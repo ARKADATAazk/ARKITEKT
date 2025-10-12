@@ -1,0 +1,160 @@
+{
+    "Lua.workspace.library": [
+        "c:\\Users\\arkad\\.vscode\\extensions\\antoinebalaine.reascript-docs-0.1.14/resources/Sexan_reaper_defs.lua",
+        "c:\\Users\\arkad\\.vscode\\extensions\\antoinebalaine.reascript-docs-0.1.14/resources/imgui_defs_0.9.lua",
+        "c:\\Users\\arkad\\.vscode\\extensions\\antoinebalaine.reascript-docs-0.1.14/resources/reawwise_defs.lua"
+    ],
+    "Lua.diagnostics.disable": [
+        "lowercase-global",
+        "param-type-mismatch",
+        "undefined-global"
+    ],
+    "Lua.workspace.preloadFileSize": 1024,
+    "lua_analyzer.codeLinting.enable": false,
+    "folder-color.pathColors": [
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\",
+            "color": "foldercolorizer.color_00ff33"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\Enhanced 6.0 Theme Adjuster\\",
+            "color": "foldercolorizer.color_6600ff"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\Enhanced 6.0 Theme Adjuster\\cache\\",
+            "color": "foldercolorizer.color_66ccff"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\colorblocks.lua\\",
+            "color": "foldercolorizer.color_990099"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\package_tiles.lua\\",
+            "color": "foldercolorizer.color_990099"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\region_tiles.lua\\",
+            "color": "foldercolorizer.color_990099"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\tiles_container.lua\\",
+            "color": "foldercolorizer.color_990099"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\tiles\\active_tile.lua\\",
+            "color": "foldercolorizer.color_990099"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\tiles\\drop_indicator.lua\\",
+            "color": "foldercolorizer.color_990099"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\tiles\\ghost_tiles.lua\\",
+            "color": "foldercolorizer.color_990099"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\tiles\\pool_tile.lua\\",
+            "color": "foldercolorizer.color_990099"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\systems\\layout_grid.lua\\",
+            "color": "foldercolorizer.color_990099"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\systems\\motion.lua\\",
+            "color": "foldercolorizer.color_990099"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\grid\\",
+            "color": "foldercolorizer.color_9900ff"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\package_tiles\\",
+            "color": "foldercolorizer.color_66cc99"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\region_tiles\\",
+            "color": "foldercolorizer.color_ff6600"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\fx\\",
+            "color": "foldercolorizer.color_990066"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\systems\\",
+            "color": "foldercolorizer.color_0066ff"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\",
+            "color": "foldercolorizer.color_00cc66"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\",
+            "color": "foldercolorizer.color_cc6600"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\app\\",
+            "color": "foldercolorizer.color_cc0033"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\core\\",
+            "color": "foldercolorizer.color_990033"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\fonts\\",
+            "color": "foldercolorizer.color_777777"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\navigation\\",
+            "color": "foldercolorizer.color_339999"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\sliders\\",
+            "color": "foldercolorizer.color_66cc66"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\features\\",
+            "color": "foldercolorizer.color_ffcc00"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\Region_Playlist\\",
+            "color": "foldercolorizer.color_ffcc00"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\gui\\widgets\\panel\\",
+            "color": "foldercolorizer.color_990099"
+        },
+        {
+            "folderPath": "ARKADATA Scripts\\ReArkitekt\\Region_Playlist\\app\\",
+            "color": "foldercolorizer.color_9900ff"
+        },
+        {
+            "folderPath": "ARKITEKT\\arkitekt\\fonts\\",
+            "color": "foldercolorizer.color_cc99ff"
+        },
+        {
+            "folderPath": "ARKITEKT\\arkitekt\\core\\",
+            "color": "foldercolorizer.color_cc3300"
+        },
+        {
+            "folderPath": "ARKITEKT\\arkitekt\\app\\",
+            "color": "foldercolorizer.color_9900cc"
+        },
+        {
+            "folderPath": "ARKITEKT\\arkitekt\\gui\\fx\\",
+            "color": "foldercolorizer.color_ff6633"
+        },
+        {
+            "folderPath": "ARKITEKT\\.vscode\\",
+            "color": "foldercolorizer.color_ff6600"
+        },
+        {
+            "folderPath": "ARKITEKT\\.github\\workflows\\",
+            "color": "foldercolorizer.color_ff6600"
+        },
+        {
+            "folderPath": "ARKITEKT\\arkitekt\\gui\\widgets\\",
+            "color": "foldercolorizer.color_00cc33"
+        }
+    ]
+}
