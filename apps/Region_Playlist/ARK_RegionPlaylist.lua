@@ -1,12 +1,4 @@
--- @description ARK Region Playlist
--- @author ARKADATA
--- @version 0.0.1
--- @changelog Initial release
--- @provides
---   app/**/*.lua
---   engine/**/*.lua
---   storage/**/*.lua
---   widgets/**/*.lua
+-- @noindex
 
 
 -- Auto-injected package path setup for relocated script
