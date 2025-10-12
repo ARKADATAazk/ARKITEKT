@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" commit="bdbdf16a4892aa010a4639db92e6413f73398ef7">
+<index version="1" commit="6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0">
   <category name="apps/Region_Playlist">
     <reapack name="ARK_RegionPlaylist.lua" type="script" desc="ARK Region Playlist">
-      <version name="0.0.1" author="ARKADATA" time="2025-10-12T23:43:56Z">
+      <version name="0.0.1" author="ARKADATA" time="2025-10-12T23:50:21Z">
         <changelog><![CDATA[Initial release]]></changelog>
-        <source main="main">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/ARK_RegionPlaylist.lua</source>
-        <source file="app/config.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/app/config.lua</source>
-        <source file="app/controller.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/app/controller.lua</source>
-        <source file="app/gui.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/app/gui.lua</source>
-        <source file="app/shortcuts.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/app/shortcuts.lua</source>
-        <source file="app/state.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/app/state.lua</source>
-        <source file="app/status.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/app/status.lua</source>
-        <source file="engine/coordinator_bridge.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/engine/coordinator_bridge.lua</source>
-        <source file="engine/core.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/engine/core.lua</source>
-        <source file="engine/playback.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/engine/playback.lua</source>
-        <source file="engine/quantize.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/engine/quantize.lua</source>
-        <source file="engine/state.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/engine/state.lua</source>
-        <source file="engine/transitions.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/engine/transitions.lua</source>
-        <source file="engine/transport.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/engine/transport.lua</source>
-        <source file="storage/state.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/storage/state.lua</source>
-        <source file="storage/undo_bridge.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/storage/undo_bridge.lua</source>
-        <source file="widgets/controls/controls_widget.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/widgets/controls/controls_widget.lua</source>
-        <source file="widgets/region_tiles/active_grid_factory.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/widgets/region_tiles/active_grid_factory.lua</source>
-        <source file="widgets/region_tiles/coordinator.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/widgets/region_tiles/coordinator.lua</source>
-        <source file="widgets/region_tiles/coordinator_render.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/widgets/region_tiles/coordinator_render.lua</source>
-        <source file="widgets/region_tiles/pool_grid_factory.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/widgets/region_tiles/pool_grid_factory.lua</source>
-        <source file="widgets/region_tiles/renderers/active.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/widgets/region_tiles/renderers/active.lua</source>
-        <source file="widgets/region_tiles/renderers/base.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/widgets/region_tiles/renderers/base.lua</source>
-        <source file="widgets/region_tiles/renderers/pool.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/widgets/region_tiles/renderers/pool.lua</source>
-        <source file="widgets/region_tiles/selector.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/bdbdf16a4892aa010a4639db92e6413f73398ef7/apps/Region_Playlist/widgets/region_tiles/selector.lua</source>
+        <source main="main">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/ARK_RegionPlaylist.lua</source>
+        <source file="app/config.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/app/config.lua</source>
+        <source file="app/controller.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/app/controller.lua</source>
+        <source file="app/gui.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/app/gui.lua</source>
+        <source file="app/shortcuts.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/app/shortcuts.lua</source>
+        <source file="app/state.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/app/state.lua</source>
+        <source file="app/status.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/app/status.lua</source>
+        <source file="engine/coordinator_bridge.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/engine/coordinator_bridge.lua</source>
+        <source file="engine/core.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/engine/core.lua</source>
+        <source file="engine/playback.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/engine/playback.lua</source>
+        <source file="engine/quantize.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/engine/quantize.lua</source>
+        <source file="engine/state.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/engine/state.lua</source>
+        <source file="engine/transitions.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/engine/transitions.lua</source>
+        <source file="engine/transport.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/engine/transport.lua</source>
+        <source file="storage/state.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/storage/state.lua</source>
+        <source file="storage/undo_bridge.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/storage/undo_bridge.lua</source>
+        <source file="widgets/controls/controls_widget.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/widgets/controls/controls_widget.lua</source>
+        <source file="widgets/region_tiles/active_grid_factory.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/widgets/region_tiles/active_grid_factory.lua</source>
+        <source file="widgets/region_tiles/coordinator.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/widgets/region_tiles/coordinator.lua</source>
+        <source file="widgets/region_tiles/coordinator_render.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/widgets/region_tiles/coordinator_render.lua</source>
+        <source file="widgets/region_tiles/pool_grid_factory.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/widgets/region_tiles/pool_grid_factory.lua</source>
+        <source file="widgets/region_tiles/renderers/active.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/widgets/region_tiles/renderers/active.lua</source>
+        <source file="widgets/region_tiles/renderers/base.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/widgets/region_tiles/renderers/base.lua</source>
+        <source file="widgets/region_tiles/renderers/pool.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/widgets/region_tiles/renderers/pool.lua</source>
+        <source file="widgets/region_tiles/selector.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/6bec6d9662a6b86b7c0eec1f32c5e7ff2708b7e0/apps/Region_Playlist/widgets/region_tiles/selector.lua</source>
       </version>
     </reapack>
   </category>
