@@ -1,7 +1,6 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/region_tiles/active_grid_factory.lua
--- Factory for creating active grid instances with standardized configuration
--- UPDATED: Added extend_input_area to handle padding zones
+-- UNCHANGED
 
 local Grid = require('rearkitekt.gui.widgets.grid.core')
 local ActiveTile = require('Region_Playlist.widgets.region_tiles.renderers.active')

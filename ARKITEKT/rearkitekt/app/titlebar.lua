@@ -1,6 +1,6 @@
 -- @noindex
 -- ReArkitekt/app/titlebar.lua
--- Enhanced: Separate styling for app name and version
+-- MODIFIED: Use regular font for version, with optional size override
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.9'
@@ -242,15 +242,11 @@ function M.new(opts)
       local available_width = (win_w - total_button_width) - title_start_x - self.pad_h
       
 
-if self.version and self.version ~= "" then
+      if self.version and self.version ~= "" then
         if self.title_font then ImGui.PushFont(ctx, self.title_font) end
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
-        
         local title_w = ImGui.CalcTextSize(ctx, self.title)
         local title_h = ImGui.GetTextLineHeight(ctx)
-        
         if self.title_font then ImGui.PopFont(ctx) end
-        ImGui.PopStyleColor(ctx)
         
         local version_font = self.version_font
         if version_font then ImGui.PushFont(ctx, version_font) end
@@ -272,9 +268,8 @@ if self.version and self.version ~= "" then
           ImGui.SameLine(ctx, 0, self.version_spacing)
           
           local height_diff = title_h - version_h
-          local version_y_offset = -1  -- ADJUST THIS VALUE: negative moves up, positive moves down
-          if height_diff > 0 then
-            ImGui.SetCursorPosY(ctx, base_y + height_diff + version_y_offset)
+          if height_diff ~= 0 then
+            ImGui.SetCursorPosY(ctx, base_y + height_diff - 1)
           end
           
           if version_font then ImGui.PushFont(ctx, version_font) end

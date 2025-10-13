@@ -1,6 +1,7 @@
 -- @noindex
 -- ReArkitekt/app/shell.lua
--- Enhanced: Separate title and version support
+-- MODIFIED: Made font loading robust against older configuration files.
+-- ADDED: Support for titlebar_version size override (uses regular font family)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui   = require 'imgui' '0.9'
@@ -26,8 +27,12 @@ do
       fonts = {
         default        = 13,
         title          = 16,
+        version        = 13,
+        titlebar_version = nil,
+        monospace      = 13,
         family_regular = 'Inter_18pt-Regular.ttf',
         family_bold    = 'Inter_18pt-SemiBold.ttf',
+        family_mono    = 'JetBrainsMono-Regular.ttf',
       },
     }
   end
@@ -47,11 +52,14 @@ end
 
 local function load_fonts(ctx, font_cfg)
   font_cfg = merge({
-    default        = DEFAULTS.fonts.default,
-    title          = DEFAULTS.fonts.title,
-    version        = DEFAULTS.fonts.version,
-    family_regular = DEFAULTS.fonts.family_regular,
-    family_bold    = DEFAULTS.fonts.family_bold,
+    default        = (DEFAULTS.fonts and DEFAULTS.fonts.default) or 13,
+    title          = (DEFAULTS.fonts and DEFAULTS.fonts.title) or 16,
+    version        = (DEFAULTS.fonts and DEFAULTS.fonts.version) or 13,
+    titlebar_version = (DEFAULTS.fonts and DEFAULTS.fonts.titlebar_version) or nil,
+    monospace      = (DEFAULTS.fonts and DEFAULTS.fonts.monospace) or 13,
+    family_regular = (DEFAULTS.fonts and DEFAULTS.fonts.family_regular) or 'Inter_18pt-Regular.ttf',
+    family_bold    = (DEFAULTS.fonts and DEFAULTS.fonts.family_bold) or 'Inter_18pt-SemiBold.ttf',
+    family_mono    = (DEFAULTS.fonts and DEFAULTS.fonts.family_mono) or 'JetBrainsMono-Regular.ttf',
   }, font_cfg or {})
 
   local SEP      = package.config:sub(1,1)
@@ -62,19 +70,37 @@ local function load_fonts(ctx, font_cfg)
 
   local R = fontsdir .. font_cfg.family_regular
   local B = fontsdir .. font_cfg.family_bold
+  local M = fontsdir .. font_cfg.family_mono
 
   local function exists(p) local f = io.open(p, 'rb'); if f then f:close(); return true end end
-  local default_font = exists(R) and ImGui.CreateFont(R, font_cfg.default)
+  local default_font   = exists(R) and ImGui.CreateFont(R, font_cfg.default)
                                 or ImGui.CreateFont('sans-serif', font_cfg.default)
-  local title_font   = exists(B) and ImGui.CreateFont(B, font_cfg.title)
+  local title_font     = exists(B) and ImGui.CreateFont(B, font_cfg.title)
                                 or default_font
-  local version_font = exists(R) and ImGui.CreateFont(R, font_cfg.version)
+  local version_font   = exists(R) and ImGui.CreateFont(R, font_cfg.version)
                                 or default_font
+  local monospace_font = exists(M) and ImGui.CreateFont(M, font_cfg.monospace)
+                                or default_font
+
+  local titlebar_version_font = nil
+  if font_cfg.titlebar_version then
+    titlebar_version_font = exists(R) and ImGui.CreateFont(R, font_cfg.titlebar_version)
+                                       or version_font
+    ImGui.Attach(ctx, titlebar_version_font)
+  end
 
   ImGui.Attach(ctx, default_font)
   ImGui.Attach(ctx, title_font)
   ImGui.Attach(ctx, version_font)
-  return { default = default_font, title = title_font, version = version_font }
+  ImGui.Attach(ctx, monospace_font)
+  
+  return { 
+    default = default_font, 
+    title = title_font, 
+    version = version_font, 
+    monospace = monospace_font,
+    titlebar_version = titlebar_version_font
+  }
 end
 
 function M.run(opts)
@@ -105,7 +131,7 @@ function M.run(opts)
       title           = title,
       version         = version,
       title_font      = fonts.title,
-      version_font    = fonts.version,
+      version_font    = fonts.titlebar_version or fonts.version,
       version_color   = opts.version_color,
       settings        = settings and settings:sub('ui') or nil,
       initial_pos     = opts.initial_pos  or cfg.window.initial_pos,

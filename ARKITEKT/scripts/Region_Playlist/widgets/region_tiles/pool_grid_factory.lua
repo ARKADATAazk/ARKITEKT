@@ -1,7 +1,6 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/region_tiles/pool_grid_factory.lua
--- Factory for creating pool grid instances with standardized configuration
--- UPDATED: Added extend_input_area to handle padding zones
+-- UNCHANGED
 
 local Grid = require('rearkitekt.gui.widgets.grid.core')
 local PoolTile = require('Region_Playlist.widgets.region_tiles.renderers.pool')

@@ -21,8 +21,10 @@ M.defaults = {
     default        = 13,
     title          = 13,
     version        = 11,
+    titlebar_version_monospace = 10, 
     family_regular = "Inter_18pt-Regular.ttf",
     family_bold    = "Inter_18pt-SemiBold.ttf",
+    family_mono = 'JetBrainsMono-Regular.ttf',
   },
 
   titlebar = {

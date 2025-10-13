@@ -1,5 +1,6 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/region_tiles/renderers/active.lua
+-- MODIFIED: Lowered responsive threshold for text.
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -20,7 +21,7 @@ M.CONFIG = {
   badge_bg = 0x14181CFF,
   badge_border_alpha = 0x33,
   disabled = { desaturate = 0.8, brightness = 0.4, min_alpha = 0x33, fade_speed = 20.0 },
-  responsive = { hide_length_below = 35, hide_badge_below = 25, hide_text_below = 17 },
+  responsive = { hide_length_below = 35, hide_badge_below = 25, hide_text_below = 15 }, -- UPDATED
   playlist_tile = { base_color = 0x3A3A3AFF },
   text_margin_right = 6,
 }

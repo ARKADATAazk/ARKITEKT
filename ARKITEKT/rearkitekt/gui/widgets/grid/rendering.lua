@@ -41,12 +41,13 @@ end
 
 function M.TileHelpers.render_border(dl, x1, y1, x2, y2, is_selected, base_color, border_color, thickness, rounding, config)
   config = config or DEFAULTS.selection
-  
+  thickness = thickness or 1
+
   if is_selected then
     local ant_color = Colors.derive_marching_ants(base_color)
-    
+    -- No inset, same pixel line as the normal border:
     MarchingAnts.draw(
-      dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5,
+      dl, x1, y1, x2, y2,
       ant_color, thickness, rounding,
       config.ant_dash or 8, config.ant_gap or 6, config.ant_speed or 20
     )
@@ -54,6 +55,7 @@ function M.TileHelpers.render_border(dl, x1, y1, x2, y2, is_selected, base_color
     Draw.rect(dl, x1, y1, x2, y2, border_color, rounding, thickness)
   end
 end
+
 
 function M.TileHelpers.compute_border_color(base_color, is_hovered, is_active, hover_factor, hover_lerp, color_mode)
   color_mode = color_mode or DEFAULTS.color_mode

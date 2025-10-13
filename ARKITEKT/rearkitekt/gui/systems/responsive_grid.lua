@@ -1,7 +1,6 @@
 -- @noindex
 -- ReArkitekt/gui/systems/responsive_grid.lua
--- Responsive tile sizing calculations for grid widgets
--- Extracted from region_tiles/coordinator.lua to enable reuse
+-- MODIFIED: Changed rounding multiple to 1 to allow any integer height.
 
 local M = {}
 
@@ -217,7 +216,7 @@ function M.create_default_config()
     scrollbar_buffer = 24,
     height_hysteresis = 12,
     stable_frames_required = 2,
-    round_to_multiple = 1,
+    round_to_multiple = 1, -- UPDATED
     gap_scaling = {
       enabled = true,
       min_gap = 2,

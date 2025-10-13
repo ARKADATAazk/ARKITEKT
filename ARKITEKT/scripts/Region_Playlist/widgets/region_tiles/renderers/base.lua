@@ -1,5 +1,6 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/region_tiles/renderers/base.lua
+-- MODIFIED: Chip offset now uses a single {x, y} table for 2D positioning.
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -22,9 +23,9 @@ M.CONFIG = {
   length_padding_y = 2,
   length_font_size = 0.82,
   length_offset_x = 3,
-  playlist_chip_radius = 4, -- UPDATED as per your request
-  playlist_chip_padding = 8,
-  playlist_chip_offset_x = 3,
+  playlist_chip_radius = 4,
+  prefix_width = 24,
+  chip_offset = { x = 0, y = 0 }, -- NEW: Nudge chip with X and Y values
   text_padding_left = 6,
   text_padding_top = 6,
   vertical_center_threshold = 40,
@@ -69,7 +70,7 @@ function M.calculate_text_position(ctx, rect, actual_height, text_sample)
   local y
   
   if actual_height < M.CONFIG.vertical_center_threshold then
-    y = y1 + (actual_height - text_height) / 2
+    y = y1 + (actual_height - text_height) / 2 - 1
   else
     y = y1 + M.CONFIG.text_padding_top
   end
@@ -111,10 +112,11 @@ end
 function M.draw_marching_ants(dl, rect, color, fx_config)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local ants_color = Colors.same_hue_variant(color, fx_config.border_saturation, fx_config.border_brightness, fx_config.ants_alpha or 0xFF)
-  local inset = fx_config.ants_inset or 0.5
-  MarchingAnts.draw(dl, x1 + inset, y1 + inset, x2 - inset, y2 - inset, ants_color, 
-    fx_config.ants_thickness, M.CONFIG.rounding, fx_config.ants_dash, fx_config.ants_gap, fx_config.ants_speed)
+  local inset = fx_config.ants_inset or 0   -- was 0.5
+  MarchingAnts.draw(dl, x1 + inset, y1 + inset, x2 - inset, y2 - inset, ants_color,
+    fx_config.ants_thickness or 1, M.CONFIG.rounding, fx_config.ants_dash, fx_config.ants_gap, fx_config.ants_speed)
 end
+
 
 function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_bound_x)
   local fx_config = TileFXConfig.get()
@@ -124,23 +126,17 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   local index_str = string.format("%d", region.rid)
   local name_str = region.name or "Unknown"
 
-  -- 1. Define the width of our "number box" using "99" as the template.
-  local max_index_w = ImGui.CalcTextSize(ctx, "99")
-
-  -- 2. Calculate the width of the actual index number.
   local index_w = ImGui.CalcTextSize(ctx, index_str)
-
-  -- 3. Calculate the starting X pos for the index to be right-aligned in the box.
-  local index_start_x = pos.x + (max_index_w - index_w)
-  Draw.text(dl, index_start_x, pos.y, accent_color, index_str)
-  
   local separator = " "
   local sep_w = ImGui.CalcTextSize(ctx, separator)
-  local separator_color = Colors.with_alpha(Colors.same_hue_variant(base_color, fx_config.separator_saturation, fx_config.separator_brightness, fx_config.separator_alpha), text_alpha)
-  Draw.text(dl, pos.x + max_index_w, pos.y, separator_color, separator)
   
-  -- 4. The name now starts at a fixed position after the box and separator.
-  local name_start_x = pos.x + max_index_w + sep_w
+  local index_start_x = pos.x + (M.CONFIG.prefix_width - index_w - sep_w)
+  Draw.text(dl, index_start_x, pos.y, accent_color, index_str)
+  
+  local separator_color = Colors.with_alpha(Colors.same_hue_variant(base_color, fx_config.separator_saturation, fx_config.separator_brightness, fx_config.separator_alpha), text_alpha)
+  Draw.text(dl, pos.x + M.CONFIG.prefix_width - sep_w, pos.y, separator_color, separator)
+  
+  local name_start_x = pos.x + M.CONFIG.prefix_width
   local name_width = right_bound_x - name_start_x
   local truncated_name = truncate_text(ctx, name_str, name_width)
   Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
@@ -150,8 +146,10 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
   local fx_config = TileFXConfig.get()
   
   local text_height = ImGui.CalcTextSize(ctx, "Tg")
-  local chip_center_y = pos.y + (text_height / 2)
-  local chip_x = pos.x + M.CONFIG.playlist_chip_offset_x
+  
+  -- The chip is centered, then adjusted by the new X and Y offsets
+  local chip_x = pos.x + (M.CONFIG.prefix_width / 2) + M.CONFIG.chip_offset.x
+  local chip_center_y = pos.y + (text_height / 2) + M.CONFIG.chip_offset.y
   
   Chip.draw(ctx, {
     style = Chip.STYLE.INDICATOR,
@@ -177,7 +175,7 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
     end
   end
 
-  local name_start_x = chip_x + M.CONFIG.playlist_chip_radius + M.CONFIG.playlist_chip_padding
+  local name_start_x = pos.x + M.CONFIG.prefix_width
   local name_width = right_bound_x - name_start_x
   local truncated_name = truncate_text(ctx, playlist_data.name, name_width)
   Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)

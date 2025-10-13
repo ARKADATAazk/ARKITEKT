@@ -48,11 +48,11 @@ M.DEFAULT = {
   -- Marching ants (uses border_saturation and border_brightness for color)
   ants_enabled = true,
   ants_replace_border = true,
-  ants_thickness = 1.5,
+  ants_thickness = 1,
   ants_dash = 8,
   ants_gap = 6,
   ants_speed = 20,
-  ants_inset = 0.5,
+  ants_inset = 0,
   ants_alpha = 0xFF,
   
   -- Selection glow
