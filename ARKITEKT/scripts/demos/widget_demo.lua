@@ -16,9 +16,9 @@ root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
 if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
 
 -- Add both module search paths
-local reapack_path = root_path .. "reapack/"
-local scripts_path = root_path .. "reapack/scripts/"
-package.path = reapack_path .. "?.lua;" .. reapack_path .. "?/init.lua;" .. 
+local arkitekt_path= root_path .. "ARKITEKT/"
+local scripts_path = root_path .. "ARKITEKT/scripts/"
+package.path = arkitekt_path.. "?.lua;" .. arkitekt_path.. "?/init.lua;" .. 
                scripts_path .. "?.lua;" .. scripts_path .. "?/init.lua;" .. 
                package.path
 
