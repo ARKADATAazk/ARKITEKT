@@ -1,10 +1,10 @@
 # FOLDER FLOW: apps
-Generated: 2025-10-13 01:20:19
+Generated: 2025-10-13 02:51:26
 Location: D:\Dropbox\REAPER\Scripts\ARKITEKT\apps
 
 ## Overview
 - **Files**: 35
-- **Total Lines**: 8,425
+- **Total Lines**: 8,423
 - **Public Functions**: 103
 - **Classes**: 30
 
@@ -13,7 +13,7 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT\apps
 ### ARK_ColorPalette.lua (98 lines)
   **Requires**: arkitekt.app.shell, apps.ColorPalette.app.state, apps.ColorPalette.app.gui, arkitekt.gui.widgets.overlay.manager, arkitekt.core.settings
 
-### ARK_RegionPlaylist.lua (60 lines)
+### ARK_RegionPlaylist.lua (58 lines)
   **Requires**: arkitekt.app.shell, apps.Region_Playlist.app.config, apps.Region_Playlist.app.state, apps.Region_Playlist.app.gui, apps.Region_Playlist.app.status
 
 ### active.lua (187 lines)

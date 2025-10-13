@@ -5,9 +5,8 @@
 -- @version 0.1.5
 -- @changelog Initial beta release
 -- @provides
---   apps/**/*.lua
---   arkitekt/**/*.lua
-
+--   ../apps/**/*.lua
+--   **/*.lua
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.9'
 

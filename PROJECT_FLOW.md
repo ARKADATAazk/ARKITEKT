@@ -1,5 +1,5 @@
 # PROJECT FLOW: ARKITEKT
-Generated: 2025-10-13 01:20:19
+Generated: 2025-10-13 02:51:26
 Root: D:\Dropbox\REAPER\Scripts\ARKITEKT
 
 ## Project Structure
@@ -46,7 +46,7 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT
 │   │   │       ├── coordinator_render.lua         # (190 lines)
 │   │   │       ├── pool_grid_factory.lua         # (186 lines)
 │   │   │       └── selector.lua         # (98 lines)
-│   │   └── ARK_RegionPlaylist.lua         # (60 lines)
+│   │   └── ARK_RegionPlaylist.lua         # (58 lines)
 │   └── demos/
 │       ├── demo.lua         # (365 lines)
 │       ├── demo2.lua         # (192 lines)
@@ -159,16 +159,17 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT
     │   └── style.lua         # (146 lines)
     ├── input/
     │   └── wheel_guard.lua         # (43 lines)
-    └── reaper/
-        ├── regions.lua         # (83 lines)
-        ├── timing.lua         # (113 lines)
-        └── transport.lua         # (97 lines)
+    ├── reaper/
+    │   ├── regions.lua         # (83 lines)
+    │   ├── timing.lua         # (113 lines)
+    │   └── transport.lua         # (97 lines)
+    └── ARKITEKT.lua         # (324 lines)
 ```
 
 ## Overview
-- **Total Files**: 118
-- **Total Lines**: 23,585
-- **Code Lines**: 18,342
+- **Total Files**: 119
+- **Total Lines**: 23,907
+- **Code Lines**: 18,588
 - **Public Functions**: 348
 - **Classes**: 81
 - **Modules**: 255
@@ -180,8 +181,8 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT
   - Exports: 103
 
 ### arkitekt/
-  - Files: 83
-  - Lines: 11,748
+  - Files: 84
+  - Lines: 11,994
   - Exports: 245
 
 ## Execution Flow Patterns
@@ -654,14 +655,6 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT
 **Private Functions**: 7 helpers
 **Dependencies**: `arkitekt.core.json`
 
-### `arkitekt/core/undo_manager.lua`
-> @noindex
-
-**Modules**: `M`
-**Classes**: `M` (stateful objects)
-**Public API**:
-  - `M.new(opts)` → Instance
-
 ## State Ownership
 
 ### Stateful Modules (Classes/Objects)
@@ -910,7 +903,7 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT
   ← `apps/demos/widget_demo.lua`
   ← ... and 10 more
 
-**`arkitekt/app/shell.lua`** is imported by 7 files:
+**`arkitekt/app/shell.lua`** is imported by 8 files:
   ← `apps/ColorPalette/ARK_ColorPalette.lua`
   ← `apps/Region_Playlist/ARK_RegionPlaylist.lua`
   ← `apps/demos/demo.lua`
@@ -918,6 +911,7 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT
   ← `apps/demos/demo3.lua`
   ← `apps/demos/demo_modal_overlay.lua`
   ← `apps/demos/widget_demo.lua`
+  ← `arkitekt/ARKITEKT.lua`
 
 **`arkitekt/gui/widgets/component/chip.lua`** is imported by 6 files:
   ← `apps/Region_Playlist/widgets/region_tiles/renderers/base.lua`
@@ -1009,9 +1003,9 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT
 3. `arkitekt/gui/widgets/grid/core.lua`: 13 imports + 3 importers = 16 total
 4. `apps/Region_Playlist/widgets/region_tiles/coordinator.lua`: 11 imports + 1 importers = 12 total
 5. `apps/Region_Playlist/app/gui.lua`: 9 imports + 1 importers = 10 total
-6. `arkitekt/gui/widgets/component/chip.lua`: 4 imports + 6 importers = 10 total
-7. `apps/Region_Playlist/widgets/region_tiles/renderers/base.lua`: 7 imports + 2 importers = 9 total
-8. `arkitekt/app/shell.lua`: 2 imports + 7 importers = 9 total
+6. `arkitekt/app/shell.lua`: 2 imports + 8 importers = 10 total
+7. `arkitekt/gui/widgets/component/chip.lua`: 4 imports + 6 importers = 10 total
+8. `apps/Region_Playlist/widgets/region_tiles/renderers/base.lua`: 7 imports + 2 importers = 9 total
 9. `apps/Region_Playlist/app/state.lua`: 5 imports + 3 importers = 8 total
 10. `apps/Region_Playlist/widgets/region_tiles/renderers/active.lua`: 5 imports + 2 importers = 7 total
 

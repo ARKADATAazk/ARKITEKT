@@ -1,14 +1,17 @@
 # FOLDER FLOW: arkitekt
-Generated: 2025-10-13 01:20:19
+Generated: 2025-10-13 02:51:26
 Location: D:\Dropbox\REAPER\Scripts\ARKITEKT\arkitekt
 
 ## Overview
-- **Files**: 83
-- **Total Lines**: 15,160
+- **Files**: 84
+- **Total Lines**: 15,484
 - **Public Functions**: 245
 - **Classes**: 51
 
 ## Files
+
+### ARKITEKT.lua (324 lines)
+  **Requires**: arkitekt.app.shell
 
 ### animation.lua (101 lines)
   **Modules**: M, AnimationCoordinator
@@ -626,6 +629,9 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT\arkitekt
 ### shell.lua
   → arkitekt.app.runtime
   → arkitekt.app.window
+
+### ARKITEKT.lua
+  → arkitekt.app.shell
 
 ### settings.lua
   → arkitekt.core.json
