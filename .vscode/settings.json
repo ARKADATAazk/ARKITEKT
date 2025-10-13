@@ -11,4 +11,50 @@
     ],
     "Lua.workspace.preloadFileSize": 1024,
     "lua_analyzer.codeLinting.enable": false,
+    "folder-color.pathColors": [
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\fonts\\",
+            "color": "foldercolorizer.color_666666"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\gui\\",
+            "color": "foldercolorizer.color_00cc66"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\gui\\fx\\",
+            "color": "foldercolorizer.color_990033"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\gui\\systems\\",
+            "color": "foldercolorizer.color_3366ff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\gui\\widgets\\",
+            "color": "foldercolorizer.color_cc6633"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\gui\\widgets\\grid\\",
+            "color": "foldercolorizer.color_66ccff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\gui\\widgets\\navigation\\",
+            "color": "foldercolorizer.color_009999"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\gui\\widgets\\overlay\\",
+            "color": "foldercolorizer.color_66cc00"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\gui\\widgets\\panel\\",
+            "color": "foldercolorizer.color_ff0099"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\gui\\widgets\\transport\\",
+            "color": "foldercolorizer.color_cc00ff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\icons\\",
+            "color": "foldercolorizer.color_99ccff"
+        }
+    ],
 }
