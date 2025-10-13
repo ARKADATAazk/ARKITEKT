@@ -1,6 +1,6 @@
 -- @noindex
 -- ReArkitekt/app/titlebar.lua
--- Custom titlebar component with close and maximize buttons, icon double-click for profiling
+-- Custom titlebar component with close and maximize buttons, icon click for hub/metrics
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.9'
@@ -74,20 +74,9 @@ function M.new(opts)
     
     on_close        = opts.on_close,
     on_maximize     = opts.on_maximize,
-    on_icon_double_click = opts.on_icon_double_click,
-    
-    -- Icon interaction state
-    icon_last_click_time = 0,
-    icon_double_click_threshold = 0.3, -- 300ms
+    on_icon_click   = opts.on_icon_click,
   }
   
-  --[[*
-  * Truncates text with an ellipsis if it exceeds the maximum width.
-  * @param ctx table The ImGui context.
-  * @param text string The text to truncate.
-  * @param max_width number The maximum allowed width.
-  * @return string The truncated text.
-  ]]
   function titlebar:_truncate_text(ctx, text, max_width)
     if not text then return "" end
 
@@ -100,10 +89,9 @@ function M.new(opts)
     local ellipsis_w = ImGui.CalcTextSize(ctx, ellipsis)
 
     if max_width < ellipsis_w then
-      return "" -- Not enough space for even "..."
+      return ""
     end
 
-    -- Iterate backwards to find the right crop point
     for i = #text, 1, -1 do
       local sub = text:sub(1, i)
       local sub_w = ImGui.CalcTextSize(ctx, sub)
@@ -171,7 +159,8 @@ function M.new(opts)
     
     local clicked_maximize = false
     local clicked_close = false
-    local icon_double_clicked = false
+    local icon_clicked = false
+    local icon_shift_clicked = false
     
     if child_visible then
       local content_h = ImGui.GetTextLineHeight(ctx)
@@ -186,20 +175,18 @@ function M.new(opts)
         local icon_y = win_y + (self.height - self.icon_size) * 0.5
         local icon_color = self.icon_color or text_color
         
-        -- Create invisible button for icon click detection
         ImGui.SetCursorPos(ctx, self.pad_h, (self.height - self.icon_size) * 0.5)
         ImGui.InvisibleButton(ctx, "##icon_button", self.icon_size, self.icon_size)
         
         local icon_hovered = ImGui.IsItemHovered(ctx)
-        local icon_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
+        local icon_button_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
         
-        if icon_clicked then
-          local current_time = reaper.time_precise()
-          if current_time - self.icon_last_click_time < self.icon_double_click_threshold then
-            icon_double_clicked = true
-            self.icon_last_click_time = 0
+        if icon_button_clicked then
+          local shift_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
+          if shift_down then
+            icon_shift_clicked = true
           else
-            self.icon_last_click_time = current_time
+            icon_clicked = true
           end
         end
         
@@ -218,22 +205,19 @@ function M.new(opts)
         self:_draw_icon(ctx, icon_x, icon_y, draw_color)
         
         if icon_hovered then
-          ImGui.SetTooltip(ctx, "Double-click to toggle profiling")
+          ImGui.SetTooltip(ctx, "Click: Open Hub\nShift+Click: Show Metrics")
         end
         
         title_x_offset = self.icon_size + self.icon_spacing
         ImGui.SetCursorPos(ctx, self.pad_h + title_x_offset, y_center)
       end
       
-      -- Calculate available width before drawing title
       local num_buttons = 1 + (self.enable_maximize and 1 or 0)
       local total_button_width = (self.button_width * num_buttons) + (self.button_spacing * (num_buttons - 1))
       
-      -- Set font and color for text calculation and drawing
       ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
       if self.title_font then ImGui.PushFont(ctx, self.title_font) end
       
-      -- NEW: Truncate title text
       local title_start_x = ImGui.GetCursorPosX(ctx)
       local available_width = (win_w - total_button_width) - title_start_x - self.pad_h
       local display_title = self:_truncate_text(ctx, self.title, available_width)
@@ -260,8 +244,8 @@ function M.new(opts)
       ImGui.Separator(ctx)
     end
     
-    if icon_double_clicked and self.on_icon_double_click then
-      self.on_icon_double_click()
+    if (icon_clicked or icon_shift_clicked) and self.on_icon_click then
+      self.on_icon_click(icon_shift_clicked)
     end
     
     if clicked_maximize and self.on_maximize then

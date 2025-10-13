@@ -1,341 +1,353 @@
--- @description ARKITEKT Toolkit
+-- @description ARKITEKT Toolkit Hub
 -- @author ARKADATA
--- @donation https://www.paypal.com/donate/?hosted_button_id=2FP22TUPGFPSJ
--- @website https://www.arkadata.com
 -- @version 0.2.0
--- @changelog Initial beta release
--- @provides
---   rearkitekt/**/*.lua
---   scripts/**/*.lua
 
--- Package path setup for relocated script
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
-local root_path = script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
+-- Package path setup
+local script_path = debug.getinfo(1, "S").source:match("@?(.*)") or ""
+local script_dir = script_path:match("(.+)[/\\]") or "."
 
--- Ensure root_path ends with a slash
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
-
--- Add both module search paths
-local arkitekt_path= root_path .. "ARKITEKT/"
-local scripts_path = root_path .. "ARKITEKT/scripts/"
-package.path = arkitekt_path.. "?.lua;" .. arkitekt_path.. "?/init.lua;" .. 
-               scripts_path .. "?.lua;" .. scripts_path .. "?/init.lua;" .. 
+package.path = script_dir .. "/?.lua;" .. 
+               script_dir .. "/?/init.lua;" .. 
                package.path
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.9'
 
-local Shell = require('rearkitekt.app.shell')
-local Settings = nil
-local Style = nil
+local function join(a,b) local s=package.config:sub(1,1); return (a:sub(-1)==s) and (a..b) or (a..s..b) end
 
--- Attempt to load optional modules
-do
-  local ok, mod = pcall(require, 'rearkitekt.app.settings')
-  if ok then Settings = mod end
-end
+local Shell = require("rearkitekt.app.shell")
+local Hub = require("rearkitekt.app.hub")
+local PackageGrid = require("rearkitekt.gui.widgets.package_tiles.grid")
+local Micromanage = require("rearkitekt.gui.widgets.package_tiles.micromanage")
+local TilesContainer = require("rearkitekt.gui.widgets.panel")
+local SelRect = require("rearkitekt.gui.widgets.selection_rectangle")
 
-do
-  local ok, mod = pcall(require, 'rearkitekt.app.style')
-  if ok then Style = mod end
-end
+local SettingsOK, Settings = pcall(require, "rearkitekt.core.settings")
+local StyleOK, Style = pcall(require, "rearkitekt.gui.style")
 
--- App State
-local app_state = {
-  counter = 0,
-  input_text = "",
-  slider_value = 0.5,
-  checkbox_value = false,
-  selected_tab = "Home",
-  color = {r = 0.4, g = 0.7, b = 0.9, a = 1.0},
-  last_status_update = 0,
-  status_messages = {
-    {text = "READY", color = 0x41E0A3FF},
-    {text = "PROCESSING", color = 0xFFA500FF},
-    {text = "WARNING", color = 0xFFFF00FF},
-    {text = "ERROR", color = 0xFF4444FF},
-  },
-  current_status_index = 1,
-}
-
--- Settings persistence
 local settings = nil
-if Settings then
-  settings = Settings.new({
-    name = 'ARKITEKT_DefaultApp',
-    defaults = {
-      counter = 0,
-      slider_value = 0.5,
-      checkbox_value = false,
-      input_text = "",
-    }
-  })
-  
-  if settings then
-    app_state.counter = settings:get('counter', app_state.counter)
-    app_state.slider_value = settings:get('slider_value', app_state.slider_value)
-    app_state.checkbox_value = settings:get('checkbox_value', app_state.checkbox_value)
-    app_state.input_text = settings:get('input_text', app_state.input_text)
-  end
+if SettingsOK and type(Settings.new)=="function" then
+  local ok, inst = pcall(Settings.new, join(script_dir,"cache"), "arkitekt_hub.json")
+  if ok then settings = inst end
 end
 
--- Style configuration
-local style = nil
-if Style then
-  style = Style.new()
-end
-
--- Status bar function
-local function get_status()
-  local current_time = reaper.time_precise()
-  
-  if current_time - app_state.last_status_update > 5.0 then
-    app_state.current_status_index = app_state.current_status_index + 1
-    if app_state.current_status_index > #app_state.status_messages then
-      app_state.current_status_index = 1
-    end
-    app_state.last_status_update = current_time
-  end
-  
-  return app_state.status_messages[app_state.current_status_index]
-end
-
--- Tab configuration
-local tabs_config = {
-  tabs = {
-    {id = "home", label = "Home", icon = "🏠"},
-    {id = "controls", label = "Controls", icon = "🎛️"},
-    {id = "settings", label = "Settings", icon = "⚙️"},
-    {id = "about", label = "About", icon = "ℹ️"},
-  },
-  active = "home",
+local pkg = {
+  tile = 220,
+  search = "",
+  order = {},
+  active = {},
+  index = {},
+  filters = { TCP = true, MCP = true, Transport = true, Global = true },
+  excl = {},
+  pins = {},
 }
 
--- Draw function for Home tab
-local function draw_home_tab(ctx)
-  ImGui.PushFont(ctx, ImGui.GetFont(ctx))
+local mock_data = {
+  { id="TCP_Modern_Light", name="Modern Light Theme", type="TCP", assets=15, 
+    keys={"tcp_background.png", "tcp_button.png", "tcp_slider.png", "tcp_knob.png", "tcp_meter.png"} },
   
-  ImGui.TextColored(ctx, 0x41E0A3FF, "Welcome to ARKITEKT Default App")
-  ImGui.Spacing(ctx)
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
+  { id="TCP_Dark_Minimal", name="Dark Minimal", type="TCP", assets=22, 
+    keys={"tcp_background.png", "tcp_knob.png", "tcp_vu.png", "tcp_button.png", "tcp_fader.png"} },
   
-  ImGui.Text(ctx, "This is a demonstration of the ARKITEKT framework.")
-  ImGui.Text(ctx, string.format("Counter: %d", app_state.counter))
+  { id="MCP_Pro_Blue", name="Pro Blue Mixer", type="MCP", assets=18, 
+    keys={"mcp_strip.png", "mcp_fader.png", "mcp_pan.png", "mcp_solo.png", "mcp_mute.png"} },
   
-  ImGui.Spacing(ctx)
+  { id="Transport_Classic", name="Classic Transport", type="Transport", assets=12, 
+    keys={"transport_play.png", "transport_stop.png", "transport_record.png", "transport_pause.png"} },
   
-  if ImGui.Button(ctx, "Increment Counter", 150, 30) then
-    app_state.counter = app_state.counter + 1
-    if settings then
-      settings:set('counter', app_state.counter)
-    end
+  { id="TCP_Colorful", name="Colorful TCP", type="TCP", assets=25, 
+    keys={"tcp_background.png", "tcp_label.png", "tcp_meter.png", "tcp_knob.png", "tcp_slider.png"} },
+  
+  { id="MCP_Compact", name="Compact Mixer", type="MCP", assets=14, 
+    keys={"mcp_strip.png", "mcp_solo.png", "mcp_mute.png", "mcp_fader.png", "mcp_volume.png"} },
+  
+  { id="Global_Icons", name="Icon Pack", type="Global", assets=45, 
+    keys={"icon_save.png", "icon_load.png", "icon_export.png", "icon_settings.png"} },
+  
+  { id="TCP_Vintage", name="Vintage Look", type="TCP", assets=19, 
+    keys={"tcp_warm.png", "tcp_analog.png", "tcp_tape.png", "tcp_background.png", "tcp_slider.png"} },
+  
+  { id="MCP_Studio", name="Studio Mixer", type="MCP", assets=21, 
+    keys={"mcp_strip.png", "mcp_fader.png", "mcp_pan.png", "mcp_eq.png", "mcp_insert.png"} },
+  
+  { id="Transport_Modern", name="Modern Transport", type="Transport", assets=16, 
+    keys={"transport_play.png", "transport_stop.png", "transport_record.png", "transport_loop.png"} },
+}
+
+for i, data in ipairs(mock_data) do
+  local P = {
+    id = data.id,
+    path = "mock://packages/" .. data.id,
+    meta = {
+      name = data.name,
+      type = data.type,
+      mosaic = data.keys,
+    },
+    keys_order = data.keys,
+    assets = {},
+  }
+  
+  for _, key in ipairs(data.keys) do
+    P.assets[key] = { file = key, provider = data.id }
   end
   
-  ImGui.SameLine(ctx)
-  
-  if ImGui.Button(ctx, "Reset Counter", 150, 30) then
-    app_state.counter = 0
-    if settings then
-      settings:set('counter', app_state.counter)
-    end
-  end
-  
-  ImGui.Spacing(ctx)
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
-  
-  ImGui.Text(ctx, "Project Information:")
-  ImGui.BulletText(ctx, string.format("Project Path: %s", reaper.GetProjectPath("")))
-  ImGui.BulletText(ctx, string.format("Time: %.2f seconds", reaper.GetPlayPosition()))
-  ImGui.BulletText(ctx, string.format("BPM: %.2f", reaper.TimeMap_GetDividedBpmAtTime(0)))
-  
-  ImGui.PopFont(ctx)
+  pkg.index[i] = P
+  pkg.order[i] = data.id
+  pkg.active[data.id] = (i % 3 ~= 0)
 end
 
--- Draw function for Controls tab
-local function draw_controls_tab(ctx)
-  ImGui.Text(ctx, "Interactive Controls")
-  ImGui.Spacing(ctx)
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
-  
-  local rv, new_text = ImGui.InputText(ctx, "Text Input", app_state.input_text, 256)
-  if rv then
-    app_state.input_text = new_text
-    if settings then
-      settings:set('input_text', app_state.input_text)
-    end
-  end
-  
-  ImGui.Spacing(ctx)
-  
-  local rv, new_value = ImGui.SliderDouble(ctx, "Slider", app_state.slider_value, 0.0, 1.0, "%.3f")
-  if rv then
-    app_state.slider_value = new_value
-    if settings then
-      settings:set('slider_value', app_state.slider_value)
-    end
-  end
-  
-  ImGui.Spacing(ctx)
-  
-  local rv, new_checked = ImGui.Checkbox(ctx, "Checkbox Option", app_state.checkbox_value)
-  if rv then
-    app_state.checkbox_value = new_checked
-    if settings then
-      settings:set('checkbox_value', app_state.checkbox_value)
-    end
-  end
-  
-  ImGui.Spacing(ctx)
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
-  
-  ImGui.Text(ctx, "Color Picker")
-  local color_u32 = ImGui.ColorConvertDouble4ToU32(
-    app_state.color.r,
-    app_state.color.g,
-    app_state.color.b,
-    app_state.color.a
-  )
-  
-  local rv, new_color = ImGui.ColorEdit4(ctx, "Color", color_u32, ImGui.ColorEditFlags_None)
-  if rv then
-    app_state.color.r, app_state.color.g, app_state.color.b, app_state.color.a = 
-      ImGui.ColorConvertU32ToDouble4(new_color)
-  end
-  
-  ImGui.Spacing(ctx)
-  
-  local draw_list = ImGui.GetWindowDrawList(ctx)
-  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  ImGui.DrawList_AddRectFilled(draw_list, cursor_x, cursor_y, cursor_x + 200, cursor_y + 50, color_u32, 4)
-  ImGui.Dummy(ctx, 200, 50)
-end
-
--- Draw function for Settings tab
-local function draw_settings_tab(ctx)
-  ImGui.Text(ctx, "Application Settings")
-  ImGui.Spacing(ctx)
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
-  
-  ImGui.Text(ctx, "Persisted Values:")
-  ImGui.BulletText(ctx, string.format("Counter: %d", app_state.counter))
-  ImGui.BulletText(ctx, string.format("Slider: %.3f", app_state.slider_value))
-  ImGui.BulletText(ctx, string.format("Checkbox: %s", app_state.checkbox_value and "true" or "false"))
-  ImGui.BulletText(ctx, string.format("Text: %s", app_state.input_text ~= "" and app_state.input_text or "(empty)"))
-  
-  ImGui.Spacing(ctx)
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
-  
-  if ImGui.Button(ctx, "Reset All Settings", 200, 30) then
-    app_state.counter = 0
-    app_state.slider_value = 0.5
-    app_state.checkbox_value = false
-    app_state.input_text = ""
+function pkg:visible()
+  local result = {}
+  for _, P in ipairs(self.index) do
+    local matches_search = (self.search == "" or P.id:lower():find(self.search:lower(), 1, true) or 
+                           (P.meta.name and P.meta.name:lower():find(self.search:lower(), 1, true)))
+    local matches_filter = self.filters[P.meta.type] == true
     
-    if settings then
-      settings:set('counter', 0)
-      settings:set('slider_value', 0.5)
-      settings:set('checkbox_value', false)
-      settings:set('input_text', "")
-      settings:flush()
+    if matches_search and matches_filter then
+      result[#result + 1] = P
     end
   end
   
-  ImGui.Spacing(ctx)
+  table.sort(result, function(a, b)
+    local idx_a, idx_b = 999, 999
+    for i, id in ipairs(self.order) do
+      if id == a.id then idx_a = i end
+      if id == b.id then idx_b = i end
+    end
+    return idx_a < idx_b
+  end)
   
+  return result
+end
+
+function pkg:toggle(id)
+  self.active[id] = not self.active[id]
   if settings then
-    ImGui.Text(ctx, string.format("Settings File: %s", settings.name))
-  else
-    ImGui.TextColored(ctx, 0xFF4444FF, "Settings module not available")
+    settings:set('pkg_active', self.active)
   end
 end
 
--- Draw function for About tab
-local function draw_about_tab(ctx)
-  ImGui.TextColored(ctx, 0x41E0A3FF, "ARKITEKT Toolkit")
-  ImGui.Spacing(ctx)
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
+function pkg:conflicts(detailed)
+  local conflicts = {}
+  local asset_providers = {}
   
-  ImGui.Text(ctx, "Version: 0.1.0")
-  ImGui.Text(ctx, "Author: ARKADATA")
-  ImGui.Spacing(ctx)
-  
-  ImGui.Text(ctx, "Features:")
-  ImGui.BulletText(ctx, "Custom window management with titlebar")
-  ImGui.BulletText(ctx, "Integrated status bar")
-  ImGui.BulletText(ctx, "Tab navigation system")
-  ImGui.BulletText(ctx, "Settings persistence")
-  ImGui.BulletText(ctx, "Profiling support (double-click icon)")
-  ImGui.BulletText(ctx, "Custom styling system")
-  ImGui.BulletText(ctx, "Maximize/restore functionality")
-  
-  ImGui.Spacing(ctx)
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
-  
-  ImGui.TextWrapped(ctx, "Double-click the application icon in the titlebar to toggle profiling metrics.")
-end
-
--- Main draw function with tab routing
-local function draw_main(ctx, state)
-  local active_tab = state.window:get_active_tab()
-  
-  if not active_tab then
-    active_tab = tabs_config.active
+  for _, P in ipairs(self.index) do
+    if self.active[P.id] then
+      for key, _ in pairs(P.assets or {}) do
+        if not asset_providers[key] then
+          asset_providers[key] = {}
+        end
+        table.insert(asset_providers[key], P.id)
+      end
+    end
   end
   
-  if active_tab == "home" then
-    draw_home_tab(ctx)
-  elseif active_tab == "controls" then
-    draw_controls_tab(ctx)
-  elseif active_tab == "settings" then
-    draw_settings_tab(ctx)
-  elseif active_tab == "about" then
-    draw_about_tab(ctx)
-  else
-    draw_home_tab(ctx)
+  for key, providers in pairs(asset_providers) do
+    if #providers > 1 then
+      for _, pkg_id in ipairs(providers) do
+        conflicts[pkg_id] = (conflicts[pkg_id] or 0) + 1
+      end
+    end
   end
+  
+  return conflicts
 end
 
--- On close callback
-local function on_close()
-  if settings then
-    settings:flush()
+function pkg:remove(id)
+  for i, P in ipairs(self.index) do
+    if P.id == id then
+      table.remove(self.index, i)
+      break
+    end
   end
+  
+  for i, order_id in ipairs(self.order) do
+    if order_id == id then
+      table.remove(self.order, i)
+      break
+    end
+  end
+  
+  self.active[id] = nil
 end
 
--- Start the application
-local runtime = Shell.run({
-  title = "ARKITEKT Default App",
-  settings = settings,
-  style = style,
+function pkg:scan()
+end
+
+local theme = {
+  color_from_key = function(key)
+    local hash = 0
+    for i = 1, #key do
+      hash = ((hash * 31) + string.byte(key, i)) % 0xFFFFFF
+    end
+    local r = (hash >> 16) & 0xFF
+    local g = (hash >> 8) & 0xFF
+    local b = hash & 0xFF
+    return (r << 24) | (g << 16) | (b << 8) | 0xFF
+  end
+}
+
+local sel_rect = SelRect.new()
+local grid = PackageGrid.create(pkg, settings, theme)
+
+local container = TilesContainer.new({
+  id = "packages_container",
+  width = nil,
+  height = nil,
+  sel_rect = sel_rect,
   
-  initial_size = {w = 900, h = 600},
-  initial_pos = {x = 100, y = 100},
-  min_size = {w = 600, h = 400},
+  on_rect_select = function(x1, y1, x2, y2, mode)
+    grid:apply_rect_selection({x1, y1, x2, y2}, mode)
+  end,
   
-  show_status_bar = true,
-  show_titlebar = true,
-  get_status_func = get_status,
-  
-  tabs = tabs_config,
-  
-  content_padding = 16,
-  
-  draw = draw_main,
-  on_close = on_close,
-  
-  enable_profiling = true,
+  on_click_empty = function()
+    grid:clear_selection()
+  end,
 })
 
-if runtime then
-  reaper.defer(function() end)
+local function get_app_status()
+  local conflicts = pkg:conflicts(true)
+  local total_conflicts = 0
+  for _, count in pairs(conflicts) do
+    total_conflicts = total_conflicts + count
+  end
+  
+  if total_conflicts > 0 then
+    return {
+      color = 0xFFA500FF,
+      text = string.format("CONFLICTS: %d", total_conflicts),
+    }
+  end
+  
+  return {
+    color = 0x41E0A3FF,
+    text = "READY",
+  }
 end
+
+local function draw_hub(ctx)
+  Hub.render_hub(ctx, {
+    apps_path = script_dir .. "/scripts/"
+  })
+end
+
+local function draw_packages(ctx)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 6, 3)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameRounding, 4)
+
+  ImGui.SetNextItemWidth(ctx, 200)
+  local ch_s, new_q = ImGui.InputText(ctx, 'Search', pkg.search or '')
+  if ch_s then 
+    pkg.search = new_q
+    if settings then settings:set('pkg_search', pkg.search) end
+  end
+
+  ImGui.SameLine(ctx)
+  
+  ImGui.SetNextItemWidth(ctx, 140)
+  local ch_t, new_tile = ImGui.SliderInt(ctx, '##TileSize', pkg.tile, 160, 420)
+  if ch_t then 
+    pkg.tile = new_tile
+    if settings then settings:set('pkg_tilesize', pkg.tile) end
+  end
+  ImGui.SameLine(ctx)
+  ImGui.Text(ctx, 'Size')
+
+  ImGui.SameLine(ctx)
+  
+  local c1, v1 = ImGui.Checkbox(ctx, 'TCP', pkg.filters.TCP)
+  if c1 then pkg.filters.TCP = v1 end
+  ImGui.SameLine(ctx)
+  
+  local c2, v2 = ImGui.Checkbox(ctx, 'MCP', pkg.filters.MCP)
+  if c2 then pkg.filters.MCP = v2 end
+  ImGui.SameLine(ctx)
+  
+  local c3, v3 = ImGui.Checkbox(ctx, 'Transport', pkg.filters.Transport)
+  if c3 then pkg.filters.Transport = v3 end
+  ImGui.SameLine(ctx)
+  
+  local c4, v4 = ImGui.Checkbox(ctx, 'Global', pkg.filters.Global)
+  if c4 then pkg.filters.Global = v4 end
+
+  ImGui.PopStyleVar(ctx, 2)
+  
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 1, 8)
+
+  if container:begin_draw(ctx) then
+    grid:draw(ctx)
+  end
+  container:end_draw(ctx)
+  
+  Micromanage.draw_window(ctx, pkg, settings)
+end
+
+local function draw_settings(ctx)
+  ImGui.Text(ctx, "Settings")
+  ImGui.Separator(ctx)
+  ImGui.TextWrapped(ctx, "This demo showcases the grid widget system:")
+  ImGui.BulletText(ctx, "Multi-select with Ctrl/Shift")
+  ImGui.BulletText(ctx, "Drag & drop reordering")
+  ImGui.BulletText(ctx, "Selection rectangle")
+  ImGui.BulletText(ctx, "Animated transitions")
+  ImGui.BulletText(ctx, "Marching ants borders")
+  ImGui.Dummy(ctx, 1, 20)
+  ImGui.Text(ctx, string.format("Packages visible: %d", #pkg:visible()))
+  ImGui.Text(ctx, string.format("Selection count: %d", grid:get_selected_count()))
+  
+  local conflicts = pkg:conflicts(true)
+  local total_conflicts = 0
+  for _, count in pairs(conflicts) do
+    total_conflicts = total_conflicts + count
+  end
+  ImGui.Text(ctx, string.format("Conflicts: %d", total_conflicts))
+end
+
+local function draw_about(ctx)
+  ImGui.Text(ctx, "About ARKITEKT Hub")
+  ImGui.Separator(ctx)
+  ImGui.TextWrapped(ctx, "This hub demonstrates the ARKITEKT framework capabilities:")
+  ImGui.Dummy(ctx, 1, 10)
+  ImGui.BulletText(ctx, "Modular widget system")
+  ImGui.BulletText(ctx, "Grid-based layouts")
+  ImGui.BulletText(ctx, "Visual effects and animations")
+  ImGui.BulletText(ctx, "Settings persistence")
+  ImGui.BulletText(ctx, "Custom window chrome")
+  ImGui.BulletText(ctx, "App launcher integration")
+end
+
+local function draw(ctx, state)
+  local active_tab = state.window:get_active_tab()
+  
+  if active_tab == "HUB" then 
+    draw_hub(ctx)
+  elseif active_tab == "PACKAGES" then 
+    draw_packages(ctx)
+  elseif active_tab == "SETTINGS" then 
+    draw_settings(ctx)
+  elseif active_tab == "ABOUT" then 
+    draw_about(ctx)
+  end
+end
+
+Shell.run({
+  title = "ARKITEKT Hub",
+  draw = draw,
+  settings = settings,
+  style = StyleOK and Style or nil,
+  initial_pos = { x = 120, y = 120 },
+  initial_size = { w = 900, h = 600 },
+  min_size = { w = 600, h = 400 },
+  get_status_func = get_app_status,
+  content_padding = 12,
+  tabs = {
+    items = {
+      { id="HUB", label="Hub" },
+      { id="PACKAGES", label="Demo" },
+      { id="SETTINGS", label="Settings" },
+      { id="ABOUT", label="About" },
+    },
+    active = "HUB",
+  },
+})

@@ -1,11 +1,17 @@
 -- @noindex
 -- ReArkitekt/app/window.lua
--- Window with integrated status bar, tabs, saved geometry, custom titlebar, and profiling
+-- Window with integrated status bar, tabs, saved geometry, custom titlebar
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.9'
 
 local M = {}
+
+local Hub = nil
+do
+  local ok, mod = pcall(require, 'rearkitekt.app.hub')
+  if ok then Hub = mod end
+end
 
 local WF_None = 0
 
@@ -98,20 +104,7 @@ function M.new(opts)
     
     overlay         = nil,
     
-    profiling       = {
-      show_metrics    = false,
-      show_custom     = false,
-      frame_times     = {},
-      max_frame_samples = 120,
-      last_frame_time = 0,
-      total_frames    = 0,
-      memory_samples  = {},
-      max_memory_samples = 60,
-      last_memory_time = 0,
-      draw_calls      = 0,
-      widgets_count   = 0,
-      custom_timers   = {},
-    },
+    show_imgui_metrics = false,
   }
 
   if ImGui.WindowFlags_NoTitleBar then
@@ -165,8 +158,39 @@ function M.new(opts)
         win.titlebar_opts.on_maximize = function()
           win:_maximize_requested()
         end
-        win.titlebar_opts.on_icon_double_click = function()
-          win:toggle_profiling()
+        win.titlebar_opts.on_icon_click = function(shift_clicked)
+          if shift_clicked then
+            win.show_imgui_metrics = not win.show_imgui_metrics
+          else
+            local script_path = debug.getinfo(1, "S").source
+            if script_path:sub(1, 1) == "@" then
+              script_path = script_path:sub(2)
+            end
+            
+            local base_dir = script_path:match("(.+[/\\])")
+            local hub_path = base_dir .. "../../ARKITEKT.lua"
+            hub_path = hub_path:gsub("[/\\]+", "/"):gsub("/+", "/")
+            while hub_path:match("[^/]+/%.%./") do
+              hub_path = hub_path:gsub("[^/]+/%.%./", "")
+            end
+            hub_path = hub_path:gsub("/", "\\")
+            
+            if reaper.file_exists(hub_path) then
+              local sanitized = hub_path:gsub("[^%w]", "")
+              local cmd_name = "_RS" .. sanitized
+              local cmd_id = reaper.NamedCommandLookup(cmd_name)
+              
+              if not cmd_id or cmd_id == 0 then
+                cmd_id = reaper.AddRemoveReaScript(true, 0, hub_path, true)
+              end
+              
+              if cmd_id and cmd_id ~= 0 then
+                reaper.Main_OnCommand(cmd_id, 0)
+              end
+            else
+              reaper.ShowConsoleMsg("Hub not found: " .. hub_path .. "\n")
+            end
+          end
         end
         
         win._titlebar = Titlebar.new(win.titlebar_opts)
@@ -310,132 +334,10 @@ function M.new(opts)
     end
   end
 
-  function win:toggle_profiling()
-    self.profiling.show_metrics = not self.profiling.show_metrics
-    self.profiling.show_custom = self.profiling.show_metrics
-  end
-  
-  function win:start_timer(name)
-    self.profiling.custom_timers[name] = reaper.time_precise()
-  end
-  
-  function win:end_timer(name)
-    if self.profiling.custom_timers[name] then
-      local elapsed = (reaper.time_precise() - self.profiling.custom_timers[name]) * 1000
-      self.profiling.custom_timers[name] = elapsed
-      return elapsed
-    end
-    return 0
-  end
-  
-  function win:update_profiling_data()
-    local current_time = reaper.time_precise()
-    
-    if self.profiling.last_frame_time > 0 then
-      local frame_time = (current_time - self.profiling.last_frame_time) * 1000
-      table.insert(self.profiling.frame_times, frame_time)
-      if #self.profiling.frame_times > self.profiling.max_frame_samples then
-        table.remove(self.profiling.frame_times, 1)
-      end
-    end
-    self.profiling.last_frame_time = current_time
-    self.profiling.total_frames = self.profiling.total_frames + 1
-    
-    if current_time - self.profiling.last_memory_time > 0.5 then
-      local mem_usage = collectgarbage("count")
-      table.insert(self.profiling.memory_samples, mem_usage)
-      if #self.profiling.memory_samples > self.profiling.max_memory_samples then
-        table.remove(self.profiling.memory_samples, 1)
-      end
-      self.profiling.last_memory_time = current_time
-    end
-  end
-  
-  function win:draw_custom_profiling(ctx)
-    if not self.profiling.show_custom then return end
-    
-    local flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_AlwaysAutoResize
-    local visible, open = ImGui.Begin(ctx, "Custom Profiling##profiling", true, flags)
-    
-    if visible then
-      ImGui.Text(ctx, string.format("Total Frames: %d", self.profiling.total_frames))
-      ImGui.Separator(ctx)
-      
-      if #self.profiling.frame_times > 0 then
-        local sum, min_ft, max_ft = 0, 999999, 0
-        for _, ft in ipairs(self.profiling.frame_times) do
-          sum = sum + ft
-          min_ft = math.min(min_ft, ft)
-          max_ft = math.max(max_ft, ft)
-        end
-        local avg_ft = sum / #self.profiling.frame_times
-        local fps = 1000 / avg_ft
-        
-        ImGui.Text(ctx, string.format("FPS: %.1f", fps))
-        ImGui.Text(ctx, string.format("Frame Time: %.2f ms (avg)", avg_ft))
-        ImGui.Text(ctx, string.format("  Min: %.2f ms | Max: %.2f ms", min_ft, max_ft))
-        
-        if ImGui.PlotLines and reaper.new_array then
-          local values = reaper.new_array(self.profiling.frame_times)
-          ImGui.PlotLines(ctx, "##frametime", values, 0, "Frame Time (ms)", 0, max_ft * 1.2, 0, 50)
-        end
-      end
-      
-      ImGui.Separator(ctx)
-      
-      if #self.profiling.memory_samples > 0 then
-        local current_mem = self.profiling.memory_samples[#self.profiling.memory_samples]
-        local min_mem, max_mem = current_mem, current_mem
-        for _, mem in ipairs(self.profiling.memory_samples) do
-          min_mem = math.min(min_mem, mem)
-          max_mem = math.max(max_mem, mem)
-        end
-        
-        ImGui.Text(ctx, string.format("Memory: %.2f MB", current_mem / 1024))
-        ImGui.Text(ctx, string.format("  Min: %.2f MB | Max: %.2f MB", min_mem / 1024, max_mem / 1024))
-        
-        if ImGui.PlotLines and reaper.new_array then
-          local values = reaper.new_array(self.profiling.memory_samples)
-          ImGui.PlotLines(ctx, "##memory", values, 0, "Memory (KB)", min_mem * 0.9, max_mem * 1.1, 0, 50)
-        end
-      end
-      
-      ImGui.Separator(ctx)
-      
-      if next(self.profiling.custom_timers) then
-        ImGui.Text(ctx, "Custom Timers:")
-        for name, time in pairs(self.profiling.custom_timers) do
-          if type(time) == "number" then
-            ImGui.Text(ctx, string.format("  %s: %.3f ms", name, time))
-          end
-        end
-      end
-      
-      ImGui.Separator(ctx)
-      
-      if ImGui.Button(ctx, "Collect Garbage") then
-        collectgarbage("collect")
-      end
-      ImGui.SameLine(ctx)
-      if ImGui.Button(ctx, "Clear Profiling Data") then
-        self.profiling.frame_times = {}
-        self.profiling.memory_samples = {}
-        self.profiling.custom_timers = {}
-        self.profiling.total_frames = 0
-      end
-    end
-    
-    ImGui.End(ctx)
-    
-    self.profiling.show_custom = open
-  end
-
   function win:Begin(ctx)
     self._body_open = false
     self._should_close = false
     self._current_ctx = ctx
-    
-    self:update_profiling_data()
     
     self:_apply_geometry(ctx)
 
@@ -537,11 +439,9 @@ function M.new(opts)
       self.overlay:render(ctx, dt)
     end
     
-    if self.profiling.show_metrics and ImGui.ShowMetricsWindow then
-      ImGui.ShowMetricsWindow(ctx, self.profiling.show_metrics)
+    if self.show_imgui_metrics and ImGui.ShowMetricsWindow then
+      self.show_imgui_metrics = ImGui.ShowMetricsWindow(ctx, true)
     end
-    
-    self:draw_custom_profiling(ctx)
 
     if self._begun then 
       ImGui.End(ctx)

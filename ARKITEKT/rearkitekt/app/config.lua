@@ -60,6 +60,10 @@ M.defaults = {
   status_bar = {
     height = 20,
   },
+
+  dependencies = {
+    hub_path = "ARKITEKT.lua",  -- Relative path to the hub/launcher file from project root
+  },
 }
 
 function M.get_defaults()
