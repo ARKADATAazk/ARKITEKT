@@ -134,7 +134,7 @@
 
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs36 ARKITEKT\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 {\b A REAPER toolkit for general use with emphasis on music design, scoring and game audio.}\line Specialized workflow scripts (e.g., Region Playlist, Theme Adjuster) + a reusable {\b ReaImGui} components library called {\b rearkitekt} with a flexible {\b theme system}.\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Developed by {\b ARKADATA}.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Developed by {\b Pierre "ARKADATA" Daunis}.\par}
 {\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Install (via ReaPack)\par}
 {\pard \ql \f0 \sa0 \li360 \fi-360 1.\tx360\tab Install {\field{\*\fldinst{HYPERLINK "https://reapack.com/"}}{\fldrslt{\ul
@@ -176,7 +176,7 @@ SWS
 {\pard \ql \f0 \sa180 \li0 \fi0 Open an issue on this repository with steps to reproduce and your REAPER/ReaImGui versions.\par}
 {\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
 {\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Credits\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Built by {\b ARKADATA}.\line Thanks to Christian Fillion, the REAPER, ReaImGui, and SWS communities.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Built by {\b Pierre "ARKADATA" Daunis}.\line Thanks to Christian Fillion, the REAPER, ReaImGui, and SWS communities.\par}
 }
 ]]></description>
   </metadata>
