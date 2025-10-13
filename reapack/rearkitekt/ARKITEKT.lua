@@ -2,11 +2,11 @@
 -- @author ARKADATA
 -- @donation https://www.paypal.com/donate/?hosted_button_id=2FP22TUPGFPSJ
 -- @website https://www.arkadata.com
--- @version 0.1.5
+-- @version 0.2.0
 -- @changelog Initial beta release
 -- @provides
---   ../apps/**/*.lua
---   **/*.lua
+--   rearkitekt/**/*.lua
+--   scripts/**/*.lua
 
 -- Package path setup for relocated script
 local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
