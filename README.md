@@ -3,7 +3,7 @@
 **A REAPER toolkit for general use with emphasis on music design, scoring and game audio.**  
 Specialized workflow scripts (e.g., Region Playlist, Theme Adjuster) + a reusable **ReaImGui** components library called **rearkitekt** with a flexible **theme system**.
 
-Developed by **ARKADATA**.
+Developed by **Pierre "ARKADATA" Daunis**.
 
 ---
 
@@ -67,5 +67,5 @@ Open an issue on this repository with steps to reproduce and your REAPER/ReaImGu
 
 ## Credits
 
-Built by **ARKADATA**.  
+Built by **Pierre "ARKADATA" Daunis**.  
 Thanks to Christian Fillion, the REAPER, ReaImGui, and SWS communities.
