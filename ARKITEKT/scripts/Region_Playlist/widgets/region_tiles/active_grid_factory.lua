@@ -1,7 +1,7 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/region_tiles/active_grid_factory.lua
 -- Factory for creating active grid instances with standardized configuration
--- Extracted from active_grid.lua to separate creation from coordination logic
+-- UPDATED: Added extend_input_area to handle padding zones
 
 local Grid = require('rearkitekt.gui.widgets.grid.core')
 local ActiveTile = require('Region_Playlist.widgets.region_tiles.renderers.active')
@@ -168,6 +168,7 @@ function M.create(rt, config)
   }
   local drop_config = config.drop_config or {}
   local ghost_config = config.ghost_config or {}
+  local padding = config.container and config.container.padding or 8
   
   return Grid.new({
     id = "active_grid",
@@ -198,6 +199,13 @@ function M.create(rt, config)
     end,
 
     render_tile = create_render_tile(rt, tile_config),
+    
+    extend_input_area = { 
+      left = padding, 
+      right = padding, 
+      top = padding, 
+      bottom = padding 
+    },
     
     config = {
       spawn = ActiveTile.CONFIG.spawn,

@@ -92,7 +92,7 @@ local function update_tab_positions(ctx, state, config, tabs, start_x)
     end
     
     local effective_spacing = spacing
-    if i > 1 and spacing == 0 then
+    if i < #tabs and spacing == 0 then
       effective_spacing = -1
     end
     
@@ -400,7 +400,7 @@ local function calculate_visible_tabs(ctx, tabs, config, available_width)
     local has_chip = tab.chip_color ~= nil
     local tab_width = calculate_tab_width(ctx, tab.label or "Tab", config, has_chip)
     local effective_spacing = (i > 1) and spacing or 0
-    if i > 1 and spacing == 0 then
+    if i > 1 and i <= #tabs and spacing == 0 then
       effective_spacing = -1
     end
     local needed = tab_width + effective_spacing
@@ -448,7 +448,7 @@ local function handle_drag_reorder(ctx, state, tabs, config, tabs_start_x)
     }
     
     local effective_spacing = spacing
-    if i > 1 and spacing == 0 then
+    if i < #tabs and spacing == 0 then
       effective_spacing = -1
     end
     
@@ -521,6 +521,8 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   local tabs_available_width_no_overflow = available_width - plus_width
   if spacing > 0 then
     tabs_available_width_no_overflow = tabs_available_width_no_overflow - spacing
+  else
+    tabs_available_width_no_overflow = tabs_available_width_no_overflow + 1
   end
   
   local visible_indices, overflow_count, tabs_width = calculate_visible_tabs(
@@ -534,10 +536,11 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     local text_w = ImGui.CalcTextSize(ctx, count_text)
     overflow_width = math.max(overflow_cfg.min_width or 21, text_w + (overflow_cfg.padding_x or 8) * 2)
     
-    local spacing_before_overflow = spacing > 0 and spacing or 0
-    local tabs_available_width_with_overflow = available_width - plus_width - overflow_width - spacing_before_overflow
+    local tabs_available_width_with_overflow = available_width - plus_width - overflow_width
     if spacing > 0 then
-      tabs_available_width_with_overflow = tabs_available_width_with_overflow - spacing
+      tabs_available_width_with_overflow = tabs_available_width_with_overflow - spacing - spacing
+    else
+      tabs_available_width_with_overflow = tabs_available_width_with_overflow + 1 + 1
     end
     
     visible_indices, overflow_count, tabs_width = calculate_visible_tabs(
@@ -548,6 +551,8 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   local tabs_start_x = x + plus_width
   if spacing > 0 then
     tabs_start_x = tabs_start_x + spacing
+  else
+    tabs_start_x = tabs_start_x - 1
   end
   
   local tabs_total_width = tabs_width
@@ -555,6 +560,8 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     tabs_total_width = tabs_total_width + overflow_width
     if spacing > 0 then
       tabs_total_width = tabs_total_width + spacing
+    else
+      tabs_total_width = tabs_total_width - 1
     end
   end
   
@@ -632,6 +639,8 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     local overflow_x = tabs_start_x + tabs_width
     if spacing > 0 then
       overflow_x = overflow_x + spacing
+    else
+      overflow_x = overflow_x - 1
     end
     
     local overflow_corner = corner_rounding and {
@@ -692,7 +701,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     end
   end
 
-  return plus_width + (spacing > 0 and spacing or 0) + tabs_total_width
+  return plus_width + (spacing > 0 and spacing or -1) + tabs_total_width
 end
 
 function M.measure(ctx, config, state)
@@ -711,6 +720,8 @@ function M.measure(ctx, config, state)
   local total = plus_width
   if spacing > 0 then
     total = total + spacing
+  else
+    total = total - 1
   end
   
   for i, tab in ipairs(tabs) do

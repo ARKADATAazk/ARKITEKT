@@ -15,10 +15,19 @@ local M = {}
 M.CONFIG = {
   bg_base = 0x1A1A1AFF,
   disabled = { desaturate = 0.9, brightness = 0.5, alpha_multiplier = 0.6 },
-  responsive = { hide_length_below = 35, hide_text_below = 20 },
-  playlist_tile = { base_color = 0x3A3A3AFF, chip_offset_x = 8, name_color = 0xCCCCCCFF, badge_color = 0x999999FF },
+  responsive = { hide_length_below = 35, hide_text_below = 17 },
+  playlist_tile = { 
+    base_color = 0x3A3A3AFF, 
+    name_color = 0xCCCCCCFF, 
+    badge_color = 0x999999FF 
+  },
   text_margin_right = 6,
-  badge_margin_right = 12,
+  badge_margin = 6,
+  badge_padding_x = 6,
+  badge_padding_y = 3,
+  badge_rounding = 4,
+  badge_bg = 0x14181CFF,
+  badge_border_alpha = 0x33,
 }
 
 function M.render(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness)
@@ -46,13 +55,11 @@ function M.render_region(ctx, rect, region, state, animator, hover_config, tile_
   local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
   local show_length = actual_height >= M.CONFIG.responsive.hide_length_below
   
-  -- For pool regions, length display is at BOTTOM-RIGHT (different Y position)
-  -- so it doesn't affect horizontal text space - right_elements stays empty
   local right_elements = {}
   
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
-    local text_pos = { x = x1 + 6, y = y1 + 6 }
+    local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
     BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, 0xFF, right_bound_x)
   end
   
@@ -94,25 +101,27 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   
   local actual_height = tile_height or (y2 - y1)
   local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
+  local show_badge = actual_height >= M.CONFIG.responsive.hide_text_below
   local text_alpha_factor = 1.0 - (disabled_factor * (1.0 - M.CONFIG.disabled.alpha_multiplier))
   local text_alpha = math.floor(0xFF * text_alpha_factor)
   
   local item_count = #playlist.items
   
-  -- Automated calculation: define all right-side elements
   local right_elements = {}
   
-  local badge_text = string.format("[%d]", item_count)
-  local badge_w = ImGui.CalcTextSize(ctx, badge_text)
-  table.insert(right_elements, BaseRenderer.create_element(
-    show_text,
-    badge_w,
-    M.CONFIG.badge_margin_right
-  ))
+  if show_badge then
+    local badge_text = string.format("[%d]", item_count)
+    local badge_w, _ = ImGui.CalcTextSize(ctx, badge_text)
+    table.insert(right_elements, BaseRenderer.create_element(
+      true,
+      (badge_w * BaseRenderer.CONFIG.badge_font_scale) + (M.CONFIG.badge_padding_x * 2),
+      M.CONFIG.badge_margin
+    ))
+  end
   
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
-    local text_pos = { x = x1 + M.CONFIG.playlist_tile.chip_offset_x, y = y1 + (actual_height - ImGui.CalcTextSize(ctx, "Tg")) / 2 }
+    local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
     
     local name_color = M.CONFIG.playlist_tile.name_color
     if disabled_factor > 0 then
@@ -123,15 +132,37 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
     end
 
     BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color)
+  end
+  
+  if show_badge then
+    local badge_text = string.format("[%d]", item_count)
+    local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
+    bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
+    local badge_x = x2 - bw - M.CONFIG.badge_padding_x * 2 - M.CONFIG.badge_margin
+    local badge_y = y1 + M.CONFIG.badge_margin
+    local badge_x2, badge_y2 = badge_x + bw + M.CONFIG.badge_padding_x * 2, badge_y + bh + M.CONFIG.badge_padding_y * 2
+    local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | math.floor(((M.CONFIG.badge_bg & 0xFF) * text_alpha_factor))
     
-    local badge_color = M.CONFIG.playlist_tile.badge_color
+    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
+    
+    local badge_border_color = M.CONFIG.playlist_tile.badge_color
     if disabled_factor > 0 then
-      badge_color = Colors.adjust_brightness(badge_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+      badge_border_color = Colors.adjust_brightness(badge_border_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     end
     if (state.hover or state.selected) and not is_disabled then
-      badge_color = 0xAAAAAAFF
+      badge_border_color = playlist_data.chip_color
     end
-    Draw.text(dl, x2 - badge_w - M.CONFIG.badge_margin_right, text_pos.y, Colors.with_alpha(badge_color, math.floor(200 * text_alpha_factor)), badge_text)
+    
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors.with_alpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
+    
+    local badge_text_color = M.CONFIG.playlist_tile.badge_color
+    if disabled_factor > 0 then
+      badge_text_color = Colors.adjust_brightness(badge_text_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+    end
+    if (state.hover or state.selected) and not is_disabled then
+      badge_text_color = 0xAAAAAAFF
+    end
+    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x, badge_y + M.CONFIG.badge_padding_y, Colors.with_alpha(badge_text_color, text_alpha), badge_text)
 
     ImGui.SetCursorScreenPos(ctx, x1, y1)
     ImGui.InvisibleButton(ctx, key .. "_tooltip", x2 - x1, y2 - y1)

@@ -1,5 +1,5 @@
 # PROJECT FLOW: ARKITEKT-Project
-Generated: 2025-10-13 15:09:44
+Generated: 2025-10-13 18:36:36
 Root: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project
 
 ## Project Structure
@@ -13,13 +13,13 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project
     │   │   │       ├── config.lua         # (140 lines)
     │   │   │       ├── init.lua         # (3 lines)
     │   │   │       └── widget.lua         # (319 lines)
-    │   │   ├── config.lua         # (90 lines)
+    │   │   ├── config.lua         # (93 lines)
     │   │   ├── hub.lua         # (93 lines)
     │   │   ├── icon.lua         # (124 lines)
     │   │   ├── runtime.lua         # (69 lines)
-    │   │   ├── shell.lua         # (256 lines)
-    │   │   ├── titlebar.lua         # (438 lines)
-    │   │   └── window.lua         # (460 lines)
+    │   │   ├── shell.lua         # (263 lines)
+    │   │   ├── titlebar.lua         # (512 lines)
+    │   │   └── window.lua         # (480 lines)
     │   ├── core/
     │   │   ├── colors.lua         # (550 lines)
     │   │   ├── json.lua         # (121 lines)
@@ -91,7 +91,7 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project
     │   │   │   │   │   ├── layout.lua         # (305 lines)
     │   │   │   │   │   ├── search_field.lua         # (120 lines)
     │   │   │   │   │   ├── separator.lua         # (33 lines)
-    │   │   │   │   │   └── tab_strip.lua         # (779 lines)
+    │   │   │   │   │   └── tab_strip.lua         # (743 lines)
     │   │   │   │   ├── modes/
     │   │   │   │   │   ├── search_sort.lua         # (225 lines)
     │   │   │   │   │   └── tabs.lua         # (647 lines)
@@ -158,7 +158,7 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project
     │   │   │       ├── coordinator_render.lua         # (190 lines)
     │   │   │       ├── pool_grid_factory.lua         # (186 lines)
     │   │   │       └── selector.lua         # (98 lines)
-    │   │   └── ARK_RegionPlaylist.lua         # (76 lines)
+    │   │   └── ARK_RegionPlaylist.lua         # (78 lines)
     │   └── demos/
     │       ├── demo.lua         # (383 lines)
     │       ├── demo2.lua         # (210 lines)
@@ -170,17 +170,17 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project
 
 ## Overview
 - **Total Files**: 120
-- **Total Lines**: 24,210
-- **Code Lines**: 18,869
-- **Public Functions**: 352
+- **Total Lines**: 24,280
+- **Code Lines**: 18,934
+- **Public Functions**: 351
 - **Classes**: 81
 - **Modules**: 260
 
 ## Folder Structure
 ### ARKITEKT/
   - Files: 120
-  - Lines: 18,869
-  - Exports: 352
+  - Lines: 18,934
+  - Exports: 351
 
 ## Execution Flow Patterns
 
@@ -741,15 +741,15 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project
 ## Top 10 Largest Files
 
 1. `ARKITEKT/scripts/Region_Playlist/app/gui.lua` (892 lines)
-2. `ARKITEKT/rearkitekt/gui/widgets/panel/header/tab_strip.lua` (779 lines)
-3. `ARKITEKT/rearkitekt/gui/widgets/tiles_container_old.lua` (753 lines)
+2. `ARKITEKT/rearkitekt/gui/widgets/tiles_container_old.lua` (753 lines)
+3. `ARKITEKT/rearkitekt/gui/widgets/panel/header/tab_strip.lua` (743 lines)
 4. `ARKITEKT/rearkitekt/gui/widgets/panel/modes/tabs.lua` (647 lines)
 5. `ARKITEKT/scripts/Region_Playlist/app/state.lua` (597 lines)
 6. `ARKITEKT/rearkitekt/core/colors.lua` (550 lines)
 7. `ARKITEKT/rearkitekt/gui/widgets/grid/core.lua` (550 lines)
-8. `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/coordinator.lua` (505 lines)
-9. `ARKITEKT/rearkitekt/app/window.lua` (460 lines)
-10. `ARKITEKT/scripts/demos/demo_modal_overlay.lua` (451 lines)
+8. `ARKITEKT/rearkitekt/app/titlebar.lua` (512 lines)
+9. `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/coordinator.lua` (505 lines)
+10. `ARKITEKT/rearkitekt/app/window.lua` (480 lines)
 
 ## Dependency Analysis
 

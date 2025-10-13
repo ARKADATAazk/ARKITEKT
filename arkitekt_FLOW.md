@@ -1,11 +1,11 @@
 # FOLDER FLOW: ARKITEKT
-Generated: 2025-10-13 15:09:44
+Generated: 2025-10-13 18:36:36
 Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
 
 ## Overview
 - **Files**: 120
-- **Total Lines**: 24,210
-- **Public Functions**: 352
+- **Total Lines**: 24,280
+- **Public Functions**: 351
 - **Classes**: 81
 
 ## Files
@@ -17,7 +17,7 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
 ### ARK_ColorPalette.lua (116 lines)
   **Requires**: rearkitekt.app.shell, ColorPalette.app.state, ColorPalette.app.gui, rearkitekt.gui.widgets.overlay.manager, rearkitekt.core.settings
 
-### ARK_RegionPlaylist.lua (76 lines)
+### ARK_RegionPlaylist.lua (78 lines)
   **Requires**: rearkitekt.app.shell, Region_Playlist.app.config, Region_Playlist.app.state, Region_Playlist.app.gui, Region_Playlist.app.status
 
 ### active.lua (187 lines)
@@ -101,7 +101,7 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
     - `M.merge(user_config, preset_name)`
   **Requires**: rearkitekt.gui.widgets.component.chip
 
-### config.lua (90 lines)
+### config.lua (93 lines)
   **Modules**: M, keys
   **Exports**:
     - `M.get_defaults()`
@@ -604,7 +604,7 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
     - `Sheet.render(ctx, alpha, bounds, content_fn, opts)`
   **Requires**: rearkitekt.gui.draw, rearkitekt.core.colors, rearkitekt.gui.style, rearkitekt.gui.widgets.overlay.config
 
-### shell.lua (256 lines)
+### shell.lua (263 lines)
   **Modules**: M, DEFAULTS
   **Exports**:
     - `M.run(opts)`
@@ -703,11 +703,10 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
     - `M.new(opts)`
   **Requires**: rearkitekt.gui.fx.easing
 
-### tab_strip.lua (779 lines)
+### tab_strip.lua (743 lines)
   **Modules**: M, visible_indices, positions
   **Exports**:
     - `M.draw(ctx, dl, x, y, available_width, height, config, state)`
-    - `M.draw_elements(ctx, dl, x, y, available_width, height, config, state)`
     - `M.measure(ctx, config, state)`
   **Requires**: rearkitekt.gui.widgets.controls.context_menu, rearkitekt.gui.widgets.component.chip
 
@@ -770,7 +769,7 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
     - `M.calculate_next_transition(region_end, mode, max_lookahead, proj)`
     - `M.get_beats_in_region(start_time, end_time, proj)`
 
-### titlebar.lua (438 lines)
+### titlebar.lua (512 lines)
   **Modules**: M, DEFAULTS
   **Classes**: M
   **Exports**:
@@ -867,7 +866,7 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
   **Modules**: t, arr
   **Requires**: rearkitekt.app.shell, ReArkitekt.gui.widgets.colorblocks, rearkitekt.gui.draw, rearkitekt.gui.fx.effects, ReArkitekt.*
 
-### window.lua (460 lines)
+### window.lua (480 lines)
   **Modules**: M, DEFAULTS
   **Classes**: M
   **Exports**:

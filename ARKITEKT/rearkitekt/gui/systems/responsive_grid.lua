@@ -217,7 +217,7 @@ function M.create_default_config()
     scrollbar_buffer = 24,
     height_hysteresis = 12,
     stable_frames_required = 2,
-    round_to_multiple = 2,
+    round_to_multiple = 1,
     gap_scaling = {
       enabled = true,
       min_gap = 2,

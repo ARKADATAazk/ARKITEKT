@@ -20,8 +20,8 @@ M.CONFIG = {
   badge_bg = 0x14181CFF,
   badge_border_alpha = 0x33,
   disabled = { desaturate = 0.8, brightness = 0.4, min_alpha = 0x33, fade_speed = 20.0 },
-  responsive = { hide_length_below = 35, hide_badge_below = 25, hide_text_below = 20 },
-  playlist_tile = { base_color = 0x3A3A3AFF, chip_offset_x = 8 },
+  responsive = { hide_length_below = 35, hide_badge_below = 25, hide_text_below = 17 },
+  playlist_tile = { base_color = 0x3A3A3AFF },
   text_margin_right = 6,
 }
 
@@ -69,7 +69,6 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
   local show_length = actual_height >= M.CONFIG.responsive.hide_length_below
   local text_alpha = math.floor(0xFF * enabled_factor + M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))
   
-  -- Automated calculation: define all right-side elements
   local right_elements = {}
   
   if show_badge then
@@ -84,7 +83,7 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
   
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
-    local text_pos = { x = x1 + 6, y = y1 + 6 }
+    local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
     BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, text_alpha, right_bound_x)
   end
   
@@ -143,7 +142,6 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   local show_badge = actual_height >= M.CONFIG.responsive.hide_badge_below
   local text_alpha = math.floor(0xFF * enabled_factor + M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))
 
-  -- Automated calculation: define all right-side elements
   local right_elements = {}
   
   if show_badge then
@@ -159,7 +157,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
-    local text_pos = { x = x1 + M.CONFIG.playlist_tile.chip_offset_x, y = y1 + (actual_height - ImGui.CalcTextSize(ctx, "Tg")) / 2 }
+    local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
     BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x)
   end
 
@@ -180,7 +178,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
     ImGui.InvisibleButton(ctx, "##badge_" .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
     if ImGui.IsItemClicked(ctx, 0) and on_repeat_cycle then on_repeat_cycle(item.key) end
-    if ImGui.IsItemHovered(ctx) then ImGui.SetTooltip(ctx, string.format("Playlist • %d items", playlist_data.item_count)) end
+    if ImGui.IsItemHovered(ctx) then ImGui.SetTooltip(ctx, string.format("Playlist • %d items • ×%d repeats", playlist_data.item_count, reps == 0 and math.huge or reps)) end
   end
 end
 

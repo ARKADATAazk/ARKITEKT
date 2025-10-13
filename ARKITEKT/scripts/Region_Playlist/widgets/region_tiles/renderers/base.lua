@@ -22,19 +22,18 @@ M.CONFIG = {
   length_padding_y = 2,
   length_font_size = 0.82,
   length_offset_x = 3,
-  playlist_chip_radius = 5,
-  playlist_chip_padding = 12,
+  playlist_chip_radius = 4, -- UPDATED as per your request
+  playlist_chip_padding = 8,
+  playlist_chip_offset_x = 3,
+  text_padding_left = 6,
+  text_padding_top = 6,
+  vertical_center_threshold = 40,
 }
 
 -- ========================================
 -- AUTOMATED TEXT OVERFLOW SYSTEM
 -- ========================================
 
--- Calculate total width occupied by right-side UI elements
--- This is the core of the automated overflow system
--- @param ctx: ImGui context
--- @param elements: table of {visible, width, margin} definitions
--- @return total width in pixels that should be reserved
 function M.calculate_right_elements_width(ctx, elements)
   local total_width = 0
   for _, element in ipairs(elements) do
@@ -45,11 +44,6 @@ function M.calculate_right_elements_width(ctx, elements)
   return total_width
 end
 
--- Helper to create a standard UI element definition
--- @param visible: boolean - should this element reserve space?
--- @param width: number - element width in pixels
--- @param margin: number - spacing after element in pixels
--- @return element definition table
 function M.create_element(visible, width, margin)
   return {
     visible = visible,
@@ -58,14 +52,29 @@ function M.create_element(visible, width, margin)
   }
 end
 
--- Calculate the right boundary for text rendering based on tile edges and right-side elements
--- @param x2: right edge of tile
--- @param text_margin: base margin from tile edge
--- @param right_elements: table of element definitions
--- @return x-coordinate where text should end
 function M.calculate_text_right_bound(ctx, x2, text_margin, right_elements)
   local right_occupied = M.calculate_right_elements_width(ctx, right_elements)
   return x2 - text_margin - right_occupied
+end
+
+-- ========================================
+-- UNIFIED POSITIONING SYSTEM
+-- ========================================
+
+function M.calculate_text_position(ctx, rect, actual_height, text_sample)
+  local x1, y1 = rect[1], rect[2]
+  local text_height = ImGui.CalcTextSize(ctx, text_sample or "Tg")
+  
+  local x = x1 + M.CONFIG.text_padding_left
+  local y
+  
+  if actual_height < M.CONFIG.vertical_center_threshold then
+    y = y1 + (actual_height - text_height) / 2
+  else
+    y = y1 + M.CONFIG.text_padding_top
+  end
+  
+  return { x = x, y = y }
 end
 
 -- ========================================
@@ -114,15 +123,24 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   
   local index_str = string.format("%d", region.rid)
   local name_str = region.name or "Unknown"
-  
-  Draw.text(dl, pos.x, pos.y, accent_color, index_str)
+
+  -- 1. Define the width of our "number box" using "99" as the template.
+  local max_index_w = ImGui.CalcTextSize(ctx, "99")
+
+  -- 2. Calculate the width of the actual index number.
   local index_w = ImGui.CalcTextSize(ctx, index_str)
+
+  -- 3. Calculate the starting X pos for the index to be right-aligned in the box.
+  local index_start_x = pos.x + (max_index_w - index_w)
+  Draw.text(dl, index_start_x, pos.y, accent_color, index_str)
+  
   local separator = " "
   local sep_w = ImGui.CalcTextSize(ctx, separator)
   local separator_color = Colors.with_alpha(Colors.same_hue_variant(base_color, fx_config.separator_saturation, fx_config.separator_brightness, fx_config.separator_alpha), text_alpha)
-  Draw.text(dl, pos.x + index_w, pos.y, separator_color, separator)
+  Draw.text(dl, pos.x + max_index_w, pos.y, separator_color, separator)
   
-  local name_start_x = pos.x + index_w + sep_w
+  -- 4. The name now starts at a fixed position after the box and separator.
+  local name_start_x = pos.x + max_index_w + sep_w
   local name_width = right_bound_x - name_start_x
   local truncated_name = truncate_text(ctx, name_str, name_width)
   Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
@@ -131,12 +149,16 @@ end
 function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, right_bound_x, name_color_override)
   local fx_config = TileFXConfig.get()
   
+  local text_height = ImGui.CalcTextSize(ctx, "Tg")
+  local chip_center_y = pos.y + (text_height / 2)
+  local chip_x = pos.x + M.CONFIG.playlist_chip_offset_x
+  
   Chip.draw(ctx, {
     style = Chip.STYLE.INDICATOR,
     color = playlist_data.chip_color,
     draw_list = dl,
-    x = pos.x,
-    y = pos.y + (10 * 0.5),
+    x = chip_x,
+    y = chip_center_y,
     radius = M.CONFIG.playlist_chip_radius,
     is_selected = state.selected,
     is_hovered = state.hover,
@@ -155,7 +177,7 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
     end
   end
 
-  local name_start_x = pos.x + M.CONFIG.playlist_chip_radius + M.CONFIG.playlist_chip_padding
+  local name_start_x = chip_x + M.CONFIG.playlist_chip_radius + M.CONFIG.playlist_chip_padding
   local name_width = right_bound_x - name_start_x
   local truncated_name = truncate_text(ctx, playlist_data.name, name_width)
   Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)

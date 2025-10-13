@@ -11,6 +11,8 @@ M.DEFAULTS = {
   rounding = 8,
   padding = 8,
   
+  disable_window_drag = true,  -- Prevent window dragging from panel area
+  
   scroll = {
     flags = 0,
     custom_scrollbar = false,

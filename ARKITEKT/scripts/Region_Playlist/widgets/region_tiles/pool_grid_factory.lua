@@ -1,7 +1,7 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/region_tiles/pool_grid_factory.lua
 -- Factory for creating pool grid instances with standardized configuration
--- NOW: Blocks dragging disabled playlists
+-- UPDATED: Added extend_input_area to handle padding zones
 
 local Grid = require('rearkitekt.gui.widgets.grid.core')
 local PoolTile = require('Region_Playlist.widgets.region_tiles.renderers.pool')
@@ -148,6 +148,7 @@ function M.create(rt, config)
   }
   local drop_config = config.drop_config or {}
   local ghost_config = config.ghost_config or {}
+  local padding = config.container and config.container.padding or 8
   
   return Grid.new({
     id = "pool_grid",
@@ -172,6 +173,13 @@ function M.create(rt, config)
     accept_external_drops = false,
     
     render_tile = create_render_tile(rt, tile_config),
+    
+    extend_input_area = { 
+      left = padding, 
+      right = padding, 
+      top = padding, 
+      bottom = padding 
+    },
     
     config = {
       spawn = PoolTile.CONFIG.spawn,

@@ -1,6 +1,6 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/panel/init.lua
--- Main panel API with element-based header
+-- Main panel API with element-based header (selection moved to grid)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.9'
@@ -74,6 +74,8 @@ function M.new(opts)
     _overflow_visible = false,
     
     current_mode = nil,
+    
+    header_height = 0,
   }, Panel)
   
   if panel.config.scroll.custom_scrollbar then
@@ -129,16 +131,16 @@ function Panel:begin_draw(ctx)
   local header_cfg = self.config.header or DEFAULTS.header
   local header_height = 0
   
-  -- Draw header background only (no elements yet)
   if header_cfg.enabled then
     header_height = Header.draw(ctx, dl, x1, y1, w, header_cfg.height, self, self.config, self.config.rounding)
   end
+  
+  self.header_height = header_height
   
   local content_y1 = y1 + header_height
   
   Background.draw(dl, x1, content_y1, x2, y2, self.config.background_pattern)
   
-  -- Draw panel border AFTER backgrounds
   if self.config.border_thickness > 0 then
     ImGui.DrawList_AddRect(
       dl,
@@ -151,7 +153,6 @@ function Panel:begin_draw(ctx)
     )
   end
   
-  -- Draw header elements on top of border
   if header_cfg.enabled then
     Header.draw_elements(ctx, dl, x1, y1, w, header_cfg.height, self, self.config)
   end
@@ -177,7 +178,19 @@ function Panel:begin_draw(ctx)
   self.child_height = child_h
   self.actual_child_height = child_h
   
-  local success = Content.begin_child(ctx, self.id, child_w, child_h, self.config.scroll)
+  local scroll_config = self.config.scroll
+  if self.config.disable_window_drag then
+    local flags = scroll_config.flags or 0
+    if ImGui.WindowFlags_NoMove then
+      flags = flags | ImGui.WindowFlags_NoMove
+    end
+    scroll_config = {
+      flags = flags,
+      bg_color = scroll_config.bg_color,
+    }
+  end
+  
+  local success = Content.begin_child(ctx, self.id, child_w, child_h, scroll_config)
   
   if success and self.config.padding > 0 then
     ImGui.SetCursorPos(ctx, self.config.padding, self.config.padding)

@@ -224,13 +224,13 @@ function M.get_region_tiles_config(layout_mode)
     
     responsive_config = {
       enabled = true,
-      min_tile_height = 20,
+      min_tile_height = 17,
       base_tile_height_active = 72,
       base_tile_height_pool = 72,
       scrollbar_buffer = 24,
       height_hysteresis = 12,
       stable_frames_required = 2,
-      round_to_multiple = 2,
+      round_to_multiple = 1,
       gap_scaling = {
         enabled = true,
         min_gap = 2,

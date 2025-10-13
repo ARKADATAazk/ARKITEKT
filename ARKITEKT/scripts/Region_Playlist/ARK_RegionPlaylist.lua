@@ -47,6 +47,7 @@ local Config = require("Region_Playlist.app.config")
 local State = require("Region_Playlist.app.state")
 local GUI = require("Region_Playlist.app.gui")
 local StatusBarConfig = require("Region_Playlist.app.status")
+local Colors = require("rearkitekt.core.colors")
 
 local SettingsOK, Settings = pcall(require, "rearkitekt.core.settings")
 local StyleOK, Style = pcall(require, "rearkitekt.gui.style")
@@ -65,7 +66,7 @@ local gui = GUI.create(State, Config, settings)
 Shell.run({
   title        = "Region Playlist",
   version      = "v2.0.0-beta",
-  version_color = 0xFF9800FF,
+  version_color = Colors.hexrgb("41FF0000"),
   draw         = function(ctx, shell_state) gui:draw(ctx, shell_state.window) end,
   settings     = settings,
   style        = StyleOK and Style or nil,

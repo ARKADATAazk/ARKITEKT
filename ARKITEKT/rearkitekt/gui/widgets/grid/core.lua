@@ -1,7 +1,7 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/grid/core.lua
 -- Main grid orchestrator - composes rendering, animation, and input modules
--- FIXED: Drop indicator now respects grid boundaries and positions correctly in vertical mode
+-- UPDATED: Now handles extended input areas (padding zones)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.9'
@@ -117,6 +117,8 @@ function M.new(opts)
     on_external_drop = opts.on_external_drop,
     on_destroy_complete = opts.on_destroy_complete,
     on_click_empty   = opts.on_click_empty,
+
+    extend_input_area = opts.extend_input_area or { left = 0, right = 0, top = 0, bottom = 0 },
 
     config           = opts.config or DEFAULTS,
 
@@ -294,10 +296,19 @@ function Grid:draw(ctx)
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
   local origin_x, origin_y = ImGui.GetCursorScreenPos(ctx)
   
-  self.grid_bounds = {origin_x, origin_y, origin_x + avail_w, origin_y + avail_h}
+  local ext = self.extend_input_area
+  local extended_x = origin_x - ext.left
+  local extended_y = origin_y - ext.top
   
   if #items == 0 then
-    ImGui.InvisibleButton(ctx, "##grid_empty_" .. self.id, avail_w, avail_h)
+    local extended_w = avail_w + ext.left + ext.right
+    local extended_h = avail_h + ext.top + ext.bottom
+    
+    self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
+    
+    ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
+    ImGui.InvisibleButton(ctx, "##grid_empty_" .. self.id, extended_w, extended_h)
+    ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
     
     self:_update_external_drop_target(ctx)
     
@@ -372,7 +383,15 @@ function Grid:draw(ctx)
 
   local bg_height = math.max(grid_height, avail_h)
   
-  ImGui.InvisibleButton(ctx, "##grid_bg_" .. self.id, avail_w, bg_height)
+  local extended_w = avail_w + ext.left + ext.right
+  local extended_h = bg_height + ext.top + ext.bottom
+  
+  self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
+  
+  ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
+  ImGui.InvisibleButton(ctx, "##grid_bg_" .. self.id, extended_w, extended_h)
+  ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
+  
   local bg_clicked = ImGui.IsItemClicked(ctx, 0)
 
   local function mouse_over_any_tile()

@@ -417,7 +417,7 @@ function M.new(opts)
     return visible, open
   end
 
-  function win:BeginBody(ctx)
+function win:BeginBody(ctx)
     if self._body_open then return false end
     
     local status_h = (self.status_bar and not self._was_docked and self.status_bar.height) or 0
@@ -426,6 +426,9 @@ function M.new(opts)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, self.content_padding, self.content_padding)
     local child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
     local window_flags = ImGui.WindowFlags_NoScrollbar
+    
+    -- Body remains draggable by default - individual components can disable dragging
+    
     local success = ImGui.BeginChild(ctx, "##body", 0, body_h, child_flags, window_flags)
     self._body_open = true
     return success
