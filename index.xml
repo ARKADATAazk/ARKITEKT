@@ -1,56 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" commit="384e6de32600936e55d951277116bbc113b8b4e4">
-  <metadata>
-    <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
-{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
-\widowctrl\hyphauto
-
-{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs36 ARKITEKT\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 {\b A REAPER toolkit for general use with emphasis on music design, scoring and game audio.}\line Specialized workflow scripts (e.g., Region Playlist, Theme Adjuster) + a reusable {\b ReaImGui} components library with a flexible {\b theme system}.\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Developed by {\b ARKADATA}.\par}
-{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Install (via ReaPack)\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 1.\tx360\tab Install {\field{\*\fldinst{HYPERLINK "https://reapack.com/"}}{\fldrslt{\ul
-ReaPack
-}}}
-.\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 2.\tx360\tab In REAPER: {\b Extensions \u8594 ? ReaPack \u8594 ? Import repositories\u8230 ?}\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 3.\tx360\tab Paste this URL and confirm:\sa180\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 \f1 https://raw.githubusercontent.com/ARKADATAazk/ARKITEKT/main/index.xml\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 4.\tx360\tab {\b Browse packages} \u8594 ? install what you need \u8594 ? {\b Sync packages} to update.\sa180\par}
-{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 What\u8217's inside\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Apps}\line Scripts focused on real workflows (e.g., {\i Region Playlist}, {\i Color Palette}, theme utilities).\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b ReaImGui Widgets (Library)}\line A modular UI kit (chips, pads, grids, tiles, status bars, etc.) used across apps.\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Theme System}\line Centralized colors/skins with presets and per-app overrides for consistent styling.\sa180\par}
-{\pard \ql \f0 \sa180 \li720 \fi0 Action names appear as {\b \u8220"ARK: \u8230 ?\u8221"} in REAPER. Filenames follow {\f1 ARK_<Feature>.lua}.\par}
-{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Requirements\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab REAPER (recent build)\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\field{\*\fldinst{HYPERLINK "https://forum.cockos.com/showthread.php?t=241418"}}{\fldrslt{\ul
-ReaImGui
-}}}
-\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\field{\*\fldinst{HYPERLINK "https://www.sws-extension.org/"}}{\fldrslt{\ul
-SWS
-}}}
-\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab JS_API\sa180\par}
-{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Repository Structure\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\f1 apps/} \u8211- end-user applications (e.g., {\f1 RegionPlaylist/}, {\f1 ColorPalette/}, {\f1 ThemeAdjuster/})\par}
-{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\f1 arkitekt/} \u8211- shared ReaImGui components, widgets, utilities, and helpers\sa180\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Packaging follows ReaPack conventions. See the {\b Packaging Documentation} on the reapack-index wiki for metadata headers and versioning.\par}
-{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Updating\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Use {\b Extensions \u8594 ? ReaPack \u8594 ? Synchronize packages} to pull the latest updates.\par}
-{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Support / Issues\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Open an issue on this repository with steps to reproduce and your REAPER/ReaImGui versions.\par}
-{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Credits\par}
-{\pard \ql \f0 \sa180 \li0 \fi0 Built by {\b ARKADATA}.\line Thanks to Christian Fillion, the REAPER, ReaImGui, and SWS communities.\par}
-}
-]]></description>
-  </metadata>
+<index version="1" commit="e54911cf2740b9e5c9faa0d968688804bce6a16a">
+  <category name="arkitekt">
+    <reapack name="ARKITEKT.lua" type="script" desc="ARKITEKT Toolkit">
+      <metadata>
+        <link rel="website">https://www.arkadata.com</link>
+        <link rel="donation">https://www.paypal.com/donate/?hosted_button_id=2FP22TUPGFPSJ</link>
+      </metadata>
+      <version name="0.1.5" author="ARKADATA" time="2025-10-13T00:59:31Z">
+        <changelog><![CDATA[Initial beta release]]></changelog>
+        <source file="../apps/ColorPalette/ARK_ColorPalette.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/ColorPalette/ARK_ColorPalette.lua</source>
+        <source file="../apps/ColorPalette/app/controller.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/ColorPalette/app/controller.lua</source>
+        <source file="../apps/ColorPalette/app/gui.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/ColorPalette/app/gui.lua</source>
+        <source file="../apps/ColorPalette/app/state.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/ColorPalette/app/state.lua</source>
+        <source file="../apps/ColorPalette/widgets/color_grid.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/ColorPalette/widgets/color_grid.lua</source>
+        <source file="../apps/Region_Playlist/ARK_RegionPlaylist.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/ARK_RegionPlaylist.lua</source>
+        <source file="../apps/Region_Playlist/app/config.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/app/config.lua</source>
+        <source file="../apps/Region_Playlist/app/controller.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/app/controller.lua</source>
+        <source file="../apps/Region_Playlist/app/gui.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/app/gui.lua</source>
+        <source file="../apps/Region_Playlist/app/shortcuts.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/app/shortcuts.lua</source>
+        <source file="../apps/Region_Playlist/app/state.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/app/state.lua</source>
+        <source file="../apps/Region_Playlist/app/status.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/app/status.lua</source>
+        <source file="../apps/Region_Playlist/engine/coordinator_bridge.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/engine/coordinator_bridge.lua</source>
+        <source file="../apps/Region_Playlist/engine/core.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/engine/core.lua</source>
+        <source file="../apps/Region_Playlist/engine/playback.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/engine/playback.lua</source>
+        <source file="../apps/Region_Playlist/engine/quantize.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/engine/quantize.lua</source>
+        <source file="../apps/Region_Playlist/engine/state.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/engine/state.lua</source>
+        <source file="../apps/Region_Playlist/engine/transitions.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/engine/transitions.lua</source>
+        <source file="../apps/Region_Playlist/engine/transport.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/engine/transport.lua</source>
+        <source file="../apps/Region_Playlist/storage/state.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/storage/state.lua</source>
+        <source file="../apps/Region_Playlist/storage/undo_bridge.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/storage/undo_bridge.lua</source>
+        <source file="../apps/Region_Playlist/widgets/controls/controls_widget.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/widgets/controls/controls_widget.lua</source>
+        <source file="../apps/Region_Playlist/widgets/region_tiles/active_grid_factory.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/widgets/region_tiles/active_grid_factory.lua</source>
+        <source file="../apps/Region_Playlist/widgets/region_tiles/coordinator.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/widgets/region_tiles/coordinator.lua</source>
+        <source file="../apps/Region_Playlist/widgets/region_tiles/coordinator_render.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/widgets/region_tiles/coordinator_render.lua</source>
+        <source file="../apps/Region_Playlist/widgets/region_tiles/pool_grid_factory.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/widgets/region_tiles/pool_grid_factory.lua</source>
+        <source file="../apps/Region_Playlist/widgets/region_tiles/renderers/active.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/widgets/region_tiles/renderers/active.lua</source>
+        <source file="../apps/Region_Playlist/widgets/region_tiles/renderers/base.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/widgets/region_tiles/renderers/base.lua</source>
+        <source file="../apps/Region_Playlist/widgets/region_tiles/renderers/pool.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/widgets/region_tiles/renderers/pool.lua</source>
+        <source file="../apps/Region_Playlist/widgets/region_tiles/selector.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/Region_Playlist/widgets/region_tiles/selector.lua</source>
+        <source file="../apps/demos/demo.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/demos/demo.lua</source>
+        <source file="../apps/demos/demo2.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/demos/demo2.lua</source>
+        <source file="../apps/demos/demo3.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/demos/demo3.lua</source>
+        <source file="../apps/demos/demo_modal_overlay.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/demos/demo_modal_overlay.lua</source>
+        <source file="../apps/demos/widget_demo.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/apps/demos/widget_demo.lua</source>
+        <source main="main">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/ARKITEKT.lua</source>
+        <source file="app/chrome/status_bar/config.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/app/chrome/status_bar/config.lua</source>
+        <source file="app/chrome/status_bar/init.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/app/chrome/status_bar/init.lua</source>
+        <source file="app/chrome/status_bar/widget.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/app/chrome/status_bar/widget.lua</source>
+        <source file="app/config.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/app/config.lua</source>
+        <source file="app/icon.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/app/icon.lua</source>
+        <source file="app/runtime.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/app/runtime.lua</source>
+        <source file="app/shell.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/app/shell.lua</source>
+        <source file="app/titlebar.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/app/titlebar.lua</source>
+        <source file="app/window.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/app/window.lua</source>
+        <source file="core/colors.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/core/colors.lua</source>
+        <source file="core/json.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/core/json.lua</source>
+        <source file="core/lifecycle.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/core/lifecycle.lua</source>
+        <source file="core/math.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/core/math.lua</source>
+        <source file="core/settings.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/core/settings.lua</source>
+        <source file="core/undo_manager.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/core/undo_manager.lua</source>
+        <source file="gui/draw.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/draw.lua</source>
+        <source file="gui/fx/animation/rect_track.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/fx/animation/rect_track.lua</source>
+        <source file="gui/fx/animation/track.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/fx/animation/track.lua</source>
+        <source file="gui/fx/animations/destroy.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/fx/animations/destroy.lua</source>
+        <source file="gui/fx/animations/spawn.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/fx/animations/spawn.lua</source>
+        <source file="gui/fx/dnd/config.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/fx/dnd/config.lua</source>
+        <source file="gui/fx/dnd/drag_indicator.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/fx/dnd/drag_indicator.lua</source>
+        <source file="gui/fx/dnd/drop_indicator.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/fx/dnd/drop_indicator.lua</source>
+        <source file="gui/fx/easing.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/fx/easing.lua</source>
+        <source file="gui/fx/effects.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/fx/effects.lua</source>
+        <source file="gui/fx/marching_ants.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/fx/marching_ants.lua</source>
+        <source file="gui/fx/tile_fx.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/fx/tile_fx.lua</source>
+        <source file="gui/fx/tile_fx_config.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/fx/tile_fx_config.lua</source>
+        <source file="gui/fx/tile_motion.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/fx/tile_motion.lua</source>
+        <source file="gui/images.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/images.lua</source>
+        <source file="gui/style.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/style.lua</source>
+        <source file="gui/systems/height_stabilizer.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/systems/height_stabilizer.lua</source>
+        <source file="gui/systems/playback_manager.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/systems/playback_manager.lua</source>
+        <source file="gui/systems/reorder.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/systems/reorder.lua</source>
+        <source file="gui/systems/responsive_grid.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/systems/responsive_grid.lua</source>
+        <source file="gui/systems/selection.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/systems/selection.lua</source>
+        <source file="gui/systems/tile_utilities.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/systems/tile_utilities.lua</source>
+        <source file="gui/widgets/chip_list/list.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/chip_list/list.lua</source>
+        <source file="gui/widgets/component/chip.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/component/chip.lua</source>
+        <source file="gui/widgets/controls/context_menu.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/controls/context_menu.lua</source>
+        <source file="gui/widgets/controls/dropdown.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/controls/dropdown.lua</source>
+        <source file="gui/widgets/controls/scrollbar.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/controls/scrollbar.lua</source>
+        <source file="gui/widgets/controls/tooltip.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/controls/tooltip.lua</source>
+        <source file="gui/widgets/displays/status_pad.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/displays/status_pad.lua</source>
+        <source file="gui/widgets/grid/animation.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/grid/animation.lua</source>
+        <source file="gui/widgets/grid/core.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/grid/core.lua</source>
+        <source file="gui/widgets/grid/dnd_state.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/grid/dnd_state.lua</source>
+        <source file="gui/widgets/grid/drop_zones.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/grid/drop_zones.lua</source>
+        <source file="gui/widgets/grid/grid_bridge.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/grid/grid_bridge.lua</source>
+        <source file="gui/widgets/grid/input.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/grid/input.lua</source>
+        <source file="gui/widgets/grid/layout.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/grid/layout.lua</source>
+        <source file="gui/widgets/grid/rendering.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/grid/rendering.lua</source>
+        <source file="gui/widgets/navigation/menutabs.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/navigation/menutabs.lua</source>
+        <source file="gui/widgets/overlay/config.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/overlay/config.lua</source>
+        <source file="gui/widgets/overlay/manager.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/overlay/manager.lua</source>
+        <source file="gui/widgets/overlay/sheet.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/overlay/sheet.lua</source>
+        <source file="gui/widgets/package_tiles/grid.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/package_tiles/grid.lua</source>
+        <source file="gui/widgets/package_tiles/micromanage.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/package_tiles/micromanage.lua</source>
+        <source file="gui/widgets/package_tiles/renderer.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/package_tiles/renderer.lua</source>
+        <source file="gui/widgets/panel/background.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/background.lua</source>
+        <source file="gui/widgets/panel/config.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/config.lua</source>
+        <source file="gui/widgets/panel/content.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/content.lua</source>
+        <source file="gui/widgets/panel/header.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/header.lua</source>
+        <source file="gui/widgets/panel/header/button.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/header/button.lua</source>
+        <source file="gui/widgets/panel/header/dropdown_field.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/header/dropdown_field.lua</source>
+        <source file="gui/widgets/panel/header/init.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/header/init.lua</source>
+        <source file="gui/widgets/panel/header/layout.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/header/layout.lua</source>
+        <source file="gui/widgets/panel/header/search_field.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/header/search_field.lua</source>
+        <source file="gui/widgets/panel/header/separator.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/header/separator.lua</source>
+        <source file="gui/widgets/panel/header/tab_strip.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/header/tab_strip.lua</source>
+        <source file="gui/widgets/panel/init.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/init.lua</source>
+        <source file="gui/widgets/panel/modes/search_sort.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/modes/search_sort.lua</source>
+        <source file="gui/widgets/panel/modes/tabs.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/modes/tabs.lua</source>
+        <source file="gui/widgets/panel/tab_animator.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/panel/tab_animator.lua</source>
+        <source file="gui/widgets/selection_rectangle.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/selection_rectangle.lua</source>
+        <source file="gui/widgets/sliders/hue.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/sliders/hue.lua</source>
+        <source file="gui/widgets/tiles_container_old.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/tiles_container_old.lua</source>
+        <source file="gui/widgets/transport/transport_container.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/transport/transport_container.lua</source>
+        <source file="gui/widgets/transport/transport_fx.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/gui/widgets/transport/transport_fx.lua</source>
+        <source file="input/wheel_guard.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/input/wheel_guard.lua</source>
+        <source file="reaper/regions.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/reaper/regions.lua</source>
+        <source file="reaper/timing.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/reaper/timing.lua</source>
+        <source file="reaper/transport.lua">https://github.com/ARKADATAazk/ARKITEKT/raw/e54911cf2740b9e5c9faa0d968688804bce6a16a/arkitekt/reaper/transport.lua</source>
+      </version>
+    </reapack>
+  </category>
 </index>
