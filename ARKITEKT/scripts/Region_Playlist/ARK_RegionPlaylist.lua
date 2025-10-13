@@ -64,6 +64,8 @@ local gui = GUI.create(State, Config, settings)
 
 Shell.run({
   title        = "Region Playlist",
+  version      = "v2.0.0-beta",
+  version_color = 0xFF9800FF,
   draw         = function(ctx, shell_state) gui:draw(ctx, shell_state.window) end,
   settings     = settings,
   style        = StyleOK and Style or nil,

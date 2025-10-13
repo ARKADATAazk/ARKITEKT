@@ -1,6 +1,6 @@
 -- @noindex
 -- ReArkitekt/app/titlebar.lua
--- Custom titlebar component with close and maximize buttons, icon click for hub/metrics
+-- Enhanced: Separate styling for app name and version
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.9'
@@ -28,6 +28,8 @@ do
       button_style    = "minimal",
       icon_size       = 18,
       icon_spacing    = 8,
+      version_spacing = 6,
+      version_color   = 0x888888FF,
       button_maximize_normal  = 0x00000000,
       button_maximize_hovered = 0x57C290FF,
       button_maximize_active  = 0x60FFFFFF,
@@ -49,23 +51,27 @@ function M.new(opts)
   
   local titlebar = {
     title           = opts.title or "Window",
+    version         = opts.version,
     title_font      = opts.title_font,
+    version_font    = opts.version_font,
     
-    height          = opts.height or DEFAULTS.height,
-    pad_h           = opts.pad_h or DEFAULTS.pad_h,
-    pad_v           = opts.pad_v or DEFAULTS.pad_v,
-    button_width    = opts.button_width or DEFAULTS.button_width,
-    button_spacing  = opts.button_spacing or DEFAULTS.button_spacing,
-    button_style    = opts.button_style or DEFAULTS.button_style,
+    height          = opts.height or DEFAULTS.height or 26,
+    pad_h           = opts.pad_h or DEFAULTS.pad_h or 12,
+    pad_v           = opts.pad_v or DEFAULTS.pad_v or 0,
+    button_width    = opts.button_width or DEFAULTS.button_width or 44,
+    button_spacing  = opts.button_spacing or DEFAULTS.button_spacing or 0,
+    button_style    = opts.button_style or DEFAULTS.button_style or "minimal",
     separator       = opts.separator ~= false,
     
     bg_color        = opts.bg_color,
     bg_color_active = opts.bg_color_active,
     text_color      = opts.text_color,
+    version_color   = opts.version_color or DEFAULTS.version_color or 0x888888FF,
+    version_spacing = opts.version_spacing or DEFAULTS.version_spacing or 6,
     
     show_icon       = opts.show_icon ~= false,
-    icon_size       = opts.icon_size or DEFAULTS.icon_size,
-    icon_spacing    = opts.icon_spacing or DEFAULTS.icon_spacing,
+    icon_size       = opts.icon_size or DEFAULTS.icon_size or 18,
+    icon_spacing    = opts.icon_spacing or DEFAULTS.icon_spacing or 8,
     icon_color      = opts.icon_color,
     icon_draw       = opts.icon_draw,
     
@@ -77,16 +83,21 @@ function M.new(opts)
     on_icon_click   = opts.on_icon_click,
   }
   
-  function titlebar:_truncate_text(ctx, text, max_width)
+  function titlebar:_truncate_text(ctx, text, max_width, font)
     if not text then return "" end
 
+    if font then ImGui.PushFont(ctx, font) end
     local text_w = ImGui.CalcTextSize(ctx, text)
+    if font then ImGui.PopFont(ctx) end
+    
     if text_w <= max_width then
       return text
     end
 
     local ellipsis = "..."
+    if font then ImGui.PushFont(ctx, font) end
     local ellipsis_w = ImGui.CalcTextSize(ctx, ellipsis)
+    if font then ImGui.PopFont(ctx) end
 
     if max_width < ellipsis_w then
       return ""
@@ -94,7 +105,10 @@ function M.new(opts)
 
     for i = #text, 1, -1 do
       local sub = text:sub(1, i)
+      if font then ImGui.PushFont(ctx, font) end
       local sub_w = ImGui.CalcTextSize(ctx, sub)
+      if font then ImGui.PopFont(ctx) end
+      
       if sub_w + ellipsis_w <= max_width then
         return sub .. ellipsis
       end
@@ -120,6 +134,10 @@ function M.new(opts)
     self.title = tostring(title or self.title)
   end
   
+  function titlebar:set_version(version)
+    self.version = version and tostring(version) or nil
+  end
+  
   function titlebar:set_maximized(state)
     self.is_maximized = state
   end
@@ -130,6 +148,10 @@ function M.new(opts)
   
   function titlebar:set_icon_color(color)
     self.icon_color = color
+  end
+  
+  function titlebar:set_version_color(color)
+    self.version_color = color
   end
   
   function titlebar:render(ctx, win_w)
@@ -147,6 +169,7 @@ function M.new(opts)
     end
     
     local text_color = self.text_color or ImGui.GetColor(ctx, ImGui.Col_Text)
+    local version_color = self.version_color or 0x888888FF
     
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, self.button_spacing, 0)
@@ -215,18 +238,68 @@ function M.new(opts)
       local num_buttons = 1 + (self.enable_maximize and 1 or 0)
       local total_button_width = (self.button_width * num_buttons) + (self.button_spacing * (num_buttons - 1))
       
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
-      if self.title_font then ImGui.PushFont(ctx, self.title_font) end
-      
       local title_start_x = ImGui.GetCursorPosX(ctx)
       local available_width = (win_w - total_button_width) - title_start_x - self.pad_h
-      local display_title = self:_truncate_text(ctx, self.title, available_width)
       
-      ImGui.Text(ctx, display_title)
-      
-      if self.title_font then ImGui.PopFont(ctx) end
-      ImGui.PopStyleColor(ctx)
-      
+
+if self.version and self.version ~= "" then
+        if self.title_font then ImGui.PushFont(ctx, self.title_font) end
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
+        
+        local title_w = ImGui.CalcTextSize(ctx, self.title)
+        local title_h = ImGui.GetTextLineHeight(ctx)
+        
+        if self.title_font then ImGui.PopFont(ctx) end
+        ImGui.PopStyleColor(ctx)
+        
+        local version_font = self.version_font
+        if version_font then ImGui.PushFont(ctx, version_font) end
+        local version_w = ImGui.CalcTextSize(ctx, self.version)
+        local version_h = ImGui.GetTextLineHeight(ctx)
+        if version_font then ImGui.PopFont(ctx) end
+        
+        local total_w = title_w + self.version_spacing + version_w
+        
+        if total_w <= available_width then
+          local base_y = ImGui.GetCursorPosY(ctx)
+          
+          if self.title_font then ImGui.PushFont(ctx, self.title_font) end
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
+          ImGui.Text(ctx, self.title)
+          ImGui.PopStyleColor(ctx)
+          if self.title_font then ImGui.PopFont(ctx) end
+          
+          ImGui.SameLine(ctx, 0, self.version_spacing)
+          
+          local height_diff = title_h - version_h
+          local version_y_offset = -1  -- ADJUST THIS VALUE: negative moves up, positive moves down
+          if height_diff > 0 then
+            ImGui.SetCursorPosY(ctx, base_y + height_diff + version_y_offset)
+          end
+          
+          if version_font then ImGui.PushFont(ctx, version_font) end
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, version_color)
+          ImGui.Text(ctx, self.version)
+          ImGui.PopStyleColor(ctx)
+          if version_font then ImGui.PopFont(ctx) end
+        else
+          if self.title_font then ImGui.PushFont(ctx, self.title_font) end
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
+          local display_title = self:_truncate_text(ctx, self.title .. " " .. self.version, available_width, self.title_font)
+          ImGui.Text(ctx, display_title)
+          ImGui.PopStyleColor(ctx)
+          if self.title_font then ImGui.PopFont(ctx) end
+        end
+      else
+        if self.title_font then ImGui.PushFont(ctx, self.title_font) end
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
+        local display_title = self:_truncate_text(ctx, self.title, available_width, self.title_font)
+        ImGui.Text(ctx, display_title)
+        ImGui.PopStyleColor(ctx)
+        if self.title_font then ImGui.PopFont(ctx) end
+      end
+
+
       ImGui.SetCursorPos(ctx, win_w - total_button_width, 0)
       
       if self.button_style == "filled" then
@@ -318,9 +391,9 @@ function M.new(opts)
     local icon_color = ImGui.GetColor(ctx, ImGui.Col_Text)
 
     if self.enable_maximize then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_maximize_normal)
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_maximize_hovered)
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_maximize_active)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_maximize_normal or 0x00000000)
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_maximize_hovered or 0x57C290FF)
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_maximize_active or 0x60FFFFFF)
 
       if ImGui.Button(ctx, "##max", self.button_width, self.height) then
         clicked_maximize = true
@@ -331,9 +404,9 @@ function M.new(opts)
       
       local current_button_bg
       if is_active then
-        current_button_bg = DEFAULTS.button_maximize_active
+        current_button_bg = DEFAULTS.button_maximize_active or 0x60FFFFFF
       elseif is_hovered then
-        current_button_bg = DEFAULTS.button_maximize_hovered
+        current_button_bg = DEFAULTS.button_maximize_hovered or 0x57C290FF
       else
         current_button_bg = bg_color
       end
@@ -352,9 +425,9 @@ function M.new(opts)
       ImGui.SameLine(ctx)
     end
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_close_normal)
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_close_hovered)
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_close_active)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_close_normal or 0x00000000)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_close_hovered or 0xCC3333FF)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_close_active or 0xFF1111FF)
 
     if ImGui.Button(ctx, "##close", self.button_width, self.height) then
       clicked_close = true
@@ -365,9 +438,9 @@ function M.new(opts)
     
     local current_button_bg
     if is_active then
-      current_button_bg = DEFAULTS.button_close_active
+      current_button_bg = DEFAULTS.button_close_active or 0xFF1111FF
     elseif is_hovered then
-      current_button_bg = DEFAULTS.button_close_hovered
+      current_button_bg = DEFAULTS.button_close_hovered or 0xCC3333FF
     else
       current_button_bg = bg_color
     end
@@ -397,9 +470,9 @@ function M.new(opts)
     if self.enable_maximize then
       local icon = self.is_maximized and "⊡" or "▢"
       
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_maximize_filled_normal)
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_maximize_filled_hovered)
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_maximize_filled_active)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_maximize_filled_normal or 0x808080FF)
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_maximize_filled_hovered or 0x999999FF)
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_maximize_filled_active or 0x666666FF)
       
       if ImGui.Button(ctx, icon .. "##max", self.button_width, self.height) then
         clicked_maximize = true
@@ -414,9 +487,9 @@ function M.new(opts)
       ImGui.SameLine(ctx)
     end
     
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_close_filled_normal)
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_close_filled_hovered)
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_close_filled_active)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_close_filled_normal or 0xCC3333FF)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_close_filled_hovered or 0xFF4444FF)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_close_filled_active or 0xFF1111FF)
     
     if ImGui.Button(ctx, "X##close", self.button_width, self.height) then
       clicked_close = true
@@ -434,5 +507,6 @@ function M.new(opts)
   
   return titlebar
 end
+
 
 return M

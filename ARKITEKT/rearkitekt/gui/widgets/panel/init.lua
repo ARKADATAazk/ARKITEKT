@@ -49,7 +49,6 @@ Panel.__index = Panel
 function M.new(opts)
   opts = opts or {}
   
-  -- Generate unique ID if not provided
   local id = opts.id or generate_unique_id("panel")
   
   local panel = setmetatable({
@@ -69,14 +68,11 @@ function M.new(opts)
     child_x = 0,
     child_y = 0,
     
-    -- Tab state
     tabs = {},
     active_tab_id = nil,
     
-    -- Modal state
     _overflow_visible = false,
     
-    -- Mode state
     current_mode = nil,
   }, Panel)
   
@@ -133,6 +129,7 @@ function Panel:begin_draw(ctx)
   local header_cfg = self.config.header or DEFAULTS.header
   local header_height = 0
   
+  -- Draw header background only (no elements yet)
   if header_cfg.enabled then
     header_height = Header.draw(ctx, dl, x1, y1, w, header_cfg.height, self, self.config, self.config.rounding)
   end
@@ -141,6 +138,7 @@ function Panel:begin_draw(ctx)
   
   Background.draw(dl, x1, content_y1, x2, y2, self.config.background_pattern)
   
+  -- Draw panel border AFTER backgrounds
   if self.config.border_thickness > 0 then
     ImGui.DrawList_AddRect(
       dl,
@@ -151,6 +149,11 @@ function Panel:begin_draw(ctx)
       0,
       self.config.border_thickness
     )
+  end
+  
+  -- Draw header elements on top of border
+  if header_cfg.enabled then
+    Header.draw_elements(ctx, dl, x1, y1, w, header_cfg.height, self, self.config)
   end
   
   local border_inset = self.config.border_thickness
@@ -223,7 +226,6 @@ function Panel:update(dt)
   end
 end
 
--- Debug method
 function Panel:get_id()
   return self.id
 end
@@ -240,7 +242,6 @@ function Panel:debug_id_chain(ctx)
   ))
 end
 
--- Tab management methods
 function Panel:set_tabs(tabs, active_id)
   self.tabs = tabs or {}
   if active_id ~= nil then
@@ -260,7 +261,6 @@ function Panel:set_active_tab_id(id)
   self.active_tab_id = id
 end
 
--- Overflow modal methods
 function Panel:is_overflow_visible()
   return self._overflow_visible or false
 end
@@ -273,7 +273,6 @@ function Panel:close_overflow_modal()
   self._overflow_visible = false
 end
 
--- Search/Sort state management methods
 function Panel:get_search_text()
   if not self.config.header or not self.config.header.elements then
     return ""
@@ -373,7 +372,6 @@ function Panel:set_sort_direction(direction)
   end
 end
 
--- Mode management methods
 function Panel:get_current_mode()
   return self.current_mode
 end
@@ -382,7 +380,6 @@ function Panel:set_current_mode(mode)
   self.current_mode = mode
 end
 
--- Utility draw function
 function M.draw(ctx, id, width, height, content_fn, config)
   config = config or DEFAULTS
   

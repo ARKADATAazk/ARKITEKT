@@ -1,6 +1,6 @@
 -- @noindex
 -- ReArkitekt/app/window.lua
--- Window with integrated status bar, tabs, saved geometry, custom titlebar
+-- Enhanced: Version support in titlebar
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.9'
@@ -48,12 +48,15 @@ function M.new(opts)
   local win = {
     settings        = opts.settings,
     title           = opts.title or DEFAULTS.window.title or "Window",
+    version         = opts.version,
     flags           = opts.flags or WF_None,
 
     content_padding = opts.content_padding or DEFAULTS.window.content_padding,
     titlebar_pad_h  = opts.titlebar_pad_h,
     titlebar_pad_v  = opts.titlebar_pad_v or DEFAULTS.titlebar.pad_v,
     title_font      = opts.title_font,
+    version_font    = opts.version_font,
+    version_color   = opts.version_color,
 
     initial_pos     = opts.initial_pos  or DEFAULTS.window.initial_pos,
     initial_size    = opts.initial_size or DEFAULTS.window.initial_size,
@@ -79,6 +82,8 @@ function M.new(opts)
       text_color      = opts.titlebar_text_color,
       enable_maximize = opts.enable_maximize ~= false,
       title_font      = opts.title_font,
+      version_font    = opts.version_font,
+      version_color   = opts.version_color,
       show_icon       = opts.show_icon,
       icon_size       = opts.icon_size,
       icon_spacing    = opts.icon_spacing,
@@ -151,6 +156,7 @@ function M.new(opts)
       local ok, Titlebar = pcall(require, 'rearkitekt.app.titlebar')
       if ok and Titlebar and Titlebar.new then
         win.titlebar_opts.title = win.title
+        win.titlebar_opts.version = win.version
         win.titlebar_opts.separator = opts.tabs and false or opts.titlebar_separator
         win.titlebar_opts.on_close = function()
           win._should_close = true
@@ -210,6 +216,20 @@ function M.new(opts)
     self.title = tostring(s or self.title)
     if self._titlebar then
       self._titlebar:set_title(self.title)
+    end
+  end
+  
+  function win:set_version(v)
+    self.version = v and tostring(v) or nil
+    if self._titlebar then
+      self._titlebar:set_version(self.version)
+    end
+  end
+  
+  function win:set_version_color(color)
+    self.version_color = color
+    if self._titlebar then
+      self._titlebar:set_version_color(color)
     end
   end
   

@@ -12,23 +12,18 @@ local M = {}
 local TAB_SLIDE_SPEED = 15.0
 local DRAG_THRESHOLD = 3.0
 
--- ============================================================================
--- HELPERS
--- ============================================================================
-
-local function with_alpha(color, alpha)
-  return (color & 0xFFFFFF00) | (alpha & 0xFF)
-end
-
-local function calculate_tab_width(ctx, label, config, has_chip)
-  local text_w = ImGui.CalcTextSize(ctx, label)
-  local chip_width = has_chip and 20 or 0
-  local min_width = config.min_width or 60
-  local max_width = config.max_width or 180
-  local padding_x = config.padding_x or 5
-  
-  return math.min(max_width, math.max(min_width, text_w + padding_x * 2 + chip_width))
-end
+local DEFAULTS = {
+  bg_color = 0x252525FF,
+  bg_hover_color = 0x2A2A2AFF,
+  bg_active_color = 0x303030FF,
+  border_outer_color = 0x000000DD,
+  border_inner_color = 0x404040FF,
+  border_hover_color = 0x505050FF,
+  border_active_color = 0x7B7B7BFF,
+  text_color = 0xAAAAAAFF,
+  text_hover_color = 0xFFFFFFFF,
+  text_active_color = 0xFFFFFFFF,
+}
 
 local function get_corner_flags(corner_rounding)
   if not corner_rounding then
@@ -46,9 +41,15 @@ local function get_corner_flags(corner_rounding)
   return flags
 end
 
--- ============================================================================
--- ANIMATION HELPERS
--- ============================================================================
+local function calculate_tab_width(ctx, label, config, has_chip)
+  local text_w = ImGui.CalcTextSize(ctx, label)
+  local chip_width = has_chip and 20 or 0
+  local min_width = config.min_width or 60
+  local max_width = config.max_width or 180
+  local padding_x = config.padding_x or 5
+  
+  return math.min(max_width, math.max(min_width, text_w + padding_x * 2 + chip_width))
+end
 
 local function init_tab_positions(state, tabs)
   if not state.tab_positions then
@@ -90,39 +91,48 @@ local function update_tab_positions(ctx, state, config, tabs, start_x)
       pos.current_x = pos.target_x
     end
     
-    cursor_x = cursor_x + tab_width + spacing
+    local effective_spacing = spacing
+    if i > 1 and spacing == 0 then
+      effective_spacing = -1
+    end
+    
+    cursor_x = cursor_x + tab_width + effective_spacing
   end
 end
-
--- ============================================================================
--- PLUS BUTTON
--- ============================================================================
 
 local function draw_plus_button(ctx, dl, x, y, width, height, config, unique_id, corner_rounding)
   local btn_cfg = config.plus_button or {}
   
+  for k, v in pairs(DEFAULTS) do
+    if btn_cfg[k] == nil then btn_cfg[k] = v end
+  end
+  
   local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
   local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
 
-  local bg_color = btn_cfg.bg_color or 0x2A2A2AFF
+  local bg_color = btn_cfg.bg_color
+  local border_inner = btn_cfg.border_inner_color
+  local icon_color = btn_cfg.text_color
+
   if is_active then
-    bg_color = btn_cfg.bg_active_color or 0x1A1A1AFF
+    bg_color = btn_cfg.bg_active_color
+    border_inner = btn_cfg.border_active_color or btn_cfg.border_hover_color
+    icon_color = btn_cfg.text_active_color or btn_cfg.text_hover_color
   elseif is_hovered then
-    bg_color = btn_cfg.bg_hover_color or 0x3A3A3AFF
+    bg_color = btn_cfg.bg_hover_color
+    border_inner = btn_cfg.border_hover_color
+    icon_color = btn_cfg.text_hover_color
   end
 
-  local border_outer = config.border_outer_color or 0x000000DD
-  local border_inner = is_hovered and (btn_cfg.border_hover_color or 0x505050FF) or (btn_cfg.border_inner_color or 0x404040FF)
-  local icon_color = is_hovered and (btn_cfg.text_hover_color or 0xFFFFFFFF) or (btn_cfg.text_color or 0xAAAAAAFF)
-
   local rounding = corner_rounding and corner_rounding.rounding or 4
+  local inner_rounding = math.max(0, rounding - 2)
   local corner_flags = get_corner_flags(corner_rounding)
   
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, rounding, corner_flags)
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, inner_rounding, corner_flags)
   
-  ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + width - 1, y + height - 1, border_inner, rounding, corner_flags, 1)
+  ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + width - 1, y + height - 1, border_inner, inner_rounding, corner_flags, 1)
   
-  ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, border_outer, rounding, corner_flags, 1)
+  ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, btn_cfg.border_outer_color or config.border_outer_color, inner_rounding, corner_flags, 1)
 
   local center_x = x + width * 0.5 
   local center_y = y + height * 0.5 - 1
@@ -145,22 +155,12 @@ local function draw_plus_button(ctx, dl, x, y, width, height, config, unique_id,
   return clicked, width
 end
 
--- ============================================================================
--- OVERFLOW BUTTON
--- ============================================================================
-
 local function draw_overflow_button(ctx, dl, x, y, width, height, config, hidden_count, unique_id, corner_rounding)
-  local btn_cfg = config.overflow_button or {
-    min_width = 21,
-    padding_x = 8,
-    bg_color = 0x1C1C1CFF,
-    bg_hover_color = 0x282828FF,
-    bg_active_color = 0x252525FF,
-    text_color = 0x707070FF,
-    text_hover_color = 0xCCCCCCFF,
-    border_inner_color = 0x303030FF,
-    border_hover_color = 0x404040FF,
-  }
+  local btn_cfg = config.overflow_button or {}
+  
+  for k, v in pairs(DEFAULTS) do
+    if btn_cfg[k] == nil then btn_cfg[k] = v end
+  end
   
   local count_text = tostring(hidden_count)
   
@@ -168,24 +168,28 @@ local function draw_overflow_button(ctx, dl, x, y, width, height, config, hidden
   local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
 
   local bg_color = btn_cfg.bg_color
+  local border_inner = btn_cfg.border_inner_color
+  local text_color = btn_cfg.text_color
+
   if is_active then
     bg_color = btn_cfg.bg_active_color
+    border_inner = btn_cfg.border_active_color or btn_cfg.border_hover_color
+    text_color = btn_cfg.text_active_color or btn_cfg.text_hover_color
   elseif is_hovered then
     bg_color = btn_cfg.bg_hover_color
+    border_inner = btn_cfg.border_hover_color
+    text_color = btn_cfg.text_hover_color
   end
 
-  local border_outer = config.border_outer_color or 0x000000DD
-  local border_inner = is_hovered and (btn_cfg.border_hover_color or 0x404040FF) or (btn_cfg.border_inner_color or 0x303030FF)
-  local text_color = is_hovered and btn_cfg.text_hover_color or btn_cfg.text_color
-
   local rounding = corner_rounding and corner_rounding.rounding or 4
+  local inner_rounding = math.max(0, rounding - 2)
   local corner_flags = get_corner_flags(corner_rounding)
   
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, rounding, corner_flags)
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, inner_rounding, corner_flags)
   
-  ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + width - 1, y + height - 1, border_inner, rounding, corner_flags, 1)
+  ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + width - 1, y + height - 1, border_inner, inner_rounding, corner_flags, 1)
   
-  ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, border_outer, rounding, corner_flags, 1)
+  ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, btn_cfg.border_outer_color or config.border_outer_color, inner_rounding, corner_flags, 1)
 
   local text_w = ImGui.CalcTextSize(ctx, count_text)
   local text_x = x + (width - text_w) * 0.5
@@ -197,10 +201,6 @@ local function draw_overflow_button(ctx, dl, x, y, width, height, config, hidden
 
   return clicked
 end
-
--- ============================================================================
--- TRACK BACKGROUND
--- ============================================================================
 
 local function draw_track(ctx, dl, x, y, width, height, config, corner_rounding)
   local track_cfg = config.track
@@ -236,11 +236,11 @@ local function draw_track(ctx, dl, x, y, width, height, config, corner_rounding)
   end
 end
 
--- ============================================================================
--- TAB RENDERING
--- ============================================================================
-
 local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height, state, config, unique_id, animator, corner_rounding)
+  for k, v in pairs(DEFAULTS) do
+    if config[k] == nil then config[k] = v end
+  end
+  
   local label = tab_data.label or "Tab"
   local id = tab_data.id
   local chip_color = tab_data.chip_color
@@ -282,41 +282,41 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
     return (color & 0xFFFFFF00) | new_a
   end
 
-  local bg_color = config.bg_color or 0x252525FF
-  local border_outer = config.border_outer_color or 0x000000DD
-  local border_inner = config.border_inner_color or 0x404040FF
-  local text_color = config.text_color or 0xAAAAAAFF
+  local bg_color = config.bg_color
+  local border_inner = config.border_inner_color
+  local text_color = config.text_color
   
   if is_active then
-    bg_color = config.bg_active_color or 0x303030FF
-    border_inner = config.border_active_color or 0X7A7A7AFF
-    text_color = config.text_active_color or 0xFFFFFFFF
+    bg_color = config.bg_active_color
+    border_inner = config.border_active_color
+    text_color = config.text_active_color
   elseif is_pressed then
-    bg_color = config.bg_hover_color or 0x2A2A2AFF
-    border_inner = config.border_hover_color or 0x505050FF
-    text_color = config.text_hover_color or 0xFFFFFFFF
+    bg_color = config.bg_active_color
+    border_inner = config.border_hover_color
+    text_color = config.text_hover_color
   elseif is_hovered then
-    bg_color = config.bg_hover_color or 0x2A2A2AFF
-    border_inner = config.border_hover_color or 0x505050FF
-    text_color = config.text_hover_color or 0xFFFFFFFF
+    bg_color = config.bg_hover_color
+    border_inner = config.border_hover_color
+    text_color = config.text_hover_color
   end
   
   bg_color = apply_alpha(bg_color, alpha_factor)
-  border_outer = apply_alpha(border_outer, alpha_factor)
+  local border_outer = apply_alpha(config.border_outer_color, alpha_factor)
   border_inner = apply_alpha(border_inner, alpha_factor)
   text_color = apply_alpha(text_color, alpha_factor)
 
   local rounding = corner_rounding and corner_rounding.rounding or 0
+  local inner_rounding = math.max(0, rounding - 2)
   local corner_flags = get_corner_flags(corner_rounding)
 
   ImGui.DrawList_AddRectFilled(dl, render_x, render_y, render_x + render_w, render_y + render_h, 
-                                bg_color, rounding, corner_flags)
+                                bg_color, inner_rounding, corner_flags)
   
   ImGui.DrawList_AddRect(dl, render_x + 1, render_y + 1, render_x + render_w - 1, render_y + render_h - 1, 
-                         border_inner, rounding, corner_flags, 1)
+                         border_inner, inner_rounding, corner_flags, 1)
   
   ImGui.DrawList_AddRect(dl, render_x, render_y, render_x + render_w, render_y + render_h, 
-                         border_outer, rounding, corner_flags, 1)
+                         border_outer, inner_rounding, corner_flags, 1)
 
   local content_x = render_x + (config.padding_x or 5)
   
@@ -391,10 +391,6 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
   return clicked, delete_requested
 end
 
--- ============================================================================
--- VISIBILITY CALCULATION
--- ============================================================================
-
 local function calculate_visible_tabs(ctx, tabs, config, available_width)
   local visible_indices = {}
   local current_width = 0
@@ -403,7 +399,11 @@ local function calculate_visible_tabs(ctx, tabs, config, available_width)
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
     local tab_width = calculate_tab_width(ctx, tab.label or "Tab", config, has_chip)
-    local needed = tab_width + (i > 1 and spacing or 0)
+    local effective_spacing = (i > 1) and spacing or 0
+    if i > 1 and spacing == 0 then
+      effective_spacing = -1
+    end
+    local needed = tab_width + effective_spacing
     
     if current_width + needed <= available_width then
       visible_indices[#visible_indices + 1] = i
@@ -417,10 +417,6 @@ local function calculate_visible_tabs(ctx, tabs, config, available_width)
   
   return visible_indices, overflow_count, current_width
 end
-
--- ============================================================================
--- DRAG & DROP REORDERING
--- ============================================================================
 
 local function handle_drag_reorder(ctx, state, tabs, config, tabs_start_x)
   if not state.dragging_tab then return end
@@ -451,7 +447,12 @@ local function handle_drag_reorder(ctx, state, tabs, config, tabs_start_x)
       width = tab_w,
     }
     
-    current_x = current_x + tab_w + spacing
+    local effective_spacing = spacing
+    if i > 1 and spacing == 0 then
+      effective_spacing = -1
+    end
+    
+    current_x = current_x + tab_w + effective_spacing
   end
   
   local current_index = state.dragging_tab.index
@@ -494,10 +495,6 @@ local function finalize_drag(ctx, state, config)
     state.dragging_tab = nil
   end
 end
-
--- ============================================================================
--- MAIN DRAW FUNCTION
--- ============================================================================
 
 function M.draw(ctx, dl, x, y, available_width, height, config, state)
   config = config or {}
@@ -720,8 +717,12 @@ function M.measure(ctx, config, state)
     local has_chip = tab.chip_color ~= nil
     local tab_w = calculate_tab_width(ctx, tab.label or "Tab", config, has_chip)
     total = total + tab_w
-    if i < #tabs and spacing > 0 then
-      total = total + spacing
+    local effective_spacing = spacing
+    if i < #tabs then
+      if spacing == 0 then
+        effective_spacing = -1
+      end
+      total = total + effective_spacing
     end
   end
   

@@ -7,6 +7,19 @@ local ImGui = require 'imgui' '0.9'
 
 local M = {}
 
+local DEFAULTS = {
+  bg_color = 0x252525FF,
+  bg_hover_color = 0x2A2A2AFF,
+  bg_active_color = 0x2A2A2AFF,
+  border_outer_color = 0x000000DD,
+  border_inner_color = 0x404040FF,
+  border_hover_color = 0x505050FF,
+  border_active_color = 0xB0B0B077,
+  text_color = 0xCCCCCCFF,
+  text_hover_color = 0xFFFFFFFF,
+  text_active_color = 0xFFFFFFFF,
+}
+
 local function get_corner_flags(corner_rounding)
   if not corner_rounding then
     return 0
@@ -24,6 +37,10 @@ local function get_corner_flags(corner_rounding)
 end
 
 function M.draw(ctx, dl, x, y, width, height, config, state)
+  for k, v in pairs(DEFAULTS) do
+    if config[k] == nil then config[k] = v end
+  end
+  
   local element_id = config.id or "button"
   local label = config.label or ""
   local icon = config.icon or ""
@@ -33,33 +50,30 @@ function M.draw(ctx, dl, x, y, width, height, config, state)
   local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
   local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
   
-  local bg_color = config.bg_color or 0x252525FF
+  local bg_color = config.bg_color
+  local border_inner = config.border_inner_color
+  local text_color = config.text_color
+  
   if is_active then
-    bg_color = config.bg_active_color or 0x1A1A1AFF
+    bg_color = config.bg_active_color
+    border_inner = config.border_active_color
+    text_color = config.text_active_color
   elseif is_hovered then
-    bg_color = config.bg_hover_color or 0x2A2A2AFF
-  end
-  
-  local border_outer = config.border_outer_color or 0x000000DD
-  local border_inner = config.border_inner_color or 0x404040FF
-  if is_hovered then
-    border_inner = config.border_hover_color or 0x505050FF
-  end
-  
-  local text_color = config.text_color or 0xAAAAAAFF
-  if is_hovered then
-    text_color = config.text_hover_color or 0xFFFFFFFF
+    bg_color = config.bg_hover_color
+    border_inner = config.border_hover_color
+    text_color = config.text_hover_color
   end
   
   local corner_rounding = config.corner_rounding
   local rounding = corner_rounding and corner_rounding.rounding or 0
+  local inner_rounding = math.max(0, rounding - 2)
   local corner_flags = get_corner_flags(corner_rounding)
   
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, rounding, corner_flags)
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, inner_rounding, corner_flags)
   
-  ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + width - 1, y + height - 1, border_inner, rounding, corner_flags, 1)
+  ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + width - 1, y + height - 1, border_inner, inner_rounding, corner_flags, 1)
   
-  ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, border_outer, rounding, corner_flags, 1)
+  ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, config.border_outer_color, inner_rounding, corner_flags, 1)
   
   local display_text = icon .. (icon ~= "" and label ~= "" and " " or "") .. label
   

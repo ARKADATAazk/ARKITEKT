@@ -245,25 +245,32 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
   local header_rounding = config.rounding or 8
   local rounding_info = calculate_corner_rounding(layout, header_rounding)
   
-  -- Border overlap: adjacent non-separator elements share 1px border
   local border_overlap = 1
   
   local cursor_x = content_x
+  
+  local last_non_sep_idx = find_last_non_separator(layout)
   
   for i, item in ipairs(layout) do
     local element = item.element
     local element_width = item.width
     local spacing_before = element.spacing_before or 0
     
-    -- Apply border overlap: subtract 1px from spacing_before if previous element was not a separator
     if i > 1 then
       local prev_element = layout[i - 1].element
       if prev_element.type ~= 'separator' and element.type ~= 'separator' then
-        spacing_before = spacing_before - border_overlap  -- Allow negative (overlap)
+        spacing_before = spacing_before - border_overlap
       end
     end
     
     cursor_x = cursor_x + spacing_before
+    
+    if i == last_non_sep_idx and element.type ~= 'separator' then
+      local remaining_space = (content_x + content_width) - cursor_x
+      if remaining_space > element_width then
+        element_width = remaining_space
+      end
+    end
     
     local component = COMPONENTS[element.type]
     if component and component.draw then

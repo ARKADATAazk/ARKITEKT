@@ -1,7 +1,6 @@
 -- @noindex
 -- ReArkitekt/app/shell.lua
--- App runner: context, fonts, optional style push/pop, window lifecycle, profiling support
--- Extended with overlay manager support
+-- Enhanced: Separate title and version support
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui   = require 'imgui' '0.9'
@@ -50,6 +49,7 @@ local function load_fonts(ctx, font_cfg)
   font_cfg = merge({
     default        = DEFAULTS.fonts.default,
     title          = DEFAULTS.fonts.title,
+    version        = DEFAULTS.fonts.version,
     family_regular = DEFAULTS.fonts.family_regular,
     family_bold    = DEFAULTS.fonts.family_bold,
   }, font_cfg or {})
@@ -68,10 +68,13 @@ local function load_fonts(ctx, font_cfg)
                                 or ImGui.CreateFont('sans-serif', font_cfg.default)
   local title_font   = exists(B) and ImGui.CreateFont(B, font_cfg.title)
                                 or default_font
+  local version_font = exists(R) and ImGui.CreateFont(R, font_cfg.version)
+                                or default_font
 
   ImGui.Attach(ctx, default_font)
   ImGui.Attach(ctx, title_font)
-  return { default = default_font, title = title_font }
+  ImGui.Attach(ctx, version_font)
+  return { default = default_font, title = title_font, version = version_font }
 end
 
 function M.run(opts)
@@ -88,6 +91,7 @@ function M.run(opts)
   end
 
   local title    = opts.title or cfg.window.title
+  local version  = opts.version
   local draw_fn  = opts.draw or function(ctx) ImGui.Text(ctx, 'No draw function provided') end
   local style    = opts.style
   local settings = opts.settings
@@ -98,27 +102,30 @@ function M.run(opts)
   local fonts = load_fonts(ctx, cfg.fonts)
 
   local window = Window.new({
-    title           = title,
-    title_font      = fonts.title,
-    settings        = settings and settings:sub('ui') or nil,
-    initial_pos     = opts.initial_pos  or cfg.window.initial_pos,
-    initial_size    = opts.initial_size or cfg.window.initial_size,
-    min_size        = opts.min_size     or cfg.window.min_size,
-    show_status_bar = opts.show_status_bar,
-    show_titlebar   = opts.show_titlebar,
-    get_status_func = opts.get_status_func,
-    status_bar_height = DEFAULTS.status_bar and DEFAULTS.status_bar.height or 28,
-    content_padding = opts.content_padding or cfg.window.content_padding,
-    titlebar_pad_h  = opts.titlebar_pad_h,
-    titlebar_pad_v  = opts.titlebar_pad_v,
-    flags           = opts.flags,
-    style           = style,
-    tabs            = opts.tabs,
-    bg_color_floating = opts.bg_color_floating,
-    bg_color_docked   = opts.bg_color_docked,
-  })
+      title           = title,
+      version         = version,
+      title_font      = fonts.title,
+      version_font    = fonts.version,
+      version_color   = opts.version_color,
+      settings        = settings and settings:sub('ui') or nil,
+      initial_pos     = opts.initial_pos  or cfg.window.initial_pos,
+      initial_size    = opts.initial_size or cfg.window.initial_size,
+      min_size        = opts.min_size     or cfg.window.min_size,
+      show_status_bar = opts.show_status_bar,
+      show_titlebar   = opts.show_titlebar,
+      get_status_func = opts.get_status_func,
+      status_bar_height = DEFAULTS.status_bar and DEFAULTS.status_bar.height or 28,
+      content_padding = opts.content_padding or cfg.window.content_padding,
+      titlebar_pad_h  = opts.titlebar_pad_h,
+      titlebar_pad_v  = opts.titlebar_pad_v,
+      flags           = opts.flags,
+      style           = style,
+      tabs            = opts.tabs,
+      bg_color_floating = opts.bg_color_floating,
+      bg_color_docked   = opts.bg_color_docked,
+    })
+    
   
-  -- Pass overlay manager to window if provided
   if opts.overlay then
     window.overlay = opts.overlay
   end

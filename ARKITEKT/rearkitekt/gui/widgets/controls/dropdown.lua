@@ -1,6 +1,6 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/controls/dropdown.lua
--- Mousewheel-friendly dropdown/combobox widget with styled popup
+-- Mousewheel-friendly dropdown/combobox widget with corner-aware design
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.9'
@@ -12,18 +12,21 @@ local DEFAULTS = {
   width = 110,
   height = 24,
   bg_color = 0x252525FF,
-  bg_hover_color = 0x303030FF,
-  bg_active_color = 0x3A3A3AFF,
+  bg_hover_color = 0x2A2A2AFF,
+  bg_active_color = 0x2A2A2AFF,
+  border_outer_color = 0x000000DD,
+  border_inner_color = 0x404040FF,
+  border_hover_color = 0x505050FF,
+  border_active_color = 0xB0B0B077,
   text_color = 0xCCCCCCFF,
   text_hover_color = 0xFFFFFFFF,
-  border_color = 0x353535FF,
-  border_hover_color = 0x454545FF,
-  rounding = 4,
+  text_active_color = 0xFFFFFFFF,
+  rounding = 0,
   padding_x = 8,
   padding_y = 4,
   arrow_size = 4,
-  arrow_color = 0x999999FF,
-  arrow_hover_color = 0xEEEEEEFF,
+  arrow_color = 0xCCCCCCFF,
+  arrow_hover_color = 0xFFFFFFFF,
   enable_mousewheel = true,
   tooltip_delay = 0.5,
   
@@ -45,6 +48,22 @@ local DEFAULTS = {
   },
 }
 
+local function get_corner_flags(corner_rounding)
+  if not corner_rounding then
+    return 0
+  end
+  
+  local flags = 0
+  if corner_rounding.round_top_left then
+    flags = flags | ImGui.DrawFlags_RoundCornersTopLeft
+  end
+  if corner_rounding.round_top_right then
+    flags = flags | ImGui.DrawFlags_RoundCornersTopRight
+  end
+  
+  return flags
+end
+
 local Dropdown = {}
 Dropdown.__index = Dropdown
 
@@ -63,8 +82,10 @@ function M.new(opts)
     on_direction_change = opts.on_direction_change,
     
     config = {},
+    corner_rounding = nil,
     
     hover_alpha = 0,
+    is_open = false,
     popup_hover_index = -1,
   }, Dropdown)
   
@@ -145,7 +166,9 @@ function Dropdown:handle_mousewheel(ctx, is_hovered)
   return false
 end
 
-function Dropdown:draw(ctx, x, y)
+function Dropdown:draw(ctx, x, y, corner_rounding)
+  self.corner_rounding = corner_rounding
+  
   local cfg = self.config
   local dl = ImGui.GetWindowDrawList(ctx)
   
@@ -158,45 +181,57 @@ function Dropdown:draw(ctx, x, y)
   local mx, my = ImGui.GetMousePos(ctx)
   local is_hovered = mx >= x1 and mx < x2 and my >= y1 and my < y2
   
-  local target_alpha = is_hovered and 1.0 or 0.0
+  local target_alpha = (is_hovered or self.is_open) and 1.0 or 0.0
   local alpha_speed = 12.0
   local dt = ImGui.GetDeltaTime(ctx)
   self.hover_alpha = self.hover_alpha + (target_alpha - self.hover_alpha) * alpha_speed * dt
   self.hover_alpha = math.max(0, math.min(1, self.hover_alpha))
   
+  local function lerp_color(a, b, t)
+    local ar = (a >> 24) & 0xFF
+    local ag = (a >> 16) & 0xFF
+    local ab = (a >> 8) & 0xFF
+    local aa = a & 0xFF
+    
+    local br = (b >> 24) & 0xFF
+    local bg = (b >> 16) & 0xFF
+    local bb = (b >> 8) & 0xFF
+    local ba = b & 0xFF
+    
+    local r = math.floor(ar + (br - ar) * t)
+    local g = math.floor(ag + (bg - ag) * t)
+    local b = math.floor(ab + (bb - ab) * t)
+    local a = math.floor(aa + (ba - aa) * t)
+    
+    return (r << 24) | (g << 16) | (b << 8) | a
+  end
+  
   local bg_color = cfg.bg_color
   local text_color = cfg.text_color
-  local border_color = cfg.border_color
+  local border_inner = cfg.border_inner_color
   local arrow_color = cfg.arrow_color
   
-  if self.hover_alpha > 0.01 then
-    local function lerp_color(a, b, t)
-      local ar = (a >> 24) & 0xFF
-      local ag = (a >> 16) & 0xFF
-      local ab = (a >> 8) & 0xFF
-      local aa = a & 0xFF
-      
-      local br = (b >> 24) & 0xFF
-      local bg = (b >> 16) & 0xFF
-      local bb = (b >> 8) & 0xFF
-      local ba = b & 0xFF
-      
-      local r = math.floor(ar + (br - ar) * t)
-      local g = math.floor(ag + (bg - ag) * t)
-      local b = math.floor(ab + (bb - ab) * t)
-      local a = math.floor(aa + (ba - aa) * t)
-      
-      return (r << 24) | (g << 16) | (b << 8) | a
-    end
-    
+  if self.is_open then
+    bg_color = cfg.bg_active_color
+    text_color = cfg.text_active_color
+    border_inner = cfg.border_active_color
+    arrow_color = cfg.arrow_hover_color
+  elseif self.hover_alpha > 0.01 then
     bg_color = lerp_color(cfg.bg_color, cfg.bg_hover_color, self.hover_alpha)
     text_color = lerp_color(cfg.text_color, cfg.text_hover_color, self.hover_alpha)
-    border_color = lerp_color(cfg.border_color, cfg.border_hover_color, self.hover_alpha)
+    border_inner = lerp_color(cfg.border_inner_color, cfg.border_hover_color, self.hover_alpha)
     arrow_color = lerp_color(cfg.arrow_color, cfg.arrow_hover_color, self.hover_alpha)
   end
   
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, cfg.rounding)
-  ImGui.DrawList_AddRect(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5, border_color, cfg.rounding, 0, 1)
+  local rounding = corner_rounding and corner_rounding.rounding or cfg.rounding
+  local inner_rounding = math.max(0, rounding - 1)
+  local corner_flags = get_corner_flags(corner_rounding)
+  
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, inner_rounding, corner_flags)
+  
+  ImGui.DrawList_AddRect(dl, x1 + 1, y1 + 1, x2 - 1, y2 - 1, border_inner, inner_rounding, corner_flags, 1)
+  
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, cfg.border_outer_color, inner_rounding, corner_flags, 1)
   
   local display_text = self:get_display_text()
   
@@ -245,6 +280,7 @@ function Dropdown:draw(ctx, x, y)
   
   if clicked then
     ImGui.OpenPopup(ctx, self.id .. "_popup")
+    self.is_open = true
   end
   
   local popup_changed = false
@@ -321,6 +357,7 @@ function Dropdown:draw(ctx, x, y)
         end
         popup_changed = true
         ImGui.CloseCurrentPopup(ctx)
+        self.is_open = false
       end
       
       if is_selected then
@@ -329,6 +366,8 @@ function Dropdown:draw(ctx, x, y)
     end
     
     ImGui.EndPopup(ctx)
+  else
+    self.is_open = false
   end
   
   ImGui.PopStyleColor(ctx, 2)

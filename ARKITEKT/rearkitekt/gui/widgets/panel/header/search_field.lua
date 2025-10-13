@@ -67,16 +67,17 @@ function M.draw(ctx, dl, x, y, width, height, config, state)
   
   local corner_rounding = config.corner_rounding
   local rounding = corner_rounding and corner_rounding.rounding or 0
+  local inner_rounding = math.max(0, rounding - 2)
   local corner_flags = get_corner_flags(corner_rounding)
   
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, rounding, corner_flags)
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, inner_rounding, corner_flags)
   
   local border_inner = state.search_focused and config.border_active_color or config.border_inner_color
   border_inner = (border_inner & 0xFFFFFF00) | alpha_byte
-  ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + width - 1, y + height - 1, border_inner, rounding, corner_flags, 1)
+  ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + width - 1, y + height - 1, border_inner, inner_rounding, corner_flags, 1)
   
   local border_outer = (config.border_outer_color & 0xFFFFFF00) | alpha_byte
-  ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, border_outer, rounding, corner_flags, 1)
+  ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, border_outer, inner_rounding, corner_flags, 1)
   
   ImGui.SetCursorScreenPos(ctx, x + 6, y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5 - 2)
   ImGui.PushItemWidth(ctx, width - 12)

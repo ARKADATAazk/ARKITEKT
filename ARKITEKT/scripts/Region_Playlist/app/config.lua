@@ -1,6 +1,6 @@
 -- @noindex
 -- Region_Playlist/app/config.lua
--- Structural config + semantic colors (widget chrome comes from defaults)
+-- Structural config + semantic colors (widget chrome comes from library defaults)
 
 local M = {}
 
@@ -82,6 +82,7 @@ M.SEPARATOR = {
 }
 
 -- Active container: tabs only
+-- All visual styling comes from library defaults
 function M.get_active_container_config(callbacks)
   return {
     header = {
@@ -99,7 +100,7 @@ function M.get_active_container_config(callbacks)
             max_width = 150,
             padding_x = 8,
             chip_radius = 4,
-            
+            -- All colors handled by library defaults
             on_tab_create = callbacks.on_tab_create,
             on_tab_change = callbacks.on_tab_change,
             on_tab_delete = callbacks.on_tab_delete,
@@ -113,6 +114,7 @@ function M.get_active_container_config(callbacks)
 end
 
 -- Pool container: mode toggle, search, sort
+-- All visual styling comes from library defaults
 function M.get_pool_container_config(callbacks)
   return {
     header = {
@@ -126,6 +128,7 @@ function M.get_pool_container_config(callbacks)
           spacing_before = 0,
           config = {
             label = "Regions",
+            -- All colors handled by library defaults
             on_click = callbacks.on_mode_toggle,
           },
         },
@@ -143,6 +146,7 @@ function M.get_pool_container_config(callbacks)
           spacing_before = 0,
           config = {
             placeholder = "Search...",
+            -- All colors handled by library defaults
             on_change = callbacks.on_search_changed,
           },
         },
@@ -162,6 +166,7 @@ function M.get_pool_container_config(callbacks)
               { value = "length", label = "Length" },
             },
             enable_mousewheel = true,
+            -- All colors handled by library defaults
             on_change = callbacks.on_sort_changed,
             on_direction_change = callbacks.on_sort_direction_changed,
           },

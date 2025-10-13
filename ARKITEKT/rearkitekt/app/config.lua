@@ -20,6 +20,7 @@ M.defaults = {
   fonts = {
     default        = 13,
     title          = 13,
+    version        = 11,
     family_regular = "Inter_18pt-Regular.ttf",
     family_bold    = "Inter_18pt-SemiBold.ttf",
   },
@@ -37,6 +38,8 @@ M.defaults = {
     text_color      = nil,
     icon_size       = 18,
     icon_spacing    = 8,
+    version_spacing = 6,
+    version_color   = 0x888888FF,
     show_icon       = true,
     enable_maximize = true,
     

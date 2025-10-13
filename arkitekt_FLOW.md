@@ -1,17 +1,18 @@
 # FOLDER FLOW: ARKITEKT
-Generated: 2025-10-13 05:50:47
+Generated: 2025-10-13 15:09:44
 Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
 
 ## Overview
 - **Files**: 120
-- **Total Lines**: 23,728
-- **Public Functions**: 350
+- **Total Lines**: 24,210
+- **Public Functions**: 352
 - **Classes**: 81
 
 ## Files
 
-### ARKITEKT.lua (38 lines)
-  **Requires**: rearkitekt.app.shell, rearkitekt.app.hub
+### ARKITEKT.lua (353 lines)
+  **Modules**: result, conflicts, asset_providers
+  **Requires**: rearkitekt.app.shell, rearkitekt.app.hub, rearkitekt.gui.widgets.package_tiles.grid, rearkitekt.gui.widgets.package_tiles.micromanage, rearkitekt.gui.widgets.panel
 
 ### ARK_ColorPalette.lua (116 lines)
   **Requires**: rearkitekt.app.shell, ColorPalette.app.state, ColorPalette.app.gui, rearkitekt.gui.widgets.overlay.manager, rearkitekt.core.settings
@@ -59,7 +60,7 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
     - `M.draw_length_display(ctx, dl, rect, region, base_color, text_alpha)`
   **Requires**: rearkitekt.gui.draw, rearkitekt.core.colors, rearkitekt.gui.fx.tile_fx, rearkitekt.gui.fx.tile_fx_config, rearkitekt.gui.fx.marching_ants
 
-### button.lua (105 lines)
+### button.lua (119 lines)
   **Modules**: M
   **Exports**:
     - `M.draw(ctx, dl, x, y, width, height, config, state)`
@@ -118,10 +119,10 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
     - `M.override(overrides)`
     - `M.reset()`
 
-### config.lua (233 lines)
+### config.lua (255 lines)
   **Modules**: M
 
-### config.lua (344 lines)
+### config.lua (349 lines)
   **Modules**: M
   **Exports**:
     - `M.get_active_container_config(callbacks)`
@@ -163,7 +164,7 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
     - `M.draw_playback_info(ctx, bridge, x, y, width)`
     - `M.draw_complete_controls(ctx, bridge, x, y, available_width)`
 
-### coordinator.lua (503 lines)
+### coordinator.lua (505 lines)
   **Modules**: M, RegionTiles, playlist_cache, spawned_keys, payload, colors
   **Classes**: RegionTiles, M
   **Exports**:
@@ -264,14 +265,14 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
     - `M.find_external_drop_target(mx, my, items, key_fn, rect_track, is_single_column, grid_bounds)`
     - `M.build_dragged_set(dragged_ids)`
 
-### dropdown.lua (356 lines)
+### dropdown.lua (395 lines)
   **Modules**: M, Dropdown
   **Classes**: Dropdown, M
   **Exports**:
     - `M.new(opts)`
   **Requires**: rearkitekt.gui.widgets.controls.tooltip
 
-### dropdown_field.lua (79 lines)
+### dropdown_field.lua (101 lines)
   **Modules**: M
   **Exports**:
     - `M.draw(ctx, dl, x, y, width, height, config, state)`
@@ -368,13 +369,14 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
 ### init.lua (3 lines)
   **Requires**: rearkitekt.app.chrome.status_bar.widget
 
-### init.lua (36 lines)
+### init.lua (46 lines)
   **Modules**: M
   **Exports**:
     - `M.draw(ctx, dl, x, y, w, h, state, config, rounding)`
+    - `M.draw_elements(ctx, dl, x, y, w, h, state, config)`
   **Requires**: rearkitekt.gui.widgets.panel.header.layout
 
-### init.lua (406 lines)
+### init.lua (403 lines)
   **Modules**: M, result, Panel
   **Classes**: Panel, M
   **Exports**:
@@ -408,7 +410,7 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
     - `M.calculate(avail_w, min_col_w, gap, n_items, origin_x, origin_y, fixed_tile_h)`
     - `M.get_height(rows, tile_h, gap)`
 
-### layout.lua (298 lines)
+### layout.lua (305 lines)
   **Modules**: M, layout, rounding_info, element_config
   **Exports**:
     - `M.draw(ctx, dl, x, y, width, height, state, config)`
@@ -552,7 +554,7 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
   **Exports**:
     - `M.new(opts)`
 
-### search_field.lua (119 lines)
+### search_field.lua (120 lines)
   **Modules**: M
   **Exports**:
     - `M.draw(ctx, dl, x, y, width, height, config, state)`
@@ -701,10 +703,11 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
     - `M.new(opts)`
   **Requires**: rearkitekt.gui.fx.easing
 
-### tab_strip.lua (731 lines)
+### tab_strip.lua (779 lines)
   **Modules**: M, visible_indices, positions
   **Exports**:
     - `M.draw(ctx, dl, x, y, available_width, height, config, state)`
+    - `M.draw_elements(ctx, dl, x, y, available_width, height, config, state)`
     - `M.measure(ctx, config, state)`
   **Requires**: rearkitekt.gui.widgets.controls.context_menu, rearkitekt.gui.widgets.component.chip
 
@@ -875,6 +878,9 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
 ### ARKITEKT.lua
   → rearkitekt.app.shell
   → rearkitekt.app.hub
+  → rearkitekt.gui.widgets.package_tiles.grid
+  → rearkitekt.gui.widgets.package_tiles.micromanage
+  → rearkitekt.gui.widgets.selection_rectangle
 
 ### config.lua
   → rearkitekt.gui.widgets.component.chip
@@ -1156,6 +1162,7 @@ Location: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\ARKITEKT
   → Region_Playlist.widgets.region_tiles.active_grid_factory
   → Region_Playlist.widgets.region_tiles.pool_grid_factory
   → rearkitekt.gui.widgets.grid.grid_bridge
+  → rearkitekt.gui.widgets.panel.config
   → Region_Playlist.app.state
 
 ### coordinator_render.lua
