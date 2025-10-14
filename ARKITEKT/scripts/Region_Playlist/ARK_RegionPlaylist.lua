@@ -44,10 +44,11 @@ addpath(join(REARKITEKT_ROOT, "?/init.lua"))
 
 local Shell = require("rearkitekt.app.shell")
 local Config = require("Region_Playlist.app.config")
-local State = require("Region_Playlist.app.state")
+local AppState = require("Region_Playlist.app.state")
 local GUI = require("Region_Playlist.app.gui")
 local StatusBarConfig = require("Region_Playlist.app.status")
 local Colors = require("rearkitekt.core.colors")
+local State = require("Region_Playlist.core.state")
 
 local hexrgb = Colors.hexrgb
 
@@ -60,10 +61,25 @@ if SettingsOK and type(Settings.new) == "function" then
   if ok then settings = inst end
 end
 
-State.initialize(settings)
+local function S()
+  return State.for_project(0)
+end
 
-local status_bar = StatusBarConfig.create(State, StyleOK and Style)
-local gui = GUI.create(State, Config, settings)
+AppState.initialize(settings)
+
+local active_playlist = AppState.get_active_playlist and AppState.get_active_playlist()
+local initial_active_id = active_playlist and active_playlist.id
+if initial_active_id then S():set('playlists.active_id', initial_active_id) end
+
+if not S():get('ui.selection') then
+  S():set('ui.selection', {
+    active = { keys = {}, last_clicked = nil },
+    pool = { keys = {}, last_clicked = nil },
+  })
+end
+
+local status_bar = StatusBarConfig.create(AppState, StyleOK and Style)
+local gui = GUI.create(AppState, Config, settings)
 
 Shell.run({
   title        = "Region Playlist",

@@ -5,6 +5,7 @@
 local Engine = require("Region_Playlist.engine.core")
 local Playback = require("Region_Playlist.engine.playback")
 local RegionState = require("Region_Playlist.storage.state")
+local StateStore = require("Region_Playlist.core.state")
 local SequenceExpander = require("Region_Playlist.app.sequence_expander")
 
 local M = {}
@@ -21,14 +22,15 @@ end
 function M.create(opts)
   opts = opts or {}
 
-  local saved_settings = RegionState.load_settings(opts.proj or 0)
+  local proj = opts.proj or 0
+  local saved_settings = RegionState.load_settings(proj)
 
   local bridge = {
-    proj = opts.proj or 0,
+    proj = proj,
     controller = nil,
     get_playlist_by_id = opts.get_playlist_by_id,
     get_active_playlist = opts.get_active_playlist,
-    get_active_playlist_id = opts.get_active_playlist_id,
+    _external_get_active_playlist_id = opts.get_active_playlist_id,
     on_repeat_cycle = opts.on_repeat_cycle,
     sequence_cache = {},
     sequence_cache_dirty = true,
@@ -39,7 +41,7 @@ function M.create(opts)
   }
 
   bridge.engine = Engine.new({
-    proj = bridge.proj,
+    proj = proj,
     quantize_mode = saved_settings.quantize_mode or "none",
     follow_playhead = saved_settings.follow_playhead or false,
     transport_override = saved_settings.transport_override or false,
@@ -55,29 +57,47 @@ function M.create(opts)
     on_transition_scheduled = opts.on_transition_scheduled,
   })
 
+  function bridge:get_active_playlist_id()
+    local playlist_id = StateStore.for_project(self.proj or 0):get('playlists.active_id')
+    if playlist_id ~= nil then
+      return playlist_id
+    end
+
+    if self._external_get_active_playlist_id then
+      local external_id = safe_call(self._external_get_active_playlist_id)
+      if external_id ~= nil then
+        return external_id
+      end
+    end
+
+    if self.controller and self.controller.state and self.controller.state.get_active_playlist_id then
+      return safe_call(function()
+        return self.controller.state:get_active_playlist_id()
+      end)
+    end
+
+    return nil
+  end
+
   local function resolve_active_playlist()
+    if bridge.get_playlist_by_id then
+      local playlist_id = bridge:get_active_playlist_id()
+      if playlist_id then
+        local playlist = safe_call(function()
+          return bridge.get_playlist_by_id(playlist_id)
+        end)
+        if playlist then return playlist end
+      end
+    end
+
     local playlist = safe_call(bridge.get_active_playlist)
     if playlist then return playlist end
 
     if bridge.controller and bridge.controller.state and bridge.controller.state.get_active_playlist then
       playlist = safe_call(function()
-        return bridge.controller.state.get_active_playlist()
+        return bridge.controller.state:get_active_playlist()
       end)
       if playlist then return playlist end
-    end
-
-    if bridge.get_active_playlist_id and bridge.get_playlist_by_id then
-      local playlist_id = safe_call(bridge.get_active_playlist_id)
-      if playlist_id then
-        return bridge.get_playlist_by_id(playlist_id)
-      end
-    end
-
-    if bridge.controller and bridge.controller.state and bridge.controller.state.state then
-      local active_id = bridge.controller.state.state.active_playlist
-      if active_id and bridge.get_playlist_by_id then
-        return bridge.get_playlist_by_id(active_id)
-      end
     end
 
     return nil

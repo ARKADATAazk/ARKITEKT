@@ -10,10 +10,69 @@ local TransportContainer = require("rearkitekt.gui.widgets.transport.transport_c
 local Sheet = require("rearkitekt.gui.widgets.overlay.sheet")
 local ChipList = require("rearkitekt.gui.widgets.chip_list.list")
 local Config = require('Region_Playlist.app.config')
+local StateStore = require("Region_Playlist.core.state")
+
+local function S()
+  return StateStore.for_project(0)
+end
+
+local function ensure_selection_struct(selection)
+  selection = selection or {}
+  local active = selection.active or {}
+  local pool = selection.pool or {}
+  selection.active = { keys = active.keys or {}, last_clicked = active.last_clicked }
+  selection.pool = { keys = pool.keys or {}, last_clicked = pool.last_clicked }
+  return selection
+end
+
+local function apply_selection_to_grid(grid, selection_data)
+  if not grid or not grid.selection then
+    return
+  end
+
+  grid.selection:clear()
+
+  local keys = selection_data.keys or {}
+  for i = 1, #keys do
+    grid.selection.selected[keys[i]] = true
+  end
+
+  grid.selection.last_clicked = selection_data.last_clicked
+end
 
 local M = {}
 local GUI = {}
 GUI.__index = GUI
+
+local function get_active_playlist_id(state)
+  local active_id = S():get('playlists.active_id')
+  if active_id ~= nil then
+    return active_id
+  end
+
+  local playlist = state.get_active_playlist and state.get_active_playlist()
+  return playlist and playlist.id or nil
+end
+
+local function set_active_playlist_id(state, playlist_id)
+  if not playlist_id then return end
+  S():set('playlists.active_id', playlist_id)
+  state.set_active_playlist(playlist_id)
+end
+
+local function apply_selection_state(self, selection)
+  selection = ensure_selection_struct(selection)
+  apply_selection_to_grid(self.region_tiles and self.region_tiles.active_grid, selection.active)
+  apply_selection_to_grid(self.region_tiles and self.region_tiles.pool_grid, selection.pool)
+  return selection
+end
+
+local function update_and_apply_selection(self, mutator)
+  local selection = ensure_selection_struct(S():get('ui.selection'))
+  if mutator then mutator(selection) end
+  S():set('ui.selection', selection)
+  return apply_selection_state(self, selection)
+end
 
 function M.create(State, AppConfig, settings)
   local self = setmetatable({
@@ -53,12 +112,10 @@ function M.create(State, AppConfig, settings)
   
   State.state.on_state_restored = function()
     self:refresh_tabs()
-    if self.region_tiles.active_grid and self.region_tiles.active_grid.selection then
-      self.region_tiles.active_grid.selection:clear()
-    end
-    if self.region_tiles.pool_grid and self.region_tiles.pool_grid.selection then
-      self.region_tiles.pool_grid.selection:clear()
-    end
+    update_and_apply_selection(self, function(selection)
+      selection.active = { keys = {}, last_clicked = nil }
+      selection.pool = { keys = {}, last_clicked = nil }
+    end)
   end
   
   State.state.on_repeat_cycle = function(key, current_loop, total_reps)
@@ -83,12 +140,12 @@ function M.create(State, AppConfig, settings)
     allow_pool_reorder = true,
     enable_active_tabs = true,
     tabs = State.get_tabs(),
-    active_tab_id = State.state.active_playlist,
+    active_tab_id = get_active_playlist_id(self.State),
     pool_mode = State.state.pool_mode,
     config = AppConfig.get_region_tiles_config(State.state.layout_mode),
     
     on_playlist_changed = function(new_id)
-      State.set_active_playlist(new_id)
+      set_active_playlist_id(self.State, new_id)
     end,
     
     on_pool_search = function(text)
@@ -113,19 +170,19 @@ function M.create(State, AppConfig, settings)
     end,
     
     on_active_reorder = function(new_order)
-      self.controller:reorder_items(State.state.active_playlist, new_order)
+      self.controller:reorder_items(get_active_playlist_id(self.State), new_order)
     end,
     
     on_active_remove = function(item_key)
-      self.controller:delete_items(State.state.active_playlist, {item_key})
+      self.controller:delete_items(get_active_playlist_id(self.State), {item_key})
     end,
     
     on_active_toggle_enabled = function(item_key, new_state)
-      self.controller:toggle_item_enabled(State.state.active_playlist, item_key, new_state)
+      self.controller:toggle_item_enabled(get_active_playlist_id(self.State), item_key, new_state)
     end,
     
     on_active_delete = function(item_keys)
-      self.controller:delete_items(State.state.active_playlist, item_keys)
+      self.controller:delete_items(get_active_playlist_id(self.State), item_keys)
       for _, key in ipairs(item_keys) do
         State.state.pending_destroy[#State.state.pending_destroy + 1] = key
       end
@@ -135,7 +192,7 @@ function M.create(State, AppConfig, settings)
     end,
     
     on_active_copy = function(dragged_items, target_index)
-      local success, keys = self.controller:copy_items(State.state.active_playlist, dragged_items, target_index)
+      local success, keys = self.controller:copy_items(get_active_playlist_id(self.State), dragged_items, target_index)
       if success and keys then
         for _, key in ipairs(keys) do
           State.state.pending_spawn[#State.state.pending_spawn + 1] = key
@@ -145,12 +202,12 @@ function M.create(State, AppConfig, settings)
     end,
     
     on_pool_to_active = function(rid, insert_index)
-      local success, key = self.controller:add_item(State.state.active_playlist, rid, insert_index)
+      local success, key = self.controller:add_item(get_active_playlist_id(self.State), rid, insert_index)
       return success and key or nil
     end,
     
     on_pool_playlist_to_active = function(playlist_id, insert_index)
-      local success, key = self.controller:add_playlist_item(State.state.active_playlist, playlist_id, insert_index)
+      local success, key = self.controller:add_playlist_item(get_active_playlist_id(self.State), playlist_id, insert_index)
       return success and key or nil
     end,
     
@@ -160,19 +217,19 @@ function M.create(State, AppConfig, settings)
     end,
     
     on_repeat_cycle = function(item_key)
-      self.controller:cycle_repeats(State.state.active_playlist, item_key)
+      self.controller:cycle_repeats(get_active_playlist_id(self.State), item_key)
     end,
     
     on_repeat_adjust = function(keys, delta)
-      self.controller:adjust_repeats(State.state.active_playlist, keys, delta)
+      self.controller:adjust_repeats(get_active_playlist_id(self.State), keys, delta)
     end,
     
     on_repeat_sync = function(keys, target_reps)
-      self.controller:sync_repeats(State.state.active_playlist, keys, target_reps)
+      self.controller:sync_repeats(get_active_playlist_id(self.State), keys, target_reps)
     end,
     
     on_pool_double_click = function(rid)
-      local success, key = self.controller:add_item(State.state.active_playlist, rid)
+      local success, key = self.controller:add_item(get_active_playlist_id(self.State), rid)
       if success and key then
         State.state.pending_spawn[#State.state.pending_spawn + 1] = key
         State.state.pending_select[#State.state.pending_select + 1] = key
@@ -180,7 +237,7 @@ function M.create(State, AppConfig, settings)
     end,
     
     on_pool_playlist_double_click = function(playlist_id)
-      local active_playlist_id = State.state.active_playlist
+      local active_playlist_id = get_active_playlist_id(self.State)
       
       if State.detect_circular_reference then
         local circular, path = State.detect_circular_reference(active_playlist_id, playlist_id)
@@ -192,7 +249,7 @@ function M.create(State, AppConfig, settings)
         end
       end
       
-      local success, key = self.controller:add_playlist_item(State.state.active_playlist, playlist_id)
+      local success, key = self.controller:add_playlist_item(get_active_playlist_id(self.State), playlist_id)
       if success and key then
         State.state.pending_spawn[#State.state.pending_spawn + 1] = key
         State.state.pending_select[#State.state.pending_select + 1] = key
@@ -207,15 +264,17 @@ function M.create(State, AppConfig, settings)
   self.region_tiles:set_pool_sort_direction(State.state.sort_direction)
   self.region_tiles:set_app_bridge(State.state.bridge)
   self.region_tiles:set_pool_mode(State.state.pool_mode)
-  
+
   State.state.active_search_filter = ""
-  
+
+  apply_selection_state(self, S():get('ui.selection'))
+
   return self
 end
 
 
 function GUI:refresh_tabs()
-  self.region_tiles:set_tabs(self.State.get_tabs(), self.State.state.active_playlist)
+  self.region_tiles:set_tabs(self.State.get_tabs(), get_active_playlist_id(self.State))
 end
 
 function GUI:draw_overflow_modal(ctx, window)
@@ -238,7 +297,7 @@ function GUI:draw_overflow_modal(ctx, window)
     })
   end
   
-  local active_id = self.State.state.active_playlist
+  local active_id = get_active_playlist_id(self.State)
   local selected_ids = {}
   selected_ids[active_id] = true
   
@@ -287,7 +346,7 @@ function GUI:draw_overflow_modal(ctx, window)
       })
       
       if clicked_tab then
-        self.State.set_active_playlist(clicked_tab)
+        set_active_playlist_id(self.State, clicked_tab)
         ImGui.CloseCurrentPopup(ctx)
         self.overflow_modal_is_open = false
         self.region_tiles.active_container:close_overflow_modal()
@@ -360,7 +419,7 @@ function GUI:draw_overflow_modal(ctx, window)
           })
           
           if clicked_tab then
-            self.State.set_active_playlist(clicked_tab)
+            set_active_playlist_id(self.State, clicked_tab)
             window.overlay:pop('overflow-tabs')
             self.overflow_modal_is_open = false
             self.region_tiles.active_container:close_overflow_modal()
@@ -744,27 +803,24 @@ function GUI:draw(ctx, window)
   end
   
   if #self.State.state.pending_select > 0 then
-    if self.region_tiles.pool_grid and self.region_tiles.pool_grid.selection then
-      self.region_tiles.pool_grid.selection:clear()
-    end
-    if self.region_tiles.active_grid and self.region_tiles.active_grid.selection then
-      self.region_tiles.active_grid.selection:clear()
-    end
-    
-    for _, key in ipairs(self.State.state.pending_select) do
-      if self.region_tiles.active_grid.selection then
-        self.region_tiles.active_grid.selection.selected[key] = true
-      end
-    end
-    
-    if self.region_tiles.active_grid.selection then
-      self.region_tiles.active_grid.selection.last_clicked = self.State.state.pending_select[#self.State.state.pending_select]
-    end
-    
-    if self.region_tiles.active_grid.behaviors and self.region_tiles.active_grid.behaviors.on_select and self.region_tiles.active_grid.selection then
+    local pending_keys = { table.unpack(self.State.state.pending_select) }
+    local last_clicked = pending_keys[#pending_keys]
+
+    update_and_apply_selection(self, function(selection)
+      selection.pool = { keys = {}, last_clicked = nil }
+      selection.active = {
+        keys = pending_keys,
+        last_clicked = last_clicked,
+      }
+    end)
+
+    if self.region_tiles.active_grid
+       and self.region_tiles.active_grid.behaviors
+       and self.region_tiles.active_grid.behaviors.on_select
+       and self.region_tiles.active_grid.selection then
       self.region_tiles.active_grid.behaviors.on_select(self.region_tiles.active_grid.selection:selected_keys())
     end
-    
+
     self.State.state.pending_select = {}
   end
   
