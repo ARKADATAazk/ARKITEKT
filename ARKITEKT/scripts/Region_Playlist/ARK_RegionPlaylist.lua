@@ -81,11 +81,10 @@ end
 local status_bar = StatusBarConfig.create(AppState, StyleOK and Style)
 local gui = GUI.create(AppState, Config, settings)
 
-Shell.run({
+local shell_options = {
   title        = "Region Playlist",
   version      = "v0.1.0",
   version_color = hexrgb("#4fffdfad"),
-  draw         = function(ctx, shell_state) gui:draw(ctx, shell_state.window) end,
   settings     = settings,
   style        = StyleOK and Style or nil,
   initial_pos  = { x = 120, y = 120 },
@@ -94,4 +93,26 @@ Shell.run({
   icon_size    = 18,
   min_size     = { w = 700, h = 500 },
   status_bar   = status_bar,
-})
+}
+
+local USE_VIEWS = true
+
+if USE_VIEWS then
+  local Main = require('Region_Playlist.views.main')
+  local main_view = Main.new({
+    gui = gui,
+    status_bar = status_bar,
+  })
+
+  shell_options.status_bar = nil
+  shell_options.draw = function(ctx, shell_state)
+    return main_view:draw(ctx, shell_state and shell_state.window or nil)
+  end
+else
+  shell_options.status_bar = status_bar
+  shell_options.draw = function(ctx, shell_state)
+    return gui:draw(ctx, shell_state and shell_state.window or nil)
+  end
+end
+
+Shell.run(shell_options)
