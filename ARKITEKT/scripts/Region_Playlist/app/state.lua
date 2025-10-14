@@ -10,12 +10,14 @@ sync_playlist_to_engine() step and guarantees nested playlists expand exactly
 once per invalidation.
 ]]
 
-local CoordinatorBridge = require("Region_Playlist.engine.coordinator_bridge")
 local RegionState = require("Region_Playlist.storage.state")
 local Persistence = require("Region_Playlist.storage.persistence")
 local UndoManager = require("rearkitekt.core.undo_manager")
 local UndoBridge = require("Region_Playlist.storage.undo_bridge")
 local Colors = require("rearkitekt.core.colors")
+local Events = require("rearkitekt.core.events")
+local Sequencer = require("Region_Playlist.playlists.sequencer")
+local PlaybackCoordinator = require("Region_Playlist.playback.coordinator")
 
 local M = {}
 
@@ -71,23 +73,33 @@ function M.initialize(settings)
   M.load_project_state()
   M.rebuild_dependency_graph()
   
-  M.state.bridge = CoordinatorBridge.create({
-    proj = 0,
-    on_region_change = function(rid, region, pointer) end,
-    on_playback_start = function(rid) end,
-    on_playback_stop = function() end,
-    on_transition_scheduled = function(rid, region_end, transition_time) end,
-    on_repeat_cycle = function(key, current_loop, total_reps)
-      if M.state.on_repeat_cycle then
-        M.state.on_repeat_cycle(key, current_loop, total_reps)
-      end
-    end,
-    get_playlist_by_id = M.get_playlist_by_id,
-    get_active_playlist = M.get_active_playlist,
-    get_active_playlist_id = function()
-      return M.state.active_playlist
-    end,
-  })
+  do
+    local events = Events.new()
+    local sequencer = Sequencer.new({
+      proj = 0,
+      get_playlist_by_id = M.get_playlist_by_id,
+    })
+
+    M.state.bridge = PlaybackCoordinator.new({
+      proj = 0,
+      sequencer = sequencer,
+      events = events,
+      on_region_change = function(rid, region, pointer) end,
+      on_playback_start = function(rid) end,
+      on_playback_stop = function() end,
+      on_transition_scheduled = function(rid, region_end, transition_time) end,
+      on_repeat_cycle = function(key, current_loop, total_reps)
+        if M.state.on_repeat_cycle then
+          M.state.on_repeat_cycle(key, current_loop, total_reps)
+        end
+      end,
+      get_playlist_by_id = M.get_playlist_by_id,
+      get_active_playlist = M.get_active_playlist,
+      get_active_playlist_id = function()
+        return M.state.active_playlist
+      end,
+    })
+  end
   
   M.state.undo_manager = UndoManager.new({ max_history = 50 })
   
