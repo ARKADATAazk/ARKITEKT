@@ -201,6 +201,25 @@ function Coordinator:update()
   end
 end
 
+function Coordinator:get_regions_for_ui()
+  local cache = {}
+  local state = self.engine and self.engine.state or nil
+  local region_cache = state and state.region_cache or nil
+  if not region_cache then
+    return cache
+  end
+  for rid, region in pairs(region_cache) do
+    cache[#cache + 1] = {
+      rid = rid,
+      name = region.name,
+      start = region.start,
+      ["end"] = region["end"],
+      color = region.color,
+    }
+  end
+  return cache
+end
+
 function Coordinator:get_state()
   return self.engine:get_state()
 end
