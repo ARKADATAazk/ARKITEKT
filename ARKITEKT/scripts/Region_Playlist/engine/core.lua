@@ -2,7 +2,7 @@
 -- ReArkitekt/features/region_playlist/engine/engine.lua
 -- Refactored: State, Transport, and Transitions extracted
 
-local EngineState = require('Region_Playlist.engine.state_refactored')
+local EngineState = require('Region_Playlist.engine.state')
 local EngineTransport = require('Region_Playlist.engine.transport')
 local EngineTransitions = require('Region_Playlist.engine.transitions')
 local EngineQuantize = require('Region_Playlist.engine.quantize')

@@ -1,10 +1,12 @@
 -- @noindex
 -- Region_Playlist/app/shortcuts.lua
--- Keyboard shortcut handling
+-- Keyboard shortcut handling using sequence-aware bridge helpers
 
 local ImGui = require 'imgui' '0.10'
 
 local M = {}
+
+package.loaded["Region_Playlist.app.shortcuts"] = M
 
 function M.handle_keyboard_shortcuts(ctx, state, region_tiles)
   local ctrl = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
@@ -35,12 +37,7 @@ function M.handle_keyboard_shortcuts(ctx, state, region_tiles)
       if region_tiles.active_grid and region_tiles.active_grid.selection then
         local selected = region_tiles.active_grid.selection:selected_keys()
         if #selected > 0 then
-          local State = require("Region_Playlist.app.state")
-          local pl = State.get_active_playlist()
-          local engine_index = state.bridge:item_key_to_engine_index(pl.items, selected[1])
-          if engine_index then
-            state.bridge.engine:set_playlist_pointer(engine_index)  -- CORRECT
-          end
+          state.bridge:set_position_by_key(selected[1])
         end
       end
       

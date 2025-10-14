@@ -1,11 +1,13 @@
 -- @noindex
--- ReArkitekt/features/region_playlist/playlist_controller.lua
+-- Region_Playlist/app/controller.lua
 -- Centralized playlist operations with automatic undo/save/sync
--- NO STALE METADATA + Key collision prevention
+-- Relies on bridge invalidate logic instead of manual engine sync
 
 local M = {}
 local Controller = {}
 Controller.__index = Controller
+
+package.loaded["Region_Playlist.app.controller"] = M
 
 local key_counter = 0
 
@@ -21,7 +23,9 @@ end
 
 function Controller:_commit()
   self.state.persist()
-  self.state.sync_playlist_to_engine()
+  if self.state.state and self.state.state.bridge then
+    self.state.state.bridge:get_sequence()
+  end
 end
 
 function Controller:_with_undo(fn)

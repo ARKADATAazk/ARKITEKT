@@ -1,6 +1,14 @@
 -- @noindex
 -- Region_Playlist/app/state.lua
--- FIXED: Detects project switches and reloads playlist data
+-- Single-source-of-truth app state (playlist expansion handled lazily)
+--[[
+The app layer is now the authoritative owner of playlist structure. Engine-side
+modules request a flattened playback sequence through the coordinator bridge
+whenever they advance, so the UI just needs to mark the cache dirty after any
+mutation. This keeps App ↔ Engine state synchronized without a manual
+sync_playlist_to_engine() step and guarantees nested playlists expand exactly
+once per invalidation.
+]]
 
 local CoordinatorBridge = require("Region_Playlist.engine.coordinator_bridge")
 local RegionState = require("Region_Playlist.storage.state")
@@ -9,6 +17,8 @@ local UndoBridge = require("Region_Playlist.storage.undo_bridge")
 local Colors = require("rearkitekt.core.colors")
 
 local M = {}
+
+package.loaded["Region_Playlist.app.state"] = M
 
 M.state = {
   active_playlist = nil,
@@ -72,12 +82,17 @@ function M.initialize(settings)
       end
     end,
     get_playlist_by_id = M.get_playlist_by_id,
+    get_active_playlist = M.get_active_playlist,
+    get_active_playlist_id = function()
+      return M.state.active_playlist
+    end,
   })
   
   M.state.undo_manager = UndoManager.new({ max_history = 50 })
   
   M.refresh_regions()
-  M.sync_playlist_to_engine()
+  M.state.bridge:invalidate_sequence()
+  M.state.bridge:get_sequence()
   M.capture_undo_snapshot()
 end
 
@@ -108,7 +123,8 @@ function M.reload_project_data()
   M.load_project_state()
   M.rebuild_dependency_graph()
   M.refresh_regions()
-  M.sync_playlist_to_engine()
+  M.state.bridge:invalidate_sequence()
+  M.state.bridge:get_sequence()
   
   M.state.undo_manager = UndoManager.new({ max_history = 50 })
   
@@ -161,15 +177,13 @@ function M.refresh_regions()
   end
 end
 
-function M.sync_playlist_to_engine()
-  local pl = M.get_active_playlist()
-  M.state.bridge:sync_from_ui_playlist(pl.items)
-end
-
 function M.persist()
   RegionState.save_playlists(M.playlists, 0)
   RegionState.save_active_playlist(M.state.active_playlist, 0)
   M.mark_graph_dirty()
+  if M.state.bridge then
+    M.state.bridge:invalidate_sequence()
+  end
 end
 
 function M.persist_ui_prefs()
@@ -209,7 +223,9 @@ function M.restore_snapshot(snapshot)
   
   M.persist()
   M.clear_pending()
-  M.sync_playlist_to_engine()
+  if M.state.bridge then
+    M.state.bridge:get_sequence()
+  end
   
   if M.state.on_state_restored then
     M.state.on_state_restored()
@@ -247,7 +263,9 @@ end
 function M.set_active_playlist(playlist_id)
   M.state.active_playlist = playlist_id
   M.persist()
-  M.sync_playlist_to_engine()
+  if M.state.bridge then
+    M.state.bridge:get_sequence()
+  end
 end
 
 local function compare_by_color(a, b)
@@ -589,7 +607,9 @@ function M.update()
       M.cleanup_deleted_regions()
     end
     
-    M.sync_playlist_to_engine()
+    if M.state.bridge then
+      M.state.bridge:get_sequence()
+    end
     M.state.last_project_state = current_project_state
   end
 end

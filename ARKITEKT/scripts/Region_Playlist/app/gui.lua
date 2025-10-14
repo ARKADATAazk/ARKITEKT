@@ -4,8 +4,8 @@
 local ImGui = require 'imgui' '0.10'
 local RegionTiles = require("Region_Playlist.widgets.region_tiles.coordinator")
 local Colors = require("rearkitekt.core.colors")
-local Shortcuts = require("Region_Playlist.app.shortcuts_refactored")
-local PlaylistController = require("Region_Playlist.app.controller_refactored")
+local Shortcuts = require("Region_Playlist.app.shortcuts")
+local PlaylistController = require("Region_Playlist.app.controller")
 local TransportContainer = require("rearkitekt.gui.widgets.transport.transport_container")
 local Sheet = require("rearkitekt.gui.widgets.overlay.sheet")
 local ChipList = require("rearkitekt.gui.widgets.chip_list.list")
