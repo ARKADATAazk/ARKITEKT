@@ -12,6 +12,7 @@ once per invalidation.
 
 local CoordinatorBridge = require("Region_Playlist.engine.coordinator_bridge")
 local RegionState = require("Region_Playlist.storage.state")
+local Persistence = require("Region_Playlist.storage.persistence")
 local UndoManager = require("rearkitekt.core.undo_manager")
 local UndoBridge = require("Region_Playlist.storage.undo_bridge")
 local Colors = require("rearkitekt.core.colors")
@@ -97,7 +98,7 @@ function M.initialize(settings)
 end
 
 function M.load_project_state()
-  M.playlists = RegionState.load_playlists(0)
+  M.playlists = Persistence.load_playlists(0)
   
   if #M.playlists == 0 then
     M.playlists = {
@@ -108,10 +109,10 @@ function M.load_project_state()
         chip_color = RegionState.generate_chip_color(),
       }
     }
-    RegionState.save_playlists(M.playlists, 0)
+    Persistence.save_playlists(M.playlists, 0)
   end
   
-  local saved_active = RegionState.load_active_playlist(0)
+  local saved_active = Persistence.load_active_playlist(0)
   M.state.active_playlist = saved_active or M.playlists[1].id
 end
 
@@ -178,8 +179,8 @@ function M.refresh_regions()
 end
 
 function M.persist()
-  RegionState.save_playlists(M.playlists, 0)
-  RegionState.save_active_playlist(M.state.active_playlist, 0)
+  Persistence.save_playlists(M.playlists, 0)
+  Persistence.save_active_playlist(M.state.active_playlist, 0)
   M.mark_graph_dirty()
   if M.state.bridge then
     M.state.bridge:invalidate_sequence()

@@ -17,11 +17,70 @@ local GridBridge = require('rearkitekt.gui.widgets.grid.grid_bridge')
 local TilesContainer = require('rearkitekt.gui.widgets.panel')
 local PanelConfig = require('rearkitekt.gui.widgets.panel.config')
 local State = require("Region_Playlist.app.state")
+local StateStore = require("Region_Playlist.core.state")
 
 local M = {}
 
 local RegionTiles = {}
 RegionTiles.__index = RegionTiles
+
+local function S()
+  return StateStore.for_project(0)
+end
+
+local function ensure_selection_struct(selection)
+  selection = selection or {}
+  local active = selection.active or {}
+  local pool = selection.pool or {}
+  selection.active = { keys = active.keys or {}, last_clicked = active.last_clicked }
+  selection.pool = { keys = pool.keys or {}, last_clicked = pool.last_clicked }
+  return selection
+end
+
+local function apply_selection_to_grid(grid, selection_data)
+  if not grid or not grid.selection then
+    return
+  end
+
+  grid.selection:clear()
+
+  local keys = selection_data.keys or {}
+  for i = 1, #keys do
+    grid.selection.selected[keys[i]] = true
+  end
+
+  grid.selection.last_clicked = selection_data.last_clicked
+end
+
+local function get_active_playlist_id()
+  local active_id = S():get('playlists.active_id')
+  if active_id ~= nil then
+    return active_id
+  end
+
+  local playlist = State.get_active_playlist and State.get_active_playlist()
+  return playlist and playlist.id or nil
+end
+
+local function set_active_playlist_id(playlist_id)
+  if not playlist_id then return end
+  S():set('playlists.active_id', playlist_id)
+  State.set_active_playlist(playlist_id)
+end
+
+local function apply_selection_state(rt, selection)
+  selection = ensure_selection_struct(selection)
+  apply_selection_to_grid(rt.active_grid, selection.active)
+  apply_selection_to_grid(rt.pool_grid, selection.pool)
+  return selection
+end
+
+local function update_and_apply_selection(rt, mutator)
+  local selection = ensure_selection_struct(S():get('ui.selection'))
+  if mutator then mutator(selection) end
+  S():set('ui.selection', selection)
+  return apply_selection_state(rt, selection)
+end
 
 local playlist_cache = {}
 local cache_frame_time = 0
@@ -126,12 +185,12 @@ function M.create(opts)
     on_tab_create = function()
       if rt.controller then
         rt.controller:create_playlist()
-        rt.active_container:set_tabs(State.get_tabs(), State.state.active_playlist)
+        rt.active_container:set_tabs(State.get_tabs(), get_active_playlist_id())
       end
     end,
     
     on_tab_change = function(id)
-      State.set_active_playlist(id)
+      set_active_playlist_id(id)
       rt.active_container:set_active_tab_id(id)
     end,
     
@@ -143,7 +202,7 @@ function M.create(opts)
     
     on_tab_delete = function(id)
       if rt.controller and rt.controller:delete_playlist(id) then
-        rt.active_container:set_tabs(State.get_tabs(), State.state.active_playlist)
+        rt.active_container:set_tabs(State.get_tabs(), get_active_playlist_id())
       end
     end,
     
@@ -198,7 +257,9 @@ function M.create(opts)
   
   -- Initialize pool state
   rt.pool_container.current_mode = opts.pool_mode or "regions"
-  
+
+  apply_selection_state(rt, S():get('ui.selection'))
+
   rt.bridge = GridBridge.new({
     copy_mode_detector = function(source, target, payload)
       if source == 'pool' and target == 'active' then
@@ -263,26 +324,17 @@ function M.create(opts)
         end
         
         if #spawned_keys > 0 then
-          if rt.pool_grid and rt.pool_grid.selection then
-            rt.pool_grid.selection:clear()
-          end
-          if rt.active_grid and rt.active_grid.selection then
-            rt.active_grid.selection:clear()
-          end
-          
           rt.active_grid:mark_spawned(spawned_keys)
-          
-          for _, key in ipairs(spawned_keys) do
-            if rt.active_grid.selection then
-              rt.active_grid.selection.selected[key] = true
-            end
-          end
-          
-          if rt.active_grid.selection then
-            rt.active_grid.selection.last_clicked = spawned_keys[#spawned_keys]
-          end
-          
-          if rt.active_grid.behaviors and rt.active_grid.behaviors.on_select and rt.active_grid.selection then
+
+          update_and_apply_selection(rt, function(selection)
+            selection.pool = { keys = {}, last_clicked = nil }
+            selection.active = {
+              keys = spawned_keys,
+              last_clicked = spawned_keys[#spawned_keys],
+            }
+          end)
+
+          if rt.active_grid and rt.active_grid.behaviors and rt.active_grid.behaviors.on_select and rt.active_grid.selection then
             rt.active_grid.behaviors.on_select(rt.active_grid.selection:selected_keys())
           end
         end
