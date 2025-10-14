@@ -44,7 +44,7 @@ addpath(join(REARKITEKT_ROOT, "?/init.lua"))
 
 local Shell = require("rearkitekt.app.shell")
 local Config = require("Region_Playlist.app.config")
-local State = require("Region_Playlist.app.state")
+local State = require("Region_Playlist.app.state_refactored")
 local GUI = require("Region_Playlist.app.gui")
 local StatusBarConfig = require("Region_Playlist.app.status")
 local Colors = require("rearkitekt.core.colors")

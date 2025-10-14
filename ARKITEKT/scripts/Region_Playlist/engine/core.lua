@@ -2,7 +2,7 @@
 -- ReArkitekt/features/region_playlist/engine/engine.lua
 -- Refactored: State, Transport, and Transitions extracted
 
-local EngineState = require('Region_Playlist.engine.state')
+local EngineState = require('Region_Playlist.engine.state_refactored')
 local EngineTransport = require('Region_Playlist.engine.transport')
 local EngineTransitions = require('Region_Playlist.engine.transitions')
 local EngineQuantize = require('Region_Playlist.engine.quantize')
@@ -55,6 +55,22 @@ end
 
 function Engine:set_order(new_order)
   self.state:set_order(new_order)
+end
+
+function Engine:set_sequence(sequence)
+  if self.state.set_sequence then
+    self.state:set_sequence(sequence or {})
+  else
+    local order = {}
+    for _, entry in ipairs(sequence or {}) do
+      order[#order + 1] = {
+        rid = entry.rid,
+        reps = entry.total_loops or 1,
+        key = entry.item_key,
+      }
+    end
+    self:set_order(order)
+  end
 end
 
 function Engine:get_current_rid()
@@ -147,6 +163,11 @@ end
 
 function Engine:get_state()
   local state_snapshot = self.state:get_state_snapshot()
+  local current_loop, total_loops = 1, 1
+  if self.state.get_current_loop_info then
+    current_loop, total_loops = self.state:get_current_loop_info()
+  end
+
   return {
     proj = self.proj,
     region_cache = state_snapshot.region_cache,
@@ -161,6 +182,11 @@ function Engine:get_state()
     _playlist_mode = self.transport._playlist_mode,
     current_idx = state_snapshot.current_idx,
     next_idx = state_snapshot.next_idx,
+    sequence_length = state_snapshot.sequence_length,
+    sequence_version = state_snapshot.sequence_version,
+    current_item_key = self.state.get_current_item_key and self.state:get_current_item_key() or nil,
+    current_loop = current_loop,
+    total_loops = total_loops,
   }
 end
 
