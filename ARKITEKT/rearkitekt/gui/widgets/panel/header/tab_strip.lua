@@ -1,6 +1,6 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/panel/header/tab_strip.lua
--- Clean, modular tab strip with integrated design
+-- Clean, modular tab strip with improved animation control
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.9'
@@ -51,17 +51,36 @@ local function calculate_tab_width(ctx, label, config, has_chip)
   return math.min(max_width, math.max(min_width, text_w + padding_x * 2 + chip_width))
 end
 
-local function init_tab_positions(state, tabs)
+local function init_tab_positions(state, tabs, start_x, ctx, config)
   if not state.tab_positions then
     state.tab_positions = {}
   end
   
-  for _, tab in ipairs(tabs) do
+  if not state.tab_animation_enabled then
+    state.tab_animation_enabled = {}
+  end
+  
+  local cursor_x = start_x
+  local spacing = config.spacing or 0
+  
+  for i, tab in ipairs(tabs) do
     if not state.tab_positions[tab.id] then
+      local has_chip = tab.chip_color ~= nil
+      local tab_width = calculate_tab_width(ctx, tab.label or "Tab", config, has_chip)
+      
       state.tab_positions[tab.id] = {
-        current_x = 0,
-        target_x = 0,
+        current_x = cursor_x,
+        target_x = cursor_x,
       }
+      
+      state.tab_animation_enabled[tab.id] = false
+      
+      local effective_spacing = spacing
+      if i < #tabs and spacing == 0 then
+        effective_spacing = -1
+      end
+      
+      cursor_x = cursor_x + tab_width + effective_spacing
     end
   end
 end
@@ -79,14 +98,26 @@ local function update_tab_positions(ctx, state, config, tabs, start_x)
     if not pos then
       pos = { current_x = cursor_x, target_x = cursor_x }
       state.tab_positions[tab.id] = pos
+      state.tab_animation_enabled[tab.id] = false
     end
     
-    pos.target_x = cursor_x
+    local new_target = cursor_x
     
-    local diff = pos.target_x - pos.current_x
-    if math.abs(diff) > 0.5 then
-      local move = diff * TAB_SLIDE_SPEED * dt
-      pos.current_x = pos.current_x + move
+    if math.abs(new_target - pos.target_x) > 0.5 then
+      state.tab_animation_enabled[tab.id] = true
+    end
+    
+    pos.target_x = new_target
+    
+    if state.tab_animation_enabled[tab.id] then
+      local diff = pos.target_x - pos.current_x
+      if math.abs(diff) > 0.5 then
+        local move = diff * TAB_SLIDE_SPEED * dt
+        pos.current_x = pos.current_x + move
+      else
+        pos.current_x = pos.target_x
+        state.tab_animation_enabled[tab.id] = false
+      end
     else
       pos.current_x = pos.target_x
     end
@@ -97,6 +128,19 @@ local function update_tab_positions(ctx, state, config, tabs, start_x)
     end
     
     cursor_x = cursor_x + tab_width + effective_spacing
+  end
+end
+
+local function enable_animation_for_affected_tabs(state, tabs, affected_index)
+  if not state.tab_animation_enabled then
+    state.tab_animation_enabled = {}
+  end
+  
+  for i = affected_index, #tabs do
+    local tab = tabs[i]
+    if tab then
+      state.tab_animation_enabled[tab.id] = true
+    end
   end
 end
 
@@ -475,6 +519,16 @@ local function handle_drag_reorder(ctx, state, tabs, config, tabs_start_x)
   if target_index ~= state.dragging_tab.index then
     local dragged_tab_data = table.remove(tabs, state.dragging_tab.index)
     table.insert(tabs, target_index, dragged_tab_data)
+    
+    local min_affected = math.min(state.dragging_tab.index, target_index)
+    local max_affected = math.max(state.dragging_tab.index, target_index)
+    
+    for i = min_affected, max_affected do
+      if tabs[i] then
+        state.tab_animation_enabled[tabs[i].id] = true
+      end
+    end
+    
     state.dragging_tab.index = target_index
   end
 end
@@ -512,11 +566,18 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     animator:update()
   end
 
-  init_tab_positions(state, tabs)
-
   local plus_cfg = config.plus_button or {}
   local plus_width = plus_cfg.width or 23
   local spacing = config.spacing or 0
+
+  local tabs_start_x = x + plus_width
+  if spacing > 0 then
+    tabs_start_x = tabs_start_x + spacing
+  else
+    tabs_start_x = tabs_start_x - 1
+  end
+
+  init_tab_positions(state, tabs, tabs_start_x, ctx, config)
 
   local tabs_available_width_no_overflow = available_width - plus_width
   if spacing > 0 then
@@ -546,13 +607,6 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     visible_indices, overflow_count, tabs_width = calculate_visible_tabs(
       ctx, tabs, config, tabs_available_width_with_overflow
     )
-  end
-  
-  local tabs_start_x = x + plus_width
-  if spacing > 0 then
-    tabs_start_x = tabs_start_x + spacing
-  else
-    tabs_start_x = tabs_start_x - 1
   end
   
   local tabs_total_width = tabs_width
@@ -664,6 +718,13 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   end
 
   if id_to_delete and #tabs > 1 then
+    for i, tab in ipairs(tabs) do
+      if tab.id == id_to_delete then
+        enable_animation_for_affected_tabs(state, tabs, i + 1)
+        break
+      end
+    end
+    
     if animator then
       animator:destroy(id_to_delete)
       state.pending_delete_id = id_to_delete

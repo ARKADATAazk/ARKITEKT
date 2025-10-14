@@ -30,6 +30,7 @@ function M.create(State, AppConfig, settings)
     },
     quantize_lookahead = Config.QUANTIZE.default_lookahead,
     overflow_modal_search = "",
+    overflow_modal_is_open = false,  -- ADD THIS LINE
   }, GUI)
   
   self.layout_button_animator = require('rearkitekt.gui.fx.tile_motion').new(Config.ANIMATION.HOVER_SPEED)
@@ -212,13 +213,18 @@ function M.create(State, AppConfig, settings)
   return self
 end
 
+
 function GUI:refresh_tabs()
   self.region_tiles:set_tabs(self.State.get_tabs(), self.State.state.active_playlist)
 end
 
 function GUI:draw_overflow_modal(ctx, window)
-  if not self.region_tiles.active_container or not self.region_tiles.active_container:is_overflow_visible() then 
-    return 
+  local should_be_visible = self.region_tiles.active_container and 
+                           self.region_tiles.active_container:is_overflow_visible()
+  
+  if not should_be_visible then
+    self.overflow_modal_is_open = false
+    return
   end
   
   local all_tabs = self.State.get_tabs()
@@ -236,134 +242,155 @@ function GUI:draw_overflow_modal(ctx, window)
   local selected_ids = {}
   selected_ids[active_id] = true
   
-  -- Fallback: Use simple popup if no overlay system
   if not window or not window.overlay then
-    ImGui.OpenPopup(ctx, "##overflow_tabs_popup")
+    -- Fallback: Use simple popup if no overlay system
+    if not self.overflow_modal_is_open then
+      ImGui.OpenPopup(ctx, "##overflow_tabs_popup")
+      self.overflow_modal_is_open = true
+    end
     
     ImGui.SetNextWindowSize(ctx, 600, 500, ImGui.Cond_FirstUseEver)
     
-    if ImGui.BeginPopupModal(ctx, "##overflow_tabs_popup", true, ImGui.WindowFlags_NoTitleBar) then
-      ImGui.Text(ctx, "All Playlists:")
-      ImGui.Separator(ctx)
-      ImGui.Dummy(ctx, 0, 8)
+    local visible = ImGui.BeginPopupModal(ctx, "##overflow_tabs_popup", true, ImGui.WindowFlags_NoTitleBar)
+    
+    if not visible then
+      self.overflow_modal_is_open = false
+      self.region_tiles.active_container:close_overflow_modal()
+      return
+    end
+    
+    ImGui.Text(ctx, "All Playlists:")
+    ImGui.Separator(ctx)
+    ImGui.Dummy(ctx, 0, 8)
+    
+    ImGui.SetNextItemWidth(ctx, -1)
+    local changed, text = ImGui.InputTextWithHint(ctx, "##tab_search", "Search playlists...", self.overflow_modal_search)
+    if changed then 
+      self.overflow_modal_search = text 
+    end
+    
+    ImGui.Dummy(ctx, 0, 8)
+    
+    if ImGui.BeginChild(ctx, "##tab_list", 0, -40) then
+      local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
+        selected_ids = selected_ids,
+        search_text = self.overflow_modal_search,
+        use_dot_style = true,
+        bg_color = 0x252530FF,
+        dot_size = 7,
+        dot_spacing = 7,
+        rounding = 5,
+        padding_h = 12,
+        column_width = 200,
+        column_spacing = 16,
+        item_spacing = 4,
+      })
       
-      ImGui.SetNextItemWidth(ctx, -1)
-      local changed, text = ImGui.InputTextWithHint(ctx, "##tab_search", "Search playlists...", self.overflow_modal_search)
-      if changed then 
-        self.overflow_modal_search = text 
-      end
-      
-      ImGui.Dummy(ctx, 0, 8)
-      
-      if ImGui.BeginChild(ctx, "##tab_list", 0, -40) then
-        local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
-          selected_ids = selected_ids,
-          search_text = self.overflow_modal_search,
-          use_dot_style = true,
-          bg_color = 0x252530FF,
-          dot_size = 7,
-          dot_spacing = 7,
-          rounding = 5,
-          padding_h = 12,
-          column_width = 200,
-          column_spacing = 16,
-          item_spacing = 4,
-        })
-        
-        if clicked_tab then
-          self.State.set_active_playlist(clicked_tab)
-          ImGui.CloseCurrentPopup(ctx)
-          self.region_tiles.active_container:close_overflow_modal()
-        end
-      end
-      ImGui.EndChild(ctx)
-      
-      ImGui.Separator(ctx)
-      ImGui.Dummy(ctx, 0, 4)
-      
-      local button_w = 100
-      local avail_w = ImGui.GetContentRegionAvail(ctx)
-      ImGui.SetCursorPosX(ctx, (avail_w - button_w) * 0.5)
-      
-      if ImGui.Button(ctx, "Close", button_w, 0) then
+      if clicked_tab then
+        self.State.set_active_playlist(clicked_tab)
         ImGui.CloseCurrentPopup(ctx)
+        self.overflow_modal_is_open = false
         self.region_tiles.active_container:close_overflow_modal()
       end
-      
-      ImGui.EndPopup(ctx)
-    else
+    end
+    ImGui.EndChild(ctx)
+    
+    ImGui.Separator(ctx)
+    ImGui.Dummy(ctx, 0, 4)
+    
+    local button_w = 100
+    local avail_w = ImGui.GetContentRegionAvail(ctx)
+    ImGui.SetCursorPosX(ctx, (avail_w - button_w) * 0.5)
+    
+    if ImGui.Button(ctx, "Close", button_w, 0) then
+      ImGui.CloseCurrentPopup(ctx)
+      self.overflow_modal_is_open = false
       self.region_tiles.active_container:close_overflow_modal()
     end
+    
+    ImGui.EndPopup(ctx)
     
     return
   end
   
-  -- Original overlay system path
-  window.overlay:push({
-    id = 'overflow-tabs',
-    close_on_scrim = true,
-    esc_to_close = true,
-    render = function(ctx, alpha, bounds)
-      Sheet.render(ctx, alpha, bounds, function(ctx, w, h, a)
-        local padding_h = 16
-        
-        ImGui.SetCursorPos(ctx, padding_h, 16)
-        ImGui.Text(ctx, "All Playlists:")
-        ImGui.SetCursorPosX(ctx, padding_h)
-        ImGui.SetNextItemWidth(ctx, w - padding_h * 2)
-        local changed, text = ImGui.InputTextWithHint(ctx, "##tab_search", "Search playlists...", self.overflow_modal_search)
-        if changed then 
-          self.overflow_modal_search = text 
-        end
-        
-        ImGui.Dummy(ctx, 0, 12)
-        ImGui.SetCursorPosX(ctx, padding_h)
-        ImGui.Separator(ctx)
-        ImGui.Dummy(ctx, 0, 12)
-        
-        ImGui.SetCursorPosX(ctx, padding_h)
-        
-        local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
-          selected_ids = selected_ids,
-          search_text = self.overflow_modal_search,
-          use_dot_style = true,
-          bg_color = 0x252530FF,
-          dot_size = 7,
-          dot_spacing = 7,
-          rounding = 5,
-          padding_h = 12,
-          column_width = 200,
-          column_spacing = 16,
-          item_spacing = 4,
+  -- Original overlay system path - only push once
+  if not self.overflow_modal_is_open then
+    self.overflow_modal_is_open = true
+    
+    window.overlay:push({
+      id = 'overflow-tabs',
+      close_on_scrim = true,
+      esc_to_close = true,
+      on_close = function()
+        self.overflow_modal_is_open = false
+        self.region_tiles.active_container:close_overflow_modal()
+      end,
+      render = function(ctx, alpha, bounds)
+        Sheet.render(ctx, alpha, bounds, function(ctx, w, h, a)
+          local padding_h = 16
+          
+          ImGui.SetCursorPos(ctx, padding_h, 16)
+          ImGui.Text(ctx, "All Playlists:")
+          ImGui.SetCursorPosX(ctx, padding_h)
+          ImGui.SetNextItemWidth(ctx, w - padding_h * 2)
+          local changed, text = ImGui.InputTextWithHint(ctx, "##tab_search", "Search playlists...", self.overflow_modal_search)
+          if changed then 
+            self.overflow_modal_search = text 
+          end
+          
+          ImGui.Dummy(ctx, 0, 12)
+          ImGui.SetCursorPosX(ctx, padding_h)
+          ImGui.Separator(ctx)
+          ImGui.Dummy(ctx, 0, 12)
+          
+          ImGui.SetCursorPosX(ctx, padding_h)
+          
+          local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
+            selected_ids = selected_ids,
+            search_text = self.overflow_modal_search,
+            use_dot_style = true,
+            bg_color = 0x252530FF,
+            dot_size = 7,
+            dot_spacing = 7,
+            rounding = 5,
+            padding_h = 12,
+            column_width = 200,
+            column_spacing = 16,
+            item_spacing = 4,
+          })
+          
+          if clicked_tab then
+            self.State.set_active_playlist(clicked_tab)
+            window.overlay:pop('overflow-tabs')
+            self.overflow_modal_is_open = false
+            self.region_tiles.active_container:close_overflow_modal()
+          end
+          
+          ImGui.Dummy(ctx, 0, 20)
+          ImGui.SetCursorPosX(ctx, padding_h)
+          ImGui.Separator(ctx)
+          ImGui.Dummy(ctx, 0, 12)
+          
+          local button_w = 100
+          local start_x = (w - button_w) * 0.5
+          
+          ImGui.SetCursorPosX(ctx, start_x)
+          if ImGui.Button(ctx, "Close", button_w, 32) then
+            window.overlay:pop('overflow-tabs')
+            self.overflow_modal_is_open = false
+            self.region_tiles.active_container:close_overflow_modal()
+          end
+        end, { 
+          title = "Select Playlist", 
+          width = 0.6, 
+          height = 0.7 
         })
-        
-        if clicked_tab then
-          self.State.set_active_playlist(clicked_tab)
-          window.overlay:pop('overflow-tabs')
-          self.region_tiles.active_container:close_overflow_modal()
-        end
-        
-        ImGui.Dummy(ctx, 0, 20)
-        ImGui.SetCursorPosX(ctx, padding_h)
-        ImGui.Separator(ctx)
-        ImGui.Dummy(ctx, 0, 12)
-        
-        local button_w = 100
-        local start_x = (w - button_w) * 0.5
-        
-        ImGui.SetCursorPosX(ctx, start_x)
-        if ImGui.Button(ctx, "Close", button_w, 32) then
-          window.overlay:pop('overflow-tabs')
-          self.region_tiles.active_container:close_overflow_modal()
-        end
-      end, { 
-        title = "Select Playlist", 
-        width = 0.6, 
-        height = 0.7 
-      })
-    end
-  })
+      end
+    })
+  end
 end
+
+
 
 function GUI:draw_transport_section(ctx)
   local content_w, content_h = self.transport_container:begin_draw(ctx)

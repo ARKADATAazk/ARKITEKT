@@ -55,6 +55,26 @@
         {
             "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\icons\\",
             "color": "foldercolorizer.color_99ccff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\PROJECT_FLOW.md\\",
+            "color": "foldercolorizer.color_33cc00"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\Region_Playlist\\",
+            "color": "foldercolorizer.color_ffcc00"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\ColorPalette\\",
+            "color": "foldercolorizer.color_6600ff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\Region_Playlist\\engine\\",
+            "color": "foldercolorizer.color_3366ff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\Region_Playlist\\app\\",
+            "color": "foldercolorizer.color_cc0066"
         }
     ],
 }
