@@ -145,6 +145,7 @@ else
   })
 end
 
+-- Phase 7.2: temporary compat layer (remove in Phase 8 cleanup)
 _G.ARK_COMPAT_MODE = _G.ARK_COMPAT_MODE or 'warn'
 local Compat = require('Region_Playlist.core.compat')
 if Compat and Compat.install then
