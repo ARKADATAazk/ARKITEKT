@@ -1,7 +1,24 @@
 local M = {}
 M.__index = M
 
-function M.new(deps)
+local function build_dependencies(arg1, coordinator, events, extras)
+  if type(arg1) == 'table' and coordinator == nil and events == nil then
+    return arg1
+  end
+  local bundle = {}
+  if type(extras) == 'table' then
+    for k, v in pairs(extras) do
+      bundle[k] = v
+    end
+  end
+  bundle.state = arg1
+  bundle.coordinator = coordinator
+  bundle.events = events
+  return bundle
+end
+
+function M.new(arg1, coordinator, events, extras)
+  local deps = build_dependencies(arg1, coordinator, events, extras)
   return setmetatable({
     deps = deps or {},
     _transport = nil,
