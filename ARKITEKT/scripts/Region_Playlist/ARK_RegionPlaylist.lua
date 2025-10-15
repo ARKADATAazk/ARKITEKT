@@ -45,7 +45,6 @@ addpath(join(REARKITEKT_ROOT, "?/init.lua"))
 local Shell = require("rearkitekt.app.shell")
 local Config = require("Region_Playlist.app.config")
 local AppState = require("Region_Playlist.app.state")
-local GUI = require("Region_Playlist.app.gui")
 local StatusBarConfig = require("Region_Playlist.app.status")
 local Colors = require("rearkitekt.core.colors")
 local EventBus = require("rearkitekt.core.events")
@@ -119,8 +118,6 @@ end
 ensure_selection_defaults(project_state)
 
 local status_bar = StatusBarConfig.create(AppState, StyleOK and Style)
-local gui = GUI.create(AppState, Config, settings)
-
 local shell_options = create_shell_options(settings, status_bar)
 
 local events = EventBus.new()
@@ -145,18 +142,11 @@ else
   })
 end
 
--- Phase 7.2: temporary compat layer (remove in Phase 8 cleanup)
-_G.ARK_COMPAT_MODE = _G.ARK_COMPAT_MODE or 'warn'
-local Compat = require('Region_Playlist.core.compat')
-if Compat and Compat.install then
-  Compat.install()
-end
-
 local main_view = MainView.new(project_state, coordinator, events, {
-  gui = gui,
   status_bar = status_bar,
   app_state = AppState,
   settings = settings,
+  config = Config,
 })
 
 shell_options.status_bar = nil

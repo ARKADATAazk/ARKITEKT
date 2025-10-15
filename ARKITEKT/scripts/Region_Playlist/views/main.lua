@@ -13,7 +13,7 @@ local function build_dependencies(arg1, coordinator, events, extras)
   end
   bundle.state = arg1
   bundle.coordinator = coordinator
-  bundle.events = events
+  bundle.events = events; if not bundle.gui and bundle.app_state and bundle.config then local GUI = require('Region_Playlist.app.gui'); bundle.gui = GUI.create(bundle.app_state, bundle.config, bundle.settings) end
   return bundle
 end
 
