@@ -181,26 +181,57 @@ function TransportBar:draw(ctx)
   local bridge = self.State.state.bridge
   local engine = bridge and bridge.engine
 
-  if engine and engine.quantize then
-    if ImGui.BeginCombo(ctx, '##quantize_mode', engine.quantize:get_quantize_label()) then
-      local modes = self.Config.QUANTIZE.modes
-      for i = 1, #modes do
-        local mode = modes[i]
-        local selected = engine.quantize:get_quantize_mode() == mode.value
-        if ImGui.Selectable(ctx, mode.label, selected) then
-          engine.quantize:set_quantize_mode(mode.value)
-          if mode.value == 'measure' then
-            engine.quantize:set_lookahead(self.Config.QUANTIZE.measure_lookahead)
-          end
+  local quantize_config = self.Config and self.Config.QUANTIZE or {}
+  if engine and engine.quantize and quantize_config.grid_options then
+    local current_mode = engine.quantize:get_quantize_mode()
+    local options = quantize_config.grid_options
+
+    local current_label = tostring(current_mode)
+    local current_index = 1
+    for i = 1, #options do
+      local option = options[i]
+      if option.value == current_mode then
+        current_label = option.label
+        current_index = i
+        break
+      end
+    end
+
+    ImGui.Text(ctx, 'Jump Mode:')
+    ImGui.SameLine(ctx, 0, 8)
+    ImGui.SetNextItemWidth(ctx, 140)
+
+    if ImGui.BeginCombo(ctx, '##quantize_mode', current_label) then
+      for i = 1, #options do
+        local option = options[i]
+        local is_selected = (i == current_index)
+        if ImGui.Selectable(ctx, option.label, is_selected) then
+          engine.quantize:set_quantize_mode(option.value)
+          current_mode = option.value
+          current_label = option.label
+          current_index = i
+        end
+        if is_selected then
+          ImGui.SetItemDefaultFocus(ctx)
         end
       end
       ImGui.EndCombo(ctx)
     end
+
     ImGui.SameLine(ctx, 0, 12)
   end
 
-  local min_lookahead = self.Config.QUANTIZE.min_lookahead * 1000
-  local max_lookahead = self.Config.QUANTIZE.max_lookahead * 1000
+  local min_lookahead = (quantize_config.min_lookahead or 0.2) * 1000
+  local max_lookahead = (quantize_config.max_lookahead or 3.0) * 1000
+
+  if engine and engine.quantize then
+    if engine.quantize.min_lookahead then
+      min_lookahead = engine.quantize.min_lookahead * 1000
+    end
+    if engine.quantize.max_lookahead then
+      max_lookahead = engine.quantize.max_lookahead * 1000
+    end
+  end
 
   ImGui.Text(ctx, 'Lookahead:')
   ImGui.SameLine(ctx, 0, 8)
