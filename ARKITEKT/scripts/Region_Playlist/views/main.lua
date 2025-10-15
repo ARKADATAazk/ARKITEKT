@@ -1,5 +1,8 @@
 local ImGui = require 'imgui' '0.10'
 
+local RegionTiles = require('Region_Playlist.widgets.region_tiles.coordinator')
+local PlaylistController = require('Region_Playlist.app.controller')
+local AppConfig = require('Region_Playlist.app.config')
 local TransportBar = require('Region_Playlist.views.transport_bar')
 local ActivePanel = require('Region_Playlist.views.active_panel')
 local PoolPanel = require('Region_Playlist.views.pool_panel')
@@ -31,11 +34,6 @@ local function build_dependencies(arg1, coordinator, events, extras)
   bundle.state = arg1
   bundle.coordinator = coordinator
   bundle.events = events
-
-  if not bundle.gui and bundle.app_state and bundle.config then
-    local GUI = require('Region_Playlist.app.gui')
-    bundle.gui = GUI.create(bundle.app_state, bundle.config, bundle.settings)
-  end
 
   return bundle
 end
@@ -78,52 +76,65 @@ function M.new(arg1, coordinator, events, extras)
 
   local self = setmetatable({
     deps = deps or {},
-    gui = deps.gui,
     State = deps.app_state or deps.state,
     Config = deps.config,
     settings = deps.settings,
     coordinator = deps.coordinator,
     events = deps.events,
+    controller = deps.controller,
+    region_tiles = deps.region_tiles,
   }, M)
 
-  if not self.gui then
-    error('MainView requires a GUI instance')
+  if not self.State then
+    error('MainView requires an application state instance')
   end
 
-  self.gui:set_main_view(self)
+  if not self.State.state then
+    error('MainView requires application state data')
+  end
+
+  self.Config = self.Config or AppConfig
+
+  if self.State and self.State.state then
+    local state_data = self.State.state
+    state_data.pending_spawn = state_data.pending_spawn or {}; state_data.pending_select = state_data.pending_select or {}
+    state_data.pending_destroy = state_data.pending_destroy or {}; state_data.active_search_filter = state_data.active_search_filter or ''
+    if self.Config and self.Config.SEPARATOR then
+      local separator = self.Config.SEPARATOR
+      if separator.horizontal and not state_data.separator_position_horizontal then state_data.separator_position_horizontal = separator.horizontal.default_position end
+      if separator.vertical and not state_data.separator_position_vertical then state_data.separator_position_vertical = separator.vertical.default_position end
+    end
+  end
+
+  self:ensure_controller()
+  self:ensure_region_tiles()
+  if not self.region_tiles then
+    error('MainView could not initialize region tiles')
+  end
 
   self.transport_bar = TransportBar.new({
     State = self.State,
     Config = self.Config,
     settings = self.settings,
-    region_tiles = self.gui.region_tiles,
+    region_tiles = self.region_tiles,
   })
-
   self.active_panel = ActivePanel.new({
     State = self.State,
-    region_tiles = self.gui.region_tiles,
+    region_tiles = self.region_tiles,
   })
-
   self.pool_panel = PoolPanel.new({
     State = self.State,
-    region_tiles = self.gui.region_tiles,
+    region_tiles = self.region_tiles,
   })
-
   self.modal_manager = ModalManager.new({
     State = self.State,
   })
-
   self.separator_manager = SeparatorManager.new({
     Config = self.Config,
   })
-
   self.status_view = StatusBarView.new({
     status_bar = deps.status_bar,
   })
-
-  if self.State and self.State.state then
-    self.State.state.active_search_filter = self.State.state.active_search_filter or ''
-  end
 
   self:apply_selection(S():get('ui.selection'))
   self:setup_state_hooks()
@@ -131,8 +142,153 @@ function M.new(arg1, coordinator, events, extras)
   return self
 end
 
-function M:set_gui(gui)
-  self.gui = gui
+function M:ensure_controller()
+  if not self.State then return nil end
+  if not self.controller then
+    local undo_manager = self.State.state and self.State.state.undo_manager
+    self.controller = PlaylistController.new(self.State, self.settings, undo_manager)
+  end
+  local bridge = self.State.state and self.State.state.bridge
+  if bridge and self.controller then
+    if bridge.set_controller then
+      bridge:set_controller(self.controller)
+    end
+    if bridge.set_playlist_lookup and self.State.get_playlist_by_id then
+      bridge:set_playlist_lookup(self.State.get_playlist_by_id)
+    end
+  end
+
+  return self.controller
+end
+
+function M:ensure_region_tiles()
+  if not self.State then return self.region_tiles end
+
+  local State = self.State
+  local state_data = State.state or {}
+  state_data.pending_spawn = state_data.pending_spawn or {}
+  state_data.pending_select = state_data.pending_select or {}
+  state_data.pending_destroy = state_data.pending_destroy or {}
+
+  local function persist_ui_prefs()
+    if State.persist_ui_prefs then State.persist_ui_prefs() end
+  end
+
+  local function apply_state_to_tiles(tiles)
+    if not tiles then return end
+    if tiles.set_pool_search_text then tiles:set_pool_search_text(state_data.search_filter) end
+    if tiles.set_pool_sort_mode then tiles:set_pool_sort_mode(state_data.sort_mode) end
+    if tiles.set_pool_sort_direction then tiles:set_pool_sort_direction(state_data.sort_direction) end
+    if tiles.set_app_bridge then tiles:set_app_bridge(state_data.bridge) end
+    if tiles.set_pool_mode then tiles:set_pool_mode(state_data.pool_mode) end
+  end
+
+  if self.region_tiles then
+    apply_state_to_tiles(self.region_tiles)
+    return self.region_tiles
+  end
+
+  local controller = self:ensure_controller()
+  local options = {
+    controller = controller,
+    get_region_by_rid = function(rid) return state_data.region_index and state_data.region_index[rid] or nil end,
+    get_playlist_by_id = function(playlist_id) return State.get_playlist_by_id and State.get_playlist_by_id(playlist_id) or nil end,
+    detect_circular_ref = function(target, source)
+      return State.detect_circular_reference and State.detect_circular_reference(target, source) or false
+    end,
+    allow_pool_reorder = true,
+    enable_active_tabs = true,
+    tabs = State.get_tabs and State.get_tabs() or {},
+    active_tab_id = get_active_playlist_id(State),
+    pool_mode = state_data.pool_mode,
+    config = self.Config and self.Config.get_region_tiles_config and self.Config.get_region_tiles_config(state_data.layout_mode) or nil,
+    on_playlist_changed = function(new_id) set_active_playlist_id(State, new_id) end,
+    on_pool_search = function(text) state_data.search_filter = text; persist_ui_prefs() end,
+    on_pool_sort = function(mode) state_data.sort_mode = mode; persist_ui_prefs() end,
+    on_pool_sort_direction = function(direction) state_data.sort_direction = direction; persist_ui_prefs() end,
+    on_pool_mode_changed = function(mode)
+      state_data.pool_mode = mode
+      if self.region_tiles and self.region_tiles.set_pool_mode then self.region_tiles:set_pool_mode(mode) end
+      persist_ui_prefs()
+    end,
+    on_active_reorder = function(new_order)
+      if controller and controller.reorder_items then controller:reorder_items(get_active_playlist_id(State), new_order) end
+    end,
+    on_active_remove = function(item_key)
+      if controller and controller.delete_items then controller:delete_items(get_active_playlist_id(State), { item_key }) end
+    end,
+    on_active_toggle_enabled = function(item_key, new_state)
+      if controller and controller.toggle_item_enabled then controller:toggle_item_enabled(get_active_playlist_id(State), item_key, new_state) end
+    end,
+    on_active_delete = function(item_keys)
+      if controller and controller.delete_items then controller:delete_items(get_active_playlist_id(State), item_keys) end
+      for _, key in ipairs(item_keys or {}) do state_data.pending_destroy[#state_data.pending_destroy + 1] = key end
+    end,
+    on_destroy_complete = function(_) end,
+    on_active_copy = function(dragged_items, target_index)
+      if not (controller and controller.copy_items) then return end
+      local success, keys = controller:copy_items(get_active_playlist_id(State), dragged_items, target_index)
+      if success and keys then
+        for _, key in ipairs(keys) do
+          state_data.pending_spawn[#state_data.pending_spawn + 1] = key
+          state_data.pending_select[#state_data.pending_select + 1] = key
+        end
+      end
+    end,
+    on_pool_to_active = function(rid, insert_index)
+      if not (controller and controller.add_item) then return nil end
+      local success, key = controller:add_item(get_active_playlist_id(State), rid, insert_index)
+      return success and key or nil
+    end,
+    on_pool_playlist_to_active = function(playlist_id, insert_index)
+      if not (controller and controller.add_playlist_item) then return nil end
+      local success, key = controller:add_playlist_item(get_active_playlist_id(State), playlist_id, insert_index)
+      return success and key or nil
+    end,
+    on_pool_reorder = function(new_rids) state_data.pool_order = new_rids; persist_ui_prefs() end,
+    on_repeat_cycle = function(item_key)
+      if controller and controller.cycle_repeats then controller:cycle_repeats(get_active_playlist_id(State), item_key) end
+    end,
+    on_repeat_adjust = function(keys, delta)
+      if controller and controller.adjust_repeats then controller:adjust_repeats(get_active_playlist_id(State), keys, delta) end
+    end,
+    on_repeat_sync = function(keys, target_reps)
+      if controller and controller.sync_repeats then controller:sync_repeats(get_active_playlist_id(State), keys, target_reps) end
+    end,
+    on_pool_double_click = function(rid)
+      if not (controller and controller.add_item) then return end
+      local success, key = controller:add_item(get_active_playlist_id(State), rid)
+      if success and key then
+        state_data.pending_spawn[#state_data.pending_spawn + 1] = key
+        state_data.pending_select[#state_data.pending_select + 1] = key
+      end
+    end,
+    on_pool_playlist_double_click = function(playlist_id)
+      if not controller then return end
+      local active_playlist_id = get_active_playlist_id(State)
+      if State.detect_circular_reference then
+        local circular, path = State.detect_circular_reference(active_playlist_id, playlist_id)
+        if circular then
+          local path_str = table.concat(path or {}, ' → ')
+          reaper.ShowConsoleMsg(string.format('Circular reference detected: %s\n', path_str))
+          reaper.MB('Cannot add playlist: circular reference detected.\n\nPath: ' .. path_str, 'Circular Reference', 0)
+          return
+        end
+      end
+      if controller.add_playlist_item then
+        local success, key = controller:add_playlist_item(active_playlist_id, playlist_id)
+        if success and key then
+          state_data.pending_spawn[#state_data.pending_spawn + 1] = key
+          state_data.pending_select[#state_data.pending_select + 1] = key
+        end
+      end
+    end,
+    settings = self.settings,
+  }
+
+  self.region_tiles = RegionTiles.create(options)
+  apply_state_to_tiles(self.region_tiles)
+  return self.region_tiles
 end
 
 function M:setup_state_hooks()
@@ -152,15 +308,15 @@ function M:setup_state_hooks()
 end
 
 function M:refresh_tabs()
-  if self.gui and self.gui.region_tiles and self.State then
-    self.gui.region_tiles:set_tabs(self.State.get_tabs(), S():get('playlists.active_id'))
+  if self.region_tiles and self.State and self.State.get_tabs then
+    self.region_tiles:set_tabs(self.State.get_tabs(), S():get('playlists.active_id'))
   end
 end
 
 function M:apply_selection(selection)
   selection = ensure_selection_struct(selection)
 
-  local region_tiles = self.gui and self.gui.region_tiles
+  local region_tiles = self.region_tiles
   if region_tiles then
     apply_selection_to_grid(region_tiles.active_grid, selection.active)
     apply_selection_to_grid(region_tiles.pool_grid, selection.pool)
@@ -177,12 +333,12 @@ function M:update_selection(mutator)
 end
 
 function M:process_pending_actions()
-  if not (self.State and self.State.state and self.gui and self.gui.region_tiles) then
+  if not (self.State and self.State.state and self.region_tiles) then
     return
   end
 
   local state = self.State.state
-  local tiles = self.gui.region_tiles
+  local tiles = self.region_tiles
 
   if #state.pending_spawn > 0 and tiles.active_grid then
     tiles.active_grid:mark_spawned(state.pending_spawn)
@@ -229,12 +385,21 @@ local function get_active_playlist_id(State)
   return playlist and playlist.id or nil
 end
 
+local function set_active_playlist_id(State, playlist_id)
+  if not (State and playlist_id) then return end
+
+  S():set('playlists.active_id', playlist_id)
+  if State.set_active_playlist then
+    State.set_active_playlist(playlist_id)
+  end
+end
+
 function M:draw(ctx, window)
-  if not (self.gui and self.State and self.Config) then
+  if not (self.region_tiles and self.State and self.Config) then
     return
   end
 
-  local region_tiles = self.gui.region_tiles
+  local region_tiles = self.region_tiles
   if region_tiles and region_tiles.active_container and region_tiles.active_container:is_overflow_visible() then
     self.modal_manager:draw(ctx, window, region_tiles)
   end
