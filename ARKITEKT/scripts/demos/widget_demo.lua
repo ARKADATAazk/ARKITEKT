@@ -83,7 +83,7 @@ local model = {
   items_by_key = {},
   order = {},
   selection = {},
-  tile_min_w = 110,      -- numeric (IMPORTANT)
+  tile_min_w = 120,      -- numeric (IMPORTANT)
   gap = 12,              -- numeric (IMPORTANT)
   show_labels = true,
   ants = { color_enabled=0xFFFFFFFF, color_disabled=0xFFFFFF55, thickness=2, radius=8, dash=10, gap=6, speed=28 },
