@@ -1,81 +1,71 @@
 -- @noindex
 -- Region_Playlist/storage/persistence.lua
--- Handles ExtState persistence for playlists and the active playlist id.
+-- Project ExtState persistence helpers for Region Playlist data.
 
 local JSON = require('rearkitekt.core.json')
-local RegionState = require('Region_Playlist.storage.state')
 
 local M = {}
 
-local EXT_STATE_SECTION = "ReArkitekt_RegionPlaylist"
-local KEY_PLAYLISTS = "playlists"
-local KEY_ACTIVE = "active_playlist"
+local EXT_STATE_SECTION = 'ReArkitekt_RegionPlaylist'
+local KEY_PLAYLISTS = 'playlists'
+local KEY_ACTIVE = 'active_playlist'
 
-local function migrate_playlist_items(items)
-  for _, item in ipairs(items) do
-    if not item.type then
-      item.type = "region"
-    end
-    if item.type == "region" and not item.reps then
-      item.reps = 1
-    end
-    if item.enabled == nil then
-      item.enabled = true
-    end
+local function coerce_project(proj)
+  if proj == nil then
+    return 0
   end
-  return items
+  return proj
 end
 
-local function migrate_playlists(playlists, proj)
-  local needs_save = false
-
-  for _, pl in ipairs(playlists) do
-    if pl.items then
-      migrate_playlist_items(pl.items)
-    end
-    if not pl.chip_color then
-      pl.chip_color = RegionState.generate_chip_color()
-      needs_save = true
-    end
+local function encode_playlists(playlists)
+  local ok, payload = pcall(JSON.encode, playlists or {})
+  if ok and type(payload) == 'string' then
+    return payload
   end
+  return '[]'
+end
 
-  if needs_save then
-    M.save_playlists(playlists, proj)
+local function decode_playlists(payload)
+  if not payload or payload == '' then
+    return {}
   end
-
-  return playlists
+  local ok, decoded = pcall(JSON.decode, payload)
+  if not ok or type(decoded) ~= 'table' then
+    return {}
+  end
+  return decoded
 end
 
 function M.save_playlists(playlists, proj)
-  proj = proj or 0
-  local json_str = JSON.encode(playlists)
-  reaper.SetProjExtState(proj, EXT_STATE_SECTION, KEY_PLAYLISTS, json_str)
+  local project = coerce_project(proj)
+  local payload = encode_playlists(playlists)
+  reaper.SetProjExtState(project, EXT_STATE_SECTION, KEY_PLAYLISTS, payload)
 end
 
 function M.load_playlists(proj)
-  proj = proj or 0
-  local ok, json_str = reaper.GetProjExtState(proj, EXT_STATE_SECTION, KEY_PLAYLISTS)
-  if ok ~= 1 or not json_str or json_str == "" then
+  local project = coerce_project(proj)
+  local ok, payload = reaper.GetProjExtState(project, EXT_STATE_SECTION, KEY_PLAYLISTS)
+  if ok ~= 1 then
     return {}
   end
-
-  local success, playlists = pcall(JSON.decode, json_str)
-  if not success then
-    return {}
-  end
-
-  return migrate_playlists(playlists or {}, proj)
+  return decode_playlists(payload)
 end
 
+-- @deprecated TEMP_PARITY_SHIM: save_active_playlist() → prefer storage.state.save_active_playlist
+-- EXPIRES: 2025-12-31 (planned removal: Phase-7)
+-- reason: app/state still persists active playlist via persistence.lua during migration.
 function M.save_active_playlist(playlist_id, proj)
-  proj = proj or 0
-  reaper.SetProjExtState(proj, EXT_STATE_SECTION, KEY_ACTIVE, playlist_id)
+  local project = coerce_project(proj)
+  reaper.SetProjExtState(project, EXT_STATE_SECTION, KEY_ACTIVE, playlist_id or '')
 end
 
+-- @deprecated TEMP_PARITY_SHIM: load_active_playlist() → prefer storage.state.load_active_playlist
+-- EXPIRES: 2025-12-31 (planned removal: Phase-7)
+-- reason: app/state still reads active playlist via persistence.lua during migration.
 function M.load_active_playlist(proj)
-  proj = proj or 0
-  local ok, playlist_id = reaper.GetProjExtState(proj, EXT_STATE_SECTION, KEY_ACTIVE)
-  if ok ~= 1 or not playlist_id or playlist_id == "" then
+  local project = coerce_project(proj)
+  local ok, playlist_id = reaper.GetProjExtState(project, EXT_STATE_SECTION, KEY_ACTIVE)
+  if ok ~= 1 or not playlist_id or playlist_id == '' then
     return nil
   end
   return playlist_id
