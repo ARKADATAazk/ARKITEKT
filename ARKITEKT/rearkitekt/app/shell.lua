@@ -128,6 +128,7 @@ function M.run(opts)
   local fonts = load_fonts(ctx, cfg.fonts)
 
   local window = Window.new({
+    fullscreen      = opts.fullscreen,
       title           = title,
       version         = version,
       title_font      = fonts.title,
