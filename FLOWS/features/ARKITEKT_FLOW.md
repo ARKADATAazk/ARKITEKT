@@ -1,20 +1,20 @@
 # ARKITEKT FLOW
-Generated: 2025-10-16 16:57:35
+Generated: 2025-10-16 19:47:40
 
 ## Overview
 - **Folders**: 1
-- **Files**: 144
-- **Total Lines**: 27,144
-- **Code Lines**: 21,257
-- **Exports**: 448
-- **Classes**: 86
+- **Files**: 149
+- **Total Lines**: 28,798
+- **Code Lines**: 22,484
+- **Exports**: 478
+- **Classes**: 88
 
 ## Folder Organization
 
 ### ARKITEKT
-- Files: 144
-- Lines: 21,257
-- Exports: 448
+- Files: 149
+- Lines: 22,484
+- Exports: 478
 
 ## Orchestrators
 
@@ -233,6 +233,49 @@ Generated: 2025-10-16 16:57:35
 **Classes**: `M`
 **Exports**:
   - `M.new(opts)` → Instance
+
+### `ARKITEKT/rearkitekt/debug/_console_widget.lua` (335 lines)
+> @noindex
+**Modules**: `M`
+**Classes**: `M`
+**Exports**:
+  - `M.new(config)` → Instance
+**Private**: 4 helpers
+**Requires**: `rearkitekt.debug.logger, rearkitekt.gui.widgets.panel, rearkitekt.gui.widgets.panel.config`
+
+### `ARKITEKT/rearkitekt/debug/console.lua` (130 lines)
+> @noindex
+**Modules**: `M`
+**Classes**: `M`
+**Exports**:
+  - `M.new(config)` → Instance
+  - `M.render(console, ctx)`
+  - `M.set_filter(console, category)`
+  - `M.get_filter(console)`
+  - `M.set_search(console, text)`
+  - `M.get_search(console)`
+  - `M.pause(console)`
+  - `M.resume(console)`
+  - `M.toggle_pause(console)`
+  - `M.is_paused(console)`
+  - `M.get_fps(console)`
+  - `M.get_frame_time(console)`
+**Requires**: `rearkitekt.debug._console_widget`
+
+### `ARKITEKT/rearkitekt/debug/logger.lua` (80 lines)
+> @noindex
+**Modules**: `M, buffer, result`
+**Exports**:
+  - `M.info(category, message, data)`
+  - `M.debug(category, message, data)`
+  - `M.warn(category, message, data)`
+  - `M.error(category, message, data)`
+  - `M.profile(category, duration_ms)`
+  - `M.clear()`
+  - `M.get_entries()`
+  - `M.get_count()`
+  - `M.get_max()`
+  - `M.set_max(max)`
 
 ### `ARKITEKT/rearkitekt/gui/draw.lua` (114 lines)
 > @noindex
@@ -461,6 +504,15 @@ Generated: 2025-10-16 16:57:35
 **Private**: 4 helpers
 **Requires**: `rearkitekt.gui.draw, rearkitekt.core.colors, rearkitekt.gui.fx.tile_fx, rearkitekt.gui.fx.tile_fx_config`
 
+### `ARKITEKT/rearkitekt/gui/widgets/controls/button.lua` (192 lines)
+> @noindex
+**Modules**: `M`
+**Exports**:
+  - `M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)`
+  - `M.measure(ctx, user_config)`
+  - `M.draw_at_cursor(ctx, user_config, id)`
+**Requires**: `rearkitekt.gui.widgets.controls.style_defaults`
+
 ### `ARKITEKT/rearkitekt/gui/widgets/controls/context_menu.lua` (106 lines)
 > @noindex
 **Modules**: `M`
@@ -484,6 +536,14 @@ Generated: 2025-10-16 16:57:35
 **Classes**: `Scrollbar, M`
 **Exports**:
   - `M.new(opts)` → Instance
+
+### `ARKITEKT/rearkitekt/gui/widgets/controls/style_defaults.lua` (142 lines)
+> @noindex
+**Modules**: `M, result`
+**Exports**:
+  - `M.apply_defaults(defaults, user_config)`
+  - `M.apply_alpha(color, alpha_factor)`
+  - `M.get_state_color(colors, is_hovered, is_active, color_key)`
 
 ### `ARKITEKT/rearkitekt/gui/widgets/controls/tooltip.lua` (129 lines)
 > @noindex
@@ -630,9 +690,11 @@ Generated: 2025-10-16 16:57:35
 **Exports**:
   - `M.draw(dl, x1, y1, x2, y2, pattern_cfg)`
 
-### `ARKITEKT/rearkitekt/gui/widgets/panel/config.lua` (257 lines)
+### `ARKITEKT/rearkitekt/gui/widgets/panel/config.lua` (234 lines)
 > @noindex
 **Modules**: `M`
+**Exports**:
+  - `M.apply_element_defaults(element_type, config)`
 
 ### `ARKITEKT/rearkitekt/gui/widgets/panel/content.lua` (44 lines)
 > @noindex
@@ -641,12 +703,13 @@ Generated: 2025-10-16 16:57:35
   - `M.begin_child(ctx, id, width, height, scroll_config)`
   - `M.end_child(ctx, container)`
 
-### `ARKITEKT/rearkitekt/gui/widgets/panel/header/button.lua` (119 lines)
+### `ARKITEKT/rearkitekt/gui/widgets/panel/header/button.lua` (42 lines)
 > @noindex
 **Modules**: `M`
 **Exports**:
   - `M.draw(ctx, dl, x, y, width, height, config, state)`
   - `M.measure(ctx, config)`
+**Requires**: `rearkitekt.gui.widgets.controls.button`
 
 ### `ARKITEKT/rearkitekt/gui/widgets/panel/header/dropdown_field.lua` (101 lines)
 > @noindex
@@ -1440,6 +1503,24 @@ Generated: 2025-10-16 16:57:35
   → `ARKITEKT/rearkitekt/gui/fx/dnd/drag_indicator.lua`
   → `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/active.lua`
 
+**`ARKITEKT/scripts/Sandbox/sandbox_2.lua`**
+  → `ARKITEKT/rearkitekt/debug/console.lua`
+  → `ARKITEKT/rearkitekt/arkit.lua`
+  → `ARKITEKT/rearkitekt/app/shell.lua`
+  → `ARKITEKT/rearkitekt/debug/logger.lua`
+
+**`ARKITEKT/scripts/Sandbox/sandbox_3.lua`**
+  → `ARKITEKT/rearkitekt/debug/console.lua`
+  → `ARKITEKT/rearkitekt/arkit.lua`
+  → `ARKITEKT/rearkitekt/app/shell.lua`
+  → `ARKITEKT/rearkitekt/debug/logger.lua`
+
+**`ARKITEKT/scripts/Sandbox/sandbox_4.lua`**
+  → `ARKITEKT/rearkitekt/gui/widgets/controls/button.lua`
+  → `ARKITEKT/rearkitekt/gui/widgets/controls/style_defaults.lua`
+  → `ARKITEKT/rearkitekt/app/shell.lua`
+  → `ARKITEKT/rearkitekt/core/colors.lua`
+
 **`ARKITEKT/rearkitekt/gui/fx/dnd/drag_indicator.lua`**
   → `ARKITEKT/rearkitekt/core/colors.lua`
   → `ARKITEKT/rearkitekt/gui/draw.lua`
@@ -1477,6 +1558,10 @@ Generated: 2025-10-16 16:57:35
 **`ARKITEKT/rearkitekt/app/shell.lua`**
   → `ARKITEKT/rearkitekt/app/runtime.lua`
   → `ARKITEKT/rearkitekt/app/window.lua`
+
+**`ARKITEKT/rearkitekt/debug/_console_widget.lua`**
+  → `ARKITEKT/rearkitekt/gui/widgets/panel/config.lua`
+  → `ARKITEKT/rearkitekt/debug/logger.lua`
 
 **`ARKITEKT/rearkitekt/gui/widgets/chip_list/list.lua`**
   → `ARKITEKT/rearkitekt/gui/widgets/component/chip.lua`
@@ -1537,6 +1622,9 @@ Generated: 2025-10-16 16:57:35
 **`ARKITEKT/rearkitekt/core/settings.lua`**
   → `ARKITEKT/rearkitekt/core/json.lua`
 
+**`ARKITEKT/rearkitekt/debug/console.lua`**
+  → `ARKITEKT/rearkitekt/debug/_console_widget.lua`
+
 **`ARKITEKT/rearkitekt/gui/fx/animation/rect_track.lua`**
   → `ARKITEKT/rearkitekt/core/math.lua`
 
@@ -1564,11 +1652,17 @@ Generated: 2025-10-16 16:57:35
 **`ARKITEKT/rearkitekt/gui/style.lua`**
   → `ARKITEKT/rearkitekt/core/colors.lua`
 
+**`ARKITEKT/rearkitekt/gui/widgets/controls/button.lua`**
+  → `ARKITEKT/rearkitekt/gui/widgets/controls/style_defaults.lua`
+
 **`ARKITEKT/rearkitekt/gui/widgets/controls/dropdown.lua`**
   → `ARKITEKT/rearkitekt/gui/widgets/controls/tooltip.lua`
 
 **`ARKITEKT/rearkitekt/gui/widgets/grid/input.lua`**
   → `ARKITEKT/rearkitekt/gui/draw.lua`
+
+**`ARKITEKT/rearkitekt/gui/widgets/panel/header/button.lua`**
+  → `ARKITEKT/rearkitekt/gui/widgets/controls/button.lua`
 
 **`ARKITEKT/rearkitekt/gui/widgets/panel/header/dropdown_field.lua`**
   → `ARKITEKT/rearkitekt/gui/widgets/controls/dropdown.lua`
