@@ -1,9 +1,10 @@
 -- @noindex
 -- ReArkitekt/app/titlebar.lua
 -- MODIFIED: Use regular font for version, with optional size override
+-- UPDATED: ImGui 0.10 font size handling
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 
 local M = {}
 
@@ -53,7 +54,9 @@ function M.new(opts)
     title           = opts.title or "Window",
     version         = opts.version,
     title_font      = opts.title_font,
+    title_font_size = opts.title_font_size or 16,
     version_font    = opts.version_font,
+    version_font_size = opts.version_font_size or 13,
     
     height          = opts.height or DEFAULTS.height or 26,
     pad_h           = opts.pad_h or DEFAULTS.pad_h or 12,
@@ -83,10 +86,10 @@ function M.new(opts)
     on_icon_click   = opts.on_icon_click,
   }
   
-  function titlebar:_truncate_text(ctx, text, max_width, font)
+  function titlebar:_truncate_text(ctx, text, max_width, font, font_size)
     if not text then return "" end
 
-    if font then ImGui.PushFont(ctx, font) end
+    if font then ImGui.PushFont(ctx, font, font_size) end
     local text_w = ImGui.CalcTextSize(ctx, text)
     if font then ImGui.PopFont(ctx) end
     
@@ -95,7 +98,7 @@ function M.new(opts)
     end
 
     local ellipsis = "..."
-    if font then ImGui.PushFont(ctx, font) end
+    if font then ImGui.PushFont(ctx, font, font_size) end
     local ellipsis_w = ImGui.CalcTextSize(ctx, ellipsis)
     if font then ImGui.PopFont(ctx) end
 
@@ -105,7 +108,7 @@ function M.new(opts)
 
     for i = #text, 1, -1 do
       local sub = text:sub(1, i)
-      if font then ImGui.PushFont(ctx, font) end
+      if font then ImGui.PushFont(ctx, font, font_size) end
       local sub_w = ImGui.CalcTextSize(ctx, sub)
       if font then ImGui.PopFont(ctx) end
       
@@ -241,15 +244,14 @@ function M.new(opts)
       local title_start_x = ImGui.GetCursorPosX(ctx)
       local available_width = (win_w - total_button_width) - title_start_x - self.pad_h
       
-
       if self.version and self.version ~= "" then
-        if self.title_font then ImGui.PushFont(ctx, self.title_font) end
+        if self.title_font then ImGui.PushFont(ctx, self.title_font, self.title_font_size) end
         local title_w = ImGui.CalcTextSize(ctx, self.title)
         local title_h = ImGui.GetTextLineHeight(ctx)
         if self.title_font then ImGui.PopFont(ctx) end
         
         local version_font = self.version_font
-        if version_font then ImGui.PushFont(ctx, version_font) end
+        if version_font then ImGui.PushFont(ctx, version_font, self.version_font_size) end
         local version_w = ImGui.CalcTextSize(ctx, self.version)
         local version_h = ImGui.GetTextLineHeight(ctx)
         if version_font then ImGui.PopFont(ctx) end
@@ -259,7 +261,7 @@ function M.new(opts)
         if total_w <= available_width then
           local base_y = ImGui.GetCursorPosY(ctx)
           
-          if self.title_font then ImGui.PushFont(ctx, self.title_font) end
+          if self.title_font then ImGui.PushFont(ctx, self.title_font, self.title_font_size) end
           ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
           ImGui.Text(ctx, self.title)
           ImGui.PopStyleColor(ctx)
@@ -272,28 +274,27 @@ function M.new(opts)
             ImGui.SetCursorPosY(ctx, base_y + height_diff - 1)
           end
           
-          if version_font then ImGui.PushFont(ctx, version_font) end
+          if version_font then ImGui.PushFont(ctx, version_font, self.version_font_size) end
           ImGui.PushStyleColor(ctx, ImGui.Col_Text, version_color)
           ImGui.Text(ctx, self.version)
           ImGui.PopStyleColor(ctx)
           if version_font then ImGui.PopFont(ctx) end
         else
-          if self.title_font then ImGui.PushFont(ctx, self.title_font) end
+          if self.title_font then ImGui.PushFont(ctx, self.title_font, self.title_font_size) end
           ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
-          local display_title = self:_truncate_text(ctx, self.title .. " " .. self.version, available_width, self.title_font)
+          local display_title = self:_truncate_text(ctx, self.title .. " " .. self.version, available_width, self.title_font, self.title_font_size)
           ImGui.Text(ctx, display_title)
           ImGui.PopStyleColor(ctx)
           if self.title_font then ImGui.PopFont(ctx) end
         end
       else
-        if self.title_font then ImGui.PushFont(ctx, self.title_font) end
+        if self.title_font then ImGui.PushFont(ctx, self.title_font, self.title_font_size) end
         ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
-        local display_title = self:_truncate_text(ctx, self.title, available_width, self.title_font)
+        local display_title = self:_truncate_text(ctx, self.title, available_width, self.title_font, self.title_font_size)
         ImGui.Text(ctx, display_title)
         ImGui.PopStyleColor(ctx)
         if self.title_font then ImGui.PopFont(ctx) end
       end
-
 
       ImGui.SetCursorPos(ctx, win_w - total_button_width, 0)
       
@@ -502,6 +503,5 @@ function M.new(opts)
   
   return titlebar
 end
-
 
 return M

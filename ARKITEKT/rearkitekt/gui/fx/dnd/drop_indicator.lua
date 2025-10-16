@@ -3,7 +3,7 @@
 -- Drop indicator for drag and drop reordering (uses your existing colors.lua)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 local DndConfig = require('rearkitekt.gui.fx.dnd.config')
 
 local M = {}

@@ -4,7 +4,7 @@
 -- UPDATED: Now handles extended input areas (padding zones)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 
 local LayoutGrid = require('rearkitekt.gui.widgets.grid.layout')
 local RectTrack = require('rearkitekt.gui.fx.animation.rect_track')

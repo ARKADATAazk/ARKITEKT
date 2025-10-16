@@ -3,7 +3,7 @@
 -- Modular drag ghost visualization system (uses your existing colors.lua)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 local Draw = require('rearkitekt.gui.draw')
 local Colors = require('rearkitekt.core.colors')
 local DndConfig = require('rearkitekt.gui.fx.dnd.config')

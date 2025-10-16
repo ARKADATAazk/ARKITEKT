@@ -30,7 +30,7 @@ if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
 package.path = root_path .. "?.lua;" .. root_path .. "?/init.lua;" .. package.path
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 
 local function dirname(p) return p:match("^(.*)[/\\]") end
 local function join(a,b) local s=package.config:sub(1,1); return (a:sub(-1)==s) and (a..b) or (a..s..b) end

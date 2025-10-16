@@ -272,3 +272,44 @@ Region_Playlist/
 └── main.lua
 
 
+Config vs Constants - When to Use Each?
+Use config.lua when:
+
+✅ Values that define how features work
+✅ Complex nested structures
+✅ Factory functions that generate configs
+✅ Things you might want to make user-configurable later
+✅ Values that differ per environment/feature
+
+Examples:
+luaconfig.quantize_grid_options = { ... }  -- List of options
+config.get_container_config(...)        -- Generated configs
+config.separator_defaults = { ... }     -- Feature behavior
+Use constants.lua when:
+
+✅ True mathematical/physical constants
+✅ Magic numbers with no business logic
+✅ Enum-like values
+✅ Values that never change
+✅ Simple primitive values
+
+Examples:
+luaconstants.HOVER_SPEED = 12.0           -- Animation speed
+constants.MAX_UNDO_STACK = 50          -- Hard limit
+constants.EPSILON = 0.001              -- Float comparison
+constants.STATUS = { OK = 1, ERROR = 2 }  -- Enum
+Use theme.lua when:
+
+✅ All visual design tokens
+✅ Colors, fonts, spacing scales
+✅ Things a designer would tweak
+✅ Visual consistency across app
+
+Examples:
+luatheme.colors.primary = 0x42E896FF
+theme.spacing.base = 8
+theme.fonts.default = "Arial"
+
+🎨 Industry Standards (What Others Use)
+Framework/ToolVisualStructuralConstantsReact/Webtheme.jsconfig.jsconstants.jsUnityTheme.csGameConfig.csConstants.csUnrealStyle.hConfig.iniConstants.hAndroidstyles.xml / colors.xmlconfig.xmlConstants.java
+Common pattern: Split visual from structural.

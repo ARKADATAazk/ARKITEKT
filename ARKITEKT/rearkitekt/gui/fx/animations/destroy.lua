@@ -3,7 +3,7 @@
 -- Destroy animation: instant red flash then smooth dissolve (refactored)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 local Easing = require('rearkitekt.gui.fx.easing')
 
 local M = {}

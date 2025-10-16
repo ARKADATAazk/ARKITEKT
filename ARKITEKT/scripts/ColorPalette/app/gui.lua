@@ -3,7 +3,7 @@
 -- Main GUI orchestrator for Color Palette (Frameless Edition)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 
 local Colors = require('rearkitekt.core.colors')
 local Draw = require('rearkitekt.gui.draw')

@@ -3,7 +3,7 @@
 -- Mousewheel-friendly dropdown/combobox widget with corner-aware design
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 local Tooltip = require('rearkitekt.gui.widgets.controls.tooltip')
 
 local M = {}

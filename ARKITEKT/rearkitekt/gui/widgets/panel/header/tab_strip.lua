@@ -3,7 +3,7 @@
 -- Clean, modular tab strip with improved animation control
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 local ContextMenu = require('rearkitekt.gui.widgets.controls.context_menu')
 local Chip = require('rearkitekt.gui.widgets.component.chip')
 

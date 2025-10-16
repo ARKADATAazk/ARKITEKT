@@ -3,7 +3,7 @@
 -- Modular status bar rendering - positioning handled by the containing window
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 local Chip = require('rearkitekt.gui.widgets.component.chip')
 local StatusBarConfig = require('rearkitekt.app.chrome.status_bar.config')
 

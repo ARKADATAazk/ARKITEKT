@@ -18,8 +18,8 @@ function M.RGBvalues(RGB)
   return R, G, B
 end
 
-function M.Color(imgui, r, g, b, a)
-  return imgui.ColorConvertDouble4ToU32(r, g, b, a)
+function M.Color(ImGui, r, g, b, a)
+  return ImGui.ColorConvertDouble4ToU32(r, g, b, a)
 end
 
 function M.SampleLimit(spl)

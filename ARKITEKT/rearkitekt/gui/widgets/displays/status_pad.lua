@@ -3,7 +3,7 @@
 -- Interactive status tile with a modern, flat design. (ReaImGui 0.9)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 
 local Draw   = require('rearkitekt.gui.draw')
 local Colors = require('rearkitekt.core.colors')
@@ -61,7 +61,7 @@ end
 local function _measure_text(ctx, text, rel_scale)
   local font = _get_scaled_font(ctx, rel_scale)
   if font then
-    ImGui.PushFont(ctx, font)
+    ImGui.PushFont(ctx, font, 1)
     local w, h = ImGui.CalcTextSize(ctx, text or '')
     ImGui.PopFont(ctx)
     return w, h
@@ -74,7 +74,7 @@ end
 local function _draw_text_scaled_clipped(ctx, text, x, y, max_w, color, rel_scale)
   local font = _get_scaled_font(ctx, rel_scale)
   if font then
-    ImGui.PushFont(ctx, font)
+    ImGui.PushFont(ctx, font, 1)
     Draw.text_clipped(ctx, text, x, y, max_w, color)
     ImGui.PopFont(ctx)
   else

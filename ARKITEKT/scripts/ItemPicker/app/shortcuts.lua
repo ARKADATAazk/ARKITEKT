@@ -1,20 +1,19 @@
+-- @noindex
+local ImGui = require 'imgui' '0.10'
+
 local M = {}
-local imgui
-local ctx
 local config
 
-function M.init(imgui_module, imgui_ctx, config_module)
-  imgui = imgui_module
-  ctx = imgui_ctx
+function M.init(config_module)
   config = config_module
 end
 
-function M.handle_tile_size_shortcuts(state)
-  local wheel = imgui.GetMouseWheel(ctx)
+function M.handle_tile_size_shortcuts(ctx, state)
+  local wheel = ImGui.GetMouseWheel(ctx)
   if wheel == 0 then return false end
   
-  local ctrl = imgui.IsKeyDown(ctx, imgui.Key_LeftCtrl) or imgui.IsKeyDown(ctx, imgui.Key_RightCtrl)
-  local alt = imgui.IsKeyDown(ctx, imgui.Key_LeftAlt) or imgui.IsKeyDown(ctx, imgui.Key_RightAlt)
+  local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+  local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
   
   if not ctrl and not alt then return false end
   
@@ -58,14 +57,14 @@ function M.handle_tile_size_shortcuts(state)
   return changed
 end
 
-function M.handle_search_shortcuts(settings)
-  local ctrl = imgui.IsKeyDown(ctx, imgui.Key_LeftCtrl) or imgui.IsKeyDown(ctx, imgui.Key_RightCtrl)
+function M.handle_search_shortcuts(ctx, settings)
+  local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
   
-  if ctrl and imgui.IsKeyPressed(ctx, imgui.Key_F) then
+  if ctrl and ImGui.IsKeyPressed(ctx, ImGui.Key_F) then
     return true
   end
   
-  if imgui.IsKeyPressed(ctx, imgui.Key_Escape) then
+  if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
     if settings.search_string and settings.search_string ~= "" then
       settings.search_string = ""
       return true

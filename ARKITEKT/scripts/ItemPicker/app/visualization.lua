@@ -1,16 +1,15 @@
+-- @noindex
+local ImGui = require 'imgui' '0.10'
+
 local M = {}
 local utils
-local imgui
-local ctx
 local SCRIPT_DIRECTORY
 local cache_manager
 
 local WAVEFORM_RESOLUTION = 2000
 
-function M.init(utils_module, imgui_module, imgui_ctx, script_dir, cache_mgr)
+function M.init(utils_module, script_dir, cache_mgr)
   utils = utils_module
-  imgui = imgui_module
-  ctx = imgui_ctx
   SCRIPT_DIRECTORY = script_dir
   cache_manager = cache_mgr
 end
@@ -108,28 +107,28 @@ function M.DownsampleWaveform(waveform, target_width)
   return downsampled
 end
 
-function M.DisplayWaveform(waveform, color, draw_list, target_width)
-  local item_x1, item_y1 = imgui.GetItemRectMin(ctx)
-  local item_x2, item_y2 = imgui.GetItemRectMax(ctx)
-  local item_w, item_h = imgui.GetItemRectSize(ctx)
+function M.DisplayWaveform(ctx, waveform, color, draw_list, target_width)
+  local item_x1, item_y1 = ImGui.GetItemRectMin(ctx)
+  local item_x2, item_y2 = ImGui.GetItemRectMax(ctx)
+  local item_w, item_h = ImGui.GetItemRectSize(ctx)
 
   if not waveform then return end
   
   local display_waveform = M.DownsampleWaveform(waveform, math.floor(target_width or item_w))
 
-  imgui.DrawList_AddRectFilled(draw_list, item_x1, item_y1, item_x2, item_y2, color)
-  local r, g, b = imgui.ColorConvertU32ToDouble4(color)
-  local h, s, v = imgui.ColorConvertRGBtoHSV(r, g, b)
+  ImGui.DrawList_AddRectFilled(draw_list, item_x1, item_y1, item_x2, item_y2, color)
+  local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
+  local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
   s = s * 0.64
   v = v * 0.35
-  r, g, b = imgui.ColorConvertHSVtoRGB(h, s, v)
+  r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local col_wave = imgui.ColorConvertDouble4ToU32(r, g, b, 1)
-  local col_zero_line = imgui.ColorConvertDouble4ToU32(r, g, b, 0.4)
+  local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
+  local col_zero_line = ImGui.ColorConvertDouble4ToU32(r, g, b, 0.4)
 
   local waveform_height = item_h / 2 * 0.95
   local zero_line = item_y1 + item_h / 2
-  imgui.DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
+  ImGui.DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
   local negative_index = #display_waveform / 2
 
   for i = 1, negative_index - 1 do
@@ -139,11 +138,11 @@ function M.DisplayWaveform(waveform, color, draw_list, target_width)
     local min_next = zero_line + waveform_height * display_waveform[i + 1 + negative_index]
     local pos_x = item_x1 + (i / negative_index) * item_w
 
-    imgui.DrawList_AddLine(draw_list, pos_x, max, pos_x, min, col_wave)
+    ImGui.DrawList_AddLine(draw_list, pos_x, max, pos_x, min, col_wave)
     if i < negative_index - 1 then
       local next_x = item_x1 + ((i + 1) / negative_index) * item_w
-      imgui.DrawList_AddLine(draw_list, pos_x, max, next_x, max_next, col_wave)
-      imgui.DrawList_AddLine(draw_list, pos_x, min, next_x, min_next, col_wave)
+      ImGui.DrawList_AddLine(draw_list, pos_x, max, next_x, max_next, col_wave)
+      ImGui.DrawList_AddLine(draw_list, pos_x, min, next_x, min_next, col_wave)
     end
   end
 end
@@ -163,9 +162,9 @@ function M.GetNoteRange(take)
   return lowest_note, highest_note
 end
 
-function M.GetMidiThumbnail(cache, item)
+function M.GetMidiThumbnail(ctx, cache, item)
   local take = reaper.GetActiveTake(item)
-  local w, h = imgui.GetItemRectSize(ctx)
+  local w, h = ImGui.GetItemRectSize(ctx)
   
   local cached_thumbnail = cache_manager.get_midi_thumbnail(cache, item, w, h)
   if cached_thumbnail then
@@ -219,53 +218,49 @@ function M.GetMidiThumbnail(cache, item)
   return thumbnail
 end
 
-function M.DisplayMidiItem(thumbnail, color, draw_list)
-  local x1, y1 = imgui.GetItemRectMin(ctx)
-  local x2, y2 = imgui.GetItemRectMax(ctx)
-  imgui.DrawList_AddRectFilled(draw_list, x1, y1, x2, y2, color)
+function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
+  local x1, y1 = ImGui.GetItemRectMin(ctx)
+  local x2, y2 = ImGui.GetItemRectMax(ctx)
+  ImGui.DrawList_AddRectFilled(draw_list, x1, y1, x2, y2, color)
 
-  local r, g, b = imgui.ColorConvertU32ToDouble4(color)
-  local h, s, v = imgui.ColorConvertRGBtoHSV(r, g, b)
+  local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
+  local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
   s = s * 0.64
   v = v * 0.35
-  r, g, b = imgui.ColorConvertHSVtoRGB(h, s, v)
+  r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local col_note = imgui.ColorConvertDouble4ToU32(r, g, b, 1)
+  local col_note = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
 
   for key, note in pairs(thumbnail) do
     local note_x1 = x1 + note.x1
     local note_x2 = x1 + note.x2
     local note_y1 = y1 + note.y1
     local note_y2 = y1 + note.y2
-    imgui.DrawList_AddRectFilled(draw_list, note_x1, note_y1, note_x2, note_y2, col_note)
+    ImGui.DrawList_AddRectFilled(draw_list, note_x1, note_y1, note_x2, note_y2, col_note)
   end
 end
 
--- Add these functions to your existing visualization.lua
-
-function M.DisplayWaveformTransparent(waveform, color, draw_list, target_width)
-  local item_x1, item_y1 = imgui.GetItemRectMin(ctx)
-  local item_x2, item_y2 = imgui.GetItemRectMax(ctx)
-  local item_w, item_h = imgui.GetItemRectSize(ctx)
+function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width)
+  local item_x1, item_y1 = ImGui.GetItemRectMin(ctx)
+  local item_x2, item_y2 = ImGui.GetItemRectMax(ctx)
+  local item_w, item_h = ImGui.GetItemRectSize(ctx)
 
   if not waveform then return end
   
   local display_waveform = M.DownsampleWaveform(waveform, math.floor(target_width or item_w))
-
-  -- NO BACKGROUND FILL - let TileFX show through
   
-  local r, g, b = imgui.ColorConvertU32ToDouble4(color)
-  local h, s, v = imgui.ColorConvertRGBtoHSV(r, g, b)
+  local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
+  local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
   s = s * 0.64
   v = v * 0.35
-  r, g, b = imgui.ColorConvertHSVtoRGB(h, s, v)
+  r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local col_wave = imgui.ColorConvertDouble4ToU32(r, g, b, 1)
-  local col_zero_line = imgui.ColorConvertDouble4ToU32(r, g, b, 0.4)
+  local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
+  local col_zero_line = ImGui.ColorConvertDouble4ToU32(r, g, b, 0.4)
 
   local waveform_height = item_h / 2 * 0.95
   local zero_line = item_y1 + item_h / 2
-  imgui.DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
+  ImGui.DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
   local negative_index = #display_waveform / 2
 
   for i = 1, negative_index - 1 do
@@ -275,48 +270,46 @@ function M.DisplayWaveformTransparent(waveform, color, draw_list, target_width)
     local min_next = zero_line + waveform_height * display_waveform[i + 1 + negative_index]
     local pos_x = item_x1 + (i / negative_index) * item_w
 
-    imgui.DrawList_AddLine(draw_list, pos_x, max, pos_x, min, col_wave)
+    ImGui.DrawList_AddLine(draw_list, pos_x, max, pos_x, min, col_wave)
     if i < negative_index - 1 then
       local next_x = item_x1 + ((i + 1) / negative_index) * item_w
-      imgui.DrawList_AddLine(draw_list, pos_x, max, next_x, max_next, col_wave)
-      imgui.DrawList_AddLine(draw_list, pos_x, min, next_x, min_next, col_wave)
+      ImGui.DrawList_AddLine(draw_list, pos_x, max, next_x, max_next, col_wave)
+      ImGui.DrawList_AddLine(draw_list, pos_x, min, next_x, min_next, col_wave)
     end
   end
 end
 
-function M.DisplayMidiItemTransparent(thumbnail, color, draw_list)
-  local x1, y1 = imgui.GetItemRectMin(ctx)
-  local x2, y2 = imgui.GetItemRectMax(ctx)
-  
-  -- NO BACKGROUND FILL - let TileFX show through
+function M.DisplayMidiItemTransparent(ctx, thumbnail, color, draw_list)
+  local x1, y1 = ImGui.GetItemRectMin(ctx)
+  local x2, y2 = ImGui.GetItemRectMax(ctx)
 
-  local r, g, b = imgui.ColorConvertU32ToDouble4(color)
-  local h, s, v = imgui.ColorConvertRGBtoHSV(r, g, b)
+  local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
+  local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
   s = s * 0.64
   v = v * 0.35
-  r, g, b = imgui.ColorConvertHSVtoRGB(h, s, v)
+  r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local col_note = imgui.ColorConvertDouble4ToU32(r, g, b, 1)
+  local col_note = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
 
   for key, note in pairs(thumbnail) do
     local note_x1 = x1 + note.x1
     local note_x2 = x1 + note.x2
     local note_y1 = y1 + note.y1
     local note_y2 = y1 + note.y2
-    imgui.DrawList_AddRectFilled(draw_list, note_x1, note_y1, note_x2, note_y2, col_note)
+    ImGui.DrawList_AddRectFilled(draw_list, note_x1, note_y1, note_x2, note_y2, col_note)
   end
 end
 
-function M.DisplayPreviewLine(preview_start, preview_end, draw_list)
+function M.DisplayPreviewLine(ctx, preview_start, preview_end, draw_list)
   if preview_start and preview_end then
     local span = preview_end - preview_start
     local time = reaper.time_precise() - preview_start
     local progress = time / span
-    local item_x1, item_y1 = imgui.GetItemRectMin(ctx)
-    local item_x2, item_y2 = imgui.GetItemRectMax(ctx)
-    local item_w, item_h = imgui.GetItemRectSize(ctx)
+    local item_x1, item_y1 = ImGui.GetItemRectMin(ctx)
+    local item_x2, item_y2 = ImGui.GetItemRectMax(ctx)
+    local item_w, item_h = ImGui.GetItemRectSize(ctx)
     local x = item_x1 + item_w * progress
-    imgui.DrawList_AddLine(draw_list, x, item_y1, x, item_y2, 0xFFFFFFFF)
+    ImGui.DrawList_AddLine(draw_list, x, item_y1, x, item_y2, 0xFFFFFFFF)
   end
 end
 

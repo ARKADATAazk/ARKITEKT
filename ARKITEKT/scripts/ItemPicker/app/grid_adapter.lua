@@ -1,7 +1,8 @@
+-- @noindex
+local ImGui = require 'imgui' '0.10'
+
 local M = {}
 local Grid
-local imgui
-local ctx
 local visualization
 local cache_mgr
 local config
@@ -10,9 +11,7 @@ local tile_rendering
 local disabled_items
 local TileAnim
 
-function M.init(imgui_module, imgui_ctx, Grid_module, visualization_module, cache_manager_module, config_module, shortcuts_module, tile_rendering_module, disabled_items_module, tile_anim_module)
-  imgui = imgui_module
-  ctx = imgui_ctx
+function M.init(Grid_module, visualization_module, cache_manager_module, config_module, shortcuts_module, tile_rendering_module, disabled_items_module, tile_anim_module)
   Grid = Grid_module
   visualization = visualization_module
   cache_mgr = cache_manager_module
@@ -26,7 +25,7 @@ function M.init(imgui_module, imgui_ctx, Grid_module, visualization_module, cach
   if not disabled_items then error("disabled_items module required") end
 end
 
-function M.create_audio_grid(state, settings)
+function M.create_audio_grid(ctx, state, settings)
   if not shortcuts then
     error("shortcuts module not initialized in grid_adapter")
   end
@@ -53,11 +52,20 @@ function M.create_audio_grid(state, settings)
         end
         
         local content = state.samples[filename]
+        if not content or #content == 0 then
+          goto skip_disabled
+        end
+        
         local current_idx = state.box_current_item[filename] or 1
         if current_idx > #content then current_idx = 1 end
         
-        local item = content[current_idx][1]
-        local item_name = content[current_idx][2]
+        local entry = content[current_idx]
+        if not entry or not entry[1] or not entry[2] then
+          goto skip_disabled
+        end
+        
+        local item = entry[1]
+        local item_name = entry[2]
         
         if settings.search_string == 0 or item_name:lower():find(settings.search_string:lower()) then
           table.insert(filtered, {
@@ -79,7 +87,7 @@ function M.create_audio_grid(state, settings)
     end,
     
     render_tile = function(ctx, rect, item_data, tile_state)
-      local dl = imgui.GetWindowDrawList(ctx)
+      local dl = ImGui.GetWindowDrawList(ctx)
       local track = reaper.GetMediaItemTrack(item_data.item)
       local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
       local r, g, b = 85/256, 91/256, 91/256
@@ -90,7 +98,7 @@ function M.create_audio_grid(state, settings)
         end
         r, g, b = RGBvalues(track_color)
       end
-      track_color = imgui.ColorConvertDouble4ToU32(r, g, b, 1)
+      track_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
       
       local is_disabled = disabled_items.is_disabled_audio(state.disabled, item_data.filename)
       
@@ -105,7 +113,7 @@ function M.create_audio_grid(state, settings)
       }
       
       tile_rendering.render_complete_tile(
-        dl, rect, render_data, tile_state, 
+        ctx, dl, rect, render_data, tile_state, 
         track_color, state.tile_animator, 
         visualization, cache_mgr, is_disabled
       )
@@ -118,7 +126,7 @@ function M.create_audio_grid(state, settings)
           if state.audio_grid.key(data) == keys[1] then
             local tile_width = shortcuts.get_tile_width(state)
             local tile_height = shortcuts.get_tile_height(state)
-            local text_w = imgui.CalcTextSize(ctx, " " .. data.name)
+            local text_w = ImGui.CalcTextSize(ctx, " " .. data.name)
             
             state.item_to_add = data.item
             state.item_to_add_name = data.name
@@ -156,7 +164,9 @@ function M.create_audio_grid(state, settings)
   })
 end
 
-function M.create_midi_grid(state, settings)
+
+
+function M.create_midi_grid(ctx, state, settings)
   if not state.tile_animator then
     state.tile_animator = TileAnim and TileAnim.new(12.0) or nil
   end
@@ -205,7 +215,7 @@ function M.create_midi_grid(state, settings)
     end,
     
     render_tile = function(ctx, rect, item_data, tile_state)
-      local dl = imgui.GetWindowDrawList(ctx)
+      local dl = ImGui.GetWindowDrawList(ctx)
       local track = reaper.GetMediaItemTrack(item_data.item)
       local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
       local r, g, b = 85/256, 91/256, 91/256
@@ -216,7 +226,7 @@ function M.create_midi_grid(state, settings)
         end
         r, g, b = RGBvalues(track_color)
       end
-      track_color = imgui.ColorConvertDouble4ToU32(r, g, b, 1)
+      track_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
       
       local is_disabled = disabled_items.is_disabled_midi(state.disabled, item_data.track_idx)
       
@@ -231,7 +241,7 @@ function M.create_midi_grid(state, settings)
       }
       
       tile_rendering.render_complete_tile(
-        dl, rect, render_data, tile_state, 
+        ctx, dl, rect, render_data, tile_state, 
         track_color, state.tile_animator, 
         visualization, cache_mgr, is_disabled
       )
@@ -244,7 +254,7 @@ function M.create_midi_grid(state, settings)
           if state.midi_grid.key(data) == keys[1] then
             local tile_width = shortcuts.get_tile_width(state)
             local tile_height = shortcuts.get_tile_height(state)
-            local text_w = imgui.CalcTextSize(ctx, " " .. data.name)
+            local text_w = ImGui.CalcTextSize(ctx, " " .. data.name)
             
             state.item_to_add = data.item
             state.item_to_add_name = data.name

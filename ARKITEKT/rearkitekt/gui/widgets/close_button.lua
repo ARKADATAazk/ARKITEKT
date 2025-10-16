@@ -3,7 +3,7 @@
 -- Floating close button that appears on hover in top-right corner
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 
 local Draw = require('rearkitekt.gui.draw')
 local Colors = require('rearkitekt.core.colors')

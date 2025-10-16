@@ -3,7 +3,7 @@
 -- Main panel API with element-based header (selection moved to grid)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 
 local Header = require('rearkitekt.gui.widgets.panel.header')
 local Content = require('rearkitekt.gui.widgets.panel.content')

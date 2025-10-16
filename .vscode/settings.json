@@ -75,6 +75,18 @@
         {
             "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\Region_Playlist\\app\\",
             "color": "foldercolorizer.color_cc0066"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\ItemPicker\\",
+            "color": "foldercolorizer.color_6666ff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\app\\",
+            "color": "foldercolorizer.color_cc0099"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\core\\",
+            "color": "foldercolorizer.color_ccff66"
         }
     ],
 }

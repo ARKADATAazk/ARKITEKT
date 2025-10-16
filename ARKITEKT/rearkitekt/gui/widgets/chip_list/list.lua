@@ -3,7 +3,7 @@
 -- Chip list container with multiple layout modes
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 
 local Chip = require('rearkitekt.gui.widgets.component.chip')
 local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')

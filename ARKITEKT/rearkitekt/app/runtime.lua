@@ -4,7 +4,7 @@
 -- Provides a clean API for running a frame callback
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 
 local M = {}
 

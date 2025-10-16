@@ -1,9 +1,10 @@
 -- @noindex
 -- ReArkitekt/app/window.lua
 -- MODIFIED: Added fullscreen/viewport mode with fade animations
+-- UPDATED: ImGui 0.10 font size handling
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 
 local M = {}
 
@@ -134,7 +135,9 @@ function M.new(opts)
     titlebar_pad_h  = opts.titlebar_pad_h,
     titlebar_pad_v  = opts.titlebar_pad_v or DEFAULTS.titlebar.pad_v,
     title_font      = opts.title_font,
+    title_font_size = opts.title_font_size or 16,
     version_font    = opts.version_font,
+    version_font_size = opts.version_font_size or 13,
     version_color   = opts.version_color,
 
     initial_pos     = opts.initial_pos  or DEFAULTS.window.initial_pos,
@@ -182,7 +185,9 @@ function M.new(opts)
       text_color      = opts.titlebar_text_color,
       enable_maximize = opts.enable_maximize ~= false,
       title_font      = opts.title_font,
+      title_font_size = opts.title_font_size or 16,
       version_font    = opts.version_font,
+      version_font_size = opts.version_font_size or 13,
       version_color   = opts.version_color,
       show_icon       = opts.show_icon,
       icon_size       = opts.icon_size,

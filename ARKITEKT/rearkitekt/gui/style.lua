@@ -3,7 +3,7 @@
 -- Shared style helpers for ReaImGui
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 
 local M = {}
@@ -117,9 +117,9 @@ function M.PushMyStyle(ctx)
   ImGui.PushStyleColor(ctx, ImGui.Col_ResizeGripActive, C.grey_20)
   ImGui.PushStyleColor(ctx, ImGui.Col_TabHovered, hexrgb("#42FA8FCC"))
   ImGui.PushStyleColor(ctx, ImGui.Col_Tab, hexrgb("#000000DC"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_TabActive, C.grey_08)
-  ImGui.PushStyleColor(ctx, ImGui.Col_TabUnfocused, hexrgb("#11261FF8"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_TabUnfocusedActive, hexrgb("#236C42FF"))
+  --ImGui.PushStyleColor(ctx, ImGui.Col_TabActive, C.grey_08)
+  --ImGui.PushStyleColor(ctx, ImGui.Col_TabUnfocused, hexrgb("#11261FF8"))
+  --ImGui.PushStyleColor(ctx, ImGui.Col_TabUnfocusedActive, hexrgb("#236C42FF"))
   ImGui.PushStyleColor(ctx, ImGui.Col_DockingPreview, hexrgb("#42FAAAB3"))
   ImGui.PushStyleColor(ctx, ImGui.Col_DockingEmptyBg, C.grey_20)
   ImGui.PushStyleColor(ctx, ImGui.Col_PlotLines, hexrgb("#9C9C9CFF"))
@@ -139,7 +139,7 @@ function M.PushMyStyle(ctx)
 end
 
 function M.PopMyStyle(ctx)
-  ImGui.PopStyleColor(ctx, 54)
+  ImGui.PopStyleColor(ctx, 51)
   ImGui.PopStyleVar(ctx, 31)
 end
 

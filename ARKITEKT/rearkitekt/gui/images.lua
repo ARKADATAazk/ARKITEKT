@@ -4,7 +4,7 @@
 -- Now supports opts.no_crop=true to bypass 3-state slicing (show full image)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
+local ImGui = require 'imgui' '0.10'
 
 local M = {}
 

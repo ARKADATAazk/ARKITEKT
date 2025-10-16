@@ -2,9 +2,10 @@
 -- ReArkitekt/app/shell.lua
 -- MODIFIED: Made font loading robust against older configuration files.
 -- ADDED: Support for titlebar_version size override (uses regular font family)
+-- UPDATED: ImGui 0.10 font size handling
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui   = require 'imgui' '0.9'
+local ImGui   = require 'imgui' '0.10'
 local Runtime = require('rearkitekt.app.runtime')
 local Window  = require('rearkitekt.app.window')
 
@@ -83,6 +84,7 @@ local function load_fonts(ctx, font_cfg)
                                 or default_font
 
   local titlebar_version_font = nil
+  local titlebar_version_size = font_cfg.titlebar_version or font_cfg.version
   if font_cfg.titlebar_version then
     titlebar_version_font = exists(R) and ImGui.CreateFont(R, font_cfg.titlebar_version)
                                        or version_font
@@ -95,11 +97,16 @@ local function load_fonts(ctx, font_cfg)
   ImGui.Attach(ctx, monospace_font)
   
   return { 
-    default = default_font, 
-    title = title_font, 
-    version = version_font, 
+    default = default_font,
+    default_size = font_cfg.default,
+    title = title_font,
+    title_size = font_cfg.title,
+    version = version_font,
+    version_size = font_cfg.version,
     monospace = monospace_font,
-    titlebar_version = titlebar_version_font
+    monospace_size = font_cfg.monospace,
+    titlebar_version = titlebar_version_font,
+    titlebar_version_size = titlebar_version_size,
   }
 end
 
@@ -129,28 +136,30 @@ function M.run(opts)
 
   local window = Window.new({
     fullscreen      = opts.fullscreen,
-      title           = title,
-      version         = version,
-      title_font      = fonts.title,
-      version_font    = fonts.titlebar_version or fonts.version,
-      version_color   = opts.version_color,
-      settings        = settings and settings:sub('ui') or nil,
-      initial_pos     = opts.initial_pos  or cfg.window.initial_pos,
-      initial_size    = opts.initial_size or cfg.window.initial_size,
-      min_size        = opts.min_size     or cfg.window.min_size,
-      show_status_bar = opts.show_status_bar,
-      show_titlebar   = opts.show_titlebar,
-      get_status_func = opts.get_status_func,
-      status_bar_height = DEFAULTS.status_bar and DEFAULTS.status_bar.height or 28,
-      content_padding = opts.content_padding or cfg.window.content_padding,
-      titlebar_pad_h  = opts.titlebar_pad_h,
-      titlebar_pad_v  = opts.titlebar_pad_v,
-      flags           = opts.flags,
-      style           = style,
-      tabs            = opts.tabs,
-      bg_color_floating = opts.bg_color_floating,
-      bg_color_docked   = opts.bg_color_docked,
-    })
+    title           = title,
+    version         = version,
+    title_font      = fonts.title,
+    title_font_size = fonts.title_size,
+    version_font    = fonts.titlebar_version or fonts.version,
+    version_font_size = fonts.titlebar_version_size or fonts.version_size,
+    version_color   = opts.version_color,
+    settings        = settings and settings:sub('ui') or nil,
+    initial_pos     = opts.initial_pos  or cfg.window.initial_pos,
+    initial_size    = opts.initial_size or cfg.window.initial_size,
+    min_size        = opts.min_size     or cfg.window.min_size,
+    show_status_bar = opts.show_status_bar,
+    show_titlebar   = opts.show_titlebar,
+    get_status_func = opts.get_status_func,
+    status_bar_height = DEFAULTS.status_bar and DEFAULTS.status_bar.height or 28,
+    content_padding = opts.content_padding or cfg.window.content_padding,
+    titlebar_pad_h  = opts.titlebar_pad_h,
+    titlebar_pad_v  = opts.titlebar_pad_v,
+    flags           = opts.flags,
+    style           = style,
+    tabs            = opts.tabs,
+    bg_color_floating = opts.bg_color_floating,
+    bg_color_docked   = opts.bg_color_docked,
+  })
     
   
   if opts.overlay then
@@ -204,7 +213,7 @@ function M.run(opts)
         end
       end
       
-      ImGui.PushFont(ctx, fonts.default)
+      ImGui.PushFont(ctx, fonts.default, fonts.default_size)
 
       local visible, open = window:Begin(ctx)
       if visible then

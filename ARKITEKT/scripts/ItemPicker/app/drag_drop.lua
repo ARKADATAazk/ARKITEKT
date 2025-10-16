@@ -1,15 +1,14 @@
+-- @noindex
+local ImGui = require 'imgui' '0.10'
+
 local M = {}
-local imgui
-local ctx
 local visualization
 
-function M.init(imgui_module, imgui_ctx, visualization_module)
-  imgui = imgui_module
-  ctx = imgui_ctx
+function M.init(visualization_module)
   visualization = visualization_module
 end
 
-function M.DragDropLogic(state, mini_font)
+function M.DragDropLogic(ctx, state, mini_font)
   local mouse_key = reaper.JS_Mouse_GetState(-1)
   local left_mouse_key = mouse_key & 1 == 1
   if not left_mouse_key then
@@ -20,14 +19,14 @@ function M.DragDropLogic(state, mini_font)
   local rv, w_x1, w_y1, w_x2, w_y2 = reaper.JS_Window_GetRect(arrange_window)
   local w_width, w_height = w_x2 - w_x1, w_y2 - w_y1
 
-  imgui.SetNextWindowPos(ctx, w_x1, w_y1)
-  imgui.SetNextWindowSize(ctx, w_width, w_height - 17)
+  ImGui.SetNextWindowPos(ctx, w_x1, w_y1)
+  ImGui.SetNextWindowSize(ctx, w_width, w_height - 17)
 
-  imgui.PushStyleVar(ctx, imgui.StyleVar_WindowBorderSize, 0)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
 
-  local _, _ = imgui.Begin(ctx, "drag_target_window", false,
-    imgui.WindowFlags_NoCollapse | imgui.WindowFlags_NoInputs | imgui.WindowFlags_NoTitleBar |
-    imgui.WindowFlags_NoFocusOnAppearing | imgui.WindowFlags_NoBackground)
+  local _, _ = ImGui.Begin(ctx, "drag_target_window", false,
+    ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoInputs | ImGui.WindowFlags_NoTitleBar |
+    ImGui.WindowFlags_NoFocusOnAppearing | ImGui.WindowFlags_NoBackground)
 
   local arrange_zoom_level = reaper.GetHZoomLevel()
 
@@ -85,64 +84,62 @@ function M.DragDropLogic(state, mini_font)
     end
 
     if rect_x1 then
-      imgui.DrawList_AddRectFilled(state.draw_list, rect_x1, rect_y1, rect_x2, rect_y2,
-        imgui.ColorConvertDouble4ToU32(177 / 256, 180 / 256, 180 / 256, 1))
+      ImGui.DrawList_AddRectFilled(state.draw_list, rect_x1, rect_y1, rect_x2, rect_y2,
+        ImGui.ColorConvertDouble4ToU32(177 / 256, 180 / 256, 180 / 256, 1))
 
-      local line_color = imgui.ColorConvertDouble4ToU32(16 / 256, 133 / 256, 130 / 256, 1)
+      local line_color = ImGui.ColorConvertDouble4ToU32(16 / 256, 133 / 256, 130 / 256, 1)
 
-      imgui.DrawList_AddLine(state.draw_list, rect_x1, w_y1, rect_x1, w_y2, line_color)
-      imgui.DrawList_AddLine(state.draw_list, rect_x2, w_y1, rect_x2, w_y2, line_color)
+      ImGui.DrawList_AddLine(state.draw_list, rect_x1, w_y1, rect_x1, w_y2, line_color)
+      ImGui.DrawList_AddLine(state.draw_list, rect_x2, w_y1, rect_x2, w_y2, line_color)
 
-      imgui.DrawList_AddLine(state.draw_list, w_x1, rect_y1, w_x2, rect_y1, line_color)
-      imgui.DrawList_AddLine(state.draw_list, w_x1, rect_y2, w_x2, rect_y2, line_color)
+      ImGui.DrawList_AddLine(state.draw_list, w_x1, rect_y1, w_x2, rect_y1, line_color)
+      ImGui.DrawList_AddLine(state.draw_list, w_x1, rect_y2, w_x2, rect_y2, line_color)
     end
   end
 
-  imgui.PopStyleVar(ctx, 1)
-  imgui.End(ctx)
+  ImGui.PopStyleVar(ctx, 1)
+  ImGui.End(ctx)
   
   return false
 end
 
-function M.DraggingThumbnailWindow(state, mini_font)
+function M.DraggingThumbnailWindow(ctx, state, mini_font)
   if not state.item_to_add_width or not state.item_to_add_height then
     return
   end
   
   local mouse_x, mouse_y = reaper.GetMousePosition()
-  imgui.SetNextWindowPos(ctx, mouse_x, mouse_y)
+  ImGui.SetNextWindowPos(ctx, mouse_x, mouse_y)
 
-  if imgui.Begin(ctx, "MouseFollower", false, imgui.WindowFlags_NoInputs | imgui.WindowFlags_TopMost | imgui.WindowFlags_NoTitleBar | imgui.WindowFlags_NoBackground | imgui.WindowFlags_AlwaysAutoResize) then
-    imgui.PushFont(ctx, mini_font)
-    local cursor_x, cursor_y = imgui.GetItemRectMin(ctx)
-    local x1, y1 = cursor_x + imgui.StyleVar_ChildBorderSize, cursor_y + imgui.StyleVar_ChildBorderSize
-    imgui.DrawList_AddRectFilled(state.draw_list, x1 - 8, y1 - 8, x1 + state.item_to_add_width + 8,
+  if ImGui.Begin(ctx, "MouseFollower", false, ImGui.WindowFlags_NoInputs | ImGui.WindowFlags_TopMost | ImGui.WindowFlags_NoTitleBar | ImGui.WindowFlags_NoBackground | ImGui.WindowFlags_AlwaysAutoResize) then
+    ImGui.PushFont(ctx, mini_font, 13)
+    local cursor_x, cursor_y = ImGui.GetItemRectMin(ctx)
+    local x1, y1 = cursor_x + ImGui.StyleVar_ChildBorderSize, cursor_y + ImGui.StyleVar_ChildBorderSize
+    ImGui.DrawList_AddRectFilled(state.draw_list, x1 - 8, y1 - 8, x1 + state.item_to_add_width + 8,
       y1 + state.item_to_add_height + 8, 0x00000050)
 
-    imgui.DrawList_AddRectFilled(state.draw_list, x1, y1, x1 + state.item_to_add_width,
-      y1 + imgui.GetTextLineHeightWithSpacing(ctx), state.item_to_add_color)
-    imgui.DrawList_AddRectFilled(state.draw_list, x1, y1, x1 + state.item_to_add_width,
-      y1 + imgui.GetTextLineHeightWithSpacing(ctx), imgui.ColorConvertDouble4ToU32(0, 0, 0, 0.3))
-    imgui.Text(ctx, " " .. state.item_to_add_name)
-    imgui.Dummy(ctx, state.item_to_add_width, state.item_to_add_height - imgui.GetTextLineHeightWithSpacing(ctx))
+    ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x1 + state.item_to_add_width,
+      y1 + ImGui.GetTextLineHeightWithSpacing(ctx), state.item_to_add_color)
+    ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x1 + state.item_to_add_width,
+      y1 + ImGui.GetTextLineHeightWithSpacing(ctx), ImGui.ColorConvertDouble4ToU32(0, 0, 0, 0.3))
+    ImGui.Text(ctx, " " .. state.item_to_add_name)
+    ImGui.Dummy(ctx, state.item_to_add_width, state.item_to_add_height - ImGui.GetTextLineHeightWithSpacing(ctx))
     if reaper.TakeIsMIDI(reaper.GetActiveTake(state.item_to_add)) then
-      local thumbnail = visualization.GetMidiThumbnail(state.cache, state.item_to_add)
-      if thumbnail then
-        visualization.DisplayMidiItem(thumbnail, state.item_to_add_color, state.draw_list)
-      end
+local thumbnail = visualization.GetMidiThumbnail(ctx, state.cache, state.item_to_add)
+if thumbnail then
+  visualization.DisplayMidiItem(ctx, thumbnail, state.item_to_add_color, state.draw_list)
+end
     else
       if not state.drag_waveform then
         state.drag_waveform = visualization.GetItemWaveform(state.cache, state.item_to_add)
       end
       if state.drag_waveform then
-        visualization.DisplayWaveform(state.drag_waveform, state.item_to_add_color, state.draw_list, state.item_to_add_width)
+        visualization.DisplayWaveform(ctx, state.drag_waveform, state.item_to_add_color, state.draw_list, state.item_to_add_width)
       end
     end
-    imgui.PopFont(ctx)
-    imgui.End(ctx)
+    ImGui.PopFont(ctx)
+    ImGui.End(ctx)
   end
 end
-
-
 
 return M

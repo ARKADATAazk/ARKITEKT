@@ -18,7 +18,7 @@ function M.draw(ctx, dl, x, y, width, height, config)
     local line_y2 = line_y1 + line_height
     
     -- DrawList_AddLine expects: dl, x1, y1, x2, y2, color, thickness
-    local ImGui = require 'imgui' '0.9'
+    local ImGui = require 'imgui' '0.10'
     ImGui.DrawList_AddLine(dl, line_x, line_y1, line_x, line_y2, line_color, line_thickness)
   end
   
