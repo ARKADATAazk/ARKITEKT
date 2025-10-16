@@ -20,23 +20,34 @@ function M.init(utils_module, grid_adapter_module, reaper_interface_module, conf
   if not disabled_items then error("disabled_items module required") end
 end
 
+local function smootherstep(t)
+  t = math.max(0.0, math.min(1.0, t))
+  return t * t * t * (t * (t * 6 - 15) + 10)
+end
+
 function M.MainWindow(ctx, state, settings, big_font, SCRIPT_TITLE, SCREEN_W, SCREEN_H)
   local window_flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoTitleBar | ImGui.WindowFlags_NoResize |
       ImGui.WindowFlags_NoMove | ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse
 
   local imgui_visible, imgui_open = ImGui.Begin(ctx, SCRIPT_TITLE, true, window_flags)
+  
+  local overlay_alpha = state.overlay_alpha or 1.0
+  
+  local ui_fade = smootherstep(math.max(0, (overlay_alpha - 0.15) / 0.85))
+  
+  local ui_y_offset = 15 * (1.0 - ui_fade)
+  
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, ui_fade)
 
   if ImGui.Checkbox(ctx, "Play Item Through Track (will add delay to preview playback)", settings.play_item_through_track) then
     settings.play_item_through_track = not settings.play_item_through_track
   end
   
   if ImGui.Checkbox(ctx, "Show Muted Tracks", settings.show_muted_tracks) then
-    state.samples, state.sample_indexes, state.midi_tracks = nil, nil, nil
     settings.show_muted_tracks = not settings.show_muted_tracks
   end
 
   if ImGui.Checkbox(ctx, "Show Muted Items", settings.show_muted_items) then
-    state.samples, state.sample_indexes, state.midi_tracks = nil, nil, nil
     settings.show_muted_items = not settings.show_muted_items
   end
   
@@ -57,6 +68,8 @@ function M.MainWindow(ctx, state, settings, big_font, SCRIPT_TITLE, SCREEN_W, SC
       end
     end
   end
+  
+  ImGui.PopStyleVar(ctx)
 
   local focus_search = shortcuts.handle_search_shortcuts(ctx, settings)
   
@@ -70,11 +83,15 @@ function M.MainWindow(ctx, state, settings, big_font, SCRIPT_TITLE, SCREEN_W, SC
     state.audio_grid = grid_adapter.create_audio_grid(ctx, state, settings)
   end
   
+  local search_fade = smootherstep(math.max(0, (overlay_alpha - 0.05) / 0.95))
+  local search_y_offset = 25 * (1.0 - search_fade)
+  
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, search_fade)
   ImGui.PushFont(ctx, big_font, 14)
   local search_text_w, search_text_h = ImGui.CalcTextSize(ctx, "Search:")
-  ImGui.DrawList_AddText(state.draw_list, SCREEN_W / 2 - search_text_w / 2, SCREEN_H * config.LAYOUT.CONTENT_START_Y - search_text_h, 0xFFFFFFFF, "Search:")
+  ImGui.DrawList_AddText(state.draw_list, SCREEN_W / 2 - search_text_w / 2, SCREEN_H * config.LAYOUT.CONTENT_START_Y - search_text_h + search_y_offset, 0xFFFFFFFF, "Search:")
 
-  ImGui.SetCursorScreenPos(ctx, SCREEN_W / 2 - (SCREEN_W * config.LAYOUT.SEARCH_WIDTH_RATIO) / 2, SCREEN_H * config.LAYOUT.CONTENT_START_Y)
+  ImGui.SetCursorScreenPos(ctx, SCREEN_W / 2 - (SCREEN_W * config.LAYOUT.SEARCH_WIDTH_RATIO) / 2, SCREEN_H * config.LAYOUT.CONTENT_START_Y + search_y_offset)
   ImGui.PushItemWidth(ctx, SCREEN_W * config.LAYOUT.SEARCH_WIDTH_RATIO)
   if (not state.initialized and settings.focus_keyboard_on_init) or focus_search then
     ImGui.SetKeyboardFocusHere(ctx)
@@ -82,15 +99,20 @@ function M.MainWindow(ctx, state, settings, big_font, SCRIPT_TITLE, SCREEN_W, SC
   end
   _, settings.search_string = ImGui.InputText(ctx, "##Search", settings.search_string)
   ImGui.PopFont(ctx)
+  ImGui.PopStyleVar(ctx)
 
   local content_start_y = SCREEN_H * config.LAYOUT.CONTENT_START_Y
   local content_height = SCREEN_H * config.LAYOUT.CONTENT_HEIGHT
   
+  local section_fade = smootherstep(math.max(0, (overlay_alpha - 0.1) / 0.9))
+  
   if state.midi_grid then
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
     ImGui.SetCursorScreenPos(ctx, config.LAYOUT.PADDING, content_start_y)
     ImGui.PushFont(ctx, big_font, 14)
     ImGui.Text(ctx, "MIDI Tracks")
     ImGui.PopFont(ctx)
+    ImGui.PopStyleVar(ctx)
     
     local midi_height = content_height * config.LAYOUT.MIDI_SECTION_RATIO
     ImGui.SetCursorScreenPos(ctx, config.LAYOUT.PADDING, content_start_y + config.LAYOUT.HEADER_HEIGHT)
@@ -102,10 +124,13 @@ function M.MainWindow(ctx, state, settings, big_font, SCRIPT_TITLE, SCREEN_W, SC
   
   if state.audio_grid then
     local audio_start_y = content_start_y + (content_height * config.LAYOUT.MIDI_SECTION_RATIO) + config.LAYOUT.SECTION_SPACING
+    
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
     ImGui.SetCursorScreenPos(ctx, config.LAYOUT.PADDING, audio_start_y)
     ImGui.PushFont(ctx, big_font, 15)
     ImGui.Text(ctx, "Audio Sources")
     ImGui.PopFont(ctx)
+    ImGui.PopStyleVar(ctx)
     
     local audio_height = content_height * config.LAYOUT.AUDIO_SECTION_RATIO
     ImGui.SetCursorScreenPos(ctx, config.LAYOUT.PADDING, audio_start_y + config.LAYOUT.HEADER_HEIGHT)

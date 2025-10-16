@@ -30,6 +30,7 @@ function M.create(state_module, config_module, settings_module, SCRIPT_DIRECTORY
     disabled_items = nil,
     utils = nil,
     tile_rendering = nil,
+    job_queue = nil,
     
     initialized = false,
   }, GUI)
@@ -44,6 +45,7 @@ function M.create(state_module, config_module, settings_module, SCRIPT_DIRECTORY
   local grid_adapter = dofile(SCRIPT_DIRECTORY .. 'app/grid_adapter.lua')
   local drag_drop = dofile(SCRIPT_DIRECTORY .. 'app/drag_drop.lua')
   local main_ui = dofile(SCRIPT_DIRECTORY .. 'app/main_ui.lua')
+  local job_queue = dofile(SCRIPT_DIRECTORY .. 'app/job_queue.lua')
   
   self.utils = utils
   self.disabled_items = disabled_items
@@ -55,6 +57,7 @@ function M.create(state_module, config_module, settings_module, SCRIPT_DIRECTORY
   self.grid_adapter = grid_adapter
   self.drag_drop = drag_drop
   self.main_ui = main_ui
+  self.job_queue = job_queue
   
   return self
 end
@@ -65,6 +68,7 @@ function GUI:initialize_once(ctx)
   self.state.cache = self.cache_manager.new(self.config.CACHE.MAX_ENTRIES)
   self.state.cache_manager = self.cache_manager
   self.state.disabled = self.disabled_items.new()
+  self.state.job_queue = self.job_queue.new(3)
   
   self.reaper_interface.init(self.utils)
   self.shortcuts.init(self.config)
@@ -90,11 +94,15 @@ function GUI:draw(ctx, shell_state)
   local viewport = ImGui.GetMainViewport(ctx)
   local SCREEN_W, SCREEN_H = ImGui.Viewport_GetSize(viewport)
   
-  -- Check what mode we're in (overlay vs window)
   local is_overlay_mode = shell_state.is_overlay_mode == true
-  local overlay = shell_state.overlay  -- This will be the overlay object if in overlay mode
+  local overlay = shell_state.overlay
   
-  -- Get fonts based on mode
+  local overlay_alpha = 1.0
+  if is_overlay_mode and overlay and overlay.alpha then
+    overlay_alpha = overlay.alpha:value()
+  end
+  self.state.overlay_alpha = overlay_alpha
+  
   local mini_font = shell_state.fonts.default
   local mini_font_size = shell_state.fonts.default_size or 14
   local big_font = shell_state.fonts.title
@@ -102,6 +110,15 @@ function GUI:draw(ctx, shell_state)
   
   ImGui.PushFont(ctx, mini_font, mini_font_size)
   reaper.PreventUIRefresh(1)
+  
+  if self.state.job_queue and self.job_queue.process_jobs then
+    self.job_queue.process_jobs(
+      self.state.job_queue,
+      self.visualization,
+      self.cache_manager,
+      ctx
+    )
+  end
   
   self.grid_adapter.update_animations(self.state, 0.016)
   
@@ -120,15 +137,12 @@ function GUI:draw(ctx, shell_state)
   reaper.PreventUIRefresh(-1)
   ImGui.PopFont(ctx)
   
-  -- Handle exit conditions based on mode
   if self.state.exit or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
     if is_overlay_mode then
-      -- In overlay mode, close the overlay
       if overlay and overlay.close then
         overlay:close()
       end
     else
-      -- In window mode, close the window
       if shell_state.window and shell_state.window.request_close then
         shell_state.window:request_close()
       end

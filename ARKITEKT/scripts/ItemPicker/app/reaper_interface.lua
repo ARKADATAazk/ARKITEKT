@@ -100,16 +100,9 @@ function M.GetProjectSamples(settings, state)
     if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
       goto next_track
     end
-    if not settings.show_muted_tracks and (reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or M.IsParentMuted(track)) then
-      goto next_track
-    end
     
     local track_items = M.GetItemInTrack(track)
     for key, item in pairs(track_items) do
-      if not settings.show_muted_items and reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1 then
-        goto next_item
-      end
-      
       local take = reaper.GetActiveTake(item)
       if not reaper.TakeIsMIDI(take) then
         local source = reaper.GetMediaItemTake_Source(take)
@@ -134,7 +127,16 @@ function M.GetProjectSamples(settings, state)
         end
         
         local item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$")
-        table.insert(samples[filename], { item, item_name })
+        
+        local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or M.IsParentMuted(track) == true
+        local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
+        
+        table.insert(samples[filename], { 
+          item, 
+          item_name,
+          track_muted = track_muted,
+          item_muted = item_muted
+        })
       end
       ::next_item::
     end
@@ -151,17 +153,12 @@ function M.GetProjectMidiTracks(settings, state)
     if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
       goto next_track
     end
-    if not settings.show_muted_tracks and (reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or M.IsParentMuted(track)) then
-      goto next_track
-    end
     
     local track_items = M.GetItemInTrack(track)
     local track_midi = {}
+    local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or M.IsParentMuted(track) == true
+    
     for key, item in pairs(track_items) do
-      if not settings.show_muted_items and reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1 then
-        goto next_item
-      end
-      
       local take = reaper.GetActiveTake(item)
       if reaper.TakeIsMIDI(take) then
         local _, num_notes = reaper.MIDI_CountEvts(take)
@@ -171,12 +168,19 @@ function M.GetProjectMidiTracks(settings, state)
         
         local _, midi = reaper.MIDI_GetAllEvts(take)
         for key, _item in pairs(track_midi) do
-          local _, _midi = reaper.MIDI_GetAllEvts(reaper.GetActiveTake(_item))
+          local _, _midi = reaper.MIDI_GetAllEvts(reaper.GetActiveTake(_item.item))
           if midi == _midi then
             goto next_item
           end
         end
-        table.insert(track_midi, item)
+        
+        local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
+        
+        table.insert(track_midi, {
+          item = item,
+          track_muted = track_muted,
+          item_muted = item_muted
+        })
       end
       ::next_item::
     end

@@ -1,7 +1,6 @@
 -- @noindex
 -- ReArkitekt/app/window.lua
--- MODIFIED: Added fullscreen/viewport mode with fade animations
--- UPDATED: ImGui 0.10 font size handling
+-- FIXED: Smooth ease-in-out curve + click-through during fade-out
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -53,7 +52,6 @@ do
           use_viewport = true,
           fade_in_duration = 0.3,
           fade_out_duration = 0.3,
-          fade_speed = 10.0,
           scrim_enabled = true,
           scrim_color = 0x000000FF,
           scrim_opacity = 0.85,
@@ -93,28 +91,42 @@ do
   end
 end
 
-local function create_alpha_tracker(speed)
+local function smootherstep(t)
+  t = math.max(0.0, math.min(1.0, t))
+  return t * t * t * (t * (t * 6 - 15) + 10)
+end
+
+local function create_alpha_tracker(duration)
   return {
     current = 0.0,
     target = 0.0,
-    speed = speed or 8.0,
+    duration = duration or 0.3,
+    elapsed = 0.0,
     set_target = function(self, t) 
       self.target = t 
+      self.elapsed = 0.0
     end,
     update = function(self, dt)
-      local diff = self.target - self.current
-      if math.abs(diff) < 0.005 then
+      if math.abs(self.target - self.current) < 0.001 then
         self.current = self.target
-      else
-        local alpha = 1.0 - math.exp(-self.speed * dt)
-        self.current = self.current + diff * alpha
+        return
+      end
+      
+      self.elapsed = self.elapsed + dt
+      local t = math.max(0.0, math.min(1.0, self.elapsed / self.duration))
+      local smoothed = smootherstep(t)
+      
+      self.current = self.current + (self.target - self.current) * smoothed
+      
+      if self.elapsed >= self.duration then
+        self.current = self.target
       end
     end,
     value = function(self) 
       return math.max(0.0, math.min(1.0, self.current))
     end,
     is_complete = function(self)
-      return math.abs(self.target - self.current) < 0.005
+      return math.abs(self.target - self.current) < 0.001
     end
   }
 end
@@ -156,13 +168,12 @@ function M.new(opts)
       use_viewport = fullscreen_opts.use_viewport,
       fade_in_duration = fullscreen_opts.fade_in_duration or 0.3,
       fade_out_duration = fullscreen_opts.fade_out_duration or 0.3,
-      fade_speed = fullscreen_opts.fade_speed or 10.0,
       scrim_enabled = fullscreen_opts.scrim_enabled,
       scrim_color = fullscreen_opts.scrim_color or 0x000000FF,
       scrim_opacity = fullscreen_opts.scrim_opacity or 0.85,
       window_bg_override = fullscreen_opts.window_bg_override,
       window_opacity = fullscreen_opts.window_opacity or 1.0,
-      alpha = create_alpha_tracker(fullscreen_opts.fade_speed or 10.0),
+      alpha = create_alpha_tracker(fullscreen_opts.fade_in_duration or 0.3),
       close_requested = false,
       is_closing = false,
       show_close_button = fullscreen_opts.show_close_button ~= false,
@@ -212,6 +223,9 @@ function M.new(opts)
     _was_docked     = false,
     _bg_color_pushed = false,
     _fullscreen_scrim_pushed = false,
+    
+    _last_frame_time = nil,
+    _current_ctx = nil,
     
     overlay         = nil,
     
@@ -545,7 +559,14 @@ function M.new(opts)
     self._current_ctx = ctx
     
     if self.fullscreen.enabled then
+      local current_time = reaper.time_precise()
       local dt = 1/60
+      if self._last_frame_time then
+        dt = current_time - self._last_frame_time
+        dt = math.max(0.001, math.min(dt, 0.1))
+      end
+      self._last_frame_time = current_time
+      
       self.fullscreen.alpha:update(dt)
       
       if self.fullscreen.is_closing and self.fullscreen.alpha:is_complete() then
@@ -564,9 +585,10 @@ function M.new(opts)
     if self.fullscreen.enabled then
       if self.fullscreen.window_bg_override then
         local alpha_val = self.fullscreen.alpha:value()
+        local bg_alpha = math.floor(255 * alpha_val + 0.5)
         local bg_color = Colors and Colors.with_alpha(
           self.fullscreen.window_bg_override, 
-          math.floor(255 * alpha_val)
+          bg_alpha
         ) or self.fullscreen.window_bg_override
         ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, bg_color)
         self._fullscreen_scrim_pushed = true
@@ -579,7 +601,12 @@ function M.new(opts)
       end
     end
 
-    local visible, open = ImGui.Begin(ctx, self.title .. "##main", true, self.flags)
+    local window_flags = self.flags
+    if self.fullscreen.enabled and self.fullscreen.is_closing and ImGui.WindowFlags_NoInputs then
+      window_flags = window_flags | ImGui.WindowFlags_NoInputs
+    end
+
+    local visible, open = ImGui.Begin(ctx, self.title .. "##main", true, window_flags)
     self._begun = true
 
     if visible then
@@ -593,26 +620,29 @@ function M.new(opts)
           local dl = ImGui.GetWindowDrawList(ctx)
           
           local alpha_val = self.fullscreen.alpha:value()
-          local scrim_opacity = math.floor(255 * self.fullscreen.scrim_opacity * alpha_val)
-          local scrim_color = Colors.with_alpha(self.fullscreen.scrim_color, scrim_opacity)
+          local scrim_opacity = self.fullscreen.scrim_opacity * alpha_val
+          local scrim_alpha = math.floor(255 * scrim_opacity + 0.5)
+          local scrim_color = Colors.with_alpha(self.fullscreen.scrim_color, scrim_alpha)
           
           Draw.rect_filled(dl, wx, wy, wx + ww, wy + wh, scrim_color, 0)
         end
         
-        ImGui.SetCursorScreenPos(ctx, wx, wy)
-        ImGui.InvisibleButton(ctx, "##fullscreen_background", ww, wh)
-        
-        if self.fullscreen.close_on_background_click and ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right) then
-          self.fullscreen.background_clicked = true
+        if not self.fullscreen.is_closing then
+          ImGui.SetCursorScreenPos(ctx, wx, wy)
+          ImGui.InvisibleButton(ctx, "##fullscreen_background", ww, wh)
+          
+          if self.fullscreen.close_on_background_click and ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right) then
+            self.fullscreen.background_clicked = true
+          end
+          
+          if self.fullscreen.close_on_background_left_click and ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left) then
+            self.fullscreen.background_clicked = true
+          end
         end
         
-        if self.fullscreen.close_on_background_left_click and ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left) then
-          self.fullscreen.background_clicked = true
-        end
-        
-        if self.fullscreen.close_button and self.fullscreen.close_button.update then
-          local dt = 1/60
+        if self.fullscreen.close_button and self.fullscreen.close_button.update and not self.fullscreen.is_closing then
           local bounds = {x = wx, y = wy, w = ww, h = wh}
+          local dt = self._last_frame_time and (reaper.time_precise() - self._last_frame_time) or 1/60
           self.fullscreen.close_button:update(ctx, bounds, dt)
         end
       else
@@ -710,7 +740,7 @@ function M.new(opts)
       self.overlay:render(ctx, dt)
     end
     
-    if self.fullscreen.enabled and self.fullscreen.close_button and self.fullscreen.close_button.render then
+    if self.fullscreen.enabled and self.fullscreen.close_button and self.fullscreen.close_button.render and not self.fullscreen.is_closing then
       local wx, wy = ImGui.GetWindowPos(ctx)
       local ww, wh = ImGui.GetWindowSize(ctx)
       local dl = ImGui.GetWindowDrawList(ctx)
@@ -718,7 +748,7 @@ function M.new(opts)
       self.fullscreen.close_button:render(ctx, bounds, dl)
     end
     
-    if self.fullscreen.enabled and self.fullscreen.background_clicked then
+    if self.fullscreen.enabled and self.fullscreen.background_clicked and not self.fullscreen.is_closing then
       self:request_close()
     end
     

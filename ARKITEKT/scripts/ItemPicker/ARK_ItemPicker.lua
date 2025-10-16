@@ -69,13 +69,7 @@ local state = {
   exit = false,
 }
 
-function table.getn(tab)
-  local i = 0
-  for _ in pairs(tab) do
-    i = i + 1
-  end
-  return i
-end
+
 
 local function cleanup()
   SetButtonState()
@@ -133,11 +127,8 @@ if USE_OVERLAY then
   local overlay = Overlay.new({
     enabled = true,
     use_viewport = true,
-    fade_duration = 10.3,
-    fade_speed = 10.0,
+    fade_duration = 0.3,
     scrim_enabled = true,
-    scrim_color = 0x000000FF,
-    scrim_opacity = 0.85,
     show_close_button = true,
     close_on_background_click = false,
     close_on_background_right_click = true,

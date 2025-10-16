@@ -313,3 +313,112 @@ theme.fonts.default = "Arial"
 🎨 Industry Standards (What Others Use)
 Framework/ToolVisualStructuralConstantsReact/Webtheme.jsconfig.jsconstants.jsUnityTheme.csGameConfig.csConstants.csUnrealStyle.hConfig.iniConstants.hAndroidstyles.xml / colors.xmlconfig.xmlConstants.java
 Common pattern: Split visual from structural.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Structure Summary
+Folder Categories
+ARK_FeatureName/
+├── domain/          # Business logic, no UI code
+├── ui/              # Views and components, presentation only
+├── state/           # Store, persistence (ExtState save/load)
+├── network/         # WAAPI, HTTP, WebSocket (only if needed)
+├── config.lua       # Feature behavior, factory functions
+├── constants.lua    # Immutable values, enums, limits
+├── theme.lua        # Colors, spacing, fonts (optional)
+└── ARK_FeatureName.lua  # Entry point
+```
+
+### Rules
+
+**Folder Creation:**
+- Start minimal, add folders when ≥3 related files
+- Max 3 levels deep
+- Cache lives in `domain/{feature}/cache.lua`
+- File I/O stays in `domain/` unless 3+ import/export modules
+
+**File Naming:**
+- `{feature}_manager.lua` - Orchestrates domain logic
+- `{feature}_view.lua` - Renders UI
+- `{feature}_store.lua` - State slice
+- `{feature}_bridge.lua` - Thin REAPER API wrapper (if 80%+ API calls)
+
+**Import Rules:**
+- `domain/` can import: `rearkitekt/core`, `rearkitekt/reaper`, other `domain/`, `state/` (read-only)
+- `domain/` cannot import: `ui/`
+- `ui/` can import: `domain/` (read-only), `state/`, `rearkitekt/gui`
+- `ui/` cannot import: direct REAPER API calls
+
+**Generic helpers:** Put in `rearkitekt/core/`, not in scripts
+
+---
+
+## Region_Playlist Simulation
+```
+ARK_RegionPlaylist/
+├── domain/
+│   ├── playback/
+│   │   ├── engine.lua              # Playback state machine
+│   │   ├── scheduler.lua           # Quantization + triggers
+│   │   ├── transitions.lua         # Region-to-region logic
+│   │   ├── tracker.lua             # Progress monitoring
+│   │   └── reaper_bridge.lua       # Transport wrapper
+│   ├── playlists/
+│   │   ├── manager.lua             # CRUD operations
+│   │   ├── sequencer.lua           # Expansion logic
+│   │   └── validator.lua           # Circular reference check
+│   ├── regions/
+│   │   ├── scanner.lua             # Polls REAPER regions
+│   │   ├── registry.lua            # Cache + change detection
+│   │   └── pool_filter.lua         # Filtering/sorting
+│   └── models/
+│       ├── playlist.lua
+│       ├── region.lua
+│       └── sequence.lua
+├── ui/
+│   ├── views/
+│   │   ├── main_view.lua           # Window orchestration
+│   │   ├── transport_bar_view.lua  # Controls + quantize
+│   │   ├── active_panel_view.lua   # Active playlist tabs
+│   │   └── pool_panel_view.lua     # Region pool
+│   ├── components/
+│   │   ├── region_tile.lua         # Tile renderer
+│   │   ├── playlist_chip.lua       # Tab selector
+│   │   └── separator.lua           # Split view divider
+│   └── widgets/
+│       ├── quantize_dropdown.lua
+│       └── status_display.lua
+├── state/
+│   ├── store.lua                   # Single state tree
+│   ├── actions.lua                 # Action creators
+│   ├── persistence.lua             # ExtState save/load
+│   └── migrations.lua              # Data format upgrades
+├── config.lua                      # Grid sizes, defaults, options
+├── constants.lua                   # Max undo, animation speeds
+├── theme.lua                       # Custom colors (if any)
+└── ARK_RegionPlaylist.lua          # Entry point

@@ -115,6 +115,7 @@ function M.DisplayWaveform(ctx, waveform, color, draw_list, target_width)
   if not waveform then return end
   
   local display_waveform = M.DownsampleWaveform(waveform, math.floor(target_width or item_w))
+  if not display_waveform or #display_waveform == 0 then return end
 
   ImGui.DrawList_AddRectFilled(draw_list, item_x1, item_y1, item_x2, item_y2, color)
   local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
@@ -132,17 +133,26 @@ function M.DisplayWaveform(ctx, waveform, color, draw_list, target_width)
   local negative_index = #display_waveform / 2
 
   for i = 1, negative_index - 1 do
-    local max = zero_line + waveform_height * display_waveform[i]
-    local min = zero_line + waveform_height * display_waveform[i + negative_index]
-    local max_next = zero_line + waveform_height * display_waveform[i + 1]
-    local min_next = zero_line + waveform_height * display_waveform[i + 1 + negative_index]
-    local pos_x = item_x1 + (i / negative_index) * item_w
+    local max_val = display_waveform[i]
+    local min_val = display_waveform[i + negative_index]
+    if max_val and min_val then
+      local max = zero_line + waveform_height * max_val
+      local min = zero_line + waveform_height * min_val
+      local pos_x = item_x1 + (i / negative_index) * item_w
 
-    ImGui.DrawList_AddLine(draw_list, pos_x, max, pos_x, min, col_wave)
-    if i < negative_index - 1 then
-      local next_x = item_x1 + ((i + 1) / negative_index) * item_w
-      ImGui.DrawList_AddLine(draw_list, pos_x, max, next_x, max_next, col_wave)
-      ImGui.DrawList_AddLine(draw_list, pos_x, min, next_x, min_next, col_wave)
+      ImGui.DrawList_AddLine(draw_list, pos_x, max, pos_x, min, col_wave)
+      
+      if i < negative_index - 1 then
+        local max_next_val = display_waveform[i + 1]
+        local min_next_val = display_waveform[i + 1 + negative_index]
+        if max_next_val and min_next_val then
+          local max_next = zero_line + waveform_height * max_next_val
+          local min_next = zero_line + waveform_height * min_next_val
+          local next_x = item_x1 + ((i + 1) / negative_index) * item_w
+          ImGui.DrawList_AddLine(draw_list, pos_x, max, next_x, max_next, col_wave)
+          ImGui.DrawList_AddLine(draw_list, pos_x, min, next_x, min_next, col_wave)
+        end
+      end
     end
   end
 end
@@ -162,13 +172,15 @@ function M.GetNoteRange(take)
   return lowest_note, highest_note
 end
 
-function M.GetMidiThumbnail(ctx, cache, item)
-  local take = reaper.GetActiveTake(item)
-  local w, h = ImGui.GetItemRectSize(ctx)
-  
+function M.GenerateMidiThumbnail(cache, item, w, h)
   local cached_thumbnail = cache_manager.get_midi_thumbnail(cache, item, w, h)
   if cached_thumbnail then
     return cached_thumbnail
+  end
+
+  local take = reaper.GetActiveTake(item)
+  if not take or not reaper.TakeIsMIDI(take) then
+    return nil
   end
 
   local thumbnail = {}
@@ -218,6 +230,13 @@ function M.GetMidiThumbnail(ctx, cache, item)
   return thumbnail
 end
 
+function M.GetMidiThumbnail(ctx, cache, item)
+  local take = reaper.GetActiveTake(item)
+  local w, h = ImGui.GetItemRectSize(ctx)
+  
+  return M.GenerateMidiThumbnail(cache, item, w, h)
+end
+
 function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
   local x1, y1 = ImGui.GetItemRectMin(ctx)
   local x2, y2 = ImGui.GetItemRectMax(ctx)
@@ -264,17 +283,26 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
   local negative_index = #display_waveform / 2
 
   for i = 1, negative_index - 1 do
-    local max = zero_line + waveform_height * display_waveform[i]
-    local min = zero_line + waveform_height * display_waveform[i + negative_index]
-    local max_next = zero_line + waveform_height * display_waveform[i + 1]
-    local min_next = zero_line + waveform_height * display_waveform[i + 1 + negative_index]
-    local pos_x = item_x1 + (i / negative_index) * item_w
+    local max_val = display_waveform[i]
+    local min_val = display_waveform[i + negative_index]
+    if max_val and min_val then
+      local max = zero_line + waveform_height * max_val
+      local min = zero_line + waveform_height * min_val
+      local pos_x = item_x1 + (i / negative_index) * item_w
 
-    ImGui.DrawList_AddLine(draw_list, pos_x, max, pos_x, min, col_wave)
-    if i < negative_index - 1 then
-      local next_x = item_x1 + ((i + 1) / negative_index) * item_w
-      ImGui.DrawList_AddLine(draw_list, pos_x, max, next_x, max_next, col_wave)
-      ImGui.DrawList_AddLine(draw_list, pos_x, min, next_x, min_next, col_wave)
+      ImGui.DrawList_AddLine(draw_list, pos_x, max, pos_x, min, col_wave)
+      
+      if i < negative_index - 1 then
+        local max_next_val = display_waveform[i + 1]
+        local min_next_val = display_waveform[i + 1 + negative_index]
+        if max_next_val and min_next_val then
+          local max_next = zero_line + waveform_height * max_next_val
+          local min_next = zero_line + waveform_height * min_next_val
+          local next_x = item_x1 + ((i + 1) / negative_index) * item_w
+          ImGui.DrawList_AddLine(draw_list, pos_x, max, next_x, max_next, col_wave)
+          ImGui.DrawList_AddLine(draw_list, pos_x, min, next_x, min_next, col_wave)
+        end
+      end
     end
   end
 end

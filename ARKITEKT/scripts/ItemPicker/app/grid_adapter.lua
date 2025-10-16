@@ -66,6 +66,16 @@ function M.create_audio_grid(ctx, state, settings)
         
         local item = entry[1]
         local item_name = entry[2]
+        local track_muted = entry.track_muted or false
+        local item_muted = entry.item_muted or false
+        
+        if not settings.show_muted_tracks and track_muted then
+          goto skip_disabled
+        end
+        
+        if not settings.show_muted_items and item_muted then
+          goto skip_disabled
+        end
         
         if settings.search_string == 0 or item_name:lower():find(settings.search_string:lower()) then
           table.insert(filtered, {
@@ -110,12 +120,15 @@ function M.create_audio_grid(ctx, state, settings)
         item = item_data.item,
         cache = state.cache,
         is_midi = false,
+        job_queue = state.job_queue,
       }
+      
+      local overlay_alpha = state.overlay_alpha or 1.0
       
       tile_rendering.render_complete_tile(
         ctx, dl, rect, render_data, tile_state, 
         track_color, state.tile_animator, 
-        visualization, cache_mgr, is_disabled
+        visualization, cache_mgr, is_disabled, overlay_alpha
       )
     end,
     
@@ -164,8 +177,6 @@ function M.create_audio_grid(ctx, state, settings)
   })
 end
 
-
-
 function M.create_midi_grid(ctx, state, settings)
   if not state.tile_animator then
     state.tile_animator = TileAnim and TileAnim.new(12.0) or nil
@@ -191,7 +202,19 @@ function M.create_midi_grid(ctx, state, settings)
         local current_idx = state.box_current_item["midi_" .. track_idx] or 1
         if current_idx > #track_items then current_idx = 1 end
         
-        local item = track_items[current_idx]
+        local entry = track_items[current_idx]
+        local item = entry.item
+        local track_muted = entry.track_muted or false
+        local item_muted = entry.item_muted or false
+        
+        if not settings.show_muted_tracks and track_muted then
+          goto skip_disabled
+        end
+        
+        if not settings.show_muted_items and item_muted then
+          goto skip_disabled
+        end
+        
         local track = reaper.GetMediaItemTrack(item)
         local _, track_name = reaper.GetTrackName(track)
         
@@ -238,12 +261,15 @@ function M.create_midi_grid(ctx, state, settings)
         item = item_data.item,
         cache = state.cache,
         is_midi = true,
+        job_queue = state.job_queue,
       }
+      
+      local overlay_alpha = state.overlay_alpha or 1.0
       
       tile_rendering.render_complete_tile(
         ctx, dl, rect, render_data, tile_state, 
         track_color, state.tile_animator, 
-        visualization, cache_mgr, is_disabled
+        visualization, cache_mgr, is_disabled, overlay_alpha
       )
     end,
     
