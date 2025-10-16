@@ -13,11 +13,12 @@ package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. pa
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 local Shell = require('rearkitekt.app.shell')
+local Arkit = require('rearkitekt.arkit')
 local Console = require('rearkitekt.debug.console')
 local Logger = require('rearkitekt.debug.logger')
-local Colors = require('rearkitekt.core.colors')
 
-local hexrgb = Colors.hexrgb
+local ImGui = Arkit.ImGui
+local hexrgb = Arkit.hexrgb
 
 local StyleOK, Style = pcall(require, 'rearkitekt.gui.style')
 
@@ -136,14 +137,12 @@ Shell.run({
     end
     
     if console.panel.filter then
-      console.filter_category = console.panel.filter.dropdown_value or "All"
+      Console.set_filter(console, console.panel.filter.dropdown_value or "All")
     end
     
     if console.panel.search then
-      console.search_text = console.panel.search.search_text or ""
+      Console.set_search(console, console.panel.search.search_text or "")
     end
-    
-    local ImGui = require('imgui')('0.10')
     
     ImGui.Text(ctx, "Debug Console Test")
     ImGui.Separator(ctx)
@@ -177,6 +176,6 @@ Shell.run({
     ImGui.Separator(ctx)
     ImGui.Text(ctx, "")
     
-    console:render(ctx)
+    Console.render(console, ctx)
   end,
 })

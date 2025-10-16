@@ -30,7 +30,7 @@ M.desaturate = M.Colors.desaturate
 M.saturate = M.Colors.saturate
 
 -- ============================================================================
--- SECTION 3: Math Utilities
+-- SECTION 2: Math Utilities
 -- ============================================================================
 
 function M.lerp(a, b, t)
@@ -55,7 +55,7 @@ function M.approximately(a, b, epsilon)
 end
 
 -- ============================================================================
--- SECTION 4: Drawing Utilities
+-- SECTION 3: Drawing Utilities
 -- ============================================================================
 
 -- Snap to pixel boundary for crisp rendering
@@ -159,7 +159,7 @@ function M.rects_intersect(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2)
 end
 
 -- ============================================================================
--- SECTION 5: Common Easing Functions
+-- SECTION 4: Common Easing Functions
 -- ============================================================================
 
 function M.ease_linear(t)
