@@ -76,6 +76,7 @@ function M.new(opts)
     current_mode = nil,
     
     header_height = 0,
+    visible_bounds = nil,
   }, Panel)
   
   if panel.config.scroll.custom_scrollbar then
@@ -192,8 +193,14 @@ function Panel:begin_draw(ctx)
   
   local success = Content.begin_child(ctx, self.id, child_w, child_h, scroll_config)
   
-  if success and self.config.padding > 0 then
-    ImGui.SetCursorPos(ctx, self.config.padding, self.config.padding)
+  if success then
+    local win_x, win_y = ImGui.GetWindowPos(ctx)
+    local win_w, win_h = ImGui.GetWindowSize(ctx)
+    self.visible_bounds = {win_x, win_y, win_x + win_w, win_y + win_h}
+    
+    if self.config.padding > 0 then
+      ImGui.SetCursorPos(ctx, self.config.padding, self.config.padding)
+    end
   end
   
   return success

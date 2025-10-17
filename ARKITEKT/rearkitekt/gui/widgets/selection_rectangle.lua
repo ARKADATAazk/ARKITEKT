@@ -1,7 +1,8 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/selection_rectangle.lua
--- Standalone selection rectangle overlay widget
+-- Standalone selection rectangle overlay widget  
 -- Marquee selection (LEFT click + drag on background, square corners)
+-- FIXED: Scroll-aware selection maintains origin point
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -11,35 +12,44 @@ local M = {}
 local SelRect = {}
 SelRect.__index = SelRect
 
--- Create a new selection rectangle widget
 function M.new(opts)
   opts = opts or {}
 
   return setmetatable({
-    -- State
     active = false,
-    mode = "replace",  -- "replace" or "add"
+    mode = "replace",
     start_pos = nil,
     current_pos = nil,
     dragged = false,
+    
+    start_scroll_x = 0,
+    start_scroll_y = 0,
+    ctx = nil,
   }, SelRect)
 end
 
--- Begin a selection (LEFT mouse button on background)
-function SelRect:begin(x, y, mode)
+function SelRect:begin(x, y, mode, ctx)
   self.active = true
   self.mode = mode or "replace"
+  self.ctx = ctx
+  
+  if ctx then
+    self.start_scroll_x = ImGui.GetScrollX(ctx)
+    self.start_scroll_y = ImGui.GetScrollY(ctx)
+  else
+    self.start_scroll_x = 0
+    self.start_scroll_y = 0
+  end
+  
   self.start_pos = {x, y}
   self.current_pos = {x, y}
   self.dragged = false
 end
 
--- Update current position (while dragging)
 function SelRect:update(x, y)
   if not self.active then return end
   self.current_pos = {x, y}
   
-  -- Check if we've actually dragged (moved more than a few pixels)
   if self.start_pos then
     local dx = math.abs(x - self.start_pos[1])
     local dy = math.abs(y - self.start_pos[2])
@@ -49,28 +59,38 @@ function SelRect:update(x, y)
   end
 end
 
--- Check if selection is active
 function SelRect:is_active()
   return self.active
 end
 
--- Check if we actually dragged (not just clicked)
 function SelRect:did_drag()
   return self.dragged
 end
 
--- Get the selection AABB
 function SelRect:aabb()
   if not self.active or not self.start_pos or not self.current_pos then
     return nil
   end
 
-  local x1 = math.min(self.start_pos[1], self.current_pos[1])
-  local y1 = math.min(self.start_pos[2], self.current_pos[2])
-  local x2 = math.max(self.start_pos[1], self.current_pos[1])
-  local y2 = math.max(self.start_pos[2], self.current_pos[2])
+  local scroll_delta_x = 0
+  local scroll_delta_y = 0
+  
+  if self.ctx then
+    local current_scroll_x = ImGui.GetScrollX(self.ctx)
+    local current_scroll_y = ImGui.GetScrollY(self.ctx)
+    
+    scroll_delta_x = current_scroll_x - self.start_scroll_x
+    scroll_delta_y = current_scroll_y - self.start_scroll_y
+  end
+  
+  local adjusted_start_x = self.start_pos[1] - scroll_delta_x
+  local adjusted_start_y = self.start_pos[2] - scroll_delta_y
+  
+  local x1 = math.min(adjusted_start_x, self.current_pos[1])
+  local y1 = math.min(adjusted_start_y, self.current_pos[2])
+  local x2 = math.max(adjusted_start_x, self.current_pos[1])
+  local y2 = math.max(adjusted_start_y, self.current_pos[2])
 
-  -- Snap to pixel boundaries for crisp rendering
   x1 = math.floor(x1 + 0.5)
   y1 = math.floor(y1 + 0.5)
   x2 = math.floor(x2 + 0.5)
@@ -79,16 +99,21 @@ function SelRect:aabb()
   return x1, y1, x2, y2
 end
 
--- Clear the selection
+function SelRect:aabb_visual()
+  return self:aabb()
+end
+
 function SelRect:clear()
   self.active = false
   self.start_pos = nil
   self.current_pos = nil
   self.mode = "replace"
   self.dragged = false
+  self.start_scroll_x = 0
+  self.start_scroll_y = 0
+  self.ctx = nil
 end
 
--- End the selection (returns AABB for final processing)
 function SelRect:finish()
   local x1, y1, x2, y2 = self:aabb()
   local did_drag = self.dragged

@@ -42,6 +42,16 @@ addpath(join(SCRIPTS_ROOT, "?/init.lua"))
 addpath(join(REARKITEKT_ROOT, "?.lua"))
 addpath(join(REARKITEKT_ROOT, "?/init.lua"))
 
+-- ============================================================================
+-- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
+-- ============================================================================
+local ProfilerInit = require('rearkitekt.debug.profiler_init')
+local profiler_enabled = ProfilerInit.init()
+
+-- ============================================================================
+-- LOAD MODULES
+-- ============================================================================
+
 local Shell = require("rearkitekt.app.shell")
 local Config = require("Region_Playlist.app.config")
 local State = require("Region_Playlist.app.state")
@@ -65,8 +75,20 @@ State.initialize(settings)
 local status_bar = StatusBarConfig.create(State, StyleOK and Style)
 local gui = GUI.create(State, Config, settings)
 
+-- ============================================================================
+-- PROFILER INSTRUMENTATION (After modules loaded)
+-- ============================================================================
+if profiler_enabled then
+  ProfilerInit.attach_locals()
+  ProfilerInit.launch_window()
+end
+
+-- ============================================================================
+-- RUN APPLICATION
+-- ============================================================================
+
 Shell.run({
-  title        = "Region Playlist",
+  title        = "Region Playlist" .. (profiler_enabled and " [Profiling]" or ""),
   version      = "v0.1.0",
   version_color = hexrgb("#4fffdfad"),
   draw         = function(ctx, shell_state) gui:draw(ctx, shell_state.window) end,

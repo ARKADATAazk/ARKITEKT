@@ -1,6 +1,7 @@
 -- @noindex
 -- ReArkitekt/app/titlebar.lua
 -- MODIFIED: Use regular font for version, with optional size override
+-- ADDED: CTRL+SHIFT+ALT+CLICK on icon to open Lua profiler
 -- UPDATED: ImGui 0.10 font size handling
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path

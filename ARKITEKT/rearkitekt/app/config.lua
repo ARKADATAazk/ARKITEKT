@@ -4,6 +4,8 @@
 
 local M = {}
 
+M.PROFILER_ENABLED = true  -- Set to true to enable profiler
+
 M.defaults = {
   window = {
     title           = "Arkitekt App",

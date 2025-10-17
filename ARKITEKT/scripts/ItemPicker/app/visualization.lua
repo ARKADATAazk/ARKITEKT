@@ -41,8 +41,16 @@ function M.GetItemWaveform(cache, item)
 
   local buf = reaper.new_array(WAVEFORM_RESOLUTION * 2 * channels)
 
-  reaper.GetMediaItemTake_Peaks(take, WAVEFORM_RESOLUTION / length, reaper.GetMediaItemInfo_Value(item, "D_POSITION"), channels,
-    WAVEFORM_RESOLUTION, 0, buf)
+  -- (unchanged) 7 args in correct order
+  reaper.GetMediaItemTake_Peaks(
+    take,
+    WAVEFORM_RESOLUTION / length,
+    reaper.GetMediaItemInfo_Value(item, "D_POSITION"),
+    channels,
+    WAVEFORM_RESOLUTION,
+    0,
+    buf
+  )
 
   local ret_tab
   if channels == 2 then
@@ -125,35 +133,61 @@ function M.DisplayWaveform(ctx, waveform, color, draw_list, target_width)
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
   local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
-  local col_zero_line = ImGui.ColorConvertDouble4ToU32(r, g, b, 0.4)
+  local col_wave_fill = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
+  local col_zero_line = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
 
   local waveform_height = item_h / 2 * 0.95
   local zero_line = item_y1 + item_h / 2
-  ImGui.DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
   local negative_index = #display_waveform / 2
 
-  for i = 1, negative_index - 1 do
-    local max_val = display_waveform[i]
-    local min_val = display_waveform[i + negative_index]
-    if max_val and min_val then
-      local max = zero_line + waveform_height * max_val
-      local min = zero_line + waveform_height * min_val
-      local pos_x = item_x1 + (i / negative_index) * item_w
+  ImGui.DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
 
-      ImGui.DrawList_AddLine(draw_list, pos_x, max, pos_x, min, col_wave)
-      
-      if i < negative_index - 1 then
-        local max_next_val = display_waveform[i + 1]
-        local min_next_val = display_waveform[i + 1 + negative_index]
-        if max_next_val and min_next_val then
-          local max_next = zero_line + waveform_height * max_next_val
-          local min_next = zero_line + waveform_height * min_next_val
-          local next_x = item_x1 + ((i + 1) / negative_index) * item_w
-          ImGui.DrawList_AddLine(draw_list, pos_x, max, next_x, max_next, col_wave)
-          ImGui.DrawList_AddLine(draw_list, pos_x, min, next_x, min_next, col_wave)
-        end
+  -- Draw waveform outlines data (unchanged builders)
+  local top_points_table = {}
+  for i = 1, negative_index do
+    local max_val = display_waveform[i]
+    if max_val then
+      local y = zero_line + waveform_height * max_val
+      local x = item_x1 + ((i - 1) / (negative_index - 1)) * item_w
+      table.insert(top_points_table, x)
+      table.insert(top_points_table, y)
+    end
+  end
+
+  local bottom_points_table = {}
+  for i = 1, negative_index do
+    local min_val = display_waveform[i + negative_index]
+    if min_val then
+      local y = zero_line + waveform_height * min_val
+      local x = item_x1 + ((i - 1) / (negative_index - 1)) * item_w
+      table.insert(bottom_points_table, x)
+      table.insert(bottom_points_table, y)
+    end
+  end
+
+  -- NEW: quad-strip fill between top & bottom (replaces the vertical bars)
+  if negative_index >= 2 then
+    for i = 1, negative_index - 1 do
+      local idx = (i - 1) * 2
+      local tx1, ty1 = top_points_table[idx + 1],     top_points_table[idx + 2]
+      local tx2, ty2 = top_points_table[idx + 3],     top_points_table[idx + 4]
+      local bx1, by1 = bottom_points_table[idx + 1],  bottom_points_table[idx + 2]
+      local bx2, by2 = bottom_points_table[idx + 3],  bottom_points_table[idx + 4]
+      if tx1 and tx2 and bx1 and bx2 then
+        ImGui.DrawList_AddQuadFilled(draw_list, bx1, by1, bx2, by2, tx2, ty2, tx1, ty1, col_wave_fill)
       end
     end
+  end
+  
+  -- Outlines (unchanged)
+  if #top_points_table >= 4 then
+    local top_array = reaper.new_array(top_points_table)
+    ImGui.DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
+  end
+  
+  if #bottom_points_table >= 4 then
+    local bottom_array = reaper.new_array(bottom_points_table)
+    ImGui.DrawList_AddPolyline(draw_list, bottom_array, col_wave, ImGui.DrawFlags_None, 1.0)
   end
 end
 
@@ -267,6 +301,7 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
   if not waveform then return end
   
   local display_waveform = M.DownsampleWaveform(waveform, math.floor(target_width or item_w))
+  if not display_waveform or #display_waveform == 0 then return end
   
   local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
@@ -275,35 +310,61 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
   local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
-  local col_zero_line = ImGui.ColorConvertDouble4ToU32(r, g, b, 0.4)
+  local col_wave_fill = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
+  local col_zero_line = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
 
   local waveform_height = item_h / 2 * 0.95
   local zero_line = item_y1 + item_h / 2
-  ImGui.DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
   local negative_index = #display_waveform / 2
 
-  for i = 1, negative_index - 1 do
-    local max_val = display_waveform[i]
-    local min_val = display_waveform[i + negative_index]
-    if max_val and min_val then
-      local max = zero_line + waveform_height * max_val
-      local min = zero_line + waveform_height * min_val
-      local pos_x = item_x1 + (i / negative_index) * item_w
+  ImGui.DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
 
-      ImGui.DrawList_AddLine(draw_list, pos_x, max, pos_x, min, col_wave)
-      
-      if i < negative_index - 1 then
-        local max_next_val = display_waveform[i + 1]
-        local min_next_val = display_waveform[i + 1 + negative_index]
-        if max_next_val and min_next_val then
-          local max_next = zero_line + waveform_height * max_next_val
-          local min_next = zero_line + waveform_height * min_next_val
-          local next_x = item_x1 + ((i + 1) / negative_index) * item_w
-          ImGui.DrawList_AddLine(draw_list, pos_x, max, next_x, max_next, col_wave)
-          ImGui.DrawList_AddLine(draw_list, pos_x, min, next_x, min_next, col_wave)
-        end
+  -- Build outlines data (unchanged builders)
+  local top_points_table = {}
+  for i = 1, negative_index do
+    local max_val = display_waveform[i]
+    if max_val then
+      local y = zero_line + waveform_height * max_val
+      local x = item_x1 + ((i - 1) / (negative_index - 1)) * item_w
+      table.insert(top_points_table, x)
+      table.insert(top_points_table, y)
+    end
+  end
+
+  local bottom_points_table = {}
+  for i = 1, negative_index do
+    local min_val = display_waveform[i + negative_index]
+    if min_val then
+      local y = zero_line + waveform_height * min_val
+      local x = item_x1 + ((i - 1) / (negative_index - 1)) * item_w
+      table.insert(bottom_points_table, x)
+      table.insert(bottom_points_table, y)
+    end
+  end
+
+  -- NEW: quad-strip fill
+  if negative_index >= 2 then
+    for i = 1, negative_index - 1 do
+      local idx = (i - 1) * 2
+      local tx1, ty1 = top_points_table[idx + 1],     top_points_table[idx + 2]
+      local tx2, ty2 = top_points_table[idx + 3],     top_points_table[idx + 4]
+      local bx1, by1 = bottom_points_table[idx + 1],  bottom_points_table[idx + 2]
+      local bx2, by2 = bottom_points_table[idx + 3],  bottom_points_table[idx + 4]
+      if tx1 and tx2 and bx1 and bx2 then
+        ImGui.DrawList_AddQuadFilled(draw_list, bx1, by1, bx2, by2, tx2, ty2, tx1, ty1, col_wave_fill)
       end
     end
+  end
+
+  -- Outlines (unchanged)
+  if #top_points_table >= 4 then
+    local top_array = reaper.new_array(top_points_table)
+    ImGui.DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
+  end
+  
+  if #bottom_points_table >= 4 then
+    local bottom_array = reaper.new_array(bottom_points_table)
+    ImGui.DrawList_AddPolyline(draw_list, bottom_array, col_wave, ImGui.DrawFlags_None, 1.0)
   end
 end
 

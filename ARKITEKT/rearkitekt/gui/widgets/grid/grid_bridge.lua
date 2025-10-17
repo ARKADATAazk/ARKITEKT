@@ -2,6 +2,7 @@
 -- ReArkitekt/gui/widgets/grid/grid_bridge.lua
 -- Coordinates drag-and-drop between multiple grid instances
 -- FIXED: Proper payload preparation in registration flow
+-- FIXED: Clear selection in other grids when clicking a different grid
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -18,6 +19,8 @@ function M.new(config)
     grids = {},
     active_source_grid = nil,
     drag_payload = nil,
+    last_active_grid = nil,
+    clearing_selections = false,
     copy_mode_detector = config.copy_mode_detector,
     delete_mode_detector = config.delete_mode_detector,
     on_cross_grid_drop = config.on_cross_grid_drop,
@@ -48,6 +51,17 @@ function GridBridge:register_grid(id, grid, opts)
   end
   
   if grid.behaviors then
+    local original_on_select = grid.behaviors.on_select
+    grid.behaviors.on_select = function(selected_keys)
+      if not bridge.clearing_selections then
+        bridge:on_grid_interaction(id)
+      end
+      
+      if original_on_select then
+        original_on_select(selected_keys)
+      end
+    end
+    
     local original_drag_start = grid.behaviors.drag_start
     grid.behaviors.drag_start = function(item_keys)
       if opts.on_drag_start then
@@ -63,12 +77,58 @@ function GridBridge:register_grid(id, grid, opts)
   grid.on_external_drop = function(insert_index)
     bridge:handle_drop(id, insert_index)
   end
+  
+  local original_on_click_empty = grid.on_click_empty
+  grid.on_click_empty = function()
+    if not bridge.clearing_selections then
+      bridge:on_grid_interaction(id)
+    end
+    
+    if original_on_click_empty then
+      original_on_click_empty()
+    end
+  end
+end
+
+function GridBridge:on_grid_interaction(grid_id)
+  if self.last_active_grid == grid_id then
+    return
+  end
+  
+  if self:is_drag_active() then
+    return
+  end
+  
+  if self.clearing_selections then
+    return
+  end
+  
+  self.clearing_selections = true
+  
+  for other_id, grid_data in pairs(self.grids) do
+    if other_id ~= grid_id then
+      local other_grid = grid_data.instance
+      if other_grid and other_grid.selection then
+        other_grid.selection:clear()
+        
+        if other_grid.behaviors and other_grid.behaviors.on_select then
+          other_grid.behaviors.on_select({})
+        end
+      end
+    end
+  end
+  
+  self.clearing_selections = false
+  self.last_active_grid = grid_id
 end
 
 function GridBridge:unregister_grid(id)
   self.grids[id] = nil
   if self.active_source_grid == id then
     self:clear_drag()
+  end
+  if self.last_active_grid == id then
+    self.last_active_grid = nil
   end
 end
 
@@ -213,6 +273,8 @@ end
 
 function GridBridge:clear()
   self.grids = {}
+  self.last_active_grid = nil
+  self.clearing_selections = false
   self:clear_drag()
 end
 

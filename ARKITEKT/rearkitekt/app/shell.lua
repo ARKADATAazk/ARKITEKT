@@ -2,6 +2,7 @@
 -- ReArkitekt/app/shell.lua
 -- MODIFIED: Made font loading robust against older configuration files.
 -- ADDED: Support for titlebar_version size override (uses regular font family)
+-- ADDED: Integrated Lua profiler support via global config flag
 -- UPDATED: ImGui 0.10 font size handling
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path

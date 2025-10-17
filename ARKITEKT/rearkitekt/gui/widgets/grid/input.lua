@@ -1,6 +1,7 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/grid/input.lua
 -- Input handling for grid widgets - unified shortcut system
+-- FIXED: Tiles outside grid bounds are no longer interactive
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -20,6 +21,12 @@ M.SHORTCUT_REGISTRY = {
 function M.is_external_drag_active(grid)
   if not grid.external_drag_check then return false end
   return grid.external_drag_check() == true
+end
+
+function M.is_rect_in_grid_bounds(grid, rect)
+  if not grid.grid_bounds then return true end
+  local gb = grid.grid_bounds
+  return not (rect[3] < gb[1] or rect[1] > gb[3] or rect[4] < gb[2] or rect[2] > gb[4])
 end
 
 function M.is_mouse_in_exclusion(grid, ctx, item, rect)
@@ -42,7 +49,7 @@ function M.find_hovered_item(grid, ctx, items)
   for _, item in ipairs(items) do
     local key = grid.key(item)
     local rect = grid.rect_track:get(key)
-    if rect and Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
+    if rect and M.is_rect_in_grid_bounds(grid, rect) and Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
       if not M.is_mouse_in_exclusion(grid, ctx, item, rect) then
         return item, key, grid.selection:is_selected(key)
       end
@@ -133,6 +140,10 @@ end
 
 function M.handle_tile_input(grid, ctx, item, rect)
   if ImGui.IsPopupOpen(ctx, "", ImGui.PopupFlags_AnyPopupId) then
+    return false
+  end
+  
+  if not M.is_rect_in_grid_bounds(grid, rect) then
     return false
   end
   

@@ -8,6 +8,7 @@ function M.new(max_entries)
   return {
     waveforms = {},
     midi_thumbnails = {},
+    waveform_arrays = {},
     access_times = {},
     max_entries = max_entries or 200,
   }
@@ -73,6 +74,31 @@ function M.set_waveform_data(cache, item, data)
   M.cleanup_old_entries(cache.waveforms, cache.access_times, cache.max_entries)
 end
 
+function M.get_waveform_arrays(cache, item, width)
+  local sig = M.get_item_signature(item)
+  if not sig then return nil end
+  
+  local key = sig .. "_arrays_" .. math.floor(width)
+  
+  if cache.waveform_arrays[key] then
+    cache.access_times[key] = get_current_time()
+    return cache.waveform_arrays[key]
+  end
+  
+  return nil
+end
+
+function M.set_waveform_arrays(cache, item, width, top_array, bottom_array)
+  local sig = M.get_item_signature(item)
+  if not sig then return end
+  
+  local key = sig .. "_arrays_" .. math.floor(width)
+  cache.waveform_arrays[key] = {top = top_array, bottom = bottom_array}
+  cache.access_times[key] = get_current_time()
+  
+  M.cleanup_old_entries(cache.waveform_arrays, cache.access_times, cache.max_entries)
+end
+
 function M.get_midi_thumbnail(cache, item, width, height)
   local sig = M.get_item_signature(item)
   if not sig then return nil end
@@ -109,6 +135,13 @@ function M.invalidate_item(cache, item)
     end
   end
   
+  for key in pairs(cache.waveform_arrays) do
+    if key:match("^" .. sig) then
+      cache.waveform_arrays[key] = nil
+      cache.access_times[key] = nil
+    end
+  end
+  
   for key in pairs(cache.midi_thumbnails) do
     if key:match("^" .. sig) then
       cache.midi_thumbnails[key] = nil
@@ -120,14 +153,17 @@ end
 function M.get_stats(cache)
   local waveform_count = 0
   local midi_count = 0
+  local array_count = 0
   
   for _ in pairs(cache.waveforms) do waveform_count = waveform_count + 1 end
   for _ in pairs(cache.midi_thumbnails) do midi_count = midi_count + 1 end
+  for _ in pairs(cache.waveform_arrays) do array_count = array_count + 1 end
   
   return {
     waveforms = waveform_count,
     midi = midi_count,
-    total = waveform_count + midi_count
+    arrays = array_count,
+    total = waveform_count + midi_count + array_count
   }
 end
 

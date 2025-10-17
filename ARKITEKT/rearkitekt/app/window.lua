@@ -1,6 +1,7 @@
 -- @noindex
 -- ReArkitekt/app/window.lua
 -- FIXED: Smooth ease-in-out curve + click-through during fade-out
+-- ADDED: Profiler support via titlebar
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'

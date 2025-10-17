@@ -2,6 +2,8 @@
 -- ReArkitekt/gui/widgets/grid/core.lua
 -- Main grid orchestrator - composes rendering, animation, and input modules
 -- UPDATED: Now handles extended input areas (padding zones)
+-- FIXED: Tiles outside grid bounds are no longer interactive or rendered
+-- FIXED: Respects parent panel scrollable bounds
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -119,6 +121,7 @@ function M.new(opts)
     on_click_empty   = opts.on_click_empty,
 
     extend_input_area = opts.extend_input_area or { left = 0, right = 0, top = 0, bottom = 0 },
+    clip_rendering = opts.clip_rendering or false,
 
     config           = opts.config or DEFAULTS,
 
@@ -145,6 +148,8 @@ function M.new(opts)
     
     last_layout_cols = 1,
     grid_bounds = nil,
+    visual_bounds = nil,
+    panel_clip_bounds = nil,
   }, Grid)
 
   grid.animator:set_rect_track(grid.rect_track)
@@ -153,14 +158,20 @@ function M.new(opts)
 end
 
 function Grid:_is_mouse_in_bounds(ctx)
-  if not self.grid_bounds then return false end
+  if not self.visual_bounds then return false end
   local mx, my = ImGui.GetMousePos(ctx)
-  return mx >= self.grid_bounds[1] and mx < self.grid_bounds[3] and
-         my >= self.grid_bounds[2] and my < self.grid_bounds[4]
+  return mx >= self.visual_bounds[1] and mx < self.visual_bounds[3] and
+         my >= self.visual_bounds[2] and my < self.visual_bounds[4]
+end
+
+function Grid:_rect_intersects_bounds(rect)
+  if not self.visual_bounds then return true end
+  local gb = self.visual_bounds
+  return not (rect[3] < gb[1] or rect[1] > gb[3] or rect[4] < gb[2] or rect[2] > gb[4])
 end
 
 function Grid:_find_drop_target(ctx, mx, my, dragged_set, items)
-  return DropZones.find_drop_target(mx, my, items, self.key, dragged_set, self.rect_track, self.last_layout_cols == 1, self.grid_bounds)
+  return DropZones.find_drop_target(mx, my, items, self.key, dragged_set, self.rect_track, self.last_layout_cols == 1, self.visual_bounds)
 end
 
 function Grid:_update_external_drop_target(ctx)
@@ -258,7 +269,7 @@ end
 function Grid:_draw_marquee(ctx, dl)
   if not self.sel_rect:is_active() or not self.sel_rect.start_pos then return end
   
-  local x1, y1, x2, y2 = self.sel_rect:aabb()
+  local x1, y1, x2, y2 = self.sel_rect:aabb_visual()
   if not x1 then return end
   
   if not self.sel_rect:did_drag() then return end
@@ -303,6 +314,12 @@ function Grid:draw(ctx)
   if #items == 0 then
     local extended_w = avail_w + ext.left + ext.right
     local extended_h = avail_h + ext.top + ext.bottom
+    
+    if self.panel_clip_bounds then
+      self.visual_bounds = self.panel_clip_bounds
+    else
+      self.visual_bounds = {origin_x, origin_y, origin_x + avail_w, origin_y + avail_h}
+    end
     
     self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
     
@@ -386,6 +403,12 @@ function Grid:draw(ctx)
   local extended_w = avail_w + ext.left + ext.right
   local extended_h = bg_height + ext.top + ext.bottom
   
+  if self.panel_clip_bounds then
+    self.visual_bounds = self.panel_clip_bounds
+  else
+    self.visual_bounds = {origin_x, origin_y, origin_x + avail_w, origin_y + bg_height}
+  end
+  
   self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
   
   ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
@@ -398,7 +421,7 @@ function Grid:draw(ctx)
     local mx, my = ImGui.GetMousePos(ctx)
     for _, item in ipairs(items) do
       local r = self.rect_track:get(self.key(item))
-      if r and Draw.point_in_rect(mx, my, r[1], r[2], r[3], r[4]) then
+      if r and self:_rect_intersects_bounds(r) and Draw.point_in_rect(mx, my, r[1], r[2], r[3], r[4]) then
         return true
       end
     end
@@ -411,7 +434,7 @@ function Grid:draw(ctx)
     local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
     local mode = (ctrl or shift) and "add" or "replace"
     
-    self.sel_rect:begin(mx, my, mode)
+    self.sel_rect:begin(mx, my, mode, ctx)
     if self.on_click_empty then self.on_click_empty() end
   end
 
@@ -420,6 +443,40 @@ function Grid:draw(ctx)
   if self.sel_rect:is_active() and ImGui.IsMouseDragging(ctx, 0, marquee_threshold) and not Input.is_external_drag_active(self) then
     local mx, my = ImGui.GetMousePos(ctx)
     self.sel_rect:update(mx, my)
+
+    -- Auto-scroll when near edges
+    if self.visual_bounds then
+      local scroll_speed = 15
+      local edge_threshold = 30
+      local bounds = self.visual_bounds
+      
+      local scroll_x = ImGui.GetScrollX(ctx)
+      local scroll_y = ImGui.GetScrollY(ctx)
+      local scroll_max_y = ImGui.GetScrollMaxY(ctx)
+      local scroll_max_x = ImGui.GetScrollMaxX(ctx)
+      
+      -- Vertical scroll
+      if my < bounds[2] + edge_threshold and scroll_y > 0 then
+        local distance_from_edge = (bounds[2] + edge_threshold) - my
+        local scroll_amount = math.min(scroll_speed * (distance_from_edge / edge_threshold), scroll_speed)
+        ImGui.SetScrollY(ctx, math.max(0, scroll_y - scroll_amount))
+      elseif my > bounds[4] - edge_threshold and scroll_y < scroll_max_y then
+        local distance_from_edge = my - (bounds[4] - edge_threshold)
+        local scroll_amount = math.min(scroll_speed * (distance_from_edge / edge_threshold), scroll_speed)
+        ImGui.SetScrollY(ctx, math.min(scroll_max_y, scroll_y + scroll_amount))
+      end
+      
+      -- Horizontal scroll (if needed)
+      if mx < bounds[1] + edge_threshold and scroll_x > 0 then
+        local distance_from_edge = (bounds[1] + edge_threshold) - mx
+        local scroll_amount = math.min(scroll_speed * (distance_from_edge / edge_threshold), scroll_speed)
+        ImGui.SetScrollX(ctx, math.max(0, scroll_x - scroll_amount))
+      elseif mx > bounds[3] - edge_threshold and scroll_x < scroll_max_x then
+        local distance_from_edge = mx - (bounds[3] - edge_threshold)
+        local scroll_amount = math.min(scroll_speed * (distance_from_edge / edge_threshold), scroll_speed)
+        ImGui.SetScrollX(ctx, math.min(scroll_max_x, scroll_x + scroll_amount))
+      end
+    end
 
     local x1, y1, x2, y2 = self.sel_rect:aabb()
     if x1 then
@@ -448,6 +505,10 @@ function Grid:draw(ctx)
 
   self.hover_id = nil
   local dl = ImGui.GetWindowDrawList(ctx)
+  
+  if self.clip_rendering and self.visual_bounds then
+    ImGui.PushClipRect(ctx, self.visual_bounds[1], self.visual_bounds[2], self.visual_bounds[3], self.visual_bounds[4], true)
+  end
 
   for i, item in ipairs(items) do
     local key = self.key(item)
@@ -455,6 +516,10 @@ function Grid:draw(ctx)
     
     if rect then
       rect = self.animator:apply_spawn_to_rect(key, rect)
+      
+      if not self:_rect_intersects_bounds(rect) then
+        goto continue
+      end
       
       self.current_rects[key] = {rect[1], rect[2], rect[3], rect[4], item}
 
@@ -468,7 +533,13 @@ function Grid:draw(ctx)
       state.hover = is_hovered
 
       self.render_tile(ctx, rect, item, state)
+      
+      ::continue::
     end
+  end
+  
+  if self.clip_rendering then
+    ImGui.PopClipRect(ctx)
   end
   
   self.animator:render_destroy_effects(ctx, dl)
@@ -564,6 +635,8 @@ function Grid:clear()
   self.previous_item_keys = {}
   self.last_layout_cols = 1
   self.grid_bounds = nil
+  self.visual_bounds = nil
+  self.panel_clip_bounds = nil
 end
 
 return M

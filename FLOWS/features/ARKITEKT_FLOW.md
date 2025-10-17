@@ -1,20 +1,20 @@
 # ARKITEKT FLOW
-Generated: 2025-10-16 19:47:40
+Generated: 2025-10-17 00:44:31
 
 ## Overview
 - **Folders**: 1
-- **Files**: 149
-- **Total Lines**: 28,798
-- **Code Lines**: 22,484
-- **Exports**: 478
+- **Files**: 150
+- **Total Lines**: 29,057
+- **Code Lines**: 22,653
+- **Exports**: 488
 - **Classes**: 88
 
 ## Folder Organization
 
 ### ARKITEKT
-- Files: 149
-- Lines: 22,484
-- Exports: 478
+- Files: 150
+- Lines: 22,653
+- Exports: 488
 
 ## Orchestrators
 
@@ -27,11 +27,11 @@ Generated: 2025-10-16 19:47:40
 **`ARKITEKT/scripts/Region_Playlist/app/gui.lua`** (9 dependencies)
   Composes: coordinator + colors + shortcuts + controller + transport_container + sheet + list + config + tile_motion
 
+**`ARKITEKT/scripts/Region_Playlist/ARK_RegionPlaylist.lua`** (7 dependencies)
+  Composes: profiler_init + shell + config + state + gui + status + colors
+
 **`ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/base.lua`** (7 dependencies)
   Composes: draw + colors + tile_fx + tile_fx_config + marching_ants + tile_utilities + chip
-
-**`ARKITEKT/ARKITEKT.lua`** (6 dependencies)
-  Composes: shell + hub + grid + micromanage + panel + selection_rectangle
 
 ## Module API
 
@@ -58,7 +58,7 @@ Generated: 2025-10-16 19:47:40
 **Private**: 6 helpers
 **Requires**: `rearkitekt.gui.widgets.component.chip, rearkitekt.app.chrome.status_bar.config`
 
-### `ARKITEKT/rearkitekt/app/config.lua` (137 lines)
+### `ARKITEKT/rearkitekt/app/config.lua` (139 lines)
 > @noindex
 **Modules**: `M, keys`
 **Exports**:
@@ -96,7 +96,7 @@ Generated: 2025-10-16 19:47:40
 **Exports**:
   - `M.new(opts)` → Instance
 
-### `ARKITEKT/rearkitekt/app/shell.lua` (299 lines)
+### `ARKITEKT/rearkitekt/app/shell.lua` (300 lines)
 > @noindex
 **Modules**: `M, DEFAULTS`
 **Exports**:
@@ -104,14 +104,14 @@ Generated: 2025-10-16 19:47:40
 **Private**: 4 helpers
 **Requires**: `rearkitekt.app.runtime, rearkitekt.app.window`
 
-### `ARKITEKT/rearkitekt/app/titlebar.lua` (507 lines)
+### `ARKITEKT/rearkitekt/app/titlebar.lua` (508 lines)
 > @noindex
 **Modules**: `M, DEFAULTS`
 **Classes**: `M`
 **Exports**:
   - `M.new(opts)` → Instance
 
-### `ARKITEKT/rearkitekt/app/window.lua` (778 lines)
+### `ARKITEKT/rearkitekt/app/window.lua` (779 lines)
 > @noindex
 **Modules**: `M, DEFAULTS`
 **Classes**: `M`
@@ -276,6 +276,19 @@ Generated: 2025-10-16 19:47:40
   - `M.get_count()`
   - `M.get_max()`
   - `M.set_max(max)`
+
+### `ARKITEKT/rearkitekt/debug/profiler_init.lua` (97 lines)
+> @noindex
+**Modules**: `M`
+**Exports**:
+  - `M.init()`
+  - `M.attach_locals(opts)`
+  - `M.attach_world()`
+  - `M.attach_to(target, opts)`
+  - `M.launch_window()`
+  - `M.get_profiler()`
+  - `M.is_enabled()`
+**Requires**: `rearkitekt.dev.profiler_init`
 
 ### `ARKITEKT/rearkitekt/gui/draw.lua` (114 lines)
 > @noindex
@@ -571,7 +584,7 @@ Generated: 2025-10-16 19:47:40
   - `M.new(config)` → Instance
 **Requires**: `rearkitekt.gui.fx.animations.spawn, rearkitekt.gui.fx.animations.destroy`
 
-### `ARKITEKT/rearkitekt/gui/widgets/grid/core.lua` (569 lines)
+### `ARKITEKT/rearkitekt/gui/widgets/grid/core.lua` (595 lines)
 > @noindex
 **Modules**: `M, Grid, current_keys, new_keys, rect_map, rect_map, order, filtered_order, new_order`
 **Classes**: `Grid, M`
@@ -602,11 +615,12 @@ Generated: 2025-10-16 19:47:40
 **Exports**:
   - `M.new(config)` → Instance
 
-### `ARKITEKT/rearkitekt/gui/widgets/grid/input.lua` (237 lines)
+### `ARKITEKT/rearkitekt/gui/widgets/grid/input.lua` (248 lines)
 > @noindex
 **Modules**: `M, keys_to_adjust, order, order`
 **Exports**:
   - `M.is_external_drag_active(grid)`
+  - `M.is_rect_in_grid_bounds(grid, rect)`
   - `M.is_mouse_in_exclusion(grid, ctx, item, rect)`
   - `M.find_hovered_item(grid, ctx, items)`
   - `M.is_shortcut_pressed(ctx, shortcut, state)`
@@ -903,7 +917,7 @@ Generated: 2025-10-16 19:47:40
   - `M.new()` → Instance
 **Requires**: `rearkitekt.core.colors, rearkitekt.gui.draw`
 
-### `ARKITEKT/scripts/ItemPicker/app/cache_manager.lua` (134 lines)
+### `ARKITEKT/scripts/ItemPicker/app/cache_manager.lua` (170 lines)
 **Modules**: `M, entries`
 **Classes**: `M`
 **Exports**:
@@ -912,6 +926,8 @@ Generated: 2025-10-16 19:47:40
   - `M.cleanup_old_entries(cache_table, access_times, max_entries)`
   - `M.get_waveform_data(cache, item)`
   - `M.set_waveform_data(cache, item, data)`
+  - `M.get_waveform_arrays(cache, item, width)`
+  - `M.set_waveform_arrays(cache, item, width, top_array, bottom_array)`
   - `M.get_midi_thumbnail(cache, item, width, height)`
   - `M.set_midi_thumbnail(cache, item, width, height, data)`
   - `M.invalidate_item(cache, item)`
@@ -1037,9 +1053,9 @@ Generated: 2025-10-16 19:47:40
   - `M.SampleLimit(spl)`
   - `M.RemoveKeyFromChunk(chunk_string, key)`
 
-### `ARKITEKT/scripts/ItemPicker/app/visualization.lua` (344 lines)
+### `ARKITEKT/scripts/ItemPicker/app/visualization.lua` (406 lines)
 > @noindex
-**Modules**: `M, downsampled, thumbnail`
+**Modules**: `M, downsampled, top_points_table, bottom_points_table, thumbnail, top_points_table, bottom_points_table`
 **Exports**:
   - `M.init(utils_module, script_dir, cache_mgr)`
   - `M.GetItemWaveform(cache, item)`
@@ -1360,6 +1376,15 @@ Generated: 2025-10-16 19:47:40
   → `ARKITEKT/rearkitekt/gui/widgets/chip_list/list.lua`
   → `ARKITEKT/rearkitekt/gui/fx/tile_motion.lua`
 
+**`ARKITEKT/scripts/Region_Playlist/ARK_RegionPlaylist.lua`**
+  → `ARKITEKT/scripts/Region_Playlist/app/status.lua`
+  → `ARKITEKT/rearkitekt/debug/profiler_init.lua`
+  → `ARKITEKT/scripts/Region_Playlist/app/gui.lua`
+  → `ARKITEKT/rearkitekt/core/colors.lua`
+  → `ARKITEKT/rearkitekt/app/shell.lua`
+  → `ARKITEKT/scripts/Region_Playlist/app/state.lua`
+  → `ARKITEKT/scripts/Region_Playlist/app/config.lua`
+
 **`ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/base.lua`**
   → `ARKITEKT/rearkitekt/gui/systems/tile_utilities.lua`
   → `ARKITEKT/rearkitekt/gui/widgets/component/chip.lua`
@@ -1384,14 +1409,6 @@ Generated: 2025-10-16 19:47:40
   → `ARKITEKT/rearkitekt/gui/fx/tile_fx.lua`
   → `ARKITEKT/rearkitekt/gui/fx/tile_motion.lua`
   → `ARKITEKT/rearkitekt/gui/widgets/grid/core.lua`
-
-**`ARKITEKT/scripts/Region_Playlist/ARK_RegionPlaylist.lua`**
-  → `ARKITEKT/scripts/Region_Playlist/app/status.lua`
-  → `ARKITEKT/scripts/Region_Playlist/app/gui.lua`
-  → `ARKITEKT/rearkitekt/core/colors.lua`
-  → `ARKITEKT/rearkitekt/app/shell.lua`
-  → `ARKITEKT/scripts/Region_Playlist/app/state.lua`
-  → `ARKITEKT/scripts/Region_Playlist/app/config.lua`
 
 **`ARKITEKT/ARKITEKT.lua`**
   → `ARKITEKT/rearkitekt/gui/widgets/package_tiles/grid.lua`

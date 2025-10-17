@@ -121,7 +121,6 @@ function M.create(opts)
   
   rt.pool_grid = PoolGridFactory.create(rt, config)
   
-  -- Get active container config and merge with TAB_MODE_DEFAULTS
   local active_config = Config.get_active_container_config({
     on_tab_create = function()
       if rt.controller then
@@ -152,16 +151,13 @@ function M.create(opts)
     end,
   })
   
-  -- Create active container using TAB_MODE_DEFAULTS as base
   rt.active_container = TilesContainer.new({
     id = "active_tiles_container",
     config = active_config,
   })
 
-  -- Initialize tabs using Panel's public API
   rt.active_container:set_tabs(opts.tabs or {}, opts.active_tab_id)
   
-  -- Get pool container config (no defaults to merge since it's custom)
   local pool_config = Config.get_pool_container_config({
     on_mode_toggle = function()
       local new_mode = rt.pool_container.current_mode == "regions" and "playlists" or "regions"
@@ -190,13 +186,11 @@ function M.create(opts)
     end,
   })
   
-  -- Create pool container
   rt.pool_container = TilesContainer.new({
     id = "pool_tiles_container",
     config = pool_config,
   })
   
-  -- Initialize pool state
   rt.pool_container.current_mode = opts.pool_mode or "regions"
   
   rt.bridge = GridBridge.new({
@@ -497,9 +491,26 @@ function RegionTiles:set_pool_sort_direction(direction)
   self.pool_container:set_sort_direction(direction)
 end
 
-RegionTiles.draw_selector = Render.draw_selector
-RegionTiles.draw_active = Render.draw_active
-RegionTiles.draw_pool = Render.draw_pool
-RegionTiles.draw_ghosts = Render.draw_ghosts
+function RegionTiles:draw_selector(ctx, playlists, active_id, height)
+  return Render.draw_selector(self, ctx, playlists, active_id, height)
+end
+
+function RegionTiles:draw_active(ctx, playlist, height)
+  if self.active_container and self.active_container.visible_bounds then
+    self.active_grid.panel_clip_bounds = self.active_container.visible_bounds
+  end
+  return Render.draw_active(self, ctx, playlist, height)
+end
+
+function RegionTiles:draw_pool(ctx, regions, height)
+  if self.pool_container and self.pool_container.visible_bounds then
+    self.pool_grid.panel_clip_bounds = self.pool_container.visible_bounds
+  end
+  return Render.draw_pool(self, ctx, regions, height)
+end
+
+function RegionTiles:draw_ghosts(ctx)
+  return Render.draw_ghosts(self, ctx)
+end
 
 return M
