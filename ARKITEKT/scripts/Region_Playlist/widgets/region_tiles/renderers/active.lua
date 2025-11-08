@@ -28,7 +28,7 @@ M.CONFIG = {
 
 function M.render(ctx, rect, item, state, get_region_by_rid, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, bridge, get_playlist_by_id)
   if item.type == "playlist" then
-    M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, get_playlist_by_id)
+    M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, get_playlist_by_id, bridge)
   else
     M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, bridge)
   end
@@ -56,9 +56,12 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
   fx_config.border_thickness = border_thickness or 1.0
   
   local playback_progress, playback_fade = 0, 0
-  if bridge and bridge:get_state().is_playing and bridge:get_current_rid() == item.rid then
+  if bridge and bridge:get_state().is_playing then
+    local current_key = bridge:get_current_item_key()
+    if current_key == item.key then
       playback_progress = bridge:get_progress() or 0
       playback_fade = require('rearkitekt.gui.systems.playback_manager').compute_fade_alpha(playback_progress, 0.1, 0.2)
+    end
   end
   
   BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade)
@@ -110,7 +113,7 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
   if show_length then BaseRenderer.draw_length_display(ctx, dl, rect, region, base_color, text_alpha) end
 end
 
-function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, get_playlist_by_id)
+function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, get_playlist_by_id, bridge)
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local playlist = get_playlist_by_id and get_playlist_by_id(item.playlist_id) or {}
@@ -135,7 +138,17 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   local fx_config = TileFXConfig.get()
   fx_config.border_thickness = border_thickness or 1.0
 
-  BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor)
+  -- Check if this playlist is currently playing
+  local playback_progress, playback_fade = 0, 0
+  if bridge and bridge:get_state().is_playing then
+    local current_playlist_key = bridge:get_current_playlist_key()
+    if current_playlist_key == item.key then
+      playback_progress = bridge:get_playlist_progress(item.key) or 0
+      playback_fade = require('rearkitekt.gui.systems.playback_manager').compute_fade_alpha(playback_progress, 0.1, 0.2)
+    end
+  end
+
+  BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade)
   if state.selected and fx_config.ants_enabled then BaseRenderer.draw_marching_ants(dl, rect, playlist_data.chip_color, fx_config) end
 
   local actual_height = tile_height or (y2 - y1)
@@ -179,7 +192,25 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
     ImGui.InvisibleButton(ctx, "##badge_" .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
     if ImGui.IsItemClicked(ctx, 0) and on_repeat_cycle then on_repeat_cycle(item.key) end
-    if ImGui.IsItemHovered(ctx) then ImGui.SetTooltip(ctx, string.format("Playlist • %d items • ×%d repeats", playlist_data.item_count, reps == 0 and math.huge or reps)) end
+    
+    -- Enhanced tooltip with playback info
+    if ImGui.IsItemHovered(ctx) then
+      local tooltip = string.format("Playlist • %d items • ×%d repeats", playlist_data.item_count, reps == 0 and math.huge or reps)
+      
+      if bridge and bridge:get_state().is_playing then
+        local current_playlist_key = bridge:get_current_playlist_key()
+        if current_playlist_key == item.key then
+          local time_remaining = bridge:get_playlist_time_remaining(item.key)
+          if time_remaining then
+            local mins = math.floor(time_remaining / 60)
+            local secs = math.floor(time_remaining % 60)
+            tooltip = tooltip .. string.format("\n▶ Playing • %d:%02d remaining", mins, secs)
+          end
+        end
+      end
+      
+      ImGui.SetTooltip(ctx, tooltip)
+    end
   end
 end
 

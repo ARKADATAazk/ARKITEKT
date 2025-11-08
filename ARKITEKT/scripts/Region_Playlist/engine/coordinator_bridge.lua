@@ -33,6 +33,7 @@ function M.create(opts)
     sequence_cache = {},
     sequence_cache_dirty = true,
     sequence_lookup = {},
+    playlist_ranges = {},  -- Maps playlist_key -> {start_idx, end_idx, playlist_id}
     _last_known_item_key = nil,
     _last_reported_loop_key = nil,
     _last_reported_loop = nil,
@@ -96,17 +97,27 @@ function M.create(opts)
   local function rebuild_sequence()
     local playlist = resolve_active_playlist()
     local sequence = {}
+    local playlist_map = {}
 
     if playlist then
-      sequence = SequenceExpander.expand_playlist(playlist, bridge.get_playlist_by_id)
+      sequence, playlist_map = SequenceExpander.expand_playlist(playlist, bridge.get_playlist_by_id)
     end
 
     bridge.sequence_cache = sequence
     bridge.sequence_lookup = {}
+    bridge.playlist_ranges = {}
+    
+    -- Map region item keys to their indices
     for idx, entry in ipairs(sequence) do
       if entry.item_key then
         bridge.sequence_lookup[entry.item_key] = idx
       end
+    end
+    
+    -- Store playlist ranges and add quick lookup to first index
+    for playlist_key, range_info in pairs(playlist_map) do
+      bridge.playlist_ranges[playlist_key] = range_info
+      bridge.sequence_lookup[playlist_key] = range_info.start_idx
     end
 
     local previous_key = bridge._last_known_item_key or bridge.engine.state:get_current_item_key()
@@ -134,6 +145,7 @@ function M.create(opts)
     self.sequence_cache_dirty = true
     self.sequence_cache = {}
     self.sequence_lookup = {}
+    self.playlist_ranges = {}
   end
 
   function bridge:_ensure_sequence()
@@ -281,6 +293,101 @@ function M.create(opts)
     self._last_known_item_key = item_key
     self:_emit_repeat_cycle_if_needed()
     return true
+  end
+
+  function bridge:get_current_playlist_key()
+    if not self.engine:get_is_playing() then return nil end
+    
+    self:_ensure_sequence()
+    local current_idx = self.engine.state and self.engine.state.current_idx or -1
+    if current_idx < 1 then return nil end
+
+    -- Find which playlist range contains the current index
+    for playlist_key, range_info in pairs(self.playlist_ranges) do
+      if current_idx >= range_info.start_idx and current_idx <= range_info.end_idx then
+        return playlist_key
+      end
+    end
+    
+    return nil
+  end
+
+  function bridge:get_playlist_progress(playlist_key)
+    if not self.engine:get_is_playing() then return nil end
+    if not playlist_key then return nil end
+    
+    self:_ensure_sequence()
+    local range_info = self.playlist_ranges[playlist_key]
+    if not range_info then return nil end
+
+    local Transport = require('rearkitekt.reaper.transport')
+    local playpos = Transport.get_play_position(self.proj)
+    
+    local total_duration = 0
+    local elapsed_duration = 0
+    local current_rid = self:get_current_rid()
+    local found_current = false
+    
+    for idx = range_info.start_idx, range_info.end_idx do
+      local entry = self.sequence_cache[idx]
+      if entry then
+        local region = self.engine.state.region_cache[entry.rid]
+        if region then
+          local region_duration = region["end"] - region.start
+          total_duration = total_duration + region_duration
+          
+          if not found_current then
+            if entry.rid == current_rid then
+              -- Add partial progress through current region
+              local region_elapsed = math.max(0, playpos - region.start)
+              elapsed_duration = elapsed_duration + math.min(region_elapsed, region_duration)
+              found_current = true
+            else
+              -- Add full duration of completed regions
+              elapsed_duration = elapsed_duration + region_duration
+            end
+          end
+        end
+      end
+    end
+    
+    if total_duration <= 0 then return 0 end
+    return math.max(0, math.min(1, elapsed_duration / total_duration))
+  end
+
+  function bridge:get_playlist_time_remaining(playlist_key)
+    if not self.engine:get_is_playing() then return nil end
+    if not playlist_key then return nil end
+    
+    self:_ensure_sequence()
+    local range_info = self.playlist_ranges[playlist_key]
+    if not range_info then return nil end
+
+    local Transport = require('rearkitekt.reaper.transport')
+    local playpos = Transport.get_play_position(self.proj)
+    
+    local remaining = 0
+    local current_rid = self:get_current_rid()
+    local found_current = false
+    
+    for idx = range_info.start_idx, range_info.end_idx do
+      local entry = self.sequence_cache[idx]
+      if entry then
+        local region = self.engine.state.region_cache[entry.rid]
+        if region then
+          if entry.rid == current_rid then
+            -- Add remaining time in current region
+            remaining = remaining + math.max(0, region["end"] - playpos)
+            found_current = true
+          elseif found_current then
+            -- Add full duration of upcoming regions
+            remaining = remaining + (region["end"] - region.start)
+          end
+        end
+      end
+    end
+    
+    return remaining
   end
 
   return bridge

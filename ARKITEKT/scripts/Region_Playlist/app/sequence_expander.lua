@@ -28,6 +28,9 @@ local function expand_items(sequence, playlist, get_playlist_by_id, context)
         else
           local nested_playlist = get_playlist_by_id and get_playlist_by_id(nested_id)
           if nested_playlist then
+            -- Track where this playlist item starts in the sequence
+            local playlist_start_idx = #sequence + 1
+
             context.stack[nested_id] = true
             local nested_sequence = {}
             expand_items(nested_sequence, nested_playlist, get_playlist_by_id, context)
@@ -42,6 +45,16 @@ local function expand_items(sequence, playlist, get_playlist_by_id, context)
                   total_loops = nested_entry.total_loops,
                 }
               end
+            end
+            
+            -- Track the range this playlist occupies in the sequence
+            local playlist_end_idx = #sequence
+            if item.key and playlist_start_idx > 0 and playlist_end_idx >= playlist_start_idx then
+              context.playlist_map[item.key] = {
+                start_idx = playlist_start_idx,
+                end_idx = playlist_end_idx,
+                playlist_id = nested_id,
+              }
             end
           end
         end
@@ -64,7 +77,11 @@ end
 
 function SequenceExpander.expand_playlist(playlist, get_playlist_by_id)
   local sequence = {}
-  local context = { stack = {}, cycle_detected = false }
+  local context = { 
+    stack = {}, 
+    cycle_detected = false,
+    playlist_map = {}  -- Maps playlist item keys to {start_idx, end_idx, playlist_id}
+  }
 
   if playlist then
     context.stack[playlist.id] = true
@@ -72,7 +89,7 @@ function SequenceExpander.expand_playlist(playlist, get_playlist_by_id)
     context.stack[playlist.id] = nil
   end
 
-  return sequence
+  return sequence, context.playlist_map
 end
 
 function SequenceExpander.debug_print_sequence(sequence, get_region_by_rid)

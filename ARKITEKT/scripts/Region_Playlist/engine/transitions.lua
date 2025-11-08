@@ -39,6 +39,40 @@ function Transitions:handle_smooth_transitions()
     self.state.current_bounds.start_pos, self.state.current_bounds.end_pos,
     self.state.next_bounds.start_pos, self.state.next_bounds.end_pos))
   
+  -- Check if current and next are TRUE duplicates (same item being repeated)
+  -- Not just the same region from different playlist items
+  local is_true_duplicate = false
+  if self.state.current_idx >= 1 and self.state.next_idx >= 1 and 
+     self.state.current_idx ~= self.state.next_idx then
+    local curr_rid = self.state.playlist_order[self.state.current_idx]
+    local next_rid = self.state.playlist_order[self.state.next_idx]
+    
+    -- Only consider it a duplicate if they share the same item (check metadata)
+    local curr_meta = self.state.playlist_metadata[self.state.current_idx]
+    local next_meta = self.state.playlist_metadata[self.state.next_idx]
+    
+    -- DEBUG: Show what we're comparing
+    reaper.ShowConsoleMsg(string.format("[TRANS] DEBUG: curr_rid=%d next_rid=%d\n", curr_rid, next_rid))
+    if curr_meta then
+      reaper.ShowConsoleMsg(string.format("[TRANS] DEBUG: curr_meta.key=%s\n", tostring(curr_meta.key)))
+    else
+      reaper.ShowConsoleMsg("[TRANS] DEBUG: curr_meta is NIL\n")
+    end
+    if next_meta then
+      reaper.ShowConsoleMsg(string.format("[TRANS] DEBUG: next_meta.key=%s\n", tostring(next_meta.key)))
+    else
+      reaper.ShowConsoleMsg("[TRANS] DEBUG: next_meta is NIL\n")
+    end
+    
+    if curr_rid == next_rid and curr_meta and next_meta and 
+       curr_meta.key == next_meta.key then
+      is_true_duplicate = true
+      reaper.ShowConsoleMsg(string.format("[TRANS] True duplicate detected (same item key: %s)\n", curr_meta.key))
+    elseif curr_rid == next_rid then
+      reaper.ShowConsoleMsg("[TRANS] DEBUG: Same RID but different keys - will transition normally\n")
+    end
+  end
+  
   -- Branch 1: In next_bounds region - EXECUTE THE TRANSITION
   if self.state.next_idx >= 1 and 
      playpos >= self.state.next_bounds.start_pos and 
@@ -49,7 +83,17 @@ function Transitions:handle_smooth_transitions()
     local entering_different_region = (self.state.current_idx ~= self.state.next_idx)
     local playhead_went_backward = (playpos < self.state.last_play_pos - 0.1)
     
-    if entering_different_region or playhead_went_backward then
+    -- For true duplicates (same item repeated), force transition when near the end
+    local force_transition_for_duplicate = false
+    if is_true_duplicate and entering_different_region then
+      local time_to_end = self.state.current_bounds.end_pos - playpos
+      if time_to_end < 0.1 then
+        force_transition_for_duplicate = true
+        reaper.ShowConsoleMsg("[TRANS] Forcing transition for true duplicate\n")
+      end
+    end
+    
+    if entering_different_region or playhead_went_backward or force_transition_for_duplicate then
       reaper.ShowConsoleMsg(string.format("[TRANS] TRANSITION FIRING: %d -> %d\n", 
         self.state.current_idx, self.state.next_idx))
       
@@ -190,9 +234,28 @@ function Transitions:_queue_next_region_if_near_end(playpos)
   local time_to_end = self.state.current_bounds.end_pos - playpos
   
   if time_to_end < 0.5 and time_to_end > 0 and self.state.next_idx >= 1 then
-    if not self.state.goto_region_queued or self.state.goto_region_target ~= self.state.next_idx then
-      local rid = self.state.playlist_order[self.state.next_idx]
-      local region = self.state:get_region_by_rid(rid)
+    -- Check if current and next are TRUE duplicates (same item, not just same region)
+    local curr_rid = self.state.playlist_order[self.state.current_idx]
+    local next_rid = self.state.playlist_order[self.state.next_idx]
+    
+    local curr_meta = self.state.playlist_metadata[self.state.current_idx]
+    local next_meta = self.state.playlist_metadata[self.state.next_idx]
+    
+    local is_true_duplicate = false
+    if curr_rid == next_rid and self.state.current_idx ~= self.state.next_idx and
+       curr_meta and next_meta and curr_meta.key == next_meta.key then
+      is_true_duplicate = true
+    end
+    
+    if is_true_duplicate then
+      -- For true duplicates (same item repeated), don't queue GoToRegion (playhead won't move)
+      -- Instead, let the transition happen based on sequence position
+      reaper.ShowConsoleMsg(string.format("[TRANS] Skipping GoToRegion for true duplicate (key: %s, idx %d->%d)\n", 
+        curr_meta.key, self.state.current_idx, self.state.next_idx))
+      self.state.goto_region_queued = true
+      self.state.goto_region_target = self.state.next_idx
+    elseif not self.state.goto_region_queued or self.state.goto_region_target ~= self.state.next_idx then
+      local region = self.state:get_region_by_rid(next_rid)
       if region then
         reaper.ShowConsoleMsg(string.format("[TRANS] Queuing GoToRegion(%d) - %.2fs to end\n", region.rid, time_to_end))
         self.transport:_seek_to_region(region.rid)

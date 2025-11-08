@@ -137,6 +137,7 @@ function State:set_sequence(sequence)
   self.playlist_metadata = {}
   self.sequence_lookup_by_key = {}
 
+  reaper.ShowConsoleMsg(string.format("[STATE] Building sequence from %d entries...\n", #sequence))
   for _, entry in ipairs(sequence) do
     local rid = entry.rid
     if rid and self.region_cache[rid] then
@@ -150,12 +151,15 @@ function State:set_sequence(sequence)
         normalized.loop = normalized.total_loops
       end
 
+      reaper.ShowConsoleMsg(string.format("[STATE] ✓ Entry #%d: rid=%d key=%s loop=%d/%d reps_will_be=%d\n", 
+        #self.sequence + 1, rid, tostring(entry.item_key), normalized.loop, normalized.total_loops, normalized.total_loops))
+      
       self.sequence[#self.sequence + 1] = normalized
       self.playlist_order[#self.playlist_order + 1] = rid
 
       self.playlist_metadata[#self.playlist_metadata + 1] = {
         key = normalized.item_key,
-        reps = 1,
+        reps = normalized.total_loops,  -- FIX: Use actual total_loops, not hardcoded 1
         current_loop = 1,
         loop = normalized.loop,
         total_loops = normalized.total_loops,
@@ -164,8 +168,11 @@ function State:set_sequence(sequence)
       if normalized.item_key then
         self.sequence_lookup_by_key[normalized.item_key] = #self.sequence
       end
+    else
+      reaper.ShowConsoleMsg(string.format("[STATE] ✗ DROPPED: rid=%s (not in region_cache) key=%s\n", tostring(rid), tostring(entry.item_key)))
     end
   end
+  reaper.ShowConsoleMsg(string.format("[STATE] Final sequence has %d items\n", #self.sequence))
 
   local function resolve_index_by_entry(entry)
     if not entry then return nil end
