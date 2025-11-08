@@ -148,7 +148,9 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     end
   end
 
-  BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade)
+  -- Draw base tile with chip color for border and playback progress
+  BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade, playlist_data.chip_color)
+  
   if state.selected and fx_config.ants_enabled then BaseRenderer.draw_marching_ants(dl, rect, playlist_data.chip_color, fx_config) end
 
   local actual_height = tile_height or (y2 - y1)

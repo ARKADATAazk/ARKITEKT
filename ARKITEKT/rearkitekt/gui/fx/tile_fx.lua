@@ -95,14 +95,16 @@ function M.render_inner_shadow(dl, x1, y1, x2, y2, strength, rounding)
     Colors.components_to_rgba(0, 0, 0, 0), shadow_color)
 end
 
-function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fade_alpha, rounding)
+function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fade_alpha, rounding, progress_color_override)
   if progress <= 0 or fade_alpha <= 0 then return end
   
   local width = x2 - x1
   local progress_width = width * progress
   local progress_x = x1 + progress_width
   
-  local r, g, b, _ = Colors.rgba_to_components(base_color)
+  -- Use override color if provided (for playlist chip color)
+  local color_source = progress_color_override or base_color
+  local r, g, b, _ = Colors.rgba_to_components(color_source)
   
   local brightness = 1.15
   r = math.min(255, math.floor(r * brightness))
@@ -126,9 +128,11 @@ function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fa
   ImGui.DrawList_AddLine(dl, progress_x, y1 + inset, progress_x, y2 - inset, bar_color, bar_thickness)
 end
 
-function M.render_border(dl, x1, y1, x2, y2, base_color, saturation, brightness, opacity, thickness, rounding, is_selected, glow_strength, glow_layers)
+function M.render_border(dl, x1, y1, x2, y2, base_color, saturation, brightness, opacity, thickness, rounding, is_selected, glow_strength, glow_layers, border_color_override)
   local alpha = math.floor(255 * opacity)
-  local border_color = Colors.same_hue_variant(base_color, saturation, brightness, alpha)
+  -- Use override color if provided (for playlist chip color)
+  local color_source = border_color_override or base_color
+  local border_color = Colors.same_hue_variant(color_source, saturation, brightness, alpha)
   
   if is_selected and glow_layers > 0 then
     local r, g, b, _ = Colors.rgba_to_components(border_color)
@@ -142,7 +146,7 @@ function M.render_border(dl, x1, y1, x2, y2, base_color, saturation, brightness,
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, thickness)
 end
 
-function M.render_complete(dl, x1, y1, x2, y2, base_color, config, is_selected, hover_factor, playback_progress, playback_fade)
+function M.render_complete(dl, x1, y1, x2, y2, base_color, config, is_selected, hover_factor, playback_progress, playback_fade, border_color_override, progress_color_override)
   hover_factor = hover_factor or 0
   playback_progress = playback_progress or 0
   playback_fade = playback_fade or 0
@@ -153,7 +157,7 @@ function M.render_complete(dl, x1, y1, x2, y2, base_color, config, is_selected, 
   M.render_base_fill(dl, x1, y1, x2, y2, config.rounding or 6)
   
   if playback_progress > 0 and playback_fade > 0 then
-    M.render_playback_progress(dl, x1, y1, x2, y2, base_color, playback_progress, playback_fade, config.rounding or 6)
+    M.render_playback_progress(dl, x1, y1, x2, y2, base_color, playback_progress, playback_fade, config.rounding or 6, progress_color_override)
   end
   
   M.render_color_fill(dl, x1, y1, x2, y2, base_color, fill_opacity, config.fill_saturation, config.fill_brightness, config.rounding or 6)
@@ -163,7 +167,7 @@ function M.render_complete(dl, x1, y1, x2, y2, base_color, config, is_selected, 
   
   if not (is_selected and config.ants_enabled and config.ants_replace_border) then
     M.render_border(dl, x1, y1, x2, y2, base_color, config.border_saturation, config.border_brightness, config.border_opacity, 
-      config.border_thickness, config.rounding or 6, is_selected, config.glow_strength, config.glow_layers)
+      config.border_thickness, config.rounding or 6, is_selected, config.glow_strength, config.glow_layers, border_color_override)
   end
 end
 

@@ -92,7 +92,8 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   end
   
   local fx_config = TileFXConfig.get()
-  BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor)
+  -- Use chip color for border (pool tiles don't have playback progress)
+  BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, 0, 0, playlist_data.chip_color)
   
   if is_disabled and disabled_factor > 0.5 then
     ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, 0x00000000 | math.floor(120 * disabled_factor), BaseRenderer.CONFIG.rounding)

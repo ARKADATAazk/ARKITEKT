@@ -104,9 +104,12 @@ M.truncate_text = truncate_text
 -- TILE RENDERING FUNCTIONS
 -- ========================================
 
-function M.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade)
+function M.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade, override_color)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-  TileFX.render_complete(dl, x1, y1, x2, y2, base_color, fx_config, state.selected, hover_factor, playback_progress or 0, playback_fade or 0)
+  -- Use override_color for border/progress if provided (for playlist tiles)
+  local border_color = override_color or base_color
+  local progress_color = override_color or base_color
+  TileFX.render_complete(dl, x1, y1, x2, y2, base_color, fx_config, state.selected, hover_factor, playback_progress or 0, playback_fade or 0, border_color, progress_color)
 end
 
 function M.draw_marching_ants(dl, rect, color, fx_config)
