@@ -41,7 +41,6 @@ function M.GetItemWaveform(cache, item)
 
   local buf = reaper.new_array(WAVEFORM_RESOLUTION * 2 * channels)
 
-  -- (unchanged) 7 args in correct order
   reaper.GetMediaItemTake_Peaks(
     take,
     WAVEFORM_RESOLUTION / length,
@@ -133,7 +132,6 @@ function M.DisplayWaveform(ctx, waveform, color, draw_list, target_width)
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
   local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
-  local col_wave_fill = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
   local col_zero_line = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
 
   local waveform_height = item_h / 2 * 0.95
@@ -142,7 +140,6 @@ function M.DisplayWaveform(ctx, waveform, color, draw_list, target_width)
 
   ImGui.DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
 
-  -- Draw waveform outlines data (unchanged builders)
   local top_points_table = {}
   for i = 1, negative_index do
     local max_val = display_waveform[i]
@@ -164,22 +161,7 @@ function M.DisplayWaveform(ctx, waveform, color, draw_list, target_width)
       table.insert(bottom_points_table, y)
     end
   end
-
-  -- NEW: quad-strip fill between top & bottom (replaces the vertical bars)
-  if negative_index >= 2 then
-    for i = 1, negative_index - 1 do
-      local idx = (i - 1) * 2
-      local tx1, ty1 = top_points_table[idx + 1],     top_points_table[idx + 2]
-      local tx2, ty2 = top_points_table[idx + 3],     top_points_table[idx + 4]
-      local bx1, by1 = bottom_points_table[idx + 1],  bottom_points_table[idx + 2]
-      local bx2, by2 = bottom_points_table[idx + 3],  bottom_points_table[idx + 4]
-      if tx1 and tx2 and bx1 and bx2 then
-        ImGui.DrawList_AddQuadFilled(draw_list, bx1, by1, bx2, by2, tx2, ty2, tx1, ty1, col_wave_fill)
-      end
-    end
-  end
   
-  -- Outlines (unchanged)
   if #top_points_table >= 4 then
     local top_array = reaper.new_array(top_points_table)
     ImGui.DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
@@ -310,7 +292,6 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
   local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
-  local col_wave_fill = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
   local col_zero_line = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
 
   local waveform_height = item_h / 2 * 0.95
@@ -319,7 +300,6 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
 
   ImGui.DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
 
-  -- Build outlines data (unchanged builders)
   local top_points_table = {}
   for i = 1, negative_index do
     local max_val = display_waveform[i]
@@ -342,21 +322,6 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
     end
   end
 
-  -- NEW: quad-strip fill
-  if negative_index >= 2 then
-    for i = 1, negative_index - 1 do
-      local idx = (i - 1) * 2
-      local tx1, ty1 = top_points_table[idx + 1],     top_points_table[idx + 2]
-      local tx2, ty2 = top_points_table[idx + 3],     top_points_table[idx + 4]
-      local bx1, by1 = bottom_points_table[idx + 1],  bottom_points_table[idx + 2]
-      local bx2, by2 = bottom_points_table[idx + 3],  bottom_points_table[idx + 4]
-      if tx1 and tx2 and bx1 and bx2 then
-        ImGui.DrawList_AddQuadFilled(draw_list, bx1, by1, bx2, by2, tx2, ty2, tx1, ty1, col_wave_fill)
-      end
-    end
-  end
-
-  -- Outlines (unchanged)
   if #top_points_table >= 4 then
     local top_array = reaper.new_array(top_points_table)
     ImGui.DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
