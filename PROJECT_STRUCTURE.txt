@@ -1,8 +1,8 @@
-PROJECT: ARKITEKT
+PROJECT: ARKITEKT-Project
 PATH: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project
 
 STRUCTURE:
-ARKITEKT/
+ARKITEKT-Project/
 ├── .github/
 │   └── workflows/
 │       ├── check.yml (18 lines)
@@ -63,8 +63,8 @@ ARKITEKT/
 │   │   │   │   ├── easing.lua (94 lines)
 │   │   │   │   ├── effects.lua (54 lines)
 │   │   │   │   ├── marching_ants.lua (100 lines)
-│   │   │   │   ├── tile_fx.lua (170 lines)
-│   │   │   │   ├── tile_fx_config.lua (79 lines)
+│   │   │   │   ├── tile_fx.lua (214 lines)
+│   │   │   │   ├── tile_fx_config.lua (85 lines)
 │   │   │   │   └── tile_motion.lua (58 lines)
 │   │   │   ├── systems/
 │   │   │   │   ├── height_stabilizer.lua (74 lines)
@@ -202,17 +202,17 @@ ARKITEKT/
 │   │   │   │   ├── config.lua (349 lines)
 │   │   │   │   ├── controller.lua (367 lines)
 │   │   │   │   ├── gui.lua (919 lines)
-│   │   │   │   ├── sequence_expander.lua (103 lines)
+│   │   │   │   ├── sequence_expander.lua (120 lines)
 │   │   │   │   ├── shortcuts.lua (80 lines)
 │   │   │   │   ├── state.lua (617 lines)
 │   │   │   │   └── status.lua (59 lines)
 │   │   │   ├── engine/
-│   │   │   │   ├── coordinator_bridge.lua (289 lines)
+│   │   │   │   ├── coordinator_bridge.lua (405 lines)
 │   │   │   │   ├── core.lua (194 lines)
 │   │   │   │   ├── playback.lua (103 lines)
 │   │   │   │   ├── quantize.lua (337 lines)
-│   │   │   │   ├── state.lua (323 lines)
-│   │   │   │   ├── transitions.lua (211 lines)
+│   │   │   │   ├── state.lua (349 lines)
+│   │   │   │   ├── transitions.lua (256 lines)
 │   │   │   │   └── transport.lua (239 lines)
 │   │   │   ├── storage/
 │   │   │   │   ├── state.lua (152 lines)
@@ -222,9 +222,9 @@ ARKITEKT/
 │   │   │   │   │   └── controls_widget.lua (151 lines)
 │   │   │   │   └── region_tiles/
 │   │   │   │       ├── renderers/
-│   │   │   │       │   ├── active.lua (186 lines)
-│   │   │   │       │   ├── base.lua (207 lines)
-│   │   │   │       │   └── pool.lua (180 lines)
+│   │   │   │       │   ├── active.lua (244 lines)
+│   │   │   │       │   ├── base.lua (212 lines)
+│   │   │   │       │   └── pool.lua (197 lines)
 │   │   │   │       ├── active_grid_factory.lua (220 lines)
 │   │   │   │       ├── coordinator.lua (516 lines)
 │   │   │   │       ├── coordinator_render.lua (190 lines)
@@ -254,8 +254,10 @@ ARKITEKT/
 │   ├── arkitekt-action-plan.md (415 lines)
 │   ├── arkitekt-final-strategy.md (876 lines)
 │   └── arkitekt_strategy.md (249 lines)
+├── .codemap (59 lines)
 ├── .gitignore (1 lines)
 ├── .reapack-index.conf (4 lines)
+├── .windsurfrules (43 lines)
 ├── AGENTS.md (33 lines)
 ├── ARKITEKT_Codex_Playbook_v5.md (295 lines)
 ├── arkitekt_FLOW.md (1575 lines)
@@ -271,9 +273,9 @@ ARKITEKT/
 ├── refactoring_templates.md (160 lines)
 └── System_Prompt_ARKITEKT_OnePager.md (66 lines)
 
-Total files: 205
-Total lines (with comments): 62,995
-Total lines (code only): 53,825
-Code/Total Ratio: 85.4% is actual code
+Total files: 206
+Total lines (with comments): 62,864
+Total lines (code only): 53,887
+Code/Total Ratio: 85.7% is actual code
 
 Generated: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\PROJECT_STRUCTURE.txt

@@ -56,7 +56,7 @@ M.DEFAULTS = {
   header = {
     enabled = false,
     height = 30,
-    bg_color = hexrgb("#2E2E2EFF"),
+    bg_color = hexrgb("#1E1E1EFF"),
     border_color = hexrgb("#00000066"),
     rounding = 8,
     

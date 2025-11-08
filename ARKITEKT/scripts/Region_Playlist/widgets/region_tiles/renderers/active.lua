@@ -20,11 +20,24 @@ M.CONFIG = {
   badge_margin = 6,
   badge_bg = 0x14181CFF,
   badge_border_alpha = 0x33,
-  disabled = { desaturate = 0.8, brightness = 0.4, min_alpha = 0x33, fade_speed = 20.0 },
+  disabled = { desaturate = 0.8, brightness = 0.4, min_alpha = 0x33, fade_speed = 20.0, min_lightness = 0.28 },
   responsive = { hide_length_below = 35, hide_badge_below = 25, hide_text_below = 15 }, -- UPDATED
   playlist_tile = { base_color = 0x3A3A3AFF },
   text_margin_right = 6,
+  badge_nudge_x = 0,
+  badge_nudge_y = 0,
+  badge_text_nudge_x = -1,
+  badge_text_nudge_y = -1,
 }
+
+local function clamp_min_lightness(color, min_l)
+  local lum = Colors.luminance(color)
+  if lum < (min_l or 0) then
+    local factor = (min_l + 0.001) / math.max(lum, 0.001)
+    return Colors.adjust_brightness(color, factor)
+  end
+  return color
+end
 
 function M.render(ctx, rect, item, state, get_region_by_rid, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, bridge, get_playlist_by_id)
   if item.type == "playlist" then
@@ -50,6 +63,7 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
   if enabled_factor < 1.0 then
     base_color = Colors.desaturate(base_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
     base_color = Colors.adjust_brightness(base_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
+    base_color = clamp_min_lightness(base_color, M.CONFIG.disabled.min_lightness or 0.28)
   end
   
   local fx_config = TileFXConfig.get()
@@ -103,7 +117,7 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
     
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors.with_alpha(base_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
-    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x, badge_y + M.CONFIG.badge_padding_y, Colors.with_alpha(0xFFFFFFDD, text_alpha), badge_text)
+    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors.with_alpha(0xFFFFFFDD, text_alpha), badge_text)
     
     ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
     ImGui.InvisibleButton(ctx, "##badge_" .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
@@ -138,6 +152,9 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     base_color = Colors.adjust_brightness(base_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
     chip_color = Colors.desaturate(chip_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
     chip_color = Colors.adjust_brightness(chip_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
+    local minL = M.CONFIG.disabled.min_lightness or 0.28
+    base_color = clamp_min_lightness(base_color, minL)
+    chip_color = clamp_min_lightness(chip_color, minL)
   end
   
   -- Update playlist_data with adjusted chip color
@@ -197,7 +214,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
 
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors.with_alpha(playlist_data.chip_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
-    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x, badge_y + M.CONFIG.badge_padding_y, Colors.with_alpha(0xFFFFFFDD, text_alpha), badge_text)
+    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors.with_alpha(0xFFFFFFDD, text_alpha), badge_text)
     
     ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
     ImGui.InvisibleButton(ctx, "##badge_" .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)

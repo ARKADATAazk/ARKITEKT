@@ -15,7 +15,7 @@ local M = {}
 
 M.CONFIG = {
   bg_base = 0x1A1A1AFF,
-  disabled = { desaturate = 0.9, brightness = 0.5, alpha_multiplier = 0.6 },
+  disabled = { desaturate = 0.9, brightness = 0.5, alpha_multiplier = 0.6, min_lightness = 0.28 },
   responsive = { hide_length_below = 35, hide_text_below = 15 }, -- UPDATED
   playlist_tile = { 
     base_color = 0x3A3A3AFF, 
@@ -29,7 +29,20 @@ M.CONFIG = {
   badge_rounding = 4,
   badge_bg = 0x14181CFF,
   badge_border_alpha = 0x33,
+  badge_nudge_x = 0,
+  badge_nudge_y = 0,
+  badge_text_nudge_x = -1,
+  badge_text_nudge_y = -1,
 }
+
+local function clamp_min_lightness(color, min_l)
+  local lum = Colors.luminance(color)
+  if lum < (min_l or 0) then
+    local factor = (min_l + 0.001) / math.max(lum, 0.001)
+    return Colors.adjust_brightness(color, factor)
+  end
+  return color
+end
 
 function M.render(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness)
   if item.id and item.items then
@@ -89,6 +102,9 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
     base_color = Colors.adjust_brightness(base_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     playlist_data.chip_color = Colors.desaturate(playlist_data.chip_color, M.CONFIG.disabled.desaturate * disabled_factor)
     playlist_data.chip_color = Colors.adjust_brightness(playlist_data.chip_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+    local minL = M.CONFIG.disabled.min_lightness or 0.28
+    base_color = clamp_min_lightness(base_color, minL)
+    playlist_data.chip_color = clamp_min_lightness(playlist_data.chip_color, minL)
   end
   
   local fx_config = TileFXConfig.get()
@@ -164,7 +180,7 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
     if (state.hover or state.selected) and not is_disabled then
       badge_text_color = 0xAAAAAAFF
     end
-    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x, badge_y + M.CONFIG.badge_padding_y, Colors.with_alpha(badge_text_color, text_alpha), badge_text)
+    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors.with_alpha(badge_text_color, text_alpha), badge_text)
 
     ImGui.SetCursorScreenPos(ctx, x1, y1)
     ImGui.InvisibleButton(ctx, key .. "_tooltip", x2 - x1, y2 - y1)

@@ -1,11 +1,11 @@
-# ARKITEKT FLOW
-Generated: 2025-11-07 02:19:13
+# ARKITEKT-PROJECT FLOW
+Generated: 2025-11-08 23:56:12
 
 ## Overview
 - **Folders**: 1
 - **Files**: 161
-- **Total Lines**: 31,526
-- **Code Lines**: 24,514
+- **Total Lines**: 31,861
+- **Code Lines**: 24,758
 - **Exports**: 211
 - **Classes**: 185
 
@@ -13,7 +13,7 @@ Generated: 2025-11-07 02:19:13
 
 ### ARKITEKT
 - Files: 161
-- Lines: 24,514
+- Lines: 24,758
 - Exports: 211
 
 ## Orchestrators
@@ -142,6 +142,21 @@ Generated: 2025-11-07 02:19:13
 **Classes**: `M, Panel`
 **Requires**: `background, config, content, scrollbar, tab_animator`
 
+### `ARKITEKT\scripts\Region_Playlist\engine\coordinator_bridge.lua` (406 lines)
+> @noindex
+**Classes**: `M`
+**Exports**:
+  - `context_depth`
+  - `current_item_key`
+  - `current_loop`
+  - `is_playing`
+  - `playlist_order`
+  - `playlist_pointer`
+  - `quantize_mode`
+  - `sequence_length`
+  - `total_loops`
+**Requires**: `core, playback, sequence_expander, state, transport`
+
 ### `ARKITEKT\rearkitekt\gui\widgets\controls\dropdown.lua` (395 lines)
 > @noindex
 **Classes**: `M, Dropdown`
@@ -186,6 +201,20 @@ Generated: 2025-11-07 02:19:13
   - `text`
 **Requires**: `grid, hub, micromanage, selection_rectangle, shell`
 
+### `ARKITEKT\scripts\Region_Playlist\engine\state.lua` (350 lines)
+> @noindex
+**Classes**: `M, State`
+**Exports**:
+  - `current_idx`
+  - `next_idx`
+  - `playlist_order`
+  - `playlist_pointer`
+  - `proj`
+  - `region_cache`
+  - `sequence_length`
+  - `sequence_version`
+**Requires**: `regions, transport`
+
 ### `ARKITEKT\scripts\Region_Playlist\app\config.lua` (349 lines)
 > @noindex
 **Classes**: `M`
@@ -224,20 +253,6 @@ Generated: 2025-11-07 02:19:13
 > @noindex
 **Classes**: `M`
 
-### `ARKITEKT\scripts\Region_Playlist\engine\state.lua` (324 lines)
-> @noindex
-**Classes**: `M, State`
-**Exports**:
-  - `current_idx`
-  - `next_idx`
-  - `playlist_order`
-  - `playlist_pointer`
-  - `proj`
-  - `region_cache`
-  - `sequence_length`
-  - `sequence_version`
-**Requires**: `regions, transport`
-
 ### `ARKITEKT\rearkitekt\app\chrome\status_bar\widget.lua` (319 lines)
 > @noindex
 **Classes**: `M`
@@ -252,8 +267,3 @@ Generated: 2025-11-07 02:19:13
 > @noindex
 **Classes**: `M`
 **Requires**: `button, dropdown_field, search_field, separator, tab_strip`
-
-### `ARKITEKT\rearkitekt\gui\widgets\chip_list\list.lua` (303 lines)
-> @noindex
-**Classes**: `M`
-**Requires**: `chip, responsive_grid`
