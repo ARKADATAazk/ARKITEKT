@@ -62,6 +62,12 @@ M.DEFAULT = {
   -- Hover
   hover_fill_boost = 0.06,
   hover_specular_boost = 0.5,
+  
+  -- Diagonal stripes (for playlists)
+  stripe_enabled = true,  -- Toggle on/off
+  stripe_spacing = 10,     -- Distance between stripes in pixels
+  stripe_thickness = 4,    -- Line thickness
+  stripe_opacity = 0.02,   -- Opacity (0.0 to 1.0)
 }
 
 function M.get()

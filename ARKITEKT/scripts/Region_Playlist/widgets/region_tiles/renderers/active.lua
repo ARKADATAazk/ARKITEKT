@@ -130,10 +130,18 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   local enabled_factor = animator:get(item.key, 'enabled')
 
   local base_color = M.CONFIG.playlist_tile.base_color
+  local chip_color = playlist_data.chip_color
+  
+  -- Apply disabled state to both base and chip color
   if enabled_factor < 1.0 then
     base_color = Colors.desaturate(base_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
     base_color = Colors.adjust_brightness(base_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
+    chip_color = Colors.desaturate(chip_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
+    chip_color = Colors.adjust_brightness(chip_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
   end
+  
+  -- Update playlist_data with adjusted chip color
+  playlist_data.chip_color = chip_color
 
   local fx_config = TileFXConfig.get()
   fx_config.border_thickness = border_thickness or 1.0
