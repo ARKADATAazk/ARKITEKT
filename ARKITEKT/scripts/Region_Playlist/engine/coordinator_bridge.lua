@@ -108,16 +108,25 @@ function M.create(opts)
     bridge.playlist_ranges = {}
     
     -- Map region item keys to their indices
+    -- CRITICAL FIX: Only store FIRST occurrence of each key
     for idx, entry in ipairs(sequence) do
-      if entry.item_key then
+      if entry.item_key and not bridge.sequence_lookup[entry.item_key] then
         bridge.sequence_lookup[entry.item_key] = idx
+        reaper.ShowConsoleMsg(string.format("[BRIDGE] Mapping key '%s' -> idx %d\n", entry.item_key, idx))
       end
+    end
+    
+    reaper.ShowConsoleMsg("[BRIDGE] Final sequence_lookup:\n")
+    for key, idx in pairs(bridge.sequence_lookup) do
+      reaper.ShowConsoleMsg(string.format("  '%s' -> %d\n", key, idx))
     end
     
     -- Store playlist ranges and add quick lookup to first index
     for playlist_key, range_info in pairs(playlist_map) do
       bridge.playlist_ranges[playlist_key] = range_info
-      bridge.sequence_lookup[playlist_key] = range_info.start_idx
+      if not bridge.sequence_lookup[playlist_key] then
+        bridge.sequence_lookup[playlist_key] = range_info.start_idx
+      end
     end
 
     local previous_key = bridge._last_known_item_key or bridge.engine.state:get_current_item_key()

@@ -151,28 +151,39 @@ function State:set_sequence(sequence)
         normalized.loop = normalized.total_loops
       end
 
-      reaper.ShowConsoleMsg(string.format("[STATE] ✓ Entry #%d: rid=%d key=%s loop=%d/%d reps_will_be=%d\n", 
-        #self.sequence + 1, rid, tostring(entry.item_key), normalized.loop, normalized.total_loops, normalized.total_loops))
+      reaper.ShowConsoleMsg(string.format("[STATE] ✓ Entry #%d: rid=%d key=%s loop=%d/%d\n", 
+        #self.sequence + 1, rid, tostring(entry.item_key), normalized.loop, normalized.total_loops))
       
       self.sequence[#self.sequence + 1] = normalized
       self.playlist_order[#self.playlist_order + 1] = rid
 
+      -- FIX: Each sequence entry represents ONE playthrough
+      -- The sequence expander already created multiple entries for repeats
+      -- So reps should always be 1 here
       self.playlist_metadata[#self.playlist_metadata + 1] = {
         key = normalized.item_key,
-        reps = normalized.total_loops,  -- FIX: Use actual total_loops, not hardcoded 1
+        reps = 1,  -- Always 1 - sequence already contains all repeats as separate entries
         current_loop = 1,
         loop = normalized.loop,
         total_loops = normalized.total_loops,
       }
 
-      if normalized.item_key then
+      -- CRITICAL FIX: Only store FIRST occurrence of each key
+      if normalized.item_key and not self.sequence_lookup_by_key[normalized.item_key] then
         self.sequence_lookup_by_key[normalized.item_key] = #self.sequence
+        reaper.ShowConsoleMsg(string.format("[STATE] Lookup: '%s' -> idx %d\n", normalized.item_key, #self.sequence))
       end
     else
       reaper.ShowConsoleMsg(string.format("[STATE] ✗ DROPPED: rid=%s (not in region_cache) key=%s\n", tostring(rid), tostring(entry.item_key)))
     end
   end
   reaper.ShowConsoleMsg(string.format("[STATE] Final sequence has %d items\n", #self.sequence))
+  
+  -- Debug: Show playlist_order
+  reaper.ShowConsoleMsg("[STATE] playlist_order:\n")
+  for i, rid in ipairs(self.playlist_order) do
+    reaper.ShowConsoleMsg(string.format("  [%d] rid=%d\n", i, rid))
+  end
 
   local function resolve_index_by_entry(entry)
     if not entry then return nil end
@@ -269,13 +280,21 @@ function State:update_bounds()
 end
 
 function State:find_index_at_position(pos)
+  reaper.ShowConsoleMsg(string.format("[STATE] find_index_at_position(%.3f) scanning %d entries...\n", pos, #self.playlist_order))
   for i = 1, #self.playlist_order do
     local rid = self.playlist_order[i]
     local region = self:get_region_by_rid(rid)
-    if region and pos >= region.start and pos < region["end"] - 1e-9 then
-      return i
+    if region then
+      local in_bounds = pos >= region.start and pos < region["end"] - 1e-9
+      reaper.ShowConsoleMsg(string.format("[STATE]   [%d] rid=%d bounds=[%.3f-%.3f] in_bounds=%s\n", 
+        i, rid, region.start, region["end"], tostring(in_bounds)))
+      if in_bounds then
+        reaper.ShowConsoleMsg(string.format("[STATE] Returning idx %d\n", i))
+        return i
+      end
     end
   end
+  reaper.ShowConsoleMsg("[STATE] No index found, returning -1\n")
   return -1
 end
 
