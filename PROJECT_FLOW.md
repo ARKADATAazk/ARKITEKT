@@ -1,19 +1,19 @@
 # ARKITEKT-PROJECT FLOW
-Generated: 2025-11-09 03:12:37
+Generated: 2025-11-09 19:54:39
 
 ## Overview
 - **Folders**: 1
 - **Files**: 160
-- **Total Lines**: 33,436
-- **Code Lines**: 25,864
+- **Total Lines**: 33,565
+- **Code Lines**: 25,953
 - **Exports**: 211
-- **Classes**: 184
+- **Classes**: 185
 
 ## Folder Organization
 
 ### ARKITEKT
 - Files: 160
-- Lines: 25,864
+- Lines: 25,953
 - Exports: 211
 
 ## Orchestrators
@@ -33,6 +33,9 @@ Generated: 2025-11-09 03:12:37
 **`ARKITEKT\scripts\Region_Playlist\app\gui.lua`** (9 dependencies)
   Composes: colors + config + controller + coordinator + list + sheet + shortcuts + tile_motion + transport_container
 
+**`ARKITEKT\rearkitekt\gui\widgets\panel\init.lua`** (7 dependencies)
+  Composes: background + button + config + content + scrollbar + style_defaults + tab_animator
+
 **`ARKITEKT\scripts\Region_Playlist\ARK_RegionPlaylist.lua`** (7 dependencies)
   Composes: colors + config + gui + profiler_init + shell + state + status
 
@@ -41,9 +44,6 @@ Generated: 2025-11-09 03:12:37
 
 **`ARKITEKT\rearkitekt\gui\widgets\package_tiles\grid.lua`** (6 dependencies)
   Composes: colors + core + height_stabilizer + micromanage + renderer + tile_motion
-
-**`ARKITEKT\rearkitekt\gui\widgets\panel\init.lua`** (6 dependencies)
-  Composes: background + button + config + content + scrollbar + tab_animator
 
 **`ARKITEKT\scripts\Sandbox\sandbox_1.lua`** (6 dependencies)
   Composes: arkit + canvas + config + connection + node + shell
@@ -91,6 +91,11 @@ Generated: 2025-11-09 03:12:37
   - `type`
 **Requires**: `colors, coordinator_bridge, state, undo_bridge, undo_manager`
 
+### `ARKITEKT\rearkitekt\gui\widgets\panel\init.lua` (591 lines)
+> @noindex
+**Classes**: `M, Panel`
+**Requires**: `background, button, config, content, scrollbar, style_defaults, tab_animator`
+
 ### `ARKITEKT\rearkitekt\core\colors.lua` (550 lines)
 > @noindex
 **Classes**: `M`
@@ -103,11 +108,6 @@ Generated: 2025-11-09 03:12:37
   - `max_channel`
   - `min_channel`
   - `saturation`
-
-### `ARKITEKT\rearkitekt\gui\widgets\panel\init.lua` (532 lines)
-> @noindex
-**Classes**: `M, Panel`
-**Requires**: `background, button, config, content, scrollbar, tab_animator`
 
 ### `ARKITEKT\rearkitekt\gui\widgets\nodal\canvas.lua` (527 lines)
 > @noindex

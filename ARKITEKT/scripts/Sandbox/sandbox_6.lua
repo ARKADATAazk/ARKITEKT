@@ -226,9 +226,6 @@ local function create_corner_buttons_panel()
           on_click = function()
             reaper.ShowConsoleMsg("[CORNER] Top-left clicked\n")
           end,
-          bg_color = hexrgb("#252525FF"),
-          bg_hover_color = hexrgb("#2A2A2AFF"),
-          text_color = hexrgb("#CCCCCCFF"),
         },
         
         top_right = {
@@ -237,9 +234,6 @@ local function create_corner_buttons_panel()
           on_click = function()
             reaper.ShowConsoleMsg("[CORNER] Top-right clicked\n")
           end,
-          bg_color = hexrgb("#252525FF"),
-          bg_hover_color = hexrgb("#EF5350FF"),
-          text_color = hexrgb("#CCCCCCFF"),
         },
         
         bottom_left = {
@@ -249,9 +243,6 @@ local function create_corner_buttons_panel()
             state.corner_button_clicks = state.corner_button_clicks + 1
             reaper.ShowConsoleMsg(string.format("[CORNER] Bottom-left clicked! (Total: %d)\n", state.corner_button_clicks))
           end,
-          bg_color = hexrgb("#252525FF"),
-          bg_hover_color = hexrgb("#4CAF50FF"),
-          text_color = hexrgb("#CCCCCCFF"),
         },
         
         bottom_right = {
@@ -260,9 +251,6 @@ local function create_corner_buttons_panel()
           on_click = function()
             reaper.ShowConsoleMsg("[CORNER] Bottom-right clicked\n")
           end,
-          bg_color = hexrgb("#252525FF"),
-          bg_hover_color = hexrgb("#4A9EFFFF"),
-          text_color = hexrgb("#CCCCCCFF"),
         },
       },
     },

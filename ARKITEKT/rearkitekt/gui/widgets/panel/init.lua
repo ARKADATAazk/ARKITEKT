@@ -114,6 +114,110 @@ function Panel:get_effective_child_width(ctx, base_width)
 end
 
 -- ============================================================================
+-- CUSTOM RECT WITH PER-CORNER ROUNDING
+-- ============================================================================
+
+local function snap_to_pixel(val)
+  return math.floor(val + 0.5)
+end
+
+local function draw_rect_with_custom_corners(dl, x1, y1, x2, y2, color, rounding_tl, rounding_tr, rounding_br, rounding_bl)
+  -- Snap to pixels for crisp rendering
+  x1 = snap_to_pixel(x1)
+  y1 = snap_to_pixel(y1)
+  x2 = snap_to_pixel(x2)
+  y2 = snap_to_pixel(y2)
+  
+  local w = x2 - x1
+  local h = y2 - y1
+  
+  local max_rounding = math.min(w, h) * 0.5
+  rounding_tl = math.min(rounding_tl or 0, max_rounding)
+  rounding_tr = math.min(rounding_tr or 0, max_rounding)
+  rounding_br = math.min(rounding_br or 0, max_rounding)
+  rounding_bl = math.min(rounding_bl or 0, max_rounding)
+  
+  ImGui.DrawList_PathClear(dl)
+  
+  -- Use more segments for smoother arcs (scale with radius)
+  local calc_segments = function(r) return math.max(6, math.floor(r * 0.5)) end
+  
+  if rounding_tl > 0 then
+    ImGui.DrawList_PathArcTo(dl, x1 + rounding_tl, y1 + rounding_tl, rounding_tl, math.pi, math.pi * 1.5, calc_segments(rounding_tl))
+  else
+    ImGui.DrawList_PathLineTo(dl, x1, y1)
+  end
+  
+  if rounding_tr > 0 then
+    ImGui.DrawList_PathArcTo(dl, x2 - rounding_tr, y1 + rounding_tr, rounding_tr, math.pi * 1.5, math.pi * 2.0, calc_segments(rounding_tr))
+  else
+    ImGui.DrawList_PathLineTo(dl, x2, y1)
+  end
+  
+  if rounding_br > 0 then
+    ImGui.DrawList_PathArcTo(dl, x2 - rounding_br, y2 - rounding_br, rounding_br, 0, math.pi * 0.5, calc_segments(rounding_br))
+  else
+    ImGui.DrawList_PathLineTo(dl, x2, y2)
+  end
+  
+  if rounding_bl > 0 then
+    ImGui.DrawList_PathArcTo(dl, x1 + rounding_bl, y2 - rounding_bl, rounding_bl, math.pi * 0.5, math.pi, calc_segments(rounding_bl))
+  else
+    ImGui.DrawList_PathLineTo(dl, x1, y2)
+  end
+  
+  ImGui.DrawList_PathFillConvex(dl, color)
+end
+
+local function draw_rect_stroke_with_custom_corners(dl, x1, y1, x2, y2, color, thickness, rounding_tl, rounding_tr, rounding_br, rounding_bl)
+  -- Snap to pixels for crisp rendering
+  x1 = snap_to_pixel(x1)
+  y1 = snap_to_pixel(y1)
+  x2 = snap_to_pixel(x2)
+  y2 = snap_to_pixel(y2)
+  
+  local w = x2 - x1
+  local h = y2 - y1
+  
+  local max_rounding = math.min(w, h) * 0.5
+  rounding_tl = math.min(rounding_tl or 0, max_rounding)
+  rounding_tr = math.min(rounding_tr or 0, max_rounding)
+  rounding_br = math.min(rounding_br or 0, max_rounding)
+  rounding_bl = math.min(rounding_bl or 0, max_rounding)
+  
+  ImGui.DrawList_PathClear(dl)
+  
+  -- Use more segments for smoother arcs (scale with radius)
+  local calc_segments = function(r) return math.max(6, math.floor(r * 0.5)) end
+  
+  if rounding_tl > 0 then
+    ImGui.DrawList_PathArcTo(dl, x1 + rounding_tl, y1 + rounding_tl, rounding_tl, math.pi, math.pi * 1.5, calc_segments(rounding_tl))
+  else
+    ImGui.DrawList_PathLineTo(dl, x1, y1)
+  end
+  
+  if rounding_tr > 0 then
+    ImGui.DrawList_PathArcTo(dl, x2 - rounding_tr, y1 + rounding_tr, rounding_tr, math.pi * 1.5, math.pi * 2.0, calc_segments(rounding_tr))
+  else
+    ImGui.DrawList_PathLineTo(dl, x2, y1)
+  end
+  
+  if rounding_br > 0 then
+    ImGui.DrawList_PathArcTo(dl, x2 - rounding_br, y2 - rounding_br, rounding_br, 0, math.pi * 0.5, calc_segments(rounding_br))
+  else
+    ImGui.DrawList_PathLineTo(dl, x2, y2)
+  end
+  
+  if rounding_bl > 0 then
+    ImGui.DrawList_PathArcTo(dl, x1 + rounding_bl, y2 - rounding_bl, rounding_bl, math.pi * 0.5, math.pi, calc_segments(rounding_bl))
+  else
+    ImGui.DrawList_PathLineTo(dl, x1, y2)
+  end
+  
+  ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, thickness)
+end
+
+-- ============================================================================
 -- CORNER BUTTONS
 -- ============================================================================
 
@@ -127,10 +231,18 @@ local function get_corner_button_instance(id)
   return corner_button_instances[id]
 end
 
-local function draw_corner_button_simple(ctx, dl, x, y, size, config, unique_id, corner_flags, rounding)
+local function draw_corner_button_custom(ctx, dl, x, y, size, config, unique_id, panel_rounding, inner_rounding, position)
+  local Style = require('rearkitekt.gui.widgets.controls.style_defaults')
+  
+  -- Apply default button styling
+  config = Style.apply_defaults(Style.BUTTON, config)
+  
   local instance = get_corner_button_instance(unique_id)
   
-  -- Check hover
+  -- Snap to pixels
+  x = snap_to_pixel(x)
+  y = snap_to_pixel(y)
+  
   local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + size, y + size)
   local is_active = is_hovered and ImGui.IsMouseDown(ctx, 0)
   
@@ -140,42 +252,71 @@ local function draw_corner_button_simple(ctx, dl, x, y, size, config, unique_id,
   instance.hover_alpha = instance.hover_alpha + (target_alpha - instance.hover_alpha) * 12.0 * dt
   instance.hover_alpha = math.max(0, math.min(1, instance.hover_alpha))
   
-  -- Get colors
-  local Style = require('rearkitekt.gui.widgets.controls.style_defaults')
-  local bg_color = config.bg_color or Style.COLORS.BG_BASE
-  local text_color = config.text_color or Style.COLORS.TEXT_NORMAL
+  -- Get state colors (exact same as button.lua)
+  local bg_color = config.bg_color
+  local border_inner = config.border_inner_color
+  local text_color = config.text_color
   
   if is_active then
-    bg_color = config.bg_active_color or Style.COLORS.BG_ACTIVE
-    text_color = config.text_active_color or Style.COLORS.TEXT_ACTIVE
+    bg_color = config.bg_active_color or bg_color
+    border_inner = config.border_active_color or border_inner
+    text_color = config.text_active_color or text_color
   elseif instance.hover_alpha > 0.01 then
-    bg_color = Style.RENDER.lerp_color(bg_color, config.bg_hover_color or Style.COLORS.BG_HOVER, instance.hover_alpha)
-    text_color = Style.RENDER.lerp_color(text_color, config.text_hover_color or Style.COLORS.TEXT_HOVER, instance.hover_alpha)
+    bg_color = Style.RENDER.lerp_color(config.bg_color, config.bg_hover_color or config.bg_color, instance.hover_alpha)
+    border_inner = Style.RENDER.lerp_color(config.border_inner_color, config.border_hover_color or config.border_inner_color, instance.hover_alpha)
+    text_color = Style.RENDER.lerp_color(config.text_color, config.text_hover_color or config.text_color, instance.hover_alpha)
   end
   
-  local inner_rounding = math.max(0, rounding - 2)
+  -- Determine rounding per corner
+  local rounding_tl, rounding_tr, rounding_br, rounding_bl = 0, 0, 0, 0
+  
+  if position == "tl" then
+    rounding_tl = panel_rounding
+    rounding_br = inner_rounding
+  elseif position == "tr" then
+    rounding_tr = panel_rounding
+    rounding_bl = inner_rounding
+  elseif position == "bl" then
+    rounding_bl = panel_rounding
+    rounding_tr = inner_rounding
+  elseif position == "br" then
+    rounding_br = panel_rounding
+    rounding_tl = inner_rounding
+  end
+  
+  -- Inner rounding (same as button.lua: rounding - 2)
+  local inner_tl = math.max(0, rounding_tl - 2)
+  local inner_tr = math.max(0, rounding_tr - 2)
+  local inner_br = math.max(0, rounding_br - 2)
+  local inner_bl = math.max(0, rounding_bl - 2)
   
   -- Draw background
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + size, y + size, bg_color, inner_rounding, corner_flags)
+  draw_rect_with_custom_corners(dl, x, y, x + size, y + size, bg_color, 
+                                 rounding_tl, rounding_tr, rounding_br, rounding_bl)
   
   -- Draw inner border
-  ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + size - 1, y + size - 1,
-    Style.COLORS.BORDER_INNER, inner_rounding, corner_flags, 1)
+  draw_rect_stroke_with_custom_corners(dl, x + 1, y + 1, x + size - 1, y + size - 1, 
+                                        border_inner, 1,
+                                        inner_tl, inner_tr, inner_br, inner_bl)
   
   -- Draw outer border
-  ImGui.DrawList_AddRect(dl, x, y, x + size, y + size,
-    Style.COLORS.BORDER_OUTER, inner_rounding, corner_flags, 1)
+  draw_rect_stroke_with_custom_corners(dl, x, y, x + size, y + size, 
+                                        config.border_outer_color, 1,
+                                        rounding_tl, rounding_tr, rounding_br, rounding_bl)
   
-  -- Draw icon/label
+  -- Draw icon/label (centered)
   local label = config.icon or config.label or ""
   if label ~= "" then
-    local text_w, text_h = ImGui.CalcTextSize(ctx, label)
+    local text_w = ImGui.CalcTextSize(ctx, label)
+    local text_line_height = ImGui.GetTextLineHeight(ctx)
+    
     local text_x = x + (size - text_w) * 0.5
-    local text_y = y + (size - text_h) * 0.5
+    local text_y = y + (size - text_line_height) * 0.5
+    
     ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
   end
   
-  -- Invisible button for interaction
+  -- Invisible button
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, "##" .. unique_id, size, size)
   
@@ -188,44 +329,46 @@ local function draw_corner_button_simple(ctx, dl, x, y, size, config, unique_id,
   end
 end
 
-local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, rounding)
+local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, panel_rounding)
   if not config.corner_buttons then return end
   
   local cb = config.corner_buttons
   local size = cb.size or 30
   local border_thickness = 1
-  local inset = rounding  -- Inset by panel rounding to align with rounded corner
   
-  -- Top-left: round only bottom-right corner
+  -- Inner corner should be circular (large radius)
+  local inner_rounding = size * 0.5  -- Circular appearance
+  
+  -- Top-left
   if cb.top_left then
     local btn_x = x + border_thickness
     local btn_y = y + border_thickness
-    local corner_flags = ImGui.DrawFlags_RoundCornersBottomRight
-    draw_corner_button_simple(ctx, dl, btn_x, btn_y, size, cb.top_left, "corner_tl", corner_flags, size)
+    draw_corner_button_custom(ctx, dl, btn_x, btn_y, size, cb.top_left, 
+                               panel_id .. "_corner_tl", panel_rounding, inner_rounding, "tl")
   end
   
-  -- Top-right: round only bottom-left corner
+  -- Top-right
   if cb.top_right then
     local btn_x = x + w - size - border_thickness
     local btn_y = y + border_thickness
-    local corner_flags = ImGui.DrawFlags_RoundCornersBottomLeft
-    draw_corner_button_simple(ctx, dl, btn_x, btn_y, size, cb.top_right, "corner_tr", corner_flags, size)
+    draw_corner_button_custom(ctx, dl, btn_x, btn_y, size, cb.top_right, 
+                               panel_id .. "_corner_tr", panel_rounding, inner_rounding, "tr")
   end
   
-  -- Bottom-left: round only top-right corner
+  -- Bottom-left
   if cb.bottom_left then
     local btn_x = x + border_thickness
     local btn_y = y + h - size - border_thickness
-    local corner_flags = ImGui.DrawFlags_RoundCornersTopRight
-    draw_corner_button_simple(ctx, dl, btn_x, btn_y, size, cb.bottom_left, "corner_bl", corner_flags, size)
+    draw_corner_button_custom(ctx, dl, btn_x, btn_y, size, cb.bottom_left, 
+                               panel_id .. "_corner_bl", panel_rounding, inner_rounding, "bl")
   end
   
-  -- Bottom-right: round only top-left corner
+  -- Bottom-right
   if cb.bottom_right then
     local btn_x = x + w - size - border_thickness
     local btn_y = y + h - size - border_thickness
-    local corner_flags = ImGui.DrawFlags_RoundCornersTopLeft
-    draw_corner_button_simple(ctx, dl, btn_x, btn_y, size, cb.bottom_right, "corner_br", corner_flags, size)
+    draw_corner_button_custom(ctx, dl, btn_x, btn_y, size, cb.bottom_right, 
+                               panel_id .. "_corner_br", panel_rounding, inner_rounding, "br")
   end
 end
 

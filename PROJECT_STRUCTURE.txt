@@ -79,11 +79,11 @@ ARKITEKT-Project/
 │   │   │   │   ├── component/
 │   │   │   │   │   └── chip.lua (333 lines)
 │   │   │   │   ├── controls/
-│   │   │   │   │   ├── button.lua (192 lines)
+│   │   │   │   │   ├── button.lua (241 lines)
 │   │   │   │   │   ├── context_menu.lua (106 lines)
 │   │   │   │   │   ├── dropdown.lua (417 lines)
 │   │   │   │   │   ├── scrollbar.lua (239 lines)
-│   │   │   │   │   ├── search_input.lua (215 lines)
+│   │   │   │   │   ├── search_input.lua (236 lines)
 │   │   │   │   │   ├── style_defaults.lua (269 lines)
 │   │   │   │   │   └── tooltip.lua (129 lines)
 │   │   │   │   ├── displays/
@@ -131,7 +131,7 @@ ARKITEKT-Project/
 │   │   │   │   │   ├── background.lua (82 lines)
 │   │   │   │   │   ├── config.lua (284 lines)
 │   │   │   │   │   ├── content.lua (58 lines)
-│   │   │   │   │   ├── init.lua (531 lines)
+│   │   │   │   │   ├── init.lua (590 lines)
 │   │   │   │   │   └── tab_animator.lua (107 lines)
 │   │   │   │   ├── sliders/
 │   │   │   │   │   └── hue.lua (276 lines)
@@ -265,7 +265,7 @@ ARKITEKT-Project/
 ├── index.xml (183 lines)
 ├── lua_perf_guide.md (391 lines)
 ├── METRICS.json (3855 lines)
-├── PROJECT_FLOW.md (269 lines)
+├── PROJECT_FLOW.md (263 lines)
 ├── PROJECT_STRUCTURE.txt (281 lines)
 ├── README.md (71 lines)
 ├── refactoring ideas (424 lines)
@@ -274,8 +274,8 @@ ARKITEKT-Project/
 └── System_Prompt_ARKITEKT_OnePager.md (66 lines)
 
 Total files: 206
-Total lines (with comments): 64,758
-Total lines (code only): 55,258
+Total lines (with comments): 64,881
+Total lines (code only): 55,341
 Code/Total Ratio: 85.3% is actual code
 
 Generated: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\PROJECT_STRUCTURE.txt
