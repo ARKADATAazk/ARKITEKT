@@ -1,5 +1,5 @@
 -- @noindex
--- ReArkitekt/gui/widgets/tiles_container/content.lua
+-- ReArkitekt/gui/widgets/panel/content.lua
 -- Scrollable content area management
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
@@ -7,7 +7,7 @@ local ImGui = require 'imgui' '0.10'
 
 local M = {}
 
-function M.begin_child(ctx, id, width, height, scroll_config)
+function M.begin_child(ctx, id, width, height, scroll_config, container)
   local flags = scroll_config.flags or 0
   local scroll_bg = scroll_config.bg_color or 0x00000000
   
@@ -16,13 +16,24 @@ function M.begin_child(ctx, id, width, height, scroll_config)
   local success = ImGui.BeginChild(ctx, id .. "_scroll", width, height, ImGui.ChildFlags_None, flags)
   
   if not success then
+    -- BeginChild failed - pop immediately and clean up
     ImGui.PopStyleColor(ctx, 1)
+  end
+  
+  -- Track success state for end_child
+  if container then
+    container._child_began_successfully = success
   end
   
   return success
 end
 
 function M.end_child(ctx, container)
+  -- Only proceed if begin_child succeeded
+  if not container._child_began_successfully then
+    return
+  end
+  
   local anti_jitter = container.config.anti_jitter
   
   if anti_jitter and anti_jitter.enabled and anti_jitter.track_scrollbar then
@@ -39,6 +50,9 @@ function M.end_child(ctx, container)
   
   ImGui.EndChild(ctx)
   ImGui.PopStyleColor(ctx, 1)
+  
+  -- Reset state
+  container._child_began_successfully = false
 end
 
 return M

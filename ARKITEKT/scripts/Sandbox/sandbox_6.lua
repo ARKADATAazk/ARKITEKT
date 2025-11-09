@@ -1,6 +1,7 @@
 -- @noindex
 -- ARKITEKT/scripts/demos/panel_features_test.lua
 -- Test all new panel features: alignment, bottom headers, corner buttons
+-- Fixed: ID isolation and better layout
 
 local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
 local root_path = script_path:match("(.*)[\\/][^\\/]+[\\/]?$") or script_path
@@ -38,6 +39,8 @@ local state = {
 local function create_alignment_panel()
   return Panel.new({
     id = "alignment_panel",
+    width = 850,
+    height = 180,
     config = {
       bg_color = hexrgb("#1A1A1AFF"),
       border_color = hexrgb("#000000DD"),
@@ -149,6 +152,8 @@ end
 local function create_bottom_header_panel()
   return Panel.new({
     id = "bottom_panel",
+    width = 850,
+    height = 150,
     config = {
       bg_color = hexrgb("#1A1A1AFF"),
       border_color = hexrgb("#000000DD"),
@@ -196,6 +201,8 @@ end
 local function create_corner_buttons_panel()
   return Panel.new({
     id = "corner_panel",
+    width = 850,
+    height = 200,
     config = {
       bg_color = hexrgb("#1A1A1AFF"),
       border_color = hexrgb("#000000DD"),
@@ -269,6 +276,8 @@ end
 local function create_hybrid_panel()
   return Panel.new({
     id = "hybrid_panel",
+    width = 850,
+    height = 150,
     config = {
       bg_color = hexrgb("#1A1A1AFF"),
       border_color = hexrgb("#000000DD"),
@@ -332,14 +341,6 @@ init()
 local function draw(ctx, shell_state)
   state.frame_count = state.frame_count + 1
   
-  -- Update frame counter in bottom panel
-  if state.panels.bottom then
-    local counter_state = state.panels.bottom.counter
-    if counter_state then
-      -- Update button label (would need to expose this in config)
-    end
-  end
-  
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 20, 20)
   
   -- Header
@@ -356,6 +357,7 @@ local function draw(ctx, shell_state)
   ImGui.Spacing(ctx)
   
   -- Panel 1: Left/Right Alignment
+  ImGui.PushID(ctx, "panel1")
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFD700FF"))
   ImGui.Text(ctx, "1. LEFT/RIGHT ALIGNMENT + SEPARATOR")
   ImGui.PopStyleColor(ctx, 1)
@@ -370,12 +372,14 @@ local function draw(ctx, shell_state)
     ImGui.Text(ctx, "Notice how elements adjacent to separator get corner rounding!")
   end
   state.panels.alignment:end_draw(ctx)
+  ImGui.PopID(ctx)
   
   ImGui.Spacing(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
   
   -- Panel 2: Bottom Header
+  ImGui.PushID(ctx, "panel2")
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFD700FF"))
   ImGui.Text(ctx, "2. BOTTOM HEADER")
   ImGui.PopStyleColor(ctx, 1)
@@ -390,12 +394,14 @@ local function draw(ctx, shell_state)
     ImGui.Text(ctx, "Useful for status bars, action toolbars, footers!")
   end
   state.panels.bottom:end_draw(ctx)
+  ImGui.PopID(ctx)
   
   ImGui.Spacing(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
   
   -- Panel 3: Corner Buttons
+  ImGui.PushID(ctx, "panel3")
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFD700FF"))
   ImGui.Text(ctx, "3. CORNER BUTTONS (NO HEADER)")
   ImGui.PopStyleColor(ctx, 1)
@@ -413,12 +419,14 @@ local function draw(ctx, shell_state)
     ImGui.Text(ctx, "Hover over corners to see the buttons!")
   end
   state.panels.corner:end_draw(ctx)
+  ImGui.PopID(ctx)
   
   ImGui.Spacing(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
   
   -- Panel 4: Hybrid
+  ImGui.PushID(ctx, "panel4")
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFD700FF"))
   ImGui.Text(ctx, "4. HEADER + CORNER BUTTONS")
   ImGui.PopStyleColor(ctx, 1)
@@ -429,8 +437,11 @@ local function draw(ctx, shell_state)
     ImGui.Text(ctx, "✓ Has both header and corner buttons")
     ImGui.Text(ctx, "✓ Set corner_buttons_always_visible = true")
     ImGui.Text(ctx, "✓ Useful for quick actions without cluttering header")
+    ImGui.Spacing(ctx)
+    ImGui.Text(ctx, "Look for the 💡 button in the bottom-left corner!")
   end
   state.panels.hybrid:end_draw(ctx)
+  ImGui.PopID(ctx)
   
   ImGui.PopStyleVar(ctx, 1)
 end
@@ -457,8 +468,8 @@ Shell.run({
   version_color = hexrgb("#888888FF"),
   style = StyleOK and Style or nil,
   initial_pos = { x = 100, y = 100 },
-  initial_size = { w = 900, h = 900 },
-  min_size = { w = 800, h = 700 },
+  initial_size = { w = 900, h = 950 },
+  min_size = { w = 900, h = 800 },
   icon_color = hexrgb("#41E0A3FF"),
   icon_size = 18,
   

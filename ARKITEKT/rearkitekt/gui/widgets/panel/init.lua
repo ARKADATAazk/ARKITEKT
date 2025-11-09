@@ -1,6 +1,7 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/panel/init.lua
 -- Main panel API with header positioning and corner buttons support
+-- Fixed: Push unique ID scope for entire panel
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -73,6 +74,8 @@ function M.new(opts)
     active_tab_id = nil,
     
     _overflow_visible = false,
+    _child_began_successfully = false,
+    _id_scope_pushed = false,
     
     current_mode = nil,
     
@@ -114,7 +117,7 @@ end
 -- CORNER BUTTONS
 -- ============================================================================
 
-local function draw_corner_button(ctx, dl, x, y, size, config, id, rounding)
+local function draw_corner_button(ctx, dl, x, y, size, config, unique_id, rounding)
   local btn_config = {
     label = config.label or config.icon or "",
     icon = config.icon,
@@ -128,9 +131,11 @@ local function draw_corner_button(ctx, dl, x, y, size, config, id, rounding)
   -- Apply custom colors if provided
   if config.bg_color then btn_config.bg_color = config.bg_color end
   if config.bg_hover_color then btn_config.bg_hover_color = config.bg_hover_color end
+  if config.bg_active_color then btn_config.bg_active_color = config.bg_active_color end
   if config.text_color then btn_config.text_color = config.text_color end
+  if config.text_hover_color then btn_config.text_hover_color = config.text_hover_color end
   
-  return Button.draw(ctx, dl, x, y, size, size, btn_config, id)
+  return Button.draw(ctx, dl, x, y, size, size, btn_config, unique_id)
 end
 
 local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, rounding)
@@ -142,22 +147,26 @@ local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, roundi
   
   -- Top-left
   if cb.top_left then
-    draw_corner_button(ctx, dl, x + margin, y + margin, size, cb.top_left, panel_id .. "_corner_tl", rounding)
+    local id = "corner_tl"  -- Simplified - panel ID scope already pushed
+    draw_corner_button(ctx, dl, x + margin, y + margin, size, cb.top_left, id, rounding)
   end
   
   -- Top-right
   if cb.top_right then
-    draw_corner_button(ctx, dl, x + w - size - margin, y + margin, size, cb.top_right, panel_id .. "_corner_tr", rounding)
+    local id = "corner_tr"
+    draw_corner_button(ctx, dl, x + w - size - margin, y + margin, size, cb.top_right, id, rounding)
   end
   
   -- Bottom-left
   if cb.bottom_left then
-    draw_corner_button(ctx, dl, x + margin, y + h - size - margin, size, cb.bottom_left, panel_id .. "_corner_bl", rounding)
+    local id = "corner_bl"
+    draw_corner_button(ctx, dl, x + margin, y + h - size - margin, size, cb.bottom_left, id, rounding)
   end
   
   -- Bottom-right
   if cb.bottom_right then
-    draw_corner_button(ctx, dl, x + w - size - margin, y + h - size - margin, size, cb.bottom_right, panel_id .. "_corner_br", rounding)
+    local id = "corner_br"
+    draw_corner_button(ctx, dl, x + w - size - margin, y + h - size - margin, size, cb.bottom_right, id, rounding)
   end
 end
 
@@ -166,6 +175,10 @@ end
 -- ============================================================================
 
 function Panel:begin_draw(ctx)
+  -- Push unique ID scope for entire panel
+  ImGui.PushID(ctx, self.id)
+  self._id_scope_pushed = true
+  
   local dt = ImGui.GetDeltaTime(ctx)
   self:update(dt)
   
@@ -276,7 +289,8 @@ function Panel:begin_draw(ctx)
     }
   end
   
-  local success = Content.begin_child(ctx, self.id, child_w, child_h, scroll_config)
+  -- Pass self (container) to begin_child for state tracking
+  local success = Content.begin_child(ctx, self.id, child_w, child_h, scroll_config, self)
   
   if success then
     local win_x, win_y = ImGui.GetWindowPos(ctx)
@@ -292,27 +306,36 @@ function Panel:begin_draw(ctx)
 end
 
 function Panel:end_draw(ctx)
-  local content_height = ImGui.GetCursorPosY(ctx)
-  local scroll_y = ImGui.GetScrollY(ctx)
-  local scroll_max_y = ImGui.GetScrollMaxY(ctx)
-  
-  if self.scrollbar then
-    self.scrollbar:set_content_height(content_height)
-    self.scrollbar:set_visible_height(self.child_height)
-    self.scrollbar:set_scroll_pos(scroll_y)
+  -- Only process if child began successfully
+  if self._child_began_successfully then
+    local content_height = ImGui.GetCursorPosY(ctx)
+    local scroll_y = ImGui.GetScrollY(ctx)
+    local scroll_max_y = ImGui.GetScrollMaxY(ctx)
     
-    if self.scrollbar.is_dragging then
-      ImGui.SetScrollY(ctx, self.scrollbar:get_scroll_pos())
+    if self.scrollbar then
+      self.scrollbar:set_content_height(content_height)
+      self.scrollbar:set_visible_height(self.child_height)
+      self.scrollbar:set_scroll_pos(scroll_y)
+      
+      if self.scrollbar.is_dragging then
+        ImGui.SetScrollY(ctx, self.scrollbar:get_scroll_pos())
+      end
+    end
+    
+    Content.end_child(ctx, self)
+    
+    if self.scrollbar and self.scrollbar:is_scrollable() then
+      local scrollbar_x = self.child_x + self.child_width - self.config.scroll.scrollbar_config.width
+      local scrollbar_y = self.child_y
+      
+      self.scrollbar:draw(ctx, scrollbar_x, scrollbar_y, self.child_height)
     end
   end
   
-  Content.end_child(ctx, self)
-  
-  if self.scrollbar and self.scrollbar:is_scrollable() then
-    local scrollbar_x = self.child_x + self.child_width - self.config.scroll.scrollbar_config.width
-    local scrollbar_y = self.child_y
-    
-    self.scrollbar:draw(ctx, scrollbar_x, scrollbar_y, self.child_height)
+  -- Pop ID scope if it was pushed
+  if self._id_scope_pushed then
+    ImGui.PopID(ctx)
+    self._id_scope_pushed = false
   end
 end
 
