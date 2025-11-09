@@ -117,25 +117,75 @@ end
 -- CORNER BUTTONS
 -- ============================================================================
 
-local function draw_corner_button(ctx, dl, x, y, size, config, unique_id, rounding)
-  local btn_config = {
-    label = config.label or config.icon or "",
-    icon = config.icon,
-    tooltip = config.tooltip,
-    on_click = config.on_click,
-    rounding = rounding,
-    width = size,
-    height = size,
-  }
+-- Instance storage for corner button animations
+local corner_button_instances = {}
+
+local function get_corner_button_instance(id)
+  if not corner_button_instances[id] then
+    corner_button_instances[id] = { hover_alpha = 0 }
+  end
+  return corner_button_instances[id]
+end
+
+local function draw_corner_button_simple(ctx, dl, x, y, size, config, unique_id, corner_flags, rounding)
+  local instance = get_corner_button_instance(unique_id)
   
-  -- Apply custom colors if provided
-  if config.bg_color then btn_config.bg_color = config.bg_color end
-  if config.bg_hover_color then btn_config.bg_hover_color = config.bg_hover_color end
-  if config.bg_active_color then btn_config.bg_active_color = config.bg_active_color end
-  if config.text_color then btn_config.text_color = config.text_color end
-  if config.text_hover_color then btn_config.text_hover_color = config.text_hover_color end
+  -- Check hover
+  local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + size, y + size)
+  local is_active = is_hovered and ImGui.IsMouseDown(ctx, 0)
   
-  return Button.draw(ctx, dl, x, y, size, size, btn_config, unique_id)
+  -- Animate hover
+  local dt = ImGui.GetDeltaTime(ctx)
+  local target_alpha = (is_hovered or is_active) and 1.0 or 0.0
+  instance.hover_alpha = instance.hover_alpha + (target_alpha - instance.hover_alpha) * 12.0 * dt
+  instance.hover_alpha = math.max(0, math.min(1, instance.hover_alpha))
+  
+  -- Get colors
+  local Style = require('rearkitekt.gui.widgets.controls.style_defaults')
+  local bg_color = config.bg_color or Style.COLORS.BG_BASE
+  local text_color = config.text_color or Style.COLORS.TEXT_NORMAL
+  
+  if is_active then
+    bg_color = config.bg_active_color or Style.COLORS.BG_ACTIVE
+    text_color = config.text_active_color or Style.COLORS.TEXT_ACTIVE
+  elseif instance.hover_alpha > 0.01 then
+    bg_color = Style.RENDER.lerp_color(bg_color, config.bg_hover_color or Style.COLORS.BG_HOVER, instance.hover_alpha)
+    text_color = Style.RENDER.lerp_color(text_color, config.text_hover_color or Style.COLORS.TEXT_HOVER, instance.hover_alpha)
+  end
+  
+  local inner_rounding = math.max(0, rounding - 2)
+  
+  -- Draw background
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + size, y + size, bg_color, inner_rounding, corner_flags)
+  
+  -- Draw inner border
+  ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + size - 1, y + size - 1,
+    Style.COLORS.BORDER_INNER, inner_rounding, corner_flags, 1)
+  
+  -- Draw outer border
+  ImGui.DrawList_AddRect(dl, x, y, x + size, y + size,
+    Style.COLORS.BORDER_OUTER, inner_rounding, corner_flags, 1)
+  
+  -- Draw icon/label
+  local label = config.icon or config.label or ""
+  if label ~= "" then
+    local text_w, text_h = ImGui.CalcTextSize(ctx, label)
+    local text_x = x + (size - text_w) * 0.5
+    local text_y = y + (size - text_h) * 0.5
+    ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
+  end
+  
+  -- Invisible button for interaction
+  ImGui.SetCursorScreenPos(ctx, x, y)
+  ImGui.InvisibleButton(ctx, "##" .. unique_id, size, size)
+  
+  if ImGui.IsItemClicked(ctx, 0) and config.on_click then
+    config.on_click()
+  end
+  
+  if is_hovered and config.tooltip then
+    ImGui.SetTooltip(ctx, config.tooltip)
+  end
 end
 
 local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, rounding)
@@ -143,30 +193,39 @@ local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, roundi
   
   local cb = config.corner_buttons
   local size = cb.size or 30
-  local margin = cb.margin or 8
+  local border_thickness = 1
+  local inset = rounding  -- Inset by panel rounding to align with rounded corner
   
-  -- Top-left
+  -- Top-left: round only bottom-right corner
   if cb.top_left then
-    local id = "corner_tl"  -- Simplified - panel ID scope already pushed
-    draw_corner_button(ctx, dl, x + margin, y + margin, size, cb.top_left, id, rounding)
+    local btn_x = x + border_thickness
+    local btn_y = y + border_thickness
+    local corner_flags = ImGui.DrawFlags_RoundCornersBottomRight
+    draw_corner_button_simple(ctx, dl, btn_x, btn_y, size, cb.top_left, "corner_tl", corner_flags, size)
   end
   
-  -- Top-right
+  -- Top-right: round only bottom-left corner
   if cb.top_right then
-    local id = "corner_tr"
-    draw_corner_button(ctx, dl, x + w - size - margin, y + margin, size, cb.top_right, id, rounding)
+    local btn_x = x + w - size - border_thickness
+    local btn_y = y + border_thickness
+    local corner_flags = ImGui.DrawFlags_RoundCornersBottomLeft
+    draw_corner_button_simple(ctx, dl, btn_x, btn_y, size, cb.top_right, "corner_tr", corner_flags, size)
   end
   
-  -- Bottom-left
+  -- Bottom-left: round only top-right corner
   if cb.bottom_left then
-    local id = "corner_bl"
-    draw_corner_button(ctx, dl, x + margin, y + h - size - margin, size, cb.bottom_left, id, rounding)
+    local btn_x = x + border_thickness
+    local btn_y = y + h - size - border_thickness
+    local corner_flags = ImGui.DrawFlags_RoundCornersTopRight
+    draw_corner_button_simple(ctx, dl, btn_x, btn_y, size, cb.bottom_left, "corner_bl", corner_flags, size)
   end
   
-  -- Bottom-right
+  -- Bottom-right: round only top-left corner
   if cb.bottom_right then
-    local id = "corner_br"
-    draw_corner_button(ctx, dl, x + w - size - margin, y + h - size - margin, size, cb.bottom_right, id, rounding)
+    local btn_x = x + w - size - border_thickness
+    local btn_y = y + h - size - border_thickness
+    local corner_flags = ImGui.DrawFlags_RoundCornersTopLeft
+    draw_corner_button_simple(ctx, dl, btn_x, btn_y, size, cb.bottom_right, "corner_br", corner_flags, size)
   end
 end
 

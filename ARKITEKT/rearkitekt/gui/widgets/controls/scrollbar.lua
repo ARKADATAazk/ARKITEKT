@@ -18,9 +18,9 @@ local DEFAULTS = {
   track_color = 0x00000000,
   track_hover_color = 0x0F0F0FFF,
   
-  thumb_color = 0x3A3A3AFF,
-  thumb_hover_color = 0x4A4A4AFF,
-  thumb_active_color = 0x5A5A5AFF,
+  thumb_color = 0x282828FF,
+  thumb_hover_color = 0x323232FF,
+  thumb_active_color = 0x3C3C3CFF,
   
   thumb_rounding = 4,
   track_rounding = 0,

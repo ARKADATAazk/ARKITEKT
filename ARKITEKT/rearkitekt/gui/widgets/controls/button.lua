@@ -9,6 +9,38 @@ local Style = require('rearkitekt.gui.widgets.controls.style_defaults')
 
 local M = {}
 
+-- Instance storage for animation state
+local instances = {}
+
+-- ============================================================================
+-- INSTANCE MANAGEMENT
+-- ============================================================================
+
+local Button = {}
+Button.__index = Button
+
+function Button.new(id)
+  local instance = setmetatable({
+    id = id,
+    hover_alpha = 0,
+  }, Button)
+  return instance
+end
+
+function Button:update(dt, is_hovered, is_active)
+  local target_alpha = (is_hovered or is_active) and 1.0 or 0.0
+  local alpha_speed = 12.0
+  self.hover_alpha = self.hover_alpha + (target_alpha - self.hover_alpha) * alpha_speed * dt
+  self.hover_alpha = math.max(0, math.min(1, self.hover_alpha))
+end
+
+local function get_or_create_instance(unique_id)
+  if not instances[unique_id] then
+    instances[unique_id] = Button.new(unique_id)
+  end
+  return instances[unique_id]
+end
+
 -- ============================================================================
 -- CONTEXT DETECTION
 -- ============================================================================
@@ -64,14 +96,28 @@ end
 -- RENDERING
 -- ============================================================================
 
-local function render_button(ctx, dl, x, y, width, height, config, context)
+local function render_button(ctx, dl, x, y, width, height, config, context, instance)
   local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
   local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
   
-  -- Get state colors
-  local bg_color = Style.get_state_color(config, is_hovered, is_active, "bg_color")
-  local border_inner = Style.get_state_color(config, is_hovered, is_active, "border_inner_color")
-  local text_color = Style.get_state_color(config, is_hovered, is_active, "text_color")
+  -- Update animation
+  local dt = ImGui.GetDeltaTime(ctx)
+  instance:update(dt, is_hovered, is_active)
+  
+  -- Get animated colors
+  local bg_color = config.bg_color
+  local border_inner = config.border_inner_color
+  local text_color = config.text_color
+  
+  if is_active then
+    bg_color = config.bg_active_color or bg_color
+    border_inner = config.border_active_color or border_inner
+    text_color = config.text_active_color or text_color
+  elseif instance.hover_alpha > 0.01 then
+    bg_color = Style.RENDER.lerp_color(config.bg_color, config.bg_hover_color or config.bg_color, instance.hover_alpha)
+    border_inner = Style.RENDER.lerp_color(config.border_inner_color, config.border_hover_color or config.border_inner_color, instance.hover_alpha)
+    text_color = Style.RENDER.lerp_color(config.text_color, config.text_hover_color or config.text_color, instance.hover_alpha)
+  end
   
   -- Calculate rounding
   local rounding = config.rounding or 0
@@ -127,8 +173,11 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
   -- Resolve context (panel vs standalone)
   local context = resolve_context(config, state_or_id)
   
+  -- Get or create instance for animation
+  local instance = get_or_create_instance(context.unique_id)
+  
   -- Render button
-  local is_hovered, is_active = render_button(ctx, dl, x, y, width, height, config, context)
+  local is_hovered, is_active = render_button(ctx, dl, x, y, width, height, config, context, instance)
   
   -- Create invisible button for interaction
   ImGui.SetCursorScreenPos(ctx, x, y)

@@ -71,21 +71,27 @@ end
 local function render_search_input(ctx, dl, x, y, width, height, config, state, context)
   local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
   
-  -- Animate alpha
+  -- Animate placeholder alpha
   local target_alpha = (state.search_focused or is_hovered or #state.search_text > 0) and 1.0 or 0.3
   local alpha_delta = (target_alpha - state.search_alpha) * config.fade_speed * ImGui.GetDeltaTime(ctx)
   state.search_alpha = math.max(0.3, math.min(1.0, state.search_alpha + alpha_delta))
   
-  -- Get state colors
-  local bg_color = state.search_focused and config.bg_active_color or (is_hovered and config.bg_hover_color or config.bg_color)
-  local border_inner = state.search_focused and config.border_active_color or (is_hovered and config.border_hover_color or config.border_inner_color)
+  -- Get state colors with smooth transitions
+  local bg_color = config.bg_color
+  local border_inner = config.border_inner_color
+  local text_color = config.text_color
   
-  -- Apply alpha
+  if state.search_focused then
+    bg_color = config.bg_active_color or bg_color
+    border_inner = config.border_active_color or border_inner
+  elseif is_hovered then
+    bg_color = config.bg_hover_color or bg_color
+    border_inner = config.border_hover_color or border_inner
+  end
+  
+  -- Apply alpha to text (for placeholder fade)
   local alpha_byte = math.floor(state.search_alpha * 255)
-  bg_color = (bg_color & 0xFFFFFF00) | alpha_byte
-  border_inner = (border_inner & 0xFFFFFF00) | alpha_byte
-  local border_outer = (config.border_outer_color & 0xFFFFFF00) | alpha_byte
-  local text_color = (config.text_color & 0xFFFFFF00) | alpha_byte
+  text_color = (text_color & 0xFFFFFF00) | alpha_byte
   
   -- Calculate rounding
   local rounding = config.rounding or 0
@@ -95,8 +101,23 @@ local function render_search_input(ctx, dl, x, y, width, height, config, state, 
   local inner_rounding = math.max(0, rounding - 2)
   local corner_flags = Style.RENDER.get_corner_flags(context.corner_rounding)
   
-  -- Draw background and borders
-  Style.RENDER.draw_control_background(dl, x, y, width, height, bg_color, border_inner, border_outer, rounding, corner_flags)
+  -- Draw background
+  ImGui.DrawList_AddRectFilled(
+    dl, x, y, x + width, y + height,
+    bg_color, inner_rounding, corner_flags
+  )
+  
+  -- Draw inner border
+  ImGui.DrawList_AddRect(
+    dl, x + 1, y + 1, x + width - 1, y + height - 1,
+    border_inner, inner_rounding, corner_flags, 1
+  )
+  
+  -- Draw outer border
+  ImGui.DrawList_AddRect(
+    dl, x, y, x + width, y + height,
+    config.border_outer_color, inner_rounding, corner_flags, 1
+  )
   
   -- Draw input field
   ImGui.SetCursorScreenPos(ctx, x + config.padding_x, y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5 - 2)
