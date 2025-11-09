@@ -1,6 +1,9 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/controls/style_defaults.lua
--- Centralized styling for all ReArkitekt controls
+-- Centralized styling and rendering utilities for all ReArkitekt controls
+
+package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
+local ImGui = require 'imgui' '0.10'
 
 local M = {}
 
@@ -77,6 +80,7 @@ M.SEARCH_INPUT = {
   text_color = M.COLORS.TEXT_NORMAL,
   padding_x = 6,
   rounding = 0,
+  tooltip_delay = 0.5,
 }
 
 M.DROPDOWN = {
@@ -96,7 +100,122 @@ M.DROPDOWN = {
   arrow_size = 6,
   arrow_color = M.COLORS.TEXT_NORMAL,
   arrow_hover_color = M.COLORS.TEXT_HOVER,
+  enable_mousewheel = true,
+  tooltip_delay = 0.5,
+  popup = {
+    bg_color = hexrgb("#1E1E1EFF"),
+    border_color = M.COLORS.BORDER_INNER,
+    item_bg_color = 0x00000000,
+    item_hover_color = M.COLORS.BORDER_INNER,
+    item_active_color = hexrgb("#4A4A4AFF"),
+    item_text_color = M.COLORS.TEXT_NORMAL,
+    item_text_hover_color = M.COLORS.TEXT_HOVER,
+    item_selected_color = hexrgb("#3A3A3AFF"),
+    item_selected_text_color = M.COLORS.TEXT_HOVER,
+    rounding = 4,
+    padding = 4,
+    item_height = 24,
+    item_padding_x = 10,
+    border_thickness = 1,
+  },
 }
+
+M.TOOLTIP = {
+  bg_color = hexrgb("#2A2A2AFF"),
+  border_color = M.COLORS.BORDER_INNER,
+  text_color = hexrgb("#EEEEEEFF"),
+  padding_x = 8,
+  padding_y = 6,
+  rounding = 4,
+  border_thickness = 1,
+  delay = 0.5,
+}
+
+-- ============================================================================
+-- RENDERING UTILITIES
+-- ============================================================================
+
+M.RENDER = {}
+
+-- Get corner flags from corner_rounding config
+function M.RENDER.get_corner_flags(corner_rounding)
+  if not corner_rounding then
+    return 0
+  end
+  
+  local flags = 0
+  if corner_rounding.round_top_left then
+    flags = flags | ImGui.DrawFlags_RoundCornersTopLeft
+  end
+  if corner_rounding.round_top_right then
+    flags = flags | ImGui.DrawFlags_RoundCornersTopRight
+  end
+  if corner_rounding.round_bottom_left then
+    flags = flags | ImGui.DrawFlags_RoundCornersBottomLeft
+  end
+  if corner_rounding.round_bottom_right then
+    flags = flags | ImGui.DrawFlags_RoundCornersBottomRight
+  end
+  
+  return flags == 0 and ImGui.DrawFlags_RoundCornersAll or flags
+end
+
+-- Draw standard double-border control background
+function M.RENDER.draw_control_background(dl, x, y, w, h, bg_color, border_inner, border_outer, rounding, corner_flags)
+  corner_flags = corner_flags or 0
+  local inner_rounding = math.max(0, rounding - 2)
+  
+  -- Background
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color, inner_rounding, corner_flags)
+  
+  -- Inner border
+  ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + w - 1, y + h - 1, border_inner, inner_rounding, corner_flags, 1)
+  
+  -- Outer border
+  ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_outer, inner_rounding, corner_flags, 1)
+end
+
+-- Get state-based colors for a control
+function M.RENDER.get_state_colors(config, is_hovered, is_active)
+  local colors = {
+    bg = config.bg_color,
+    border_inner = config.border_inner_color,
+    border_outer = config.border_outer_color,
+    text = config.text_color,
+  }
+  
+  if is_active then
+    colors.bg = config.bg_active_color or colors.bg
+    colors.border_inner = config.border_active_color or colors.border_inner
+    colors.text = config.text_active_color or colors.text
+  elseif is_hovered then
+    colors.bg = config.bg_hover_color or colors.bg
+    colors.border_inner = config.border_hover_color or colors.border_inner
+    colors.text = config.text_hover_color or colors.text
+  end
+  
+  return colors
+end
+
+-- Lerp between two colors
+function M.RENDER.lerp_color(a, b, t)
+  local ar = (a >> 24) & 0xFF
+  local ag = (a >> 16) & 0xFF
+  local ab = (a >> 8) & 0xFF
+  local aa = a & 0xFF
+  
+  local br = (b >> 24) & 0xFF
+  local bg = (b >> 16) & 0xFF
+  local bb = (b >> 8) & 0xFF
+  local ba = b & 0xFF
+  
+  local r = math.floor(ar + (br - ar) * t)
+  local g = math.floor(ag + (bg - ag) * t)
+  local b = math.floor(ab + (bb - ab) * t)
+  local a = math.floor(aa + (ba - aa) * t)
+  
+  return (r << 24) | (g << 16) | (b << 8) | a
+end
 
 -- ============================================================================
 -- UTILITY FUNCTIONS
@@ -107,8 +226,13 @@ function M.apply_defaults(defaults, user_config)
   user_config = user_config or {}
   local result = {}
   
+  -- Deep merge for nested tables (like popup config)
   for k, v in pairs(defaults) do
-    result[k] = user_config[k] ~= nil and user_config[k] or v
+    if type(v) == "table" and type(user_config[k]) == "table" then
+      result[k] = M.apply_defaults(v, user_config[k])
+    else
+      result[k] = user_config[k] ~= nil and user_config[k] or v
+    end
   end
   
   -- Add any extra user configs not in defaults
@@ -130,10 +254,13 @@ end
 
 -- Get state-based color (normal, hover, active)
 function M.get_state_color(colors, is_hovered, is_active, color_key)
-  if is_active and colors[color_key .. "_active"] then
-    return colors[color_key .. "_active"]
-  elseif is_hovered and colors[color_key .. "_hover"] then
-    return colors[color_key .. "_hover"]
+  local active_key = color_key .. "_active"
+  local hover_key = color_key .. "_hover"
+  
+  if is_active and colors[active_key] then
+    return colors[active_key]
+  elseif is_hovered and colors[hover_key] then
+    return colors[hover_key]
   else
     return colors[color_key]
   end

@@ -1,116 +1,69 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/controls/dropdown.lua
--- Mousewheel-friendly dropdown/combobox widget with corner-aware design
+-- Standalone dropdown/combobox widget with ReArkitekt styling
+-- Can be used anywhere, with optional panel integration
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local Style = require('rearkitekt.gui.widgets.controls.style_defaults')
 local Tooltip = require('rearkitekt.gui.widgets.controls.tooltip')
 
 local M = {}
 
-local DEFAULTS = {
-  width = 110,
-  height = 24,
-  bg_color = 0x252525FF,
-  bg_hover_color = 0x2A2A2AFF,
-  bg_active_color = 0x2A2A2AFF,
-  border_outer_color = 0x000000DD,
-  border_inner_color = 0x404040FF,
-  border_hover_color = 0x505050FF,
-  border_active_color = 0xB0B0B077,
-  text_color = 0xCCCCCCFF,
-  text_hover_color = 0xFFFFFFFF,
-  text_active_color = 0xFFFFFFFF,
-  rounding = 0,
-  padding_x = 8,
-  padding_y = 4,
-  arrow_size = 4,
-  arrow_color = 0xCCCCCCFF,
-  arrow_hover_color = 0xFFFFFFFF,
-  enable_mousewheel = true,
-  tooltip_delay = 0.5,
-  
-  popup = {
-    bg_color = 0x1E1E1EFF,
-    border_color = 0x404040FF,
-    item_bg_color = 0x00000000,
-    item_hover_color = 0x404040FF,
-    item_active_color = 0x4A4A4AFF,
-    item_text_color = 0xCCCCCCFF,
-    item_text_hover_color = 0xFFFFFFFF,
-    item_selected_color = 0x3A3A3AFF,
-    item_selected_text_color = 0xFFFFFFFF,
-    rounding = 4,
-    padding = 4,
-    item_height = 24,
-    item_padding_x = 10,
-    border_thickness = 1,
-  },
-}
+-- Instance storage (internal to component)
+local instances = {}
 
-local function get_corner_flags(corner_rounding)
-  if not corner_rounding then
-    return 0
+-- ============================================================================
+-- CONTEXT DETECTION
+-- ============================================================================
+
+local function resolve_context(config, state_or_id)
+  local context = {
+    unique_id = nil,
+    corner_rounding = nil,
+    is_panel_context = false,
+  }
+  
+  -- Check if we're in a panel context
+  if type(state_or_id) == "table" and state_or_id._panel_id then
+    context.is_panel_context = true
+    context.unique_id = string.format("%s_%s", state_or_id._panel_id, config.id or "dropdown")
+    context.corner_rounding = config.corner_rounding
+  else
+    -- Standalone context
+    context.unique_id = type(state_or_id) == "string" and state_or_id or (config.id or "dropdown")
+    context.corner_rounding = nil
   end
   
-  local flags = 0
-  if corner_rounding.round_top_left then
-    flags = flags | ImGui.DrawFlags_RoundCornersTopLeft
-  end
-  if corner_rounding.round_top_right then
-    flags = flags | ImGui.DrawFlags_RoundCornersTopRight
-  end
-  
-  return flags
+  return context
 end
+
+-- ============================================================================
+-- INSTANCE MANAGEMENT
+-- ============================================================================
 
 local Dropdown = {}
 Dropdown.__index = Dropdown
 
-function M.new(opts)
-  opts = opts or {}
-  
-  local dropdown = setmetatable({
-    id = opts.id or "dropdown",
-    label = opts.label or "",
-    tooltip = opts.tooltip,
-    tooltip_delay = opts.tooltip_delay,
-    options = opts.options or {},
-    current_value = opts.current_value,
-    sort_direction = opts.sort_direction or "asc",
-    on_change = opts.on_change,
-    on_direction_change = opts.on_direction_change,
-    
-    config = {},
-    corner_rounding = nil,
-    
+function Dropdown.new(id, config, initial_value, initial_direction)
+  local instance = setmetatable({
+    id = id,
+    config = config,
+    current_value = initial_value,
+    sort_direction = initial_direction or "asc",
     hover_alpha = 0,
     is_open = false,
     popup_hover_index = -1,
   }, Dropdown)
   
-  for k, v in pairs(DEFAULTS) do
-    if k == "popup" then
-      dropdown.config.popup = {}
-      for pk, pv in pairs(DEFAULTS.popup) do
-        dropdown.config.popup[pk] = (opts.config and opts.config.popup and opts.config.popup[pk] ~= nil) and opts.config.popup[pk] or pv
-      end
-    else
-      dropdown.config[k] = (opts.config and opts.config[k] ~= nil) and opts.config[k] or v
-    end
-  end
-  
-  if opts.tooltip_delay ~= nil then
-    dropdown.config.tooltip_delay = opts.tooltip_delay
-  end
-  
-  return dropdown
+  return instance
 end
 
 function Dropdown:get_current_index()
   if not self.current_value then return 1 end
   
-  for i, opt in ipairs(self.options) do
+  local options = self.config.options or {}
+  for i, opt in ipairs(options) do
     local value = type(opt) == "table" and opt.value or opt
     if value == self.current_value then
       return i
@@ -121,11 +74,13 @@ function Dropdown:get_current_index()
 end
 
 function Dropdown:get_display_text()
+  local options = self.config.options or {}
+  
   if not self.current_value then
-    return self.options[1] and (type(self.options[1]) == "table" and self.options[1].label or tostring(self.options[1])) or ""
+    return options[1] and (type(options[1]) == "table" and options[1].label or tostring(options[1])) or ""
   end
   
-  for _, opt in ipairs(self.options) do
+  for _, opt in ipairs(options) do
     local value = type(opt) == "table" and opt.value or opt
     local label = type(opt) == "table" and opt.label or tostring(opt)
     if value == self.current_value then
@@ -144,20 +99,21 @@ function Dropdown:handle_mousewheel(ctx, is_hovered)
   
   local current_idx = self:get_current_index()
   local new_idx = current_idx
+  local options = self.config.options or {}
   
   if wheel > 0 then
     new_idx = math.max(1, current_idx - 1)
   else
-    new_idx = math.min(#self.options, current_idx + 1)
+    new_idx = math.min(#options, current_idx + 1)
   end
   
   if new_idx ~= current_idx then
-    local new_opt = self.options[new_idx]
+    local new_opt = options[new_idx]
     local new_value = type(new_opt) == "table" and new_opt.value or new_opt
     self.current_value = new_value
     
-    if self.on_change then
-      self.on_change(new_value)
+    if self.config.on_change then
+      self.config.on_change(new_value)
     end
     
     return true
@@ -166,46 +122,23 @@ function Dropdown:handle_mousewheel(ctx, is_hovered)
   return false
 end
 
-function Dropdown:draw(ctx, x, y, corner_rounding)
-  self.corner_rounding = corner_rounding
-  
+function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   local cfg = self.config
-  local dl = ImGui.GetWindowDrawList(ctx)
-  
-  local w = cfg.width
-  local h = cfg.height
   
   local x1, y1 = x, y
-  local x2, y2 = x + w, y + h
+  local x2, y2 = x + width, y + height
   
   local mx, my = ImGui.GetMousePos(ctx)
   local is_hovered = mx >= x1 and mx < x2 and my >= y1 and my < y2
   
+  -- Animate hover alpha
   local target_alpha = (is_hovered or self.is_open) and 1.0 or 0.0
   local alpha_speed = 12.0
   local dt = ImGui.GetDeltaTime(ctx)
   self.hover_alpha = self.hover_alpha + (target_alpha - self.hover_alpha) * alpha_speed * dt
   self.hover_alpha = math.max(0, math.min(1, self.hover_alpha))
   
-  local function lerp_color(a, b, t)
-    local ar = (a >> 24) & 0xFF
-    local ag = (a >> 16) & 0xFF
-    local ab = (a >> 8) & 0xFF
-    local aa = a & 0xFF
-    
-    local br = (b >> 24) & 0xFF
-    local bg = (b >> 16) & 0xFF
-    local bb = (b >> 8) & 0xFF
-    local ba = b & 0xFF
-    
-    local r = math.floor(ar + (br - ar) * t)
-    local g = math.floor(ag + (bg - ag) * t)
-    local b = math.floor(ab + (bb - ab) * t)
-    local a = math.floor(aa + (ba - aa) * t)
-    
-    return (r << 24) | (g << 16) | (b << 8) | a
-  end
-  
+  -- Get state colors
   local bg_color = cfg.bg_color
   local text_color = cfg.text_color
   local border_inner = cfg.border_inner_color
@@ -217,24 +150,21 @@ function Dropdown:draw(ctx, x, y, corner_rounding)
     border_inner = cfg.border_active_color
     arrow_color = cfg.arrow_hover_color
   elseif self.hover_alpha > 0.01 then
-    bg_color = lerp_color(cfg.bg_color, cfg.bg_hover_color, self.hover_alpha)
-    text_color = lerp_color(cfg.text_color, cfg.text_hover_color, self.hover_alpha)
-    border_inner = lerp_color(cfg.border_inner_color, cfg.border_hover_color, self.hover_alpha)
-    arrow_color = lerp_color(cfg.arrow_color, cfg.arrow_hover_color, self.hover_alpha)
+    bg_color = Style.RENDER.lerp_color(cfg.bg_color, cfg.bg_hover_color, self.hover_alpha)
+    text_color = Style.RENDER.lerp_color(cfg.text_color, cfg.text_hover_color, self.hover_alpha)
+    border_inner = Style.RENDER.lerp_color(cfg.border_inner_color, cfg.border_hover_color, self.hover_alpha)
+    arrow_color = Style.RENDER.lerp_color(cfg.arrow_color, cfg.arrow_hover_color, self.hover_alpha)
   end
   
+  -- Calculate rounding
   local rounding = corner_rounding and corner_rounding.rounding or cfg.rounding
-  local inner_rounding = math.max(0, rounding - 1)
-  local corner_flags = get_corner_flags(corner_rounding)
+  local corner_flags = Style.RENDER.get_corner_flags(corner_rounding)
   
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, inner_rounding, corner_flags)
+  -- Draw background and borders
+  Style.RENDER.draw_control_background(dl, x1, y1, width, height, bg_color, border_inner, cfg.border_outer_color, rounding, corner_flags)
   
-  ImGui.DrawList_AddRect(dl, x1 + 1, y1 + 1, x2 - 1, y2 - 1, border_inner, inner_rounding, corner_flags, 1)
-  
-  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, cfg.border_outer_color, inner_rounding, corner_flags, 1)
-  
+  -- Draw text
   local display_text = self:get_display_text()
-  
   local dir_indicator = ""
   if self.current_value ~= nil then
     dir_indicator = (self.sort_direction == "asc") and "↑ " or "↓ "
@@ -243,12 +173,13 @@ function Dropdown:draw(ctx, x, y, corner_rounding)
   local full_text = dir_indicator .. display_text
   local text_w, text_h = ImGui.CalcTextSize(ctx, full_text)
   local text_x = x1 + cfg.padding_x
-  local text_y = y1 + (h - text_h) * 0.5
+  local text_y = y1 + (height - text_h) * 0.5
   
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, full_text)
   
+  -- Draw arrow
   local arrow_x = x2 - cfg.padding_x - cfg.arrow_size
-  local arrow_y = y1 + h * 0.5
+  local arrow_y = y1 + height * 0.5
   local arrow_half = cfg.arrow_size
   
   ImGui.DrawList_AddTriangleFilled(dl,
@@ -257,93 +188,99 @@ function Dropdown:draw(ctx, x, y, corner_rounding)
     arrow_x, arrow_y + arrow_half * 0.7,
     arrow_color)
   
+  -- Interaction
   ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.InvisibleButton(ctx, self.id .. "_btn", w, h)
+  ImGui.InvisibleButton(ctx, self.id .. "_btn", width, height)
   
   local clicked = ImGui.IsItemClicked(ctx, 0)
   local right_clicked = ImGui.IsItemClicked(ctx, 1)
   local wheel_changed = self:handle_mousewheel(ctx, is_hovered)
   
+  -- Right-click to toggle sort direction
   if right_clicked and self.current_value then
     self.sort_direction = (self.sort_direction == "asc") and "desc" or "asc"
-    if self.on_direction_change then
-      self.on_direction_change(self.sort_direction)
+    if cfg.on_direction_change then
+      cfg.on_direction_change(self.sort_direction)
     end
   end
   
-  if is_hovered and self.tooltip then
-    local delay = self.tooltip_delay or (self.config.tooltip_delay or DEFAULTS.tooltip_delay)
-    Tooltip.show_delayed(ctx, self.tooltip, {delay = delay})
+  -- Tooltip
+  if is_hovered and cfg.tooltip then
+    Tooltip.show_delayed(ctx, cfg.tooltip, {
+      delay = cfg.tooltip_delay or Style.TOOLTIP.delay
+    })
   else
-    Tooltip.reset()
+    if not is_hovered then
+      Tooltip.reset()
+    end
   end
   
+  -- Open popup
   if clicked then
     ImGui.OpenPopup(ctx, self.id .. "_popup")
     self.is_open = true
   end
   
+  -- Draw popup
   local popup_changed = false
+  local popup_cfg = cfg.popup
   
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, cfg.popup.padding, cfg.popup.padding)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, cfg.popup.rounding)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_PopupRounding, cfg.popup.rounding)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, cfg.popup.border_thickness)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, popup_cfg.padding, popup_cfg.padding)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, popup_cfg.rounding)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_PopupRounding, popup_cfg.rounding)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, popup_cfg.border_thickness)
   
-  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, cfg.popup.bg_color)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, cfg.popup.border_color)
+  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, popup_cfg.bg_color)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, popup_cfg.border_color)
   
   if ImGui.BeginPopup(ctx, self.id .. "_popup") then
     local popup_dl = ImGui.GetWindowDrawList(ctx)
-    
     self.popup_hover_index = -1
     
+    -- Calculate popup width
     local max_text_width = 0
-    for _, opt in ipairs(self.options) do
+    local options = cfg.options or {}
+    for _, opt in ipairs(options) do
       local label = type(opt) == "table" and opt.label or tostring(opt)
       local text_w, _ = ImGui.CalcTextSize(ctx, label)
       max_text_width = math.max(max_text_width, text_w)
     end
     
-    local popup_width = math.max(cfg.width, max_text_width + cfg.popup.item_padding_x * 2 + 20)
+    local popup_width = math.max(width, max_text_width + popup_cfg.item_padding_x * 2 + 20)
     
-    for i, opt in ipairs(self.options) do
-      local value
-      if type(opt) == "table" then
-        value = opt.value
-      else
-        value = opt
-      end
+    -- Draw items
+    for i, opt in ipairs(options) do
+      local value = type(opt) == "table" and opt.value or opt
       local label = type(opt) == "table" and opt.label or tostring(opt)
       
       local is_selected = value == self.current_value
       
       local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
       local item_w = popup_width
-      local item_h = cfg.popup.item_height
+      local item_h = popup_cfg.item_height
       
       local item_hovered = ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_h)
       if item_hovered then
         self.popup_hover_index = i
       end
       
-      local item_bg = cfg.popup.item_bg_color
-      local item_text = cfg.popup.item_text_color
+      local item_bg = popup_cfg.item_bg_color
+      local item_text = popup_cfg.item_text_color
       
       if is_selected then
-        item_bg = cfg.popup.item_selected_color
-        item_text = cfg.popup.item_selected_text_color
+        item_bg = popup_cfg.item_selected_color
+        item_text = popup_cfg.item_selected_text_color
       end
       
       if item_hovered then
-        item_bg = is_selected and cfg.popup.item_active_color or cfg.popup.item_hover_color
-        item_text = cfg.popup.item_text_hover_color
+        item_bg = is_selected and popup_cfg.item_active_color or popup_cfg.item_hover_color
+        item_text = popup_cfg.item_text_hover_color
       end
       
       ImGui.DrawList_AddRectFilled(popup_dl, item_x, item_y, item_x + item_w, item_y + item_h, item_bg, 2)
       
       local text_w, text_h = ImGui.CalcTextSize(ctx, label)
-      local text_x = item_x + cfg.popup.item_padding_x
+      local text_x = item_x + popup_cfg.item_padding_x
       local text_y = item_y + (item_h - text_h) * 0.5
       
       ImGui.DrawList_AddText(popup_dl, text_x, text_y, item_text, label)
@@ -352,8 +289,8 @@ function Dropdown:draw(ctx, x, y, corner_rounding)
       
       if ImGui.IsItemClicked(ctx, 0) then
         self.current_value = value
-        if self.on_change then
-          self.on_change(value)
+        if cfg.on_change then
+          cfg.on_change(value)
         end
         popup_changed = true
         ImGui.CloseCurrentPopup(ctx)
@@ -376,20 +313,104 @@ function Dropdown:draw(ctx, x, y, corner_rounding)
   return clicked or wheel_changed or popup_changed or right_clicked
 end
 
-function Dropdown:set_value(value)
-  self.current_value = value
+-- ============================================================================
+-- INSTANCE MANAGEMENT
+-- ============================================================================
+
+local function get_or_create_instance(context, config, state_or_id)
+  local instance = instances[context.unique_id]
+  
+  if not instance then
+    -- Get initial values from state (if panel context)
+    local initial_value = nil
+    local initial_direction = "asc"
+    
+    if context.is_panel_context then
+      initial_value = state_or_id.dropdown_value
+      initial_direction = state_or_id.dropdown_direction or "asc"
+    end
+    
+    instance = Dropdown.new(context.unique_id, config, initial_value, initial_direction)
+    instances[context.unique_id] = instance
+  else
+    -- Update config
+    instance.config = config
+    
+    -- Sync with panel state if needed
+    if context.is_panel_context then
+      if state_or_id.dropdown_value and state_or_id.dropdown_value ~= instance.current_value then
+        instance.current_value = state_or_id.dropdown_value
+      end
+      if state_or_id.dropdown_direction and state_or_id.dropdown_direction ~= instance.sort_direction then
+        instance.sort_direction = state_or_id.dropdown_direction
+      end
+    end
+  end
+  
+  return instance
 end
 
-function Dropdown:get_value()
-  return self.current_value
+local function sync_to_state(instance, state_or_id, context)
+  if context.is_panel_context then
+    state_or_id.dropdown_value = instance.current_value
+    state_or_id.dropdown_direction = instance.sort_direction
+  end
 end
 
-function Dropdown:set_direction(direction)
-  self.sort_direction = direction
+-- ============================================================================
+-- PUBLIC API
+-- ============================================================================
+
+function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
+  -- Apply style defaults
+  local config = Style.apply_defaults(Style.DROPDOWN, user_config)
+  
+  -- Resolve context (panel vs standalone)
+  local context = resolve_context(config, state_or_id)
+  
+  -- Get or create instance
+  local instance = get_or_create_instance(context, config, state_or_id)
+  
+  -- Draw dropdown
+  local changed = instance:draw(ctx, dl, x, y, width, height, context.corner_rounding)
+  
+  -- Sync state back
+  sync_to_state(instance, state_or_id, context)
+  
+  return changed
 end
 
-function Dropdown:get_direction()
-  return self.sort_direction
+function M.measure(ctx, user_config)
+  local config = Style.apply_defaults(Style.DROPDOWN, user_config)
+  return config.width or 120
+end
+
+-- ============================================================================
+-- STATE ACCESSORS (for standalone use)
+-- ============================================================================
+
+function M.get_value(id)
+  local instance = instances[id]
+  return instance and instance.current_value or nil
+end
+
+function M.set_value(id, value)
+  local instance = instances[id]
+  if instance then
+    instance.current_value = value
+  end
+end
+
+function M.get_direction(id)
+  local instance = instances[id]
+  return instance and instance.sort_direction or "asc"
+end
+
+function M.set_direction(id, direction)
+  local instance = instances[id]
+  if instance then
+    instance.sort_direction = direction
+  end
 end
 
 return M

@@ -1,17 +1,19 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/panel/header/layout.lua
 -- Layout engine for header elements with corner detection
+-- Enhanced with left/right alignment support
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local M = {}
 
+-- Component registry - imports from controls/ directly for reusable components
 local COMPONENTS = {
+  button = require('rearkitekt.gui.widgets.controls.button'),
+  search_field = require('rearkitekt.gui.widgets.controls.search_input'),
+  dropdown_field = require('rearkitekt.gui.widgets.controls.dropdown'),
   tab_strip = require('rearkitekt.gui.widgets.panel.header.tab_strip'),
-  search_field = require('rearkitekt.gui.widgets.panel.header.search_field'),
-  dropdown_field = require('rearkitekt.gui.widgets.panel.header.dropdown_field'),
-  button = require('rearkitekt.gui.widgets.panel.header.button'),
   separator = require('rearkitekt.gui.widgets.panel.header.separator'),
 }
 
@@ -36,6 +38,26 @@ local function calculate_element_width(ctx, element, state)
   end
   
   return 0
+end
+
+-- ============================================================================
+-- LEFT/RIGHT ALIGNMENT
+-- ============================================================================
+
+local function separate_by_alignment(elements)
+  local left = {}
+  local right = {}
+  
+  for _, element in ipairs(elements) do
+    local align = element.align or "left"
+    if align == "right" then
+      table.insert(right, element)
+    else
+      table.insert(left, element)
+    end
+  end
+  
+  return left, right
 end
 
 local function layout_elements(ctx, elements, available_width, state)
@@ -125,7 +147,7 @@ local function find_separator_neighbors(elements, separator_index)
   return left_neighbor, right_neighbor
 end
 
-local function calculate_corner_rounding(layout, header_rounding)
+local function calculate_corner_rounding(layout, header_rounding, is_bottom)
   local rounding_info = {}
   
   local first_idx = find_first_non_separator(layout)
@@ -136,6 +158,8 @@ local function calculate_corner_rounding(layout, header_rounding)
       rounding_info[i] = {
         round_top_left = false,
         round_top_right = false,
+        round_bottom_left = false,
+        round_bottom_right = false,
       }
     else
       local round_left = false
@@ -161,11 +185,24 @@ local function calculate_corner_rounding(layout, header_rounding)
         end
       end
       
-      rounding_info[i] = {
-        round_top_left = round_left,
-        round_top_right = round_right,
-        rounding = header_rounding,
-      }
+      -- Apply rounding based on header position
+      if is_bottom then
+        rounding_info[i] = {
+          round_top_left = false,
+          round_top_right = false,
+          round_bottom_left = round_left,
+          round_bottom_right = round_right,
+          rounding = header_rounding,
+        }
+      else
+        rounding_info[i] = {
+          round_top_left = round_left,
+          round_top_right = round_right,
+          round_bottom_left = false,
+          round_bottom_right = false,
+          rounding = header_rounding,
+        }
+      end
     end
   end
   
@@ -223,32 +260,19 @@ local function get_or_create_element_state(state, element)
 end
 
 -- ============================================================================
--- MAIN DRAW FUNCTION
+-- ELEMENT RENDERING
 -- ============================================================================
 
-function M.draw(ctx, dl, x, y, width, height, state, config)
-  if not config or not config.elements or #config.elements == 0 then
+local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom)
+  if not elements or #elements == 0 then
     return 0
   end
   
-  local padding = config.padding or {}
-  local padding_left = padding.left or 0
-  local padding_right = padding.right or 0
-  
-  local content_width = width - padding_left - padding_right
-  local content_height = height
-  local content_x = x + padding_left
-  local content_y = y
-  
-  local layout = layout_elements(ctx, config.elements, content_width, state)
-  
-  local header_rounding = config.rounding or 8
-  local rounding_info = calculate_corner_rounding(layout, header_rounding)
+  local layout = layout_elements(ctx, elements, width, state)
+  local rounding_info = calculate_corner_rounding(layout, header_rounding, is_bottom)
   
   local border_overlap = 1
-  
-  local cursor_x = content_x
-  
+  local cursor_x = x
   local last_non_sep_idx = find_last_non_separator(layout)
   
   for i, item in ipairs(layout) do
@@ -266,7 +290,7 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     cursor_x = cursor_x + spacing_before
     
     if i == last_non_sep_idx and element.type ~= 'separator' then
-      local remaining_space = (content_x + content_width) - cursor_x
+      local remaining_space = (x + width) - cursor_x
       if remaining_space > element_width then
         element_width = remaining_space
       end
@@ -287,8 +311,8 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
       
       local used_width = component.draw(
         ctx, dl,
-        cursor_x, content_y,
-        element_width, content_height,
+        cursor_x, y,
+        element_width, height,
         element_config,
         element_state
       )
@@ -297,6 +321,81 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     else
       cursor_x = cursor_x + element_width
     end
+  end
+  
+  return height
+end
+
+-- ============================================================================
+-- MAIN DRAW FUNCTION
+-- ============================================================================
+
+function M.draw(ctx, dl, x, y, width, height, state, config)
+  if not config or not config.elements or #config.elements == 0 then
+    return 0
+  end
+  
+  local padding = config.padding or {}
+  local padding_left = padding.left or 0
+  local padding_right = padding.right or 0
+  
+  local content_width = width - padding_left - padding_right
+  local content_height = height
+  local content_x = x + padding_left
+  local content_y = y
+  
+  local header_rounding = config.rounding or 8
+  local is_bottom = config.position == "bottom"
+  
+  -- Separate elements by alignment
+  local left_elements, right_elements = separate_by_alignment(config.elements)
+  
+  if #left_elements > 0 and #right_elements > 0 then
+    -- Both left and right elements: calculate available space
+    local left_layout = layout_elements(ctx, left_elements, content_width, state)
+    local right_layout = layout_elements(ctx, right_elements, content_width, state)
+    
+    -- Calculate total width needed
+    local left_width = 0
+    for _, item in ipairs(left_layout) do
+      left_width = left_width + item.width
+      if item.element.spacing_before then
+        left_width = left_width + item.element.spacing_before
+      end
+    end
+    
+    local right_width = 0
+    for _, item in ipairs(right_layout) do
+      right_width = right_width + item.width
+      if item.element.spacing_before then
+        right_width = right_width + item.element.spacing_before
+      end
+    end
+    
+    -- Render left-aligned elements
+    render_elements(ctx, dl, content_x, content_y, left_width, content_height, left_elements, state, header_rounding, is_bottom)
+    
+    -- Render right-aligned elements
+    local right_x = content_x + content_width - right_width
+    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom)
+    
+  elseif #right_elements > 0 then
+    -- Only right-aligned elements
+    local right_layout = layout_elements(ctx, right_elements, content_width, state)
+    local right_width = 0
+    for _, item in ipairs(right_layout) do
+      right_width = right_width + item.width
+      if item.element.spacing_before then
+        right_width = right_width + item.element.spacing_before
+      end
+    end
+    
+    local right_x = content_x + content_width - right_width
+    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom)
+    
+  else
+    -- Only left-aligned elements (default)
+    render_elements(ctx, dl, content_x, content_y, content_width, content_height, left_elements, state, header_rounding, is_bottom)
   end
   
   return height

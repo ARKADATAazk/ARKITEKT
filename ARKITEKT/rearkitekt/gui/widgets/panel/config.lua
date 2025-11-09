@@ -1,7 +1,6 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/panel/config.lua
--- Default configuration for panel with integrated header design
--- Updated with standard ReArkitekt styling as defaults
+-- Default configuration for panel with enhanced features
 
 local M = {}
 
@@ -53,9 +52,11 @@ M.DEFAULTS = {
     },
   },
   
+  -- Header configuration
   header = {
     enabled = false,
     height = 30,
+    position = "top", -- "top" or "bottom"
     bg_color = hexrgb("#1E1E1EFF"),
     border_color = hexrgb("#00000066"),
     rounding = 8,
@@ -69,6 +70,28 @@ M.DEFAULTS = {
     
     elements = {},
   },
+  
+  -- Corner buttons (shown when header is disabled, or if corner_buttons_always_visible = true)
+  corner_buttons = nil,
+  -- Example:
+  -- corner_buttons = {
+  --   size = 30,
+  --   margin = 8,
+  --   bottom_left = {
+  --     icon = "⚙",
+  --     label = "",
+  --     tooltip = "Settings",
+  --     on_click = function() ... end,
+  --     bg_color = hexrgb("#252525FF"),
+  --     bg_hover_color = hexrgb("#2A2A2AFF"),
+  --     text_color = hexrgb("#CCCCCCFF"),
+  --   },
+  --   bottom_right = { ... },
+  --   top_left = { ... },
+  --   top_right = { ... },
+  -- },
+  
+  corner_buttons_always_visible = false, -- Show corner buttons even with header
 }
 
 -- Standard element styling (used by all header elements)
@@ -123,7 +146,94 @@ M.ELEMENT_STYLE = {
   },
 }
 
-M.TAB_MODE_DEFAULTS = {
+-- Example: Header with left/right alignment
+M.ALIGNED_HEADER_EXAMPLE = {
+  header = {
+    enabled = true,
+    height = 30,
+    position = "top",
+    bg_color = hexrgb("#1E1E1EFF"),
+    border_color = hexrgb("#00000066"),
+    rounding = 8,
+    
+    padding = {
+      left = 0,
+      right = 0,
+    },
+    
+    elements = {
+      -- Left-aligned elements
+      {
+        id = "title",
+        type = "button",
+        align = "left",
+        spacing_before = 0,
+        config = {
+          label = "My Panel",
+        }
+      },
+      {
+        id = "search",
+        type = "search_field",
+        align = "left",
+        width = 200,
+        spacing_before = 8,
+        config = {
+          placeholder = "Search...",
+        }
+      },
+      
+      -- Right-aligned elements
+      {
+        id = "sort",
+        type = "dropdown_field",
+        align = "right",
+        width = 120,
+        spacing_before = 8,
+        config = {
+          options = {
+            { label = "Name", value = "name" },
+            { label = "Date", value = "date" },
+          },
+        }
+      },
+      {
+        id = "settings",
+        type = "button",
+        align = "right",
+        spacing_before = 8,
+        config = {
+          label = "⚙",
+        }
+      },
+    },
+  },
+}
+
+-- Example: Bottom header configuration
+M.BOTTOM_HEADER_EXAMPLE = {
+  header = {
+    enabled = true,
+    height = 30,
+    position = "bottom", -- Header at bottom
+    bg_color = hexrgb("#1E1E1EFF"),
+    border_color = hexrgb("#00000066"),
+    rounding = 8,
+    
+    elements = {
+      {
+        id = "status",
+        type = "button",
+        config = {
+          label = "Status: Ready",
+        }
+      },
+    },
+  },
+}
+
+-- Example: Tab mode with corner buttons
+M.TAB_MODE_WITH_CORNER_BUTTONS = {
   header = {
     enabled = true,
     height = 20,
@@ -131,89 +241,29 @@ M.TAB_MODE_DEFAULTS = {
     border_color = hexrgb("#00000066"),
     rounding = 8,
     
-    padding = {
-      left = 0,
-      right = 0,
-      top = 0,
-      bottom = 0,
-    },
-    
     elements = {
       {
         id = "tabs",
         type = "tab_strip",
         flex = 1,
-        spacing_before = 0,
         config = {
-          spacing = 0,
-          min_width = 60,
-          max_width = 180,
-          padding_x = 5,
-          
-          border_outer_color = hexrgb("#000000DD"),
-          border_inner_color = hexrgb("#404040FF"),
-          border_hover_color = hexrgb("#505050FF"),
-          border_active_color = hexrgb("#7B7B7BFF"),
-          
-          bg_color = hexrgb("#252525FF"),
-          bg_hover_color = hexrgb("#2A2A2AFF"),
-          bg_active_color = hexrgb("#303030FF"),
-          
-          text_color = hexrgb("#AAAAAAFF"),
-          text_hover_color = hexrgb("#FFFFFFFF"),
-          text_active_color = hexrgb("#FFFFFFFF"),
-          
-          chip_radius = 4,
-          
-          plus_button = {
-            width = 23,
-            border_outer_color = hexrgb("#000000DD"),
-            border_inner_color = hexrgb("#404040FF"),
-            border_hover_color = hexrgb("#505050FF"),
-            bg_color = hexrgb("#252525FF"),
-            bg_hover_color = hexrgb("#2A2A2AFF"),
-            bg_active_color = hexrgb("#2A2A2AFF"),
-            text_color = hexrgb("#AAAAAAFF"),
-            text_hover_color = hexrgb("#FFFFFFFF"),
-            text_active_color = hexrgb("#FFFFFFFF"),
-          },
-          
-          overflow_button = {
-            min_width = 21,
-            padding_x = 8,
-            border_outer_color = hexrgb("#000000DD"),
-            border_inner_color = hexrgb("#404040FF"),
-            border_hover_color = hexrgb("#505050FF"),
-            bg_color = hexrgb("#252525FF"),
-            bg_hover_color = hexrgb("#2A2A2AFF"),
-            bg_active_color = hexrgb("#2A2A2AFF"),
-            text_color = hexrgb("#707070FF"),
-            text_hover_color = hexrgb("#CCCCCCFF"),
-            text_active_color = hexrgb("#FFFFFFFF"),
-          },
-          
-          track = {
-            enabled = false,
-          },
-          
-          context_menu = {
-            bg_color = hexrgb("#1E1E1EFF"),
-            hover_color = hexrgb("#2E2E2EFF"),
-            text_color = hexrgb("#CCCCCCFF"),
-            separator_color = hexrgb("#404040FF"),
-            padding = 8,
-            item_height = 24,
-          },
-          
-          on_tab_create = nil,
-          on_tab_change = nil,
-          on_tab_delete = nil,
-          on_tab_reorder = nil,
-          on_overflow_clicked = nil,
+          -- tab strip config
         },
       },
     },
   },
+  
+  corner_buttons = {
+    size = 24,
+    margin = 8,
+    bottom_left = {
+      icon = "+",
+      tooltip = "Add item",
+      on_click = function() print("Add clicked") end,
+    },
+  },
+  
+  corner_buttons_always_visible = true,
 }
 
 -- Helper to apply default element styling

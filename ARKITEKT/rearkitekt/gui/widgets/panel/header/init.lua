@@ -1,6 +1,6 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/panel/header/init.lua
--- Header coordinator - uses layout engine
+-- Header coordinator - supports top and bottom positioning
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -15,20 +15,38 @@ function M.draw(ctx, dl, x, y, w, h, state, config, rounding)
     return 0
   end
   
+  local position = header_cfg.position or "top"
+  
+  -- Determine corner flags based on position
+  local corner_flags
+  if position == "bottom" then
+    corner_flags = ImGui.DrawFlags_RoundCornersBottom
+  else
+    corner_flags = ImGui.DrawFlags_RoundCornersTop
+  end
+  
   -- Draw header background
   ImGui.DrawList_AddRectFilled(
     dl, x, y, x + w, y + h,
     header_cfg.bg_color or 0x0F0F0FFF,
     rounding,
-    ImGui.DrawFlags_RoundCornersTop
+    corner_flags
   )
   
-  -- Draw header bottom separator
-  ImGui.DrawList_AddLine(
-    dl, x, y + h - 1, x + w, y + h - 1,
-    header_cfg.border_color or 0x000000DD,
-    1
-  )
+  -- Draw border (top or bottom depending on position)
+  if position == "bottom" then
+    ImGui.DrawList_AddLine(
+      dl, x, y, x + w, y,
+      header_cfg.border_color or 0x000000DD,
+      1
+    )
+  else
+    ImGui.DrawList_AddLine(
+      dl, x, y + h - 1, x + w, y + h - 1,
+      header_cfg.border_color or 0x000000DD,
+      1
+    )
+  end
   
   return h
 end

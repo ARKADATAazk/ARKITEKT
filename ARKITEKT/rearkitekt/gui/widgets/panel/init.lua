@@ -1,6 +1,6 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/panel/init.lua
--- Main panel API with element-based header (selection moved to grid)
+-- Main panel API with header positioning and corner buttons support
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -10,6 +10,7 @@ local Content = require('rearkitekt.gui.widgets.panel.content')
 local Background = require('rearkitekt.gui.widgets.panel.background')
 local TabAnimator = require('rearkitekt.gui.widgets.panel.tab_animator')
 local Scrollbar = require('rearkitekt.gui.widgets.controls.scrollbar')
+local Button = require('rearkitekt.gui.widgets.controls.button')
 local Config = require('rearkitekt.gui.widgets.panel.config')
 
 local M = {}
@@ -109,6 +110,61 @@ function Panel:get_effective_child_width(ctx, base_width)
   return base_width
 end
 
+-- ============================================================================
+-- CORNER BUTTONS
+-- ============================================================================
+
+local function draw_corner_button(ctx, dl, x, y, size, config, id, rounding)
+  local btn_config = {
+    label = config.label or config.icon or "",
+    icon = config.icon,
+    tooltip = config.tooltip,
+    on_click = config.on_click,
+    rounding = rounding,
+    width = size,
+    height = size,
+  }
+  
+  -- Apply custom colors if provided
+  if config.bg_color then btn_config.bg_color = config.bg_color end
+  if config.bg_hover_color then btn_config.bg_hover_color = config.bg_hover_color end
+  if config.text_color then btn_config.text_color = config.text_color end
+  
+  return Button.draw(ctx, dl, x, y, size, size, btn_config, id)
+end
+
+local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, rounding)
+  if not config.corner_buttons then return end
+  
+  local cb = config.corner_buttons
+  local size = cb.size or 30
+  local margin = cb.margin or 8
+  
+  -- Top-left
+  if cb.top_left then
+    draw_corner_button(ctx, dl, x + margin, y + margin, size, cb.top_left, panel_id .. "_corner_tl", rounding)
+  end
+  
+  -- Top-right
+  if cb.top_right then
+    draw_corner_button(ctx, dl, x + w - size - margin, y + margin, size, cb.top_right, panel_id .. "_corner_tr", rounding)
+  end
+  
+  -- Bottom-left
+  if cb.bottom_left then
+    draw_corner_button(ctx, dl, x + margin, y + h - size - margin, size, cb.bottom_left, panel_id .. "_corner_bl", rounding)
+  end
+  
+  -- Bottom-right
+  if cb.bottom_right then
+    draw_corner_button(ctx, dl, x + w - size - margin, y + h - size - margin, size, cb.bottom_right, panel_id .. "_corner_br", rounding)
+  end
+end
+
+-- ============================================================================
+-- MAIN RENDERING
+-- ============================================================================
+
 function Panel:begin_draw(ctx)
   local dt = ImGui.GetDeltaTime(ctx)
   self:update(dt)
@@ -123,25 +179,43 @@ function Panel:begin_draw(ctx)
   local x1, y1 = cursor_x, cursor_y
   local x2, y2 = x1 + w, y1 + h
   
+  -- Draw panel background
   ImGui.DrawList_AddRectFilled(
     dl, x1, y1, x2, y2,
     self.config.bg_color,
     self.config.rounding
   )
   
+  -- Header configuration
   local header_cfg = self.config.header or DEFAULTS.header
   local header_height = 0
+  local header_position = "top"
+  local content_y1 = y1
+  local content_y2 = y2
   
   if header_cfg.enabled then
-    header_height = Header.draw(ctx, dl, x1, y1, w, header_cfg.height, self, self.config, self.config.rounding)
+    header_height = header_cfg.height or 30
+    header_position = header_cfg.position or "top"
+    
+    if header_position == "bottom" then
+      -- Bottom header: draw at bottom, content above
+      Header.draw(ctx, dl, x1, y2 - header_height, w, header_height, self, self.config, self.config.rounding)
+      content_y1 = y1
+      content_y2 = y2 - header_height
+    else
+      -- Top header: draw at top, content below
+      Header.draw(ctx, dl, x1, y1, w, header_height, self, self.config, self.config.rounding)
+      content_y1 = y1 + header_height
+      content_y2 = y2
+    end
   end
   
   self.header_height = header_height
   
-  local content_y1 = y1 + header_height
+  -- Draw background pattern in content area
+  Background.draw(dl, x1, content_y1, x2, content_y2, self.config.background_pattern)
   
-  Background.draw(dl, x1, content_y1, x2, y2, self.config.background_pattern)
-  
+  -- Draw panel border
   if self.config.border_thickness > 0 then
     ImGui.DrawList_AddRect(
       dl,
@@ -154,10 +228,21 @@ function Panel:begin_draw(ctx)
     )
   end
   
+  -- Draw header elements on top
   if header_cfg.enabled then
-    Header.draw_elements(ctx, dl, x1, y1, w, header_cfg.height, self, self.config)
+    if header_position == "bottom" then
+      Header.draw_elements(ctx, dl, x1, y2 - header_height, w, header_height, self, self.config)
+    else
+      Header.draw_elements(ctx, dl, x1, y1, w, header_height, self, self.config)
+    end
   end
   
+  -- Draw corner buttons (if no header, or if explicitly enabled)
+  if not header_cfg.enabled or self.config.corner_buttons_always_visible then
+    draw_corner_buttons(ctx, dl, x1, y1, w, h, self.config, self.id, self.config.rounding)
+  end
+  
+  -- Calculate content area
   local border_inset = self.config.border_thickness
   local child_x = x1 + border_inset
   local child_y = content_y1 + border_inset
@@ -173,7 +258,7 @@ function Panel:begin_draw(ctx)
   ImGui.SetCursorScreenPos(ctx, child_x, child_y)
   
   local child_w = w - (border_inset * 2) - scrollbar_width
-  local child_h = (h - header_height) - (border_inset * 2)
+  local child_h = (content_y2 - content_y1) - (border_inset * 2)
   
   self.child_width = child_w
   self.child_height = child_h
