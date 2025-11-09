@@ -296,7 +296,7 @@ function M.get_filtered_pool_regions()
   
   for _, rid in ipairs(M.state.pool_order) do
     local region = M.state.region_index[rid]
-    if region and (search == "" or region.name:lower():find(search, 1, true)) then
+    if region and region.name ~= "__TRANSITION_TRIGGER" and (search == "" or region.name:lower():find(search, 1, true)) then
       result[#result + 1] = region
     end
   end
