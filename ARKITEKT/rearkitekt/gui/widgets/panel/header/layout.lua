@@ -307,6 +307,17 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
         element_config.corner_rounding = rounding_info[i]
       end
       
+      -- Update button label from panel current_mode if this is a mode_toggle button
+      if element.type == "button" and element.id == "mode_toggle" and state.current_mode then
+        if state.current_mode == "regions" then
+          element_config.label = "Regions"
+        elseif state.current_mode == "playlists" then
+          element_config.label = "Playlists"
+        elseif state.current_mode == "mixed" then
+          element_config.label = "Mixed"
+        end
+      end
+      
       local element_state = get_or_create_element_state(state, element)
       
       local used_width = component.draw(

@@ -160,7 +160,15 @@ function M.create(opts)
   
   local pool_config = Config.get_pool_container_config({
     on_mode_toggle = function()
-      local new_mode = rt.pool_container.current_mode == "regions" and "playlists" or "regions"
+      local current = rt.pool_container.current_mode or "regions"
+      local new_mode
+      if current == "regions" then
+        new_mode = "playlists"
+      elseif current == "playlists" then
+        new_mode = "mixed"
+      else
+        new_mode = "regions"
+      end
       rt.pool_container.current_mode = new_mode
       if rt.on_pool_mode_changed then
         rt.on_pool_mode_changed(new_mode)

@@ -377,7 +377,8 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
   -- Sync state back
   sync_to_state(instance, state_or_id, context)
   
-  return changed
+  -- Return width first (for layout), then changed status
+  return width, changed
 end
 
 function M.measure(ctx, user_config)

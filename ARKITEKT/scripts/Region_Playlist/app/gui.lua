@@ -793,6 +793,17 @@ function GUI:draw(ctx, window)
   local pool_data
   if self.State.state.pool_mode == "playlists" then
     pool_data = self.State.get_playlists_for_pool()
+  elseif self.State.state.pool_mode == "mixed" then
+    -- Combine both regions and playlists
+    pool_data = {}
+    local regions = self.State.get_filtered_pool_regions()
+    local playlists = self.State.get_playlists_for_pool()
+    for _, region in ipairs(regions) do
+      pool_data[#pool_data + 1] = region
+    end
+    for _, playlist in ipairs(playlists) do
+      pool_data[#pool_data + 1] = playlist
+    end
   else
     pool_data = self.State.get_filtered_pool_regions()
   end

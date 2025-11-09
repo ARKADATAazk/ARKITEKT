@@ -81,9 +81,10 @@ ARKITEKT-Project/
 │   │   │   │   ├── controls/
 │   │   │   │   │   ├── button.lua (192 lines)
 │   │   │   │   │   ├── context_menu.lua (106 lines)
-│   │   │   │   │   ├── dropdown.lua (395 lines)
+│   │   │   │   │   ├── dropdown.lua (417 lines)
 │   │   │   │   │   ├── scrollbar.lua (239 lines)
-│   │   │   │   │   ├── style_defaults.lua (142 lines)
+│   │   │   │   │   ├── search_input.lua (215 lines)
+│   │   │   │   │   ├── style_defaults.lua (269 lines)
 │   │   │   │   │   └── tooltip.lua (129 lines)
 │   │   │   │   ├── displays/
 │   │   │   │   │   └── status_pad.lua (192 lines)
@@ -123,17 +124,14 @@ ARKITEKT-Project/
 │   │   │   │   │   └── renderer.lua (267 lines)
 │   │   │   │   ├── panel/
 │   │   │   │   │   ├── header/
-│   │   │   │   │   │   ├── button.lua (42 lines)
-│   │   │   │   │   │   ├── dropdown_field.lua (101 lines)
-│   │   │   │   │   │   ├── init.lua (46 lines)
-│   │   │   │   │   │   ├── layout.lua (305 lines)
-│   │   │   │   │   │   ├── search_field.lua (120 lines)
+│   │   │   │   │   │   ├── init.lua (64 lines)
+│   │   │   │   │   │   ├── layout.lua (415 lines)
 │   │   │   │   │   │   ├── separator.lua (33 lines)
 │   │   │   │   │   │   └── tab_strip.lua (804 lines)
 │   │   │   │   │   ├── background.lua (82 lines)
-│   │   │   │   │   ├── config.lua (234 lines)
-│   │   │   │   │   ├── content.lua (44 lines)
-│   │   │   │   │   ├── init.lua (423 lines)
+│   │   │   │   │   ├── config.lua (284 lines)
+│   │   │   │   │   ├── content.lua (58 lines)
+│   │   │   │   │   ├── init.lua (531 lines)
 │   │   │   │   │   └── tab_animator.lua (107 lines)
 │   │   │   │   ├── sliders/
 │   │   │   │   │   └── hue.lua (276 lines)
@@ -173,6 +171,7 @@ ARKITEKT-Project/
 │   │   │   │   └── color_grid.lua (143 lines)
 │   │   │   └── ARK_ColorPalette.lua (116 lines)
 │   │   ├── demos/
+│   │   │   ├── controls_test.lua (238 lines)
 │   │   │   ├── demo.lua (383 lines)
 │   │   │   ├── demo2.lua (210 lines)
 │   │   │   ├── demo3.lua (148 lines)
@@ -201,7 +200,7 @@ ARKITEKT-Project/
 │   │   │   ├── app/
 │   │   │   │   ├── config.lua (349 lines)
 │   │   │   │   ├── controller.lua (367 lines)
-│   │   │   │   ├── gui.lua (919 lines)
+│   │   │   │   ├── gui.lua (930 lines)
 │   │   │   │   ├── sequence_expander.lua (120 lines)
 │   │   │   │   ├── shortcuts.lua (80 lines)
 │   │   │   │   ├── state.lua (617 lines)
@@ -226,7 +225,7 @@ ARKITEKT-Project/
 │   │   │   │       │   ├── base.lua (212 lines)
 │   │   │   │       │   └── pool.lua (197 lines)
 │   │   │   │       ├── active_grid_factory.lua (220 lines)
-│   │   │   │       ├── coordinator.lua (516 lines)
+│   │   │   │       ├── coordinator.lua (524 lines)
 │   │   │   │       ├── coordinator_render.lua (190 lines)
 │   │   │   │       ├── pool_grid_factory.lua (193 lines)
 │   │   │   │       └── selector.lua (98 lines)
@@ -236,8 +235,8 @@ ARKITEKT-Project/
 │   │       ├── sandbox_2.lua (181 lines)
 │   │       ├── sandbox_3.lua (178 lines)
 │   │       ├── sandbox_4.lua (519 lines)
-│   │       ├── sandbox_5.lua (0 lines)
-│   │       ├── sandbox_6.lua (0 lines)
+│   │       ├── sandbox_5.lua (431 lines)
+│   │       ├── sandbox_6.lua (477 lines)
 │   │       ├── sandbox_7.lua (0 lines)
 │   │       ├── sandbox_8.lua (0 lines)
 │   │       └── sandbox_9.lua (0 lines)
@@ -266,16 +265,17 @@ ARKITEKT-Project/
 ├── index.xml (183 lines)
 ├── lua_perf_guide.md (391 lines)
 ├── METRICS.json (3855 lines)
-├── PROJECT_FLOW.md (259 lines)
-├── PROJECT_STRUCTURE.txt (279 lines)
+├── PROJECT_FLOW.md (269 lines)
+├── PROJECT_STRUCTURE.txt (281 lines)
 ├── README.md (71 lines)
 ├── refactoring ideas (424 lines)
+├── REFACTORING_SUMMARY.md (316 lines)
 ├── refactoring_templates.md (160 lines)
 └── System_Prompt_ARKITEKT_OnePager.md (66 lines)
 
 Total files: 206
-Total lines (with comments): 62,864
-Total lines (code only): 53,887
-Code/Total Ratio: 85.7% is actual code
+Total lines (with comments): 64,758
+Total lines (code only): 55,258
+Code/Total Ratio: 85.3% is actual code
 
 Generated: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\PROJECT_STRUCTURE.txt
