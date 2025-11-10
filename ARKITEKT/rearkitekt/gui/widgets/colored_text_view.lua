@@ -471,8 +471,8 @@ function ColoredTextView:render(ctx, width, height)
           local sel_y1 = line_y
           local sel_y2 = line_y + self.char_advance.y
           
-          -- Draw selection rectangle
-          ImGui.DrawList_AddRectFilled(draw_list, sel_x1, sel_y1, sel_x2, sel_y2, 0x8060A0FF)
+          -- Draw selection rectangle with better visibility
+          ImGui.DrawList_AddRectFilled(draw_list, sel_x1, sel_y1, sel_x2, sel_y2, 0x4A90D9AA)
         end
       end
     end

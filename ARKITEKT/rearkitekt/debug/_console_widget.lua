@@ -62,38 +62,6 @@ local LEVEL_COLORS = {
   PROFILE = COLORS.grey_52,
 }
 
-local LEVEL_ICONS = {
-  INFO = "●",
-  DEBUG = "○",
-  WARN = "⚠",
-  ERROR = "✕",
-  PROFILE = "ⱗ",
-}
-
-local function get_category_icon(category)
-  local icons = {
-    STATE = "◆",
-    TRANSITIONS = "▶",
-    TRANSPORT = "♵",
-    PLAYLIST = "♪",
-    REGION = "▣",
-    COORDINATOR = "⚙",
-    WIDGET = "◉",
-    CONTROLLER = "⚡",
-    QUANTIZE = "⊞",
-    PLAYBACK = "▸",
-    SEQUENCER = "≡",
-    STORAGE = "▦",
-    UNDO = "↶",
-    ENGINE = "⚙",
-    GUI = "▢",
-    BRIDGE = "⇄",
-    SYSTEM = "◈",
-    CONSOLE = "○",
-  }
-  return icons[category] or "•"
-end
-
 local function get_entry_color(entry)
   if CATEGORY_COLORS[entry.category] then
     return CATEGORY_COLORS[entry.category]
@@ -282,7 +250,7 @@ function M.new(config)
     config = panel_config,
   })
   
-  -- Convert log entries to colored text view format
+  -- Convert log entries to colored text view format (without icons)
   function console:update_text_view()
     local entries = Logger.get_entries()
     local lines = {}
@@ -303,17 +271,15 @@ function M.new(config)
       
       if show then
         local color = get_entry_color(entry)
-        local icon = get_category_icon(entry.category)
         
         local msg_str = entry.message
         if entry.data then
           msg_str = msg_str .. " {...}"
         end
         
-        -- Create line with colored segments
+        -- Create line with colored segments (no icons)
         table.insert(lines, {
           segments = {
-            {text = icon .. " ", color = color},
             {text = msg_str, color = color}
           }
         })
@@ -340,45 +306,49 @@ function M.new(config)
     end
   end
   
-  local function draw_footer(ctx, w)
+  local function draw_stats_overlay(ctx, w, h)
     local dl = ImGui.GetWindowDrawList(ctx)
     local sx, sy = ImGui.GetCursorScreenPos(ctx)
     
-    local footer_h = 24
-    local x1, y1 = sx, sy
-    local x2, y2 = sx + w, sy + footer_h
+    -- Stats panel in top right
+    local stats_w = 200
+    local stats_h = 60
+    local padding = 12
+    local stats_x = sx + w - stats_w - padding
+    local stats_y = sy + padding
     
-    ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, COLORS.grey_18, 0, 0)
-    ImGui.DrawList_AddLine(dl, x1, y1, x2, y1, hexrgb("#000000DD"), 1.0)
+    -- Background with slight transparency
+    local bg_color = hexrgb("#1A1A1AE6")
+    local border_color = hexrgb("#333333FF")
+    ImGui.DrawList_AddRectFilled(dl, stats_x, stats_y, stats_x + stats_w, stats_y + stats_h, bg_color, 6, 0)
+    ImGui.DrawList_AddRect(dl, stats_x, stats_y, stats_x + stats_w, stats_y + stats_h, border_color, 6, 0, 1.0)
     
+    -- FPS
     local fps_str = string.format("FPS: %d", console.fps)
-    local frame_str = string.format("Frame: %.1fms", console.frame_time_ms)
-    local count_str = string.format("Logs: %d/%d", Logger.get_count(), Logger.get_max())
+    local fps_color = console.fps >= 60 and COLORS.teal or (console.fps >= 30 and COLORS.yellow or COLORS.red)
+    ImGui.DrawList_AddText(dl, stats_x + 12, stats_y + 8, fps_color, fps_str)
     
-    local text_y = y1 + 4
+    -- Frame time
+    local frame_str = string.format("%.1fms", console.frame_time_ms)
+    ImGui.DrawList_AddText(dl, stats_x + 12, stats_y + 26, COLORS.grey_60, frame_str)
     
-    ImGui.DrawList_AddText(dl, x1 + 8, text_y, COLORS.grey_60, fps_str)
-    ImGui.DrawList_AddText(dl, x1 + 80, text_y, COLORS.grey_60, frame_str)
-    ImGui.DrawList_AddText(dl, x1 + 180, text_y, COLORS.grey_60, count_str)
-    
-    ImGui.Dummy(ctx, 0, footer_h)
+    -- Log count
+    local count_str = string.format("%d / %d logs", Logger.get_count(), Logger.get_max())
+    ImGui.DrawList_AddText(dl, stats_x + 12, stats_y + 44, COLORS.grey_60, count_str)
   end
   
   function console:render(ctx)
     self:update()
     
     local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
-    local sx, sy = ImGui.GetCursorScreenPos(ctx)
     
     if self.panel:begin_draw(ctx) then
-      local content_h = avail_h - 24 -- Reserve space for footer
-      self.text_view:render(ctx, avail_w, content_h)
+      self.text_view:render(ctx, avail_w, avail_h)
     end
     self.panel:end_draw(ctx)
     
-    local footer_y = sy + avail_h - 24
-    ImGui.SetCursorScreenPos(ctx, sx, footer_y)
-    draw_footer(ctx, avail_w)
+    -- Draw stats overlay in top right
+    draw_stats_overlay(ctx, avail_w, avail_h)
   end
   
   -- Initialize with current logs
