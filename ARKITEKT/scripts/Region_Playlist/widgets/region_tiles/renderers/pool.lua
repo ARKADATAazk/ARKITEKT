@@ -206,15 +206,17 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
       name_color = Colors.hexrgb("#FFFFFF")
     end
 
-    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color)
+    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color, actual_height, rect)
   end
   
   if show_badge then
     local badge_text = string.format("[%d]", item_count)
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
     bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
+    -- Calculate badge height with padding for positioning
+    local badge_height = bh + M.CONFIG.badge_padding_y * 2
     local badge_x = x2 - bw - M.CONFIG.badge_padding_x * 2 - M.CONFIG.badge_margin
-    local badge_y = y1 + M.CONFIG.badge_margin
+    local badge_y = BaseRenderer.calculate_badge_position(ctx, rect, badge_height, actual_height)
     local badge_x2, badge_y2 = badge_x + bw + M.CONFIG.badge_padding_x * 2, badge_y + bh + M.CONFIG.badge_padding_y * 2
     local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | math.floor(((M.CONFIG.badge_bg & 0xFF) * text_alpha_factor))
     
@@ -232,12 +234,12 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
     
     -- Use whiter text like active tiles
     Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors.with_alpha(Colors.hexrgb("#FFFFFFDD"), text_alpha), badge_text)
-
-    ImGui.SetCursorScreenPos(ctx, x1, y1)
-    ImGui.InvisibleButton(ctx, key .. "_tooltip", x2 - x1, y2 - y1)
-    if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, string.format("Playlist • %d items", item_count))
-    end
+  end
+  
+  ImGui.SetCursorScreenPos(ctx, x1, y1)
+  ImGui.InvisibleButton(ctx, key .. "_tooltip", x2 - x1, y2 - y1)
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.SetTooltip(ctx, string.format("Playlist • %d items", item_count))
   end
 end
 

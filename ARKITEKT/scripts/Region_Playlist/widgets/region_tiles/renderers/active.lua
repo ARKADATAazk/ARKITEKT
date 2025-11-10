@@ -110,8 +110,9 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
     local badge_text = (reps == 0) and "∞" or ("×" .. reps)
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
     bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
+    local badge_height = bh + M.CONFIG.badge_padding_y * 2
     local badge_x = x2 - bw - M.CONFIG.badge_padding_x * 2 - M.CONFIG.badge_margin
-    local badge_y = y1 + M.CONFIG.badge_margin
+    local badge_y = BaseRenderer.calculate_badge_position(ctx, rect, badge_height, actual_height)
     local badge_x2, badge_y2 = badge_x + bw + M.CONFIG.badge_padding_x * 2, badge_y + bh + M.CONFIG.badge_padding_y * 2
     local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | (math.floor(((M.CONFIG.badge_bg & 0xFF) * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))))
     
@@ -199,7 +200,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
     local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
-    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x)
+    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, nil, actual_height, rect)
   end
 
   if show_badge then
@@ -207,8 +208,9 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     local badge_text = (reps == 0) and ("∞ [" .. playlist_data.item_count .. "]") or ("×" .. reps .. " [" .. playlist_data.item_count .. "]")
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
     bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
+    local badge_height = bh + M.CONFIG.badge_padding_y * 2
     local badge_x = x2 - bw - M.CONFIG.badge_padding_x * 2 - M.CONFIG.badge_margin
-    local badge_y = y1 + M.CONFIG.badge_margin
+    local badge_y = BaseRenderer.calculate_badge_position(ctx, rect, badge_height, actual_height)
     local badge_x2, badge_y2 = badge_x + bw + M.CONFIG.badge_padding_x * 2, badge_y + bh + M.CONFIG.badge_padding_y * 2
     local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | (math.floor(((M.CONFIG.badge_bg & 0xFF) * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))))
 

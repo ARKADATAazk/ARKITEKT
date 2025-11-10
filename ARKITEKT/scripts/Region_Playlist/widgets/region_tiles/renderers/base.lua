@@ -29,6 +29,8 @@ M.CONFIG = {
   text_padding_left = 6,
   text_padding_top = 6,
   vertical_center_threshold = 40,
+  badge_vertical_center_threshold = 45,
+  chip_vertical_center_threshold = 50,
 }
 
 -- ========================================
@@ -76,6 +78,36 @@ function M.calculate_text_position(ctx, rect, actual_height, text_sample)
   end
   
   return { x = x, y = y }
+end
+
+function M.calculate_badge_position(ctx, rect, badge_height, actual_height)
+  local y1 = rect[2]
+  
+  if actual_height < M.CONFIG.badge_vertical_center_threshold then
+    -- Vertically center the badge
+    return y1 + (actual_height - badge_height) / 2
+  else
+    -- Use fixed top margin
+    return y1 + 6  -- badge_margin from active/pool CONFIG
+  end
+end
+
+function M.calculate_chip_position(ctx, rect, text_height, actual_height)
+  local y1 = rect[2]
+  
+  if actual_height < M.CONFIG.chip_vertical_center_threshold then
+    -- Vertically center the chip relative to tile
+    return y1 + (actual_height / 2) + M.CONFIG.chip_offset.y
+  else
+    -- Use text-relative positioning
+    local text_y
+    if actual_height < M.CONFIG.vertical_center_threshold then
+      text_y = y1 + (actual_height - text_height) / 2 - 1
+    else
+      text_y = y1 + M.CONFIG.text_padding_top
+    end
+    return text_y + (text_height / 2) + M.CONFIG.chip_offset.y
+  end
 end
 
 -- ========================================
@@ -147,14 +179,19 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
 end
 
-function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, right_bound_x, name_color_override)
+function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, right_bound_x, name_color_override, actual_height, rect)
   local fx_config = TileFXConfig.get()
   
   local text_height = ImGui.CalcTextSize(ctx, "Tg")
   
-  -- The chip is centered, then adjusted by the new X and Y offsets
+  -- The chip is centered, with optional vertical centering for small tiles
   local chip_x = pos.x + (M.CONFIG.prefix_width / 2) + M.CONFIG.chip_offset.x
-  local chip_center_y = pos.y + (text_height / 2) + M.CONFIG.chip_offset.y
+  local chip_center_y
+  if actual_height and rect then
+    chip_center_y = M.calculate_chip_position(ctx, rect, text_height, actual_height)
+  else
+    chip_center_y = pos.y + (text_height / 2) + M.CONFIG.chip_offset.y
+  end
   
   Chip.draw(ctx, {
     style = Chip.STYLE.INDICATOR,
