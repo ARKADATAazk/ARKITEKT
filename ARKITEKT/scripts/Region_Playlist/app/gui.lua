@@ -839,10 +839,19 @@ function GUI:draw(ctx, window)
     pool_height = math.max(1, pool_height)
     
     local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
+
+    local sep_thickness = separator_config.thickness
+    local sep_y = start_y + active_height + separator_gap/2
+    local mx, my = ImGui.GetMousePos(ctx)
+    local over_sep_h = (mx >= start_x and mx < start_x + content_w and my >= sep_y - sep_thickness/2 and my < sep_y + sep_thickness/2)
+    local block_input = self.separator_drag_state.is_dragging or (over_sep_h and ImGui.IsMouseDown(ctx, 0))
+
+    if self.region_tiles.active_grid then self.region_tiles.active_grid.block_all_input = block_input end
+    if self.region_tiles.pool_grid then self.region_tiles.pool_grid.block_all_input = block_input end
     
     self.region_tiles:draw_active(ctx, display_playlist, active_height)
     
-    local separator_y = start_y + active_height + separator_gap/2
+    local separator_y = sep_y
     local action, value = self:draw_horizontal_separator(ctx, start_x, separator_y, content_w, content_h)
     
     if action == "reset" then
@@ -858,6 +867,11 @@ function GUI:draw(ctx, window)
     ImGui.SetCursorScreenPos(ctx, start_x, start_y + active_height + separator_gap)
     
     self.region_tiles:draw_pool(ctx, pool_data, pool_height)
+
+    if not self.separator_drag_state.is_dragging and not (over_sep_h and ImGui.IsMouseDown(ctx, 0)) then
+      if self.region_tiles.active_grid then self.region_tiles.active_grid.block_all_input = false end
+      if self.region_tiles.pool_grid then self.region_tiles.pool_grid.block_all_input = false end
+    end
   else
     local content_w, content_h = ImGui.GetContentRegionAvail(ctx)
     
@@ -889,6 +903,15 @@ function GUI:draw(ctx, window)
     pool_width = math.max(1, pool_width)
     
     local start_cursor_x, start_cursor_y = ImGui.GetCursorScreenPos(ctx)
+
+    local sep_thickness = separator_config.thickness
+    local sep_x = start_cursor_x + active_width + separator_gap/2
+    local mx, my = ImGui.GetMousePos(ctx)
+    local over_sep_v = (mx >= sep_x - sep_thickness/2 and mx < sep_x + sep_thickness/2 and my >= start_cursor_y and my < start_cursor_y + content_h)
+    local block_input = self.separator_drag_state.is_dragging or (over_sep_v and ImGui.IsMouseDown(ctx, 0))
+
+    if self.region_tiles.active_grid then self.region_tiles.active_grid.block_all_input = block_input end
+    if self.region_tiles.pool_grid then self.region_tiles.pool_grid.block_all_input = block_input end
     
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
     
@@ -899,7 +922,7 @@ function GUI:draw(ctx, window)
     
     ImGui.PopStyleVar(ctx)
     
-    local separator_x = start_cursor_x + active_width + separator_gap/2
+    local separator_x = sep_x
     local action, value = self:draw_vertical_separator(ctx, separator_x, start_cursor_y, content_w, content_h)
     
     if action == "reset" then
@@ -908,6 +931,11 @@ function GUI:draw(ctx, window)
     elseif action == "drag" and content_w >= min_total_width then
       local new_active_width = value - start_cursor_x - separator_gap/2
       new_active_width = math.max(min_active_width, math.min(new_active_width, content_w - min_pool_width - separator_gap))
+
+    if not self.separator_drag_state.is_dragging and not (over_sep_v and ImGui.IsMouseDown(ctx, 0)) then
+      if self.region_tiles.active_grid then self.region_tiles.active_grid.block_all_input = false end
+      if self.region_tiles.pool_grid then self.region_tiles.pool_grid.block_all_input = false end
+    end
       self.State.state.separator_position_vertical = new_active_width
       self.State.persist_ui_prefs()
     end

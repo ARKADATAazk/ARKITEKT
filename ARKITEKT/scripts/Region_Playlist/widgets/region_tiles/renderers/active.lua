@@ -222,7 +222,8 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     
     -- Enhanced tooltip with playback info
     if ImGui.IsItemHovered(ctx) then
-      local tooltip = string.format("Playlist • %d items • ×%d repeats", playlist_data.item_count, reps == 0 and math.huge or reps)
+      local reps_text = (reps == 0) and "∞" or tostring(reps)
+      local tooltip = string.format("Playlist • %d items • ×%s repeats", playlist_data.item_count, reps_text)
       
       if bridge and bridge:get_state().is_playing then
         local current_playlist_key = bridge:get_current_playlist_key()

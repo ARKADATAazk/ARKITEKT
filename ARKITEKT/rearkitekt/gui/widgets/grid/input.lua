@@ -24,9 +24,9 @@ function M.is_external_drag_active(grid)
 end
 
 function M.is_rect_in_grid_bounds(grid, rect)
-  if not grid.grid_bounds then return true end
-  local gb = grid.grid_bounds
-  return not (rect[3] < gb[1] or rect[1] > gb[3] or rect[4] < gb[2] or rect[2] > gb[4])
+  if not grid.visual_bounds then return true end
+  local vb = grid.visual_bounds
+  return not (rect[3] < vb[1] or rect[1] > vb[3] or rect[4] < vb[2] or rect[2] > vb[4])
 end
 
 function M.is_mouse_in_exclusion(grid, ctx, item, rect)
@@ -46,6 +46,11 @@ end
 
 function M.find_hovered_item(grid, ctx, items)
   local mx, my = ImGui.GetMousePos(ctx)
+  if grid.visual_bounds then
+    if not Draw.point_in_rect(mx, my, grid.visual_bounds[1], grid.visual_bounds[2], grid.visual_bounds[3], grid.visual_bounds[4]) then
+      return nil, nil, false
+    end
+  end
   for _, item in ipairs(items) do
     local key = grid.key(item)
     local rect = grid.rect_track:get(key)
@@ -145,6 +150,13 @@ function M.handle_tile_input(grid, ctx, item, rect)
   
   if not M.is_rect_in_grid_bounds(grid, rect) then
     return false
+  end
+
+  if grid.visual_bounds then
+    local mx, my = ImGui.GetMousePos(ctx)
+    if not Draw.point_in_rect(mx, my, grid.visual_bounds[1], grid.visual_bounds[2], grid.visual_bounds[3], grid.visual_bounds[4]) then
+      return false
+    end
   end
   
   local key = grid.key(item)

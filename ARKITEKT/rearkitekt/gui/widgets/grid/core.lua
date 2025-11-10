@@ -203,11 +203,19 @@ function Grid:_draw_drag_visuals(ctx, dl)
 
   local items = self.get_items()
   local target_index, coord, alt1, alt2, orientation = self:_find_drop_target(ctx, mx, my, dragged_set, items)
-  self.drag:set_target(target_index)
 
   local cfg = self.config
+
+  local dragged_ids = self.drag:get_dragged_ids()
+  local all_items_dragged = (#items > 0) and (#dragged_ids == #items) or false
+
+  if all_items_dragged then
+    self.drag:set_target(nil)
+  else
+    self.drag:set_target(target_index)
+  end
   
-  for _, id in ipairs(self.drag:get_dragged_ids()) do
+  for _, id in ipairs(dragged_ids) do
     local r = self.rect_track:get(id)
     if r then
       local dim_fill = (cfg.dim and cfg.dim.fill_color) or DEFAULTS.dim.fill_color
@@ -220,7 +228,7 @@ function Grid:_draw_drag_visuals(ctx, dl)
     end
   end
 
-  if target_index and coord and alt1 and alt2 and orientation and self.render_drop_zones then
+  if (not all_items_dragged) and target_index and coord and alt1 and alt2 and orientation and self.render_drop_zones then
     local is_copy_mode = self.is_copy_mode_check and self.is_copy_mode_check() or false
     if orientation == 'horizontal' then
       DropIndicator.draw(ctx, dl, cfg.drop or DEFAULTS.drop, is_copy_mode, orientation, alt1, alt2, coord)
@@ -229,9 +237,9 @@ function Grid:_draw_drag_visuals(ctx, dl)
     end
   end
 
-  if #self.drag:get_dragged_ids() > 0 then
+  if #dragged_ids > 0 then
     local fg_dl = ImGui.GetForegroundDrawList(ctx)
-    DragIndicator.draw(ctx, fg_dl, mx, my, #self.drag:get_dragged_ids(), cfg.ghost or DEFAULTS.ghost)
+    DragIndicator.draw(ctx, fg_dl, mx, my, #dragged_ids, cfg.ghost or DEFAULTS.ghost)
   end
 end
 
@@ -344,8 +352,13 @@ function Grid:draw(ctx)
     return
   end
 
-  local keyboard_consumed = Input.handle_shortcuts(self, ctx)
-  local wheel_consumed = Input.handle_wheel_input(self, ctx, items)
+  local keyboard_consumed = false
+  local wheel_consumed = false
+
+  if not self.block_all_input then
+    keyboard_consumed = Input.handle_shortcuts(self, ctx)
+    wheel_consumed = Input.handle_wheel_input(self, ctx, items)
+  end
   
   if wheel_consumed then
     local current_scroll_y = ImGui.GetScrollY(ctx)
@@ -529,7 +542,10 @@ function Grid:draw(ctx)
         index    = i,
       }
 
-      local is_hovered = Input.handle_tile_input(self, ctx, item, rect)
+      local is_hovered = false
+      if not self.block_all_input then
+        is_hovered = Input.handle_tile_input(self, ctx, item, rect)
+      end
       state.hover = is_hovered
 
       self.render_tile(ctx, rect, item, state)
@@ -544,9 +560,11 @@ function Grid:draw(ctx)
   
   self.animator:render_destroy_effects(ctx, dl)
 
-  Input.check_start_drag(self, ctx)
-
-  if self.drag:is_active() then
+  if not self.block_all_input then
+    Input.check_start_drag(self, ctx)
+  end
+  
+  if (not self.block_all_input) and self.drag:is_active() then
     self:_draw_drag_visuals(ctx, dl)
   end
 
