@@ -224,9 +224,9 @@ ARKITEKT-Project/
 │   │   │   │   │   └── controls_widget.lua (151 lines)
 │   │   │   │   └── region_tiles/
 │   │   │   │       ├── renderers/
-│   │   │   │       │   ├── active.lua (245 lines)
-│   │   │   │       │   ├── base.lua (212 lines)
-│   │   │   │       │   └── pool.lua (341 lines)
+│   │   │   │       │   ├── active.lua (247 lines)
+│   │   │   │       │   ├── base.lua (279 lines)
+│   │   │   │       │   └── pool.lua (343 lines)
 │   │   │   │       ├── active_grid_factory.lua (220 lines)
 │   │   │   │       ├── coordinator.lua (522 lines)
 │   │   │   │       ├── coordinator_render.lua (190 lines)
@@ -269,7 +269,7 @@ ARKITEKT-Project/
 ├── lua_perf_guide.md (391 lines)
 ├── METRICS.json (3855 lines)
 ├── PROJECT_FLOW.md (263 lines)
-├── PROJECT_STRUCTURE.txt (283 lines)
+├── PROJECT_STRUCTURE.txt (284 lines)
 ├── README.md (71 lines)
 ├── refactoring ideas (424 lines)
 ├── REFACTORING_SUMMARY.md (316 lines)
@@ -277,8 +277,8 @@ ARKITEKT-Project/
 └── System_Prompt_ARKITEKT_OnePager.md (66 lines)
 
 Total files: 209
-Total lines (with comments): 65,937
-Total lines (code only): 56,137
+Total lines (with comments): 66,009
+Total lines (code only): 56,185
 Code/Total Ratio: 85.1% is actual code
 
 Generated: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\PROJECT_STRUCTURE.txt

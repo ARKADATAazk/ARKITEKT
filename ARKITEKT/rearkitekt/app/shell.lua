@@ -3,6 +3,7 @@
 -- MODIFIED: Made font loading robust against older configuration files.
 -- ADDED: Support for titlebar_version size override (uses regular font family)
 -- ADDED: Integrated Lua profiler support via global config flag
+-- ADDED: Support for show_icon option to disable titlebar icon
 -- UPDATED: ImGui 0.10 font size handling
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
@@ -131,6 +132,11 @@ function M.run(opts)
   local settings = opts.settings
   local raw_content = (opts.raw_content == true)
   local enable_profiling = opts.enable_profiling ~= false
+  
+  local show_icon = opts.window and opts.window.show_icon
+  if show_icon == nil then
+    show_icon = opts.show_icon
+  end
 
   local ctx   = ImGui.CreateContext(title)
   local fonts = load_fonts(ctx, cfg.fonts)
@@ -150,6 +156,7 @@ function M.run(opts)
     min_size        = opts.min_size     or cfg.window.min_size,
     show_status_bar = opts.show_status_bar,
     show_titlebar   = opts.show_titlebar,
+    show_icon       = show_icon,
     get_status_func = opts.get_status_func,
     status_bar_height = DEFAULTS.status_bar and DEFAULTS.status_bar.height or 28,
     content_padding = opts.content_padding or cfg.window.content_padding,
