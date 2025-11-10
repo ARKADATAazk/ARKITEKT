@@ -12,6 +12,7 @@ local Background = require('rearkitekt.gui.widgets.panel.background')
 local TabAnimator = require('rearkitekt.gui.widgets.panel.tab_animator')
 local Scrollbar = require('rearkitekt.gui.widgets.controls.scrollbar')
 local Button = require('rearkitekt.gui.widgets.controls.button')
+local CornerButton = require('rearkitekt.gui.widgets.controls.corner_button')
 local Config = require('rearkitekt.gui.widgets.panel.config')
 
 local M = {}
@@ -263,62 +264,8 @@ local function get_corner_button_instance(id)
   return corner_button_instances[id]
 end
 
-local function draw_corner_button_custom(ctx, dl, x, y, size, config, unique_id, panel_rounding, inner_rounding, position)
-  local Style = require('rearkitekt.gui.widgets.controls.style_defaults')
-  
-  config = Style.apply_defaults(Style.BUTTON, config)
-  
-  local instance = get_corner_button_instance(unique_id)
-  
-  local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + size, y + size)
-  local is_active = is_hovered and ImGui.IsMouseDown(ctx, 0)
-  
-  local dt = ImGui.GetDeltaTime(ctx)
-  local target_alpha = (is_hovered or is_active) and 1.0 or 0.0
-  instance.hover_alpha = instance.hover_alpha + (target_alpha - instance.hover_alpha) * 12.0 * dt
-  instance.hover_alpha = math.max(0, math.min(1, instance.hover_alpha))
-  
-  local bg_color = config.bg_color
-  local border_inner = config.border_inner_color
-  local text_color = config.text_color
-  
-  if is_active then
-    bg_color = config.bg_active_color or bg_color
-    border_inner = config.border_active_color or border_inner
-    text_color = config.text_active_color or text_color
-  elseif instance.hover_alpha > 0.01 then
-    bg_color = Style.RENDER.lerp_color(config.bg_color, config.bg_hover_color or config.bg_color, instance.hover_alpha)
-    border_inner = Style.RENDER.lerp_color(config.border_inner_color, config.border_hover_color or config.border_inner_color, instance.hover_alpha)
-    text_color = Style.RENDER.lerp_color(config.text_color, config.text_hover_color or config.text_color, instance.hover_alpha)
-  end
-  
-  -- Draw using standard functions for crisp rendering
-  draw_corner_button_shape(dl, x, y, size, bg_color, border_inner, config.border_outer_color,
-                           panel_rounding, inner_rounding, position)
-  
-  -- Draw icon/label (centered using actual text bounds)
-  local label = config.icon or config.label or ""
-  if label ~= "" then
-    local text_w, text_h = ImGui.CalcTextSize(ctx, label)
-    
-    -- Center using actual text dimensions
-    local text_x = x + (size - text_w) * 0.5
-    local text_y = y + (size - text_h) * 0.5
-    
-    ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
-  end
-  
-  ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, "##" .. unique_id, size, size)
-  
-  if ImGui.IsItemClicked(ctx, 0) and config.on_click then
-    config.on_click()
-  end
-  
-  if is_hovered and config.tooltip then
-    ImGui.SetTooltip(ctx, config.tooltip)
-  end
-end
+-- Corner button rendering is delegated to controls.corner_button
+-- (draw_corner_button_custom removed)
 
 local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, panel_rounding)
   if not config.corner_buttons then return end
@@ -339,32 +286,28 @@ local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, panel_
   if cb.top_left then
     local btn_x = x + border_thickness + offset_x
     local btn_y = y + border_thickness + offset_y
-    draw_corner_button_custom(ctx, dl, btn_x, btn_y, size, cb.top_left, 
-                               panel_id .. "_corner_tl", outer_rounding, inner_rounding, "tl")
+    CornerButton.draw(ctx, dl, btn_x, btn_y, size, cb.top_left, panel_id .. "_corner_tl", outer_rounding, inner_rounding, "tl")
   end
   
   -- Top-right
   if cb.top_right then
     local btn_x = x + w - size - border_thickness - offset_x
     local btn_y = y + border_thickness + offset_y
-    draw_corner_button_custom(ctx, dl, btn_x, btn_y, size, cb.top_right, 
-                               panel_id .. "_corner_tr", outer_rounding, inner_rounding, "tr")
+    CornerButton.draw(ctx, dl, btn_x, btn_y, size, cb.top_right, panel_id .. "_corner_tr", outer_rounding, inner_rounding, "tr")
   end
   
   -- Bottom-left
   if cb.bottom_left then
     local btn_x = x + border_thickness + offset_x
     local btn_y = y + h - size - border_thickness - offset_y
-    draw_corner_button_custom(ctx, dl, btn_x, btn_y, size, cb.bottom_left, 
-                               panel_id .. "_corner_bl", outer_rounding, inner_rounding, "bl")
+    CornerButton.draw(ctx, dl, btn_x, btn_y, size, cb.bottom_left, panel_id .. "_corner_bl", outer_rounding, inner_rounding, "bl")
   end
   
   -- Bottom-right
   if cb.bottom_right then
     local btn_x = x + w - size - border_thickness - offset_x
     local btn_y = y + h - size - border_thickness - offset_y
-    draw_corner_button_custom(ctx, dl, btn_x, btn_y, size, cb.bottom_right, 
-                               panel_id .. "_corner_br", outer_rounding, inner_rounding, "br")
+    CornerButton.draw(ctx, dl, btn_x, btn_y, size, cb.bottom_right, panel_id .. "_corner_br", outer_rounding, inner_rounding, "br")
   end
 end
 
