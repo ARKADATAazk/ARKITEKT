@@ -34,8 +34,8 @@ ARKITEKT-Project/
 │   │   │   ├── settings.lua (118 lines)
 │   │   │   └── undo_manager.lua (70 lines)
 │   │   ├── debug/
-│   │   │   ├── _console_widget.lua (430 lines)
-│   │   │   ├── console.lua (149 lines)
+│   │   │   ├── _console_widget.lua (390 lines)
+│   │   │   ├── console.lua (170 lines)
 │   │   │   ├── console_window.lua (72 lines)
 │   │   │   ├── logger.lua (86 lines)
 │   │   │   └── profiler_init.lua (97 lines)
@@ -92,11 +92,11 @@ ARKITEKT-Project/
 │   │   │   │   │   └── status_pad.lua (192 lines)
 │   │   │   │   ├── grid/
 │   │   │   │   │   ├── animation.lua (101 lines)
-│   │   │   │   │   ├── core.lua (642 lines)
+│   │   │   │   │   ├── core.lua (660 lines)
 │   │   │   │   │   ├── dnd_state.lua (113 lines)
 │   │   │   │   │   ├── drop_zones.lua (277 lines)
 │   │   │   │   │   ├── grid_bridge.lua (281 lines)
-│   │   │   │   │   ├── input.lua (248 lines)
+│   │   │   │   │   ├── input.lua (260 lines)
 │   │   │   │   │   ├── layout.lua (101 lines)
 │   │   │   │   │   └── rendering.lua (92 lines)
 │   │   │   │   ├── navigation/
@@ -141,6 +141,7 @@ ARKITEKT-Project/
 │   │   │   │   │   ├── transport_container.lua (137 lines)
 │   │   │   │   │   └── transport_fx.lua (107 lines)
 │   │   │   │   ├── close_button.lua (148 lines)
+│   │   │   │   ├── colored_text_view.lua (496 lines)
 │   │   │   │   └── selection_rectangle.lua (124 lines)
 │   │   │   ├── draw.lua (114 lines)
 │   │   │   ├── images.lua (284 lines)
@@ -202,7 +203,7 @@ ARKITEKT-Project/
 │   │   │   ├── app/
 │   │   │   │   ├── config.lua (349 lines)
 │   │   │   │   ├── controller.lua (367 lines)
-│   │   │   │   ├── gui.lua (930 lines)
+│   │   │   │   ├── gui.lua (958 lines)
 │   │   │   │   ├── sequence_expander.lua (120 lines)
 │   │   │   │   ├── shortcuts.lua (80 lines)
 │   │   │   │   ├── state.lua (617 lines)
@@ -223,11 +224,11 @@ ARKITEKT-Project/
 │   │   │   │   │   └── controls_widget.lua (151 lines)
 │   │   │   │   └── region_tiles/
 │   │   │   │       ├── renderers/
-│   │   │   │       │   ├── active.lua (244 lines)
+│   │   │   │       │   ├── active.lua (245 lines)
 │   │   │   │       │   ├── base.lua (212 lines)
-│   │   │   │       │   └── pool.lua (197 lines)
+│   │   │   │       │   └── pool.lua (341 lines)
 │   │   │   │       ├── active_grid_factory.lua (220 lines)
-│   │   │   │       ├── coordinator.lua (524 lines)
+│   │   │   │       ├── coordinator.lua (522 lines)
 │   │   │   │       ├── coordinator_render.lua (190 lines)
 │   │   │   │       ├── pool_grid_factory.lua (193 lines)
 │   │   │   │       └── selector.lua (98 lines)
@@ -268,16 +269,16 @@ ARKITEKT-Project/
 ├── lua_perf_guide.md (391 lines)
 ├── METRICS.json (3855 lines)
 ├── PROJECT_FLOW.md (263 lines)
-├── PROJECT_STRUCTURE.txt (281 lines)
+├── PROJECT_STRUCTURE.txt (283 lines)
 ├── README.md (71 lines)
 ├── refactoring ideas (424 lines)
 ├── REFACTORING_SUMMARY.md (316 lines)
 ├── refactoring_templates.md (160 lines)
 └── System_Prompt_ARKITEKT_OnePager.md (66 lines)
 
-Total files: 208
-Total lines (with comments): 65,257
-Total lines (code only): 55,665
-Code/Total Ratio: 85.3% is actual code
+Total files: 209
+Total lines (with comments): 65,937
+Total lines (code only): 56,137
+Code/Total Ratio: 85.1% is actual code
 
 Generated: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\PROJECT_STRUCTURE.txt

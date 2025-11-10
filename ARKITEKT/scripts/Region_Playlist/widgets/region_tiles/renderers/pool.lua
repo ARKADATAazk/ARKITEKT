@@ -1,6 +1,6 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/region_tiles/renderers/pool.lua
--- MODIFIED: Lowered responsive threshold for text.
+-- MODIFIED: Using Colors.hexrgb() for all color definitions
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -14,40 +14,42 @@ local BaseRenderer = require('Region_Playlist.widgets.region_tiles.renderers.bas
 local M = {}
 
 M.CONFIG = {
-  bg_base = 0x1A1A1AFF,
+  bg_base = Colors.hexrgb("#1A1A1A"),
   disabled = { desaturate = 0.9, brightness = 0.5, alpha_multiplier = 0.6, min_lightness = 0.28 },
-  responsive = { hide_length_below = 35, hide_text_below = 15 }, -- UPDATED
+  responsive = { hide_length_below = 35, hide_text_below = 15 },
   playlist_tile = { 
-    base_color = 0x3A3A3AFF, 
-    name_color = 0xCCCCCCFF, 
-    badge_color = 0x999999FF 
+    base_color = Colors.hexrgb("#3A3A3A"), 
+    name_color = Colors.hexrgb("#CCCCCC"), 
+    badge_color = Colors.hexrgb("#999999") 
   },
   text_margin_right = 6,
   badge_margin = 6,
   badge_padding_x = 6,
   badge_padding_y = 3,
   badge_rounding = 4,
-  badge_bg = 0x14181CFF,
+  badge_bg = Colors.hexrgb("#14181C"),
   badge_border_alpha = 0x33,
   badge_nudge_x = 0,
   badge_nudge_y = 0,
   badge_text_nudge_x = -1,
-  badge_text_nudge_y = -1,
+  badge_text_nudge_y = -2,
   circular = {
-    base_color = 0x240C0CFF,
-    stripe_color = 0x30101044,
-    border_color = 0x6A0606FF,
-    text_color = 0xF70000FF,
-    lock_color = 0x6A0606FF,
-    playlist_chip_color = 0x980404FF,
+    base_color = Colors.hexrgb("#240C0Cff"),
+    stripe_color = Colors.with_alpha(Colors.hexrgb("#430d0d85"), 0x33),
+    border_color = Colors.hexrgb("#240f0fff"),
+    text_color = Colors.hexrgb("#901b1bff"),
+    lock_color = Colors.hexrgb("#901b1bff"),
+    playlist_chip_color = Colors.hexrgb("#901b1bff"),
+    badge_bg = Colors.hexrgb("#240C0Cff"),
+    badge_border_color = Colors.hexrgb("#652a2aff"),
     lock_base_w = 11,
     lock_base_h = 7,
     lock_handle_w = 2,
     lock_handle_h = 5,
     lock_top_w = 9,
     lock_top_h = 2,
-    stripe_width = 1.5,
-    stripe_spacing = 14,
+    stripe_width = 8,
+    stripe_spacing = 16,
   },
 }
 
@@ -153,7 +155,7 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   local base_color = M.CONFIG.playlist_tile.base_color
   local playlist_data = {
     name = playlist.name or "Unnamed Playlist",
-    chip_color = playlist.chip_color or 0xFF5733FF
+    chip_color = playlist.chip_color or Colors.hexrgb("#FF5733")
   }
 
   if disabled_factor > 0 then
@@ -201,7 +203,7 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
       name_color = Colors.adjust_brightness(name_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     end
     if (state.hover or state.selected) and not is_disabled then
-      name_color = 0xFFFFFFFF
+      name_color = Colors.hexrgb("#FFFFFF")
     end
 
     BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color)
@@ -218,7 +220,7 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
     
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     
-    local badge_border_color = M.CONFIG.playlist_tile.badge_color
+    local badge_border_color = playlist_data.chip_color
     if disabled_factor > 0 then
       badge_border_color = Colors.adjust_brightness(badge_border_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     end
@@ -228,14 +230,8 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
     
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors.with_alpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
     
-    local badge_text_color = M.CONFIG.playlist_tile.badge_color
-    if disabled_factor > 0 then
-      badge_text_color = Colors.adjust_brightness(badge_text_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
-    end
-    if (state.hover or state.selected) and not is_disabled then
-      badge_text_color = 0xAAAAAAFF
-    end
-    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors.with_alpha(badge_text_color, text_alpha), badge_text)
+    -- Use whiter text like active tiles
+    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors.with_alpha(Colors.hexrgb("#FFFFFFDD"), text_alpha), badge_text)
 
     ImGui.SetCursorScreenPos(ctx, x1, y1)
     ImGui.InvisibleButton(ctx, key .. "_tooltip", x2 - x1, y2 - y1)
@@ -264,6 +260,11 @@ function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_
   
   -- Draw base tile with red border
   BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, 0, 0, 0, border_color)
+  
+  -- Draw marching ants if selected
+  if state.selected and fx_config.ants_enabled then
+    BaseRenderer.draw_marching_ants(dl, rect, border_color, fx_config)
+  end
   
   -- Draw diagonal stripe pattern
   local stripe_w = M.CONFIG.circular.stripe_width
@@ -298,24 +299,30 @@ function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_
   if show_text then
     local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
     
-    -- Draw playlist name with original chip color
-    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, 0xFF, x2 - M.CONFIG.text_margin_right, M.CONFIG.playlist_tile.name_color)
+    -- Override playlist data to use red color for circular tiles
+    local circular_playlist_data = {
+      name = playlist_data.name,
+      chip_color = M.CONFIG.circular.playlist_chip_color
+    }
+    
+    -- Draw playlist name with red color
+    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, circular_playlist_data, state, 0xFF, x2 - M.CONFIG.text_margin_right, M.CONFIG.circular.text_color)
   end
   
   if show_badge then
-    -- Draw badge container with lock icon
-    local lock_size = M.CONFIG.circular.lock_base_w
-    local lock_margin = M.CONFIG.badge_margin + 2
-    local badge_x = x2 - lock_size - lock_margin * 2 - 2
+    -- Draw badge container with lock icon (same size as normal badge)
+    local badge_text = string.format("[%d]", item_count)
+    local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
+    bw, bh = bw * BaseRenderer.CONFIG.badge_font_scale, bh * BaseRenderer.CONFIG.badge_font_scale
+    local badge_x = x2 - 25 - M.CONFIG.badge_margin
     local badge_y = y1 + M.CONFIG.badge_margin
-    local badge_x2 = x2 - lock_margin
-    local badge_y2 = badge_y + lock_size + M.CONFIG.badge_padding_y * 2
-    local badge_bg = M.CONFIG.badge_bg
+    local badge_x2, badge_y2 = badge_x + 25, badge_y + 25
+    local badge_bg = M.CONFIG.circular.badge_bg
     
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     
-    local badge_border_color = M.CONFIG.circular.border_color
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors.with_alpha(badge_border_color, 0x88), M.CONFIG.badge_rounding, 0, 0.5)
+    local badge_border_color = M.CONFIG.circular.badge_border_color
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors.with_alpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
     
     -- Draw lock icon centered in badge
     local lock_x = badge_x + (badge_x2 - badge_x) * 0.5
@@ -323,18 +330,11 @@ function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_
     draw_lock_icon(dl, lock_x, lock_y, M.CONFIG.circular, M.CONFIG.circular.lock_color)
   end
   
-  -- Draw "CIRCULAR" text centered
-  local label = "CIRCULAR"
-  local label_w, label_h = ImGui.CalcTextSize(ctx, label)
-  local label_x = x1 + (x2 - x1 - label_w) * 0.5
-  local label_y = y1 + (y2 - y1 - label_h) * 0.5
-  ImGui.DrawList_AddText(dl, label_x, label_y, M.CONFIG.circular.text_color, label)
-  
   -- Tooltip
   ImGui.SetCursorScreenPos(ctx, x1, y1)
   ImGui.InvisibleButton(ctx, key .. "_tooltip", x2 - x1, y2 - y1)
   if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Cannot drag: would create circular reference")
+    ImGui.SetTooltip(ctx, "Cannot drag to Active Grid: would create circular reference")
   end
 end
 
