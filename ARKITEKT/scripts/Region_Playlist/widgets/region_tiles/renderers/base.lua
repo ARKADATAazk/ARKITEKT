@@ -1,6 +1,6 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/region_tiles/renderers/base.lua
--- MODIFIED: Chip offset now uses a single {x, y} table for 2D positioning.
+-- MODIFIED: Dynamic index overflow - reserves space for 2 digits, extends right for 3+
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -24,14 +24,21 @@ M.CONFIG = {
   length_font_size = 0.82,
   length_offset_x = 3,
   playlist_chip_radius = 4,
-  prefix_width = 24,
-  chip_offset = { x = 0, y = 0 }, -- NEW: Nudge chip with X and Y values
+  chip_offset = { x = 0, y = 0 },
   text_padding_left = 6,
   text_padding_top = 6,
+  text_vertical_nudge_small_tiles = -3,
   vertical_center_threshold = 40,
   badge_vertical_center_threshold = 45,
   chip_vertical_center_threshold = 50,
+  
+  -- Dynamic index sizing: reserve space for 2 digits, overflow for 3+
+  index_reserved_digits = 2,
+  index_separator_spacing = 4,
 }
+
+-- Cache for reserved index width (calculated once per context)
+local _reserved_index_width_cache = {}
 
 -- ========================================
 -- AUTOMATED TEXT OVERFLOW SYSTEM
@@ -72,7 +79,7 @@ function M.calculate_text_position(ctx, rect, actual_height, text_sample)
   local y
   
   if actual_height < M.CONFIG.vertical_center_threshold then
-    y = y1 + (actual_height - text_height) / 2 - 1
+    y = y1 + (actual_height - text_height) / 2 + M.CONFIG.text_vertical_nudge_small_tiles
   else
     y = y1 + M.CONFIG.text_padding_top
   end
@@ -84,11 +91,9 @@ function M.calculate_badge_position(ctx, rect, badge_height, actual_height)
   local y1 = rect[2]
   
   if actual_height < M.CONFIG.badge_vertical_center_threshold then
-    -- Vertically center the badge
     return y1 + (actual_height - badge_height) / 2
   else
-    -- Use fixed top margin
-    return y1 + 6  -- badge_margin from active/pool CONFIG
+    return y1 + 6
   end
 end
 
@@ -96,18 +101,34 @@ function M.calculate_chip_position(ctx, rect, text_height, actual_height)
   local y1 = rect[2]
   
   if actual_height < M.CONFIG.chip_vertical_center_threshold then
-    -- Vertically center the chip relative to tile
     return y1 + (actual_height / 2) + M.CONFIG.chip_offset.y
   else
-    -- Use text-relative positioning
     local text_y
     if actual_height < M.CONFIG.vertical_center_threshold then
-      text_y = y1 + (actual_height - text_height) / 2 - 1
+      text_y = y1 + (actual_height - text_height) / 2 + M.CONFIG.text_vertical_nudge_small_tiles
     else
       text_y = y1 + M.CONFIG.text_padding_top
     end
     return text_y + (text_height / 2) + M.CONFIG.chip_offset.y
   end
+end
+
+-- ========================================
+-- DYNAMIC INDEX WIDTH CALCULATION
+-- ========================================
+
+local function get_reserved_index_width(ctx)
+  local ctx_ptr = tostring(ctx)
+  if _reserved_index_width_cache[ctx_ptr] then
+    return _reserved_index_width_cache[ctx_ptr]
+  end
+  
+  local max_digits = M.CONFIG.index_reserved_digits
+  local reserved_str = string.rep("9", max_digits)
+  local width = ImGui.CalcTextSize(ctx, reserved_str)
+  
+  _reserved_index_width_cache[ctx_ptr] = width
+  return width
 end
 
 -- ========================================
@@ -138,10 +159,9 @@ M.truncate_text = truncate_text
 
 function M.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade, override_color)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-  -- Use override_color for border/progress/stripes if provided (for playlist tiles)
   local border_color = override_color or base_color
   local progress_color = override_color or base_color
-  local stripe_color = override_color  -- Only playlists have override_color
+  local stripe_color = override_color
   local stripe_enabled = (override_color ~= nil) and fx_config.stripe_enabled
   TileFX.render_complete(dl, x1, y1, x2, y2, base_color, fx_config, state.selected, hover_factor, playback_progress or 0, playback_fade or 0, border_color, progress_color, stripe_color, stripe_enabled)
 end
@@ -149,11 +169,10 @@ end
 function M.draw_marching_ants(dl, rect, color, fx_config)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local ants_color = Colors.same_hue_variant(color, fx_config.border_saturation, fx_config.border_brightness, fx_config.ants_alpha or 0xFF)
-  local inset = fx_config.ants_inset or 0   -- was 0.5
+  local inset = fx_config.ants_inset or 0
   MarchingAnts.draw(dl, x1 + inset, y1 + inset, x2 - inset, y2 - inset, ants_color,
     fx_config.ants_thickness or 1, M.CONFIG.rounding, fx_config.ants_dash, fx_config.ants_gap, fx_config.ants_speed)
 end
-
 
 function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_bound_x)
   local fx_config = TileFXConfig.get()
@@ -162,18 +181,27 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   
   local index_str = string.format("%d", region.rid)
   local name_str = region.name or "Unknown"
-
-  local index_w = ImGui.CalcTextSize(ctx, index_str)
   local separator = " "
+  
+  -- Calculate widths
+  local reserved_width = get_reserved_index_width(ctx)
+  local index_w = ImGui.CalcTextSize(ctx, index_str)
   local sep_w = ImGui.CalcTextSize(ctx, separator)
   
-  local index_start_x = pos.x + (M.CONFIG.prefix_width - index_w - sep_w)
+  -- Determine if index overflows reserved space
+  local overflow = math.max(0, index_w - reserved_width)
+  
+  -- Index shifts RIGHT when it overflows, title shifts by same amount
+  local index_start_x = pos.x + overflow + (reserved_width - index_w)
   Draw.text(dl, index_start_x, pos.y, accent_color, index_str)
   
+  -- Separator position: shifts right by overflow amount
+  local separator_x = pos.x + reserved_width + M.CONFIG.index_separator_spacing + overflow
   local separator_color = Colors.with_alpha(Colors.same_hue_variant(base_color, fx_config.separator_saturation, fx_config.separator_brightness, fx_config.separator_alpha), text_alpha)
-  Draw.text(dl, pos.x + M.CONFIG.prefix_width - sep_w, pos.y, separator_color, separator)
+  Draw.text(dl, separator_x, pos.y, separator_color, separator)
   
-  local name_start_x = pos.x + M.CONFIG.prefix_width
+  -- Name starts after separator (also shifted by overflow)
+  local name_start_x = separator_x + sep_w
   local name_width = right_bound_x - name_start_x
   local truncated_name = truncate_text(ctx, name_str, name_width)
   Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
@@ -184,8 +212,9 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
   
   local text_height = ImGui.CalcTextSize(ctx, "Tg")
   
-  -- The chip is centered, with optional vertical centering for small tiles
-  local chip_x = pos.x + (M.CONFIG.prefix_width / 2) + M.CONFIG.chip_offset.x
+  -- Calculate chip position
+  local reserved_width = get_reserved_index_width(ctx)
+  local chip_x = pos.x + (reserved_width / 2) + M.CONFIG.chip_offset.x
   local chip_center_y
   if actual_height and rect then
     chip_center_y = M.calculate_chip_position(ctx, rect, text_height, actual_height)
@@ -217,33 +246,34 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
     end
   end
 
-  local name_start_x = pos.x + M.CONFIG.prefix_width
+  -- Name starts after reserved space + spacing
+  local name_start_x = pos.x + reserved_width + M.CONFIG.index_separator_spacing
   local name_width = right_bound_x - name_start_x
   local truncated_name = truncate_text(ctx, playlist_data.name, name_width)
   Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
 end
 
 function M.draw_length_display(ctx, dl, rect, region, base_color, text_alpha)
-    local x2, y2 = rect[3], rect[4]
-    local height_factor = math.min(1.0, math.max(0.0, ((y2 - rect[2]) - 20) / (72 - 20)))
-    local fx_config = TileFXConfig.get()
+  local x2, y2 = rect[3], rect[4]
+  local height_factor = math.min(1.0, math.max(0.0, ((y2 - rect[2]) - 20) / (72 - 20)))
+  local fx_config = TileFXConfig.get()
 
-    local length_str = TileUtil.format_bar_length(region.start, region["end"], 0)
-    local scale = M.CONFIG.length_font_size
-    local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
-    length_w, length_h = length_w * scale, length_h * scale
-    
-    local scaled_padding_x = M.CONFIG.length_padding_x * (0.5 + 0.5 * height_factor)
-    local scaled_padding_y = M.CONFIG.length_padding_y * (0.5 + 0.5 * height_factor)
-    local scaled_margin = M.CONFIG.length_margin * (0.3 + 0.7 * height_factor)
-    
-    local length_x = x2 - length_w - scaled_padding_x * 2 - scaled_margin - M.CONFIG.length_offset_x
-    local length_y = y2 - length_h - scaled_padding_y * 2 - scaled_margin
-    
-    local length_color = Colors.same_hue_variant(base_color, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
-    length_color = Colors.with_alpha(length_color, text_alpha)
-    
-    Draw.text(dl, length_x + scaled_padding_x, length_y + scaled_padding_y, length_color, length_str)
+  local length_str = TileUtil.format_bar_length(region.start, region["end"], 0)
+  local scale = M.CONFIG.length_font_size
+  local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
+  length_w, length_h = length_w * scale, length_h * scale
+  
+  local scaled_padding_x = M.CONFIG.length_padding_x * (0.5 + 0.5 * height_factor)
+  local scaled_padding_y = M.CONFIG.length_padding_y * (0.5 + 0.5 * height_factor)
+  local scaled_margin = M.CONFIG.length_margin * (0.3 + 0.7 * height_factor)
+  
+  local length_x = x2 - length_w - scaled_padding_x * 2 - scaled_margin - M.CONFIG.length_offset_x
+  local length_y = y2 - length_h - scaled_padding_y * 2 - scaled_margin
+  
+  local length_color = Colors.same_hue_variant(base_color, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
+  length_color = Colors.with_alpha(length_color, text_alpha)
+  
+  Draw.text(dl, length_x + scaled_padding_x, length_y + scaled_padding_y, length_color, length_str)
 end
 
 return M
