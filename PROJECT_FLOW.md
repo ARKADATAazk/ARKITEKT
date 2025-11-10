@@ -1,19 +1,19 @@
 # ARKITEKT-PROJECT FLOW
-Generated: 2025-11-09 19:54:39
+Generated: 2025-11-10 17:34:07
 
 ## Overview
 - **Folders**: 1
-- **Files**: 160
-- **Total Lines**: 33,565
-- **Code Lines**: 25,953
+- **Files**: 162
+- **Total Lines**: 33,944
+- **Code Lines**: 26,277
 - **Exports**: 211
-- **Classes**: 185
+- **Classes**: 187
 
 ## Folder Organization
 
 ### ARKITEKT
-- Files: 160
-- Lines: 25,953
+- Files: 162
+- Lines: 26,277
 - Exports: 211
 
 ## Orchestrators
@@ -34,7 +34,7 @@ Generated: 2025-11-09 19:54:39
   Composes: colors + config + controller + coordinator + list + sheet + shortcuts + tile_motion + transport_container
 
 **`ARKITEKT\rearkitekt\gui\widgets\panel\init.lua`** (7 dependencies)
-  Composes: background + button + config + content + scrollbar + style_defaults + tab_animator
+  Composes: background + button + config + content + corner_button + scrollbar + tab_animator
 
 **`ARKITEKT\scripts\Region_Playlist\ARK_RegionPlaylist.lua`** (7 dependencies)
   Composes: colors + config + gui + profiler_init + shell + state + status
@@ -75,6 +75,11 @@ Generated: 2025-11-09 19:54:39
   - `update`
   - `value`
 
+### `ARKITEKT\rearkitekt\gui\widgets\panel\init.lua` (673 lines)
+> @noindex
+**Classes**: `M, Panel`
+**Requires**: `background, button, config, content, corner_button, scrollbar, tab_animator`
+
 ### `ARKITEKT\rearkitekt\gui\widgets\grid\core.lua` (642 lines)
 > @noindex
 **Classes**: `M, Grid`
@@ -90,11 +95,6 @@ Generated: 2025-11-09 19:54:39
   - `reps`
   - `type`
 **Requires**: `colors, coordinator_bridge, state, undo_bridge, undo_manager`
-
-### `ARKITEKT\rearkitekt\gui\widgets\panel\init.lua` (591 lines)
-> @noindex
-**Classes**: `M, Panel`
-**Requires**: `background, button, config, content, scrollbar, style_defaults, tab_animator`
 
 ### `ARKITEKT\rearkitekt\core\colors.lua` (550 lines)
 > @noindex
@@ -125,11 +125,11 @@ Generated: 2025-11-09 19:54:39
 > @noindex
 **Requires**: `button, colors, shell, style_defaults`
 
-### `ARKITEKT\rearkitekt\app\titlebar.lua` (508 lines)
+### `ARKITEKT\rearkitekt\app\titlebar.lua` (518 lines)
 > @noindex
 **Classes**: `M, DEFAULTS`
 
-### `ARKITEKT\scripts\Sandbox\sandbox_6.lua` (478 lines)
+### `ARKITEKT\scripts\Sandbox\sandbox_6.lua` (466 lines)
 > @noindex
 **Requires**: `arkit, shell`
 
@@ -150,6 +150,11 @@ Generated: 2025-11-09 19:54:39
 > @noindex
 **Requires**: `arkit, button, dropdown, search_input, shell`
 
+### `ARKITEKT\rearkitekt\debug\_console_widget.lua` (430 lines)
+> @noindex
+**Classes**: `M`
+**Requires**: `config, logger`
+
 ### `ARKITEKT\rearkitekt\gui\widgets\controls\dropdown.lua` (418 lines)
 > @noindex
 **Classes**: `M, Dropdown`
@@ -160,7 +165,7 @@ Generated: 2025-11-09 19:54:39
 **Classes**: `M`
 **Requires**: `button, dropdown, search_input, separator, tab_strip`
 
-### `ARKITEKT\scripts\Region_Playlist\engine\coordinator_bridge.lua` (406 lines)
+### `ARKITEKT\scripts\Region_Playlist\engine\coordinator_bridge.lua` (398 lines)
 > @noindex
 **Classes**: `M`
 **Exports**:
@@ -173,7 +178,7 @@ Generated: 2025-11-09 19:54:39
   - `quantize_mode`
   - `sequence_length`
   - `total_loops`
-**Requires**: `core, playback, sequence_expander, state, transport`
+**Requires**: `core, logger, playback, sequence_expander, state, transport`
 
 ### `ARKITEKT\scripts\demos\demo.lua` (383 lines)
 > @noindex
@@ -214,20 +219,6 @@ Generated: 2025-11-09 19:54:39
   - `text`
 **Requires**: `grid, hub, micromanage, selection_rectangle, shell`
 
-### `ARKITEKT\scripts\Region_Playlist\engine\state.lua` (350 lines)
-> @noindex
-**Classes**: `M, State`
-**Exports**:
-  - `current_idx`
-  - `next_idx`
-  - `playlist_order`
-  - `playlist_pointer`
-  - `proj`
-  - `region_cache`
-  - `sequence_length`
-  - `sequence_version`
-**Requires**: `regions, transport`
-
 ### `ARKITEKT\scripts\Region_Playlist\app\config.lua` (349 lines)
 > @noindex
 **Classes**: `M`
@@ -243,14 +234,19 @@ Generated: 2025-11-09 19:54:39
   - `max_width`
   - `min_width`
 
-### `ARKITEKT\scripts\Region_Playlist\engine\quantize.lua` (337 lines)
+### `ARKITEKT\scripts\Region_Playlist\engine\state.lua` (342 lines)
 > @noindex
-**Classes**: `M, Quantize`
-
-### `ARKITEKT\rearkitekt\debug\_console_widget.lua` (335 lines)
-> @noindex
-**Classes**: `M`
-**Requires**: `config, logger`
+**Classes**: `M, State`
+**Exports**:
+  - `current_idx`
+  - `next_idx`
+  - `playlist_order`
+  - `playlist_pointer`
+  - `proj`
+  - `region_cache`
+  - `sequence_length`
+  - `sequence_version`
+**Requires**: `logger, regions, transport`
 
 ### `ARKITEKT\rearkitekt\gui\widgets\nodal\rendering\node_renderer.lua` (334 lines)
 > @noindex
@@ -261,3 +257,7 @@ Generated: 2025-11-09 19:54:39
 > @noindex
 **Classes**: `M`
 **Requires**: `colors, draw, tile_fx, tile_fx_config`
+
+### `ARKITEKT\scripts\ItemPicker\app\grid_adapter.lua` (333 lines)
+> @noindex
+**Classes**: `M`

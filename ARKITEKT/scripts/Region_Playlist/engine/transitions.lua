@@ -37,7 +37,7 @@ function Transitions:handle_smooth_transitions()
   
   local playpos = _get_play_pos(self.proj)
   
-  Logger.trace("TRANSPORT", "playpos=%.3f curr_idx=%d next_idx=%d curr_bounds=[%.3f-%.3f] next_bounds=[%.3f-%.3f]",
+  Logger.debug("TRANSITIONS", "playpos=%.3f curr_idx=%d next_idx=%d curr_bounds=[%.3f-%.3f] next_bounds=[%.3f-%.3f]",
     playpos, self.state.current_idx, self.state.next_idx,
     self.state.current_bounds.start_pos, self.state.current_bounds.end_pos,
     self.state.next_bounds.start_pos, self.state.next_bounds.end_pos)
@@ -51,13 +51,13 @@ function Transitions:handle_smooth_transitions()
      playpos >= self.state.next_bounds.start_pos and 
      playpos < self.state.next_bounds.end_pos + self.state.boundary_epsilon then
     
-    Logger.trace("TRANSPORT", "Branch 1: In next_bounds (different region)")
+    Logger.debug("TRANSITIONS", "Branch 1: In next_bounds (different region)")
     
     local entering_different_region = (self.state.current_idx ~= self.state.next_idx)
     local playhead_went_backward = (playpos < self.state.last_play_pos - 0.1)
     
     if entering_different_region or playhead_went_backward then
-      Logger.debug("TRANSPORT", "TRANSITION FIRING: %d -> %d", self.state.current_idx, self.state.next_idx)
+      Logger.info("TRANSITIONS", "TRANSITION FIRING: %d -> %d", self.state.current_idx, self.state.next_idx)
       
       self.state.current_idx = self.state.next_idx
       self.state.playlist_pointer = self.state.current_idx
@@ -94,7 +94,7 @@ function Transitions:handle_smooth_transitions()
         end
       else
         self.state.next_idx = -1
-        Logger.debug("TRANSPORT", "No next candidate")
+        Logger.info("TRANSITIONS", "No next candidate")
       end
     end
     
@@ -106,7 +106,7 @@ function Transitions:handle_smooth_transitions()
       local time_to_end = self.state.current_bounds.end_pos - playpos
       
       if time_to_end <= 0.05 and time_to_end >= -0.01 then
-        Logger.debug("TRANSPORT", "TIME-BASED TRANSITION (same region): %d -> %d", self.state.current_idx, self.state.next_idx)
+        Logger.info("TRANSITIONS", "TIME-BASED TRANSITION (same region): %d -> %d", self.state.current_idx, self.state.next_idx)
         
         self.state.current_idx = self.state.next_idx
         self.state.playlist_pointer = self.state.current_idx
@@ -145,23 +145,23 @@ function Transitions:handle_smooth_transitions()
     end
     
   else
-    Logger.trace("TRANSPORT", "Branch 3: Out of bounds, syncing")
+    Logger.debug("TRANSITIONS", "Branch 3: Out of bounds, syncing")
     local found_idx = self.state:find_index_at_position(playpos)
-    Logger.trace("TRANSPORT", "find_index_at_position(%.3f) returned: %d", playpos, found_idx)
+    Logger.debug("TRANSITIONS", "find_index_at_position(%.3f) returned: %d", playpos, found_idx)
     
     if found_idx >= 1 then
       local was_uninitialized = (self.state.current_idx == -1)
       
       local first_idx_at_pos = found_idx
-      Logger.trace("TRANSPORT", "Checking for earlier entries with same rid as idx %d (rid=%d)", 
+      Logger.debug("TRANSITIONS", "Checking for earlier entries with same rid as idx %d (rid=%d)", 
         found_idx, self.state.playlist_order[found_idx])
       
       for i = 1, found_idx - 1 do
         local rid = self.state.playlist_order[i]
-        Logger.trace("TRANSPORT", "  idx %d: rid=%d", i, rid)
+        Logger.debug("TRANSITIONS", "  idx %d: rid=%d", i, rid)
         if rid == self.state.playlist_order[found_idx] then
           first_idx_at_pos = i
-          Logger.trace("TRANSPORT", "Found earlier match! Using idx %d instead of %d", i, found_idx)
+          Logger.debug("TRANSITIONS", "Found earlier match! Using idx %d instead of %d", i, found_idx)
           break
         end
       end
@@ -221,7 +221,7 @@ function Transitions:_queue_next_region_if_near_end(playpos)
       local rid = self.state.playlist_order[self.state.next_idx]
       local region = self.state:get_region_by_rid(rid)
       if region then
-        Logger.debug("TRANSPORT", "Queuing GoToRegion(%d) - %.2fs to end", region.rid, time_to_end)
+        Logger.info("TRANSPORT", "Queuing GoToRegion(%d) - %.2fs to end", region.rid, time_to_end)
         self.transport:_seek_to_region(region.rid)
         self.state.goto_region_queued = true
         self.state.goto_region_target = self.state.next_idx

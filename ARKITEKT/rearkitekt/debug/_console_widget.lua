@@ -1,12 +1,13 @@
 -- @noindex
 -- rearkitekt/debug/_console_widget.lua
--- Console widget implementation (internal)
+-- Console widget implementation with ColoredTextView
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Logger = require('rearkitekt.debug.logger')
 local Panel = require('rearkitekt.gui.widgets.panel')
 local Config = require('rearkitekt.gui.widgets.panel.config')
+local ColoredTextView = require('rearkitekt.gui.widgets.colored_text_view')
 
 local M = {}
 
@@ -32,6 +33,27 @@ local COLORS = {
   grey_08 = hexrgb("#141414FF"),
 }
 
+local CATEGORY_COLORS = {
+  ENGINE = COLORS.teal,
+  GUI = COLORS.grey_84,
+  STATE = hexrgb("#FFD700FF"),
+  BRIDGE = COLORS.yellow,
+  STORAGE = hexrgb("#CD853FFF"),
+  TRANSITIONS = hexrgb("#00CED1FF"),
+  TRANSPORT = hexrgb("#4682B4FF"),
+  PLAYLIST = hexrgb("#9370DBFF"),
+  REGION = hexrgb("#20B2AAFF"),
+  COORDINATOR = hexrgb("#FF69B4FF"),
+  WIDGET = hexrgb("#87CEEBFF"),
+  CONTROLLER = hexrgb("#98FB98FF"),
+  QUANTIZE = hexrgb("#DDA0DDFF"),
+  PLAYBACK = hexrgb("#F0E68CFF"),
+  SEQUENCER = hexrgb("#ADD8E6FF"),
+  UNDO = hexrgb("#F5DEB3FF"),
+  SYSTEM = COLORS.grey_84,
+  CONSOLE = COLORS.grey_60,
+}
+
 local LEVEL_COLORS = {
   INFO = COLORS.teal,
   DEBUG = COLORS.grey_60,
@@ -47,6 +69,40 @@ local LEVEL_ICONS = {
   ERROR = "✕",
   PROFILE = "ⱗ",
 }
+
+local function get_category_icon(category)
+  local icons = {
+    STATE = "◆",
+    TRANSITIONS = "▶",
+    TRANSPORT = "♵",
+    PLAYLIST = "♪",
+    REGION = "▣",
+    COORDINATOR = "⚙",
+    WIDGET = "◉",
+    CONTROLLER = "⚡",
+    QUANTIZE = "⊞",
+    PLAYBACK = "▸",
+    SEQUENCER = "≡",
+    STORAGE = "▦",
+    UNDO = "↶",
+    ENGINE = "⚙",
+    GUI = "▢",
+    BRIDGE = "⇄",
+    SYSTEM = "◈",
+    CONSOLE = "○",
+  }
+  return icons[category] or "•"
+end
+
+local function get_entry_color(entry)
+  if CATEGORY_COLORS[entry.category] then
+    return CATEGORY_COLORS[entry.category]
+  elseif LEVEL_COLORS[entry.level] then
+    return LEVEL_COLORS[entry.level]
+  else
+    return COLORS.grey_60
+  end
+end
 
 function M.new(config)
   config = config or {}
@@ -65,6 +121,8 @@ function M.new(config)
     user_scrolled_up = false,
     
     panel = nil,
+    text_view = ColoredTextView.new(),
+    last_entry_count = 0,
   }
   
   local panel_config = {
@@ -98,6 +156,8 @@ function M.new(config)
             width = 50,
             on_click = function()
               Logger.clear()
+              console.text_view:set_lines({})
+              console.last_entry_count = 0
             end,
           },
         },
@@ -126,6 +186,23 @@ function M.new(config)
           },
         },
         {
+          id = "copy_btn",
+          type = "button",
+          spacing_before = 0,
+          config = {
+            id = "copy",
+            label = "Copy",
+            width = 50,
+            on_click = function()
+              if console.text_view:copy() then
+                Logger.info("CONSOLE", "Selection copied to clipboard")
+              else
+                Logger.warn("CONSOLE", "No selection to copy")
+              end
+            end,
+          },
+        },
+        {
           id = "sep1",
           type = "separator",
           width = 12,
@@ -147,6 +224,7 @@ function M.new(config)
             },
             on_change = function(value)
               console.filter_category = value
+              console:update_text_view()
             end,
           },
         },
@@ -159,6 +237,7 @@ function M.new(config)
             placeholder = "Search...",
             on_change = function(text)
               console.search_text = text
+              console:update_text_view()
             end,
           },
         },
@@ -203,29 +282,19 @@ function M.new(config)
     config = panel_config,
   })
   
-  local function format_time(timestamp)
-    local h = math.floor(timestamp / 3600) % 24
-    local m = math.floor(timestamp / 60) % 60
-    local s = timestamp % 60
-    return string.format("%02d:%02d:%06.3f", h, m, s)
-  end
-  
-  local function draw_log_entries(ctx)
+  -- Convert log entries to colored text view format
+  function console:update_text_view()
     local entries = Logger.get_entries()
+    local lines = {}
     
-    -- Build complete text buffer with filtered entries
-    local text_lines = {}
     for _, entry in ipairs(entries) do
+      -- Apply filters
       local show = true
-      
-      -- Filter by level
-      if console.filter_category ~= "All" and entry.level ~= console.filter_category then
+      if self.filter_category ~= "All" and entry.level ~= self.filter_category then
         show = false
       end
-      
-      -- Filter by search text
-      if console.search_text ~= "" then
-        local search_lower = console.search_text:lower()
+      if self.search_text ~= "" then
+        local search_lower = self.search_text:lower()
         local text = (entry.message .. entry.category):lower()
         if not text:find(search_lower, 1, true) then
           show = false
@@ -233,27 +302,42 @@ function M.new(config)
       end
       
       if show then
+        local color = get_entry_color(entry)
+        local icon = get_category_icon(entry.category)
+        
         local msg_str = entry.message
         if entry.data then
           msg_str = msg_str .. " {...}"
         end
-        table.insert(text_lines, msg_str)
+        
+        -- Create line with colored segments
+        table.insert(lines, {
+          segments = {
+            {text = icon .. " ", color = color},
+            {text = msg_str, color = color}
+          }
+        })
       end
     end
     
-    local full_text = table.concat(text_lines, "\n")
+    self.text_view:set_lines(lines)
+  end
+  
+  function console:update()
+    local current_time = reaper.time_precise()
+    if self.last_frame_time > 0 then
+      local delta = current_time - self.last_frame_time
+      self.frame_time_ms = delta * 1000
+      self.fps = math.floor(1.0 / delta + 0.5)
+    end
+    self.last_frame_time = current_time
     
-    -- Use InputTextMultiline for proper text selection
-    local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
-    
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0x00000000)  -- Transparent background
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0x00000000)
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0x00000000)
-    
-    local flags = ImGui.InputTextFlags_ReadOnly
-    ImGui.InputTextMultiline(ctx, "##console_text", full_text, avail_w, avail_h, flags)
-    
-    ImGui.PopStyleColor(ctx, 3)
+    -- Update text view if logs changed
+    local current_count = Logger.get_count()
+    if not self.paused and current_count ~= self.last_entry_count then
+      self:update_text_view()
+      self.last_entry_count = current_count
+    end
   end
   
   local function draw_footer(ctx, w)
@@ -280,16 +364,6 @@ function M.new(config)
     ImGui.Dummy(ctx, 0, footer_h)
   end
   
-  function console:update()
-    local current_time = reaper.time_precise()
-    if self.last_frame_time > 0 then
-      local delta = current_time - self.last_frame_time
-      self.frame_time_ms = delta * 1000
-      self.fps = math.floor(1.0 / delta + 0.5)
-    end
-    self.last_frame_time = current_time
-  end
-  
   function console:render(ctx)
     self:update()
     
@@ -297,25 +371,8 @@ function M.new(config)
     local sx, sy = ImGui.GetCursorScreenPos(ctx)
     
     if self.panel:begin_draw(ctx) then
-      local scroll_y = ImGui.GetScrollY(ctx)
-      local scroll_max_y = ImGui.GetScrollMaxY(ctx)
-      
-      local was_at_bottom = (scroll_max_y == 0) or (scroll_y >= scroll_max_y - 5)
-      
-      if scroll_y < self.scroll_pos then
-        self.user_scrolled_up = true
-      elseif scroll_y >= scroll_max_y - 5 then
-        self.user_scrolled_up = false
-      end
-      
-      self.scroll_pos = scroll_y
-      self.scroll_max = scroll_max_y
-      
-      draw_log_entries(ctx)
-      
-      if not self.paused and not self.user_scrolled_up and was_at_bottom then
-        ImGui.SetScrollHereY(ctx, 1.0)
-      end
+      local content_h = avail_h - 24 -- Reserve space for footer
+      self.text_view:render(ctx, avail_w, content_h)
     end
     self.panel:end_draw(ctx)
     
@@ -323,6 +380,9 @@ function M.new(config)
     ImGui.SetCursorScreenPos(ctx, sx, footer_y)
     draw_footer(ctx, avail_w)
   end
+  
+  -- Initialize with current logs
+  console:update_text_view()
   
   return console
 end

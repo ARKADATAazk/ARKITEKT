@@ -22,7 +22,7 @@ ARKITEKT-Project/
 │   │   │   ├── overlay.lua (381 lines)
 │   │   │   ├── runtime.lua (69 lines)
 │   │   │   ├── shell.lua (300 lines)
-│   │   │   ├── titlebar.lua (508 lines)
+│   │   │   ├── titlebar.lua (517 lines)
 │   │   │   └── window.lua (779 lines)
 │   │   ├── core/
 │   │   │   ├── theme_manager/
@@ -34,9 +34,10 @@ ARKITEKT-Project/
 │   │   │   ├── settings.lua (118 lines)
 │   │   │   └── undo_manager.lua (70 lines)
 │   │   ├── debug/
-│   │   │   ├── _console_widget.lua (335 lines)
-│   │   │   ├── console.lua (130 lines)
-│   │   │   ├── logger.lua (80 lines)
+│   │   │   ├── _console_widget.lua (430 lines)
+│   │   │   ├── console.lua (149 lines)
+│   │   │   ├── console_window.lua (72 lines)
+│   │   │   ├── logger.lua (86 lines)
 │   │   │   └── profiler_init.lua (97 lines)
 │   │   ├── fonts/
 │   │   │   ├── Inter_18pt-Regular.ttf (2337 lines)
@@ -81,6 +82,7 @@ ARKITEKT-Project/
 │   │   │   │   ├── controls/
 │   │   │   │   │   ├── button.lua (241 lines)
 │   │   │   │   │   ├── context_menu.lua (106 lines)
+│   │   │   │   │   ├── corner_button.lua (162 lines)
 │   │   │   │   │   ├── dropdown.lua (417 lines)
 │   │   │   │   │   ├── scrollbar.lua (239 lines)
 │   │   │   │   │   ├── search_input.lua (236 lines)
@@ -131,7 +133,7 @@ ARKITEKT-Project/
 │   │   │   │   │   ├── background.lua (82 lines)
 │   │   │   │   │   ├── config.lua (284 lines)
 │   │   │   │   │   ├── content.lua (58 lines)
-│   │   │   │   │   ├── init.lua (590 lines)
+│   │   │   │   │   ├── init.lua (672 lines)
 │   │   │   │   │   └── tab_animator.lua (107 lines)
 │   │   │   │   ├── sliders/
 │   │   │   │   │   └── hue.lua (276 lines)
@@ -206,12 +208,12 @@ ARKITEKT-Project/
 │   │   │   │   ├── state.lua (617 lines)
 │   │   │   │   └── status.lua (59 lines)
 │   │   │   ├── engine/
-│   │   │   │   ├── coordinator_bridge.lua (405 lines)
+│   │   │   │   ├── coordinator_bridge.lua (397 lines)
 │   │   │   │   ├── core.lua (194 lines)
 │   │   │   │   ├── playback.lua (103 lines)
-│   │   │   │   ├── quantize.lua (337 lines)
-│   │   │   │   ├── state.lua (349 lines)
-│   │   │   │   ├── transitions.lua (256 lines)
+│   │   │   │   ├── quantize.lua (315 lines)
+│   │   │   │   ├── state.lua (341 lines)
+│   │   │   │   ├── transitions.lua (237 lines)
 │   │   │   │   └── transport.lua (239 lines)
 │   │   │   ├── storage/
 │   │   │   │   ├── state.lua (152 lines)
@@ -236,7 +238,7 @@ ARKITEKT-Project/
 │   │       ├── sandbox_3.lua (178 lines)
 │   │       ├── sandbox_4.lua (519 lines)
 │   │       ├── sandbox_5.lua (431 lines)
-│   │       ├── sandbox_6.lua (477 lines)
+│   │       ├── sandbox_6.lua (465 lines)
 │   │       ├── sandbox_7.lua (0 lines)
 │   │       ├── sandbox_8.lua (0 lines)
 │   │       └── sandbox_9.lua (0 lines)
@@ -273,9 +275,9 @@ ARKITEKT-Project/
 ├── refactoring_templates.md (160 lines)
 └── System_Prompt_ARKITEKT_OnePager.md (66 lines)
 
-Total files: 206
-Total lines (with comments): 64,881
-Total lines (code only): 55,341
+Total files: 208
+Total lines (with comments): 65,257
+Total lines (code only): 55,665
 Code/Total Ratio: 85.3% is actual code
 
 Generated: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\PROJECT_STRUCTURE.txt
