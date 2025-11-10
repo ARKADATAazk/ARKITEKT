@@ -243,9 +243,7 @@ function M.create(opts)
             if rt.detect_circular_ref then
               local circular, path = rt.detect_circular_ref(active_playlist_id, item_data.id)
               if circular then
-                local path_str = table.concat(path, " → ")
-                reaper.ShowConsoleMsg(string.format("Circular reference detected: %s\n", path_str))
-                reaper.MB("Cannot add playlist: circular reference detected.\n\nPath: " .. path_str, "Circular Reference", 0)
+                -- Silently skip circular references (visual indication on tile)
                 goto continue_loop
               end
             end

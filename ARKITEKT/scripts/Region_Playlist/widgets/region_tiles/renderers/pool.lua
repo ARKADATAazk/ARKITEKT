@@ -33,6 +33,22 @@ M.CONFIG = {
   badge_nudge_y = 0,
   badge_text_nudge_x = -1,
   badge_text_nudge_y = -1,
+  circular = {
+    base_color = 0x240C0CFF,
+    stripe_color = 0x30101044,
+    border_color = 0x6A0606FF,
+    text_color = 0xF70000FF,
+    lock_color = 0x6A0606FF,
+    playlist_chip_color = 0x980404FF,
+    lock_base_w = 11,
+    lock_base_h = 7,
+    lock_handle_w = 2,
+    lock_handle_h = 5,
+    lock_top_w = 9,
+    lock_top_h = 2,
+    stripe_width = 1.5,
+    stripe_spacing = 14,
+  },
 }
 
 local function clamp_min_lightness(color, min_l)
@@ -42,6 +58,43 @@ local function clamp_min_lightness(color, min_l)
     return Colors.adjust_brightness(color, factor)
   end
   return color
+end
+
+local function draw_lock_icon(dl, cx, cy, config, color)
+  local base_w = config.lock_base_w
+  local base_h = config.lock_base_h
+  local handle_w = config.lock_handle_w
+  local handle_h = config.lock_handle_h
+  local top_w = config.lock_top_w
+  local top_h = config.lock_top_h
+  
+  -- Lock base (11w x 7h)
+  local base_x1 = cx - base_w * 0.5
+  local base_y1 = cy - base_h * 0.5 + 2
+  local base_x2 = base_x1 + base_w
+  local base_y2 = base_y1 + base_h
+  ImGui.DrawList_AddRectFilled(dl, base_x1, base_y1, base_x2, base_y2, color, 0)
+  
+  -- Left handle (2w x 5h, 1px in from left)
+  local left_handle_x1 = base_x1 + 1
+  local left_handle_y1 = base_y1 - handle_h
+  local left_handle_x2 = left_handle_x1 + handle_w
+  local left_handle_y2 = base_y1
+  ImGui.DrawList_AddRectFilled(dl, left_handle_x1, left_handle_y1, left_handle_x2, left_handle_y2, color, 0)
+  
+  -- Right handle (2w x 5h, 1px in from right)
+  local right_handle_x1 = base_x2 - handle_w - 1
+  local right_handle_y1 = base_y1 - handle_h
+  local right_handle_x2 = base_x2 - 1
+  local right_handle_y2 = base_y1
+  ImGui.DrawList_AddRectFilled(dl, right_handle_x1, right_handle_y1, right_handle_x2, right_handle_y2, color, 0)
+  
+  -- Top handle (9w x 2h)
+  local top_x1 = cx - top_w * 0.5
+  local top_y1 = base_y1 - handle_h
+  local top_x2 = top_x1 + top_w
+  local top_y2 = top_y1 + top_h
+  ImGui.DrawList_AddRectFilled(dl, top_x1, top_y1, top_x2, top_y2, color, 0)
 end
 
 function M.render(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness)
@@ -86,6 +139,12 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   local key = "pool_playlist_" .. tostring(playlist.id)
   local is_disabled = playlist.is_disabled or false
   
+  -- Special rendering for circular reference tiles
+  if is_disabled then
+    M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness)
+    return
+  end
+  
   animator:track(key, 'hover', (state.hover and not is_disabled) and 1.0 or 0.0, hover_config and hover_config.animation_speed_hover or 12.0)
   animator:track(key, 'disabled', is_disabled and 1.0 or 0.0, 12.0)
   local hover_factor = animator:get(key, 'hover')
@@ -110,10 +169,6 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   local fx_config = TileFXConfig.get()
   -- Use chip color for border (pool tiles don't have playback progress)
   BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, 0, 0, playlist_data.chip_color)
-  
-  if is_disabled and disabled_factor > 0.5 then
-    ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, 0x00000000 | math.floor(120 * disabled_factor), BaseRenderer.CONFIG.rounding)
-  end
   
   if state.selected and fx_config.ants_enabled then BaseRenderer.draw_marching_ants(dl, rect, playlist_data.chip_color, fx_config) end
   
@@ -185,12 +240,101 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
     ImGui.SetCursorScreenPos(ctx, x1, y1)
     ImGui.InvisibleButton(ctx, key .. "_tooltip", x2 - x1, y2 - y1)
     if ImGui.IsItemHovered(ctx) then
-      if is_disabled then
-        ImGui.SetTooltip(ctx, "Cannot drag: would create circular reference")
-      else
-        ImGui.SetTooltip(ctx, string.format("Playlist • %d items", item_count))
-      end
+      ImGui.SetTooltip(ctx, string.format("Playlist • %d items", item_count))
     end
+  end
+end
+
+function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness)
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+  local key = "pool_playlist_" .. tostring(playlist.id)
+  
+  animator:track(key, 'hover', 0, hover_config and hover_config.animation_speed_hover or 12.0)
+  animator:track(key, 'disabled', 1.0, 12.0)
+  
+  local base_color = M.CONFIG.circular.base_color
+  local playlist_data = {
+    name = playlist.name or "Unnamed Playlist",
+    chip_color = M.CONFIG.circular.playlist_chip_color
+  }
+  
+  local fx_config = TileFXConfig.get()
+  local border_color = M.CONFIG.circular.border_color
+  
+  -- Draw base tile with red border
+  BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, 0, 0, 0, border_color)
+  
+  -- Draw diagonal stripe pattern
+  local stripe_w = M.CONFIG.circular.stripe_width
+  local stripe_spacing = M.CONFIG.circular.stripe_spacing
+  local stripe_color = M.CONFIG.circular.stripe_color
+  
+  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
+  
+  local tile_w = x2 - x1
+  local tile_h = y2 - y1
+  local diagonal_length = math.sqrt(tile_w * tile_w + tile_h * tile_h)
+  local num_stripes = math.ceil(diagonal_length / stripe_spacing) + 2
+  
+  for i = -num_stripes, num_stripes do
+    local offset = i * stripe_spacing
+    local sx1 = x1 + offset
+    local sy1 = y1
+    local sx2 = x1 + offset + tile_h
+    local sy2 = y2
+    
+    ImGui.DrawList_AddLine(dl, sx1, sy1, sx2, sy2, stripe_color, stripe_w)
+  end
+  
+  ImGui.DrawList_PopClipRect(dl)
+  
+  local actual_height = tile_height or (y2 - y1)
+  local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
+  local show_badge = actual_height >= M.CONFIG.responsive.hide_text_below
+  
+  local item_count = #playlist.items
+  
+  if show_text then
+    local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
+    
+    -- Draw playlist name with original chip color
+    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, 0xFF, x2 - M.CONFIG.text_margin_right, M.CONFIG.playlist_tile.name_color)
+  end
+  
+  if show_badge then
+    -- Draw badge container with lock icon
+    local lock_size = M.CONFIG.circular.lock_base_w
+    local lock_margin = M.CONFIG.badge_margin + 2
+    local badge_x = x2 - lock_size - lock_margin * 2 - 2
+    local badge_y = y1 + M.CONFIG.badge_margin
+    local badge_x2 = x2 - lock_margin
+    local badge_y2 = badge_y + lock_size + M.CONFIG.badge_padding_y * 2
+    local badge_bg = M.CONFIG.badge_bg
+    
+    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
+    
+    local badge_border_color = M.CONFIG.circular.border_color
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors.with_alpha(badge_border_color, 0x88), M.CONFIG.badge_rounding, 0, 0.5)
+    
+    -- Draw lock icon centered in badge
+    local lock_x = badge_x + (badge_x2 - badge_x) * 0.5
+    local lock_y = badge_y + (badge_y2 - badge_y) * 0.5
+    draw_lock_icon(dl, lock_x, lock_y, M.CONFIG.circular, M.CONFIG.circular.lock_color)
+  end
+  
+  -- Draw "CIRCULAR" text centered
+  local label = "CIRCULAR"
+  local label_w, label_h = ImGui.CalcTextSize(ctx, label)
+  local label_x = x1 + (x2 - x1 - label_w) * 0.5
+  local label_y = y1 + (y2 - y1 - label_h) * 0.5
+  ImGui.DrawList_AddText(dl, label_x, label_y, M.CONFIG.circular.text_color, label)
+  
+  -- Tooltip
+  ImGui.SetCursorScreenPos(ctx, x1, y1)
+  ImGui.InvisibleButton(ctx, key .. "_tooltip", x2 - x1, y2 - y1)
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.SetTooltip(ctx, "Cannot drag: would create circular reference")
   end
 end
 
