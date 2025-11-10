@@ -1,6 +1,9 @@
 -- @noindex
 -- ReArkitekt/features/region_playlist/engine/transitions.lua
 -- Smooth transition logic between regions - FIXED: Handle same-region repeats with time-based transitions
+-- MODIFIED: Integrated Logger for debug output
+
+local Logger = require("rearkitekt.debug.logger")
 
 local M = {}
 local Transitions = {}
@@ -34,31 +37,27 @@ function Transitions:handle_smooth_transitions()
   
   local playpos = _get_play_pos(self.proj)
   
-  reaper.ShowConsoleMsg(string.format("[TRANS] playpos=%.3f curr_idx=%d next_idx=%d curr_bounds=[%.3f-%.3f] next_bounds=[%.3f-%.3f]\n",
+  Logger.trace("TRANSPORT", "playpos=%.3f curr_idx=%d next_idx=%d curr_bounds=[%.3f-%.3f] next_bounds=[%.3f-%.3f]",
     playpos, self.state.current_idx, self.state.next_idx,
     self.state.current_bounds.start_pos, self.state.current_bounds.end_pos,
-    self.state.next_bounds.start_pos, self.state.next_bounds.end_pos))
+    self.state.next_bounds.start_pos, self.state.next_bounds.end_pos)
   
-  -- Check if current and next are the same physical region (repeating)
   local curr_rid = self.state.current_idx >= 1 and self.state.playlist_order[self.state.current_idx] or nil
   local next_rid = self.state.next_idx >= 1 and self.state.playlist_order[self.state.next_idx] or nil
   local is_same_region = (curr_rid == next_rid and curr_rid ~= nil)
   
-  -- Branch 1: In next_bounds region - EXECUTE THE TRANSITION
-  -- BUT: Skip this if current and next are the same region (use time-based instead)
   if self.state.next_idx >= 1 and 
      not is_same_region and
      playpos >= self.state.next_bounds.start_pos and 
      playpos < self.state.next_bounds.end_pos + self.state.boundary_epsilon then
     
-    reaper.ShowConsoleMsg("[TRANS] Branch 1: In next_bounds (different region)\n")
+    Logger.trace("TRANSPORT", "Branch 1: In next_bounds (different region)")
     
     local entering_different_region = (self.state.current_idx ~= self.state.next_idx)
     local playhead_went_backward = (playpos < self.state.last_play_pos - 0.1)
     
     if entering_different_region or playhead_went_backward then
-      reaper.ShowConsoleMsg(string.format("[TRANS] TRANSITION FIRING: %d -> %d\n", 
-        self.state.current_idx, self.state.next_idx))
+      Logger.debug("TRANSPORT", "TRANSITION FIRING: %d -> %d", self.state.current_idx, self.state.next_idx)
       
       self.state.current_idx = self.state.next_idx
       self.state.playlist_pointer = self.state.current_idx
@@ -71,12 +70,10 @@ function Transitions:handle_smooth_transitions()
       
       local meta = self.state.playlist_metadata[self.state.current_idx]
       
-      -- Fire repeat cycle callback for UI updates
       if self.on_repeat_cycle and meta and meta.key and meta.loop and meta.total_loops and meta.loop > 1 then
         self.on_repeat_cycle(meta.key, meta.loop, meta.total_loops)
       end
       
-      -- Always advance to next sequence entry (repeats are already in sequence)
       local next_candidate
       if self.state.current_idx < #self.state.playlist_order then
         next_candidate = self.state.current_idx + 1
@@ -93,40 +90,33 @@ function Transitions:handle_smooth_transitions()
         if region then
           self.state.next_bounds.start_pos = region.start
           self.state.next_bounds.end_pos = region["end"]
-          -- Queue GoToRegion only when transition is imminent
           self:_queue_next_region_if_near_end(playpos)
         end
       else
         self.state.next_idx = -1
-        reaper.ShowConsoleMsg("[TRANS] No next candidate\n")
+        Logger.debug("TRANSPORT", "No next candidate")
       end
     end
     
-  -- Branch 2: In current_bounds region - CHECK IF NEAR END or handle same-region repeats
   elseif self.state.current_bounds.end_pos > self.state.current_bounds.start_pos and
          playpos >= self.state.current_bounds.start_pos and 
          playpos < self.state.current_bounds.end_pos + self.state.boundary_epsilon then
     
-    -- For same-region repeats, use time-based transition at the end
     if is_same_region and self.state.next_idx >= 1 then
       local time_to_end = self.state.current_bounds.end_pos - playpos
       
-      -- Transition when we're very close to the end (within 0.05 seconds)
       if time_to_end <= 0.05 and time_to_end >= -0.01 then
-        reaper.ShowConsoleMsg(string.format("[TRANS] TIME-BASED TRANSITION (same region): %d -> %d\n", 
-          self.state.current_idx, self.state.next_idx))
+        Logger.debug("TRANSPORT", "TIME-BASED TRANSITION (same region): %d -> %d", self.state.current_idx, self.state.next_idx)
         
         self.state.current_idx = self.state.next_idx
         self.state.playlist_pointer = self.state.current_idx
         
         local meta = self.state.playlist_metadata[self.state.current_idx]
         
-        -- Fire repeat cycle callback for UI updates
         if self.on_repeat_cycle and meta and meta.key and meta.loop and meta.total_loops and meta.loop > 1 then
           self.on_repeat_cycle(meta.key, meta.loop, meta.total_loops)
         end
         
-        -- Advance to next entry
         local next_candidate
         if self.state.current_idx < #self.state.playlist_order then
           next_candidate = self.state.current_idx + 1
@@ -148,34 +138,30 @@ function Transitions:handle_smooth_transitions()
           self.state.next_idx = -1
         end
       else
-        -- Queue GoToRegion only when close to end
         self:_queue_next_region_if_near_end(playpos)
       end
     else
-      -- Normal case: different region, just queue GoToRegion
       self:_queue_next_region_if_near_end(playpos)
     end
     
-  -- Branch 3: Neither - need to sync
   else
-    reaper.ShowConsoleMsg("[TRANS] Branch 3: Out of bounds, syncing\n")
+    Logger.trace("TRANSPORT", "Branch 3: Out of bounds, syncing")
     local found_idx = self.state:find_index_at_position(playpos)
-    reaper.ShowConsoleMsg(string.format("[TRANS] find_index_at_position(%.3f) returned: %d\n", playpos, found_idx))
+    Logger.trace("TRANSPORT", "find_index_at_position(%.3f) returned: %d", playpos, found_idx)
     
     if found_idx >= 1 then
       local was_uninitialized = (self.state.current_idx == -1)
       
-      -- Find the FIRST entry at this position (in case of repeats)
       local first_idx_at_pos = found_idx
-      reaper.ShowConsoleMsg(string.format("[TRANS] Checking for earlier entries with same rid as idx %d (rid=%d)\n", 
-        found_idx, self.state.playlist_order[found_idx]))
+      Logger.trace("TRANSPORT", "Checking for earlier entries with same rid as idx %d (rid=%d)", 
+        found_idx, self.state.playlist_order[found_idx])
       
       for i = 1, found_idx - 1 do
         local rid = self.state.playlist_order[i]
-        reaper.ShowConsoleMsg(string.format("[TRANS]   idx %d: rid=%d\n", i, rid))
+        Logger.trace("TRANSPORT", "  idx %d: rid=%d", i, rid)
         if rid == self.state.playlist_order[found_idx] then
           first_idx_at_pos = i
-          reaper.ShowConsoleMsg(string.format("[TRANS] Found earlier match! Using idx %d instead of %d\n", i, found_idx))
+          Logger.trace("TRANSPORT", "Found earlier match! Using idx %d instead of %d", i, found_idx)
           break
         end
       end
@@ -189,7 +175,6 @@ function Transitions:handle_smooth_transitions()
         self.state.current_bounds.end_pos = region["end"]
       end
       
-      -- Always advance to next entry (no looping within transitions)
       local next_candidate
       if first_idx_at_pos < #self.state.playlist_order then
         next_candidate = first_idx_at_pos + 1
@@ -229,7 +214,6 @@ function Transitions:handle_smooth_transitions()
 end
 
 function Transitions:_queue_next_region_if_near_end(playpos)
-  -- Only queue GoToRegion when within 0.5 seconds of current region end
   local time_to_end = self.state.current_bounds.end_pos - playpos
   
   if time_to_end < 0.5 and time_to_end > 0 and self.state.next_idx >= 1 then
@@ -237,16 +221,13 @@ function Transitions:_queue_next_region_if_near_end(playpos)
       local rid = self.state.playlist_order[self.state.next_idx]
       local region = self.state:get_region_by_rid(rid)
       if region then
-        -- CRITICAL: ALWAYS queue GoToRegion, even for same-region repeats
-        -- The playhead must jump back to the start of the region
-        reaper.ShowConsoleMsg(string.format("[TRANS] Queuing GoToRegion(%d) - %.2fs to end\n", region.rid, time_to_end))
+        Logger.debug("TRANSPORT", "Queuing GoToRegion(%d) - %.2fs to end", region.rid, time_to_end)
         self.transport:_seek_to_region(region.rid)
         self.state.goto_region_queued = true
         self.state.goto_region_target = self.state.next_idx
       end
     end
   elseif time_to_end > 0.5 then
-    -- Reset if we're far from end (allows quantize to work)
     self.state.goto_region_queued = false
     self.state.goto_region_target = nil
   end

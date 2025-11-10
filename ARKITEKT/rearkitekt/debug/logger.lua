@@ -9,13 +9,19 @@ local max_entries = 1000
 local start_index = 1
 local count = 0
 
-local function add_entry(level, category, message, data)
+local function add_entry(level, category, message, ...)
+  -- Format message with varargs if provided
+  local formatted_message = message or ""
+  if select('#', ...) > 0 then
+    formatted_message = string.format(message, ...)
+  end
+  
   local entry = {
     time = reaper.time_precise(),
     level = level,
     category = category or "SYSTEM",
-    message = message or "",
-    data = data,
+    message = formatted_message,
+    data = nil,
     expanded = false,
   }
   
@@ -28,20 +34,20 @@ local function add_entry(level, category, message, data)
   end
 end
 
-function M.info(category, message, data)
-  add_entry("INFO", category, message, data)
+function M.info(category, message, ...)
+  add_entry("INFO", category, message, ...)
 end
 
-function M.debug(category, message, data)
-  add_entry("DEBUG", category, message, data)
+function M.debug(category, message, ...)
+  add_entry("DEBUG", category, message, ...)
 end
 
-function M.warn(category, message, data)
-  add_entry("WARN", category, message, data)
+function M.warn(category, message, ...)
+  add_entry("WARN", category, message, ...)
 end
 
-function M.error(category, message, data)
-  add_entry("ERROR", category, message, data)
+function M.error(category, message, ...)
+  add_entry("ERROR", category, message, ...)
 end
 
 function M.profile(category, duration_ms)

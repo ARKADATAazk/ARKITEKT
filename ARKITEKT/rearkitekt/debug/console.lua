@@ -1,8 +1,7 @@
 -- @noindex
 -- rearkitekt/debug/console.lua
 -- Visual debug console widget - Public API
---
--- This is a thin wrapper. Implementation details in _console_widget.lua
+-- Complete wrapper for console widget implementation
 
 local ConsoleWidget = require('rearkitekt.debug._console_widget')
 
@@ -28,24 +27,44 @@ end
 
 --- Set the log level filter
 -- @param console Console instance
--- @param category string One of: "All", "INFO", "DEBUG", "WARN", "ERROR", "PROFILE"
-function M.set_filter(console, category)
+-- @param level string One of: "All", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "PROFILE"
+function M.set_level_filter(console, level)
   if not console then
-    error("Console.set_filter() requires console instance")
+    error("Console.set_level_filter() requires console instance")
   end
-  local valid = {All=true, INFO=true, DEBUG=true, WARN=true, ERROR=true, PROFILE=true}
-  if not valid[category] then
-    error("Invalid filter category: " .. tostring(category))
+  local valid = {All=true, TRACE=true, DEBUG=true, INFO=true, WARN=true, ERROR=true, FATAL=true, PROFILE=true}
+  if not valid[level] then
+    error("Invalid filter level: " .. tostring(level))
+  end
+  console.filter_level = level
+end
+
+--- Get the current level filter
+-- @param console Console instance
+-- @return string Current filter level
+function M.get_level_filter(console)
+  if not console then
+    error("Console.get_level_filter() requires console instance")
+  end
+  return console.filter_level
+end
+
+--- Set the category filter
+-- @param console Console instance
+-- @param category string One of: "All", "ENGINE", "GUI", "STATE", "BRIDGE", etc.
+function M.set_category_filter(console, category)
+  if not console then
+    error("Console.set_category_filter() requires console instance")
   end
   console.filter_category = category
 end
 
---- Get the current filter
+--- Get the current category filter
 -- @param console Console instance
 -- @return string Current filter category
-function M.get_filter(console)
+function M.get_category_filter(console)
   if not console then
-    error("Console.get_filter() requires console instance")
+    error("Console.get_category_filter() requires console instance")
   end
   return console.filter_category
 end

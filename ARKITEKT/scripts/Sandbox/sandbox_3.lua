@@ -134,7 +134,7 @@ Shell.run({
     end
     
     if console.panel and console.panel.filter then
-      Console.set_filter(console, console.panel.filter.dropdown_value or "All")
+      Console.set_category_filter(console, console.panel.filter.dropdown_value or "All")
     end
     
     if console.panel and console.panel.search then

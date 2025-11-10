@@ -1,6 +1,6 @@
 -- @noindex
 -- ReArkitekt/app/titlebar.lua
--- MODIFIED: Use regular font for version, with optional size override
+-- MODIFIED: Added CTRL+ALT+CLICK to open debug console
 -- ADDED: CTRL+SHIFT+ALT+CLICK on icon to open Lua profiler
 -- UPDATED: ImGui 0.10 font size handling
 
@@ -209,8 +209,17 @@ function M.new(opts)
         local icon_button_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
         
         if icon_button_clicked then
+          local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
+          local alt_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Alt)
           local shift_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
-          if shift_down then
+          
+          if ctrl_down and alt_down then
+            -- CTRL+ALT+CLICK: Open debug console
+            local ok, ConsoleWindow = pcall(require, 'rearkitekt.debug.console_window')
+            if ok and ConsoleWindow and ConsoleWindow.launch then
+              ConsoleWindow.launch()
+            end
+          elseif shift_down then
             icon_shift_clicked = true
           else
             icon_clicked = true
@@ -232,7 +241,7 @@ function M.new(opts)
         self:_draw_icon(ctx, icon_x, icon_y, draw_color)
         
         if icon_hovered then
-          ImGui.SetTooltip(ctx, "Click: Open Hub\nShift+Click: Show Metrics")
+          ImGui.SetTooltip(ctx, "Click: Open Hub\nShift+Click: Show Metrics\nCtrl+Alt+Click: Debug Console")
         end
         
         title_x_offset = self.icon_size + self.icon_spacing

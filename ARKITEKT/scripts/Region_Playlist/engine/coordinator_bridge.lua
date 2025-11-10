@@ -1,11 +1,13 @@
 -- @noindex
 -- Region_Playlist/engine/coordinator_bridge.lua
 -- Sequence-driven coordinator bridge that lazily expands playlists on demand
+-- MODIFIED: Integrated Logger for debug output
 
 local Engine = require("Region_Playlist.engine.core")
 local Playback = require("Region_Playlist.engine.playback")
 local RegionState = require("Region_Playlist.storage.state")
 local SequenceExpander = require("Region_Playlist.app.sequence_expander")
+local Logger = require("rearkitekt.debug.logger")
 
 local M = {}
 
@@ -33,7 +35,7 @@ function M.create(opts)
     sequence_cache = {},
     sequence_cache_dirty = true,
     sequence_lookup = {},
-    playlist_ranges = {},  -- Maps playlist_key -> {start_idx, end_idx, playlist_id}
+    playlist_ranges = {},
     _last_known_item_key = nil,
     _last_reported_loop_key = nil,
     _last_reported_loop = nil,
@@ -107,21 +109,16 @@ function M.create(opts)
     bridge.sequence_lookup = {}
     bridge.playlist_ranges = {}
     
-    -- Map region item keys to their indices
-    -- CRITICAL FIX: Only store FIRST occurrence of each key
     for idx, entry in ipairs(sequence) do
       if entry.item_key and not bridge.sequence_lookup[entry.item_key] then
         bridge.sequence_lookup[entry.item_key] = idx
-        reaper.ShowConsoleMsg(string.format("[BRIDGE] Mapping key '%s' -> idx %d\n", entry.item_key, idx))
+        Logger.debug("BRIDGE", "Mapping key '%s' -> idx %d", entry.item_key, idx)
       end
     end
     
-    reaper.ShowConsoleMsg("[BRIDGE] Final sequence_lookup:\n")
-    for key, idx in pairs(bridge.sequence_lookup) do
-      reaper.ShowConsoleMsg(string.format("  '%s' -> %d\n", key, idx))
-    end
+    Logger.debug("BRIDGE", "Final sequence_lookup built with %d entries", 
+      (function() local count = 0; for _ in pairs(bridge.sequence_lookup) do count = count + 1 end; return count end)())
     
-    -- Store playlist ranges and add quick lookup to first index
     for playlist_key, range_info in pairs(playlist_map) do
       bridge.playlist_ranges[playlist_key] = range_info
       if not bridge.sequence_lookup[playlist_key] then
@@ -311,7 +308,6 @@ function M.create(opts)
     local current_idx = self.engine.state and self.engine.state.current_idx or -1
     if current_idx < 1 then return nil end
 
-    -- Find which playlist range contains the current index
     for playlist_key, range_info in pairs(self.playlist_ranges) do
       if current_idx >= range_info.start_idx and current_idx <= range_info.end_idx then
         return playlist_key
@@ -347,12 +343,10 @@ function M.create(opts)
           
           if not found_current then
             if entry.rid == current_rid then
-              -- Add partial progress through current region
               local region_elapsed = math.max(0, playpos - region.start)
               elapsed_duration = elapsed_duration + math.min(region_elapsed, region_duration)
               found_current = true
             else
-              -- Add full duration of completed regions
               elapsed_duration = elapsed_duration + region_duration
             end
           end
@@ -385,11 +379,9 @@ function M.create(opts)
         local region = self.engine.state.region_cache[entry.rid]
         if region then
           if entry.rid == current_rid then
-            -- Add remaining time in current region
             remaining = remaining + math.max(0, region["end"] - playpos)
             found_current = true
           elseif found_current then
-            -- Add full duration of upcoming regions
             remaining = remaining + (region["end"] - region.start)
           end
         end

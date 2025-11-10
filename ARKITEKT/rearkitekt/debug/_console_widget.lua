@@ -212,15 +212,18 @@ function M.new(config)
   
   local function draw_log_entries(ctx)
     local entries = Logger.get_entries()
-    local dl = ImGui.GetWindowDrawList(ctx)
     
+    -- Build complete text buffer with filtered entries
+    local text_lines = {}
     for _, entry in ipairs(entries) do
       local show = true
       
+      -- Filter by level
       if console.filter_category ~= "All" and entry.level ~= console.filter_category then
         show = false
       end
       
+      -- Filter by search text
       if console.search_text ~= "" then
         local search_lower = console.search_text:lower()
         local text = (entry.message .. entry.category):lower()
@@ -230,35 +233,27 @@ function M.new(config)
       end
       
       if show then
-        local color = LEVEL_COLORS[entry.level] or COLORS.grey_60
-        local icon = LEVEL_ICONS[entry.level] or "○"
-        
-        local time_str = format_time(entry.time)
-        local level_str = string.format("[%s%s]", icon, entry.level)
-        local category_str = entry.category
-        
-        local sx, sy = ImGui.GetCursorScreenPos(ctx)
-        local x = sx
-        
-        ImGui.DrawList_AddText(dl, x, sy, COLORS.grey_52, time_str)
-        x = x + 90
-        
-        ImGui.DrawList_AddText(dl, x, sy, color, level_str)
-        x = x + 65
-        
-        ImGui.DrawList_AddText(dl, x, sy, COLORS.grey_60, category_str)
-        x = x + 80
-        
         local msg_str = entry.message
         if entry.data then
           msg_str = msg_str .. " {...}"
         end
-        
-        ImGui.DrawList_AddText(dl, x, sy, COLORS.grey_84, msg_str)
-        
-        ImGui.Dummy(ctx, 0, 16)
+        table.insert(text_lines, msg_str)
       end
     end
+    
+    local full_text = table.concat(text_lines, "\n")
+    
+    -- Use InputTextMultiline for proper text selection
+    local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
+    
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0x00000000)  -- Transparent background
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0x00000000)
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0x00000000)
+    
+    local flags = ImGui.InputTextFlags_ReadOnly
+    ImGui.InputTextMultiline(ctx, "##console_text", full_text, avail_w, avail_h, flags)
+    
+    ImGui.PopStyleColor(ctx, 3)
   end
   
   local function draw_footer(ctx, w)
