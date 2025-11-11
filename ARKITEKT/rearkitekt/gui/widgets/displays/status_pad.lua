@@ -21,8 +21,8 @@ local DEFAULTS = {
   icon_box_size   = 18,
   icon_area_width = 45,
   text_padding_x       = 12,
-  text_primary_size    = 0.95,
-  text_secondary_size  = 0.85,
+  text_primary_size    = 1.0,
+  text_secondary_size  = 1.0,
   text_line_spacing    = 2,
   hover_animation_speed = 10.0,
   icons = {
@@ -32,55 +32,13 @@ local DEFAULTS = {
   },
 }
 
-local FontPool = {}
-local function _scale_key(scale) return string.format('%.3f', scale or 1.0) end
-local function _get_scaled_font(ctx, rel_scale)
-  rel_scale = rel_scale or 1.0
-  local base_px = ImGui.GetFontSize(ctx) or 13
-  local pool = FontPool[ctx]
-  if not pool or pool.base_px ~= base_px then
-    pool = { base_px = base_px, fonts = {} }
-    FontPool[ctx] = pool
-  end
-  local key = _scale_key(rel_scale)
-  local font = pool.fonts[key]
-  if font == nil then
-    local px = math.max(1, math.floor(base_px * rel_scale + 0.5))
-    local created = ImGui.CreateFont('sans-serif', px)
-    if created then
-      ImGui.Attach(ctx, created)
-      pool.fonts[key] = created
-      font = created
-    else
-      pool.fonts[key] = false
-      font = nil
-    end
-  elseif font == false then font = nil end
-  return font
+local function _measure_text(ctx, text)
+  local w, h = ImGui.CalcTextSize(ctx, text or '')
+  return w, h
 end
 
-local function _measure_text(ctx, text, rel_scale)
-  local font = _get_scaled_font(ctx, rel_scale)
-  if font then
-    ImGui.PushFont(ctx, font, 1)
-    local w, h = ImGui.CalcTextSize(ctx, text or '')
-    ImGui.PopFont(ctx)
-    return w, h
-  else
-    local w, h = ImGui.CalcTextSize(ctx, text or '')
-    return w * (rel_scale or 1.0), h * (rel_scale or 1.0)
-  end
-end
-
-local function _draw_text_scaled_clipped(ctx, text, x, y, max_w, color, rel_scale)
-  local font = _get_scaled_font(ctx, rel_scale)
-  if font then
-    ImGui.PushFont(ctx, font, 1)
-    Draw.text_clipped(ctx, text, x, y, max_w, color)
-    ImGui.PopFont(ctx)
-  else
-    Draw.text_clipped(ctx, text, x, y, max_w, color)
-  end
+local function _draw_text_clipped(ctx, text, x, y, max_w, color)
+  Draw.text_clipped(ctx, text, x, y, max_w, color)
 end
 
 local StatusPad = {}
@@ -162,19 +120,16 @@ function StatusPad:draw(ctx, x, y)
   local secondary_color = self.state and hexrgb("#AAAAAA") or hexrgb("#888888")
 
   if self.secondary_text and self.secondary_text ~= "" then
-    local primary_scale   = cfg.text_primary_size
-    local secondary_scale = cfg.text_secondary_size
-    local _, primary_h   = _measure_text(ctx, self.primary_text, primary_scale)
-    local _, secondary_h = _measure_text(ctx, self.secondary_text, secondary_scale)
+    local _, primary_h   = _measure_text(ctx, self.primary_text)
+    local _, secondary_h = _measure_text(ctx, self.secondary_text)
     local total_h = primary_h + secondary_h + cfg.text_line_spacing
     local text_y  = y1 + (self.height - total_h) / 2
-    _draw_text_scaled_clipped(ctx, self.primary_text, text_x, text_y, available_width, primary_color, primary_scale)
-    _draw_text_scaled_clipped(ctx, self.secondary_text, text_x, text_y + primary_h + cfg.text_line_spacing, available_width, secondary_color, secondary_scale)
+    _draw_text_clipped(ctx, self.primary_text, text_x, text_y, available_width, primary_color)
+    _draw_text_clipped(ctx, self.secondary_text, text_x, text_y + primary_h + cfg.text_line_spacing, available_width, secondary_color)
   else
-    local scale  = cfg.text_primary_size
-    local _, th  = _measure_text(ctx, self.primary_text, scale)
+    local _, th  = _measure_text(ctx, self.primary_text)
     local text_y = y1 + (self.height - th) / 2
-    _draw_text_scaled_clipped(ctx, self.primary_text, text_x, text_y, available_width, primary_color, scale)
+    _draw_text_clipped(ctx, self.primary_text, text_x, text_y, available_width, primary_color)
   end
 
   ImGui.SetCursorScreenPos(ctx, x1, y1)

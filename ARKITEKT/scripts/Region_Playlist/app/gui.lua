@@ -15,6 +15,8 @@ local TransportWidgets = require("Region_Playlist.widgets._temp_transportwidgets
 local M = {}
 local GUI = {}
 GUI.__index = GUI
+local hexrgb = Colors.hexrgb
+
 
 function M.create(State, AppConfig, settings)
   local self = setmetatable({

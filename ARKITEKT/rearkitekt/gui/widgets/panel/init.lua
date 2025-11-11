@@ -414,6 +414,9 @@ function Panel:begin_draw(ctx)
   local child_w = w - (border_inset * 2) - scrollbar_width
   local child_h = (content_y2 - content_y1) - (border_inset * 2)
   
+  if child_w < 1 then child_w = 1 end
+  if child_h < 1 then child_h = 1 end
+  
   self.child_width = child_w
   self.child_height = child_h
   self.actual_child_height = child_h
@@ -439,7 +442,13 @@ function Panel:begin_draw(ctx)
     self.visible_bounds = {win_x, win_y, win_x + win_w, win_y + win_h}
     
     if self.config.padding > 0 then
-      ImGui.SetCursorPos(ctx, self.config.padding, self.config.padding)
+      local px = self.config.padding
+      local py = self.config.padding
+      if px > child_w - 1 then px = math.max(0, child_w - 1) end
+      if py > child_h - 1 then py = math.max(0, child_h - 1) end
+      if px < 0 then px = 0 end
+      if py < 0 then py = 0 end
+      ImGui.SetCursorPos(ctx, px, py)
     end
   end
   

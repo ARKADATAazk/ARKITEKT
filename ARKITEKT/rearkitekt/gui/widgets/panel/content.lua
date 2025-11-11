@@ -51,6 +51,7 @@ function M.end_child(ctx, container)
     end
   end
   
+  ImGui.Dummy(ctx, 0, 0)
   ImGui.EndChild(ctx)
   ImGui.PopStyleColor(ctx, 1)
   

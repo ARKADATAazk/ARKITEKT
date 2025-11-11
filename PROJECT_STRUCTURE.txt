@@ -13,17 +13,17 @@ ARKITEKT-Project/
 │   │   ├── app/
 │   │   │   ├── chrome/
 │   │   │   │   └── status_bar/
-│   │   │   │       ├── config.lua (139 lines)
+│   │   │   │       ├── config.lua (142 lines)
 │   │   │   │       ├── init.lua (2 lines)
-│   │   │   │       └── widget.lua (318 lines)
-│   │   │   ├── config.lua (139 lines)
+│   │   │   │       └── widget.lua (320 lines)
+│   │   │   ├── config.lua (134 lines)
 │   │   │   ├── hub.lua (93 lines)
 │   │   │   ├── icon.lua (124 lines)
 │   │   │   ├── overlay.lua (381 lines)
 │   │   │   ├── runtime.lua (69 lines)
 │   │   │   ├── shell.lua (307 lines)
-│   │   │   ├── titlebar.lua (517 lines)
-│   │   │   └── window.lua (779 lines)
+│   │   │   ├── titlebar.lua (519 lines)
+│   │   │   └── window.lua (786 lines)
 │   │   ├── core/
 │   │   │   ├── theme_manager/
 │   │   │   │   └── lua (0 lines)
@@ -34,9 +34,9 @@ ARKITEKT-Project/
 │   │   │   ├── settings.lua (118 lines)
 │   │   │   └── undo_manager.lua (70 lines)
 │   │   ├── debug/
-│   │   │   ├── _console_widget.lua (360 lines)
+│   │   │   ├── _console_widget.lua (363 lines)
 │   │   │   ├── console.lua (170 lines)
-│   │   │   ├── console_window.lua (86 lines)
+│   │   │   ├── console_window.lua (89 lines)
 │   │   │   ├── logger.lua (86 lines)
 │   │   │   └── profiler_init.lua (97 lines)
 │   │   ├── fonts/
@@ -55,17 +55,17 @@ ARKITEKT-Project/
 │   │   │   │   │   ├── rect_track.lua (136 lines)
 │   │   │   │   │   └── track.lua (53 lines)
 │   │   │   │   ├── animations/
-│   │   │   │   │   ├── destroy.lua (149 lines)
+│   │   │   │   │   ├── destroy.lua (152 lines)
 │   │   │   │   │   └── spawn.lua (58 lines)
 │   │   │   │   ├── dnd/
-│   │   │   │   │   ├── config.lua (91 lines)
+│   │   │   │   │   ├── config.lua (94 lines)
 │   │   │   │   │   ├── drag_indicator.lua (219 lines)
-│   │   │   │   │   └── drop_indicator.lua (113 lines)
+│   │   │   │   │   └── drop_indicator.lua (116 lines)
 │   │   │   │   ├── easing.lua (94 lines)
 │   │   │   │   ├── effects.lua (54 lines)
 │   │   │   │   ├── marching_ants.lua (100 lines)
-│   │   │   │   ├── tile_fx.lua (214 lines)
-│   │   │   │   ├── tile_fx_config.lua (85 lines)
+│   │   │   │   ├── tile_fx.lua (215 lines)
+│   │   │   │   ├── tile_fx_config.lua (88 lines)
 │   │   │   │   └── tile_motion.lua (58 lines)
 │   │   │   ├── systems/
 │   │   │   │   ├── height_stabilizer.lua (74 lines)
@@ -78,21 +78,21 @@ ARKITEKT-Project/
 │   │   │   │   ├── chip_list/
 │   │   │   │   │   └── list.lua (305 lines)
 │   │   │   │   ├── component/
-│   │   │   │   │   └── chip.lua (339 lines)
+│   │   │   │   │   └── chip.lua (340 lines)
 │   │   │   │   ├── controls/
 │   │   │   │   │   ├── button.lua (241 lines)
-│   │   │   │   │   ├── context_menu.lua (106 lines)
+│   │   │   │   │   ├── context_menu.lua (108 lines)
 │   │   │   │   │   ├── corner_button.lua (162 lines)
 │   │   │   │   │   ├── dropdown.lua (417 lines)
-│   │   │   │   │   ├── scrollbar.lua (239 lines)
-│   │   │   │   │   ├── search_input.lua (236 lines)
-│   │   │   │   │   ├── style_defaults.lua (269 lines)
-│   │   │   │   │   └── tooltip.lua (129 lines)
+│   │   │   │   │   ├── scrollbar.lua (241 lines)
+│   │   │   │   │   ├── search_input.lua (239 lines)
+│   │   │   │   │   ├── style_defaults.lua (272 lines)
+│   │   │   │   │   └── tooltip.lua (132 lines)
 │   │   │   │   ├── displays/
-│   │   │   │   │   └── status_pad.lua (192 lines)
+│   │   │   │   │   └── status_pad.lua (148 lines)
 │   │   │   │   ├── grid/
-│   │   │   │   │   ├── animation.lua (101 lines)
-│   │   │   │   │   ├── core.lua (660 lines)
+│   │   │   │   │   ├── animation.lua (104 lines)
+│   │   │   │   │   ├── core.lua (661 lines)
 │   │   │   │   │   ├── dnd_state.lua (113 lines)
 │   │   │   │   │   ├── drop_zones.lua (277 lines)
 │   │   │   │   │   ├── grid_bridge.lua (281 lines)
@@ -100,50 +100,50 @@ ARKITEKT-Project/
 │   │   │   │   │   ├── layout.lua (101 lines)
 │   │   │   │   │   └── rendering.lua (92 lines)
 │   │   │   │   ├── navigation/
-│   │   │   │   │   └── menutabs.lua (269 lines)
+│   │   │   │   │   └── menutabs.lua (271 lines)
 │   │   │   │   ├── nodal/
 │   │   │   │   │   ├── core/
-│   │   │   │   │   │   ├── connection.lua (231 lines)
-│   │   │   │   │   │   ├── node.lua (138 lines)
+│   │   │   │   │   │   ├── connection.lua (234 lines)
+│   │   │   │   │   │   ├── node.lua (141 lines)
 │   │   │   │   │   │   └── port.lua (65 lines)
 │   │   │   │   │   ├── rendering/
-│   │   │   │   │   │   ├── connection_renderer.lua (215 lines)
-│   │   │   │   │   │   ├── node_renderer.lua (334 lines)
+│   │   │   │   │   │   ├── connection_renderer.lua (216 lines)
+│   │   │   │   │   │   ├── node_renderer.lua (335 lines)
 │   │   │   │   │   │   └── port_renderer.lua (26 lines)
 │   │   │   │   │   ├── systems/
 │   │   │   │   │   │   ├── auto_layout.lua (103 lines)
 │   │   │   │   │   │   ├── bezier.lua (77 lines)
 │   │   │   │   │   │   └── viewport.lua (261 lines)
-│   │   │   │   │   ├── canvas.lua (527 lines)
-│   │   │   │   │   └── config.lua (157 lines)
+│   │   │   │   │   ├── canvas.lua (530 lines)
+│   │   │   │   │   └── config.lua (160 lines)
 │   │   │   │   ├── overlay/
-│   │   │   │   │   ├── config.lua (139 lines)
-│   │   │   │   │   ├── manager.lua (178 lines)
-│   │   │   │   │   └── sheet.lua (125 lines)
+│   │   │   │   │   ├── config.lua (142 lines)
+│   │   │   │   │   ├── manager.lua (179 lines)
+│   │   │   │   │   └── sheet.lua (126 lines)
 │   │   │   │   ├── package_tiles/
 │   │   │   │   │   ├── grid.lua (227 lines)
 │   │   │   │   │   ├── micromanage.lua (127 lines)
-│   │   │   │   │   └── renderer.lua (267 lines)
+│   │   │   │   │   └── renderer.lua (268 lines)
 │   │   │   │   ├── panel/
 │   │   │   │   │   ├── header/
-│   │   │   │   │   │   ├── init.lua (64 lines)
+│   │   │   │   │   │   ├── init.lua (67 lines)
 │   │   │   │   │   │   ├── layout.lua (415 lines)
-│   │   │   │   │   │   ├── separator.lua (33 lines)
-│   │   │   │   │   │   └── tab_strip.lua (852 lines)
+│   │   │   │   │   │   ├── separator.lua (36 lines)
+│   │   │   │   │   │   └── tab_strip.lua (886 lines)
 │   │   │   │   │   ├── background.lua (82 lines)
-│   │   │   │   │   ├── config.lua (284 lines)
-│   │   │   │   │   ├── content.lua (58 lines)
-│   │   │   │   │   ├── init.lua (672 lines)
+│   │   │   │   │   ├── config.lua (287 lines)
+│   │   │   │   │   ├── content.lua (62 lines)
+│   │   │   │   │   ├── init.lua (681 lines)
 │   │   │   │   │   └── tab_animator.lua (107 lines)
 │   │   │   │   ├── sliders/
-│   │   │   │   │   └── hue.lua (276 lines)
+│   │   │   │   │   └── hue.lua (279 lines)
 │   │   │   │   ├── transport/
 │   │   │   │   │   ├── transport_container.lua (137 lines)
-│   │   │   │   │   └── transport_fx.lua (107 lines)
-│   │   │   │   ├── close_button.lua (148 lines)
-│   │   │   │   ├── colored_text_view.lua (496 lines)
+│   │   │   │   │   └── transport_fx.lua (108 lines)
+│   │   │   │   ├── close_button.lua (149 lines)
+│   │   │   │   ├── colored_text_view.lua (499 lines)
 │   │   │   │   └── selection_rectangle.lua (124 lines)
-│   │   │   ├── draw.lua (114 lines)
+│   │   │   ├── draw.lua (117 lines)
 │   │   │   ├── images.lua (284 lines)
 │   │   │   └── style.lua (146 lines)
 │   │   ├── icons/
@@ -153,7 +153,7 @@ ARKITEKT-Project/
 │   │   │   ├── rearkitekt@2.png
 │   │   │   └── rearkitekt@3.png
 │   │   ├── reaper/
-│   │   │   ├── regions.lua (83 lines)
+│   │   │   ├── regions.lua (86 lines)
 │   │   │   ├── timing.lua (113 lines)
 │   │   │   └── transport.lua (97 lines)
 │   │   ├── themes/
@@ -167,47 +167,47 @@ ARKITEKT-Project/
 │   ├── scripts/
 │   │   ├── ColorPalette/
 │   │   │   ├── app/
-│   │   │   │   ├── controller.lua (235 lines)
+│   │   │   │   ├── controller.lua (238 lines)
 │   │   │   │   ├── gui.lua (443 lines)
 │   │   │   │   └── state.lua (273 lines)
 │   │   │   ├── widgets/
-│   │   │   │   └── color_grid.lua (143 lines)
-│   │   │   └── ARK_ColorPalette.lua (116 lines)
+│   │   │   │   └── color_grid.lua (144 lines)
+│   │   │   └── ARK_ColorPalette.lua (119 lines)
 │   │   ├── demos/
-│   │   │   ├── controls_test.lua (238 lines)
-│   │   │   ├── demo.lua (383 lines)
-│   │   │   ├── demo2.lua (210 lines)
-│   │   │   ├── demo3.lua (148 lines)
-│   │   │   ├── demo_modal_overlay.lua (451 lines)
-│   │   │   └── widget_demo.lua (250 lines)
+│   │   │   ├── controls_test.lua (241 lines)
+│   │   │   ├── demo.lua (386 lines)
+│   │   │   ├── demo2.lua (213 lines)
+│   │   │   ├── demo3.lua (151 lines)
+│   │   │   ├── demo_modal_overlay.lua (454 lines)
+│   │   │   └── widget_demo.lua (253 lines)
 │   │   ├── ItemPicker/
 │   │   │   ├── app/
 │   │   │   │   ├── app.zip
 │   │   │   │   ├── cache_manager.lua (170 lines)
-│   │   │   │   ├── config.lua (59 lines)
+│   │   │   │   ├── config.lua (62 lines)
 │   │   │   │   ├── disabled_items.lua (62 lines)
-│   │   │   │   ├── drag_drop.lua (145 lines)
+│   │   │   │   ├── drag_drop.lua (148 lines)
 │   │   │   │   ├── grid_adapter.lua (333 lines)
 │   │   │   │   ├── gui.lua (153 lines)
 │   │   │   │   ├── job_queue.lua (121 lines)
-│   │   │   │   ├── main_ui.lua (146 lines)
+│   │   │   │   ├── main_ui.lua (149 lines)
 │   │   │   │   ├── pickle.lua (85 lines)
 │   │   │   │   ├── reaper_interface.lua (224 lines)
 │   │   │   │   ├── shortcuts.lua (91 lines)
-│   │   │   │   ├── tile_rendering.lua (444 lines)
-│   │   │   │   ├── ui_content.lua (212 lines)
+│   │   │   │   ├── tile_rendering.lua (447 lines)
+│   │   │   │   ├── ui_content.lua (215 lines)
 │   │   │   │   ├── utils.lua (35 lines)
-│   │   │   │   └── visualization.lua (370 lines)
+│   │   │   │   └── visualization.lua (373 lines)
 │   │   │   └── ARK_ItemPicker.lua (226 lines)
 │   │   ├── Region_Playlist/
 │   │   │   ├── app/
-│   │   │   │   ├── config.lua (349 lines)
+│   │   │   │   ├── config.lua (379 lines)
 │   │   │   │   ├── controller.lua (367 lines)
-│   │   │   │   ├── gui.lua (969 lines)
+│   │   │   │   ├── gui.lua (821 lines)
 │   │   │   │   ├── sequence_expander.lua (153 lines)
 │   │   │   │   ├── shortcuts.lua (80 lines)
 │   │   │   │   ├── state.lua (664 lines)
-│   │   │   │   └── status.lua (59 lines)
+│   │   │   │   └── status.lua (62 lines)
 │   │   │   ├── engine/
 │   │   │   │   ├── coordinator_bridge.lua (428 lines)
 │   │   │   │   ├── core.lua (194 lines)
@@ -222,28 +222,29 @@ ARKITEKT-Project/
 │   │   │   ├── widgets/
 │   │   │   │   ├── controls/
 │   │   │   │   │   └── controls_widget.lua (151 lines)
-│   │   │   │   └── region_tiles/
-│   │   │   │       ├── renderers/
-│   │   │   │       │   ├── active.lua (247 lines)
-│   │   │   │       │   ├── base.lua (279 lines)
-│   │   │   │       │   └── pool.lua (343 lines)
-│   │   │   │       ├── active_grid_factory.lua (220 lines)
-│   │   │   │       ├── coordinator.lua (522 lines)
-│   │   │   │       ├── coordinator_render.lua (190 lines)
-│   │   │   │       ├── pool_grid_factory.lua (193 lines)
-│   │   │   │       └── selector.lua (98 lines)
+│   │   │   │   ├── region_tiles/
+│   │   │   │   │   ├── renderers/
+│   │   │   │   │   │   ├── active.lua (248 lines)
+│   │   │   │   │   │   ├── base.lua (280 lines)
+│   │   │   │   │   │   └── pool.lua (343 lines)
+│   │   │   │   │   ├── active_grid_factory.lua (223 lines)
+│   │   │   │   │   ├── coordinator.lua (522 lines)
+│   │   │   │   │   ├── coordinator_render.lua (190 lines)
+│   │   │   │   │   ├── pool_grid_factory.lua (196 lines)
+│   │   │   │   │   └── selector.lua (99 lines)
+│   │   │   │   └── _temp_transportwidgets.lua (375 lines)
 │   │   │   └── ARK_RegionPlaylist.lua (103 lines)
 │   │   └── Sandbox/
-│   │       ├── sandbox_1.lua (237 lines)
-│   │       ├── sandbox_2.lua (181 lines)
-│   │       ├── sandbox_3.lua (178 lines)
+│   │       ├── sandbox_1.lua (238 lines)
+│   │       ├── sandbox_2.lua (182 lines)
+│   │       ├── sandbox_3.lua (179 lines)
 │   │       ├── sandbox_4.lua (519 lines)
-│   │       ├── sandbox_5.lua (431 lines)
+│   │       ├── sandbox_5.lua (432 lines)
 │   │       ├── sandbox_6.lua (465 lines)
 │   │       ├── sandbox_7.lua (0 lines)
 │   │       ├── sandbox_8.lua (0 lines)
 │   │       └── sandbox_9.lua (0 lines)
-│   └── ARKITEKT.lua (353 lines)
+│   └── ARKITEKT.lua (356 lines)
 ├── FLOWS/
 │   ├── features/
 │   │   ├── ARKITEKT_FLOW.md (1711 lines)
@@ -256,6 +257,9 @@ ARKITEKT-Project/
 │   ├── arkitekt-action-plan.md (415 lines)
 │   ├── arkitekt-final-strategy.md (876 lines)
 │   └── arkitekt_strategy.md (249 lines)
+├── Utils/
+│   └── Python/
+│       └── hexrgb.py (100 lines)
 ├── .codemap (59 lines)
 ├── .gitignore (1 lines)
 ├── .reapack-index.conf (4 lines)
@@ -276,9 +280,9 @@ ARKITEKT-Project/
 ├── refactoring_templates.md (160 lines)
 └── System_Prompt_ARKITEKT_OnePager.md (66 lines)
 
-Total files: 209
-Total lines (with comments): 66,194
-Total lines (code only): 56,312
-Code/Total Ratio: 85.1% is actual code
+Total files: 211
+Total lines (with comments): 66,707
+Total lines (code only): 56,652
+Code/Total Ratio: 84.9% is actual code
 
 Generated: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\PROJECT_STRUCTURE.txt
