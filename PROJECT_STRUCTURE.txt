@@ -21,7 +21,7 @@ ARKITEKT-Project/
 │   │   │   ├── icon.lua (124 lines)
 │   │   │   ├── overlay.lua (381 lines)
 │   │   │   ├── runtime.lua (69 lines)
-│   │   │   ├── shell.lua (300 lines)
+│   │   │   ├── shell.lua (307 lines)
 │   │   │   ├── titlebar.lua (517 lines)
 │   │   │   └── window.lua (779 lines)
 │   │   ├── core/
@@ -34,9 +34,9 @@ ARKITEKT-Project/
 │   │   │   ├── settings.lua (118 lines)
 │   │   │   └── undo_manager.lua (70 lines)
 │   │   ├── debug/
-│   │   │   ├── _console_widget.lua (390 lines)
+│   │   │   ├── _console_widget.lua (360 lines)
 │   │   │   ├── console.lua (170 lines)
-│   │   │   ├── console_window.lua (72 lines)
+│   │   │   ├── console_window.lua (86 lines)
 │   │   │   ├── logger.lua (86 lines)
 │   │   │   └── profiler_init.lua (97 lines)
 │   │   ├── fonts/
@@ -76,9 +76,9 @@ ARKITEKT-Project/
 │   │   │   │   └── tile_utilities.lua (49 lines)
 │   │   │   ├── widgets/
 │   │   │   │   ├── chip_list/
-│   │   │   │   │   └── list.lua (303 lines)
+│   │   │   │   │   └── list.lua (305 lines)
 │   │   │   │   ├── component/
-│   │   │   │   │   └── chip.lua (333 lines)
+│   │   │   │   │   └── chip.lua (339 lines)
 │   │   │   │   ├── controls/
 │   │   │   │   │   ├── button.lua (241 lines)
 │   │   │   │   │   ├── context_menu.lua (106 lines)
@@ -129,7 +129,7 @@ ARKITEKT-Project/
 │   │   │   │   │   │   ├── init.lua (64 lines)
 │   │   │   │   │   │   ├── layout.lua (415 lines)
 │   │   │   │   │   │   ├── separator.lua (33 lines)
-│   │   │   │   │   │   └── tab_strip.lua (804 lines)
+│   │   │   │   │   │   └── tab_strip.lua (852 lines)
 │   │   │   │   │   ├── background.lua (82 lines)
 │   │   │   │   │   ├── config.lua (284 lines)
 │   │   │   │   │   ├── content.lua (58 lines)
@@ -203,15 +203,15 @@ ARKITEKT-Project/
 │   │   │   ├── app/
 │   │   │   │   ├── config.lua (349 lines)
 │   │   │   │   ├── controller.lua (367 lines)
-│   │   │   │   ├── gui.lua (958 lines)
-│   │   │   │   ├── sequence_expander.lua (120 lines)
+│   │   │   │   ├── gui.lua (969 lines)
+│   │   │   │   ├── sequence_expander.lua (153 lines)
 │   │   │   │   ├── shortcuts.lua (80 lines)
-│   │   │   │   ├── state.lua (617 lines)
+│   │   │   │   ├── state.lua (664 lines)
 │   │   │   │   └── status.lua (59 lines)
 │   │   │   ├── engine/
-│   │   │   │   ├── coordinator_bridge.lua (397 lines)
+│   │   │   │   ├── coordinator_bridge.lua (428 lines)
 │   │   │   │   ├── core.lua (194 lines)
-│   │   │   │   ├── playback.lua (103 lines)
+│   │   │   │   ├── playback.lua (116 lines)
 │   │   │   │   ├── quantize.lua (315 lines)
 │   │   │   │   ├── state.lua (341 lines)
 │   │   │   │   ├── transitions.lua (237 lines)
@@ -268,7 +268,7 @@ ARKITEKT-Project/
 ├── index.xml (183 lines)
 ├── lua_perf_guide.md (391 lines)
 ├── METRICS.json (3855 lines)
-├── PROJECT_FLOW.md (263 lines)
+├── PROJECT_FLOW.md (266 lines)
 ├── PROJECT_STRUCTURE.txt (284 lines)
 ├── README.md (71 lines)
 ├── refactoring ideas (424 lines)
@@ -277,8 +277,8 @@ ARKITEKT-Project/
 └── System_Prompt_ARKITEKT_OnePager.md (66 lines)
 
 Total files: 209
-Total lines (with comments): 66,009
-Total lines (code only): 56,185
+Total lines (with comments): 66,194
+Total lines (code only): 56,312
 Code/Total Ratio: 85.1% is actual code
 
 Generated: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\PROJECT_STRUCTURE.txt

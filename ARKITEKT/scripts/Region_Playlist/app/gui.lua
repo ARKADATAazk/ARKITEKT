@@ -10,6 +10,7 @@ local TransportContainer = require("rearkitekt.gui.widgets.transport.transport_c
 local Sheet = require("rearkitekt.gui.widgets.overlay.sheet")
 local ChipList = require("rearkitekt.gui.widgets.chip_list.list")
 local Config = require('Region_Playlist.app.config')
+local TransportWidgets = require("Region_Playlist.widgets._temp_transportwidgets")
 
 local M = {}
 local GUI = {}
@@ -21,7 +22,6 @@ function M.create(State, AppConfig, settings)
     Config = Config,
     settings = settings,
     region_tiles = nil,
-    layout_button_animator = nil,
     controller = nil,
     transport_container = nil,
     separator_drag_state = {
@@ -30,10 +30,15 @@ function M.create(State, AppConfig, settings)
     },
     quantize_lookahead = Config.QUANTIZE.default_lookahead,
     overflow_modal_search = "",
-    overflow_modal_is_open = false,  -- ADD THIS LINE
+    overflow_modal_is_open = false,
+    
+    -- New transport widgets
+    view_mode_button = TransportWidgets.ViewModeButton.new(Config.TRANSPORT.view_mode),
+    transport_display = TransportWidgets.TransportDisplay.new(Config.TRANSPORT.display),
+    jump_controls = TransportWidgets.JumpControls.new(Config.TRANSPORT.jump),
+    global_controls = TransportWidgets.GlobalControls.new(Config.TRANSPORT.global),
   }, GUI)
   
-  self.layout_button_animator = require('rearkitekt.gui.fx.tile_motion').new(Config.ANIMATION.HOVER_SPEED)
   self.controller = PlaylistController.new(State, settings, State.state.undo_manager)
   
   self.transport_container = TransportContainer.new({
@@ -296,7 +301,7 @@ function GUI:draw_overflow_modal(ctx, window)
       })
       
       if clicked_tab then
-        self.State.set_active_playlist(clicked_tab, true)  -- Move to end
+        self.State.set_active_playlist(clicked_tab, true)
         self:refresh_tabs()
         ImGui.CloseCurrentPopup(ctx)
         self.overflow_modal_is_open = false
@@ -323,7 +328,7 @@ function GUI:draw_overflow_modal(ctx, window)
     return
   end
   
-  -- Original overlay system path - only push once
+  -- Original overlay system path
   if not self.overflow_modal_is_open then
     self.overflow_modal_is_open = true
     
@@ -370,7 +375,7 @@ function GUI:draw_overflow_modal(ctx, window)
           })
           
           if clicked_tab then
-            self.State.set_active_playlist(clicked_tab, true)  -- Move to end
+            self.State.set_active_playlist(clicked_tab, true)
             self:refresh_tabs()
             window.overlay:pop('overflow-tabs')
             self.overflow_modal_is_open = false
@@ -401,245 +406,92 @@ function GUI:draw_overflow_modal(ctx, window)
   end
 end
 
-
-
 function GUI:draw_transport_section(ctx)
   local content_w, content_h = self.transport_container:begin_draw(ctx)
   
-  local spacing = 12
-  local current_x = 0
+  local spacing = self.Config.TRANSPORT.spacing
   
-  ImGui.SetCursorPosX(ctx, current_x)
-  self:draw_layout_toggle_button(ctx)
-  current_x = ImGui.GetCursorPosX(ctx)
+  -- Responsive layout calculations
+  local view_mode_w = self.Config.TRANSPORT.view_mode.size
+  local global_w = self.Config.TRANSPORT.global.pad_width + 16
+  local display_w = content_w - view_mode_w - global_w - spacing * 3
   
-  ImGui.SetCursorPosX(ctx, current_x)
-  self:draw_transport_override_checkbox(ctx)
-  current_x = ImGui.GetCursorPosX(ctx)
-  
-  ImGui.SetCursorPosX(ctx, current_x)
-  self:draw_loop_playlist_checkbox(ctx)
-  current_x = ImGui.GetCursorPosX(ctx)
-  
-  ImGui.Dummy(ctx, 1, 10)
-  
-  local engine = self.State.state.bridge.engine
-  if engine and engine.quantize then
-    local current_mode = engine.quantize:get_quantize_mode()
-    
-    local grid_options = self.Config.QUANTIZE.grid_options
-    
-    local current_idx = 1
-    for i, opt in ipairs(grid_options) do
-      if opt.value == current_mode then
-        current_idx = i
-        break
-      end
-    end
-    
-    ImGui.Text(ctx, "Jump Mode:")
-    ImGui.SameLine(ctx, 0, 8)
-    ImGui.SetNextItemWidth(ctx, 140)
-    
-    if ImGui.BeginCombo(ctx, "##quantize_mode", grid_options[current_idx].label) then
-      for i, opt in ipairs(grid_options) do
-        local is_selected = (i == current_idx)
-        if ImGui.Selectable(ctx, opt.label, is_selected) then
-          engine.quantize:set_quantize_mode(opt.value)
-        end
-        if is_selected then
-          ImGui.SetItemDefaultFocus(ctx)
-        end
-      end
-      ImGui.EndCombo(ctx)
-    end
-    
-    ImGui.SameLine(ctx, 0, 12)
-  end
-  
-  local min_lookahead = 10
-  local max_lookahead = 200
-  
-  if engine and engine.quantize then
-    min_lookahead = engine.quantize.min_lookahead * 1000
-    max_lookahead = engine.quantize.max_lookahead * 1000
-  end
-  
-  ImGui.Text(ctx, "Lookahead (ms):")
-  ImGui.SameLine(ctx, 0, 8)
-  ImGui.SetNextItemWidth(ctx, 120)
-  local changed, new_val = ImGui.SliderDouble(
-    ctx, 
-    "##lookahead", 
-    self.quantize_lookahead * 1000, 
-    min_lookahead,
-    max_lookahead,
-    "%.0f"
-  )
-  if changed then
-    self.quantize_lookahead = new_val / 1000
-  end
-  
-  ImGui.SameLine(ctx, 0, 12)
-  
-  local bridge_state = self.State.state.bridge:get_state()
-  local is_disabled = not bridge_state.is_playing
-  
-  if is_disabled then
-    ImGui.BeginDisabled(ctx)
-  end
-  
-  local button_label = "Jump to Next"
-  if engine and engine.quantize then
-    local mode = engine.quantize:get_quantize_mode()
-    if mode == "measure" then
-      button_label = "Jump on Next Measure"
-    else
-      local grid_val = tonumber(mode)
-      if grid_val == 4.0 then
-        button_label = "Jump on Next Bar"
-      elseif grid_val == 2.0 then
-        button_label = "Jump on Next 1/2"
-      elseif grid_val == 1.0 then
-        button_label = "Jump on Next 1/4"
-      elseif grid_val == 0.5 then
-        button_label = "Jump on Next 1/8"
-      elseif grid_val == 0.25 then
-        button_label = "Jump on Next 1/16"
-      elseif grid_val == 0.125 then
-        button_label = "Jump on Next 1/32"
-      elseif grid_val == 0.0625 then
-        button_label = "Jump on Next 1/64"
-      else
-        button_label = "Jump on Next Grid"
-      end
-    end
-  end
-  
-  if ImGui.Button(ctx, button_label) then
-    self.State.state.bridge:jump_to_next_quantized(self.quantize_lookahead)
-  end
-  
-  if is_disabled then
-    ImGui.EndDisabled(ctx)
-  end
-  
-  if ImGui.IsItemHovered(ctx, ImGui.HoveredFlags_AllowWhenDisabled) then
-    if is_disabled then
-      ImGui.SetTooltip(ctx, "Start playback to enable")
-    else
-      ImGui.SetTooltip(ctx, "Jump to next quantize point")
-    end
-  end
-  
-  self.transport_container:end_draw(ctx)
-end
-
-function GUI:draw_layout_toggle_button(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  local config = self.Config.LAYOUT_BUTTON
-  local btn_w = config.width
-  local btn_h = config.height
+  -- Left: View Mode Button (vertically centered)
+  local view_x = cursor_x
+  local view_y = cursor_y + (content_h - view_mode_w) / 2
   
-  local mx, my = ImGui.GetMousePos(ctx)
-  local is_hovered = mx >= cursor_x and mx < cursor_x + btn_w and my >= cursor_y and my < cursor_y + btn_h
-  
-  self.layout_button_animator:track('btn', 'hover', is_hovered and 1.0 or 0.0, config.animation_speed)
-  local hover_factor = self.layout_button_animator:get('btn', 'hover')
-  
-  local bg_color = Colors.lerp(config.bg_color, config.bg_hover, hover_factor)
-  local border_color = Colors.lerp(config.border_color, config.border_hover, hover_factor)
-  local icon_color = Colors.lerp(config.icon_color, config.icon_hover, hover_factor)
-  
-  ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + btn_w, cursor_y + btn_h, 
-                                bg_color, config.rounding)
-  ImGui.DrawList_AddRect(dl, cursor_x + 0.5, cursor_y + 0.5, cursor_x + btn_w - 0.5, cursor_y + btn_h - 0.5, 
-                        border_color, config.rounding, 0, 1)
-  
-  local padding = 6
-  local icon_x = cursor_x + padding
-  local icon_y = cursor_y + padding
-  local icon_w = btn_w - padding * 2
-  local icon_h = btn_h - padding * 2
-  
-  if self.State.state.layout_mode == 'horizontal' then
-    local bar_h = 3
-    local gap = 2
-    local bar_w = icon_w
-    
-    for i = 0, 2 do
-      local bar_y = icon_y + i * (bar_h + gap)
-      ImGui.DrawList_AddRectFilled(dl, icon_x, bar_y, icon_x + bar_w, bar_y + bar_h, 
-                                    icon_color, 1)
-    end
-  else
-    local bar_w = 3
-    local gap = 2
-    local bar_h = icon_h
-    
-    for i = 0, 2 do
-      local bar_x = icon_x + i * (bar_w + gap)
-      ImGui.DrawList_AddRectFilled(dl, bar_x, icon_y, bar_x + bar_w, icon_y + bar_h, 
-                                    icon_color, 1)
-    end
-  end
-  
-  ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y)
-  local _ = ImGui.InvisibleButton(ctx, "##layout_toggle", btn_w, btn_h)
-  
-  if ImGui.IsItemClicked(ctx, 0) then
+  self.view_mode_button:draw(ctx, view_x, view_y, self.State.state.layout_mode, function()
     self.State.state.layout_mode = (self.State.state.layout_mode == 'horizontal') and 'vertical' or 'horizontal'
     self.region_tiles:set_layout_mode(self.State.state.layout_mode)
     self.State.persist_ui_prefs()
-  end
+  end)
   
-  if ImGui.IsItemHovered(ctx) then
-    local tooltip = self.State.state.layout_mode == 'horizontal' and "Switch to List Mode" or "Switch to Timeline Mode"
-    ImGui.SetTooltip(ctx, tooltip)
-  end
+  -- Center: Transport Display + Jump Controls
+  local display_x = view_x + view_mode_w + spacing
+  local display_y = cursor_y
+  local display_h = content_h - self.Config.TRANSPORT.jump.height - 6
   
-  ImGui.SameLine(ctx, 0, 12)
-end
-
-function GUI:draw_transport_override_checkbox(ctx)
-  local engine = self.State.state.bridge.engine
-  if not engine then return end
+  local bridge_state = {
+    is_playing = self.State.state.bridge:get_state().is_playing,
+    time_remaining = self.State.state.bridge:get_time_remaining(),
+    progress = self.State.state.bridge:get_progress() or 0,
+    quantize_mode = self.State.state.bridge:get_state().quantize_mode,
+  }
   
-  local transport_override = engine:get_transport_override()
-  local changed, new_value = ImGui.Checkbox(ctx, "Transport Override", transport_override)
-  
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Sync playlist when REAPER playhead\nenters any active region")
-  end
-  
-  if changed then
-    engine:set_transport_override(new_value)
-    if self.settings then 
-      self.settings:set('transport_override', new_value) 
+  local get_current_region = function()
+    local rid = self.State.state.bridge:get_current_rid()
+    if rid then
+      return self.State.state.region_index[rid]
     end
+    return nil
   end
   
-  ImGui.SameLine(ctx, 0, 12)
-end
-
-function GUI:draw_loop_playlist_checkbox(ctx)
-  local bridge = self.State.state.bridge
-  if not bridge then return end
+  self.transport_display:draw(ctx, display_x, display_y, display_w, display_h, bridge_state, get_current_region)
   
-  local loop_playlist = bridge:get_loop_playlist()
-  local changed, new_value = ImGui.Checkbox(ctx, "Loop Playlist", loop_playlist)
+  -- Jump Controls (below display)
+  local jump_x = display_x
+  local jump_y = display_y + display_h + 6
   
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Wrap to start when reaching\nthe end of the playlist")
-  end
+  local engine = self.State.state.bridge.engine
   
-  if changed then
-    bridge:set_loop_playlist(new_value)
-  end
+  self.jump_controls:draw(ctx, jump_x, jump_y, display_w, bridge_state, self.quantize_lookahead,
+    function()
+      self.State.state.bridge:jump_to_next_quantized(self.quantize_lookahead)
+    end,
+    function(mode)
+      if engine and engine.quantize then
+        engine.quantize:set_quantize_mode(mode)
+      end
+    end,
+    function(value)
+      self.quantize_lookahead = value
+    end
+  )
   
-  ImGui.SameLine(ctx, 0, 12)
+  -- Right: Global Controls (StatusPads)
+  local global_x = display_x + display_w + spacing
+  local global_y = cursor_y + (content_h - 72) / 2
+  
+  local transport_override = engine and engine:get_transport_override() or false
+  local loop_playlist = self.State.state.bridge:get_loop_playlist()
+  
+  self.global_controls:draw(ctx, global_x, global_y, transport_override, loop_playlist,
+    function(value)
+      if engine then
+        engine:set_transport_override(value)
+        if self.settings then
+          self.settings:set('transport_override', value)
+        end
+      end
+    end,
+    function(value)
+      self.State.state.bridge:set_loop_playlist(value)
+    end
+  )
+  
+  self.transport_container:end_draw(ctx)
 end
 
 function GUI:draw_horizontal_separator(ctx, x, y, width, height)
@@ -785,7 +637,6 @@ function GUI:draw(ctx, window)
   end
   
   self.region_tiles:update_animations(0.016)
-  self.layout_button_animator:update(0.016)
   
   Shortcuts.handle_keyboard_shortcuts(ctx, self.State.state, self.region_tiles)
   
@@ -805,7 +656,6 @@ function GUI:draw(ctx, window)
   if self.State.state.pool_mode == "playlists" then
     pool_data = self.State.get_playlists_for_pool()
   elseif self.State.state.pool_mode == "mixed" then
-    -- Combine both regions and playlists
     pool_data = {}
     local regions = self.State.get_filtered_pool_regions()
     local playlists = self.State.get_playlists_for_pool()

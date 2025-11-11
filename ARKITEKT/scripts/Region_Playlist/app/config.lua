@@ -23,18 +23,60 @@ M.DIM = {
   STROKE = 0xFFFFFF33,
 }
 
--- Transport dimensions
+-- Transport dimensions and styling (using library design language)
 M.TRANSPORT = {
-  height = 120,
+  height = 100,
   padding = 12,
   spacing = 12,
+  
+  -- View mode button (left)
+  view_mode = {
+    size = 32,
+    rounding = 4,
+    bg_color = 0x252525FF,
+    bg_hover = 0x2A2A2AFF,
+    border_inner = 0x404040FF,
+    border_hover = 0x505050FF,
+    border_outer = 0x000000DD,
+    icon_color = 0xCCCCCCFF,
+    animation_speed = 12.0,
+  },
+  
+  -- Central display (library-styled double border)
+  display = {
+    bg_color = 0x252525FF,
+    border_inner = 0x404040FF,
+    border_outer = 0x000000DD,
+    rounding = 6,
+    time_color = 0xCCCCCCFF,
+    time_playing_color = 0xFFFFFFFF,
+    status_color = 0xAAAAAAFF,
+    region_color = 0xCCCCCCFF,
+    track_color = 0x30303080,
+    fill_color = 0x41E0A3FF,
+  },
+  
+  -- Jump controls (compact, library-styled)
+  jump = {
+    height = 28,
+  },
+  
+  -- Global controls (StatusPad based)
+  global = {
+    spacing = 8,
+    pad_width = 180,
+    pad_height = 32,
+    pad_rounding = 6,
+    transport_color = 0x4A9EFFFF,
+    loop_color = 0x9C87E8FF,
+  },
 }
 
 -- Quantize settings
 M.QUANTIZE = {
   default_lookahead = 0.30,
   min_lookahead = 0.20,
-  max_lookahead = 3.0,
+  max_lookahead = 1.0,
   
   grid_options = {
     { label = "Measure", value = "measure" },
@@ -46,21 +88,6 @@ M.QUANTIZE = {
     { label = "1/32 Note", value = "0.125" },
     { label = "1/64 Note", value = "0.0625" },
   },
-}
-
--- Layout button (custom drawn in gui.lua)
-M.LAYOUT_BUTTON = {
-  width = 32,
-  height = 32,
-  rounding = 4,
-  bg_color = 0x2A2A2AFF,
-  bg_hover = 0x3A3A3AFF,
-  bg_active = 0x4A4A4AFF,
-  border_color = 0x404040FF,
-  border_hover = 0x606060FF,
-  icon_color = 0xAAAAAAFF,
-  icon_hover = 0xFFFFFFFF,
-  animation_speed = 12.0,
 }
 
 -- Separator dimensions

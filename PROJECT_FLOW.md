@@ -1,20 +1,20 @@
 # ARKITEKT-PROJECT FLOW
-Generated: 2025-11-10 17:34:07
+Generated: 2025-11-11 02:55:42
 
 ## Overview
 - **Folders**: 1
-- **Files**: 162
-- **Total Lines**: 33,944
-- **Code Lines**: 26,277
-- **Exports**: 211
-- **Classes**: 187
+- **Files**: 163
+- **Total Lines**: 34,879
+- **Code Lines**: 26,918
+- **Exports**: 213
+- **Classes**: 189
 
 ## Folder Organization
 
 ### ARKITEKT
-- Files: 162
-- Lines: 26,277
-- Exports: 211
+- Files: 163
+- Lines: 26,918
+- Exports: 213
 
 ## Orchestrators
 
@@ -50,12 +50,12 @@ Generated: 2025-11-10 17:34:07
 
 ## Module API
 
-### `ARKITEKT\scripts\Region_Playlist\app\gui.lua` (930 lines)
+### `ARKITEKT\scripts\Region_Playlist\app\gui.lua` (969 lines)
 > @noindex
 **Classes**: `M, GUI`
 **Requires**: `colors, config, controller, coordinator, list, sheet, shortcuts, tile_motion`
 
-### `ARKITEKT\rearkitekt\gui\widgets\panel\header\tab_strip.lua` (804 lines)
+### `ARKITEKT\rearkitekt\gui\widgets\panel\header\tab_strip.lua` (852 lines)
 > @noindex
 **Classes**: `M`
 **Requires**: `chip, context_menu`
@@ -80,12 +80,7 @@ Generated: 2025-11-10 17:34:07
 **Classes**: `M, Panel`
 **Requires**: `background, button, config, content, corner_button, scrollbar, tab_animator`
 
-### `ARKITEKT\rearkitekt\gui\widgets\grid\core.lua` (642 lines)
-> @noindex
-**Classes**: `M, Grid`
-**Requires**: `animation, colors, dnd_state, drag_indicator, draw, drop_indicator, drop_zones, input`
-
-### `ARKITEKT\scripts\Region_Playlist\app\state.lua` (618 lines)
+### `ARKITEKT\scripts\Region_Playlist\app\state.lua` (665 lines)
 > @noindex
 **Classes**: `M`
 **Exports**:
@@ -95,6 +90,11 @@ Generated: 2025-11-10 17:34:07
   - `reps`
   - `type`
 **Requires**: `colors, coordinator_bridge, state, undo_bridge, undo_manager`
+
+### `ARKITEKT\rearkitekt\gui\widgets\grid\core.lua` (660 lines)
+> @noindex
+**Classes**: `M, Grid`
+**Requires**: `animation, colors, dnd_state, drag_indicator, draw, drop_indicator, drop_zones, input`
 
 ### `ARKITEKT\rearkitekt\core\colors.lua` (550 lines)
 > @noindex
@@ -116,7 +116,7 @@ Generated: 2025-11-10 17:34:07
   - `values`
 **Requires**: `auto_layout, background, config, connection, connection_renderer, drag_indicator, drop_indicator, node`
 
-### `ARKITEKT\scripts\Region_Playlist\widgets\region_tiles\coordinator.lua` (524 lines)
+### `ARKITEKT\scripts\Region_Playlist\widgets\region_tiles\coordinator.lua` (522 lines)
 > @noindex
 **Classes**: `M, RegionTiles`
 **Requires**: `active_grid_factory, colors, config, coordinator_render, draw, grid_bridge, height_stabilizer, pool_grid_factory`
@@ -128,6 +128,13 @@ Generated: 2025-11-10 17:34:07
 ### `ARKITEKT\rearkitekt\app\titlebar.lua` (518 lines)
 > @noindex
 **Classes**: `M, DEFAULTS`
+
+### `ARKITEKT\rearkitekt\gui\widgets\colored_text_view.lua` (497 lines)
+> @noindex
+**Classes**: `M, ColoredTextView`
+**Exports**:
+  - `col`
+  - `line`
 
 ### `ARKITEKT\scripts\Sandbox\sandbox_6.lua` (466 lines)
 > @noindex
@@ -150,22 +157,7 @@ Generated: 2025-11-10 17:34:07
 > @noindex
 **Requires**: `arkit, button, dropdown, search_input, shell`
 
-### `ARKITEKT\rearkitekt\debug\_console_widget.lua` (430 lines)
-> @noindex
-**Classes**: `M`
-**Requires**: `config, logger`
-
-### `ARKITEKT\rearkitekt\gui\widgets\controls\dropdown.lua` (418 lines)
-> @noindex
-**Classes**: `M, Dropdown`
-**Requires**: `style_defaults, tooltip`
-
-### `ARKITEKT\rearkitekt\gui\widgets\panel\header\layout.lua` (416 lines)
-> @noindex
-**Classes**: `M`
-**Requires**: `button, dropdown, search_input, separator, tab_strip`
-
-### `ARKITEKT\scripts\Region_Playlist\engine\coordinator_bridge.lua` (398 lines)
+### `ARKITEKT\scripts\Region_Playlist\engine\coordinator_bridge.lua` (429 lines)
 > @noindex
 **Classes**: `M`
 **Exports**:
@@ -179,6 +171,16 @@ Generated: 2025-11-10 17:34:07
   - `sequence_length`
   - `total_loops`
 **Requires**: `core, logger, playback, sequence_expander, state, transport`
+
+### `ARKITEKT\rearkitekt\gui\widgets\controls\dropdown.lua` (418 lines)
+> @noindex
+**Classes**: `M, Dropdown`
+**Requires**: `style_defaults, tooltip`
+
+### `ARKITEKT\rearkitekt\gui\widgets\panel\header\layout.lua` (416 lines)
+> @noindex
+**Classes**: `M`
+**Requires**: `button, dropdown, search_input, separator, tab_strip`
 
 ### `ARKITEKT\scripts\demos\demo.lua` (383 lines)
 > @noindex
@@ -212,6 +214,11 @@ Generated: 2025-11-10 17:34:07
 **Classes**: `M, Controller`
 **Requires**: `state`
 
+### `ARKITEKT\rearkitekt\debug\_console_widget.lua` (361 lines)
+> @noindex
+**Classes**: `M`
+**Requires**: `colored_text_view, config, logger`
+
 ### `ARKITEKT\ARKITEKT.lua` (353 lines)
 > ARKITEKT Toolkit Hub
 **Exports**:
@@ -234,6 +241,11 @@ Generated: 2025-11-10 17:34:07
   - `max_width`
   - `min_width`
 
+### `ARKITEKT\scripts\Region_Playlist\widgets\region_tiles\renderers\pool.lua` (343 lines)
+> @noindex
+**Classes**: `M`
+**Requires**: `base, colors, draw, tile_fx_config, tile_utilities`
+
 ### `ARKITEKT\scripts\Region_Playlist\engine\state.lua` (342 lines)
 > @noindex
 **Classes**: `M, State`
@@ -248,16 +260,7 @@ Generated: 2025-11-10 17:34:07
   - `sequence_version`
 **Requires**: `logger, regions, transport`
 
-### `ARKITEKT\rearkitekt\gui\widgets\nodal\rendering\node_renderer.lua` (334 lines)
-> @noindex
-**Classes**: `M`
-**Requires**: `auto_layout, chip, colors, draw, marching_ants, node, port, tile_fx`
-
-### `ARKITEKT\rearkitekt\gui\widgets\component\chip.lua` (333 lines)
+### `ARKITEKT\rearkitekt\gui\widgets\component\chip.lua` (339 lines)
 > @noindex
 **Classes**: `M`
 **Requires**: `colors, draw, tile_fx, tile_fx_config`
-
-### `ARKITEKT\scripts\ItemPicker\app\grid_adapter.lua` (333 lines)
-> @noindex
-**Classes**: `M`

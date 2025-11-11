@@ -138,6 +138,12 @@ local function update_tab_positions(ctx, state, config, tabs, start_x)
   local dt = ImGui.GetDeltaTime(ctx)
   local cursor_x = start_x
   
+  -- First pass: calculate all new targets and detect if this is a uniform shift (window move)
+  local new_targets = {}
+  local deltas = {}
+  local is_uniform_shift = true
+  local first_delta = nil
+  
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
     local tab_width = calculate_tab_width(ctx, tab.label or "Tab", config, has_chip)
@@ -149,25 +155,15 @@ local function update_tab_positions(ctx, state, config, tabs, start_x)
       state.tab_animation_enabled[tab.id] = false
     end
     
-    local new_target = cursor_x
+    new_targets[tab.id] = cursor_x
+    local delta = cursor_x - pos.target_x
+    deltas[tab.id] = delta
     
-    if math.abs(new_target - pos.target_x) > 0.5 then
-      state.tab_animation_enabled[tab.id] = true
-    end
-    
-    pos.target_x = new_target
-    
-    if state.tab_animation_enabled[tab.id] then
-      local diff = pos.target_x - pos.current_x
-      if math.abs(diff) > 0.5 then
-        local move = diff * TAB_SLIDE_SPEED * dt
-        pos.current_x = pos.current_x + move
-      else
-        pos.current_x = pos.target_x
-        state.tab_animation_enabled[tab.id] = false
-      end
-    else
-      pos.current_x = pos.target_x
+    -- Check if all tabs are shifting by the same amount (window drag)
+    if first_delta == nil then
+      first_delta = delta
+    elseif math.abs(delta - first_delta) > 0.1 then
+      is_uniform_shift = false
     end
     
     local effective_spacing = spacing
@@ -176,6 +172,40 @@ local function update_tab_positions(ctx, state, config, tabs, start_x)
     end
     
     cursor_x = cursor_x + tab_width + effective_spacing
+  end
+  
+  -- Second pass: update positions, snap instantly if uniform shift (window move)
+  for i, tab in ipairs(tabs) do
+    local pos = state.tab_positions[tab.id]
+    local new_target = new_targets[tab.id]
+    local delta = deltas[tab.id]
+    
+    if is_uniform_shift and math.abs(delta) > 0.01 then
+      -- Window is being dragged: snap all tabs instantly, no animation
+      pos.current_x = new_target
+      pos.target_x = new_target
+      state.tab_animation_enabled[tab.id] = false
+    else
+      -- Individual tab repositioning (reorder): use smooth animation
+      if math.abs(new_target - pos.target_x) > 0.5 then
+        state.tab_animation_enabled[tab.id] = true
+      end
+      
+      pos.target_x = new_target
+      
+      if state.tab_animation_enabled[tab.id] then
+        local diff = pos.target_x - pos.current_x
+        if math.abs(diff) > 0.5 then
+          local move = diff * TAB_SLIDE_SPEED * dt
+          pos.current_x = pos.current_x + move
+        else
+          pos.current_x = pos.target_x
+          state.tab_animation_enabled[tab.id] = false
+        end
+      else
+        pos.current_x = pos.target_x
+      end
+    end
   end
 end
 
@@ -837,11 +867,13 @@ function M.measure(ctx, config, state)
     local has_chip = tab.chip_color ~= nil
     local tab_w = calculate_tab_width(ctx, tab.label or "Tab", config, has_chip)
     total = total + tab_w
+    
     local effective_spacing = spacing
+    if i < #tabs and spacing == 0 then
+      effective_spacing = -1
+    end
+    
     if i < #tabs then
-      if spacing == 0 then
-        effective_spacing = -1
-      end
       total = total + effective_spacing
     end
   end
