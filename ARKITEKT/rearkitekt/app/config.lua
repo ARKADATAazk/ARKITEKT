@@ -4,7 +4,7 @@
 
 local M = {}
 
-M.PROFILER_ENABLED = true  -- Set to true to enable profiler
+M.PROFILER_ENABLED = false  -- Set to true to enable profiler
 
 M.defaults = {
   window = {
@@ -63,7 +63,7 @@ M.defaults = {
 
   fonts = {
     default        = 13,
-    title          = 0,
+    title          = 13,
     version        = 11,
     titlebar_version_monospace = 10, 
     family_regular = "Inter_18pt-Regular.ttf",

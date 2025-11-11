@@ -86,7 +86,7 @@ function Selector:draw(ctx, playlists, active_id, height, on_playlist_changed)
     local _ = ImGui.InvisibleButton(ctx, "##selector_" .. pl.id, cfg.chip_width, cfg.chip_height)
     
     if ImGui.IsItemClicked(ctx, 0) and on_playlist_changed then
-      on_playlist_changed(pl.id)
+      on_playlist_changed(pl.id, true)  -- Move to end when clicked
     end
   end
 end

@@ -165,6 +165,26 @@ function M.get_tabs()
   return tabs
 end
 
+function M.count_playlist_contents(playlist_id)
+  local playlist = M.get_playlist_by_id(playlist_id)
+  if not playlist or not playlist.items then
+    return 0, 0
+  end
+  
+  local region_count = 0
+  local playlist_count = 0
+  
+  for _, item in ipairs(playlist.items) do
+    if item.type == "region" then
+      region_count = region_count + 1
+    elseif item.type == "playlist" then
+      playlist_count = playlist_count + 1
+    end
+  end
+  
+  return region_count, playlist_count
+end
+
 function M.refresh_regions()
   local regions = M.state.bridge:get_regions_for_ui()
   
@@ -260,11 +280,38 @@ function M.can_redo()
   return M.state.undo_manager:can_redo()
 end
 
-function M.set_active_playlist(playlist_id)
+function M.set_active_playlist(playlist_id, move_to_end)
   M.state.active_playlist = playlist_id
+  
+  -- Optionally move the playlist to the end (last visible tab)
+  if move_to_end then
+    M.move_playlist_to_end(playlist_id)
+  end
+  
   M.persist()
   if M.state.bridge then
     M.state.bridge:get_sequence()
+  end
+end
+
+function M.move_playlist_to_end(playlist_id)
+  -- Find the playlist's current position
+  local playlist_index = nil
+  for i, pl in ipairs(M.playlists) do
+    if pl.id == playlist_id then
+      playlist_index = i
+      break
+    end
+  end
+  
+  if not playlist_index then return end
+  
+  -- Move to position 1 (front) so it's always visible
+  -- Most recently selected playlist appears first
+  if playlist_index ~= 1 then
+    local playlist = table.remove(M.playlists, playlist_index)
+    table.insert(M.playlists, 1, playlist)
+    M.persist()
   end
 end
 

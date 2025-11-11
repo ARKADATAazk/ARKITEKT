@@ -242,10 +242,16 @@ function M.draw(ctx, opts)
       Draw.rect_filled(dl, start_x, start_y, start_x + chip_w, start_y + 2, inner_shadow, 0)
     end
     
+    -- Draw border: 1px when not selected, thicker when selected
     if is_selected then
+      local border_thickness = opts.border_thickness or 2.0
       local border_color = Colors.with_alpha(Colors.adjust_brightness(color, 1.8), 255)
       _render_border_glow(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, color, rounding, 4)
-      Draw.rect(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, border_color, rounding, 2.5)
+      Draw.rect(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, border_color, rounding, border_thickness)
+    else
+      -- Subtle 1px border when not selected
+      local border_color = Colors.with_alpha(Colors.adjust_brightness(color, 0.8), 100)
+      Draw.rect(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, border_color, rounding, 1.0)
     end
     
     local dot_x = start_x + padding_h + (dot_size * 0.5)

@@ -231,9 +231,18 @@ function GUI:draw_overflow_modal(ctx, window)
   
   local tab_items = {}
   for _, tab in ipairs(all_tabs) do
+    local region_count, playlist_count = self.State.count_playlist_contents(tab.id)
+    local count_str = ""
+    if region_count > 0 or playlist_count > 0 then
+      local parts = {}
+      if region_count > 0 then table.insert(parts, region_count .. "R") end
+      if playlist_count > 0 then table.insert(parts, playlist_count .. "P") end
+      count_str = " (" .. table.concat(parts, ", ") .. ")"
+    end
+    
     table.insert(tab_items, {
       id = tab.id,
-      label = tab.label,
+      label = tab.label .. count_str,
       color = tab.chip_color or 0x888888FF,
     })
   end
@@ -287,7 +296,8 @@ function GUI:draw_overflow_modal(ctx, window)
       })
       
       if clicked_tab then
-        self.State.set_active_playlist(clicked_tab)
+        self.State.set_active_playlist(clicked_tab, true)  -- Move to end
+        self:refresh_tabs()
         ImGui.CloseCurrentPopup(ctx)
         self.overflow_modal_is_open = false
         self.region_tiles.active_container:close_overflow_modal()
@@ -360,7 +370,8 @@ function GUI:draw_overflow_modal(ctx, window)
           })
           
           if clicked_tab then
-            self.State.set_active_playlist(clicked_tab)
+            self.State.set_active_playlist(clicked_tab, true)  -- Move to end
+            self:refresh_tabs()
             window.overlay:pop('overflow-tabs')
             self.overflow_modal_is_open = false
             self.region_tiles.active_container:close_overflow_modal()

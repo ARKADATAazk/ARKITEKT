@@ -35,6 +35,7 @@ local function _draw_chip(ctx, item, is_selected, opts)
     padding_h = opts.padding_h,
     explicit_width = opts.explicit_width,
     text_align = opts.text_align,
+    border_thickness = opts.border_thickness,
   })
 end
 
@@ -176,6 +177,7 @@ function M.draw_columns(ctx, items, opts)
     padding_h = opts.padding_h or 12,
     explicit_width = column_width,
     text_align = "left",
+    border_thickness = opts.border_thickness,
   }
   
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)

@@ -48,7 +48,55 @@ local function calculate_tab_width(ctx, label, config, has_chip)
   local max_width = config.max_width or 180
   local padding_x = config.padding_x or 5
   
-  return math.min(max_width, math.max(min_width, text_w + padding_x * 2 + chip_width))
+  local ideal_width = text_w + padding_x * 2 + chip_width
+  return math.min(max_width, math.max(min_width, ideal_width))
+end
+
+local function calculate_responsive_tab_widths(ctx, tabs, config, available_width)
+  local min_width = config.min_width or 60
+  local max_width = config.max_width or 180
+  local padding_x = config.padding_x or 5
+  local spacing = config.spacing or 0
+  
+  -- Calculate ideal widths for all tabs
+  local ideal_widths = {}
+  local total_ideal = 0
+  
+  for i, tab in ipairs(tabs) do
+    local has_chip = tab.chip_color ~= nil
+    local text_w = ImGui.CalcTextSize(ctx, tab.label or "Tab")
+    local chip_width = has_chip and 20 or 0
+    local ideal = text_w + padding_x * 2 + chip_width
+    ideal = math.min(max_width, math.max(min_width, ideal))
+    
+    ideal_widths[i] = ideal
+    total_ideal = total_ideal + ideal
+    
+    if i < #tabs then
+      total_ideal = total_ideal + (spacing == 0 and -1 or spacing)
+    end
+  end
+  
+  -- If we have extra space, distribute it proportionally
+  if total_ideal < available_width and #tabs > 0 then
+    local extra_space = available_width - total_ideal
+    local space_per_tab = extra_space / #tabs
+    
+    for i = 1, #tabs do
+      local new_width = ideal_widths[i] + space_per_tab
+      ideal_widths[i] = math.min(max_width, new_width)
+    end
+  -- If we're tight on space, compress proportionally
+  elseif total_ideal > available_width and #tabs > 0 then
+    local compression_ratio = available_width / total_ideal
+    
+    for i = 1, #tabs do
+      local compressed = ideal_widths[i] * compression_ratio
+      ideal_widths[i] = math.max(min_width, compressed)
+    end
+  end
+  
+  return ideal_widths
 end
 
 local function init_tab_positions(state, tabs, start_x, ctx, config)
