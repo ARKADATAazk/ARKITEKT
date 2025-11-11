@@ -1,3 +1,6 @@
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 local M = {}
 
 M.TILE = {
@@ -35,8 +38,8 @@ M.CACHE = {
 }
 
 M.COLORS = {
-  HOVER_OVERLAY = 0xFFFFFF20,
-  TEXT_SHADOW = 0x00000050,
+  HOVER_OVERLAY = hexrgb("#FFFFFF20"),
+  TEXT_SHADOW = hexrgb("#00000050"),
   DEFAULT_TRACK_COLOR = {85/256, 91/256, 91/256},
 }
 

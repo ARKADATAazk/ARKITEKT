@@ -5,6 +5,9 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local DndConfig = require('rearkitekt.gui.fx.dnd.config')
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 

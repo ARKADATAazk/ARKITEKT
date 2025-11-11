@@ -4,19 +4,21 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 local DEFAULTS = {
-  bg_color = 0x1E1E1EFF,
-  border_color = 0x404040FF,
-  item_bg_color = 0x00000000,
-  item_hover_color = 0x3A3A3AFF,
-  item_active_color = 0x454545FF,
-  item_text_color = 0xCCCCCCFF,
-  item_text_hover_color = 0xFFFFFFFF,
-  item_disabled_color = 0x666666FF,
-  separator_color = 0x404040FF,
+  bg_color = hexrgb("#1E1E1E"),
+  border_color = hexrgb("#404040"),
+  item_bg_color = hexrgb("#000000"),
+  item_hover_color = hexrgb("#3A3A3A"),
+  item_active_color = hexrgb("#454545"),
+  item_text_color = hexrgb("#CCCCCC"),
+  item_text_hover_color = hexrgb("#FFFFFF"),
+  item_disabled_color = hexrgb("#666666"),
+  separator_color = hexrgb("#404040"),
   rounding = 4,
   padding = 4,
   item_height = 24,

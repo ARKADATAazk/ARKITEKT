@@ -7,6 +7,9 @@ local ImGui = require 'imgui' '0.10'
 local StatusPad = require('rearkitekt.gui.widgets.displays.status_pad')
 local Button = require('rearkitekt.gui.widgets.controls.button')
 local Tooltip = require('rearkitekt.gui.widgets.controls.tooltip')
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 
@@ -25,7 +28,7 @@ function M.ViewModeButton.new(config)
 end
 
 function M.ViewModeButton:draw_icon(ctx, dl, x, y, mode)
-  local color = self.config.icon_color or 0xAAAAAAFF
+  local color = self.config.icon_color or hexrgb("#AAAAAA")
   
   if mode == 'vertical' then
     -- Top bar: 20x3, 2px space, left 5x15, 2px space, right 13x15
@@ -54,9 +57,9 @@ function M.ViewModeButton:draw(ctx, x, y, current_mode, on_click)
   self.hover_alpha = self.hover_alpha + (target - self.hover_alpha) * speed * dt
   self.hover_alpha = math.max(0, math.min(1, self.hover_alpha))
   
-  local bg = self:lerp_color(cfg.bg_color or 0x252525FF, cfg.bg_hover or 0x2A2A2AFF, self.hover_alpha)
-  local border_inner = self:lerp_color(cfg.border_inner or 0x404040FF, cfg.border_hover or 0x505050FF, self.hover_alpha)
-  local border_outer = cfg.border_outer or 0x000000DD
+  local bg = self:lerp_color(cfg.bg_color or hexrgb("#252525"), cfg.bg_hover or hexrgb("#2A2A2A"), self.hover_alpha)
+  local border_inner = self:lerp_color(cfg.border_inner or hexrgb("#404040"), cfg.border_hover or hexrgb("#505050"), self.hover_alpha)
+  local border_outer = cfg.border_outer or hexrgb("#000000DD")
   
   local rounding = cfg.rounding or 4
   local inner_rounding = math.max(0, rounding - 2)
@@ -118,9 +121,9 @@ function M.TransportDisplay:draw(ctx, x, y, width, height, bridge_state, get_cur
   local dl = ImGui.GetWindowDrawList(ctx)
   local cfg = self.config
   
-  local bg = cfg.bg_color or 0x252525FF
-  local border_inner = cfg.border_inner or 0x404040FF
-  local border_outer = cfg.border_outer or 0x000000DD
+  local bg = cfg.bg_color or hexrgb("#252525")
+  local border_inner = cfg.border_inner or hexrgb("#404040")
+  local border_outer = cfg.border_outer or hexrgb("#000000DD")
   local rounding = cfg.rounding or 6
   local inner_rounding = math.max(0, rounding - 2)
   
@@ -138,7 +141,7 @@ function M.TransportDisplay:draw(ctx, x, y, width, height, bridge_state, get_cur
   
   -- Main time display
   local time_text = "READY"
-  local time_color = cfg.time_color or 0xCCCCCCFF
+  local time_color = cfg.time_color or hexrgb("#CCCCCC")
   
   if bridge_state.is_playing then
     local time_remaining = bridge_state.time_remaining or 0
@@ -150,7 +153,7 @@ function M.TransportDisplay:draw(ctx, x, y, width, height, bridge_state, get_cur
     else
       time_text = string.format("%04.1f", secs)
     end
-    time_color = cfg.time_playing_color or 0xFFFFFFFF
+    time_color = cfg.time_playing_color or hexrgb("#FFFFFF")
   end
   
   local time_w, time_h = ImGui.CalcTextSize(ctx, time_text)
@@ -161,7 +164,7 @@ function M.TransportDisplay:draw(ctx, x, y, width, height, bridge_state, get_cur
   if bridge_state.is_playing then
     local mode = bridge_state.quantize_mode or "none"
     local status_text = mode ~= "none" and ("Cue: " .. mode) or "Immediate"
-    local status_color = cfg.status_color or 0xAAAAAAFF
+    local status_color = cfg.status_color or hexrgb("#AAAAAA")
     local status_w = ImGui.CalcTextSize(ctx, status_text)
     ImGui.DrawList_AddText(dl, cx - status_w / 2, time_y + time_h + 4, status_color, status_text)
   end
@@ -174,13 +177,13 @@ function M.TransportDisplay:draw(ctx, x, y, width, height, bridge_state, get_cur
   local bar_x = x + padding
   
   -- Track
-  local track_color = cfg.track_color or 0x30303080
+  local track_color = cfg.track_color or hexrgb("#30303080")
   ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + bar_w, bar_y + bar_h, track_color, 1.5)
   
   -- Fill
   if progress > 0 then
     local fill_w = bar_w * progress
-    local fill_color = cfg.fill_color or 0x41E0A3FF
+    local fill_color = cfg.fill_color or hexrgb("#41E0A3")
     ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + fill_w, bar_y + bar_h, fill_color, 1.5)
   end
   
@@ -189,7 +192,7 @@ function M.TransportDisplay:draw(ctx, x, y, width, height, bridge_state, get_cur
     local current_region = get_current_region and get_current_region()
     if current_region then
       local region_text = current_region.name or "Region"
-      local region_color = cfg.region_color or 0xCCCCCCFF
+      local region_color = cfg.region_color or hexrgb("#CCCCCC")
       local region_w = ImGui.CalcTextSize(ctx, region_text)
       ImGui.DrawList_AddText(dl, cx - region_w / 2, bar_y - 20, region_color, region_text)
     end
@@ -327,7 +330,7 @@ function M.GlobalControls.new(config)
     width = pad_config.width,
     height = pad_config.height,
     rounding = pad_config.rounding,
-    color = config.transport_color or 0x4A9EFFFF,
+    color = config.transport_color or hexrgb("#4A9EFF"),
     primary_text = "Transport Override",
     icon_type = "check",
   })
@@ -337,7 +340,7 @@ function M.GlobalControls.new(config)
     width = pad_config.width,
     height = pad_config.height,
     rounding = pad_config.rounding,
-    color = config.loop_color or 0x9C87E8FF,
+    color = config.loop_color or hexrgb("#9C87E8"),
     primary_text = "Loop Playlist",
     icon_type = "check",
   })

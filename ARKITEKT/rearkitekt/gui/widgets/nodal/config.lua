@@ -2,7 +2,10 @@
 -- ReArkitekt/gui/widgets/nodal/config.lua
 -- Visual configuration for node system (unified with panel background system)
 
+local Colors = require('rearkitekt.core.colors')
+
 local M = {}
+local hexrgb = Colors.hexrgb
 
 M.DEFAULT = {
   node = {
@@ -61,34 +64,34 @@ M.DEFAULT = {
     padding_x = 6,
     padding_y = 3,
     margin = 6,
-    bg = 0x14181CFF,
+    bg = hexrgb("#14181C"),
     border_alpha = 0x33,
     font_scale = 0.88,
   },
   
   colors = {
     mirror_modes = {
-      linked = 0x41E0A3FF,
-      detached = 0x4A9EFFFF,
-      frozen = 0xFF9500FF,
+      linked = hexrgb("#41E0A3"),
+      detached = hexrgb("#4A9EFF"),
+      frozen = hexrgb("#FF9500"),
     },
     
     connection_types = {
-      sequential = 0x88CEFFFF,
-      trigger = 0xFF6B9DFF,
+      sequential = hexrgb("#88CEFF"),
+      trigger = hexrgb("#FF6B9D"),
     },
     
     text = {
-      header = 0xFFFFFFFF,
-      body = 0xAAAAAAFF,
-      port_label = 0xDDDDDDFF,
-      trigger_section = 0xFFFFFFFF,
+      header = hexrgb("#FFFFFF"),
+      body = hexrgb("#AAAAAA"),
+      port_label = hexrgb("#DDDDDD"),
+      trigger_section = hexrgb("#FFFFFF"),
     },
     
-    bg_base = 0x1A1A1AFF,
-    chip_bg = 0x1A1A1AFF,
-    port_glow = 0xFFFFFF88,
-    connection_label_bg = 0x1A1A1AEE,
+    bg_base = hexrgb("#1A1A1A"),
+    chip_bg = hexrgb("#1A1A1A"),
+    port_glow = hexrgb("#FFFFFF88"),
+    connection_label_bg = hexrgb("#1A1A1AEE"),
   },
   
   tile_fx = {
@@ -114,7 +117,7 @@ M.DEFAULT = {
     ants_dash = 8,
     ants_gap = 6,
     ants_speed = 20,
-    ants_alpha = 0xFF,
+    ants_alpha = hexrgb("#000000FF"),
   },
   
   background_pattern = {
@@ -122,14 +125,14 @@ M.DEFAULT = {
     primary = {
       type = 'grid',
       spacing = 50,
-      color = 0x14141490,
+      color = hexrgb("#14141490"),
       line_thickness = 1.5,
     },
     secondary = {
       enabled = true,
       type = 'grid',
       spacing = 5,
-      color = 0x14141420,
+      color = hexrgb("#14141420"),
       line_thickness = 0.5,
     },
   },

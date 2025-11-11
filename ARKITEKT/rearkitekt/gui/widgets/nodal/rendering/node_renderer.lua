@@ -14,6 +14,7 @@ local MarchingAnts = require('rearkitekt.gui.fx.marching_ants')
 local Port = require('rearkitekt.gui.widgets.nodal.core.port')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 -- Store available nodes for dropdowns (set by canvas)
 M.available_nodes = {}
@@ -43,7 +44,7 @@ function M.render(ctx, node, animator, config)
   local x2, y2 = node.x + node.width, node.y + node.height
   
   -- Use dark neutral background instead of base_color
-  local bg_color = config.colors.bg_base or 0x1A1A1AFF
+  local bg_color = config.colors.bg_base or hexrgb("#1A1A1A")
   
   -- Get colored chip color from mirror_mode
   local chip_color = require('rearkitekt.gui.widgets.nodal.core.node').get_base_color(node, config)
@@ -86,7 +87,7 @@ function M.render_header(ctx, dl, node, config, chip_color)
   local seq_w, seq_h = ImGui.CalcTextSize(ctx, sequence_text)
   local seq_x = x1 + 24
   local seq_y = y1
-  Draw.text(dl, seq_x, seq_y, 0x888888FF, sequence_text)
+  Draw.text(dl, seq_x, seq_y, hexrgb("#888888"), sequence_text)
   
   local name_x = seq_x + seq_w + 8
   local name_y = y1
@@ -117,7 +118,7 @@ function M.render_loop_badge(ctx, dl, node, config, chip_color)
     padding_x = 6,
     padding_y = 3,
     margin = 6,
-    bg = 0x14181CFF,
+    bg = hexrgb("#14181C"),
     border_alpha = 0x33,
     font_scale = 0.88,
   }
@@ -140,7 +141,7 @@ function M.render_loop_badge(ctx, dl, node, config, chip_color)
     badge_config.rounding, 0, 0.5)
   
   Draw.text(dl, badge_x + badge_config.padding_x, badge_y + badge_config.padding_y, 
-    0xFFFFFFDD, badge_text)
+    hexrgb("#FFFFFFDD"), badge_text)
 end
 
 function M.render_triggers_ui(ctx, dl, node, config, chip_color)

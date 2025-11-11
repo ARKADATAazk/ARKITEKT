@@ -271,7 +271,7 @@ function M.new(opts)
       local scrim_color = (self.scrim_color & 0xFFFFFF00) | math.floor(255 * scrim_alpha + 0.5)
       ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, scrim_color)
     else
-      ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, 0x00000000)
+      ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, hexrgb("#00000000"))
     end
     
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
@@ -356,11 +356,11 @@ function M.new(opts)
     
     local bg_opacity = self.close_button_hovered and btn.bg_opacity_hover or btn.bg_opacity
     local bg_alpha = bg_opacity * alpha_val
-    local bg_color = (btn.bg_color & 0xFFFFFF00) | math.floor(255 * bg_alpha + 0.5)
+    local bg_color = (btn.bg_color & hexrgb("#FFFFFF00")) | math.floor(255 * bg_alpha + 0.5)
     ImGui.DrawList_AddRectFilled(dl, btn_x, btn_y, btn_x + btn.size, btn_y + btn.size, bg_color, btn.size/2)
     
     local icon_color = self.close_button_hovered and btn.hover_color or btn.color
-    icon_color = (icon_color & 0xFFFFFF00) | math.floor(255 * alpha_val + 0.5)
+    icon_color = (icon_color & hexrgb("#FFFFFF00")) | math.floor(255 * alpha_val + 0.5)
     
     local padding = btn.size * 0.3
     local x1, y1 = btn_x + padding, btn_y + padding

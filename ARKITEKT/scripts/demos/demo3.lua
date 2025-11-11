@@ -46,6 +46,9 @@ local StatusPad = require("rearkitekt.gui.widgets.displays.status_pad")
 local StatusBar = require("rearkitekt.app.chrome.status_bar")
 
 local style_ok, Style = pcall(require, "rearkitekt.gui.style")
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 -- Initial states for the pads
 local transport_override = true
@@ -55,7 +58,7 @@ local quantize_enabled = true
 -- Status bar configuration
 local function get_status()
   return {
-    color = 0x41E0A3FF,
+    color = hexrgb("#41E0A3"),
     text  = "Status Pads Demo  •  Clean Toggle Widgets",
   }
 end
@@ -68,7 +71,7 @@ local function init_pads()
   pads.transport = StatusPad.new({
     id = "transport_pad",
     width = 250, height = 40,
-    color = 0x41E0A3FF, -- Teal/Green
+    color = hexrgb("#41E0A3"), -- Teal/Green
     primary_text = "Transport Override",
     state = transport_override,
     icon_type = "check",
@@ -81,7 +84,7 @@ local function init_pads()
   pads.follow = StatusPad.new({
     id = "follow_pad",
     width = 250, height = 40,
-    color = 0x5B8DFFFF, -- Blue
+    color = hexrgb("#5B8DFF"), -- Blue
     primary_text = "Follow Playhead",
     state = follow_playhead,
     icon_type = "check",
@@ -94,7 +97,7 @@ local function init_pads()
   pads.quantize = StatusPad.new({
     id = "quantize_pad",
     width = 250, height = 52, -- Slightly taller for two lines of text
-    color = 0xFFA94DFF, -- Orange
+    color = hexrgb("#FFA94D"), -- Orange
     primary_text = "Quantize",
     secondary_text = quantize_enabled and "Quantized" or "Off",
     state = quantize_enabled,
@@ -111,14 +114,14 @@ init_pads()
 
 -- Main draw loop
 local function draw(ctx)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0xEEEEEEFF)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#EEEEEE"))
   
   ImGui.Dummy(ctx, 1, 8)
   ImGui.Text(ctx, "Toggle Controls")
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 1, 10)
   
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, 0x999999FF)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
   ImGui.TextWrapped(ctx, "These widgets are styled to match the toggle buttons from the reference screenshot. Click any pad to toggle its state.")
   ImGui.PopStyleColor(ctx)
   

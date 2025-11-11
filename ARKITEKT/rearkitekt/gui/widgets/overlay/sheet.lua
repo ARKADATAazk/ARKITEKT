@@ -11,6 +11,7 @@ local Style  = require('rearkitekt.gui.style')
 local OverlayConfig = require('rearkitekt.gui.widgets.overlay.config')
 
 local Sheet = {}
+local hexrgb = Colors.hexrgb
 
 function Sheet.render(ctx, alpha, bounds, content_fn, opts)
   opts = opts or {}
@@ -34,7 +35,7 @@ function Sheet.render(ctx, alpha, bounds, content_fn, opts)
     for i = config.sheet.shadow.layers, 1, -1 do
       local shadow_offset = math.floor((i / config.sheet.shadow.layers) * config.sheet.shadow.max_offset)
       local shadow_alpha = math.floor((config.sheet.shadow.base_alpha / i) * alpha)
-      local shadow_color = Colors.with_alpha(0x000000FF, shadow_alpha)
+      local shadow_color = Colors.with_alpha(hexrgb("#000000"), shadow_alpha)
       Draw.rect_filled(dl, 
         x - shadow_offset, y - shadow_offset, 
         x + w + shadow_offset, y + h + shadow_offset, 

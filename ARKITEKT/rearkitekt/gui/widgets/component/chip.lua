@@ -11,6 +11,7 @@ local TileFX = require('rearkitekt.gui.fx.tile_fx')
 local TileFXConfig = require('rearkitekt.gui.fx.tile_fx_config')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 local STYLE = {
   PILL = "pill",
@@ -122,7 +123,7 @@ function M.draw(ctx, opts)
   opts = opts or {}
   local style = opts.style or STYLE.PILL
   local label = opts.label or ""
-  local color = opts.color or 0xFF5733FF
+  local color = opts.color or hexrgb("#FF5733")
   local height = opts.height or (style == STYLE.DOT and 28 or 24)
   local is_selected = opts.is_selected or false
   local is_hovered = opts.is_hovered or false
@@ -145,7 +146,7 @@ function M.draw(ctx, opts)
     local shadow_alpha = opts.shadow_alpha or 80
     local alpha_factor = opts.alpha_factor or 1.0
     local border = opts.border or false
-    local border_color = opts.border_color or 0x000000FF
+    local border_color = opts.border_color or hexrgb("#000000")
     local border_thickness = opts.border_thickness or 1.0
     
     local draw_color = _apply_state(color, is_active, is_hovered, is_selected)
@@ -161,7 +162,7 @@ function M.draw(ctx, opts)
           x + shadow_offset_x, 
           y + shadow_offset_y, 
           radius + shadow_blur, 
-          Colors.with_alpha(0x000000FF, shadow_alpha_final))
+          Colors.with_alpha(hexrgb("#000000"), shadow_alpha_final))
       end
       
       if show_glow then
@@ -187,7 +188,7 @@ function M.draw(ctx, opts)
           y1 + shadow_offset_y - shadow_blur, 
           x2 + shadow_offset_x + shadow_blur, 
           y2 + shadow_offset_y + shadow_blur, 
-          Colors.with_alpha(0x000000FF, shadow_alpha_final), 
+          Colors.with_alpha(hexrgb("#000000"), shadow_alpha_final), 
           rounding)
       end
       
@@ -228,7 +229,7 @@ function M.draw(ctx, opts)
   local dl = ImGui.GetWindowDrawList(ctx)
   
   if style == STYLE.DOT then
-    local bg_color = opts.bg_color or 0x1E1E1EFF
+    local bg_color = opts.bg_color or hexrgb("#1E1E1E")
     local dot_size = opts.dot_size or 8
     local dot_spacing = opts.dot_spacing or 10
     local dot_shape = opts.dot_shape or SHAPE.CIRCLE
@@ -238,7 +239,7 @@ function M.draw(ctx, opts)
     Draw.rect_filled(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, draw_bg, rounding)
     
     if is_hovered or is_selected then
-      local inner_shadow = Colors.with_alpha(0x000000FF, 40)
+      local inner_shadow = Colors.with_alpha(hexrgb("#000000"), 40)
       Draw.rect_filled(dl, start_x, start_y, start_x + chip_w, start_y + 2, inner_shadow, 0)
     end
     
@@ -259,7 +260,7 @@ function M.draw(ctx, opts)
     local dot_color = _apply_state(color, false, is_hovered, is_selected)
     
     if dot_shape == SHAPE.CIRCLE then
-      ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, (dot_size * 0.5) + 1, Colors.with_alpha(0x000000FF, 80))
+      ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, (dot_size * 0.5) + 1, Colors.with_alpha(hexrgb("#000000"), 80))
       
       if is_selected or is_hovered then
         _render_glow(dl, dot_x, dot_y, dot_size * 0.5, dot_color, 4)
@@ -273,7 +274,7 @@ function M.draw(ctx, opts)
         dot_y - half_dot, 
         dot_x + half_dot, 
         dot_y + half_dot, 
-        Colors.with_alpha(0x000000FF, 80), 
+        Colors.with_alpha(hexrgb("#000000"), 80), 
         dot_rounding)
       
       if is_selected or is_hovered then
@@ -289,7 +290,7 @@ function M.draw(ctx, opts)
         dot_rounding)
     end
     
-    local text_color = (is_hovered or is_selected) and 0xFFFFFFFF or Colors.with_alpha(0xFFFFFFFF, 200)
+    local text_color = (is_hovered or is_selected) and hexrgb("#FFFFFF") or Colors.with_alpha(hexrgb("#FFFFFF"), 200)
     local content_x = start_x + padding_h + dot_size + dot_spacing
     local available_w = chip_w - (content_x - start_x) - padding_h
     

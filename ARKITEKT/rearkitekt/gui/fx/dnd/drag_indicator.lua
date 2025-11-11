@@ -67,7 +67,7 @@ local function draw_copy_indicator(ctx, dl, mx, my, config)
   local ix = mx - size - 20
   local iy = my - size / 2
   
-  ImGui.DrawList_AddCircleFilled(dl, ix + size/2, iy + size/2, size/2, 0x1A1A1AEE)
+  ImGui.DrawList_AddCircleFilled(dl, ix + size/2, iy + size/2, size/2, hexrgb("#1A1A1AEE"))
   ImGui.DrawList_AddCircle(dl, ix + size/2, iy + size/2, size/2, indicator_color, 0, 2)
   
   local tw, th = ImGui.CalcTextSize(ctx, indicator_text)
@@ -83,7 +83,7 @@ local function draw_delete_indicator(ctx, dl, mx, my, config)
   local ix = mx - size - 20
   local iy = my - size / 2
   
-  ImGui.DrawList_AddCircleFilled(dl, ix + size/2, iy + size/2, size/2, 0x1A1A1AEE)
+  ImGui.DrawList_AddCircleFilled(dl, ix + size/2, iy + size/2, size/2, hexrgb("#1A1A1AEE"))
   ImGui.DrawList_AddCircle(dl, ix + size/2, iy + size/2, size/2, indicator_color, 0, 2)
   
   local tw, th = ImGui.CalcTextSize(ctx, indicator_text)
@@ -116,7 +116,7 @@ function M.draw_badge(ctx, dl, mx, my, count, config, is_copy_mode, is_delete_mo
   
   if cfg.shadow and cfg.shadow.enabled then
     local shadow_offset = cfg.shadow.offset or 2
-    local shadow_color = cfg.shadow.color or 0x00000099
+    local shadow_color = cfg.shadow.color or hexrgb("#00000099")
     ImGui.DrawList_AddRectFilled(dl, 
       bx + shadow_offset, by + shadow_offset, 
       bx + badge_w + shadow_offset, by + badge_h + shadow_offset, 

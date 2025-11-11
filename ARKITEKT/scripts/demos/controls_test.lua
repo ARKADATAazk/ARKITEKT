@@ -16,6 +16,9 @@ local Dropdown = require('rearkitekt.gui.widgets.controls.dropdown')
 -- Import panel system
 local Panel = require('rearkitekt.gui.widgets.panel')
 local Config = require('rearkitekt.gui.widgets.panel.config')
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 -- ============================================================================
 -- TEST STATE
@@ -36,8 +39,8 @@ local test_state = {
 
 local function create_test_panel()
   local panel_config = {
-    bg_color = 0x1A1A1AFF,
-    border_color = 0x000000DD,
+    bg_color = hexrgb("#1A1A1A"),
+    border_color = hexrgb("#000000DD"),
     border_thickness = 1,
     rounding = 8,
     padding = 16,
@@ -45,8 +48,8 @@ local function create_test_panel()
     header = {
       enabled = true,
       height = 30,
-      bg_color = 0x1E1E1EFF,
-      border_color = 0x00000066,
+      bg_color = hexrgb("#1E1E1E"),
+      border_color = hexrgb("#00000066"),
       rounding = 8,
       
       padding = {

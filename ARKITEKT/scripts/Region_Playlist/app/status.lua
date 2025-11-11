@@ -3,6 +3,9 @@
 -- Status bar configuration
 
 local StatusBar = require("rearkitekt.app.chrome.status_bar")
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 
@@ -40,7 +43,7 @@ local function get_app_status(State)
     end
     
     return {
-      color = 0x41E0A3FF,
+      color = hexrgb("#41E0A3"),
       text = status_text .. "  • " .. mode_text .. "  • " .. quantize_text .. "  • Space=Play  Arrows=Prev/Next  Q=Quantize",
       buttons = nil,
       right_buttons = nil,

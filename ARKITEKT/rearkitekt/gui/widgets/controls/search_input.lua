@@ -7,6 +7,9 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Style = require('rearkitekt.gui.widgets.controls.style_defaults')
 local Tooltip = require('rearkitekt.gui.widgets.controls.tooltip')
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 
@@ -123,10 +126,10 @@ local function render_search_input(ctx, dl, x, y, width, height, config, state, 
   ImGui.SetCursorScreenPos(ctx, x + config.padding_x, y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5 - 2)
   ImGui.PushItemWidth(ctx, width - config.padding_x * 2)
   
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0x00000000)
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0x00000000)
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0x00000000)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#00000000"))
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
   
   local changed, new_text = ImGui.InputTextWithHint(

@@ -4,6 +4,9 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 
@@ -11,7 +14,7 @@ local M = {}
 local function hexrgb(hex)
   if hex:sub(1, 1) == "#" then hex = hex:sub(2) end
   local h = tonumber(hex, 16)
-  if not h then return 0xFFFFFFFF end
+  if not h then return hexrgb("#FFFFFF") end
   return (#hex == 8) and h or ((h << 8) | 0xFF)
 end
 
@@ -105,7 +108,7 @@ M.DROPDOWN = {
   popup = {
     bg_color = hexrgb("#1E1E1EFF"),
     border_color = M.COLORS.BORDER_INNER,
-    item_bg_color = 0x00000000,
+    item_bg_color = hexrgb("#00000000"),
     item_hover_color = M.COLORS.BORDER_INNER,
     item_active_color = hexrgb("#4A4A4AFF"),
     item_text_color = M.COLORS.TEXT_NORMAL,

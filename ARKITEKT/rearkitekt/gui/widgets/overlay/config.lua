@@ -2,17 +2,20 @@
 -- ReArkitekt/gui/widgets/overlay/config.lua
 -- Configuration for modal overlay and sheet appearance
 
+local Colors = require('rearkitekt.core.colors')
+
 local M = {}
+local hexrgb = Colors.hexrgb
 
 local default_config = {
   scrim = {
-    color = 0x1A1A1AFF,
+    color = hexrgb("#1A1A1A"),
     opacity = 0.94,
   },
   
   sheet = {
     background = {
-      color = 0x1A1A1AFF,
+      color = hexrgb("#1A1A1A"),
       opacity = 0.96,
     },
     
@@ -24,37 +27,37 @@ local default_config = {
     },
     
     border = {
-      outer_color = 0x404040FF,
+      outer_color = hexrgb("#404040"),
       outer_opacity = 0.7,
       outer_thickness = 1.5,
-      inner_color = 0xFFFFFFFF,
+      inner_color = hexrgb("#FFFFFF"),
       inner_opacity = 0.10,
       inner_thickness = 1.0,
     },
     
     gradient = {
       top_enabled = true,
-      top_color = 0xFFFFFFFF,
+      top_color = hexrgb("#FFFFFF"),
       top_height = 80,
       top_max_alpha = 0.06,
       
       bottom_enabled = true,
-      bottom_color = 0x000000FF,
+      bottom_color = hexrgb("#000000"),
       bottom_height = 60,
       bottom_max_alpha = 0.08,
     },
     
     header = {
       height = 42,
-      text_color = 0xFFFFFFFF,
+      text_color = hexrgb("#FFFFFF"),
       text_opacity = 1.0,
       
-      divider_color = 0x666666FF,
+      divider_color = hexrgb("#666666"),
       divider_opacity = 0.31,
       divider_thickness = 1.0,
       divider_fade_width = 60,
       
-      highlight_color = 0xFFFFFFFF,
+      highlight_color = hexrgb("#FFFFFF"),
       highlight_opacity = 0.06,
       highlight_thickness = 1.0,
     },

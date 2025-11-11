@@ -2,6 +2,9 @@
 -- ReArkitekt/gui/widgets/nodal/core/node.lua
 -- Node data structure and logic with trigger UI height calculation
 
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 local M = {}
 
 function M.new(opts)
@@ -94,7 +97,7 @@ function M.calculate_height(node, config)
 end
 
 function M.get_base_color(node, config)
-  return config.colors.mirror_modes[node.mirror_mode] or 0x88CEFFFF
+  return config.colors.mirror_modes[node.mirror_mode] or hexrgb("#88CEFF")
 end
 
 function M.is_point_inside(node, x, y)

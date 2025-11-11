@@ -3,6 +3,9 @@
 -- Default configuration for status bar appearance and behavior
 
 local Chip = require('rearkitekt.gui.widgets.component.chip')
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 
@@ -31,7 +34,7 @@ M.defaults = {
     shadow_blur = 1,             -- Shadow blur radius
     shadow_alpha = 80,           -- Shadow transparency (0-255)
     border = false,              -- Enable border
-    border_color = 0x000000FF,   -- Border color (RGBA)
+    border_color = hexrgb("#000000"),   -- Border color (RGBA)
     border_thickness = 1.0,      -- Border line thickness
   },
 }
@@ -64,7 +67,7 @@ M.presets = {
       shadow_blur = 0,
       shadow_alpha = 120,
       border = true,
-      border_color = 0x000000FF,
+      border_color = hexrgb("#000000"),
       border_thickness = 1.0,
     }
   },
@@ -105,7 +108,7 @@ M.presets = {
       shadow_blur = 1,
       shadow_alpha = 100,
       border = true,
-      border_color = 0x000000FF,
+      border_color = hexrgb("#000000"),
       border_thickness = 1.5,
     }
   },

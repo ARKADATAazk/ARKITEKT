@@ -69,7 +69,7 @@ function M.centered_text(ctx, text, x1, y1, x2, y2, color)
   local tw, th = M.ImGui.CalcTextSize(ctx, text)
   local cx = x1 + math.floor((x2 - x1 - tw) * 0.5)
   local cy = y1 + math.floor((y2 - y1 - th) * 0.5)
-  M.ImGui.DrawList_AddText(dl, cx, cy, color or 0xFFFFFFFF, text)
+  M.ImGui.DrawList_AddText(dl, cx, cy, color or hexrgb("#FFFFFF"), text)
 end
 
 -- Draw a crisp rectangle (pixel-aligned)

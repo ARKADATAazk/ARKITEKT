@@ -69,6 +69,9 @@ local cache_dir = reaper.GetResourcePath() .. SEP .. "Scripts" .. SEP .. "ReArki
 
 -- Initialize settings and state
 local Settings = require('rearkitekt.core.settings')
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 local settings = Settings.open(cache_dir, 'settings.json')
 
 State.initialize(settings)
@@ -104,8 +107,8 @@ Shell.run({
   
   -- Make window frameless
   flags = ImGui.WindowFlags_NoBackground,
-  bg_color_floating = 0x00000000,
-  bg_color_docked = 0x00000000,
+  bg_color_floating = hexrgb("#00000000"),
+  bg_color_docked = hexrgb("#00000000"),
   
   -- Pass overlay manager to window
   overlay = overlay,

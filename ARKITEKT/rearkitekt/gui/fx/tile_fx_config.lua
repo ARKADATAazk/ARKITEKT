@@ -2,6 +2,9 @@
 -- ReArkitekt/gui/fx/tile_fx_config.lua
 -- Granular tile visual configuration
 
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 local M = {}
 
 M.DEFAULT = {
@@ -27,7 +30,7 @@ M.DEFAULT = {
   
   -- Region name text - neutral white/gray (brightness adjusts the base neutral color)
   name_brightness = 1.0,
-  name_base_color = 0xDDE3E9FF,
+  name_base_color = hexrgb("#DDE3E9"),
   
   -- Duration/bars text - region-colored
   duration_saturation = 0.3,

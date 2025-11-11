@@ -6,8 +6,10 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Chip = require('rearkitekt.gui.widgets.component.chip')
 local StatusBarConfig = require('rearkitekt.app.chrome.status_bar.config')
+local Colors = require('rearkitekt.core.colors')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 local function add_text(dl, x, y, col_u32, s)
   if dl and ImGui.DrawList_AddText then
@@ -47,16 +49,16 @@ function M.new(config)
   local style   = config.style or {}
   local palette = style.palette or {}
 
-  local COL_BG     = palette.grey_08  or 0x1E1E1EFF
-  local COL_BORDER = palette.black    or 0x000000FF
-  local COL_TEXT   = palette.grey_c0  or 0xC0C0C0FF  -- fixed RGBA fallback
-  local COL_SEP    = palette.grey_66  or 0x666666FF
+  local COL_BG     = palette.grey_08  or hexrgb("#1E1E1E")
+  local COL_BORDER = palette.black    or hexrgb("#000000")
+  local COL_TEXT   = palette.grey_c0  or hexrgb("#C0C0C0")  -- fixed RGBA fallback
+  local COL_SEP    = palette.grey_66  or hexrgb("#666666")
 
-  local DEFAULT_TEAL   = palette.teal    or 0x41E0A3FF
-  local DEFAULT_YELLOW = palette.yellow  or 0xE0B341FF
-  local DEFAULT_RED    = palette.red     or 0xE04141FF
+  local DEFAULT_TEAL   = palette.teal    or hexrgb("#41E0A3")
+  local DEFAULT_YELLOW = palette.yellow  or hexrgb("#E0B341")
+  local DEFAULT_RED    = palette.red     or hexrgb("#E04141")
 
-  local RESIZE_HANDLE_COLOR = palette.grey_66 or 0x666666FF
+  local RESIZE_HANDLE_COLOR = palette.grey_66 or hexrgb("#666666")
 
   -- Chip configuration from merged config
   local chip_config           = config.chip
@@ -146,7 +148,7 @@ function M.new(config)
       ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNWSE)
     end
 
-    local grip_color = (is_hovering or resize_dragging) and (palette.grey_52 or 0x858585FF) or RESIZE_HANDLE_COLOR
+    local grip_color = (is_hovering or resize_dragging) and (palette.grey_52 or hexrgb("#858585")) or RESIZE_HANDLE_COLOR
 
     local row1_y = center_y + 3
     ImGui.DrawList_AddRectFilled(dl, handle_right - (sz * 3) - (gap * 2), row1_y, handle_right - (sz * 2) - (gap * 2), row1_y + sz, grip_color, 0, 0)

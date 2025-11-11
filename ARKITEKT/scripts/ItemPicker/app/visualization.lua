@@ -1,5 +1,8 @@
 -- @noindex
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 local utils
@@ -363,7 +366,7 @@ function M.DisplayPreviewLine(ctx, preview_start, preview_end, draw_list)
     local item_x2, item_y2 = ImGui.GetItemRectMax(ctx)
     local item_w, item_h = ImGui.GetItemRectSize(ctx)
     local x = item_x1 + item_w * progress
-    ImGui.DrawList_AddLine(draw_list, x, item_y1, x, item_y2, 0xFFFFFFFF)
+    ImGui.DrawList_AddLine(draw_list, x, item_y1, x, item_y2, hexrgb("#FFFFFF"))
   end
 end
 

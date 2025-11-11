@@ -1,5 +1,8 @@
 -- @noindex
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 local visualization
@@ -116,7 +119,7 @@ function M.DraggingThumbnailWindow(ctx, state, mini_font)
     local cursor_x, cursor_y = ImGui.GetItemRectMin(ctx)
     local x1, y1 = cursor_x + ImGui.StyleVar_ChildBorderSize, cursor_y + ImGui.StyleVar_ChildBorderSize
     ImGui.DrawList_AddRectFilled(state.draw_list, x1 - 8, y1 - 8, x1 + state.item_to_add_width + 8,
-      y1 + state.item_to_add_height + 8, 0x00000050)
+      y1 + state.item_to_add_height + 8, hexrgb("#00000050"))
 
     ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x1 + state.item_to_add_width,
       y1 + ImGui.GetTextLineHeightWithSpacing(ctx), state.item_to_add_color)

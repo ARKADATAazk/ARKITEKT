@@ -11,18 +11,19 @@ local TileFXConfig = require('rearkitekt.gui.fx.tile_fx_config')
 local BaseRenderer = require('Region_Playlist.widgets.region_tiles.renderers.base')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 M.CONFIG = {
-  bg_base = 0x1A1A1AFF,
+  bg_base = hexrgb("#1A1A1A"),
   badge_rounding = 4,
   badge_padding_x = 6,
   badge_padding_y = 3,
   badge_margin = 6,
-  badge_bg = 0x14181CFF,
+  badge_bg = hexrgb("#14181C"),
   badge_border_alpha = 0x33,
   disabled = { desaturate = 0.8, brightness = 0.4, min_alpha = 0x33, fade_speed = 20.0, min_lightness = 0.28 },
   responsive = { hide_length_below = 35, hide_badge_below = 25, hide_text_below = 15 }, -- UPDATED
-  playlist_tile = { base_color = 0x3A3A3AFF },
+  playlist_tile = { base_color = hexrgb("#3A3A3A") },
   text_margin_right = 6,
   badge_nudge_x = 0,
   badge_nudge_y = 0,
@@ -118,7 +119,7 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
     
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors.with_alpha(base_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
-    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors.with_alpha(0xFFFFFFDD, text_alpha), badge_text)
+    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
     
     ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
     ImGui.InvisibleButton(ctx, "##badge_" .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
@@ -135,7 +136,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   local playlist_data = {
     name = playlist.name or item.playlist_name or "Unknown Playlist",
     item_count = playlist.items and #playlist.items or item.playlist_item_count or 0,
-    chip_color = playlist.chip_color or item.chip_color or 0xFF5733FF
+    chip_color = playlist.chip_color or item.chip_color or hexrgb("#FF5733")
   }
 
   local is_enabled = item.enabled ~= false
@@ -216,7 +217,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
 
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors.with_alpha(playlist_data.chip_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
-    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors.with_alpha(0xFFFFFFDD, text_alpha), badge_text)
+    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
     
     ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
     ImGui.InvisibleButton(ctx, "##badge_" .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)

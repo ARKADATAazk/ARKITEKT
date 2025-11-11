@@ -14,6 +14,9 @@ do
   end
   
   local ok2, C = pcall(require, "rearkitekt.core.colors")
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
   if ok2 and type(C) == "table" then
     Colors = C
   end
@@ -55,13 +58,13 @@ local function render_slider(dl, x0, y0, x1, y1, gradient_fn, opt)
   local inset = border_thickness
   
   -- Dark base
-  ImGui.DrawList_AddRectFilled(dl, x0, y0, x1, y1, 0x1A1A1AFF, rounding)
+  ImGui.DrawList_AddRectFilled(dl, x0, y0, x1, y1, hexrgb("#1A1A1A"), rounding)
   
   -- Gradient (drawn inset to not interfere with rounded corners)
   gradient_fn(dl, x0 + inset, y0 + inset, x1 - inset, y1 - inset, opt)
   
   -- Border
-  ImGui.DrawList_AddRect(dl, x0, y0, x1, y1, 0x000000FF, rounding, 0, border_thickness)
+  ImGui.DrawList_AddRect(dl, x0, y0, x1, y1, hexrgb("#000000"), rounding, 0, border_thickness)
 end
 
 -- Render grab handle (ROUNDED, DARKER)
@@ -72,14 +75,14 @@ local function render_grab(dl, gx, y0, y1, GRAB_W, active, hovered)
   
   -- Shadow (rounded)
   ImGui.DrawList_AddRectFilled(dl, x_left + 1, y0 + 1, x_right + 1, y1 + 1, 
-    0x00000050, rounding)
+    hexrgb("#00000050"), rounding)
   
   -- Base (darker bluish-greys, rounded)
-  local grab_col = active and 0x585C65FF or (hovered and 0x484C55FF or 0x383C45FF)
+  local grab_col = active and hexrgb("#585C65") or (hovered and hexrgb("#484C55") or hexrgb("#383C45"))
   ImGui.DrawList_AddRectFilled(dl, x_left, y0, x_right, y1, grab_col, rounding)
   
   -- Border (rounded)
-  ImGui.DrawList_AddRect(dl, x_left, y0, x_right, y1, 0x000000FF, rounding, 0, 1.0)
+  ImGui.DrawList_AddRect(dl, x_left, y0, x_right, y1, hexrgb("#000000"), rounding, 0, 1.0)
 end
 
 -- Core slider

@@ -28,6 +28,7 @@ local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
 local StyleOK, Style = pcall(require, 'rearkitekt.gui.style')
+local Colors = require('rearkitekt.core.colors')
 
 -- ============================================================================
 -- STATE
@@ -247,7 +248,7 @@ local function draw_standalone_section(ctx)
     purple = hexrgb("#B968C7FF"),
   }
   
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, color_map[state.standalone.dropdown_value] or 0xFFFFFFFF)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, color_map[state.standalone.dropdown_value] or hexrgb("#FFFFFF"))
   ImGui.Text(ctx, string.format("Selected: %s (%s)", state.standalone.dropdown_value, state.standalone.dropdown_direction))
   ImGui.PopStyleColor(ctx, 1)
   

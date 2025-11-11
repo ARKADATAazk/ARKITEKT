@@ -13,6 +13,7 @@ local OverlayConfig = require('rearkitekt.gui.widgets.overlay.config')
 
 local M = {}
 M.__index = M
+local hexrgb = Colors.hexrgb
 
 local function create_alpha_tracker(speed)
   return {
@@ -141,7 +142,7 @@ function M:render(ctx, dt)
   
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
-  ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, 0x00000000)
+  ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, hexrgb("#00000000"))
   
   Style.PushMyStyle(ctx)
   

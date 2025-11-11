@@ -1,5 +1,8 @@
 -- @noindex
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 local config
@@ -32,7 +35,7 @@ M.CONFIG = {
     saturation_factor = 1.1,
     brightness_factor = 0.7,
     alpha = 0xDD,
-    text_shadow = 0x00000099,
+    text_shadow = hexrgb("#00000099"),
   },
   
   badge = {
@@ -40,12 +43,12 @@ M.CONFIG = {
     padding_y = 3,
     margin = 6,
     rounding = 4,
-    bg = 0x14181CFF,
+    bg = hexrgb("#14181C"),
     border_alpha = 0x33,
   },
   
   text = {
-    primary_color = 0xFFFFFFFF,
+    primary_color = hexrgb("#FFFFFF"),
     padding_left = 6,
     padding_top = 4,
     margin_right = 6,
@@ -76,7 +79,7 @@ M.CONFIG = {
     separator_alpha = 0x99,
     
     name_brightness = 1.0,
-    name_base_color = 0xDDE3E9FF,
+    name_base_color = hexrgb("#DDE3E9"),
     
     duration_saturation = 0.3,
     duration_brightness = 1,
@@ -177,7 +180,7 @@ end
 
 local function get_dark_waveform_color(base_color)
   if not Colors then
-    return 0x333333FF
+    return hexrgb("#333333")
   end
   
   local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
@@ -235,7 +238,7 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, is_midi, alpha)
   local size = math.min(x2 - x1, y2 - y1) * 0.15
   
   local spinner_alpha = math.floor(alpha * 128)
-  local spinner_color = Colors.with_alpha(0xFFFFFFFF, spinner_alpha)
+  local spinner_color = Colors.with_alpha(hexrgb("#FFFFFF"), spinner_alpha)
   
   local time = reaper.time_precise()
   local angle = (time * 2) % (math.pi * 2)
@@ -332,7 +335,7 @@ function M.render_complete_tile(ctx, dl, rect, item_data, tile_state, base_color
         math.floor(M.CONFIG.tile_fx.ants_alpha * combined_alpha)
       )
     else
-      ant_color = 0xFFFFFFFF
+      ant_color = hexrgb("#FFFFFF")
     end
     
     local inset = M.CONFIG.tile_fx.ants_inset
@@ -390,10 +393,10 @@ function M.render_complete_tile(ctx, dl, rect, item_data, tile_state, base_color
     
     if Draw then
       Draw.text(dl, badge_x + M.CONFIG.badge.padding_x, badge_y + M.CONFIG.badge.padding_y, 
-        Colors and Colors.with_alpha(0xFFFFFFDD, text_alpha) or 0xFFFFFFDD, badge_text)
+        Colors and Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha) or hexrgb("#FFFFFFDD"), badge_text)
     else
       ImGui.DrawList_AddText(dl, badge_x + M.CONFIG.badge.padding_x, badge_y + M.CONFIG.badge.padding_y, 
-        Colors and Colors.with_alpha(0xFFFFFFDD, text_alpha) or 0xFFFFFFDD, badge_text)
+        Colors and Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha) or hexrgb("#FFFFFFDD"), badge_text)
     end
   end
   

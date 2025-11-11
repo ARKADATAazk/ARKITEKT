@@ -5,6 +5,9 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Easing = require('rearkitekt.gui.fx.easing')
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 
@@ -85,7 +88,7 @@ function DestroyAnim:render(ctx, dl, key, base_rect, base_color, rounding)
   local nx2 = cx + new_w * 0.5
   local ny2 = cy + new_h * 0.5
   
-  local target_red = 0xAA333388
+  local target_red = hexrgb("#AA333388")
   
   local r1 = (base_color >> 24) & 0xFF
   local g1 = (base_color >> 16) & 0xFF
@@ -121,7 +124,7 @@ function DestroyAnim:render(ctx, dl, key, base_rect, base_color, rounding)
   end
   
   local cross_alpha = math.floor(255 * (1 - Easing.ease_out_quad(t)))
-  local cross_color = 0xFF444400 | cross_alpha
+  local cross_color = (hexrgb("#FF4444") & 0xFFFFFF00) | cross_alpha
   local cross_thickness = 2.5
   
   local cross_size = 20

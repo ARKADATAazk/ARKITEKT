@@ -24,6 +24,9 @@ local SelRect = require("rearkitekt.gui.widgets.selection_rectangle")
 
 local SettingsOK, Settings = pcall(require, "rearkitekt.core.settings")
 local StyleOK, Style = pcall(require, "rearkitekt.gui.style")
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local settings = nil
 if SettingsOK and type(Settings.new)=="function" then
@@ -214,13 +217,13 @@ local function get_app_status()
   
   if total_conflicts > 0 then
     return {
-      color = 0xFFA500FF,
+      color = hexrgb("#FFA500"),
       text = string.format("CONFLICTS: %d", total_conflicts),
     }
   end
   
   return {
-    color = 0x41E0A3FF,
+    color = hexrgb("#41E0A3"),
     text = "READY",
   }
 end

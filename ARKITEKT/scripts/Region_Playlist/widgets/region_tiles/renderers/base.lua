@@ -14,6 +14,7 @@ local TileUtil = require('rearkitekt.gui.systems.tile_utilities')
 local Chip = require('rearkitekt.gui.widgets.component.chip')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 M.CONFIG = {
   rounding = 6,
@@ -242,7 +243,7 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
   else
     name_color = Colors.with_alpha(Colors.adjust_brightness(fx_config.name_base_color, fx_config.name_brightness), text_alpha)
     if state.hover or state.selected then
-      name_color = Colors.with_alpha(0xFFFFFFFF, text_alpha)
+      name_color = Colors.with_alpha(hexrgb("#FFFFFF"), text_alpha)
     end
   end
 

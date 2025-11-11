@@ -2,34 +2,37 @@
 -- ReArkitekt/gui/fx/dnd/config.lua
 -- Centralized configuration for drag and drop visual indicators
 
+local Colors = require('rearkitekt.core.colors')
+
 local M = {}
+local hexrgb = Colors.hexrgb
 
 M.MODES = {
   move = {
-    stroke_color = 0x42E896FF,
-    glow_color = 0x42E89633,
-    badge_accent = 0x42E896FF,
+    stroke_color = hexrgb("#42E896"),
+    glow_color = hexrgb("#42E89633"),
+    badge_accent = hexrgb("#42E896"),
   },
   copy = {
-    stroke_color = 0x9C87E8FF,
-    glow_color = 0x9C87E833,
-    badge_accent = 0x9C87E8FF,
+    stroke_color = hexrgb("#9C87E8"),
+    glow_color = hexrgb("#9C87E833"),
+    badge_accent = hexrgb("#9C87E8"),
     indicator_text = "+",
-    indicator_color = 0x9C87E8FF,
+    indicator_color = hexrgb("#9C87E8"),
   },
   delete = {
-    stroke_color = 0xE84A4AFF,
-    glow_color = 0xE84A4A33,
-    badge_accent = 0xE84A4AFF,
+    stroke_color = hexrgb("#E84A4A"),
+    glow_color = hexrgb("#E84A4A33"),
+    badge_accent = hexrgb("#E84A4A"),
     indicator_text = "-",
-    indicator_color = 0xE84A4AFF,
+    indicator_color = hexrgb("#E84A4A"),
   },
 }
 
 M.TILE_DEFAULTS = {
   width = 60,
   height = 40,
-  base_fill = 0x1A1A1AFF,
+  base_fill = hexrgb("#1A1A1A"),
   stroke_thickness = 1.5,
   rounding = 4,
   global_opacity = 0.70,
@@ -44,8 +47,8 @@ M.STACK_DEFAULTS = {
 }
 
 M.BADGE_DEFAULTS = {
-  bg = 0x1A1A1AEE,
-  border_color = 0x00000099,
+  bg = hexrgb("#1A1A1AEE"),
+  border_color = hexrgb("#00000099"),
   border_thickness = 1,
   rounding = 6,
   padding_x = 6,
@@ -71,14 +74,14 @@ M.DROP_DEFAULTS = {
 M.SHADOW_DEFAULTS = {
   enabled = false,
   layers = 2,
-  base_color = 0x00000044,
+  base_color = hexrgb("#00000044"),
   offset = 2,
   blur_spread = 1.0,
 }
 
 M.INNER_GLOW_DEFAULTS = {
   enabled = false,
-  color = 0x42E89622,
+  color = hexrgb("#42E89622"),
   thickness = 2,
 }
 

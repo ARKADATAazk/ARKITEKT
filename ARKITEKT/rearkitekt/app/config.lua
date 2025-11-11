@@ -2,7 +2,10 @@
 -- ReArkitekt/app/config.lua
 -- Single source of truth for all application defaults
 
+local Colors = require('rearkitekt.core.colors')
+
 local M = {}
+local hexrgb = Colors.hexrgb
 
 M.PROFILER_ENABLED = false  -- Set to true to enable profiler
 
@@ -16,7 +19,7 @@ M.defaults = {
     
     -- Background colors
     bg_color_floating = nil,  -- nil = use ImGui default
-    bg_color_docked   = 0x282828FF,  -- Slightly lighter for docked mode
+    bg_color_docked   = hexrgb("#282828"),  -- Slightly lighter for docked mode
     
     -- Fullscreen/Viewport mode settings
     fullscreen = {
@@ -27,19 +30,11 @@ M.defaults = {
       fade_speed = 10.0,  -- Animation speed multiplier (higher = faster)
       
       scrim_enabled = true,  -- Show dark background scrim
-      scrim_color = 0x000000FF,
+      scrim_color = hexrgb("#000000"),
       scrim_opacity = 0.85,
       
       window_bg_override = nil,  -- Override window background color (nil = use default)
       window_opacity = 1.0,  -- Overall window content opacity
-      
-      -- Window flags for fullscreen mode
-      hide_titlebar = true,
-      no_resize = true,
-      no_move = true,
-      no_collapse = true,
-      no_scrollbar = true,
-      no_scroll_with_mouse = true,
       
       -- Close behavior
       show_close_button = true,  -- Show floating close button on hover
@@ -51,12 +46,12 @@ M.defaults = {
       close_button = {
         size = 32,
         margin = 16,
-        bg_color = 0x000000FF,
+        bg_color = hexrgb("#000000"),
         bg_opacity = 0.6,
         bg_opacity_hover = 0.8,
-        icon_color = 0xFFFFFFFF,
-        hover_color = 0xFF4444FF,
-        active_color = 0xFF0000FF,
+        icon_color = hexrgb("#FFFFFF"),
+        hover_color = hexrgb("#FF4444"),
+        active_color = hexrgb("#FF0000"),
       },
     },
   },
@@ -85,25 +80,25 @@ M.defaults = {
     icon_size       = 18,
     icon_spacing    = 8,
     version_spacing = 6,
-    version_color   = 0x888888FF,
+    version_color   = hexrgb("#888888"),
     show_icon       = true,
     enable_maximize = true,
     
     -- Button colors (minimal style)
-    button_maximize_normal  = 0x00000000,
-    button_maximize_hovered = 0x57C290FF,
-    button_maximize_active  = 0x60FFFFFF,
-    button_close_normal     = 0x00000000,
-    button_close_hovered    = 0xCC3333FF,
-    button_close_active     = 0xFF1111FF,
+    button_maximize_normal  = hexrgb("#00000000"),
+    button_maximize_hovered = hexrgb("#57C290"),
+    button_maximize_active  = hexrgb("#60FFFF"),
+    button_close_normal     = hexrgb("#00000000"),
+    button_close_hovered    = hexrgb("#CC3333"),
+    button_close_active     = hexrgb("#FF1111"),
     
     -- Button colors (filled style)
-    button_maximize_filled_normal  = 0x808080FF,
-    button_maximize_filled_hovered = 0x999999FF,
-    button_maximize_filled_active  = 0x666666FF,
-    button_close_filled_normal     = 0xCC3333FF,
-    button_close_filled_hovered    = 0xFF4444FF,
-    button_close_filled_active     = 0xFF1111FF,
+    button_maximize_filled_normal  = hexrgb("#808080"),
+    button_maximize_filled_hovered = hexrgb("#999999"),
+    button_maximize_filled_active  = hexrgb("#666666"),
+    button_close_filled_normal     = hexrgb("#CC3333"),
+    button_close_filled_hovered    = hexrgb("#FF4444"),
+    button_close_filled_active     = hexrgb("#FF1111"),
   },
 
   status_bar = {

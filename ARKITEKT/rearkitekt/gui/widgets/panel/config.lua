@@ -2,13 +2,16 @@
 -- ReArkitekt/gui/widgets/panel/config.lua
 -- Default configuration for panel with enhanced features
 
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 local M = {}
 
 -- Standard ReArkitekt color palette
 local function hexrgb(hex)
   if hex:sub(1, 1) == "#" then hex = hex:sub(2) end
   local h = tonumber(hex, 16)
-  if not h then return 0xFFFFFFFF end
+  if not h then return hexrgb("#FFFFFF") end
   return (#hex == 8) and h or ((h << 8) | 0xFF)
 end
 
@@ -24,7 +27,7 @@ M.DEFAULTS = {
   scroll = {
     flags = 0,
     custom_scrollbar = false,
-    bg_color = 0x00000000,
+    bg_color = hexrgb("#00000000"),
   },
   
   anti_jitter = {

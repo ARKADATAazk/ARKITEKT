@@ -24,6 +24,7 @@ local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
 local StyleOK, Style = pcall(require, 'rearkitekt.gui.style')
+local Colors = require('rearkitekt.core.colors')
 
 local function create_mock_music_flow()
   local config = Config.get()
@@ -205,9 +206,9 @@ Shell.run({
     local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
     
     -- Style the child window
-    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x0A0A0AFF)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#0A0A0A"))
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x404040FF)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#404040"))
     
     -- Create child window that fills available space with no scrollbars
     -- Using WindowFlags_NoScrollbar and WindowFlags_NoScrollWithMouse to prevent scroll interference

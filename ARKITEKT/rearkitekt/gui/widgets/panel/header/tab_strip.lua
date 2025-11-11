@@ -6,23 +6,25 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local ContextMenu = require('rearkitekt.gui.widgets.controls.context_menu')
 local Chip = require('rearkitekt.gui.widgets.component.chip')
+local Colors = require('rearkitekt.core.colors')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 local TAB_SLIDE_SPEED = 15.0
 local DRAG_THRESHOLD = 3.0
 
 local DEFAULTS = {
-  bg_color = 0x252525FF,
-  bg_hover_color = 0x2A2A2AFF,
-  bg_active_color = 0x303030FF,
-  border_outer_color = 0x000000DD,
-  border_inner_color = 0x404040FF,
-  border_hover_color = 0x505050FF,
-  border_active_color = 0x7B7B7BFF,
-  text_color = 0xAAAAAAFF,
-  text_hover_color = 0xFFFFFFFF,
-  text_active_color = 0xFFFFFFFF,
+  bg_color = hexrgb("#252525"),
+  bg_hover_color = hexrgb("#2A2A2A"),
+  bg_active_color = hexrgb("#303030"),
+  border_outer_color = hexrgb("#000000DD"),
+  border_inner_color = hexrgb("#404040"),
+  border_hover_color = hexrgb("#505050"),
+  border_active_color = hexrgb("#7B7B7B"),
+  text_color = hexrgb("#AAAAAA"),
+  text_hover_color = hexrgb("#FFFFFF"),
+  text_active_color = hexrgb("#FFFFFF"),
 }
 
 local function get_corner_flags(corner_rounding)
@@ -340,7 +342,7 @@ local function draw_track(ctx, dl, x, y, width, height, config, corner_rounding)
     dl,
     track_x, track_y,
     track_x + track_width, track_y + track_height,
-    track_cfg.bg_color or 0x1A1A1AFF,
+    track_cfg.bg_color or hexrgb("#1A1A1A"),
     rounding,
     corner_flags
   )
@@ -350,7 +352,7 @@ local function draw_track(ctx, dl, x, y, width, height, config, corner_rounding)
       dl,
       track_x, track_y,
       track_x + track_width, track_y + track_height,
-      track_cfg.border_color or 0x0A0A0AFF,
+      track_cfg.border_color or hexrgb("#0A0A0A"),
       rounding,
       corner_flags,
       track_cfg.border_thickness

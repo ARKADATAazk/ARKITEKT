@@ -10,6 +10,7 @@ local Colors = require('rearkitekt.core.colors')
 local Connection = require('rearkitekt.gui.widgets.nodal.core.connection')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 function M.render(ctx, connection, nodes, config)
   local dl = ImGui.GetWindowDrawList(ctx)
@@ -181,7 +182,7 @@ function M.render_connection_label_manhattan(ctx, dl, connection, points, config
       local bg_y2 = mid_y + text_h / 2 + padding
       
       ImGui.DrawList_AddRectFilled(dl, bg_x1, bg_y1, bg_x2, bg_y2, 
-        config.colors.connection_label_bg or 0x1A1A1AEE, 
+        config.colors.connection_label_bg or hexrgb("#1A1A1AEE"), 
         config.connection.label_bg_rounding or 4)
       
       ImGui.DrawList_AddRect(dl, bg_x1, bg_y1, bg_x2, bg_y2, connection.color, 

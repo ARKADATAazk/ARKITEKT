@@ -1,5 +1,8 @@
 -- @noindex
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 local utils
@@ -89,7 +92,7 @@ function M.MainWindow(ctx, state, settings, big_font, SCRIPT_TITLE, SCREEN_W, SC
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, search_fade)
   ImGui.PushFont(ctx, big_font, 14)
   local search_text_w, search_text_h = ImGui.CalcTextSize(ctx, "Search:")
-  ImGui.DrawList_AddText(state.draw_list, SCREEN_W / 2 - search_text_w / 2, SCREEN_H * config.LAYOUT.CONTENT_START_Y - search_text_h + search_y_offset, 0xFFFFFFFF, "Search:")
+  ImGui.DrawList_AddText(state.draw_list, SCREEN_W / 2 - search_text_w / 2, SCREEN_H * config.LAYOUT.CONTENT_START_Y - search_text_h + search_y_offset, hexrgb("#FFFFFF"), "Search:")
 
   ImGui.SetCursorScreenPos(ctx, SCREEN_W / 2 - (SCREEN_W * config.LAYOUT.SEARCH_WIDTH_RATIO) / 2, SCREEN_H * config.LAYOUT.CONTENT_START_Y + search_y_offset)
   ImGui.PushItemWidth(ctx, SCREEN_W * config.LAYOUT.SEARCH_WIDTH_RATIO)

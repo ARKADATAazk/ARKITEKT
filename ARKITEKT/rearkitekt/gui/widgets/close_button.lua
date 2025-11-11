@@ -9,6 +9,7 @@ local Draw = require('rearkitekt.gui.draw')
 local Colors = require('rearkitekt.core.colors')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 local function create_alpha_tracker(speed)
   return {
@@ -41,15 +42,15 @@ function M.new(opts)
     margin = opts.margin or 16,
     proximity_distance = opts.proximity_distance or 150,
     
-    bg_color = opts.bg_color or 0x000000FF,
+    bg_color = opts.bg_color or hexrgb("#000000"),
     bg_opacity = opts.bg_opacity or 0.6,
     bg_opacity_hover = opts.bg_opacity_hover or 0.8,
     
-    icon_color = opts.icon_color or 0xFFFFFFFF,
+    icon_color = opts.icon_color or hexrgb("#FFFFFF"),
     icon_opacity = opts.icon_opacity or 0.8,
     
-    hover_color = opts.hover_color or 0xFF4444FF,
-    active_color = opts.active_color or 0xFF0000FF,
+    hover_color = opts.hover_color or hexrgb("#FF4444"),
+    active_color = opts.active_color or hexrgb("#FF0000"),
     
     alpha = create_alpha_tracker(12.0),
     hover_alpha = create_alpha_tracker(16.0),

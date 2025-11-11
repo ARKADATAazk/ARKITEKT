@@ -7,6 +7,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local M = {}
+local hexrgb
 
 local Hub = nil
 do
@@ -23,7 +24,10 @@ end
 local Colors = nil
 do
   local ok, mod = pcall(require, 'rearkitekt.core.colors')
-  if ok then Colors = mod end
+  if ok then 
+    Colors = mod
+    hexrgb = Colors.hexrgb
+  end
 end
 
 local CloseButton = nil
@@ -54,7 +58,7 @@ do
           fade_in_duration = 0.3,
           fade_out_duration = 0.3,
           scrim_enabled = true,
-          scrim_color = 0x000000FF,
+          scrim_color = hexrgb and hexrgb("#000000") or 0x000000FF,
           scrim_opacity = 0.85,
           window_bg_override = nil,
           window_opacity = 1.0,
@@ -71,12 +75,12 @@ do
           close_button = {
             size = 32,
             margin = 16,
-            bg_color = 0x000000FF,
+            bg_color = hexrgb and hexrgb("#000000") or 0x000000FF,
             bg_opacity = 0.6,
             bg_opacity_hover = 0.8,
-            icon_color = 0xFFFFFFFF,
-            hover_color = 0xFF4444FF,
-            active_color = 0xFF0000FF,
+            icon_color = hexrgb and hexrgb("#FFFFFF") or 0xFFFFFFFF,
+            hover_color = hexrgb and hexrgb("#FF4444") or 0xFF4444FF,
+            active_color = hexrgb and hexrgb("#FF0000") or 0xFF0000FF,
           },
         },
       },
@@ -170,7 +174,7 @@ function M.new(opts)
       fade_in_duration = fullscreen_opts.fade_in_duration or 0.3,
       fade_out_duration = fullscreen_opts.fade_out_duration or 0.3,
       scrim_enabled = fullscreen_opts.scrim_enabled,
-      scrim_color = fullscreen_opts.scrim_color or 0x000000FF,
+      scrim_color = fullscreen_opts.scrim_color or hexrgb("#000000"),
       scrim_opacity = fullscreen_opts.scrim_opacity or 0.85,
       window_bg_override = fullscreen_opts.window_bg_override,
       window_opacity = fullscreen_opts.window_opacity or 1.0,
@@ -285,7 +289,7 @@ function M.new(opts)
         local status_height_compensation = 6
         win.status_bar = StatusBar.new({
           height = DEFAULTS.status_bar.height + status_height_compensation,
-          get_status = opts.get_status_func or function() return { text = "READY", color = 0x41E0A3FF } end,
+          get_status = opts.get_status_func or function() return { text = "READY", color = hexrgb("#41E0A3") } end,
           style = opts.style and { palette = opts.style.palette } or nil
         })
       end
@@ -356,6 +360,9 @@ function M.new(opts)
 
   do
     local ok, OverlayManager = pcall(require, 'rearkitekt.gui.widgets.overlay.manager')
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
     if ok and OverlayManager and OverlayManager.new then
       win.overlay = OverlayManager.new()
     end
@@ -367,12 +374,12 @@ function M.new(opts)
       size = btn_opts.size or 32,
       margin = btn_opts.margin or 16,
       proximity_distance = fullscreen_opts.close_button_proximity or 150,
-      bg_color = btn_opts.bg_color or 0x000000FF,
+      bg_color = btn_opts.bg_color or hexrgb("#000000"),
       bg_opacity = btn_opts.bg_opacity or 0.6,
       bg_opacity_hover = btn_opts.bg_opacity_hover or 0.8,
-      icon_color = btn_opts.icon_color or 0xFFFFFFFF,
-      hover_color = btn_opts.hover_color or 0xFF4444FF,
-      active_color = btn_opts.active_color or 0xFF0000FF,
+      icon_color = btn_opts.icon_color or hexrgb("#FFFFFF"),
+      hover_color = btn_opts.hover_color or hexrgb("#FF4444"),
+      active_color = btn_opts.active_color or hexrgb("#FF0000"),
       on_click = function()
         win:request_close()
       end,

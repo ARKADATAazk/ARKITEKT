@@ -4,9 +4,11 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
 
 local M = {}
 M.__index = M
+local hexrgb = Colors.hexrgb
 
 local DEFAULTS = {
   style = {
@@ -22,15 +24,15 @@ local DEFAULTS = {
     active_indicator_max_px = 48,
   },
   colors = {
-    bg_active   = 0x242424FF,
-    bg_clicked  = 0x2A2A2AFF,
-    bg_hovered  = 0x202020FF,
-    bg_inactive = 0x1A1A1AFF,
-    border      = 0x000000FF,
-    active_indicator = 0x41E0A3FF,
-    text_active = 0xFFFFFFFF,
-    text_inact  = 0xBBBBBBE0,
-    text_disabled = 0x888888A0,
+    bg_active   = hexrgb("#242424"),
+    bg_clicked  = hexrgb("#2A2A2A"),
+    bg_hovered  = hexrgb("#202020"),
+    bg_inactive = hexrgb("#1A1A1A"),
+    border      = hexrgb("#000000"),
+    active_indicator = hexrgb("#41E0A3"),
+    text_active = hexrgb("#FFFFFF"),
+    text_inact  = hexrgb("#BBBBBB"),
+    text_disabled = hexrgb("#888888"),
   }
 }
 

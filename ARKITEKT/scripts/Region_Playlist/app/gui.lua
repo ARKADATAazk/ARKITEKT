@@ -248,7 +248,7 @@ function GUI:draw_overflow_modal(ctx, window)
     table.insert(tab_items, {
       id = tab.id,
       label = tab.label .. count_str,
-      color = tab.chip_color or 0x888888FF,
+      color = tab.chip_color or hexrgb("#888888"),
     })
   end
   
@@ -290,7 +290,7 @@ function GUI:draw_overflow_modal(ctx, window)
         selected_ids = selected_ids,
         search_text = self.overflow_modal_search,
         use_dot_style = true,
-        bg_color = 0x252530FF,
+        bg_color = hexrgb("#252530"),
         dot_size = 7,
         dot_spacing = 7,
         rounding = 5,
@@ -364,7 +364,7 @@ function GUI:draw_overflow_modal(ctx, window)
             selected_ids = selected_ids,
             search_text = self.overflow_modal_search,
             use_dot_style = true,
-            bg_color = 0x252530FF,
+            bg_color = hexrgb("#252530"),
             dot_size = 7,
             dot_spacing = 7,
             rounding = 5,

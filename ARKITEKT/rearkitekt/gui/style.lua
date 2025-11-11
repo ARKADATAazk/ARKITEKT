@@ -43,7 +43,7 @@ local C = {
 }
 
 function M.with_alpha(col, a)
-  return (col & 0xFFFFFF00) | (a & 0xFF)
+  return (col & 0xFF000000) | (a & 0xFF)
 end
 
 M.palette = C

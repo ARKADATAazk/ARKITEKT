@@ -10,6 +10,7 @@ local MarchingAnts = require('rearkitekt.gui.fx.marching_ants')
 local Colors = require('rearkitekt.core.colors')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 M.CONFIG = {
   tile = {
@@ -19,11 +20,11 @@ M.CONFIG = {
   },
   
   colors = {
-    bg = { inactive = 0x1A1A1AFF, active = 0x2D4A37FF, hover_tint = 0x2A2A2AFF, hover_influence = 0.4 },
-    border = { inactive = 0x303030FF, active = nil, hover = nil, thickness = 0.5 },
-    text = { active = 0xFFFFFFFF, inactive = 0x999999FF, secondary = 0x888888FF, conflict = 0xFFA500FF },
-    badge = { bg_active = 0x00000099, bg_inactive = 0x00000066, text = 0xAAAAAAFF },
-    footer = { gradient = 0x00000044 },
+    bg = { inactive = hexrgb("#1A1A1A"), active = hexrgb("#2D4A37"), hover_tint = hexrgb("#2A2A2A"), hover_influence = 0.4 },
+    border = { inactive = hexrgb("#303030"), active = nil, hover = nil, thickness = 0.5 },
+    text = { active = hexrgb("#FFFFFF"), inactive = hexrgb("#999999"), secondary = hexrgb("#888888"), conflict = hexrgb("#FFA500") },
+    badge = { bg_active = hexrgb("#00000099"), bg_inactive = hexrgb("#00000066"), text = hexrgb("#AAAAAA") },
+    footer = { gradient = hexrgb("#00000044") },
   },
   
   selection = {
@@ -41,7 +42,7 @@ M.CONFIG = {
   
   mosaic = {
     padding = 15, max_size = 50, gap = 6, count = 3,
-    rounding = 3, border_color = 0x00000088, border_thickness = 1, y_offset = 45,
+    rounding = 3, border_color = hexrgb("#00000088"), border_thickness = 1, y_offset = 45,
   },
   
   animation = { speed_hover = 12.0, speed_active = 8.0 },
@@ -239,7 +240,7 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
                 M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
       
       local label = key:sub(1, 3):upper()
-      Draw.centered_text(ctx, label, cx, cy, cx + cell_size, cy + cell_size, 0xFFFFFFFF)
+      Draw.centered_text(ctx, label, cx, cy, cx + cell_size, cy + cell_size, hexrgb("#FFFFFF"))
     end
   end
 end

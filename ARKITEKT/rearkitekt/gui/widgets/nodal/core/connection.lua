@@ -2,6 +2,9 @@
 -- ReArkitekt/gui/widgets/nodal/core/connection.lua
 -- Connection data structure with Manhattan routing
 
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 local M = {}
 
 function M.new(opts)
@@ -26,7 +29,7 @@ function M.new_sequential(source_guid, target_guid, color)
     type = "sequential",
     source_node = source_guid,
     target_node = target_guid,
-    color = color or 0x88CEFFFF,
+    color = color or hexrgb("#88CEFF"),
     animated = false,
   })
 end
@@ -38,7 +41,7 @@ function M.new_trigger(source_guid, target_guid, event_name, jump_mode, color)
     target_node = target_guid,
     event_name = event_name,
     jump_mode = jump_mode or "INCREMENTAL",
-    color = color or 0xFF6B9DFF,
+    color = color or hexrgb("#FF6B9D"),
     animated = false,
   })
 end

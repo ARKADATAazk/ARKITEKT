@@ -1,3 +1,6 @@
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 local M = {}
 local imgui
 local ctx
@@ -24,7 +27,7 @@ function M.ContentTable(content_table, name, num_boxes, box_w, box_h, table_x, t
   
   imgui.SetCursorScreenPos(ctx, table_x, table_y)
   local name_w, name_h = imgui.CalcTextSize(ctx, name)
-  imgui.DrawList_AddText(state.draw_list, table_x + table_w / 2 - name_w / 2, table_y - name_h, 0xFFFFFFFF, name)
+  imgui.DrawList_AddText(state.draw_list, table_x + table_w / 2 - name_w / 2, table_y - name_h, hexrgb("#FFFFFF"), name)
   local scroll_size = imgui.GetStyleVar(ctx, imgui.StyleVar_ScrollbarSize)
   if not state.scroll_y[name] then
     state.scroll_y[name] = 0
@@ -33,7 +36,7 @@ function M.ContentTable(content_table, name, num_boxes, box_w, box_h, table_x, t
   if table_h > SCREEN_H * 0.7 then
     local text = "(Shift + Scroll)"
     local text_w, text_h = imgui.CalcTextSize(ctx, text)
-    imgui.DrawList_AddText(state.draw_list, table_x + table_w - text_w, table_y + SCREEN_H * 0.7, 0xFFFFFFFF, text)
+    imgui.DrawList_AddText(state.draw_list, table_x + table_w - text_w, table_y + SCREEN_H * 0.7, hexrgb("#FFFFFF"), text)
   end
 
   imgui.SetNextWindowScroll(ctx, 0, state.scroll_y[name])
@@ -125,12 +128,12 @@ function M.ContentTable(content_table, name, num_boxes, box_w, box_h, table_x, t
           imgui.DrawList_AddRectFilled(state.draw_list, box_x1, box_y1, box_x1 + box_w,
             box_y1 + text_height_spacing, track_color, 2)
           imgui.DrawList_AddRectFilled(state.draw_list, box_x1, box_y1, box_x1 + box_w,
-            box_y1 + text_height_spacing, 0x00000050, 2)
+            box_y1 + text_height_spacing, hexrgb("#00000050"), 2)
           imgui.DrawList_AddRectFilled(state.draw_list, box_x1, box_y1 + text_height,
             box_x2, box_y2, track_color)
 
           if reaper.TakeIsMIDI(take) then
-            imgui.DrawList_AddText(state.draw_list, box_x1, box_y1, 0xFFFFFFFF, box_name)
+            imgui.DrawList_AddText(state.draw_list, box_x1, box_y1, hexrgb("#FFFFFF"), box_name)
 
             local thumbnail = cache_mgr.get_midi_thumbnail(state.cache, item, box_x2 - box_x1, box_y2 - box_y1)
             if not thumbnail then
@@ -140,7 +143,7 @@ function M.ContentTable(content_table, name, num_boxes, box_w, box_h, table_x, t
               visualization.DisplayMidiItem(thumbnail, track_color, state.draw_list)
             end
           else
-            imgui.DrawList_AddText(state.draw_list, box_x1, box_y1, 0xFFFFFFFF, box_name)
+            imgui.DrawList_AddText(state.draw_list, box_x1, box_y1, hexrgb("#FFFFFF"), box_name)
 
             local bitmap = cache_mgr.get_bitmap(state.cache, item, box_w, box_h, track_color)
             if bitmap then
@@ -161,7 +164,7 @@ function M.ContentTable(content_table, name, num_boxes, box_w, box_h, table_x, t
           if #content > 1 then
             local item_num_string = string.format("%.0f", state.box_current_item[content_key]) .. "/" .. #content .. " "
             imgui.DrawList_AddText(state.draw_list, box_x2 - imgui.CalcTextSize(ctx, item_num_string),
-              box_y1 + text_height_spacing, 0xFFFFFFFF, item_num_string)
+              box_y1 + text_height_spacing, hexrgb("#FFFFFF"), item_num_string)
           end
 
           if state.previewing == state.box_current_item[content_key] .. content_key then
@@ -169,15 +172,15 @@ function M.ContentTable(content_table, name, num_boxes, box_w, box_h, table_x, t
           end
 
           if track_muted then
-            imgui.DrawList_AddRectFilled(state.draw_list, box_x1, box_y1, box_x2, box_y2, 0x00000090, 2)
+            imgui.DrawList_AddRectFilled(state.draw_list, box_x1, box_y1, box_x2, box_y2, hexrgb("#00000090"), 2)
             local str_w, str_h = imgui.CalcTextSize(ctx, "Track Muted")
             imgui.DrawList_AddText(state.draw_list, box_x1 + (box_x2 - box_x1) / 2 - str_w / 2,
-              box_y1 + (box_y2 - box_y1) / 2 - str_h / 2, 0xFF000090, "Track Muted")
+              box_y1 + (box_y2 - box_y1) / 2 - str_h / 2, hexrgb("#FF000090"), "Track Muted")
           elseif item_muted then
-            imgui.DrawList_AddRectFilled(state.draw_list, box_x1, box_y1, box_x2, box_y2, 0x00000090, 2)
+            imgui.DrawList_AddRectFilled(state.draw_list, box_x1, box_y1, box_x2, box_y2, hexrgb("#00000090"), 2)
             local str_w, str_h = imgui.CalcTextSize(ctx, "Item Muted")
             imgui.DrawList_AddText(state.draw_list, box_x1 + (box_x2 - box_x1) / 2 - str_w / 2,
-              box_y1 + (box_y2 - box_y1) / 2 - str_h / 2, 0xFF000090, "Item Muted")
+              box_y1 + (box_y2 - box_y1) / 2 - str_h / 2, hexrgb("#FF000090"), "Item Muted")
           end
 
           if imgui.BeginDragDropSource(ctx, imgui.DragDropFlags_SourceNoPreviewTooltip) then
@@ -192,7 +195,7 @@ function M.ContentTable(content_table, name, num_boxes, box_w, box_h, table_x, t
           end
 
           if imgui.IsMouseHoveringRect(ctx, box_x1, box_y1, box_x2, box_y2) then
-            imgui.DrawList_AddRectFilled(state.draw_list, box_x1, box_y1, box_x2, box_y2, 0xFFFFFF30, 2)
+            imgui.DrawList_AddRectFilled(state.draw_list, box_x1, box_y1, box_x2, box_y2, hexrgb("#FFFFFF30"), 2)
 
             if imgui.GetMouseWheel(ctx) ~= 0 then
               state.box_current_item[content_key] = math.max(

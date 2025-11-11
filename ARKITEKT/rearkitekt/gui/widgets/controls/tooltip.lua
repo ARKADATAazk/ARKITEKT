@@ -4,13 +4,16 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 
 local DEFAULTS = {
-  bg_color = 0x2A2A2AFF,
-  border_color = 0x404040FF,
-  text_color = 0xEEEEEEFF,
+  bg_color = hexrgb("#2A2A2A"),
+  border_color = hexrgb("#404040"),
+  text_color = hexrgb("#EEEEEE"),
   padding_x = 8,
   padding_y = 6,
   rounding = 4,

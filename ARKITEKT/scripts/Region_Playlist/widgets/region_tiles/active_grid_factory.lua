@@ -4,6 +4,9 @@
 
 local Grid = require('rearkitekt.gui.widgets.grid.core')
 local ActiveTile = require('Region_Playlist.widgets.region_tiles.renderers.active')
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 
@@ -160,8 +163,8 @@ function M.create(rt, config)
   local base_tile_height = config.base_tile_height_active or 72
   local tile_config = config.tile_config or { border_thickness = 0.5, rounding = 6 }
   local dim_config = config.dim_config or {
-    fill_color = 0x00000088,
-    stroke_color = 0xFFFFFF33,
+    fill_color = hexrgb("#00000088"),
+    stroke_color = hexrgb("#FFFFFF33"),
     stroke_thickness = 1.5,
     rounding = 6,
   }

@@ -50,6 +50,9 @@ local TilesContainer = require("rearkitekt.gui.widgets.panel")
 
 -- Fallback style
 local style_ok, Style = pcall(require, "rearkitekt.gui.style")
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 -- State variables - ALL AT THE TOP
 local hue = 210.0
@@ -59,7 +62,7 @@ local brightness = 85.0
 -- This is now just a callback function, not part of a component instance.
 local function get_status()
   return {
-    color = 0x41E0A3FF,
+    color = hexrgb("#41E0A3"),
     text  = string.format("H:%.0f° S:%.0f%% B:%.0f%% | Color Sliders Demo", hue, saturation, brightness),
     buttons = nil,
     right_buttons = nil
@@ -95,12 +98,12 @@ end
 -- Dummy tile renderer
 local function draw_dummy_tile(ctx, dl, x, y, w, h, label, color)
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, color, 4)
-  ImGui.DrawList_AddRect(dl, x + 0.5, y + 0.5, x + w - 0.5, y + h - 0.5, 0x00000088, 4, 0, 1)
+  ImGui.DrawList_AddRect(dl, x + 0.5, y + 0.5, x + w - 0.5, y + h - 0.5, hexrgb("#00000088"), 4, 0, 1)
   
   local tw, th = ImGui.CalcTextSize(ctx, label)
   local tx = x + (w - tw) / 2
   local ty = y + (h - th) / 2
-  ImGui.DrawList_AddText(dl, tx, ty, 0xFFFFFFFF, label)
+  ImGui.DrawList_AddText(dl, tx, ty, hexrgb("#FFFFFF"), label)
 end
 
 -- UI
@@ -146,7 +149,7 @@ local function draw(ctx)
   local dl = ImGui.GetWindowDrawList(ctx)
   local px, py = ImGui.GetCursorScreenPos(ctx)
   ImGui.DrawList_AddRectFilled(dl, px, py, px + 320, py + 40, preview_color, 4)
-  ImGui.DrawList_AddRect(dl, px + 0.5, py + 0.5, px + 319.5, py + 39.5, 0x000000DD, 4, 0, 1)
+  ImGui.DrawList_AddRect(dl, px + 0.5, py + 0.5, px + 319.5, py + 39.5, hexrgb("#000000DD"), 4, 0, 1)
   ImGui.Dummy(ctx, 320, 40)
 
   ImGui.Dummy(ctx, 1, 12)

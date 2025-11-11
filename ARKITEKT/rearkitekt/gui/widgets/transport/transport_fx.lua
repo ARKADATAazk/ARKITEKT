@@ -6,6 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
 
 local M = {}
 
@@ -13,7 +14,7 @@ M.DEFAULT_CONFIG = {
   rounding = 8,
   
   base = {
-    color = 0x161616FF,
+    color = hexrgb("#161616"),
   },
   
   specular = {
@@ -27,7 +28,7 @@ M.DEFAULT_CONFIG = {
   },
   
   border = {
-    color = 0x000000FF,
+    color = hexrgb("#000000"),
     thickness = 1,
   },
   

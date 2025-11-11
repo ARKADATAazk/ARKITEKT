@@ -11,12 +11,13 @@ local TileFX = require('rearkitekt.gui.fx.tile_fx')
 local TileFXConfig = require('rearkitekt.gui.fx.tile_fx_config')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 local DEFAULTS = {
   width = 250,
   height = 40,
   rounding = 5,
-  base_color = 0x41E0A3FF,
+  base_color = hexrgb("#41E0A3"),
   icon_box_size   = 18,
   icon_area_width = 45,
   text_padding_x       = 12,
@@ -157,8 +158,8 @@ function StatusPad:draw(ctx, x, y)
 
   local text_x = x1 + cfg.icon_area_width
   local available_width = self.width - cfg.icon_area_width - cfg.text_padding_x
-  local primary_color   = self.state and 0xFFFFFFFF or 0xBBBBBBFF
-  local secondary_color = self.state and 0xAAAAAAFF or 0x888888FF
+  local primary_color   = self.state and hexrgb("#FFFFFF") or hexrgb("#BBBBBB")
+  local secondary_color = self.state and hexrgb("#AAAAAA") or hexrgb("#888888")
 
   if self.secondary_text and self.secondary_text ~= "" then
     local primary_scale   = cfg.text_primary_size

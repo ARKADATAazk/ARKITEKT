@@ -4,6 +4,9 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 
@@ -472,7 +475,7 @@ function ColoredTextView:render(ctx, width, height)
           local sel_y2 = line_y + self.char_advance.y
           
           -- Draw selection rectangle with dark grey
-          ImGui.DrawList_AddRectFilled(draw_list, sel_x1, sel_y1, sel_x2, sel_y2, 0x404040CC)
+          ImGui.DrawList_AddRectFilled(draw_list, sel_x1, sel_y1, sel_x2, sel_y2, hexrgb("#404040CC"))
         end
       end
     end

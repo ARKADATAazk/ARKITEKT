@@ -8,13 +8,16 @@ local Logger = require('rearkitekt.debug.logger')
 local Panel = require('rearkitekt.gui.widgets.panel')
 local Config = require('rearkitekt.gui.widgets.panel.config')
 local ColoredTextView = require('rearkitekt.gui.widgets.colored_text_view')
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 
 local function hexrgb(hex)
   if hex:sub(1, 1) == "#" then hex = hex:sub(2) end
   local h = tonumber(hex, 16)
-  if not h then return 0xFFFFFFFF end
+  if not h then return hexrgb("#FFFFFF") end
   return (#hex == 8) and h or ((h << 8) | 0xFF)
 end
 
@@ -102,7 +105,7 @@ function M.new(config)
     
     scroll = {
       flags = 0,
-      bg_color = 0x00000000,
+      bg_color = hexrgb("#00000000"),
     },
     
     background_pattern = {

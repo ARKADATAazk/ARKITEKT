@@ -2,6 +2,9 @@
 -- ReArkitekt/ColorPalette/app/controller.lua
 -- Handles color application to REAPER targets
 
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 local M = {}
 
 local Controller = {}

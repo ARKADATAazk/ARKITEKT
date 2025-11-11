@@ -9,6 +9,7 @@ local Colors = require('rearkitekt.core.colors')
 local Draw = require('rearkitekt.gui.draw')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 local ColorGrid = {}
 ColorGrid.__index = ColorGrid
@@ -110,7 +111,7 @@ function ColorGrid:draw(ctx, colors, config, allow_interaction)
     Draw.rect_filled(dl, x1, y1, x2, y2, fill_color, rounding)
     
     -- Draw black border (1px)
-    Draw.rect(dl, x1, y1, x2, y2, 0x000000FF, rounding, 1)
+    Draw.rect(dl, x1, y1, x2, y2, hexrgb("#000000"), rounding, 1)
     
     -- Draw color border on top for hover effect
     if is_hovered then

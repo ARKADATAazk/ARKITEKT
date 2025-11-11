@@ -9,6 +9,9 @@ local Logger = require('rearkitekt.debug.logger')
 local M = {}
 
 local StyleOK, Style = pcall(require, 'rearkitekt.gui.style')
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local window_state = {
   runtime = nil,
@@ -19,7 +22,7 @@ local window_state = {
 local function hexrgb(hex)
   if hex:sub(1, 1) == "#" then hex = hex:sub(2) end
   local h = tonumber(hex, 16)
-  if not h then return 0xFFFFFFFF end
+  if not h then return hexrgb("#FFFFFF") end
   return (#hex == 8) and h or ((h << 8) | 0xFF)
 end
 

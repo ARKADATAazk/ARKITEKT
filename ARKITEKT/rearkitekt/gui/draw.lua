@@ -5,6 +5,9 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 
@@ -19,7 +22,7 @@ function M.centered_text(ctx, text, x1, y1, x2, y2, color)
   local tw, th = ImGui.CalcTextSize(ctx, text)
   local cx = x1 + math.floor((x2 - x1 - tw) * 0.5)
   local cy = y1 + math.floor((y2 - y1 - th) * 0.5)
-  ImGui.DrawList_AddText(dl, cx, cy, color or 0xFFFFFFFF, text)
+  ImGui.DrawList_AddText(dl, cx, cy, color or hexrgb("#FFFFFF"), text)
 end
 
 -- Draw a crisp rectangle (pixel-aligned)

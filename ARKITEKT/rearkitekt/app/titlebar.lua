@@ -6,8 +6,10 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 local Icon = nil
 do
@@ -31,19 +33,19 @@ do
       icon_size       = 18,
       icon_spacing    = 8,
       version_spacing = 6,
-      version_color   = 0x888888FF,
-      button_maximize_normal  = 0x00000000,
-      button_maximize_hovered = 0x57C290FF,
-      button_maximize_active  = 0x60FFFFFF,
-      button_close_normal     = 0x00000000,
-      button_close_hovered    = 0xCC3333FF,
-      button_close_active     = 0xFF1111FF,
-      button_maximize_filled_normal  = 0x808080FF,
-      button_maximize_filled_hovered = 0x999999FF,
-      button_maximize_filled_active  = 0x666666FF,
-      button_close_filled_normal     = 0xCC3333FF,
-      button_close_filled_hovered    = 0xFF4444FF,
-      button_close_filled_active     = 0xFF1111FF,
+      version_color   = hexrgb("#888888"),
+      button_maximize_normal  = hexrgb("#00000000"),
+      button_maximize_hovered = hexrgb("#57C290"),
+      button_maximize_active  = hexrgb("#60FFFF"),
+      button_close_normal     = hexrgb("#00000000"),
+      button_close_hovered    = hexrgb("#CC3333"),
+      button_close_active     = hexrgb("#FF1111"),
+      button_maximize_filled_normal  = hexrgb("#808080"),
+      button_maximize_filled_hovered = hexrgb("#999999"),
+      button_maximize_filled_active  = hexrgb("#666666"),
+      button_close_filled_normal     = hexrgb("#CC3333"),
+      button_close_filled_hovered    = hexrgb("#FF4444"),
+      button_close_filled_active     = hexrgb("#FF1111"),
     }
   end
 end
@@ -70,7 +72,7 @@ function M.new(opts)
     bg_color        = opts.bg_color,
     bg_color_active = opts.bg_color_active,
     text_color      = opts.text_color,
-    version_color   = opts.version_color or DEFAULTS.version_color or 0x888888FF,
+    version_color   = opts.version_color or DEFAULTS.version_color or hexrgb("#888888"),
     version_spacing = opts.version_spacing or DEFAULTS.version_spacing or 6,
     
     show_icon       = opts.show_icon ~= false,
@@ -173,7 +175,7 @@ function M.new(opts)
     end
     
     local text_color = self.text_color or ImGui.GetColor(ctx, ImGui.Col_Text)
-    local version_color = self.version_color or 0x888888FF
+    local version_color = self.version_color or hexrgb("#888888")
     
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, self.button_spacing, 0)
@@ -397,9 +399,9 @@ function M.new(opts)
     local icon_color = ImGui.GetColor(ctx, ImGui.Col_Text)
 
     if self.enable_maximize then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_maximize_normal or 0x00000000)
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_maximize_hovered or 0x57C290FF)
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_maximize_active or 0x60FFFFFF)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_maximize_normal or hexrgb("#00000000"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_maximize_hovered or hexrgb("#57C290"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_maximize_active or hexrgb("#60FFFF"))
 
       if ImGui.Button(ctx, "##max", self.button_width, self.height) then
         clicked_maximize = true
@@ -410,9 +412,9 @@ function M.new(opts)
       
       local current_button_bg
       if is_active then
-        current_button_bg = DEFAULTS.button_maximize_active or 0x60FFFFFF
+        current_button_bg = DEFAULTS.button_maximize_active or hexrgb("#60FFFF")
       elseif is_hovered then
-        current_button_bg = DEFAULTS.button_maximize_hovered or 0x57C290FF
+        current_button_bg = DEFAULTS.button_maximize_hovered or hexrgb("#57C290")
       else
         current_button_bg = bg_color
       end
@@ -431,9 +433,9 @@ function M.new(opts)
       ImGui.SameLine(ctx)
     end
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_close_normal or 0x00000000)
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_close_hovered or 0xCC3333FF)
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_close_active or 0xFF1111FF)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_close_normal or hexrgb("#00000000"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_close_hovered or hexrgb("#CC3333"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_close_active or hexrgb("#FF1111"))
 
     if ImGui.Button(ctx, "##close", self.button_width, self.height) then
       clicked_close = true
@@ -444,9 +446,9 @@ function M.new(opts)
     
     local current_button_bg
     if is_active then
-      current_button_bg = DEFAULTS.button_close_active or 0xFF1111FF
+      current_button_bg = DEFAULTS.button_close_active or hexrgb("#FF1111")
     elseif is_hovered then
-      current_button_bg = DEFAULTS.button_close_hovered or 0xCC3333FF
+      current_button_bg = DEFAULTS.button_close_hovered or hexrgb("#CC3333")
     else
       current_button_bg = bg_color
     end
@@ -476,9 +478,9 @@ function M.new(opts)
     if self.enable_maximize then
       local icon = self.is_maximized and "⊡" or "▢"
       
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_maximize_filled_normal or 0x808080FF)
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_maximize_filled_hovered or 0x999999FF)
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_maximize_filled_active or 0x666666FF)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_maximize_filled_normal or hexrgb("#808080"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_maximize_filled_hovered or hexrgb("#999999"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_maximize_filled_active or hexrgb("#666666"))
       
       if ImGui.Button(ctx, icon .. "##max", self.button_width, self.height) then
         clicked_maximize = true
@@ -493,9 +495,9 @@ function M.new(opts)
       ImGui.SameLine(ctx)
     end
     
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_close_filled_normal or 0xCC3333FF)
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_close_filled_hovered or 0xFF4444FF)
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_close_filled_active or 0xFF1111FF)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_close_filled_normal or hexrgb("#CC3333"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_close_filled_hovered or hexrgb("#FF4444"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_close_filled_active or hexrgb("#FF1111"))
     
     if ImGui.Button(ctx, "X##close", self.button_width, self.height) then
       clicked_close = true

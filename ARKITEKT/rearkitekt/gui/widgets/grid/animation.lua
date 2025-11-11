@@ -5,6 +5,9 @@
 
 local SpawnAnim = require('rearkitekt.gui.fx.animations.spawn')
 local DestroyAnim = require('rearkitekt.gui.fx.animations.destroy')
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 local M = {}
 
@@ -88,7 +91,7 @@ end
 
 function AnimationCoordinator:render_destroy_effects(ctx, dl)
   for key, anim_data in pairs(self.destroy_anim.destroying) do
-    self.destroy_anim:render(ctx, dl, key, anim_data.rect, 0x1A1A1AFF, 6)
+    self.destroy_anim:render(ctx, dl, key, anim_data.rect, hexrgb("#1A1A1A"), 6)
   end
 end
 

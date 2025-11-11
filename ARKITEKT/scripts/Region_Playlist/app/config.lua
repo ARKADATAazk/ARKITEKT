@@ -2,7 +2,10 @@
 -- Region_Playlist/app/config.lua
 -- Structural config + semantic colors (widget chrome comes from library defaults)
 
+local Colors = require('rearkitekt.core.colors')
+
 local M = {}
+local hexrgb = Colors.hexrgb
 
 -- Animation speeds
 M.ANIMATION = {
@@ -12,15 +15,15 @@ M.ANIMATION = {
 
 -- Semantic operation colors (move/copy/delete visual feedback)
 M.ACCENT = {
-  GREEN = 0x42E896FF,   -- Move operation
-  PURPLE = 0x9C87E8FF,  -- Copy operation
-  RED = 0xE84A4AFF,     -- Delete operation
+  GREEN = hexrgb("#42E896"),   -- Move operation
+  PURPLE = hexrgb("#9C87E8"),  -- Copy operation
+  RED = hexrgb("#E84A4A"),     -- Delete operation
 }
 
 -- Dimmed tile appearance
 M.DIM = {
-  FILL = 0x00000088,
-  STROKE = 0xFFFFFF33,
+  FILL = hexrgb("#00000088"),
+  STROKE = hexrgb("#FFFFFF33"),
 }
 
 -- Transport dimensions and styling (using library design language)
@@ -33,27 +36,27 @@ M.TRANSPORT = {
   view_mode = {
     size = 32,
     rounding = 4,
-    bg_color = 0x252525FF,
-    bg_hover = 0x2A2A2AFF,
-    border_inner = 0x404040FF,
-    border_hover = 0x505050FF,
-    border_outer = 0x000000DD,
-    icon_color = 0xCCCCCCFF,
+    bg_color = hexrgb("#252525"),
+    bg_hover = hexrgb("#2A2A2A"),
+    border_inner = hexrgb("#404040"),
+    border_hover = hexrgb("#505050"),
+    border_outer = hexrgb("#000000DD"),
+    icon_color = hexrgb("#CCCCCC"),
     animation_speed = 12.0,
   },
   
   -- Central display (library-styled double border)
   display = {
-    bg_color = 0x252525FF,
-    border_inner = 0x404040FF,
-    border_outer = 0x000000DD,
+    bg_color = hexrgb("#252525"),
+    border_inner = hexrgb("#404040"),
+    border_outer = hexrgb("#000000DD"),
     rounding = 6,
-    time_color = 0xCCCCCCFF,
-    time_playing_color = 0xFFFFFFFF,
-    status_color = 0xAAAAAAFF,
-    region_color = 0xCCCCCCFF,
-    track_color = 0x30303080,
-    fill_color = 0x41E0A3FF,
+    time_color = hexrgb("#CCCCCC"),
+    time_playing_color = hexrgb("#FFFFFF"),
+    status_color = hexrgb("#AAAAAA"),
+    region_color = hexrgb("#CCCCCC"),
+    track_color = hexrgb("#30303080"),
+    fill_color = hexrgb("#41E0A3"),
   },
   
   -- Jump controls (compact, library-styled)
@@ -67,8 +70,8 @@ M.TRANSPORT = {
     pad_width = 180,
     pad_height = 32,
     pad_rounding = 6,
-    transport_color = 0x4A9EFFFF,
-    loop_color = 0x9C87E8FF,
+    transport_color = hexrgb("#4A9EFF"),
+    loop_color = hexrgb("#9C87E8"),
   },
 }
 
@@ -271,7 +274,7 @@ function M.get_region_tiles_config(layout_mode)
       hover_border_lerp = 0.5,
       base_fill_desaturation = 0.4,
       base_fill_brightness = 0.4,
-      base_fill_alpha = 0x66,
+      base_fill_alpha = hexrgb("#00000066"),
     },
     
     dim_config = {
@@ -287,7 +290,7 @@ function M.get_region_tiles_config(layout_mode)
           width = 2, 
           color = M.ACCENT.GREEN,
           glow_width = 12, 
-          glow_color = 0x42E89633 
+          glow_color = hexrgb("#42E89633") 
         },
         caps = { 
           width = 8, 
@@ -295,7 +298,7 @@ function M.get_region_tiles_config(layout_mode)
           color = M.ACCENT.GREEN,
           rounding = 0, 
           glow_size = 3, 
-          glow_color = 0x42E89644 
+          glow_color = hexrgb("#42E89644") 
         },
       },
       copy_mode = {
@@ -303,7 +306,7 @@ function M.get_region_tiles_config(layout_mode)
           width = 2, 
           color = M.ACCENT.PURPLE,
           glow_width = 12, 
-          glow_color = 0x9C87E833 
+          glow_color = hexrgb("#9C87E833") 
         },
         caps = { 
           width = 8, 
@@ -311,7 +314,7 @@ function M.get_region_tiles_config(layout_mode)
           color = M.ACCENT.PURPLE,
           rounding = 0, 
           glow_size = 3, 
-          glow_color = 0x9C87E844 
+          glow_color = hexrgb("#9C87E844") 
         },
       },
       pulse_speed = 2.5,
@@ -348,25 +351,25 @@ function M.get_region_tiles_config(layout_mode)
       },
       copy_mode = {
         stroke_color = M.ACCENT.PURPLE,
-        glow_color = 0x9C87E833,
+        glow_color = hexrgb("#9C87E833"),
         badge_accent = M.ACCENT.PURPLE,
         indicator_text = "+",
         indicator_color = M.ACCENT.PURPLE,
       },
       move_mode = {
         stroke_color = M.ACCENT.GREEN,
-        glow_color = 0x42E89633,
+        glow_color = Colors.hexrgb("#42E89633"),
         badge_accent = M.ACCENT.GREEN,
       },
       delete_mode = {
         stroke_color = M.ACCENT.RED,
-        glow_color = 0xE84A4A33,
+        glow_color = Colors.hexrgb("#E84A4A33"),
         badge_accent = M.ACCENT.RED,
         indicator_text = "-",
         indicator_color = M.ACCENT.RED,
       },
     },
-    
+
     wheel_config = {
       step = 1,
     },

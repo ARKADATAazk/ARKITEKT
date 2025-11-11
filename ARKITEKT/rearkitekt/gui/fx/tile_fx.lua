@@ -8,9 +8,10 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 function M.render_base_fill(dl, x1, y1, x2, y2, rounding)
-  local base_neutral = 0x0F0F0FFF
+  local base_neutral = hexrgb("#0F0F0F")
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, base_neutral, rounding)
 end
 

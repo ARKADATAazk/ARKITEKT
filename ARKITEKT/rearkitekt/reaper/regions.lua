@@ -2,9 +2,12 @@
 -- ReArkitekt/reaper/regions.lua
 -- REAPER Region API wrapper - uses native markrgnindexnumber as stable RID
 
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 local M = {}
 
-local FALLBACK_COLOR = 0x4A5A6AFF
+local FALLBACK_COLOR = hexrgb("#4A5A6A")
 
 local function convert_reaper_color_to_rgba(native_color)
   if not native_color or native_color == 0 then

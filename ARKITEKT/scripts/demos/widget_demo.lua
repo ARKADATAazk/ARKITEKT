@@ -56,6 +56,9 @@ local okStyle,Style= pcall(require,"rearkitekt.gui.style")
 local ColorBlocks  = require("ReArkitekt.gui.widgets.colorblocks")
 local Draw         = require("rearkitekt.gui.draw")
 local Effects      = require("rearkitekt.gui.fx.effects")
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 
 -- Small helpers
 local function log(...) local t={}; for i=1,select("#",...) do t[#t+1]=tostring(select(i,...)) end reaper.ShowConsoleMsg(table.concat(t," ").."\n") end
@@ -86,7 +89,7 @@ local model = {
   tile_min_w = 110,      -- numeric (IMPORTANT)
   gap = 12,              -- numeric (IMPORTANT)
   show_labels = true,
-  ants = { color_enabled=0xFFFFFFFF, color_disabled=0xFFFFFF55, thickness=2, radius=8, dash=10, gap=6, speed=28 },
+  ants = { color_enabled=hexrgb("#FFFFFF"), color_disabled=hexrgb("#FFFFFF55"), thickness=2, radius=8, dash=10, gap=6, speed=28 },
 }
 
 local function seed_colors()
@@ -117,14 +120,14 @@ local function render_color_tile(ctx, rect, item, state)
 
   -- swatch
   Draw.rect_filled(dl, x1, y1, x2, y2, item.color, 6)
-  Draw.rect(dl, x1+0.5, y1+0.5, x2-0.5, y2-0.5, 0x00000055, 6, 1)
+  Draw.rect(dl, x1+0.5, y1+0.5, x2-0.5, y2-0.5, hexrgb("#00000055"), 6, 1)
 
   -- selection / hover
   if state.selected then
     local a = model.ants
     Effects.marching_ants_rounded(dl, x1, y1, x2, y2, a.color_enabled, a.thickness, a.radius, a.dash, a.gap, a.speed)
   elseif state.hover then
-    Draw.rect(dl, x1, y1, x2, y2, 0xFFFFFF40, 6, 1)
+    Draw.rect(dl, x1, y1, x2, y2, hexrgb("#FFFFFF40"), 6, 1)
   end
 
   if model.show_labels then
@@ -132,8 +135,8 @@ local function render_color_tile(ctx, rect, item, state)
     local pad = 6
     local tx = math.floor(x1 + (x2-x1 - tw)*0.5)
     local ty = math.floor(y2 - th - pad)
-    ImGui.DrawList_AddText(dl, tx+1, ty+1, 0x000000CC, item.name)
-    ImGui.DrawList_AddText(dl, tx,   ty,   0xFFFFFFFF, item.name)
+    ImGui.DrawList_AddText(dl, tx+1, ty+1, hexrgb("#000000CC"), item.name)
+    ImGui.DrawList_AddText(dl, tx,   ty,   hexrgb("#FFFFFF"), item.name)
   end
 end
 
