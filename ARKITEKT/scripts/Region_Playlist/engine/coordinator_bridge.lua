@@ -308,13 +308,38 @@ function M.create(opts)
     local current_idx = self.engine.state and self.engine.state.current_idx or -1
     if current_idx < 1 then return nil end
 
+    -- Find the most specific (smallest range) playlist containing current_idx
+    -- This handles nested playlists by returning the innermost one
+    local best_key = nil
+    local best_range_size = math.huge
+    
     for playlist_key, range_info in pairs(self.playlist_ranges) do
       if current_idx >= range_info.start_idx and current_idx <= range_info.end_idx then
-        return playlist_key
+        local range_size = range_info.end_idx - range_info.start_idx + 1
+        if range_size < best_range_size then
+          best_key = playlist_key
+          best_range_size = range_size
+        end
       end
     end
     
-    return nil
+    return best_key
+  end
+  
+  -- Check if a playlist contains the current playback position
+  -- For nested playlists, multiple playlists can be active (parent and children)
+  function bridge:is_playlist_active(playlist_key)
+    if not self.engine:get_is_playing() then return false end
+    if not playlist_key then return false end
+    
+    self:_ensure_sequence()
+    local current_idx = self.engine.state and self.engine.state.current_idx or -1
+    if current_idx < 1 then return false end
+    
+    local range_info = self.playlist_ranges[playlist_key]
+    if not range_info then return false end
+    
+    return current_idx >= range_info.start_idx and current_idx <= range_info.end_idx
   end
 
   function bridge:get_playlist_progress(playlist_key)
@@ -330,7 +355,7 @@ function M.create(opts)
     
     local total_duration = 0
     local elapsed_duration = 0
-    local current_rid = self:get_current_rid()
+    local current_pointer = self.engine.state.playlist_pointer
     local found_current = false
     
     for idx = range_info.start_idx, range_info.end_idx do
@@ -342,11 +367,15 @@ function M.create(opts)
           total_duration = total_duration + region_duration
           
           if not found_current then
-            if entry.rid == current_rid then
-              local region_elapsed = math.max(0, playpos - region.start)
+            if idx == current_pointer then
+              -- We're currently playing this exact sequence entry
+              -- Clamp playpos to handle transition jitter when looping same region
+              local clamped_pos = math.max(region.start, math.min(playpos, region["end"]))
+              local region_elapsed = clamped_pos - region.start
               elapsed_duration = elapsed_duration + math.min(region_elapsed, region_duration)
               found_current = true
-            else
+            elseif idx < current_pointer then
+              -- This entry has already played
               elapsed_duration = elapsed_duration + region_duration
             end
           end
@@ -370,7 +399,7 @@ function M.create(opts)
     local playpos = Transport.get_play_position(self.proj)
     
     local remaining = 0
-    local current_rid = self:get_current_rid()
+    local current_pointer = self.engine.state.playlist_pointer
     local found_current = false
     
     for idx = range_info.start_idx, range_info.end_idx do
@@ -378,10 +407,12 @@ function M.create(opts)
       if entry then
         local region = self.engine.state.region_cache[entry.rid]
         if region then
-          if entry.rid == current_rid then
+          if idx == current_pointer then
+            -- We're currently playing this exact sequence entry
             remaining = remaining + math.max(0, region["end"] - playpos)
             found_current = true
-          elseif found_current then
+          elseif idx > current_pointer then
+            -- This entry hasn't played yet
             remaining = remaining + (region["end"] - region.start)
           end
         end

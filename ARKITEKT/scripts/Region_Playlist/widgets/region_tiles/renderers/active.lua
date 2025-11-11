@@ -164,11 +164,11 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   local fx_config = TileFXConfig.get()
   fx_config.border_thickness = border_thickness or 1.0
 
-  -- Check if this playlist is currently playing
+  -- Check if this playlist is currently playing (includes nested playlists)
   local playback_progress, playback_fade = 0, 0
   if bridge and bridge:get_state().is_playing then
-    local current_playlist_key = bridge:get_current_playlist_key()
-    if current_playlist_key == item.key then
+    -- Use is_playlist_active to support deep nesting - all parent playlists show progress
+    if bridge:is_playlist_active(item.key) then
       playback_progress = bridge:get_playlist_progress(item.key) or 0
       playback_fade = require('rearkitekt.gui.systems.playback_manager').compute_fade_alpha(playback_progress, 0.1, 0.2)
     end

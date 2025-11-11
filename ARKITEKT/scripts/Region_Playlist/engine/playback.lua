@@ -67,10 +67,15 @@ function Playback:get_progress()
     return nil
   end
   
-  local rid = self.engine:get_current_rid()
-  if not rid then return nil end
+  local pointer = self.engine.state.playlist_pointer
+  if pointer < 1 or pointer > #self.engine.state.sequence then
+    return nil
+  end
   
-  local region = self.engine:get_region_by_rid(rid)
+  local entry = self.engine.state.sequence[pointer]
+  if not entry then return nil end
+  
+  local region = self.engine.state:get_region_by_rid(entry.rid)
   if not region then return nil end
   
   local Transport = require('rearkitekt.reaper.transport')
@@ -79,7 +84,10 @@ function Playback:get_progress()
   local duration = region["end"] - region.start
   if duration <= 0 then return 0 end
   
-  local elapsed = playpos - region.start
+  -- Clamp playpos within region bounds to handle transition jitter
+  -- When looping the same region, pointer updates before playpos resets
+  local clamped_pos = math.max(region.start, math.min(playpos, region["end"]))
+  local elapsed = clamped_pos - region.start
   return math.max(0, math.min(1, elapsed / duration))
 end
 
@@ -88,10 +96,15 @@ function Playback:get_time_remaining()
     return nil
   end
   
-  local rid = self.engine:get_current_rid()
-  if not rid then return nil end
+  local pointer = self.engine.state.playlist_pointer
+  if pointer < 1 or pointer > #self.engine.state.sequence then
+    return nil
+  end
   
-  local region = self.engine:get_region_by_rid(rid)
+  local entry = self.engine.state.sequence[pointer]
+  if not entry then return nil end
+  
+  local region = self.engine.state:get_region_by_rid(entry.rid)
   if not region then return nil end
   
   local Transport = require('rearkitekt.reaper.transport')

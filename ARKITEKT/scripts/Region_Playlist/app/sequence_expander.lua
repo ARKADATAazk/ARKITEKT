@@ -30,13 +30,34 @@ local function expand_items(sequence, playlist, get_playlist_by_id, context)
           if nested_playlist then
             -- Track where this playlist item starts in the sequence
             local playlist_start_idx = #sequence + 1
+            
+            -- Store current map size to identify new nested ranges
+            local map_snapshot = {}
+            for k, v in pairs(context.playlist_map) do
+              map_snapshot[k] = {start_idx = v.start_idx, end_idx = v.end_idx, playlist_id = v.playlist_id}
+            end
 
             context.stack[nested_id] = true
             local nested_sequence = {}
             expand_items(nested_sequence, nested_playlist, get_playlist_by_id, context)
             context.stack[nested_id] = nil
+            
+            -- Identify new nested playlist ranges and adjust their indices
+            local new_nested_ranges = {}
+            for nested_key, nested_range in pairs(context.playlist_map) do
+              if not map_snapshot[nested_key] then
+                new_nested_ranges[nested_key] = {
+                  start_idx = nested_range.start_idx,
+                  end_idx = nested_range.end_idx,
+                  playlist_id = nested_range.playlist_id
+                }
+                -- Remove from map, will re-add with correct offsets
+                context.playlist_map[nested_key] = nil
+              end
+            end
 
-            for _ = 1, reps do
+            for rep = 1, reps do
+              local rep_start = #sequence + 1
               for _, nested_entry in ipairs(nested_sequence) do
                 sequence[#sequence + 1] = {
                   rid = nested_entry.rid,
@@ -45,9 +66,21 @@ local function expand_items(sequence, playlist, get_playlist_by_id, context)
                   total_loops = nested_entry.total_loops,
                 }
               end
+              local rep_end = #sequence
+              
+              -- Add nested ranges with proper offset for this repetition
+              for nested_key, nested_range in pairs(new_nested_ranges) do
+                local offset = rep_start - 1
+                local unique_key = (rep > 1) and (nested_key .. "_rep" .. rep) or nested_key
+                context.playlist_map[unique_key] = {
+                  start_idx = nested_range.start_idx + offset,
+                  end_idx = nested_range.end_idx + offset,
+                  playlist_id = nested_range.playlist_id,
+                }
+              end
             end
             
-            -- Track the range this playlist occupies in the sequence
+            -- Track the range THIS playlist occupies in the sequence
             local playlist_end_idx = #sequence
             if item.key and playlist_start_idx > 0 and playlist_end_idx >= playlist_start_idx then
               context.playlist_map[item.key] = {
