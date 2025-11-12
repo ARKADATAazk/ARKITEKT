@@ -70,7 +70,7 @@ M.TRANSPORT = {
     hover = { specular_boost = 1.5, glow_boost = 1.3, transition_speed = 6.0 },
     gradient = {
       fade_speed = 8.0,
-      ready_color = hexrgb("#1A1A1A"),
+      ready_color = hexrgb("#838383ff"),  -- Dark grey when not playing
       fill_opacity = 0.3,      -- transparency of region gradient over panel bg
       fill_saturation = 0.8,
       fill_brightness = 0.8,

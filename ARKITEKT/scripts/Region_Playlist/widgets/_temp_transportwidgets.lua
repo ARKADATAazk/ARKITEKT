@@ -30,7 +30,8 @@ local TRANSPORT_LAYOUT_CONFIG = {
   
   -- Progress Bar
   progress_height = 3,            -- Height of progress bar
-  progress_bottom_offset = 8,     -- Distance from bottom of display area
+  progress_bottom_offset = 4,     -- Distance from bottom of display area
+  progress_padding_h = 16,        -- Horizontal padding for progress bar
   
   -- Single Row Layout: [Playlist] [Current Region] [TIME] [Next Region]
   -- Playlist (left side)
@@ -60,40 +61,66 @@ local TRANSPORT_LAYOUT_CONFIG = {
 -- ============================================================================
 local TransportIcons = {}
 
--- PLAY icon (Triangle 12x12)
+-- PLAY icon (Triangle 14x14 - larger for better quality)
 function TransportIcons.draw_play(dl, x, y, width, height, color)
-  local icon_size = 12
+  local icon_size = 14
   local cx = x + width / 2
   local cy = y + height / 2
   
-  local x1 = math.floor(cx - icon_size / 3 + 0.5)
-  local y1 = math.floor(cy - icon_size / 2 + 0.5)
-  local x2 = math.floor(cx - icon_size / 3 + 0.5)
-  local y2 = math.floor(cy + icon_size / 2 + 0.5)
-  local x3 = math.floor(cx + icon_size / 2 + 0.5)
-  local y3 = math.floor(cy + 0.5)
+  local x1 = cx - icon_size / 3
+  local y1 = cy - icon_size / 2
+  local x2 = cx - icon_size / 3
+  local y2 = cy + icon_size / 2
+  local x3 = cx + icon_size / 2
+  local y3 = cy
   
-  ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, color)
+  -- Draw with stroke for better antialiasing
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathLineTo(dl, x1, y1)
+  ImGui.DrawList_PathLineTo(dl, x2, y2)
+  ImGui.DrawList_PathLineTo(dl, x3, y3)
+  ImGui.DrawList_PathFillConvex(dl, color)
+  
+  -- Add thin stroke for sharper edges
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathLineTo(dl, x1, y1)
+  ImGui.DrawList_PathLineTo(dl, x2, y2)
+  ImGui.DrawList_PathLineTo(dl, x3, y3)
+  ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 0.5)
 end
 
--- STOP icon (Square 9x9)
+-- STOP icon (Square 10x10 - larger for better quality)
 function TransportIcons.draw_stop(dl, x, y, width, height, color)
-  local icon_size = 9
+  local icon_size = 10
   local cx = x + width / 2
   local cy = y + height / 2
   
-  local x1 = math.floor(cx - icon_size / 2 + 0.5)
-  local y1 = math.floor(cy - icon_size / 2 + 0.5)
-  local x2 = math.floor(cx + icon_size / 2 + 0.5)
-  local y2 = math.floor(cy + icon_size / 2 + 0.5)
+  local x1 = cx - icon_size / 2
+  local y1 = cy - icon_size / 2
+  local x2 = cx + icon_size / 2
+  local y2 = cy + icon_size / 2
   
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, color, 0)
+  -- Draw with stroke for better antialiasing
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathLineTo(dl, x1, y1)
+  ImGui.DrawList_PathLineTo(dl, x2, y1)
+  ImGui.DrawList_PathLineTo(dl, x2, y2)
+  ImGui.DrawList_PathLineTo(dl, x1, y2)
+  ImGui.DrawList_PathFillConvex(dl, color)
+  
+  -- Add thin stroke for sharper edges
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathLineTo(dl, x1, y1)
+  ImGui.DrawList_PathLineTo(dl, x2, y1)
+  ImGui.DrawList_PathLineTo(dl, x2, y2)
+  ImGui.DrawList_PathLineTo(dl, x1, y2)
+  ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 0.5)
 end
 
 -- LOOP icon (Complex L-shape pattern)
 function TransportIcons.draw_loop(dl, x, y, width, height, color)
-  local cx = x + width / 2
-  local cy = y + height / 2
+  local cx = math.floor(x + width / 2 + 0.5)
+  local cy = math.floor(y + height / 2 + 0.5)
   
   local line_width = 2
   local l_width = 6
@@ -132,30 +159,52 @@ function TransportIcons.draw_loop(dl, x, y, width, height, color)
   ImGui.DrawList_AddRectFilled(dl, right_l_x, start_y, right_l_x + l_width, start_y + line_width, color)
 end
 
--- JUMP icon (Double Play Triangle)
+-- JUMP icon (Double Play Triangle - larger for better quality)
 function TransportIcons.draw_jump(dl, x, y, width, height, color)
-  local icon_size = 10
-  local spacing = 2
+  local icon_size = 11
+  local spacing = 3
   local cx = x + width / 2
   local cy = y + height / 2
   
   -- First triangle
-  local x1_1 = math.floor(cx - icon_size - spacing / 2 + 0.5)
-  local y1_1 = math.floor(cy - icon_size / 2 + 0.5)
-  local x1_2 = math.floor(cx - icon_size - spacing / 2 + 0.5)
-  local y1_2 = math.floor(cy + icon_size / 2 + 0.5)
-  local x1_3 = math.floor(cx - spacing / 2 + 0.5)
-  local y1_3 = math.floor(cy + 0.5)
-  ImGui.DrawList_AddTriangleFilled(dl, x1_1, y1_1, x1_2, y1_2, x1_3, y1_3, color)
+  local x1_1 = cx - icon_size - spacing / 2
+  local y1_1 = cy - icon_size / 2
+  local x1_2 = cx - icon_size - spacing / 2
+  local y1_2 = cy + icon_size / 2
+  local x1_3 = cx - spacing / 2
+  local y1_3 = cy
+  
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathLineTo(dl, x1_1, y1_1)
+  ImGui.DrawList_PathLineTo(dl, x1_2, y1_2)
+  ImGui.DrawList_PathLineTo(dl, x1_3, y1_3)
+  ImGui.DrawList_PathFillConvex(dl, color)
+  
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathLineTo(dl, x1_1, y1_1)
+  ImGui.DrawList_PathLineTo(dl, x1_2, y1_2)
+  ImGui.DrawList_PathLineTo(dl, x1_3, y1_3)
+  ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 0.5)
   
   -- Second triangle
-  local x2_1 = math.floor(cx + spacing / 2 + 0.5)
-  local y2_1 = math.floor(cy - icon_size / 2 + 0.5)
-  local x2_2 = math.floor(cx + spacing / 2 + 0.5)
-  local y2_2 = math.floor(cy + icon_size / 2 + 0.5)
-  local x2_3 = math.floor(cx + icon_size + spacing / 2 + 0.5)
-  local y2_3 = math.floor(cy + 0.5)
-  ImGui.DrawList_AddTriangleFilled(dl, x2_1, y2_1, x2_2, y2_2, x2_3, y2_3, color)
+  local x2_1 = cx + spacing / 2
+  local y2_1 = cy - icon_size / 2
+  local x2_2 = cx + spacing / 2
+  local y2_2 = cy + icon_size / 2
+  local x2_3 = cx + icon_size + spacing / 2
+  local y2_3 = cy
+  
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathLineTo(dl, x2_1, y2_1)
+  ImGui.DrawList_PathLineTo(dl, x2_2, y2_2)
+  ImGui.DrawList_PathLineTo(dl, x2_3, y2_3)
+  ImGui.DrawList_PathFillConvex(dl, color)
+  
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathLineTo(dl, x2_1, y2_1)
+  ImGui.DrawList_PathLineTo(dl, x2_2, y2_2)
+  ImGui.DrawList_PathLineTo(dl, x2_3, y2_3)
+  ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 0.5)
 end
 
 -- ============================================================================
@@ -363,7 +412,7 @@ function M.TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current
   
   -- Get time dimensions with large font
   if time_font then
-    ImGui.PushFont(ctx, time_font)
+    ImGui.PushFont(ctx, time_font, 20)
   end
   local time_w, time_h = ImGui.CalcTextSize(ctx, time_text)
   if time_font then
@@ -406,7 +455,7 @@ function M.TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current
   local center_x = x + width / 2
   
   if time_font then
-    ImGui.PushFont(ctx, time_font)
+    ImGui.PushFont(ctx, time_font, 20)
   end
   
   local time_x = center_x - time_w / 2 + LC.time_offset_x

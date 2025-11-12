@@ -59,18 +59,21 @@ end
 
 local function separate_by_alignment(elements)
   local left = {}
+  local center = {}
   local right = {}
   
   for _, element in ipairs(elements) do
     local align = element.align or "left"
     if align == "right" then
       table.insert(right, element)
+    elseif align == "center" then
+      table.insert(center, element)
     else
       table.insert(left, element)
     end
   end
   
-  return left, right
+  return left, center, right
 end
 
 local function layout_elements(ctx, elements, available_width, state)
@@ -227,14 +230,36 @@ local function calculate_corner_rounding(layout, header_rounding, is_bottom)
           rounding = header_rounding,
         }
       else
-        -- Header: round TOP corners (existing behavior)
-        rounding_info[i] = {
-          round_top_left = round_left,
-          round_top_right = round_right,
-          round_bottom_left = false,
-          round_bottom_right = false,
-          rounding = header_rounding,
-        }
+        -- Header (top): standard behavior is top corners
+        -- Special case: if this is a transport panel, use bottom corners instead
+        local use_bottom_rounding = false
+        -- Detect transport panel by checking if any element has transport-specific IDs
+        for _, layout_item in ipairs(layout) do
+          if layout_item.element.id and layout_item.element.id:match("^transport_") then
+            use_bottom_rounding = true
+            break
+          end
+        end
+        
+        if use_bottom_rounding then
+          -- Transport special case: round BOTTOM corners for all buttons
+          rounding_info[i] = {
+            round_top_left = false,
+            round_top_right = false,
+            round_bottom_left = round_left,
+            round_bottom_right = round_right,
+            rounding = header_rounding,
+          }
+        else
+          -- Standard top header: round TOP corners
+          rounding_info[i] = {
+            round_top_left = round_left,
+            round_top_right = round_right,
+            round_bottom_left = false,
+            round_bottom_right = false,
+            rounding = header_rounding,
+          }
+        end
       end
     end
   end
@@ -394,7 +419,25 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
   local is_bottom = config.position == "bottom"
   
   -- Separate elements by alignment
-  local left_elements, right_elements = separate_by_alignment(config.elements)
+  local left_elements, center_elements, right_elements = separate_by_alignment(config.elements)
+  
+  -- Handle center elements
+  if #center_elements > 0 then
+    local center_layout = layout_elements(ctx, center_elements, content_width, state)
+    local center_width = 0
+    for _, item in ipairs(center_layout) do
+      center_width = center_width + item.width
+      if item.element.spacing_before then
+        center_width = center_width + item.element.spacing_before
+      end
+    end
+    
+    local valign = config.valign or "top"
+    -- Pixel snap center position to prevent blurry borders
+    local center_x = math.floor(content_x + (content_width - center_width) / 2 + 0.5)
+    render_elements(ctx, dl, center_x, content_y, center_width, content_height, center_elements, state, header_rounding, is_bottom, valign)
+    return height
+  end
   
   if #left_elements > 0 and #right_elements > 0 then
     -- Both left and right elements: calculate available space

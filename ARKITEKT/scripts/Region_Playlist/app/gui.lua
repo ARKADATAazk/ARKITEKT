@@ -50,7 +50,7 @@ function M.create(State, AppConfig, settings)
   self.transport_container = TransportContainer.new({
     id = "region_playlist_transport",
     height = Config.TRANSPORT.height,
-    button_height = 23,
+    button_height = 30,
     header_elements = self:build_transport_header_elements({}),
     config = {
       fx = Config.TRANSPORT.fx,
@@ -423,9 +423,16 @@ function GUI:get_transport_region_colors()
   local bridge = self.State.state.bridge
   if not bridge then return {} end
   
+  -- Check if actually playing, not just if there's a current region
+  local bridge_state = bridge:get_state()
+  if not bridge_state.is_playing then
+    -- Not playing, return empty for ready state
+    return {}
+  end
+  
   local current_rid = bridge:get_current_rid()
   if not current_rid then
-    -- Not playing, return nil for ready state
+    -- No current region
     return {}
   end
   
@@ -474,7 +481,7 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
     {
       type = "button",
       id = "transport_play",
-      align = "left",
+      align = "center",
       width = 34,
       config = {
         is_toggled = bridge_state.is_playing or false,
@@ -497,7 +504,7 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
     {
       type = "button",
       id = "transport_stop",
-      align = "left",
+      align = "center",
       width = 34,
       config = {
         custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
@@ -513,7 +520,7 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
     {
       type = "button",
       id = "transport_loop",
-      align = "left",
+      align = "center",
       width = 34,
       config = {
         is_toggled = bridge_state.loop_enabled or false,
@@ -531,7 +538,7 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
     {
       type = "button",
       id = "transport_jump",
-      align = "left",
+      align = "center",
       width = 46,
       config = {
         custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
@@ -547,7 +554,7 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
     {
       type = "dropdown_field",
       id = "transport_measure",
-      align = "left",
+      align = "center",
       width = 85,
       config = {
         tooltip = "Grid/Quantize Mode",
@@ -568,18 +575,11 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
         end,
       },
     },
-    -- SEPARATOR between dropdown and override
-    {
-      type = "separator",
-      id = "transport_sep2",
-      align = "left",
-      width = 4,
-    },
     -- OVERRIDE button (toggle)
     {
       type = "button",
       id = "transport_override",
-      align = "left",
+      align = "center",
       width = 70,
       config = {
         label = "Override",
@@ -601,7 +601,7 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
     {
       type = "button",
       id = "transport_follow",
-      align = "left",
+      align = "center",
       width = 110,
       config = {
         label = "Follow Viewport",
@@ -679,7 +679,7 @@ function GUI:draw_transport_section(ctx)
   
   -- Layout: [ViewMode] [Display (full width)] with buttons at bottom
   local view_mode_w = self.Config.TRANSPORT.view_mode.size
-  local button_height = 21  -- Same height for all buttons
+  local button_height = 30  -- Same height for all buttons
   local button_spacing = 8
   
   -- Calculate display area
@@ -808,7 +808,12 @@ function GUI:get_filtered_active_items(playlist)
   return filtered
 end
 
-function GUI:draw(ctx, window)
+function GUI:draw(ctx, window, shell_state)
+  -- Store shell_state for font access
+  if shell_state then
+    self.shell_state = shell_state
+  end
+  
   if self.region_tiles.active_container and self.region_tiles.active_container:is_overflow_visible() then
     self:draw_overflow_modal(ctx, window)
   end

@@ -56,7 +56,8 @@ function M.new(opts)
       header = {
         enabled = true,
         height = button_height,
-        position = "bottom",
+        position = "top",
+        valign = "middle",  -- Vertically center buttons in header
         bg_color = hexrgb("#00000000"),  -- Transparent header background
         border_color = hexrgb("#00000000"),
         rounding = 8,
@@ -121,7 +122,20 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
   
   -- Lerp colors
   local function lerp_color(from, to, t)
-    if not from or not to then return to end
+    -- If either is nil, handle fade to/from ready color
+    if not from and not to then return nil end
+    if not from then
+      -- Fading from ready (nil) to a color: use ready_color as source
+      local Colors = require('rearkitekt.core.colors')
+      local ready_color = self.config.fx.gradient.ready_color or Colors.hexrgb("#1A1A1A")
+      from = ready_color
+    end
+    if not to then
+      -- Fading from color to ready (nil): use ready_color as target
+      local Colors = require('rearkitekt.core.colors')
+      local ready_color = self.config.fx.gradient.ready_color or Colors.hexrgb("#1A1A1A")
+      to = ready_color
+    end
     
     local Colors = require('rearkitekt.core.colors')
     local r1, g1, b1, a1 = Colors.rgba_to_components(from)
@@ -137,12 +151,40 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
   
   local lerp_factor = math.min(1.0, fade_speed * dt)
   
+  -- Always update colors, even when target is nil (not playing)
+  -- Fade to/from ready_color for smooth transitions
   if self.target_current_color then
     self.current_region_color = lerp_color(self.current_region_color, self.target_current_color, lerp_factor)
+  else
+    -- Fade to ready color when not playing
+    local Colors = require('rearkitekt.core.colors')
+    local ready_color = self.config.fx.gradient.ready_color or Colors.hexrgb("#1A1A1A")
+    if self.current_region_color then
+      self.current_region_color = lerp_color(self.current_region_color, ready_color, lerp_factor)
+      -- Check if fade is complete (close enough to ready color)
+      if math.abs((self.current_region_color or 0) - ready_color) < 256 then
+        self.current_region_color = nil
+      end
+    else
+      self.current_region_color = nil
+    end
   end
   
   if self.target_next_color then
     self.next_region_color = lerp_color(self.next_region_color, self.target_next_color, lerp_factor)
+  else
+    -- Fade to ready color when not playing
+    local Colors = require('rearkitekt.core.colors')
+    local ready_color = self.config.fx.gradient.ready_color or Colors.hexrgb("#1A1A1A")
+    if self.next_region_color then
+      self.next_region_color = lerp_color(self.next_region_color, ready_color, lerp_factor)
+      -- Check if fade is complete
+      if math.abs((self.next_region_color or 0) - ready_color) < 256 then
+        self.next_region_color = nil
+      end
+    else
+      self.next_region_color = nil
+    end
   end
 end
 
