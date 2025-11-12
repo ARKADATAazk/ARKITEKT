@@ -292,6 +292,13 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
         if cfg.on_change then
           cfg.on_change(value)
         end
+        -- If sorting is enabled but the selected option is 'No Sort', reset direction to asc
+        if cfg.enable_sort and value == nil then
+          self.sort_direction = "asc"
+          if cfg.on_direction_change then
+            cfg.on_direction_change(self.sort_direction)
+          end
+        end
         popup_changed = true
         ImGui.CloseCurrentPopup(ctx)
         self.is_open = false

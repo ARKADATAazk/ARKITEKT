@@ -106,20 +106,28 @@ function TransportIcons.draw_loop(dl, x, y, width, height, color)
   local start_x = math.floor(cx - total_width / 2 + 0.5)
   local start_y = math.floor(cy - l_height / 2 + 0.5)
   
-  -- Left L-shape
-  ImGui.DrawList_AddRectFilled(dl, start_x, start_y, start_x + line_width, start_y + l_height, color)
-  ImGui.DrawList_AddRectFilled(dl, start_x, start_y + l_height - line_width, start_x + l_width, start_y + l_height, color)
+  -- Offsets per request
+  local left_L_dx = 3
+  local rect1_dx, rect1_dy = -1, -4
+  local rect2_dx, rect2_dy = 0, 4
+  local right_L_dx = -4
   
-  -- Two center rectangles
-  local rect1_x = start_x + l_width + gap
-  local rect1_y = math.floor(cy - rect_height / 2 + 0.5)
+  -- Left L-shape (moved right by 3px)
+  local left_x = start_x + left_L_dx
+  ImGui.DrawList_AddRectFilled(dl, left_x, start_y, left_x + line_width, start_y + l_height, color)
+  ImGui.DrawList_AddRectFilled(dl, left_x, start_y + l_height - line_width, left_x + l_width, start_y + l_height, color)
+  
+  -- Two center rectangles (first square up 4px, left 1px; second square down 4px)
+  local rect1_x = start_x + l_width + gap + rect1_dx
+  local rect1_y = math.floor(cy - rect_height / 2 + 0.5) + rect1_dy
   ImGui.DrawList_AddRectFilled(dl, rect1_x, rect1_y, rect1_x + rect_width, rect1_y + rect_height, color)
   
-  local rect2_x = rect1_x + rect_width + gap
-  ImGui.DrawList_AddRectFilled(dl, rect2_x, rect1_y, rect2_x + rect_width, rect1_y + rect_height, color)
+  local rect2_x = (start_x + l_width + gap + rect_width + gap) + rect2_dx
+  local rect2_y = math.floor(cy - rect_height / 2 + 0.5) + rect2_dy
+  ImGui.DrawList_AddRectFilled(dl, rect2_x, rect2_y, rect2_x + rect_width, rect2_y + rect_height, color)
   
-  -- Right L-shape (inverted)
-  local right_l_x = rect2_x + rect_width + gap
+  -- Right L-shape (moved left by 4px)
+  local right_l_x = (rect2_x + rect_width + gap) + right_L_dx
   ImGui.DrawList_AddRectFilled(dl, right_l_x + l_width - line_width, start_y, right_l_x + l_width, start_y + l_height, color)
   ImGui.DrawList_AddRectFilled(dl, right_l_x, start_y, right_l_x + l_width, start_y + line_width, color)
 end

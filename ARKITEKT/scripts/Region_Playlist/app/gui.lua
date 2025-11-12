@@ -538,13 +538,6 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
         end,
       },
     },
-    -- SEPARATOR
-    {
-      type = "separator",
-      id = "transport_sep1",
-      align = "left",
-      width = 4,
-    },
     -- MEASURE dropdown (quantize/grid selector)
     {
       type = "dropdown_field",
@@ -569,6 +562,13 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
           reaper.ShowConsoleMsg("Quantize mode set to: " .. tostring(new_value) .. "\n")
         end,
       },
+    },
+    -- SEPARATOR between dropdown and override
+    {
+      type = "separator",
+      id = "transport_sep2",
+      align = "left",
+      width = 4,
     },
     -- OVERRIDE button (toggle)
     {

@@ -179,6 +179,7 @@ function M.get_pool_container_config(callbacks)
           config = {
             tooltip = "Sort by",
             tooltip_delay = 0.5,
+            enable_sort = true,
             options = {
               { value = nil, label = "No Sort" },
               { value = "color", label = "Color" },

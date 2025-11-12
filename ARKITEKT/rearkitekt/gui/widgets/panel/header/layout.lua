@@ -206,16 +206,28 @@ local function calculate_corner_rounding(layout, header_rounding, is_bottom)
       end
       
       -- Apply rounding based on header position (top vs bottom)
-      -- The presence of this table signals panel context to widgets
+      -- Distinguish rounding caused by separators vs group edges (first/last)
+      local left_due_to_sep, right_due_to_sep = false, false
+      for j = 1, #layout do
+        if is_separator(layout[j].element.type) then
+          local ln, rn = find_separator_neighbors(layout, j)
+          if ln == i then right_due_to_sep = true end
+          if rn == i then left_due_to_sep = true end
+        end
+      end
+      
       if is_bottom then
+        -- Footer: round TOP corners only for elements adjacent to separators
+        -- Corner-most elements (first/last) keep original BOTTOM rounding
         rounding_info[i] = {
-          round_top_left = false,
-          round_top_right = false,
-          round_bottom_left = round_left,
-          round_bottom_right = round_right,
+          round_top_left = left_due_to_sep,
+          round_top_right = right_due_to_sep,
+          round_bottom_left = round_left and not left_due_to_sep,
+          round_bottom_right = round_right and not right_due_to_sep,
           rounding = header_rounding,
         }
       else
+        -- Header: round TOP corners (existing behavior)
         rounding_info[i] = {
           round_top_left = round_left,
           round_top_right = round_right,
