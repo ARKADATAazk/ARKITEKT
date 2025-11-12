@@ -133,10 +133,37 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local playlist = get_playlist_by_id and get_playlist_by_id(item.playlist_id) or {}
+  
+  -- Calculate total duration if playlist has items (in beat positions)
+  local total_duration = 0
+  if playlist.items and bridge then
+    local State = require("Region_Playlist.app.state")
+    -- Calculate duration from region beat positions
+    for _, pl_item in ipairs(playlist.items) do
+      -- Handle both old format (rid) and new format (region_num)
+      local item_type = pl_item.type or "region"
+      local rid = pl_item.region_num or pl_item.rid
+      
+      if item_type == "region" and rid then
+        local region = State.state.region_index[rid]
+        if region then
+          -- region.start and region["end"] are in beat positions
+          local duration = (region["end"] or 0) - (region.start or 0)
+          local repeats = pl_item.repeats or pl_item.reps or 1
+          total_duration = total_duration + (duration * repeats)
+        end
+      elseif item_type == "playlist" and pl_item.playlist_id then
+        -- For nested playlists, we'd need recursive calculation
+        -- For now, skip nested duration calculation in active view
+      end
+    end
+  end
+  
   local playlist_data = {
     name = playlist.name or item.playlist_name or "Unknown Playlist",
     item_count = playlist.items and #playlist.items or item.playlist_item_count or 0,
-    chip_color = playlist.chip_color or item.chip_color or hexrgb("#FF5733")
+    chip_color = playlist.chip_color or item.chip_color or hexrgb("#FF5733"),
+    total_duration = total_duration
   }
 
   local is_enabled = item.enabled ~= false
@@ -183,6 +210,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   local actual_height = tile_height or (y2 - y1)
   local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
   local show_badge = actual_height >= M.CONFIG.responsive.hide_badge_below
+  local show_length = actual_height >= M.CONFIG.responsive.hide_length_below
   local text_alpha = math.floor(0xFF * enabled_factor + M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))
 
   local right_elements = {}
@@ -242,6 +270,11 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
       
       ImGui.SetTooltip(ctx, tooltip)
     end
+  end
+  
+  -- Draw playlist duration in bottom right (like regions)
+  if show_length then
+    BaseRenderer.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color, text_alpha)
   end
 end
 

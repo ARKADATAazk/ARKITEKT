@@ -364,12 +364,6 @@ local function get_or_create_instance(context, config, state_or_id)
     end
   end
   
-  -- DEBUG: Log state
-  if context.unique_id and context.unique_id:match("sort") then
-    reaper.ShowConsoleMsg(string.format("[DROPDOWN] value=%s, dir=%s\n", 
-      tostring(instance.current_value), tostring(instance.sort_direction)))
-  end
-  
   return instance
 end
 

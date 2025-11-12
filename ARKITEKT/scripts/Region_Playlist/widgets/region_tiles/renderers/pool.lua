@@ -155,7 +155,8 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   local base_color = M.CONFIG.playlist_tile.base_color
   local playlist_data = {
     name = playlist.name or "Unnamed Playlist",
-    chip_color = playlist.chip_color or Colors.hexrgb("#FF5733")
+    chip_color = playlist.chip_color or Colors.hexrgb("#FF5733"),
+    total_duration = playlist.total_duration or 0
   }
 
   if disabled_factor > 0 then
@@ -177,6 +178,7 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   local actual_height = tile_height or (y2 - y1)
   local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
   local show_badge = actual_height >= M.CONFIG.responsive.hide_text_below
+  local show_length = actual_height >= M.CONFIG.responsive.hide_length_below
   local text_alpha_factor = 1.0 - (disabled_factor * (1.0 - M.CONFIG.disabled.alpha_multiplier))
   local text_alpha = math.floor(0xFF * text_alpha_factor)
   
@@ -234,6 +236,11 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
     
     -- Use whiter text like active tiles
     Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors.with_alpha(Colors.hexrgb("#FFFFFFDD"), text_alpha), badge_text)
+  end
+  
+  -- Draw playlist duration in bottom right (like regions)
+  if show_length then
+    BaseRenderer.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color, text_alpha)
   end
   
   ImGui.SetCursorScreenPos(ctx, x1, y1)

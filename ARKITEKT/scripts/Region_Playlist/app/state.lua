@@ -375,6 +375,49 @@ function M.get_filtered_pool_regions()
 end
 
 
+-- Helper: Calculate total duration of all regions in a playlist
+local function calculate_playlist_duration(playlist, region_index)
+  if not playlist or not playlist.items then return 0 end
+  
+  local total_duration = 0
+  reaper.ShowConsoleMsg(string.format("[CALC DURATION] Playlist '%s'\n", playlist.name or "?"))
+  
+  for _, item in ipairs(playlist.items) do
+    -- Skip disabled items
+    if item.enabled == false then
+      goto continue
+    end
+    
+    -- Handle both old format (rid) and new format (region_num)
+    -- If no type field, assume it's a region (for backwards compatibility)
+    local item_type = item.type or "region"
+    local rid = item.region_num or item.rid
+    
+    if item_type == "region" and rid then
+      local region = region_index[rid]
+      if region then
+        -- region.start and region["end"] are time positions in seconds
+        local duration_seconds = (region["end"] or 0) - (region.start or 0)
+        local repeats = item.repeats or item.reps or 1
+        total_duration = total_duration + (duration_seconds * repeats)
+      end
+    elseif item_type == "playlist" and item.playlist_id then
+      -- For nested playlists, recursively calculate duration
+      local nested_pl = M.get_playlist_by_id(item.playlist_id)
+      if nested_pl then
+        local nested_duration = calculate_playlist_duration(nested_pl, region_index)
+        local repeats = item.repeats or 1
+        total_duration = total_duration + (nested_duration * repeats)
+      end
+    end
+    
+    ::continue::
+  end
+  
+  return total_duration
+end
+
+-- Playlist comparison functions
 local function compare_playlists_by_alpha(a, b)
   local name_a = (a.name or ""):lower()
   local name_b = (b.name or ""):lower()
@@ -385,6 +428,20 @@ local function compare_playlists_by_item_count(a, b)
   local count_a = #a.items
   local count_b = #b.items
   return count_a < count_b
+end
+
+local function compare_playlists_by_color(a, b)
+  local color_a = a.chip_color or 0
+  local color_b = b.chip_color or 0
+  return Colors.compare_colors(color_a, color_b)
+end
+
+local function compare_playlists_by_index(a, b)
+  return (a.index or 0) < (b.index or 0)
+end
+
+local function compare_playlists_by_duration(a, b)
+  return (a.total_duration or 0) < (b.total_duration or 0)
 end
 
 function M.mark_graph_dirty()
@@ -481,16 +538,26 @@ function M.get_playlists_for_pool()
   local pool_playlists = {}
   local active_id = M.state.active_playlist
   
+  -- Build playlist index map for implicit ordering
+  local playlist_index_map = {}
+  for i, pl in ipairs(M.playlists) do
+    playlist_index_map[pl.id] = i
+  end
+  
   for _, pl in ipairs(M.playlists) do
     if pl.id ~= active_id then
       local is_draggable = M.is_playlist_draggable_to(pl.id, active_id)
+      local total_duration = calculate_playlist_duration(pl, M.state.region_index)
       
       pool_playlists[#pool_playlists + 1] = {
+        type = "playlist",  -- Mark as playlist for mixed mode
         id = pl.id,
         name = pl.name,
         items = pl.items,
         chip_color = pl.chip_color or RegionState.generate_chip_color(),
         is_disabled = not is_draggable,
+        index = playlist_index_map[pl.id] or 0,
+        total_duration = total_duration,
       }
     end
   end
@@ -509,13 +576,20 @@ function M.get_playlists_for_pool()
   local sort_mode = M.state.sort_mode
   local sort_dir = M.state.sort_direction or "asc"
   
-  if sort_mode == "alpha" then
+  -- Apply sorting (only if sort_mode is active)
+  if sort_mode == "color" then
+    table.sort(pool_playlists, compare_playlists_by_color)
+  elseif sort_mode == "index" then
+    table.sort(pool_playlists, compare_playlists_by_index)
+  elseif sort_mode == "alpha" then
     table.sort(pool_playlists, compare_playlists_by_alpha)
   elseif sort_mode == "length" then
-    table.sort(pool_playlists, compare_playlists_by_item_count)
+    -- Length now sorts by total duration instead of item count
+    table.sort(pool_playlists, compare_playlists_by_duration)
   end
   
-  if sort_dir == "desc" then
+  -- Reverse if descending (only when sort_mode is active)
+  if sort_mode and sort_dir == "desc" then
     local reversed = {}
     for i = #pool_playlists, 1, -1 do
       reversed[#reversed + 1] = pool_playlists[i]
@@ -524,6 +598,93 @@ function M.get_playlists_for_pool()
   end
   
   return pool_playlists
+end
+
+-- Mixed mode: combine regions and playlists with unified sorting
+function M.get_mixed_pool_sorted()
+  local regions = M.get_filtered_pool_regions()
+  local playlists = M.get_playlists_for_pool()
+  
+  local sort_mode = M.state.sort_mode
+  local sort_dir = M.state.sort_direction or "asc"
+  
+  -- If no sort mode, return regions first, then playlists (natural order)
+  if not sort_mode then
+    local result = {}
+    for _, region in ipairs(regions) do
+      result[#result + 1] = region
+    end
+    for _, playlist in ipairs(playlists) do
+      result[#result + 1] = playlist
+    end
+    return result
+  end
+  
+  -- Otherwise, combine and sort together
+  local combined = {}
+  
+  -- Add regions (already have type field or can be identified by lack of type)
+  for _, region in ipairs(regions) do
+    if not region.type then
+      region.type = "region"
+    end
+    combined[#combined + 1] = region
+  end
+  
+  -- Add playlists (already marked with type="playlist")
+  for _, playlist in ipairs(playlists) do
+    combined[#combined + 1] = playlist
+  end
+  
+  -- Unified comparison function that works for both regions and playlists
+  local function unified_compare(a, b)
+    if sort_mode == "color" then
+      local color_a = a.chip_color or a.color or 0
+      local color_b = b.chip_color or b.color or 0
+      return Colors.compare_colors(color_a, color_b)
+    elseif sort_mode == "index" then
+      local idx_a = a.index or a.rid or 0
+      local idx_b = b.index or b.rid or 0
+      return idx_a < idx_b
+    elseif sort_mode == "alpha" then
+      local name_a = (a.name or ""):lower()
+      local name_b = (b.name or ""):lower()
+      return name_a < name_b
+    elseif sort_mode == "length" then
+      -- For regions: use end - start
+      -- For playlists: use total_duration
+      local len_a
+      if a.type == "playlist" then
+        len_a = a.total_duration or 0
+      else
+        len_a = (a["end"] or 0) - (a.start or 0)
+      end
+      
+      local len_b
+      if b.type == "playlist" then
+        len_b = b.total_duration or 0
+      else
+        len_b = (b["end"] or 0) - (b.start or 0)
+      end
+      
+      return len_a < len_b
+    end
+    
+    return false
+  end
+  
+  table.sort(combined, unified_compare)
+  
+  -- Reverse if descending
+  if sort_dir == "desc" then
+    local reversed = {}
+    for i = #combined, 1, -1 do
+      reversed[#reversed + 1] = combined[i]
+    end
+    return reversed
+  end
+  
+  return combined
 end
 
 function M.detect_circular_reference(target_playlist_id, playlist_id_to_add)
