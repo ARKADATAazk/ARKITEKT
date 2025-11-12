@@ -12,7 +12,7 @@ local hexrgb = Colors.hexrgb
 
 function M.render_base_fill(dl, x1, y1, x2, y2, rounding)
   local base_neutral = hexrgb("#0F0F0F")
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, base_neutral, rounding)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, base_neutral, rounding, ImGui.DrawFlags_RoundCornersAll)
 end
 
 function M.render_color_fill(dl, x1, y1, x2, y2, base_color, opacity, saturation, brightness, rounding)
@@ -33,7 +33,7 @@ function M.render_color_fill(dl, x1, y1, x2, y2, base_color, opacity, saturation
   
   local alpha = math.floor(255 * opacity)
   local fill_color = Colors.components_to_rgba(r, g, b, alpha)
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, fill_color, rounding)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, fill_color, rounding, ImGui.DrawFlags_RoundCornersAll)
 end
 
 function M.render_gradient(dl, x1, y1, x2, y2, base_color, intensity, opacity, rounding)
@@ -54,8 +54,12 @@ function M.render_gradient(dl, x1, y1, x2, y2, base_color, intensity, opacity, r
   local color_top = Colors.components_to_rgba(r_top, g_top, b_top, alpha)
   local color_bottom = Colors.components_to_rgba(r_bottom, g_bottom, b_bottom, alpha)
   
-  ImGui.DrawList_AddRectFilledMultiColor(dl, x1, y1, x2, y2, 
+  -- Inset on all sides to stay inside rounded corners (AddRectFilledMultiColor doesn't support corner flags)
+  local inset = math.min(2, rounding * 0.3)
+  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
+  ImGui.DrawList_AddRectFilledMultiColor(dl, x1 + inset, y1 + inset, x2 - inset, y2 - inset, 
     color_top, color_top, color_bottom, color_bottom)
+  ImGui.DrawList_PopClipRect(dl)
 end
 
 function M.render_specular(dl, x1, y1, x2, y2, base_color, strength, coverage, rounding)
@@ -76,14 +80,21 @@ function M.render_specular(dl, x1, y1, x2, y2, base_color, strength, coverage, r
   local color_top = Colors.components_to_rgba(r_spec, g_spec, b_spec, alpha_top)
   local color_bottom = Colors.components_to_rgba(r_spec, g_spec, b_spec, alpha_bottom)
   
-  ImGui.DrawList_AddRectFilledMultiColor(dl, x1, y1, x2, band_y2,
+  -- Inset on all sides to stay inside rounded corners (AddRectFilledMultiColor doesn't support corner flags)
+  local inset = math.min(2, rounding * 0.3)
+  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
+  ImGui.DrawList_AddRectFilledMultiColor(dl, x1 + inset, y1 + inset, x2 - inset, band_y2,
     color_top, color_top, color_bottom, color_bottom)
+  ImGui.DrawList_PopClipRect(dl)
 end
 
 function M.render_inner_shadow(dl, x1, y1, x2, y2, strength, rounding)
   local shadow_size = 2
   local shadow_alpha = math.floor(255 * strength * 0.4)
   local shadow_color = Colors.components_to_rgba(0, 0, 0, shadow_alpha)
+  
+  -- Clip to rounded rect bounds (AddRectFilledMultiColor doesn't support corner flags)
+  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
   
   ImGui.DrawList_AddRectFilledMultiColor(dl, 
     x1, y1, x2, y1 + shadow_size,
@@ -94,6 +105,8 @@ function M.render_inner_shadow(dl, x1, y1, x2, y2, strength, rounding)
     x1, y1, x1 + shadow_size, y2,
     shadow_color, Colors.components_to_rgba(0, 0, 0, 0),
     Colors.components_to_rgba(0, 0, 0, 0), shadow_color)
+  
+  ImGui.DrawList_PopClipRect(dl)
 end
 
 function M.render_diagonal_stripes(dl, x1, y1, x2, y2, stripe_color, spacing, thickness, opacity, rounding)
@@ -147,7 +160,7 @@ function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fa
   local alpha = math.floor(base_alpha * fade_alpha)
   local progress_color = Colors.components_to_rgba(r, g, b, alpha)
   
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, progress_x, y2, progress_color, rounding)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, progress_x, y2, progress_color, rounding, ImGui.DrawFlags_RoundCornersAll)
   
   local base_bar_alpha = 0xAA
   local bar_alpha = math.floor(base_bar_alpha * fade_alpha)
@@ -171,11 +184,11 @@ function M.render_border(dl, x1, y1, x2, y2, base_color, saturation, brightness,
     for i = glow_layers, 1, -1 do
       local glow_alpha = math.floor(glow_strength * 30 / i)
       local glow_color = Colors.components_to_rgba(r, g, b, glow_alpha)
-      ImGui.DrawList_AddRect(dl, x1 - i, y1 - i, x2 + i, y2 + i, glow_color, rounding, 0, thickness)
+      ImGui.DrawList_AddRect(dl, x1 - i, y1 - i, x2 + i, y2 + i, glow_color, rounding, ImGui.DrawFlags_RoundCornersAll, thickness)
     end
   end
   
-  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, thickness)
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, ImGui.DrawFlags_RoundCornersAll, thickness)
 end
 
 function M.render_complete(dl, x1, y1, x2, y2, base_color, config, is_selected, hover_factor, playback_progress, playback_fade, border_color_override, progress_color_override, stripe_color, stripe_enabled)

@@ -5,8 +5,21 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local PanelConfig = require('rearkitekt.gui.widgets.panel.config')
 
 local M = {}
+
+-- Deep merge utility
+local function deep_merge(base, override)
+  local result = {}
+  for k, v in pairs(base or {}) do
+    result[k] = v
+  end
+  for k, v in pairs(override or {}) do
+    result[k] = v
+  end
+  return result
+end
 
 -- Component registry - imports from controls/ directly for reusable components
 local COMPONENTS = {
@@ -155,6 +168,7 @@ local function calculate_corner_rounding(layout, header_rounding, is_bottom)
   
   for i, item in ipairs(layout) do
     if is_separator(item.element.type) then
+      -- Separators never have rounding
       rounding_info[i] = {
         round_top_left = false,
         round_top_right = false,
@@ -162,30 +176,37 @@ local function calculate_corner_rounding(layout, header_rounding, is_bottom)
         round_bottom_right = false,
       }
     else
+      -- Default: no rounding (buttons in the middle of a group)
       local round_left = false
       local round_right = false
       
+      -- Round left edge if: first element OR right neighbor of a separator
       if i == first_idx then
         round_left = true
       end
       
+      -- Round right edge if: last element OR left neighbor of a separator
       if i == last_idx then
         round_right = true
       end
       
+      -- Check if this element is adjacent to any separator
       for j = 1, #layout do
         if is_separator(layout[j].element.type) then
           local left_neighbor, right_neighbor = find_separator_neighbors(layout, j)
           if left_neighbor == i then
+            -- This element is to the left of a separator
             round_right = true
           end
           if right_neighbor == i then
+            -- This element is to the right of a separator
             round_left = true
           end
         end
       end
       
-      -- Apply rounding based on header position
+      -- Apply rounding based on header position (top vs bottom)
+      -- The presence of this table signals panel context to widgets
       if is_bottom then
         rounding_info[i] = {
           round_top_left = false,
@@ -298,10 +319,12 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
     
     local component = COMPONENTS[element.type]
     if component and component.draw then
-      local element_config = {}
-      for k, v in pairs(element.config or {}) do
-        element_config[k] = v
-      end
+      -- Apply panel ELEMENT_STYLE defaults first, then merge user config
+      local style_defaults = PanelConfig.ELEMENT_STYLE[element.type] or {}
+      local element_config = deep_merge(style_defaults, element.config or {})
+      
+      -- Pass element ID to config for unique identification
+      element_config.id = element.id
       
       if rounding_info[i] then
         element_config.corner_rounding = rounding_info[i]

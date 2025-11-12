@@ -60,6 +60,7 @@ local function load_fonts(ctx, font_cfg)
     version        = (DEFAULTS.fonts and DEFAULTS.fonts.version) or 13,
     titlebar_version = (DEFAULTS.fonts and DEFAULTS.fonts.titlebar_version) or nil,
     monospace      = (DEFAULTS.fonts and DEFAULTS.fonts.monospace) or 13,
+    time_display   = (DEFAULTS.fonts and DEFAULTS.fonts.time_display) or nil,
     family_regular = (DEFAULTS.fonts and DEFAULTS.fonts.family_regular) or 'Inter_18pt-Regular.ttf',
     family_bold    = (DEFAULTS.fonts and DEFAULTS.fonts.family_bold) or 'Inter_18pt-SemiBold.ttf',
     family_mono    = (DEFAULTS.fonts and DEFAULTS.fonts.family_mono) or 'JetBrainsMono-Regular.ttf',
@@ -84,6 +85,13 @@ local function load_fonts(ctx, font_cfg)
                                 or default_font
   local monospace_font = exists(M) and ImGui.CreateFont(M, font_cfg.monospace)
                                 or default_font
+  
+  local time_display_font = nil
+  if font_cfg.time_display then
+    time_display_font = exists(B) and ImGui.CreateFont(B, font_cfg.time_display)
+                                   or ImGui.CreateFont('sans-serif', font_cfg.time_display)
+    ImGui.Attach(ctx, time_display_font)
+  end
 
   local titlebar_version_font = nil
   local titlebar_version_size = font_cfg.titlebar_version or font_cfg.version
@@ -109,6 +117,8 @@ local function load_fonts(ctx, font_cfg)
     monospace_size = font_cfg.monospace,
     titlebar_version = titlebar_version_font,
     titlebar_version_size = titlebar_version_size,
+    time_display = time_display_font,
+    time_display_size = font_cfg.time_display,
   }
 end
 

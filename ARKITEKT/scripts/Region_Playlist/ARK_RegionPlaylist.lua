@@ -100,4 +100,7 @@ Shell.run({
   icon_size    = 18,
   min_size     = { w = 700, h = 500 },
   status_bar   = status_bar,
+  fonts        = {
+    time_display = 32,  -- Large font for transport time display
+  },
 })

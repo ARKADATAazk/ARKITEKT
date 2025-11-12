@@ -64,6 +64,8 @@ M.DEFAULTS = {
     border_color = hexrgb("#00000066"),
     rounding = 8,
     
+    -- IMPORTANT: Keep left/right padding at 0 so corner rounding on
+    -- first/last buttons is visible. Otherwise rounded corners are hidden.
     padding = {
       left = 0,
       right = 0,
@@ -109,6 +111,17 @@ M.ELEMENT_STYLE = {
     text_color = hexrgb("#CCCCCCFF"),
     text_hover_color = hexrgb("#FFFFFFFF"),
     text_active_color = hexrgb("#FFFFFFFF"),
+    
+    -- Toggle state colors
+    bg_on_color = hexrgb("#434343FF"),
+    bg_on_hover_color = hexrgb("#484848FF"),
+    bg_on_active_color = hexrgb("#3E3E3EFF"),
+    border_inner_on_color = hexrgb("#898989FF"),
+    border_on_hover_color = hexrgb("#9A9A9AFF"),
+    border_on_active_color = hexrgb("#7E7E7EFF"),
+    text_on_color = hexrgb("#FFFFFFFF"),
+    text_on_hover_color = hexrgb("#FFFFFFFF"),
+    text_on_active_color = hexrgb("#FFFFFFFF"),
   },
   
   dropdown = {

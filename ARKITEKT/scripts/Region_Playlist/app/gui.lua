@@ -33,19 +33,25 @@ function M.create(State, AppConfig, settings)
     quantize_lookahead = Config.QUANTIZE.default_lookahead,
     overflow_modal_search = "",
     overflow_modal_is_open = false,
+    shell_state = nil,  -- Store shell state for font access
     
     -- New transport widgets
     view_mode_button = TransportWidgets.ViewModeButton.new(Config.TRANSPORT.view_mode),
     transport_display = TransportWidgets.TransportDisplay.new(Config.TRANSPORT.display),
     jump_controls = TransportWidgets.JumpControls.new(Config.TRANSPORT.jump),
-    global_controls = TransportWidgets.GlobalControls.new(Config.TRANSPORT.global),
+    override_button = TransportWidgets.SimpleToggleButton.new("##transport_override", "Override", 80, 21),
+    loop_button = TransportWidgets.SimpleToggleButton.new("##loop_playlist", "Loop", 80, 21),
+    transport_button_bar = TransportWidgets.TransportButtonBar.new(),
   }, GUI)
   
   self.controller = PlaylistController.new(State, settings, State.state.undo_manager)
   
+  -- Transport panel with bottom header for buttons
   self.transport_container = TransportContainer.new({
     id = "region_playlist_transport",
     height = Config.TRANSPORT.height,
+    button_height = 23,
+    header_elements = self:build_transport_header_elements({}),
   })
   
   State.state.bridge:set_controller(self.controller)
@@ -408,21 +414,278 @@ function GUI:draw_overflow_modal(ctx, window)
   end
 end
 
+function GUI:get_transport_region_colors()
+  local bridge = self.State.state.bridge
+  if not bridge then return {} end
+  
+  local current_rid = bridge:get_current_rid()
+  if not current_rid then
+    -- Not playing, return nil for ready state
+    return {}
+  end
+  
+  -- Get current region color
+  local current_region = self.State.state.region_index[current_rid]
+  local current_color = current_region and current_region.color or nil
+  
+  -- Find next unique region in sequence (skipping repeat cycles)
+  local sequence = bridge:get_sequence()
+  if not sequence or #sequence == 0 then
+    return { current = current_color }
+  end
+  
+  local current_idx = bridge:get_state().playlist_pointer
+  if not current_idx or current_idx < 1 then
+    return { current = current_color }
+  end
+  
+  -- Find next entry with different RID
+  local next_rid = nil
+  for i = current_idx + 1, #sequence do
+    local entry = sequence[i]
+    if entry and entry.rid and entry.rid ~= current_rid then
+      next_rid = entry.rid
+      break
+    end
+  end
+  
+  -- If no next found (last region or all remaining are same), return nil for next
+  if not next_rid then
+    return { current = current_color }
+  end
+  
+  local next_region = self.State.state.region_index[next_rid]
+  local next_color = next_region and next_region.color or nil
+  
+  return { current = current_color, next = next_color }
+end
+
+function GUI:build_transport_header_elements_with_state(bridge_state)
+  bridge_state = bridge_state or {}
+  local TransportWidgets = require('Region_Playlist.widgets._temp_transportwidgets')
+  
+  return {
+    -- PLAY button (toggle)
+    {
+      type = "button",
+      id = "transport_play",
+      align = "left",
+      width = 34,
+      config = {
+        is_toggled = bridge_state.is_playing or false,
+        custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
+          TransportWidgets.draw_play_icon(dl, bx, by, bw, bh, text_color)
+        end,
+        tooltip = "Play/Pause",
+        on_click = function()
+          local bridge = self.State.state.bridge
+          local is_playing = bridge:get_state().is_playing
+          if is_playing then
+            bridge:pause()
+          else
+            bridge:play()
+          end
+        end,
+      },
+    },
+    -- STOP button
+    {
+      type = "button",
+      id = "transport_stop",
+      align = "left",
+      width = 34,
+      config = {
+        custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
+          TransportWidgets.draw_stop_icon(dl, bx, by, bw, bh, text_color)
+        end,
+        tooltip = "Stop",
+        on_click = function()
+          self.State.state.bridge:stop()
+        end,
+      },
+    },
+    -- LOOP button (toggle)
+    {
+      type = "button",
+      id = "transport_loop",
+      align = "left",
+      width = 34,
+      config = {
+        is_toggled = bridge_state.loop_enabled or false,
+        custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
+          TransportWidgets.draw_loop_icon(dl, bx, by, bw, bh, text_color)
+        end,
+        tooltip = "Loop",
+        on_click = function()
+          local current_state = self.State.state.bridge:get_loop_playlist()
+          self.State.state.bridge:set_loop_playlist(not current_state)
+        end,
+      },
+    },
+    -- JUMP button
+    {
+      type = "button",
+      id = "transport_jump",
+      align = "left",
+      width = 46,
+      config = {
+        custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
+          TransportWidgets.draw_jump_icon(dl, bx, by, bw, bh, text_color)
+        end,
+        tooltip = "Jump Forward",
+        on_click = function()
+          self.State.state.bridge:jump_to_next_quantized(self.quantize_lookahead)
+        end,
+      },
+    },
+    -- SEPARATOR
+    {
+      type = "separator",
+      id = "transport_sep1",
+      align = "left",
+      width = 4,
+    },
+    -- MEASURE dropdown (quantize/grid selector)
+    {
+      type = "dropdown_field",
+      id = "transport_measure",
+      align = "left",
+      width = 85,
+      config = {
+        tooltip = "Grid/Quantize Mode",
+        options = {
+          { value = "measure", label = "Bar" },
+          { value = "beat", label = "Beat" },
+          { value = 1, label = "1/1" },
+          { value = 0.5, label = "1/2" },
+          { value = 0.25, label = "1/4" },
+          { value = 0.125, label = "1/8" },
+          { value = 0.0625, label = "1/16" },
+          { value = 0.03125, label = "1/32" },
+        },
+        enable_mousewheel = true,
+        on_change = function(new_value)
+          self.State.state.bridge:set_quantize_mode(new_value)
+          reaper.ShowConsoleMsg("Quantize mode set to: " .. tostring(new_value) .. "\n")
+        end,
+      },
+    },
+    -- OVERRIDE button (toggle)
+    {
+      type = "button",
+      id = "transport_override",
+      align = "left",
+      width = 70,
+      config = {
+        label = "Override",
+        is_toggled = bridge_state.override_enabled or false,
+        tooltip = "Override Quantization",
+        on_click = function()
+          local engine = self.State.state.bridge.engine
+          if engine then
+            local current_state = engine:get_transport_override()
+            engine:set_transport_override(not current_state)
+            if self.settings then
+              self.settings:set('transport_override', not current_state)
+            end
+          end
+        end,
+      },
+    },
+    -- FOLLOW VIEWPORT button (toggle)
+    {
+      type = "button",
+      id = "transport_follow",
+      align = "left",
+      width = 110,
+      config = {
+        label = "Follow Viewport",
+        is_toggled = bridge_state.follow_viewport or false,
+        tooltip = "Follow Playhead in Viewport",
+        on_click = function()
+          reaper.ShowConsoleMsg("Follow Viewport toggle not yet implemented\n")
+        end,
+      },
+    },
+  }
+end
+
+function GUI:build_transport_header_elements()
+  return self:build_transport_header_elements_with_state({})
+end
+
 function GUI:draw_transport_section(ctx)
-  local content_w, content_h = self.transport_container:begin_draw(ctx)
+  local hexrgb = Colors.hexrgb
+  
+  -- Get bridge state first to update header elements
+  local engine = self.State.state.bridge.engine
+  local bridge_state = {
+    is_playing = self.State.state.bridge:get_state().is_playing,
+    time_remaining = self.State.state.bridge:get_time_remaining(),
+    progress = self.State.state.bridge:get_progress() or 0,
+    quantize_mode = self.State.state.bridge:get_state().quantize_mode,
+    loop_enabled = self.State.state.bridge:get_loop_playlist(),
+    override_enabled = engine and engine:get_transport_override() or false,
+    follow_viewport = false,  -- TODO: Wire up to actual viewport follow state
+  }
+  
+  -- Update header elements with current state
+  self.transport_container:set_header_elements(self:build_transport_header_elements_with_state(bridge_state))
+  
+  local region_colors = self:get_transport_region_colors()
+  local content_w, content_h = self.transport_container:begin_draw(ctx, region_colors)
   
   local spacing = self.Config.TRANSPORT.spacing
-  
-  -- Responsive layout calculations
-  local view_mode_w = self.Config.TRANSPORT.view_mode.size
-  local global_w = self.Config.TRANSPORT.global.pad_width + 16
-  local display_w = content_w - view_mode_w - global_w - spacing * 3
-  
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  -- Left: View Mode Button (vertically centered)
+  -- Get playlist data
+  local active_playlist = self.State.get_active_playlist()
+  local playlist_data = active_playlist and {
+    name = active_playlist.name,
+    color = active_playlist.chip_color or hexrgb("#888888"),
+  } or nil
+  
+  -- Get current and next region objects
+  local bridge = self.State.state.bridge
+  local current_region = nil
+  local next_region = nil
+  
+  if bridge then
+    local current_rid = bridge:get_current_rid()
+    if current_rid then
+      current_region = self.State.state.region_index[current_rid]
+      
+      -- Find next unique region
+      local sequence = bridge:get_sequence()
+      if sequence and #sequence > 0 then
+        local current_idx = bridge:get_state().playlist_pointer
+        if current_idx and current_idx >= 1 then
+          for i = current_idx + 1, #sequence do
+            local entry = sequence[i]
+            if entry and entry.rid and entry.rid ~= current_rid then
+              next_region = self.State.state.region_index[entry.rid]
+              break
+            end
+          end
+        end
+      end
+    end
+  end
+  
+  -- Layout: [ViewMode] [Display (full width)] with buttons at bottom
+  local view_mode_w = self.Config.TRANSPORT.view_mode.size
+  local button_height = 21  -- Same height for all buttons
+  local button_spacing = 8
+  
+  -- Calculate display area
+  local display_x = cursor_x + view_mode_w + spacing
+  local display_w = content_w - view_mode_w - spacing
+  local display_y = cursor_y
+  local display_h = content_h - button_height  -- Buttons at bottom, no padding
+  
+  -- Left: View Mode Button (vertically centered in display area)
   local view_x = cursor_x
-  local view_y = cursor_y + (content_h - view_mode_w) / 2
+  local view_y = cursor_y + (display_h - view_mode_w) / 2
   
   self.view_mode_button:draw(ctx, view_x, view_y, self.State.state.layout_mode, function()
     self.State.state.layout_mode = (self.State.state.layout_mode == 'horizontal') and 'vertical' or 'horizontal'
@@ -430,71 +693,16 @@ function GUI:draw_transport_section(ctx)
     self.State.persist_ui_prefs()
   end)
   
-  -- Center: Transport Display + Jump Controls
-  local display_x = view_x + view_mode_w + spacing
-  local display_y = cursor_y
-  local display_h = content_h - self.Config.TRANSPORT.jump.height - 6
-  
-  local bridge_state = {
-    is_playing = self.State.state.bridge:get_state().is_playing,
-    time_remaining = self.State.state.bridge:get_time_remaining(),
-    progress = self.State.state.bridge:get_progress() or 0,
-    quantize_mode = self.State.state.bridge:get_state().quantize_mode,
-  }
-  
-  local get_current_region = function()
-    local rid = self.State.state.bridge:get_current_rid()
-    if rid then
-      return self.State.state.region_index[rid]
-    end
-    return nil
-  end
-  
-  self.transport_display:draw(ctx, display_x, display_y, display_w, display_h, bridge_state, get_current_region)
-  
-  -- Jump Controls (below display)
-  local jump_x = display_x
-  local jump_y = display_y + display_h + 6
-  
-  local engine = self.State.state.bridge.engine
-  
-  self.jump_controls:draw(ctx, jump_x, jump_y, display_w, bridge_state, self.quantize_lookahead,
-    function()
-      self.State.state.bridge:jump_to_next_quantized(self.quantize_lookahead)
-    end,
-    function(mode)
-      if engine and engine.quantize then
-        engine.quantize:set_quantize_mode(mode)
-      end
-    end,
-    function(value)
-      self.quantize_lookahead = value
-    end
-  )
-  
-  -- Right: Global Controls (StatusPads)
-  local global_x = display_x + display_w + spacing
-  local global_y = cursor_y + (content_h - 72) / 2
-  
-  local transport_override = engine and engine:get_transport_override() or false
-  local loop_playlist = self.State.state.bridge:get_loop_playlist()
-  
-  self.global_controls:draw(ctx, global_x, global_y, transport_override, loop_playlist,
-    function(value)
-      if engine then
-        engine:set_transport_override(value)
-        if self.settings then
-          self.settings:set('transport_override', value)
-        end
-      end
-    end,
-    function(value)
-      self.State.state.bridge:set_loop_playlist(value)
-    end
-  )
+  -- Draw display with playlist, current/next regions, and colors
+  -- Panel header (buttons) will be drawn automatically at bottom
+  local time_font = self.shell_state and self.shell_state.fonts and self.shell_state.fonts.time_display or nil
+  self.transport_display:draw(ctx, display_x, display_y, display_w, display_h, 
+    bridge_state, current_region, next_region, playlist_data, region_colors, time_font)
   
   self.transport_container:end_draw(ctx)
 end
+
+
 
 function GUI:draw_horizontal_separator(ctx, x, y, width, height)
   local separator_config = self.Config.SEPARATOR.horizontal
@@ -642,9 +850,16 @@ function GUI:draw(ctx, window)
   
   Shortcuts.handle_keyboard_shortcuts(ctx, self.State.state, self.region_tiles)
   
+  -- Store position before transport
+  local transport_start_x, transport_start_y = ImGui.GetCursorScreenPos(ctx)
+  
   self:draw_transport_section(ctx)
   
-  ImGui.Dummy(ctx, 1, 8)
+  -- Visual separator between transport and grids (matches grid separator spacing)
+  -- After EndChild, cursor is reset, so we need to explicitly position it
+  local sep_gap = self.Config.SEPARATOR.horizontal.gap
+  local transport_height = self.Config.TRANSPORT.height
+  ImGui.SetCursorScreenPos(ctx, transport_start_x, transport_start_y + transport_height + sep_gap)
   
   local pl = self.State.get_active_playlist()
   local filtered_active_items = self:get_filtered_active_items(pl)

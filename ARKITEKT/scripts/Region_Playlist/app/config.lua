@@ -28,7 +28,7 @@ M.DIM = {
 
 -- Transport dimensions and styling (using library design language)
 M.TRANSPORT = {
-  height = 100,
+  height = 72,
   padding = 12,
   spacing = 12,
   
@@ -53,25 +53,16 @@ M.TRANSPORT = {
     rounding = 6,
     time_color = hexrgb("#CCCCCC"),
     time_playing_color = hexrgb("#FFFFFF"),
-    status_color = hexrgb("#AAAAAA"),
+    status_color = hexrgb("#888888"),
     region_color = hexrgb("#CCCCCC"),
-    track_color = hexrgb("#30303080"),
+    track_color = hexrgb("#1D1D1D"),
     fill_color = hexrgb("#41E0A3"),
+    progress_height = 3,
   },
   
   -- Jump controls (compact, library-styled)
   jump = {
     height = 28,
-  },
-  
-  -- Global controls (StatusPad based)
-  global = {
-    spacing = 8,
-    pad_width = 180,
-    pad_height = 32,
-    pad_rounding = 6,
-    transport_color = hexrgb("#4A9EFF"),
-    loop_color = hexrgb("#9C87E8"),
   },
 }
 

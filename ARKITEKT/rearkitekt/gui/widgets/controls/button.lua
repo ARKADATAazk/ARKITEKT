@@ -70,11 +70,21 @@ end
 -- CORNER ROUNDING
 -- ============================================================================
 
+--- Converts corner_rounding config to ImGui corner flags.
+--- Logic:
+---   - nil corner_rounding = standalone button, return 0 (caller handles default)
+---   - corner_rounding exists with flags = specific corners rounded
+---   - corner_rounding exists with no flags = middle button, explicitly no rounding
+--- @param corner_rounding table|nil Corner rounding configuration from layout engine
+--- @return integer ImGui DrawFlags for corner rounding
 local function get_corner_flags(corner_rounding)
+  -- No corner_rounding config = standalone button (not in panel header)
+  -- Return 0 so caller can apply default behavior
   if not corner_rounding then
     return 0
   end
   
+  -- Panel context: build flags from individual corner settings
   local flags = 0
   if corner_rounding.round_top_left then
     flags = flags | ImGui.DrawFlags_RoundCornersTopLeft
@@ -89,7 +99,13 @@ local function get_corner_flags(corner_rounding)
     flags = flags | ImGui.DrawFlags_RoundCornersBottomRight
   end
   
-  return flags == 0 and ImGui.DrawFlags_RoundCornersAll or flags
+  -- If flags == 0 here, it means we're in panel context but no corners should round
+  -- (middle button in a group). Return RoundCornersNone to explicitly disable rounding.
+  if flags == 0 then
+    return ImGui.DrawFlags_RoundCornersNone
+  end
+  
+  return flags
 end
 
 -- ============================================================================
@@ -99,24 +115,47 @@ end
 local function render_button(ctx, dl, x, y, width, height, config, context, instance)
   local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
   local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
+  local is_toggled = config.is_toggled or false
   
   -- Update animation
   local dt = ImGui.GetDeltaTime(ctx)
   instance:update(dt, is_hovered, is_active)
   
-  -- Get animated colors
-  local bg_color = config.bg_color
-  local border_inner = config.border_inner_color
-  local text_color = config.text_color
+  -- Get animated colors (considering toggle state)
+  local bg_color, border_inner, border_outer, text_color
   
-  if is_active then
-    bg_color = config.bg_active_color or bg_color
-    border_inner = config.border_active_color or border_inner
-    text_color = config.text_active_color or text_color
-  elseif instance.hover_alpha > 0.01 then
-    bg_color = Style.RENDER.lerp_color(config.bg_color, config.bg_hover_color or config.bg_color, instance.hover_alpha)
-    border_inner = Style.RENDER.lerp_color(config.border_inner_color, config.border_hover_color or config.border_inner_color, instance.hover_alpha)
-    text_color = Style.RENDER.lerp_color(config.text_color, config.text_hover_color or config.text_color, instance.hover_alpha)
+  if is_toggled then
+    -- Use toggle ON colors
+    bg_color = config.bg_on_color or config.bg_color
+    border_inner = config.border_inner_on_color or config.border_inner_color
+    border_outer = config.border_outer_on_color or config.border_outer_color
+    text_color = config.text_on_color or config.text_color
+    
+    if is_active then
+      bg_color = config.bg_on_active_color or bg_color
+      border_inner = config.border_on_active_color or border_inner
+      text_color = config.text_on_active_color or text_color
+    elseif instance.hover_alpha > 0.01 then
+      bg_color = Style.RENDER.lerp_color(config.bg_on_color or config.bg_color, config.bg_on_hover_color or bg_color, instance.hover_alpha)
+      border_inner = Style.RENDER.lerp_color(config.border_inner_on_color or config.border_inner_color, config.border_on_hover_color or border_inner, instance.hover_alpha)
+      text_color = Style.RENDER.lerp_color(config.text_on_color or config.text_color, config.text_on_hover_color or text_color, instance.hover_alpha)
+    end
+  else
+    -- Use normal colors
+    bg_color = config.bg_color
+    border_inner = config.border_inner_color
+    border_outer = config.border_outer_color
+    text_color = config.text_color
+    
+    if is_active then
+      bg_color = config.bg_active_color or bg_color
+      border_inner = config.border_active_color or border_inner
+      text_color = config.text_active_color or text_color
+    elseif instance.hover_alpha > 0.01 then
+      bg_color = Style.RENDER.lerp_color(config.bg_color, config.bg_hover_color or config.bg_color, instance.hover_alpha)
+      border_inner = Style.RENDER.lerp_color(config.border_inner_color, config.border_hover_color or config.border_inner_color, instance.hover_alpha)
+      text_color = Style.RENDER.lerp_color(config.text_color, config.text_hover_color or config.text_color, instance.hover_alpha)
+    end
   end
   
   -- Calculate rounding
@@ -142,7 +181,7 @@ local function render_button(ctx, dl, x, y, width, height, config, context, inst
   -- Draw outer border
   ImGui.DrawList_AddRect(
     dl, x, y, x + width, y + height,
-    config.border_outer_color, inner_rounding, corner_flags, 1
+    border_outer, inner_rounding, corner_flags, 1
   )
   
   -- Draw content (text or custom)

@@ -70,6 +70,37 @@ M.BUTTON = {
   rounding = 0,
 }
 
+-- Toggle button style (for PLAY/LOOP/OVERRIDE/FOLLOW states)
+M.BUTTON_TOGGLE = {
+  -- Normal/OFF state (inherit from BUTTON)
+  bg_color = M.COLORS.BG_BASE,
+  bg_hover_color = M.COLORS.BG_HOVER,
+  bg_active_color = M.COLORS.BG_ACTIVE,
+  border_outer_color = M.COLORS.BORDER_OUTER,
+  border_inner_color = M.COLORS.BORDER_INNER,
+  border_hover_color = M.COLORS.BORDER_HOVER,
+  border_active_color = M.COLORS.BORDER_ACTIVE,
+  text_color = M.COLORS.TEXT_NORMAL,
+  text_hover_color = M.COLORS.TEXT_HOVER,
+  text_active_color = M.COLORS.TEXT_ACTIVE,
+  
+  -- ON state (toggle active colors)
+  bg_on_color = hexrgb("#434343FF"),
+  bg_on_hover_color = hexrgb("#484848FF"),
+  bg_on_active_color = hexrgb("#3E3E3EFF"),
+  border_outer_on_color = hexrgb("#000000DD"),
+  border_inner_on_color = hexrgb("#898989FF"),
+  border_on_hover_color = hexrgb("#9A9A9AFF"),
+  border_on_active_color = hexrgb("#7E7E7EFF"),
+  text_on_color = hexrgb("#FFFFFFFF"),
+  text_on_hover_color = hexrgb("#FFFFFFFF"),
+  text_on_active_color = hexrgb("#FFFFFFFF"),
+  
+  padding_x = 10,
+  padding_y = 6,
+  rounding = 0,
+}
+
 M.SEARCH_INPUT = {
   placeholder = "Search...",
   fade_speed = 8.0,
@@ -140,12 +171,21 @@ M.TOOLTIP = {
 
 M.RENDER = {}
 
--- Get corner flags from corner_rounding config
+--- Converts corner_rounding config to ImGui corner flags.
+--- Logic:
+---   - nil corner_rounding = standalone element, return 0 (caller handles default)
+---   - corner_rounding exists with flags = specific corners rounded
+---   - corner_rounding exists with no flags = middle element, explicitly no rounding
+--- @param corner_rounding table|nil Corner rounding configuration from layout engine
+--- @return integer ImGui DrawFlags for corner rounding
 function M.RENDER.get_corner_flags(corner_rounding)
+  -- No corner_rounding config = standalone element (not in panel header)
+  -- Return 0 so caller can apply default behavior
   if not corner_rounding then
     return 0
   end
   
+  -- Panel context: build flags from individual corner settings
   local flags = 0
   if corner_rounding.round_top_left then
     flags = flags | ImGui.DrawFlags_RoundCornersTopLeft
@@ -160,7 +200,13 @@ function M.RENDER.get_corner_flags(corner_rounding)
     flags = flags | ImGui.DrawFlags_RoundCornersBottomRight
   end
   
-  return flags == 0 and ImGui.DrawFlags_RoundCornersAll or flags
+  -- If flags == 0 here, it means we're in panel context but no corners should round
+  -- (middle element in a group). Return RoundCornersNone to explicitly disable rounding.
+  if flags == 0 then
+    return ImGui.DrawFlags_RoundCornersNone
+  end
+  
+  return flags
 end
 
 -- Draw standard double-border control background

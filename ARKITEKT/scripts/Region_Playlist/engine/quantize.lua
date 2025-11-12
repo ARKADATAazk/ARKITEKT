@@ -119,6 +119,15 @@ function Quantize:_calculate_next_quantize_point(playpos, skip_count)
     Logger.debug("QUANTIZE", "Mode=measure, skip=%d -> measure=%d (%.3fs)", skip_count, next_measure_num, next_time)
     
     return next_time
+  elseif self.quantize_mode == "beat" then
+    -- Quantize to next beat (1.0 grid division)
+    local retval, measures, cml, fullbeats, cdenom = reaper.TimeMap2_timeToBeats(self.proj, playpos)
+    local next_beat = math.floor(fullbeats) + 1 + skip_count
+    local next_time = reaper.TimeMap2_QNToTime(self.proj, next_beat)
+    
+    Logger.debug("QUANTIZE", "Mode=beat, skip=%d -> beat=%d (%.3fs)", skip_count, next_beat, next_time)
+    
+    return next_time
   else
     local grid_div = tonumber(self.quantize_mode)
     if not grid_div or grid_div <= 0 then
