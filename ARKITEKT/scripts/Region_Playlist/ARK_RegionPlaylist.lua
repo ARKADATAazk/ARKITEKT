@@ -90,7 +90,6 @@ end
 Shell.run({
   title        = "Region Playlist" .. (profiler_enabled and " [Profiling]" or ""),
   version      = "v0.1.0",
-  version_color = hexrgb("#4fffdfad"),
   draw         = function(ctx, shell_state) gui:draw(ctx, shell_state.window, shell_state) end,
   settings     = settings,
   style        = StyleOK and Style or nil,

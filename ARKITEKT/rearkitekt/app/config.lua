@@ -80,7 +80,7 @@ M.defaults = {
     icon_size       = 18,
     icon_spacing    = 8,
     version_spacing = 6,
-    version_color   = hexrgb("#888888"),
+    version_color   = hexrgb("#ffffff5b"),
     show_icon       = true,
     enable_maximize = true,
     

@@ -42,6 +42,9 @@ function M.new(opts)
   self.quantize_mode = opts.quantize_mode or "none"
   self.on_repeat_cycle = opts.on_repeat_cycle
   
+  -- Initialize quantize submodule with the mode
+  self.quantize:set_quantize_mode(self.quantize_mode)
+  
   return self
 end
 
@@ -151,6 +154,7 @@ end
 
 function Engine:set_quantize_mode(mode)
   self.quantize_mode = mode
+  self.quantize:set_quantize_mode(mode)
 end
 
 function Engine:get_quantize_mode()

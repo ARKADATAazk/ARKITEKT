@@ -343,15 +343,31 @@ local function get_or_create_instance(context, config, state_or_id)
     -- Update config
     instance.config = config
     
-    -- Sync with panel state if needed
-    if context.is_panel_context then
-      if state_or_id.dropdown_value and state_or_id.dropdown_value ~= instance.current_value then
-        instance.current_value = state_or_id.dropdown_value
-      end
-      if state_or_id.dropdown_direction and state_or_id.dropdown_direction ~= instance.sort_direction then
-        instance.sort_direction = state_or_id.dropdown_direction
+    -- Don't auto-sync from panel state on every frame
+    -- The instance is the source of truth during interaction
+    -- Sync happens via sync_to_state after draw
+  end
+  
+  -- Defensive: if current_value is accidentally a table, extract the actual value
+  if type(instance.current_value) == "table" then
+    instance.current_value = instance.current_value.value
+  end
+  
+  -- Defensive: if current_value is nil ("No Sort"), always force direction to asc
+  if instance.current_value == nil then
+    if instance.sort_direction ~= "asc" then
+      instance.sort_direction = "asc"
+      -- Trigger callback to update app state
+      if config.on_direction_change then
+        config.on_direction_change("asc")
       end
     end
+  end
+  
+  -- DEBUG: Log state
+  if context.unique_id and context.unique_id:match("sort") then
+    reaper.ShowConsoleMsg(string.format("[DROPDOWN] value=%s, dir=%s\n", 
+      tostring(instance.current_value), tostring(instance.sort_direction)))
   end
   
   return instance

@@ -21,17 +21,18 @@ local M = {}
 -- ============================================================================
 local TRANSPORT_LAYOUT_CONFIG = {
   -- Global Offset (affects entire transport content including progress bar)
-  global_offset_y = 0,            -- Vertical offset for entire transport group (positive = down, negative = up)
+  global_offset_y = -5,           -- Vertical offset for entire transport group (positive = down, negative = up)
   
   -- Spacing & Padding
-  padding = 8,                    -- Outer padding from display edges
+  padding = 48,                   -- Horizontal padding from display edges (matches progress bar padding)
+  padding_top = 8,                -- Top padding for content (separate from horizontal)
   spacing_horizontal = 12,        -- Horizontal spacing between elements
   spacing_progress = 8,           -- Vertical spacing between content row and progress bar
   
   -- Progress Bar
   progress_height = 3,            -- Height of progress bar
-  progress_bottom_offset = 4,     -- Distance from bottom of display area
-  progress_padding_h = 16,        -- Horizontal padding for progress bar
+  progress_bottom_offset = 13,    -- Distance from bottom of display area (increased by 5 from 8 to 13)
+  progress_padding_h = 48,        -- Horizontal padding for progress bar from edge of panel
   
   -- Single Row Layout: [Playlist] [Current Region] [TIME] [Next Region]
   -- Playlist (left side)
@@ -61,17 +62,18 @@ local TRANSPORT_LAYOUT_CONFIG = {
 -- ============================================================================
 local TransportIcons = {}
 
--- PLAY icon (Triangle 14x14 - larger for better quality)
+-- PLAY icon (Triangle - pixel-perfect alignment, 30% smaller vertically)
 function TransportIcons.draw_play(dl, x, y, width, height, color)
-  local icon_size = 14
-  local cx = x + width / 2
-  local cy = y + height / 2
+  local icon_size = 14 * 0.7  -- 30% reduction vertically
+  local cx = math.floor(x + width / 2 + 0.5)
+  local cy = math.floor(y + height / 2 + 0.5)
   
-  local x1 = cx - icon_size / 3
-  local y1 = cy - icon_size / 2
-  local x2 = cx - icon_size / 3
-  local y2 = cy + icon_size / 2
-  local x3 = cx + icon_size / 2
+  -- Ensure vertices are on whole pixels
+  local x1 = math.floor(cx - icon_size / 3 + 0.5)
+  local y1 = math.floor(cy - icon_size / 2 + 0.5)
+  local x2 = math.floor(cx - icon_size / 3 + 0.5)
+  local y2 = math.floor(cy + icon_size / 2 + 0.5)
+  local x3 = math.floor(cx + icon_size / 2 + 0.5)
   local y3 = cy
   
   -- Draw with stroke for better antialiasing
@@ -89,32 +91,23 @@ function TransportIcons.draw_play(dl, x, y, width, height, color)
   ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 0.5)
 end
 
--- STOP icon (Square 10x10 - larger for better quality)
+-- STOP icon (Square - pixel-perfect alignment)
 function TransportIcons.draw_stop(dl, x, y, width, height, color)
   local icon_size = 10
-  local cx = x + width / 2
-  local cy = y + height / 2
+  local cx = math.floor(x + width / 2 + 0.5)
+  local cy = math.floor(y + height / 2 + 0.5)
   
-  local x1 = cx - icon_size / 2
-  local y1 = cy - icon_size / 2
-  local x2 = cx + icon_size / 2
-  local y2 = cy + icon_size / 2
+  -- Ensure all coordinates are on whole pixels
+  local x1 = math.floor(cx - icon_size / 2 + 0.5)
+  local y1 = math.floor(cy - icon_size / 2 + 0.5)
+  local x2 = math.floor(cx + icon_size / 2 + 0.5)
+  local y2 = math.floor(cy + icon_size / 2 + 0.5)
   
-  -- Draw with stroke for better antialiasing
-  ImGui.DrawList_PathClear(dl)
-  ImGui.DrawList_PathLineTo(dl, x1, y1)
-  ImGui.DrawList_PathLineTo(dl, x2, y1)
-  ImGui.DrawList_PathLineTo(dl, x2, y2)
-  ImGui.DrawList_PathLineTo(dl, x1, y2)
-  ImGui.DrawList_PathFillConvex(dl, color)
+  -- Draw filled rectangle on whole pixels
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, color, 0)
   
   -- Add thin stroke for sharper edges
-  ImGui.DrawList_PathClear(dl)
-  ImGui.DrawList_PathLineTo(dl, x1, y1)
-  ImGui.DrawList_PathLineTo(dl, x2, y1)
-  ImGui.DrawList_PathLineTo(dl, x2, y2)
-  ImGui.DrawList_PathLineTo(dl, x1, y2)
-  ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 0.5)
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, color, 0, 0, 0.5)
 end
 
 -- LOOP icon (Complex L-shape pattern)
@@ -139,39 +132,39 @@ function TransportIcons.draw_loop(dl, x, y, width, height, color)
   local rect2_dx, rect2_dy = 0, 4
   local right_L_dx = -4
   
-  -- Left L-shape (moved right by 3px)
-  local left_x = start_x + left_L_dx
+  -- Left L-shape (moved right by 3px) - ensure whole pixels
+  local left_x = math.floor(start_x + left_L_dx + 0.5)
   ImGui.DrawList_AddRectFilled(dl, left_x, start_y, left_x + line_width, start_y + l_height, color)
   ImGui.DrawList_AddRectFilled(dl, left_x, start_y + l_height - line_width, left_x + l_width, start_y + l_height, color)
   
   -- Two center rectangles (first square up 4px, left 1px; second square down 4px)
-  local rect1_x = start_x + l_width + gap + rect1_dx
-  local rect1_y = math.floor(cy - rect_height / 2 + 0.5) + rect1_dy
+  local rect1_x = math.floor(start_x + l_width + gap + rect1_dx + 0.5)
+  local rect1_y = math.floor(cy - rect_height / 2 + rect1_dy + 0.5)
   ImGui.DrawList_AddRectFilled(dl, rect1_x, rect1_y, rect1_x + rect_width, rect1_y + rect_height, color)
   
-  local rect2_x = (start_x + l_width + gap + rect_width + gap) + rect2_dx
-  local rect2_y = math.floor(cy - rect_height / 2 + 0.5) + rect2_dy
+  local rect2_x = math.floor(start_x + l_width + gap + rect_width + gap + rect2_dx + 0.5)
+  local rect2_y = math.floor(cy - rect_height / 2 + rect2_dy + 0.5)
   ImGui.DrawList_AddRectFilled(dl, rect2_x, rect2_y, rect2_x + rect_width, rect2_y + rect_height, color)
   
-  -- Right L-shape (moved left by 4px)
-  local right_l_x = (rect2_x + rect_width + gap) + right_L_dx
+  -- Right L-shape (moved left by 4px) - ensure whole pixels
+  local right_l_x = math.floor(rect2_x + rect_width + gap + right_L_dx + 0.5)
   ImGui.DrawList_AddRectFilled(dl, right_l_x + l_width - line_width, start_y, right_l_x + l_width, start_y + l_height, color)
   ImGui.DrawList_AddRectFilled(dl, right_l_x, start_y, right_l_x + l_width, start_y + line_width, color)
 end
 
--- JUMP icon (Double Play Triangle - larger for better quality)
+-- JUMP icon (Double Play Triangle - pixel-perfect alignment)
 function TransportIcons.draw_jump(dl, x, y, width, height, color)
   local icon_size = 11
   local spacing = 3
-  local cx = x + width / 2
-  local cy = y + height / 2
+  local cx = math.floor(x + width / 2 + 0.5)
+  local cy = math.floor(y + height / 2 + 0.5)
   
-  -- First triangle
-  local x1_1 = cx - icon_size - spacing / 2
-  local y1_1 = cy - icon_size / 2
-  local x1_2 = cx - icon_size - spacing / 2
-  local y1_2 = cy + icon_size / 2
-  local x1_3 = cx - spacing / 2
+  -- First triangle - ensure whole pixels
+  local x1_1 = math.floor(cx - icon_size - spacing / 2 + 0.5)
+  local y1_1 = math.floor(cy - icon_size / 2 + 0.5)
+  local x1_2 = math.floor(cx - icon_size - spacing / 2 + 0.5)
+  local y1_2 = math.floor(cy + icon_size / 2 + 0.5)
+  local x1_3 = math.floor(cx - spacing / 2 + 0.5)
   local y1_3 = cy
   
   ImGui.DrawList_PathClear(dl)
@@ -186,12 +179,12 @@ function TransportIcons.draw_jump(dl, x, y, width, height, color)
   ImGui.DrawList_PathLineTo(dl, x1_3, y1_3)
   ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 0.5)
   
-  -- Second triangle
-  local x2_1 = cx + spacing / 2
-  local y2_1 = cy - icon_size / 2
-  local x2_2 = cx + spacing / 2
-  local y2_2 = cy + icon_size / 2
-  local x2_3 = cx + icon_size + spacing / 2
+  -- Second triangle - ensure whole pixels
+  local x2_1 = math.floor(cx + spacing / 2 + 0.5)
+  local y2_1 = math.floor(cy - icon_size / 2 + 0.5)
+  local x2_2 = math.floor(cx + spacing / 2 + 0.5)
+  local y2_2 = math.floor(cy + icon_size / 2 + 0.5)
+  local x2_3 = math.floor(cx + icon_size + spacing / 2 + 0.5)
   local y2_3 = cy
   
   ImGui.DrawList_PathClear(dl)
@@ -339,6 +332,20 @@ function M.TransportDisplay.new(config)
   }, M.TransportDisplay)
 end
 
+-- Helper to ensure progress bar color has minimum brightness
+local function ensure_minimum_brightness(color, min_luminance)
+  min_luminance = min_luminance or 0.15
+  
+  local lum = Colors.luminance(color)
+  if lum >= min_luminance then
+    return color
+  end
+  
+  -- Calculate brightness boost needed
+  local boost_factor = min_luminance / math.max(lum, 0.01)
+  return Colors.adjust_brightness(color, boost_factor)
+end
+
 function M.TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_region, next_region, playlist_data, region_colors, time_font)
   local dl = ImGui.GetWindowDrawList(ctx)
   local cfg = self.config
@@ -355,16 +362,16 @@ function M.TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current
   -- ================================================
   
   local progress = bridge_state.progress or 0
-  local bar_x = x + LC.padding
+  local bar_x = x + LC.progress_padding_h
   local bar_y = y + height - LC.progress_height - LC.progress_bottom_offset
-  local bar_w = width - LC.padding * 2
+  local bar_w = width - LC.progress_padding_h * 2
   local bar_h = LC.progress_height
   
   -- Track background
   local track_color = cfg.track_color or hexrgb("#1D1D1D")
   ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + bar_w, bar_y + bar_h, track_color, 1.5)
   
-  -- Gradient fill
+  -- Gradient fill with minimum brightness enforcement
   if progress > 0 and region_colors and region_colors.current then
     local fill_w = bar_w * progress
     
@@ -372,11 +379,11 @@ function M.TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current
     local color_left, color_right
     if region_colors.next then
       -- Playing with next region: gradient from current to next
-      color_left = region_colors.current
-      color_right = region_colors.next
+      color_left = ensure_minimum_brightness(region_colors.current, 0.15)
+      color_right = ensure_minimum_brightness(region_colors.next, 0.15)
     else
       -- Last region: gradient to black
-      color_left = region_colors.current
+      color_left = ensure_minimum_brightness(region_colors.current, 0.15)
       color_right = hexrgb("#000000")
     end
     
@@ -391,7 +398,7 @@ function M.TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current
   
   -- Calculate available space above progress bar
   local content_bottom = bar_y - LC.spacing_progress
-  local content_top = y + LC.padding
+  local content_top = y + (LC.padding_top or 8)  -- Use separate top padding
   
   -- Build time text first to get dimensions
   local time_text = "READY"
