@@ -31,6 +31,7 @@ M.TRANSPORT = {
   height = 72,
   padding = 12,
   spacing = 12,
+  panel_bg_color = hexrgb("#131313c9"),
   
   -- View mode button (left)
   view_mode = {
@@ -58,6 +59,29 @@ M.TRANSPORT = {
     track_color = hexrgb("#1D1D1D"),
     fill_color = hexrgb("#41E0A3"),
     progress_height = 3,
+  },
+  
+  -- Transport FX (background, gradient, glow, border)
+  fx = {
+    rounding = 8,
+    specular = { height = 40, strength = 0.02 },
+    inner_glow = { size = 20, strength = 0.08 },
+    border = { color = hexrgb("#000000"), thickness = 1 },
+    hover = { specular_boost = 1.5, glow_boost = 1.3, transition_speed = 6.0 },
+    gradient = {
+      fade_speed = 8.0,
+      ready_color = hexrgb("#1A1A1A"),
+      fill_opacity = 0.3,      -- transparency of region gradient over panel bg
+      fill_saturation = 0.8,
+      fill_brightness = 0.8,
+    },
+    progress = { height = 3, track_color = hexrgb("#1D1D1D") },
+  },
+  
+  -- Background pattern (panel grid/dots behind gradient)
+  background_pattern = {
+    primary = { type = 'dots', spacing = 50, color = hexrgb("#0000001c"), dot_size = 2.5 },
+    secondary = { enabled = true, type = 'dots', spacing = 5, color = hexrgb("#14141447"), dot_size = 1.5 },
   },
   
   -- Jump controls (compact, library-styled)

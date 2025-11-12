@@ -52,6 +52,11 @@ function M.create(State, AppConfig, settings)
     height = Config.TRANSPORT.height,
     button_height = 23,
     header_elements = self:build_transport_header_elements({}),
+    config = {
+      fx = Config.TRANSPORT.fx,
+      background_pattern = Config.TRANSPORT.background_pattern,
+      panel_bg_color = Config.TRANSPORT.panel_bg_color,
+    },
   })
   
   State.state.bridge:set_controller(self.controller)

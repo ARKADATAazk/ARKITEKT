@@ -16,6 +16,10 @@ local DEFAULTS = {
   height = 48,
   button_height = 23,
   fx = TransportFX.DEFAULT_CONFIG,
+  background_pattern = {
+    primary = { type = 'dots', spacing = 50, color = hexrgb("#0000001c"), dot_size = 2.5 },
+    secondary = { enabled = true, type = 'dots', spacing = 5, color = hexrgb("#14141447"), dot_size = 1.5 },
+  },
   hover_fade_speed = 6.0,
 }
 
@@ -31,32 +35,22 @@ function M.new(opts)
   -- Panel.new() automatically sets up id and _panel_id fields which are
   -- required for header elements to detect panel context and apply
   -- automatic corner rounding based on element position and separators.
+  local cfg = opts.config or DEFAULTS
   local panel = Panel.new({
     id = opts.id or "transport_panel",
     height = opts.height or DEFAULTS.height,
     width = opts.width,
     
     config = {
-      bg_color = hexrgb("#00000000"),  -- Transparent, we'll draw custom background
+      bg_color = cfg.panel_bg_color or hexrgb("#00000000"),  -- Configurable base background (defaults to transparent)
       border_thickness = 0,
-      rounding = 0,
+      rounding = 8,
       
-      -- Use dotted background pattern for transport panel
+      -- Use configurable background pattern for transport panel
       background_pattern = {
         enabled = true,
-        primary = {
-          type = 'dots',
-          spacing = 50,
-          color = hexrgb("#0000001c"),
-          dot_size = 2.5,
-        },
-        secondary = {
-          enabled = true,
-          type = 'dots',
-          spacing = 5,
-          color = hexrgb("#14141447"),
-          dot_size = 1.5,
-        },
+        primary = cfg.background_pattern and cfg.background_pattern.primary or DEFAULTS.background_pattern.primary,
+        secondary = cfg.background_pattern and cfg.background_pattern.secondary or DEFAULTS.background_pattern.secondary,
       },
       
       header = {
@@ -75,7 +69,7 @@ function M.new(opts)
   local container = setmetatable({
     panel = panel,
     id = opts.id or "transport_panel",
-    config = opts.config or DEFAULTS,
+    config = cfg,
     
     height = opts.height or DEFAULTS.height,
     width = opts.width,
