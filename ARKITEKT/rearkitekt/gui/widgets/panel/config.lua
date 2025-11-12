@@ -207,6 +207,7 @@ M.ALIGNED_HEADER_EXAMPLE = {
         width = 120,
         spacing_before = 8,
         config = {
+          enable_sort = true,
           options = {
             { label = "Name", value = "name" },
             { label = "Date", value = "date" },

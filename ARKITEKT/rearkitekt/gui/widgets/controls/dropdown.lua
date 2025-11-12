@@ -166,7 +166,7 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   -- Draw text
   local display_text = self:get_display_text()
   local dir_indicator = ""
-  if self.current_value ~= nil then
+  if cfg.enable_sort and self.current_value ~= nil then
     dir_indicator = (self.sort_direction == "asc") and "↑ " or "↓ "
   end
   
@@ -196,8 +196,8 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   local right_clicked = ImGui.IsItemClicked(ctx, 1)
   local wheel_changed = self:handle_mousewheel(ctx, is_hovered)
   
-  -- Right-click to toggle sort direction
-  if right_clicked and self.current_value then
+  -- Right-click to toggle sort direction (only when enabled)
+  if cfg.enable_sort and right_clicked and self.current_value then
     self.sort_direction = (self.sort_direction == "asc") and "desc" or "asc"
     if cfg.on_direction_change then
       cfg.on_direction_change(self.sort_direction)
