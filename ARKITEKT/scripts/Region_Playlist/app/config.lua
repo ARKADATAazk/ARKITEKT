@@ -175,6 +175,7 @@ function M.get_pool_container_config(callbacks)
             label = "Regions",
             -- All colors handled by library defaults
             on_click = callbacks.on_mode_toggle,
+            on_right_click = callbacks.on_mode_toggle_right,
           },
         },
         {

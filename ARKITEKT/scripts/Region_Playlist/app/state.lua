@@ -315,6 +315,32 @@ function M.move_playlist_to_end(playlist_id)
   end
 end
 
+function M.reorder_playlists_by_ids(new_playlist_ids)
+  -- Build a map of playlists by ID
+  local playlist_map = {}
+  for _, pl in ipairs(M.playlists) do
+    playlist_map[pl.id] = pl
+  end
+  
+  -- Rebuild playlists array in new order
+  local reordered = {}
+  for _, id in ipairs(new_playlist_ids) do
+    local pl = playlist_map[id]
+    if pl then
+      reordered[#reordered + 1] = pl
+      playlist_map[id] = nil  -- Mark as used
+    end
+  end
+  
+  -- Append any playlists not in the reorder list (shouldn't happen, but defensive)
+  for _, pl in pairs(playlist_map) do
+    reordered[#reordered + 1] = pl
+  end
+  
+  M.playlists = reordered
+  M.persist()
+end
+
 local function compare_by_color(a, b)
   local color_a = a.color or 0
   local color_b = b.color or 0

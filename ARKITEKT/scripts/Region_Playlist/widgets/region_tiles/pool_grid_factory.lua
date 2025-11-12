@@ -65,17 +65,32 @@ local function create_behaviors(rt)
     end,
     
     reorder = function(new_order)
-      if not rt.allow_pool_reorder or not rt.on_pool_reorder then return end
+      if not rt.allow_pool_reorder then return end
       
+      -- Extract regions and playlists separately
       local rids = {}
+      local playlist_ids = {}
+      
       for _, key in ipairs(new_order) do
-        local rid = tonumber(key:match("pool_(%d+)"))
-        if rid then
-          rids[#rids + 1] = rid
+        local playlist_id = key:match("pool_playlist_(.+)")
+        if playlist_id then
+          playlist_ids[#playlist_ids + 1] = playlist_id
+        else
+          local rid = tonumber(key:match("pool_(%d+)"))
+          if rid then
+            rids[#rids + 1] = rid
+          end
         end
       end
       
-      rt.on_pool_reorder(rids)
+      -- Call appropriate reorder callbacks
+      if #rids > 0 and rt.on_pool_reorder then
+        rt.on_pool_reorder(rids)
+      end
+      
+      if #playlist_ids > 0 and rt.on_pool_playlist_reorder then
+        rt.on_pool_playlist_reorder(playlist_ids)
+      end
     end,
     
     double_click = function(key)

@@ -223,10 +223,15 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
   ImGui.InvisibleButton(ctx, "##" .. context.unique_id, width, height)
   
   local clicked = ImGui.IsItemClicked(ctx, 0)
+  local right_clicked = ImGui.IsItemClicked(ctx, 1)
   
-  -- Handle click callback
+  -- Handle click callbacks
   if clicked and config.on_click then
     config.on_click()
+  end
+  
+  if right_clicked and config.on_right_click then
+    config.on_right_click()
   end
   
   -- Handle tooltip

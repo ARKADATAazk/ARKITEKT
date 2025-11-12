@@ -182,6 +182,10 @@ function M.create(State, AppConfig, settings)
       State.persist_ui_prefs()
     end,
     
+    on_pool_playlist_reorder = function(new_playlist_ids)
+      State.reorder_playlists_by_ids(new_playlist_ids)
+    end,
+    
     on_repeat_cycle = function(item_key)
       self.controller:cycle_repeats(State.state.active_playlist, item_key)
     end,

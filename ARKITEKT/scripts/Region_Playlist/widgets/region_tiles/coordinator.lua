@@ -66,6 +66,7 @@ function M.create(opts)
     on_pool_to_active = opts.on_pool_to_active,
     on_pool_playlist_to_active = opts.on_pool_playlist_to_active,
     on_pool_reorder = opts.on_pool_reorder,
+    on_pool_playlist_reorder = opts.on_pool_playlist_reorder,
     on_repeat_cycle = opts.on_repeat_cycle,
     on_repeat_adjust = opts.on_repeat_adjust,
     on_repeat_sync = opts.on_repeat_sync,
@@ -158,16 +159,45 @@ function M.create(opts)
 
   rt.active_container:set_tabs(opts.tabs or {}, opts.active_tab_id)
   
+  -- Track previous mode for mixed toggle (closure variable)
+  local previous_mode = "regions"
+  
   local pool_config = Config.get_pool_container_config({
     on_mode_toggle = function()
+      -- Left-click: toggle between regions and playlists
       local current = rt.pool_container.current_mode or "regions"
       local new_mode
       if current == "regions" then
         new_mode = "playlists"
       elseif current == "playlists" then
-        new_mode = "mixed"
-      else
         new_mode = "regions"
+      else
+        -- If in mixed, go to previous mode
+        new_mode = previous_mode
+      end
+      
+      -- Update previous mode if we're not in mixed
+      if new_mode ~= "mixed" then
+        previous_mode = new_mode
+      end
+      
+      rt.pool_container.current_mode = new_mode
+      if rt.on_pool_mode_changed then
+        rt.on_pool_mode_changed(new_mode)
+      end
+    end,
+    
+    on_mode_toggle_right = function()
+      -- Right-click: toggle mixed mode on/off
+      local current = rt.pool_container.current_mode or "regions"
+      local new_mode
+      if current == "mixed" then
+        -- Exit mixed mode, restore previous mode
+        new_mode = previous_mode
+      else
+        -- Enter mixed mode, save current mode
+        previous_mode = current
+        new_mode = "mixed"
       end
       rt.pool_container.current_mode = new_mode
       if rt.on_pool_mode_changed then
