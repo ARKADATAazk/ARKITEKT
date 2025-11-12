@@ -43,15 +43,24 @@ local function create_behaviors(rt)
         return
       end
       
-      local rids = {}
+      local payload = {}
       for _, key in ipairs(filtered_keys) do
-        local rid = tonumber(key:match("pool_(%d+)"))
-        if rid then
-          rids[#rids + 1] = rid
+        local item = items_by_key[key]
+        if item then
+          -- Check if it's a playlist (has id and items fields)
+          if item.id and item.items then
+            payload[#payload + 1] = {type = "playlist", id = item.id}
+          else
+            -- It's a region (has rid field)
+            local rid = item.rid
+            if rid then
+              payload[#payload + 1] = rid
+            end
+          end
         end
       end
       rt.drag_state.source = 'pool'
-      rt.drag_state.data = rids
+      rt.drag_state.data = payload
       rt.drag_state.ctrl_held = false
     end,
     

@@ -306,27 +306,25 @@ function M.create(opts)
   rt.bridge:register_grid('pool', rt.pool_grid, {
     accepts_drops_from = {},
     on_drag_start = function(item_keys)
-      local pool_mode = rt.pool_container.current_mode
       local payload = {}
       
-      if pool_mode == "playlists" then
-        for _, key in ipairs(item_keys) do
-          local playlist_id = key:match("pool_playlist_(.+)")
-          if playlist_id and rt.get_playlist_by_id then
-            local playlist = rt.get_playlist_by_id(playlist_id)
-            if playlist then
-              payload[#payload + 1] = {
-                type = "playlist",
-                id = playlist.id,
-                name = playlist.name,
-                chip_color = playlist.chip_color,
-                item_count = #playlist.items,
-              }
-            end
+      -- Handle both regions and playlists by checking key pattern
+      for _, key in ipairs(item_keys) do
+        local playlist_id = key:match("pool_playlist_(.+)")
+        if playlist_id and rt.get_playlist_by_id then
+          -- It's a playlist
+          local playlist = rt.get_playlist_by_id(playlist_id)
+          if playlist then
+            payload[#payload + 1] = {
+              type = "playlist",
+              id = playlist.id,
+              name = playlist.name,
+              chip_color = playlist.chip_color,
+              item_count = #playlist.items,
+            }
           end
-        end
-      else
-        for _, key in ipairs(item_keys) do
+        else
+          -- It's a region
           local rid = tonumber(key:match("pool_(%d+)"))
           if rid then
             payload[#payload + 1] = rid
