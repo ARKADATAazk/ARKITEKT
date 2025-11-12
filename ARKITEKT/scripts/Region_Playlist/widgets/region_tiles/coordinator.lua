@@ -126,7 +126,7 @@ function M.create(opts)
     on_tab_create = function()
       if rt.controller then
         rt.controller:create_playlist()
-        rt.active_container:set_tabs(State.get_tabs(), State.state.active_playlist)
+        rt.active_container:set_tabs(State.get_tabs(), State.active_playlist)
       end
     end,
     
@@ -143,7 +143,7 @@ function M.create(opts)
     
     on_tab_delete = function(id)
       if rt.controller and rt.controller:delete_playlist(id) then
-        rt.active_container:set_tabs(State.get_tabs(), State.state.active_playlist)
+        rt.active_container:set_tabs(State.get_tabs(), State.active_playlist)
       end
     end,
     

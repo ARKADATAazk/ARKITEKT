@@ -76,8 +76,8 @@ function M.create(opts)
       end
     end
 
-    if bridge.controller and bridge.controller.state and bridge.controller.state.state then
-      local active_id = bridge.controller.state.state.active_playlist
+    if bridge.controller and bridge.controller.state then
+      local active_id = bridge.controller.state.active_playlist
       if active_id and bridge.get_playlist_by_id then
         return bridge.get_playlist_by_id(active_id)
       end

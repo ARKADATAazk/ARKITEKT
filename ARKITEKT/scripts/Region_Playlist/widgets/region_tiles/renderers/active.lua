@@ -145,7 +145,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
       local rid = pl_item.region_num or pl_item.rid
       
       if item_type == "region" and rid then
-        local region = State.state.region_index[rid]
+        local region = State.region_index[rid]
         if region then
           -- region.start and region["end"] are in beat positions
           local duration = (region["end"] or 0) - (region.start or 0)

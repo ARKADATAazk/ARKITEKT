@@ -23,8 +23,8 @@ end
 
 function Controller:_commit()
   self.state.persist()
-  if self.state.state and self.state.state.bridge then
-    self.state.state.bridge:get_sequence()
+  if self.state.bridge then
+    self.state.bridge:get_sequence()
   end
 end
 
@@ -79,7 +79,7 @@ function Controller:create_playlist(name)
     }
     
     self.state.playlists[#self.state.playlists + 1] = new_playlist
-    self.state.state.active_playlist = new_id
+    self.state.active_playlist = new_id
     
     return new_id
   end)
@@ -105,9 +105,9 @@ function Controller:delete_playlist(id)
     
     table.remove(self.state.playlists, delete_index)
     
-    if self.state.state.active_playlist == id then
+    if self.state.active_playlist == id then
       local new_active_index = math.min(delete_index, #self.state.playlists)
-      self.state.state.active_playlist = self.state.playlists[new_active_index].id
+      self.state.active_playlist = self.state.playlists[new_active_index].id
     end
     
     for _, pl in ipairs(self.state.playlists) do

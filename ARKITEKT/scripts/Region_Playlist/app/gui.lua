@@ -44,7 +44,7 @@ function M.create(State, AppConfig, settings)
     transport_button_bar = TransportWidgets.TransportButtonBar.new(),
   }, GUI)
   
-  self.controller = PlaylistController.new(State, settings, State.state.undo_manager)
+  self.controller = PlaylistController.new(State, settings, State.undo_manager)
   
   -- Transport panel with bottom header for buttons
   self.transport_container = TransportContainer.new({
@@ -59,17 +59,17 @@ function M.create(State, AppConfig, settings)
     },
   })
   
-  State.state.bridge:set_controller(self.controller)
-  State.state.bridge:set_playlist_lookup(State.get_playlist_by_id)
+  State.bridge:set_controller(self.controller)
+  State.bridge:set_playlist_lookup(State.get_playlist_by_id)
   
-  if not State.state.separator_position_horizontal then
-    State.state.separator_position_horizontal = Config.SEPARATOR.horizontal.default_position
+  if not State.separator_position_horizontal then
+    State.separator_position_horizontal = Config.SEPARATOR.horizontal.default_position
   end
-  if not State.state.separator_position_vertical then
-    State.state.separator_position_vertical = Config.SEPARATOR.vertical.default_position
+  if not State.separator_position_vertical then
+    State.separator_position_vertical = Config.SEPARATOR.vertical.default_position
   end
   
-  State.state.on_state_restored = function()
+  State.on_state_restored = function()
     self:refresh_tabs()
     if self.region_tiles.active_grid and self.region_tiles.active_grid.selection then
       self.region_tiles.active_grid.selection:clear()
@@ -79,7 +79,7 @@ function M.create(State, AppConfig, settings)
     end
   end
   
-  State.state.on_repeat_cycle = function(key, current_loop, total_reps)
+  State.on_repeat_cycle = function(key, current_loop, total_reps)
     reaper.ShowConsoleMsg(string.format("[GUI] Repeat cycle: %s (%d/%d)\n", key, current_loop, total_reps))
   end
   
@@ -87,7 +87,7 @@ function M.create(State, AppConfig, settings)
     controller = self.controller,
     
     get_region_by_rid = function(rid)
-      return State.state.region_index[rid]
+      return State.region_index[rid]
     end,
     
     get_playlist_by_id = function(playlist_id)
@@ -101,56 +101,56 @@ function M.create(State, AppConfig, settings)
     allow_pool_reorder = true,
     enable_active_tabs = true,
     tabs = State.get_tabs(),
-    active_tab_id = State.state.active_playlist,
-    pool_mode = State.state.pool_mode,
-    config = AppConfig.get_region_tiles_config(State.state.layout_mode),
+    active_tab_id = State.active_playlist,
+    pool_mode = State.pool_mode,
+    config = AppConfig.get_region_tiles_config(State.layout_mode),
     
     on_playlist_changed = function(new_id)
       State.set_active_playlist(new_id)
     end,
     
     on_pool_search = function(text)
-      State.state.search_filter = text
+      State.search_filter = text
       State.persist_ui_prefs()
     end,
     
     on_pool_sort = function(mode)
-      State.state.sort_mode = mode
+      State.sort_mode = mode
       -- Reset to ascending when "No Sort" is selected
       -- (The dropdown widget handles this internally now)
       if mode == nil then
-        State.state.sort_direction = "asc"
+        State.sort_direction = "asc"
       end
       State.persist_ui_prefs()
     end,
 
     on_pool_sort_direction = function(direction)
-      State.state.sort_direction = direction
+      State.sort_direction = direction
       State.persist_ui_prefs()
     end,
     
     on_pool_mode_changed = function(mode)
-      State.state.pool_mode = mode
+      State.pool_mode = mode
       self.region_tiles:set_pool_mode(mode)
       State.persist_ui_prefs()
     end,
     
     on_active_reorder = function(new_order)
-      self.controller:reorder_items(State.state.active_playlist, new_order)
+      self.controller:reorder_items(State.active_playlist, new_order)
     end,
     
     on_active_remove = function(item_key)
-      self.controller:delete_items(State.state.active_playlist, {item_key})
+      self.controller:delete_items(State.active_playlist, {item_key})
     end,
     
     on_active_toggle_enabled = function(item_key, new_state)
-      self.controller:toggle_item_enabled(State.state.active_playlist, item_key, new_state)
+      self.controller:toggle_item_enabled(State.active_playlist, item_key, new_state)
     end,
     
     on_active_delete = function(item_keys)
-      self.controller:delete_items(State.state.active_playlist, item_keys)
+      self.controller:delete_items(State.active_playlist, item_keys)
       for _, key in ipairs(item_keys) do
-        State.state.pending_destroy[#State.state.pending_destroy + 1] = key
+        State.pending_destroy[#State.pending_destroy + 1] = key
       end
     end,
     
@@ -158,27 +158,27 @@ function M.create(State, AppConfig, settings)
     end,
     
     on_active_copy = function(dragged_items, target_index)
-      local success, keys = self.controller:copy_items(State.state.active_playlist, dragged_items, target_index)
+      local success, keys = self.controller:copy_items(State.active_playlist, dragged_items, target_index)
       if success and keys then
         for _, key in ipairs(keys) do
-          State.state.pending_spawn[#State.state.pending_spawn + 1] = key
-          State.state.pending_select[#State.state.pending_select + 1] = key
+          State.pending_spawn[#State.pending_spawn + 1] = key
+          State.pending_select[#State.pending_select + 1] = key
         end
       end
     end,
     
     on_pool_to_active = function(rid, insert_index)
-      local success, key = self.controller:add_item(State.state.active_playlist, rid, insert_index)
+      local success, key = self.controller:add_item(State.active_playlist, rid, insert_index)
       return success and key or nil
     end,
     
     on_pool_playlist_to_active = function(playlist_id, insert_index)
-      local success, key = self.controller:add_playlist_item(State.state.active_playlist, playlist_id, insert_index)
+      local success, key = self.controller:add_playlist_item(State.active_playlist, playlist_id, insert_index)
       return success and key or nil
     end,
     
     on_pool_reorder = function(new_rids)
-      State.state.pool_order = new_rids
+      State.pool_order = new_rids
       State.persist_ui_prefs()
     end,
     
@@ -187,27 +187,27 @@ function M.create(State, AppConfig, settings)
     end,
     
     on_repeat_cycle = function(item_key)
-      self.controller:cycle_repeats(State.state.active_playlist, item_key)
+      self.controller:cycle_repeats(State.active_playlist, item_key)
     end,
     
     on_repeat_adjust = function(keys, delta)
-      self.controller:adjust_repeats(State.state.active_playlist, keys, delta)
+      self.controller:adjust_repeats(State.active_playlist, keys, delta)
     end,
     
     on_repeat_sync = function(keys, target_reps)
-      self.controller:sync_repeats(State.state.active_playlist, keys, target_reps)
+      self.controller:sync_repeats(State.active_playlist, keys, target_reps)
     end,
     
     on_pool_double_click = function(rid)
-      local success, key = self.controller:add_item(State.state.active_playlist, rid)
+      local success, key = self.controller:add_item(State.active_playlist, rid)
       if success and key then
-        State.state.pending_spawn[#State.state.pending_spawn + 1] = key
-        State.state.pending_select[#State.state.pending_select + 1] = key
+        State.pending_spawn[#State.pending_spawn + 1] = key
+        State.pending_select[#State.pending_select + 1] = key
       end
     end,
     
     on_pool_playlist_double_click = function(playlist_id)
-      local active_playlist_id = State.state.active_playlist
+      local active_playlist_id = State.active_playlist
       
       if State.detect_circular_reference then
         local circular, path = State.detect_circular_reference(active_playlist_id, playlist_id)
@@ -219,30 +219,30 @@ function M.create(State, AppConfig, settings)
         end
       end
       
-      local success, key = self.controller:add_playlist_item(State.state.active_playlist, playlist_id)
+      local success, key = self.controller:add_playlist_item(State.active_playlist, playlist_id)
       if success and key then
-        State.state.pending_spawn[#State.state.pending_spawn + 1] = key
-        State.state.pending_select[#State.state.pending_select + 1] = key
+        State.pending_spawn[#State.pending_spawn + 1] = key
+        State.pending_select[#State.pending_select + 1] = key
       end
     end,
     
     settings = settings,
   })
   
-  self.region_tiles:set_pool_search_text(State.state.search_filter)
-  self.region_tiles:set_pool_sort_mode(State.state.sort_mode)
-  self.region_tiles:set_pool_sort_direction(State.state.sort_direction)
-  self.region_tiles:set_app_bridge(State.state.bridge)
-  self.region_tiles:set_pool_mode(State.state.pool_mode)
+  self.region_tiles:set_pool_search_text(State.search_filter)
+  self.region_tiles:set_pool_sort_mode(State.sort_mode)
+  self.region_tiles:set_pool_sort_direction(State.sort_direction)
+  self.region_tiles:set_app_bridge(State.bridge)
+  self.region_tiles:set_pool_mode(State.pool_mode)
   
-  State.state.active_search_filter = ""
+  State.active_search_filter = ""
   
   return self
 end
 
 
 function GUI:refresh_tabs()
-  self.region_tiles:set_tabs(self.State.get_tabs(), self.State.state.active_playlist)
+  self.region_tiles:set_tabs(self.State.get_tabs(), self.State.active_playlist)
 end
 
 function GUI:draw_overflow_modal(ctx, window)
@@ -274,7 +274,7 @@ function GUI:draw_overflow_modal(ctx, window)
     })
   end
   
-  local active_id = self.State.state.active_playlist
+  local active_id = self.State.active_playlist
   local selected_ids = {}
   selected_ids[active_id] = true
   
@@ -429,7 +429,7 @@ function GUI:draw_overflow_modal(ctx, window)
 end
 
 function GUI:get_transport_region_colors()
-  local bridge = self.State.state.bridge
+  local bridge = self.State.bridge
   if not bridge then return {} end
   
   -- Check if actually playing, not just if there's a current region
@@ -446,7 +446,7 @@ function GUI:get_transport_region_colors()
   end
   
   -- Get current region color
-  local current_region = self.State.state.region_index[current_rid]
+  local current_region = self.State.region_index[current_rid]
   local current_color = current_region and current_region.color or nil
   
   -- Find next unique region in sequence (skipping repeat cycles)
@@ -475,7 +475,7 @@ function GUI:get_transport_region_colors()
     return { current = current_color }
   end
   
-  local next_region = self.State.state.region_index[next_rid]
+  local next_region = self.State.region_index[next_rid]
   local next_color = next_region and next_region.color or nil
   
   return { current = current_color, next = next_color }
@@ -499,7 +499,7 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
         end,
         tooltip = "Play/Pause",
         on_click = function()
-          local bridge = self.State.state.bridge
+          local bridge = self.State.bridge
           local is_playing = bridge:get_state().is_playing
           if is_playing then
             bridge:stop()
@@ -521,7 +521,7 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
         end,
         tooltip = "Stop",
         on_click = function()
-          self.State.state.bridge:stop()
+          self.State.bridge:stop()
         end,
       },
     },
@@ -538,8 +538,8 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
         end,
         tooltip = "Loop",
         on_click = function()
-          local current_state = self.State.state.bridge:get_loop_playlist()
-          self.State.state.bridge:set_loop_playlist(not current_state)
+          local current_state = self.State.bridge:get_loop_playlist()
+          self.State.bridge:set_loop_playlist(not current_state)
         end,
       },
     },
@@ -555,7 +555,7 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
         end,
         tooltip = "Jump Forward",
         on_click = function()
-          self.State.state.bridge:jump_to_next_quantized(self.quantize_lookahead)
+          self.State.bridge:jump_to_next_quantized(self.quantize_lookahead)
         end,
       },
     },
@@ -582,7 +582,7 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
         },
         enable_mousewheel = true,
         on_change = function(new_value)
-          self.State.state.bridge:set_quantize_mode(new_value)
+          self.State.bridge:set_quantize_mode(new_value)
           reaper.ShowConsoleMsg("Quantize mode set to: " .. tostring(new_value) .. "\n")
         end,
       },
@@ -598,7 +598,7 @@ function GUI:build_transport_header_elements_with_state(bridge_state)
         is_toggled = bridge_state.override_enabled or false,
         tooltip = "Override Quantization",
         on_click = function()
-          local engine = self.State.state.bridge.engine
+          local engine = self.State.bridge.engine
           if engine then
             local current_state = engine:get_transport_override()
             engine:set_transport_override(not current_state)
@@ -635,13 +635,13 @@ function GUI:draw_transport_section(ctx)
   local hexrgb = Colors.hexrgb
   
   -- Get bridge state first to update header elements
-  local engine = self.State.state.bridge.engine
+  local engine = self.State.bridge.engine
   local bridge_state = {
-    is_playing = self.State.state.bridge:get_state().is_playing,
-    time_remaining = self.State.state.bridge:get_time_remaining(),
-    progress = self.State.state.bridge:get_progress() or 0,
-    quantize_mode = self.State.state.bridge:get_state().quantize_mode,
-    loop_enabled = self.State.state.bridge:get_loop_playlist(),
+    is_playing = self.State.bridge:get_state().is_playing,
+    time_remaining = self.State.bridge:get_time_remaining(),
+    progress = self.State.bridge:get_progress() or 0,
+    quantize_mode = self.State.bridge:get_state().quantize_mode,
+    loop_enabled = self.State.bridge:get_loop_playlist(),
     override_enabled = engine and engine:get_transport_override() or false,
     follow_viewport = false,  -- TODO: Wire up to actual viewport follow state
   }
@@ -669,14 +669,14 @@ function GUI:draw_transport_section(ctx)
   } or nil
   
   -- Get current and next region objects
-  local bridge = self.State.state.bridge
+  local bridge = self.State.bridge
   local current_region = nil
   local next_region = nil
   
   if bridge then
     local current_rid = bridge:get_current_rid()
     if current_rid then
-      current_region = self.State.state.region_index[current_rid]
+      current_region = self.State.region_index[current_rid]
       
       -- Find next unique region
       local sequence = bridge:get_sequence()
@@ -686,7 +686,7 @@ function GUI:draw_transport_section(ctx)
           for i = current_idx + 1, #sequence do
             local entry = sequence[i]
             if entry and entry.rid and entry.rid ~= current_rid then
-              next_region = self.State.state.region_index[entry.rid]
+              next_region = self.State.region_index[entry.rid]
               break
             end
           end
@@ -719,8 +719,8 @@ function GUI:draw_transport_section(ctx)
   local is_hovered = mx >= view_x and mx < view_x + view_mode_size and my >= view_y and my < view_y + view_mode_size
   
   if is_hovered and ImGui.IsMouseClicked(ctx, 0) then
-    self.State.state.layout_mode = (self.State.state.layout_mode == 'horizontal') and 'vertical' or 'horizontal'
-    self.region_tiles:set_layout_mode(self.State.state.layout_mode)
+    self.State.layout_mode = (self.State.layout_mode == 'horizontal') and 'vertical' or 'horizontal'
+    self.region_tiles:set_layout_mode(self.State.layout_mode)
     self.State.persist_ui_prefs()
   end
   
@@ -762,7 +762,7 @@ function GUI:draw_transport_section(ctx)
   local icon_y = math.floor(view_y + (btn_size - 20) / 2 + 0.5)
   local icon_color = cfg.icon_color or hexrgb("#AAAAAA")
   
-  if self.State.state.layout_mode == 'vertical' then
+  if self.State.layout_mode == 'vertical' then
     ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y, icon_x + 20, icon_y + 3, icon_color, 0)
     ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y + 5, icon_x + 5, icon_y + 20, icon_color, 0)
     ImGui.DrawList_AddRectFilled(dl, icon_x + 7, icon_y + 5, icon_x + 20, icon_y + 20, icon_color, 0)
@@ -775,7 +775,7 @@ function GUI:draw_transport_section(ctx)
   -- Tooltip
   if is_hovered then
     local Tooltip = require('rearkitekt.gui.widgets.controls.tooltip')
-    local tooltip = self.State.state.layout_mode == 'horizontal' and "Switch to List Mode" or "Switch to Timeline Mode"
+    local tooltip = self.State.layout_mode == 'horizontal' and "Switch to List Mode" or "Switch to Timeline Mode"
     Tooltip.show(ctx, tooltip)
   end
   
@@ -854,7 +854,7 @@ function GUI:draw_vertical_separator(ctx, x, y, width, height)
 end
 
 function GUI:get_filtered_active_items(playlist)
-  local filter = self.State.state.active_search_filter or ""
+  local filter = self.State.active_search_filter or ""
   
   if filter == "" then
     return playlist.items
@@ -871,7 +871,7 @@ function GUI:get_filtered_active_items(playlist)
         filtered[#filtered + 1] = item
       end
     else
-      local region = self.State.state.region_index[item.rid]
+      local region = self.State.region_index[item.rid]
       if region then
         local name_lower = region.name:lower()
         if name_lower:find(filter_lower, 1, true) then
@@ -894,15 +894,15 @@ function GUI:draw(ctx, window, shell_state)
     self:draw_overflow_modal(ctx, window)
   end
   
-  self.State.state.bridge:update()
+  self.State.bridge:update()
   self.State.update()
   
-  if #self.State.state.pending_spawn > 0 then
-    self.region_tiles.active_grid:mark_spawned(self.State.state.pending_spawn)
-    self.State.state.pending_spawn = {}
+  if #self.State.pending_spawn > 0 then
+    self.region_tiles.active_grid:mark_spawned(self.State.pending_spawn)
+    self.State.pending_spawn = {}
   end
   
-  if #self.State.state.pending_select > 0 then
+  if #self.State.pending_select > 0 then
     if self.region_tiles.pool_grid and self.region_tiles.pool_grid.selection then
       self.region_tiles.pool_grid.selection:clear()
     end
@@ -910,31 +910,31 @@ function GUI:draw(ctx, window, shell_state)
       self.region_tiles.active_grid.selection:clear()
     end
     
-    for _, key in ipairs(self.State.state.pending_select) do
+    for _, key in ipairs(self.State.pending_select) do
       if self.region_tiles.active_grid.selection then
         self.region_tiles.active_grid.selection.selected[key] = true
       end
     end
     
     if self.region_tiles.active_grid.selection then
-      self.region_tiles.active_grid.selection.last_clicked = self.State.state.pending_select[#self.State.state.pending_select]
+      self.region_tiles.active_grid.selection.last_clicked = self.State.pending_select[#self.State.pending_select]
     end
     
     if self.region_tiles.active_grid.behaviors and self.region_tiles.active_grid.behaviors.on_select and self.region_tiles.active_grid.selection then
       self.region_tiles.active_grid.behaviors.on_select(self.region_tiles.active_grid.selection:selected_keys())
     end
     
-    self.State.state.pending_select = {}
+    self.State.pending_select = {}
   end
   
-  if #self.State.state.pending_destroy > 0 then
-    self.region_tiles.active_grid:mark_destroyed(self.State.state.pending_destroy)
-    self.State.state.pending_destroy = {}
+  if #self.State.pending_destroy > 0 then
+    self.region_tiles.active_grid:mark_destroyed(self.State.pending_destroy)
+    self.State.pending_destroy = {}
   end
   
   self.region_tiles:update_animations(0.016)
   
-  Shortcuts.handle_keyboard_shortcuts(ctx, self.State.state, self.region_tiles)
+  Shortcuts.handle_keyboard_shortcuts(ctx, self.State, self.region_tiles)
   
   -- Store position before transport
   local transport_start_x, transport_start_y = ImGui.GetCursorScreenPos(ctx)
@@ -956,16 +956,16 @@ function GUI:draw(ctx, window, shell_state)
   }
   
   local pool_data
-  if self.State.state.pool_mode == "playlists" then
+  if self.State.pool_mode == "playlists" then
     pool_data = self.State.get_playlists_for_pool()
-  elseif self.State.state.pool_mode == "mixed" then
+  elseif self.State.pool_mode == "mixed" then
     -- Use unified mixed mode sorting (regions first if no sort, unified sort otherwise)
     pool_data = self.State.get_mixed_pool_sorted()
   else
     pool_data = self.State.get_filtered_pool_regions()
   end
   
-  if self.State.state.layout_mode == 'horizontal' then
+  if self.State.layout_mode == 'horizontal' then
     local content_w, content_h = ImGui.GetContentRegionAvail(ctx)
     
     local separator_config = self.Config.SEPARATOR.horizontal
@@ -987,7 +987,7 @@ function GUI:draw(ctx, window, shell_state)
       
       pool_height = math.max(1, content_h - active_height - separator_gap)
     else
-      active_height = self.State.state.separator_position_horizontal
+      active_height = self.State.separator_position_horizontal
       active_height = math.max(min_active_height, math.min(active_height, content_h - min_pool_height - separator_gap))
       pool_height = content_h - active_height - separator_gap
     end
@@ -1012,12 +1012,12 @@ function GUI:draw(ctx, window, shell_state)
     local action, value = self:draw_horizontal_separator(ctx, start_x, separator_y, content_w, content_h)
     
     if action == "reset" then
-      self.State.state.separator_position_horizontal = separator_config.default_position
+      self.State.separator_position_horizontal = separator_config.default_position
       self.State.persist_ui_prefs()
     elseif action == "drag" and content_h >= min_total_height then
       local new_active_height = value - start_y - separator_gap/2
       new_active_height = math.max(min_active_height, math.min(new_active_height, content_h - min_pool_height - separator_gap))
-      self.State.state.separator_position_horizontal = new_active_height
+      self.State.separator_position_horizontal = new_active_height
       self.State.persist_ui_prefs()
     end
     
@@ -1051,7 +1051,7 @@ function GUI:draw(ctx, window, shell_state)
       
       pool_width = math.max(1, content_w - active_width - separator_gap)
     else
-      active_width = self.State.state.separator_position_vertical
+      active_width = self.State.separator_position_vertical
       active_width = math.max(min_active_width, math.min(active_width, content_w - min_pool_width - separator_gap))
       pool_width = content_w - active_width - separator_gap
     end
@@ -1083,18 +1083,18 @@ function GUI:draw(ctx, window, shell_state)
     local action, value = self:draw_vertical_separator(ctx, separator_x, start_cursor_y, content_w, content_h)
     
     if action == "reset" then
-      self.State.state.separator_position_vertical = separator_config.default_position
+      self.State.separator_position_vertical = separator_config.default_position
       self.State.persist_ui_prefs()
     elseif action == "drag" and content_w >= min_total_width then
       local new_active_width = value - start_cursor_x - separator_gap/2
       new_active_width = math.max(min_active_width, math.min(new_active_width, content_w - min_pool_width - separator_gap))
+      self.State.separator_position_vertical = new_active_width
+      self.State.persist_ui_prefs()
+    end
 
     if not self.separator_drag_state.is_dragging and not (over_sep_v and ImGui.IsMouseDown(ctx, 0)) then
       if self.region_tiles.active_grid then self.region_tiles.active_grid.block_all_input = false end
       if self.region_tiles.pool_grid then self.region_tiles.pool_grid.block_all_input = false end
-    end
-      self.State.state.separator_position_vertical = new_active_width
-      self.State.persist_ui_prefs()
     end
     
     ImGui.SetCursorScreenPos(ctx, start_cursor_x + active_width + separator_gap, start_cursor_y)

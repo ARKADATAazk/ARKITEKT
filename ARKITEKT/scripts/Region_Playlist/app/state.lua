@@ -20,25 +20,24 @@ local M = {}
 
 package.loaded["Region_Playlist.app.state"] = M
 
-M.state = {
-  active_playlist = nil,
-  search_filter = "",
-  sort_mode = nil,
-  sort_direction = "asc",
-  layout_mode = 'horizontal',
-  pool_mode = 'regions',
-  region_index = {},
-  pool_order = {},
-  pending_spawn = {},
-  pending_select = {},
-  pending_destroy = {},
-  bridge = nil,
-  last_project_state = -1,
-  last_project_filename = nil,
-  undo_manager = nil,
-  on_state_restored = nil,
-  on_repeat_cycle = nil,
-}
+-- Flattened state structure (no nested .state table)
+M.active_playlist = nil
+M.search_filter = ""
+M.sort_mode = nil
+M.sort_direction = "asc"
+M.layout_mode = 'horizontal'
+M.pool_mode = 'regions'
+M.region_index = {}
+M.pool_order = {}
+M.pending_spawn = {}
+M.pending_select = {}
+M.pending_destroy = {}
+M.bridge = nil
+M.last_project_state = -1
+M.last_project_filename = nil
+M.undo_manager = nil
+M.on_state_restored = nil
+M.on_repeat_cycle = nil
 
 M.playlists = {}
 M.settings = nil
@@ -58,41 +57,41 @@ function M.initialize(settings)
   M.settings = settings
   
   if settings then
-    M.state.search_filter = settings:get('pool_search') or ""
-    M.state.sort_mode = settings:get('pool_sort')
-    M.state.sort_direction = settings:get('pool_sort_direction') or "asc"
-    M.state.layout_mode = settings:get('layout_mode') or 'horizontal'
-    M.state.pool_mode = settings:get('pool_mode') or 'regions'
+    M.search_filter = settings:get('pool_search') or ""
+    M.sort_mode = settings:get('pool_sort')
+    M.sort_direction = settings:get('pool_sort_direction') or "asc"
+    M.layout_mode = settings:get('layout_mode') or 'horizontal'
+    M.pool_mode = settings:get('pool_mode') or 'regions'
   end
   
-  M.state.last_project_filename = get_current_project_filename()
+  M.last_project_filename = get_current_project_filename()
   
   M.load_project_state()
   M.rebuild_dependency_graph()
   
-  M.state.bridge = CoordinatorBridge.create({
+  M.bridge = CoordinatorBridge.create({
     proj = 0,
     on_region_change = function(rid, region, pointer) end,
     on_playback_start = function(rid) end,
     on_playback_stop = function() end,
     on_transition_scheduled = function(rid, region_end, transition_time) end,
     on_repeat_cycle = function(key, current_loop, total_reps)
-      if M.state.on_repeat_cycle then
-        M.state.on_repeat_cycle(key, current_loop, total_reps)
+      if M.on_repeat_cycle then
+        M.on_repeat_cycle(key, current_loop, total_reps)
       end
     end,
     get_playlist_by_id = M.get_playlist_by_id,
     get_active_playlist = M.get_active_playlist,
     get_active_playlist_id = function()
-      return M.state.active_playlist
+      return M.active_playlist
     end,
   })
   
-  M.state.undo_manager = UndoManager.new({ max_history = 50 })
+  M.undo_manager = UndoManager.new({ max_history = 50 })
   
   M.refresh_regions()
-  M.state.bridge:invalidate_sequence()
-  M.state.bridge:get_sequence()
+  M.bridge:invalidate_sequence()
+  M.bridge:get_sequence()
   M.capture_undo_snapshot()
 end
 
@@ -112,32 +111,32 @@ function M.load_project_state()
   end
   
   local saved_active = RegionState.load_active_playlist(0)
-  M.state.active_playlist = saved_active or M.playlists[1].id
+  M.active_playlist = saved_active or M.playlists[1].id
 end
 
 function M.reload_project_data()
-  if M.state.bridge and M.state.bridge.engine and M.state.bridge.engine.is_playing then
-    M.state.bridge:stop()
+  if M.bridge and M.bridge.engine and M.bridge.engine.is_playing then
+    M.bridge:stop()
   end
   
   M.load_project_state()
   M.rebuild_dependency_graph()
   M.refresh_regions()
-  M.state.bridge:invalidate_sequence()
-  M.state.bridge:get_sequence()
+  M.bridge:invalidate_sequence()
+  M.bridge:get_sequence()
   
-  M.state.undo_manager = UndoManager.new({ max_history = 50 })
+  M.undo_manager = UndoManager.new({ max_history = 50 })
   
   M.clear_pending()
   
-  if M.state.on_state_restored then
-    M.state.on_state_restored()
+  if M.on_state_restored then
+    M.on_state_restored()
   end
 end
 
 function M.get_active_playlist()
   for _, pl in ipairs(M.playlists) do
-    if pl.id == M.state.active_playlist then
+    if pl.id == M.active_playlist then
       return pl
     end
   end
@@ -186,102 +185,102 @@ function M.count_playlist_contents(playlist_id)
 end
 
 function M.refresh_regions()
-  local regions = M.state.bridge:get_regions_for_ui()
+  local regions = M.bridge:get_regions_for_ui()
   
-  M.state.region_index = {}
-  M.state.pool_order = {}
+  M.region_index = {}
+  M.pool_order = {}
   
   for _, region in ipairs(regions) do
-    M.state.region_index[region.rid] = region
-    M.state.pool_order[#M.state.pool_order + 1] = region.rid
+    M.region_index[region.rid] = region
+    M.pool_order[#M.pool_order + 1] = region.rid
   end
 end
 
 function M.persist()
   RegionState.save_playlists(M.playlists, 0)
-  RegionState.save_active_playlist(M.state.active_playlist, 0)
+  RegionState.save_active_playlist(M.active_playlist, 0)
   M.mark_graph_dirty()
-  if M.state.bridge then
-    M.state.bridge:invalidate_sequence()
+  if M.bridge then
+    M.bridge:invalidate_sequence()
   end
 end
 
 function M.persist_ui_prefs()
   if not M.settings then return end
-  M.settings:set('pool_search', M.state.search_filter)
-  M.settings:set('pool_sort', M.state.sort_mode)
-  M.settings:set('pool_sort_direction', M.state.sort_direction)
-  M.settings:set('layout_mode', M.state.layout_mode)
-  M.settings:set('pool_mode', M.state.pool_mode)
+  M.settings:set('pool_search', M.search_filter)
+  M.settings:set('pool_sort', M.sort_mode)
+  M.settings:set('pool_sort_direction', M.sort_direction)
+  M.settings:set('layout_mode', M.layout_mode)
+  M.settings:set('pool_mode', M.pool_mode)
 end
 
 function M.capture_undo_snapshot()
-  local snapshot = UndoBridge.capture_snapshot(M.playlists, M.state.active_playlist)
-  M.state.undo_manager:push(snapshot)
+  local snapshot = UndoBridge.capture_snapshot(M.playlists, M.active_playlist)
+  M.undo_manager:push(snapshot)
 end
 
 function M.clear_pending()
-  M.state.pending_spawn = {}
-  M.state.pending_select = {}
-  M.state.pending_destroy = {}
+  M.pending_spawn = {}
+  M.pending_select = {}
+  M.pending_destroy = {}
 end
 
 function M.restore_snapshot(snapshot)
   if not snapshot then return false end
   
-  if M.state.bridge and M.state.bridge.engine and M.state.bridge.engine.is_playing then
-    M.state.bridge:stop()
+  if M.bridge and M.bridge.engine and M.bridge.engine.is_playing then
+    M.bridge:stop()
   end
   
   local restored_playlists, restored_active = UndoBridge.restore_snapshot(
     snapshot, 
-    M.state.region_index
+    M.region_index
   )
   
   M.playlists = restored_playlists
-  M.state.active_playlist = restored_active
+  M.active_playlist = restored_active
   
   M.persist()
   M.clear_pending()
-  if M.state.bridge then
-    M.state.bridge:get_sequence()
+  if M.bridge then
+    M.bridge:get_sequence()
   end
   
-  if M.state.on_state_restored then
-    M.state.on_state_restored()
+  if M.on_state_restored then
+    M.on_state_restored()
   end
   
   return true
 end
 
 function M.undo()
-  if not M.state.undo_manager:can_undo() then
+  if not M.undo_manager:can_undo() then
     return false
   end
   
-  local snapshot = M.state.undo_manager:undo()
+  local snapshot = M.undo_manager:undo()
   return M.restore_snapshot(snapshot)
 end
 
 function M.redo()
-  if not M.state.undo_manager:can_redo() then
+  if not M.undo_manager:can_redo() then
     return false
   end
   
-  local snapshot = M.state.undo_manager:redo()
+  local snapshot = M.undo_manager:redo()
   return M.restore_snapshot(snapshot)
 end
 
 function M.can_undo()
-  return M.state.undo_manager:can_undo()
+  return M.undo_manager:can_undo()
 end
 
 function M.can_redo()
-  return M.state.undo_manager:can_redo()
+  return M.undo_manager:can_redo()
 end
 
 function M.set_active_playlist(playlist_id, move_to_end)
-  M.state.active_playlist = playlist_id
+  M.active_playlist = playlist_id
   
   -- Optionally move the playlist to the end (last visible tab)
   if move_to_end then
@@ -289,8 +288,8 @@ function M.set_active_playlist(playlist_id, move_to_end)
   end
   
   M.persist()
-  if M.state.bridge then
-    M.state.bridge:get_sequence()
+  if M.bridge then
+    M.bridge:get_sequence()
   end
 end
 
@@ -365,17 +364,17 @@ end
 
 function M.get_filtered_pool_regions()
   local result = {}
-  local search = M.state.search_filter:lower()
+  local search = M.search_filter:lower()
   
-  for _, rid in ipairs(M.state.pool_order) do
-    local region = M.state.region_index[rid]
+  for _, rid in ipairs(M.pool_order) do
+    local region = M.region_index[rid]
     if region and region.name ~= "__TRANSITION_TRIGGER" and (search == "" or region.name:lower():find(search, 1, true)) then
       result[#result + 1] = region
     end
   end
   
-  local sort_mode = M.state.sort_mode
-  local sort_dir = M.state.sort_direction or "asc"
+  local sort_mode = M.sort_mode
+  local sort_dir = M.sort_direction or "asc"
   
   -- ONLY sort if there's an active sort mode
   if sort_mode == "color" then
@@ -562,7 +561,7 @@ function M.get_playlists_for_pool()
   end
   
   local pool_playlists = {}
-  local active_id = M.state.active_playlist
+  local active_id = M.active_playlist
   
   -- Build playlist index map for implicit ordering
   local playlist_index_map = {}
@@ -573,7 +572,7 @@ function M.get_playlists_for_pool()
   for _, pl in ipairs(M.playlists) do
     if pl.id ~= active_id then
       local is_draggable = M.is_playlist_draggable_to(pl.id, active_id)
-      local total_duration = calculate_playlist_duration(pl, M.state.region_index)
+      local total_duration = calculate_playlist_duration(pl, M.region_index)
       
       pool_playlists[#pool_playlists + 1] = {
         type = "playlist",  -- Mark as playlist for mixed mode
@@ -588,7 +587,7 @@ function M.get_playlists_for_pool()
     end
   end
   
-  local search = M.state.search_filter:lower()
+  local search = M.search_filter:lower()
   if search ~= "" then
     local filtered = {}
     for _, pl in ipairs(pool_playlists) do
@@ -599,8 +598,8 @@ function M.get_playlists_for_pool()
     pool_playlists = filtered
   end
   
-  local sort_mode = M.state.sort_mode
-  local sort_dir = M.state.sort_direction or "asc"
+  local sort_mode = M.sort_mode
+  local sort_dir = M.sort_direction or "asc"
   
   -- Apply sorting (only if sort_mode is active)
   if sort_mode == "color" then
@@ -631,8 +630,8 @@ function M.get_mixed_pool_sorted()
   local regions = M.get_filtered_pool_regions()
   local playlists = M.get_playlists_for_pool()
   
-  local sort_mode = M.state.sort_mode
-  local sort_dir = M.state.sort_direction or "asc"
+  local sort_mode = M.sort_mode
+  local sort_dir = M.sort_direction or "asc"
   
   -- If no sort mode, return regions first, then playlists (natural order)
   if not sort_mode then
@@ -795,10 +794,10 @@ function M.cleanup_deleted_regions()
     local i = 1
     while i <= #pl.items do
       local item = pl.items[i]
-      if item.type == "region" and not M.state.region_index[item.rid] then
+      if item.type == "region" and not M.region_index[item.rid] then
         table.remove(pl.items, i)
         removed_any = true
-        M.state.pending_destroy[item.key] = true
+        M.pending_destroy[item.key] = true
       else
         i = i + 1
       end
@@ -815,23 +814,23 @@ end
 function M.update()
   local current_project_filename = get_current_project_filename()
   
-  if current_project_filename ~= M.state.last_project_filename then
-    M.state.last_project_filename = current_project_filename
+  if current_project_filename ~= M.last_project_filename then
+    M.last_project_filename = current_project_filename
     M.reload_project_data()
     return
   end
   
   local current_project_state = reaper.GetProjectStateChangeCount(0)
-  if current_project_state ~= M.state.last_project_state then
+  if current_project_state ~= M.last_project_state then
     local old_region_count = 0
-    for _ in pairs(M.state.region_index) do
+    for _ in pairs(M.region_index) do
       old_region_count = old_region_count + 1
     end
     
     M.refresh_regions()
     
     local new_region_count = 0
-    for _ in pairs(M.state.region_index) do
+    for _ in pairs(M.region_index) do
       new_region_count = new_region_count + 1
     end
     
@@ -841,10 +840,10 @@ function M.update()
       M.cleanup_deleted_regions()
     end
     
-    if M.state.bridge then
-      M.state.bridge:get_sequence()
+    if M.bridge then
+      M.bridge:get_sequence()
     end
-    M.state.last_project_state = current_project_state
+    M.last_project_state = current_project_state
   end
 end
 
