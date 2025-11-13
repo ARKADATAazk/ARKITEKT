@@ -38,16 +38,52 @@ local function get_app_status(State)
     local status_parts = {}
     local status_color = STATUS_COLORS.READY
     local priority = 5  -- Lower number = higher priority
-    
-    -- Check for undo/redo availability (info)
-    if State.can_undo and State.can_undo() then
-      table.insert(status_parts, "Undo Available")
+
+    -- Check for circular dependency errors (error - highest priority)
+    if State.get_circular_dependency_error and State.get_circular_dependency_error() then
+      table.insert(status_parts, State.get_circular_dependency_error())
+      if priority > 1 then
+        status_color = STATUS_COLORS.ERROR
+        priority = 1
+      end
+    end
+
+    -- Check for empty playlist (warning)
+    local active_playlist = State.get_active_playlist and State.get_active_playlist()
+    if active_playlist and active_playlist.order and #active_playlist.order == 0 and not bridge_state.is_playing then
+      table.insert(status_parts, "Playlist is empty")
+      if priority > 2 then
+        status_color = STATUS_COLORS.WARNING
+        priority = 2
+      end
+    end
+
+    -- Check for override mode (warning)
+    if bridge_state.override_enabled then
+      table.insert(status_parts, "Override: Active")
+      if priority > 2 then
+        status_color = STATUS_COLORS.WARNING
+        priority = 2
+      end
+    end
+
+    -- Check for multi-selection (info)
+    local selection_info = State.get_selection_info and State.get_selection_info()
+    if selection_info and (selection_info.region_count > 0 or selection_info.playlist_count > 0) then
+      local parts = {}
+      if selection_info.region_count > 0 then
+        table.insert(parts, string.format("%d Region%s", selection_info.region_count, selection_info.region_count > 1 and "s" or ""))
+      end
+      if selection_info.playlist_count > 0 then
+        table.insert(parts, string.format("%d Playlist%s", selection_info.playlist_count, selection_info.playlist_count > 1 and "s" or ""))
+      end
+      table.insert(status_parts, table.concat(parts, ", ") .. " selected")
       if priority > 3 then
         status_color = STATUS_COLORS.INFO
         priority = 3
       end
     end
-    
+
     -- Check for active search filter (info)
     local search_filter = State.get_search_filter and State.get_search_filter() or ""
     if search_filter and search_filter ~= "" then

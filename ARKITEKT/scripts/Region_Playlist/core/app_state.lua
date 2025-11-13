@@ -63,6 +63,12 @@ M.settings = nil
 M.dependency_graph = {}
 M.graph_dirty = true
 
+-- Status bar state
+M.selection_info = { region_count = 0, playlist_count = 0 }
+M.circular_dependency_error = nil
+M.circular_dependency_error_timestamp = nil
+M.circular_dependency_error_timeout = 3.0  -- seconds
+
 local function get_current_project_filename()
   local proj_path = reaper.GetProjectPath("")
   local proj_name = reaper.GetProjectName(0, "")
@@ -297,6 +303,37 @@ end
 
 function M.add_pending_destroy(key)
   M.pending_destroy[#M.pending_destroy + 1] = key
+end
+
+-- Status bar state accessors
+function M.get_selection_info()
+  return M.selection_info
+end
+
+function M.set_selection_info(info)
+  M.selection_info = info or { region_count = 0, playlist_count = 0 }
+end
+
+function M.get_circular_dependency_error()
+  -- Auto-clear error after timeout
+  if M.circular_dependency_error and M.circular_dependency_error_timestamp then
+    local current_time = reaper.time_precise()
+    if (current_time - M.circular_dependency_error_timestamp) >= M.circular_dependency_error_timeout then
+      M.circular_dependency_error = nil
+      M.circular_dependency_error_timestamp = nil
+    end
+  end
+  return M.circular_dependency_error
+end
+
+function M.set_circular_dependency_error(error_msg)
+  M.circular_dependency_error = error_msg
+  M.circular_dependency_error_timestamp = reaper.time_precise()
+end
+
+function M.clear_circular_dependency_error()
+  M.circular_dependency_error = nil
+  M.circular_dependency_error_timestamp = nil
 end
 
 -- <<< CANONICAL ACCESSORS (END)

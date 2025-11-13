@@ -52,6 +52,7 @@ function M.create(opts)
   end
   
   local rt = setmetatable({
+    State = opts.State,
     controller = opts.controller,
     get_region_by_rid = opts.get_region_by_rid,
     get_playlist_by_id = cached_get_playlist,
@@ -278,7 +279,10 @@ function M.create(opts)
             if rt.detect_circular_ref then
               local circular, path = rt.detect_circular_ref(active_playlist_id, item_data.id)
               if circular then
-                -- Silently skip circular references (visual indication on tile)
+                -- Set error in status bar and skip
+                if rt.State and rt.State.set_circular_dependency_error then
+                  rt.State.set_circular_dependency_error("Cannot add playlist - would create circular dependency")
+                end
                 goto continue_loop
               end
             end
@@ -298,6 +302,11 @@ function M.create(opts)
         end
         
         if #spawned_keys > 0 then
+          -- Clear any circular dependency errors on successful operation
+          if rt.State and rt.State.clear_circular_dependency_error then
+            rt.State.clear_circular_dependency_error()
+          end
+
           if rt.pool_grid and rt.pool_grid.selection then
             rt.pool_grid.selection:clear()
           end
