@@ -20,8 +20,8 @@ local STATUS_COLORS = {
   ERROR = hexrgb("#E04141"),     -- Red
   WARNING = hexrgb("#E0B341"),  -- Yellow/Orange
   INFO = hexrgb("#4A9EFF"),     -- Blue
-  PLAYING = hexrgb("#41E0A3"),  -- Green/Teal
-  READY = hexrgb("#41E0A3"),    -- Green/Teal
+  PLAYING = hexrgb("#49ff70ff"),  -- Green/Teal
+  READY = hexrgb("#54ff4eff"),    -- Green/Teal
   IDLE = hexrgb("#888888"),     -- Gray
 }
 

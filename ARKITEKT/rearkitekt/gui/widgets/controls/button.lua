@@ -206,8 +206,17 @@ end
 -- ============================================================================
 
 function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
+  -- Resolve base style with optional preset support
+  local base = Style.BUTTON
+  if user_config then
+    if user_config.preset_name and Style[user_config.preset_name] then
+      base = Style.apply_defaults(base, Style[user_config.preset_name])
+    elseif user_config.preset and type(user_config.preset) == 'table' then
+      base = Style.apply_defaults(base, user_config.preset)
+    end
+  end
   -- Apply style defaults
-  local config = Style.apply_defaults(Style.BUTTON, user_config)
+  local config = Style.apply_defaults(base, user_config)
   
   -- Resolve context (panel vs standalone)
   local context = resolve_context(config, state_or_id)
@@ -243,7 +252,15 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
 end
 
 function M.measure(ctx, user_config)
-  local config = Style.apply_defaults(Style.BUTTON, user_config)
+  local base = Style.BUTTON
+  if user_config then
+    if user_config.preset_name and Style[user_config.preset_name] then
+      base = Style.apply_defaults(base, Style[user_config.preset_name])
+    elseif user_config.preset and type(user_config.preset) == 'table' then
+      base = Style.apply_defaults(base, user_config.preset)
+    end
+  end
+  local config = Style.apply_defaults(base, user_config)
   
   -- Fixed width?
   if config.width then

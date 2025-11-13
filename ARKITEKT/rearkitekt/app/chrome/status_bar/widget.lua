@@ -52,7 +52,7 @@ function M.new(config)
   local COL_TEXT   = palette.grey_c0  or hexrgb("#C0C0C0")  -- fixed RGBA fallback
   local COL_SEP    = palette.grey_66  or hexrgb("#666666")
 
-  local DEFAULT_TEAL   = palette.teal    or hexrgb("#41E0A3")
+  local DEFAULT_TEAL   = palette.teal    or hexrgb("#ff6f00ff")
   local DEFAULT_YELLOW = palette.yellow  or hexrgb("#E0B341")
   local DEFAULT_RED    = palette.red     or hexrgb("#E04141")
 
@@ -180,7 +180,7 @@ function M.new(config)
     local center_y = y1 + (h / 2)
 
     local text_w, text_h = ImGui.CalcTextSize(ctx, status_text)
-    local label_y = center_y - (text_h / 2)
+    local label_y = center_y - (text_h / 2) - 1
     local label_x = x1 + LEFT_PAD
     add_text(dl, label_x, label_y, text_color, status_text)
 
@@ -238,7 +238,7 @@ function M.new(config)
     for i, info in ipairs(item_widths) do
       if info.type == "text" then
         local _, rtext_h = ImGui.CalcTextSize(ctx, info.content)
-        local rtext_y = center_y - (rtext_h / 2)
+        local rtext_y = center_y - (rtext_h / 2) - 1
         add_text(dl, x1 + right_x, rtext_y, COL_TEXT, info.content)
         right_x = right_x + info.width + 10
       elseif info.type == "button" then

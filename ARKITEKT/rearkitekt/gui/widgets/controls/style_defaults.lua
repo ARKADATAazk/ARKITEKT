@@ -101,6 +101,37 @@ M.BUTTON_TOGGLE = {
   rounding = 0,
 }
 
+-- Accent toggle preset: green-teal accent for ON state
+M.BUTTON_TOGGLE_ACCENT = {
+  -- Normal/OFF (same base as BUTTON)
+  bg_color = M.COLORS.BG_BASE,
+  bg_hover_color = M.COLORS.BG_HOVER,
+  bg_active_color = M.COLORS.BG_ACTIVE,
+  border_outer_color = M.COLORS.BORDER_OUTER,
+  border_inner_color = M.COLORS.BORDER_INNER,
+  border_hover_color = M.COLORS.BORDER_HOVER,
+  border_active_color = M.COLORS.BORDER_ACTIVE,
+  text_color = M.COLORS.TEXT_NORMAL,
+  text_hover_color = M.COLORS.TEXT_HOVER,
+  text_active_color = M.COLORS.TEXT_ACTIVE,
+  
+  -- ON state (accent)
+  bg_on_color = hexrgb("#3d2424ff"),
+  bg_on_hover_color = hexrgb("#b04141ff"),
+  bg_on_active_color = hexrgb("#8f2e2eff"),
+  border_outer_on_color = M.COLORS.BORDER_OUTER,
+  border_inner_on_color = hexrgb("#41E0A3FF"),
+  border_on_hover_color = hexrgb("#56E6B0FF"),
+  border_on_active_color = hexrgb("#c83838ff"),
+  text_on_color = hexrgb("#FFFFFFFF"),
+  text_on_hover_color = hexrgb("#FFFFFFFF"),
+  text_on_active_color = hexrgb("#FFFFFFFF"),
+  
+  padding_x = 10,
+  padding_y = 6,
+  rounding = 0,
+}
+
 M.SEARCH_INPUT = {
   placeholder = "Search...",
   fade_speed = 8.0,

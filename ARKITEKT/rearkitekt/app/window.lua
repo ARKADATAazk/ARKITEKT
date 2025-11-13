@@ -728,7 +728,17 @@ local hexrgb = Colors.hexrgb
       if self.status_bar and self.status_bar.render and not self._was_docked then
         ImGui.SetCursorPosX(ctx, 0)
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
-        self.status_bar.render(ctx)
+        do
+          local sf = self.version_font or self.title_font
+          local ss = (self.version_font_size or 13)
+          if sf and ss and ss > 0 then
+            ImGui.PushFont(ctx, sf, ss)
+            self.status_bar.render(ctx)
+            ImGui.PopFont(ctx)
+          else
+            self.status_bar.render(ctx)
+          end
+        end
         ImGui.PopStyleVar(ctx)
       end
     end
