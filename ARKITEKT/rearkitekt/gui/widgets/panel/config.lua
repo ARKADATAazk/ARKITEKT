@@ -102,6 +102,9 @@ M.DEFAULTS = {
 -- Standard element styling (used by all header elements)
 M.ELEMENT_STYLE = {
   button = {
+    -- Base button colors for panel context
+    -- NOTE: Toggle colors are NOT defined here - use preset_name in your button config
+    --       to apply toggle styles (e.g., preset_name = "BUTTON_TOGGLE_TEAL")
     bg_color = hexrgb("#252525FF"),
     bg_hover_color = hexrgb("#2A2A2AFF"),
     bg_active_color = hexrgb("#202020FF"),
@@ -111,17 +114,6 @@ M.ELEMENT_STYLE = {
     text_color = hexrgb("#CCCCCCFF"),
     text_hover_color = hexrgb("#FFFFFFFF"),
     text_active_color = hexrgb("#FFFFFFFF"),
-    
-    -- Toggle state colors
-    bg_on_color = hexrgb("#434343FF"),
-    bg_on_hover_color = hexrgb("#484848FF"),
-    bg_on_active_color = hexrgb("#3E3E3EFF"),
-    border_inner_on_color = hexrgb("#898989FF"),
-    border_on_hover_color = hexrgb("#9A9A9AFF"),
-    border_on_active_color = hexrgb("#7E7E7EFF"),
-    text_on_color = hexrgb("#FFFFFFFF"),
-    text_on_hover_color = hexrgb("#FFFFFFFF"),
-    text_on_active_color = hexrgb("#FFFFFFFF"),
   },
   
   dropdown = {
