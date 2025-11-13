@@ -2,32 +2,29 @@
 -- ReArkitekt/gui/widgets/panel/config.lua
 -- Default configuration for panel with enhanced features
 
+local Style = require('rearkitekt.gui.widgets.controls.style_defaults')
+local C = Style.COLORS  -- Shorthand for centralized colors
+
 local Colors = require('rearkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = Colors.hexrgb  -- For background pattern colors
+
+local Config = require('rearkitekt.core.config')
 
 local M = {}
 
--- Standard ReArkitekt color palette
-local function hexrgb(hex)
-  if hex:sub(1, 1) == "#" then hex = hex:sub(2) end
-  local h = tonumber(hex, 16)
-  if not h then return hexrgb("#FFFFFF") end
-  return (#hex == 8) and h or ((h << 8) | 0xFF)
-end
-
 M.DEFAULTS = {
-  bg_color = hexrgb("#1A1A1AFF"),
-  border_color = hexrgb("#000000DD"),
+  bg_color = C.BG_PANEL,
+  border_color = C.BORDER_OUTER,
   border_thickness = 1,
   rounding = 8,
   padding = 8,
-  
+
   disable_window_drag = true,
-  
+
   scroll = {
     flags = 0,
     custom_scrollbar = false,
-    bg_color = hexrgb("#00000000"),
+    bg_color = C.BG_TRANSPARENT,
   },
   
   anti_jitter = {
@@ -60,8 +57,8 @@ M.DEFAULTS = {
     enabled = false,
     height = 30,
     position = "top", -- "top" or "bottom"
-    bg_color = hexrgb("#1E1E1EFF"),
-    border_color = hexrgb("#00000066"),
+    bg_color = C.BG_HEADER,
+    border_color = C.BORDER_SUBTLE,
     rounding = 8,
     
     -- IMPORTANT: Keep left/right padding at 0 so corner rounding on
@@ -87,9 +84,9 @@ M.DEFAULTS = {
   --     label = "",
   --     tooltip = "Settings",
   --     on_click = function() ... end,
-  --     bg_color = hexrgb("#252525FF"),
-  --     bg_hover_color = hexrgb("#2A2A2AFF"),
-  --     text_color = hexrgb("#CCCCCCFF"),
+  --     bg_color = C.BG_BASE,
+  --     bg_hover_color = C.BG_HOVER,
+  --     text_color = C.TEXT_NORMAL,
   --   },
   --   bottom_right = { ... },
   --   top_left = { ... },
@@ -105,48 +102,48 @@ M.ELEMENT_STYLE = {
     -- Base button colors for panel context
     -- NOTE: Toggle colors are NOT defined here - use preset_name in your button config
     --       to apply toggle styles (e.g., preset_name = "BUTTON_TOGGLE_TEAL")
-    bg_color = hexrgb("#252525FF"),
-    bg_hover_color = hexrgb("#2A2A2AFF"),
-    bg_active_color = hexrgb("#202020FF"),
-    border_outer_color = hexrgb("#000000DD"),
-    border_inner_color = hexrgb("#404040FF"),
-    border_hover_color = hexrgb("#505050FF"),
-    text_color = hexrgb("#CCCCCCFF"),
-    text_hover_color = hexrgb("#FFFFFFFF"),
-    text_active_color = hexrgb("#FFFFFFFF"),
+    bg_color = C.BG_BASE,
+    bg_hover_color = C.BG_HOVER,
+    bg_active_color = C.BG_ACTIVE,
+    border_outer_color = C.BORDER_OUTER,
+    border_inner_color = C.BORDER_INNER,
+    border_hover_color = C.BORDER_HOVER,
+    text_color = C.TEXT_NORMAL,
+    text_hover_color = C.TEXT_HOVER,
+    text_active_color = C.TEXT_ACTIVE,
   },
-  
+
   dropdown = {
-    bg_color = hexrgb("#252525FF"),
-    bg_hover_color = hexrgb("#2A2A2AFF"),
-    bg_active_color = hexrgb("#2A2A2AFF"),
-    border_outer_color = hexrgb("#000000DD"),
-    border_inner_color = hexrgb("#404040FF"),
-    border_hover_color = hexrgb("#505050FF"),
-    border_active_color = hexrgb("#B0B0B077"),
-    text_color = hexrgb("#CCCCCCFF"),
-    text_hover_color = hexrgb("#FFFFFFFF"),
-    text_active_color = hexrgb("#FFFFFFFF"),
+    bg_color = C.BG_BASE,
+    bg_hover_color = C.BG_HOVER,
+    bg_active_color = C.BG_HOVER,
+    border_outer_color = C.BORDER_OUTER,
+    border_inner_color = C.BORDER_INNER,
+    border_hover_color = C.BORDER_HOVER,
+    border_active_color = C.BORDER_ACTIVE,
+    text_color = C.TEXT_NORMAL,
+    text_hover_color = C.TEXT_HOVER,
+    text_active_color = C.TEXT_ACTIVE,
     rounding = 0,
     padding_x = 10,
     padding_y = 6,
     arrow_size = 6,
-    arrow_color = hexrgb("#CCCCCCFF"),
-    arrow_hover_color = hexrgb("#FFFFFFFF"),
+    arrow_color = C.TEXT_NORMAL,
+    arrow_hover_color = C.TEXT_HOVER,
     enable_mousewheel = true,
   },
-  
+
   search = {
     placeholder = "Search...",
     fade_speed = 8.0,
-    bg_color = hexrgb("#252525FF"),
-    bg_hover_color = hexrgb("#2A2A2AFF"),
-    bg_active_color = hexrgb("#2A2A2AFF"),
-    border_outer_color = hexrgb("#000000DD"),
-    border_inner_color = hexrgb("#404040FF"),
-    border_hover_color = hexrgb("#505050FF"),
-    border_active_color = hexrgb("#B0B0B077"),
-    text_color = hexrgb("#CCCCCCFF"),
+    bg_color = C.BG_BASE,
+    bg_hover_color = C.BG_HOVER,
+    bg_active_color = C.BG_HOVER,
+    border_outer_color = C.BORDER_OUTER,
+    border_inner_color = C.BORDER_INNER,
+    border_hover_color = C.BORDER_HOVER,
+    border_active_color = C.BORDER_ACTIVE,
+    text_color = C.TEXT_NORMAL,
   },
   
   separator = {
@@ -160,8 +157,8 @@ M.ALIGNED_HEADER_EXAMPLE = {
     enabled = true,
     height = 30,
     position = "top",
-    bg_color = hexrgb("#1E1E1EFF"),
-    border_color = hexrgb("#00000066"),
+    bg_color = C.BG_HEADER,
+    border_color = C.BORDER_SUBTLE,
     rounding = 8,
     
     padding = {
@@ -225,8 +222,8 @@ M.BOTTOM_HEADER_EXAMPLE = {
     enabled = true,
     height = 30,
     position = "bottom", -- Header at bottom
-    bg_color = hexrgb("#1E1E1EFF"),
-    border_color = hexrgb("#00000066"),
+    bg_color = C.BG_HEADER,
+    border_color = C.BORDER_SUBTLE,
     rounding = 8,
     
     elements = {
@@ -246,8 +243,8 @@ M.TAB_MODE_WITH_CORNER_BUTTONS = {
   header = {
     enabled = true,
     height = 20,
-    bg_color = hexrgb("#2E2E2EFF"),
-    border_color = hexrgb("#00000066"),
+    bg_color = C.BG_HEADER_TAB,
+    border_color = C.BORDER_SUBTLE,
     rounding = 8,
     
     elements = {
@@ -279,15 +276,8 @@ M.TAB_MODE_WITH_CORNER_BUTTONS = {
 function M.apply_element_defaults(element_type, config)
   local defaults = M.ELEMENT_STYLE[element_type]
   if not defaults then return config end
-  
-  config = config or {}
-  for k, v in pairs(defaults) do
-    if config[k] == nil then
-      config[k] = v
-    end
-  end
-  
-  return config
+
+  return Config.apply_defaults(defaults, config)
 end
 
 return M

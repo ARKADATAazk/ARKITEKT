@@ -28,6 +28,10 @@ M.COLORS = {
   BG_HOVER = hexrgb("#2A2A2AFF"),
   BG_ACTIVE = hexrgb("#303030FF"),
   BG_PANEL = hexrgb("#1A1A1AFF"),
+  BG_HEADER = hexrgb("#1E1E1EFF"),
+  BG_HEADER_TAB = hexrgb("#2E2E2EFF"),
+  BG_TOOLTIP = hexrgb("#2A2A2AFF"),
+  BG_TRANSPARENT = hexrgb("#00000000"),
 
   -- Borders
   BORDER_OUTER = hexrgb("#000000DD"),
@@ -35,6 +39,7 @@ M.COLORS = {
   BORDER_HOVER = hexrgb("#505050FF"),
   BORDER_ACTIVE = hexrgb("#B0B0B077"),
   BORDER_FOCUS = hexrgb("#7B7B7BFF"),
+  BORDER_SUBTLE = hexrgb("#00000066"),
 
   -- Text
   TEXT_NORMAL = hexrgb("#CCCCCCFF"),
@@ -42,6 +47,7 @@ M.COLORS = {
   TEXT_ACTIVE = hexrgb("#FFFFFFFF"),
   TEXT_DIMMED = hexrgb("#AAAAAAFF"),
   TEXT_DARK = hexrgb("#707070FF"),
+  TEXT_BRIGHT = hexrgb("#EEEEEEFF"),
 
   -- Accents
   ACCENT_PRIMARY = hexrgb("#4A9EFF"),
