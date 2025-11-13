@@ -28,27 +28,110 @@ M.COLORS = {
   BG_HOVER = hexrgb("#2A2A2AFF"),
   BG_ACTIVE = hexrgb("#303030FF"),
   BG_PANEL = hexrgb("#1A1A1AFF"),
-  
+
   -- Borders
   BORDER_OUTER = hexrgb("#000000DD"),
   BORDER_INNER = hexrgb("#404040FF"),
   BORDER_HOVER = hexrgb("#505050FF"),
   BORDER_ACTIVE = hexrgb("#B0B0B077"),
   BORDER_FOCUS = hexrgb("#7B7B7BFF"),
-  
+
   -- Text
   TEXT_NORMAL = hexrgb("#CCCCCCFF"),
   TEXT_HOVER = hexrgb("#FFFFFFFF"),
   TEXT_ACTIVE = hexrgb("#FFFFFFFF"),
   TEXT_DIMMED = hexrgb("#AAAAAAFF"),
   TEXT_DARK = hexrgb("#707070FF"),
-  
+
   -- Accents
   ACCENT_PRIMARY = hexrgb("#4A9EFF"),
   ACCENT_SUCCESS = hexrgb("#4CAF50"),
   ACCENT_WARNING = hexrgb("#FFA726"),
   ACCENT_DANGER = hexrgb("#EF5350"),
 }
+
+-- ============================================================================
+-- TOGGLE BUTTON COLOR VARIANTS
+-- Define all toggle button color schemes here for easy modification
+--
+-- Usage:
+--   To use a specific variant, set preset_name in button config:
+--
+--   config = {
+--     is_toggled = true,
+--     preset_name = "BUTTON_TOGGLE_TEAL",  -- or "BUTTON_TOGGLE_WHITE"
+--     ...
+--   }
+--
+-- To add a new variant:
+--   1. Add color scheme to M.TOGGLE_VARIANTS below
+--   2. Create preset: M.BUTTON_TOGGLE_<NAME> = create_toggle_style(M.TOGGLE_VARIANTS.<NAME>)
+--
+-- Note: Text/icon colors automatically inherit from text_on color in variant
+-- ============================================================================
+
+M.TOGGLE_VARIANTS = {
+  -- WHITE variant: Classic white/gray toggle style
+  WHITE = {
+    bg_on = hexrgb("#434343FF"),
+    bg_on_hover = hexrgb("#484848FF"),
+    bg_on_active = hexrgb("#3E3E3EFF"),
+    border_inner_on = hexrgb("#898989FF"),
+    border_inner_on_hover = hexrgb("#9A9A9AFF"),
+    border_inner_on_active = hexrgb("#7E7E7EFF"),
+    text_on = hexrgb("#FFFFFFFF"),
+  },
+
+  -- TEAL variant: Teal/green accent toggle style
+  TEAL = {
+    bg_on = hexrgb("#295650FF"),
+    bg_on_hover = hexrgb("#2E6459FF"),
+    bg_on_active = hexrgb("#234B46FF"),
+    border_inner_on = hexrgb("#37775FFF"),
+    border_inner_on_hover = hexrgb("#42866DFF"),
+    border_inner_on_active = hexrgb("#2D6851FF"),
+    text_on = hexrgb("#41E0A3FF"),
+  },
+}
+
+-- ============================================================================
+-- TOGGLE BUTTON STYLE BUILDER
+-- ============================================================================
+
+--- Creates a toggle button style from a variant
+--- @param variant table Color variant from TOGGLE_VARIANTS
+--- @return table Complete toggle button style configuration
+local function create_toggle_style(variant)
+  return {
+    -- Normal/OFF state (inherit from base button colors)
+    bg_color = M.COLORS.BG_BASE,
+    bg_hover_color = M.COLORS.BG_HOVER,
+    bg_active_color = M.COLORS.BG_ACTIVE,
+    border_outer_color = M.COLORS.BORDER_OUTER,
+    border_inner_color = M.COLORS.BORDER_INNER,
+    border_hover_color = M.COLORS.BORDER_HOVER,
+    border_active_color = M.COLORS.BORDER_ACTIVE,
+    text_color = M.COLORS.TEXT_NORMAL,
+    text_hover_color = M.COLORS.TEXT_HOVER,
+    text_active_color = M.COLORS.TEXT_ACTIVE,
+
+    -- ON state (from variant)
+    bg_on_color = variant.bg_on,
+    bg_on_hover_color = variant.bg_on_hover,
+    bg_on_active_color = variant.bg_on_active,
+    border_outer_on_color = M.COLORS.BORDER_OUTER, -- Always black outer border
+    border_inner_on_color = variant.border_inner_on,
+    border_on_hover_color = variant.border_inner_on_hover,
+    border_on_active_color = variant.border_inner_on_active,
+    text_on_color = variant.text_on,
+    text_on_hover_color = variant.text_on,
+    text_on_active_color = variant.text_on,
+
+    padding_x = 10,
+    padding_y = 6,
+    rounding = 0,
+  }
+end
 
 -- ============================================================================
 -- COMPONENT STYLE PRESETS
@@ -70,67 +153,13 @@ M.BUTTON = {
   rounding = 0,
 }
 
--- Toggle button style (for PLAY/LOOP/OVERRIDE/FOLLOW states)
-M.BUTTON_TOGGLE = {
-  -- Normal/OFF state (inherit from BUTTON)
-  bg_color = M.COLORS.BG_BASE,
-  bg_hover_color = M.COLORS.BG_HOVER,
-  bg_active_color = M.COLORS.BG_ACTIVE,
-  border_outer_color = M.COLORS.BORDER_OUTER,
-  border_inner_color = M.COLORS.BORDER_INNER,
-  border_hover_color = M.COLORS.BORDER_HOVER,
-  border_active_color = M.COLORS.BORDER_ACTIVE,
-  text_color = M.COLORS.TEXT_NORMAL,
-  text_hover_color = M.COLORS.TEXT_HOVER,
-  text_active_color = M.COLORS.TEXT_ACTIVE,
-  
-  -- ON state (toggle active colors)
-  bg_on_color = hexrgb("#434343FF"),
-  bg_on_hover_color = hexrgb("#484848FF"),
-  bg_on_active_color = hexrgb("#3E3E3EFF"),
-  border_outer_on_color = hexrgb("#000000DD"),
-  border_inner_on_color = hexrgb("#898989FF"),
-  border_on_hover_color = hexrgb("#9A9A9AFF"),
-  border_on_active_color = hexrgb("#7E7E7EFF"),
-  text_on_color = hexrgb("#FFFFFFFF"),
-  text_on_hover_color = hexrgb("#FFFFFFFF"),
-  text_on_active_color = hexrgb("#FFFFFFFF"),
-  
-  padding_x = 10,
-  padding_y = 6,
-  rounding = 0,
-}
+-- Toggle button presets - built from variants defined above
+M.BUTTON_TOGGLE = create_toggle_style(M.TOGGLE_VARIANTS.WHITE)
+M.BUTTON_TOGGLE_WHITE = create_toggle_style(M.TOGGLE_VARIANTS.WHITE)
+M.BUTTON_TOGGLE_TEAL = create_toggle_style(M.TOGGLE_VARIANTS.TEAL)
 
--- Accent toggle preset: green-teal accent for ON state
-M.BUTTON_TOGGLE_ACCENT = {
-  -- Normal/OFF (same base as BUTTON)
-  bg_color = M.COLORS.BG_BASE,
-  bg_hover_color = M.COLORS.BG_HOVER,
-  bg_active_color = M.COLORS.BG_ACTIVE,
-  border_outer_color = M.COLORS.BORDER_OUTER,
-  border_inner_color = M.COLORS.BORDER_INNER,
-  border_hover_color = M.COLORS.BORDER_HOVER,
-  border_active_color = M.COLORS.BORDER_ACTIVE,
-  text_color = M.COLORS.TEXT_NORMAL,
-  text_hover_color = M.COLORS.TEXT_HOVER,
-  text_active_color = M.COLORS.TEXT_ACTIVE,
-  
-  -- ON state (accent)
-  bg_on_color = hexrgb("#3d2424ff"),
-  bg_on_hover_color = hexrgb("#b04141ff"),
-  bg_on_active_color = hexrgb("#8f2e2eff"),
-  border_outer_on_color = M.COLORS.BORDER_OUTER,
-  border_inner_on_color = hexrgb("#41E0A3FF"),
-  border_on_hover_color = hexrgb("#56E6B0FF"),
-  border_on_active_color = hexrgb("#c83838ff"),
-  text_on_color = hexrgb("#FFFFFFFF"),
-  text_on_hover_color = hexrgb("#FFFFFFFF"),
-  text_on_active_color = hexrgb("#FFFFFFFF"),
-  
-  padding_x = 10,
-  padding_y = 6,
-  rounding = 0,
-}
+-- Legacy alias for backward compatibility
+M.BUTTON_TOGGLE_ACCENT = M.BUTTON_TOGGLE_TEAL
 
 M.SEARCH_INPUT = {
   placeholder = "Search...",
