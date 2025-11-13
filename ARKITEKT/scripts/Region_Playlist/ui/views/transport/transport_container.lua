@@ -1,12 +1,13 @@
 -- @noindex
--- ReArkitekt/gui/widgets/transport/transport_container.lua
+-- Region_Playlist/ui/views/transport/transport_container.lua
 -- Transport panel with bottom header and gradient background
+-- MOVED FROM LIBRARY: Project-specific transport panel (no other scripts use this)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local Panel = require('rearkitekt.gui.widgets.panel.init')
-local TransportFX = require('rearkitekt.gui.widgets.transport.transport_fx')
+local TransportFX = require('Region_Playlist.ui.views.transport.transport_fx')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -31,10 +32,6 @@ function M.new(opts)
   
   local button_height = opts.button_height or DEFAULTS.button_height
   
-  -- Create panel with bottom header configuration
-  -- Panel.new() automatically sets up id and _panel_id fields which are
-  -- required for header elements to detect panel context and apply
-  -- automatic corner rounding based on element position and separators.
   local cfg = opts.config or DEFAULTS
   local panel = Panel.new({
     id = opts.id or "transport_panel",
@@ -42,11 +39,10 @@ function M.new(opts)
     width = opts.width,
     
     config = {
-      bg_color = cfg.panel_bg_color or hexrgb("#00000000"),  -- Configurable base background (defaults to transparent)
+      bg_color = cfg.panel_bg_color or hexrgb("#00000000"),
       border_thickness = 0,
       rounding = 8,
       
-      -- Use configurable background pattern for transport panel
       background_pattern = {
         enabled = true,
         primary = cfg.background_pattern and cfg.background_pattern.primary or DEFAULTS.background_pattern.primary,
@@ -57,11 +53,11 @@ function M.new(opts)
         enabled = true,
         height = button_height,
         position = "top",
-        valign = "middle",  -- Vertically center buttons in header
-        bg_color = hexrgb("#00000000"),  -- Transparent header background
+        valign = "middle",
+        bg_color = hexrgb("#00000000"),
         border_color = hexrgb("#00000000"),
         rounding = 8,
-        padding = { left = 0, right = 0 },  -- No padding so corner rounding is visible
+        padding = { left = 0, right = 0 },
         elements = opts.header_elements or {},
       },
     },
@@ -80,7 +76,6 @@ function M.new(opts)
     
     on_hover_changed = opts.on_hover_changed,
     
-    -- Color animation state
     current_region_color = nil,
     next_region_color = nil,
     target_current_color = nil,
@@ -107,7 +102,6 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
   local dt = ImGui.GetDeltaTime(ctx)
   local fade_speed = self.config.fx.gradient.fade_speed or 8.0
   
-  -- Initialize colors if first time
   if not self.current_region_color then
     self.current_region_color = target_current
     self.next_region_color = target_next
@@ -116,22 +110,17 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
     return
   end
   
-  -- Update targets
   self.target_current_color = target_current
   self.target_next_color = target_next
   
-  -- Lerp colors
   local function lerp_color(from, to, t)
-    -- If either is nil, handle fade to/from ready color
     if not from and not to then return nil end
     if not from then
-      -- Fading from ready (nil) to a color: use ready_color as source
       local Colors = require('rearkitekt.core.colors')
       local ready_color = self.config.fx.gradient.ready_color or Colors.hexrgb("#1A1A1A")
       from = ready_color
     end
     if not to then
-      -- Fading from color to ready (nil): use ready_color as target
       local Colors = require('rearkitekt.core.colors')
       local ready_color = self.config.fx.gradient.ready_color or Colors.hexrgb("#1A1A1A")
       to = ready_color
@@ -151,17 +140,13 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
   
   local lerp_factor = math.min(1.0, fade_speed * dt)
   
-  -- Always update colors, even when target is nil (not playing)
-  -- Fade to/from ready_color for smooth transitions
   if self.target_current_color then
     self.current_region_color = lerp_color(self.current_region_color, self.target_current_color, lerp_factor)
   else
-    -- Fade to ready color when not playing
     local Colors = require('rearkitekt.core.colors')
     local ready_color = self.config.fx.gradient.ready_color or Colors.hexrgb("#1A1A1A")
     if self.current_region_color then
       self.current_region_color = lerp_color(self.current_region_color, ready_color, lerp_factor)
-      -- Check if fade is complete (close enough to ready color)
       if math.abs((self.current_region_color or 0) - ready_color) < 256 then
         self.current_region_color = nil
       end
@@ -173,12 +158,10 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
   if self.target_next_color then
     self.next_region_color = lerp_color(self.next_region_color, self.target_next_color, lerp_factor)
   else
-    -- Fade to ready color when not playing
     local Colors = require('rearkitekt.core.colors')
     local ready_color = self.config.fx.gradient.ready_color or Colors.hexrgb("#1A1A1A")
     if self.next_region_color then
       self.next_region_color = lerp_color(self.next_region_color, ready_color, lerp_factor)
-      -- Check if fade is complete
       if math.abs((self.next_region_color or 0) - ready_color) < 256 then
         self.next_region_color = nil
       end
@@ -195,7 +178,6 @@ function TransportPanel:begin_draw(ctx, region_colors)
   
   self:update_region_colors(ctx, target_current, target_next)
   
-  -- Get panel bounds before drawing
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
   local w = self.width or avail_w
@@ -206,7 +188,6 @@ function TransportPanel:begin_draw(ctx, region_colors)
   
   self.last_bounds = { x1 = x1, y1 = y1, x2 = x2, y2 = y2 }
   
-  -- Update hover state and draw transport FX background
   local dl = ImGui.GetWindowDrawList(ctx)
   local dt = ImGui.GetDeltaTime(ctx)
   local is_hovered = self:update_hover_state(ctx, x1, y1, x2, y2, dt)
@@ -218,10 +199,8 @@ function TransportPanel:begin_draw(ctx, region_colors)
     self.on_hover_changed(is_hovered, self.hover_alpha)
   end
   
-  -- Begin panel draw (this will draw header at bottom)
   local success = self.panel:begin_draw(ctx)
   
-  -- Calculate content dimensions (panel child dimensions)
   local content_w = self.panel.child_width or w
   local content_h = self.panel.child_height or (h - (self.panel.header_height or 0))
   

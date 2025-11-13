@@ -56,7 +56,7 @@ local Shell = require("rearkitekt.app.shell")
 local Config = require("Region_Playlist.core.config")
 local State = require("Region_Playlist.core.app_state")
 local GUI = require("Region_Playlist.ui.gui")
-local StatusBarConfig = require("Region_Playlist.ui.status")
+local StatusConfig = require("Region_Playlist.ui.status")
 local Colors = require("rearkitekt.core.colors")
 
 local hexrgb = Colors.hexrgb
@@ -72,7 +72,6 @@ end
 
 State.initialize(settings)
 
-local status_bar = StatusBarConfig.create(State, StyleOK and Style)
 local gui = GUI.create(State, Config, settings)
 
 -- ============================================================================
@@ -98,7 +97,7 @@ Shell.run({
   icon_color   = hexrgb("#41E0A3"),
   icon_size    = 18,
   min_size     = { w = 700, h = 500 },
-  status_bar   = status_bar,
+  get_status_func = StatusConfig.get_status_func and StatusConfig.get_status_func(State) or nil,
   fonts        = {
     time_display = 20,  -- Transport time display font
   },

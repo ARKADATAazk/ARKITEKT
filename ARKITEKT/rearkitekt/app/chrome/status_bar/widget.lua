@@ -4,7 +4,6 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Chip = require('rearkitekt.gui.widgets.component.chip')
 local StatusBarConfig = require('rearkitekt.app.chrome.status_bar.config')
 local Colors = require('rearkitekt.core.colors')
 
@@ -27,7 +26,6 @@ function M.new(config)
   local H         = config.height
   local LEFT_PAD  = config.left_pad
   local TEXT_PAD  = config.text_pad
-  local CHIP_SIZE = config.chip_size
   local RIGHT_PAD = config.right_pad
 
   local get_status  = config.get_status or function() return {} end
@@ -59,21 +57,6 @@ function M.new(config)
   local DEFAULT_RED    = palette.red     or hexrgb("#E04141")
 
   local RESIZE_HANDLE_COLOR = palette.grey_66 or hexrgb("#666666")
-
-  -- Chip configuration from merged config
-  local chip_config           = config.chip
-  local chip_shape            = chip_config.shape
-  local chip_rounding         = chip_config.rounding
-  local chip_show_glow        = chip_config.show_glow
-  local chip_glow_layers      = chip_config.glow_layers
-  local chip_shadow           = chip_config.shadow
-  local chip_shadow_offset_x  = chip_config.shadow_offset_x
-  local chip_shadow_offset_y  = chip_config.shadow_offset_y
-  local chip_shadow_blur      = chip_config.shadow_blur
-  local chip_shadow_alpha     = chip_config.shadow_alpha
-  local chip_border           = chip_config.border
-  local chip_border_color     = chip_config.border_color
-  local chip_border_thickness = chip_config.border_thickness
 
   local function set_right_text(text)
     right_text = text or ""
@@ -191,44 +174,18 @@ function M.new(config)
 
     -- Status content
     local status       = get_status()
-    local chip_color   = status.color or DEFAULT_TEAL
+    local text_color   = status.color or DEFAULT_TEAL
     local status_text  = status.text  or "READY"
 
     local center_y = y1 + (h / 2)
-    local chip_x   = x1 + LEFT_PAD + (CHIP_SIZE / 2)
-    local chip_y   = center_y
-
-    local chip_opts = {
-      style = Chip.STYLE.INDICATOR,
-      draw_list = dl,
-      x = chip_x,
-      y = chip_y,
-      color = chip_color,
-      shape = chip_shape,
-      radius = chip_shape == Chip.SHAPE.CIRCLE and (CHIP_SIZE / 2) or nil,
-      size = chip_shape   == Chip.SHAPE.SQUARE and CHIP_SIZE       or nil,
-      rounding = chip_shape == Chip.SHAPE.SQUARE and chip_rounding or nil,
-      show_glow = chip_show_glow,
-      glow_layers = chip_glow_layers,
-      shadow = chip_shadow,
-      shadow_offset_x = chip_shadow_offset_x,
-      shadow_offset_y = chip_shadow_offset_y,
-      shadow_blur = chip_shadow_blur,
-      shadow_alpha = chip_shadow_alpha,
-      border = chip_border,
-      border_color = chip_border_color,
-      border_thickness = chip_border_thickness,
-    }
-
-    Chip.draw(ctx, chip_opts)
 
     local text_w, text_h = ImGui.CalcTextSize(ctx, status_text)
     local label_y = center_y - (text_h / 2)
-    local label_x = x1 + LEFT_PAD + CHIP_SIZE + TEXT_PAD
-    add_text(dl, label_x, label_y, chip_color, status_text)
+    local label_x = x1 + LEFT_PAD
+    add_text(dl, label_x, label_y, text_color, status_text)
 
     local left_text_w = text_w or 0
-    local cursor_x = LEFT_PAD + CHIP_SIZE + TEXT_PAD + left_text_w + 10
+    local cursor_x = LEFT_PAD + left_text_w + 10
 
     local button_height = math.min(20, h - 8)
     local button_y = center_y - (button_height / 2)

@@ -54,6 +54,7 @@ function Dropdown.new(id, config, initial_value, initial_direction)
     hover_alpha = 0,
     is_open = false,
     popup_hover_index = -1,
+    footer_interacting = false,  -- Track if user is interacting with footer
   }, Dropdown)
   
   return instance
@@ -236,6 +237,7 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   if ImGui.BeginPopup(ctx, self.id .. "_popup") then
     local popup_dl = ImGui.GetWindowDrawList(ctx)
     self.popup_hover_index = -1
+    self.footer_interacting = false
     
     -- Calculate popup width
     local max_text_width = 0
@@ -308,6 +310,36 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
         ImGui.SetItemDefaultFocus(ctx)
       end
     end
+    
+    -- >>> FOOTER CONTENT (BEGIN)
+    -- Render optional footer content (e.g., sliders, buttons)
+    if cfg.footer_content then
+      -- Add separator before footer
+      local sep_x, sep_y = ImGui.GetCursorScreenPos(ctx)
+      ImGui.Dummy(ctx, popup_width, 4)
+      local sep_y2 = sep_y + 2
+      ImGui.DrawList_AddLine(popup_dl, sep_x + 4, sep_y2, sep_x + popup_width - 4, sep_y2, Style.COLORS.BORDER_INNER, 1)
+      
+      -- Track footer region for interaction detection
+      local footer_start_y = sep_y + 4
+      
+      -- Call user-provided footer rendering function
+      local footer_ctx = {
+        ctx = ctx,
+        dl = popup_dl,
+        width = popup_width,
+        padding = popup_cfg.item_padding_x,
+      }
+      cfg.footer_content(footer_ctx)
+      
+      -- Check if mouse is in footer region (prevent close on footer interaction)
+      local footer_end_y = ImGui.GetCursorScreenPos(ctx)
+      local mx, my = ImGui.GetMousePos(ctx)
+      if my >= footer_start_y and my <= footer_end_y then
+        self.footer_interacting = true
+      end
+    end
+    -- <<< FOOTER CONTENT (END)
     
     ImGui.EndPopup(ctx)
   else
