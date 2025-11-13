@@ -1,19 +1,19 @@
 -- @noindex
--- Region_Playlist/app/shortcuts.lua
+-- Region_Playlist/ui/shortcuts.lua
 -- Keyboard shortcut handling using sequence-aware bridge helpers
 
 local ImGui = require 'imgui' '0.10'
 
 local M = {}
 
-package.loaded["Region_Playlist.app.shortcuts"] = M
+package.loaded["Region_Playlist.ui.shortcuts"] = M
 
 function M.handle_keyboard_shortcuts(ctx, state, region_tiles)
   local ctrl = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
   local shift = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
   
   if ctrl and ImGui.IsKeyPressed(ctx, ImGui.Key_Z, false) then
-    local State = require("Region_Playlist.app.state")
+    local State = require("Region_Playlist.core.app_state")
     if shift then
       State.redo()
     else
@@ -23,7 +23,7 @@ function M.handle_keyboard_shortcuts(ctx, state, region_tiles)
   end
   
   if ctrl and ImGui.IsKeyPressed(ctx, ImGui.Key_Y, false) then
-    local State = require("Region_Playlist.app.state")
+    local State = require("Region_Playlist.core.app_state")
     State.redo()
     return true
   end

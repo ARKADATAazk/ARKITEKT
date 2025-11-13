@@ -5,8 +5,8 @@
 
 local Engine = require("Region_Playlist.engine.core")
 local Playback = require("Region_Playlist.engine.playback")
-local RegionState = require("Region_Playlist.storage.state")
-local SequenceExpander = require("Region_Playlist.app.sequence_expander")
+local RegionState = require("Region_Playlist.storage.persistence")
+local SequenceExpander = require("Region_Playlist.core.sequence_expander")
 local Logger = require("rearkitekt.debug.logger")
 
 local M = {}

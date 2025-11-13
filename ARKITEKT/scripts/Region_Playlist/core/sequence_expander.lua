@@ -1,5 +1,5 @@
 -- @noindex
--- Region_Playlist/app/sequence_expander.lua
+-- Region_Playlist/core/sequence_expander.lua
 -- Expands nested playlists into a flat playback sequence with loop metadata
 
 local SequenceExpander = {}

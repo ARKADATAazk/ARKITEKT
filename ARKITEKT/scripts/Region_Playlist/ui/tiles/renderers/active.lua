@@ -1,5 +1,5 @@
 -- @noindex
--- ReArkitekt/gui/widgets/region_tiles/renderers/active.lua
+-- Region_Playlist/ui/tiles/renderers/active.lua
 -- MODIFIED: Lowered responsive threshold for text.
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
@@ -8,7 +8,7 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Draw = require('rearkitekt.gui.draw')
 local TileFXConfig = require('rearkitekt.gui.fx.tile_fx_config')
-local BaseRenderer = require('Region_Playlist.widgets.region_tiles.renderers.base')
+local BaseRenderer = require('Region_Playlist.ui.tiles.renderers.base')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -137,7 +137,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   -- Calculate total duration if playlist has items (in beat positions)
   local total_duration = 0
   if playlist.items and bridge then
-    local State = require("Region_Playlist.app.state")
+    local State = require("Region_Playlist.core.app_state")
     -- Calculate duration from region beat positions
     for _, pl_item in ipairs(playlist.items) do
       -- Handle both old format (rid) and new format (region_num)

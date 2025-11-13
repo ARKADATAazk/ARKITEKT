@@ -1,16 +1,16 @@
 -- @noindex
--- Region_Playlist/app/gui.lua
+-- Region_Playlist/ui/gui.lua
 
 local ImGui = require 'imgui' '0.10'
-local RegionTiles = require("Region_Playlist.widgets.region_tiles.coordinator")
+local RegionTiles = require("Region_Playlist.ui.tiles.coordinator")
 local Colors = require("rearkitekt.core.colors")
-local Shortcuts = require("Region_Playlist.app.shortcuts")
-local PlaylistController = require("Region_Playlist.app.controller")
+local Shortcuts = require("Region_Playlist.ui.shortcuts")
+local PlaylistController = require("Region_Playlist.core.controller")
 local TransportContainer = require("rearkitekt.gui.widgets.transport.transport_container")
 local Sheet = require("rearkitekt.gui.widgets.overlay.sheet")
 local ChipList = require("rearkitekt.gui.widgets.chip_list.list")
-local Config = require('Region_Playlist.app.config')
-local TransportWidgets = require("Region_Playlist.widgets._temp_transportwidgets")
+local Config = require('Region_Playlist.core.config')
+local TransportWidgets = require("Region_Playlist.ui.transport_widgets")
 
 local M = {}
 local GUI = {}
@@ -483,7 +483,7 @@ end
 
 function GUI:build_transport_header_elements_with_state(bridge_state)
   bridge_state = bridge_state or {}
-  local TransportWidgets = require('Region_Playlist.widgets._temp_transportwidgets')
+  local TransportWidgets = require('Region_Playlist.ui.transport_widgets')
   
   return {
     -- PLAY button (toggle)

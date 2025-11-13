@@ -1,13 +1,13 @@
 -- @noindex
--- ReArkitekt/gui/widgets/region_tiles/coordinator_render.lua
+-- Region_Playlist/ui/tiles/coordinator_render.lua
 -- Rendering methods for region tiles coordinator
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local DragIndicator = require('rearkitekt.gui.fx.dnd.drag_indicator')
-local ActiveTile = require('Region_Playlist.widgets.region_tiles.renderers.active')
-local PoolTile = require('Region_Playlist.widgets.region_tiles.renderers.pool')
+local ActiveTile = require('Region_Playlist.ui.tiles.renderers.active')
+local PoolTile = require('Region_Playlist.ui.tiles.renderers.pool')
 local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')
 
 local M = {}

@@ -1,5 +1,5 @@
 -- @noindex
--- ReArkitekt/gui/widgets/region_tiles/selector.lua
+-- Region_Playlist/ui/tiles/selector.lua
 -- Playlist selector widget with animated chips
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path

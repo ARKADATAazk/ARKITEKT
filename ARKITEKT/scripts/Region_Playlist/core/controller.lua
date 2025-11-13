@@ -1,5 +1,5 @@
 -- @noindex
--- Region_Playlist/app/controller.lua
+-- Region_Playlist/core/controller.lua
 -- Centralized playlist operations with automatic undo/save/sync
 -- Relies on bridge invalidate logic instead of manual engine sync
 
@@ -7,7 +7,7 @@ local M = {}
 local Controller = {}
 Controller.__index = Controller
 
-package.loaded["Region_Playlist.app.controller"] = M
+package.loaded["Region_Playlist.core.controller"] = M
 
 local key_counter = 0
 
@@ -70,7 +70,7 @@ function Controller:create_playlist(name)
   return self:_with_undo(function()
     local new_id = self:_generate_playlist_id()
     
-    local RegionState = require("Region_Playlist.storage.state")
+    local RegionState = require("Region_Playlist.storage.persistence")
     
     local new_playlist = {
       id = new_id,

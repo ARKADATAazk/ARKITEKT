@@ -1,5 +1,5 @@
 -- @noindex
--- ReArkitekt/gui/widgets/region_tiles/renderers/pool.lua
+-- Region_Playlist/ui/tiles/renderers/pool.lua
 -- MODIFIED: Using Colors.hexrgb() for all color definitions
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
@@ -9,7 +9,7 @@ local Colors = require('rearkitekt.core.colors')
 local Draw = require('rearkitekt.gui.draw')
 local TileFXConfig = require('rearkitekt.gui.fx.tile_fx_config')
 local TileUtil = require('rearkitekt.gui.systems.tile_utilities')
-local BaseRenderer = require('Region_Playlist.widgets.region_tiles.renderers.base')
+local BaseRenderer = require('Region_Playlist.ui.tiles.renderers.base')
 
 local M = {}
 

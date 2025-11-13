@@ -1,5 +1,5 @@
 -- @noindex
--- ReArkitekt/features/region_playlist/state.lua
+-- Region_Playlist/storage/persistence.lua
 -- Region Playlist state persistence via Project ExtState
 -- FIXED: Colors persist correctly and generation is centralized.
 

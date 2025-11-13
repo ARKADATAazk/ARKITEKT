@@ -53,10 +53,10 @@ local profiler_enabled = ProfilerInit.init()
 -- ============================================================================
 
 local Shell = require("rearkitekt.app.shell")
-local Config = require("Region_Playlist.app.config")
-local State = require("Region_Playlist.app.state")
-local GUI = require("Region_Playlist.app.gui")
-local StatusBarConfig = require("Region_Playlist.app.status")
+local Config = require("Region_Playlist.core.config")
+local State = require("Region_Playlist.core.app_state")
+local GUI = require("Region_Playlist.ui.gui")
+local StatusBarConfig = require("Region_Playlist.ui.status")
 local Colors = require("rearkitekt.core.colors")
 
 local hexrgb = Colors.hexrgb

@@ -1,22 +1,22 @@
 -- @noindex
--- ReArkitekt/gui/widgets/region_tiles/coordinator.lua
+-- Region_Playlist/ui/tiles/coordinator.lua
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Config = require('Region_Playlist.app.config')
-local Render = require('Region_Playlist.widgets.region_tiles.coordinator_render')
+local Config = require('Region_Playlist.core.config')
+local Render = require('Region_Playlist.ui.tiles.coordinator_render')
 local Draw = require('rearkitekt.gui.draw')
 local Colors = require('rearkitekt.core.colors')
 local TileAnim = require('rearkitekt.gui.fx.tile_motion')
 local HeightStabilizer = require('rearkitekt.gui.systems.height_stabilizer')
-local Selector = require('Region_Playlist.widgets.region_tiles.selector')
-local ActiveGridFactory = require('Region_Playlist.widgets.region_tiles.active_grid_factory')
-local PoolGridFactory = require('Region_Playlist.widgets.region_tiles.pool_grid_factory')
+local Selector = require('Region_Playlist.ui.tiles.selector')
+local ActiveGridFactory = require('Region_Playlist.ui.tiles.active_grid_factory')
+local PoolGridFactory = require('Region_Playlist.ui.tiles.pool_grid_factory')
 local GridBridge = require('rearkitekt.gui.widgets.grid.grid_bridge')
 local TilesContainer = require('rearkitekt.gui.widgets.panel')
 local PanelConfig = require('rearkitekt.gui.widgets.panel.config')
-local State = require("Region_Playlist.app.state")
+local State = require("Region_Playlist.core.app_state")
 
 local M = {}
 

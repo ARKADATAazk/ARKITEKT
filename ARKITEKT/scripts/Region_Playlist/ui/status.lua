@@ -1,5 +1,5 @@
 -- @noindex
--- Region_Playlist/app/status.lua
+-- Region_Playlist/ui/status.lua
 -- Status bar configuration
 
 local StatusBar = require("rearkitekt.app.chrome.status_bar")

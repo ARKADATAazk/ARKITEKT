@@ -1,9 +1,9 @@
 -- @noindex
--- ReArkitekt/gui/widgets/region_tiles/active_grid_factory.lua
+-- Region_Playlist/ui/tiles/active_grid_factory.lua
 -- UNCHANGED
 
 local Grid = require('rearkitekt.gui.widgets.grid.core')
-local ActiveTile = require('Region_Playlist.widgets.region_tiles.renderers.active')
+local ActiveTile = require('Region_Playlist.ui.tiles.renderers.active')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

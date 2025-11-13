@@ -80,10 +80,10 @@ ARKITEKT-Project/
 │   │   │   │   ├── component/
 │   │   │   │   │   └── chip.lua (340 lines)
 │   │   │   │   ├── controls/
-│   │   │   │   │   ├── button.lua (280 lines)
+│   │   │   │   │   ├── button.lua (285 lines)
 │   │   │   │   │   ├── context_menu.lua (108 lines)
 │   │   │   │   │   ├── corner_button.lua (162 lines)
-│   │   │   │   │   ├── dropdown.lua (424 lines)
+│   │   │   │   │   ├── dropdown.lua (434 lines)
 │   │   │   │   │   ├── scrollbar.lua (241 lines)
 │   │   │   │   │   ├── search_input.lua (239 lines)
 │   │   │   │   │   ├── style_defaults.lua (318 lines)
@@ -201,39 +201,40 @@ ARKITEKT-Project/
 │   │   │   └── ARK_ItemPicker.lua (226 lines)
 │   │   ├── Region_Playlist/
 │   │   │   ├── app/
-│   │   │   │   ├── config.lua (395 lines)
-│   │   │   │   ├── controller.lua (367 lines)
-│   │   │   │   ├── gui.lua (1046 lines)
-│   │   │   │   ├── sequence_expander.lua (153 lines)
-│   │   │   │   ├── shortcuts.lua (80 lines)
-│   │   │   │   ├── state.lua (664 lines)
-│   │   │   │   └── status.lua (62 lines)
+│   │   │   │   └── sws_importer.lua (371 lines)
+│   │   │   ├── core/
+│   │   │   │   ├── app_state.lua (998 lines)
+│   │   │   │   ├── config.lua (396 lines)
+│   │   │   │   ├── controller.lua (371 lines)
+│   │   │   │   └── sequence_expander.lua (153 lines)
 │   │   │   ├── engine/
 │   │   │   │   ├── coordinator_bridge.lua (428 lines)
-│   │   │   │   ├── core.lua (194 lines)
+│   │   │   │   ├── core.lua (198 lines)
+│   │   │   │   ├── engine_state.lua (341 lines)
 │   │   │   │   ├── playback.lua (116 lines)
-│   │   │   │   ├── quantize.lua (324 lines)
-│   │   │   │   ├── state.lua (341 lines)
+│   │   │   │   ├── quantize.lua (342 lines)
 │   │   │   │   ├── transitions.lua (237 lines)
 │   │   │   │   └── transport.lua (239 lines)
 │   │   │   ├── storage/
-│   │   │   │   ├── state.lua (152 lines)
+│   │   │   │   ├── persistence.lua (152 lines)
 │   │   │   │   └── undo_bridge.lua (91 lines)
-│   │   │   ├── widgets/
-│   │   │   │   ├── controls/
-│   │   │   │   │   └── controls_widget.lua (151 lines)
-│   │   │   │   ├── region_tiles/
+│   │   │   ├── ui/
+│   │   │   │   ├── tiles/
 │   │   │   │   │   ├── renderers/
-│   │   │   │   │   │   ├── active.lua (248 lines)
-│   │   │   │   │   │   ├── base.lua (280 lines)
-│   │   │   │   │   │   └── pool.lua (343 lines)
+│   │   │   │   │   │   ├── active.lua (281 lines)
+│   │   │   │   │   │   ├── base.lua (309 lines)
+│   │   │   │   │   │   └── pool.lua (350 lines)
 │   │   │   │   │   ├── active_grid_factory.lua (223 lines)
-│   │   │   │   │   ├── coordinator.lua (522 lines)
+│   │   │   │   │   ├── coordinator.lua (555 lines)
 │   │   │   │   │   ├── coordinator_render.lua (190 lines)
-│   │   │   │   │   ├── pool_grid_factory.lua (196 lines)
+│   │   │   │   │   ├── pool_grid_factory.lua (220 lines)
 │   │   │   │   │   └── selector.lua (99 lines)
-│   │   │   │   └── _temp_transportwidgets.lua (819 lines)
-│   │   │   └── ARK_RegionPlaylist.lua (106 lines)
+│   │   │   │   ├── gui.lua (1126 lines)
+│   │   │   │   ├── shortcuts.lua (80 lines)
+│   │   │   │   ├── status.lua (63 lines)
+│   │   │   │   └── transport_widgets.lua (826 lines)
+│   │   │   ├── widgets/
+│   │   │   └── ARK_RegionPlaylist.lua (105 lines)
 │   │   └── Sandbox/
 │   │       ├── sandbox_1.lua (238 lines)
 │   │       ├── sandbox_2.lua (182 lines)
@@ -278,11 +279,12 @@ ARKITEKT-Project/
 ├── refactoring ideas (424 lines)
 ├── REFACTORING_SUMMARY.md (316 lines)
 ├── refactoring_templates.md (160 lines)
+├── SWS_IMPORT_GUIDE.md (450 lines)
 └── System_Prompt_ARKITEKT_OnePager.md (66 lines)
 
-Total files: 211
-Total lines (with comments): 67,973
-Total lines (code only): 57,538
-Code/Total Ratio: 84.6% is actual code
+Total files: 212
+Total lines (with comments): 69,232
+Total lines (code only): 58,449
+Code/Total Ratio: 84.4% is actual code
 
 Generated: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\PROJECT_STRUCTURE.txt

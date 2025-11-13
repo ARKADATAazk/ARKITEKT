@@ -1,5 +1,5 @@
 -- @noindex
--- Region_Playlist/app/state.lua
+-- Region_Playlist/core/app_state.lua
 -- Single-source-of-truth app state (playlist expansion handled lazily)
 --[[
 The app layer is now the authoritative owner of playlist structure. Engine-side
@@ -11,14 +11,14 @@ once per invalidation.
 ]]
 
 local CoordinatorBridge = require("Region_Playlist.engine.coordinator_bridge")
-local RegionState = require("Region_Playlist.storage.state")
+local RegionState = require("Region_Playlist.storage.persistence")
 local UndoManager = require("rearkitekt.core.undo_manager")
 local UndoBridge = require("Region_Playlist.storage.undo_bridge")
 local Colors = require("rearkitekt.core.colors")
 
 local M = {}
 
-package.loaded["Region_Playlist.app.state"] = M
+package.loaded["Region_Playlist.core.app_state"] = M
 
 -- >>> MODE CONSTANTS (BEGIN)
 -- Valid mode values for state validation

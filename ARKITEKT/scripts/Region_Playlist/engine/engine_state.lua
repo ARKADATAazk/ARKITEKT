@@ -1,5 +1,5 @@
 -- @noindex
--- Region_Playlist/engine/state.lua
+-- Region_Playlist/engine/engine_state.lua
 -- Sequence-driven state management for region playlist engine
 -- MODIFIED: Integrated Logger for debug output
 
@@ -11,7 +11,7 @@ local M = {}
 local State = {}
 State.__index = State
 
-package.loaded["Region_Playlist.engine.state"] = M
+package.loaded["Region_Playlist.engine.engine_state"] = M
 
 function M.new(opts)
   opts = opts or {}

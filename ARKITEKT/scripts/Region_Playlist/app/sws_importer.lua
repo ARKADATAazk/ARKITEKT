@@ -2,7 +2,7 @@
 -- Region_Playlist/app/sws_importer.lua
 -- Import playlists from SWS Region Playlist format
 
-local RegionState = require("Region_Playlist.storage.state")
+local RegionState = require("Region_Playlist.storage.persistence")
 local Colors = require("rearkitekt.core.colors")
 
 local M = {}

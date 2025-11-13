@@ -1,6 +1,6 @@
 -- @noindex
--- Region_Playlist/widgets/_temp_transportwidgets.lua
--- Temporary transport widgets for refactor
+-- Region_Playlist/ui/transport_widgets.lua
+-- Transport widgets for Region Playlist
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'

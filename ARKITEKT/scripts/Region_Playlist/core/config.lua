@@ -1,5 +1,5 @@
 -- @noindex
--- Region_Playlist/app/config.lua
+-- Region_Playlist/core/config.lua
 -- Structural config + semantic colors (widget chrome comes from library defaults)
 
 local Colors = require('rearkitekt.core.colors')
