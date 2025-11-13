@@ -218,4 +218,72 @@ function M.freeze(t)
   })
 end
 
+-- ============================================================================
+-- DEBUGGING: Config Diff
+-- ============================================================================
+
+--- Compare two configs and return differences
+--- Useful for debugging preset application issues
+--- @param expected table Expected configuration
+--- @param actual table Actual configuration
+--- @return table Array of difference descriptions
+function M.diff(expected, actual)
+  local differences = {}
+
+  -- Check expected keys
+  for k, v in pairs(expected) do
+    if actual[k] ~= v then
+      if type(v) == "number" and type(actual[k]) == "number" then
+        -- Format as hex if looks like color
+        if v > 0xFFFFFF then
+          table.insert(differences, string.format(
+            "  %s: expected 0x%08X, got %s",
+            k, v, actual[k] and string.format("0x%08X", actual[k]) or "nil"
+          ))
+        else
+          table.insert(differences, string.format(
+            "  %s: expected %s, got %s",
+            k, tostring(v), tostring(actual[k])
+          ))
+        end
+      else
+        table.insert(differences, string.format(
+          "  %s: expected %s, got %s",
+          k, tostring(v), tostring(actual[k])
+        ))
+      end
+    end
+  end
+
+  -- Check for unexpected keys
+  for k, v in pairs(actual) do
+    if expected[k] == nil then
+      table.insert(differences, string.format(
+        "  %s: not in expected, got %s",
+        k, tostring(v)
+      ))
+    end
+  end
+
+  return differences
+end
+
+--- Print config diff to console
+--- @param expected table Expected configuration
+--- @param actual table Actual configuration
+--- @param label string|nil Optional label for the diff
+function M.print_diff(expected, actual, label)
+  local differences = M.diff(expected, actual)
+
+  if #differences == 0 then
+    print((label or "Config diff") .. ": No differences")
+    return
+  end
+
+  print((label or "Config diff") .. ":")
+  for _, diff in ipairs(differences) do
+    print(diff)
+  end
+end
+
 return M

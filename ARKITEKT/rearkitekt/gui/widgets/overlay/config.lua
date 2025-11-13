@@ -3,6 +3,7 @@
 -- Configuration for modal overlay and sheet appearance
 
 local Colors = require('rearkitekt.core.colors')
+local ConfigUtil = require('rearkitekt.core.config')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -70,69 +71,21 @@ local current_config = nil
 
 function M.get()
   if not current_config then
-    current_config = {}
-    for k, v in pairs(default_config) do
-      if type(v) == "table" then
-        current_config[k] = {}
-        for k2, v2 in pairs(v) do
-          if type(v2) == "table" then
-            current_config[k][k2] = {}
-            for k3, v3 in pairs(v2) do
-              current_config[k][k2][k3] = v3
-            end
-          else
-            current_config[k][k2] = v2
-          end
-        end
-      else
-        current_config[k] = v
-      end
-    end
+    -- Deep copy default config on first access
+    current_config = ConfigUtil.deep_merge({}, default_config)
   end
   return current_config
 end
 
 function M.override(overrides)
   local config = M.get()
-  local new_config = {}
-  
-  for k, v in pairs(config) do
-    if type(v) == "table" then
-      new_config[k] = {}
-      for k2, v2 in pairs(v) do
-        if type(v2) == "table" then
-          new_config[k][k2] = {}
-          for k3, v3 in pairs(v2) do
-            new_config[k][k2][k3] = v3
-          end
-        else
-          new_config[k][k2] = v2
-        end
-      end
-    else
-      new_config[k] = v
-    end
+
+  if not overrides then
+    return ConfigUtil.deep_merge({}, config)  -- Return deep copy
   end
-  
-  if overrides then
-    for k, v in pairs(overrides) do
-      if type(v) == "table" and new_config[k] then
-        for k2, v2 in pairs(v) do
-          if type(v2) == "table" and new_config[k][k2] then
-            for k3, v3 in pairs(v2) do
-              new_config[k][k2][k3] = v3
-            end
-          else
-            new_config[k][k2] = v2
-          end
-        end
-      else
-        new_config[k] = v
-      end
-    end
-  end
-  
-  return new_config
+
+  -- Deep merge config with overrides
+  return ConfigUtil.deep_merge(config, overrides)
 end
 
 function M.reset()

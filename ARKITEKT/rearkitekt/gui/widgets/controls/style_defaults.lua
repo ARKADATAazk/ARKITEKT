@@ -6,6 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
+local ConfigUtil = require('rearkitekt.core.config')
 
 
 local M = {}
@@ -337,27 +338,9 @@ end
 -- ============================================================================
 
 -- Apply defaults to user config
+-- Delegates to centralized Config utility for consistency
 function M.apply_defaults(defaults, user_config)
-  user_config = user_config or {}
-  local result = {}
-  
-  -- Deep merge for nested tables (like popup config)
-  for k, v in pairs(defaults) do
-    if type(v) == "table" and type(user_config[k]) == "table" then
-      result[k] = M.apply_defaults(v, user_config[k])
-    else
-      result[k] = user_config[k] ~= nil and user_config[k] or v
-    end
-  end
-  
-  -- Add any extra user configs not in defaults
-  for k, v in pairs(user_config) do
-    if result[k] == nil then
-      result[k] = v
-    end
-  end
-  
-  return result
+  return ConfigUtil.apply_defaults(defaults, user_config)
 end
 
 -- Apply alpha to color

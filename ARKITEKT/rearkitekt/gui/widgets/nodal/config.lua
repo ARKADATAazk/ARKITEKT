@@ -3,6 +3,7 @@
 -- Visual configuration for node system (unified with panel background system)
 
 local Colors = require('rearkitekt.core.colors')
+local ConfigUtil = require('rearkitekt.core.config')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -143,18 +144,12 @@ function M.get()
 end
 
 function M.override(overrides)
-  local config = {}
-  for k, v in pairs(M.DEFAULT) do
-    if type(v) == "table" then
-      config[k] = {}
-      for k2, v2 in pairs(v) do
-        config[k][k2] = (overrides[k] and overrides[k][k2]) or v2
-      end
-    else
-      config[k] = overrides[k] or v
-    end
+  if not overrides then
+    return ConfigUtil.deep_merge({}, M.DEFAULT)  -- Return deep copy
   end
-  return config
+
+  -- Deep merge DEFAULT with overrides
+  return ConfigUtil.deep_merge(M.DEFAULT, overrides)
 end
 
 return M
