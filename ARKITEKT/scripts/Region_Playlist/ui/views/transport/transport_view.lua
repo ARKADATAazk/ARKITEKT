@@ -98,7 +98,7 @@ function TransportView:build_header_elements(bridge_state)
       width = 34,
       config = {
         is_toggled = bridge_state.is_playing or false,
-        preset_name = "BUTTON_TOGGLE_ACCENT",
+        preset_name = "BUTTON_TOGGLE_TEAL",
         custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
           TransportIcons.draw_play(dl, bx, by, bw, bh, text_color)
         end,
@@ -136,7 +136,7 @@ function TransportView:build_header_elements(bridge_state)
       width = 34,
       config = {
         is_toggled = bridge_state.loop_enabled or false,
-        preset_name = "BUTTON_TOGGLE_ACCENT",
+        preset_name = "BUTTON_TOGGLE_TEAL",
         custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
           TransportIcons.draw_loop(dl, bx, by, bw, bh, text_color)
         end,
@@ -230,7 +230,7 @@ function TransportView:build_header_elements(bridge_state)
       config = {
         label = "Override",
         is_toggled = bridge_state.override_enabled or false,
-        preset_name = "BUTTON_TOGGLE_ACCENT",
+        preset_name = "BUTTON_TOGGLE_TEAL",
         tooltip = "Override Quantization",
         on_click = function()
           local bridge = self.state.get_bridge()
@@ -250,7 +250,7 @@ function TransportView:build_header_elements(bridge_state)
       config = {
         label = "Follow Viewport",
         is_toggled = bridge_state.follow_viewport or false,
-        preset_name = "BUTTON_TOGGLE_ACCENT",
+        preset_name = "BUTTON_TOGGLE_TEAL",
         tooltip = "Follow Playhead in Viewport",
         on_click = function()
           reaper.ShowConsoleMsg("Follow Viewport toggle not yet implemented\n")
