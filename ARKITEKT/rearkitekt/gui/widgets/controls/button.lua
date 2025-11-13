@@ -5,7 +5,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Style = require('rearkitekt.gui.widgets.controls.style_defaults')
+local Style = require('rearkitekt.gui.style.defaults')
 
 local M = {}
 

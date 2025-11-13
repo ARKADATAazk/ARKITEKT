@@ -20,7 +20,7 @@ local Panel = require('rearkitekt.gui.widgets.panel')
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
-local StyleOK, Style = pcall(require, 'rearkitekt.gui.style')
+local StyleOK, Style = pcall(require, 'rearkitekt.gui.style.imgui_defaults')
 
 -- ============================================================================
 -- STATE

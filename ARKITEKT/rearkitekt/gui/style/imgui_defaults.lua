@@ -1,6 +1,7 @@
 -- @noindex
--- style.lua
--- Shared style helpers for ReaImGui
+-- ReArkitekt/gui/style/imgui_defaults.lua
+-- ImGui theme overrides and base styling
+-- This provides fallback styling for native ImGui widgets when custom components aren't used
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -9,6 +10,9 @@ local Colors = require('rearkitekt.core.colors')
 local M = {}
 local hexrgb = Colors.hexrgb
 
+-- ImGui-specific color palette
+-- These are primarily for native ImGui widgets (buttons, sliders, etc.)
+-- For custom components, use gui/style/defaults.lua M.COLORS instead
 local C = {
   white         = hexrgb("#FFFFFF"),
   black         = hexrgb("#000000"),

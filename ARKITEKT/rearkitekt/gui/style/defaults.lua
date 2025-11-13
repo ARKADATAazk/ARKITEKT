@@ -1,13 +1,17 @@
 -- @noindex
--- ReArkitekt/gui/widgets/controls/style_defaults.lua
--- Centralized styling and rendering utilities for all ReArkitekt controls
+-- ReArkitekt/gui/style/defaults.lua
+-- Centralized colors, presets, and styling utilities for all ReArkitekt components
+--
+-- This is the SINGLE SOURCE OF TRUTH for all colors and component style presets.
+-- All custom components should use M.COLORS and M.BUTTON_TOGGLE_*, M.DROPDOWN, etc.
+--
+-- For ImGui native widgets, see imgui_defaults.lua instead.
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 local ConfigUtil = require('rearkitekt.core.config')
-
 
 local M = {}
 

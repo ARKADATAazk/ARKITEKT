@@ -2,7 +2,7 @@
 -- ReArkitekt/gui/widgets/panel/config.lua
 -- Default configuration for panel with enhanced features
 
-local Style = require('rearkitekt.gui.widgets.controls.style_defaults')
+local Style = require('rearkitekt.gui.style.defaults')
 local C = Style.COLORS  -- Shorthand for centralized colors
 
 local Colors = require('rearkitekt.core.colors')
