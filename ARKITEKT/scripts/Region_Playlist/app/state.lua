@@ -20,13 +20,32 @@ local M = {}
 
 package.loaded["Region_Playlist.app.state"] = M
 
+-- >>> MODE CONSTANTS (BEGIN)
+-- Valid mode values for state validation
+M.POOL_MODES = {
+  REGIONS = "regions",
+  PLAYLISTS = "playlists",
+  MIXED = "mixed"
+}
+
+M.LAYOUT_MODES = {
+  HORIZONTAL = "horizontal",
+  VERTICAL = "vertical"
+}
+
+M.SORT_DIRECTIONS = {
+  ASC = "asc",
+  DESC = "desc"
+}
+-- <<< MODE CONSTANTS (END)
+
 -- Flattened state structure (no nested .state table)
 M.active_playlist = nil
 M.search_filter = ""
 M.sort_mode = nil
-M.sort_direction = "asc"
-M.layout_mode = 'horizontal'
-M.pool_mode = 'regions'
+M.sort_direction = M.SORT_DIRECTIONS.ASC
+M.layout_mode = M.LAYOUT_MODES.HORIZONTAL
+M.pool_mode = M.POOL_MODES.REGIONS
 M.region_index = {}
 M.pool_order = {}
 M.pending_spawn = {}
@@ -134,6 +153,13 @@ function M.reload_project_data()
   end
 end
 
+-- >>> CANONICAL ACCESSORS (BEGIN)
+-- Single source of truth for state access - use these instead of direct field access
+
+function M.get_active_playlist_id()
+  return M.active_playlist
+end
+
 function M.get_active_playlist()
   for _, pl in ipairs(M.playlists) do
     if pl.id == M.active_playlist then
@@ -151,6 +177,129 @@ function M.get_playlist_by_id(playlist_id)
   end
   return nil
 end
+
+function M.get_playlists()
+  return M.playlists
+end
+
+function M.get_bridge()
+  return M.bridge
+end
+
+function M.get_region_by_rid(rid)
+  return M.region_index[rid]
+end
+
+function M.get_region_index()
+  return M.region_index
+end
+
+function M.get_pool_order()
+  return M.pool_order
+end
+
+function M.set_pool_order(new_order)
+  M.pool_order = new_order
+end
+
+function M.get_search_filter()
+  return M.search_filter
+end
+
+function M.set_search_filter(text)
+  M.search_filter = text
+end
+
+function M.get_sort_mode()
+  return M.sort_mode
+end
+
+function M.set_sort_mode(mode)
+  M.sort_mode = mode
+end
+
+function M.get_sort_direction()
+  return M.sort_direction
+end
+
+function M.set_sort_direction(direction)
+  -- Validate sort direction
+  if direction ~= M.SORT_DIRECTIONS.ASC and 
+     direction ~= M.SORT_DIRECTIONS.DESC then
+    error(string.format("Invalid sort_direction: %s (expected 'asc' or 'desc')", tostring(direction)))
+  end
+  M.sort_direction = direction
+end
+
+function M.get_layout_mode()
+  return M.layout_mode
+end
+
+function M.set_layout_mode(mode)
+  -- Validate layout mode
+  if mode ~= M.LAYOUT_MODES.HORIZONTAL and 
+     mode ~= M.LAYOUT_MODES.VERTICAL then
+    error(string.format("Invalid layout_mode: %s (expected 'horizontal' or 'vertical')", tostring(mode)))
+  end
+  M.layout_mode = mode
+end
+
+function M.get_pool_mode()
+  return M.pool_mode
+end
+
+function M.set_pool_mode(mode)
+  -- Validate pool mode
+  if mode ~= M.POOL_MODES.REGIONS and 
+     mode ~= M.POOL_MODES.PLAYLISTS and 
+     mode ~= M.POOL_MODES.MIXED then
+    error(string.format("Invalid pool_mode: %s (expected 'regions', 'playlists', or 'mixed')", tostring(mode)))
+  end
+  M.pool_mode = mode
+end
+
+function M.get_pending_spawn()
+  return M.pending_spawn
+end
+
+function M.get_pending_select()
+  return M.pending_select
+end
+
+function M.get_pending_destroy()
+  return M.pending_destroy
+end
+
+function M.get_separator_position_horizontal()
+  return M.separator_position_horizontal
+end
+
+function M.set_separator_position_horizontal(pos)
+  M.separator_position_horizontal = pos
+end
+
+function M.get_separator_position_vertical()
+  return M.separator_position_vertical
+end
+
+function M.set_separator_position_vertical(pos)
+  M.separator_position_vertical = pos
+end
+
+-- Pending operation helpers
+function M.add_pending_spawn(key)
+  M.pending_spawn[#M.pending_spawn + 1] = key
+end
+
+function M.add_pending_select(key)
+  M.pending_select[#M.pending_select + 1] = key
+end
+
+function M.add_pending_destroy(key)
+  M.pending_destroy[#M.pending_destroy + 1] = key
+end
+
+-- <<< CANONICAL ACCESSORS (END)
 
 function M.get_tabs()
   local tabs = {}
@@ -282,9 +431,9 @@ end
 function M.set_active_playlist(playlist_id, move_to_end)
   M.active_playlist = playlist_id
   
-  -- Optionally move the playlist to the end (last visible tab)
+  -- Optionally move the playlist to the front (first visible tab)
   if move_to_end then
-    M.move_playlist_to_end(playlist_id)
+    M.move_playlist_to_front(playlist_id)
   end
   
   M.persist()
@@ -293,7 +442,7 @@ function M.set_active_playlist(playlist_id, move_to_end)
   end
 end
 
-function M.move_playlist_to_end(playlist_id)
+function M.move_playlist_to_front(playlist_id)
   -- Find the playlist's current position
   local playlist_index = nil
   for i, pl in ipairs(M.playlists) do
@@ -405,7 +554,6 @@ local function calculate_playlist_duration(playlist, region_index)
   if not playlist or not playlist.items then return 0 end
   
   local total_duration = 0
-  reaper.ShowConsoleMsg(string.format("[CALC DURATION] Playlist '%s'\n", playlist.name or "?"))
   
   for _, item in ipairs(playlist.items) do
     -- Skip disabled items

@@ -23,8 +23,9 @@ end
 
 function Controller:_commit()
   self.state.persist()
-  if self.state.bridge then
-    self.state.bridge:get_sequence()
+  local bridge = self.state.get_bridge()
+  if bridge then
+    bridge:get_sequence()
   end
 end
 
@@ -40,7 +41,7 @@ function Controller:_with_undo(fn)
 end
 
 function Controller:_get_playlist(id)
-  for _, pl in ipairs(self.state.playlists) do
+  for _, pl in ipairs(self.state.get_playlists()) do
     if pl.id == id then
       return pl
     end
@@ -50,7 +51,7 @@ end
 
 function Controller:_generate_playlist_id()
   local max_id = 0
-  for _, pl in ipairs(self.state.playlists) do
+  for _, pl in ipairs(self.state.get_playlists()) do
     local id_num = tonumber(pl.id)
     if id_num and id_num > max_id then
       max_id = id_num
@@ -78,21 +79,23 @@ function Controller:create_playlist(name)
       chip_color = RegionState.generate_chip_color(),
     }
     
-    self.state.playlists[#self.state.playlists + 1] = new_playlist
-    self.state.active_playlist = new_id
+    local playlists = self.state.get_playlists()
+    playlists[#playlists + 1] = new_playlist
+    self.state.set_active_playlist(new_id)
     
     return new_id
   end)
 end
 
 function Controller:delete_playlist(id)
-  if #self.state.playlists <= 1 then
+  local playlists = self.state.get_playlists()
+  if #playlists <= 1 then
     return false, "Cannot delete last playlist"
   end
   
   return self:_with_undo(function()
     local delete_index = nil
-    for i, pl in ipairs(self.state.playlists) do
+    for i, pl in ipairs(playlists) do
       if pl.id == id then
         delete_index = i
         break
@@ -103,14 +106,14 @@ function Controller:delete_playlist(id)
       error("Playlist not found")
     end
     
-    table.remove(self.state.playlists, delete_index)
+    table.remove(playlists, delete_index)
     
-    if self.state.active_playlist == id then
-      local new_active_index = math.min(delete_index, #self.state.playlists)
-      self.state.active_playlist = self.state.playlists[new_active_index].id
+    if self.state.get_active_playlist_id() == id then
+      local new_active_index = math.min(delete_index, #playlists)
+      self.state.set_active_playlist(playlists[new_active_index].id)
     end
     
-    for _, pl in ipairs(self.state.playlists) do
+    for _, pl in ipairs(playlists) do
       local i = 1
       while i <= #pl.items do
         local item = pl.items[i]
@@ -130,8 +133,9 @@ function Controller:reorder_playlists(from_idx, to_idx)
   end
   
   return self:_with_undo(function()
-    local moved_playlist = table.remove(self.state.playlists, from_idx)
-    table.insert(self.state.playlists, to_idx, moved_playlist)
+    local playlists = self.state.get_playlists()
+    local moved_playlist = table.remove(playlists, from_idx)
+    table.insert(playlists, to_idx, moved_playlist)
   end)
 end
 

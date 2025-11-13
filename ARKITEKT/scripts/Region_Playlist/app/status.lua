@@ -11,18 +11,19 @@ local M = {}
 
 local function get_app_status(State)
   return function()
-    local mode_text = State.layout_mode == 'horizontal' and "Timeline Mode" or "List Mode"
+    local mode_text = State.get_layout_mode() == 'horizontal' and "Timeline Mode" or "List Mode"
     
-    local bridge_state = State.bridge:get_state()
+    local bridge = State.get_bridge()
+    local bridge_state = bridge:get_state()
     local status_text = "READY"
     
     if bridge_state.is_playing then
-      local current_rid = State.bridge:get_current_rid()
+      local current_rid = bridge:get_current_rid()
       if current_rid then
-        local region = State.region_index[current_rid]
+        local region = State.get_region_by_rid(current_rid)
         if region then
-          local progress = State.bridge:get_progress() or 0
-          local time_remaining = State.bridge:get_time_remaining()
+          local progress = bridge:get_progress() or 0
+          local time_remaining = bridge:get_time_remaining()
           status_text = string.format("PLAYING: %s [%d/%d] %.0f%%", 
             region.name, 
             bridge_state.playlist_pointer, 
