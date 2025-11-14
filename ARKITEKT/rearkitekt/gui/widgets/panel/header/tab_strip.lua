@@ -46,16 +46,16 @@ end
 local function calculate_tab_width(ctx, label, config, has_chip)
   local text_w = ImGui.CalcTextSize(ctx, label)
   local chip_width = has_chip and 20 or 0
-  local min_width = config.min_width or 60
+  local min_width = config.min_width or 50  -- Reduced from 60 to 50
   local max_width = config.max_width or 180
   local padding_x = config.padding_x or 5
-  
+
   local ideal_width = text_w + padding_x * 2 + chip_width
   return math.min(max_width, math.max(min_width, ideal_width))
 end
 
 local function calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
-  local min_width = config.min_width or 60
+  local min_width = config.min_width or 50  -- Reduced from 60 to 50
   local max_width = config.max_width or 180
   local padding_x = config.padding_x or 5
   local spacing = config.spacing or 0
@@ -532,18 +532,108 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
   end
 
   local delete_requested = false
+  local rename_requested = false
+  local duplicate_requested = false
+  local color_selected = nil
+
   if right_clicked then
     ImGui.OpenPopup(ctx, "##tab_context_" .. id .. "_" .. unique_id)
   end
 
+  -- Define preset colors (16 color palette)
+  local preset_colors = {
+    0xFF4444FF, -- Red
+    0xFF44AAFF, -- Pink
+    0xFF44DDFF, -- Magenta
+    0xFFAA44FF, -- Purple
+    0xFFDD44FF, -- Blue
+    0xFFDDAAAA, -- Light Blue
+    0xFFDDDD44, -- Cyan
+    0xFFAADD44, -- Teal
+    0xFF44DD44, -- Green
+    0xFF44AA44, -- Lime
+    0xFF4444AA, -- Yellow
+    0xFF4444DD, -- Orange
+    0xFFAA4444, -- Brown
+    0xFFAAAAAA, -- Gray
+    0xFFDDDDDD, -- Light Gray
+    0xFF666666, -- Dark Gray
+  }
+
   if ContextMenu.begin(ctx, "##tab_context_" .. id .. "_" .. unique_id, config.context_menu) then
-    if ContextMenu.item(ctx, "Delete Tab", config.context_menu) then
+    if ContextMenu.item(ctx, "Rename Playlist", config.context_menu) then
+      rename_requested = true
+    end
+
+    if ContextMenu.item(ctx, "Duplicate Playlist", config.context_menu) then
+      duplicate_requested = true
+    end
+
+    ImGui.Separator(ctx)
+
+    -- Color picker submenu
+    if ImGui.BeginMenu(ctx, "Chip Color") then
+      -- Draw color grid (4x4)
+      local grid_cols = 4
+      local chip_size = 20
+      local chip_spacing = 4
+
+      for i, color in ipairs(preset_colors) do
+        local col = (i - 1) % grid_cols
+        local row = math.floor((i - 1) / grid_cols)
+
+        ImGui.SetCursorScreenPos(ctx,
+          ImGui.GetCursorScreenPosX(ctx) + col * (chip_size + chip_spacing),
+          ImGui.GetCursorScreenPosY(ctx) + row * (chip_size + chip_spacing))
+
+        local dl_menu = ImGui.GetWindowDrawList(ctx)
+        local x_pos = ImGui.GetCursorScreenPosX(ctx)
+        local y_pos = ImGui.GetCursorScreenPosY(ctx)
+
+        -- Draw chip
+        ImGui.DrawList_AddCircleFilled(dl_menu,
+          x_pos + chip_size/2, y_pos + chip_size/2,
+          chip_size/2 - 2, color)
+
+        -- Make it clickable
+        ImGui.SetCursorScreenPos(ctx, x_pos, y_pos)
+        if ImGui.InvisibleButton(ctx, "##color_" .. i .. "_" .. id, chip_size, chip_size) then
+          color_selected = color
+          ImGui.CloseCurrentPopup(ctx)
+        end
+
+        -- Tooltip with hover effect
+        if ImGui.IsItemHovered(ctx) then
+          ImGui.DrawList_AddCircle(dl_menu,
+            x_pos + chip_size/2, y_pos + chip_size/2,
+            chip_size/2 - 1, 0xFFFFFFFF, 0, 2)
+        end
+      end
+
+      -- Reset position for next menu items
+      ImGui.Dummy(ctx, grid_cols * (chip_size + chip_spacing),
+                   math.ceil(#preset_colors / grid_cols) * (chip_size + chip_spacing))
+
+      ImGui.Separator(ctx)
+
+      if ImGui.MenuItem(ctx, "Remove Color") then
+        color_selected = false  -- false means remove color
+        ImGui.CloseCurrentPopup(ctx)
+      end
+
+      ImGui.EndMenu(ctx)
+    end
+
+    ImGui.Separator(ctx)
+
+    if ContextMenu.item(ctx, "Delete Playlist", config.context_menu) then
       delete_requested = true
     end
+
     ContextMenu.end_menu(ctx)
   end
 
-  return clicked, delete_requested
+  return clicked, delete_requested, rename_requested, duplicate_requested, color_selected
 end
 
 local function calculate_visible_tabs(ctx, tabs, config, available_width)
@@ -919,6 +1009,10 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
   local clicked_tab_id = nil
   local id_to_delete = nil
+  local id_to_rename = nil
+  local id_to_duplicate = nil
+  local id_for_color_change = nil
+  local new_color = nil
 
   for i, tab_data in ipairs(tabs) do
     local is_visible = false
@@ -982,7 +1076,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
         render_width = math.floor(render_width + 0.5)
 
         local is_active = (tab_data.id == active_tab_id)
-        local clicked, delete_requested = draw_tab(
+        local clicked, delete_requested, rename_requested, duplicate_requested, color_selected = draw_tab(
           ctx, dl, tab_data, is_active,
           i, tab_x, y, render_width, height,
           state, config, unique_id, animator, nil
@@ -994,6 +1088,19 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
         if delete_requested then
           id_to_delete = tab_data.id
+        end
+
+        if rename_requested then
+          id_to_rename = tab_data.id
+        end
+
+        if duplicate_requested then
+          id_to_duplicate = tab_data.id
+        end
+
+        if color_selected ~= nil then
+          id_for_color_change = tab_data.id
+          new_color = color_selected
         end
       end
     end
@@ -1017,6 +1124,18 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
   if clicked_tab_id and config.on_tab_change then
     config.on_tab_change(clicked_tab_id)
+  end
+
+  if id_to_rename and config.on_tab_rename then
+    config.on_tab_rename(id_to_rename)
+  end
+
+  if id_to_duplicate and config.on_tab_duplicate then
+    config.on_tab_duplicate(id_to_duplicate)
+  end
+
+  if id_for_color_change and config.on_tab_color_change then
+    config.on_tab_color_change(id_for_color_change, new_color)
   end
 
   if id_to_delete and #tabs > 1 then
