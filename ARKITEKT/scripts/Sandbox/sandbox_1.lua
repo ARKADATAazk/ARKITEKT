@@ -23,7 +23,7 @@ local Config = require('rearkitekt.gui.widgets.nodal.config')
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
-local StyleOK, Style = pcall(require, 'rearkitekt.gui.style')
+local StyleOK, Style = pcall(require, 'rearkitekt.gui.style.imgui_defaults')
 local Colors = require('rearkitekt.core.colors')
 
 local function create_mock_music_flow()

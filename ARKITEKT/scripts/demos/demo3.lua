@@ -45,7 +45,7 @@ local Shell = require("rearkitekt.app.shell")
 local StatusPad = require("rearkitekt.gui.widgets.displays.status_pad")
 local StatusBar = require("rearkitekt.app.chrome.status_bar")
 
-local style_ok, Style = pcall(require, "rearkitekt.gui.style")
+local style_ok, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

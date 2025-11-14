@@ -61,7 +61,7 @@ local GUI = require("ColorPalette.app.gui")
 local OverlayManager = require("rearkitekt.gui.widgets.overlay.manager")
 
 -- Load optional style
-local style_ok, Style = pcall(require, "rearkitekt.gui.style")
+local style_ok, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
 
 -- Initialize cache directory for settings
 local SEP = package.config:sub(1,1)

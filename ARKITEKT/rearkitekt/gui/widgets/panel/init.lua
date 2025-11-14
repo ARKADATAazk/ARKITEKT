@@ -13,37 +13,17 @@ local TabAnimator = require('rearkitekt.gui.widgets.panel.tab_animator')
 local Scrollbar = require('rearkitekt.gui.widgets.controls.scrollbar')
 local Button = require('rearkitekt.gui.widgets.controls.button')
 local CornerButton = require('rearkitekt.gui.widgets.controls.corner_button')
-local Config = require('rearkitekt.gui.widgets.panel.config')
+local PanelConfig = require('rearkitekt.gui.widgets.panel.config')
+local ConfigUtil = require('rearkitekt.core.config')
 
 local M = {}
-local DEFAULTS = Config.DEFAULTS
+local DEFAULTS = PanelConfig.DEFAULTS
 
 local panel_id_counter = 0
 
 local function generate_unique_id(prefix)
   panel_id_counter = panel_id_counter + 1
   return string.format("%s_%d", prefix or "panel", panel_id_counter)
-end
-
-local function deep_merge(base, override)
-  if not override then return base end
-  if not base then return override end
-  
-  local result = {}
-  
-  for k, v in pairs(base) do
-    result[k] = v
-  end
-  
-  for k, v in pairs(override) do
-    if type(v) == 'table' and type(result[k]) == 'table' then
-      result[k] = deep_merge(result[k], v)
-    else
-      result[k] = v
-    end
-  end
-  
-  return result
 end
 
 local Panel = {}
@@ -57,7 +37,7 @@ function M.new(opts)
   local panel = setmetatable({
     id = id,
     _panel_id = id,  -- CRITICAL: Required for header elements to detect panel context
-    config = deep_merge(DEFAULTS, opts.config),
+    config = ConfigUtil.deep_merge(DEFAULTS, opts.config),
     
     width = opts.width,
     height = opts.height,

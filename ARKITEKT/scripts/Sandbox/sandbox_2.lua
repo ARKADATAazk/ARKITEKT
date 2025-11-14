@@ -20,7 +20,7 @@ local Logger = require('rearkitekt.debug.logger')
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
-local StyleOK, Style = pcall(require, 'rearkitekt.gui.style')
+local StyleOK, Style = pcall(require, 'rearkitekt.gui.style.imgui_defaults')
 local Colors = require('rearkitekt.core.colors')
 
 local console = Console.new()
