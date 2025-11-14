@@ -95,24 +95,40 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
 
   local total_with_spacing = total_natural + total_spacing
 
-  -- Stretch logic when overflow is at edge
-  if should_extend then
-    if total_with_spacing < available_width then
-      -- Stretch UP: Fill empty space by distributing evenly
-      local extra_space = available_width - total_with_spacing
-      local base_per_tab = math.floor(extra_space / #tabs)
-      local remainder = extra_space - (base_per_tab * #tabs)
+  -- Stretch logic: only expand tabs with clipped text when space available
+  if total_with_spacing < available_width then
+    local extra_space = available_width - total_with_spacing
 
-      for i = 1, #tabs do
-        natural_widths[i] = natural_widths[i] + base_per_tab
-        -- Distribute remainder pixels to first N tabs (ensures exact fill)
-        if i <= remainder then
-          natural_widths[i] = natural_widths[i] + 1
-        end
+    -- Identify which tabs have clipped text (need more space)
+    local clipped_tabs = {}
+    local total_deficit = 0
+    for i, tab in ipairs(tabs) do
+      local has_chip = tab.chip_color ~= nil
+      local text_w = ImGui.CalcTextSize(ctx, tab.label or "Tab")
+      local chip_width = has_chip and 20 or 0
+      local actual_needed = math.floor(text_w + padding_x * 2 + chip_width + 0.5)
+
+      -- Tab is clipped if actual text needs more than current width
+      if actual_needed > natural_widths[i] then
+        local deficit = actual_needed - natural_widths[i]
+        clipped_tabs[i] = deficit
+        total_deficit = total_deficit + deficit
       end
     end
-    -- NOTE: No stretch DOWN here - let calculate_visible_tabs handle overflow
-    -- This prevents truncation by moving tabs to overflow instead
+
+    -- Distribute extra space only to clipped tabs, proportionally
+    if total_deficit > 0 and next(clipped_tabs) then
+      local space_to_distribute = math.min(extra_space, total_deficit)
+
+      for i, deficit in pairs(clipped_tabs) do
+        local proportion = deficit / total_deficit
+        local extra = math.floor(space_to_distribute * proportion + 0.5)
+        natural_widths[i] = natural_widths[i] + extra
+
+        -- Still respect max_width
+        natural_widths[i] = math.min(max_width, natural_widths[i])
+      end
+    end
   end
 
   return natural_widths, min_text_widths
@@ -540,25 +556,24 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
   end
 
   -- Define preset colors (16 vivid rainbow spectrum colors)
-  -- Format: 0xAABBGGRR (Alpha, Blue, Green, Red)
-  -- Calculated using HSV: H=i/16*360°, S=1.0, V=1.0
+  -- Using hexrgb() for proper color conversion
   local preset_colors = {
-    0xFF0000FF, -- H=0.0°    RGB(255, 0, 0)   Red
-    0xFF0060FF, -- H=22.5°   RGB(255, 96, 0)   Red-Orange
-    0xFF00BFFF, -- H=45.0°   RGB(255, 191, 0)  Orange
-    0xFF00FFDF, -- H=67.5°   RGB(223, 255, 0)  Yellow-Orange
-    0xFF00FFBF, -- H=90.0°   RGB(191, 255, 0)  Yellow-Green
-    0xFF00FF60, -- H=112.5°  RGB(96, 255, 0)   Lime
-    0xFF00FF00, -- H=135.0°  RGB(0, 255, 0)    Green
-    0xFF60FF00, -- H=157.5°  RGB(0, 255, 96)   Spring Green
-    0xFFBFFF00, -- H=180.0°  RGB(0, 255, 191)  Turquoise
-    0xFFFFDF00, -- H=202.5°  RGB(0, 223, 255)  Sky Blue
-    0xFFFFBF00, -- H=225.0°  RGB(0, 191, 255)  Azure
-    0xFFFF6000, -- H=247.5°  RGB(0, 96, 255)   Blue
-    0xFFFF0000, -- H=270.0°  RGB(0, 0, 255)    Deep Blue
-    0xFFFF0060, -- H=292.5°  RGB(96, 0, 255)   Purple
-    0xFFFF00BF, -- H=315.0°  RGB(191, 0, 255)  Violet
-    0xFFFF00FF, -- H=337.5°  RGB(255, 0, 255)  Magenta
+    hexrgb("#FF0000"), -- H=0°     Red
+    hexrgb("#FF6000"), -- H=22.5°  Red-Orange
+    hexrgb("#FFBF00"), -- H=45°    Orange
+    hexrgb("#FFDF00"), -- H=67.5°  Yellow-Orange
+    hexrgb("#BFFF00"), -- H=90°    Yellow-Green
+    hexrgb("#60FF00"), -- H=112.5° Lime
+    hexrgb("#00FF00"), -- H=135°   Green
+    hexrgb("#00FF60"), -- H=157.5° Spring Green
+    hexrgb("#00FFBF"), -- H=180°   Turquoise
+    hexrgb("#00DFFF"), -- H=202.5° Sky Blue
+    hexrgb("#00BFFF"), -- H=225°   Azure
+    hexrgb("#0060FF"), -- H=247.5° Blue
+    hexrgb("#0000FF"), -- H=270°   Deep Blue
+    hexrgb("#6000FF"), -- H=292.5° Purple
+    hexrgb("#BF00FF"), -- H=315°   Violet
+    hexrgb("#FF00FF"), -- H=337.5° Magenta
   }
 
   if ContextMenu.begin(ctx, "##tab_context_" .. id .. "_" .. unique_id, config.context_menu) then
@@ -841,9 +856,13 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     tabs_available_width = tabs_max_width
   end
 
-  -- Calculate widths once - always expand to fill available space
-  -- The expand logic only activates when there's actually extra space
-  local final_tab_widths, min_text_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, true)
+  -- Calculate widths - only expand when overflow is at edge (crowded state)
+  local final_tab_widths, min_text_widths
+  if overflow_at_edge then
+    final_tab_widths, min_text_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, true)
+  else
+    final_tab_widths, min_text_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, false)
+  end
 
   -- Calculate visible tabs using final widths when extending, natural widths otherwise
   local visible_indices, overflow_count, tabs_width
@@ -934,9 +953,9 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
   -- Store final adjusted widths in cache for use by position functions
   state._cached_tab_widths = final_tab_widths
-  state._cached_should_extend = true  -- Always extend tabs to fill space
+  state._cached_should_extend = overflow_at_edge
 
-  init_tab_positions(state, tabs, tabs_start_x, ctx, config, tabs_available_width, true)
+  init_tab_positions(state, tabs, tabs_start_x, ctx, config, tabs_available_width, overflow_at_edge)
 
   -- Recalculate overflow button width based on content
   if overflow_count > 0 then
@@ -983,10 +1002,10 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     config.on_tab_create()
   end
 
-  handle_drag_reorder(ctx, state, tabs, config, tabs_start_x, tabs_available_width, true)
+  handle_drag_reorder(ctx, state, tabs, config, tabs_start_x, tabs_available_width, overflow_at_edge)
   finalize_drag(ctx, state, config)
 
-  update_tab_positions(ctx, state, config, tabs, tabs_start_x, tabs_available_width, true)
+  update_tab_positions(ctx, state, config, tabs, tabs_start_x, tabs_available_width, overflow_at_edge)
 
   -- Calculate responsive widths for drawing
   -- When overflow is at edge and we've calculated final widths, use those
