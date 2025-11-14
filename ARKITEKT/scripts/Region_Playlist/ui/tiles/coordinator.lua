@@ -52,6 +52,7 @@ function M.create(opts)
   end
   
   local rt = setmetatable({
+    State = opts.State,
     controller = opts.controller,
     get_region_by_rid = opts.get_region_by_rid,
     get_playlist_by_id = cached_get_playlist,
@@ -278,7 +279,10 @@ function M.create(opts)
             if rt.detect_circular_ref then
               local circular, path = rt.detect_circular_ref(active_playlist_id, item_data.id)
               if circular then
-                -- Silently skip circular references (visual indication on tile)
+                -- Set error in status bar and skip
+                if rt.State and rt.State.set_circular_dependency_error then
+                  rt.State.set_circular_dependency_error("Cannot add playlist - would create circular dependency")
+                end
                 goto continue_loop
               end
             end
@@ -298,6 +302,40 @@ function M.create(opts)
         end
         
         if #spawned_keys > 0 then
+          -- Clear any circular dependency errors on successful operation
+          if rt.State and rt.State.clear_circular_dependency_error then
+            rt.State.clear_circular_dependency_error()
+          end
+
+          -- Show drag-and-drop notification
+          if rt.State and rt.State.set_state_change_notification then
+            local region_count = 0
+            local playlist_count = 0
+
+            for _, item_data in ipairs(drop_info.payload) do
+              if type(item_data) == "number" then
+                region_count = region_count + 1
+              elseif type(item_data) == "table" and item_data.type == "playlist" then
+                playlist_count = playlist_count + 1
+              end
+            end
+
+            local parts = {}
+            if region_count > 0 then
+              table.insert(parts, string.format("%d region%s", region_count, region_count > 1 and "s" or ""))
+            end
+            if playlist_count > 0 then
+              table.insert(parts, string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or ""))
+            end
+
+            if #parts > 0 then
+              local items_text = table.concat(parts, ", ")
+              local active_playlist = rt.State.get_active_playlist and rt.State.get_active_playlist()
+              local playlist_name = active_playlist and active_playlist.name or "Active Grid"
+              rt.State.set_state_change_notification(string.format("Copied %s from Pool Grid to Active Grid (%s)", items_text, playlist_name))
+            end
+          end
+
           if rt.pool_grid and rt.pool_grid.selection then
             rt.pool_grid.selection:clear()
           end

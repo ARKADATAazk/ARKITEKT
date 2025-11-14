@@ -101,6 +101,34 @@ local function create_behaviors(rt)
         
         if #dragged_items > 0 then
           rt.on_active_copy(dragged_items, rt.active_grid.drag:get_target_index())
+
+          -- Show copy notification
+          if rt.State and rt.State.set_state_change_notification then
+            local region_count = 0
+            local playlist_count = 0
+            for _, item in ipairs(dragged_items) do
+              if item.playlist_id then
+                playlist_count = playlist_count + 1
+              else
+                region_count = region_count + 1
+              end
+            end
+
+            local parts = {}
+            if region_count > 0 then
+              table.insert(parts, string.format("%d region%s", region_count, region_count > 1 and "s" or ""))
+            end
+            if playlist_count > 0 then
+              table.insert(parts, string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or ""))
+            end
+
+            if #parts > 0 then
+              local items_text = table.concat(parts, ", ")
+              local active_playlist = rt.State.get_active_playlist and rt.State.get_active_playlist()
+              local playlist_name = active_playlist and active_playlist.name or "Active Grid"
+              rt.State.set_state_change_notification(string.format("Copied %s within Active Grid (%s)", items_text, playlist_name))
+            end
+          end
         end
       elseif rt.on_active_reorder then
         local playlist_items = rt.active_grid.get_items()
@@ -115,12 +143,91 @@ local function create_behaviors(rt)
             new_items[#new_items + 1] = items_by_key[key]
           end
         end
-        
+
         rt.on_active_reorder(new_items)
+
+        -- Show move notification
+        if rt.State and rt.State.set_state_change_notification and rt.active_grid.drag then
+          local dragged_ids = rt.active_grid.drag:get_dragged_ids()
+          if #dragged_ids > 0 then
+            local region_count = 0
+            local playlist_count = 0
+            for _, key in ipairs(dragged_ids) do
+              local item = items_by_key[key]
+              if item then
+                if item.playlist_id then
+                  playlist_count = playlist_count + 1
+                else
+                  region_count = region_count + 1
+                end
+              end
+            end
+
+            local parts = {}
+            if region_count > 0 then
+              table.insert(parts, string.format("%d region%s", region_count, region_count > 1 and "s" or ""))
+            end
+            if playlist_count > 0 then
+              table.insert(parts, string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or ""))
+            end
+
+            if #parts > 0 then
+              local items_text = table.concat(parts, ", ")
+              local active_playlist = rt.State.get_active_playlist and rt.State.get_active_playlist()
+              local playlist_name = active_playlist and active_playlist.name or "Active Grid"
+              rt.State.set_state_change_notification(string.format("Moved %s within Active Grid (%s)", items_text, playlist_name))
+            end
+          end
+        end
       end
     end,
     
     on_select = function(selected_keys)
+      -- Count regions and playlists in active grid selection
+      local region_count = 0
+      local playlist_count = 0
+
+      if selected_keys and #selected_keys > 0 then
+        local playlist_items = rt.active_grid.get_items()
+        local items_by_key = {}
+        for _, item in ipairs(playlist_items) do
+          items_by_key[item.key] = item
+        end
+
+        for _, key in ipairs(selected_keys) do
+          local item = items_by_key[key]
+          if item then
+            if item.playlist_id then
+              playlist_count = playlist_count + 1
+            else
+              region_count = region_count + 1
+            end
+          end
+        end
+      end
+
+      -- Combine with pool grid selection
+      local pool_selection_info = { region_count = 0, playlist_count = 0 }
+      if rt.pool_grid and rt.pool_grid.selection then
+        local pool_items = rt.pool_grid.get_items()
+        local pool_selected_keys = rt.pool_grid.selection:selected_keys()
+
+        for _, key in ipairs(pool_selected_keys) do
+          if key:match("^pool_playlist_") then
+            pool_selection_info.playlist_count = pool_selection_info.playlist_count + 1
+          else
+            pool_selection_info.region_count = pool_selection_info.region_count + 1
+          end
+        end
+      end
+
+      -- Update State with combined selection info
+      if rt.State and rt.State.set_selection_info then
+        rt.State.set_selection_info({
+          region_count = region_count + pool_selection_info.region_count,
+          playlist_count = playlist_count + pool_selection_info.playlist_count
+        })
+      end
     end,
   }
 end
