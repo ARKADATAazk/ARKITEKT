@@ -571,63 +571,66 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
 
     ImGui.Separator(ctx)
 
-    -- Color picker submenu
-    if ImGui.BeginMenu(ctx, "Chip Color") then
-      -- Draw color grid (4x4)
-      local grid_cols = 4
-      local chip_size = 20
-      local chip_spacing = 4
-
-      for i, color in ipairs(preset_colors) do
-        local col = (i - 1) % grid_cols
-        local row = math.floor((i - 1) / grid_cols)
-
-        ImGui.SetCursorScreenPos(ctx,
-          ImGui.GetCursorScreenPosX(ctx) + col * (chip_size + chip_spacing),
-          ImGui.GetCursorScreenPosY(ctx) + row * (chip_size + chip_spacing))
-
-        local dl_menu = ImGui.GetWindowDrawList(ctx)
-        local x_pos = ImGui.GetCursorScreenPosX(ctx)
-        local y_pos = ImGui.GetCursorScreenPosY(ctx)
-
-        -- Draw chip
-        ImGui.DrawList_AddCircleFilled(dl_menu,
-          x_pos + chip_size/2, y_pos + chip_size/2,
-          chip_size/2 - 2, color)
-
-        -- Make it clickable
-        ImGui.SetCursorScreenPos(ctx, x_pos, y_pos)
-        if ImGui.InvisibleButton(ctx, "##color_" .. i .. "_" .. id, chip_size, chip_size) then
-          color_selected = color
-          ImGui.CloseCurrentPopup(ctx)
-        end
-
-        -- Tooltip with hover effect
-        if ImGui.IsItemHovered(ctx) then
-          ImGui.DrawList_AddCircle(dl_menu,
-            x_pos + chip_size/2, y_pos + chip_size/2,
-            chip_size/2 - 1, 0xFFFFFFFF, 0, 2)
-        end
-      end
-
-      -- Reset position for next menu items
-      ImGui.Dummy(ctx, grid_cols * (chip_size + chip_spacing),
-                   math.ceil(#preset_colors / grid_cols) * (chip_size + chip_spacing))
-
-      ImGui.Separator(ctx)
-
-      if ImGui.MenuItem(ctx, "Remove Color") then
-        color_selected = false  -- false means remove color
-        ImGui.CloseCurrentPopup(ctx)
-      end
-
-      ImGui.EndMenu(ctx)
+    if ContextMenu.item(ctx, "Delete Playlist", config.context_menu) then
+      delete_requested = true
     end
 
     ImGui.Separator(ctx)
+    ImGui.Text(ctx, "Chip Color:")
+    ImGui.Spacing(ctx)
 
-    if ContextMenu.item(ctx, "Delete Playlist", config.context_menu) then
-      delete_requested = true
+    -- Draw color grid inline (4x4)
+    local grid_cols = 4
+    local chip_size = 18
+    local chip_spacing = 6
+    local dl_menu = ImGui.GetWindowDrawList(ctx)
+    local menu_start_x, menu_start_y = ImGui.GetCursorScreenPos(ctx)
+
+    for i, color in ipairs(preset_colors) do
+      local col_idx = (i - 1) % grid_cols
+      local row_idx = math.floor((i - 1) / grid_cols)
+
+      local chip_x = menu_start_x + col_idx * (chip_size + chip_spacing) + chip_spacing
+      local chip_y = menu_start_y + row_idx * (chip_size + chip_spacing)
+
+      -- Check if this is the current color
+      local is_selected = (chip_color and chip_color == color)
+
+      -- Draw chip background
+      ImGui.DrawList_AddCircleFilled(dl_menu,
+        chip_x + chip_size/2, chip_y + chip_size/2,
+        chip_size/2 - 1, color)
+
+      -- Draw selection indicator
+      if is_selected then
+        ImGui.DrawList_AddCircle(dl_menu,
+          chip_x + chip_size/2, chip_y + chip_size/2,
+          chip_size/2 + 1, 0xFFFFFFFF, 0, 2)
+      end
+
+      -- Make it clickable
+      ImGui.SetCursorScreenPos(ctx, chip_x, chip_y)
+      if ImGui.InvisibleButton(ctx, "##color_" .. i .. "_" .. id, chip_size, chip_size) then
+        color_selected = color
+      end
+
+      -- Hover effect
+      if ImGui.IsItemHovered(ctx) then
+        ImGui.DrawList_AddCircle(dl_menu,
+          chip_x + chip_size/2, chip_y + chip_size/2,
+          chip_size/2, 0xFFFFFFFF, 0, 1.5)
+      end
+    end
+
+    -- Move cursor past the grid
+    ImGui.SetCursorScreenPos(ctx, menu_start_x,
+      menu_start_y + math.ceil(#preset_colors / grid_cols) * (chip_size + chip_spacing) + chip_spacing)
+
+    ImGui.Spacing(ctx)
+
+    -- Remove color button
+    if ImGui.Button(ctx, "Remove Color", -1, 0) then
+      color_selected = false  -- false means remove color
     end
 
     ContextMenu.end_menu(ctx)
