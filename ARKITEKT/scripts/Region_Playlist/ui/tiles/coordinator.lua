@@ -43,132 +43,110 @@ end
 
 function M.create(opts)
   opts = opts or {}
-  
+
   local config = opts.config or {}
-  
+
+  -- Wrap get_playlist_by_id with caching
   local raw_get_playlist = opts.get_playlist_by_id
   local cached_get_playlist = function(id)
     return cached_get_playlist_by_id(raw_get_playlist, id)
   end
-  
-  local rt = setmetatable({
-    controller = opts.controller,
-    get_region_by_rid = opts.get_region_by_rid,
-    get_playlist_by_id = cached_get_playlist,
-    detect_circular_ref = opts.detect_circular_ref,
-    on_playlist_changed = opts.on_playlist_changed,
-    on_active_reorder = opts.on_active_reorder,
-    on_active_remove = opts.on_active_remove,
-    on_active_copy = opts.on_active_copy,
-    on_active_toggle_enabled = opts.on_active_toggle_enabled,
-    on_active_delete = opts.on_active_delete,
-    on_destroy_complete = opts.on_destroy_complete,
-    on_pool_to_active = opts.on_pool_to_active,
-    on_pool_playlist_to_active = opts.on_pool_playlist_to_active,
-    on_pool_reorder = opts.on_pool_reorder,
-    on_pool_playlist_reorder = opts.on_pool_playlist_reorder,
-    on_repeat_cycle = opts.on_repeat_cycle,
-    on_repeat_adjust = opts.on_repeat_adjust,
-    on_repeat_sync = opts.on_repeat_sync,
-    on_pool_double_click = opts.on_pool_double_click,
-    on_pool_playlist_double_click = opts.on_pool_playlist_double_click,
-    on_pool_search = opts.on_pool_search,
-    on_pool_sort = opts.on_pool_sort,
-    on_pool_sort_direction = opts.on_pool_sort_direction,
-    on_pool_mode_changed = opts.on_pool_mode_changed,
-    settings = opts.settings,
-    
-    allow_pool_reorder = opts.allow_pool_reorder ~= false,
-    
-    config = config,
-    layout_mode = config.layout_mode,
-    hover_config = config.hover_config,
-    responsive_config = config.responsive_config,
-    container_config = config.container,
-    wheel_config = config.wheel_config,
-    
-    selector = Selector.new(),
-    active_animator = TileAnim.new(config.hover_config.animation_speed_hover),
-    pool_animator = TileAnim.new(config.hover_config.animation_speed_hover),
-    
-    active_bounds = nil,
-    pool_bounds = nil,
-    
-    active_grid = nil,
-    pool_grid = nil,
-    bridge = nil,
-    app_bridge = nil,
-    
-    wheel_consumed_this_frame = false,
-    
-    active_height_stabilizer = HeightStabilizer.new({
-      stable_frames_required = config.responsive_config.stable_frames_required,
-      height_hysteresis = config.responsive_config.height_hysteresis,
-    }),
-    pool_height_stabilizer = HeightStabilizer.new({
-      stable_frames_required = config.responsive_config.stable_frames_required,
-      height_hysteresis = config.responsive_config.height_hysteresis,
-    }),
-    
-    current_active_tile_height = config.responsive_config.base_tile_height_active,
-    current_pool_tile_height = config.responsive_config.base_tile_height_pool,
-    
-    _original_active_min_col_w = nil,
-    _imgui_ctx = nil,
-  }, RegionTiles)
+
+  -- Start with all opts (auto-inherit callbacks and options)
+  local rt = setmetatable({}, RegionTiles)
+  for k, v in pairs(opts) do
+    rt[k] = v
+  end
+
+  -- Override specific fields that need special handling
+  rt.get_playlist_by_id = cached_get_playlist
+  rt.config = config
+  rt.allow_pool_reorder = opts.allow_pool_reorder ~= false
+
+  -- Unpack config for convenience
+  rt.layout_mode = config.layout_mode
+  rt.hover_config = config.hover_config
+  rt.responsive_config = config.responsive_config
+  rt.container_config = config.container
+  rt.wheel_config = config.wheel_config
+
+  -- Initialize internal state
+  rt.selector = Selector.new()
+  rt.active_animator = TileAnim.new(config.hover_config.animation_speed_hover)
+  rt.pool_animator = TileAnim.new(config.hover_config.animation_speed_hover)
+
+  rt.active_bounds = nil
+  rt.pool_bounds = nil
+  rt.active_grid = nil
+  rt.pool_grid = nil
+  rt.bridge = nil
+  rt.app_bridge = nil
+  rt.wheel_consumed_this_frame = false
+
+  rt.active_height_stabilizer = HeightStabilizer.new({
+    stable_frames_required = config.responsive_config.stable_frames_required,
+    height_hysteresis = config.responsive_config.height_hysteresis,
+  })
+  rt.pool_height_stabilizer = HeightStabilizer.new({
+    stable_frames_required = config.responsive_config.stable_frames_required,
+    height_hysteresis = config.responsive_config.height_hysteresis,
+  })
+
+  rt.current_active_tile_height = config.responsive_config.base_tile_height_active
+  rt.current_pool_tile_height = config.responsive_config.base_tile_height_pool
+
+  rt._original_active_min_col_w = nil
+  rt._imgui_ctx = nil
   
   rt.active_grid = ActiveGridFactory.create(rt, config)
   rt._original_active_min_col_w = rt.active_grid.min_col_w_fn
   
   rt.pool_grid = PoolGridFactory.create(rt, config)
-  
-  local active_config = Config.get_active_container_config({
-    on_tab_create = function()
-      if rt.controller then
-        rt.controller:create_playlist()
+
+  -- Helper: wrap controller action with auto-refresh on success
+  local function controller_action(action_fn)
+    return function(...)
+      if not rt.controller then return end
+      local success, err = action_fn(rt.controller, ...)
+      if success then
         rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+      elseif err then
+        reaper.ShowConsoleMsg("[RegionPlaylist] Error: " .. tostring(err) .. "\n")
       end
-    end,
-    
+      return success, err
+    end
+  end
+
+  local active_config = Config.get_active_container_config({
+    on_tab_create = controller_action(function(ctrl)
+      return ctrl:create_playlist()
+    end),
+
     on_tab_change = function(id)
       State.set_active_playlist(id)
       rt.active_container:set_active_tab_id(id)
     end,
-    
-    on_tab_reorder = function(source_index, target_index)
-      if rt.controller then
-        rt.controller:reorder_playlists(source_index, target_index)
-      end
-    end,
-    
-    on_tab_delete = function(id)
-      if rt.controller and rt.controller:delete_playlist(id) then
-        rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
-      end
-    end,
+
+    on_tab_reorder = controller_action(function(ctrl, source_index, target_index)
+      return ctrl:reorder_playlists(source_index, target_index)
+    end),
+
+    on_tab_delete = controller_action(function(ctrl, id)
+      return ctrl:delete_playlist(id)
+    end),
 
     on_tab_rename = function(id)
       rt._rename_playlist_id = id
       rt._rename_input_visible = true
     end,
 
-    on_tab_duplicate = function(id)
-      if rt.controller then
-        local success, result = rt.controller:duplicate_playlist(id)
-        if success then
-          rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
-        end
-      end
-    end,
+    on_tab_duplicate = controller_action(function(ctrl, id)
+      return ctrl:duplicate_playlist(id)
+    end),
 
-    on_tab_color_change = function(id, color)
-      if rt.controller then
-        local success, result = rt.controller:set_playlist_color(id, color == false and nil or color)
-        if success then
-          rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
-        end
-      end
-    end,
+    on_tab_color_change = controller_action(function(ctrl, id, color)
+      return ctrl:set_playlist_color(id, color == false and nil or color)
+    end),
 
     on_overflow_clicked = function()
       rt.active_container._overflow_visible = true
