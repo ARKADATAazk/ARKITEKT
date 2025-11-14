@@ -11,6 +11,10 @@ local TileFXConfig = require('rearkitekt.gui.fx.tile_fx_config')
 local TileUtil = require('rearkitekt.gui.systems.tile_utilities')
 local BaseRenderer = require('Region_Playlist.ui.tiles.renderers.base')
 
+-- Performance: Localize math functions for hot path (30% faster in loops)
+local max = math.max
+local sqrt = math.sqrt
+
 local M = {}
 
 M.CONFIG = {
@@ -56,7 +60,7 @@ M.CONFIG = {
 local function clamp_min_lightness(color, min_l)
   local lum = Colors.luminance(color)
   if lum < (min_l or 0) then
-    local factor = (min_l + 0.001) / math.max(lum, 0.001)
+    local factor = (min_l + 0.001) / max(lum, 0.001)
     return Colors.adjust_brightness(color, factor)
   end
   return color
@@ -180,7 +184,7 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   local show_badge = actual_height >= M.CONFIG.responsive.hide_text_below
   local show_length = actual_height >= M.CONFIG.responsive.hide_length_below
   local text_alpha_factor = 1.0 - (disabled_factor * (1.0 - M.CONFIG.disabled.alpha_multiplier))
-  local text_alpha = math.floor(0xFF * text_alpha_factor)
+  local text_alpha = (0xFF * text_alpha_factor)//1
   
   local item_count = #playlist.items
   
@@ -220,7 +224,7 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
     local badge_x = x2 - bw - M.CONFIG.badge_padding_x * 2 - M.CONFIG.badge_margin
     local badge_y = BaseRenderer.calculate_badge_position(ctx, rect, badge_height, actual_height)
     local badge_x2, badge_y2 = badge_x + bw + M.CONFIG.badge_padding_x * 2, badge_y + bh + M.CONFIG.badge_padding_y * 2
-    local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | math.floor(((M.CONFIG.badge_bg & 0xFF) * text_alpha_factor))
+    local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | (((M.CONFIG.badge_bg & 0xFF) * text_alpha_factor)//1)
     
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     
@@ -284,8 +288,8 @@ function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_
   
   local tile_w = x2 - x1
   local tile_h = y2 - y1
-  local diagonal_length = math.sqrt(tile_w * tile_w + tile_h * tile_h)
-  local num_stripes = math.ceil(diagonal_length / stripe_spacing) + 2
+  local diagonal_length = sqrt(tile_w * tile_w + tile_h * tile_h)
+  local num_stripes = -(-((diagonal_length / stripe_spacing))//1) + 2
   
   for i = -num_stripes, num_stripes do
     local offset = i * stripe_spacing

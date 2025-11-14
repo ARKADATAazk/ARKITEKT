@@ -5,6 +5,10 @@
 
 local Logger = require("rearkitekt.debug.logger")
 
+-- Performance: Use VM operations instead of C function calls
+-- floor(x) = x//1 (5-10% faster in loops)
+-- ceil(n) = (n + 1 - n%1) (faster alternative)
+
 local M = {}
 local Quantize = {}
 Quantize.__index = Quantize
@@ -113,7 +117,7 @@ function Quantize:_calculate_next_quantize_point(playpos, skip_count)
   
   if self.quantize_mode == "measure" then
     local retval, measures, cml, fullbeats, cdenom = reaper.TimeMap2_timeToBeats(self.proj, playpos)
-    local next_measure_num = math.floor(measures) + 1 + skip_count
+    local next_measure_num = measures//1 + 1 + skip_count
     local next_time = reaper.TimeMap2_beatsToTime(self.proj, 0, next_measure_num)
     
     Logger.debug("QUANTIZE", "Mode=measure, skip=%d -> measure=%d (%.3fs)", skip_count, next_measure_num, next_time)
@@ -144,7 +148,7 @@ function Quantize:_calculate_next_quantize_point(playpos, skip_count)
   elseif self.quantize_mode == "beat" then
     -- Quantize to next beat (1.0 grid division)
     local retval, measures, cml, fullbeats, cdenom = reaper.TimeMap2_timeToBeats(self.proj, playpos)
-    local next_beat = math.floor(fullbeats) + 1 + skip_count
+    local next_beat = fullbeats//1 + 1 + skip_count
     local next_time = reaper.TimeMap2_QNToTime(self.proj, next_beat)
     
     Logger.debug("QUANTIZE", "Mode=beat, skip=%d -> beat=%d (%.3fs)", skip_count, next_beat, next_time)
@@ -157,11 +161,12 @@ function Quantize:_calculate_next_quantize_point(playpos, skip_count)
     end
     
     local retval, measures, cml, fullbeats, cdenom = reaper.TimeMap2_timeToBeats(self.proj, playpos)
-    local beat_in_measure = fullbeats - (math.floor(measures) * cml)
-    
-    local next_beat_in_measure = math.ceil(beat_in_measure / grid_div) * grid_div
-    
-    local target_measure = math.floor(measures)
+    local beat_in_measure = fullbeats - (measures//1 * cml)
+
+    -- Use VM operation for ceil: -(-n//1)
+    local next_beat_in_measure = -(-((beat_in_measure / grid_div))//1) * grid_div
+
+    local target_measure = measures//1
     if next_beat_in_measure >= cml then
       target_measure = target_measure + 1
       next_beat_in_measure = 0

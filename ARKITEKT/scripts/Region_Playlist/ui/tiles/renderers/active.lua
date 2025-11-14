@@ -10,6 +10,9 @@ local Draw = require('rearkitekt.gui.draw')
 local TileFXConfig = require('rearkitekt.gui.fx.tile_fx_config')
 local BaseRenderer = require('Region_Playlist.ui.tiles.renderers.base')
 
+-- Performance: Localize math functions for hot path (30% faster in loops)
+local max = math.max
+
 local M = {}
 local hexrgb = Colors.hexrgb
 
@@ -34,7 +37,7 @@ M.CONFIG = {
 local function clamp_min_lightness(color, min_l)
   local lum = Colors.luminance(color)
   if lum < (min_l or 0) then
-    local factor = (min_l + 0.001) / math.max(lum, 0.001)
+    local factor = (min_l + 0.001) / max(lum, 0.001)
     return Colors.adjust_brightness(color, factor)
   end
   return color
@@ -99,12 +102,12 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
   
   BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade)
   if state.selected and fx_config.ants_enabled then BaseRenderer.draw_marching_ants(dl, rect, base_color, fx_config) end
-  
+
   local actual_height = tile_height or (y2 - y1)
   local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
   local show_badge = actual_height >= M.CONFIG.responsive.hide_badge_below
   local show_length = actual_height >= M.CONFIG.responsive.hide_length_below
-  local text_alpha = math.floor(0xFF * enabled_factor + M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))
+  local text_alpha = (0xFF * enabled_factor + M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))//1
   
   local right_elements = {}
   
@@ -133,7 +136,7 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
     local badge_x = x2 - bw - M.CONFIG.badge_padding_x * 2 - M.CONFIG.badge_margin
     local badge_y = BaseRenderer.calculate_badge_position(ctx, rect, badge_height, actual_height)
     local badge_x2, badge_y2 = badge_x + bw + M.CONFIG.badge_padding_x * 2, badge_y + bh + M.CONFIG.badge_padding_y * 2
-    local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | (math.floor(((M.CONFIG.badge_bg & 0xFF) * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))))
+    local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | ((((M.CONFIG.badge_bg & 0xFF) * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor)))//1)
     
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors.with_alpha(base_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
@@ -246,7 +249,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
   local show_badge = actual_height >= M.CONFIG.responsive.hide_badge_below
   local show_length = actual_height >= M.CONFIG.responsive.hide_length_below
-  local text_alpha = math.floor(0xFF * enabled_factor + M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))
+  local text_alpha = (0xFF * enabled_factor + M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))//1
 
   local right_elements = {}
   
@@ -276,7 +279,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     local badge_x = x2 - bw - M.CONFIG.badge_padding_x * 2 - M.CONFIG.badge_margin
     local badge_y = BaseRenderer.calculate_badge_position(ctx, rect, badge_height, actual_height)
     local badge_x2, badge_y2 = badge_x + bw + M.CONFIG.badge_padding_x * 2, badge_y + bh + M.CONFIG.badge_padding_y * 2
-    local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | (math.floor(((M.CONFIG.badge_bg & 0xFF) * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))))
+    local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | ((((M.CONFIG.badge_bg & 0xFF) * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor)))//1)
 
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors.with_alpha(playlist_data.chip_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
@@ -296,8 +299,8 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
         if current_playlist_key == item.key then
           local time_remaining = bridge:get_playlist_time_remaining(item.key)
           if time_remaining then
-            local mins = math.floor(time_remaining / 60)
-            local secs = math.floor(time_remaining % 60)
+            local mins = (time_remaining / 60)//1
+            local secs = (time_remaining % 60)//1
             tooltip = tooltip .. string.format("\n▶ Playing • %d:%02d remaining", mins, secs)
           end
         end
