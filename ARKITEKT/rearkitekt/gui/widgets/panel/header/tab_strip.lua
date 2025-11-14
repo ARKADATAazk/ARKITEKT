@@ -642,83 +642,71 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
     ImGui.DrawList_AddLine(dl_menu, sep_x1 + 8, sep_y1, sep_x1 + sep_w - 8, sep_y1, hexrgb("#505050FF"), 1)
     ImGui.Dummy(ctx, 1, 6)
 
-    -- Label with better styling
+    -- Label with centered styling for distinction
     local label_text = "Chip Color"
-    local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
-    ImGui.DrawList_AddText(dl_menu, label_x, label_y, hexrgb("#E0E0E0FF"), label_text)
-    ImGui.Dummy(ctx, 1, 22)
-
-    -- Draw color grid inline (4x4) with improved centering and sizing
-    local grid_cols = 4
-    local chip_size = 24  -- Increased from 18px
-    local chip_spacing = 8  -- Increased from 6px
-    local grid_rows = math.ceil(#preset_colors / grid_cols)
-    local grid_width = grid_cols * chip_size + (grid_cols - 1) * chip_spacing
     local menu_width = ImGui.GetContentRegionAvail(ctx)
+    local label_w = ImGui.CalcTextSize(ctx, label_text)
+    local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
+    local label_offset_x = (menu_width - label_w) * 0.5
+    ImGui.DrawList_AddText(dl_menu, label_x + label_offset_x, label_y, hexrgb("#E0E0E0FF"), label_text)
+    ImGui.Dummy(ctx, 1, 20)
+
+    -- Draw color grid inline (4x4) using Chip component for consistency
+    local grid_cols = 4
+    local chip_radius = 6  -- Reduced from effective 10px to 6px
+    local chip_spacing = 10  -- Spacing between chip centers
+    local grid_rows = math.ceil(#preset_colors / grid_cols)
+    local grid_width = (grid_cols - 1) * chip_spacing
     local menu_start_x, menu_start_y = ImGui.GetCursorScreenPos(ctx)
 
-    -- Center the grid horizontally
+    -- Center the grid horizontally to match text bounds
     local grid_offset_x = (menu_width - grid_width) * 0.5
 
     for i, color in ipairs(preset_colors) do
       local col_idx = (i - 1) % grid_cols
       local row_idx = math.floor((i - 1) / grid_cols)
 
-      local chip_x = menu_start_x + grid_offset_x + col_idx * (chip_size + chip_spacing)
-      local chip_y = menu_start_y + row_idx * (chip_size + chip_spacing)
-      local chip_cx = chip_x + chip_size * 0.5
-      local chip_cy = chip_y + chip_size * 0.5
-      local chip_radius = (chip_size * 0.5) - 2
+      local chip_cx = menu_start_x + grid_offset_x + col_idx * chip_spacing
+      local chip_cy = menu_start_y + row_idx * chip_spacing
+      local hit_size = chip_radius * 2 + 4  -- Hit area slightly larger than visual
 
       -- Check if this is the current color
       local is_selected = (chip_color and chip_color == color)
-      local is_hovered = false
 
       -- Make it clickable (check first for hover state)
-      ImGui.SetCursorScreenPos(ctx, chip_x, chip_y)
-      if ImGui.InvisibleButton(ctx, "##color_" .. i .. "_" .. id, chip_size, chip_size) then
+      local hit_x = chip_cx - hit_size * 0.5
+      local hit_y = chip_cy - hit_size * 0.5
+      ImGui.SetCursorScreenPos(ctx, hit_x, hit_y)
+      if ImGui.InvisibleButton(ctx, "##color_" .. i .. "_" .. id, hit_size, hit_size) then
         if config.on_tab_color_change then
           config.on_tab_color_change(id, color)
         end
       end
-      is_hovered = ImGui.IsItemHovered(ctx)
+      local is_hovered = ImGui.IsItemHovered(ctx)
 
-      -- Draw selection background (filled circle behind)
-      if is_selected then
-        ImGui.DrawList_AddCircleFilled(dl_menu, chip_cx, chip_cy,
-          chip_radius + 3, hexrgb("#FFFFFF40"), 32)  -- 32 segments for smooth circle
-      end
-
-      -- Draw hover background
-      if is_hovered then
-        ImGui.DrawList_AddCircleFilled(dl_menu, chip_cx, chip_cy,
-          chip_radius + 2, hexrgb("#FFFFFF20"), 32)
-      end
-
-      -- Draw chip with anti-aliasing (more segments)
-      ImGui.DrawList_AddCircleFilled(dl_menu, chip_cx, chip_cy,
-        chip_radius, color, 32)  -- 32 segments for smooth anti-aliasing
-
-      -- Draw subtle inner shadow for depth
-      ImGui.DrawList_AddCircle(dl_menu, chip_cx, chip_cy + 0.5,
-        chip_radius - 0.5, hexrgb("#00000040"), 32, 1)
-
-      -- Draw selection indicator (bright outer ring)
-      if is_selected then
-        ImGui.DrawList_AddCircle(dl_menu, chip_cx, chip_cy,
-          chip_radius + 1, hexrgb("#FFFFFFFF"), 32, 2.5)
-      end
-
-      -- Hover effect (subtle white ring)
-      if is_hovered and not is_selected then
-        ImGui.DrawList_AddCircle(dl_menu, chip_cx, chip_cy,
-          chip_radius, hexrgb("#FFFFFFAA"), 32, 1.5)
-      end
+      -- Use Chip component for consistent rendering with glow for selection
+      Chip.draw(ctx, {
+        style = Chip.STYLE.INDICATOR,
+        shape = Chip.SHAPE.CIRCLE,
+        color = color,
+        draw_list = dl_menu,
+        x = chip_cx,
+        y = chip_cy,
+        radius = chip_radius,
+        is_selected = is_selected,
+        is_hovered = is_hovered,
+        show_glow = is_selected or is_hovered,
+        glow_layers = is_selected and 6 or 3,
+        shadow = true,
+        border = is_hovered,
+        border_color = hexrgb("#FFFFFF80"),
+        border_thickness = 1.0,
+      })
     end
 
     -- Move cursor past the grid
     ImGui.SetCursorScreenPos(ctx, menu_start_x,
-      menu_start_y + grid_rows * (chip_size + chip_spacing) + 4)
+      menu_start_y + grid_rows * chip_spacing + chip_radius + 2)
 
     -- Enhanced separator before Remove button
     ImGui.Dummy(ctx, 1, 4)
