@@ -3,6 +3,7 @@
 -- Main layout view with absolute positioning and fade animations
 
 local ImGui = require 'imgui' '0.10'
+local SearchInput = require('rearkitekt.gui.widgets.controls.search_input')
 local StatusBar = require('ItemPicker.ui.views.status_bar')
 
 local M = {}
@@ -49,6 +50,18 @@ end
 function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, screen_h)
   self:handle_shortcuts(ctx)
 
+  -- Create fullscreen window wrapper (matching old MainWindow)
+  local window_flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoTitleBar |
+                       ImGui.WindowFlags_NoResize | ImGui.WindowFlags_NoMove |
+                       ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse
+
+  local imgui_visible, imgui_open = ImGui.Begin(ctx, title, true, window_flags)
+
+  if not imgui_visible then
+    ImGui.End(ctx)
+    return
+  end
+
   local overlay_alpha = self.state.overlay_alpha or 1.0
 
   -- UI fade with offset (matching original)
@@ -92,21 +105,36 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     content_start_y - search_text_h + search_y_offset,
     0xFFFFFFFF, "Search:")
 
-  -- Search input centered
-  ImGui.SetCursorScreenPos(ctx,
-    screen_w / 2 - (screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO) / 2,
-    content_start_y + search_y_offset)
-  ImGui.PushItemWidth(ctx, screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO)
+  -- Search input centered using rearkitekt widget
+  local search_x = screen_w / 2 - (screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO) / 2
+  local search_y = content_start_y + search_y_offset
+  local search_width = screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO
+  local search_height = 24
 
   if (not self.state.initialized and self.state.settings.focus_keyboard_on_init) or self.focus_search then
+    -- Focus search by setting cursor position
+    ImGui.SetCursorScreenPos(ctx, search_x, search_y)
     ImGui.SetKeyboardFocusHere(ctx)
     self.state.initialized = true
+    self.focus_search = false
   end
 
-  local _, new_search = ImGui.InputText(ctx, "##Search", self.state.settings.search_string or "")
-  if _ then
+  -- Use rearkitekt search widget
+  local current_search = self.state.settings.search_string or ""
+  SearchInput.draw(ctx, self.state.draw_list, search_x, search_y, search_width, search_height, {
+    id = "item_picker_search",
+    placeholder = "Search items...",
+    value = current_search,
+  }, "item_picker_search")
+
+  -- Get updated search text
+  local new_search = SearchInput.get_text("item_picker_search")
+  if new_search ~= current_search then
     self.state:set_search_filter(new_search)
   end
+
+  -- Advance cursor past search widget
+  ImGui.SetCursorScreenPos(ctx, search_x, search_y + search_height)
 
   ImGui.PopFont(ctx)
   ImGui.PopStyleVar(ctx)
@@ -150,6 +178,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.coordinator:render_audio_grid(ctx, screen_w - (self.config.LAYOUT.PADDING * 2), audio_height)
     ImGui.EndChild(ctx)
   end
+
+  ImGui.End(ctx)
 end
 
 return M
