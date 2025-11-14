@@ -640,34 +640,29 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
     local sep_w = ImGui.GetContentRegionAvail(ctx)
     local dl_menu = ImGui.GetWindowDrawList(ctx)
     ImGui.DrawList_AddLine(dl_menu, sep_x1 + 8, sep_y1, sep_x1 + sep_w - 8, sep_y1, hexrgb("#505050FF"), 1)
-    ImGui.Dummy(ctx, 1, 6)
-
-    -- Label with centered styling for distinction
-    local label_text = "Chip Color"
-    local menu_width = ImGui.GetContentRegionAvail(ctx)
-    local label_w = ImGui.CalcTextSize(ctx, label_text)
-    local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
-    local label_offset_x = (menu_width - label_w) * 0.5
-    ImGui.DrawList_AddText(dl_menu, label_x + label_offset_x, label_y, hexrgb("#E0E0E0FF"), label_text)
-    ImGui.Dummy(ctx, 1, 20)
+    ImGui.Dummy(ctx, 1, 8)
 
     -- Draw color grid inline (4x4) using Chip component for consistency
     local grid_cols = 4
-    local chip_radius = 6  -- Reduced from effective 10px to 6px
-    local chip_spacing = 10  -- Spacing between chip centers
+    local chip_radius = 7  -- Increased by 20% from 6px to 7px
     local grid_rows = math.ceil(#preset_colors / grid_cols)
-    local grid_width = (grid_cols - 1) * chip_spacing
+    local menu_width = ImGui.GetContentRegionAvail(ctx)
     local menu_start_x, menu_start_y = ImGui.GetCursorScreenPos(ctx)
 
-    -- Center the grid horizontally to match text bounds
-    local grid_offset_x = (menu_width - grid_width) * 0.5
+    -- Calculate spacing to fill the full width of context menu perfectly
+    local edge_margin = chip_radius + 4  -- Small margin from edges
+    local available_width = menu_width - (edge_margin * 2)
+    local chip_spacing = available_width / (grid_cols - 1)  -- Center-to-center spacing
+
+    -- Start position for first chip
+    local grid_offset_x = edge_margin
 
     for i, color in ipairs(preset_colors) do
       local col_idx = (i - 1) % grid_cols
       local row_idx = math.floor((i - 1) / grid_cols)
 
       local chip_cx = menu_start_x + grid_offset_x + col_idx * chip_spacing
-      local chip_cy = menu_start_y + row_idx * chip_spacing
+      local chip_cy = menu_start_y + row_idx * chip_spacing  -- Use same spacing for perfect grid
       local hit_size = chip_radius * 2 + 4  -- Hit area slightly larger than visual
 
       -- Check if this is the current color
@@ -706,7 +701,7 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
 
     -- Move cursor past the grid
     ImGui.SetCursorScreenPos(ctx, menu_start_x,
-      menu_start_y + grid_rows * chip_spacing + chip_radius + 2)
+      menu_start_y + (grid_rows - 1) * chip_spacing + chip_radius * 2 + 4)
 
     -- Enhanced separator before Remove button
     ImGui.Dummy(ctx, 1, 4)
