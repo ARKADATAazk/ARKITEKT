@@ -95,22 +95,17 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
 
   local total_with_spacing = total_natural + total_spacing
 
-  -- Stretch logic: only expand tabs with clipped text when space available
+  -- STAGE 1: Always expand tabs with clipped text (independent of should_extend)
   if total_with_spacing < available_width then
     local extra_space = available_width - total_with_spacing
 
-    -- Identify which tabs have clipped text (need more space)
+    -- Identify which tabs have clipped text (actual text exceeds current width)
     local clipped_tabs = {}
     local total_deficit = 0
     for i, tab in ipairs(tabs) do
-      local has_chip = tab.chip_color ~= nil
-      local text_w = ImGui.CalcTextSize(ctx, tab.label or "Tab")
-      local chip_width = has_chip and 20 or 0
-      local actual_needed = math.floor(text_w + padding_x * 2 + chip_width + 0.5)
-
-      -- Tab is clipped if actual text needs more than current width
-      if actual_needed > natural_widths[i] then
-        local deficit = actual_needed - natural_widths[i]
+      -- Check if this tab's text was clamped by max_width
+      if min_text_widths[i] > natural_widths[i] then
+        local deficit = math.min(min_text_widths[i] - natural_widths[i], extra_space)
         clipped_tabs[i] = deficit
         total_deficit = total_deficit + deficit
       end
@@ -123,10 +118,33 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
       for i, deficit in pairs(clipped_tabs) do
         local proportion = deficit / total_deficit
         local extra = math.floor(space_to_distribute * proportion + 0.5)
+        -- Allow exceeding max_width to show full text
         natural_widths[i] = natural_widths[i] + extra
+      end
 
-        -- Still respect max_width
-        natural_widths[i] = math.min(max_width, natural_widths[i])
+      -- Recalculate total after expanding clipped tabs
+      total_with_spacing = 0
+      for i = 1, #tabs do
+        total_with_spacing = total_with_spacing + natural_widths[i]
+        if i < #tabs then
+          local effective_spacing = (spacing == 0 and -1 or spacing)
+          total_with_spacing = total_with_spacing + effective_spacing
+        end
+      end
+    end
+  end
+
+  -- STAGE 2: If should_extend (80% threshold), distribute remaining space evenly to all tabs
+  if should_extend and total_with_spacing < available_width then
+    local extra_space = available_width - total_with_spacing
+    local base_per_tab = math.floor(extra_space / #tabs)
+    local remainder = extra_space - (base_per_tab * #tabs)
+
+    for i = 1, #tabs do
+      natural_widths[i] = natural_widths[i] + base_per_tab
+      -- Distribute remainder pixels to first N tabs (ensures exact fill)
+      if i <= remainder then
+        natural_widths[i] = natural_widths[i] + 1
       end
     end
   end
