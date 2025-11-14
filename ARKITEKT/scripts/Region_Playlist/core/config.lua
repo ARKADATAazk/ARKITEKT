@@ -165,16 +165,6 @@ end
 -- Pool container: mode toggle, search, sort
 -- All visual styling comes from library defaults
 function M.get_pool_container_config(callbacks)
-  -- Helper to merge callbacks matching a pattern into base config
-  local function merge_callbacks(base_config, pattern)
-    for key, value in pairs(callbacks or {}) do
-      if type(key) == "string" and key:match(pattern) and type(value) == "function" then
-        base_config[key] = value
-      end
-    end
-    return base_config
-  end
-
   return {
     header = {
       enabled = true,
@@ -185,9 +175,11 @@ function M.get_pool_container_config(callbacks)
           type = "button",
           width = 100,
           spacing_before = 0,
-          config = merge_callbacks({
+          config = {
             label = "Regions",
-          }, "^on_mode_"),
+            on_click = callbacks.on_mode_toggle,
+            on_right_click = callbacks.on_mode_toggle_right,
+          },
         },
         {
           id = "spacer1",
@@ -201,16 +193,17 @@ function M.get_pool_container_config(callbacks)
           type = "search_field",
           width = 200,
           spacing_before = 0,
-          config = merge_callbacks({
+          config = {
             placeholder = "Search...",
-          }, "^on_search"),
+            on_change = callbacks.on_search_changed,
+          },
         },
         {
           id = "sort",
           type = "dropdown_field",
           width = 120,
           spacing_before = 0,
-          config = merge_callbacks({
+          config = {
             tooltip = "Sort by",
             tooltip_delay = 0.5,
             enable_sort = true,
@@ -222,7 +215,9 @@ function M.get_pool_container_config(callbacks)
               { value = "length", label = "Length" },
             },
             enable_mousewheel = true,
-          }, "^on_.*_change"),
+            on_change = callbacks.on_sort_changed,
+            on_direction_change = callbacks.on_sort_direction_changed,
+          },
         },
       },
     },
