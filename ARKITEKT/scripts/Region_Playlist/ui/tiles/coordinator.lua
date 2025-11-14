@@ -146,7 +146,26 @@ function M.create(opts)
         rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
       end
     end,
-    
+
+    on_tab_rename = function(id)
+      rt._rename_playlist_id = id
+      rt._rename_input_visible = true
+    end,
+
+    on_tab_duplicate = function(id)
+      if rt.controller then
+        rt.controller:duplicate_playlist(id)
+        rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+      end
+    end,
+
+    on_tab_color_change = function(id, color)
+      if rt.controller then
+        rt.controller:set_playlist_color(id, color == false and nil or color)
+        rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+      end
+    end,
+
     on_overflow_clicked = function()
       rt.active_container._overflow_visible = true
     end,

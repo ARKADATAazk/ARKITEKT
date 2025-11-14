@@ -87,6 +87,78 @@ function Controller:create_playlist(name)
   end)
 end
 
+function Controller:duplicate_playlist(id)
+  return self:_with_undo(function()
+    local playlists = self.state.get_playlists()
+    local source_playlist = nil
+    local source_index = nil
+
+    for i, pl in ipairs(playlists) do
+      if pl.id == id then
+        source_playlist = pl
+        source_index = i
+        break
+      end
+    end
+
+    if not source_playlist then
+      error("Playlist not found")
+    end
+
+    local new_id = self:_generate_playlist_id()
+    local RegionState = require("Region_Playlist.storage.persistence")
+
+    -- Deep copy items
+    local new_items = {}
+    for i, item in ipairs(source_playlist.items) do
+      new_items[i] = {
+        key = item.key,
+        rids = item.rids and {table.unpack(item.rids)} or nil,
+        playlist_id = item.playlist_id,
+        enabled = item.enabled,
+        repeats = item.repeats,
+      }
+    end
+
+    local new_playlist = {
+      id = new_id,
+      name = source_playlist.name .. " Copy",
+      items = new_items,
+      chip_color = source_playlist.chip_color,
+    }
+
+    -- Insert after source playlist
+    table.insert(playlists, source_index + 1, new_playlist)
+    self.state.set_active_playlist(new_id)
+
+    return new_id
+  end)
+end
+
+function Controller:rename_playlist(id, new_name)
+  return self:_with_undo(function()
+    local playlist = self:_get_playlist(id)
+    if not playlist then
+      error("Playlist not found")
+    end
+
+    playlist.name = new_name or playlist.name
+    return true
+  end)
+end
+
+function Controller:set_playlist_color(id, color)
+  return self:_with_undo(function()
+    local playlist = self:_get_playlist(id)
+    if not playlist then
+      error("Playlist not found")
+    end
+
+    playlist.chip_color = color or nil
+    return true
+  end)
+end
+
 function Controller:delete_playlist(id)
   local playlists = self.state.get_playlists()
   if #playlists <= 1 then
