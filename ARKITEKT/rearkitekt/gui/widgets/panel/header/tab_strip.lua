@@ -564,11 +564,13 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
     if ContextMenu.item(ctx, "Rename Playlist", config.context_menu) then
       reaper.ShowConsoleMsg("[DEBUG draw_tab] Rename clicked for tab id: " .. tostring(id) .. "\n")
       rename_requested = true
+      ImGui.CloseCurrentPopup(ctx)
     end
 
     if ContextMenu.item(ctx, "Duplicate Playlist", config.context_menu) then
       reaper.ShowConsoleMsg("[DEBUG draw_tab] Duplicate clicked for tab id: " .. tostring(id) .. "\n")
       duplicate_requested = true
+      ImGui.CloseCurrentPopup(ctx)
     end
 
     ImGui.Separator(ctx)
