@@ -579,7 +579,7 @@ local function calculate_playlist_duration(playlist, region_index)
       local nested_pl = M.get_playlist_by_id(item.playlist_id)
       if nested_pl then
         local nested_duration = calculate_playlist_duration(nested_pl, region_index)
-        local repeats = item.repeats or 1
+        local repeats = item.repeats or item.reps or 1
         total_duration = total_duration + (nested_duration * repeats)
       end
     end
