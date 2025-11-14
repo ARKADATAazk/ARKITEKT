@@ -8,7 +8,7 @@ local ImGui = require 'imgui' '0.10'
 local palette
 local Colors
 do
-  local ok, Style = pcall(require, "rearkitekt.gui.style")
+  local ok, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
   if ok and type(Style) == "table" and type(Style.palette) == "table" then
     palette = Style.palette
   end

@@ -131,6 +131,52 @@ local function create_behaviors(rt)
     end,
     
     on_select = function(selected_keys)
+      -- Count regions and playlists in pool grid selection
+      local region_count = 0
+      local playlist_count = 0
+
+      if selected_keys and #selected_keys > 0 then
+        for _, key in ipairs(selected_keys) do
+          if key:match("^pool_playlist_") then
+            playlist_count = playlist_count + 1
+          else
+            region_count = region_count + 1
+          end
+        end
+      end
+
+      -- Combine with active grid selection
+      local active_selection_info = { region_count = 0, playlist_count = 0 }
+      if rt.active_grid and rt.active_grid.selection then
+        local active_items = rt.active_grid.get_items()
+        local active_selected_keys = rt.active_grid.selection:selected_keys()
+
+        for _, key in ipairs(active_selected_keys) do
+          local item = nil
+          for _, it in ipairs(active_items) do
+            if it.key == key then
+              item = it
+              break
+            end
+          end
+
+          if item then
+            if item.playlist_id then
+              active_selection_info.playlist_count = active_selection_info.playlist_count + 1
+            else
+              active_selection_info.region_count = active_selection_info.region_count + 1
+            end
+          end
+        end
+      end
+
+      -- Update State with combined selection info
+      if rt.State and rt.State.set_selection_info then
+        rt.State.set_selection_info({
+          region_count = region_count + active_selection_info.region_count,
+          playlist_count = playlist_count + active_selection_info.playlist_count
+        })
+      end
     end,
   }
 end

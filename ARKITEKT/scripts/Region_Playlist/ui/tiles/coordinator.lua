@@ -98,6 +98,73 @@ function M.create(opts)
   rt._original_active_min_col_w = nil
   rt._imgui_ctx = nil
   
+  local rt = setmetatable({
+    State = opts.State,
+    controller = opts.controller,
+    get_region_by_rid = opts.get_region_by_rid,
+    get_playlist_by_id = cached_get_playlist,
+    detect_circular_ref = opts.detect_circular_ref,
+    on_playlist_changed = opts.on_playlist_changed,
+    on_active_reorder = opts.on_active_reorder,
+    on_active_remove = opts.on_active_remove,
+    on_active_copy = opts.on_active_copy,
+    on_active_toggle_enabled = opts.on_active_toggle_enabled,
+    on_active_delete = opts.on_active_delete,
+    on_destroy_complete = opts.on_destroy_complete,
+    on_pool_to_active = opts.on_pool_to_active,
+    on_pool_playlist_to_active = opts.on_pool_playlist_to_active,
+    on_pool_reorder = opts.on_pool_reorder,
+    on_pool_playlist_reorder = opts.on_pool_playlist_reorder,
+    on_repeat_cycle = opts.on_repeat_cycle,
+    on_repeat_adjust = opts.on_repeat_adjust,
+    on_repeat_sync = opts.on_repeat_sync,
+    on_pool_double_click = opts.on_pool_double_click,
+    on_pool_playlist_double_click = opts.on_pool_playlist_double_click,
+    on_pool_search = opts.on_pool_search,
+    on_pool_sort = opts.on_pool_sort,
+    on_pool_sort_direction = opts.on_pool_sort_direction,
+    on_pool_mode_changed = opts.on_pool_mode_changed,
+    settings = opts.settings,
+    
+    allow_pool_reorder = opts.allow_pool_reorder ~= false,
+    
+    config = config,
+    layout_mode = config.layout_mode,
+    hover_config = config.hover_config,
+    responsive_config = config.responsive_config,
+    container_config = config.container,
+    wheel_config = config.wheel_config,
+    
+    selector = Selector.new(),
+    active_animator = TileAnim.new(config.hover_config.animation_speed_hover),
+    pool_animator = TileAnim.new(config.hover_config.animation_speed_hover),
+    
+    active_bounds = nil,
+    pool_bounds = nil,
+    
+    active_grid = nil,
+    pool_grid = nil,
+    bridge = nil,
+    app_bridge = nil,
+    
+    wheel_consumed_this_frame = false,
+    
+    active_height_stabilizer = HeightStabilizer.new({
+      stable_frames_required = config.responsive_config.stable_frames_required,
+      height_hysteresis = config.responsive_config.height_hysteresis,
+    }),
+    pool_height_stabilizer = HeightStabilizer.new({
+      stable_frames_required = config.responsive_config.stable_frames_required,
+      height_hysteresis = config.responsive_config.height_hysteresis,
+    }),
+    
+    current_active_tile_height = config.responsive_config.base_tile_height_active,
+    current_pool_tile_height = config.responsive_config.base_tile_height_pool,
+    
+    _original_active_min_col_w = nil,
+    _imgui_ctx = nil,
+  }, RegionTiles)
+  
   rt.active_grid = ActiveGridFactory.create(rt, config)
   rt._original_active_min_col_w = rt.active_grid.min_col_w_fn
   
@@ -279,7 +346,10 @@ function M.create(opts)
             if rt.detect_circular_ref then
               local circular, path = rt.detect_circular_ref(active_playlist_id, item_data.id)
               if circular then
-                -- Silently skip circular references (visual indication on tile)
+                -- Set error in status bar and skip
+                if rt.State and rt.State.set_circular_dependency_error then
+                  rt.State.set_circular_dependency_error("Cannot add playlist - would create circular dependency")
+                end
                 goto continue_loop
               end
             end
@@ -299,6 +369,40 @@ function M.create(opts)
         end
         
         if #spawned_keys > 0 then
+          -- Clear any circular dependency errors on successful operation
+          if rt.State and rt.State.clear_circular_dependency_error then
+            rt.State.clear_circular_dependency_error()
+          end
+
+          -- Show drag-and-drop notification
+          if rt.State and rt.State.set_state_change_notification then
+            local region_count = 0
+            local playlist_count = 0
+
+            for _, item_data in ipairs(drop_info.payload) do
+              if type(item_data) == "number" then
+                region_count = region_count + 1
+              elseif type(item_data) == "table" and item_data.type == "playlist" then
+                playlist_count = playlist_count + 1
+              end
+            end
+
+            local parts = {}
+            if region_count > 0 then
+              table.insert(parts, string.format("%d region%s", region_count, region_count > 1 and "s" or ""))
+            end
+            if playlist_count > 0 then
+              table.insert(parts, string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or ""))
+            end
+
+            if #parts > 0 then
+              local items_text = table.concat(parts, ", ")
+              local active_playlist = rt.State.get_active_playlist and rt.State.get_active_playlist()
+              local playlist_name = active_playlist and active_playlist.name or "Active Grid"
+              rt.State.set_state_change_notification(string.format("Copied %s from Pool Grid to Active Grid (%s)", items_text, playlist_name))
+            end
+          end
+
           if rt.pool_grid and rt.pool_grid.selection then
             rt.pool_grid.selection:clear()
           end

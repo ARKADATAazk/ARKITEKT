@@ -33,30 +33,63 @@ local function get_app_status(State)
       local bridge_state = bridge:get_state()
     
     -- >>> STATUS DETECTION (BEGIN)
-    local status_parts = {}
+    -- Show ONLY ONE status message at a time (highest priority wins)
+    local status_message = nil
     local status_color = STATUS_COLORS.READY
-    local priority = 5  -- Lower number = higher priority
-    
-    -- Check for undo/redo availability (info)
-    if State.can_undo and State.can_undo() then
-      table.insert(status_parts, "Undo Available")
-      if priority > 3 then
-        status_color = STATUS_COLORS.INFO
-        priority = 3
+
+    -- Track override state changes
+    if State.check_override_state_change then
+      State.check_override_state_change(bridge_state.transport_override)
+    end
+
+    -- Priority 1: Errors (RED)
+    if State.get_circular_dependency_error and State.get_circular_dependency_error() then
+      status_message = State.get_circular_dependency_error()
+      status_color = STATUS_COLORS.ERROR
+    end
+
+    -- Priority 2: State change notifications - temporary feedback
+    if not status_message then
+      if State.get_state_change_notification then
+        local notification = State.get_state_change_notification()
+        if notification then
+          status_message = notification
+          -- JUMP messages get WARNING color (orange), others get INFO (blue)
+          if notification:match("^Jump:") then
+            status_color = STATUS_COLORS.WARNING
+          else
+            status_color = STATUS_COLORS.INFO
+          end
+        end
       end
     end
-    
-    -- Check for active search filter (info)
-    local search_filter = State.get_search_filter and State.get_search_filter() or ""
-    if search_filter and search_filter ~= "" then
-      table.insert(status_parts, string.format("Filter: '%s'", search_filter))
-      if priority > 3 then
-        status_color = STATUS_COLORS.INFO
-        priority = 3
+
+    -- Priority 3: Warnings (ORANGE) - only if no errors/notifications
+    if not status_message then
+      local active_playlist = State.get_active_playlist and State.get_active_playlist()
+      if active_playlist and active_playlist.order and #active_playlist.order == 0 and not bridge_state.is_playing then
+        status_message = "Playlist is empty"
+        status_color = STATUS_COLORS.WARNING
       end
     end
-    
-    -- Check for playback state (playing)
+
+    -- Priority 4: Info (BLUE) - only if no errors/warnings/notifications
+    if not status_message then
+      local selection_info = State.get_selection_info and State.get_selection_info()
+      if selection_info and (selection_info.region_count > 0 or selection_info.playlist_count > 0) then
+        local parts = {}
+        if selection_info.region_count > 0 then
+          table.insert(parts, string.format("%d Region%s", selection_info.region_count, selection_info.region_count > 1 and "s" or ""))
+        end
+        if selection_info.playlist_count > 0 then
+          table.insert(parts, string.format("%d Playlist%s", selection_info.playlist_count, selection_info.playlist_count > 1 and "s" or ""))
+        end
+        status_message = table.concat(parts, ", ") .. " selected"
+        status_color = STATUS_COLORS.INFO
+      end
+    end
+
+    -- Priority 5: Playback state (GREEN) - overrides info/warnings but not errors/notifications
     if bridge_state.is_playing then
       local current_rid = bridge:get_current_rid()
       if current_rid then
@@ -64,65 +97,46 @@ local function get_app_status(State)
         if region then
           local progress = bridge:get_progress() or 0
           local time_remaining = bridge:get_time_remaining()
-          local play_text = string.format("▶ %s [%d/%d] %.0f%%", 
-            region.name, 
-            bridge_state.playlist_pointer, 
-            #bridge_state.playlist_order,
-            progress * 100)
-          if time_remaining then
-            play_text = play_text .. string.format(" (%.1fs)", time_remaining)
+
+          -- Enhanced playback info with playlist name
+          local play_parts = {}
+
+          -- Add playlist name
+          local active_playlist = State.get_active_playlist and State.get_active_playlist()
+          if active_playlist then
+            table.insert(play_parts, string.format("Playing '%s'", active_playlist.name or "Untitled"))
           end
-          table.insert(status_parts, 1, play_text)  -- Insert at front
-          if priority > 4 then
+
+          table.insert(play_parts, string.format("▶ %s", region.name))
+          table.insert(play_parts, string.format("[%d/%d]", bridge_state.playlist_pointer, #bridge_state.playlist_order))
+
+          -- Add loop info if looping
+          if bridge_state.current_loop and bridge_state.total_loops and bridge_state.total_loops > 1 then
+            table.insert(play_parts, string.format("Loop %d/%d", bridge_state.current_loop, bridge_state.total_loops))
+          end
+
+          -- Add progress percentage
+          table.insert(play_parts, string.format("%.0f%%", progress * 100))
+
+          -- Add time remaining
+          if time_remaining then
+            table.insert(play_parts, string.format("%.1fs left", time_remaining))
+          end
+
+          local play_text = table.concat(play_parts, "  ")
+
+          -- Playing state takes precedence over info/warnings but not errors or notifications
+          local has_notification = State.get_state_change_notification and State.get_state_change_notification()
+          if status_color ~= STATUS_COLORS.ERROR and status_color ~= STATUS_COLORS.WARNING and not (status_color == STATUS_COLORS.INFO and has_notification) then
+            status_message = play_text
             status_color = STATUS_COLORS.PLAYING
-            priority = 4
           end
         end
       end
     end
-    
-    -- Build base info (always shown)
-    local mode_text = State.get_layout_mode() == 'horizontal' and "Timeline" or "List"
-    local quantize_text = bridge_state.quantize_mode or "none"
-    if quantize_text ~= "none" then
-      quantize_text = "Q:" .. quantize_text
-    else
-      quantize_text = "Q:Off"
-    end
-    
-    -- Add playlist info
-    local active_playlist = State.get_active_playlist and State.get_active_playlist()
-    local playlist_info = ""
-    if active_playlist then
-      local region_count = active_playlist.order and #active_playlist.order or 0
-      playlist_info = string.format("%s (%d)", active_playlist.name or "Untitled", region_count)
-    end
-    
-    -- Build final status text
-    local base_parts = {}
-    if playlist_info ~= "" then
-      table.insert(base_parts, playlist_info)
-    end
-    table.insert(base_parts, mode_text)
-    table.insert(base_parts, quantize_text)
-    
-    -- Prepend dynamic status if any
-    local final_parts = {}
-    if #status_parts > 0 then
-      for _, part in ipairs(status_parts) do
-        table.insert(final_parts, part)
-      end
-    end
-    for _, part in ipairs(base_parts) do
-      table.insert(final_parts, part)
-    end
-    
-      local info_text = table.concat(final_parts, "  •  ")
-      
-      -- Failsafe: ensure we never return empty text
-      if not info_text or info_text == "" then
-        info_text = "[Status Error]"
-      end
+
+    -- Build final status text (no base info, message only)
+    local info_text = status_message or ""
       -- <<< STATUS DETECTION (END)
       
       return {

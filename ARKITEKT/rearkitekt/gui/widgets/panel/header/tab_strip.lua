@@ -6,25 +6,26 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local ContextMenu = require('rearkitekt.gui.widgets.controls.context_menu')
 local Chip = require('rearkitekt.gui.widgets.component.chip')
-local Colors = require('rearkitekt.core.colors')
+local Style = require('rearkitekt.gui.style.defaults')
 
 local M = {}
-local hexrgb = Colors.hexrgb
+local C = Style.COLORS          -- Shared primitives
+local PC = Style.PANEL_COLORS   -- Panel-specific colors
 
 local TAB_SLIDE_SPEED = 15.0
 local DRAG_THRESHOLD = 3.0
 
 local DEFAULTS = {
-  bg_color = hexrgb("#252525"),
-  bg_hover_color = hexrgb("#2A2A2A"),
-  bg_active_color = hexrgb("#303030"),
-  border_outer_color = hexrgb("#000000DD"),
-  border_inner_color = hexrgb("#404040"),
-  border_hover_color = hexrgb("#505050"),
-  border_active_color = hexrgb("#7B7B7B"),
-  text_color = hexrgb("#AAAAAA"),
-  text_hover_color = hexrgb("#FFFFFF"),
-  text_active_color = hexrgb("#FFFFFF"),
+  bg_color = PC.bg_tab,
+  bg_hover_color = PC.bg_tab_hover,
+  bg_active_color = PC.bg_tab_active,
+  border_outer_color = C.BORDER_OUTER,
+  border_inner_color = PC.border_tab_inner,
+  border_hover_color = PC.border_tab_hover,
+  border_active_color = PC.border_tab_focus,
+  text_color = PC.text_tab,
+  text_hover_color = PC.text_tab_hover,
+  text_active_color = PC.text_tab_active,
 }
 
 local function get_corner_flags(corner_rounding)
@@ -413,17 +414,17 @@ local function draw_track(ctx, dl, x, y, width, height, config, corner_rounding)
     dl,
     track_x, track_y,
     track_x + track_width, track_y + track_height,
-    track_cfg.bg_color or hexrgb("#1A1A1A"),
+    track_cfg.bg_color or PC.bg_tab_track,
     rounding,
     corner_flags
   )
-  
+
   if track_cfg.border_thickness and track_cfg.border_thickness > 0 then
     ImGui.DrawList_AddRect(
       dl,
       track_x, track_y,
       track_x + track_width, track_y + track_height,
-      track_cfg.border_color or hexrgb("#0A0A0A"),
+      track_cfg.border_color or PC.border_tab_track,
       rounding,
       corner_flags,
       track_cfg.border_thickness

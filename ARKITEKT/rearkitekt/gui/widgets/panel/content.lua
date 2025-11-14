@@ -4,15 +4,15 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local Style = require('rearkitekt.gui.style.defaults')
+local PC = Style.PANEL_COLORS   -- Panel-specific colors
 
 
 local M = {}
 
 function M.begin_child(ctx, id, width, height, scroll_config, container)
   local flags = scroll_config.flags or 0
-  local scroll_bg = scroll_config.bg_color or hexrgb("#00000000")
+  local scroll_bg = scroll_config.bg_color or PC.bg_scrollbar
   
   ImGui.PushStyleColor(ctx, ImGui.Col_ScrollbarBg, scroll_bg)
   

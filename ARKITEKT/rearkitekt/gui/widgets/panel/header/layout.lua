@@ -6,20 +6,9 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local PanelConfig = require('rearkitekt.gui.widgets.panel.config')
+local ConfigUtil = require('rearkitekt.core.config')
 
 local M = {}
-
--- Deep merge utility
-local function deep_merge(base, override)
-  local result = {}
-  for k, v in pairs(base or {}) do
-    result[k] = v
-  end
-  for k, v in pairs(override or {}) do
-    result[k] = v
-  end
-  return result
-end
 
 -- Component registry - imports from controls/ directly for reusable components
 local COMPONENTS = {
@@ -356,9 +345,9 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
     
     local component = COMPONENTS[element.type]
     if component and component.draw then
-      -- Apply panel ELEMENT_STYLE defaults first, then merge user config
+      -- Merge panel ELEMENT_STYLE as fallback (won't override preset colors)
       local style_defaults = PanelConfig.ELEMENT_STYLE[element.type] or {}
-      local element_config = deep_merge(style_defaults, element.config or {})
+      local element_config = ConfigUtil.merge_safe(element.config or {}, style_defaults)
       
       -- Pass element ID to config for unique identification
       element_config.id = element.id

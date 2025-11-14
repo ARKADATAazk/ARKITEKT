@@ -23,7 +23,7 @@ local TilesContainer = require("rearkitekt.gui.widgets.panel")
 local SelRect = require("rearkitekt.gui.widgets.selection_rectangle")
 
 local SettingsOK, Settings = pcall(require, "rearkitekt.core.settings")
-local StyleOK, Style = pcall(require, "rearkitekt.gui.style")
+local StyleOK, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

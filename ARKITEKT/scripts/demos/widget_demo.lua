@@ -52,7 +52,7 @@ addpath(join(HERE,  "?.lua")); addpath(join(HERE,  "?/init.lua"))
 -- Your modules
 local Shell        = require("rearkitekt.app.shell")
 local Settings     = (function() local ok,m=pcall(require,"rearkitekt.core.settings"); return ok and m or nil end)()
-local okStyle,Style= pcall(require,"rearkitekt.gui.style")
+local okStyle,Style= pcall(require,"rearkitekt.gui.style.imgui_defaults")
 local ColorBlocks  = require("ReArkitekt.gui.widgets.colorblocks")
 local Draw         = require("rearkitekt.gui.draw")
 local Effects      = require("rearkitekt.gui.fx.effects")

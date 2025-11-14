@@ -7,7 +7,7 @@ local ImGui = require 'imgui' '0.10'
 
 local Draw   = require('rearkitekt.gui.draw')
 local Colors = require('rearkitekt.core.colors')
-local Style  = require('rearkitekt.gui.style')
+local Style  = require('rearkitekt.gui.style.imgui_defaults')
 local OverlayConfig = require('rearkitekt.gui.widgets.overlay.config')
 
 local Sheet = {}

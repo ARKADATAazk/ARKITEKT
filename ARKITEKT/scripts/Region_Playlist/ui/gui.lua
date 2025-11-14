@@ -57,20 +57,21 @@ function M.create(State, AppConfig, settings)
   end
   
   self.region_tiles = RegionTiles.create({
+    State = State,
     controller = self.controller,
-    
+
     get_region_by_rid = function(rid)
       return State.get_region_by_rid(rid)
     end,
-    
+
     get_playlist_by_id = function(playlist_id)
       return State.get_playlist_by_id(playlist_id)
     end,
-    
+
     detect_circular_ref = function(target_playlist_id, source_playlist_id)
       return State.detect_circular_reference(target_playlist_id, source_playlist_id)
     end,
-    
+
     allow_pool_reorder = true,
     enable_active_tabs = true,
     tabs = State.get_tabs(),

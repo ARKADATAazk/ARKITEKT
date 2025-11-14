@@ -49,7 +49,7 @@ local ColorSliders  = require("rearkitekt.gui.widgets.sliders.hue")
 local TilesContainer = require("rearkitekt.gui.widgets.panel")
 
 -- Fallback style
-local style_ok, Style = pcall(require, "rearkitekt.gui.style")
+local style_ok, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

@@ -49,7 +49,7 @@ local Sheet = require("rearkitekt.gui.widgets.overlay.sheet")
 local ChipList = require("rearkitekt.gui.widgets.chip_list.list")
 local OverlayConfig = require("rearkitekt.gui.widgets.overlay.config")
 
-local style_ok, Style = pcall(require, "rearkitekt.gui.style")
+local style_ok, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
