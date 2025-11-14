@@ -32,7 +32,7 @@ function M.calculate_cascade_factor(rect, overlay_alpha, config)
     local grid_x = math.floor(x1 / 150)
     local grid_y = math.floor(y1 / 150)
     local grid_distance = math.sqrt(grid_x * grid_x + grid_y * grid_y)
-    M.tile_spawn_times[key] = grid_distance * config.cascade.stagger_delay
+    M.tile_spawn_times[key] = grid_distance * config.TILE_RENDER.cascade.stagger_delay
   end
 
   local delay = M.tile_spawn_times[key]
@@ -67,11 +67,11 @@ function M.get_dark_waveform_color(base_color, config)
   local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
 
-  s = config.waveform.saturation
-  v = config.waveform.brightness
+  s = config.TILE_RENDER.waveform.saturation
+  v = config.TILE_RENDER.waveform.brightness
 
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
-  return ImGui.ColorConvertDouble4ToU32(r, g, b, config.waveform.line_alpha)
+  return ImGui.ColorConvertDouble4ToU32(r, g, b, config.TILE_RENDER.waveform.line_alpha)
 end
 
 -- Render header bar
@@ -79,16 +79,16 @@ function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, c
   local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
 
-  s = s * config.header.saturation_factor
-  v = v * config.header.brightness_factor
+  s = s * config.TILE_RENDER.header.saturation_factor
+  v = v * config.TILE_RENDER.header.brightness_factor
 
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local final_alpha = math.floor((config.header.alpha / 255) * alpha * 255)
+  local final_alpha = math.floor((config.TILE_RENDER.header.alpha / 255) * alpha * 255)
   local header_color = ImGui.ColorConvertDouble4ToU32(r, g, b, final_alpha / 255)
 
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, header_color, config.TILE.ROUNDING)
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, config.header.text_shadow, config.TILE.ROUNDING)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, config.TILE_RENDER.header.text_shadow, config.TILE.ROUNDING)
 end
 
 -- Render placeholder with loading spinner
@@ -126,45 +126,46 @@ end
 
 -- Render text with badge
 function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index, total, base_color, text_alpha, config)
-  local show_text = header_height >= (config.responsive.hide_text_below - config.header.min_height)
-  local show_badge = header_height >= (config.responsive.hide_badge_below - config.header.min_height)
+  local tile_render = config.TILE_RENDER
+  local show_text = header_height >= (tile_render.responsive.hide_text_below - tile_render.header.min_height)
+  local show_badge = header_height >= (tile_render.responsive.hide_badge_below - tile_render.header.min_height)
 
   if not show_text then return end
 
-  local text_x = x1 + config.text.padding_left
+  local text_x = x1 + tile_render.text.padding_left
   local text_y = y1 + (header_height - ImGui.GetTextLineHeight(ctx)) / 2
 
-  local right_bound_x = x2 - config.text.margin_right
+  local right_bound_x = x2 - tile_render.text.margin_right
   if show_badge and total and total > 1 then
     local badge_text = string.format("%d/%d", index or 1, total)
     local bw, _ = ImGui.CalcTextSize(ctx, badge_text)
-    right_bound_x = right_bound_x - (bw + config.badge.padding_x * 2 + config.badge.margin)
+    right_bound_x = right_bound_x - (bw + tile_render.badge.padding_x * 2 + tile_render.badge.margin)
   end
 
   local available_width = right_bound_x - text_x
   local truncated_name = M.truncate_text(ctx, item_name, available_width)
 
-  Draw.text(dl, text_x, text_y, Colors.with_alpha(config.text.primary_color, text_alpha), truncated_name)
+  Draw.text(dl, text_x, text_y, Colors.with_alpha(tile_render.text.primary_color, text_alpha), truncated_name)
 
   -- Render badge
   if show_badge and total and total > 1 then
     local badge_text = string.format("%d/%d", index or 1, total)
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
 
-    local badge_x = x2 - bw - config.badge.padding_x * 2 - config.badge.margin
-    local badge_y = y1 + (header_height - (bh + config.badge.padding_y * 2)) / 2
-    local badge_x2 = badge_x + bw + config.badge.padding_x * 2
-    local badge_y2 = badge_y + bh + config.badge.padding_y * 2
+    local badge_x = x2 - bw - tile_render.badge.padding_x * 2 - tile_render.badge.margin
+    local badge_y = y1 + (header_height - (bh + tile_render.badge.padding_y * 2)) / 2
+    local badge_x2 = badge_x + bw + tile_render.badge.padding_x * 2
+    local badge_y2 = badge_y + bh + tile_render.badge.padding_y * 2
 
-    local badge_bg_alpha = math.floor((config.badge.bg & 0xFF) * (text_alpha / 255))
-    local badge_bg = (config.badge.bg & 0xFFFFFF00) | badge_bg_alpha
+    local badge_bg_alpha = math.floor((tile_render.badge.bg & 0xFF) * (text_alpha / 255))
+    local badge_bg = (tile_render.badge.bg & 0xFFFFFF00) | badge_bg_alpha
 
-    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, config.badge.rounding)
+    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, tile_render.badge.rounding)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2,
-      Colors.with_alpha(base_color, config.badge.border_alpha),
-      config.badge.rounding, 0, 0.5)
+      Colors.with_alpha(base_color, tile_render.badge.border_alpha),
+      tile_render.badge.rounding, 0, 0.5)
 
-    Draw.text(dl, badge_x + config.badge.padding_x, badge_y + config.badge.padding_y,
+    Draw.text(dl, badge_x + tile_render.badge.padding_x, badge_y + tile_render.badge.padding_y,
       Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
   end
 end

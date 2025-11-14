@@ -16,7 +16,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local center_x, center_y = (x1 + x2) / 2, (y1 + y2) / 2
 
   local overlay_alpha = state.overlay_alpha or 1.0
-  local cascade_factor = BaseRenderer.calculate_cascade_factor(rect, overlay_alpha, config.TILE_RENDER)
+  local cascade_factor = BaseRenderer.calculate_cascade_factor(rect, overlay_alpha, config)
 
   if cascade_factor < 0.001 then return end
 
@@ -86,7 +86,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Render header
   BaseRenderer.render_header_bar(dl, scaled_x1, scaled_y1, scaled_x2, header_height,
-    base_color, combined_alpha, config.TILE_RENDER)
+    base_color, combined_alpha, config)
 
   -- Render marching ants for selection
   if tile_state.selected and cascade_factor > 0.5 then
@@ -113,7 +113,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Render text and badge
   if cascade_factor > 0.3 then
     BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, scaled_x2, header_height,
-      item_data.name, item_data.index, item_data.total, base_color, text_alpha, config.TILE_RENDER)
+      item_data.name, item_data.index, item_data.total, base_color, text_alpha, config)
   end
 
   -- Render waveform
@@ -125,7 +125,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
     ImGui.Dummy(ctx, content_w, content_h)
 
-    local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config.TILE_RENDER)
+    local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config)
     local waveform_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
     dark_color = Colors.with_alpha(dark_color, math.floor(waveform_alpha * 255))
 
