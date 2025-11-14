@@ -496,8 +496,8 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
   end
 
   local text_w, text_h = ImGui.CalcTextSize(ctx, label)
-  local text_x = content_x
-  local text_y = render_y + (render_h - text_h) * 0.5 - 1
+  local text_x = content_x - 3
+  local text_y = render_y + (render_h - text_h) * 0.5
 
   -- Extend text rendering to 2px from edge (inner border)
   local text_max_w = render_x + render_w - text_x - 2
@@ -551,8 +551,8 @@ local function calculate_visible_tabs(ctx, tabs, config, available_width)
   local current_width = 0
   local spacing = config.spacing or 0
 
-  -- Add 4 pixels to available width to use buffer space before tab edge
-  local adjusted_available_width = available_width + 4
+  -- Add 8 pixels to available width to use buffer space before tab edge
+  local adjusted_available_width = available_width + 8
 
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
@@ -755,8 +755,8 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     local current_width = 0
     local spacing_val = config.spacing or 0
 
-    -- Add 4 pixels to available width to use buffer space before tab edge
-    local adjusted_available_width = tabs_available_width + 4
+    -- Add 8 pixels to available width to use buffer space before tab edge
+    local adjusted_available_width = tabs_available_width + 8
 
     for i, tab in ipairs(tabs) do
       local tab_width = final_tab_widths[i]
