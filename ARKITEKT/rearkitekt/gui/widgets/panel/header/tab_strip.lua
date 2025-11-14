@@ -201,16 +201,8 @@ local function update_tab_positions(ctx, state, config, tabs, start_x, available
     local new_target = new_targets[tab.id]
     local delta = deltas[tab.id]
 
-    -- Disable animation during resize to prevent jitter
-    local is_resizing = not is_uniform_shift and math.abs(delta) > 5
-
     if is_uniform_shift and math.abs(delta) > 0.01 then
       -- Window is being dragged: snap all tabs instantly, no animation
-      pos.current_x = new_target
-      pos.target_x = new_target
-      state.tab_animation_enabled[tab.id] = false
-    elseif is_resizing then
-      -- Window is being resized: snap instantly to prevent jitter
       pos.current_x = new_target
       pos.target_x = new_target
       state.tab_animation_enabled[tab.id] = false
@@ -871,12 +863,19 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
   update_tab_positions(ctx, state, config, tabs, tabs_start_x, tabs_available_width, overflow_at_edge)
 
-  -- Use the already calculated final widths when overflow is at edge, otherwise calculate
+  -- Calculate responsive widths for drawing
+  -- When overflow is at edge and we've calculated final widths, use those
+  -- Otherwise calculate fresh (handles non-edge case)
   local responsive_widths
   if overflow_at_edge and final_tab_widths then
-    responsive_widths = final_tab_widths
+    -- Create a full table with all widths for drawing
+    responsive_widths = {}
+    for i = 1, #tabs do
+      responsive_widths[i] = final_tab_widths[i] or calculate_tab_width(ctx, tabs[i].label or "Tab", config, tabs[i].chip_color ~= nil)
+    end
   else
-    responsive_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, overflow_at_edge)
+    local widths, min_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, overflow_at_edge)
+    responsive_widths = widths
   end
 
   local clicked_tab_id = nil
