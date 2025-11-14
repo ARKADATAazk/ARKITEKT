@@ -158,8 +158,8 @@ M.ALIGNED_HEADER_EXAMPLE = {
     enabled = true,
     height = 30,
     position = "top",
-    bg_color = C.BG_HEADER,
-    border_color = C.BORDER_SUBTLE,
+    bg_color = PC.bg_header,
+    border_color = PC.border_header,
     rounding = 8,
     
     padding = {
@@ -223,8 +223,8 @@ M.BOTTOM_HEADER_EXAMPLE = {
     enabled = true,
     height = 30,
     position = "bottom", -- Header at bottom
-    bg_color = C.BG_HEADER,
-    border_color = C.BORDER_SUBTLE,
+    bg_color = PC.bg_header,
+    border_color = PC.border_header,
     rounding = 8,
     
     elements = {
@@ -244,8 +244,8 @@ M.TAB_MODE_WITH_CORNER_BUTTONS = {
   header = {
     enabled = true,
     height = 20,
-    bg_color = C.BG_HEADER_TAB,
-    border_color = C.BORDER_SUBTLE,
+    bg_color = PC.bg_tab,
+    border_color = PC.border_header,
     rounding = 8,
     
     elements = {
