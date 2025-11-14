@@ -364,7 +364,7 @@ function M.check_override_state_change(current_override_state)
   if current_override_state ~= M.last_override_state then
     M.last_override_state = current_override_state
     if current_override_state then
-      M.set_state_change_notification("Override enabled")
+      M.set_state_change_notification("Override: Transport will take over when hitting a region")
     else
       M.set_state_change_notification("Override disabled")
     end

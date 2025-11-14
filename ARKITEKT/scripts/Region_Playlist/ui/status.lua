@@ -50,13 +50,18 @@ local function get_app_status(State)
       status_color = STATUS_COLORS.ERROR
     end
 
-    -- Priority 2: State change notifications (INFO) - temporary feedback
+    -- Priority 2: State change notifications - temporary feedback
     if not status_message then
       if State.get_state_change_notification then
         local notification = State.get_state_change_notification()
         if notification then
           status_message = notification
-          status_color = STATUS_COLORS.INFO
+          -- JUMP messages get WARNING color (orange), others get INFO (blue)
+          if notification:match("^Jump:") then
+            status_color = STATUS_COLORS.WARNING
+          else
+            status_color = STATUS_COLORS.INFO
+          end
         end
       end
     end
@@ -122,8 +127,9 @@ local function get_app_status(State)
 
           local play_text = table.concat(play_parts, "  ")
 
-          -- Playing state takes precedence over everything except errors and notifications
-          if status_color ~= STATUS_COLORS.ERROR and not (status_color == STATUS_COLORS.INFO and State.get_state_change_notification and State.get_state_change_notification()) then
+          -- Playing state takes precedence over info/warnings but not errors or notifications
+          local has_notification = State.get_state_change_notification and State.get_state_change_notification()
+          if status_color ~= STATUS_COLORS.ERROR and status_color ~= STATUS_COLORS.WARNING and not (status_color == STATUS_COLORS.INFO and has_notification) then
             status_message = play_text
             status_color = STATUS_COLORS.PLAYING
           end

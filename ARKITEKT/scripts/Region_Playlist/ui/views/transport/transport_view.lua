@@ -159,7 +159,27 @@ function TransportView:build_header_elements(bridge_state)
         end,
         tooltip = "Jump Forward",
         on_click = function()
-          self.state.get_bridge():jump_to_next_quantized(self.config.quantize_lookahead)
+          local bridge = self.state.get_bridge()
+          local success = bridge:jump_to_next_quantized(self.config.quantize_lookahead)
+
+          if success and self.state.set_state_change_notification then
+            local bridge_state = bridge:get_state()
+            local quantize_mode = bridge_state.quantize_mode or "none"
+
+            -- Get next region info
+            if bridge_state.playlist_order and bridge_state.playlist_pointer then
+              local next_idx = bridge_state.playlist_pointer + 1
+              if next_idx <= #bridge_state.playlist_order then
+                local next_rid = bridge_state.playlist_order[next_idx]
+                local next_region = self.state.get_region_by_rid and self.state.get_region_by_rid(next_rid)
+
+                if next_region then
+                  local msg = string.format("Jump: Next → '%s' (Quantize: %s)", next_region.name, quantize_mode)
+                  self.state.set_state_change_notification(msg)
+                end
+              end
+            end
+          end
         end,
       },
     },
