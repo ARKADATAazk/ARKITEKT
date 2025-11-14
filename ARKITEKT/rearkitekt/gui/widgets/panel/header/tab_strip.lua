@@ -640,7 +640,7 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
     local sep_w = ImGui.GetContentRegionAvail(ctx)
     local dl_menu = ImGui.GetWindowDrawList(ctx)
     ImGui.DrawList_AddLine(dl_menu, sep_x1 + 8, sep_y1, sep_x1 + sep_w - 8, sep_y1, hexrgb("#505050FF"), 1)
-    ImGui.Dummy(ctx, 1, 8)
+    ImGui.Dummy(ctx, 1, 6)
 
     -- Draw color grid inline (4x4) using Chip component for consistency
     local grid_cols = 4
@@ -649,13 +649,13 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
     local menu_width = ImGui.GetContentRegionAvail(ctx)
     local menu_start_x, menu_start_y = ImGui.GetCursorScreenPos(ctx)
 
-    -- Calculate spacing to fill the full width of context menu perfectly
-    local edge_margin = chip_radius + 4  -- Small margin from edges
-    local available_width = menu_width - (edge_margin * 2)
+    -- Match menu item padding (12px horizontal inset) to align with text content
+    local item_padding_x = 12  -- Same as context menu items
+    local available_width = menu_width - (item_padding_x * 2)
     local chip_spacing = available_width / (grid_cols - 1)  -- Center-to-center spacing
 
-    -- Start position for first chip
-    local grid_offset_x = edge_margin
+    -- Start position for first chip (aligned with menu item text)
+    local grid_offset_x = item_padding_x
 
     for i, color in ipairs(preset_colors) do
       local col_idx = (i - 1) % grid_cols
