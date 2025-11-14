@@ -921,11 +921,40 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
           local mx = ImGui.GetMousePos(ctx)
           tab_x = mx - state.dragging_tab.offset_x
         end
-        
+
+        -- Calculate actual render width to ensure border overlap with next tab
+        local render_width = tab_w
+        local next_visible_idx = nil
+        for j = i + 1, #tabs do
+          for _, vis_idx in ipairs(visible_indices) do
+            if vis_idx == j then
+              next_visible_idx = j
+              break
+            end
+          end
+          if next_visible_idx then break end
+        end
+
+        -- If there's a next visible tab, extend width to overlap its border
+        if next_visible_idx then
+          local next_pos = state.tab_positions[tabs[next_visible_idx].id]
+          if next_pos then
+            local next_x = next_pos.current_x
+            if state.dragging_tab and state.dragging_tab.id == tabs[next_visible_idx].id then
+              local mx = ImGui.GetMousePos(ctx)
+              next_x = mx - state.dragging_tab.offset_x
+            end
+
+            -- Extend this tab's width to reach the next tab (with 1px overlap)
+            local distance_to_next = next_x - tab_x
+            render_width = distance_to_next + 1  -- +1 for border overlap
+          end
+        end
+
         local is_active = (tab_data.id == active_tab_id)
         local clicked, delete_requested = draw_tab(
-          ctx, dl, tab_data, is_active, 
-          i, tab_x, y, tab_w, height, 
+          ctx, dl, tab_data, is_active,
+          i, tab_x, y, render_width, height,
           state, config, unique_id, animator, nil
         )
 
