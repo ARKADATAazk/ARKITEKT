@@ -124,7 +124,9 @@ local function create_behaviors(rt)
 
             if #parts > 0 then
               local items_text = table.concat(parts, ", ")
-              rt.State.set_state_change_notification(string.format("Copied %s within Active Grid", items_text))
+              local active_playlist = rt.State.get_active_playlist and rt.State.get_active_playlist()
+              local playlist_name = active_playlist and active_playlist.name or "Active Grid"
+              rt.State.set_state_change_notification(string.format("Copied %s within Active Grid (%s)", items_text, playlist_name))
             end
           end
         end
@@ -171,7 +173,9 @@ local function create_behaviors(rt)
 
             if #parts > 0 then
               local items_text = table.concat(parts, ", ")
-              rt.State.set_state_change_notification(string.format("Moved %s within Active Grid", items_text))
+              local active_playlist = rt.State.get_active_playlist and rt.State.get_active_playlist()
+              local playlist_name = active_playlist and active_playlist.name or "Active Grid"
+              rt.State.set_state_change_notification(string.format("Moved %s within Active Grid (%s)", items_text, playlist_name))
             end
           end
         end

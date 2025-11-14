@@ -330,7 +330,9 @@ function M.create(opts)
 
             if #parts > 0 then
               local items_text = table.concat(parts, ", ")
-              rt.State.set_state_change_notification(string.format("Copied %s from Pool Grid to Active Grid", items_text))
+              local active_playlist = rt.State.get_active_playlist and rt.State.get_active_playlist()
+              local playlist_name = active_playlist and active_playlist.name or "Active Grid"
+              rt.State.set_state_change_notification(string.format("Copied %s from Pool Grid to Active Grid (%s)", items_text, playlist_name))
             end
           end
 
