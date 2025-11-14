@@ -4,17 +4,27 @@ Python scripts for ARKITEKT development workflows.
 
 ## svg_to_lua.py
 
-Converts SVG path elements to ReaImGui DrawList API calls for vector icon rendering.
+Converts SVG files to ReaImGui DrawList API calls for vector icon rendering using the battle-tested `svgpathtools` library.
 
 ### Features
 
-- ✅ Full SVG path command support (M, L, H, V, C, Q, Z and relative variants)
-- ✅ Automatic coordinate normalization to 0-1 range
-- ✅ DPI-aware rendering code generation
-- ✅ Handles both fill and stroke
-- ✅ Supports cubic and quadratic bezier curves
-- ✅ Multiple path support
-- ✅ Bounding box calculation
+- ✅ **Complete SVG support** via svgpathtools (handles ALL path commands including S, T, A)
+- ✅ **ViewBox parsing** for correct scaling
+- ✅ **Basic shapes** (circle, rect, polygon) automatically converted to paths
+- ✅ **Arc approximation** using cubic bezier curves
+- ✅ **Smooth bezier** (S/s, T/t commands) fully supported
+- ✅ **Automatic normalization** to 0-1 range based on viewBox or bounds
+- ✅ **DPI-aware** rendering code generation
+- ✅ **Fill and stroke** handling with proper color mapping
+- ✅ **Multi-path** support
+
+### Installation
+
+```bash
+pip install svgpathtools
+```
+
+This will also install dependencies: `numpy`, `scipy`, `svgwrite`
 
 ### Usage
 
@@ -24,8 +34,8 @@ python svg_to_lua.py icon.svg
 
 # Generate complete Lua module file
 python svg_to_lua.py arkitekt_logo.svg \
-    --output ../ARKITEKT/rearkitekt/app/icon_generated.lua \
-    --function-name draw_arkitekt_accurate
+    -o ../ARKITEKT/rearkitekt/app/icon_generated.lua \
+    -f draw_arkitekt_accurate
 
 # Without coordinate normalization
 python svg_to_lua.py icon.svg --no-normalize
@@ -67,24 +77,38 @@ function M.draw_icon(ctx, x, y, size, color)
 end
 ```
 
-### Supported SVG Commands
+### Supported SVG Features
 
-| SVG | Description | ImGui API |
-|-----|-------------|-----------|
-| M/m | Move to | `DrawList_PathLineTo` |
-| L/l | Line to | `DrawList_PathLineTo` |
-| H/h | Horizontal line | `DrawList_PathLineTo` |
-| V/v | Vertical line | `DrawList_PathLineTo` |
-| C/c | Cubic bezier | `DrawList_PathBezierCubicCurveTo` |
-| Q/q | Quadratic bezier | `DrawList_PathBezierQuadraticCurveTo` |
-| Z/z | Close path | Handled by fill/stroke flags |
+| Feature | Support | Implementation |
+|---------|---------|----------------|
+| **Path Commands** | ✅ Full | All M, L, H, V, C, S, Q, T, A, Z (absolute & relative) |
+| **Smooth Bezier** (S/s, T/t) | ✅ Yes | Handled by svgpathtools |
+| **Arcs** (A/a) | ✅ Yes | Approximated with cubic bezier curves |
+| **Basic Shapes** | ✅ Yes | Circle, rect, polygon → converted to paths |
+| **ViewBox** | ✅ Yes | Used for normalization |
+| **Fill/Stroke** | ✅ Yes | Mapped to color parameter |
+| **Multiple Paths** | ✅ Yes | Each path rendered separately |
+| **Transforms** | ⚠️ Limited | Basic transforms handled by svgpathtools |
 
-### Notes
+### Conversion Details
 
-- **Normalization**: By default, coordinates are normalized to 0-1 range for consistent scaling
-- **DPI Scaling**: All coordinates are multiplied by `size * dpi` for proper multi-DPI support
-- **Color**: Uses single color parameter (can be extended for multi-color icons)
-- **Transforms**: SVG transforms are not yet supported - flatten paths in your SVG editor first
+**ImGui DrawList Mapping:**
+- Lines → `DrawList_PathLineTo()`
+- Cubic Bezier → `DrawList_PathBezierCubicCurveTo()`
+- Quadratic Bezier → `DrawList_PathBezierQuadraticCurveTo()`
+- Arcs → Approximated with 4 cubic bezier segments
+- Fill → `DrawList_PathFillConvex()`
+- Stroke → `DrawList_PathStroke()`
+
+**Coordinate Normalization:**
+- Uses ViewBox if present in SVG
+- Otherwise calculates bounding box from all paths
+- Normalizes to 0-1 range for consistent scaling at any DPI
+- All coordinates multiplied by `size * dpi` at runtime
+
+**Color Handling:**
+- SVG fills and strokes mapped to single `color` parameter in Lua
+- Multi-color icons: generate separate functions for each color layer
 
 ---
 
