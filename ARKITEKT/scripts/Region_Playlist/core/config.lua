@@ -45,7 +45,20 @@ M.TRANSPORT = {
     icon_color = hexrgb("#CCCCCC"),
     animation_speed = 12.0,
   },
-  
+
+  -- Settings button (right)
+  settings = {
+    size = 32,
+    rounding = 4,
+    bg_color = hexrgb("#252525"),
+    bg_hover = hexrgb("#2A2A2A"),
+    border_inner = hexrgb("#404040"),
+    border_hover = hexrgb("#505050"),
+    border_outer = hexrgb("#000000DD"),
+    icon_color = hexrgb("#CCCCCC"),
+    animation_speed = 12.0,
+  },
+
   -- Central display (library-styled double border)
   display = {
     bg_color = hexrgb("#252525"),
