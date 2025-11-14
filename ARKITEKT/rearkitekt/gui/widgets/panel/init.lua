@@ -248,6 +248,133 @@ end
 -- Corner button rendering is delegated to controls.corner_button
 -- (draw_corner_button_custom removed)
 
+-- Foreground version for rendering on top of content
+-- Uses a separate invisible window for click detection while drawing on foreground
+local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel_id, panel_rounding)
+  if not config.corner_buttons then return end
+
+  local cb = config.corner_buttons
+  local size = cb.size or 30
+  local border_thickness = 1
+
+  -- Responsive: Hide corner buttons if panel is too narrow
+  local min_width = cb.min_width_to_show or 150
+  if w < min_width then
+    return
+  end
+
+  -- Get rounding from config
+  local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
+  local outer_rounding = CORNER_BUTTON_CONFIG.outer_corner_rounding
+
+  -- Get position offsets
+  local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
+  local offset_y = CORNER_BUTTON_CONFIG.position_offset_y
+
+  -- Helper to draw a single corner button on foreground
+  local function draw_button(position, button_config, btn_x, btn_y, unique_id)
+    if not button_config then return end
+
+    -- Draw visuals on foreground
+    local Style = require('rearkitekt.gui.style.defaults')
+    local inst = get_corner_button_instance(unique_id)
+
+    local hovered = ImGui.IsMouseHoveringRect(ctx, btn_x, btn_y, btn_x + size, btn_y + size)
+    local active = hovered and ImGui.IsMouseDown(ctx, 0)
+
+    local dt = ImGui.GetDeltaTime(ctx)
+    local target = (hovered or active) and 1.0 or 0.0
+    inst.hover_alpha = inst.hover_alpha + (target - inst.hover_alpha) * 12.0 * dt
+    inst.hover_alpha = math.max(0, math.min(1, inst.hover_alpha))
+
+    -- Apply style defaults
+    local cfg = Style.apply_defaults(Style.BUTTON, button_config)
+
+    local bg = cfg.bg_color
+    local border_inner = cfg.border_inner_color
+    local text = cfg.text_color
+
+    if active then
+      bg = cfg.bg_active_color or bg
+      border_inner = cfg.border_active_color or border_inner
+      text = cfg.text_active_color or text
+    elseif inst.hover_alpha > 0.01 then
+      bg = Style.RENDER.lerp_color(cfg.bg_color, cfg.bg_hover_color or cfg.bg_color, inst.hover_alpha)
+      border_inner = Style.RENDER.lerp_color(cfg.border_inner_color, cfg.border_hover_color or cfg.border_inner_color, inst.hover_alpha)
+      text = Style.RENDER.lerp_color(cfg.text_color, cfg.text_hover_color or cfg.text_color, inst.hover_alpha)
+    end
+
+    -- Draw corner shape (using helper from CornerButton module)
+    local CornerButton = require('rearkitekt.gui.widgets.controls.corner_button')
+    -- Call the internal draw function through the public API but on foreground drawlist
+    -- Actually, let's just inline the drawing here since we need foreground DL
+
+    -- Draw filled background
+    local rtl, rtr, rbr, rbl = 0, 0, 0, 0
+    if position == 'tl' then
+      rtl = outer_rounding; rbr = inner_rounding
+    elseif position == 'tr' then
+      rtr = outer_rounding; rbl = inner_rounding
+    elseif position == 'bl' then
+      rbl = outer_rounding; rtr = inner_rounding
+    elseif position == 'br' then
+      rbr = outer_rounding; rtl = inner_rounding
+    end
+
+    local itl = math.max(0, rtl - 2)
+    local itr = math.max(0, rtr - 2)
+    local ibr = math.max(0, rbr - 2)
+    local ibl = math.max(0, rbl - 2)
+
+    ImGui.DrawList_AddRectFilled(dl, btn_x, btn_y, btn_x + size, btn_y + size, bg, (itl + itr + ibr + ibl) / 4)
+    ImGui.DrawList_AddRect(dl, btn_x + 1, btn_y + 1, btn_x + size - 1, btn_y + size - 1, border_inner, (itl + itr + ibr + ibl) / 4, 0, 1)
+    ImGui.DrawList_AddRect(dl, btn_x, btn_y, btn_x + size, btn_y + size, cfg.border_outer_color, (itl + itr + ibr + ibl) / 4, 0, 1)
+
+    -- Draw icon/label
+    local label = cfg.icon or cfg.label or ''
+    if label ~= '' then
+      local tw, th = ImGui.CalcTextSize(ctx, label)
+      local tx = btn_x + (size - tw) * 0.5
+      local ty = btn_y + (size - th) * 0.5
+      ImGui.DrawList_AddText(dl, tx, ty, text, label)
+    end
+
+    -- Click detection (manual for foreground)
+    if hovered and ImGui.IsMouseClicked(ctx, 0) and cfg.on_click then
+      cfg.on_click()
+    end
+
+    if hovered and cfg.tooltip then
+      ImGui.SetTooltip(ctx, cfg.tooltip)
+    end
+  end
+
+  -- Draw each corner button
+  if cb.top_left then
+    local btn_x = x + border_thickness + offset_x
+    local btn_y = y + border_thickness + offset_y
+    draw_button('tl', cb.top_left, btn_x, btn_y, panel_id .. "_corner_tl")
+  end
+
+  if cb.top_right then
+    local btn_x = x + w - size - border_thickness - offset_x
+    local btn_y = y + border_thickness + offset_y
+    draw_button('tr', cb.top_right, btn_x, btn_y, panel_id .. "_corner_tr")
+  end
+
+  if cb.bottom_left then
+    local btn_x = x + border_thickness + offset_x
+    local btn_y = y + h - size - border_thickness - offset_y
+    draw_button('bl', cb.bottom_left, btn_x, btn_y, panel_id .. "_corner_bl")
+  end
+
+  if cb.bottom_right then
+    local btn_x = x + w - size - border_thickness - offset_x
+    local btn_y = y + h - size - border_thickness - offset_y
+    draw_button('br', cb.bottom_right, btn_x, btn_y, panel_id .. "_corner_br")
+  end
+end
+
 local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, panel_rounding)
   if not config.corner_buttons then return end
 
@@ -408,12 +535,10 @@ function Panel:begin_draw(ctx)
       Header.draw_elements(ctx, dl, x1, y1, w, header_height, self, self.config)
     end
   end
-  
-  -- Draw corner buttons (if no header, or if explicitly enabled)
-  if not header_cfg.enabled or self.config.corner_buttons_always_visible then
-    draw_corner_buttons(ctx, dl, x1, y1, w, h, self.config, self.id, self.config.rounding)
-  end
-  
+
+  -- Store panel bounds for corner buttons (drawn later in end_draw to be on top)
+  self._corner_button_bounds = {x1, y1, w, h}
+
   -- Calculate content area
   local border_inset = self.config.border_thickness
   local child_x = x1 + border_inset
@@ -491,15 +616,25 @@ function Panel:end_draw(ctx)
     end
     
     Content.end_child(ctx, self)
-    
+
     if self.scrollbar and self.scrollbar:is_scrollable() then
       local scrollbar_x = self.child_x + self.child_width - self.config.scroll.scrollbar_config.width
       local scrollbar_y = self.child_y
-      
+
       self.scrollbar:draw(ctx, scrollbar_x, scrollbar_y, self.child_height)
     end
   end
-  
+
+  -- Draw corner buttons on top (using foreground draw list to render over content)
+  if self._corner_button_bounds then
+    local header_cfg = self.config.header
+    if not header_cfg.enabled or self.config.corner_buttons_always_visible then
+      local fg_dl = ImGui.GetForegroundDrawList(ctx)
+      local x1, y1, w, h = table.unpack(self._corner_button_bounds)
+      draw_corner_buttons_foreground(ctx, fg_dl, x1, y1, w, h, self.config, self.id, self.config.rounding)
+    end
+  end
+
   -- Pop ID scope if it was pushed
   if self._id_scope_pushed then
     ImGui.PopID(ctx)
