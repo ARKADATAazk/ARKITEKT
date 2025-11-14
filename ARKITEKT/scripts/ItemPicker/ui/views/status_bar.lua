@@ -31,10 +31,15 @@ function StatusBar:render(ctx)
   local selected_audio = self.state.audio_selection_count or 0
   local selected_midi = self.state.midi_selection_count or 0
 
-  -- Left side: Selection info
+  -- Left side: Selection info and preview status
   local status_text = ""
 
-  if selected_audio > 0 or selected_midi > 0 then
+  -- Preview status
+  if self.state.previewing and self.state.previewing ~= 0 and self.state.preview_item then
+    local take = reaper.GetActiveTake(self.state.preview_item)
+    local item_name = take and reaper.GetTakeName(take) or "Item"
+    status_text = string.format("🔊 Previewing: %s", item_name)
+  elseif selected_audio > 0 or selected_midi > 0 then
     local parts = {}
     if selected_audio > 0 then
       table.insert(parts, string.format("%d Audio", selected_audio))
@@ -52,7 +57,7 @@ function StatusBar:render(ctx)
   -- Right side: Keyboard shortcuts hint
   ImGui.SameLine(ctx)
 
-  local hints = "Ctrl+F: Search | Right-click: Toggle | Delete: Disable | Alt+Click: Quick Disable"
+  local hints = "Ctrl+F: Search | Space: Preview | Delete: Disable | Alt+Click: Quick Disable"
   local hints_w = ImGui.CalcTextSize(ctx, hints)
   ImGui.SetCursorPosX(ctx, avail_w - hints_w - 10)
 

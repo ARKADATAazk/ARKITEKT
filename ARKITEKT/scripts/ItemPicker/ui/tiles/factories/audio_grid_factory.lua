@@ -161,6 +161,26 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       -- Update state with current selection count
       state.audio_selection_count = #selected_keys
     end,
+
+    play = function(selected_keys)
+      -- Preview selected items (use first selected)
+      if not selected_keys or #selected_keys == 0 then return end
+
+      local key = selected_keys[1]
+      local items = get_items()
+
+      for _, item_data in ipairs(items) do
+        if item_data.key == key then
+          -- Toggle preview
+          if state:is_previewing(item_data.item) then
+            state:stop_preview()
+          else
+            state:start_preview(item_data.item)
+          end
+          return
+        end
+      end
+    end,
   }
 
   return grid

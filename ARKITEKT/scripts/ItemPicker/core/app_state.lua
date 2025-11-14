@@ -52,6 +52,11 @@ M.dragging_is_audio = true
 M.audio_selection_count = 0
 M.midi_selection_count = 0
 
+-- Preview state
+M.preview_item = nil
+M.preview_track = nil
+M.previewing = 0
+
 M.draw_list = nil
 M.overlay_alpha = 1.0
 M.exit = false
@@ -64,9 +69,6 @@ M.tile_animator = nil
 
 -- Grid scroll state
 M.scroll_y = {}
-
--- Preview state
-M.previewing = 0
 
 -- Pending operations (for animations)
 M.pending_spawn = {}
@@ -228,6 +230,45 @@ end
 
 function M.request_exit()
   M.exit = true
+end
+
+-- Preview management
+function M.start_preview(item)
+  if not item then return end
+
+  -- Stop current preview
+  M.stop_preview()
+
+  -- Start new preview
+  local play_through_track = M.settings.play_item_through_track
+  local track = reaper.GetMediaItemTrack(item)
+
+  if play_through_track then
+    M.previewing = reaper.PlayPreview(reaper.PCM_Source_CreateFromType("MIDI"))
+    M.preview_track = track
+  else
+    local take = reaper.GetActiveTake(item)
+    if take then
+      local source = reaper.GetMediaItemTake_Source(take)
+      if source then
+        M.previewing = reaper.PlayPreview(source)
+        M.preview_item = item
+      end
+    end
+  end
+end
+
+function M.stop_preview()
+  if M.previewing and M.previewing ~= 0 then
+    reaper.StopPreview(M.previewing)
+    M.previewing = 0
+    M.preview_item = nil
+    M.preview_track = nil
+  end
+end
+
+function M.is_previewing(item)
+  return M.preview_item == item and M.previewing ~= 0
 end
 
 -- Persistence
