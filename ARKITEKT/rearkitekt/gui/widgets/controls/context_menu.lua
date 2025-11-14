@@ -10,53 +10,55 @@ local M = {}
 local hexrgb = Colors.hexrgb
 
 local DEFAULTS = {
-  bg_color = hexrgb("#1E1E1E"),
-  border_color = hexrgb("#404040"),
-  item_bg_color = hexrgb("#000000"),
-  item_hover_color = hexrgb("#3A3A3A"),
-  item_active_color = hexrgb("#454545"),
-  item_text_color = hexrgb("#CCCCCC"),
-  item_text_hover_color = hexrgb("#FFFFFF"),
+  bg_color = hexrgb("#242424"),         -- Lighter background for better contrast
+  border_color = hexrgb("#505050"),     -- More visible border
+  item_bg_color = hexrgb("#00000000"),  -- Transparent default
+  item_hover_color = hexrgb("#2E2E2E"), -- Subtle hover highlight
+  item_active_color = hexrgb("#353535"), -- Active state
+  item_text_color = hexrgb("#CCCCCC"),  -- Standard text
+  item_text_hover_color = hexrgb("#FFFFFF"), -- Bright on hover
   item_disabled_color = hexrgb("#666666"),
-  separator_color = hexrgb("#404040"),
-  rounding = 4,
-  padding = 4,
-  item_height = 24,
-  item_padding_x = 10,
+  separator_color = hexrgb("#505050"),   -- Match border color
+  rounding = 2,                          -- Slight rounding for modern look
+  padding = 8,                           -- More padding for breathing room
+  item_height = 26,                      -- Taller items
+  item_padding_x = 12,                   -- More horizontal padding
   border_thickness = 1,
 }
 
 function M.begin(ctx, id, config)
   config = config or {}
-  
+
   local bg_color = config.bg_color or DEFAULTS.bg_color
   local border_color = config.border_color or DEFAULTS.border_color
   local rounding = config.rounding or DEFAULTS.rounding
   local padding = config.padding or DEFAULTS.padding
   local border_thickness = config.border_thickness or DEFAULTS.border_thickness
-  
+  local min_width = config.min_width or 180  -- Minimum width for better appearance
+
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, rounding)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_PopupRounding, rounding)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, border_thickness)
-  
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowMinSize, min_width, 0)
+
   ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, bg_color)
   ImGui.PushStyleColor(ctx, ImGui.Col_Border, border_color)
-  
+
   local popup_open = ImGui.BeginPopup(ctx, id)
-  
+
   if not popup_open then
     ImGui.PopStyleColor(ctx, 2)
-    ImGui.PopStyleVar(ctx, 4)
+    ImGui.PopStyleVar(ctx, 5)
   end
-  
+
   return popup_open
 end
 
 function M.end_menu(ctx)
   ImGui.EndPopup(ctx)
   ImGui.PopStyleColor(ctx, 2)
-  ImGui.PopStyleVar(ctx, 4)
+  ImGui.PopStyleVar(ctx, 5)
 end
 
 function M.item(ctx, label, config)
@@ -95,14 +97,16 @@ end
 function M.separator(ctx, config)
   config = config or {}
   local separator_color = config.separator_color or DEFAULTS.separator_color
-  
+
+  ImGui.Dummy(ctx, 1, 4)
   local x, y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
-  
+
   local dl = ImGui.GetWindowDrawList(ctx)
-  ImGui.DrawList_AddLine(dl, x, y + 4, x + avail_w, y + 4, separator_color, 1)
-  
-  ImGui.Dummy(ctx, 1, 8)
+  -- Enhanced separator with inset from edges
+  ImGui.DrawList_AddLine(dl, x + 8, y, x + avail_w - 8, y, separator_color, 1)
+
+  ImGui.Dummy(ctx, 1, 6)
 end
 
 return M
