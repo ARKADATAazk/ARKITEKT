@@ -101,28 +101,18 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   if bridge_state.is_playing then
     local time_remaining = bridge_state.time_remaining or 0
 
-    -- Get current play position and time signature for beats display
-    local play_pos = reaper.GetPlayPosition()
-    local _, measures, _, beats, _ = reaper.TimeMap2_timeToBeats(0, play_pos)
-
-    -- Format beats as "BAR.BEAT" (e.g., "4.2" means bar 4, beat 2)
-    local beat_display = string.format("%d.%d", measures + 1, math.floor(beats) + 1)
-
     -- Format time as H:M:S:ms
     local hours = math.floor(time_remaining / 3600)
     local mins = math.floor((time_remaining % 3600) / 60)
     local secs = math.floor(time_remaining % 60)
     local ms = math.floor((time_remaining % 1) * 100)  -- centiseconds
 
-    local time_display
     if hours > 0 then
-      time_display = string.format("%d:%02d:%02d:%02d", hours, mins, secs, ms)
+      time_text = string.format("%d:%02d:%02d:%02d", hours, mins, secs, ms)
     else
-      time_display = string.format("%02d:%02d:%02d", mins, secs, ms)
+      time_text = string.format("%02d:%02d:%02d", mins, secs, ms)
     end
 
-    -- Combine as "BEATS/TIME"
-    time_text = string.format("%s/%s", beat_display, time_display)
     time_color = cfg.time_playing_color or hexrgb("#FFFFFF")
   end
   
