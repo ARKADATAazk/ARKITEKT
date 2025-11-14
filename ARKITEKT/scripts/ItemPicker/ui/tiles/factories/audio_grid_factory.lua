@@ -53,10 +53,17 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
         goto continue
       end
 
-      -- Get track color
-      local take = reaper.GetActiveTake(item)
+      -- Get track color (using I_CUSTOMCOLOR like old implementation)
       local track = reaper.GetMediaItemTrack(item)
-      local track_color = reaper.GetTrackColor(track)
+      local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
+      local r, g, b = 85/256, 91/256, 91/256  -- Default grey
+      if track_color ~= 16576 and track_color > 0 then
+        local R = track_color & 255
+        local G = (track_color >> 8) & 255
+        local B = (track_color >> 16) & 255
+        r, g, b = R/255, G/255, B/255
+      end
+      local color = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
 
       table.insert(filtered, {
         filename = filename,
@@ -64,7 +71,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
         name = item_name,
         index = current_idx,
         total = #content,
-        color = track_color ~= 0 and (track_color | 0xFF) or 0xFF555555,
+        color = color,
         key = filename,
       })
 

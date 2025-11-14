@@ -54,7 +54,21 @@ function M.handle_drag_logic(ctx, state, mini_font)
 
   local rect_x1, rect_y1, rect_x2, rect_y2
 
-  local item_length = reaper.GetMediaSourceLength(reaper.GetMediaItemTake_Source(reaper.GetActiveTake(state.item_to_add)))
+  if not state.item_to_add then
+    ImGui.PopStyleVar(ctx, 1)
+    ImGui.End(ctx)
+    return false
+  end
+
+  local take = reaper.GetActiveTake(state.item_to_add)
+  if not take then
+    ImGui.PopStyleVar(ctx, 1)
+    ImGui.End(ctx)
+    return false
+  end
+
+  local source = reaper.GetMediaItemTake_Source(take)
+  local item_length = source and reaper.GetMediaSourceLength(source) or 0
 
   if track and (str == "arrange" or (str and str:find('envelope'))) then
     -- Over existing track
@@ -161,13 +175,14 @@ function M.render_drag_preview(ctx, state, mini_font, visualization)
     -- Content area
     ImGui.Dummy(ctx, state.item_to_add_width, state.item_to_add_height - ImGui.GetTextLineHeightWithSpacing(ctx))
 
-    -- Visualiz ation
-    if reaper.TakeIsMIDI(reaper.GetActiveTake(state.item_to_add)) then
+    -- Visualization
+    local take = reaper.GetActiveTake(state.item_to_add)
+    if take and reaper.TakeIsMIDI(take) then
       local thumbnail = visualization.GetMidiThumbnail(ctx, state.cache, state.item_to_add)
       if thumbnail then
         visualization.DisplayMidiItem(ctx, thumbnail, state.item_to_add_color, state.draw_list)
       end
-    else
+    elseif take then
       if not state.drag_waveform then
         state.drag_waveform = visualization.GetItemWaveform(state.cache, state.item_to_add)
       end
