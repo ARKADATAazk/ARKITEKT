@@ -67,12 +67,12 @@ M.graph_dirty = true
 M.selection_info = { region_count = 0, playlist_count = 0 }
 M.circular_dependency_error = nil
 M.circular_dependency_error_timestamp = nil
-M.circular_dependency_error_timeout = 3.0  -- seconds
+M.circular_dependency_error_timeout = 6.0  -- seconds (doubled)
 
 -- Temporary state change notifications
 M.state_change_notification = nil
 M.state_change_notification_timestamp = nil
-M.state_change_notification_timeout = 2.0  -- seconds
+M.state_change_notification_timeout = 4.0  -- seconds (doubled)
 
 M.last_override_state = false
 

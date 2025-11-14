@@ -95,8 +95,15 @@ local function get_app_status(State)
           local progress = bridge:get_progress() or 0
           local time_remaining = bridge:get_time_remaining()
 
-          -- Enhanced playback info
+          -- Enhanced playback info with playlist name
           local play_parts = {}
+
+          -- Add playlist name
+          local active_playlist = State.get_active_playlist and State.get_active_playlist()
+          if active_playlist then
+            table.insert(play_parts, string.format("Playing '%s'", active_playlist.name or "Untitled"))
+          end
+
           table.insert(play_parts, string.format("▶ %s", region.name))
           table.insert(play_parts, string.format("[%d/%d]", bridge_state.playlist_pointer, #bridge_state.playlist_order))
 
@@ -124,34 +131,8 @@ local function get_app_status(State)
       end
     end
 
-    -- Build base info (always shown)
-    -- Add playlist info
-    local active_playlist = State.get_active_playlist and State.get_active_playlist()
-    local playlist_info = ""
-    if active_playlist then
-      local region_count = active_playlist.order and #active_playlist.order or 0
-      playlist_info = string.format("%s (%d)", active_playlist.name or "Untitled", region_count)
-    end
-
-    -- Build final status text
-    local final_parts = {}
-
-    -- Add dynamic status message if present
-    if status_message then
-      table.insert(final_parts, status_message)
-    end
-
-    -- Add base info (only playlist name and count)
-    if playlist_info ~= "" then
-      table.insert(final_parts, playlist_info)
-    end
-
-      local info_text = table.concat(final_parts, "  •  ")
-      
-      -- Failsafe: ensure we never return empty text
-      if not info_text or info_text == "" then
-        info_text = "[Status Error]"
-      end
+    -- Build final status text (no base info, message only)
+    local info_text = status_message or ""
       -- <<< STATUS DETECTION (END)
       
       return {
