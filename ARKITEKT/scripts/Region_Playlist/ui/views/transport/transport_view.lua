@@ -108,6 +108,10 @@ function TransportView:build_header_elements(bridge_state)
           local is_playing = bridge:get_state().is_playing
           if is_playing then
             bridge:stop()
+            -- Cancel jump flash on stop
+            if self.container then
+              self.container:cancel_jump_flash()
+            end
           else
             bridge:play()
           end
@@ -126,6 +130,10 @@ function TransportView:build_header_elements(bridge_state)
         tooltip = "Stop",
         on_click = function()
           self.state.get_bridge():stop()
+          -- Cancel jump flash on stop
+          if self.container then
+            self.container:cancel_jump_flash()
+          end
         end,
       },
     },
@@ -161,6 +169,11 @@ function TransportView:build_header_elements(bridge_state)
         on_click = function()
           local bridge = self.state.get_bridge()
           local success = bridge:jump_to_next_quantized(self.config.quantize_lookahead)
+
+          -- Trigger visual flash effect on successful jump
+          if success and self.container then
+            self.container:trigger_jump_flash()
+          end
 
           if success and self.state.set_state_change_notification then
             local bridge_state = bridge:get_state()

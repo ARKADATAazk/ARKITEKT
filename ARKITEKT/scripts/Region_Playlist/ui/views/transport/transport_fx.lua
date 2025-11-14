@@ -79,24 +79,31 @@ local function process_tile_border_color(base_color)
   return Colors.same_hue_variant(base_color, saturation, brightness, alpha)
 end
 
-function M.render_gradient_background(dl, x1, y1, x2, y2, color_left, color_right, rounding, gradient_config)
-  local opacity = gradient_config.fill_opacity or 0.25
+function M.render_gradient_background(dl, x1, y1, x2, y2, color_left, color_right, rounding, gradient_config, jump_flash_alpha, jump_flash_config)
+  jump_flash_alpha = jump_flash_alpha or 0.0
+  jump_flash_config = jump_flash_config or {}
+
+  local base_opacity = gradient_config.fill_opacity or 0.25
   local saturation = gradient_config.fill_saturation or 0.35
   local brightness = gradient_config.fill_brightness or 0.45
-  
+  local max_opacity = jump_flash_config.max_opacity or 0.85
+
+  -- Boost opacity heavily during jump flash (base -> max)
+  local opacity = base_opacity + (max_opacity - base_opacity) * jump_flash_alpha
+
   local processed_left = process_tile_fill_color(color_left, opacity, saturation, brightness)
   local processed_right = process_tile_fill_color(color_right, opacity, saturation, brightness)
-  
+
   local r1, g1, b1, a1 = Colors.rgba_to_components(processed_left)
   local r2, g2, b2, a2 = Colors.rgba_to_components(processed_right)
-  
+
   local color_tl = Colors.components_to_rgba(r1, g1, b1, a1)
   local color_tr = Colors.components_to_rgba(r2, g2, b2, a2)
   local color_bl = Colors.components_to_rgba(r1, g1, b1, a1)
   local color_br = Colors.components_to_rgba(r2, g2, b2, a2)
-  
+
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, color_tl, rounding, ImGui.DrawFlags_RoundCornersAll)
-  
+
   local inset = math.min(2, rounding * 0.3)
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
   ImGui.DrawList_AddRectFilledMultiColor(dl, x1 + inset, y1 + inset, x2 - inset, y2 - inset, color_tl, color_tr, color_br, color_bl)
@@ -181,12 +188,13 @@ function M.render_border(dl, x1, y1, x2, y2, config)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_cfg.color, config.rounding, ImGui.DrawFlags_RoundCornersAll, border_cfg.thickness)
 end
 
-function M.render_complete(dl, x1, y1, x2, y2, config, hover_factor, current_region_color, next_region_color)
+function M.render_complete(dl, x1, y1, x2, y2, config, hover_factor, current_region_color, next_region_color, jump_flash_alpha)
   config = config or M.DEFAULT_CONFIG
   hover_factor = hover_factor or 0
-  
+  jump_flash_alpha = jump_flash_alpha or 0
+
   local color_left, color_right
-  
+
   if current_region_color and next_region_color then
     color_left = current_region_color
     color_right = next_region_color
@@ -198,9 +206,9 @@ function M.render_complete(dl, x1, y1, x2, y2, config, hover_factor, current_reg
     color_left = ready_color
     color_right = ready_color
   end
-  
-  M.render_gradient_background(dl, x1, y1, x2, y2, color_left, color_right, config.rounding, config.gradient)
-  
+
+  M.render_gradient_background(dl, x1, y1, x2, y2, color_left, color_right, config.rounding, config.gradient, jump_flash_alpha, config.jump_flash)
+
   M.render_specular(dl, x1, y1, x2, y2, config, hover_factor)
   M.render_inner_glow(dl, x1, y1, x2, y2, config, hover_factor)
   M.render_border(dl, x1, y1, x2, y2, config)

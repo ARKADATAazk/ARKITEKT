@@ -75,6 +75,10 @@ M.TRANSPORT = {
       fill_saturation = 0.8,
       fill_brightness = 0.8,
     },
+    jump_flash = {
+      fade_speed = 3.0,        -- How fast the flash fades out (higher = faster)
+      max_opacity = 0.85,      -- Maximum gradient opacity during flash
+    },
     progress = { height = 3, track_color = hexrgb("#1D1D1D") },
   },
   

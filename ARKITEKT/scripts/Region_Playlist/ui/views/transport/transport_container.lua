@@ -77,6 +77,9 @@ function M.new(opts)
     next_region_color = nil,
     target_current_color = nil,
     target_next_color = nil,
+
+    -- Jump flash effect
+    jump_flash_alpha = 0.0,
   }, TransportPanel)
 
   return container
@@ -93,6 +96,25 @@ function TransportPanel:update_hover_state(ctx, x1, y1, x2, y2, dt)
   self.hover_alpha = math.max(0.0, math.min(1.0, self.hover_alpha + delta))
 
   return is_hovered
+end
+
+-- Trigger jump flash effect (call when jump button is clicked)
+function TransportPanel:trigger_jump_flash()
+  self.jump_flash_alpha = 1.0
+end
+
+-- Cancel jump flash effect (call when transport stops or transition cancelled)
+function TransportPanel:cancel_jump_flash()
+  self.jump_flash_alpha = 0.0
+end
+
+-- Update jump flash fade
+function TransportPanel:update_jump_flash(dt)
+  if self.jump_flash_alpha > 0.0 then
+    local fade_speed = (self.config.fx and self.config.fx.jump_flash and self.config.fx.jump_flash.fade_speed) or 3.0
+    local fade_delta = fade_speed * dt
+    self.jump_flash_alpha = math.max(0.0, self.jump_flash_alpha - fade_delta)
+  end
 end
 
 function TransportPanel:update_region_colors(ctx, target_current, target_next)
@@ -172,35 +194,38 @@ function TransportPanel:begin_draw(ctx, region_colors)
   region_colors = region_colors or {}
   local target_current = region_colors.current
   local target_next = region_colors.next
-  
+
+  local dt = ImGui.GetDeltaTime(ctx)
+
   self:update_region_colors(ctx, target_current, target_next)
-  
+  self:update_jump_flash(dt)
+
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
   local w = self.width or avail_w
   local h = self.height
-  
+
   local x1, y1 = cursor_x, cursor_y
   local x2, y2 = x1 + w, y1 + h
-  
+
   self.last_bounds = { x1 = x1, y1 = y1, x2 = x2, y2 = y2 }
-  
+
   local dl = ImGui.GetWindowDrawList(ctx)
-  local dt = ImGui.GetDeltaTime(ctx)
   local is_hovered = self:update_hover_state(ctx, x1, y1, x2, y2, dt)
-  
-  TransportFX.render_complete(dl, x1, y1, x2, y2, self.config.fx, self.hover_alpha, 
-    self.current_region_color, self.next_region_color)
-  
+
+  -- Pass jump flash alpha to render for gradient boost
+  TransportFX.render_complete(dl, x1, y1, x2, y2, self.config.fx, self.hover_alpha,
+    self.current_region_color, self.next_region_color, self.jump_flash_alpha)
+
   if self.on_hover_changed then
     self.on_hover_changed(is_hovered, self.hover_alpha)
   end
-  
+
   local success = self.panel:begin_draw(ctx)
-  
+
   local content_w = self.panel.child_width or w
   local content_h = self.panel.child_height or (h - (self.panel.header_height or 0))
-  
+
   return content_w, content_h
 end
 
@@ -214,6 +239,7 @@ function TransportPanel:reset()
   self.next_region_color = nil
   self.target_current_color = nil
   self.target_next_color = nil
+  self.jump_flash_alpha = 0.0
 end
 
 function TransportPanel:get_hover_factor()
