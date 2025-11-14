@@ -132,7 +132,7 @@ function M.get_active_container_config(callbacks)
   return {
     header = {
       enabled = true,
-      height = 23,
+      height = 24,
       elements = {
         {
           id = "tabs",

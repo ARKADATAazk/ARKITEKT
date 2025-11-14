@@ -59,120 +59,138 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
   local max_width = config.max_width or 180
   local padding_x = config.padding_x or 5
   local spacing = config.spacing or 0
-  
+
   -- Calculate ideal widths for all tabs
   local ideal_widths = {}
   local total_ideal = 0
-  
+
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
     local text_w = ImGui.CalcTextSize(ctx, tab.label or "Tab")
     local chip_width = has_chip and 20 or 0
     local ideal = text_w + padding_x * 2 + chip_width
     ideal = math.min(max_width, math.max(min_width, ideal))
-    
+
     ideal_widths[i] = ideal
     total_ideal = total_ideal + ideal
-    
+
     if i < #tabs then
       total_ideal = total_ideal + (spacing == 0 and -1 or spacing)
     end
   end
-  
+
+  -- Check if we're using more than 80% of available width
+  local usage_ratio = total_ideal / available_width
+
   -- If we have extra space, distribute it proportionally
   if total_ideal < available_width and #tabs > 0 then
-    local extra_space = available_width - total_ideal
-    local space_per_tab = extra_space / #tabs
-    
-    for i = 1, #tabs do
-      local new_width = ideal_widths[i] + space_per_tab
-      ideal_widths[i] = math.min(max_width, new_width)
+    -- If using more than 80% of space, expand to fill 100%
+    if usage_ratio > 0.80 then
+      local extra_space = available_width - total_ideal
+      local space_per_tab = extra_space / #tabs
+
+      for i = 1, #tabs do
+        ideal_widths[i] = ideal_widths[i] + space_per_tab
+      end
+    else
+      -- Otherwise distribute proportionally but respect max_width
+      local extra_space = available_width - total_ideal
+      local space_per_tab = extra_space / #tabs
+
+      for i = 1, #tabs do
+        local new_width = ideal_widths[i] + space_per_tab
+        ideal_widths[i] = math.min(max_width, new_width)
+      end
     end
   -- If we're tight on space, compress proportionally
   elseif total_ideal > available_width and #tabs > 0 then
     local compression_ratio = available_width / total_ideal
-    
+
     for i = 1, #tabs do
       local compressed = ideal_widths[i] * compression_ratio
       ideal_widths[i] = math.max(min_width, compressed)
     end
   end
-  
+
   return ideal_widths
 end
 
-local function init_tab_positions(state, tabs, start_x, ctx, config)
+local function init_tab_positions(state, tabs, start_x, ctx, config, available_width)
   if not state.tab_positions then
     state.tab_positions = {}
   end
-  
+
   if not state.tab_animation_enabled then
     state.tab_animation_enabled = {}
   end
-  
+
+  -- Use responsive width calculation
+  local tab_widths = calculate_responsive_tab_widths(ctx, tabs, config, available_width)
+
   local cursor_x = start_x
   local spacing = config.spacing or 0
-  
+
   for i, tab in ipairs(tabs) do
     if not state.tab_positions[tab.id] then
-      local has_chip = tab.chip_color ~= nil
-      local tab_width = calculate_tab_width(ctx, tab.label or "Tab", config, has_chip)
-      
+      local tab_width = tab_widths[i] or calculate_tab_width(ctx, tab.label or "Tab", config, tab.chip_color ~= nil)
+
       state.tab_positions[tab.id] = {
         current_x = cursor_x,
         target_x = cursor_x,
       }
-      
+
       state.tab_animation_enabled[tab.id] = false
-      
+
       local effective_spacing = spacing
       if i < #tabs and spacing == 0 then
         effective_spacing = -1
       end
-      
+
       cursor_x = cursor_x + tab_width + effective_spacing
     end
   end
 end
 
-local function update_tab_positions(ctx, state, config, tabs, start_x)
+local function update_tab_positions(ctx, state, config, tabs, start_x, available_width)
   local spacing = config.spacing or 0
   local dt = ImGui.GetDeltaTime(ctx)
   local cursor_x = start_x
-  
+
+  -- Use responsive width calculation
+  local tab_widths = calculate_responsive_tab_widths(ctx, tabs, config, available_width)
+
   -- First pass: calculate all new targets and detect if this is a uniform shift (window move)
   local new_targets = {}
   local deltas = {}
   local is_uniform_shift = true
   local first_delta = nil
-  
+
   for i, tab in ipairs(tabs) do
-    local has_chip = tab.chip_color ~= nil
-    local tab_width = calculate_tab_width(ctx, tab.label or "Tab", config, has_chip)
+    local tab_width = tab_widths[i] or calculate_tab_width(ctx, tab.label or "Tab", config, tab.chip_color ~= nil)
     local pos = state.tab_positions[tab.id]
-    
+
     if not pos then
       pos = { current_x = cursor_x, target_x = cursor_x }
       state.tab_positions[tab.id] = pos
       state.tab_animation_enabled[tab.id] = false
     end
-    
+
     new_targets[tab.id] = cursor_x
     local delta = cursor_x - pos.target_x
     deltas[tab.id] = delta
-    
+
     -- Check if all tabs are shifting by the same amount (window drag)
     if first_delta == nil then
       first_delta = delta
     elseif math.abs(delta - first_delta) > 0.1 then
       is_uniform_shift = false
     end
-    
+
     local effective_spacing = spacing
     if i < #tabs and spacing == 0 then
       effective_spacing = -1
     end
-    
+
     cursor_x = cursor_x + tab_width + effective_spacing
   end
   
@@ -281,13 +299,14 @@ end
 
 local function draw_overflow_button(ctx, dl, x, y, width, height, config, hidden_count, unique_id, corner_rounding)
   local btn_cfg = config.overflow_button or {}
-  
+
   for k, v in pairs(DEFAULTS) do
     if btn_cfg[k] == nil then btn_cfg[k] = v end
   end
-  
-  local count_text = tostring(hidden_count)
-  
+
+  -- Use vertical ellipsis (⋮) when no overflow, count when overflow exists
+  local display_text = (hidden_count > 0) and tostring(hidden_count) or "⋮"
+
   local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
   local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
 
@@ -308,17 +327,17 @@ local function draw_overflow_button(ctx, dl, x, y, width, height, config, hidden
   local rounding = corner_rounding and corner_rounding.rounding or 4
   local inner_rounding = math.max(0, rounding - 2)
   local corner_flags = get_corner_flags(corner_rounding)
-  
+
   ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, inner_rounding, corner_flags)
-  
+
   ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + width - 1, y + height - 1, border_inner, inner_rounding, corner_flags, 1)
-  
+
   ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, btn_cfg.border_outer_color or config.border_outer_color, inner_rounding, corner_flags, 1)
 
-  local text_w = ImGui.CalcTextSize(ctx, count_text)
+  local text_w = ImGui.CalcTextSize(ctx, display_text)
   local text_x = x + (width - text_w) * 0.5
   local text_y = y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5
-  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, count_text)
+  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, display_text)
 
   ImGui.SetCursorScreenPos(ctx, x, y)
   local clicked = ImGui.InvisibleButton(ctx, "##overflow_" .. unique_id, width, height)
@@ -467,7 +486,7 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
 
   local text_w, text_h = ImGui.CalcTextSize(ctx, label)
   local text_x = content_x
-  local text_y = render_y + (render_h - text_h) * 0.5
+  local text_y = render_y + (render_h - text_h) * 0.5 - 1
 
   local text_max_w = render_x + render_w - text_x - (config.padding_x or 5)
   if text_w > text_max_w then
@@ -542,27 +561,29 @@ local function calculate_visible_tabs(ctx, tabs, config, available_width)
   return visible_indices, overflow_count, current_width
 end
 
-local function handle_drag_reorder(ctx, state, tabs, config, tabs_start_x)
+local function handle_drag_reorder(ctx, state, tabs, config, tabs_start_x, available_width)
   if not state.dragging_tab then return end
   if not ImGui.IsMouseDragging(ctx, 0) then return end
-  
+
   local mx = ImGui.GetMousePos(ctx)
+
+  -- Use responsive width calculation
+  local tab_widths = calculate_responsive_tab_widths(ctx, tabs, config, available_width)
+
   local dragged_tab = tabs[state.dragging_tab.index]
-  local has_chip = dragged_tab.chip_color ~= nil
-  local dragged_width = calculate_tab_width(ctx, dragged_tab.label or "Tab", config, has_chip)
+  local dragged_width = tab_widths[state.dragging_tab.index] or calculate_tab_width(ctx, dragged_tab.label or "Tab", config, dragged_tab.chip_color ~= nil)
   local spacing = config.spacing or 0
-  
+
   local drag_left = mx - state.dragging_tab.offset_x
   local drag_right = drag_left + dragged_width
-  
+
   local positions = {}
   local current_x = tabs_start_x
-  
+
   for i = 1, #tabs do
     local tab = tabs[i]
-    local tab_has_chip = tab.chip_color ~= nil
-    local tab_w = calculate_tab_width(ctx, tab.label or "Tab", config, tab_has_chip)
-    
+    local tab_w = tab_widths[i] or calculate_tab_width(ctx, tab.label or "Tab", config, tab.chip_color ~= nil)
+
     positions[i] = {
       index = i,
       left = current_x,
@@ -570,12 +591,12 @@ local function handle_drag_reorder(ctx, state, tabs, config, tabs_start_x)
       right = current_x + tab_w,
       width = tab_w,
     }
-    
+
     local effective_spacing = spacing
     if i < #tabs and spacing == 0 then
       effective_spacing = -1
     end
-    
+
     current_x = current_x + tab_w + effective_spacing
   end
   
@@ -657,46 +678,39 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     tabs_start_x = tabs_start_x - 1
   end
 
-  init_tab_positions(state, tabs, tabs_start_x, ctx, config)
+  -- Always reserve space for overflow/menu button
+  local overflow_cfg = config.overflow_button or { min_width = 21, padding_x = 8 }
+  local overflow_width = overflow_cfg.min_width or 21
 
-  local tabs_available_width_no_overflow = available_width - plus_width
+  local tabs_available_width_with_overflow = available_width - plus_width - overflow_width
   if spacing > 0 then
-    tabs_available_width_no_overflow = tabs_available_width_no_overflow - spacing
+    tabs_available_width_with_overflow = tabs_available_width_with_overflow - spacing - spacing
   else
-    tabs_available_width_no_overflow = tabs_available_width_no_overflow + 1
+    tabs_available_width_with_overflow = tabs_available_width_with_overflow + 1 + 1
   end
-  
+
+  init_tab_positions(state, tabs, tabs_start_x, ctx, config, tabs_available_width_with_overflow)
+
   local visible_indices, overflow_count, tabs_width = calculate_visible_tabs(
-    ctx, tabs, config, tabs_available_width_no_overflow
+    ctx, tabs, config, tabs_available_width_with_overflow
   )
-  
-  local overflow_width = 0
+
+  -- Adjust overflow button width based on content (count or menu icon)
   if overflow_count > 0 then
-    local overflow_cfg = config.overflow_button or { min_width = 21, padding_x = 8 }
     local count_text = tostring(overflow_count)
     local text_w = ImGui.CalcTextSize(ctx, count_text)
     overflow_width = math.max(overflow_cfg.min_width or 21, text_w + (overflow_cfg.padding_x or 8) * 2)
-    
-    local tabs_available_width_with_overflow = available_width - plus_width - overflow_width
-    if spacing > 0 then
-      tabs_available_width_with_overflow = tabs_available_width_with_overflow - spacing - spacing
-    else
-      tabs_available_width_with_overflow = tabs_available_width_with_overflow + 1 + 1
-    end
-    
-    visible_indices, overflow_count, tabs_width = calculate_visible_tabs(
-      ctx, tabs, config, tabs_available_width_with_overflow
-    )
+  else
+    -- Width for menu icon (⋮)
+    overflow_width = overflow_cfg.min_width or 21
   end
   
-  local tabs_total_width = tabs_width
-  if overflow_count > 0 then
-    tabs_total_width = tabs_total_width + overflow_width
-    if spacing > 0 then
-      tabs_total_width = tabs_total_width + spacing
-    else
-      tabs_total_width = tabs_total_width - 1
-    end
+  -- Always include overflow button in total width
+  local tabs_total_width = tabs_width + overflow_width
+  if spacing > 0 then
+    tabs_total_width = tabs_total_width + spacing
+  else
+    tabs_total_width = tabs_total_width - 1
   end
   
   if config.track and config.track.enabled then
@@ -717,16 +731,19 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   } or nil
   
   local plus_clicked, _ = draw_plus_button(ctx, dl, x, y, plus_width, height, config, unique_id, plus_corner)
-  
+
   if plus_clicked and config.on_tab_create then
     config.on_tab_create()
   end
 
-  handle_drag_reorder(ctx, state, tabs, config, tabs_start_x)
+  handle_drag_reorder(ctx, state, tabs, config, tabs_start_x, tabs_available_width_with_overflow)
   finalize_drag(ctx, state, config)
 
-  update_tab_positions(ctx, state, config, tabs, tabs_start_x)
-  
+  update_tab_positions(ctx, state, config, tabs, tabs_start_x, tabs_available_width_with_overflow)
+
+  -- Calculate responsive widths for drawing
+  local responsive_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width_with_overflow)
+
   local clicked_tab_id = nil
   local id_to_delete = nil
 
@@ -738,14 +755,13 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
         break
       end
     end
-    
+
     if is_visible then
       local pos = state.tab_positions[tab_data.id]
       if pos then
-        local has_chip = tab_data.chip_color ~= nil
-        local tab_w = calculate_tab_width(ctx, tab_data.label or "Tab", config, has_chip)
+        local tab_w = responsive_widths[i] or calculate_tab_width(ctx, tab_data.label or "Tab", config, tab_data.chip_color ~= nil)
         local tab_x = pos.current_x
-        
+
         if state.dragging_tab and state.dragging_tab.id == tab_data.id then
           local mx = ImGui.GetMousePos(ctx)
           tab_x = mx - state.dragging_tab.offset_x
@@ -769,28 +785,27 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     end
   end
   
-  if overflow_count > 0 then
-    local overflow_x = tabs_start_x + tabs_width
-    if spacing > 0 then
-      overflow_x = overflow_x + spacing
-    else
-      overflow_x = overflow_x - 1
-    end
-    
-    local overflow_corner = corner_rounding and {
-      round_top_left = false,
-      round_top_right = corner_rounding.round_top_right,
-      rounding = corner_rounding.rounding,
-    } or nil
-    
-    local overflow_clicked = draw_overflow_button(
-      ctx, dl, overflow_x, y, overflow_width, height, 
-      config, overflow_count, unique_id, overflow_corner
-    )
-    
-    if overflow_clicked and config.on_overflow_clicked then
-      config.on_overflow_clicked()
-    end
+  -- Always draw overflow/menu button
+  local overflow_x = tabs_start_x + tabs_width
+  if spacing > 0 then
+    overflow_x = overflow_x + spacing
+  else
+    overflow_x = overflow_x - 1
+  end
+
+  local overflow_corner = corner_rounding and {
+    round_top_left = false,
+    round_top_right = corner_rounding.round_top_right,
+    rounding = corner_rounding.rounding,
+  } or nil
+
+  local overflow_clicked = draw_overflow_button(
+    ctx, dl, overflow_x, y, overflow_width, height,
+    config, overflow_count, unique_id, overflow_corner
+  )
+
+  if overflow_clicked and config.on_overflow_clicked then
+    config.on_overflow_clicked()
   end
 
   if clicked_tab_id and config.on_tab_change then
