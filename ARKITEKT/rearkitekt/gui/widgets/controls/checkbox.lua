@@ -57,6 +57,7 @@ end
 local CHECKBOX_DEFAULTS = {
   size = 18,
   rounding = 0,
+  alpha = 1.0,  -- Visual alpha for fade animations
 
   -- OFF state colors (unchecked)
   bg_color = Style.BUTTON_COLORS.bg,
@@ -147,6 +148,12 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked)
   local rounding = config.rounding or 0
   local inner_rounding = math.max(0, rounding - 2)
 
+  -- Apply alpha to all colors for fade animation support
+  local visual_alpha = config.alpha or 1.0
+  bg_color = Colors.with_alpha(bg_color, math.floor(((bg_color & 0xFF) / 255) * visual_alpha * 255))
+  border_inner = Colors.with_alpha(border_inner, math.floor(((border_inner & 0xFF) / 255) * visual_alpha * 255))
+  border_outer = Colors.with_alpha(border_outer, math.floor(((border_outer & 0xFF) / 255) * visual_alpha * 255))
+
   -- Draw background
   ImGui.DrawList_AddRectFilled(dl, x, y, x + size, y + size, bg_color, inner_rounding)
 
@@ -158,7 +165,7 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked)
 
   -- Draw checkmark
   if instance.check_alpha > 0.01 then
-    local check_color = Colors.with_alpha(config.check_color, math.floor(instance.check_alpha * 255))
+    local check_color = Colors.with_alpha(config.check_color, math.floor(instance.check_alpha * visual_alpha * 255))
     local padding = size * 0.25
     local check_size = size - padding * 2
 
@@ -211,6 +218,10 @@ function M.draw(ctx, dl, x, y, label, is_checked, user_config, id)
     local label_color = instance.hover_alpha > 0.01 and
                         Style.RENDER.lerp_color(config.label_color, config.label_hover_color, instance.hover_alpha) or
                         config.label_color
+
+    -- Apply visual alpha to label
+    local visual_alpha = config.alpha or 1.0
+    label_color = Colors.with_alpha(label_color, math.floor(((label_color & 0xFF) / 255) * visual_alpha * 255))
 
     ImGui.DrawList_AddText(dl, label_x, label_y, label_color, label)
 

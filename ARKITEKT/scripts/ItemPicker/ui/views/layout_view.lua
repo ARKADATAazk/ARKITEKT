@@ -70,15 +70,15 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local ui_y_offset = 15 * (1.0 - ui_fade)
 
   -- Render checkboxes with fade animation and 14px padding
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, ui_fade)
-
+  -- Note: We pass alpha as config param instead of using PushStyleVar to keep interaction working
   local checkbox_x = 14
   local checkbox_y = 14 + ui_y_offset
+  local checkbox_config = { alpha = ui_fade }
 
   ImGui.SetCursorScreenPos(ctx, checkbox_x, checkbox_y)
   local clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
     "Play Item Through Track (will add delay to preview playback)",
-    self.state.settings.play_item_through_track, nil, "play_item_through_track")
+    self.state.settings.play_item_through_track, checkbox_config, "play_item_through_track")
   if clicked then
     self.state:set_setting('play_item_through_track', not self.state.settings.play_item_through_track)
   end
@@ -87,7 +87,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   ImGui.SetCursorScreenPos(ctx, checkbox_x, checkbox_y)
   clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
     "Show Muted Tracks",
-    self.state.settings.show_muted_tracks, nil, "show_muted_tracks")
+    self.state.settings.show_muted_tracks, checkbox_config, "show_muted_tracks")
   if clicked then
     self.state:set_setting('show_muted_tracks', not self.state.settings.show_muted_tracks)
   end
@@ -96,7 +96,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   ImGui.SetCursorScreenPos(ctx, checkbox_x, checkbox_y)
   clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
     "Show Muted Items",
-    self.state.settings.show_muted_items, nil, "show_muted_items")
+    self.state.settings.show_muted_items, checkbox_config, "show_muted_items")
   if clicked then
     self.state:set_setting('show_muted_items', not self.state.settings.show_muted_items)
   end
@@ -106,12 +106,10 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local disabled_x = checkbox_x + muted_items_width
   clicked = Checkbox.draw(ctx, self.state.draw_list, disabled_x, checkbox_y,
     "Show Disabled Items",
-    self.state.settings.show_disabled_items, nil, "show_disabled_items")
+    self.state.settings.show_disabled_items, checkbox_config, "show_disabled_items")
   if clicked then
     self.state:set_setting('show_disabled_items', not self.state.settings.show_disabled_items)
   end
-
-  ImGui.PopStyleVar(ctx)
 
   -- Search fade with different offset
   local search_fade = smootherstep(math.max(0, (overlay_alpha - 0.05) / 0.95))

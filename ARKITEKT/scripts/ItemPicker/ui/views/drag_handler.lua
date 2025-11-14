@@ -54,7 +54,8 @@ function M.handle_drag_logic(ctx, state, mini_font)
 
   local rect_x1, rect_y1, rect_x2, rect_y2
 
-  if not state.item_to_add then
+  -- Validate state.item_to_add is a valid MediaItem
+  if not state.item_to_add or not reaper.ValidatePtr2(0, state.item_to_add, "MediaItem*") then
     ImGui.PopStyleVar(ctx, 1)
     ImGui.End(ctx)
     return false
@@ -118,6 +119,11 @@ end
 
 function M.render_drag_preview(ctx, state, mini_font, visualization)
   if not state.item_to_add_width or not state.item_to_add_height then
+    return
+  end
+
+  -- Validate state.item_to_add is a valid MediaItem
+  if not state.item_to_add or not reaper.ValidatePtr2(0, state.item_to_add, "MediaItem*") then
     return
   end
 
