@@ -12,16 +12,16 @@ local M = {}
 -- Status priority (highest priority wins):
 -- 1. Errors (red)
 -- 2. Warnings (yellow/orange)
--- 3. Info states (blue)
--- 4. Playing (green)
--- 5. Ready (teal)
+-- 3. Info states (light grey)
+-- 4. Playing (light grey)
+-- 5. Ready (light grey)
 
 local STATUS_COLORS = {
   ERROR = hexrgb("#E04141"),     -- Red
   WARNING = hexrgb("#E0B341"),  -- Yellow/Orange
-  INFO = hexrgb("#4A9EFF"),     -- Blue
-  PLAYING = hexrgb("#49ff70ff"),  -- Green/Teal
-  READY = hexrgb("#54ff4eff"),    -- Green/Teal
+  INFO = hexrgb("#CCCCCC"),     -- Light grey
+  PLAYING = hexrgb("#CCCCCC"),  -- Light grey
+  READY = hexrgb("#CCCCCC"),    -- Light grey
   IDLE = hexrgb("#888888"),     -- Gray
 }
 

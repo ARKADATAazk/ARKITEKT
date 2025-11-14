@@ -181,6 +181,18 @@ function M.get_active_container_config(callbacks)
         },
       },
     },
+    corner_buttons = {
+      size = 32,
+      margin = 8,
+      bottom_left = {
+        icon = "⚡",
+        tooltip = "Actions (coming soon)",
+        on_click = function()
+          reaper.ShowConsoleMsg("Active Grid Actions button clicked (coming soon)\n")
+        end,
+      },
+    },
+    corner_buttons_always_visible = true,
   }
 end
 
@@ -243,6 +255,18 @@ function M.get_pool_container_config(callbacks)
         },
       },
     },
+    corner_buttons = {
+      size = 32,
+      margin = 8,
+      bottom_left = {
+        icon = "⚡",
+        tooltip = "Actions (coming soon)",
+        on_click = function()
+          reaper.ShowConsoleMsg("Pool Grid Actions button clicked (coming soon)\n")
+        end,
+      },
+    },
+    corner_buttons_always_visible = true,
   }
 end
 
