@@ -260,11 +260,9 @@ function M.draw_length_display(ctx, dl, rect, region, base_color, text_alpha)
   local fx_config = TileFXConfig.get()
 
   local length_str = TileUtil.format_bar_length(region.start, region["end"], 0)
-  local scale = M.CONFIG.length_font_size
   local scaled_margin = M.CONFIG.length_margin * (0.3 + 0.7 * height_factor)
 
-  -- Set font scale for accurate measurement
-  ImGui.SetWindowFontScale(ctx, scale)
+  -- Measure text at actual draw size (ReaImGui draws at full font size)
   local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
 
   -- Right-aligned: longer text extends left, position stays fixed relative to right edge
@@ -274,10 +272,7 @@ function M.draw_length_display(ctx, dl, rect, region, base_color, text_alpha)
   local length_color = Colors.same_hue_variant(base_color, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
   length_color = Colors.with_alpha(length_color, text_alpha)
 
-  ImGui.DrawList_AddText(dl, length_x, length_y, length_color, length_str)
-
-  -- Reset font scale
-  ImGui.SetWindowFontScale(ctx, 1.0)
+  Draw.text(dl, length_x, length_y, length_color, length_str)
 end
 
 function M.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color, text_alpha)
@@ -292,11 +287,9 @@ function M.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color
   -- Pass 0 as start and total_duration as end to get the duration formatted
   local length_str = TileUtil.format_bar_length(0, total_duration_seconds, 0)
 
-  local scale = M.CONFIG.length_font_size
   local scaled_margin = M.CONFIG.length_margin * (0.3 + 0.7 * height_factor)
 
-  -- Set font scale for accurate measurement
-  ImGui.SetWindowFontScale(ctx, scale)
+  -- Measure text at actual draw size (ReaImGui draws at full font size)
   local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
 
   -- Right-aligned: longer text extends left, position stays fixed relative to right edge
@@ -308,10 +301,7 @@ function M.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color
   local length_color = Colors.same_hue_variant(color_source, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
   length_color = Colors.with_alpha(length_color, text_alpha)
 
-  ImGui.DrawList_AddText(dl, length_x, length_y, length_color, length_str)
-
-  -- Reset font scale
-  ImGui.SetWindowFontScale(ctx, 1.0)
+  Draw.text(dl, length_x, length_y, length_color, length_str)
 end
 
 return M
