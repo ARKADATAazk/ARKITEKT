@@ -540,23 +540,25 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
   end
 
   -- Define preset colors (16 vivid rainbow spectrum colors)
+  -- Format: 0xAABBGGRR (Alpha, Blue, Green, Red)
+  -- Calculated using HSV: H=i/16*360°, S=1.0, V=1.0
   local preset_colors = {
-    0xFF0000FF, -- Red (H=0°)
-    0xFF0060FF, -- Red-Orange (H=22.5°)
-    0xFF00BFFF, -- Orange (H=45°)
-    0xFF00EFFF, -- Yellow-Orange (H=67.5°)
-    0xFF00FF90, -- Yellow-Green (H=90°)
-    0xFF00FF30, -- Green (H=112.5°)
-    0xFF30FF00, -- Bright Green (H=135°)
-    0xFF90FF00, -- Cyan-Green (H=157.5°)
-    0xFFFFFF00, -- Cyan (H=180°)
-    0xFFFF9000, -- Sky Blue (H=202.5°)
-    0xFFFF3000, -- Blue (H=225°)
-    0xFFFF0030, -- Deep Blue (H=247.5°)
-    0xFF9000FF, -- Purple (H=270°)
-    0xFFEF00FF, -- Violet (H=292.5°)
-    0xFFFF00BF, -- Hot Pink (H=315°)
-    0xFFFF0060, -- Pink (H=337.5°)
+    0xFF0000FF, -- H=0.0°    RGB(255, 0, 0)   Red
+    0xFF0060FF, -- H=22.5°   RGB(255, 96, 0)   Red-Orange
+    0xFF00BFFF, -- H=45.0°   RGB(255, 191, 0)  Orange
+    0xFF00FFDF, -- H=67.5°   RGB(223, 255, 0)  Yellow-Orange
+    0xFF00FFBF, -- H=90.0°   RGB(191, 255, 0)  Yellow-Green
+    0xFF00FF60, -- H=112.5°  RGB(96, 255, 0)   Lime
+    0xFF00FF00, -- H=135.0°  RGB(0, 255, 0)    Green
+    0xFF60FF00, -- H=157.5°  RGB(0, 255, 96)   Spring Green
+    0xFFBFFF00, -- H=180.0°  RGB(0, 255, 191)  Turquoise
+    0xFFFFDF00, -- H=202.5°  RGB(0, 223, 255)  Sky Blue
+    0xFFFFBF00, -- H=225.0°  RGB(0, 191, 255)  Azure
+    0xFFFF6000, -- H=247.5°  RGB(0, 96, 255)   Blue
+    0xFFFF0000, -- H=270.0°  RGB(0, 0, 255)    Deep Blue
+    0xFFFF0060, -- H=292.5°  RGB(96, 0, 255)   Purple
+    0xFFFF00BF, -- H=315.0°  RGB(191, 0, 255)  Violet
+    0xFFFF00FF, -- H=337.5°  RGB(255, 0, 255)  Magenta
   }
 
   if ContextMenu.begin(ctx, "##tab_context_" .. id .. "_" .. unique_id, config.context_menu) then
@@ -839,13 +841,9 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     tabs_available_width = tabs_max_width
   end
 
-  -- Calculate widths once - will be adjusted and reused for init, update, drag, and draw
-  local final_tab_widths, min_text_widths
-  if overflow_at_edge then
-    final_tab_widths, min_text_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, true)
-  else
-    final_tab_widths, min_text_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, false)
-  end
+  -- Calculate widths once - always expand to fill available space
+  -- The expand logic only activates when there's actually extra space
+  local final_tab_widths, min_text_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, true)
 
   -- Calculate visible tabs using final widths when extending, natural widths otherwise
   local visible_indices, overflow_count, tabs_width
@@ -936,9 +934,9 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
   -- Store final adjusted widths in cache for use by position functions
   state._cached_tab_widths = final_tab_widths
-  state._cached_should_extend = overflow_at_edge
+  state._cached_should_extend = true  -- Always extend tabs to fill space
 
-  init_tab_positions(state, tabs, tabs_start_x, ctx, config, tabs_available_width, overflow_at_edge)
+  init_tab_positions(state, tabs, tabs_start_x, ctx, config, tabs_available_width, true)
 
   -- Recalculate overflow button width based on content
   if overflow_count > 0 then
@@ -985,10 +983,10 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     config.on_tab_create()
   end
 
-  handle_drag_reorder(ctx, state, tabs, config, tabs_start_x, tabs_available_width, overflow_at_edge)
+  handle_drag_reorder(ctx, state, tabs, config, tabs_start_x, tabs_available_width, true)
   finalize_drag(ctx, state, config)
 
-  update_tab_positions(ctx, state, config, tabs, tabs_start_x, tabs_available_width, overflow_at_edge)
+  update_tab_positions(ctx, state, config, tabs, tabs_start_x, tabs_available_width, true)
 
   -- Calculate responsive widths for drawing
   -- When overflow is at edge and we've calculated final widths, use those
