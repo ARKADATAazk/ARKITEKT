@@ -200,9 +200,17 @@ local function update_tab_positions(ctx, state, config, tabs, start_x, available
     local pos = state.tab_positions[tab.id]
     local new_target = new_targets[tab.id]
     local delta = deltas[tab.id]
-    
+
+    -- Disable animation during resize to prevent jitter
+    local is_resizing = not is_uniform_shift and math.abs(delta) > 5
+
     if is_uniform_shift and math.abs(delta) > 0.01 then
       -- Window is being dragged: snap all tabs instantly, no animation
+      pos.current_x = new_target
+      pos.target_x = new_target
+      state.tab_animation_enabled[tab.id] = false
+    elseif is_resizing then
+      -- Window is being resized: snap instantly to prevent jitter
       pos.current_x = new_target
       pos.target_x = new_target
       state.tab_animation_enabled[tab.id] = false
@@ -211,9 +219,9 @@ local function update_tab_positions(ctx, state, config, tabs, start_x, available
       if math.abs(new_target - pos.target_x) > 0.5 then
         state.tab_animation_enabled[tab.id] = true
       end
-      
+
       pos.target_x = new_target
-      
+
       if state.tab_animation_enabled[tab.id] then
         local diff = pos.target_x - pos.current_x
         if math.abs(diff) > 0.5 then
@@ -720,11 +728,45 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     tabs_available_width = tabs_max_width
   end
 
+  -- When overflow is at edge, calculate extended widths first to determine what fits
+  local final_tab_widths, min_text_widths
+  if overflow_at_edge then
+    final_tab_widths, min_text_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, true)
+  end
+
   init_tab_positions(state, tabs, tabs_start_x, ctx, config, tabs_available_width, overflow_at_edge)
 
-  local visible_indices, overflow_count, tabs_width = calculate_visible_tabs(
-    ctx, tabs, config, tabs_available_width
-  )
+  -- Calculate visible tabs using final widths when extending, natural widths otherwise
+  local visible_indices, overflow_count, tabs_width
+  if overflow_at_edge and final_tab_widths then
+    -- Use extended widths to determine visibility
+    visible_indices = {}
+    local current_width = 0
+    local spacing_val = config.spacing or 0
+
+    for i, tab in ipairs(tabs) do
+      local tab_width = final_tab_widths[i]
+      local effective_spacing = (i > 1) and spacing_val or 0
+      if i > 1 and i <= #tabs and spacing_val == 0 then
+        effective_spacing = -1
+      end
+      local needed = tab_width + effective_spacing
+
+      if current_width + needed <= tabs_available_width then
+        visible_indices[#visible_indices + 1] = i
+        current_width = current_width + needed
+      else
+        break
+      end
+    end
+
+    overflow_count = #tabs - #visible_indices
+    tabs_width = current_width
+  else
+    visible_indices, overflow_count, tabs_width = calculate_visible_tabs(
+      ctx, tabs, config, tabs_available_width
+    )
+  end
 
   -- Recalculate overflow button width based on content
   if overflow_count > 0 then
