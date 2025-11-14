@@ -94,21 +94,26 @@ M.TRANSPORT = {
   },
 }
 
--- Quantize settings
+-- Quantize settings (single source of truth)
 M.QUANTIZE = {
+  default_mode = "measure",
   default_lookahead = 0.30,
   min_lookahead = 0.20,
   max_lookahead = 1.0,
-  
-  grid_options = {
-    { label = "Measure", value = "measure" },
-    { label = "1 Bar (4/4)", value = "4.0" },
-    { label = "1/2 Note", value = "2.0" },
-    { label = "1/4 Note", value = "1.0" },
-    { label = "1/8 Note", value = "0.5" },
-    { label = "1/16 Note", value = "0.25" },
-    { label = "1/32 Note", value = "0.125" },
-    { label = "1/64 Note", value = "0.0625" },
+
+  -- Quantize mode options for UI dropdowns
+  -- Values map to quantize.lua mode detection: strings for named modes, numbers for grid divisions
+  options = {
+    { value = "4bar", label = "4 Bars" },
+    { value = "2bar", label = "2 Bars" },
+    { value = "measure", label = "1 Bar" },
+    { value = "beat", label = "Beat" },
+    { value = 1, label = "1/1" },
+    { value = 0.5, label = "1/2" },
+    { value = 0.25, label = "1/4" },
+    { value = 0.125, label = "1/8" },
+    { value = 0.0625, label = "1/16" },
+    { value = 0.03125, label = "1/32" },
   },
 }
 
