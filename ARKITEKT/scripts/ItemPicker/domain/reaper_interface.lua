@@ -145,19 +145,20 @@ function M.GetProjectSamples(settings, state)
   return samples, sample_indexes
 end
 
-function M.GetProjectMidiTracks(settings, state)
+function M.GetProjectMIDI(settings, state)
   local all_tracks = M.GetAllTracks()
-  local midi_tracks = {}
-  
+  local midi_items = {}
+  local midi_indexes = {}
+
   for key, track in pairs(all_tracks) do
     if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
       goto next_track
     end
-    
+
     local track_items = M.GetItemInTrack(track)
     local track_midi = {}
     local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or M.IsParentMuted(track) == true
-    
+
     for key, item in pairs(track_items) do
       local take = reaper.GetActiveTake(item)
       if reaper.TakeIsMIDI(take) then
@@ -165,7 +166,7 @@ function M.GetProjectMidiTracks(settings, state)
         if num_notes == 0 then
           goto next_item
         end
-        
+
         local _, midi = reaper.MIDI_GetAllEvts(take)
         for key, _item in pairs(track_midi) do
           local _, _midi = reaper.MIDI_GetAllEvts(reaper.GetActiveTake(_item.item))
@@ -173,25 +174,32 @@ function M.GetProjectMidiTracks(settings, state)
             goto next_item
           end
         end
-        
+
         local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
-        
+        local item_name = reaper.GetTakeName(take)
+        if not item_name or item_name == "" then
+          item_name = "MIDI Item"
+        end
+
         table.insert(track_midi, {
-          item = item,
+          item,
+          item_name,
           track_muted = track_muted,
           item_muted = item_muted
         })
       end
       ::next_item::
     end
-    
+
     if #track_midi > 0 then
-      table.insert(midi_tracks, track_midi)
+      local track_guid = reaper.GetTrackGUID(track)
+      midi_items[track_guid] = track_midi
+      table.insert(midi_indexes, track_guid)
     end
     ::next_track::
   end
 
-  return midi_tracks
+  return midi_items, midi_indexes
 end
 
 function M.InsertItemAtMousePos(item, state)
