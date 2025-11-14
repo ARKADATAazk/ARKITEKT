@@ -75,8 +75,19 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
     local current_key = bridge:get_current_item_key()
     if current_key == item.key then
       playback_progress = bridge:get_progress() or 0
-      playback_fade = require('rearkitekt.gui.systems.playback_manager').compute_fade_alpha(playback_progress, 0.1, 0.2)
+      -- Time-based fade: fade in when playing, fade out at 100% or when stopped
+      local target_fade = (playback_progress > 0 and playback_progress < 1.0) and 1.0 or 0.0
+      animator:track(item.key, 'progress_fade', target_fade, 8.0)  -- 8.0 = fixed fade speed
+      playback_fade = animator:get(item.key, 'progress_fade')
+    else
+      -- Not currently playing this item, fade out
+      animator:track(item.key, 'progress_fade', 0.0, 8.0)
+      playback_fade = animator:get(item.key, 'progress_fade')
     end
+  else
+    -- Playback stopped, fade out
+    animator:track(item.key, 'progress_fade', 0.0, 8.0)
+    playback_fade = animator:get(item.key, 'progress_fade')
   end
   
   BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade)
@@ -197,8 +208,19 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     -- Use is_playlist_active to support deep nesting - all parent playlists show progress
     if bridge:is_playlist_active(item.key) then
       playback_progress = bridge:get_playlist_progress(item.key) or 0
-      playback_fade = require('rearkitekt.gui.systems.playback_manager').compute_fade_alpha(playback_progress, 0.1, 0.2)
+      -- Time-based fade: fade in when playing, fade out at 100% or when stopped
+      local target_fade = (playback_progress > 0 and playback_progress < 1.0) and 1.0 or 0.0
+      animator:track(item.key, 'progress_fade', target_fade, 8.0)  -- 8.0 = fixed fade speed
+      playback_fade = animator:get(item.key, 'progress_fade')
+    else
+      -- Not currently playing this playlist, fade out
+      animator:track(item.key, 'progress_fade', 0.0, 8.0)
+      playback_fade = animator:get(item.key, 'progress_fade')
     end
+  else
+    -- Playback stopped, fade out
+    animator:track(item.key, 'progress_fade', 0.0, 8.0)
+    playback_fade = animator:get(item.key, 'progress_fade')
   end
 
   -- Draw base tile with chip color for border and playback progress

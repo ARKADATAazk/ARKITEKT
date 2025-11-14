@@ -263,18 +263,17 @@ function M.draw_length_display(ctx, dl, rect, region, base_color, text_alpha)
   local scale = M.CONFIG.length_font_size
   local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
   length_w, length_h = length_w * scale, length_h * scale
-  
-  local scaled_padding_x = M.CONFIG.length_padding_x * (0.5 + 0.5 * height_factor)
-  local scaled_padding_y = M.CONFIG.length_padding_y * (0.5 + 0.5 * height_factor)
+
   local scaled_margin = M.CONFIG.length_margin * (0.3 + 0.7 * height_factor)
-  
-  local length_x = x2 - length_w - scaled_padding_x * 2 - scaled_margin - M.CONFIG.length_offset_x
-  local length_y = y2 - length_h - scaled_padding_y * 2 - scaled_margin
-  
+
+  -- Right-aligned: longer text extends left, position stays fixed relative to right edge
+  local length_x = x2 - length_w - scaled_margin
+  local length_y = y2 - length_h - scaled_margin
+
   local length_color = Colors.same_hue_variant(base_color, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
   length_color = Colors.with_alpha(length_color, text_alpha)
-  
-  Draw.text(dl, length_x + scaled_padding_x, length_y + scaled_padding_y, length_color, length_str)
+
+  Draw.text(dl, length_x, length_y, length_color, length_str)
 end
 
 function M.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color, text_alpha)
@@ -284,26 +283,27 @@ function M.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color
 
   -- Use total_duration from playlist_data (in seconds, same as regions)
   local total_duration_seconds = playlist_data.total_duration or 0
-  
+
   -- Format using TileUtil.format_bar_length (same as regions)
   -- Pass 0 as start and total_duration as end to get the duration formatted
   local length_str = TileUtil.format_bar_length(0, total_duration_seconds, 0)
-  
+
   local scale = M.CONFIG.length_font_size
   local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
   length_w, length_h = length_w * scale, length_h * scale
-  
-  local scaled_padding_x = M.CONFIG.length_padding_x * (0.5 + 0.5 * height_factor)
-  local scaled_padding_y = M.CONFIG.length_padding_y * (0.5 + 0.5 * height_factor)
+
   local scaled_margin = M.CONFIG.length_margin * (0.3 + 0.7 * height_factor)
-  
-  local length_x = x2 - length_w - scaled_padding_x * 2 - scaled_margin - M.CONFIG.length_offset_x
-  local length_y = y2 - length_h - scaled_padding_y * 2 - scaled_margin
-  
-  local length_color = Colors.same_hue_variant(base_color, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
+
+  -- Right-aligned: longer text extends left, position stays fixed relative to right edge
+  local length_x = x2 - length_w - scaled_margin
+  local length_y = y2 - length_h - scaled_margin
+
+  -- Use chip color for playlist length display (same as region tiles use region color)
+  local color_source = playlist_data.chip_color or base_color
+  local length_color = Colors.same_hue_variant(color_source, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
   length_color = Colors.with_alpha(length_color, text_alpha)
-  
-  Draw.text(dl, length_x + scaled_padding_x, length_y + scaled_padding_y, length_color, length_str)
+
+  Draw.text(dl, length_x, length_y, length_color, length_str)
 end
 
 return M
