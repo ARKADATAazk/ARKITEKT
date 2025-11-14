@@ -562,10 +562,12 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
 
   if ContextMenu.begin(ctx, "##tab_context_" .. id .. "_" .. unique_id, config.context_menu) then
     if ContextMenu.item(ctx, "Rename Playlist", config.context_menu) then
+      reaper.ShowConsoleMsg("[DEBUG draw_tab] Rename clicked for tab id: " .. tostring(id) .. "\n")
       rename_requested = true
     end
 
     if ContextMenu.item(ctx, "Duplicate Playlist", config.context_menu) then
+      reaper.ShowConsoleMsg("[DEBUG draw_tab] Duplicate clicked for tab id: " .. tostring(id) .. "\n")
       duplicate_requested = true
     end
 
@@ -611,6 +613,7 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
       -- Make it clickable
       ImGui.SetCursorScreenPos(ctx, chip_x, chip_y)
       if ImGui.InvisibleButton(ctx, "##color_" .. i .. "_" .. id, chip_size, chip_size) then
+        reaper.ShowConsoleMsg("[DEBUG draw_tab] Color chip clicked: " .. tostring(color) .. " for tab id: " .. tostring(id) .. "\n")
         color_selected = color
       end
 
@@ -1130,14 +1133,17 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   end
 
   if id_to_rename and config.on_tab_rename then
+    reaper.ShowConsoleMsg("[DEBUG TabStrip] Calling on_tab_rename with id: " .. tostring(id_to_rename) .. "\n")
     config.on_tab_rename(id_to_rename)
   end
 
   if id_to_duplicate and config.on_tab_duplicate then
+    reaper.ShowConsoleMsg("[DEBUG TabStrip] Calling on_tab_duplicate with id: " .. tostring(id_to_duplicate) .. "\n")
     config.on_tab_duplicate(id_to_duplicate)
   end
 
   if id_for_color_change and config.on_tab_color_change then
+    reaper.ShowConsoleMsg("[DEBUG TabStrip] Calling on_tab_color_change with id: " .. tostring(id_for_color_change) .. ", color: " .. tostring(new_color) .. "\n")
     config.on_tab_color_change(id_for_color_change, new_color)
   end
 

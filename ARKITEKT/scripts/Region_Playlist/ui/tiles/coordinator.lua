@@ -148,19 +148,31 @@ function M.create(opts)
     end,
 
     on_tab_rename = function(id)
+      reaper.ShowConsoleMsg("[DEBUG] on_tab_rename called with id: " .. tostring(id) .. "\n")
       rt._rename_playlist_id = id
       rt._rename_input_visible = true
     end,
 
     on_tab_duplicate = function(id)
-      if rt.controller and rt.controller:duplicate_playlist(id) then
-        rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+      reaper.ShowConsoleMsg("[DEBUG] on_tab_duplicate called with id: " .. tostring(id) .. "\n")
+      reaper.ShowConsoleMsg("[DEBUG] controller exists: " .. tostring(rt.controller ~= nil) .. "\n")
+      if rt.controller then
+        local success, result = rt.controller:duplicate_playlist(id)
+        reaper.ShowConsoleMsg("[DEBUG] duplicate_playlist returned: " .. tostring(success) .. ", " .. tostring(result) .. "\n")
+        if success then
+          rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+        end
       end
     end,
 
     on_tab_color_change = function(id, color)
-      if rt.controller and rt.controller:set_playlist_color(id, color == false and nil or color) then
-        rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+      reaper.ShowConsoleMsg("[DEBUG] on_tab_color_change called with id: " .. tostring(id) .. ", color: " .. tostring(color) .. "\n")
+      if rt.controller then
+        local success, result = rt.controller:set_playlist_color(id, color == false and nil or color)
+        reaper.ShowConsoleMsg("[DEBUG] set_playlist_color returned: " .. tostring(success) .. ", " .. tostring(result) .. "\n")
+        if success then
+          rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+        end
       end
     end,
 
