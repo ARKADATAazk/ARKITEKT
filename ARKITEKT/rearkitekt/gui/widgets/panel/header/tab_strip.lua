@@ -74,10 +74,10 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
 
     -- Calculate width based on actual rendering:
     -- Left: padding_x - 3 (text offset)
-    -- Right: 2 (target margin to inner border)
+    -- Right: 6 (comfortable margin to inner border)
     -- Chip: 12 actual space (not 20)
     local left_margin = math.max(0, padding_x - 3)
-    local right_margin = 2
+    local right_margin = 6
     local actual_chip_space = has_chip and 12 or 0
     local actual_text_width = math.floor(text_w + left_margin + right_margin + actual_chip_space + 0.5)
 
