@@ -261,10 +261,11 @@ function M.draw_length_display(ctx, dl, rect, region, base_color, text_alpha)
 
   local length_str = TileUtil.format_bar_length(region.start, region["end"], 0)
   local scale = M.CONFIG.length_font_size
-  local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
-  length_w, length_h = length_w * scale, length_h * scale
-
   local scaled_margin = M.CONFIG.length_margin * (0.3 + 0.7 * height_factor)
+
+  -- Set font scale for accurate measurement
+  ImGui.SetWindowFontScale(ctx, scale)
+  local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
 
   -- Right-aligned: longer text extends left, position stays fixed relative to right edge
   local length_x = x2 - length_w - scaled_margin
@@ -273,7 +274,10 @@ function M.draw_length_display(ctx, dl, rect, region, base_color, text_alpha)
   local length_color = Colors.same_hue_variant(base_color, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
   length_color = Colors.with_alpha(length_color, text_alpha)
 
-  Draw.text(dl, length_x, length_y, length_color, length_str)
+  ImGui.DrawList_AddText(dl, length_x, length_y, length_color, length_str)
+
+  -- Reset font scale
+  ImGui.SetWindowFontScale(ctx, 1.0)
 end
 
 function M.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color, text_alpha)
@@ -289,10 +293,11 @@ function M.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color
   local length_str = TileUtil.format_bar_length(0, total_duration_seconds, 0)
 
   local scale = M.CONFIG.length_font_size
-  local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
-  length_w, length_h = length_w * scale, length_h * scale
-
   local scaled_margin = M.CONFIG.length_margin * (0.3 + 0.7 * height_factor)
+
+  -- Set font scale for accurate measurement
+  ImGui.SetWindowFontScale(ctx, scale)
+  local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
 
   -- Right-aligned: longer text extends left, position stays fixed relative to right edge
   local length_x = x2 - length_w - scaled_margin
@@ -303,7 +308,10 @@ function M.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color
   local length_color = Colors.same_hue_variant(color_source, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
   length_color = Colors.with_alpha(length_color, text_alpha)
 
-  Draw.text(dl, length_x, length_y, length_color, length_str)
+  ImGui.DrawList_AddText(dl, length_x, length_y, length_color, length_str)
+
+  -- Reset font scale
+  ImGui.SetWindowFontScale(ctx, 1.0)
 end
 
 return M

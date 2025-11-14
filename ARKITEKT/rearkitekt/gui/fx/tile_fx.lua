@@ -161,17 +161,24 @@ function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fa
   local alpha = math.floor(base_alpha * fade_alpha)
   local progress_color = Colors.components_to_rgba(r, g, b, alpha)
 
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, progress_x, y2, progress_color, rounding, ImGui.DrawFlags_RoundCornersAll)
+  -- Match tile shape: round left corners, straight right edge (unless at 100%)
+  local corner_flags = (progress >= 1.0) and ImGui.DrawFlags_RoundCornersAll or ImGui.DrawFlags_RoundCornersLeft
 
-  local base_bar_alpha = 0xAA
-  local bar_alpha = math.floor(base_bar_alpha * fade_alpha)
-  local bar_color = Colors.components_to_rgba(r, g, b, bar_alpha)
-  local bar_thickness = 1
+  -- Clip to tile bounds to ensure progress respects rounded corners
+  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, progress_x, y2, progress_color, rounding, corner_flags)
+  ImGui.DrawList_PopClipRect(dl)
 
-  local height = y2 - y1
-  local inset = math.min(rounding * 0.5, 2)
+  -- Draw right edge indicator line (only if not at 100%)
+  if progress < 1.0 then
+    local base_bar_alpha = 0xAA
+    local bar_alpha = math.floor(base_bar_alpha * fade_alpha)
+    local bar_color = Colors.components_to_rgba(r, g, b, bar_alpha)
+    local bar_thickness = 1
+    local inset = math.min(rounding * 0.5, 2)
 
-  ImGui.DrawList_AddLine(dl, progress_x, y1 + inset, progress_x, y2 - inset, bar_color, bar_thickness)
+    ImGui.DrawList_AddLine(dl, progress_x, y1 + inset, progress_x, y2 - inset, bar_color, bar_thickness)
+  end
 end
 
 function M.render_border(dl, x1, y1, x2, y2, base_color, saturation, brightness, opacity, thickness, rounding, is_selected, glow_strength, glow_layers, border_color_override)
