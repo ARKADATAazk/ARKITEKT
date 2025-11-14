@@ -9,6 +9,7 @@ local DragIndicator = require('rearkitekt.gui.fx.dnd.drag_indicator')
 local ActiveTile = require('Region_Playlist.ui.tiles.renderers.active')
 local PoolTile = require('Region_Playlist.ui.tiles.renderers.pool')
 local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')
+local State = require('Region_Playlist.core.app_state')
 
 local M = {}
 
@@ -95,7 +96,7 @@ function M.draw_active(self, ctx, playlist, height)
     self._rename_input_visible = false
     if not self._rename_input_buffer then
       -- Find current name
-      local playlists = self.state.get_playlists()
+      local playlists = State.get_playlists()
       for _, pl in ipairs(playlists) do
         if pl.id == self._rename_playlist_id then
           self._rename_input_buffer = pl.name or ""
@@ -127,7 +128,7 @@ function M.draw_active(self, ctx, playlist, height)
     if ImGui.Button(ctx, "OK", 100, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
       if self.controller and self._rename_playlist_id and self._rename_input_buffer and self._rename_input_buffer ~= "" then
         self.controller:rename_playlist(self._rename_playlist_id, self._rename_input_buffer)
-        self.active_container:set_tabs(self.state.get_tabs(), self.state.get_active_playlist_id())
+        self.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
       end
       self._rename_input_buffer = nil
       self._rename_playlist_id = nil
