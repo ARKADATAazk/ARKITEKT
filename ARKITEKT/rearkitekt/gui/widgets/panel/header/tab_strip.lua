@@ -532,9 +532,6 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
   end
 
   local delete_requested = false
-  local rename_requested = false
-  local duplicate_requested = false
-  local color_selected = nil
 
   if right_clicked then
     ImGui.OpenPopup(ctx, "##tab_context_" .. id .. "_" .. unique_id)
@@ -563,13 +560,19 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
   if ContextMenu.begin(ctx, "##tab_context_" .. id .. "_" .. unique_id, config.context_menu) then
     if ContextMenu.item(ctx, "Rename Playlist", config.context_menu) then
       reaper.ShowConsoleMsg("[DEBUG draw_tab] Rename clicked for tab id: " .. tostring(id) .. "\n")
-      rename_requested = true
+      -- Call callback immediately
+      if config.on_tab_rename then
+        config.on_tab_rename(id)
+      end
       ImGui.CloseCurrentPopup(ctx)
     end
 
     if ContextMenu.item(ctx, "Duplicate Playlist", config.context_menu) then
       reaper.ShowConsoleMsg("[DEBUG draw_tab] Duplicate clicked for tab id: " .. tostring(id) .. "\n")
-      duplicate_requested = true
+      -- Call callback immediately
+      if config.on_tab_duplicate then
+        config.on_tab_duplicate(id)
+      end
       ImGui.CloseCurrentPopup(ctx)
     end
 
@@ -616,7 +619,10 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
       ImGui.SetCursorScreenPos(ctx, chip_x, chip_y)
       if ImGui.InvisibleButton(ctx, "##color_" .. i .. "_" .. id, chip_size, chip_size) then
         reaper.ShowConsoleMsg("[DEBUG draw_tab] Color chip clicked: " .. tostring(color) .. " for tab id: " .. tostring(id) .. "\n")
-        color_selected = color
+        -- Call callback immediately
+        if config.on_tab_color_change then
+          config.on_tab_color_change(id, color)
+        end
       end
 
       -- Hover effect
@@ -635,13 +641,16 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
 
     -- Remove color button
     if ImGui.Button(ctx, "Remove Color", -1, 0) then
-      color_selected = false  -- false means remove color
+      -- Call callback immediately
+      if config.on_tab_color_change then
+        config.on_tab_color_change(id, false)
+      end
     end
 
     ContextMenu.end_menu(ctx)
   end
 
-  return clicked, delete_requested, rename_requested, duplicate_requested, color_selected
+  return clicked, delete_requested
 end
 
 local function calculate_visible_tabs(ctx, tabs, config, available_width)
@@ -1017,10 +1026,6 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
   local clicked_tab_id = nil
   local id_to_delete = nil
-  local id_to_rename = nil
-  local id_to_duplicate = nil
-  local id_for_color_change = nil
-  local new_color = nil
 
   for i, tab_data in ipairs(tabs) do
     local is_visible = false
@@ -1084,18 +1089,11 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
         render_width = math.floor(render_width + 0.5)
 
         local is_active = (tab_data.id == active_tab_id)
-        local clicked, delete_requested, rename_requested, duplicate_requested, color_selected = draw_tab(
+        local clicked, delete_requested = draw_tab(
           ctx, dl, tab_data, is_active,
           i, tab_x, y, render_width, height,
           state, config, unique_id, animator, nil
         )
-
-        -- DEBUG: Check what draw_tab returned
-        if rename_requested or duplicate_requested or color_selected ~= nil then
-          reaper.ShowConsoleMsg("[DEBUG RETURN] draw_tab returned - rename:" .. tostring(rename_requested) ..
-            " duplicate:" .. tostring(duplicate_requested) ..
-            " color:" .. tostring(color_selected) .. "\n")
-        end
 
         if clicked and not (state.dragging_tab or ImGui.IsMouseDragging(ctx, 0)) then
           clicked_tab_id = tab_data.id
@@ -1103,22 +1101,6 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
         if delete_requested then
           id_to_delete = tab_data.id
-        end
-
-        if rename_requested then
-          reaper.ShowConsoleMsg("[DEBUG CAPTURE] Setting id_to_rename = " .. tostring(tab_data.id) .. "\n")
-          id_to_rename = tab_data.id
-        end
-
-        if duplicate_requested then
-          reaper.ShowConsoleMsg("[DEBUG CAPTURE] Setting id_to_duplicate = " .. tostring(tab_data.id) .. "\n")
-          id_to_duplicate = tab_data.id
-        end
-
-        if color_selected ~= nil then
-          reaper.ShowConsoleMsg("[DEBUG CAPTURE] Setting id_for_color_change = " .. tostring(tab_data.id) .. ", color = " .. tostring(color_selected) .. "\n")
-          id_for_color_change = tab_data.id
-          new_color = color_selected
         end
       end
     end
@@ -1142,21 +1124,6 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
   if clicked_tab_id and config.on_tab_change then
     config.on_tab_change(clicked_tab_id)
-  end
-
-  if id_to_rename and config.on_tab_rename then
-    reaper.ShowConsoleMsg("[DEBUG TabStrip] Calling on_tab_rename with id: " .. tostring(id_to_rename) .. "\n")
-    config.on_tab_rename(id_to_rename)
-  end
-
-  if id_to_duplicate and config.on_tab_duplicate then
-    reaper.ShowConsoleMsg("[DEBUG TabStrip] Calling on_tab_duplicate with id: " .. tostring(id_to_duplicate) .. "\n")
-    config.on_tab_duplicate(id_to_duplicate)
-  end
-
-  if id_for_color_change and config.on_tab_color_change then
-    reaper.ShowConsoleMsg("[DEBUG TabStrip] Calling on_tab_color_change with id: " .. tostring(id_for_color_change) .. ", color: " .. tostring(new_color) .. "\n")
-    config.on_tab_color_change(id_for_color_change, new_color)
   end
 
   if id_to_delete and #tabs > 1 then
