@@ -78,7 +78,7 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h)
   if not self.audio_grid then return end
 
   if ImGui.BeginChild(ctx, "audio_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
-    self.audio_grid:render(ctx, avail_w, avail_h)
+    self.audio_grid:draw(ctx)
     ImGui.EndChild(ctx)
   end
 end
@@ -87,7 +87,7 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h)
   if not self.midi_grid then return end
 
   if ImGui.BeginChild(ctx, "midi_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
-    self.midi_grid:render(ctx, avail_w, avail_h)
+    self.midi_grid:draw(ctx)
     ImGui.EndChild(ctx)
   end
 end
