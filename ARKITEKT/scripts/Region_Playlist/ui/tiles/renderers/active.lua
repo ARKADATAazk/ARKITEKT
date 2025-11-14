@@ -84,15 +84,13 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
       playback_fade = animator:get(item.key, 'progress_fade')
     else
       -- Not currently playing this item, fade out slowly
-      local current_fade = animator:get(item.key, 'progress_fade') or 0
       animator:track(item.key, 'progress_fade', 0.0, 1.0 / 1.5)  -- 1.5 second fade out
-      playback_fade = current_fade
+      playback_fade = animator:get(item.key, 'progress_fade')  -- Get animated value
     end
   else
     -- Playback stopped, fade out slowly
-    local current_fade = animator:get(item.key, 'progress_fade') or 0
     animator:track(item.key, 'progress_fade', 0.0, 1.0 / 1.5)  -- 1.5 second fade out
-    playback_fade = current_fade
+    playback_fade = animator:get(item.key, 'progress_fade')  -- Get animated value
   end
   
   BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade)
@@ -222,15 +220,13 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
       playback_fade = animator:get(item.key, 'progress_fade')
     else
       -- Not currently playing this playlist, fade out slowly
-      local current_fade = animator:get(item.key, 'progress_fade') or 0
       animator:track(item.key, 'progress_fade', 0.0, 1.0 / 1.5)  -- 1.5 second fade out
-      playback_fade = current_fade
+      playback_fade = animator:get(item.key, 'progress_fade')  -- Get animated value
     end
   else
     -- Playback stopped, fade out slowly
-    local current_fade = animator:get(item.key, 'progress_fade') or 0
     animator:track(item.key, 'progress_fade', 0.0, 1.0 / 1.5)  -- 1.5 second fade out
-    playback_fade = current_fade
+    playback_fade = animator:get(item.key, 'progress_fade')  -- Get animated value
   end
 
   -- Draw base tile with chip color for border and playback progress
