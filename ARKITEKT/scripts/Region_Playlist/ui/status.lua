@@ -83,12 +83,6 @@ local function get_app_status(State)
         end
         status_message = table.concat(parts, ", ") .. " selected"
         status_color = STATUS_COLORS.INFO
-      else
-        local search_filter = State.get_search_filter and State.get_search_filter() or ""
-        if search_filter and search_filter ~= "" then
-          status_message = string.format("Filter: '%s'", search_filter)
-          status_color = STATUS_COLORS.INFO
-        end
       end
     end
 

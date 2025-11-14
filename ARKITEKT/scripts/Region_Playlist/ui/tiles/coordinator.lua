@@ -307,6 +307,33 @@ function M.create(opts)
             rt.State.clear_circular_dependency_error()
           end
 
+          -- Show drag-and-drop notification
+          if rt.State and rt.State.set_state_change_notification then
+            local region_count = 0
+            local playlist_count = 0
+
+            for _, item_data in ipairs(drop_info.payload) do
+              if type(item_data) == "number" then
+                region_count = region_count + 1
+              elseif type(item_data) == "table" and item_data.type == "playlist" then
+                playlist_count = playlist_count + 1
+              end
+            end
+
+            local parts = {}
+            if region_count > 0 then
+              table.insert(parts, string.format("%d region%s", region_count, region_count > 1 and "s" or ""))
+            end
+            if playlist_count > 0 then
+              table.insert(parts, string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or ""))
+            end
+
+            if #parts > 0 then
+              local items_text = table.concat(parts, ", ")
+              rt.State.set_state_change_notification(string.format("Copied %s from Pool Grid to Active Grid", items_text))
+            end
+          end
+
           if rt.pool_grid and rt.pool_grid.selection then
             rt.pool_grid.selection:clear()
           end
