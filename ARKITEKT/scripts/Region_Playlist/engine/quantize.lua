@@ -121,46 +121,24 @@ function Quantize:_calculate_next_quantize_point(playpos, skip_count)
     return next_time
   elseif self.quantize_mode == "2bar" then
     local retval, measures, cml, fullbeats, cdenom = reaper.TimeMap2_timeToBeats(self.proj, playpos)
-    local current_measure = measures
 
-    -- Find next 2-bar boundary
-    local next_2bar_measure = math.ceil(current_measure / 2) * 2
+    -- Simply add 2 bars from current position (skip * 2 for additional cycles)
+    local target_measure = measures + 2 + (skip_count * 2)
+    local next_time = reaper.TimeMap2_beatsToTime(self.proj, 0, target_measure)
 
-    -- Ensure it's at least 2 bars away (full cycle)
-    local distance = next_2bar_measure - current_measure
-    if distance < 2.0 then
-      next_2bar_measure = next_2bar_measure + 2
-    end
-
-    -- Add skip cycles
-    next_2bar_measure = next_2bar_measure + (skip_count * 2)
-
-    local next_time = reaper.TimeMap2_beatsToTime(self.proj, 0, next_2bar_measure)
-
-    Logger.debug("QUANTIZE", "Mode=2bar, current=%.3f dist=%.3f skip=%d -> measure=%d (%.3fs)",
-      current_measure, next_2bar_measure - current_measure, skip_count, next_2bar_measure, next_time)
+    Logger.debug("QUANTIZE", "Mode=2bar, current=%.3f -> target=%.3f (%.3fs)",
+      measures, target_measure, next_time)
 
     return next_time
   elseif self.quantize_mode == "4bar" then
     local retval, measures, cml, fullbeats, cdenom = reaper.TimeMap2_timeToBeats(self.proj, playpos)
-    local current_measure = measures
 
-    -- Find next 4-bar boundary
-    local next_4bar_measure = math.ceil(current_measure / 4) * 4
+    -- Simply add 4 bars from current position (skip * 4 for additional cycles)
+    local target_measure = measures + 4 + (skip_count * 4)
+    local next_time = reaper.TimeMap2_beatsToTime(self.proj, 0, target_measure)
 
-    -- Ensure it's at least 4 bars away (full cycle)
-    local distance = next_4bar_measure - current_measure
-    if distance < 4.0 then
-      next_4bar_measure = next_4bar_measure + 4
-    end
-
-    -- Add skip cycles
-    next_4bar_measure = next_4bar_measure + (skip_count * 4)
-
-    local next_time = reaper.TimeMap2_beatsToTime(self.proj, 0, next_4bar_measure)
-
-    Logger.debug("QUANTIZE", "Mode=4bar, current=%.3f dist=%.3f skip=%d -> measure=%d (%.3fs)",
-      current_measure, next_4bar_measure - current_measure, skip_count, next_4bar_measure, next_time)
+    Logger.debug("QUANTIZE", "Mode=4bar, current=%.3f -> target=%.3f (%.3fs)",
+      measures, target_measure, next_time)
 
     return next_time
   elseif self.quantize_mode == "beat" then
