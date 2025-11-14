@@ -499,10 +499,11 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
   local text_x = content_x
   local text_y = render_y + (render_h - text_h) * 0.5 - 1
 
-  local text_max_w = render_x + render_w - text_x - (config.padding_x or 5)
+  -- Extend text rendering to 2px from edge (inner border)
+  local text_max_w = render_x + render_w - text_x - 2
   if text_w > text_max_w then
-    ImGui.DrawList_PushClipRect(dl, text_x, render_y, 
-                                render_x + render_w - (config.padding_x or 5), render_y + render_h, true)
+    ImGui.DrawList_PushClipRect(dl, text_x, render_y,
+                                render_x + render_w - 2, render_y + render_h, true)
     ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
     ImGui.DrawList_PopClipRect(dl)
   else
@@ -549,7 +550,10 @@ local function calculate_visible_tabs(ctx, tabs, config, available_width)
   local visible_indices = {}
   local current_width = 0
   local spacing = config.spacing or 0
-  
+
+  -- Subtract 4 pixels from available width to prevent abrupt clipping at edge
+  local adjusted_available_width = available_width - 4
+
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
     local tab_width = calculate_tab_width(ctx, tab.label or "Tab", config, has_chip)
@@ -558,17 +562,17 @@ local function calculate_visible_tabs(ctx, tabs, config, available_width)
       effective_spacing = -1
     end
     local needed = tab_width + effective_spacing
-    
-    if current_width + needed <= available_width then
+
+    if current_width + needed <= adjusted_available_width then
       visible_indices[#visible_indices + 1] = i
       current_width = current_width + needed
     else
       break
     end
   end
-  
+
   local overflow_count = #tabs - #visible_indices
-  
+
   return visible_indices, overflow_count, current_width
 end
 
@@ -751,6 +755,9 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     local current_width = 0
     local spacing_val = config.spacing or 0
 
+    -- Subtract 4 pixels from available width to prevent abrupt clipping at edge
+    local adjusted_available_width = tabs_available_width - 4
+
     for i, tab in ipairs(tabs) do
       local tab_width = final_tab_widths[i]
       local effective_spacing = (i > 1) and spacing_val or 0
@@ -759,7 +766,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
       end
       local needed = tab_width + effective_spacing
 
-      if current_width + needed <= tabs_available_width then
+      if current_width + needed <= adjusted_available_width then
         visible_indices[#visible_indices + 1] = i
         current_width = current_width + needed
       else
@@ -899,14 +906,31 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     responsive_widths = widths
   end
 
+  -- Calculate overflow button position before drawing tabs (needed for last tab width calculation)
+  local overflow_x
+  if overflow_at_edge then
+    -- Position at the right edge (aligned with corner, no offset)
+    overflow_x = x + available_width - overflow_width
+  else
+    -- Position right after tabs (natural flow with border overlap)
+    overflow_x = tabs_start_x + tabs_width
+    if spacing > 0 then
+      overflow_x = overflow_x + spacing
+    else
+      overflow_x = overflow_x - 1  -- Border overlap
+    end
+  end
+
   local clicked_tab_id = nil
   local id_to_delete = nil
 
   for i, tab_data in ipairs(tabs) do
     local is_visible = false
-    for _, vis_idx in ipairs(visible_indices) do
+    local is_last_visible = false
+    for idx, vis_idx in ipairs(visible_indices) do
       if vis_idx == i then
         is_visible = true
+        is_last_visible = (idx == #visible_indices)
         break
       end
     end
@@ -915,14 +939,15 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
       local pos = state.tab_positions[tab_data.id]
       if pos then
         local tab_w = responsive_widths[i] or calculate_tab_width(ctx, tab_data.label or "Tab", config, tab_data.chip_color ~= nil)
-        local tab_x = pos.current_x
+        -- Snap to whole pixels for crisp rendering during animation
+        local tab_x = math.floor(pos.current_x + 0.5)
 
         if state.dragging_tab and state.dragging_tab.id == tab_data.id then
           local mx = ImGui.GetMousePos(ctx)
-          tab_x = mx - state.dragging_tab.offset_x
+          tab_x = math.floor(mx - state.dragging_tab.offset_x + 0.5)
         end
 
-        -- Calculate actual render width to ensure border overlap with next tab
+        -- Calculate actual render width to ensure border overlap with next tab/overflow
         local render_width = tab_w
         local next_visible_idx = nil
         for j = i + 1, #tabs do
@@ -939,16 +964,20 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
         if next_visible_idx then
           local next_pos = state.tab_positions[tabs[next_visible_idx].id]
           if next_pos then
-            local next_x = next_pos.current_x
+            local next_x = math.floor(next_pos.current_x + 0.5)
             if state.dragging_tab and state.dragging_tab.id == tabs[next_visible_idx].id then
               local mx = ImGui.GetMousePos(ctx)
-              next_x = mx - state.dragging_tab.offset_x
+              next_x = math.floor(mx - state.dragging_tab.offset_x + 0.5)
             end
 
             -- Extend this tab's width to reach the next tab (with 1px overlap)
             local distance_to_next = next_x - tab_x
             render_width = distance_to_next + 1  -- +1 for border overlap
           end
+        elseif is_last_visible and overflow_count > 0 then
+          -- Last visible tab before overflow - extend to overlap overflow button
+          local distance_to_overflow = overflow_x - tab_x
+          render_width = distance_to_overflow + 1  -- +1 for border overlap
         end
 
         local is_active = (tab_data.id == active_tab_id)
@@ -968,22 +997,8 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
       end
     end
   end
-  
-  -- Draw overflow/menu button
-  local overflow_x
-  if overflow_at_edge then
-    -- Position at the right edge (aligned with corner, no offset)
-    overflow_x = x + available_width - overflow_width
-  else
-    -- Position right after tabs (natural flow with border overlap)
-    overflow_x = tabs_start_x + tabs_width
-    if spacing > 0 then
-      overflow_x = overflow_x + spacing
-    else
-      overflow_x = overflow_x - 1  -- Border overlap
-    end
-  end
 
+  -- Draw overflow/menu button (overflow_x already calculated before tab loop)
   local overflow_corner = corner_rounding and {
     round_top_left = false,
     round_top_right = corner_rounding.round_top_right,
