@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local SearchInput = require('rearkitekt.gui.widgets.controls.search_input')
+local Checkbox = require('rearkitekt.gui.widgets.controls.checkbox')
 local StatusBar = require('ItemPicker.ui.views.status_bar')
 
 local M = {}
@@ -68,23 +69,45 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local ui_fade = smootherstep(math.max(0, (overlay_alpha - 0.15) / 0.85))
   local ui_y_offset = 15 * (1.0 - ui_fade)
 
-  -- Render checkboxes with fade animation
+  -- Render checkboxes with fade animation and 14px padding
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, ui_fade)
 
-  if ImGui.Checkbox(ctx, "Play Item Through Track (will add delay to preview playback)", self.state.settings.play_item_through_track) then
+  local checkbox_x = 14
+  local checkbox_y = 14 + ui_y_offset
+
+  ImGui.SetCursorScreenPos(ctx, checkbox_x, checkbox_y)
+  local clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
+    "Play Item Through Track (will add delay to preview playback)",
+    self.state.settings.play_item_through_track, nil, "play_item_through_track")
+  if clicked then
     self.state:set_setting('play_item_through_track', not self.state.settings.play_item_through_track)
   end
 
-  if ImGui.Checkbox(ctx, "Show Muted Tracks", self.state.settings.show_muted_tracks) then
+  checkbox_y = checkbox_y + 24
+  ImGui.SetCursorScreenPos(ctx, checkbox_x, checkbox_y)
+  clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
+    "Show Muted Tracks",
+    self.state.settings.show_muted_tracks, nil, "show_muted_tracks")
+  if clicked then
     self.state:set_setting('show_muted_tracks', not self.state.settings.show_muted_tracks)
   end
 
-  if ImGui.Checkbox(ctx, "Show Muted Items", self.state.settings.show_muted_items) then
+  checkbox_y = checkbox_y + 24
+  ImGui.SetCursorScreenPos(ctx, checkbox_x, checkbox_y)
+  clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
+    "Show Muted Items",
+    self.state.settings.show_muted_items, nil, "show_muted_items")
+  if clicked then
     self.state:set_setting('show_muted_items', not self.state.settings.show_muted_items)
   end
 
-  ImGui.SameLine(ctx)
-  if ImGui.Checkbox(ctx, "Show Disabled Items", self.state.settings.show_disabled_items) then
+  -- Show Disabled Items on same line (after Show Muted Items)
+  local muted_items_width = ImGui.CalcTextSize(ctx, "Show Muted Items") + 18 + 8 + 20  -- checkbox + spacing + margin
+  local disabled_x = checkbox_x + muted_items_width
+  clicked = Checkbox.draw(ctx, self.state.draw_list, disabled_x, checkbox_y,
+    "Show Disabled Items",
+    self.state.settings.show_disabled_items, nil, "show_disabled_items")
+  if clicked then
     self.state:set_setting('show_disabled_items', not self.state.settings.show_disabled_items)
   end
 
@@ -94,20 +117,13 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local search_fade = smootherstep(math.max(0, (overlay_alpha - 0.05) / 0.95))
   local search_y_offset = 25 * (1.0 - search_fade)
 
-  -- Render "Search:" label centered
+  -- Search input centered using rearkitekt widget (rounded to whole pixels)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, search_fade)
   ImGui.PushFont(ctx, title_font, 14)
-  local search_text_w, search_text_h = ImGui.CalcTextSize(ctx, "Search:")
   local content_start_y = screen_h * self.config.LAYOUT.CONTENT_START_Y
 
-  ImGui.DrawList_AddText(self.state.draw_list,
-    screen_w / 2 - search_text_w / 2,
-    content_start_y - search_text_h + search_y_offset,
-    0xFFFFFFFF, "Search:")
-
-  -- Search input centered using rearkitekt widget
-  local search_x = screen_w / 2 - (screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO) / 2
-  local search_y = content_start_y + search_y_offset
+  local search_x = math.floor(screen_w / 2 - (screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO) / 2 + 0.5)
+  local search_y = math.floor(content_start_y + search_y_offset + 0.5)
   local search_width = screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO
   local search_height = 24
 
