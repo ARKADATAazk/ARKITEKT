@@ -882,10 +882,10 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     final_tab_widths, min_text_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, false)
   end
 
-  -- Calculate visible tabs using final widths when extending, natural widths otherwise
+  -- Calculate visible tabs - always use final_tab_widths (includes Stage 1 expansion)
   local visible_indices, overflow_count, tabs_width
-  if overflow_at_edge and final_tab_widths then
-    -- Use extended widths to determine visibility
+  if final_tab_widths then
+    -- Use expanded widths to determine visibility
     visible_indices = {}
     local current_width = 0
     local spacing_val = config.spacing or 0
@@ -911,57 +911,60 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     overflow_count = #tabs - #visible_indices
     tabs_width = current_width
 
-    -- If not all tabs fit even with extension, re-extend only visible tabs to fill space
-    if overflow_count > 0 and #visible_indices > 0 then
-      local visible_tabs = {}
-      for _, idx in ipairs(visible_indices) do
-        table.insert(visible_tabs, tabs[idx])
-      end
-
-      -- Re-calculate widths for only visible tabs to fill the entire available width
-      local visible_widths, visible_min_widths = calculate_responsive_tab_widths(ctx, visible_tabs, config, tabs_available_width, true)
-
-      -- Verify total and adjust last tab if needed to ensure exact fill
-      local verify_total = 0
-      for i = 1, #visible_widths do
-        verify_total = verify_total + visible_widths[i]
-        if i < #visible_widths then
-          verify_total = verify_total + (spacing_val == 0 and -1 or spacing_val)
+    -- Only re-extend to fill when at 80% threshold (overflow_at_edge)
+    if overflow_at_edge then
+      if overflow_count > 0 and #visible_indices > 0 then
+        -- Not all tabs fit - re-extend only visible tabs to fill space
+        local visible_tabs = {}
+        for _, idx in ipairs(visible_indices) do
+          table.insert(visible_tabs, tabs[idx])
         end
-      end
 
-      -- If there's any rounding error, adjust the last visible tab
-      local diff = tabs_available_width - verify_total
-      if diff ~= 0 and #visible_widths > 0 then
-        visible_widths[#visible_widths] = visible_widths[#visible_widths] + diff
-      end
+        -- Re-calculate widths for only visible tabs to fill the entire available width
+        local visible_widths, visible_min_widths = calculate_responsive_tab_widths(ctx, visible_tabs, config, tabs_available_width, true)
 
-      -- Map visible widths back to original tab indices
-      local remapped_widths = {}
-      for i, idx in ipairs(visible_indices) do
-        remapped_widths[idx] = visible_widths[i]
-      end
-      final_tab_widths = remapped_widths
-
-      tabs_width = tabs_available_width  -- Exact width
-    elseif overflow_count == 0 and #visible_indices > 0 then
-      -- All tabs fit - ensure they fill the space
-      local verify_total = 0
-      for i, idx in ipairs(visible_indices) do
-        verify_total = verify_total + final_tab_widths[idx]
-        if i < #visible_indices then
-          verify_total = verify_total + (spacing_val == 0 and -1 or spacing_val)
+        -- Verify total and adjust last tab if needed to ensure exact fill
+        local verify_total = 0
+        for i = 1, #visible_widths do
+          verify_total = verify_total + visible_widths[i]
+          if i < #visible_widths then
+            verify_total = verify_total + (spacing_val == 0 and -1 or spacing_val)
+          end
         end
-      end
 
-      -- Adjust last tab if needed
-      local diff = tabs_available_width - verify_total
-      if diff ~= 0 and #visible_indices > 0 then
-        local last_idx = visible_indices[#visible_indices]
-        final_tab_widths[last_idx] = final_tab_widths[last_idx] + diff
-      end
+        -- If there's any rounding error, adjust the last visible tab
+        local diff = tabs_available_width - verify_total
+        if diff ~= 0 and #visible_widths > 0 then
+          visible_widths[#visible_widths] = visible_widths[#visible_widths] + diff
+        end
 
-      tabs_width = tabs_available_width  -- Exact width
+        -- Map visible widths back to original tab indices
+        local remapped_widths = {}
+        for i, idx in ipairs(visible_indices) do
+          remapped_widths[idx] = visible_widths[i]
+        end
+        final_tab_widths = remapped_widths
+
+        tabs_width = tabs_available_width  -- Exact width
+      elseif overflow_count == 0 and #visible_indices > 0 then
+        -- All tabs fit at 80% threshold - fill to edge exactly
+        local verify_total = 0
+        for i, idx in ipairs(visible_indices) do
+          verify_total = verify_total + final_tab_widths[idx]
+          if i < #visible_indices then
+            verify_total = verify_total + (spacing_val == 0 and -1 or spacing_val)
+          end
+        end
+
+        -- Adjust last tab to fill exactly
+        local diff = tabs_available_width - verify_total
+        if diff ~= 0 and #visible_indices > 0 then
+          local last_idx = visible_indices[#visible_indices]
+          final_tab_widths[last_idx] = final_tab_widths[last_idx] + diff
+        end
+
+        tabs_width = tabs_available_width  -- Exact width
+      end
     end
   else
     visible_indices, overflow_count, tabs_width = calculate_visible_tabs(
