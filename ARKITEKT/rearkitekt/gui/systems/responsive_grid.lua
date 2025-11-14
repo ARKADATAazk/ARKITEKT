@@ -4,8 +4,8 @@
 
 local M = {}
 -- Performance: Localize math functions for hot path (30% faster in loops)
-local max = max
-local min = min
+local max = math.max
+local min = math.min
 
 
 function M.calculate_scaled_gap(tile_height, base_gap, base_height, min_height, responsive_config)

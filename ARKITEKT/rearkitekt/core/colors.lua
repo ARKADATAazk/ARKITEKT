@@ -3,8 +3,8 @@
 -- Color manipulation and adaptive palette generation
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
-local max = max
-local min = min
+local max = math.max
+local min = math.min
 
 local M = {}
 

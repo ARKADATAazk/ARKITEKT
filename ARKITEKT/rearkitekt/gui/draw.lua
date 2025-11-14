@@ -4,8 +4,8 @@
 -- Crisp pixel-aligned rendering utilities
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
-local max = max
-local min = min
+local max = math.max
+local min = math.min
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
