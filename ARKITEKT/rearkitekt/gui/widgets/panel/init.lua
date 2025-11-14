@@ -271,6 +271,74 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
   local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
   local offset_y = CORNER_BUTTON_CONFIG.position_offset_y
 
+  -- Helper: Draw rounded rect path with asymmetric corners
+  local function draw_rounded_rect_path(x1, y1, x2, y2, color, filled, rt, rr, rb, rl, thickness)
+    local function snap_pixel(v)
+      return math.floor(v + 0.5)
+    end
+
+    x1 = snap_pixel(x1)
+    y1 = snap_pixel(y1)
+    x2 = snap_pixel(x2)
+    y2 = snap_pixel(y2)
+
+    if not filled and thickness == 1 then
+      x1 = x1 + 0.5
+      y1 = y1 + 0.5
+      x2 = x2 - 0.5
+      y2 = y2 - 0.5
+    end
+
+    local w = x2 - x1
+    local h = y2 - y1
+    local max_r = math.min(w, h) * 0.5
+    rt = math.min(rt or 0, max_r)
+    rr = math.min(rr or 0, max_r)
+    rb = math.min(rb or 0, max_r)
+    rl = math.min(rl or 0, max_r)
+
+    local function segs(r)
+      if r <= 0 then return 0 end
+      return math.max(4, math.floor(r * 0.6))
+    end
+
+    ImGui.DrawList_PathClear(dl)
+
+    -- Top-left corner
+    if rt > 0 then
+      ImGui.DrawList_PathArcTo(dl, x1 + rt, y1 + rt, rt, math.pi, math.pi * 1.5, segs(rt))
+    else
+      ImGui.DrawList_PathLineTo(dl, x1, y1)
+    end
+
+    -- Top-right corner
+    if rr > 0 then
+      ImGui.DrawList_PathArcTo(dl, x2 - rr, y1 + rr, rr, math.pi * 1.5, math.pi * 2.0, segs(rr))
+    else
+      ImGui.DrawList_PathLineTo(dl, x2, y1)
+    end
+
+    -- Bottom-right corner
+    if rb > 0 then
+      ImGui.DrawList_PathArcTo(dl, x2 - rb, y2 - rb, rb, 0, math.pi * 0.5, segs(rb))
+    else
+      ImGui.DrawList_PathLineTo(dl, x2, y2)
+    end
+
+    -- Bottom-left corner
+    if rl > 0 then
+      ImGui.DrawList_PathArcTo(dl, x1 + rl, y2 - rl, rl, math.pi * 0.5, math.pi, segs(rl))
+    else
+      ImGui.DrawList_PathLineTo(dl, x1, y2)
+    end
+
+    if filled then
+      ImGui.DrawList_PathFillConvex(dl, color)
+    else
+      ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, thickness or 1)
+    end
+  end
+
   -- Helper to draw a single corner button on foreground
   local function draw_button(position, button_config, btn_x, btn_y, unique_id)
     if not button_config then return end
@@ -304,12 +372,7 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
       text = Style.RENDER.lerp_color(cfg.text_color, cfg.text_hover_color or cfg.text_color, inst.hover_alpha)
     end
 
-    -- Draw corner shape (using helper from CornerButton module)
-    local CornerButton = require('rearkitekt.gui.widgets.controls.corner_button')
-    -- Call the internal draw function through the public API but on foreground drawlist
-    -- Actually, let's just inline the drawing here since we need foreground DL
-
-    -- Draw filled background
+    -- Determine corner-specific rounding (asymmetric)
     local rtl, rtr, rbr, rbl = 0, 0, 0, 0
     if position == 'tl' then
       rtl = outer_rounding; rbr = inner_rounding
@@ -326,9 +389,10 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     local ibr = math.max(0, rbr - 2)
     local ibl = math.max(0, rbl - 2)
 
-    ImGui.DrawList_AddRectFilled(dl, btn_x, btn_y, btn_x + size, btn_y + size, bg, (itl + itr + ibr + ibl) / 4)
-    ImGui.DrawList_AddRect(dl, btn_x + 1, btn_y + 1, btn_x + size - 1, btn_y + size - 1, border_inner, (itl + itr + ibr + ibl) / 4, 0, 1)
-    ImGui.DrawList_AddRect(dl, btn_x, btn_y, btn_x + size, btn_y + size, cfg.border_outer_color, (itl + itr + ibr + ibl) / 4, 0, 1)
+    -- Draw corner shape with proper asymmetric rounding using path-based drawing
+    draw_rounded_rect_path(btn_x, btn_y, btn_x + size, btn_y + size, bg, true, itl, itr, ibr, ibl)
+    draw_rounded_rect_path(btn_x + 1, btn_y + 1, btn_x + size - 1, btn_y + size - 1, border_inner, false, itl, itr, ibr, ibl, 1)
+    draw_rounded_rect_path(btn_x, btn_y, btn_x + size, btn_y + size, cfg.border_outer_color, false, itl, itr, ibr, ibl, 1)
 
     -- Draw icon/label
     local label = cfg.icon or cfg.label or ''
