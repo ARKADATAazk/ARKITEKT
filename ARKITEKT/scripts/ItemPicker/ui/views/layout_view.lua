@@ -75,7 +75,6 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local checkbox_y = 14 + ui_y_offset
   local checkbox_config = { alpha = ui_fade }
 
-  ImGui.SetCursorScreenPos(ctx, checkbox_x, checkbox_y)
   local _, clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
     "Play Item Through Track (will add delay to preview playback)",
     self.state.settings.play_item_through_track, checkbox_config, "play_item_through_track")
@@ -84,7 +83,6 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   end
 
   checkbox_y = checkbox_y + 24
-  ImGui.SetCursorScreenPos(ctx, checkbox_x, checkbox_y)
   _, clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
     "Show Muted Tracks",
     self.state.settings.show_muted_tracks, checkbox_config, "show_muted_tracks")
@@ -93,7 +91,6 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   end
 
   checkbox_y = checkbox_y + 24
-  ImGui.SetCursorScreenPos(ctx, checkbox_x, checkbox_y)
   _, clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
     "Show Muted Items",
     self.state.settings.show_muted_items, checkbox_config, "show_muted_items")

@@ -103,6 +103,11 @@ function M.GetProjectSamples(settings, state)
     
     local track_items = M.GetItemInTrack(track)
     for key, item in pairs(track_items) do
+      -- Validate item is a valid MediaItem pointer
+      if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+        goto next_item
+      end
+
       local take = reaper.GetActiveTake(item)
       if not take then
         goto next_item
@@ -163,6 +168,11 @@ function M.GetProjectMIDI(settings, state)
     local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or M.IsParentMuted(track) == true
 
     for key, item in pairs(track_items) do
+      -- Validate item is a valid MediaItem pointer
+      if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+        goto next_item
+      end
+
       local take = reaper.GetActiveTake(item)
       if not take then
         goto next_item
