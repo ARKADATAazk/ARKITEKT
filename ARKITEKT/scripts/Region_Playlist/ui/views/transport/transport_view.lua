@@ -9,6 +9,7 @@ local TransportContainer = require('Region_Playlist.ui.views.transport.transport
 local TransportIcons = require('Region_Playlist.ui.views.transport.transport_icons')
 local ButtonWidgets = require('Region_Playlist.ui.views.transport.button_widgets')
 local DisplayWidget = require('Region_Playlist.ui.views.transport.display_widget')
+local CoreConfig = require('Region_Playlist.core.config')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -204,24 +205,13 @@ function TransportView:build_header_elements(bridge_state)
     },
     {
       type = "dropdown_field",
-      id = "transport_measure",
+      id = "transport_quantize",
       align = "center",
       width = 85,
       config = {
         tooltip = "Grid/Quantize Mode",
         current_value = bridge_state.quantize_mode,
-        options = {
-          { value = "4bar", label = "4 Bars" },
-          { value = "2bar", label = "2 Bars" },
-          { value = "measure", label = "1 Bar" },
-          { value = "beat", label = "Beat" },
-          { value = 1, label = "1/1" },
-          { value = 0.5, label = "1/2" },
-          { value = 0.25, label = "1/4" },
-          { value = 0.125, label = "1/8" },
-          { value = 0.0625, label = "1/16" },
-          { value = 0.03125, label = "1/32" },
-        },
+        options = CoreConfig.QUANTIZE.options,  -- Single source of truth
         enable_mousewheel = true,
         on_change = function(new_value)
           self.state.get_bridge():set_quantize_mode(new_value)

@@ -121,21 +121,33 @@ function Quantize:_calculate_next_quantize_point(playpos, skip_count)
     return next_time
   elseif self.quantize_mode == "2bar" then
     local retval, measures, cml, fullbeats, cdenom = reaper.TimeMap2_timeToBeats(self.proj, playpos)
-    local current_measure = math.floor(measures)
-    local next_2bar_measure = math.ceil((current_measure + 1) / 2) * 2 + (skip_count * 2)
+    local current_measure = measures  -- Use full precision
+    -- Find next 2-bar boundary ahead of current position
+    local next_2bar_measure = math.ceil(current_measure / 2) * 2 + (skip_count * 2)
+    -- Ensure we're actually ahead (not on the boundary)
+    if next_2bar_measure <= current_measure then
+      next_2bar_measure = next_2bar_measure + 2
+    end
     local next_time = reaper.TimeMap2_beatsToTime(self.proj, 0, next_2bar_measure)
-    
-    Logger.debug("QUANTIZE", "Mode=2bar, skip=%d -> measure=%d (%.3fs)", skip_count, next_2bar_measure, next_time)
-    
+
+    Logger.debug("QUANTIZE", "Mode=2bar, current=%.3f skip=%d -> measure=%d (%.3fs)",
+      current_measure, skip_count, next_2bar_measure, next_time)
+
     return next_time
   elseif self.quantize_mode == "4bar" then
     local retval, measures, cml, fullbeats, cdenom = reaper.TimeMap2_timeToBeats(self.proj, playpos)
-    local current_measure = math.floor(measures)
-    local next_4bar_measure = math.ceil((current_measure + 1) / 4) * 4 + (skip_count * 4)
+    local current_measure = measures  -- Use full precision
+    -- Find next 4-bar boundary ahead of current position
+    local next_4bar_measure = math.ceil(current_measure / 4) * 4 + (skip_count * 4)
+    -- Ensure we're actually ahead (not on the boundary)
+    if next_4bar_measure <= current_measure then
+      next_4bar_measure = next_4bar_measure + 4
+    end
     local next_time = reaper.TimeMap2_beatsToTime(self.proj, 0, next_4bar_measure)
-    
-    Logger.debug("QUANTIZE", "Mode=4bar, skip=%d -> measure=%d (%.3fs)", skip_count, next_4bar_measure, next_time)
-    
+
+    Logger.debug("QUANTIZE", "Mode=4bar, current=%.3f skip=%d -> measure=%d (%.3fs)",
+      current_measure, skip_count, next_4bar_measure, next_time)
+
     return next_time
   elseif self.quantize_mode == "beat" then
     -- Quantize to next beat (1.0 grid division)
