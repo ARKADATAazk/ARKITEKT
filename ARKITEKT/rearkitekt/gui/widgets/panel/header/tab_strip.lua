@@ -751,7 +751,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     visible_indices = {}
     local current_width = 0
     local spacing_val = config.spacing or 0
-    local buffer_per_tab = 10  -- Allow each tab up to 10px buffer space
+    local total_buffer = 10  -- Allow up to 10px total buffer space
 
     for i, tab in ipairs(tabs) do
       local tab_width = final_tab_widths[i]
@@ -759,10 +759,10 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
       if i > 1 and i <= #tabs and spacing_val == 0 then
         effective_spacing = -1
       end
-      -- Subtract buffer from each tab - allows tab to use its padding
-      local needed = (tab_width - buffer_per_tab) + effective_spacing
+      local needed = tab_width + effective_spacing
 
-      if current_width + needed <= tabs_available_width then
+      -- Allow tabs to fit with buffer space
+      if current_width + needed <= tabs_available_width + total_buffer then
         visible_indices[#visible_indices + 1] = i
         current_width = current_width + needed
       else
@@ -971,15 +971,15 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
             render_width = math.max(tab_w, distance_to_next + 1)  -- Ensure never smaller than tab_w
           end
         elseif is_last_visible then
-          -- Last visible tab - extend to overflow button or edge
+          -- Last visible tab - extend to overflow button (with overlap)
           local target_x = overflow_x
           local distance_to_target = target_x - tab_x
-          -- Add 10px buffer for all tabs when calculating to target
-          render_width = math.max(tab_w, distance_to_target + 1)
+          render_width = distance_to_target + 1  -- +1 for border overlap
         end
 
         -- Ensure render_width is always positive and at least 1px
-        render_width = math.max(1, math.floor(render_width + 0.5))
+        render_width = math.max(1, render_width)
+        render_width = math.floor(render_width + 0.5)
 
         local is_active = (tab_data.id == active_tab_id)
         local clicked, delete_requested = draw_tab(
