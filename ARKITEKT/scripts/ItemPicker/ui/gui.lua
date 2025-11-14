@@ -75,7 +75,9 @@ function GUI:draw(ctx, shell_state)
 
   -- Get fonts
   local mini_font = shell_state.fonts.default
+  local mini_font_size = shell_state.fonts.default_size or 14
   local big_font = shell_state.fonts.title
+  local big_font_size = shell_state.fonts.title_size or 24
 
   -- Process async jobs
   if self.state.job_queue then
@@ -94,13 +96,13 @@ function GUI:draw(ctx, shell_state)
   -- Handle tile size shortcuts
   self.coordinator:handle_tile_size_shortcuts(ctx)
 
-  ImGui.PushFont(ctx, mini_font)
+  ImGui.PushFont(ctx, mini_font, mini_font_size)
   reaper.PreventUIRefresh(1)
 
   -- Check if dragging
   if not self.state.dragging then
     -- Normal mode - show main UI
-    self.layout_view:render(ctx, big_font, "Item Picker", SCREEN_W, SCREEN_H)
+    self.layout_view:render(ctx, big_font, big_font_size, "Item Picker", SCREEN_W, SCREEN_H)
   else
     -- Dragging mode - show drag overlay
     local should_insert = self.drag_handler.handle_drag_logic(ctx, self.state, mini_font)

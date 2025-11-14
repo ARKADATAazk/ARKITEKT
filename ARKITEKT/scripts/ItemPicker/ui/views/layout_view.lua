@@ -58,11 +58,11 @@ function LayoutView:handle_shortcuts(ctx)
   end
 end
 
-function LayoutView:render_header(ctx, title_font, title)
+function LayoutView:render_header(ctx, title_font, title_font_size, title)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
   -- Title
-  ImGui.PushFont(ctx, title_font)
+  ImGui.PushFont(ctx, title_font, title_font_size)
   local title_w = ImGui.CalcTextSize(ctx, title)
   ImGui.SetCursorPosX(ctx, (avail_w - title_w) / 2)
   ImGui.Text(ctx, title)
@@ -122,11 +122,11 @@ function LayoutView:render_header(ctx, title_font, title)
   ImGui.Spacing(ctx)
 end
 
-function LayoutView:render(ctx, title_font, title, screen_w, screen_h)
+function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, screen_h)
   self:handle_shortcuts(ctx)
 
   -- Render header
-  self:render_header(ctx, title_font, title)
+  self:render_header(ctx, title_font, title_font_size, title)
 
   -- Calculate layout (reserve space for status bar)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
