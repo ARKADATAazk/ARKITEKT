@@ -89,23 +89,23 @@ function M.render_specular(dl, x1, y1, x2, y2, base_color, strength, coverage, r
 end
 
 function M.render_inner_shadow(dl, x1, y1, x2, y2, strength, rounding)
-  local shadow_size = 2
+  local shadow_size = 3  -- Increased to 3px to be visible under 1px border
   local shadow_alpha = math.floor(255 * strength * 0.4)
   local shadow_color = Colors.components_to_rgba(0, 0, 0, shadow_alpha)
-  
+
   -- Clip to rounded rect bounds (AddRectFilledMultiColor doesn't support corner flags)
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
-  
-  ImGui.DrawList_AddRectFilledMultiColor(dl, 
+
+  ImGui.DrawList_AddRectFilledMultiColor(dl,
     x1, y1, x2, y1 + shadow_size,
     shadow_color, shadow_color,
     Colors.components_to_rgba(0, 0, 0, 0), Colors.components_to_rgba(0, 0, 0, 0))
-  
+
   ImGui.DrawList_AddRectFilledMultiColor(dl,
     x1, y1, x1 + shadow_size, y2,
     shadow_color, Colors.components_to_rgba(0, 0, 0, 0),
     Colors.components_to_rgba(0, 0, 0, 0), shadow_color)
-  
+
   ImGui.DrawList_PopClipRect(dl)
 end
 
@@ -142,35 +142,43 @@ end
 
 function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fade_alpha, rounding, progress_color_override)
   if progress <= 0 or fade_alpha <= 0 then return end
-  
+
   local width = x2 - x1
-  local progress_width = width * progress
+  -- Snap to whole pixels to prevent aliasing on the edge
+  local progress_width = math.floor(width * progress)
   local progress_x = x1 + progress_width
-  
+
   -- Use override color if provided (for playlist chip color)
   local color_source = progress_color_override or base_color
   local r, g, b, _ = Colors.rgba_to_components(color_source)
-  
+
   local brightness = 1.15
   r = math.min(255, math.floor(r * brightness))
   g = math.min(255, math.floor(g * brightness))
   b = math.min(255, math.floor(b * brightness))
-  
+
   local base_alpha = 0x40
   local alpha = math.floor(base_alpha * fade_alpha)
   local progress_color = Colors.components_to_rgba(r, g, b, alpha)
-  
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, progress_x, y2, progress_color, rounding, ImGui.DrawFlags_RoundCornersAll)
-  
-  local base_bar_alpha = 0xAA
-  local bar_alpha = math.floor(base_bar_alpha * fade_alpha)
-  local bar_color = Colors.components_to_rgba(r, g, b, bar_alpha)
-  local bar_thickness = 1
-  
-  local height = y2 - y1
-  local inset = math.min(rounding * 0.5, 2)
-  
-  ImGui.DrawList_AddLine(dl, progress_x, y1 + inset, progress_x, y2 - inset, bar_color, bar_thickness)
+
+  -- Match tile shape: round left corners, straight right edge (unless at 100%)
+  local corner_flags = (progress >= 1.0) and ImGui.DrawFlags_RoundCornersAll or ImGui.DrawFlags_RoundCornersLeft
+
+  -- Clip to tile bounds to ensure progress respects rounded corners
+  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, progress_x, y2, progress_color, rounding, corner_flags)
+  ImGui.DrawList_PopClipRect(dl)
+
+  -- Draw right edge indicator line (only if not at 100%)
+  if progress < 1.0 then
+    local base_bar_alpha = 0xAA
+    local bar_alpha = math.floor(base_bar_alpha * fade_alpha)
+    local bar_color = Colors.components_to_rgba(r, g, b, bar_alpha)
+    local bar_thickness = 1
+    local inset = math.min(rounding * 0.5, 2)
+
+    ImGui.DrawList_AddLine(dl, progress_x, y1 + inset, progress_x, y2 - inset, bar_color, bar_thickness)
+  end
 end
 
 function M.render_border(dl, x1, y1, x2, y2, base_color, saturation, brightness, opacity, thickness, rounding, is_selected, glow_strength, glow_layers, border_color_override)
