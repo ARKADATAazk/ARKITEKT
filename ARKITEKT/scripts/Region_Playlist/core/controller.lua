@@ -119,16 +119,34 @@ function Controller:duplicate_playlist(id)
     local new_id = self:_generate_playlist_id()
     local RegionState = require("Region_Playlist.storage.persistence")
 
-    -- Deep copy items
+    -- Deep copy items with proper structure and new keys
     local new_items = {}
     for i, item in ipairs(source_playlist.items) do
-      new_items[i] = {
-        key = item.key,
-        rids = item.rids and {table.unpack(item.rids)} or nil,
-        playlist_id = item.playlist_id,
-        enabled = item.enabled,
-        repeats = item.repeats,
-      }
+      local new_item
+
+      if item.type == "region" then
+        -- Region item
+        new_item = {
+          type = "region",
+          rid = item.rid,
+          reps = item.reps or 1,
+          enabled = item.enabled ~= false,
+          key = self:_generate_item_key(item.rid),
+        }
+      elseif item.type == "playlist" then
+        -- Playlist item
+        new_item = {
+          type = "playlist",
+          playlist_id = item.playlist_id,
+          reps = item.reps or 1,
+          enabled = item.enabled ~= false,
+          key = self:_generate_item_key("playlist_" .. item.playlist_id),
+        }
+      end
+
+      if new_item then
+        new_items[i] = new_item
+      end
     end
 
     local new_playlist = {
