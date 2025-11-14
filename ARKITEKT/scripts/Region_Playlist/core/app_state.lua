@@ -69,6 +69,13 @@ M.circular_dependency_error = nil
 M.circular_dependency_error_timestamp = nil
 M.circular_dependency_error_timeout = 3.0  -- seconds
 
+-- Temporary state change notifications
+M.state_change_notification = nil
+M.state_change_notification_timestamp = nil
+M.state_change_notification_timeout = 2.0  -- seconds
+
+M.last_override_state = false
+
 local function get_current_project_filename()
   local proj_path = reaper.GetProjectPath("")
   local proj_name = reaper.GetProjectName(0, "")
@@ -334,6 +341,34 @@ end
 function M.clear_circular_dependency_error()
   M.circular_dependency_error = nil
   M.circular_dependency_error_timestamp = nil
+end
+
+function M.get_state_change_notification()
+  -- Auto-clear notification after timeout
+  if M.state_change_notification and M.state_change_notification_timestamp then
+    local current_time = reaper.time_precise()
+    if (current_time - M.state_change_notification_timestamp) >= M.state_change_notification_timeout then
+      M.state_change_notification = nil
+      M.state_change_notification_timestamp = nil
+    end
+  end
+  return M.state_change_notification
+end
+
+function M.set_state_change_notification(message)
+  M.state_change_notification = message
+  M.state_change_notification_timestamp = reaper.time_precise()
+end
+
+function M.check_override_state_change(current_override_state)
+  if current_override_state ~= M.last_override_state then
+    M.last_override_state = current_override_state
+    if current_override_state then
+      M.set_state_change_notification("Override enabled")
+    else
+      M.set_state_change_notification("Override disabled")
+    end
+  end
 end
 
 -- <<< CANONICAL ACCESSORS (END)

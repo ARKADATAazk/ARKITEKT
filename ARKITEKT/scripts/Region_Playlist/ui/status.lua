@@ -39,25 +39,38 @@ local function get_app_status(State)
     local status_message = nil
     local status_color = STATUS_COLORS.READY
 
+    -- Track override state changes
+    if State.check_override_state_change then
+      State.check_override_state_change(bridge_state.transport_override)
+    end
+
     -- Priority 1: Errors (RED)
     if State.get_circular_dependency_error and State.get_circular_dependency_error() then
       status_message = State.get_circular_dependency_error()
       status_color = STATUS_COLORS.ERROR
     end
 
-    -- Priority 2: Warnings (ORANGE) - only if no errors
+    -- Priority 2: State change notifications (INFO) - temporary feedback
+    if not status_message then
+      if State.get_state_change_notification then
+        local notification = State.get_state_change_notification()
+        if notification then
+          status_message = notification
+          status_color = STATUS_COLORS.INFO
+        end
+      end
+    end
+
+    -- Priority 3: Warnings (ORANGE) - only if no errors/notifications
     if not status_message then
       local active_playlist = State.get_active_playlist and State.get_active_playlist()
       if active_playlist and active_playlist.order and #active_playlist.order == 0 and not bridge_state.is_playing then
         status_message = "Playlist is empty"
         status_color = STATUS_COLORS.WARNING
-      elseif bridge_state.transport_override then
-        status_message = "Override: Active"
-        status_color = STATUS_COLORS.WARNING
       end
     end
 
-    -- Priority 3: Info (BLUE) - only if no errors/warnings
+    -- Priority 4: Info (BLUE) - only if no errors/warnings/notifications
     if not status_message then
       local selection_info = State.get_selection_info and State.get_selection_info()
       if selection_info and (selection_info.region_count > 0 or selection_info.playlist_count > 0) then
@@ -78,8 +91,8 @@ local function get_app_status(State)
         end
       end
     end
-    
-    -- Priority 4: Playback state (GREEN) - overrides info/warnings but not errors
+
+    -- Priority 5: Playback state (GREEN) - overrides info/warnings but not errors/notifications
     if bridge_state.is_playing then
       local current_rid = bridge:get_current_rid()
       if current_rid then
@@ -87,16 +100,29 @@ local function get_app_status(State)
         if region then
           local progress = bridge:get_progress() or 0
           local time_remaining = bridge:get_time_remaining()
-          local play_text = string.format("▶ %s [%d/%d] %.0f%%",
-            region.name,
-            bridge_state.playlist_pointer,
-            #bridge_state.playlist_order,
-            progress * 100)
-          if time_remaining then
-            play_text = play_text .. string.format(" (%.1fs)", time_remaining)
+
+          -- Enhanced playback info
+          local play_parts = {}
+          table.insert(play_parts, string.format("▶ %s", region.name))
+          table.insert(play_parts, string.format("[%d/%d]", bridge_state.playlist_pointer, #bridge_state.playlist_order))
+
+          -- Add loop info if looping
+          if bridge_state.current_loop and bridge_state.total_loops and bridge_state.total_loops > 1 then
+            table.insert(play_parts, string.format("Loop %d/%d", bridge_state.current_loop, bridge_state.total_loops))
           end
-          -- Playing state takes precedence over everything except errors
-          if status_color ~= STATUS_COLORS.ERROR then
+
+          -- Add progress percentage
+          table.insert(play_parts, string.format("%.0f%%", progress * 100))
+
+          -- Add time remaining
+          if time_remaining then
+            table.insert(play_parts, string.format("%.1fs left", time_remaining))
+          end
+
+          local play_text = table.concat(play_parts, "  ")
+
+          -- Playing state takes precedence over everything except errors and notifications
+          if status_color ~= STATUS_COLORS.ERROR and not (status_color == STATUS_COLORS.INFO and State.get_state_change_notification and State.get_state_change_notification()) then
             status_message = play_text
             status_color = STATUS_COLORS.PLAYING
           end
@@ -105,14 +131,6 @@ local function get_app_status(State)
     end
 
     -- Build base info (always shown)
-    local mode_text = State.get_layout_mode() == 'horizontal' and "Timeline" or "List"
-    local quantize_text = bridge_state.quantize_mode or "none"
-    if quantize_text ~= "none" then
-      quantize_text = "Q:" .. quantize_text
-    else
-      quantize_text = "Q:Off"
-    end
-
     -- Add playlist info
     local active_playlist = State.get_active_playlist and State.get_active_playlist()
     local playlist_info = ""
@@ -129,12 +147,10 @@ local function get_app_status(State)
       table.insert(final_parts, status_message)
     end
 
-    -- Add base info
+    -- Add base info (only playlist name and count)
     if playlist_info ~= "" then
       table.insert(final_parts, playlist_info)
     end
-    table.insert(final_parts, mode_text)
-    table.insert(final_parts, quantize_text)
 
       local info_text = table.concat(final_parts, "  •  ")
       
