@@ -80,6 +80,8 @@ function M.new(opts)
 
     -- Jump flash effect
     jump_flash_alpha = 0.0,
+    jump_flash_state = "idle",  -- "idle", "holding", "fading"
+    jump_target_rid = nil,      -- Target region ID we're jumping to
   }, TransportPanel)
 
   return container
@@ -99,21 +101,42 @@ function TransportPanel:update_hover_state(ctx, x1, y1, x2, y2, dt)
 end
 
 -- Trigger jump flash effect (call when jump button is clicked)
-function TransportPanel:trigger_jump_flash()
+function TransportPanel:trigger_jump_flash(target_rid)
   self.jump_flash_alpha = 1.0
+  self.jump_flash_state = "holding"
+  self.jump_target_rid = target_rid
 end
 
 -- Cancel jump flash effect (call when transport stops or transition cancelled)
 function TransportPanel:cancel_jump_flash()
   self.jump_flash_alpha = 0.0
+  self.jump_flash_state = "idle"
+  self.jump_target_rid = nil
 end
 
--- Update jump flash fade
-function TransportPanel:update_jump_flash(dt)
-  if self.jump_flash_alpha > 0.0 then
-    local fade_speed = (self.config.fx and self.config.fx.jump_flash and self.config.fx.jump_flash.fade_speed) or 3.0
-    local fade_delta = fade_speed * dt
-    self.jump_flash_alpha = math.max(0.0, self.jump_flash_alpha - fade_delta)
+-- Update jump flash (hold during transition, fade after reaching target)
+function TransportPanel:update_jump_flash(dt, current_rid)
+  if self.jump_flash_state == "holding" then
+    -- Hold at full opacity until we reach the target region
+    if current_rid and self.jump_target_rid and current_rid == self.jump_target_rid then
+      -- Transition complete, start fading
+      self.jump_flash_state = "fading"
+    end
+    -- Keep alpha at 1.0 while holding
+    self.jump_flash_alpha = 1.0
+
+  elseif self.jump_flash_state == "fading" then
+    -- Fade out
+    if self.jump_flash_alpha > 0.0 then
+      local fade_speed = (self.config.fx and self.config.fx.jump_flash and self.config.fx.jump_flash.fade_speed) or 3.0
+      local fade_delta = fade_speed * dt
+      self.jump_flash_alpha = math.max(0.0, self.jump_flash_alpha - fade_delta)
+
+      if self.jump_flash_alpha == 0.0 then
+        self.jump_flash_state = "idle"
+        self.jump_target_rid = nil
+      end
+    end
   end
 end
 
@@ -190,7 +213,7 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
   end
 end
 
-function TransportPanel:begin_draw(ctx, region_colors)
+function TransportPanel:begin_draw(ctx, region_colors, current_rid)
   region_colors = region_colors or {}
   local target_current = region_colors.current
   local target_next = region_colors.next
@@ -198,7 +221,7 @@ function TransportPanel:begin_draw(ctx, region_colors)
   local dt = ImGui.GetDeltaTime(ctx)
 
   self:update_region_colors(ctx, target_current, target_next)
-  self:update_jump_flash(dt)
+  self:update_jump_flash(dt, current_rid)
 
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
@@ -240,6 +263,8 @@ function TransportPanel:reset()
   self.target_current_color = nil
   self.target_next_color = nil
   self.jump_flash_alpha = 0.0
+  self.jump_flash_state = "idle"
+  self.jump_target_rid = nil
 end
 
 function TransportPanel:get_hover_factor()
@@ -270,7 +295,7 @@ function TransportPanel:get_panel_state()
   return self.panel
 end
 
-function M.draw(ctx, id, width, height, content_fn, config, region_colors)
+function M.draw(ctx, id, width, height, content_fn, config, region_colors, current_rid)
   if not config then
     error("TransportContainer.draw requires config parameter")
   end
@@ -284,7 +309,7 @@ function M.draw(ctx, id, width, height, content_fn, config, region_colors)
     config = config,
   })
 
-  local content_w, content_h = container:begin_draw(ctx, region_colors)
+  local content_w, content_h = container:begin_draw(ctx, region_colors, current_rid)
 
   if content_fn then
     content_fn(ctx, content_w, content_h)

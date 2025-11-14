@@ -168,28 +168,34 @@ function TransportView:build_header_elements(bridge_state)
         tooltip = "Jump Forward",
         on_click = function()
           local bridge = self.state.get_bridge()
+
+          -- Get target region ID before jump
+          local target_rid = nil
+          local bridge_state = bridge:get_state()
+          if bridge_state.playlist_order and bridge_state.playlist_pointer then
+            local next_idx = bridge_state.playlist_pointer + 1
+            if next_idx <= #bridge_state.playlist_order then
+              target_rid = bridge_state.playlist_order[next_idx]
+            end
+          end
+
           local success = bridge:jump_to_next_quantized(self.config.quantize_lookahead)
 
-          -- Trigger visual flash effect on successful jump
-          if success and self.container then
-            self.container:trigger_jump_flash()
+          -- Trigger visual flash effect on successful jump with target region ID
+          if success and self.container and target_rid then
+            self.container:trigger_jump_flash(target_rid)
           end
 
           if success and self.state.set_state_change_notification then
-            local bridge_state = bridge:get_state()
             local quantize_mode = bridge_state.quantize_mode or "none"
 
             -- Get next region info
-            if bridge_state.playlist_order and bridge_state.playlist_pointer then
-              local next_idx = bridge_state.playlist_pointer + 1
-              if next_idx <= #bridge_state.playlist_order then
-                local next_rid = bridge_state.playlist_order[next_idx]
-                local next_region = self.state.get_region_by_rid and self.state.get_region_by_rid(next_rid)
+            if target_rid then
+              local next_region = self.state.get_region_by_rid and self.state.get_region_by_rid(target_rid)
 
-                if next_region then
-                  local msg = string.format("Jump: Next → '%s' (Quantize: %s)", next_region.name, quantize_mode)
-                  self.state.set_state_change_notification(msg)
-                end
+              if next_region then
+                local msg = string.format("Jump: Next → '%s' (Quantize: %s)", next_region.name, quantize_mode)
+                self.state.set_state_change_notification(msg)
               end
             end
           end
@@ -314,7 +320,14 @@ function TransportView:draw(ctx, shell_state)
   local transport_start_x, transport_start_y = ImGui.GetCursorScreenPos(ctx)
   
   local region_colors = self:get_region_colors()
-  local content_w, content_h = self.container:begin_draw(ctx, region_colors)
+
+  -- Get current region ID for jump flash tracking
+  local current_rid = nil
+  if bridge then
+    current_rid = bridge:get_current_rid()
+  end
+
+  local content_w, content_h = self.container:begin_draw(ctx, region_colors, current_rid)
   
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
