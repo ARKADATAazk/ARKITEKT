@@ -69,13 +69,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local ui_fade = smootherstep(math.max(0, (overlay_alpha - 0.15) / 0.85))
   local ui_y_offset = 15 * (1.0 - ui_fade)
 
+  -- Get current window draw list (not cached)
+  local draw_list = ImGui.GetWindowDrawList(ctx)
+
   -- Render checkboxes with fade animation and 14px padding
   -- Note: We pass alpha as config param instead of using PushStyleVar to keep interaction working
   local checkbox_x = 14
   local checkbox_y = 14 + ui_y_offset
   local checkbox_config = { alpha = ui_fade }
 
-  local _, clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
+  local _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
     "Play Item Through Track (will add delay to preview playback)",
     self.state.settings.play_item_through_track, checkbox_config, "play_item_through_track")
   if clicked then
@@ -83,7 +86,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   end
 
   checkbox_y = checkbox_y + 24
-  _, clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
+  _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
     "Show Muted Tracks",
     self.state.settings.show_muted_tracks, checkbox_config, "show_muted_tracks")
   if clicked then
@@ -91,7 +94,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   end
 
   checkbox_y = checkbox_y + 24
-  _, clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
+  _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
     "Show Muted Items",
     self.state.settings.show_muted_items, checkbox_config, "show_muted_items")
   if clicked then
@@ -101,7 +104,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Show Disabled Items on same line (after Show Muted Items)
   local muted_items_width = ImGui.CalcTextSize(ctx, "Show Muted Items") + 18 + 8 + 20  -- checkbox + spacing + margin
   local disabled_x = checkbox_x + muted_items_width
-  _, clicked = Checkbox.draw(ctx, self.state.draw_list, disabled_x, checkbox_y,
+  _, clicked = Checkbox.draw(ctx, draw_list, disabled_x, checkbox_y,
     "Show Disabled Items",
     self.state.settings.show_disabled_items, checkbox_config, "show_disabled_items")
   if clicked then
