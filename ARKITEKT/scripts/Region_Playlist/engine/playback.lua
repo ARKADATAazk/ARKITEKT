@@ -6,6 +6,9 @@
 local max = math.max
 local min = math.min
 
+-- Performance: Cache module to avoid repeated require() lookups in hot functions
+local Transport = require('rearkitekt.reaper.transport')
+
 local M = {}
 local Playback = {}
 Playback.__index = Playback
@@ -81,8 +84,7 @@ function Playback:get_progress()
   
   local region = self.engine.state:get_region_by_rid(entry.rid)
   if not region then return nil end
-  
-  local Transport = require('rearkitekt.reaper.transport')
+
   local playpos = Transport.get_play_position(self.engine.proj)
   
   local duration = region["end"] - region.start
@@ -110,8 +112,7 @@ function Playback:get_time_remaining()
   
   local region = self.engine.state:get_region_by_rid(entry.rid)
   if not region then return nil end
-  
-  local Transport = require('rearkitekt.reaper.transport')
+
   local playpos = Transport.get_play_position(self.engine.proj)
 
   return max(0, region["end"] - playpos)

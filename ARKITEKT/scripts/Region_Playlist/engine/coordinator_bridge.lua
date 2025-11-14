@@ -13,6 +13,9 @@ local Logger = require("rearkitekt.debug.logger")
 local max = math.max
 local min = math.min
 
+-- Performance: Cache module to avoid repeated require() lookups in hot functions
+local Transport = require('rearkitekt.reaper.transport')
+
 local M = {}
 
 package.loaded["Region_Playlist.engine.coordinator_bridge"] = M
@@ -354,7 +357,6 @@ function M.create(opts)
     local range_info = self.playlist_ranges[playlist_key]
     if not range_info then return nil end
 
-    local Transport = require('rearkitekt.reaper.transport')
     local playpos = Transport.get_play_position(self.proj)
     
     local total_duration = 0
@@ -399,7 +401,6 @@ function M.create(opts)
     local range_info = self.playlist_ranges[playlist_key]
     if not range_info then return nil end
 
-    local Transport = require('rearkitekt.reaper.transport')
     local playpos = Transport.get_play_position(self.proj)
     
     local remaining = 0
