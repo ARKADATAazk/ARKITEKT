@@ -74,6 +74,7 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
     local natural = text_w + padding_x * 2 + chip_width
     natural = math.max(min_width, natural)  -- Never go below min
     natural = math.min(max_width, natural)  -- Never exceed max
+    natural = math.floor(natural + 0.5)  -- Round to whole pixels
 
     natural_widths[i] = natural
     total_natural = total_natural + natural
@@ -86,16 +87,38 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
 
   local total_with_spacing = total_natural + total_spacing
 
-  -- Only extend tabs if explicitly requested (when overflow button is at edge)
-  if should_extend and total_with_spacing < available_width then
-    -- Distribute extra space evenly to fill the header seamlessly
-    local extra_space = available_width - total_with_spacing
-    local space_per_tab = extra_space / #tabs
+  -- Stretch logic: extend or compress tabs to fill available space
+  if should_extend then
+    if total_with_spacing < available_width then
+      -- Stretch UP: Distribute extra space evenly to fill the header seamlessly
+      local extra_space = available_width - total_with_spacing
+      local base_per_tab = math.floor(extra_space / #tabs)
+      local remainder = extra_space - (base_per_tab * #tabs)
 
-    for i = 1, #tabs do
-      -- When overflow is at edge, extend beyond max_width to fill space
-      -- This prevents empty gaps and creates seamless integration
-      natural_widths[i] = natural_widths[i] + space_per_tab
+      for i = 1, #tabs do
+        natural_widths[i] = natural_widths[i] + base_per_tab
+        -- Distribute remainder pixels to first N tabs (ensures exact fill)
+        if i <= remainder then
+          natural_widths[i] = natural_widths[i] + 1
+        end
+      end
+    elseif total_with_spacing > available_width then
+      -- Stretch DOWN: Compress tabs proportionally to fit
+      local compression_ratio = available_width / total_with_spacing
+      local new_total = 0
+
+      for i = 1, #tabs do
+        natural_widths[i] = math.floor(natural_widths[i] * compression_ratio + 0.5)
+        natural_widths[i] = math.max(min_width, natural_widths[i])  -- Don't go below min
+        new_total = new_total + natural_widths[i]
+      end
+
+      -- Adjust for rounding errors to exactly match available width
+      local diff = available_width - (new_total + total_spacing)
+      if diff > 0 and #tabs > 0 then
+        -- Add remaining pixels to last tab
+        natural_widths[#tabs] = natural_widths[#tabs] + diff
+      end
     end
   end
 
