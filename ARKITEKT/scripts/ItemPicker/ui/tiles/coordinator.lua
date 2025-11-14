@@ -37,14 +37,6 @@ function Coordinator:update_animations(dt)
   if self.animator then
     self.animator:update(dt)
   end
-
-  if self.audio_grid then
-    self.audio_grid:update(dt)
-  end
-
-  if self.midi_grid then
-    self.midi_grid:update(dt)
-  end
 end
 
 function Coordinator:handle_tile_size_shortcuts(ctx)
