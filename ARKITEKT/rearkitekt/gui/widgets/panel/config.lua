@@ -80,6 +80,7 @@ M.DEFAULTS = {
   -- corner_buttons = {
   --   size = 30,
   --   margin = 8,
+  --   min_width_to_show = 150, -- Hide corner buttons if panel width < this value (responsive behavior)
   --   bottom_left = {
   --     icon = "⚙",
   --     label = "",
@@ -93,7 +94,7 @@ M.DEFAULTS = {
   --   top_left = { ... },
   --   top_right = { ... },
   -- },
-  
+
   corner_buttons_always_visible = false, -- Show corner buttons even with header
 }
 

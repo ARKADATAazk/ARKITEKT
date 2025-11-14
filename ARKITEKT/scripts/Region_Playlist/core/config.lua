@@ -48,7 +48,7 @@ M.TRANSPORT = {
 
   -- Corner buttons (panel feature)
   corner_buttons = {
-    size = 32,
+    size = 30,
     margin = 8,
     top_right = {
       icon = "⚙",
@@ -182,7 +182,7 @@ function M.get_active_container_config(callbacks)
       },
     },
     corner_buttons = {
-      size = 32,
+      size = 30,
       margin = 8,
       bottom_left = {
         icon = "⚡",
@@ -256,7 +256,7 @@ function M.get_pool_container_config(callbacks)
       },
     },
     corner_buttons = {
-      size = 32,
+      size = 30,
       margin = 8,
       bottom_left = {
         icon = "⚡",

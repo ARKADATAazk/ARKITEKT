@@ -250,40 +250,47 @@ end
 
 local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, panel_rounding)
   if not config.corner_buttons then return end
-  
+
   local cb = config.corner_buttons
   local size = cb.size or 30
   local border_thickness = 1
-  
+
+  -- Responsive: Hide corner buttons if panel is too narrow
+  -- Default minimum width: 2 buttons + margins (150px gives good spacing)
+  local min_width = cb.min_width_to_show or 150
+  if w < min_width then
+    return
+  end
+
   -- Get rounding from config
   local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
   local outer_rounding = CORNER_BUTTON_CONFIG.outer_corner_rounding
-  
+
   -- Get position offsets
   local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
   local offset_y = CORNER_BUTTON_CONFIG.position_offset_y
-  
+
   -- Top-left
   if cb.top_left then
     local btn_x = x + border_thickness + offset_x
     local btn_y = y + border_thickness + offset_y
     CornerButton.draw(ctx, dl, btn_x, btn_y, size, cb.top_left, panel_id .. "_corner_tl", outer_rounding, inner_rounding, "tl")
   end
-  
+
   -- Top-right
   if cb.top_right then
     local btn_x = x + w - size - border_thickness - offset_x
     local btn_y = y + border_thickness + offset_y
     CornerButton.draw(ctx, dl, btn_x, btn_y, size, cb.top_right, panel_id .. "_corner_tr", outer_rounding, inner_rounding, "tr")
   end
-  
+
   -- Bottom-left
   if cb.bottom_left then
     local btn_x = x + border_thickness + offset_x
     local btn_y = y + h - size - border_thickness - offset_y
     CornerButton.draw(ctx, dl, btn_x, btn_y, size, cb.bottom_left, panel_id .. "_corner_bl", outer_rounding, inner_rounding, "bl")
   end
-  
+
   -- Bottom-right
   if cb.bottom_right then
     local btn_x = x + w - size - border_thickness - offset_x
