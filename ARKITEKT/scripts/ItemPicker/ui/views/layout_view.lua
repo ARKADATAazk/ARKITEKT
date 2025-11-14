@@ -3,7 +3,6 @@
 -- Main layout view with search and grids
 
 local ImGui = require 'imgui' '0.10'
-local SearchInput = require('rearkitekt.gui.widgets.controls.search_input')
 local StatusBar = require('ItemPicker.ui.views.status_bar')
 local HeightStabilizer = require('rearkitekt.gui.systems.height_stabilizer')
 
@@ -16,7 +15,6 @@ function M.new(config, state, coordinator)
     config = config,
     state = state,
     coordinator = coordinator,
-    search_input = nil,
     status_bar = nil,
     focus_search = false,
 
@@ -78,19 +76,16 @@ function LayoutView:render_header(ctx, title_font, title_font_size, title)
   -- Search field
   ImGui.SetNextItemWidth(ctx, search_w)
 
-  if not self.search_input then
-    self.search_input = SearchInput.new({
-      placeholder = "Search items...",
-      on_change = function(value)
-        self.state:set_search_filter(value)
-      end,
-    })
+  local search_value = self.state.settings.search_string or ""
+
+  if self.focus_search then
+    ImGui.SetKeyboardFocusHere(ctx)
+    self.focus_search = false
   end
 
-  local search_value = self.state.settings.search_string or ""
-  local search_changed = self.search_input:render(ctx, search_value, self.focus_search)
-  if search_changed then
-    self.focus_search = false
+  local changed, new_value = ImGui.InputTextWithHint(ctx, "##search", "Search items...", search_value)
+  if changed then
+    self.state:set_search_filter(new_value)
   end
 
   ImGui.SameLine(ctx)

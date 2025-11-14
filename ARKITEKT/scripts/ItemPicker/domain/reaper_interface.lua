@@ -169,7 +169,7 @@ function M.GetProjectMIDI(settings, state)
 
         local _, midi = reaper.MIDI_GetAllEvts(take)
         for key, _item in pairs(track_midi) do
-          local _, _midi = reaper.MIDI_GetAllEvts(reaper.GetActiveTake(_item.item))
+          local _, _midi = reaper.MIDI_GetAllEvts(reaper.GetActiveTake(_item[1]))
           if midi == _midi then
             goto next_item
           end
