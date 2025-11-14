@@ -83,12 +83,17 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
       animator:track(item.key, 'progress_fade', target_fade, fade_speed)
       playback_fade = animator:get(item.key, 'progress_fade')
     else
-      -- Not currently playing this item, fade out slowly
+      -- Not currently playing this item, fade out slowly at 100% progress
+      playback_progress = 1.0  -- Keep at 100% while fading out
       animator:track(item.key, 'progress_fade', 0.0, 1.0 / 1.5)  -- 1.5 second fade out
       playback_fade = animator:get(item.key, 'progress_fade')  -- Get animated value
     end
   else
-    -- Playback stopped, fade out slowly
+    -- Playback stopped, fade out slowly at last known progress
+    local current_fade = animator:get(item.key, 'progress_fade') or 0
+    if current_fade > 0 then
+      playback_progress = 1.0  -- Keep at 100% while fading out
+    end
     animator:track(item.key, 'progress_fade', 0.0, 1.0 / 1.5)  -- 1.5 second fade out
     playback_fade = animator:get(item.key, 'progress_fade')  -- Get animated value
   end
@@ -219,12 +224,17 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
       animator:track(item.key, 'progress_fade', target_fade, fade_speed)
       playback_fade = animator:get(item.key, 'progress_fade')
     else
-      -- Not currently playing this playlist, fade out slowly
+      -- Not currently playing this playlist, fade out slowly at 100% progress
+      playback_progress = 1.0  -- Keep at 100% while fading out
       animator:track(item.key, 'progress_fade', 0.0, 1.0 / 1.5)  -- 1.5 second fade out
       playback_fade = animator:get(item.key, 'progress_fade')  -- Get animated value
     end
   else
-    -- Playback stopped, fade out slowly
+    -- Playback stopped, fade out slowly at last known progress
+    local current_fade = animator:get(item.key, 'progress_fade') or 0
+    if current_fade > 0 then
+      playback_progress = 1.0  -- Keep at 100% while fading out
+    end
     animator:track(item.key, 'progress_fade', 0.0, 1.0 / 1.5)  -- 1.5 second fade out
     playback_fade = animator:get(item.key, 'progress_fade')  -- Get animated value
   end
