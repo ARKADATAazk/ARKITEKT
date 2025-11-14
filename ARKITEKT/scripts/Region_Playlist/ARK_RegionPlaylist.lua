@@ -62,7 +62,7 @@ local Colors = require("rearkitekt.core.colors")
 local hexrgb = Colors.hexrgb
 
 local SettingsOK, Settings = pcall(require, "rearkitekt.core.settings")
-local StyleOK, Style = pcall(require, "rearkitekt.gui.style")
+local StyleOK, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
 
 local settings = nil
 if SettingsOK and type(Settings.new) == "function" then
