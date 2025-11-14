@@ -2,19 +2,18 @@
 -- ReArkitekt/gui/widgets/panel/header/separator.lua
 -- Separator element for header layout
 
-local Colors = require('rearkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local Style = require('rearkitekt.gui.style.defaults')
 
 local M = {}
 
 function M.draw(ctx, dl, x, y, width, height, config)
   -- Separator is just empty space
   -- The layout engine will handle corner rounding of adjacent elements
-  
+
   -- Optional: Draw a visual line if configured
   if config.show_line then
     local line_x = x + width * 0.5
-    local line_color = config.line_color or hexrgb("#30303080")
+    local line_color = config.line_color or Style.COLORS.SEPARATOR_LINE
     local line_thickness = config.line_thickness or 1
     local line_height = height * (config.line_height_ratio or 0.6)
     local line_y1 = y + (height - line_height) * 0.5

@@ -6,8 +6,8 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local Layout = require('rearkitekt.gui.widgets.panel.header.layout')
-local Colors = require('rearkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local Style = require('rearkitekt.gui.style.defaults')
+local C = Style.COLORS
 
 
 local M = {}
@@ -65,22 +65,22 @@ function M.draw(ctx, dl, x, y, w, h, state, config, rounding)
   -- Draw header background
   ImGui.DrawList_AddRectFilled(
     dl, x, y, x + w, y + h,
-    header_cfg.bg_color or hexrgb("#0F0F0F"),
+    header_cfg.bg_color or C.BG_HEADER,
     rounding,
     corner_flags
   )
-  
+
   -- Draw border (top or bottom depending on position)
   if position == "bottom" then
     ImGui.DrawList_AddLine(
       dl, x, y, x + w, y,
-      header_cfg.border_color or hexrgb("#000000DD"),
+      header_cfg.border_color or C.BORDER_OUTER,
       1
     )
   else
     ImGui.DrawList_AddLine(
       dl, x, y + h - 1, x + w, y + h - 1,
-      header_cfg.border_color or hexrgb("#000000DD"),
+      header_cfg.border_color or C.BORDER_OUTER,
       1
     )
   end

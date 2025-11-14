@@ -46,6 +46,9 @@ M.COLORS = {
   BORDER_FOCUS = hexrgb("#7B7B7BFF"),
   BORDER_SUBTLE = hexrgb("#00000066"),
 
+  -- Separators
+  SEPARATOR_LINE = hexrgb("#30303080"),
+
   -- Text
   TEXT_NORMAL = hexrgb("#CCCCCCFF"),
   TEXT_HOVER = hexrgb("#FFFFFFFF"),
