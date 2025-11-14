@@ -633,17 +633,15 @@ local function calculate_playlist_duration(playlist, region_index)
       goto continue
     end
     
-    -- Handle both old format (rid) and new format (region_num)
-    -- If no type field, assume it's a region (for backwards compatibility)
     local item_type = item.type or "region"
-    local rid = item.region_num or item.rid
+    local rid = item.rid
     
     if item_type == "region" and rid then
       local region = region_index[rid]
       if region then
         -- region.start and region["end"] are time positions in seconds
         local duration_seconds = (region["end"] or 0) - (region.start or 0)
-        local repeats = item.repeats or item.reps or 1
+        local repeats = item.reps or 1
         total_duration = total_duration + (duration_seconds * repeats)
       end
     elseif item_type == "playlist" and item.playlist_id then
@@ -651,7 +649,7 @@ local function calculate_playlist_duration(playlist, region_index)
       local nested_pl = M.get_playlist_by_id(item.playlist_id)
       if nested_pl then
         local nested_duration = calculate_playlist_duration(nested_pl, region_index)
-        local repeats = item.repeats or 1
+        local repeats = item.reps or 1
         total_duration = total_duration + (nested_duration * repeats)
       end
     end

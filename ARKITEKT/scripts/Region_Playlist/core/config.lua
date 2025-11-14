@@ -129,29 +129,33 @@ M.SEPARATOR = {
 -- Active container: tabs only
 -- All visual styling comes from library defaults
 function M.get_active_container_config(callbacks)
+  -- Base config
+  local tab_config = {
+    spacing = 0,
+    min_width = 60,
+    max_width = 150,
+    padding_x = 8,
+    chip_radius = 4,
+  }
+
+  -- Auto-merge all callbacks (no manual whitelist needed)
+  for key, value in pairs(callbacks or {}) do
+    if type(key) == "string" and key:match("^on_") and type(value) == "function" then
+      tab_config[key] = value
+    end
+  end
+
   return {
     header = {
       enabled = true,
-      height = 23,
+      height = 24,
       elements = {
         {
           id = "tabs",
           type = "tab_strip",
           flex = 1,
           spacing_before = 0,
-          config = {
-            spacing = 0,
-            min_width = 60,
-            max_width = 150,
-            padding_x = 8,
-            chip_radius = 4,
-            -- All colors handled by library defaults
-            on_tab_create = callbacks.on_tab_create,
-            on_tab_change = callbacks.on_tab_change,
-            on_tab_delete = callbacks.on_tab_delete,
-            on_tab_reorder = callbacks.on_tab_reorder,
-            on_overflow_clicked = callbacks.on_overflow_clicked,
-          },
+          config = tab_config,
         },
       },
     },
@@ -173,7 +177,6 @@ function M.get_pool_container_config(callbacks)
           spacing_before = 0,
           config = {
             label = "Regions",
-            -- All colors handled by library defaults
             on_click = callbacks.on_mode_toggle,
             on_right_click = callbacks.on_mode_toggle_right,
           },
@@ -192,7 +195,6 @@ function M.get_pool_container_config(callbacks)
           spacing_before = 0,
           config = {
             placeholder = "Search...",
-            -- All colors handled by library defaults
             on_change = callbacks.on_search_changed,
           },
         },
@@ -213,7 +215,6 @@ function M.get_pool_container_config(callbacks)
               { value = "length", label = "Length" },
             },
             enable_mousewheel = true,
-            -- All colors handled by library defaults
             on_change = callbacks.on_sort_changed,
             on_direction_change = callbacks.on_sort_direction_changed,
           },

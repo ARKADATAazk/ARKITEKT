@@ -69,21 +69,122 @@ end
 function Controller:create_playlist(name)
   return self:_with_undo(function()
     local new_id = self:_generate_playlist_id()
-    
+
     local RegionState = require("Region_Playlist.storage.persistence")
-    
+
     local new_playlist = {
       id = new_id,
       name = name or ("Playlist " .. new_id),
       items = {},
       chip_color = RegionState.generate_chip_color(),
     }
-    
+
     local playlists = self.state.get_playlists()
-    playlists[#playlists + 1] = new_playlist
+    local active_id = self.state.get_active_playlist_id()
+
+    -- Find active playlist index
+    local insert_index = #playlists + 1  -- Default to end
+    for i, pl in ipairs(playlists) do
+      if pl.id == active_id then
+        insert_index = i + 1  -- Insert after active
+        break
+      end
+    end
+
+    table.insert(playlists, insert_index, new_playlist)
     self.state.set_active_playlist(new_id)
-    
+
     return new_id
+  end)
+end
+
+function Controller:duplicate_playlist(id)
+  local playlists = self.state.get_playlists()
+  local source_playlist = nil
+  local source_index = nil
+
+  for i, pl in ipairs(playlists) do
+    if pl.id == id then
+      source_playlist = pl
+      source_index = i
+      break
+    end
+  end
+
+  if not source_playlist then
+    return false, "Playlist not found"
+  end
+
+  return self:_with_undo(function()
+    local new_id = self:_generate_playlist_id()
+    local RegionState = require("Region_Playlist.storage.persistence")
+
+    -- Deep copy items with proper structure and new keys
+    local new_items = {}
+    for i, item in ipairs(source_playlist.items) do
+      local new_item
+
+      if item.type == "region" then
+        -- Region item
+        new_item = {
+          type = "region",
+          rid = item.rid,
+          reps = item.reps or 1,
+          enabled = item.enabled ~= false,
+          key = self:_generate_item_key(item.rid),
+        }
+      elseif item.type == "playlist" then
+        -- Playlist item
+        new_item = {
+          type = "playlist",
+          playlist_id = item.playlist_id,
+          reps = item.reps or 1,
+          enabled = item.enabled ~= false,
+          key = self:_generate_item_key("playlist_" .. item.playlist_id),
+        }
+      end
+
+      if new_item then
+        new_items[i] = new_item
+      end
+    end
+
+    local new_playlist = {
+      id = new_id,
+      name = source_playlist.name .. " Copy",
+      items = new_items,
+      chip_color = source_playlist.chip_color,
+    }
+
+    -- Insert after source playlist
+    table.insert(playlists, source_index + 1, new_playlist)
+    self.state.set_active_playlist(new_id)
+
+    return new_id
+  end)
+end
+
+function Controller:rename_playlist(id, new_name)
+  local playlist = self:_get_playlist(id)
+  if not playlist then
+    return false, "Playlist not found"
+  end
+
+  return self:_with_undo(function()
+    playlist.name = new_name or playlist.name
+    return true
+  end)
+end
+
+function Controller:set_playlist_color(id, color)
+  local playlist = self:_get_playlist(id)
+  if not playlist then
+    return false, "Playlist not found"
+  end
+
+  return self:_with_undo(function()
+    playlist.chip_color = color or nil
+    return true
   end)
 end
 

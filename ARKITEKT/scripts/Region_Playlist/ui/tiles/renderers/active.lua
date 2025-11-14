@@ -140,16 +140,15 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     local State = require("Region_Playlist.core.app_state")
     -- Calculate duration from region beat positions
     for _, pl_item in ipairs(playlist.items) do
-      -- Handle both old format (rid) and new format (region_num)
       local item_type = pl_item.type or "region"
-      local rid = pl_item.region_num or pl_item.rid
+      local rid = pl_item.rid
       
       if item_type == "region" and rid then
         local region = State.get_region_by_rid(rid)
         if region then
           -- region.start and region["end"] are in beat positions
           local duration = (region["end"] or 0) - (region.start or 0)
-          local repeats = pl_item.repeats or pl_item.reps or 1
+          local repeats = pl_item.reps or 1
           total_duration = total_duration + (duration * repeats)
         end
       elseif item_type == "playlist" and pl_item.playlist_id then

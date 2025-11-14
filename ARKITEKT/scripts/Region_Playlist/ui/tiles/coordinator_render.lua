@@ -9,6 +9,7 @@ local DragIndicator = require('rearkitekt.gui.fx.dnd.drag_indicator')
 local ActiveTile = require('Region_Playlist.ui.tiles.renderers.active')
 local PoolTile = require('Region_Playlist.ui.tiles.renderers.pool')
 local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')
+local State = require('Region_Playlist.core.app_state')
 
 local M = {}
 
@@ -88,7 +89,63 @@ function M.draw_active(self, ctx, playlist, height)
   self.active_grid:draw(ctx)
   
   self.active_container:end_draw(ctx)
-  
+
+  -- Rename playlist modal
+  if self._rename_input_visible then
+    ImGui.OpenPopup(ctx, "Rename Playlist")
+    self._rename_input_visible = false
+    if not self._rename_input_buffer then
+      -- Find current name
+      local playlists = State.get_playlists()
+      for _, pl in ipairs(playlists) do
+        if pl.id == self._rename_playlist_id then
+          self._rename_input_buffer = pl.name or ""
+          break
+        end
+      end
+    end
+  end
+
+  if ImGui.BeginPopupModal(ctx, "Rename Playlist", nil, ImGui.WindowFlags_AlwaysAutoResize) then
+    ImGui.Text(ctx, "Enter new name:")
+    ImGui.SetNextItemWidth(ctx, 300)
+
+    if not self._rename_input_buffer then
+      self._rename_input_buffer = ""
+    end
+
+    local rv, buf = ImGui.InputText(ctx, "##rename_input", self._rename_input_buffer)
+    if rv then
+      self._rename_input_buffer = buf
+    end
+
+    if ImGui.IsWindowAppearing(ctx) then
+      ImGui.SetKeyboardFocusHere(ctx, -1)
+    end
+
+    ImGui.Spacing(ctx)
+
+    if ImGui.Button(ctx, "OK", 100, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
+      if self.controller and self._rename_playlist_id and self._rename_input_buffer and self._rename_input_buffer ~= "" then
+        self.controller:rename_playlist(self._rename_playlist_id, self._rename_input_buffer)
+        self.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+      end
+      self._rename_input_buffer = nil
+      self._rename_playlist_id = nil
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    ImGui.SameLine(ctx)
+
+    if ImGui.Button(ctx, "Cancel", 100, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+      self._rename_input_buffer = nil
+      self._rename_playlist_id = nil
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    ImGui.EndPopup(ctx)
+  end
+
   if self.bridge:is_drag_active() and self.bridge:get_source_grid() == 'active' and ImGui.IsMouseReleased(ctx, 0) then
     if not self.bridge:is_mouse_over_grid(ctx, 'active') then
       self.bridge:cancel_drag()
