@@ -1,12 +1,24 @@
 -- @noindex
 -- ItemPicker main launcher with clean overlay support
-local _, script_filename, _, _, _, _, _ = reaper.get_action_context()
-local SCRIPT_DIRECTORY = script_filename:match('(.*)[%\\/]') .. "\\"
 
-local ARKITEKT_PATH = SCRIPT_DIRECTORY:match("(.*/ARKITEKT/)") or SCRIPT_DIRECTORY:match("(.*\\ARKITEKT\\)")
-package.path = ARKITEKT_PATH .. '?.lua;' .. ARKITEKT_PATH .. '?/init.lua;' .. package.path
+-- Package path setup (following RegionPlaylist pattern)
+local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
+local root_path = script_path
+root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path  -- Go up one level from ItemPicker
+root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path  -- Go up to ARKITEKT
+root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path  -- Go up to project root
+
+-- Ensure root_path ends with a slash
+if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
+
+-- Add both module search paths
+local arkitekt_path = root_path .. "ARKITEKT/"
+local scripts_path = root_path .. "ARKITEKT/scripts/"
+package.path = arkitekt_path.. "?.lua;" .. arkitekt_path.. "?/init.lua;" ..
+               scripts_path .. "?.lua;" .. scripts_path .. "?/init.lua;" ..
+               package.path
+
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-package.path = SCRIPT_DIRECTORY .. '?.lua;' .. SCRIPT_DIRECTORY .. '?/init.lua;' .. package.path
 
 -- Check dependencies
 local has_imgui, imgui_test = pcall(require, 'imgui')
