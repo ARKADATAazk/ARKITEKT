@@ -13,88 +13,85 @@ local hexrgb = Colors.hexrgb
 
 local M = {}
 
-local DEFAULTS = {
-  height = 48,
-  button_height = 23,
-  fx = TransportFX.DEFAULT_CONFIG,
-  background_pattern = {
-    primary = { type = 'dots', spacing = 50, color = hexrgb("#0000001c"), dot_size = 2.5 },
-    secondary = { enabled = true, type = 'dots', spacing = 5, color = hexrgb("#14141447"), dot_size = 1.5 },
-  },
-  hover_fade_speed = 6.0,
-}
+-- Note: All default configuration is centralized in Region_Playlist/core/config.lua (M.TRANSPORT)
+-- This avoids duplication and ensures single source of truth
 
 local TransportPanel = {}
 TransportPanel.__index = TransportPanel
 
 function M.new(opts)
   opts = opts or {}
-  
-  local button_height = opts.button_height or DEFAULTS.button_height
-  
-  local cfg = opts.config or DEFAULTS
+
+  -- Require config to be passed in - no local defaults
+  if not opts.config then
+    error("TransportContainer.new requires opts.config to be provided")
+  end
+
+  local cfg = opts.config
+  local button_height = opts.button_height or 23
+
   local panel = Panel.new({
     id = opts.id or "transport_panel",
-    height = opts.height or DEFAULTS.height,
+    height = opts.height,
     width = opts.width,
-    
+
     config = {
       bg_color = cfg.panel_bg_color or hexrgb("#00000000"),
       border_thickness = 0,
-      rounding = 8,
-      
+      rounding = cfg.fx and cfg.fx.rounding or 8,
+
       background_pattern = {
-        enabled = true,
-        primary = cfg.background_pattern and cfg.background_pattern.primary or DEFAULTS.background_pattern.primary,
-        secondary = cfg.background_pattern and cfg.background_pattern.secondary or DEFAULTS.background_pattern.secondary,
+        enabled = cfg.background_pattern ~= nil,
+        primary = cfg.background_pattern and cfg.background_pattern.primary or {},
+        secondary = cfg.background_pattern and cfg.background_pattern.secondary or {},
       },
-      
+
       header = {
         enabled = true,
         height = button_height,
         position = "top",
         valign = "middle",
-        bg_color = hexrgb("#00000000"),
-        border_color = hexrgb("#00000000"),
-        rounding = 8,
+        bg_color = hexrgb("#00000000"),  -- Transparent so pattern shows through
+        border_color = hexrgb("#00000000"),  -- Transparent border
+        rounding = cfg.fx and cfg.fx.rounding or 8,
         padding = { left = 0, right = 0 },
         elements = opts.header_elements or {},
       },
     },
   })
-  
+
   local container = setmetatable({
     panel = panel,
     id = opts.id or "transport_panel",
     config = cfg,
-    
-    height = opts.height or DEFAULTS.height,
+
+    height = opts.height,
     width = opts.width,
-    
+
     hover_alpha = 0.0,
     last_bounds = { x1 = 0, y1 = 0, x2 = 0, y2 = 0 },
-    
+
     on_hover_changed = opts.on_hover_changed,
-    
+
     current_region_color = nil,
     next_region_color = nil,
     target_current_color = nil,
     target_next_color = nil,
   }, TransportPanel)
-  
+
   return container
 end
 
 function TransportPanel:update_hover_state(ctx, x1, y1, x2, y2, dt)
   local mx, my = ImGui.GetMousePos(ctx)
   local is_hovered = mx >= x1 and mx < x2 and my >= y1 and my < y2
-  
+
   local target_alpha = is_hovered and 1.0 or 0.0
-  local fade_speed = self.config.hover_fade_speed or DEFAULTS.hover_fade_speed
-  
+  local fade_speed = (self.config.fx and self.config.fx.hover and self.config.fx.hover.transition_speed) or 6.0
+
   local delta = (target_alpha - self.hover_alpha) * fade_speed * dt
   self.hover_alpha = math.max(0.0, math.min(1.0, self.hover_alpha + delta))
-  
+
   return is_hovered
 end
 
@@ -248,24 +245,27 @@ function TransportPanel:get_panel_state()
 end
 
 function M.draw(ctx, id, width, height, content_fn, config, region_colors)
-  config = config or DEFAULTS
+  if not config then
+    error("TransportContainer.draw requires config parameter")
+  end
+
   region_colors = region_colors or {}
-  
+
   local container = M.new({
     id = id,
     width = width,
     height = height,
     config = config,
   })
-  
+
   local content_w, content_h = container:begin_draw(ctx, region_colors)
-  
+
   if content_fn then
     content_fn(ctx, content_w, content_h)
   end
-  
+
   container:end_draw(ctx)
-  
+
   return container
 end
 

@@ -347,21 +347,21 @@ function Panel:begin_draw(ctx)
   
   self.header_height = header_height
   
-  -- Draw background pattern in content area
+  -- Draw background pattern across full panel area (including header for transparency)
   -- Apply clipping to respect rounded corners and border insets
   if self.config.background_pattern and self.config.background_pattern.enabled then
     local border_inset = self.config.border_thickness
     local pattern_x1 = x1 + border_inset
-    local pattern_y1 = content_y1 + border_inset
+    local pattern_y1 = y1 + border_inset  -- Start from panel top, not content_y1
     local pattern_x2 = x2 - border_inset
-    local pattern_y2 = content_y2 - border_inset
-    
+    local pattern_y2 = y2 - border_inset  -- End at panel bottom, not content_y2
+
     -- Push clip rect with rounded corners to prevent bleeding
     local clip_rounding = math.max(0, self.config.rounding - border_inset)
     ImGui.DrawList_PushClipRect(dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, true)
-    
+
     Background.draw(dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, self.config.background_pattern)
-    
+
     ImGui.DrawList_PopClipRect(dl)
   end
   
