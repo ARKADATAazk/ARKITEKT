@@ -85,7 +85,7 @@ M.TRANSPORT = {
   -- Background pattern (panel grid/dots behind gradient)
   background_pattern = {
     primary = { type = 'dots', spacing = 50, color = hexrgb("#0000001c"), dot_size = 2.5 },
-    secondary = { enabled = true, type = 'dots', spacing = 5, color = hexrgb("#14141447"), dot_size = 1.5 },
+    secondary = { enabled = true, type = 'dots', spacing = 5, color = hexrgb("#141414d0"), dot_size = 1.5 },
   },
   
   -- Jump controls (compact, library-styled)
