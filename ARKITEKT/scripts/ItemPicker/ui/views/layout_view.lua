@@ -5,6 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local SearchInput = require('rearkitekt.gui.widgets.controls.search_input')
 local StatusBar = require('ItemPicker.ui.views.status_bar')
+local HeightStabilizer = require('rearkitekt.gui.systems.height_stabilizer')
 
 local M = {}
 local LayoutView = {}
@@ -18,9 +19,24 @@ function M.new(config, state, coordinator)
     search_input = nil,
     status_bar = nil,
     focus_search = false,
+
+    -- Height stabilizers to prevent jitter
+    midi_height_stabilizer = nil,
+    audio_height_stabilizer = nil,
   }, LayoutView)
 
   self.status_bar = StatusBar.new(config, state)
+
+  -- Create height stabilizers
+  self.midi_height_stabilizer = HeightStabilizer.new({
+    stable_frames_required = 2,
+    height_hysteresis = 12,
+  })
+
+  self.audio_height_stabilizer = HeightStabilizer.new({
+    stable_frames_required = 2,
+    height_hysteresis = 12,
+  })
 
   return self
 end
@@ -116,9 +132,13 @@ function LayoutView:render(ctx, title_font, title, screen_w, screen_h)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
   local avail_h = ImGui.GetContentRegionAvail(ctx) - 40  -- Reserve for status bar
 
-  local midi_h = avail_h * self.config.LAYOUT.MIDI_SECTION_RATIO
-  local audio_h = avail_h * self.config.LAYOUT.AUDIO_SECTION_RATIO
+  local raw_midi_h = avail_h * self.config.LAYOUT.MIDI_SECTION_RATIO
+  local raw_audio_h = avail_h * self.config.LAYOUT.AUDIO_SECTION_RATIO
   local spacing = self.config.LAYOUT.SECTION_SPACING
+
+  -- Stabilize heights to prevent jitter
+  local midi_h = self.midi_height_stabilizer:update(raw_midi_h)
+  local audio_h = self.audio_height_stabilizer:update(raw_audio_h)
 
   -- MIDI section
   if midi_h > 50 then
