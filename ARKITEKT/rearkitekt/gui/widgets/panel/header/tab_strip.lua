@@ -1088,6 +1088,13 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
           state, config, unique_id, animator, nil
         )
 
+        -- DEBUG: Check what draw_tab returned
+        if rename_requested or duplicate_requested or color_selected ~= nil then
+          reaper.ShowConsoleMsg("[DEBUG RETURN] draw_tab returned - rename:" .. tostring(rename_requested) ..
+            " duplicate:" .. tostring(duplicate_requested) ..
+            " color:" .. tostring(color_selected) .. "\n")
+        end
+
         if clicked and not (state.dragging_tab or ImGui.IsMouseDragging(ctx, 0)) then
           clicked_tab_id = tab_data.id
         end
@@ -1097,14 +1104,17 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
         end
 
         if rename_requested then
+          reaper.ShowConsoleMsg("[DEBUG CAPTURE] Setting id_to_rename = " .. tostring(tab_data.id) .. "\n")
           id_to_rename = tab_data.id
         end
 
         if duplicate_requested then
+          reaper.ShowConsoleMsg("[DEBUG CAPTURE] Setting id_to_duplicate = " .. tostring(tab_data.id) .. "\n")
           id_to_duplicate = tab_data.id
         end
 
         if color_selected ~= nil then
+          reaper.ShowConsoleMsg("[DEBUG CAPTURE] Setting id_for_color_change = " .. tostring(tab_data.id) .. ", color = " .. tostring(color_selected) .. "\n")
           id_for_color_change = tab_data.id
           new_color = color_selected
         end

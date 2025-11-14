@@ -27,8 +27,6 @@ local STATUS_COLORS = {
 
 local function get_app_status(State)
   return function()
-    reaper.ShowConsoleMsg("[STATUS DEBUG] get_app_status function called\n")
-    
     -- Ensure we always return something valid
     local ok, result = pcall(function()
       local bridge = State.get_bridge()
@@ -136,11 +134,9 @@ local function get_app_status(State)
     end)
     
     if ok then
-      reaper.ShowConsoleMsg("[STATUS DEBUG] Returning text: " .. (result.text or "nil") .. "\n")
       return result
     else
       -- Error occurred, return diagnostic
-      reaper.ShowConsoleMsg("[STATUS DEBUG] ERROR: " .. tostring(result) .. "\n")
       return {
         color = STATUS_COLORS.ERROR,
         text = "Status Error: " .. tostring(result),
