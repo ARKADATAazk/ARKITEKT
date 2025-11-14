@@ -75,27 +75,26 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
     local current_key = bridge:get_current_item_key()
     if current_key == item.key then
       playback_progress = bridge:get_progress() or 0
+      -- Store progress for fade out
+      animator:track(item.key, 'last_progress', playback_progress, 999)  -- Instant update
       -- Time-based fade: fade in when playing, fade out at 100% or when stopped
       local target_fade = (playback_progress > 0 and playback_progress < 1.0) and 1.0 or 0.0
       local current_fade = animator:get(item.key, 'progress_fade') or 0
-      -- Fast fade in (8.0), slow fade out (1.5 seconds = 0.667 speed)
-      local fade_speed = (target_fade > current_fade) and 8.0 or (1.0 / 1.5)
+      -- Fast fade in (8.0), faster fade out (0.8 seconds)
+      local fade_speed = (target_fade > current_fade) and 8.0 or (1.0 / 0.8)
       animator:track(item.key, 'progress_fade', target_fade, fade_speed)
       playback_fade = animator:get(item.key, 'progress_fade')
     else
-      -- Not currently playing this item, fade out slowly at 100% progress
-      playback_progress = 1.0  -- Keep at 100% while fading out
-      animator:track(item.key, 'progress_fade', 0.0, 1.0 / 1.5)  -- 1.5 second fade out
-      playback_fade = animator:get(item.key, 'progress_fade')  -- Get animated value
+      -- Not currently playing this item, fade out at last known progress
+      playback_progress = animator:get(item.key, 'last_progress') or 0
+      animator:track(item.key, 'progress_fade', 0.0, 1.0 / 0.8)  -- 0.8 second fade out
+      playback_fade = animator:get(item.key, 'progress_fade')
     end
   else
-    -- Playback stopped, fade out slowly at last known progress
-    local current_fade = animator:get(item.key, 'progress_fade') or 0
-    if current_fade > 0 then
-      playback_progress = 1.0  -- Keep at 100% while fading out
-    end
-    animator:track(item.key, 'progress_fade', 0.0, 1.0 / 1.5)  -- 1.5 second fade out
-    playback_fade = animator:get(item.key, 'progress_fade')  -- Get animated value
+    -- Playback stopped, fade out at last known progress
+    playback_progress = animator:get(item.key, 'last_progress') or 0
+    animator:track(item.key, 'progress_fade', 0.0, 1.0 / 0.8)  -- 0.8 second fade out
+    playback_fade = animator:get(item.key, 'progress_fade')
   end
   
   BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade)
@@ -216,27 +215,26 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     -- Use is_playlist_active to support deep nesting - all parent playlists show progress
     if bridge:is_playlist_active(item.key) then
       playback_progress = bridge:get_playlist_progress(item.key) or 0
+      -- Store progress for fade out
+      animator:track(item.key, 'last_progress', playback_progress, 999)  -- Instant update
       -- Time-based fade: fade in when playing, fade out at 100% or when stopped
       local target_fade = (playback_progress > 0 and playback_progress < 1.0) and 1.0 or 0.0
       local current_fade = animator:get(item.key, 'progress_fade') or 0
-      -- Fast fade in (8.0), slow fade out (1.5 seconds = 0.667 speed)
-      local fade_speed = (target_fade > current_fade) and 8.0 or (1.0 / 1.5)
+      -- Fast fade in (8.0), faster fade out (0.8 seconds)
+      local fade_speed = (target_fade > current_fade) and 8.0 or (1.0 / 0.8)
       animator:track(item.key, 'progress_fade', target_fade, fade_speed)
       playback_fade = animator:get(item.key, 'progress_fade')
     else
-      -- Not currently playing this playlist, fade out slowly at 100% progress
-      playback_progress = 1.0  -- Keep at 100% while fading out
-      animator:track(item.key, 'progress_fade', 0.0, 1.0 / 1.5)  -- 1.5 second fade out
-      playback_fade = animator:get(item.key, 'progress_fade')  -- Get animated value
+      -- Not currently playing this playlist, fade out at last known progress
+      playback_progress = animator:get(item.key, 'last_progress') or 0
+      animator:track(item.key, 'progress_fade', 0.0, 1.0 / 0.8)  -- 0.8 second fade out
+      playback_fade = animator:get(item.key, 'progress_fade')
     end
   else
-    -- Playback stopped, fade out slowly at last known progress
-    local current_fade = animator:get(item.key, 'progress_fade') or 0
-    if current_fade > 0 then
-      playback_progress = 1.0  -- Keep at 100% while fading out
-    end
-    animator:track(item.key, 'progress_fade', 0.0, 1.0 / 1.5)  -- 1.5 second fade out
-    playback_fade = animator:get(item.key, 'progress_fade')  -- Get animated value
+    -- Playback stopped, fade out at last known progress
+    playback_progress = animator:get(item.key, 'last_progress') or 0
+    animator:track(item.key, 'progress_fade', 0.0, 1.0 / 0.8)  -- 0.8 second fade out
+    playback_fade = animator:get(item.key, 'progress_fade')
   end
 
   -- Draw base tile with chip color for border and playback progress
