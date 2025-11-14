@@ -557,6 +557,9 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
   local clicked = ImGui.IsItemClicked(ctx, 0)
   local right_clicked = ImGui.IsItemClicked(ctx, 1)
 
+  -- Check for Alt+click to delete
+  local alt_held = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+
   if ImGui.IsItemActive(ctx) and not state.dragging_tab then
     local drag_delta_x, drag_delta_y = ImGui.GetMouseDragDelta(ctx, 0)
     local drag_distance = math.sqrt(drag_delta_x * drag_delta_x + drag_delta_y * drag_delta_y)
@@ -573,6 +576,12 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
   end
 
   local delete_requested = false
+
+  -- Alt+click to delete
+  if clicked and alt_held then
+    delete_requested = true
+    clicked = false  -- Don't trigger tab selection when deleting
+  end
 
   if right_clicked then
     ImGui.OpenPopup(ctx, "##tab_context_" .. id .. "_" .. unique_id)
