@@ -38,7 +38,7 @@ local TRANSPORT_LAYOUT_CONFIG = {
   current_region_offset_y = 0,
   next_region_offset_x = 0,
   next_region_offset_y = 0,
-  content_vertical_offset = 0,
+  content_vertical_offset = -2,
 }
 
 local TransportDisplay = {}
