@@ -76,7 +76,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local checkbox_config = { alpha = ui_fade }
 
   ImGui.SetCursorScreenPos(ctx, checkbox_x, checkbox_y)
-  local clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
+  local _, clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
     "Play Item Through Track (will add delay to preview playback)",
     self.state.settings.play_item_through_track, checkbox_config, "play_item_through_track")
   if clicked then
@@ -85,7 +85,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   checkbox_y = checkbox_y + 24
   ImGui.SetCursorScreenPos(ctx, checkbox_x, checkbox_y)
-  clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
+  _, clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
     "Show Muted Tracks",
     self.state.settings.show_muted_tracks, checkbox_config, "show_muted_tracks")
   if clicked then
@@ -94,7 +94,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   checkbox_y = checkbox_y + 24
   ImGui.SetCursorScreenPos(ctx, checkbox_x, checkbox_y)
-  clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
+  _, clicked = Checkbox.draw(ctx, self.state.draw_list, checkbox_x, checkbox_y,
     "Show Muted Items",
     self.state.settings.show_muted_items, checkbox_config, "show_muted_items")
   if clicked then
@@ -104,7 +104,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Show Disabled Items on same line (after Show Muted Items)
   local muted_items_width = ImGui.CalcTextSize(ctx, "Show Muted Items") + 18 + 8 + 20  -- checkbox + spacing + margin
   local disabled_x = checkbox_x + muted_items_width
-  clicked = Checkbox.draw(ctx, self.state.draw_list, disabled_x, checkbox_y,
+  _, clicked = Checkbox.draw(ctx, self.state.draw_list, disabled_x, checkbox_y,
     "Show Disabled Items",
     self.state.settings.show_disabled_items, checkbox_config, "show_disabled_items")
   if clicked then

@@ -104,6 +104,9 @@ function M.GetProjectSamples(settings, state)
     local track_items = M.GetItemInTrack(track)
     for key, item in pairs(track_items) do
       local take = reaper.GetActiveTake(item)
+      if not take then
+        goto next_item
+      end
       if not reaper.TakeIsMIDI(take) then
         local source = reaper.GetMediaItemTake_Source(take)
         local _, _, _, _, _, reverse = reaper.BR_GetMediaSourceProperties(take)
@@ -161,6 +164,9 @@ function M.GetProjectMIDI(settings, state)
 
     for key, item in pairs(track_items) do
       local take = reaper.GetActiveTake(item)
+      if not take then
+        goto next_item
+      end
       if reaper.TakeIsMIDI(take) then
         local _, num_notes = reaper.MIDI_CountEvts(take)
         if num_notes == 0 then
@@ -203,7 +209,16 @@ function M.GetProjectMIDI(settings, state)
 end
 
 function M.InsertItemAtMousePos(item, state)
+  -- Validate item is a valid MediaItem
+  if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+    return
+  end
+
   local take = reaper.GetActiveTake(item)
+  if not take then
+    return
+  end
+
   local source = reaper.GetMediaItemTake_Source(take)
   local mouse_x, mouse_y = reaper.GetMousePosition()
   local track, str = reaper.GetThingFromPoint(mouse_x, mouse_y)
