@@ -190,17 +190,15 @@ function M.get_active_container_config(callbacks)
         on_click = function()
           reaper.ShowConsoleMsg("Active Grid Actions button clicked (coming soon)\n")
         end,
-        -- Transparent overlay style for better tile visibility
-        bg_color = hexrgb("#43434380"),
-        bg_hover_color = hexrgb("#484848AA"),
-        bg_active_color = hexrgb("#3E3E3E70"),
-        border_inner_color = hexrgb("#89898980"),
-        border_hover_color = hexrgb("#9A9A9AA0"),
-        border_active_color = hexrgb("#7E7E7E70"),
-        border_outer_color = hexrgb("#000000CC"),
-        text_color = hexrgb("#FFFFFFDD"),
-        text_hover_color = hexrgb("#FFFFFFFF"),
-        text_active_color = hexrgb("#FFFFFFDD"),
+        -- Simple black transparent overlay
+        bg_color = hexrgb("#00000050"),           -- Black fill, 31% opacity
+        bg_hover_color = hexrgb("#00000070"),     -- Black fill, 44% opacity on hover
+        bg_active_color = hexrgb("#00000060"),    -- Black fill, 38% opacity when pressed
+        border_outer_color = hexrgb("#00000099"), -- Black border, 60% opacity
+        border_inner_color = hexrgb("#00000000"), -- No inner border
+        text_color = hexrgb("#FFFFFFFF"),         -- White icon
+        text_hover_color = hexrgb("#FFFFFFFF"),   -- White icon on hover
+        text_active_color = hexrgb("#FFFFFFFF"),  -- White icon when pressed
       },
     },
     corner_buttons_always_visible = true,
@@ -275,17 +273,15 @@ function M.get_pool_container_config(callbacks)
         on_click = function()
           reaper.ShowConsoleMsg("Pool Grid Actions button clicked (coming soon)\n")
         end,
-        -- Transparent overlay style for better tile visibility
-        bg_color = hexrgb("#43434380"),
-        bg_hover_color = hexrgb("#484848AA"),
-        bg_active_color = hexrgb("#3E3E3E70"),
-        border_inner_color = hexrgb("#89898980"),
-        border_hover_color = hexrgb("#9A9A9AA0"),
-        border_active_color = hexrgb("#7E7E7E70"),
-        border_outer_color = hexrgb("#000000CC"),
-        text_color = hexrgb("#FFFFFFDD"),
-        text_hover_color = hexrgb("#FFFFFFFF"),
-        text_active_color = hexrgb("#FFFFFFDD"),
+        -- Simple black transparent overlay
+        bg_color = hexrgb("#00000050"),           -- Black fill, 31% opacity
+        bg_hover_color = hexrgb("#00000070"),     -- Black fill, 44% opacity on hover
+        bg_active_color = hexrgb("#00000060"),    -- Black fill, 38% opacity when pressed
+        border_outer_color = hexrgb("#00000099"), -- Black border, 60% opacity
+        border_inner_color = hexrgb("#00000000"), -- No inner border
+        text_color = hexrgb("#FFFFFFFF"),         -- White icon
+        text_hover_color = hexrgb("#FFFFFFFF"),   -- White icon on hover
+        text_active_color = hexrgb("#FFFFFFFF"),  -- White icon when pressed
       },
     },
     corner_buttons_always_visible = true,
