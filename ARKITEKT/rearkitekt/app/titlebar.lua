@@ -193,7 +193,7 @@ function M.new(opts)
     
     if child_visible then
       local content_h = ImGui.GetTextLineHeight(ctx)
-      local y_center = (self.height - content_h) * 0.5 - 1
+      local y_center = (self.height - content_h) * 0.5 
       
       ImGui.SetCursorPos(ctx, self.pad_h, y_center)
       

@@ -8,6 +8,10 @@ local ContextMenu = require('rearkitekt.gui.widgets.controls.context_menu')
 local Chip = require('rearkitekt.gui.widgets.component.chip')
 local Style = require('rearkitekt.gui.style.defaults')
 
+local Colors = require('rearkitekt.core.colors')
+
+local hexrgb = Colors.hexrgb
+
 local M = {}
 local C = Style.COLORS          -- Shared primitives
 local PC = Style.PANEL_COLORS   -- Panel-specific colors
