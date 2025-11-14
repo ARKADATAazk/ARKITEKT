@@ -129,6 +129,22 @@ M.SEPARATOR = {
 -- Active container: tabs only
 -- All visual styling comes from library defaults
 function M.get_active_container_config(callbacks)
+  -- Base config
+  local tab_config = {
+    spacing = 0,
+    min_width = 60,
+    max_width = 150,
+    padding_x = 8,
+    chip_radius = 4,
+  }
+
+  -- Auto-merge all callbacks (no manual whitelist needed)
+  for key, value in pairs(callbacks or {}) do
+    if type(key) == "string" and key:match("^on_") and type(value) == "function" then
+      tab_config[key] = value
+    end
+  end
+
   return {
     header = {
       enabled = true,
@@ -139,22 +155,7 @@ function M.get_active_container_config(callbacks)
           type = "tab_strip",
           flex = 1,
           spacing_before = 0,
-          config = {
-            spacing = 0,
-            min_width = 60,
-            max_width = 150,
-            padding_x = 8,
-            chip_radius = 4,
-            -- All colors handled by library defaults
-            on_tab_create = callbacks.on_tab_create,
-            on_tab_change = callbacks.on_tab_change,
-            on_tab_delete = callbacks.on_tab_delete,
-            on_tab_reorder = callbacks.on_tab_reorder,
-            on_tab_rename = callbacks.on_tab_rename,
-            on_tab_duplicate = callbacks.on_tab_duplicate,
-            on_tab_color_change = callbacks.on_tab_color_change,
-            on_overflow_clicked = callbacks.on_overflow_clicked,
-          },
+          config = tab_config,
         },
       },
     },
@@ -164,6 +165,16 @@ end
 -- Pool container: mode toggle, search, sort
 -- All visual styling comes from library defaults
 function M.get_pool_container_config(callbacks)
+  -- Helper to merge callbacks matching a pattern into base config
+  local function merge_callbacks(base_config, pattern)
+    for key, value in pairs(callbacks or {}) do
+      if type(key) == "string" and key:match(pattern) and type(value) == "function" then
+        base_config[key] = value
+      end
+    end
+    return base_config
+  end
+
   return {
     header = {
       enabled = true,
@@ -174,12 +185,9 @@ function M.get_pool_container_config(callbacks)
           type = "button",
           width = 100,
           spacing_before = 0,
-          config = {
+          config = merge_callbacks({
             label = "Regions",
-            -- All colors handled by library defaults
-            on_click = callbacks.on_mode_toggle,
-            on_right_click = callbacks.on_mode_toggle_right,
-          },
+          }, "^on_mode_"),
         },
         {
           id = "spacer1",
@@ -193,18 +201,16 @@ function M.get_pool_container_config(callbacks)
           type = "search_field",
           width = 200,
           spacing_before = 0,
-          config = {
+          config = merge_callbacks({
             placeholder = "Search...",
-            -- All colors handled by library defaults
-            on_change = callbacks.on_search_changed,
-          },
+          }, "^on_search"),
         },
         {
           id = "sort",
           type = "dropdown_field",
           width = 120,
           spacing_before = 0,
-          config = {
+          config = merge_callbacks({
             tooltip = "Sort by",
             tooltip_delay = 0.5,
             enable_sort = true,
@@ -216,10 +222,7 @@ function M.get_pool_container_config(callbacks)
               { value = "length", label = "Length" },
             },
             enable_mousewheel = true,
-            -- All colors handled by library defaults
-            on_change = callbacks.on_sort_changed,
-            on_direction_change = callbacks.on_sort_direction_changed,
-          },
+          }, "^on_.*_change"),
         },
       },
     },
