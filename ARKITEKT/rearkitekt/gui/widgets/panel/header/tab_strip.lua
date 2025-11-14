@@ -762,6 +762,34 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
     overflow_count = #tabs - #visible_indices
     tabs_width = current_width
+
+    -- If not all tabs fit even with extension, re-extend only visible tabs to fill space
+    if overflow_count > 0 and #visible_indices > 0 then
+      local visible_tabs = {}
+      for _, idx in ipairs(visible_indices) do
+        table.insert(visible_tabs, tabs[idx])
+      end
+
+      -- Re-calculate widths for only visible tabs to fill the entire available width
+      local visible_widths, visible_min_widths = calculate_responsive_tab_widths(ctx, visible_tabs, config, tabs_available_width, true)
+
+      -- Map visible widths back to original tab indices
+      local remapped_widths = {}
+      for i, idx in ipairs(visible_indices) do
+        remapped_widths[idx] = visible_widths[i]
+      end
+      final_tab_widths = remapped_widths
+
+      -- Recalculate actual width used
+      current_width = 0
+      for i = 1, #visible_widths do
+        current_width = current_width + visible_widths[i]
+        if i < #visible_widths then
+          current_width = current_width + (spacing_val == 0 and -1 or spacing_val)
+        end
+      end
+      tabs_width = current_width
+    end
   else
     visible_indices, overflow_count, tabs_width = calculate_visible_tabs(
       ctx, tabs, config, tabs_available_width
@@ -818,8 +846,13 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
   update_tab_positions(ctx, state, config, tabs, tabs_start_x, tabs_available_width, overflow_at_edge)
 
-  -- Calculate responsive widths for drawing
-  local responsive_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, overflow_at_edge)
+  -- Use the already calculated final widths when overflow is at edge, otherwise calculate
+  local responsive_widths
+  if overflow_at_edge and final_tab_widths then
+    responsive_widths = final_tab_widths
+  else
+    responsive_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, overflow_at_edge)
+  end
 
   local clicked_tab_id = nil
   local id_to_delete = nil
