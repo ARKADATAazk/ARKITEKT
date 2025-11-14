@@ -71,10 +71,15 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
     local text_w = ImGui.CalcTextSize(ctx, tab.label or "Tab")
-    local chip_width = has_chip and 20 or 0
 
-    -- Calculate actual width needed for text
-    local actual_text_width = math.floor(text_w + padding_x * 2 + chip_width + 0.5)
+    -- Calculate width based on actual rendering:
+    -- Left: padding_x - 3 (text offset)
+    -- Right: 2 (target margin to inner border)
+    -- Chip: 12 actual space (not 20)
+    local left_margin = math.max(0, padding_x - 3)
+    local right_margin = 2
+    local actual_chip_space = has_chip and 12 or 0
+    local actual_text_width = math.floor(text_w + left_margin + right_margin + actual_chip_space + 0.5)
 
     -- Apply very small floor (20px) to prevent microscopic tabs
     min_text_widths[i] = math.max(20, actual_text_width)

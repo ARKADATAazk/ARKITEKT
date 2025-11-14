@@ -69,20 +69,31 @@ end
 function Controller:create_playlist(name)
   return self:_with_undo(function()
     local new_id = self:_generate_playlist_id()
-    
+
     local RegionState = require("Region_Playlist.storage.persistence")
-    
+
     local new_playlist = {
       id = new_id,
       name = name or ("Playlist " .. new_id),
       items = {},
       chip_color = RegionState.generate_chip_color(),
     }
-    
+
     local playlists = self.state.get_playlists()
-    playlists[#playlists + 1] = new_playlist
+    local active_id = self.state.get_active_playlist_id()
+
+    -- Find active playlist index
+    local insert_index = #playlists + 1  -- Default to end
+    for i, pl in ipairs(playlists) do
+      if pl.id == active_id then
+        insert_index = i + 1  -- Insert after active
+        break
+      end
+    end
+
+    table.insert(playlists, insert_index, new_playlist)
     self.state.set_active_playlist(new_id)
-    
+
     return new_id
   end)
 end
