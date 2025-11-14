@@ -48,14 +48,29 @@ end
 
 local function ensure_minimum_brightness(color, min_luminance)
   min_luminance = min_luminance or 0.15
-  
+
   local lum = Colors.luminance(color)
   if lum >= min_luminance then
     return color
   end
-  
+
   local boost_factor = min_luminance / math.max(lum, 0.01)
   return Colors.adjust_brightness(color, boost_factor)
+end
+
+local function ensure_progress_bar_brightness(color)
+  -- Ensure progress bar is never too dark (min 30% brightness)
+  local r, g, b, a = Colors.rgba_to_components(color)
+  local lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255.0
+
+  if lum < 0.30 then
+    local boost = 0.30 / math.max(lum, 0.01)
+    r = math.min(255, math.floor(r * boost))
+    g = math.min(255, math.floor(g * boost))
+    b = math.min(255, math.floor(b * boost))
+  end
+
+  return Colors.components_to_rgba(r, g, b, a)
 end
 
 function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_region, next_region, playlist_data, region_colors, time_font)
@@ -77,19 +92,23 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + bar_w, bar_y + bar_h, track_color, 1.5)
   
   if progress > 0 and region_colors and region_colors.current then
+    -- Full-width gradient, clipped to progress
     local fill_w = bar_w * progress
-    
+
     local color_left, color_right
     if region_colors.next then
-      color_left = ensure_minimum_brightness(region_colors.current, 0.15)
-      color_right = ensure_minimum_brightness(region_colors.next, 0.15)
+      color_left = ensure_progress_bar_brightness(region_colors.current)
+      color_right = ensure_progress_bar_brightness(region_colors.next)
     else
-      color_left = ensure_minimum_brightness(region_colors.current, 0.15)
-      color_right = hexrgb("#000000")
+      color_left = ensure_progress_bar_brightness(region_colors.current)
+      color_right = ensure_progress_bar_brightness(region_colors.current)
     end
-    
-    TransportFX.render_progress_gradient(dl, bar_x, bar_y, bar_x + fill_w, bar_y + bar_h, 
+
+    -- Clip to reveal only the filled portion of the full-width gradient
+    ImGui.DrawList_PushClipRect(dl, bar_x, bar_y, bar_x + fill_w, bar_y + bar_h, true)
+    TransportFX.render_progress_gradient(dl, bar_x, bar_y, bar_x + bar_w, bar_y + bar_h,
       color_left, color_right, 1.5)
+    ImGui.DrawList_PopClipRect(dl)
   end
   
   local content_bottom = bar_y - LC.spacing_progress

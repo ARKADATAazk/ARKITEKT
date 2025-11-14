@@ -56,7 +56,7 @@ M.TRANSPORT = {
     time_playing_color = hexrgb("#FFFFFF"),
     status_color = hexrgb("#888888"),
     region_color = hexrgb("#CCCCCC"),
-    track_color = hexrgb("#1D1D1D"),
+    track_color = hexrgb("#404040"),  -- Lighter track for better visibility
     fill_color = hexrgb("#41E0A3"),
     progress_height = 3,
   },
