@@ -551,8 +551,8 @@ local function calculate_visible_tabs(ctx, tabs, config, available_width)
   local current_width = 0
   local spacing = config.spacing or 0
 
-  -- Subtract 4 pixels from available width to prevent abrupt clipping at edge
-  local adjusted_available_width = available_width - 4
+  -- Add 4 pixels to available width to use buffer space before tab edge
+  local adjusted_available_width = available_width + 4
 
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
@@ -755,8 +755,8 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     local current_width = 0
     local spacing_val = config.spacing or 0
 
-    -- Subtract 4 pixels from available width to prevent abrupt clipping at edge
-    local adjusted_available_width = tabs_available_width - 4
+    -- Add 4 pixels to available width to use buffer space before tab edge
+    local adjusted_available_width = tabs_available_width + 4
 
     for i, tab in ipairs(tabs) do
       local tab_width = final_tab_widths[i]
