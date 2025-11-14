@@ -9,22 +9,23 @@ local Chip = require('rearkitekt.gui.widgets.component.chip')
 local Style = require('rearkitekt.gui.style.defaults')
 
 local M = {}
-local C = Style.COLORS  -- Reference centralized colors
+local C = Style.COLORS          -- Shared primitives
+local PC = Style.PANEL_COLORS   -- Panel-specific colors
 
 local TAB_SLIDE_SPEED = 15.0
 local DRAG_THRESHOLD = 3.0
 
 local DEFAULTS = {
-  bg_color = C.BG_BASE,
-  bg_hover_color = C.BG_HOVER,
-  bg_active_color = C.BG_ACTIVE,
+  bg_color = PC.bg_tab,
+  bg_hover_color = PC.bg_tab_hover,
+  bg_active_color = PC.bg_tab_active,
   border_outer_color = C.BORDER_OUTER,
-  border_inner_color = C.BORDER_INNER,
-  border_hover_color = C.BORDER_HOVER,
-  border_active_color = C.BORDER_FOCUS,
-  text_color = C.TEXT_DIMMED,
-  text_hover_color = C.TEXT_HOVER,
-  text_active_color = C.TEXT_ACTIVE,
+  border_inner_color = PC.border_tab_inner,
+  border_hover_color = PC.border_tab_hover,
+  border_active_color = PC.border_tab_focus,
+  text_color = PC.text_tab,
+  text_hover_color = PC.text_tab_hover,
+  text_active_color = PC.text_tab_active,
 }
 
 local function get_corner_flags(corner_rounding)
@@ -342,7 +343,7 @@ local function draw_track(ctx, dl, x, y, width, height, config, corner_rounding)
     dl,
     track_x, track_y,
     track_x + track_width, track_y + track_height,
-    track_cfg.bg_color or C.BG_PANEL,
+    track_cfg.bg_color or PC.bg_tab_track,
     rounding,
     corner_flags
   )
@@ -352,7 +353,7 @@ local function draw_track(ctx, dl, x, y, width, height, config, corner_rounding)
       dl,
       track_x, track_y,
       track_x + track_width, track_y + track_height,
-      track_cfg.border_color or C.BORDER_OUTER,
+      track_cfg.border_color or PC.border_tab_track,
       rounding,
       corner_flags,
       track_cfg.border_thickness

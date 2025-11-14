@@ -7,7 +7,8 @@ local ImGui = require 'imgui' '0.10'
 
 local Layout = require('rearkitekt.gui.widgets.panel.header.layout')
 local Style = require('rearkitekt.gui.style.defaults')
-local C = Style.COLORS
+local C = Style.COLORS          -- Shared primitives
+local PC = Style.PANEL_COLORS   -- Panel-specific colors
 
 
 local M = {}
@@ -65,7 +66,7 @@ function M.draw(ctx, dl, x, y, w, h, state, config, rounding)
   -- Draw header background
   ImGui.DrawList_AddRectFilled(
     dl, x, y, x + w, y + h,
-    header_cfg.bg_color or C.BG_HEADER,
+    header_cfg.bg_color or PC.bg_header,
     rounding,
     corner_flags
   )
@@ -74,13 +75,13 @@ function M.draw(ctx, dl, x, y, w, h, state, config, rounding)
   if position == "bottom" then
     ImGui.DrawList_AddLine(
       dl, x, y, x + w, y,
-      header_cfg.border_color or C.BORDER_OUTER,
+      header_cfg.border_color or PC.border_header,
       1
     )
   else
     ImGui.DrawList_AddLine(
       dl, x, y + h - 1, x + w, y + h - 1,
-      header_cfg.border_color or C.BORDER_OUTER,
+      header_cfg.border_color or PC.border_header,
       1
     )
   end

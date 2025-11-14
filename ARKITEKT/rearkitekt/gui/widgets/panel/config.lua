@@ -3,18 +3,19 @@
 -- Default configuration for panel with enhanced features
 
 local Style = require('rearkitekt.gui.style.defaults')
-local C = Style.COLORS  -- Shorthand for centralized colors
+local C = Style.COLORS          -- Shared primitives
+local PC = Style.PANEL_COLORS   -- Panel-specific colors
 
 local Colors = require('rearkitekt.core.colors')
-local hexrgb = Colors.hexrgb  -- For background pattern colors
+local hexrgb = Colors.hexrgb
 
 local Config = require('rearkitekt.core.config')
 
 local M = {}
 
 M.DEFAULTS = {
-  bg_color = C.BG_PANEL,
-  border_color = C.BORDER_OUTER,
+  bg_color = PC.bg_panel,
+  border_color = PC.border_panel,
   border_thickness = 1,
   rounding = 8,
   padding = 8,
@@ -24,21 +25,21 @@ M.DEFAULTS = {
   scroll = {
     flags = 0,
     custom_scrollbar = false,
-    bg_color = C.BG_TRANSPARENT,
+    bg_color = PC.bg_scrollbar,
   },
-  
+
   anti_jitter = {
     enabled = true,
     track_scrollbar = true,
     height_threshold = 5,
   },
-  
+
   background_pattern = {
     enabled = true,
     primary = {
       type = 'grid',
       spacing = 50,
-      color = hexrgb("#14141490"),
+      color = PC.pattern_primary,
       dot_size = 2.5,
       line_thickness = 1.5,
     },
@@ -46,19 +47,19 @@ M.DEFAULTS = {
       enabled = true,
       type = 'grid',
       spacing = 5,
-      color = hexrgb("#14141420"),
+      color = PC.pattern_secondary,
       dot_size = 1.5,
       line_thickness = 0.5,
     },
   },
-  
+
   -- Header configuration
   header = {
     enabled = false,
     height = 30,
     position = "top", -- "top" or "bottom"
-    bg_color = C.BG_HEADER,
-    border_color = C.BORDER_SUBTLE,
+    bg_color = PC.bg_header,
+    border_color = PC.border_header,
     rounding = 8,
     
     -- IMPORTANT: Keep left/right padding at 0 so corner rounding on

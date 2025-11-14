@@ -3,6 +3,7 @@
 -- Separator element for header layout
 
 local Style = require('rearkitekt.gui.style.defaults')
+local PC = Style.PANEL_COLORS   -- Panel-specific colors
 
 local M = {}
 
@@ -13,7 +14,7 @@ function M.draw(ctx, dl, x, y, width, height, config)
   -- Optional: Draw a visual line if configured
   if config.show_line then
     local line_x = x + width * 0.5
-    local line_color = config.line_color or Style.COLORS.SEPARATOR_LINE
+    local line_color = config.line_color or PC.separator_line
     local line_thickness = config.line_thickness or 1
     local line_height = height * (config.line_height_ratio or 0.6)
     local line_y1 = y + (height - line_height) * 0.5
