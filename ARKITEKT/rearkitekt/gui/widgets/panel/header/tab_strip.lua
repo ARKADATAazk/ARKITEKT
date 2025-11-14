@@ -550,9 +550,7 @@ local function calculate_visible_tabs(ctx, tabs, config, available_width)
   local visible_indices = {}
   local current_width = 0
   local spacing = config.spacing or 0
-
-  -- Add 8 pixels to available width to use buffer space before tab edge
-  local adjusted_available_width = available_width + 8
+  local buffer_per_tab = 10  -- Allow each tab to use 10px of buffer space
 
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
@@ -561,9 +559,10 @@ local function calculate_visible_tabs(ctx, tabs, config, available_width)
     if i > 1 and i <= #tabs and spacing == 0 then
       effective_spacing = -1
     end
-    local needed = tab_width + effective_spacing
+    -- Subtract buffer from needed space - allows tab to use its padding buffer
+    local needed = tab_width + effective_spacing - buffer_per_tab
 
-    if current_width + needed <= adjusted_available_width then
+    if current_width + needed <= available_width then
       visible_indices[#visible_indices + 1] = i
       current_width = current_width + needed
     else
@@ -754,9 +753,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     visible_indices = {}
     local current_width = 0
     local spacing_val = config.spacing or 0
-
-    -- Add 8 pixels to available width to use buffer space before tab edge
-    local adjusted_available_width = tabs_available_width + 8
+    local buffer_per_tab = 10  -- Allow each tab to use 10px of buffer space
 
     for i, tab in ipairs(tabs) do
       local tab_width = final_tab_widths[i]
@@ -764,9 +761,10 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
       if i > 1 and i <= #tabs and spacing_val == 0 then
         effective_spacing = -1
       end
-      local needed = tab_width + effective_spacing
+      -- Subtract buffer from needed space - allows tab to use its padding buffer
+      local needed = tab_width + effective_spacing - buffer_per_tab
 
-      if current_width + needed <= adjusted_available_width then
+      if current_width + needed <= tabs_available_width then
         visible_indices[#visible_indices + 1] = i
         current_width = current_width + needed
       else
