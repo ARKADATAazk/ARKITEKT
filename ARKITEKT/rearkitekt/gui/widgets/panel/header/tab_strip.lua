@@ -60,9 +60,12 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
   local padding_x = config.padding_x or 5
   local spacing = config.spacing or 0
 
+  if #tabs == 0 then return {} end
+
   -- Calculate natural/ideal widths for all tabs (what they need to display without truncation)
   local natural_widths = {}
   local total_natural = 0
+  local total_spacing = 0
 
   for i, tab in ipairs(tabs) do
     local has_chip = tab.chip_color ~= nil
@@ -76,18 +79,22 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
     total_natural = total_natural + natural
 
     if i < #tabs then
-      total_natural = total_natural + (spacing == 0 and -1 or spacing)
+      local effective_spacing = (spacing == 0 and -1 or spacing)
+      total_spacing = total_spacing + effective_spacing
     end
   end
 
+  local total_with_spacing = total_natural + total_spacing
+
   -- Only extend tabs if explicitly requested (when overflow button is at edge)
-  if should_extend and total_natural < available_width and #tabs > 0 then
-    -- Extend tabs to fill the space seamlessly
-    local extra_space = available_width - total_natural
+  if should_extend and total_with_spacing < available_width then
+    -- Distribute extra space evenly (similar to grid responsiveness)
+    local extra_space = available_width - total_with_spacing
     local space_per_tab = extra_space / #tabs
 
     for i = 1, #tabs do
-      natural_widths[i] = natural_widths[i] + space_per_tab
+      -- Don't exceed max_width even when extending
+      natural_widths[i] = math.min(max_width, natural_widths[i] + space_per_tab)
     end
   end
 
@@ -685,7 +692,8 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   local usage_ratio = (total_tabs_natural + overflow_width + (spacing == 0 and -1 or spacing)) / tabs_max_width
 
   -- Determine overflow button positioning strategy
-  local overflow_at_edge = (usage_ratio >= 0.80)
+  -- Only push to edge if tabs will actually fill the space (prevents empty gaps)
+  local overflow_at_edge = (usage_ratio >= 0.80) and (total_tabs_natural >= tabs_max_width * 0.60)
 
   local tabs_available_width
   if overflow_at_edge then
@@ -799,12 +807,12 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   -- Draw overflow/menu button
   local overflow_x
   if overflow_at_edge then
-    -- Position at the right edge
+    -- Position at the right edge (with -1 for border overlap)
     overflow_x = x + available_width - overflow_width
     if spacing > 0 then
       overflow_x = overflow_x - spacing
     else
-      overflow_x = overflow_x + 1
+      overflow_x = overflow_x - 1  -- Border overlap, same as natural flow
     end
   else
     -- Position right after tabs (natural flow)
@@ -812,7 +820,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     if spacing > 0 then
       overflow_x = overflow_x + spacing
     else
-      overflow_x = overflow_x - 1
+      overflow_x = overflow_x - 1  -- Border overlap
     end
   end
 
