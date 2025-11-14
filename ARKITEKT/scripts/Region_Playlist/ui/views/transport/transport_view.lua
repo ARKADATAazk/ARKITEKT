@@ -24,7 +24,6 @@ function M.new(config, state_module)
     state = state_module,
     container = nil,
     view_mode_button = ButtonWidgets.ViewModeButton_new(config.view_mode),
-    settings_button = ButtonWidgets.SettingsButton_new(config.settings),
     transport_display = DisplayWidget.new(config.display),
   }, TransportView)
   
@@ -37,6 +36,7 @@ function M.new(config, state_module)
       fx = config.fx,
       background_pattern = config.background_pattern,
       panel_bg_color = config.panel_bg_color,
+      corner_buttons = config.corner_buttons,
     },
   })
   
@@ -383,17 +383,6 @@ function TransportView:draw(ctx, shell_state)
     local new_mode = (self.state.get_layout_mode() == 'horizontal') and 'vertical' or 'horizontal'
     self.state.set_layout_mode(new_mode)
     self.state.persist_ui_prefs()
-  end, true)
-
-  -- Settings button (right side)
-  local settings_size = self.config.settings.size
-  local avail_w = ImGui.GetContentRegionAvail(ctx)
-  local settings_x = transport_start_x + avail_w - settings_size - 8
-  local settings_y = transport_start_y + (transport_height - settings_size) / 2
-
-  self.settings_button:draw(ctx, settings_x, settings_y, function()
-    -- Dummy action for now
-    reaper.ShowConsoleMsg("Settings button clicked (coming soon)\n")
   end, true)
 
   ImGui.SetCursorScreenPos(ctx, transport_start_x, transport_start_y + transport_height)

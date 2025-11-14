@@ -46,17 +46,17 @@ M.TRANSPORT = {
     animation_speed = 12.0,
   },
 
-  -- Settings button (right)
-  settings = {
+  -- Corner buttons (panel feature)
+  corner_buttons = {
     size = 32,
-    rounding = 4,
-    bg_color = hexrgb("#252525"),
-    bg_hover = hexrgb("#2A2A2A"),
-    border_inner = hexrgb("#404040"),
-    border_hover = hexrgb("#505050"),
-    border_outer = hexrgb("#000000DD"),
-    icon_color = hexrgb("#CCCCCC"),
-    animation_speed = 12.0,
+    margin = 8,
+    top_right = {
+      icon = "⚙",
+      tooltip = "Settings (coming soon)",
+      on_click = function()
+        reaper.ShowConsoleMsg("Settings button clicked (coming soon)\n")
+      end,
+    },
   },
 
   -- Central display (library-styled double border)

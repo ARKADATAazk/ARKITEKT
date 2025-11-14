@@ -62,6 +62,9 @@ function M.new(opts)
         padding = { left = 0, right = 0 },
         elements = opts.header_elements or {},
       },
+
+      corner_buttons = cfg.corner_buttons or nil,
+      corner_buttons_always_visible = true,  -- Show corner buttons even with header
     },
   })
 
