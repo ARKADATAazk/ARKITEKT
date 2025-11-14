@@ -62,8 +62,9 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
 
   if #tabs == 0 then return {} end
 
-  -- Calculate natural/ideal widths for all tabs (what they need to display without truncation)
+  -- Calculate natural/ideal widths for all tabs
   local natural_widths = {}
+  local min_text_widths = {}  -- Minimum width needed to show text without truncation
   local total_natural = 0
   local total_spacing = 0
 
@@ -71,9 +72,14 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
     local has_chip = tab.chip_color ~= nil
     local text_w = ImGui.CalcTextSize(ctx, tab.label or "Tab")
     local chip_width = has_chip and 20 or 0
-    local natural = text_w + padding_x * 2 + chip_width
-    natural = math.max(min_width, natural)  -- Never go below min
-    natural = math.min(max_width, natural)  -- Never exceed max
+
+    -- Absolute minimum to show text (never go below this)
+    local min_text_width = math.floor(text_w + padding_x * 2 + chip_width + 0.5)
+    min_text_widths[i] = math.max(min_width, min_text_width)
+
+    -- Natural/ideal width
+    local natural = min_text_widths[i]
+    natural = math.min(max_width, natural)  -- Cap at max
     natural = math.floor(natural + 0.5)  -- Round to whole pixels
 
     natural_widths[i] = natural
@@ -87,10 +93,10 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
 
   local total_with_spacing = total_natural + total_spacing
 
-  -- Stretch logic: extend or compress tabs to fill available space
+  -- Stretch logic when overflow is at edge
   if should_extend then
     if total_with_spacing < available_width then
-      -- Stretch UP: Distribute extra space evenly to fill the header seamlessly
+      -- Stretch UP: Fill empty space by distributing evenly
       local extra_space = available_width - total_with_spacing
       local base_per_tab = math.floor(extra_space / #tabs)
       local remainder = extra_space - (base_per_tab * #tabs)
@@ -102,27 +108,12 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
           natural_widths[i] = natural_widths[i] + 1
         end
       end
-    elseif total_with_spacing > available_width then
-      -- Stretch DOWN: Compress tabs proportionally to fit
-      local compression_ratio = available_width / total_with_spacing
-      local new_total = 0
-
-      for i = 1, #tabs do
-        natural_widths[i] = math.floor(natural_widths[i] * compression_ratio + 0.5)
-        natural_widths[i] = math.max(min_width, natural_widths[i])  -- Don't go below min
-        new_total = new_total + natural_widths[i]
-      end
-
-      -- Adjust for rounding errors to exactly match available width
-      local diff = available_width - (new_total + total_spacing)
-      if diff > 0 and #tabs > 0 then
-        -- Add remaining pixels to last tab
-        natural_widths[#tabs] = natural_widths[#tabs] + diff
-      end
     end
+    -- NOTE: No stretch DOWN here - let calculate_visible_tabs handle overflow
+    -- This prevents truncation by moving tabs to overflow instead
   end
 
-  return natural_widths
+  return natural_widths, min_text_widths
 end
 
 local function init_tab_positions(state, tabs, start_x, ctx, config, available_width, should_extend)
@@ -135,7 +126,7 @@ local function init_tab_positions(state, tabs, start_x, ctx, config, available_w
   end
 
   -- Use responsive width calculation
-  local tab_widths = calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
+  local tab_widths, min_widths = calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
 
   local cursor_x = start_x
   local spacing = config.spacing or 0
@@ -167,7 +158,7 @@ local function update_tab_positions(ctx, state, config, tabs, start_x, available
   local cursor_x = start_x
 
   -- Use responsive width calculation
-  local tab_widths = calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
+  local tab_widths, min_widths = calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
 
   -- First pass: calculate all new targets and detect if this is a uniform shift (window move)
   local new_targets = {}
@@ -578,7 +569,7 @@ local function handle_drag_reorder(ctx, state, tabs, config, tabs_start_x, avail
   local mx = ImGui.GetMousePos(ctx)
 
   -- Use responsive width calculation
-  local tab_widths = calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
+  local tab_widths, min_widths = calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
 
   local dragged_tab = tabs[state.dragging_tab.index]
   local dragged_width = tab_widths[state.dragging_tab.index] or calculate_tab_width(ctx, dragged_tab.label or "Tab", config, dragged_tab.chip_color ~= nil)
@@ -697,7 +688,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   end
 
   -- Calculate natural tab widths without any constraints (no extension yet)
-  local natural_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_max_width, false)
+  local natural_widths, min_text_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_max_width, false)
 
   -- Calculate total natural width of tabs
   local total_tabs_natural = 0
@@ -716,9 +707,9 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   local usage_ratio = (total_tabs_natural + overflow_width + (spacing == 0 and -1 or spacing)) / tabs_max_width
 
   -- Determine overflow button positioning strategy
-  -- Only push to edge if tabs will actually fill the space (prevents empty gaps)
-  -- Lower threshold (50%) allows better responsiveness at narrow widths
-  local overflow_at_edge = (usage_ratio >= 0.80) and (total_tabs_natural >= tabs_max_width * 0.50)
+  -- Push to edge when tabs use >= 75% of available space
+  -- This ensures overflow button snaps to corner before creating awkward gaps
+  local overflow_at_edge = (usage_ratio >= 0.75)
 
   local tabs_available_width
   if overflow_at_edge then
