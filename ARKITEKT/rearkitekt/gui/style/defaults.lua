@@ -156,6 +156,17 @@ M.BUTTON_COLORS = {
     border_inner_on_active = hexrgb("#2D6851FF"), -- Darker teal when pressed
     text_on = hexrgb("#41E0A3FF"),      -- Bright teal/green text
   },
+
+  -- TRANSPARENT variant: Semi-transparent overlay style (for corner buttons over content)
+  toggle_transparent = {
+    bg_on = hexrgb("#434343AA"),        -- Semi-transparent gray when ON (67% opacity)
+    bg_on_hover = hexrgb("#484848BB"),  -- Slightly lighter on hover (73% opacity)
+    bg_on_active = hexrgb("#3E3E3E99"), -- Slightly darker when pressed (60% opacity)
+    border_inner_on = hexrgb("#898989AA"),        -- Semi-transparent border
+    border_inner_on_hover = hexrgb("#9A9A9ABB"),  -- Lighter on hover
+    border_inner_on_active = hexrgb("#7E7E7E99"), -- Darker when pressed
+    text_on = hexrgb("#FFFFFFDD"),      -- Bright white text (87% opacity)
+  },
 }
 
 -- ============================================================================
@@ -299,6 +310,7 @@ M.BUTTON = {
 M.BUTTON_TOGGLE = create_toggle_style(M.BUTTON_COLORS.toggle_white)
 M.BUTTON_TOGGLE_WHITE = create_toggle_style(M.BUTTON_COLORS.toggle_white)
 M.BUTTON_TOGGLE_TEAL = create_toggle_style(M.BUTTON_COLORS.toggle_teal)
+M.BUTTON_TOGGLE_TRANSPARENT = create_toggle_style(M.BUTTON_COLORS.toggle_transparent)
 
 -- Legacy alias for backward compatibility
 M.BUTTON_TOGGLE_ACCENT = M.BUTTON_TOGGLE_TEAL

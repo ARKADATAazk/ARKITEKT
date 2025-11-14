@@ -182,7 +182,7 @@ function M.get_active_container_config(callbacks)
       },
     },
     corner_buttons = {
-      size = 25,
+      size = 24,
       margin = 8,
       bottom_left = {
         icon = "⚡",
@@ -190,6 +190,17 @@ function M.get_active_container_config(callbacks)
         on_click = function()
           reaper.ShowConsoleMsg("Active Grid Actions button clicked (coming soon)\n")
         end,
+        -- Transparent overlay style for better tile visibility
+        bg_color = hexrgb("#43434380"),
+        bg_hover_color = hexrgb("#484848AA"),
+        bg_active_color = hexrgb("#3E3E3E70"),
+        border_inner_color = hexrgb("#89898980"),
+        border_hover_color = hexrgb("#9A9A9AA0"),
+        border_active_color = hexrgb("#7E7E7E70"),
+        border_outer_color = hexrgb("#000000CC"),
+        text_color = hexrgb("#FFFFFFDD"),
+        text_hover_color = hexrgb("#FFFFFFFF"),
+        text_active_color = hexrgb("#FFFFFFDD"),
       },
     },
     corner_buttons_always_visible = true,
@@ -256,7 +267,7 @@ function M.get_pool_container_config(callbacks)
       },
     },
     corner_buttons = {
-      size = 25,
+      size = 24,
       margin = 8,
       bottom_left = {
         icon = "⚡",
@@ -264,6 +275,17 @@ function M.get_pool_container_config(callbacks)
         on_click = function()
           reaper.ShowConsoleMsg("Pool Grid Actions button clicked (coming soon)\n")
         end,
+        -- Transparent overlay style for better tile visibility
+        bg_color = hexrgb("#43434380"),
+        bg_hover_color = hexrgb("#484848AA"),
+        bg_active_color = hexrgb("#3E3E3E70"),
+        border_inner_color = hexrgb("#89898980"),
+        border_hover_color = hexrgb("#9A9A9AA0"),
+        border_active_color = hexrgb("#7E7E7E70"),
+        border_outer_color = hexrgb("#000000CC"),
+        text_color = hexrgb("#FFFFFFDD"),
+        text_hover_color = hexrgb("#FFFFFFFF"),
+        text_active_color = hexrgb("#FFFFFFDD"),
       },
     },
     corner_buttons_always_visible = true,
