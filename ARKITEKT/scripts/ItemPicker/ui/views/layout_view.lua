@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local SearchInput = require('rearkitekt.gui.widgets.controls.search_input')
+local StatusBar = require('ItemPicker.ui.views.status_bar')
 
 local M = {}
 local LayoutView = {}
@@ -15,8 +16,11 @@ function M.new(config, state, coordinator)
     state = state,
     coordinator = coordinator,
     search_input = nil,
+    status_bar = nil,
     focus_search = false,
   }, LayoutView)
+
+  self.status_bar = StatusBar.new(config, state)
 
   return self
 end
@@ -108,9 +112,9 @@ function LayoutView:render(ctx, title_font, title, screen_w, screen_h)
   -- Render header
   self:render_header(ctx, title_font, title)
 
-  -- Calculate layout
+  -- Calculate layout (reserve space for status bar)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
-  local avail_h = ImGui.GetContentRegionAvail(ctx)
+  local avail_h = ImGui.GetContentRegionAvail(ctx) - 40  -- Reserve for status bar
 
   local midi_h = avail_h * self.config.LAYOUT.MIDI_SECTION_RATIO
   local audio_h = avail_h * self.config.LAYOUT.AUDIO_SECTION_RATIO
@@ -134,6 +138,9 @@ function LayoutView:render(ctx, title_font, title, screen_w, screen_h)
 
     self.coordinator:render_audio_grid(ctx, avail_w, audio_h - 40)
   end
+
+  -- Status bar at bottom
+  self.status_bar:render(ctx)
 end
 
 return M

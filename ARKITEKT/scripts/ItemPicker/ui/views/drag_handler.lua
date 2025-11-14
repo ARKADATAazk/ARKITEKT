@@ -134,6 +134,28 @@ function M.render_drag_preview(ctx, state, mini_font, visualization)
       x1 + state.item_to_add_width, y1 + ImGui.GetTextLineHeightWithSpacing(ctx),
       ImGui.ColorConvertDouble4ToU32(0, 0, 0, 0.3))
 
+    -- Multi-item badge
+    local dragging_count = (state.dragging_keys and #state.dragging_keys) or 1
+    if dragging_count > 1 then
+      local badge_text = string.format("%d items", dragging_count)
+      local badge_w, badge_h = ImGui.CalcTextSize(ctx, badge_text)
+      local badge_x = x1 + state.item_to_add_width - badge_w - 16
+      local badge_y = y1 + 4
+
+      -- Badge background
+      ImGui.DrawList_AddRectFilled(state.draw_list, badge_x - 6, badge_y - 2,
+        badge_x + badge_w + 6, badge_y + badge_h + 2,
+        hexrgb("#14181CDD"), 4)
+
+      -- Badge border
+      ImGui.DrawList_AddRect(state.draw_list, badge_x - 6, badge_y - 2,
+        badge_x + badge_w + 6, badge_y + badge_h + 2,
+        Colors.with_alpha(state.item_to_add_color, 0x99), 4, 0, 1.5)
+
+      -- Badge text
+      ImGui.DrawList_AddText(state.draw_list, badge_x, badge_y, hexrgb("#FFFFFFDD"), badge_text)
+    end
+
     ImGui.Text(ctx, " " .. state.item_to_add_name)
 
     -- Content area

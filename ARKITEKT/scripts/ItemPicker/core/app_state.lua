@@ -35,6 +35,8 @@ M.track_chunks = {}
 M.item_chunks = {}
 
 M.tile_sizes = { width = nil, height = nil }  -- nil = use config default
+
+-- Drag state
 M.dragging = nil
 M.item_to_add = nil
 M.item_to_add_name = nil
@@ -43,6 +45,12 @@ M.item_to_add_width = nil
 M.item_to_add_height = nil
 M.drag_waveform = nil
 M.out_of_bounds = nil
+M.dragging_keys = {}  -- All selected keys being dragged
+M.dragging_is_audio = true
+
+-- Selection state
+M.audio_selection_count = 0
+M.midi_selection_count = 0
 
 M.draw_list = nil
 M.overlay_alpha = 1.0
