@@ -55,7 +55,7 @@ local function calculate_tab_width(ctx, label, config, has_chip)
 end
 
 local function calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
-  local min_width = config.min_width or 50  -- Reduced from 60 to 50
+  local min_width = config.min_width or 50  -- Soft minimum (only for very small text)
   local max_width = config.max_width or 180
   local padding_x = config.padding_x or 5
   local spacing = config.spacing or 0
@@ -73,14 +73,16 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
     local text_w = ImGui.CalcTextSize(ctx, tab.label or "Tab")
     local chip_width = has_chip and 20 or 0
 
-    -- Absolute minimum to show text (never go below this)
-    local min_text_width = math.floor(text_w + padding_x * 2 + chip_width + 0.5)
-    min_text_widths[i] = math.max(min_width, min_text_width)
+    -- Calculate actual width needed for text
+    local actual_text_width = math.floor(text_w + padding_x * 2 + chip_width + 0.5)
 
-    -- Natural/ideal width
+    -- Apply very small floor (20px) to prevent microscopic tabs
+    min_text_widths[i] = math.max(20, actual_text_width)
+
+    -- Natural width: use actual text width, cap at max only
     local natural = min_text_widths[i]
-    natural = math.min(max_width, natural)  -- Cap at max
-    natural = math.floor(natural + 0.5)  -- Round to whole pixels
+    natural = math.min(max_width, natural)  -- Hard cap at max
+    natural = math.floor(natural + 0.5)     -- Round to whole pixels
 
     natural_widths[i] = natural
     total_natural = total_natural + natural
@@ -537,24 +539,24 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
     ImGui.OpenPopup(ctx, "##tab_context_" .. id .. "_" .. unique_id)
   end
 
-  -- Define preset colors (16 color rainbow spectrum + neutrals)
+  -- Define preset colors (16 vivid rainbow spectrum colors)
   local preset_colors = {
-    0xFF0000FF, -- Red
-    0xFF0066FF, -- Red-Orange
-    0xFF00CCFF, -- Orange
-    0xFF00FFFF, -- Yellow
-    0xFF00FF99, -- Yellow-Green
-    0xFF00FF33, -- Green
-    0xFF33FF00, -- Light Green
-    0xFF99FF00, -- Lime
-    0xFFFFFF00, -- Cyan
-    0xFFFFCC00, -- Sky Blue
-    0xFFFF6600, -- Blue
-    0xFFFF0000, -- Deep Blue
-    0xFFFF0066, -- Purple
-    0xFFFF00CC, -- Magenta
-    0xFF9900FF, -- Pink
-    0xFF3300FF, -- Hot Pink
+    0xFF0000FF, -- Red (H=0°)
+    0xFF0060FF, -- Red-Orange (H=22.5°)
+    0xFF00BFFF, -- Orange (H=45°)
+    0xFF00EFFF, -- Yellow-Orange (H=67.5°)
+    0xFF00FF90, -- Yellow-Green (H=90°)
+    0xFF00FF30, -- Green (H=112.5°)
+    0xFF30FF00, -- Bright Green (H=135°)
+    0xFF90FF00, -- Cyan-Green (H=157.5°)
+    0xFFFFFF00, -- Cyan (H=180°)
+    0xFFFF9000, -- Sky Blue (H=202.5°)
+    0xFFFF3000, -- Blue (H=225°)
+    0xFFFF0030, -- Deep Blue (H=247.5°)
+    0xFF9000FF, -- Purple (H=270°)
+    0xFFEF00FF, -- Violet (H=292.5°)
+    0xFFFF00BF, -- Hot Pink (H=315°)
+    0xFFFF0060, -- Pink (H=337.5°)
   }
 
   if ContextMenu.begin(ctx, "##tab_context_" .. id .. "_" .. unique_id, config.context_menu) then
