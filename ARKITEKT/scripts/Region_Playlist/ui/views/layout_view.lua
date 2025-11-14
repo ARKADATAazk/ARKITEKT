@@ -8,8 +8,8 @@ local ImGui = require 'imgui' '0.10'
 local SeparatorView = require('Region_Playlist.ui.views.separator_view')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
-local max = max
-local min = min
+local max = math.max
+local min = math.min
 
 local M = {}
 
