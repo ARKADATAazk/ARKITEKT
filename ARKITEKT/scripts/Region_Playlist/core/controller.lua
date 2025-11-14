@@ -88,23 +88,23 @@ function Controller:create_playlist(name)
 end
 
 function Controller:duplicate_playlist(id)
+  local playlists = self.state.get_playlists()
+  local source_playlist = nil
+  local source_index = nil
+
+  for i, pl in ipairs(playlists) do
+    if pl.id == id then
+      source_playlist = pl
+      source_index = i
+      break
+    end
+  end
+
+  if not source_playlist then
+    return false, "Playlist not found"
+  end
+
   return self:_with_undo(function()
-    local playlists = self.state.get_playlists()
-    local source_playlist = nil
-    local source_index = nil
-
-    for i, pl in ipairs(playlists) do
-      if pl.id == id then
-        source_playlist = pl
-        source_index = i
-        break
-      end
-    end
-
-    if not source_playlist then
-      error("Playlist not found")
-    end
-
     local new_id = self:_generate_playlist_id()
     local RegionState = require("Region_Playlist.storage.persistence")
 
@@ -136,24 +136,24 @@ function Controller:duplicate_playlist(id)
 end
 
 function Controller:rename_playlist(id, new_name)
-  return self:_with_undo(function()
-    local playlist = self:_get_playlist(id)
-    if not playlist then
-      error("Playlist not found")
-    end
+  local playlist = self:_get_playlist(id)
+  if not playlist then
+    return false, "Playlist not found"
+  end
 
+  return self:_with_undo(function()
     playlist.name = new_name or playlist.name
     return true
   end)
 end
 
 function Controller:set_playlist_color(id, color)
-  return self:_with_undo(function()
-    local playlist = self:_get_playlist(id)
-    if not playlist then
-      error("Playlist not found")
-    end
+  local playlist = self:_get_playlist(id)
+  if not playlist then
+    return false, "Playlist not found"
+  end
 
+  return self:_with_undo(function()
     playlist.chip_color = color or nil
     return true
   end)

@@ -540,24 +540,24 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
     ImGui.OpenPopup(ctx, "##tab_context_" .. id .. "_" .. unique_id)
   end
 
-  -- Define preset colors (16 color palette)
+  -- Define preset colors (16 color rainbow spectrum + neutrals)
   local preset_colors = {
-    0xFF4444FF, -- Red
-    0xFF44AAFF, -- Pink
-    0xFF44DDFF, -- Magenta
-    0xFFAA44FF, -- Purple
-    0xFFDD44FF, -- Blue
-    0xFFDDAAAA, -- Light Blue
-    0xFFDDDD44, -- Cyan
-    0xFFAADD44, -- Teal
-    0xFF44DD44, -- Green
-    0xFF44AA44, -- Lime
-    0xFF4444AA, -- Yellow
-    0xFF4444DD, -- Orange
-    0xFFAA4444, -- Brown
-    0xFFAAAAAA, -- Gray
-    0xFFDDDDDD, -- Light Gray
-    0xFF666666, -- Dark Gray
+    0xFF0000FF, -- Red
+    0xFF0066FF, -- Red-Orange
+    0xFF00CCFF, -- Orange
+    0xFF00FFFF, -- Yellow
+    0xFF00FF99, -- Yellow-Green
+    0xFF00FF33, -- Green
+    0xFF33FF00, -- Light Green
+    0xFF99FF00, -- Lime
+    0xFFFFFF00, -- Cyan
+    0xFFFFCC00, -- Sky Blue
+    0xFFFF6600, -- Blue
+    0xFFFF0000, -- Deep Blue
+    0xFFFF0066, -- Purple
+    0xFFFF00CC, -- Magenta
+    0xFF9900FF, -- Pink
+    0xFF3300FF, -- Hot Pink
   }
 
   if ContextMenu.begin(ctx, "##tab_context_" .. id .. "_" .. unique_id, config.context_menu) then

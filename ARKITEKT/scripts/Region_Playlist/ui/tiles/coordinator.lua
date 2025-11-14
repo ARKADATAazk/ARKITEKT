@@ -153,15 +153,13 @@ function M.create(opts)
     end,
 
     on_tab_duplicate = function(id)
-      if rt.controller then
-        rt.controller:duplicate_playlist(id)
+      if rt.controller and rt.controller:duplicate_playlist(id) then
         rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
       end
     end,
 
     on_tab_color_change = function(id, color)
-      if rt.controller then
-        rt.controller:set_playlist_color(id, color == false and nil or color)
+      if rt.controller and rt.controller:set_playlist_color(id, color == false and nil or color) then
         rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
       end
     end,
