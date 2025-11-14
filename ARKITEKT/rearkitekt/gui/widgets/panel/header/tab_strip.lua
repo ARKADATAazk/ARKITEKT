@@ -803,13 +803,18 @@ local function handle_drag_reorder(ctx, state, tabs, config, tabs_start_x, avail
   end
 end
 
-local function finalize_drag(ctx, state, config)
+local function finalize_drag(ctx, state, config, tabs, tabs_start_x, overflow_x, responsive_widths)
   if not state.dragging_tab then return end
-  
+
   if not ImGui.IsMouseDown(ctx, 0) then
     local mx = ImGui.GetMousePos(ctx)
     if state.tab_positions and state.tab_positions[state.dragging_tab.id] then
-      state.tab_positions[state.dragging_tab.id].current_x = mx - state.dragging_tab.offset_x
+      local dragged_tab_w = responsive_widths and responsive_widths[state.dragging_tab.index] or 50
+      local unclamped_x = mx - state.dragging_tab.offset_x
+      -- Clamp final position between plus button and overflow button
+      local min_x = tabs_start_x
+      local max_x = overflow_x - dragged_tab_w
+      state.tab_positions[state.dragging_tab.id].current_x = math.max(min_x, math.min(max_x, unclamped_x))
     end
     
     if config.on_tab_reorder and state.dragging_tab.original_index ~= state.dragging_tab.index then
@@ -1037,14 +1042,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     config.on_tab_create()
   end
 
-  handle_drag_reorder(ctx, state, tabs, config, tabs_start_x, tabs_available_width, overflow_at_edge)
-  finalize_drag(ctx, state, config)
-
-  update_tab_positions(ctx, state, config, tabs, tabs_start_x, tabs_available_width, overflow_at_edge)
-
-  -- Calculate responsive widths for drawing
-  -- When overflow is at edge and we've calculated final widths, use those
-  -- Otherwise calculate fresh (handles non-edge case)
+  -- Calculate responsive widths for drawing (needed for drag clamping)
   local responsive_widths
   if overflow_at_edge and final_tab_widths then
     -- Create a full table with all widths for drawing
@@ -1057,7 +1055,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     responsive_widths = widths
   end
 
-  -- Calculate overflow button position before drawing tabs (needed for last tab width calculation)
+  -- Calculate overflow button position (needed for drag clamping)
   local overflow_x
   if overflow_at_edge then
     -- Position at the right edge (aligned with corner, no offset)
@@ -1071,6 +1069,11 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
       overflow_x = overflow_x - 1  -- Border overlap
     end
   end
+
+  -- Handle tab dragging (with calculated bounds for clamping)
+  handle_drag_reorder(ctx, state, tabs, config, tabs_start_x, tabs_available_width, overflow_at_edge)
+  finalize_drag(ctx, state, config, tabs, tabs_start_x, overflow_x, responsive_widths)
+  update_tab_positions(ctx, state, config, tabs, tabs_start_x, tabs_available_width, overflow_at_edge)
 
   local clicked_tab_id = nil
   local id_to_delete = nil
@@ -1095,7 +1098,11 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
         if state.dragging_tab and state.dragging_tab.id == tab_data.id then
           local mx = ImGui.GetMousePos(ctx)
-          tab_x = math.floor(mx - state.dragging_tab.offset_x + 0.5)
+          local unclamped_x = mx - state.dragging_tab.offset_x
+          -- Clamp drag position between plus button and overflow button
+          local min_x = tabs_start_x
+          local max_x = overflow_x - tab_w
+          tab_x = math.floor(math.max(min_x, math.min(max_x, unclamped_x)) + 0.5)
         end
 
         -- Calculate actual render width to ensure border overlap with next tab/overflow
@@ -1118,7 +1125,12 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
             local next_x = math.floor(next_pos.current_x + 0.5)
             if state.dragging_tab and state.dragging_tab.id == tabs[next_visible_idx].id then
               local mx = ImGui.GetMousePos(ctx)
-              next_x = math.floor(mx - state.dragging_tab.offset_x + 0.5)
+              local next_tab_w = responsive_widths[next_visible_idx] or calculate_tab_width(ctx, tabs[next_visible_idx].label or "Tab", config, tabs[next_visible_idx].chip_color ~= nil)
+              local unclamped_x = mx - state.dragging_tab.offset_x
+              -- Clamp drag position
+              local min_x = tabs_start_x
+              local max_x = overflow_x - next_tab_w
+              next_x = math.floor(math.max(min_x, math.min(max_x, unclamped_x)) + 0.5)
             end
 
             -- Extend this tab's width to reach the next tab (with 1px overlap)
