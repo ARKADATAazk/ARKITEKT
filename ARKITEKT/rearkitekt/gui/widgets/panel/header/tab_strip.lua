@@ -88,13 +88,14 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
 
   -- Only extend tabs if explicitly requested (when overflow button is at edge)
   if should_extend and total_with_spacing < available_width then
-    -- Distribute extra space evenly (similar to grid responsiveness)
+    -- Distribute extra space evenly to fill the header seamlessly
     local extra_space = available_width - total_with_spacing
     local space_per_tab = extra_space / #tabs
 
     for i = 1, #tabs do
-      -- Don't exceed max_width even when extending
-      natural_widths[i] = math.min(max_width, natural_widths[i] + space_per_tab)
+      -- When overflow is at edge, extend beyond max_width to fill space
+      -- This prevents empty gaps and creates seamless integration
+      natural_widths[i] = natural_widths[i] + space_per_tab
     end
   end
 
@@ -693,12 +694,13 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
   -- Determine overflow button positioning strategy
   -- Only push to edge if tabs will actually fill the space (prevents empty gaps)
-  local overflow_at_edge = (usage_ratio >= 0.80) and (total_tabs_natural >= tabs_max_width * 0.60)
+  -- Lower threshold (50%) allows better responsiveness at narrow widths
+  local overflow_at_edge = (usage_ratio >= 0.80) and (total_tabs_natural >= tabs_max_width * 0.50)
 
   local tabs_available_width
   if overflow_at_edge then
-    -- Push overflow to edge, give tabs all remaining space
-    tabs_available_width = tabs_max_width - overflow_width - (spacing == 0 and -1 or spacing)
+    -- Push overflow to edge, give tabs all remaining space with border overlap
+    tabs_available_width = tabs_max_width - overflow_width + 1  -- +1 for border overlap with overflow
   else
     -- Natural flow: overflow sits after tabs
     tabs_available_width = tabs_max_width
@@ -807,15 +809,10 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   -- Draw overflow/menu button
   local overflow_x
   if overflow_at_edge then
-    -- Position at the right edge (with -1 for border overlap)
+    -- Position at the right edge (aligned with corner, no offset)
     overflow_x = x + available_width - overflow_width
-    if spacing > 0 then
-      overflow_x = overflow_x - spacing
-    else
-      overflow_x = overflow_x - 1  -- Border overlap, same as natural flow
-    end
   else
-    -- Position right after tabs (natural flow)
+    -- Position right after tabs (natural flow with border overlap)
     overflow_x = tabs_start_x + tabs_width
     if spacing > 0 then
       overflow_x = overflow_x + spacing
