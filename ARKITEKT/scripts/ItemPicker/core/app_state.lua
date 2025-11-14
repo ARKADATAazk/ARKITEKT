@@ -74,8 +74,12 @@ M.scroll_y = {}
 M.pending_spawn = {}
 M.pending_destroy = {}
 
+-- Config reference (set during initialization)
+M.config = nil
+
 -- Initialization
 function M.initialize(config)
+  M.config = config
   M.settings = Persistence.load_settings()
   local disabled_data = Persistence.load_disabled_items()
   M.disabled = disabled_data or { audio = {}, midi = {} }
@@ -109,15 +113,16 @@ function M.set_search_filter(filter)
 end
 
 -- Tile size management
-function M.get_tile_width(config)
-  return M.tile_sizes.width or config.TILE.DEFAULT_WIDTH
+function M:get_tile_width()
+  return M.tile_sizes.width or M.config.TILE.DEFAULT_WIDTH
 end
 
-function M.get_tile_height(config)
-  return M.tile_sizes.height or config.TILE.DEFAULT_HEIGHT
+function M:get_tile_height()
+  return M.tile_sizes.height or M.config.TILE.DEFAULT_HEIGHT
 end
 
-function M.set_tile_size(width, height, config)
+function M:set_tile_size(width, height)
+  local config = M.config
   local clamped_width = math.max(config.TILE.MIN_WIDTH, math.min(config.TILE.MAX_WIDTH, width))
   local clamped_height = math.max(config.TILE.MIN_HEIGHT, math.min(config.TILE.MAX_HEIGHT, height))
 

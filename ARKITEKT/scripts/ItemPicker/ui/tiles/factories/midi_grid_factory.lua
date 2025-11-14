@@ -77,8 +77,8 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
   local grid = Grid.new({
     id = "midi_items",
     gap = config.TILE.GAP,
-    min_col_w = function() return state:get_tile_width(config) end,
-    fixed_tile_h = state:get_tile_height(config),
+    min_col_w = function() return state:get_tile_width() end,
+    fixed_tile_h = state:get_tile_height(),
 
     get_items = get_items,
 
@@ -103,8 +103,8 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
 
       for _, item_data in ipairs(items) do
         if item_data.key == key then
-          local drag_w = math.min(200, state:get_tile_width(config))
-          local drag_h = math.min(120, state:get_tile_height(config))
+          local drag_w = math.min(200, state:get_tile_width())
+          local drag_h = math.min(120, state:get_tile_height())
 
           -- Store all selected keys for batch insert
           state.dragging_keys = keys

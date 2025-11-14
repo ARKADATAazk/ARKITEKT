@@ -57,26 +57,26 @@ function Coordinator:handle_tile_size_shortcuts(ctx)
   if not ctrl and not alt then return false end
 
   local delta = wheel > 0 and 1 or -1
-  local current_w = self.state:get_tile_width(self.config)
-  local current_h = self.state:get_tile_height(self.config)
+  local current_w = self.state:get_tile_width()
+  local current_h = self.state:get_tile_height()
 
   if ctrl then
     local new_height = current_h + (delta * self.config.TILE.HEIGHT_STEP)
-    self.state:set_tile_size(current_w, new_height, self.config)
+    self.state:set_tile_size(current_w, new_height)
   elseif alt then
     local new_width = current_w + (delta * self.config.TILE.WIDTH_STEP)
-    self.state:set_tile_size(new_width, current_h, self.config)
+    self.state:set_tile_size(new_width, current_h)
   end
 
   -- Update grids with new size
   if self.midi_grid then
-    self.midi_grid.min_col_w_fn = function() return self.state:get_tile_width(self.config) end
-    self.midi_grid.fixed_tile_h = self.state:get_tile_height(self.config)
+    self.midi_grid.min_col_w_fn = function() return self.state:get_tile_width() end
+    self.midi_grid.fixed_tile_h = self.state:get_tile_height()
   end
 
   if self.audio_grid then
-    self.audio_grid.min_col_w_fn = function() return self.state:get_tile_width(self.config) end
-    self.audio_grid.fixed_tile_h = self.state:get_tile_height(self.config)
+    self.audio_grid.min_col_w_fn = function() return self.state:get_tile_width() end
+    self.audio_grid.fixed_tile_h = self.state:get_tile_height()
   end
 
   return true
