@@ -125,8 +125,13 @@ local function init_tab_positions(state, tabs, start_x, ctx, config, available_w
     state.tab_animation_enabled = {}
   end
 
-  -- Use responsive width calculation
-  local tab_widths, min_widths = calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
+  -- Use cached widths if available, otherwise calculate
+  local tab_widths
+  if state._cached_tab_widths then
+    tab_widths = state._cached_tab_widths
+  else
+    tab_widths, _ = calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
+  end
 
   local cursor_x = start_x
   local spacing = config.spacing or 0
@@ -157,8 +162,13 @@ local function update_tab_positions(ctx, state, config, tabs, start_x, available
   local dt = ImGui.GetDeltaTime(ctx)
   local cursor_x = start_x
 
-  -- Use responsive width calculation
-  local tab_widths, min_widths = calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
+  -- Use cached widths if available, otherwise calculate
+  local tab_widths
+  if state._cached_tab_widths then
+    tab_widths = state._cached_tab_widths
+  else
+    tab_widths, _ = calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
+  end
 
   -- First pass: calculate all new targets and detect if this is a uniform shift (window move)
   local new_targets = {}
@@ -568,8 +578,13 @@ local function handle_drag_reorder(ctx, state, tabs, config, tabs_start_x, avail
 
   local mx = ImGui.GetMousePos(ctx)
 
-  -- Use responsive width calculation
-  local tab_widths, min_widths = calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
+  -- Use cached widths if available, otherwise calculate
+  local tab_widths
+  if state._cached_tab_widths then
+    tab_widths = state._cached_tab_widths
+  else
+    tab_widths, _ = calculate_responsive_tab_widths(ctx, tabs, config, available_width, should_extend)
+  end
 
   local dragged_tab = tabs[state.dragging_tab.index]
   local dragged_width = tab_widths[state.dragging_tab.index] or calculate_tab_width(ctx, dragged_tab.label or "Tab", config, dragged_tab.chip_color ~= nil)
@@ -720,13 +735,13 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     tabs_available_width = tabs_max_width
   end
 
-  -- When overflow is at edge, calculate extended widths first to determine what fits
+  -- Calculate widths once - will be adjusted and reused for init, update, drag, and draw
   local final_tab_widths, min_text_widths
   if overflow_at_edge then
     final_tab_widths, min_text_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, true)
+  else
+    final_tab_widths, min_text_widths = calculate_responsive_tab_widths(ctx, tabs, config, tabs_available_width, false)
   end
-
-  init_tab_positions(state, tabs, tabs_start_x, ctx, config, tabs_available_width, overflow_at_edge)
 
   -- Calculate visible tabs using final widths when extending, natural widths otherwise
   local visible_indices, overflow_count, tabs_width
@@ -812,6 +827,12 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
       ctx, tabs, config, tabs_available_width
     )
   end
+
+  -- Store final adjusted widths in cache for use by position functions
+  state._cached_tab_widths = final_tab_widths
+  state._cached_should_extend = overflow_at_edge
+
+  init_tab_positions(state, tabs, tabs_start_x, ctx, config, tabs_available_width, overflow_at_edge)
 
   -- Recalculate overflow button width based on content
   if overflow_count > 0 then
