@@ -239,7 +239,7 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
     self.popup_hover_index = -1
     self.footer_interacting = false
     
-    -- Calculate popup width
+    -- Calculate popup width (increased for better appearance)
     local max_text_width = 0
     local options = cfg.options or {}
     for _, opt in ipairs(options) do
@@ -247,8 +247,10 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
       local text_w, _ = ImGui.CalcTextSize(ctx, label)
       max_text_width = math.max(max_text_width, text_w)
     end
-    
-    local popup_width = math.max(width, max_text_width + popup_cfg.item_padding_x * 2 + 20)
+
+    -- Use larger popup width: 1.5x button width or text-based, whichever is larger
+    local min_popup_width = math.max(width * 1.5, 180)
+    local popup_width = math.max(min_popup_width, max_text_width + popup_cfg.item_padding_x * 2 + 40)
     
     -- Draw items
     for i, opt in ipairs(options) do
@@ -316,9 +318,10 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
     if cfg.footer_content then
       -- Add separator before footer
       local sep_x, sep_y = ImGui.GetCursorScreenPos(ctx)
-      ImGui.Dummy(ctx, popup_width, 4)
-      local sep_y2 = sep_y + 2
-      ImGui.DrawList_AddLine(popup_dl, sep_x + 4, sep_y2, sep_x + popup_width - 4, sep_y2, Style.COLORS.BORDER_INNER, 1)
+      ImGui.Dummy(ctx, popup_width, 6)
+      local sep_y2 = sep_y + 3
+      -- Enhanced separator with subtle glow effect
+      ImGui.DrawList_AddLine(popup_dl, sep_x + 8, sep_y2, sep_x + popup_width - 8, sep_y2, cfg.popup.border_color, 1)
       
       -- Track footer region for interaction detection
       local footer_start_y = sep_y + 4

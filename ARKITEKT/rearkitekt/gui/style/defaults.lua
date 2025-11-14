@@ -187,18 +187,18 @@ M.DROPDOWN_COLORS = {
   arrow = M.COLORS.TEXT_NORMAL,
   arrow_hover = M.COLORS.TEXT_HOVER,
 
-  -- Popup menu
-  popup_bg = hexrgb("#1E1E1EFF"),         -- Popup background (slightly darker)
-  popup_border = M.COLORS.BORDER_INNER,   -- Popup border
+  -- Popup menu (improved visibility and contrast)
+  popup_bg = hexrgb("#242424FF"),         -- Popup background (lighter for better contrast)
+  popup_border = hexrgb("#505050FF"),     -- Popup border (more visible)
 
-  -- Menu items
+  -- Menu items (enhanced styling)
   item_bg = hexrgb("#00000000"),          -- Item background (transparent)
-  item_hover = M.COLORS.BORDER_INNER,     -- Item background on hover
-  item_active = hexrgb("#4A4A4AFF"),      -- Item background when active
-  item_selected = hexrgb("#3A3A3AFF"),    -- Item background when selected
+  item_hover = hexrgb("#2E2E2EFF"),       -- Item background on hover (subtle highlight)
+  item_active = hexrgb("#353535FF"),      -- Item background when active (more visible)
+  item_selected = hexrgb("#303030FF"),    -- Item background when selected
   item_text = M.COLORS.TEXT_NORMAL,       -- Item text
   item_text_hover = M.COLORS.TEXT_HOVER,  -- Item text on hover
-  item_text_selected = M.COLORS.TEXT_HOVER, -- Item text when selected
+  item_text_selected = M.COLORS.TEXT_BRIGHT, -- Item text when selected (brighter)
 }
 
 -- ============================================================================
@@ -348,10 +348,10 @@ M.DROPDOWN = {
     item_text_hover_color = M.DROPDOWN_COLORS.item_text_hover,
     item_selected_color = M.DROPDOWN_COLORS.item_selected,
     item_selected_text_color = M.DROPDOWN_COLORS.item_text_selected,
-    rounding = 4,
-    padding = 4,
-    item_height = 24,
-    item_padding_x = 10,
+    rounding = 2,             -- Slight rounding for modern look
+    padding = 6,              -- More padding for breathing room
+    item_height = 26,         -- Taller items for better touch targets
+    item_padding_x = 12,      -- More horizontal padding
     border_thickness = 1,
   },
 }

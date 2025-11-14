@@ -222,22 +222,34 @@ function TransportView:build_header_elements(bridge_state)
           local dl = footer_ctx.dl
           local width = footer_ctx.width
           local padding = footer_ctx.padding
-          
+
           -- Label
           local label = "Jump Lookahead"
           local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
-          local label_color = Colors.hexrgb("#CCCCCCFF")
+          local label_color = Colors.hexrgb("#E0E0E0FF")
           ImGui.DrawList_AddText(dl, label_x + padding, label_y, label_color, label)
-          ImGui.Dummy(ctx, width, 18)
-          
+          ImGui.Dummy(ctx, width, 20)
+
+          -- Push custom slider styling for better appearance
+          ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#1A1A1AFF"))          -- Slider track background
+          ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#222222FF"))   -- Hovered track
+          ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#252525FF"))    -- Active track
+          ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, Colors.hexrgb("#37775FFF"))       -- Grab (matches teal theme)
+          ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, Colors.hexrgb("#42866DFF"))  -- Active grab (brighter teal)
+          ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabMinSize, 14)                            -- Larger grab for easier interaction
+          ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 4, 6)                         -- More padding for height
+
           -- Slider
           local slider_x, slider_y = ImGui.GetCursorScreenPos(ctx)
           ImGui.SetCursorScreenPos(ctx, slider_x + padding, slider_y)
           ImGui.SetNextItemWidth(ctx, width - padding * 2)
-          
+
           local lookahead_ms = self.config.quantize_lookahead * 1000
           local changed, new_val = ImGui.SliderDouble(ctx, "##quantize_lookahead", lookahead_ms, 200, 1000, "%.0fms")
-          
+
+          ImGui.PopStyleVar(ctx, 2)
+          ImGui.PopStyleColor(ctx, 5)
+
           if changed then
             self.config.quantize_lookahead = new_val / 1000
             -- Persist to settings
@@ -245,8 +257,8 @@ function TransportView:build_header_elements(bridge_state)
               self.state.settings:set('quantize_lookahead', self.config.quantize_lookahead)
             end
           end
-          
-          ImGui.Dummy(ctx, width, 4)
+
+          ImGui.Dummy(ctx, width, 6)
         end,
         -- <<< FOOTER: LOOKAHEAD SLIDER (END)
       },
