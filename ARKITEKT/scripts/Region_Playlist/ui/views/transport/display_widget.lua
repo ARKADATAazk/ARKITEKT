@@ -25,7 +25,8 @@ local TRANSPORT_LAYOUT_CONFIG = {
   spacing_progress = 8,
   progress_height = 3,
   progress_bottom_offset = 12,
-  progress_padding_h = 56,
+  progress_padding_left = 56,
+  progress_padding_right = 96,  -- Increased to balance view mode button on left
   playlist_chip_size = 8,
   playlist_chip_offset_x = 4,
   playlist_chip_offset_y = 2,
@@ -87,9 +88,9 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   y = y + LC.global_offset_y
   
   local progress = bridge_state.progress or 0
-  local bar_x = x + LC.progress_padding_h
+  local bar_x = x + LC.progress_padding_left
   local bar_y = y + height - LC.progress_height - LC.progress_bottom_offset
-  local bar_w = width - LC.progress_padding_h * 2
+  local bar_w = width - LC.progress_padding_left - LC.progress_padding_right
   local bar_h = LC.progress_height
   
   local track_color = cfg.track_color or hexrgb("#1D1D1D")
