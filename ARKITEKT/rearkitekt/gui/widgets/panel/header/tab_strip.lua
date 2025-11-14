@@ -751,7 +751,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
     visible_indices = {}
     local current_width = 0
     local spacing_val = config.spacing or 0
-    local buffer_per_tab = 10  -- Allow each tab up to 10px additional space
+    local buffer_per_tab = 10  -- Allow each tab up to 10px buffer space
 
     for i, tab in ipairs(tabs) do
       local tab_width = final_tab_widths[i]
@@ -759,10 +759,10 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
       if i > 1 and i <= #tabs and spacing_val == 0 then
         effective_spacing = -1
       end
-      local needed = tab_width + effective_spacing
+      -- Subtract buffer from each tab - allows tab to use its padding
+      local needed = (tab_width - buffer_per_tab) + effective_spacing
 
-      -- Allow tab to fit even if it needs up to 10px more than available
-      if current_width + needed <= tabs_available_width + buffer_per_tab then
+      if current_width + needed <= tabs_available_width then
         visible_indices[#visible_indices + 1] = i
         current_width = current_width + needed
       else
@@ -780,10 +780,8 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
         table.insert(visible_tabs, tabs[idx])
       end
 
-      -- Re-calculate widths for only visible tabs to fill available width + buffer
-      -- Allow up to 10px buffer per tab that can be used
-      local extended_width = tabs_available_width + (#visible_indices * buffer_per_tab)
-      local visible_widths, visible_min_widths = calculate_responsive_tab_widths(ctx, visible_tabs, config, extended_width, true)
+      -- Re-calculate widths for only visible tabs to fill the entire available width
+      local visible_widths, visible_min_widths = calculate_responsive_tab_widths(ctx, visible_tabs, config, tabs_available_width, true)
 
       -- Verify total and adjust last tab if needed to ensure exact fill
       local verify_total = 0
@@ -794,8 +792,8 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
         end
       end
 
-      -- Adjust for rounding error
-      local diff = extended_width - verify_total
+      -- If there's any rounding error, adjust the last visible tab
+      local diff = tabs_available_width - verify_total
       if diff ~= 0 and #visible_widths > 0 then
         visible_widths[#visible_widths] = visible_widths[#visible_widths] + diff
       end
@@ -807,10 +805,9 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
       end
       final_tab_widths = remapped_widths
 
-      tabs_width = extended_width  -- Width including buffer
+      tabs_width = tabs_available_width  -- Exact width
     elseif overflow_count == 0 and #visible_indices > 0 then
-      -- All tabs fit - ensure they fill the space including buffer
-      local extended_width = tabs_available_width + (#visible_indices * buffer_per_tab)
+      -- All tabs fit - ensure they fill the space
       local verify_total = 0
       for i, idx in ipairs(visible_indices) do
         verify_total = verify_total + final_tab_widths[idx]
@@ -819,21 +816,14 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
         end
       end
 
-      -- Distribute extra space including buffer across tabs
-      local extra = extended_width - verify_total
-      if extra > 0 and #visible_indices > 0 then
-        local per_tab = math.floor(extra / #visible_indices)
-        local remainder = extra - (per_tab * #visible_indices)
-
-        for i, idx in ipairs(visible_indices) do
-          final_tab_widths[idx] = final_tab_widths[idx] + per_tab
-          if i <= remainder then
-            final_tab_widths[idx] = final_tab_widths[idx] + 1
-          end
-        end
+      -- Adjust last tab if needed
+      local diff = tabs_available_width - verify_total
+      if diff ~= 0 and #visible_indices > 0 then
+        local last_idx = visible_indices[#visible_indices]
+        final_tab_widths[last_idx] = final_tab_widths[last_idx] + diff
       end
 
-      tabs_width = extended_width  -- Width including buffer
+      tabs_width = tabs_available_width  -- Exact width
     end
   else
     visible_indices, overflow_count, tabs_width = calculate_visible_tabs(
