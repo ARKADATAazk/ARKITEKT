@@ -165,10 +165,16 @@ function Grid:_is_mouse_in_bounds(ctx)
          my >= self.visual_bounds[2] and my < self.visual_bounds[4]
 end
 
-function Grid:_rect_intersects_bounds(rect)
+function Grid:_rect_intersects_bounds(rect, buffer)
   if not self.visual_bounds then return true end
   local gb = self.visual_bounds
-  return not (rect[3] < gb[1] or rect[1] > gb[3] or rect[4] < gb[2] or rect[2] > gb[4])
+  local buff = buffer or 0
+
+  -- Expand bounds by buffer for smoother scrolling (pre-render items about to be visible)
+  return not (rect[3] < (gb[1] - buff) or
+              rect[1] > (gb[3] + buff) or
+              rect[4] < (gb[2] - buff) or
+              rect[2] > (gb[4] + buff))
 end
 
 function Grid:_find_drop_target(ctx, mx, my, dragged_set, items)
@@ -524,17 +530,27 @@ function Grid:draw(ctx)
     ImGui.PushClipRect(ctx, self.visual_bounds[1], self.visual_bounds[2], self.visual_bounds[3], self.visual_bounds[4], true)
   end
 
+  -- Viewport culling with buffer zone (200px) for smoother scrolling
+  local VIEWPORT_BUFFER = 200
+
   for i, item in ipairs(items) do
     local key = self.key(item)
     local rect = self.rect_track:get(key)
-    
+
     if rect then
       rect = self.animator:apply_spawn_to_rect(key, rect)
-      
-      if not self:_rect_intersects_bounds(rect) then
+
+      -- Early viewport culling - skip ALL work for items outside visible area
+      -- Use buffer zone to pre-render items about to come into view
+      local is_visible = self:_rect_intersects_bounds(rect, VIEWPORT_BUFFER)
+
+      if not is_visible then
+        -- Skip rendering, input, and expensive operations for invisible items
+        -- But still track the rect for layout calculations
+        self.current_rects[key] = {rect[1], rect[2], rect[3], rect[4], item}
         goto continue
       end
-      
+
       self.current_rects[key] = {rect[1], rect[2], rect[3], rect[4], item}
 
       local state = {
@@ -550,7 +566,7 @@ function Grid:draw(ctx)
       state.hover = is_hovered
 
       self.render_tile(ctx, rect, item, state)
-      
+
       ::continue::
     end
   end
