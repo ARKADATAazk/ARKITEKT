@@ -80,7 +80,7 @@ M.TILE_RENDER = {
   -- Badge
   badge = {
     padding_x = 6,
-    padding_y = 3,
+    padding_y = 1,  -- Reduced by 2 per side (4 pixels total height reduction)
     margin = 6,
     rounding = 4,
     bg = hexrgb("#14181C"),

@@ -152,7 +152,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local search_x = math.floor(screen_w / 2 - (screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO) / 2 + 0.5)
   local search_y = math.floor(content_start_y + search_y_offset + 0.5)
   local search_width = screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO
-  local search_height = 24
+  local search_height = 28  -- Increased by 4 pixels
 
   if (not self.state.initialized and self.state.settings.focus_keyboard_on_init) or self.focus_search then
     -- Focus search by setting cursor position
