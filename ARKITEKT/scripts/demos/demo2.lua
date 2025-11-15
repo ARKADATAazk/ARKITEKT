@@ -45,8 +45,8 @@ addpath(join(HERE,  "ReArkitekt/?/?.lua"))
 
 -- Libs
 local Shell         = require("rearkitekt.app.shell")
-local ColorSliders  = require("rearkitekt.gui.widgets.sliders.hue")
-local TilesContainer = require("rearkitekt.gui.widgets.panel")
+local ColorSliders  = require("rearkitekt.gui.widgets.primitives.hue_slider")
+local TilesContainer = require("rearkitekt.gui.widgets.containers.panel")
 
 -- Fallback style
 local style_ok, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")

@@ -9,13 +9,13 @@ local ImGui = require 'imgui' '0.10'
 local Shell = require('rearkitekt.app.shell')
 
 -- Import base controls
-local Button = require('rearkitekt.gui.widgets.controls.button')
-local SearchInput = require('rearkitekt.gui.widgets.controls.search_input')
-local Dropdown = require('rearkitekt.gui.widgets.controls.dropdown')
+local Button = require('rearkitekt.gui.widgets.primitives.button')
+local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
+local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
 
 -- Import panel system
-local Panel = require('rearkitekt.gui.widgets.panel')
-local Config = require('rearkitekt.gui.widgets.panel.config')
+local Panel = require('rearkitekt.gui.widgets.containers.panel')
+local Config = require('rearkitekt.gui.widgets.containers.panel.config')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

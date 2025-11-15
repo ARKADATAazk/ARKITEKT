@@ -8,7 +8,7 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local TileFXConfig = require('rearkitekt.gui.fx.config.tile_fx_config')
 local TransportFX = require('Region_Playlist.ui.views.transport.transport_fx')
-local Chip = require('rearkitekt.gui.widgets.component.chip')
+local Chip = require('rearkitekt.gui.widgets.data.chip')
 local hexrgb = Colors.hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)

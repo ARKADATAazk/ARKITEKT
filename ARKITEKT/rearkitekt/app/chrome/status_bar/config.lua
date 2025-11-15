@@ -2,7 +2,7 @@
 -- ReArkitekt/app/chrome/status_bar/config.lua
 -- Default configuration for status bar appearance and behavior
 
-local Chip = require('rearkitekt.gui.widgets.component.chip')
+local Chip = require('rearkitekt.gui.widgets.data.chip')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

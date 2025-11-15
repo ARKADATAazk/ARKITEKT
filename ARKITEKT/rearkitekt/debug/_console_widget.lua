@@ -5,9 +5,9 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Logger = require('rearkitekt.debug.logger')
-local Panel = require('rearkitekt.gui.widgets.panel')
-local Config = require('rearkitekt.gui.widgets.panel.config')
-local ColoredTextView = require('rearkitekt.gui.widgets.colored_text_view')
+local Panel = require('rearkitekt.gui.widgets.containers.panel')
+local Config = require('rearkitekt.gui.widgets.containers.panel.config')
+local ColoredTextView = require('rearkitekt.gui.widgets.text.colored_text_view')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

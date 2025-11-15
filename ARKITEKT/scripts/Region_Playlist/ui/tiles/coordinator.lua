@@ -13,9 +13,9 @@ local HeightStabilizer = require('rearkitekt.gui.systems.height_stabilizer')
 local Selector = require('Region_Playlist.ui.tiles.selector')
 local ActiveGridFactory = require('Region_Playlist.ui.tiles.active_grid_factory')
 local PoolGridFactory = require('Region_Playlist.ui.tiles.pool_grid_factory')
-local GridBridge = require('rearkitekt.gui.widgets.grid.grid_bridge')
-local TilesContainer = require('rearkitekt.gui.widgets.panel')
-local PanelConfig = require('rearkitekt.gui.widgets.panel.config')
+local GridBridge = require('rearkitekt.gui.widgets.containers.grid.grid_bridge')
+local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
+local PanelConfig = require('rearkitekt.gui.widgets.containers.panel.config')
 local State = require("Region_Playlist.core.app_state")
 
 local M = {}

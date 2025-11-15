@@ -32,7 +32,7 @@ end
 
 local CloseButton = nil
 do
-  local ok, mod = pcall(require, 'rearkitekt.gui.widgets.close_button')
+  local ok, mod = pcall(require, 'rearkitekt.gui.widgets.primitives.close_button')
   if ok then CloseButton = mod end
 end
 
@@ -359,7 +359,7 @@ function M.new(opts)
   end
 
   do
-    local ok, OverlayManager = pcall(require, 'rearkitekt.gui.widgets.overlay.manager')
+    local ok, OverlayManager = pcall(require, 'rearkitekt.gui.widgets.overlays.overlay.manager')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

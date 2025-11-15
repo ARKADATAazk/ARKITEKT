@@ -6,7 +6,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Panel = require('rearkitekt.gui.widgets.panel.init')
+local Panel = require('rearkitekt.gui.widgets.containers.panel.init')
 local TransportFX = require('Region_Playlist.ui.views.transport.transport_fx')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb

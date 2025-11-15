@@ -2,7 +2,7 @@
 -- Region_Playlist/ui/tiles/pool_grid_factory.lua
 -- UNCHANGED
 
-local Grid = require('rearkitekt.gui.widgets.grid.core')
+local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
 local PoolTile = require('Region_Playlist.ui.tiles.renderers.pool')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb

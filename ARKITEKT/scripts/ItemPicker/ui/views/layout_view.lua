@@ -3,10 +3,10 @@
 -- Main layout view with absolute positioning and fade animations
 
 local ImGui = require 'imgui' '0.10'
-local SearchInput = require('rearkitekt.gui.widgets.controls.search_input')
-local Checkbox = require('rearkitekt.gui.widgets.controls.checkbox')
-local Dropdown = require('rearkitekt.gui.widgets.controls.dropdown')
-local DraggableSeparator = require('rearkitekt.gui.widgets.controls.draggable_separator')
+local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
+local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
+local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
+local DraggableSeparator = require('rearkitekt.gui.widgets.primitives.separator')
 local StatusBar = require('ItemPicker.ui.views.status_bar')
 
 -- Debug module - with error handling

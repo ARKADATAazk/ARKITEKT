@@ -15,7 +15,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 local Shell = require('rearkitekt.app.shell')
 local Arkit = require('rearkitekt.arkit')
-local Panel = require('rearkitekt.gui.widgets.panel')
+local Panel = require('rearkitekt.gui.widgets.containers.panel')
 
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb

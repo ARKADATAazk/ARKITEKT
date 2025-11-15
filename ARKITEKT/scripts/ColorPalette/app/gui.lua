@@ -9,7 +9,7 @@ local Colors = require('rearkitekt.core.colors')
 local Draw = require('rearkitekt.gui.draw')
 local ColorGrid = require('ColorPalette.widgets.color_grid')
 local Controller = require('ColorPalette.app.controller')
-local Sheet = require('rearkitekt.gui.widgets.overlay.sheet')
+local Sheet = require('rearkitekt.gui.widgets.overlays.overlay.sheet')
 
 local M = {}
 

@@ -17,12 +17,12 @@ local Shell = require('rearkitekt.app.shell')
 local Arkit = require('rearkitekt.arkit')
 
 -- Import refactored base controls
-local Button = require('rearkitekt.gui.widgets.controls.button')
-local SearchInput = require('rearkitekt.gui.widgets.controls.search_input')
-local Dropdown = require('rearkitekt.gui.widgets.controls.dropdown')
+local Button = require('rearkitekt.gui.widgets.primitives.button')
+local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
+local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
 
 -- Import panel system
-local Panel = require('rearkitekt.gui.widgets.panel')
+local Panel = require('rearkitekt.gui.widgets.containers.panel')
 
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb

@@ -3,7 +3,7 @@
 -- Factory for creating MIDI items grid
 
 local ImGui = require 'imgui' '0.10'
-local Grid = require('rearkitekt.gui.widgets.grid.core')
+local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
 local MidiRenderer = require('ItemPicker.ui.tiles.renderers.midi')
 
 local M = {}

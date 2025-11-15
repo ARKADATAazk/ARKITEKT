@@ -5,8 +5,8 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Sheet = require('rearkitekt.gui.widgets.overlay.sheet')
-local ChipList = require('rearkitekt.gui.widgets.chip_list.list')
+local Sheet = require('rearkitekt.gui.widgets.overlays.overlay.sheet')
+local ChipList = require('rearkitekt.gui.widgets.data.chip_list')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

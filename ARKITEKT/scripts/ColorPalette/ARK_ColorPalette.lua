@@ -58,7 +58,7 @@ addpath(join(HERE,"?/init.lua"))
 local Shell = require("rearkitekt.app.shell")
 local State = require("ColorPalette.app.state")
 local GUI = require("ColorPalette.app.gui")
-local OverlayManager = require("rearkitekt.gui.widgets.overlay.manager")
+local OverlayManager = require("rearkitekt.gui.widgets.overlays.overlay.manager")
 
 -- Load optional style
 local style_ok, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")

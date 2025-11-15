@@ -15,10 +15,10 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local Shell = require('rearkitekt.app.shell')
 local Arkit = require('rearkitekt.arkit')
 
-local Canvas = require('rearkitekt.gui.widgets.nodal.canvas')
-local Node = require('rearkitekt.gui.widgets.nodal.core.node')
-local Connection = require('rearkitekt.gui.widgets.nodal.core.connection')
-local Config = require('rearkitekt.gui.widgets.nodal.config')
+local Canvas = require('rearkitekt.gui.widgets.editors.nodal.canvas')
+local Node = require('rearkitekt.gui.widgets.editors.nodal.core.node')
+local Connection = require('rearkitekt.gui.widgets.editors.nodal.core.connection')
+local Config = require('rearkitekt.gui.widgets.editors.nodal.config')
 
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
