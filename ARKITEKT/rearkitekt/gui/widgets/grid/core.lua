@@ -154,10 +154,6 @@ function M.new(opts)
     visual_bounds = nil,
     panel_clip_bounds = nil,
 
-    -- Track dimensions for resize detection
-    last_avail_w = nil,
-    last_avail_h = nil,
-
     -- Cache string IDs for performance (avoid string concatenation every frame)
     _cached_bg_id = "##grid_bg_" .. grid_id,
     _cached_empty_id = "##grid_empty_" .. grid_id,
@@ -391,90 +387,15 @@ function Grid:draw(ctx)
   self.current_rects = {}
 
   local min_col_w = self.min_col_w_fn()
-
-  -- PERFORMANCE: Detect resize to teleport items instead of animating
-  -- When resizing with 1000 items scrolled far down, animating all items causes massive lag
-  -- Teleporting is instant and keeps items settled
-  local resize_threshold = 5  -- pixels - ignore tiny fluctuations
-  local did_resize = false
-  local anchor_item_idx = nil
-  local anchor_item_y_offset = nil  -- Offset from viewport top
-
-  if self.last_avail_w and self.last_avail_h then
-    local w_diff = math.abs(avail_w - self.last_avail_w)
-    local h_diff = math.abs(avail_h - self.last_avail_h)
-    did_resize = (w_diff > resize_threshold or h_diff > resize_threshold)
-
-    -- CRITICAL: Find anchor item to maintain scroll position during resize
-    -- This prevents "lost in space" feeling when resizing while scrolled down
-    if did_resize and num_items > 0 then
-      local scroll_y = ImGui.GetScrollY(ctx)
-      local mx, my = ImGui.GetMousePos(ctx)
-      local window_x, window_y = ImGui.GetWindowPos(ctx)
-
-      -- Use mouse Y position if mouse is over window, otherwise use viewport center
-      local anchor_y = my
-      local mouse_in_window = (mx >= window_x and mx < window_x + avail_w and
-                               my >= window_y and my < window_y + avail_h)
-
-      if not mouse_in_window then
-        anchor_y = window_y + avail_h / 2
-      end
-
-      -- Find item closest to anchor point using current positions
-      local min_dist = math.huge
-      for i, item in ipairs(items) do
-        local key = self.key(item)
-        local current_rect = self.rect_track:get(key)
-        if current_rect then
-          local item_center_y = (current_rect[2] + current_rect[4]) / 2
-          local dist = math.abs(item_center_y - anchor_y)
-          if dist < min_dist then
-            min_dist = dist
-            anchor_item_idx = i
-            anchor_item_y_offset = current_rect[2] - (window_y + scroll_y)
-          end
-        end
-      end
-    end
-  end
-
-  self.last_avail_w = avail_w
-  self.last_avail_h = avail_h
-
   local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, num_items, origin_x, origin_y, self.fixed_tile_h)
 
   self.last_layout_cols = cols
 
   local current_keys = {}
-  if did_resize then
-    -- Teleport all items to new positions (no animation, keeps settled state)
-    for i, item in ipairs(items) do
-      local key = self.key(item)
-      current_keys[key] = true
-      self.rect_track:teleport(key, rects[i])
-    end
-
-    -- Adjust scroll to keep anchor item in same relative position
-    if anchor_item_idx and rects[anchor_item_idx] then
-      local window_x, window_y = ImGui.GetWindowPos(ctx)
-      local new_item_y = rects[anchor_item_idx][2]
-      local desired_scroll_y = new_item_y - window_y - anchor_item_y_offset
-
-      -- Clamp to valid scroll range
-      local max_scroll = ImGui.GetScrollMaxY(ctx)
-      if max_scroll > 0 then
-        desired_scroll_y = math.max(0, math.min(desired_scroll_y, max_scroll))
-        ImGui.SetScrollY(ctx, desired_scroll_y)
-      end
-    end
-  else
-    -- Normal operation: animate to new positions
-    for i, item in ipairs(items) do
-      local key = self.key(item)
-      current_keys[key] = true
-      self.rect_track:to(key, rects[i])
-    end
+  for i, item in ipairs(items) do
+    local key = self.key(item)
+    current_keys[key] = true
+    self.rect_track:to(key, rects[i])
   end
 
   local new_keys = {}
