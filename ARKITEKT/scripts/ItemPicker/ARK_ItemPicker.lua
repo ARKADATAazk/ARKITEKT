@@ -35,7 +35,7 @@ end
 -- Load required modules
 local ImGui = require 'imgui' '0.10'
 local Runtime = require('rearkitekt.app.runtime')
-local Overlay = require('rearkitekt.app.overlay')
+local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
 
 -- Load new refactored modules
 local Config = require('ItemPicker.core.config')
@@ -121,24 +121,36 @@ if USE_OVERLAY then
   local ctx = ImGui.CreateContext("Item Picker")
   local fonts = load_fonts(ctx)
 
-  -- Create overlay
-  local overlay = Overlay.new({
-    enabled = true,
+  -- Create overlay manager
+  local overlay_mgr = OverlayManager.new()
+
+  -- Push overlay onto stack
+  overlay_mgr:push({
+    id = "item_picker_main",
     use_viewport = true,
     fade_duration = 0.3,
-    scrim_enabled = true,
+    fade_curve = OverlayManager.CURVE_SMOOTHERSTEP,
     show_close_button = true,
     close_on_background_click = false,
     close_on_background_right_click = true,
-    close_on_escape = false,  -- We'll handle ESC in the GUI
+    close_on_scrim = false,
+    esc_to_close = false,  -- We'll handle ESC in the GUI
     close_button_size = 32,
     close_button_margin = 16,
     close_button_proximity = 150,
     content_padding = 20,
 
-    draw = function(ctx, overlay_state)
+    render = function(ctx, alpha_val, bounds)
       -- Push font for content with size
       ImGui.PushFont(ctx, fonts.default, fonts.default_size)
+
+      local overlay_state = {
+        x = bounds.x + 20,
+        y = bounds.y + 20,
+        width = bounds.w - 40,
+        height = bounds.h - 40,
+        alpha = alpha_val,
+      }
 
       -- Check if we're dragging - if so, skip the child window entirely
       if not State.dragging then
@@ -155,11 +167,10 @@ if USE_OVERLAY then
 
           -- Let the GUI handle its own drawing
           if gui and gui.draw then
-            -- Pass a state that includes both fonts and overlay reference
             gui:draw(ctx, {
               fonts = fonts,
               overlay_state = overlay_state,
-              overlay = overlay_state.overlay,  -- Pass the overlay reference
+              overlay = overlay_mgr,  -- Pass the manager reference
               is_overlay_mode = true,
             })
           end
@@ -173,7 +184,7 @@ if USE_OVERLAY then
           gui:draw(ctx, {
             fonts = fonts,
             overlay_state = overlay_state,
-            overlay = overlay_state.overlay,
+            overlay = overlay_mgr,
             is_overlay_mode = true,
           })
         end
@@ -187,9 +198,6 @@ if USE_OVERLAY then
     end,
   })
 
-  -- Open overlay immediately
-  overlay:open()
-
   -- Create runtime
   local runtime = Runtime.new({
     title = "Item Picker",
@@ -201,16 +209,16 @@ if USE_OVERLAY then
         ImGui.PushFont(ctx, fonts.default, fonts.default_size)
         gui:draw(ctx, {
           fonts = fonts,
-          overlay_state = overlay.state or {},
-          overlay = overlay,
+          overlay_state = {},
+          overlay = overlay_mgr,
           is_overlay_mode = true,
         })
         ImGui.PopFont(ctx)
         return true  -- Keep running
       else
-        -- Normal mode: let overlay handle everything
-        local keep_open = overlay:render(ctx)
-        return keep_open
+        -- Normal mode: let overlay manager handle everything
+        overlay_mgr:render(ctx)
+        return overlay_mgr:is_active()
       end
     end,
 
