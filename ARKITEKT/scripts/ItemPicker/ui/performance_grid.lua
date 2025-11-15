@@ -240,12 +240,35 @@ function Grid:draw(ctx)
   local min_col_w = self.min_col_w_fn()
   local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, num_items, origin_x, origin_y, self.fixed_tile_h)
 
-  -- DEBUG: Detect layout change
+  -- Detect layout change and find anchor item
   local layout_changed = (self.last_layout_cols ~= cols)
-  local scroll_before = nil
-  if layout_changed then
-    scroll_before = ImGui.GetScrollY(ctx)
-    reaper.ShowConsoleMsg(string.format("[LAYOUT] cols: %d->%d, scroll_before=%.1f\n", self.last_layout_cols, cols, scroll_before))
+  local anchor_item_idx = nil
+  local anchor_offset_from_scroll = 0
+
+  if layout_changed and num_items > 0 then
+    local scroll_y = ImGui.GetScrollY(ctx)
+    reaper.ShowConsoleMsg(string.format("[LAYOUT] cols: %d->%d, scroll=%.1f\n", self.last_layout_cols, cols, scroll_y))
+
+    -- Find item closest to current scroll position (in content space)
+    local min_dist = math.huge
+    for i, item in ipairs(items) do
+      local key = self.key(item)
+      local rect = self.rect_track:get(key)
+      if rect then
+        -- Convert screen space to content space
+        local item_content_y = rect[2] - origin_y + scroll_y
+        local dist = math.abs(item_content_y - scroll_y)
+        if dist < min_dist then
+          min_dist = dist
+          anchor_item_idx = i
+          anchor_offset_from_scroll = item_content_y - scroll_y
+        end
+      end
+    end
+
+    if anchor_item_idx then
+      reaper.ShowConsoleMsg(string.format("[ANCHOR] Found item #%d, offset=%.1f\n", anchor_item_idx, anchor_offset_from_scroll))
+    end
   end
 
   self.last_layout_cols = cols
@@ -313,12 +336,27 @@ function Grid:draw(ctx)
   ImGui.InvisibleButton(ctx, self._cached_bg_id, extended_w, extended_h)
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
-  -- DEBUG: Check if ImGui adjusted scroll after InvisibleButton
-  if layout_changed and scroll_before then
-    local scroll_after = ImGui.GetScrollY(ctx)
-    local max_scroll = ImGui.GetScrollMaxY(ctx)
-    reaper.ShowConsoleMsg(string.format("[LAYOUT] scroll_after=%.1f, max=%.1f, delta=%.1f\n",
-      scroll_after, max_scroll, scroll_after - scroll_before))
+  -- Adjust scroll to keep anchor item in same position
+  if layout_changed and anchor_item_idx and anchor_item_idx <= num_items then
+    local key = self.key(items[anchor_item_idx])
+    local new_rect = self.rect_track:get(key)
+
+    if new_rect then
+      -- Convert new position to content space
+      local new_item_content_y = new_rect[2] - origin_y + ImGui.GetScrollY(ctx)
+      -- We want item to be at same offset from scroll position
+      local desired_scroll_y = new_item_content_y - anchor_offset_from_scroll
+
+      -- Clamp to valid range
+      local max_scroll = ImGui.GetScrollMaxY(ctx)
+      desired_scroll_y = math.max(0, math.min(desired_scroll_y, max_scroll))
+
+      local old_scroll = ImGui.GetScrollY(ctx)
+      ImGui.SetScrollY(ctx, desired_scroll_y)
+
+      reaper.ShowConsoleMsg(string.format("[SCROLL] Adjusted: %.1f -> %.1f (max=%.1f)\n",
+        old_scroll, desired_scroll_y, max_scroll))
+    end
   end
 
   local bg_clicked = ImGui.IsItemClicked(ctx, 0)
