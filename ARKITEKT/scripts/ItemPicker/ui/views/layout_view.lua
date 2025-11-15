@@ -111,7 +111,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   if clicked then
     reaper.ShowConsoleMsg("[CHECKBOX] CLICKED play_item_through_track! (toggling)\n")
     if Debug then Debug.log("CHECKBOX", "play_item_through_track TOGGLED") end
-    self.state:set_setting('play_item_through_track', not self.state.settings.play_item_through_track)
+    self.state.set_setting('play_item_through_track', not self.state.settings.play_item_through_track)
   end
 
   checkbox_y = checkbox_y + 24
@@ -119,7 +119,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     "Show Muted Tracks",
     self.state.settings.show_muted_tracks, checkbox_config, "show_muted_tracks")
   if clicked then
-    self.state:set_setting('show_muted_tracks', not self.state.settings.show_muted_tracks)
+    self.state.set_setting('show_muted_tracks', not self.state.settings.show_muted_tracks)
   end
 
   checkbox_y = checkbox_y + 24
@@ -127,7 +127,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     "Show Muted Items",
     self.state.settings.show_muted_items, checkbox_config, "show_muted_items")
   if clicked then
-    self.state:set_setting('show_muted_items', not self.state.settings.show_muted_items)
+    self.state.set_setting('show_muted_items', not self.state.settings.show_muted_items)
   end
 
   -- Show Disabled Items on same line (after Show Muted Items)
@@ -137,7 +137,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     "Show Disabled Items",
     self.state.settings.show_disabled_items, checkbox_config, "show_disabled_items")
   if clicked then
-    self.state:set_setting('show_disabled_items', not self.state.settings.show_disabled_items)
+    self.state.set_setting('show_disabled_items', not self.state.settings.show_disabled_items)
   end
 
   -- Search fade with different offset
