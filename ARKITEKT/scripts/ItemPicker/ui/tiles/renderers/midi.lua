@@ -129,8 +129,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local midi_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
     dark_color = Colors.with_alpha(dark_color, math.floor(midi_alpha * 255))
 
-    -- Try memory + disk cache first (instant load from disk if available)
-    local thumbnail = cache_mgr and cache_mgr.get_midi_thumbnail_cached(state.cache, item_data.item, content_w, content_h)
+    local thumbnail = cache_mgr and cache_mgr.get_midi_thumbnail(state.cache, item_data.item, content_w, content_h)
     if thumbnail then
       if visualization.DisplayMidiItemTransparent then
         ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)

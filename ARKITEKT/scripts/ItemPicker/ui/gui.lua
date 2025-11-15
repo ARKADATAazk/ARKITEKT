@@ -111,12 +111,6 @@ function GUI:draw(ctx, shell_state)
     )
   end
 
-  -- Process disk writes every 3rd frame to further reduce I/O blocking
-  self.state.disk_write_frame = (self.state.disk_write_frame or 0) + 1
-  if self.state.disk_write_frame % 3 == 0 then
-    self.cache_mgr.process_disk_writes()
-  end
-
   -- Update animations
   self.coordinator:update_animations(0.016)
 
