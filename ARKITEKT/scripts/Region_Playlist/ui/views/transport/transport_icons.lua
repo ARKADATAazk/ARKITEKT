@@ -207,30 +207,38 @@ function M.draw_tool(dl, x, y, width, height, color)
   local cx = floor(x + width / 2 + 0.5)
   local cy = floor(y + height / 2 + 0.5)
 
-  -- Simple wrench icon
-  local handle_w = 2
-  local handle_h = 10
-  local head_w = 5
-  local head_h = 4
-  local gap = 1
+  -- Mixer icon: 3 vertical sliders with knobs at different positions
+  local slider_w = 2
+  local slider_h = 14
+  local knob_w = 4
+  local knob_h = 3
+  local spacing = 3
 
-  -- Draw handle (vertical rectangle)
-  local handle_x = floor(cx - handle_w / 2 + 0.5)
-  local handle_y = floor(cy - 2 + 0.5)
-  ImGui.DrawList_AddRectFilled(dl, handle_x, handle_y, handle_x + handle_w, handle_y + handle_h, color, 0)
+  -- Calculate starting x to center all 3 sliders
+  local total_width = slider_w * 3 + spacing * 2
+  local start_x = floor(cx - total_width / 2 + 0.5)
+  local start_y = floor(cy - slider_h / 2 + 0.5)
 
-  -- Draw wrench head (top part with gap)
-  local head_x = floor(cx - head_w / 2 + 0.5)
-  local head_y = floor(cy - head_h - 2 + 0.5)
+  -- Slider 1 (left) - knob at top
+  local s1_x = start_x
+  ImGui.DrawList_AddRectFilled(dl, s1_x, start_y, s1_x + slider_w, start_y + slider_h, color, 0)
+  local k1_x = floor(s1_x - (knob_w - slider_w) / 2 + 0.5)
+  local k1_y = start_y
+  ImGui.DrawList_AddRectFilled(dl, k1_x, k1_y, k1_x + knob_w, k1_y + knob_h, color, 1)
 
-  -- Left side of head
-  ImGui.DrawList_AddRectFilled(dl, head_x, head_y, head_x + 2, head_y + head_h, color, 0)
+  -- Slider 2 (middle) - knob at middle
+  local s2_x = start_x + slider_w + spacing
+  ImGui.DrawList_AddRectFilled(dl, s2_x, start_y, s2_x + slider_w, start_y + slider_h, color, 0)
+  local k2_x = floor(s2_x - (knob_w - slider_w) / 2 + 0.5)
+  local k2_y = floor(start_y + slider_h / 2 - knob_h / 2 + 0.5)
+  ImGui.DrawList_AddRectFilled(dl, k2_x, k2_y, k2_x + knob_w, k2_y + knob_h, color, 1)
 
-  -- Right side of head
-  ImGui.DrawList_AddRectFilled(dl, head_x + head_w - 2, head_y, head_x + head_w, head_y + head_h, color, 0)
-
-  -- Top of head
-  ImGui.DrawList_AddRectFilled(dl, head_x, head_y, head_x + head_w, head_y + 1, color, 0)
+  -- Slider 3 (right) - knob at bottom
+  local s3_x = start_x + (slider_w + spacing) * 2
+  ImGui.DrawList_AddRectFilled(dl, s3_x, start_y, s3_x + slider_w, start_y + slider_h, color, 0)
+  local k3_x = floor(s3_x - (knob_w - slider_w) / 2 + 0.5)
+  local k3_y = start_y + slider_h - knob_h
+  ImGui.DrawList_AddRectFilled(dl, k3_x, k3_y, k3_x + knob_w, k3_y + knob_h, color, 1)
 end
 
 return M
