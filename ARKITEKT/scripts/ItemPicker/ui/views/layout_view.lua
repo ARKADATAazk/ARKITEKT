@@ -6,6 +6,7 @@ local ImGui = require 'imgui' '0.10'
 local SearchInput = require('rearkitekt.gui.widgets.controls.search_input')
 local Checkbox = require('rearkitekt.gui.widgets.controls.checkbox')
 local StatusBar = require('ItemPicker.ui.views.status_bar')
+local Debug = require('ItemPicker.debug_log')
 
 local M = {}
 local LayoutView = {}
@@ -51,6 +52,10 @@ end
 function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, screen_h)
   self:handle_shortcuts(ctx)
 
+  -- Set window position and size BEFORE Begin (critical!)
+  ImGui.SetNextWindowPos(ctx, 0, 0)
+  ImGui.SetNextWindowSize(ctx, screen_w, screen_h)
+
   -- Create fullscreen window wrapper (matching old MainWindow)
   local window_flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoTitleBar |
                        ImGui.WindowFlags_NoResize | ImGui.WindowFlags_NoMove |
@@ -78,10 +83,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local checkbox_y = 14 + ui_y_offset
   local checkbox_config = { alpha = ui_fade }
 
-  local _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
+  local total_width, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
     "Play Item Through Track (will add delay to preview playback)",
     self.state.settings.play_item_through_track, checkbox_config, "play_item_through_track")
+  Debug.log_checkbox("play_item_through_track", clicked, self.state.settings.play_item_through_track, total_width)
   if clicked then
+    Debug.log("CHECKBOX", "play_item_through_track TOGGLED")
     self.state:set_setting('play_item_through_track', not self.state.settings.play_item_through_track)
   end
 
