@@ -80,37 +80,37 @@ local function load_fonts(ctx, font_cfg)
   local I = fontsdir .. font_cfg.family_icons
 
   local function exists(p) local f = io.open(p, 'rb'); if f then f:close(); return true end end
-  -- v0.10 API: CreateFont/CreateFontFromFile still need size parameter
-  -- Size can also be specified/overridden in PushFont
-  local default_font   = exists(R) and ImGui.CreateFontFromFile(R, font_cfg.default)
-                                or ImGui.CreateFont('sans-serif', font_cfg.default)
-  local title_font     = exists(B) and ImGui.CreateFontFromFile(B, font_cfg.title)
+  -- v0.10 API: CreateFont/CreateFontFromFile do NOT take size parameter
+  -- Size is specified in PushFont(ctx, font, size) instead
+  local default_font   = exists(R) and ImGui.CreateFontFromFile(R)
+                                or ImGui.CreateFont('sans-serif')
+  local title_font     = exists(B) and ImGui.CreateFontFromFile(B)
                                 or default_font
-  local version_font   = exists(R) and ImGui.CreateFontFromFile(R, font_cfg.version)
+  local version_font   = exists(R) and ImGui.CreateFontFromFile(R)
                                 or default_font
-  local monospace_font = exists(M) and ImGui.CreateFontFromFile(M, font_cfg.monospace)
+  local monospace_font = exists(M) and ImGui.CreateFontFromFile(M)
                                 or default_font
 
   local time_display_font = nil
   if font_cfg.time_display then
-    time_display_font = exists(B) and ImGui.CreateFontFromFile(B, font_cfg.time_display)
-                                   or ImGui.CreateFont('sans-serif', font_cfg.time_display)
+    time_display_font = exists(B) and ImGui.CreateFontFromFile(B)
+                                   or ImGui.CreateFont('sans-serif')
   end
 
   local titlebar_version_font = nil
   local titlebar_version_size = font_cfg.titlebar_version or font_cfg.version
   if font_cfg.titlebar_version then
-    titlebar_version_font = exists(R) and ImGui.CreateFontFromFile(R, titlebar_version_size)
+    titlebar_version_font = exists(R) and ImGui.CreateFontFromFile(R)
                                        or version_font
   end
 
   local icons_font = nil
   if font_cfg.icons then
     if exists(I) then
-      -- Load icon font with its configured size
-      icons_font = ImGui.CreateFontFromFile(I, font_cfg.icons)
+      -- Load icon font without size (size specified in PushFont)
+      icons_font = ImGui.CreateFontFromFile(I)
       if icons_font then
-        reaper.ShowConsoleMsg(string.format("[Shell] Icon font loaded: %s (size: %d, obj: %s)\n", I, font_cfg.icons, tostring(icons_font)))
+        reaper.ShowConsoleMsg(string.format("[Shell] Icon font loaded: %s (obj: %s)\n", I, tostring(icons_font)))
       else
         reaper.ShowConsoleMsg(string.format("[Shell] ERROR: Icon font failed to load: %s\n", I))
         icons_font = default_font
@@ -121,8 +121,8 @@ local function load_fonts(ctx, font_cfg)
     end
   end
 
-  -- Note: In ReaImGui v0.10, fonts still need size at creation
-  -- Fonts don't need to be Attached before use
+  -- Note: In ReaImGui v0.10, size is NOT passed to CreateFont
+  -- Size is passed to PushFont(ctx, font, size) when using the font
 
   return {
     default = default_font,
