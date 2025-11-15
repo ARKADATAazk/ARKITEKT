@@ -7,7 +7,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local Colors = require('rearkitekt.core.colors')
-local TileFXConfig = require('rearkitekt.gui.fx.config.tile_fx_config')
+local TileFXConfig = require('rearkitekt.gui.rendering.tile.defaults')
 local hexrgb = Colors.hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)

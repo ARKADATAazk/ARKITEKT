@@ -5,7 +5,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local PanelConfig = require('rearkitekt.gui.widgets.containers.panel.config')
+local PanelConfig = require('rearkitekt.gui.widgets.containers.panel.defaults')
 local ConfigUtil = require('rearkitekt.core.config')
 
 local M = {}

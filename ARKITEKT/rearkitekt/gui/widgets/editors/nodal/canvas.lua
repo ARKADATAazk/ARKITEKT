@@ -5,7 +5,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Config = require('rearkitekt.gui.widgets.editors.nodal.config')
+local Config = require('rearkitekt.gui.widgets.editors.nodal.defaults')
 local Node = require('rearkitekt.gui.widgets.editors.nodal.core.node')
 local NodeRenderer = require('rearkitekt.gui.widgets.editors.nodal.rendering.node_renderer')
 local Connection = require('rearkitekt.gui.widgets.editors.nodal.core.connection')

@@ -7,7 +7,7 @@ local ImGui = require 'imgui' '0.10'
 
 local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
 local Colors = require('rearkitekt.core.colors')
-local TileAnim = require('rearkitekt.gui.fx.rendering.tile_motion')
+local TileAnim = require('rearkitekt.gui.rendering.tile.animator')
 local Renderer = require('rearkitekt.gui.widgets.media.package_tiles.renderer')
 local Micromanage = require('rearkitekt.gui.widgets.media.package_tiles.micromanage')
 local HeightStabilizer = require('rearkitekt.gui.systems.height_stabilizer')

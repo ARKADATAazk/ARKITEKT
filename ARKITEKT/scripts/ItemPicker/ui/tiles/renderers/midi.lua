@@ -4,7 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
-local TileFX = require('rearkitekt.gui.fx.rendering.tile_fx')
+local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.tiles.renderers.base')
 

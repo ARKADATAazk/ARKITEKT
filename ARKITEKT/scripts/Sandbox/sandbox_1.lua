@@ -18,7 +18,7 @@ local Arkit = require('rearkitekt.arkit')
 local Canvas = require('rearkitekt.gui.widgets.editors.nodal.canvas')
 local Node = require('rearkitekt.gui.widgets.editors.nodal.core.node')
 local Connection = require('rearkitekt.gui.widgets.editors.nodal.core.connection')
-local Config = require('rearkitekt.gui.widgets.editors.nodal.config')
+local Config = require('rearkitekt.gui.widgets.editors.nodal.defaults')
 
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb

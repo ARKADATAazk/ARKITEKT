@@ -15,7 +15,7 @@ local M = {}
 
 local DEFAULTS = {}
 do
-  local ok, Config = pcall(require, 'rearkitekt.app.config')
+  local ok, Config = pcall(require, 'rearkitekt.app.app_defaults')
   if ok and Config and Config.get_defaults then
     DEFAULTS = Config.get_defaults()
   else

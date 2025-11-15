@@ -13,7 +13,7 @@ local TabAnimator = require('rearkitekt.gui.widgets.containers.panel.tab_animato
 local Scrollbar = require('rearkitekt.gui.widgets.primitives.scrollbar')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local CornerButton = require('rearkitekt.gui.widgets.primitives.corner_button')
-local PanelConfig = require('rearkitekt.gui.widgets.containers.panel.config')
+local PanelConfig = require('rearkitekt.gui.widgets.containers.panel.defaults')
 local ConfigUtil = require('rearkitekt.core.config')
 
 local M = {}

@@ -15,7 +15,7 @@ local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
 
 -- Import panel system
 local Panel = require('rearkitekt.gui.widgets.containers.panel')
-local Config = require('rearkitekt.gui.widgets.containers.panel.config')
+local Config = require('rearkitekt.gui.widgets.containers.panel.defaults')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

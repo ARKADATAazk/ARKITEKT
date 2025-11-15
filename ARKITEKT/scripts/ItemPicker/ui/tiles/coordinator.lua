@@ -3,7 +3,7 @@
 -- Coordinator for managing audio and MIDI grids
 
 local ImGui = require 'imgui' '0.10'
-local TileAnim = require('rearkitekt.gui.fx.rendering.tile_motion')
+local TileAnim = require('rearkitekt.gui.rendering.tile.animator')
 local AudioGridFactory = require('ItemPicker.ui.tiles.factories.audio_grid_factory')
 local MidiGridFactory = require('ItemPicker.ui.tiles.factories.midi_grid_factory')
 
