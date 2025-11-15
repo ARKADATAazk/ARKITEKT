@@ -218,6 +218,10 @@ function M.create(opts)
     on_overflow_clicked = function()
       rt.active_container._overflow_visible = true
     end,
+
+    on_actions_button_click = function()
+      rt._actions_menu_visible = true
+    end,
   })
   
   rt.active_container = TilesContainer.new({

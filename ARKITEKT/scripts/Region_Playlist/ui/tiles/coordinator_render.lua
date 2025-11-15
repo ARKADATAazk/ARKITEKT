@@ -10,6 +10,8 @@ local ActiveTile = require('Region_Playlist.ui.tiles.renderers.active')
 local PoolTile = require('Region_Playlist.ui.tiles.renderers.pool')
 local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')
 local State = require('Region_Playlist.core.app_state')
+local ContextMenu = require('rearkitekt.gui.widgets.controls.context_menu')
+local SWSImporter = require('Region_Playlist.storage.sws_importer')
 
 local M = {}
 
@@ -89,6 +91,85 @@ function M.draw_active(self, ctx, playlist, height)
   self.active_grid:draw(ctx)
   
   self.active_container:end_draw(ctx)
+
+  -- Actions context menu
+  if self._actions_menu_visible then
+    ImGui.OpenPopup(ctx, "ActionsMenu")
+    self._actions_menu_visible = false
+  end
+
+  if ContextMenu.begin(ctx, "ActionsMenu") then
+    if ContextMenu.item(ctx, "Import from SWS Region Playlist") then
+      -- Trigger import
+      self._sws_import_requested = true
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    ContextMenu.end_menu(ctx)
+  end
+
+  -- SWS Import execution and result modal
+  if self._sws_import_requested then
+    self._sws_import_requested = false
+
+    -- Check if SWS playlists exist
+    local has_sws = SWSImporter.has_sws_playlists()
+
+    if not has_sws then
+      self._sws_import_result = {
+        success = false,
+        message = "No SWS Region Playlists found in the current project.\n\nMake sure the project is saved and contains SWS Region Playlists."
+      }
+      self._sws_show_result = true
+    else
+      -- Execute import (replace mode, with backup)
+      local success, report, err = SWSImporter.execute_import(false, true)
+
+      if success and report then
+        local formatted = SWSImporter.format_report(report)
+        self._sws_import_result = {
+          success = true,
+          message = "Import successful!\n\n" .. formatted
+        }
+      else
+        self._sws_import_result = {
+          success = false,
+          message = "Import failed: " .. tostring(err or "Unknown error")
+        }
+      end
+
+      self._sws_show_result = true
+
+      -- Refresh UI state
+      if success then
+        State.reload_project_data()
+        if self.controller then
+          self.controller:refresh_state()
+        end
+        -- Update tabs in the active container
+        self.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+      end
+    end
+  end
+
+  -- Show import result modal
+  if self._sws_show_result then
+    ImGui.OpenPopup(ctx, "SWS Import Result")
+    self._sws_show_result = false
+  end
+
+  if ImGui.BeginPopupModal(ctx, "SWS Import Result", nil, ImGui.WindowFlags_AlwaysAutoResize) then
+    if self._sws_import_result then
+      ImGui.TextWrapped(ctx, self._sws_import_result.message)
+      ImGui.Spacing(ctx)
+
+      if ImGui.Button(ctx, "OK", 120, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+        self._sws_import_result = nil
+        ImGui.CloseCurrentPopup(ctx)
+      end
+    end
+    ImGui.EndPopup(ctx)
+  end
 
   -- Rename playlist modal
   if self._rename_input_visible then

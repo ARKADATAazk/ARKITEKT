@@ -186,10 +186,8 @@ function M.get_active_container_config(callbacks)
       margin = 8,
       bottom_left = {
         icon = utf8.char(0xED3C),  -- remixicon flashlight-fill
-        tooltip = "Actions (coming soon)",
-        on_click = function()
-          reaper.ShowConsoleMsg("Active Grid Actions button clicked (coming soon)\n")
-        end,
+        tooltip = "Actions",
+        on_click = callbacks.on_actions_button_click,
         -- Simple black transparent overlay
         bg_color = hexrgb("#00000050"),           -- Black fill, 31% opacity
         bg_hover_color = hexrgb("#00000070"),     -- Black fill, 44% opacity on hover
