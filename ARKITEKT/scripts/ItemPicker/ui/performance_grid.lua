@@ -310,15 +310,6 @@ function Grid:draw(ctx)
 
   self.animator:update(0.016)
 
-  -- PERFORMANCE: Restore scroll percentage after resize
-  if did_resize then
-    local max_scroll = ImGui.GetScrollMaxY(ctx)
-    if max_scroll > 0 then
-      local new_scroll_y = scroll_percent * max_scroll
-      ImGui.SetScrollY(ctx, new_scroll_y)
-    end
-  end
-
   local tile_h = rects[1] and (rects[1][4] - rects[1][2]) or 100
   local grid_height = rows * (tile_h + self.gap) + self.gap
 
@@ -344,6 +335,16 @@ function Grid:draw(ctx)
   ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
   ImGui.InvisibleButton(ctx, self._cached_bg_id, extended_w, extended_h)
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
+
+  -- PERFORMANCE: Restore scroll percentage after resize
+  -- CRITICAL: Must be AFTER InvisibleButton so ImGui knows the new scroll region size
+  if did_resize then
+    local max_scroll = ImGui.GetScrollMaxY(ctx)
+    if max_scroll > 0 then
+      local new_scroll_y = scroll_percent * max_scroll
+      ImGui.SetScrollY(ctx, new_scroll_y)
+    end
+  end
 
   local bg_clicked = ImGui.IsItemClicked(ctx, 0)
 
