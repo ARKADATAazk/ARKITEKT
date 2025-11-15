@@ -18,19 +18,25 @@ function M.new(max_entries)
   }
 end
 
-function M.get_item_signature(item)
+function M.get_item_signature(item, uuid)
+  -- If UUID is provided, use it directly (stable across file renames)
+  if uuid then
+    return uuid
+  end
+
+  -- Fallback to old filename-based signature for compatibility
   local take = reaper.GetActiveTake(item)
   if not take then return nil end
-  
+
   local source = reaper.GetMediaItemTake_Source(take)
   local filename = reaper.GetMediaSourceFileName(source)
   local startoffs = reaper.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS")
   local playrate = reaper.GetMediaItemTakeInfo_Value(take, "D_PLAYRATE")
   local length = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
-  
-  return string.format("%s_%.3f_%.3f_%.3f", 
-    filename:gsub("[^%w]", "_"), 
-    startoffs, 
+
+  return string.format("%s_%.3f_%.3f_%.3f",
+    filename:gsub("[^%w]", "_"),
+    startoffs,
     playrate,
     length
   )
@@ -56,46 +62,46 @@ function M.cleanup_old_entries(cache_table, access_times, max_entries)
   end
 end
 
-function M.get_waveform_data(cache, item)
-  local sig = M.get_item_signature(item)
+function M.get_waveform_data(cache, item, uuid)
+  local sig = M.get_item_signature(item, uuid)
   if not sig then return nil end
-  
+
   if cache.waveforms[sig] then
     cache.access_times[sig] = get_current_time()
     return cache.waveforms[sig]
   end
-  
+
   return nil
 end
 
-function M.set_waveform_data(cache, item, data)
-  local sig = M.get_item_signature(item)
+function M.set_waveform_data(cache, item, data, uuid)
+  local sig = M.get_item_signature(item, uuid)
   if not sig then return end
-  
+
   cache.waveforms[sig] = data
   cache.access_times[sig] = get_current_time()
-  
+
   M.cleanup_old_entries(cache.waveforms, cache.access_times, cache.max_entries)
 end
 
-function M.get_waveform_arrays(cache, item, width)
-  local sig = M.get_item_signature(item)
+function M.get_waveform_arrays(cache, item, width, uuid)
+  local sig = M.get_item_signature(item, uuid)
   if not sig then return nil end
-  
+
   local key = sig .. "_arrays_" .. math.floor(width)
-  
+
   if cache.waveform_arrays[key] then
     cache.access_times[key] = get_current_time()
     return cache.waveform_arrays[key]
   end
-  
+
   return nil
 end
 
-function M.set_waveform_arrays(cache, item, width, top_array, bottom_array)
-  local sig = M.get_item_signature(item)
+function M.set_waveform_arrays(cache, item, width, top_array, bottom_array, uuid)
+  local sig = M.get_item_signature(item, uuid)
   if not sig then return end
-  
+
   local key = sig .. "_arrays_" .. math.floor(width)
   cache.waveform_arrays[key] = {top = top_array, bottom = bottom_array}
   cache.access_times[key] = get_current_time()
@@ -108,8 +114,8 @@ end
 local MIDI_CACHE_MAX_WIDTH = 512
 local MIDI_CACHE_MAX_HEIGHT = 512
 
-function M.get_midi_thumbnail(cache, item, width, height)
-  local sig = M.get_item_signature(item)
+function M.get_midi_thumbnail(cache, item, width, height, uuid)
+  local sig = M.get_item_signature(item, uuid)
   if not sig then return nil end
 
   -- Always use max resolution for cache key (size-independent)
@@ -123,8 +129,8 @@ function M.get_midi_thumbnail(cache, item, width, height)
   return nil
 end
 
-function M.set_midi_thumbnail(cache, item, width, height, data)
-  local sig = M.get_item_signature(item)
+function M.set_midi_thumbnail(cache, item, width, height, data, uuid)
+  local sig = M.get_item_signature(item, uuid)
   if not sig then return end
 
   -- Always use max resolution for cache key (size-independent)
@@ -139,10 +145,10 @@ function M.get_midi_cache_size()
   return MIDI_CACHE_MAX_WIDTH, MIDI_CACHE_MAX_HEIGHT
 end
 
-function M.invalidate_item(cache, item)
-  local sig = M.get_item_signature(item)
+function M.invalidate_item(cache, item, uuid)
+  local sig = M.get_item_signature(item, uuid)
   if not sig then return end
-  
+
   for key in pairs(cache.waveforms) do
     if key:match("^" .. sig) then
       cache.waveforms[key] = nil

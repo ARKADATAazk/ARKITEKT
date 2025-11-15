@@ -1,5 +1,6 @@
 local M = {}
 local utils
+local UUID = require("rearkitekt.core.uuid")
 
 function M.init(utils_module)
   utils = utils_module
@@ -138,12 +139,13 @@ function M.GetProjectSamples(settings, state)
         
         local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or M.IsParentMuted(track) == true
         local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
-        
-        table.insert(samples[filename], { 
-          item, 
+
+        table.insert(samples[filename], {
+          item,
           item_name,
           track_muted = track_muted,
-          item_muted = item_muted
+          item_muted = item_muted,
+          uuid = UUID.generate()
         })
       end
       ::next_item::
@@ -202,7 +204,8 @@ function M.GetProjectMIDI(settings, state)
           item,
           item_name,
           track_muted = track_muted,
-          item_muted = item_muted
+          item_muted = item_muted,
+          uuid = UUID.generate()
         }
 
         if split_mode then

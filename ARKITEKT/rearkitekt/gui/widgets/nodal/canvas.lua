@@ -54,33 +54,41 @@ function M.new(opts)
   local canvas = {
     nodes = opts.nodes or {},
     connections = opts.connections or {},
-    
+    node_lookup = {},  -- guid -> node (O(1) lookup)
+
     config = opts.config or Config.get(),
-    
+
     container_x = opts.container_x or 50,
     container_width = opts.container_width or 320,
-    
+
     animator = create_simple_animator(),
-    
+
     viewport = Viewport.new({
       scale = opts.initial_scale or 1.0,
       min_scale = opts.min_scale or 0.5,
       max_scale = opts.max_scale or 1.5,
     }),
-    
+
     selected_nodes = {},
     hovered_node = nil,
     hovered_connection = nil,
     hovered_port = nil,
-    
+
     drag_connection = nil,
     drag_node = nil,
     drag_node_index = nil,
     drag_drop_index = nil,
   }
-  
+
+  -- Build node lookup table for O(1) access
+  for _, node in ipairs(canvas.nodes) do
+    if node.guid then
+      canvas.node_lookup[node.guid] = node
+    end
+  end
+
   Layout.calculate_container_layout(canvas.nodes, canvas.config, canvas.container_x, canvas.container_width)
-  
+
   return canvas
 end
 

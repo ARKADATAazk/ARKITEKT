@@ -24,10 +24,12 @@ M.settings = {
 }
 
 -- Runtime state (volatile)
-M.samples = {}  -- { [filename] = { {item, name, track_muted, item_muted}, ...} }
+M.samples = {}  -- { [filename] = { {item, name, track_muted, item_muted, uuid}, ...} }
 M.sample_indexes = {}  -- Ordered list of filenames
-M.midi_items = {}  -- { [track_guid] = { {item, name, track_muted, item_muted}, ...} }
+M.midi_items = {}  -- { [track_guid] = { {item, name, track_muted, item_muted, uuid}, ...} }
 M.midi_indexes = {}  -- Ordered list of track GUIDs
+M.audio_item_lookup = {}  -- { [uuid] = item_data } for O(1) access
+M.midi_item_lookup = {}  -- { [uuid] = item_data } for O(1) access
 M.needs_recollect = false  -- Flag to trigger item recollection
 
 M.box_current_sample = {}  -- { [filename] = sample_index }

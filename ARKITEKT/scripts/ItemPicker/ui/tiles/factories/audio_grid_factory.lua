@@ -37,6 +37,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       local item_name = entry[2]
       local track_muted = entry.track_muted or false
       local item_muted = entry.item_muted or false
+      local uuid = entry.uuid
 
       -- Check mute filters
       if not state.settings.show_muted_tracks and track_muted then
@@ -72,7 +73,8 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
         index = current_idx,
         total = #content,
         color = color,
-        key = filename,
+        key = uuid,
+        uuid = uuid,
       })
 
       ::continue::
@@ -90,7 +92,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
     get_items = get_items,
 
     key = function(item_data)
-      return item_data.filename
+      return item_data.uuid
     end,
 
     render_tile = function(ctx, rect, item_data, tile_state)
@@ -106,25 +108,37 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       if not keys or #keys == 0 then return end
 
       -- Support multi-item drag (use first selected item for preview)
-      local key = keys[1]
-      reaper.ShowConsoleMsg(string.format("[DRAG_START] First key: %s\n", tostring(key)))
+      local uuid = keys[1]
+      reaper.ShowConsoleMsg(string.format("[DRAG_START] First UUID: %s\n", tostring(uuid)))
+
+      -- O(1) lookup instead of O(n) search
+      local item_lookup_data = state.audio_item_lookup[uuid]
+      if not item_lookup_data then
+        reaper.ShowConsoleMsg("[DRAG_START] Item not found in lookup!\n")
+        return
+      end
+
+      local drag_w = math.min(200, state:get_tile_width())
+      local drag_h = math.min(120, state:get_tile_height())
+
+      -- Store all selected keys for batch insert
+      state.dragging_keys = keys
+      state.dragging_is_audio = true
+
+      -- Get current display data (filtered version)
       local items = get_items()
-
+      local display_data
       for _, item_data in ipairs(items) do
-        if item_data.key == key then
-          local drag_w = math.min(200, state:get_tile_width())
-          local drag_h = math.min(120, state:get_tile_height())
-
-          -- Store all selected keys for batch insert
-          state.dragging_keys = keys
-          state.dragging_is_audio = true
-
-          reaper.ShowConsoleMsg(string.format("[DRAG_START] Starting drag for: %s\n", item_data.name))
-          state.start_drag(item_data.item, item_data.name, item_data.color, drag_w, drag_h)
-          return
+        if item_data.uuid == uuid then
+          display_data = item_data
+          break
         end
       end
-      reaper.ShowConsoleMsg("[DRAG_START] Item not found in grid!\n")
+
+      if display_data then
+        reaper.ShowConsoleMsg(string.format("[DRAG_START] Starting drag for: %s\n", display_data.name))
+        state.start_drag(display_data.item, display_data.name, display_data.color, drag_w, drag_h)
+      end
     end,
 
     right_click = function(key, selected_keys)
