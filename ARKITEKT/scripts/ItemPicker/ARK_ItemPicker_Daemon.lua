@@ -67,6 +67,7 @@ local ext_state_toggle = "toggle_request"
 local daemon = {
   running = false,
   ui_visible = false,
+  runtime_ready = false,  -- Flag to prevent rendering before Runtime is ready
 
   -- Background processing
   last_change_count = -1,
@@ -311,6 +312,12 @@ end
 local function show_ui()
   if daemon.ui_visible then return end
 
+  -- Don't show UI until Runtime has created at least one frame
+  if not daemon.runtime_ready then
+    log("Runtime not ready yet, deferring UI show...")
+    return
+  end
+
   daemon.ui_visible = true
   reaper.SetExtState(ext_state_section, ext_state_visible, "1", false)
 
@@ -431,6 +438,12 @@ local function initialize()
     ctx = daemon.ctx,
 
     on_frame = function(ctx)
+      -- Mark runtime as ready on first frame
+      if not daemon.runtime_ready then
+        daemon.runtime_ready = true
+        log("Runtime ready - UI can now be shown")
+      end
+
       -- Only render if visible or dragging
       if State.dragging then
         -- When dragging, skip overlay and just render drag handlers
@@ -474,15 +487,12 @@ local function initialize()
     State.midi_indexes = cached_state.midi_indexes or {}
     State.last_change_count = current_change_count
     log("Loaded cached state - instant startup ready")
-
-    -- Pre-initialize GUI with cached data
-    -- This ensures first show is instant (no collection work on first frame)
-    daemon.gui:initialize_once(daemon.ctx)
   else
-    -- No cache or outdated - do full initialization upfront
-    log("No cache found - initializing from scratch...")
-    daemon.gui:initialize_once(daemon.ctx)
+    log("No cache found - will initialize on first show")
   end
+
+  -- Don't pre-initialize GUI here - it needs a valid ImGui frame context
+  -- GUI will initialize on first show (inside Runtime's on_frame callback)
 
   -- Trigger initial background processing
   daemon.last_change_count = -1
