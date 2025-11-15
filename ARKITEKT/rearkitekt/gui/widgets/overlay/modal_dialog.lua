@@ -1,6 +1,7 @@
 -- @noindex
 -- ReArkitekt/gui/widgets/overlay/modal_dialog.lua
 -- Unified modal dialog system with consistent styling and behavior
+-- NO RELIANCE on ImGui popup defaults - everything custom drawn
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -43,6 +44,9 @@ local DEFAULTS = {
   -- Scrim (dark overlay behind modal)
   scrim_color = hexrgb("#00000099"),  -- Semi-transparent black
 }
+
+-- Active modal state
+local active_modal = nil
 
 -- Helper: Draw simple square modal box with double borders
 local function draw_modal_box(ctx, dl, x, y, width, height, title)
@@ -132,6 +136,17 @@ local function draw_text_input(ctx, x, y, width, height, unique_id, text, placeh
   return changed, new_text, is_focused
 end
 
+-- Helper: Check if mouse clicked outside modal box
+local function clicked_outside(ctx, x, y, w, h)
+  if ImGui.IsMouseClicked(ctx, 0) then
+    local mx, my = ImGui.GetMousePos(ctx)
+    if mx < x or mx > x + w or my < y or my > y + h then
+      return true
+    end
+  end
+  return false
+end
+
 -- ============================================================================
 -- MESSAGE DIALOG
 -- ============================================================================
@@ -142,41 +157,31 @@ function M.show_message(ctx, title, message, opts)
   local button_label = opts.button_label or "OK"
   local on_close = opts.on_close
 
-  -- Calculate modal size
+  -- Only create modal state once
+  if not active_modal or active_modal.id ~= id then
+    active_modal = {
+      id = id,
+      type = "message",
+      title = title,
+      message = message,
+      opts = opts,
+    }
+  end
+
+  -- Calculate modal size based on current window
   local win_w, win_h = ImGui.GetWindowSize(ctx)
+  local win_x, win_y = ImGui.GetWindowPos(ctx)
   local modal_w = math.max(DEFAULTS.min_width, math.min(DEFAULTS.max_width, win_w * (opts.width or 0.45)))
   local modal_h = math.max(DEFAULTS.min_height, math.min(DEFAULTS.max_height, win_h * (opts.height or 0.25)))
 
-  -- Center on script window
-  local win_x, win_y = ImGui.GetWindowPos(ctx)
-  ImGui.SetNextWindowPos(ctx,
-    win_x + (win_w - modal_w) * 0.5,
-    win_y + (win_h - modal_h) * 0.5,
-    ImGui.Cond_Appearing)
+  -- Center modal
+  local x = win_x + (win_w - modal_w) * 0.5
+  local y = win_y + (win_h - modal_h) * 0.5
 
-  ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
+  local dl = ImGui.GetForegroundDrawList(ctx)
 
-  -- Kill ALL white colors - make everything dark or transparent
-  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_TitleBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_TitleBgActive, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_TitleBgCollapsed, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ModalWindowDimBg, DEFAULTS.scrim_color)  -- THIS WAS THE WHITE OVERLAY
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-
-  local visible = ImGui.BeginPopupModal(ctx, id, true, ImGui.WindowFlags_NoTitleBar | ImGui.WindowFlags_NoResize)
-
-  if not visible then
-    ImGui.PopStyleVar(ctx, 1)
-    ImGui.PopStyleColor(ctx, 8)
-    return false
-  end
-
-  local dl = ImGui.GetWindowDrawList(ctx)
-  local x, y = ImGui.GetWindowPos(ctx)
+  -- Draw dark scrim over entire window
+  ImGui.DrawList_AddRectFilled(dl, win_x, win_y, win_x + win_w, win_y + win_h, DEFAULTS.scrim_color)
 
   -- Draw modal box
   draw_modal_box(ctx, dl, x, y, modal_w, modal_h, title)
@@ -184,8 +189,8 @@ function M.show_message(ctx, title, message, opts)
   -- Content area
   local content_y_offset = (title and title ~= "") and (DEFAULTS.title_height + 1) or 1
   local content_y = y + content_y_offset + DEFAULTS.padding_y
-  local content_h = modal_h - content_y_offset - DEFAULTS.button_area_height - DEFAULTS.padding_y
 
+  -- Draw message text
   ImGui.SetCursorScreenPos(ctx, x + DEFAULTS.padding_x, content_y)
   ImGui.PushTextWrapPos(ctx, x + modal_w - DEFAULTS.padding_x)
   ImGui.Text(ctx, message)
@@ -195,23 +200,25 @@ function M.show_message(ctx, title, message, opts)
   local button_y = y + modal_h - DEFAULTS.button_area_height + 10
   local button_x = x + (modal_w - DEFAULTS.button_width) * 0.5
 
-  local clicked = Button.draw(ctx, dl, button_x, button_y, DEFAULTS.button_width, 28, {
+  Button.draw(ctx, dl, button_x, button_y, DEFAULTS.button_width, 28, {
     label = button_label,
     on_click = function()
-      ImGui.CloseCurrentPopup(ctx)
+      active_modal = nil
       if on_close then on_close() end
     end
   }, id .. "_btn")
 
   -- Close on ESC or Enter
   if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
-    ImGui.CloseCurrentPopup(ctx)
+    active_modal = nil
     if on_close then on_close() end
   end
 
-  ImGui.EndPopup(ctx)
-  ImGui.PopStyleVar(ctx, 1)
-  ImGui.PopStyleColor(ctx, 8)
+  -- Close if clicked outside
+  if clicked_outside(ctx, x, y, modal_w, modal_h) then
+    active_modal = nil
+    if on_close then on_close() end
+  end
 
   return true
 end
@@ -228,41 +235,31 @@ function M.show_confirm(ctx, title, message, opts)
   local on_confirm = opts.on_confirm
   local on_cancel = opts.on_cancel
 
+  -- Only create modal state once
+  if not active_modal or active_modal.id ~= id then
+    active_modal = {
+      id = id,
+      type = "confirm",
+      title = title,
+      message = message,
+      opts = opts,
+    }
+  end
+
   -- Calculate modal size
   local win_w, win_h = ImGui.GetWindowSize(ctx)
+  local win_x, win_y = ImGui.GetWindowPos(ctx)
   local modal_w = math.max(DEFAULTS.min_width, math.min(DEFAULTS.max_width, win_w * (opts.width or 0.45)))
   local modal_h = math.max(DEFAULTS.min_height, math.min(DEFAULTS.max_height, win_h * (opts.height or 0.25)))
 
-  -- Center on script window
-  local win_x, win_y = ImGui.GetWindowPos(ctx)
-  ImGui.SetNextWindowPos(ctx,
-    win_x + (win_w - modal_w) * 0.5,
-    win_y + (win_h - modal_h) * 0.5,
-    ImGui.Cond_Appearing)
+  -- Center modal
+  local x = win_x + (win_w - modal_w) * 0.5
+  local y = win_y + (win_h - modal_h) * 0.5
 
-  ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
+  local dl = ImGui.GetForegroundDrawList(ctx)
 
-  -- Kill ALL white colors - make everything dark or transparent
-  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_TitleBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_TitleBgActive, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_TitleBgCollapsed, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ModalWindowDimBg, DEFAULTS.scrim_color)  -- THIS WAS THE WHITE OVERLAY
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-
-  local visible = ImGui.BeginPopupModal(ctx, id, true, ImGui.WindowFlags_NoTitleBar | ImGui.WindowFlags_NoResize)
-
-  if not visible then
-    ImGui.PopStyleVar(ctx, 1)
-    ImGui.PopStyleColor(ctx, 8)
-    return false
-  end
-
-  local dl = ImGui.GetWindowDrawList(ctx)
-  local x, y = ImGui.GetWindowPos(ctx)
+  -- Draw dark scrim over entire window
+  ImGui.DrawList_AddRectFilled(dl, win_x, win_y, win_x + win_w, win_y + win_h, DEFAULTS.scrim_color)
 
   -- Draw modal box
   draw_modal_box(ctx, dl, x, y, modal_w, modal_h, title)
@@ -270,8 +267,8 @@ function M.show_confirm(ctx, title, message, opts)
   -- Content area
   local content_y_offset = (title and title ~= "") and (DEFAULTS.title_height + 1) or 1
   local content_y = y + content_y_offset + DEFAULTS.padding_y
-  local content_h = modal_h - content_y_offset - DEFAULTS.button_area_height - DEFAULTS.padding_y
 
+  -- Draw message text
   ImGui.SetCursorScreenPos(ctx, x + DEFAULTS.padding_x, content_y)
   ImGui.PushTextWrapPos(ctx, x + modal_w - DEFAULTS.padding_x)
   ImGui.Text(ctx, message)
@@ -286,7 +283,7 @@ function M.show_confirm(ctx, title, message, opts)
   Button.draw(ctx, dl, buttons_start_x, button_y, DEFAULTS.button_width, 28, {
     label = cancel_label,
     on_click = function()
-      ImGui.CloseCurrentPopup(ctx)
+      active_modal = nil
       if on_cancel then on_cancel() end
     end
   }, id .. "_cancel")
@@ -295,26 +292,28 @@ function M.show_confirm(ctx, title, message, opts)
   Button.draw(ctx, dl, buttons_start_x + DEFAULTS.button_width + DEFAULTS.button_spacing, button_y, DEFAULTS.button_width, 28, {
     label = confirm_label,
     on_click = function()
-      ImGui.CloseCurrentPopup(ctx)
+      active_modal = nil
       if on_confirm then on_confirm() end
     end
   }, id .. "_confirm")
 
   -- Close on ESC (cancel)
   if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-    ImGui.CloseCurrentPopup(ctx)
+    active_modal = nil
     if on_cancel then on_cancel() end
   end
 
   -- Close on Enter (confirm)
   if ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
-    ImGui.CloseCurrentPopup(ctx)
+    active_modal = nil
     if on_confirm then on_confirm() end
   end
 
-  ImGui.EndPopup(ctx)
-  ImGui.PopStyleVar(ctx, 1)
-  ImGui.PopStyleColor(ctx, 8)
+  -- Close if clicked outside (cancel)
+  if clicked_outside(ctx, x, y, modal_w, modal_h) then
+    active_modal = nil
+    if on_cancel then on_cancel() end
+  end
 
   return true
 end
@@ -345,41 +344,30 @@ function M.show_input(ctx, title, initial_text, opts)
 
   local state = input_state[id]
 
+  -- Only create modal state once
+  if not active_modal or active_modal.id ~= id then
+    active_modal = {
+      id = id,
+      type = "input",
+      title = title,
+      opts = opts,
+    }
+  end
+
   -- Calculate modal size
   local win_w, win_h = ImGui.GetWindowSize(ctx)
+  local win_x, win_y = ImGui.GetWindowPos(ctx)
   local modal_w = math.max(DEFAULTS.min_width, math.min(DEFAULTS.max_width, win_w * (opts.width or 0.45)))
   local modal_h = math.max(DEFAULTS.min_height, math.min(DEFAULTS.max_height, win_h * (opts.height or 0.3)))
 
-  -- Center on script window
-  local win_x, win_y = ImGui.GetWindowPos(ctx)
-  ImGui.SetNextWindowPos(ctx,
-    win_x + (win_w - modal_w) * 0.5,
-    win_y + (win_h - modal_h) * 0.5,
-    ImGui.Cond_Appearing)
+  -- Center modal
+  local x = win_x + (win_w - modal_w) * 0.5
+  local y = win_y + (win_h - modal_h) * 0.5
 
-  ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
+  local dl = ImGui.GetForegroundDrawList(ctx)
 
-  -- Make background transparent (we draw our own)
-  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, hexrgb("#00000000"))
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-
-  local visible = ImGui.BeginPopupModal(ctx, id, true, ImGui.WindowFlags_NoTitleBar | ImGui.WindowFlags_NoResize)
-
-  if not visible then
-    ImGui.PopStyleVar(ctx, 1)
-    ImGui.PopStyleColor(ctx, 1)
-    -- Clean up state when modal closes
-    input_state[id] = nil
-    return false
-  end
-
-  local dl = ImGui.GetWindowDrawList(ctx)
-  local x, y = ImGui.GetWindowPos(ctx)
-
-  -- Draw dark scrim over entire script window
-  local script_win_x, script_win_y = ImGui.GetWindowPos(ctx)
-  local script_win_w, script_win_h = ImGui.GetWindowSize(ctx)
-  ImGui.DrawList_AddRectFilled(dl, script_win_x, script_win_y, script_win_x + script_win_w, script_win_y + script_win_h, DEFAULTS.scrim_color)
+  -- Draw dark scrim over entire window
+  ImGui.DrawList_AddRectFilled(dl, win_x, win_y, win_x + win_w, win_y + win_h, DEFAULTS.scrim_color)
 
   -- Draw modal box
   draw_modal_box(ctx, dl, x, y, modal_w, modal_h, title)
@@ -413,15 +401,15 @@ function M.show_input(ctx, title, initial_text, opts)
   local button_y = y + modal_h - DEFAULTS.button_area_height + 10
 
   local function do_cancel()
-    ImGui.CloseCurrentPopup(ctx)
+    active_modal = nil
     input_state[id] = nil
     if on_cancel then on_cancel() end
   end
 
   local function do_confirm()
     if state.text and state.text ~= "" then
-      ImGui.CloseCurrentPopup(ctx)
       local result_text = state.text
+      active_modal = nil
       input_state[id] = nil
       if on_confirm then on_confirm(result_text) end
     end
@@ -445,13 +433,14 @@ function M.show_input(ctx, title, initial_text, opts)
   end
 
   -- Close on Enter (confirm)
-  if ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
+  if ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) and not is_focused then
     do_confirm()
   end
 
-  ImGui.EndPopup(ctx)
-  ImGui.PopStyleVar(ctx, 1)
-  ImGui.PopStyleColor(ctx, 8)
+  -- Close if clicked outside (cancel)
+  if clicked_outside(ctx, x, y, modal_w, modal_h) then
+    do_cancel()
+  end
 
   return true
 end

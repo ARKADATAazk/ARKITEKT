@@ -43,7 +43,6 @@ local function execute_sws_import(self, ctx)
       message = "No SWS Region Playlists found in the current project.\n\n" ..
                 "Make sure the project is saved and contains SWS Region Playlists."
     }
-    ImGui.OpenPopup(ctx, "##sws_import_result")
     return
   end
 
@@ -55,14 +54,12 @@ local function execute_sws_import(self, ctx)
       title = "Import Successful",
       message = "Import successful!\n\n" .. SWSImporter.format_report(report)
     }
-    ImGui.OpenPopup(ctx, "##sws_import_result")
     refresh_after_import(self)
   else
     sws_result_data = {
       title = "Import Failed",
       message = "Import failed: " .. tostring(err or "Unknown error")
     }
-    ImGui.OpenPopup(ctx, "##sws_import_result")
   end
 end
 
@@ -186,7 +183,6 @@ function M.draw_active(self, ctx, playlist, height)
         break
       end
     end
-    ImGui.OpenPopup(ctx, "##rename_playlist")
     self._rename_input_visible = false
   end
 
