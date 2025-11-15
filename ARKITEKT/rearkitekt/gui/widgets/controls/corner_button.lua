@@ -112,8 +112,15 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
   local config = Style.apply_defaults(Style.BUTTON, user_config)
   local inst = get_instance(unique_id)
 
-  local hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + size, y + size)
-  local active = hovered and ImGui.IsMouseDown(ctx, 0)
+  -- Only check hover/active state if not blocking
+  local is_blocking = config.is_blocking or false
+  local hovered = false
+  local active = false
+
+  if not is_blocking then
+    hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + size, y + size)
+    active = hovered and ImGui.IsMouseDown(ctx, 0)
+  end
 
   local dt = ImGui.GetDeltaTime(ctx)
   local target = (hovered or active) and 1.0 or 0.0
@@ -152,7 +159,6 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
 
   -- Only create interactive button if no modal is blocking
   local clicked = false
-  local is_blocking = config.is_blocking or false
   if not is_blocking then
     ImGui.SetCursorScreenPos(ctx, x, y)
     ImGui.InvisibleButton(ctx, '##' .. unique_id, size, size)
@@ -160,10 +166,11 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
     if clicked and config.on_click then
       config.on_click()
     end
-  end
 
-  if hovered and config.tooltip then
-    ImGui.SetTooltip(ctx, config.tooltip)
+    -- Only show tooltip if not blocking
+    if hovered and config.tooltip then
+      ImGui.SetTooltip(ctx, config.tooltip)
+    end
   end
 
   return clicked

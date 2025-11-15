@@ -45,8 +45,12 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
   local cfg = self.config
   local btn_size = cfg.size or 32
 
-  local mx, my = ImGui.GetMousePos(ctx)
-  local is_hovered = mx >= x and mx < x + btn_size and my >= y and my < y + btn_size
+  -- Only check hover if not blocking
+  local is_hovered = false
+  if not is_blocking then
+    local mx, my = ImGui.GetMousePos(ctx)
+    is_hovered = mx >= x and mx < x + btn_size and my >= y and my < y + btn_size
+  end
 
   local target = is_hovered and 1.0 or 0.0
   local speed = cfg.animation_speed or 12.0
@@ -83,13 +87,14 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
         on_click()
       end
     end
+
+    -- Only show tooltip if not blocking
+    if is_hovered then
+      local tooltip = current_mode == 'horizontal' and "Switch to List Mode" or "Switch to Timeline Mode"
+      Tooltip.show(ctx, tooltip)
+    end
   end
-  
-  if is_hovered then
-    local tooltip = current_mode == 'horizontal' and "Switch to List Mode" or "Switch to Timeline Mode"
-    Tooltip.show(ctx, tooltip)
-  end
-  
+
   return btn_size
 end
 
