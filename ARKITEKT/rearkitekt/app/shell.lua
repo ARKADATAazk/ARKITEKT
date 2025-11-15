@@ -250,8 +250,8 @@ function M.run(opts)
           window:end_timer("style_push")
         end
       end
-      
-      ImGui.PushFont(ctx, fonts.default, fonts.default_size)
+
+      ImGui.PushFont(ctx, fonts.default)
 
       local visible, open = window:Begin(ctx)
       if visible then
