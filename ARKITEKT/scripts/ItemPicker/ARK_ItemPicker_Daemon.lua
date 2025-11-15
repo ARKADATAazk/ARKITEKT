@@ -39,11 +39,11 @@ local daemon_state = {
   -- Incremental thumbnail generation state
   thumbnail_queue = {},
   queue_index = 1,
-  thumbnails_per_cycle = 2,  -- Generate 2 per cycle to stay lightweight
+  thumbnails_per_cycle = 5,  -- Generate 5 per cycle (increased from 2)
 
   -- Timing
   idle_interval = 1.0,        -- 1 second when idle
-  active_interval = 0.1,      -- 100ms when generating thumbnails
+  active_interval = 0.05,     -- 50ms when generating (faster than before)
   last_update = 0,
 }
 
@@ -110,6 +110,28 @@ local function build_thumbnail_queue(state)
   daemon_state.thumbnail_queue = {}
   daemon_state.queue_index = 1
 
+  -- Queue audio waveforms for generation
+  if state.samples and state.sample_indexes then
+    for _, key in ipairs(state.sample_indexes) do
+      local sample_data = state.samples[key]
+      if sample_data and sample_data[1] and sample_data[1].item then
+        -- Check if waveform already exists in disk cache
+        local sig = cache_mgr.get_item_signature(sample_data[1].item)
+        if sig then
+          local cached = cache_mgr.load_waveform_from_disk(sig)
+          if not cached then
+            -- Not cached, add to queue
+            table.insert(daemon_state.thumbnail_queue, {
+              type = "audio",
+              item = sample_data[1].item,
+              key = key,
+            })
+          end
+        end
+      end
+    end
+  end
+
   -- Queue MIDI items for thumbnail generation
   if state.midi_items and state.midi_indexes then
     for _, key in ipairs(state.midi_indexes) do
@@ -132,7 +154,10 @@ local function build_thumbnail_queue(state)
     end
   end
 
-  log(string.format("Queued %d thumbnails for generation", #daemon_state.thumbnail_queue))
+  log(string.format("Queued %d visualizations for generation (%d audio + %d MIDI)",
+    #daemon_state.thumbnail_queue,
+    state.sample_indexes and #state.sample_indexes or 0,
+    state.midi_indexes and #state.midi_indexes or 0))
 end
 
 -- Process a batch of thumbnails
@@ -147,7 +172,10 @@ local function process_thumbnail_batch()
 
     local job = daemon_state.thumbnail_queue[daemon_state.queue_index]
 
-    if job.type == "midi" then
+    if job.type == "audio" then
+      -- Generate audio waveform
+      visualization.GetItemWaveform(daemon_state.cache, job.item)
+    elseif job.type == "midi" then
       -- Generate MIDI thumbnail
       local cache_w, cache_h = cache_mgr.get_midi_cache_size()
       visualization.GenerateMidiThumbnail(daemon_state.cache, job.item, cache_w, cache_h)

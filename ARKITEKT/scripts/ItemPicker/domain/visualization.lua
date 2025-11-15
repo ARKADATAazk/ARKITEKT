@@ -18,8 +18,13 @@ function M.init(utils_module, script_dir, cache_mgr)
 end
 
 function M.GetItemWaveform(cache, item)
-  local cached_data = cache_manager.get_waveform_data(cache, item)
+  -- Try memory + disk cache first (instant load from disk if available)
+  local cached_data = cache_manager.get_waveform_data_cached(cache, item)
   if cached_data then
+    -- For backwards compatibility: if cached_data is a table with 'peaks', extract peaks
+    if type(cached_data) == "table" and cached_data.peaks then
+      return cached_data.peaks
+    end
     return cached_data
   end
 
@@ -65,8 +70,13 @@ function M.GetItemWaveform(cache, item)
   else
     ret_tab = buf.table()
   end
-  
-  cache_manager.set_waveform_data(cache, item, ret_tab)
+
+  -- Save to memory + disk cache with proper format
+  local waveform_data = {
+    peaks = ret_tab,
+    num_channels = channels
+  }
+  cache_manager.set_waveform_data_cached(cache, item, waveform_data)
   return ret_tab
 end
 
