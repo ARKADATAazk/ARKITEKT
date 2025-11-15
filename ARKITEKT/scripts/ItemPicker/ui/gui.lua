@@ -91,8 +91,16 @@ function GUI:draw(ctx, shell_state)
   self.state.overlay_alpha = overlay_alpha
 
   -- Get screen dimensions
-  local viewport = ImGui.GetMainViewport(ctx)
-  local SCREEN_W, SCREEN_H = ImGui.Viewport_GetSize(viewport)
+  local SCREEN_W, SCREEN_H
+  if is_overlay_mode and shell_state.overlay_state then
+    -- In overlay mode, use the bounds from overlay manager (full REAPER window via JS API)
+    SCREEN_W = shell_state.overlay_state.width
+    SCREEN_H = shell_state.overlay_state.height
+  else
+    -- Normal mode, use viewport size
+    local viewport = ImGui.GetMainViewport(ctx)
+    SCREEN_W, SCREEN_H = ImGui.Viewport_GetSize(viewport)
+  end
 
   -- Get fonts
   local mini_font = shell_state.fonts.default
