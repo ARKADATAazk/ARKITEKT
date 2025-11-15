@@ -193,15 +193,6 @@ function M.get_active_container_config(callbacks)
         end,
         tooltip = "Actions",
         on_click = callbacks.on_actions_button_click,
-        -- Simple black transparent overlay
-        bg_color = hexrgb("#00000050"),           -- Black fill, 31% opacity
-        bg_hover_color = hexrgb("#00000070"),     -- Black fill, 44% opacity on hover
-        bg_active_color = hexrgb("#00000060"),    -- Black fill, 38% opacity when pressed
-        border_outer_color = hexrgb("#00000099"), -- Black border, 60% opacity
-        border_inner_color = hexrgb("#00000000"), -- No inner border
-        text_color = hexrgb("#FFFFFFFF"),         -- White icon
-        text_hover_color = hexrgb("#FFFFFFFF"),   -- White icon on hover
-        text_active_color = hexrgb("#FFFFFFFF"),  -- White icon when pressed
       },
     },
     corner_buttons_always_visible = true,
@@ -278,15 +269,6 @@ function M.get_pool_container_config(callbacks)
         on_click = function()
           reaper.ShowConsoleMsg("Pool Grid Actions button clicked (coming soon)\n")
         end,
-        -- Simple black transparent overlay
-        bg_color = hexrgb("#00000050"),           -- Black fill, 31% opacity
-        bg_hover_color = hexrgb("#00000070"),     -- Black fill, 44% opacity on hover
-        bg_active_color = hexrgb("#00000060"),    -- Black fill, 38% opacity when pressed
-        border_outer_color = hexrgb("#00000099"), -- Black border, 60% opacity
-        border_inner_color = hexrgb("#00000000"), -- No inner border
-        text_color = hexrgb("#FFFFFFFF"),         -- White icon
-        text_hover_color = hexrgb("#FFFFFFFF"),   -- White icon on hover
-        text_active_color = hexrgb("#FFFFFFFF"),  -- White icon when pressed
       },
     },
     corner_buttons_always_visible = true,

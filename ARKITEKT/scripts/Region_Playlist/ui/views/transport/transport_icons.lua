@@ -135,138 +135,72 @@ function M.draw_bolt(dl, x, y, width, height, color)
   local cx = floor(x + width / 2 + 0.5)
   local cy = floor(y + height / 2 + 0.5)
 
-  -- Lightning bolt shape - zigzag pattern
-  local bolt_width = 7
-  local bolt_height = 12
+  -- Simplified lightning bolt using rectangles
+  -- Top vertical segment
+  local top_x = cx - 1
+  local top_y = cy - 6
+  local top_w = 2
+  local top_h = 4
+  ImGui.DrawList_AddRectFilled(dl, top_x, top_y, top_x + top_w, top_y + top_h, color)
 
-  -- Top point
-  local x1 = cx
-  local y1 = floor(cy - bolt_height / 2 + 0.5)
+  -- Upper diagonal (top-right slant)
+  local mid1_x = cx - 1
+  local mid1_y = cy - 2
+  local mid1_w = 4
+  local mid1_h = 2
+  ImGui.DrawList_AddRectFilled(dl, mid1_x, mid1_y, mid1_x + mid1_w, mid1_y + mid1_h, color)
 
-  -- Upper left
-  local x2 = floor(cx - bolt_width / 3 + 0.5)
-  local y2 = floor(cy - 1 + 0.5)
+  -- Middle vertical (offset left)
+  local mid2_x = cx - 2
+  local mid2_y = cy
+  local mid2_w = 2
+  local mid2_h = 2
+  ImGui.DrawList_AddRectFilled(dl, mid2_x, mid2_y, mid2_x + mid2_w, mid2_y + mid2_h, color)
 
-  -- Middle right (kink out)
-  local x3 = floor(cx + bolt_width / 4 + 0.5)
-  local y3 = floor(cy - 1 + 0.5)
+  -- Lower diagonal (bottom-left slant)
+  local mid3_x = cx - 4
+  local mid3_y = cy + 2
+  local mid3_w = 4
+  local mid3_h = 2
+  ImGui.DrawList_AddRectFilled(dl, mid3_x, mid3_y, mid3_x + mid3_w, mid3_y + mid3_h, color)
 
-  -- Lower left (before bottom point)
-  local x4 = floor(cx - bolt_width / 4 + 0.5)
-  local y4 = floor(cy + 2 + 0.5)
-
-  -- Bottom point
-  local x5 = cx
-  local y5 = floor(cy + bolt_height / 2 + 0.5)
-
-  -- Lower right (going back up)
-  local x6 = floor(cx + bolt_width / 3 + 0.5)
-  local y6 = floor(cy + 2 + 0.5)
-
-  -- Middle left (kink in)
-  local x7 = floor(cx - bolt_width / 4 + 0.5)
-  local y7 = floor(cy + 0.5)
-
-  -- Upper right (back to top)
-  local x8 = floor(cx + bolt_width / 4 + 0.5)
-  local y8 = floor(cy + 0.5)
-
-  -- Draw filled bolt
-  ImGui.DrawList_PathClear(dl)
-  ImGui.DrawList_PathLineTo(dl, x1, y1)  -- Top
-  ImGui.DrawList_PathLineTo(dl, x2, y2)  -- Upper left
-  ImGui.DrawList_PathLineTo(dl, x3, y3)  -- Middle right
-  ImGui.DrawList_PathLineTo(dl, x4, y4)  -- Lower left
-  ImGui.DrawList_PathLineTo(dl, x5, y5)  -- Bottom
-  ImGui.DrawList_PathLineTo(dl, x6, y6)  -- Lower right
-  ImGui.DrawList_PathLineTo(dl, x7, y7)  -- Middle left
-  ImGui.DrawList_PathLineTo(dl, x8, y8)  -- Upper right
-  ImGui.DrawList_PathFillConvex(dl, color)
-
-  -- Draw outline
-  ImGui.DrawList_PathClear(dl)
-  ImGui.DrawList_PathLineTo(dl, x1, y1)
-  ImGui.DrawList_PathLineTo(dl, x2, y2)
-  ImGui.DrawList_PathLineTo(dl, x3, y3)
-  ImGui.DrawList_PathLineTo(dl, x4, y4)
-  ImGui.DrawList_PathLineTo(dl, x5, y5)
-  ImGui.DrawList_PathLineTo(dl, x6, y6)
-  ImGui.DrawList_PathLineTo(dl, x7, y7)
-  ImGui.DrawList_PathLineTo(dl, x8, y8)
-  ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 0.5)
+  -- Bottom vertical segment
+  local bot_x = cx - 1
+  local bot_y = cy + 4
+  local bot_w = 2
+  local bot_h = 3
+  ImGui.DrawList_AddRectFilled(dl, bot_x, bot_y, bot_x + bot_w, bot_y + bot_h, color)
 end
 
 function M.draw_gear(dl, x, y, width, height, color)
   local cx = floor(x + width / 2 + 0.5)
   local cy = floor(y + height / 2 + 0.5)
 
-  -- Gear icon - circle with 6 teeth
-  local outer_radius = 6
-  local inner_radius = 3.5
-  local tooth_count = 6
-  local center_hole = 2
+  -- Simple gear using circle with small rectangles for teeth
+  local body_radius = 5
+  local tooth_len = 2
+  local tooth_w = 2
+  local tooth_count = 8
 
-  -- Draw gear teeth using a simplified approach
-  ImGui.DrawList_PathClear(dl)
+  -- Draw main body circle
+  ImGui.DrawList_AddCircleFilled(dl, cx, cy, body_radius, color, 16)
 
+  -- Draw teeth as small rectangles around the circle
   for i = 0, tooth_count - 1 do
-    local angle1 = (i / tooth_count) * 2 * math.pi
-    local angle2 = ((i + 0.4) / tooth_count) * 2 * math.pi
-    local angle3 = ((i + 0.6) / tooth_count) * 2 * math.pi
-    local angle4 = ((i + 1) / tooth_count) * 2 * math.pi
+    local angle = (i / tooth_count) * 2 * math.pi
+    local tooth_cx = cx + math.cos(angle) * (body_radius + tooth_len / 2)
+    local tooth_cy = cy + math.sin(angle) * (body_radius + tooth_len / 2)
 
-    -- Outer tooth edge
-    ImGui.DrawList_PathLineTo(dl,
-      floor(cx + math.cos(angle1) * outer_radius + 0.5),
-      floor(cy + math.sin(angle1) * outer_radius + 0.5))
-    ImGui.DrawList_PathLineTo(dl,
-      floor(cx + math.cos(angle2) * outer_radius + 0.5),
-      floor(cy + math.sin(angle2) * outer_radius + 0.5))
-
-    -- Dip to inner circle
-    ImGui.DrawList_PathLineTo(dl,
-      floor(cx + math.cos(angle2) * inner_radius + 0.5),
-      floor(cy + math.sin(angle2) * inner_radius + 0.5))
-    ImGui.DrawList_PathLineTo(dl,
-      floor(cx + math.cos(angle3) * inner_radius + 0.5),
-      floor(cy + math.sin(angle3) * inner_radius + 0.5))
-
-    -- Back to outer for next tooth
-    ImGui.DrawList_PathLineTo(dl,
-      floor(cx + math.cos(angle3) * outer_radius + 0.5),
-      floor(cy + math.sin(angle3) * outer_radius + 0.5))
+    -- Small rectangle for tooth
+    local tx = floor(tooth_cx - tooth_w / 2 + 0.5)
+    local ty = floor(tooth_cy - tooth_w / 2 + 0.5)
+    ImGui.DrawList_AddRectFilled(dl, tx, ty, tx + tooth_w, ty + tooth_w, color, 0)
   end
-
-  ImGui.DrawList_PathFillConvex(dl, color)
-
-  -- Draw outline
-  ImGui.DrawList_PathClear(dl)
-  for i = 0, tooth_count - 1 do
-    local angle1 = (i / tooth_count) * 2 * math.pi
-    local angle2 = ((i + 0.4) / tooth_count) * 2 * math.pi
-    local angle3 = ((i + 0.6) / tooth_count) * 2 * math.pi
-
-    ImGui.DrawList_PathLineTo(dl,
-      floor(cx + math.cos(angle1) * outer_radius + 0.5),
-      floor(cy + math.sin(angle1) * outer_radius + 0.5))
-    ImGui.DrawList_PathLineTo(dl,
-      floor(cx + math.cos(angle2) * outer_radius + 0.5),
-      floor(cy + math.sin(angle2) * outer_radius + 0.5))
-    ImGui.DrawList_PathLineTo(dl,
-      floor(cx + math.cos(angle2) * inner_radius + 0.5),
-      floor(cy + math.sin(angle2) * inner_radius + 0.5))
-    ImGui.DrawList_PathLineTo(dl,
-      floor(cx + math.cos(angle3) * inner_radius + 0.5),
-      floor(cy + math.sin(angle3) * inner_radius + 0.5))
-    ImGui.DrawList_PathLineTo(dl,
-      floor(cx + math.cos(angle3) * outer_radius + 0.5),
-      floor(cy + math.sin(angle3) * outer_radius + 0.5))
-  end
-  ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 0.5)
 
   -- Draw center hole
-  ImGui.DrawList_AddCircleFilled(dl, cx, cy, center_hole, 0xFF000000, 12)
-  ImGui.DrawList_AddCircle(dl, cx, cy, center_hole, color, 12, 0.5)
+  local hole_radius = 2
+  ImGui.DrawList_AddCircleFilled(dl, cx, cy, hole_radius, 0xFF000000, 12)
+  ImGui.DrawList_AddCircle(dl, cx, cy, hole_radius, color, 12, 1)
 end
 
 return M
