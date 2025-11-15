@@ -193,51 +193,6 @@ function Grid:draw(ctx)
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
   local origin_x, origin_y = ImGui.GetCursorScreenPos(ctx)
 
-  -- PERFORMANCE: Detect resize BEFORE layout calculation
-  local resize_threshold = 5
-  local did_resize = false
-  local anchor_item_idx = nil
-  local anchor_offset_y = 0  -- How far down from viewport top was the anchor item
-
-  if self._perf_last_avail_w and self._perf_last_avail_h then
-    local w_diff = math.abs(avail_w - self._perf_last_avail_w)
-    local h_diff = math.abs(avail_h - self._perf_last_avail_h)
-    did_resize = (w_diff > resize_threshold or h_diff > resize_threshold)
-
-    if did_resize then
-      reaper.ShowConsoleMsg(string.format("[PERF_GRID] RESIZE DETECTED! w_diff=%.1f h_diff=%.1f\n", w_diff, h_diff))
-    end
-
-    -- Find anchor item BEFORE layout changes
-    if did_resize and num_items > 0 then
-      local window_x, window_y = ImGui.GetWindowPos(ctx)
-      local viewport_top_y = window_y + 30  -- Screen space: window top + title bar
-
-      -- Find the first item that's visible at the top of viewport
-      local min_dist = math.huge
-      for i, item in ipairs(items) do
-        local key = self.key(item)
-        local rect = self.rect_track:get(key)
-        if rect then
-          local item_top_y = rect[2]  -- Already in screen space
-          local dist = math.abs(item_top_y - viewport_top_y)
-          if dist < min_dist then
-            min_dist = dist
-            anchor_item_idx = i
-            anchor_offset_y = item_top_y - viewport_top_y
-          end
-        end
-      end
-
-      if anchor_item_idx then
-        reaper.ShowConsoleMsg(string.format("[PERF_GRID] Found anchor: item #%d, offset=%.1f\n", anchor_item_idx, anchor_offset_y))
-      end
-    end
-  end
-
-  self._perf_last_avail_w = avail_w
-  self._perf_last_avail_h = avail_h
-
   local ext = self.extend_input_area
   local extended_x = origin_x - ext.left
   local extended_y = origin_y - ext.top
@@ -293,9 +248,56 @@ function Grid:draw(ctx)
   local min_col_w = self.min_col_w_fn()
   local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, num_items, origin_x, origin_y, self.fixed_tile_h)
 
-  self.last_layout_cols = cols
+  -- PERFORMANCE: Detect layout change (column count changed OR window resized)
+  local resize_threshold = 5
+  local did_resize = false
+  local anchor_item_idx = nil
+  local anchor_offset_y = 0
 
-  -- PERFORMANCE: Use teleport instead of animate during resize
+  if self._perf_last_avail_w and self._perf_last_avail_h then
+    local w_diff = math.abs(avail_w - self._perf_last_avail_w)
+    local h_diff = math.abs(avail_h - self._perf_last_avail_h)
+    local window_resized = (w_diff > resize_threshold or h_diff > resize_threshold)
+    local layout_changed = (self.last_layout_cols ~= cols)
+
+    did_resize = window_resized or layout_changed
+
+    if did_resize then
+      reaper.ShowConsoleMsg(string.format("[PERF_GRID] LAYOUT CHANGE! cols: %d->%d, w_diff=%.1f h_diff=%.1f\n",
+        self.last_layout_cols, cols, w_diff, h_diff))
+
+      -- Find anchor item BEFORE teleporting
+      if num_items > 0 then
+        local window_x, window_y = ImGui.GetWindowPos(ctx)
+        local viewport_top_y = window_y + 30
+
+        local min_dist = math.huge
+        for i, item in ipairs(items) do
+          local key = self.key(item)
+          local rect = self.rect_track:get(key)
+          if rect then
+            local item_top_y = rect[2]
+            local dist = math.abs(item_top_y - viewport_top_y)
+            if dist < min_dist then
+              min_dist = dist
+              anchor_item_idx = i
+              anchor_offset_y = item_top_y - viewport_top_y
+            end
+          end
+        end
+
+        if anchor_item_idx then
+          reaper.ShowConsoleMsg(string.format("[PERF_GRID] Found anchor: item #%d, offset=%.1f\n", anchor_item_idx, anchor_offset_y))
+        end
+      end
+    end
+  end
+
+  self.last_layout_cols = cols
+  self._perf_last_avail_w = avail_w
+  self._perf_last_avail_h = avail_h
+
+  -- PERFORMANCE: Use teleport instead of animate during layout change
   local current_keys = {}
   for i, item in ipairs(items) do
     local key = self.key(item)
