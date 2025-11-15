@@ -164,23 +164,19 @@ function M.show_message(ctx, title, message, opts)
   ImGui.PushStyleColor(ctx, ImGui.Col_TitleBgActive, hexrgb("#00000000"))
   ImGui.PushStyleColor(ctx, ImGui.Col_TitleBgCollapsed, hexrgb("#00000000"))
   ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ModalWindowDimBg, DEFAULTS.scrim_color)  -- THIS WAS THE WHITE OVERLAY
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
 
   local visible = ImGui.BeginPopupModal(ctx, id, true, ImGui.WindowFlags_NoTitleBar | ImGui.WindowFlags_NoResize)
 
   if not visible then
     ImGui.PopStyleVar(ctx, 1)
-    ImGui.PopStyleColor(ctx, 7)
+    ImGui.PopStyleColor(ctx, 8)
     return false
   end
 
   local dl = ImGui.GetWindowDrawList(ctx)
   local x, y = ImGui.GetWindowPos(ctx)
-
-  -- Draw dark scrim over entire script window
-  local script_win_x, script_win_y = ImGui.GetWindowPos(ctx)
-  local script_win_w, script_win_h = ImGui.GetWindowSize(ctx)
-  ImGui.DrawList_AddRectFilled(dl, script_win_x, script_win_y, script_win_x + script_win_w, script_win_y + script_win_h, DEFAULTS.scrim_color)
 
   -- Draw modal box
   draw_modal_box(ctx, dl, x, y, modal_w, modal_h, title)
@@ -215,7 +211,7 @@ function M.show_message(ctx, title, message, opts)
 
   ImGui.EndPopup(ctx)
   ImGui.PopStyleVar(ctx, 1)
-  ImGui.PopStyleColor(ctx, 7)
+  ImGui.PopStyleColor(ctx, 8)
 
   return true
 end
@@ -254,23 +250,19 @@ function M.show_confirm(ctx, title, message, opts)
   ImGui.PushStyleColor(ctx, ImGui.Col_TitleBgActive, hexrgb("#00000000"))
   ImGui.PushStyleColor(ctx, ImGui.Col_TitleBgCollapsed, hexrgb("#00000000"))
   ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ModalWindowDimBg, DEFAULTS.scrim_color)  -- THIS WAS THE WHITE OVERLAY
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
 
   local visible = ImGui.BeginPopupModal(ctx, id, true, ImGui.WindowFlags_NoTitleBar | ImGui.WindowFlags_NoResize)
 
   if not visible then
     ImGui.PopStyleVar(ctx, 1)
-    ImGui.PopStyleColor(ctx, 7)
+    ImGui.PopStyleColor(ctx, 8)
     return false
   end
 
   local dl = ImGui.GetWindowDrawList(ctx)
   local x, y = ImGui.GetWindowPos(ctx)
-
-  -- Draw dark scrim over entire script window
-  local script_win_x, script_win_y = ImGui.GetWindowPos(ctx)
-  local script_win_w, script_win_h = ImGui.GetWindowSize(ctx)
-  ImGui.DrawList_AddRectFilled(dl, script_win_x, script_win_y, script_win_x + script_win_w, script_win_y + script_win_h, DEFAULTS.scrim_color)
 
   -- Draw modal box
   draw_modal_box(ctx, dl, x, y, modal_w, modal_h, title)
@@ -322,7 +314,7 @@ function M.show_confirm(ctx, title, message, opts)
 
   ImGui.EndPopup(ctx)
   ImGui.PopStyleVar(ctx, 1)
-  ImGui.PopStyleColor(ctx, 7)
+  ImGui.PopStyleColor(ctx, 8)
 
   return true
 end
@@ -459,7 +451,7 @@ function M.show_input(ctx, title, initial_text, opts)
 
   ImGui.EndPopup(ctx)
   ImGui.PopStyleVar(ctx, 1)
-  ImGui.PopStyleColor(ctx, 7)
+  ImGui.PopStyleColor(ctx, 8)
 
   return true
 end
