@@ -134,9 +134,6 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
     text = Style.RENDER.lerp_color(config.text_color, config.text_hover_color or config.text_color, inst.hover_alpha)
   end
 
-  -- Check if we should block interaction (modal/popup is open)
-  local any_popup_open = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId + ImGui.PopupFlags_AnyPopupLevel)
-
   -- Draw button visuals
   draw_corner_shape(dl, x, y, size, bg, border_inner, config.border_outer_color, outer_rounding, inner_rounding, position)
 
@@ -155,7 +152,8 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
 
   -- Only create interactive button if no modal is blocking
   local clicked = false
-  if not any_popup_open then
+  local is_blocking = config.is_blocking or false
+  if not is_blocking then
     ImGui.SetCursorScreenPos(ctx, x, y)
     ImGui.InvisibleButton(ctx, '##' .. unique_id, size, size)
     clicked = ImGui.IsItemClicked(ctx, 0)

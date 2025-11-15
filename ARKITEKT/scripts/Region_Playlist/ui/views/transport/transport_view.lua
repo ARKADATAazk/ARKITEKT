@@ -302,7 +302,8 @@ function TransportView:build_header_elements(bridge_state)
   }
 end
 
-function TransportView:draw(ctx, shell_state)
+function TransportView:draw(ctx, shell_state, is_blocking)
+  is_blocking = is_blocking or false
   local bridge = self.state.get_bridge()
   local engine = bridge.engine
   local bridge_state = {
@@ -406,7 +407,7 @@ function TransportView:draw(ctx, shell_state)
     local new_mode = (self.state.get_layout_mode() == 'horizontal') and 'vertical' or 'horizontal'
     self.state.set_layout_mode(new_mode)
     self.state.persist_ui_prefs()
-  end, true)
+  end, true, is_blocking)
 
   ImGui.SetCursorScreenPos(ctx, transport_start_x, transport_start_y + transport_height)
 end

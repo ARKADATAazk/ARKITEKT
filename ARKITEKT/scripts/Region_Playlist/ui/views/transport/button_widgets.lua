@@ -39,27 +39,28 @@ function ViewModeButton:draw_icon(ctx, dl, x, y, mode)
   end
 end
 
-function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_drawlist)
+function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_drawlist, is_blocking)
+  is_blocking = is_blocking or false
   local dl = use_foreground_drawlist and ImGui.GetForegroundDrawList(ctx) or ImGui.GetWindowDrawList(ctx)
   local cfg = self.config
   local btn_size = cfg.size or 32
-  
+
   local mx, my = ImGui.GetMousePos(ctx)
   local is_hovered = mx >= x and mx < x + btn_size and my >= y and my < y + btn_size
-  
+
   local target = is_hovered and 1.0 or 0.0
   local speed = cfg.animation_speed or 12.0
   local dt = ImGui.GetDeltaTime(ctx)
   self.hover_alpha = self.hover_alpha + (target - self.hover_alpha) * speed * dt
   self.hover_alpha = max(0, min(1, self.hover_alpha))
-  
+
   local bg = self:lerp_color(cfg.bg_color or hexrgb("#252525"), cfg.bg_hover or hexrgb("#2A2A2A"), self.hover_alpha)
   local border_inner = self:lerp_color(cfg.border_inner or hexrgb("#404040"), cfg.border_hover or hexrgb("#505050"), self.hover_alpha)
   local border_outer = cfg.border_outer or hexrgb("#000000DD")
-  
+
   local rounding = cfg.rounding or 4
   local inner_rounding = max(0, rounding - 2)
-  
+
   ImGui.DrawList_AddRectFilled(dl, x, y, x + btn_size, y + btn_size, bg, inner_rounding)
   ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + btn_size - 1, y + btn_size - 1, border_inner, inner_rounding, 0, 1)
   ImGui.DrawList_AddRect(dl, x, y, x + btn_size, y + btn_size, border_outer, inner_rounding, 0, 1)
@@ -68,16 +69,13 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
   local icon_y = (y + (btn_size - 20) / 2 + 0.5)//1
   self:draw_icon(ctx, dl, icon_x, icon_y, current_mode)
 
-  -- Check if modal/popup is blocking interaction
-  local any_popup_open = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId + ImGui.PopupFlags_AnyPopupLevel)
-
   -- Use manual click detection when on foreground drawlist (outside child context)
-  if use_foreground_drawlist then
-    if not any_popup_open and is_hovered and ImGui.IsMouseClicked(ctx, 0) and on_click then
-      on_click()
-    end
-  else
-    if not any_popup_open then
+  if not is_blocking then
+    if use_foreground_drawlist then
+      if is_hovered and ImGui.IsMouseClicked(ctx, 0) and on_click then
+        on_click()
+      end
+    else
       ImGui.SetCursorScreenPos(ctx, x, y)
       ImGui.InvisibleButton(ctx, "##view_mode_toggle", btn_size, btn_size)
 
@@ -151,16 +149,13 @@ function SimpleToggleButton:draw(ctx, x, y, state, on_click, color)
   local tw, th = ImGui.CalcTextSize(ctx, self.label)
   ImGui.DrawList_AddText(dl, x + (self.width - tw) / 2, y + (self.height - th) / 2, text_color, self.label)
 
-  -- Block interaction if modal/popup is open
-  local any_popup_open = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId + ImGui.PopupFlags_AnyPopupLevel)
+  -- Note: SimpleToggleButton doesn't currently support is_blocking parameter
+  -- If needed, add it to the draw() signature like ViewModeButton
+  ImGui.SetCursorScreenPos(ctx, x, y)
+  ImGui.InvisibleButton(ctx, self.id, self.width, self.height)
 
-  if not any_popup_open then
-    ImGui.SetCursorScreenPos(ctx, x, y)
-    ImGui.InvisibleButton(ctx, self.id, self.width, self.height)
-
-    if ImGui.IsItemClicked(ctx, 0) and on_click then
-      on_click(not state)
-    end
+  if ImGui.IsItemClicked(ctx, 0) and on_click then
+    on_click(not state)
   end
   
   return self.width

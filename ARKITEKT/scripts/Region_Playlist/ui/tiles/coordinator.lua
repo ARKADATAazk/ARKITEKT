@@ -635,8 +635,15 @@ function RegionTiles:set_pool_sort_mode(mode)
   self.pool_container:set_sort_mode(mode)
 end
 
-function RegionTiles:set_pool_sort_direction(direction)
-  self.pool_container:set_sort_direction(direction)
+function RegionTiles:get_pool_sort_direction()
+  return self.pool_container:get_sort_direction()
+end
+
+function RegionTiles:is_modal_blocking()
+  -- Check if any modal overlay or context menu is currently active
+  local overflow_active = self.active_container and self.active_container:is_overflow_visible()
+  local actions_menu_active = self._actions_menu_visible
+  return overflow_active or actions_menu_active
 end
 
 function RegionTiles:draw_selector(ctx, playlists, active_id, height)
@@ -648,26 +655,31 @@ function RegionTiles:draw_active(ctx, playlist, height, shell_state)
     self.active_grid.panel_clip_bounds = self.active_container.visible_bounds
   end
 
-  -- Inject icon font and size into corner buttons
+  -- Inject modal blocking state and icon font into corner buttons
+  local is_blocking = self:is_modal_blocking()
   local icons_font = shell_state and shell_state.fonts and shell_state.fonts.icons
   local icons_size = shell_state and shell_state.fonts and shell_state.fonts.icons_size
-  if icons_font and self.active_container and self.active_container.config and self.active_container.config.corner_buttons then
+  if self.active_container and self.active_container.config and self.active_container.config.corner_buttons then
     local cb = self.active_container.config.corner_buttons
     if cb.top_right then
       cb.top_right.icon_font = icons_font
       cb.top_right.icon_font_size = icons_size
+      cb.top_right.is_blocking = is_blocking
     end
     if cb.top_left then
       cb.top_left.icon_font = icons_font
       cb.top_left.icon_font_size = icons_size
+      cb.top_left.is_blocking = is_blocking
     end
     if cb.bottom_right then
       cb.bottom_right.icon_font = icons_font
       cb.bottom_right.icon_font_size = icons_size
+      cb.bottom_right.is_blocking = is_blocking
     end
     if cb.bottom_left then
       cb.bottom_left.icon_font = icons_font
       cb.bottom_left.icon_font_size = icons_size
+      cb.bottom_left.is_blocking = is_blocking
     end
   end
 
@@ -677,6 +689,15 @@ end
 function RegionTiles:draw_pool(ctx, regions, height, shell_state)
   if self.pool_container and self.pool_container.visible_bounds then
     self.pool_grid.panel_clip_bounds = self.pool_container.visible_bounds
+  end
+
+  -- Inject modal blocking state into corner buttons
+  local is_blocking = self:is_modal_blocking()
+  if self.pool_container and self.pool_container.config and self.pool_container.config.corner_buttons then
+    local cb = self.pool_container.config.corner_buttons
+    if cb.bottom_left then
+      cb.bottom_left.is_blocking = is_blocking
+    end
   end
 
   -- Inject icon font and size into corner buttons
