@@ -643,10 +643,10 @@ function RegionTiles:set_pool_sort_direction(direction)
   self.pool_container:set_sort_direction(direction)
 end
 
-function RegionTiles:is_modal_blocking()
+function RegionTiles:is_modal_blocking(ctx)
   -- Check if any modal overlay or context menu is currently active
   local overflow_active = self.active_container and self.active_container:is_overflow_visible()
-  local actions_menu_active = self._actions_menu_visible
+  local actions_menu_active = ctx and ImGui.IsPopupOpen(ctx, "ActionsMenu", ImGui.PopupFlags_AnyPopupId) or false
   return overflow_active or actions_menu_active
 end
 
@@ -660,7 +660,7 @@ function RegionTiles:draw_active(ctx, playlist, height, shell_state)
   end
 
   -- Inject modal blocking state and icon font into corner buttons
-  local is_blocking = self:is_modal_blocking()
+  local is_blocking = self:is_modal_blocking(ctx)
   local icons_font = shell_state and shell_state.fonts and shell_state.fonts.icons
   local icons_size = shell_state and shell_state.fonts and shell_state.fonts.icons_size
   if self.active_container and self.active_container.config and self.active_container.config.corner_buttons then
@@ -696,7 +696,7 @@ function RegionTiles:draw_pool(ctx, regions, height, shell_state)
   end
 
   -- Inject modal blocking state into corner buttons
-  local is_blocking = self:is_modal_blocking()
+  local is_blocking = self:is_modal_blocking(ctx)
   if self.pool_container and self.pool_container.config and self.pool_container.config.corner_buttons then
     local cb = self.pool_container.config.corner_buttons
     if cb.bottom_left then

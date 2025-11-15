@@ -286,13 +286,13 @@ end
 
 function GUI:draw(ctx, window, shell_state)
   self.shell_state = shell_state
-  
+
   self:update_state(ctx, window)
 
   -- Get cursor position BEFORE drawing transport
   local transport_start_x, transport_start_y = ImGui.GetCursorScreenPos(ctx)
 
-  local is_blocking = self.region_tiles:is_modal_blocking()
+  local is_blocking = self.region_tiles:is_modal_blocking(ctx)
   self.transport_view:draw(ctx, shell_state, is_blocking)
 
   -- Position cursor after transport with separator gap
@@ -301,7 +301,7 @@ function GUI:draw(ctx, window, shell_state)
   ImGui.SetCursorScreenPos(ctx, transport_start_x, transport_start_y + transport_height + sep_gap)
 
   self.layout_view:draw(ctx, self.region_tiles, shell_state)
-  
+
   self.region_tiles:draw_ghosts(ctx)
 end
 
