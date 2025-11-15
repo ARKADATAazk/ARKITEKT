@@ -192,7 +192,7 @@ function Grid:draw(ctx)
   -- PERFORMANCE: Detect resize BEFORE layout calculation
   local resize_threshold = 5
   local did_resize = false
-  local scroll_percent = 0
+  local saved_scroll_y = 0
 
   if self._perf_last_avail_w and self._perf_last_avail_h then
     local w_diff = math.abs(avail_w - self._perf_last_avail_w)
@@ -200,11 +200,7 @@ function Grid:draw(ctx)
     did_resize = (w_diff > resize_threshold or h_diff > resize_threshold)
 
     if did_resize then
-      local scroll_y = ImGui.GetScrollY(ctx)
-      local max_scroll = ImGui.GetScrollMaxY(ctx)
-      if max_scroll > 0 then
-        scroll_percent = scroll_y / max_scroll
-      end
+      saved_scroll_y = ImGui.GetScrollY(ctx)
     end
   end
 
@@ -336,14 +332,13 @@ function Grid:draw(ctx)
   ImGui.InvisibleButton(ctx, self._cached_bg_id, extended_w, extended_h)
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
-  -- PERFORMANCE: Restore scroll percentage after resize
+  -- PERFORMANCE: Restore scroll position after resize
   -- CRITICAL: Must be AFTER InvisibleButton so ImGui knows the new scroll region size
-  if did_resize then
+  if did_resize and saved_scroll_y > 0 then
     local max_scroll = ImGui.GetScrollMaxY(ctx)
-    if max_scroll > 0 then
-      local new_scroll_y = scroll_percent * max_scroll
-      ImGui.SetScrollY(ctx, new_scroll_y)
-    end
+    -- Clamp to valid range
+    local clamped_scroll = math.min(saved_scroll_y, max_scroll)
+    ImGui.SetScrollY(ctx, clamped_scroll)
   end
 
   local bg_clicked = ImGui.IsItemClicked(ctx, 0)
