@@ -142,19 +142,28 @@ function M.handle_wheel_input(grid, ctx, items)
 
   local item, key, is_selected = M.find_hovered_item(grid, ctx, items)
   if not item or not key then return false end
-  
-  local wheel_step = (grid.config and grid.config.wheel and grid.config.wheel.step) or 1
-  local delta = (wheel_y > 0) and wheel_step or -wheel_step
-  
-  local keys_to_adjust = {}
-  if is_selected and grid.selection:count() > 0 then
-    keys_to_adjust = grid.selection:selected_keys()
-  else
-    keys_to_adjust = {key}
+
+  -- Check if CTRL or ALT is held (tile resize modifiers)
+  local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+  local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+
+  -- If CTRL or ALT is held, this is a tile resize operation - consume wheel to prevent scroll
+  if ctrl or alt then
+    local wheel_step = (grid.config and grid.config.wheel and grid.config.wheel.step) or 1
+    local delta = (wheel_y > 0) and wheel_step or -wheel_step
+
+    local keys_to_adjust = {}
+    if is_selected and grid.selection:count() > 0 then
+      keys_to_adjust = grid.selection:selected_keys()
+    else
+      keys_to_adjust = {key}
+    end
+
+    grid.behaviors.wheel_adjust(keys_to_adjust, delta)
+    return true  -- Consume wheel to prevent scrolling
   end
-  
-  grid.behaviors.wheel_adjust(keys_to_adjust, delta)
-  return true
+
+  return false
 end
 
 function M.handle_tile_input(grid, ctx, item, rect)

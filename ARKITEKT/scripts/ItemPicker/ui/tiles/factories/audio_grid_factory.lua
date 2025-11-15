@@ -147,10 +147,8 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
     end,
 
     wheel_adjust = function(keys, delta)
-      reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST] Called! keys=%d, delta=%d\n", #keys, delta))
       if not keys or #keys == 0 then return end
       local key = keys[1]
-      reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST] Cycling: %s, delta=%d\n", tostring(key), delta))
       state.cycle_audio_item(key, delta > 0 and 1 or -1)
     end,
 

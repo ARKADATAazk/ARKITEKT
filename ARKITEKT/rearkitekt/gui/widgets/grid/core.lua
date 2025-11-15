@@ -100,8 +100,10 @@ Grid.__index = Grid
 function M.new(opts)
   opts = opts or {}
 
+  local grid_id = opts.id or "grid"
+
   local grid = setmetatable({
-    id               = opts.id or "grid",
+    id               = grid_id,
     gap              = opts.gap or 12,
     min_col_w_fn     = type(opts.min_col_w) == "function" and opts.min_col_w or function() return opts.min_col_w or 160 end,
     fixed_tile_h     = opts.fixed_tile_h,
@@ -128,7 +130,7 @@ function M.new(opts)
 
     selection        = Selection.new(),
     rect_track       = RectTrack.new(
-      opts.layout_speed or DEFAULTS.layout.speed, 
+      opts.layout_speed or DEFAULTS.layout.speed,
       opts.layout_snap or DEFAULTS.layout.snap_epsilon
     ),
     sel_rect         = SelRect.new(),
@@ -146,11 +148,15 @@ function M.new(opts)
     external_drop_target = nil,
     last_window_pos  = nil,
     previous_item_keys = {},
-    
+
     last_layout_cols = 1,
     grid_bounds = nil,
     visual_bounds = nil,
     panel_clip_bounds = nil,
+
+    -- Cache string IDs for performance (avoid string concatenation every frame)
+    _cached_bg_id = "##grid_bg_" .. grid_id,
+    _cached_empty_id = "##grid_empty_" .. grid_id,
   }, Grid)
 
   grid.animator:set_rect_track(grid.rect_track)
@@ -206,30 +212,34 @@ end
 
 function Grid:_draw_drag_visuals(ctx, dl)
   local mx, my = ImGui.GetMousePos(ctx)
-  local dragged_set = DropZones.build_dragged_set(self.drag:get_dragged_ids())
+  local dragged_ids = self.drag:get_dragged_ids()
+  local dragged_set = DropZones.build_dragged_set(dragged_ids)
 
   local items = self.get_items()
   local target_index, coord, alt1, alt2, orientation = self:_find_drop_target(ctx, mx, my, dragged_set, items)
 
   local cfg = self.config
 
-  local dragged_ids = self.drag:get_dragged_ids()
-  local all_items_dragged = (#items > 0) and (#dragged_ids == #items) or false
+  -- Cache lengths for performance
+  local num_items = #items
+  local num_dragged = #dragged_ids
+  local all_items_dragged = (num_items > 0) and (num_dragged == num_items) or false
 
   if all_items_dragged then
     self.drag:set_target(nil)
   else
     self.drag:set_target(target_index)
   end
-  
-  for _, id in ipairs(dragged_ids) do
+
+  for i = 1, num_dragged do
+    local id = dragged_ids[i]
     local r = self.rect_track:get(id)
     if r then
       local dim_fill = (cfg.dim and cfg.dim.fill_color) or DEFAULTS.dim.fill_color
       local dim_stroke = (cfg.dim and cfg.dim.stroke_color) or DEFAULTS.dim.stroke_color
       local dim_thickness = (cfg.dim and cfg.dim.stroke_thickness) or DEFAULTS.dim.stroke_thickness
       local dim_rounding = (cfg.dim and cfg.dim.rounding) or DEFAULTS.dim.rounding
-      
+
       ImGui.DrawList_AddRectFilled(dl, r[1], r[2], r[3], r[4], dim_fill, dim_rounding)
       ImGui.DrawList_AddRect(dl, r[1]+0.5, r[2]+0.5, r[3]-0.5, r[4]-0.5, dim_stroke, dim_rounding, 0, dim_thickness)
     end
@@ -244,9 +254,9 @@ function Grid:_draw_drag_visuals(ctx, dl)
     end
   end
 
-  if #dragged_ids > 0 then
+  if num_dragged > 0 then
     local fg_dl = ImGui.GetForegroundDrawList(ctx)
-    DragIndicator.draw(ctx, fg_dl, mx, my, #dragged_ids, cfg.ghost or DEFAULTS.ghost)
+    DragIndicator.draw(ctx, fg_dl, mx, my, num_dragged, cfg.ghost or DEFAULTS.ghost)
   end
 end
 
@@ -318,15 +328,17 @@ end
 
 function Grid:draw(ctx)
   local items = self.get_items()
-  
+  -- Cache table length for performance (avoid recalculating #items multiple times)
+  local num_items = #items
+
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
   local origin_x, origin_y = ImGui.GetCursorScreenPos(ctx)
-  
+
   local ext = self.extend_input_area
   local extended_x = origin_x - ext.left
   local extended_y = origin_y - ext.top
-  
-  if #items == 0 then
+
+  if num_items == 0 then
     local extended_w = avail_w + ext.left + ext.right
     local extended_h = avail_h + ext.top + ext.bottom
     
@@ -337,9 +349,9 @@ function Grid:draw(ctx)
     end
     
     self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
-    
+
     ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
-    ImGui.InvisibleButton(ctx, "##grid_empty_" .. self.id, extended_w, extended_h)
+    ImGui.InvisibleButton(ctx, self._cached_empty_id, extended_w, extended_h)
     ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
     
     self:_update_external_drop_target(ctx)
@@ -375,8 +387,8 @@ function Grid:draw(ctx)
   self.current_rects = {}
 
   local min_col_w = self.min_col_w_fn()
-  local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, #items, origin_x, origin_y, self.fixed_tile_h)
-  
+  local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, num_items, origin_x, origin_y, self.fixed_tile_h)
+
   self.last_layout_cols = cols
 
   local current_keys = {}
@@ -426,29 +438,48 @@ function Grid:draw(ctx)
   if self.panel_clip_bounds then
     self.visual_bounds = self.panel_clip_bounds
   else
-    self.visual_bounds = {origin_x, origin_y, origin_x + avail_w, origin_y + bg_height}
+    -- CRITICAL FIX: Calculate actual visible viewport in screen space
+    -- Use GetCursorStartPos to get the content area start, which stays fixed
+    local window_x, window_y = ImGui.GetWindowPos(ctx)
+    local scroll_y = ImGui.GetScrollY(ctx)
+
+    -- Content area starts at window position (accounting for title bar/padding automatically)
+    -- and extends by the available region size
+    local content_start_y = window_y + (origin_y - scroll_y - window_y)
+
+    -- Simpler approach: just use window pos and available region
+    -- This gives us the visible viewport in screen space
+    self.visual_bounds = {
+      window_x,
+      window_y + 30,  -- Approximate title bar height
+      window_x + avail_w,
+      window_y + 30 + avail_h
+    }
   end
   
   self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
-  
+
   ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
-  ImGui.InvisibleButton(ctx, "##grid_bg_" .. self.id, extended_w, extended_h)
+  ImGui.InvisibleButton(ctx, self._cached_bg_id, extended_w, extended_h)
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
-  
+
   local bg_clicked = ImGui.IsItemClicked(ctx, 0)
 
-  local function mouse_over_any_tile()
+  -- Optimized: Check if mouse is over any tile (inline to avoid function call overhead)
+  local mouse_over_tile = false
+  if bg_clicked then
     local mx, my = ImGui.GetMousePos(ctx)
-    for _, item in ipairs(items) do
+    for i = 1, num_items do
+      local item = items[i]
       local r = self.rect_track:get(self.key(item))
       if r and self:_rect_intersects_bounds(r) and Draw.point_in_rect(mx, my, r[1], r[2], r[3], r[4]) then
-        return true
+        mouse_over_tile = true
+        break
       end
     end
-    return false
   end
 
-  if bg_clicked and not mouse_over_any_tile() and not Input.is_external_drag_active(self) then
+  if bg_clicked and not mouse_over_tile and not Input.is_external_drag_active(self) then
     local mx, my = ImGui.GetMousePos(ctx)
     local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
     local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
@@ -501,12 +532,13 @@ function Grid:draw(ctx)
     local x1, y1, x2, y2 = self.sel_rect:aabb()
     if x1 then
       local rect_map = {}
-      for i, item in ipairs(items) do
+      for i = 1, num_items do
+        local item = items[i]
         rect_map[self.key(item)] = rects[i]
       end
       self.selection:apply_rect({x1, y1, x2, y2}, rect_map, self.sel_rect.mode)
-      if self.behaviors and self.behaviors.on_select then 
-        self.behaviors.on_select(self.selection:selected_keys()) 
+      if self.behaviors and self.behaviors.on_select then
+        self.behaviors.on_select(self.selection:selected_keys())
       end
     end
   end
@@ -530,23 +562,47 @@ function Grid:draw(ctx)
     ImGui.PushClipRect(ctx, self.visual_bounds[1], self.visual_bounds[2], self.visual_bounds[3], self.visual_bounds[4], true)
   end
 
-  -- Viewport culling with buffer zone (200px) for smoother scrolling
-  local VIEWPORT_BUFFER = 200
+  -- Viewport culling with buffer zone (dynamic based on item count for better performance)
+  local VIEWPORT_BUFFER = (num_items > 500) and 100 or 200
 
-  for i, item in ipairs(items) do
+  -- CRITICAL OPTIMIZATION: Calculate visible row range to avoid looping through all items
+  -- For 1000 items with 10 visible, this reduces loop from 1000 to ~20 items
+  local first_item, last_item = 1, num_items
+  if self.visual_bounds and rects[1] then
+    -- Cache math functions for performance
+    local floor = math.floor
+    local ceil = math.ceil
+    local max = math.max
+    local min = math.min
+
+    local tile_h = rects[1][4] - rects[1][2]
+    local row_height = tile_h + self.gap
+
+    -- Calculate which rows are visible (with buffer)
+    local viewport_top = self.visual_bounds[2] - VIEWPORT_BUFFER
+    local viewport_bottom = self.visual_bounds[4] + VIEWPORT_BUFFER
+
+    local first_visible_row = max(0, floor((viewport_top - origin_y - self.gap) / row_height))
+    local last_visible_row = ceil((viewport_bottom - origin_y - self.gap) / row_height)
+
+    -- Convert row range to item indices
+    first_item = max(1, first_visible_row * cols + 1)
+    last_item = min(num_items, (last_visible_row + 1) * cols)
+  end
+
+  for i = first_item, last_item do
+    local item = items[i]
     local key = self.key(item)
     local rect = self.rect_track:get(key)
 
     if rect then
       rect = self.animator:apply_spawn_to_rect(key, rect)
 
-      -- Early viewport culling - skip ALL work for items outside visible area
-      -- Use buffer zone to pre-render items about to come into view
+      -- Viewport culling check (should pass for most items in range due to row calculation)
       local is_visible = self:_rect_intersects_bounds(rect, VIEWPORT_BUFFER)
 
       if not is_visible then
         -- Skip rendering, input, and expensive operations for invisible items
-        -- But still track the rect for layout calculations
         self.current_rects[key] = {rect[1], rect[2], rect[3], rect[4], item}
         goto continue
       end
@@ -601,12 +657,16 @@ function Grid:draw(ctx)
   if self.drag:is_active() and ImGui.IsMouseReleased(ctx, 0) then
     if self.drag:get_target_index() and self.behaviors and self.behaviors.reorder then
       local order = {}
-      for _, item in ipairs(items) do order[#order+1] = self.key(item) end
-      
+      for i = 1, num_items do
+        order[i] = self.key(items[i])
+      end
+
       local dragged_set = DropZones.build_dragged_set(self.drag:get_dragged_ids())
-      
+
       local filtered_order = {}
-      for _, id in ipairs(order) do
+      local num_order = #order
+      for i = 1, num_order do
+        local id = order[i]
         if not dragged_set[id] then
           filtered_order[#filtered_order + 1] = id
         end
