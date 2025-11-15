@@ -162,7 +162,7 @@ end
 local function convert_sws_playlist_to_ark(sws_playlist, playlist_num)
   local ark_playlist = {
     id = "SWS_" .. tostring(playlist_num),
-    name = sws_playlist.name,
+    name = "[SWS] " .. sws_playlist.name,
     items = {},
     chip_color = RegionState.generate_chip_color(),
   }
@@ -311,10 +311,11 @@ function M.execute_import(merge_mode, backup)
   
   -- Save to project
   if merge_mode then
-    -- Merge with existing playlists
+    -- Merge with existing playlists (prepend SWS playlists to the beginning)
     local existing = RegionState.load_playlists(0)
-    for _, pl in ipairs(ark_playlists) do
-      table.insert(existing, pl)
+    -- Insert in reverse order so they appear in correct order at the beginning
+    for i = #ark_playlists, 1, -1 do
+      table.insert(existing, 1, ark_playlists[i])
     end
     RegionState.save_playlists(existing, 0)
     

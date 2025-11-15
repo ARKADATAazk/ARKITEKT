@@ -122,8 +122,8 @@ function M.draw_active(self, ctx, playlist, height)
       }
       self._sws_show_result = true
     else
-      -- Execute import (replace mode, with backup)
-      local success, report, err = SWSImporter.execute_import(false, true)
+      -- Execute import (merge mode, with backup)
+      local success, report, err = SWSImporter.execute_import(true, true)
 
       if success and report then
         local formatted = SWSImporter.format_report(report)
