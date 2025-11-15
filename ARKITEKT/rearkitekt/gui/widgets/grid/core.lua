@@ -438,7 +438,9 @@ function Grid:draw(ctx)
   if self.panel_clip_bounds then
     self.visual_bounds = self.panel_clip_bounds
   else
-    self.visual_bounds = {origin_x, origin_y, origin_x + avail_w, origin_y + bg_height}
+    -- CRITICAL FIX: Use avail_h (visible height) not bg_height (total grid height)
+    -- This makes viewport culling actually work for thousands of items
+    self.visual_bounds = {origin_x, origin_y, origin_x + avail_w, origin_y + avail_h}
   end
   
   self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
