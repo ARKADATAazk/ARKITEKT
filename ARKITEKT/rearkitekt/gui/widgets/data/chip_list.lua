@@ -23,6 +23,7 @@ end
 
 local function _draw_chip(ctx, item, is_selected, opts)
   return Chip.draw(ctx, {
+    id = "##chip_" .. (item.id or item.label),
     style = opts.style,
     label = item.label,
     color = item.color,
