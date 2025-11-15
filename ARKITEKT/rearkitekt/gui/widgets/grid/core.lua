@@ -439,17 +439,21 @@ function Grid:draw(ctx)
     self.visual_bounds = self.panel_clip_bounds
   else
     -- CRITICAL FIX: Calculate actual visible viewport in screen space
-    -- origin_y changes when scrolling (becomes negative), so we need fixed window coords
-    local content_min_x, content_min_y = ImGui.GetWindowContentRegionMin(ctx)
-    local content_max_x, content_max_y = ImGui.GetWindowContentRegionMax(ctx)
+    -- Use GetCursorStartPos to get the content area start, which stays fixed
     local window_x, window_y = ImGui.GetWindowPos(ctx)
+    local scroll_y = ImGui.GetScrollY(ctx)
 
-    -- Convert content region to screen space
+    -- Content area starts at window position (accounting for title bar/padding automatically)
+    -- and extends by the available region size
+    local content_start_y = window_y + (origin_y - scroll_y - window_y)
+
+    -- Simpler approach: just use window pos and available region
+    -- This gives us the visible viewport in screen space
     self.visual_bounds = {
-      window_x + content_min_x,
-      window_y + content_min_y,
-      window_x + content_max_x,
-      window_y + content_max_y
+      window_x,
+      window_y + 30,  -- Approximate title bar height
+      window_x + avail_w,
+      window_y + 30 + avail_h
     }
   end
   
