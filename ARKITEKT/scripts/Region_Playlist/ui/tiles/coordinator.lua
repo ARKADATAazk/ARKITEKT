@@ -647,8 +647,9 @@ function RegionTiles:is_modal_blocking(ctx)
   -- Check if ANY popup/modal is currently blocking input
   if not ctx then return false end
 
-  -- Check if any popup is open at all (empty string with AnyPopupLevel checks all popups)
-  return ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupLevel)
+  -- In ImGui, popups automatically capture input. Check if any popup has captured the mouse.
+  -- When a popup/modal is open, we should block manual mouse checks on foreground elements.
+  return ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
 end
 
 function RegionTiles:draw_selector(ctx, playlists, active_id, height)
