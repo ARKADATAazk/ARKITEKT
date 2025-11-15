@@ -16,20 +16,9 @@ local ModalDialog = require('rearkitekt.gui.widgets.overlay.modal_dialog')
 
 local M = {}
 
--- Modal instance for SWS import results
-local sws_result_modal = nil
-
--- Helper: Show import result modal
-local function show_import_result(ctx, window, success, message)
-  local title = success and "Import Successful" or "Import Failed"
-
-  sws_result_modal = ModalDialog.show_message(ctx, window, title, message, {
-    id = "##sws_import_result",
-    button_label = "OK",
-    width = 0.45,
-    height = 0.25,
-  })
-end
+-- Modal state
+local sws_result_data = nil
+local rename_initial_text = nil
 
 -- Helper: Refresh UI after successful import and select first imported playlist
 local function refresh_after_import(self)
@@ -46,12 +35,15 @@ local function refresh_after_import(self)
 end
 
 -- Helper: Execute SWS import and handle results
-local function execute_sws_import(self, ctx, window)
+local function execute_sws_import(self, ctx)
   -- Check for SWS playlists
   if not SWSImporter.has_sws_playlists() then
-    show_import_result(ctx, window, false,
-      "No SWS Region Playlists found in the current project.\n\n" ..
-      "Make sure the project is saved and contains SWS Region Playlists.")
+    sws_result_data = {
+      title = "Import Failed",
+      message = "No SWS Region Playlists found in the current project.\n\n" ..
+                "Make sure the project is saved and contains SWS Region Playlists."
+    }
+    ImGui.OpenPopup(ctx, "##sws_import_result")
     return
   end
 
@@ -59,10 +51,18 @@ local function execute_sws_import(self, ctx, window)
   local success, report, err = SWSImporter.execute_import(true, true)
 
   if success and report then
-    show_import_result(ctx, window, true, "Import successful!\n\n" .. SWSImporter.format_report(report))
+    sws_result_data = {
+      title = "Import Successful",
+      message = "Import successful!\n\n" .. SWSImporter.format_report(report)
+    }
+    ImGui.OpenPopup(ctx, "##sws_import_result")
     refresh_after_import(self)
   else
-    show_import_result(ctx, window, false, "Import failed: " .. tostring(err or "Unknown error"))
+    sws_result_data = {
+      title = "Import Failed",
+      message = "Import failed: " .. tostring(err or "Unknown error")
+    }
+    ImGui.OpenPopup(ctx, "##sws_import_result")
   end
 end
 
@@ -160,63 +160,58 @@ function M.draw_active(self, ctx, playlist, height)
   -- Execute SWS import
   if self._sws_import_requested then
     self._sws_import_requested = false
-    execute_sws_import(self, ctx, self.window)
+    execute_sws_import(self, ctx)
   end
 
-  -- Rename playlist modal
+  -- Show SWS import result modal
+  if sws_result_data then
+    ModalDialog.show_message(ctx, sws_result_data.title, sws_result_data.message, {
+      id = "##sws_import_result",
+      button_label = "OK",
+      width = 0.45,
+      height = 0.25,
+      on_close = function()
+        sws_result_data = nil
+      end
+    })
+  end
+
+  -- Open rename playlist modal
   if self._rename_input_visible then
-    ImGui.OpenPopup(ctx, "Rename Playlist")
-    self._rename_input_visible = false
-    if not self._rename_input_buffer then
-      -- Find current name
-      local playlists = State.get_playlists()
-      for _, pl in ipairs(playlists) do
-        if pl.id == self._rename_playlist_id then
-          self._rename_input_buffer = pl.name or ""
-          break
-        end
+    -- Find current name
+    local playlists = State.get_playlists()
+    for _, pl in ipairs(playlists) do
+      if pl.id == self._rename_playlist_id then
+        rename_initial_text = pl.name or ""
+        break
       end
     end
+    ImGui.OpenPopup(ctx, "##rename_playlist")
+    self._rename_input_visible = false
   end
 
-  if ImGui.BeginPopupModal(ctx, "Rename Playlist", nil, ImGui.WindowFlags_AlwaysAutoResize) then
-    ImGui.Text(ctx, "Enter new name:")
-    ImGui.SetNextItemWidth(ctx, 300)
-
-    if not self._rename_input_buffer then
-      self._rename_input_buffer = ""
-    end
-
-    local rv, buf = ImGui.InputText(ctx, "##rename_input", self._rename_input_buffer)
-    if rv then
-      self._rename_input_buffer = buf
-    end
-
-    if ImGui.IsWindowAppearing(ctx) then
-      ImGui.SetKeyboardFocusHere(ctx, -1)
-    end
-
-    ImGui.Spacing(ctx)
-
-    if ImGui.Button(ctx, "OK", 100, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
-      if self.controller and self._rename_playlist_id and self._rename_input_buffer and self._rename_input_buffer ~= "" then
-        self.controller:rename_playlist(self._rename_playlist_id, self._rename_input_buffer)
-        self.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+  -- Show rename playlist modal
+  if rename_initial_text then
+    ModalDialog.show_input(ctx, "Rename Playlist", rename_initial_text, {
+      id = "##rename_playlist",
+      placeholder = "Enter playlist name",
+      confirm_label = "Rename",
+      cancel_label = "Cancel",
+      width = 0.4,
+      height = 0.25,
+      on_confirm = function(new_name)
+        if self.controller and self._rename_playlist_id then
+          self.controller:rename_playlist(self._rename_playlist_id, new_name)
+          self.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+        end
+        rename_initial_text = nil
+        self._rename_playlist_id = nil
+      end,
+      on_cancel = function()
+        rename_initial_text = nil
+        self._rename_playlist_id = nil
       end
-      self._rename_input_buffer = nil
-      self._rename_playlist_id = nil
-      ImGui.CloseCurrentPopup(ctx)
-    end
-
-    ImGui.SameLine(ctx)
-
-    if ImGui.Button(ctx, "Cancel", 100, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-      self._rename_input_buffer = nil
-      self._rename_playlist_id = nil
-      ImGui.CloseCurrentPopup(ctx)
-    end
-
-    ImGui.EndPopup(ctx)
+    })
   end
 
   if self.bridge:is_drag_active() and self.bridge:get_source_grid() == 'active' and ImGui.IsMouseReleased(ctx, 0) then

@@ -228,9 +228,6 @@ function GUI:refresh_tabs()
 end
 
 function GUI:update_state(ctx, window)
-  -- Set window on region_tiles for modal access
-  self.region_tiles.window = window
-
   if self.overflow_modal_view:should_show() then
     self.overflow_modal_view:draw(ctx, window)
   end
