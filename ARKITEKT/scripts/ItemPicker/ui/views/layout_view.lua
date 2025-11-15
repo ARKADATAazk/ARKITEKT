@@ -6,7 +6,16 @@ local ImGui = require 'imgui' '0.10'
 local SearchInput = require('rearkitekt.gui.widgets.controls.search_input')
 local Checkbox = require('rearkitekt.gui.widgets.controls.checkbox')
 local StatusBar = require('ItemPicker.ui.views.status_bar')
-local Debug = require('ItemPicker.debug_log')
+
+-- Debug module - with error handling
+local Debug = nil
+local debug_ok, debug_module = pcall(require, 'ItemPicker.debug_log')
+if debug_ok then
+  Debug = debug_module
+  reaper.ShowConsoleMsg("=== ITEMPICKER DEBUG MODULE LOADED ===\n")
+else
+  reaper.ShowConsoleMsg("=== DEBUG MODULE FAILED: " .. tostring(debug_module) .. " ===\n")
+end
 
 local M = {}
 local LayoutView = {}
@@ -56,6 +65,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   ImGui.SetNextWindowPos(ctx, 0, 0)
   ImGui.SetNextWindowSize(ctx, screen_w, screen_h)
 
+  -- Debug output
+  if not self.window_size_logged then
+    reaper.ShowConsoleMsg(string.format("=== WINDOW SIZE: %dx%d ===\n", screen_w, screen_h))
+    self.window_size_logged = true
+  end
+
   -- Create fullscreen window wrapper (matching old MainWindow)
   local window_flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoTitleBar |
                        ImGui.WindowFlags_NoResize | ImGui.WindowFlags_NoMove |
@@ -86,9 +101,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local total_width, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
     "Play Item Through Track (will add delay to preview playback)",
     self.state.settings.play_item_through_track, checkbox_config, "play_item_through_track")
-  Debug.log_checkbox("play_item_through_track", clicked, self.state.settings.play_item_through_track, total_width)
+
+  -- Log file debug (if available)
+  if Debug then
+    Debug.log_checkbox("play_item_through_track", clicked, self.state.settings.play_item_through_track, total_width)
+  end
+
+  -- Console debug only on interaction
   if clicked then
-    Debug.log("CHECKBOX", "play_item_through_track TOGGLED")
+    reaper.ShowConsoleMsg("[CHECKBOX] CLICKED play_item_through_track! (toggling)\n")
+    if Debug then Debug.log("CHECKBOX", "play_item_through_track TOGGLED") end
     self.state:set_setting('play_item_through_track', not self.state.settings.play_item_through_track)
   end
 
