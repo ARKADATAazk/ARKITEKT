@@ -62,29 +62,34 @@ function LayoutView:handle_shortcuts(ctx)
   end
 end
 
-function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, screen_h)
+function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, screen_h, is_overlay_mode)
   self:handle_shortcuts(ctx)
 
-  -- Set window position and size BEFORE Begin (critical!)
-  ImGui.SetNextWindowPos(ctx, 0, 0)
-  ImGui.SetNextWindowSize(ctx, screen_w, screen_h)
+  -- In overlay mode, skip window creation (overlay manager already created the window)
+  local imgui_visible = true
+  if not is_overlay_mode then
+    -- Set window position and size BEFORE Begin (critical!)
+    ImGui.SetNextWindowPos(ctx, 0, 0)
+    ImGui.SetNextWindowSize(ctx, screen_w, screen_h)
 
-  -- Debug output
-  if not self.window_size_logged then
-    reaper.ShowConsoleMsg(string.format("=== WINDOW SIZE: %dx%d ===\n", screen_w, screen_h))
-    self.window_size_logged = true
-  end
+    -- Debug output
+    if not self.window_size_logged then
+      reaper.ShowConsoleMsg(string.format("=== WINDOW SIZE: %dx%d ===\n", screen_w, screen_h))
+      self.window_size_logged = true
+    end
 
-  -- Create fullscreen window wrapper (matching old MainWindow)
-  local window_flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoTitleBar |
-                       ImGui.WindowFlags_NoResize | ImGui.WindowFlags_NoMove |
-                       ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse
+    -- Create fullscreen window wrapper (matching old MainWindow)
+    local window_flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoTitleBar |
+                         ImGui.WindowFlags_NoResize | ImGui.WindowFlags_NoMove |
+                         ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse
 
-  local imgui_visible, imgui_open = ImGui.Begin(ctx, title, true, window_flags)
+    local imgui_open
+    imgui_visible, imgui_open = ImGui.Begin(ctx, title, true, window_flags)
 
-  if not imgui_visible then
-    ImGui.End(ctx)
-    return
+    if not imgui_visible then
+      ImGui.End(ctx)
+      return
+    end
   end
 
   local overlay_alpha = self.state.overlay_alpha or 1.0
@@ -377,7 +382,10 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end
   end
 
-  ImGui.End(ctx)
+  -- Only end window if we created one (not in overlay mode)
+  if not is_overlay_mode then
+    ImGui.End(ctx)
+  end
 end
 
 return M

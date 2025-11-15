@@ -144,7 +144,7 @@ function GUI:draw(ctx, shell_state)
   -- Check if dragging
   if not self.state.dragging then
     -- Normal mode - show main UI
-    self.layout_view:render(ctx, big_font, big_font_size, "Item Picker", SCREEN_W, SCREEN_H)
+    self.layout_view:render(ctx, big_font, big_font_size, "Item Picker", SCREEN_W, SCREEN_H, is_overlay_mode)
   else
     -- Dragging mode - don't create main window at all
     -- The drag_handler creates its own windows (drag_target_window and MouseFollower)
