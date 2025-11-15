@@ -110,7 +110,7 @@ function GUI:draw(ctx, shell_state)
     local should_insert = self.drag_handler.handle_drag_logic(ctx, self.state, mini_font)
     if should_insert then
       self.controller.insert_item_at_mouse(self.state.item_to_add, self.state)
-      self.state.end_drag()  -- End drag state immediately
+      -- Don't call end_drag() - keep dragging state until exit to prevent modal flicker
       self.state.request_exit()  -- Module function, uses dot notation
     end
 
