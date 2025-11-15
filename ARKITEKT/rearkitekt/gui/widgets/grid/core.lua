@@ -551,7 +551,32 @@ function Grid:draw(ctx)
   -- Viewport culling with buffer zone (dynamic based on item count for better performance)
   local VIEWPORT_BUFFER = (num_items > 500) and 100 or 200
 
-  for i = 1, num_items do
+  -- CRITICAL OPTIMIZATION: Calculate visible row range to avoid looping through all items
+  -- For 1000 items with 10 visible, this reduces loop from 1000 to ~20 items
+  local first_item, last_item = 1, num_items
+  if self.visual_bounds and rects[1] then
+    -- Cache math functions for performance
+    local floor = math.floor
+    local ceil = math.ceil
+    local max = math.max
+    local min = math.min
+
+    local tile_h = rects[1][4] - rects[1][2]
+    local row_height = tile_h + self.gap
+
+    -- Calculate which rows are visible (with buffer)
+    local viewport_top = self.visual_bounds[2] - VIEWPORT_BUFFER
+    local viewport_bottom = self.visual_bounds[4] + VIEWPORT_BUFFER
+
+    local first_visible_row = max(0, floor((viewport_top - origin_y - self.gap) / row_height))
+    local last_visible_row = ceil((viewport_bottom - origin_y - self.gap) / row_height)
+
+    -- Convert row range to item indices
+    first_item = max(1, first_visible_row * cols + 1)
+    last_item = min(num_items, (last_visible_row + 1) * cols)
+  end
+
+  for i = first_item, last_item do
     local item = items[i]
     local key = self.key(item)
     local rect = self.rect_track:get(key)
@@ -559,13 +584,11 @@ function Grid:draw(ctx)
     if rect then
       rect = self.animator:apply_spawn_to_rect(key, rect)
 
-      -- Early viewport culling - skip ALL work for items outside visible area
-      -- Use buffer zone to pre-render items about to come into view
+      -- Viewport culling check (should pass for most items in range due to row calculation)
       local is_visible = self:_rect_intersects_bounds(rect, VIEWPORT_BUFFER)
 
       if not is_visible then
         -- Skip rendering, input, and expensive operations for invisible items
-        -- But still track the rect for layout calculations
         self.current_rects[key] = {rect[1], rect[2], rect[3], rect[4], item}
         goto continue
       end
