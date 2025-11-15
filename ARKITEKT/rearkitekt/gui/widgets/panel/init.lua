@@ -397,9 +397,15 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     -- Draw icon/label
     local label = cfg.icon or cfg.label or ''
     if label ~= '' then
-      -- Use icon font if available
-      if cb.icon_font then
-        ImGui.PushFont(ctx, cb.icon_font)
+      -- Use icon font if available and valid
+      local use_icon_font = (cb.icon_font and cb.icon_font ~= 0 and cb.icon_font ~= nil)
+      if use_icon_font then
+        local success = pcall(function()
+          ImGui.PushFont(ctx, cb.icon_font)
+        end)
+        if not success then
+          use_icon_font = false
+        end
       end
 
       local tw, th = ImGui.CalcTextSize(ctx, label)
@@ -407,7 +413,7 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
       local ty = btn_y + (size - th) * 0.5
       ImGui.DrawList_AddText(dl, tx, ty, text, label)
 
-      if cb.icon_font then
+      if use_icon_font then
         ImGui.PopFont(ctx)
       end
     end

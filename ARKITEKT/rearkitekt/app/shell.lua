@@ -108,7 +108,14 @@ local function load_fonts(ctx, font_cfg)
     if exists(I) then
       -- Use CreateFontFromFile for loading from file (v0.10 API)
       icons_font = ImGui.CreateFontFromFile(I, font_cfg.icons)
+      if icons_font then
+        reaper.ShowConsoleMsg(string.format("[Shell] Icon font loaded: %s (size: %d, obj: %s)\n", I, font_cfg.icons, tostring(icons_font)))
+      else
+        reaper.ShowConsoleMsg(string.format("[Shell] ERROR: Icon font failed to load: %s\n", I))
+        icons_font = default_font
+      end
     else
+      reaper.ShowConsoleMsg(string.format("[Shell] WARNING: Icon font file not found: %s\n", I))
       icons_font = default_font
     end
   end
