@@ -38,8 +38,9 @@ function GUI:initialize_once(ctx)
 
   if not self.state.job_queue then
     local job_queue_module = require('ItemPicker.domain.job_queue')
-    -- Process 5 thumbnails per frame (balanced speed/performance: 5 * 60fps = 300/sec)
-    self.state.job_queue = job_queue_module.new(5)
+    -- Process 1 thumbnail per frame (maximum smoothness: 1 * 33fps = 33/sec)
+    -- Prioritizes UI responsiveness over generation speed
+    self.state.job_queue = job_queue_module.new(1)
   end
 
   -- Try to load cached project state first
@@ -60,8 +61,8 @@ function GUI:initialize_once(ctx)
     self.controller.collect_project_items(self.state)
     self.state.last_change_count = current_change_count
 
-    -- Save state for next time
-    self.cache_mgr.save_project_state_to_disk(self.state)
+    -- Don't save state on initial load (defer to avoid blocking)
+    -- It will be saved on next recollection or when closing
   end
 
   -- Create coordinator and layout view
@@ -99,7 +100,7 @@ function GUI:draw(ctx, shell_state)
   local big_font = shell_state.fonts.title
   local big_font_size = shell_state.fonts.title_size or 24
 
-  -- Process async jobs
+  -- Process async jobs (max 1 per frame for smooth FPS)
   if self.state.job_queue then
     local job_queue_module = require('ItemPicker.domain.job_queue')
     job_queue_module.process_jobs(
@@ -110,8 +111,11 @@ function GUI:draw(ctx, shell_state)
     )
   end
 
-  -- Process disk writes (max 1 per frame to avoid blocking)
-  self.cache_mgr.process_disk_writes()
+  -- Process disk writes every 3rd frame to further reduce I/O blocking
+  self.state.disk_write_frame = (self.state.disk_write_frame or 0) + 1
+  if self.state.disk_write_frame % 3 == 0 then
+    self.cache_mgr.process_disk_writes()
+  end
 
   -- Update animations
   self.coordinator:update_animations(0.016)
@@ -129,9 +133,10 @@ function GUI:draw(ctx, shell_state)
     self.cache_mgr.save_project_state_to_disk(self.state)
   end
 
-  -- Periodically check for project changes (every 60 frames = ~1 second)
+  -- Periodically check for project changes (every 180 frames = ~5-6 seconds)
+  -- Reduced frequency to avoid performance impact
   self.state.frame_count = (self.state.frame_count or 0) + 1
-  if self.state.frame_count % 60 == 0 then
+  if self.state.frame_count % 180 == 0 then
     local current_change_count = reaper.GetProjectStateChangeCount(0)
     if self.state.last_change_count and current_change_count ~= self.state.last_change_count then
       -- Project changed, trigger recollection
