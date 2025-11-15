@@ -67,8 +67,9 @@ function M.draw_selector(self, ctx, playlists, active_id, height)
   self.selector:draw(ctx, playlists, active_id, height, self.on_playlist_changed)
 end
 
-function M.draw_active(self, ctx, playlist, height)
+function M.draw_active(self, ctx, playlist, height, shell_state)
   self._imgui_ctx = ctx
+  local window = shell_state and shell_state.window
   
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w, _ = ImGui.GetContentRegionAvail(ctx)
@@ -162,7 +163,7 @@ function M.draw_active(self, ctx, playlist, height)
 
   -- Show SWS import result modal
   if sws_result_data then
-    ModalDialog.show_message(ctx, sws_result_data.title, sws_result_data.message, {
+    ModalDialog.show_message(ctx, window, sws_result_data.title, sws_result_data.message, {
       id = "##sws_import_result",
       button_label = "OK",
       width = 0.45,
@@ -188,7 +189,7 @@ function M.draw_active(self, ctx, playlist, height)
 
   -- Show rename playlist modal
   if rename_initial_text then
-    ModalDialog.show_input(ctx, "Rename Playlist", rename_initial_text, {
+    ModalDialog.show_input(ctx, window, "Rename Playlist", rename_initial_text, {
       id = "##rename_playlist",
       placeholder = "Enter playlist name",
       confirm_label = "Rename",

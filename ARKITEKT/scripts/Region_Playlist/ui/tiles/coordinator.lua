@@ -671,7 +671,7 @@ function RegionTiles:draw_active(ctx, playlist, height, shell_state)
     end
   end
 
-  return Render.draw_active(self, ctx, playlist, height)
+  return Render.draw_active(self, ctx, playlist, height, shell_state)
 end
 
 function RegionTiles:draw_pool(ctx, regions, height, shell_state)
