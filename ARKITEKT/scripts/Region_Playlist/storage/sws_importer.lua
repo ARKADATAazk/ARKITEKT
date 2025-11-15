@@ -108,36 +108,45 @@ local function parse_sws_playlists(lines)
   return playlists
 end
 
--- Convert SWS region ID (internal) to REAPER region number
+-- Decode SWS region ID to region number
+-- SWS uses bitfield format: 0x40000000 | region_number for regions
 -- Returns: region number or nil
-local function get_region_number_from_sws_id(sws_rgn_id)
+local function decode_sws_region_id(sws_id)
+  local REGION_FLAG = 0x40000000  -- Bit 30 set = region
+
+  -- Check if it's a region (bit 30 set)
+  if sws_id >= REGION_FLAG then
+    -- Extract region number from lower bits
+    return sws_id - REGION_FLAG
+  end
+
+  -- Not a region (it's a marker)
+  return nil
+end
+
+-- Find region by number and return ARK region index (1-based count of regions only)
+-- Returns: ARK region number (1-based region count) or nil
+local function get_ark_region_number(region_num)
   local idx = 0
-  local num_markers = reaper.CountProjectMarkers(0)
-  
-  while idx < num_markers do
+  local region_count = 0
+
+  while true do
     local retval, isrgn, pos, rgnend, name, markrgnindexnumber = reaper.EnumProjectMarkers(idx)
-    if retval > 0 and isrgn then
-      -- SWS stores the internal ID (markrgnindexnumber)
-      if markrgnindexnumber == sws_rgn_id then
-        -- Get the actual region number (1-based display number)
-        local region_num = 0
-        local count = 0
-        for i = 0, idx do
-          local ret, is_rgn = reaper.EnumProjectMarkers(i)
-          if ret > 0 and is_rgn then
-            count = count + 1
-            if i == idx then
-              region_num = count
-              break
-            end
-          end
-        end
-        return region_num
+    if retval == 0 then
+      break  -- No more markers/regions
+    end
+
+    if isrgn then
+      region_count = region_count + 1
+      -- markrgnindexnumber is the displayed region number
+      if markrgnindexnumber == region_num then
+        return region_count
       end
     end
+
     idx = idx + 1
   end
-  
+
   return nil
 end
 
@@ -167,10 +176,16 @@ local function convert_sws_playlist_to_ark(sws_playlist, playlist_num)
   }
   
   for _, sws_item in ipairs(sws_playlist.items) do
-    -- Convert SWS region ID to region number
-    local region_num = get_region_number_from_sws_id(sws_item.sws_rgn_id)
-    
-    if region_num then
+    -- Decode SWS region ID to get the REAPER region number
+    local reaper_region_num = decode_sws_region_id(sws_item.sws_rgn_id)
+
+    -- Find the ARK region index (1-based count of regions only)
+    local ark_region_num = nil
+    if reaper_region_num then
+      ark_region_num = get_ark_region_number(reaper_region_num)
+    end
+
+    if ark_region_num then
       -- Handle loop count
       local reps = sws_item.sws_loop_count
       if reps < 0 then
@@ -187,10 +202,10 @@ local function convert_sws_playlist_to_ark(sws_playlist, playlist_num)
       
       local ark_item = {
         type = "region",
-        rid = region_num,
+        rid = ark_region_num,
         reps = reps,
         enabled = true,
-        key = generate_item_key(region_num),
+        key = generate_item_key(ark_region_num),
       }
       
       table.insert(ark_playlist.items, ark_item)
