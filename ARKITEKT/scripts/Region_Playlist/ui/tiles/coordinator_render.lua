@@ -143,6 +143,15 @@ function M.draw_active(self, ctx, playlist, height)
       -- Refresh UI state
       if success then
         State.reload_project_data()
+
+        -- Get the first imported playlist (they're prepended, so it's at index 1)
+        local playlists = State.get_playlists()
+        if playlists and #playlists > 0 then
+          local first_imported_id = playlists[1].id
+          -- Set as active playlist
+          State.set_active_playlist(first_imported_id)
+        end
+
         -- Update tabs in the active container
         self.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
       end
@@ -153,14 +162,34 @@ function M.draw_active(self, ctx, playlist, height)
   if self._sws_show_result then
     ImGui.OpenPopup(ctx, "SWS Import Result")
     self._sws_show_result = false
+
+    -- Center modal on screen
+    local viewport = ImGui.GetMainViewport(ctx)
+    local vp_x, vp_y = ImGui.Viewport_GetPos(viewport)
+    local vp_w, vp_h = ImGui.Viewport_GetSize(viewport)
+    local modal_w, modal_h = 650, 200  -- Wide and short
+    ImGui.SetNextWindowPos(ctx, vp_x + (vp_w - modal_w) * 0.5, vp_y + (vp_h - modal_h) * 0.5, ImGui.Cond_Appearing)
+    ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
   end
 
-  if ImGui.BeginPopupModal(ctx, "SWS Import Result", nil, ImGui.WindowFlags_AlwaysAutoResize) then
+  if ImGui.BeginPopupModal(ctx, "SWS Import Result", nil, ImGui.WindowFlags_NoResize) then
     if self._sws_import_result then
+      -- Display message
       ImGui.TextWrapped(ctx, self._sws_import_result.message)
+
+      -- Spacer to push button to bottom
+      local avail_h = ImGui.GetContentRegionAvail(ctx)
+      ImGui.Dummy(ctx, 0, avail_h - 35)  -- Leave room for button + spacing
+
+      ImGui.Separator(ctx)
       ImGui.Spacing(ctx)
 
-      if ImGui.Button(ctx, "OK", 120, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+      -- Center the OK button
+      local button_w = 120
+      local window_w = ImGui.GetWindowWidth(ctx)
+      ImGui.SetCursorPosX(ctx, (window_w - button_w) * 0.5)
+
+      if ImGui.Button(ctx, "OK", button_w, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
         self._sws_import_result = nil
         ImGui.CloseCurrentPopup(ctx)
       end
