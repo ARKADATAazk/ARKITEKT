@@ -255,6 +255,7 @@ function M:render(ctx, dt)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
   ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))
 
   Style.PushMyStyle(ctx)
 
@@ -268,14 +269,8 @@ function M:render(ctx, dt)
     local scrim_color = Colors.with_alpha(config.scrim.color, scrim_opacity)
     Draw.rect_filled(dl, x, y, x+w, y+h, scrim_color, 0)
 
-    ImGui.SetCursorScreenPos(ctx, x, y)
-    ImGui.InvisibleButton(ctx, '##scrim', w, h)
-    local clicked_scrim = ImGui.IsItemClicked(ctx)
-    local right_clicked_scrim = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right)
-
+    -- Check for escape key
     if top.esc_to_close and ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-      self:pop()
-    elseif clicked_scrim and top.close_on_scrim then
       self:pop()
     else
       -- Render close button if enabled
@@ -285,6 +280,14 @@ function M:render(ctx, dt)
 
       -- Render content
       top.render(ctx, alpha_val, {x=x, y=y, w=w, h=h, dl=dl})
+
+      -- Handle scrim clicks (check if click is outside content area)
+      if top.close_on_scrim and not ImGui.IsAnyItemHovered(ctx) then
+        if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) or
+           ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right) then
+          self:pop()
+        end
+      end
 
       -- Handle background clicks
       if top.close_on_background_click or top.close_on_background_right_click then
@@ -322,7 +325,7 @@ function M:render(ctx, dt)
   ImGui.End(ctx)
 
   Style.PopMyStyle(ctx)
-  ImGui.PopStyleColor(ctx)
+  ImGui.PopStyleColor(ctx, 2)
   ImGui.PopStyleVar(ctx, 2)
 end
 
