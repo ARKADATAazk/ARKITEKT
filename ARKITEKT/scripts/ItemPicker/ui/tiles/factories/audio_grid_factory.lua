@@ -3,7 +3,7 @@
 -- Factory for creating audio items grid
 
 local ImGui = require 'imgui' '0.10'
-local Grid = require('ItemPicker.ui.performance_grid')  -- Use performance-optimized grid
+local Grid = require('rearkitekt.gui.widgets.grid.core')
 local AudioRenderer = require('ItemPicker.ui.tiles.renderers.audio')
 
 local M = {}
