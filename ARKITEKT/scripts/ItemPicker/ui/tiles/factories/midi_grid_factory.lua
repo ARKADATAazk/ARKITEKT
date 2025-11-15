@@ -121,7 +121,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
           state.dragging_is_audio = false
 
           reaper.ShowConsoleMsg(string.format("[DRAG_START MIDI] Starting drag for: %s\n", item_data.name))
-          state:start_drag(item_data.item, item_data.name, item_data.color, drag_w, drag_h)
+          state.start_drag(item_data.item, item_data.name, item_data.color, drag_w, drag_h)
           return
         end
       end
@@ -132,7 +132,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       -- Toggle disabled state for all selected items
       if #selected_keys > 1 then
         -- Multi-select: toggle all to the opposite of clicked item's state
-        local new_state = not state:is_midi_disabled(key)
+        local new_state = not state.is_midi_disabled(key)
         for _, sel_key in ipairs(selected_keys) do
           if new_state then
             state.disabled.midi[sel_key] = true
@@ -140,10 +140,10 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
             state.disabled.midi[sel_key] = nil
           end
         end
-        state:persist_disabled()
+        state.persist_disabled()
       else
         -- Single item: toggle
-        state:toggle_midi_disabled(key)
+        state.toggle_midi_disabled(key)
       end
     end,
 
@@ -152,7 +152,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       if not keys or #keys == 0 then return end
       local key = keys[1]
       reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Cycling: %s, delta=%d\n", tostring(key), delta))
-      state:cycle_midi_item(key, delta > 0 and 1 or -1)
+      state.cycle_midi_item(key, delta > 0 and 1 or -1)
     end,
 
     delete = function(item_keys)
@@ -160,7 +160,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       for _, key in ipairs(item_keys) do
         state.disabled.midi[key] = true
       end
-      state:persist_disabled()
+      state.persist_disabled()
     end,
 
     alt_click = function(item_keys)
@@ -168,7 +168,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       for _, key in ipairs(item_keys) do
         state.disabled.midi[key] = true
       end
-      state:persist_disabled()
+      state.persist_disabled()
     end,
 
     on_select = function(selected_keys)
@@ -186,10 +186,10 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       for _, item_data in ipairs(items) do
         if item_data.key == key then
           -- Toggle preview
-          if state:is_previewing(item_data.item) then
-            state:stop_preview()
+          if state.is_previewing(item_data.item) then
+            state.stop_preview()
           else
-            state:start_preview(item_data.item)
+            state.start_preview(item_data.item)
           end
           return
         end

@@ -198,7 +198,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   ImGui.SetCursorScreenPos(ctx, self.config.LAYOUT.PADDING, content_start_y + self.config.LAYOUT.HEADER_HEIGHT)
 
   if ImGui.BeginChild(ctx, "midi_container", screen_w - (self.config.LAYOUT.PADDING * 2), midi_height, 0,
-    ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse) then
+    ImGui.WindowFlags_NoScrollbar) then
     self.coordinator:render_midi_grid(ctx, screen_w - (self.config.LAYOUT.PADDING * 2), midi_height)
     ImGui.EndChild(ctx)
   end
@@ -217,7 +217,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   ImGui.SetCursorScreenPos(ctx, self.config.LAYOUT.PADDING, audio_start_y + self.config.LAYOUT.HEADER_HEIGHT)
 
   if ImGui.BeginChild(ctx, "audio_container", screen_w - (self.config.LAYOUT.PADDING * 2), audio_height, 0,
-    ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse) then
+    ImGui.WindowFlags_NoScrollbar) then
     self.coordinator:render_audio_grid(ctx, screen_w - (self.config.LAYOUT.PADDING * 2), audio_height)
     ImGui.EndChild(ctx)
   end
