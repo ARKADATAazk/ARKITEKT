@@ -26,6 +26,25 @@ function M.collect_project_items(state)
   state.sample_indexes = sample_indexes
   state.midi_items = midi_items
   state.midi_indexes = midi_indexes
+
+  -- Build UUID lookup tables for O(1) access
+  state.audio_item_lookup = {}
+  for filename, items in pairs(samples) do
+    for _, item_data in ipairs(items) do
+      if item_data.uuid then
+        state.audio_item_lookup[item_data.uuid] = item_data
+      end
+    end
+  end
+
+  state.midi_item_lookup = {}
+  for track_guid, items in pairs(midi_items) do
+    for _, item_data in ipairs(items) do
+      if item_data.uuid then
+        state.midi_item_lookup[item_data.uuid] = item_data
+      end
+    end
+  end
 end
 
 -- Insert item at mouse position in arrange view

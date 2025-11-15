@@ -114,11 +114,11 @@ function M.process_jobs(job_queue, visualization, cache_mgr, imgui_ctx)
 
       if job.type == "waveform" then
         if visualization.GetItemWaveform then
-          visualization.GetItemWaveform(job.cache, job.item)
+          visualization.GetItemWaveform(job.cache, job.item, job.cache_key)
         end
       elseif job.type == "midi" then
         if visualization.GenerateMidiThumbnail then
-          visualization.GenerateMidiThumbnail(job.cache, job.item, job.width, job.height)
+          visualization.GenerateMidiThumbnail(job.cache, job.item, job.width, job.height, job.cache_key)
         end
       end
 

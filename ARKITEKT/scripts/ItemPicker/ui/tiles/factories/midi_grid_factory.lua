@@ -37,6 +37,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       local item_name = entry[2]
       local track_muted = entry.track_muted or false
       local item_muted = entry.item_muted or false
+      local uuid = entry.uuid
 
       -- Check mute filters
       if not state.settings.show_muted_tracks and track_muted then
@@ -72,7 +73,8 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
         index = current_idx,
         total = #content,
         color = color,
-        key = track_guid,
+        key = uuid,
+        uuid = uuid,
         is_midi = true,
       })
 
@@ -91,7 +93,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
     get_items = get_items,
 
     key = function(item_data)
-      return item_data.track_guid
+      return item_data.uuid
     end,
 
     render_tile = function(ctx, rect, item_data, tile_state)
@@ -107,64 +109,127 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       if not keys or #keys == 0 then return end
 
       -- Support multi-item drag (use first selected item for preview)
-      local key = keys[1]
-      reaper.ShowConsoleMsg(string.format("[DRAG_START MIDI] First key: %s\n", tostring(key)))
+      local uuid = keys[1]
+      reaper.ShowConsoleMsg(string.format("[DRAG_START MIDI] First UUID: %s\n", tostring(uuid)))
+
+      -- O(1) lookup instead of O(n) search
+      local item_lookup_data = state.midi_item_lookup[uuid]
+      if not item_lookup_data then
+        reaper.ShowConsoleMsg("[DRAG_START MIDI] Item not found in lookup!\n")
+        return
+      end
+
+      local drag_w = math.min(200, state:get_tile_width())
+      local drag_h = math.min(120, state:get_tile_height())
+
+      -- Store all selected keys for batch insert
+      state.dragging_keys = keys
+      state.dragging_is_audio = false
+
+      -- Get current display data (filtered version)
       local items = get_items()
-
+      local display_data
       for _, item_data in ipairs(items) do
-        if item_data.key == key then
-          local drag_w = math.min(200, state:get_tile_width())
-          local drag_h = math.min(120, state:get_tile_height())
-
-          -- Store all selected keys for batch insert
-          state.dragging_keys = keys
-          state.dragging_is_audio = false
-
-          reaper.ShowConsoleMsg(string.format("[DRAG_START MIDI] Starting drag for: %s\n", item_data.name))
-          state.start_drag(item_data.item, item_data.name, item_data.color, drag_w, drag_h)
-          return
+        if item_data.uuid == uuid then
+          display_data = item_data
+          break
         end
       end
-      reaper.ShowConsoleMsg("[DRAG_START MIDI] Item not found in grid!\n")
+
+      if display_data then
+        reaper.ShowConsoleMsg(string.format("[DRAG_START MIDI] Starting drag for: %s\n", display_data.name))
+        state.start_drag(display_data.item, display_data.name, display_data.color, drag_w, drag_h)
+      end
     end,
 
-    right_click = function(key, selected_keys)
+    right_click = function(uuid, selected_uuids)
       -- Toggle disabled state for all selected items
-      if #selected_keys > 1 then
+      -- Need to get track_guid from UUID lookup
+      local item_data = state.midi_item_lookup[uuid]
+      if not item_data then return end
+
+      local items = get_items()
+      local track_guid_map = {}
+      for _, data in ipairs(items) do
+        if data.uuid then
+          track_guid_map[data.uuid] = data.track_guid
+        end
+      end
+
+      if #selected_uuids > 1 then
         -- Multi-select: toggle all to the opposite of clicked item's state
-        local new_state = not state.is_midi_disabled(key)
-        for _, sel_key in ipairs(selected_keys) do
-          if new_state then
-            state.disabled.midi[sel_key] = true
-          else
-            state.disabled.midi[sel_key] = nil
+        local clicked_track_guid = track_guid_map[uuid]
+        local new_state = not state.is_midi_disabled(clicked_track_guid)
+        for _, sel_uuid in ipairs(selected_uuids) do
+          local sel_track_guid = track_guid_map[sel_uuid]
+          if sel_track_guid then
+            if new_state then
+              state.disabled.midi[sel_track_guid] = true
+            else
+              state.disabled.midi[sel_track_guid] = nil
+            end
           end
         end
         state.persist_disabled()
       else
         -- Single item: toggle
-        state.toggle_midi_disabled(key)
+        local track_guid = track_guid_map[uuid]
+        if track_guid then
+          state.toggle_midi_disabled(track_guid)
+        end
       end
     end,
 
-    wheel_adjust = function(keys, delta)
-      if not keys or #keys == 0 then return end
-      local key = keys[1]
-      state.cycle_midi_item(key, delta > 0 and 1 or -1)
+    wheel_adjust = function(uuids, delta)
+      if not uuids or #uuids == 0 then return end
+      local uuid = uuids[1]
+
+      -- Get track_guid from UUID
+      local items = get_items()
+      for _, data in ipairs(items) do
+        if data.uuid == uuid then
+          state.cycle_midi_item(data.track_guid, delta > 0 and 1 or -1)
+          return
+        end
+      end
     end,
 
-    delete = function(item_keys)
+    delete = function(item_uuids)
       -- Disable all selected items
-      for _, key in ipairs(item_keys) do
-        state.disabled.midi[key] = true
+      -- Convert UUIDs to track_guids
+      local items = get_items()
+      local track_guid_map = {}
+      for _, data in ipairs(items) do
+        if data.uuid then
+          track_guid_map[data.uuid] = data.track_guid
+        end
+      end
+
+      for _, uuid in ipairs(item_uuids) do
+        local track_guid = track_guid_map[uuid]
+        if track_guid then
+          state.disabled.midi[track_guid] = true
+        end
       end
       state.persist_disabled()
     end,
 
-    alt_click = function(item_keys)
+    alt_click = function(item_uuids)
       -- Quick disable with Alt+click
-      for _, key in ipairs(item_keys) do
-        state.disabled.midi[key] = true
+      -- Convert UUIDs to track_guids
+      local items = get_items()
+      local track_guid_map = {}
+      for _, data in ipairs(items) do
+        if data.uuid then
+          track_guid_map[data.uuid] = data.track_guid
+        end
+      end
+
+      for _, uuid in ipairs(item_uuids) do
+        local track_guid = track_guid_map[uuid]
+        if track_guid then
+          state.disabled.midi[track_guid] = true
+        end
       end
       state.persist_disabled()
     end,
@@ -174,15 +239,15 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       state.midi_selection_count = #selected_keys
     end,
 
-    play = function(selected_keys)
+    play = function(selected_uuids)
       -- Preview selected items (use first selected)
-      if not selected_keys or #selected_keys == 0 then return end
+      if not selected_uuids or #selected_uuids == 0 then return end
 
-      local key = selected_keys[1]
+      local uuid = selected_uuids[1]
       local items = get_items()
 
       for _, item_data in ipairs(items) do
-        if item_data.key == key then
+        if item_data.uuid == uuid then
           -- Toggle preview
           if state.is_previewing(item_data.item) then
             state.stop_preview()

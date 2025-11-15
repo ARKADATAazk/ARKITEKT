@@ -9,7 +9,7 @@ Controller.__index = Controller
 
 package.loaded["Region_Playlist.core.controller"] = M
 
-local key_counter = 0
+local UUID = require("rearkitekt.core.uuid")
 
 function M.new(state_module, settings, undo_manager)
   local ctrl = setmetatable({
@@ -41,29 +41,15 @@ function Controller:_with_undo(fn)
 end
 
 function Controller:_get_playlist(id)
-  for _, pl in ipairs(self.state.get_playlists()) do
-    if pl.id == id then
-      return pl
-    end
-  end
-  return nil
+  return self.state.get_playlist_by_id(id)
 end
 
 function Controller:_generate_playlist_id()
-  local max_id = 0
-  for _, pl in ipairs(self.state.get_playlists()) do
-    local id_num = tonumber(pl.id)
-    if id_num and id_num > max_id then
-      max_id = id_num
-    end
-  end
-  return tostring(max_id + 1)
+  return UUID.generate()
 end
 
-function Controller:_generate_item_key(identifier, suffix)
-  key_counter = key_counter + 1
-  local base = "item_" .. tostring(identifier) .. "_" .. reaper.time_precise() .. "_" .. key_counter
-  return suffix and (base .. "_" .. suffix) or base
+function Controller:_generate_item_key()
+  return UUID.generate()
 end
 
 function Controller:create_playlist(name)
@@ -72,9 +58,12 @@ function Controller:create_playlist(name)
 
     local RegionState = require("Region_Playlist.storage.persistence")
 
+    -- Generate human-readable default name based on count
+    local default_name = "Playlist " .. tostring(#self.state.get_playlists() + 1)
+
     local new_playlist = {
       id = new_id,
-      name = name or ("Playlist " .. new_id),
+      name = name or default_name,
       items = {},
       chip_color = RegionState.generate_chip_color(),
     }
@@ -131,7 +120,7 @@ function Controller:duplicate_playlist(id)
           rid = item.rid,
           reps = item.reps or 1,
           enabled = item.enabled ~= false,
-          key = self:_generate_item_key(item.rid),
+          key = self:_generate_item_key(),
         }
       elseif item.type == "playlist" then
         -- Playlist item
@@ -140,7 +129,7 @@ function Controller:duplicate_playlist(id)
           playlist_id = item.playlist_id,
           reps = item.reps or 1,
           enabled = item.enabled ~= false,
-          key = self:_generate_item_key("playlist_" .. item.playlist_id),
+          key = self:_generate_item_key(),
         }
       end
 
@@ -165,13 +154,17 @@ function Controller:duplicate_playlist(id)
 end
 
 function Controller:rename_playlist(id, new_name)
+  reaper.ShowConsoleMsg("[Debug] rename_playlist called with ID: " .. tostring(id) .. " new_name: " .. tostring(new_name) .. "\n")
   local playlist = self:_get_playlist(id)
   if not playlist then
+    reaper.ShowConsoleMsg("[Debug] ERROR: Playlist not found for ID: " .. tostring(id) .. "\n")
     return false, "Playlist not found"
   end
 
+  reaper.ShowConsoleMsg("[Debug] Found playlist, renaming from '" .. tostring(playlist.name) .. "' to '" .. tostring(new_name) .. "'\n")
   return self:_with_undo(function()
     playlist.name = new_name or playlist.name
+    reaper.ShowConsoleMsg("[Debug] Rename complete, new name: " .. tostring(playlist.name) .. "\n")
     return true
   end)
 end
@@ -252,7 +245,7 @@ function Controller:add_item(playlist_id, rid, insert_index)
       rid = rid,
       reps = 1,
       enabled = true,
-      key = self:_generate_item_key(rid),
+      key = self:_generate_item_key(),
     }
     
     table.insert(pl.items, insert_index or (#pl.items + 1), new_item)
@@ -277,7 +270,7 @@ function Controller:add_playlist_item(target_playlist_id, source_playlist_id, in
       playlist_id = source_playlist_id,
       reps = 1,
       enabled = true,
-      key = self:_generate_item_key("playlist_" .. source_playlist_id),
+      key = self:_generate_item_key(),
     }
     
     table.insert(target_pl.items, insert_index or (#target_pl.items + 1), new_item)
@@ -301,7 +294,7 @@ function Controller:add_items_batch(playlist_id, rids, insert_index)
         rid = rid,
         reps = 1,
         enabled = true,
-        key = self:_generate_item_key(rid, i),
+        key = self:_generate_item_key(),
       }
       table.insert(pl.items, idx + i - 1, new_item)
       keys[#keys + 1] = new_item.key
@@ -328,7 +321,7 @@ function Controller:copy_items(playlist_id, items, insert_index)
         playlist_id = item.playlist_id,
         reps = item.reps or 1,
         enabled = item.enabled ~= false,
-        key = self:_generate_item_key(item.rid or ("playlist_" .. (item.playlist_id or "unknown")), i),
+        key = self:_generate_item_key(),
       }
       table.insert(pl.items, idx + i - 1, new_item)
       keys[#keys + 1] = new_item.key
