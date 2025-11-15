@@ -143,9 +143,6 @@ function M.draw_active(self, ctx, playlist, height)
       -- Refresh UI state
       if success then
         State.reload_project_data()
-        if self.controller then
-          self.controller:refresh_state()
-        end
         -- Update tabs in the active container
         self.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
       end
