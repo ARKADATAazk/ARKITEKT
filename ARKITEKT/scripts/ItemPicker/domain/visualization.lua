@@ -195,7 +195,8 @@ function M.GenerateMidiThumbnail(cache, item, w, h)
   -- Always generate at max resolution for caching (size-independent)
   local cache_w, cache_h = cache_manager.get_midi_cache_size()
 
-  local cached_thumbnail = cache_manager.get_midi_thumbnail(cache, item, cache_w, cache_h)
+  -- Try memory + disk cache first
+  local cached_thumbnail = cache_manager.get_midi_thumbnail_cached(cache, item, cache_w, cache_h)
   if cached_thumbnail then
     return cached_thumbnail
   end
@@ -250,8 +251,9 @@ function M.GenerateMidiThumbnail(cache, item, w, h)
       })
     end
   end
-  
-  cache_manager.set_midi_thumbnail(cache, item, w, h, thumbnail)
+
+  -- Save to memory + disk cache
+  cache_manager.set_midi_thumbnail_cached(cache, item, w, h, thumbnail)
   return thumbnail
 end
 

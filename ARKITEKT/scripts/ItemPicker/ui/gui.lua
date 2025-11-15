@@ -38,11 +38,31 @@ function GUI:initialize_once(ctx)
 
   if not self.state.job_queue then
     local job_queue_module = require('ItemPicker.domain.job_queue')
-    self.state.job_queue = job_queue_module.new(3)
+    -- Process 10 thumbnails per frame for faster loading (10 * 60fps = 600/sec)
+    self.state.job_queue = job_queue_module.new(10)
   end
 
-  -- Collect items from project
-  self.controller.collect_project_items(self.state)
+  -- Try to load cached project state first
+  local cached_state = self.cache_mgr.load_project_state_from_disk()
+  local current_change_count = reaper.GetProjectStateChangeCount(0)
+
+  if cached_state and cached_state.change_count == current_change_count then
+    -- Project hasn't changed, use cached state (instant load!)
+    self.state.sample_indexes = cached_state.sample_indexes or {}
+    self.state.midi_indexes = cached_state.midi_indexes or {}
+    self.state.last_change_count = current_change_count
+
+    -- Still need to collect full items (just metadata was cached)
+    -- But this allows faster startup for large projects
+    self.controller.collect_project_items(self.state)
+  else
+    -- Project changed or no cache, full collection
+    self.controller.collect_project_items(self.state)
+    self.state.last_change_count = current_change_count
+
+    -- Save state for next time
+    self.cache_mgr.save_project_state_to_disk(self.state)
+  end
 
   -- Create coordinator and layout view
   self.coordinator = Coordinator.new(ctx, self.config, self.state, self.visualization, self.cache_mgr)
@@ -100,6 +120,20 @@ function GUI:draw(ctx, shell_state)
   if self.state.needs_recollect then
     self.controller.collect_project_items(self.state)
     self.state.needs_recollect = false
+    self.state.last_change_count = reaper.GetProjectStateChangeCount(0)
+
+    -- Save updated state to disk
+    self.cache_mgr.save_project_state_to_disk(self.state)
+  end
+
+  -- Periodically check for project changes (every 60 frames = ~1 second)
+  self.state.frame_count = (self.state.frame_count or 0) + 1
+  if self.state.frame_count % 60 == 0 then
+    local current_change_count = reaper.GetProjectStateChangeCount(0)
+    if self.state.last_change_count and current_change_count ~= self.state.last_change_count then
+      -- Project changed, trigger recollection
+      self.state.needs_recollect = true
+    end
   end
 
   ImGui.PushFont(ctx, mini_font, mini_font_size)
