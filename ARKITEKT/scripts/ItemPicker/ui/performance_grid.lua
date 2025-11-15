@@ -22,8 +22,6 @@ local DropZones  = require('rearkitekt.gui.widgets.grid.drop_zones')
 local M = {}
 local hexrgb = Colors.hexrgb
 
-reaper.ShowConsoleMsg("[PERF_GRID] Module loaded!\n")
-
 local DEFAULTS = {
   layout = { speed = 14.0, snap_epsilon = 0.5 },
   drag = { threshold = 6 },
@@ -101,8 +99,6 @@ function M.new(opts)
 
   local grid_id = opts.id or "grid"
 
-  reaper.ShowConsoleMsg(string.format("[PERF_GRID] Creating grid: %s\n", grid_id))
-
   local grid = setmetatable({
     id               = grid_id,
     gap              = opts.gap or 12,
@@ -154,10 +150,6 @@ function M.new(opts)
     grid_bounds = nil,
     visual_bounds = nil,
     panel_clip_bounds = nil,
-
-    -- PERFORMANCE: Track dimensions for resize detection
-    _perf_last_avail_w = nil,
-    _perf_last_avail_h = nil,
 
     -- Cache string IDs for performance
     _cached_bg_id = "##grid_bg_" .. grid_id,
@@ -248,66 +240,14 @@ function Grid:draw(ctx)
   local min_col_w = self.min_col_w_fn()
   local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, num_items, origin_x, origin_y, self.fixed_tile_h)
 
-  -- PERFORMANCE: Detect layout change (column count changed OR window resized)
-  local resize_threshold = 5
-  local did_resize = false
-  local anchor_item_idx = nil
-  local anchor_offset_y = 0
-
-  if self._perf_last_avail_w and self._perf_last_avail_h then
-    local w_diff = math.abs(avail_w - self._perf_last_avail_w)
-    local h_diff = math.abs(avail_h - self._perf_last_avail_h)
-    local window_resized = (w_diff > resize_threshold or h_diff > resize_threshold)
-    local layout_changed = (self.last_layout_cols ~= cols)
-
-    did_resize = window_resized or layout_changed
-
-    if did_resize then
-      reaper.ShowConsoleMsg(string.format("[PERF_GRID] LAYOUT CHANGE! cols: %d->%d, w_diff=%.1f h_diff=%.1f\n",
-        self.last_layout_cols, cols, w_diff, h_diff))
-
-      -- Find anchor item BEFORE teleporting
-      if num_items > 0 then
-        local window_x, window_y = ImGui.GetWindowPos(ctx)
-        local viewport_top_y = window_y + 30
-
-        local min_dist = math.huge
-        for i, item in ipairs(items) do
-          local key = self.key(item)
-          local rect = self.rect_track:get(key)
-          if rect then
-            local item_top_y = rect[2]
-            local dist = math.abs(item_top_y - viewport_top_y)
-            if dist < min_dist then
-              min_dist = dist
-              anchor_item_idx = i
-              anchor_offset_y = item_top_y - viewport_top_y
-            end
-          end
-        end
-
-        if anchor_item_idx then
-          reaper.ShowConsoleMsg(string.format("[PERF_GRID] Found anchor: item #%d, offset=%.1f\n", anchor_item_idx, anchor_offset_y))
-        end
-      end
-    end
-  end
-
   self.last_layout_cols = cols
-  self._perf_last_avail_w = avail_w
-  self._perf_last_avail_h = avail_h
 
-  -- PERFORMANCE: Use teleport instead of animate during layout change
+  -- Keep smooth animations (don't teleport - teleport kills responsiveness)
   local current_keys = {}
   for i, item in ipairs(items) do
     local key = self.key(item)
     current_keys[key] = true
-
-    if did_resize then
-      self.rect_track:teleport(key, rects[i])
-    else
-      self.rect_track:to(key, rects[i])
-    end
+    self.rect_track:to(key, rects[i])
   end
 
   local new_keys = {}
@@ -364,33 +304,6 @@ function Grid:draw(ctx)
   ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
   ImGui.InvisibleButton(ctx, self._cached_bg_id, extended_w, extended_h)
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
-
-  -- PERFORMANCE: Restore scroll position after resize using anchor item
-  -- CRITICAL: Must be AFTER InvisibleButton so ImGui knows the new scroll region size
-  if did_resize and anchor_item_idx and anchor_item_idx <= num_items then
-    local old_scroll = ImGui.GetScrollY(ctx)
-
-    -- Find anchor item in NEW layout
-    local key = self.key(items[anchor_item_idx])
-    local new_rect = self.rect_track:get(key)
-
-    if new_rect then
-      local window_x, window_y = ImGui.GetWindowPos(ctx)
-      -- Calculate desired scroll to keep anchor item at same offset from viewport top
-      local new_item_top_y = new_rect[2]
-      local desired_viewport_top_y = new_item_top_y - anchor_offset_y
-      local desired_scroll_y = desired_viewport_top_y - window_y - 30  -- 30 = title bar approx
-
-      -- Clamp to valid scroll range
-      local max_scroll = ImGui.GetScrollMaxY(ctx)
-      desired_scroll_y = math.max(0, math.min(desired_scroll_y, max_scroll))
-      ImGui.SetScrollY(ctx, desired_scroll_y)
-
-      reaper.ShowConsoleMsg(string.format("[PERF_GRID] Scroll adjust: %.1f -> %.1f (max=%.1f)\n", old_scroll, desired_scroll_y, max_scroll))
-    else
-      reaper.ShowConsoleMsg("[PERF_GRID] ERROR: Anchor item rect not found!\n")
-    end
-  end
 
   local bg_clicked = ImGui.IsItemClicked(ctx, 0)
 
