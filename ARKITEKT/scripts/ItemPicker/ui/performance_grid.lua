@@ -202,9 +202,8 @@ function Grid:draw(ctx)
 
     -- Find anchor item BEFORE layout changes
     if did_resize and num_items > 0 then
-      local scroll_y = ImGui.GetScrollY(ctx)
       local window_x, window_y = ImGui.GetWindowPos(ctx)
-      local viewport_top_y = window_y + scroll_y + 30  -- 30 = title bar approx
+      local viewport_top_y = window_y + 30  -- Screen space: window top + title bar
 
       -- Find the first item that's visible at the top of viewport
       local min_dist = math.huge
@@ -212,7 +211,7 @@ function Grid:draw(ctx)
         local key = self.key(item)
         local rect = self.rect_track:get(key)
         if rect then
-          local item_top_y = rect[2]
+          local item_top_y = rect[2]  -- Already in screen space
           local dist = math.abs(item_top_y - viewport_top_y)
           if dist < min_dist then
             min_dist = dist
