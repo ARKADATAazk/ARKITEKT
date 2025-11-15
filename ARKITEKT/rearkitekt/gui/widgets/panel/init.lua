@@ -438,12 +438,20 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     -- Only allow interaction if not blocking
     if not is_blocking then
       -- Click detection (manual for foreground)
-      if hovered and ImGui.IsMouseClicked(ctx, 0) and cfg.on_click then
-        cfg.on_click()
+      if hovered and ImGui.IsMouseClicked(ctx, 0) then
+        reaper.ShowConsoleMsg("CLICK DETECTED on " .. unique_id .. " (blocking=" .. tostring(is_blocking) .. ")\n")
+        if cfg.on_click then
+          cfg.on_click()
+        end
       end
 
       if hovered and cfg.tooltip then
         ImGui.SetTooltip(ctx, cfg.tooltip)
+      end
+    else
+      -- Debug: Check if we're getting mouse clicks while blocking
+      if ImGui.IsMouseClicked(ctx, 0) then
+        reaper.ShowConsoleMsg("CLICK IGNORED on " .. unique_id .. " (blocking=" .. tostring(is_blocking) .. ")\n")
       end
     end
   end
