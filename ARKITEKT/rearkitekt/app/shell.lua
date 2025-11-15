@@ -82,26 +82,28 @@ local function load_fonts(ctx, font_cfg)
   local function exists(p) local f = io.open(p, 'rb'); if f then f:close(); return true end end
   -- v0.10 API: CreateFont/CreateFontFromFile do NOT take size parameter
   -- Size is specified in PushFont(ctx, font, size) instead
+  -- IMPORTANT: Only load each font file ONCE and reuse with different sizes in PushFont
+
   local default_font   = exists(R) and ImGui.CreateFontFromFile(R)
                                 or ImGui.CreateFont('sans-serif')
   local title_font     = exists(B) and ImGui.CreateFontFromFile(B)
                                 or default_font
-  local version_font   = exists(R) and ImGui.CreateFontFromFile(R)
-                                or default_font
+  -- Reuse default_font (Inter-Regular) for version - don't load R again
+  local version_font   = default_font
   local monospace_font = exists(M) and ImGui.CreateFontFromFile(M)
                                 or default_font
 
+  -- Reuse title_font (Inter-Bold) for time display - don't load B again
   local time_display_font = nil
   if font_cfg.time_display then
-    time_display_font = exists(B) and ImGui.CreateFontFromFile(B)
-                                   or ImGui.CreateFont('sans-serif')
+    time_display_font = title_font
   end
 
+  -- Reuse default_font (Inter-Regular) for titlebar version - don't load R again
   local titlebar_version_font = nil
   local titlebar_version_size = font_cfg.titlebar_version or font_cfg.version
   if font_cfg.titlebar_version then
-    titlebar_version_font = exists(R) and ImGui.CreateFontFromFile(R)
-                                       or version_font
+    titlebar_version_font = default_font
   end
 
   local icons_font = nil
@@ -121,8 +123,8 @@ local function load_fonts(ctx, font_cfg)
     end
   end
 
-  -- Note: In ReaImGui v0.10, size is NOT passed to CreateFont
-  -- Size is passed to PushFont(ctx, font, size) when using the font
+  -- Note: Each font file is loaded only ONCE
+  -- Different sizes are achieved by passing size to PushFont(ctx, font, size)
 
   return {
     default = default_font,
