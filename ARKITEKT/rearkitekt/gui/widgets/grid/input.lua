@@ -103,8 +103,10 @@ end
 function M.handle_shortcuts(grid, ctx)
   if not grid.behaviors then return false end
 
-  -- Block shortcuts when mouse is over any popup/modal window
-  if ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow) then
+  -- Block shortcuts when mouse is over a DIFFERENT window (e.g., popup on top of this grid)
+  local is_current_window_hovered = ImGui.IsWindowHovered(ctx)
+  local is_any_window_hovered = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
+  if is_any_window_hovered and not is_current_window_hovered then
     return false
   end
 
@@ -128,8 +130,10 @@ end
 function M.handle_wheel_input(grid, ctx, items)
   if not grid.behaviors or not grid.behaviors.wheel_adjust then return false end
 
-  -- Block wheel input when mouse is over any popup/modal window
-  if ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow) then
+  -- Block wheel input when mouse is over a DIFFERENT window (e.g., popup on top of this grid)
+  local is_current_window_hovered = ImGui.IsWindowHovered(ctx)
+  local is_any_window_hovered = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
+  if is_any_window_hovered and not is_current_window_hovered then
     return false
   end
 
@@ -154,8 +158,10 @@ function M.handle_wheel_input(grid, ctx, items)
 end
 
 function M.handle_tile_input(grid, ctx, item, rect)
-  -- Block tile input when mouse is over any popup/modal window
-  if ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow) then
+  -- Block tile input when mouse is over a DIFFERENT window (e.g., popup on top of this grid)
+  local is_current_window_hovered = ImGui.IsWindowHovered(ctx)
+  local is_any_window_hovered = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
+  if is_any_window_hovered and not is_current_window_hovered then
     return false
   end
 
