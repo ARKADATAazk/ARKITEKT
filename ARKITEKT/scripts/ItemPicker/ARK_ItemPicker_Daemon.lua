@@ -68,7 +68,6 @@ local daemon = {
   running = false,
   ui_visible = false,
   runtime_ready = false,  -- Flag to prevent rendering before Runtime is ready
-  overlay_pushed = false, -- Track if overlay is on stack
 
   -- Background processing
   last_change_count = -1,
@@ -384,6 +383,57 @@ local function initialize()
   -- Create GUI (pre-initialized)
   daemon.gui = GUI.new(Config, State, Controller, visualization, cache_mgr, drag_handler)
 
+  -- Push overlay ONCE during init (before Runtime.start())
+  -- Its render callback checks daemon.ui_visible flag
+  local Colors = require('rearkitekt.core.colors')
+  daemon.overlay_mgr:push({
+    id = "item_picker_main",
+    use_viewport = true,
+    fade_duration = 0.2,
+    fade_curve = 'ease_out_quad',
+    scrim_color = Colors.hexrgb("#101010"),
+    scrim_opacity = 0.92,
+    show_close_button = true,
+    close_on_background_click = false,
+    close_on_background_right_click = true,
+    close_on_scrim = false,
+    esc_to_close = false,
+    close_button_size = 32,
+    close_button_margin = 16,
+    close_button_proximity = 150,
+    content_padding = 20,
+
+    render = function(ctx, alpha_val, bounds)
+      -- Only render if UI is visible
+      if not daemon.ui_visible then return end
+
+      ImGui.PushFont(ctx, daemon.fonts.default, daemon.fonts.default_size)
+
+      local overlay_state = {
+        x = bounds.x,
+        y = bounds.y,
+        width = bounds.w,
+        height = bounds.h,
+        alpha = alpha_val,
+      }
+
+      if daemon.gui and daemon.gui.draw then
+        daemon.gui:draw(ctx, {
+          fonts = daemon.fonts,
+          overlay_state = overlay_state,
+          overlay = { alpha = { value = function() return alpha_val end } },
+          is_overlay_mode = true,
+        })
+      end
+
+      ImGui.PopFont(ctx)
+    end,
+
+    on_close = function()
+      hide_ui()
+    end,
+  })
+
   -- Create runtime for proper ImGui frame handling
   daemon.runtime = Runtime.new({
     title = "Item Picker Daemon",
@@ -396,68 +446,8 @@ local function initialize()
         log("Runtime ready - UI can now be shown")
       end
 
-      -- Handle overlay push/pop based on ui_visible flag
-      if daemon.ui_visible and not daemon.overlay_pushed then
-        -- Push overlay inside frame context
-        local Colors = require('rearkitekt.core.colors')
-        daemon.overlay_mgr:push({
-          id = "item_picker_main",
-          use_viewport = true,
-          fade_duration = 0.2,
-          fade_curve = 'ease_out_quad',
-          scrim_color = Colors.hexrgb("#101010"),
-          scrim_opacity = 0.92,
-          show_close_button = true,
-          close_on_background_click = false,
-          close_on_background_right_click = true,
-          close_on_scrim = false,
-          esc_to_close = false,
-          close_button_size = 32,
-          close_button_margin = 16,
-          close_button_proximity = 150,
-          content_padding = 20,
-
-          render = function(ctx, alpha_val, bounds)
-            ImGui.PushFont(ctx, daemon.fonts.default, daemon.fonts.default_size)
-
-            local overlay_state = {
-              x = bounds.x,
-              y = bounds.y,
-              width = bounds.w,
-              height = bounds.h,
-              alpha = alpha_val,
-            }
-
-            if daemon.gui and daemon.gui.draw then
-              daemon.gui:draw(ctx, {
-                fonts = daemon.fonts,
-                overlay_state = overlay_state,
-                overlay = { alpha = { value = function() return alpha_val end } },
-                is_overlay_mode = true,
-              })
-            end
-
-            ImGui.PopFont(ctx)
-          end,
-
-          on_close = function()
-            daemon.ui_visible = false
-            daemon.overlay_pushed = false
-            reaper.SetExtState(ext_state_section, ext_state_visible, "0", false)
-          end,
-        })
-        daemon.overlay_pushed = true
-        log("Overlay pushed")
-      elseif not daemon.ui_visible and daemon.overlay_pushed then
-        -- Pop overlay inside frame context
-        daemon.overlay_mgr:pop("item_picker_main")
-        daemon.overlay_pushed = false
-        log("Overlay popped")
-      end
-
-      -- Render if visible or dragging
+      -- When dragging, skip overlay and just render drag handlers
       if State.dragging then
-        -- When dragging, skip overlay and just render drag handlers
         ImGui.PushFont(ctx, daemon.fonts.default, daemon.fonts.default_size)
         daemon.gui:draw(ctx, {
           fonts = daemon.fonts,
@@ -467,19 +457,11 @@ local function initialize()
         })
         ImGui.PopFont(ctx)
         return true  -- Keep running
-      elseif daemon.overlay_pushed then
-        -- Normal mode: let overlay manager handle rendering
+      else
+        -- Let overlay manager handle rendering (it checks daemon.ui_visible flag)
         daemon.overlay_mgr:render(ctx)
 
-        -- Check if overlay was closed
-        if not daemon.overlay_mgr:is_active() then
-          daemon.ui_visible = false
-          daemon.overlay_pushed = false
-          reaper.SetExtState(ext_state_section, ext_state_visible, "0", false)
-        end
-        return true  -- Keep running
-      else
-        -- Hidden - still return true to keep runtime alive
+        -- Always keep running (even when hidden)
         return true
       end
     end,
