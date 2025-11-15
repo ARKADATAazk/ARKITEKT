@@ -200,6 +200,10 @@ function Grid:draw(ctx)
     local h_diff = math.abs(avail_h - self._perf_last_avail_h)
     did_resize = (w_diff > resize_threshold or h_diff > resize_threshold)
 
+    if did_resize then
+      reaper.ShowConsoleMsg(string.format("[PERF_GRID] RESIZE DETECTED! w_diff=%.1f h_diff=%.1f\n", w_diff, h_diff))
+    end
+
     -- Find anchor item BEFORE layout changes
     if did_resize and num_items > 0 then
       local window_x, window_y = ImGui.GetWindowPos(ctx)
@@ -219,6 +223,10 @@ function Grid:draw(ctx)
             anchor_offset_y = item_top_y - viewport_top_y
           end
         end
+      end
+
+      if anchor_item_idx then
+        reaper.ShowConsoleMsg(string.format("[PERF_GRID] Found anchor: item #%d, offset=%.1f\n", anchor_item_idx, anchor_offset_y))
       end
     end
   end
@@ -354,6 +362,8 @@ function Grid:draw(ctx)
   -- PERFORMANCE: Restore scroll position after resize using anchor item
   -- CRITICAL: Must be AFTER InvisibleButton so ImGui knows the new scroll region size
   if did_resize and anchor_item_idx and anchor_item_idx <= num_items then
+    local old_scroll = ImGui.GetScrollY(ctx)
+
     -- Find anchor item in NEW layout
     local key = self.key(items[anchor_item_idx])
     local new_rect = self.rect_track:get(key)
@@ -369,6 +379,10 @@ function Grid:draw(ctx)
       local max_scroll = ImGui.GetScrollMaxY(ctx)
       desired_scroll_y = math.max(0, math.min(desired_scroll_y, max_scroll))
       ImGui.SetScrollY(ctx, desired_scroll_y)
+
+      reaper.ShowConsoleMsg(string.format("[PERF_GRID] Scroll adjust: %.1f -> %.1f (max=%.1f)\n", old_scroll, desired_scroll_y, max_scroll))
+    else
+      reaper.ShowConsoleMsg("[PERF_GRID] ERROR: Anchor item rect not found!\n")
     end
   end
 
