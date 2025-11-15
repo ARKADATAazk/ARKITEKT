@@ -425,6 +425,45 @@ local function initialize()
   -- Create GUI (pre-initialized)
   daemon.gui = GUI.new(Config, State, Controller, visualization, cache_mgr, drag_handler)
 
+  -- Create runtime for proper ImGui frame handling
+  daemon.runtime = Runtime.new({
+    title = "Item Picker Daemon",
+    ctx = daemon.ctx,
+
+    on_frame = function(ctx)
+      -- Only render if visible or dragging
+      if State.dragging then
+        -- When dragging, skip overlay and just render drag handlers
+        ImGui.PushFont(ctx, daemon.fonts.default, daemon.fonts.default_size)
+        daemon.gui:draw(ctx, {
+          fonts = daemon.fonts,
+          overlay_state = {},
+          overlay = daemon.overlay_mgr,
+          is_overlay_mode = true,
+        })
+        ImGui.PopFont(ctx)
+        return true  -- Keep running
+      elseif daemon.ui_visible then
+        -- Normal mode: let overlay manager handle rendering
+        daemon.overlay_mgr:render(ctx)
+
+        -- Check if overlay was closed
+        if not daemon.overlay_mgr:is_active() then
+          daemon.ui_visible = false
+          reaper.SetExtState(ext_state_section, ext_state_visible, "0", false)
+        end
+        return true  -- Keep running
+      else
+        -- Hidden - still return true to keep runtime alive
+        return true
+      end
+    end,
+
+    on_destroy = function()
+      -- Don't cleanup here - handled by daemon cleanup
+    end,
+  })
+
   -- Pre-load cached state for instant startup
   local cached_state = cache_mgr.load_project_state_from_disk()
   local current_change_count = reaper.GetProjectStateChangeCount(0)
@@ -463,28 +502,6 @@ local function main_loop()
 
   -- Background processing (always runs)
   background_processing()
-
-  -- UI rendering (only when visible or dragging)
-  if State.dragging then
-    -- When dragging, skip overlay and just render drag handlers
-    ImGui.PushFont(daemon.ctx, daemon.fonts.default, daemon.fonts.default_size)
-    daemon.gui:draw(daemon.ctx, {
-      fonts = daemon.fonts,
-      overlay_state = {},
-      overlay = daemon.overlay_mgr,
-      is_overlay_mode = true,
-    })
-    ImGui.PopFont(daemon.ctx)
-  elseif daemon.ui_visible then
-    -- Normal mode: let overlay manager handle rendering
-    daemon.overlay_mgr:render(daemon.ctx)
-
-    -- Check if overlay was closed
-    if not daemon.overlay_mgr:is_active() then
-      daemon.ui_visible = false
-      reaper.SetExtState(ext_state_section, ext_state_visible, "0", false)
-    end
-  end
 
   reaper.defer(main_loop)
 end
@@ -526,5 +543,8 @@ initialize()
 -- Register cleanup
 reaper.atexit(cleanup)
 
--- Start main loop
+-- Start runtime (handles ImGui frame context)
+daemon.runtime:start()
+
+-- Start background processing loop
 main_loop()
