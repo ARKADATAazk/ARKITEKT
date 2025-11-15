@@ -133,7 +133,7 @@ function M.get_or_create_default_playlist(playlists, regions)
   return {
     {
       id = UUID.generate(),
-      name = "Main Playlist",
+      name = "Playlist 1",
       items = default_items,
       chip_color = M.generate_chip_color(),
     }
