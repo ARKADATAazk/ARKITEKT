@@ -102,6 +102,10 @@ local function collect_project_items()
     settings = settings,
   }
 
+  -- Get track and item chunks for comparison (required by reaper_interface)
+  state.track_chunks = reaper_interface.GetAllTrackStateChunks()
+  state.item_chunks = reaper_interface.GetAllCleanedItemChunks()
+
   -- Get samples and MIDI items
   local samples, sample_indexes = reaper_interface.GetProjectSamples(settings, state)
   local midi_items, midi_indexes = reaper_interface.GetProjectMIDI(settings, state)
