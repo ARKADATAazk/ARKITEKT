@@ -80,18 +80,19 @@ local function load_fonts(ctx, font_cfg)
   local I = fontsdir .. font_cfg.family_icons
 
   local function exists(p) local f = io.open(p, 'rb'); if f then f:close(); return true end end
-  local default_font   = exists(R) and ImGui.CreateFont(R, font_cfg.default)
+  -- Use CreateFontFromFile for loading from files (v0.10 API)
+  local default_font   = exists(R) and ImGui.CreateFontFromFile(R, font_cfg.default)
                                 or ImGui.CreateFont('sans-serif', font_cfg.default)
-  local title_font     = exists(B) and ImGui.CreateFont(B, font_cfg.title)
+  local title_font     = exists(B) and ImGui.CreateFontFromFile(B, font_cfg.title)
                                 or default_font
-  local version_font   = exists(R) and ImGui.CreateFont(R, font_cfg.version)
+  local version_font   = exists(R) and ImGui.CreateFontFromFile(R, font_cfg.version)
                                 or default_font
-  local monospace_font = exists(M) and ImGui.CreateFont(M, font_cfg.monospace)
+  local monospace_font = exists(M) and ImGui.CreateFontFromFile(M, font_cfg.monospace)
                                 or default_font
 
   local time_display_font = nil
   if font_cfg.time_display then
-    time_display_font = exists(B) and ImGui.CreateFont(B, font_cfg.time_display)
+    time_display_font = exists(B) and ImGui.CreateFontFromFile(B, font_cfg.time_display)
                                    or ImGui.CreateFont('sans-serif', font_cfg.time_display)
     ImGui.Attach(ctx, time_display_font)
   end
@@ -99,16 +100,20 @@ local function load_fonts(ctx, font_cfg)
   local titlebar_version_font = nil
   local titlebar_version_size = font_cfg.titlebar_version or font_cfg.version
   if font_cfg.titlebar_version then
-    titlebar_version_font = exists(R) and ImGui.CreateFont(R, font_cfg.titlebar_version)
+    titlebar_version_font = exists(R) and ImGui.CreateFontFromFile(R, font_cfg.titlebar_version)
                                        or version_font
     ImGui.Attach(ctx, titlebar_version_font)
   end
 
   local icons_font = nil
   if font_cfg.icons then
-    icons_font = exists(I) and ImGui.CreateFont(I, font_cfg.icons)
-                            or default_font
-    ImGui.Attach(ctx, icons_font)
+    if exists(I) then
+      -- Use CreateFontFromFile for loading from file (v0.10 API)
+      icons_font = ImGui.CreateFontFromFile(I, font_cfg.icons)
+      ImGui.Attach(ctx, icons_font)
+    else
+      icons_font = default_font
+    end
   end
 
   ImGui.Attach(ctx, default_font)
