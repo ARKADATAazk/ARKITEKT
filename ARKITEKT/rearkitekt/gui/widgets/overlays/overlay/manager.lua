@@ -252,11 +252,10 @@ function M:render(ctx, dt)
   local window_flags = ImGui.WindowFlags_NoTitleBar
                      | ImGui.WindowFlags_NoResize
                      | ImGui.WindowFlags_NoMove
+                     | ImGui.WindowFlags_NoCollapse
                      | ImGui.WindowFlags_NoScrollbar
                      | ImGui.WindowFlags_NoScrollWithMouse
-                     | ImGui.WindowFlags_NoCollapse
-                     | ImGui.WindowFlags_NoNavFocus
-                     | ImGui.WindowFlags_NoDocking
+                     | ImGui.WindowFlags_NoNav
 
   -- Calculate scrim color with alpha (like old overlay.lua)
   local config = OverlayConfig.get()
@@ -265,16 +264,11 @@ function M:render(ctx, dt)
   local scrim_alpha = base_scrim_opacity * alpha_val
   local scrim_color = (base_scrim_color & 0xFFFFFF00) | math.floor(255 * scrim_alpha + 0.5)
 
-  -- Push window background with scrim (before PushMyStyle to avoid override)
+  -- Don't use PushMyStyle for viewport overlays - match old overlay.lua exactly
   ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, scrim_color)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, 0)
-
-  Style.PushMyStyle(ctx)
-
-  -- Override child bg to transparent (after PushMyStyle)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, alpha_val)
 
   local visible = ImGui.Begin(ctx, "##modal_overlay_" .. top.id, true, window_flags)
 
@@ -336,10 +330,8 @@ function M:render(ctx, dt)
 
   ImGui.End(ctx)
 
-  -- Pop in reverse order
-  ImGui.PopStyleColor(ctx, 1)  -- ChildBg
-  Style.PopMyStyle(ctx)
-  ImGui.PopStyleVar(ctx, 3)    -- WindowRounding, WindowBorderSize, WindowPadding
+  -- Pop in reverse order (matching old overlay.lua)
+  ImGui.PopStyleVar(ctx, 3)    -- Alpha, WindowBorderSize, WindowPadding
   ImGui.PopStyleColor(ctx, 1)  -- WindowBg
 end
 
