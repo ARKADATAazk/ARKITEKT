@@ -154,13 +154,17 @@ function Controller:duplicate_playlist(id)
 end
 
 function Controller:rename_playlist(id, new_name)
+  reaper.ShowConsoleMsg("[Debug] rename_playlist called with ID: " .. tostring(id) .. " new_name: " .. tostring(new_name) .. "\n")
   local playlist = self:_get_playlist(id)
   if not playlist then
+    reaper.ShowConsoleMsg("[Debug] ERROR: Playlist not found for ID: " .. tostring(id) .. "\n")
     return false, "Playlist not found"
   end
 
+  reaper.ShowConsoleMsg("[Debug] Found playlist, renaming from '" .. tostring(playlist.name) .. "' to '" .. tostring(new_name) .. "'\n")
   return self:_with_undo(function()
     playlist.name = new_name or playlist.name
+    reaper.ShowConsoleMsg("[Debug] Rename complete, new name: " .. tostring(playlist.name) .. "\n")
     return true
   end)
 end

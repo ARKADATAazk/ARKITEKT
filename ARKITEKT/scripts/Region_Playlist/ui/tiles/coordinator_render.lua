@@ -178,11 +178,17 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   if self._rename_input_visible then
     -- Find current name
     local playlists = State.get_playlists()
+    reaper.ShowConsoleMsg("[Debug] Looking for playlist ID: " .. tostring(self._rename_playlist_id) .. "\n")
     for _, pl in ipairs(playlists) do
+      reaper.ShowConsoleMsg("[Debug] Checking playlist ID: " .. tostring(pl.id) .. " name: " .. tostring(pl.name) .. "\n")
       if pl.id == self._rename_playlist_id then
         rename_initial_text = pl.name or ""
+        reaper.ShowConsoleMsg("[Debug] Found matching playlist!\n")
         break
       end
+    end
+    if not rename_initial_text then
+      reaper.ShowConsoleMsg("[Debug] ERROR: No matching playlist found!\n")
     end
     self._rename_input_visible = false
   end
