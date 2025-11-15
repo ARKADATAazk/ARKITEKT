@@ -103,10 +103,12 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
   -- Behaviors
   grid.behaviors = {
     drag_start = function(keys)
+      reaper.ShowConsoleMsg(string.format("[DRAG_START MIDI] Called! keys=%d\n", keys and #keys or 0))
       if not keys or #keys == 0 then return end
 
       -- Support multi-item drag (use first selected item for preview)
       local key = keys[1]
+      reaper.ShowConsoleMsg(string.format("[DRAG_START MIDI] First key: %s\n", tostring(key)))
       local items = get_items()
 
       for _, item_data in ipairs(items) do
@@ -118,10 +120,12 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
           state.dragging_keys = keys
           state.dragging_is_audio = false
 
+          reaper.ShowConsoleMsg(string.format("[DRAG_START MIDI] Starting drag for: %s\n", item_data.name))
           state:start_drag(item_data.item, item_data.name, item_data.color, drag_w, drag_h)
           return
         end
       end
+      reaper.ShowConsoleMsg("[DRAG_START MIDI] Item not found in grid!\n")
     end,
 
     right_click = function(key, selected_keys)
@@ -144,8 +148,10 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
     end,
 
     wheel_adjust = function(keys, delta)
+      reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Called! keys=%d, delta=%d\n", #keys, delta))
       if not keys or #keys == 0 then return end
       local key = keys[1]
+      reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Cycling: %s, delta=%d\n", tostring(key), delta))
       state:cycle_midi_item(key, delta > 0 and 1 or -1)
     end,
 
