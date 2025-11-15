@@ -19,6 +19,15 @@ package.path = arkitekt_path.. "?.lua;" .. arkitekt_path.. "?/init.lua;" ..
                scripts_path .. "?.lua;" .. scripts_path .. "?/init.lua;" ..
                package.path
 
+-- Add ReaImGui path (needed by visualization module)
+package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
+
+-- Check and load ReaImGui shim
+local reaimgui_shim_file_path = reaper.GetResourcePath() .. '/Scripts/ReaTeam Extensions/API/imgui.lua'
+if reaper.file_exists(reaimgui_shim_file_path) then
+  dofile(reaimgui_shim_file_path)('0.10')
+end
+
 -- Load required modules
 local cache_mgr = require('ItemPicker.domain.cache_manager')
 local reaper_interface = require('ItemPicker.domain.reaper_interface')
