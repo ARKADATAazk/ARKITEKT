@@ -5,6 +5,8 @@
 local ImGui = require 'imgui' '0.10'
 local SearchInput = require('rearkitekt.gui.widgets.controls.search_input')
 local Checkbox = require('rearkitekt.gui.widgets.controls.checkbox')
+local Dropdown = require('rearkitekt.gui.widgets.controls.dropdown')
+local DraggableSeparator = require('rearkitekt.gui.widgets.controls.draggable_separator')
 local StatusBar = require('ItemPicker.ui.views.status_bar')
 
 -- Debug module - with error handling
@@ -27,10 +29,12 @@ function M.new(config, state, coordinator)
     state = state,
     coordinator = coordinator,
     status_bar = nil,
+    separator = nil,
     focus_search = false,
   }, LayoutView)
 
   self.status_bar = StatusBar.new(config, state)
+  self.separator = DraggableSeparator.new()
 
   return self
 end
@@ -151,6 +155,31 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.needs_recollect = true
   end
 
+  -- View mode dropdown (new line)
+  checkbox_y = checkbox_y + 30  -- Extra spacing before dropdown
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, ui_fade)
+  local _, view_changed = Dropdown.draw(ctx, draw_list, checkbox_x, checkbox_y, 120, 24, {
+    id = "view_mode",
+    options = {
+      {value = "MIXED", label = "Mixed View"},
+      {value = "MIDI", label = "MIDI Only"},
+      {value = "AUDIO", label = "Audio Only"}
+    },
+    on_change = function(value)
+      self.state.set_view_mode(value)
+    end
+  }, "view_mode")
+  ImGui.PopStyleVar(ctx)
+
+  -- Initialize dropdown value if not set
+  if not Dropdown.get_value("view_mode") then
+    local current_mode = self.state.get_view_mode()
+    Dropdown.instances = Dropdown.instances or {}
+    if Dropdown.instances["view_mode"] then
+      Dropdown.instances["view_mode"].current_value = current_mode
+    end
+  end
+
   -- Search fade with different offset
   local search_fade = smootherstep(math.max(0, (overlay_alpha - 0.05) / 0.95))
   local search_y_offset = 25 * (1.0 - search_fade)
@@ -196,41 +225,156 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Section fade
   local section_fade = smootherstep(math.max(0, (overlay_alpha - 0.1) / 0.9))
   local content_height = screen_h * self.config.LAYOUT.CONTENT_HEIGHT
+  local content_width = screen_w - (self.config.LAYOUT.PADDING * 2)
 
-  -- MIDI section
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
-  ImGui.SetCursorScreenPos(ctx, self.config.LAYOUT.PADDING, content_start_y)
-  ImGui.PushFont(ctx, title_font, 14)
-  ImGui.Text(ctx, "MIDI Tracks")
-  ImGui.PopFont(ctx)
-  ImGui.PopStyleVar(ctx)
+  -- Get view mode
+  local view_mode = self.state.get_view_mode()
 
-  local midi_height = content_height * self.config.LAYOUT.MIDI_SECTION_RATIO
-  ImGui.SetCursorScreenPos(ctx, self.config.LAYOUT.PADDING, content_start_y + self.config.LAYOUT.HEADER_HEIGHT)
+  -- Calculate section heights based on view mode
+  local start_x = self.config.LAYOUT.PADDING
+  local start_y = content_start_y
+  local header_height = self.config.LAYOUT.HEADER_HEIGHT
 
-  if ImGui.BeginChild(ctx, "midi_container", screen_w - (self.config.LAYOUT.PADDING * 2), midi_height, 0,
-    ImGui.WindowFlags_NoScrollbar) then
-    self.coordinator:render_midi_grid(ctx, screen_w - (self.config.LAYOUT.PADDING * 2), midi_height)
-    ImGui.EndChild(ctx)
-  end
+  local max = math.max
+  local min = math.min
 
-  -- Audio section
-  local audio_start_y = content_start_y + (content_height * self.config.LAYOUT.MIDI_SECTION_RATIO) + self.config.LAYOUT.SECTION_SPACING
+  if view_mode == "MIDI" then
+    -- MIDI only - use full content height
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
+    ImGui.SetCursorScreenPos(ctx, start_x, start_y)
+    ImGui.PushFont(ctx, title_font, 14)
+    ImGui.Text(ctx, "MIDI Tracks")
+    ImGui.PopFont(ctx)
+    ImGui.PopStyleVar(ctx)
 
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
-  ImGui.SetCursorScreenPos(ctx, self.config.LAYOUT.PADDING, audio_start_y)
-  ImGui.PushFont(ctx, title_font, 15)
-  ImGui.Text(ctx, "Audio Sources")
-  ImGui.PopFont(ctx)
-  ImGui.PopStyleVar(ctx)
+    local midi_height = content_height
+    ImGui.SetCursorScreenPos(ctx, start_x, start_y + header_height)
 
-  local audio_height = content_height * self.config.LAYOUT.AUDIO_SECTION_RATIO
-  ImGui.SetCursorScreenPos(ctx, self.config.LAYOUT.PADDING, audio_start_y + self.config.LAYOUT.HEADER_HEIGHT)
+    if ImGui.BeginChild(ctx, "midi_container", content_width, midi_height, 0,
+      ImGui.WindowFlags_NoScrollbar) then
+      self.coordinator:render_midi_grid(ctx, content_width, midi_height)
+      ImGui.EndChild(ctx)
+    end
 
-  if ImGui.BeginChild(ctx, "audio_container", screen_w - (self.config.LAYOUT.PADDING * 2), audio_height, 0,
-    ImGui.WindowFlags_NoScrollbar) then
-    self.coordinator:render_audio_grid(ctx, screen_w - (self.config.LAYOUT.PADDING * 2), audio_height)
-    ImGui.EndChild(ctx)
+  elseif view_mode == "AUDIO" then
+    -- Audio only - use full content height
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
+    ImGui.SetCursorScreenPos(ctx, start_x, start_y)
+    ImGui.PushFont(ctx, title_font, 15)
+    ImGui.Text(ctx, "Audio Sources")
+    ImGui.PopFont(ctx)
+    ImGui.PopStyleVar(ctx)
+
+    local audio_height = content_height
+    ImGui.SetCursorScreenPos(ctx, start_x, start_y + header_height)
+
+    if ImGui.BeginChild(ctx, "audio_container", content_width, audio_height, 0,
+      ImGui.WindowFlags_NoScrollbar) then
+      self.coordinator:render_audio_grid(ctx, content_width, audio_height)
+      ImGui.EndChild(ctx)
+    end
+
+  else
+    -- MIXED mode - use draggable separator
+    local sep_config = self.config.SEPARATOR
+    local min_midi_height = sep_config.min_midi_height
+    local min_audio_height = sep_config.min_audio_height
+    local separator_gap = sep_config.gap
+    local min_total_height = min_midi_height + min_audio_height + separator_gap
+
+    local midi_height, audio_height
+
+    if content_height < min_total_height then
+      -- Not enough space - scale proportionally
+      local ratio = content_height / min_total_height
+      midi_height = (min_midi_height * ratio)//1
+      audio_height = content_height - midi_height - separator_gap
+
+      if midi_height < 50 then midi_height = 50 end
+      if audio_height < 50 then audio_height = 50 end
+
+      audio_height = max(1, content_height - midi_height - separator_gap)
+    else
+      -- Use saved separator position
+      midi_height = self.state.get_separator_position()
+      midi_height = max(min_midi_height, min(midi_height, content_height - min_audio_height - separator_gap))
+      audio_height = content_height - midi_height - separator_gap
+    end
+
+    midi_height = max(1, midi_height)
+    audio_height = max(1, audio_height)
+
+    -- Check if separator is being interacted with
+    local sep_thickness = sep_config.thickness
+    local sep_y = start_y + header_height + midi_height + separator_gap/2
+    local mx, my = ImGui.GetMousePos(ctx)
+    local over_sep = (mx >= start_x and mx < start_x + content_width and
+                      my >= sep_y - sep_thickness/2 and my < sep_y + sep_thickness/2)
+    local block_input = self.separator:is_dragging() or (over_sep and ImGui.IsMouseDown(ctx, 0))
+
+    -- MIDI section
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
+    ImGui.SetCursorScreenPos(ctx, start_x, start_y)
+    ImGui.PushFont(ctx, title_font, 14)
+    ImGui.Text(ctx, "MIDI Tracks")
+    ImGui.PopFont(ctx)
+    ImGui.PopStyleVar(ctx)
+
+    ImGui.SetCursorScreenPos(ctx, start_x, start_y + header_height)
+
+    if ImGui.BeginChild(ctx, "midi_container", content_width, midi_height, 0,
+      ImGui.WindowFlags_NoScrollbar) then
+      -- Block grid input during separator drag
+      if self.coordinator.midi_grid then
+        self.coordinator.midi_grid.block_all_input = block_input
+      end
+      self.coordinator:render_midi_grid(ctx, content_width, midi_height)
+      ImGui.EndChild(ctx)
+    end
+
+    -- Draggable separator
+    local separator_y = sep_y
+    local action, value = self.separator:draw_horizontal(ctx, start_x, separator_y, content_width, content_height, sep_config)
+
+    if action == "reset" then
+      self.state.set_separator_position(sep_config.default_midi_height)
+    elseif action == "drag" and content_height >= min_total_height then
+      local new_midi_height = value - start_y - header_height - separator_gap/2
+      new_midi_height = max(min_midi_height, min(new_midi_height, content_height - min_audio_height - separator_gap))
+      self.state.set_separator_position(new_midi_height)
+    end
+
+    -- Audio section
+    local audio_start_y = start_y + header_height + midi_height + separator_gap
+
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
+    ImGui.SetCursorScreenPos(ctx, start_x, audio_start_y)
+    ImGui.PushFont(ctx, title_font, 15)
+    ImGui.Text(ctx, "Audio Sources")
+    ImGui.PopFont(ctx)
+    ImGui.PopStyleVar(ctx)
+
+    ImGui.SetCursorScreenPos(ctx, start_x, audio_start_y + header_height)
+
+    if ImGui.BeginChild(ctx, "audio_container", content_width, audio_height, 0,
+      ImGui.WindowFlags_NoScrollbar) then
+      -- Block grid input during separator drag
+      if self.coordinator.audio_grid then
+        self.coordinator.audio_grid.block_all_input = block_input
+      end
+      self.coordinator:render_audio_grid(ctx, content_width, audio_height)
+      ImGui.EndChild(ctx)
+    end
+
+    -- Unblock input after separator interaction
+    if not self.separator:is_dragging() and not (over_sep and ImGui.IsMouseDown(ctx, 0)) then
+      if self.coordinator.midi_grid then
+        self.coordinator.midi_grid.block_all_input = false
+      end
+      if self.coordinator.audio_grid then
+        self.coordinator.audio_grid.block_all_input = false
+      end
+    end
   end
 
   ImGui.End(ctx)
