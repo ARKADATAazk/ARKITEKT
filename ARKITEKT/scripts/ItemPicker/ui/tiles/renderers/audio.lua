@@ -134,7 +134,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local waveform_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
     dark_color = Colors.with_alpha(dark_color, math.floor(waveform_alpha * 255))
 
-    local waveform = cache_mgr and cache_mgr.get_waveform_data(state.cache, item_data.item)
+    local waveform = cache_mgr and cache_mgr.get_waveform_data(state.cache, item_data.item, item_data.uuid)
     if waveform then
       if visualization.DisplayWaveformTransparent then
         visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, content_w)
@@ -142,7 +142,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     else
       BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
       if state.job_queue and state.job_queue.add_waveform_job then
-        state.job_queue.add_waveform_job(state.cache, item_data.item, item_data.key)
+        state.job_queue.add_waveform_job(state.cache, item_data.item, item_data.uuid)
       end
     end
   end

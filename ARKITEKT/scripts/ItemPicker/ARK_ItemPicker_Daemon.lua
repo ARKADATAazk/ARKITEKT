@@ -128,8 +128,9 @@ local function build_thumbnail_queue(state)
     for _, key in ipairs(state.sample_indexes) do
       local sample_data = state.samples[key]
       if sample_data and sample_data[1] and sample_data[1].item then
+        local uuid = sample_data[1].uuid
         -- Check if waveform already exists in disk cache
-        local sig = cache_mgr.get_item_signature(sample_data[1].item)
+        local sig = cache_mgr.get_item_signature(sample_data[1].item, uuid)
         if sig then
           local cached = cache_mgr.load_waveform_from_disk(sig)
           if not cached then
@@ -138,6 +139,7 @@ local function build_thumbnail_queue(state)
               type = "audio",
               item = sample_data[1].item,
               key = key,
+              uuid = uuid,
             })
           end
         end
@@ -150,8 +152,9 @@ local function build_thumbnail_queue(state)
     for _, key in ipairs(state.midi_indexes) do
       local midi_data = state.midi_items[key]
       if midi_data and midi_data[1] and midi_data[1].item then
+        local uuid = midi_data[1].uuid
         -- Check if thumbnail already exists in disk cache
-        local sig = cache_mgr.get_item_signature(midi_data[1].item)
+        local sig = cache_mgr.get_item_signature(midi_data[1].item, uuid)
         if sig then
           local cached = cache_mgr.load_midi_thumbnail_from_disk(sig)
           if not cached then
@@ -160,6 +163,7 @@ local function build_thumbnail_queue(state)
               type = "midi",
               item = midi_data[1].item,
               key = key,
+              uuid = uuid,
             })
           end
         end
@@ -187,11 +191,11 @@ local function process_thumbnail_batch()
 
     if job.type == "audio" then
       -- Generate audio waveform
-      visualization.GetItemWaveform(daemon_state.cache, job.item)
+      visualization.GetItemWaveform(daemon_state.cache, job.item, job.uuid)
     elseif job.type == "midi" then
       -- Generate MIDI thumbnail
       local cache_w, cache_h = cache_mgr.get_midi_cache_size()
-      visualization.GenerateMidiThumbnail(daemon_state.cache, job.item, cache_w, cache_h)
+      visualization.GenerateMidiThumbnail(daemon_state.cache, job.item, cache_w, cache_h, job.uuid)
     end
 
     daemon_state.queue_index = daemon_state.queue_index + 1

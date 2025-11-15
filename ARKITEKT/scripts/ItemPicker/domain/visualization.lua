@@ -17,8 +17,8 @@ function M.init(utils_module, script_dir, cache_mgr)
   cache_manager = cache_mgr
 end
 
-function M.GetItemWaveform(cache, item)
-  local cached_data = cache_manager.get_waveform_data(cache, item)
+function M.GetItemWaveform(cache, item, uuid)
+  local cached_data = cache_manager.get_waveform_data(cache, item, uuid)
   if cached_data then
     return cached_data
   end
@@ -66,7 +66,7 @@ function M.GetItemWaveform(cache, item)
     ret_tab = buf.table()
   end
 
-  cache_manager.set_waveform_data(cache, item, ret_tab)
+  cache_manager.set_waveform_data(cache, item, ret_tab, uuid)
   return ret_tab
 end
 
@@ -215,11 +215,11 @@ function M.GetNoteRange(take)
   return lowest_note, highest_note
 end
 
-function M.GenerateMidiThumbnail(cache, item, w, h)
+function M.GenerateMidiThumbnail(cache, item, w, h, uuid)
   -- Always generate at max resolution for caching (size-independent)
   local cache_w, cache_h = cache_manager.get_midi_cache_size()
 
-  local cached_thumbnail = cache_manager.get_midi_thumbnail(cache, item, cache_w, cache_h)
+  local cached_thumbnail = cache_manager.get_midi_thumbnail(cache, item, cache_w, cache_h, uuid)
   if cached_thumbnail then
     return cached_thumbnail
   end
@@ -275,7 +275,7 @@ function M.GenerateMidiThumbnail(cache, item, w, h)
     end
   end
 
-  cache_manager.set_midi_thumbnail(cache, item, w, h, thumbnail)
+  cache_manager.set_midi_thumbnail(cache, item, w, h, thumbnail, uuid)
   return thumbnail
 end
 

@@ -134,7 +134,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local midi_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
     dark_color = Colors.with_alpha(dark_color, math.floor(midi_alpha * 255))
 
-    local thumbnail = cache_mgr and cache_mgr.get_midi_thumbnail(state.cache, item_data.item, content_w, content_h)
+    local thumbnail = cache_mgr and cache_mgr.get_midi_thumbnail(state.cache, item_data.item, content_w, content_h, item_data.uuid)
     if thumbnail then
       if visualization.DisplayMidiItemTransparent then
         ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
@@ -145,7 +145,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Thumbnail not cached, show placeholder and queue generation
       BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
       if state.job_queue and state.job_queue.add_midi_job then
-        state.job_queue.add_midi_job(state.cache, item_data.item, content_w, content_h, item_data.key)
+        state.job_queue.add_midi_job(state.cache, item_data.item, content_w, content_h, item_data.uuid)
       end
     end
   end
