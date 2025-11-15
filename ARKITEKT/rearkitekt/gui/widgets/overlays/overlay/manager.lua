@@ -223,10 +223,10 @@ function M:render(ctx, dt)
   local x, y, w, h
 
   if top.use_viewport then
-    -- Use REAPER viewport work area (excludes menu bar, etc.)
+    -- Use full REAPER viewport (entire screen) like old overlay.lua
     local viewport = ImGui.GetMainViewport(ctx)
-    x, y = ImGui.Viewport_GetWorkPos(viewport)
-    w, h = ImGui.Viewport_GetWorkSize(viewport)
+    x, y = ImGui.Viewport_GetPos(viewport)
+    w, h = ImGui.Viewport_GetSize(viewport)
   else
     -- Use parent window bounds with UI offset adjustments
     local parent_x, parent_y = ImGui.GetWindowPos(ctx)
@@ -258,21 +258,22 @@ function M:render(ctx, dt)
                      | ImGui.WindowFlags_NoNavFocus
                      | ImGui.WindowFlags_NoDocking
 
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, 0)
-
-  Style.PushMyStyle(ctx)
-
-  -- Calculate scrim color with alpha
+  -- Calculate scrim color with alpha (like old overlay.lua)
   local config = OverlayConfig.get()
   local base_scrim_color = top.scrim_color or config.scrim.color
   local base_scrim_opacity = top.scrim_opacity or config.scrim.opacity
   local scrim_alpha = base_scrim_opacity * alpha_val
   local scrim_color = (base_scrim_color & 0xFFFFFF00) | math.floor(255 * scrim_alpha + 0.5)
 
-  -- Override window background with scrim color (must be after PushMyStyle)
+  -- Push window background with scrim (before PushMyStyle to avoid override)
   ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, scrim_color)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, 0)
+
+  Style.PushMyStyle(ctx)
+
+  -- Override child bg to transparent (after PushMyStyle)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))
 
   local visible = ImGui.Begin(ctx, "##modal_overlay_" .. top.id, true, window_flags)
@@ -335,10 +336,11 @@ function M:render(ctx, dt)
 
   ImGui.End(ctx)
 
-  -- Pop in reverse order (colors pushed after style, so pop them first)
-  ImGui.PopStyleColor(ctx, 2)
+  -- Pop in reverse order
+  ImGui.PopStyleColor(ctx, 1)  -- ChildBg
   Style.PopMyStyle(ctx)
-  ImGui.PopStyleVar(ctx, 3)
+  ImGui.PopStyleVar(ctx, 3)    -- WindowRounding, WindowBorderSize, WindowPadding
+  ImGui.PopStyleColor(ctx, 1)  -- WindowBg
 end
 
 -- ============================================================================
