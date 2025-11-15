@@ -165,7 +165,14 @@ function M.show_message(ctx, title, message, opts)
       title = title,
       message = message,
       opts = opts,
+      first_frame = true,
     }
+  end
+
+  -- Skip first frame to avoid closing from the click that opened it
+  local is_first_frame = active_modal.first_frame
+  if is_first_frame then
+    active_modal.first_frame = false
   end
 
   -- Calculate modal size based on current window
@@ -214,8 +221,8 @@ function M.show_message(ctx, title, message, opts)
     if on_close then on_close() end
   end
 
-  -- Close if clicked outside
-  if clicked_outside(ctx, x, y, modal_w, modal_h) then
+  -- Close if clicked outside (but not on first frame to avoid closing from opening click)
+  if not is_first_frame and clicked_outside(ctx, x, y, modal_w, modal_h) then
     active_modal = nil
     if on_close then on_close() end
   end
@@ -243,7 +250,14 @@ function M.show_confirm(ctx, title, message, opts)
       title = title,
       message = message,
       opts = opts,
+      first_frame = true,
     }
+  end
+
+  -- Skip first frame to avoid closing from the click that opened it
+  local is_first_frame = active_modal.first_frame
+  if is_first_frame then
+    active_modal.first_frame = false
   end
 
   -- Calculate modal size
@@ -309,8 +323,8 @@ function M.show_confirm(ctx, title, message, opts)
     if on_confirm then on_confirm() end
   end
 
-  -- Close if clicked outside (cancel)
-  if clicked_outside(ctx, x, y, modal_w, modal_h) then
+  -- Close if clicked outside (cancel, but not on first frame)
+  if not is_first_frame and clicked_outside(ctx, x, y, modal_w, modal_h) then
     active_modal = nil
     if on_cancel then on_cancel() end
   end
@@ -351,7 +365,14 @@ function M.show_input(ctx, title, initial_text, opts)
       type = "input",
       title = title,
       opts = opts,
+      first_frame = true,
     }
+  end
+
+  -- Skip first frame to avoid closing from the click that opened it
+  local is_first_frame = active_modal.first_frame
+  if is_first_frame then
+    active_modal.first_frame = false
   end
 
   -- Calculate modal size
@@ -437,8 +458,8 @@ function M.show_input(ctx, title, initial_text, opts)
     do_confirm()
   end
 
-  -- Close if clicked outside (cancel)
-  if clicked_outside(ctx, x, y, modal_w, modal_h) then
+  -- Close if clicked outside (cancel, but not on first frame)
+  if not is_first_frame and clicked_outside(ctx, x, y, modal_w, modal_h) then
     do_cancel()
   end
 
