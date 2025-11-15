@@ -53,7 +53,7 @@ M.TRANSPORT = {
     margin = 8,
     top_right = {
       custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
-        TransportIcons.draw_gear(dl, x, y, width, height, color)
+        TransportIcons.draw_tool(dl, x, y, width, height, color)
       end,
       tooltip = "Settings (coming soon)",
       on_click = function()

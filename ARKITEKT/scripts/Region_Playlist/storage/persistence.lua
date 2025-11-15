@@ -4,11 +4,12 @@
 -- FIXED: Colors persist correctly and generation is centralized.
 
 local JSON = require('rearkitekt.core.json')
-local Colors = require('rearkitekt.core.colors') -- Added
+local Colors = require('rearkitekt.core.colors')
+local UUID = require('rearkitekt.core.uuid')
 
 local M = {}
 
-local EXT_STATE_SECTION = "ReArkitekt_RegionPlaylist"
+local EXT_STATE_SECTION = "ARK_REGIONPLAYLIST"
 local KEY_PLAYLISTS = "playlists"
 local KEY_ACTIVE = "active_playlist"
 local KEY_SETTINGS = "settings"
@@ -117,7 +118,7 @@ function M.get_or_create_default_playlist(playlists, regions)
   if #playlists > 0 then
     return playlists
   end
-  
+
   local default_items = {}
   for i, region in ipairs(regions) do
     default_items[#default_items + 1] = {
@@ -125,13 +126,13 @@ function M.get_or_create_default_playlist(playlists, regions)
       rid = i,
       reps = 1,
       enabled = true,
-      key = "region_" .. i,
+      key = UUID.generate(),
     }
   end
-  
+
   return {
     {
-      id = "Main",
+      id = UUID.generate(),
       name = "Main Playlist",
       items = default_items,
       chip_color = M.generate_chip_color(),

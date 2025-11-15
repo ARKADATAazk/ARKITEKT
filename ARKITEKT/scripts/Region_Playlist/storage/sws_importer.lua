@@ -306,10 +306,10 @@ function M.execute_import(merge_mode, backup)
   -- Backup current state
   if backup then
     RegionState.backup_current_state = RegionState.backup_current_state or function(proj)
-      local ok, json_str = reaper.GetProjExtState(proj, "ReArkitekt_RegionPlaylist", "playlists")
+      local ok, json_str = reaper.GetProjExtState(proj, "ARK_REGIONPLAYLIST", "playlists")
       if ok == 1 and json_str ~= "" then
-        reaper.SetProjExtState(proj, "ReArkitekt_RegionPlaylist", "playlists_backup", json_str)
-        reaper.SetProjExtState(proj, "ReArkitekt_RegionPlaylist", "playlists_backup_time", tostring(os.time()))
+        reaper.SetProjExtState(proj, "ARK_REGIONPLAYLIST", "playlists_backup", json_str)
+        reaper.SetProjExtState(proj, "ARK_REGIONPLAYLIST", "playlists_backup_time", tostring(os.time()))
       end
     end
     RegionState.backup_current_state(0)

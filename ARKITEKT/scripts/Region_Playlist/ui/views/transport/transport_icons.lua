@@ -203,4 +203,34 @@ function M.draw_gear(dl, x, y, width, height, color)
   ImGui.DrawList_AddCircle(dl, cx, cy, hole_radius, color, 12, 1)
 end
 
+function M.draw_tool(dl, x, y, width, height, color)
+  local cx = floor(x + width / 2 + 0.5)
+  local cy = floor(y + height / 2 + 0.5)
+
+  -- Simple wrench icon
+  local handle_w = 2
+  local handle_h = 10
+  local head_w = 5
+  local head_h = 4
+  local gap = 1
+
+  -- Draw handle (vertical rectangle)
+  local handle_x = floor(cx - handle_w / 2 + 0.5)
+  local handle_y = floor(cy - 2 + 0.5)
+  ImGui.DrawList_AddRectFilled(dl, handle_x, handle_y, handle_x + handle_w, handle_y + handle_h, color, 0)
+
+  -- Draw wrench head (top part with gap)
+  local head_x = floor(cx - head_w / 2 + 0.5)
+  local head_y = floor(cy - head_h - 2 + 0.5)
+
+  -- Left side of head
+  ImGui.DrawList_AddRectFilled(dl, head_x, head_y, head_x + 2, head_y + head_h, color, 0)
+
+  -- Right side of head
+  ImGui.DrawList_AddRectFilled(dl, head_x + head_w - 2, head_y, head_x + head_w, head_y + head_h, color, 0)
+
+  -- Top of head
+  ImGui.DrawList_AddRectFilled(dl, head_x, head_y, head_x + head_w, head_y + 1, color, 0)
+end
+
 return M
