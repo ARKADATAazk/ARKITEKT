@@ -58,9 +58,12 @@ function Controller:create_playlist(name)
 
     local RegionState = require("Region_Playlist.storage.persistence")
 
+    -- Generate human-readable default name based on count
+    local default_name = "Playlist " .. tostring(#self.state.get_playlists() + 1)
+
     local new_playlist = {
       id = new_id,
-      name = name or ("Playlist " .. new_id),
+      name = name or default_name,
       items = {},
       chip_color = RegionState.generate_chip_color(),
     }

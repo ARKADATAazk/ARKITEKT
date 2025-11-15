@@ -383,7 +383,7 @@ function M.get_tabs()
   for _, pl in ipairs(M.playlists) do
     tabs[#tabs + 1] = {
       id = pl.id,
-      label = pl.name or ("Playlist " .. pl.id),
+      label = pl.name or "Untitled",
       chip_color = pl.chip_color,
     }
   end
