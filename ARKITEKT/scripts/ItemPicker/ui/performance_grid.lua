@@ -192,15 +192,35 @@ function Grid:draw(ctx)
   -- PERFORMANCE: Detect resize BEFORE layout calculation
   local resize_threshold = 5
   local did_resize = false
-  local saved_scroll_y = 0
+  local anchor_item_idx = nil
+  local anchor_offset_y = 0  -- How far down from viewport top was the anchor item
 
   if self._perf_last_avail_w and self._perf_last_avail_h then
     local w_diff = math.abs(avail_w - self._perf_last_avail_w)
     local h_diff = math.abs(avail_h - self._perf_last_avail_h)
     did_resize = (w_diff > resize_threshold or h_diff > resize_threshold)
 
-    if did_resize then
-      saved_scroll_y = ImGui.GetScrollY(ctx)
+    -- Find anchor item BEFORE layout changes
+    if did_resize and num_items > 0 then
+      local scroll_y = ImGui.GetScrollY(ctx)
+      local window_x, window_y = ImGui.GetWindowPos(ctx)
+      local viewport_top_y = window_y + scroll_y + 30  -- 30 = title bar approx
+
+      -- Find the first item that's visible at the top of viewport
+      local min_dist = math.huge
+      for i, item in ipairs(items) do
+        local key = self.key(item)
+        local rect = self.rect_track:get(key)
+        if rect then
+          local item_top_y = rect[2]
+          local dist = math.abs(item_top_y - viewport_top_y)
+          if dist < min_dist then
+            min_dist = dist
+            anchor_item_idx = i
+            anchor_offset_y = item_top_y - viewport_top_y
+          end
+        end
+      end
     end
   end
 
@@ -332,13 +352,25 @@ function Grid:draw(ctx)
   ImGui.InvisibleButton(ctx, self._cached_bg_id, extended_w, extended_h)
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
-  -- PERFORMANCE: Restore scroll position after resize
+  -- PERFORMANCE: Restore scroll position after resize using anchor item
   -- CRITICAL: Must be AFTER InvisibleButton so ImGui knows the new scroll region size
-  if did_resize and saved_scroll_y > 0 then
-    local max_scroll = ImGui.GetScrollMaxY(ctx)
-    -- Clamp to valid range
-    local clamped_scroll = math.min(saved_scroll_y, max_scroll)
-    ImGui.SetScrollY(ctx, clamped_scroll)
+  if did_resize and anchor_item_idx and anchor_item_idx <= num_items then
+    -- Find anchor item in NEW layout
+    local key = self.key(items[anchor_item_idx])
+    local new_rect = self.rect_track:get(key)
+
+    if new_rect then
+      local window_x, window_y = ImGui.GetWindowPos(ctx)
+      -- Calculate desired scroll to keep anchor item at same offset from viewport top
+      local new_item_top_y = new_rect[2]
+      local desired_viewport_top_y = new_item_top_y - anchor_offset_y
+      local desired_scroll_y = desired_viewport_top_y - window_y - 30  -- 30 = title bar approx
+
+      -- Clamp to valid scroll range
+      local max_scroll = ImGui.GetScrollMaxY(ctx)
+      desired_scroll_y = math.max(0, math.min(desired_scroll_y, max_scroll))
+      ImGui.SetScrollY(ctx, desired_scroll_y)
+    end
   end
 
   local bg_clicked = ImGui.IsItemClicked(ctx, 0)
