@@ -12,6 +12,7 @@ local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')
 local State = require('Region_Playlist.core.app_state')
 local ContextMenu = require('rearkitekt.gui.widgets.controls.context_menu')
 local SWSImporter = require('Region_Playlist.storage.sws_importer')
+local Colors = require('rearkitekt.core.colors')
 
 local M = {}
 
@@ -22,6 +23,9 @@ local SWS_IMPORT_MODAL = {
   BUTTON_WIDTH = 120,
   BUTTON_BOTTOM_SPACING = 35,
 }
+
+-- Modal background color (dark grey with opacity)
+local MODAL_BG_COLOR = Colors.with_alpha(Colors.hexrgb("#141414FF"), 0xF0)
 
 -- Helper: Set import result and trigger modal display
 local function set_import_result(self, success, message)
@@ -64,15 +68,14 @@ local function execute_sws_import(self)
   end
 end
 
--- Helper: Center modal window on viewport
+-- Helper: Center modal window on parent window (script window, not viewport)
 local function center_modal_window(ctx, width, height)
-  local viewport = ImGui.GetMainViewport(ctx)
-  local vp_x, vp_y = ImGui.Viewport_GetPos(viewport)
-  local vp_w, vp_h = ImGui.Viewport_GetSize(viewport)
+  local win_x, win_y = ImGui.GetWindowPos(ctx)
+  local win_w, win_h = ImGui.GetWindowSize(ctx)
 
   ImGui.SetNextWindowPos(ctx,
-    vp_x + (vp_w - width) * 0.5,
-    vp_y + (vp_h - height) * 0.5,
+    win_x + (win_w - width) * 0.5,
+    win_y + (win_h - height) * 0.5,
     ImGui.Cond_Appearing)
   ImGui.SetNextWindowSize(ctx, width, height, ImGui.Cond_Appearing)
 end
@@ -197,6 +200,9 @@ function M.draw_active(self, ctx, playlist, height)
     center_modal_window(ctx, SWS_IMPORT_MODAL.WIDTH, SWS_IMPORT_MODAL.HEIGHT)
   end
 
+  -- Push dark background style for modal
+  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, MODAL_BG_COLOR)
+
   if ImGui.BeginPopupModal(ctx, "SWS Import Result", nil, ImGui.WindowFlags_NoResize) then
     if self._sws_import_result then
       ImGui.TextWrapped(ctx, self._sws_import_result.message)
@@ -209,6 +215,9 @@ function M.draw_active(self, ctx, playlist, height)
     end
     ImGui.EndPopup(ctx)
   end
+
+  -- Pop style color
+  ImGui.PopStyleColor(ctx, 1)
 
   -- Rename playlist modal
   if self._rename_input_visible then
