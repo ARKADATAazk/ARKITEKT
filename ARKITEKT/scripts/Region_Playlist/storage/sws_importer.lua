@@ -7,6 +7,12 @@ local Colors = require("rearkitekt.core.colors")
 
 local M = {}
 
+-- Constants
+local SWS_REGION_FLAG = 0x40000000  -- Bit 30 indicates region in SWS format
+local SWS_INFINITE_LOOP = -1
+local ARK_INFINITE_LOOP_REPS = 999  -- ARK representation of infinite loop
+local SWS_PLAYLIST_NAME_PREFIX = "[SWS] "
+
 -- Parse a single SWS playlist section from RPP lines
 -- Returns: playlist table or nil on error
 local function parse_sws_playlist_section(lines, start_idx)
@@ -112,15 +118,9 @@ end
 -- SWS uses bitfield format: 0x40000000 | region_number for regions
 -- Returns: region number or nil
 local function decode_sws_region_id(sws_id)
-  local REGION_FLAG = 0x40000000  -- Bit 30 set = region
-
-  -- Check if it's a region (bit 30 set)
-  if sws_id >= REGION_FLAG then
-    -- Extract region number from lower bits
-    return sws_id - REGION_FLAG
+  if sws_id >= SWS_REGION_FLAG then
+    return sws_id - SWS_REGION_FLAG
   end
-
-  -- Not a region (it's a marker)
   return nil
 end
 
@@ -157,12 +157,24 @@ local function generate_item_key(rid)
   return "imported_" .. tostring(rid) .. "_" .. reaper.time_precise() .. "_" .. key_counter
 end
 
+-- Convert SWS loop count to ARK repeat count
+-- Returns: reps (number), is_infinite (bool), is_valid (bool)
+local function convert_loop_count(sws_loop_count)
+  if sws_loop_count == SWS_INFINITE_LOOP then
+    return ARK_INFINITE_LOOP_REPS, true, true
+  elseif sws_loop_count == 0 then
+    return 0, false, false  -- Invalid
+  else
+    return sws_loop_count, false, true
+  end
+end
+
 -- Convert SWS playlist to ARK format
 -- Returns: ARK playlist table, plus report data
 local function convert_sws_playlist_to_ark(sws_playlist, playlist_num)
   local ark_playlist = {
     id = "SWS_" .. tostring(playlist_num),
-    name = "[SWS] " .. sws_playlist.name,
+    name = SWS_PLAYLIST_NAME_PREFIX .. sws_playlist.name,
     items = {},
     chip_color = RegionState.generate_chip_color(),
   }
@@ -186,29 +198,27 @@ local function convert_sws_playlist_to_ark(sws_playlist, playlist_num)
     end
 
     if ark_region_num then
-      -- Handle loop count
-      local reps = sws_item.sws_loop_count
-      if reps < 0 then
-        -- SWS infinite loop: convert to large number
-        -- ARK doesn't have true infinite loops, use 999 as "effectively infinite"
-        reps = 999
-        report.infinite_loops = report.infinite_loops + 1
-      elseif reps == 0 then
-        -- Invalid, skip
+      -- Convert loop count
+      local reps, is_infinite, is_valid = convert_loop_count(sws_item.sws_loop_count)
+
+      if not is_valid then
         report.skipped_items = report.skipped_items + 1
         table.insert(report.skipped_rids, sws_item.sws_rgn_id)
         goto continue
       end
-      
-      local ark_item = {
+
+      if is_infinite then
+        report.infinite_loops = report.infinite_loops + 1
+      end
+
+      table.insert(ark_playlist.items, {
         type = "region",
         rid = ark_region_num,
         reps = reps,
         enabled = true,
         key = generate_item_key(ark_region_num),
-      }
-      
-      table.insert(ark_playlist.items, ark_item)
+      })
+
       report.converted_items = report.converted_items + 1
     else
       -- Region not found (deleted or ID mismatch)

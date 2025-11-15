@@ -15,6 +15,84 @@ local SWSImporter = require('Region_Playlist.storage.sws_importer')
 
 local M = {}
 
+-- Modal constants
+local SWS_IMPORT_MODAL = {
+  WIDTH = 650,
+  HEIGHT = 200,
+  BUTTON_WIDTH = 120,
+  BUTTON_BOTTOM_SPACING = 35,
+}
+
+-- Helper: Set import result and trigger modal display
+local function set_import_result(self, success, message)
+  self._sws_import_result = { success = success, message = message }
+  self._sws_show_result = true
+end
+
+-- Helper: Refresh UI after successful import and select first imported playlist
+local function refresh_after_import(self)
+  State.reload_project_data()
+
+  -- Select first imported playlist (prepended at index 1)
+  local playlists = State.get_playlists()
+  if playlists and #playlists > 0 then
+    State.set_active_playlist(playlists[1].id)
+  end
+
+  -- Update tabs UI
+  self.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+end
+
+-- Helper: Execute SWS import and handle results
+local function execute_sws_import(self)
+  -- Check for SWS playlists
+  if not SWSImporter.has_sws_playlists() then
+    set_import_result(self, false,
+      "No SWS Region Playlists found in the current project.\n\n" ..
+      "Make sure the project is saved and contains SWS Region Playlists.")
+    return
+  end
+
+  -- Execute import
+  local success, report, err = SWSImporter.execute_import(true, true)
+
+  if success and report then
+    set_import_result(self, true, "Import successful!\n\n" .. SWSImporter.format_report(report))
+    refresh_after_import(self)
+  else
+    set_import_result(self, false, "Import failed: " .. tostring(err or "Unknown error"))
+  end
+end
+
+-- Helper: Center modal window on viewport
+local function center_modal_window(ctx, width, height)
+  local viewport = ImGui.GetMainViewport(ctx)
+  local vp_x, vp_y = ImGui.Viewport_GetPos(viewport)
+  local vp_w, vp_h = ImGui.Viewport_GetSize(viewport)
+
+  ImGui.SetNextWindowPos(ctx,
+    vp_x + (vp_w - width) * 0.5,
+    vp_y + (vp_h - height) * 0.5,
+    ImGui.Cond_Appearing)
+  ImGui.SetNextWindowSize(ctx, width, height, ImGui.Cond_Appearing)
+end
+
+-- Helper: Draw centered button at bottom of modal
+local function draw_modal_bottom_button(ctx, label, button_width)
+  -- Spacer to push button to bottom
+  local avail_h = ImGui.GetContentRegionAvail(ctx)
+  ImGui.Dummy(ctx, 0, avail_h - SWS_IMPORT_MODAL.BUTTON_BOTTOM_SPACING)
+
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
+  -- Center button
+  local window_w = ImGui.GetWindowWidth(ctx)
+  ImGui.SetCursorPosX(ctx, (window_w - button_width) * 0.5)
+
+  return ImGui.Button(ctx, label, button_width, 0)
+end
+
 function M.draw_selector(self, ctx, playlists, active_id, height)
   self.selector:draw(ctx, playlists, active_id, height, self.on_playlist_changed)
 end
@@ -100,96 +178,31 @@ function M.draw_active(self, ctx, playlist, height)
 
   if ContextMenu.begin(ctx, "ActionsMenu") then
     if ContextMenu.item(ctx, "Import from SWS Region Playlist") then
-      -- Trigger import
       self._sws_import_requested = true
       ImGui.CloseCurrentPopup(ctx)
     end
-
     ContextMenu.end_menu(ctx)
   end
 
-  -- SWS Import execution and result modal
+  -- Execute SWS import
   if self._sws_import_requested then
     self._sws_import_requested = false
-
-    -- Check if SWS playlists exist
-    local has_sws = SWSImporter.has_sws_playlists()
-
-    if not has_sws then
-      self._sws_import_result = {
-        success = false,
-        message = "No SWS Region Playlists found in the current project.\n\nMake sure the project is saved and contains SWS Region Playlists."
-      }
-      self._sws_show_result = true
-    else
-      -- Execute import (merge mode, with backup)
-      local success, report, err = SWSImporter.execute_import(true, true)
-
-      if success and report then
-        local formatted = SWSImporter.format_report(report)
-        self._sws_import_result = {
-          success = true,
-          message = "Import successful!\n\n" .. formatted
-        }
-      else
-        self._sws_import_result = {
-          success = false,
-          message = "Import failed: " .. tostring(err or "Unknown error")
-        }
-      end
-
-      self._sws_show_result = true
-
-      -- Refresh UI state
-      if success then
-        State.reload_project_data()
-
-        -- Get the first imported playlist (they're prepended, so it's at index 1)
-        local playlists = State.get_playlists()
-        if playlists and #playlists > 0 then
-          local first_imported_id = playlists[1].id
-          -- Set as active playlist
-          State.set_active_playlist(first_imported_id)
-        end
-
-        -- Update tabs in the active container
-        self.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
-      end
-    end
+    execute_sws_import(self)
   end
 
   -- Show import result modal
   if self._sws_show_result then
     ImGui.OpenPopup(ctx, "SWS Import Result")
     self._sws_show_result = false
-
-    -- Center modal on screen
-    local viewport = ImGui.GetMainViewport(ctx)
-    local vp_x, vp_y = ImGui.Viewport_GetPos(viewport)
-    local vp_w, vp_h = ImGui.Viewport_GetSize(viewport)
-    local modal_w, modal_h = 650, 200  -- Wide and short
-    ImGui.SetNextWindowPos(ctx, vp_x + (vp_w - modal_w) * 0.5, vp_y + (vp_h - modal_h) * 0.5, ImGui.Cond_Appearing)
-    ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
+    center_modal_window(ctx, SWS_IMPORT_MODAL.WIDTH, SWS_IMPORT_MODAL.HEIGHT)
   end
 
   if ImGui.BeginPopupModal(ctx, "SWS Import Result", nil, ImGui.WindowFlags_NoResize) then
     if self._sws_import_result then
-      -- Display message
       ImGui.TextWrapped(ctx, self._sws_import_result.message)
 
-      -- Spacer to push button to bottom
-      local avail_h = ImGui.GetContentRegionAvail(ctx)
-      ImGui.Dummy(ctx, 0, avail_h - 35)  -- Leave room for button + spacing
-
-      ImGui.Separator(ctx)
-      ImGui.Spacing(ctx)
-
-      -- Center the OK button
-      local button_w = 120
-      local window_w = ImGui.GetWindowWidth(ctx)
-      ImGui.SetCursorPosX(ctx, (window_w - button_w) * 0.5)
-
-      if ImGui.Button(ctx, "OK", button_w, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+      local clicked = draw_modal_bottom_button(ctx, "OK", SWS_IMPORT_MODAL.BUTTON_WIDTH)
+      if clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
         self._sws_import_result = nil
         ImGui.CloseCurrentPopup(ctx)
       end
