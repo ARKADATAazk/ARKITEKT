@@ -3,8 +3,9 @@
 -- Animation coordination for grid spawn/destroy effects
 -- Thin wrapper around spawn_anim and destroy_anim systems
 
-local SpawnAnim = require('rearkitekt.gui.fx.animations.spawn')
-local DestroyAnim = require('rearkitekt.gui.fx.animations.destroy')
+local Lifecycle = require('rearkitekt.gui.fx.animation.lifecycle')
+local SpawnAnim = Lifecycle.SpawnTracker
+local DestroyAnim = Lifecycle.DestroyAnim
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

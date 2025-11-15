@@ -55,7 +55,7 @@ local Settings     = (function() local ok,m=pcall(require,"rearkitekt.core.setti
 local okStyle,Style= pcall(require,"rearkitekt.gui.style.imgui_defaults")
 local ColorBlocks  = require("ReArkitekt.gui.widgets.colorblocks")
 local Draw         = require("rearkitekt.gui.draw")
-local Effects      = require("rearkitekt.gui.fx.effects")
+local Effects      = require("rearkitekt.gui.fx.rendering.effects")
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

@@ -6,7 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local Draw = require('rearkitekt.gui.draw')
-local MarchingAnts = require('rearkitekt.gui.fx.marching_ants')
+local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local Colors = require('rearkitekt.core.colors')
 
 local M = {}

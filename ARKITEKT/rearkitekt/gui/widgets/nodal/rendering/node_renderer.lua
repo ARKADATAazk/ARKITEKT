@@ -5,12 +5,12 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local TileFX = require('rearkitekt.gui.fx.tile_fx')
-local TileFXConfig = require('rearkitekt.gui.fx.tile_fx_config')
+local TileFX = require('rearkitekt.gui.fx.rendering.tile_fx')
+local TileFXConfig = require('rearkitekt.gui.fx.config.tile_fx_config')
 local Colors = require('rearkitekt.core.colors')
 local Draw = require('rearkitekt.gui.draw')
 local Chip = require('rearkitekt.gui.widgets.component.chip')
-local MarchingAnts = require('rearkitekt.gui.fx.marching_ants')
+local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local Port = require('rearkitekt.gui.widgets.nodal.core.port')
 
 local M = {}

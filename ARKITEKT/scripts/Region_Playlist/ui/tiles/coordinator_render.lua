@@ -5,7 +5,8 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local DragIndicator = require('rearkitekt.gui.fx.dnd.drag_indicator')
+local Dnd = require('rearkitekt.gui.fx.interactions.dnd')
+local DragIndicator = Dnd.DragIndicator
 local ActiveTile = require('Region_Playlist.ui.tiles.renderers.active')
 local PoolTile = require('Region_Playlist.ui.tiles.renderers.pool')
 local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')

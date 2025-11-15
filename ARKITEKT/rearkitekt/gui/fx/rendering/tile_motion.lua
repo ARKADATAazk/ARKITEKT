@@ -3,7 +3,8 @@
 -- Per-tile animation state for smooth hover/active/selection transitions (refactored)
 -- Manages multiple animation tracks per tile using extracted Track class
 
-local Track = require('rearkitekt.gui.fx.animation.track')
+local Tracks = require('rearkitekt.gui.fx.animation.tracks')
+local Track = Tracks.Track
 
 local M = {}
 

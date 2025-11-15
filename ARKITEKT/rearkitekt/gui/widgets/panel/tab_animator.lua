@@ -2,7 +2,7 @@
 -- ReArkitekt/gui/widgets/tiles_container/tab_animator.lua
 -- Tab spawn/destroy animation manager
 
-local Easing = require('rearkitekt.gui.fx.easing')
+local Easing = require('rearkitekt.gui.fx.animation.easing')
 
 local M = {}
 

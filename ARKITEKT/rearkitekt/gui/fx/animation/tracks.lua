@@ -1,21 +1,75 @@
 -- @noindex
--- ReArkitekt/gui/fx/animation/rect_track.lua
--- Multi-rectangle animation tracker with staggered delays and magnetic snapping
--- Usage:
---   local tracker = RectTrack.new(14.0)
---   tracker:to(item_id, {x1, y1, x2, y2})
---   tracker:to_with_delay(item_id, rect, 0.05)
---   tracker:update(dt)
---   local current_rect = tracker:get(item_id)
+-- ReArkitekt/gui/fx/animation/tracks.lua
+-- Animation tracking utilities - single-value and multi-rectangle trackers
+-- Merged from track.lua and rect_track.lua for better organization
 
 local Math = require('rearkitekt.core.math')
 
 local M = {}
 
+-- =============================================================================
+-- Track: Single-value animation track with smooth interpolation
+-- =============================================================================
+-- Usage:
+--   local track = Tracks.Track.new(0, 14.0)  -- initial value, speed
+--   track:to(100)                             -- set target
+--   track:update(dt)                          -- update in frame loop
+--   local val = track:get()                   -- get current value
+
+local Track = {}
+Track.__index = Track
+
+function Track.new(initial_value, speed)
+  return setmetatable({
+    current = initial_value or 0,
+    target = initial_value or 0,
+    speed = speed or 14.0,
+  }, Track)
+end
+
+function Track:to(target)
+  self.target = target
+end
+
+function Track:update(dt)
+  dt = dt or 0.016
+  self.current = Math.lerp(self.current, self.target, self.speed * dt)
+  return self.current
+end
+
+function Track:get()
+  return self.current
+end
+
+function Track:teleport(value)
+  self.current = value
+  self.target = value
+end
+
+function Track:is_animating(epsilon)
+  epsilon = epsilon or 0.01
+  return math.abs(self.current - self.target) > epsilon
+end
+
+function Track:set_speed(speed)
+  self.speed = speed
+end
+
+-- =============================================================================
+-- RectTrack: Multi-rectangle animation tracker with staggered delays
+-- and magnetic snapping
+-- =============================================================================
+-- Usage:
+--   local tracker = Tracks.RectTrack.new(14.0)
+--   tracker:to(item_id, {x1, y1, x2, y2})
+--   tracker:to_with_delay(item_id, rect, 0.05)
+--   tracker:update(dt)
+--   local current_rect = tracker:get(item_id)
+
 local RectTrack = {}
 RectTrack.__index = RectTrack
 
-function M.new(speed, snap_epsilon, magnetic_threshold, magnetic_multiplier)
+function RectTrack.new(speed, snap_epsilon, magnetic_threshold, magnetic_multiplier)
   return setmetatable({
     rects = {},
     speed = speed or 14.0,
@@ -177,5 +231,9 @@ end
 function RectTrack:remove(id)
   self.rects[id] = nil
 end
+
+-- Export both track types
+M.Track = Track
+M.RectTrack = RectTrack
 
 return M

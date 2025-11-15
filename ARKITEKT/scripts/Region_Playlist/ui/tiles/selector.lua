@@ -7,7 +7,7 @@ local ImGui = require 'imgui' '0.10'
 
 local Draw = require('rearkitekt.gui.draw')
 local Colors = require('rearkitekt.core.colors')
-local TileAnim = require('rearkitekt.gui.fx.tile_motion')
+local TileAnim = require('rearkitekt.gui.fx.rendering.tile_motion')
 
 local M = {}
 local hexrgb = Colors.hexrgb

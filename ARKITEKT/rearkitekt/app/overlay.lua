@@ -14,7 +14,7 @@ local M = {}
 
 local Easing = nil
 do
-  local ok, mod = pcall(require, 'rearkitekt.gui.fx.easing')
+  local ok, mod = pcall(require, 'rearkitekt.gui.fx.animation.easing')
   if ok then Easing = mod end
 end
 
