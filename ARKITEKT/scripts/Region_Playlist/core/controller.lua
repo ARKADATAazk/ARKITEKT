@@ -52,6 +52,38 @@ function Controller:_generate_item_key()
   return UUID.generate()
 end
 
+function Controller:_generate_unique_name(base_name, exclude_id)
+  local playlists = self.state.get_playlists()
+  local existing_names = {}
+
+  -- Collect all existing names except the one we're duplicating
+  for _, pl in ipairs(playlists) do
+    if pl.id ~= exclude_id then
+      existing_names[pl.name] = true
+    end
+  end
+
+  -- Try "Name Copy" first
+  local candidate = base_name .. " Copy"
+  if not existing_names[candidate] then
+    return candidate
+  end
+
+  -- Try "Name Copy (2)", "Name Copy (3)", etc.
+  local index = 2
+  while true do
+    candidate = base_name .. " Copy (" .. index .. ")"
+    if not existing_names[candidate] then
+      return candidate
+    end
+    index = index + 1
+    -- Safety limit to prevent infinite loop
+    if index > 1000 then
+      return base_name .. " Copy (" .. os.time() .. ")"
+    end
+  end
+end
+
 function Controller:create_playlist(name)
   return self:_with_undo(function()
     local new_id = self:_generate_playlist_id()
@@ -140,7 +172,7 @@ function Controller:duplicate_playlist(id)
 
     local new_playlist = {
       id = new_id,
-      name = source_playlist.name .. " Copy",
+      name = self:_generate_unique_name(source_playlist.name, id),
       items = new_items,
       chip_color = source_playlist.chip_color,
     }

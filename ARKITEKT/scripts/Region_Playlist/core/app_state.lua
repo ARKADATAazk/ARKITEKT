@@ -143,7 +143,7 @@ function M.load_project_state()
     M.playlists = {
       {
         id = UUID.generate(),
-        name = "Main",
+        name = "Playlist 1",
         items = {},
         chip_color = RegionState.generate_chip_color(),
       }
