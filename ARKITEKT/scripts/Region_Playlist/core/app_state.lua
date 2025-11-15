@@ -59,6 +59,7 @@ M.on_state_restored = nil
 M.on_repeat_cycle = nil
 
 M.playlists = {}
+M.playlist_lookup = {}  -- UUID -> playlist object (O(1) lookup)
 M.settings = nil
 M.dependency_graph = {}
 M.graph_dirty = true
@@ -83,6 +84,13 @@ local function get_current_project_filename()
     return nil
   end
   return proj_path .. "/" .. proj_name
+end
+
+local function rebuild_playlist_lookup()
+  M.playlist_lookup = {}
+  for _, pl in ipairs(M.playlists) do
+    M.playlist_lookup[pl.id] = pl
+  end
 end
 
 function M.initialize(settings)
@@ -129,11 +137,12 @@ end
 
 function M.load_project_state()
   M.playlists = RegionState.load_playlists(0)
-  
+
   if #M.playlists == 0 then
+    local UUID = require("rearkitekt.core.uuid")
     M.playlists = {
       {
-        id = "Main",
+        id = UUID.generate(),
         name = "Main",
         items = {},
         chip_color = RegionState.generate_chip_color(),
@@ -141,7 +150,9 @@ function M.load_project_state()
     }
     RegionState.save_playlists(M.playlists, 0)
   end
-  
+
+  rebuild_playlist_lookup()
+
   local saved_active = RegionState.load_active_playlist(0)
   M.active_playlist = saved_active or M.playlists[1].id
 end
@@ -174,21 +185,15 @@ function M.get_active_playlist_id()
 end
 
 function M.get_active_playlist()
-  for _, pl in ipairs(M.playlists) do
-    if pl.id == M.active_playlist then
-      return pl
-    end
+  local pl = M.playlist_lookup[M.active_playlist]
+  if pl then
+    return pl
   end
   return M.playlists[1]
 end
 
 function M.get_playlist_by_id(playlist_id)
-  for _, pl in ipairs(M.playlists) do
-    if pl.id == playlist_id then
-      return pl
-    end
-  end
-  return nil
+  return M.playlist_lookup[playlist_id]
 end
 
 function M.get_playlists()
@@ -460,7 +465,9 @@ function M.restore_snapshot(snapshot)
   
   M.playlists = restored_playlists
   M.active_playlist = restored_active
-  
+
+  rebuild_playlist_lookup()
+
   M.persist()
   M.clear_pending()
   if M.bridge then
@@ -556,8 +563,9 @@ function M.reorder_playlists_by_ids(new_playlist_ids)
   for _, pl in pairs(playlist_map) do
     reordered[#reordered + 1] = pl
   end
-  
+
   M.playlists = reordered
+  rebuild_playlist_lookup()
   M.persist()
 end
 

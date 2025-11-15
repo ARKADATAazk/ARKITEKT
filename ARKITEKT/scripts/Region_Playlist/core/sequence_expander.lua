@@ -93,7 +93,8 @@ local function expand_items(sequence, playlist, get_playlist_by_id, context)
         end
       elseif item.type == "region" and item.rid then
         local reps = normalize_loops(item.reps)
-        local key = item.key or ("region_" .. tostring(item.rid))
+        -- All items now have UUID keys from controller
+        local key = item.key
 
         for loop_index = 1, reps do
           sequence[#sequence + 1] = {
