@@ -57,8 +57,14 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
   local target = is_hovered and 1.0 or 0.0
   local speed = cfg.animation_speed or 12.0
   local dt = ImGui.GetDeltaTime(ctx)
-  self.hover_alpha = self.hover_alpha + (target - self.hover_alpha) * speed * dt
-  self.hover_alpha = max(0, min(1, self.hover_alpha))
+
+  -- Reset hover alpha immediately when blocking (don't animate)
+  if is_blocking then
+    self.hover_alpha = 0
+  else
+    self.hover_alpha = self.hover_alpha + (target - self.hover_alpha) * speed * dt
+    self.hover_alpha = max(0, min(1, self.hover_alpha))
+  end
 
   local bg = self:lerp_color(cfg.bg_color or hexrgb("#252525"), cfg.bg_hover or hexrgb("#2A2A2A"), self.hover_alpha)
   local border_inner = self:lerp_color(cfg.border_inner or hexrgb("#404040"), cfg.border_hover or hexrgb("#505050"), self.hover_alpha)

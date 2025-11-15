@@ -125,8 +125,14 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
 
   local dt = ImGui.GetDeltaTime(ctx)
   local target = (hovered or active) and 1.0 or 0.0
-  inst.hover_alpha = inst.hover_alpha + (target - inst.hover_alpha) * 12.0 * dt
-  inst.hover_alpha = math.max(0, math.min(1, inst.hover_alpha))
+
+  -- Reset hover alpha immediately when blocking (don't animate)
+  if is_blocking then
+    inst.hover_alpha = 0
+  else
+    inst.hover_alpha = inst.hover_alpha + (target - inst.hover_alpha) * 12.0 * dt
+    inst.hover_alpha = math.max(0, math.min(1, inst.hover_alpha))
+  end
 
   local bg = config.bg_color
   local border_inner = config.border_inner_color
