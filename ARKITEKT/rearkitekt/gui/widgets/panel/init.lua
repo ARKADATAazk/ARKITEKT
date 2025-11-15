@@ -398,10 +398,10 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     local label = cfg.icon or cfg.label or ''
     if label ~= '' then
       -- Push icon font if available (must be active during DrawList call)
-      -- Font already has size set from CreateFont, just push/pop the font object
-      local use_icon_font = (cb.icon_font and cb.icon_font ~= 0 and cb.icon_font ~= nil)
+      -- PushFont requires 3 parameters: ctx, font, size
+      local use_icon_font = (cb.icon_font and cb.icon_font ~= 0 and cb.icon_font ~= nil and cb.icon_font_size)
       if use_icon_font then
-        ImGui.PushFont(ctx, cb.icon_font)
+        ImGui.PushFont(ctx, cb.icon_font, cb.icon_font_size)
       end
 
       -- Calculate size and position with active font

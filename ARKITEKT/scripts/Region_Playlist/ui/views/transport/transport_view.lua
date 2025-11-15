@@ -315,21 +315,26 @@ function TransportView:draw(ctx, shell_state)
     follow_viewport = false,
   }
 
-  -- Inject icon font into corner buttons (size is already set in font object)
+  -- Inject icon font and size into corner buttons
   local icons_font = shell_state and shell_state.fonts and shell_state.fonts.icons
+  local icons_size = shell_state and shell_state.fonts and shell_state.fonts.icons_size
   if icons_font and self.container.panel.config.corner_buttons then
     local cb = self.container.panel.config.corner_buttons
     if cb.top_right then
       cb.top_right.icon_font = icons_font
+      cb.top_right.icon_font_size = icons_size
     end
     if cb.top_left then
       cb.top_left.icon_font = icons_font
+      cb.top_left.icon_font_size = icons_size
     end
     if cb.bottom_right then
       cb.bottom_right.icon_font = icons_font
+      cb.bottom_right.icon_font_size = icons_size
     end
     if cb.bottom_left then
       cb.bottom_left.icon_font = icons_font
+      cb.bottom_left.icon_font_size = icons_size
     end
   end
 

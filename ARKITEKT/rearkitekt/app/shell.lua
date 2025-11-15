@@ -251,7 +251,7 @@ function M.run(opts)
         end
       end
 
-      ImGui.PushFont(ctx, fonts.default)
+      ImGui.PushFont(ctx, fonts.default, fonts.default_size)
 
       local visible, open = window:Begin(ctx)
       if visible then
