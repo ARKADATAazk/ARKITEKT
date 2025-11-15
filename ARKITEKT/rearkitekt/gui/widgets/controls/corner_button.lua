@@ -136,12 +136,17 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
 
   draw_corner_shape(dl, x, y, size, bg, border_inner, config.border_outer_color, outer_rounding, inner_rounding, position)
 
-  local label = config.icon or config.label or ''
-  if label ~= '' then
-    local tw, th = ImGui.CalcTextSize(ctx, label)
-    local tx = x + (size - tw) * 0.5
-    local ty = y + (size - th) * 0.5
-    ImGui.DrawList_AddText(dl, tx, ty, text, label)
+  -- Support custom draw function or fallback to icon/label text
+  if config.custom_draw then
+    config.custom_draw(ctx, dl, x, y, size, size, hovered, active, text)
+  else
+    local label = config.icon or config.label or ''
+    if label ~= '' then
+      local tw, th = ImGui.CalcTextSize(ctx, label)
+      local tx = x + (size - tw) * 0.5
+      local ty = y + (size - th) * 0.5
+      ImGui.DrawList_AddText(dl, tx, ty, text, label)
+    end
   end
 
   ImGui.SetCursorScreenPos(ctx, x, y)

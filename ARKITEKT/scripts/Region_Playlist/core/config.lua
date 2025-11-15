@@ -3,6 +3,7 @@
 -- Structural config + semantic colors (widget chrome comes from library defaults)
 
 local Colors = require('rearkitekt.core.colors')
+local TransportIcons = require('Region_Playlist.ui.views.transport.transport_icons')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -51,7 +52,9 @@ M.TRANSPORT = {
     size = 30,
     margin = 8,
     top_right = {
-      icon = utf8.char(0xF0EB),  -- remixicon settings-6-fill
+      custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
+        TransportIcons.draw_gear(dl, x, y, width, height, color)
+      end,
       tooltip = "Settings (coming soon)",
       on_click = function()
         reaper.ShowConsoleMsg("Settings button clicked (coming soon)\n")
@@ -185,7 +188,9 @@ function M.get_active_container_config(callbacks)
       size = 24,
       margin = 8,
       bottom_left = {
-        icon = utf8.char(0xED3C),  -- remixicon flashlight-fill
+        custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
+          TransportIcons.draw_bolt(dl, x, y, width, height, color)
+        end,
         tooltip = "Actions",
         on_click = callbacks.on_actions_button_click,
         -- Simple black transparent overlay
@@ -266,7 +271,9 @@ function M.get_pool_container_config(callbacks)
       size = 24,
       margin = 8,
       bottom_left = {
-        icon = utf8.char(0xED3C),  -- remixicon flashlight-fill
+        custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
+          TransportIcons.draw_bolt(dl, x, y, width, height, color)
+        end,
         tooltip = "Actions (coming soon)",
         on_click = function()
           reaper.ShowConsoleMsg("Pool Grid Actions button clicked (coming soon)\n")

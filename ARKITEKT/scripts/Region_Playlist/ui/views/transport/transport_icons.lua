@@ -91,44 +91,182 @@ function M.draw_jump(dl, x, y, width, height, color)
   local spacing = 3
   local cx = floor(x + width / 2 + 0.5)
   local cy = floor(y + height / 2 + 0.5)
-  
+
   local x1_1 = floor(cx - icon_size - spacing / 2 + 0.5)
   local y1_1 = floor(cy - icon_size / 2 + 0.5)
   local x1_2 = floor(cx - icon_size - spacing / 2 + 0.5)
   local y1_2 = floor(cy + icon_size / 2 + 0.5)
   local x1_3 = floor(cx - spacing / 2 + 0.5)
   local y1_3 = cy
-  
+
   ImGui.DrawList_PathClear(dl)
   ImGui.DrawList_PathLineTo(dl, x1_1, y1_1)
   ImGui.DrawList_PathLineTo(dl, x1_2, y1_2)
   ImGui.DrawList_PathLineTo(dl, x1_3, y1_3)
   ImGui.DrawList_PathFillConvex(dl, color)
-  
+
   ImGui.DrawList_PathClear(dl)
   ImGui.DrawList_PathLineTo(dl, x1_1, y1_1)
   ImGui.DrawList_PathLineTo(dl, x1_2, y1_2)
   ImGui.DrawList_PathLineTo(dl, x1_3, y1_3)
   ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 0.5)
-  
+
   local x2_1 = floor(cx + spacing / 2 + 0.5)
   local y2_1 = floor(cy - icon_size / 2 + 0.5)
   local x2_2 = floor(cx + spacing / 2 + 0.5)
   local y2_2 = floor(cy + icon_size / 2 + 0.5)
   local x2_3 = floor(cx + icon_size + spacing / 2 + 0.5)
   local y2_3 = cy
-  
+
   ImGui.DrawList_PathClear(dl)
   ImGui.DrawList_PathLineTo(dl, x2_1, y2_1)
   ImGui.DrawList_PathLineTo(dl, x2_2, y2_2)
   ImGui.DrawList_PathLineTo(dl, x2_3, y2_3)
   ImGui.DrawList_PathFillConvex(dl, color)
-  
+
   ImGui.DrawList_PathClear(dl)
   ImGui.DrawList_PathLineTo(dl, x2_1, y2_1)
   ImGui.DrawList_PathLineTo(dl, x2_2, y2_2)
   ImGui.DrawList_PathLineTo(dl, x2_3, y2_3)
   ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 0.5)
+end
+
+function M.draw_bolt(dl, x, y, width, height, color)
+  local cx = floor(x + width / 2 + 0.5)
+  local cy = floor(y + height / 2 + 0.5)
+
+  -- Lightning bolt shape - zigzag pattern
+  local bolt_width = 7
+  local bolt_height = 12
+
+  -- Top point
+  local x1 = cx
+  local y1 = floor(cy - bolt_height / 2 + 0.5)
+
+  -- Upper left
+  local x2 = floor(cx - bolt_width / 3 + 0.5)
+  local y2 = floor(cy - 1 + 0.5)
+
+  -- Middle right (kink out)
+  local x3 = floor(cx + bolt_width / 4 + 0.5)
+  local y3 = floor(cy - 1 + 0.5)
+
+  -- Lower left (before bottom point)
+  local x4 = floor(cx - bolt_width / 4 + 0.5)
+  local y4 = floor(cy + 2 + 0.5)
+
+  -- Bottom point
+  local x5 = cx
+  local y5 = floor(cy + bolt_height / 2 + 0.5)
+
+  -- Lower right (going back up)
+  local x6 = floor(cx + bolt_width / 3 + 0.5)
+  local y6 = floor(cy + 2 + 0.5)
+
+  -- Middle left (kink in)
+  local x7 = floor(cx - bolt_width / 4 + 0.5)
+  local y7 = floor(cy + 0.5)
+
+  -- Upper right (back to top)
+  local x8 = floor(cx + bolt_width / 4 + 0.5)
+  local y8 = floor(cy + 0.5)
+
+  -- Draw filled bolt
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathLineTo(dl, x1, y1)  -- Top
+  ImGui.DrawList_PathLineTo(dl, x2, y2)  -- Upper left
+  ImGui.DrawList_PathLineTo(dl, x3, y3)  -- Middle right
+  ImGui.DrawList_PathLineTo(dl, x4, y4)  -- Lower left
+  ImGui.DrawList_PathLineTo(dl, x5, y5)  -- Bottom
+  ImGui.DrawList_PathLineTo(dl, x6, y6)  -- Lower right
+  ImGui.DrawList_PathLineTo(dl, x7, y7)  -- Middle left
+  ImGui.DrawList_PathLineTo(dl, x8, y8)  -- Upper right
+  ImGui.DrawList_PathFillConvex(dl, color)
+
+  -- Draw outline
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathLineTo(dl, x1, y1)
+  ImGui.DrawList_PathLineTo(dl, x2, y2)
+  ImGui.DrawList_PathLineTo(dl, x3, y3)
+  ImGui.DrawList_PathLineTo(dl, x4, y4)
+  ImGui.DrawList_PathLineTo(dl, x5, y5)
+  ImGui.DrawList_PathLineTo(dl, x6, y6)
+  ImGui.DrawList_PathLineTo(dl, x7, y7)
+  ImGui.DrawList_PathLineTo(dl, x8, y8)
+  ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 0.5)
+end
+
+function M.draw_gear(dl, x, y, width, height, color)
+  local cx = floor(x + width / 2 + 0.5)
+  local cy = floor(y + height / 2 + 0.5)
+
+  -- Gear icon - circle with 6 teeth
+  local outer_radius = 6
+  local inner_radius = 3.5
+  local tooth_count = 6
+  local center_hole = 2
+
+  -- Draw gear teeth using a simplified approach
+  ImGui.DrawList_PathClear(dl)
+
+  for i = 0, tooth_count - 1 do
+    local angle1 = (i / tooth_count) * 2 * math.pi
+    local angle2 = ((i + 0.4) / tooth_count) * 2 * math.pi
+    local angle3 = ((i + 0.6) / tooth_count) * 2 * math.pi
+    local angle4 = ((i + 1) / tooth_count) * 2 * math.pi
+
+    -- Outer tooth edge
+    ImGui.DrawList_PathLineTo(dl,
+      floor(cx + math.cos(angle1) * outer_radius + 0.5),
+      floor(cy + math.sin(angle1) * outer_radius + 0.5))
+    ImGui.DrawList_PathLineTo(dl,
+      floor(cx + math.cos(angle2) * outer_radius + 0.5),
+      floor(cy + math.sin(angle2) * outer_radius + 0.5))
+
+    -- Dip to inner circle
+    ImGui.DrawList_PathLineTo(dl,
+      floor(cx + math.cos(angle2) * inner_radius + 0.5),
+      floor(cy + math.sin(angle2) * inner_radius + 0.5))
+    ImGui.DrawList_PathLineTo(dl,
+      floor(cx + math.cos(angle3) * inner_radius + 0.5),
+      floor(cy + math.sin(angle3) * inner_radius + 0.5))
+
+    -- Back to outer for next tooth
+    ImGui.DrawList_PathLineTo(dl,
+      floor(cx + math.cos(angle3) * outer_radius + 0.5),
+      floor(cy + math.sin(angle3) * outer_radius + 0.5))
+  end
+
+  ImGui.DrawList_PathFillConvex(dl, color)
+
+  -- Draw outline
+  ImGui.DrawList_PathClear(dl)
+  for i = 0, tooth_count - 1 do
+    local angle1 = (i / tooth_count) * 2 * math.pi
+    local angle2 = ((i + 0.4) / tooth_count) * 2 * math.pi
+    local angle3 = ((i + 0.6) / tooth_count) * 2 * math.pi
+
+    ImGui.DrawList_PathLineTo(dl,
+      floor(cx + math.cos(angle1) * outer_radius + 0.5),
+      floor(cy + math.sin(angle1) * outer_radius + 0.5))
+    ImGui.DrawList_PathLineTo(dl,
+      floor(cx + math.cos(angle2) * outer_radius + 0.5),
+      floor(cy + math.sin(angle2) * outer_radius + 0.5))
+    ImGui.DrawList_PathLineTo(dl,
+      floor(cx + math.cos(angle2) * inner_radius + 0.5),
+      floor(cy + math.sin(angle2) * inner_radius + 0.5))
+    ImGui.DrawList_PathLineTo(dl,
+      floor(cx + math.cos(angle3) * inner_radius + 0.5),
+      floor(cy + math.sin(angle3) * inner_radius + 0.5))
+    ImGui.DrawList_PathLineTo(dl,
+      floor(cx + math.cos(angle3) * outer_radius + 0.5),
+      floor(cy + math.sin(angle3) * outer_radius + 0.5))
+  end
+  ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 0.5)
+
+  -- Draw center hole
+  ImGui.DrawList_AddCircleFilled(dl, cx, cy, center_hole, 0xFF000000, 12)
+  ImGui.DrawList_AddCircle(dl, cx, cy, center_hole, color, 12, 0.5)
 end
 
 return M
