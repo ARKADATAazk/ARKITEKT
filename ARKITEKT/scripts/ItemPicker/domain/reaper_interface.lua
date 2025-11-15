@@ -103,7 +103,15 @@ function M.GetProjectSamples(settings, state)
     
     local track_items = M.GetItemInTrack(track)
     for key, item in pairs(track_items) do
+      -- Validate item is a valid MediaItem pointer
+      if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+        goto next_item
+      end
+
       local take = reaper.GetActiveTake(item)
+      if not take then
+        goto next_item
+      end
       if not reaper.TakeIsMIDI(take) then
         local source = reaper.GetMediaItemTake_Source(take)
         local _, _, _, _, _, reverse = reaper.BR_GetMediaSourceProperties(take)
@@ -145,79 +153,166 @@ function M.GetProjectSamples(settings, state)
   return samples, sample_indexes
 end
 
-function M.GetProjectMidiTracks(settings, state)
+function M.GetProjectMIDI(settings, state)
   local all_tracks = M.GetAllTracks()
-  local midi_tracks = {}
-  
+  local midi_items = {}
+  local midi_indexes = {}
+  local split_mode = settings.split_midi_by_track
+
   for key, track in pairs(all_tracks) do
     if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
       goto next_track
     end
-    
+
     local track_items = M.GetItemInTrack(track)
     local track_midi = {}
     local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or M.IsParentMuted(track) == true
-    
+
     for key, item in pairs(track_items) do
+      -- Validate item is a valid MediaItem pointer
+      if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+        goto next_item
+      end
+
       local take = reaper.GetActiveTake(item)
+      if not take then
+        goto next_item
+      end
       if reaper.TakeIsMIDI(take) then
         local _, num_notes = reaper.MIDI_CountEvts(take)
         if num_notes == 0 then
           goto next_item
         end
-        
+
         local _, midi = reaper.MIDI_GetAllEvts(take)
         for key, _item in pairs(track_midi) do
-          local _, _midi = reaper.MIDI_GetAllEvts(reaper.GetActiveTake(_item.item))
+          local _, _midi = reaper.MIDI_GetAllEvts(reaper.GetActiveTake(_item[1]))
           if midi == _midi then
             goto next_item
           end
         end
-        
+
         local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
-        
-        table.insert(track_midi, {
-          item = item,
+        local item_name = reaper.GetTakeName(take)
+        if not item_name or item_name == "" then
+          item_name = "MIDI Item"
+        end
+
+        local item_data = {
+          item,
+          item_name,
           track_muted = track_muted,
           item_muted = item_muted
-        })
+        }
+
+        if split_mode then
+          -- Split mode: one tile per MIDI item (use item GUID as key)
+          local item_guid = reaper.BR_GetMediaItemGUID(item)
+          midi_items[item_guid] = { item_data }  -- Wrap in array for consistency
+          table.insert(midi_indexes, item_guid)
+        else
+          -- Grouped mode: collect items by track
+          table.insert(track_midi, item_data)
+        end
       end
       ::next_item::
     end
-    
-    if #track_midi > 0 then
-      table.insert(midi_tracks, track_midi)
+
+    -- In grouped mode, store all items for this track
+    if not split_mode and #track_midi > 0 then
+      local track_guid = reaper.GetTrackGUID(track)
+      midi_items[track_guid] = track_midi
+      table.insert(midi_indexes, track_guid)
     end
     ::next_track::
   end
 
-  return midi_tracks
+  return midi_items, midi_indexes
 end
 
 function M.InsertItemAtMousePos(item, state)
+  -- Validate item is a valid MediaItem
+  if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+    return
+  end
+
   local take = reaper.GetActiveTake(item)
+  if not take then
+    return
+  end
+
   local source = reaper.GetMediaItemTake_Source(take)
   local mouse_x, mouse_y = reaper.GetMousePosition()
   local track, str = reaper.GetThingFromPoint(mouse_x, mouse_y)
-  
+
   if track or state.out_of_bounds then
     if state.out_of_bounds then
       reaper.InsertTrackAtIndex(reaper.CountTracks(0), false)
       track = reaper.GetTrack(0, reaper.CountTracks(0) - 1)
       state.out_of_bounds = nil
     end
-    
+
     reaper.BR_GetMouseCursorContext()
     local mouse_position_in_arrange = reaper.BR_GetMouseCursorContext_Position()
 
     if reaper.GetToggleCommandState(1157) then
       mouse_position_in_arrange = reaper.SnapToGrid(0, mouse_position_in_arrange)
     end
-    
+
+    -- Get all items to insert (support batch insert from dragging_keys)
+    local items_to_insert = {}
+
+    if state.dragging_keys and #state.dragging_keys > 0 then
+      reaper.ShowConsoleMsg(string.format("[INSERT] Batch insert: %d items\n", #state.dragging_keys))
+
+      for _, key in ipairs(state.dragging_keys) do
+        local current_item
+
+        if state.dragging_is_audio then
+          local content = state.samples[key]
+          local current_idx = state.box_current_item[key] or 1
+          if content and content[current_idx] then
+            current_item = content[current_idx][1]
+          end
+        else
+          local content = state.midi_items[key]
+          local current_idx = state.box_current_midi_track[key] or 1
+          if content and content[current_idx] then
+            current_item = content[current_idx][1]
+          end
+        end
+
+        if current_item and reaper.ValidatePtr2(0, current_item, "MediaItem*") then
+          table.insert(items_to_insert, current_item)
+        end
+      end
+    else
+      table.insert(items_to_insert, item)
+    end
+
+    reaper.ShowConsoleMsg(string.format("[INSERT] Inserting %d items at position %.2f\n", #items_to_insert, mouse_position_in_arrange))
+
+    -- Insert all items
     reaper.SelectAllMediaItems(0, false)
-    reaper.SetMediaItemSelected(item, true)
-    reaper.ApplyNudge(0, 1, 5, 1, mouse_position_in_arrange, false, 1)
-    reaper.MoveMediaItemToTrack(reaper.GetSelectedMediaItem(0, 0), track)
+    local current_pos = mouse_position_in_arrange
+
+    for _, insert_item in ipairs(items_to_insert) do
+      reaper.SetMediaItemSelected(insert_item, true)
+      reaper.ApplyNudge(0, 1, 5, 1, current_pos, false, 1)
+      local inserted = reaper.GetSelectedMediaItem(0, 0)
+      if inserted then
+        reaper.MoveMediaItemToTrack(inserted, track)
+
+        -- Calculate next position (current item length + small gap)
+        local item_len = reaper.GetMediaItemInfo_Value(inserted, "D_LENGTH")
+        current_pos = current_pos + item_len
+      end
+      reaper.SelectAllMediaItems(0, false)
+    end
+
+    -- Cleanup drag state
+    state.dragging_keys = nil
+    state.dragging_is_audio = nil
   end
 end
 

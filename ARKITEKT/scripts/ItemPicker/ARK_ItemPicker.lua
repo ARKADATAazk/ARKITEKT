@@ -1,12 +1,24 @@
 -- @noindex
 -- ItemPicker main launcher with clean overlay support
-local _, script_filename, _, _, _, _, _ = reaper.get_action_context()
-local SCRIPT_DIRECTORY = script_filename:match('(.*)[%\\/]') .. "\\"
 
-local ARKITEKT_PATH = SCRIPT_DIRECTORY:match("(.*/ARKITEKT/)") or SCRIPT_DIRECTORY:match("(.*\\ARKITEKT\\)")
-package.path = ARKITEKT_PATH .. '?.lua;' .. ARKITEKT_PATH .. '?/init.lua;' .. package.path
+-- Package path setup (following RegionPlaylist pattern)
+local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
+local root_path = script_path
+root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path  -- Go up one level from ItemPicker
+root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path  -- Go up to ARKITEKT
+root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path  -- Go up to project root
+
+-- Ensure root_path ends with a slash
+if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
+
+-- Add both module search paths
+local arkitekt_path = root_path .. "ARKITEKT/"
+local scripts_path = root_path .. "ARKITEKT/scripts/"
+package.path = arkitekt_path.. "?.lua;" .. arkitekt_path.. "?/init.lua;" ..
+               scripts_path .. "?.lua;" .. scripts_path .. "?/init.lua;" ..
+               package.path
+
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-package.path = SCRIPT_DIRECTORY .. '?.lua;' .. SCRIPT_DIRECTORY .. '?/init.lua;' .. package.path
 
 -- Check dependencies
 local has_imgui, imgui_test = pcall(require, 'imgui')
@@ -24,11 +36,19 @@ end
 local ImGui = require 'imgui' '0.10'
 local Runtime = require('rearkitekt.app.runtime')
 local Overlay = require('rearkitekt.app.overlay')
-local GUI = dofile(SCRIPT_DIRECTORY .. 'app/gui.lua')
-local pickle = dofile(SCRIPT_DIRECTORY .. 'app/pickle.lua')
-local config = dofile(SCRIPT_DIRECTORY .. 'app/config.lua')
 
-if not config then error("config failed to load") end
+-- Load new refactored modules
+local Config = require('ItemPicker.core.config')
+local State = require('ItemPicker.core.app_state')
+local Controller = require('ItemPicker.core.controller')
+local GUI = require('ItemPicker.ui.gui')
+
+-- Domain modules
+local visualization = require('ItemPicker.domain.visualization')
+local cache_mgr = require('ItemPicker.domain.cache_manager')
+local reaper_interface = require('ItemPicker.domain.reaper_interface')
+local utils = require('ItemPicker.domain.utils')
+local drag_handler = require('ItemPicker.ui.views.drag_handler')
 
 -- Configuration
 local USE_OVERLAY = true  -- Set to false for normal window mode
@@ -39,48 +59,26 @@ local function SetButtonState(set)
   reaper.RefreshToolbar2(sec, cmd)
 end
 
--- Settings management
-local settings = {
-  play_item_through_track = false,
-  show_muted_tracks = false,
-  show_muted_items = false,
-  show_disabled_items = false,
-  focus_keyboard_on_init = true,
-  search_string = 0,
-}
+-- Initialize state
+State.initialize(Config)
 
-local rv, pickled_settings = reaper.GetProjExtState(0, "ItemPicker", "settings")
-if rv == 1 then
-  settings = pickle.Unpickle(pickled_settings)
-end
+-- Initialize domain modules
+reaper_interface.init(utils)
+visualization.init(utils, SCRIPT_DIRECTORY, cache_mgr)
 
--- State management
-local state = {
-  item_waveforms = {},
-  midi_thumbnails = {},
-  box_current_sample = {},
-  box_current_item = {},
-  scroll_y = {},
-  previewing = 0,
-  cache = nil,
-  cache_manager = nil,
-  disabled = nil,
-  dragging = nil,
-  exit = false,
-}
+-- Initialize controller
+Controller.init(reaper_interface, utils)
 
-
+-- Create GUI
+local gui = GUI.new(Config, State, Controller, visualization, cache_mgr, drag_handler)
 
 local function cleanup()
   SetButtonState()
   reaper.Main_OnCommand(reaper.NamedCommandLookup("_SWS_STOPPREVIEW"), 0)
-  reaper.SetProjExtState(0, "ItemPicker", "settings", pickle.Pickle(settings))
+  State.cleanup()
 end
 
 SetButtonState(1)
-
--- Create GUI
-local gui = GUI.create(state, config, settings, SCRIPT_DIRECTORY)
 
 -- Font loading
 local function load_fonts(ctx)
@@ -89,16 +87,16 @@ local function load_fonts(ctx)
   local this_dir = src:match('(.*'..SEP..')') or ('.'..SEP)
   local parent = this_dir:match('^(.*'..SEP..')[^'..SEP..']*'..SEP..'$') or this_dir
   local fontsdir = parent .. 'rearkitekt' .. SEP .. 'fonts' .. SEP
-  
+
   local regular = fontsdir .. 'Inter_18pt-Regular.ttf'
   local bold = fontsdir .. 'Inter_18pt-SemiBold.ttf'
   local mono = fontsdir .. 'JetBrainsMono-Regular.ttf'
-  
-  local function exists(p) 
+
+  local function exists(p)
     local f = io.open(p, 'rb')
     if f then f:close(); return true end
   end
-  
+
   local fonts = {
     default = exists(regular) and ImGui.CreateFont(regular, 14) or ImGui.CreateFont('sans-serif', 14),
     default_size = 14,
@@ -107,13 +105,13 @@ local function load_fonts(ctx)
     monospace = exists(mono) and ImGui.CreateFont(mono, 14) or ImGui.CreateFont('sans-serif', 14),
     monospace_size = 14,
   }
-  
+
   for _, font in pairs(fonts) do
     if font and type(font) ~= "number" then
       ImGui.Attach(ctx, font)
     end
   end
-  
+
   return fonts
 end
 
@@ -122,7 +120,7 @@ if USE_OVERLAY then
   -- OVERLAY MODE
   local ctx = ImGui.CreateContext("Item Picker")
   local fonts = load_fonts(ctx)
-  
+
   -- Create overlay
   local overlay = Overlay.new({
     enabled = true,
@@ -137,88 +135,116 @@ if USE_OVERLAY then
     close_button_margin = 16,
     close_button_proximity = 150,
     content_padding = 20,
-    
+
     draw = function(ctx, overlay_state)
       -- Push font for content with size
       ImGui.PushFont(ctx, fonts.default, fonts.default_size)
-      
-      -- Create a child window for the actual content
-      local child_flags = ImGui.WindowFlags_NoScrollbar | 
-                         ImGui.WindowFlags_NoScrollWithMouse |
-                         ImGui.WindowFlags_NoBackground
-      
-      if ImGui.BeginChild(ctx, "##ItemPickerContent", 
-                          overlay_state.width, 
-                          overlay_state.height, 
-                          ImGui.ChildFlags_None, 
-                          child_flags) then
-        
-        -- Let the GUI handle its own drawing
+
+      -- Check if we're dragging - if so, skip the child window entirely
+      if not State.dragging then
+        -- Normal mode: create child window for content
+        local child_flags = ImGui.WindowFlags_NoScrollbar |
+                           ImGui.WindowFlags_NoScrollWithMouse |
+                           ImGui.WindowFlags_NoBackground
+
+        if ImGui.BeginChild(ctx, "##ItemPickerContent",
+                            overlay_state.width,
+                            overlay_state.height,
+                            ImGui.ChildFlags_None,
+                            child_flags) then
+
+          -- Let the GUI handle its own drawing
+          if gui and gui.draw then
+            -- Pass a state that includes both fonts and overlay reference
+            gui:draw(ctx, {
+              fonts = fonts,
+              overlay_state = overlay_state,
+              overlay = overlay_state.overlay,  -- Pass the overlay reference
+              is_overlay_mode = true,
+            })
+          end
+
+          ImGui.EndChild(ctx)
+        end
+      else
+        -- Dragging mode: skip child window, just call gui:draw directly
+        -- This allows arrange window to receive mouse input
         if gui and gui.draw then
-          -- Pass a state that includes both fonts and overlay reference
           gui:draw(ctx, {
             fonts = fonts,
             overlay_state = overlay_state,
-            overlay = overlay_state.overlay,  -- Pass the overlay reference
+            overlay = overlay_state.overlay,
             is_overlay_mode = true,
           })
         end
-        
-        ImGui.EndChild(ctx)
       end
-      
+
       ImGui.PopFont(ctx)
     end,
-    
+
     on_close = function()
       cleanup()
     end,
   })
-  
+
   -- Open overlay immediately
   overlay:open()
-  
+
   -- Create runtime
   local runtime = Runtime.new({
     title = "Item Picker",
     ctx = ctx,
-    
+
     on_frame = function(ctx)
-      local keep_open = overlay:render(ctx)
-      return keep_open
+      -- When dragging, skip overlay entirely and just render drag handlers
+      if State.dragging then
+        ImGui.PushFont(ctx, fonts.default, fonts.default_size)
+        gui:draw(ctx, {
+          fonts = fonts,
+          overlay_state = overlay.state or {},
+          overlay = overlay,
+          is_overlay_mode = true,
+        })
+        ImGui.PopFont(ctx)
+        return true  -- Keep running
+      else
+        -- Normal mode: let overlay handle everything
+        local keep_open = overlay:render(ctx)
+        return keep_open
+      end
     end,
-    
+
     on_destroy = function()
       cleanup()
     end,
   })
-  
+
   runtime:start()
-  
+
 else
   -- NORMAL WINDOW MODE (using Shell)
   local Shell = require('rearkitekt.app.shell')
-  
+
   Shell.run({
     title = "Item Picker",
     version = "1.0.0",
-    
+
     show_titlebar = true,
     show_status_bar = false,
-    
+
     initial_size = { w = 1200, h = 800 },
     min_size = { w = 800, h = 600 },
-    
+
     fonts = {
       default = 14,
       title = 24,
       monospace = 14,
     },
-    
+
     draw = function(ctx, shell_state)
       gui:draw(ctx, shell_state)
     end,
-    
+
     on_close = function()
       cleanup()
     end,
