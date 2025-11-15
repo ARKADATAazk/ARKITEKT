@@ -112,8 +112,9 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
   local config = Style.apply_defaults(Style.BUTTON, user_config)
   local inst = get_instance(unique_id)
 
-  -- Only check hover/active state if not blocking
-  local is_blocking = config.is_blocking or false
+  -- CRITICAL: Check if mouse is over ANY window to prevent click leaking
+  local mouse_over_window = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
+  local is_blocking = config.is_blocking or mouse_over_window
   local hovered = false
   local active = false
 

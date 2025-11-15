@@ -350,15 +350,12 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     -- Apply style defaults
     local cfg = Style.apply_defaults(Style.BUTTON, button_config)
 
-    -- Only check hover/active state if not blocking
-    local is_blocking = cfg.is_blocking or false
+    -- CRITICAL: Foreground elements must manually check if mouse is over ANY window
+    -- to prevent clicks from leaking through popups/modals
+    local mouse_over_window = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
+    local is_blocking = cfg.is_blocking or mouse_over_window
     local hovered = false
     local active = false
-
-    -- DEBUG: Print blocking state
-    if is_blocking then
-      reaper.ShowConsoleMsg("BLOCKING: " .. unique_id .. "\n")
-    end
 
     if not is_blocking then
       hovered = ImGui.IsMouseHoveringRect(ctx, btn_x, btn_y, btn_x + size, btn_y + size)
@@ -438,20 +435,12 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     -- Only allow interaction if not blocking
     if not is_blocking then
       -- Click detection (manual for foreground)
-      if hovered and ImGui.IsMouseClicked(ctx, 0) then
-        reaper.ShowConsoleMsg("CLICK DETECTED on " .. unique_id .. " (blocking=" .. tostring(is_blocking) .. ")\n")
-        if cfg.on_click then
-          cfg.on_click()
-        end
+      if hovered and ImGui.IsMouseClicked(ctx, 0) and cfg.on_click then
+        cfg.on_click()
       end
 
       if hovered and cfg.tooltip then
         ImGui.SetTooltip(ctx, cfg.tooltip)
-      end
-    else
-      -- Debug: Check if we're getting mouse clicks while blocking
-      if ImGui.IsMouseClicked(ctx, 0) then
-        reaper.ShowConsoleMsg("CLICK IGNORED on " .. unique_id .. " (blocking=" .. tostring(is_blocking) .. ")\n")
       end
     end
   end
