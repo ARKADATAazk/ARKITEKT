@@ -196,8 +196,22 @@ if USE_OVERLAY then
     ctx = ctx,
 
     on_frame = function(ctx)
-      local keep_open = overlay:render(ctx)
-      return keep_open
+      -- When dragging, skip overlay entirely and just render drag handlers
+      if State.dragging then
+        ImGui.PushFont(ctx, fonts.default, fonts.default_size)
+        gui:draw(ctx, {
+          fonts = fonts,
+          overlay_state = overlay.state or {},
+          overlay = overlay,
+          is_overlay_mode = true,
+        })
+        ImGui.PopFont(ctx)
+        return true  -- Keep running
+      else
+        -- Normal mode: let overlay handle everything
+        local keep_open = overlay:render(ctx)
+        return keep_open
+      end
     end,
 
     on_destroy = function()
