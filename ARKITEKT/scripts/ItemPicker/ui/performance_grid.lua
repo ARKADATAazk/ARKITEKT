@@ -22,6 +22,8 @@ local DropZones  = require('rearkitekt.gui.widgets.grid.drop_zones')
 local M = {}
 local hexrgb = Colors.hexrgb
 
+reaper.ShowConsoleMsg("[PERF_GRID] Module loaded!\n")
+
 local DEFAULTS = {
   layout = { speed = 14.0, snap_epsilon = 0.5 },
   drag = { threshold = 6 },
@@ -98,6 +100,8 @@ function M.new(opts)
   opts = opts or {}
 
   local grid_id = opts.id or "grid"
+
+  reaper.ShowConsoleMsg(string.format("[PERF_GRID] Creating grid: %s\n", grid_id))
 
   local grid = setmetatable({
     id               = grid_id,
