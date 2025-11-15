@@ -38,8 +38,8 @@ function GUI:initialize_once(ctx)
 
   if not self.state.job_queue then
     local job_queue_module = require('ItemPicker.domain.job_queue')
-    -- Process 10 thumbnails per frame for faster loading (10 * 60fps = 600/sec)
-    self.state.job_queue = job_queue_module.new(10)
+    -- Process 5 thumbnails per frame (balanced speed/performance: 5 * 60fps = 300/sec)
+    self.state.job_queue = job_queue_module.new(5)
   end
 
   -- Try to load cached project state first
@@ -109,6 +109,9 @@ function GUI:draw(ctx, shell_state)
       ctx
     )
   end
+
+  -- Process disk writes (max 1 per frame to avoid blocking)
+  self.cache_mgr.process_disk_writes()
 
   -- Update animations
   self.coordinator:update_animations(0.016)

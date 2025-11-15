@@ -4,6 +4,10 @@ local function get_current_time()
   return reaper.time_precise()
 end
 
+-- Global disk write queue (processed at low priority)
+local disk_write_queue = {}
+local max_disk_writes_per_frame = 1  -- Only 1 disk write per frame to avoid blocking
+
 function M.new(max_entries)
   return {
     waveforms = {},
@@ -387,15 +391,57 @@ function M.get_midi_thumbnail_cached(cache, item, width, height)
   return nil
 end
 
--- Enhanced set_midi_thumbnail with disk persistence
+-- Queue a disk write (non-blocking)
+local function queue_disk_write(write_type, sig, data)
+  -- Check if already queued
+  for _, queued in ipairs(disk_write_queue) do
+    if queued.sig == sig and queued.type == write_type then
+      return  -- Already queued, skip
+    end
+  end
+
+  table.insert(disk_write_queue, {
+    type = write_type,
+    sig = sig,
+    data = data
+  })
+end
+
+-- Process queued disk writes (call once per frame)
+function M.process_disk_writes()
+  local writes_done = 0
+
+  while writes_done < max_disk_writes_per_frame and #disk_write_queue > 0 do
+    local write_job = table.remove(disk_write_queue, 1)
+
+    if write_job.type == "midi" then
+      M.save_midi_thumbnail_to_disk(write_job.sig, write_job.data)
+    elseif write_job.type == "waveform" then
+      M.save_waveform_to_disk(write_job.sig, write_job.data)
+    end
+
+    writes_done = writes_done + 1
+  end
+
+  return writes_done, #disk_write_queue
+end
+
+-- Get disk write queue stats
+function M.get_disk_write_queue_stats()
+  return {
+    pending = #disk_write_queue
+  }
+end
+
+-- Enhanced set_midi_thumbnail with disk persistence (queued)
 function M.set_midi_thumbnail_cached(cache, item, width, height, data)
-  -- Save to memory cache
+  -- Save to memory cache immediately
   M.set_midi_thumbnail(cache, item, width, height, data)
 
-  -- Save to disk cache asynchronously (don't block)
+  -- Queue disk write for later (non-blocking)
   local sig = M.get_item_signature(item)
   if sig then
-    M.save_midi_thumbnail_to_disk(sig, data)
+    queue_disk_write("midi", sig, data)
   end
 end
 
@@ -420,15 +466,15 @@ function M.get_waveform_data_cached(cache, item)
   return nil
 end
 
--- Enhanced set_waveform_data with disk persistence
+-- Enhanced set_waveform_data with disk persistence (queued)
 function M.set_waveform_data_cached(cache, item, data)
-  -- Save to memory cache
+  -- Save to memory cache immediately
   M.set_waveform_data(cache, item, data)
 
-  -- Save to disk cache asynchronously (don't block)
+  -- Queue disk write for later (non-blocking)
   local sig = M.get_item_signature(item)
   if sig then
-    M.save_waveform_to_disk(sig, data)
+    queue_disk_write("waveform", sig, data)
   end
 end
 
