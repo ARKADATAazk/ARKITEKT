@@ -26,6 +26,9 @@ do
   if ok then Easing = mod end
 end
 
+-- Check for JS API
+local JS_API_available = reaper.JS_Window_GetRect ~= nil
+
 -- ============================================================================
 -- SECTION 2: Alpha Tracker (supports both speed-based and curve-based)
 -- ============================================================================
@@ -223,10 +226,25 @@ function M:render(ctx, dt)
   local x, y, w, h
 
   if top.use_viewport then
-    -- Use full REAPER viewport (entire screen including menu/titlebar)
-    local viewport = ImGui.GetMainViewport(ctx)
-    x, y = ImGui.Viewport_GetPos(viewport)
-    w, h = ImGui.Viewport_GetSize(viewport)
+    -- Use JS API to get actual REAPER window dimensions if available
+    if JS_API_available then
+      local hwnd = reaper.GetMainHwnd()
+      local retval, left, top_y, right, bottom = reaper.JS_Window_GetRect(hwnd)
+      if retval then
+        x, y = left, top_y
+        w, h = right - left, bottom - top_y
+      else
+        -- Fallback to viewport
+        local viewport = ImGui.GetMainViewport(ctx)
+        x, y = ImGui.Viewport_GetPos(viewport)
+        w, h = ImGui.Viewport_GetSize(viewport)
+      end
+    else
+      -- No JS API, use viewport (won't cover menu/titlebar)
+      local viewport = ImGui.GetMainViewport(ctx)
+      x, y = ImGui.Viewport_GetPos(viewport)
+      w, h = ImGui.Viewport_GetSize(viewport)
+    end
   else
     -- Use parent window bounds with UI offset adjustments
     local parent_x, parent_y = ImGui.GetWindowPos(ctx)
