@@ -644,10 +644,11 @@ function RegionTiles:set_pool_sort_direction(direction)
 end
 
 function RegionTiles:is_modal_blocking(ctx)
-  -- Check if any modal overlay or context menu is currently active
-  local overflow_active = self.active_container and self.active_container:is_overflow_visible()
-  local actions_menu_active = ctx and ImGui.IsPopupOpen(ctx, "ActionsMenu", ImGui.PopupFlags_AnyPopupId) or false
-  return overflow_active or actions_menu_active
+  -- Check if ANY popup/modal is currently blocking input
+  if not ctx then return false end
+
+  -- Check if any popup is open at all (empty string with AnyPopupLevel checks all popups)
+  return ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupLevel)
 end
 
 function RegionTiles:draw_selector(ctx, playlists, active_id, height)
