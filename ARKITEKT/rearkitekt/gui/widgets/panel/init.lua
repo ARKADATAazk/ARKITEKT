@@ -347,16 +347,23 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     local Style = require('rearkitekt.gui.style.defaults')
     local inst = get_corner_button_instance(unique_id)
 
-    local hovered = ImGui.IsMouseHoveringRect(ctx, btn_x, btn_y, btn_x + size, btn_y + size)
-    local active = hovered and ImGui.IsMouseDown(ctx, 0)
+    -- Apply style defaults
+    local cfg = Style.apply_defaults(Style.BUTTON, button_config)
+
+    -- Only check hover/active state if not blocking
+    local is_blocking = cfg.is_blocking or false
+    local hovered = false
+    local active = false
+
+    if not is_blocking then
+      hovered = ImGui.IsMouseHoveringRect(ctx, btn_x, btn_y, btn_x + size, btn_y + size)
+      active = hovered and ImGui.IsMouseDown(ctx, 0)
+    end
 
     local dt = ImGui.GetDeltaTime(ctx)
     local target = (hovered or active) and 1.0 or 0.0
     inst.hover_alpha = inst.hover_alpha + (target - inst.hover_alpha) * 12.0 * dt
     inst.hover_alpha = math.max(0, math.min(1, inst.hover_alpha))
-
-    -- Apply style defaults
-    local cfg = Style.apply_defaults(Style.BUTTON, button_config)
 
     local bg = cfg.bg_color
     local border_inner = cfg.border_inner_color
@@ -394,37 +401,45 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     draw_rounded_rect_path(btn_x + 1, btn_y + 1, btn_x + size - 1, btn_y + size - 1, border_inner, false, itl, itr, ibr, ibl, 1)
     draw_rounded_rect_path(btn_x, btn_y, btn_x + size, btn_y + size, cfg.border_outer_color, false, itl, itr, ibr, ibl, 1)
 
-    -- Draw icon/label
-    local label = cfg.icon or cfg.label or ''
-    if label ~= '' then
-      -- Push icon font if available (must be active during DrawList call)
-      -- PushFont requires 3 parameters: ctx, font, size
-      local use_icon_font = (cb.icon_font and cb.icon_font ~= 0 and cb.icon_font ~= nil and cb.icon_font_size)
-      if use_icon_font then
-        ImGui.PushFont(ctx, cb.icon_font, cb.icon_font_size)
-      end
+    -- Support custom_draw callback (for icons drawn with primitives)
+    if cfg.custom_draw then
+      cfg.custom_draw(ctx, dl, btn_x, btn_y, size, size, hovered, active, text)
+    else
+      -- Draw icon/label
+      local label = cfg.icon or cfg.label or ''
+      if label ~= '' then
+        -- Push icon font if available (must be active during DrawList call)
+        -- PushFont requires 3 parameters: ctx, font, size
+        local use_icon_font = (cb.icon_font and cb.icon_font ~= 0 and cb.icon_font ~= nil and cb.icon_font_size)
+        if use_icon_font then
+          ImGui.PushFont(ctx, cb.icon_font, cb.icon_font_size)
+        end
 
-      -- Calculate size and position with active font
-      local tw, th = ImGui.CalcTextSize(ctx, label)
-      local tx = btn_x + (size - tw) * 0.5
-      local ty = btn_y + (size - th) * 0.5
+        -- Calculate size and position with active font
+        local tw, th = ImGui.CalcTextSize(ctx, label)
+        local tx = btn_x + (size - tw) * 0.5
+        local ty = btn_y + (size - th) * 0.5
 
-      -- Draw with currently active font (from font stack)
-      ImGui.DrawList_AddText(dl, tx, ty, text, label)
+        -- Draw with currently active font (from font stack)
+        ImGui.DrawList_AddText(dl, tx, ty, text, label)
 
-      -- Pop icon font after drawing
-      if use_icon_font then
-        ImGui.PopFont(ctx)
+        -- Pop icon font after drawing
+        if use_icon_font then
+          ImGui.PopFont(ctx)
+        end
       end
     end
 
-    -- Click detection (manual for foreground)
-    if hovered and ImGui.IsMouseClicked(ctx, 0) and cfg.on_click then
-      cfg.on_click()
-    end
+    -- Only allow interaction if not blocking
+    if not is_blocking then
+      -- Click detection (manual for foreground)
+      if hovered and ImGui.IsMouseClicked(ctx, 0) and cfg.on_click then
+        cfg.on_click()
+      end
 
-    if hovered and cfg.tooltip then
-      ImGui.SetTooltip(ctx, cfg.tooltip)
+      if hovered and cfg.tooltip then
+        ImGui.SetTooltip(ctx, cfg.tooltip)
+      end
     end
   end
 
