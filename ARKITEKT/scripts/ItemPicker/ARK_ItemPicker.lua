@@ -140,29 +140,43 @@ if USE_OVERLAY then
       -- Push font for content with size
       ImGui.PushFont(ctx, fonts.default, fonts.default_size)
 
-      -- Create a child window for the actual content
-      local child_flags = ImGui.WindowFlags_NoScrollbar |
-                         ImGui.WindowFlags_NoScrollWithMouse |
-                         ImGui.WindowFlags_NoBackground
+      -- Check if we're dragging - if so, skip the child window entirely
+      if not State.dragging then
+        -- Normal mode: create child window for content
+        local child_flags = ImGui.WindowFlags_NoScrollbar |
+                           ImGui.WindowFlags_NoScrollWithMouse |
+                           ImGui.WindowFlags_NoBackground
 
-      if ImGui.BeginChild(ctx, "##ItemPickerContent",
-                          overlay_state.width,
-                          overlay_state.height,
-                          ImGui.ChildFlags_None,
-                          child_flags) then
+        if ImGui.BeginChild(ctx, "##ItemPickerContent",
+                            overlay_state.width,
+                            overlay_state.height,
+                            ImGui.ChildFlags_None,
+                            child_flags) then
 
-        -- Let the GUI handle its own drawing
+          -- Let the GUI handle its own drawing
+          if gui and gui.draw then
+            -- Pass a state that includes both fonts and overlay reference
+            gui:draw(ctx, {
+              fonts = fonts,
+              overlay_state = overlay_state,
+              overlay = overlay_state.overlay,  -- Pass the overlay reference
+              is_overlay_mode = true,
+            })
+          end
+
+          ImGui.EndChild(ctx)
+        end
+      else
+        -- Dragging mode: skip child window, just call gui:draw directly
+        -- This allows arrange window to receive mouse input
         if gui and gui.draw then
-          -- Pass a state that includes both fonts and overlay reference
           gui:draw(ctx, {
             fonts = fonts,
             overlay_state = overlay_state,
-            overlay = overlay_state.overlay,  -- Pass the overlay reference
+            overlay = overlay_state.overlay,
             is_overlay_mode = true,
           })
         end
-
-        ImGui.EndChild(ctx)
       end
 
       ImGui.PopFont(ctx)
