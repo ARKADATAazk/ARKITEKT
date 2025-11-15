@@ -129,7 +129,7 @@ if USE_OVERLAY then
     id = "item_picker_main",
     use_viewport = true,
     fade_duration = 0.3,
-    fade_curve = OverlayManager.CURVE_SMOOTHERSTEP,
+    fade_curve = 'smootherstep',
     show_close_button = true,
     close_on_background_click = false,
     close_on_background_right_click = true,

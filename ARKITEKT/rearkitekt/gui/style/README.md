@@ -78,6 +78,28 @@ M.MY_COMPONENT = {
 }
 ```
 
+## Available Easing Curves
+
+For overlays and animations, use these curve names (from `gui/fx/animation/easing.lua`):
+
+- `'linear'` - No easing
+- `'smoothstep'` - Smooth start/end
+- `'smootherstep'` - Extra smooth start/end
+- `'ease_in_quad'`, `'ease_out_quad'`, `'ease_in_out_quad'`
+- `'ease_in_cubic'`, `'ease_out_cubic'`, `'ease_in_out_cubic'`
+- `'ease_in_sine'`, `'ease_out_sine'`, `'ease_in_out_sine'`
+- `'ease_in_expo'`, `'ease_out_expo'`, `'ease_in_out_expo'`
+- `'ease_in_back'`, `'ease_out_back'`
+
+Example:
+```lua
+overlay_mgr:push({
+  fade_curve = 'smootherstep',
+  fade_duration = 0.3,
+  -- ...
+})
+```
+
 ## Architecture
 
 ```

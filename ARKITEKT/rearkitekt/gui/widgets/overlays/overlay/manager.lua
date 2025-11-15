@@ -26,25 +26,6 @@ do
   if ok then Easing = mod end
 end
 
--- Curve type constants
-M.CURVE_LINEAR = 'linear'
-M.CURVE_EASE_IN_QUAD = 'ease_in_quad'
-M.CURVE_EASE_OUT_QUAD = 'ease_out_quad'
-M.CURVE_EASE_IN_OUT_QUAD = 'ease_in_out_quad'
-M.CURVE_EASE_IN_CUBIC = 'ease_in_cubic'
-M.CURVE_EASE_OUT_CUBIC = 'ease_out_cubic'
-M.CURVE_EASE_IN_OUT_CUBIC = 'ease_in_out_cubic'
-M.CURVE_EASE_IN_SINE = 'ease_in_sine'
-M.CURVE_EASE_OUT_SINE = 'ease_out_sine'
-M.CURVE_EASE_IN_OUT_SINE = 'ease_in_out_sine'
-M.CURVE_SMOOTHSTEP = 'smoothstep'
-M.CURVE_SMOOTHERSTEP = 'smootherstep'
-M.CURVE_EASE_IN_EXPO = 'ease_in_expo'
-M.CURVE_EASE_OUT_EXPO = 'ease_out_expo'
-M.CURVE_EASE_IN_OUT_EXPO = 'ease_in_out_expo'
-M.CURVE_EASE_IN_BACK = 'ease_in_back'
-M.CURVE_EASE_OUT_BACK = 'ease_out_back'
-
 -- ============================================================================
 -- SECTION 2: Alpha Tracker (supports both speed-based and curve-based)
 -- ============================================================================
@@ -77,7 +58,7 @@ local function create_alpha_tracker(opts)
 
     -- Curve-based mode (time-based easing)
     duration = opts.duration or 0.3,
-    curve_type = opts.curve_type or M.CURVE_SMOOTHERSTEP,
+    curve_type = opts.curve_type or 'smootherstep',
     elapsed = 0.0,
   }
 
