@@ -19,6 +19,8 @@ M.settings = {
   search_string = "",
   tile_width = nil,
   tile_height = nil,
+  separator_position = nil,  -- MIDI section height (nil = use default from config)
+  view_mode = "MIXED",  -- "MIDI", "AUDIO", or "MIXED"
 }
 
 -- Runtime state (volatile)
@@ -135,6 +137,28 @@ function M:set_tile_size(width, height)
   M.settings.tile_height = clamped_height
 
   M.persist_settings()
+end
+
+-- Separator position management
+function M.get_separator_position()
+  return M.settings.separator_position or M.config.SEPARATOR.default_midi_height
+end
+
+function M.set_separator_position(height)
+  M.settings.separator_position = height
+  M.persist_settings()
+end
+
+-- View mode management
+function M.get_view_mode()
+  return M.settings.view_mode or "MIXED"
+end
+
+function M.set_view_mode(mode)
+  if mode == "MIDI" or mode == "AUDIO" or mode == "MIXED" then
+    M.settings.view_mode = mode
+    M.persist_settings()
+  end
 end
 
 -- Disabled items management

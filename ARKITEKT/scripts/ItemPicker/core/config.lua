@@ -38,6 +38,15 @@ M.LAYOUT = {
   SEARCH_WIDTH_RATIO = 0.2,
 }
 
+-- Separator (draggable divider between MIDI and Audio sections)
+M.SEPARATOR = {
+  thickness = 20,
+  gap = 8,
+  min_midi_height = 100,
+  min_audio_height = 150,
+  default_midi_height = 300,  -- Will be used on first load or double-click reset
+}
+
 -- Cache
 M.CACHE = {
   MAX_ENTRIES = 200,
