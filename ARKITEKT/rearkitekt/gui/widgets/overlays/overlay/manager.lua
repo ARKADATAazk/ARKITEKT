@@ -254,10 +254,12 @@ function M:render(ctx, dt)
 
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
-  ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))
 
   Style.PushMyStyle(ctx)
+
+  -- Override style colors to ensure transparency (must be after PushMyStyle)
+  ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))
 
   local visible = ImGui.Begin(ctx, "##modal_overlay_" .. top.id, true, window_flags)
 
@@ -324,8 +326,9 @@ function M:render(ctx, dt)
 
   ImGui.End(ctx)
 
-  Style.PopMyStyle(ctx)
+  -- Pop in reverse order (colors pushed after style, so pop them first)
   ImGui.PopStyleColor(ctx, 2)
+  Style.PopMyStyle(ctx)
   ImGui.PopStyleVar(ctx, 2)
 end
 
