@@ -99,29 +99,40 @@ function M.set_waveform_arrays(cache, item, width, top_array, bottom_array)
   M.cleanup_old_entries(cache.waveform_arrays, cache.access_times, cache.max_entries)
 end
 
+-- Cache MIDI thumbnails at fixed max resolution, then scale when displaying
+-- This prevents regeneration on every tile resize
+local MIDI_CACHE_MAX_WIDTH = 512
+local MIDI_CACHE_MAX_HEIGHT = 512
+
 function M.get_midi_thumbnail(cache, item, width, height)
   local sig = M.get_item_signature(item)
   if not sig then return nil end
-  
-  local key = sig .. "_" .. width .. "_" .. height
-  
+
+  -- Always use max resolution for cache key (size-independent)
+  local key = sig .. "_midi"
+
   if cache.midi_thumbnails[key] then
     cache.access_times[key] = get_current_time()
     return cache.midi_thumbnails[key]
   end
-  
+
   return nil
 end
 
 function M.set_midi_thumbnail(cache, item, width, height, data)
   local sig = M.get_item_signature(item)
   if not sig then return end
-  
-  local key = sig .. "_" .. width .. "_" .. height
+
+  -- Always use max resolution for cache key (size-independent)
+  local key = sig .. "_midi"
   cache.midi_thumbnails[key] = data
   cache.access_times[key] = get_current_time()
-  
+
   M.cleanup_old_entries(cache.midi_thumbnails, cache.access_times, cache.max_entries)
+end
+
+function M.get_midi_cache_size()
+  return MIDI_CACHE_MAX_WIDTH, MIDI_CACHE_MAX_HEIGHT
 end
 
 function M.invalidate_item(cache, item)

@@ -192,7 +192,10 @@ function M.GetNoteRange(take)
 end
 
 function M.GenerateMidiThumbnail(cache, item, w, h)
-  local cached_thumbnail = cache_manager.get_midi_thumbnail(cache, item, w, h)
+  -- Always generate at max resolution for caching (size-independent)
+  local cache_w, cache_h = cache_manager.get_midi_cache_size()
+
+  local cached_thumbnail = cache_manager.get_midi_thumbnail(cache, item, cache_w, cache_h)
   if cached_thumbnail then
     return cached_thumbnail
   end
@@ -201,6 +204,9 @@ function M.GenerateMidiThumbnail(cache, item, w, h)
   if not take or not reaper.TakeIsMIDI(take) then
     return nil
   end
+
+  -- Use max resolution for generation
+  w, h = cache_w, cache_h
 
   local thumbnail = {}
 
@@ -259,7 +265,17 @@ end
 function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
   local x1, y1 = ImGui.GetItemRectMin(ctx)
   local x2, y2 = ImGui.GetItemRectMax(ctx)
+  local display_w = x2 - x1
+  local display_h = y2 - y1
+
   ImGui.DrawList_AddRectFilled(draw_list, x1, y1, x2, y2, color)
+
+  -- Get the cache resolution used when generating
+  local cache_w, cache_h = cache_manager.get_midi_cache_size()
+
+  -- Calculate scale factors
+  local scale_x = display_w / cache_w
+  local scale_y = display_h / cache_h
 
   local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
@@ -270,10 +286,11 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
   local col_note = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
 
   for key, note in pairs(thumbnail) do
-    local note_x1 = x1 + note.x1
-    local note_x2 = x1 + note.x2
-    local note_y1 = y1 + note.y1
-    local note_y2 = y1 + note.y2
+    -- Scale note coordinates from cache resolution to display resolution
+    local note_x1 = x1 + (note.x1 * scale_x)
+    local note_x2 = x1 + (note.x2 * scale_x)
+    local note_y1 = y1 + (note.y1 * scale_y)
+    local note_y2 = y1 + (note.y2 * scale_y)
     ImGui.DrawList_AddRectFilled(draw_list, note_x1, note_y1, note_x2, note_y2, col_note)
   end
 end
@@ -339,6 +356,15 @@ end
 function M.DisplayMidiItemTransparent(ctx, thumbnail, color, draw_list)
   local x1, y1 = ImGui.GetItemRectMin(ctx)
   local x2, y2 = ImGui.GetItemRectMax(ctx)
+  local display_w = x2 - x1
+  local display_h = y2 - y1
+
+  -- Get the cache resolution used when generating
+  local cache_w, cache_h = cache_manager.get_midi_cache_size()
+
+  -- Calculate scale factors
+  local scale_x = display_w / cache_w
+  local scale_y = display_h / cache_h
 
   local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
@@ -349,10 +375,11 @@ function M.DisplayMidiItemTransparent(ctx, thumbnail, color, draw_list)
   local col_note = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
 
   for key, note in pairs(thumbnail) do
-    local note_x1 = x1 + note.x1
-    local note_x2 = x1 + note.x2
-    local note_y1 = y1 + note.y1
-    local note_y2 = y1 + note.y2
+    -- Scale note coordinates from cache resolution to display resolution
+    local note_x1 = x1 + (note.x1 * scale_x)
+    local note_x2 = x1 + (note.x2 * scale_x)
+    local note_y1 = y1 + (note.y1 * scale_y)
+    local note_y2 = y1 + (note.y2 * scale_y)
     ImGui.DrawList_AddRectFilled(draw_list, note_x1, note_y1, note_x2, note_y2, col_note)
   end
 end
