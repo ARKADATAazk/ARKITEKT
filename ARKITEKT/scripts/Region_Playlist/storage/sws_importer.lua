@@ -69,8 +69,10 @@ end
 -- Read current project file as text
 -- Returns: lines table or nil on error
 local function read_project_file()
-  local proj_path = reaper.GetProjectPath(0)
-  local retval, proj_name = reaper.GetProjectName(0, "")
+  ---@diagnostic disable-next-line: redundant-parameter
+  local proj_path = reaper.GetProjectPath("")
+  ---@diagnostic disable-next-line: redundant-parameter
+  local proj_name = reaper.GetProjectName(0, "")
   if proj_path == "" or proj_name == "" then
     return nil, "No project file found (project not saved)"
   end
