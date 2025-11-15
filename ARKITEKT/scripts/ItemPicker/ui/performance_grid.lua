@@ -240,6 +240,14 @@ function Grid:draw(ctx)
   local min_col_w = self.min_col_w_fn()
   local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, num_items, origin_x, origin_y, self.fixed_tile_h)
 
+  -- DEBUG: Detect layout change
+  local layout_changed = (self.last_layout_cols ~= cols)
+  local scroll_before = nil
+  if layout_changed then
+    scroll_before = ImGui.GetScrollY(ctx)
+    reaper.ShowConsoleMsg(string.format("[LAYOUT] cols: %d->%d, scroll_before=%.1f\n", self.last_layout_cols, cols, scroll_before))
+  end
+
   self.last_layout_cols = cols
 
   -- Keep smooth animations (don't teleport - teleport kills responsiveness)
@@ -304,6 +312,14 @@ function Grid:draw(ctx)
   ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
   ImGui.InvisibleButton(ctx, self._cached_bg_id, extended_w, extended_h)
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
+
+  -- DEBUG: Check if ImGui adjusted scroll after InvisibleButton
+  if layout_changed and scroll_before then
+    local scroll_after = ImGui.GetScrollY(ctx)
+    local max_scroll = ImGui.GetScrollMaxY(ctx)
+    reaper.ShowConsoleMsg(string.format("[LAYOUT] scroll_after=%.1f, max=%.1f, delta=%.1f\n",
+      scroll_after, max_scroll, scroll_after - scroll_before))
+  end
 
   local bg_clicked = ImGui.IsItemClicked(ctx, 0)
 
