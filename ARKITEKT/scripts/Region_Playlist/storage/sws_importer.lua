@@ -15,44 +15,48 @@ local function parse_sws_playlist_section(lines, start_idx)
     name = "Imported",
     is_active = false,
   }
-  
-  -- Parse header line: <S&M_RGN_PLAYLIST "Name" [0|1]
+
+  -- Parse header line: <S&M_RGN_PLAYLIST "Name" [0|1] or <S&M_RGN_PLAYLIST Name [0|1]
   local header = lines[start_idx]
-  
-  -- Extract name (between quotes)
+
+  -- Try quoted name first
   local name = header:match('<S&M_RGN_PLAYLIST%s+"([^"]+)"')
+  if not name then
+    -- Try unquoted name (everything between PLAYLIST and the number or end of line)
+    name = header:match('<S&M_RGN_PLAYLIST%s+([^%s]+)')
+  end
   if name then
     playlist.name = name
   end
-  
+
   -- Extract active flag (0 or 1 at end)
   local is_active = header:match('%s+(%d+)%s*$')
   if is_active == "1" then
     playlist.is_active = true
   end
-  
+
   -- Parse items until we hit '>'
   local idx = start_idx + 1
   while idx <= #lines do
     local line = lines[idx]
-    
-    -- End of playlist section
-    if line:match('^>%s*$') then
+
+    -- End of playlist section (allow leading whitespace)
+    if line:match('^%s*>%s*$') then
       return playlist, idx
     end
-    
-    -- Parse item line: regionId loopCount
-    local rgn_id, loop_count = line:match('^(%d+)%s+(-?%d+)%s*$')
+
+    -- Parse item line: regionId loopCount (allow leading whitespace)
+    local rgn_id, loop_count = line:match('^%s*(%d+)%s+(-?%d+)%s*$')
     if rgn_id and loop_count then
       table.insert(playlist.items, {
         sws_rgn_id = tonumber(rgn_id),
         sws_loop_count = tonumber(loop_count),
       })
     end
-    
+
     idx = idx + 1
   end
-  
+
   return playlist, idx
 end
 
@@ -85,22 +89,22 @@ end
 local function parse_sws_playlists(lines)
   local playlists = {}
   local idx = 1
-  
+
   while idx <= #lines do
     local line = lines[idx]
-    
-    -- Found a playlist section
-    if line:match('^<S&M_RGN_PLAYLIST') then
+
+    -- Found a playlist section (allow leading whitespace)
+    if line:match('<S&M_RGN_PLAYLIST') then
       local playlist, end_idx = parse_sws_playlist_section(lines, idx)
       if playlist then
         table.insert(playlists, playlist)
         idx = end_idx
       end
     end
-    
+
     idx = idx + 1
   end
-  
+
   return playlists
 end
 
@@ -359,13 +363,14 @@ function M.has_sws_playlists()
   if not lines then
     return false
   end
-  
+
   for _, line in ipairs(lines) do
-    if line:match('^<S&M_RGN_PLAYLIST') then
+    -- Allow leading whitespace
+    if line:match('<S&M_RGN_PLAYLIST') then
       return true
     end
   end
-  
+
   return false
 end
 
