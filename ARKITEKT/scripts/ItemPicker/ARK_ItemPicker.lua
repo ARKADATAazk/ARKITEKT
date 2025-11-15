@@ -161,7 +161,7 @@ if USE_OVERLAY then
         gui:draw(ctx, {
           fonts = fonts,
           overlay_state = overlay_state,
-          overlay = overlay_mgr,
+          overlay = { alpha = { value = function() return alpha_val end } },  -- Provide alpha accessor for animations
           is_overlay_mode = true,
         })
       end
