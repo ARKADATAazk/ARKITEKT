@@ -59,11 +59,12 @@ end
 -- Read current project file as text
 -- Returns: lines table or nil on error
 local function read_project_file()
-  local proj_path, proj_name = reaper.GetProjectPath("")
+  local proj_path = reaper.GetProjectPath("")
+  local proj_name = reaper.GetProjectName(0, "")
   if proj_path == "" or proj_name == "" then
     return nil, "No project file found (project not saved)"
   end
-  
+
   local filepath = proj_path .. "/" .. proj_name
   local file = io.open(filepath, "r")
   if not file then
