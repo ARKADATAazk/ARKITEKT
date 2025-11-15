@@ -152,8 +152,10 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, '##' .. unique_id, size, size)
 
+  -- Don't handle clicks if a popup/modal is open (respects modal overlay blocking)
   local clicked = ImGui.IsItemClicked(ctx, 0)
-  if clicked and config.on_click then
+  local any_popup_open = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
+  if clicked and not any_popup_open and config.on_click then
     config.on_click()
   end
 
