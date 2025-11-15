@@ -644,14 +644,27 @@ function RegionTiles:draw_active(ctx, playlist, height, shell_state)
     self.active_grid.panel_clip_bounds = self.active_container.visible_bounds
   end
 
-  -- Inject icon font into corner buttons
+  -- Inject icon font and size into corner buttons
   local icons_font = shell_state and shell_state.fonts and shell_state.fonts.icons
+  local icons_size = shell_state and shell_state.fonts and shell_state.fonts.icons_size
   if icons_font and self.active_container and self.active_container.config and self.active_container.config.corner_buttons then
     local cb = self.active_container.config.corner_buttons
-    if cb.top_right then cb.top_right.icon_font = icons_font end
-    if cb.top_left then cb.top_left.icon_font = icons_font end
-    if cb.bottom_right then cb.bottom_right.icon_font = icons_font end
-    if cb.bottom_left then cb.bottom_left.icon_font = icons_font end
+    if cb.top_right then
+      cb.top_right.icon_font = icons_font
+      cb.top_right.icon_font_size = icons_size
+    end
+    if cb.top_left then
+      cb.top_left.icon_font = icons_font
+      cb.top_left.icon_font_size = icons_size
+    end
+    if cb.bottom_right then
+      cb.bottom_right.icon_font = icons_font
+      cb.bottom_right.icon_font_size = icons_size
+    end
+    if cb.bottom_left then
+      cb.bottom_left.icon_font = icons_font
+      cb.bottom_left.icon_font_size = icons_size
+    end
   end
 
   return Render.draw_active(self, ctx, playlist, height)
@@ -662,14 +675,27 @@ function RegionTiles:draw_pool(ctx, regions, height, shell_state)
     self.pool_grid.panel_clip_bounds = self.pool_container.visible_bounds
   end
 
-  -- Inject icon font into corner buttons
+  -- Inject icon font and size into corner buttons
   local icons_font = shell_state and shell_state.fonts and shell_state.fonts.icons
+  local icons_size = shell_state and shell_state.fonts and shell_state.fonts.icons_size
   if icons_font and self.pool_container and self.pool_container.config and self.pool_container.config.corner_buttons then
     local cb = self.pool_container.config.corner_buttons
-    if cb.top_right then cb.top_right.icon_font = icons_font end
-    if cb.top_left then cb.top_left.icon_font = icons_font end
-    if cb.bottom_right then cb.bottom_right.icon_font = icons_font end
-    if cb.bottom_left then cb.bottom_left.icon_font = icons_font end
+    if cb.top_right then
+      cb.top_right.icon_font = icons_font
+      cb.top_right.icon_font_size = icons_size
+    end
+    if cb.top_left then
+      cb.top_left.icon_font = icons_font
+      cb.top_left.icon_font_size = icons_size
+    end
+    if cb.bottom_right then
+      cb.bottom_right.icon_font = icons_font
+      cb.bottom_right.icon_font_size = icons_size
+    end
+    if cb.bottom_left then
+      cb.bottom_left.icon_font = icons_font
+      cb.bottom_left.icon_font_size = icons_size
+    end
   end
 
   return Render.draw_pool(self, ctx, regions, height)
