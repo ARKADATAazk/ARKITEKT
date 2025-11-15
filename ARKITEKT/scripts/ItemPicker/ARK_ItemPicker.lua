@@ -125,11 +125,14 @@ if USE_OVERLAY then
   local overlay_mgr = OverlayManager.new()
 
   -- Push overlay onto stack
+  local Colors = require('rearkitekt.core.colors')
   overlay_mgr:push({
     id = "item_picker_main",
     use_viewport = true,
-    fade_duration = 0.3,
-    fade_curve = 'smootherstep',
+    fade_duration = 0.15,
+    fade_curve = 'ease_out_quad',
+    scrim_color = Colors.hexrgb("#000000"),  -- Pure black for fullscreen
+    scrim_opacity = 0.95,
     show_close_button = true,
     close_on_background_click = false,
     close_on_background_right_click = true,

@@ -51,6 +51,7 @@ local function create_alpha_tracker(opts)
   local tracker = {
     current = 0.0,
     target = 0.0,
+    start_value = 0.0,
     mode = mode,
 
     -- Speed-based mode (exponential smoothing)
@@ -65,6 +66,7 @@ local function create_alpha_tracker(opts)
   function tracker:set_target(t)
     self.target = clamp(t, 0.0, 1.0)
     if self.mode == 'curve' then
+      self.start_value = self.current
       self.elapsed = 0.0
     end
   end
@@ -89,7 +91,8 @@ local function create_alpha_tracker(opts)
       self.elapsed = self.elapsed + dt
       local t = clamp(self.elapsed / self.duration, 0.0, 1.0)
       local curved = apply_curve(t, self.curve_type)
-      self.current = self.current + (self.target - self.current) * curved
+      -- Lerp from start_value to target using curved t
+      self.current = self.start_value + (self.target - self.start_value) * curved
       if self.elapsed >= self.duration then
         self.current = self.target
       end
@@ -148,6 +151,10 @@ function M:push(opts)
     close_on_scrim = (opts.close_on_scrim ~= false),
     esc_to_close = (opts.esc_to_close ~= false),
     use_viewport = (opts.use_viewport == true),
+
+    -- Scrim customization
+    scrim_color = opts.scrim_color,
+    scrim_opacity = opts.scrim_opacity,
 
     -- Close button support
     show_close_button = (opts.show_close_button == true),
@@ -250,26 +257,27 @@ function M:render(ctx, dt)
                      | ImGui.WindowFlags_NoCollapse
                      | ImGui.WindowFlags_NoNavFocus
                      | ImGui.WindowFlags_NoDocking
-                     | ImGui.WindowFlags_NoBackground
 
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
 
   Style.PushMyStyle(ctx)
 
-  -- Override style colors to ensure transparency (must be after PushMyStyle)
-  ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, hexrgb("#00000000"))
+  -- Calculate scrim color with alpha
+  local config = OverlayConfig.get()
+  local base_scrim_color = top.scrim_color or config.scrim.color
+  local base_scrim_opacity = top.scrim_opacity or config.scrim.opacity
+  local scrim_alpha = base_scrim_opacity * alpha_val
+  local scrim_color = (base_scrim_color & 0xFFFFFF00) | math.floor(255 * scrim_alpha + 0.5)
+
+  -- Override window background with scrim color (must be after PushMyStyle)
+  ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, scrim_color)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))
 
   local visible = ImGui.Begin(ctx, "##modal_overlay_" .. top.id, true, window_flags)
 
   if visible then
     local dl = ImGui.GetWindowDrawList(ctx)
-
-    local config = OverlayConfig.get()
-    local scrim_opacity = math.floor(255 * config.scrim.opacity * alpha_val)
-    local scrim_color = Colors.with_alpha(config.scrim.color, scrim_opacity)
-    Draw.rect_filled(dl, x, y, x+w, y+h, scrim_color, 0)
 
     -- Check for escape key
     if top.esc_to_close and ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
