@@ -397,28 +397,25 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     -- Draw icon/label
     local label = cfg.icon or cfg.label or ''
     if label ~= '' then
-      -- Use icon font if available (v0.10: explicit font in DrawList_AddText)
-      local use_icon_font = (cb.icon_font and cb.icon_font ~= 0 and cb.icon_font ~= nil and cb.icon_font_size)
-
-      local draw_font = use_icon_font and cb.icon_font or nil
-      local draw_size = use_icon_font and cb.icon_font_size or 0
-
-      -- Push font for CalcTextSize
+      -- Push icon font if available (must be active during DrawList call)
+      -- Font already has size set from CreateFont, just push/pop the font object
+      local use_icon_font = (cb.icon_font and cb.icon_font ~= 0 and cb.icon_font ~= nil)
       if use_icon_font then
-        pcall(function() ImGui.PushFont(ctx, cb.icon_font, cb.icon_font_size) end)
+        ImGui.PushFont(ctx, cb.icon_font)
       end
 
+      -- Calculate size and position with active font
       local tw, th = ImGui.CalcTextSize(ctx, label)
       local tx = btn_x + (size - tw) * 0.5
       local ty = btn_y + (size - th) * 0.5
 
-      -- Pop font before drawing
+      -- Draw with currently active font (from font stack)
+      ImGui.DrawList_AddText(dl, tx, ty, text, label)
+
+      -- Pop icon font after drawing
       if use_icon_font then
         ImGui.PopFont(ctx)
       end
-
-      -- DrawList_AddText with explicit font and size
-      ImGui.DrawList_AddText(dl, draw_font, draw_size, tx, ty, text, label)
     end
 
     -- Click detection (manual for foreground)
