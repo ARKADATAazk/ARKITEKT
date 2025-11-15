@@ -639,6 +639,10 @@ function RegionTiles:get_pool_sort_direction()
   return self.pool_container:get_sort_direction()
 end
 
+function RegionTiles:set_pool_sort_direction(direction)
+  self.pool_container:set_sort_direction(direction)
+end
+
 function RegionTiles:is_modal_blocking()
   -- Check if any modal overlay or context menu is currently active
   local overflow_active = self.active_container and self.active_container:is_overflow_visible()
