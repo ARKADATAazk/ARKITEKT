@@ -154,6 +154,10 @@ function M.new(opts)
     visual_bounds = nil,
     panel_clip_bounds = nil,
 
+    -- Track dimensions for resize detection
+    last_avail_w = nil,
+    last_avail_h = nil,
+
     -- Cache string IDs for performance (avoid string concatenation every frame)
     _cached_bg_id = "##grid_bg_" .. grid_id,
     _cached_empty_id = "##grid_empty_" .. grid_id,
@@ -391,11 +395,36 @@ function Grid:draw(ctx)
 
   self.last_layout_cols = cols
 
+  -- PERFORMANCE: Detect resize to teleport items instead of animating
+  -- When resizing with 1000 items scrolled far down, animating all items causes massive lag
+  -- Teleporting is instant and keeps items settled
+  local resize_threshold = 5  -- pixels - ignore tiny fluctuations
+  local did_resize = false
+
+  if self.last_avail_w and self.last_avail_h then
+    local w_diff = math.abs(avail_w - self.last_avail_w)
+    local h_diff = math.abs(avail_h - self.last_avail_h)
+    did_resize = (w_diff > resize_threshold or h_diff > resize_threshold)
+  end
+
+  self.last_avail_w = avail_w
+  self.last_avail_h = avail_h
+
   local current_keys = {}
-  for i, item in ipairs(items) do
-    local key = self.key(item)
-    current_keys[key] = true
-    self.rect_track:to(key, rects[i])
+  if did_resize then
+    -- Teleport all items to new positions (no animation, keeps settled state)
+    for i, item in ipairs(items) do
+      local key = self.key(item)
+      current_keys[key] = true
+      self.rect_track:teleport(key, rects[i])
+    end
+  else
+    -- Normal operation: animate to new positions
+    for i, item in ipairs(items) do
+      local key = self.key(item)
+      current_keys[key] = true
+      self.rect_track:to(key, rects[i])
+    end
   end
 
   local new_keys = {}
