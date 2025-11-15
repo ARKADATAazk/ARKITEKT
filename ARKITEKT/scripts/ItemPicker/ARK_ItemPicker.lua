@@ -148,49 +148,22 @@ if USE_OVERLAY then
       ImGui.PushFont(ctx, fonts.default, fonts.default_size)
 
       local overlay_state = {
-        x = bounds.x + 20,
-        y = bounds.y + 20,
-        width = bounds.w - 40,
-        height = bounds.h - 40,
+        x = bounds.x,
+        y = bounds.y,
+        width = bounds.w,
+        height = bounds.h,
         alpha = alpha_val,
       }
 
-      -- Check if we're dragging - if so, skip the child window entirely
-      if not State.dragging then
-        -- Normal mode: create child window for content
-        local child_flags = ImGui.WindowFlags_NoScrollbar |
-                           ImGui.WindowFlags_NoScrollWithMouse |
-                           ImGui.WindowFlags_NoBackground
-
-        if ImGui.BeginChild(ctx, "##ItemPickerContent",
-                            overlay_state.width,
-                            overlay_state.height,
-                            ImGui.ChildFlags_None,
-                            child_flags) then
-
-          -- Let the GUI handle its own drawing
-          if gui and gui.draw then
-            gui:draw(ctx, {
-              fonts = fonts,
-              overlay_state = overlay_state,
-              overlay = overlay_mgr,  -- Pass the manager reference
-              is_overlay_mode = true,
-            })
-          end
-
-          ImGui.EndChild(ctx)
-        end
-      else
-        -- Dragging mode: skip child window, just call gui:draw directly
-        -- This allows arrange window to receive mouse input
-        if gui and gui.draw then
-          gui:draw(ctx, {
-            fonts = fonts,
-            overlay_state = overlay_state,
-            overlay = overlay_mgr,
-            is_overlay_mode = true,
-          })
-        end
+      -- In overlay mode, don't create child window - draw directly
+      -- The overlay manager's window is the container
+      if gui and gui.draw then
+        gui:draw(ctx, {
+          fonts = fonts,
+          overlay_state = overlay_state,
+          overlay = overlay_mgr,
+          is_overlay_mode = true,
+        })
       end
 
       ImGui.PopFont(ctx)

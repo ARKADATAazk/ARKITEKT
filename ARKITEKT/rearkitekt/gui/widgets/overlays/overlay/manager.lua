@@ -223,10 +223,10 @@ function M:render(ctx, dt)
   local x, y, w, h
 
   if top.use_viewport then
-    -- Use full REAPER viewport (entire screen) - matches old overlay.lua
+    -- Use viewport work area (actual drawable area, excludes menu bars)
     local viewport = ImGui.GetMainViewport(ctx)
-    x, y = ImGui.Viewport_GetPos(viewport)
-    w, h = ImGui.Viewport_GetSize(viewport)
+    x, y = ImGui.Viewport_GetWorkPos(viewport)
+    w, h = ImGui.Viewport_GetWorkSize(viewport)
   else
     -- Use parent window bounds with UI offset adjustments
     local parent_x, parent_y = ImGui.GetWindowPos(ctx)
