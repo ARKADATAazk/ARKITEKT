@@ -397,10 +397,19 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     -- Draw icon/label
     local label = cfg.icon or cfg.label or ''
     if label ~= '' then
+      -- Use icon font if available
+      if cb.icon_font then
+        ImGui.PushFont(ctx, cb.icon_font)
+      end
+
       local tw, th = ImGui.CalcTextSize(ctx, label)
       local tx = btn_x + (size - tw) * 0.5
       local ty = btn_y + (size - th) * 0.5
       ImGui.DrawList_AddText(dl, tx, ty, text, label)
+
+      if cb.icon_font then
+        ImGui.PopFont(ctx)
+      end
     end
 
     -- Click detection (manual for foreground)

@@ -314,7 +314,17 @@ function TransportView:draw(ctx, shell_state)
     override_enabled = engine and engine:get_transport_override() or false,
     follow_viewport = false,
   }
-  
+
+  -- Inject icon font into corner buttons
+  local icons_font = shell_state and shell_state.fonts and shell_state.fonts.icons
+  if icons_font and self.container.panel.config.corner_buttons then
+    local cb = self.container.panel.config.corner_buttons
+    if cb.top_right then cb.top_right.icon_font = icons_font end
+    if cb.top_left then cb.top_left.icon_font = icons_font end
+    if cb.bottom_right then cb.bottom_right.icon_font = icons_font end
+    if cb.bottom_left then cb.bottom_left.icon_font = icons_font end
+  end
+
   self.container:set_header_elements(self:build_header_elements(bridge_state))
   
   local spacing = self.config.spacing

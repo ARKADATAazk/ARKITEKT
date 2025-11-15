@@ -51,7 +51,7 @@ M.TRANSPORT = {
     size = 30,
     margin = 8,
     top_right = {
-      icon = "⚙",
+      icon = utf8.char(0xF0EB),  -- remixicon settings-6-fill
       tooltip = "Settings (coming soon)",
       on_click = function()
         reaper.ShowConsoleMsg("Settings button clicked (coming soon)\n")
@@ -185,7 +185,7 @@ function M.get_active_container_config(callbacks)
       size = 24,
       margin = 8,
       bottom_left = {
-        icon = "⚡",
+        icon = utf8.char(0xED3C),  -- remixicon flashlight-fill
         tooltip = "Actions (coming soon)",
         on_click = function()
           reaper.ShowConsoleMsg("Active Grid Actions button clicked (coming soon)\n")
@@ -268,7 +268,7 @@ function M.get_pool_container_config(callbacks)
       size = 24,
       margin = 8,
       bottom_left = {
-        icon = "⚡",
+        icon = utf8.char(0xED3C),  -- remixicon flashlight-fill
         tooltip = "Actions (coming soon)",
         on_click = function()
           reaper.ShowConsoleMsg("Pool Grid Actions button clicked (coming soon)\n")

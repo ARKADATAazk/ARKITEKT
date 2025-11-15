@@ -100,5 +100,6 @@ Shell.run({
   get_status_func = StatusConfig.get_status_func and StatusConfig.get_status_func(State) or nil,
   fonts        = {
     time_display = 20,  -- Transport time display font
+    icons = 20,         -- Icon font (remixicon) for corner buttons
   },
 })

@@ -639,17 +639,39 @@ function RegionTiles:draw_selector(ctx, playlists, active_id, height)
   return Render.draw_selector(self, ctx, playlists, active_id, height)
 end
 
-function RegionTiles:draw_active(ctx, playlist, height)
+function RegionTiles:draw_active(ctx, playlist, height, shell_state)
   if self.active_container and self.active_container.visible_bounds then
     self.active_grid.panel_clip_bounds = self.active_container.visible_bounds
   end
+
+  -- Inject icon font into corner buttons
+  local icons_font = shell_state and shell_state.fonts and shell_state.fonts.icons
+  if icons_font and self.active_container and self.active_container.config and self.active_container.config.corner_buttons then
+    local cb = self.active_container.config.corner_buttons
+    if cb.top_right then cb.top_right.icon_font = icons_font end
+    if cb.top_left then cb.top_left.icon_font = icons_font end
+    if cb.bottom_right then cb.bottom_right.icon_font = icons_font end
+    if cb.bottom_left then cb.bottom_left.icon_font = icons_font end
+  end
+
   return Render.draw_active(self, ctx, playlist, height)
 end
 
-function RegionTiles:draw_pool(ctx, regions, height)
+function RegionTiles:draw_pool(ctx, regions, height, shell_state)
   if self.pool_container and self.pool_container.visible_bounds then
     self.pool_grid.panel_clip_bounds = self.pool_container.visible_bounds
   end
+
+  -- Inject icon font into corner buttons
+  local icons_font = shell_state and shell_state.fonts and shell_state.fonts.icons
+  if icons_font and self.pool_container and self.pool_container.config and self.pool_container.config.corner_buttons then
+    local cb = self.pool_container.config.corner_buttons
+    if cb.top_right then cb.top_right.icon_font = icons_font end
+    if cb.top_left then cb.top_left.icon_font = icons_font end
+    if cb.bottom_right then cb.bottom_right.icon_font = icons_font end
+    if cb.bottom_left then cb.bottom_left.icon_font = icons_font end
+  end
+
   return Render.draw_pool(self, ctx, regions, height)
 end
 

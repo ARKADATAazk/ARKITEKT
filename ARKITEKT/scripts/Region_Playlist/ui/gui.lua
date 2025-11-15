@@ -293,13 +293,13 @@ function GUI:draw(ctx, window, shell_state)
   local transport_start_x, transport_start_y = ImGui.GetCursorScreenPos(ctx)
   
   self.transport_view:draw(ctx, shell_state)
-  
+
   -- Position cursor after transport with separator gap
   local sep_gap = self.Config.SEPARATOR.horizontal.gap
   local transport_height = self.Config.TRANSPORT.height
   ImGui.SetCursorScreenPos(ctx, transport_start_x, transport_start_y + transport_height + sep_gap)
-  
-  self.layout_view:draw(ctx, self.region_tiles)
+
+  self.layout_view:draw(ctx, self.region_tiles, shell_state)
   
   self.region_tiles:draw_ghosts(ctx)
 end

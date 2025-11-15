@@ -61,9 +61,11 @@ local function load_fonts(ctx, font_cfg)
     titlebar_version = (DEFAULTS.fonts and DEFAULTS.fonts.titlebar_version) or nil,
     monospace      = (DEFAULTS.fonts and DEFAULTS.fonts.monospace) or 13,
     time_display   = (DEFAULTS.fonts and DEFAULTS.fonts.time_display) or nil,
+    icons          = (DEFAULTS.fonts and DEFAULTS.fonts.icons) or nil,
     family_regular = (DEFAULTS.fonts and DEFAULTS.fonts.family_regular) or 'Inter_18pt-Regular.ttf',
     family_bold    = (DEFAULTS.fonts and DEFAULTS.fonts.family_bold) or 'Inter_18pt-SemiBold.ttf',
     family_mono    = (DEFAULTS.fonts and DEFAULTS.fonts.family_mono) or 'JetBrainsMono-Regular.ttf',
+    family_icons   = (DEFAULTS.fonts and DEFAULTS.fonts.family_icons) or 'remixicon.ttf',
   }, font_cfg or {})
 
   local SEP      = package.config:sub(1,1)
@@ -75,6 +77,7 @@ local function load_fonts(ctx, font_cfg)
   local R = fontsdir .. font_cfg.family_regular
   local B = fontsdir .. font_cfg.family_bold
   local M = fontsdir .. font_cfg.family_mono
+  local I = fontsdir .. font_cfg.family_icons
 
   local function exists(p) local f = io.open(p, 'rb'); if f then f:close(); return true end end
   local default_font   = exists(R) and ImGui.CreateFont(R, font_cfg.default)
@@ -85,7 +88,7 @@ local function load_fonts(ctx, font_cfg)
                                 or default_font
   local monospace_font = exists(M) and ImGui.CreateFont(M, font_cfg.monospace)
                                 or default_font
-  
+
   local time_display_font = nil
   if font_cfg.time_display then
     time_display_font = exists(B) and ImGui.CreateFont(B, font_cfg.time_display)
@@ -101,12 +104,19 @@ local function load_fonts(ctx, font_cfg)
     ImGui.Attach(ctx, titlebar_version_font)
   end
 
+  local icons_font = nil
+  if font_cfg.icons then
+    icons_font = exists(I) and ImGui.CreateFont(I, font_cfg.icons)
+                            or default_font
+    ImGui.Attach(ctx, icons_font)
+  end
+
   ImGui.Attach(ctx, default_font)
   ImGui.Attach(ctx, title_font)
   ImGui.Attach(ctx, version_font)
   ImGui.Attach(ctx, monospace_font)
-  
-  return { 
+
+  return {
     default = default_font,
     default_size = font_cfg.default,
     title = title_font,
@@ -119,6 +129,8 @@ local function load_fonts(ctx, font_cfg)
     titlebar_version_size = titlebar_version_size,
     time_display = time_display_font,
     time_display_size = font_cfg.time_display,
+    icons = icons_font,
+    icons_size = font_cfg.icons,
   }
 end
 
