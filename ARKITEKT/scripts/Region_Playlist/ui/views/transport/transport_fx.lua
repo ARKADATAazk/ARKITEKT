@@ -192,6 +192,17 @@ function M.render_border(dl, x1, y1, x2, y2, config)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_cfg.color, config.rounding, ImGui.DrawFlags_RoundCornersAll, border_cfg.thickness)
 end
 
+---Renders complete transport FX including gradient, specular, glow, and border
+---@param dl any ImGui DrawList
+---@param x1 number Left position
+---@param y1 number Top position
+---@param x2 number Right position
+---@param y2 number Bottom position
+---@param config table FX configuration
+---@param hover_factor number Hover alpha (0-1)
+---@param current_region_color number Current region color (RGBA)
+---@param next_region_color number|nil Next region color (RGBA) or nil
+---@param jump_flash_alpha number Jump flash alpha (0-1)
 function M.render_complete(dl, x1, y1, x2, y2, config, hover_factor, current_region_color, next_region_color, jump_flash_alpha)
   config = config or M.DEFAULT_CONFIG
   hover_factor = hover_factor or 0

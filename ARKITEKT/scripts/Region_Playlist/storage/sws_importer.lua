@@ -69,8 +69,8 @@ end
 -- Read current project file as text
 -- Returns: lines table or nil on error
 local function read_project_file()
-  local proj_path = reaper.GetProjectPath("")
-  local proj_name = reaper.GetProjectName(0, "")
+  local proj_path = reaper.GetProjectPath(0)
+  local retval, proj_name = reaper.GetProjectName(0, "")
   if proj_path == "" or proj_name == "" then
     return nil, "No project file found (project not saved)"
   end
@@ -323,25 +323,34 @@ function M.execute_import(merge_mode, backup)
   if merge_mode then
     -- Merge with existing playlists (prepend SWS playlists to the beginning)
     local existing = RegionState.load_playlists(0)
+    if not existing then existing = {} end
+
     -- Insert in reverse order so they appear in correct order at the beginning
     for i = #ark_playlists, 1, -1 do
-      table.insert(existing, 1, ark_playlists[i])
+      if ark_playlists[i] then
+        table.insert(existing, 1, ark_playlists[i])
+      end
     end
     RegionState.save_playlists(existing, 0)
-    
+
     -- Set active playlist if SWS had one marked
-    if report.active_playlist_idx then
-      local new_active_id = existing[#existing - #ark_playlists + report.active_playlist_idx].id
-      RegionState.save_active_playlist(new_active_id, 0)
+    if report and report.active_playlist_idx then
+      local target_idx = #existing - #ark_playlists + report.active_playlist_idx
+      if existing[target_idx] and existing[target_idx].id then
+        RegionState.save_active_playlist(existing[target_idx].id, 0)
+      end
     end
   else
     -- Replace all playlists
     RegionState.save_playlists(ark_playlists, 0)
-    
+
     -- Set active playlist
-    if report.active_playlist_idx and ark_playlists[report.active_playlist_idx] then
-      RegionState.save_active_playlist(ark_playlists[report.active_playlist_idx].id, 0)
-    elseif #ark_playlists > 0 then
+    if report and report.active_playlist_idx and ark_playlists[report.active_playlist_idx] then
+      local playlist = ark_playlists[report.active_playlist_idx]
+      if playlist and playlist.id then
+        RegionState.save_active_playlist(playlist.id, 0)
+      end
+    elseif #ark_playlists > 0 and ark_playlists[1] and ark_playlists[1].id then
       RegionState.save_active_playlist(ark_playlists[1].id, 0)
     end
   end
