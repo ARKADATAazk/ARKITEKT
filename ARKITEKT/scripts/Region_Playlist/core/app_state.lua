@@ -423,6 +423,7 @@ function M.refresh_regions()
 end
 
 function M.persist()
+  rebuild_playlist_lookup()  -- Rebuild lookup table whenever playlists change
   RegionState.save_playlists(M.playlists, 0)
   RegionState.save_active_playlist(M.active_playlist, 0)
   M.mark_graph_dirty()
