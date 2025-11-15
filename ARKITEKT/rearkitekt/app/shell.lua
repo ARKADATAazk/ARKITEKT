@@ -94,7 +94,6 @@ local function load_fonts(ctx, font_cfg)
   if font_cfg.time_display then
     time_display_font = exists(B) and ImGui.CreateFontFromFile(B, font_cfg.time_display)
                                    or ImGui.CreateFont('sans-serif', font_cfg.time_display)
-    ImGui.Attach(ctx, time_display_font)
   end
 
   local titlebar_version_font = nil
@@ -102,7 +101,6 @@ local function load_fonts(ctx, font_cfg)
   if font_cfg.titlebar_version then
     titlebar_version_font = exists(R) and ImGui.CreateFontFromFile(R, font_cfg.titlebar_version)
                                        or version_font
-    ImGui.Attach(ctx, titlebar_version_font)
   end
 
   local icons_font = nil
@@ -110,16 +108,13 @@ local function load_fonts(ctx, font_cfg)
     if exists(I) then
       -- Use CreateFontFromFile for loading from file (v0.10 API)
       icons_font = ImGui.CreateFontFromFile(I, font_cfg.icons)
-      ImGui.Attach(ctx, icons_font)
     else
       icons_font = default_font
     end
   end
 
-  ImGui.Attach(ctx, default_font)
-  ImGui.Attach(ctx, title_font)
-  ImGui.Attach(ctx, version_font)
-  ImGui.Attach(ctx, monospace_font)
+  -- Note: In ReaImGui v0.10, fonts don't need to be Attached before use
+  -- The requirement was lifted in v0.10
 
   return {
     default = default_font,
