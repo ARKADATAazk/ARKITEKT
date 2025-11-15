@@ -3,6 +3,7 @@
 -- Performance-optimized grid wrapper for Item Picker
 -- Adds resize handling with scroll position maintenance to prevent disorientation
 
+local ImGui = require 'imgui' '0.10'
 local Grid = require('rearkitekt.gui.widgets.grid.core')
 
 local M = {}
@@ -14,14 +15,13 @@ function M.new(opts)
   -- Add resize tracking state
   base_grid._perf_last_avail_w = nil
   base_grid._perf_last_avail_h = nil
-  base_grid._perf_last_scroll_percent = 0
 
-  -- Store original render method
-  local original_render = base_grid.render
+  -- Store original draw method (not render!)
+  local original_draw = base_grid.draw
 
-  -- Override render to add resize handling
-  base_grid.render = function(self, ctx, items)
-    -- Get available space BEFORE calling original render
+  -- Override draw to add resize handling
+  base_grid.draw = function(self, ctx)
+    -- Get available space BEFORE calling original draw
     local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
 
     -- Detect resize
@@ -47,7 +47,7 @@ function M.new(opts)
     self._perf_last_avail_w = avail_w
     self._perf_last_avail_h = avail_h
 
-    -- If resizing, we'll need to intercept the rect_track:to() calls and use teleport instead
+    -- If resizing, intercept rect_track:to() calls and use teleport instead
     if did_resize then
       -- Store original :to method
       local original_to = self.rect_track.to
@@ -57,8 +57,8 @@ function M.new(opts)
         track:teleport(id, rect)
       end
 
-      -- Call original render (this will calculate layout and call rect_track:to)
-      original_render(self, ctx, items)
+      -- Call original draw (this will calculate layout and call rect_track:to)
+      original_draw(self, ctx)
 
       -- Restore original :to method
       self.rect_track.to = original_to
@@ -70,8 +70,8 @@ function M.new(opts)
         ImGui.SetScrollY(ctx, new_scroll_y)
       end
     else
-      -- Normal render (smooth animations)
-      original_render(self, ctx, items)
+      -- Normal draw (smooth animations)
+      original_draw(self, ctx)
     end
   end
 
