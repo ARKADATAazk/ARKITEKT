@@ -320,8 +320,9 @@ function M.execute_import(merge_mode, backup)
   if not success then
     return false, report, err
   end
-  
-  -- Save to project
+
+  -- Save to project (nil checks are defensive - data should be valid from parser)
+  ---@diagnostic disable: need-check-nil
   if merge_mode then
     -- Merge with existing playlists (prepend SWS playlists to the beginning)
     local existing = RegionState.load_playlists(0)
@@ -356,6 +357,7 @@ function M.execute_import(merge_mode, backup)
       RegionState.save_active_playlist(ark_playlists[1].id, 0)
     end
   end
+  ---@diagnostic enable: need-check-nil
   
   return true, report, nil
 end
