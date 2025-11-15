@@ -104,11 +104,25 @@ function GUI:draw(ctx, shell_state)
     -- Normal mode - show main UI
     self.layout_view:render(ctx, big_font, big_font_size, "Item Picker", SCREEN_W, SCREEN_H)
   else
-    -- Dragging mode - show drag overlay
+    -- Dragging mode - create transparent non-blocking window
+    ImGui.SetNextWindowPos(ctx, 0, 0)
+    ImGui.SetNextWindowSize(ctx, SCREEN_W, SCREEN_H)
+
+    local drag_flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoTitleBar |
+                       ImGui.WindowFlags_NoResize | ImGui.WindowFlags_NoMove |
+                       ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoBackground |
+                       ImGui.WindowFlags_NoInputs  -- Critical: allows mouse to pass through
+
+    if ImGui.Begin(ctx, "Item Picker (Dragging)", true, drag_flags) then
+      -- Window exists but is transparent and non-blocking
+      ImGui.End(ctx)
+    end
+
+    -- Show drag overlay and preview on top
     local should_insert = self.drag_handler.handle_drag_logic(ctx, self.state, mini_font)
     if should_insert then
       self.controller.insert_item_at_mouse(self.state.item_to_add, self.state)
-      self.state:request_exit()
+      self.state.request_exit()  -- Module function, uses dot notation
     end
 
     self.drag_handler.render_drag_preview(ctx, self.state, mini_font, self.visualization)
