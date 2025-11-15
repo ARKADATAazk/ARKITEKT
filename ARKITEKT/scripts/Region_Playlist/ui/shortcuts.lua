@@ -9,6 +9,11 @@ local M = {}
 package.loaded["Region_Playlist.ui.shortcuts"] = M
 
 function M.handle_keyboard_shortcuts(ctx, state, region_tiles)
+  -- Block shortcuts when mouse is over any popup/modal window
+  if ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow) then
+    return false
+  end
+
   local ctrl = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
   local shift = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
   
