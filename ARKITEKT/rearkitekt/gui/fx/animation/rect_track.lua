@@ -31,40 +31,72 @@ function RectTrack:to(id, rect)
       current = {rect[1], rect[2], rect[3], rect[4]},
       target = {rect[1], rect[2], rect[3], rect[4]},
       delay = 0,
+      settled = true,  -- Start settled if spawning at target position
     }
   else
     local r = self.rects[id]
+
+    -- Check if target actually changed before unsettling
+    local target_changed = (r.target[1] ~= rect[1] or r.target[2] ~= rect[2] or
+                           r.target[3] ~= rect[3] or r.target[4] ~= rect[4])
+
     r.target[1] = rect[1]
     r.target[2] = rect[2]
     r.target[3] = rect[3]
     r.target[4] = rect[4]
     r.delay = 0
+
+    -- Only unsettle if target actually changed
+    if target_changed then
+      r.settled = false
+    end
   end
 end
 
 function RectTrack:to_with_delay(id, rect, delay)
   delay = delay or 0
-  
+
   if not self.rects[id] then
     self.rects[id] = {
       current = {rect[1], rect[2], rect[3], rect[4]},
       target = {rect[1], rect[2], rect[3], rect[4]},
       delay = delay,
+      settled = (delay == 0),  -- Start settled if no delay
     }
   else
     local r = self.rects[id]
+
+    -- Check if target actually changed before unsettling
+    local target_changed = (r.target[1] ~= rect[1] or r.target[2] ~= rect[2] or
+                           r.target[3] ~= rect[3] or r.target[4] ~= rect[4])
+
     r.target[1] = rect[1]
     r.target[2] = rect[2]
     r.target[3] = rect[3]
     r.target[4] = rect[4]
     r.delay = delay
+
+    -- Only unsettle if target actually changed
+    if target_changed then
+      r.settled = false
+    end
   end
 end
 
 function RectTrack:update(dt)
   dt = dt or 0.016
-  
+
+  -- Cache math functions for performance
+  local sqrt = math.sqrt
+  local abs = math.abs
+
   for id, r in pairs(self.rects) do
+    -- CRITICAL OPTIMIZATION: Skip settled items (massive win when idle)
+    -- With 1000 items, this reduces update from 1000 iterations to ~0-20
+    if r.settled then
+      goto continue
+    end
+
     if r.delay and r.delay > 0 then
       r.delay = r.delay - dt
       if r.delay < 0 then r.delay = 0 end
@@ -74,21 +106,31 @@ function RectTrack:update(dt)
         local d = r.target[i] - r.current[i]
         dist_sq = dist_sq + d * d
       end
-      local dist = math.sqrt(dist_sq)
-      
+      local dist = sqrt(dist_sq)
+
       local effective_speed = self.speed
       if dist < self.magnetic_threshold then
         effective_speed = self.speed * self.magnetic_multiplier
       end
-      
+
+      local all_snapped = true
       for i = 1, 4 do
         r.current[i] = Math.lerp(r.current[i], r.target[i], effective_speed * dt)
-        
-        if math.abs(r.current[i] - r.target[i]) < self.snap_eps then
+
+        if abs(r.current[i] - r.target[i]) < self.snap_eps then
           r.current[i] = r.target[i]
+        else
+          all_snapped = false
         end
       end
+
+      -- Mark as settled when all coordinates have snapped
+      if all_snapped then
+        r.settled = true
+      end
     end
+
+    ::continue::
   end
 end
 
@@ -105,12 +147,14 @@ function RectTrack:teleport(id, rect)
       current = {rect[1], rect[2], rect[3], rect[4]},
       target = {rect[1], rect[2], rect[3], rect[4]},
       delay = 0,
+      settled = true,
     }
   else
     local r = self.rects[id]
     r.current = {rect[1], rect[2], rect[3], rect[4]}
     r.target = {rect[1], rect[2], rect[3], rect[4]}
     r.delay = 0
+    r.settled = true
   end
 end
 
@@ -121,6 +165,7 @@ function RectTrack:teleport_all(new_rects)
       current = {rect[1], rect[2], rect[3], rect[4]},
       target = {rect[1], rect[2], rect[3], rect[4]},
       delay = 0,
+      settled = true,
     }
   end
 end
