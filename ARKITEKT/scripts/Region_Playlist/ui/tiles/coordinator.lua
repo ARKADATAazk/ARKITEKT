@@ -644,12 +644,16 @@ function RegionTiles:set_pool_sort_direction(direction)
 end
 
 function RegionTiles:is_modal_blocking(ctx)
-  -- Check if ANY popup/modal is currently blocking input
-  if not ctx then return false end
+  -- Check if custom overlay modal is open (overflow tabs picker)
+  local overflow_active = self.active_container and self.active_container:is_overflow_visible()
+  if overflow_active then return true end
 
-  -- In ImGui, popups automatically capture input. Check if any popup has captured the mouse.
-  -- When a popup/modal is open, we should block manual mouse checks on foreground elements.
-  return ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
+  -- Check if any ImGui popup is open (context menus, etc)
+  if ctx then
+    return ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
+  end
+
+  return false
 end
 
 function RegionTiles:draw_selector(ctx, playlists, active_id, height)
