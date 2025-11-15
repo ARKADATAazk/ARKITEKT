@@ -12,25 +12,23 @@ local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')
 local State = require('Region_Playlist.core.app_state')
 local ContextMenu = require('rearkitekt.gui.widgets.controls.context_menu')
 local SWSImporter = require('Region_Playlist.storage.sws_importer')
-local Colors = require('rearkitekt.core.colors')
+local ModalDialog = require('rearkitekt.gui.widgets.overlay.modal_dialog')
 
 local M = {}
 
--- Modal constants
-local SWS_IMPORT_MODAL = {
-  WIDTH = 650,
-  HEIGHT = 200,
-  BUTTON_WIDTH = 120,
-  BUTTON_BOTTOM_SPACING = 35,
-}
+-- Modal instance for SWS import results
+local sws_result_modal = nil
 
--- Modal background color (dark grey with opacity)
-local MODAL_BG_COLOR = Colors.with_alpha(Colors.hexrgb("#141414FF"), 0xF0)
+-- Helper: Show import result modal
+local function show_import_result(ctx, window, success, message)
+  local title = success and "Import Successful" or "Import Failed"
 
--- Helper: Set import result and trigger modal display
-local function set_import_result(self, success, message)
-  self._sws_import_result = { success = success, message = message }
-  self._sws_show_result = true
+  sws_result_modal = ModalDialog.show_message(ctx, window, title, message, {
+    id = "##sws_import_result",
+    button_label = "OK",
+    width = 0.45,
+    height = 0.25,
+  })
 end
 
 -- Helper: Refresh UI after successful import and select first imported playlist
@@ -48,10 +46,10 @@ local function refresh_after_import(self)
 end
 
 -- Helper: Execute SWS import and handle results
-local function execute_sws_import(self)
+local function execute_sws_import(self, ctx, window)
   -- Check for SWS playlists
   if not SWSImporter.has_sws_playlists() then
-    set_import_result(self, false,
+    show_import_result(ctx, window, false,
       "No SWS Region Playlists found in the current project.\n\n" ..
       "Make sure the project is saved and contains SWS Region Playlists.")
     return
@@ -61,39 +59,11 @@ local function execute_sws_import(self)
   local success, report, err = SWSImporter.execute_import(true, true)
 
   if success and report then
-    set_import_result(self, true, "Import successful!\n\n" .. SWSImporter.format_report(report))
+    show_import_result(ctx, window, true, "Import successful!\n\n" .. SWSImporter.format_report(report))
     refresh_after_import(self)
   else
-    set_import_result(self, false, "Import failed: " .. tostring(err or "Unknown error"))
+    show_import_result(ctx, window, false, "Import failed: " .. tostring(err or "Unknown error"))
   end
-end
-
--- Helper: Center modal window on parent window (script window, not viewport)
-local function center_modal_window(ctx, width, height)
-  local win_x, win_y = ImGui.GetWindowPos(ctx)
-  local win_w, win_h = ImGui.GetWindowSize(ctx)
-
-  ImGui.SetNextWindowPos(ctx,
-    win_x + (win_w - width) * 0.5,
-    win_y + (win_h - height) * 0.5,
-    ImGui.Cond_Appearing)
-  ImGui.SetNextWindowSize(ctx, width, height, ImGui.Cond_Appearing)
-end
-
--- Helper: Draw centered button at bottom of modal
-local function draw_modal_bottom_button(ctx, label, button_width)
-  -- Spacer to push button to bottom
-  local avail_h = ImGui.GetContentRegionAvail(ctx)
-  ImGui.Dummy(ctx, 0, avail_h - SWS_IMPORT_MODAL.BUTTON_BOTTOM_SPACING)
-
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
-
-  -- Center button
-  local window_w = ImGui.GetWindowWidth(ctx)
-  ImGui.SetCursorPosX(ctx, (window_w - button_width) * 0.5)
-
-  return ImGui.Button(ctx, label, button_width, 0)
 end
 
 function M.draw_selector(self, ctx, playlists, active_id, height)
@@ -190,34 +160,8 @@ function M.draw_active(self, ctx, playlist, height)
   -- Execute SWS import
   if self._sws_import_requested then
     self._sws_import_requested = false
-    execute_sws_import(self)
+    execute_sws_import(self, ctx, self.window)
   end
-
-  -- Show import result modal
-  if self._sws_show_result then
-    ImGui.OpenPopup(ctx, "SWS Import Result")
-    self._sws_show_result = false
-    center_modal_window(ctx, SWS_IMPORT_MODAL.WIDTH, SWS_IMPORT_MODAL.HEIGHT)
-  end
-
-  -- Push dark background style for modal
-  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, MODAL_BG_COLOR)
-
-  if ImGui.BeginPopupModal(ctx, "SWS Import Result", nil, ImGui.WindowFlags_NoResize) then
-    if self._sws_import_result then
-      ImGui.TextWrapped(ctx, self._sws_import_result.message)
-
-      local clicked = draw_modal_bottom_button(ctx, "OK", SWS_IMPORT_MODAL.BUTTON_WIDTH)
-      if clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-        self._sws_import_result = nil
-        ImGui.CloseCurrentPopup(ctx)
-      end
-    end
-    ImGui.EndPopup(ctx)
-  end
-
-  -- Pop style color
-  ImGui.PopStyleColor(ctx, 1)
 
   -- Rename playlist modal
   if self._rename_input_visible then
