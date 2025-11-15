@@ -140,6 +140,17 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.set_setting('show_disabled_items', not self.state.settings.show_disabled_items)
   end
 
+  -- Split MIDI Items checkbox (new line)
+  checkbox_y = checkbox_y + 24
+  _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
+    "Split MIDI Items by Track",
+    self.state.settings.split_midi_by_track, checkbox_config, "split_midi_by_track")
+  if clicked then
+    self.state.set_setting('split_midi_by_track', not self.state.settings.split_midi_by_track)
+    -- Recollect items when this setting changes
+    self.state.needs_recollect = true
+  end
+
   -- Search fade with different offset
   local search_fade = smootherstep(math.max(0, (overlay_alpha - 0.05) / 0.95))
   local search_y_offset = 25 * (1.0 - search_fade)

@@ -96,6 +96,12 @@ function GUI:draw(ctx, shell_state)
   -- Handle tile size shortcuts
   self.coordinator:handle_tile_size_shortcuts(ctx)
 
+  -- Check if we need to recollect items (e.g., after toggling split_midi_by_track)
+  if self.state.needs_recollect then
+    self.controller.collect_project_items(self.state)
+    self.state.needs_recollect = false
+  end
+
   ImGui.PushFont(ctx, mini_font, mini_font_size)
   reaper.PreventUIRefresh(1)
 

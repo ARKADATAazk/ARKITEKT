@@ -14,6 +14,7 @@ M.settings = {
   show_muted_tracks = false,
   show_muted_items = false,
   show_disabled_items = false,
+  split_midi_by_track = false,  -- Show each MIDI item separately instead of grouped by track
   focus_keyboard_on_init = true,
   search_string = "",
   tile_width = nil,
@@ -25,6 +26,7 @@ M.samples = {}  -- { [filename] = { {item, name, track_muted, item_muted}, ...} 
 M.sample_indexes = {}  -- Ordered list of filenames
 M.midi_items = {}  -- { [track_guid] = { {item, name, track_muted, item_muted}, ...} }
 M.midi_indexes = {}  -- Ordered list of track GUIDs
+M.needs_recollect = false  -- Flag to trigger item recollection
 
 M.box_current_sample = {}  -- { [filename] = sample_index }
 M.box_current_item = {}  -- { [filename] = item_index }
