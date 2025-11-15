@@ -129,9 +129,9 @@ if USE_OVERLAY then
   overlay_mgr:push({
     id = "item_picker_main",
     use_viewport = true,
-    fade_duration = 0.15,
+    fade_duration = 0.3,
     fade_curve = 'ease_out_quad',
-    scrim_color = Colors.hexrgb("#000000"),  -- Pure black for fullscreen
+    scrim_color = Colors.hexrgb("#0A0A0A"),  -- Very dark grey for fullscreen
     scrim_opacity = 0.95,
     show_close_button = true,
     close_on_background_click = false,
