@@ -40,11 +40,7 @@ function ViewModeButton:draw_icon(ctx, dl, x, y, mode)
 end
 
 function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_drawlist, is_blocking)
-  -- CRITICAL: Check if mouse is over a child/popup window (not just root)
-  local is_over_any = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
-  local is_over_root = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_RootWindow)
-  local mouse_over_popup = is_over_any and not is_over_root
-  is_blocking = is_blocking or mouse_over_popup
+  is_blocking = is_blocking or false
   local dl = use_foreground_drawlist and ImGui.GetForegroundDrawList(ctx) or ImGui.GetWindowDrawList(ctx)
   local cfg = self.config
   local btn_size = cfg.size or 32
