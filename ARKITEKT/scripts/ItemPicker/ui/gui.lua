@@ -114,14 +114,11 @@ function GUI:draw(ctx, shell_state)
     -- The drag_handler creates its own windows (drag_target_window and MouseFollower)
     -- which allows the arrange window to receive mouse input
     local should_insert = self.drag_handler.handle_drag_logic(ctx, self.state, mini_font)
-    if should_insert then
-      -- Only insert if we haven't already inserted (prevent infinite loop)
-      if not self.state.drop_completed then
-        self.controller.insert_item_at_mouse(self.state.item_to_add, self.state)
-        self.state.drop_completed = true  -- Mark as completed to prevent re-insertion
-      end
-      -- Don't call end_drag() or request_exit() - keep dragging state until exit to prevent modal flicker
-      self.state.request_exit()  -- Module function, uses dot notation
+    if should_insert and not self.state.drop_completed then
+      -- Only insert once
+      self.controller.insert_item_at_mouse(self.state.item_to_add, self.state)
+      self.state.drop_completed = true  -- Mark as completed
+      self.state.request_exit()  -- Exit immediately after insertion
     end
 
     self.drag_handler.render_drag_preview(ctx, self.state, mini_font, self.visualization)
