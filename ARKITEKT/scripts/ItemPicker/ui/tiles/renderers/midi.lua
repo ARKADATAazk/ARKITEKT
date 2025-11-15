@@ -116,8 +116,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       item_data.name, item_data.index, item_data.total, base_color, text_alpha, config)
   end
 
-  -- Render MIDI visualization
-  if not is_disabled and item_data.item and cascade_factor > 0.2 then
+  -- Render MIDI visualization (show even when disabled, just with toned down color)
+  if item_data.item and cascade_factor > 0.2 then
     local content_y1 = scaled_y1 + header_height
     local content_w = scaled_w
     local content_h = scaled_y2 - content_y1
