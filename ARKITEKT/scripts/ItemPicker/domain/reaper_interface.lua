@@ -268,20 +268,20 @@ function M.InsertItemAtMousePos(item, state)
     if state.dragging_keys and #state.dragging_keys > 0 then
       reaper.ShowConsoleMsg(string.format("[INSERT] Batch insert: %d items\n", #state.dragging_keys))
 
-      for _, key in ipairs(state.dragging_keys) do
+      for _, uuid in ipairs(state.dragging_keys) do
         local current_item
 
         if state.dragging_is_audio then
-          local content = state.samples[key]
-          local current_idx = state.box_current_item[key] or 1
-          if content and content[current_idx] then
-            current_item = content[current_idx][1]
+          -- Use UUID lookup table for O(1) access
+          local item_data = state.audio_item_lookup[uuid]
+          if item_data then
+            current_item = item_data[1]
           end
         else
-          local content = state.midi_items[key]
-          local current_idx = state.box_current_midi_track[key] or 1
-          if content and content[current_idx] then
-            current_item = content[current_idx][1]
+          -- Use UUID lookup table for O(1) access
+          local item_data = state.midi_item_lookup[uuid]
+          if item_data then
+            current_item = item_data[1]
           end
         end
 

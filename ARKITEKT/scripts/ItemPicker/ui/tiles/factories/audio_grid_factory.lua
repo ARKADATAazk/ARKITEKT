@@ -141,43 +141,94 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       end
     end,
 
-    right_click = function(key, selected_keys)
+    right_click = function(uuid, selected_uuids)
       -- Toggle disabled state for all selected items
-      if #selected_keys > 1 then
+      -- Need to get filename from UUID lookup
+      local item_data = state.audio_item_lookup[uuid]
+      if not item_data then return end
+
+      local items = get_items()
+      local filename_map = {}
+      for _, data in ipairs(items) do
+        if data.uuid then
+          filename_map[data.uuid] = data.filename
+        end
+      end
+
+      if #selected_uuids > 1 then
         -- Multi-select: toggle all to the opposite of clicked item's state
-        local new_state = not state.is_audio_disabled(key)
-        for _, sel_key in ipairs(selected_keys) do
-          if new_state then
-            state.disabled.audio[sel_key] = true
-          else
-            state.disabled.audio[sel_key] = nil
+        local clicked_filename = filename_map[uuid]
+        local new_state = not state.is_audio_disabled(clicked_filename)
+        for _, sel_uuid in ipairs(selected_uuids) do
+          local sel_filename = filename_map[sel_uuid]
+          if sel_filename then
+            if new_state then
+              state.disabled.audio[sel_filename] = true
+            else
+              state.disabled.audio[sel_filename] = nil
+            end
           end
         end
         state.persist_disabled()
       else
         -- Single item: toggle
-        state.toggle_audio_disabled(key)
+        local filename = filename_map[uuid]
+        if filename then
+          state.toggle_audio_disabled(filename)
+        end
       end
     end,
 
-    wheel_adjust = function(keys, delta)
-      if not keys or #keys == 0 then return end
-      local key = keys[1]
-      state.cycle_audio_item(key, delta > 0 and 1 or -1)
+    wheel_adjust = function(uuids, delta)
+      if not uuids or #uuids == 0 then return end
+      local uuid = uuids[1]
+
+      -- Get filename from UUID
+      local items = get_items()
+      for _, data in ipairs(items) do
+        if data.uuid == uuid then
+          state.cycle_audio_item(data.filename, delta > 0 and 1 or -1)
+          return
+        end
+      end
     end,
 
-    delete = function(item_keys)
+    delete = function(item_uuids)
       -- Disable all selected items
-      for _, key in ipairs(item_keys) do
-        state.disabled.audio[key] = true
+      -- Convert UUIDs to filenames
+      local items = get_items()
+      local filename_map = {}
+      for _, data in ipairs(items) do
+        if data.uuid then
+          filename_map[data.uuid] = data.filename
+        end
+      end
+
+      for _, uuid in ipairs(item_uuids) do
+        local filename = filename_map[uuid]
+        if filename then
+          state.disabled.audio[filename] = true
+        end
       end
       state.persist_disabled()
     end,
 
-    alt_click = function(item_keys)
+    alt_click = function(item_uuids)
       -- Quick disable with Alt+click
-      for _, key in ipairs(item_keys) do
-        state.disabled.audio[key] = true
+      -- Convert UUIDs to filenames
+      local items = get_items()
+      local filename_map = {}
+      for _, data in ipairs(items) do
+        if data.uuid then
+          filename_map[data.uuid] = data.filename
+        end
+      end
+
+      for _, uuid in ipairs(item_uuids) do
+        local filename = filename_map[uuid]
+        if filename then
+          state.disabled.audio[filename] = true
+        end
       end
       state.persist_disabled()
     end,

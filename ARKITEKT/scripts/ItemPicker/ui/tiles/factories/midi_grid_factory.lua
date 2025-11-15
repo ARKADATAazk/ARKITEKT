@@ -142,43 +142,94 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       end
     end,
 
-    right_click = function(key, selected_keys)
+    right_click = function(uuid, selected_uuids)
       -- Toggle disabled state for all selected items
-      if #selected_keys > 1 then
+      -- Need to get track_guid from UUID lookup
+      local item_data = state.midi_item_lookup[uuid]
+      if not item_data then return end
+
+      local items = get_items()
+      local track_guid_map = {}
+      for _, data in ipairs(items) do
+        if data.uuid then
+          track_guid_map[data.uuid] = data.track_guid
+        end
+      end
+
+      if #selected_uuids > 1 then
         -- Multi-select: toggle all to the opposite of clicked item's state
-        local new_state = not state.is_midi_disabled(key)
-        for _, sel_key in ipairs(selected_keys) do
-          if new_state then
-            state.disabled.midi[sel_key] = true
-          else
-            state.disabled.midi[sel_key] = nil
+        local clicked_track_guid = track_guid_map[uuid]
+        local new_state = not state.is_midi_disabled(clicked_track_guid)
+        for _, sel_uuid in ipairs(selected_uuids) do
+          local sel_track_guid = track_guid_map[sel_uuid]
+          if sel_track_guid then
+            if new_state then
+              state.disabled.midi[sel_track_guid] = true
+            else
+              state.disabled.midi[sel_track_guid] = nil
+            end
           end
         end
         state.persist_disabled()
       else
         -- Single item: toggle
-        state.toggle_midi_disabled(key)
+        local track_guid = track_guid_map[uuid]
+        if track_guid then
+          state.toggle_midi_disabled(track_guid)
+        end
       end
     end,
 
-    wheel_adjust = function(keys, delta)
-      if not keys or #keys == 0 then return end
-      local key = keys[1]
-      state.cycle_midi_item(key, delta > 0 and 1 or -1)
+    wheel_adjust = function(uuids, delta)
+      if not uuids or #uuids == 0 then return end
+      local uuid = uuids[1]
+
+      -- Get track_guid from UUID
+      local items = get_items()
+      for _, data in ipairs(items) do
+        if data.uuid == uuid then
+          state.cycle_midi_item(data.track_guid, delta > 0 and 1 or -1)
+          return
+        end
+      end
     end,
 
-    delete = function(item_keys)
+    delete = function(item_uuids)
       -- Disable all selected items
-      for _, key in ipairs(item_keys) do
-        state.disabled.midi[key] = true
+      -- Convert UUIDs to track_guids
+      local items = get_items()
+      local track_guid_map = {}
+      for _, data in ipairs(items) do
+        if data.uuid then
+          track_guid_map[data.uuid] = data.track_guid
+        end
+      end
+
+      for _, uuid in ipairs(item_uuids) do
+        local track_guid = track_guid_map[uuid]
+        if track_guid then
+          state.disabled.midi[track_guid] = true
+        end
       end
       state.persist_disabled()
     end,
 
-    alt_click = function(item_keys)
+    alt_click = function(item_uuids)
       -- Quick disable with Alt+click
-      for _, key in ipairs(item_keys) do
-        state.disabled.midi[key] = true
+      -- Convert UUIDs to track_guids
+      local items = get_items()
+      local track_guid_map = {}
+      for _, data in ipairs(items) do
+        if data.uuid then
+          track_guid_map[data.uuid] = data.track_guid
+        end
+      end
+
+      for _, uuid in ipairs(item_uuids) do
+        local track_guid = track_guid_map[uuid]
+        if track_guid then
+          state.disabled.midi[track_guid] = true
+        end
       end
       state.persist_disabled()
     end,
@@ -188,15 +239,15 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       state.midi_selection_count = #selected_keys
     end,
 
-    play = function(selected_keys)
+    play = function(selected_uuids)
       -- Preview selected items (use first selected)
-      if not selected_keys or #selected_keys == 0 then return end
+      if not selected_uuids or #selected_uuids == 0 then return end
 
-      local key = selected_keys[1]
+      local uuid = selected_uuids[1]
       local items = get_items()
 
       for _, item_data in ipairs(items) do
-        if item_data.key == key then
+        if item_data.uuid == uuid then
           -- Toggle preview
           if state.is_previewing(item_data.item) then
             state.stop_preview()
