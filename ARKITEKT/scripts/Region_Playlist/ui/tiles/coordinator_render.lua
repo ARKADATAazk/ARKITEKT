@@ -11,7 +11,7 @@ local ActiveTile = require('Region_Playlist.ui.tiles.renderers.active')
 local PoolTile = require('Region_Playlist.ui.tiles.renderers.pool')
 local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')
 local State = require('Region_Playlist.core.app_state')
-local ContextMenu = require('rearkitekt.gui.widgets.overlays.overlays.context_menu')
+local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 local SWSImporter = require('Region_Playlist.storage.sws_importer')
 local ModalDialog = require('rearkitekt.gui.widgets.overlays.overlay.modal_dialog')
 

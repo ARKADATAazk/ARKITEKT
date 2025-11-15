@@ -6,7 +6,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Style = require('rearkitekt.gui.style.defaults')
-local Tooltip = require('rearkitekt.gui.widgets.overlays.overlays.tooltip')
+local Tooltip = require('rearkitekt.gui.widgets.overlays.tooltip')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

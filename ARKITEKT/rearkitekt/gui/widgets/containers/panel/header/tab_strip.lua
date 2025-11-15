@@ -4,7 +4,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ContextMenu = require('rearkitekt.gui.widgets.overlays.overlays.context_menu')
+local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local Style = require('rearkitekt.gui.style.defaults')
 
