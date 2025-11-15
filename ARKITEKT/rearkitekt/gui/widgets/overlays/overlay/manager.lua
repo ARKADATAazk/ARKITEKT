@@ -260,6 +260,7 @@ function M:render(ctx, dt)
 
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, 0)
 
   Style.PushMyStyle(ctx)
 
@@ -337,7 +338,7 @@ function M:render(ctx, dt)
   -- Pop in reverse order (colors pushed after style, so pop them first)
   ImGui.PopStyleColor(ctx, 2)
   Style.PopMyStyle(ctx)
-  ImGui.PopStyleVar(ctx, 2)
+  ImGui.PopStyleVar(ctx, 3)
 end
 
 -- ============================================================================
