@@ -75,14 +75,19 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   ImGui.DrawList_PathLineTo(dl, scaled_x1, scaled_y2)
   ImGui.DrawList_PathFillConvex(dl, render_color)
 
-  -- Apply TileFX
-  local fx_config = {}
-  for k, v in pairs(config.TILE_RENDER.tile_fx) do fx_config[k] = v end
+  -- Apply TileFX (optimized: reuse config table instead of copying)
+  local fx_config = config.TILE_RENDER.tile_fx
+  local saved_rounding = fx_config.rounding
+  local saved_ants_replace = fx_config.ants_replace_border
   fx_config.rounding = config.TILE.ROUNDING
   fx_config.ants_replace_border = false
 
   TileFX.render_complete(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color,
     fx_config, tile_state.selected, hover_factor, 0, 0)
+
+  -- Restore original values
+  fx_config.rounding = saved_rounding
+  fx_config.ants_replace_border = saved_ants_replace
 
   -- Render header
   BaseRenderer.render_header_bar(dl, scaled_x1, scaled_y1, scaled_x2, header_height,
