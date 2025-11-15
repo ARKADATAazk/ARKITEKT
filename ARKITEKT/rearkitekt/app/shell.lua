@@ -106,22 +106,26 @@ local function load_fonts(ctx, font_cfg)
     titlebar_version_font = default_font
   end
 
+  -- TEMPORARILY DISABLED: Icon font loading causing issues
+  -- Need to debug why remixicon is taking over all fonts
   local icons_font = nil
-  if font_cfg.icons then
-    if exists(I) then
-      -- Load icon font without size (size specified in PushFont)
-      icons_font = ImGui.CreateFontFromFile(I)
-      if icons_font then
-        reaper.ShowConsoleMsg(string.format("[Shell] Icon font loaded: %s (obj: %s)\n", I, tostring(icons_font)))
-      else
-        reaper.ShowConsoleMsg(string.format("[Shell] ERROR: Icon font failed to load: %s\n", I))
-        icons_font = default_font
-      end
-    else
-      reaper.ShowConsoleMsg(string.format("[Shell] WARNING: Icon font file not found: %s\n", I))
-      icons_font = default_font
-    end
-  end
+  -- if font_cfg.icons then
+  --   if exists(I) then
+  --     -- Load icon font without size (size specified in PushFont)
+  --     icons_font = ImGui.CreateFontFromFile(I)
+  --     if icons_font then
+  --       reaper.ShowConsoleMsg(string.format("[Shell] Icon font loaded: %s (obj: %s)\n", I, tostring(icons_font)))
+  --     else
+  --       reaper.ShowConsoleMsg(string.format("[Shell] ERROR: Icon font failed to load: %s\n", I))
+  --       icons_font = default_font
+  --     end
+  --   else
+  --     reaper.ShowConsoleMsg(string.format("[Shell] WARNING: Icon font file not found: %s\n", I))
+  --     icons_font = default_font
+  --   end
+  -- end
+
+  reaper.ShowConsoleMsg(string.format("[Shell] DEBUG: default_font = %s, icons_font = %s\n", tostring(default_font), tostring(icons_font)))
 
   -- Note: Each font file is loaded only ONCE
   -- Different sizes are achieved by passing size to PushFont(ctx, font, size)
