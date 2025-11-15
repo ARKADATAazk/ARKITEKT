@@ -102,9 +102,14 @@ end
 
 function M.handle_shortcuts(grid, ctx)
   if not grid.behaviors then return false end
-  
+
+  -- Block shortcuts when mouse is over any popup/modal window
+  if ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow) then
+    return false
+  end
+
   grid.shortcut_state = grid.shortcut_state or {}
-  
+
   for _, shortcut in ipairs(M.SHORTCUT_REGISTRY) do
     if M.is_shortcut_pressed(ctx, shortcut, grid.shortcut_state) then
       local behavior = grid.behaviors[shortcut.name]
@@ -115,17 +120,22 @@ function M.handle_shortcuts(grid, ctx)
       end
     end
   end
-  
+
   M.reset_shortcut_states(ctx, grid.shortcut_state)
   return false
 end
 
 function M.handle_wheel_input(grid, ctx, items)
   if not grid.behaviors or not grid.behaviors.wheel_adjust then return false end
-  
+
+  -- Block wheel input when mouse is over any popup/modal window
+  if ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow) then
+    return false
+  end
+
   local wheel_y = ImGui.GetMouseWheel(ctx)
   if wheel_y == 0 then return false end
-  
+
   local item, key, is_selected = M.find_hovered_item(grid, ctx, items)
   if not item or not key then return false end
   
@@ -144,10 +154,11 @@ function M.handle_wheel_input(grid, ctx, items)
 end
 
 function M.handle_tile_input(grid, ctx, item, rect)
-  if ImGui.IsPopupOpen(ctx, "", ImGui.PopupFlags_AnyPopupId) then
+  -- Block tile input when mouse is over any popup/modal window
+  if ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow) then
     return false
   end
-  
+
   if not M.is_rect_in_grid_bounds(grid, rect) then
     return false
   end
