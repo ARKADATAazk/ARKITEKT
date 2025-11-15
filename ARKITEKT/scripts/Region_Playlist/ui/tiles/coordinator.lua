@@ -646,11 +646,18 @@ end
 function RegionTiles:is_modal_blocking(ctx)
   -- Check if custom overlay modal is open (overflow tabs picker)
   local overflow_active = self.active_container and self.active_container:is_overflow_visible()
-  if overflow_active then return true end
+  if overflow_active then
+    reaper.ShowConsoleMsg("MODAL BLOCKING: overflow active\n")
+    return true
+  end
 
   -- Check if any ImGui popup is open (context menus, etc)
   if ctx then
-    return ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
+    local popup_open = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
+    if popup_open then
+      reaper.ShowConsoleMsg("MODAL BLOCKING: popup open\n")
+      return true
+    end
   end
 
   return false

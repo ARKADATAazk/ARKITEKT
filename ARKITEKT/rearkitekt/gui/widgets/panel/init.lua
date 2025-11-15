@@ -355,6 +355,11 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     local hovered = false
     local active = false
 
+    -- DEBUG: Print blocking state
+    if is_blocking then
+      reaper.ShowConsoleMsg("BLOCKING: " .. unique_id .. "\n")
+    end
+
     if not is_blocking then
       hovered = ImGui.IsMouseHoveringRect(ctx, btn_x, btn_y, btn_x + size, btn_y + size)
       active = hovered and ImGui.IsMouseDown(ctx, 0)
