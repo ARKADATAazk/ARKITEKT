@@ -415,11 +415,12 @@ function TransportView:draw(ctx, shell_state, is_blocking)
   local view_x = transport_start_x + 8
   local view_y = transport_start_y + (transport_height - view_mode_size) / 2
 
+  -- Use window drawlist (not foreground) so context menus appear above button
   self.view_mode_button:draw(ctx, view_x, view_y, self.state.get_layout_mode(), function()
     local new_mode = (self.state.get_layout_mode() == 'horizontal') and 'vertical' or 'horizontal'
     self.state.set_layout_mode(new_mode)
     self.state.persist_ui_prefs()
-  end, true, is_blocking)
+  end, false, is_blocking)
 
   ImGui.SetCursorScreenPos(ctx, transport_start_x, transport_start_y + transport_height)
 end

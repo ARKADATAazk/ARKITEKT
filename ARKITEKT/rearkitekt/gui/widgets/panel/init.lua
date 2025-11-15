@@ -724,14 +724,14 @@ function Panel:end_draw(ctx)
     end
   end
 
-  -- Draw corner buttons on foreground (above panel content)
-  -- Modals will block interaction via their own capture logic
+  -- Draw corner buttons on window drawlist (above tiles, below popups)
+  -- Using window drawlist ensures proper z-order: tiles < buttons < context menus/popups
   if self._corner_button_bounds then
     local header_cfg = self.config.header
     if not header_cfg.enabled or self.config.corner_buttons_always_visible then
-      local fg_dl = ImGui.GetForegroundDrawList(ctx)
+      local dl = ImGui.GetWindowDrawList(ctx)
       local x1, y1, w, h = table.unpack(self._corner_button_bounds)
-      draw_corner_buttons_foreground(ctx, fg_dl, x1, y1, w, h, self.config, self.id, self.config.rounding)
+      draw_corner_buttons_foreground(ctx, dl, x1, y1, w, h, self.config, self.id, self.config.rounding)
     end
   end
 
