@@ -255,8 +255,9 @@ function Grid:draw(ctx)
       local key = self.key(item)
       local rect = self.rect_track:get(key)
       if rect then
-        -- Convert screen space to content space
-        local item_content_y = rect[2] - origin_y + scroll_y
+        -- Item's position in content space (relative to content origin)
+        local item_content_y = rect[2] - origin_y
+        -- Distance from current scroll position
         local dist = math.abs(item_content_y - scroll_y)
         if dist < min_dist then
           min_dist = dist
@@ -342,8 +343,8 @@ function Grid:draw(ctx)
     local new_rect = self.rect_track:get(key)
 
     if new_rect then
-      -- Convert new position to content space
-      local new_item_content_y = new_rect[2] - origin_y + ImGui.GetScrollY(ctx)
+      -- Item's new position in content space
+      local new_item_content_y = new_rect[2] - origin_y
       -- We want item to be at same offset from scroll position
       local desired_scroll_y = new_item_content_y - anchor_offset_from_scroll
 
