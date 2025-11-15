@@ -67,18 +67,23 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
   local icon_x = (x + (btn_size - 20) / 2 + 0.5)//1
   local icon_y = (y + (btn_size - 20) / 2 + 0.5)//1
   self:draw_icon(ctx, dl, icon_x, icon_y, current_mode)
-  
+
+  -- Check if modal/popup is blocking interaction
+  local any_popup_open = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId + ImGui.PopupFlags_AnyPopupLevel)
+
   -- Use manual click detection when on foreground drawlist (outside child context)
   if use_foreground_drawlist then
-    if is_hovered and ImGui.IsMouseClicked(ctx, 0) and on_click then
+    if not any_popup_open and is_hovered and ImGui.IsMouseClicked(ctx, 0) and on_click then
       on_click()
     end
   else
-    ImGui.SetCursorScreenPos(ctx, x, y)
-    ImGui.InvisibleButton(ctx, "##view_mode_toggle", btn_size, btn_size)
-    
-    if ImGui.IsItemClicked(ctx, 0) and on_click then
-      on_click()
+    if not any_popup_open then
+      ImGui.SetCursorScreenPos(ctx, x, y)
+      ImGui.InvisibleButton(ctx, "##view_mode_toggle", btn_size, btn_size)
+
+      if ImGui.IsItemClicked(ctx, 0) and on_click then
+        on_click()
+      end
     end
   end
   
@@ -145,12 +150,17 @@ function SimpleToggleButton:draw(ctx, x, y, state, on_click, color)
   local text_color = state and hexrgb("#FFFFFF") or hexrgb("#999999")
   local tw, th = ImGui.CalcTextSize(ctx, self.label)
   ImGui.DrawList_AddText(dl, x + (self.width - tw) / 2, y + (self.height - th) / 2, text_color, self.label)
-  
-  ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, self.id, self.width, self.height)
-  
-  if ImGui.IsItemClicked(ctx, 0) and on_click then
-    on_click(not state)
+
+  -- Block interaction if modal/popup is open
+  local any_popup_open = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId + ImGui.PopupFlags_AnyPopupLevel)
+
+  if not any_popup_open then
+    ImGui.SetCursorScreenPos(ctx, x, y)
+    ImGui.InvisibleButton(ctx, self.id, self.width, self.height)
+
+    if ImGui.IsItemClicked(ctx, 0) and on_click then
+      on_click(not state)
+    end
   end
   
   return self.width
