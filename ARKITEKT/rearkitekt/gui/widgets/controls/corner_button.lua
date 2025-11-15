@@ -112,9 +112,11 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
   local config = Style.apply_defaults(Style.BUTTON, user_config)
   local inst = get_instance(unique_id)
 
-  -- CRITICAL: Check if mouse is over ANY window to prevent click leaking
-  local mouse_over_window = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
-  local is_blocking = config.is_blocking or mouse_over_window
+  -- CRITICAL: Check if mouse is over a child/popup window (not just root)
+  local is_over_any = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
+  local is_over_root = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_RootWindow)
+  local mouse_over_popup = is_over_any and not is_over_root
+  local is_blocking = config.is_blocking or mouse_over_popup
   local hovered = false
   local active = false
 

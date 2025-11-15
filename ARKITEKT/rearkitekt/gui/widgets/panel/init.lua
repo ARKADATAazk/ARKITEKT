@@ -350,10 +350,12 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     -- Apply style defaults
     local cfg = Style.apply_defaults(Style.BUTTON, button_config)
 
-    -- CRITICAL: Foreground elements must manually check if mouse is over ANY window
-    -- to prevent clicks from leaking through popups/modals
-    local mouse_over_window = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
-    local is_blocking = cfg.is_blocking or mouse_over_window
+    -- CRITICAL: Foreground elements must check if mouse is over a child/popup window
+    -- AnyWindow includes root, so we check: is_any AND NOT is_root = popup blocking
+    local is_over_any = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
+    local is_over_root = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_RootWindow)
+    local mouse_over_popup = is_over_any and not is_over_root
+    local is_blocking = cfg.is_blocking or mouse_over_popup
     local hovered = false
     local active = false
 
