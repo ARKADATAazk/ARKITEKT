@@ -438,9 +438,19 @@ function Grid:draw(ctx)
   if self.panel_clip_bounds then
     self.visual_bounds = self.panel_clip_bounds
   else
-    -- CRITICAL FIX: Use avail_h (visible height) not bg_height (total grid height)
-    -- This makes viewport culling actually work for thousands of items
-    self.visual_bounds = {origin_x, origin_y, origin_x + avail_w, origin_y + avail_h}
+    -- CRITICAL FIX: Calculate actual visible viewport in screen space
+    -- origin_y changes when scrolling (becomes negative), so we need fixed window coords
+    local content_min_x, content_min_y = ImGui.GetWindowContentRegionMin(ctx)
+    local content_max_x, content_max_y = ImGui.GetWindowContentRegionMax(ctx)
+    local window_x, window_y = ImGui.GetWindowPos(ctx)
+
+    -- Convert content region to screen space
+    self.visual_bounds = {
+      window_x + content_min_x,
+      window_y + content_min_y,
+      window_x + content_max_x,
+      window_y + content_max_y
+    }
   end
   
   self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
