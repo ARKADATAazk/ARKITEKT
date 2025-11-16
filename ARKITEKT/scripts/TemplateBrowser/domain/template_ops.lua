@@ -5,7 +5,7 @@
 local M = {}
 
 -- Apply template to selected track(s)
-function M.apply_to_selected_track(template_path)
+function M.apply_to_selected_track(template_path, template_uuid, state)
   local track_count = reaper.CountSelectedTracks(0)
 
   if track_count == 0 then
@@ -39,11 +39,24 @@ function M.apply_to_selected_track(template_path)
   reaper.Undo_EndBlock("Apply Track Template", -1)
   reaper.UpdateArrange()
 
+  -- Track usage
+  if template_uuid and state and state.metadata then
+    local tmpl_metadata = state.metadata.templates[template_uuid]
+    if tmpl_metadata then
+      tmpl_metadata.usage_count = (tmpl_metadata.usage_count or 0) + 1
+      tmpl_metadata.last_used = os.time()
+
+      -- Save metadata
+      local Persistence = require('TemplateBrowser.domain.persistence')
+      Persistence.save_metadata(state.metadata)
+    end
+  end
+
   return true
 end
 
 -- Insert template as new track(s)
-function M.insert_as_new_track(template_path)
+function M.insert_as_new_track(template_path, template_uuid, state)
   reaper.Undo_BeginBlock()
 
   -- Get insertion point (after selected track, or at end)
@@ -92,6 +105,19 @@ function M.insert_as_new_track(template_path)
   reaper.Undo_EndBlock("Insert Track Template", -1)
   reaper.UpdateArrange()
   reaper.TrackList_AdjustWindows(false)
+
+  -- Track usage
+  if template_uuid and state and state.metadata then
+    local tmpl_metadata = state.metadata.templates[template_uuid]
+    if tmpl_metadata then
+      tmpl_metadata.usage_count = (tmpl_metadata.usage_count or 0) + 1
+      tmpl_metadata.last_used = os.time()
+
+      -- Save metadata
+      local Persistence = require('TemplateBrowser.domain.persistence')
+      Persistence.save_metadata(state.metadata)
+    end
+  end
 
   return true
 end

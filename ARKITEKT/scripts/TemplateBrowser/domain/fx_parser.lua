@@ -81,8 +81,6 @@ function M.parse_template_fx(filepath)
         if fx_name and not fx_set[fx_name] then
           fx_set[fx_name] = true
           table.insert(fx_list, fx_name)
-          -- Debug logging
-          reaper.ShowConsoleMsg("FX Parser: Found " .. fx_name .. " in " .. filepath .. "\n")
         end
       end
     end

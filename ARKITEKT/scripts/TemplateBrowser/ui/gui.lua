@@ -626,6 +626,17 @@ local function draw_left_panel(ctx, state, config, width, height)
   local was_vsts = (state.left_panel_tab == "vsts")
   local was_tags = (state.left_panel_tab == "tags")
 
+  -- Count active filters
+  local fx_filter_count = 0
+  for _ in pairs(state.filter_fx) do
+    fx_filter_count = fx_filter_count + 1
+  end
+
+  local tag_filter_count = 0
+  for _ in pairs(state.filter_tags) do
+    tag_filter_count = tag_filter_count + 1
+  end
+
   -- DIRECTORY tab
   if was_directory then
     ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
@@ -640,10 +651,11 @@ local function draw_left_panel(ctx, state, config, width, height)
   ImGui.SameLine(ctx)
 
   -- VSTS tab
+  local vsts_label = fx_filter_count > 0 and string.format("VSTS (%d)", fx_filter_count) or "VSTS"
   if was_vsts then
     ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
   end
-  if ImGui.Button(ctx, "VSTS", tab_width - 2, 24) then
+  if ImGui.Button(ctx, vsts_label, tab_width - 2, 24) then
     state.left_panel_tab = "vsts"
   end
   if was_vsts then
@@ -653,10 +665,11 @@ local function draw_left_panel(ctx, state, config, width, height)
   ImGui.SameLine(ctx)
 
   -- TAGS tab
+  local tags_label = tag_filter_count > 0 and string.format("TAGS (%d)", tag_filter_count) or "TAGS"
   if was_tags then
     ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
   end
-  if ImGui.Button(ctx, "TAGS", tab_width - 2, 24) then
+  if ImGui.Button(ctx, tags_label, tab_width - 2, 24) then
     state.left_panel_tab = "tags"
   end
   if was_tags then
@@ -757,15 +770,64 @@ local function draw_template_panel(ctx, state, config, width, height)
 
   if has_filters then
     ImGui.NewLine(ctx)  -- End the chip line
+
+    -- Clear all filters button
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(0.6, 0.3, 0.3, 1.0))
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, ImGui.ColorConvertDouble4ToU32(0.7, 0.4, 0.4, 1.0))
+    if ImGui.SmallButton(ctx, "Clear All Filters") then
+      -- Clear all FX filters
+      state.filter_fx = {}
+      -- Clear all tag filters
+      state.filter_tags = {}
+      -- Re-filter
+      local Scanner = require('TemplateBrowser.domain.scanner')
+      Scanner.filter_templates(state)
+    end
+    ImGui.PopStyleColor(ctx, 2)
+
     ImGui.Spacing(ctx)
   end
 
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- Template count
+  -- Template count and sort selector
   local count = #state.filtered_templates
   ImGui.Text(ctx, string.format("%d template%s", count, count == 1 and "" or "s"))
+
+  ImGui.SameLine(ctx)
+  ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 10)
+  ImGui.Text(ctx, "Sort:")
+  ImGui.SameLine(ctx)
+
+  -- Sort mode combo box
+  local sort_modes = {"Alphabetical", "Most Used", "Recently Added", "Color"}
+  local sort_mode_values = {"alphabetical", "usage", "insertion", "color"}
+  local current_idx = 1
+  for i, mode_val in ipairs(sort_mode_values) do
+    if state.sort_mode == mode_val then
+      current_idx = i
+      break
+    end
+  end
+
+  ImGui.SetNextItemWidth(ctx, 130)
+  if ImGui.BeginCombo(ctx, "##sort", sort_modes[current_idx]) then
+    for i, mode_label in ipairs(sort_modes) do
+      local is_selected = (current_idx == i)
+      if ImGui.Selectable(ctx, mode_label, is_selected) then
+        state.sort_mode = sort_mode_values[i]
+        -- Re-filter to apply new sort
+        local Scanner = require('TemplateBrowser.domain.scanner')
+        Scanner.filter_templates(state)
+      end
+      if is_selected then
+        ImGui.SetItemDefaultFocus(ctx)
+      end
+    end
+    ImGui.EndCombo(ctx)
+  end
+
   ImGui.Separator(ctx)
 
   -- Template list
@@ -853,7 +915,7 @@ local function draw_template_panel(ctx, state, config, width, height)
           state.rename_buffer = tmpl.name
         else
           -- Apply
-          TemplateOps.apply_to_selected_track(tmpl.path)
+          TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
         end
       end
 
@@ -1001,12 +1063,12 @@ local function draw_info_panel(ctx, state, config, width, height)
     -- Actions
     if ImGui.Button(ctx, "Apply to Selected Track", -1, 32) then
       reaper.ShowConsoleMsg("Applying template: " .. tmpl.name .. "\n")
-      TemplateOps.apply_to_selected_track(tmpl.path)
+      TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
     end
 
     if ImGui.Button(ctx, "Insert as New Track", -1, 32) then
       reaper.ShowConsoleMsg("Inserting template as new track: " .. tmpl.name .. "\n")
-      TemplateOps.insert_as_new_track(tmpl.path)
+      TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
     end
 
     if ImGui.Button(ctx, "Rename (F2)", -1, 32) then

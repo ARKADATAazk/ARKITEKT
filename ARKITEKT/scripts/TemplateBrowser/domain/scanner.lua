@@ -106,7 +106,9 @@ local function scan_directory(path, relative_path, metadata)
           notes = "",
           fx = {},
           created = os.time(),
-          last_seen = os.time()
+          last_seen = os.time(),
+          usage_count = 0,
+          last_used = nil
         }
 
         -- Only set file_size if we successfully read it
@@ -284,9 +286,6 @@ function M.filter_templates(state)
     tag_filter_count = tag_filter_count + 1
   end
 
-  reaper.ShowConsoleMsg(string.format("Filtering: selected_folder='%s', search='%s', fx_filters=%d, tag_filters=%d\n",
-    state.selected_folder or "nil", state.search_query, fx_filter_count, tag_filter_count))
-
   for _, tmpl in ipairs(state.templates) do
     local matches = true
 
@@ -354,7 +353,39 @@ function M.filter_templates(state)
     end
   end
 
-  reaper.ShowConsoleMsg(string.format("Filtered: %d -> %d templates\n", #state.templates, #filtered))
+  -- Sort filtered templates based on sort mode
+  if state.sort_mode == "alphabetical" then
+    table.sort(filtered, function(a, b)
+      return a.name:lower() < b.name:lower()
+    end)
+  elseif state.sort_mode == "usage" then
+    table.sort(filtered, function(a, b)
+      local a_usage = (state.metadata and state.metadata.templates[a.uuid] and state.metadata.templates[a.uuid].usage_count) or 0
+      local b_usage = (state.metadata and state.metadata.templates[b.uuid] and state.metadata.templates[b.uuid].usage_count) or 0
+      if a_usage == b_usage then
+        -- Tie-breaker: alphabetical
+        return a.name:lower() < b.name:lower()
+      end
+      return a_usage > b_usage  -- Most used first
+    end)
+  elseif state.sort_mode == "insertion" then
+    table.sort(filtered, function(a, b)
+      local a_created = (state.metadata and state.metadata.templates[a.uuid] and state.metadata.templates[a.uuid].created) or 0
+      local b_created = (state.metadata and state.metadata.templates[b.uuid] and state.metadata.templates[b.uuid].created) or 0
+      if a_created == b_created then
+        -- Tie-breaker: alphabetical
+        return a.name:lower() < b.name:lower()
+      end
+      return a_created > b_created  -- Most recent first
+    end)
+  elseif state.sort_mode == "color" then
+    -- TODO: Sort by color when color metadata is added
+    -- For now, fall back to alphabetical
+    table.sort(filtered, function(a, b)
+      return a.name:lower() < b.name:lower()
+    end)
+  end
+
   state.filtered_templates = filtered
 end
 
