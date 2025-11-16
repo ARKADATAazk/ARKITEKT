@@ -36,8 +36,8 @@ function M.new(State, AppConfig, settings)
   }, DebugView)
 
   -- Initialize image cache using ARKITEKT's system
-  -- Use small budget (3 images per frame) for progressive loading without UI freeze
-  self.image_cache = ImageCache.new({ budget = 3, no_crop = true })
+  -- Use moderate budget (12 images per frame) for progressive loading without UI freeze
+  self.image_cache = ImageCache.new({ budget = 12, no_crop = true })
 
   -- Create container (Panel) with header
   local container_config = self:create_container_config()

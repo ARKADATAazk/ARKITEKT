@@ -101,9 +101,11 @@ function M.new(opts)
   opts = opts or {}
   local self = setmetatable({
     _cache        = {},
+    _cache_order  = {},  -- Track insertion order for LRU
     _creates_left = 0,
     _budget       = math.max(0, tonumber(opts.budget or 48)),
-    _no_crop      = opts.no_crop == true,  -- <— NEW: bypass slicing when true
+    _max_cache    = tonumber(opts.max_cache or 200),  -- Max cached images
+    _no_crop      = opts.no_crop == true,
   }, Cache)
   return self
 end
@@ -112,11 +114,24 @@ function Cache:begin_frame()
   self._creates_left = self._budget
 end
 
+-- Evict oldest cached images if over limit
+function Cache:evict_if_needed()
+  while #self._cache_order > self._max_cache do
+    local oldest_path = table.remove(self._cache_order, 1)
+    local rec = self._cache[oldest_path]
+    if rec and rec.img then
+      destroy_image(rec.img)
+    end
+    self._cache[oldest_path] = nil
+  end
+end
+
 function Cache:clear()
   for _, rec in pairs(self._cache) do
     if rec and rec.img then destroy_image(rec.img) end
   end
   self._cache = {}
+  self._cache_order = {}
   collectgarbage('collect')
 end
 
@@ -124,6 +139,14 @@ function Cache:unload(path)
   local rec = self._cache[path]
   if rec and rec.img then destroy_image(rec.img) end
   self._cache[path] = nil
+
+  -- Remove from cache order
+  for i, p in ipairs(self._cache_order) do
+    if p == path then
+      table.remove(self._cache_order, i)
+      break
+    end
+  end
 end
 
 function Cache:set_no_crop(b)
@@ -168,17 +191,22 @@ local function ensure_record(self, path)
     end
   end
   
-  rec = { 
-    img = img, 
-    w = w, 
+  rec = {
+    img = img,
+    w = w,
     h = h,
     src_x = src_x,
-    src_y = src_y, 
+    src_y = src_y,
     src_w = src_w,
     src_h = src_h
   }
   self._cache[path] = rec
   self._creates_left = self._creates_left - 1
+
+  -- Track in LRU order
+  table.insert(self._cache_order, path)
+  self:evict_if_needed()
+
   return rec
 end
 
@@ -187,20 +215,36 @@ local function validate_record(self, path, rec)
     return ensure_record(self, path)
   end
 
+  -- Check if userdata is still valid type
   if type(rec.img) ~= "userdata" then
-    pcall(destroy_image, rec.img)
     self._cache[path] = nil
+    -- Remove from cache order
+    for i, p in ipairs(self._cache_order) do
+      if p == path then
+        table.remove(self._cache_order, i)
+        break
+      end
+    end
     return ensure_record(self, path)
   end
 
+  -- Try to validate the image size, but silently fail if invalid
+  -- (avoiding error spam when images are evicted from cache)
   local ok, w, h = pcall(ImGui.Image_GetSize, rec.img)
   if ok and w and h and w > 0 and h > 0 then
     rec.w, rec.h = w, h
     return rec
   end
-  
-  pcall(destroy_image, rec.img)
+
+  -- Image is invalid (evicted or destroyed), clear and recreate
   self._cache[path] = nil
+  -- Remove from cache order
+  for i, p in ipairs(self._cache_order) do
+    if p == path then
+      table.remove(self._cache_order, i)
+      break
+    end
+  end
   return ensure_record(self, path)
 end
 
