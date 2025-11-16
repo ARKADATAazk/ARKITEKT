@@ -159,8 +159,10 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
       ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
         size = picker_size,
         on_change = function(color)
+          reaper.ShowConsoleMsg("[Active Picker] on_change called with color: " .. tostring(color) .. "\n")
           if self.active_grid and self.active_grid.selection and self.controller then
             local selected_keys = self.active_grid.selection:selected_keys()
+            reaper.ShowConsoleMsg("[Active Picker] Selected keys: " .. #selected_keys .. "\n")
             local rids = {}
             local playlist_ids = {}
 
@@ -175,11 +177,14 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
               end
             end
 
+            reaper.ShowConsoleMsg("[Active Picker] RIDs to recolor: " .. #rids .. "\n")
             if #rids > 0 then
-              self.controller:set_region_colors_batch(rids, color)
+              local count = self.controller:set_region_colors_batch(rids, color)
+              reaper.ShowConsoleMsg("[Active Picker] Recolored count: " .. tostring(count) .. "\n")
             end
             for _, playlist_id in ipairs(playlist_ids) do
               self.controller:set_playlist_color(playlist_id, color)
+              reaper.ShowConsoleMsg("[Active Picker] Recolored playlist: " .. tostring(playlist_id) .. "\n")
             end
           end
         end,
@@ -381,9 +386,11 @@ function M.draw_pool(self, ctx, regions, height)
       ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
         size = picker_size,
         on_change = function(color)
+          reaper.ShowConsoleMsg("[Pool Picker] on_change called with color: " .. tostring(color) .. "\n")
           -- Recolor Active grid selections (not Pool selections)
           if self.active_grid and self.active_grid.selection and self.controller then
             local selected_keys = self.active_grid.selection:selected_keys()
+            reaper.ShowConsoleMsg("[Pool Picker] Active grid selected keys: " .. #selected_keys .. "\n")
             local rids = {}
             local playlist_ids = {}
 
@@ -398,11 +405,14 @@ function M.draw_pool(self, ctx, regions, height)
               end
             end
 
+            reaper.ShowConsoleMsg("[Pool Picker] RIDs to recolor: " .. #rids .. "\n")
             if #rids > 0 then
-              self.controller:set_region_colors_batch(rids, color)
+              local count = self.controller:set_region_colors_batch(rids, color)
+              reaper.ShowConsoleMsg("[Pool Picker] Recolored count: " .. tostring(count) .. "\n")
             end
             for _, playlist_id in ipairs(playlist_ids) do
               self.controller:set_playlist_color(playlist_id, color)
+              reaper.ShowConsoleMsg("[Pool Picker] Recolored playlist: " .. tostring(playlist_id) .. "\n")
             end
           end
         end,
