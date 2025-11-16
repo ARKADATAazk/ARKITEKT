@@ -923,14 +923,17 @@ local function draw_template_panel(ctx, gui, width, height)
   -- Add dummy item to establish proper window boundaries after grid's SetCursorPos usage
   ImGui.Dummy(ctx, 0, 0)
 
-  -- Context menu with color picker (triggered by grid's right_click)
+  ImGui.EndChild(ctx)  -- End TemplatePanel child
+end
+
+-- Draw template context menu (color picker)
+local function draw_template_context_menu(ctx, state)
+  -- Context menu with color picker (MUST be outside BeginChild for popups to work)
   if state.context_menu_template then
-    ImGui.OpenPopup(ctx, "##template_color_picker")
-    -- Clear the trigger after opening to prevent repeated opens
-    state.context_menu_opening = true
+    ImGui.OpenPopup(ctx, "template_color_picker")
   end
 
-  if ImGui.BeginPopup(ctx, "##template_color_picker") then
+  if ImGui.BeginPopup(ctx, "template_color_picker") then
     local tmpl = state.context_menu_template
     if tmpl then
       ImGui.Text(ctx, "Set Template Color")
@@ -965,7 +968,6 @@ local function draw_template_panel(ctx, gui, width, height)
             Persistence.save_metadata(state.metadata)
           end
           state.context_menu_template = nil
-          state.context_menu_opening = false
           ImGui.CloseCurrentPopup(ctx)
         end
 
@@ -1000,22 +1002,16 @@ local function draw_template_panel(ctx, gui, width, height)
           Persistence.save_metadata(state.metadata)
         end
         state.context_menu_template = nil
-        state.context_menu_opening = false
         ImGui.CloseCurrentPopup(ctx)
       end
     end
 
     ImGui.EndPopup(ctx)
-  elseif not state.context_menu_opening then
-    -- Only clear if we're not in the process of opening
-    state.context_menu_template = nil
   end
+end
 
-  -- Reset opening flag after first frame
-  if state.context_menu_opening and not state.context_menu_template then
-    state.context_menu_opening = false
-  end
-
+-- Draw template rename modal
+local function draw_template_rename_modal(ctx, state)
   -- Rename modal popup (for F2 or Ctrl+double-click)
   if state.renaming_item and state.renaming_type == "template" then
     ImGui.OpenPopup(ctx, "Rename Template")
@@ -1089,8 +1085,6 @@ local function draw_template_panel(ctx, gui, width, height)
 
     ImGui.EndPopup(ctx)
   end
-
-  ImGui.EndChild(ctx)
 end
 
 -- Draw info & tag assignment panel (right)
@@ -1390,6 +1384,10 @@ function GUI:draw(ctx, shell_state)
   -- Right panel: Info & Tag Assignment
   ImGui.SetCursorPos(ctx, sep2_x_local + separator_thickness / 2, cursor_y)
   draw_info_panel(ctx, self.state, self.config, info_width, panel_height)
+
+  -- Template context menu and rename modal (must be drawn outside panels)
+  draw_template_context_menu(ctx, self.state)
+  draw_template_rename_modal(ctx, self.state)
 
   -- Handle exit
   if self.state.exit or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
