@@ -18,6 +18,36 @@ local function get_data_dir()
   return data_dir
 end
 
+-- Log to file for debugging
+local log_file_handle = nil
+function M.log(message)
+  if not log_file_handle then
+    local data_dir = get_data_dir()
+    local sep = package.config:sub(1,1)
+    local log_path = data_dir .. sep .. "debug.log"
+    log_file_handle = io.open(log_path, "w")  -- Overwrite on first open
+    if log_file_handle then
+      log_file_handle:write("=== TemplateBrowser Debug Log ===\n")
+      log_file_handle:write(os.date("%Y-%m-%d %H:%M:%S") .. "\n\n")
+    end
+  end
+
+  if log_file_handle then
+    log_file_handle:write(message .. "\n")
+    log_file_handle:flush()  -- Ensure it's written immediately
+  end
+
+  -- Also log to console
+  reaper.ShowConsoleMsg(message .. "\n")
+end
+
+function M.close_log()
+  if log_file_handle then
+    log_file_handle:close()
+    log_file_handle = nil
+  end
+end
+
 -- Generate a UUID
 local function generate_uuid()
   local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
@@ -271,13 +301,13 @@ function M.find_template(metadata, uuid, name, path)
   -- Debug: log first failed lookup
   if not M._logged_first_miss then
     M._logged_first_miss = true
-    reaper.ShowConsoleMsg("DEBUG find_template: Looking for name='" .. tostring(name) .. "', path='" .. tostring(path) .. "'\n")
+    M.log("DEBUG find_template: Looking for name='" .. tostring(name) .. "', path='" .. tostring(path) .. "'")
 
-    -- Show first 3 templates from metadata for comparison
+    -- Show first 5 templates from metadata for comparison
     local count = 0
     for _, tmpl in pairs(metadata.templates) do
-      if count < 3 then
-        reaper.ShowConsoleMsg("  Metadata has: name='" .. tostring(tmpl.name) .. "', path='" .. tostring(tmpl.path) .. "'\n")
+      if count < 5 then
+        M.log("  Metadata has: name='" .. tostring(tmpl.name) .. "', path='" .. tostring(tmpl.path) .. "'")
         count = count + 1
       else
         break

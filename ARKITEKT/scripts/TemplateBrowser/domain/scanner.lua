@@ -246,7 +246,10 @@ function M.scan_templates(state)
       template_count = template_count + 1
     end
   end
-  reaper.ShowConsoleMsg("DEBUG: Loaded metadata with " .. template_count .. " templates\n")
+  local sep = package.config:sub(1,1)
+  Persistence.log("=== Scanning Templates ===")
+  Persistence.log("Path separator: '" .. sep .. "' (ASCII: " .. string.byte(sep) .. ")")
+  Persistence.log("Loaded metadata with " .. template_count .. " templates")
 
   -- Scan with UUID tracking (FX parsing is deferred to background queue)
   local templates, folders = scan_directory(template_path, "", metadata)
