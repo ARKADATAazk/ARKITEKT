@@ -129,7 +129,9 @@ function M.GetProjectSamples(settings, state)
     ::count_next_track::
   end
 
-  -- Second pass: collect items with pool counts
+  -- Second pass: collect items with pool counts (only first instance of pooled items)
+  local collected_sources = {}  -- Track which sources we've already collected
+
   for key, track in pairs(all_tracks) do
     if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
       goto next_track
@@ -157,6 +159,14 @@ function M.GetProjectSamples(settings, state)
           goto next_item
         end
 
+        -- Get source pointer for pooling check
+        local source_ptr = tostring(source)
+
+        -- Skip if we've already collected an item with this source (pooled items)
+        if collected_sources[source_ptr] then
+          goto next_item
+        end
+
         if not samples[filename] then
           table.insert(sample_indexes, filename)
           samples[filename] = {}
@@ -174,7 +184,6 @@ function M.GetProjectSamples(settings, state)
         local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
 
         -- Get pool count for this source
-        local source_ptr = tostring(source)
         local pool_count = source_pool_counts[source_ptr] or 1
 
         table.insert(samples[filename], {
@@ -185,6 +194,9 @@ function M.GetProjectSamples(settings, state)
           uuid = UUID.generate(),
           pool_count = pool_count
         })
+
+        -- Mark this source as collected
+        collected_sources[source_ptr] = true
       end
       ::next_item::
     end
@@ -233,7 +245,9 @@ function M.GetProjectMIDI(settings, state)
     ::count_next_track::
   end
 
-  -- Second pass: collect items with pool counts
+  -- Second pass: collect items with pool counts (only first instance of pooled items)
+  local collected_midi = {}  -- Track which MIDI data we've already collected
+
   for key, track in pairs(all_tracks) do
     if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") == 0 or M.IsParentFrozen(track, state.track_chunks) == true then
       goto next_track
@@ -260,6 +274,12 @@ function M.GetProjectMIDI(settings, state)
         end
 
         local _, midi = reaper.MIDI_GetAllEvts(take)
+
+        -- Skip if we've already collected an item with this MIDI data (pooled items)
+        if collected_midi[midi] then
+          goto next_item
+        end
+
         for key, _item in pairs(track_midi) do
           local _, _midi = reaper.MIDI_GetAllEvts(reaper.GetActiveTake(_item[1]))
           if midi == _midi then
@@ -294,6 +314,9 @@ function M.GetProjectMIDI(settings, state)
           -- Grouped mode: collect items by track
           table.insert(track_midi, item_data)
         end
+
+        -- Mark this MIDI data as collected
+        collected_midi[midi] = true
       end
       ::next_item::
     end
