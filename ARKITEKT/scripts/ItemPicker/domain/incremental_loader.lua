@@ -132,7 +132,7 @@ function M.process_batch(loader, state, settings)
 end
 
 function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
-  local UUID = require('ItemPicker.domain.uuid')
+  local UUID = require('rearkitekt.core.uuid')
   local take = reaper.GetActiveTake(item)
 
   local source = reaper.GetMediaItemTake_Source(take)
@@ -170,7 +170,7 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
 end
 
 function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
-  local UUID = require('ItemPicker.domain.uuid')
+  local UUID = require('rearkitekt.core.uuid')
   local settings = state.settings or {}
 
   local track_guid = reaper.GetTrackGUID(track)
