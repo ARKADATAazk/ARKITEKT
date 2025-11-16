@@ -216,8 +216,12 @@ end
 function Controller:set_region_color(rid, color)
   local Regions = require('rearkitekt.reaper.regions')
 
+  reaper.ShowConsoleMsg(string.format("Controller:set_region_color(%d, %08X)\n", rid, color))
+
   -- Set color in Reaper (this updates the timeline immediately)
   local success = Regions.set_region_color(0, rid, color)
+
+  reaper.ShowConsoleMsg(string.format("  -> Regions.set_region_color returned: %s\n", tostring(success)))
 
   if success then
     -- Force engine state refresh to update UI cache
