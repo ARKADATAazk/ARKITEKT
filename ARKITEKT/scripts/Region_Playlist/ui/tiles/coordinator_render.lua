@@ -152,6 +152,10 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
 
+    -- Remove padding around child region
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
+
     -- Wrap in a child region to ensure proper input handling
     local child_flags = ImGui.ChildFlags_None
     if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size, child_flags) then
@@ -195,6 +199,8 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
       })
       ImGui.EndChild(ctx)
     end
+
+    ImGui.PopStyleVar(ctx, 2)
   end
 
   -- Actions context menu
@@ -366,6 +372,10 @@ function M.draw_pool(self, ctx, regions, height)
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
 
+    -- Remove padding around child region
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
+
     -- Wrap in a child region to ensure proper input handling
     local child_flags = ImGui.ChildFlags_None
     if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size, child_flags) then
@@ -409,6 +419,8 @@ function M.draw_pool(self, ctx, regions, height)
       })
       ImGui.EndChild(ctx)
     end
+
+    ImGui.PopStyleVar(ctx, 2)
   end
 
   -- Pool Actions context menu
