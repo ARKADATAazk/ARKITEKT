@@ -181,20 +181,58 @@ end
 
 -- Load template metadata
 function M.load_metadata()
-  return M.load_json("metadata.json") or {
-    templates = {},
-    folders = {},
-    tags = {}
-  }
+  local data = M.load_json("metadata.json")
+
+  -- Ensure structure exists
+  if not data then
+    data = {}
+  end
+
+  if not data.templates then
+    data.templates = {}
+  end
+
+  if not data.folders then
+    data.folders = {}
+  end
+
+  if not data.tags then
+    data.tags = {}
+  end
+
+  return data
 end
 
 -- Save template metadata
 function M.save_metadata(metadata)
+  if not metadata then
+    reaper.ShowConsoleMsg("ERROR: Cannot save nil metadata\n")
+    return false
+  end
+
+  -- Ensure structure exists before saving
+  if not metadata.templates then
+    metadata.templates = {}
+  end
+
+  if not metadata.folders then
+    metadata.folders = {}
+  end
+
+  if not metadata.tags then
+    metadata.tags = {}
+  end
+
   return M.save_json("metadata.json", metadata)
 end
 
 -- Find template by UUID or fallback to name
 function M.find_template(metadata, uuid, name, path)
+  -- Ensure metadata has templates table
+  if not metadata or not metadata.templates then
+    return nil
+  end
+
   -- Try UUID first
   if uuid and metadata.templates[uuid] then
     return metadata.templates[uuid]
@@ -212,6 +250,11 @@ end
 
 -- Find folder by UUID or fallback to name
 function M.find_folder(metadata, uuid, name, path)
+  -- Ensure metadata has folders table
+  if not metadata or not metadata.folders then
+    return nil
+  end
+
   -- Try UUID first
   if uuid and metadata.folders[uuid] then
     return metadata.folders[uuid]
