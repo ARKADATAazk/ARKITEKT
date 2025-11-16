@@ -384,7 +384,9 @@ function M.draw_ghosts(self, ctx)
 end
 
 function M.draw_color_pickers(self, ctx)
-  -- Draw color pickers in their own windows to stay on top (like corner buttons)
+  -- Draw color pickers using foreground draw list (like corner buttons)
+  local fg_dl = ImGui.GetForegroundDrawList(ctx)
+
   if self._active_color_picker_visible and self.active_bounds then
     local picker_size = 130
     local cursor_x, cursor_y, _, _ = table.unpack(self.active_bounds)
@@ -393,57 +395,47 @@ function M.draw_color_pickers(self, ctx)
     local picker_x = cursor_x + self.container_config.padding
     local picker_y = cursor_y + height - picker_size - self.container_config.padding
 
-    -- Create a tiny window for the picker (stays on top like corner buttons)
+    -- Use tooltip approach - tooltips render on foreground
     ImGui.SetNextWindowPos(ctx, picker_x, picker_y)
-    ImGui.SetNextWindowSize(ctx, picker_size, picker_size)
-    ImGui.SetNextWindowFocus(ctx)  -- Keep it focused on top
-
-    local flags = ImGui.WindowFlags_NoDecoration |
-                  ImGui.WindowFlags_NoMove |
-                  ImGui.WindowFlags_NoSavedSettings |
-                  ImGui.WindowFlags_NoScrollbar |
-                  ImGui.WindowFlags_NoScrollWithMouse |
-                  ImGui.WindowFlags_NoBackground
-
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-    if ImGui.Begin(ctx, "##ActiveColorPicker_TopLevel", true, flags) then
-      ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
-        size = picker_size,
-        on_change = function(color)
-          if self.active_grid and self.active_grid.selection and self.controller then
-            local selected_keys = self.active_grid.selection:selected_keys()
-            local rids = {}
-            local playlist_ids = {}
+    ImGui.BeginTooltip(ctx)
 
-            for _, key in ipairs(selected_keys) do
-              local rid = key:match("^active_(%d+)$")
-              if rid then
-                table.insert(rids, tonumber(rid))
-              end
-              local playlist_id = key:match("^active_playlist_(.+)$")
-              if playlist_id then
-                table.insert(playlist_ids, playlist_id)
-              end
-            end
+    ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
+      size = picker_size,
+      on_change = function(color)
+        if self.active_grid and self.active_grid.selection and self.controller then
+          local selected_keys = self.active_grid.selection:selected_keys()
+          local rids = {}
+          local playlist_ids = {}
 
-            if #rids > 0 then
-              self.controller:set_region_colors_batch(rids, color)
+          for _, key in ipairs(selected_keys) do
+            local rid = key:match("^active_(%d+)$")
+            if rid then
+              table.insert(rids, tonumber(rid))
             end
-            for _, playlist_id in ipairs(playlist_ids) do
-              self.controller:set_playlist_color(playlist_id, color)
+            local playlist_id = key:match("^active_playlist_(.+)$")
+            if playlist_id then
+              table.insert(playlist_ids, playlist_id)
             end
           end
-        end,
-        on_close = function()
-          self._active_color_picker_visible = false
-        end,
-      })
-      ImGui.End(ctx)
-    end
+
+          if #rids > 0 then
+            self.controller:set_region_colors_batch(rids, color)
+          end
+          for _, playlist_id in ipairs(playlist_ids) do
+            self.controller:set_playlist_color(playlist_id, color)
+          end
+        end
+      end,
+      on_close = function()
+        self._active_color_picker_visible = false
+      end,
+    })
+
+    ImGui.EndTooltip(ctx)
     ImGui.PopStyleVar(ctx, 1)
   end
 
-  -- Draw pool color picker in its own window to stay on top
   if self._pool_color_picker_visible and self.pool_bounds then
     local picker_size = 130
     local cursor_x, cursor_y, _, _ = table.unpack(self.pool_bounds)
@@ -452,53 +444,44 @@ function M.draw_color_pickers(self, ctx)
     local picker_x = cursor_x + self.container_config.padding
     local picker_y = cursor_y + height - picker_size - self.container_config.padding
 
-    -- Create a tiny window for the picker (stays on top)
+    -- Use tooltip approach - tooltips render on foreground
     ImGui.SetNextWindowPos(ctx, picker_x, picker_y)
-    ImGui.SetNextWindowSize(ctx, picker_size, picker_size)
-    ImGui.SetNextWindowFocus(ctx)  -- Keep it focused on top
-
-    local flags = ImGui.WindowFlags_NoDecoration |
-                  ImGui.WindowFlags_NoMove |
-                  ImGui.WindowFlags_NoSavedSettings |
-                  ImGui.WindowFlags_NoScrollbar |
-                  ImGui.WindowFlags_NoScrollWithMouse |
-                  ImGui.WindowFlags_NoBackground
-
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-    if ImGui.Begin(ctx, "##PoolColorPicker_TopLevel", true, flags) then
-      ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
-        size = picker_size,
-        on_change = function(color)
-          if self.pool_grid and self.pool_grid.selection and self.controller then
-            local selected_keys = self.pool_grid.selection:selected_keys()
-            local rids = {}
-            local playlist_ids = {}
+    ImGui.BeginTooltip(ctx)
 
-            for _, key in ipairs(selected_keys) do
-              local rid = key:match("^pool_(%d+)$")
-              if rid then
-                table.insert(rids, tonumber(rid))
-              end
-              local playlist_id = key:match("^pool_playlist_(.+)$")
-              if playlist_id then
-                table.insert(playlist_ids, playlist_id)
-              end
-            end
+    ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
+      size = picker_size,
+      on_change = function(color)
+        if self.pool_grid and self.pool_grid.selection and self.controller then
+          local selected_keys = self.pool_grid.selection:selected_keys()
+          local rids = {}
+          local playlist_ids = {}
 
-            if #rids > 0 then
-              self.controller:set_region_colors_batch(rids, color)
+          for _, key in ipairs(selected_keys) do
+            local rid = key:match("^pool_(%d+)$")
+            if rid then
+              table.insert(rids, tonumber(rid))
             end
-            for _, playlist_id in ipairs(playlist_ids) do
-              self.controller:set_playlist_color(playlist_id, color)
+            local playlist_id = key:match("^pool_playlist_(.+)$")
+            if playlist_id then
+              table.insert(playlist_ids, playlist_id)
             end
           end
-        end,
-        on_close = function()
-          self._pool_color_picker_visible = false
-        end,
-      })
-      ImGui.End(ctx)
-    end
+
+          if #rids > 0 then
+            self.controller:set_region_colors_batch(rids, color)
+          end
+          for _, playlist_id in ipairs(playlist_ids) do
+            self.controller:set_playlist_color(playlist_id, color)
+          end
+        end
+      end,
+      on_close = function()
+        self._pool_color_picker_visible = false
+      end,
+    })
+
+    ImGui.EndTooltip(ctx)
     ImGui.PopStyleVar(ctx, 1)
   end
 end
