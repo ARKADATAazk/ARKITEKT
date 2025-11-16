@@ -387,19 +387,19 @@ function M.draw_pool(self, ctx, regions, height)
         size = picker_size,
         on_change = function(color)
           reaper.ShowConsoleMsg("[Pool Picker] on_change called with color: " .. tostring(color) .. "\n")
-          -- Recolor Active grid selections (not Pool selections)
-          if self.active_grid and self.active_grid.selection and self.controller then
-            local selected_keys = self.active_grid.selection:selected_keys()
-            reaper.ShowConsoleMsg("[Pool Picker] Active grid selected keys: " .. #selected_keys .. "\n")
+          -- Recolor Pool selections
+          if self.pool_grid and self.pool_grid.selection and self.controller then
+            local selected_keys = self.pool_grid.selection:selected_keys()
+            reaper.ShowConsoleMsg("[Pool Picker] Pool selected keys: " .. #selected_keys .. "\n")
             local rids = {}
             local playlist_ids = {}
 
             for _, key in ipairs(selected_keys) do
-              local rid = key:match("^active_(%d+)$")
+              local rid = key:match("^pool_(%d+)$")
               if rid then
                 table.insert(rids, tonumber(rid))
               end
-              local playlist_id = key:match("^active_playlist_(.+)$")
+              local playlist_id = key:match("^pool_playlist_(.+)$")
               if playlist_id then
                 table.insert(playlist_ids, playlist_id)
               end
@@ -450,12 +450,12 @@ function M.draw_pool(self, ctx, regions, height)
       if self._pool_color_picker_visible then
         self._pool_color_picker_visible = false
       else
-        -- Get first selected item's color from Active grid as initial color
+        -- Get first selected item's color from Pool as initial color
         local initial_color = nil
-        if self.active_grid and self.active_grid.selection then
-          local selected_keys = self.active_grid.selection:selected_keys()
+        if self.pool_grid and self.pool_grid.selection then
+          local selected_keys = self.pool_grid.selection:selected_keys()
           for _, key in ipairs(selected_keys) do
-            local rid = key:match("^active_(%d+)$")
+            local rid = key:match("^pool_(%d+)$")
             if rid then
               local region = State.get_region_by_rid(tonumber(rid))
               if region and region.color then
