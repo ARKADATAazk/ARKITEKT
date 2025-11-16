@@ -168,6 +168,33 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       end
     end
   end
+
+  -- Render pool count badge (bottom right) if more than 1 instance
+  if item_data.pool_count and item_data.pool_count > 1 and cascade_factor > 0.5 then
+    local pool_text = "×" .. tostring(item_data.pool_count)
+    local text_w, text_h = ImGui.CalcTextSize(ctx, pool_text)
+    local badge_padding = 4
+    local badge_w = text_w + badge_padding * 2
+    local badge_h = text_h + badge_padding * 2
+    local badge_x = scaled_x2 - badge_w - 4
+    local badge_y = scaled_y2 - badge_h - 4
+    local badge_rounding = 3
+
+    -- Badge background
+    local badge_bg = Colors.hexrgb("#14181C")
+    badge_bg = Colors.with_alpha(badge_bg, math.floor(combined_alpha * 200))
+    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, badge_rounding)
+
+    -- Badge border
+    local badge_border = Colors.hexrgb("#2A2A2A")
+    badge_border = Colors.with_alpha(badge_border, math.floor(combined_alpha * 100))
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_border, badge_rounding, 0, 1)
+
+    -- Pool count text
+    local text_color = Colors.hexrgb("#AAAAAA")
+    text_color = Colors.with_alpha(text_color, math.floor(combined_alpha * 255))
+    ImGui.DrawList_AddText(dl, badge_x + badge_padding, badge_y + badge_padding, text_color, pool_text)
+  end
 end
 
 return M

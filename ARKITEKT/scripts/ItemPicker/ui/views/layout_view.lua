@@ -231,6 +231,66 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.needs_recollect = true
   end
 
+  -- Sort mode buttons (on same line after Split MIDI)
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Split MIDI Items by Track") + 18 + 8 + 40  -- Extra spacing
+  local sort_button_x = checkbox_x + prev_width
+
+  -- Draw sort mode label and buttons
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, ui_fade)
+  local sort_label = "Sort:"
+  local sort_label_width = ImGui.CalcTextSize(ctx, sort_label)
+  ImGui.DrawList_AddText(draw_list, sort_button_x, checkbox_y + 3, Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(ui_fade * 180)), sort_label)
+
+  -- Sort buttons
+  local button_x = sort_button_x + sort_label_width + 8
+  local button_y = checkbox_y
+  local button_h = 20
+  local button_gap = 4
+
+  local sort_modes = {
+    {id = "none", label = "None"},
+    {id = "color", label = "Color"},
+    {id = "name", label = "Name"},
+  }
+
+  local current_sort = self.state.settings.sort_mode or "none"
+  for i, mode in ipairs(sort_modes) do
+    local label = mode.label
+    local label_width = ImGui.CalcTextSize(ctx, label)
+    local button_w = label_width + 16
+
+    local is_active = (current_sort == mode.id)
+    local mx, my = ImGui.GetMousePos(ctx)
+    local is_hovered = mx >= button_x and mx < button_x + button_w and my >= button_y and my < button_y + button_h
+
+    -- Button background
+    local bg_color = is_active and Colors.hexrgb("#2A2A2A") or Colors.hexrgb("#1A1A1A")
+    if is_hovered and not is_active then
+      bg_color = Colors.hexrgb("#222222")
+    end
+    bg_color = Colors.with_alpha(bg_color, math.floor(ui_fade * 200))
+    ImGui.DrawList_AddRectFilled(draw_list, button_x, button_y, button_x + button_w, button_y + button_h, bg_color, 3)
+
+    -- Button border
+    local border_color = is_active and Colors.hexrgb("#3A3A3A") or Colors.hexrgb("#2A2A2A")
+    border_color = Colors.with_alpha(border_color, math.floor(ui_fade * 255))
+    ImGui.DrawList_AddRect(draw_list, button_x, button_y, button_x + button_w, button_y + button_h, border_color, 3, 0, 1)
+
+    -- Button text
+    local text_color = is_active and Colors.hexrgb("#FFFFFF") or Colors.hexrgb("#AAAAAA")
+    text_color = Colors.with_alpha(text_color, math.floor(ui_fade * 255))
+    ImGui.DrawList_AddText(draw_list, button_x + 8, button_y + 2, text_color, label)
+
+    -- Click detection
+    if is_hovered and ImGui.IsMouseClicked(ctx, 0) then
+      self.state.set_setting('sort_mode', mode.id)
+    end
+
+    button_x = button_x + button_w + button_gap
+  end
+
+  ImGui.PopStyleVar(ctx)
+
   -- Track final checkbox Y position for search bar positioning
   local checkboxes_end_y = checkbox_y + 24 + 10  -- Add some spacing after checkboxes
 

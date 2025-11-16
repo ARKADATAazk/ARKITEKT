@@ -86,9 +86,55 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
         color = color,
         key = uuid,
         uuid = uuid,
+        pool_count = #content,  -- Number of instances of this source
       })
 
       ::continue::
+    end
+
+    -- Apply sorting
+    local sort_mode = state.settings.sort_mode or "none"
+    if sort_mode == "color" then
+      -- Sort by color (hue-based for visual grouping)
+      table.sort(filtered, function(a, b)
+        -- Extract RGB from ImGui color (ABGR format)
+        local ar = (a.color >> 16) & 0xFF
+        local ag = (a.color >> 8) & 0xFF
+        local ab = a.color & 0xFF
+
+        local br = (b.color >> 16) & 0xFF
+        local bg = (b.color >> 8) & 0xFF
+        local bb = b.color & 0xFF
+
+        -- Convert to HSV for better color sorting
+        local function rgb_to_hue(r, g, b)
+          r, g, b = r/255, g/255, b/255
+          local max = math.max(r, g, b)
+          local min = math.min(r, g, b)
+          if max == min then return 0 end
+
+          local hue
+          if max == r then
+            hue = (g - b) / (max - min)
+          elseif max == g then
+            hue = 2 + (b - r) / (max - min)
+          else
+            hue = 4 + (r - g) / (max - min)
+          end
+          hue = hue * 60
+          if hue < 0 then hue = hue + 360 end
+          return hue
+        end
+
+        local a_hue = rgb_to_hue(ar, ag, ab)
+        local b_hue = rgb_to_hue(br, bg, bb)
+        return a_hue < b_hue
+      end)
+    elseif sort_mode == "name" then
+      -- Sort alphabetically by name
+      table.sort(filtered, function(a, b)
+        return a.name:lower() < b.name:lower()
+      end)
     end
 
     return filtered
