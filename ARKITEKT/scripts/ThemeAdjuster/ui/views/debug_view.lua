@@ -5,8 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
 local Theme = require('ThemeAdjuster.core.theme')
-local ImageCache = require('ThemeAdjuster.core.image_cache')
-local Lifecycle = require('ThemeAdjuster.core.lifecycle')
+local ImageCache = require('rearkitekt.gui.images')  -- Use ARKITEKT's central image system
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -31,23 +30,13 @@ function M.new(State, AppConfig, settings)
     recursive = settings and settings:get('debug_recursive', true) or true,
     filter_text = settings and settings:get('debug_filter', "") or "",
 
-    -- Lifecycle and image cache
-    lifecycle = Lifecycle.new(),
+    -- Image cache
     image_cache = nil,
+    first_draw = true,
   }, DebugView)
 
-  -- Initialize image cache with lifecycle
-  self.image_cache = self.lifecycle:register(ImageCache.new({ budget = 48, no_crop = true }))
-
-  -- Fetch images on first show
-  self.lifecycle:on_show(function()
-    if not self.img_dir then
-      self.img_dir = Theme.prepare_images(false)
-      if self.img_dir then
-        self:fetch_image_list()
-      end
-    end
-  end)
+  -- Initialize image cache using ARKITEKT's system
+  self.image_cache = ImageCache.new({ budget = 48, no_crop = true })
 
   -- Create container (Panel) with header
   local container_config = self:create_container_config()
@@ -313,6 +302,17 @@ function DebugView:update(dt)
 end
 
 function DebugView:draw(ctx, shell_state)
+  -- First-time initialization
+  if self.first_draw then
+    self.first_draw = false
+    if not self.img_dir then
+      self.img_dir = Theme.prepare_images(false)
+      if self.img_dir then
+        self:fetch_image_list()
+      end
+    end
+  end
+
   -- Begin frame for image cache budget
   if self.image_cache then
     self.image_cache:begin_frame()
