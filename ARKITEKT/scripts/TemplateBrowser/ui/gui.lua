@@ -35,17 +35,13 @@ function GUI:initialize_once(ctx)
 end
 
 -- Draw folder tree recursively
-local function draw_folder_node(ctx, node, state, config, level)
-  level = level or 0
-  local clicked = false
-
-  -- Indentation
-  if level > 0 then
-    ImGui.Indent(ctx, 16)
-  end
-
-  -- Folder item
+local function draw_folder_node(ctx, node, state, config)
   local is_selected = (state.selected_folder == node.path)
+
+  -- Build unique ID for this node
+  local node_id = "folder_" .. (node.path ~= "" and node.path or "root")
+
+  -- Set up flags
   local flags = ImGui.TreeNodeFlags_OpenOnArrow
     | ImGui.TreeNodeFlags_OpenOnDoubleClick
     | ImGui.TreeNodeFlags_SpanAvailWidth
@@ -58,28 +54,29 @@ local function draw_folder_node(ctx, node, state, config, level)
     flags = flags | ImGui.TreeNodeFlags_Leaf | ImGui.TreeNodeFlags_NoTreePushOnOpen
   end
 
-  local node_open = ImGui.TreeNodeEx(ctx, node.name .. "##" .. node.path, flags)
+  -- Draw the tree node (Label##ID format)
+  local node_open = ImGui.TreeNodeEx(ctx, node_id, flags, node.name)
 
+  -- Check for click
   if ImGui.IsItemClicked(ctx) then
     state.selected_folder = node.path
     local Scanner = require('TemplateBrowser.domain.scanner')
     Scanner.filter_templates(state)
-    clicked = true
   end
 
-  -- Draw children
-  if node_open and #node.children > 0 then
-    for _, child in ipairs(node.children) do
-      draw_folder_node(ctx, child, state, config, level + 1)
+  -- Draw children if node is open
+  if node_open then
+    if #node.children > 0 then
+      for _, child in ipairs(node.children) do
+        draw_folder_node(ctx, child, state, config)
+      end
     end
-    ImGui.TreePop(ctx)
+    -- Always pop if TreeNodeEx returned true and didn't have NoTreePushOnOpen
+    -- or if it had children
+    if #node.children > 0 then
+      ImGui.TreePop(ctx)
+    end
   end
-
-  if level > 0 then
-    ImGui.Unindent(ctx, 16)
-  end
-
-  return clicked
 end
 
 -- Draw folder panel (left)
@@ -115,7 +112,7 @@ local function draw_folder_panel(ctx, state, config, width, height)
   -- Folder tree
   if state.folders and state.folders.children then
     for _, child in ipairs(state.folders.children) do
-      draw_folder_node(ctx, child, state, config, 0)
+      draw_folder_node(ctx, child, state, config)
     end
   end
 
