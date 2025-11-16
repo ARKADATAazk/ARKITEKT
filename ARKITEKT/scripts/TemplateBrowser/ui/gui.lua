@@ -38,8 +38,9 @@ end
 local function draw_folder_node(ctx, node, state, config)
   local is_selected = (state.selected_folder == node.path)
 
-  -- Build unique ID for this node
-  local node_id = "folder_" .. (node.path ~= "" and node.path or "root")
+  -- Build unique label with ID: "FolderName##unique_id"
+  local node_id = node.path ~= "" and node.path or "root"
+  local label = node.name .. "##" .. node_id
 
   -- Set up flags
   local flags = ImGui.TreeNodeFlags_OpenOnArrow
@@ -54,8 +55,8 @@ local function draw_folder_node(ctx, node, state, config)
     flags = flags | ImGui.TreeNodeFlags_Leaf | ImGui.TreeNodeFlags_NoTreePushOnOpen
   end
 
-  -- Draw the tree node (Label##ID format)
-  local node_open = ImGui.TreeNodeEx(ctx, node_id, flags, node.name)
+  -- Draw the tree node: TreeNodeEx(ctx, label, flags)
+  local node_open = ImGui.TreeNodeEx(ctx, label, flags)
 
   -- Check for click
   if ImGui.IsItemClicked(ctx) then
