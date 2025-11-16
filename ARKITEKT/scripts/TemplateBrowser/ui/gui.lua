@@ -9,7 +9,7 @@ local Tags = require('TemplateBrowser.domain.tags')
 local Separator = require('TemplateBrowser.ui.separator')
 local FXQueue = require('TemplateBrowser.domain.fx_queue')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
-local TileAnim = require('rearkitekt.gui.animation.tile')
+local TileAnim = require('rearkitekt.gui.rendering.tile.animator')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
 
 local M = {}
