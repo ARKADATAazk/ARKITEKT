@@ -61,7 +61,7 @@ local function draw_package_tile(ctx, pkg, theme, P, rect, state, settings, cust
   Renderer.TileRenderer.border(dl, rect, base_color, is_selected, is_active, is_hovered)
   Renderer.TileRenderer.order_badge(ctx, dl, pkg, P, x1, y1)
   Renderer.TileRenderer.conflicts(ctx, dl, pkg, P, x1, y1, tile_w)
-  Renderer.TileRenderer.checkbox(ctx, pkg, P, custom_state.checkbox_rects, x1, y1, tile_w, tile_h)
+  Renderer.TileRenderer.checkbox(ctx, pkg, P, custom_state.checkbox_rects, x1, y1, tile_w, tile_h, settings)
   Renderer.TileRenderer.mosaic(ctx, dl, theme, P, x1, y1, tile_w)
   Renderer.TileRenderer.footer(ctx, dl, pkg, P, x1, y1, tile_w, tile_h)
 end
@@ -179,26 +179,6 @@ function M.create(pkg, settings, theme)
     
     render_tile = function(ctx, rect, P, state)
       draw_package_tile(ctx, pkg, theme, P, rect, state, settings, custom_state)
-    end,
-    
-    render_overlays = function(ctx, current_rects)
-      for id, rect in pairs(custom_state.checkbox_rects) do
-        local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-        
-        ImGui.SetCursorScreenPos(ctx, x1, y1)
-        ImGui.PushID(ctx, 'overlay_cb_' .. id)
-        ImGui.InvisibleButton(ctx, '##dummy', x2 - x1, y2 - y1)
-        
-        if ImGui.IsItemClicked(ctx, 0) then
-          pkg.active[id] = not pkg.active[id]
-          if settings then settings:set('pkg_active', pkg.active) end
-        end
-        
-        if ImGui.IsItemHovered(ctx) then
-          ImGui.SetTooltip(ctx, pkg.active[id] and "Disable package" or "Enable package")
-        end
-        ImGui.PopID(ctx)
-      end
     end,
   })
   
