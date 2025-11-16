@@ -33,17 +33,17 @@ local function scan_directory(path, relative_path, metadata)
       local full_path = path .. file
       local relative_folder = relative_path
 
-      -- Get file modification time
-      local file_modified = reaper.file_exists(full_path) and
-                           (reaper.EnumerateFiles and os.time()) or os.time()
-      -- Note: REAPER doesn't expose file mtime directly, so we use a workaround
-      -- We'll use file size as a proxy for changes
-      local file_handle = io.open(full_path, "r")
-      local file_size = 0
+      -- Get file size for change detection
+      local file_handle, err = io.open(full_path, "r")
+      local file_size = nil
       if file_handle then
-        file_handle:seek("end")
-        file_size = file_handle:seek()
+        file_size = file_handle:seek("end")  -- Returns position at end = file size
         file_handle:close()
+      else
+        reaper.ShowConsoleMsg("WARNING: Cannot open file for size check: " .. full_path .. "\n")
+        if err then
+          reaper.ShowConsoleMsg("ERROR: " .. tostring(err) .. "\n")
+        end
       end
 
       -- Try to find existing template in metadata by name+path
@@ -61,12 +61,27 @@ local function scan_directory(path, relative_path, metadata)
         existing.last_seen = os.time()
 
         -- Check if file has changed by comparing size
-        local size_changed = (existing.file_size ~= file_size)
+        local size_changed = false
+        if file_size and existing.file_size then
+          size_changed = (existing.file_size ~= file_size)
+        elseif file_size and not existing.file_size then
+          -- We have size now but didn't before
+          size_changed = false  -- Don't re-parse, just update metadata
+        elseif not file_size and existing.file_size then
+          -- Had size before but can't read now - something wrong
+          reaper.ShowConsoleMsg("WARNING: Could not read file size for: " .. template_name .. "\n")
+          size_changed = false  -- Don't re-parse due to read error
+        end
+
         -- Only re-parse if fx field is missing (nil), not if it's an empty array
         local missing_fx = (existing.fx == nil)
 
-        if size_changed or missing_fx then
-          -- File changed or FX missing - needs re-parsing
+        if size_changed then
+          reaper.ShowConsoleMsg("FX: File changed (size): " .. template_name .. " (" .. tostring(existing.file_size) .. " -> " .. tostring(file_size) .. ")\n")
+          needs_fx_parse = true
+          fx_list = {}
+        elseif missing_fx then
+          reaper.ShowConsoleMsg("FX: Missing FX data: " .. template_name .. "\n")
           needs_fx_parse = true
           fx_list = {}
         else
@@ -75,21 +90,30 @@ local function scan_directory(path, relative_path, metadata)
         end
 
         -- Update file size in metadata
-        existing.file_size = file_size
+        if file_size then
+          existing.file_size = file_size
+        end
       else
         -- Create new UUID and metadata entry
         uuid = Persistence.generate_uuid()
-        metadata.templates[uuid] = {
+
+        local new_metadata = {
           uuid = uuid,
           name = template_name,
           path = relative_path,
           tags = {},
           notes = "",
           fx = {},
-          file_size = file_size,
           created = os.time(),
           last_seen = os.time()
         }
+
+        -- Only set file_size if we successfully read it
+        if file_size then
+          new_metadata.file_size = file_size
+        end
+
+        metadata.templates[uuid] = new_metadata
         needs_fx_parse = true
         reaper.ShowConsoleMsg("New template UUID: " .. template_name .. " -> " .. uuid .. "\n")
       end
