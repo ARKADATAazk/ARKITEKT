@@ -303,7 +303,6 @@ function GUI:draw(ctx, window, shell_state)
   self.layout_view:draw(ctx, self.region_tiles, shell_state)
 
   self.region_tiles:draw_ghosts(ctx)
-  self.region_tiles:draw_color_pickers(ctx)
 end
 
 return M
