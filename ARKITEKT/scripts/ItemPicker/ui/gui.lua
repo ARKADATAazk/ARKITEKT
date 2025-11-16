@@ -70,12 +70,88 @@ function GUI:start_incremental_loading()
   local current_change_count = reaper.GetProjectStateChangeCount(0)
   self.state.last_change_count = current_change_count
 
-  -- ALWAYS use incremental loading (no blocking path)
-  reaper.ShowConsoleMsg("Using incremental loader (50 items/frame)\n")
-  local IncrementalLoader = require('ItemPicker.domain.incremental_loader')
-  self.incremental_loader = IncrementalLoader.new(self.controller.reaper_interface, 50) -- 50 items per frame
-  IncrementalLoader.start_loading(self.incremental_loader, self.state, self.state.settings)
-  self.loading_started = true
+  -- Try loading cached item data first (INSTANT)
+  local cached_data = self.cache_mgr.load_items_data_from_disk()
+
+  if cached_data and cached_data.change_count == current_change_count then
+    reaper.ShowConsoleMsg("Cache HIT! Loading from disk (instant)\n")
+
+    -- Populate state with cached metadata (no item pointers yet)
+    self.state.sample_indexes = cached_data.sample_indexes or {}
+    self.state.midi_indexes = cached_data.midi_indexes or {}
+
+    -- Create empty samples/midi_items structures
+    self.state.samples = {}
+    self.state.midi_items = {}
+
+    -- Populate with cached metadata (dummy item pointers for now)
+    for filename, meta_items in pairs(cached_data.samples_meta or {}) do
+      self.state.samples[filename] = {}
+      for _, meta in ipairs(meta_items) do
+        -- Placeholder: [nil, name, track_muted, item_muted, uuid]
+        table.insert(self.state.samples[filename], {
+          nil,  -- Item pointer will be populated by validation
+          meta.name,
+          track_muted = meta.track_muted,
+          item_muted = meta.item_muted,
+          uuid = meta.uuid
+        })
+      end
+    end
+
+    for key, meta_items in pairs(cached_data.midi_meta or {}) do
+      self.state.midi_items[key] = {}
+      for _, meta in ipairs(meta_items) do
+        table.insert(self.state.midi_items[key], {
+          nil,  -- Item pointer will be populated by validation
+          meta.name,
+          track_muted = meta.track_muted,
+          item_muted = meta.item_muted,
+          uuid = meta.uuid
+        })
+      end
+    end
+
+    -- Build UUID lookup tables
+    self.state.audio_item_lookup = {}
+    for filename, items in pairs(self.state.samples) do
+      for _, item_data in ipairs(items) do
+        if item_data.uuid then
+          self.state.audio_item_lookup[item_data.uuid] = item_data
+        end
+      end
+    end
+
+    self.state.midi_item_lookup = {}
+    for key, items in pairs(self.state.midi_items) do
+      for _, item_data in ipairs(items) do
+        if item_data.uuid then
+          self.state.midi_item_lookup[item_data.uuid] = item_data
+        end
+      end
+    end
+
+    -- Mark as loaded (UI can render immediately with cached data)
+    self.data_loaded = true
+    self.loading_started = true
+
+    reaper.ShowConsoleMsg("Cache loaded! UI ready instantly\n")
+    reaper.ShowConsoleMsg("TODO: Background validation not implemented yet\n")
+
+  else
+    -- Cache miss or stale, use incremental loader
+    if not cached_data then
+      reaper.ShowConsoleMsg("Cache MISS! No cached data found\n")
+    else
+      reaper.ShowConsoleMsg("Cache STALE! Change count mismatch\n")
+    end
+
+    reaper.ShowConsoleMsg("Using incremental loader (50 items/frame)\n")
+    local IncrementalLoader = require('ItemPicker.domain.incremental_loader')
+    self.incremental_loader = IncrementalLoader.new(self.controller.reaper_interface, 50)
+    IncrementalLoader.start_loading(self.incremental_loader, self.state, self.state.settings)
+    self.loading_started = true
+  end
 end
 
 -- Process incremental loading batch (called every frame)
@@ -91,6 +167,11 @@ function GUI:process_incremental_loading()
   if is_complete then
     reaper.ShowConsoleMsg("=== ItemPicker: Loading complete! ===\n")
     self.data_loaded = true
+
+    -- Save item data to disk cache for next launch
+    reaper.ShowConsoleMsg("Saving item data to disk cache...\n")
+    self.cache_mgr.save_items_data_to_disk(self.state)
+
     -- After initial load burst, throttle to 2 jobs/frame for smooth FPS
     if self.state.job_queue then
       self.state.job_queue.max_per_frame = 2
