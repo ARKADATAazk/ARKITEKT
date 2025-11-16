@@ -11,7 +11,7 @@ local Shapes = require('rearkitekt.gui.rendering.shapes')
 
 local M = {}
 
-function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, cache_mgr, state)
+function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local tile_w, tile_h = x2 - x1, y2 - y1
   local center_x, center_y = (x1 + x2) / 2, (y1 + y2) / 2
@@ -318,24 +318,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
     ImGui.Dummy(ctx, content_w, content_h)
 
-    local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config)
-    local midi_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
-    dark_color = Colors.with_alpha(dark_color, math.floor(midi_alpha * 255))
-
-    local thumbnail = cache_mgr and cache_mgr.get_midi_thumbnail(state.cache, item_data.item, content_w, content_h, item_data.uuid)
-    if thumbnail then
-      if visualization.DisplayMidiItemTransparent then
-        ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
-        ImGui.Dummy(ctx, content_w, content_h)
-        visualization.DisplayMidiItemTransparent(ctx, thumbnail, dark_color, dl)
-      end
-    else
-      -- Thumbnail not cached, show placeholder and queue generation
-      BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
-      if state.job_queue and state.job_queue.add_midi_job then
-        state.job_queue.add_midi_job(state.cache, item_data.item, content_w, content_h, item_data.uuid)
-      end
-    end
+    -- MIDI thumbnail rendering removed - show simple placeholder
+    -- TODO: Implement lazy MIDI thumbnail loading if needed
+    BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
   end
 
   -- Render pool count badge (bottom right) if more than 1 instance

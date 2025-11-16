@@ -10,13 +10,12 @@ local M = {}
 local GUI = {}
 GUI.__index = GUI
 
-function M.new(config, state, controller, visualization, cache_mgr, drag_handler)
+function M.new(config, state, controller, visualization, drag_handler)
   local self = setmetatable({
     config = config,
     state = state,
     controller = controller,
     visualization = visualization,
-    cache_mgr = cache_mgr,
     drag_handler = drag_handler,
 
     coordinator = nil,
@@ -38,17 +37,6 @@ function GUI:initialize_once(ctx)
   -- Store context for later use
   self.ctx = ctx
 
-  -- Initialize domain modules (lightweight, immediate)
-  if not self.state.cache then
-    self.state.cache = self.cache_mgr.new(self.config.CACHE.MAX_ENTRIES)
-  end
-
-  if not self.state.job_queue then
-    local job_queue_module = require('ItemPicker.data.job_queue')
-    -- Start with burst mode: 10 jobs/frame during initial load
-    self.state.job_queue = job_queue_module.new(10)
-  end
-
   -- Initialize empty state so UI can render immediately
   self.state.samples = {}
   self.state.sample_indexes = {}
@@ -58,124 +46,30 @@ function GUI:initialize_once(ctx)
   self.state.midi_item_lookup = {}
 
   -- Create coordinator and layout view with empty data
-  self.coordinator = Coordinator.new(ctx, self.config, self.state, self.visualization, self.cache_mgr)
+  self.coordinator = Coordinator.new(ctx, self.config, self.state, self.visualization)
   self.layout_view = LayoutView.new(self.config, self.state, self.coordinator)
 
   self.initialized = true
 end
 
 -- Start incremental loading (non-blocking)
+-- Start incremental loading (non-blocking)
 function GUI:start_incremental_loading()
   if self.loading_started then return end
 
-  reaper.ShowConsoleMsg("=== ItemPicker: Starting data loading ===\n")
+  reaper.ShowConsoleMsg("=== ItemPicker: Starting data loading ===
+")
 
   local current_change_count = reaper.GetProjectStateChangeCount(0)
   self.state.last_change_count = current_change_count
 
-  -- Try loading cached item data first (INSTANT)
-  local cached_data = self.cache_mgr.load_items_data_from_disk()
-
-  if cached_data and cached_data.change_count == current_change_count then
-    reaper.ShowConsoleMsg("Cache HIT! Loading from disk (instant)\n")
-
-    -- Debug: Check what we loaded
-    local meta_sample_count = 0
-    for _ in pairs(cached_data.samples_meta or {}) do meta_sample_count = meta_sample_count + 1 end
-    local meta_midi_count = 0
-    for _ in pairs(cached_data.midi_meta or {}) do meta_midi_count = meta_midi_count + 1 end
-    reaper.ShowConsoleMsg(string.format("DEBUG: Cached samples_meta: %d, midi_meta: %d\n", meta_sample_count, meta_midi_count))
-    reaper.ShowConsoleMsg(string.format("DEBUG: sample_indexes: %d, midi_indexes: %d\n",
-      #(cached_data.sample_indexes or {}), #(cached_data.midi_indexes or {})))
-
-    -- Populate state with cached metadata (no item pointers yet)
-    self.state.sample_indexes = cached_data.sample_indexes or {}
-    self.state.midi_indexes = cached_data.midi_indexes or {}
-
-    -- Create empty samples/midi_items structures
-    self.state.samples = {}
-    self.state.midi_items = {}
-
-    -- Populate with cached metadata (dummy item pointers for now)
-    for filename, meta_items in pairs(cached_data.samples_meta or {}) do
-      self.state.samples[filename] = {}
-      for _, meta in ipairs(meta_items) do
-        -- Placeholder: [nil, name, track_muted, item_muted, uuid]
-        table.insert(self.state.samples[filename], {
-          nil,  -- Item pointer will be populated by validation
-          meta.name,
-          track_muted = meta.track_muted,
-          item_muted = meta.item_muted,
-          uuid = meta.uuid
-        })
-      end
-    end
-
-    for key, meta_items in pairs(cached_data.midi_meta or {}) do
-      self.state.midi_items[key] = {}
-      for _, meta in ipairs(meta_items) do
-        table.insert(self.state.midi_items[key], {
-          nil,  -- Item pointer will be populated by validation
-          meta.name,
-          track_muted = meta.track_muted,
-          item_muted = meta.item_muted,
-          uuid = meta.uuid
-        })
-      end
-    end
-
-    -- Build UUID lookup tables
-    self.state.audio_item_lookup = {}
-    for filename, items in pairs(self.state.samples) do
-      for _, item_data in ipairs(items) do
-        if item_data.uuid then
-          self.state.audio_item_lookup[item_data.uuid] = item_data
-        end
-      end
-    end
-
-    self.state.midi_item_lookup = {}
-    for key, items in pairs(self.state.midi_items) do
-      for _, item_data in ipairs(items) do
-        if item_data.uuid then
-          self.state.midi_item_lookup[item_data.uuid] = item_data
-        end
-      end
-    end
-
-    -- Debug: Check populated state
-    local populated_sample_count = 0
-    for _ in pairs(self.state.samples) do populated_sample_count = populated_sample_count + 1 end
-    local populated_midi_count = 0
-    for _ in pairs(self.state.midi_items) do populated_midi_count = populated_midi_count + 1 end
-    reaper.ShowConsoleMsg(string.format("DEBUG: Populated state.samples: %d, state.midi_items: %d\n",
-      populated_sample_count, populated_midi_count))
-
-    -- Recreate coordinator and layout with populated data
-    self.coordinator = Coordinator.new(self.ctx, self.config, self.state, self.visualization, self.cache_mgr)
-    self.layout_view = LayoutView.new(self.config, self.state, self.coordinator)
-
-    -- Mark as loaded (UI can render immediately with cached data)
-    self.data_loaded = true
-    self.loading_started = true
-
-    reaper.ShowConsoleMsg("Cache loaded! UI ready instantly\n")
-    reaper.ShowConsoleMsg("TODO: Background validation not implemented yet\n")
-
-  else
-    -- Cache miss or stale, use incremental loader
-    if not cached_data then
-      reaper.ShowConsoleMsg("Cache MISS! No cached data found\n")
-    else
-      reaper.ShowConsoleMsg("Cache STALE! Change count mismatch\n")
-    end
-
-    reaper.ShowConsoleMsg("Using incremental loader (50 items/frame)\n")
-    local IncrementalLoader = require('ItemPicker.data.loaders.incremental_loader')
-    self.incremental_loader = IncrementalLoader.new(self.controller.reaper_interface, 50)
-    IncrementalLoader.start_loading(self.incremental_loader, self.state, self.state.settings)
-    self.loading_started = true
-  end
+  -- Use incremental loader to load items
+  reaper.ShowConsoleMsg("Using incremental loader (50 items/frame)
+")
+  local IncrementalLoader = require('ItemPicker.data.loaders.incremental_loader')
+  self.incremental_loader = IncrementalLoader.new(self.controller.reaper_interface, 50)
+  IncrementalLoader.start_loading(self.incremental_loader, self.state, self.state.settings)
+  self.loading_started = true
 end
 
 -- Process incremental loading batch (called every frame)
@@ -189,17 +83,9 @@ function GUI:process_incremental_loading()
   IncrementalLoader.get_results(self.incremental_loader, self.state)
 
   if is_complete then
-    reaper.ShowConsoleMsg("=== ItemPicker: Loading complete! ===\n")
+    reaper.ShowConsoleMsg("=== ItemPicker: Loading complete! ===
+")
     self.data_loaded = true
-
-    -- Save item data to disk cache for next launch
-    reaper.ShowConsoleMsg("Saving item data to disk cache...\n")
-    self.cache_mgr.save_items_data_to_disk(self.state)
-
-    -- After initial load burst, throttle to 2 jobs/frame for smooth FPS
-    if self.state.job_queue then
-      self.state.job_queue.max_per_frame = 2
-    end
   end
 end
 
@@ -259,7 +145,7 @@ function GUI:draw(ctx, shell_state)
     job_queue_module.process_jobs(
       self.state.job_queue,
       self.visualization,
-      self.cache_mgr,
+      
       ctx
     )
   end
@@ -277,7 +163,6 @@ function GUI:draw(ctx, shell_state)
     self.state.last_change_count = reaper.GetProjectStateChangeCount(0)
 
     -- Save updated state to disk
-    self.cache_mgr.save_project_state_to_disk(self.state)
   end
 
   -- Periodically check for project changes (every 180 frames = ~5-6 seconds)

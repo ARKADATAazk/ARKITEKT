@@ -45,7 +45,6 @@ local GUI = require('ItemPicker.ui.main_window')
 
 -- Data and service modules
 local visualization = require('ItemPicker.services.visualization')
-local cache_mgr = require('ItemPicker.data.loaders.cache_manager')
 local reaper_interface = require('ItemPicker.data.reaper_api')
 local utils = require('ItemPicker.services.utils')
 local drag_handler = require('ItemPicker.ui.components.drag_handler')
@@ -64,13 +63,13 @@ State.initialize(Config)
 
 -- Initialize domain modules
 reaper_interface.init(utils)
-visualization.init(utils, SCRIPT_DIRECTORY, cache_mgr)
+visualization.init(utils, SCRIPT_DIRECTORY)
 
 -- Initialize controller
 Controller.init(reaper_interface, utils)
 
 -- Create GUI
-local gui = GUI.new(Config, State, Controller, visualization, cache_mgr, drag_handler)
+local gui = GUI.new(Config, State, Controller, visualization, drag_handler)
 
 local function cleanup()
   SetButtonState()

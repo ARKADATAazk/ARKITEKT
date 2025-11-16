@@ -8,7 +8,7 @@ local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
 
 local M = {}
 
-function M.create(ctx, config, state, visualization, cache_mgr, animator)
+function M.create(ctx, config, state, visualization, animator)
   local function get_items()
     if not state.sample_indexes then return {} end
 
@@ -155,7 +155,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
 
     render_tile = function(ctx, rect, item_data, tile_state)
       local dl = ImGui.GetWindowDrawList(ctx)
-      AudioRenderer.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, cache_mgr, state)
+      AudioRenderer.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state)
     end,
   })
 
