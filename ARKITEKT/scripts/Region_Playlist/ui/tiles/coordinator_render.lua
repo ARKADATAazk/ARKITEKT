@@ -152,12 +152,14 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
 
-    -- Remove padding around child region
+    -- Remove padding and add black border
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ChildBorderSize, 2)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x000000FF)
 
-    -- Wrap in a child region to ensure proper input handling
-    local child_flags = ImGui.ChildFlags_None
+    -- Wrap in a child region with border
+    local child_flags = ImGui.ChildFlags_Border
     if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size, child_flags) then
       ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
         size = picker_size,
@@ -200,7 +202,8 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
       ImGui.EndChild(ctx)
     end
 
-    ImGui.PopStyleVar(ctx, 2)
+    ImGui.PopStyleColor(ctx, 1)
+    ImGui.PopStyleVar(ctx, 3)
   end
 
   -- Actions context menu
@@ -372,12 +375,14 @@ function M.draw_pool(self, ctx, regions, height)
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
 
-    -- Remove padding around child region
+    -- Remove padding and add black border
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ChildBorderSize, 2)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x000000FF)
 
-    -- Wrap in a child region to ensure proper input handling
-    local child_flags = ImGui.ChildFlags_None
+    -- Wrap in a child region with border
+    local child_flags = ImGui.ChildFlags_Border
     if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size, child_flags) then
       ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
         size = picker_size,
@@ -420,7 +425,8 @@ function M.draw_pool(self, ctx, regions, height)
       ImGui.EndChild(ctx)
     end
 
-    ImGui.PopStyleVar(ctx, 2)
+    ImGui.PopStyleColor(ctx, 1)
+    ImGui.PopStyleVar(ctx, 3)
   end
 
   -- Pool Actions context menu
