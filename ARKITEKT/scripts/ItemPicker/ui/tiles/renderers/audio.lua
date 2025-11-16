@@ -137,7 +137,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   if cascade_factor > 0.5 and is_favorite then
     local star_x = scaled_x2 - star_badge_size - star_padding
     local star_y = scaled_y1 + star_padding
-    Shapes.draw_favorite_star(dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite)
+    Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite)
   end
 
   -- Render waveform (show even when disabled, just with toned down color)

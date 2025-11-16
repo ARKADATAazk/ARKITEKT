@@ -8,6 +8,7 @@ local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local DraggableSeparator = require('rearkitekt.gui.widgets.primitives.separator')
 local StatusBar = require('ItemPicker.ui.views.status_bar')
 local Colors = require('rearkitekt.core.colors')
+local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 
 -- Debug module - with error handling
 local Debug = nil
@@ -45,19 +46,37 @@ local function smootherstep(t)
   return t * t * t * (t * (t * 6 - 15) + 10)
 end
 
--- Draw a panel background and border
+-- Draw a panel background and border with dotted pattern
 local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
   alpha = alpha or 1.0
   rounding = rounding or 6
 
-  -- Panel background
+  -- Panel background (semi-transparent)
   local bg_color = Colors.hexrgb("#0F0F0F")
-  bg_color = Colors.with_alpha(bg_color, math.floor(alpha * 0xFF))
+  bg_color = Colors.with_alpha(bg_color, math.floor(alpha * 0x66))  -- More transparent (40%)
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, rounding)
+
+  -- Dotted background pattern
+  local pattern_config = {
+    enabled = true,
+    primary = {
+      type = 'dots',
+      spacing = 16,
+      dot_size = 1.5,
+      color = Colors.with_alpha(Colors.hexrgb("#2A2A2A"), math.floor(alpha * 100)),
+      offset_x = 0,
+      offset_y = 0,
+    }
+  }
+
+  -- Push clip rect for rounded corners
+  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
+  Background.draw(dl, x1, y1, x2, y2, pattern_config)
+  ImGui.DrawList_PopClipRect(dl)
 
   -- Panel border
   local border_color = Colors.hexrgb("#1A1A1A")
-  border_color = Colors.with_alpha(border_color, math.floor(alpha * 0xFF))
+  border_color = Colors.with_alpha(border_color, math.floor(alpha * 0xAA))
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
 end
 
@@ -259,6 +278,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local start_y = content_start_y
   local header_height = self.config.LAYOUT.HEADER_HEIGHT
 
+  -- Panel right padding
+  local panel_right_padding = 12
+
   local max = math.max
   local min = math.min
 
@@ -268,7 +290,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local panel_rounding = 6
     local panel_x1 = start_x
     local panel_y1 = start_y
-    local panel_x2 = start_x + content_width
+    local panel_x2 = start_x + content_width - panel_right_padding
     local panel_y2 = start_y + header_height + content_height
 
     -- Draw panel background
@@ -285,11 +307,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- MIDI grid
     local midi_content_y = start_y + header_height
     local midi_content_h = content_height - panel_padding
+    local midi_grid_width = content_width - panel_right_padding - panel_padding * 2
     ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, midi_content_y)
 
-    if ImGui.BeginChild(ctx, "midi_container", content_width - panel_padding * 2, midi_content_h, 0,
+    if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_content_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
-      self.coordinator:render_midi_grid(ctx, content_width - panel_padding * 2, midi_content_h)
+      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_content_h)
       ImGui.EndChild(ctx)
     end
 
@@ -299,7 +322,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local panel_rounding = 6
     local panel_x1 = start_x
     local panel_y1 = start_y
-    local panel_x2 = start_x + content_width
+    local panel_x2 = start_x + content_width - panel_right_padding
     local panel_y2 = start_y + header_height + content_height
 
     -- Draw panel background
@@ -316,11 +339,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Audio grid
     local audio_content_y = start_y + header_height
     local audio_content_h = content_height - panel_padding
+    local audio_grid_width = content_width - panel_right_padding - panel_padding * 2
     ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_content_y)
 
-    if ImGui.BeginChild(ctx, "audio_container", content_width - panel_padding * 2, audio_content_h, 0,
+    if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_content_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
-      self.coordinator:render_audio_grid(ctx, content_width - panel_padding * 2, audio_content_h)
+      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_content_h)
       ImGui.EndChild(ctx)
     end
 
@@ -367,7 +391,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local panel_rounding = 6
     local midi_panel_x1 = start_x
     local midi_panel_y1 = start_y
-    local midi_panel_x2 = start_x + content_width
+    local midi_panel_x2 = start_x + content_width - panel_right_padding
     local midi_panel_y2 = start_y + header_height + midi_height
 
     -- Draw MIDI panel background
@@ -384,15 +408,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- MIDI grid container
     local midi_content_y = start_y + header_height
     local midi_content_h = midi_height - panel_padding
+    local midi_grid_width = content_width - panel_right_padding - panel_padding * 2
     ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, midi_content_y)
 
-    if ImGui.BeginChild(ctx, "midi_container", content_width - panel_padding * 2, midi_content_h, 0,
+    if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_content_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
       -- Block grid input during separator drag
       if self.coordinator.midi_grid then
         self.coordinator.midi_grid.block_all_input = block_input
       end
-      self.coordinator:render_midi_grid(ctx, content_width - panel_padding * 2, midi_content_h)
+      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_content_h)
       ImGui.EndChild(ctx)
     end
 
@@ -412,7 +437,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local audio_start_y = start_y + header_height + midi_height + separator_gap
     local audio_panel_x1 = start_x
     local audio_panel_y1 = audio_start_y
-    local audio_panel_x2 = start_x + content_width
+    local audio_panel_x2 = start_x + content_width - panel_right_padding
     local audio_panel_y2 = audio_start_y + header_height + audio_height
 
     -- Draw Audio panel background
@@ -429,15 +454,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Audio grid container
     local audio_content_y = audio_start_y + header_height
     local audio_content_h = audio_height - panel_padding
+    local audio_grid_width = content_width - panel_right_padding - panel_padding * 2
     ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_content_y)
 
-    if ImGui.BeginChild(ctx, "audio_container", content_width - panel_padding * 2, audio_content_h, 0,
+    if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_content_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
       -- Block grid input during separator drag
       if self.coordinator.audio_grid then
         self.coordinator.audio_grid.block_all_input = block_input
       end
-      self.coordinator:render_audio_grid(ctx, content_width - panel_padding * 2, audio_content_h)
+      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_content_h)
       ImGui.EndChild(ctx)
     end
 

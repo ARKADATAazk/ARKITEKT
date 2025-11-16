@@ -86,13 +86,14 @@ function M.draw_star_outline(dl, cx, cy, outer_radius, inner_radius, color, thic
 end
 
 -- Draw a favorite star indicator with simple badge styling
+-- @param ctx ImGui context
 -- @param dl DrawList
 -- @param x X position (top-left of bounds)
 -- @param y Y position (top-left of bounds)
 -- @param size Size of the badge
 -- @param alpha Overall alpha multiplier
 -- @param is_favorite Whether the item is favorited
-function M.draw_favorite_star(dl, x, y, size, alpha, is_favorite)
+function M.draw_favorite_star(ctx, dl, x, y, size, alpha, is_favorite)
   alpha = alpha or 1.0
 
   if not is_favorite then
@@ -114,18 +115,18 @@ function M.draw_favorite_star(dl, x, y, size, alpha, is_favorite)
   border_color = Colors.with_alpha(border_color, border_alpha)
   ImGui.DrawList_AddRect(dl, x, y, x + size, y + size, border_color, badge_rounding, 0, 1)
 
-  -- Simple white star
-  local cx = x + size / 2
-  local cy = y + size / 2
-  local star_size = (size - padding * 2) / 2
-  local outer_radius = star_size
-  local inner_radius = outer_radius * 0.38
-
+  -- Use Unicode star character for cleaner rendering (no aliasing)
+  local star_char = "★"  -- U+2605 BLACK STAR
   local star_alpha = math.floor(alpha * 255)
   local star_color = Colors.hexrgb("#FFFFFF")
   star_color = Colors.with_alpha(star_color, star_alpha)
 
-  M.draw_star_filled(dl, cx, cy, outer_radius, inner_radius, star_color)
+  -- Center the star text within the badge
+  local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)
+  local text_x = x + (size - text_w) / 2
+  local text_y = y + (size - text_h) / 2
+
+  ImGui.DrawList_AddText(dl, text_x, text_y, star_color, star_char)
 end
 
 return M
