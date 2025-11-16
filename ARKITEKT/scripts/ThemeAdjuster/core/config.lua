@@ -8,7 +8,9 @@ local hexrgb = Colors.hexrgb
 local M = {}
 
 -- Assembler container config
-function M.get_assembler_container_config(callbacks)
+function M.get_assembler_container_config(callbacks, filters)
+  filters = filters or M.DEFAULT_FILTERS
+
   return {
     header = {
       enabled = true,
@@ -58,6 +60,7 @@ function M.get_assembler_container_config(callbacks)
           spacing_before = 0,
           config = {
             label = "TCP",
+            checked = filters.TCP,
             on_change = callbacks.on_filter_tcp_changed,
           },
         },
@@ -68,6 +71,7 @@ function M.get_assembler_container_config(callbacks)
           spacing_before = 0,
           config = {
             label = "MCP",
+            checked = filters.MCP,
             on_change = callbacks.on_filter_mcp_changed,
           },
         },
@@ -78,6 +82,7 @@ function M.get_assembler_container_config(callbacks)
           spacing_before = 0,
           config = {
             label = "Transport",
+            checked = filters.Transport,
             on_change = callbacks.on_filter_transport_changed,
           },
         },
@@ -88,6 +93,7 @@ function M.get_assembler_container_config(callbacks)
           spacing_before = 0,
           config = {
             label = "Global",
+            checked = filters.Global,
             on_change = callbacks.on_filter_global_changed,
           },
         },

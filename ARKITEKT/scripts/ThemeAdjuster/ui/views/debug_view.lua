@@ -110,6 +110,7 @@ function DebugView:create_container_config()
           spacing_before = 0,
           config = {
             label = "Recursive",
+            checked = self.recursive,
             on_change = function(value)
               self.recursive = value
               if self.settings then self.settings:set('debug_recursive', value) end

@@ -37,6 +37,9 @@ function M.new(State, AppConfig, settings)
   self.theme_model = self:create_theme_model()
 
   -- Create container (Panel) with header and footer
+  -- Get current filter values for checkbox initialization
+  local filters = State.get_filters()
+
   local container_config = Config.get_assembler_container_config({
     on_demo_toggle = function()
       local new_demo = not State.get_demo_mode()
@@ -95,7 +98,7 @@ function M.new(State, AppConfig, settings)
       State.set_filters(filters)
       self.package_model.filters = filters
     end,
-  })
+  }, filters)
 
   -- Add footer with ZIP linking status
   container_config.footer = {
