@@ -57,7 +57,68 @@ function M.is_open(id)
   return inst.is_open
 end
 
---- Render the color picker window
+--- Render the color picker contents (without window wrapper)
+--- @param ctx userdata ImGui context
+--- @param id string Unique identifier for this picker
+--- @param on_change function Callback when color changes
+--- @return boolean changed Whether color was changed this frame
+local function render_picker_contents(ctx, id, on_change)
+  local inst = get_instance(id)
+  local changed = false
+
+  -- Style the color picker with dark borders
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#000000FF"))
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameBorderSize, 1)
+
+  -- Color picker configuration
+  local picker_flags = ImGui.ColorEditFlags_PickerHueWheel |
+                       ImGui.ColorEditFlags_NoSidePreview |
+                       ImGui.ColorEditFlags_NoSmallPreview |
+                       ImGui.ColorEditFlags_NoAlpha |
+                       ImGui.ColorEditFlags_NoInputs |
+                       ImGui.ColorEditFlags_NoLabel
+
+  -- Convert our RGBA to ImGui's ARGB format
+  local argb_color = Colors.rgba_to_argb(inst.current_color)
+
+  -- Draw the color picker (hue wheel + triangle)
+  local rv, new_argb_color = ImGui.ColorPicker4(ctx, '##picker_' .. id, argb_color, picker_flags)
+
+  ImGui.PopStyleVar(ctx, 1)
+  ImGui.PopStyleColor(ctx, 1)
+
+  -- Track color changes during dragging, but only apply on mouse release
+  if rv then
+    -- Convert ImGui's ARGB back to our RGBA format
+    local new_rgba = Colors.argb_to_rgba(new_argb_color)
+    inst.current_color = new_rgba
+    changed = true
+
+    -- Store that we have a pending change
+    inst.pending_change = true
+  end
+
+  -- Apply color only when mouse button is released
+  if inst.pending_change and ImGui.IsMouseReleased(ctx, 0) then
+    inst.pending_change = false
+
+    if on_change then
+      on_change(inst.current_color)
+    end
+  end
+
+  -- Show hex value
+  ImGui.Spacing(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
+  local hex_str = string.format("#%06X", (inst.current_color >> 8) & 0xFFFFFF)
+  ImGui.Text(ctx, "Color: " .. hex_str)
+
+  return changed
+end
+
+--- Render the color picker as a floating window
 --- @param ctx userdata ImGui context
 --- @param id string Unique identifier for this picker
 --- @param config table Configuration { on_change = function(color), title = string }
@@ -106,57 +167,8 @@ function M.render(ctx, id, config)
     return false
   end
 
-  local changed = false
-
-  -- Style the color picker with dark borders
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#000000FF"))  -- Dark border for triangle
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameBorderSize, 1)
-
-  -- Color picker configuration
-  local picker_flags = ImGui.ColorEditFlags_PickerHueWheel |
-                       ImGui.ColorEditFlags_NoSidePreview |
-                       ImGui.ColorEditFlags_NoSmallPreview |
-                       ImGui.ColorEditFlags_NoAlpha |
-                       ImGui.ColorEditFlags_NoInputs |
-                       ImGui.ColorEditFlags_NoLabel
-
-  -- Convert our RGBA to ImGui's ARGB format
-  local argb_color = Colors.rgba_to_argb(inst.current_color)
-
-  -- Draw the color picker (hue wheel + triangle)
-  local rv, new_argb_color = ImGui.ColorPicker4(ctx, '##picker', argb_color, picker_flags)
-
-  ImGui.PopStyleVar(ctx, 1)
-  ImGui.PopStyleColor(ctx, 1)
-
-  -- Track color changes during dragging, but only apply on mouse release
-  if rv then
-    -- Convert ImGui's ARGB back to our RGBA format
-    local new_rgba = Colors.argb_to_rgba(new_argb_color)
-    inst.current_color = new_rgba
-    changed = true
-
-    -- Store that we have a pending change
-    inst.pending_change = true
-  end
-
-  -- Apply color only when mouse button is released
-  if inst.pending_change and ImGui.IsMouseReleased(ctx, 0) then
-    inst.pending_change = false
-
-    if on_change then
-      reaper.ShowConsoleMsg(string.format("Color applied on mouse release: RGBA=%08X\n", inst.current_color))
-      on_change(inst.current_color)
-    end
-  end
-
-  -- Optional: Show hex value
-  ImGui.Spacing(ctx)
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
-
-  local hex_str = string.format("#%06X", (inst.current_color >> 8) & 0xFFFFFF)
-  ImGui.Text(ctx, "Color: " .. hex_str)
+  -- Render the picker contents
+  local changed = render_picker_contents(ctx, id, on_change)
 
   -- Close button at bottom
   ImGui.Spacing(ctx)
@@ -184,6 +196,49 @@ end
 function M.set_color(id, color)
   local inst = get_instance(id)
   inst.current_color = color
+end
+
+--- Render the color picker inline (embedded in a panel)
+--- @param ctx userdata ImGui context
+--- @param id string Unique identifier for this picker
+--- @param config table Configuration { on_change = function(color), on_close = function(), initial_color = number }
+--- @return boolean changed Whether color was changed this frame
+function M.render_inline(ctx, id, config)
+  config = config or {}
+  local inst = get_instance(id)
+  local on_change = config.on_change
+  local on_close = config.on_close
+
+  -- Set initial color if provided
+  if config.initial_color and inst.first_open then
+    inst.current_color = config.initial_color
+    inst.first_open = false
+  end
+
+  -- Render the picker contents
+  local changed = render_picker_contents(ctx, id, on_change)
+
+  -- Close button at bottom
+  ImGui.Spacing(ctx)
+  local button_w = ImGui.GetContentRegionAvail(ctx)
+  if ImGui.Button(ctx, "Close##" .. id, button_w, 0) then
+    if on_close then
+      on_close()
+    end
+  end
+
+  return changed
+end
+
+--- Initialize inline picker (call this to show it)
+--- @param id string Unique identifier for this picker
+--- @param initial_color number Optional initial color (RGBA)
+function M.show_inline(id, initial_color)
+  local inst = get_instance(id)
+  inst.first_open = true
+  if initial_color then
+    inst.current_color = initial_color
+  end
 end
 
 return M

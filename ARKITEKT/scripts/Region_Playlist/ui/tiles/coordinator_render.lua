@@ -93,13 +93,20 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   
   local child_w = avail_w - (self.container_config.padding * 2)
   local child_h = (height - header_height) - (self.container_config.padding * 2)
-  
+
+  -- Reserve space for inline color picker if visible
+  local picker_height = 270  -- Height of color picker (approx 250px picker + padding)
+  local grid_h = child_h
+  if self._active_color_picker_visible then
+    grid_h = child_h - picker_height - 8  -- 8px spacing
+  end
+
   self.active_grid.get_items = function() return playlist.items end
-  
+
   local raw_height, raw_gap = ResponsiveGrid.calculate_responsive_tile_height({
     item_count = #playlist.items,
     avail_width = child_w,
-    avail_height = child_h,
+    avail_height = grid_h,  -- Use grid_h instead of child_h to account for picker
     base_gap = ActiveTile.CONFIG.gap,
     min_col_width = ActiveTile.CONFIG.tile_width,
     base_tile_height = self.responsive_config.base_tile_height_active,
@@ -140,7 +147,42 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   end
   
   self.active_grid:draw(ctx)
-  
+
+  -- Inline Color Picker (renders at bottom of active panel if visible)
+  if self._active_color_picker_visible then
+    -- Add spacing before the picker
+    ImGui.Spacing(ctx)
+    ImGui.Separator(ctx)
+    ImGui.Spacing(ctx)
+
+    -- Render inline color picker
+    ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
+      on_change = function(color)
+        -- Apply color to all selected regions/playlists
+        if self.active_grid and self.active_grid.selection and self.controller then
+          local selected_keys = self.active_grid.selection:selected_keys()
+
+          for _, key in ipairs(selected_keys) do
+            -- Handle regions: "active_123"
+            local rid = key:match("^active_(%d+)$")
+            if rid then
+              self.controller:set_region_color(tonumber(rid), color)
+            end
+
+            -- Handle playlists: "active_playlist_abc-def"
+            local playlist_id = key:match("^active_playlist_(.+)$")
+            if playlist_id then
+              self.controller:set_playlist_color(playlist_id, color)
+            end
+          end
+        end
+      end,
+      on_close = function()
+        self._active_color_picker_visible = false
+      end,
+    })
+  end
+
   self.active_container:end_draw(ctx)
 
   -- Actions context menu
@@ -150,6 +192,29 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   end
 
   if ContextMenu.begin(ctx, "ActionsMenu") then
+    if ContextMenu.item(ctx, "Recolor") then
+      -- Get first selected item's color as initial color
+      local initial_color = nil
+      if self.active_grid and self.active_grid.selection then
+        local selected_keys = self.active_grid.selection:selected_keys()
+        for _, key in ipairs(selected_keys) do
+          local rid = key:match("^active_(%d+)$")
+          if rid then
+            local region = State.get_region_by_rid(tonumber(rid))
+            if region and region.color then
+              initial_color = region.color
+              break
+            end
+          end
+        end
+      end
+
+      -- Show inline color picker
+      self._active_color_picker_visible = true
+      ColorPickerWindow.show_inline("active_recolor_inline", initial_color)
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
     if ContextMenu.item(ctx, "Import from SWS Region Playlist") then
       self._sws_import_requested = true
       ImGui.CloseCurrentPopup(ctx)
@@ -251,13 +316,20 @@ function M.draw_pool(self, ctx, regions, height)
   
   local child_w = avail_w - (self.container_config.padding * 2)
   local child_h = (height - header_height) - (self.container_config.padding * 2)
-  
+
+  -- Reserve space for inline color picker if visible
+  local picker_height = 270  -- Height of color picker (approx 250px picker + padding)
+  local grid_h = child_h
+  if self._pool_color_picker_visible then
+    grid_h = child_h - picker_height - 8  -- 8px spacing
+  end
+
   self.pool_grid.get_items = function() return regions end
   
   local raw_height, raw_gap = ResponsiveGrid.calculate_responsive_tile_height({
     item_count = #regions,
     avail_width = child_w,
-    avail_height = child_h,
+    avail_height = grid_h,  -- Use grid_h instead of child_h to account for picker
     base_gap = PoolTile.CONFIG.gap,
     min_col_width = PoolTile.CONFIG.tile_width,
     base_tile_height = self.responsive_config.base_tile_height_pool,
@@ -270,9 +342,44 @@ function M.draw_pool(self, ctx, regions, height)
   self.current_pool_tile_height = responsive_height
   self.pool_grid.fixed_tile_h = responsive_height
   self.pool_grid.gap = raw_gap
-  
+
   self.pool_grid:draw(ctx)
-  
+
+  -- Inline Color Picker (renders at bottom of pool panel if visible)
+  if self._pool_color_picker_visible then
+    -- Add spacing before the picker
+    ImGui.Spacing(ctx)
+    ImGui.Separator(ctx)
+    ImGui.Spacing(ctx)
+
+    -- Render inline color picker
+    ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
+      on_change = function(color)
+        -- Apply color to all selected regions/playlists
+        if self.pool_grid and self.pool_grid.selection and self.controller then
+          local selected_keys = self.pool_grid.selection:selected_keys()
+
+          for _, key in ipairs(selected_keys) do
+            -- Handle regions: "pool_123"
+            local rid = key:match("^pool_(%d+)$")
+            if rid then
+              self.controller:set_region_color(tonumber(rid), color)
+            end
+
+            -- Handle playlists: "pool_playlist_abc-def"
+            local playlist_id = key:match("^pool_playlist_(.+)$")
+            if playlist_id then
+              self.controller:set_playlist_color(playlist_id, color)
+            end
+          end
+        end
+      end,
+      on_close = function()
+        self._pool_color_picker_visible = false
+      end,
+    })
+  end
+
   self.pool_container:end_draw(ctx)
 
   -- Pool Actions context menu
@@ -299,7 +406,9 @@ function M.draw_pool(self, ctx, regions, height)
         end
       end
 
-      ColorPickerWindow.open("pool_recolor", initial_color)
+      -- Show inline color picker instead of window
+      self._pool_color_picker_visible = true
+      ColorPickerWindow.show_inline("pool_recolor_inline", initial_color)
       ImGui.CloseCurrentPopup(ctx)
     end
 
@@ -311,36 +420,6 @@ function M.draw_pool(self, ctx, regions, height)
       self.bridge:clear_drag()
     end
   end
-
-  -- Color Picker Window (renders if open)
-  ColorPickerWindow.render(ctx, "pool_recolor", {
-    title = "Recolor Selected",
-    on_change = function(color)
-      -- Live update: apply color immediately to all selected regions/playlists
-      if self.pool_grid and self.pool_grid.selection and self.controller then
-        local selected_keys = self.pool_grid.selection:selected_keys()
-        reaper.ShowConsoleMsg(string.format("Callback fired! Selected keys: %d\n", #selected_keys))
-
-        for _, key in ipairs(selected_keys) do
-          -- Handle regions: "pool_123"
-          local rid = key:match("^pool_(%d+)$")
-          if rid then
-            reaper.ShowConsoleMsg(string.format("Setting region %d color to %08X\n", tonumber(rid), color))
-            self.controller:set_region_color(tonumber(rid), color)
-          end
-
-          -- Handle playlists: "pool_playlist_abc-def"
-          local playlist_id = key:match("^pool_playlist_(.+)$")
-          if playlist_id then
-            reaper.ShowConsoleMsg(string.format("Setting playlist %s color to %08X\n", playlist_id, color))
-            self.controller:set_playlist_color(playlist_id, color)
-          end
-        end
-      else
-        reaper.ShowConsoleMsg("Callback fired but missing grid/selection/controller\n")
-      end
-    end
-  })
 end
 
 function M.draw_ghosts(self, ctx)
