@@ -8,6 +8,7 @@ local FileOps = require('TemplateBrowser.domain.file_ops')
 local Tags = require('TemplateBrowser.domain.tags')
 local Separator = require('TemplateBrowser.ui.separator')
 local FXQueue = require('TemplateBrowser.domain.fx_queue')
+local Chip = require('TemplateBrowser.ui.chip')
 
 local M = {}
 local GUI = {}
@@ -901,8 +902,111 @@ local function draw_template_panel(ctx, state, config, width, height)
         label = label .. "  [" .. tmpl.folder .. "]"
       end
 
+      -- Store position before Selectable
+      local pre_cursor_x, pre_cursor_y = ImGui.GetCursorPos(ctx)
+
       if ImGui.Selectable(ctx, label, is_selected, nil, 0, config.TEMPLATE_ITEM_HEIGHT) then
         state.selected_template = tmpl
+      end
+
+      -- Draw colored chip if template has one
+      local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
+      if tmpl_metadata and tmpl_metadata.chip_color then
+        local sel_item_hovered = ImGui.IsItemHovered(ctx)
+        local chip_x, chip_y = ImGui.GetCursorScreenPos(ctx)
+        -- Offset to beginning of selectable item
+        chip_y = chip_y - config.TEMPLATE_ITEM_HEIGHT + (config.TEMPLATE_ITEM_HEIGHT / 2)
+        chip_x = chip_x + 4
+
+        Chip.draw_indicator(ctx, {
+          x = chip_x,
+          y = chip_y,
+          radius = 4,
+          color = tmpl_metadata.chip_color,
+          is_selected = is_selected,
+          is_hovered = sel_item_hovered,
+          show_glow = is_selected or sel_item_hovered,
+          glow_layers = 2,
+        })
+      end
+
+      -- Right-click: open color picker context menu
+      if ImGui.IsItemClicked(ctx, 1) then  -- Right mouse button
+        state.selected_template = tmpl
+        ImGui.OpenPopup(ctx, "##template_context_" .. tostring(i))
+      end
+
+      -- Context menu with color picker
+      if ImGui.BeginPopup(ctx, "##template_context_" .. tostring(i)) then
+        ImGui.Text(ctx, "Set Template Color")
+        ImGui.Separator(ctx)
+        ImGui.Spacing(ctx)
+
+        -- Get template metadata
+        local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
+        local current_color = tmpl_metadata and tmpl_metadata.chip_color or nil
+
+        -- Draw 4x4 color grid
+        local grid_cols = 4
+        local chip_size = 20
+        local chip_spacing = 8
+        local chip_radius = chip_size / 2
+
+        for idx, color in ipairs(Chip.PRESET_COLORS) do
+          local col_idx = (idx - 1) % grid_cols
+          local row_idx = math.floor((idx - 1) / grid_cols)
+
+          if col_idx > 0 then
+            ImGui.SameLine(ctx)
+          end
+
+          -- Position for color button
+          local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
+
+          -- Clickable area
+          if ImGui.InvisibleButton(ctx, "##color_" .. idx .. "_" .. i, chip_size, chip_size) then
+            -- Set color
+            if tmpl_metadata then
+              tmpl_metadata.chip_color = color
+              local Persistence = require('TemplateBrowser.domain.persistence')
+              Persistence.save_metadata(state.metadata)
+            end
+            ImGui.CloseCurrentPopup(ctx)
+          end
+
+          local is_hovered = ImGui.IsItemHovered(ctx)
+          local is_this_color = (current_color == color)
+
+          -- Draw chip
+          local chip_x = start_x + chip_radius
+          local chip_y = start_y + chip_radius
+          Chip.draw_indicator(ctx, {
+            x = chip_x,
+            y = chip_y,
+            radius = chip_radius - 2,
+            color = color,
+            is_selected = is_this_color,
+            is_hovered = is_hovered,
+            show_glow = is_this_color or is_hovered,
+            glow_layers = is_this_color and 6 or 3,
+          })
+        end
+
+        ImGui.Spacing(ctx)
+        ImGui.Separator(ctx)
+        ImGui.Spacing(ctx)
+
+        -- Remove color button
+        if ImGui.Button(ctx, "Remove Color", -1, 0) then
+          if tmpl_metadata then
+            tmpl_metadata.chip_color = nil
+            local Persistence = require('TemplateBrowser.domain.persistence')
+            Persistence.save_metadata(state.metadata)
+          end
+          ImGui.CloseCurrentPopup(ctx)
+        end
+
+        ImGui.EndPopup(ctx)
       end
 
       -- Double-click: apply or rename (Ctrl = rename, normal = apply)

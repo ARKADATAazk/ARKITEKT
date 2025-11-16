@@ -108,7 +108,8 @@ local function scan_directory(path, relative_path, metadata)
           created = os.time(),
           last_seen = os.time(),
           usage_count = 0,
-          last_used = nil
+          last_used = nil,
+          chip_color = nil  -- Color chip for template (can be set via context menu)
         }
 
         -- Only set file_size if we successfully read it
@@ -379,9 +380,31 @@ function M.filter_templates(state)
       return a_created > b_created  -- Most recent first
     end)
   elseif state.sort_mode == "color" then
-    -- TODO: Sort by color when color metadata is added
-    -- For now, fall back to alphabetical
+    -- Sort by color: colored templates first (grouped by color), then uncolored (alphabetical)
     table.sort(filtered, function(a, b)
+      local a_metadata = state.metadata and state.metadata.templates[a.uuid]
+      local b_metadata = state.metadata and state.metadata.templates[b.uuid]
+      local a_color = a_metadata and a_metadata.chip_color
+      local b_color = b_metadata and b_metadata.chip_color
+
+      -- If both have colors, sort by color value (groups similar colors)
+      if a_color and b_color then
+        if a_color == b_color then
+          -- Same color: alphabetical
+          return a.name:lower() < b.name:lower()
+        end
+        return a_color < b_color
+      end
+
+      -- Colored templates come before uncolored
+      if a_color and not b_color then
+        return true
+      end
+      if not a_color and b_color then
+        return false
+      end
+
+      -- Both uncolored: alphabetical
       return a.name:lower() < b.name:lower()
     end)
   end
