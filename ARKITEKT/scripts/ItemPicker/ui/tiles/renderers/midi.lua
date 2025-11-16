@@ -179,6 +179,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       if not state.rename_focused then
         ImGui.SetKeyboardFocusHere(ctx)
         state.rename_focused = true
+        state.rename_focus_frame = true  -- Mark this as the focus frame
       end
 
       local changed, new_text = ImGui.InputText(ctx, "##rename", state.rename_text, ImGui.InputTextFlags_EnterReturnsTrue)
@@ -200,6 +201,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
           state.rename_uuid = next_uuid
           state.rename_focused = false
           state.rename_text = ""  -- Will be populated on next frame
+          state.rename_focus_frame = false
         else
           -- No more items in queue, end rename session
           state.rename_active = false
@@ -207,10 +209,11 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
           state.rename_focused = false
           state.rename_queue = nil
           state.rename_queue_index = 0
+          state.rename_focus_frame = false
         end
       end
 
-      -- Cancel on Escape or focus loss
+      -- Cancel on Escape or focus loss (but NOT on the frame we just set focus)
       if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
         -- Cancel entire rename session on Escape
         state.rename_active = false
@@ -218,13 +221,20 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         state.rename_focused = false
         state.rename_queue = nil
         state.rename_queue_index = 0
-      elseif state.rename_focused and not ImGui.IsItemActive(ctx) then
-        -- Only cancel on focus loss if not in batch mode
+        state.rename_focus_frame = false
+      elseif state.rename_focused and not ImGui.IsItemActive(ctx) and not state.rename_focus_frame then
+        -- Only cancel on focus loss if not in batch mode AND not on focus frame
         if not state.rename_queue or #state.rename_queue <= 1 then
           state.rename_active = false
           state.rename_uuid = nil
           state.rename_focused = false
+          state.rename_focus_frame = false
         end
+      end
+
+      -- Clear focus frame flag after first frame
+      if state.rename_focus_frame then
+        state.rename_focus_frame = false
       end
 
       -- Update rename text
