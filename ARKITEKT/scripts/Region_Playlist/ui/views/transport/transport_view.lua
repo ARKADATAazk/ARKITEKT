@@ -240,14 +240,15 @@ function TransportView:build_header_elements(bridge_state, available_width)
           ImGui.DrawList_AddText(dl, label_x + padding, label_y, label_color, label)
           ImGui.Dummy(ctx, width, 20)
 
-          -- Push custom slider styling for better appearance
+          -- Push custom slider styling for squared grey slider
           ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#1A1A1AFF"))          -- Slider track background
           ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#222222FF"))   -- Hovered track
           ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#252525FF"))    -- Active track
-          ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, Colors.hexrgb("#37775FFF"))       -- Grab (matches teal theme)
-          ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, Colors.hexrgb("#42866DFF"))  -- Active grab (brighter teal)
+          ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, Colors.hexrgb("#606060FF"))       -- Grey grab (squared)
+          ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, Colors.hexrgb("#707070FF"))  -- Lighter grey when active
           ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabMinSize, 14)                            -- Larger grab for easier interaction
           ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 4, 6)                         -- More padding for height
+          ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabRounding, 0)                            -- Squared grab (not rounded)
 
           -- Slider
           local slider_x, slider_y = ImGui.GetCursorScreenPos(ctx)
@@ -257,7 +258,7 @@ function TransportView:build_header_elements(bridge_state, available_width)
           local lookahead_ms = self.config.quantize_lookahead * 1000
           local changed, new_val = ImGui.SliderDouble(ctx, "##quantize_lookahead", lookahead_ms, 200, 1000, "%.0fms")
 
-          ImGui.PopStyleVar(ctx, 2)
+          ImGui.PopStyleVar(ctx, 3)  -- Pop GrabRounding, FramePadding, GrabMinSize
           ImGui.PopStyleColor(ctx, 5)
 
           if changed then

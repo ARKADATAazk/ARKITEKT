@@ -198,9 +198,9 @@ M.DROPDOWN_COLORS = {
   arrow = M.COLORS.TEXT_NORMAL,
   arrow_hover = M.COLORS.TEXT_HOVER,
 
-  -- Popup menu (improved visibility and contrast)
-  popup_bg = hexrgb("#242424FF"),         -- Popup background (lighter for better contrast)
-  popup_border = hexrgb("#505050FF"),     -- Popup border (more visible)
+  -- Popup menu (darker with dark borders)
+  popup_bg = hexrgb("#1A1A1AFF"),         -- Popup background (darker)
+  popup_border = hexrgb("#252525FF"),     -- Popup border (dark)
 
   -- Menu items (enhanced styling)
   item_bg = hexrgb("#00000000"),          -- Item background (transparent)
