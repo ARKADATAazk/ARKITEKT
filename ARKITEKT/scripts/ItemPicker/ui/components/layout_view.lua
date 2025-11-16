@@ -6,7 +6,7 @@ local ImGui = require 'imgui' '0.10'
 local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
 local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local DraggableSeparator = require('rearkitekt.gui.widgets.primitives.separator')
-local StatusBar = require('ItemPicker.ui.views.status_bar')
+local StatusBar = require('ItemPicker.ui.components.status_bar')
 local Colors = require('rearkitekt.core.colors')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 
