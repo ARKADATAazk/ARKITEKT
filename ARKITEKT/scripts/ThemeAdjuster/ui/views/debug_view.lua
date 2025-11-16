@@ -36,7 +36,8 @@ function M.new(State, AppConfig, settings)
   }, DebugView)
 
   -- Initialize image cache using ARKITEKT's system
-  self.image_cache = ImageCache.new({ budget = 48, no_crop = true })
+  -- Use small budget (3 images per frame) for progressive loading without UI freeze
+  self.image_cache = ImageCache.new({ budget = 3, no_crop = true })
 
   -- Create container (Panel) with header
   local container_config = self:create_container_config()
@@ -62,10 +63,9 @@ function DebugView:create_container_config()
           config = {
             label = "Rescan Images",
             on_click = function()
-              if self.image_cache then self.image_cache:clear() end
               self.img_dir = Theme.prepare_images(true)
               if self.img_dir then
-                self:fetch_image_list()
+                self:fetch_image_list()  -- This will clear cache automatically
               end
             end,
           },
@@ -79,12 +79,11 @@ function DebugView:create_container_config()
             label = "Reload in REAPER",
             on_click = function()
               Theme.reload_theme_in_reaper()
-              if self.image_cache then self.image_cache:clear() end
               self.image_list = {}
               self.total_images = 0
               self.img_dir = Theme.prepare_images(false)
               if self.img_dir then
-                self:fetch_image_list()
+                self:fetch_image_list()  -- This will clear cache automatically
               end
             end,
           },
@@ -136,7 +135,7 @@ function DebugView:create_container_config()
             on_click = function()
               self.page_index = math.max(1, self.page_index - 1)
               if self.settings then self.settings:set('debug_page_index', self.page_index) end
-              if self.image_cache then self.image_cache:clear() end
+              -- Don't clear cache - let images load progressively
             end,
           },
         },
@@ -151,7 +150,7 @@ function DebugView:create_container_config()
               local total_pages = self:get_total_pages()
               self.page_index = math.min(total_pages, self.page_index + 1)
               if self.settings then self.settings:set('debug_page_index', self.page_index) end
-              if self.image_cache then self.image_cache:clear() end
+              -- Don't clear cache - let images load progressively
             end,
           },
         },
