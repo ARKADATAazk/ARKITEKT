@@ -18,6 +18,18 @@ local ColorPickerWindow = require('rearkitekt.gui.widgets.tools.color_picker_win
 
 local M = {}
 
+-- ImGui 0.9/0.10 compatibility for ChildFlags
+local HAS_CHILD_FLAGS = (ImGui.ChildFlags_None ~= nil)
+
+-- Helper: BeginChild with border compatibility
+local function BeginChildWithBorder(ctx, id, width, height)
+  if HAS_CHILD_FLAGS then
+    return ImGui.BeginChild(ctx, id, width, height, ImGui.ChildFlags_Border)
+  else
+    return ImGui.BeginChild(ctx, id, width, height, true)
+  end
+end
+
 -- Modal state
 local sws_result_data = nil
 local rename_initial_text = nil
@@ -159,7 +171,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
     ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x000000FF)
 
     -- Wrap in a child region with border
-    if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size, ImGui.ChildFlags_Border) then
+    if BeginChildWithBorder(ctx, "ActiveColorPickerRegion", picker_size, picker_size) then
       ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
         size = picker_size,
         on_change = function(color)
@@ -381,7 +393,7 @@ function M.draw_pool(self, ctx, regions, height)
     ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x000000FF)
 
     -- Wrap in a child region with border
-    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size, ImGui.ChildFlags_Border) then
+    if BeginChildWithBorder(ctx, "PoolColorPickerRegion", picker_size, picker_size) then
       ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
         size = picker_size,
         on_change = function(color)
