@@ -12,6 +12,8 @@ local Chip = require('rearkitekt.gui.widgets.data.chip')
 local Colors = require('rearkitekt.core.colors')
 local TileAnim = require('rearkitekt.gui.rendering.tile.animator')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
+local TilesContainer = require('rearkitekt.gui.widgets.containers.tiles')
+local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_config')
 
 local M = {}
 local GUI = {}
@@ -55,6 +57,7 @@ function M.new(config, state, scanner)
     separator2 = Separator.new("sep2"),
     template_animator = TileAnim.new(16.0),  -- Animation speed
     template_grid = nil,  -- Initialized in initialize_once
+    template_container = nil,  -- Initialized in initialize_once
   }, GUI)
 
   return self
@@ -75,7 +78,7 @@ function GUI:initialize_once(ctx)
       -- Update selected template from grid selection
       if selected_keys and #selected_keys > 0 then
         local key = selected_keys[1]
-        local uuid = key:match("template_(.+)")  -- Keep as string, don't convert to number!
+        local uuid = key:match("template_(.+)")  -- Keep as string!
 
         for _, tmpl in ipairs(self.state.filtered_templates) do
           if tmpl.uuid == uuid then
@@ -111,6 +114,31 @@ function GUI:initialize_once(ctx)
       end
     end
   )
+
+  -- Create template container with header controls
+  local container_config = TemplateContainerConfig.create({
+    get_template_count = function()
+      return #self.state.filtered_templates
+    end,
+    get_search_query = function()
+      return self.state.search_query
+    end,
+    on_search_changed = function(new_query)
+      self.state.search_query = new_query
+      local Scanner = require('TemplateBrowser.domain.scanner')
+      Scanner.filter_templates(self.state)
+    end,
+    get_sort_mode = function()
+      return self.state.sort_mode
+    end,
+    on_sort_changed = function(new_mode)
+      self.state.sort_mode = new_mode
+      local Scanner = require('TemplateBrowser.domain.scanner')
+      Scanner.filter_templates(self.state)
+    end,
+  })
+
+  self.template_container = TilesContainer.new(container_config)
 
   self.initialized = true
 end
@@ -770,162 +798,24 @@ local function draw_left_panel(ctx, state, config, width, height)
 end
 
 -- Draw template list panel (middle)
+-- Draw template panel using TilesContainer
 local function draw_template_panel(ctx, gui, width, height)
   local state = gui.state
-  local config = gui.config
 
-  BeginChildCompat(ctx, "TemplatePanel", width, height, true)
+  -- Set container dimensions
+  gui.template_container.width = width
+  gui.template_container.height = height
 
-  -- Header with search
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.SeparatorText(ctx, "Templates")
-  ImGui.PopStyleColor(ctx)
-
-  ImGui.Spacing(ctx)
-
-  -- Search box
-  ImGui.SetNextItemWidth(ctx, -1)
-  local changed, new_query = ImGui.InputTextWithHint(ctx, "##search", "Search templates...", state.search_query)
-  if changed then
-    state.search_query = new_query
-    local Scanner = require('TemplateBrowser.domain.scanner')
-    Scanner.filter_templates(state)
+  -- Begin panel drawing
+  if not gui.template_container:begin_draw(ctx) then
+    return
   end
 
-  ImGui.Spacing(ctx)
-
-  -- Filter chips (VSTs and Tags)
-  local has_filters = false
-
-  -- VST filter chips
-  for fx_name, _ in pairs(state.filter_fx) do
-    has_filters = true
-    ImGui.PushID(ctx, "fx_" .. fx_name)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(0.3, 0.5, 0.7, 1.0))
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, ImGui.ColorConvertDouble4ToU32(0.4, 0.6, 0.8, 1.0))
-
-    if ImGui.SmallButton(ctx, fx_name .. " x") then
-      -- Remove from filter
-      state.filter_fx[fx_name] = nil
-      local Scanner = require('TemplateBrowser.domain.scanner')
-      Scanner.filter_templates(state)
-    end
-
-    ImGui.PopStyleColor(ctx, 2)
-    ImGui.SameLine(ctx)
-    ImGui.PopID(ctx)
-  end
-
-  -- Tag filter chips
-  for tag_name, _ in pairs(state.filter_tags) do
-    has_filters = true
-    local tag_data = state.metadata and state.metadata.tags and state.metadata.tags[tag_name]
-
-    ImGui.PushID(ctx, "tag_" .. tag_name)
-
-    if tag_data then
-      local r = ((tag_data.color >> 16) & 0xFF) / 255.0
-      local g = ((tag_data.color >> 8) & 0xFF) / 255.0
-      local b = (tag_data.color & 0xFF) / 255.0
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(r * 0.7, g * 0.7, b * 0.7, 1.0))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, ImGui.ColorConvertDouble4ToU32(r * 0.9, g * 0.9, b * 0.9, 1.0))
-    else
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(0.5, 0.3, 0.7, 1.0))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, ImGui.ColorConvertDouble4ToU32(0.6, 0.4, 0.8, 1.0))
-    end
-
-    if ImGui.SmallButton(ctx, tag_name .. " x") then
-      -- Remove from filter
-      state.filter_tags[tag_name] = nil
-      local Scanner = require('TemplateBrowser.domain.scanner')
-      Scanner.filter_templates(state)
-    end
-
-    ImGui.PopStyleColor(ctx, 2)
-    ImGui.SameLine(ctx)
-    ImGui.PopID(ctx)
-  end
-
-  if has_filters then
-    ImGui.NewLine(ctx)  -- End the chip line
-
-    -- Clear all filters button
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(0.6, 0.3, 0.3, 1.0))
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, ImGui.ColorConvertDouble4ToU32(0.7, 0.4, 0.4, 1.0))
-    if ImGui.SmallButton(ctx, "Clear All Filters") then
-      -- Clear all FX filters
-      state.filter_fx = {}
-      -- Clear all tag filters
-      state.filter_tags = {}
-      -- Re-filter
-      local Scanner = require('TemplateBrowser.domain.scanner')
-      Scanner.filter_templates(state)
-    end
-    ImGui.PopStyleColor(ctx, 2)
-
-    ImGui.Spacing(ctx)
-  end
-
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
-
-  -- Template count and sort selector
-  local count = #state.filtered_templates
-  ImGui.Text(ctx, string.format("%d template%s", count, count == 1 and "" or "s"))
-
-  ImGui.SameLine(ctx)
-  ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 10)
-  ImGui.Text(ctx, "Sort:")
-  ImGui.SameLine(ctx)
-
-  -- Sort mode combo box
-  local sort_modes = {"Alphabetical", "Most Used", "Recently Added", "Color"}
-  local sort_mode_values = {"alphabetical", "usage", "insertion", "color"}
-  local current_idx = 1
-  for i, mode_val in ipairs(sort_mode_values) do
-    if state.sort_mode == mode_val then
-      current_idx = i
-      break
-    end
-  end
-
-  ImGui.SetNextItemWidth(ctx, 130)
-  if ImGui.BeginCombo(ctx, "##sort", sort_modes[current_idx]) then
-    for i, mode_label in ipairs(sort_modes) do
-      local is_selected = (current_idx == i)
-      if ImGui.Selectable(ctx, mode_label, is_selected) then
-        state.sort_mode = sort_mode_values[i]
-        -- Re-filter to apply new sort
-        local Scanner = require('TemplateBrowser.domain.scanner')
-        Scanner.filter_templates(state)
-      end
-      if is_selected then
-        ImGui.SetItemDefaultFocus(ctx)
-      end
-    end
-    ImGui.EndCombo(ctx)
-  end
-
-  -- Tile width control
-  ImGui.SameLine(ctx)
-  ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 15)
-  ImGui.Text(ctx, "Size:")
-  ImGui.SameLine(ctx)
-  ImGui.SetNextItemWidth(ctx, 100)
-  local changed, new_width = ImGui.SliderInt(ctx, "##tilewidth", state.tile_width, 120, 600, "%d px")
-  if changed then
-    state.tile_width = new_width
-  end
-
-  ImGui.Separator(ctx)
-
-  -- Template grid
+  -- Draw template grid
   gui.template_grid:draw(ctx)
 
-  -- Add dummy item to establish proper window boundaries after grid's SetCursorPos usage
-  ImGui.Dummy(ctx, 0, 0)
-
-  ImGui.EndChild(ctx)  -- End TemplatePanel child
+  -- End panel drawing
+  gui.template_container:end_draw(ctx)
 end
 
 -- Draw template context menu (color picker)
