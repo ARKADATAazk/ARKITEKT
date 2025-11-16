@@ -135,7 +135,8 @@ function DebugView:create_container_config()
             on_click = function()
               self.page_index = math.max(1, self.page_index - 1)
               if self.settings then self.settings:set('debug_page_index', self.page_index) end
-              -- Don't clear cache - let images load progressively
+              -- Clear cache to avoid invalid image handle errors
+              if self.image_cache then self.image_cache:clear() end
             end,
           },
         },
@@ -150,7 +151,8 @@ function DebugView:create_container_config()
               local total_pages = self:get_total_pages()
               self.page_index = math.min(total_pages, self.page_index + 1)
               if self.settings then self.settings:set('debug_page_index', self.page_index) end
-              -- Don't clear cache - let images load progressively
+              -- Clear cache to avoid invalid image handle errors
+              if self.image_cache then self.image_cache:clear() end
             end,
           },
         },
