@@ -89,10 +89,19 @@ function TransportView:get_region_colors()
   return { current = current_color, next = next_color }
 end
 
-function TransportView:build_header_elements(bridge_state)
+function TransportView:build_header_elements(bridge_state, available_width)
   bridge_state = bridge_state or {}
+  available_width = available_width or math.huge
 
-  return {
+  -- Calculate minimum width needed for all buttons
+  -- Play (34) + Stop (34) + Loop (34) + Jump (46) + Quantize (85) + Override (130) + Follow (110) + spacing
+  local min_width_full = 34 + 34 + 34 + 46 + 85 + 130 + 110 + (6 * 0)  -- ~473px without spacing
+  local min_width_compact = 34 + 34 + 34 + 46 + 85 + 90 + (5 * 0)  -- ~323px with dropdown
+
+  -- Use compact mode (dropdown) if there's not enough space for full buttons
+  local use_compact_mode = available_width < min_width_full
+
+  local elements = {
     {
       type = "button",
       id = "transport_play",
@@ -264,7 +273,53 @@ function TransportView:build_header_elements(bridge_state)
         -- <<< FOOTER: LOOKAHEAD SLIDER (END)
       },
     },
-    {
+  }
+
+  -- Add playback controls (responsive: dropdown when compact, buttons when full)
+  if use_compact_mode then
+    -- Compact mode: Use dropdown with checkboxes
+    elements[#elements + 1] = {
+      type = "dropdown_field",
+      id = "transport_playback",
+      align = "center",
+      width = 90,
+      config = {
+        tooltip = "Playback Options",
+        current_value = nil,
+        options = {
+          { value = nil, label = "Playback" },
+          {
+            value = "override_transport",
+            label = "Override Transport",
+            checkbox = true,
+            checked = bridge_state.override_enabled or false,
+          },
+          {
+            value = "follow_viewport",
+            label = "Follow Viewport",
+            checkbox = true,
+            checked = bridge_state.follow_viewport or false,
+          },
+        },
+        on_checkbox_change = function(value, new_checked)
+          if value == "override_transport" then
+            local bridge = self.state.get_bridge()
+            local engine = bridge.engine
+            if engine then
+              engine:set_transport_override(new_checked)
+            end
+          elseif value == "follow_viewport" then
+            local command_id = reaper.NamedCommandLookup("_WOL_CONTSCROLL")
+            if command_id > 0 then
+              reaper.Main_OnCommand(command_id, 0)
+            end
+          end
+        end,
+      },
+    }
+  else
+    -- Full mode: Use separate toggle buttons
+    elements[#elements + 1] = {
       type = "button",
       id = "transport_override",
       align = "center",
@@ -283,8 +338,8 @@ function TransportView:build_header_elements(bridge_state)
           end
         end,
       },
-    },
-    {
+    }
+    elements[#elements + 1] = {
       type = "button",
       id = "transport_follow",
       align = "center",
@@ -295,15 +350,16 @@ function TransportView:build_header_elements(bridge_state)
         preset_name = "BUTTON_TOGGLE_WHITE",
         tooltip = "Follow Playhead in Viewport",
         on_click = function()
-          -- Toggle REAPER action (Continuous scrolling during playback)
           local command_id = reaper.NamedCommandLookup("_WOL_CONTSCROLL")
           if command_id > 0 then
             reaper.Main_OnCommand(command_id, 0)
           end
         end,
       },
-    },
-  }
+    }
+  end
+
+  return elements
 end
 
 function TransportView:draw(ctx, shell_state, is_blocking)
@@ -363,7 +419,9 @@ function TransportView:draw(ctx, shell_state, is_blocking)
     end
   end
 
-  self.container:set_header_elements(self:build_header_elements(bridge_state))
+  -- Get available width for responsive header layout
+  local available_width = ImGui.GetContentRegionAvail(ctx)
+  self.container:set_header_elements(self:build_header_elements(bridge_state, available_width))
   
   local spacing = self.config.spacing
   local transport_height = self.config.height
