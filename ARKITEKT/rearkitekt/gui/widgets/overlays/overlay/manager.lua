@@ -282,13 +282,23 @@ function M:render(ctx, dt)
   local scrim_alpha = base_scrim_opacity * alpha_val
   local scrim_color = (base_scrim_color & 0xFFFFFF00) | math.floor(255 * scrim_alpha + 0.5)
 
-  -- Don't use PushMyStyle for viewport overlays - match old overlay.lua exactly
+  -- HYBRID APPROACH: Use BeginPopupModal for input blocking, custom rendering for visuals
+  -- Set modal dim background to fully transparent (we render our own scrim)
+  ImGui.PushStyleColor(ctx, ImGui.Col_ModalWindowDimBg, 0x00000000)  -- Transparent
+
+  -- Set window background to scrim color for custom appearance
   ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, scrim_color)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, alpha_val)
 
-  local visible = ImGui.Begin(ctx, "##modal_overlay_" .. top.id, true, window_flags)
+  -- Open popup modal if not already open
+  local popup_id = "##modal_overlay_" .. top.id
+  if not ImGui.IsPopupOpen(ctx, popup_id, ImGui.PopupFlags_None) then
+    ImGui.OpenPopup(ctx, popup_id)
+  end
+
+  local visible = ImGui.BeginPopupModal(ctx, popup_id, nil, window_flags)
 
   if visible then
     local dl = ImGui.GetWindowDrawList(ctx)
@@ -346,11 +356,11 @@ function M:render(ctx, dt)
     end
   end
 
-  ImGui.End(ctx)
+  ImGui.EndPopup(ctx)
 
   -- Pop in reverse order (matching old overlay.lua)
   ImGui.PopStyleVar(ctx, 3)    -- Alpha, WindowBorderSize, WindowPadding
-  ImGui.PopStyleColor(ctx, 1)  -- WindowBg
+  ImGui.PopStyleColor(ctx, 2)  -- WindowBg, ModalWindowDimBg
 end
 
 -- ============================================================================
