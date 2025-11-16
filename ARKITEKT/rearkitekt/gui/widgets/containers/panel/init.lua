@@ -555,7 +555,6 @@ function Panel:begin_draw(ctx)
   )
   
   -- Header and footer configuration (dual toolbar support)
-  -- Both use the same rendering system, just positioned differently
   local header_cfg = self.config.header or DEFAULTS.header
   local footer_cfg = self.config.footer
 
@@ -582,14 +581,13 @@ function Panel:begin_draw(ctx)
   -- Draw footer at bottom if enabled (always at bottom, independent of header)
   if footer_cfg and footer_cfg.enabled then
     footer_height = footer_cfg.height or 30
-    -- Create a temporary config for footer that matches header structure
-    local footer_panel_config = {
-      header = footer_cfg,
-      border_color = self.config.border_color,
-      bg_color = self.config.bg_color,
-      rounding = self.config.rounding,
-    }
-    Header.draw(ctx, dl, x1, y2 - footer_height, w, footer_height, self, footer_panel_config, self.config.rounding)
+    -- Ensure footer has position="bottom" for proper corner rounding
+    footer_cfg.position = "bottom"
+    -- Temporarily swap footer into header position for rendering
+    local saved_header = self.config.header
+    self.config.header = footer_cfg
+    Header.draw(ctx, dl, x1, y2 - footer_height, w, footer_height, self, self.config, self.config.rounding)
+    self.config.header = saved_header
     content_y2 = content_y2 - footer_height
   end
 
@@ -654,13 +652,11 @@ function Panel:begin_draw(ctx)
 
   -- Draw footer elements if enabled
   if footer_cfg and footer_cfg.enabled then
-    local footer_panel_config = {
-      header = footer_cfg,
-      border_color = self.config.border_color,
-      bg_color = self.config.bg_color,
-      rounding = self.config.rounding,
-    }
-    Header.draw_elements(ctx, dl, x1, y2 - footer_height, w, footer_height, self, footer_panel_config)
+    -- Temporarily swap footer into header position for rendering
+    local saved_header = self.config.header
+    self.config.header = footer_cfg
+    Header.draw_elements(ctx, dl, x1, y2 - footer_height, w, footer_height, self, self.config)
+    self.config.header = saved_header
   end
 
   -- Store panel bounds for corner buttons (drawn later in end_draw to be on top)
