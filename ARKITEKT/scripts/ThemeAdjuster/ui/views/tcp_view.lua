@@ -116,158 +116,193 @@ function TCPView:toggle_bitflag(param_name, bit)
 end
 
 function TCPView:draw(ctx, shell_state)
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+
   -- Title
-  ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
-  ImGui.Text(ctx, "Track Control Panel (TCP)")
+  ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
+  ImGui.Text(ctx, "Track Control Panel")
   ImGui.PopFont(ctx)
 
-  ImGui.Dummy(ctx, 0, 10)
-
-  -- Spinners section
-  ImGui.SeparatorText(ctx, "Layout Settings")
-
-  -- Folder Indent
-  ImGui.Text(ctx, "Folder Indent")
-  ImGui.SameLine(ctx, 200)
-  local changed, new_idx = Spinner.draw(ctx, "tcp_indent", self.tcp_indent_idx, SPINNER_VALUES.tcp_indent, {w = 200})
-  if changed then
-    self.tcp_indent_idx = new_idx
-    -- TODO: Set parameter
-  end
-
-  -- Align Controls
-  ImGui.Text(ctx, "Align Controls")
-  ImGui.SameLine(ctx, 200)
-  local changed, new_idx = Spinner.draw(ctx, "tcp_control_align", self.tcp_control_align_idx, SPINNER_VALUES.tcp_control_align, {w = 200})
-  if changed then
-    self.tcp_control_align_idx = new_idx
-  end
-
-  -- Name Size
-  ImGui.Text(ctx, "Name Size")
-  ImGui.SameLine(ctx, 200)
-  local changed, new_idx = Spinner.draw(ctx, "tcp_LabelSize", self.tcp_LabelSize_idx, SPINNER_VALUES.tcp_LabelSize, {w = 200})
-  if changed then
-    self.tcp_LabelSize_idx = new_idx
-  end
-
-  -- Volume Size
-  ImGui.Text(ctx, "Volume Size")
-  ImGui.SameLine(ctx, 200)
-  local changed, new_idx = Spinner.draw(ctx, "tcp_vol_size", self.tcp_vol_size_idx, SPINNER_VALUES.tcp_vol_size, {w = 200})
-  if changed then
-    self.tcp_vol_size_idx = new_idx
-  end
-
-  -- Meter Size
-  ImGui.Text(ctx, "Meter Size")
-  ImGui.SameLine(ctx, 200)
-  local changed, new_idx = Spinner.draw(ctx, "tcp_MeterSize", self.tcp_MeterSize_idx, SPINNER_VALUES.tcp_MeterSize, {w = 200})
-  if changed then
-    self.tcp_MeterSize_idx = new_idx
-  end
-
-  -- Input Size
-  ImGui.Text(ctx, "Input Size")
-  ImGui.SameLine(ctx, 200)
-  local changed, new_idx = Spinner.draw(ctx, "tcp_InputSize", self.tcp_InputSize_idx, SPINNER_VALUES.tcp_InputSize, {w = 200})
-  if changed then
-    self.tcp_InputSize_idx = new_idx
-  end
-
-  -- Meter Location
-  ImGui.Text(ctx, "Meter Location")
-  ImGui.SameLine(ctx, 200)
-  local changed, new_idx = Spinner.draw(ctx, "tcp_MeterLoc", self.tcp_MeterLoc_idx, SPINNER_VALUES.tcp_MeterLoc, {w = 200})
-  if changed then
-    self.tcp_MeterLoc_idx = new_idx
-  end
-
-  -- Sends List
-  ImGui.Text(ctx, "Sends List")
-  ImGui.SameLine(ctx, 200)
-  local changed, new_idx = Spinner.draw(ctx, "tcp_sepSends", self.tcp_sepSends_idx, SPINNER_VALUES.tcp_sepSends, {w = 200})
-  if changed then
-    self.tcp_sepSends_idx = new_idx
-  end
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
+  ImGui.Text(ctx, "Configure track appearance and element visibility")
+  ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 15)
 
-  -- Layout System
-  ImGui.SeparatorText(ctx, "Active Layout")
+  -- Layout Settings Section
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+  if ImGui.BeginChild(ctx, "tcp_layout_section", avail_w, 280, ImGui.ChildFlags_Border) then
+    ImGui.Dummy(ctx, 0, 8)
 
-  -- A/B/C buttons
-  ImGui.Text(ctx, "Active Layout:")
-  ImGui.SameLine(ctx)
+    ImGui.Indent(ctx, 12)
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
+    ImGui.Text(ctx, "LAYOUT SETTINGS")
+    ImGui.PopFont(ctx)
+    ImGui.Dummy(ctx, 0, 8)
 
-  for _, layout in ipairs({'A', 'B', 'C'}) do
-    local is_active = (self.active_layout == layout)
-    if is_active then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#2D4A37"))
+    local label_w = 140
+    local spinner_w = math.min(220, avail_w - label_w - 40)
+
+    -- Helper function to draw spinner row
+    local function draw_spinner_row(label, id, idx, values)
+      ImGui.AlignTextToFramePadding(ctx)
+      ImGui.Text(ctx, label)
+      ImGui.SameLine(ctx, label_w)
+      local changed, new_idx = Spinner.draw(ctx, id, idx, values, {w = spinner_w})
+      ImGui.Dummy(ctx, 0, 4)
+      return changed, new_idx
     end
-    if ImGui.Button(ctx, layout, 40, 0) then
-      self.active_layout = layout
-      -- TODO: Apply layout
-    end
-    if is_active then
-      ImGui.PopStyleColor(ctx)
-    end
-    ImGui.SameLine(ctx)
+
+    -- Spinners
+    local changed, new_idx = draw_spinner_row("Folder Indent", "tcp_indent", self.tcp_indent_idx, SPINNER_VALUES.tcp_indent)
+    if changed then self.tcp_indent_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Align Controls", "tcp_control_align", self.tcp_control_align_idx, SPINNER_VALUES.tcp_control_align)
+    if changed then self.tcp_control_align_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Name Size", "tcp_LabelSize", self.tcp_LabelSize_idx, SPINNER_VALUES.tcp_LabelSize)
+    if changed then self.tcp_LabelSize_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Volume Size", "tcp_vol_size", self.tcp_vol_size_idx, SPINNER_VALUES.tcp_vol_size)
+    if changed then self.tcp_vol_size_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Meter Size", "tcp_MeterSize", self.tcp_MeterSize_idx, SPINNER_VALUES.tcp_MeterSize)
+    if changed then self.tcp_MeterSize_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Input Size", "tcp_InputSize", self.tcp_InputSize_idx, SPINNER_VALUES.tcp_InputSize)
+    if changed then self.tcp_InputSize_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Meter Location", "tcp_MeterLoc", self.tcp_MeterLoc_idx, SPINNER_VALUES.tcp_MeterLoc)
+    if changed then self.tcp_MeterLoc_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Sends List", "tcp_sepSends", self.tcp_sepSends_idx, SPINNER_VALUES.tcp_sepSends)
+    if changed then self.tcp_sepSends_idx = new_idx end
+
+    ImGui.Unindent(ctx, 12)
+    ImGui.Dummy(ctx, 0, 8)
+    ImGui.EndChild(ctx)
   end
-  ImGui.NewLine(ctx)
+  ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Dummy(ctx, 0, 12)
 
-  -- Apply Size buttons
-  ImGui.Text(ctx, "Apply Size:")
-  ImGui.SameLine(ctx)
+  -- Layout & Size Section
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+  if ImGui.BeginChild(ctx, "tcp_layout_buttons", avail_w, 120, ImGui.ChildFlags_Border) then
+    ImGui.Dummy(ctx, 0, 8)
 
-  for _, size in ipairs({'100%', '150%', '200%'}) do
-    if ImGui.Button(ctx, size, 60, 0) then
-      -- TODO: Apply size
-    end
-    ImGui.SameLine(ctx)
-  end
-  ImGui.NewLine(ctx)
+    ImGui.Indent(ctx, 12)
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
+    ImGui.Text(ctx, "ACTIVE LAYOUT & SIZE")
+    ImGui.PopFont(ctx)
+    ImGui.Dummy(ctx, 0, 8)
 
-  ImGui.Dummy(ctx, 0, 15)
+    -- Active Layout
+    ImGui.AlignTextToFramePadding(ctx)
+    ImGui.Text(ctx, "Active Layout")
+    ImGui.SameLine(ctx, 140)
 
-  -- Visibility Table
-  ImGui.SeparatorText(ctx, "Element Visibility")
-
-  if ImGui.BeginTable(ctx, "tcp_visibility", 5, ImGui.TableFlags_Borders | ImGui.TableFlags_RowBg) then
-    -- Setup columns
-    ImGui.TableSetupColumn(ctx, "Element", ImGui.TableColumnFlags_WidthFixed, 150)
-    for _, col in ipairs(VISIBILITY_COLUMNS) do
-      ImGui.TableSetupColumn(ctx, col.label, ImGui.TableColumnFlags_WidthFixed, 80)
-    end
-    ImGui.TableHeadersRow(ctx)
-
-    -- Rows
-    for _, elem in ipairs(VISIBILITY_ELEMENTS) do
-      ImGui.TableNextRow(ctx)
-
-      -- Element name
-      ImGui.TableSetColumnIndex(ctx, 0)
-      ImGui.Text(ctx, elem.label)
-
-      -- Checkboxes for each condition
-      for col_idx, col in ipairs(VISIBILITY_COLUMNS) do
-        ImGui.TableSetColumnIndex(ctx, col_idx)
-
-        local current_value = self.visibility[elem.id] or 0
-        local is_checked = (current_value & col.bit) ~= 0
-
-        ImGui.PushID(ctx, elem.id .. "_" .. col.bit)
-        if ImGui.Checkbox(ctx, "##check", is_checked) then
-          self:toggle_bitflag(elem.id, col.bit)
-        end
-        ImGui.PopID(ctx)
+    for _, layout in ipairs({'A', 'B', 'C'}) do
+      local is_active = (self.active_layout == layout)
+      if is_active then
+        ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#2D4A37"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#3A5F48"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#47724F"))
       end
+      if ImGui.Button(ctx, layout, 50, 24) then
+        self.active_layout = layout
+        -- TODO: Apply layout
+      end
+      if is_active then
+        ImGui.PopStyleColor(ctx, 3)
+      end
+      ImGui.SameLine(ctx, 0, 6)
     end
+    ImGui.NewLine(ctx)
 
-    ImGui.EndTable(ctx)
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Apply Size
+    ImGui.AlignTextToFramePadding(ctx)
+    ImGui.Text(ctx, "Apply Size")
+    ImGui.SameLine(ctx, 140)
+
+    for _, size in ipairs({'100%', '150%', '200%'}) do
+      if ImGui.Button(ctx, size, 70, 24) then
+        -- TODO: Apply size
+      end
+      ImGui.SameLine(ctx, 0, 6)
+    end
+    ImGui.NewLine(ctx)
+
+    ImGui.Unindent(ctx, 12)
+    ImGui.Dummy(ctx, 0, 8)
+    ImGui.EndChild(ctx)
   end
+  ImGui.PopStyleColor(ctx)
+
+  ImGui.Dummy(ctx, 0, 12)
+
+  -- Visibility Table Section
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+  if ImGui.BeginChild(ctx, "tcp_visibility_section", avail_w, 0, ImGui.ChildFlags_Border) then
+    ImGui.Dummy(ctx, 0, 8)
+
+    ImGui.Indent(ctx, 12)
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
+    ImGui.Text(ctx, "ELEMENT VISIBILITY")
+    ImGui.PopFont(ctx)
+    ImGui.Dummy(ctx, 0, 4)
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
+    ImGui.Text(ctx, "Control when track elements are visible")
+    ImGui.PopStyleColor(ctx)
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Table
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_CellPadding, 8, 6)
+    if ImGui.BeginTable(ctx, "tcp_visibility", 5, ImGui.TableFlags_Borders | ImGui.TableFlags_RowBg | ImGui.TableFlags_ScrollY, avail_w - 24, 300) then
+      -- Setup columns
+      ImGui.TableSetupColumn(ctx, "Element", ImGui.TableColumnFlags_WidthFixed, 150)
+      for _, col in ipairs(VISIBILITY_COLUMNS) do
+        ImGui.TableSetupColumn(ctx, col.label, ImGui.TableColumnFlags_WidthFixed, 90)
+      end
+      ImGui.TableSetupScrollFreeze(ctx, 0, 1)
+      ImGui.TableHeadersRow(ctx)
+
+      -- Rows
+      for _, elem in ipairs(VISIBILITY_ELEMENTS) do
+        ImGui.TableNextRow(ctx)
+
+        -- Element name
+        ImGui.TableSetColumnIndex(ctx, 0)
+        ImGui.AlignTextToFramePadding(ctx)
+        ImGui.Text(ctx, elem.label)
+
+        -- Checkboxes for each condition
+        for col_idx, col in ipairs(VISIBILITY_COLUMNS) do
+          ImGui.TableSetColumnIndex(ctx, col_idx)
+
+          local current_value = self.visibility[elem.id] or 0
+          local is_checked = (current_value & col.bit) ~= 0
+
+          ImGui.PushID(ctx, elem.id .. "_" .. col.bit)
+          if ImGui.Checkbox(ctx, "##check", is_checked) then
+            self:toggle_bitflag(elem.id, col.bit)
+          end
+          ImGui.PopID(ctx)
+        end
+      end
+
+      ImGui.EndTable(ctx)
+    end
+    ImGui.PopStyleVar(ctx)
+
+    ImGui.Unindent(ctx, 12)
+    ImGui.Dummy(ctx, 0, 8)
+    ImGui.EndChild(ctx)
+  end
+  ImGui.PopStyleColor(ctx)
 end
 
 return M

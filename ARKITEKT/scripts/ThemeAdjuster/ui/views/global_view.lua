@@ -84,23 +84,54 @@ function GlobalView:reset_color_controls()
 end
 
 function GlobalView:draw(ctx, shell_state)
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+
   -- Title
-  ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
+  ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
   ImGui.Text(ctx, "Global Color Controls")
   ImGui.PopFont(ctx)
 
-  ImGui.Dummy(ctx, 0, 10)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
+  ImGui.Text(ctx, "Adjust theme-wide color properties")
+  ImGui.PopStyleColor(ctx)
+
+  ImGui.Dummy(ctx, 0, 15)
+
+  -- Color Sliders Section
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+  if ImGui.BeginChild(ctx, "global_color_sliders", avail_w, 0, ImGui.ChildFlags_Border) then
+    ImGui.Dummy(ctx, 0, 8)
+
+    ImGui.Indent(ctx, 12)
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
+    ImGui.Text(ctx, "COLOR ADJUSTMENTS")
+    ImGui.PopFont(ctx)
+    ImGui.Dummy(ctx, 0, 12)
+
+  -- Helper function for slider rows
+  local function draw_slider_row(label, value_text, slider_func, slider_id, slider_value, slider_opts)
+    ImGui.AlignTextToFramePadding(ctx)
+    ImGui.Text(ctx, label)
+    ImGui.SameLine(ctx, 150)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
+    ImGui.Text(ctx, value_text)
+    ImGui.PopStyleColor(ctx)
+    ImGui.Dummy(ctx, 0, 4)
+
+    local changed, new_val = slider_func(ctx, slider_id, slider_value, slider_opts)
+    ImGui.Dummy(ctx, 0, 8)
+    return changed, new_val
+  end
 
   -- Gamma slider (grayscale, 0-2.0, default 1.0)
-  ImGui.Text(ctx, "Gamma")
-  ImGui.SameLine(ctx, 150)
-  ImGui.Text(ctx, string.format("%.2f", self.gamma))
-
-  local changed, new_gamma = HueSlider.draw_gamma(ctx, "##gamma", self.gamma * 100, {
-    w = 300,
-    h = 20,
-    default = 100,
-  })
+  local changed, new_gamma = draw_slider_row(
+    "Gamma",
+    string.format("%.2f", self.gamma),
+    HueSlider.draw_gamma,
+    "##gamma",
+    self.gamma * 100,
+    {w = math.min(350, avail_w - 200), h = 22, default = 100}
+  )
   if changed then
     self.gamma = new_gamma / 100
     self:set_param(-1000, self.gamma * 1000, false)
@@ -109,18 +140,15 @@ function GlobalView:draw(ctx, shell_state)
     self:set_param(-1000, self.gamma * 1000, true)
   end
 
-  ImGui.Dummy(ctx, 0, 5)
-
-  -- Highlights slider (grayscale, 0-256, default 128)
-  ImGui.Text(ctx, "Highlights")
-  ImGui.SameLine(ctx, 150)
-  ImGui.Text(ctx, string.format("%d", self.highlights))
-
-  local changed, new_highlights = HueSlider.draw_gamma(ctx, "##highlights", (self.highlights / 256) * 100, {
-    w = 300,
-    h = 20,
-    default = 50,
-  })
+  -- Highlights slider
+  changed, new_highlights = draw_slider_row(
+    "Highlights",
+    string.format("%d", self.highlights),
+    HueSlider.draw_gamma,
+    "##highlights",
+    (self.highlights / 256) * 100,
+    {w = math.min(350, avail_w - 200), h = 22, default = 50}
+  )
   if changed then
     self.highlights = math.floor((new_highlights / 100) * 256 + 0.5)
     self:set_param(-1003, self.highlights, false)
@@ -129,18 +157,15 @@ function GlobalView:draw(ctx, shell_state)
     self:set_param(-1003, self.highlights, true)
   end
 
-  ImGui.Dummy(ctx, 0, 5)
-
-  -- Midtones slider (grayscale, 0-256, default 128)
-  ImGui.Text(ctx, "Midtones")
-  ImGui.SameLine(ctx, 150)
-  ImGui.Text(ctx, string.format("%d", self.midtones))
-
-  local changed, new_midtones = HueSlider.draw_gamma(ctx, "##midtones", (self.midtones / 256) * 100, {
-    w = 300,
-    h = 20,
-    default = 50,
-  })
+  -- Midtones slider
+  local changed, new_midtones = draw_slider_row(
+    "Midtones",
+    string.format("%d", self.midtones),
+    HueSlider.draw_gamma,
+    "##midtones",
+    (self.midtones / 256) * 100,
+    {w = math.min(350, avail_w - 200), h = 22, default = 50}
+  )
   if changed then
     self.midtones = math.floor((new_midtones / 100) * 256 + 0.5)
     self:set_param(-1002, self.midtones, false)
@@ -149,18 +174,15 @@ function GlobalView:draw(ctx, shell_state)
     self:set_param(-1002, self.midtones, true)
   end
 
-  ImGui.Dummy(ctx, 0, 5)
-
-  -- Shadows slider (grayscale, 0-256, default 128)
-  ImGui.Text(ctx, "Shadows")
-  ImGui.SameLine(ctx, 150)
-  ImGui.Text(ctx, string.format("%d", self.shadows))
-
-  local changed, new_shadows = HueSlider.draw_gamma(ctx, "##shadows", (self.shadows / 256) * 100, {
-    w = 300,
-    h = 20,
-    default = 50,
-  })
+  -- Shadows slider
+  changed, new_shadows = draw_slider_row(
+    "Shadows",
+    string.format("%d", self.shadows),
+    HueSlider.draw_gamma,
+    "##shadows",
+    (self.shadows / 256) * 100,
+    {w = math.min(350, avail_w - 200), h = 22, default = 50}
+  )
   if changed then
     self.shadows = math.floor((new_shadows / 100) * 256 + 0.5)
     self:set_param(-1001, self.shadows, false)
@@ -169,19 +191,15 @@ function GlobalView:draw(ctx, shell_state)
     self:set_param(-1001, self.shadows, true)
   end
 
-  ImGui.Dummy(ctx, 0, 5)
-
-  -- Saturation slider (grayscale with color hint, 0-256, default 128, displays as %)
-  ImGui.Text(ctx, "Saturation")
-  ImGui.SameLine(ctx, 150)
-  ImGui.Text(ctx, string.format("%d%%", math.floor((self.saturation / 256) * 100 + 0.5)))
-
-  local changed, new_saturation = HueSlider.draw_saturation(ctx, "##saturation", (self.saturation / 256) * 100, 210, {
-    w = 300,
-    h = 20,
-    default = 50,
-    brightness = 80,
-  })
+  -- Saturation slider
+  changed, new_saturation = draw_slider_row(
+    "Saturation",
+    string.format("%d%%", math.floor((self.saturation / 256) * 100 + 0.5)),
+    function(c, i, v, o) return HueSlider.draw_saturation(c, i, v, 210, o) end,
+    "##saturation",
+    (self.saturation / 256) * 100,
+    {w = math.min(350, avail_w - 200), h = 22, default = 50, brightness = 80}
+  )
   if changed then
     self.saturation = math.floor((new_saturation / 100) * 256 + 0.5)
     self:set_param(-1004, self.saturation, false)
@@ -190,21 +208,16 @@ function GlobalView:draw(ctx, shell_state)
     self:set_param(-1004, self.saturation, true)
   end
 
-  ImGui.Dummy(ctx, 0, 5)
-
-  -- Tint slider (hue gradient, 0-384, default 192, displays as -180° to +180°)
+  -- Tint slider
   local tint_degrees = (self.tint - 192) * (360 / 384)
-  ImGui.Text(ctx, "Tint")
-  ImGui.SameLine(ctx, 150)
-  ImGui.Text(ctx, string.format("%.0f°", tint_degrees))
-
-  local changed, new_tint_normalized = HueSlider.draw_hue(ctx, "##tint", ((self.tint / 384) * 360), {
-    w = 300,
-    h = 20,
-    default = 180,
-    saturation = 75,
-    brightness = 80,
-  })
+  changed, new_tint_normalized = draw_slider_row(
+    "Tint",
+    string.format("%.0f°", tint_degrees),
+    HueSlider.draw_hue,
+    "##tint",
+    ((self.tint / 384) * 360),
+    {w = math.min(350, avail_w - 200), h = 22, default = 180, saturation = 75, brightness = 80}
+  )
   if changed then
     self.tint = math.floor((new_tint_normalized / 360) * 384 + 0.5)
     self:set_param(-1005, self.tint, false)
@@ -213,25 +226,38 @@ function GlobalView:draw(ctx, shell_state)
     self:set_param(-1005, self.tint, true)
   end
 
-  ImGui.Dummy(ctx, 0, 15)
+  ImGui.Dummy(ctx, 0, 12)
 
   -- Toggles
+  ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
+  ImGui.Text(ctx, "OPTIONS")
+  ImGui.PopFont(ctx)
+  ImGui.Dummy(ctx, 0, 8)
+
   if ImGui.Checkbox(ctx, "Custom color track names", self.custom_track_names) then
     self.custom_track_names = not self.custom_track_names
     -- TODO: Set 'glb_track_label_color' parameter
   end
+
+  ImGui.Dummy(ctx, 0, 4)
 
   if ImGui.Checkbox(ctx, "Also affect project custom colors", self.affect_project_colors) then
     self.affect_project_colors = not self.affect_project_colors
     self:set_param(-1006, self.affect_project_colors and 1 or 0, true)
   end
 
-  ImGui.Dummy(ctx, 0, 15)
+  ImGui.Dummy(ctx, 0, 12)
 
   -- Reset button
-  if ImGui.Button(ctx, "Reset All Color Controls") then
+  if ImGui.Button(ctx, "Reset All Color Controls", 180, 28) then
     self:reset_color_controls()
   end
+
+  ImGui.Unindent(ctx, 12)
+  ImGui.Dummy(ctx, 0, 8)
+  ImGui.EndChild(ctx)
+  end
+  ImGui.PopStyleColor(ctx)
 end
 
 return M
