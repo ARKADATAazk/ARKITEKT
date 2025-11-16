@@ -215,15 +215,41 @@ function M.render_inline(ctx, id, config)
     inst.first_open = false
   end
 
-  -- Render the picker contents
-  local changed = render_picker_contents(ctx, id, on_change)
+  local changed = false
 
-  -- Close button at bottom
-  ImGui.Spacing(ctx)
-  local button_w = ImGui.GetContentRegionAvail(ctx)
-  if ImGui.Button(ctx, "Close##" .. id, button_w, 0) then
-    if on_close then
-      on_close()
+  -- Compact inline picker - just the color wheel, no extras
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#000000FF"))
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameBorderSize, 1)
+
+  local picker_flags = ImGui.ColorEditFlags_PickerHueWheel |
+                       ImGui.ColorEditFlags_NoSidePreview |
+                       ImGui.ColorEditFlags_NoSmallPreview |
+                       ImGui.ColorEditFlags_NoAlpha |
+                       ImGui.ColorEditFlags_NoInputs |
+                       ImGui.ColorEditFlags_NoLabel
+
+  -- Convert our RGBA to ImGui's ARGB format
+  local argb_color = Colors.rgba_to_argb(inst.current_color)
+
+  -- Draw compact color picker
+  local rv, new_argb_color = ImGui.ColorPicker4(ctx, '##picker_inline_' .. id, argb_color, picker_flags)
+
+  ImGui.PopStyleVar(ctx, 1)
+  ImGui.PopStyleColor(ctx, 1)
+
+  -- Track color changes during dragging, but only apply on mouse release
+  if rv then
+    local new_rgba = Colors.argb_to_rgba(new_argb_color)
+    inst.current_color = new_rgba
+    changed = true
+    inst.pending_change = true
+  end
+
+  -- Apply color only when mouse button is released
+  if inst.pending_change and ImGui.IsMouseReleased(ctx, 0) then
+    inst.pending_change = false
+    if on_change then
+      on_change(inst.current_color)
     end
   end
 

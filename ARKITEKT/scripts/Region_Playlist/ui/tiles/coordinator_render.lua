@@ -95,10 +95,10 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   local child_h = (height - header_height) - (self.container_config.padding * 2)
 
   -- Reserve space for inline color picker if visible
-  local picker_height = 220  -- Reduced height for color picker
+  local picker_size = 130  -- Compact 130x130 color picker
   local grid_h = child_h
   if self._active_color_picker_visible then
-    grid_h = child_h - picker_height - 8  -- 8px spacing
+    grid_h = child_h - picker_size - 12  -- Reserve space for picker + spacing
   end
 
   self.active_grid.get_items = function() return playlist.items end
@@ -113,51 +113,56 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
     min_tile_height = self.responsive_config.min_tile_height,
     responsive_config = self.responsive_config,
   })
-  
+
   local responsive_height = self.active_height_stabilizer:update(raw_height)
-  
+
   self.current_active_tile_height = responsive_height
   self.active_grid.fixed_tile_h = responsive_height
   self.active_grid.gap = raw_gap
-  
+
   local wheel_y = ImGui.GetMouseWheel(ctx)
-  
+
   if wheel_y ~= 0 then
     local item, key, is_selected = self:_find_hovered_tile(ctx, playlist.items)
-    
+
     if item and key and self.on_repeat_adjust then
       local delta = (wheel_y > 0) and self.wheel_config.step or -self.wheel_config.step
       local shift_held = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
-      
+
       local keys_to_adjust = {}
       if is_selected and self.active_grid.selection:count() > 0 then
         keys_to_adjust = self.active_grid.selection:selected_keys()
       else
         keys_to_adjust = {key}
       end
-      
+
       if shift_held and self.on_repeat_sync then
         local target_reps = item.reps or 1
         self.on_repeat_sync(keys_to_adjust, target_reps)
       end
-      
+
       self.on_repeat_adjust(keys_to_adjust, delta)
       self.wheel_consumed_this_frame = true
     end
   end
-  
-  self.active_grid:draw(ctx)
+
+  -- Constrain grid to allocated space if picker is visible
+  if self._active_color_picker_visible then
+    if ImGui.BeginChild(ctx, "ActiveGridArea", 0, grid_h, ImGui.ChildFlags_None) then
+      self.active_grid:draw(ctx)
+      ImGui.EndChild(ctx)
+    end
+  else
+    self.active_grid:draw(ctx)
+  end
 
   -- Inline Color Picker (renders at bottom of active panel if visible)
   if self._active_color_picker_visible then
-    -- Add spacing before the picker
-    ImGui.Spacing(ctx)
-    ImGui.Separator(ctx)
     ImGui.Spacing(ctx)
 
     -- Wrap in a child region to ensure proper input handling
     local child_flags = ImGui.ChildFlags_None
-    if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", 0, picker_height, child_flags) then
+    if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size, child_flags) then
       ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
         on_change = function(color)
           -- Apply color to all selected regions/playlists
@@ -327,14 +332,14 @@ function M.draw_pool(self, ctx, regions, height)
   local child_h = (height - header_height) - (self.container_config.padding * 2)
 
   -- Reserve space for inline color picker if visible
-  local picker_height = 220  -- Reduced height for color picker
+  local picker_size = 130  -- Compact 130x130 color picker
   local grid_h = child_h
   if self._pool_color_picker_visible then
-    grid_h = child_h - picker_height - 8  -- 8px spacing
+    grid_h = child_h - picker_size - 12  -- Reserve space for picker + spacing
   end
 
   self.pool_grid.get_items = function() return regions end
-  
+
   local raw_height, raw_gap = ResponsiveGrid.calculate_responsive_tile_height({
     item_count = #regions,
     avail_width = child_w,
@@ -345,25 +350,30 @@ function M.draw_pool(self, ctx, regions, height)
     min_tile_height = self.responsive_config.min_tile_height,
     responsive_config = self.responsive_config,
   })
-  
+
   local responsive_height = self.pool_height_stabilizer:update(raw_height)
-  
+
   self.current_pool_tile_height = responsive_height
   self.pool_grid.fixed_tile_h = responsive_height
   self.pool_grid.gap = raw_gap
 
-  self.pool_grid:draw(ctx)
+  -- Constrain grid to allocated space if picker is visible
+  if self._pool_color_picker_visible then
+    if ImGui.BeginChild(ctx, "PoolGridArea", 0, grid_h, ImGui.ChildFlags_None) then
+      self.pool_grid:draw(ctx)
+      ImGui.EndChild(ctx)
+    end
+  else
+    self.pool_grid:draw(ctx)
+  end
 
   -- Inline Color Picker (renders at bottom of pool panel if visible)
   if self._pool_color_picker_visible then
-    -- Add spacing before the picker
-    ImGui.Spacing(ctx)
-    ImGui.Separator(ctx)
     ImGui.Spacing(ctx)
 
     -- Wrap in a child region to ensure proper input handling
     local child_flags = ImGui.ChildFlags_None
-    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", 0, picker_height, child_flags) then
+    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size, child_flags) then
       ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
         on_change = function(color)
           -- Apply color to all selected regions/playlists
