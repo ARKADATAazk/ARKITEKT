@@ -286,35 +286,36 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
     end
 
     if rec and rec.img then
-      -- Calculate available area for preview (full tile width with padding)
-      local preview_w = tile_w - M.CONFIG.mosaic.padding * 2
-      local preview_h = M.CONFIG.mosaic.max_size * 1.5  -- Taller than mosaic cells
+      -- Calculate available area for preview (full tile content area)
+      local preview_area_w = tile_w - M.CONFIG.mosaic.padding * 2
+      local preview_area_h = M.CONFIG.mosaic.max_size * 1.5
 
-      -- Calculate aspect-preserving dimensions
+      -- Fill mode: scale image to cover entire area (may crop)
       local img_w, img_h = rec.src_w, rec.src_h
       local aspect = img_w / img_h
+      local area_aspect = preview_area_w / preview_area_h
       local draw_w, draw_h
 
-      if aspect > preview_w / preview_h then
-        -- Wider - fit to width
-        draw_w = preview_w
-        draw_h = preview_w / aspect
+      if aspect > area_aspect then
+        -- Image wider than area - fit to height, crop width
+        draw_h = preview_area_h
+        draw_w = preview_area_h * aspect
       else
-        -- Taller - fit to height
-        draw_h = preview_h
-        draw_w = preview_h * aspect
+        -- Image taller than area - fit to width, crop height
+        draw_w = preview_area_w
+        draw_h = preview_area_w / aspect
       end
 
-      -- Center the preview
-      local preview_x = tile_x + math.floor((tile_w - draw_w) / 2)
-      local preview_y = tile_y + M.CONFIG.mosaic.y_offset
-
-      -- Clip to bounds
+      -- Center the oversized image so it crops evenly
       local clip_x1 = tile_x + M.CONFIG.mosaic.padding
-      local clip_y1 = preview_y
-      local clip_x2 = tile_x + tile_w - M.CONFIG.mosaic.padding
-      local clip_y2 = preview_y + preview_h
+      local clip_y1 = tile_y + M.CONFIG.mosaic.y_offset
+      local clip_x2 = clip_x1 + preview_area_w
+      local clip_y2 = clip_y1 + preview_area_h
 
+      local preview_x = clip_x1 - math.floor((draw_w - preview_area_w) / 2)
+      local preview_y = clip_y1 - math.floor((draw_h - preview_area_h) / 2)
+
+      -- Clip to exact bounds and draw
       ImGui.PushClipRect(ctx, clip_x1, clip_y1, clip_x2, clip_y2, true)
       ImGui.SetCursorScreenPos(ctx, preview_x, preview_y)
       local ok = pcall(ImGui.Image, ctx, rec.img, draw_w, draw_h)
@@ -322,7 +323,7 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
 
       if ok then
         preview_drawn = true
-        -- Draw border around preview area
+        -- Draw border around clipped area
         Draw.rect(dl, clip_x1, clip_y1, clip_x2, clip_y2,
                   M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
       end
