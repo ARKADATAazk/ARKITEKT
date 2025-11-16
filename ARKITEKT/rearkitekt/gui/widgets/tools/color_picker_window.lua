@@ -274,9 +274,8 @@ function M.render_inline(ctx, id, config)
     inst.first_open = false
   end
 
-  -- Use ColorPicker4 with no padding
-  local picker_flags = ImGui.ColorEditFlags_PickerHueWheel |
-                       ImGui.ColorEditFlags_NoSidePreview |
+  -- Use ColorPicker3 (square picker, no hue wheel, no alpha)
+  local picker_flags = ImGui.ColorEditFlags_NoSidePreview |
                        ImGui.ColorEditFlags_NoSmallPreview |
                        ImGui.ColorEditFlags_NoAlpha |
                        ImGui.ColorEditFlags_NoInputs |
@@ -290,7 +289,7 @@ function M.render_inline(ctx, id, config)
   -- Convert RGBA to ARGB for ImGui
   local argb_color = Colors.rgba_to_argb(inst.current_color)
 
-  local rv, new_argb_color = ImGui.ColorPicker4(ctx, '##picker_inline_' .. id, argb_color, picker_flags)
+  local rv, new_argb_color = ImGui.ColorPicker3(ctx, '##picker_inline_' .. id, argb_color, picker_flags)
 
   ImGui.PopStyleVar(ctx, 3)
 

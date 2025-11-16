@@ -157,7 +157,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
     -- Wrap in a child region for input handling
-    if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size, false) then
+    if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size, 0) then
       ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
         size = picker_size,
         on_change = function(color)
@@ -376,7 +376,7 @@ function M.draw_pool(self, ctx, regions, height)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
     -- Wrap in a child region for input handling
-    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size, false) then
+    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size, 0) then
       ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
         size = picker_size,
         on_change = function(color)
