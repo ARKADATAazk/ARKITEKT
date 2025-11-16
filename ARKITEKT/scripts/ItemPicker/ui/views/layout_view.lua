@@ -51,19 +51,19 @@ local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
   alpha = alpha or 1.0
   rounding = rounding or 6
 
-  -- Panel background (semi-transparent)
+  -- Panel background (semi-transparent, lighter)
   local bg_color = Colors.hexrgb("#0F0F0F")
-  bg_color = Colors.with_alpha(bg_color, math.floor(alpha * 0x66))  -- More transparent (40%)
+  bg_color = Colors.with_alpha(bg_color, math.floor(alpha * 0x99))  -- 60% opacity (lighter)
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, rounding)
 
-  -- Dotted background pattern
+  -- Dotted background pattern (more visible)
   local pattern_config = {
     enabled = true,
     primary = {
       type = 'dots',
       spacing = 16,
       dot_size = 1.5,
-      color = Colors.with_alpha(Colors.hexrgb("#2A2A2A"), math.floor(alpha * 100)),
+      color = Colors.with_alpha(Colors.hexrgb("#2A2A2A"), math.floor(alpha * 180)),  -- More visible
       offset_x = 0,
       offset_y = 0,
     }
@@ -136,12 +136,14 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Get current window draw list (not cached)
   local draw_list = ImGui.GetWindowDrawList(ctx)
 
-  -- Render checkboxes with fade animation and 14px padding
+  -- Render checkboxes with fade animation and 14px padding (organized in 2 lines)
   -- Note: We pass alpha as config param instead of using PushStyleVar to keep interaction working
   local checkbox_x = 14
   local checkbox_y = 14 + ui_y_offset
   local checkbox_config = { alpha = ui_fade }
+  local spacing = 20  -- Horizontal spacing between checkboxes
 
+  -- Line 1: Play Item Through Track | Show Muted Tracks | Show Muted Items | Show Disabled Items
   local total_width, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
     "Play Item Through Track (will add delay to preview playback)",
     self.state.settings.play_item_through_track, checkbox_config, "play_item_through_track")
@@ -158,25 +160,29 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.set_setting('play_item_through_track', not self.state.settings.play_item_through_track)
   end
 
-  checkbox_y = checkbox_y + 24
-  _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
+  -- Show Muted Tracks on same line
+  local prev_width = ImGui.CalcTextSize(ctx, "Play Item Through Track (will add delay to preview playback)") + 18 + 8 + spacing
+  local muted_tracks_x = checkbox_x + prev_width
+  _, clicked = Checkbox.draw(ctx, draw_list, muted_tracks_x, checkbox_y,
     "Show Muted Tracks",
     self.state.settings.show_muted_tracks, checkbox_config, "show_muted_tracks")
   if clicked then
     self.state.set_setting('show_muted_tracks', not self.state.settings.show_muted_tracks)
   end
 
-  checkbox_y = checkbox_y + 24
-  _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
+  -- Show Muted Items on same line
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Muted Tracks") + 18 + 8 + spacing
+  local muted_items_x = checkbox_x + prev_width
+  _, clicked = Checkbox.draw(ctx, draw_list, muted_items_x, checkbox_y,
     "Show Muted Items",
     self.state.settings.show_muted_items, checkbox_config, "show_muted_items")
   if clicked then
     self.state.set_setting('show_muted_items', not self.state.settings.show_muted_items)
   end
 
-  -- Show Disabled Items on same line (after Show Muted Items)
-  local muted_items_width = ImGui.CalcTextSize(ctx, "Show Muted Items") + 18 + 8 + 20  -- checkbox + spacing + margin
-  local disabled_x = checkbox_x + muted_items_width
+  -- Show Disabled Items on same line
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Muted Items") + 18 + 8 + spacing
+  local disabled_x = checkbox_x + prev_width
   _, clicked = Checkbox.draw(ctx, draw_list, disabled_x, checkbox_y,
     "Show Disabled Items",
     self.state.settings.show_disabled_items, checkbox_config, "show_disabled_items")
@@ -184,7 +190,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.set_setting('show_disabled_items', not self.state.settings.show_disabled_items)
   end
 
-  -- Show Favorites Only checkbox (new line)
+  -- Line 2: Show Favorites Only | Show Audio | Show MIDI | Split MIDI Items by Track
   checkbox_y = checkbox_y + 24
   _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
     "Show Favorites Only",
@@ -193,9 +199,10 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.set_setting('show_favorites_only', not self.state.settings.show_favorites_only)
   end
 
-  -- Show Audio checkbox (new line)
-  checkbox_y = checkbox_y + 24
-  _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
+  -- Show Audio on same line
+  prev_width = ImGui.CalcTextSize(ctx, "Show Favorites Only") + 18 + 8 + spacing
+  local show_audio_x = checkbox_x + prev_width
+  _, clicked = Checkbox.draw(ctx, draw_list, show_audio_x, checkbox_y,
     "Show Audio",
     self.state.settings.show_audio, checkbox_config, "show_audio")
   if clicked then
@@ -203,8 +210,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   end
 
   -- Show MIDI on same line
-  local show_audio_width = ImGui.CalcTextSize(ctx, "Show Audio") + 18 + 8 + 20  -- checkbox + spacing + margin
-  local show_midi_x = checkbox_x + show_audio_width
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Audio") + 18 + 8 + spacing
+  local show_midi_x = checkbox_x + prev_width
   _, clicked = Checkbox.draw(ctx, draw_list, show_midi_x, checkbox_y,
     "Show MIDI",
     self.state.settings.show_midi, checkbox_config, "show_midi")
@@ -212,9 +219,10 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.set_setting('show_midi', not self.state.settings.show_midi)
   end
 
-  -- Split MIDI Items checkbox (new line)
-  checkbox_y = checkbox_y + 24
-  _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
+  -- Split MIDI Items by Track on same line
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show MIDI") + 18 + 8 + spacing
+  local split_midi_x = checkbox_x + prev_width
+  _, clicked = Checkbox.draw(ctx, draw_list, split_midi_x, checkbox_y,
     "Split MIDI Items by Track",
     self.state.settings.split_midi_by_track, checkbox_config, "split_midi_by_track")
   if clicked then
@@ -223,6 +231,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.needs_recollect = true
   end
 
+  -- Track final checkbox Y position for search bar positioning
+  local checkboxes_end_y = checkbox_y + 24 + 10  -- Add some spacing after checkboxes
+
   -- Search fade with different offset
   local search_fade = smootherstep(math.max(0, (overlay_alpha - 0.05) / 0.95))
   local search_y_offset = 25 * (1.0 - search_fade)
@@ -230,10 +241,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Search input centered using rearkitekt widget (rounded to whole pixels)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, search_fade)
   ImGui.PushFont(ctx, title_font, 14)
-  local content_start_y = screen_h * self.config.LAYOUT.CONTENT_START_Y
 
   local search_x = math.floor(screen_w / 2 - (screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO) / 2 + 0.5)
-  local search_y = math.floor(content_start_y + search_y_offset + 0.5)
+  local search_y = math.floor(checkboxes_end_y + search_y_offset + 0.5)
   local search_width = screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO
   local search_height = 28  -- Increased by 4 pixels
 
@@ -267,7 +277,11 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Section fade
   local section_fade = smootherstep(math.max(0, (overlay_alpha - 0.1) / 0.9))
-  local content_height = screen_h * self.config.LAYOUT.CONTENT_HEIGHT
+
+  -- Calculate panel start position (below search bar)
+  local panels_start_y = search_y + search_height + 20  -- 20px spacing below search
+  local panels_end_y = screen_h - 40  -- Leave some bottom margin
+  local content_height = panels_end_y - panels_start_y
   local content_width = screen_w - (self.config.LAYOUT.PADDING * 2)
 
   -- Get view mode
@@ -275,7 +289,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Calculate section heights based on view mode
   local start_x = self.config.LAYOUT.PADDING
-  local start_y = content_start_y
+  local start_y = panels_start_y
   local header_height = self.config.LAYOUT.HEADER_HEIGHT
 
   -- Panel right padding
