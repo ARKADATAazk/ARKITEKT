@@ -748,83 +748,117 @@ function GUI:draw(ctx, shell_state)
   -- Adjust spacing after title
   ImGui.SetCursorPosY(ctx, title_y + 30)
 
+  -- Padding
+  local padding_left = 14
+  local padding_right = 14
+  local padding_bottom = 14
+
   local cursor_y = ImGui.GetCursorPosY(ctx)
-  local panel_height = SCREEN_H - cursor_y - self.config.PANEL_SPACING
+  local content_width = SCREEN_W - padding_left - padding_right
+  local panel_height = SCREEN_H - cursor_y - padding_bottom
+
+  -- Get screen position offset for coordinate conversion
+  local screen_x, screen_y = ImGui.GetCursorScreenPos(ctx)
+  local window_x = screen_x - padding_left
+  local window_y = screen_y - cursor_y
 
   -- Draggable separator configuration
   local separator_thickness = 8
   local min_panel_width = 150
 
-  -- Calculate positions based on ratios
-  local sep1_x = SCREEN_W * self.state.separator1_ratio
-  local sep2_x = SCREEN_W * self.state.separator2_ratio
+  -- Calculate positions based on ratios within content area
+  local sep1_x_local = padding_left + (content_width * self.state.separator1_ratio)
+  local sep2_x_local = padding_left + (content_width * self.state.separator2_ratio)
+
+  -- Convert to screen coordinates for separator
+  local sep1_x_screen = window_x + sep1_x_local
+  local sep2_x_screen = window_x + sep2_x_local
+  local cursor_y_screen = window_y + cursor_y
 
   -- Handle separator 1 dragging
-  local sep1_action, sep1_new_x = self.separator1:draw_vertical(ctx, sep1_x, cursor_y, 0, panel_height, separator_thickness)
+  local sep1_action, sep1_new_x_screen = self.separator1:draw_vertical(ctx, sep1_x_screen, cursor_y_screen, 0, panel_height, separator_thickness)
   if sep1_action == "drag" then
-    -- Clamp to valid range
-    sep1_new_x = math.max(min_panel_width, math.min(sep1_new_x, SCREEN_W - min_panel_width * 2 - separator_thickness * 2))
-    self.state.separator1_ratio = sep1_new_x / SCREEN_W
-    sep1_x = sep1_new_x
+    -- Convert back to window coordinates
+    local sep1_new_x = sep1_new_x_screen - window_x
+    -- Clamp to valid range within content area
+    local min_x = padding_left + min_panel_width
+    local max_x = SCREEN_W - padding_right - min_panel_width * 2 - separator_thickness * 2
+    sep1_new_x = math.max(min_x, math.min(sep1_new_x, max_x))
+    self.state.separator1_ratio = (sep1_new_x - padding_left) / content_width
+    sep1_x_local = sep1_new_x
+    sep1_x_screen = window_x + sep1_x_local
   elseif sep1_action == "reset" then
     self.state.separator1_ratio = self.config.FOLDERS_PANEL_WIDTH_RATIO
-    sep1_x = SCREEN_W * self.state.separator1_ratio
+    sep1_x_local = padding_left + (content_width * self.state.separator1_ratio)
+    sep1_x_screen = window_x + sep1_x_local
   end
 
   -- Handle separator 2 dragging
-  local sep2_action, sep2_new_x = self.separator2:draw_vertical(ctx, sep2_x, cursor_y, 0, panel_height, separator_thickness)
+  local sep2_action, sep2_new_x_screen = self.separator2:draw_vertical(ctx, sep2_x_screen, cursor_y_screen, 0, panel_height, separator_thickness)
   if sep2_action == "drag" then
+    -- Convert back to window coordinates
+    local sep2_new_x = sep2_new_x_screen - window_x
     -- Clamp to valid range
-    sep2_new_x = math.max(sep1_x + separator_thickness + min_panel_width, math.min(sep2_new_x, SCREEN_W - min_panel_width))
-    self.state.separator2_ratio = sep2_new_x / SCREEN_W
-    sep2_x = sep2_new_x
+    local min_x = sep1_x_local + separator_thickness + min_panel_width
+    local max_x = SCREEN_W - padding_right - min_panel_width
+    sep2_new_x = math.max(min_x, math.min(sep2_new_x, max_x))
+    self.state.separator2_ratio = (sep2_new_x - padding_left) / content_width
+    sep2_x_local = sep2_new_x
+    sep2_x_screen = window_x + sep2_x_local
   elseif sep2_action == "reset" then
     self.state.separator2_ratio = self.state.separator1_ratio + self.config.TEMPLATES_PANEL_WIDTH_RATIO
-    sep2_x = SCREEN_W * self.state.separator2_ratio
+    sep2_x_local = padding_left + (content_width * self.state.separator2_ratio)
+    sep2_x_screen = window_x + sep2_x_local
   end
 
-  -- Calculate panel widths
-  local left_column_width = sep1_x - separator_thickness / 2
-  local template_width = sep2_x - sep1_x - separator_thickness
-  local info_width = SCREEN_W - sep2_x - separator_thickness / 2
+  -- Calculate panel widths (accounting for separator thickness)
+  local left_column_width = sep1_x_local - padding_left - separator_thickness / 2
+  local template_width = sep2_x_local - sep1_x_local - separator_thickness
+  local info_width = SCREEN_W - padding_right - sep2_x_local - separator_thickness / 2
 
   -- Split left column vertically (Explorer on top, Tags list on bottom)
-  local explorer_y = cursor_y + panel_height * self.state.explorer_height_ratio
+  local explorer_y_local = cursor_y + panel_height * self.state.explorer_height_ratio
+  local explorer_y_screen = window_y + explorer_y_local
+  local explorer_x_screen = window_x + padding_left
 
   -- Handle horizontal separator between Explorer and Tags
-  local sep_explorer_action, sep_explorer_new_y = self.separator_explorer:draw_horizontal(
-    ctx, 0, explorer_y, left_column_width, 0, separator_thickness
+  local sep_explorer_action, sep_explorer_new_y_screen = self.separator_explorer:draw_horizontal(
+    ctx, explorer_x_screen, explorer_y_screen, left_column_width, 0, separator_thickness
   )
   if sep_explorer_action == "drag" then
+    -- Convert back to window coordinates
+    local sep_explorer_new_y = sep_explorer_new_y_screen - window_y
     local min_explorer = cursor_y + 100
     local max_explorer = cursor_y + panel_height - 100
     sep_explorer_new_y = math.max(min_explorer, math.min(sep_explorer_new_y, max_explorer))
     self.state.explorer_height_ratio = (sep_explorer_new_y - cursor_y) / panel_height
-    explorer_y = sep_explorer_new_y
+    explorer_y_local = sep_explorer_new_y
+    explorer_y_screen = window_y + explorer_y_local
   elseif sep_explorer_action == "reset" then
     self.state.explorer_height_ratio = 0.6
-    explorer_y = cursor_y + panel_height * 0.6
+    explorer_y_local = cursor_y + panel_height * 0.6
+    explorer_y_screen = window_y + explorer_y_local
   end
 
-  local explorer_height = explorer_y - cursor_y - separator_thickness / 2
-  local tags_list_y = explorer_y + separator_thickness / 2
+  local explorer_height = explorer_y_local - cursor_y - separator_thickness / 2
+  local tags_list_y = explorer_y_local + separator_thickness / 2
   local tags_list_height = cursor_y + panel_height - tags_list_y
 
-  -- Draw panels with equal padding
+  -- Draw panels with padding
   -- Left column: Explorer
-  ImGui.SetCursorPos(ctx, 0, cursor_y)
+  ImGui.SetCursorPos(ctx, padding_left, cursor_y)
   draw_folder_panel(ctx, self.state, self.config, left_column_width, explorer_height)
 
   -- Left column: Tags list
-  ImGui.SetCursorPos(ctx, 0, tags_list_y)
+  ImGui.SetCursorPos(ctx, padding_left, tags_list_y)
   draw_tags_list_panel(ctx, self.state, self.config, left_column_width, tags_list_height)
 
   -- Middle panel: Templates
-  ImGui.SetCursorPos(ctx, sep1_x + separator_thickness / 2, cursor_y)
+  ImGui.SetCursorPos(ctx, sep1_x_local + separator_thickness / 2, cursor_y)
   draw_template_panel(ctx, self.state, self.config, template_width, panel_height)
 
   -- Right panel: Info & Tag Assignment
-  ImGui.SetCursorPos(ctx, sep2_x + separator_thickness / 2, cursor_y)
+  ImGui.SetCursorPos(ctx, sep2_x_local + separator_thickness / 2, cursor_y)
   draw_info_panel(ctx, self.state, self.config, info_width, panel_height)
 
   -- Handle exit
