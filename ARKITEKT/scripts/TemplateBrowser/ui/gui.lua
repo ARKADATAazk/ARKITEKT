@@ -350,11 +350,61 @@ local function draw_vsts_content(ctx, state, config, width, height)
   local FXParser = require('TemplateBrowser.domain.fx_parser')
   local all_fx = FXParser.get_all_fx(state.templates)
 
+  -- Header with VST count and Force Reparse button
   ImGui.Text(ctx, string.format("%d VST%s found", #all_fx, #all_fx == 1 and "" or "s"))
+
+  ImGui.SameLine(ctx, width - 120 - config.PANEL_PADDING * 2)
+
+  -- Force Reparse button (two-click confirmation)
+  local button_label = "Force Reparse All"
+  local button_color = nil
+
+  if state.reparse_armed then
+    button_label = "CONFIRM REPARSE?"
+    button_color = ImGui.ColorConvertDouble4ToU32(0.8, 0.2, 0.2, 1.0)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, button_color)
+  end
+
+  if ImGui.Button(ctx, button_label, 120, 0) then
+    if state.reparse_armed then
+      -- Second click - execute reparse
+      reaper.ShowConsoleMsg("Force reparsing all templates...\n")
+
+      -- Clear file_size from all templates in metadata to force re-parse
+      if state.metadata and state.metadata.templates then
+        for uuid, tmpl in pairs(state.metadata.templates) do
+          tmpl.file_size = nil
+        end
+      end
+
+      -- Save metadata and trigger rescan
+      local Persistence = require('TemplateBrowser.domain.persistence')
+      Persistence.save_metadata(state.metadata)
+
+      -- Trigger rescan which will re-parse everything
+      local Scanner = require('TemplateBrowser.domain.scanner')
+      Scanner.scan_templates(state)
+
+      state.reparse_armed = false
+    else
+      -- First click - arm the button
+      state.reparse_armed = true
+    end
+  end
+
+  if state.reparse_armed then
+    ImGui.PopStyleColor(ctx)
+
+    -- Auto-disarm after hovering away
+    if not ImGui.IsItemHovered(ctx) then
+      state.reparse_armed = false
+    end
+  end
+
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  BeginChildCompat(ctx, "VSTsList", width - config.PANEL_PADDING * 2, height - 30, false)
+  BeginChildCompat(ctx, "VSTsList", width - config.PANEL_PADDING * 2, height - 60, false)
 
   for _, fx_name in ipairs(all_fx) do
     ImGui.PushID(ctx, fx_name)

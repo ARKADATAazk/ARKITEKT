@@ -41,6 +41,7 @@ M.undo_manager = nil
 -- Internal
 M.exit = false
 M.overlay_alpha = 1.0
+M.reparse_armed = false  -- Force reparse button armed state
 
 function M.initialize(config)
   M.config = config
@@ -48,6 +49,7 @@ function M.initialize(config)
   M.templates = {}
   M.filtered_templates = {}
   M.metadata = nil
+  M.reparse_armed = false
   M.selected_folder = nil
   M.selected_template = nil
   M.search_query = ""
