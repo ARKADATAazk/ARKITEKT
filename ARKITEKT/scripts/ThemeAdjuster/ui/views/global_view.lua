@@ -85,7 +85,7 @@ end
 
 function GlobalView:draw(ctx, shell_state)
   -- Title
-  ImGui.PushFont(ctx, shell_state.fonts.bold)
+  ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
   ImGui.Text(ctx, "Global Color Controls")
   ImGui.PopFont(ctx)
 
