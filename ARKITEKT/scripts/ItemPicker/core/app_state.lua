@@ -2,7 +2,7 @@
 -- ItemPicker/core/app_state.lua
 -- Centralized state management (single source of truth)
 
-local Persistence = require("ItemPicker.storage.persistence")
+local Persistence = require("ItemPicker.data.persistence")
 
 local M = {}
 
