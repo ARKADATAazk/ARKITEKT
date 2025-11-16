@@ -23,27 +23,30 @@ end
 function M.new(opts)
   opts = opts or {}
   local self = setmetatable({}, Transport)
-  
+
   self.proj = opts.proj or 0
   self.state = opts.state
-  
+
   self.transport_override = (opts.transport_override == true)
   self.loop_playlist = (opts.loop_playlist == true)
-  
+  self.follow_viewport = (opts.follow_viewport == true)
+
   self.is_playing = false
   self.last_seek_time = 0
   self.seek_throttle = 0.06
-  
+
   self._playlist_mode = false
   self._old_smoothseek = nil
   self._old_repeat = nil
-  
+  self._old_smooth_scroll = nil
+
   return self
 end
 
 function Transport:_enter_playlist_mode_if_needed()
   if self._playlist_mode then return end
-  
+
+  -- Save and override SWS settings
   if _has_sws() then
     self._old_smoothseek = reaper.SNM_GetIntConfigVar("smoothseek", -1)
     reaper.SNM_SetIntConfigVar("smoothseek", 3)
@@ -53,12 +56,23 @@ function Transport:_enter_playlist_mode_if_needed()
       reaper.GetSetRepeat(0)
     end
   end
+
+  -- Save and enable continuous scrolling if Follow Viewport is enabled
+  -- Command 41817: View: Toggle continuous scrolling during playback
+  if self.follow_viewport then
+    self._old_smooth_scroll = reaper.GetToggleCommandState(41817)
+    if self._old_smooth_scroll == 0 then
+      reaper.Main_OnCommand(41817, 0)  -- Enable smooth scroll
+    end
+  end
+
   self._playlist_mode = true
 end
 
 function Transport:_leave_playlist_mode_if_needed()
   if not self._playlist_mode then return end
-  
+
+  -- Restore SWS settings
   if _has_sws() then
     if self._old_smoothseek ~= nil then
       reaper.SNM_SetIntConfigVar("smoothseek", self._old_smoothseek)
@@ -69,6 +83,17 @@ function Transport:_leave_playlist_mode_if_needed()
     end
     self._old_repeat = nil
   end
+
+  -- Restore continuous scrolling to original state
+  -- Command 41817: View: Toggle continuous scrolling during playback
+  if self._old_smooth_scroll ~= nil then
+    local current_state = reaper.GetToggleCommandState(41817)
+    if current_state ~= self._old_smooth_scroll then
+      reaper.Main_OnCommand(41817, 0)  -- Toggle back to original
+    end
+    self._old_smooth_scroll = nil
+  end
+
   self._playlist_mode = false
 end
 
@@ -209,6 +234,37 @@ end
 
 function Transport:get_transport_override()
   return self.transport_override
+end
+
+function Transport:set_follow_viewport(enabled)
+  local was_enabled = self.follow_viewport
+  self.follow_viewport = not not enabled
+
+  -- If we're already in playlist mode, update smooth scroll state immediately
+  if self._playlist_mode then
+    if enabled and not was_enabled then
+      -- Enabling: save and enable smooth scroll
+      if self._old_smooth_scroll == nil then
+        self._old_smooth_scroll = reaper.GetToggleCommandState(41817)
+        if self._old_smooth_scroll == 0 then
+          reaper.Main_OnCommand(41817, 0)
+        end
+      end
+    elseif not enabled and was_enabled then
+      -- Disabling: restore smooth scroll
+      if self._old_smooth_scroll ~= nil then
+        local current_state = reaper.GetToggleCommandState(41817)
+        if current_state ~= self._old_smooth_scroll then
+          reaper.Main_OnCommand(41817, 0)
+        end
+        self._old_smooth_scroll = nil
+      end
+    end
+  end
+end
+
+function Transport:get_follow_viewport()
+  return self.follow_viewport
 end
 
 function Transport:set_loop_playlist(enabled)

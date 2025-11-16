@@ -54,6 +54,7 @@ function M.create(opts)
     follow_playhead = saved_settings.follow_playhead or false,
     transport_override = saved_settings.transport_override or false,
     loop_playlist = saved_settings.loop_playlist or false,
+    follow_viewport = saved_settings.follow_viewport or false,
     on_repeat_cycle = nil,
     playlist_lookup = opts.get_playlist_by_id,
   })

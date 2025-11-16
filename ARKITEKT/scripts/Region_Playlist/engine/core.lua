@@ -23,6 +23,7 @@ function M.new(opts)
     state = self.state,
     transport_override = opts.transport_override,
     loop_playlist = opts.loop_playlist,
+    follow_viewport = opts.follow_viewport,
   })
   
   self.transitions = EngineTransitions.new({
@@ -180,6 +181,7 @@ function Engine:get_state()
     follow_playhead = self.follow_playhead,
     transport_override = self.transport:get_transport_override(),
     loop_playlist = self.transport:get_loop_playlist(),
+    follow_viewport = self.transport:get_follow_viewport(),
     quantize_mode = self.quantize_mode,
     is_playing = self.transport.is_playing,
     has_sws = EngineTransport._has_sws(),

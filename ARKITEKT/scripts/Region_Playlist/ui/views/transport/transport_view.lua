@@ -309,8 +309,11 @@ function TransportView:build_header_elements(bridge_state, available_width)
               engine:set_transport_override(new_checked)
             end
           elseif value == "follow_viewport" then
-            -- Toggle REAPER action 41817: View: Toggle continuous scrolling during playback
-            reaper.Main_OnCommand(41817, 0)
+            local bridge = self.state.get_bridge()
+            local engine = bridge.engine
+            if engine then
+              engine:set_follow_viewport(new_checked)
+            end
           end
         end,
       },
@@ -348,8 +351,12 @@ function TransportView:build_header_elements(bridge_state, available_width)
         preset_name = "BUTTON_TOGGLE_WHITE",
         tooltip = "Follow Playhead in Viewport (Continuous Scrolling)",
         on_click = function()
-          -- Toggle REAPER action 41817: View: Toggle continuous scrolling during playback
-          reaper.Main_OnCommand(41817, 0)
+          local bridge = self.state.get_bridge()
+          local engine = bridge.engine
+          if engine then
+            local current_state = engine:get_follow_viewport()
+            engine:set_follow_viewport(not current_state)
+          end
         end,
       },
     }
@@ -363,10 +370,6 @@ function TransportView:draw(ctx, shell_state, is_blocking)
   local bridge = self.state.get_bridge()
   local engine = bridge.engine
 
-  -- Query REAPER toggle state for Follow Viewport (Continuous scrolling during playback)
-  -- Command ID 41817: View: Toggle continuous scrolling during playback
-  local follow_viewport_enabled = reaper.GetToggleCommandState(41817) == 1
-
   local bridge_state = {
     is_playing = bridge:get_state().is_playing,
     time_remaining = bridge:get_time_remaining(),
@@ -374,7 +377,7 @@ function TransportView:draw(ctx, shell_state, is_blocking)
     quantize_mode = bridge:get_state().quantize_mode,
     loop_enabled = bridge:get_loop_playlist(),
     override_enabled = engine and engine:get_transport_override() or false,
-    follow_viewport = follow_viewport_enabled,
+    follow_viewport = engine and engine:get_follow_viewport() or false,
   }
 
   -- Inject icon font, size, and blocking state into corner buttons
