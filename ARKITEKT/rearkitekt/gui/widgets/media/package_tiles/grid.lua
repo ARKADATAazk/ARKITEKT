@@ -206,18 +206,12 @@ function M.create(pkg, settings, theme)
     draw = function(self, ctx)
       self.custom_state.checkbox_rects = {}
       self.custom_state.animator:update(0.016)
-
+      
       local avail_w = ImGui.GetContentRegionAvail(ctx)
       local min_col_w = pkg.tile or 220
       local raw_height = calculate_clamped_tile_height(avail_w, min_col_w, 12, Renderer.CONFIG.tile.max_height)
       local clamped_height = self.custom_state.height_stabilizer:update(raw_height)
-
-      -- Debug: Log when height changes
-      local prev_height = self.grid.fixed_tile_h
-      if prev_height and math.abs(clamped_height - prev_height) > 0.1 then
-        reaper.ShowConsoleMsg(string.format("[PackageTiles] Height changed: %.1f -> %.1f\n", prev_height, clamped_height))
-      end
-
+      
       self.grid.fixed_tile_h = clamped_height
       self.grid:draw(ctx)
     end,
