@@ -72,16 +72,26 @@ function M.process_batch(loader, state, settings)
     return true, 1.0
   end
 
+  local batch_start_time = reaper.time_precise()
   local batch_end = math.min(loader.current_index + loader.batch_size, total_items)
 
   -- Process this batch
+  local reaper_time = 0
+  local processing_time = 0
+
   for i = loader.current_index + 1, batch_end do
     local entry = loader.all_items[i]
     local item = entry.item
     local track = entry.track
 
     -- Get and clean chunk for this item
+    local t1 = reaper.time_precise()
     local _, chunk = reaper.GetItemStateChunk(item, "")
+    local take = reaper.GetActiveTake(item)
+    local is_midi = take and reaper.TakeIsMIDI(take) or false
+    local t2 = reaper.time_precise()
+    reaper_time = reaper_time + (t2 - t1)
+
     local utils = require('ItemPicker.domain.utils')
     chunk = utils.RemoveKeyFromChunk(chunk, "POSITION")
     chunk = utils.RemoveKeyFromChunk(chunk, "IGUID")
@@ -90,9 +100,8 @@ function M.process_batch(loader, state, settings)
     local chunk_id = loader.reaper_interface.ItemChunkID(item)
     loader.item_chunks[chunk_id] = chunk
 
-    local take = reaper.GetActiveTake(item)
     if take then
-      if reaper.TakeIsMIDI(take) then
+      if is_midi then
         -- Process MIDI item
         M.process_midi_item(loader, item, track, chunk, chunk_id, state)
       else
@@ -100,10 +109,19 @@ function M.process_batch(loader, state, settings)
         M.process_audio_item(loader, item, track, chunk, chunk_id, state)
       end
     end
+
+    local t3 = reaper.time_precise()
+    processing_time = processing_time + (t3 - t2)
   end
 
   loader.current_index = batch_end
   local progress = loader.current_index / total_items
+
+  local batch_time = (reaper.time_precise() - batch_start_time) * 1000
+  local reaper_ms = reaper_time * 1000
+  local processing_ms = processing_time * 1000
+  reaper.ShowConsoleMsg(string.format("Batch %d-%d: %.1fms total (REAPER: %.1fms, Processing: %.1fms)\n",
+    batch_end - loader.batch_size + 1, batch_end, batch_time, reaper_ms, processing_ms))
 
   if loader.current_index >= total_items then
     loader.is_loading = false
