@@ -8,6 +8,17 @@ local M = {}
 local GUI = {}
 GUI.__index = GUI
 
+-- ImGui 0.9/0.10 compatibility for BeginChild
+local HAS_CHILD_FLAGS = (ImGui.ChildFlags_None ~= nil)
+local function BeginChildCompat(ctx, id, w, h, want_border, window_flags)
+  if HAS_CHILD_FLAGS then
+    local child_flags = want_border and (ImGui.ChildFlags_Border or 0) or 0
+    return ImGui.BeginChild(ctx, id, w, h, child_flags, window_flags or 0)
+  else
+    return ImGui.BeginChild(ctx, id, w, h, want_border and true or false, window_flags or 0)
+  end
+end
+
 function M.new(config, state, scanner)
   local self = setmetatable({
     config = config,
@@ -75,7 +86,7 @@ end
 
 -- Draw folder panel (left)
 local function draw_folder_panel(ctx, state, config, width, height)
-  ImGui.BeginChild(ctx, "FolderPanel", width, height, ImGui.ChildFlags_Border)
+  BeginChildCompat(ctx, "FolderPanel", width, height, true)
 
   -- Header
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
@@ -115,7 +126,7 @@ end
 
 -- Draw template list panel (middle)
 local function draw_template_panel(ctx, state, config, width, height)
-  ImGui.BeginChild(ctx, "TemplatePanel", width, height, ImGui.ChildFlags_Border)
+  BeginChildCompat(ctx, "TemplatePanel", width, height, true)
 
   -- Header with search
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
@@ -143,7 +154,7 @@ local function draw_template_panel(ctx, state, config, width, height)
   ImGui.Separator(ctx)
 
   -- Template list
-  ImGui.BeginChild(ctx, "TemplateList", 0, 0)
+  BeginChildCompat(ctx, "TemplateList", 0, 0, false)
 
   for i, tmpl in ipairs(state.filtered_templates) do
     local is_selected = (state.selected_template == tmpl)
@@ -178,7 +189,7 @@ end
 
 -- Draw tags/info panel (right)
 local function draw_tags_panel(ctx, state, config, width, height)
-  ImGui.BeginChild(ctx, "TagsPanel", width, height, ImGui.ChildFlags_Border)
+  BeginChildCompat(ctx, "TagsPanel", width, height, true)
 
   -- Header
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
