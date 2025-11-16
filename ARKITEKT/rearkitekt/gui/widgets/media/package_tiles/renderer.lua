@@ -232,7 +232,7 @@ function M.TileRenderer.checkbox(ctx, pkg, P, cb_rects, tile_x, tile_y, tile_w, 
   end
 end
 
-function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
+function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h)
   if not theme or not theme.color_from_key then return end
 
   -- Begin frame for image cache
@@ -286,9 +286,9 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
     end
 
     if rec and rec.img then
-      -- Calculate available area for preview (full tile content area)
+      -- Calculate available area for preview (use most of tile height above footer)
       local preview_area_w = tile_w - M.CONFIG.mosaic.padding * 2
-      local preview_area_h = M.CONFIG.mosaic.max_size * 1.5
+      local preview_area_h = tile_h - M.CONFIG.mosaic.y_offset - M.CONFIG.footer.height - M.CONFIG.mosaic.padding
 
       -- Fill mode: scale image to cover entire area (may crop)
       local img_w, img_h = rec.src_w, rec.src_h
@@ -333,18 +333,28 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
     return
   end
 
-  -- No preview.png, fall back to mosaic of 3 images
+  -- No preview.png, fall back to mosaic of actual number of images (1, 2, or 3)
+  local preview_keys = P.meta and P.meta.mosaic or { P.keys_order[1], P.keys_order[2], P.keys_order[3] }
+  -- Filter out nil values
+  local valid_keys = {}
+  for _, key in ipairs(preview_keys) do
+    if key then
+      table.insert(valid_keys, key)
+    end
+  end
+  local num_images = math.min(M.CONFIG.mosaic.count, #valid_keys)
+
+  if num_images == 0 then return end
+
   local cell_size = math.min(
     M.CONFIG.mosaic.max_size,
-    math.floor((tile_w - M.CONFIG.mosaic.padding * 2 - (M.CONFIG.mosaic.count - 1) * M.CONFIG.mosaic.gap) / M.CONFIG.mosaic.count)
+    math.floor((tile_w - M.CONFIG.mosaic.padding * 2 - (num_images - 1) * M.CONFIG.mosaic.gap) / num_images)
   )
-  local total_width = cell_size * M.CONFIG.mosaic.count + (M.CONFIG.mosaic.count - 1) * M.CONFIG.mosaic.gap
+  local total_width = cell_size * num_images + (num_images - 1) * M.CONFIG.mosaic.gap
   local mosaic_x = tile_x + math.floor((tile_w - total_width) / 2)
   local mosaic_y = tile_y + M.CONFIG.mosaic.y_offset
-
-  local preview_keys = P.meta and P.meta.mosaic or { P.keys_order[1], P.keys_order[2], P.keys_order[3] }
-  for i = 1, math.min(M.CONFIG.mosaic.count, #preview_keys) do
-    local key = preview_keys[i]
+  for i = 1, num_images do
+    local key = valid_keys[i]
     if key then
       local cx = mosaic_x + (i - 1) * (cell_size + M.CONFIG.mosaic.gap)
       local cy = mosaic_y
