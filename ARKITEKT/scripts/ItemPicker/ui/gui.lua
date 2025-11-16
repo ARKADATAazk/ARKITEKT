@@ -25,6 +25,8 @@ function M.new(config, state, controller, visualization, cache_mgr, drag_handler
     initialized = false,
     data_loaded = false,
     load_frame_counter = 0,
+    incremental_loader = nil,
+    loading_started = false,
   }, GUI)
 
   return self
@@ -59,9 +61,9 @@ function GUI:initialize_once(ctx)
   self.initialized = true
 end
 
--- Deferred data loading (called after UI is visible)
-function GUI:load_data_deferred()
-  if self.data_loaded then return end
+-- Start incremental loading (non-blocking)
+function GUI:start_incremental_loading()
+  if self.loading_started then return end
 
   -- Try to load cached project state first
   local cached_state = self.cache_mgr.load_project_state_from_disk()
@@ -72,30 +74,53 @@ function GUI:load_data_deferred()
     self.state.sample_indexes = cached_state.sample_indexes or {}
     self.state.midi_indexes = cached_state.midi_indexes or {}
     self.state.last_change_count = current_change_count
+    -- Still populate full item data from cache
+    self.controller.collect_project_items(self.state)
+    self.data_loaded = true
+    self.loading_started = true
   else
+    -- Start incremental loading for large projects
+    local IncrementalLoader = require('ItemPicker.domain.incremental_loader')
+    self.incremental_loader = IncrementalLoader.new(self.controller.reaper_interface, 50) -- 50 items per frame
+    IncrementalLoader.start_loading(self.incremental_loader, self.state, self.state.settings)
     self.state.last_change_count = current_change_count
+    self.loading_started = true
   end
+end
 
-  -- Collect all project items
-  self.controller.collect_project_items(self.state)
+-- Process incremental loading batch (called every frame)
+function GUI:process_incremental_loading()
+  if self.data_loaded or not self.incremental_loader then return end
 
-  -- After initial load burst, throttle to 2 jobs/frame for smooth FPS
-  if self.state.job_queue then
-    self.state.job_queue.max_per_frame = 2
+  local IncrementalLoader = require('ItemPicker.domain.incremental_loader')
+  local is_complete, progress = IncrementalLoader.process_batch(self.incremental_loader, self.state, self.state.settings)
+
+  -- Update state with current results (even if not complete)
+  IncrementalLoader.get_results(self.incremental_loader, self.state)
+
+  if is_complete then
+    self.data_loaded = true
+    -- After initial load burst, throttle to 2 jobs/frame for smooth FPS
+    if self.state.job_queue then
+      self.state.job_queue.max_per_frame = 2
+    end
   end
-
-  self.data_loaded = true
 end
 
 function GUI:draw(ctx, shell_state)
   self:initialize_once(ctx)
 
-  -- Defer data loading by 3 frames to let modal fade in start
-  if not self.data_loaded then
+  -- Start incremental loading after 3 frames (let modal fade begin)
+  if not self.loading_started then
     self.load_frame_counter = self.load_frame_counter + 1
     if self.load_frame_counter >= 3 then
-      self:load_data_deferred()
+      self:start_incremental_loading()
     end
+  end
+
+  -- Process one batch per frame (non-blocking)
+  if self.loading_started and not self.data_loaded then
+    self:process_incremental_loading()
   end
 
   -- Get draw list
