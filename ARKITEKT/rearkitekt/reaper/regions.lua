@@ -15,8 +15,8 @@ local function convert_reaper_color_to_rgba(native_color)
   end
 
   local color_int = native_color | 0x1000000
-  -- ColorFromNative returns (b, g, r) not (r, g, b) on Windows
-  local b, g, r = reaper.ColorFromNative(color_int)
+  -- ColorFromNative handles platform conversion automatically
+  local r, g, b = reaper.ColorFromNative(color_int)
 
   return (r << 24) | (g << 16) | (b << 8) | 0xFF
 end
@@ -27,9 +27,9 @@ local function convert_rgba_to_reaper_color(rgba_color)
   local g = (rgba_color >> 16) & 0xFF
   local b = (rgba_color >> 8) & 0xFF
 
-  -- Convert to native Reaper color format (BGR on Windows)
-  -- ColorToNative expects (b, g, r) not (r, g, b)
-  return reaper.ColorToNative(b, g, r) | 0x1000000
+  -- ColorToNative handles platform conversion (BGR on Windows) automatically
+  -- Just pass r, g, b and let the API handle it
+  return reaper.ColorToNative(r, g, b) | 0x1000000
 end
 
 function M.scan_project_regions(proj)
@@ -139,7 +139,10 @@ function M.set_region_color(proj, target_rid, rgba_color)
 
   reaper.ShowConsoleMsg(string.format("    -> SetProjectMarker4 returned: %s\n", tostring(success)))
 
+  -- Force immediate visual update
   reaper.UpdateTimeline()
+  reaper.UpdateArrange()
+
   return true
 end
 
