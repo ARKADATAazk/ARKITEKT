@@ -7,6 +7,7 @@ local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
 local PackageTilesGrid = require('rearkitekt.gui.widgets.media.package_tiles.grid')
 local PackageManager = require('ThemeAdjuster.packages.manager')
 local Config = require('ThemeAdjuster.core.config')
+local Theme = require('ThemeAdjuster.core.theme')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -23,6 +24,10 @@ function M.new(State, AppConfig, settings)
     grid = nil,
     package_model = nil,
     theme_model = nil,
+
+    -- ZIP linking state
+    selected_zip_index = 0,
+    available_zips = {},
   }, AssemblerView)
 
   -- Create package model (adapter for the grid)
@@ -229,6 +234,96 @@ function AssemblerView:update(dt)
   end
 end
 
+function AssemblerView:draw_footer(ctx)
+  local status, dir, zip_name = Theme.get_status()
+  local info = Theme.get_theme_info()
+
+  -- Footer height
+  local footer_height = 32
+  local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
+
+  -- Draw footer background
+  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local footer_x1, footer_y1 = cursor_x, cursor_y
+  local footer_x2, footer_y2 = cursor_x + avail_w, cursor_y + footer_height
+
+  ImGui.DrawList_AddRectFilled(dl, footer_x1, footer_y1, footer_x2, footer_y2, hexrgb("#1E1E1E"))
+  ImGui.DrawList_AddRect(dl, footer_x1, footer_y1, footer_x2, footer_y2, hexrgb("#000000"))
+
+  -- Position cursor for content
+  ImGui.SetCursorScreenPos(ctx, footer_x1 + 12, footer_y1 + 6)
+
+  -- Show status on the left
+  if status == "needs-link" then
+    -- Red "NOT LINKED" text
+    ImGui.TextColored(ctx, hexrgb("#E04141"), "NOT LINKED")
+    ImGui.SameLine(ctx)
+    ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 8)
+
+    -- ZIP dropdown
+    if #self.available_zips == 0 then
+      self.available_zips = Theme.list_theme_zips()
+    end
+
+    if #self.available_zips > 0 then
+      -- Create display list (just filenames)
+      local zip_names = {}
+      for _, zip_path in ipairs(self.available_zips) do
+        local name = zip_path:match("[^\\/]+$") or zip_path
+        table.insert(zip_names, name)
+      end
+
+      ImGui.SetNextItemWidth(ctx, 300)
+      local changed, new_index = ImGui.Combo(ctx, "##zip_picker", self.selected_zip_index, table.concat(zip_names, "\0"))
+
+      if changed and new_index > 0 then
+        self.selected_zip_index = new_index
+        local selected_zip = self.available_zips[new_index]
+        if selected_zip then
+          -- Build cache from selected ZIP
+          local img_dir, err = Theme.build_cache_from_zip(info.theme_name, selected_zip)
+          if img_dir then
+            -- Trigger package rescan
+            local packages = PackageManager.scan_packages(nil, self.State.get_demo_mode())
+            self.State.set_packages(packages)
+            self.package_model.index = packages
+          end
+        end
+      end
+
+      ImGui.SameLine(ctx)
+      ImGui.TextDisabled(ctx, "Select ZIP to link theme")
+    else
+      ImGui.TextDisabled(ctx, "No .ReaperThemeZip files found in ColorThemes")
+    end
+
+  elseif status == "linked-ready" or status == "zip-ready" then
+    ImGui.TextColored(ctx, hexrgb("#41E0A3"), "LINKED")
+    if zip_name then
+      ImGui.SameLine(ctx)
+      ImGui.TextDisabled(ctx, "→ " .. zip_name)
+    end
+
+  elseif status == "direct" then
+    ImGui.TextColored(ctx, hexrgb("#41E0A3"), "DIRECT")
+    if dir then
+      ImGui.SameLine(ctx)
+      ImGui.TextDisabled(ctx, "→ " .. (dir:match("[^\\/]+$") or dir))
+    end
+
+  elseif status == "linked-needs-build" then
+    ImGui.TextColored(ctx, hexrgb("#E0B341"), "BUILD NEEDED")
+    if zip_name then
+      ImGui.SameLine(ctx)
+      ImGui.TextDisabled(ctx, "→ " .. zip_name)
+    end
+  end
+
+  -- Advance cursor past footer
+  ImGui.SetCursorScreenPos(ctx, footer_x1, footer_y2)
+end
+
 function AssemblerView:draw(ctx, shell_state)
   local visible_packages = self.package_model:visible()
 
@@ -244,6 +339,9 @@ function AssemblerView:draw(ctx, shell_state)
   if self.container:begin_draw(ctx) then
     -- Draw grid inside container
     self.grid:draw(ctx)
+
+    -- Draw footer at the bottom
+    self:draw_footer(ctx)
   end
   self.container:end_draw(ctx)
 end
