@@ -108,6 +108,10 @@ function M.render(ctx, id, config)
 
   local changed = false
 
+  -- Style the color picker with dark borders
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#000000FF"))  -- Dark border for triangle
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameBorderSize, 1)
+
   -- Color picker configuration
   local picker_flags = ImGui.ColorEditFlags_PickerHueWheel |
                        ImGui.ColorEditFlags_NoSidePreview |
@@ -119,12 +123,16 @@ function M.render(ctx, id, config)
   -- Draw the color picker (hue wheel + triangle)
   local rv, new_color = ImGui.ColorPicker4(ctx, '##picker', inst.current_color, picker_flags)
 
+  ImGui.PopStyleVar(ctx, 1)
+  ImGui.PopStyleColor(ctx, 1)
+
   if rv then
     inst.current_color = new_color | 0xFF  -- Preserve full alpha
     changed = true
 
     -- Call callback immediately on change (live update)
     if on_change then
+      reaper.ShowConsoleMsg(string.format("Color changed to: %08X\n", inst.current_color))
       on_change(inst.current_color)
     end
   end

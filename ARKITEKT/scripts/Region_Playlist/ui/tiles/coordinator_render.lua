@@ -282,38 +282,25 @@ function M.draw_pool(self, ctx, regions, height)
   end
 
   if ContextMenu.begin(ctx, "PoolActionsMenu") then
-    -- Check if pool grid has any selected items
-    local has_pool_selection = false
-    if self.pool_grid and self.pool_grid.selection then
-      local selected_keys = self.pool_grid.selection:selected_keys()
-      has_pool_selection = #selected_keys > 0
-    end
-
-    if has_pool_selection then
-      if ContextMenu.item(ctx, "Recolor") then
-        -- Get first selected item's color as initial color
-        local initial_color = nil
-        if self.pool_grid and self.pool_grid.selection then
-          local selected_keys = self.pool_grid.selection:selected_keys()
-          for _, key in ipairs(selected_keys) do
-            local rid = key:match("^pool_(%d+)$")
-            if rid then
-              local region = State.get_region_by_rid(tonumber(rid))
-              if region and region.color then
-                initial_color = region.color
-                break
-              end
+    if ContextMenu.item(ctx, "Recolor") then
+      -- Get first selected item's color as initial color
+      local initial_color = nil
+      if self.pool_grid and self.pool_grid.selection then
+        local selected_keys = self.pool_grid.selection:selected_keys()
+        for _, key in ipairs(selected_keys) do
+          local rid = key:match("^pool_(%d+)$")
+          if rid then
+            local region = State.get_region_by_rid(tonumber(rid))
+            if region and region.color then
+              initial_color = region.color
+              break
             end
           end
         end
-
-        ColorPickerWindow.open("pool_recolor", initial_color)
-        ImGui.CloseCurrentPopup(ctx)
       end
-    else
-      ImGui.BeginDisabled(ctx)
-      ContextMenu.item(ctx, "Recolor")
-      ImGui.EndDisabled(ctx)
+
+      ColorPickerWindow.open("pool_recolor", initial_color)
+      ImGui.CloseCurrentPopup(ctx)
     end
 
     ContextMenu.end_menu(ctx)
@@ -332,20 +319,25 @@ function M.draw_pool(self, ctx, regions, height)
       -- Live update: apply color immediately to all selected regions/playlists
       if self.pool_grid and self.pool_grid.selection and self.controller then
         local selected_keys = self.pool_grid.selection:selected_keys()
+        reaper.ShowConsoleMsg(string.format("Callback fired! Selected keys: %d\n", #selected_keys))
 
         for _, key in ipairs(selected_keys) do
           -- Handle regions: "pool_123"
           local rid = key:match("^pool_(%d+)$")
           if rid then
+            reaper.ShowConsoleMsg(string.format("Setting region %d color to %08X\n", tonumber(rid), color))
             self.controller:set_region_color(tonumber(rid), color)
           end
 
           -- Handle playlists: "pool_playlist_abc-def"
           local playlist_id = key:match("^pool_playlist_(.+)$")
           if playlist_id then
+            reaper.ShowConsoleMsg(string.format("Setting playlist %s color to %08X\n", playlist_id, color))
             self.controller:set_playlist_color(playlist_id, color)
           end
         end
+      else
+        reaper.ShowConsoleMsg("Callback fired but missing grid/selection/controller\n")
       end
     end
   })
