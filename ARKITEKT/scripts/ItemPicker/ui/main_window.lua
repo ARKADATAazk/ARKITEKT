@@ -45,6 +45,10 @@ function GUI:initialize_once(ctx)
   self.state.audio_item_lookup = {}
   self.state.midi_item_lookup = {}
 
+  -- Initialize disk cache for waveform/thumbnail persistence
+  local disk_cache = require('ItemPicker.data.disk_cache')
+  disk_cache.init()
+
   -- Initialize job queue for lazy waveform/thumbnail generation
   if not self.state.job_queue then
     local job_queue_module = require('ItemPicker.data.job_queue')
