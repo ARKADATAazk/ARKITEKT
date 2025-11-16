@@ -467,9 +467,12 @@ end
 
 --- Crop playlist to new project tab (SWS-style with undo trick)
 --- @param playlist_items table Array of {rid, reps} objects
+--- @param playlist_name string Name of the playlist to recreate
+--- @param playlist_chip_color number Chip color of the playlist
 --- @return boolean success
-function M.crop_to_playlist_new_tab(playlist_items)
+function M.crop_to_playlist_new_tab(playlist_items, playlist_name, playlist_chip_color)
   reaper.ShowConsoleMsg("[RegionOps] crop_to_playlist_new_tab called with " .. tostring(#playlist_items or 0) .. " items\n")
+  reaper.ShowConsoleMsg("[RegionOps] Playlist name: " .. tostring(playlist_name) .. "\n")
 
   if not playlist_items or #playlist_items == 0 then
     reaper.ShowConsoleMsg("[RegionOps] No playlist items provided\n")
@@ -511,12 +514,14 @@ function M.crop_to_playlist_new_tab(playlist_items)
         -- Copy envelope points
         copy_envelope_points(proj, region.start, region["end"], time_offset)
 
-        -- Store region for creation
+        -- Store region for creation (preserving original RID!)
         table.insert(regions_to_create, {
           start = current_position,
           ["end"] = current_position + region_length,
           name = region.name,
-          color = region.color
+          color = region.color,
+          rid = rid,  -- CRITICAL: Store original RID for playlist recreation
+          reps = reps  -- Store reps for playlist recreation
         })
 
         current_position = current_position + region_length
@@ -552,8 +557,9 @@ function M.crop_to_playlist_new_tab(playlist_items)
   local new_master = reaper.GetMasterTrack(0)
   reaper.SetTrackStateChunk(new_master, master_chunk, false)
 
-  -- Create region markers
-  for _, rgn in ipairs(regions_to_create) do
+  -- Create region markers with PRESERVED region numbers
+  local region_rid_map = {}  -- Track which RID appears at which position for playlist
+  for idx, rgn in ipairs(regions_to_create) do
     local native_color = 0
     if rgn.color then
       local r = (rgn.color >> 24) & 0xFF
@@ -562,14 +568,49 @@ function M.crop_to_playlist_new_tab(playlist_items)
       native_color = reaper.ColorToNative(r, g, b) | 0x1000000
     end
 
-    reaper.AddProjectMarker2(0, true, rgn.start, rgn["end"], rgn.name or "", -1, native_color)
+    -- Use the original RID (markrgnindexnumber) instead of -1 to preserve region numbers
+    reaper.AddProjectMarker2(0, true, rgn.start, rgn["end"], rgn.name or "", rgn.rid, native_color)
+
+    -- Track this region for playlist creation
+    if not region_rid_map[rgn.rid] then
+      region_rid_map[rgn.rid] = {rid = rgn.rid, reps = rgn.reps}
+    end
   end
 
   reaper.PreventUIRefresh(-1)
   reaper.Undo_EndBlock("Crop playlist to new tab", -1)
   reaper.UpdateArrange()
 
-  reaper.ShowConsoleMsg("[RegionOps] crop_to_playlist_new_tab completed\n")
+  -- Now recreate the playlist in the new project tab
+  local State = require('Region_Playlist.core.app_state')
+  local UUID = require('rearkitekt.core.uuid')
+
+  -- Create new playlist with the same name
+  local new_playlist = {
+    id = UUID.generate(),
+    name = playlist_name or "Cropped Playlist",
+    items = {},
+    chip_color = playlist_chip_color
+  }
+
+  -- Rebuild playlist items with the preserved RIDs
+  for _, pl_item in ipairs(playlist_items) do
+    table.insert(new_playlist.items, {
+      type = "region",
+      rid = pl_item.rid,  -- RID is preserved since we used it when creating regions
+      reps = pl_item.reps or 1,
+      enabled = true,
+      key = UUID.generate()
+    })
+  end
+
+  -- Add playlist to state
+  local playlists = State.get_playlists()
+  table.insert(playlists, new_playlist)
+  State.set_active_playlist(new_playlist.id)
+  State.persist()  -- Save to project
+
+  reaper.ShowConsoleMsg("[RegionOps] crop_to_playlist_new_tab completed - Playlist '" .. tostring(playlist_name) .. "' recreated with " .. #new_playlist.items .. " items\n")
   return true
 end
 

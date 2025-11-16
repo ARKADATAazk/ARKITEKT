@@ -188,11 +188,12 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
 
     if ContextMenu.item(ctx, "Crop to Playlist (New Tab)") then
       reaper.ShowConsoleMsg("[Active Menu] Crop to Playlist (New Tab) clicked\n")
-      -- Get ALL playlist items from active playlist
+      -- Get the full active playlist object (not just items)
       local playlist = State.get_active_playlist()
-      local playlist_items = {}
 
       if playlist and playlist.items then
+        -- Build playlist items array
+        local playlist_items = {}
         for _, item in ipairs(playlist.items) do
           if item.type == "region" and item.rid then
             table.insert(playlist_items, {
@@ -201,12 +202,13 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
             })
           end
         end
-      end
 
-      reaper.ShowConsoleMsg("[Active Menu] Total playlist items to crop (new tab): " .. #playlist_items .. "\n")
-      if #playlist_items > 0 then
-        local RegionOps = require('rearkitekt.reaper.region_operations')
-        RegionOps.crop_to_playlist_new_tab(playlist_items)
+        reaper.ShowConsoleMsg("[Active Menu] Total playlist items to crop (new tab): " .. #playlist_items .. "\n")
+        if #playlist_items > 0 then
+          -- Pass both the playlist structure and items to preserve playlist
+          local RegionOps = require('rearkitekt.reaper.region_operations')
+          RegionOps.crop_to_playlist_new_tab(playlist_items, playlist.name, playlist.chip_color)
+        end
       end
       ImGui.CloseCurrentPopup(ctx)
     end
