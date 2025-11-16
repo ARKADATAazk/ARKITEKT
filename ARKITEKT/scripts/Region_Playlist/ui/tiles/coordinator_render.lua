@@ -161,9 +161,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
                         ImGui.WindowFlags_NoSavedSettings |
                         ImGui.WindowFlags_NoMove |
                         ImGui.WindowFlags_NoScrollbar |
-                        ImGui.WindowFlags_NoScrollWithMouse |
-                        ImGui.WindowFlags_NoBringToFrontOnFocus |
-                        ImGui.WindowFlags_NoFocusOnAppearing
+                        ImGui.WindowFlags_NoScrollWithMouse
 
     ImGui.SetNextWindowBgAlpha(ctx, 0.0)
     if ImGui.Begin(ctx, "##ActiveColorPickerOverlay", true, window_flags) then
@@ -391,9 +389,7 @@ function M.draw_pool(self, ctx, regions, height)
                         ImGui.WindowFlags_NoSavedSettings |
                         ImGui.WindowFlags_NoMove |
                         ImGui.WindowFlags_NoScrollbar |
-                        ImGui.WindowFlags_NoScrollWithMouse |
-                        ImGui.WindowFlags_NoBringToFrontOnFocus |
-                        ImGui.WindowFlags_NoFocusOnAppearing
+                        ImGui.WindowFlags_NoScrollWithMouse
 
     ImGui.SetNextWindowBgAlpha(ctx, 0.0)
     if ImGui.Begin(ctx, "##PoolColorPickerOverlay", true, window_flags) then
