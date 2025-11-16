@@ -268,8 +268,8 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
     if not rec and M._package_image_cache._creates_left > 0 then
       local ok, img = pcall(ImGui.CreateImage, preview_path, ImGui.ImageFlags_NoErrors or 0)
       if ok and img then
-        local w, h = pcall(ImGui.Image_GetSize, img)
-        if w and h then
+        local ok_size, w, h = pcall(ImGui.Image_GetSize, img)
+        if ok_size and w and h then
           rec = {
             img = img,
             w = w,
@@ -379,8 +379,8 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
         if not rec and M._package_image_cache._creates_left > 0 then
           local ok, img = pcall(ImGui.CreateImage, img_path, ImGui.ImageFlags_NoErrors or 0)
           if ok and img then
-            local w, h = pcall(ImGui.Image_GetSize, img)
-            if w and h then
+            local ok_size, w, h = pcall(ImGui.Image_GetSize, img)
+            if ok_size and w and h then
               rec = {
                 img = img,
                 w = w,
