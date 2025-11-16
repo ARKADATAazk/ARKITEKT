@@ -292,10 +292,16 @@ end
 
 -- Save waveform to cache
 function M.save_waveform(item, uuid, waveform)
-  if not current_cache or not waveform then return false end
+  if not current_cache or not waveform then
+    reaper.ShowConsoleMsg("[Cache] save_waveform failed: no cache or waveform\n")
+    return false
+  end
 
   local hash = get_item_hash(item)
-  if not hash then return false end
+  if not hash then
+    reaper.ShowConsoleMsg("[Cache] save_waveform failed: no hash for item\n")
+    return false
+  end
 
   -- Create or update entry
   if not current_cache[uuid] then
@@ -305,8 +311,9 @@ function M.save_waveform(item, uuid, waveform)
   current_cache[uuid].hash = hash
   current_cache[uuid].waveform = waveform
 
-  -- Save to disk (async would be better, but Lua doesn't have that)
-  return save_project_cache(current_project_guid, current_cache)
+  -- Don't save to disk on every waveform - too slow! Will flush on exit
+  -- reaper.ShowConsoleMsg(string.format("[Cache] Saved waveform %s\n", uuid:sub(1,8)))
+  return true
 end
 
 -- Load MIDI thumbnail from cache
@@ -342,15 +349,29 @@ function M.save_midi_thumbnail(item, uuid, thumbnail)
   current_cache[uuid].hash = hash
   current_cache[uuid].midi_thumbnail = thumbnail
 
-  -- Save to disk
-  return save_project_cache(current_project_guid, current_cache)
+  -- Don't save to disk on every thumbnail - too slow! Will flush on exit
+  return true
 end
 
 -- Flush cache to disk (call on exit)
 function M.flush()
   if current_cache and current_project_guid then
-    save_project_cache(current_project_guid, current_cache)
-    reaper.ShowConsoleMsg("[ItemPicker Cache] Flushed cache to disk\n")
+    -- Count entries
+    local count = 0
+    for _ in pairs(current_cache) do
+      count = count + 1
+    end
+
+    reaper.ShowConsoleMsg(string.format("[ItemPicker Cache] Flushing %d entries to disk...\n", count))
+
+    local success = save_project_cache(current_project_guid, current_cache)
+    if success then
+      reaper.ShowConsoleMsg("[ItemPicker Cache] Successfully saved to disk!\n")
+    else
+      reaper.ShowConsoleMsg("[ItemPicker Cache] ERROR: Failed to save cache!\n")
+    end
+  else
+    reaper.ShowConsoleMsg("[ItemPicker Cache] Nothing to flush\n")
   end
 end
 
