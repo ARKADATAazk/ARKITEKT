@@ -32,7 +32,15 @@ end
 
 function GUI:refresh_packages()
   local demo_mode = self.State.get_demo_mode()
-  local packages = PackageManager.scan_packages(nil, demo_mode)
+  local theme_root = nil
+  if not demo_mode then
+    local Theme = require('ThemeAdjuster.core.theme')
+    local theme_info = Theme.get_theme_info()
+    if theme_info.theme_path then
+      theme_root = theme_info.theme_path:match("^(.*)[\\/][^\\/]+$") or theme_info.theme_path
+    end
+  end
+  local packages = PackageManager.scan_packages(theme_root, demo_mode)
   self.State.set_packages(packages)
 
   -- Initialize order if empty

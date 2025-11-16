@@ -51,7 +51,16 @@ function M.new(State, AppConfig, settings)
       State.set_demo_mode(new_demo)
       self.package_model.demo = new_demo
       -- Trigger rescan
-      local packages = PackageManager.scan_packages(nil, new_demo)
+      local theme_root = nil
+      if not new_demo then
+        local Theme = require('ThemeAdjuster.core.theme')
+        local theme_info = Theme.get_theme_info()
+        if theme_info.theme_path then
+          -- Extract directory from theme path
+          theme_root = theme_info.theme_path:match("^(.*)[\\/][^\\/]+$") or theme_info.theme_path
+        end
+      end
+      local packages = PackageManager.scan_packages(theme_root, new_demo)
       State.set_packages(packages)
       self.package_model.index = packages
       -- Reinitialize order
@@ -220,7 +229,15 @@ function AssemblerView:create_package_model()
     scan = function(self)
       -- Trigger package rescan
       local demo_mode = State.get_demo_mode()
-      local packages = PackageManager.scan_packages(nil, demo_mode)
+      local theme_root = nil
+      if not demo_mode then
+        local Theme = require('ThemeAdjuster.core.theme')
+        local theme_info = Theme.get_theme_info()
+        if theme_info.theme_path then
+          theme_root = theme_info.theme_path:match("^(.*)[\\/][^\\/]+$") or theme_info.theme_path
+        end
+      end
+      local packages = PackageManager.scan_packages(theme_root, demo_mode)
       State.set_packages(packages)
       self.index = packages
     end,
