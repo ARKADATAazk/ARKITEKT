@@ -538,8 +538,8 @@ function M.crop_to_playlist_new_tab(playlist_items)
   reaper.Undo_EndBlock("Crop playlist to new tab", -1)
   reaper.Undo_DoUndo2(0)
 
-  -- Create new project tab
-  reaper.Main_OnCommand(40859, 0) -- File: New project tab (ignore default template)
+  -- Create new project tab with EMPTY project (no template)
+  reaper.Main_OnCommand(41929, 0) -- File: New project tab (ignore default template)
 
   reaper.Undo_BeginBlock()
   reaper.PreventUIRefresh(1)

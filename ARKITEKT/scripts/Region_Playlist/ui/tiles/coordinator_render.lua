@@ -388,9 +388,9 @@ function M.draw_pool(self, ctx, regions, height)
   if self._pool_color_picker_visible then
     local picker_size = 130
 
-    -- Position at bottom-left corner
+    -- Position at bottom-left corner (moved down 30px)
     local picker_x = cursor_x + self.container_config.padding
-    local picker_y = cursor_y + height - picker_size - self.container_config.padding - 20
+    local picker_y = cursor_y + height - picker_size - self.container_config.padding + 10
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
