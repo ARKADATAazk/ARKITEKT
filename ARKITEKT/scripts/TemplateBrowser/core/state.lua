@@ -17,6 +17,21 @@ M.selected_template = nil   -- Currently selected template
 M.search_query = ""         -- Search filter
 M.filter_tags = {}          -- Active tag filters
 
+-- Folder open/close state (path -> bool)
+M.folder_open_state = {}
+
+-- Rename state
+M.renaming_item = nil       -- Item being renamed (folder node or template)
+M.renaming_type = nil       -- "folder" or "template"
+M.rename_buffer = ""        -- Text input buffer for rename
+
+-- Drag and drop state
+M.dragging_item = nil       -- Item being dragged
+M.dragging_type = nil       -- "folder" or "template"
+
+-- Undo manager
+M.undo_manager = nil
+
 -- Internal
 M.exit = false
 M.overlay_alpha = 1.0
@@ -32,6 +47,16 @@ function M.initialize(config)
   M.selected_template = nil
   M.search_query = ""
   M.filter_tags = {}
+  M.folder_open_state = {}
+  M.renaming_item = nil
+  M.renaming_type = nil
+  M.rename_buffer = ""
+  M.dragging_item = nil
+  M.dragging_type = nil
+
+  -- Create undo manager
+  local Undo = require('TemplateBrowser.domain.undo')
+  M.undo_manager = Undo.new()
 end
 
 function M.cleanup()
