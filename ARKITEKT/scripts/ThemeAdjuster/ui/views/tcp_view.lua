@@ -201,14 +201,15 @@ function TCPView:draw(ctx, shell_state)
   ImGui.SameLine(ctx)
 
   for _, layout in ipairs({'A', 'B', 'C'}) do
-    if self.active_layout == layout then
+    local is_active = (self.active_layout == layout)
+    if is_active then
       ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#2D4A37"))
     end
     if ImGui.Button(ctx, layout, 40, 0) then
       self.active_layout = layout
       -- TODO: Apply layout
     end
-    if self.active_layout == layout then
+    if is_active then
       ImGui.PopStyleColor(ctx)
     end
     ImGui.SameLine(ctx)
