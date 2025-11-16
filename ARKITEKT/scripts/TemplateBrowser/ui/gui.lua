@@ -9,12 +9,33 @@ local Tags = require('TemplateBrowser.domain.tags')
 local Separator = require('TemplateBrowser.ui.separator')
 local FXQueue = require('TemplateBrowser.domain.fx_queue')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
+local Colors = require('rearkitekt.core.colors')
 local TileAnim = require('rearkitekt.gui.rendering.tile.animator')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
 
 local M = {}
 local GUI = {}
 GUI.__index = GUI
+
+-- Color preset palette for template chips
+local PRESET_COLORS = {
+  Colors.hexrgb("#FF0000"), -- Red
+  Colors.hexrgb("#FF6000"), -- Red-Orange
+  Colors.hexrgb("#FF9900"), -- Orange
+  Colors.hexrgb("#FFCC00"), -- Yellow-Orange
+  Colors.hexrgb("#FFFF00"), -- Yellow
+  Colors.hexrgb("#CCFF00"), -- Yellow-Green
+  Colors.hexrgb("#66FF00"), -- Lime
+  Colors.hexrgb("#00FF00"), -- Green
+  Colors.hexrgb("#00FF66"), -- Green-Cyan
+  Colors.hexrgb("#00FFCC"), -- Cyan-Green
+  Colors.hexrgb("#00FFFF"), -- Cyan
+  Colors.hexrgb("#00CCFF"), -- Cyan-Blue
+  Colors.hexrgb("#0066FF"), -- Blue
+  Colors.hexrgb("#0000FF"), -- Deep Blue
+  Colors.hexrgb("#6600FF"), -- Blue-Purple
+  Colors.hexrgb("#CC00FF"), -- Purple
+}
 
 -- ImGui compatibility for BeginChild
 -- ChildFlags_Border might not exist in all versions, so use hardcoded values
@@ -732,7 +753,10 @@ local function draw_left_panel(ctx, state, config, width, height)
 end
 
 -- Draw template list panel (middle)
-local function draw_template_panel(ctx, state, config, width, height)
+local function draw_template_panel(ctx, gui, width, height)
+  local state = gui.state
+  local config = gui.config
+
   BeginChildCompat(ctx, "TemplatePanel", width, height, true)
 
   -- Header with search
@@ -867,307 +891,92 @@ local function draw_template_panel(ctx, state, config, width, height)
 
   ImGui.Separator(ctx)
 
-  -- Template list
-  BeginChildCompat(ctx, "TemplateList", 0, 0, false)
+  -- Template grid
+  gui.template_grid:draw(ctx)
 
-  for i, tmpl in ipairs(state.filtered_templates) do
-    local is_selected = (state.selected_template == tmpl)
-    local is_renaming = (state.renaming_item == tmpl and state.renaming_type == "template")
+  -- Context menu with color picker (triggered by grid's on_context_menu)
+  if state.context_menu_template then
+    ImGui.OpenPopup(ctx, "##template_color_picker")
+  end
 
-    ImGui.PushID(ctx, i)
+  if ImGui.BeginPopup(ctx, "##template_color_picker") then
+    local tmpl = state.context_menu_template
+    if tmpl then
+      ImGui.Text(ctx, "Set Template Color")
+      ImGui.Separator(ctx)
+      ImGui.Spacing(ctx)
 
-    if is_renaming then
-      -- Rename mode
-      ImGui.SetNextItemWidth(ctx, -1)
-      local changed_rename, new_name = ImGui.InputText(ctx, "##rename_tmpl", state.rename_buffer)
-
-      if changed_rename then
-        state.rename_buffer = new_name
-      end
-
-      -- Commit on Enter or deactivate
-      if ImGui.IsItemDeactivatedAfterEdit(ctx) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
-        if state.rename_buffer ~= "" and state.rename_buffer ~= tmpl.name then
-          local old_path = tmpl.path
-          local success, new_path = FileOps.rename_template(tmpl.path, state.rename_buffer)
-          if success then
-            -- Create undo operation
-            state.undo_manager:push({
-              description = "Rename template: " .. tmpl.name .. " -> " .. state.rename_buffer,
-              undo_fn = function()
-                local undo_success = FileOps.rename_template(new_path, tmpl.name)
-                if undo_success then
-                  local Scanner = require('TemplateBrowser.domain.scanner')
-                  Scanner.scan_templates(state)
-                end
-                return undo_success
-              end,
-              redo_fn = function()
-                local redo_success = FileOps.rename_template(old_path, state.rename_buffer)
-                if redo_success then
-                  local Scanner = require('TemplateBrowser.domain.scanner')
-                  Scanner.scan_templates(state)
-                end
-                return redo_success
-              end
-            })
-
-            local Scanner = require('TemplateBrowser.domain.scanner')
-            Scanner.scan_templates(state)
-          end
-        end
-        state.renaming_item = nil
-        state.renaming_type = nil
-        state.rename_buffer = ""
-      end
-
-      -- Cancel on Escape
-      if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-        state.renaming_item = nil
-        state.renaming_type = nil
-        state.rename_buffer = ""
-      end
-    else
-      -- Normal display
-      if is_selected then
-        ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.selected_bg)
-      end
-
-      local label = tmpl.name
-      if tmpl.relative_path ~= "" then
-        label = label .. "  [" .. tmpl.folder .. "]"
-      end
-
-      -- Store position before Selectable
-      local pre_cursor_x, pre_cursor_y = ImGui.GetCursorPos(ctx)
-
-      if ImGui.Selectable(ctx, label, is_selected, nil, 0, config.TEMPLATE_ITEM_HEIGHT) then
-        state.selected_template = tmpl
-      end
-
-      -- Draw colored chip if template has one
+      -- Get template metadata
       local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
-      if tmpl_metadata and tmpl_metadata.chip_color then
-        local sel_item_hovered = ImGui.IsItemHovered(ctx)
-        local chip_x, chip_y = ImGui.GetCursorScreenPos(ctx)
-        -- Offset to beginning of selectable item
-        chip_y = chip_y - config.TEMPLATE_ITEM_HEIGHT + (config.TEMPLATE_ITEM_HEIGHT / 2)
-        chip_x = chip_x + 4
+      local current_color = tmpl_metadata and tmpl_metadata.chip_color or nil
 
+      -- Draw 4x4 color grid
+      local grid_cols = 4
+      local chip_size = 20
+      local chip_radius = chip_size / 2
+
+      for idx, color in ipairs(PRESET_COLORS) do
+        local col_idx = (idx - 1) % grid_cols
+
+        if col_idx > 0 then
+          ImGui.SameLine(ctx)
+        end
+
+        -- Position for color button
+        local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
+
+        -- Clickable area
+        if ImGui.InvisibleButton(ctx, "##color_" .. idx, chip_size, chip_size) then
+          -- Set color
+          if tmpl_metadata then
+            tmpl_metadata.chip_color = color
+            local Persistence = require('TemplateBrowser.domain.persistence')
+            Persistence.save_metadata(state.metadata)
+          end
+          state.context_menu_template = nil
+          ImGui.CloseCurrentPopup(ctx)
+        end
+
+        local is_hovered = ImGui.IsItemHovered(ctx)
+        local is_this_color = (current_color == color)
+
+        -- Draw chip
+        local chip_x = start_x + chip_radius
+        local chip_y = start_y + chip_radius
         Chip.draw(ctx, {
           style = Chip.STYLE.INDICATOR,
           x = chip_x,
           y = chip_y,
-          radius = 4,
-          color = tmpl_metadata.chip_color,
-          is_selected = is_selected,
-          is_hovered = sel_item_hovered,
-          show_glow = is_selected or sel_item_hovered,
-          glow_layers = 2,
+          radius = chip_radius - 2,
+          color = color,
+          is_selected = is_this_color,
+          is_hovered = is_hovered,
+          show_glow = is_this_color or is_hovered,
+          glow_layers = is_this_color and 6 or 3,
         })
       end
 
-      -- Right-click: open color picker context menu
-      if ImGui.IsItemClicked(ctx, 1) then  -- Right mouse button
-        state.selected_template = tmpl
-        ImGui.OpenPopup(ctx, "##template_context_" .. tostring(i))
-      end
+      ImGui.Spacing(ctx)
+      ImGui.Separator(ctx)
+      ImGui.Spacing(ctx)
 
-      -- Context menu with color picker
-      if ImGui.BeginPopup(ctx, "##template_context_" .. tostring(i)) then
-        ImGui.Text(ctx, "Set Template Color")
-        ImGui.Separator(ctx)
-        ImGui.Spacing(ctx)
-
-        -- Get template metadata
-        local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
-        local current_color = tmpl_metadata and tmpl_metadata.chip_color or nil
-
-        -- Draw 4x4 color grid
-        local grid_cols = 4
-        local chip_size = 20
-        local chip_spacing = 8
-        local chip_radius = chip_size / 2
-
-        for idx, color in ipairs(Chip.PRESET_COLORS) do
-          local col_idx = (idx - 1) % grid_cols
-          local row_idx = math.floor((idx - 1) / grid_cols)
-
-          if col_idx > 0 then
-            ImGui.SameLine(ctx)
-          end
-
-          -- Position for color button
-          local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
-
-          -- Clickable area
-          if ImGui.InvisibleButton(ctx, "##color_" .. idx .. "_" .. i, chip_size, chip_size) then
-            -- Set color
-            if tmpl_metadata then
-              tmpl_metadata.chip_color = color
-              local Persistence = require('TemplateBrowser.domain.persistence')
-              Persistence.save_metadata(state.metadata)
-            end
-            ImGui.CloseCurrentPopup(ctx)
-          end
-
-          local is_hovered = ImGui.IsItemHovered(ctx)
-          local is_this_color = (current_color == color)
-
-          -- Draw chip
-          local chip_x = start_x + chip_radius
-          local chip_y = start_y + chip_radius
-          Chip.draw(ctx, {
-            style = Chip.STYLE.INDICATOR,
-            x = chip_x,
-            y = chip_y,
-            radius = chip_radius - 2,
-            color = color,
-            is_selected = is_this_color,
-            is_hovered = is_hovered,
-            show_glow = is_this_color or is_hovered,
-            glow_layers = is_this_color and 6 or 3,
-          })
+      -- Remove color button
+      if ImGui.Button(ctx, "Remove Color", -1, 0) then
+        if tmpl_metadata then
+          tmpl_metadata.chip_color = nil
+          local Persistence = require('TemplateBrowser.domain.persistence')
+          Persistence.save_metadata(state.metadata)
         end
-
-        ImGui.Spacing(ctx)
-        ImGui.Separator(ctx)
-        ImGui.Spacing(ctx)
-
-        -- Remove color button
-        if ImGui.Button(ctx, "Remove Color", -1, 0) then
-          if tmpl_metadata then
-            tmpl_metadata.chip_color = nil
-            local Persistence = require('TemplateBrowser.domain.persistence')
-            Persistence.save_metadata(state.metadata)
-          end
-          ImGui.CloseCurrentPopup(ctx)
-        end
-
-        ImGui.EndPopup(ctx)
-      end
-
-      -- Double-click: apply or rename (Ctrl = rename, normal = apply)
-      if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
-        local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
-        if ctrl_down then
-          -- Rename
-          state.renaming_item = tmpl
-          state.renaming_type = "template"
-          state.rename_buffer = tmpl.name
-        else
-          -- Apply
-          TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
-        end
-      end
-
-      -- Drag source
-      if ImGui.BeginDragDropSource(ctx) then
-        ImGui.SetDragDropPayload(ctx, "TEMPLATE", tmpl.path)
-        ImGui.Text(ctx, tmpl.name)
-        ImGui.EndDragDropSource(ctx)
-      end
-
-      if is_selected then
-        ImGui.PopStyleColor(ctx)
-      end
-
-      -- Show FX and Tags as clickable chips under template name
-      local has_chips = false
-
-      -- FX chips
-      if tmpl.fx and #tmpl.fx > 0 then
-        has_chips = true
-        ImGui.Indent(ctx, 10)
-
-        for _, fx_name in ipairs(tmpl.fx) do
-          ImGui.PushID(ctx, "fx_chip_" .. fx_name)
-
-          local is_fx_filtered = state.filter_fx[fx_name] or false
-
-          if is_fx_filtered then
-            ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(0.3, 0.5, 0.7, 1.0))
-          else
-            ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(0.25, 0.25, 0.25, 1.0))
-          end
-          ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, ImGui.ColorConvertDouble4ToU32(0.35, 0.55, 0.75, 1.0))
-
-          if ImGui.SmallButton(ctx, fx_name) then
-            -- Toggle FX filter
-            if is_fx_filtered then
-              state.filter_fx[fx_name] = nil
-            else
-              state.filter_fx[fx_name] = true
-            end
-
-            local Scanner = require('TemplateBrowser.domain.scanner')
-            Scanner.filter_templates(state)
-          end
-
-          ImGui.PopStyleColor(ctx, 2)
-          ImGui.SameLine(ctx)
-          ImGui.PopID(ctx)
-        end
-
-        ImGui.NewLine(ctx)
-        ImGui.Unindent(ctx, 10)
-      end
-
-      -- Tag chips
-      local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
-      if tmpl_metadata and tmpl_metadata.tags and #tmpl_metadata.tags > 0 then
-        has_chips = true
-        ImGui.Indent(ctx, 10)
-
-        for _, tag_name in ipairs(tmpl_metadata.tags) do
-          local tag_data = state.metadata.tags and state.metadata.tags[tag_name]
-
-          if tag_data then
-            ImGui.PushID(ctx, "tag_chip_" .. tag_name)
-
-            local is_tag_filtered = state.filter_tags[tag_name] or false
-            local r = ((tag_data.color >> 16) & 0xFF) / 255.0
-            local g = ((tag_data.color >> 8) & 0xFF) / 255.0
-            local b = (tag_data.color & 0xFF) / 255.0
-
-            if is_tag_filtered then
-              ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(r * 0.7, g * 0.7, b * 0.7, 1.0))
-            else
-              ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(r * 0.5, g * 0.5, b * 0.5, 1.0))
-            end
-            ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, ImGui.ColorConvertDouble4ToU32(r * 0.9, g * 0.9, b * 0.9, 1.0))
-
-            if ImGui.SmallButton(ctx, tag_name) then
-              -- Toggle tag filter
-              if is_tag_filtered then
-                state.filter_tags[tag_name] = nil
-              else
-                state.filter_tags[tag_name] = true
-              end
-
-              local Scanner = require('TemplateBrowser.domain.scanner')
-              Scanner.filter_templates(state)
-            end
-
-            ImGui.PopStyleColor(ctx, 2)
-            ImGui.SameLine(ctx)
-            ImGui.PopID(ctx)
-          end
-        end
-
-        ImGui.NewLine(ctx)
-        ImGui.Unindent(ctx, 10)
-      end
-
-      if has_chips then
-        ImGui.Spacing(ctx)
+        state.context_menu_template = nil
+        ImGui.CloseCurrentPopup(ctx)
       end
     end
 
-    ImGui.PopID(ctx)
+    ImGui.EndPopup(ctx)
+  else
+    -- Clear context menu template when popup is closed
+    state.context_menu_template = nil
   end
-
-  ImGui.EndChild(ctx)
   ImGui.EndChild(ctx)
 end
 
@@ -1463,7 +1272,7 @@ function GUI:draw(ctx, shell_state)
 
   -- Middle panel: Templates
   ImGui.SetCursorPos(ctx, sep1_x_local + separator_thickness / 2, cursor_y)
-  draw_template_panel(ctx, self.state, self.config, template_width, panel_height)
+  draw_template_panel(ctx, self, template_width, panel_height)
 
   -- Right panel: Info & Tag Assignment
   ImGui.SetCursorPos(ctx, sep2_x_local + separator_thickness / 2, cursor_y)
