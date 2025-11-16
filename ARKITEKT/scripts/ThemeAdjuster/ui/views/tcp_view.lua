@@ -131,7 +131,7 @@ function TCPView:draw(ctx, shell_state)
 
   -- Layout Settings Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "tcp_layout_section", avail_w, 280, ImGui.ChildFlags_Border) then
+  if ImGui.BeginChild(ctx, "tcp_layout_section", avail_w, 280, true) then
     ImGui.Dummy(ctx, 0, 8)
 
     ImGui.Indent(ctx, 12)
@@ -188,7 +188,7 @@ function TCPView:draw(ctx, shell_state)
 
   -- Layout & Size Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "tcp_layout_buttons", avail_w, 120, ImGui.ChildFlags_Border) then
+  if ImGui.BeginChild(ctx, "tcp_layout_buttons", avail_w, 120, true) then
     ImGui.Dummy(ctx, 0, 8)
 
     ImGui.Indent(ctx, 12)
@@ -245,7 +245,7 @@ function TCPView:draw(ctx, shell_state)
 
   -- Visibility Table Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "tcp_visibility_section", avail_w, 0, ImGui.ChildFlags_Border) then
+  if ImGui.BeginChild(ctx, "tcp_visibility_section", avail_w, 0, true) then
     ImGui.Dummy(ctx, 0, 8)
 
     ImGui.Indent(ctx, 12)

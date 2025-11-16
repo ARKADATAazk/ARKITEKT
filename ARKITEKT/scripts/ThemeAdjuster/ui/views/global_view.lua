@@ -99,7 +99,7 @@ function GlobalView:draw(ctx, shell_state)
 
   -- Color Sliders Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "global_color_sliders", avail_w, 0, ImGui.ChildFlags_Border) then
+  if ImGui.BeginChild(ctx, "global_color_sliders", avail_w, 0, true) then
     ImGui.Dummy(ctx, 0, 8)
 
     ImGui.Indent(ctx, 12)
