@@ -71,6 +71,8 @@ function M.get_package_order() return state.package_order end
 function M.get_theme_status() return state.theme_status end
 function M.get_theme_name() return state.theme_name end
 function M.get_cache_status() return state.cache_status end
+function M.get_package_exclusions() return state.package_exclusions end
+function M.get_package_pins() return state.package_pins end
 
 -- ============================================================================
 -- SETTERS
@@ -104,15 +106,18 @@ end
 function M.set_active_packages(packages)
   state.active_packages = packages
   if state.settings then state.settings:set('active_packages', packages) end
+  M.update_resolution()
 end
 
 function M.set_package_order(order)
   state.package_order = order
   if state.settings then state.settings:set('package_order', order) end
+  M.update_resolution()
 end
 
 function M.set_packages(packages)
   state.packages = packages
+  M.update_resolution()
 end
 
 function M.set_theme_status(status)
@@ -130,6 +135,41 @@ end
 function M.toggle_package(package_id)
   state.active_packages[package_id] = not state.active_packages[package_id]
   if state.settings then state.settings:set('active_packages', state.active_packages) end
+
+  -- Trigger resolution update
+  M.update_resolution()
+end
+
+function M.set_package_exclusions(exclusions)
+  state.package_exclusions = exclusions
+  if state.settings then state.settings:set('package_exclusions', exclusions) end
+  M.update_resolution()
+end
+
+function M.set_package_pins(pins)
+  state.package_pins = pins
+  if state.settings then state.settings:set('package_pins', pins) end
+  M.update_resolution()
+end
+
+-- ============================================================================
+-- PACKAGE RESOLUTION
+-- ============================================================================
+
+function M.update_resolution()
+  -- Resolve packages and update ImageMap
+  local PackageManager = require('ThemeAdjuster.packages.manager')
+  local ImageMap = require('ThemeAdjuster.packages.image_map')
+
+  local resolved = PackageManager.resolve_packages(
+    state.packages,
+    state.active_packages,
+    state.package_order,
+    state.package_exclusions,
+    state.package_pins
+  )
+
+  ImageMap.apply(resolved)
 end
 
 return M
