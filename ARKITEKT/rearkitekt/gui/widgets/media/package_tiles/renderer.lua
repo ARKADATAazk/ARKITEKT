@@ -208,20 +208,15 @@ function M.TileRenderer.checkbox(ctx, pkg, P, cb_rects, tile_x, tile_y, tile_w, 
 
   cb_rects[P.id] = {x1, y1, x2, y2}
 
+  -- Render visual-only checkbox (interaction handled in render_overlays)
   ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.PushID(ctx, 'cb_' .. P.id)
+  ImGui.PushID(ctx, 'cb_visual_' .. P.id)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, M.CONFIG.checkbox.padding_x, M.CONFIG.checkbox.padding_y)
-  local clicked, checked = ImGui.Checkbox(ctx, '##enable', pkg.active[P.id] == true)
-  if clicked then
-    pkg.active[P.id] = checked
-    if settings then settings:set('pkg_active', pkg.active) end
-  end
+  ImGui.BeginDisabled(ctx, true)
+  ImGui.Checkbox(ctx, '##enable', pkg.active[P.id] == true)
+  ImGui.EndDisabled(ctx)
   ImGui.PopStyleVar(ctx)
   ImGui.PopID(ctx)
-
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, pkg.active[P.id] and "Disable package" or "Enable package")
-  end
 end
 
 function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)

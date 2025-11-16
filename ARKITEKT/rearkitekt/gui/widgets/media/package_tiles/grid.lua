@@ -180,6 +180,39 @@ function M.create(pkg, settings, theme)
     render_tile = function(ctx, rect, P, state)
       draw_package_tile(ctx, pkg, theme, P, rect, state, settings, custom_state)
     end,
+
+    render_overlays = function(ctx, current_rects)
+      -- Render interactive checkboxes AFTER grid input processing
+      -- This prevents checkbox clicks from interfering with drag/drop
+      for id, rect in pairs(custom_state.checkbox_rects) do
+        local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+
+        ImGui.SetCursorScreenPos(ctx, x1, y1)
+        ImGui.PushID(ctx, 'cb_interact_' .. id)
+
+        -- Render actual interactive checkbox
+        ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, Renderer.CONFIG.checkbox.padding_x, Renderer.CONFIG.checkbox.padding_y)
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, 0)  -- Transparent bg (visual checkbox is underneath)
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, 0)
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, 0)
+        ImGui.PushStyleColor(ctx, ImGui.Col_CheckMark, 0)  -- Hide checkmark (visual checkbox shows it)
+
+        local clicked, checked = ImGui.Checkbox(ctx, '##overlay', pkg.active[id] == true)
+        if clicked then
+          pkg.active[id] = checked
+          if settings then settings:set('pkg_active', pkg.active) end
+        end
+
+        ImGui.PopStyleColor(ctx, 4)
+        ImGui.PopStyleVar(ctx)
+
+        if ImGui.IsItemHovered(ctx) then
+          ImGui.SetTooltip(ctx, pkg.active[id] and "Disable package" or "Enable package")
+        end
+
+        ImGui.PopID(ctx)
+      end
+    end,
   })
   
   return {
