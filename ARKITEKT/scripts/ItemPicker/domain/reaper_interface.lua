@@ -178,7 +178,12 @@ function M.GetProjectSamples(settings, state)
           end
         end
 
-        local item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$")
+        -- Get take name (same as MIDI items)
+        local item_name = reaper.GetTakeName(take)
+        if not item_name or item_name == "" then
+          -- Fallback to filename if take has no name
+          item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$")
+        end
 
         local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or M.IsParentMuted(track) == true
         local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
