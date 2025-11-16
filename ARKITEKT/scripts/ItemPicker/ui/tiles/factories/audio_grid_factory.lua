@@ -317,6 +317,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
 
     double_click = function(uuid)
       -- Start rename for this item
+      reaper.ShowConsoleMsg("[DOUBLE CLICK] Starting rename for uuid: " .. tostring(uuid) .. "\n")
       local items = get_items()
       for _, item_data in ipairs(items) do
         if item_data.uuid == uuid then
@@ -325,9 +326,11 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
           state.rename_text = item_data.name
           state.rename_is_audio = true
           state.rename_focused = false  -- Reset focus flag
+          reaper.ShowConsoleMsg("[DOUBLE CLICK] Rename state set - active=" .. tostring(state.rename_active) .. " uuid=" .. tostring(state.rename_uuid) .. " text=" .. tostring(state.rename_text) .. "\n")
           return
         end
       end
+      reaper.ShowConsoleMsg("[DOUBLE CLICK] UUID not found in items!\n")
     end,
 
     rename = function(selected_keys)
