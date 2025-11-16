@@ -65,8 +65,9 @@ local function scan_directory(path, relative_path, metadata)
         if file_size and existing.file_size then
           size_changed = (existing.file_size ~= file_size)
         elseif file_size and not existing.file_size then
-          -- We have size now but didn't before
-          size_changed = false  -- Don't re-parse, just update metadata
+          -- We have size now but didn't before - old metadata without file_size
+          size_changed = true  -- Re-parse to get FX with new system
+          reaper.ShowConsoleMsg("FX: Old metadata (no file_size): " .. template_name .. "\n")
         elseif not file_size and existing.file_size then
           -- Had size before but can't read now - something wrong
           reaper.ShowConsoleMsg("WARNING: Could not read file size for: " .. template_name .. "\n")
