@@ -38,10 +38,8 @@ function GUI:refresh_packages()
     local theme_info = Theme.get_theme_info()
     if theme_info.theme_path then
       theme_root = theme_info.theme_path
-      -- If path ends with a theme file, strip it to get directory
-      if theme_root:match("%.ReaperTheme[Zip]*$") then
-        theme_root = theme_root:match("^(.*)[\\/][^\\/]+$") or theme_root
-      end
+      -- Strip .ReaperTheme or .ReaperThemeZip extension to get directory name
+      theme_root = theme_root:gsub("%.ReaperTheme[Zip]*$", "")
       -- Remove trailing separator if present
       theme_root = theme_root:gsub("[\\/]+$", "")
     end

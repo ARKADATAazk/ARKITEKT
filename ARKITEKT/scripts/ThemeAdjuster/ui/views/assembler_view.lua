@@ -56,19 +56,12 @@ function M.new(State, AppConfig, settings)
         local Theme = require('ThemeAdjuster.core.theme')
         local theme_info = Theme.get_theme_info()
         if theme_info.theme_path then
-          reaper.ShowConsoleMsg("[AssemblerView] Original theme_path = " .. tostring(theme_info.theme_path) .. "\n")
           -- Extract directory from theme path
           theme_root = theme_info.theme_path
-          -- If path ends with a theme file, strip it to get directory
-          if theme_root:match("%.ReaperTheme") or theme_root:match("%.ReaperThemeZip") then
-            reaper.ShowConsoleMsg("[AssemblerView] Detected theme file, stripping filename\n")
-            theme_root = theme_root:match("^(.*)[\\/][^\\/]+$") or theme_root
-          else
-            reaper.ShowConsoleMsg("[AssemblerView] Not a theme file, using path as-is\n")
-          end
+          -- Strip .ReaperTheme or .ReaperThemeZip extension to get directory name
+          theme_root = theme_root:gsub("%.ReaperTheme[Zip]*$", "")
           -- Remove trailing separator if present
           theme_root = theme_root:gsub("[\\/]+$", "")
-          reaper.ShowConsoleMsg("[AssemblerView] Final theme_root = " .. tostring(theme_root) .. "\n")
         end
       end
       local packages = PackageManager.scan_packages(theme_root, new_demo)
@@ -246,10 +239,8 @@ function AssemblerView:create_package_model()
         local theme_info = Theme.get_theme_info()
         if theme_info.theme_path then
           theme_root = theme_info.theme_path
-          -- If path ends with a theme file, strip it to get directory
-          if theme_root:match("%.ReaperTheme[Zip]*$") then
-            theme_root = theme_root:match("^(.*)[\\/][^\\/]+$") or theme_root
-          end
+          -- Strip .ReaperTheme or .ReaperThemeZip extension to get directory name
+          theme_root = theme_root:gsub("%.ReaperTheme[Zip]*$", "")
           -- Remove trailing separator if present
           theme_root = theme_root:gsub("[\\/]+$", "")
         end
