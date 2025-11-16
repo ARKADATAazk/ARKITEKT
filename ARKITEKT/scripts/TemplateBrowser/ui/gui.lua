@@ -138,7 +138,10 @@ function GUI:initialize_once(ctx)
     end,
   })
 
-  self.template_container = TilesContainer.new(container_config)
+  self.template_container = TilesContainer.new({
+    id = "templates_container",
+    config = container_config,
+  })
 
   self.initialized = true
 end

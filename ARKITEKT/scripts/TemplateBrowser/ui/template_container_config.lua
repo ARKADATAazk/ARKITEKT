@@ -6,7 +6,6 @@ local M = {}
 
 function M.create(callbacks)
   return {
-    id = "templates_container",
     bg_color = 0x1A1A1AFF,
     border_thickness = 0,
     border_color = 0x3A3A3AFF,
