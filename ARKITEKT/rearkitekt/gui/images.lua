@@ -66,10 +66,9 @@ end
 
 local function destroy_image(img)
   if not img then return end
-  -- Try to destroy image if the function exists
-  -- ImGui 0.10 might not have an explicit destroy function for images
-  -- In that case, the image will be garbage collected automatically
-  local destroy_fn = ImGui.Image_Destroy or ImGui.DestroyImage
+  -- Safely check if destroy function exists without triggering nil access error
+  -- Use rawget to avoid accessing potentially nil fields
+  local destroy_fn = rawget(ImGui, 'Image_Destroy') or rawget(ImGui, 'DestroyImage')
   if destroy_fn then
     pcall(destroy_fn, img)
   end
