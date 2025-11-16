@@ -954,7 +954,8 @@ local function draw_template_panel(ctx, state, config, width, height)
         chip_y = chip_y - config.TEMPLATE_ITEM_HEIGHT + (config.TEMPLATE_ITEM_HEIGHT / 2)
         chip_x = chip_x + 4
 
-        Chip.draw_indicator(ctx, {
+        Chip.draw(ctx, {
+          style = Chip.STYLE.INDICATOR,
           x = chip_x,
           y = chip_y,
           radius = 4,
@@ -1016,7 +1017,8 @@ local function draw_template_panel(ctx, state, config, width, height)
           -- Draw chip
           local chip_x = start_x + chip_radius
           local chip_y = start_y + chip_radius
-          Chip.draw_indicator(ctx, {
+          Chip.draw(ctx, {
+            style = Chip.STYLE.INDICATOR,
             x = chip_x,
             y = chip_y,
             radius = chip_radius - 2,
