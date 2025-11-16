@@ -94,19 +94,12 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   local child_w = avail_w - (self.container_config.padding * 2)
   local child_h = (height - header_height) - (self.container_config.padding * 2)
 
-  -- Reserve space for inline color picker if visible
-  local picker_size = 130  -- Compact 130x130 color picker
-  local grid_h = child_h
-  if self._active_color_picker_visible then
-    grid_h = child_h - picker_size - 12  -- Reserve space for picker + spacing
-  end
-
   self.active_grid.get_items = function() return playlist.items end
 
   local raw_height, raw_gap = ResponsiveGrid.calculate_responsive_tile_height({
     item_count = #playlist.items,
     avail_width = child_w,
-    avail_height = grid_h,  -- Use grid_h instead of child_h to account for picker
+    avail_height = child_h,
     base_gap = ActiveTile.CONFIG.gap,
     min_col_width = ActiveTile.CONFIG.tile_width,
     base_tile_height = self.responsive_config.base_tile_height_active,
@@ -146,41 +139,52 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
     end
   end
 
-  -- Constrain grid to allocated space if picker is visible
-  if self._active_color_picker_visible then
-    if ImGui.BeginChild(ctx, "ActiveGridArea", 0, grid_h, ImGui.ChildFlags_None) then
-      self.active_grid:draw(ctx)
-      ImGui.EndChild(ctx)
-    end
-  else
-    self.active_grid:draw(ctx)
-  end
+  self.active_grid:draw(ctx)
 
-  -- Inline Color Picker (renders at bottom of active panel if visible)
+  self.active_container:end_draw(ctx)
+
+  -- Inline Color Picker (renders on top at bottom-left if visible)
   if self._active_color_picker_visible then
-    ImGui.Spacing(ctx)
+    local picker_size = 130
+    -- Position at bottom-left corner of active container
+    local picker_x = cursor_x + self.container_config.padding
+    local picker_y = cursor_y + height - picker_size - self.container_config.padding - 10
+
+    ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
 
     -- Wrap in a child region to ensure proper input handling
     local child_flags = ImGui.ChildFlags_None
     if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size, child_flags) then
       ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
         on_change = function(color)
-          -- Apply color to all selected regions/playlists
+          -- Batch apply color to all selected regions/playlists
           if self.active_grid and self.active_grid.selection and self.controller then
             local selected_keys = self.active_grid.selection:selected_keys()
+            local rids = {}
+            local playlist_ids = {}
 
             for _, key in ipairs(selected_keys) do
-              -- Handle regions: "active_123"
+              -- Collect regions: "active_123"
               local rid = key:match("^active_(%d+)$")
               if rid then
-                self.controller:set_region_color(tonumber(rid), color)
+                table.insert(rids, tonumber(rid))
               end
 
-              -- Handle playlists: "active_playlist_abc-def"
+              -- Collect playlists: "active_playlist_abc-def"
               local playlist_id = key:match("^active_playlist_(.+)$")
               if playlist_id then
-                self.controller:set_playlist_color(playlist_id, color)
+                table.insert(playlist_ids, playlist_id)
               end
+            end
+
+            -- Batch update regions
+            if #rids > 0 then
+              self.controller:set_region_colors_batch(rids, color)
+            end
+
+            -- Update playlists individually (usually fewer playlists)
+            for _, playlist_id in ipairs(playlist_ids) do
+              self.controller:set_playlist_color(playlist_id, color)
             end
           end
         end,
@@ -191,8 +195,6 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
       ImGui.EndChild(ctx)
     end
   end
-
-  self.active_container:end_draw(ctx)
 
   -- Actions context menu
   if self._actions_menu_visible then
@@ -331,19 +333,12 @@ function M.draw_pool(self, ctx, regions, height)
   local child_w = avail_w - (self.container_config.padding * 2)
   local child_h = (height - header_height) - (self.container_config.padding * 2)
 
-  -- Reserve space for inline color picker if visible
-  local picker_size = 130  -- Compact 130x130 color picker
-  local grid_h = child_h
-  if self._pool_color_picker_visible then
-    grid_h = child_h - picker_size - 12  -- Reserve space for picker + spacing
-  end
-
   self.pool_grid.get_items = function() return regions end
 
   local raw_height, raw_gap = ResponsiveGrid.calculate_responsive_tile_height({
     item_count = #regions,
     avail_width = child_w,
-    avail_height = grid_h,  -- Use grid_h instead of child_h to account for picker
+    avail_height = child_h,
     base_gap = PoolTile.CONFIG.gap,
     min_col_width = PoolTile.CONFIG.tile_width,
     base_tile_height = self.responsive_config.base_tile_height_pool,
@@ -357,41 +352,52 @@ function M.draw_pool(self, ctx, regions, height)
   self.pool_grid.fixed_tile_h = responsive_height
   self.pool_grid.gap = raw_gap
 
-  -- Constrain grid to allocated space if picker is visible
-  if self._pool_color_picker_visible then
-    if ImGui.BeginChild(ctx, "PoolGridArea", 0, grid_h, ImGui.ChildFlags_None) then
-      self.pool_grid:draw(ctx)
-      ImGui.EndChild(ctx)
-    end
-  else
-    self.pool_grid:draw(ctx)
-  end
+  self.pool_grid:draw(ctx)
 
-  -- Inline Color Picker (renders at bottom of pool panel if visible)
+  self.pool_container:end_draw(ctx)
+
+  -- Inline Color Picker (renders on top at bottom-left if visible)
   if self._pool_color_picker_visible then
-    ImGui.Spacing(ctx)
+    local picker_size = 130
+    -- Position at bottom-left corner of pool container
+    local picker_x = cursor_x + self.container_config.padding
+    local picker_y = cursor_y + height - picker_size - self.container_config.padding - 10
+
+    ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
 
     -- Wrap in a child region to ensure proper input handling
     local child_flags = ImGui.ChildFlags_None
     if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size, child_flags) then
       ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
         on_change = function(color)
-          -- Apply color to all selected regions/playlists
+          -- Batch apply color to all selected regions/playlists
           if self.pool_grid and self.pool_grid.selection and self.controller then
             local selected_keys = self.pool_grid.selection:selected_keys()
+            local rids = {}
+            local playlist_ids = {}
 
             for _, key in ipairs(selected_keys) do
-              -- Handle regions: "pool_123"
+              -- Collect regions: "pool_123"
               local rid = key:match("^pool_(%d+)$")
               if rid then
-                self.controller:set_region_color(tonumber(rid), color)
+                table.insert(rids, tonumber(rid))
               end
 
-              -- Handle playlists: "pool_playlist_abc-def"
+              -- Collect playlists: "pool_playlist_abc-def"
               local playlist_id = key:match("^pool_playlist_(.+)$")
               if playlist_id then
-                self.controller:set_playlist_color(playlist_id, color)
+                table.insert(playlist_ids, playlist_id)
               end
+            end
+
+            -- Batch update regions
+            if #rids > 0 then
+              self.controller:set_region_colors_batch(rids, color)
+            end
+
+            -- Update playlists individually (usually fewer playlists)
+            for _, playlist_id in ipairs(playlist_ids) do
+              self.controller:set_playlist_color(playlist_id, color)
             end
           end
         end,
@@ -402,8 +408,6 @@ function M.draw_pool(self, ctx, regions, height)
       ImGui.EndChild(ctx)
     end
   end
-
-  self.pool_container:end_draw(ctx)
 
   -- Pool Actions context menu
   if self._pool_actions_menu_visible then
