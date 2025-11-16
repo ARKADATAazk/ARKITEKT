@@ -265,41 +265,40 @@ function TransportView:build_header_elements(bridge_state)
       },
     },
     {
-      type = "dropdown_field",
-      id = "transport_playback",
+      type = "button",
+      id = "transport_override",
       align = "center",
-      width = 90,
+      width = 130,
       config = {
-        tooltip = "Playback Options",
-        current_value = nil,  -- No selection, just shows label from options
-        options = {
-          { value = nil, label = "Playback" },  -- Display-only header
-          {
-            value = "override_transport",
-            label = "Override Transport",
-            checkbox = true,
-            checked = bridge_state.override_enabled or false,
-          },
-          {
-            value = "follow_viewport",
-            label = "Follow Viewport",
-            checkbox = true,
-            checked = bridge_state.follow_viewport or false,
-          },
-        },
-        on_checkbox_change = function(value, new_checked)
-          if value == "override_transport" then
-            local bridge = self.state.get_bridge()
-            local engine = bridge.engine
-            if engine then
-              engine:set_transport_override(new_checked)
-            end
-          elseif value == "follow_viewport" then
-            -- Toggle REAPER action 41817 (Continuous scrolling during playback)
-            local command_id = reaper.NamedCommandLookup("_WOL_CONTSCROLL")
-            if command_id > 0 then
-              reaper.Main_OnCommand(command_id, 0)
-            end
+        label = "Override Transport",
+        is_toggled = bridge_state.override_enabled or false,
+        preset_name = "BUTTON_TOGGLE_WHITE",
+        tooltip = "Override Transport Quantization",
+        on_click = function()
+          local bridge = self.state.get_bridge()
+          local engine = bridge.engine
+          if engine then
+            local current_state = engine:get_transport_override()
+            engine:set_transport_override(not current_state)
+          end
+        end,
+      },
+    },
+    {
+      type = "button",
+      id = "transport_follow",
+      align = "center",
+      width = 110,
+      config = {
+        label = "Follow Viewport",
+        is_toggled = bridge_state.follow_viewport or false,
+        preset_name = "BUTTON_TOGGLE_WHITE",
+        tooltip = "Follow Playhead in Viewport",
+        on_click = function()
+          -- Toggle REAPER action (Continuous scrolling during playback)
+          local command_id = reaper.NamedCommandLookup("_WOL_CONTSCROLL")
+          if command_id > 0 then
+            reaper.Main_OnCommand(command_id, 0)
           end
         end,
       },

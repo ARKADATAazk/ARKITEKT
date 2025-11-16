@@ -296,8 +296,8 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
         local checkbox_bg = is_checked and popup_cfg.item_selected_color or popup_cfg.item_bg_color
         ImGui.DrawList_AddRectFilled(popup_dl, checkbox_x, checkbox_y, checkbox_x + checkbox_size, checkbox_y + checkbox_size, checkbox_bg, 2)
 
-        -- Checkbox border
-        ImGui.DrawList_AddRect(popup_dl, checkbox_x, checkbox_y, checkbox_x + checkbox_size, checkbox_y + checkbox_size, item_text, 2, 1)
+        -- Checkbox border (no corner flags - use default rounding)
+        ImGui.DrawList_AddRect(popup_dl, checkbox_x, checkbox_y, checkbox_x + checkbox_size, checkbox_y + checkbox_size, item_text, 2)
 
         -- Checkmark if checked
         if is_checked then
