@@ -72,14 +72,23 @@ function GUI:initialize_once(ctx)
     function() return self.state.tile_width end,  -- get_tile_width
     -- on_select
     function(selected_keys)
-      reaper.ShowConsoleMsg(string.format("on_select called with %d keys\n", selected_keys and #selected_keys or 0))
       -- Update selected template from grid selection
       if selected_keys and #selected_keys > 0 then
-        local uuid = tonumber(selected_keys[1]:match("template_(.+)"))
+        local key = selected_keys[1]
+        reaper.ShowConsoleMsg(string.format("on_select: key='%s'\n", key))
+        local uuid = tonumber(key:match("template_(.+)"))
+        reaper.ShowConsoleMsg(string.format("  extracted UUID=%s (type: %s)\n", tostring(uuid), type(uuid)))
+
+        if #self.state.filtered_templates > 0 then
+          reaper.ShowConsoleMsg(string.format("  first tmpl.uuid=%s (type: %s)\n",
+            tostring(self.state.filtered_templates[1].uuid),
+            type(self.state.filtered_templates[1].uuid)))
+        end
+
         for _, tmpl in ipairs(self.state.filtered_templates) do
           if tmpl.uuid == uuid then
             self.state.selected_template = tmpl
-            reaper.ShowConsoleMsg(string.format("Selected template: %s\n", tmpl.name))
+            reaper.ShowConsoleMsg(string.format("  ✓ MATCHED: %s\n", tmpl.name))
             break
           end
         end
