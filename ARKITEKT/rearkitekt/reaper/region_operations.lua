@@ -1,6 +1,6 @@
 -- @noindex
 -- ReArkitekt/reaper/region_operations.lua
--- Region playlist operations (Append, Paste, Crop, etc.)
+-- Region playlist operations matching SWS behavior (Append, Paste, Crop, etc.)
 
 local M = {}
 
@@ -8,6 +8,7 @@ local M = {}
 -- UTILITY FUNCTIONS
 -- ============================================================================
 
+--- Get project length based on last item end
 local function get_project_length(proj)
   proj = proj or 0
   local length = 0
@@ -27,91 +28,93 @@ local function get_project_length(proj)
   return length
 end
 
-local function copy_region_content(proj, region_start, region_end, target_position, region_name, region_color)
-  proj = proj or 0
-  local new_items = {}
-  local time_offset = target_position - region_start
-  local region_length = region_end - region_start
+--- Split items at region boundaries and return items in region
+local function split_items_in_region(proj, region_start, region_end)
+  local items_in_region = {}
 
-  -- Create the region marker at the target position
-  if region_name then
-    local new_region_start = target_position
-    local new_region_end = target_position + region_length
-
-    -- Convert RGBA color to native REAPER color if needed
-    local native_color = 0
-    if region_color then
-      local r = (region_color >> 24) & 0xFF
-      local g = (region_color >> 16) & 0xFF
-      local b = (region_color >> 8) & 0xFF
-      native_color = reaper.ColorToNative(r, g, b) | 0x1000000
-    end
-
-    reaper.AddProjectMarker2(proj, true, new_region_start, new_region_end, region_name, -1, native_color)
-    reaper.ShowConsoleMsg("[RegionOps] Created region marker: " .. region_name .. " at " .. tostring(new_region_start) .. " - " .. tostring(new_region_end) .. "\n")
-  end
-
-  -- Copy all items in the region
   for i = 0, reaper.CountMediaItems(proj) - 1 do
     local item = reaper.GetMediaItem(proj, i)
     local item_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
-    local item_length = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
-    local item_end = item_pos + item_length
-    local track = reaper.GetMediaItem_Track(item)
+    local item_len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+    local item_end = item_pos + item_len
 
     -- Check if item overlaps with region
     if item_pos < region_end and item_end > region_start then
-      -- Calculate the portion of the item that's in the region
-      local copy_start = math.max(item_pos, region_start)
-      local copy_end = math.min(item_end, region_end)
-      local copy_length = copy_end - copy_start
+      -- Split at region start if item starts before
+      if item_pos < region_start and item_end > region_start then
+        reaper.SplitMediaItem(item, region_start)
+      end
 
-      -- Create new item
-      local new_item = reaper.AddMediaItemToTrack(track)
+      -- Split at region end if item extends beyond
+      if item_pos < region_end and item_end > region_end then
+        reaper.SplitMediaItem(item, region_end)
+      end
 
-      -- Copy item state chunk
-      local chunk_success, item_chunk = reaper.GetItemStateChunk(item, "", false)
-      if chunk_success then
-        local new_pos = copy_start + time_offset
+      -- Check if this item is now fully within region
+      item_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+      item_len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+      item_end = item_pos + item_len
 
-        -- Get the take offset if item starts before region
-        local take_offset = 0
-        if item_pos < region_start then
-          take_offset = region_start - item_pos
-        end
-
-        -- Set new item chunk
-        reaper.SetItemStateChunk(new_item, item_chunk, false)
-
-        -- Set position and length
-        reaper.SetMediaItemInfo_Value(new_item, "D_POSITION", new_pos)
-        reaper.SetMediaItemInfo_Value(new_item, "D_LENGTH", copy_length)
-
-        -- Adjust take offset
-        local take = reaper.GetActiveTake(new_item)
-        if take then
-          local current_offset = reaper.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS")
-          reaper.SetMediaItemTakeInfo_Value(take, "D_STARTOFFS", current_offset + take_offset)
-        end
-
-        table.insert(new_items, new_item)
+      if item_pos >= region_start and item_end <= region_end then
+        table.insert(items_in_region, item)
       end
     end
   end
 
-  -- Copy automation envelopes
+  return items_in_region
+end
+
+--- Duplicate items to target position
+local function duplicate_items_to_position(items, time_offset)
+  local new_items = {}
+
+  for _, item in ipairs(items) do
+    local track = reaper.GetMediaItem_Track(item)
+    local _, chunk = reaper.GetItemStateChunk(item, "", false)
+
+    -- Create new item
+    local new_item = reaper.AddMediaItemToTrack(track)
+
+    -- Set chunk
+    reaper.SetItemStateChunk(new_item, chunk, false)
+
+    -- Update position
+    local old_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+    reaper.SetMediaItemInfo_Value(new_item, "D_POSITION", old_pos + time_offset)
+
+    table.insert(new_items, new_item)
+  end
+
+  return new_items
+end
+
+--- Copy tempo markers in range to target position
+local function copy_tempo_markers(proj, source_start, source_end, time_offset)
+  local tempo_count = reaper.CountTempoTimeSigMarkers(proj)
+
+  for i = 0, tempo_count - 1 do
+    local retval, timepos, measurepos, beatpos, bpm, timesig_num, timesig_denom, lineartempo =
+      reaper.GetTempoTimeSigMarker(proj, i)
+
+    if timepos >= source_start and timepos <= source_end then
+      local new_time = timepos + time_offset
+      reaper.SetTempoTimeSigMarker(proj, -1, new_time, -1, -1, bpm, timesig_num, timesig_denom, lineartempo)
+    end
+  end
+end
+
+--- Copy envelope points in range to target position
+local function copy_envelope_points(proj, source_start, source_end, time_offset)
   for i = 0, reaper.CountTracks(proj) - 1 do
     local track = reaper.GetTrack(proj, i)
     for j = 0, reaper.CountTrackEnvelopes(track) - 1 do
       local envelope = reaper.GetTrackEnvelope(track, j)
-
-      -- Get all envelope points in region
       local num_points = reaper.CountEnvelopePoints(envelope)
-      local points_to_copy = {}
 
+      local points_to_copy = {}
       for k = 0, num_points - 1 do
         local retval, time, value, shape, tension, selected = reaper.GetEnvelopePoint(envelope, k)
-        if time >= region_start and time <= region_end then
+        if time >= source_start and time <= source_end then
           table.insert(points_to_copy, {
             time = time + time_offset,
             value = value,
@@ -127,34 +130,74 @@ local function copy_region_content(proj, region_start, region_end, target_positi
       end
     end
   end
+end
 
-  -- Copy tempo markers
-  local tempo_count = reaper.CountTempoTimeSigMarkers(proj)
-  for i = 0, tempo_count - 1 do
-    local retval, timepos, measurepos, beatpos, bpm, timesig_num, timesig_denom, lineartempo =
-      reaper.GetTempoTimeSigMarker(proj, i)
+--- Insert silence at position by moving everything after it
+local function insert_silence(proj, position, length)
+  -- Select all items after position
+  reaper.SelectAllMediaItems(proj, false)
 
-    if timepos >= region_start and timepos <= region_end then
-      local new_time = timepos + time_offset
-      reaper.SetTempoTimeSigMarker(proj, -1, new_time, measurepos, beatpos, bpm, timesig_num, timesig_denom, lineartempo)
+  for i = 0, reaper.CountMediaItems(proj) - 1 do
+    local item = reaper.GetMediaItem(proj, i)
+    local item_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+
+    if item_pos >= position then
+      reaper.SetMediaItemSelected(item, true)
     end
   end
 
-  return new_items
+  -- Move selected items
+  if reaper.CountSelectedMediaItems(proj) > 0 then
+    reaper.ApplyNudge(proj, 0, 0, 0, length, false, 0)
+  end
+
+  -- Move tempo markers
+  local tempo_count = reaper.CountTempoTimeSigMarkers(proj)
+  for i = tempo_count - 1, 0, -1 do
+    local retval, timepos, measurepos, beatpos, bpm, timesig_num, timesig_denom, lineartempo =
+      reaper.GetTempoTimeSigMarker(proj, i)
+
+    if timepos >= position then
+      reaper.DeleteTempoTimeSigMarker(proj, i)
+      reaper.SetTempoTimeSigMarker(proj, -1, timepos + length, -1, -1, bpm, timesig_num, timesig_denom, lineartempo)
+    end
+  end
+
+  -- Move envelope points
+  for i = 0, reaper.CountTracks(proj) - 1 do
+    local track = reaper.GetTrack(proj, i)
+    for j = 0, reaper.CountTrackEnvelopes(track) - 1 do
+      local envelope = reaper.GetTrackEnvelope(track, j)
+      local num_points = reaper.CountEnvelopePoints(envelope)
+
+      local points_to_move = {}
+      for k = num_points - 1, 0, -1 do
+        local retval, time, value, shape, tension, selected = reaper.GetEnvelopePoint(envelope, k)
+        if time >= position then
+          table.insert(points_to_move, {idx = k, time = time, value = value, shape = shape, tension = tension})
+        end
+      end
+
+      for _, point in ipairs(points_to_move) do
+        reaper.DeleteEnvelopePointEx(envelope, -1, point.idx)
+        reaper.InsertEnvelopePoint(envelope, point.time + length, point.value, point.shape, point.tension, false, true)
+      end
+    end
+  end
 end
 
 -- ============================================================================
--- PUBLIC API
+-- PUBLIC API - MATCHING SWS BEHAVIOR
 -- ============================================================================
 
---- Append selected regions to the end of the project
---- @param rids table Array of region IDs to append
+--- Append playlist to the end of the project
+--- @param playlist_items table Array of {rid, reps} objects
 --- @return boolean success
-function M.append_regions_to_project(rids)
-  reaper.ShowConsoleMsg("[RegionOps] append_regions_to_project called with " .. tostring(#rids or 0) .. " RIDs\n")
+function M.append_playlist_to_project(playlist_items)
+  reaper.ShowConsoleMsg("[RegionOps] append_playlist_to_project called with " .. tostring(#playlist_items or 0) .. " items\n")
 
-  if not rids or #rids == 0 then
-    reaper.ShowConsoleMsg("[RegionOps] No RIDs provided, returning false\n")
+  if not playlist_items or #playlist_items == 0 then
+    reaper.ShowConsoleMsg("[RegionOps] No playlist items provided\n")
     return false
   end
 
@@ -168,108 +211,177 @@ function M.append_regions_to_project(rids)
   local project_end = get_project_length(proj)
   reaper.ShowConsoleMsg("[RegionOps] Project end position: " .. tostring(project_end) .. "\n")
   local current_position = project_end
-  local gap = 0
 
-  -- Get region data and sort by position
-  local regions_data = {}
-  for _, rid in ipairs(rids) do
-    reaper.ShowConsoleMsg("[RegionOps] Looking up region with RID: " .. tostring(rid) .. "\n")
+  -- Process each playlist item
+  for _, pl_item in ipairs(playlist_items) do
+    local rid = pl_item.rid
+    local reps = pl_item.reps or 1
+
+    reaper.ShowConsoleMsg("[RegionOps] Processing RID " .. tostring(rid) .. " with " .. tostring(reps) .. " reps\n")
+
     local region = Regions.get_region_by_rid(proj, rid)
     if region then
       reaper.ShowConsoleMsg("[RegionOps] Found region: " .. tostring(region.name) .. " (" .. tostring(region.start) .. " - " .. tostring(region["end"]) .. ")\n")
-      table.insert(regions_data, region)
+
+      local region_length = region["end"] - region.start
+
+      -- Split items in this region
+      local items_in_region = split_items_in_region(proj, region.start, region["end"])
+      reaper.ShowConsoleMsg("[RegionOps] Found " .. #items_in_region .. " items in region\n")
+
+      -- Duplicate for each rep
+      for rep = 1, reps do
+        reaper.ShowConsoleMsg("[RegionOps] Rep " .. rep .. "/" .. reps .. " at position " .. tostring(current_position) .. "\n")
+
+        local time_offset = current_position - region.start
+
+        -- Duplicate items
+        duplicate_items_to_position(items_in_region, time_offset)
+
+        -- Copy tempo markers
+        copy_tempo_markers(proj, region.start, region["end"], time_offset)
+
+        -- Copy envelope points
+        copy_envelope_points(proj, region.start, region["end"], time_offset)
+
+        -- Create region marker
+        local new_region_start = current_position
+        local new_region_end = current_position + region_length
+
+        -- Convert RGBA color to native REAPER color
+        local native_color = 0
+        if region.color then
+          local r = (region.color >> 24) & 0xFF
+          local g = (region.color >> 16) & 0xFF
+          local b = (region.color >> 8) & 0xFF
+          native_color = reaper.ColorToNative(r, g, b) | 0x1000000
+        end
+
+        reaper.AddProjectMarker2(proj, true, new_region_start, new_region_end, region.name or "", -1, native_color)
+
+        current_position = current_position + region_length
+      end
     else
       reaper.ShowConsoleMsg("[RegionOps] Region not found for RID: " .. tostring(rid) .. "\n")
     end
   end
 
-  -- Sort by start position
-  table.sort(regions_data, function(a, b) return a.start < b.start end)
-  reaper.ShowConsoleMsg("[RegionOps] Copying " .. #regions_data .. " regions\n")
-
-  -- Copy each region to the end
-  for _, region in ipairs(regions_data) do
-    reaper.ShowConsoleMsg("[RegionOps] Copying region to position " .. tostring(current_position) .. "\n")
-    copy_region_content(proj, region.start, region["end"], current_position, region.name, region.color)
-    current_position = current_position + (region["end"] - region.start) + gap
-  end
-
-  reaper.Undo_EndBlock("Append regions to project", -1)
+  reaper.Undo_EndBlock("Append playlist to project", -1)
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
 
-  reaper.ShowConsoleMsg("[RegionOps] append_regions_to_project completed successfully\n")
+  reaper.ShowConsoleMsg("[RegionOps] append_playlist_to_project completed\n")
   return true
 end
 
---- Paste selected regions at edit cursor
---- @param rids table Array of region IDs to paste
+--- Paste playlist at edit cursor
+--- @param playlist_items table Array of {rid, reps} objects
 --- @return boolean success
-function M.paste_regions_at_cursor(rids)
-  reaper.ShowConsoleMsg("[RegionOps] paste_regions_at_cursor called with " .. tostring(#rids or 0) .. " RIDs\n")
+function M.paste_playlist_at_cursor(playlist_items)
+  reaper.ShowConsoleMsg("[RegionOps] paste_playlist_at_cursor called with " .. tostring(#playlist_items or 0) .. " items\n")
 
-  if not rids or #rids == 0 then
-    reaper.ShowConsoleMsg("[RegionOps] No RIDs provided, returning false\n")
+  if not playlist_items or #playlist_items == 0 then
+    reaper.ShowConsoleMsg("[RegionOps] No playlist items provided\n")
     return false
-  end
-
-  -- Log the RIDs to check for duplicates
-  reaper.ShowConsoleMsg("[RegionOps] RIDs received: ")
-  for i, rid in ipairs(rids) do
-    reaper.ShowConsoleMsg(tostring(rid) .. (i < #rids and ", " or "\n"))
   end
 
   local proj = 0
   local Regions = require('rearkitekt.reaper.regions')
-
-  reaper.PreventUIRefresh(1)
-  reaper.Undo_BeginBlock()
 
   -- Get edit cursor position
   local cursor_pos = reaper.GetCursorPosition()
-  reaper.ShowConsoleMsg("[RegionOps] Edit cursor position: " .. tostring(cursor_pos) .. "\n")
-  local current_position = cursor_pos
-  local gap = 0
+  local project_end = get_project_length(proj)
 
-  -- Get region data and sort by position
-  local regions_data = {}
-  for _, rid in ipairs(rids) do
-    local region = Regions.get_region_by_rid(proj, rid)
+  reaper.ShowConsoleMsg("[RegionOps] Edit cursor: " .. tostring(cursor_pos) .. ", Project end: " .. tostring(project_end) .. "\n")
+
+  reaper.PreventUIRefresh(1)
+  reaper.Undo_BeginBlock()
+
+  -- Calculate total playlist length
+  local total_length = 0
+  for _, pl_item in ipairs(playlist_items) do
+    local region = Regions.get_region_by_rid(proj, pl_item.rid)
     if region then
-      reaper.ShowConsoleMsg("[RegionOps] Found region: " .. tostring(region.name) .. " (" .. tostring(region.start) .. " - " .. tostring(region["end"]) .. ")\n")
-      table.insert(regions_data, region)
-    else
-      reaper.ShowConsoleMsg("[RegionOps] Region not found for RID: " .. tostring(rid) .. "\n")
+      local region_length = region["end"] - region.start
+      local reps = pl_item.reps or 1
+      total_length = total_length + (region_length * reps)
     end
   end
 
-  -- Sort by start position
-  table.sort(regions_data, function(a, b) return a.start < b.start end)
-  reaper.ShowConsoleMsg("[RegionOps] Pasting " .. #regions_data .. " regions\n")
+  reaper.ShowConsoleMsg("[RegionOps] Total playlist length: " .. tostring(total_length) .. "\n")
 
-  -- Copy each region to cursor
-  for i, region in ipairs(regions_data) do
-    reaper.ShowConsoleMsg("[RegionOps] Pasting region " .. i .. "/" .. #regions_data .. " to position " .. tostring(current_position) .. "\n")
-    copy_region_content(proj, region.start, region["end"], current_position, region.name, region.color)
-    current_position = current_position + (region["end"] - region.start) + gap
+  -- Insert silence if pasting inside project
+  if cursor_pos < project_end then
+    reaper.ShowConsoleMsg("[RegionOps] Inserting silence of " .. tostring(total_length) .. " at " .. tostring(cursor_pos) .. "\n")
+    insert_silence(proj, cursor_pos, total_length)
   end
 
-  reaper.Undo_EndBlock("Paste regions at cursor", -1)
+  local current_position = cursor_pos
+
+  -- Process each playlist item
+  for _, pl_item in ipairs(playlist_items) do
+    local rid = pl_item.rid
+    local reps = pl_item.reps or 1
+
+    reaper.ShowConsoleMsg("[RegionOps] Processing RID " .. tostring(rid) .. " with " .. tostring(reps) .. " reps\n")
+
+    local region = Regions.get_region_by_rid(proj, rid)
+    if region then
+      local region_length = region["end"] - region.start
+
+      -- Split items in this region
+      local items_in_region = split_items_in_region(proj, region.start, region["end"])
+
+      -- Duplicate for each rep
+      for rep = 1, reps do
+        reaper.ShowConsoleMsg("[RegionOps] Rep " .. rep .. "/" .. reps .. " at position " .. tostring(current_position) .. "\n")
+
+        local time_offset = current_position - region.start
+
+        -- Duplicate items
+        duplicate_items_to_position(items_in_region, time_offset)
+
+        -- Copy tempo markers
+        copy_tempo_markers(proj, region.start, region["end"], time_offset)
+
+        -- Copy envelope points
+        copy_envelope_points(proj, region.start, region["end"], time_offset)
+
+        -- Create region marker
+        local new_region_start = current_position
+        local new_region_end = current_position + region_length
+
+        local native_color = 0
+        if region.color then
+          local r = (region.color >> 24) & 0xFF
+          local g = (region.color >> 16) & 0xFF
+          local b = (region.color >> 8) & 0xFF
+          native_color = reaper.ColorToNative(r, g, b) | 0x1000000
+        end
+
+        reaper.AddProjectMarker2(proj, true, new_region_start, new_region_end, region.name or "", -1, native_color)
+
+        current_position = current_position + region_length
+      end
+    end
+  end
+
+  reaper.Undo_EndBlock("Paste playlist at cursor", -1)
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
 
-  reaper.ShowConsoleMsg("[RegionOps] paste_regions_at_cursor completed successfully\n")
+  reaper.ShowConsoleMsg("[RegionOps] paste_playlist_at_cursor completed\n")
   return true
 end
 
---- Crop project to selected regions (delete everything outside)
---- @param rids table Array of region IDs to keep
+--- Crop project to playlist
+--- @param playlist_items table Array of {rid, reps} objects
 --- @return boolean success
-function M.crop_to_regions(rids)
-  reaper.ShowConsoleMsg("[RegionOps] crop_to_regions called with " .. tostring(#rids or 0) .. " RIDs\n")
+function M.crop_to_playlist(playlist_items)
+  reaper.ShowConsoleMsg("[RegionOps] crop_to_playlist called with " .. tostring(#playlist_items or 0) .. " items\n")
 
-  if not rids or #rids == 0 then
-    reaper.ShowConsoleMsg("[RegionOps] No RIDs provided, returning false\n")
+  if not playlist_items or #playlist_items == 0 then
+    reaper.ShowConsoleMsg("[RegionOps] No playlist items provided\n")
     return false
   end
 
@@ -279,228 +391,186 @@ function M.crop_to_regions(rids)
   reaper.PreventUIRefresh(1)
   reaper.Undo_BeginBlock()
 
-  -- Get region data
-  local keep_ranges = {}
-  for _, rid in ipairs(rids) do
+  -- Build playlist content at position 0
+  local current_position = 0
+  local regions_to_create = {}
+
+  for _, pl_item in ipairs(playlist_items) do
+    local rid = pl_item.rid
+    local reps = pl_item.reps or 1
+
     local region = Regions.get_region_by_rid(proj, rid)
     if region then
-      table.insert(keep_ranges, {start = region.start, rgnend = region["end"]})
-    end
-  end
+      local region_length = region["end"] - region.start
 
-  -- Delete all items outside the keep ranges
-  local items_to_delete = {}
+      -- Split items in this region
+      local items_in_region = split_items_in_region(proj, region.start, region["end"])
 
-  for i = 0, reaper.CountMediaItems(proj) - 1 do
-    local item = reaper.GetMediaItem(proj, i)
-    local item_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
-    local item_end = item_pos + reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+      -- Duplicate for each rep
+      for rep = 1, reps do
+        local time_offset = current_position - region.start
 
-    local should_keep = false
+        -- Duplicate items
+        duplicate_items_to_position(items_in_region, time_offset)
 
-    -- Check if item overlaps with any keep range
-    for _, range in ipairs(keep_ranges) do
-      if item_pos < range.rgnend and item_end > range.start then
-        should_keep = true
+        -- Copy tempo markers
+        copy_tempo_markers(proj, region.start, region["end"], time_offset)
 
-        -- Trim item if it extends beyond range
-        if item_pos < range.start then
-          local trim_amount = range.start - item_pos
-          reaper.SetMediaItemInfo_Value(item, "D_POSITION", range.start)
-          reaper.SetMediaItemInfo_Value(item, "D_LENGTH",
-            reaper.GetMediaItemInfo_Value(item, "D_LENGTH") - trim_amount)
+        -- Copy envelope points
+        copy_envelope_points(proj, region.start, region["end"], time_offset)
 
-          -- Adjust take offset
-          local take = reaper.GetActiveTake(item)
-          if take then
-            local offset = reaper.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS")
-            reaper.SetMediaItemTakeInfo_Value(take, "D_STARTOFFS", offset + trim_amount)
-          end
+        -- Store region for creation
+        table.insert(regions_to_create, {
+          start = current_position,
+          ["end"] = current_position + region_length,
+          name = region.name,
+          color = region.color
+        })
 
-          item_pos = range.start
-          item_end = item_pos + reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
-        end
-
-        if item_end > range.rgnend then
-          local new_length = range.rgnend - item_pos
-          reaper.SetMediaItemInfo_Value(item, "D_LENGTH", new_length)
-        end
-
-        break
-      end
-    end
-
-    if not should_keep then
-      table.insert(items_to_delete, item)
-    end
-  end
-
-  -- Delete items outside ranges
-  for _, item in ipairs(items_to_delete) do
-    reaper.DeleteTrackMediaItem(reaper.GetMediaItem_Track(item), item)
-  end
-
-  -- Delete automation points outside ranges
-  for i = 0, reaper.CountTracks(proj) - 1 do
-    local track = reaper.GetTrack(proj, i)
-    for j = 0, reaper.CountTrackEnvelopes(track) - 1 do
-      local envelope = reaper.GetTrackEnvelope(track, j)
-      local num_points = reaper.CountEnvelopePoints(envelope)
-
-      -- Delete points from end to start to avoid index issues
-      for k = num_points - 1, 0, -1 do
-        local retval, time, value, shape, tension, selected = reaper.GetEnvelopePoint(envelope, k)
-
-        local in_range = false
-        for _, range in ipairs(keep_ranges) do
-          if time >= range.start and time <= range.rgnend then
-            in_range = true
-            break
-          end
-        end
-
-        if not in_range then
-          reaper.DeleteEnvelopePointEx(envelope, -1, k)
-        end
+        current_position = current_position + region_length
       end
     end
   end
+
+  local playlist_end = current_position
+
+  -- Set time selection to playlist range
+  reaper.GetSet_LoopTimeRange(true, false, 0, playlist_end, false)
+
+  -- Crop project to time selection
+  reaper.Main_OnCommand(40289, 0) -- Item: Remove items/tracks/envelope points/markers/regions/... Time selection
+
+  -- Create region markers
+  for _, rgn in ipairs(regions_to_create) do
+    local native_color = 0
+    if rgn.color then
+      local r = (rgn.color >> 24) & 0xFF
+      local g = (rgn.color >> 16) & 0xFF
+      local b = (rgn.color >> 8) & 0xFF
+      native_color = reaper.ColorToNative(r, g, b) | 0x1000000
+    end
+
+    reaper.AddProjectMarker2(proj, true, rgn.start, rgn["end"], rgn.name or "", -1, native_color)
+  end
+
+  -- Clear time selection
+  reaper.GetSet_LoopTimeRange(true, false, 0, 0, false)
+  reaper.SetEditCurPos(0, false, false)
 
   reaper.Undo_EndBlock("Crop project to playlist", -1)
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
 
+  reaper.ShowConsoleMsg("[RegionOps] crop_to_playlist completed\n")
   return true
 end
 
---- Copy playlist regions to a new project tab
---- @param rids table Array of region IDs to copy to new tab
+--- Crop playlist to new project tab (SWS-style with undo trick)
+--- @param playlist_items table Array of {rid, reps} objects
 --- @return boolean success
-function M.crop_to_regions_new_tab(rids)
-  reaper.ShowConsoleMsg("[RegionOps] crop_to_regions_new_tab called with " .. tostring(#rids or 0) .. " RIDs\n")
+function M.crop_to_playlist_new_tab(playlist_items)
+  reaper.ShowConsoleMsg("[RegionOps] crop_to_playlist_new_tab called with " .. tostring(#playlist_items or 0) .. " items\n")
 
-  if not rids or #rids == 0 then
-    reaper.ShowConsoleMsg("[RegionOps] No RIDs provided, returning false\n")
+  if not playlist_items or #playlist_items == 0 then
+    reaper.ShowConsoleMsg("[RegionOps] No playlist items provided\n")
     return false
   end
 
-  local source_proj = 0
+  -- First, build the playlist in current project using crop_to_playlist logic
+  local proj = 0
   local Regions = require('rearkitekt.reaper.regions')
 
-  -- Get region bounds for time selection
-  local regions_data = {}
-  for _, rid in ipairs(rids) do
-    local region = Regions.get_region_by_rid(source_proj, rid)
-    if region then
-      table.insert(regions_data, region)
-    end
-  end
-
-  if #regions_data == 0 then
-    reaper.ShowConsoleMsg("[RegionOps] No valid regions found\n")
-    return false
-  end
-
-  -- Sort by start position
-  table.sort(regions_data, function(a, b) return a.start < b.start end)
-
-  -- Calculate total time span needed
-  local earliest_start = regions_data[1].start
-  local latest_end = regions_data[#regions_data]["end"]
-
   reaper.PreventUIRefresh(1)
+  reaper.Undo_BeginBlock()
 
-  -- Select all items within the regions in source project
-  reaper.SelectAllMediaItems(source_proj, false) -- Deselect all first
-  for i = 0, reaper.CountMediaItems(source_proj) - 1 do
-    local item = reaper.GetMediaItem(source_proj, i)
-    local item_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
-    local item_end = item_pos + reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+  -- Build playlist content at position 0
+  local current_position = 0
+  local regions_to_create = {}
 
-    -- Check if item overlaps with any region
-    for _, region in ipairs(regions_data) do
-      if item_pos < region["end"] and item_end > region.start then
-        reaper.SetMediaItemSelected(item, true)
-        break
+  for _, pl_item in ipairs(playlist_items) do
+    local rid = pl_item.rid
+    local reps = pl_item.reps or 1
+
+    local region = Regions.get_region_by_rid(proj, rid)
+    if region then
+      local region_length = region["end"] - region.start
+
+      -- Split items in this region
+      local items_in_region = split_items_in_region(proj, region.start, region["end"])
+
+      -- Duplicate for each rep
+      for rep = 1, reps do
+        local time_offset = current_position - region.start
+
+        -- Duplicate items
+        duplicate_items_to_position(items_in_region, time_offset)
+
+        -- Copy tempo markers
+        copy_tempo_markers(proj, region.start, region["end"], time_offset)
+
+        -- Copy envelope points
+        copy_envelope_points(proj, region.start, region["end"], time_offset)
+
+        -- Store region for creation
+        table.insert(regions_to_create, {
+          start = current_position,
+          ["end"] = current_position + region_length,
+          name = region.name,
+          color = region.color
+        })
+
+        current_position = current_position + region_length
       end
     end
   end
 
-  -- Copy selected items
-  reaper.Main_OnCommand(40698, 0) -- Copy selected items
+  -- Store master track state
+  local master_track = reaper.GetMasterTrack(proj)
+  local _, master_chunk = reaper.GetTrackStateChunk(master_track, "", false)
+
+  -- Select and copy all tracks
+  reaper.Main_OnCommand(40296, 0) -- Track: Select all tracks
+  reaper.Main_OnCommand(40210, 0) -- Track: Copy selected tracks
+
+  reaper.PreventUIRefresh(-1)
+
+  -- Undo trick: end block and undo to restore original project
+  reaper.Undo_EndBlock("Crop playlist to new tab", -1)
+  reaper.Undo_DoUndo2(0)
 
   -- Create new project tab
-  reaper.Main_OnCommand(40859, 0) -- New project tab
+  reaper.Main_OnCommand(40859, 0) -- File: New project tab (ignore default template)
 
-  -- Paste items at time 0
-  reaper.SetEditCurPos(0, false, false)
-  reaper.Main_OnCommand(40914, 0) -- Paste items at edit cursor, keeping original track assignment
+  reaper.Undo_BeginBlock()
+  reaper.PreventUIRefresh(1)
 
-  -- Create region markers in new tab
-  for i, region in ipairs(regions_data) do
-    local offset = region.start - earliest_start
-    local new_start = offset
-    local new_end = offset + (region["end"] - region.start)
+  -- Paste tracks
+  reaper.Main_OnCommand(40058, 0) -- Track: Paste tracks/items
+  reaper.Main_OnCommand(40297, 0) -- Track: Unselect all tracks
 
-    -- Convert RGBA color to native REAPER color
+  -- Restore master track
+  local new_master = reaper.GetMasterTrack(0)
+  reaper.SetTrackStateChunk(new_master, master_chunk, false)
+
+  -- Create region markers
+  for _, rgn in ipairs(regions_to_create) do
     local native_color = 0
-    if region.color then
-      local r = (region.color >> 24) & 0xFF
-      local g = (region.color >> 16) & 0xFF
-      local b = (region.color >> 8) & 0xFF
+    if rgn.color then
+      local r = (rgn.color >> 24) & 0xFF
+      local g = (rgn.color >> 16) & 0xFF
+      local b = (rgn.color >> 8) & 0xFF
       native_color = reaper.ColorToNative(r, g, b) | 0x1000000
     end
 
-    reaper.AddProjectMarker2(0, true, new_start, new_end, region.name or "", -1, native_color)
+    reaper.AddProjectMarker2(0, true, rgn.start, rgn["end"], rgn.name or "", -1, native_color)
   end
 
   reaper.PreventUIRefresh(-1)
+  reaper.Undo_EndBlock("Crop playlist to new tab", -1)
   reaper.UpdateArrange()
 
-  reaper.ShowConsoleMsg("[RegionOps] crop_to_regions_new_tab completed successfully\n")
+  reaper.ShowConsoleMsg("[RegionOps] crop_to_playlist_new_tab completed\n")
   return true
-end
-
---- Append ALL regions to the end of the project
---- @return boolean success
-function M.append_all_regions_to_project()
-  local proj = 0
-  local Regions = require('rearkitekt.reaper.regions')
-
-  -- Get all regions
-  local all_regions = Regions.scan_project_regions(proj)
-  if #all_regions == 0 then
-    return false
-  end
-
-  -- Extract RIDs
-  local rids = {}
-  for _, region in ipairs(all_regions) do
-    table.insert(rids, region.rid)
-  end
-
-  return M.append_regions_to_project(rids)
-end
-
---- Paste ALL regions at edit cursor
---- @return boolean success
-function M.paste_all_regions_at_cursor()
-  local proj = 0
-  local Regions = require('rearkitekt.reaper.regions')
-
-  -- Get all regions
-  local all_regions = Regions.scan_project_regions(proj)
-  if #all_regions == 0 then
-    return false
-  end
-
-  -- Extract RIDs
-  local rids = {}
-  for _, region in ipairs(all_regions) do
-    table.insert(rids, region.rid)
-  end
-
-  return M.paste_regions_at_cursor(rids)
 end
 
 return M
