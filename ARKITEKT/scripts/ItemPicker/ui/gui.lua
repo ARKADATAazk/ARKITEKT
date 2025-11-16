@@ -65,27 +65,17 @@ end
 function GUI:start_incremental_loading()
   if self.loading_started then return end
 
-  -- Try to load cached project state first
-  local cached_state = self.cache_mgr.load_project_state_from_disk()
-  local current_change_count = reaper.GetProjectStateChangeCount(0)
+  reaper.ShowConsoleMsg("=== ItemPicker: Starting data loading ===\n")
 
-  if cached_state and cached_state.change_count == current_change_count then
-    -- Project hasn't changed, use cached state (instant load!)
-    self.state.sample_indexes = cached_state.sample_indexes or {}
-    self.state.midi_indexes = cached_state.midi_indexes or {}
-    self.state.last_change_count = current_change_count
-    -- Still populate full item data from cache
-    self.controller.collect_project_items(self.state)
-    self.data_loaded = true
-    self.loading_started = true
-  else
-    -- Start incremental loading for large projects
-    local IncrementalLoader = require('ItemPicker.domain.incremental_loader')
-    self.incremental_loader = IncrementalLoader.new(self.controller.reaper_interface, 50) -- 50 items per frame
-    IncrementalLoader.start_loading(self.incremental_loader, self.state, self.state.settings)
-    self.state.last_change_count = current_change_count
-    self.loading_started = true
-  end
+  local current_change_count = reaper.GetProjectStateChangeCount(0)
+  self.state.last_change_count = current_change_count
+
+  -- ALWAYS use incremental loading (no blocking path)
+  reaper.ShowConsoleMsg("Using incremental loader (50 items/frame)\n")
+  local IncrementalLoader = require('ItemPicker.domain.incremental_loader')
+  self.incremental_loader = IncrementalLoader.new(self.controller.reaper_interface, 50) -- 50 items per frame
+  IncrementalLoader.start_loading(self.incremental_loader, self.state, self.state.settings)
+  self.loading_started = true
 end
 
 -- Process incremental loading batch (called every frame)
@@ -99,6 +89,7 @@ function GUI:process_incremental_loading()
   IncrementalLoader.get_results(self.incremental_loader, self.state)
 
   if is_complete then
+    reaper.ShowConsoleMsg("=== ItemPicker: Loading complete! ===\n")
     self.data_loaded = true
     -- After initial load burst, throttle to 2 jobs/frame for smooth FPS
     if self.state.job_queue then
