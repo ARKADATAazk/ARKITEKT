@@ -43,6 +43,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       local track_muted = entry.track_muted or false
       local item_muted = entry.item_muted or false
       local uuid = entry.uuid
+      local pool_count = entry.pool_count or 1
 
       -- Check mute filters
       if not state.settings.show_muted_tracks and track_muted then
@@ -87,7 +88,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
         key = uuid,
         uuid = uuid,
         is_midi = true,
-        pool_count = #content,  -- Number of instances on this track
+        pool_count = pool_count,  -- Number of pooled items (from Reaper pooling)
       })
 
       ::continue::
