@@ -436,6 +436,12 @@ end
 function M.cleanup()
   M.persist_all()
 
+  -- Flush disk cache to save waveforms/thumbnails
+  local disk_cache_ok, disk_cache = pcall(require, 'ItemPicker.data.disk_cache')
+  if disk_cache_ok and disk_cache.flush then
+    disk_cache.flush()
+  end
+
   -- Stop preview using SWS command
   M.stop_preview()
 end

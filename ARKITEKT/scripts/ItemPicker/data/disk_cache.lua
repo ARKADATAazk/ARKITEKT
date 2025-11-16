@@ -1,54 +1,66 @@
 -- @noindex
 -- ItemPicker/data/disk_cache.lua
--- Disk-based cache for waveforms and MIDI thumbnails
+-- Project-scoped disk cache with LRU eviction (max 5 projects)
 
 local M = {}
 
--- Cache directory structure:
--- REAPER_RESOURCE_PATH/Data/ARKITEKT/ItemPicker/
---   ├── waveforms/{uuid}.dat
---   └── midi_thumbnails/{uuid}.dat
+-- Cache directory: REAPER_RESOURCE_PATH/Data/ARKITEKT/ItemPicker/
+--   ├── cache_index.lua (tracks 5 most recent projects)
+--   ├── {project_guid_1}.lua
+--   ├── {project_guid_2}.lua
+--   └── ...
 
 local cache_dir = nil
+local current_project_guid = nil
+local current_cache = nil -- In-memory cache for current project
+local MAX_PROJECTS = 5
 
--- Initialize cache directory
-function M.init()
-  local resource_path = reaper.GetResourcePath()
-  cache_dir = resource_path .. "/Data/ARKITEKT/ItemPicker"
-
-  -- Create directories if they don't exist
-  local waveforms_dir = cache_dir .. "/waveforms"
-  local midi_dir = cache_dir .. "/midi_thumbnails"
-
-  reaper.RecursiveCreateDirectory(waveforms_dir, 0)
-  reaper.RecursiveCreateDirectory(midi_dir, 0)
-
-  return cache_dir
-end
-
--- Simple Lua table serialization
-local function serialize(t)
+-- Simple Lua table serialization (supports nested tables and numbers)
+local function serialize(t, indent)
+  indent = indent or ""
   if type(t) ~= "table" then
-    return tostring(t)
-  end
-
-  local result = "{"
-  for i, v in ipairs(t) do
-    if type(v) == "number" then
-      result = result .. v .. ","
-    elseif type(v) == "table" then
-      result = result .. serialize(v) .. ","
+    if type(t) == "number" then
+      return tostring(t)
+    else
+      return "nil"
     end
   end
-  result = result .. "}"
+
+  local result = "{\n"
+  local next_indent = indent .. "  "
+
+  -- Handle array part
+  for i, v in ipairs(t) do
+    result = result .. next_indent
+    if type(v) == "number" then
+      result = result .. v
+    elseif type(v) == "table" then
+      result = result .. serialize(v, next_indent)
+    end
+    result = result .. ",\n"
+  end
+
+  -- Handle hash part (for MIDI thumbnails with x1,y1,x2,y2)
+  for k, v in pairs(t) do
+    if type(k) ~= "number" or k > #t then
+      result = result .. next_indent .. "[\"" .. tostring(k) .. "\"] = "
+      if type(v) == "number" then
+        result = result .. v
+      elseif type(v) == "table" then
+        result = result .. serialize(v, next_indent)
+      end
+      result = result .. ",\n"
+    end
+  end
+
+  result = result .. indent .. "}"
   return result
 end
 
--- Simple Lua table deserialization
+-- Deserialize Lua table from string
 local function deserialize(str)
   if not str or str == "" then return nil end
 
-  -- Use loadstring to evaluate the serialized table
   local func, err = load("return " .. str)
   if not func then
     return nil
@@ -61,9 +73,30 @@ local function deserialize(str)
   return nil
 end
 
+-- Get current project GUID
+local function get_project_guid()
+  local proj = 0 -- Current project
+  local retval, guid = reaper.GetSetProjectInfo_String(proj, "PROJECT_ID", "", false)
+
+  -- If project has no GUID yet (unsaved), generate a temporary one based on path
+  if not retval or guid == "" then
+    local retval2, path = reaper.EnumProjects(-1, "")
+    if path and path ~= "" then
+      -- Use path hash as temporary GUID
+      guid = "temp_" .. tostring(path):gsub("[^%w]", "_")
+    else
+      guid = "unsaved_project"
+    end
+  end
+
+  return guid
+end
+
 -- Get item hash (to detect if item changed)
 local function get_item_hash(item)
-  if not item then return nil end
+  if not item or not reaper.ValidatePtr(item, "MediaItem*") then
+    return nil
+  end
 
   local length = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
   local take = reaper.GetActiveTake(item)
@@ -72,109 +105,234 @@ local function get_item_hash(item)
   local start_offset = reaper.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS")
   local playrate = reaper.GetMediaItemTakeInfo_Value(take, "D_PLAYRATE")
 
-  -- Simple hash: concatenate values
   return string.format("%.6f_%.6f_%.6f", length, start_offset, playrate)
 end
 
--- Load waveform from disk
-function M.load_waveform(item, uuid)
-  if not cache_dir then M.init() end
+-- Load cache index (tracks last 5 projects)
+local function load_cache_index()
+  local index_path = cache_dir .. "/cache_index.lua"
+  local file = io.open(index_path, "r")
 
-  local filepath = cache_dir .. "/waveforms/" .. uuid .. ".dat"
-  local file = io.open(filepath, "r")
-  if not file then return nil end
+  if not file then
+    return { projects = {} } -- { projects = { {guid="...", timestamp=123}, ... } }
+  end
 
   local content = file:read("*all")
   file:close()
 
-  if not content or content == "" then return nil end
-
-  -- Parse: first line is hash, rest is data
-  local hash_line, data = content:match("^([^\n]+)\n(.*)$")
-  if not hash_line or not data then return nil end
-
-  -- Validate hash
-  local current_hash = get_item_hash(item)
-  if hash_line ~= current_hash then
-    -- Item changed, invalidate cache
-    os.remove(filepath)
-    return nil
-  end
-
-  return deserialize(data)
+  local index = deserialize(content)
+  return index or { projects = {} }
 end
 
--- Save waveform to disk
-function M.save_waveform(item, uuid, waveform)
-  if not cache_dir then M.init() end
-  if not waveform then return false end
+-- Save cache index
+local function save_cache_index(index)
+  local index_path = cache_dir .. "/cache_index.lua"
+  local file = io.open(index_path, "w")
 
-  local filepath = cache_dir .. "/waveforms/" .. uuid .. ".dat"
-  local file = io.open(filepath, "w")
   if not file then return false end
 
-  local hash = get_item_hash(item)
-  local data = serialize(waveform)
-
-  file:write(hash .. "\n" .. data)
+  file:write(serialize(index))
   file:close()
 
   return true
 end
 
--- Load MIDI thumbnail from disk
-function M.load_midi_thumbnail(item, uuid)
-  if not cache_dir then M.init() end
+-- Update project access time and evict old projects
+local function update_project_access(project_guid)
+  local index = load_cache_index()
+  local timestamp = os.time()
 
-  local filepath = cache_dir .. "/midi_thumbnails/" .. uuid .. ".dat"
-  local file = io.open(filepath, "r")
-  if not file then return nil end
+  -- Find existing project entry
+  local found = false
+  for i, proj in ipairs(index.projects) do
+    if proj.guid == project_guid then
+      -- Update timestamp (move to end - most recent)
+      table.remove(index.projects, i)
+      table.insert(index.projects, { guid = project_guid, timestamp = timestamp })
+      found = true
+      break
+    end
+  end
+
+  -- Add new project if not found
+  if not found then
+    table.insert(index.projects, { guid = project_guid, timestamp = timestamp })
+  end
+
+  -- Evict oldest project if we exceed MAX_PROJECTS
+  if #index.projects > MAX_PROJECTS then
+    local oldest = table.remove(index.projects, 1) -- Remove first (oldest)
+
+    -- Delete the old project's cache file
+    local old_cache_path = cache_dir .. "/" .. oldest.guid .. ".lua"
+    os.remove(old_cache_path)
+
+    reaper.ShowConsoleMsg("[ItemPicker Cache] Evicted old project cache: " .. oldest.guid .. "\n")
+  end
+
+  save_cache_index(index)
+end
+
+-- Load project cache from disk
+local function load_project_cache(project_guid)
+  local cache_path = cache_dir .. "/" .. project_guid .. ".lua"
+  local file = io.open(cache_path, "r")
+
+  if not file then
+    return {} -- Empty cache
+  end
 
   local content = file:read("*all")
   file:close()
 
-  if not content or content == "" then return nil end
-
-  -- Parse: first line is hash, rest is data
-  local hash_line, data = content:match("^([^\n]+)\n(.*)$")
-  if not hash_line or not data then return nil end
-
-  -- Validate hash
-  local current_hash = get_item_hash(item)
-  if hash_line ~= current_hash then
-    -- Item changed, invalidate cache
-    os.remove(filepath)
-    return nil
-  end
-
-  return deserialize(data)
+  local cache = deserialize(content)
+  return cache or {}
 end
 
--- Save MIDI thumbnail to disk
-function M.save_midi_thumbnail(item, uuid, thumbnail)
-  if not cache_dir then M.init() end
-  if not thumbnail then return false end
+-- Save project cache to disk
+local function save_project_cache(project_guid, cache)
+  local cache_path = cache_dir .. "/" .. project_guid .. ".lua"
+  local file = io.open(cache_path, "w")
 
-  local filepath = cache_dir .. "/midi_thumbnails/" .. uuid .. ".dat"
-  local file = io.open(filepath, "w")
-  if not file then return false end
+  if not file then
+    reaper.ShowConsoleMsg("[ItemPicker Cache] Failed to save cache: " .. cache_path .. "\n")
+    return false
+  end
 
-  local hash = get_item_hash(item)
-  local data = serialize(thumbnail)
-
-  file:write(hash .. "\n" .. data)
+  file:write(serialize(cache))
   file:close()
 
   return true
 end
 
--- Clear entire cache (for cleanup/reset)
-function M.clear_cache()
-  if not cache_dir then M.init() end
+-- Initialize cache system
+function M.init()
+  local resource_path = reaper.GetResourcePath()
+  cache_dir = resource_path .. "/Data/ARKITEKT/ItemPicker"
 
-  -- This is a simple implementation - could be enhanced with recursive delete
-  -- For now, just return the cache directory for manual cleanup
+  -- Create cache directory
+  reaper.RecursiveCreateDirectory(cache_dir, 0)
+
+  -- Get current project GUID
+  current_project_guid = get_project_guid()
+
+  -- Load cache for current project
+  current_cache = load_project_cache(current_project_guid)
+
+  -- Update access time and handle eviction
+  update_project_access(current_project_guid)
+
+  reaper.ShowConsoleMsg("[ItemPicker Cache] Initialized for project: " .. current_project_guid .. "\n")
+
   return cache_dir
+end
+
+-- Load waveform from cache
+function M.load_waveform(item, uuid)
+  if not current_cache then return nil end
+
+  local entry = current_cache[uuid]
+  if not entry then return nil end
+
+  -- Validate hash (detect if item changed)
+  local current_hash = get_item_hash(item)
+  if not current_hash or entry.hash ~= current_hash then
+    -- Item changed, invalidate cache entry
+    current_cache[uuid] = nil
+    return nil
+  end
+
+  return entry.waveform
+end
+
+-- Save waveform to cache
+function M.save_waveform(item, uuid, waveform)
+  if not current_cache or not waveform then return false end
+
+  local hash = get_item_hash(item)
+  if not hash then return false end
+
+  -- Create or update entry
+  if not current_cache[uuid] then
+    current_cache[uuid] = {}
+  end
+
+  current_cache[uuid].hash = hash
+  current_cache[uuid].waveform = waveform
+
+  -- Save to disk (async would be better, but Lua doesn't have that)
+  return save_project_cache(current_project_guid, current_cache)
+end
+
+-- Load MIDI thumbnail from cache
+function M.load_midi_thumbnail(item, uuid)
+  if not current_cache then return nil end
+
+  local entry = current_cache[uuid]
+  if not entry then return nil end
+
+  -- Validate hash
+  local current_hash = get_item_hash(item)
+  if not current_hash or entry.hash ~= current_hash then
+    -- Item changed, invalidate cache entry
+    current_cache[uuid] = nil
+    return nil
+  end
+
+  return entry.midi_thumbnail
+end
+
+-- Save MIDI thumbnail to cache
+function M.save_midi_thumbnail(item, uuid, thumbnail)
+  if not current_cache or not thumbnail then return false end
+
+  local hash = get_item_hash(item)
+  if not hash then return false end
+
+  -- Create or update entry
+  if not current_cache[uuid] then
+    current_cache[uuid] = {}
+  end
+
+  current_cache[uuid].hash = hash
+  current_cache[uuid].midi_thumbnail = thumbnail
+
+  -- Save to disk
+  return save_project_cache(current_project_guid, current_cache)
+end
+
+-- Flush cache to disk (call on exit)
+function M.flush()
+  if current_cache and current_project_guid then
+    save_project_cache(current_project_guid, current_cache)
+    reaper.ShowConsoleMsg("[ItemPicker Cache] Flushed cache to disk\n")
+  end
+end
+
+-- Clear cache for current project
+function M.clear_current_project()
+  if current_project_guid then
+    current_cache = {}
+    local cache_path = cache_dir .. "/" .. current_project_guid .. ".lua"
+    os.remove(cache_path)
+    reaper.ShowConsoleMsg("[ItemPicker Cache] Cleared cache for current project\n")
+  end
+end
+
+-- Get cache stats
+function M.get_stats()
+  if not current_cache then return { items = 0 } end
+
+  local count = 0
+  for _ in pairs(current_cache) do
+    count = count + 1
+  end
+
+  return {
+    items = count,
+    project = current_project_guid,
+    directory = cache_dir
+  }
 end
 
 return M

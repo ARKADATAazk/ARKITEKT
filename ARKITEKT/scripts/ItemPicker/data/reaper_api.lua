@@ -1,6 +1,22 @@
 local M = {}
 local utils
-local UUID = require("rearkitekt.core.uuid")
+
+-- Generate stable UUID from item GUID (for cache consistency)
+local function get_item_uuid(item)
+  -- Use REAPER's built-in item GUID for stable identification
+  local guid = reaper.BR_GetMediaItemGUID(item)
+  if guid then
+    return guid
+  end
+
+  -- Fallback: generate hash from item properties (shouldn't happen with SWS installed)
+  local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+  local length = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+  local track = reaper.GetMediaItem_Track(item)
+  local track_num = reaper.GetMediaTrackInfo_Value(track, "IP_TRACKNUMBER")
+
+  return string.format("item_%d_%.6f_%.6f", track_num, pos, length)
+end
 
 function M.init(utils_module)
   utils = utils_module
@@ -196,7 +212,7 @@ function M.GetProjectSamples(settings, state)
           item_name,
           track_muted = track_muted,
           item_muted = item_muted,
-          uuid = UUID.generate(),
+          uuid = get_item_uuid(item),
           pool_count = pool_count
         })
 
@@ -306,7 +322,7 @@ function M.GetProjectMIDI(settings, state)
           item_name,
           track_muted = track_muted,
           item_muted = item_muted,
-          uuid = UUID.generate(),
+          uuid = get_item_uuid(item),
           pool_count = pool_count
         }
 
