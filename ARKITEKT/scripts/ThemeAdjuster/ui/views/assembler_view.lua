@@ -138,7 +138,7 @@ function M.new(State, AppConfig, settings)
   )
 
   -- Override right-click behavior to open modal
-  self.grid.grid.config.behaviors.right_click = function(key, selected_keys)
+  self.grid.config.behaviors.right_click = function(key, selected_keys)
     -- Find the package data for this key
     local packages = State.get_packages()
     for _, pkg in ipairs(packages) do
