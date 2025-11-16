@@ -146,12 +146,10 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   -- Inline Color Picker (renders on top at bottom-left if visible)
   if self._active_color_picker_visible then
     local picker_size = 130
-    local corner_button_size = 30  -- Standard corner button size
-    local gap = 8  -- Gap between corner button and picker
 
-    -- Position at top-left, below corner button
+    -- Position at bottom-left corner
     local picker_x = cursor_x + self.container_config.padding
-    local picker_y = cursor_y + corner_button_size + gap + self.container_config.padding
+    local picker_y = cursor_y + height - picker_size - self.container_config.padding - 20
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
@@ -190,10 +188,10 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
         end,
       })
 
-      -- Close button centered below picker
+      -- Close button - moved up 30px and left 13px from center
       local close_button_size = 16
-      local close_x = (picker_size - close_button_size) / 2
-      ImGui.SetCursorPos(ctx, close_x, picker_size + 2)
+      local close_x = (picker_size - close_button_size) / 2 - 13
+      ImGui.SetCursorPos(ctx, close_x, picker_size - 28)
 
       ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 0, 0)
       if ImGui.Button(ctx, "X##close_active_picker", close_button_size, close_button_size) then
@@ -367,15 +365,13 @@ function M.draw_pool(self, ctx, regions, height)
 
   self.pool_container:end_draw(ctx)
 
-  -- Inline Color Picker for Pool (renders on top, recolors Active grid selections)
+  -- Inline Color Picker for Pool (renders on top at bottom-left, recolors Active grid selections)
   if self._pool_color_picker_visible then
     local picker_size = 130
-    local corner_button_size = 30  -- Standard corner button size
-    local gap = 8  -- Gap between corner button and picker
 
-    -- Position at top-left, below corner button
+    -- Position at bottom-left corner
     local picker_x = cursor_x + self.container_config.padding
-    local picker_y = cursor_y + corner_button_size + gap + self.container_config.padding
+    local picker_y = cursor_y + height - picker_size - self.container_config.padding - 20
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
@@ -415,10 +411,10 @@ function M.draw_pool(self, ctx, regions, height)
         end,
       })
 
-      -- Close button centered below picker
+      -- Close button - moved up 30px and left 13px from center
       local close_button_size = 16
-      local close_x = (picker_size - close_button_size) / 2
-      ImGui.SetCursorPos(ctx, close_x, picker_size + 2)
+      local close_x = (picker_size - close_button_size) / 2 - 13
+      ImGui.SetCursorPos(ctx, close_x, picker_size - 28)
 
       ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 0, 0)
       if ImGui.Button(ctx, "X##close_pool_picker", close_button_size, close_button_size) then
