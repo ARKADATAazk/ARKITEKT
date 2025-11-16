@@ -73,6 +73,9 @@ M.rename_active = false
 M.rename_uuid = nil
 M.rename_text = ""
 M.rename_is_audio = true
+M.rename_focused = false  -- Track if input is focused
+M.rename_queue = nil  -- For batch rename
+M.rename_queue_index = 0
 
 M.draw_list = nil
 M.overlay_alpha = 1.0

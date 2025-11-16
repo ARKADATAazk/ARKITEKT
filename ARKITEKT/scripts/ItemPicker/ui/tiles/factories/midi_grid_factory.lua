@@ -325,6 +325,29 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
           state.rename_uuid = uuid
           state.rename_text = item_data.name
           state.rename_is_audio = false
+          state.rename_focused = false  -- Reset focus flag
+          return
+        end
+      end
+    end,
+
+    rename = function(selected_keys)
+      -- Start rename for selected items (batch rename)
+      if not selected_keys or #selected_keys == 0 then return end
+
+      -- Start with first selected item
+      local uuid = selected_keys[1]
+      local items = get_items()
+
+      for _, item_data in ipairs(items) do
+        if item_data.uuid == uuid then
+          state.rename_active = true
+          state.rename_uuid = uuid
+          state.rename_text = item_data.name
+          state.rename_is_audio = false
+          state.rename_focused = false  -- Reset focus flag
+          state.rename_queue = selected_keys  -- Store all selected for batch rename
+          state.rename_queue_index = 1
           return
         end
       end

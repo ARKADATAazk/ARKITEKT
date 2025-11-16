@@ -155,6 +155,11 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Check if this tile is being renamed
   local is_renaming = state.rename_active and state.rename_uuid == item_data.uuid and state.rename_is_audio
 
+  -- Populate rename text if it's empty (happens when moving to next item in batch)
+  if is_renaming and (not state.rename_text or state.rename_text == "") then
+    state.rename_text = item_data.name
+  end
+
   -- Render text and badge (with reduced width if star is present)
   if cascade_factor > 0.3 then
     if is_renaming then
@@ -184,14 +189,40 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         if take then
           reaper.GetSetMediaItemTakeInfo_String(take, "P_NAME", new_text, true)
         end
-        state.rename_active = false
-        state.rename_uuid = nil
-        state.rename_focused = false
+
+        -- Check if there are more items in the batch rename queue
+        if state.rename_queue and state.rename_queue_index < #state.rename_queue then
+          -- Move to next item in queue
+          state.rename_queue_index = state.rename_queue_index + 1
+          local next_uuid = state.rename_queue[state.rename_queue_index]
+
+          -- Find the next item to rename
+          -- This will be picked up on next frame, need to get item name
+          -- For now, set to empty and let the next frame's double_click logic populate it
+          state.rename_uuid = next_uuid
+          state.rename_focused = false
+          state.rename_text = ""  -- Will be populated by factory on next frame
+        else
+          -- No more items in queue, end rename session
+          state.rename_active = false
+          state.rename_uuid = nil
+          state.rename_focused = false
+          state.rename_queue = nil
+          state.rename_queue_index = 0
+        end
       end
 
       -- Cancel on Escape or focus loss
-      if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) or not ImGui.IsItemActive(ctx) then
-        if state.rename_focused and not ImGui.IsItemActive(ctx) then
+      if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+        -- Cancel entire rename session on Escape
+        state.rename_active = false
+        state.rename_uuid = nil
+        state.rename_focused = false
+        state.rename_queue = nil
+        state.rename_queue_index = 0
+      elseif state.rename_focused and not ImGui.IsItemActive(ctx) then
+        -- Only cancel on focus loss if not in batch mode
+        if not state.rename_queue or #state.rename_queue <= 1 then
           state.rename_active = false
           state.rename_uuid = nil
           state.rename_focused = false
