@@ -87,21 +87,21 @@ function TransportView:draw(ctx, shell_state)
   ImGui.Text(ctx, "Configure transport bar appearance and visibility")
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 15)
+  ImGui.Dummy(ctx, 0, 12)
 
   -- Layout Settings Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "transport_layout_section", avail_w, 120, 1) then
-    ImGui.Dummy(ctx, 0, 8)
+  if ImGui.BeginChild(ctx, "transport_layout_section", avail_w, 100, 1) then
+    ImGui.Dummy(ctx, 0, 6)
 
-    ImGui.Indent(ctx, 12)
+    ImGui.Indent(ctx, 8)
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "LAYOUT SETTINGS")
     ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Dummy(ctx, 0, 6)
 
-    local label_w = 140
-    local spinner_w = math.min(220, avail_w - label_w - 40)
+    local label_w = 120
+    local spinner_w = 180
 
     -- Helper function to draw spinner row
     local function draw_spinner_row(label, id, idx, values)
@@ -109,7 +109,7 @@ function TransportView:draw(ctx, shell_state)
       ImGui.Text(ctx, label)
       ImGui.SameLine(ctx, label_w)
       local changed, new_idx = Spinner.draw(ctx, id, idx, values, {w = spinner_w})
-      ImGui.Dummy(ctx, 0, 4)
+      ImGui.Dummy(ctx, 0, 3)
       return changed, new_idx
     end
 
@@ -120,29 +120,29 @@ function TransportView:draw(ctx, shell_state)
     changed, new_idx = draw_spinner_row("Rate Display Mode", "trans_rateMode", self.trans_rateMode_idx, SPINNER_VALUES.trans_rateMode)
     if changed then self.trans_rateMode_idx = new_idx end
 
-    ImGui.Unindent(ctx, 12)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 6)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 12)
+  ImGui.Dummy(ctx, 0, 10)
 
   -- Layout & Size Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "transport_layout_buttons", avail_w, 120, 1) then
-    ImGui.Dummy(ctx, 0, 8)
+  if ImGui.BeginChild(ctx, "transport_layout_buttons", avail_w, 100, 1) then
+    ImGui.Dummy(ctx, 0, 6)
 
-    ImGui.Indent(ctx, 12)
+    ImGui.Indent(ctx, 8)
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "ACTIVE LAYOUT & SIZE")
     ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Dummy(ctx, 0, 6)
 
     -- Active Layout
     ImGui.AlignTextToFramePadding(ctx)
     ImGui.Text(ctx, "Active Layout")
-    ImGui.SameLine(ctx, 140)
+    ImGui.SameLine(ctx, 120)
 
     for _, layout in ipairs({'A', 'B', 'C'}) do
       local is_active = (self.active_layout == layout)
@@ -162,12 +162,12 @@ function TransportView:draw(ctx, shell_state)
     end
     ImGui.NewLine(ctx)
 
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Dummy(ctx, 0, 4)
 
     -- Apply Size
     ImGui.AlignTextToFramePadding(ctx)
     ImGui.Text(ctx, "Apply Size")
-    ImGui.SameLine(ctx, 140)
+    ImGui.SameLine(ctx, 120)
 
     for _, size in ipairs({'100%', '150%', '200%'}) do
       if ImGui.Button(ctx, size, 70, 24) then
@@ -177,29 +177,29 @@ function TransportView:draw(ctx, shell_state)
     end
     ImGui.NewLine(ctx)
 
-    ImGui.Unindent(ctx, 12)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 6)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 12)
+  ImGui.Dummy(ctx, 0, 10)
 
   -- Element Visibility Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
   if ImGui.BeginChild(ctx, "transport_visibility_section", avail_w, 0, 1) then
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Dummy(ctx, 0, 6)
 
-    ImGui.Indent(ctx, 12)
+    ImGui.Indent(ctx, 8)
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "ELEMENT VISIBILITY")
     ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Dummy(ctx, 0, 3)
 
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
     ImGui.Text(ctx, "Control which transport elements are visible")
     ImGui.PopStyleColor(ctx)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Dummy(ctx, 0, 6)
 
     -- Helper function for checkbox rows
     local function draw_checkbox_row(label, checked)
@@ -207,12 +207,12 @@ function TransportView:draw(ctx, shell_state)
       if ImGui.Checkbox(ctx, label, checked) then
         result = not checked
       end
-      ImGui.Dummy(ctx, 0, 4)
+      ImGui.Dummy(ctx, 0, 3)
       return result
     end
 
     -- Two columns layout for checkboxes
-    local col_w = (avail_w - 48) / 2
+    local col_w = (avail_w - 32) / 2
 
     ImGui.BeginGroup(ctx)
 
@@ -226,7 +226,7 @@ function TransportView:draw(ctx, shell_state)
 
     ImGui.EndGroup(ctx)
 
-    ImGui.SameLine(ctx, col_w + 24)
+    ImGui.SameLine(ctx, col_w + 8)
 
     ImGui.BeginGroup(ctx)
 
@@ -240,8 +240,8 @@ function TransportView:draw(ctx, shell_state)
 
     ImGui.EndGroup(ctx)
 
-    ImGui.Unindent(ctx, 12)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 6)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)

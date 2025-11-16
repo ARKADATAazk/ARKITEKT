@@ -129,77 +129,108 @@ function MCPView:draw(ctx, shell_state)
   ImGui.Text(ctx, "Configure mixer appearance and element visibility")
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 15)
+  ImGui.Dummy(ctx, 0, 12)
 
   -- Layout Settings Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "mcp_layout_section", avail_w, 260, 1) then
-    ImGui.Dummy(ctx, 0, 8)
+  if ImGui.BeginChild(ctx, "mcp_layout_section", avail_w, 180, 1) then
+    ImGui.Dummy(ctx, 0, 6)
 
-    ImGui.Indent(ctx, 12)
+    ImGui.Indent(ctx, 8)
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "LAYOUT SETTINGS")
     ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Dummy(ctx, 0, 6)
 
-    local label_w = 140
-    local spinner_w = math.min(220, avail_w - label_w - 40)
+    -- Calculate column widths
+    local col_count = 3
+    local col_w = (avail_w - 32) / col_count
+    local label_w = 90
+    local spinner_w = col_w - label_w - 12
 
-    -- Helper function to draw spinner row
+    -- Helper function to draw compact spinner row
     local function draw_spinner_row(label, id, idx, values)
       ImGui.AlignTextToFramePadding(ctx)
       ImGui.Text(ctx, label)
       ImGui.SameLine(ctx, label_w)
       local changed, new_idx = Spinner.draw(ctx, id, idx, values, {w = spinner_w})
-      ImGui.Dummy(ctx, 0, 4)
+      ImGui.Dummy(ctx, 0, 3)
       return changed, new_idx
     end
 
-    -- Spinners
-    local changed, new_idx = draw_spinner_row("Folder Indent", "mcp_indent", self.mcp_indent_idx, SPINNER_VALUES.mcp_indent)
+    -- Column 1: Layout
+    ImGui.BeginGroup(ctx)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+    ImGui.Text(ctx, "Layout")
+    ImGui.PopStyleColor(ctx)
+    ImGui.Dummy(ctx, 0, 3)
+
+    local changed, new_idx = draw_spinner_row("Indent", "mcp_indent", self.mcp_indent_idx, SPINNER_VALUES.mcp_indent)
     if changed then self.mcp_indent_idx = new_idx end
 
-    changed, new_idx = draw_spinner_row("Align Controls", "mcp_align", self.mcp_align_idx, SPINNER_VALUES.mcp_align)
+    changed, new_idx = draw_spinner_row("Alignment", "mcp_align", self.mcp_align_idx, SPINNER_VALUES.mcp_align)
     if changed then self.mcp_align_idx = new_idx end
 
-    changed, new_idx = draw_spinner_row("Meter Expansion", "mcp_meterExpSize", self.mcp_meterExpSize_idx, SPINNER_VALUES.mcp_meterExpSize)
-    if changed then self.mcp_meterExpSize_idx = new_idx end
-
-    changed, new_idx = draw_spinner_row("Border Style", "mcp_border", self.mcp_border_idx, SPINNER_VALUES.mcp_border)
+    changed, new_idx = draw_spinner_row("Border", "mcp_border", self.mcp_border_idx, SPINNER_VALUES.mcp_border)
     if changed then self.mcp_border_idx = new_idx end
 
-    changed, new_idx = draw_spinner_row("Volume Text", "mcp_volText_pos", self.mcp_volText_pos_idx, SPINNER_VALUES.mcp_volText_pos)
+    ImGui.EndGroup(ctx)
+
+    -- Column 2: Text Positions
+    ImGui.SameLine(ctx, col_w + 8)
+    ImGui.BeginGroup(ctx)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+    ImGui.Text(ctx, "Text Position")
+    ImGui.PopStyleColor(ctx)
+    ImGui.Dummy(ctx, 0, 3)
+
+    changed, new_idx = draw_spinner_row("Volume", "mcp_volText_pos", self.mcp_volText_pos_idx, SPINNER_VALUES.mcp_volText_pos)
     if changed then self.mcp_volText_pos_idx = new_idx end
 
-    changed, new_idx = draw_spinner_row("Pan Text", "mcp_panText_pos", self.mcp_panText_pos_idx, SPINNER_VALUES.mcp_panText_pos)
+    changed, new_idx = draw_spinner_row("Pan", "mcp_panText_pos", self.mcp_panText_pos_idx, SPINNER_VALUES.mcp_panText_pos)
     if changed then self.mcp_panText_pos_idx = new_idx end
 
-    changed, new_idx = draw_spinner_row("Extended Mixer", "mcp_extmixer_mode", self.mcp_extmixer_mode_idx, SPINNER_VALUES.mcp_extmixer_mode)
+    ImGui.EndGroup(ctx)
+
+    -- Column 3: Options
+    ImGui.SameLine(ctx, (col_w * 2) + 8)
+    ImGui.BeginGroup(ctx)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+    ImGui.Text(ctx, "Options")
+    ImGui.PopStyleColor(ctx)
+    ImGui.Dummy(ctx, 0, 3)
+
+    changed, new_idx = draw_spinner_row("Meter Exp", "mcp_meterExpSize", self.mcp_meterExpSize_idx, SPINNER_VALUES.mcp_meterExpSize)
+    if changed then self.mcp_meterExpSize_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Ext Mixer", "mcp_extmixer_mode", self.mcp_extmixer_mode_idx, SPINNER_VALUES.mcp_extmixer_mode)
     if changed then self.mcp_extmixer_mode_idx = new_idx end
 
-    ImGui.Unindent(ctx, 12)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.EndGroup(ctx)
+
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 6)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 12)
+  ImGui.Dummy(ctx, 0, 10)
 
   -- Layout & Size Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "mcp_layout_buttons", avail_w, 120, 1) then
-    ImGui.Dummy(ctx, 0, 8)
+  if ImGui.BeginChild(ctx, "mcp_layout_buttons", avail_w, 100, 1) then
+    ImGui.Dummy(ctx, 0, 6)
 
-    ImGui.Indent(ctx, 12)
+    ImGui.Indent(ctx, 8)
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "ACTIVE LAYOUT & SIZE")
     ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Dummy(ctx, 0, 6)
 
     -- Active Layout
     ImGui.AlignTextToFramePadding(ctx)
     ImGui.Text(ctx, "Active Layout")
-    ImGui.SameLine(ctx, 140)
+    ImGui.SameLine(ctx, 120)
 
     for _, layout in ipairs({'A', 'B', 'C'}) do
       local is_active = (self.active_layout == layout)
@@ -219,12 +250,12 @@ function MCPView:draw(ctx, shell_state)
     end
     ImGui.NewLine(ctx)
 
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Dummy(ctx, 0, 4)
 
     -- Apply Size
     ImGui.AlignTextToFramePadding(ctx)
     ImGui.Text(ctx, "Apply Size")
-    ImGui.SameLine(ctx, 140)
+    ImGui.SameLine(ctx, 120)
 
     for _, size in ipairs({'100%', '150%', '200%'}) do
       if ImGui.Button(ctx, size, 70, 24) then
@@ -234,68 +265,68 @@ function MCPView:draw(ctx, shell_state)
     end
     ImGui.NewLine(ctx)
 
-    ImGui.Unindent(ctx, 12)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 6)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 12)
+  ImGui.Dummy(ctx, 0, 10)
 
   -- Options Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "mcp_options_section", avail_w, 100, 1) then
-    ImGui.Dummy(ctx, 0, 8)
+  if ImGui.BeginChild(ctx, "mcp_options_section", avail_w, 80, 1) then
+    ImGui.Dummy(ctx, 0, 6)
 
-    ImGui.Indent(ctx, 12)
+    ImGui.Indent(ctx, 8)
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "OPTIONS")
     ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Dummy(ctx, 0, 6)
 
     if ImGui.Checkbox(ctx, "Hide MCP of master track", self.hide_mcp_master) then
       self.hide_mcp_master = not self.hide_mcp_master
       -- TODO: Set parameter
     end
 
-    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Dummy(ctx, 0, 3)
 
     if ImGui.Checkbox(ctx, "Indicate tracks that are folder parents", self.folder_parent_indicator) then
       self.folder_parent_indicator = not self.folder_parent_indicator
       -- TODO: Set parameter
     end
 
-    ImGui.Unindent(ctx, 12)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 6)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 12)
+  ImGui.Dummy(ctx, 0, 10)
 
   -- Visibility Table Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
   if ImGui.BeginChild(ctx, "mcp_visibility_section", avail_w, 0, 1) then
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Dummy(ctx, 0, 6)
 
-    ImGui.Indent(ctx, 12)
+    ImGui.Indent(ctx, 8)
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "ELEMENT VISIBILITY")
     ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Dummy(ctx, 0, 3)
 
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
     ImGui.Text(ctx, "Control when mixer elements are visible")
     ImGui.PopStyleColor(ctx)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Dummy(ctx, 0, 6)
 
     -- Table
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_CellPadding, 8, 6)
-    if ImGui.BeginTable(ctx, "mcp_visibility", 5, ImGui.TableFlags_Borders | ImGui.TableFlags_RowBg | ImGui.TableFlags_ScrollY, avail_w - 24, 300) then
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_CellPadding, 6, 4)
+    if ImGui.BeginTable(ctx, "mcp_visibility", 5, ImGui.TableFlags_Borders | ImGui.TableFlags_RowBg | ImGui.TableFlags_ScrollY, avail_w - 16, 300) then
       -- Setup columns
-      ImGui.TableSetupColumn(ctx, "Element", ImGui.TableColumnFlags_WidthFixed, 150)
+      ImGui.TableSetupColumn(ctx, "Element", ImGui.TableColumnFlags_WidthFixed, 130)
       for _, col in ipairs(VISIBILITY_COLUMNS) do
-        ImGui.TableSetupColumn(ctx, col.label, ImGui.TableColumnFlags_WidthFixed, 90)
+        ImGui.TableSetupColumn(ctx, col.label, ImGui.TableColumnFlags_WidthFixed, 85)
       end
       ImGui.TableSetupScrollFreeze(ctx, 0, 1)
       ImGui.TableHeadersRow(ctx)
@@ -328,8 +359,8 @@ function MCPView:draw(ctx, shell_state)
     end
     ImGui.PopStyleVar(ctx)
 
-    ImGui.Unindent(ctx, 12)
-    ImGui.Dummy(ctx, 0, 8)
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 6)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)
