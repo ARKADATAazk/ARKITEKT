@@ -1,72 +1,85 @@
--- main.lua
+-- @noindex
+-- ThemeAdjuster v2 - Main Entry Point
+-- Refactored to use ARKITEKT framework
+
+-- ============================================================================
+-- PACKAGE PATH SETUP
+-- ============================================================================
+local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
+local root_path = script_path
+root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
+root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
+root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
+
+if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
+
+local arkitekt_path = root_path .. "ARKITEKT/"
+local scripts_path = root_path .. "ARKITEKT/scripts/"
+package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" ..
+               scripts_path .. "?.lua;" .. scripts_path .. "?/init.lua;" ..
+               package.path
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.9'
 
--- Expand package.path for subfolders
-do
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, 'S').source:sub(2)
-  local dir = src:match("(.*"..sep..")") or ("."..sep)
-  package.path = table.concat({
-    dir .. "?.lua",
-    dir .. "core" .. sep .. "?.lua",
-    dir .. "tabs" .. sep .. "?.lua",
-    package.path
-  }, ";")
+local function dirname(p) return p:match("^(.*)[/\\]") end
+local function join(a,b) local s=package.config:sub(1,1); return (a:sub(-1)==s) and (a..b) or (a..s..b) end
+local function addpath(p) if p and p~="" and not package.path:find(p,1,true) then package.path = p .. ";" .. package.path end end
+
+local SRC = debug.getinfo(1,"S").source:sub(2)
+local HERE = dirname(SRC) or "."
+local REARKITEKT_ROOT = dirname(HERE or ".") or "."
+local SCRIPTS_ROOT = dirname(REARKITEKT_ROOT or ".") or "."
+
+addpath(join(SCRIPTS_ROOT, "?.lua"))
+addpath(join(SCRIPTS_ROOT, "?/init.lua"))
+addpath(join(REARKITEKT_ROOT, "?.lua"))
+addpath(join(REARKITEKT_ROOT, "?/init.lua"))
+
+-- ============================================================================
+-- LOAD MODULES
+-- ============================================================================
+
+local Shell = require("rearkitekt.app.shell")
+local Config = require("ThemeAdjuster.core.config")
+local State = require("ThemeAdjuster.core.state")
+local GUI = require("ThemeAdjuster.ui.gui")
+local StatusConfig = require("ThemeAdjuster.ui.status")
+local Colors = require("rearkitekt.core.colors")
+
+local hexrgb = Colors.hexrgb
+
+local SettingsOK, Settings = pcall(require, "rearkitekt.core.settings")
+local StyleOK, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
+
+-- ============================================================================
+-- INITIALIZE SETTINGS
+-- ============================================================================
+
+local settings = nil
+if SettingsOK and type(Settings.new) == "function" then
+  local ok, inst = pcall(Settings.new, join(HERE, "cache"), "theme_adjuster.json")
+  if ok then settings = inst end
 end
 
-local app    = require('app')          -- keep (core/app.lua)
-local style  = require('style')        -- keep
-local theme  = require('theme')        -- keep
-local dbgmod = require('debug_tab')    -- keep
-local assembler_tab = require('assembler_tab')
-local settings
+State.initialize(settings)
 
--- Open debounced settings store under /cache/
-do
-  local sep2 = package.config:sub(1,1)
-  local src2 = debug.getinfo(1, 'S').source:sub(2)
-  local dir2 = src2:match("(.*"..sep2..")") or ("."..sep2)
-  settings = require('settings').open(dir2 .. "cache", "settings.json")
-end
+local gui = GUI.create(State, Config, settings)
 
-  -- keep
+-- ============================================================================
+-- RUN APPLICATION
+-- ============================================================================
 
--- instantiate tabs that expose lifecycle hooks
-local asm = assembler_tab.create(theme, settings and settings:sub('tabs.ASSEMBLER'))
-local dbg = dbgmod.create(theme, settings and settings:sub('tabs.DEBUG'))
-
-local tabs = {
-  { id = 'GLOBAL',    draw = function(ctx, s) end },
-
-  { id = 'ASSEMBLER',
-    draw        = asm.draw,
-    on_hide     = asm.on_hide,
-    begin_frame = asm.begin_frame,
-  },
-
-  { id = 'TCP',       draw = function(ctx, s) end },
-  { id = 'MCP',       draw = function(ctx, s) end },
-  { id = 'COLORS',    draw = function(ctx, s) end },
-  { id = 'ENVELOPES', draw = function(ctx, s) end },
-  { id = 'TRANSPORT', draw = function(ctx, s) end },
-
-  { id = 'DEBUG',
-    draw        = dbg.draw,
-    on_hide     = dbg.on_hide,
-    begin_frame = dbg.begin_frame,
-  },
-}
-
-app.run({
-  settings_store = settings,
-  title      = 'Enhanced 6.0 Theme Adjuster — Demo',
-  theme      = theme,            -- ← add this
-  tabs       = tabs,
-  style      = style,
-  brandColor = 0x00B88FCC,
-  brandHover = 0x33CCB8CC,
-  brandDown  = 0x00A07ACC,
+Shell.run({
+  title        = "Enhanced 6.0 Theme Adjuster",
+  version      = "v2.0.0",
+  draw         = function(ctx, shell_state) gui:draw(ctx, shell_state.window, shell_state) end,
+  settings     = settings,
+  style        = StyleOK and Style or nil,
+  initial_pos  = { x = 80, y = 80 },
+  initial_size = { w = 980, h = 600 },
+  icon_color   = hexrgb("#00B88F"),
+  icon_size    = 18,
+  min_size     = { w = 700, h = 500 },
+  get_status_func = StatusConfig.get_status_func and StatusConfig.get_status_func(State) or nil,
+  fonts        = {},
 })
-
