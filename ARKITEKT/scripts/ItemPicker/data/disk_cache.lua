@@ -78,15 +78,22 @@ local function get_project_guid()
   local proj = 0 -- Current project
   local retval, guid = reaper.GetSetProjectInfo_String(proj, "PROJECT_ID", "", false)
 
-  -- If project has no GUID yet (unsaved), generate a temporary one based on path
+  -- If project has no GUID yet (unsaved), use project file path
   if not retval or guid == "" then
-    local retval2, path = reaper.EnumProjects(-1, "")
-    if path and path ~= "" then
-      -- Use path hash as temporary GUID
-      guid = "temp_" .. tostring(path):gsub("[^%w]", "_")
+    local proj_path = reaper.GetProjectPath("")
+    local proj_name = reaper.GetProjectName(0, "")
+
+    if proj_path and proj_path ~= "" and proj_name and proj_name ~= "" then
+      -- Use full path + name as stable identifier
+      local full_path = proj_path .. "/" .. proj_name
+      guid = "path_" .. tostring(full_path):gsub("[^%w]", "_")
+      reaper.ShowConsoleMsg("[ItemPicker Cache] Using project path as ID: " .. proj_name .. "\n")
     else
       guid = "unsaved_project"
+      reaper.ShowConsoleMsg("[ItemPicker Cache] WARNING: Unsaved project, cache won't persist!\n")
     end
+  else
+    reaper.ShowConsoleMsg("[ItemPicker Cache] Using project GUID: " .. guid .. "\n")
   end
 
   return guid
@@ -222,9 +229,47 @@ function M.init()
   -- Update access time and handle eviction
   update_project_access(current_project_guid)
 
-  reaper.ShowConsoleMsg("[ItemPicker Cache] Initialized for project: " .. current_project_guid .. "\n")
+  local entry_count = 0
+  for _ in pairs(current_cache) do
+    entry_count = entry_count + 1
+  end
+
+  reaper.ShowConsoleMsg(string.format("[ItemPicker Cache] Loaded %d cached entries for project\n", entry_count))
 
   return cache_dir
+end
+
+-- Pre-load disk cache into runtime cache (call on startup)
+-- This makes cached items instantly available without going through job queue
+function M.preload_to_runtime(runtime_cache)
+  if not current_cache or not runtime_cache then
+    return { loaded = 0, skipped = 0 }
+  end
+
+  local loaded = 0
+  local skipped = 0
+
+  for uuid, entry in pairs(current_cache) do
+    -- Load waveforms
+    if entry.waveform then
+      if not runtime_cache.waveforms then
+        runtime_cache.waveforms = {}
+      end
+      runtime_cache.waveforms[uuid] = entry.waveform
+      loaded = loaded + 1
+    end
+
+    -- Load MIDI thumbnails
+    if entry.midi_thumbnail then
+      if not runtime_cache.midi_thumbnails then
+        runtime_cache.midi_thumbnails = {}
+      end
+      runtime_cache.midi_thumbnails[uuid] = entry.midi_thumbnail
+      loaded = loaded + 1
+    end
+  end
+
+  return { loaded = loaded, skipped = skipped }
 end
 
 -- Load waveform from cache

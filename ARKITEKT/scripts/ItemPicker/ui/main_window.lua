@@ -47,7 +47,14 @@ function GUI:initialize_once(ctx)
 
   -- Initialize disk cache for waveform/thumbnail persistence
   local disk_cache = require('ItemPicker.data.disk_cache')
-  disk_cache.init()
+  local cache_dir = disk_cache.init()
+
+  -- Pre-load disk cache into runtime cache for instant access
+  -- This prevents items from being queued if they're already cached
+  local stats = disk_cache.preload_to_runtime(self.state.runtime_cache)
+  if stats and stats.loaded > 0 then
+    reaper.ShowConsoleMsg(string.format("[ItemPicker] Loaded %d cached items from disk\n", stats.loaded))
+  end
 
   -- Initialize job queue for lazy waveform/thumbnail generation
   if not self.state.job_queue then

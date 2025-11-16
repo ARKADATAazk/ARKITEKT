@@ -2,6 +2,8 @@ local M = {}
 local utils
 
 -- Generate stable UUID from item GUID (for cache consistency)
+local warned_about_sws = false
+
 local function get_item_uuid(item)
   -- Use REAPER's built-in item GUID for stable identification
   local guid = reaper.BR_GetMediaItemGUID(item)
@@ -10,6 +12,11 @@ local function get_item_uuid(item)
   end
 
   -- Fallback: generate hash from item properties (shouldn't happen with SWS installed)
+  if not warned_about_sws then
+    reaper.ShowConsoleMsg("[ItemPicker] WARNING: BR_GetMediaItemGUID failed - install SWS extension for stable cache!\n")
+    warned_about_sws = true
+  end
+
   local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
   local length = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
   local track = reaper.GetMediaItem_Track(item)
