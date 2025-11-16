@@ -150,25 +150,11 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
     local picker_x = cursor_x + self.container_config.padding
     local picker_y = cursor_y + height - picker_size - self.container_config.padding
 
-    -- Create a transparent overlay window on top to hold the picker
-    ImGui.SetNextWindowPos(ctx, picker_x, picker_y)
-    ImGui.SetNextWindowSize(ctx, picker_size, picker_size)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
-    ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, 0x00000000) -- Transparent background
+    ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
 
-    local window_flags = ImGui.WindowFlags_NoDecoration |
-                        ImGui.WindowFlags_NoSavedSettings |
-                        ImGui.WindowFlags_NoMove |
-                        ImGui.WindowFlags_NoScrollbar |
-                        ImGui.WindowFlags_NoScrollWithMouse
-
-    ImGui.SetNextWindowBgAlpha(ctx, 0.0)
-    if ImGui.Begin(ctx, "##ActiveColorPickerOverlay", true, window_flags) then
-      ImGui.SetWindowFocus(ctx)
-      ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
-        size = picker_size,
-        on_change = function(color)
+    ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
+      size = picker_size,
+      on_change = function(color)
           -- Batch apply color to all selected regions/playlists
           if self.active_grid and self.active_grid.selection and self.controller then
             local selected_keys = self.active_grid.selection:selected_keys()
@@ -203,12 +189,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
         on_close = function()
           self._active_color_picker_visible = false
         end,
-      })
-      ImGui.End(ctx)
-    end
-
-    ImGui.PopStyleColor(ctx, 1)
-    ImGui.PopStyleVar(ctx, 2)
+    })
   end
 
   -- Actions context menu
@@ -378,25 +359,11 @@ function M.draw_pool(self, ctx, regions, height)
     local picker_x = cursor_x + self.container_config.padding
     local picker_y = cursor_y + height - picker_size - self.container_config.padding
 
-    -- Create a transparent overlay window on top to hold the picker
-    ImGui.SetNextWindowPos(ctx, picker_x, picker_y)
-    ImGui.SetNextWindowSize(ctx, picker_size, picker_size)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
-    ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, 0x00000000) -- Transparent background
+    ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
 
-    local window_flags = ImGui.WindowFlags_NoDecoration |
-                        ImGui.WindowFlags_NoSavedSettings |
-                        ImGui.WindowFlags_NoMove |
-                        ImGui.WindowFlags_NoScrollbar |
-                        ImGui.WindowFlags_NoScrollWithMouse
-
-    ImGui.SetNextWindowBgAlpha(ctx, 0.0)
-    if ImGui.Begin(ctx, "##PoolColorPickerOverlay", true, window_flags) then
-      ImGui.SetWindowFocus(ctx)
-      ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
-        size = picker_size,
-        on_change = function(color)
+    ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
+      size = picker_size,
+      on_change = function(color)
           -- Batch apply color to all selected regions/playlists
           if self.pool_grid and self.pool_grid.selection and self.controller then
             local selected_keys = self.pool_grid.selection:selected_keys()
@@ -431,12 +398,7 @@ function M.draw_pool(self, ctx, regions, height)
         on_close = function()
           self._pool_color_picker_visible = false
         end,
-      })
-      ImGui.End(ctx)
-    end
-
-    ImGui.PopStyleColor(ctx, 1)
-    ImGui.PopStyleVar(ctx, 2)
+    })
   end
 
   -- Pool Actions context menu
