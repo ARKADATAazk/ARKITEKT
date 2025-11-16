@@ -27,10 +27,29 @@ local function get_project_length(proj)
   return length
 end
 
-local function copy_region_content(proj, region_start, region_end, target_position)
+local function copy_region_content(proj, region_start, region_end, target_position, region_name, region_color)
   proj = proj or 0
   local new_items = {}
   local time_offset = target_position - region_start
+  local region_length = region_end - region_start
+
+  -- Create the region marker at the target position
+  if region_name then
+    local new_region_start = target_position
+    local new_region_end = target_position + region_length
+
+    -- Convert RGBA color to native REAPER color if needed
+    local native_color = 0
+    if region_color then
+      local r = (region_color >> 24) & 0xFF
+      local g = (region_color >> 16) & 0xFF
+      local b = (region_color >> 8) & 0xFF
+      native_color = reaper.ColorToNative(r, g, b) | 0x1000000
+    end
+
+    reaper.AddProjectMarker2(proj, true, new_region_start, new_region_end, region_name, -1, native_color)
+    reaper.ShowConsoleMsg("[RegionOps] Created region marker: " .. region_name .. " at " .. tostring(new_region_start) .. " - " .. tostring(new_region_end) .. "\n")
+  end
 
   -- Copy all items in the region
   for i = 0, reaper.CountMediaItems(proj) - 1 do
@@ -171,7 +190,7 @@ function M.append_regions_to_project(rids)
   -- Copy each region to the end
   for _, region in ipairs(regions_data) do
     reaper.ShowConsoleMsg("[RegionOps] Copying region to position " .. tostring(current_position) .. "\n")
-    copy_region_content(proj, region.start, region["end"], current_position)
+    copy_region_content(proj, region.start, region["end"], current_position, region.name, region.color)
     current_position = current_position + (region["end"] - region.start) + gap
   end
 
@@ -216,7 +235,7 @@ function M.paste_regions_at_cursor(rids)
 
   -- Copy each region to cursor
   for _, region in ipairs(regions_data) do
-    copy_region_content(proj, region.start, region["end"], current_position)
+    copy_region_content(proj, region.start, region["end"], current_position, region.name, region.color)
     current_position = current_position + (region["end"] - region.start) + gap
   end
 
