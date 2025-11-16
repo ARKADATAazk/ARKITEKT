@@ -167,12 +167,15 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
             local playlist_ids = {}
 
             for _, key in ipairs(selected_keys) do
+              reaper.ShowConsoleMsg("[Active Picker] Key: " .. tostring(key) .. "\n")
               local rid = key:match("^active_(%d+)$")
               if rid then
+                reaper.ShowConsoleMsg("[Active Picker] Matched RID: " .. tostring(rid) .. "\n")
                 table.insert(rids, tonumber(rid))
               end
               local playlist_id = key:match("^active_playlist_(.+)$")
               if playlist_id then
+                reaper.ShowConsoleMsg("[Active Picker] Matched playlist: " .. tostring(playlist_id) .. "\n")
                 table.insert(playlist_ids, playlist_id)
               end
             end
@@ -387,20 +390,23 @@ function M.draw_pool(self, ctx, regions, height)
         size = picker_size,
         on_change = function(color)
           reaper.ShowConsoleMsg("[Pool Picker] on_change called with color: " .. tostring(color) .. "\n")
-          -- Recolor Pool selections
-          if self.pool_grid and self.pool_grid.selection and self.controller then
-            local selected_keys = self.pool_grid.selection:selected_keys()
-            reaper.ShowConsoleMsg("[Pool Picker] Pool selected keys: " .. #selected_keys .. "\n")
+          -- Recolor Active grid selections
+          if self.active_grid and self.active_grid.selection and self.controller then
+            local selected_keys = self.active_grid.selection:selected_keys()
+            reaper.ShowConsoleMsg("[Pool Picker] Active selected keys: " .. #selected_keys .. "\n")
             local rids = {}
             local playlist_ids = {}
 
             for _, key in ipairs(selected_keys) do
-              local rid = key:match("^pool_(%d+)$")
+              reaper.ShowConsoleMsg("[Pool Picker] Key: " .. tostring(key) .. "\n")
+              local rid = key:match("^active_(%d+)$")
               if rid then
+                reaper.ShowConsoleMsg("[Pool Picker] Matched RID: " .. tostring(rid) .. "\n")
                 table.insert(rids, tonumber(rid))
               end
-              local playlist_id = key:match("^pool_playlist_(.+)$")
+              local playlist_id = key:match("^active_playlist_(.+)$")
               if playlist_id then
+                reaper.ShowConsoleMsg("[Pool Picker] Matched playlist: " .. tostring(playlist_id) .. "\n")
                 table.insert(playlist_ids, playlist_id)
               end
             end
@@ -450,12 +456,12 @@ function M.draw_pool(self, ctx, regions, height)
       if self._pool_color_picker_visible then
         self._pool_color_picker_visible = false
       else
-        -- Get first selected item's color from Pool as initial color
+        -- Get first selected item's color from Active grid as initial color
         local initial_color = nil
-        if self.pool_grid and self.pool_grid.selection then
-          local selected_keys = self.pool_grid.selection:selected_keys()
+        if self.active_grid and self.active_grid.selection then
+          local selected_keys = self.active_grid.selection:selected_keys()
           for _, key in ipairs(selected_keys) do
-            local rid = key:match("^pool_(%d+)$")
+            local rid = key:match("^active_(%d+)$")
             if rid then
               local region = State.get_region_by_rid(tonumber(rid))
               if region and region.color then
