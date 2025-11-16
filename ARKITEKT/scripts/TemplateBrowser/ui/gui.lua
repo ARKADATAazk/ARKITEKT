@@ -58,7 +58,6 @@ local function draw_folder_node(ctx, node, state, config)
   -- Use path as ID, display name as label
   ImGui.PushID(ctx, unique_id)
   local node_open = ImGui.TreeNodeEx(ctx, node.name, flags)
-  ImGui.PopID(ctx)
 
   -- Check for click
   if ImGui.IsItemClicked(ctx) then
@@ -74,6 +73,8 @@ local function draw_folder_node(ctx, node, state, config)
     end
     ImGui.TreePop(ctx)
   end
+
+  ImGui.PopID(ctx)
 end
 
 -- Draw folder panel (left)
