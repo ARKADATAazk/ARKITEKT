@@ -145,10 +145,10 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
 
   -- Inline Color Picker (renders on top at bottom-left if visible)
   if self._active_color_picker_visible then
-    local picker_size = 130
+    local picker_size = 195  -- 50% larger (130 * 1.5)
     -- Position at bottom-left corner of active container
     local picker_x = cursor_x + self.container_config.padding
-    local picker_y = cursor_y + height - picker_size - self.container_config.padding - 10
+    local picker_y = cursor_y + height - picker_size - self.container_config.padding + 60  -- Moved down 70px
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
 
@@ -358,10 +358,10 @@ function M.draw_pool(self, ctx, regions, height)
 
   -- Inline Color Picker (renders on top at bottom-left if visible)
   if self._pool_color_picker_visible then
-    local picker_size = 130
+    local picker_size = 195  -- 50% larger (130 * 1.5)
     -- Position at bottom-left corner of pool container
     local picker_x = cursor_x + self.container_config.padding
-    local picker_y = cursor_y + height - picker_size - self.container_config.padding - 10
+    local picker_y = cursor_y + height - picker_size - self.container_config.padding + 60  -- Moved down 70px
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
 

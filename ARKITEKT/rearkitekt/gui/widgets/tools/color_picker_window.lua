@@ -218,8 +218,10 @@ function M.render_inline(ctx, id, config)
   local changed = false
 
   -- Compact inline picker - just the color wheel, no extras
+  -- Style with black borders on triangle
   ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#000000FF"))
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameBorderSize, 1)
+  ImGui.PushStyleColor(ctx, ImGui.Col_BorderShadow, hexrgb("#000000FF"))
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameBorderSize, 2)  -- Thicker border
 
   local picker_flags = ImGui.ColorEditFlags_PickerHueWheel |
                        ImGui.ColorEditFlags_NoSidePreview |
@@ -235,7 +237,7 @@ function M.render_inline(ctx, id, config)
   local rv, new_argb_color = ImGui.ColorPicker4(ctx, '##picker_inline_' .. id, argb_color, picker_flags)
 
   ImGui.PopStyleVar(ctx, 1)
-  ImGui.PopStyleColor(ctx, 1)
+  ImGui.PopStyleColor(ctx, 2)
 
   -- Track color changes during dragging, but only apply on mouse release
   if rv then
