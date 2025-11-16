@@ -147,15 +147,17 @@ end
 
 function AssemblerView:create_package_model()
   local State = self.State
+  local settings = self.settings
 
-  return {
+  -- Create a tile size proxy that syncs with State
+  local tile_size = { value = State.get_tile_size() }
+  local model = {
     -- Properties
     index = State.get_packages(),  -- All packages (required by grid)
     active = State.get_active_packages(),
     order = State.get_package_order(),
     excl = {},  -- TODO: Load from state
     pins = {},  -- TODO: Load from state
-    tile = State.get_tile_size(),
     demo = State.get_demo_mode(),
     search = State.get_search_text(),
     filters = State.get_filters(),
@@ -192,7 +194,32 @@ function AssemblerView:create_package_model()
       local order = State.get_package_order()
       return PackageManager.detect_conflicts(packages, active, order)
     end,
+
+    update_tile_size = function(self, new_size)
+      tile_size.value = new_size
+      State.set_tile_size(new_size)
+    end,
   }
+
+  -- Set up metatable to intercept tile property access
+  local mt = {
+    __index = function(t, k)
+      if k == "tile" then
+        return tile_size.value
+      end
+      return rawget(model, k)
+    end,
+    __newindex = function(t, k, v)
+      if k == "tile" then
+        tile_size.value = v
+        State.set_tile_size(v)
+      else
+        rawset(model, k, v)
+      end
+    end
+  }
+
+  return setmetatable(model, mt)
 end
 
 function AssemblerView:update(dt)

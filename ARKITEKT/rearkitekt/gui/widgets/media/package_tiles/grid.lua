@@ -158,6 +158,19 @@ function M.create(pkg, settings, theme)
       
       drag_start = function(drag_ids)
       end,
+
+      wheel_adjust = function(keys, delta)
+        -- Adjust global tile size (CTRL+MouseWheel zoom)
+        local current_size = pkg.tile or 220
+        local step = 10  -- Size change per wheel notch
+        local new_size = current_size + (delta * step)
+
+        -- Clamp to reasonable bounds
+        new_size = math.max(120, math.min(400, new_size))
+
+        pkg.tile = new_size
+        if settings then settings:set('tile_size', new_size) end
+      end,
     },
     
     render_tile = function(ctx, rect, P, state)
