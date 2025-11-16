@@ -417,31 +417,30 @@ function Grid:draw(ctx)
   self.animator:handle_spawn(new_keys, self.rect_track)
   self.previous_item_keys = current_keys
 
+  -- Window movement detection: Only teleport if in a top-level window
+  -- Skip for child windows (like Panel content) to avoid false positives
+  local is_child_window = (ImGui.GetWindowFlags(ctx) & ImGui.WindowFlags_ChildWindow) ~= 0
+
   local wx, wy = ImGui.GetWindowPos(ctx)
   local window_moved = false
-  if self.last_window_pos then
-    -- Use threshold instead of exact match to avoid false positives from floating point
-    -- or child window position changes (scrolling, etc)
+
+  if not is_child_window and self.last_window_pos then
+    -- Only check for window movement in top-level windows
     local dx = math.abs(wx - self.last_window_pos[1])
     local dy = math.abs(wy - self.last_window_pos[2])
-    if dx > 2 or dy > 2 then  -- 2px threshold
+    if dx > 2 or dy > 2 then
       window_moved = true
-      -- Debug: Log window movement detection
-      if self.id == "pkg_grid" then
-        reaper.ShowConsoleMsg(string.format("[Grid] Window moved: dx=%.1f dy=%.1f\n", dx, dy))
-      end
     end
   end
   self.last_window_pos = {wx, wy}
 
   if window_moved then
+    -- Teleport tiles when top-level window is dragged (prevents animation lag)
     local rect_map = {}
     for i, item in ipairs(items) do rect_map[self.key(item)] = rects[i] end
-    if self.id == "pkg_grid" then
-      reaper.ShowConsoleMsg("[Grid] TELEPORTING all tiles (window moved)\n")
-    end
     self.rect_track:teleport_all(rect_map)
   else
+    -- Normal animation update
     self.rect_track:update()
   end
   
@@ -707,9 +706,6 @@ function Grid:draw(ctx)
         new_order[#new_order + 1] = filtered_order[i]
       end
 
-      if self.id == "pkg_grid" then
-        reaper.ShowConsoleMsg(string.format("[Grid] Calling reorder behavior (moved item to new position)\n"))
-      end
       self.behaviors.reorder(new_order)
     end
     
