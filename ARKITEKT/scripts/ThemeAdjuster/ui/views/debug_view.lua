@@ -266,7 +266,8 @@ function DebugView:draw_image_grid(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
   local cols = math.max(1, math.floor(avail_w / (cell + 12)))
 
-  local table_flags = ImGui.TableFlags_NoBordersInBody | ImGui.TableFlags_SizingStretchSame
+  -- Use simple table flags that are guaranteed to exist
+  local table_flags = 0  -- No special flags needed for simple grid
 
   if ImGui.BeginTable(ctx, 'debug_img_grid', cols, table_flags) then
     local a, b = self:get_page_bounds()
