@@ -20,7 +20,6 @@ function M.get_assembler_container_config(callbacks, filters)
         {
           id = "demo_toggle",
           type = "button",
-          align = "left",
           width = 60,
           spacing_before = 0,
           config = {
@@ -40,7 +39,6 @@ function M.get_assembler_container_config(callbacks, filters)
         {
           id = "search",
           type = "search_field",
-          align = "right",
           width = 200,
           spacing_before = 0,
           config = {
@@ -51,7 +49,6 @@ function M.get_assembler_container_config(callbacks, filters)
         {
           id = "filters",
           type = "dropdown_field",
-          align = "right",
           width = 80,
           spacing_before = 0,
           config = {

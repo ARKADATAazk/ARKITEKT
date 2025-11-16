@@ -88,11 +88,10 @@ function M.new(State, AppConfig, settings)
     bg_color = hexrgb("#1E1E1E"),
     border_color = hexrgb("#000000"),
     elements = {
-      -- Left: ZIP status
+      -- Left: ZIP status (flex to take remaining space)
       {
         id = "zip_status",
         type = "custom",
-        align = "left",
         flex = 1,
         spacing_before = 0,
         config = {
@@ -105,7 +104,6 @@ function M.new(State, AppConfig, settings)
       {
         id = "rebuild_cache",
         type = "button",
-        align = "right",
         width = 110,
         spacing_before = 0,
         config = {
