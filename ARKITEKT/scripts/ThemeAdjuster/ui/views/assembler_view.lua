@@ -9,6 +9,7 @@ local PackageManager = require('ThemeAdjuster.packages.manager')
 local Config = require('ThemeAdjuster.core.config')
 local Theme = require('ThemeAdjuster.core.theme')
 local Colors = require('rearkitekt.core.colors')
+local PackageModal = require('ThemeAdjuster.ui.views.package_modal')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -24,11 +25,15 @@ function M.new(State, AppConfig, settings)
     grid = nil,
     package_model = nil,
     theme_model = nil,
+    package_modal = nil,
 
     -- ZIP linking state
     selected_zip_index = 0,
     available_zips = {},
   }, AssemblerView)
+
+  -- Create package modal
+  self.package_modal = PackageModal.new(State, settings)
 
   -- Create package model (adapter for the grid)
   self.package_model = self:create_package_model()
@@ -131,6 +136,18 @@ function M.new(State, AppConfig, settings)
     settings,
     self.theme_model
   )
+
+  -- Override right-click behavior to open modal
+  self.grid.grid.config.behaviors.right_click = function(key, selected_keys)
+    -- Find the package data for this key
+    local packages = State.get_packages()
+    for _, pkg in ipairs(packages) do
+      if pkg.id == key then
+        self.package_modal:show(pkg)
+        break
+      end
+    end
+  end
 
   return self
 end
@@ -348,6 +365,11 @@ function AssemblerView:draw(ctx, shell_state)
     self.grid:draw(ctx)
   end
   self.container:end_draw(ctx)
+
+  -- Draw package modal (outside panel, as overlay)
+  if self.package_modal then
+    self.package_modal:draw(ctx)
+  end
 end
 
 return M
