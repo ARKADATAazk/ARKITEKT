@@ -84,33 +84,32 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
   -- Configure visual effects with diagonal stripes if template has color
   local fx_config = TileFXConfig.override({
-    fill = { opacity = 0.4, saturation = 0.6, brightness = 0.7 },
-    gradient = { intensity = 0.2, opacity = 0.6 },
-    specular = { strength = state.hover and 0.3 or 0.15, coverage = 0.3 },
-    inner_shadow = { strength = 0.25 },
-    border = {
-      saturation = 1.0,
-      brightness = 1.2,
-      opacity = 0.7,
-      thickness = 1.0,
-      glow_strength = 0.0,  -- No glow on border (using marching ants instead)
-      glow_layers = 0,
-    },
-    stripe = {
-      enabled = chip_color ~= nil,  -- Enable stripes if template has color
-      spacing = 10,
-      thickness = 4,
-      opacity = 0.04,
-    },
-    ants = {
-      enabled = state.selected,  -- Marching ants for selection
-      thickness = 2,
-      dash = 8,
-      gap = 6,
-      speed = 20,
-      inset = 0,
-      alpha = 0xFF,
-    },
+    fill_opacity = 0.4,
+    fill_saturation = 0.6,
+    fill_brightness = 0.7,
+    gradient_intensity = 0.2,
+    gradient_opacity = 0.6,
+    specular_strength = state.hover and 0.3 or 0.15,
+    specular_coverage = 0.3,
+    inner_shadow_strength = 0.25,
+    border_saturation = 1.0,
+    border_brightness = 1.2,
+    border_opacity = 0.7,
+    border_thickness = 1.0,
+    glow_strength = 0.0,  -- No glow (using marching ants instead)
+    glow_layers = 0,
+    stripe_enabled = chip_color ~= nil,  -- Enable stripes if template has color
+    stripe_spacing = 10,
+    stripe_thickness = 4,
+    stripe_opacity = 0.04,
+    ants_enabled = state.selected,  -- Marching ants for selection
+    ants_replace_border = true,
+    ants_thickness = 2,
+    ants_dash = 8,
+    ants_gap = 6,
+    ants_speed = 20,
+    ants_inset = 0,
+    ants_alpha = 0xFF,
     rounding = 6,
   })
 

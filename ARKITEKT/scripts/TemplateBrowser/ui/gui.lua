@@ -910,7 +910,7 @@ local function draw_template_panel(ctx, gui, width, height)
   ImGui.Text(ctx, "Size:")
   ImGui.SameLine(ctx)
   ImGui.SetNextItemWidth(ctx, 100)
-  local changed, new_width = ImGui.SliderInt(ctx, "##tilewidth", state.tile_width, 120, 320, "%d px")
+  local changed, new_width = ImGui.SliderInt(ctx, "##tilewidth", state.tile_width, 120, 600, "%d px")
   if changed then
     state.tile_width = new_width
   end
@@ -923,9 +923,11 @@ local function draw_template_panel(ctx, gui, width, height)
   -- Add dummy item to establish proper window boundaries after grid's SetCursorPos usage
   ImGui.Dummy(ctx, 0, 0)
 
-  -- Context menu with color picker (triggered by grid's on_context_menu)
+  -- Context menu with color picker (triggered by grid's right_click)
   if state.context_menu_template then
     ImGui.OpenPopup(ctx, "##template_color_picker")
+    -- Clear the trigger after opening to prevent repeated opens
+    state.context_menu_opening = true
   end
 
   if ImGui.BeginPopup(ctx, "##template_color_picker") then
@@ -963,6 +965,7 @@ local function draw_template_panel(ctx, gui, width, height)
             Persistence.save_metadata(state.metadata)
           end
           state.context_menu_template = nil
+          state.context_menu_opening = false
           ImGui.CloseCurrentPopup(ctx)
         end
 
@@ -997,19 +1000,25 @@ local function draw_template_panel(ctx, gui, width, height)
           Persistence.save_metadata(state.metadata)
         end
         state.context_menu_template = nil
+        state.context_menu_opening = false
         ImGui.CloseCurrentPopup(ctx)
       end
     end
 
     ImGui.EndPopup(ctx)
-  else
-    -- Clear context menu template when popup is closed
+  elseif not state.context_menu_opening then
+    -- Only clear if we're not in the process of opening
     state.context_menu_template = nil
+  end
+
+  -- Reset opening flag after first frame
+  if state.context_menu_opening and not state.context_menu_template then
+    state.context_menu_opening = false
   end
 
   -- Rename modal popup (for F2 or Ctrl+double-click)
   if state.renaming_item and state.renaming_type == "template" then
-    ImGui.OpenPopup(ctx, "##rename_template_modal")
+    ImGui.OpenPopup(ctx, "Rename Template")
   end
 
   if ImGui.BeginPopupModal(ctx, "Rename Template", nil, ImGui.WindowFlags_AlwaysAutoResize) then
