@@ -54,11 +54,12 @@ local function load_metadata()
 end
 
 local function img_flags_noerr()
-  return (type(ImGui.ImageFlags_NoErrors) == "function") and ImGui.ImageFlags_NoErrors or 0
+  -- In ImGui 0.10, flags are values not functions
+  return ImGui.ImageFlags_NoErrors or 0
 end
 
 local function create_image(path)
-  local ok, img = pcall(ImGui.CreateImage, path, img_flags_noerr)
+  local ok, img = pcall(ImGui.CreateImage, path, img_flags_noerr())
   if ok and img then return img end
   return nil
 end
