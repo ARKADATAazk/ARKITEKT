@@ -5,6 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local AssemblerView = require("ThemeAdjuster.ui.views.assembler_view")
 local GlobalView = require("ThemeAdjuster.ui.views.global_view")
+local TCPView = require("ThemeAdjuster.ui.views.tcp_view")
 local DebugView = require("ThemeAdjuster.ui.views.debug_view")
 
 local M = {}
@@ -18,6 +19,7 @@ function M.new(State, Config, settings)
     settings = settings,
     assembler_view = nil,
     global_view = nil,
+    tcp_view = nil,
     debug_view = nil,
   }, TabContent)
 
@@ -26,6 +28,9 @@ function M.new(State, Config, settings)
 
   -- Create global view (color controls)
   self.global_view = GlobalView.new(State, Config, settings)
+
+  -- Create TCP view (track control panel)
+  self.tcp_view = TCPView.new(State, Config, settings)
 
   -- Create debug view (theme info + image browser)
   self.debug_view = DebugView.new(State, Config, settings)
@@ -53,7 +58,9 @@ function TabContent:draw(ctx, tab_id, shell_state)
       self.global_view:draw(ctx, shell_state)
     end
   elseif tab_id == "TCP" then
-    ImGui.Text(ctx, "TCP tab - Coming soon")
+    if self.tcp_view then
+      self.tcp_view:draw(ctx, shell_state)
+    end
   elseif tab_id == "MCP" then
     ImGui.Text(ctx, "MCP tab - Coming soon")
   elseif tab_id == "COLORS" then
