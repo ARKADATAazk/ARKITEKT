@@ -95,7 +95,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   local child_h = (height - header_height) - (self.container_config.padding * 2)
 
   -- Reserve space for inline color picker if visible
-  local picker_height = 270  -- Height of color picker (approx 250px picker + padding)
+  local picker_height = 220  -- Reduced height for color picker
   local grid_h = child_h
   if self._active_color_picker_visible then
     grid_h = child_h - picker_height - 8  -- 8px spacing
@@ -155,32 +155,36 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
     ImGui.Separator(ctx)
     ImGui.Spacing(ctx)
 
-    -- Render inline color picker
-    ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
-      on_change = function(color)
-        -- Apply color to all selected regions/playlists
-        if self.active_grid and self.active_grid.selection and self.controller then
-          local selected_keys = self.active_grid.selection:selected_keys()
+    -- Wrap in a child region to ensure proper input handling
+    local child_flags = ImGui.ChildFlags_None
+    if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", 0, picker_height, child_flags) then
+      ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
+        on_change = function(color)
+          -- Apply color to all selected regions/playlists
+          if self.active_grid and self.active_grid.selection and self.controller then
+            local selected_keys = self.active_grid.selection:selected_keys()
 
-          for _, key in ipairs(selected_keys) do
-            -- Handle regions: "active_123"
-            local rid = key:match("^active_(%d+)$")
-            if rid then
-              self.controller:set_region_color(tonumber(rid), color)
-            end
+            for _, key in ipairs(selected_keys) do
+              -- Handle regions: "active_123"
+              local rid = key:match("^active_(%d+)$")
+              if rid then
+                self.controller:set_region_color(tonumber(rid), color)
+              end
 
-            -- Handle playlists: "active_playlist_abc-def"
-            local playlist_id = key:match("^active_playlist_(.+)$")
-            if playlist_id then
-              self.controller:set_playlist_color(playlist_id, color)
+              -- Handle playlists: "active_playlist_abc-def"
+              local playlist_id = key:match("^active_playlist_(.+)$")
+              if playlist_id then
+                self.controller:set_playlist_color(playlist_id, color)
+              end
             end
           end
-        end
-      end,
-      on_close = function()
-        self._active_color_picker_visible = false
-      end,
-    })
+        end,
+        on_close = function()
+          self._active_color_picker_visible = false
+        end,
+      })
+      ImGui.EndChild(ctx)
+    end
   end
 
   self.active_container:end_draw(ctx)
@@ -193,25 +197,30 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
 
   if ContextMenu.begin(ctx, "ActionsMenu") then
     if ContextMenu.item(ctx, "Recolor") then
-      -- Get first selected item's color as initial color
-      local initial_color = nil
-      if self.active_grid and self.active_grid.selection then
-        local selected_keys = self.active_grid.selection:selected_keys()
-        for _, key in ipairs(selected_keys) do
-          local rid = key:match("^active_(%d+)$")
-          if rid then
-            local region = State.get_region_by_rid(tonumber(rid))
-            if region and region.color then
-              initial_color = region.color
-              break
+      -- Toggle behavior: close if already open
+      if self._active_color_picker_visible then
+        self._active_color_picker_visible = false
+      else
+        -- Get first selected item's color as initial color
+        local initial_color = nil
+        if self.active_grid and self.active_grid.selection then
+          local selected_keys = self.active_grid.selection:selected_keys()
+          for _, key in ipairs(selected_keys) do
+            local rid = key:match("^active_(%d+)$")
+            if rid then
+              local region = State.get_region_by_rid(tonumber(rid))
+              if region and region.color then
+                initial_color = region.color
+                break
+              end
             end
           end
         end
-      end
 
-      -- Show inline color picker
-      self._active_color_picker_visible = true
-      ColorPickerWindow.show_inline("active_recolor_inline", initial_color)
+        -- Show inline color picker
+        self._active_color_picker_visible = true
+        ColorPickerWindow.show_inline("active_recolor_inline", initial_color)
+      end
       ImGui.CloseCurrentPopup(ctx)
     end
 
@@ -318,7 +327,7 @@ function M.draw_pool(self, ctx, regions, height)
   local child_h = (height - header_height) - (self.container_config.padding * 2)
 
   -- Reserve space for inline color picker if visible
-  local picker_height = 270  -- Height of color picker (approx 250px picker + padding)
+  local picker_height = 220  -- Reduced height for color picker
   local grid_h = child_h
   if self._pool_color_picker_visible then
     grid_h = child_h - picker_height - 8  -- 8px spacing
@@ -352,32 +361,36 @@ function M.draw_pool(self, ctx, regions, height)
     ImGui.Separator(ctx)
     ImGui.Spacing(ctx)
 
-    -- Render inline color picker
-    ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
-      on_change = function(color)
-        -- Apply color to all selected regions/playlists
-        if self.pool_grid and self.pool_grid.selection and self.controller then
-          local selected_keys = self.pool_grid.selection:selected_keys()
+    -- Wrap in a child region to ensure proper input handling
+    local child_flags = ImGui.ChildFlags_None
+    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", 0, picker_height, child_flags) then
+      ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
+        on_change = function(color)
+          -- Apply color to all selected regions/playlists
+          if self.pool_grid and self.pool_grid.selection and self.controller then
+            local selected_keys = self.pool_grid.selection:selected_keys()
 
-          for _, key in ipairs(selected_keys) do
-            -- Handle regions: "pool_123"
-            local rid = key:match("^pool_(%d+)$")
-            if rid then
-              self.controller:set_region_color(tonumber(rid), color)
-            end
+            for _, key in ipairs(selected_keys) do
+              -- Handle regions: "pool_123"
+              local rid = key:match("^pool_(%d+)$")
+              if rid then
+                self.controller:set_region_color(tonumber(rid), color)
+              end
 
-            -- Handle playlists: "pool_playlist_abc-def"
-            local playlist_id = key:match("^pool_playlist_(.+)$")
-            if playlist_id then
-              self.controller:set_playlist_color(playlist_id, color)
+              -- Handle playlists: "pool_playlist_abc-def"
+              local playlist_id = key:match("^pool_playlist_(.+)$")
+              if playlist_id then
+                self.controller:set_playlist_color(playlist_id, color)
+              end
             end
           end
-        end
-      end,
-      on_close = function()
-        self._pool_color_picker_visible = false
-      end,
-    })
+        end,
+        on_close = function()
+          self._pool_color_picker_visible = false
+        end,
+      })
+      ImGui.EndChild(ctx)
+    end
   end
 
   self.pool_container:end_draw(ctx)
@@ -390,25 +403,30 @@ function M.draw_pool(self, ctx, regions, height)
 
   if ContextMenu.begin(ctx, "PoolActionsMenu") then
     if ContextMenu.item(ctx, "Recolor") then
-      -- Get first selected item's color as initial color
-      local initial_color = nil
-      if self.pool_grid and self.pool_grid.selection then
-        local selected_keys = self.pool_grid.selection:selected_keys()
-        for _, key in ipairs(selected_keys) do
-          local rid = key:match("^pool_(%d+)$")
-          if rid then
-            local region = State.get_region_by_rid(tonumber(rid))
-            if region and region.color then
-              initial_color = region.color
-              break
+      -- Toggle behavior: close if already open
+      if self._pool_color_picker_visible then
+        self._pool_color_picker_visible = false
+      else
+        -- Get first selected item's color as initial color
+        local initial_color = nil
+        if self.pool_grid and self.pool_grid.selection then
+          local selected_keys = self.pool_grid.selection:selected_keys()
+          for _, key in ipairs(selected_keys) do
+            local rid = key:match("^pool_(%d+)$")
+            if rid then
+              local region = State.get_region_by_rid(tonumber(rid))
+              if region and region.color then
+                initial_color = region.color
+                break
+              end
             end
           end
         end
-      end
 
-      -- Show inline color picker instead of window
-      self._pool_color_picker_visible = true
-      ColorPickerWindow.show_inline("pool_recolor_inline", initial_color)
+        -- Show inline color picker
+        self._pool_color_picker_visible = true
+        ColorPickerWindow.show_inline("pool_recolor_inline", initial_color)
+      end
       ImGui.CloseCurrentPopup(ctx)
     end
 
