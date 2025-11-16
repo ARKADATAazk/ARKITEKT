@@ -155,6 +155,16 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Check if this tile is being renamed
   local is_renaming = state.rename_active and state.rename_uuid == item_data.uuid and state.rename_is_audio
 
+  if state.rename_active and item_data.uuid then
+    reaper.ShowConsoleMsg(string.format("[AUDIO RENDER] rename_active=%s rename_uuid=%s item_uuid=%s is_audio=%s is_renaming=%s cascade=%.2f\n",
+      tostring(state.rename_active),
+      tostring(state.rename_uuid),
+      tostring(item_data.uuid),
+      tostring(state.rename_is_audio),
+      tostring(is_renaming),
+      cascade_factor))
+  end
+
   -- Populate rename text if it's empty (happens when moving to next item in batch)
   if is_renaming and (not state.rename_text or state.rename_text == "") then
     state.rename_text = item_data.name
