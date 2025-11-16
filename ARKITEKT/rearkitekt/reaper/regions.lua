@@ -123,6 +123,9 @@ function M.set_region_color(proj, target_rid, rgba_color)
   local b = (rgba_color >> 8) & 0xFF
   reaper.ShowConsoleMsg(string.format("    -> RGBA(%d,%d,%d) -> native_color=%08X\n", r, g, b, native_color))
 
+  -- Begin undo block
+  reaper.Undo_BeginBlock()
+
   -- Update the region with new color using SetProjectMarker4
   -- Parameters: proj, index, isrgn, pos, rgnend, name, markrgnindexnumber, color, flags
   local success = reaper.SetProjectMarker4(
@@ -139,11 +142,17 @@ function M.set_region_color(proj, target_rid, rgba_color)
 
   reaper.ShowConsoleMsg(string.format("    -> SetProjectMarker4 returned: %s\n", tostring(success)))
 
+  -- Mark project as modified
+  reaper.MarkProjectDirty(proj)
+
+  -- End undo block
+  reaper.Undo_EndBlock("Change region color", -1)
+
   -- Force immediate visual update
   reaper.UpdateTimeline()
   reaper.UpdateArrange()
 
-  return true
+  return success
 end
 
 return M
