@@ -39,10 +39,20 @@ local function draw_folder_node(ctx, node, state, config)
   local is_selected = (state.selected_folder == node.path)
   local has_children = #node.children > 0
 
+  -- DEBUG: Check what node.name actually is
+  local name_str = tostring(node.name or "nil")
+  local name_type = type(node.name)
+
   -- Build unique label: "FolderName##unique_id"
   -- Sanitize path for use as ID (replace slashes)
   local safe_id = (node.path ~= "" and node.path or "root"):gsub("[/\\]", "_")
-  local label = node.name .. "##folder_" .. safe_id
+  local label = name_str .. "##folder_" .. safe_id
+
+  -- Debug first time only
+  if not _G.DEBUG_FOLDERS_PRINTED then
+    reaper.ShowConsoleMsg(string.format("DEBUG TreeNode: name='%s' (type=%s), path='%s', label='%s'\n",
+      name_str, name_type, node.path or "nil", label))
+  end
 
   -- Set up flags
   local flags = ImGui.TreeNodeFlags_OpenOnArrow
@@ -108,9 +118,11 @@ local function draw_folder_panel(ctx, state, config, width, height)
 
   -- Folder tree
   if state.folders and state.folders.children then
+    _G.DEBUG_FOLDERS_PRINTED = false  -- Reset debug flag
     for _, child in ipairs(state.folders.children) do
       draw_folder_node(ctx, child, state, config)
     end
+    _G.DEBUG_FOLDERS_PRINTED = true  -- Set flag after first frame
   end
 
   ImGui.EndChild(ctx)
