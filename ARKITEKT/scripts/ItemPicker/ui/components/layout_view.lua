@@ -12,7 +12,7 @@ local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 
 -- Debug module - with error handling
 local Debug = nil
-local debug_ok, debug_module = pcall(require, 'ItemPicker.debug_log')
+local debug_ok, debug_module = pcall(require, 'ItemPicker.utils.logger')
 if debug_ok then
   Debug = debug_module
   reaper.ShowConsoleMsg("=== ITEMPICKER DEBUG MODULE LOADED ===\n")

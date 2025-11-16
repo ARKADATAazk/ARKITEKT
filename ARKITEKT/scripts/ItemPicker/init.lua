@@ -3,24 +3,28 @@
 
 local M = {}
 
--- Module exports
+-- Core modules
 M.core = {}
 M.core.config = require('ItemPicker.core.config')
 M.core.app_state = require('ItemPicker.core.app_state')
 M.core.controller = require('ItemPicker.core.controller')
 
-M.domain = {}
-M.domain.visualization = require('ItemPicker.domain.visualization')
-M.domain.cache_manager = require('ItemPicker.domain.cache_manager')
-M.domain.reaper_interface = require('ItemPicker.domain.reaper_interface')
-M.domain.job_queue = require('ItemPicker.domain.job_queue')
-M.domain.utils = require('ItemPicker.domain.utils')
-M.domain.disabled_items = require('ItemPicker.domain.disabled_items')
+-- Data layer
+M.data = {}
+M.data.persistence = require('ItemPicker.data.persistence')
+M.data.reaper_api = require('ItemPicker.data.reaper_api')
+M.data.job_queue = require('ItemPicker.data.job_queue')
+M.data.loaders = {}
+M.data.loaders.cache_manager = require('ItemPicker.data.loaders.cache_manager')
+M.data.loaders.incremental_loader = require('ItemPicker.data.loaders.incremental_loader')
 
+-- Services
+M.services = {}
+M.services.visualization = require('ItemPicker.services.visualization')
+M.services.utils = require('ItemPicker.services.utils')
+
+-- UI modules
 M.ui = {}
-M.ui.gui = require('ItemPicker.ui.gui')
-
-M.storage = {}
-M.storage.persistence = require('ItemPicker.storage.persistence')
+M.ui.main_window = require('ItemPicker.ui.main_window')
 
 return M

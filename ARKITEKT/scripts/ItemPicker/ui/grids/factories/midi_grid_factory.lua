@@ -4,7 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
-local MidiRenderer = require('ItemPicker.ui.tiles.renderers.midi')
+local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
 
 local M = {}
 

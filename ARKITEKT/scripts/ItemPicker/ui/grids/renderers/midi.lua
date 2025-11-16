@@ -1,12 +1,12 @@
 -- @noindex
--- ItemPicker/ui/tiles/renderers/audio.lua
--- Audio tile renderer with waveform visualization
+-- ItemPicker/ui/tiles/renderers/midi.lua
+-- MIDI tile renderer with piano roll visualization
 
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
-local BaseRenderer = require('ItemPicker.ui.tiles.renderers.base')
+local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
 local Shapes = require('rearkitekt.gui.rendering.shapes')
 
 local M = {}
@@ -33,7 +33,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local scaled_y2 = center_y + scaled_h / 2 + y_offset
 
   -- Track animations
-  local is_disabled = state.disabled and state.disabled.audio and state.disabled.audio[item_data.filename]
+  local is_disabled = state.disabled and state.disabled.midi and state.disabled.midi[item_data.track_guid]
 
   if animator and item_data.key then
     animator:track(item_data.key, 'hover', tile_state.hover and 1.0 or 0.0, config.TILE_RENDER.animation_speed_hover)
@@ -145,7 +145,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   -- Check if item is favorited
-  local is_favorite = state.favorites and state.favorites.audio and state.favorites.audio[item_data.filename]
+  local is_favorite = state.favorites and state.favorites.midi and state.favorites.midi[item_data.track_guid]
 
   -- Calculate star badge space
   local star_badge_size = 18
@@ -153,7 +153,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local text_right_margin = is_favorite and (star_badge_size + star_padding * 2) or 0
 
   -- Check if this tile is being renamed
-  local is_renaming = state.rename_active and state.rename_uuid == item_data.uuid and state.rename_is_audio
+  local is_renaming = state.rename_active and state.rename_uuid == item_data.uuid and not state.rename_is_audio
 
   -- Populate rename text if it's empty (happens when moving to next item in batch)
   if is_renaming and (not state.rename_text or state.rename_text == "") then
@@ -191,8 +191,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       if changed then
         -- Get fresh item data from lookup
-        local lookup_data = state.audio_item_lookup[item_data.uuid]
+        local lookup_data = state.midi_item_lookup[item_data.uuid]
         if not lookup_data then
+          -- Fallback: try to use item_data.item directly
           lookup_data = item_data
         end
 
@@ -200,6 +201,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
         -- Validate item pointer
         if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+          reaper.ShowConsoleMsg("[RENAME ERROR] Invalid MediaItem pointer for UUID: " .. tostring(item_data.uuid) .. "\n")
           state.rename_active = false
           state.rename_uuid = nil
           state.rename_focused = false
@@ -218,18 +220,19 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
           reaper.GetSetMediaItemTakeInfo_String(take, "P_NAME", new_text, true)
 
           -- Update the name in the lookup immediately so tile reflects change
-          if state.audio_item_lookup[item_data.uuid] then
-            if type(state.audio_item_lookup[item_data.uuid]) == "table" then
-              state.audio_item_lookup[item_data.uuid][2] = new_text
+          if state.midi_item_lookup[item_data.uuid] then
+            -- Update array format: {item, name, track_muted, item_muted, uuid, pool_count}
+            if type(state.midi_item_lookup[item_data.uuid]) == "table" then
+              state.midi_item_lookup[item_data.uuid][2] = new_text
             end
           end
 
-          -- Also update in the samples array
-          if state.samples then
-            for filename, items_array in pairs(state.samples) do
+          -- Also update in the midi_items array
+          if state.midi_items then
+            for track_guid, items_array in pairs(state.midi_items) do
               for _, entry in ipairs(items_array) do
                 if entry.uuid == item_data.uuid then
-                  entry[2] = new_text
+                  entry[2] = new_text  -- Update name in array
                   break
                 end
               end
@@ -250,11 +253,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
           local next_uuid = state.rename_queue[state.rename_queue_index]
 
           -- Find the next item to rename
-          -- This will be picked up on next frame, need to get item name
-          -- For now, set to empty and let the next frame's double_click logic populate it
           state.rename_uuid = next_uuid
           state.rename_focused = false
-          state.rename_text = ""  -- Will be populated by factory on next frame
+          state.rename_text = ""  -- Will be populated on next frame
           state.rename_focus_frame = false
         else
           -- No more items in queue, end rename session
@@ -308,7 +309,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite)
   end
 
-  -- Render waveform (show even when disabled, just with toned down color)
+  -- Render MIDI visualization (show even when disabled, just with toned down color)
   if item_data.item and cascade_factor > 0.2 then
     local content_y1 = scaled_y1 + header_height
     local content_w = scaled_w
@@ -318,18 +319,21 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     ImGui.Dummy(ctx, content_w, content_h)
 
     local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config)
-    local waveform_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
-    dark_color = Colors.with_alpha(dark_color, math.floor(waveform_alpha * 255))
+    local midi_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
+    dark_color = Colors.with_alpha(dark_color, math.floor(midi_alpha * 255))
 
-    local waveform = cache_mgr and cache_mgr.get_waveform_data(state.cache, item_data.item, item_data.uuid)
-    if waveform then
-      if visualization.DisplayWaveformTransparent then
-        visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, content_w)
+    local thumbnail = cache_mgr and cache_mgr.get_midi_thumbnail(state.cache, item_data.item, content_w, content_h, item_data.uuid)
+    if thumbnail then
+      if visualization.DisplayMidiItemTransparent then
+        ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
+        ImGui.Dummy(ctx, content_w, content_h)
+        visualization.DisplayMidiItemTransparent(ctx, thumbnail, dark_color, dl)
       end
     else
+      -- Thumbnail not cached, show placeholder and queue generation
       BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
-      if state.job_queue and state.job_queue.add_waveform_job then
-        state.job_queue.add_waveform_job(state.cache, item_data.item, item_data.uuid)
+      if state.job_queue and state.job_queue.add_midi_job then
+        state.job_queue.add_midi_job(state.cache, item_data.item, content_w, content_h, item_data.uuid)
       end
     end
   end

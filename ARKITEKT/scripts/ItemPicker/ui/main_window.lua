@@ -3,8 +3,8 @@
 -- GUI orchestrator
 
 local ImGui = require 'imgui' '0.10'
-local Coordinator = require('ItemPicker.ui.tiles.coordinator')
-local LayoutView = require('ItemPicker.ui.views.layout_view')
+local Coordinator = require('ItemPicker.ui.grids.coordinator')
+local LayoutView = require('ItemPicker.ui.components.layout_view')
 
 local M = {}
 local GUI = {}
@@ -44,7 +44,7 @@ function GUI:initialize_once(ctx)
   end
 
   if not self.state.job_queue then
-    local job_queue_module = require('ItemPicker.domain.job_queue')
+    local job_queue_module = require('ItemPicker.data.job_queue')
     -- Start with burst mode: 10 jobs/frame during initial load
     self.state.job_queue = job_queue_module.new(10)
   end
@@ -171,7 +171,7 @@ function GUI:start_incremental_loading()
     end
 
     reaper.ShowConsoleMsg("Using incremental loader (50 items/frame)\n")
-    local IncrementalLoader = require('ItemPicker.domain.incremental_loader')
+    local IncrementalLoader = require('ItemPicker.data.loaders.incremental_loader')
     self.incremental_loader = IncrementalLoader.new(self.controller.reaper_interface, 50)
     IncrementalLoader.start_loading(self.incremental_loader, self.state, self.state.settings)
     self.loading_started = true
@@ -182,7 +182,7 @@ end
 function GUI:process_incremental_loading()
   if self.data_loaded or not self.incremental_loader then return end
 
-  local IncrementalLoader = require('ItemPicker.domain.incremental_loader')
+  local IncrementalLoader = require('ItemPicker.data.loaders.incremental_loader')
   local is_complete, progress = IncrementalLoader.process_batch(self.incremental_loader, self.state, self.state.settings)
 
   -- Update state with current results (even if not complete)
@@ -255,7 +255,7 @@ function GUI:draw(ctx, shell_state)
 
   -- Process async jobs (max 1 per frame for smooth FPS)
   if self.state.job_queue then
-    local job_queue_module = require('ItemPicker.domain.job_queue')
+    local job_queue_module = require('ItemPicker.data.job_queue')
     job_queue_module.process_jobs(
       self.state.job_queue,
       self.visualization,
