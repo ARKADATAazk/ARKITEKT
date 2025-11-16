@@ -724,13 +724,21 @@ function Panel:end_draw(ctx)
     end
   end
 
-  -- Draw corner buttons on foreground drawlist (above tiles, below popups)
-  -- Using foreground drawlist ensures proper z-order: tiles < buttons < context menus/popups
+  -- CRITICAL: Corner button z-order fix
+  -- Corner buttons must render: above tiles < below popups
+  -- Solution: Draw on window drawlist AFTER child, then let popups naturally render on top
+  -- Note: We're outside the child window here, so popups will render above us
   if self._corner_button_bounds then
     local header_cfg = self.config.header
     if not header_cfg.enabled or self.config.corner_buttons_always_visible then
-      local dl = ImGui.GetForegroundDrawList(ctx)
+      -- Get window drawlist (parent window, after child has ended)
+      -- Child window content was already submitted
+      -- Corner buttons draw now on parent
+      -- Popups will draw after in their own windows
+      local dl = ImGui.GetWindowDrawList(ctx)
       local x1, y1, w, h = table.unpack(self._corner_button_bounds)
+
+      -- Draw buttons visually on parent window drawlist
       draw_corner_buttons_foreground(ctx, dl, x1, y1, w, h, self.config, self.id, self.config.rounding)
     end
   end
