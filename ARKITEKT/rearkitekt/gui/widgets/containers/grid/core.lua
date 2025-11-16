@@ -341,27 +341,34 @@ function Grid:draw(ctx)
   local extended_y = origin_y - ext.top
 
   if num_items == 0 then
+    -- CRITICAL: Update animations even when grid is empty
+    -- so destruction animations can complete properly
+    self.animator:update(0.016)
+
     local extended_w = avail_w + ext.left + ext.right
     local extended_h = avail_h + ext.top + ext.bottom
-    
+
     if self.panel_clip_bounds then
       self.visual_bounds = self.panel_clip_bounds
     else
       self.visual_bounds = {origin_x, origin_y, origin_x + avail_w, origin_y + avail_h}
     end
-    
+
     self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
 
     ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
     ImGui.InvisibleButton(ctx, self._cached_empty_id, extended_w, extended_h)
     ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
-    
+
+    -- Render destruction animations even when grid is empty
+    local dl = ImGui.GetWindowDrawList(ctx)
+    self.animator:render_destroy_effects(ctx, dl)
+
     self:_update_external_drop_target(ctx)
-    
+
     if Input.is_external_drag_active(self) then
-      local dl = ImGui.GetWindowDrawList(ctx)
       self:_draw_external_drop_visuals(ctx, dl)
-      
+
       if self.accept_external_drops and ImGui.IsMouseReleased(ctx, 0) then
         if self.external_drop_target and self.on_external_drop then
           self.on_external_drop(self.external_drop_target.index)
@@ -369,7 +376,7 @@ function Grid:draw(ctx)
         self.external_drop_target = nil
       end
     end
-    
+
     return
   end
 
