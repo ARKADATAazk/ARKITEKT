@@ -420,16 +420,8 @@ function Grid:draw(ctx)
   local wx, wy = ImGui.GetWindowPos(ctx)
   local window_moved = false
   if self.last_window_pos then
-    -- Use threshold instead of exact match to avoid false positives from floating point
-    -- or child window position changes (scrolling, etc)
-    local dx = math.abs(wx - self.last_window_pos[1])
-    local dy = math.abs(wy - self.last_window_pos[2])
-    if dx > 2 or dy > 2 then  -- 2px threshold
+    if wx ~= self.last_window_pos[1] or wy ~= self.last_window_pos[2] then
       window_moved = true
-      -- Debug: Log window movement detection
-      if self.id == "pkg_grid" then
-        reaper.ShowConsoleMsg(string.format("[Grid] Window moved: dx=%.1f dy=%.1f\n", dx, dy))
-      end
     end
   end
   self.last_window_pos = {wx, wy}
@@ -437,9 +429,6 @@ function Grid:draw(ctx)
   if window_moved then
     local rect_map = {}
     for i, item in ipairs(items) do rect_map[self.key(item)] = rects[i] end
-    if self.id == "pkg_grid" then
-      reaper.ShowConsoleMsg("[Grid] TELEPORTING all tiles (window moved)\n")
-    end
     self.rect_track:teleport_all(rect_map)
   else
     self.rect_track:update()
@@ -707,9 +696,6 @@ function Grid:draw(ctx)
         new_order[#new_order + 1] = filtered_order[i]
       end
 
-      if self.id == "pkg_grid" then
-        reaper.ShowConsoleMsg(string.format("[Grid] Calling reorder behavior (moved item to new position)\n"))
-      end
       self.behaviors.reorder(new_order)
     end
     

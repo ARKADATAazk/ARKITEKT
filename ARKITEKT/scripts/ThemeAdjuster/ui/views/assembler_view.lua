@@ -229,7 +229,20 @@ function AssemblerView:create_package_model()
       local packages = State.get_packages()
       local search = State.get_search_text()
       local filters = State.get_filters()
-      return PackageManager.filter_packages(packages, search, filters)
+      local filtered = PackageManager.filter_packages(packages, search, filters)
+
+      -- Sort by order array (for drag/drop reordering)
+      local order = State.get_package_order()
+      table.sort(filtered, function(a, b)
+        local idx_a, idx_b = 999, 999
+        for i, id in ipairs(order) do
+          if id == a.id then idx_a = i end
+          if id == b.id then idx_b = i end
+        end
+        return idx_a < idx_b
+      end)
+
+      return filtered
     end,
 
     conflicts = function(self, compute)
