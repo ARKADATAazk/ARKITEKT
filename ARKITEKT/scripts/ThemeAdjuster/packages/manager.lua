@@ -4,6 +4,9 @@
 
 local M = {}
 
+-- Platform path separator
+local SEP = package.config:sub(1,1)
+
 -- ============================================================================
 -- DEMO DATA GENERATOR
 -- ============================================================================
@@ -88,7 +91,7 @@ local function scan_package_folder(package_path, package_id)
   }
 
   -- Try to load manifest.json (optional)
-  local manifest_path = package_path .. "/manifest.json"
+  local manifest_path = package_path .. SEP .. "manifest.json"
   local manifest_file = io.open(manifest_path, "r")
   if manifest_file then
     local content = manifest_file:read("*all")
@@ -125,7 +128,7 @@ local function scan_package_folder(package_path, package_id)
 
         -- Add to assets
         package.assets[key] = {
-          path = package_path .. "/" .. file,
+          path = package_path .. SEP .. file,
           is_strip = false,  -- TODO: Detect multi-frame strips
         }
 
@@ -159,7 +162,7 @@ function M.scan_packages(theme_root, demo_mode)
     return {}
   end
 
-  local packages_path = theme_root .. "/Assembler/Packages"
+  local packages_path = theme_root .. SEP .. "Assembler" .. SEP .. "Packages"
   local packages = {}
 
   -- Check if Packages directory exists
@@ -174,7 +177,7 @@ function M.scan_packages(theme_root, demo_mode)
   repeat
     local folder = reaper.EnumerateSubdirectories(packages_path, i)
     if folder then
-      local package_path = packages_path .. "/" .. folder
+      local package_path = packages_path .. SEP .. folder
       local package, has_assets = scan_package_folder(package_path, folder)
 
       if has_assets then

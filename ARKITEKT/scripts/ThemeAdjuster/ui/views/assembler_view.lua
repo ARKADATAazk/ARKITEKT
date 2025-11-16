@@ -381,18 +381,19 @@ end
 function AssemblerView:draw(ctx, shell_state)
   local visible_packages = self.package_model:visible()
 
-  if #visible_packages == 0 then
-    ImGui.Text(ctx, 'No packages found.')
-    if not self.State.get_demo_mode() then
-      ImGui.BulletText(ctx, 'Enable "Demo Mode" to preview the interface.')
-    end
-    return
-  end
-
-  -- Begin container (Panel)
+  -- Begin container (Panel) - always draw to show header/footer
   if self.container:begin_draw(ctx) then
-    -- Draw grid inside container
-    self.grid:draw(ctx)
+    -- Draw content inside container
+    if #visible_packages == 0 then
+      -- Show empty state message
+      ImGui.Text(ctx, 'No packages found.')
+      if not self.State.get_demo_mode() then
+        ImGui.BulletText(ctx, 'Enable "Demo Mode" to preview the interface.')
+      end
+    else
+      -- Draw grid
+      self.grid:draw(ctx)
+    end
   end
   self.container:end_draw(ctx)
 
