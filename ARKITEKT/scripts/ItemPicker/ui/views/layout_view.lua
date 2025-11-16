@@ -7,6 +7,7 @@ local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
 local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local DraggableSeparator = require('rearkitekt.gui.widgets.primitives.separator')
 local StatusBar = require('ItemPicker.ui.views.status_bar')
+local Colors = require('rearkitekt.core.colors')
 
 -- Debug module - with error handling
 local Debug = nil
@@ -42,6 +43,22 @@ end
 local function smootherstep(t)
   t = math.max(0.0, math.min(1.0, t))
   return t * t * t * (t * (t * 6 - 15) + 10)
+end
+
+-- Draw a panel background and border
+local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
+  alpha = alpha or 1.0
+  rounding = rounding or 6
+
+  -- Panel background
+  local bg_color = Colors.hexrgb("#0F0F0F")
+  bg_color = Colors.with_alpha(bg_color, math.floor(alpha * 0xFF))
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, rounding)
+
+  -- Panel border
+  local border_color = Colors.hexrgb("#1A1A1A")
+  border_color = Colors.with_alpha(border_color, math.floor(alpha * 0xFF))
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
 end
 
 function LayoutView:handle_shortcuts(ctx)
@@ -246,38 +263,64 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local min = math.min
 
   if view_mode == "MIDI" then
-    -- MIDI only - use full content height
+    -- MIDI only - use full content height with panel
+    local panel_padding = 4
+    local panel_rounding = 6
+    local panel_x1 = start_x
+    local panel_y1 = start_y
+    local panel_x2 = start_x + content_width
+    local panel_y2 = start_y + header_height + content_height
+
+    -- Draw panel background
+    draw_panel(draw_list, panel_x1, panel_y1, panel_x2, panel_y2, panel_rounding, section_fade)
+
+    -- MIDI header
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
-    ImGui.SetCursorScreenPos(ctx, start_x, start_y)
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + panel_padding)
     ImGui.PushFont(ctx, title_font, 14)
     ImGui.Text(ctx, "MIDI Tracks")
     ImGui.PopFont(ctx)
     ImGui.PopStyleVar(ctx)
 
-    local midi_height = content_height
-    ImGui.SetCursorScreenPos(ctx, start_x, start_y + header_height)
+    -- MIDI grid
+    local midi_content_y = start_y + header_height
+    local midi_content_h = content_height - panel_padding
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, midi_content_y)
 
-    if ImGui.BeginChild(ctx, "midi_container", content_width, midi_height, 0,
+    if ImGui.BeginChild(ctx, "midi_container", content_width - panel_padding * 2, midi_content_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
-      self.coordinator:render_midi_grid(ctx, content_width, midi_height)
+      self.coordinator:render_midi_grid(ctx, content_width - panel_padding * 2, midi_content_h)
       ImGui.EndChild(ctx)
     end
 
   elseif view_mode == "AUDIO" then
-    -- Audio only - use full content height
+    -- Audio only - use full content height with panel
+    local panel_padding = 4
+    local panel_rounding = 6
+    local panel_x1 = start_x
+    local panel_y1 = start_y
+    local panel_x2 = start_x + content_width
+    local panel_y2 = start_y + header_height + content_height
+
+    -- Draw panel background
+    draw_panel(draw_list, panel_x1, panel_y1, panel_x2, panel_y2, panel_rounding, section_fade)
+
+    -- Audio header
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
-    ImGui.SetCursorScreenPos(ctx, start_x, start_y)
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + panel_padding)
     ImGui.PushFont(ctx, title_font, 15)
     ImGui.Text(ctx, "Audio Sources")
     ImGui.PopFont(ctx)
     ImGui.PopStyleVar(ctx)
 
-    local audio_height = content_height
-    ImGui.SetCursorScreenPos(ctx, start_x, start_y + header_height)
+    -- Audio grid
+    local audio_content_y = start_y + header_height
+    local audio_content_h = content_height - panel_padding
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_content_y)
 
-    if ImGui.BeginChild(ctx, "audio_container", content_width, audio_height, 0,
+    if ImGui.BeginChild(ctx, "audio_container", content_width - panel_padding * 2, audio_content_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
-      self.coordinator:render_audio_grid(ctx, content_width, audio_height)
+      self.coordinator:render_audio_grid(ctx, content_width - panel_padding * 2, audio_content_h)
       ImGui.EndChild(ctx)
     end
 
@@ -319,23 +362,37 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
                       my >= sep_y - sep_thickness/2 and my < sep_y + sep_thickness/2)
     local block_input = self.separator:is_dragging() or (over_sep and ImGui.IsMouseDown(ctx, 0))
 
-    -- MIDI section
+    -- MIDI section with panel
+    local panel_padding = 4
+    local panel_rounding = 6
+    local midi_panel_x1 = start_x
+    local midi_panel_y1 = start_y
+    local midi_panel_x2 = start_x + content_width
+    local midi_panel_y2 = start_y + header_height + midi_height
+
+    -- Draw MIDI panel background
+    draw_panel(draw_list, midi_panel_x1, midi_panel_y1, midi_panel_x2, midi_panel_y2, panel_rounding, section_fade)
+
+    -- MIDI header
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
-    ImGui.SetCursorScreenPos(ctx, start_x, start_y)
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + panel_padding)
     ImGui.PushFont(ctx, title_font, 14)
     ImGui.Text(ctx, "MIDI Tracks")
     ImGui.PopFont(ctx)
     ImGui.PopStyleVar(ctx)
 
-    ImGui.SetCursorScreenPos(ctx, start_x, start_y + header_height)
+    -- MIDI grid container
+    local midi_content_y = start_y + header_height
+    local midi_content_h = midi_height - panel_padding
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, midi_content_y)
 
-    if ImGui.BeginChild(ctx, "midi_container", content_width, midi_height, 0,
+    if ImGui.BeginChild(ctx, "midi_container", content_width - panel_padding * 2, midi_content_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
       -- Block grid input during separator drag
       if self.coordinator.midi_grid then
         self.coordinator.midi_grid.block_all_input = block_input
       end
-      self.coordinator:render_midi_grid(ctx, content_width, midi_height)
+      self.coordinator:render_midi_grid(ctx, content_width - panel_padding * 2, midi_content_h)
       ImGui.EndChild(ctx)
     end
 
@@ -351,25 +408,36 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       self.state.set_separator_position(new_midi_height)
     end
 
-    -- Audio section
+    -- Audio section with panel
     local audio_start_y = start_y + header_height + midi_height + separator_gap
+    local audio_panel_x1 = start_x
+    local audio_panel_y1 = audio_start_y
+    local audio_panel_x2 = start_x + content_width
+    local audio_panel_y2 = audio_start_y + header_height + audio_height
 
+    -- Draw Audio panel background
+    draw_panel(draw_list, audio_panel_x1, audio_panel_y1, audio_panel_x2, audio_panel_y2, panel_rounding, section_fade)
+
+    -- Audio header
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
-    ImGui.SetCursorScreenPos(ctx, start_x, audio_start_y)
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_start_y + panel_padding)
     ImGui.PushFont(ctx, title_font, 15)
     ImGui.Text(ctx, "Audio Sources")
     ImGui.PopFont(ctx)
     ImGui.PopStyleVar(ctx)
 
-    ImGui.SetCursorScreenPos(ctx, start_x, audio_start_y + header_height)
+    -- Audio grid container
+    local audio_content_y = audio_start_y + header_height
+    local audio_content_h = audio_height - panel_padding
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_content_y)
 
-    if ImGui.BeginChild(ctx, "audio_container", content_width, audio_height, 0,
+    if ImGui.BeginChild(ctx, "audio_container", content_width - panel_padding * 2, audio_content_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
       -- Block grid input during separator drag
       if self.coordinator.audio_grid then
         self.coordinator.audio_grid.block_all_input = block_input
       end
-      self.coordinator:render_audio_grid(ctx, content_width, audio_height)
+      self.coordinator:render_audio_grid(ctx, content_width - panel_padding * 2, audio_content_h)
       ImGui.EndChild(ctx)
     end
 
