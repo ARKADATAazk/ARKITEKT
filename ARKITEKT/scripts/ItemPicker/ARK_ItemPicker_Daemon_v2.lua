@@ -202,10 +202,9 @@ local runtime = Runtime.new({
       ImGui.PopFont(ctx)
       return true
     else
-      -- Only render overlay when UI is visible
-      if ui_visible then
-        overlay_mgr:render(ctx)
-      end
+      -- ALWAYS render overlay to maintain ImGui context state
+      -- The overlay's render callback handles ui_visible check
+      overlay_mgr:render(ctx)
       return true  -- Always keep running (even when hidden)
     end
   end,
