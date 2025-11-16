@@ -290,7 +290,7 @@ function M.draw_pool(self, ctx, regions, height)
     end
 
     if has_pool_selection then
-      if ContextMenu.item(ctx, "Recolor Selected...") then
+      if ContextMenu.item(ctx, "Recolor") then
         -- Get first selected item's color as initial color
         local initial_color = nil
         if self.pool_grid and self.pool_grid.selection then
@@ -312,7 +312,7 @@ function M.draw_pool(self, ctx, regions, height)
       end
     else
       ImGui.BeginDisabled(ctx)
-      ContextMenu.item(ctx, "Recolor Selected...")
+      ContextMenu.item(ctx, "Recolor")
       ImGui.EndDisabled(ctx)
     end
 

@@ -80,7 +80,8 @@ function M.render(ctx, id, config)
 
   -- Set initial window position (center of screen) on first open
   if inst.first_open then
-    local display_w, display_h = ImGui.GetDisplaySize(ctx)
+    local viewport = ImGui.GetMainViewport(ctx)
+    local display_w, display_h = ImGui.Viewport_GetSize(viewport)
     ImGui.SetNextWindowPos(ctx, display_w * 0.5, display_h * 0.5, ImGui.Cond_Appearing, 0.5, 0.5)
     inst.first_open = false
   end
