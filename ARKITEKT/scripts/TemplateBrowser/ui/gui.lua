@@ -35,12 +35,13 @@ function GUI:initialize_once(ctx)
 end
 
 -- Draw folder tree recursively
+local _folder_counter = 0
 local function draw_folder_node(ctx, node, state, config)
+  _folder_counter = _folder_counter + 1
+  local node_id = _folder_counter
+
   local is_selected = (state.selected_folder == node.path)
   local has_children = #node.children > 0
-
-  -- Use full path as unique ID (ensures uniqueness even with duplicate folder names)
-  local unique_id = node.path ~= "" and node.path or "Root"
 
   -- Set up flags
   local flags = ImGui.TreeNodeFlags_OpenOnArrow
@@ -55,9 +56,9 @@ local function draw_folder_node(ctx, node, state, config)
     flags = flags | ImGui.TreeNodeFlags_Leaf
   end
 
-  -- Use path as ID, display name as label
-  ImGui.PushID(ctx, unique_id)
-  local node_open = ImGui.TreeNodeEx(ctx, node.name, flags)
+  -- Use integer ID with PushID
+  ImGui.PushID(ctx, node_id)
+  local node_open = ImGui.TreeNode(ctx, node.name, flags)
 
   -- Check for click
   if ImGui.IsItemClicked(ctx) then
@@ -109,6 +110,7 @@ local function draw_folder_panel(ctx, state, config, width, height)
 
   -- Folder tree
   if state.folders and state.folders.children then
+    _folder_counter = 0  -- Reset counter each frame
     for _, child in ipairs(state.folders.children) do
       draw_folder_node(ctx, child, state, config)
     end
