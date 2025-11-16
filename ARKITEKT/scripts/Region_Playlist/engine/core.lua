@@ -153,6 +153,14 @@ function Engine:get_loop_playlist()
   return self.transport:get_loop_playlist()
 end
 
+function Engine:set_follow_viewport(enabled)
+  self.transport:set_follow_viewport(enabled)
+end
+
+function Engine:get_follow_viewport()
+  return self.transport:get_follow_viewport()
+end
+
 function Engine:set_quantize_mode(mode)
   self.quantize_mode = mode
   self.quantize:set_quantize_mode(mode)
