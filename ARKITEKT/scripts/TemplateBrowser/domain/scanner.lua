@@ -62,7 +62,8 @@ local function scan_directory(path, relative_path, metadata)
 
         -- Check if file has changed by comparing size
         local size_changed = (existing.file_size ~= file_size)
-        local missing_fx = not existing.fx or #existing.fx == 0
+        -- Only re-parse if fx field is missing (nil), not if it's an empty array
+        local missing_fx = (existing.fx == nil)
 
         if size_changed or missing_fx then
           -- File changed or FX missing - needs re-parsing

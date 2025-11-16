@@ -29,26 +29,49 @@ end
 
 M.generate_uuid = generate_uuid
 
--- Simple JSON encoder
-local function json_encode(data)
+-- Simple JSON encoder with pretty printing
+local function json_encode(data, indent, current_indent)
+  indent = indent or "  "  -- Default to 2 spaces
+  current_indent = current_indent or ""
+
   if type(data) == "table" then
     local is_array = #data > 0
     local parts = {}
+    local next_indent = current_indent .. indent
 
     if is_array then
+      -- Array formatting
+      if #data == 0 then
+        return "[]"
+      end
       for i, v in ipairs(data) do
-        table.insert(parts, json_encode(v))
+        table.insert(parts, next_indent .. json_encode(v, indent, next_indent))
       end
-      return "[" .. table.concat(parts, ",") .. "]"
+      return "[\n" .. table.concat(parts, ",\n") .. "\n" .. current_indent .. "]"
     else
-      for k, v in pairs(data) do
-        table.insert(parts, '"' .. k .. '":' .. json_encode(v))
+      -- Object formatting
+      local count = 0
+      for _ in pairs(data) do count = count + 1 end
+      if count == 0 then
+        return "{}"
       end
-      return "{" .. table.concat(parts, ",") .. "}"
+
+      -- Sort keys for consistent output
+      local sorted_keys = {}
+      for k in pairs(data) do
+        table.insert(sorted_keys, k)
+      end
+      table.sort(sorted_keys)
+
+      for _, k in ipairs(sorted_keys) do
+        local v = data[k]
+        table.insert(parts, next_indent .. '"' .. k .. '": ' .. json_encode(v, indent, next_indent))
+      end
+      return "{\n" .. table.concat(parts, ",\n") .. "\n" .. current_indent .. "}"
     end
   elseif type(data) == "string" then
     -- Basic escaping
-    data = data:gsub('\\', '\\\\'):gsub('"', '\\"'):gsub('\n', '\\n')
+    data = data:gsub('\\', '\\\\'):gsub('"', '\\"'):gsub('\n', '\\n'):gsub('\r', '\\r'):gsub('\t', '\\t')
     return '"' .. data .. '"'
   elseif type(data) == "number" then
     return tostring(data)
