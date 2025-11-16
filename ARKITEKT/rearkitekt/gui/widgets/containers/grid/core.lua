@@ -497,7 +497,6 @@ function Grid:draw(ctx)
 
   -- Handle double-click on tile at grid level (before marquee selection)
   if bg_double_clicked and double_clicked_tile_key and self.behaviors and self.behaviors.double_click then
-    reaper.ShowConsoleMsg(string.format("[GRID CORE] Double-click detected at grid level! key=%s\n", tostring(double_clicked_tile_key)))
     self.behaviors.double_click(double_clicked_tile_key)
   end
 

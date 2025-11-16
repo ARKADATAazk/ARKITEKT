@@ -191,45 +191,15 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       if changed then
         -- Get fresh item data from lookup
-        reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] UUID: %s\n", tostring(item_data.uuid)))
-
         local lookup_data = state.audio_item_lookup[item_data.uuid]
-        reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] Lookup data found: %s\n", tostring(lookup_data ~= nil)))
-
         if not lookup_data then
-          -- Fallback: try to use item_data.item directly
           lookup_data = item_data
-          reaper.ShowConsoleMsg("[AUDIO RENAME] Using item_data as fallback\n")
         end
 
         local item = lookup_data.item or lookup_data[1]
-        reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] Item pointer: %s, Type: %s\n",
-          tostring(item),
-          type(item)))
 
         -- Validate item pointer
-        if not item then
-          reaper.ShowConsoleMsg("[RENAME ERROR] Item is nil\n")
-        else
-          local is_valid = reaper.ValidatePtr2(0, item, "MediaItem*")
-          reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] ValidatePtr2 result: %s\n", tostring(is_valid)))
-
-          if not is_valid then
-            reaper.ShowConsoleMsg("[RENAME ERROR] Invalid MediaItem pointer for UUID: " .. tostring(item_data.uuid) .. "\n")
-            state.rename_active = false
-            state.rename_uuid = nil
-            state.rename_focused = false
-            state.rename_queue = nil
-            state.rename_queue_index = 0
-            state.rename_focus_frame = false
-            ImGui.PopStyleColor(ctx, 2)
-            ImGui.PopStyleVar(ctx)
-            return
-          end
-        end
-
         if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
-          reaper.ShowConsoleMsg("[RENAME ERROR] Final validation failed\n")
           state.rename_active = false
           state.rename_uuid = nil
           state.rename_focused = false
@@ -242,36 +212,15 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         end
 
         -- Apply rename to the item
-        reaper.ShowConsoleMsg("[AUDIO RENAME] Starting Undo_BeginBlock\n")
         reaper.Undo_BeginBlock()
-
-        reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] Calling GetActiveTake on item %s\n", tostring(item)))
         local take = reaper.GetActiveTake(item)
-        reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] Take pointer: %s, Type: %s\n",
-          tostring(take),
-          type(take)))
-
         if take then
-          reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] Calling GetSetMediaItemTakeInfo_String with new_text='%s'\n", new_text))
-
-          -- Get current name first
-          local retval, current_name = reaper.GetSetMediaItemTakeInfo_String(take, "P_NAME", "", false)
-          reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] Current name: '%s'\n", current_name))
-
-          -- Set new name
-          local set_retval = reaper.GetSetMediaItemTakeInfo_String(take, "P_NAME", new_text, true)
-          reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] GetSetMediaItemTakeInfo_String returned: %s\n", tostring(set_retval)))
-
-          -- Verify it was set
-          local verify_retval, verify_name = reaper.GetSetMediaItemTakeInfo_String(take, "P_NAME", "", false)
-          reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] Verified new name: '%s'\n", verify_name))
+          reaper.GetSetMediaItemTakeInfo_String(take, "P_NAME", new_text, true)
 
           -- Update the name in the lookup immediately so tile reflects change
           if state.audio_item_lookup[item_data.uuid] then
-            -- Update array format: {item, name, track_muted, item_muted, uuid, pool_count}
             if type(state.audio_item_lookup[item_data.uuid]) == "table" then
               state.audio_item_lookup[item_data.uuid][2] = new_text
-              reaper.ShowConsoleMsg("[AUDIO RENAME] Updated audio_item_lookup\n")
             end
           end
 
@@ -280,8 +229,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
             for filename, items_array in pairs(state.samples) do
               for _, entry in ipairs(items_array) do
                 if entry.uuid == item_data.uuid then
-                  entry[2] = new_text  -- Update name in array
-                  reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] Updated samples array for filename: %s\n", filename))
+                  entry[2] = new_text
                   break
                 end
               end
@@ -290,15 +238,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
           -- Update the current item_data name for immediate display
           item_data.name = new_text
-          reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] Updated item_data.name to: '%s'\n", item_data.name))
 
-          reaper.ShowConsoleMsg("[AUDIO RENAME] Calling UpdateArrange\n")
           reaper.UpdateArrange()
-        else
-          reaper.ShowConsoleMsg("[AUDIO RENAME ERROR] GetActiveTake returned nil!\n")
         end
-
-        reaper.ShowConsoleMsg("[AUDIO RENAME] Calling Undo_EndBlock\n")
         reaper.Undo_EndBlock("Rename item take", -1)
 
         -- Check if there are more items in the batch rename queue

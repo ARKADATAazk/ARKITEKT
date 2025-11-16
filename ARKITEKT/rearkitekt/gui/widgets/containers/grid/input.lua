@@ -196,14 +196,6 @@ function M.handle_tile_input(grid, ctx, item, rect)
   local is_hovered = Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4])
   if is_hovered then grid.hover_id = key end
 
-  -- Debug double-click detection
-  if is_hovered and ImGui.IsMouseDoubleClicked(ctx, 0) then
-    reaper.ShowConsoleMsg(string.format("[INPUT] Double-click detected! key=%s sel_rect_active=%s drag_active=%s\n",
-      tostring(key),
-      tostring(grid.sel_rect:is_active()),
-      tostring(grid.drag.active)))
-  end
-
   if is_hovered and not grid.sel_rect:is_active() and not grid.drag.active and not M.is_external_drag_active(grid) then
     if ImGui.IsMouseClicked(ctx, 0) then
       local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
@@ -256,11 +248,7 @@ function M.handle_tile_input(grid, ctx, item, rect)
     end
 
     if ImGui.IsMouseDoubleClicked(ctx, 0) then
-      reaper.ShowConsoleMsg(string.format("[INPUT] Double-click handler reached! key=%s has_behavior=%s\n",
-        tostring(key),
-        tostring(grid.behaviors and grid.behaviors.double_click ~= nil)))
       if grid.behaviors and grid.behaviors.double_click then
-        reaper.ShowConsoleMsg("[INPUT] Calling double_click behavior\n")
         grid.behaviors.double_click(key)
       end
     end
