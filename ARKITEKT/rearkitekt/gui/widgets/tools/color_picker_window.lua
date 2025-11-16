@@ -7,12 +7,62 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
+local CustomPicker = require('rearkitekt.gui.widgets.tools.custom_color_picker')
 
 local M = {}
 local hexrgb = Colors.hexrgb
 
 -- State for each picker instance
 local instances = {}
+
+-- Convert RGB to HSV
+local function rgb_to_hsv(r, g, b)
+  r, g, b = r / 255, g / 255, b / 255
+  local max_c = math.max(r, g, b)
+  local min_c = math.min(r, g, b)
+  local delta = max_c - min_c
+
+  local h = 0
+  if delta ~= 0 then
+    if max_c == r then
+      h = ((g - b) / delta) % 6
+    elseif max_c == g then
+      h = (b - r) / delta + 2
+    else
+      h = (r - g) / delta + 4
+    end
+    h = h / 6
+  end
+
+  local s = (max_c == 0) and 0 or (delta / max_c)
+  local v = max_c
+
+  return h, s, v
+end
+
+-- Convert HSV to RGB
+local function hsv_to_rgb(h, s, v)
+  local c = v * s
+  local x = c * (1 - math.abs((h * 6) % 2 - 1))
+  local m = v - c
+
+  local r, g, b
+  if h < 1/6 then
+    r, g, b = c, x, 0
+  elseif h < 2/6 then
+    r, g, b = x, c, 0
+  elseif h < 3/6 then
+    r, g, b = 0, c, x
+  elseif h < 4/6 then
+    r, g, b = 0, x, c
+  elseif h < 5/6 then
+    r, g, b = x, 0, c
+  else
+    r, g, b = c, 0, x
+  end
+
+  return math.floor((r + m) * 255), math.floor((g + m) * 255), math.floor((b + m) * 255)
+end
 
 --- Create or get a color picker instance
 --- @param id string Unique identifier for this picker
@@ -24,6 +74,9 @@ local function get_instance(id)
       current_color = 0xFF0000FF,  -- Default red
       backup_color = nil,
       first_open = true,
+      h = 0,
+      s = 1,
+      v = 1,
     }
   end
   return instances[id]
@@ -201,50 +254,38 @@ end
 --- Render the color picker inline (embedded in a panel)
 --- @param ctx userdata ImGui context
 --- @param id string Unique identifier for this picker
---- @param config table Configuration { on_change = function(color), on_close = function(), initial_color = number }
+--- @param config table Configuration { on_change = function(color), on_close = function(), initial_color = number, size = number }
 --- @return boolean changed Whether color was changed this frame
 function M.render_inline(ctx, id, config)
   config = config or {}
   local inst = get_instance(id)
   local on_change = config.on_change
   local on_close = config.on_close
+  local size = config.size or 195
 
   -- Set initial color if provided
   if config.initial_color and inst.first_open then
     inst.current_color = config.initial_color
+    -- Convert to HSV for the picker
+    local r = (inst.current_color >> 24) & 0xFF
+    local g = (inst.current_color >> 16) & 0xFF
+    local b = (inst.current_color >> 8) & 0xFF
+    inst.h, inst.s, inst.v = rgb_to_hsv(r, g, b)
     inst.first_open = false
   end
 
-  local changed = false
+  -- Render custom color picker
+  local picker_changed, new_h, new_s, new_v = CustomPicker.render(ctx, size, inst.h, inst.s, inst.v)
 
-  -- Compact inline picker - just the color wheel, no extras
-  -- Style with black borders on triangle
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#000000FF"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_BorderShadow, hexrgb("#000000FF"))
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameBorderSize, 2)  -- Thicker border
-
-  local picker_flags = ImGui.ColorEditFlags_PickerHueWheel |
-                       ImGui.ColorEditFlags_NoSidePreview |
-                       ImGui.ColorEditFlags_NoSmallPreview |
-                       ImGui.ColorEditFlags_NoAlpha |
-                       ImGui.ColorEditFlags_NoInputs |
-                       ImGui.ColorEditFlags_NoLabel
-
-  -- Convert our RGBA to ImGui's ARGB format
-  local argb_color = Colors.rgba_to_argb(inst.current_color)
-
-  -- Draw compact color picker
-  local rv, new_argb_color = ImGui.ColorPicker4(ctx, '##picker_inline_' .. id, argb_color, picker_flags)
-
-  ImGui.PopStyleVar(ctx, 1)
-  ImGui.PopStyleColor(ctx, 2)
-
-  -- Track color changes during dragging, but only apply on mouse release
-  if rv then
-    local new_rgba = Colors.argb_to_rgba(new_argb_color)
-    inst.current_color = new_rgba
-    changed = true
+  if picker_changed then
+    inst.h = new_h
+    inst.s = new_s
+    inst.v = new_v
     inst.pending_change = true
+
+    -- Convert HSV to RGBA
+    local r, g, b = hsv_to_rgb(inst.h, inst.s, inst.v)
+    inst.current_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
   end
 
   -- Apply color only when mouse button is released
@@ -255,7 +296,7 @@ function M.render_inline(ctx, id, config)
     end
   end
 
-  return changed
+  return picker_changed
 end
 
 --- Initialize inline picker (call this to show it)
@@ -266,6 +307,11 @@ function M.show_inline(id, initial_color)
   inst.first_open = true
   if initial_color then
     inst.current_color = initial_color
+    -- Convert to HSV
+    local r = (initial_color >> 24) & 0xFF
+    local g = (initial_color >> 16) & 0xFF
+    local b = (initial_color >> 8) & 0xFF
+    inst.h, inst.s, inst.v = rgb_to_hsv(r, g, b)
   end
 end
 

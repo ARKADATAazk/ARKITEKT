@@ -156,6 +156,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
     local child_flags = ImGui.ChildFlags_None
     if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size, child_flags) then
       ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
+        size = picker_size,
         on_change = function(color)
           -- Batch apply color to all selected regions/playlists
           if self.active_grid and self.active_grid.selection and self.controller then
@@ -369,6 +370,7 @@ function M.draw_pool(self, ctx, regions, height)
     local child_flags = ImGui.ChildFlags_None
     if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size, child_flags) then
       ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
+        size = picker_size,
         on_change = function(color)
           -- Batch apply color to all selected regions/playlists
           if self.pool_grid and self.pool_grid.selection and self.controller then
