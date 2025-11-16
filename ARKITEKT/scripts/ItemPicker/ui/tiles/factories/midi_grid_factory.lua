@@ -29,11 +29,11 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       if current_idx > #content then current_idx = 1 end
 
       local entry = content[current_idx]
-      if not entry or not entry[1] or not entry[2] then
+      if not entry or not entry[2] then  -- Only require name, not item pointer
         goto continue
       end
 
-      local item = entry[1]
+      local item = entry[1]  -- May be nil for cached data
       local item_name = entry[2]
       local track_muted = entry.track_muted or false
       local item_muted = entry.item_muted or false
@@ -54,9 +54,15 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
         goto continue
       end
 
-      -- Get track color (using I_CUSTOMCOLOR like old implementation)
-      local track = reaper.GetMediaItemTrack(item)
-      local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
+      -- Get track color (default grey if item is nil/invalid)
+      local track_color = 16576  -- Default grey code
+      if item and reaper.ValidatePtr2(0, item, "MediaItem*") then
+        local track = reaper.GetMediaItemTrack(item)
+        if track then
+          track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
+        end
+      end
+
       local r, g, b = 85/256, 91/256, 91/256  -- Default grey
       if track_color ~= 16576 and track_color > 0 then
         local R = track_color & 255

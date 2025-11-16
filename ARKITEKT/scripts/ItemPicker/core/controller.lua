@@ -10,6 +10,8 @@ local utils
 function M.init(reaper_interface_module, utils_module)
   reaper_interface = reaper_interface_module
   utils = utils_module
+  -- Expose reaper_interface for incremental loader
+  M.reaper_interface = reaper_interface_module
 end
 
 -- Collect all items from the project

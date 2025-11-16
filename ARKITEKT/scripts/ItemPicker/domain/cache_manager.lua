@@ -347,6 +347,120 @@ function M.save_project_state_to_disk(state)
   return true
 end
 
+-- Save FULL item data to disk (for instant loading)
+function M.save_items_data_to_disk(state)
+  local project_path = reaper.GetProjectPath("")
+  if project_path == "" then
+    project_path = "unsaved"
+  end
+
+  local sep = package.config:sub(1,1)
+  local cache_dir = M.get_cache_dir()
+  local project_hash = M.get_project_hash(project_path)
+  local project_dir = cache_dir .. "projects" .. sep .. project_hash .. sep
+
+  reaper.RecursiveCreateDirectory(project_dir, 0)
+
+  local items_file = project_dir .. "items_data.lua"
+  local file = io.open(items_file, "w")
+  if not file then return false end
+
+  -- Serialize full item data (without item pointers, just metadata)
+  file:write("return {\n")
+  file:write("  change_count = " .. reaper.GetProjectStateChangeCount(0) .. ",\n")
+
+  -- Save sample_indexes
+  file:write("  sample_indexes = {")
+  for i, key in ipairs(state.sample_indexes or {}) do
+    if i > 1 then file:write(", ") end
+    file:write(string.format("%q", key))
+  end
+  file:write("},\n")
+
+  -- Save midi_indexes
+  file:write("  midi_indexes = {")
+  for i, key in ipairs(state.midi_indexes or {}) do
+    if i > 1 then file:write(", ") end
+    file:write(string.format("%q", key))
+  end
+  file:write("},\n")
+
+  -- Save samples metadata (NO item pointers, just names/UUIDs/flags)
+  file:write("  samples_meta = {\n")
+  for filename, items in pairs(state.samples or {}) do
+    file:write(string.format("    [%q] = {\n", filename))
+    for _, item_data in ipairs(items) do
+      file:write("      {")
+      file:write(string.format("name=%q, ", item_data[2] or ""))
+      file:write(string.format("track_muted=%s, ", item_data.track_muted and "true" or "false"))
+      file:write(string.format("item_muted=%s, ", item_data.item_muted and "true" or "false"))
+      file:write(string.format("uuid=%q", item_data.uuid or ""))
+      file:write("},\n")
+    end
+    file:write("    },\n")
+  end
+  file:write("  },\n")
+
+  -- Save midi_items metadata
+  file:write("  midi_meta = {\n")
+  for key, items in pairs(state.midi_items or {}) do
+    file:write(string.format("    [%q] = {\n", key))
+    for _, item_data in ipairs(items) do
+      file:write("      {")
+      file:write(string.format("name=%q, ", item_data[2] or ""))
+      file:write(string.format("track_muted=%s, ", item_data.track_muted and "true" or "false"))
+      file:write(string.format("item_muted=%s, ", item_data.item_muted and "true" or "false"))
+      file:write(string.format("uuid=%q", item_data.uuid or ""))
+      file:write("},\n")
+    end
+    file:write("    },\n")
+  end
+  file:write("  },\n")
+
+  -- Save item chunks for validation
+  file:write("  item_chunks = {\n")
+  for chunk_id, chunk in pairs(state.item_chunks or {}) do
+    -- Only save first 200 chars of chunk for validation (full chunks are huge)
+    local short_chunk = chunk:sub(1, 200)
+    file:write(string.format("    [%q] = %q,\n", chunk_id, short_chunk))
+  end
+  file:write("  },\n")
+
+  file:write("}\n")
+  file:close()
+
+  return true
+end
+
+-- Load FULL item data from disk (instant)
+function M.load_items_data_from_disk()
+  local project_path = reaper.GetProjectPath("")
+  if project_path == "" then
+    project_path = "unsaved"
+  end
+
+  local sep = package.config:sub(1,1)
+  local cache_dir = M.get_cache_dir()
+  local project_hash = M.get_project_hash(project_path)
+  local items_file = cache_dir .. "projects" .. sep .. project_hash .. sep .. "items_data.lua"
+
+  local file = io.open(items_file, "r")
+  if not file then return nil end
+  file:close()
+
+  local success, data = pcall(dofile, items_file)
+  if not success then return nil end
+
+  -- Check if change count matches
+  local current_change_count = reaper.GetProjectStateChangeCount(0)
+  if data.change_count ~= current_change_count then
+    -- Project changed, cache is stale
+    return nil
+  end
+
+  return data
+end
+
 -- Load project state from disk
 function M.load_project_state_from_disk()
   local project_path = reaper.GetProjectPath("")
