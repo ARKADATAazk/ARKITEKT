@@ -226,7 +226,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
     end,
 
     alt_click = function(item_uuids)
-      -- Quick disable with Alt+click
+      -- Toggle disable with Alt+click
       -- Convert UUIDs to track_guids
       local items = get_items()
       local track_guid_map = {}
@@ -239,10 +239,9 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       for _, uuid in ipairs(item_uuids) do
         local track_guid = track_guid_map[uuid]
         if track_guid then
-          state.disabled.midi[track_guid] = true
+          state.toggle_midi_disabled(track_guid)
         end
       end
-      state.persist_disabled()
     end,
 
     on_select = function(selected_keys)

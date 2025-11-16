@@ -225,7 +225,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
     end,
 
     alt_click = function(item_uuids)
-      -- Quick disable with Alt+click
+      -- Toggle disable with Alt+click
       -- Convert UUIDs to filenames
       local items = get_items()
       local filename_map = {}
@@ -238,10 +238,9 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       for _, uuid in ipairs(item_uuids) do
         local filename = filename_map[uuid]
         if filename then
-          state.disabled.audio[filename] = true
+          state.toggle_audio_disabled(filename)
         end
       end
-      state.persist_disabled()
     end,
 
     on_select = function(selected_keys)

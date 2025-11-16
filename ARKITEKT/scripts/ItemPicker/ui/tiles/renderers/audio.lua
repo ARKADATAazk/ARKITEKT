@@ -118,20 +118,26 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     )
   end
 
-  -- Render text and badge
+  -- Check if item is favorited
+  local is_favorite = state.favorites and state.favorites.audio and state.favorites.audio[item_data.filename]
+
+  -- Calculate star badge space
+  local star_badge_size = 18
+  local star_padding = 4
+  local text_right_margin = is_favorite and (star_badge_size + star_padding * 2) or 0
+
+  -- Render text and badge (with reduced width if star is present)
   if cascade_factor > 0.3 then
-    BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, scaled_x2, header_height,
+    local text_x2 = scaled_x2 - text_right_margin
+    BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, text_x2, header_height,
       item_data.name, item_data.index, item_data.total, base_color, text_alpha, config)
   end
 
-  -- Render favorite star indicator
-  if cascade_factor > 0.5 then
-    local is_favorite = state.favorites and state.favorites.audio and state.favorites.audio[item_data.filename]
-    local star_size = math.min(16, scaled_h * 0.15)
-    local star_padding = 4
-    local star_x = scaled_x2 - star_size - star_padding
+  -- Render favorite star badge
+  if cascade_factor > 0.5 and is_favorite then
+    local star_x = scaled_x2 - star_badge_size - star_padding
     local star_y = scaled_y1 + star_padding
-    Shapes.draw_favorite_star(dl, star_x, star_y, star_size, base_color, combined_alpha, is_favorite, hover_factor)
+    Shapes.draw_favorite_star(dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite)
   end
 
   -- Render waveform (show even when disabled, just with toned down color)
