@@ -3,6 +3,7 @@
 -- Main GUI with three-panel layout
 
 local ImGui = require 'imgui' '0.10'
+local TemplateOps = require('TemplateBrowser.domain.template_ops')
 
 local M = {}
 local GUI = {}
@@ -216,13 +217,13 @@ local function draw_tags_panel(ctx, state, config, width, height)
 
     -- Actions
     if ImGui.Button(ctx, "Apply to Selected Track", -1, 32) then
-      -- TODO: Apply template to selected track
-      reaper.ShowConsoleMsg("Apply template to selected track: " .. tmpl.name .. "\n")
+      reaper.ShowConsoleMsg("Applying template: " .. tmpl.name .. "\n")
+      TemplateOps.apply_to_selected_track(tmpl.path)
     end
 
     if ImGui.Button(ctx, "Insert as New Track", -1, 32) then
-      -- TODO: Insert template as new track
-      reaper.ShowConsoleMsg("Insert template as new track: " .. tmpl.name .. "\n")
+      reaper.ShowConsoleMsg("Inserting template as new track: " .. tmpl.name .. "\n")
+      TemplateOps.insert_as_new_track(tmpl.path)
     end
 
     ImGui.Spacing(ctx)

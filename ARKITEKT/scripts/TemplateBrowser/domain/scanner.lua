@@ -130,11 +130,15 @@ end
 function M.filter_templates(state)
   local filtered = {}
 
+  reaper.ShowConsoleMsg(string.format("Filtering: selected_folder='%s', search='%s'\n",
+    state.selected_folder or "nil", state.search_query))
+
   for _, tmpl in ipairs(state.templates) do
     local matches = true
 
     -- Filter by folder
     if state.selected_folder and state.selected_folder ~= "" then
+      -- Exact match on relative_path
       if tmpl.relative_path ~= state.selected_folder then
         matches = false
       end
@@ -153,6 +157,7 @@ function M.filter_templates(state)
     end
   end
 
+  reaper.ShowConsoleMsg(string.format("Filtered: %d -> %d templates\n", #state.templates, #filtered))
   state.filtered_templates = filtered
 end
 
