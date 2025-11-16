@@ -734,8 +734,8 @@ function Panel:end_draw(ctx)
     if not header_cfg.enabled or self.config.corner_buttons_always_visible then
       local x1, y1, w, h = table.unpack(self._corner_button_bounds)
       local cb = self.config.corner_buttons
-      local size = CORNER_BUTTON_CONFIG.size
-      local border_thickness = self.config.border_thickness or 0
+      local size = cb.size or 30
+      local border_thickness = 1
       local outer_rounding = self.config.rounding or 8
       local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
       local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
