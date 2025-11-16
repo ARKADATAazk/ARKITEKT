@@ -139,13 +139,13 @@ function GUI:draw(ctx, shell_state)
   local big_font = shell_state.fonts.title
   local big_font_size = shell_state.fonts.title_size or 24
 
-  -- Process async jobs (max 1 per frame for smooth FPS)
-  if self.state.job_queue then
+  -- Process async jobs for waveform/thumbnail generation
+  if self.state.job_queue and self.state.runtime_cache then
     local job_queue_module = require('ItemPicker.data.job_queue')
     job_queue_module.process_jobs(
       self.state.job_queue,
       self.visualization,
-      
+      self.state.runtime_cache,
       ctx
     )
   end

@@ -317,9 +317,23 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
     ImGui.Dummy(ctx, content_w, content_h)
 
-    -- Waveform rendering removed - show simple placeholder
-    -- TODO: Implement lazy waveform loading if needed
-    BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
+    local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config)
+    local waveform_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
+    dark_color = Colors.with_alpha(dark_color, math.floor(waveform_alpha * 255))
+
+    -- Check runtime cache for waveform
+    local waveform = state.runtime_cache and state.runtime_cache.waveforms[item_data.uuid]
+    if waveform then
+      if visualization.DisplayWaveformTransparent then
+        visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, content_w)
+      end
+    else
+      -- Show placeholder and queue waveform generation
+      BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
+      if state.job_queue and state.job_queue.add_waveform_job then
+        state.job_queue.add_waveform_job(item_data.item, item_data.uuid)
+      end
+    end
   end
 
   -- Render pool count badge (bottom right) if more than 1 instance

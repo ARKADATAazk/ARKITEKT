@@ -318,9 +318,25 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
     ImGui.Dummy(ctx, content_w, content_h)
 
-    -- MIDI thumbnail rendering removed - show simple placeholder
-    -- TODO: Implement lazy MIDI thumbnail loading if needed
-    BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
+    local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config)
+    local midi_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
+    dark_color = Colors.with_alpha(dark_color, math.floor(midi_alpha * 255))
+
+    -- Check runtime cache for MIDI thumbnail
+    local thumbnail = state.runtime_cache and state.runtime_cache.midi_thumbnails[item_data.uuid]
+    if thumbnail then
+      if visualization.DisplayMidiItemTransparent then
+        ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
+        ImGui.Dummy(ctx, content_w, content_h)
+        visualization.DisplayMidiItemTransparent(ctx, thumbnail, dark_color, dl)
+      end
+    else
+      -- Show placeholder and queue thumbnail generation
+      BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
+      if state.job_queue and state.job_queue.add_midi_job then
+        state.job_queue.add_midi_job(item_data.item, content_w, content_h, item_data.uuid)
+      end
+    end
   end
 
   -- Render pool count badge (bottom right) if more than 1 instance

@@ -78,6 +78,12 @@ M.rename_queue = nil  -- For batch rename
 M.rename_queue_index = 0
 
 M.draw_list = nil
+
+-- Runtime cache for waveforms/thumbnails (in-memory only, no disk I/O)
+M.runtime_cache = {
+  waveforms = {},
+  midi_thumbnails = {},
+}
 M.overlay_alpha = 1.0
 M.exit = false
 

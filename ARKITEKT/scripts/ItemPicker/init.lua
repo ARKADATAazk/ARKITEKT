@@ -13,6 +13,7 @@ M.core.controller = require('ItemPicker.core.controller')
 M.data = {}
 M.data.persistence = require('ItemPicker.data.persistence')
 M.data.reaper_api = require('ItemPicker.data.reaper_api')
+M.data.job_queue = require('ItemPicker.data.job_queue')
 M.data.loaders = {}
 M.data.loaders.incremental_loader = require('ItemPicker.data.loaders.incremental_loader')
 
