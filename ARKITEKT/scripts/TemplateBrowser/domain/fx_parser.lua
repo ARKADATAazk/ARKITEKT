@@ -52,18 +52,25 @@ function M.parse_template_fx(filepath)
 
   local fx_list = {}
   local fx_set = {}  -- Track unique FX
-  local in_fxchain = false
+  local depth = 0    -- Track nesting depth within FXCHAIN
 
   for line in file:lines() do
-    -- Check if we're entering/leaving FXCHAIN
+    -- Check if we're entering FXCHAIN
     if line:match("^%s*<FXCHAIN") then
-      in_fxchain = true
-    elseif line:match("^%s*>") and in_fxchain then
-      in_fxchain = false
+      depth = 1  -- We're now at depth 1 inside FXCHAIN
+    elseif depth > 0 then
+      -- Count opening brackets (increase depth)
+      if line:match("^%s*<") then
+        depth = depth + 1
+      -- Count closing brackets (decrease depth)
+      elseif line:match("^%s*>%s*$") then
+        depth = depth - 1
+        -- When depth reaches 0, we've exited FXCHAIN
+      end
     end
 
-    -- Parse FX lines within FXCHAIN
-    if in_fxchain then
+    -- Parse FX lines within FXCHAIN (depth > 0)
+    if depth > 0 then
       -- Look for VST, VST3, CLAP, JS, AU lines
       if line:match("^%s*<?VST[23]?%s+") or
          line:match("^%s*<?CLAP%s+") or
@@ -74,6 +81,8 @@ function M.parse_template_fx(filepath)
         if fx_name and not fx_set[fx_name] then
           fx_set[fx_name] = true
           table.insert(fx_list, fx_name)
+          -- Debug logging
+          reaper.ShowConsoleMsg("FX Parser: Found " .. fx_name .. " in " .. filepath .. "\n")
         end
       end
     end

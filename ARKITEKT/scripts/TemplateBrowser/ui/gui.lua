@@ -561,7 +561,7 @@ local function draw_left_panel(ctx, state, config, width, height)
   local was_tags = (state.left_panel_tab == "tags")
 
   -- DIRECTORY tab
-  if state.left_panel_tab == "directory" then
+  if was_directory then
     ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
   end
   if ImGui.Button(ctx, "DIRECTORY", tab_width - 2, 24) then
@@ -574,7 +574,7 @@ local function draw_left_panel(ctx, state, config, width, height)
   ImGui.SameLine(ctx)
 
   -- VSTS tab
-  if state.left_panel_tab == "vsts" then
+  if was_vsts then
     ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
   end
   if ImGui.Button(ctx, "VSTS", tab_width - 2, 24) then
@@ -587,7 +587,7 @@ local function draw_left_panel(ctx, state, config, width, height)
   ImGui.SameLine(ctx)
 
   -- TAGS tab
-  if state.left_panel_tab == "tags" then
+  if was_tags then
     ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
   end
   if ImGui.Button(ctx, "TAGS", tab_width - 2, 24) then
