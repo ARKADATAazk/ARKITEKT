@@ -725,21 +725,70 @@ function Panel:end_draw(ctx)
   end
 
   -- CRITICAL: Corner button z-order fix
-  -- Corner buttons must render: above tiles < below popups
-  -- Solution: Draw on window drawlist AFTER child, then let popups naturally render on top
-  -- Note: We're outside the child window here, so popups will render above us
+  -- ImGui render order: parent drawlist < child windows < popups < foreground drawlist
+  -- Problem: We need buttons between child (tiles) and popups (menus)
+  -- Solution: Each corner button is its own child window created AFTER the grid child
+  -- This ensures: grid child < button children < popup windows
   if self._corner_button_bounds then
     local header_cfg = self.config.header
     if not header_cfg.enabled or self.config.corner_buttons_always_visible then
-      -- Get window drawlist (parent window, after child has ended)
-      -- Child window content was already submitted
-      -- Corner buttons draw now on parent
-      -- Popups will draw after in their own windows
-      local dl = ImGui.GetWindowDrawList(ctx)
       local x1, y1, w, h = table.unpack(self._corner_button_bounds)
+      local cb = self.config.corner_buttons
+      local size = CORNER_BUTTON_CONFIG.size
+      local border_thickness = self.config.border_thickness or 0
+      local outer_rounding = self.config.rounding or 8
+      local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
+      local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
+      local offset_y = CORNER_BUTTON_CONFIG.position_offset_y
+      local panel_id = self.id
 
-      -- Draw buttons visually on parent window drawlist
-      draw_corner_buttons_foreground(ctx, dl, x1, y1, w, h, self.config, self.id, self.config.rounding)
+      -- Create each corner button as its own child window
+      -- These child windows are created AFTER the grid child, so they render on top
+      -- But popups still render above these child windows
+
+      local function create_corner_button_child(btn_config, btn_x, btn_y, position, suffix)
+        if not btn_config then return end
+
+        -- Position the child window at the button location
+        ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
+
+        -- Create transparent, clickable child window
+        local child_flags = ImGui.WindowFlags_NoScrollbar |
+                           ImGui.WindowFlags_NoScrollWithMouse |
+                           ImGui.WindowFlags_NoBackground
+
+        if ImGui.BeginChild(ctx, panel_id .. "_corner_" .. suffix, size, size, ImGui.ChildFlags_None, child_flags) then
+          local dl = ImGui.GetWindowDrawList(ctx)
+          -- Draw the corner button at its position
+          CornerButton.draw(ctx, dl, btn_x, btn_y, size, btn_config, panel_id .. "_corner_" .. suffix, outer_rounding, inner_rounding, position)
+          ImGui.EndChild(ctx)
+        end
+      end
+
+      -- Create child windows for each corner button
+      if cb.top_left then
+        local btn_x = x1 + border_thickness + offset_x
+        local btn_y = y1 + border_thickness + offset_y
+        create_corner_button_child(cb.top_left, btn_x, btn_y, "tl", "tl")
+      end
+
+      if cb.top_right then
+        local btn_x = x1 + w - size - border_thickness - offset_x
+        local btn_y = y1 + border_thickness + offset_y
+        create_corner_button_child(cb.top_right, btn_x, btn_y, "tr", "tr")
+      end
+
+      if cb.bottom_left then
+        local btn_x = x1 + border_thickness + offset_x
+        local btn_y = y1 + h - size - border_thickness - offset_y
+        create_corner_button_child(cb.bottom_left, btn_x, btn_y, "bl", "bl")
+      end
+
+      if cb.bottom_right then
+        local btn_x = x1 + w - size - border_thickness - offset_x
+        local btn_y = y1 + h - size - border_thickness - offset_y
+        create_corner_button_child(cb.bottom_right, btn_x, btn_y, "br", "br")
+      end
     end
   end
 
