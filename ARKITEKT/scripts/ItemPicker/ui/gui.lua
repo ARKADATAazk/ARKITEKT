@@ -101,22 +101,13 @@ end
 function GUI:draw(ctx, shell_state)
   self:initialize_once(ctx)
 
-  -- Start incremental loading after 3 frames (let modal fade begin)
+  -- Start incremental loading after fade animation completes (~20 frames = 333ms at 60fps)
+  -- This ensures smooth fade-in before heavy processing begins
   if not self.loading_started then
     self.load_frame_counter = self.load_frame_counter + 1
-    if self.load_frame_counter >= 3 then
+    if self.load_frame_counter >= 20 then
       self:start_incremental_loading()
     end
-  end
-
-  -- Process one batch per frame (non-blocking)
-  if self.loading_started and not self.data_loaded then
-    self:process_incremental_loading()
-  end
-
-  -- Get draw list
-  if not self.state.draw_list then
-    self.state.draw_list = ImGui.GetWindowDrawList(ctx)
   end
 
   -- Get overlay alpha for cascade animation
@@ -128,6 +119,11 @@ function GUI:draw(ctx, shell_state)
     overlay_alpha = overlay.alpha:value()
   end
   self.state.overlay_alpha = overlay_alpha
+
+  -- Only start processing batches once fade is nearly complete (alpha > 0.95)
+  if self.loading_started and not self.data_loaded and overlay_alpha > 0.95 then
+    self:process_incremental_loading()
+  end
 
   -- Get screen dimensions
   local SCREEN_W, SCREEN_H
