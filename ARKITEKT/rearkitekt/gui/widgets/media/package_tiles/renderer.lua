@@ -8,9 +8,17 @@ local ImGui = require 'imgui' '0.10'
 local Draw = require('rearkitekt.gui.draw')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local Colors = require('rearkitekt.core.colors')
+local ImageCache = require('rearkitekt.gui.images')
 
 local M = {}
 local hexrgb = Colors.hexrgb
+
+-- Shared image cache for package mosaic previews
+M._package_image_cache = M._package_image_cache or ImageCache.new({
+  budget = 20,      -- Load up to 20 images per frame
+  max_cache = 100,  -- Cache up to 100 images
+  no_crop = true,   -- Don't slice 3-state images
+})
 
 M.CONFIG = {
   tile = {
@@ -224,11 +232,11 @@ function M.TileRenderer.checkbox(ctx, pkg, P, cb_rects, tile_x, tile_y, tile_w, 
   end
 end
 
--- Cache for loaded mosaic images
-M._mosaic_image_cache = M._mosaic_image_cache or {}
-
 function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
   if not theme or not theme.color_from_key then return end
+
+  -- Begin frame for image cache
+  M._package_image_cache:begin_frame()
 
   local cell_size = math.min(
     M.CONFIG.mosaic.max_size,
@@ -248,28 +256,80 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
       -- Try to load and display actual image
       local asset = P.assets and P.assets[key]
       local img_path = asset and asset.path
-      local img_loaded = false
+      local img_drawn = false
 
       if img_path and not img_path:match("^%(mock%)") then
-        -- Load image (with caching)
-        local cache_key = P.id .. ":" .. key
-        local img = M._mosaic_image_cache[cache_key]
+        -- Use image cache with validation
+        local rec = M._package_image_cache._cache[img_path]
+        if rec then
+          -- Validate the cached record
+          local validate_record = function(cache, path, record)
+            if not record or not record.img then return nil end
+            if type(record.img) ~= "userdata" then
+              cache._cache[path] = nil
+              return nil
+            end
+            local ok, w, h = pcall(ImGui.Image_GetSize, record.img)
+            if ok and w and h and w > 0 and h > 0 then
+              record.w, record.h = w, h
+              return record
+            end
+            cache._cache[path] = nil
+            return nil
+          end
+          rec = validate_record(M._package_image_cache, img_path, rec)
+        end
 
-        if not img then
-          local ok, loaded_img = pcall(ImGui.CreateImage, img_path, ImGui.ImageFlags_NoErrors or 0)
-          if ok and loaded_img then
-            M._mosaic_image_cache[cache_key] = loaded_img
-            img = loaded_img
+        -- If not cached or invalid, try to load
+        if not rec and M._package_image_cache._creates_left > 0 then
+          local ok, img = pcall(ImGui.CreateImage, img_path, ImGui.ImageFlags_NoErrors or 0)
+          if ok and img then
+            local w, h = pcall(ImGui.Image_GetSize, img)
+            if w and h then
+              rec = {
+                img = img,
+                w = w,
+                h = h,
+                src_x = 0,
+                src_y = 0,
+                src_w = w,
+                src_h = h,
+              }
+              M._package_image_cache._cache[img_path] = rec
+              M._package_image_cache._creates_left = M._package_image_cache._creates_left - 1
+            end
           end
         end
 
-        if img then
-          -- Draw image
-          ImGui.SetCursorScreenPos(ctx, cx, cy)
-          local ok = pcall(ImGui.Image, ctx, img, cell_size, cell_size)
+        if rec and rec.img then
+          -- Calculate aspect-preserving dimensions
+          local img_w, img_h = rec.src_w, rec.src_h
+          local aspect = img_w / img_h
+          local draw_w, draw_h
+
+          if aspect > 1 then
+            -- Wider than tall - fit to width
+            draw_w = cell_size
+            draw_h = cell_size / aspect
+          else
+            -- Taller than wide - fit to height
+            draw_h = cell_size
+            draw_w = cell_size * aspect
+          end
+
+          -- Center or clip if needed
+          local img_x = cx + math.floor((cell_size - draw_w) / 2)
+          local img_y = cy + math.floor((cell_size - draw_h) / 2)
+
+          -- Clip to cell bounds
+          ImGui.PushClipRect(ctx, cx, cy, cx + cell_size, cy + cell_size, true)
+          ImGui.SetCursorScreenPos(ctx, img_x, img_y)
+          local ok = pcall(ImGui.Image, ctx, rec.img, draw_w, draw_h)
+          ImGui.PopClipRect(ctx)
+
           if ok then
-            img_loaded = true
-            -- Draw border around image
+            img_drawn = true
+            -- Draw border around cell (not image)
             Draw.rect(dl, cx, cy, cx + cell_size, cy + cell_size,
                       M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
           end
@@ -277,7 +337,7 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
       end
 
       -- Fallback to colored square if image didn't load
-      if not img_loaded then
+      if not img_drawn then
         local col = theme.color_from_key(key:gsub("%.%w+$", ""))
         Draw.rect_filled(dl, cx, cy, cx + cell_size, cy + cell_size, col, M.CONFIG.mosaic.rounding)
         Draw.rect(dl, cx, cy, cx + cell_size, cy + cell_size,
