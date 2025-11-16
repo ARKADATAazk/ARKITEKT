@@ -695,7 +695,7 @@ function Grid:draw(ctx)
       for i = insert_pos, #filtered_order do
         new_order[#new_order + 1] = filtered_order[i]
       end
-      
+
       self.behaviors.reorder(new_order)
     end
     

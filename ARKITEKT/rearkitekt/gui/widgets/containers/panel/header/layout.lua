@@ -13,10 +13,19 @@ local M = {}
 -- Component registry - imports from controls/ directly for reusable components
 local COMPONENTS = {
   button = require('rearkitekt.gui.widgets.primitives.button'),
+  checkbox = require('rearkitekt.gui.widgets.primitives.checkbox'),
   search_field = require('rearkitekt.gui.widgets.inputs.search_input'),
   dropdown_field = require('rearkitekt.gui.widgets.inputs.dropdown'),
   tab_strip = require('rearkitekt.gui.widgets.containers.panel.header.tab_strip'),
   separator = require('rearkitekt.gui.widgets.containers.panel.header.separator'),
+  custom = {
+    -- Custom element type that accepts a draw callback
+    draw = function(ctx, dl, x, y, width, height, config, state)
+      if config.on_draw then
+        config.on_draw(ctx, dl, x, y, width, height, state)
+      end
+    end,
+  },
 }
 
 -- ============================================================================

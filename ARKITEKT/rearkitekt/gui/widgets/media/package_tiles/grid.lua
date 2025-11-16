@@ -61,7 +61,7 @@ local function draw_package_tile(ctx, pkg, theme, P, rect, state, settings, cust
   Renderer.TileRenderer.border(dl, rect, base_color, is_selected, is_active, is_hovered)
   Renderer.TileRenderer.order_badge(ctx, dl, pkg, P, x1, y1)
   Renderer.TileRenderer.conflicts(ctx, dl, pkg, P, x1, y1, tile_w)
-  Renderer.TileRenderer.checkbox(ctx, pkg, P, custom_state.checkbox_rects, x1, y1, tile_w, tile_h)
+  Renderer.TileRenderer.checkbox(ctx, pkg, P, custom_state.checkbox_rects, x1, y1, tile_w, tile_h, settings)
   Renderer.TileRenderer.mosaic(ctx, dl, theme, P, x1, y1, tile_w)
   Renderer.TileRenderer.footer(ctx, dl, pkg, P, x1, y1, tile_w, tile_h)
 end
@@ -150,7 +150,11 @@ function M.create(pkg, settings, theme)
       
       reorder = function(new_keys)
         pkg.order = new_keys
-        if settings then settings:set('pkg_order', pkg.order) end
+        if settings then
+          settings:set('pkg_order', pkg.order)
+          -- Also sync with package_order key for ThemeAdjuster State
+          settings:set('package_order', pkg.order)
+        end
       end,
       
       on_select = function(selected_keys)
@@ -158,30 +162,23 @@ function M.create(pkg, settings, theme)
       
       drag_start = function(drag_ids)
       end,
+
+      wheel_adjust = function(keys, delta)
+        -- Adjust global tile size (CTRL+MouseWheel zoom)
+        local current_size = pkg.tile or 220
+        local step = 10  -- Size change per wheel notch
+        local new_size = current_size + (delta * step)
+
+        -- Clamp to reasonable bounds
+        new_size = math.max(120, math.min(400, new_size))
+
+        pkg.tile = new_size
+        if settings then settings:set('tile_size', new_size) end
+      end,
     },
     
     render_tile = function(ctx, rect, P, state)
       draw_package_tile(ctx, pkg, theme, P, rect, state, settings, custom_state)
-    end,
-    
-    render_overlays = function(ctx, current_rects)
-      for id, rect in pairs(custom_state.checkbox_rects) do
-        local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-        
-        ImGui.SetCursorScreenPos(ctx, x1, y1)
-        ImGui.PushID(ctx, 'overlay_cb_' .. id)
-        ImGui.InvisibleButton(ctx, '##dummy', x2 - x1, y2 - y1)
-        
-        if ImGui.IsItemClicked(ctx, 0) then
-          pkg.active[id] = not pkg.active[id]
-          if settings then settings:set('pkg_active', pkg.active) end
-        end
-        
-        if ImGui.IsItemHovered(ctx) then
-          ImGui.SetTooltip(ctx, pkg.active[id] and "Disable package" or "Enable package")
-        end
-        ImGui.PopID(ctx)
-      end
     end,
   })
   
