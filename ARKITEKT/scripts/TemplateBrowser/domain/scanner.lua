@@ -4,7 +4,7 @@
 
 local M = {}
 local Persistence = require('TemplateBrowser.domain.persistence')
-local FXParser = require('TemplateBrowser.domain.fx_parser')
+local FXQueue = require('TemplateBrowser.domain.fx_queue')
 
 -- Get REAPER's default track template path
 local function get_template_path()
@@ -33,8 +33,8 @@ local function scan_directory(path, relative_path, metadata)
       local full_path = path .. file
       local relative_folder = relative_path
 
-      -- Parse FX from template file
-      local fx_list = FXParser.parse_template_fx(full_path)
+      -- Skip FX parsing during initial scan - will be parsed in background
+      local fx_list = {}
 
       -- Try to find existing template in metadata by name+path
       local existing = Persistence.find_template(metadata, nil, template_name, relative_path)
@@ -46,7 +46,8 @@ local function scan_directory(path, relative_path, metadata)
         existing.name = template_name
         existing.path = relative_path
         existing.last_seen = os.time()
-        existing.fx = fx_list  -- Update FX list
+        -- Preserve existing FX list from metadata (will be updated by queue)
+        fx_list = existing.fx or {}
       else
         -- Create new UUID and metadata entry
         uuid = Persistence.generate_uuid()
@@ -56,7 +57,7 @@ local function scan_directory(path, relative_path, metadata)
           path = relative_path,
           tags = {},
           notes = "",
-          fx = fx_list,
+          fx = {},  -- Empty initially, will be populated by background parser
           created = os.time(),
           last_seen = os.time()
         }
@@ -70,7 +71,7 @@ local function scan_directory(path, relative_path, metadata)
         path = full_path,
         relative_path = relative_path,
         folder = relative_path ~= "" and relative_path or "Root",
-        fx = fx_list,  -- Include FX in template object
+        fx = fx_list,  -- Will be populated by background parser
       })
     end
 
@@ -183,7 +184,7 @@ function M.scan_templates(state)
   local metadata = Persistence.load_metadata()
   state.metadata = metadata
 
-  -- Scan with UUID tracking
+  -- Scan with UUID tracking (FX parsing is deferred to background queue)
   local templates, folders = scan_directory(template_path, "", metadata)
 
   state.templates = templates
@@ -194,6 +195,9 @@ function M.scan_templates(state)
   Persistence.save_metadata(metadata)
 
   reaper.ShowConsoleMsg(string.format("Found %d templates in %d folders\n", #templates, #folders))
+
+  -- Start background FX parsing
+  FXQueue.add_to_queue(state, templates)
 end
 
 -- Filter templates by folder and search

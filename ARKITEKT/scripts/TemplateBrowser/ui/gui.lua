@@ -7,6 +7,7 @@ local TemplateOps = require('TemplateBrowser.domain.template_ops')
 local FileOps = require('TemplateBrowser.domain.file_ops')
 local Tags = require('TemplateBrowser.domain.tags')
 local Separator = require('TemplateBrowser.ui.separator')
+local FXQueue = require('TemplateBrowser.domain.fx_queue')
 
 local M = {}
 local GUI = {}
@@ -242,67 +243,25 @@ local function draw_folder_node(ctx, node, state, config)
   ImGui.PopID(ctx)
 end
 
--- Draw tabbed left panel (DIRECTORY / VSTS / TAGS)
-local function draw_left_panel(ctx, state, config, width, height)
-  BeginChildCompat(ctx, "LeftPanel", width, height, true)
+-- Mini tags list for bottom of directory tab
+local function draw_tags_mini_list(ctx, state, config, width, height)
+  BeginChildCompat(ctx, "DirectoryTags", width, height, true)
 
-  -- Tab bar
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-
-  local tab_width = width / 3
-  local tab_flags = 0
-
-  -- DIRECTORY tab
-  if state.left_panel_tab == "directory" then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
-  end
-  if ImGui.Button(ctx, "DIRECTORY", tab_width - 2, 24) then
-    state.left_panel_tab = "directory"
-  end
-  if state.left_panel_tab == "directory" then
-    ImGui.PopStyleColor(ctx)
-  end
-
-  ImGui.SameLine(ctx)
-
-  -- VSTS tab
-  if state.left_panel_tab == "vsts" then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
-  end
-  if ImGui.Button(ctx, "VSTS", tab_width - 2, 24) then
-    state.left_panel_tab = "vsts"
-  end
-  if state.left_panel_tab == "vsts" then
-    ImGui.PopStyleColor(ctx)
-  end
-
-  ImGui.SameLine(ctx)
-
-  -- TAGS tab
-  if state.left_panel_tab == "tags" then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
-  end
-  if ImGui.Button(ctx, "TAGS", tab_width - 2, 24) then
-    state.left_panel_tab = "tags"
-  end
-  if state.left_panel_tab == "tags" then
-    ImGui.PopStyleColor(ctx)
-  end
-
+  ImGui.Text(ctx, "Tags")
   ImGui.PopStyleColor(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- Draw content based on active tab
-  local content_height = height - 35  -- Account for tab bar
-
-  if state.left_panel_tab == "directory" then
-    draw_directory_content(ctx, state, config, width, content_height)
-  elseif state.left_panel_tab == "vsts" then
-    draw_vsts_content(ctx, state, config, width, content_height)
-  elseif state.left_panel_tab == "tags" then
-    draw_tags_content(ctx, state, config, width, content_height)
+  -- Show tag count
+  local tag_count = 0
+  if state.metadata and state.metadata.tags then
+    for _ in pairs(state.metadata.tags) do
+      tag_count = tag_count + 1
+    end
   end
+
+  ImGui.TextDisabled(ctx, string.format("%d tag%s (see TAGS tab)", tag_count, tag_count == 1 and "" or "s"))
 
   ImGui.EndChild(ctx)
 end
@@ -383,29 +342,6 @@ local function draw_directory_content(ctx, state, config, width, height)
 
   -- Tags section at bottom
   draw_tags_mini_list(ctx, state, config, width - config.PANEL_PADDING * 2, tags_height)
-end
-
--- Mini tags list for bottom of directory tab
-local function draw_tags_mini_list(ctx, state, config, width, height)
-  BeginChildCompat(ctx, "DirectoryTags", width, height, true)
-
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.Text(ctx, "Tags")
-  ImGui.PopStyleColor(ctx)
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
-
-  -- Show tag count
-  local tag_count = 0
-  if state.metadata and state.metadata.tags then
-    for _ in pairs(state.metadata.tags) do
-      tag_count = tag_count + 1
-    end
-  end
-
-  ImGui.TextDisabled(ctx, string.format("%d tag%s (see TAGS tab)", tag_count, tag_count == 1 and "" or "s"))
-
-  ImGui.EndChild(ctx)
 end
 
 -- Draw VSTS content (list of all FX with filtering)
@@ -559,71 +495,66 @@ local function draw_tags_content(ctx, state, config, width, height)
   ImGui.EndChild(ctx)
 end
 
--- DEPRECATED: Old folder panel function (kept for reference, will be removed)
-local function draw_folder_panel_old(ctx, state, config, width, height)
-  BeginChildCompat(ctx, "FolderPanel", width, height, true)
+-- Draw tabbed left panel (DIRECTORY / VSTS / TAGS)
+local function draw_left_panel(ctx, state, config, width, height)
+  BeginChildCompat(ctx, "LeftPanel", width, height, true)
 
-  -- Header with "+" button
-  local header_text_w = ImGui.CalcTextSize(ctx, "Explorer")
-  local button_w = 24
-
+  -- Tab bar
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.Text(ctx, "Explorer")
-  ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING)
 
-  if ImGui.Button(ctx, "+", button_w, 0) then
-    -- Create new folder
-    local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
-    local folder_num = 1
-    local new_folder_name = "New Folder"
+  local tab_width = width / 3
+  local tab_flags = 0
 
-    -- Find unique name
-    while true do
-      local test_path = template_path .. package.config:sub(1,1) .. new_folder_name
-      if not reaper.file_exists(test_path) then
-        break
-      end
-      folder_num = folder_num + 1
-      new_folder_name = "New Folder " .. folder_num
-    end
-
-    local success, new_path = FileOps.create_folder(template_path, new_folder_name)
-    if success then
-      local Scanner = require('TemplateBrowser.domain.scanner')
-      Scanner.scan_templates(state)
-    end
+  -- DIRECTORY tab
+  if state.left_panel_tab == "directory" then
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
   end
-
-  ImGui.PopStyleColor(ctx)
-
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
-
-  -- "All Templates" option
-  local is_all_selected = (state.selected_folder == nil or state.selected_folder == "")
-  if is_all_selected then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.selected_bg)
+  if ImGui.Button(ctx, "DIRECTORY", tab_width - 2, 24) then
+    state.left_panel_tab = "directory"
   end
-
-  if ImGui.Selectable(ctx, "All Templates", is_all_selected) then
-    state.selected_folder = ""
-    local Scanner = require('TemplateBrowser.domain.scanner')
-    Scanner.filter_templates(state)
-  end
-
-  if is_all_selected then
+  if state.left_panel_tab == "directory" then
     ImGui.PopStyleColor(ctx)
   end
 
+  ImGui.SameLine(ctx)
+
+  -- VSTS tab
+  if state.left_panel_tab == "vsts" then
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
+  end
+  if ImGui.Button(ctx, "VSTS", tab_width - 2, 24) then
+    state.left_panel_tab = "vsts"
+  end
+  if state.left_panel_tab == "vsts" then
+    ImGui.PopStyleColor(ctx)
+  end
+
+  ImGui.SameLine(ctx)
+
+  -- TAGS tab
+  if state.left_panel_tab == "tags" then
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
+  end
+  if ImGui.Button(ctx, "TAGS", tab_width - 2, 24) then
+    state.left_panel_tab = "tags"
+  end
+  if state.left_panel_tab == "tags" then
+    ImGui.PopStyleColor(ctx)
+  end
+
+  ImGui.PopStyleColor(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- Folder tree
-  if state.folders and state.folders.children then
-    _folder_counter = 0  -- Reset counter each frame
-    for _, child in ipairs(state.folders.children) do
-      draw_folder_node(ctx, child, state, config)
-    end
+  -- Draw content based on active tab
+  local content_height = height - 35  -- Account for tab bar
+
+  if state.left_panel_tab == "directory" then
+    draw_directory_content(ctx, state, config, width, content_height)
+  elseif state.left_panel_tab == "vsts" then
+    draw_vsts_content(ctx, state, config, width, content_height)
+  elseif state.left_panel_tab == "tags" then
+    draw_tags_content(ctx, state, config, width, content_height)
   end
 
   ImGui.EndChild(ctx)
@@ -783,114 +714,6 @@ local function draw_template_panel(ctx, state, config, width, height)
   ImGui.EndChild(ctx)
 end
 
--- Draw tags list panel (left-bottom)
-local function draw_tags_list_panel(ctx, state, config, width, height)
-  BeginChildCompat(ctx, "TagsListPanel", width, height, true)
-
-  -- Header with "+" button
-  local header_text = "Tags"
-  local header_text_w = ImGui.CalcTextSize(ctx, header_text)
-  local button_w = 24
-
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.Text(ctx, header_text)
-  ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING)
-
-  if ImGui.Button(ctx, "+##createtag", button_w, 0) then
-    -- Create new tag - prompt for name
-    local tag_num = 1
-    local new_tag_name = "Tag " .. tag_num
-
-    -- Find unique name
-    if state.metadata and state.metadata.tags then
-      while state.metadata.tags[new_tag_name] do
-        tag_num = tag_num + 1
-        new_tag_name = "Tag " .. tag_num
-      end
-    end
-
-    -- Create tag with random color
-    local r = math.random(50, 255) / 255.0
-    local g = math.random(50, 255) / 255.0
-    local b = math.random(50, 255) / 255.0
-    local color = (math.floor(r * 255) << 16) | (math.floor(g * 255) << 8) | math.floor(b * 255)
-
-    Tags.create_tag(state.metadata, new_tag_name, color)
-
-    -- Save metadata
-    local Persistence = require('TemplateBrowser.domain.persistence')
-    Persistence.save_metadata(state.metadata)
-  end
-
-  ImGui.PopStyleColor(ctx)
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
-
-  -- List all tags
-  if state.metadata and state.metadata.tags then
-    for tag_name, tag_data in pairs(state.metadata.tags) do
-      local is_renaming = (state.renaming_item == tag_name and state.renaming_type == "tag")
-
-      ImGui.PushID(ctx, tag_name)
-
-      if is_renaming then
-        -- Rename mode
-        ImGui.SetNextItemWidth(ctx, -1)
-        local changed, new_name = ImGui.InputText(ctx, "##rename_tag", state.rename_buffer)
-
-        if changed then
-          state.rename_buffer = new_name
-        end
-
-        -- Commit on Enter or deactivate
-        if ImGui.IsItemDeactivatedAfterEdit(ctx) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
-          if state.rename_buffer ~= "" and state.rename_buffer ~= tag_name then
-            -- Rename tag
-            Tags.rename_tag(state.metadata, tag_name, state.rename_buffer)
-            local Persistence = require('TemplateBrowser.domain.persistence')
-            Persistence.save_metadata(state.metadata)
-          end
-          state.renaming_item = nil
-          state.renaming_type = nil
-          state.rename_buffer = ""
-        end
-
-        -- Cancel on Escape
-        if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-          state.renaming_item = nil
-          state.renaming_type = nil
-          state.rename_buffer = ""
-        end
-      else
-        -- Normal display
-        -- Color swatch
-        local r = ((tag_data.color >> 16) & 0xFF) / 255.0
-        local g = ((tag_data.color >> 8) & 0xFF) / 255.0
-        local b = (tag_data.color & 0xFF) / 255.0
-
-        ImGui.ColorButton(ctx, "##color", ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0), 0, 16, 16)
-        ImGui.SameLine(ctx)
-
-        -- Tag name
-        ImGui.Text(ctx, tag_name)
-
-        -- Double-click to rename
-        if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
-          state.renaming_item = tag_name
-          state.renaming_type = "tag"
-          state.rename_buffer = tag_name
-        end
-      end
-
-      ImGui.PopID(ctx)
-    end
-  else
-    ImGui.TextDisabled(ctx, "No tags yet")
-  end
-
-  ImGui.EndChild(ctx)
-end
-
 -- Draw info & tag assignment panel (right)
 local function draw_info_panel(ctx, state, config, width, height)
   BeginChildCompat(ctx, "InfoPanel", width, height, true)
@@ -1030,6 +853,9 @@ end
 function GUI:draw(ctx, shell_state)
   self:initialize_once(ctx)
 
+  -- Process background FX parsing queue (5 templates per frame)
+  FXQueue.process_batch(self.state, 5)
+
   -- Handle undo/redo
   if ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl) and ImGui.IsKeyPressed(ctx, ImGui.Key_Z) then
     if ImGui.IsKeyDown(ctx, ImGui.Mod_Shift) then
@@ -1077,6 +903,28 @@ function GUI:draw(ctx, shell_state)
   ImGui.SetCursorPos(ctx, (SCREEN_W - title_w) * 0.5, title_y)
   ImGui.Text(ctx, title)
   ImGui.PopFont(ctx)
+
+  -- FX parsing progress indicator
+  if not FXQueue.is_complete(self.state) then
+    local status = FXQueue.get_status(self.state)
+    local progress = FXQueue.get_progress(self.state)
+
+    local status_y = title_y + 25
+    local status_w = ImGui.CalcTextSize(ctx, status)
+
+    ImGui.SetCursorPos(ctx, (SCREEN_W - status_w) * 0.5, status_y)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, ImGui.ColorConvertDouble4ToU32(0.7, 0.7, 0.7, 1.0))
+    ImGui.Text(ctx, status)
+    ImGui.PopStyleColor(ctx)
+
+    -- Small progress bar
+    local bar_width = 200
+    local bar_height = 3
+    ImGui.SetCursorPos(ctx, (SCREEN_W - bar_width) * 0.5, status_y + 18)
+    ImGui.PushStyleColor(ctx, ImGui.Col_PlotHistogram, self.config.COLORS.selected_bg)
+    ImGui.ProgressBar(ctx, progress, bar_width, bar_height, "")
+    ImGui.PopStyleColor(ctx)
+  end
 
   -- Adjust spacing after title
   ImGui.SetCursorPosY(ctx, title_y + 30)
