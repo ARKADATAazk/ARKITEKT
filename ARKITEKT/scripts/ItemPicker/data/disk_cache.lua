@@ -16,12 +16,15 @@ local current_cache = nil -- In-memory cache for current project
 local MAX_PROJECTS = 5
 local flushed = false -- Prevent double flush
 
--- Simple Lua table serialization (supports nested tables and numbers)
+-- Simple Lua table serialization (supports nested tables, numbers, and strings)
 local function serialize(t, indent)
   indent = indent or ""
   if type(t) ~= "table" then
     if type(t) == "number" then
       return tostring(t)
+    elseif type(t) == "string" then
+      -- Escape strings properly
+      return string.format("%q", t)
     else
       return "nil"
     end
@@ -35,18 +38,22 @@ local function serialize(t, indent)
     result = result .. next_indent
     if type(v) == "number" then
       result = result .. v
+    elseif type(v) == "string" then
+      result = result .. string.format("%q", v)
     elseif type(v) == "table" then
       result = result .. serialize(v, next_indent)
     end
     result = result .. ",\n"
   end
 
-  -- Handle hash part (for MIDI thumbnails with x1,y1,x2,y2)
+  -- Handle hash part (for MIDI thumbnails with x1,y1,x2,y2 and hash strings)
   for k, v in pairs(t) do
     if type(k) ~= "number" or k > #t then
-      result = result .. next_indent .. "[\"" .. tostring(k) .. "\"] = "
+      result = result .. next_indent .. "[" .. string.format("%q", tostring(k)) .. "] = "
       if type(v) == "number" then
         result = result .. v
+      elseif type(v) == "string" then
+        result = result .. string.format("%q", v)
       elseif type(v) == "table" then
         result = result .. serialize(v, next_indent)
       end
