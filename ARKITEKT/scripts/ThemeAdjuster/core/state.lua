@@ -19,6 +19,7 @@ local state = {
   package_pins = {},
 
   -- UI state
+  active_tab = "ASSEMBLER",
   demo_mode = true,
   search_text = "",
   filters = {
@@ -43,6 +44,7 @@ function M.initialize(settings)
   state.settings = settings
 
   if settings then
+    state.active_tab = settings:get('active_tab', "ASSEMBLER")
     state.demo_mode = settings:get('demo_mode', true)
     state.search_text = settings:get('search_text', "")
     state.filters = settings:get('filters', state.filters)
@@ -58,6 +60,7 @@ end
 -- GETTERS
 -- ============================================================================
 
+function M.get_active_tab() return state.active_tab end
 function M.get_demo_mode() return state.demo_mode end
 function M.get_search_text() return state.search_text end
 function M.get_filters() return state.filters end
@@ -72,6 +75,11 @@ function M.get_cache_status() return state.cache_status end
 -- ============================================================================
 -- SETTERS
 -- ============================================================================
+
+function M.set_active_tab(value)
+  state.active_tab = value
+  if state.settings then state.settings:set('active_tab', value) end
+end
 
 function M.set_demo_mode(value)
   state.demo_mode = value

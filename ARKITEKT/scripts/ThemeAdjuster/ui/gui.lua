@@ -1,10 +1,11 @@
 -- @noindex
 -- ThemeAdjuster/ui/gui.lua
--- Main GUI orchestrator
+-- Main GUI orchestrator with tab system
 
 local ImGui = require 'imgui' '0.10'
-local PackagesView = require("ThemeAdjuster.ui.views.packages_view")
+local Config = require("ThemeAdjuster.core.config")
 local PackageManager = require("ThemeAdjuster.packages.manager")
+local TabContent = require("ThemeAdjuster.ui.tab_content")
 
 local M = {}
 local GUI = {}
@@ -15,15 +16,15 @@ function M.create(State, AppConfig, settings)
     State = State,
     Config = AppConfig,
     settings = settings,
-    packages_view = nil,
-    shell_state = nil,
+    tab_content = nil,
+    current_tab = State.get_active_tab(),
   }, GUI)
 
-  -- Initialize packages view
-  self.packages_view = PackagesView.new(State, AppConfig, settings)
-
-  -- Initial package scan
+  -- Initialize packages
   self:refresh_packages()
+
+  -- Create tab content handler
+  self.tab_content = TabContent.new(State, AppConfig, settings)
 
   return self
 end
@@ -44,20 +45,34 @@ function GUI:refresh_packages()
 end
 
 function GUI:update_state(ctx, window)
-  -- Update animations, state, etc.
-  if self.packages_view and self.packages_view.update then
-    self.packages_view:update(0.016)
+  -- Update animations
+  if self.tab_content and self.tab_content.update then
+    self.tab_content:update(0.016)
   end
 end
 
 function GUI:draw(ctx, window, shell_state)
-  self.shell_state = shell_state
-
   self:update_state(ctx, window)
 
-  -- Draw packages view
-  if self.packages_view then
-    self.packages_view:draw(ctx, shell_state)
+  -- Draw tab bar
+  if ImGui.BeginTabBar(ctx, 'main_tabs') then
+    for _, tab_def in ipairs(Config.TABS) do
+      if ImGui.BeginTabItem(ctx, tab_def.label) then
+        -- Track active tab
+        if self.current_tab ~= tab_def.id then
+          self.current_tab = tab_def.id
+          self.State.set_active_tab(tab_def.id)
+        end
+
+        -- Draw tab content
+        if self.tab_content then
+          self.tab_content:draw(ctx, tab_def.id, shell_state)
+        end
+
+        ImGui.EndTabItem(ctx)
+      end
+    end
+    ImGui.EndTabBar(ctx)
   end
 end
 
