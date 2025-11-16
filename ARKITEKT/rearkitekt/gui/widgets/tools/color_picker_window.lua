@@ -281,17 +281,16 @@ function M.render_inline(ctx, id, config)
                        ImGui.ColorEditFlags_NoInputs |
                        ImGui.ColorEditFlags_NoLabel
 
-  -- Remove all padding to maximize picker size
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 0, 0)
+  -- Set size for the picker
+  if size then
+    ImGui.SetNextItemWidth(ctx, size)
+  end
 
   -- Convert RGBA to ARGB for ImGui
   local argb_color = Colors.rgba_to_argb(inst.current_color)
 
   local rv, new_argb_color = ImGui.ColorPicker3(ctx, '##picker_inline_' .. id, argb_color, picker_flags)
 
-  ImGui.PopStyleVar(ctx, 3)
 
   if rv then
     inst.current_color = Colors.argb_to_rgba(new_argb_color)
