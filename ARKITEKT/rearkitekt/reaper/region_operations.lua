@@ -206,8 +206,17 @@ end
 --- @param rids table Array of region IDs to paste
 --- @return boolean success
 function M.paste_regions_at_cursor(rids)
+  reaper.ShowConsoleMsg("[RegionOps] paste_regions_at_cursor called with " .. tostring(#rids or 0) .. " RIDs\n")
+
   if not rids or #rids == 0 then
+    reaper.ShowConsoleMsg("[RegionOps] No RIDs provided, returning false\n")
     return false
+  end
+
+  -- Log the RIDs to check for duplicates
+  reaper.ShowConsoleMsg("[RegionOps] RIDs received: ")
+  for i, rid in ipairs(rids) do
+    reaper.ShowConsoleMsg(tostring(rid) .. (i < #rids and ", " or "\n"))
   end
 
   local proj = 0
@@ -218,6 +227,7 @@ function M.paste_regions_at_cursor(rids)
 
   -- Get edit cursor position
   local cursor_pos = reaper.GetCursorPosition()
+  reaper.ShowConsoleMsg("[RegionOps] Edit cursor position: " .. tostring(cursor_pos) .. "\n")
   local current_position = cursor_pos
   local gap = 0
 
@@ -226,15 +236,20 @@ function M.paste_regions_at_cursor(rids)
   for _, rid in ipairs(rids) do
     local region = Regions.get_region_by_rid(proj, rid)
     if region then
+      reaper.ShowConsoleMsg("[RegionOps] Found region: " .. tostring(region.name) .. " (" .. tostring(region.start) .. " - " .. tostring(region["end"]) .. ")\n")
       table.insert(regions_data, region)
+    else
+      reaper.ShowConsoleMsg("[RegionOps] Region not found for RID: " .. tostring(rid) .. "\n")
     end
   end
 
   -- Sort by start position
   table.sort(regions_data, function(a, b) return a.start < b.start end)
+  reaper.ShowConsoleMsg("[RegionOps] Pasting " .. #regions_data .. " regions\n")
 
   -- Copy each region to cursor
-  for _, region in ipairs(regions_data) do
+  for i, region in ipairs(regions_data) do
+    reaper.ShowConsoleMsg("[RegionOps] Pasting region " .. i .. "/" .. #regions_data .. " to position " .. tostring(current_position) .. "\n")
     copy_region_content(proj, region.start, region["end"], current_position, region.name, region.color)
     current_position = current_position + (region["end"] - region.start) + gap
   end
@@ -243,6 +258,7 @@ function M.paste_regions_at_cursor(rids)
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
 
+  reaper.ShowConsoleMsg("[RegionOps] paste_regions_at_cursor completed successfully\n")
   return true
 end
 
@@ -357,19 +373,92 @@ function M.crop_to_regions(rids)
   return true
 end
 
---- Crop project to regions in a new project tab
---- @param rids table Array of region IDs to keep
+--- Copy playlist regions to a new project tab
+--- @param rids table Array of region IDs to copy to new tab
 --- @return boolean success
 function M.crop_to_regions_new_tab(rids)
+  reaper.ShowConsoleMsg("[RegionOps] crop_to_regions_new_tab called with " .. tostring(#rids or 0) .. " RIDs\n")
+
   if not rids or #rids == 0 then
+    reaper.ShowConsoleMsg("[RegionOps] No RIDs provided, returning false\n")
     return false
   end
+
+  local source_proj = 0
+  local Regions = require('rearkitekt.reaper.regions')
+
+  -- Get region bounds for time selection
+  local regions_data = {}
+  for _, rid in ipairs(rids) do
+    local region = Regions.get_region_by_rid(source_proj, rid)
+    if region then
+      table.insert(regions_data, region)
+    end
+  end
+
+  if #regions_data == 0 then
+    reaper.ShowConsoleMsg("[RegionOps] No valid regions found\n")
+    return false
+  end
+
+  -- Sort by start position
+  table.sort(regions_data, function(a, b) return a.start < b.start end)
+
+  -- Calculate total time span needed
+  local earliest_start = regions_data[1].start
+  local latest_end = regions_data[#regions_data]["end"]
+
+  reaper.PreventUIRefresh(1)
+
+  -- Select all items within the regions in source project
+  reaper.SelectAllMediaItems(source_proj, false) -- Deselect all first
+  for i = 0, reaper.CountMediaItems(source_proj) - 1 do
+    local item = reaper.GetMediaItem(source_proj, i)
+    local item_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+    local item_end = item_pos + reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+
+    -- Check if item overlaps with any region
+    for _, region in ipairs(regions_data) do
+      if item_pos < region["end"] and item_end > region.start then
+        reaper.SetMediaItemSelected(item, true)
+        break
+      end
+    end
+  end
+
+  -- Copy selected items
+  reaper.Main_OnCommand(40698, 0) -- Copy selected items
 
   -- Create new project tab
   reaper.Main_OnCommand(40859, 0) -- New project tab
 
-  -- For now, just crop in the new project (full implementation would require cross-project copying)
-  return M.crop_to_regions(rids)
+  -- Paste items at time 0
+  reaper.SetEditCurPos(0, false, false)
+  reaper.Main_OnCommand(40914, 0) -- Paste items at edit cursor, keeping original track assignment
+
+  -- Create region markers in new tab
+  for i, region in ipairs(regions_data) do
+    local offset = region.start - earliest_start
+    local new_start = offset
+    local new_end = offset + (region["end"] - region.start)
+
+    -- Convert RGBA color to native REAPER color
+    local native_color = 0
+    if region.color then
+      local r = (region.color >> 24) & 0xFF
+      local g = (region.color >> 16) & 0xFF
+      local b = (region.color >> 8) & 0xFF
+      native_color = reaper.ColorToNative(r, g, b) | 0x1000000
+    end
+
+    reaper.AddProjectMarker2(0, true, new_start, new_end, region.name or "", -1, native_color)
+  end
+
+  reaper.PreventUIRefresh(-1)
+  reaper.UpdateArrange()
+
+  reaper.ShowConsoleMsg("[RegionOps] crop_to_regions_new_tab completed successfully\n")
+  return true
 end
 
 --- Append ALL regions to the end of the project
