@@ -126,11 +126,65 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local star_padding = 4
   local text_right_margin = is_favorite and (star_badge_size + star_padding * 2) or 0
 
+  -- Check if this tile is being renamed
+  local is_renaming = state.rename_active and state.rename_uuid == item_data.uuid and state.rename_is_audio
+
   -- Render text and badge (with reduced width if star is present)
   if cascade_factor > 0.3 then
-    local text_x2 = scaled_x2 - text_right_margin
-    BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, text_x2, header_height,
-      item_data.name, item_data.index, item_data.total, base_color, text_alpha, config)
+    if is_renaming then
+      -- Render inline rename input
+      local input_x = scaled_x1 + 8
+      local input_y = scaled_y1 + 4
+      local input_w = (scaled_x2 - text_right_margin) - input_x - 4
+      local input_h = header_height - 8
+
+      ImGui.SetCursorScreenPos(ctx, input_x, input_y)
+      ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 2, 2)
+      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#1A1A1A"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#FFFFFF"))
+      ImGui.SetNextItemWidth(ctx, input_w)
+
+      -- Auto-focus on first frame
+      if not state.rename_focused then
+        ImGui.SetKeyboardFocusHere(ctx)
+        state.rename_focused = true
+      end
+
+      local changed, new_text = ImGui.InputText(ctx, "##rename", state.rename_text, ImGui.InputTextFlags_EnterReturnsTrue)
+
+      if changed then
+        -- Apply rename to the item
+        local take = reaper.GetActiveTake(item_data.item)
+        if take then
+          reaper.GetSetMediaItemTakeInfo_String(take, "P_NAME", new_text, true)
+        end
+        state.rename_active = false
+        state.rename_uuid = nil
+        state.rename_focused = false
+      end
+
+      -- Cancel on Escape or focus loss
+      if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) or not ImGui.IsItemActive() then
+        if state.rename_focused and not ImGui.IsItemActive() then
+          state.rename_active = false
+          state.rename_uuid = nil
+          state.rename_focused = false
+        end
+      end
+
+      -- Update rename text
+      if not changed then
+        _, state.rename_text = ImGui.InputText(ctx, "##rename_hidden", new_text or state.rename_text)
+      end
+
+      ImGui.PopStyleColor(ctx, 2)
+      ImGui.PopStyleVar(ctx)
+    else
+      -- Normal text rendering
+      local text_x2 = scaled_x2 - text_right_margin
+      BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, text_x2, header_height,
+        item_data.name, item_data.index, item_data.total, base_color, text_alpha, config)
+    end
   end
 
   -- Render favorite star badge

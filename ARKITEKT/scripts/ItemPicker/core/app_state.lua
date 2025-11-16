@@ -63,9 +63,18 @@ M.audio_selection_count = 0
 M.midi_selection_count = 0
 
 -- Preview state
-M.preview_item = nil
-M.preview_track = nil
 M.previewing = 0
+M.preview_item = nil
+M.preview_temp_item = nil
+M.preview_track = nil
+M.preview_start_time = nil
+M.preview_duration = nil
+
+-- Rename state
+M.rename_active = false
+M.rename_uuid = nil
+M.rename_text = ""
+M.rename_is_audio = true
 
 M.draw_list = nil
 M.overlay_alpha = 1.0
@@ -310,14 +319,11 @@ function M.start_preview(item)
   -- Stop current preview
   M.stop_preview()
 
-  -- Start new preview
-  local play_through_track = M.settings.play_item_through_track
-  local track = reaper.GetMediaItemTrack(item)
+  -- Get the currently selected/active track
+  local target_track = reaper.GetSelectedTrack(0, 0)
 
-  if play_through_track then
-    M.previewing = reaper.PlayPreview(reaper.PCM_Source_CreateFromType("MIDI"))
-    M.preview_track = track
-  else
+  if not target_track then
+    -- No track selected, use regular preview
     local take = reaper.GetActiveTake(item)
     if take then
       local source = reaper.GetMediaItemTake_Source(take)
@@ -326,6 +332,60 @@ function M.start_preview(item)
         M.preview_item = item
       end
     end
+    return
+  end
+
+  -- Preview through selected track by creating a temporary item
+  local take = reaper.GetActiveTake(item)
+  if not take then return end
+
+  -- Get item position and length
+  local item_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+  local item_len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+
+  -- Get current edit cursor position
+  local cursor_pos = reaper.GetCursorPosition()
+
+  -- Create temporary item on selected track
+  local temp_item = reaper.AddMediaItemToTrack(target_track)
+  reaper.SetMediaItemInfo_Value(temp_item, "D_POSITION", cursor_pos)
+  reaper.SetMediaItemInfo_Value(temp_item, "D_LENGTH", item_len)
+
+  -- Copy the take to the temporary item
+  local temp_take = reaper.AddTakeToMediaItem(temp_item)
+  local source = reaper.GetMediaItemTake_Source(take)
+
+  if source then
+    reaper.SetMediaItemTake_Source(temp_take, source)
+
+    -- Copy take properties
+    local take_offset = reaper.GetMediaItemTakeInfo_Value(take, "D_STARTOFFS")
+    reaper.SetMediaItemTakeInfo_Value(temp_take, "D_STARTOFFS", take_offset)
+
+    -- Copy item volume
+    local item_vol = reaper.GetMediaItemInfo_Value(item, "D_VOL")
+    reaper.SetMediaItemInfo_Value(temp_item, "D_VOL", item_vol)
+
+    -- Make it active take
+    reaper.SetActiveTake(temp_take)
+
+    -- Update timeline
+    reaper.UpdateItemInProject(temp_item)
+
+    -- Start playback from cursor position
+    reaper.SetEditCurPos(cursor_pos, false, false)
+    reaper.OnPlayButton()
+
+    -- Store preview state
+    M.preview_item = item
+    M.preview_temp_item = temp_item
+    M.preview_track = target_track
+    M.preview_start_time = reaper.time_precise()
+    M.preview_duration = item_len
+    M.previewing = 1  -- Flag to indicate preview is active
+  else
+    -- Failed to get source, clean up
+    reaper.DeleteTrackMediaItem(target_track, temp_item)
   end
 end
 
@@ -333,13 +393,58 @@ function M.stop_preview()
   if M.previewing and M.previewing ~= 0 then
     reaper.StopPreview(M.previewing)
     M.previewing = 0
-    M.preview_item = nil
-    M.preview_track = nil
   end
+
+  -- Clean up temporary preview item
+  if M.preview_temp_item then
+    -- Stop playback if it's still playing
+    local play_state = reaper.GetPlayState()
+    if play_state & 1 == 1 then  -- Check if playing
+      reaper.OnStopButton()
+    end
+
+    -- Delete temporary item
+    if M.preview_track and reaper.ValidatePtr2(0, M.preview_track, "MediaTrack*") then
+      if reaper.ValidatePtr2(0, M.preview_temp_item, "MediaItem*") then
+        reaper.DeleteTrackMediaItem(M.preview_track, M.preview_temp_item)
+      end
+    end
+
+    M.preview_temp_item = nil
+  end
+
+  M.preview_item = nil
+  M.preview_track = nil
+  M.preview_start_time = nil
+  M.preview_duration = nil
 end
 
 function M.is_previewing(item)
-  return M.preview_item == item and M.previewing ~= 0
+  if not M.previewing or M.previewing == 0 then
+    return false
+  end
+
+  -- Check if using temp item (track preview)
+  if M.preview_temp_item then
+    -- Check if playback is still active and within duration
+    local play_state = reaper.GetPlayState()
+    if play_state & 1 == 0 then
+      -- Playback stopped, clean up
+      M.stop_preview()
+      return false
+    end
+
+    -- Check if preview duration exceeded
+    if M.preview_start_time and M.preview_duration then
+      local elapsed = reaper.time_precise() - M.preview_start_time
+      if elapsed >= M.preview_duration then
+        M.stop_preview()
+        return false
+      end
+    end
+  end
+
+  return M.preview_item == item
 end
 
 -- Persistence

@@ -315,6 +315,20 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
         end
       end
     end,
+
+    double_click = function(uuid)
+      -- Start rename for this item
+      local items = get_items()
+      for _, item_data in ipairs(items) do
+        if item_data.uuid == uuid then
+          state.rename_active = true
+          state.rename_uuid = uuid
+          state.rename_text = item_data.name
+          state.rename_is_audio = false
+          return
+        end
+      end
+    end,
   }
 
   return grid
