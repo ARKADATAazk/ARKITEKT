@@ -14,8 +14,9 @@ local function convert_reaper_color_to_rgba(native_color)
     return FALLBACK_COLOR
   end
 
-  local color_int = native_color | 0x1000000
-  -- ColorFromNative handles platform conversion automatically
+  -- Strip the custom color flag (0x1000000) before converting
+  -- ColorFromNative expects just the RGB value
+  local color_int = native_color & 0xFFFFFF
   local r, g, b = reaper.ColorFromNative(color_int)
 
   return (r << 24) | (g << 16) | (b << 8) | 0xFF
@@ -130,7 +131,8 @@ function M.set_region_color(proj, target_rid, rgba_color)
 
   -- Update the region with new color using SetProjectMarker4
   -- Parameters: proj, index, isrgn, pos, rgnend, name, markrgnindexnumber, color, flags
-  -- NOTE: No undo block for live dragging - too slow
+  reaper.Undo_BeginBlock()
+
   local success = reaper.SetProjectMarker4(
     proj,
     rgn.index,        -- marker/region index
@@ -144,6 +146,12 @@ function M.set_region_color(proj, target_rid, rgba_color)
   )
 
   reaper.ShowConsoleMsg(string.format("    -> SetProjectMarker4 returned: %s\n", tostring(success)))
+
+  if success then
+    reaper.MarkProjectDirty(proj)
+  end
+
+  reaper.Undo_EndBlock("Set region color", -1)
 
   -- Force immediate visual update
   reaper.UpdateTimeline()

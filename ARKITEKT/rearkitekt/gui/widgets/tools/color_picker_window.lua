@@ -129,14 +129,23 @@ function M.render(ctx, id, config)
   ImGui.PopStyleVar(ctx, 1)
   ImGui.PopStyleColor(ctx, 1)
 
+  -- Track color changes during dragging, but only apply on mouse release
   if rv then
     -- Convert ImGui's ARGB back to our RGBA format
-    inst.current_color = Colors.argb_to_rgba(new_argb_color)
+    local new_rgba = Colors.argb_to_rgba(new_argb_color)
+    inst.current_color = new_rgba
     changed = true
 
-    -- Call callback immediately on change (live update)
+    -- Store that we have a pending change
+    inst.pending_change = true
+  end
+
+  -- Apply color only when mouse button is released
+  if inst.pending_change and ImGui.IsMouseReleased(ctx, 0) then
+    inst.pending_change = false
+
     if on_change then
-      reaper.ShowConsoleMsg(string.format("Color changed to RGBA: %08X (was ARGB: %08X)\n", inst.current_color, new_argb_color))
+      reaper.ShowConsoleMsg(string.format("Color applied on mouse release: RGBA=%08X\n", inst.current_color))
       on_change(inst.current_color)
     end
   end
