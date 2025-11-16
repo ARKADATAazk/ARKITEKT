@@ -65,6 +65,8 @@ M.midi_selection_count = 0
 -- Preview state
 M.previewing = false
 M.preview_item = nil
+M.preview_start_time = nil
+M.preview_duration = nil
 
 -- Rename state
 M.rename_active = false
@@ -315,6 +317,9 @@ function M.start_preview(item)
   -- Stop current preview
   M.stop_preview()
 
+  -- Get item duration for progress tracking
+  local item_len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+
   -- First, select the item for SWS commands to work
   reaper.SelectAllMediaItems(0, false)  -- Deselect all
   reaper.SetMediaItemSelected(item, true)
@@ -335,6 +340,8 @@ function M.start_preview(item)
       reaper.Main_OnCommand(cmd_id, 0)
       M.previewing = true
       M.preview_item = item
+      M.preview_start_time = reaper.time_precise()
+      M.preview_duration = item_len
     end
   else
     -- Audio: Use SWS commands
@@ -345,6 +352,8 @@ function M.start_preview(item)
         reaper.Main_OnCommand(cmd_id, 0)
         M.previewing = true
         M.preview_item = item
+        M.preview_start_time = reaper.time_precise()
+        M.preview_duration = item_len
       end
     else
       -- Direct preview (no FX, faster)
@@ -353,6 +362,8 @@ function M.start_preview(item)
         reaper.Main_OnCommand(cmd_id, 0)
         M.previewing = true
         M.preview_item = item
+        M.preview_start_time = reaper.time_precise()
+        M.preview_duration = item_len
       end
     end
   end
@@ -367,11 +378,30 @@ function M.stop_preview()
     end
     M.previewing = false
     M.preview_item = nil
+    M.preview_start_time = nil
+    M.preview_duration = nil
   end
 end
 
 function M.is_previewing(item)
   return M.previewing and M.preview_item == item
+end
+
+function M.get_preview_progress()
+  if not M.previewing or not M.preview_start_time or not M.preview_duration then
+    return 0
+  end
+
+  local elapsed = reaper.time_precise() - M.preview_start_time
+  local progress = elapsed / M.preview_duration
+
+  -- Auto-stop when preview completes
+  if progress >= 1.0 then
+    M.stop_preview()
+    return 1.0
+  end
+
+  return progress
 end
 
 -- Persistence
@@ -397,11 +427,8 @@ end
 function M.cleanup()
   M.persist_all()
 
-  -- Stop preview
-  if M.previewing and M.previewing ~= 0 then
-    reaper.StopPreview(M.previewing)
-    M.previewing = 0
-  end
+  -- Stop preview using SWS command
+  M.stop_preview()
 end
 
 return M

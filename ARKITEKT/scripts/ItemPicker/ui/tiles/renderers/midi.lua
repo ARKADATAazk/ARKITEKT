@@ -43,6 +43,32 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local hover_factor = animator and animator:get(item_data.key, 'hover') or (tile_state.hover and 1.0 or 0.0)
   local enabled_factor = animator and animator:get(item_data.key, 'enabled') or (is_disabled and 0.0 or 1.0)
 
+  -- Track playback progress
+  local playback_progress, playback_fade = 0, 0
+  if state.is_previewing and state.is_previewing(item_data.item) then
+    playback_progress = state.get_preview_progress and state.get_preview_progress() or 0
+    -- Store progress for fade out
+    if animator and item_data.key then
+      animator:track(item_data.key, 'last_progress', playback_progress, 999)  -- Instant update
+      -- Time-based fade: fade in when playing, fade out at 100% or when stopped
+      local target_fade = (playback_progress > 0 and playback_progress < 1.0) and 1.0 or 0.0
+      local current_fade = animator:get(item_data.key, 'progress_fade') or 0
+      -- Fast fade in (8.0), faster fade out (0.8 seconds)
+      local fade_speed = (target_fade > current_fade) and 8.0 or (1.0 / 0.8)
+      animator:track(item_data.key, 'progress_fade', target_fade, fade_speed)
+      playback_fade = animator:get(item_data.key, 'progress_fade')
+    else
+      playback_fade = 1.0
+    end
+  else
+    -- Not currently playing this item, fade out at last known progress
+    if animator and item_data.key then
+      playback_progress = animator:get(item_data.key, 'last_progress') or 0
+      animator:track(item_data.key, 'progress_fade', 0.0, 1.0 / 0.8)  -- 0.8 second fade out
+      playback_fade = animator:get(item_data.key, 'progress_fade')
+    end
+  end
+
   -- Get base color from item
   local base_color = item_data.color or 0xFF555555
 
@@ -86,7 +112,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   fx_config.ants_replace_border = false
 
   TileFX.render_complete(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color,
-    fx_config, tile_state.selected, hover_factor, 0, 0)
+    fx_config, tile_state.selected, hover_factor, playback_progress, playback_fade)
 
   -- Restore original values
   fx_config.rounding = saved_rounding
