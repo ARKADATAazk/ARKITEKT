@@ -101,6 +101,11 @@ end
 function GUI:draw(ctx, shell_state)
   self:initialize_once(ctx)
 
+  -- Get draw list (MUST be first, before any rendering)
+  if not self.state.draw_list then
+    self.state.draw_list = ImGui.GetWindowDrawList(ctx)
+  end
+
   -- Start incremental loading after fade animation completes (~20 frames = 333ms at 60fps)
   -- This ensures smooth fade-in before heavy processing begins
   if not self.loading_started then
