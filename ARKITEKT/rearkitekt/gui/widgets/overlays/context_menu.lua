@@ -10,7 +10,7 @@ local M = {}
 local hexrgb = Colors.hexrgb
 
 local DEFAULTS = {
-  bg_color = hexrgb("#1A1A1A"),         -- Dark background
+  bg_color = hexrgb("#222222"),         -- Lighter grey background
   border_color = hexrgb("#0F0F0F"),     -- Much darker border (almost black)
   item_bg_color = hexrgb("#00000000"),  -- Transparent default
   item_hover_color = hexrgb("#2E2E2E"), -- Subtle hover highlight
