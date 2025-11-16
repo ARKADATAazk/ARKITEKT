@@ -744,4 +744,8 @@ function RegionTiles:draw_ghosts(ctx)
   return Render.draw_ghosts(self, ctx)
 end
 
+function RegionTiles:draw_color_pickers(ctx)
+  return Render.draw_color_pickers(self, ctx)
+end
+
 return M
