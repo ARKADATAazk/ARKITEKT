@@ -132,7 +132,10 @@ end
 --- @param rids table Array of region IDs to append
 --- @return boolean success
 function M.append_regions_to_project(rids)
+  reaper.ShowConsoleMsg("[RegionOps] append_regions_to_project called with " .. tostring(#rids or 0) .. " RIDs\n")
+
   if not rids or #rids == 0 then
+    reaper.ShowConsoleMsg("[RegionOps] No RIDs provided, returning false\n")
     return false
   end
 
@@ -144,23 +147,30 @@ function M.append_regions_to_project(rids)
 
   -- Get current project end
   local project_end = get_project_length(proj)
+  reaper.ShowConsoleMsg("[RegionOps] Project end position: " .. tostring(project_end) .. "\n")
   local current_position = project_end
   local gap = 0
 
   -- Get region data and sort by position
   local regions_data = {}
   for _, rid in ipairs(rids) do
+    reaper.ShowConsoleMsg("[RegionOps] Looking up region with RID: " .. tostring(rid) .. "\n")
     local region = Regions.get_region_by_rid(proj, rid)
     if region then
+      reaper.ShowConsoleMsg("[RegionOps] Found region: " .. tostring(region.name) .. " (" .. tostring(region.start) .. " - " .. tostring(region["end"]) .. ")\n")
       table.insert(regions_data, region)
+    else
+      reaper.ShowConsoleMsg("[RegionOps] Region not found for RID: " .. tostring(rid) .. "\n")
     end
   end
 
   -- Sort by start position
   table.sort(regions_data, function(a, b) return a.start < b.start end)
+  reaper.ShowConsoleMsg("[RegionOps] Copying " .. #regions_data .. " regions\n")
 
   -- Copy each region to the end
   for _, region in ipairs(regions_data) do
+    reaper.ShowConsoleMsg("[RegionOps] Copying region to position " .. tostring(current_position) .. "\n")
     copy_region_content(proj, region.start, region["end"], current_position)
     current_position = current_position + (region["end"] - region.start) + gap
   end
@@ -169,6 +179,7 @@ function M.append_regions_to_project(rids)
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
 
+  reaper.ShowConsoleMsg("[RegionOps] append_regions_to_project completed successfully\n")
   return true
 end
 
@@ -220,7 +231,10 @@ end
 --- @param rids table Array of region IDs to keep
 --- @return boolean success
 function M.crop_to_regions(rids)
+  reaper.ShowConsoleMsg("[RegionOps] crop_to_regions called with " .. tostring(#rids or 0) .. " RIDs\n")
+
   if not rids or #rids == 0 then
+    reaper.ShowConsoleMsg("[RegionOps] No RIDs provided, returning false\n")
     return false
   end
 

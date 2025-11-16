@@ -151,19 +151,27 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
 
   if ContextMenu.begin(ctx, "ActionsMenu") then
     if ContextMenu.item(ctx, "Crop Project to Playlist") then
+      reaper.ShowConsoleMsg("[Active Menu] Crop Project to Playlist clicked\n")
       -- Get selected region RIDs from active grid
       local selected_keys = self.active_grid and self.active_grid.selection and self.active_grid.selection:selected_keys() or {}
+      reaper.ShowConsoleMsg("[Active Menu] Selected keys count: " .. #selected_keys .. "\n")
       local rids = {}
       for _, key in ipairs(selected_keys) do
+        reaper.ShowConsoleMsg("[Active Menu] Key: " .. tostring(key) .. "\n")
         local rid = key:match("^active_(%d+)$")
         if rid then
+          reaper.ShowConsoleMsg("[Active Menu] Matched RID: " .. tostring(rid) .. "\n")
           table.insert(rids, tonumber(rid))
         end
       end
 
+      reaper.ShowConsoleMsg("[Active Menu] Total RIDs to crop: " .. #rids .. "\n")
       if #rids > 0 then
         local RegionOps = require('rearkitekt.reaper.region_operations')
         RegionOps.crop_to_regions(rids)
+        reaper.ShowConsoleMsg("[Active Menu] Crop operation completed\n")
+      else
+        reaper.ShowConsoleMsg("[Active Menu] No RIDs found, operation skipped\n")
       end
       ImGui.CloseCurrentPopup(ctx)
     end
@@ -428,37 +436,53 @@ function M.draw_pool(self, ctx, regions, height)
     if ContextMenu.separator(ctx) then end
 
     if ContextMenu.item(ctx, "Append Selected Regions to Project") then
+      reaper.ShowConsoleMsg("[Pool Menu] Append Selected Regions clicked\n")
       -- Get selected region RIDs from pool grid
       local selected_keys = self.pool_grid and self.pool_grid.selection and self.pool_grid.selection:selected_keys() or {}
+      reaper.ShowConsoleMsg("[Pool Menu] Selected keys count: " .. #selected_keys .. "\n")
       local rids = {}
       for _, key in ipairs(selected_keys) do
+        reaper.ShowConsoleMsg("[Pool Menu] Key: " .. tostring(key) .. "\n")
         local rid = key:match("^pool_(%d+)$")
         if rid then
+          reaper.ShowConsoleMsg("[Pool Menu] Matched RID: " .. tostring(rid) .. "\n")
           table.insert(rids, tonumber(rid))
         end
       end
 
+      reaper.ShowConsoleMsg("[Pool Menu] Total RIDs to append: " .. #rids .. "\n")
       if #rids > 0 then
         local RegionOps = require('rearkitekt.reaper.region_operations')
         RegionOps.append_regions_to_project(rids)
+        reaper.ShowConsoleMsg("[Pool Menu] Append operation completed\n")
+      else
+        reaper.ShowConsoleMsg("[Pool Menu] No RIDs found, operation skipped\n")
       end
       ImGui.CloseCurrentPopup(ctx)
     end
 
     if ContextMenu.item(ctx, "Paste Selected Regions at Edit Cursor") then
+      reaper.ShowConsoleMsg("[Pool Menu] Paste Selected Regions clicked\n")
       -- Get selected region RIDs from pool grid
       local selected_keys = self.pool_grid and self.pool_grid.selection and self.pool_grid.selection:selected_keys() or {}
+      reaper.ShowConsoleMsg("[Pool Menu] Selected keys count: " .. #selected_keys .. "\n")
       local rids = {}
       for _, key in ipairs(selected_keys) do
+        reaper.ShowConsoleMsg("[Pool Menu] Key: " .. tostring(key) .. "\n")
         local rid = key:match("^pool_(%d+)$")
         if rid then
+          reaper.ShowConsoleMsg("[Pool Menu] Matched RID: " .. tostring(rid) .. "\n")
           table.insert(rids, tonumber(rid))
         end
       end
 
+      reaper.ShowConsoleMsg("[Pool Menu] Total RIDs to paste: " .. #rids .. "\n")
       if #rids > 0 then
         local RegionOps = require('rearkitekt.reaper.region_operations')
         RegionOps.paste_regions_at_cursor(rids)
+        reaper.ShowConsoleMsg("[Pool Menu] Paste operation completed\n")
+      else
+        reaper.ShowConsoleMsg("[Pool Menu] No RIDs found, operation skipped\n")
       end
       ImGui.CloseCurrentPopup(ctx)
     end
