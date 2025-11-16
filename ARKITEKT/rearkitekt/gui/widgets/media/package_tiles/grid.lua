@@ -150,7 +150,11 @@ function M.create(pkg, settings, theme)
       
       reorder = function(new_keys)
         pkg.order = new_keys
-        if settings then settings:set('pkg_order', pkg.order) end
+        if settings then
+          settings:set('pkg_order', pkg.order)
+          -- Also sync with package_order key for ThemeAdjuster State
+          settings:set('package_order', pkg.order)
+        end
       end,
       
       on_select = function(selected_keys)

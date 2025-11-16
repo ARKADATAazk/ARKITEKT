@@ -232,10 +232,10 @@ function AssemblerView:create_package_model()
       local filtered = PackageManager.filter_packages(packages, search, filters)
 
       -- Sort by order array (for drag/drop reordering)
-      local order = State.get_package_order()
+      -- Use self.order which is updated directly by grid reorder behavior
       table.sort(filtered, function(a, b)
         local idx_a, idx_b = 999, 999
-        for i, id in ipairs(order) do
+        for i, id in ipairs(self.order) do
           if id == a.id then idx_a = i end
           if id == b.id then idx_b = i end
         end
