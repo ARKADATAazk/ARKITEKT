@@ -112,37 +112,150 @@ local function json_encode(data, indent, current_indent)
   end
 end
 
--- Simple JSON decoder
+-- Simple but functional JSON decoder
 local function json_decode(str)
   if not str or str == "" then return nil end
 
-  -- Try using built-in JSON if available
-  local has_json, json = pcall(require, "json")
-  if has_json and json.decode then
-    local ok, result = pcall(json.decode, str)
-    if ok then return result end
+  local pos = 1
+
+  local function skip_whitespace()
+    while pos <= #str and str:sub(pos, pos):match("%s") do
+      pos = pos + 1
+    end
   end
 
-  -- Fallback: basic manual parsing (only for simple cases)
-  -- This is a very basic implementation, good enough for our needs
-  str = str:gsub("^%s*", ""):gsub("%s*$", "")
+  local function decode_value()
+    skip_whitespace()
+    local char = str:sub(pos, pos)
 
-  if str:sub(1,1) == "{" then
-    local result = {}
-    -- Very basic object parsing
-    for key, value in str:gmatch('"([^"]+)"%s*:%s*"([^"]*)"') do
-      result[key] = value
+    if char == "{" then
+      -- Object
+      pos = pos + 1
+      local obj = {}
+      skip_whitespace()
+
+      if str:sub(pos, pos) == "}" then
+        pos = pos + 1
+        return obj
+      end
+
+      while true do
+        skip_whitespace()
+
+        -- Read key
+        if str:sub(pos, pos) ~= '"' then break end
+        pos = pos + 1
+        local key_start = pos
+        while pos <= #str and str:sub(pos, pos) ~= '"' do
+          if str:sub(pos, pos) == '\\' then pos = pos + 1 end
+          pos = pos + 1
+        end
+        local key = str:sub(key_start, pos - 1)
+        pos = pos + 1
+
+        skip_whitespace()
+        if str:sub(pos, pos) ~= ":" then break end
+        pos = pos + 1
+
+        -- Read value
+        obj[key] = decode_value()
+
+        skip_whitespace()
+        char = str:sub(pos, pos)
+        if char == "}" then
+          pos = pos + 1
+          return obj
+        elseif char == "," then
+          pos = pos + 1
+        else
+          break
+        end
+      end
+
+      return obj
+
+    elseif char == "[" then
+      -- Array
+      pos = pos + 1
+      local arr = {}
+      skip_whitespace()
+
+      if str:sub(pos, pos) == "]" then
+        pos = pos + 1
+        return arr
+      end
+
+      while true do
+        table.insert(arr, decode_value())
+        skip_whitespace()
+        char = str:sub(pos, pos)
+        if char == "]" then
+          pos = pos + 1
+          return arr
+        elseif char == "," then
+          pos = pos + 1
+        else
+          break
+        end
+      end
+
+      return arr
+
+    elseif char == '"' then
+      -- String
+      pos = pos + 1
+      local str_start = pos
+      while pos <= #str do
+        if str:sub(pos, pos) == '"' then
+          local value = str:sub(str_start, pos - 1)
+          -- Unescape
+          value = value:gsub('\\(.)', function(c)
+            if c == 'n' then return '\n'
+            elseif c == 'r' then return '\r'
+            elseif c == 't' then return '\t'
+            else return c end
+          end)
+          pos = pos + 1
+          return value
+        elseif str:sub(pos, pos) == '\\' then
+          pos = pos + 2
+        else
+          pos = pos + 1
+        end
+      end
+      return ""
+
+    elseif char == "t" and str:sub(pos, pos + 3) == "true" then
+      pos = pos + 4
+      return true
+
+    elseif char == "f" and str:sub(pos, pos + 4) == "false" then
+      pos = pos + 5
+      return false
+
+    elseif char == "n" and str:sub(pos, pos + 3) == "null" then
+      pos = pos + 4
+      return nil
+
+    else
+      -- Number
+      local num_start = pos
+      if char == "-" then pos = pos + 1 end
+      while pos <= #str and str:sub(pos, pos):match("[%d%.]") do
+        pos = pos + 1
+      end
+      local num_str = str:sub(num_start, pos - 1)
+      return tonumber(num_str)
     end
-    for key, value in str:gmatch('"([^"]+)"%s*:%s*([%d%.]+)') do
-      result[key] = tonumber(value)
-    end
-    for key in str:gmatch('"([^"]+)"%s*:%s*%[') do
-      result[key] = {}
-    end
+  end
+
+  local ok, result = pcall(decode_value)
+  if ok then
     return result
+  else
+    M.log("ERROR: JSON decode failed: " .. tostring(result))
+    return {}
   end
-
-  return {}
 end
 
 -- Save data to JSON file
