@@ -37,7 +37,13 @@ function GUI:refresh_packages()
     local Theme = require('ThemeAdjuster.core.theme')
     local theme_info = Theme.get_theme_info()
     if theme_info.theme_path then
-      theme_root = theme_info.theme_path:match("^(.*)[\\/][^\\/]+$") or theme_info.theme_path
+      theme_root = theme_info.theme_path
+      -- If path ends with a theme file, strip it to get directory
+      if theme_root:match("%.ReaperTheme[Zip]*$") then
+        theme_root = theme_root:match("^(.*)[\\/][^\\/]+$") or theme_root
+      end
+      -- Remove trailing separator if present
+      theme_root = theme_root:gsub("[\\/]+$", "")
     end
   end
   local packages = PackageManager.scan_packages(theme_root, demo_mode)
