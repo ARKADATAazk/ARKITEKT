@@ -243,26 +243,92 @@ local function draw_folder_node(ctx, node, state, config)
   ImGui.PopID(ctx)
 end
 
--- Mini tags list for bottom of directory tab
+-- Tags list for bottom of directory tab (with filtering)
 local function draw_tags_mini_list(ctx, state, config, width, height)
   BeginChildCompat(ctx, "DirectoryTags", width, height, true)
 
+  -- Header with "+" button
+  local button_w = 24
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
   ImGui.Text(ctx, "Tags")
+  ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING * 2)
+
+  if ImGui.Button(ctx, "+##createtag_dir", button_w, 0) then
+    -- Create new tag - prompt for name
+    local tag_num = 1
+    local new_tag_name = "Tag " .. tag_num
+
+    -- Find unique name
+    if state.metadata and state.metadata.tags then
+      while state.metadata.tags[new_tag_name] do
+        tag_num = tag_num + 1
+        new_tag_name = "Tag " .. tag_num
+      end
+    end
+
+    -- Create tag with random color
+    local r = math.random(50, 255) / 255.0
+    local g = math.random(50, 255) / 255.0
+    local b = math.random(50, 255) / 255.0
+    local color = (math.floor(r * 255) << 16) | (math.floor(g * 255) << 8) | math.floor(b * 255)
+
+    Tags.create_tag(state.metadata, new_tag_name, color)
+
+    -- Save metadata
+    local Persistence = require('TemplateBrowser.domain.persistence')
+    Persistence.save_metadata(state.metadata)
+  end
+
   ImGui.PopStyleColor(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- Show tag count
-  local tag_count = 0
+  -- List all tags with filtering
+  BeginChildCompat(ctx, "DirectoryTagsList", 0, 0, false)
+
   if state.metadata and state.metadata.tags then
-    for _ in pairs(state.metadata.tags) do
-      tag_count = tag_count + 1
+    for tag_name, tag_data in pairs(state.metadata.tags) do
+      ImGui.PushID(ctx, tag_name)
+
+      local is_selected = state.filter_tags[tag_name] or false
+
+      if is_selected then
+        ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.selected_bg)
+      end
+
+      -- Color swatch
+      local r = ((tag_data.color >> 16) & 0xFF) / 255.0
+      local g = ((tag_data.color >> 8) & 0xFF) / 255.0
+      local b = (tag_data.color & 0xFF) / 255.0
+
+      ImGui.ColorButton(ctx, "##color", ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0), 0, 16, 16)
+      ImGui.SameLine(ctx)
+
+      -- Tag name as selectable
+      if ImGui.Selectable(ctx, tag_name, is_selected) then
+        -- Toggle tag filter
+        if is_selected then
+          state.filter_tags[tag_name] = nil
+        else
+          state.filter_tags[tag_name] = true
+        end
+
+        -- Re-filter templates
+        local Scanner = require('TemplateBrowser.domain.scanner')
+        Scanner.filter_templates(state)
+      end
+
+      if is_selected then
+        ImGui.PopStyleColor(ctx)
+      end
+
+      ImGui.PopID(ctx)
     end
+  else
+    ImGui.TextDisabled(ctx, "No tags yet")
   end
 
-  ImGui.TextDisabled(ctx, string.format("%d tag%s (see TAGS tab)", tag_count, tag_count == 1 and "" or "s"))
-
+  ImGui.EndChild(ctx)
   ImGui.EndChild(ctx)
 end
 
@@ -636,6 +702,64 @@ local function draw_template_panel(ctx, state, config, width, height)
   end
 
   ImGui.Spacing(ctx)
+
+  -- Filter chips (VSTs and Tags)
+  local has_filters = false
+
+  -- VST filter chips
+  for fx_name, _ in pairs(state.filter_fx) do
+    has_filters = true
+    ImGui.PushID(ctx, "fx_" .. fx_name)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(0.3, 0.5, 0.7, 1.0))
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, ImGui.ColorConvertDouble4ToU32(0.4, 0.6, 0.8, 1.0))
+
+    if ImGui.SmallButton(ctx, fx_name .. " x") then
+      -- Remove from filter
+      state.filter_fx[fx_name] = nil
+      local Scanner = require('TemplateBrowser.domain.scanner')
+      Scanner.filter_templates(state)
+    end
+
+    ImGui.PopStyleColor(ctx, 2)
+    ImGui.SameLine(ctx)
+    ImGui.PopID(ctx)
+  end
+
+  -- Tag filter chips
+  for tag_name, _ in pairs(state.filter_tags) do
+    has_filters = true
+    local tag_data = state.metadata and state.metadata.tags and state.metadata.tags[tag_name]
+
+    ImGui.PushID(ctx, "tag_" .. tag_name)
+
+    if tag_data then
+      local r = ((tag_data.color >> 16) & 0xFF) / 255.0
+      local g = ((tag_data.color >> 8) & 0xFF) / 255.0
+      local b = (tag_data.color & 0xFF) / 255.0
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(r * 0.7, g * 0.7, b * 0.7, 1.0))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, ImGui.ColorConvertDouble4ToU32(r * 0.9, g * 0.9, b * 0.9, 1.0))
+    else
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(0.5, 0.3, 0.7, 1.0))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, ImGui.ColorConvertDouble4ToU32(0.6, 0.4, 0.8, 1.0))
+    end
+
+    if ImGui.SmallButton(ctx, tag_name .. " x") then
+      -- Remove from filter
+      state.filter_tags[tag_name] = nil
+      local Scanner = require('TemplateBrowser.domain.scanner')
+      Scanner.filter_templates(state)
+    end
+
+    ImGui.PopStyleColor(ctx, 2)
+    ImGui.SameLine(ctx)
+    ImGui.PopID(ctx)
+  end
+
+  if has_filters then
+    ImGui.NewLine(ctx)  -- End the chip line
+    ImGui.Spacing(ctx)
+  end
+
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
@@ -744,20 +868,94 @@ local function draw_template_panel(ctx, state, config, width, height)
         ImGui.PopStyleColor(ctx)
       end
 
-      -- Show FX under template name
+      -- Show FX and Tags as clickable chips under template name
+      local has_chips = false
+
+      -- FX chips
       if tmpl.fx and #tmpl.fx > 0 then
+        has_chips = true
         ImGui.Indent(ctx, 10)
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, ImGui.ColorConvertDouble4ToU32(0.6, 0.6, 0.6, 1.0))
 
-        -- Show unique FX (deduplicated)
-        local fx_str = table.concat(tmpl.fx, ", ")
-        if #fx_str > 60 then
-          fx_str = fx_str:sub(1, 57) .. "..."
+        for _, fx_name in ipairs(tmpl.fx) do
+          ImGui.PushID(ctx, "fx_chip_" .. fx_name)
+
+          local is_fx_filtered = state.filter_fx[fx_name] or false
+
+          if is_fx_filtered then
+            ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(0.3, 0.5, 0.7, 1.0))
+          else
+            ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(0.25, 0.25, 0.25, 1.0))
+          end
+          ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, ImGui.ColorConvertDouble4ToU32(0.35, 0.55, 0.75, 1.0))
+
+          if ImGui.SmallButton(ctx, fx_name) then
+            -- Toggle FX filter
+            if is_fx_filtered then
+              state.filter_fx[fx_name] = nil
+            else
+              state.filter_fx[fx_name] = true
+            end
+
+            local Scanner = require('TemplateBrowser.domain.scanner')
+            Scanner.filter_templates(state)
+          end
+
+          ImGui.PopStyleColor(ctx, 2)
+          ImGui.SameLine(ctx)
+          ImGui.PopID(ctx)
         end
-        ImGui.TextWrapped(ctx, fx_str)
 
-        ImGui.PopStyleColor(ctx)
+        ImGui.NewLine(ctx)
         ImGui.Unindent(ctx, 10)
+      end
+
+      -- Tag chips
+      local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
+      if tmpl_metadata and tmpl_metadata.tags and #tmpl_metadata.tags > 0 then
+        has_chips = true
+        ImGui.Indent(ctx, 10)
+
+        for _, tag_name in ipairs(tmpl_metadata.tags) do
+          local tag_data = state.metadata.tags and state.metadata.tags[tag_name]
+
+          if tag_data then
+            ImGui.PushID(ctx, "tag_chip_" .. tag_name)
+
+            local is_tag_filtered = state.filter_tags[tag_name] or false
+            local r = ((tag_data.color >> 16) & 0xFF) / 255.0
+            local g = ((tag_data.color >> 8) & 0xFF) / 255.0
+            local b = (tag_data.color & 0xFF) / 255.0
+
+            if is_tag_filtered then
+              ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(r * 0.7, g * 0.7, b * 0.7, 1.0))
+            else
+              ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(r * 0.5, g * 0.5, b * 0.5, 1.0))
+            end
+            ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, ImGui.ColorConvertDouble4ToU32(r * 0.9, g * 0.9, b * 0.9, 1.0))
+
+            if ImGui.SmallButton(ctx, tag_name) then
+              -- Toggle tag filter
+              if is_tag_filtered then
+                state.filter_tags[tag_name] = nil
+              else
+                state.filter_tags[tag_name] = true
+              end
+
+              local Scanner = require('TemplateBrowser.domain.scanner')
+              Scanner.filter_templates(state)
+            end
+
+            ImGui.PopStyleColor(ctx, 2)
+            ImGui.SameLine(ctx)
+            ImGui.PopID(ctx)
+          end
+        end
+
+        ImGui.NewLine(ctx)
+        ImGui.Unindent(ctx, 10)
+      end
+
+      if has_chips then
         ImGui.Spacing(ctx)
       end
     end

@@ -278,8 +278,14 @@ function M.filter_templates(state)
     fx_filter_count = fx_filter_count + 1
   end
 
-  reaper.ShowConsoleMsg(string.format("Filtering: selected_folder='%s', search='%s', fx_filters=%d\n",
-    state.selected_folder or "nil", state.search_query, fx_filter_count))
+  -- Count active tag filters
+  local tag_filter_count = 0
+  for _ in pairs(state.filter_tags) do
+    tag_filter_count = tag_filter_count + 1
+  end
+
+  reaper.ShowConsoleMsg(string.format("Filtering: selected_folder='%s', search='%s', fx_filters=%d, tag_filters=%d\n",
+    state.selected_folder or "nil", state.search_query, fx_filter_count, tag_filter_count))
 
   for _, tmpl in ipairs(state.templates) do
     local matches = true
@@ -314,6 +320,28 @@ function M.filter_templates(state)
             end
           end
           if not has_fx then
+            matches = false
+            break
+          end
+        end
+      end
+    end
+
+    -- Filter by tags (template must have ALL selected tags)
+    if matches and tag_filter_count > 0 then
+      local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
+      if not tmpl_metadata or not tmpl_metadata.tags then
+        matches = false
+      else
+        for tag_name in pairs(state.filter_tags) do
+          local has_tag = false
+          for _, template_tag in ipairs(tmpl_metadata.tags) do
+            if template_tag == tag_name then
+              has_tag = true
+              break
+            end
+          end
+          if not has_tag then
             matches = false
             break
           end
