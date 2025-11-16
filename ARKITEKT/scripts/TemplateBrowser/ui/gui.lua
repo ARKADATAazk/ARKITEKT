@@ -894,6 +894,9 @@ local function draw_template_panel(ctx, gui, width, height)
   -- Template grid
   gui.template_grid:draw(ctx)
 
+  -- Add dummy item to establish proper window boundaries after grid's SetCursorPos usage
+  ImGui.Dummy(ctx, 0, 0)
+
   -- Context menu with color picker (triggered by grid's on_context_menu)
   if state.context_menu_template then
     ImGui.OpenPopup(ctx, "##template_color_picker")
