@@ -195,7 +195,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         local take = reaper.GetActiveTake(item_data.item)
         if take then
           reaper.GetSetMediaItemTakeInfo_String(take, "P_NAME", new_text, true)
-          reaper.UpdateItemInProject(item_data.item)
+          reaper.UpdateArrange()
         end
         reaper.Undo_EndBlock("Rename item take", -1)
 
