@@ -224,9 +224,12 @@ function M.TileRenderer.checkbox(ctx, pkg, P, cb_rects, tile_x, tile_y, tile_w, 
   end
 end
 
+-- Cache for loaded mosaic images
+M._mosaic_image_cache = M._mosaic_image_cache or {}
+
 function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
   if not theme or not theme.color_from_key then return end
-  
+
   local cell_size = math.min(
     M.CONFIG.mosaic.max_size,
     math.floor((tile_w - M.CONFIG.mosaic.padding * 2 - (M.CONFIG.mosaic.count - 1) * M.CONFIG.mosaic.gap) / M.CONFIG.mosaic.count)
@@ -234,21 +237,55 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
   local total_width = cell_size * M.CONFIG.mosaic.count + (M.CONFIG.mosaic.count - 1) * M.CONFIG.mosaic.gap
   local mosaic_x = tile_x + math.floor((tile_w - total_width) / 2)
   local mosaic_y = tile_y + M.CONFIG.mosaic.y_offset
-  
+
   local preview_keys = P.meta and P.meta.mosaic or { P.keys_order[1], P.keys_order[2], P.keys_order[3] }
   for i = 1, math.min(M.CONFIG.mosaic.count, #preview_keys) do
     local key = preview_keys[i]
     if key then
-      local col = theme.color_from_key(key:gsub("%.%w+$", ""))
       local cx = mosaic_x + (i - 1) * (cell_size + M.CONFIG.mosaic.gap)
       local cy = mosaic_y
-      
-      Draw.rect_filled(dl, cx, cy, cx + cell_size, cy + cell_size, col, M.CONFIG.mosaic.rounding)
-      Draw.rect(dl, cx, cy, cx + cell_size, cy + cell_size, 
-                M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
-      
-      local label = key:sub(1, 3):upper()
-      Draw.centered_text(ctx, label, cx, cy, cx + cell_size, cy + cell_size, hexrgb("#FFFFFF"))
+
+      -- Try to load and display actual image
+      local asset = P.assets and P.assets[key]
+      local img_path = asset and asset.path
+      local img_loaded = false
+
+      if img_path and not img_path:match("^%(mock%)") then
+        -- Load image (with caching)
+        local cache_key = P.id .. ":" .. key
+        local img = M._mosaic_image_cache[cache_key]
+
+        if not img then
+          local ok, loaded_img = pcall(ImGui.CreateImage, img_path, ImGui.ImageFlags_NoErrors or 0)
+          if ok and loaded_img then
+            M._mosaic_image_cache[cache_key] = loaded_img
+            img = loaded_img
+          end
+        end
+
+        if img then
+          -- Draw image
+          ImGui.SetCursorScreenPos(ctx, cx, cy)
+          local ok = pcall(ImGui.Image, ctx, img, cell_size, cell_size)
+          if ok then
+            img_loaded = true
+            -- Draw border around image
+            Draw.rect(dl, cx, cy, cx + cell_size, cy + cell_size,
+                      M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
+          end
+        end
+      end
+
+      -- Fallback to colored square if image didn't load
+      if not img_loaded then
+        local col = theme.color_from_key(key:gsub("%.%w+$", ""))
+        Draw.rect_filled(dl, cx, cy, cx + cell_size, cy + cell_size, col, M.CONFIG.mosaic.rounding)
+        Draw.rect(dl, cx, cy, cx + cell_size, cy + cell_size,
+                  M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
+
+        local label = key:sub(1, 3):upper()
+        Draw.centered_text(ctx, label, cx, cy, cx + cell_size, cy + cell_size, hexrgb("#FFFFFF"))
+      end
     end
   end
 end
