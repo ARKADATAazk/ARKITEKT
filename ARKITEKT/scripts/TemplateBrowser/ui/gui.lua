@@ -8,7 +8,9 @@ local FileOps = require('TemplateBrowser.domain.file_ops')
 local Tags = require('TemplateBrowser.domain.tags')
 local Separator = require('TemplateBrowser.ui.separator')
 local FXQueue = require('TemplateBrowser.domain.fx_queue')
-local Chip = require('TemplateBrowser.ui.chip')
+local Chip = require('rearkitekt.gui.widgets.data.chip')
+local TileAnim = require('rearkitekt.gui.animation.tile')
+local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
 
 local M = {}
 local GUI = {}
@@ -30,6 +32,8 @@ function M.new(config, state, scanner)
     initialized = false,
     separator1 = Separator.new("sep1"),
     separator2 = Separator.new("sep2"),
+    template_animator = TileAnim.new(16.0),  -- Animation speed
+    template_grid = nil,  -- Initialized in initialize_once
   }, GUI)
 
   return self
@@ -38,6 +42,38 @@ end
 function GUI:initialize_once(ctx)
   if self.initialized then return end
   self.ctx = ctx
+
+  -- Create template grid
+  self.template_grid = TemplateGridFactory.create(
+    function() return self.state.filtered_templates end,
+    self.state.metadata,
+    self.template_animator,
+    -- on_select
+    function(selected_keys)
+      -- Update selected template from grid selection
+      if selected_keys and #selected_keys > 0 then
+        local idx = tonumber(selected_keys[1]:match("template_(.+)"))
+        for _, tmpl in ipairs(self.state.filtered_templates) do
+          if tmpl.uuid == idx then
+            self.state.selected_template = tmpl
+            break
+          end
+        end
+      else
+        self.state.selected_template = nil
+      end
+    end,
+    -- on_double_click
+    function(template)
+      TemplateOps.apply_to_selected_track(template.path, template.uuid, self.state)
+    end,
+    -- on_context_menu
+    function(template)
+      -- Right-click context menu handled in grid behaviors
+      self.state.context_menu_template = template
+    end
+  )
+
   self.initialized = true
 end
 
