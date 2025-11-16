@@ -74,33 +74,49 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Get template metadata
   local tmpl_meta = metadata and metadata.templates[template.uuid]
   local chip_color = tmpl_meta and tmpl_meta.chip_color
-  local base_color = chip_color or hexrgb("#2A2A2A")
+
+  -- Use neutral base color for tile, chip_color only affects stripes and chip
+  local base_color = hexrgb("#2A2A2A")
 
   -- Animation tracking
   animator:track(template.uuid, 'hover', state.hover and 1.0 or 0.0, 12.0)
   local hover_factor = animator:get(template.uuid, 'hover')
 
-  -- Configure visual effects
+  -- Configure visual effects with diagonal stripes if template has color
   local fx_config = TileFXConfig.override({
     fill = { opacity = 0.4, saturation = 0.6, brightness = 0.7 },
     gradient = { intensity = 0.2, opacity = 0.6 },
     specular = { strength = state.hover and 0.3 or 0.15, coverage = 0.3 },
     inner_shadow = { strength = 0.25 },
     border = {
-      saturation = 1.3,
-      brightness = 1.5,
-      opacity = state.selected and 1.0 or 0.7,
-      thickness = state.selected and 2.0 or 1.0,
-      glow_strength = state.selected and 0.5 or 0.2,
-      glow_layers = state.selected and 4 or 2,
+      saturation = 1.0,
+      brightness = 1.2,
+      opacity = 0.7,
+      thickness = 1.0,
+      glow_strength = 0.0,  -- No glow on border (using marching ants instead)
+      glow_layers = 0,
     },
-    stripe = { enabled = false },  -- No diagonal stripes for templates
+    stripe = {
+      enabled = chip_color ~= nil,  -- Enable stripes if template has color
+      spacing = 10,
+      thickness = 4,
+      opacity = 0.04,
+    },
+    ants = {
+      enabled = state.selected,  -- Marching ants for selection
+      thickness = 2,
+      dash = 8,
+      gap = 6,
+      speed = 20,
+      inset = 0,
+      alpha = 0xFF,
+    },
     rounding = 6,
   })
 
-  -- Render base tile with all effects
+  -- Render base tile with stripe_color for diagonals (chip_color affects only stripes)
   TileFX.render_complete(dl, x1, y1, x2, y2, base_color, fx_config,
-    state.selected, hover_factor, nil, nil)
+    state.selected, hover_factor, nil, nil, nil, nil, chip_color, chip_color ~= nil)
 
   -- Calculate text alpha based on tile height
   local text_alpha = 255

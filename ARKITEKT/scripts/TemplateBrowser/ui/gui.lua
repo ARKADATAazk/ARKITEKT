@@ -69,6 +69,7 @@ function GUI:initialize_once(ctx)
     function() return self.state.filtered_templates end,
     self.state.metadata,
     self.template_animator,
+    function() return self.state.tile_width end,  -- get_tile_width
     -- on_select
     function(selected_keys)
       -- Update selected template from grid selection
@@ -891,6 +892,17 @@ local function draw_template_panel(ctx, gui, width, height)
       end
     end
     ImGui.EndCombo(ctx)
+  end
+
+  -- Tile width control
+  ImGui.SameLine(ctx)
+  ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 15)
+  ImGui.Text(ctx, "Size:")
+  ImGui.SameLine(ctx)
+  ImGui.SetNextItemWidth(ctx, 100)
+  local changed, new_width = ImGui.SliderInt(ctx, "##tilewidth", state.tile_width, 120, 320, "%d px")
+  if changed then
+    state.tile_width = new_width
   end
 
   ImGui.Separator(ctx)

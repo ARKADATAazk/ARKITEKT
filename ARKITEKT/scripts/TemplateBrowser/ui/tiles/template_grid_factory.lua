@@ -8,11 +8,11 @@ local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
 
 local M = {}
 
-function M.create(get_templates, metadata, animator, on_select, on_double_click, on_right_click)
+function M.create(get_templates, metadata, animator, get_tile_width, on_select, on_double_click, on_right_click)
   return Grid.new({
     id = "template_grid",
     gap = TemplateTile.CONFIG.gap,
-    min_col_w = function() return TemplateTile.CONFIG.min_col_width end,
+    min_col_w = get_tile_width,  -- Use function to get dynamic tile width
     fixed_tile_h = TemplateTile.CONFIG.base_tile_height,
 
     -- Data source

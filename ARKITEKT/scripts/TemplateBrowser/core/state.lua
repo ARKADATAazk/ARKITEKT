@@ -18,6 +18,7 @@ M.filter_tags = {}          -- Active tag filters
 M.filter_fx = {}            -- Active FX filters (table of FX name -> true)
 M.left_panel_tab = "directory"  -- Current tab: "directory", "vsts", "tags"
 M.sort_mode = "alphabetical"     -- Template sorting: "alphabetical", "usage", "insertion", "color"
+M.tile_width = 180          -- Template tile width (controls column count)
 
 -- Folder open/close state (path -> bool)
 M.folder_open_state = {}
@@ -58,6 +59,7 @@ function M.initialize(config)
   M.filter_fx = {}
   M.left_panel_tab = "directory"
   M.sort_mode = "alphabetical"
+  M.tile_width = 180
   M.folder_open_state = {}
   M.renaming_item = nil
   M.renaming_type = nil
