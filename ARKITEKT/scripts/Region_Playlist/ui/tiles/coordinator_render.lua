@@ -152,26 +152,24 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   if ContextMenu.begin(ctx, "ActionsMenu") then
     if ContextMenu.item(ctx, "Crop Project to Playlist") then
       reaper.ShowConsoleMsg("[Active Menu] Crop Project to Playlist clicked\n")
-      -- Get selected playlist items from active grid
-      local selected_keys = self.active_grid and self.active_grid.selection and self.active_grid.selection:selected_keys() or {}
-      reaper.ShowConsoleMsg("[Active Menu] Selected keys count: " .. #selected_keys .. "\n")
-
+      -- Get ALL region RIDs from active playlist (not selections)
       local rids = {}
       local playlist = State.get_active_playlist()
 
-      if playlist and playlist.items then
-        for _, key in ipairs(selected_keys) do
-          reaper.ShowConsoleMsg("[Active Menu] Key: " .. tostring(key) .. "\n")
+      reaper.ShowConsoleMsg("[Active Menu] Active playlist: " .. tostring(playlist and playlist.id or "nil") .. "\n")
+      if playlist then
+        reaper.ShowConsoleMsg("[Active Menu] Playlist has " .. tostring(playlist.items and #playlist.items or 0) .. " items\n")
+      end
 
-          -- Look up the item in the playlist
-          for _, item in ipairs(playlist.items) do
-            if item.id == key and item.type == "region" and item.rid then
-              reaper.ShowConsoleMsg("[Active Menu] Found region item with RID: " .. tostring(item.rid) .. "\n")
-              table.insert(rids, item.rid)
-              break
-            end
+      if playlist and playlist.items then
+        for _, item in ipairs(playlist.items) do
+          if item.type == "region" and item.rid then
+            reaper.ShowConsoleMsg("[Active Menu] Found region item with RID: " .. tostring(item.rid) .. "\n")
+            table.insert(rids, item.rid)
           end
         end
+      else
+        reaper.ShowConsoleMsg("[Active Menu] No active playlist or playlist has no items\n")
       end
 
       reaper.ShowConsoleMsg("[Active Menu] Total RIDs to crop: " .. #rids .. "\n")
@@ -186,21 +184,20 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
     end
 
     if ContextMenu.item(ctx, "Crop to Playlist (New Tab)") then
-      local selected_keys = self.active_grid and self.active_grid.selection and self.active_grid.selection:selected_keys() or {}
+      reaper.ShowConsoleMsg("[Active Menu] Crop to Playlist (New Tab) clicked\n")
+      -- Get ALL region RIDs from active playlist (not selections)
       local rids = {}
       local playlist = State.get_active_playlist()
 
       if playlist and playlist.items then
-        for _, key in ipairs(selected_keys) do
-          for _, item in ipairs(playlist.items) do
-            if item.id == key and item.type == "region" and item.rid then
-              table.insert(rids, item.rid)
-              break
-            end
+        for _, item in ipairs(playlist.items) do
+          if item.type == "region" and item.rid then
+            table.insert(rids, item.rid)
           end
         end
       end
 
+      reaper.ShowConsoleMsg("[Active Menu] Total RIDs to crop (new tab): " .. #rids .. "\n")
       if #rids > 0 then
         local RegionOps = require('rearkitekt.reaper.region_operations')
         RegionOps.crop_to_regions_new_tab(rids)
