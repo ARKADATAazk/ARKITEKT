@@ -238,6 +238,101 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
   -- Begin frame for image cache
   M._package_image_cache:begin_frame()
 
+  -- Check for preview.png first - display as single full-width image
+  if P.meta and P.meta.preview_path then
+    local preview_path = P.meta.preview_path
+    local preview_drawn = false
+
+    -- Use image cache with validation
+    local rec = M._package_image_cache._cache[preview_path]
+    if rec then
+      -- Validate the cached record
+      local validate_record = function(cache, path, record)
+        if not record or not record.img then return nil end
+        if type(record.img) ~= "userdata" then
+          cache._cache[path] = nil
+          return nil
+        end
+        local ok, w, h = pcall(ImGui.Image_GetSize, record.img)
+        if ok and w and h and w > 0 and h > 0 then
+          record.w, record.h = w, h
+          return record
+        end
+        cache._cache[path] = nil
+        return nil
+      end
+      rec = validate_record(M._package_image_cache, preview_path, rec)
+    end
+
+    -- If not cached or invalid, try to load
+    if not rec and M._package_image_cache._creates_left > 0 then
+      local ok, img = pcall(ImGui.CreateImage, preview_path, ImGui.ImageFlags_NoErrors or 0)
+      if ok and img then
+        local w, h = pcall(ImGui.Image_GetSize, img)
+        if w and h then
+          rec = {
+            img = img,
+            w = w,
+            h = h,
+            src_x = 0,
+            src_y = 0,
+            src_w = w,
+            src_h = h,
+          }
+          M._package_image_cache._cache[preview_path] = rec
+          M._package_image_cache._creates_left = M._package_image_cache._creates_left - 1
+        end
+      end
+    end
+
+    if rec and rec.img then
+      -- Calculate available area for preview (full tile width with padding)
+      local preview_w = tile_w - M.CONFIG.mosaic.padding * 2
+      local preview_h = M.CONFIG.mosaic.max_size * 1.5  -- Taller than mosaic cells
+
+      -- Calculate aspect-preserving dimensions
+      local img_w, img_h = rec.src_w, rec.src_h
+      local aspect = img_w / img_h
+      local draw_w, draw_h
+
+      if aspect > preview_w / preview_h then
+        -- Wider - fit to width
+        draw_w = preview_w
+        draw_h = preview_w / aspect
+      else
+        -- Taller - fit to height
+        draw_h = preview_h
+        draw_w = preview_h * aspect
+      end
+
+      -- Center the preview
+      local preview_x = tile_x + math.floor((tile_w - draw_w) / 2)
+      local preview_y = tile_y + M.CONFIG.mosaic.y_offset
+
+      -- Clip to bounds
+      local clip_x1 = tile_x + M.CONFIG.mosaic.padding
+      local clip_y1 = preview_y
+      local clip_x2 = tile_x + tile_w - M.CONFIG.mosaic.padding
+      local clip_y2 = preview_y + preview_h
+
+      ImGui.PushClipRect(ctx, clip_x1, clip_y1, clip_x2, clip_y2, true)
+      ImGui.SetCursorScreenPos(ctx, preview_x, preview_y)
+      local ok = pcall(ImGui.Image, ctx, rec.img, draw_w, draw_h)
+      ImGui.PopClipRect(ctx)
+
+      if ok then
+        preview_drawn = true
+        -- Draw border around preview area
+        Draw.rect(dl, clip_x1, clip_y1, clip_x2, clip_y2,
+                  M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
+      end
+    end
+
+    -- If preview was drawn or attempted, don't show mosaic
+    return
+  end
+
+  -- No preview.png, fall back to mosaic of 3 images
   local cell_size = math.min(
     M.CONFIG.mosaic.max_size,
     math.floor((tile_w - M.CONFIG.mosaic.padding * 2 - (M.CONFIG.mosaic.count - 1) * M.CONFIG.mosaic.gap) / M.CONFIG.mosaic.count)
