@@ -94,8 +94,11 @@ Shell.run({
       { id = "DEBUG", label = "Debug" },
     },
     active = State.get_active_tab(),
+    style = {
+      active_indicator_height = 0,  -- Remove accent line below active tab
+      spacing_after = 2,             -- Reduce spacing below tabs (was 4)
+    },
     colors = {
-      active_indicator = hexrgb("#CCCCCC"),  -- Light grey instead of green
       bg_active   = hexrgb("#242424"),
       bg_clicked  = hexrgb("#2A2A2A"),
       bg_hovered  = hexrgb("#202020"),
