@@ -7,6 +7,7 @@ local Colors = require('rearkitekt.core.colors')
 local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.tiles.renderers.base')
+local Shapes = require('rearkitekt.gui.rendering.shapes')
 
 local M = {}
 
@@ -121,6 +122,16 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   if cascade_factor > 0.3 then
     BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, scaled_x2, header_height,
       item_data.name, item_data.index, item_data.total, base_color, text_alpha, config)
+  end
+
+  -- Render favorite star indicator
+  if cascade_factor > 0.5 then
+    local is_favorite = state.favorites and state.favorites.audio and state.favorites.audio[item_data.filename]
+    local star_size = math.min(16, scaled_h * 0.15)
+    local star_padding = 4
+    local star_x = scaled_x2 - star_size - star_padding
+    local star_y = scaled_y1 + star_padding
+    Shapes.draw_favorite_star(dl, star_x, star_y, star_size, base_color, combined_alpha, is_favorite, hover_factor)
   end
 
   -- Render waveform (show even when disabled, just with toned down color)
