@@ -165,7 +165,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
 
     ImGui.SetNextWindowBgAlpha(ctx, 0.0)
     if ImGui.Begin(ctx, "##ActiveColorPickerOverlay", true, window_flags) then
-      ImGui.BringWindowToDisplayFront(ctx)
+      ImGui.SetWindowFocus(ctx)
       ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
         size = picker_size,
         on_change = function(color)
@@ -393,7 +393,7 @@ function M.draw_pool(self, ctx, regions, height)
 
     ImGui.SetNextWindowBgAlpha(ctx, 0.0)
     if ImGui.Begin(ctx, "##PoolColorPickerOverlay", true, window_flags) then
-      ImGui.BringWindowToDisplayFront(ctx)
+      ImGui.SetWindowFocus(ctx)
       ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
         size = picker_size,
         on_change = function(color)
