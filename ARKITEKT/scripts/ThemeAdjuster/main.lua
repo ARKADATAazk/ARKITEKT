@@ -94,6 +94,16 @@ Shell.run({
       { id = "DEBUG", label = "Debug" },
     },
     active = State.get_active_tab(),
+    colors = {
+      active_indicator = hexrgb("#CCCCCC"),  -- Light grey instead of green
+      bg_active   = hexrgb("#242424"),
+      bg_clicked  = hexrgb("#2A2A2A"),
+      bg_hovered  = hexrgb("#202020"),
+      bg_inactive = hexrgb("#1A1A1A"),
+      border      = hexrgb("#000000"),
+      text_active = hexrgb("#FFFFFF"),
+      text_inact  = hexrgb("#BBBBBB"),
+    },
   },
   fonts        = {},
 })
