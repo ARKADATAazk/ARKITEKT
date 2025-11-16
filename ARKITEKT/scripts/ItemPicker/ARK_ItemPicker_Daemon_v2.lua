@@ -52,7 +52,6 @@ local ext_section = "ARK_ItemPicker_Daemon"
 
 -- Visibility flag (controlled by toggle script)
 local ui_visible = false
-local overlay_pushed = false
 
 local function SetButtonState(set)
   local is_new_value, filename, sec, cmd, mode, resolution, val = reaper.get_action_context()
@@ -126,60 +125,59 @@ local fonts = load_fonts(ctx)
 -- Create overlay manager
 local overlay_mgr = OverlayManager.new()
 
--- Function to push overlay (will be called when UI becomes visible)
+-- Push overlay at module level (like ARK_ItemPicker.lua)
 local Colors = require('rearkitekt.core.colors')
-local function push_overlay()
-  if overlay_pushed then return end
+overlay_mgr:push({
+  id = "item_picker_main",
+  use_viewport = true,
+  fade_duration = 0.2,
+  fade_curve = 'ease_out_quad',
+  scrim_color = Colors.hexrgb("#101010"),
+  scrim_opacity = 0.92,
+  show_close_button = true,
+  close_on_background_click = false,
+  close_on_background_right_click = true,
+  close_on_scrim = false,
+  esc_to_close = false,
+  close_button_size = 32,
+  close_button_margin = 16,
+  close_button_proximity = 150,
+  content_padding = 20,
 
-  overlay_mgr:push({
-    id = "item_picker_main",
-    use_viewport = true,
-    fade_duration = 0.2,
-    fade_curve = 'ease_out_quad',
-    scrim_color = Colors.hexrgb("#101010"),
-    scrim_opacity = 0.92,
-    show_close_button = true,
-    close_on_background_click = false,
-    close_on_background_right_click = true,
-    close_on_scrim = false,
-    esc_to_close = false,
-    close_button_size = 32,
-    close_button_margin = 16,
-    close_button_proximity = 150,
-    content_padding = 20,
+  render = function(ctx, alpha_val, bounds)
+    -- Only render content when visible
+    if not ui_visible then return end
 
-    render = function(ctx, alpha_val, bounds)
-      ImGui.PushFont(ctx, fonts.default, fonts.default_size)
+    ImGui.PushFont(ctx, fonts.default, fonts.default_size)
 
-      local overlay_state = {
-        x = bounds.x,
-        y = bounds.y,
-        width = bounds.w,
-        height = bounds.h,
-        alpha = alpha_val,
-      }
+    local overlay_state = {
+      x = bounds.x,
+      y = bounds.y,
+      width = bounds.w,
+      height = bounds.h,
+      alpha = alpha_val,
+    }
 
-      if gui and gui.draw then
-        gui:draw(ctx, {
-          fonts = fonts,
-          overlay_state = overlay_state,
-          overlay = { alpha = { value = function() return alpha_val end } },
-          is_overlay_mode = true,
-        })
-      end
+    if gui and gui.draw then
+      gui:draw(ctx, {
+        fonts = fonts,
+        overlay_state = overlay_state,
+        overlay = { alpha = { value = function() return alpha_val end } },
+        is_overlay_mode = true,
+      })
+    end
 
-      ImGui.PopFont(ctx)
-    end,
+    ImGui.PopFont(ctx)
+  end,
 
-    on_close = function()
-      ui_visible = false
-      overlay_pushed = false
-      reaper.SetExtState(ext_section, "ui_visible", "0", false)
-    end,
-  })
+  on_close = function()
+    ui_visible = false
+    reaper.SetExtState(ext_section, "ui_visible", "0", false)
+  end,
+})
 
-  overlay_pushed = true
-end
+-- Start hidden
+overlay_mgr:set_visible("item_picker_main", false)
 
 -- Create runtime (EXACTLY like ARK_ItemPicker.lua)
 local runtime = Runtime.new({
@@ -194,13 +192,8 @@ local runtime = Runtime.new({
       ui_visible = not ui_visible
       reaper.SetExtState(ext_section, "ui_visible", ui_visible and "1" or "0", false)
 
-      -- Push or pop overlay based on visibility
-      if ui_visible and not overlay_pushed then
-        push_overlay()
-      elseif not ui_visible and overlay_pushed then
-        overlay_mgr:pop("item_picker_main")
-        overlay_pushed = false
-      end
+      -- Control overlay visibility
+      overlay_mgr:set_visible("item_picker_main", ui_visible)
     end
 
     -- When dragging, skip overlay and just render drag handlers
@@ -215,11 +208,9 @@ local runtime = Runtime.new({
       ImGui.PopFont(ctx)
       return true
     else
-      -- Only render overlay if it's pushed
-      if overlay_pushed then
-        overlay_mgr:render(ctx)
-      end
-      return true  -- Always keep running (even when hidden)
+      -- Always render overlay (visibility controlled via set_visible)
+      overlay_mgr:render(ctx)
+      return true  -- Always keep running
     end
   end,
 
