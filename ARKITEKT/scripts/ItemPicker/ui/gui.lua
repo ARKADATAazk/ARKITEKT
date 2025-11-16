@@ -23,6 +23,8 @@ function M.new(config, state, controller, visualization, cache_mgr, drag_handler
     layout_view = nil,
 
     initialized = false,
+    data_loaded = false,
+    load_frame_counter = 0,
   }, GUI)
 
   return self
@@ -31,17 +33,35 @@ end
 function GUI:initialize_once(ctx)
   if self.initialized then return end
 
-  -- Initialize domain modules
+  -- Initialize domain modules (lightweight, immediate)
   if not self.state.cache then
     self.state.cache = self.cache_mgr.new(self.config.CACHE.MAX_ENTRIES)
   end
 
   if not self.state.job_queue then
     local job_queue_module = require('ItemPicker.domain.job_queue')
-    -- Process 1 thumbnail per frame (maximum smoothness: 1 * 33fps = 33/sec)
-    -- Prioritizes UI responsiveness over generation speed
-    self.state.job_queue = job_queue_module.new(1)
+    -- Start with burst mode: 10 jobs/frame during initial load
+    self.state.job_queue = job_queue_module.new(10)
   end
+
+  -- Initialize empty state so UI can render immediately
+  self.state.samples = {}
+  self.state.sample_indexes = {}
+  self.state.midi_items = {}
+  self.state.midi_indexes = {}
+  self.state.audio_item_lookup = {}
+  self.state.midi_item_lookup = {}
+
+  -- Create coordinator and layout view with empty data
+  self.coordinator = Coordinator.new(ctx, self.config, self.state, self.visualization, self.cache_mgr)
+  self.layout_view = LayoutView.new(self.config, self.state, self.coordinator)
+
+  self.initialized = true
+end
+
+-- Deferred data loading (called after UI is visible)
+function GUI:load_data_deferred()
+  if self.data_loaded then return end
 
   -- Try to load cached project state first
   local cached_state = self.cache_mgr.load_project_state_from_disk()
@@ -52,28 +72,31 @@ function GUI:initialize_once(ctx)
     self.state.sample_indexes = cached_state.sample_indexes or {}
     self.state.midi_indexes = cached_state.midi_indexes or {}
     self.state.last_change_count = current_change_count
-
-    -- Still need to collect full items (just metadata was cached)
-    -- But this allows faster startup for large projects
-    self.controller.collect_project_items(self.state)
   else
-    -- Project changed or no cache, full collection
-    self.controller.collect_project_items(self.state)
     self.state.last_change_count = current_change_count
-
-    -- Don't save state on initial load (defer to avoid blocking)
-    -- It will be saved on next recollection or when closing
   end
 
-  -- Create coordinator and layout view
-  self.coordinator = Coordinator.new(ctx, self.config, self.state, self.visualization, self.cache_mgr)
-  self.layout_view = LayoutView.new(self.config, self.state, self.coordinator)
+  -- Collect all project items
+  self.controller.collect_project_items(self.state)
 
-  self.initialized = true
+  -- After initial load burst, throttle to 2 jobs/frame for smooth FPS
+  if self.state.job_queue then
+    self.state.job_queue.max_per_frame = 2
+  end
+
+  self.data_loaded = true
 end
 
 function GUI:draw(ctx, shell_state)
   self:initialize_once(ctx)
+
+  -- Defer data loading by 3 frames to let modal fade in start
+  if not self.data_loaded then
+    self.load_frame_counter = self.load_frame_counter + 1
+    if self.load_frame_counter >= 3 then
+      self:load_data_deferred()
+    end
+  end
 
   -- Get draw list
   if not self.state.draw_list then
