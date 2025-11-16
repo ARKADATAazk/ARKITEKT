@@ -158,8 +158,8 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ChildBorderSize, 2)
     ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x000000FF)
 
-    -- Wrap in a child region with border (border parameter is boolean in this ImGui version)
-    if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size, true) then
+    -- Wrap in a child region with border
+    if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size, ImGui.ChildFlags_Border) then
       ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
         size = picker_size,
         on_change = function(color)
@@ -380,8 +380,8 @@ function M.draw_pool(self, ctx, regions, height)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ChildBorderSize, 2)
     ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x000000FF)
 
-    -- Wrap in a child region with border (border parameter is boolean in this ImGui version)
-    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size, true) then
+    -- Wrap in a child region with border
+    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size, ImGui.ChildFlags_Border) then
       ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
         size = picker_size,
         on_change = function(color)
