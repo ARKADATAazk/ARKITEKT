@@ -29,7 +29,12 @@ local function convert_rgba_to_reaper_color(rgba_color)
 
   -- ColorToNative handles platform conversion (BGR on Windows) automatically
   -- Just pass r, g, b and let the API handle it
-  return reaper.ColorToNative(r, g, b) | 0x1000000
+  local native_rgb = reaper.ColorToNative(r, g, b)
+  local result = native_rgb | 0x1000000
+
+  reaper.ShowConsoleMsg(string.format("      ColorToNative(%d,%d,%d) = %08X, with flag = %08X\n", r, g, b, native_rgb, result))
+
+  return result
 end
 
 function M.scan_project_regions(proj)
