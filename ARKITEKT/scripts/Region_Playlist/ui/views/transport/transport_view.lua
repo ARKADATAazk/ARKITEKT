@@ -309,10 +309,8 @@ function TransportView:build_header_elements(bridge_state, available_width)
               engine:set_transport_override(new_checked)
             end
           elseif value == "follow_viewport" then
-            local command_id = reaper.NamedCommandLookup("_WOL_CONTSCROLL")
-            if command_id > 0 then
-              reaper.Main_OnCommand(command_id, 0)
-            end
+            -- Toggle REAPER action 41817: View: Toggle continuous scrolling during playback
+            reaper.Main_OnCommand(41817, 0)
           end
         end,
       },
@@ -348,12 +346,10 @@ function TransportView:build_header_elements(bridge_state, available_width)
         label = "Follow Viewport",
         is_toggled = bridge_state.follow_viewport or false,
         preset_name = "BUTTON_TOGGLE_WHITE",
-        tooltip = "Follow Playhead in Viewport",
+        tooltip = "Follow Playhead in Viewport (Continuous Scrolling)",
         on_click = function()
-          local command_id = reaper.NamedCommandLookup("_WOL_CONTSCROLL")
-          if command_id > 0 then
-            reaper.Main_OnCommand(command_id, 0)
-          end
+          -- Toggle REAPER action 41817: View: Toggle continuous scrolling during playback
+          reaper.Main_OnCommand(41817, 0)
         end,
       },
     }
@@ -368,11 +364,8 @@ function TransportView:draw(ctx, shell_state, is_blocking)
   local engine = bridge.engine
 
   -- Query REAPER toggle state for Follow Viewport (Continuous scrolling during playback)
-  local follow_viewport_enabled = false
-  local command_id = reaper.NamedCommandLookup("_WOL_CONTSCROLL")
-  if command_id > 0 then
-    follow_viewport_enabled = reaper.GetToggleCommandState(command_id) == 1
-  end
+  -- Command ID 41817: View: Toggle continuous scrolling during playback
+  local follow_viewport_enabled = reaper.GetToggleCommandState(41817) == 1
 
   local bridge_state = {
     is_playing = bridge:get_state().is_playing,
