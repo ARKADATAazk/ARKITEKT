@@ -39,22 +39,22 @@ end
 function GlobalView:load_from_theme()
   -- Load values from REAPER theme parameters
   local ok, gamma = pcall(reaper.ThemeLayout_GetParameter, -1000)
-  if ok and gamma then self.gamma = gamma / 1000 end
+  if ok and type(gamma) == "number" then self.gamma = gamma / 1000 end
 
   local ok, highlights = pcall(reaper.ThemeLayout_GetParameter, -1003)
-  if ok and highlights then self.highlights = highlights end
+  if ok and type(highlights) == "number" then self.highlights = highlights end
 
   local ok, midtones = pcall(reaper.ThemeLayout_GetParameter, -1002)
-  if ok and midtones then self.midtones = midtones end
+  if ok and type(midtones) == "number" then self.midtones = midtones end
 
   local ok, shadows = pcall(reaper.ThemeLayout_GetParameter, -1001)
-  if ok and shadows then self.shadows = shadows end
+  if ok and type(shadows) == "number" then self.shadows = shadows end
 
   local ok, saturation = pcall(reaper.ThemeLayout_GetParameter, -1004)
-  if ok and saturation then self.saturation = saturation end
+  if ok and type(saturation) == "number" then self.saturation = saturation end
 
   local ok, tint = pcall(reaper.ThemeLayout_GetParameter, -1005)
-  if ok and tint then self.tint = tint end
+  if ok and type(tint) == "number" then self.tint = tint end
 end
 
 function GlobalView:set_param(param_id, value, save)
