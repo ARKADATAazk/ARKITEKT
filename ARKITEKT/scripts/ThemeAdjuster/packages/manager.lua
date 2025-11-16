@@ -158,17 +158,23 @@ function M.scan_packages(theme_root, demo_mode)
     return generate_demo_packages()
   end
 
+  reaper.ShowConsoleMsg("[PackageScanner] theme_root = " .. tostring(theme_root) .. "\n")
+
   if not theme_root or theme_root == "" then
+    reaper.ShowConsoleMsg("[PackageScanner] theme_root is nil or empty, returning empty\n")
     return {}
   end
 
   local packages_path = theme_root .. SEP .. "Assembler" .. SEP .. "Packages"
+  reaper.ShowConsoleMsg("[PackageScanner] packages_path = " .. packages_path .. "\n")
   local packages = {}
 
   -- Check if Packages directory exists
   local test_file = reaper.EnumerateSubdirectories(packages_path, 0)
+  reaper.ShowConsoleMsg("[PackageScanner] First subdirectory test = " .. tostring(test_file) .. "\n")
   if not test_file then
     -- Directory doesn't exist, return empty
+    reaper.ShowConsoleMsg("[PackageScanner] Packages directory does not exist\n")
     return {}
   end
 
@@ -177,8 +183,11 @@ function M.scan_packages(theme_root, demo_mode)
   repeat
     local folder = reaper.EnumerateSubdirectories(packages_path, i)
     if folder then
+      reaper.ShowConsoleMsg("[PackageScanner] Found package folder: " .. folder .. "\n")
       local package_path = packages_path .. SEP .. folder
       local package, has_assets = scan_package_folder(package_path, folder)
+
+      reaper.ShowConsoleMsg("[PackageScanner] Package " .. folder .. " has " .. #package.keys_order .. " assets\n")
 
       if has_assets then
         table.insert(packages, package)
@@ -187,6 +196,7 @@ function M.scan_packages(theme_root, demo_mode)
     i = i + 1
   until not folder
 
+  reaper.ShowConsoleMsg("[PackageScanner] Total packages found: " .. #packages .. "\n")
   return packages
 end
 
