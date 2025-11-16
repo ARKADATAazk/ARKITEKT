@@ -37,7 +37,7 @@ function M.create(get_templates, metadata, animator, get_tile_width, on_select, 
         end
       end,
 
-      -- Double-click to apply template (receives only key)
+      -- Double-click to apply template or rename with Ctrl (receives only key)
       double_click = function(key)
         if on_double_click then
           -- Look up template by uuid from key

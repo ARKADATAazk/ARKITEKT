@@ -88,7 +88,17 @@ function GUI:initialize_once(ctx)
     -- on_double_click (receives template object from factory)
     function(template)
       if template then
-        TemplateOps.apply_to_selected_track(template.path, template.uuid, self.state)
+        -- Check if Ctrl is held for rename, otherwise apply template
+        local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
+        if ctrl_down then
+          -- Start rename
+          self.state.renaming_item = template
+          self.state.renaming_type = "template"
+          self.state.rename_buffer = template.name
+        else
+          -- Apply template to track
+          TemplateOps.apply_to_selected_track(template.path, template.uuid, self.state)
+        end
       end
     end,
     -- on_right_click (receives template and selected_keys from factory)
@@ -996,6 +1006,81 @@ local function draw_template_panel(ctx, gui, width, height)
     -- Clear context menu template when popup is closed
     state.context_menu_template = nil
   end
+
+  -- Rename modal popup (for F2 or Ctrl+double-click)
+  if state.renaming_item and state.renaming_type == "template" then
+    ImGui.OpenPopup(ctx, "##rename_template_modal")
+  end
+
+  if ImGui.BeginPopupModal(ctx, "Rename Template", nil, ImGui.WindowFlags_AlwaysAutoResize) then
+    local tmpl = state.renaming_item
+
+    ImGui.Text(ctx, "Current name: " .. (tmpl and tmpl.name or ""))
+    ImGui.Spacing(ctx)
+
+    ImGui.SetNextItemWidth(ctx, 300)
+    local changed, new_name = ImGui.InputText(ctx, "##rename_input", state.rename_buffer)
+    if changed then
+      state.rename_buffer = new_name
+    end
+
+    -- Auto-focus input on first frame
+    if ImGui.IsWindowAppearing(ctx) then
+      ImGui.SetKeyboardFocusHere(ctx, -1)
+    end
+
+    ImGui.Spacing(ctx)
+    ImGui.Separator(ctx)
+    ImGui.Spacing(ctx)
+
+    -- Buttons
+    if ImGui.Button(ctx, "OK", 140, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
+      if state.rename_buffer ~= "" and state.rename_buffer ~= tmpl.name then
+        local old_path = tmpl.path
+        local success, new_path = FileOps.rename_template(tmpl.path, state.rename_buffer)
+        if success then
+          -- Create undo operation
+          state.undo_manager:push({
+            description = "Rename template: " .. tmpl.name .. " -> " .. state.rename_buffer,
+            undo_fn = function()
+              local undo_success = FileOps.rename_template(new_path, tmpl.name)
+              if undo_success then
+                local Scanner = require('TemplateBrowser.domain.scanner')
+                Scanner.scan_templates(state)
+              end
+              return undo_success
+            end,
+            redo_fn = function()
+              local redo_success = FileOps.rename_template(old_path, state.rename_buffer)
+              if redo_success then
+                local Scanner = require('TemplateBrowser.domain.scanner')
+                Scanner.scan_templates(state)
+              end
+              return redo_success
+            end
+          })
+
+          local Scanner = require('TemplateBrowser.domain.scanner')
+          Scanner.scan_templates(state)
+        end
+      end
+      state.renaming_item = nil
+      state.renaming_type = nil
+      state.rename_buffer = ""
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    ImGui.SameLine(ctx)
+    if ImGui.Button(ctx, "Cancel", 140, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+      state.renaming_item = nil
+      state.renaming_type = nil
+      state.rename_buffer = ""
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    ImGui.EndPopup(ctx)
+  end
+
   ImGui.EndChild(ctx)
 end
 
