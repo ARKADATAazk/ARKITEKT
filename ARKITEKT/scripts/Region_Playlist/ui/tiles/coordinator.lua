@@ -299,6 +299,10 @@ function M.create(opts)
         rt.on_pool_sort_direction(direction)
       end
     end,
+
+    on_actions_click = function()
+      rt._pool_actions_menu_visible = true
+    end,
   })
   
   rt.pool_container = TilesContainer.new({

@@ -14,6 +14,7 @@ local State = require('Region_Playlist.core.app_state')
 local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 local SWSImporter = require('Region_Playlist.storage.sws_importer')
 local ModalDialog = require('rearkitekt.gui.widgets.overlays.overlay.modal_dialog')
+local ColorPickerWindow = require('rearkitekt.gui.widgets.tools.color_picker_window')
 
 local M = {}
 
@@ -273,12 +274,78 @@ function M.draw_pool(self, ctx, regions, height)
   self.pool_grid:draw(ctx)
   
   self.pool_container:end_draw(ctx)
-  
+
+  -- Pool Actions context menu
+  if self._pool_actions_menu_visible then
+    ImGui.OpenPopup(ctx, "PoolActionsMenu")
+    self._pool_actions_menu_visible = false
+  end
+
+  if ContextMenu.begin(ctx, "PoolActionsMenu") then
+    local selection_info = State.get_selection_info()
+    local has_pool_selection = (selection_info.pool_region_count or 0) > 0 or
+                                (selection_info.pool_playlist_count or 0) > 0
+
+    if has_pool_selection then
+      if ContextMenu.item(ctx, "Recolor Selected...") then
+        -- Get first selected item's color as initial color
+        local initial_color = nil
+        if self.pool_grid and self.pool_grid.selection then
+          local selected_keys = self.pool_grid.selection:selected_keys()
+          for _, key in ipairs(selected_keys) do
+            local rid = key:match("^pool_(%d+)$")
+            if rid then
+              local region = State.get_region_by_rid(tonumber(rid))
+              if region and region.color then
+                initial_color = region.color
+                break
+              end
+            end
+          end
+        end
+
+        ColorPickerWindow.open("pool_recolor", initial_color)
+        ImGui.CloseCurrentPopup(ctx)
+      end
+    else
+      ImGui.BeginDisabled(ctx)
+      ContextMenu.item(ctx, "Recolor Selected...")
+      ImGui.EndDisabled(ctx)
+    end
+
+    ContextMenu.end_menu(ctx)
+  end
+
   if self.bridge:is_drag_active() and self.bridge:get_source_grid() == 'pool' and ImGui.IsMouseReleased(ctx, 0) then
     if not self.bridge:is_mouse_over_grid(ctx, 'active') then
       self.bridge:clear_drag()
     end
   end
+
+  -- Color Picker Window (renders if open)
+  ColorPickerWindow.render(ctx, "pool_recolor", {
+    title = "Recolor Selected",
+    on_change = function(color)
+      -- Live update: apply color immediately to all selected regions/playlists
+      if self.pool_grid and self.pool_grid.selection and self.controller then
+        local selected_keys = self.pool_grid.selection:selected_keys()
+
+        for _, key in ipairs(selected_keys) do
+          -- Handle regions: "pool_123"
+          local rid = key:match("^pool_(%d+)$")
+          if rid then
+            self.controller:set_region_color(tonumber(rid), color)
+          end
+
+          -- Handle playlists: "pool_playlist_abc-def"
+          local playlist_id = key:match("^pool_playlist_(.+)$")
+          if playlist_id then
+            self.controller:set_playlist_color(playlist_id, color)
+          end
+        end
+      end
+    end
+  })
 end
 
 function M.draw_ghosts(self, ctx)

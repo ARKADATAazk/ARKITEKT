@@ -265,9 +265,11 @@ function M.get_pool_container_config(callbacks)
         custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
           TransportIcons.draw_bolt(dl, x, y, width, height, color)
         end,
-        tooltip = "Actions (coming soon)",
+        tooltip = "Actions",
         on_click = function()
-          reaper.ShowConsoleMsg("Pool Grid Actions button clicked (coming soon)\n")
+          if callbacks.on_actions_click then
+            callbacks.on_actions_click()
+          end
         end,
       },
     },

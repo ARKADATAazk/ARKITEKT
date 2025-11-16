@@ -213,6 +213,22 @@ function Controller:set_playlist_color(id, color)
   end)
 end
 
+function Controller:set_region_color(rid, color)
+  local Regions = require('rearkitekt.reaper.regions')
+
+  -- Set color in Reaper (this updates the timeline immediately)
+  local success = Regions.set_region_color(0, rid, color)
+
+  if success then
+    -- Force engine state refresh to update UI cache
+    if self.bridge and self.bridge.engine then
+      self.bridge.engine:check_for_changes()
+    end
+  end
+
+  return success
+end
+
 function Controller:delete_playlist(id)
   local playlists = self.state.get_playlists()
   if #playlists <= 1 then
