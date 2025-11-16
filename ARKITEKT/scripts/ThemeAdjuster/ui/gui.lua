@@ -54,25 +54,18 @@ end
 function GUI:draw(ctx, window, shell_state)
   self:update_state(ctx, window)
 
-  -- Draw tab bar
-  if ImGui.BeginTabBar(ctx, 'main_tabs') then
-    for _, tab_def in ipairs(Config.TABS) do
-      if ImGui.BeginTabItem(ctx, tab_def.label) then
-        -- Track active tab
-        if self.current_tab ~= tab_def.id then
-          self.current_tab = tab_def.id
-          self.State.set_active_tab(tab_def.id)
-        end
+  -- Get active tab from window (menutabs system)
+  local active_tab = window:get_active_tab()
 
-        -- Draw tab content
-        if self.tab_content then
-          self.tab_content:draw(ctx, tab_def.id, shell_state)
-        end
+  -- Track active tab changes
+  if self.current_tab ~= active_tab then
+    self.current_tab = active_tab
+    self.State.set_active_tab(active_tab)
+  end
 
-        ImGui.EndTabItem(ctx)
-      end
-    end
-    ImGui.EndTabBar(ctx)
+  -- Draw tab content
+  if self.tab_content then
+    self.tab_content:draw(ctx, active_tab, shell_state)
   end
 end
 

@@ -81,5 +81,19 @@ Shell.run({
   icon_size    = 18,
   min_size     = { w = 700, h = 500 },
   get_status_func = StatusConfig.get_status_func and StatusConfig.get_status_func(State) or nil,
+  content_padding = 12,
+  tabs = {
+    items = {
+      { id = "GLOBAL", label = "Global" },
+      { id = "ASSEMBLER", label = "Assembler" },
+      { id = "TCP", label = "TCP" },
+      { id = "MCP", label = "MCP" },
+      { id = "COLORS", label = "Colors" },
+      { id = "ENVELOPES", label = "Envelopes" },
+      { id = "TRANSPORT", label = "Transport" },
+      { id = "DEBUG", label = "Debug" },
+    },
+    active = State.get_active_tab(),
+  },
   fonts        = {},
 })
