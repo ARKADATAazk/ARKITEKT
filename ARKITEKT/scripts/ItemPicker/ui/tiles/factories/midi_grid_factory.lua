@@ -14,6 +14,11 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
 
     local filtered = {}
     for _, track_guid in ipairs(state.midi_indexes) do
+      -- Check favorites filter
+      if state.settings.show_favorites_only and not state.favorites.midi[track_guid] then
+        goto continue
+      end
+
       -- Check disabled filter
       if not state.settings.show_disabled_items and state.disabled.midi[track_guid] then
         goto continue
@@ -149,7 +154,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
     end,
 
     right_click = function(uuid, selected_uuids)
-      -- Toggle disabled state for all selected items
+      -- Toggle favorite state for all selected items
       -- Need to get track_guid from UUID lookup
       local item_data = state.midi_item_lookup[uuid]
       if not item_data then return end
@@ -165,23 +170,23 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       if #selected_uuids > 1 then
         -- Multi-select: toggle all to the opposite of clicked item's state
         local clicked_track_guid = track_guid_map[uuid]
-        local new_state = not state.is_midi_disabled(clicked_track_guid)
+        local new_state = not state.is_midi_favorite(clicked_track_guid)
         for _, sel_uuid in ipairs(selected_uuids) do
           local sel_track_guid = track_guid_map[sel_uuid]
           if sel_track_guid then
             if new_state then
-              state.disabled.midi[sel_track_guid] = true
+              state.favorites.midi[sel_track_guid] = true
             else
-              state.disabled.midi[sel_track_guid] = nil
+              state.favorites.midi[sel_track_guid] = nil
             end
           end
         end
-        state.persist_disabled()
+        state.persist_favorites()
       else
         -- Single item: toggle
         local track_guid = track_guid_map[uuid]
         if track_guid then
-          state.toggle_midi_disabled(track_guid)
+          state.toggle_midi_favorite(track_guid)
         end
       end
     end,

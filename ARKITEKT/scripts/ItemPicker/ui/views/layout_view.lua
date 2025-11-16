@@ -149,6 +149,15 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.set_setting('show_disabled_items', not self.state.settings.show_disabled_items)
   end
 
+  -- Show Favorites Only checkbox (new line)
+  checkbox_y = checkbox_y + 24
+  _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
+    "Show Favorites Only",
+    self.state.settings.show_favorites_only, checkbox_config, "show_favorites_only")
+  if clicked then
+    self.state.set_setting('show_favorites_only', not self.state.settings.show_favorites_only)
+  end
+
   -- Split MIDI Items checkbox (new line)
   checkbox_y = checkbox_y + 24
   _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,

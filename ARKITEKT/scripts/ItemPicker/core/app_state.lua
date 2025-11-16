@@ -14,6 +14,7 @@ M.settings = {
   show_muted_tracks = false,
   show_muted_items = false,
   show_disabled_items = false,
+  show_favorites_only = false,
   split_midi_by_track = false,  -- Show each MIDI item separately instead of grouped by track
   focus_keyboard_on_init = true,
   search_string = "",
@@ -37,6 +38,7 @@ M.box_current_item = {}  -- { [filename] = item_index }
 M.box_current_midi_track = {}  -- { [track_guid] = item_index }
 
 M.disabled = { audio = {}, midi = {} }
+M.favorites = { audio = {}, midi = {} }
 M.track_chunks = {}
 M.item_chunks = {}
 
@@ -89,6 +91,8 @@ function M.initialize(config)
   M.settings = Persistence.load_settings()
   local disabled_data = Persistence.load_disabled_items()
   M.disabled = disabled_data or { audio = {}, midi = {} }
+  local favorites_data = Persistence.load_favorites()
+  M.favorites = favorites_data or { audio = {}, midi = {} }
 
   -- Restore tile sizes from settings
   if M.settings.tile_width then
@@ -188,6 +192,33 @@ function M.toggle_midi_disabled(track_guid)
     M.disabled.midi[track_guid] = true
   end
   M.persist_disabled()
+end
+
+-- Favorites management
+function M.is_audio_favorite(filename)
+  return M.favorites.audio[filename] == true
+end
+
+function M.is_midi_favorite(track_guid)
+  return M.favorites.midi[track_guid] == true
+end
+
+function M.toggle_audio_favorite(filename)
+  if M.favorites.audio[filename] then
+    M.favorites.audio[filename] = nil
+  else
+    M.favorites.audio[filename] = true
+  end
+  M.persist_favorites()
+end
+
+function M.toggle_midi_favorite(track_guid)
+  if M.favorites.midi[track_guid] then
+    M.favorites.midi[track_guid] = nil
+  else
+    M.favorites.midi[track_guid] = true
+  end
+  M.persist_favorites()
 end
 
 -- Item cycling
@@ -313,9 +344,14 @@ function M.persist_disabled()
   Persistence.save_disabled_items(M.disabled)
 end
 
+function M.persist_favorites()
+  Persistence.save_favorites(M.favorites)
+end
+
 function M.persist_all()
   M.persist_settings()
   M.persist_disabled()
+  M.persist_favorites()
 end
 
 -- Cleanup

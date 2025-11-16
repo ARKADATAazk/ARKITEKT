@@ -14,6 +14,11 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
 
     local filtered = {}
     for _, filename in ipairs(state.sample_indexes) do
+      -- Check favorites filter
+      if state.settings.show_favorites_only and not state.favorites.audio[filename] then
+        goto continue
+      end
+
       -- Check disabled filter
       if not state.settings.show_disabled_items and state.disabled.audio[filename] then
         goto continue
@@ -148,7 +153,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
     end,
 
     right_click = function(uuid, selected_uuids)
-      -- Toggle disabled state for all selected items
+      -- Toggle favorite state for all selected items
       -- Need to get filename from UUID lookup
       local item_data = state.audio_item_lookup[uuid]
       if not item_data then return end
@@ -164,23 +169,23 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       if #selected_uuids > 1 then
         -- Multi-select: toggle all to the opposite of clicked item's state
         local clicked_filename = filename_map[uuid]
-        local new_state = not state.is_audio_disabled(clicked_filename)
+        local new_state = not state.is_audio_favorite(clicked_filename)
         for _, sel_uuid in ipairs(selected_uuids) do
           local sel_filename = filename_map[sel_uuid]
           if sel_filename then
             if new_state then
-              state.disabled.audio[sel_filename] = true
+              state.favorites.audio[sel_filename] = true
             else
-              state.disabled.audio[sel_filename] = nil
+              state.favorites.audio[sel_filename] = nil
             end
           end
         end
-        state.persist_disabled()
+        state.persist_favorites()
       else
         -- Single item: toggle
         local filename = filename_map[uuid]
         if filename then
-          state.toggle_audio_disabled(filename)
+          state.toggle_audio_favorite(filename)
         end
       end
     end,
