@@ -8,18 +8,12 @@ local M = {}
 local GUI = {}
 GUI.__index = GUI
 
--- ImGui 0.9/0.10 compatibility for BeginChild
--- Safely check for ChildFlags_Border existence
-local ok, child_border_flag = pcall(function() return ImGui.ChildFlags_Border end)
-local HAS_CHILD_FLAGS = ok and child_border_flag ~= nil
-
+-- ImGui compatibility for BeginChild
+-- ChildFlags_Border might not exist in all versions, so use hardcoded values
+-- ChildFlags_None = 0, ChildFlags_Border = 1
 local function BeginChildCompat(ctx, id, w, h, want_border, window_flags)
-  if HAS_CHILD_FLAGS then
-    local child_flags = want_border and child_border_flag or 0
-    return ImGui.BeginChild(ctx, id, w, h, child_flags, window_flags or 0)
-  else
-    return ImGui.BeginChild(ctx, id, w, h, want_border and true or false, window_flags or 0)
-  end
+  local child_flags = want_border and 1 or 0
+  return ImGui.BeginChild(ctx, id, w, h, child_flags, window_flags or 0)
 end
 
 function M.new(config, state, scanner)
