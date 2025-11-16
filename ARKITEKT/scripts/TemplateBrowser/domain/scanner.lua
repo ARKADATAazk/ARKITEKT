@@ -1,8 +1,9 @@
 -- @noindex
 -- TemplateBrowser/domain/scanner.lua
--- Scans REAPER's track template directory
+-- Scans REAPER's track template directory with UUID tracking
 
 local M = {}
+local Persistence = require('TemplateBrowser.domain.persistence')
 
 -- Get REAPER's default track template path
 local function get_template_path()
@@ -12,7 +13,7 @@ local function get_template_path()
 end
 
 -- Recursively scan directory for .RTrackTemplate files
-local function scan_directory(path, relative_path)
+local function scan_directory(path, relative_path, metadata)
   relative_path = relative_path or ""
 
   local templates = {}
@@ -28,10 +29,39 @@ local function scan_directory(path, relative_path)
     -- Check if it's a track template
     if file:match("%.RTrackTemplate$") then
       local template_name = file:gsub("%.RTrackTemplate$", "")
+      local full_path = path .. file
+      local relative_folder = relative_path
+
+      -- Try to find existing template in metadata by name+path
+      local existing = Persistence.find_template(metadata, nil, template_name, relative_path)
+
+      local uuid
+      if existing then
+        uuid = existing.uuid
+        -- Update metadata
+        existing.name = template_name
+        existing.path = relative_path
+        existing.last_seen = os.time()
+      else
+        -- Create new UUID and metadata entry
+        uuid = Persistence.generate_uuid()
+        metadata.templates[uuid] = {
+          uuid = uuid,
+          name = template_name,
+          path = relative_path,
+          tags = {},
+          notes = "",
+          created = os.time(),
+          last_seen = os.time()
+        }
+        reaper.ShowConsoleMsg("New template UUID: " .. template_name .. " -> " .. uuid .. "\n")
+      end
+
       table.insert(templates, {
+        uuid = uuid,
         name = template_name,
         file = file,
-        path = path .. file,
+        path = full_path,
         relative_path = relative_path,
         folder = relative_path ~= "" and relative_path or "Root",
       })
@@ -49,11 +79,35 @@ local function scan_directory(path, relative_path)
     local new_relative = relative_path ~= "" and (relative_path .. sep .. subdir) or subdir
     local sub_path = path .. subdir .. sep
 
+    -- Try to find existing folder in metadata
+    local existing_folder = Persistence.find_folder(metadata, nil, subdir, new_relative)
+
+    local folder_uuid
+    if existing_folder then
+      folder_uuid = existing_folder.uuid
+      existing_folder.name = subdir
+      existing_folder.path = new_relative
+      existing_folder.last_seen = os.time()
+    else
+      -- Create new UUID and metadata entry
+      folder_uuid = Persistence.generate_uuid()
+      metadata.folders[folder_uuid] = {
+        uuid = folder_uuid,
+        name = subdir,
+        path = new_relative,
+        tags = {},
+        created = os.time(),
+        last_seen = os.time()
+      }
+      reaper.ShowConsoleMsg("New folder UUID: " .. subdir .. " -> " .. folder_uuid .. "\n")
+    end
+
     -- Recursively scan subdirectory
-    local sub_templates, sub_folders = scan_directory(sub_path, new_relative)
+    local sub_templates, sub_folders = scan_directory(sub_path, new_relative, metadata)
 
     -- Add folder to list
     table.insert(folders, {
+      uuid = folder_uuid,
       name = subdir,
       path = new_relative,
       full_path = sub_path,
@@ -97,6 +151,7 @@ local function build_folder_tree(folders)
   for _, folder in ipairs(folders) do
     local parent_node = path_to_node[folder.parent] or tree
     local node = {
+      uuid = folder.uuid,
       name = folder.name,
       path = folder.path,
       full_path = folder.full_path,
@@ -117,11 +172,19 @@ function M.scan_templates(state)
   reaper.ShowConsoleMsg("=== TemplateBrowser: Scanning templates ===\n")
   reaper.ShowConsoleMsg("Template path: " .. template_path .. "\n")
 
-  local templates, folders = scan_directory(template_path, "")
+  -- Load metadata
+  local metadata = Persistence.load_metadata()
+  state.metadata = metadata
+
+  -- Scan with UUID tracking
+  local templates, folders = scan_directory(template_path, "", metadata)
 
   state.templates = templates
   state.filtered_templates = templates
   state.folders = build_folder_tree(folders)
+
+  -- Save updated metadata
+  Persistence.save_metadata(metadata)
 
   reaper.ShowConsoleMsg(string.format("Found %d templates in %d folders\n", #templates, #folders))
 end

@@ -5,6 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local TemplateOps = require('TemplateBrowser.domain.template_ops')
 local FileOps = require('TemplateBrowser.domain.file_ops')
+local Tags = require('TemplateBrowser.domain.tags')
 
 local M = {}
 local GUI = {}
@@ -445,9 +446,77 @@ local function draw_template_panel(ctx, state, config, width, height)
   ImGui.EndChild(ctx)
 end
 
--- Draw tags/info panel (right)
-local function draw_tags_panel(ctx, state, config, width, height)
-  BeginChildCompat(ctx, "TagsPanel", width, height, true)
+-- Draw tags list panel (left-bottom)
+local function draw_tags_list_panel(ctx, state, config, width, height)
+  BeginChildCompat(ctx, "TagsListPanel", width, height, true)
+
+  -- Header with "+" button
+  local header_text = "Tags"
+  local header_text_w = ImGui.CalcTextSize(ctx, header_text)
+  local button_w = 24
+
+  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
+  ImGui.Text(ctx, header_text)
+  ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING)
+
+  if ImGui.Button(ctx, "+##createtag", button_w, 0) then
+    -- Create new tag - prompt for name
+    local tag_num = 1
+    local new_tag_name = "Tag " .. tag_num
+
+    -- Find unique name
+    if state.metadata and state.metadata.tags then
+      while state.metadata.tags[new_tag_name] do
+        tag_num = tag_num + 1
+        new_tag_name = "Tag " .. tag_num
+      end
+    end
+
+    -- Create tag with random color
+    local r = math.random(50, 255) / 255.0
+    local g = math.random(50, 255) / 255.0
+    local b = math.random(50, 255) / 255.0
+    local color = (math.floor(r * 255) << 16) | (math.floor(g * 255) << 8) | math.floor(b * 255)
+
+    Tags.create_tag(state.metadata, new_tag_name, color)
+
+    -- Save metadata
+    local Persistence = require('TemplateBrowser.domain.persistence')
+    Persistence.save_metadata(state.metadata)
+  end
+
+  ImGui.PopStyleColor(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
+  -- List all tags
+  if state.metadata and state.metadata.tags then
+    for tag_name, tag_data in pairs(state.metadata.tags) do
+      ImGui.PushID(ctx, tag_name)
+
+      -- Color swatch
+      local r = ((tag_data.color >> 16) & 0xFF) / 255.0
+      local g = ((tag_data.color >> 8) & 0xFF) / 255.0
+      local b = (tag_data.color & 0xFF) / 255.0
+
+      ImGui.ColorButton(ctx, "##color", ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0), 0, 16, 16)
+      ImGui.SameLine(ctx)
+
+      -- Tag name
+      ImGui.Text(ctx, tag_name)
+
+      ImGui.PopID(ctx)
+    end
+  else
+    ImGui.TextDisabled(ctx, "No tags yet")
+  end
+
+  ImGui.EndChild(ctx)
+end
+
+-- Draw info & tag assignment panel (right)
+local function draw_info_panel(ctx, state, config, width, height)
+  BeginChildCompat(ctx, "InfoPanel", width, height, true)
 
   -- Header
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
@@ -458,6 +527,7 @@ local function draw_tags_panel(ctx, state, config, width, height)
 
   if state.selected_template then
     local tmpl = state.selected_template
+    local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
 
     -- Template info
     ImGui.Text(ctx, "Name:")
@@ -496,10 +566,82 @@ local function draw_tags_panel(ctx, state, config, width, height)
     ImGui.Separator(ctx)
     ImGui.Spacing(ctx)
 
-    -- Tags (placeholder)
+    -- Notes
+    ImGui.Text(ctx, "Notes:")
+    ImGui.Spacing(ctx)
+
+    local notes = (tmpl_metadata and tmpl_metadata.notes) or ""
+    ImGui.SetNextItemWidth(ctx, -1)
+    local notes_changed, new_notes = ImGui.InputTextMultiline(ctx, "##notes", notes, -1, 80)
+    if notes_changed then
+      Tags.set_template_notes(state.metadata, tmpl.uuid, new_notes)
+      local Persistence = require('TemplateBrowser.domain.persistence')
+      Persistence.save_metadata(state.metadata)
+    end
+
+    ImGui.Spacing(ctx)
+    ImGui.Separator(ctx)
+    ImGui.Spacing(ctx)
+
+    -- Tag Assignment
     ImGui.Text(ctx, "Tags:")
     ImGui.Spacing(ctx)
-    ImGui.TextDisabled(ctx, "Tag system coming soon...")
+
+    if state.metadata and state.metadata.tags then
+      local has_tags = false
+      for tag_name, tag_data in pairs(state.metadata.tags) do
+        has_tags = true
+        ImGui.PushID(ctx, tag_name)
+
+        -- Check if this tag is assigned
+        local is_assigned = false
+        if tmpl_metadata and tmpl_metadata.tags then
+          for _, assigned_tag in ipairs(tmpl_metadata.tags) do
+            if assigned_tag == tag_name then
+              is_assigned = true
+              break
+            end
+          end
+        end
+
+        -- Color swatch with opacity based on assignment
+        local r = ((tag_data.color >> 16) & 0xFF) / 255.0
+        local g = ((tag_data.color >> 8) & 0xFF) / 255.0
+        local b = (tag_data.color & 0xFF) / 255.0
+        local alpha = is_assigned and 1.0 or 0.3
+
+        if ImGui.ColorButton(ctx, "##color", ImGui.ColorConvertDouble4ToU32(r, g, b, alpha), 0, 20, 20) then
+          -- Toggle tag assignment
+          if is_assigned then
+            Tags.remove_tag_from_template(state.metadata, tmpl.uuid, tag_name)
+          else
+            Tags.add_tag_to_template(state.metadata, tmpl.uuid, tag_name)
+          end
+          local Persistence = require('TemplateBrowser.domain.persistence')
+          Persistence.save_metadata(state.metadata)
+        end
+
+        ImGui.SameLine(ctx)
+
+        -- Tag name with opacity
+        if not is_assigned then
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, ImGui.ColorConvertDouble4ToU32(0.5, 0.5, 0.5, 1.0))
+        end
+        ImGui.Text(ctx, tag_name)
+        if not is_assigned then
+          ImGui.PopStyleColor(ctx)
+        end
+
+        ImGui.PopID(ctx)
+      end
+
+      if not has_tags then
+        ImGui.TextDisabled(ctx, "No tags available")
+        ImGui.TextDisabled(ctx, "Create tags in the Tags panel")
+      end
+    else
+      ImGui.TextDisabled(ctx, "No tags available")
+    end
 
   else
     ImGui.TextDisabled(ctx, "Select a template to view details")
@@ -549,38 +691,68 @@ function GUI:draw(ctx, shell_state)
     SCREEN_W, SCREEN_H = ImGui.Viewport_GetSize(viewport)
   end
 
-  -- Calculate panel widths
-  local total_width = SCREEN_W - (self.config.PANEL_SPACING * 4)
-  local folder_width = total_width * self.config.FOLDERS_PANEL_WIDTH_RATIO
-  local template_width = total_width * self.config.TEMPLATES_PANEL_WIDTH_RATIO
-  local tags_width = total_width * self.config.TAGS_PANEL_WIDTH_RATIO
-  local panel_height = SCREEN_H - (self.config.PANEL_SPACING * 2)
+  -- Calculate panel dimensions
+  local separator_width = 2
+  local num_separators = 2  -- Between left-middle and middle-right
+  local total_width = SCREEN_W - (self.config.PANEL_SPACING * 2) - (num_separators * separator_width)
 
-  -- Title
+  local left_column_width = total_width * self.config.FOLDERS_PANEL_WIDTH_RATIO
+  local template_width = total_width * self.config.TEMPLATES_PANEL_WIDTH_RATIO
+  local info_width = total_width * self.config.TAGS_PANEL_WIDTH_RATIO
+
+  -- Title (moved up by 15 pixels)
+  local title_y_offset = -15
   ImGui.PushFont(ctx, shell_state.fonts.title, shell_state.fonts.title_size)
   local title = "Template Browser"
   local title_w = ImGui.CalcTextSize(ctx, title)
-  ImGui.SetCursorPosX(ctx, (SCREEN_W - title_w) * 0.5)
+  local title_y = ImGui.GetCursorPosY(ctx) + title_y_offset
+  ImGui.SetCursorPos(ctx, (SCREEN_W - title_w) * 0.5, title_y)
   ImGui.Text(ctx, title)
   ImGui.PopFont(ctx)
 
-  ImGui.Spacing(ctx)
-  ImGui.Spacing(ctx)
+  -- Adjust spacing after title
+  ImGui.SetCursorPosY(ctx, title_y + 30)
 
-  -- Three-panel layout
   local cursor_y = ImGui.GetCursorPosY(ctx)
+  local panel_height = SCREEN_H - cursor_y - self.config.PANEL_SPACING
 
-  -- Left panel: Explorer
+  -- Split left column vertically (Explorer on top, Tags list on bottom)
+  local explorer_height = panel_height * 0.6
+  local tags_list_height = panel_height * 0.4 - self.config.PANEL_SPACING
+
+  -- Left column (Explorer + Tags list)
   ImGui.SetCursorPos(ctx, self.config.PANEL_SPACING, cursor_y)
-  draw_folder_panel(ctx, self.state, self.config, folder_width, panel_height)
+  draw_folder_panel(ctx, self.state, self.config, left_column_width, explorer_height)
+
+  -- Tags list panel below Explorer
+  ImGui.SetCursorPos(ctx, self.config.PANEL_SPACING, cursor_y + explorer_height + self.config.PANEL_SPACING)
+  draw_tags_list_panel(ctx, self.state, self.config, left_column_width, tags_list_height)
+
+  -- Separator 1
+  local sep1_x = self.config.PANEL_SPACING + left_column_width + self.config.PANEL_SPACING
+  ImGui.SetCursorPos(ctx, sep1_x, cursor_y)
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x40404080)
+  BeginChildCompat(ctx, "Sep1", separator_width, panel_height, false)
+  ImGui.EndChild(ctx)
+  ImGui.PopStyleColor(ctx)
 
   -- Middle panel: Templates
-  ImGui.SameLine(ctx, 0, self.config.PANEL_SPACING)
+  local middle_x = sep1_x + separator_width
+  ImGui.SetCursorPos(ctx, middle_x, cursor_y)
   draw_template_panel(ctx, self.state, self.config, template_width, panel_height)
 
-  -- Right panel: Tags/Info
-  ImGui.SameLine(ctx, 0, self.config.PANEL_SPACING)
-  draw_tags_panel(ctx, self.state, self.config, tags_width, panel_height)
+  -- Separator 2
+  local sep2_x = middle_x + template_width + self.config.PANEL_SPACING
+  ImGui.SetCursorPos(ctx, sep2_x, cursor_y)
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x40404080)
+  BeginChildCompat(ctx, "Sep2", separator_width, panel_height, false)
+  ImGui.EndChild(ctx)
+  ImGui.PopStyleColor(ctx)
+
+  -- Right panel: Info & Tag Assignment
+  local right_x = sep2_x + separator_width
+  ImGui.SetCursorPos(ctx, right_x, cursor_y)
+  draw_info_panel(ctx, self.state, self.config, info_width, panel_height)
 
   -- Handle exit
   if self.state.exit or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then

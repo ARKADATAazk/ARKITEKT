@@ -8,8 +8,7 @@ local M = {}
 M.folders = {}              -- Folder tree structure
 M.templates = {}            -- All templates
 M.filtered_templates = {}   -- Currently visible templates
-M.tags = {}                 -- Tag definitions
-M.template_tags = {}        -- Template -> tags mapping
+M.metadata = nil            -- Persistent metadata (tags, notes, UUIDs)
 
 -- UI State
 M.selected_folder = nil     -- Currently selected folder path
@@ -41,8 +40,7 @@ function M.initialize(config)
   M.folders = {}
   M.templates = {}
   M.filtered_templates = {}
-  M.tags = {}
-  M.template_tags = {}
+  M.metadata = nil
   M.selected_folder = nil
   M.selected_template = nil
   M.search_query = ""
