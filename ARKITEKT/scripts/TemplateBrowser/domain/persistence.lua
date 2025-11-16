@@ -268,6 +268,23 @@ function M.find_template(metadata, uuid, name, path)
     end
   end
 
+  -- Debug: log first failed lookup
+  if not M._logged_first_miss then
+    M._logged_first_miss = true
+    reaper.ShowConsoleMsg("DEBUG find_template: Looking for name='" .. tostring(name) .. "', path='" .. tostring(path) .. "'\n")
+
+    -- Show first 3 templates from metadata for comparison
+    local count = 0
+    for _, tmpl in pairs(metadata.templates) do
+      if count < 3 then
+        reaper.ShowConsoleMsg("  Metadata has: name='" .. tostring(tmpl.name) .. "', path='" .. tostring(tmpl.path) .. "'\n")
+        count = count + 1
+      else
+        break
+      end
+    end
+  end
+
   return nil
 end
 

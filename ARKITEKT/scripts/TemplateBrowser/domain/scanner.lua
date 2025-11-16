@@ -239,6 +239,15 @@ function M.scan_templates(state)
   local metadata = Persistence.load_metadata()
   state.metadata = metadata
 
+  -- Debug: Check if metadata loaded
+  local template_count = 0
+  if metadata and metadata.templates then
+    for _ in pairs(metadata.templates) do
+      template_count = template_count + 1
+    end
+  end
+  reaper.ShowConsoleMsg("DEBUG: Loaded metadata with " .. template_count .. " templates\n")
+
   -- Scan with UUID tracking (FX parsing is deferred to background queue)
   local templates, folders = scan_directory(template_path, "", metadata)
 
