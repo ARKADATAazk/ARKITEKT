@@ -276,7 +276,7 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
       end
 
       ImGui.SetNextItemWidth(ctx, 300)
-      local changed, new_index = ImGui.Combo(ctx, "##zip_picker", self.selected_zip_index, table.concat(zip_names, "\0"))
+      local changed, new_index = ImGui.Combo(ctx, "##zip_picker", self.selected_zip_index, table.concat(zip_names, "\0") .. "\0")
 
       if changed and new_index > 0 then
         self.selected_zip_index = new_index
