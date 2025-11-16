@@ -211,7 +211,9 @@ function M.TileRenderer.checkbox(ctx, pkg, P, cb_rects, tile_x, tile_y, tile_w, 
   ImGui.SetCursorScreenPos(ctx, x1, y1)
   ImGui.PushID(ctx, 'cb_visual_' .. P.id)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, M.CONFIG.checkbox.padding_x, M.CONFIG.checkbox.padding_y)
+  ImGui.BeginDisabled(ctx, true)  -- Make checkbox purely visual, not interactive
   ImGui.Checkbox(ctx, '##enable', pkg.active[P.id] == true)
+  ImGui.EndDisabled(ctx)
   ImGui.PopStyleVar(ctx)
   ImGui.PopID(ctx)
 end
