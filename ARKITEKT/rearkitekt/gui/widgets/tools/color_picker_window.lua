@@ -120,19 +120,23 @@ function M.render(ctx, id, config)
                        ImGui.ColorEditFlags_NoInputs |
                        ImGui.ColorEditFlags_NoLabel
 
+  -- Convert our RGBA to ImGui's ARGB format
+  local argb_color = Colors.rgba_to_argb(inst.current_color)
+
   -- Draw the color picker (hue wheel + triangle)
-  local rv, new_color = ImGui.ColorPicker4(ctx, '##picker', inst.current_color, picker_flags)
+  local rv, new_argb_color = ImGui.ColorPicker4(ctx, '##picker', argb_color, picker_flags)
 
   ImGui.PopStyleVar(ctx, 1)
   ImGui.PopStyleColor(ctx, 1)
 
   if rv then
-    inst.current_color = new_color | 0xFF  -- Preserve full alpha
+    -- Convert ImGui's ARGB back to our RGBA format
+    inst.current_color = Colors.argb_to_rgba(new_argb_color)
     changed = true
 
     -- Call callback immediately on change (live update)
     if on_change then
-      reaper.ShowConsoleMsg(string.format("Color changed to: %08X\n", inst.current_color))
+      reaper.ShowConsoleMsg(string.format("Color changed to RGBA: %08X (was ARGB: %08X)\n", inst.current_color, new_argb_color))
       on_change(inst.current_color)
     end
   end

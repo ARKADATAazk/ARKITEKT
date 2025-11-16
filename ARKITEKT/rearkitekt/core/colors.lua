@@ -45,6 +45,23 @@ function M.components_to_rgba(r, g, b, a)
   return (r << 24) | (g << 16) | (b << 8) | a
 end
 
+-- ImGui uses ARGB format, convert to/from our RGBA format
+function M.argb_to_rgba(argb_color)
+  local a = (argb_color >> 24) & 0xFF
+  local r = (argb_color >> 16) & 0xFF
+  local g = (argb_color >> 8) & 0xFF
+  local b = argb_color & 0xFF
+  return (r << 24) | (g << 16) | (b << 8) | a
+end
+
+function M.rgba_to_argb(rgba_color)
+  local r = (rgba_color >> 24) & 0xFF
+  local g = (rgba_color >> 16) & 0xFF
+  local b = (rgba_color >> 8) & 0xFF
+  local a = rgba_color & 0xFF
+  return (a << 24) | (r << 16) | (g << 8) | b
+end
+
 function M.with_alpha(color, alpha)
   return (color & 0xFFFFFF00) | (alpha & 0xFF)
 end
