@@ -7,20 +7,20 @@ local hexrgb = Colors.hexrgb
 local M = {}
 local utils
 local SCRIPT_DIRECTORY
-local cache_manager
 
 local WAVEFORM_RESOLUTION = 2000
+local MIDI_CACHE_WIDTH = 400
+local MIDI_CACHE_HEIGHT = 200
 
-function M.init(utils_module, script_dir, cache_mgr)
+function M.init(utils_module, script_dir)
   utils = utils_module
   SCRIPT_DIRECTORY = script_dir
-  cache_manager = cache_mgr
 end
 
 function M.GetItemWaveform(cache, item, uuid)
-  local cached_data = cache_manager.get_waveform_data(cache, item, uuid)
-  if cached_data then
-    return cached_data
+  -- Check runtime cache
+  if cache and cache.waveforms and cache.waveforms[uuid] then
+    return cache.waveforms[uuid]
   end
 
   local take = reaper.GetActiveTake(item)
@@ -66,7 +66,10 @@ function M.GetItemWaveform(cache, item, uuid)
     ret_tab = buf.table()
   end
 
-  cache_manager.set_waveform_data(cache, item, ret_tab, uuid)
+  -- Store in runtime cache
+  if cache and cache.waveforms then
+    cache.waveforms[uuid] = ret_tab
+  end
   return ret_tab
 end
 
@@ -216,12 +219,9 @@ function M.GetNoteRange(take)
 end
 
 function M.GenerateMidiThumbnail(cache, item, w, h, uuid)
-  -- Always generate at max resolution for caching (size-independent)
-  local cache_w, cache_h = cache_manager.get_midi_cache_size()
-
-  local cached_thumbnail = cache_manager.get_midi_thumbnail(cache, item, cache_w, cache_h, uuid)
-  if cached_thumbnail then
-    return cached_thumbnail
+  -- Check runtime cache
+  if cache and cache.midi_thumbnails and cache.midi_thumbnails[uuid] then
+    return cache.midi_thumbnails[uuid]
   end
 
   local take = reaper.GetActiveTake(item)
@@ -229,8 +229,8 @@ function M.GenerateMidiThumbnail(cache, item, w, h, uuid)
     return nil
   end
 
-  -- Use max resolution for generation
-  w, h = cache_w, cache_h
+  -- Use fixed resolution for generation
+  w, h = MIDI_CACHE_WIDTH, MIDI_CACHE_HEIGHT
 
   local thumbnail = {}
 
@@ -275,7 +275,10 @@ function M.GenerateMidiThumbnail(cache, item, w, h, uuid)
     end
   end
 
-  cache_manager.set_midi_thumbnail(cache, item, w, h, thumbnail, uuid)
+  -- Store in runtime cache
+  if cache and cache.midi_thumbnails then
+    cache.midi_thumbnails[uuid] = thumbnail
+  end
   return thumbnail
 end
 
@@ -299,12 +302,9 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
 
   DrawList_AddRectFilled(draw_list, x1, y1, x2, y2, color)
 
-  -- Get the cache resolution used when generating
-  local cache_w, cache_h = cache_manager.get_midi_cache_size()
-
-  -- Calculate scale factors
-  local scale_x = display_w / cache_w
-  local scale_y = display_h / cache_h
+  -- Calculate scale factors using fixed cache resolution
+  local scale_x = display_w / MIDI_CACHE_WIDTH
+  local scale_y = display_h / MIDI_CACHE_HEIGHT
 
   local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
@@ -409,12 +409,9 @@ function M.DisplayMidiItemTransparent(ctx, thumbnail, color, draw_list)
   local display_w = x2 - x1
   local display_h = y2 - y1
 
-  -- Get the cache resolution used when generating
-  local cache_w, cache_h = cache_manager.get_midi_cache_size()
-
-  -- Calculate scale factors
-  local scale_x = display_w / cache_w
-  local scale_y = display_h / cache_h
+  -- Calculate scale factors using fixed cache resolution
+  local scale_x = display_w / MIDI_CACHE_WIDTH
+  local scale_y = display_h / MIDI_CACHE_HEIGHT
 
   local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
