@@ -12,7 +12,7 @@ local Chip = require('rearkitekt.gui.widgets.data.chip')
 local Colors = require('rearkitekt.core.colors')
 local TileAnim = require('rearkitekt.gui.rendering.tile.animator')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
-local TilesContainer = require('rearkitekt.gui.widgets.containers.tiles')
+local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
 local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_config')
 
 local M = {}
