@@ -150,6 +150,55 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   end
 
   if ContextMenu.begin(ctx, "ActionsMenu") then
+    if ContextMenu.item(ctx, "Crop Project to Playlist") then
+      -- Get selected region RIDs from active grid
+      local selected_keys = self.active_grid and self.active_grid.selection and self.active_grid.selection:selected_keys() or {}
+      local rids = {}
+      for _, key in ipairs(selected_keys) do
+        local rid = key:match("^active_(%d+)$")
+        if rid then
+          table.insert(rids, tonumber(rid))
+        end
+      end
+
+      if #rids > 0 then
+        local RegionOps = require('rearkitekt.reaper.region_operations')
+        RegionOps.crop_to_regions(rids)
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ContextMenu.item(ctx, "Crop to Playlist (New Tab)") then
+      local selected_keys = self.active_grid and self.active_grid.selection and self.active_grid.selection:selected_keys() or {}
+      local rids = {}
+      for _, key in ipairs(selected_keys) do
+        local rid = key:match("^active_(%d+)$")
+        if rid then
+          table.insert(rids, tonumber(rid))
+        end
+      end
+
+      if #rids > 0 then
+        local RegionOps = require('rearkitekt.reaper.region_operations')
+        RegionOps.crop_to_regions_new_tab(rids)
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ContextMenu.item(ctx, "Append Playlist to Project") then
+      local RegionOps = require('rearkitekt.reaper.region_operations')
+      RegionOps.append_all_regions_to_project()
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ContextMenu.item(ctx, "Paste Playlist at Edit Cursor") then
+      local RegionOps = require('rearkitekt.reaper.region_operations')
+      RegionOps.paste_all_regions_at_cursor()
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ContextMenu.separator(ctx) then end
+
     if ContextMenu.item(ctx, "Import from SWS Region Playlist") then
       self._sws_import_requested = true
       ImGui.CloseCurrentPopup(ctx)
@@ -372,6 +421,44 @@ function M.draw_pool(self, ctx, regions, height)
         -- Show inline color picker
         self._pool_color_picker_visible = true
         ColorPickerWindow.show_inline("pool_recolor_inline", initial_color)
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ContextMenu.separator(ctx) then end
+
+    if ContextMenu.item(ctx, "Append Selected Regions to Project") then
+      -- Get selected region RIDs from pool grid
+      local selected_keys = self.pool_grid and self.pool_grid.selection and self.pool_grid.selection:selected_keys() or {}
+      local rids = {}
+      for _, key in ipairs(selected_keys) do
+        local rid = key:match("^pool_(%d+)$")
+        if rid then
+          table.insert(rids, tonumber(rid))
+        end
+      end
+
+      if #rids > 0 then
+        local RegionOps = require('rearkitekt.reaper.region_operations')
+        RegionOps.append_regions_to_project(rids)
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ContextMenu.item(ctx, "Paste Selected Regions at Edit Cursor") then
+      -- Get selected region RIDs from pool grid
+      local selected_keys = self.pool_grid and self.pool_grid.selection and self.pool_grid.selection:selected_keys() or {}
+      local rids = {}
+      for _, key in ipairs(selected_keys) do
+        local rid = key:match("^pool_(%d+)$")
+        if rid then
+          table.insert(rids, tonumber(rid))
+        end
+      end
+
+      if #rids > 0 then
+        local RegionOps = require('rearkitekt.reaper.region_operations')
+        RegionOps.paste_regions_at_cursor(rids)
       end
       ImGui.CloseCurrentPopup(ctx)
     end
