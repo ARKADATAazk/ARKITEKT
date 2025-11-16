@@ -357,12 +357,11 @@ local function draw_vsts_content(ctx, state, config, width, height)
 
   -- Force Reparse button (two-click confirmation)
   local button_label = "Force Reparse All"
-  local button_color = nil
+  local was_armed = state.reparse_armed  -- Save state before button changes it
 
   if state.reparse_armed then
     button_label = "CONFIRM REPARSE?"
-    button_color = ImGui.ColorConvertDouble4ToU32(0.8, 0.2, 0.2, 1.0)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, button_color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(0.8, 0.2, 0.2, 1.0))
   end
 
   if ImGui.Button(ctx, button_label, 120, 0) then
@@ -392,13 +391,14 @@ local function draw_vsts_content(ctx, state, config, width, height)
     end
   end
 
-  if state.reparse_armed then
+  -- Pop the color we pushed (based on state BEFORE button was clicked)
+  if was_armed then
     ImGui.PopStyleColor(ctx)
+  end
 
-    -- Auto-disarm after hovering away
-    if not ImGui.IsItemHovered(ctx) then
-      state.reparse_armed = false
-    end
+  -- Auto-disarm after hovering away
+  if state.reparse_armed and not ImGui.IsItemHovered(ctx) then
+    state.reparse_armed = false
   end
 
   ImGui.Separator(ctx)
