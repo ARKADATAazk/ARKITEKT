@@ -15,6 +15,8 @@ local function get_default_settings()
     show_muted_items = false,
     show_disabled_items = false,
     show_favorites_only = false,
+    show_audio = true,
+    show_midi = true,
     focus_keyboard_on_init = true,
     search_string = "",
     tile_width = nil,  -- nil = use config default

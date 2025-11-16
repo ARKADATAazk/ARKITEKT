@@ -5,7 +5,6 @@
 local ImGui = require 'imgui' '0.10'
 local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
 local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
-local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
 local DraggableSeparator = require('rearkitekt.gui.widgets.primitives.separator')
 local StatusBar = require('ItemPicker.ui.views.status_bar')
 
@@ -158,6 +157,25 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.set_setting('show_favorites_only', not self.state.settings.show_favorites_only)
   end
 
+  -- Show Audio checkbox (new line)
+  checkbox_y = checkbox_y + 24
+  _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
+    "Show Audio",
+    self.state.settings.show_audio, checkbox_config, "show_audio")
+  if clicked then
+    self.state.set_setting('show_audio', not self.state.settings.show_audio)
+  end
+
+  -- Show MIDI on same line
+  local show_audio_width = ImGui.CalcTextSize(ctx, "Show Audio") + 18 + 8 + 20  -- checkbox + spacing + margin
+  local show_midi_x = checkbox_x + show_audio_width
+  _, clicked = Checkbox.draw(ctx, draw_list, show_midi_x, checkbox_y,
+    "Show MIDI",
+    self.state.settings.show_midi, checkbox_config, "show_midi")
+  if clicked then
+    self.state.set_setting('show_midi', not self.state.settings.show_midi)
+  end
+
   -- Split MIDI Items checkbox (new line)
   checkbox_y = checkbox_y + 24
   _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
@@ -167,31 +185,6 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.set_setting('split_midi_by_track', not self.state.settings.split_midi_by_track)
     -- Recollect items when this setting changes
     self.state.needs_recollect = true
-  end
-
-  -- View mode dropdown (new line)
-  checkbox_y = checkbox_y + 30  -- Extra spacing before dropdown
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, ui_fade)
-  local _, view_changed = Dropdown.draw(ctx, draw_list, checkbox_x, checkbox_y, 120, 24, {
-    id = "view_mode",
-    options = {
-      {value = "MIXED", label = "Mixed View"},
-      {value = "MIDI", label = "MIDI Only"},
-      {value = "AUDIO", label = "Audio Only"}
-    },
-    on_change = function(value)
-      self.state.set_view_mode(value)
-    end
-  }, "view_mode")
-  ImGui.PopStyleVar(ctx)
-
-  -- Initialize dropdown value if not set
-  if not Dropdown.get_value("view_mode") then
-    local current_mode = self.state.get_view_mode()
-    Dropdown.instances = Dropdown.instances or {}
-    if Dropdown.instances["view_mode"] then
-      Dropdown.instances["view_mode"].current_value = current_mode
-    end
   end
 
   -- Search fade with different offset

@@ -15,13 +15,14 @@ M.settings = {
   show_muted_items = false,
   show_disabled_items = false,
   show_favorites_only = false,
+  show_audio = true,
+  show_midi = true,
   split_midi_by_track = false,  -- Show each MIDI item separately instead of grouped by track
   focus_keyboard_on_init = true,
   search_string = "",
   tile_width = nil,
   tile_height = nil,
   separator_position = nil,  -- MIDI section height (nil = use default from config)
-  view_mode = "MIXED",  -- "MIDI", "AUDIO", or "MIXED"
 }
 
 -- Runtime state (volatile)
@@ -155,15 +156,20 @@ function M.set_separator_position(height)
   M.persist_settings()
 end
 
--- View mode management
+-- View mode management (derived from checkboxes)
 function M.get_view_mode()
-  return M.settings.view_mode or "MIXED"
-end
+  local show_audio = M.settings.show_audio
+  local show_midi = M.settings.show_midi
 
-function M.set_view_mode(mode)
-  if mode == "MIDI" or mode == "AUDIO" or mode == "MIXED" then
-    M.settings.view_mode = mode
-    M.persist_settings()
+  if show_audio and show_midi then
+    return "MIXED"
+  elseif show_midi then
+    return "MIDI"
+  elseif show_audio then
+    return "AUDIO"
+  else
+    -- If both are off, default to MIXED
+    return "MIXED"
   end
 end
 
