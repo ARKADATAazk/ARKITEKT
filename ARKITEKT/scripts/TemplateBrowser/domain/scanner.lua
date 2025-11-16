@@ -4,6 +4,7 @@
 
 local M = {}
 local Persistence = require('TemplateBrowser.domain.persistence')
+local FXParser = require('TemplateBrowser.domain.fx_parser')
 
 -- Get REAPER's default track template path
 local function get_template_path()
@@ -32,6 +33,9 @@ local function scan_directory(path, relative_path, metadata)
       local full_path = path .. file
       local relative_folder = relative_path
 
+      -- Parse FX from template file
+      local fx_list = FXParser.parse_template_fx(full_path)
+
       -- Try to find existing template in metadata by name+path
       local existing = Persistence.find_template(metadata, nil, template_name, relative_path)
 
@@ -42,6 +46,7 @@ local function scan_directory(path, relative_path, metadata)
         existing.name = template_name
         existing.path = relative_path
         existing.last_seen = os.time()
+        existing.fx = fx_list  -- Update FX list
       else
         -- Create new UUID and metadata entry
         uuid = Persistence.generate_uuid()
@@ -51,6 +56,7 @@ local function scan_directory(path, relative_path, metadata)
           path = relative_path,
           tags = {},
           notes = "",
+          fx = fx_list,
           created = os.time(),
           last_seen = os.time()
         }
@@ -64,6 +70,7 @@ local function scan_directory(path, relative_path, metadata)
         path = full_path,
         relative_path = relative_path,
         folder = relative_path ~= "" and relative_path or "Root",
+        fx = fx_list,  -- Include FX in template object
       })
     end
 
@@ -193,8 +200,14 @@ end
 function M.filter_templates(state)
   local filtered = {}
 
-  reaper.ShowConsoleMsg(string.format("Filtering: selected_folder='%s', search='%s'\n",
-    state.selected_folder or "nil", state.search_query))
+  -- Count active FX filters
+  local fx_filter_count = 0
+  for _ in pairs(state.filter_fx) do
+    fx_filter_count = fx_filter_count + 1
+  end
+
+  reaper.ShowConsoleMsg(string.format("Filtering: selected_folder='%s', search='%s', fx_filters=%d\n",
+    state.selected_folder or "nil", state.search_query, fx_filter_count))
 
   for _, tmpl in ipairs(state.templates) do
     local matches = true
@@ -212,6 +225,27 @@ function M.filter_templates(state)
       local query_lower = state.search_query:lower()
       if not tmpl.name:lower():match(query_lower) then
         matches = false
+      end
+    end
+
+    -- Filter by FX (template must have ALL selected FX)
+    if matches and fx_filter_count > 0 then
+      if not tmpl.fx then
+        matches = false
+      else
+        for fx_name in pairs(state.filter_fx) do
+          local has_fx = false
+          for _, template_fx in ipairs(tmpl.fx) do
+            if template_fx == fx_name then
+              has_fx = true
+              break
+            end
+          end
+          if not has_fx then
+            matches = false
+            break
+          end
+        end
       end
     end
 

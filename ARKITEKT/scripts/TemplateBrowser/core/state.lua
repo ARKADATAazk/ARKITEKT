@@ -15,6 +15,8 @@ M.selected_folder = nil     -- Currently selected folder path
 M.selected_template = nil   -- Currently selected template
 M.search_query = ""         -- Search filter
 M.filter_tags = {}          -- Active tag filters
+M.filter_fx = {}            -- Active FX filters (table of FX name -> true)
+M.left_panel_tab = "directory"  -- Current tab: "directory", "vsts", "tags"
 
 -- Folder open/close state (path -> bool)
 M.folder_open_state = {}
@@ -50,6 +52,8 @@ function M.initialize(config)
   M.selected_template = nil
   M.search_query = ""
   M.filter_tags = {}
+  M.filter_fx = {}
+  M.left_panel_tab = "directory"
   M.folder_open_state = {}
   M.renaming_item = nil
   M.renaming_type = nil
