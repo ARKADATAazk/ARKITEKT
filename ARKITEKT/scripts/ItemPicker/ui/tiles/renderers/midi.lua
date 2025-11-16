@@ -190,11 +190,58 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       end
 
       if changed then
+        -- Get fresh item data from lookup
+        local lookup_data = state.midi_item_lookup[item_data.uuid]
+        if not lookup_data then
+          -- Fallback: try to use item_data.item directly
+          lookup_data = item_data
+        end
+
+        local item = lookup_data.item or lookup_data[1]
+
+        -- Validate item pointer
+        if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+          reaper.ShowConsoleMsg("[RENAME ERROR] Invalid MediaItem pointer for UUID: " .. tostring(item_data.uuid) .. "\n")
+          state.rename_active = false
+          state.rename_uuid = nil
+          state.rename_focused = false
+          state.rename_queue = nil
+          state.rename_queue_index = 0
+          state.rename_focus_frame = false
+          ImGui.PopStyleColor(ctx, 2)
+          ImGui.PopStyleVar(ctx)
+          return
+        end
+
         -- Apply rename to the item
         reaper.Undo_BeginBlock()
-        local take = reaper.GetActiveTake(item_data.item)
+        local take = reaper.GetActiveTake(item)
         if take then
           reaper.GetSetMediaItemTakeInfo_String(take, "P_NAME", new_text, true)
+
+          -- Update the name in the lookup immediately so tile reflects change
+          if state.midi_item_lookup[item_data.uuid] then
+            -- Update array format: {item, name, track_muted, item_muted, uuid, pool_count}
+            if type(state.midi_item_lookup[item_data.uuid]) == "table" then
+              state.midi_item_lookup[item_data.uuid][2] = new_text
+            end
+          end
+
+          -- Also update in the midi_items array
+          if state.midi_items then
+            for track_guid, items_array in pairs(state.midi_items) do
+              for _, entry in ipairs(items_array) do
+                if entry.uuid == item_data.uuid then
+                  entry[2] = new_text  -- Update name in array
+                  break
+                end
+              end
+            end
+          end
+
+          -- Update the current item_data name for immediate display
+          item_data.name = new_text
+
           reaper.UpdateArrange()
         end
         reaper.Undo_EndBlock("Rename item take", -1)
