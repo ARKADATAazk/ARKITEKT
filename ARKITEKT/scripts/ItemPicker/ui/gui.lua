@@ -79,6 +79,15 @@ function GUI:start_incremental_loading()
   if cached_data and cached_data.change_count == current_change_count then
     reaper.ShowConsoleMsg("Cache HIT! Loading from disk (instant)\n")
 
+    -- Debug: Check what we loaded
+    local meta_sample_count = 0
+    for _ in pairs(cached_data.samples_meta or {}) do meta_sample_count = meta_sample_count + 1 end
+    local meta_midi_count = 0
+    for _ in pairs(cached_data.midi_meta or {}) do meta_midi_count = meta_midi_count + 1 end
+    reaper.ShowConsoleMsg(string.format("DEBUG: Cached samples_meta: %d, midi_meta: %d\n", meta_sample_count, meta_midi_count))
+    reaper.ShowConsoleMsg(string.format("DEBUG: sample_indexes: %d, midi_indexes: %d\n",
+      #(cached_data.sample_indexes or {}), #(cached_data.midi_indexes or {})))
+
     -- Populate state with cached metadata (no item pointers yet)
     self.state.sample_indexes = cached_data.sample_indexes or {}
     self.state.midi_indexes = cached_data.midi_indexes or {}
@@ -133,6 +142,14 @@ function GUI:start_incremental_loading()
         end
       end
     end
+
+    -- Debug: Check populated state
+    local populated_sample_count = 0
+    for _ in pairs(self.state.samples) do populated_sample_count = populated_sample_count + 1 end
+    local populated_midi_count = 0
+    for _ in pairs(self.state.midi_items) do populated_midi_count = populated_midi_count + 1 end
+    reaper.ShowConsoleMsg(string.format("DEBUG: Populated state.samples: %d, state.midi_items: %d\n",
+      populated_sample_count, populated_midi_count))
 
     -- Recreate coordinator and layout with populated data
     self.coordinator = Coordinator.new(self.ctx, self.config, self.state, self.visualization, self.cache_mgr)
