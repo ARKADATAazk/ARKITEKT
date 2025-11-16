@@ -7,6 +7,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Style = require('rearkitekt.gui.style.defaults')
 local Tooltip = require('rearkitekt.gui.widgets.overlays.tooltip')
+local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 
 local M = {}
 
@@ -222,47 +223,22 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
     self.is_open = true
   end
   
-  -- Draw popup
+  -- Draw popup (using context_menu for consistent shadow/styling)
   local popup_changed = false
   local popup_cfg = cfg.popup
-  
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, popup_cfg.padding, popup_cfg.padding)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, popup_cfg.rounding)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_PopupRounding, popup_cfg.rounding)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, popup_cfg.border_thickness)
-  
-  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, popup_cfg.bg_color)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, popup_cfg.border_color)
-  
-  if ImGui.BeginPopup(ctx, self.id .. "_popup") then
+
+  -- Use ContextMenu.begin for popup with shadow effect
+  if ContextMenu.begin(ctx, self.id .. "_popup", {
+    bg_color = popup_cfg.bg_color,
+    border_color = popup_cfg.border_color,
+    rounding = popup_cfg.rounding,
+    padding = popup_cfg.padding,
+    border_thickness = popup_cfg.border_thickness,
+    min_width = math.max(width * 1.5, 180),
+  }) then
     local popup_dl = ImGui.GetWindowDrawList(ctx)
     self.popup_hover_index = -1
     self.footer_interacting = false
-
-    -- Draw subtle shadow/halo effect
-    local wx, wy = ImGui.GetWindowPos(ctx)
-    local ww, wh = ImGui.GetWindowSize(ctx)
-    local bg_dl = ImGui.GetBackgroundDrawList(ctx)
-    local shadow_offset = 3
-    local shadow_spread = 6
-    ImGui.DrawList_AddRectFilled(
-      bg_dl,
-      wx + shadow_offset - shadow_spread,
-      wy + shadow_offset - shadow_spread,
-      wx + ww + shadow_offset + shadow_spread,
-      wy + wh + shadow_offset + shadow_spread,
-      Colors.hexrgb("#00000040"),  -- 25% opacity
-      popup_cfg.rounding + shadow_spread
-    )
-    ImGui.DrawList_AddRectFilled(
-      bg_dl,
-      wx + shadow_offset - shadow_spread/2,
-      wy + shadow_offset - shadow_spread/2,
-      wx + ww + shadow_offset + shadow_spread/2,
-      wy + wh + shadow_offset + shadow_spread/2,
-      Colors.hexrgb("#00000030"),  -- 19% opacity
-      popup_cfg.rounding + shadow_spread/2
-    )
 
     -- Calculate popup width (increased for better appearance)
     local max_text_width = 0
@@ -409,14 +385,11 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
       end
     end
     -- <<< FOOTER CONTENT (END)
-    
-    ImGui.EndPopup(ctx)
+
+    ContextMenu.end_menu(ctx)
   else
     self.is_open = false
   end
-  
-  ImGui.PopStyleColor(ctx, 2)
-  ImGui.PopStyleVar(ctx, 4)
   
   return clicked or wheel_changed or popup_changed or right_clicked
 end
