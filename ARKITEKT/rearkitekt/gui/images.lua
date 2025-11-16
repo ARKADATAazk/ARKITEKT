@@ -66,13 +66,13 @@ end
 
 local function destroy_image(img)
   if not img then return end
-  -- In ImGui 0.10, use Image_Destroy instead of DestroyImage
-  if ImGui.Image_Destroy then
-    pcall(ImGui.Image_Destroy, img)
-  elseif ImGui.DestroyImage then
-    pcall(ImGui.DestroyImage, img)
+  -- Try to destroy image if the function exists
+  -- ImGui 0.10 might not have an explicit destroy function for images
+  -- In that case, the image will be garbage collected automatically
+  local destroy_fn = ImGui.Image_Destroy or ImGui.DestroyImage
+  if destroy_fn then
+    pcall(destroy_fn, img)
   end
-  -- If neither exists, images will be garbage collected automatically
 end
 
 local function image_size(img)
