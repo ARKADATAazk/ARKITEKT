@@ -37,10 +37,12 @@ end
 -- Draw folder tree recursively
 local function draw_folder_node(ctx, node, state, config)
   local is_selected = (state.selected_folder == node.path)
+  local has_children = #node.children > 0
 
-  -- Build unique label with ID: "FolderName##unique_id"
-  local node_id = node.path ~= "" and node.path or "root"
-  local label = node.name .. "##" .. node_id
+  -- Build unique label: "FolderName##unique_id"
+  -- Sanitize path for use as ID (replace slashes)
+  local safe_id = (node.path ~= "" and node.path or "root"):gsub("[/\\]", "_")
+  local label = node.name .. "##folder_" .. safe_id
 
   -- Set up flags
   local flags = ImGui.TreeNodeFlags_OpenOnArrow
@@ -51,8 +53,8 @@ local function draw_folder_node(ctx, node, state, config)
     flags = flags | ImGui.TreeNodeFlags_Selected
   end
 
-  if #node.children == 0 then
-    flags = flags | ImGui.TreeNodeFlags_Leaf | ImGui.TreeNodeFlags_NoTreePushOnOpen
+  if not has_children then
+    flags = flags | ImGui.TreeNodeFlags_Leaf
   end
 
   -- Draw the tree node: TreeNodeEx(ctx, label, flags)
@@ -65,18 +67,12 @@ local function draw_folder_node(ctx, node, state, config)
     Scanner.filter_templates(state)
   end
 
-  -- Draw children if node is open
+  -- Draw children and always pop if opened
   if node_open then
-    if #node.children > 0 then
-      for _, child in ipairs(node.children) do
-        draw_folder_node(ctx, child, state, config)
-      end
+    for _, child in ipairs(node.children) do
+      draw_folder_node(ctx, child, state, config)
     end
-    -- Always pop if TreeNodeEx returned true and didn't have NoTreePushOnOpen
-    -- or if it had children
-    if #node.children > 0 then
-      ImGui.TreePop(ctx)
-    end
+    ImGui.TreePop(ctx)
   end
 end
 
