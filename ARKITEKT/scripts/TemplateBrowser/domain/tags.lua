@@ -21,6 +21,50 @@ function M.create_tag(metadata, tag_name, color)
   return true
 end
 
+-- Rename a tag
+function M.rename_tag(metadata, old_name, new_name)
+  if not metadata.tags[old_name] then
+    reaper.ShowConsoleMsg("Tag not found: " .. old_name .. "\n")
+    return false
+  end
+
+  if metadata.tags[new_name] then
+    reaper.ShowConsoleMsg("Tag already exists: " .. new_name .. "\n")
+    return false
+  end
+
+  -- Copy tag data with new name
+  local tag_data = metadata.tags[old_name]
+  tag_data.name = new_name
+  metadata.tags[new_name] = tag_data
+  metadata.tags[old_name] = nil
+
+  -- Update tag references in all templates
+  for _, tmpl in pairs(metadata.templates) do
+    if tmpl.tags then
+      for i, t in ipairs(tmpl.tags) do
+        if t == old_name then
+          tmpl.tags[i] = new_name
+        end
+      end
+    end
+  end
+
+  -- Update tag references in all folders
+  for _, fld in pairs(metadata.folders) do
+    if fld.tags then
+      for i, t in ipairs(fld.tags) do
+        if t == old_name then
+          fld.tags[i] = new_name
+        end
+      end
+    end
+  end
+
+  reaper.ShowConsoleMsg("Renamed tag: " .. old_name .. " -> " .. new_name .. "\n")
+  return true
+end
+
 -- Delete a tag
 function M.delete_tag(metadata, tag_name)
   if not metadata.tags[tag_name] then

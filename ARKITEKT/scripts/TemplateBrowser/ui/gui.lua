@@ -6,6 +6,7 @@ local ImGui = require 'imgui' '0.10'
 local TemplateOps = require('TemplateBrowser.domain.template_ops')
 local FileOps = require('TemplateBrowser.domain.file_ops')
 local Tags = require('TemplateBrowser.domain.tags')
+local Separator = require('TemplateBrowser.ui.separator')
 
 local M = {}
 local GUI = {}
@@ -25,6 +26,9 @@ function M.new(config, state, scanner)
     state = state,
     scanner = scanner,
     initialized = false,
+    separator1 = Separator.new("sep1"),
+    separator2 = Separator.new("sep2"),
+    separator_explorer = Separator.new("explorer"),
   }, GUI)
 
   return self
@@ -492,18 +496,58 @@ local function draw_tags_list_panel(ctx, state, config, width, height)
   -- List all tags
   if state.metadata and state.metadata.tags then
     for tag_name, tag_data in pairs(state.metadata.tags) do
+      local is_renaming = (state.renaming_item == tag_name and state.renaming_type == "tag")
+
       ImGui.PushID(ctx, tag_name)
 
-      -- Color swatch
-      local r = ((tag_data.color >> 16) & 0xFF) / 255.0
-      local g = ((tag_data.color >> 8) & 0xFF) / 255.0
-      local b = (tag_data.color & 0xFF) / 255.0
+      if is_renaming then
+        -- Rename mode
+        ImGui.SetNextItemWidth(ctx, -1)
+        local changed, new_name = ImGui.InputText(ctx, "##rename_tag", state.rename_buffer)
 
-      ImGui.ColorButton(ctx, "##color", ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0), 0, 16, 16)
-      ImGui.SameLine(ctx)
+        if changed then
+          state.rename_buffer = new_name
+        end
 
-      -- Tag name
-      ImGui.Text(ctx, tag_name)
+        -- Commit on Enter or deactivate
+        if ImGui.IsItemDeactivatedAfterEdit(ctx) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
+          if state.rename_buffer ~= "" and state.rename_buffer ~= tag_name then
+            -- Rename tag
+            Tags.rename_tag(state.metadata, tag_name, state.rename_buffer)
+            local Persistence = require('TemplateBrowser.domain.persistence')
+            Persistence.save_metadata(state.metadata)
+          end
+          state.renaming_item = nil
+          state.renaming_type = nil
+          state.rename_buffer = ""
+        end
+
+        -- Cancel on Escape
+        if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+          state.renaming_item = nil
+          state.renaming_type = nil
+          state.rename_buffer = ""
+        end
+      else
+        -- Normal display
+        -- Color swatch
+        local r = ((tag_data.color >> 16) & 0xFF) / 255.0
+        local g = ((tag_data.color >> 8) & 0xFF) / 255.0
+        local b = (tag_data.color & 0xFF) / 255.0
+
+        ImGui.ColorButton(ctx, "##color", ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0), 0, 16, 16)
+        ImGui.SameLine(ctx)
+
+        -- Tag name
+        ImGui.Text(ctx, tag_name)
+
+        -- Double-click to rename
+        if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
+          state.renaming_item = tag_name
+          state.renaming_type = "tag"
+          state.rename_buffer = tag_name
+        end
+      end
 
       ImGui.PopID(ctx)
     end
@@ -691,15 +735,6 @@ function GUI:draw(ctx, shell_state)
     SCREEN_W, SCREEN_H = ImGui.Viewport_GetSize(viewport)
   end
 
-  -- Calculate panel dimensions
-  local separator_width = 2
-  local num_separators = 2  -- Between left-middle and middle-right
-  local total_width = SCREEN_W - (self.config.PANEL_SPACING * 2) - (num_separators * separator_width)
-
-  local left_column_width = total_width * self.config.FOLDERS_PANEL_WIDTH_RATIO
-  local template_width = total_width * self.config.TEMPLATES_PANEL_WIDTH_RATIO
-  local info_width = total_width * self.config.TAGS_PANEL_WIDTH_RATIO
-
   -- Title (moved up by 15 pixels)
   local title_y_offset = -15
   ImGui.PushFont(ctx, shell_state.fonts.title, shell_state.fonts.title_size)
@@ -716,42 +751,80 @@ function GUI:draw(ctx, shell_state)
   local cursor_y = ImGui.GetCursorPosY(ctx)
   local panel_height = SCREEN_H - cursor_y - self.config.PANEL_SPACING
 
-  -- Split left column vertically (Explorer on top, Tags list on bottom)
-  local explorer_height = panel_height * 0.6
-  local tags_list_height = panel_height * 0.4 - self.config.PANEL_SPACING
+  -- Draggable separator configuration
+  local separator_thickness = 8
+  local min_panel_width = 150
 
-  -- Left column (Explorer + Tags list)
-  ImGui.SetCursorPos(ctx, self.config.PANEL_SPACING, cursor_y)
+  -- Calculate positions based on ratios
+  local sep1_x = SCREEN_W * self.state.separator1_ratio
+  local sep2_x = SCREEN_W * self.state.separator2_ratio
+
+  -- Handle separator 1 dragging
+  local sep1_action, sep1_new_x = self.separator1:draw_vertical(ctx, sep1_x, cursor_y, 0, panel_height, separator_thickness)
+  if sep1_action == "drag" then
+    -- Clamp to valid range
+    sep1_new_x = math.max(min_panel_width, math.min(sep1_new_x, SCREEN_W - min_panel_width * 2 - separator_thickness * 2))
+    self.state.separator1_ratio = sep1_new_x / SCREEN_W
+    sep1_x = sep1_new_x
+  elseif sep1_action == "reset" then
+    self.state.separator1_ratio = self.config.FOLDERS_PANEL_WIDTH_RATIO
+    sep1_x = SCREEN_W * self.state.separator1_ratio
+  end
+
+  -- Handle separator 2 dragging
+  local sep2_action, sep2_new_x = self.separator2:draw_vertical(ctx, sep2_x, cursor_y, 0, panel_height, separator_thickness)
+  if sep2_action == "drag" then
+    -- Clamp to valid range
+    sep2_new_x = math.max(sep1_x + separator_thickness + min_panel_width, math.min(sep2_new_x, SCREEN_W - min_panel_width))
+    self.state.separator2_ratio = sep2_new_x / SCREEN_W
+    sep2_x = sep2_new_x
+  elseif sep2_action == "reset" then
+    self.state.separator2_ratio = self.state.separator1_ratio + self.config.TEMPLATES_PANEL_WIDTH_RATIO
+    sep2_x = SCREEN_W * self.state.separator2_ratio
+  end
+
+  -- Calculate panel widths
+  local left_column_width = sep1_x - separator_thickness / 2
+  local template_width = sep2_x - sep1_x - separator_thickness
+  local info_width = SCREEN_W - sep2_x - separator_thickness / 2
+
+  -- Split left column vertically (Explorer on top, Tags list on bottom)
+  local explorer_y = cursor_y + panel_height * self.state.explorer_height_ratio
+
+  -- Handle horizontal separator between Explorer and Tags
+  local sep_explorer_action, sep_explorer_new_y = self.separator_explorer:draw_horizontal(
+    ctx, 0, explorer_y, left_column_width, 0, separator_thickness
+  )
+  if sep_explorer_action == "drag" then
+    local min_explorer = cursor_y + 100
+    local max_explorer = cursor_y + panel_height - 100
+    sep_explorer_new_y = math.max(min_explorer, math.min(sep_explorer_new_y, max_explorer))
+    self.state.explorer_height_ratio = (sep_explorer_new_y - cursor_y) / panel_height
+    explorer_y = sep_explorer_new_y
+  elseif sep_explorer_action == "reset" then
+    self.state.explorer_height_ratio = 0.6
+    explorer_y = cursor_y + panel_height * 0.6
+  end
+
+  local explorer_height = explorer_y - cursor_y - separator_thickness / 2
+  local tags_list_y = explorer_y + separator_thickness / 2
+  local tags_list_height = cursor_y + panel_height - tags_list_y
+
+  -- Draw panels with equal padding
+  -- Left column: Explorer
+  ImGui.SetCursorPos(ctx, 0, cursor_y)
   draw_folder_panel(ctx, self.state, self.config, left_column_width, explorer_height)
 
-  -- Tags list panel below Explorer
-  ImGui.SetCursorPos(ctx, self.config.PANEL_SPACING, cursor_y + explorer_height + self.config.PANEL_SPACING)
+  -- Left column: Tags list
+  ImGui.SetCursorPos(ctx, 0, tags_list_y)
   draw_tags_list_panel(ctx, self.state, self.config, left_column_width, tags_list_height)
 
-  -- Separator 1
-  local sep1_x = self.config.PANEL_SPACING + left_column_width + self.config.PANEL_SPACING
-  ImGui.SetCursorPos(ctx, sep1_x, cursor_y)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x40404080)
-  BeginChildCompat(ctx, "Sep1", separator_width, panel_height, false)
-  ImGui.EndChild(ctx)
-  ImGui.PopStyleColor(ctx)
-
   -- Middle panel: Templates
-  local middle_x = sep1_x + separator_width
-  ImGui.SetCursorPos(ctx, middle_x, cursor_y)
+  ImGui.SetCursorPos(ctx, sep1_x + separator_thickness / 2, cursor_y)
   draw_template_panel(ctx, self.state, self.config, template_width, panel_height)
 
-  -- Separator 2
-  local sep2_x = middle_x + template_width + self.config.PANEL_SPACING
-  ImGui.SetCursorPos(ctx, sep2_x, cursor_y)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, 0x40404080)
-  BeginChildCompat(ctx, "Sep2", separator_width, panel_height, false)
-  ImGui.EndChild(ctx)
-  ImGui.PopStyleColor(ctx)
-
   -- Right panel: Info & Tag Assignment
-  local right_x = sep2_x + separator_width
-  ImGui.SetCursorPos(ctx, right_x, cursor_y)
+  ImGui.SetCursorPos(ctx, sep2_x + separator_thickness / 2, cursor_y)
   draw_info_panel(ctx, self.state, self.config, info_width, panel_height)
 
   -- Handle exit

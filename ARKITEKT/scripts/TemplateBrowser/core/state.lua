@@ -20,13 +20,18 @@ M.filter_tags = {}          -- Active tag filters
 M.folder_open_state = {}
 
 -- Rename state
-M.renaming_item = nil       -- Item being renamed (folder node or template)
-M.renaming_type = nil       -- "folder" or "template"
+M.renaming_item = nil       -- Item being renamed (folder node, template, or tag name)
+M.renaming_type = nil       -- "folder", "template", or "tag"
 M.rename_buffer = ""        -- Text input buffer for rename
 
 -- Drag and drop state
 M.dragging_item = nil       -- Item being dragged
 M.dragging_type = nil       -- "folder" or "template"
+
+-- Panel layout state
+M.separator1_ratio = nil    -- Ratio for first separator (left column width)
+M.separator2_ratio = nil    -- Ratio for second separator (left+middle width)
+M.explorer_height_ratio = nil  -- Ratio for explorer vs tags panel height
 
 -- Undo manager
 M.undo_manager = nil
@@ -51,6 +56,11 @@ function M.initialize(config)
   M.rename_buffer = ""
   M.dragging_item = nil
   M.dragging_type = nil
+
+  -- Panel layout defaults
+  M.separator1_ratio = config.FOLDERS_PANEL_WIDTH_RATIO or 0.22
+  M.separator2_ratio = (config.FOLDERS_PANEL_WIDTH_RATIO or 0.22) + (config.TEMPLATES_PANEL_WIDTH_RATIO or 0.50)
+  M.explorer_height_ratio = 0.6
 
   -- Create undo manager
   local Undo = require('TemplateBrowser.domain.undo')
