@@ -344,7 +344,7 @@ function M.crop_to_regions(rids)
         end
 
         if not in_range then
-          reaper.DeleteEnvelopePoint(envelope, k)
+          reaper.DeleteEnvelopePointEx(envelope, -1, k)
         end
       end
     end
