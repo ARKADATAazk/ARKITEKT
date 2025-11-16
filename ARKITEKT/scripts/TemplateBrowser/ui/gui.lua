@@ -82,7 +82,7 @@ local function draw_folder_panel(ctx, state, config, width, height)
   ImGui.SeparatorText(ctx, "Folders")
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Spacing()
+  ImGui.Spacing(ctx)
 
   -- "All Templates" option
   local is_all_selected = (state.selected_folder == nil or state.selected_folder == "")
@@ -101,7 +101,7 @@ local function draw_folder_panel(ctx, state, config, width, height)
   end
 
   ImGui.Separator(ctx)
-  ImGui.Spacing()
+  ImGui.Spacing(ctx)
 
   -- Folder tree
   if state.folders and state.folders.children then
@@ -122,7 +122,7 @@ local function draw_template_panel(ctx, state, config, width, height)
   ImGui.SeparatorText(ctx, "Templates")
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Spacing()
+  ImGui.Spacing(ctx)
 
   -- Search box
   ImGui.SetNextItemWidth(ctx, -1)
@@ -133,9 +133,9 @@ local function draw_template_panel(ctx, state, config, width, height)
     Scanner.filter_templates(state)
   end
 
-  ImGui.Spacing()
+  ImGui.Spacing(ctx)
   ImGui.Separator(ctx)
-  ImGui.Spacing()
+  ImGui.Spacing(ctx)
 
   -- Template count
   local count = #state.filtered_templates
@@ -185,7 +185,7 @@ local function draw_tags_panel(ctx, state, config, width, height)
   ImGui.SeparatorText(ctx, "Info & Tags")
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Spacing()
+  ImGui.Spacing(ctx)
 
   if state.selected_template then
     local tmpl = state.selected_template
@@ -196,15 +196,15 @@ local function draw_tags_panel(ctx, state, config, width, height)
     ImGui.TextWrapped(ctx, tmpl.name)
     ImGui.Unindent(ctx, 10)
 
-    ImGui.Spacing()
+    ImGui.Spacing(ctx)
     ImGui.Text(ctx, "Location:")
     ImGui.Indent(ctx, 10)
     ImGui.TextWrapped(ctx, tmpl.folder)
     ImGui.Unindent(ctx, 10)
 
-    ImGui.Spacing()
+    ImGui.Spacing(ctx)
     ImGui.Separator(ctx)
-    ImGui.Spacing()
+    ImGui.Spacing(ctx)
 
     -- Actions
     if ImGui.Button(ctx, "Apply to Selected Track", -1, 32) then
@@ -217,13 +217,13 @@ local function draw_tags_panel(ctx, state, config, width, height)
       reaper.ShowConsoleMsg("Insert template as new track: " .. tmpl.name .. "\n")
     end
 
-    ImGui.Spacing()
+    ImGui.Spacing(ctx)
     ImGui.Separator(ctx)
-    ImGui.Spacing()
+    ImGui.Spacing(ctx)
 
     -- Tags (placeholder)
     ImGui.Text(ctx, "Tags:")
-    ImGui.Spacing()
+    ImGui.Spacing(ctx)
     ImGui.TextDisabled(ctx, "Tag system coming soon...")
 
   else
@@ -271,8 +271,8 @@ function GUI:draw(ctx, shell_state)
   ImGui.Text(ctx, title)
   ImGui.PopFont(ctx)
 
-  ImGui.Spacing()
-  ImGui.Spacing()
+  ImGui.Spacing(ctx)
+  ImGui.Spacing(ctx)
 
   -- Three-panel layout
   local cursor_y = ImGui.GetCursorPosY(ctx)
