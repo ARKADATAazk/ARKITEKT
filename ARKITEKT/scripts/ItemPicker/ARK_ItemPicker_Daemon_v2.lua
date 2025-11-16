@@ -145,9 +145,6 @@ overlay_mgr:push({
   content_padding = 20,
 
   render = function(ctx, alpha_val, bounds)
-    -- Only render content when visible
-    if not ui_visible then return end
-
     ImGui.PushFont(ctx, fonts.default, fonts.default_size)
 
     local overlay_state = {
@@ -176,9 +173,6 @@ overlay_mgr:push({
   end,
 })
 
--- Start hidden
-overlay_mgr:set_visible("item_picker_main", false)
-
 -- Create runtime (EXACTLY like ARK_ItemPicker.lua)
 local runtime = Runtime.new({
   title = "Item Picker Daemon",
@@ -191,9 +185,6 @@ local runtime = Runtime.new({
       reaper.SetExtState(ext_section, "toggle_request", "", false)
       ui_visible = not ui_visible
       reaper.SetExtState(ext_section, "ui_visible", ui_visible and "1" or "0", false)
-
-      -- Control overlay visibility
-      overlay_mgr:set_visible("item_picker_main", ui_visible)
     end
 
     -- When dragging, skip overlay and just render drag handlers
@@ -208,8 +199,10 @@ local runtime = Runtime.new({
       ImGui.PopFont(ctx)
       return true
     else
-      -- Always render overlay (visibility controlled via set_visible)
-      overlay_mgr:render(ctx)
+      -- Only render overlay when UI is visible
+      if ui_visible then
+        overlay_mgr:render(ctx)
+      end
       return true  -- Always keep running
     end
   end,

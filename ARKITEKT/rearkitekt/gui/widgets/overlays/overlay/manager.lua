@@ -204,15 +204,6 @@ function M:is_active()
   return #self.stack > 0
 end
 
-function M:set_visible(id, visible)
-  for i, ov in ipairs(self.stack) do
-    if ov.id == id then
-      ov.hidden = not visible
-      return
-    end
-  end
-end
-
 function M:render(ctx, dt)
   if #self.stack == 0 then return end
 
@@ -230,10 +221,6 @@ function M:render(ctx, dt)
   end
 
   local top = self.stack[#self.stack]
-
-  -- Skip rendering if overlay is hidden
-  if top.hidden then return end
-
   local alpha_val = top.alpha:value()
 
   local x, y, w, h
