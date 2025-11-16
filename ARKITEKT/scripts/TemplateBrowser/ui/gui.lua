@@ -73,9 +73,9 @@ function GUI:initialize_once(ctx)
     function(selected_keys)
       -- Update selected template from grid selection
       if selected_keys and #selected_keys > 0 then
-        local idx = tonumber(selected_keys[1]:match("template_(.+)"))
+        local uuid = tonumber(selected_keys[1]:match("template_(.+)"))
         for _, tmpl in ipairs(self.state.filtered_templates) do
-          if tmpl.uuid == idx then
+          if tmpl.uuid == uuid then
             self.state.selected_template = tmpl
             break
           end
@@ -84,14 +84,18 @@ function GUI:initialize_once(ctx)
         self.state.selected_template = nil
       end
     end,
-    -- on_double_click
+    -- on_double_click (receives template object from factory)
     function(template)
-      TemplateOps.apply_to_selected_track(template.path, template.uuid, self.state)
+      if template then
+        TemplateOps.apply_to_selected_track(template.path, template.uuid, self.state)
+      end
     end,
-    -- on_context_menu
-    function(template)
-      -- Right-click context menu handled in grid behaviors
-      self.state.context_menu_template = template
+    -- on_right_click (receives template and selected_keys from factory)
+    function(template, selected_keys)
+      if template then
+        -- Set context menu template for color picker
+        self.state.context_menu_template = template
+      end
     end
   )
 

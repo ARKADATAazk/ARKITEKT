@@ -8,7 +8,7 @@ local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
 
 local M = {}
 
-function M.create(get_templates, metadata, animator, on_select, on_double_click, on_context_menu)
+function M.create(get_templates, metadata, animator, on_select, on_double_click, on_right_click)
   return Grid.new({
     id = "template_grid",
     gap = TemplateTile.CONFIG.gap,
@@ -37,17 +37,33 @@ function M.create(get_templates, metadata, animator, on_select, on_double_click,
         end
       end,
 
-      -- Double-click to apply template
-      double_click = function(key, template)
+      -- Double-click to apply template (receives only key)
+      double_click = function(key)
         if on_double_click then
-          on_double_click(template)
+          -- Look up template by uuid from key
+          local uuid = tonumber(key:match("template_(.+)"))
+          local templates = get_templates()
+          for _, tmpl in ipairs(templates) do
+            if tmpl.uuid == uuid then
+              on_double_click(tmpl)
+              break
+            end
+          end
         end
       end,
 
-      -- Right-click context menu
-      context_menu = function(key, template)
-        if on_context_menu then
-          on_context_menu(template)
+      -- Right-click context menu (receives key and selected_keys)
+      right_click = function(key, selected_keys)
+        if on_right_click then
+          -- Look up template by uuid from key
+          local uuid = tonumber(key:match("template_(.+)"))
+          local templates = get_templates()
+          for _, tmpl in ipairs(templates) do
+            if tmpl.uuid == uuid then
+              on_right_click(tmpl, selected_keys)
+              break
+            end
+          end
         end
       end,
 
@@ -55,9 +71,13 @@ function M.create(get_templates, metadata, animator, on_select, on_double_click,
       drag_start = function(item_keys)
         local items = {}
         for _, key in ipairs(item_keys) do
-          local template = get_templates()[key]
-          if template then
-            table.insert(items, template)
+          local uuid = tonumber(key:match("template_(.+)"))
+          local templates = get_templates()
+          for _, tmpl in ipairs(templates) do
+            if tmpl.uuid == uuid then
+              table.insert(items, tmpl)
+              break
+            end
           end
         end
         return items
