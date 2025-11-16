@@ -354,9 +354,9 @@ function M:render(ctx, dt)
         end
       end
     end
-  end
 
-  ImGui.EndPopup(ctx)
+    ImGui.EndPopup(ctx)
+  end
 
   -- Pop in reverse order (matching old overlay.lua)
   ImGui.PopStyleVar(ctx, 3)    -- Alpha, WindowBorderSize, WindowPadding
