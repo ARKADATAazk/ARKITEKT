@@ -282,9 +282,12 @@ function M.draw_pool(self, ctx, regions, height)
   end
 
   if ContextMenu.begin(ctx, "PoolActionsMenu") then
-    local selection_info = State.get_selection_info()
-    local has_pool_selection = (selection_info.pool_region_count or 0) > 0 or
-                                (selection_info.pool_playlist_count or 0) > 0
+    -- Check if pool grid has any selected items
+    local has_pool_selection = false
+    if self.pool_grid and self.pool_grid.selection then
+      local selected_keys = self.pool_grid.selection:selected_keys()
+      has_pool_selection = #selected_keys > 0
+    end
 
     if has_pool_selection then
       if ContextMenu.item(ctx, "Recolor Selected...") then
