@@ -457,11 +457,12 @@ local function initialize()
         })
         ImGui.PopFont(ctx)
         return true  -- Keep running
-      else
-        -- Let overlay manager handle rendering (it checks daemon.ui_visible flag)
+      elseif daemon.ui_visible then
+        -- Only render overlay when UI is visible
         daemon.overlay_mgr:render(ctx)
-
-        -- Always keep running (even when hidden)
+        return true
+      else
+        -- Hidden - don't render anything, just keep runtime alive
         return true
       end
     end,
