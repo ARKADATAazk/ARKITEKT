@@ -59,19 +59,16 @@ function GUI:initialize_once(ctx)
 end
 
 -- Start incremental loading (non-blocking)
--- Start incremental loading (non-blocking)
 function GUI:start_incremental_loading()
   if self.loading_started then return end
 
-  reaper.ShowConsoleMsg("=== ItemPicker: Starting data loading ===
-")
+  reaper.ShowConsoleMsg("=== ItemPicker: Starting data loading ===\n")
 
   local current_change_count = reaper.GetProjectStateChangeCount(0)
   self.state.last_change_count = current_change_count
 
   -- Use incremental loader to load items
-  reaper.ShowConsoleMsg("Using incremental loader (50 items/frame)
-")
+  reaper.ShowConsoleMsg("Using incremental loader (50 items/frame)\n")
   local IncrementalLoader = require('ItemPicker.data.loaders.incremental_loader')
   self.incremental_loader = IncrementalLoader.new(self.controller.reaper_interface, 50)
   IncrementalLoader.start_loading(self.incremental_loader, self.state, self.state.settings)
@@ -89,8 +86,7 @@ function GUI:process_incremental_loading()
   IncrementalLoader.get_results(self.incremental_loader, self.state)
 
   if is_complete then
-    reaper.ShowConsoleMsg("=== ItemPicker: Loading complete! ===
-")
+    reaper.ShowConsoleMsg("=== ItemPicker: Loading complete! ===\n")
     self.data_loaded = true
   end
 end
