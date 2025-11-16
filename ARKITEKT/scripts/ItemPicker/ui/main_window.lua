@@ -45,6 +45,12 @@ function GUI:initialize_once(ctx)
   self.state.audio_item_lookup = {}
   self.state.midi_item_lookup = {}
 
+  -- Initialize job queue for lazy waveform/thumbnail generation
+  if not self.state.job_queue then
+    local job_queue_module = require('ItemPicker.data.job_queue')
+    self.state.job_queue = job_queue_module.new(3) -- Process 3 jobs per frame
+  end
+
   -- Create coordinator and layout view with empty data
   self.coordinator = Coordinator.new(ctx, self.config, self.state, self.visualization)
   self.layout_view = LayoutView.new(self.config, self.state, self.coordinator)
