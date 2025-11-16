@@ -191,17 +191,45 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       if changed then
         -- Get fresh item data from lookup
+        reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] UUID: %s\n", tostring(item_data.uuid)))
+
         local lookup_data = state.audio_item_lookup[item_data.uuid]
+        reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] Lookup data found: %s\n", tostring(lookup_data ~= nil)))
+
         if not lookup_data then
           -- Fallback: try to use item_data.item directly
           lookup_data = item_data
+          reaper.ShowConsoleMsg("[AUDIO RENAME] Using item_data as fallback\n")
         end
 
         local item = lookup_data.item or lookup_data[1]
+        reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] Item pointer: %s, Type: %s\n",
+          tostring(item),
+          type(item)))
 
         -- Validate item pointer
+        if not item then
+          reaper.ShowConsoleMsg("[RENAME ERROR] Item is nil\n")
+        else
+          local is_valid = reaper.ValidatePtr2(0, item, "MediaItem*")
+          reaper.ShowConsoleMsg(string.format("[AUDIO RENAME] ValidatePtr2 result: %s\n", tostring(is_valid)))
+
+          if not is_valid then
+            reaper.ShowConsoleMsg("[RENAME ERROR] Invalid MediaItem pointer for UUID: " .. tostring(item_data.uuid) .. "\n")
+            state.rename_active = false
+            state.rename_uuid = nil
+            state.rename_focused = false
+            state.rename_queue = nil
+            state.rename_queue_index = 0
+            state.rename_focus_frame = false
+            ImGui.PopStyleColor(ctx, 2)
+            ImGui.PopStyleVar(ctx)
+            return
+          end
+        end
+
         if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
-          reaper.ShowConsoleMsg("[RENAME ERROR] Invalid MediaItem pointer for UUID: " .. tostring(item_data.uuid) .. "\n")
+          reaper.ShowConsoleMsg("[RENAME ERROR] Final validation failed\n")
           state.rename_active = false
           state.rename_uuid = nil
           state.rename_focused = false
