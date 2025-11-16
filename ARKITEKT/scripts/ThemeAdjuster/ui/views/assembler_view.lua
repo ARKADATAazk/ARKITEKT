@@ -36,7 +36,7 @@ function M.new(State, AppConfig, settings)
   -- Create theme model (for color_from_key)
   self.theme_model = self:create_theme_model()
 
-  -- Create container (Panel) with header
+  -- Create container (Panel) with header and footer
   local container_config = Config.get_assembler_container_config({
     on_demo_toggle = function()
       local new_demo = not State.get_demo_mode()
@@ -96,6 +96,28 @@ function M.new(State, AppConfig, settings)
       self.package_model.filters = filters
     end,
   })
+
+  -- Add footer with ZIP linking status
+  container_config.footer = {
+    enabled = true,
+    height = 32,
+    bg_color = hexrgb("#1E1E1E"),
+    border_color = hexrgb("#000000"),
+    elements = {
+      {
+        id = "zip_status",
+        type = "custom",
+        width = 0,  -- Take all available space
+        flex = 1,
+        spacing_before = 0,
+        config = {
+          on_draw = function(ctx, dl, x, y, width, height, state)
+            self:draw_zip_status(ctx, dl, x, y, width, height)
+          end,
+        },
+      },
+    },
+  }
 
   self.container = TilesContainer.new({
     id = "assembler_container",
@@ -234,25 +256,12 @@ function AssemblerView:update(dt)
   end
 end
 
-function AssemblerView:draw_footer(ctx)
+function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
   local status, dir, zip_name = Theme.get_status()
   local info = Theme.get_theme_info()
 
-  -- Footer height
-  local footer_height = 32
-  local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
-
-  -- Draw footer background
-  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
-  local footer_x1, footer_y1 = cursor_x, cursor_y
-  local footer_x2, footer_y2 = cursor_x + avail_w, cursor_y + footer_height
-
-  ImGui.DrawList_AddRectFilled(dl, footer_x1, footer_y1, footer_x2, footer_y2, hexrgb("#1E1E1E"))
-  ImGui.DrawList_AddRect(dl, footer_x1, footer_y1, footer_x2, footer_y2, hexrgb("#000000"))
-
-  -- Position cursor for content
-  ImGui.SetCursorScreenPos(ctx, footer_x1 + 12, footer_y1 + 6)
+  -- Position cursor for content (with padding)
+  ImGui.SetCursorScreenPos(ctx, x + 12, y + 6)
 
   -- Show status on the left
   if status == "needs-link" then
@@ -319,9 +328,6 @@ function AssemblerView:draw_footer(ctx)
       ImGui.TextDisabled(ctx, "→ " .. zip_name)
     end
   end
-
-  -- Advance cursor past footer
-  ImGui.SetCursorScreenPos(ctx, footer_x1, footer_y2)
 end
 
 function AssemblerView:draw(ctx, shell_state)
@@ -339,9 +345,6 @@ function AssemblerView:draw(ctx, shell_state)
   if self.container:begin_draw(ctx) then
     -- Draw grid inside container
     self.grid:draw(ctx)
-
-    -- Draw footer at the bottom
-    self:draw_footer(ctx)
   end
   self.container:end_draw(ctx)
 end

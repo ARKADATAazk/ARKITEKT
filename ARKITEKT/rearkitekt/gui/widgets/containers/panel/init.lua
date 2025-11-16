@@ -560,11 +560,15 @@ function Panel:begin_draw(ctx)
   local header_position = "top"
   local content_y1 = y1
   local content_y2 = y2
-  
+
+  -- Footer configuration (separate from header for dual toolbar support)
+  local footer_cfg = self.config.footer
+  local footer_height = 0
+
   if header_cfg.enabled then
     header_height = header_cfg.height or 30
     header_position = header_cfg.position or "top"
-    
+
     if header_position == "bottom" then
       -- Bottom header: draw at bottom, content above
       Header.draw(ctx, dl, x1, y2 - header_height, w, header_height, self, self.config, self.config.rounding)
@@ -577,8 +581,21 @@ function Panel:begin_draw(ctx)
       content_y2 = y2
     end
   end
-  
+
+  -- Draw footer if enabled (always positioned at bottom)
+  if footer_cfg and footer_cfg.enabled then
+    footer_height = footer_cfg.height or 30
+    -- Adjust content area to make room for footer
+    content_y2 = content_y2 - footer_height
+    -- Draw footer background and border
+    Header.draw(ctx, dl, x1, y2 - footer_height, w, footer_height, self,
+                {header = footer_cfg, border_color = self.config.border_color,
+                 bg_color = self.config.bg_color, rounding = self.config.rounding},
+                self.config.rounding)
+  end
+
   self.header_height = header_height
+  self.footer_height = footer_height
 
   -- Draw background pattern (smart header detection: only draw under header if it's transparent)
   -- Apply clipping to respect rounded corners and border insets
@@ -633,6 +650,13 @@ function Panel:begin_draw(ctx)
     else
       Header.draw_elements(ctx, dl, x1, y1, w, header_height, self, self.config)
     end
+  end
+
+  -- Draw footer elements if enabled
+  if footer_cfg and footer_cfg.enabled then
+    Header.draw_elements(ctx, dl, x1, y2 - footer_height, w, footer_height, self,
+                        {header = footer_cfg, border_color = self.config.border_color,
+                         bg_color = self.config.bg_color, rounding = self.config.rounding})
   end
 
   -- Store panel bounds for corner buttons (drawn later in end_draw to be on top)
