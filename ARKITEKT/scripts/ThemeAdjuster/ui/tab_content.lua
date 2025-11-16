@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local AssemblerView = require("ThemeAdjuster.ui.views.assembler_view")
+local DebugView = require("ThemeAdjuster.ui.views.debug_view")
 
 local M = {}
 local TabContent = {}
@@ -15,10 +16,14 @@ function M.new(State, Config, settings)
     Config = Config,
     settings = settings,
     assembler_view = nil,
+    debug_view = nil,
   }, TabContent)
 
   -- Create assembler view (package grid with Panel)
   self.assembler_view = AssemblerView.new(State, Config, settings)
+
+  -- Create debug view (theme info + image browser)
+  self.debug_view = DebugView.new(State, Config, settings)
 
   return self
 end
@@ -27,6 +32,9 @@ function TabContent:update(dt)
   -- Update animations for active views
   if self.assembler_view and self.assembler_view.update then
     self.assembler_view:update(dt)
+  end
+  if self.debug_view and self.debug_view.update then
+    self.debug_view:update(dt)
   end
 end
 
@@ -48,11 +56,9 @@ function TabContent:draw(ctx, tab_id, shell_state)
   elseif tab_id == "TRANSPORT" then
     ImGui.Text(ctx, "Transport tab - Coming soon")
   elseif tab_id == "DEBUG" then
-    ImGui.Text(ctx, "Debug tab - Coming soon")
-    ImGui.Separator(ctx)
-    ImGui.Text(ctx, string.format("Active tab: %s", self.State.get_active_tab()))
-    ImGui.Text(ctx, string.format("Demo mode: %s", tostring(self.State.get_demo_mode())))
-    ImGui.Text(ctx, string.format("Packages: %d", #self.State.get_packages()))
+    if self.debug_view then
+      self.debug_view:draw(ctx, shell_state)
+    end
   else
     ImGui.Text(ctx, "Unknown tab: " .. tostring(tab_id))
   end
