@@ -6,6 +6,7 @@ local ImGui = require 'imgui' '0.10'
 local Config = require("ThemeAdjuster.core.config")
 local PackageManager = require("ThemeAdjuster.packages.manager")
 local TabContent = require("ThemeAdjuster.ui.tab_content")
+local Theme = require("ThemeAdjuster.core.theme")
 
 local M = {}
 local GUI = {}
@@ -53,6 +54,15 @@ end
 
 function GUI:draw(ctx, window, shell_state)
   self:update_state(ctx, window)
+
+  -- Update window title with current theme name
+  local theme_info = Theme.get_theme_info()
+  local theme_name = theme_info.theme_name or ""
+  if theme_name ~= "" then
+    window:set_title("Theme Adjuster [" .. theme_name .. "]")
+  else
+    window:set_title("Theme Adjuster")
+  end
 
   -- Get active tab from window (menutabs system)
   local active_tab = window:get_active_tab()

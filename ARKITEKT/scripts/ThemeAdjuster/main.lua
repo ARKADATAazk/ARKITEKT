@@ -70,8 +70,8 @@ local gui = GUI.create(State, Config, settings)
 -- ============================================================================
 
 Shell.run({
-  title        = "Enhanced 6.0 Theme Adjuster",
-  version      = "v2.0.0",
+  title        = "Theme Adjuster",
+  version      = "(1.0.0)",
   draw         = function(ctx, shell_state) gui:draw(ctx, shell_state.window, shell_state) end,
   settings     = settings,
   style        = StyleOK and Style or nil,

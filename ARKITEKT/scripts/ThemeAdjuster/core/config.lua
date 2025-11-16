@@ -16,9 +16,11 @@ function M.get_assembler_container_config(callbacks, filters)
       enabled = true,
       height = 32,
       elements = {
+        -- Left: Demo button
         {
           id = "demo_toggle",
           type = "button",
+          align = "left",
           width = 90,
           spacing_before = 0,
           config = {
@@ -26,32 +28,25 @@ function M.get_assembler_container_config(callbacks, filters)
             on_click = callbacks.on_demo_toggle,
           },
         },
-        {
-          id = "search",
-          type = "search_field",
-          width = 200,
-          spacing_before = 0,
-          config = {
-            placeholder = "Search packages...",
-            on_change = callbacks.on_search_changed,
-          },
-        },
-        {
-          id = "rebuild_cache",
-          type = "button",
-          width = 110,
-          spacing_before = 0,
-          config = {
-            label = "Rebuild Cache",
-            on_click = callbacks.on_rebuild_cache,
-          },
-        },
+        -- Center: Empty spacer
         {
           id = "spacer1",
           type = "separator",
           flex = 1,
           spacing_before = 0,
           config = { show_line = false },
+        },
+        -- Right: Search, Filters, Rebuild Cache
+        {
+          id = "search",
+          type = "search_field",
+          align = "right",
+          width = 200,
+          spacing_before = 0,
+          config = {
+            placeholder = "Search packages...",
+            on_change = callbacks.on_search_changed,
+          },
         },
         {
           id = "filters",
@@ -90,6 +85,17 @@ function M.get_assembler_container_config(callbacks, filters)
               },
             },
             on_checkbox_change = callbacks.on_filter_changed,
+          },
+        },
+        {
+          id = "rebuild_cache",
+          type = "button",
+          align = "right",
+          width = 110,
+          spacing_before = 0,
+          config = {
+            label = "Rebuild Cache",
+            on_click = callbacks.on_rebuild_cache,
           },
         },
       },
