@@ -50,6 +50,33 @@ function M.begin(ctx, id, config)
   if not popup_open then
     ImGui.PopStyleColor(ctx, 2)
     ImGui.PopStyleVar(ctx, 5)
+  else
+    -- Draw subtle shadow/halo effect
+    local wx, wy = ImGui.GetWindowPos(ctx)
+    local ww, wh = ImGui.GetWindowSize(ctx)
+    local bg_dl = ImGui.GetBackgroundDrawList(ctx)
+
+    -- Draw multi-layer shadow for soft glow effect
+    local shadow_offset = 3
+    local shadow_spread = 6
+    ImGui.DrawList_AddRectFilled(
+      bg_dl,
+      wx + shadow_offset - shadow_spread,
+      wy + shadow_offset - shadow_spread,
+      wx + ww + shadow_offset + shadow_spread,
+      wy + wh + shadow_offset + shadow_spread,
+      hexrgb("#00000040"),  -- 25% opacity
+      rounding + shadow_spread
+    )
+    ImGui.DrawList_AddRectFilled(
+      bg_dl,
+      wx + shadow_offset - shadow_spread/2,
+      wy + shadow_offset - shadow_spread/2,
+      wx + ww + shadow_offset + shadow_spread/2,
+      wy + wh + shadow_offset + shadow_spread/2,
+      hexrgb("#00000030"),  -- 19% opacity
+      rounding + shadow_spread/2
+    )
   end
 
   return popup_open

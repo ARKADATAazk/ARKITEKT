@@ -238,7 +238,32 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
     local popup_dl = ImGui.GetWindowDrawList(ctx)
     self.popup_hover_index = -1
     self.footer_interacting = false
-    
+
+    -- Draw subtle shadow/halo effect
+    local wx, wy = ImGui.GetWindowPos(ctx)
+    local ww, wh = ImGui.GetWindowSize(ctx)
+    local bg_dl = ImGui.GetBackgroundDrawList(ctx)
+    local shadow_offset = 3
+    local shadow_spread = 6
+    ImGui.DrawList_AddRectFilled(
+      bg_dl,
+      wx + shadow_offset - shadow_spread,
+      wy + shadow_offset - shadow_spread,
+      wx + ww + shadow_offset + shadow_spread,
+      wy + wh + shadow_offset + shadow_spread,
+      Colors.hexrgb("#00000040"),  -- 25% opacity
+      popup_cfg.rounding + shadow_spread
+    )
+    ImGui.DrawList_AddRectFilled(
+      bg_dl,
+      wx + shadow_offset - shadow_spread/2,
+      wy + shadow_offset - shadow_spread/2,
+      wx + ww + shadow_offset + shadow_spread/2,
+      wy + wh + shadow_offset + shadow_spread/2,
+      Colors.hexrgb("#00000030"),  -- 19% opacity
+      popup_cfg.rounding + shadow_spread/2
+    )
+
     -- Calculate popup width (increased for better appearance)
     local max_text_width = 0
     local options = cfg.options or {}
