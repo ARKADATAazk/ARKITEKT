@@ -10,12 +10,9 @@ local function get_data_dir()
   local sep = package.config:sub(1,1)
   local data_dir = resource_path .. sep .. "Data" .. sep .. "ARKITEKT" .. sep .. "TemplateBrowser"
 
-  -- Create directory if it doesn't exist
-  local has_lfs, lfs = pcall(require, "lfs")
-  if has_lfs then
-    lfs.mkdir(resource_path .. sep .. "Data")
-    lfs.mkdir(resource_path .. sep .. "Data" .. sep .. "ARKITEKT")
-    lfs.mkdir(data_dir)
+  -- Create directory if it doesn't exist using REAPER's API
+  if reaper.RecursiveCreateDirectory then
+    reaper.RecursiveCreateDirectory(data_dir, 0)
   end
 
   return data_dir
@@ -101,17 +98,34 @@ function M.save_json(filename, data)
   local sep = package.config:sub(1,1)
   local filepath = data_dir .. sep .. filename
 
-  local file = io.open(filepath, "w")
+  -- Ensure directory exists
+  if reaper.RecursiveCreateDirectory then
+    local success = reaper.RecursiveCreateDirectory(data_dir, 0)
+    if not success then
+      reaper.ShowConsoleMsg("ERROR: Failed to create directory: " .. data_dir .. "\n")
+    end
+  end
+
+  local file, err = io.open(filepath, "w")
   if not file then
-    reaper.ShowConsoleMsg("ERROR: Failed to save: " .. filepath .. "\n")
+    reaper.ShowConsoleMsg("ERROR: Failed to open file for writing: " .. filepath .. "\n")
+    if err then
+      reaper.ShowConsoleMsg("ERROR: " .. err .. "\n")
+    end
     return false
   end
 
   local json_str = json_encode(data)
-  file:write(json_str)
+  local write_ok, write_err = file:write(json_str)
+  if not write_ok then
+    reaper.ShowConsoleMsg("ERROR: Failed to write data: " .. tostring(write_err) .. "\n")
+    file:close()
+    return false
+  end
+
   file:close()
 
-  reaper.ShowConsoleMsg("Saved: " .. filepath .. "\n")
+  reaper.ShowConsoleMsg("Saved metadata: " .. filepath .. "\n")
   return true
 end
 
