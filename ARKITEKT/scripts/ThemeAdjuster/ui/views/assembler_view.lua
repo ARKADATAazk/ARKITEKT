@@ -71,32 +71,21 @@ function M.new(State, AppConfig, settings)
       end)
     end,
 
-    on_filter_tcp_changed = function(value)
+    on_filter_changed = function(filter_key, new_checked)
       local filters = State.get_filters()
-      filters.TCP = value
-      State.set_filters(filters)
-      self.package_model.filters = filters
-    end,
-
-    on_filter_mcp_changed = function(value)
-      local filters = State.get_filters()
-      filters.MCP = value
-      State.set_filters(filters)
-      self.package_model.filters = filters
-    end,
-
-    on_filter_transport_changed = function(value)
-      local filters = State.get_filters()
-      filters.Transport = value
-      State.set_filters(filters)
-      self.package_model.filters = filters
-    end,
-
-    on_filter_global_changed = function(value)
-      local filters = State.get_filters()
-      filters.Global = value
-      State.set_filters(filters)
-      self.package_model.filters = filters
+      -- Map dropdown values to filter keys
+      local filter_map = {
+        tcp = "TCP",
+        mcp = "MCP",
+        transport = "Transport",
+        global = "Global",
+      }
+      local filter_name = filter_map[filter_key]
+      if filter_name then
+        filters[filter_name] = new_checked
+        State.set_filters(filters)
+        self.package_model.filters = filters
+      end
     end,
   }, filters)
 
