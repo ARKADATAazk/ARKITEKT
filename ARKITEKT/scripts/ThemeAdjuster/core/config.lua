@@ -16,12 +16,12 @@ function M.get_assembler_container_config(callbacks, filters)
       enabled = true,
       height = 32,
       elements = {
-        -- Left: Demo button
+        -- Left: Demo button (small)
         {
           id = "demo_toggle",
           type = "button",
           align = "left",
-          width = 90,
+          width = 60,
           spacing_before = 0,
           config = {
             label = "Demo",
@@ -36,7 +36,7 @@ function M.get_assembler_container_config(callbacks, filters)
           spacing_before = 0,
           config = { show_line = false },
         },
-        -- Right: Search, Filters, Rebuild Cache
+        -- Right: Search, Filters
         {
           id = "search",
           type = "search_field",
@@ -85,17 +85,6 @@ function M.get_assembler_container_config(callbacks, filters)
               },
             },
             on_checkbox_change = callbacks.on_filter_changed,
-          },
-        },
-        {
-          id = "rebuild_cache",
-          type = "button",
-          align = "right",
-          width = 110,
-          spacing_before = 0,
-          config = {
-            label = "Rebuild Cache",
-            on_click = callbacks.on_rebuild_cache,
           },
         },
       },

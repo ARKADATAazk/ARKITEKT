@@ -63,14 +63,6 @@ function M.new(State, AppConfig, settings)
       self.package_model.search = text
     end,
 
-    on_rebuild_cache = function()
-      State.set_cache_status("rebuilding")
-      -- TODO: Actual cache rebuild
-      reaper.defer(function()
-        State.set_cache_status("ready")
-      end)
-    end,
-
     on_filter_changed = function(filter_key, new_checked)
       local filters = State.get_filters()
       -- Map dropdown values to filter keys
@@ -89,22 +81,41 @@ function M.new(State, AppConfig, settings)
     end,
   }, filters)
 
-  -- Add footer with ZIP linking status
+  -- Add footer with ZIP linking status (left) and Rebuild Cache (right)
   container_config.footer = {
     enabled = true,
     height = 32,
     bg_color = hexrgb("#1E1E1E"),
     border_color = hexrgb("#000000"),
     elements = {
+      -- Left: ZIP status
       {
         id = "zip_status",
         type = "custom",
-        width = 0,  -- Take all available space
+        align = "left",
         flex = 1,
         spacing_before = 0,
         config = {
           on_draw = function(ctx, dl, x, y, width, height, state)
             self:draw_zip_status(ctx, dl, x, y, width, height)
+          end,
+        },
+      },
+      -- Right: Rebuild Cache button
+      {
+        id = "rebuild_cache",
+        type = "button",
+        align = "right",
+        width = 110,
+        spacing_before = 0,
+        config = {
+          label = "Rebuild Cache",
+          on_click = function()
+            State.set_cache_status("rebuilding")
+            -- TODO: Actual cache rebuild
+            reaper.defer(function()
+              State.set_cache_status("ready")
+            end)
           end,
         },
       },
