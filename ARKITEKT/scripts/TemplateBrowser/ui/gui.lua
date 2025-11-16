@@ -75,20 +75,11 @@ function GUI:initialize_once(ctx)
       -- Update selected template from grid selection
       if selected_keys and #selected_keys > 0 then
         local key = selected_keys[1]
-        reaper.ShowConsoleMsg(string.format("on_select: key='%s'\n", key))
-        local uuid = tonumber(key:match("template_(.+)"))
-        reaper.ShowConsoleMsg(string.format("  extracted UUID=%s (type: %s)\n", tostring(uuid), type(uuid)))
-
-        if #self.state.filtered_templates > 0 then
-          reaper.ShowConsoleMsg(string.format("  first tmpl.uuid=%s (type: %s)\n",
-            tostring(self.state.filtered_templates[1].uuid),
-            type(self.state.filtered_templates[1].uuid)))
-        end
+        local uuid = key:match("template_(.+)")  -- Keep as string, don't convert to number!
 
         for _, tmpl in ipairs(self.state.filtered_templates) do
           if tmpl.uuid == uuid then
             self.state.selected_template = tmpl
-            reaper.ShowConsoleMsg(string.format("  ✓ MATCHED: %s\n", tmpl.name))
             break
           end
         end
@@ -98,7 +89,6 @@ function GUI:initialize_once(ctx)
     end,
     -- on_double_click (receives template object from factory)
     function(template)
-      reaper.ShowConsoleMsg(string.format("on_double_click called: %s\n", template and template.name or "nil"))
       if template then
         -- Check if Ctrl is held for rename, otherwise apply template
         local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
@@ -107,21 +97,17 @@ function GUI:initialize_once(ctx)
           self.state.renaming_item = template
           self.state.renaming_type = "template"
           self.state.rename_buffer = template.name
-          reaper.ShowConsoleMsg("Starting rename\n")
         else
           -- Apply template to track
           TemplateOps.apply_to_selected_track(template.path, template.uuid, self.state)
-          reaper.ShowConsoleMsg("Applying template\n")
         end
       end
     end,
     -- on_right_click (receives template and selected_keys from factory)
     function(template, selected_keys)
-      reaper.ShowConsoleMsg(string.format("on_right_click called: %s\n", template and template.name or "nil"))
       if template then
         -- Set context menu template for color picker
         self.state.context_menu_template = template
-        reaper.ShowConsoleMsg("Set context_menu_template\n")
       end
     end
   )
@@ -934,17 +920,7 @@ local function draw_template_panel(ctx, gui, width, height)
   ImGui.Separator(ctx)
 
   -- Template grid
-  if not gui.template_grid then
-    reaper.ShowConsoleMsg("ERROR: template_grid is nil!\n")
-    ImGui.Text(ctx, "ERROR: Grid not initialized")
-  else
-    local template_count = #state.filtered_templates
-    if not gui._grid_debug_shown then
-      reaper.ShowConsoleMsg(string.format("Grid initialized with %d templates\n", template_count))
-      gui._grid_debug_shown = true
-    end
-    gui.template_grid:draw(ctx)
-  end
+  gui.template_grid:draw(ctx)
 
   -- Add dummy item to establish proper window boundaries after grid's SetCursorPos usage
   ImGui.Dummy(ctx, 0, 0)

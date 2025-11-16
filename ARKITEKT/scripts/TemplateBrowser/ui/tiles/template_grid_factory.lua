@@ -40,8 +40,8 @@ function M.create(get_templates, metadata, animator, get_tile_width, on_select, 
       -- Double-click to apply template or rename with Ctrl (receives only key)
       double_click = function(key)
         if on_double_click then
-          -- Look up template by uuid from key
-          local uuid = tonumber(key:match("template_(.+)"))
+          -- Look up template by uuid from key (keep as string!)
+          local uuid = key:match("template_(.+)")
           local templates = get_templates()
           for _, tmpl in ipairs(templates) do
             if tmpl.uuid == uuid then
@@ -55,8 +55,8 @@ function M.create(get_templates, metadata, animator, get_tile_width, on_select, 
       -- Right-click context menu (receives key and selected_keys)
       right_click = function(key, selected_keys)
         if on_right_click then
-          -- Look up template by uuid from key
-          local uuid = tonumber(key:match("template_(.+)"))
+          -- Look up template by uuid from key (keep as string!)
+          local uuid = key:match("template_(.+)")
           local templates = get_templates()
           for _, tmpl in ipairs(templates) do
             if tmpl.uuid == uuid then
@@ -71,7 +71,7 @@ function M.create(get_templates, metadata, animator, get_tile_width, on_select, 
       drag_start = function(item_keys)
         local items = {}
         for _, key in ipairs(item_keys) do
-          local uuid = tonumber(key:match("template_(.+)"))
+          local uuid = key:match("template_(.+)")  -- Keep as string!
           local templates = get_templates()
           for _, tmpl in ipairs(templates) do
             if tmpl.uuid == uuid then
