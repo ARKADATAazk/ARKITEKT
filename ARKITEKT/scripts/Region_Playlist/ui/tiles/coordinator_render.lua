@@ -18,18 +18,6 @@ local ColorPickerWindow = require('rearkitekt.gui.widgets.tools.color_picker_win
 
 local M = {}
 
--- ImGui 0.9/0.10 compatibility for ChildFlags
-local HAS_CHILD_FLAGS = (ImGui.ChildFlags_None ~= nil)
-
--- Helper: BeginChild with border compatibility
-local function BeginChildWithBorder(ctx, id, width, height)
-  if HAS_CHILD_FLAGS then
-    return ImGui.BeginChild(ctx, id, width, height, ImGui.ChildFlags_Border)
-  else
-    return ImGui.BeginChild(ctx, id, width, height, true)
-  end
-end
-
 -- Modal state
 local sws_result_data = nil
 local rename_initial_text = nil
@@ -164,14 +152,12 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
 
-    -- Remove padding and add black border
+    -- Remove all padding
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ChildBorderSize, 2)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x000000FF)
 
-    -- Wrap in a child region with border
-    if BeginChildWithBorder(ctx, "ActiveColorPickerRegion", picker_size, picker_size) then
+    -- Wrap in a child region for input handling
+    if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size, false) then
       ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
         size = picker_size,
         on_change = function(color)
@@ -213,8 +199,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
       ImGui.EndChild(ctx)
     end
 
-    ImGui.PopStyleColor(ctx, 1)
-    ImGui.PopStyleVar(ctx, 3)
+    ImGui.PopStyleVar(ctx, 2)
   end
 
   -- Actions context menu
@@ -386,14 +371,12 @@ function M.draw_pool(self, ctx, regions, height)
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
 
-    -- Remove padding and add black border
+    -- Remove all padding
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ChildBorderSize, 2)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0x000000FF)
 
-    -- Wrap in a child region with border
-    if BeginChildWithBorder(ctx, "PoolColorPickerRegion", picker_size, picker_size) then
+    -- Wrap in a child region for input handling
+    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size, false) then
       ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
         size = picker_size,
         on_change = function(color)
@@ -435,8 +418,7 @@ function M.draw_pool(self, ctx, regions, height)
       ImGui.EndChild(ctx)
     end
 
-    ImGui.PopStyleColor(ctx, 1)
-    ImGui.PopStyleVar(ctx, 3)
+    ImGui.PopStyleVar(ctx, 2)
   end
 
   -- Pool Actions context menu
