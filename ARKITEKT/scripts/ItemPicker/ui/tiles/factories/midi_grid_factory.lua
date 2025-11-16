@@ -14,6 +14,11 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
 
     local filtered = {}
     for _, track_guid in ipairs(state.midi_indexes) do
+      -- Check disabled filter
+      if not state.settings.show_disabled_items and state.disabled.midi[track_guid] then
+        goto continue
+      end
+
       local content = state.midi_items[track_guid]
       if not content or #content == 0 then
         goto continue

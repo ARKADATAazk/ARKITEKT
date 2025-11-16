@@ -14,6 +14,11 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
 
     local filtered = {}
     for _, filename in ipairs(state.sample_indexes) do
+      -- Check disabled filter
+      if not state.settings.show_disabled_items and state.disabled.audio[filename] then
+        goto continue
+      end
+
       local content = state.samples[filename]
       if not content or #content == 0 then
         goto continue
