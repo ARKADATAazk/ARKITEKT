@@ -164,8 +164,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       end
 
       -- Cancel on Escape or focus loss
-      if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) or not ImGui.IsItemActive() then
-        if state.rename_focused and not ImGui.IsItemActive() then
+      if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) or not ImGui.IsItemActive(ctx) then
+        if state.rename_focused and not ImGui.IsItemActive(ctx) then
           state.rename_active = false
           state.rename_uuid = nil
           state.rename_focused = false
