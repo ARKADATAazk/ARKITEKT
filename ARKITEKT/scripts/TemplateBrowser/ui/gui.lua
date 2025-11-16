@@ -39,10 +39,8 @@ local function draw_folder_node(ctx, node, state, config)
   local is_selected = (state.selected_folder == node.path)
   local has_children = #node.children > 0
 
-  -- Build unique label: "FolderName##unique_id"
-  -- Sanitize path for use as ID (replace ALL non-alphanumeric chars)
-  local safe_id = (node.path ~= "" and node.path or "root"):gsub("[^%w]", "_")
-  local label = node.name .. "##folder_" .. safe_id
+  -- Use full path as unique ID (ensures uniqueness even with duplicate folder names)
+  local unique_id = node.path ~= "" and node.path or "Root"
 
   -- Set up flags
   local flags = ImGui.TreeNodeFlags_OpenOnArrow
@@ -57,8 +55,10 @@ local function draw_folder_node(ctx, node, state, config)
     flags = flags | ImGui.TreeNodeFlags_Leaf
   end
 
-  -- Draw the tree node: TreeNodeEx(ctx, label, flags)
-  local node_open = ImGui.TreeNodeEx(ctx, label, flags)
+  -- Use path as ID, display name as label
+  ImGui.PushID(ctx, unique_id)
+  local node_open = ImGui.TreeNodeEx(ctx, node.name, flags)
+  ImGui.PopID(ctx)
 
   -- Check for click
   if ImGui.IsItemClicked(ctx) then
