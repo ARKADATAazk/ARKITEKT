@@ -21,16 +21,25 @@ function M.add_to_queue(state, templates)
     M.init_queue(state)
   end
 
-  -- Copy template references to queue
+  -- Only add templates that need FX parsing (new or modified)
+  local added = 0
   for _, tmpl in ipairs(templates) do
-    table.insert(state.fx_queue.templates, tmpl)
+    if tmpl.needs_fx_parse then
+      table.insert(state.fx_queue.templates, tmpl)
+      added = added + 1
+    end
   end
 
   state.fx_queue.total = #state.fx_queue.templates
   state.fx_queue.index = 0
-  state.fx_queue.complete = false
+  state.fx_queue.complete = (added == 0)  -- If nothing to parse, mark as complete
 
-  reaper.ShowConsoleMsg(string.format("FX Queue: Added %d templates for parsing\n", state.fx_queue.total))
+  if added > 0 then
+    reaper.ShowConsoleMsg(string.format("FX Queue: Added %d templates for parsing (%d cached)\n",
+                                        added, #templates - added))
+  else
+    reaper.ShowConsoleMsg("FX Queue: All templates cached, no parsing needed\n")
+  end
 end
 
 -- Process a batch of templates (called per frame)
@@ -56,6 +65,15 @@ function M.process_batch(state, batch_size)
     -- Update metadata if it exists
     if state.metadata and state.metadata.templates and state.metadata.templates[tmpl.uuid] then
       state.metadata.templates[tmpl.uuid].fx = fx_list
+      -- Ensure file_size is stored (should already be set during scan, but just to be safe)
+      if not state.metadata.templates[tmpl.uuid].file_size then
+        local file_handle = io.open(tmpl.path, "r")
+        if file_handle then
+          file_handle:seek("end")
+          state.metadata.templates[tmpl.uuid].file_size = file_handle:seek()
+          file_handle:close()
+        end
+      end
     end
 
     state.fx_queue.index = i

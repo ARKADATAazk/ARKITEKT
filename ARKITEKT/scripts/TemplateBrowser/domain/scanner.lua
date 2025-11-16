@@ -33,21 +33,48 @@ local function scan_directory(path, relative_path, metadata)
       local full_path = path .. file
       local relative_folder = relative_path
 
-      -- Skip FX parsing during initial scan - will be parsed in background
-      local fx_list = {}
+      -- Get file modification time
+      local file_modified = reaper.file_exists(full_path) and
+                           (reaper.EnumerateFiles and os.time()) or os.time()
+      -- Note: REAPER doesn't expose file mtime directly, so we use a workaround
+      -- We'll use file size as a proxy for changes
+      local file_handle = io.open(full_path, "r")
+      local file_size = 0
+      if file_handle then
+        file_handle:seek("end")
+        file_size = file_handle:seek()
+        file_handle:close()
+      end
 
       -- Try to find existing template in metadata by name+path
       local existing = Persistence.find_template(metadata, nil, template_name, relative_path)
 
       local uuid
+      local fx_list = {}
+      local needs_fx_parse = false
+
       if existing then
         uuid = existing.uuid
         -- Update metadata
         existing.name = template_name
         existing.path = relative_path
         existing.last_seen = os.time()
-        -- Preserve existing FX list from metadata (will be updated by queue)
-        fx_list = existing.fx or {}
+
+        -- Check if file has changed by comparing size
+        local size_changed = (existing.file_size ~= file_size)
+        local missing_fx = not existing.fx or #existing.fx == 0
+
+        if size_changed or missing_fx then
+          -- File changed or FX missing - needs re-parsing
+          needs_fx_parse = true
+          fx_list = {}
+        else
+          -- File unchanged - use cached FX
+          fx_list = existing.fx or {}
+        end
+
+        -- Update file size in metadata
+        existing.file_size = file_size
       else
         -- Create new UUID and metadata entry
         uuid = Persistence.generate_uuid()
@@ -57,10 +84,12 @@ local function scan_directory(path, relative_path, metadata)
           path = relative_path,
           tags = {},
           notes = "",
-          fx = {},  -- Empty initially, will be populated by background parser
+          fx = {},
+          file_size = file_size,
           created = os.time(),
           last_seen = os.time()
         }
+        needs_fx_parse = true
         reaper.ShowConsoleMsg("New template UUID: " .. template_name .. " -> " .. uuid .. "\n")
       end
 
@@ -71,7 +100,8 @@ local function scan_directory(path, relative_path, metadata)
         path = full_path,
         relative_path = relative_path,
         folder = relative_path ~= "" and relative_path or "Root",
-        fx = fx_list,  -- Will be populated by background parser
+        fx = fx_list,
+        needs_fx_parse = needs_fx_parse,  -- Flag for queue
       })
     end
 
