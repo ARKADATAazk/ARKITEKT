@@ -146,14 +146,18 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   -- Inline Color Picker (renders on top at bottom-left if visible)
   if self._active_color_picker_visible then
     local picker_size = 130
+    local corner_button_size = 30  -- Standard corner button size
+    local gap = 8  -- Gap between corner button and picker
+
+    -- Position at top-left, below corner button
     local picker_x = cursor_x + self.container_config.padding
-    local picker_y = cursor_y + height - picker_size - self.container_config.padding
+    local picker_y = cursor_y + corner_button_size + gap + self.container_config.padding
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
-    if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size, 0) then
+    if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size + 20, 0) then
       ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
         size = picker_size,
         on_change = function(color)
@@ -185,6 +189,18 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
           self._active_color_picker_visible = false
         end,
       })
+
+      -- Close button centered below picker
+      local close_button_size = 16
+      local close_x = (picker_size - close_button_size) / 2
+      ImGui.SetCursorPos(ctx, close_x, picker_size + 2)
+
+      ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 0, 0)
+      if ImGui.Button(ctx, "X##close_active_picker", close_button_size, close_button_size) then
+        self._active_color_picker_visible = false
+      end
+      ImGui.PopStyleVar(ctx, 1)
+
       ImGui.EndChild(ctx)
     end
 
@@ -351,31 +367,36 @@ function M.draw_pool(self, ctx, regions, height)
 
   self.pool_container:end_draw(ctx)
 
-  -- Inline Color Picker for Pool (renders on top at bottom-left if visible)
+  -- Inline Color Picker for Pool (renders on top, recolors Active grid selections)
   if self._pool_color_picker_visible then
     local picker_size = 130
+    local corner_button_size = 30  -- Standard corner button size
+    local gap = 8  -- Gap between corner button and picker
+
+    -- Position at top-left, below corner button
     local picker_x = cursor_x + self.container_config.padding
-    local picker_y = cursor_y + height - picker_size - self.container_config.padding
+    local picker_y = cursor_y + corner_button_size + gap + self.container_config.padding
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
-    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size, 0) then
+    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size + 20, 0) then
       ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
         size = picker_size,
         on_change = function(color)
-          if self.pool_grid and self.pool_grid.selection and self.controller then
-            local selected_keys = self.pool_grid.selection:selected_keys()
+          -- Recolor Active grid selections (not Pool selections)
+          if self.active_grid and self.active_grid.selection and self.controller then
+            local selected_keys = self.active_grid.selection:selected_keys()
             local rids = {}
             local playlist_ids = {}
 
             for _, key in ipairs(selected_keys) do
-              local rid = key:match("^pool_(%d+)$")
+              local rid = key:match("^active_(%d+)$")
               if rid then
                 table.insert(rids, tonumber(rid))
               end
-              local playlist_id = key:match("^pool_playlist_(.+)$")
+              local playlist_id = key:match("^active_playlist_(.+)$")
               if playlist_id then
                 table.insert(playlist_ids, playlist_id)
               end
@@ -393,6 +414,18 @@ function M.draw_pool(self, ctx, regions, height)
           self._pool_color_picker_visible = false
         end,
       })
+
+      -- Close button centered below picker
+      local close_button_size = 16
+      local close_x = (picker_size - close_button_size) / 2
+      ImGui.SetCursorPos(ctx, close_x, picker_size + 2)
+
+      ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 0, 0)
+      if ImGui.Button(ctx, "X##close_pool_picker", close_button_size, close_button_size) then
+        self._pool_color_picker_visible = false
+      end
+      ImGui.PopStyleVar(ctx, 1)
+
       ImGui.EndChild(ctx)
     end
 
@@ -411,12 +444,12 @@ function M.draw_pool(self, ctx, regions, height)
       if self._pool_color_picker_visible then
         self._pool_color_picker_visible = false
       else
-        -- Get first selected item's color as initial color
+        -- Get first selected item's color from Active grid as initial color
         local initial_color = nil
-        if self.pool_grid and self.pool_grid.selection then
-          local selected_keys = self.pool_grid.selection:selected_keys()
+        if self.active_grid and self.active_grid.selection then
+          local selected_keys = self.active_grid.selection:selected_keys()
           for _, key in ipairs(selected_keys) do
-            local rid = key:match("^pool_(%d+)$")
+            local rid = key:match("^active_(%d+)$")
             if rid then
               local region = State.get_region_by_rid(tonumber(rid))
               if region and region.color then
