@@ -346,10 +346,13 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
 
   if num_images == 0 then return end
 
-  -- Calculate cell size based on available width (no max constraint)
+  -- Calculate cell size with max constraint (but adapt to actual count for centering)
   local available_w = tile_w - M.CONFIG.mosaic.padding * 2
   local total_gap = (num_images - 1) * M.CONFIG.mosaic.gap
-  local cell_size = math.floor((available_w - total_gap) / num_images)
+  local cell_size = math.min(
+    M.CONFIG.mosaic.max_size,
+    math.floor((available_w - total_gap) / num_images)
+  )
 
   local total_width = cell_size * num_images + total_gap
   local mosaic_x = tile_x + math.floor((tile_w - total_width) / 2)
