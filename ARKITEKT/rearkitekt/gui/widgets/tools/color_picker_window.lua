@@ -274,18 +274,22 @@ function M.render_inline(ctx, id, config)
     inst.first_open = false
   end
 
-  -- Render custom color picker
-  local picker_changed, new_h, new_s, new_v = CustomPicker.render(ctx, size, inst.h, inst.s, inst.v)
+  -- Use ImGui's ColorPicker4 (better rendering)
+  local picker_flags = ImGui.ColorEditFlags_PickerHueWheel |
+                       ImGui.ColorEditFlags_NoSidePreview |
+                       ImGui.ColorEditFlags_NoSmallPreview |
+                       ImGui.ColorEditFlags_NoAlpha |
+                       ImGui.ColorEditFlags_NoInputs |
+                       ImGui.ColorEditFlags_NoLabel
 
-  if picker_changed then
-    inst.h = new_h
-    inst.s = new_s
-    inst.v = new_v
+  -- Convert to ARGB for ImGui
+  local argb_color = Colors.rgba_to_argb(inst.current_color)
+
+  local rv, new_argb_color = ImGui.ColorPicker4(ctx, '##picker_inline_' .. id, argb_color, picker_flags)
+
+  if rv then
+    inst.current_color = Colors.argb_to_rgba(new_argb_color)
     inst.pending_change = true
-
-    -- Convert HSV to RGBA
-    local r, g, b = hsv_to_rgb(inst.h, inst.s, inst.v)
-    inst.current_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
   end
 
   -- Apply color only when mouse button is released
@@ -296,7 +300,7 @@ function M.render_inline(ctx, id, config)
     end
   end
 
-  return picker_changed
+  return rv
 end
 
 --- Initialize inline picker (call this to show it)
