@@ -256,59 +256,100 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
     for i, opt in ipairs(options) do
       local value = type(opt) == "table" and opt.value or opt
       local label = type(opt) == "table" and opt.label or tostring(opt)
-      
+      local is_checkbox = type(opt) == "table" and opt.checkbox or false
+      local is_checked = type(opt) == "table" and opt.checked or false
+
       local is_selected = value == self.current_value
-      
+
       local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
       local item_w = popup_width
       local item_h = popup_cfg.item_height
-      
+
       local item_hovered = ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_h)
       if item_hovered then
         self.popup_hover_index = i
       end
-      
+
       local item_bg = popup_cfg.item_bg_color
       local item_text = popup_cfg.item_text_color
-      
+
       if is_selected then
         item_bg = popup_cfg.item_selected_color
         item_text = popup_cfg.item_selected_text_color
       end
-      
+
       if item_hovered then
         item_bg = is_selected and popup_cfg.item_active_color or popup_cfg.item_hover_color
         item_text = popup_cfg.item_text_hover_color
       end
-      
+
       ImGui.DrawList_AddRectFilled(popup_dl, item_x, item_y, item_x + item_w, item_y + item_h, item_bg, 2)
-      
-      local text_w, text_h = ImGui.CalcTextSize(ctx, label)
+
+      -- Draw checkbox if enabled
       local text_x = item_x + popup_cfg.item_padding_x
-      local text_y = item_y + (item_h - text_h) * 0.5
-      
-      ImGui.DrawList_AddText(popup_dl, text_x, text_y, item_text, label)
-      
-      ImGui.InvisibleButton(ctx, self.id .. "_item_" .. i, item_w, item_h)
-      
-      if ImGui.IsItemClicked(ctx, 0) then
-        self.current_value = value
-        if cfg.on_change then
-          cfg.on_change(value)
+      if is_checkbox then
+        local checkbox_size = 14
+        local checkbox_x = text_x
+        local checkbox_y = item_y + (item_h - checkbox_size) * 0.5
+
+        -- Checkbox background
+        local checkbox_bg = is_checked and popup_cfg.item_selected_color or popup_cfg.item_bg_color
+        ImGui.DrawList_AddRectFilled(popup_dl, checkbox_x, checkbox_y, checkbox_x + checkbox_size, checkbox_y + checkbox_size, checkbox_bg, 2)
+
+        -- Checkbox border
+        ImGui.DrawList_AddRect(popup_dl, checkbox_x, checkbox_y, checkbox_x + checkbox_size, checkbox_y + checkbox_size, item_text, 2, 1)
+
+        -- Checkmark if checked
+        if is_checked then
+          local padding = 3
+          ImGui.DrawList_AddLine(popup_dl,
+            checkbox_x + padding, checkbox_y + checkbox_size * 0.5,
+            checkbox_x + checkbox_size * 0.4, checkbox_y + checkbox_size - padding,
+            item_text, 2)
+          ImGui.DrawList_AddLine(popup_dl,
+            checkbox_x + checkbox_size * 0.4, checkbox_y + checkbox_size - padding,
+            checkbox_x + checkbox_size - padding, checkbox_y + padding,
+            item_text, 2)
         end
-        -- If sorting is enabled but the selected option is 'No Sort', reset direction to asc
-        if cfg.enable_sort and value == nil then
-          self.sort_direction = "asc"
-          if cfg.on_direction_change then
-            cfg.on_direction_change(self.sort_direction)
-          end
-        end
-        popup_changed = true
-        ImGui.CloseCurrentPopup(ctx)
-        self.is_open = false
+
+        text_x = text_x + checkbox_size + 8
       end
-      
-      if is_selected then
+
+      local text_w, text_h = ImGui.CalcTextSize(ctx, label)
+      local text_y = item_y + (item_h - text_h) * 0.5
+
+      ImGui.DrawList_AddText(popup_dl, text_x, text_y, item_text, label)
+
+      ImGui.InvisibleButton(ctx, self.id .. "_item_" .. i, item_w, item_h)
+
+      if ImGui.IsItemClicked(ctx, 0) then
+        if is_checkbox then
+          -- For checkbox items, toggle the checked state and call on_checkbox_change
+          if cfg.on_checkbox_change then
+            cfg.on_checkbox_change(value, not is_checked)
+          end
+          popup_changed = true
+          -- Don't close popup for checkboxes
+        else
+          -- For regular items, set current value and close popup
+          self.current_value = value
+          if cfg.on_change then
+            cfg.on_change(value)
+          end
+          -- If sorting is enabled but the selected option is 'No Sort', reset direction to asc
+          if cfg.enable_sort and value == nil then
+            self.sort_direction = "asc"
+            if cfg.on_direction_change then
+              cfg.on_direction_change(self.sort_direction)
+            end
+          end
+          popup_changed = true
+          ImGui.CloseCurrentPopup(ctx)
+          self.is_open = false
+        end
+      end
+
+      if is_selected and not is_checkbox then
         ImGui.SetItemDefaultFocus(ctx)
       end
     end
