@@ -8,6 +8,7 @@ local GlobalView = require("ThemeAdjuster.ui.views.global_view")
 local TCPView = require("ThemeAdjuster.ui.views.tcp_view")
 local MCPView = require("ThemeAdjuster.ui.views.mcp_view")
 local TransportView = require("ThemeAdjuster.ui.views.transport_view")
+local EnvelopeView = require("ThemeAdjuster.ui.views.envelope_view")
 local DebugView = require("ThemeAdjuster.ui.views.debug_view")
 
 local M = {}
@@ -24,6 +25,7 @@ function M.new(State, Config, settings)
     tcp_view = nil,
     mcp_view = nil,
     transport_view = nil,
+    envelope_view = nil,
     debug_view = nil,
   }, TabContent)
 
@@ -41,6 +43,9 @@ function M.new(State, Config, settings)
 
   -- Create transport view (transport bar)
   self.transport_view = TransportView.new(State, Config, settings)
+
+  -- Create envelope view (envelope panel)
+  self.envelope_view = EnvelopeView.new(State, Config, settings)
 
   -- Create debug view (theme info + image browser)
   self.debug_view = DebugView.new(State, Config, settings)
@@ -78,7 +83,9 @@ function TabContent:draw(ctx, tab_id, shell_state)
   elseif tab_id == "COLORS" then
     ImGui.Text(ctx, "Colors tab - Coming soon")
   elseif tab_id == "ENVELOPES" then
-    ImGui.Text(ctx, "Envelopes tab - Coming soon")
+    if self.envelope_view then
+      self.envelope_view:draw(ctx, shell_state)
+    end
   elseif tab_id == "TRANSPORT" then
     if self.transport_view then
       self.transport_view:draw(ctx, shell_state)

@@ -1,6 +1,6 @@
 -- @noindex
--- ThemeAdjuster/ui/views/transport_view.lua
--- Transport bar configuration tab
+-- ThemeAdjuster/ui/views/envelope_view.lua
+-- Envelope configuration tab
 
 local ImGui = require 'imgui' '0.10'
 local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
@@ -8,16 +8,17 @@ local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}
-local TransportView = {}
-TransportView.__index = TransportView
+local EnvelopeView = {}
+EnvelopeView.__index = EnvelopeView
 
--- Spinner value lists (from Default 6.0)
+-- Spinner value lists
 local SPINNER_VALUES = {
-  trans_rateSize = {'MIN', 60, 90, 120, 150, 180, 210},
-  trans_rateMode = {'RATE', 'FRAMES'},
-  trans_status_size = {'MIN', 80, 120, 160, 200},
-  trans_bpmEdit_size = {'MIN', 60, 80, 100, 120},
-  trans_timeEdit_size = {'MIN', 100, 140, 180, 220},
+  env_vol_size = {'MIN', 40, 60, 80, 100, 120},
+  env_pan_size = {'MIN', 40, 60, 80, 100},
+  env_labelSize = {'MIN', 50, 75, 100, 125, 150},
+  env_MeterSize = {4, 10, 20, 40, 80},
+  env_type = {'NORMAL', 'COMPACT', 'TINY'},
+  env_min_height = {24, 40, 60, 80, 100, 120},
 }
 
 function M.new(State, Config, settings)
@@ -27,29 +28,24 @@ function M.new(State, Config, settings)
     settings = settings,
 
     -- Spinner indices (1-based)
-    trans_rateSize_idx = 1,
-    trans_rateMode_idx = 1,
-    trans_status_size_idx = 1,
-    trans_bpmEdit_size_idx = 1,
-    trans_timeEdit_size_idx = 1,
+    env_vol_size_idx = 1,
+    env_pan_size_idx = 1,
+    env_labelSize_idx = 1,
+    env_MeterSize_idx = 1,
+    env_type_idx = 1,
+    env_min_height_idx = 1,
 
     -- Active layout (A/B/C)
     active_layout = 'A',
 
-    -- Toggles (action toggles from Default 6.0)
-    show_play_position = true,
-    show_playback_status = true,
-    show_transport_state = true,
-    show_record_status = true,
-    show_loop_repeat = true,
-    show_auto_crossfade = false,
-    show_midi_editor_btn = false,
-    show_metronome = true,
-    show_tempo_bpm = true,
-    show_time_signature = true,
-    show_project_length = false,
-    show_selection_length = false,
-  }, TransportView)
+    -- Toggles
+    show_env_volume = true,
+    show_env_pan = true,
+    show_env_values = true,
+    show_env_mod_values = false,
+    show_env_fader = true,
+    env_hide_tcp_env = false,
+  }, EnvelopeView)
 
   -- Load initial values from theme
   self:load_from_theme()
@@ -57,12 +53,12 @@ function M.new(State, Config, settings)
   return self
 end
 
-function TransportView:load_from_theme()
+function EnvelopeView:load_from_theme()
   -- TODO: Load spinner indices and toggle states from theme parameters
   -- For now, keep defaults
 end
 
-function TransportView:get_param_index(param_name)
+function EnvelopeView:get_param_index(param_name)
   -- Get parameter index from theme layout
   -- Returns nil if not found
   local ok, idx = pcall(reaper.ThemeLayout_GetParameter, param_name)
@@ -72,7 +68,7 @@ function TransportView:get_param_index(param_name)
   return nil
 end
 
-function TransportView:set_param(param, value, save)
+function EnvelopeView:set_param(param, value, save)
   save = save == nil and true or save
   local ok = pcall(reaper.ThemeLayout_SetParameter, param, value, save)
   if ok and save then
@@ -81,23 +77,23 @@ function TransportView:set_param(param, value, save)
   return ok
 end
 
-function TransportView:draw(ctx, shell_state)
+function EnvelopeView:draw(ctx, shell_state)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
   -- Title
   ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
-  ImGui.Text(ctx, "Transport Bar")
+  ImGui.Text(ctx, "Envelope Panel")
   ImGui.PopFont(ctx)
 
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-  ImGui.Text(ctx, "Configure transport bar appearance and visibility")
+  ImGui.Text(ctx, "Configure envelope appearance and element visibility")
   ImGui.PopStyleColor(ctx)
 
   ImGui.Dummy(ctx, 0, 12)
 
   -- Layout Settings Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "transport_layout_section", avail_w, 140, 1) then
+  if ImGui.BeginChild(ctx, "env_layout_section", avail_w, 180, 1) then
     ImGui.Dummy(ctx, 0, 6)
 
     ImGui.Indent(ctx, 8)
@@ -106,10 +102,13 @@ function TransportView:draw(ctx, shell_state)
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 6)
 
+    -- Calculate column widths
+    local col_count = 2
+    local col_w = (avail_w - 32) / col_count
     local label_w = 100
-    local spinner_w = 160
+    local spinner_w = col_w - label_w - 12
 
-    -- Helper function to draw spinner row
+    -- Helper function to draw compact spinner row
     local function draw_spinner_row(label, id, idx, values)
       ImGui.AlignTextToFramePadding(ctx)
       ImGui.Text(ctx, label)
@@ -119,31 +118,40 @@ function TransportView:draw(ctx, shell_state)
       return changed, new_idx
     end
 
-    -- Column layout for spinners
-    local col_w = (avail_w - 32) / 2
-
+    -- Column 1: Element Sizing
     ImGui.BeginGroup(ctx)
-    -- Left column
-    local changed, new_idx = draw_spinner_row("Rate Size", "trans_rateSize", self.trans_rateSize_idx, SPINNER_VALUES.trans_rateSize)
-    if changed then self.trans_rateSize_idx = new_idx end
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+    ImGui.Text(ctx, "Element Sizing")
+    ImGui.PopStyleColor(ctx)
+    ImGui.Dummy(ctx, 0, 3)
 
-    changed, new_idx = draw_spinner_row("Rate Mode", "trans_rateMode", self.trans_rateMode_idx, SPINNER_VALUES.trans_rateMode)
-    if changed then self.trans_rateMode_idx = new_idx end
+    local changed, new_idx = draw_spinner_row("Label Size", "env_labelSize", self.env_labelSize_idx, SPINNER_VALUES.env_labelSize)
+    if changed then self.env_labelSize_idx = new_idx end
 
-    changed, new_idx = draw_spinner_row("Status Size", "trans_status_size", self.trans_status_size_idx, SPINNER_VALUES.trans_status_size)
-    if changed then self.trans_status_size_idx = new_idx end
+    changed, new_idx = draw_spinner_row("Volume", "env_vol_size", self.env_vol_size_idx, SPINNER_VALUES.env_vol_size)
+    if changed then self.env_vol_size_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Pan", "env_pan_size", self.env_pan_size_idx, SPINNER_VALUES.env_pan_size)
+    if changed then self.env_pan_size_idx = new_idx end
 
     ImGui.EndGroup(ctx)
 
+    -- Column 2: Display Options
     ImGui.SameLine(ctx, col_w + 8)
-
     ImGui.BeginGroup(ctx)
-    -- Right column
-    changed, new_idx = draw_spinner_row("BPM Editor", "trans_bpmEdit_size", self.trans_bpmEdit_size_idx, SPINNER_VALUES.trans_bpmEdit_size)
-    if changed then self.trans_bpmEdit_size_idx = new_idx end
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+    ImGui.Text(ctx, "Display Options")
+    ImGui.PopStyleColor(ctx)
+    ImGui.Dummy(ctx, 0, 3)
 
-    changed, new_idx = draw_spinner_row("Time Editor", "trans_timeEdit_size", self.trans_timeEdit_size_idx, SPINNER_VALUES.trans_timeEdit_size)
-    if changed then self.trans_timeEdit_size_idx = new_idx end
+    changed, new_idx = draw_spinner_row("Meter Size", "env_MeterSize", self.env_MeterSize_idx, SPINNER_VALUES.env_MeterSize)
+    if changed then self.env_MeterSize_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Env Type", "env_type", self.env_type_idx, SPINNER_VALUES.env_type)
+    if changed then self.env_type_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Min Height", "env_min_height", self.env_min_height_idx, SPINNER_VALUES.env_min_height)
+    if changed then self.env_min_height_idx = new_idx end
 
     ImGui.EndGroup(ctx)
 
@@ -157,7 +165,7 @@ function TransportView:draw(ctx, shell_state)
 
   -- Layout & Size Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "transport_layout_buttons", avail_w, 100, 1) then
+  if ImGui.BeginChild(ctx, "env_layout_buttons", avail_w, 100, 1) then
     ImGui.Dummy(ctx, 0, 6)
 
     ImGui.Indent(ctx, 8)
@@ -214,7 +222,7 @@ function TransportView:draw(ctx, shell_state)
 
   -- Element Visibility Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "transport_visibility_section", avail_w, 0, 1) then
+  if ImGui.BeginChild(ctx, "env_visibility_section", avail_w, 0, 1) then
     ImGui.Dummy(ctx, 0, 6)
 
     ImGui.Indent(ctx, 8)
@@ -224,7 +232,7 @@ function TransportView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 3)
 
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-    ImGui.Text(ctx, "Control which transport elements are visible")
+    ImGui.Text(ctx, "Control which envelope elements are visible")
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 6)
 
@@ -244,12 +252,9 @@ function TransportView:draw(ctx, shell_state)
     ImGui.BeginGroup(ctx)
 
     -- Left column
-    self.show_play_position = draw_checkbox_row("Show play position", self.show_play_position)
-    self.show_playback_status = draw_checkbox_row("Show playback status", self.show_playback_status)
-    self.show_transport_state = draw_checkbox_row("Show transport state", self.show_transport_state)
-    self.show_record_status = draw_checkbox_row("Show record status", self.show_record_status)
-    self.show_loop_repeat = draw_checkbox_row("Show loop/repeat status", self.show_loop_repeat)
-    self.show_auto_crossfade = draw_checkbox_row("Show auto-crossfade", self.show_auto_crossfade)
+    self.show_env_volume = draw_checkbox_row("Show volume control", self.show_env_volume)
+    self.show_env_pan = draw_checkbox_row("Show pan control", self.show_env_pan)
+    self.show_env_fader = draw_checkbox_row("Show fader", self.show_env_fader)
 
     ImGui.EndGroup(ctx)
 
@@ -258,12 +263,9 @@ function TransportView:draw(ctx, shell_state)
     ImGui.BeginGroup(ctx)
 
     -- Right column
-    self.show_midi_editor_btn = draw_checkbox_row("Show MIDI editor button", self.show_midi_editor_btn)
-    self.show_metronome = draw_checkbox_row("Show metronome", self.show_metronome)
-    self.show_tempo_bpm = draw_checkbox_row("Show tempo (BPM)", self.show_tempo_bpm)
-    self.show_time_signature = draw_checkbox_row("Show time signature", self.show_time_signature)
-    self.show_project_length = draw_checkbox_row("Show project length", self.show_project_length)
-    self.show_selection_length = draw_checkbox_row("Show selection length", self.show_selection_length)
+    self.show_env_values = draw_checkbox_row("Show values", self.show_env_values)
+    self.show_env_mod_values = draw_checkbox_row("Show modulation values", self.show_env_mod_values)
+    self.env_hide_tcp_env = draw_checkbox_row("Hide TCP envelope controls", self.env_hide_tcp_env)
 
     ImGui.EndGroup(ctx)
 

@@ -20,6 +20,11 @@ local SPINNER_VALUES = {
   mcp_volText_pos = {'NORMAL', 'SEPARATE'},
   mcp_panText_pos = {'NORMAL', 'SEPARATE'},
   mcp_extmixer_mode = {'OFF', '1', '2', '3'},
+  mcp_labelSize = {'MIN', 50, 75, 100, 125, 150},
+  mcp_volSize = {'MIN', 40, 60, 80, 100, 120},
+  mcp_fxlist_size = {'MIN', 80, 120, 160, 200},
+  mcp_sendlist_size = {'MIN', 60, 90, 120, 150},
+  mcp_io_size = {'MIN', 50, 75, 100, 125},
 }
 
 -- Visibility elements with bitflags
@@ -60,6 +65,11 @@ function M.new(State, Config, settings)
     mcp_volText_pos_idx = 1,
     mcp_panText_pos_idx = 1,
     mcp_extmixer_mode_idx = 1,
+    mcp_labelSize_idx = 1,
+    mcp_volSize_idx = 1,
+    mcp_fxlist_size_idx = 1,
+    mcp_sendlist_size_idx = 1,
+    mcp_io_size_idx = 1,
 
     -- Active layout (A/B/C)
     active_layout = 'A',
@@ -133,7 +143,7 @@ function MCPView:draw(ctx, shell_state)
 
   -- Layout Settings Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "mcp_layout_section", avail_w, 180, 1) then
+  if ImGui.BeginChild(ctx, "mcp_layout_section", avail_w, 220, 1) then
     ImGui.Dummy(ctx, 0, 6)
 
     ImGui.Indent(ctx, 8)
@@ -174,37 +184,52 @@ function MCPView:draw(ctx, shell_state)
     changed, new_idx = draw_spinner_row("Border", "mcp_border", self.mcp_border_idx, SPINNER_VALUES.mcp_border)
     if changed then self.mcp_border_idx = new_idx end
 
+    changed, new_idx = draw_spinner_row("Ext Mixer", "mcp_extmixer_mode", self.mcp_extmixer_mode_idx, SPINNER_VALUES.mcp_extmixer_mode)
+    if changed then self.mcp_extmixer_mode_idx = new_idx end
+
     ImGui.EndGroup(ctx)
 
-    -- Column 2: Text Positions
+    -- Column 2: Element Sizing
     ImGui.SameLine(ctx, col_w + 8)
     ImGui.BeginGroup(ctx)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Text Position")
+    ImGui.Text(ctx, "Element Sizing")
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    changed, new_idx = draw_spinner_row("Volume", "mcp_volText_pos", self.mcp_volText_pos_idx, SPINNER_VALUES.mcp_volText_pos)
-    if changed then self.mcp_volText_pos_idx = new_idx end
+    changed, new_idx = draw_spinner_row("Label", "mcp_labelSize", self.mcp_labelSize_idx, SPINNER_VALUES.mcp_labelSize)
+    if changed then self.mcp_labelSize_idx = new_idx end
 
-    changed, new_idx = draw_spinner_row("Pan", "mcp_panText_pos", self.mcp_panText_pos_idx, SPINNER_VALUES.mcp_panText_pos)
-    if changed then self.mcp_panText_pos_idx = new_idx end
-
-    ImGui.EndGroup(ctx)
-
-    -- Column 3: Options
-    ImGui.SameLine(ctx, (col_w * 2) + 8)
-    ImGui.BeginGroup(ctx)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Options")
-    ImGui.PopStyleColor(ctx)
-    ImGui.Dummy(ctx, 0, 3)
+    changed, new_idx = draw_spinner_row("Volume", "mcp_volSize", self.mcp_volSize_idx, SPINNER_VALUES.mcp_volSize)
+    if changed then self.mcp_volSize_idx = new_idx end
 
     changed, new_idx = draw_spinner_row("Meter Exp", "mcp_meterExpSize", self.mcp_meterExpSize_idx, SPINNER_VALUES.mcp_meterExpSize)
     if changed then self.mcp_meterExpSize_idx = new_idx end
 
-    changed, new_idx = draw_spinner_row("Ext Mixer", "mcp_extmixer_mode", self.mcp_extmixer_mode_idx, SPINNER_VALUES.mcp_extmixer_mode)
-    if changed then self.mcp_extmixer_mode_idx = new_idx end
+    changed, new_idx = draw_spinner_row("I/O", "mcp_io_size", self.mcp_io_size_idx, SPINNER_VALUES.mcp_io_size)
+    if changed then self.mcp_io_size_idx = new_idx end
+
+    ImGui.EndGroup(ctx)
+
+    -- Column 3: List Sizing
+    ImGui.SameLine(ctx, (col_w * 2) + 8)
+    ImGui.BeginGroup(ctx)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+    ImGui.Text(ctx, "List Sizing")
+    ImGui.PopStyleColor(ctx)
+    ImGui.Dummy(ctx, 0, 3)
+
+    changed, new_idx = draw_spinner_row("FX List", "mcp_fxlist_size", self.mcp_fxlist_size_idx, SPINNER_VALUES.mcp_fxlist_size)
+    if changed then self.mcp_fxlist_size_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Send List", "mcp_sendlist_size", self.mcp_sendlist_size_idx, SPINNER_VALUES.mcp_sendlist_size)
+    if changed then self.mcp_sendlist_size_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Vol Text", "mcp_volText_pos", self.mcp_volText_pos_idx, SPINNER_VALUES.mcp_volText_pos)
+    if changed then self.mcp_volText_pos_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Pan Text", "mcp_panText_pos", self.mcp_panText_pos_idx, SPINNER_VALUES.mcp_panText_pos)
+    if changed then self.mcp_panText_pos_idx = new_idx end
 
     ImGui.EndGroup(ctx)
 

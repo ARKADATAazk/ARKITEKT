@@ -21,6 +21,10 @@ local SPINNER_VALUES = {
   tcp_InputSize = {'MIN', 25, 40, 60, 90, 150, 200},
   tcp_MeterLoc = {'LEFT', 'RIGHT', 'LEFT IF ARMED'},
   tcp_sepSends = {'OFF', 'ON'},
+  tcp_fxparms_size = {'MIN', 50, 75, 100, 125, 150},
+  tcp_recmon_size = {'MIN', 20, 30, 40, 50},
+  tcp_pan_size = {'MIN', 40, 60, 80, 100},
+  tcp_width_size = {'MIN', 40, 60, 80, 100},
 }
 
 -- Visibility elements with bitflags
@@ -62,6 +66,10 @@ function M.new(State, Config, settings)
     tcp_InputSize_idx = 1,
     tcp_MeterLoc_idx = 1,
     tcp_sepSends_idx = 1,
+    tcp_fxparms_size_idx = 1,
+    tcp_recmon_size_idx = 1,
+    tcp_pan_size_idx = 1,
+    tcp_width_size_idx = 1,
 
     -- Active layout (A/B/C)
     active_layout = 'A',
@@ -131,7 +139,7 @@ function TCPView:draw(ctx, shell_state)
 
   -- Layout Settings Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "tcp_layout_section", avail_w, 180, 1) then
+  if ImGui.BeginChild(ctx, "tcp_layout_section", avail_w, 220, 1) then
     ImGui.Dummy(ctx, 0, 6)
 
     ImGui.Indent(ctx, 8)
@@ -169,9 +177,15 @@ function TCPView:draw(ctx, shell_state)
     changed, new_idx = draw_spinner_row("Alignment", "tcp_control_align", self.tcp_control_align_idx, SPINNER_VALUES.tcp_control_align)
     if changed then self.tcp_control_align_idx = new_idx end
 
+    changed, new_idx = draw_spinner_row("Meter Loc", "tcp_MeterLoc", self.tcp_MeterLoc_idx, SPINNER_VALUES.tcp_MeterLoc)
+    if changed then self.tcp_MeterLoc_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Send List", "tcp_sepSends", self.tcp_sepSends_idx, SPINNER_VALUES.tcp_sepSends)
+    if changed then self.tcp_sepSends_idx = new_idx end
+
     ImGui.EndGroup(ctx)
 
-    -- Column 2: Sizing
+    -- Column 2: Element Sizing
     ImGui.SameLine(ctx, col_w + 8)
     ImGui.BeginGroup(ctx)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
@@ -193,19 +207,25 @@ function TCPView:draw(ctx, shell_state)
 
     ImGui.EndGroup(ctx)
 
-    -- Column 3: Options
+    -- Column 3: Control Sizing
     ImGui.SameLine(ctx, (col_w * 2) + 8)
     ImGui.BeginGroup(ctx)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Options")
+    ImGui.Text(ctx, "Control Sizing")
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    changed, new_idx = draw_spinner_row("Meter Loc", "tcp_MeterLoc", self.tcp_MeterLoc_idx, SPINNER_VALUES.tcp_MeterLoc)
-    if changed then self.tcp_MeterLoc_idx = new_idx end
+    changed, new_idx = draw_spinner_row("FX Parms", "tcp_fxparms_size", self.tcp_fxparms_size_idx, SPINNER_VALUES.tcp_fxparms_size)
+    if changed then self.tcp_fxparms_size_idx = new_idx end
 
-    changed, new_idx = draw_spinner_row("Send List", "tcp_sepSends", self.tcp_sepSends_idx, SPINNER_VALUES.tcp_sepSends)
-    if changed then self.tcp_sepSends_idx = new_idx end
+    changed, new_idx = draw_spinner_row("Rec Mon", "tcp_recmon_size", self.tcp_recmon_size_idx, SPINNER_VALUES.tcp_recmon_size)
+    if changed then self.tcp_recmon_size_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Pan", "tcp_pan_size", self.tcp_pan_size_idx, SPINNER_VALUES.tcp_pan_size)
+    if changed then self.tcp_pan_size_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Width", "tcp_width_size", self.tcp_width_size_idx, SPINNER_VALUES.tcp_width_size)
+    if changed then self.tcp_width_size_idx = new_idx end
 
     ImGui.EndGroup(ctx)
 
