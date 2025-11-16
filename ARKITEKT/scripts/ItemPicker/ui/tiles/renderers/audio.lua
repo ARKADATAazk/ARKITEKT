@@ -184,12 +184,20 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       local changed, new_text = ImGui.InputText(ctx, "##rename", state.rename_text, ImGui.InputTextFlags_EnterReturnsTrue)
 
+      -- Update rename text in real-time (even if not committed with Enter)
+      if not changed then
+        state.rename_text = new_text
+      end
+
       if changed then
         -- Apply rename to the item
+        reaper.Undo_BeginBlock()
         local take = reaper.GetActiveTake(item_data.item)
         if take then
           reaper.GetSetMediaItemTakeInfo_String(take, "P_NAME", new_text, true)
+          reaper.UpdateItemInProject(item_data.item)
         end
+        reaper.Undo_EndBlock("Rename item take", -1)
 
         -- Check if there are more items in the batch rename queue
         if state.rename_queue and state.rename_queue_index < #state.rename_queue then
@@ -237,11 +245,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Clear focus frame flag after first frame
       if state.rename_focus_frame then
         state.rename_focus_frame = false
-      end
-
-      -- Update rename text
-      if not changed then
-        _, state.rename_text = ImGui.InputText(ctx, "##rename_hidden", new_text or state.rename_text)
       end
 
       ImGui.PopStyleColor(ctx, 2)
