@@ -66,9 +66,8 @@ local ext_state_toggle = "toggle_request"
 
 local daemon = {
   running = false,
-  ui_visible = false,
+  ui_visible = false,  -- Controls whether UI renders (toggled via ExtState)
   runtime_ready = false,  -- Flag to prevent rendering before Runtime is ready
-  overlay_setup = false,  -- Flag to track if overlay was pushed
 
   -- Background processing
   last_change_count = -1,
@@ -384,7 +383,55 @@ local function initialize()
   -- Create GUI (pre-initialized)
   daemon.gui = GUI.new(Config, State, Controller, visualization, cache_mgr, drag_handler)
 
-  -- DON'T push overlay here - will be pushed on first show inside on_frame
+  -- Push overlay EXACTLY like ARK_ItemPicker.lua (before Runtime.start())
+  local Colors = require('rearkitekt.core.colors')
+  daemon.overlay_mgr:push({
+    id = "item_picker_main",
+    use_viewport = true,
+    fade_duration = 0.2,
+    fade_curve = 'ease_out_quad',
+    scrim_color = Colors.hexrgb("#101010"),
+    scrim_opacity = 0.92,
+    show_close_button = true,
+    close_on_background_click = false,
+    close_on_background_right_click = true,
+    close_on_scrim = false,
+    esc_to_close = false,
+    close_button_size = 32,
+    close_button_margin = 16,
+    close_button_proximity = 150,
+    content_padding = 20,
+
+    render = function(ctx, alpha_val, bounds)
+      -- Only render content if UI is visible
+      if not daemon.ui_visible then return end
+
+      ImGui.PushFont(ctx, daemon.fonts.default, daemon.fonts.default_size)
+
+      local overlay_state = {
+        x = bounds.x,
+        y = bounds.y,
+        width = bounds.w,
+        height = bounds.h,
+        alpha = alpha_val,
+      }
+
+      if daemon.gui and daemon.gui.draw then
+        daemon.gui:draw(ctx, {
+          fonts = daemon.fonts,
+          overlay_state = overlay_state,
+          overlay = { alpha = { value = function() return alpha_val end } },
+          is_overlay_mode = true,
+        })
+      end
+
+      ImGui.PopFont(ctx)
+    end,
+
+    on_close = function()
+      hide_ui()
+    end,
+  })
 
   -- Create runtime for proper ImGui frame handling
   daemon.runtime = Runtime.new({
@@ -398,59 +445,7 @@ local function initialize()
         log("Runtime ready - UI can now be shown")
       end
 
-      -- Setup overlay on first show (inside valid frame context)
-      if daemon.ui_visible and not daemon.overlay_setup then
-        local Colors = require('rearkitekt.core.colors')
-        daemon.overlay_mgr:push({
-          id = "item_picker_main",
-          use_viewport = true,
-          fade_duration = 0.2,
-          fade_curve = 'ease_out_quad',
-          scrim_color = Colors.hexrgb("#101010"),
-          scrim_opacity = 0.92,
-          show_close_button = true,
-          close_on_background_click = false,
-          close_on_background_right_click = true,
-          close_on_scrim = false,
-          esc_to_close = false,
-          close_button_size = 32,
-          close_button_margin = 16,
-          close_button_proximity = 150,
-          content_padding = 20,
-
-          render = function(ctx, alpha_val, bounds)
-            ImGui.PushFont(ctx, daemon.fonts.default, daemon.fonts.default_size)
-
-            local overlay_state = {
-              x = bounds.x,
-              y = bounds.y,
-              width = bounds.w,
-              height = bounds.h,
-              alpha = alpha_val,
-            }
-
-            if daemon.gui and daemon.gui.draw then
-              daemon.gui:draw(ctx, {
-                fonts = daemon.fonts,
-                overlay_state = overlay_state,
-                overlay = { alpha = { value = function() return alpha_val end } },
-                is_overlay_mode = true,
-              })
-            end
-
-            ImGui.PopFont(ctx)
-          end,
-
-          on_close = function()
-            hide_ui()
-            daemon.overlay_setup = false
-          end,
-        })
-        daemon.overlay_setup = true
-        log("Overlay setup complete")
-      end
-
-      -- When dragging, skip overlay and just render drag handlers
+      -- EXACTLY like ARK_ItemPicker.lua
       if State.dragging then
         ImGui.PushFont(ctx, daemon.fonts.default, daemon.fonts.default_size)
         daemon.gui:draw(ctx, {
@@ -460,13 +455,13 @@ local function initialize()
           is_overlay_mode = true,
         })
         ImGui.PopFont(ctx)
-        return true  -- Keep running
-      elseif daemon.overlay_setup then
-        -- Only render overlay if it was setup
-        daemon.overlay_mgr:render(ctx)
         return true
       else
-        -- Hidden - don't render anything, just keep runtime alive
+        -- Only difference: check if UI should be visible
+        if daemon.ui_visible then
+          daemon.overlay_mgr:render(ctx)
+        end
+        -- Always return true to keep runtime alive (even when hidden)
         return true
       end
     end,
