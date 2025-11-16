@@ -53,8 +53,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       1.0 - (1.0 - config.TILE_RENDER.disabled.brightness) * (1.0 - enabled_factor))
   end
 
-  -- Apply cascade/enabled alpha
-  local combined_alpha = cascade_factor * enabled_factor
+  -- Apply cascade/enabled alpha with minimum for disabled items
+  local min_alpha_factor = (config.TILE_RENDER.disabled.min_alpha or 0x33) / 255
+  local alpha_factor = min_alpha_factor + (1.0 - min_alpha_factor) * enabled_factor
+  local combined_alpha = cascade_factor * alpha_factor
   local base_alpha = (render_color & 0xFF) / 255
   local final_alpha = base_alpha * combined_alpha
   render_color = Colors.with_alpha(render_color, math.floor(final_alpha * 255))
