@@ -35,6 +35,9 @@ end
 function GUI:initialize_once(ctx)
   if self.initialized then return end
 
+  -- Store context for later use
+  self.ctx = ctx
+
   -- Initialize domain modules (lightweight, immediate)
   if not self.state.cache then
     self.state.cache = self.cache_mgr.new(self.config.CACHE.MAX_ENTRIES)
@@ -130,6 +133,10 @@ function GUI:start_incremental_loading()
         end
       end
     end
+
+    -- Recreate coordinator and layout with populated data
+    self.coordinator = Coordinator.new(self.ctx, self.config, self.state, self.visualization, self.cache_mgr)
+    self.layout_view = LayoutView.new(self.config, self.state, self.coordinator)
 
     -- Mark as loaded (UI can render immediately with cached data)
     self.data_loaded = true
