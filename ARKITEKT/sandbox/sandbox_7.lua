@@ -30,19 +30,19 @@ local function main()
       reaper.ShowConsoleMsg(string.format("  Current color: %08X\n", color or 0))
 
       -- Try to set it to red
-      local success = reaper.SetProjectMarker4(
+      local success = reaper.SetProjectMarkerByIndex2(
         proj,
         i,                      -- index
         true,                   -- isrgn
         pos,                    -- position
         rgnend,                 -- region end
-        name,                   -- name
-        markrgnindexnumber,     -- markrgnindexnumber
+        markrgnindexnumber,     -- markrgnindexnumber - BEFORE name!
+        name,                   -- name - AFTER markrgnindexnumber!
         red_with_flag,          -- color with flag
         0                       -- flags
       )
 
-      reaper.ShowConsoleMsg(string.format("  SetProjectMarker4 success: %s\n", tostring(success)))
+      reaper.ShowConsoleMsg(string.format("  SetProjectMarkerByIndex2 success: %s\n", tostring(success)))
 
       -- Verify the change
       local _, isrgn2, _, _, _, _, new_color = reaper.EnumProjectMarkers3(proj, i)

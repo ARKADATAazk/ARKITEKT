@@ -129,23 +129,23 @@ function M.set_region_color(proj, target_rid, rgba_color)
   local b = (rgba_color >> 8) & 0xFF
   reaper.ShowConsoleMsg(string.format("    -> RGBA(%d,%d,%d) -> native_color=%08X\n", r, g, b, native_color))
 
-  -- Update the region with new color using SetProjectMarker4
-  -- Parameters: proj, index, isrgn, pos, rgnend, name, markrgnindexnumber, color, flags
+  -- Update the region with new color using SetProjectMarkerByIndex2
+  -- Parameters: proj, index, isrgn, pos, rgnend, markrgnindexnumber, name, color, flags
   reaper.Undo_BeginBlock()
 
-  local success = reaper.SetProjectMarker4(
+  local success = reaper.SetProjectMarkerByIndex2(
     proj,
     rgn.index,        -- marker/region index
     true,             -- isrgn (true for region)
     rgn.start,        -- position
     rgn["end"],       -- region end
-    rgn.name,         -- name
-    target_rid,       -- markrgnindexnumber (RID)
+    target_rid,       -- markrgnindexnumber (RID) - BEFORE name!
+    rgn.name,         -- name - AFTER markrgnindexnumber!
     native_color,     -- color
     0                 -- flags
   )
 
-  reaper.ShowConsoleMsg(string.format("    -> SetProjectMarker4 returned: %s\n", tostring(success)))
+  reaper.ShowConsoleMsg(string.format("    -> SetProjectMarkerByIndex2 returned: %s\n", tostring(success)))
 
   if success then
     reaper.MarkProjectDirty(proj)
