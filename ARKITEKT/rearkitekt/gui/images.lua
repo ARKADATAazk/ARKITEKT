@@ -202,49 +202,6 @@ function Cache:set_no_crop(b)
   -- If you want to refresh to full frames immediately, call :clear() after toggling.
 end
 
--- Public API: Get a validated image record (automatically validates/recreates if stale)
--- Returns: table { img, w, h, src_x, src_y, src_w, src_h } or nil
--- This is the RECOMMENDED way to access cached images for custom rendering
-function Cache:get_validated(path)
-  if not path or path == "" then return nil end
-
-  local rec = self._cache[path]
-
-  -- Use the internal validate_record function
-  rec = validate_record(self, path, rec)
-
-  return rec
-end
-
--- Check if an image is cached (without triggering load)
-function Cache:is_cached(path)
-  if not path or path == "" then return false end
-  local rec = self._cache[path]
-  return rec ~= nil and rec ~= false
-end
-
--- Get cache statistics for debugging/monitoring
-function Cache:get_stats()
-  local valid_count = 0
-  local failed_count = 0
-
-  for _, rec in pairs(self._cache) do
-    if rec == false then
-      failed_count = failed_count + 1
-    elseif rec and rec.img then
-      valid_count = valid_count + 1
-    end
-  end
-
-  return {
-    valid = valid_count,
-    failed = failed_count,
-    total = valid_count + failed_count,
-    max_cache = self._max_cache,
-    budget_remaining = self._creates_left,
-  }
-end
-
 local function ensure_record(self, path)
   if not path or path == "" then return nil end
 
@@ -337,6 +294,57 @@ local function validate_record(self, path, rec)
   end
   return ensure_record(self, path)
 end
+
+-- ============================================================================
+-- PUBLIC API: Use these methods for accessing cached images
+-- ============================================================================
+
+-- Public API: Get a validated image record (automatically validates/recreates if stale)
+-- Returns: table { img, w, h, src_x, src_y, src_w, src_h } or nil
+-- This is the RECOMMENDED way to access cached images for custom rendering
+function Cache:get_validated(path)
+  if not path or path == "" then return nil end
+
+  local rec = self._cache[path]
+
+  -- Use the internal validate_record function
+  rec = validate_record(self, path, rec)
+
+  return rec
+end
+
+-- Check if an image is cached (without triggering load)
+function Cache:is_cached(path)
+  if not path or path == "" then return false end
+  local rec = self._cache[path]
+  return rec ~= nil and rec ~= false
+end
+
+-- Get cache statistics for debugging/monitoring
+function Cache:get_stats()
+  local valid_count = 0
+  local failed_count = 0
+
+  for _, rec in pairs(self._cache) do
+    if rec == false then
+      failed_count = failed_count + 1
+    elseif rec and rec.img then
+      valid_count = valid_count + 1
+    end
+  end
+
+  return {
+    valid = valid_count,
+    failed = failed_count,
+    total = valid_count + failed_count,
+    max_cache = self._max_cache,
+    budget_remaining = self._creates_left,
+  }
+end
+
+-- ============================================================================
+-- DRAW METHODS: Convenience wrappers around get_validated
+-- ============================================================================
 
 function Cache:draw_original(ctx, path)
   if not path or path == "" then
