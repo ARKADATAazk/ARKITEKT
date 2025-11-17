@@ -63,17 +63,13 @@ local function render_tree_node(ctx, node, config, state, depth)
   -- Check if node has color
   local node_color = node.color
 
-  -- If renaming, show input field
+  -- If renaming, show input field (same as original working implementation)
   if is_renaming then
     -- Initialize field with current name
     local rename_field_id = "treeview_rename_" .. node_id
-    if Fields.get_text(rename_field_id) == "" or Fields.get_text(rename_field_id) ~= state.rename_buffer then
+    if Fields.get_text(rename_field_id) == "" then
       Fields.set_text(rename_field_id, state.rename_buffer)
     end
-
-    -- Indent to match tree structure
-    local indent = ImGui.GetTreeNodeToLabelSpacing(ctx)
-    ImGui.Indent(ctx, indent)
 
     local changed, new_name = Fields.draw_at_cursor(ctx, {
       width = -1,
@@ -84,8 +80,6 @@ local function render_tree_node(ctx, node, config, state, depth)
     if changed then
       state.rename_buffer = new_name
     end
-
-    ImGui.Unindent(ctx, indent)
 
     -- Commit on Enter or deactivate
     if ImGui.IsItemDeactivatedAfterEdit(ctx) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
@@ -106,10 +100,8 @@ local function render_tree_node(ctx, node, config, state, depth)
   else
     -- Normal tree node display
 
-    -- Tree node flags
-    local flags = ImGui.TreeNodeFlags_OpenOnArrow |
-                  ImGui.TreeNodeFlags_SpanAvailWidth |
-                  ImGui.TreeNodeFlags_FramePadding
+    -- Tree node flags (same as original working implementation)
+    local flags = ImGui.TreeNodeFlags_SpanAvailWidth
 
     if is_selected then
       flags = flags | ImGui.TreeNodeFlags_Selected
@@ -136,36 +128,8 @@ local function render_tree_node(ctx, node, config, state, depth)
       ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + avail_w, cursor_y + line_height, bg_color, 2)
     end
 
-    -- Get cursor position before rendering tree node for icon drawing
-    local pre_cursor_x, pre_cursor_y = ImGui.GetCursorScreenPos(ctx)
-
-    -- Render tree node with blank label (we'll draw icon+label ourselves)
-    -- PushID above ensures unique ID, so we just pass empty label
-    local node_open = ImGui.TreeNodeEx(ctx, "", flags)
-
-    -- Draw folder icon and label on the same line as the tree arrow
-    -- We need to go back and draw over where ImGui placed the (empty) label
-    local post_cursor_x, post_cursor_y = ImGui.GetCursorScreenPos(ctx)
-
-    local dl = ImGui.GetWindowDrawList(ctx)
-    local text_y_offset = (ImGui.GetTextLineHeight(ctx) - 12) * 0.5  -- Center icon vertically
-
-    -- Calculate where to draw the icon (after the tree arrow)
-    local label_start_x = pre_cursor_x + ImGui.GetTreeNodeToLabelSpacing(ctx)
-
-    -- Draw folder icon
-    local icon_width = draw_folder_icon(ctx, dl, label_start_x, pre_cursor_y + text_y_offset, 12,
-                                       node_color or Colors.hexrgb("#888888"))
-
-    -- Draw node name after icon
-    local text_x = label_start_x + icon_width
-    ImGui.DrawList_AddText(dl, text_x, pre_cursor_y, Colors.hexrgb("#FFFFFF"), node.name)
-
-    -- Make the entire line clickable by setting an invisible button
-    ImGui.SetCursorScreenPos(ctx, pre_cursor_x, pre_cursor_y)
-    local avail_w = ImGui.GetContentRegionAvail(ctx)
-    local line_height = ImGui.GetTextLineHeightWithSpacing(ctx)
-    ImGui.InvisibleButton(ctx, "##clickable_" .. node_id, avail_w, line_height)
+    -- Render tree node - simple and clean like the original
+    local node_open = ImGui.TreeNode(ctx, node.name, flags)
 
     -- Handle clicks
     if ImGui.IsItemClicked(ctx) and not ImGui.IsItemToggledOpen(ctx) then
@@ -206,7 +170,7 @@ local function render_tree_node(ctx, node, config, state, depth)
           render_tree_node(ctx, child, config, state, depth + 1)
         end
       end
-      ImGui.TreePop(ctx)  -- Always pop if node was opened, regardless of children
+      ImGui.TreePop(ctx)
     end
   end
 
