@@ -111,9 +111,9 @@ local function render_tree_node(ctx, node, config, state, depth)
       ImGui.SetNextItemOpen(ctx, true)
     end
 
-    -- Use the node name directly as the tree label
-    -- The label will be visible, but we'll draw the icon on top of it
-    local node_open = ImGui.TreeNodeEx(ctx, node.name, flags)
+    -- Use empty label and draw icon + text manually
+    -- TreeNodeEx(ctx, str_id, label, flags) - need all 4 params!
+    local node_open = ImGui.TreeNodeEx(ctx, node_id, "", flags)
 
     -- Get the item rect for the tree node (full width due to SpanAvailWidth flag)
     local tree_item_hovered = ImGui.IsItemHovered(ctx)
@@ -151,15 +151,20 @@ local function render_tree_node(ctx, node, config, state, depth)
       ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, selection_bg, 2)
     end
 
-    -- Now draw the folder icon on top of the label
-    -- Calculate icon position (after the arrow, before the text)
+    -- Now manually draw the folder icon and text (since label is empty)
+    -- Calculate positions (after the arrow/indent)
     local arrow_width = ImGui.GetTreeNodeToLabelSpacing(ctx)
     local icon_x = item_min_x + arrow_width
     local text_y_offset = (ImGui.GetTextLineHeight(ctx) - 9) * 0.5  -- Center icon vertically (9 = tab_h + main_h)
     local icon_y = item_min_y + text_y_offset
 
     -- Draw folder icon
-    draw_folder_icon(ctx, dl, icon_x, icon_y, node_color)
+    local icon_width = draw_folder_icon(ctx, dl, icon_x, icon_y, node_color)
+
+    -- Draw text label after icon
+    local text_x = icon_x + icon_width
+    local text_y = item_min_y
+    ImGui.DrawList_AddText(dl, text_x, text_y, Colors.hexrgb("#FFFFFFFF"), node.name)
 
     -- Handle single click for selection
     if tree_item_clicked and not tree_toggled then
