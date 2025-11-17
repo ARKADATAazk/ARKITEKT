@@ -81,6 +81,10 @@ function GUI:start_incremental_loading()
   -- No chunk-based duplicate detection, no waveform/MIDI data (handled by job queue)
   local fast_mode = true
 
+  -- SKIP VISUALIZATIONS: Don't generate waveforms/MIDI at all during loading
+  -- Just show colored tiles with names for instant loading
+  self.state.skip_visualizations = true
+
   self.controller.start_incremental_loading(self.state, 100, fast_mode) -- 100 items per frame, fast mode
 
   self.loading_started = true
@@ -148,7 +152,8 @@ function GUI:draw(ctx, shell_state)
   local big_font_size = shell_state.fonts.title_size or 24
 
   -- Process async jobs for waveform/thumbnail generation
-  if self.state.job_queue and self.state.runtime_cache then
+  -- Skip job processing entirely if skip_visualizations is enabled
+  if not self.state.skip_visualizations and self.state.job_queue and self.state.runtime_cache then
     local job_queue_module = require('ItemPicker.data.job_queue')
 
     -- Process more jobs during initial loading for faster startup

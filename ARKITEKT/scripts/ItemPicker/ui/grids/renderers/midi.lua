@@ -331,9 +331,11 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         visualization.DisplayMidiItemTransparent(ctx, thumbnail, dark_color, dl)
       end
     else
-      -- Show placeholder and queue thumbnail generation
+      -- Show placeholder and queue thumbnail generation (unless skip_visualizations is enabled)
       BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
-      if state.job_queue and state.job_queue.add_midi_job then
+
+      -- Skip queueing MIDI jobs if skip_visualizations is enabled (fast mode)
+      if not state.skip_visualizations and state.job_queue and state.job_queue.add_midi_job then
         state.job_queue.add_midi_job(item_data.item, content_w, content_h, item_data.uuid)
       end
     end
