@@ -188,14 +188,24 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
   if region_tiles.active_grid then region_tiles.active_grid.block_all_input = block_input end
   if region_tiles.pool_grid then region_tiles.pool_grid.block_all_input = block_input end
 
+  -- Ensure content_h is valid to prevent BeginChild/EndChild errors
+  local safe_content_h = math.max(1, content_h or 1)
+
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
-  if ImGui.BeginChild(ctx, "##left_column", active_width, content_h, ImGui.ChildFlags_None, 0) then
-    region_tiles:draw_active(ctx, display_playlist, content_h, shell_state)
-  end
-  ImGui.EndChild(ctx)
-  
+  -- Wrap in pcall to ensure PopStyleVar is always called
+  local success, error_msg = pcall(function()
+    if ImGui.BeginChild(ctx, "##left_column", active_width, safe_content_h, ImGui.ChildFlags_None, 0) then
+      region_tiles:draw_active(ctx, display_playlist, safe_content_h, shell_state)
+    end
+    ImGui.EndChild(ctx)
+  end)
+
   ImGui.PopStyleVar(ctx)
+
+  if not success and error_msg then
+    reaper.ShowConsoleMsg("Layout error (left column): " .. tostring(error_msg) .. "\n")
+  end
   
   local separator_x = sep_x
   local action, value = self.separator_view:draw_vertical(ctx, separator_x, start_cursor_y, content_w, content_h, separator_config)
@@ -216,15 +226,25 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
   end
   
   ImGui.SetCursorScreenPos(ctx, start_cursor_x + active_width + separator_gap, start_cursor_y)
-  
+
+  -- Ensure content_h is valid to prevent BeginChild/EndChild errors
+  local safe_content_h = math.max(1, content_h or 1)
+
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
-  if ImGui.BeginChild(ctx, "##right_column", pool_width, content_h, ImGui.ChildFlags_None, 0) then
-    region_tiles:draw_pool(ctx, pool_data, content_h, shell_state)
-  end
-  ImGui.EndChild(ctx)
-  
+  -- Wrap in pcall to ensure PopStyleVar is always called
+  local success, error_msg = pcall(function()
+    if ImGui.BeginChild(ctx, "##right_column", pool_width, safe_content_h, ImGui.ChildFlags_None, 0) then
+      region_tiles:draw_pool(ctx, pool_data, safe_content_h, shell_state)
+    end
+    ImGui.EndChild(ctx)
+  end)
+
   ImGui.PopStyleVar(ctx)
+
+  if not success and error_msg then
+    reaper.ShowConsoleMsg("Layout error (right column): " .. tostring(error_msg) .. "\n")
+  end
 end
 
 return M

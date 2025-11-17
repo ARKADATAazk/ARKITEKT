@@ -34,9 +34,9 @@ M.TRANSPORT = {
   spacing = 12,
   panel_bg_color = hexrgb("#131313c9"),
   
-  -- View mode button (left)
+  -- View mode button (bottom-left corner)
   view_mode = {
-    size = 32,
+    size = 30,  -- Match settings icon size
     rounding = 4,
     bg_color = hexrgb("#252525"),
     bg_hover = hexrgb("#2A2A2A"),
@@ -51,7 +51,7 @@ M.TRANSPORT = {
   corner_buttons = {
     size = 30,
     margin = 8,
-    top_right = {
+    bottom_right = {
       custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
         TransportIcons.draw_tool(dl, x, y, width, height, color)
       end,
@@ -131,6 +131,26 @@ M.QUANTIZE = {
     { value = 0.0625, label = "1/16" },
     { value = 0.03125, label = "1/32" },
   },
+}
+
+-- Transport button layout priorities (modular system)
+-- Lower priority = more important (shown first, hidden last)
+M.TRANSPORT_BUTTONS = {
+  play = { priority = 1, width = 34 },      -- Always show
+  jump = { priority = 2, width = 46 },      -- Always show
+  quantize = { priority = 3, width = 85 },
+  playback = { priority = 4, width_dropdown = 90, width_buttons = 240 },  -- Override(130) + Follow(110)
+  loop = { priority = 5, width = 34 },
+  stop = { priority = 6, width = 34 },
+}
+
+-- Responsive breakpoints for transport layout
+M.TRANSPORT_LAYOUT = {
+  -- When to combine quantize + playback into single "PB" dropdown
+  ultra_compact_width = 250,
+
+  -- When to use playback dropdown instead of separate buttons
+  compact_width = 400,
 }
 
 -- Separator dimensions

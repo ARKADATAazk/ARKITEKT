@@ -958,8 +958,16 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
       end
       local needed = tab_width + effective_spacing
 
+      -- Special case: if this is the ONLY tab (first tab and no others added yet),
+      -- always make it fit by constraining to available width
+      if i == 1 and #tabs == 1 then
+        visible_indices[#visible_indices + 1] = i
+        -- Constrain single tab to available width
+        local max_single_tab_width = tabs_available_width
+        final_tab_widths[i] = math.min(tab_width, max_single_tab_width)
+        current_width = final_tab_widths[i]
       -- Allow tabs to fit with buffer space
-      if current_width + needed <= tabs_available_width + total_buffer then
+      elseif current_width + needed <= tabs_available_width + total_buffer then
         visible_indices[#visible_indices + 1] = i
         current_width = current_width + needed
       else
@@ -1118,6 +1126,9 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   local clicked_tab_id = nil
   local id_to_delete = nil
 
+  -- Apply clipping to prevent tabs from overflowing panel bounds
+  ImGui.DrawList_PushClipRect(dl, x, y, x + available_width, y + height, true)
+
   for i, tab_data in ipairs(tabs) do
     local is_visible = false
     local is_last_visible = false
@@ -1231,6 +1242,15 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
   if overflow_clicked and config.on_overflow_clicked then
     config.on_overflow_clicked()
   end
+
+  -- Draw clip edge borders when content overflows
+  local panel_right = x + available_width
+  if tabs_start_x + tabs_width > panel_right or (overflow_at_edge and overflow_x + overflow_width > panel_right) then
+    local border_color = 0x000000FF
+    ImGui.DrawList_AddLine(dl, panel_right, y, panel_right, y + height, border_color, 1)
+  end
+
+  ImGui.DrawList_PopClipRect(dl)
 
   if clicked_tab_id and config.on_tab_change then
     config.on_tab_change(clicked_tab_id)

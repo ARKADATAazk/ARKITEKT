@@ -263,6 +263,9 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     return
   end
 
+  -- Apply clipping to prevent corner buttons from overflowing panel bounds
+  ImGui.DrawList_PushClipRect(dl, x, y, x + w, y + h, true)
+
   -- Get rounding from config
   local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
   local outer_rounding = CORNER_BUTTON_CONFIG.outer_corner_rounding
@@ -449,29 +452,54 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
   end
 
   -- Draw each corner button
+  local buttons_drawn = {}
+
   if cb.top_left then
     local btn_x = x + border_thickness + offset_x
     local btn_y = y + border_thickness + offset_y
     draw_button('tl', cb.top_left, btn_x, btn_y, panel_id .. "_corner_tl")
+    buttons_drawn[#buttons_drawn + 1] = {x = btn_x, y = btn_y, w = size, h = size}
   end
 
   if cb.top_right then
     local btn_x = x + w - size - border_thickness - offset_x
     local btn_y = y + border_thickness + offset_y
     draw_button('tr', cb.top_right, btn_x, btn_y, panel_id .. "_corner_tr")
+    buttons_drawn[#buttons_drawn + 1] = {x = btn_x, y = btn_y, w = size, h = size}
   end
 
   if cb.bottom_left then
     local btn_x = x + border_thickness + offset_x
     local btn_y = y + h - size - border_thickness - offset_y
     draw_button('bl', cb.bottom_left, btn_x, btn_y, panel_id .. "_corner_bl")
+    buttons_drawn[#buttons_drawn + 1] = {x = btn_x, y = btn_y, w = size, h = size}
   end
 
   if cb.bottom_right then
     local btn_x = x + w - size - border_thickness - offset_x
     local btn_y = y + h - size - border_thickness - offset_y
     draw_button('br', cb.bottom_right, btn_x, btn_y, panel_id .. "_corner_br")
+    buttons_drawn[#buttons_drawn + 1] = {x = btn_x, y = btn_y, w = size, h = size}
   end
+
+  -- Draw clip edge borders for any button that extends beyond panel bounds
+  local border_color = 0x000000FF
+  for _, btn in ipairs(buttons_drawn) do
+    if btn.x < x then
+      ImGui.DrawList_AddLine(dl, x, btn.y, x, btn.y + btn.h, border_color, 1)
+    end
+    if btn.x + btn.w > x + w then
+      ImGui.DrawList_AddLine(dl, x + w, btn.y, x + w, btn.y + btn.h, border_color, 1)
+    end
+    if btn.y < y then
+      ImGui.DrawList_AddLine(dl, btn.x, y, btn.x + btn.w, y, border_color, 1)
+    end
+    if btn.y + btn.h > y + h then
+      ImGui.DrawList_AddLine(dl, btn.x, y + h, btn.x + btn.w, y + h, border_color, 1)
+    end
+  end
+
+  ImGui.DrawList_PopClipRect(dl)
 end
 
 local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, panel_rounding)
@@ -767,12 +795,22 @@ function Panel:end_draw(ctx)
       local offset_y = CORNER_BUTTON_CONFIG.position_offset_y
       local panel_id = self.id
 
+      -- Apply clipping to prevent corner buttons from overflowing panel bounds
+      local dl = ImGui.GetWindowDrawList(ctx)
+      ImGui.DrawList_PushClipRect(dl, x1, y1, x1 + w, y1 + h, true)
+
+      -- Track button positions for clip edge border detection
+      local buttons_drawn = {}
+
       -- Create each corner button as its own child window
       -- These child windows are created AFTER the grid child, so they render on top
       -- But popups still render above these child windows
 
       local function create_corner_button_child(btn_config, btn_x, btn_y, position, suffix)
         if not btn_config then return end
+
+        -- Track button position for clipping detection
+        buttons_drawn[#buttons_drawn + 1] = {x = btn_x, y = btn_y, w = size, h = size}
 
         -- Position the child window at the button location
         ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
@@ -814,6 +852,26 @@ function Panel:end_draw(ctx)
         local btn_y = y1 + h - size - border_thickness - offset_y
         create_corner_button_child(cb.bottom_right, btn_x, btn_y, "br", "br")
       end
+
+      -- Draw clip edge borders for any button that extends beyond panel bounds
+      local border_color = 0x000000FF
+      for _, btn in ipairs(buttons_drawn) do
+        if btn.x < x1 then
+          ImGui.DrawList_AddLine(dl, x1, btn.y, x1, btn.y + btn.h, border_color, 1)
+        end
+        if btn.x + btn.w > x1 + w then
+          ImGui.DrawList_AddLine(dl, x1 + w, btn.y, x1 + w, btn.y + btn.h, border_color, 1)
+        end
+        if btn.y < y1 then
+          ImGui.DrawList_AddLine(dl, btn.x, y1, btn.x + btn.w, y1, border_color, 1)
+        end
+        if btn.y + btn.h > y1 + h then
+          ImGui.DrawList_AddLine(dl, btn.x, y1 + h, btn.x + btn.w, y1 + h, border_color, 1)
+        end
+      end
+
+      -- Pop clip rect after all corner buttons are drawn
+      ImGui.DrawList_PopClipRect(dl)
       end
     end
   end

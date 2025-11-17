@@ -27,15 +27,18 @@ end
 
 function ViewModeButton:draw_icon(ctx, dl, x, y, mode)
   local color = self.config.icon_color or hexrgb("#AAAAAA")
-  
+  local icon_size = 16  -- Smaller icon for 30px button (was 20px for 32px button)
+
   if mode == 'vertical' then
-    ImGui.DrawList_AddRectFilled(dl, x, y, x + 20, y + 3, color, 0)
-    ImGui.DrawList_AddRectFilled(dl, x, y + 5, x + 5, y + 20, color, 0)
-    ImGui.DrawList_AddRectFilled(dl, x + 7, y + 5, x + 20, y + 20, color, 0)
+    -- List mode icon: horizontal bar at top + two vertical columns below
+    ImGui.DrawList_AddRectFilled(dl, x, y, x + icon_size, y + 2, color, 0)
+    ImGui.DrawList_AddRectFilled(dl, x, y + 4, x + 4, y + icon_size, color, 0)
+    ImGui.DrawList_AddRectFilled(dl, x + 6, y + 4, x + icon_size, y + icon_size, color, 0)
   else
-    ImGui.DrawList_AddRectFilled(dl, x, y, x + 20, y + 3, color, 0)
-    ImGui.DrawList_AddRectFilled(dl, x, y + 5, x + 20, y + 9, color, 0)
-    ImGui.DrawList_AddRectFilled(dl, x, y + 11, x + 20, y + 20, color, 0)
+    -- Timeline mode icon: three horizontal bars stacked
+    ImGui.DrawList_AddRectFilled(dl, x, y, x + icon_size, y + 2, color, 0)
+    ImGui.DrawList_AddRectFilled(dl, x, y + 4, x + icon_size, y + 7, color, 0)
+    ImGui.DrawList_AddRectFilled(dl, x, y + 9, x + icon_size, y + icon_size, color, 0)
   end
 end
 
@@ -75,8 +78,9 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
   ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + btn_size - 1, y + btn_size - 1, border_inner, inner_rounding, 0, 1)
   ImGui.DrawList_AddRect(dl, x, y, x + btn_size, y + btn_size, border_outer, inner_rounding, 0, 1)
 
-  local icon_x = (x + (btn_size - 20) / 2 + 0.5)//1
-  local icon_y = (y + (btn_size - 20) / 2 + 0.5)//1
+  local icon_size = 16  -- Match icon size from draw_icon
+  local icon_x = (x + (btn_size - icon_size) / 2 + 0.5)//1
+  local icon_y = (y + (btn_size - icon_size) / 2 + 0.5)//1
   self:draw_icon(ctx, dl, icon_x, icon_y, current_mode)
 
   -- Use manual click detection when on foreground drawlist (outside child context)

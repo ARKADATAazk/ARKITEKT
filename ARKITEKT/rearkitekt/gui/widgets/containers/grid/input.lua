@@ -240,13 +240,98 @@ function M.handle_tile_input(grid, ctx, item, rect)
     end
 
     if ImGui.IsMouseDoubleClicked(ctx, 0) then
-      if grid.behaviors and grid.behaviors.double_click then
+      -- Double-click triggers inline editing for single tile
+      if grid.behaviors and grid.behaviors.start_inline_edit then
+        grid.behaviors.start_inline_edit(key)
+      elseif grid.behaviors and grid.behaviors.double_click then
         grid.behaviors.double_click(key)
       end
     end
   end
 
   return is_hovered
+end
+
+-- Check if currently editing a tile inline
+function M.is_editing_inline(grid)
+  return grid.editing_state and grid.editing_state.active
+end
+
+-- Get the key being edited
+function M.get_editing_key(grid)
+  if not M.is_editing_inline(grid) then return nil end
+  return grid.editing_state.key
+end
+
+-- Start inline editing for a single tile
+function M.start_inline_edit(grid, key, initial_text)
+  grid.editing_state = {
+    active = true,
+    key = key,
+    text = initial_text or "",
+    focus_next_frame = true,
+  }
+end
+
+-- Stop inline editing (commit or cancel)
+function M.stop_inline_edit(grid, commit)
+  if not grid.editing_state or not grid.editing_state.active then return end
+
+  local key = grid.editing_state.key
+  local new_text = grid.editing_state.text
+
+  grid.editing_state = nil
+
+  if commit and grid.behaviors and grid.behaviors.on_inline_edit_complete then
+    grid.behaviors.on_inline_edit_complete(key, new_text)
+  end
+end
+
+-- Handle inline editing input (call this during tile rendering)
+function M.handle_inline_edit_input(grid, ctx, key, rect, current_text)
+  if not grid.editing_state or grid.editing_state.key ~= key then
+    return false, current_text  -- Not editing this tile
+  end
+
+  local state = grid.editing_state
+
+  -- Set up input field position
+  local padding = 6
+  ImGui.SetCursorScreenPos(ctx, rect[1] + padding, rect[2] + padding)
+  ImGui.SetNextItemWidth(ctx, rect[3] - rect[1] - padding * 2)
+
+  -- Focus input on first frame
+  if state.focus_next_frame then
+    ImGui.SetKeyboardFocusHere(ctx)
+    state.focus_next_frame = false
+  end
+
+  -- Draw input field
+  local changed, new_text = ImGui.InputText(
+    ctx,
+    "##inline_edit_" .. key,
+    state.text,
+    ImGui.InputTextFlags_None
+  )
+
+  if changed then
+    state.text = new_text
+  end
+
+  -- Check for Enter (commit) or Escape (cancel)
+  local is_active = ImGui.IsItemActive(ctx)
+  local enter_pressed = ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter)
+  local escape_pressed = ImGui.IsKeyPressed(ctx, ImGui.Key_Escape)
+
+  if enter_pressed and is_active then
+    M.stop_inline_edit(grid, true)  -- Commit
+    return true, state.text
+  elseif escape_pressed or (not is_active and ImGui.IsMouseClicked(ctx, 0)) then
+    M.stop_inline_edit(grid, false)  -- Cancel
+    return true, current_text
+  end
+
+  return true, state.text  -- Still editing
 end
 
 function M.check_start_drag(grid, ctx)

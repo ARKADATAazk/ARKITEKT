@@ -15,6 +15,7 @@ local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 local SWSImporter = require('Region_Playlist.storage.sws_importer')
 local ModalDialog = require('rearkitekt.gui.widgets.overlays.overlay.modal_dialog')
 local ColorPickerWindow = require('rearkitekt.gui.widgets.tools.color_picker_window')
+local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
 
 local M = {}
 
@@ -285,6 +286,16 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
         sws_result_data = nil
       end
     })
+  end
+
+  -- Draw batch rename modal (if open)
+  if BatchRenameModal.is_open() then
+    local active_playlist = State.get_active_playlist()
+    local selected_count = 0
+    if self.active_grid and self.active_grid.selection then
+      selected_count = self.active_grid.selection:count()
+    end
+    BatchRenameModal.draw(ctx, selected_count)
   end
 
   -- Open rename playlist modal
