@@ -54,9 +54,17 @@ function M.start_loading(loader, state, settings)
   -- Get track chunks once (relatively fast)
   loader.track_chunks = loader.reaper_interface.GetAllTrackStateChunks()
 
+  -- PRE-COMPUTE track mute status once (instead of per-item!)
+  loader.track_muted_cache = {}
+  local all_tracks = loader.reaper_interface.GetAllTracks()
+
+  for _, track in pairs(all_tracks) do
+    local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
+    loader.track_muted_cache[track] = track_muted
+  end
+
   -- Collect all items into a flat list
   loader.all_items = {}
-  local all_tracks = loader.reaper_interface.GetAllTracks()
 
   for _, track in pairs(all_tracks) do
     if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") ~= 0 and
@@ -171,12 +179,8 @@ function M.process_audio_item_fast(loader, item, track, state)
   local take = reaper.GetActiveTake(item)
   if not take then return end
 
+  -- Use cached source directly (skip reverse checking in fast mode)
   local source = reaper.GetMediaItemTake_Source(take)
-  local _, _, _, _, _, reverse = reaper.BR_GetMediaSourceProperties(take)
-  if reverse then
-    source = reaper.GetMediaSourceParent(source)
-  end
-
   local filename = reaper.GetMediaSourceFileName(source)
   if not filename then return end
 
@@ -191,7 +195,8 @@ function M.process_audio_item_fast(loader, item, track, state)
     item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$")
   end
 
-  local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
+  -- Use pre-computed track mute status from cache
+  local track_muted = loader.track_muted_cache[track] or false
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
 
   table.insert(loader.samples[filename], {
@@ -261,7 +266,8 @@ function M.process_midi_item_fast(loader, item, track, state)
     loader.midi_items[key] = {}
   end
 
-  local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
+  -- Use pre-computed track mute status from cache
+  local track_muted = loader.track_muted_cache[track] or false
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
 
   table.insert(loader.midi_items[key], {

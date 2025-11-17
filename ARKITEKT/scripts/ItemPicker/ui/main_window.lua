@@ -85,7 +85,8 @@ function GUI:start_incremental_loading()
   -- Just show colored tiles with names for instant loading
   self.state.skip_visualizations = true
 
-  self.controller.start_incremental_loading(self.state, 100, fast_mode) -- 100 items per frame, fast mode
+  -- Increased batch size to 500 (fast mode is much faster now with caching)
+  self.controller.start_incremental_loading(self.state, 500, fast_mode)
 
   self.loading_started = true
 end
