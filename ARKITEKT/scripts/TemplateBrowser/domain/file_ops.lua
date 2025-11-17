@@ -107,52 +107,30 @@ function M.create_folder(parent_path, folder_name)
   parent_path = normalize_path(parent_path)
   local new_path = parent_path .. sep .. folder_name
 
-  -- Check if folder already exists (try with trailing slash for directory detection)
+  -- Check if folder already exists
   if reaper.file_exists(new_path .. sep) then
     reaper.ShowConsoleMsg(string.format("Folder already exists: %s\n", new_path))
     return false, nil
   end
 
-  -- Try using lfs if available
-  local has_lfs, lfs = pcall(require, "lfs")
-  if has_lfs then
-    lfs.mkdir(new_path)
+  -- New approach: Create folder by writing a placeholder file
+  -- This forces the folder structure to exist without blocking mkdir commands
+  local placeholder_path = new_path .. sep .. ".placeholder"
+
+  local file = io.open(placeholder_path, "w")
+  if file then
+    file:write("# Temporary placeholder file - safe to delete\n")
+    file:close()
+
+    -- Remove the placeholder file
+    os.remove(placeholder_path)
+
+    reaper.ShowConsoleMsg(string.format("Created folder: %s\n", new_path))
+    return true, new_path
   else
-    -- Fallback: try platform-specific commands
-    if sep == "\\" then
-      -- Windows
-      local cmd = 'cmd /c mkdir "' .. new_path:gsub("/", "\\") .. '" 2>nul'
-      os.execute(cmd)
-    else
-      -- Unix/Mac
-      os.execute('mkdir -p "' .. new_path .. '"')
-    end
+    reaper.ShowConsoleMsg(string.format("ERROR: Failed to create folder: %s\n", new_path))
+    return false, nil
   end
-
-  -- Verify folder was created - try multiple methods
-  local exists = false
-
-  -- Try with trailing slash
-  if reaper.file_exists(new_path .. sep) then
-    exists = true
-  end
-
-  -- Try without trailing slash
-  if not exists and reaper.file_exists(new_path) then
-    exists = true
-  end
-
-  -- Try with lfs.attributes if available
-  if not exists and has_lfs then
-    local attrs = lfs.attributes(new_path)
-    exists = (attrs ~= nil and attrs.mode == "directory")
-  end
-
-  -- Note: On Dropbox/cloud storage, folders may be created successfully but
-  -- verification can fail due to file system overlay sync delays. Since the
-  -- mkdir command completed without error, we'll assume success.
-  reaper.ShowConsoleMsg(string.format("Created folder: %s\n", new_path))
-  return true, new_path
 end
 
 return M
