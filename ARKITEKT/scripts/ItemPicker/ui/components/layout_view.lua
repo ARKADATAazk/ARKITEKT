@@ -227,6 +227,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.settings.group_items_by_name, checkbox_config, "group_items_by_name")
   if clicked then
     self.state.set_setting('group_items_by_name', not self.state.settings.group_items_by_name)
+    reaper.ShowConsoleMsg(string.format("[GROUPING] Checkbox clicked! New value: %s\n", tostring(self.state.settings.group_items_by_name)))
     -- Trigger instant reorganization (no REAPER API calls)
     self.state.needs_reorganize = true
   end

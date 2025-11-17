@@ -385,6 +385,9 @@ end
 
 -- Reorganize items based on grouping setting (instant, no REAPER API calls)
 function M.reorganize_items(loader, group_by_name)
+  reaper.ShowConsoleMsg(string.format("[REORGANIZE] Called with group_by_name=%s, raw pools: audio=%d, midi=%d\n",
+    tostring(group_by_name), #loader.raw_audio_items, #loader.raw_midi_items))
+
   -- Clear grouped results
   loader.samples = {}
   loader.sample_indexes = {}

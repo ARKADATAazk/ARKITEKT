@@ -181,10 +181,15 @@ function GUI:draw(ctx, shell_state)
   -- Check if we need to reorganize items (instant, no reload)
   if self.state.needs_reorganize and not self.state.is_loading then
     self.state.needs_reorganize = false
+    reaper.ShowConsoleMsg(string.format("[GROUPING] Reorganizing items... group_by_name=%s\n", tostring(self.state.settings.group_items_by_name)))
 
     -- Reorganize from raw pool (instant operation)
     if self.state.incremental_loader then
       local incremental_loader_module = require("ItemPicker.data.loaders.incremental_loader")
+      local raw_audio_count = #(self.state.incremental_loader.raw_audio_items or {})
+      local raw_midi_count = #(self.state.incremental_loader.raw_midi_items or {})
+      reaper.ShowConsoleMsg(string.format("[GROUPING] Raw pools: %d audio, %d midi\n", raw_audio_count, raw_midi_count))
+
       incremental_loader_module.reorganize_items(
         self.state.incremental_loader,
         self.state.settings.group_items_by_name
@@ -196,12 +201,18 @@ function GUI:draw(ctx, shell_state)
       self.state.midi_items = self.state.incremental_loader.midi_items
       self.state.midi_indexes = self.state.incremental_loader.midi_indexes
 
+      reaper.ShowConsoleMsg(string.format("[GROUPING] After reorganize: %d audio groups, %d midi groups\n",
+        #self.state.sample_indexes, #self.state.midi_indexes))
+
       -- Rebuild lookups
       incremental_loader_module.get_results(self.state.incremental_loader, self.state)
 
       -- Invalidate filter cache (items changed)
       self.state.runtime_cache.audio_filter_hash = nil
       self.state.runtime_cache.midi_filter_hash = nil
+      reaper.ShowConsoleMsg("[GROUPING] Reorganization complete!\n")
+    else
+      reaper.ShowConsoleMsg("[GROUPING] ERROR: No incremental_loader found!\n")
     end
   end
 
