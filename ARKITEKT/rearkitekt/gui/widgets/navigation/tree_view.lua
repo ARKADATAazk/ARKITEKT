@@ -189,6 +189,12 @@ local function render_tree_node(ctx, node, config, state, depth)
       state.open_nodes[node_id] = node_open
     end
 
+    -- Handle F2 key to start rename when this node is selected
+    if is_selected and config.enable_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_F2) then
+      state.renaming_node = node_id
+      state.rename_buffer = node.name
+    end
+
     -- Handle double-click (rename by default if enabled)
     if tree_item_double_clicked then
       if config.enable_rename then
