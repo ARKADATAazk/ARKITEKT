@@ -127,19 +127,83 @@ local function render_tree_node(ctx, node, config, state, depth)
     -- Draw folder icon
     local icon_width = draw_folder_icon(ctx, dl, icon_x, icon_y, node_color)
 
-    -- Draw text label after icon
+    -- Calculate text position
     local text_x = icon_x + icon_width
     local text_y = item_min_y
-    ImGui.DrawList_AddText(dl, text_x, text_y, Colors.hexrgb("#FFFFFFFF"), node.name)
 
-    -- Draw template count if available (right-aligned)
-    if node.template_count and node.template_count > 0 and config.show_template_count then
-      local count_text = "(" .. node.template_count .. ")"
-      local count_w = ImGui.CalcTextSize(ctx, count_text)
-      local count_x = item_max_x - count_w - 8  -- 8px padding from right edge
-      local count_y = item_min_y
-      local count_color = Colors.hexrgb("#808080FF")  -- Gray
-      ImGui.DrawList_AddText(dl, count_x, count_y, count_color, count_text)
+    -- If renaming, show input field inline instead of text
+    if is_renaming then
+      -- Position cursor right after icon
+      ImGui.SameLine(ctx, 0, 0)
+      ImGui.SetCursorPosX(ctx, text_x)
+      ImGui.SetCursorPosY(ctx, item_min_y - ImGui.GetWindowPos(ctx))
+
+      -- Style: lighter background for input field
+      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#FFFFFF15"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#FFFFFF20"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#FFFFFF25"))
+
+      -- Auto-focus and select all text on first show
+      if not state.rename_focus_set then
+        ImGui.SetKeyboardFocusHere(ctx, 0)
+        state.rename_focus_set = true
+      end
+
+      -- Input field width: from text position to right edge minus padding
+      ImGui.SetNextItemWidth(ctx, item_max_x - text_x - 8)
+      local rv, buf = ImGui.InputText(ctx, "##rename_" .. node_id, state.rename_buffer, ImGui.InputTextFlags_AutoSelectAll)
+
+      if rv then
+        state.rename_buffer = buf
+      end
+
+      ImGui.PopStyleColor(ctx, 3)
+
+      local input_active = ImGui.IsItemActive(ctx)
+      local input_hovered = ImGui.IsItemHovered(ctx)
+
+      -- Clicking away closes the edit (cancel)
+      if not input_active and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) then
+        -- Check if click was outside the input
+        local mx, my = ImGui.GetMousePos(ctx)
+        if not (mx >= text_x and mx <= item_max_x and my >= item_min_y and my <= item_max_y) then
+          state.renaming_node = nil
+          state.rename_buffer = ""
+          state.rename_focus_set = nil
+        end
+      end
+
+      -- Commit on Enter
+      if ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter) then
+        if state.rename_buffer ~= "" and state.rename_buffer ~= node.name then
+          if config.on_rename then
+            config.on_rename(node, state.rename_buffer)
+          end
+        end
+        state.renaming_node = nil
+        state.rename_buffer = ""
+        state.rename_focus_set = nil
+      end
+
+      -- Cancel on Escape or lost focus
+      if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+        state.renaming_node = nil
+        state.rename_buffer = ""
+        state.rename_focus_set = nil
+      end
+    else
+      -- Draw text label after icon (normal display)
+      ImGui.DrawList_AddText(dl, text_x, text_y, Colors.hexrgb("#FFFFFFFF"), node.name)
+
+      -- Draw template count if available (right-aligned)
+      if node.template_count and node.template_count > 0 and config.show_template_count then
+        local count_text = "(" .. node.template_count .. ")"
+        local count_w = ImGui.CalcTextSize(ctx, count_text)
+        local count_x = item_max_x - count_w - 8  -- 8px padding from right edge
+        local count_y = item_min_y
+        local count_color = Colors.hexrgb("#808080FF")  -- Gray
+        ImGui.DrawList_AddText(dl, count_x, count_y, count_color, count_text)
+      end
     end
 
     -- Handle single click for selection
@@ -176,65 +240,6 @@ local function render_tree_node(ctx, node, config, state, depth)
     if tree_item_right_clicked then
       if config.on_right_click then
         config.on_right_click(node)
-      end
-    end
-
-    -- If renaming, overlay input field on top of the drawn text
-    if is_renaming then
-      -- Use screen coordinates for precise positioning
-      local screen_x, screen_y = ImGui.GetCursorScreenPos(ctx)
-
-      -- Position: text start + 25px right, item top - 8px up
-      ImGui.SetCursorScreenPos(ctx, text_x + 25, item_min_y - 8)
-
-      -- Style: lighter background for input field
-      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#FFFFFF15"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#FFFFFF20"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#FFFFFF25"))
-
-      -- Auto-focus and select all text on first show
-      if not state.rename_focus_set then
-        ImGui.SetKeyboardFocusHere(ctx, 0)
-        state.rename_focus_set = true
-      end
-
-      -- Use plain ImGui InputText for better control
-      ImGui.SetNextItemWidth(ctx, item_max_x - text_x - 30)
-      local rv, buf = ImGui.InputText(ctx, "##rename_" .. node_id, state.rename_buffer, ImGui.InputTextFlags_AutoSelectAll)
-
-      if rv then
-        state.rename_buffer = buf
-      end
-
-      ImGui.PopStyleColor(ctx, 3)
-
-      -- Restore cursor screen position
-      ImGui.SetCursorScreenPos(ctx, screen_x, screen_y)
-
-      -- Clicking away closes the edit (cancel)
-      if not ImGui.IsItemActive(ctx) and not ImGui.IsItemHovered(ctx) and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) then
-        state.renaming_node = nil
-        state.rename_buffer = ""
-        state.rename_focus_set = nil
-      end
-
-      -- Commit on Enter
-      if ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter) then
-        if state.rename_buffer ~= "" and state.rename_buffer ~= node.name then
-          if config.on_rename then
-            config.on_rename(node, state.rename_buffer)
-          end
-        end
-        state.renaming_node = nil
-        state.rename_buffer = ""
-        state.rename_focus_set = nil
-      end
-
-      -- Cancel on Escape or deactivate
-      if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) or (ImGui.IsItemDeactivated(ctx) and not ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) and not ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter)) then
-        state.renaming_node = nil
-        state.rename_buffer = ""
-        state.rename_focus_set = nil
       end
     end
 
