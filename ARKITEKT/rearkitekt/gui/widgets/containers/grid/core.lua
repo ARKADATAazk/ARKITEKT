@@ -642,7 +642,7 @@ function Grid:draw(ctx)
       end
       state.hover = is_hovered
 
-      self.render_tile(ctx, rect, item, state)
+      self.render_tile(ctx, rect, item, state, self)
 
       ::continue::
     end

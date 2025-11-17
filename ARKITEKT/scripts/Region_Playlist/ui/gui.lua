@@ -125,7 +125,21 @@ function M.create(State, AppConfig, settings)
         State.add_pending_destroy(key)
       end
     end,
-    
+
+    -- Single item rename (inline editing)
+    on_active_rename = function(item_key, new_name)
+      self.controller:rename_item(State.get_active_playlist_id(), item_key, new_name)
+    end,
+
+    -- Batch rename with wildcards
+    on_active_batch_rename = function(item_keys, pattern)
+      local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
+      local new_names = BatchRenameModal.apply_pattern_to_items(pattern, #item_keys)
+      for i, key in ipairs(item_keys) do
+        self.controller:rename_item(State.get_active_playlist_id(), key, new_names[i])
+      end
+    end,
+
     on_destroy_complete = function(key)
     end,
     

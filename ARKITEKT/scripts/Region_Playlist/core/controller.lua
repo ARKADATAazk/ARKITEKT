@@ -201,6 +201,33 @@ function Controller:rename_playlist(id, new_name)
   end)
 end
 
+function Controller:rename_item(playlist_id, item_key, new_name)
+  local playlist = self:_get_playlist(playlist_id)
+  if not playlist then return false, "Playlist not found" end
+
+  for _, item in ipairs(playlist.items) do
+    if item.key == item_key then
+      if item.type == "playlist" then
+        -- Rename playlist item
+        return self:rename_playlist(item.playlist_id, new_name)
+      else
+        -- Rename region in REAPER
+        local Regions = require('rearkitekt.reaper.regions')
+        local region = Regions.get_region_by_rid(item.rid)
+        if region then
+          return self:_with_undo(function()
+            Regions.set_region_name(region.id, new_name)
+            return true
+          end)
+        end
+        return false, "Region not found"
+      end
+    end
+  end
+
+  return false, "Item not found"
+end
+
 function Controller:set_playlist_color(id, color)
   local playlist = self:_get_playlist(id)
   if not playlist then

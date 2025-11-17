@@ -229,6 +229,68 @@ local function create_behaviors(rt)
         })
       end
     end,
+
+    -- Inline editing: Double-click to edit single tile
+    start_inline_edit = function(key)
+      local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
+      local playlist_items = rt.active_grid.get_items()
+      for _, item in ipairs(playlist_items) do
+        if item.key == key then
+          -- Get current name
+          local current_name
+          if item.type == "playlist" then
+            local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.playlist_id)
+            current_name = playlist and playlist.name or "Playlist"
+          else
+            local region = rt.get_region_by_rid(item.rid)
+            current_name = region and region.name or "Region"
+          end
+          GridInput.start_inline_edit(rt.active_grid, key, current_name)
+          break
+        end
+      end
+    end,
+
+    -- Inline edit complete callback
+    on_inline_edit_complete = function(key, new_name)
+      if rt.on_active_rename then
+        rt.on_active_rename(key, new_name)
+      end
+    end,
+
+    -- F2: Batch rename with wildcards
+    rename = function(selected_keys)
+      if not selected_keys or #selected_keys == 0 then return end
+
+      -- Single selection: start inline editing
+      if #selected_keys == 1 then
+        local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
+        local key = selected_keys[1]
+        local playlist_items = rt.active_grid.get_items()
+        for _, item in ipairs(playlist_items) do
+          if item.key == key then
+            local current_name
+            if item.type == "playlist" then
+              local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.playlist_id)
+              current_name = playlist and playlist.name or "Playlist"
+            else
+              local region = rt.get_region_by_rid(item.rid)
+              current_name = region and region.name or "Region"
+            end
+            GridInput.start_inline_edit(rt.active_grid, key, current_name)
+            break
+          end
+        end
+      else
+        -- Multiple selection: open batch rename modal
+        local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
+        BatchRenameModal.open(#selected_keys, function(pattern)
+          if rt.on_active_batch_rename then
+            rt.on_active_batch_rename(selected_keys, pattern)
+          end
+        end)
+      end
+    end,
   }
 end
 
@@ -256,11 +318,11 @@ local function create_copy_mode_check(rt)
 end
 
 local function create_render_tile(rt, tile_config)
-  return function(ctx, rect, item, state)
+  return function(ctx, rect, item, state, grid)
     local tile_height = rect[4] - rect[2]
-    ActiveTile.render(ctx, rect, item, state, rt.get_region_by_rid, rt.active_animator, 
-                    rt.on_repeat_cycle, rt.hover_config, tile_height, tile_config.border_thickness, 
-                    rt.app_bridge, rt.get_playlist_by_id)
+    ActiveTile.render(ctx, rect, item, state, rt.get_region_by_rid, rt.active_animator,
+                    rt.on_repeat_cycle, rt.hover_config, tile_height, tile_config.border_thickness,
+                    rt.app_bridge, rt.get_playlist_by_id, grid)
   end
 end
 

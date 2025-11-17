@@ -175,44 +175,58 @@ function M.draw_marching_ants(dl, rect, color, fx_config)
     fx_config.ants_thickness or 1, M.CONFIG.rounding, fx_config.ants_dash, fx_config.ants_gap, fx_config.ants_speed)
 end
 
-function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_bound_x)
+function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_bound_x, grid, rect)
   local fx_config = TileFXConfig.get()
   local accent_color = Colors.with_alpha(Colors.same_hue_variant(base_color, fx_config.index_saturation, fx_config.index_brightness, 0xFF), text_alpha)
   local name_color = Colors.with_alpha(Colors.adjust_brightness(fx_config.name_base_color, fx_config.name_brightness), text_alpha)
-  
+
   local index_str = string.format("%d", region.rid)
   local name_str = region.name or "Unknown"
   local separator = " "
-  
+
   -- Calculate widths
   local reserved_width = get_reserved_index_width(ctx)
   local index_w = ImGui.CalcTextSize(ctx, index_str)
   local sep_w = ImGui.CalcTextSize(ctx, separator)
-  
+
   -- Determine if index overflows reserved space
   local overflow = math.max(0, index_w - reserved_width)
-  
+
   -- Index shifts RIGHT when it overflows, title shifts by same amount
   local index_start_x = pos.x + overflow + (reserved_width - index_w)
   Draw.text(dl, index_start_x, pos.y, accent_color, index_str)
-  
+
   -- Separator position: shifts right by overflow amount
   local separator_x = pos.x + reserved_width + M.CONFIG.index_separator_spacing + overflow
   local separator_color = Colors.with_alpha(Colors.same_hue_variant(base_color, fx_config.separator_saturation, fx_config.separator_brightness, fx_config.separator_alpha), text_alpha)
   Draw.text(dl, separator_x, pos.y, separator_color, separator)
-  
+
   -- Name starts after separator (also shifted by overflow)
   local name_start_x = separator_x + sep_w
   local name_width = right_bound_x - name_start_x
+
+  -- Check if inline editing mode (if grid is provided)
+  if grid and rect then
+    local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
+    local item_key = grid.key and grid.key(region) or region.rid
+    local is_editing, edited_text = GridInput.handle_inline_edit_input(grid, ctx, item_key,
+      {rect[1] + name_start_x - pos.x, rect[2], rect[3], rect[4]}, name_str)
+
+    if is_editing then
+      -- Don't draw text while editing (InputText is drawn instead)
+      return
+    end
+  end
+
   local truncated_name = truncate_text(ctx, name_str, name_width)
   Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
 end
 
-function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, right_bound_x, name_color_override, actual_height, rect)
+function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, right_bound_x, name_color_override, actual_height, rect, grid)
   local fx_config = TileFXConfig.get()
-  
+
   local text_height = ImGui.CalcTextSize(ctx, "Tg")
-  
+
   -- Calculate chip position
   local reserved_width = get_reserved_index_width(ctx)
   local chip_x = pos.x + (reserved_width / 2) + M.CONFIG.chip_offset.x
@@ -222,7 +236,7 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
   else
     chip_center_y = pos.y + (text_height / 2) + M.CONFIG.chip_offset.y
   end
-  
+
   Chip.draw(ctx, {
     style = Chip.STYLE.INDICATOR,
     color = playlist_data.chip_color,
@@ -250,7 +264,22 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
   -- Name starts after reserved space + spacing
   local name_start_x = pos.x + reserved_width + M.CONFIG.index_separator_spacing
   local name_width = right_bound_x - name_start_x
-  local truncated_name = truncate_text(ctx, playlist_data.name, name_width)
+  local name_str = playlist_data.name
+
+  -- Check if inline editing mode (if grid is provided)
+  if grid and rect then
+    local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
+    local item_key = grid.key and grid.key(playlist_data) or playlist_data.id
+    local is_editing, edited_text = GridInput.handle_inline_edit_input(grid, ctx, item_key,
+      {rect[1] + name_start_x - pos.x, rect[2], rect[3], rect[4]}, name_str)
+
+    if is_editing then
+      -- Don't draw text while editing (InputText is drawn instead)
+      return
+    end
+  end
+
+  local truncated_name = truncate_text(ctx, name_str, name_width)
   Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
 end
 
