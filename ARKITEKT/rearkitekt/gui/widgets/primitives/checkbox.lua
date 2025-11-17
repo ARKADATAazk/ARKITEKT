@@ -189,22 +189,57 @@ end
 -- ============================================================================
 
 --- Draw a checkbox at specific coordinates
+--- Supports two calling conventions:
+--- 1. Panel header context: M.draw(ctx, dl, x, y, width, height, config, state)
+--- 2. Standalone context: M.draw(ctx, dl, x, y, label, is_checked, user_config, id)
 --- @param ctx ImGui context
 --- @param dl ImGui draw list
 --- @param x number X coordinate
 --- @param y number Y coordinate
---- @param label string Checkbox label text
---- @param is_checked boolean Current checked state
---- @param user_config table|nil Optional configuration overrides
---- @param id string Unique identifier for this checkbox
+--- @param param5 number|string Width (panel) or label (standalone)
+--- @param param6 number|boolean Height (panel) or is_checked (standalone)
+--- @param param7 table|nil Config
+--- @param param8 table|string State (panel) or id (standalone)
 --- @return number total_width Total width used (checkbox + label)
 --- @return boolean clicked True if checkbox was clicked
-function M.draw(ctx, dl, x, y, label, is_checked, user_config, id)
-  -- Apply style defaults
-  local config = Style.apply_defaults(CHECKBOX_DEFAULTS, user_config)
+function M.draw(ctx, dl, x, y, param5, param6, param7, param8)
+  local label, is_checked, config, id, instance, state
 
-  -- Get or create instance for animation
-  local instance = get_or_create_instance(id)
+  -- Detect calling convention
+  if type(param5) == "number" and type(param6) == "number" then
+    -- Panel header context: (ctx, dl, x, y, width, height, config, state)
+    local width, height = param5, param6
+    config = Style.apply_defaults(CHECKBOX_DEFAULTS, param7)
+    state = param8
+
+    -- Extract checkbox-specific params from config
+    label = config.label or ""
+    id = config.id or "checkbox"
+
+    -- Get checked state from element_state or config
+    if state and state.checkbox_value ~= nil then
+      is_checked = state.checkbox_value
+    elseif config.checked ~= nil then
+      is_checked = config.checked
+    else
+      is_checked = false
+    end
+
+    -- Create unique ID for panel context
+    if type(state) == "table" and state._panel_id then
+      id = string.format("%s_%s", state._panel_id, id)
+    end
+
+    instance = get_or_create_instance(id)
+  else
+    -- Standalone context: (ctx, dl, x, y, label, is_checked, user_config, id)
+    label = param5
+    is_checked = param6
+    local user_config = param7
+    id = param8
+    config = Style.apply_defaults(CHECKBOX_DEFAULTS, user_config)
+    instance = get_or_create_instance(id)
+  end
 
   -- Render checkbox box
   local is_hovered, is_active = render_checkbox(ctx, dl, x, y, config, instance, is_checked)
@@ -241,6 +276,19 @@ function M.draw(ctx, dl, x, y, label, is_checked, user_config, id)
   if id == "play_item_through_track" and (is_item_hovered or clicked or button_pressed or is_item_active) then
     reaper.ShowConsoleMsg(string.format("[CHECKBOX_WIDGET] id=%s, button_pressed=%s, clicked=%s, hovered=%s, active=%s\n",
       id, tostring(button_pressed), tostring(clicked), tostring(is_item_hovered), tostring(is_item_active)))
+  end
+
+  -- Handle interaction
+  if clicked then
+    local new_value = not is_checked
+
+    -- Panel context: Update state and call callback
+    if state then
+      state.checkbox_value = new_value
+      if config.on_change then
+        config.on_change(new_value)
+      end
+    end
   end
 
   -- Handle tooltip

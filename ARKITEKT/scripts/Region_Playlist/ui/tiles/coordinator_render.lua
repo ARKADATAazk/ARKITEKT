@@ -143,60 +143,6 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
 
   self.active_container:end_draw(ctx)
 
-  -- Inline Color Picker (renders on top at bottom-left if visible)
-  if self._active_color_picker_visible then
-    local picker_size = 195  -- 50% larger (130 * 1.5)
-    -- Position at bottom-left corner of active container
-    local picker_x = cursor_x + self.container_config.padding
-    local picker_y = cursor_y + height - picker_size - self.container_config.padding + 60  -- Moved down 70px
-
-    ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
-
-    -- Wrap in a child region to ensure proper input handling
-    local child_flags = ImGui.ChildFlags_None
-    if ImGui.BeginChild(ctx, "ActiveColorPickerRegion", picker_size, picker_size, child_flags) then
-      ColorPickerWindow.render_inline(ctx, "active_recolor_inline", {
-        size = picker_size,
-        on_change = function(color)
-          -- Batch apply color to all selected regions/playlists
-          if self.active_grid and self.active_grid.selection and self.controller then
-            local selected_keys = self.active_grid.selection:selected_keys()
-            local rids = {}
-            local playlist_ids = {}
-
-            for _, key in ipairs(selected_keys) do
-              -- Collect regions: "active_123"
-              local rid = key:match("^active_(%d+)$")
-              if rid then
-                table.insert(rids, tonumber(rid))
-              end
-
-              -- Collect playlists: "active_playlist_abc-def"
-              local playlist_id = key:match("^active_playlist_(.+)$")
-              if playlist_id then
-                table.insert(playlist_ids, playlist_id)
-              end
-            end
-
-            -- Batch update regions
-            if #rids > 0 then
-              self.controller:set_region_colors_batch(rids, color)
-            end
-
-            -- Update playlists individually (usually fewer playlists)
-            for _, playlist_id in ipairs(playlist_ids) do
-              self.controller:set_playlist_color(playlist_id, color)
-            end
-          end
-        end,
-        on_close = function()
-          self._active_color_picker_visible = false
-        end,
-      })
-      ImGui.EndChild(ctx)
-    end
-  end
-
   -- Actions context menu
   if self._actions_menu_visible then
     ImGui.OpenPopup(ctx, "ActionsMenu")
@@ -204,33 +150,116 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   end
 
   if ContextMenu.begin(ctx, "ActionsMenu") then
-    if ContextMenu.item(ctx, "Recolor") then
-      -- Toggle behavior: close if already open
-      if self._active_color_picker_visible then
-        self._active_color_picker_visible = false
-      else
-        -- Get first selected item's color as initial color
-        local initial_color = nil
-        if self.active_grid and self.active_grid.selection then
-          local selected_keys = self.active_grid.selection:selected_keys()
-          for _, key in ipairs(selected_keys) do
-            local rid = key:match("^active_(%d+)$")
-            if rid then
-              local region = State.get_region_by_rid(tonumber(rid))
-              if region and region.color then
-                initial_color = region.color
-                break
-              end
-            end
+    if ContextMenu.item(ctx, "Crop Project to Playlist") then
+      reaper.ShowConsoleMsg("[Active Menu] Crop Project to Playlist clicked\n")
+      -- Get ALL playlist items from active playlist
+      local playlist = State.get_active_playlist()
+      local playlist_items = {}
+
+      reaper.ShowConsoleMsg("[Active Menu] Active playlist: " .. tostring(playlist and playlist.id or "nil") .. "\n")
+      if playlist then
+        reaper.ShowConsoleMsg("[Active Menu] Playlist has " .. tostring(playlist.items and #playlist.items or 0) .. " items\n")
+      end
+
+      if playlist and playlist.items then
+        for _, item in ipairs(playlist.items) do
+          if item.type == "region" and item.rid then
+            reaper.ShowConsoleMsg("[Active Menu] Found region item with RID: " .. tostring(item.rid) .. " reps: " .. tostring(item.reps or 1) .. "\n")
+            table.insert(playlist_items, {
+              rid = item.rid,
+              reps = item.reps or 1
+            })
           end
         end
+      else
+        reaper.ShowConsoleMsg("[Active Menu] No active playlist or playlist has no items\n")
+      end
 
-        -- Show inline color picker
-        self._active_color_picker_visible = true
-        ColorPickerWindow.show_inline("active_recolor_inline", initial_color)
+      reaper.ShowConsoleMsg("[Active Menu] Total playlist items to crop: " .. #playlist_items .. "\n")
+      if #playlist_items > 0 then
+        local RegionOps = require('rearkitekt.reaper.region_operations')
+        RegionOps.crop_to_playlist(playlist_items)
+        reaper.ShowConsoleMsg("[Active Menu] Crop operation completed\n")
+      else
+        reaper.ShowConsoleMsg("[Active Menu] No playlist items found, operation skipped\n")
       end
       ImGui.CloseCurrentPopup(ctx)
     end
+
+    if ContextMenu.item(ctx, "Crop to Playlist (New Tab)") then
+      reaper.ShowConsoleMsg("[Active Menu] Crop to Playlist (New Tab) clicked\n")
+      -- Get the full active playlist object (not just items)
+      local playlist = State.get_active_playlist()
+
+      if playlist and playlist.items then
+        -- Build playlist items array
+        local playlist_items = {}
+        for _, item in ipairs(playlist.items) do
+          if item.type == "region" and item.rid then
+            table.insert(playlist_items, {
+              rid = item.rid,
+              reps = item.reps or 1
+            })
+          end
+        end
+
+        reaper.ShowConsoleMsg("[Active Menu] Total playlist items to crop (new tab): " .. #playlist_items .. "\n")
+        if #playlist_items > 0 then
+          -- Pass both the playlist structure and items to preserve playlist
+          local RegionOps = require('rearkitekt.reaper.region_operations')
+          RegionOps.crop_to_playlist_new_tab(playlist_items, playlist.name, playlist.chip_color)
+        end
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ContextMenu.item(ctx, "Append Playlist to Project") then
+      -- Get all playlist items from active playlist
+      local playlist = State.get_active_playlist()
+      local playlist_items = {}
+
+      if playlist and playlist.items then
+        for _, item in ipairs(playlist.items) do
+          if item.type == "region" and item.rid then
+            table.insert(playlist_items, {
+              rid = item.rid,
+              reps = item.reps or 1
+            })
+          end
+        end
+      end
+
+      if #playlist_items > 0 then
+        local RegionOps = require('rearkitekt.reaper.region_operations')
+        RegionOps.append_playlist_to_project(playlist_items)
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ContextMenu.item(ctx, "Paste Playlist at Edit Cursor") then
+      -- Get all playlist items from active playlist
+      local playlist = State.get_active_playlist()
+      local playlist_items = {}
+
+      if playlist and playlist.items then
+        for _, item in ipairs(playlist.items) do
+          if item.type == "region" and item.rid then
+            table.insert(playlist_items, {
+              rid = item.rid,
+              reps = item.reps or 1
+            })
+          end
+        end
+      end
+
+      if #playlist_items > 0 then
+        local RegionOps = require('rearkitekt.reaper.region_operations')
+        RegionOps.paste_playlist_at_cursor(playlist_items)
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ContextMenu.separator(ctx) then end
 
     if ContextMenu.item(ctx, "Import from SWS Region Playlist") then
       self._sws_import_requested = true
@@ -357,58 +386,70 @@ function M.draw_pool(self, ctx, regions, height)
 
   self.pool_container:end_draw(ctx)
 
-  -- Inline Color Picker (renders on top at bottom-left if visible)
+  -- Inline Color Picker for Pool (renders on top at bottom-left)
   if self._pool_color_picker_visible then
-    local picker_size = 195  -- 50% larger (130 * 1.5)
-    -- Position at bottom-left corner of pool container
+    local picker_size = 130
+
+    -- Position at bottom-left corner (moved down 30px)
     local picker_x = cursor_x + self.container_config.padding
-    local picker_y = cursor_y + height - picker_size - self.container_config.padding + 60  -- Moved down 70px
+    local picker_y = cursor_y + height - picker_size - self.container_config.padding + 10
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
-    -- Wrap in a child region to ensure proper input handling
-    local child_flags = ImGui.ChildFlags_None
-    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size, child_flags) then
+    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size + 20, 0) then
       ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
         size = picker_size,
         on_change = function(color)
-          -- Batch apply color to all selected regions/playlists
-          if self.pool_grid and self.pool_grid.selection and self.controller then
-            local selected_keys = self.pool_grid.selection:selected_keys()
-            local rids = {}
-            local playlist_ids = {}
+          if not self.controller then return end
 
+          local rids = {}
+          local playlist_ids = {}
+
+          -- Check Pool grid selections only
+          if self.pool_grid and self.pool_grid.selection then
+            local selected_keys = self.pool_grid.selection:selected_keys()
             for _, key in ipairs(selected_keys) do
-              -- Collect regions: "pool_123"
               local rid = key:match("^pool_(%d+)$")
               if rid then
                 table.insert(rids, tonumber(rid))
               end
-
-              -- Collect playlists: "pool_playlist_abc-def"
               local playlist_id = key:match("^pool_playlist_(.+)$")
               if playlist_id then
                 table.insert(playlist_ids, playlist_id)
               end
             end
+          end
 
-            -- Batch update regions
-            if #rids > 0 then
-              self.controller:set_region_colors_batch(rids, color)
-            end
-
-            -- Update playlists individually (usually fewer playlists)
-            for _, playlist_id in ipairs(playlist_ids) do
-              self.controller:set_playlist_color(playlist_id, color)
-            end
+          -- Apply colors to Pool selections
+          if #rids > 0 then
+            self.controller:set_region_colors_batch(rids, color)
+          end
+          for _, playlist_id in ipairs(playlist_ids) do
+            self.controller:set_playlist_color(playlist_id, color)
           end
         end,
         on_close = function()
           self._pool_color_picker_visible = false
         end,
       })
+
+      -- Close button - moved up 30px and left 13px from center
+      local close_button_size = 16
+      local close_x = (picker_size - close_button_size) / 2 - 13
+      ImGui.SetCursorPos(ctx, close_x, picker_size - 28)
+
+      ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 0, 0)
+      if ImGui.Button(ctx, "X##close_pool_picker", close_button_size, close_button_size) then
+        self._pool_color_picker_visible = false
+      end
+      ImGui.PopStyleVar(ctx, 1)
+
       ImGui.EndChild(ctx)
     end
+
+    ImGui.PopStyleVar(ctx, 2)
   end
 
   -- Pool Actions context menu
@@ -423,7 +464,7 @@ function M.draw_pool(self, ctx, regions, height)
       if self._pool_color_picker_visible then
         self._pool_color_picker_visible = false
       else
-        -- Get first selected item's color as initial color
+        -- Get first selected item's color from Pool as initial color
         local initial_color = nil
         if self.pool_grid and self.pool_grid.selection then
           local selected_keys = self.pool_grid.selection:selected_keys()
@@ -442,6 +483,60 @@ function M.draw_pool(self, ctx, regions, height)
         -- Show inline color picker
         self._pool_color_picker_visible = true
         ColorPickerWindow.show_inline("pool_recolor_inline", initial_color)
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ContextMenu.separator(ctx) then end
+
+    if ContextMenu.item(ctx, "Append Selected Regions to Project") then
+      reaper.ShowConsoleMsg("[Pool Menu] Append Selected Regions clicked\n")
+      -- Get selected region RIDs from pool grid
+      local selected_keys = self.pool_grid and self.pool_grid.selection and self.pool_grid.selection:selected_keys() or {}
+      reaper.ShowConsoleMsg("[Pool Menu] Selected keys count: " .. #selected_keys .. "\n")
+      local rids = {}
+      for _, key in ipairs(selected_keys) do
+        reaper.ShowConsoleMsg("[Pool Menu] Key: " .. tostring(key) .. "\n")
+        local rid = key:match("^pool_(%d+)$")
+        if rid then
+          reaper.ShowConsoleMsg("[Pool Menu] Matched RID: " .. tostring(rid) .. "\n")
+          table.insert(rids, tonumber(rid))
+        end
+      end
+
+      reaper.ShowConsoleMsg("[Pool Menu] Total RIDs to append: " .. #rids .. "\n")
+      if #rids > 0 then
+        local RegionOps = require('rearkitekt.reaper.region_operations')
+        RegionOps.append_regions_to_project(rids)
+        reaper.ShowConsoleMsg("[Pool Menu] Append operation completed\n")
+      else
+        reaper.ShowConsoleMsg("[Pool Menu] No RIDs found, operation skipped\n")
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ContextMenu.item(ctx, "Paste Selected Regions at Edit Cursor") then
+      reaper.ShowConsoleMsg("[Pool Menu] Paste Selected Regions clicked\n")
+      -- Get selected region RIDs from pool grid
+      local selected_keys = self.pool_grid and self.pool_grid.selection and self.pool_grid.selection:selected_keys() or {}
+      reaper.ShowConsoleMsg("[Pool Menu] Selected keys count: " .. #selected_keys .. "\n")
+      local rids = {}
+      for _, key in ipairs(selected_keys) do
+        reaper.ShowConsoleMsg("[Pool Menu] Key: " .. tostring(key) .. "\n")
+        local rid = key:match("^pool_(%d+)$")
+        if rid then
+          reaper.ShowConsoleMsg("[Pool Menu] Matched RID: " .. tostring(rid) .. "\n")
+          table.insert(rids, tonumber(rid))
+        end
+      end
+
+      reaper.ShowConsoleMsg("[Pool Menu] Total RIDs to paste: " .. #rids .. "\n")
+      if #rids > 0 then
+        local RegionOps = require('rearkitekt.reaper.region_operations')
+        RegionOps.paste_regions_at_cursor(rids)
+        reaper.ShowConsoleMsg("[Pool Menu] Paste operation completed\n")
+      else
+        reaper.ShowConsoleMsg("[Pool Menu] No RIDs found, operation skipped\n")
       end
       ImGui.CloseCurrentPopup(ctx)
     end

@@ -554,31 +554,45 @@ function Panel:begin_draw(ctx)
     self.config.rounding
   )
   
-  -- Header configuration
+  -- Header and footer configuration (dual toolbar support)
   local header_cfg = self.config.header or DEFAULTS.header
+  local footer_cfg = self.config.footer
+
   local header_height = 0
-  local header_position = "top"
+  local footer_height = 0
   local content_y1 = y1
   local content_y2 = y2
-  
+
+  -- Draw header at top if enabled (unless explicitly positioned at bottom)
   if header_cfg.enabled then
     header_height = header_cfg.height or 30
-    header_position = header_cfg.position or "top"
-    
-    if header_position == "bottom" then
-      -- Bottom header: draw at bottom, content above
-      Header.draw(ctx, dl, x1, y2 - header_height, w, header_height, self, self.config, self.config.rounding)
-      content_y1 = y1
-      content_y2 = y2 - header_height
-    else
-      -- Top header: draw at top, content below
+    local header_position = header_cfg.position or "top"
+
+    if header_position == "top" then
       Header.draw(ctx, dl, x1, y1, w, header_height, self, self.config, self.config.rounding)
       content_y1 = y1 + header_height
-      content_y2 = y2
+    elseif header_position == "bottom" then
+      -- Header at bottom (when no footer exists)
+      Header.draw(ctx, dl, x1, y2 - header_height, w, header_height, self, self.config, self.config.rounding)
+      content_y2 = y2 - header_height
     end
   end
-  
+
+  -- Draw footer at bottom if enabled (always at bottom, independent of header)
+  if footer_cfg and footer_cfg.enabled then
+    footer_height = footer_cfg.height or 30
+    -- Ensure footer has position="bottom" for proper corner rounding
+    footer_cfg.position = "bottom"
+    -- Temporarily swap footer into header position for rendering
+    local saved_header = self.config.header
+    self.config.header = footer_cfg
+    Header.draw(ctx, dl, x1, y2 - footer_height, w, footer_height, self, self.config, self.config.rounding)
+    self.config.header = saved_header
+    content_y2 = content_y2 - footer_height
+  end
+
   self.header_height = header_height
+  self.footer_height = footer_height
 
   -- Draw background pattern (smart header detection: only draw under header if it's transparent)
   -- Apply clipping to respect rounded corners and border insets
@@ -628,11 +642,21 @@ function Panel:begin_draw(ctx)
   
   -- Draw header elements on top
   if header_cfg.enabled then
-    if header_position == "bottom" then
-      Header.draw_elements(ctx, dl, x1, y2 - header_height, w, header_height, self, self.config)
-    else
+    local header_position = header_cfg.position or "top"
+    if header_position == "top" then
       Header.draw_elements(ctx, dl, x1, y1, w, header_height, self, self.config)
+    elseif header_position == "bottom" then
+      Header.draw_elements(ctx, dl, x1, y2 - header_height, w, header_height, self, self.config)
     end
+  end
+
+  -- Draw footer elements if enabled
+  if footer_cfg and footer_cfg.enabled then
+    -- Temporarily swap footer into header position for rendering
+    local saved_header = self.config.header
+    self.config.header = footer_cfg
+    Header.draw_elements(ctx, dl, x1, y2 - footer_height, w, footer_height, self, self.config)
+    self.config.header = saved_header
   end
 
   -- Store panel bounds for corner buttons (drawn later in end_draw to be on top)

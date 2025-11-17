@@ -1,6 +1,6 @@
 -- @noindex
--- ThemeAdjuster v2 - Main Entry Point
--- Refactored to use ARKITEKT framework
+-- ThemeAdjuster main_panel_test.lua
+-- Test version using Panel tab_strip instead of Shell menutabs
 
 -- ============================================================================
 -- PACKAGE PATH SETUP
@@ -42,7 +42,7 @@ addpath(join(REARKITEKT_ROOT, "?/init.lua"))
 local Shell = require("rearkitekt.app.shell")
 local Config = require("ThemeAdjuster.core.config")
 local State = require("ThemeAdjuster.core.state")
-local GUI = require("ThemeAdjuster.ui.gui")
+local GUI = require("ThemeAdjuster.ui.gui_panel_test")  -- Use test version
 local StatusConfig = require("ThemeAdjuster.ui.status")
 local Colors = require("rearkitekt.core.colors")
 
@@ -66,12 +66,12 @@ State.initialize(settings)
 local gui = GUI.create(State, Config, settings)
 
 -- ============================================================================
--- RUN APPLICATION
+-- RUN APPLICATION (NO MENUTABS)
 -- ============================================================================
 
 Shell.run({
-  title        = "Theme Adjuster",
-  version      = "(1.0.0)",
+  title        = "Enhanced 6.0 Theme Adjuster (Panel Tab Test)",
+  version      = "v2.0.0-test",
   draw         = function(ctx, shell_state) gui:draw(ctx, shell_state.window, shell_state) end,
   settings     = settings,
   style        = StyleOK and Style or nil,
@@ -82,31 +82,6 @@ Shell.run({
   min_size     = { w = 700, h = 500 },
   get_status_func = StatusConfig.get_status_func and StatusConfig.get_status_func(State) or nil,
   content_padding = 12,
-  tabs = {
-    items = {
-      { id = "GLOBAL", label = "Global" },
-      { id = "ASSEMBLER", label = "Assembler" },
-      { id = "TCP", label = "TCP" },
-      { id = "MCP", label = "MCP" },
-      { id = "COLORS", label = "Colors" },
-      { id = "ENVELOPES", label = "Envelopes" },
-      { id = "TRANSPORT", label = "Transport" },
-      { id = "DEBUG", label = "Debug" },
-    },
-    active = State.get_active_tab(),
-    style = {
-      active_indicator_height = 0,  -- Remove accent line below active tab
-      spacing_after = 2,             -- Reduce spacing below tabs (was 4)
-    },
-    colors = {
-      bg_active   = hexrgb("#242424"),
-      bg_clicked  = hexrgb("#2A2A2A"),
-      bg_hovered  = hexrgb("#202020"),
-      bg_inactive = hexrgb("#1A1A1A"),
-      border      = hexrgb("#000000"),
-      text_active = hexrgb("#FFFFFF"),
-      text_inact  = hexrgb("#BBBBBB"),
-    },
-  },
+  -- NO tabs config - using Panel tab_strip instead
   fonts        = {},
 })

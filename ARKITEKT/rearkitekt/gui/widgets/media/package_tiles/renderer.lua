@@ -188,7 +188,7 @@ function M.TileRenderer.conflicts(ctx, dl, pkg, P, tile_x, tile_y, tile_w)
   end
 end
 
-function M.TileRenderer.checkbox(ctx, pkg, P, cb_rects, tile_x, tile_y, tile_w, tile_h)
+function M.TileRenderer.checkbox(ctx, pkg, P, cb_rects, tile_x, tile_y, tile_w, tile_h, settings)
   local order_index = 0
   for i, pid in ipairs(pkg.order) do
     if pid == P.id then
@@ -196,24 +196,32 @@ function M.TileRenderer.checkbox(ctx, pkg, P, cb_rects, tile_x, tile_y, tile_w, 
       break
     end
   end
-  
+
   local badge = '#' .. tostring(order_index)
   local _, bh = ImGui.CalcTextSize(ctx, badge)
   local size = math.max(M.CONFIG.checkbox.min_size, math.floor(bh + 2))
-  
+
   local x2 = tile_x + tile_w - M.CONFIG.checkbox.margin
   local y1 = tile_y + M.CONFIG.checkbox.margin
   local x1 = x2 - size
   local y2 = y1 + size
-  
+
   cb_rects[P.id] = {x1, y1, x2, y2}
-  
+
   ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.PushID(ctx, 'cb_visual_' .. P.id)
+  ImGui.PushID(ctx, 'cb_' .. P.id)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, M.CONFIG.checkbox.padding_x, M.CONFIG.checkbox.padding_y)
-  ImGui.Checkbox(ctx, '##enable', pkg.active[P.id] == true)
+  local clicked, checked = ImGui.Checkbox(ctx, '##enable', pkg.active[P.id] == true)
+  if clicked then
+    pkg.active[P.id] = checked
+    if settings then settings:set('pkg_active', pkg.active) end
+  end
   ImGui.PopStyleVar(ctx)
   ImGui.PopID(ctx)
+
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.SetTooltip(ctx, pkg.active[P.id] and "Disable package" or "Enable package")
+  end
 end
 
 function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
