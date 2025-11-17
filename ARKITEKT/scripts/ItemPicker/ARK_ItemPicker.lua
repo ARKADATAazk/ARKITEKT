@@ -20,6 +20,12 @@ package.path = arkitekt_path.. "?.lua;" .. arkitekt_path.. "?/init.lua;" ..
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
+-- ============================================================================
+-- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
+-- ============================================================================
+local ProfilerInit = require('rearkitekt.debug.profiler_init')
+local profiler_enabled = ProfilerInit.init()
+
 -- Check dependencies
 local has_imgui, imgui_test = pcall(require, 'imgui')
 if not has_imgui then
@@ -71,6 +77,14 @@ Controller.init(reaper_interface, utils)
 -- Create GUI
 local gui = GUI.new(Config, State, Controller, visualization, drag_handler)
 
+-- ============================================================================
+-- PROFILER INSTRUMENTATION (After modules loaded)
+-- ============================================================================
+if profiler_enabled then
+  ProfilerInit.attach_locals()
+  ProfilerInit.launch_window()
+end
+
 local function cleanup()
   SetButtonState()
   reaper.Main_OnCommand(reaper.NamedCommandLookup("_SWS_STOPPREVIEW"), 0)
@@ -117,7 +131,7 @@ end
 -- Run based on mode
 if USE_OVERLAY then
   -- OVERLAY MODE
-  local ctx = ImGui.CreateContext("Item Picker")
+  local ctx = ImGui.CreateContext("Item Picker" .. (profiler_enabled and " [Profiling]" or ""))
   local fonts = load_fonts(ctx)
 
   -- Create overlay manager
@@ -175,7 +189,7 @@ if USE_OVERLAY then
 
   -- Create runtime
   local runtime = Runtime.new({
-    title = "Item Picker",
+    title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
     ctx = ctx,
 
     on_frame = function(ctx)
@@ -209,7 +223,7 @@ else
   local Shell = require('rearkitekt.app.shell')
 
   Shell.run({
-    title = "Item Picker",
+    title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
     version = "1.0.0",
 
     show_titlebar = true,
