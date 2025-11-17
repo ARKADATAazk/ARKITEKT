@@ -170,17 +170,20 @@ function PackagesView:draw_header_content(ctx)
 
   ImGui.SameLine(ctx)
 
-  -- Tile size slider
-  ImGui.SetNextItemWidth(ctx, 140)
+  -- Tile size slider (modern styled)
+  ImGui.Text(ctx, 'Tile Size')
+  ImGui.SameLine(ctx)
+  ImGui.SetNextItemWidth(ctx, 160)
   local tile_size = self.State.get_tile_size()
   local size_changed, new_size = ImGui.SliderInt(ctx, '##tilesize', tile_size, 160, 420)
   if size_changed then
     self.State.set_tile_size(new_size)
     self.package_model.tile = new_size
   end
-
   ImGui.SameLine(ctx)
-  ImGui.Text(ctx, 'Size')
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
+  ImGui.Text(ctx, string.format('%dpx', tile_size))
+  ImGui.PopStyleColor(ctx)
 
   ImGui.SameLine(ctx)
 

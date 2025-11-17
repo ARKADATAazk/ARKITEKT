@@ -109,32 +109,49 @@ function GlobalView:draw(ctx, shell_state)
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 10)
 
-    -- Calculate centered layout
-    local label_w = 100
-    local value_w = 60
-    local slider_w = avail_w - label_w - value_w - 40
-    local label_x = (avail_w - slider_w - value_w - 16) / 2
+    -- Modern responsive slider layout
+    local LABEL_WIDTH = 100
+    local VALUE_WIDTH = 70
+    local SLIDER_HEIGHT = 24
+    local SPACING = 12
+    local MIN_SLIDER_WIDTH = 200
+    local MAX_SLIDER_WIDTH = 500
 
-    -- Helper function for centered slider rows
+    -- Calculate responsive slider width
+    local total_padding = 24 + (SPACING * 2) -- Left padding + gaps
+    local available_for_slider = avail_w - LABEL_WIDTH - VALUE_WIDTH - total_padding
+    local slider_w = math.max(MIN_SLIDER_WIDTH, math.min(MAX_SLIDER_WIDTH, available_for_slider))
+
+    -- Calculate starting X position for centered layout
+    local total_row_width = LABEL_WIDTH + SPACING + slider_w + SPACING + VALUE_WIDTH
+    local start_x = (avail_w - total_row_width) / 2
+
+    -- Helper function for modern aligned slider rows
     local function draw_slider_row(label, value_text, slider_func, slider_id, slider_value, slider_opts)
-      -- Center the label
-      local cursor_x = ImGui.GetCursorPosX(ctx)
-      ImGui.SetCursorPosX(ctx, cursor_x + label_x - label_w)
+      local cursor_x_base = ImGui.GetCursorPosX(ctx)
 
+      -- LEFT LABEL (right-aligned)
+      local label_text_w = ImGui.CalcTextSize(ctx, label)
+      ImGui.SetCursorPosX(ctx, cursor_x_base + start_x + LABEL_WIDTH - label_text_w)
       ImGui.AlignTextToFramePadding(ctx)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
       ImGui.Text(ctx, label)
-      ImGui.SameLine(ctx, 0, 8)
+      ImGui.PopStyleColor(ctx)
 
-      -- Slider
+      -- SLIDER (fixed width, centered vertically)
+      ImGui.SameLine(ctx, 0, SPACING)
+      slider_opts.w = slider_w
+      slider_opts.h = SLIDER_HEIGHT
       local changed, new_val = slider_func(ctx, slider_id, slider_value, slider_opts)
 
-      -- Value text on the right
-      ImGui.SameLine(ctx, 0, 8)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
+      -- RIGHT VALUE (left-aligned)
+      ImGui.SameLine(ctx, 0, SPACING)
+      ImGui.AlignTextToFramePadding(ctx)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
       ImGui.Text(ctx, value_text)
       ImGui.PopStyleColor(ctx)
 
-      ImGui.Dummy(ctx, 0, 6)
+      ImGui.Dummy(ctx, 0, 8)
       return changed, new_val
     end
 
@@ -146,7 +163,7 @@ function GlobalView:draw(ctx, shell_state)
       HueSlider.draw_gamma,
       "##gamma",
       ((self.gamma - 500) / 1500) * 100,  -- Map 500-2000 to 0-100
-      {w = slider_w, h = 22, default = 33.33}  -- 1000 is 33.33% of range
+      {default = 33.33}  -- 1000 is 33.33% of range
     )
     if changed then
       self.gamma = math.floor((new_gamma_normalized / 100) * 1500 + 500 + 0.5)
@@ -164,7 +181,7 @@ function GlobalView:draw(ctx, shell_state)
       HueSlider.draw_gamma,
       "##highlights",
       (self.highlights / 512) * 100,  -- Map 0-512 to 0-100
-      {w = slider_w, h = 22, default = 50}  -- 256 is 50% of range
+      {default = 50}  -- 256 is 50% of range
     )
     if changed then
       self.highlights = math.floor((new_highlights_normalized / 100) * 512 + 0.5)
@@ -182,7 +199,7 @@ function GlobalView:draw(ctx, shell_state)
       HueSlider.draw_gamma,
       "##midtones",
       (self.midtones / 512) * 100,  -- Map 0-512 to 0-100
-      {w = slider_w, h = 22, default = 50}  -- 256 is 50% of range
+      {default = 50}  -- 256 is 50% of range
     )
     if changed then
       self.midtones = math.floor((new_midtones_normalized / 100) * 512 + 0.5)
@@ -200,7 +217,7 @@ function GlobalView:draw(ctx, shell_state)
       HueSlider.draw_gamma,
       "##shadows",
       (self.shadows / 512) * 100,  -- Map 0-512 to 0-100
-      {w = slider_w, h = 22, default = 50}  -- 256 is 50% of range
+      {default = 50}  -- 256 is 50% of range
     )
     if changed then
       self.shadows = math.floor((new_shadows_normalized / 100) * 512 + 0.5)
@@ -218,7 +235,7 @@ function GlobalView:draw(ctx, shell_state)
       function(c, i, v, o) return HueSlider.draw_saturation(c, i, v, 210, o) end,
       "##saturation",
       (self.saturation / 512) * 100,  -- Map 0-512 to 0-100
-      {w = slider_w, h = 22, default = 50, brightness = 80}  -- 256 is 50% of range
+      {default = 50, brightness = 80}  -- 256 is 50% of range
     )
     if changed then
       self.saturation = math.floor((new_saturation_normalized / 100) * 512 + 0.5)
@@ -236,7 +253,7 @@ function GlobalView:draw(ctx, shell_state)
       HueSlider.draw_hue,
       "##tint",
       ((self.tint / 384) * 360),
-      {w = slider_w, h = 22, default = 180, saturation = 75, brightness = 80}
+      {default = 180, saturation = 75, brightness = 80}
     )
     if changed then
       self.tint = math.floor((new_tint_normalized / 360) * 384 + 0.5)
