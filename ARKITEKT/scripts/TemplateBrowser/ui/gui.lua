@@ -14,6 +14,8 @@ local TileAnim = require('rearkitekt.gui.rendering.tile.animator')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
 local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
 local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_config')
+local Tabs = require('rearkitekt.gui.widgets.navigation.tabs')
+local Button = require('rearkitekt.gui.widgets.primitives.button')
 
 local M = {}
 local GUI = {}
@@ -757,18 +759,7 @@ end
 local function draw_left_panel(ctx, state, config, width, height)
   BeginChildCompat(ctx, "LeftPanel", width, height, true)
 
-  -- Tab bar
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-
-  local tab_width = width / 3
-  local tab_flags = 0
-
-  -- Save current tab state BEFORE buttons change it
-  local was_directory = (state.left_panel_tab == "directory")
-  local was_vsts = (state.left_panel_tab == "vsts")
-  local was_tags = (state.left_panel_tab == "tags")
-
-  -- Count active filters
+  -- Count active filters for badges
   local fx_filter_count = 0
   for _ in pairs(state.filter_fx) do
     fx_filter_count = fx_filter_count + 1
@@ -779,46 +770,24 @@ local function draw_left_panel(ctx, state, config, width, height)
     tag_filter_count = tag_filter_count + 1
   end
 
-  -- DIRECTORY tab
-  if was_directory then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
-  end
-  if ImGui.Button(ctx, "DIRECTORY", tab_width - 2, 24) then
-    state.left_panel_tab = "directory"
-  end
-  if was_directory then
-    ImGui.PopStyleColor(ctx)
-  end
+  -- Draw tabs using rearkitekt Tabs widget
+  local tabs_def = {
+    { id = "directory", label = "DIRECTORY" },
+    { id = "vsts", label = "VSTS", badge = fx_filter_count > 0 and fx_filter_count or nil },
+    { id = "tags", label = "TAGS", badge = tag_filter_count > 0 and tag_filter_count or nil },
+  }
 
-  ImGui.SameLine(ctx)
+  local clicked_tab = Tabs.draw_at_cursor(ctx, tabs_def, state.left_panel_tab, {
+    height = 24,
+    available_width = width,
+    bg_color = config.COLORS.header_bg,
+    active_color = config.COLORS.selected_bg,
+    text_color = config.COLORS.text,
+  })
 
-  -- VSTS tab
-  local vsts_label = fx_filter_count > 0 and string.format("VSTS (%d)", fx_filter_count) or "VSTS"
-  if was_vsts then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
+  if clicked_tab then
+    state.left_panel_tab = clicked_tab
   end
-  if ImGui.Button(ctx, vsts_label, tab_width - 2, 24) then
-    state.left_panel_tab = "vsts"
-  end
-  if was_vsts then
-    ImGui.PopStyleColor(ctx)
-  end
-
-  ImGui.SameLine(ctx)
-
-  -- TAGS tab
-  local tags_label = tag_filter_count > 0 and string.format("TAGS (%d)", tag_filter_count) or "TAGS"
-  if was_tags then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
-  end
-  if ImGui.Button(ctx, tags_label, tab_width - 2, 24) then
-    state.left_panel_tab = "tags"
-  end
-  if was_tags then
-    ImGui.PopStyleColor(ctx)
-  end
-
-  ImGui.PopStyleColor(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
