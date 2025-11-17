@@ -194,16 +194,41 @@ function GUI:initialize_once(ctx)
   self.initialized = true
 end
 
+-- Count templates in a folder and its subfolders
+local function count_templates_in_folder(folder_path, all_templates)
+  local count = 0
+
+  -- Normalize folder path for comparison (remove trailing slash)
+  local normalized_folder = folder_path:gsub("[/\\]+$", "")
+
+  for _, tmpl in ipairs(all_templates) do
+    -- Check if template's folder starts with this folder path
+    local tmpl_folder = tmpl.folder or ""
+    tmpl_folder = tmpl_folder:gsub("[/\\]+$", "")
+
+    -- Match if template is in this folder or any subfolder
+    if tmpl_folder == normalized_folder or tmpl_folder:find("^" .. normalized_folder:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") .. "[/\\]") then
+      count = count + 1
+    end
+  end
+
+  return count
+end
+
 -- Convert folder tree to TreeView format with colors from metadata
-local function prepare_tree_nodes(node, metadata)
+local function prepare_tree_nodes(node, metadata, all_templates)
   if not node then return {} end
 
   local function convert_node(n)
+    -- Count templates in this folder
+    local template_count = count_templates_in_folder(n.path or "", all_templates or {})
+
     local tree_node = {
       id = n.path,
       name = n.name,
       path = n.path,
       full_path = n.full_path,
+      template_count = template_count,
       children = {},
     }
 
@@ -235,7 +260,7 @@ end
 -- Draw folder tree using TreeView widget
 local function draw_folder_tree(ctx, state, config)
   -- Prepare tree nodes from state.folders
-  local tree_nodes = prepare_tree_nodes(state.folders, state.metadata)
+  local tree_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
 
   if #tree_nodes == 0 then
     return
@@ -253,6 +278,7 @@ local function draw_folder_tree(ctx, state, config)
   TreeView.draw(ctx, tree_nodes, tree_state, {
     enable_rename = true,
     show_colors = true,
+    show_template_count = true,
 
     -- Selection callback
     on_select = function(node)

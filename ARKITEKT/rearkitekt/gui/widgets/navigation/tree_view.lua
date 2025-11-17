@@ -166,6 +166,16 @@ local function render_tree_node(ctx, node, config, state, depth)
     local text_y = item_min_y
     ImGui.DrawList_AddText(dl, text_x, text_y, Colors.hexrgb("#FFFFFFFF"), node.name)
 
+    -- Draw template count if available (right-aligned)
+    if node.template_count and node.template_count > 0 and config.show_template_count then
+      local count_text = "(" .. node.template_count .. ")"
+      local count_w = ImGui.CalcTextSize(ctx, count_text)
+      local count_x = item_max_x - count_w - 8  -- 8px padding from right edge
+      local count_y = item_min_y
+      local count_color = Colors.hexrgb("#808080FF")  -- Gray
+      ImGui.DrawList_AddText(dl, count_x, count_y, count_color, count_text)
+    end
+
     -- Handle single click for selection
     if tree_item_clicked and not tree_toggled then
       state.selected_node = node_id

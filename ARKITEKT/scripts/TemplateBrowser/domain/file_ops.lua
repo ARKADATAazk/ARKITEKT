@@ -107,25 +107,35 @@ function M.create_folder(parent_path, folder_name)
   parent_path = normalize_path(parent_path)
   local new_path = parent_path .. sep .. folder_name
 
+  -- Check if folder already exists
+  if reaper.file_exists(new_path) then
+    reaper.ShowConsoleMsg(string.format("Folder already exists: %s\n", new_path))
+    return false, nil
+  end
+
   -- Use reaper's directory creation if available, otherwise try os
   local success = false
 
   -- Try using lfs if available
   local has_lfs, lfs = pcall(require, "lfs")
   if has_lfs then
-    success = lfs.mkdir(new_path)
+    local result, err = lfs.mkdir(new_path)
+    success = (result == true or result == nil and err == nil)
   else
     -- Fallback: try platform-specific commands
     if sep == "\\" then
-      -- Windows
-      success = os.execute('mkdir "' .. new_path .. '"') == 0
+      -- Windows: use system() which is more reliable
+      local cmd = 'cmd /c mkdir "' .. new_path:gsub("/", "\\") .. '" 2>nul'
+      local result = os.execute(cmd)
+      -- Check if folder was created
+      success = reaper.file_exists(new_path)
     else
       -- Unix/Mac
       success = os.execute('mkdir -p "' .. new_path .. '"') == 0
     end
   end
 
-  if success then
+  if success or reaper.file_exists(new_path) then
     reaper.ShowConsoleMsg(string.format("Created folder: %s\n", new_path))
     return true, new_path
   else
