@@ -11,28 +11,41 @@ local hexrgb = Colors.hexrgb
 
 local M = {}
 
--- Draw a triangular arrow icon
+-- Draw a triangular arrow icon with pixel-perfect coordinates
 local function draw_arrow(dl, x, y, w, h, color, direction)
-  local cx = x + w / 2
-  local cy = y + h / 2
-  local size = math.min(w, h) * 0.35
+  -- Round to whole pixels for crisp rendering
+  local cx = math.floor(x + w / 2 + 0.5)
+  local cy = math.floor(y + h / 2 + 0.5)
+  local size = math.floor(math.min(w, h) * 0.35 + 0.5)
 
   if direction == "left" then
-    local x1, y1 = cx + size * 0.4, cy - size * 0.6
-    local x2, y2 = cx + size * 0.4, cy + size * 0.6
-    local x3, y3 = cx - size * 0.6, cy
+    local x1 = math.floor(cx + size * 0.4 + 0.5)
+    local y1 = math.floor(cy - size * 0.6 + 0.5)
+    local x2 = math.floor(cx + size * 0.4 + 0.5)
+    local y2 = math.floor(cy + size * 0.6 + 0.5)
+    local x3 = math.floor(cx - size * 0.6 + 0.5)
+    local y3 = cy
     ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, color)
   else -- right
-    local x1, y1 = cx - size * 0.4, cy - size * 0.6
-    local x2, y2 = cx - size * 0.4, cy + size * 0.6
-    local x3, y3 = cx + size * 0.6, cy
+    local x1 = math.floor(cx - size * 0.4 + 0.5)
+    local y1 = math.floor(cy - size * 0.6 + 0.5)
+    local x2 = math.floor(cx - size * 0.4 + 0.5)
+    local y2 = math.floor(cy + size * 0.6 + 0.5)
+    local x3 = math.floor(cx + size * 0.6 + 0.5)
+    local y3 = cy
     ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, color)
   end
 end
 
--- Draw a custom spinner button with modern styling
+-- Draw a custom spinner button with modern styling (pixel-perfect)
 local function draw_spinner_button(ctx, id, x, y, w, h, direction)
   local dl = ImGui.GetWindowDrawList(ctx)
+
+  -- Round to whole pixels
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+  w = math.floor(w + 0.5)
+  h = math.floor(h + 0.5)
 
   -- Invisible button for interaction
   ImGui.SetCursorScreenPos(ctx, x, y)
@@ -48,13 +61,13 @@ local function draw_spinner_button(ctx, id, x, y, w, h, direction)
   local border_outer = Style.COLORS.BORDER_OUTER
   local arrow_color = hovered and Style.COLORS.TEXT_HOVER or Style.COLORS.TEXT_NORMAL
 
-  -- Background
+  -- Background (pixel-aligned)
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color, 0)
 
-  -- Inner border (highlight)
+  -- Inner border (highlight) - inset by 1px
   ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + w - 1, y + h - 1, border_inner, 0, 0, 1)
 
-  -- Outer border (black)
+  -- Outer border (black) - exact pixel boundary
   ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_outer, 0, 0, 1)
 
   -- Arrow icon
@@ -63,26 +76,32 @@ local function draw_spinner_button(ctx, id, x, y, w, h, direction)
   return clicked
 end
 
--- Draw value display area
+-- Draw value display area (pixel-perfect)
 local function draw_value_display(ctx, dl, x, y, w, h, text, hovered, active)
+  -- Round to whole pixels
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+  w = math.floor(w + 0.5)
+  h = math.floor(h + 0.5)
+
   local bg_color = active and Style.COLORS.BG_ACTIVE or (hovered and Style.COLORS.BG_HOVER or Style.COLORS.BG_BASE)
   local border_inner = hovered and Style.COLORS.BORDER_HOVER or Style.COLORS.BORDER_INNER
   local border_outer = Style.COLORS.BORDER_OUTER
   local text_color = hovered and Style.COLORS.TEXT_HOVER or Style.COLORS.TEXT_NORMAL
 
-  -- Background
+  -- Background (pixel-aligned)
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color, 0)
 
-  -- Inner border
+  -- Inner border (inset by 1px)
   ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + w - 1, y + h - 1, border_inner, 0, 0, 1)
 
-  -- Outer border
+  -- Outer border (exact pixel boundary)
   ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_outer, 0, 0, 1)
 
-  -- Text (centered)
+  -- Text (centered and pixel-aligned)
   local text_w, text_h = ImGui.CalcTextSize(ctx, text)
-  local text_x = x + (w - text_w) / 2
-  local text_y = y + (h - text_h) / 2
+  local text_x = math.floor(x + (w - text_w) / 2 + 0.5)
+  local text_y = math.floor(y + (h - text_h) / 2 + 0.5)
 
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, text)
 end
@@ -116,8 +135,12 @@ function M.draw(ctx, id, current_index, values, opts)
   local x, y = ImGui.GetCursorScreenPos(ctx)
   local dl = ImGui.GetWindowDrawList(ctx)
 
-  -- Calculate widths
-  local value_w = total_w - (button_w * 2) - (spacing * 2)
+  -- Round starting position to whole pixels for crisp rendering
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  -- Calculate widths (ensure whole pixels)
+  local value_w = math.floor(total_w - (button_w * 2) - (spacing * 2) + 0.5)
   local left_x = x
   local value_x = x + button_w + spacing
   local right_x = x + button_w + spacing + value_w + spacing
