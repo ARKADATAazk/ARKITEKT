@@ -58,81 +58,8 @@ local function render_tree_node(ctx, node, config, state, depth)
   -- Check if node has color
   local node_color = node.color
 
-  -- If renaming, show input field (same as original working implementation)
-  if is_renaming then
-    -- Position the input field: 25px right, 8px up
-    ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 25)
-    ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) - 8)
-
-    -- Style: lighter background for input field
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#FFFFFF15"))  -- Light semi-transparent white
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#FFFFFF20"))
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#FFFFFF25"))
-
-    -- Initialize field with current name
-    local rename_field_id = "treeview_rename_" .. node_id
-    if Fields.get_text(rename_field_id) == "" then
-      Fields.set_text(rename_field_id, state.rename_buffer)
-    end
-
-    local changed, new_name = Fields.draw_at_cursor(ctx, {
-      width = -25,  -- Account for right offset
-      height = 18,
-      text = state.rename_buffer,
-    }, rename_field_id)
-
-    -- Auto-select all text when first shown
-    if ImGui.IsItemActivated(ctx) then
-      ImGui.SetKeyboardFocusHere(ctx, -1)  -- Focus this item
-    end
-
-    -- Select all text on first activation
-    local should_select_all = state.rename_just_started
-    if should_select_all == nil then
-      state.rename_just_started = true
-      should_select_all = true
-    end
-
-    if should_select_all and ImGui.IsItemActive(ctx) then
-      -- Select all text
-      local text_len = #state.rename_buffer
-      ImGui.SetKeyboardFocusHere(ctx, -1)
-      state.rename_just_started = false
-    end
-
-    ImGui.PopStyleColor(ctx, 3)
-
-    if changed then
-      state.rename_buffer = new_name
-    end
-
-    -- Clicking away closes the edit (cancel)
-    if not ImGui.IsItemActive(ctx) and not ImGui.IsItemHovered(ctx) and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) then
-      state.renaming_node = nil
-      state.rename_buffer = ""
-      state.rename_just_started = nil
-    end
-
-    -- Commit on Enter or deactivate after edit
-    if ImGui.IsItemDeactivatedAfterEdit(ctx) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
-      if state.rename_buffer ~= "" and state.rename_buffer ~= node.name then
-        if config.on_rename then
-          config.on_rename(node, state.rename_buffer)
-        end
-      end
-      state.renaming_node = nil
-      state.rename_buffer = ""
-      state.rename_just_started = nil
-    end
-
-    -- Cancel on Escape
-    if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-      state.renaming_node = nil
-      state.rename_buffer = ""
-      state.rename_just_started = nil
-    end
-  else
-    -- Normal tree node display
+  -- Always draw tree node structure (even when renaming) to maintain proper layout
+  -- Normal tree node display
 
     -- Tree node flags (same as original working implementation)
     local flags = ImGui.TreeNodeFlags_SpanAvailWidth
@@ -249,6 +176,65 @@ local function render_tree_node(ctx, node, config, state, depth)
     if tree_item_right_clicked then
       if config.on_right_click then
         config.on_right_click(node)
+      end
+    end
+
+    -- If renaming, overlay input field on top of the drawn text
+    if is_renaming then
+      -- Use screen coordinates for precise positioning
+      local screen_x, screen_y = ImGui.GetCursorScreenPos(ctx)
+
+      -- Position: text start + 25px right, item top - 8px up
+      ImGui.SetCursorScreenPos(ctx, text_x + 25, item_min_y - 8)
+
+      -- Style: lighter background for input field
+      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#FFFFFF15"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#FFFFFF20"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#FFFFFF25"))
+
+      -- Auto-focus and select all text on first show
+      if not state.rename_focus_set then
+        ImGui.SetKeyboardFocusHere(ctx, 0)
+        state.rename_focus_set = true
+      end
+
+      -- Use plain ImGui InputText for better control
+      ImGui.SetNextItemWidth(ctx, item_max_x - text_x - 30)
+      local rv, buf = ImGui.InputText(ctx, "##rename_" .. node_id, state.rename_buffer, ImGui.InputTextFlags_AutoSelectAll)
+
+      if rv then
+        state.rename_buffer = buf
+      end
+
+      ImGui.PopStyleColor(ctx, 3)
+
+      -- Restore cursor screen position
+      ImGui.SetCursorScreenPos(ctx, screen_x, screen_y)
+
+      -- Clicking away closes the edit (cancel)
+      if not ImGui.IsItemActive(ctx) and not ImGui.IsItemHovered(ctx) and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) then
+        state.renaming_node = nil
+        state.rename_buffer = ""
+        state.rename_focus_set = nil
+      end
+
+      -- Commit on Enter
+      if ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter) then
+        if state.rename_buffer ~= "" and state.rename_buffer ~= node.name then
+          if config.on_rename then
+            config.on_rename(node, state.rename_buffer)
+          end
+        end
+        state.renaming_node = nil
+        state.rename_buffer = ""
+        state.rename_focus_set = nil
+      end
+
+      -- Cancel on Escape or deactivate
+      if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) or (ImGui.IsItemDeactivated(ctx) and not ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) and not ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter)) then
+        state.renaming_node = nil
+        state.rename_buffer = ""
+        state.rename_focus_set = nil
       end
     end
 
