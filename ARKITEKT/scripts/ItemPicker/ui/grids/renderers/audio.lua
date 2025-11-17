@@ -321,19 +321,22 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local waveform_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
     dark_color = Colors.with_alpha(dark_color, math.floor(waveform_alpha * 255))
 
-    -- Check runtime cache for waveform
-    local waveform = state.runtime_cache and state.runtime_cache.waveforms[item_data.uuid]
-    if waveform then
-      if visualization.DisplayWaveformTransparent then
-        visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, content_w)
-      end
-    else
-      -- Show placeholder and queue waveform generation (unless skip_visualizations is enabled)
-      BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
+    -- Skip all waveform rendering if skip_visualizations is enabled (fast mode)
+    if not state.skip_visualizations then
+      -- Check runtime cache for waveform
+      local waveform = state.runtime_cache and state.runtime_cache.waveforms[item_data.uuid]
+      if waveform then
+        if visualization.DisplayWaveformTransparent then
+          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, content_w)
+        end
+      else
+        -- Show placeholder and queue waveform generation
+        BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
 
-      -- Skip queueing waveform jobs if skip_visualizations is enabled (fast mode)
-      if not state.skip_visualizations and state.job_queue and state.job_queue.add_waveform_job then
-        state.job_queue.add_waveform_job(item_data.item, item_data.uuid)
+        -- Queue waveform job
+        if state.job_queue and state.job_queue.add_waveform_job then
+          state.job_queue.add_waveform_job(item_data.item, item_data.uuid)
+        end
       end
     end
   end

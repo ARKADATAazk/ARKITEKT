@@ -113,10 +113,15 @@ function GUI:draw(ctx, shell_state)
       reaper.ShowConsoleMsg(string.format("=== ItemPicker: Loading complete! (%.1fms) ===\n", elapsed))
 
       -- Pre-load disk cache into runtime cache now that items are loaded
-      local disk_cache = require('ItemPicker.data.disk_cache')
-      local stats = disk_cache.preload_to_runtime(self.state.runtime_cache)
-      if stats and stats.loaded > 0 then
-        reaper.ShowConsoleMsg(string.format("[ItemPicker] Loaded %d cached visualizations from disk\n", stats.loaded))
+      -- Skip if skip_visualizations is enabled (fast mode)
+      if not self.state.skip_visualizations then
+        local disk_cache = require('ItemPicker.data.disk_cache')
+        local stats = disk_cache.preload_to_runtime(self.state.runtime_cache)
+        if stats and stats.loaded > 0 then
+          reaper.ShowConsoleMsg(string.format("[ItemPicker] Loaded %d cached visualizations from disk\n", stats.loaded))
+        end
+      else
+        reaper.ShowConsoleMsg("[ItemPicker] Skipped loading visualizations (fast mode enabled)\n")
       end
 
       self.data_loaded = true
