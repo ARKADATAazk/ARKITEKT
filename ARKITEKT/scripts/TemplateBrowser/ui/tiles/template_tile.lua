@@ -8,6 +8,7 @@ local Draw = require('rearkitekt.gui.draw')
 local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
 local TileFXConfig = require('rearkitekt.gui.rendering.tile.defaults')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
+local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -116,6 +117,27 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Render base tile with stripe_color for diagonals (chip_color affects only stripes)
   TileFX.render_complete(dl, x1, y1, x2, y2, base_color, fx_config,
     state.selected, hover_factor, nil, nil, nil, nil, chip_color, chip_color ~= nil)
+
+  -- Draw marching ants on selected tiles
+  if state.selected and fx_config.ants_enabled then
+    local ants_color = Colors.same_hue_variant(
+      chip_color or base_color,
+      fx_config.border_saturation,
+      fx_config.border_brightness,
+      fx_config.ants_alpha or 0xFF
+    )
+    local inset = fx_config.ants_inset or 0
+    MarchingAnts.draw(
+      dl,
+      x1 + inset, y1 + inset, x2 - inset, y2 - inset,
+      ants_color,
+      fx_config.ants_thickness,
+      fx_config.rounding,
+      fx_config.ants_dash,
+      fx_config.ants_gap,
+      fx_config.ants_speed
+    )
+  end
 
   -- Calculate text alpha based on tile height
   local text_alpha = 255
