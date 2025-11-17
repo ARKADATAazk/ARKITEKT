@@ -49,10 +49,15 @@ function TabContent:update(dt)
 end
 
 function TabContent:draw(ctx, tab_id, shell_state)
-  -- Clear image cache when switching tabs (prevents stale handle errors)
-  -- Pattern from debug_view.lua - proven to work for pagination
+  -- Clear image caches when switching tabs (prevents stale handle errors)
   if self.last_tab_id and self.last_tab_id ~= tab_id then
+    -- Clear package renderer cache (for ASSEMBLER tab)
     Renderer.clear_image_cache()
+
+    -- Clear debug view cache if leaving debug tab
+    if self.last_tab_id == "DEBUG" and self.views.DEBUG and self.views.DEBUG.image_cache then
+      self.views.DEBUG.image_cache:clear()
+    end
   end
   self.last_tab_id = tab_id
 
