@@ -136,6 +136,50 @@ function GUI:initialize_once(ctx)
       local Scanner = require('TemplateBrowser.domain.scanner')
       Scanner.filter_templates(self.state)
     end,
+    get_filter_items = function()
+      local items = {}
+
+      -- Add active tag filters
+      if self.state.metadata and self.state.metadata.tags then
+        for tag_name, _ in pairs(self.state.filter_tags) do
+          local tag_data = self.state.metadata.tags[tag_name]
+          if tag_data then
+            table.insert(items, {
+              id = "tag:" .. tag_name,
+              label = tag_name,
+              color = tag_data.color,
+            })
+          end
+        end
+      end
+
+      -- Add active FX filters
+      for fx_name, _ in pairs(self.state.filter_fx) do
+        table.insert(items, {
+          id = "fx:" .. fx_name,
+          label = fx_name,
+          color = 0x888888,  -- Gray for FX
+        })
+      end
+
+      return items
+    end,
+    on_filter_remove = function(filter_id)
+      -- Parse filter ID to determine type
+      local filter_type, filter_name = filter_id:match("^(%w+):(.+)$")
+
+      if filter_type == "tag" then
+        -- Remove tag filter
+        self.state.filter_tags[filter_name] = nil
+      elseif filter_type == "fx" then
+        -- Remove FX filter
+        self.state.filter_fx[filter_name] = nil
+      end
+
+      -- Re-filter templates
+      local Scanner = require('TemplateBrowser.domain.scanner')
+      Scanner.filter_templates(self.state)
+    end,
   })
 
   self.template_container = TilesContainer.new({
