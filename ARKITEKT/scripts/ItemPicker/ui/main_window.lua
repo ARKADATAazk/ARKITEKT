@@ -96,9 +96,9 @@ function GUI:draw(ctx, shell_state)
     -- Start actual loading NOW (after UI is shown)
     self.start_loading_next_frame = false
 
-    -- Enable visualizations (waveforms and MIDI thumbnails)
-    local fast_mode = false
-    self.state.skip_visualizations = false
+    -- Use fast mode (skip expensive chunk processing) but keep visualizations
+    local fast_mode = true  -- Skip expensive chunk-based duplicate detection
+    self.state.skip_visualizations = false  -- Show waveforms and MIDI thumbnails
 
     -- Smaller batches for smoother UI (100 items per frame)
     self.controller.start_incremental_loading(self.state, 100, fast_mode)
@@ -229,9 +229,9 @@ function GUI:draw(ctx, shell_state)
     self.state.midi_items = {}
     self.state.midi_indexes = {}
 
-    -- Enable visualizations (waveforms and MIDI thumbnails)
-    local fast_mode = false
-    self.state.skip_visualizations = false
+    -- Use fast mode (skip expensive chunk processing) but keep visualizations
+    local fast_mode = true  -- Skip expensive chunk-based duplicate detection
+    self.state.skip_visualizations = false  -- Show waveforms and MIDI thumbnails
     self.controller.start_incremental_loading(self.state, 100, fast_mode)
   end
 
