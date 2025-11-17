@@ -447,11 +447,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
       end
 
       -- Color swatch
-      local r = ((tag_data.color >> 16) & 0xFF) / 255.0
-      local g = ((tag_data.color >> 8) & 0xFF) / 255.0
-      local b = (tag_data.color & 0xFF) / 255.0
-
-      ImGui.ColorButton(ctx, "##color", ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0), 0, 16, 16)
+      ImGui.ColorButton(ctx, "##color", tag_data.color, 0, 16, 16)
       ImGui.SameLine(ctx)
 
       -- Tag name as selectable
@@ -577,7 +573,7 @@ local function draw_vsts_content(ctx, state, config, width, height)
 
   if state.reparse_armed then
     button_label = "CONFIRM REPARSE?"
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(0.8, 0.2, 0.2, 1.0))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, Colors.components_to_rgba(0.8, 0.2, 0.2, 1.0))
   end
 
   if ImGui.Button(ctx, button_label, 120, 0) then
@@ -734,11 +730,7 @@ local function draw_tags_content(ctx, state, config, width, height)
       else
         -- Normal display
         -- Color swatch
-        local r = ((tag_data.color >> 16) & 0xFF) / 255.0
-        local g = ((tag_data.color >> 8) & 0xFF) / 255.0
-        local b = (tag_data.color & 0xFF) / 255.0
-
-        ImGui.ColorButton(ctx, "##color", ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0), 0, 16, 16)
+        ImGui.ColorButton(ctx, "##color", tag_data.color, 0, 16, 16)
         ImGui.SameLine(ctx)
 
         -- Tag name
@@ -1117,12 +1109,10 @@ local function draw_info_panel(ctx, state, config, width, height)
         end
 
         -- Color swatch with opacity based on assignment
-        local r = ((tag_data.color >> 16) & 0xFF) / 255.0
-        local g = ((tag_data.color >> 8) & 0xFF) / 255.0
-        local b = (tag_data.color & 0xFF) / 255.0
-        local alpha = is_assigned and 1.0 or 0.3
+        local alpha = is_assigned and 0xFF or 0x4D  -- Full opacity or 30%
+        local button_color = Colors.with_alpha(tag_data.color, alpha)
 
-        if ImGui.ColorButton(ctx, "##color", ImGui.ColorConvertDouble4ToU32(r, g, b, alpha), 0, 20, 20) then
+        if ImGui.ColorButton(ctx, "##color", button_color, 0, 20, 20) then
           -- Toggle tag assignment
           if is_assigned then
             Tags.remove_tag_from_template(state.metadata, tmpl.uuid, tag_name)
@@ -1137,7 +1127,7 @@ local function draw_info_panel(ctx, state, config, width, height)
 
         -- Tag name with opacity
         if not is_assigned then
-          ImGui.PushStyleColor(ctx, ImGui.Col_Text, ImGui.ColorConvertDouble4ToU32(0.5, 0.5, 0.5, 1.0))
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.components_to_rgba(0.5, 0.5, 0.5, 1.0))
         end
         ImGui.Text(ctx, tag_name)
         if not is_assigned then
@@ -1225,7 +1215,7 @@ function GUI:draw(ctx, shell_state)
     local status_w = ImGui.CalcTextSize(ctx, status)
 
     ImGui.SetCursorPos(ctx, (SCREEN_W - status_w) * 0.5, status_y)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, ImGui.ColorConvertDouble4ToU32(0.7, 0.7, 0.7, 1.0))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.components_to_rgba(0.7, 0.7, 0.7, 1.0))
     ImGui.Text(ctx, status)
     ImGui.PopStyleColor(ctx)
 
