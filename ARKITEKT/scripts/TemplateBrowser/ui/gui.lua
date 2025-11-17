@@ -448,12 +448,7 @@ local function draw_directory_content(ctx, state, config, width, height)
   ImGui.Spacing(ctx)
 
   -- Folder tree
-  if state.folders and state.folders.children then
-    _folder_counter = 0  -- Reset counter each frame
-    for _, child in ipairs(state.folders.children) do
-      draw_folder_node(ctx, child, state, config)
-    end
-  end
+  draw_folder_tree(ctx, state, config)
 
   ImGui.EndChild(ctx)
 
