@@ -207,6 +207,30 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
     end
 
+    -- Drag-drop source (for dragging folders)
+    if config.enable_drag_drop and ImGui.BeginDragDropSource(ctx) then
+      ImGui.SetDragDropPayload(ctx, "TREENODE_FOLDER", node_id)
+      ImGui.Text(ctx, "Move: " .. node.name)
+      ImGui.EndDragDropSource(ctx)
+    end
+
+    -- Drag-drop target (for receiving folders and templates)
+    if config.enable_drag_drop and ImGui.BeginDragDropTarget(ctx) then
+      -- Accept folder drops
+      local accepted_folder, folder_payload = ImGui.AcceptDragDropPayload(ctx, "TREENODE_FOLDER")
+      if accepted_folder and folder_payload and config.on_drop_folder then
+        config.on_drop_folder(folder_payload, node)
+      end
+
+      -- Accept template drops
+      local accepted_template, template_payload = ImGui.AcceptDragDropPayload(ctx, "TEMPLATE")
+      if accepted_template and template_payload and config.on_drop_template then
+        config.on_drop_template(template_payload, node)
+      end
+
+      ImGui.EndDragDropTarget(ctx)
+    end
+
     -- Render children if node is open
     if node_open then
       if node.children and #node.children > 0 then

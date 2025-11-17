@@ -644,6 +644,21 @@ function Grid:draw(ctx)
 
       self.render_tile(ctx, rect, item, state, self)
 
+      -- Add drag-drop source support for tiles
+      local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+      ImGui.SetCursorScreenPos(ctx, x1, y1)
+      ImGui.InvisibleButton(ctx, "##dragdrop_" .. key, x2 - x1, y2 - y1)
+
+      if self.behaviors and self.behaviors.drag_drop_payload and ImGui.BeginDragDropSource(ctx) then
+        -- Get payload data for this item
+        local payload_data = self.behaviors.drag_drop_payload(key, item)
+        if payload_data then
+          ImGui.SetDragDropPayload(ctx, "TEMPLATE", payload_data)
+          ImGui.Text(ctx, "Move: " .. (item.name or "Item"))
+        end
+        ImGui.EndDragDropSource(ctx)
+      end
+
       ::continue::
     end
   end

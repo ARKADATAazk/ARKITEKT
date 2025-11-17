@@ -82,6 +82,12 @@ function M.create(get_templates, metadata, animator, get_tile_width, on_select, 
         end
         return items
       end,
+
+      -- Drag-drop payload (for ImGui drag-drop to folders)
+      drag_drop_payload = function(key, item)
+        -- Return template UUID as payload
+        return item.uuid
+      end,
     },
 
     -- Input area extension (easier clicking)

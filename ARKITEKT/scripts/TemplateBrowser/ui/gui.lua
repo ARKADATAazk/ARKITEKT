@@ -279,12 +279,64 @@ local function draw_folder_tree(ctx, state, config)
     enable_rename = true,
     show_colors = true,
     show_template_count = true,
+    enable_drag_drop = true,
 
     -- Selection callback
     on_select = function(node)
       state.selected_folder = node.path
       local Scanner = require('TemplateBrowser.domain.scanner')
       Scanner.filter_templates(state)
+    end,
+
+    -- Folder drop callback
+    on_drop_folder = function(dragged_node_id, target_node)
+      -- Find the source node
+      local function find_node_by_id(nodes, id)
+        for _, n in ipairs(nodes) do
+          if n.id == id then return n end
+          if n.children then
+            local found = find_node_by_id(n.children, id)
+            if found then return found end
+          end
+        end
+        return nil
+      end
+
+      local source_node = find_node_by_id(tree_nodes, dragged_node_id)
+      if not source_node or not target_node then return end
+
+      -- Don't allow dropping onto self or into own children
+      if source_node.id == target_node.id then return end
+
+      -- Move folder
+      local success = FileOps.move_folder(source_node.full_path, target_node.full_path)
+      if success then
+        -- Rescan templates
+        local Scanner = require('TemplateBrowser.domain.scanner')
+        Scanner.scan_templates(state)
+      end
+    end,
+
+    -- Template drop callback
+    on_drop_template = function(template_uuid, target_node)
+      -- Find template by UUID
+      local template = nil
+      for _, tmpl in ipairs(state.templates) do
+        if tmpl.uuid == template_uuid then
+          template = tmpl
+          break
+        end
+      end
+
+      if not template or not target_node then return end
+
+      -- Move template to target folder
+      local success = FileOps.move_template(template.path, target_node.full_path)
+      if success then
+        -- Rescan templates
+        local Scanner = require('TemplateBrowser.domain.scanner')
+        Scanner.scan_templates(state)
+      end
     end,
 
     -- Rename callback
