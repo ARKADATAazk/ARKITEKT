@@ -166,7 +166,7 @@ function M.create(pkg, settings, theme)
       wheel_adjust = function(keys, delta)
         -- Adjust global tile size (CTRL+MouseWheel zoom)
         local current_size = pkg.tile or 220
-        local step = 10  -- Size change per wheel notch
+        local step = 20  -- Size change per wheel notch (2x for faster resize)
         local new_size = current_size + (delta * step)
 
         -- Clamp to reasonable bounds
