@@ -18,12 +18,13 @@ function M.new(State, Config, settings)
     settings = settings,
 
     -- Slider values (loaded from theme parameters)
-    gamma = 1.0,          -- 0.0 to 2.0, default 1.0
-    highlights = -128,    -- -256 to 0, default -128
-    midtones = -128,      -- -256 to 0, default -128
-    shadows = -128,       -- -256 to 0, default -128
-    saturation = 256,     -- 0 to 512, default 256 (100%)
-    tint = 192,           -- 0-384, center = 192 (0°)
+    -- Storage values (actual theme parameter values)
+    gamma = 1000,         -- Storage: 500-2000, Display: 0.50-2.00, Default: 1000 (1.00)
+    highlights = 256,     -- Storage: 0-512, Display: 0.00-2.00, Default: 256 (1.00)
+    midtones = 256,       -- Storage: 0-512, Display: 0.00-2.00, Default: 256 (1.00)
+    shadows = 256,        -- Storage: 0-512, Display: 0.00-2.00, Default: 256 (1.00)
+    saturation = 256,     -- Storage: 0-512, Display: 0%-200%, Default: 256 (100%)
+    tint = 192,           -- Storage: 0-384, Display: -180° to +180°, Default: 192 (0°)
 
     -- Toggles
     custom_track_names = false,
@@ -39,7 +40,7 @@ end
 function GlobalView:load_from_theme()
   -- Load values from REAPER theme parameters
   local ok, gamma = pcall(reaper.ThemeLayout_GetParameter, -1000)
-  if ok and type(gamma) == "number" then self.gamma = gamma / 1000 end
+  if ok and type(gamma) == "number" then self.gamma = gamma end
 
   local ok, highlights = pcall(reaper.ThemeLayout_GetParameter, -1003)
   if ok and type(highlights) == "number" then self.highlights = highlights end
@@ -68,14 +69,14 @@ end
 
 function GlobalView:reset_color_controls()
   -- Reset all color controls to defaults
-  self.gamma = 1.0
-  self.highlights = -128
-  self.midtones = -128
-  self.shadows = -128
+  self.gamma = 1000
+  self.highlights = 256
+  self.midtones = 256
+  self.shadows = 256
   self.saturation = 256
   self.tint = 192
 
-  self:set_param(-1000, self.gamma * 1000, true)
+  self:set_param(-1000, self.gamma, true)
   self:set_param(-1001, self.shadows, true)
   self:set_param(-1002, self.midtones, true)
   self:set_param(-1003, self.highlights, true)
@@ -137,93 +138,98 @@ function GlobalView:draw(ctx, shell_state)
       return changed, new_val
     end
 
-    -- Gamma slider (0-2.0, default 1.0)
-    local changed, new_gamma = draw_slider_row(
+    -- Gamma slider (Storage: 500-2000, Display: 0.50-2.00, Default: 1000)
+    local gamma_display = self.gamma / 1000
+    local changed, new_gamma_normalized = draw_slider_row(
       "Gamma",
-      string.format("%.2f", self.gamma),
+      string.format("%.2f", gamma_display),
       HueSlider.draw_gamma,
       "##gamma",
-      (self.gamma / 2.0) * 100,  -- 0-200 normalized to 0-100
-      {w = slider_w, h = 22, default = 50}  -- 50% = 1.0
+      ((self.gamma - 500) / 1500) * 100,  -- Map 500-2000 to 0-100
+      {w = slider_w, h = 22, default = 33.33}  -- 1000 is 33.33% of range
     )
     if changed then
-      self.gamma = (new_gamma / 100) * 2.0
-      self:set_param(-1000, self.gamma * 1000, false)
+      self.gamma = math.floor((new_gamma_normalized / 100) * 1500 + 500 + 0.5)
+      self:set_param(-1000, self.gamma, false)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
-      self:set_param(-1000, self.gamma * 1000, true)
+      self:set_param(-1000, self.gamma, true)
     end
 
-    -- Highlights slider (-256 to 0, default -128)
-    local changed, new_highlights = draw_slider_row(
+    -- Highlights slider (Storage: 0-512, Display: 0.00-2.00, Default: 256)
+    local highlights_display = self.highlights / 256
+    local changed, new_highlights_normalized = draw_slider_row(
       "Highlights",
-      string.format("%d", self.highlights),
+      string.format("%.2f", highlights_display),
       HueSlider.draw_gamma,
       "##highlights",
-      ((self.highlights + 256) / 256) * 100,  -- -256 to 0 normalized to 0-100
-      {w = slider_w, h = 22, default = 50}  -- 50% = -128
+      (self.highlights / 512) * 100,  -- Map 0-512 to 0-100
+      {w = slider_w, h = 22, default = 50}  -- 256 is 50% of range
     )
     if changed then
-      self.highlights = math.floor(((new_highlights / 100) * 256) - 256 + 0.5)
+      self.highlights = math.floor((new_highlights_normalized / 100) * 512 + 0.5)
       self:set_param(-1003, self.highlights, false)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1003, self.highlights, true)
     end
 
-    -- Midtones slider (-256 to 0, default -128)
-    local changed, new_midtones = draw_slider_row(
+    -- Midtones slider (Storage: 0-512, Display: 0.00-2.00, Default: 256)
+    local midtones_display = self.midtones / 256
+    local changed, new_midtones_normalized = draw_slider_row(
       "Midtones",
-      string.format("%d", self.midtones),
+      string.format("%.2f", midtones_display),
       HueSlider.draw_gamma,
       "##midtones",
-      ((self.midtones + 256) / 256) * 100,  -- -256 to 0 normalized to 0-100
-      {w = slider_w, h = 22, default = 50}  -- 50% = -128
+      (self.midtones / 512) * 100,  -- Map 0-512 to 0-100
+      {w = slider_w, h = 22, default = 50}  -- 256 is 50% of range
     )
     if changed then
-      self.midtones = math.floor(((new_midtones / 100) * 256) - 256 + 0.5)
+      self.midtones = math.floor((new_midtones_normalized / 100) * 512 + 0.5)
       self:set_param(-1002, self.midtones, false)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1002, self.midtones, true)
     end
 
-    -- Shadows slider (-256 to 0, default -128)
-    local changed, new_shadows = draw_slider_row(
+    -- Shadows slider (Storage: 0-512, Display: 0.00-2.00, Default: 256)
+    local shadows_display = self.shadows / 256
+    local changed, new_shadows_normalized = draw_slider_row(
       "Shadows",
-      string.format("%d", self.shadows),
+      string.format("%.2f", shadows_display),
       HueSlider.draw_gamma,
       "##shadows",
-      ((self.shadows + 256) / 256) * 100,  -- -256 to 0 normalized to 0-100
-      {w = slider_w, h = 22, default = 50}  -- 50% = -128
+      (self.shadows / 512) * 100,  -- Map 0-512 to 0-100
+      {w = slider_w, h = 22, default = 50}  -- 256 is 50% of range
     )
     if changed then
-      self.shadows = math.floor(((new_shadows / 100) * 256) - 256 + 0.5)
+      self.shadows = math.floor((new_shadows_normalized / 100) * 512 + 0.5)
       self:set_param(-1001, self.shadows, false)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1001, self.shadows, true)
     end
 
-    -- Saturation slider (0-512, default 256 = 100%)
-    local changed, new_saturation = draw_slider_row(
+    -- Saturation slider (Storage: 0-512, Display: 0%-200%, Default: 256 = 100%)
+    local saturation_display = math.floor(self.saturation / 2.56 + 0.5)
+    local changed, new_saturation_normalized = draw_slider_row(
       "Saturation",
-      string.format("%d%%", math.floor((self.saturation / 256) * 100 + 0.5)),
+      string.format("%d%%", saturation_display),
       function(c, i, v, o) return HueSlider.draw_saturation(c, i, v, 210, o) end,
       "##saturation",
-      (self.saturation / 512) * 100,  -- 0-512 normalized to 0-100
-      {w = slider_w, h = 22, default = 50, brightness = 80}  -- 50% = 256 = 100%
+      (self.saturation / 512) * 100,  -- Map 0-512 to 0-100
+      {w = slider_w, h = 22, default = 50, brightness = 80}  -- 256 is 50% of range
     )
     if changed then
-      self.saturation = math.floor((new_saturation / 100) * 512 + 0.5)
+      self.saturation = math.floor((new_saturation_normalized / 100) * 512 + 0.5)
       self:set_param(-1004, self.saturation, false)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1004, self.saturation, true)
     end
 
-    -- Tint slider (0-384, center = 192 = 0°)
-    local tint_degrees = (self.tint - 192) * (360 / 384)
+    -- Tint slider (Storage: 0-384, Display: -180° to +180°, Default: 192 = 0°)
+    local tint_degrees = math.floor(self.tint * 0.9375 - 180 + 0.5)
     local changed, new_tint_normalized = draw_slider_row(
       "Tint",
       string.format("%.0f°", tint_degrees),
