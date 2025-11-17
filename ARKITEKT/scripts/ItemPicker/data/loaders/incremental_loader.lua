@@ -226,7 +226,7 @@ function M.process_audio_item_fast(loader, item, track, state)
 
   local item_name = reaper.GetTakeName(take)
   if not item_name or item_name == "" then
-    item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$")
+    item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$") or "Unnamed Audio"
   end
 
   -- Compute mute status and track color ONCE during loading
@@ -275,7 +275,7 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
 
   local item_name = reaper.GetTakeName(take)
   if not item_name or item_name == "" then
-    item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$")
+    item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$") or "Unnamed Audio"
   end
 
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
@@ -432,6 +432,13 @@ function M.reorganize_items(loader, group_by_name)
       group_key = raw_item.uuid
     end
 
+    -- Skip items with nil keys (shouldn't happen, but safety check)
+    if not group_key or group_key == "" then
+      reaper.ShowConsoleMsg(string.format("[REORGANIZE] WARNING: Skipping audio item with nil/empty group_key (item_name=%s, uuid=%s)\n",
+        tostring(raw_item.item_name), tostring(raw_item.uuid)))
+      goto skip_audio
+    end
+
     if not loader.samples[group_key] then
       table.insert(loader.sample_indexes, group_key)
       loader.samples[group_key] = {}
@@ -445,6 +452,8 @@ function M.reorganize_items(loader, group_by_name)
       uuid = raw_item.uuid,
       track_color = raw_item.track_color,  -- Include cached color
     })
+
+    ::skip_audio::
   end
 
   -- Reorganize MIDI items
@@ -456,6 +465,13 @@ function M.reorganize_items(loader, group_by_name)
     else
       -- Each item is separate (use UUID as unique key)
       group_key = raw_item.uuid
+    end
+
+    -- Skip items with nil keys (shouldn't happen, but safety check)
+    if not group_key or group_key == "" then
+      reaper.ShowConsoleMsg(string.format("[REORGANIZE] WARNING: Skipping MIDI item with nil/empty group_key (item_name=%s, uuid=%s)\n",
+        tostring(raw_item.item_name), tostring(raw_item.uuid)))
+      goto skip_midi
     end
 
     if not loader.midi_items[group_key] then
@@ -471,6 +487,8 @@ function M.reorganize_items(loader, group_by_name)
       uuid = raw_item.uuid,
       track_color = raw_item.track_color,  -- Include cached color
     })
+
+    ::skip_midi::
   end
 end
 
