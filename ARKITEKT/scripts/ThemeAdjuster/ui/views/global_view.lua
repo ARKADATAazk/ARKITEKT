@@ -155,33 +155,33 @@ function GlobalView:draw(ctx, shell_state)
       return changed, new_val
     end
 
-    -- Gamma slider (Storage: 500-2000, Display: 0.50-2.00, Default: 1000)
+    -- Gamma slider (Storage: 500-2000, Display: 0.50-2.00, Default: 1000) - REVERSED
     local gamma_display = self.gamma / 1000
     local changed, new_gamma_normalized = draw_slider_row(
       "Gamma",
       string.format("%.2f", gamma_display),
       HueSlider.draw_gamma,
       "##gamma",
-      ((self.gamma - 500) / 1500) * 100,  -- Map 500-2000 to 0-100
-      {default = 33.33}  -- 1000 is 33.33% of range
+      ((2000 - self.gamma) / 1500) * 100,  -- Map 500-2000 to 100-0 (reversed)
+      {default = 66.67}  -- 1000 is 66.67% of reversed range
     )
     if changed then
-      self.gamma = math.floor((new_gamma_normalized / 100) * 1500 + 500 + 0.5)
+      self.gamma = math.floor(2000 - (new_gamma_normalized / 100) * 1500 + 0.5)  -- Reversed
       self:set_param(-1000, self.gamma, false)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1000, self.gamma, true)
     end
 
-    -- Highlights slider (Storage: 0-512, Display: 0.00-2.00, Default: 256)
-    local highlights_display = self.highlights / 256
+    -- Highlights slider (Storage: 0-512, Display: -2.00 to 2.00, Default: 256 = 0.00)
+    local highlights_display = (self.highlights - 256) / 128  -- Map 0→-2.00, 256→0.00, 512→2.00
     local changed, new_highlights_normalized = draw_slider_row(
       "Highlights",
       string.format("%.2f", highlights_display),
       HueSlider.draw_gamma,
       "##highlights",
       (self.highlights / 512) * 100,  -- Map 0-512 to 0-100
-      {default = 50}  -- 256 is 50% of range
+      {default = 50}  -- 256 is 50% of range (0.00)
     )
     if changed then
       self.highlights = math.floor((new_highlights_normalized / 100) * 512 + 0.5)
@@ -191,15 +191,15 @@ function GlobalView:draw(ctx, shell_state)
       self:set_param(-1003, self.highlights, true)
     end
 
-    -- Midtones slider (Storage: 0-512, Display: 0.00-2.00, Default: 256)
-    local midtones_display = self.midtones / 256
+    -- Midtones slider (Storage: 0-512, Display: -2.00 to 2.00, Default: 256 = 0.00)
+    local midtones_display = (self.midtones - 256) / 128  -- Map 0→-2.00, 256→0.00, 512→2.00
     local changed, new_midtones_normalized = draw_slider_row(
       "Midtones",
       string.format("%.2f", midtones_display),
       HueSlider.draw_gamma,
       "##midtones",
       (self.midtones / 512) * 100,  -- Map 0-512 to 0-100
-      {default = 50}  -- 256 is 50% of range
+      {default = 50}  -- 256 is 50% of range (0.00)
     )
     if changed then
       self.midtones = math.floor((new_midtones_normalized / 100) * 512 + 0.5)
@@ -209,15 +209,15 @@ function GlobalView:draw(ctx, shell_state)
       self:set_param(-1002, self.midtones, true)
     end
 
-    -- Shadows slider (Storage: 0-512, Display: 0.00-2.00, Default: 256)
-    local shadows_display = self.shadows / 256
+    -- Shadows slider (Storage: 0-512, Display: -2.00 to 2.00, Default: 256 = 0.00)
+    local shadows_display = (self.shadows - 256) / 128  -- Map 0→-2.00, 256→0.00, 512→2.00
     local changed, new_shadows_normalized = draw_slider_row(
       "Shadows",
       string.format("%.2f", shadows_display),
       HueSlider.draw_gamma,
       "##shadows",
       (self.shadows / 512) * 100,  -- Map 0-512 to 0-100
-      {default = 50}  -- 256 is 50% of range
+      {default = 50}  -- 256 is 50% of range (0.00)
     )
     if changed then
       self.shadows = math.floor((new_shadows_normalized / 100) * 512 + 0.5)
