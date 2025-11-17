@@ -32,18 +32,7 @@ end
 
 function GUI:refresh_packages()
   local demo_mode = self.State.get_demo_mode()
-  local theme_root = nil
-  if not demo_mode then
-    local Theme = require('ThemeAdjuster.core.theme')
-    local theme_info = Theme.get_theme_info()
-    if theme_info.theme_path then
-      theme_root = theme_info.theme_path
-      -- Strip .ReaperTheme or .ReaperThemeZip extension to get directory name
-      theme_root = theme_root:gsub("%.ReaperTheme[Zip]*$", "")
-      -- Remove trailing separator if present
-      theme_root = theme_root:gsub("[\\/]+$", "")
-    end
-  end
+  local theme_root = demo_mode and nil or Theme.get_theme_root_path()
   local packages = PackageManager.scan_packages(theme_root, demo_mode)
   self.State.set_packages(packages)
 

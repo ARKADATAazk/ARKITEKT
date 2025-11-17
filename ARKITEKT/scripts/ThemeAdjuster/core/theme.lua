@@ -102,6 +102,21 @@ function M.get_theme_info()
   return info
 end
 
+-- Get theme root directory (for package scanning)
+-- Returns nil for demo mode or if no theme is loaded
+function M.get_theme_root_path()
+  local info = M.get_theme_info()
+  if not info.theme_path then return nil end
+
+  local theme_root = info.theme_path
+  -- Strip .ReaperTheme or .ReaperThemeZip extension
+  theme_root = theme_root:gsub("%.ReaperTheme[Zip]*$", "")
+  -- Remove trailing separator if present
+  theme_root = theme_root:gsub("[\\/]+$", "")
+
+  return theme_root
+end
+
 -- -------------- Link management (JSON-based, using theme names as keys) --------------
 local function load_links()
   local txt = read_text(LINKS_PATH)

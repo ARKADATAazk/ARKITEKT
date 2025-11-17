@@ -51,19 +51,7 @@ function M.new(State, AppConfig, settings)
       State.set_demo_mode(new_demo)
       self.package_model.demo = new_demo
       -- Trigger rescan
-      local theme_root = nil
-      if not new_demo then
-        local Theme = require('ThemeAdjuster.core.theme')
-        local theme_info = Theme.get_theme_info()
-        if theme_info.theme_path then
-          -- Extract directory from theme path
-          theme_root = theme_info.theme_path
-          -- Strip .ReaperTheme or .ReaperThemeZip extension to get directory name
-          theme_root = theme_root:gsub("%.ReaperTheme[Zip]*$", "")
-          -- Remove trailing separator if present
-          theme_root = theme_root:gsub("[\\/]+$", "")
-        end
-      end
+      local theme_root = new_demo and nil or Theme.get_theme_root_path()
       local packages = PackageManager.scan_packages(theme_root, new_demo)
       State.set_packages(packages)
       self.package_model.index = packages
@@ -233,18 +221,7 @@ function AssemblerView:create_package_model()
     scan = function(self)
       -- Trigger package rescan
       local demo_mode = State.get_demo_mode()
-      local theme_root = nil
-      if not demo_mode then
-        local Theme = require('ThemeAdjuster.core.theme')
-        local theme_info = Theme.get_theme_info()
-        if theme_info.theme_path then
-          theme_root = theme_info.theme_path
-          -- Strip .ReaperTheme or .ReaperThemeZip extension to get directory name
-          theme_root = theme_root:gsub("%.ReaperTheme[Zip]*$", "")
-          -- Remove trailing separator if present
-          theme_root = theme_root:gsub("[\\/]+$", "")
-        end
-      end
+      local theme_root = demo_mode and nil or Theme.get_theme_root_path()
       local packages = PackageManager.scan_packages(theme_root, demo_mode)
       State.set_packages(packages)
       self.index = packages
