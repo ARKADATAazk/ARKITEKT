@@ -28,6 +28,99 @@ local COMPONENTS = {
   },
 }
 
+-- Inline component for filter chip lists
+local ChipList = require('rearkitekt.gui.widgets.data.chip_list')
+local Chip = require('rearkitekt.gui.widgets.data.chip')
+
+-- Custom compound element for template browser header with search/sort + filter chips
+local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
+local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
+local Button = require('rearkitekt.gui.widgets.primitives.button')
+
+COMPONENTS.template_header_controls = {
+  draw = function(ctx, dl, x, y, width, height, config, state)
+    local row1_height = 26
+    local row_spacing = 4
+    local row2_y = y + row1_height + row_spacing
+
+    -- ROW 1: Template count + Search + Sort
+    local cursor_x = x
+
+    -- Template count (120px)
+    if config.get_template_count then
+      local count = config.get_template_count()
+      local label = string.format("%d template%s", count, count == 1 and "" or "s")
+
+      Button.draw(ctx, dl, cursor_x, y, 120, row1_height, {
+        label = label,
+        interactive = false,
+        style = {
+          bg_color = 0x00000000,  -- Transparent
+          text_color = 0xAAAAAAFF,
+        },
+      }, state)
+      cursor_x = cursor_x + 128
+    end
+
+    -- Search field (200px, positioned before sort)
+    local sort_width = 140
+    local search_width = 200
+    local search_x = x + width - sort_width - search_width - 8
+
+    if config.get_search_query and config.on_search_changed then
+      SearchInput.draw(ctx, dl, search_x, y, search_width, row1_height, {
+        placeholder = "Search templates...",
+        get_value = config.get_search_query,
+        on_change = config.on_search_changed,
+      }, state)
+    end
+
+    -- Sort dropdown (140px, right side)
+    if config.get_sort_mode and config.on_sort_changed then
+      local sort_x = search_x + search_width + 8
+      Dropdown.draw(ctx, dl, sort_x, y, sort_width, row1_height, {
+        tooltip = "Sort by",
+        tooltip_delay = 0.5,
+        enable_sort = false,
+        get_value = config.get_sort_mode,
+        options = {
+          { value = "alphabetical", label = "Alphabetical" },
+          { value = "usage", label = "Most Used" },
+          { value = "insertion", label = "Recently Added" },
+          { value = "color", label = "Color" },
+        },
+        enable_mousewheel = true,
+        on_change = config.on_sort_changed,
+      }, state)
+    end
+
+    -- ROW 2: Filter chips
+    if config.get_filter_items and config.on_filter_remove then
+      local items = config.get_filter_items()
+      if #items > 0 then
+        ImGui.SetCursorScreenPos(ctx, x, row2_y)
+        local clicked_id = ChipList.draw(ctx, items, {
+          max_width = width,
+          chip_height = 18,
+          chip_spacing = 4,
+          line_spacing = 2,
+          use_dot_style = true,
+        })
+
+        if clicked_id then
+          config.on_filter_remove(clicked_id)
+        end
+      end
+    end
+
+    return width
+  end,
+
+  measure = function(ctx, config, state)
+    return 0  -- Dynamic width
+  end,
+}
+
 -- ============================================================================
 -- WIDTH CALCULATION
 -- ============================================================================
@@ -375,7 +468,12 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
           element_config.label = "Mixed"
         end
       end
-      
+
+      -- Evaluate function-based labels (for dynamic content)
+      if element_config.label and type(element_config.label) == "function" then
+        element_config.label = element_config.label(state)
+      end
+
       local element_state = get_or_create_element_state(state, element)
       
       local used_width = component.draw(
