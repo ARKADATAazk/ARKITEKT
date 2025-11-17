@@ -516,12 +516,23 @@ local function draw_directory_content(ctx, state, config, width, height)
     local folder_num = 1
     local new_folder_name = "New Folder"
 
-    -- Find unique name
-    while true do
-      local test_path = template_path .. package.config:sub(1,1) .. new_folder_name
-      if not reaper.file_exists(test_path) then
-        break
+    -- Find unique name by checking existing folders in the tree
+    local function folder_exists_in_tree(node, name)
+      if not node then return false end
+      if node.children then
+        for _, child in ipairs(node.children) do
+          if child.name == name and child.path == name then
+            return true
+          end
+          if folder_exists_in_tree(child, name) then
+            return true
+          end
+        end
       end
+      return false
+    end
+
+    while folder_exists_in_tree(state.folders, new_folder_name) do
       folder_num = folder_num + 1
       new_folder_name = "New Folder " .. folder_num
     end
