@@ -307,15 +307,19 @@ local function draw_folder_tree(ctx, state, config)
       local target_full_path = target_node.full_path
       local target_name = target_node.name
 
+      -- Strip trailing slashes from paths (full_path includes trailing separator)
+      local source_normalized = source_full_path:gsub("[/\\]+$", "")
+      local target_normalized = target_full_path:gsub("[/\\]+$", "")
+
       -- Extract old parent directory
-      local old_parent = source_full_path:match("^(.+)[/\\][^/\\]+$")
+      local old_parent = source_normalized:match("^(.+)[/\\][^/\\]+$")
       if not old_parent then
         reaper.ShowConsoleMsg("ERROR: Cannot determine parent folder for: " .. source_full_path .. "\n")
         return
       end
 
-      -- Move folder
-      local success, new_path = FileOps.move_folder(source_full_path, target_full_path)
+      -- Move folder (use normalized paths without trailing slashes)
+      local success, new_path = FileOps.move_folder(source_normalized, target_normalized)
       if success then
         -- Create undo operation with all paths captured as strings
         state.undo_manager:push({
@@ -333,7 +337,7 @@ local function draw_folder_tree(ctx, state, config)
             local sep = package.config:sub(1,1)
             local original_source = old_parent .. sep .. source_name
 
-            local redo_success, redo_new_path = FileOps.move_folder(original_source, target_full_path)
+            local redo_success, redo_new_path = FileOps.move_folder(original_source, target_normalized)
             if redo_success then
               new_path = redo_new_path  -- Update for subsequent operations
               local Scanner = require('TemplateBrowser.domain.scanner')
