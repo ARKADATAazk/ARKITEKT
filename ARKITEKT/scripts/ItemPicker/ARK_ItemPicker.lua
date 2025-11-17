@@ -26,6 +26,14 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ProfilerInit = require('rearkitekt.debug.profiler_init')
 local profiler_enabled = ProfilerInit.init()
 
+if profiler_enabled then
+  reaper.ShowConsoleMsg("[ItemPicker] ✓ Profiler enabled and initialized\n")
+else
+  reaper.ShowConsoleMsg("[ItemPicker] ✗ Profiler disabled or not found\n")
+  reaper.ShowConsoleMsg("[ItemPicker]   To enable: Set PROFILER_ENABLED=true in rearkitekt/app/app_defaults.lua\n")
+  reaper.ShowConsoleMsg("[ItemPicker]   Install profiler: ReaPack > Browse > Search 'cfillion Lua profiler'\n")
+end
+
 -- Check dependencies
 local has_imgui, imgui_test = pcall(require, 'imgui')
 if not has_imgui then
@@ -193,6 +201,11 @@ if USE_OVERLAY then
     ctx = ctx,
 
     on_frame = function(ctx)
+      -- Show ImGui debug window when profiling
+      if profiler_enabled then
+        ImGui.ShowMetricsWindow(ctx, true)
+      end
+
       -- When dragging, skip overlay entirely and just render drag handlers
       if State.dragging then
         ImGui.PushFont(ctx, fonts.default, fonts.default_size)
@@ -239,6 +252,11 @@ else
     },
 
     draw = function(ctx, shell_state)
+      -- Show ImGui debug window when profiling
+      if profiler_enabled then
+        ImGui.ShowMetricsWindow(ctx, true)
+      end
+
       gui:draw(ctx, shell_state)
     end,
 
