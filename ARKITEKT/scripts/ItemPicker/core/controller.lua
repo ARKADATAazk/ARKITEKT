@@ -6,15 +6,57 @@ local M = {}
 
 local reaper_interface
 local utils
+local incremental_loader_module
 
 function M.init(reaper_interface_module, utils_module)
   reaper_interface = reaper_interface_module
   utils = utils_module
+  incremental_loader_module = require('ItemPicker.data.loaders.incremental_loader')
   -- Expose reaper_interface for incremental loader
   M.reaper_interface = reaper_interface_module
 end
 
--- Collect all items from the project
+-- Start incremental loading (non-blocking)
+function M.start_incremental_loading(state, batch_size, fast_mode)
+  if not state.incremental_loader then
+    state.incremental_loader = incremental_loader_module.new(reaper_interface, batch_size or 50)
+  end
+
+  -- Set fast mode flag (skips expensive chunk processing)
+  state.incremental_loader.fast_mode = fast_mode or false
+
+  incremental_loader_module.start_loading(state.incremental_loader, state, state.settings)
+  state.is_loading = true
+  state.loading_progress = 0
+end
+
+-- Process one batch of loading (call every frame)
+-- Returns: is_complete, progress (0-1)
+function M.process_loading_batch(state)
+  if not state.incremental_loader or not state.is_loading then
+    return true, 1.0
+  end
+
+  local is_complete, progress = incremental_loader_module.process_batch(
+    state.incremental_loader,
+    state,
+    state.settings
+  )
+
+  if is_complete then
+    -- Loading complete, update state
+    incremental_loader_module.get_results(state.incremental_loader, state)
+    state.is_loading = false
+    state.loading_progress = 1.0
+    state.incremental_loader = nil
+  else
+    state.loading_progress = progress
+  end
+
+  return is_complete, progress
+end
+
+-- Collect all items from the project (legacy synchronous method - kept for compatibility)
 function M.collect_project_items(state)
   -- Get track and item chunks for comparison
   state.track_chunks = reaper_interface.GetAllTrackStateChunks()

@@ -44,20 +44,17 @@ function GUI:initialize_once(ctx)
   self.state.midi_item_lookup = {}
 
   -- Initialize disk cache for waveform/thumbnail persistence
+  -- Pre-loading will happen incrementally as items are loaded
   local disk_cache = require('ItemPicker.data.disk_cache')
   local cache_dir = disk_cache.init()
 
-  -- Pre-load disk cache into runtime cache for instant access
-  -- This prevents items from being queued if they're already cached
-  local stats = disk_cache.preload_to_runtime(self.state.runtime_cache)
-  if stats and stats.loaded > 0 then
-    reaper.ShowConsoleMsg(string.format("[ItemPicker] Loaded %d cached items from disk\n", stats.loaded))
-  end
+  reaper.ShowConsoleMsg("[ItemPicker] Disk cache initialized, will preload as items load\n")
 
   -- Initialize job queue for lazy waveform/thumbnail generation
   if not self.state.job_queue then
     local job_queue_module = require('ItemPicker.data.job_queue')
-    self.state.job_queue = job_queue_module.new(3) -- Process 3 jobs per frame
+    -- Process more jobs per frame during loading, fewer during normal operation
+    self.state.job_queue = job_queue_module.new(10) -- Process 10 jobs per frame
   end
 
   -- Create coordinator and layout view with empty data
@@ -71,22 +68,16 @@ end
 function GUI:start_incremental_loading()
   if self.loading_started then return end
 
-  reaper.ShowConsoleMsg("=== ItemPicker: Starting data loading ===\n")
+  reaper.ShowConsoleMsg("=== ItemPicker: Starting lazy loading ===\n")
 
   local current_change_count = reaper.GetProjectStateChangeCount(0)
   self.state.last_change_count = current_change_count
 
-  -- Load ALL items synchronously (fast enough for up to ~1000 items)
-  reaper.ShowConsoleMsg("Loading all items synchronously...\n")
-  local start_time = reaper.time_precise()
-
-  self.controller.collect_project_items(self.state)
-
-  local elapsed = (reaper.time_precise() - start_time) * 1000
-  reaper.ShowConsoleMsg(string.format("=== ItemPicker: Loading complete! (%.1fms) ===\n", elapsed))
-
-  self.data_loaded = true
+  -- LAZY LOAD: Start loading on NEXT frame (not this one!)
+  -- This allows UI to show immediately
+  self.loading_start_time = reaper.time_precise()
   self.loading_started = true
+  self.start_loading_next_frame = true
 end
 
 
@@ -98,9 +89,39 @@ function GUI:draw(ctx, shell_state)
     self.state.draw_list = ImGui.GetWindowDrawList(ctx)
   end
 
-  -- Start loading immediately on first frame
+  -- Start loading on SECOND frame (UI shows first)
   if not self.loading_started then
     self:start_incremental_loading()
+  elseif self.start_loading_next_frame and not self.state.is_loading then
+    -- Start actual loading NOW (after UI is shown)
+    self.start_loading_next_frame = false
+
+    local fast_mode = true
+    self.state.skip_visualizations = true
+
+    -- Smaller batches for smoother UI (100 items per frame)
+    self.controller.start_incremental_loading(self.state, 100, fast_mode)
+  end
+
+  -- Process incremental loading batch every frame
+  if self.state.is_loading then
+    local is_complete, progress = self.controller.process_loading_batch(self.state)
+
+    if is_complete then
+      local elapsed = (reaper.time_precise() - self.loading_start_time) * 1000
+      reaper.ShowConsoleMsg(string.format("=== ItemPicker: Loading complete! (%.1fms) ===\n", elapsed))
+
+      -- Skip disk cache in fast mode
+      if not self.state.skip_visualizations then
+        local disk_cache = require('ItemPicker.data.disk_cache')
+        local stats = disk_cache.preload_to_runtime(self.state.runtime_cache)
+        if stats and stats.loaded > 0 then
+          reaper.ShowConsoleMsg(string.format("[ItemPicker] Loaded %d cached visualizations from disk\n", stats.loaded))
+        end
+      end
+
+      self.data_loaded = true
+    end
   end
 
   -- Get overlay alpha for cascade animation
@@ -132,8 +153,17 @@ function GUI:draw(ctx, shell_state)
   local big_font_size = shell_state.fonts.title_size or 24
 
   -- Process async jobs for waveform/thumbnail generation
-  if self.state.job_queue and self.state.runtime_cache then
+  -- Skip job processing entirely if skip_visualizations is enabled
+  if not self.state.skip_visualizations and self.state.job_queue and self.state.runtime_cache then
     local job_queue_module = require('ItemPicker.data.job_queue')
+
+    -- Process more jobs during initial loading for faster startup
+    if self.state.is_loading then
+      self.state.job_queue.max_per_frame = 20 -- Aggressive during loading
+    else
+      self.state.job_queue.max_per_frame = 5 -- Conservative during normal operation
+    end
+
     job_queue_module.process_jobs(
       self.state.job_queue,
       self.visualization,
@@ -148,13 +178,58 @@ function GUI:draw(ctx, shell_state)
   -- Handle tile size shortcuts
   self.coordinator:handle_tile_size_shortcuts(ctx)
 
-  -- Check if we need to recollect items (e.g., after toggling split_midi_by_track)
-  if self.state.needs_recollect then
-    self.controller.collect_project_items(self.state)
-    self.state.needs_recollect = false
-    self.state.last_change_count = reaper.GetProjectStateChangeCount(0)
+  -- Check if we need to reorganize items (instant, no reload)
+  if self.state.needs_reorganize and not self.state.is_loading then
+    self.state.needs_reorganize = false
+    reaper.ShowConsoleMsg(string.format("[GROUPING] Reorganizing items... group_by_name=%s\n", tostring(self.state.settings.group_items_by_name)))
 
-    -- Save updated state to disk
+    -- Reorganize from raw pool (instant operation)
+    if self.state.incremental_loader then
+      local incremental_loader_module = require("ItemPicker.data.loaders.incremental_loader")
+      local raw_audio_count = #(self.state.incremental_loader.raw_audio_items or {})
+      local raw_midi_count = #(self.state.incremental_loader.raw_midi_items or {})
+      reaper.ShowConsoleMsg(string.format("[GROUPING] Raw pools: %d audio, %d midi\n", raw_audio_count, raw_midi_count))
+
+      incremental_loader_module.reorganize_items(
+        self.state.incremental_loader,
+        self.state.settings.group_items_by_name
+      )
+
+      -- Copy results to state
+      self.state.samples = self.state.incremental_loader.samples
+      self.state.sample_indexes = self.state.incremental_loader.sample_indexes
+      self.state.midi_items = self.state.incremental_loader.midi_items
+      self.state.midi_indexes = self.state.incremental_loader.midi_indexes
+
+      reaper.ShowConsoleMsg(string.format("[GROUPING] After reorganize: %d audio groups, %d midi groups\n",
+        #self.state.sample_indexes, #self.state.midi_indexes))
+
+      -- Rebuild lookups
+      incremental_loader_module.get_results(self.state.incremental_loader, self.state)
+
+      -- Invalidate filter cache (items changed)
+      self.state.runtime_cache.audio_filter_hash = nil
+      self.state.runtime_cache.midi_filter_hash = nil
+      reaper.ShowConsoleMsg("[GROUPING] Reorganization complete!\n")
+    else
+      reaper.ShowConsoleMsg("[GROUPING] ERROR: No incremental_loader found!\n")
+    end
+  end
+
+  -- Check if we need to recollect items from REAPER (project changes)
+  if self.state.needs_recollect and not self.state.is_loading then
+    self.state.needs_recollect = false
+
+    -- Clear current items
+    self.state.samples = {}
+    self.state.sample_indexes = {}
+    self.state.midi_items = {}
+    self.state.midi_indexes = {}
+
+    -- Start incremental loading with fast mode
+    local fast_mode = true
+    self.state.skip_visualizations = true
+    self.controller.start_incremental_loading(self.state, 100, fast_mode)
   end
 
   -- Periodically check for project changes (every 180 frames = ~5-6 seconds)

@@ -190,7 +190,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.set_setting('show_disabled_items', not self.state.settings.show_disabled_items)
   end
 
-  -- Line 2: Show Favorites Only | Show Audio | Show MIDI | Split MIDI Items by Track
+  -- Line 2: Show Favorites Only | Show Audio | Show MIDI | Sort Mode
   checkbox_y = checkbox_y + 24
   _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
     "Show Favorites Only",
@@ -219,20 +219,21 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.set_setting('show_midi', not self.state.settings.show_midi)
   end
 
-  -- Split MIDI Items by Track on same line
+  -- Group Items of Same Name checkbox on same line
   prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show MIDI") + 18 + 8 + spacing
-  local split_midi_x = checkbox_x + prev_width
-  _, clicked = Checkbox.draw(ctx, draw_list, split_midi_x, checkbox_y,
-    "Split MIDI Items by Track",
-    self.state.settings.split_midi_by_track, checkbox_config, "split_midi_by_track")
+  local group_items_x = checkbox_x + prev_width
+  _, clicked = Checkbox.draw(ctx, draw_list, group_items_x, checkbox_y,
+    "Group Items of Same Name",
+    self.state.settings.group_items_by_name, checkbox_config, "group_items_by_name")
   if clicked then
-    self.state.set_setting('split_midi_by_track', not self.state.settings.split_midi_by_track)
-    -- Recollect items when this setting changes
-    self.state.needs_recollect = true
+    self.state.set_setting('group_items_by_name', not self.state.settings.group_items_by_name)
+    reaper.ShowConsoleMsg(string.format("[GROUPING] Checkbox clicked! New value: %s\n", tostring(self.state.settings.group_items_by_name)))
+    -- Trigger instant reorganization (no REAPER API calls)
+    self.state.needs_reorganize = true
   end
 
-  -- Sort mode buttons (on same line after Split MIDI)
-  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Split MIDI Items by Track") + 18 + 8 + 40  -- Extra spacing
+  -- Sort mode buttons (on same line after Group Items checkbox)
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Group Items of Same Name") + 18 + 8 + 40  -- Extra spacing
   local sort_button_x = checkbox_x + prev_width
 
   -- Draw sort mode label and buttons

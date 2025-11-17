@@ -31,14 +31,31 @@ function StatusBar:render(ctx)
   local selected_audio = self.state.audio_selection_count or 0
   local selected_midi = self.state.midi_selection_count or 0
 
-  -- Left side: Selection info and preview status
+  -- Left side: Selection info, loading progress, and preview status
   local status_text = ""
 
+  -- Loading status (highest priority)
+  if self.state.is_loading then
+    local progress = self.state.loading_progress or 0
+    local percent = math.floor(progress * 100)
+
+    -- Animated spinner
+    local spinner_chars = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
+    local spinner_idx = math.floor((reaper.time_precise() * 8) % #spinner_chars) + 1
+    local spinner = spinner_chars[spinner_idx]
+
+    status_text = string.format("%s Loading items... %d%% (%d Audio, %d MIDI)",
+      spinner, percent, total_audio, total_midi)
+
+    -- Show loading color
+    local loading_color = hexrgb("#4A9EFF")
+    ImGui.TextColored(ctx, loading_color, status_text)
   -- Preview status
-  if self.state.previewing and self.state.previewing ~= 0 and self.state.preview_item then
+  elseif self.state.previewing and self.state.previewing ~= 0 and self.state.preview_item then
     local take = reaper.GetActiveTake(self.state.preview_item)
     local item_name = take and reaper.GetTakeName(take) or "Item"
     status_text = string.format("🔊 Previewing: %s", item_name)
+    ImGui.Text(ctx, status_text)
   elseif selected_audio > 0 or selected_midi > 0 then
     local parts = {}
     if selected_audio > 0 then
@@ -48,11 +65,11 @@ function StatusBar:render(ctx)
       table.insert(parts, string.format("%d MIDI", selected_midi))
     end
     status_text = string.format("Selected: %s", table.concat(parts, ", "))
+    ImGui.Text(ctx, status_text)
   else
     status_text = string.format("Items: %d Audio, %d MIDI", total_audio, total_midi)
+    ImGui.Text(ctx, status_text)
   end
-
-  ImGui.Text(ctx, status_text)
 
   -- Right side: Keyboard shortcuts hint
   ImGui.SameLine(ctx)
