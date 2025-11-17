@@ -494,6 +494,49 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
 end
 
 -- ============================================================================
+-- CLIP EDGE BORDER DRAWING
+-- ============================================================================
+
+--- Draws visual borders at panel edges where content is being clipped
+--- @param dl ImGui draw list
+--- @param panel_x number Panel left edge
+--- @param panel_y number Panel top edge
+--- @param panel_width number Panel width
+--- @param panel_height number Panel height
+--- @param ... number Content boundaries (left_start, left_end, right_start, right_end)
+local function draw_clip_edge_borders(dl, panel_x, panel_y, panel_width, panel_height, ...)
+  local bounds = {...}
+  local border_color = 0x000000FF  -- Black border for clip edges
+  local border_thickness = 1
+
+  local panel_left = panel_x
+  local panel_right = panel_x + panel_width
+
+  -- Check if content extends beyond left edge
+  if #bounds >= 1 and bounds[1] < panel_left then
+    ImGui.DrawList_AddLine(dl, panel_left, panel_y, panel_left, panel_y + panel_height, border_color, border_thickness)
+  end
+
+  -- Check if content extends beyond right edge
+  local right_bound = #bounds >= 2 and bounds[2] or bounds[1]
+  if right_bound > panel_right then
+    ImGui.DrawList_AddLine(dl, panel_right, panel_y, panel_right, panel_y + panel_height, border_color, border_thickness)
+  end
+
+  -- For dual-side layouts (left + right elements)
+  if #bounds >= 4 then
+    -- Check left-aligned content overflow
+    if bounds[2] > panel_right then
+      ImGui.DrawList_AddLine(dl, panel_right, panel_y, panel_right, panel_y + panel_height, border_color, border_thickness)
+    end
+    -- Check right-aligned content overflow
+    if bounds[3] < panel_left then
+      ImGui.DrawList_AddLine(dl, panel_left, panel_y, panel_left, panel_y + panel_height, border_color, border_thickness)
+    end
+  end
+end
+
+-- ============================================================================
 -- MAIN DRAW FUNCTION
 -- ============================================================================
 
@@ -535,6 +578,10 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     -- Pixel snap center position to prevent blurry borders
     local center_x = math.floor(content_x + (content_width - center_width) / 2 + 0.5)
     render_elements(ctx, dl, center_x, content_y, center_width, content_height, center_elements, state, header_rounding, is_bottom, valign)
+
+    -- Draw clip edge borders if content overflows
+    draw_clip_edge_borders(dl, x, y, width, height, center_x, center_x + center_width)
+
     ImGui.DrawList_PopClipRect(dl)
     return height
   end
@@ -568,6 +615,9 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     local right_x = content_x + content_width - right_width
     render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom)
 
+    -- Draw clip edge borders if content overflows
+    draw_clip_edge_borders(dl, x, y, width, height, content_x, content_x + left_width, right_x, right_x + right_width)
+
   elseif #right_elements > 0 then
     -- Only right-aligned elements
     local right_layout = layout_elements(ctx, right_elements, content_width, state)
@@ -582,9 +632,15 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     local right_x = content_x + content_width - right_width
     render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom)
 
+    -- Draw clip edge borders if content overflows
+    draw_clip_edge_borders(dl, x, y, width, height, right_x, right_x + right_width)
+
   else
     -- Only left-aligned elements (default)
     render_elements(ctx, dl, content_x, content_y, content_width, content_height, left_elements, state, header_rounding, is_bottom)
+
+    -- Draw clip edge borders if content overflows
+    draw_clip_edge_borders(dl, x, y, width, height, content_x, content_x + content_width)
   end
 
   -- Always pop clip rect before returning
