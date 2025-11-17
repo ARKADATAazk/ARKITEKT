@@ -34,9 +34,9 @@ M.TRANSPORT = {
   spacing = 12,
   panel_bg_color = hexrgb("#131313c9"),
   
-  -- View mode button (left)
+  -- View mode button (bottom-left corner)
   view_mode = {
-    size = 32,
+    size = 30,  -- Match settings icon size
     rounding = 4,
     bg_color = hexrgb("#252525"),
     bg_hover = hexrgb("#2A2A2A"),

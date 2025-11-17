@@ -40,6 +40,13 @@ local TRANSPORT_LAYOUT_CONFIG = {
   next_region_offset_x = 0,
   next_region_offset_y = 0,
   content_vertical_offset = -2,
+
+  -- Responsive breakpoints
+  hide_playlist_width = 500,  -- Hide playlist name below this width
+  truncate_region_width = 450,  -- Start truncating region names below this
+  hide_region_width = 300,  -- Hide region names below this width
+  region_name_max_chars = 15,  -- Max chars before truncation starts
+  region_name_min_chars = 8,  -- Min chars when fully truncated
 }
 
 local TransportDisplay = {}
@@ -49,6 +56,27 @@ function M.new(config)
   return setmetatable({
     config = config or {},
   }, TransportDisplay)
+end
+
+-- Truncate text with ellipsis based on character count
+local function truncate_text(text, max_chars)
+  if #text <= max_chars then
+    return text
+  end
+  return text:sub(1, max_chars - 1) .. "…"
+end
+
+-- Calculate truncation length based on available width
+local function get_truncate_length(width, min_width, max_width, min_chars, max_chars)
+  if width >= max_width then
+    return max_chars
+  end
+  if width <= min_width then
+    return min_chars
+  end
+  -- Linear interpolation
+  local factor = (width - min_width) / (max_width - min_width)
+  return min_chars + (max_chars - min_chars) * factor
 end
 
 local function ensure_minimum_brightness(color, min_luminance)
@@ -153,11 +181,12 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   local row_height = math.max(text_line_h, time_h)
   
   local row_y = content_top + ((content_bottom - content_top) - row_height) / 2 + LC.content_vertical_offset
-  
-  if playlist_data then
+
+  -- Responsive: Only show playlist name if width is sufficient
+  if playlist_data and width >= LC.hide_playlist_width then
     local chip_x = x + LC.padding + LC.playlist_chip_offset_x
     local chip_y = row_y + row_height / 2 + LC.playlist_chip_offset_y
-    
+
     Chip.draw(ctx, {
       style = Chip.STYLE.INDICATOR,
       color = playlist_data.color,
@@ -170,7 +199,7 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
       show_glow = false,
       alpha_factor = 1.0,
     })
-    
+
     local playlist_name_x = x + LC.padding + LC.playlist_name_offset_x
     local playlist_name_y = row_y + (row_height - text_line_h) / 2 + LC.playlist_name_offset_y
     local playlist_name_color = hexrgb("#CCCCCC")
@@ -192,36 +221,62 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
     ImGui.PopFont(ctx)
   end
   
-  if bridge_state.is_playing and current_region then
+  -- Responsive: Only show current region if width is sufficient
+  if bridge_state.is_playing and current_region and width >= LC.hide_region_width then
     local index_str = string.format("%d", current_region.rid)
     local name_str = current_region.name or "Unknown"
-    
+
+    -- Apply responsive truncation
+    if width < LC.truncate_region_width then
+      local truncate_len = get_truncate_length(
+        width,
+        LC.hide_region_width,
+        LC.truncate_region_width,
+        LC.region_name_min_chars,
+        LC.region_name_max_chars
+      )
+      name_str = truncate_text(name_str, truncate_len)
+    end
+
     local index_color = Colors.same_hue_variant(current_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
     local name_color = hexrgb("#FFFFFF")
-    
+
     local index_w = ImGui.CalcTextSize(ctx, index_str)
     local name_w = ImGui.CalcTextSize(ctx, name_str)
-    
+
     local total_w = index_w + LC.region_label_spacing + name_w
     local current_x = time_x - total_w - LC.spacing_horizontal + LC.current_region_offset_x
     local current_y = row_y + (row_height - text_line_h) / 2 + LC.current_region_offset_y
-    
+
     ImGui.DrawList_AddText(dl, current_x, current_y, index_color, index_str)
     ImGui.DrawList_AddText(dl, current_x + index_w + LC.region_label_spacing, current_y, name_color, name_str)
   end
   
-  if bridge_state.is_playing and next_region then
+  -- Responsive: Only show next region if width is sufficient
+  if bridge_state.is_playing and next_region and width >= LC.hide_region_width then
     local index_str = string.format("%d", next_region.rid)
     local name_str = next_region.name or "Unknown"
-    
+
+    -- Apply responsive truncation
+    if width < LC.truncate_region_width then
+      local truncate_len = get_truncate_length(
+        width,
+        LC.hide_region_width,
+        LC.truncate_region_width,
+        LC.region_name_min_chars,
+        LC.region_name_max_chars
+      )
+      name_str = truncate_text(name_str, truncate_len)
+    end
+
     local index_color = Colors.same_hue_variant(next_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
     local name_color = hexrgb("#FFFFFF")
-    
+
     local index_w = ImGui.CalcTextSize(ctx, index_str)
-    
+
     local next_x = time_x + time_w + LC.spacing_horizontal + LC.next_region_offset_x
     local next_y = row_y + (row_height - text_line_h) / 2 + LC.next_region_offset_y
-    
+
     ImGui.DrawList_AddText(dl, next_x, next_y, index_color, index_str)
     ImGui.DrawList_AddText(dl, next_x + index_w + LC.region_label_spacing, next_y, name_color, name_str)
   end

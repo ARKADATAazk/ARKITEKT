@@ -479,8 +479,9 @@ function TransportView:draw(ctx, shell_state, is_blocking)
   self.container:end_draw(ctx)
   
   local view_mode_size = self.config.view_mode.size
-  local view_x = transport_start_x + 8
-  local view_y = transport_start_y + (transport_height - view_mode_size) / 2
+  local view_mode_margin = 8  -- Match corner button margin
+  local view_x = transport_start_x + view_mode_margin
+  local view_y = transport_start_y + transport_height - view_mode_size - view_mode_margin
 
   -- Use foreground drawlist so button appears above child window content
   self.view_mode_button:draw(ctx, view_x, view_y, self.state.get_layout_mode(), function()
