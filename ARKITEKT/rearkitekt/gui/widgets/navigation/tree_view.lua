@@ -127,8 +127,8 @@ local function render_tree_node(ctx, node, config, state, depth)
     -- We need to draw the icon inline with the label, so use TreeNodeEx with custom rendering
     local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
 
-    -- Render the tree node structure with empty label
-    local node_open = ImGui.TreeNodeEx(ctx, "##" .. node_id, flags)
+    -- Render the tree node structure with empty label (PushID above provides unique ID)
+    local node_open = ImGui.TreeNodeEx(ctx, "", flags)
 
     -- Now draw the folder icon and name on the same line
     ImGui.SameLine(ctx, 0, 0)
