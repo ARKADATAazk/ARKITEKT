@@ -2,7 +2,7 @@
 -- ItemPicker/core/app_state.lua
 -- Centralized state management (single source of truth)
 
-local Persistence = require("ItemPicker.storage.persistence")
+local Persistence = require("ItemPicker.data.persistence")
 
 local M = {}
 
@@ -14,13 +14,16 @@ M.settings = {
   show_muted_tracks = false,
   show_muted_items = false,
   show_disabled_items = false,
+  show_favorites_only = false,
+  show_audio = true,
+  show_midi = true,
   split_midi_by_track = false,  -- Show each MIDI item separately instead of grouped by track
   focus_keyboard_on_init = true,
   search_string = "",
   tile_width = nil,
   tile_height = nil,
   separator_position = nil,  -- MIDI section height (nil = use default from config)
-  view_mode = "MIXED",  -- "MIDI", "AUDIO", or "MIXED"
+  sort_mode = "none",  -- Options: "none", "color", "name"
 }
 
 -- Runtime state (volatile)
@@ -37,6 +40,7 @@ M.box_current_item = {}  -- { [filename] = item_index }
 M.box_current_midi_track = {}  -- { [track_guid] = item_index }
 
 M.disabled = { audio = {}, midi = {} }
+M.favorites = { audio = {}, midi = {} }
 M.track_chunks = {}
 M.item_chunks = {}
 
@@ -59,11 +63,27 @@ M.audio_selection_count = 0
 M.midi_selection_count = 0
 
 -- Preview state
+M.previewing = false
 M.preview_item = nil
-M.preview_track = nil
-M.previewing = 0
+M.preview_start_time = nil
+M.preview_duration = nil
+
+-- Rename state
+M.rename_active = false
+M.rename_uuid = nil
+M.rename_text = ""
+M.rename_is_audio = true
+M.rename_focused = false  -- Track if input is focused
+M.rename_queue = nil  -- For batch rename
+M.rename_queue_index = 0
 
 M.draw_list = nil
+
+-- Runtime cache for waveforms/thumbnails (in-memory only, no disk I/O)
+M.runtime_cache = {
+  waveforms = {},
+  midi_thumbnails = {},
+}
 M.overlay_alpha = 1.0
 M.exit = false
 
@@ -89,6 +109,8 @@ function M.initialize(config)
   M.settings = Persistence.load_settings()
   local disabled_data = Persistence.load_disabled_items()
   M.disabled = disabled_data or { audio = {}, midi = {} }
+  local favorites_data = Persistence.load_favorites()
+  M.favorites = favorites_data or { audio = {}, midi = {} }
 
   -- Restore tile sizes from settings
   if M.settings.tile_width then
@@ -151,15 +173,20 @@ function M.set_separator_position(height)
   M.persist_settings()
 end
 
--- View mode management
+-- View mode management (derived from checkboxes)
 function M.get_view_mode()
-  return M.settings.view_mode or "MIXED"
-end
+  local show_audio = M.settings.show_audio
+  local show_midi = M.settings.show_midi
 
-function M.set_view_mode(mode)
-  if mode == "MIDI" or mode == "AUDIO" or mode == "MIXED" then
-    M.settings.view_mode = mode
-    M.persist_settings()
+  if show_audio and show_midi then
+    return "MIXED"
+  elseif show_midi then
+    return "MIDI"
+  elseif show_audio then
+    return "AUDIO"
+  else
+    -- If both are off, default to MIXED
+    return "MIXED"
   end
 end
 
@@ -188,6 +215,33 @@ function M.toggle_midi_disabled(track_guid)
     M.disabled.midi[track_guid] = true
   end
   M.persist_disabled()
+end
+
+-- Favorites management
+function M.is_audio_favorite(filename)
+  return M.favorites.audio[filename] == true
+end
+
+function M.is_midi_favorite(track_guid)
+  return M.favorites.midi[track_guid] == true
+end
+
+function M.toggle_audio_favorite(filename)
+  if M.favorites.audio[filename] then
+    M.favorites.audio[filename] = nil
+  else
+    M.favorites.audio[filename] = true
+  end
+  M.persist_favorites()
+end
+
+function M.toggle_midi_favorite(track_guid)
+  if M.favorites.midi[track_guid] then
+    M.favorites.midi[track_guid] = nil
+  else
+    M.favorites.midi[track_guid] = true
+  end
+  M.persist_favorites()
 end
 
 -- Item cycling
@@ -265,43 +319,98 @@ function M.request_exit()
   M.exit = true
 end
 
--- Preview management
+-- Preview management (using SWS extension commands)
 function M.start_preview(item)
   if not item then return end
 
   -- Stop current preview
   M.stop_preview()
 
-  -- Start new preview
-  local play_through_track = M.settings.play_item_through_track
-  local track = reaper.GetMediaItemTrack(item)
+  -- Get item duration for progress tracking
+  local item_len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
 
-  if play_through_track then
-    M.previewing = reaper.PlayPreview(reaper.PCM_Source_CreateFromType("MIDI"))
-    M.preview_track = track
+  -- First, select the item for SWS commands to work
+  reaper.SelectAllMediaItems(0, false)  -- Deselect all
+  reaper.SetMediaItemSelected(item, true)
+
+  -- Get currently selected track (if any)
+  local selected_track = reaper.GetSelectedTrack(0, 0)
+
+  -- Check if it's MIDI
+  local take = reaper.GetActiveTake(item)
+  if take and reaper.TakeIsMIDI(take) then
+    -- MIDI requires timeline movement (limitation of Reaper API)
+    local item_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+    reaper.SetEditCurPos(item_pos, false, false)
+
+    -- Use SWS preview through track (required for MIDI)
+    local cmd_id = reaper.NamedCommandLookup("_SWS_PREVIEWTRACK")
+    if cmd_id and cmd_id ~= 0 then
+      reaper.Main_OnCommand(cmd_id, 0)
+      M.previewing = true
+      M.preview_item = item
+      M.preview_start_time = reaper.time_precise()
+      M.preview_duration = item_len
+    end
   else
-    local take = reaper.GetActiveTake(item)
-    if take then
-      local source = reaper.GetMediaItemTake_Source(take)
-      if source then
-        M.previewing = reaper.PlayPreview(source)
+    -- Audio: Use SWS commands
+    if selected_track then
+      -- Preview through selected track with FX
+      local cmd_id = reaper.NamedCommandLookup("_SWS_PREVIEWTRACK")
+      if cmd_id and cmd_id ~= 0 then
+        reaper.Main_OnCommand(cmd_id, 0)
+        M.previewing = true
         M.preview_item = item
+        M.preview_start_time = reaper.time_precise()
+        M.preview_duration = item_len
+      end
+    else
+      -- Direct preview (no FX, faster)
+      local cmd_id = reaper.NamedCommandLookup("_XENAKIOS_ITEMASPCM1")
+      if cmd_id and cmd_id ~= 0 then
+        reaper.Main_OnCommand(cmd_id, 0)
+        M.previewing = true
+        M.preview_item = item
+        M.preview_start_time = reaper.time_precise()
+        M.preview_duration = item_len
       end
     end
   end
 end
 
 function M.stop_preview()
-  if M.previewing and M.previewing ~= 0 then
-    reaper.StopPreview(M.previewing)
-    M.previewing = 0
+  if M.previewing then
+    -- Stop SWS preview
+    local cmd_id = reaper.NamedCommandLookup("_XENAKIOS_STOPITEMPREVIEW")
+    if cmd_id and cmd_id ~= 0 then
+      reaper.Main_OnCommand(cmd_id, 0)
+    end
+    M.previewing = false
     M.preview_item = nil
-    M.preview_track = nil
+    M.preview_start_time = nil
+    M.preview_duration = nil
   end
 end
 
 function M.is_previewing(item)
-  return M.preview_item == item and M.previewing ~= 0
+  return M.previewing and M.preview_item == item
+end
+
+function M.get_preview_progress()
+  if not M.previewing or not M.preview_start_time or not M.preview_duration then
+    return 0
+  end
+
+  local elapsed = reaper.time_precise() - M.preview_start_time
+  local progress = elapsed / M.preview_duration
+
+  -- Auto-stop when preview completes
+  if progress >= 1.0 then
+    M.stop_preview()
+    return 1.0
+  end
+
+  return progress
 end
 
 -- Persistence
@@ -313,20 +422,28 @@ function M.persist_disabled()
   Persistence.save_disabled_items(M.disabled)
 end
 
+function M.persist_favorites()
+  Persistence.save_favorites(M.favorites)
+end
+
 function M.persist_all()
   M.persist_settings()
   M.persist_disabled()
+  M.persist_favorites()
 end
 
 -- Cleanup
 function M.cleanup()
   M.persist_all()
 
-  -- Stop preview
-  if M.previewing and M.previewing ~= 0 then
-    reaper.StopPreview(M.previewing)
-    M.previewing = 0
+  -- Flush disk cache to save waveforms/thumbnails
+  local disk_cache_ok, disk_cache = pcall(require, 'ItemPicker.data.disk_cache')
+  if disk_cache_ok and disk_cache.flush then
+    disk_cache.flush()
   end
+
+  -- Stop preview using SWS command
+  M.stop_preview()
 end
 
 return M

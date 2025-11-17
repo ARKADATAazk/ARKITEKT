@@ -473,19 +473,31 @@ function Grid:draw(ctx)
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
   local bg_clicked = ImGui.IsItemClicked(ctx, 0)
+  local bg_double_clicked = ImGui.IsItemClicked(ctx, 0) and ImGui.IsMouseDoubleClicked(ctx, 0)
 
   -- Optimized: Check if mouse is over any tile (inline to avoid function call overhead)
   local mouse_over_tile = false
-  if bg_clicked then
+  local double_clicked_tile_key = nil
+
+  if bg_clicked or bg_double_clicked then
     local mx, my = ImGui.GetMousePos(ctx)
     for i = 1, num_items do
       local item = items[i]
-      local r = self.rect_track:get(self.key(item))
+      local key = self.key(item)
+      local r = self.rect_track:get(key)
       if r and self:_rect_intersects_bounds(r) and Draw.point_in_rect(mx, my, r[1], r[2], r[3], r[4]) then
         mouse_over_tile = true
+        if bg_double_clicked then
+          double_clicked_tile_key = key
+        end
         break
       end
     end
+  end
+
+  -- Handle double-click on tile at grid level (before marquee selection)
+  if bg_double_clicked and double_clicked_tile_key and self.behaviors and self.behaviors.double_click then
+    self.behaviors.double_click(double_clicked_tile_key)
   end
 
   if bg_clicked and not mouse_over_tile and not Input.is_external_drag_active(self) then

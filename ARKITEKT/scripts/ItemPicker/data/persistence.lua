@@ -14,6 +14,9 @@ local function get_default_settings()
     show_muted_tracks = false,
     show_muted_items = false,
     show_disabled_items = false,
+    show_favorites_only = false,
+    show_audio = true,
+    show_midi = true,
     focus_keyboard_on_init = true,
     search_string = "",
     tile_width = nil,  -- nil = use config default
@@ -116,6 +119,44 @@ function M.save_disabled_items(disabled)
   )
 
   reaper.SetProjExtState(0, EXTNAME, "disabled_items", serialized)
+end
+
+-- Favorites persistence
+function M.load_favorites()
+  local has_state, state_str = reaper.GetProjExtState(0, EXTNAME, "favorites")
+
+  if not has_state or has_state == 0 or state_str == "" then
+    return { audio = {}, midi = {} }
+  end
+
+  local success, favorites = pcall(load("return " .. state_str))
+  if not success or type(favorites) ~= "table" then
+    return { audio = {}, midi = {} }
+  end
+
+  return favorites
+end
+
+function M.save_favorites(favorites)
+  if not favorites then return end
+
+  local function serialize_set(tbl)
+    if not tbl then return "{}" end
+    local parts = {}
+    for k, _ in pairs(tbl) do
+      local key_str = string.format("[%q]", tostring(k))
+      table.insert(parts, key_str .. "=true")
+    end
+    return "{" .. table.concat(parts, ",") .. "}"
+  end
+
+  local serialized = string.format(
+    "{audio=%s,midi=%s}",
+    serialize_set(favorites.audio),
+    serialize_set(favorites.midi)
+  )
+
+  reaper.SetProjExtState(0, EXTNAME, "favorites", serialized)
 end
 
 return M

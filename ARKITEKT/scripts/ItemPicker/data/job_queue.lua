@@ -1,4 +1,5 @@
 local M = {}
+local disk_cache = require('ItemPicker.data.disk_cache')
 
 function M.new(max_per_frame)
   local queue = {
@@ -11,18 +12,18 @@ function M.new(max_per_frame)
     processing_keys = {},
   }
 
-  queue.add_waveform_job = function(cache, item, cache_key, is_visible)
-    return M.add_waveform_job(queue, cache, item, cache_key, is_visible)
+  queue.add_waveform_job = function(item, cache_key, is_visible)
+    return M.add_waveform_job(queue, item, cache_key, is_visible)
   end
 
-  queue.add_midi_job = function(cache, item, width, height, cache_key, is_visible)
-    return M.add_midi_job(queue, cache, item, width, height, cache_key, is_visible)
+  queue.add_midi_job = function(item, width, height, cache_key, is_visible)
+    return M.add_midi_job(queue, item, width, height, cache_key, is_visible)
   end
 
   return queue
 end
 
-function M.add_waveform_job(job_queue, cache, item, cache_key, is_visible)
+function M.add_waveform_job(job_queue, item, cache_key, is_visible)
   if job_queue.processing_keys[cache_key] then
     return
   end
@@ -45,13 +46,12 @@ function M.add_waveform_job(job_queue, cache, item, cache_key, is_visible)
 
   table.insert(target_queue, {
     type = "waveform",
-    cache = cache,
     item = item,
     cache_key = cache_key,
   })
 end
 
-function M.add_midi_job(job_queue, cache, item, width, height, cache_key, is_visible)
+function M.add_midi_job(job_queue, item, width, height, cache_key, is_visible)
   if job_queue.processing_keys[cache_key] then
     return
   end
@@ -74,7 +74,6 @@ function M.add_midi_job(job_queue, cache, item, width, height, cache_key, is_vis
 
   table.insert(target_queue, {
     type = "midi",
-    cache = cache,
     item = item,
     width = width,
     height = height,
@@ -82,7 +81,7 @@ function M.add_midi_job(job_queue, cache, item, width, height, cache_key, is_vis
   })
 end
 
-function M.process_jobs(job_queue, visualization, cache_mgr, imgui_ctx)
+function M.process_jobs(job_queue, visualization, runtime_cache, imgui_ctx)
   -- Count both priority and normal queues
   local total_queued = #job_queue.waveform_queue + #job_queue.midi_queue +
                        #job_queue.waveform_queue_priority + #job_queue.midi_queue_priority
@@ -113,12 +112,40 @@ function M.process_jobs(job_queue, visualization, cache_mgr, imgui_ctx)
       job_queue.processing_keys[job.cache_key] = true
 
       if job.type == "waveform" then
-        if visualization.GetItemWaveform then
-          visualization.GetItemWaveform(job.cache, job.item, job.cache_key)
+        -- Try disk cache first
+        local cached_waveform = disk_cache.load_waveform(job.item, job.cache_key)
+        if cached_waveform then
+          -- Load from disk cache into runtime cache
+          if runtime_cache and runtime_cache.waveforms then
+            runtime_cache.waveforms[job.cache_key] = cached_waveform
+          end
+        else
+          -- Generate new waveform
+          if visualization.GetItemWaveform then
+            local waveform = visualization.GetItemWaveform(runtime_cache, job.item, job.cache_key)
+            -- Save to disk cache (already stored in runtime_cache by GetItemWaveform)
+            if waveform then
+              disk_cache.save_waveform(job.item, job.cache_key, waveform)
+            end
+          end
         end
       elseif job.type == "midi" then
-        if visualization.GenerateMidiThumbnail then
-          visualization.GenerateMidiThumbnail(job.cache, job.item, job.width, job.height, job.cache_key)
+        -- Try disk cache first
+        local cached_thumbnail = disk_cache.load_midi_thumbnail(job.item, job.cache_key)
+        if cached_thumbnail then
+          -- Load from disk cache into runtime cache
+          if runtime_cache and runtime_cache.midi_thumbnails then
+            runtime_cache.midi_thumbnails[job.cache_key] = cached_thumbnail
+          end
+        else
+          -- Generate new thumbnail
+          if visualization.GenerateMidiThumbnail then
+            local thumbnail = visualization.GenerateMidiThumbnail(runtime_cache, job.item, job.width, job.height, job.cache_key)
+            -- Save to disk cache (already stored in runtime_cache by GenerateMidiThumbnail)
+            if thumbnail then
+              disk_cache.save_midi_thumbnail(job.item, job.cache_key, thumbnail)
+            end
+          end
         end
       end
 

@@ -4,16 +4,21 @@
 
 local ImGui = require 'imgui' '0.10'
 local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
-local MidiRenderer = require('ItemPicker.ui.tiles.renderers.midi')
+local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
 
 local M = {}
 
-function M.create(ctx, config, state, visualization, cache_mgr, animator)
+function M.create(ctx, config, state, visualization, animator)
   local function get_items()
     if not state.midi_indexes then return {} end
 
     local filtered = {}
     for _, track_guid in ipairs(state.midi_indexes) do
+      -- Check favorites filter
+      if state.settings.show_favorites_only and not state.favorites.midi[track_guid] then
+        goto continue
+      end
+
       -- Check disabled filter
       if not state.settings.show_disabled_items and state.disabled.midi[track_guid] then
         goto continue
@@ -38,6 +43,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       local track_muted = entry.track_muted or false
       local item_muted = entry.item_muted or false
       local uuid = entry.uuid
+      local pool_count = entry.pool_count or 1
 
       -- Check mute filters
       if not state.settings.show_muted_tracks and track_muted then
@@ -82,9 +88,55 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
         key = uuid,
         uuid = uuid,
         is_midi = true,
+        pool_count = pool_count,  -- Number of pooled items (from Reaper pooling)
       })
 
       ::continue::
+    end
+
+    -- Apply sorting
+    local sort_mode = state.settings.sort_mode or "none"
+    if sort_mode == "color" then
+      -- Sort by color (hue-based for visual grouping)
+      table.sort(filtered, function(a, b)
+        -- Extract RGB from ImGui color (ABGR format)
+        local ar = (a.color >> 16) & 0xFF
+        local ag = (a.color >> 8) & 0xFF
+        local ab = a.color & 0xFF
+
+        local br = (b.color >> 16) & 0xFF
+        local bg = (b.color >> 8) & 0xFF
+        local bb = b.color & 0xFF
+
+        -- Convert to HSV for better color sorting
+        local function rgb_to_hue(r, g, b)
+          r, g, b = r/255, g/255, b/255
+          local max = math.max(r, g, b)
+          local min = math.min(r, g, b)
+          if max == min then return 0 end
+
+          local hue
+          if max == r then
+            hue = (g - b) / (max - min)
+          elseif max == g then
+            hue = 2 + (b - r) / (max - min)
+          else
+            hue = 4 + (r - g) / (max - min)
+          end
+          hue = hue * 60
+          if hue < 0 then hue = hue + 360 end
+          return hue
+        end
+
+        local a_hue = rgb_to_hue(ar, ag, ab)
+        local b_hue = rgb_to_hue(br, bg, bb)
+        return a_hue < b_hue
+      end)
+    elseif sort_mode == "name" then
+      -- Sort alphabetically by name
+      table.sort(filtered, function(a, b)
+        return a.name:lower() < b.name:lower()
+      end)
     end
 
     return filtered
@@ -104,7 +156,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
 
     render_tile = function(ctx, rect, item_data, tile_state)
       local dl = ImGui.GetWindowDrawList(ctx)
-      MidiRenderer.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, cache_mgr, state)
+      MidiRenderer.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state)
     end,
   })
 
@@ -149,7 +201,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
     end,
 
     right_click = function(uuid, selected_uuids)
-      -- Toggle disabled state for all selected items
+      -- Toggle favorite state for all selected items
       -- Need to get track_guid from UUID lookup
       local item_data = state.midi_item_lookup[uuid]
       if not item_data then return end
@@ -165,23 +217,23 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       if #selected_uuids > 1 then
         -- Multi-select: toggle all to the opposite of clicked item's state
         local clicked_track_guid = track_guid_map[uuid]
-        local new_state = not state.is_midi_disabled(clicked_track_guid)
+        local new_state = not state.is_midi_favorite(clicked_track_guid)
         for _, sel_uuid in ipairs(selected_uuids) do
           local sel_track_guid = track_guid_map[sel_uuid]
           if sel_track_guid then
             if new_state then
-              state.disabled.midi[sel_track_guid] = true
+              state.favorites.midi[sel_track_guid] = true
             else
-              state.disabled.midi[sel_track_guid] = nil
+              state.favorites.midi[sel_track_guid] = nil
             end
           end
         end
-        state.persist_disabled()
+        state.persist_favorites()
       else
         -- Single item: toggle
         local track_guid = track_guid_map[uuid]
         if track_guid then
-          state.toggle_midi_disabled(track_guid)
+          state.toggle_midi_favorite(track_guid)
         end
       end
     end,
@@ -221,7 +273,7 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
     end,
 
     alt_click = function(item_uuids)
-      -- Quick disable with Alt+click
+      -- Toggle disable with Alt+click
       -- Convert UUIDs to track_guids
       local items = get_items()
       local track_guid_map = {}
@@ -234,10 +286,9 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
       for _, uuid in ipairs(item_uuids) do
         local track_guid = track_guid_map[uuid]
         if track_guid then
-          state.disabled.midi[track_guid] = true
+          state.toggle_midi_disabled(track_guid)
         end
       end
-      state.persist_disabled()
     end,
 
     on_select = function(selected_keys)
@@ -260,6 +311,43 @@ function M.create(ctx, config, state, visualization, cache_mgr, animator)
           else
             state.start_preview(item_data.item)
           end
+          return
+        end
+      end
+    end,
+
+    double_click = function(uuid)
+      -- Start rename for this item
+      local items = get_items()
+      for _, item_data in ipairs(items) do
+        if item_data.uuid == uuid then
+          state.rename_active = true
+          state.rename_uuid = uuid
+          state.rename_text = item_data.name
+          state.rename_is_audio = false
+          state.rename_focused = false  -- Reset focus flag
+          return
+        end
+      end
+    end,
+
+    rename = function(selected_keys)
+      -- Start rename for selected items (batch rename)
+      if not selected_keys or #selected_keys == 0 then return end
+
+      -- Start with first selected item
+      local uuid = selected_keys[1]
+      local items = get_items()
+
+      for _, item_data in ipairs(items) do
+        if item_data.uuid == uuid then
+          state.rename_active = true
+          state.rename_uuid = uuid
+          state.rename_text = item_data.name
+          state.rename_is_audio = false
+          state.rename_focused = false  -- Reset focus flag
+          state.rename_queue = selected_keys  -- Store all selected for batch rename
+          state.rename_queue_index = 1
           return
         end
       end

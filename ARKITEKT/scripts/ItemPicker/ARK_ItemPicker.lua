@@ -41,14 +41,13 @@ local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager'
 local Config = require('ItemPicker.core.config')
 local State = require('ItemPicker.core.app_state')
 local Controller = require('ItemPicker.core.controller')
-local GUI = require('ItemPicker.ui.gui')
+local GUI = require('ItemPicker.ui.main_window')
 
--- Domain modules
-local visualization = require('ItemPicker.domain.visualization')
-local cache_mgr = require('ItemPicker.domain.cache_manager')
-local reaper_interface = require('ItemPicker.domain.reaper_interface')
-local utils = require('ItemPicker.domain.utils')
-local drag_handler = require('ItemPicker.ui.views.drag_handler')
+-- Data and service modules
+local visualization = require('ItemPicker.services.visualization')
+local reaper_interface = require('ItemPicker.data.reaper_api')
+local utils = require('ItemPicker.services.utils')
+local drag_handler = require('ItemPicker.ui.components.drag_handler')
 
 -- Configuration
 local USE_OVERLAY = true  -- Set to false for normal window mode
@@ -64,13 +63,13 @@ State.initialize(Config)
 
 -- Initialize domain modules
 reaper_interface.init(utils)
-visualization.init(utils, SCRIPT_DIRECTORY, cache_mgr)
+visualization.init(utils, SCRIPT_DIRECTORY)
 
 -- Initialize controller
 Controller.init(reaper_interface, utils)
 
 -- Create GUI
-local gui = GUI.new(Config, State, Controller, visualization, cache_mgr, drag_handler)
+local gui = GUI.new(Config, State, Controller, visualization, drag_handler)
 
 local function cleanup()
   SetButtonState()

@@ -4,19 +4,18 @@
 
 local ImGui = require 'imgui' '0.10'
 local TileAnim = require('rearkitekt.gui.rendering.tile.animator')
-local AudioGridFactory = require('ItemPicker.ui.tiles.factories.audio_grid_factory')
-local MidiGridFactory = require('ItemPicker.ui.tiles.factories.midi_grid_factory')
+local AudioGridFactory = require('ItemPicker.ui.grids.factories.audio_grid_factory')
+local MidiGridFactory = require('ItemPicker.ui.grids.factories.midi_grid_factory')
 
 local M = {}
 local Coordinator = {}
 Coordinator.__index = Coordinator
 
-function M.new(ctx, config, state, visualization, cache_mgr)
+function M.new(ctx, config, state, visualization)
   local self = setmetatable({
     config = config,
     state = state,
     visualization = visualization,
-    cache_mgr = cache_mgr,
 
     animator = nil,
     audio_grid = nil,
@@ -27,8 +26,8 @@ function M.new(ctx, config, state, visualization, cache_mgr)
   self.animator = TileAnim.new(12.0)
 
   -- Create grids
-  self.audio_grid = AudioGridFactory.create(ctx, config, state, visualization, cache_mgr, self.animator)
-  self.midi_grid = MidiGridFactory.create(ctx, config, state, visualization, cache_mgr, self.animator)
+  self.audio_grid = AudioGridFactory.create(ctx, config, state, visualization, self.animator)
+  self.midi_grid = MidiGridFactory.create(ctx, config, state, visualization, self.animator)
 
   return self
 end
