@@ -135,18 +135,20 @@ function TCPView:draw(ctx, shell_state)
   ImGui.Text(ctx, "Configure track appearance and element visibility")
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 12)
+  ImGui.Dummy(ctx, 0, 8)
 
-  -- Layout & Size Section (MOVED TO TOP)
+  -- Single scrollable content area
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "tcp_layout_buttons", avail_w, 90, 1) then
-    ImGui.Dummy(ctx, 0, 2)
+  if ImGui.BeginChild(ctx, "tcp_content", avail_w, 0, 1) then
+    ImGui.Dummy(ctx, 0, 4)
 
     ImGui.Indent(ctx, 8)
+
+    -- Layout & Size Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "ACTIVE LAYOUT & SIZE")
     ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 2)
+    ImGui.Dummy(ctx, 0, 4)
 
     -- Active Layout
     ImGui.AlignTextToFramePadding(ctx)
@@ -186,24 +188,13 @@ function TCPView:draw(ctx, shell_state)
     end
     ImGui.NewLine(ctx)
 
-    ImGui.Unindent(ctx, 8)
-    ImGui.Dummy(ctx, 0, 2)
-    ImGui.EndChild(ctx)
-  end
-  ImGui.PopStyleColor(ctx)
+    ImGui.Dummy(ctx, 0, 16)
 
-  ImGui.Dummy(ctx, 0, 8)
-
-  -- Layout Settings Section (MOVED AFTER LAYOUT & SIZE)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "tcp_layout_section", avail_w, 200, 1) then
-    ImGui.Dummy(ctx, 0, 2)
-
-    ImGui.Indent(ctx, 8)
+    -- Sizing Controls Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "SIZING CONTROLS")
     ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 2)
+    ImGui.Dummy(ctx, 0, 4)
 
     -- Calculate column widths
     local col_count = 3
@@ -296,24 +287,13 @@ function TCPView:draw(ctx, shell_state)
 
     ImGui.EndGroup(ctx)
 
-    ImGui.Unindent(ctx, 8)
-    ImGui.Dummy(ctx, 0, 2)
-    ImGui.EndChild(ctx)
-  end
-  ImGui.PopStyleColor(ctx)
+    ImGui.Dummy(ctx, 0, 16)
 
-  ImGui.Dummy(ctx, 0, 8)
-
-  -- Visibility Table Section
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "tcp_visibility_section", avail_w, 0, 1) then
-    ImGui.Dummy(ctx, 0, 2)
-
-    ImGui.Indent(ctx, 8)
+    -- Element Visibility Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "ELEMENT VISIBILITY")
     ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 3)
+    ImGui.Dummy(ctx, 0, 4)
 
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
     ImGui.Text(ctx, "Control when track elements are visible")
