@@ -151,16 +151,33 @@ function TCPView:draw(ctx, shell_state)
     -- Calculate column widths
     local col_count = 3
     local col_w = (avail_w - 32) / col_count
-    local label_w = 90
-    local spinner_w = col_w - label_w - 12
+    local label_w = 100  -- Fixed label width for consistency
+    local value_w = 60   -- Fixed value width for display
+    local spinner_w = col_w - label_w - value_w - 16  -- Remaining for spinner
 
-    -- Helper function to draw compact spinner row
+    -- Helper function to draw properly aligned spinner row
     local function draw_spinner_row(label, id, idx, values)
+      -- Label (right-aligned in label column)
+      local label_text_w = ImGui.CalcTextSize(ctx, label)
+      ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + label_w - label_text_w)
       ImGui.AlignTextToFramePadding(ctx)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
       ImGui.Text(ctx, label)
-      ImGui.SameLine(ctx, label_w)
-      local changed, new_idx = Spinner.draw(ctx, id, idx, values, {w = spinner_w})
-      ImGui.Dummy(ctx, 0, 3)
+      ImGui.PopStyleColor(ctx)
+
+      -- Spinner (fixed position, fixed width)
+      ImGui.SameLine(ctx, 0, 8)
+      local changed, new_idx = Spinner.draw(ctx, id, idx, values, {w = spinner_w, h = 24})
+
+      -- Value display (left-aligned)
+      ImGui.SameLine(ctx, 0, 8)
+      ImGui.AlignTextToFramePadding(ctx)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
+      local current_value = tostring(values[idx] or "")
+      ImGui.Text(ctx, current_value)
+      ImGui.PopStyleColor(ctx)
+
+      ImGui.Dummy(ctx, 0, 6)
       return changed, new_idx
     end
 
