@@ -51,7 +51,7 @@ M.TRANSPORT = {
   corner_buttons = {
     size = 30,
     margin = 8,
-    top_right = {
+    bottom_right = {
       custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
         TransportIcons.draw_tool(dl, x, y, width, height, color)
       end,

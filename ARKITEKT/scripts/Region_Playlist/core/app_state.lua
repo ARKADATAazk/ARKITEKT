@@ -54,6 +54,7 @@ M.pending_destroy = {}
 M.bridge = nil
 M.last_project_state = -1
 M.last_project_filename = nil
+M.last_project_ptr = nil  -- Track actual project pointer to detect tab switches
 M.undo_manager = nil
 M.on_state_restored = nil
 M.on_repeat_cycle = nil
@@ -86,6 +87,13 @@ local function get_current_project_filename()
   return proj_path .. "/" .. proj_name
 end
 
+local function get_current_project_ptr()
+  -- Get the current project pointer to detect tab switches
+  -- EnumProjects(-1, "") returns the current project
+  local proj, _ = reaper.EnumProjects(-1, "")
+  return proj
+end
+
 local function rebuild_playlist_lookup()
   M.playlist_lookup = {}
   for _, pl in ipairs(M.playlists) do
@@ -105,7 +113,8 @@ function M.initialize(settings)
   end
   
   M.last_project_filename = get_current_project_filename()
-  
+  M.last_project_ptr = get_current_project_ptr()
+
   M.load_project_state()
   M.rebuild_dependency_graph()
   
@@ -1040,9 +1049,16 @@ end
 
 function M.update()
   local current_project_filename = get_current_project_filename()
-  
-  if current_project_filename ~= M.last_project_filename then
+  local current_project_ptr = get_current_project_ptr()
+
+  -- Detect project change: either filename changed OR project pointer changed
+  -- This handles both saved projects (filename changes) and unsaved projects (pointer changes)
+  local project_changed = (current_project_filename ~= M.last_project_filename) or
+                          (current_project_ptr ~= M.last_project_ptr)
+
+  if project_changed then
     M.last_project_filename = current_project_filename
+    M.last_project_ptr = current_project_ptr
     M.reload_project_data()
     return
   end
