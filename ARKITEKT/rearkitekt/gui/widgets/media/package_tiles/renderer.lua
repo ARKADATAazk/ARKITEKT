@@ -402,12 +402,13 @@ function M.TileRenderer.footer(ctx, dl, pkg, P, tile_x, tile_y, tile_w, tile_h)
   Draw.text_right(ctx, tile_x + tile_w - M.CONFIG.footer.padding_x, footer_y + 6, M.CONFIG.colors.text.secondary, count_text)
 end
 
--- DEPRECATED: Manual cache clearing no longer needed!
--- The ImageCache now uses automatic handle validation via get_validated()
--- Invalid handles are detected and auto-recovered on every access
+-- Clear image cache to avoid invalid image handle errors
+-- Called when switching tabs or navigating between views
+-- Pattern from debug_view.lua - works reliably for navigation events
 function M.clear_image_cache()
-  -- Legacy function kept for backward compatibility
-  -- No-op since validation is now automatic
+  if M._package_image_cache then
+    M._package_image_cache:clear()
+  end
 end
 
 return M

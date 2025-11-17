@@ -10,6 +10,7 @@ local MCPView = require("ThemeAdjuster.ui.views.mcp_view")
 local TransportView = require("ThemeAdjuster.ui.views.transport_view")
 local EnvelopeView = require("ThemeAdjuster.ui.views.envelope_view")
 local DebugView = require("ThemeAdjuster.ui.views.debug_view")
+local Renderer = require("rearkitekt.gui.widgets.media.package_tiles.renderer")
 
 local M = {}
 local TabContent = {}
@@ -21,6 +22,7 @@ function M.new(State, Config, settings)
     Config = Config,
     settings = settings,
     views = {},  -- Tab registry
+    last_tab_id = nil,  -- Track tab changes for cache clearing
   }, TabContent)
 
   -- Register all views in a table for clean lookup
@@ -47,9 +49,12 @@ function TabContent:update(dt)
 end
 
 function TabContent:draw(ctx, tab_id, shell_state)
-  -- NOTE: Manual cache clearing no longer needed!
-  -- ImageCache now auto-validates handles on every access via get_validated()
-  -- Invalid handles are automatically detected and recovered
+  -- Clear image cache when switching tabs (prevents stale handle errors)
+  -- Pattern from debug_view.lua - proven to work for pagination
+  if self.last_tab_id and self.last_tab_id ~= tab_id then
+    Renderer.clear_image_cache()
+  end
+  self.last_tab_id = tab_id
 
   -- Registry-based tab routing
   local view = self.views[tab_id]
