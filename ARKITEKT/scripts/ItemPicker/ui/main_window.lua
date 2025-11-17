@@ -96,8 +96,10 @@ function GUI:draw(ctx, shell_state)
     -- Start actual loading NOW (after UI is shown)
     self.start_loading_next_frame = false
 
-    local fast_mode = true
-    self.state.skip_visualizations = true
+    -- Auto-detect project size to enable/disable visualizations
+    local total_items = reaper.CountMediaItems(0)
+    local fast_mode = total_items > 500  -- Disable visualizations for large projects
+    self.state.skip_visualizations = fast_mode
 
     -- Smaller batches for smoother UI (100 items per frame)
     self.controller.start_incremental_loading(self.state, 100, fast_mode)
@@ -226,9 +228,10 @@ function GUI:draw(ctx, shell_state)
     self.state.midi_items = {}
     self.state.midi_indexes = {}
 
-    -- Start incremental loading with fast mode
-    local fast_mode = true
-    self.state.skip_visualizations = true
+    -- Auto-detect project size to enable/disable visualizations
+    local total_items = reaper.CountMediaItems(0)
+    local fast_mode = total_items > 500  -- Disable visualizations for large projects
+    self.state.skip_visualizations = fast_mode
     self.controller.start_incremental_loading(self.state, 100, fast_mode)
   end
 
