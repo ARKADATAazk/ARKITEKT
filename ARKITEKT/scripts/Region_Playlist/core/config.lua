@@ -133,6 +133,26 @@ M.QUANTIZE = {
   },
 }
 
+-- Transport button layout priorities (modular system)
+-- Lower priority = more important (shown first, hidden last)
+M.TRANSPORT_BUTTONS = {
+  play = { priority = 1, width = 34 },      -- Always show
+  jump = { priority = 2, width = 46 },      -- Always show
+  quantize = { priority = 3, width = 85 },
+  playback = { priority = 4, width_dropdown = 90, width_buttons = 240 },  -- Override(130) + Follow(110)
+  loop = { priority = 5, width = 34 },
+  stop = { priority = 6, width = 34 },
+}
+
+-- Responsive breakpoints for transport layout
+M.TRANSPORT_LAYOUT = {
+  -- When to combine quantize + playback into single "PB" dropdown
+  ultra_compact_width = 250,
+
+  -- When to use playback dropdown instead of separate buttons
+  compact_width = 400,
+}
+
 -- Separator dimensions
 M.SEPARATOR = {
   horizontal = {

@@ -89,239 +89,224 @@ function TransportView:get_region_colors()
   return { current = current_color, next = next_color }
 end
 
-function TransportView:build_header_elements(bridge_state, available_width)
-  bridge_state = bridge_state or {}
-  available_width = available_width or math.huge
+-- >>> MODULAR BUTTON BUILDERS (BEGIN)
+-- These functions build individual button elements using config as single source of truth
 
-  -- Calculate minimum width needed for all buttons
-  -- Play (34) + Stop (34) + Loop (34) + Jump (46) + Quantize (85) + Override (130) + Follow (110) + spacing
-  local min_width_full = 34 + 34 + 34 + 46 + 85 + 130 + 110 + (6 * 0)  -- ~473px without spacing
-  local min_width_compact = 34 + 34 + 34 + 46 + 85 + 90 + (5 * 0)  -- ~323px with dropdown
-
-  -- Use compact mode (dropdown) if there's not enough space for full buttons
-  local use_compact_mode = available_width < min_width_full
-
-  local elements = {
-    {
-      type = "button",
-      id = "transport_play",
-      align = "center",
-      width = 34,
-      config = {
-        is_toggled = bridge_state.is_playing or false,
-        preset_name = "BUTTON_TOGGLE_WHITE",
-        custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
-          TransportIcons.draw_play(dl, bx, by, bw, bh, text_color)
-        end,
-        tooltip = "Play/Pause",
-        on_click = function()
-          local bridge = self.state.get_bridge()
-          local is_playing = bridge:get_state().is_playing
-          if is_playing then
-            bridge:stop()
-            -- Cancel jump flash on stop
-            if self.container then
-              self.container:cancel_jump_flash()
-            end
-          else
-            bridge:play()
-          end
-        end,
-      },
-    },
-    {
-      type = "button",
-      id = "transport_stop",
-      align = "center",
-      width = 34,
-      config = {
-        custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
-          TransportIcons.draw_stop(dl, bx, by, bw, bh, text_color)
-        end,
-        tooltip = "Stop",
-        on_click = function()
-          self.state.get_bridge():stop()
-          -- Cancel jump flash on stop
+function TransportView:build_play_button(bridge_state)
+  return {
+    type = "button",
+    id = "transport_play",
+    align = "center",
+    width = CoreConfig.TRANSPORT_BUTTONS.play.width,
+    config = {
+      is_toggled = bridge_state.is_playing or false,
+      preset_name = "BUTTON_TOGGLE_WHITE",
+      custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
+        TransportIcons.draw_play(dl, bx, by, bw, bh, text_color)
+      end,
+      tooltip = "Play/Pause",
+      on_click = function()
+        local bridge = self.state.get_bridge()
+        local is_playing = bridge:get_state().is_playing
+        if is_playing then
+          bridge:stop()
           if self.container then
             self.container:cancel_jump_flash()
           end
-        end,
-      },
-    },
-    {
-      type = "button",
-      id = "transport_loop",
-      align = "center",
-      width = 34,
-      config = {
-        is_toggled = bridge_state.loop_enabled or false,
-        preset_name = "BUTTON_TOGGLE_WHITE",
-        custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
-          TransportIcons.draw_loop(dl, bx, by, bw, bh, text_color)
-        end,
-        tooltip = "Loop",
-        on_click = function()
-          local bridge = self.state.get_bridge()
-          local current_state = bridge:get_loop_playlist()
-          bridge:set_loop_playlist(not current_state)
-        end,
-      },
-    },
-    {
-      type = "button",
-      id = "transport_jump",
-      align = "center",
-      width = 46,
-      config = {
-        custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
-          TransportIcons.draw_jump(dl, bx, by, bw, bh, text_color)
-        end,
-        tooltip = "Jump Forward",
-        on_click = function()
-          local bridge = self.state.get_bridge()
-
-          -- Get target region ID before jump
-          local target_rid = nil
-          local bridge_state = bridge:get_state()
-          if bridge_state.playlist_order and bridge_state.playlist_pointer then
-            local next_idx = bridge_state.playlist_pointer + 1
-            if next_idx <= #bridge_state.playlist_order then
-              target_rid = bridge_state.playlist_order[next_idx]
-            end
-          end
-
-          local success = bridge:jump_to_next_quantized(self.config.quantize_lookahead)
-
-          -- Trigger visual flash effect on successful jump with target region ID
-          if success and self.container and target_rid then
-            self.container:trigger_jump_flash(target_rid)
-          end
-
-          if success and self.state.set_state_change_notification then
-            local quantize_mode = bridge_state.quantize_mode or "none"
-
-            -- Get next region info
-            if target_rid then
-              local next_region = self.state.get_region_by_rid and self.state.get_region_by_rid(target_rid)
-
-              if next_region then
-                local msg = string.format("Jump: Next → '%s' (Quantize: %s)", next_region.name, quantize_mode)
-                self.state.set_state_change_notification(msg)
-              end
-            end
-          end
-        end,
-      },
-    },
-    {
-      type = "dropdown_field",
-      id = "transport_quantize",
-      align = "center",
-      width = 85,
-      config = {
-        tooltip = "Grid/Quantize Mode",
-        current_value = bridge_state.quantize_mode,
-        options = CoreConfig.QUANTIZE.options,  -- Single source of truth
-        enable_mousewheel = true,
-        on_change = function(new_value)
-          self.state.get_bridge():set_quantize_mode(new_value)
-        end,
-        -- >>> FOOTER: LOOKAHEAD SLIDER (BEGIN)
-        footer_content = function(footer_ctx)
-          local ctx = footer_ctx.ctx
-          local dl = footer_ctx.dl
-          local width = footer_ctx.width
-          local padding = footer_ctx.padding
-
-          -- Label
-          local label = "Jump Lookahead"
-          local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
-          local label_color = Colors.hexrgb("#E0E0E0FF")
-          ImGui.DrawList_AddText(dl, label_x + padding, label_y, label_color, label)
-          ImGui.Dummy(ctx, width, 20)
-
-          -- Push custom slider styling for squared grey slider
-          ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#1A1A1AFF"))          -- Slider track background
-          ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#222222FF"))   -- Hovered track
-          ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#252525FF"))    -- Active track
-          ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, Colors.hexrgb("#606060FF"))       -- Grey grab (squared)
-          ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, Colors.hexrgb("#707070FF"))  -- Lighter grey when active
-          ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabMinSize, 14)                            -- Larger grab for easier interaction
-          ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 4, 6)                         -- More padding for height
-          ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabRounding, 0)                            -- Squared grab (not rounded)
-
-          -- Slider
-          local slider_x, slider_y = ImGui.GetCursorScreenPos(ctx)
-          ImGui.SetCursorScreenPos(ctx, slider_x + padding, slider_y)
-          ImGui.SetNextItemWidth(ctx, width - padding * 2)
-
-          local lookahead_ms = self.config.quantize_lookahead * 1000
-          local changed, new_val = ImGui.SliderDouble(ctx, "##quantize_lookahead", lookahead_ms, 200, 1000, "%.0fms")
-
-          ImGui.PopStyleVar(ctx, 3)  -- Pop GrabRounding, FramePadding, GrabMinSize
-          ImGui.PopStyleColor(ctx, 5)
-
-          if changed then
-            self.config.quantize_lookahead = new_val / 1000
-            -- Persist to settings
-            if self.state.settings then
-              self.state.settings:set('quantize_lookahead', self.config.quantize_lookahead)
-            end
-          end
-
-          ImGui.Dummy(ctx, width, 6)
-        end,
-        -- <<< FOOTER: LOOKAHEAD SLIDER (END)
-      },
+        else
+          bridge:play()
+        end
+      end,
     },
   }
+end
 
-  -- Add playback controls (responsive: dropdown when compact, buttons when full)
-  if use_compact_mode then
-    -- Compact mode: Use dropdown with checkboxes
-    elements[#elements + 1] = {
-      type = "dropdown_field",
-      id = "transport_playback",
-      align = "center",
-      width = 90,
-      config = {
-        tooltip = "Playback Options",
-        current_value = nil,
-        options = {
-          { value = nil, label = "Playback" },
-          {
-            value = "override_transport",
-            label = "Override Transport",
-            checkbox = true,
-            checked = bridge_state.override_enabled or false,
-          },
-          {
-            value = "follow_viewport",
-            label = "Follow Viewport",
-            checkbox = true,
-            checked = bridge_state.follow_viewport or false,
-          },
-        },
-        on_checkbox_change = function(value, new_checked)
-          if value == "override_transport" then
-            local bridge = self.state.get_bridge()
-            local engine = bridge.engine
-            if engine then
-              engine:set_transport_override(new_checked)
-            end
-          elseif value == "follow_viewport" then
-            local bridge = self.state.get_bridge()
-            local engine = bridge.engine
-            if engine then
-              engine:set_follow_viewport(new_checked)
+function TransportView:build_stop_button()
+  return {
+    type = "button",
+    id = "transport_stop",
+    align = "center",
+    width = CoreConfig.TRANSPORT_BUTTONS.stop.width,
+    config = {
+      custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
+        TransportIcons.draw_stop(dl, bx, by, bw, bh, text_color)
+      end,
+      tooltip = "Stop",
+      on_click = function()
+        self.state.get_bridge():stop()
+        if self.container then
+          self.container:cancel_jump_flash()
+        end
+      end,
+    },
+  }
+end
+
+function TransportView:build_loop_button(bridge_state)
+  return {
+    type = "button",
+    id = "transport_loop",
+    align = "center",
+    width = CoreConfig.TRANSPORT_BUTTONS.loop.width,
+    config = {
+      is_toggled = bridge_state.loop_enabled or false,
+      preset_name = "BUTTON_TOGGLE_WHITE",
+      custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
+        TransportIcons.draw_loop(dl, bx, by, bw, bh, text_color)
+      end,
+      tooltip = "Loop",
+      on_click = function()
+        local bridge = self.state.get_bridge()
+        local current_state = bridge:get_loop_playlist()
+        bridge:set_loop_playlist(not current_state)
+      end,
+    },
+  }
+end
+
+function TransportView:build_jump_button(bridge_state)
+  return {
+    type = "button",
+    id = "transport_jump",
+    align = "center",
+    width = CoreConfig.TRANSPORT_BUTTONS.jump.width,
+    config = {
+      custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
+        TransportIcons.draw_jump(dl, bx, by, bw, bh, text_color)
+      end,
+      tooltip = "Jump Forward",
+      on_click = function()
+        local bridge = self.state.get_bridge()
+        local target_rid = nil
+        local bridge_state = bridge:get_state()
+        if bridge_state.playlist_order and bridge_state.playlist_pointer then
+          local next_idx = bridge_state.playlist_pointer + 1
+          if next_idx <= #bridge_state.playlist_order then
+            target_rid = bridge_state.playlist_order[next_idx]
+          end
+        end
+
+        local success = bridge:jump_to_next_quantized(self.config.quantize_lookahead)
+
+        if success and self.container and target_rid then
+          self.container:trigger_jump_flash(target_rid)
+        end
+
+        if success and self.state.set_state_change_notification then
+          local quantize_mode = bridge_state.quantize_mode or "none"
+          if target_rid then
+            local next_region = self.state.get_region_by_rid and self.state.get_region_by_rid(target_rid)
+            if next_region then
+              local msg = string.format("Jump: Next → '%s' (Quantize: %s)", next_region.name, quantize_mode)
+              self.state.set_state_change_notification(msg)
             end
           end
-        end,
+        end
+      end,
+    },
+  }
+end
+
+function TransportView:build_quantize_dropdown(bridge_state)
+  return {
+    type = "dropdown_field",
+    id = "transport_quantize",
+    align = "center",
+    width = CoreConfig.TRANSPORT_BUTTONS.quantize.width,
+    config = {
+      tooltip = "Grid/Quantize Mode",
+      current_value = bridge_state.quantize_mode,
+      options = CoreConfig.QUANTIZE.options,
+      enable_mousewheel = true,
+      on_change = function(new_value)
+        self.state.get_bridge():set_quantize_mode(new_value)
+      end,
+      footer_content = function(footer_ctx)
+        local ctx = footer_ctx.ctx
+        local dl = footer_ctx.dl
+        local width = footer_ctx.width
+        local padding = footer_ctx.padding
+
+        local label = "Jump Lookahead"
+        local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
+        local label_color = Colors.hexrgb("#E0E0E0FF")
+        ImGui.DrawList_AddText(dl, label_x + padding, label_y, label_color, label)
+        ImGui.Dummy(ctx, width, 20)
+
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#1A1A1AFF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#222222FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#252525FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, Colors.hexrgb("#606060FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, Colors.hexrgb("#707070FF"))
+        ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabMinSize, 14)
+        ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 4, 6)
+        ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabRounding, 0)
+
+        local slider_x, slider_y = ImGui.GetCursorScreenPos(ctx)
+        ImGui.SetCursorScreenPos(ctx, slider_x + padding, slider_y)
+        ImGui.SetNextItemWidth(ctx, width - padding * 2)
+
+        local lookahead_ms = self.config.quantize_lookahead * 1000
+        local changed, new_val = ImGui.SliderDouble(ctx, "##quantize_lookahead", lookahead_ms, 200, 1000, "%.0fms")
+
+        ImGui.PopStyleVar(ctx, 3)
+        ImGui.PopStyleColor(ctx, 5)
+
+        if changed then
+          self.config.quantize_lookahead = new_val / 1000
+          if self.state.settings then
+            self.state.settings:set('quantize_lookahead', self.config.quantize_lookahead)
+          end
+        end
+
+        ImGui.Dummy(ctx, width, 6)
+      end,
+    },
+  }
+end
+
+function TransportView:build_playback_dropdown(bridge_state)
+  return {
+    type = "dropdown_field",
+    id = "transport_playback",
+    align = "center",
+    width = CoreConfig.TRANSPORT_BUTTONS.playback.width_dropdown,
+    config = {
+      tooltip = "Playback Options",
+      current_value = nil,
+      options = {
+        { value = nil, label = "Playback" },
+        {
+          value = "override_transport",
+          label = "Override Transport",
+          checkbox = true,
+          checked = bridge_state.override_enabled or false,
+        },
+        {
+          value = "follow_viewport",
+          label = "Follow Viewport",
+          checkbox = true,
+          checked = bridge_state.follow_viewport or false,
+        },
       },
-    }
-  else
-    -- Full mode: Use separate toggle buttons
-    elements[#elements + 1] = {
+      on_checkbox_change = function(value, new_checked)
+        local bridge = self.state.get_bridge()
+        local engine = bridge.engine
+        if not engine then return end
+
+        if value == "override_transport" then
+          engine:set_transport_override(new_checked)
+        elseif value == "follow_viewport" then
+          engine:set_follow_viewport(new_checked)
+        end
+      end,
+    },
+  }
+end
+
+function TransportView:build_playback_buttons(bridge_state)
+  return {
+    {
       type = "button",
       id = "transport_override",
       align = "center",
@@ -340,8 +325,8 @@ function TransportView:build_header_elements(bridge_state, available_width)
           end
         end,
       },
-    }
-    elements[#elements + 1] = {
+    },
+    {
       type = "button",
       id = "transport_follow",
       align = "center",
@@ -360,11 +345,170 @@ function TransportView:build_header_elements(bridge_state, available_width)
           end
         end,
       },
-    }
+    },
+  }
+end
+
+-- <<< MODULAR BUTTON BUILDERS (END)
+
+function TransportView:build_header_elements(bridge_state, available_width)
+  bridge_state = bridge_state or {}
+  available_width = available_width or math.huge
+
+  local BTN = CoreConfig.TRANSPORT_BUTTONS
+  local LAYOUT = CoreConfig.TRANSPORT_LAYOUT
+
+  -- Determine layout mode based on available width
+  local ultra_compact = available_width < LAYOUT.ultra_compact_width
+  local compact = available_width < LAYOUT.compact_width
+
+  local elements = {}
+
+  -- PRIORITY 1: Play button (always show)
+  elements[#elements + 1] = self:build_play_button(bridge_state)
+
+  -- PRIORITY 2: Jump button (always show)
+  elements[#elements + 1] = self:build_jump_button(bridge_state)
+
+  -- Ultra-compact mode: Combine Quantize + Playback into single "PB" dropdown
+  if ultra_compact then
+    elements[#elements + 1] = self:build_combined_pb_dropdown(bridge_state)
+    return elements
+  end
+
+  -- PRIORITY 3: Quantize dropdown
+  local used_width = BTN.play.width + BTN.jump.width + BTN.quantize.width
+  if available_width >= used_width then
+    elements[#elements + 1] = self:build_quantize_dropdown(bridge_state)
+  end
+
+  -- PRIORITY 4: Playback controls (dropdown or buttons based on compact mode)
+  local playback_width = compact and BTN.playback.width_dropdown or BTN.playback.width_buttons
+  used_width = used_width + playback_width
+  if available_width >= used_width then
+    if compact then
+      elements[#elements + 1] = self:build_playback_dropdown(bridge_state)
+    else
+      local buttons = self:build_playback_buttons(bridge_state)
+      for _, btn in ipairs(buttons) do
+        elements[#elements + 1] = btn
+      end
+    end
+  end
+
+  -- PRIORITY 5: Loop button
+  used_width = used_width + BTN.loop.width
+  if available_width >= used_width then
+    elements[#elements + 1] = self:build_loop_button(bridge_state)
+  end
+
+  -- PRIORITY 6: Stop button (lowest priority)
+  used_width = used_width + BTN.stop.width
+  if available_width >= used_width then
+    elements[#elements + 1] = self:build_stop_button()
   end
 
   return elements
 end
+
+-- Build combined "PB" dropdown for ultra-compact mode
+function TransportView:build_combined_pb_dropdown(bridge_state)
+  -- Combine quantize options and playback checkboxes into single dropdown
+  local options = {
+    { value = nil, label = "PB", separator = "Quantize" },
+  }
+
+  -- Add all quantize options
+  for _, opt in ipairs(CoreConfig.QUANTIZE.options) do
+    options[#options + 1] = opt
+  end
+
+  -- Add separator and playback options
+  options[#options + 1] = { value = nil, label = "", separator = "Playback" }
+  options[#options + 1] = {
+    value = "override_transport",
+    label = "Override Transport",
+    checkbox = true,
+    checked = bridge_state.override_enabled or false,
+  }
+  options[#options + 1] = {
+    value = "follow_viewport",
+    label = "Follow Viewport",
+    checkbox = true,
+    checked = bridge_state.follow_viewport or false,
+  }
+
+  return {
+    type = "dropdown_field",
+    id = "transport_pb_combined",
+    align = "center",
+    width = 60,  -- Compact "PB" label
+    config = {
+      tooltip = "Playback & Quantize Settings",
+      current_value = bridge_state.quantize_mode,
+      options = options,
+      enable_mousewheel = true,
+      on_change = function(new_value)
+        -- Handle quantize mode changes
+        if new_value and new_value ~= "override_transport" and new_value ~= "follow_viewport" then
+          self.state.get_bridge():set_quantize_mode(new_value)
+        end
+      end,
+      on_checkbox_change = function(value, new_checked)
+        local bridge = self.state.get_bridge()
+        local engine = bridge.engine
+        if not engine then return end
+
+        if value == "override_transport" then
+          engine:set_transport_override(new_checked)
+        elseif value == "follow_viewport" then
+          engine:set_follow_viewport(new_checked)
+        end
+      end,
+      footer_content = function(footer_ctx)
+        local ctx = footer_ctx.ctx
+        local dl = footer_ctx.dl
+        local width = footer_ctx.width
+        local padding = footer_ctx.padding
+
+        local label = "Jump Lookahead"
+        local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
+        local label_color = Colors.hexrgb("#E0E0E0FF")
+        ImGui.DrawList_AddText(dl, label_x + padding, label_y, label_color, label)
+        ImGui.Dummy(ctx, width, 20)
+
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#1A1A1AFF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#222222FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#252525FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, Colors.hexrgb("#606060FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, Colors.hexrgb("#707070FF"))
+        ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabMinSize, 14)
+        ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 4, 6)
+        ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabRounding, 0)
+
+        local slider_x, slider_y = ImGui.GetCursorScreenPos(ctx)
+        ImGui.SetCursorScreenPos(ctx, slider_x + padding, slider_y)
+        ImGui.SetNextItemWidth(ctx, width - padding * 2)
+
+        local lookahead_ms = self.config.quantize_lookahead * 1000
+        local changed, new_val = ImGui.SliderDouble(ctx, "##quantize_lookahead_pb", lookahead_ms, 200, 1000, "%.0fms")
+
+        ImGui.PopStyleVar(ctx, 3)
+        ImGui.PopStyleColor(ctx, 5)
+
+        if changed then
+          self.config.quantize_lookahead = new_val / 1000
+          if self.state.settings then
+            self.state.settings:set('quantize_lookahead', self.config.quantize_lookahead)
+          end
+        end
+
+        ImGui.Dummy(ctx, width, 6)
+      end,
+    },
+  }
+end
+
 
 function TransportView:draw(ctx, shell_state, is_blocking)
   is_blocking = is_blocking or false
