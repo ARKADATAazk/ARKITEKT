@@ -98,8 +98,33 @@ local function draw_value_display(ctx, dl, x, y, w, h, text, hovered, active)
   -- Outer border (exact pixel boundary)
   ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_outer, 0, 0, 1)
 
-  -- Text (centered and pixel-aligned)
+  -- Text (centered and pixel-aligned with truncation)
   local text_w, text_h = ImGui.CalcTextSize(ctx, text)
+  local max_text_w = w - 12  -- Leave padding on both sides
+
+  -- Truncate if text is too wide
+  if text_w > max_text_w then
+    -- Binary search to find how much text fits
+    local truncated_text = text
+    local len = #text
+
+    -- Quick estimation: assume average char width
+    local est_chars = math.floor((max_text_w / text_w) * len * 0.9)
+    est_chars = math.max(1, math.min(est_chars, len - 3))
+
+    truncated_text = text:sub(1, est_chars) .. "..."
+    text_w = ImGui.CalcTextSize(ctx, truncated_text)
+
+    -- Refine if still too wide
+    while text_w > max_text_w and est_chars > 1 do
+      est_chars = est_chars - 1
+      truncated_text = text:sub(1, est_chars) .. "..."
+      text_w = ImGui.CalcTextSize(ctx, truncated_text)
+    end
+
+    text = truncated_text
+  end
+
   local text_x = math.floor(x + (w - text_w) / 2 + 0.5)
   local text_y = math.floor(y + (h - text_h) / 2 + 0.5)
 
