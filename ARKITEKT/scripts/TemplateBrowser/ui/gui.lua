@@ -245,7 +245,7 @@ local function draw_folder_tree(ctx, state, config)
   local tree_state = {
     open_nodes = state.folder_open_state,  -- TreeView uses open_nodes
     selected_node = state.selected_folder,  -- Map selected_folder to selected_node
-    renaming_node = state.renaming_item and state.renaming_item.path or nil,
+    renaming_node = state.renaming_folder_path or nil,  -- Track renaming by path
     rename_buffer = state.rename_buffer or "",
   }
 
@@ -412,6 +412,8 @@ local function draw_folder_tree(ctx, state, config)
 
   -- Sync TreeView state back to Template Browser state
   state.selected_folder = tree_state.selected_node
+  state.renaming_folder_path = tree_state.renaming_node
+  state.rename_buffer = tree_state.rename_buffer
 end
 
 -- Tags list for bottom of directory tab (with filtering)

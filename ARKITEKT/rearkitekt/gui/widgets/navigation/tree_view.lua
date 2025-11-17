@@ -58,11 +58,6 @@ local function render_tree_node(ctx, node, config, state, depth)
   -- Check if node has color
   local node_color = node.color
 
-  -- Debug: Log rename state
-  if is_renaming then
-    reaper.ShowConsoleMsg("DEBUG: Showing rename input for: " .. node.name .. " (node_id: " .. node_id .. ")\n")
-  end
-
   -- If renaming, show input field (same as original working implementation)
   if is_renaming then
     -- Initialize field with current name
@@ -196,17 +191,13 @@ local function render_tree_node(ctx, node, config, state, depth)
 
     -- Handle F2 key to start rename when this node is selected
     if is_selected and config.enable_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_F2) then
-      reaper.ShowConsoleMsg("DEBUG: F2 pressed, starting rename for: " .. node.name .. "\n")
       state.renaming_node = node_id
       state.rename_buffer = node.name
     end
 
     -- Handle double-click (rename by default if enabled)
     if tree_item_double_clicked then
-      reaper.ShowConsoleMsg("DEBUG: Double-click detected on: " .. node.name .. "\n")
-      reaper.ShowConsoleMsg("DEBUG: config.enable_rename = " .. tostring(config.enable_rename) .. "\n")
       if config.enable_rename then
-        reaper.ShowConsoleMsg("DEBUG: Starting rename for: " .. node.name .. " (node_id: " .. node_id .. ")\n")
         state.renaming_node = node_id
         state.rename_buffer = node.name
       end
