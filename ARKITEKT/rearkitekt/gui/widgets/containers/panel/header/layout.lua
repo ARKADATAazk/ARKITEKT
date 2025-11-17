@@ -366,7 +366,12 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
           element_config.label = "Mixed"
         end
       end
-      
+
+      -- Evaluate function-based labels (for dynamic content)
+      if element_config.label and type(element_config.label) == "function" then
+        element_config.label = element_config.label(state)
+      end
+
       local element_state = get_or_create_element_state(state, element)
       
       local used_width = component.draw(
