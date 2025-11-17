@@ -1,28 +1,32 @@
-local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
-local band = bit.band
-local Colors = require("rearkitekt.gui.colors")
-local ImGui = require("imgui_abstraction")
+-- @noindex
+-- ReArkitekt/gui/fx/tile_fx.lua
+-- Multi-layer tile rendering with granular controls
+
+package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
+local ImGui = require 'imgui' '0.10'
+
+local Colors = require('rearkitekt.core.colors')
+
+-- Performance: Localize math functions for hot path (30% faster in loops)
+local max = math.max
+local min = math.min
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 function M.render_base_fill(dl, x1, y1, x2, y2, rounding)
-  local r, g, b, a = 0x10, 0x10, 0x10, 0xFF
-  local fill_color = Colors.components_to_rgba(r, g, b, a)
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, fill_color, rounding, ImGui.DrawFlags_RoundCornersAll)
+  local base_neutral = hexrgb("#0F0F0F")
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, base_neutral, rounding, ImGui.DrawFlags_RoundCornersAll)
 end
 
-function M.render_color_fill(dl, x1, y1, x2, y2, base_color, saturation, brightness, opacity, rounding)
+function M.render_color_fill(dl, x1, y1, x2, y2, base_color, opacity, saturation, brightness, rounding)
   local r, g, b, _ = Colors.rgba_to_components(base_color)
 
   if saturation ~= 1.0 then
-    local gray = (r * 0.299 + g * 0.587 + b * 0.114)//1
+    local gray = r * 0.299 + g * 0.587 + b * 0.114
     r = (r + (gray - r) * (1 - saturation))//1
     g = (g + (gray - g) * (1 - saturation))//1
     b = (b + (gray - b) * (1 - saturation))//1
-
-    r = min(255, max(0, r))
-    g = min(255, max(0, g))
-    b = min(255, max(0, b))
   end
 
   if brightness ~= 1.0 then
@@ -48,33 +52,33 @@ function M.render_gradient(dl, x1, y1, x2, y2, base_color, intensity, opacity, r
 
   local r_bottom = max(0, (r * boost_bottom)//1)
   local g_bottom = max(0, (g * boost_bottom)//1)
-  local b_bottom = min(255, (b * boost_bottom)//1)
+  local b_bottom = max(0, (b * boost_bottom)//1)
 
   local alpha = (255 * opacity)//1
-
   local color_top = Colors.components_to_rgba(r_top, g_top, b_top, alpha)
   local color_bottom = Colors.components_to_rgba(r_bottom, g_bottom, b_bottom, alpha)
 
-  -- Clip to rounded rect bounds (AddRectFilledMultiColor doesn't support corner flags)
+  -- Inset on all sides to stay inside rounded corners (AddRectFilledMultiColor doesn't support corner flags)
+  local inset = min(2, rounding * 0.3)
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
-  ImGui.DrawList_AddRectFilledMultiColor(dl, x1, y1, x2, y2,
+  ImGui.DrawList_AddRectFilledMultiColor(dl, x1 + inset, y1 + inset, x2 - inset, y2 - inset,
     color_top, color_top, color_bottom, color_bottom)
   ImGui.DrawList_PopClipRect(dl)
 end
 
-function M.render_specular(dl, x1, y1, x2, y2, base_color, strength, rounding)
-  local r, g, b, _ = Colors.rgba_to_components(base_color)
-
-  local specular_boost = 2.5
-  local r_spec = min(255, (r * specular_boost)//1)
-  local g_spec = min(255, (g * specular_boost)//1)
-  local b_spec = min(255, (b * specular_boost)//1)
-
+function M.render_specular(dl, x1, y1, x2, y2, base_color, strength, coverage, rounding)
   local height = y2 - y1
-  local band_height = height * 0.25
+  local band_height = height * coverage
   local band_y2 = y1 + band_height
 
-  local alpha_top = (255 * strength * 0.8)//1
+  local r, g, b, _ = Colors.rgba_to_components(base_color)
+
+  local boost = 1.3
+  local r_spec = min(255, (r * boost + 20)//1)
+  local g_spec = min(255, (g * boost + 20)//1)
+  local b_spec = min(255, (b * boost + 20)//1)
+
+  local alpha_top = (255 * strength * 0.6)//1
   local alpha_bottom = 0
 
   local color_top = Colors.components_to_rgba(r_spec, g_spec, b_spec, alpha_top)
@@ -188,60 +192,21 @@ function M.render_border(dl, x1, y1, x2, y2, base_color, saturation, brightness,
   if is_selected and glow_layers > 0 then
     local r, g, b, _ = Colors.rgba_to_components(border_color)
     for i = glow_layers, 1, -1 do
-      local layer_thickness = thickness + (i * 2)
-      local layer_alpha = (alpha * glow_strength * (i / glow_layers))//1
-      local layer_color = Colors.components_to_rgba(r, g, b, layer_alpha)
-      ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, layer_color, rounding, ImGui.DrawFlags_RoundCornersAll, layer_thickness)
+      local glow_alpha = (glow_strength * 30 / i)//1
+      local glow_color = Colors.components_to_rgba(r, g, b, glow_alpha)
+      ImGui.DrawList_AddRect(dl, x1 - i, y1 - i, x2 + i, y2 + i, glow_color, rounding, ImGui.DrawFlags_RoundCornersAll, thickness)
     end
   end
 
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, ImGui.DrawFlags_RoundCornersAll, thickness)
 end
 
-function M.render_overlay_text(dl, x1, y1, x2, y2, text, font_size, color, opacity, h_align, v_align)
-  local alpha = (255 * opacity)//1
-  local r, g, b, _ = Colors.rgba_to_components(color)
-  local text_color = Colors.components_to_rgba(r, g, b, alpha)
-
-  local text_width, text_height = ImGui.CalcTextSize(text)
-
-  -- Default to center alignment
-  h_align = h_align or "center"
-  v_align = v_align or "center"
-
-  local text_x
-  if h_align == "left" then
-    text_x = x1 + 4
-  elseif h_align == "right" then
-    text_x = x2 - text_width - 4
-  else -- center
-    text_x = x1 + ((x2 - x1 - text_width) * 0.5)//1
-  end
-
-  local text_y
-  if v_align == "top" then
-    text_y = y1 + 4
-  elseif v_align == "bottom" then
-    text_y = y2 - text_height - 4
-  else -- center
-    text_y = y1 + ((y2 - y1 - text_height) * 0.5)//1
-  end
-
-  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, text)
-end
-
-function M.render(dl, x1, y1, x2, y2, base_color, config, hover_amount, playback_progress, playback_fade, progress_color_override)
-  config = config or {}
-  hover_amount = hover_amount or 0
+function M.render_complete(dl, x1, y1, x2, y2, base_color, config, is_selected, hover_factor, playback_progress, playback_fade, border_color_override, progress_color_override, stripe_color, stripe_enabled)
+  hover_factor = hover_factor or 0
   playback_progress = playback_progress or 0
   playback_fade = playback_fade or 0
 
-  local hover_factor = hover_amount
-  local saturation = config.saturation + (hover_factor * config.hover_saturation_boost)
-  local brightness = config.brightness + (hover_factor * config.hover_brightness_boost)
-  local color_opacity = config.color_opacity
-  local gradient_intensity = config.gradient_intensity + (hover_factor * config.hover_gradient_boost)
-  local gradient_opacity = config.gradient_opacity
+  local fill_opacity = config.fill_opacity + (hover_factor * config.hover_fill_boost)
   local specular_strength = config.specular_strength * (1 + hover_factor * config.hover_specular_boost)
 
   M.render_base_fill(dl, x1, y1, x2, y2, config.rounding or 6)
@@ -250,27 +215,24 @@ function M.render(dl, x1, y1, x2, y2, base_color, config, hover_amount, playback
     M.render_playback_progress(dl, x1, y1, x2, y2, base_color, playback_progress, playback_fade, config.rounding or 6, progress_color_override)
   end
 
-  if color_opacity > 0 then
-    M.render_color_fill(dl, x1, y1, x2, y2, base_color, saturation, brightness, color_opacity, config.rounding or 6)
+  M.render_color_fill(dl, x1, y1, x2, y2, base_color, fill_opacity, config.fill_saturation, config.fill_brightness, config.rounding or 6)
+
+  -- Diagonal stripes for playlists (if enabled)
+  if stripe_enabled and stripe_color then
+    local stripe_spacing = config.stripe_spacing or 10
+    local stripe_thickness = config.stripe_thickness or 1
+    local stripe_opacity = config.stripe_opacity or 0.08
+    M.render_diagonal_stripes(dl, x1, y1, x2, y2, stripe_color, stripe_spacing, stripe_thickness, stripe_opacity, config.rounding or 6)
   end
 
-  if gradient_opacity > 0 then
-    M.render_gradient(dl, x1, y1, x2, y2, base_color, gradient_intensity, gradient_opacity, config.rounding or 6)
-  end
+  M.render_gradient(dl, x1, y1, x2, y2, base_color, config.gradient_intensity, config.gradient_opacity, config.rounding or 6)
+  M.render_specular(dl, x1, y1, x2, y2, base_color, specular_strength, config.specular_coverage, config.rounding or 6)
+  M.render_inner_shadow(dl, x1, y1, x2, y2, config.inner_shadow_strength, config.rounding or 6)
 
-  if specular_strength > 0 then
-    M.render_specular(dl, x1, y1, x2, y2, base_color, specular_strength, config.rounding or 6)
+  if not (is_selected and config.ants_enabled and config.ants_replace_border) then
+    M.render_border(dl, x1, y1, x2, y2, base_color, config.border_saturation, config.border_brightness, config.border_opacity,
+      config.border_thickness, config.rounding or 6, is_selected, config.glow_strength, config.glow_layers, border_color_override)
   end
-
-  if config.inner_shadow_strength > 0 then
-    M.render_inner_shadow(dl, x1, y1, x2, y2, config.inner_shadow_strength, config.rounding or 6)
-  end
-
-  if config.stripes_opacity > 0 then
-    M.render_diagonal_stripes(dl, x1, y1, x2, y2, base_color, config.stripes_spacing, config.stripes_thickness, config.stripes_opacity, config.rounding or 6)
-  end
-
-  M.render_border(dl, x1, y1, x2, y2, base_color, config.border_saturation, config.border_brightness, config.border_opacity, config.border_thickness, config.rounding or 6, config.is_selected, config.glow_strength, config.glow_layers, config.border_color_override)
 end
 
 return M
