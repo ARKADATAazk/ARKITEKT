@@ -17,6 +17,7 @@ M.settings = {
   show_favorites_only = false,
   show_audio = true,
   show_midi = true,
+  group_items_by_name = true,  -- Group items with same name together (e.g., all "Kick" samples)
   focus_keyboard_on_init = true,
   search_string = "",
   tile_width = nil,

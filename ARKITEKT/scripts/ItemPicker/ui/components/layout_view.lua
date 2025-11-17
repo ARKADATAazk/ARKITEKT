@@ -219,10 +219,20 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.set_setting('show_midi', not self.state.settings.show_midi)
   end
 
-  -- Removed "Split MIDI Items by Track" checkbox - MIDI now always groups by take name
+  -- Group Items of Same Name checkbox on same line
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show MIDI") + 18 + 8 + spacing
+  local group_items_x = checkbox_x + prev_width
+  _, clicked = Checkbox.draw(ctx, draw_list, group_items_x, checkbox_y,
+    "Group Items of Same Name",
+    self.state.settings.group_items_by_name, checkbox_config, "group_items_by_name")
+  if clicked then
+    self.state.set_setting('group_items_by_name', not self.state.settings.group_items_by_name)
+    -- Trigger seamless reload without blocking
+    self.state.needs_recollect = true
+  end
 
-  -- Sort mode buttons (on same line after Show MIDI checkbox)
-  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show MIDI") + 18 + 8 + 40  -- Extra spacing
+  -- Sort mode buttons (on same line after Group Items checkbox)
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Group Items of Same Name") + 18 + 8 + 40  -- Extra spacing
   local sort_button_x = checkbox_x + prev_width
 
   -- Draw sort mode label and buttons

@@ -218,12 +218,6 @@ function M.process_audio_item_fast(loader, item, track, state)
   local filename = reaper.GetMediaSourceFileName(source)
   if not filename then return end
 
-  -- Initialize sample group
-  if not loader.samples[filename] then
-    table.insert(loader.sample_indexes, filename)
-    loader.samples[filename] = {}
-  end
-
   local item_name = reaper.GetTakeName(take)
   if not item_name or item_name == "" then
     item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$")
@@ -233,7 +227,23 @@ function M.process_audio_item_fast(loader, item, track, state)
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
 
-  table.insert(loader.samples[filename], {
+  -- Determine grouping key based on setting
+  local group_key
+  if state.settings.group_items_by_name then
+    -- Group by filename (multiple items with same source file)
+    group_key = filename
+  else
+    -- Each item is separate (use UUID as unique key)
+    group_key = get_item_uuid(item)
+  end
+
+  -- Initialize sample group
+  if not loader.samples[group_key] then
+    table.insert(loader.sample_indexes, group_key)
+    loader.samples[group_key] = {}
+  end
+
+  table.insert(loader.samples[group_key], {
     item,
     item_name,
     track_muted = track_muted,
@@ -295,17 +305,26 @@ function M.process_midi_item_fast(loader, item, track, state)
     item_name = "Unnamed MIDI"
   end
 
-  -- Group by take name (so all "Kick" MIDI items are together)
-  if not loader.midi_items[item_name] then
-    table.insert(loader.midi_indexes, item_name)
-    loader.midi_items[item_name] = {}
-  end
-
   -- Compute mute status on-demand (no pre-caching in fast mode)
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
 
-  table.insert(loader.midi_items[item_name], {
+  -- Determine grouping key based on setting
+  local group_key
+  if state.settings.group_items_by_name then
+    -- Group by take name (so all "Kick" MIDI items are together)
+    group_key = item_name
+  else
+    -- Each item is separate (use UUID as unique key)
+    group_key = get_item_uuid(item)
+  end
+
+  if not loader.midi_items[group_key] then
+    table.insert(loader.midi_indexes, group_key)
+    loader.midi_items[group_key] = {}
+  end
+
+  table.insert(loader.midi_items[group_key], {
     item,
     item_name,  -- Display the actual take name
     track_muted = track_muted,

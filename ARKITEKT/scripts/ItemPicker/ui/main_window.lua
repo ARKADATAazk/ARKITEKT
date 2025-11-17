@@ -178,7 +178,21 @@ function GUI:draw(ctx, shell_state)
   -- Handle tile size shortcuts
   self.coordinator:handle_tile_size_shortcuts(ctx)
 
-  -- Removed slow recollect - no longer needed since we removed split_midi_by_track
+  -- Check if we need to recollect items (seamless using incremental loading)
+  if self.state.needs_recollect and not self.state.is_loading then
+    self.state.needs_recollect = false
+
+    -- Clear current items
+    self.state.samples = {}
+    self.state.sample_indexes = {}
+    self.state.midi_items = {}
+    self.state.midi_indexes = {}
+
+    -- Start incremental loading with fast mode
+    local fast_mode = true
+    self.state.skip_visualizations = true
+    self.controller.start_incremental_loading(self.state, 100, fast_mode)
+  end
 
   -- Periodically check for project changes (every 180 frames = ~5-6 seconds)
   -- Reduced frequency to avoid performance impact
