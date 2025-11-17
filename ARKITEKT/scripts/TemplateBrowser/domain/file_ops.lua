@@ -109,7 +109,31 @@ function M.create_folder(parent_path, folder_name)
 
   -- Use REAPER's native directory creation function
   if reaper.RecursiveCreateDirectory then
+    reaper.ShowConsoleMsg(string.format("DEBUG: Calling RecursiveCreateDirectory('%s', 0)\n", new_path))
     local success = reaper.RecursiveCreateDirectory(new_path, 0)
+    reaper.ShowConsoleMsg(string.format("DEBUG: RecursiveCreateDirectory returned: %s\n", tostring(success)))
+
+    -- Verify folder was created
+    local exists_check1 = reaper.file_exists(new_path .. sep)
+    local exists_check2 = reaper.file_exists(new_path)
+    reaper.ShowConsoleMsg(string.format("DEBUG: file_exists('%s%s') = %s\n", new_path, sep, tostring(exists_check1)))
+    reaper.ShowConsoleMsg(string.format("DEBUG: file_exists('%s') = %s\n", new_path, tostring(exists_check2)))
+
+    -- Check if folder shows up in enumeration
+    local parent = parent_path
+    local idx = 0
+    local found_in_enum = false
+    while true do
+      local subdir = reaper.EnumerateSubdirectories(parent, idx)
+      if not subdir then break end
+      if subdir == folder_name then
+        found_in_enum = true
+        break
+      end
+      idx = idx + 1
+    end
+    reaper.ShowConsoleMsg(string.format("DEBUG: Folder '%s' found in EnumerateSubdirectories: %s\n", folder_name, tostring(found_in_enum)))
+
     if success then
       reaper.ShowConsoleMsg(string.format("Created folder: %s\n", new_path))
       return true, new_path
