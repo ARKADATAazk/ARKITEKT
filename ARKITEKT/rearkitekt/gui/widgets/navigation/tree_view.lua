@@ -111,42 +111,58 @@ local function render_tree_node(ctx, node, config, state, depth)
       ImGui.SetNextItemOpen(ctx, true)
     end
 
-    -- Draw colored background if node has color
-    if node_color and config.show_colors then
-      local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-      local avail_w = ImGui.GetContentRegionAvail(ctx)
-      local line_height = ImGui.GetTextLineHeightWithSpacing(ctx)
-      local dl = ImGui.GetWindowDrawList(ctx)
+    -- Use the node name directly as the tree label
+    -- The label will be visible, but we'll draw the icon on top of it
+    local node_open = ImGui.TreeNodeEx(ctx, node.name, flags)
 
-      -- Draw semi-transparent colored background (20% opacity)
+    -- Get the item rect for the tree node (full width due to SpanAvailWidth flag)
+    local tree_item_hovered = ImGui.IsItemHovered(ctx)
+    local tree_item_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
+    local tree_item_right_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right)
+    local tree_item_double_clicked = tree_item_hovered and ImGui.IsMouseDoubleClicked(ctx, ImGui.MouseButton_Left)
+    local tree_toggled = ImGui.IsItemToggledOpen(ctx)
+
+    -- Get item rect for drawing overlays
+    local item_min_x, item_min_y = ImGui.GetItemRectMin(ctx)
+    local item_max_x, item_max_y = ImGui.GetItemRectMax(ctx)
+    local dl = ImGui.GetWindowDrawList(ctx)
+
+    -- Draw colored background if node has color (BEFORE drawing icon/text)
+    if node_color and config.show_colors then
       local bg_color = Colors.with_alpha(node_color, 0x33)  -- 20% opacity
-      ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + avail_w, cursor_y + line_height, bg_color, 2)
+      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, bg_color, 2)
     end
 
-    -- Render tree node with folder icon
-    -- We need to draw the icon inline with the label, so use TreeNodeEx with custom rendering
-    local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
+    -- Draw hover effect (subtle white overlay)
+    if tree_item_hovered and not is_selected then
+      local hover_color = Colors.hexrgb("#FFFFFF10")  -- 6% opacity white
+      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, hover_color, 2)
+    end
 
-    -- Render the tree node structure with empty label (PushID above provides unique ID)
-    local node_open = ImGui.TreeNodeEx(ctx, "", flags)
+    -- Draw selection indicator
+    if is_selected then
+      -- Left edge accent bar
+      local selection_bar_width = 3
+      local selection_color = Colors.hexrgb("#4A9EFFFF")  -- Bright blue
+      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_min_x + selection_bar_width, item_max_y, selection_color, 0)
 
-    -- Now draw the folder icon and name on the same line
-    ImGui.SameLine(ctx, 0, 0)
+      -- Selection background
+      local selection_bg = Colors.hexrgb("#4A9EFF30")  -- 18% opacity blue
+      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, selection_bg, 2)
+    end
 
-    local dl = ImGui.GetWindowDrawList(ctx)
-    local icon_cursor_x, icon_cursor_y = ImGui.GetCursorScreenPos(ctx)
+    -- Now draw the folder icon on top of the label
+    -- Calculate icon position (after the arrow, before the text)
+    local arrow_width = ImGui.GetTreeNodeToLabelSpacing(ctx)
+    local icon_x = item_min_x + arrow_width
     local text_y_offset = (ImGui.GetTextLineHeight(ctx) - 9) * 0.5  -- Center icon vertically (9 = tab_h + main_h)
+    local icon_y = item_min_y + text_y_offset
 
     -- Draw folder icon
-    local icon_width = draw_folder_icon(ctx, dl, icon_cursor_x, icon_cursor_y + text_y_offset, node_color)
+    draw_folder_icon(ctx, dl, icon_x, icon_y, node_color)
 
-    -- Draw label after icon
-    ImGui.SetCursorScreenPos(ctx, icon_cursor_x + icon_width, icon_cursor_y)
-    ImGui.Text(ctx, node.name)
-
-    -- Handle clicks
-    if ImGui.IsItemClicked(ctx) and not ImGui.IsItemToggledOpen(ctx) then
-      -- Single click: select node
+    -- Handle single click for selection
+    if tree_item_clicked and not tree_toggled then
       state.selected_node = node_id
       if config.on_select then
         config.on_select(node)
@@ -159,7 +175,7 @@ local function render_tree_node(ctx, node, config, state, depth)
     end
 
     -- Handle double-click (rename by default if enabled)
-    if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, ImGui.MouseButton_Left) then
+    if tree_item_double_clicked then
       if config.enable_rename then
         state.renaming_node = node_id
         state.rename_buffer = node.name
@@ -170,7 +186,7 @@ local function render_tree_node(ctx, node, config, state, depth)
     end
 
     -- Handle right-click
-    if ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right) then
+    if tree_item_right_clicked then
       if config.on_right_click then
         config.on_right_click(node)
       end
