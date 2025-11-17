@@ -23,15 +23,32 @@ function M.GetItemWaveform(cache, item, uuid)
     return cache.waveforms[uuid]
   end
 
+  -- Validate item and take
+  if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+    return nil
+  end
+
   local take = reaper.GetActiveTake(item)
+  if not take then
+    return nil
+  end
+
   local sourceraw = reaper.GetMediaItemTake_Source(take)
+  if not sourceraw then
+    return nil
+  end
   local _, _, _, _, _, reverse = reaper.BR_GetMediaSourceProperties(take)
   if reverse then
     sourceraw = reaper.GetMediaSourceParent(sourceraw)
   end
 
   local filename = reaper.GetMediaSourceFileName(sourceraw)
+
+  -- Try to create PCM source from file, fallback to original source if it fails
   local source = reaper.PCM_Source_CreateFromFile(filename)
+  if not source or not reaper.ValidatePtr2(0, source, "PCM_source*") then
+    source = sourceraw  -- Use original source if file creation fails
+  end
 
   local length = math.min(
     reaper.GetMediaItemInfo_Value(item, "D_LENGTH"),
@@ -222,6 +239,11 @@ function M.GenerateMidiThumbnail(cache, item, w, h, uuid)
   -- Check runtime cache
   if cache and cache.midi_thumbnails and cache.midi_thumbnails[uuid] then
     return cache.midi_thumbnails[uuid]
+  end
+
+  -- Validate item
+  if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
+    return nil
   end
 
   local take = reaper.GetActiveTake(item)
