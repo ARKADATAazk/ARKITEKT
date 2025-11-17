@@ -253,7 +253,7 @@ local function draw_folder_tree(ctx, state, config)
   TreeView.draw(ctx, tree_nodes, tree_state, {
     enable_rename = true,
     show_colors = true,
-    enable_drag_drop = false,  -- Disabled until properly implemented
+    enable_drag_drop = true,  -- Enable folder drag-and-drop
 
     -- Selection callback
     on_select = function(node)
@@ -276,11 +276,30 @@ local function draw_folder_tree(ctx, state, config)
         return nil
       end
 
+      -- Check if target is a descendant of source
+      local function is_descendant(parent_node, potential_child_id)
+        if not parent_node.children then return false end
+        for _, child in ipairs(parent_node.children) do
+          if child.id == potential_child_id then return true end
+          if is_descendant(child, potential_child_id) then return true end
+        end
+        return false
+      end
+
       local source_node = find_node_by_id(tree_nodes, dragged_node_id)
       if not source_node or not target_node then return end
 
-      -- Don't allow dropping onto self or into own children
-      if source_node.id == target_node.id then return end
+      -- Don't allow dropping onto self
+      if source_node.id == target_node.id then
+        reaper.ShowConsoleMsg("Cannot move folder into itself\n")
+        return
+      end
+
+      -- Don't allow dropping into own descendants (circular reference)
+      if is_descendant(source_node, target_node.id) then
+        reaper.ShowConsoleMsg("Cannot move folder into its own subfolder\n")
+        return
+      end
 
       -- Move folder
       local success = FileOps.move_folder(source_node.full_path, target_node.full_path)
