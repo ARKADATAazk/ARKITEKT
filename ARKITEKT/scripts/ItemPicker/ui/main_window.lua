@@ -23,8 +23,6 @@ function M.new(config, state, controller, visualization, drag_handler)
 
     initialized = false,
     data_loaded = false,
-    load_frame_counter = 0,
-    incremental_loader = nil,
     loading_started = false,
   }, GUI)
 
@@ -78,29 +76,19 @@ function GUI:start_incremental_loading()
   local current_change_count = reaper.GetProjectStateChangeCount(0)
   self.state.last_change_count = current_change_count
 
-  -- Use incremental loader to load items
-  reaper.ShowConsoleMsg("Using incremental loader (50 items/frame)\n")
-  local IncrementalLoader = require('ItemPicker.data.loaders.incremental_loader')
-  self.incremental_loader = IncrementalLoader.new(self.controller.reaper_interface, 50)
-  IncrementalLoader.start_loading(self.incremental_loader, self.state, self.state.settings)
+  -- Load ALL items synchronously (fast enough for up to ~1000 items)
+  reaper.ShowConsoleMsg("Loading all items synchronously...\n")
+  local start_time = reaper.time_precise()
+
+  self.controller.collect_project_items(self.state)
+
+  local elapsed = (reaper.time_precise() - start_time) * 1000
+  reaper.ShowConsoleMsg(string.format("=== ItemPicker: Loading complete! (%.1fms) ===\n", elapsed))
+
+  self.data_loaded = true
   self.loading_started = true
 end
 
--- Process incremental loading batch (called every frame)
-function GUI:process_incremental_loading()
-  if self.data_loaded or not self.incremental_loader then return end
-
-  local IncrementalLoader = require('ItemPicker.data.loaders.incremental_loader')
-  local is_complete, progress = IncrementalLoader.process_batch(self.incremental_loader, self.state, self.state.settings)
-
-  -- Update state with current results (even if not complete)
-  IncrementalLoader.get_results(self.incremental_loader, self.state)
-
-  if is_complete then
-    reaper.ShowConsoleMsg("=== ItemPicker: Loading complete! ===\n")
-    self.data_loaded = true
-  end
-end
 
 function GUI:draw(ctx, shell_state)
   self:initialize_once(ctx)
@@ -110,13 +98,9 @@ function GUI:draw(ctx, shell_state)
     self.state.draw_list = ImGui.GetWindowDrawList(ctx)
   end
 
-  -- Start incremental loading after fade animation completes (~20 frames = 333ms at 60fps)
-  -- This ensures smooth fade-in before heavy processing begins
+  -- Start loading immediately on first frame
   if not self.loading_started then
-    self.load_frame_counter = self.load_frame_counter + 1
-    if self.load_frame_counter >= 20 then
-      self:start_incremental_loading()
-    end
+    self:start_incremental_loading()
   end
 
   -- Get overlay alpha for cascade animation
@@ -128,11 +112,6 @@ function GUI:draw(ctx, shell_state)
     overlay_alpha = overlay.alpha:value()
   end
   self.state.overlay_alpha = overlay_alpha
-
-  -- Only start processing batches once fade is nearly complete (alpha > 0.95)
-  if self.loading_started and not self.data_loaded and overlay_alpha > 0.95 then
-    self:process_incremental_loading()
-  end
 
   -- Get screen dimensions
   local SCREEN_W, SCREEN_H
