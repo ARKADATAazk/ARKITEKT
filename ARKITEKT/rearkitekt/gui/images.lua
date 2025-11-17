@@ -1,7 +1,54 @@
 -- @noindex
--- core/image_cache.lua
--- Metadata-driven 3-state image detection and caching
--- Now supports opts.no_crop=true to bypass 3-state slicing (show full image)
+-- ReArkitekt/gui/images.lua
+-- Enterprise-grade image cache with automatic handle validation and lifecycle management
+--
+-- USAGE GUIDELINES:
+-- ================================================================================
+--
+-- BASIC SETUP:
+--   local ImageCache = require('rearkitekt.gui.images')
+--   local cache = ImageCache.new({
+--     budget = 20,      -- Max images to load per frame (prevents UI freeze)
+--     max_cache = 100,  -- Max total cached images (LRU eviction)
+--     no_crop = true,   -- Set true to disable 3-state image slicing
+--   })
+--
+-- FRAME-BASED RENDERING:
+--   function MyView:draw(ctx)
+--     cache:begin_frame()  -- REQUIRED: Call once per frame before drawing
+--
+--     -- Draw images...
+--     cache:draw_thumb(ctx, image_path, 64)
+--     cache:draw_original(ctx, image_path)
+--     cache:draw_fit(ctx, image_path, 100, 100)
+--   end
+--
+-- ADVANCED: Direct Record Access (when you need custom rendering)
+--   local rec = cache:get_validated(path)  -- Returns validated record or nil
+--   if rec and rec.img then
+--     -- rec = { img, w, h, src_x, src_y, src_w, src_h }
+--     ImGui.Image(ctx, rec.img, w, h)
+--   end
+--
+-- LIFECYCLE MANAGEMENT:
+--   - Handles are automatically validated on every access
+--   - Invalid handles are detected via pcall(Image_GetSize)
+--   - Stale handles are auto-recovered by recreating the image
+--   - LRU eviction keeps memory usage bounded
+--   - No manual cache:clear() needed on tab switches!
+--
+-- ERROR HANDLING:
+--   - All ImGui calls are pcall-wrapped for safety
+--   - Failed images are marked as 'false' to avoid retry spam
+--   - Graceful fallback to Dummy widgets on errors
+--
+-- PERFORMANCE:
+--   - Frame budget prevents UI stutter from bulk loading
+--   - Validation is lazy (only on access)
+--   - LRU eviction prevents unbounded memory growth
+--   - Reference counting could be added for advanced use cases
+--
+-- ================================================================================
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -153,6 +200,49 @@ function Cache:set_no_crop(b)
   self._no_crop = not not b
   -- We keep existing records; drawing uses stored src rects.
   -- If you want to refresh to full frames immediately, call :clear() after toggling.
+end
+
+-- Public API: Get a validated image record (automatically validates/recreates if stale)
+-- Returns: table { img, w, h, src_x, src_y, src_w, src_h } or nil
+-- This is the RECOMMENDED way to access cached images for custom rendering
+function Cache:get_validated(path)
+  if not path or path == "" then return nil end
+
+  local rec = self._cache[path]
+
+  -- Use the internal validate_record function
+  rec = validate_record(self, path, rec)
+
+  return rec
+end
+
+-- Check if an image is cached (without triggering load)
+function Cache:is_cached(path)
+  if not path or path == "" then return false end
+  local rec = self._cache[path]
+  return rec ~= nil and rec ~= false
+end
+
+-- Get cache statistics for debugging/monitoring
+function Cache:get_stats()
+  local valid_count = 0
+  local failed_count = 0
+
+  for _, rec in pairs(self._cache) do
+    if rec == false then
+      failed_count = failed_count + 1
+    elseif rec and rec.img then
+      valid_count = valid_count + 1
+    end
+  end
+
+  return {
+    valid = valid_count,
+    failed = failed_count,
+    total = valid_count + failed_count,
+    max_cache = self._max_cache,
+    budget_remaining = self._creates_left,
+  }
 end
 
 local function ensure_record(self, path)

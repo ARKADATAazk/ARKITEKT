@@ -243,47 +243,8 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
     local preview_path = P.meta.preview_path
     local preview_drawn = false
 
-    -- Use image cache with validation
-    local rec = M._package_image_cache._cache[preview_path]
-    if rec then
-      -- Validate the cached record
-      local validate_record = function(cache, path, record)
-        if not record or not record.img then return nil end
-        if type(record.img) ~= "userdata" then
-          cache._cache[path] = nil
-          return nil
-        end
-        local ok, w, h = pcall(ImGui.Image_GetSize, record.img)
-        if ok and w and h and w > 0 and h > 0 then
-          record.w, record.h = w, h
-          return record
-        end
-        cache._cache[path] = nil
-        return nil
-      end
-      rec = validate_record(M._package_image_cache, preview_path, rec)
-    end
-
-    -- If not cached or invalid, try to load
-    if not rec and M._package_image_cache._creates_left > 0 then
-      local ok, img = pcall(ImGui.CreateImage, preview_path, ImGui.ImageFlags_NoErrors or 0)
-      if ok and img then
-        local ok_size, w, h = pcall(ImGui.Image_GetSize, img)
-        if ok_size and w and h then
-          rec = {
-            img = img,
-            w = w,
-            h = h,
-            src_x = 0,
-            src_y = 0,
-            src_w = w,
-            src_h = h,
-          }
-          M._package_image_cache._cache[preview_path] = rec
-          M._package_image_cache._creates_left = M._package_image_cache._creates_left - 1
-        end
-      end
-    end
+    -- Use public API for validated access (auto-validates and recreates if needed)
+    local rec = M._package_image_cache:get_validated(preview_path)
 
     if rec and rec.img then
       -- Calculate available area for preview (use most of tile height above footer)
@@ -369,47 +330,8 @@ function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h
       local img_drawn = false
 
       if img_path and not img_path:match("^%(mock%)") then
-        -- Use image cache with validation
-        local rec = M._package_image_cache._cache[img_path]
-        if rec then
-          -- Validate the cached record
-          local validate_record = function(cache, path, record)
-            if not record or not record.img then return nil end
-            if type(record.img) ~= "userdata" then
-              cache._cache[path] = nil
-              return nil
-            end
-            local ok, w, h = pcall(ImGui.Image_GetSize, record.img)
-            if ok and w and h and w > 0 and h > 0 then
-              record.w, record.h = w, h
-              return record
-            end
-            cache._cache[path] = nil
-            return nil
-          end
-          rec = validate_record(M._package_image_cache, img_path, rec)
-        end
-
-        -- If not cached or invalid, try to load
-        if not rec and M._package_image_cache._creates_left > 0 then
-          local ok, img = pcall(ImGui.CreateImage, img_path, ImGui.ImageFlags_NoErrors or 0)
-          if ok and img then
-            local ok_size, w, h = pcall(ImGui.Image_GetSize, img)
-            if ok_size and w and h then
-              rec = {
-                img = img,
-                w = w,
-                h = h,
-                src_x = 0,
-                src_y = 0,
-                src_w = w,
-                src_h = h,
-              }
-              M._package_image_cache._cache[img_path] = rec
-              M._package_image_cache._creates_left = M._package_image_cache._creates_left - 1
-            end
-          end
-        end
+        -- Use public API for validated access (auto-validates and recreates if needed)
+        local rec = M._package_image_cache:get_validated(img_path)
 
         if rec and rec.img then
           -- Calculate aspect-preserving dimensions
@@ -480,11 +402,12 @@ function M.TileRenderer.footer(ctx, dl, pkg, P, tile_x, tile_y, tile_w, tile_h)
   Draw.text_right(ctx, tile_x + tile_w - M.CONFIG.footer.padding_x, footer_y + 6, M.CONFIG.colors.text.secondary, count_text)
 end
 
--- Clear image cache to avoid invalid image handle errors when switching tabs
+-- DEPRECATED: Manual cache clearing no longer needed!
+-- The ImageCache now uses automatic handle validation via get_validated()
+-- Invalid handles are detected and auto-recovered on every access
 function M.clear_image_cache()
-  if M._package_image_cache then
-    M._package_image_cache:clear()
-  end
+  -- Legacy function kept for backward compatibility
+  -- No-op since validation is now automatic
 end
 
 return M
