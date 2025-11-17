@@ -2,20 +2,22 @@
 -- TemplateBrowser/ui/template_container_config.lua
 -- Panel container configuration for template grid
 
+local Colors = require('rearkitekt.core.colors')
+
 local M = {}
 
 function M.create(callbacks)
   return {
-    bg_color = 0x1A1A1AFF,
+    bg_color = Colors.hexrgb("#1A1A1A"),
     border_thickness = 0,
-    border_color = 0x3A3A3AFF,
+    border_color = Colors.hexrgb("#3A3A3A"),
     rounding = 0,
     padding = 10,
 
     header = {
       enabled = true,
       height = 56,  -- Height for two rows: controls (26px) + spacing (4px) + chips (18px + padding)
-      bg_color = 0x252525FF,
+      bg_color = Colors.hexrgb("#252525"),
       padding = {
         left = 8,
         right = 8,

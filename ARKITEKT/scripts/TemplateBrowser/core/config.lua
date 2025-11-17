@@ -2,6 +2,9 @@
 -- TemplateBrowser/core/config.lua
 -- Configuration settings
 
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 local M = {}
 
 -- UI Layout
@@ -16,14 +19,14 @@ M.TAGS_PANEL_WIDTH_RATIO = 0.22      -- 22% for tags panel
 
 -- Colors (placeholder - can be themed later)
 M.COLORS = {
-  panel_bg = 0x1a1a1aFF,
-  panel_border = 0x333333FF,
-  header_bg = 0x252525FF,
-  selected_bg = 0x2a5599FF,
-  hover_bg = 0x2a2a2aFF,
-  text = 0xffffffFF,
-  text_dim = 0x888888FF,
-  separator = 0x404040FF,
+  panel_bg = hexrgb("#1A1A1A"),
+  panel_border = hexrgb("#333333"),
+  header_bg = hexrgb("#252525"),
+  selected_bg = hexrgb("#2A5599"),
+  hover_bg = hexrgb("#2A2A2A"),
+  text = hexrgb("#FFFFFF"),
+  text_dim = hexrgb("#888888"),
+  separator = hexrgb("#404040"),
 }
 
 -- Template display
@@ -32,14 +35,14 @@ M.FOLDER_ITEM_HEIGHT = 28
 
 -- Tags
 M.TAG_COLORS = {
-  0x3b82f6FF, -- Blue
-  0x10b981FF, -- Green
-  0xf59e0bFF, -- Amber
-  0xef4444FF, -- Red
-  0x8b5cf6FF, -- Purple
-  0xec4899FF, -- Pink
-  0x14b8a6FF, -- Teal
-  0xf97316FF, -- Orange
+  hexrgb("#3B82F6"), -- Blue
+  hexrgb("#10B981"), -- Green
+  hexrgb("#F59E0B"), -- Amber
+  hexrgb("#EF4444"), -- Red
+  hexrgb("#8B5CF6"), -- Purple
+  hexrgb("#EC4899"), -- Pink
+  hexrgb("#14B8A6"), -- Teal
+  hexrgb("#F97316"), -- Orange
 }
 
 return M

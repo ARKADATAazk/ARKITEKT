@@ -14,6 +14,10 @@ local TileAnim = require('rearkitekt.gui.rendering.tile.animator')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
 local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
 local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_config')
+local Tabs = require('rearkitekt.gui.widgets.navigation.tabs')
+local Button = require('rearkitekt.gui.widgets.primitives.button')
+local Fields = require('rearkitekt.gui.widgets.primitives.fields')
+local TreeView = require('rearkitekt.gui.widgets.navigation.tree_view')
 
 local M = {}
 local GUI = {}
@@ -190,46 +194,82 @@ function GUI:initialize_once(ctx)
   self.initialized = true
 end
 
--- Draw folder tree recursively
-local _folder_counter = 0
-local function draw_folder_node(ctx, node, state, config)
-  _folder_counter = _folder_counter + 1
-  local node_id = _folder_counter
+-- Convert folder tree to TreeView format with colors from metadata
+local function prepare_tree_nodes(node, metadata)
+  if not node then return {} end
 
-  local is_selected = (state.selected_folder == node.path)
-  local has_children = #node.children > 0
-  local is_renaming = (state.renaming_item == node and state.renaming_type == "folder")
+  local function convert_node(n)
+    local tree_node = {
+      id = n.path,
+      name = n.name,
+      path = n.path,
+      full_path = n.full_path,
+      children = {},
+    }
 
-  -- Check if folder should be open (from state or default)
-  local is_open = state.folder_open_state[node.path]
-  if is_open == nil then is_open = false end
-
-  ImGui.PushID(ctx, node_id)
-
-  -- If renaming, show input instead of tree node
-  if is_renaming then
-    ImGui.SetNextItemWidth(ctx, -1)
-    local changed, new_name = ImGui.InputText(ctx, "##rename", state.rename_buffer)
-
-    if changed then
-      state.rename_buffer = new_name
+    -- Add color from metadata if available
+    if metadata and metadata.folders and metadata.folders[n.uuid] then
+      tree_node.color = metadata.folders[n.uuid].color
     end
 
-    -- Auto-focus on first frame
-    if ImGui.IsWindowAppearing(ctx) then
-      ImGui.SetKeyboardFocusHere(ctx, 0)
+    -- Convert children recursively
+    if n.children then
+      for _, child in ipairs(n.children) do
+        table.insert(tree_node.children, convert_node(child))
+      end
     end
 
-    -- Commit on Enter or deactivate
-    if ImGui.IsItemDeactivatedAfterEdit(ctx) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
-      if state.rename_buffer ~= "" and state.rename_buffer ~= node.name then
-        -- Perform rename
+    return tree_node
+  end
+
+  local root_nodes = {}
+  if node.children then
+    for _, child in ipairs(node.children) do
+      table.insert(root_nodes, convert_node(child))
+    end
+  end
+
+  return root_nodes
+end
+
+-- Draw folder tree using TreeView widget
+local function draw_folder_tree(ctx, state, config)
+  -- Prepare tree nodes from state.folders
+  local tree_nodes = prepare_tree_nodes(state.folders, state.metadata)
+
+  if #tree_nodes == 0 then
+    return
+  end
+
+  -- Map state variables to TreeView format
+  local tree_state = {
+    open_nodes = state.folder_open_state,  -- TreeView uses open_nodes
+    selected_node = state.selected_folder,  -- Map selected_folder to selected_node
+    renaming_node = state.renaming_item and state.renaming_item.path or nil,
+    rename_buffer = state.rename_buffer or "",
+  }
+
+  -- Draw tree with callbacks
+  TreeView.draw(ctx, tree_nodes, tree_state, {
+    enable_rename = true,
+    show_colors = true,
+
+    -- Selection callback
+    on_select = function(node)
+      state.selected_folder = node.path
+      local Scanner = require('TemplateBrowser.domain.scanner')
+      Scanner.filter_templates(state)
+    end,
+
+    -- Rename callback
+    on_rename = function(node, new_name)
+      if new_name ~= "" and new_name ~= node.name then
         local old_path = node.full_path
-        local success, new_path = FileOps.rename_folder(old_path, state.rename_buffer)
+        local success, new_path = FileOps.rename_folder(old_path, new_name)
         if success then
           -- Create undo operation
           state.undo_manager:push({
-            description = "Rename folder: " .. node.name .. " -> " .. state.rename_buffer,
+            description = "Rename folder: " .. node.name .. " -> " .. new_name,
             undo_fn = function()
               local undo_success = FileOps.rename_folder(new_path, node.name)
               if undo_success then
@@ -239,7 +279,7 @@ local function draw_folder_node(ctx, node, state, config)
               return undo_success
             end,
             redo_fn = function()
-              local redo_success = FileOps.rename_folder(old_path, state.rename_buffer)
+              local redo_success = FileOps.rename_folder(old_path, new_name)
               if redo_success then
                 local Scanner = require('TemplateBrowser.domain.scanner')
                 Scanner.scan_templates(state)
@@ -253,144 +293,11 @@ local function draw_folder_node(ctx, node, state, config)
           Scanner.scan_templates(state)
         end
       end
-      state.renaming_item = nil
-      state.renaming_type = nil
-      state.rename_buffer = ""
-    end
+    end,
+  })
 
-    -- Cancel on Escape
-    if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-      state.renaming_item = nil
-      state.renaming_type = nil
-      state.rename_buffer = ""
-    end
-  else
-    -- Normal tree node display
-    local flags = ImGui.TreeNodeFlags_SpanAvailWidth
-
-    if is_selected then
-      flags = flags | ImGui.TreeNodeFlags_Selected
-    end
-
-    if not has_children then
-      flags = flags | ImGui.TreeNodeFlags_Leaf
-    end
-
-    -- Set open state
-    if is_open then
-      ImGui.SetNextItemOpen(ctx, true)
-    end
-
-    local node_open = ImGui.TreeNode(ctx, node.name, flags)
-
-    -- Handle clicks
-    if ImGui.IsItemClicked(ctx) and not ImGui.IsItemToggledOpen(ctx) then
-      -- Single click: select folder and filter
-      state.selected_folder = node.path
-      local Scanner = require('TemplateBrowser.domain.scanner')
-      Scanner.filter_templates(state)
-    end
-
-    -- Track open state
-    state.folder_open_state[node.path] = node_open
-
-    -- Double-click to rename
-    if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
-      state.renaming_item = node
-      state.renaming_type = "folder"
-      state.rename_buffer = node.name
-    end
-
-    -- Drag source (folder drag)
-    if ImGui.BeginDragDropSource(ctx) then
-      ImGui.SetDragDropPayload(ctx, "FOLDER", node.full_path)
-      ImGui.Text(ctx, "Move: " .. node.name)
-      ImGui.EndDragDropSource(ctx)
-    end
-
-    -- Drop target (drop template or folder here)
-    if ImGui.BeginDragDropTarget(ctx) then
-      local payload, data = ImGui.AcceptDragDropPayload(ctx, "TEMPLATE")
-      if payload then
-        -- Move template to this folder
-        local old_path = data
-        local success, new_path = FileOps.move_template(data, node.full_path)
-        if success then
-          -- Create undo operation
-          local tmpl_filename = old_path:match("[^/\\]+$")
-          state.undo_manager:push({
-            description = "Move template: " .. tmpl_filename,
-            undo_fn = function()
-              local old_dir = old_path:match("^(.*)[/\\]")
-              local undo_success = FileOps.move_template(new_path, old_dir)
-              if undo_success then
-                local Scanner = require('TemplateBrowser.domain.scanner')
-                Scanner.scan_templates(state)
-              end
-              return undo_success
-            end,
-            redo_fn = function()
-              local redo_success = FileOps.move_template(old_path, node.full_path)
-              if redo_success then
-                local Scanner = require('TemplateBrowser.domain.scanner')
-                Scanner.scan_templates(state)
-              end
-              return redo_success
-            end
-          })
-
-          local Scanner = require('TemplateBrowser.domain.scanner')
-          Scanner.scan_templates(state)
-        end
-      end
-
-      local folder_payload, folder_data = ImGui.AcceptDragDropPayload(ctx, "FOLDER")
-      if folder_payload and folder_data ~= node.full_path then
-        -- Move folder into this folder
-        local old_path = folder_data
-        local success, new_path = FileOps.move_folder(folder_data, node.full_path)
-        if success then
-          -- Create undo operation
-          local folder_name = old_path:match("[^/\\]+$")
-          state.undo_manager:push({
-            description = "Move folder: " .. folder_name,
-            undo_fn = function()
-              local old_parent = old_path:match("^(.*)[/\\]")
-              local undo_success = FileOps.move_folder(new_path, old_parent)
-              if undo_success then
-                local Scanner = require('TemplateBrowser.domain.scanner')
-                Scanner.scan_templates(state)
-              end
-              return undo_success
-            end,
-            redo_fn = function()
-              local redo_success = FileOps.move_folder(old_path, node.full_path)
-              if redo_success then
-                local Scanner = require('TemplateBrowser.domain.scanner')
-                Scanner.scan_templates(state)
-              end
-              return redo_success
-            end
-          })
-
-          local Scanner = require('TemplateBrowser.domain.scanner')
-          Scanner.scan_templates(state)
-        end
-      end
-
-      ImGui.EndDragDropTarget(ctx)
-    end
-
-    -- Draw children if open
-    if node_open then
-      for _, child in ipairs(node.children) do
-        draw_folder_node(ctx, child, state, config)
-      end
-      ImGui.TreePop(ctx)
-    end
-  end
-
-  ImGui.PopID(ctx)
+  -- Sync TreeView state back to Template Browser state
+  state.selected_folder = tree_state.selected_node
 end
 
 -- Tags list for bottom of directory tab (with filtering)
@@ -403,7 +310,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
   ImGui.Text(ctx, "Tags")
   ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING * 2)
 
-  if ImGui.Button(ctx, "+##createtag_dir", button_w, 0) then
+  if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "createtag_dir") then
     -- Create new tag - prompt for name
     local tag_num = 1
     local new_tag_name = "Tag " .. tag_num
@@ -447,11 +354,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
       end
 
       -- Color swatch
-      local r = ((tag_data.color >> 16) & 0xFF) / 255.0
-      local g = ((tag_data.color >> 8) & 0xFF) / 255.0
-      local b = (tag_data.color & 0xFF) / 255.0
-
-      ImGui.ColorButton(ctx, "##color", ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0), 0, 16, 16)
+      ImGui.ColorButton(ctx, "##color", tag_data.color, 0, 16, 16)
       ImGui.SameLine(ctx)
 
       -- Tag name as selectable
@@ -497,7 +400,7 @@ local function draw_directory_content(ctx, state, config, width, height)
   ImGui.Text(ctx, "Explorer")
   ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING * 3)
 
-  if ImGui.Button(ctx, "+##folder", button_w, 0) then
+  if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "folder") then
     -- Create new folder
     local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
     local folder_num = 1
@@ -545,12 +448,7 @@ local function draw_directory_content(ctx, state, config, width, height)
   ImGui.Spacing(ctx)
 
   -- Folder tree
-  if state.folders and state.folders.children then
-    _folder_counter = 0  -- Reset counter each frame
-    for _, child in ipairs(state.folders.children) do
-      draw_folder_node(ctx, child, state, config)
-    end
-  end
+  draw_folder_tree(ctx, state, config)
 
   ImGui.EndChild(ctx)
 
@@ -573,14 +471,19 @@ local function draw_vsts_content(ctx, state, config, width, height)
 
   -- Force Reparse button (two-click confirmation)
   local button_label = "Force Reparse All"
-  local was_armed = state.reparse_armed  -- Save state before button changes it
+  local button_config = { label = button_label, width = 120, height = 24 }
 
   if state.reparse_armed then
     button_label = "CONFIRM REPARSE?"
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, ImGui.ColorConvertDouble4ToU32(0.8, 0.2, 0.2, 1.0))
+    button_config = {
+      label = button_label,
+      width = 120,
+      height = 24,
+      bg_color = Colors.hexrgb("#CC3333")
+    }
   end
 
-  if ImGui.Button(ctx, button_label, 120, 0) then
+  if Button.draw_at_cursor(ctx, button_config, "force_reparse") then
     if state.reparse_armed then
       -- Second click - execute reparse
       reaper.ShowConsoleMsg("Force reparsing all templates...\n")
@@ -605,11 +508,6 @@ local function draw_vsts_content(ctx, state, config, width, height)
       -- First click - arm the button
       state.reparse_armed = true
     end
-  end
-
-  -- Pop the color we pushed (based on state BEFORE button was clicked)
-  if was_armed then
-    ImGui.PopStyleColor(ctx)
   end
 
   -- Auto-disarm after hovering away
@@ -664,7 +562,7 @@ local function draw_tags_content(ctx, state, config, width, height)
   ImGui.Text(ctx, header_text)
   ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING * 2)
 
-  if ImGui.Button(ctx, "+##createtag", button_w, 0) then
+  if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "createtag") then
     -- Create new tag - prompt for name
     local tag_num = 1
     local new_tag_name = "Tag " .. tag_num
@@ -705,8 +603,16 @@ local function draw_tags_content(ctx, state, config, width, height)
 
       if is_renaming then
         -- Rename mode
-        ImGui.SetNextItemWidth(ctx, -1)
-        local changed, new_name = ImGui.InputText(ctx, "##rename_tag", state.rename_buffer)
+        -- Initialize field with current name
+        if Fields.get_text("tag_rename_" .. tag_name) == "" then
+          Fields.set_text("tag_rename_" .. tag_name, state.rename_buffer)
+        end
+
+        local changed, new_name = Fields.draw_at_cursor(ctx, {
+          width = -1,
+          height = 20,
+          text = state.rename_buffer,
+        }, "tag_rename_" .. tag_name)
 
         if changed then
           state.rename_buffer = new_name
@@ -734,11 +640,7 @@ local function draw_tags_content(ctx, state, config, width, height)
       else
         -- Normal display
         -- Color swatch
-        local r = ((tag_data.color >> 16) & 0xFF) / 255.0
-        local g = ((tag_data.color >> 8) & 0xFF) / 255.0
-        local b = (tag_data.color & 0xFF) / 255.0
-
-        ImGui.ColorButton(ctx, "##color", ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0), 0, 16, 16)
+        ImGui.ColorButton(ctx, "##color", tag_data.color, 0, 16, 16)
         ImGui.SameLine(ctx)
 
         -- Tag name
@@ -765,18 +667,7 @@ end
 local function draw_left_panel(ctx, state, config, width, height)
   BeginChildCompat(ctx, "LeftPanel", width, height, true)
 
-  -- Tab bar
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-
-  local tab_width = width / 3
-  local tab_flags = 0
-
-  -- Save current tab state BEFORE buttons change it
-  local was_directory = (state.left_panel_tab == "directory")
-  local was_vsts = (state.left_panel_tab == "vsts")
-  local was_tags = (state.left_panel_tab == "tags")
-
-  -- Count active filters
+  -- Count active filters for badges
   local fx_filter_count = 0
   for _ in pairs(state.filter_fx) do
     fx_filter_count = fx_filter_count + 1
@@ -787,46 +678,24 @@ local function draw_left_panel(ctx, state, config, width, height)
     tag_filter_count = tag_filter_count + 1
   end
 
-  -- DIRECTORY tab
-  if was_directory then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
-  end
-  if ImGui.Button(ctx, "DIRECTORY", tab_width - 2, 24) then
-    state.left_panel_tab = "directory"
-  end
-  if was_directory then
-    ImGui.PopStyleColor(ctx)
-  end
+  -- Draw tabs using rearkitekt Tabs widget
+  local tabs_def = {
+    { id = "directory", label = "DIRECTORY" },
+    { id = "vsts", label = "VSTS", badge = fx_filter_count > 0 and fx_filter_count or nil },
+    { id = "tags", label = "TAGS", badge = tag_filter_count > 0 and tag_filter_count or nil },
+  }
 
-  ImGui.SameLine(ctx)
+  local clicked_tab = Tabs.draw_at_cursor(ctx, tabs_def, state.left_panel_tab, {
+    height = 24,
+    available_width = width,
+    bg_color = config.COLORS.header_bg,
+    active_color = config.COLORS.selected_bg,
+    text_color = config.COLORS.text,
+  })
 
-  -- VSTS tab
-  local vsts_label = fx_filter_count > 0 and string.format("VSTS (%d)", fx_filter_count) or "VSTS"
-  if was_vsts then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
+  if clicked_tab then
+    state.left_panel_tab = clicked_tab
   end
-  if ImGui.Button(ctx, vsts_label, tab_width - 2, 24) then
-    state.left_panel_tab = "vsts"
-  end
-  if was_vsts then
-    ImGui.PopStyleColor(ctx)
-  end
-
-  ImGui.SameLine(ctx)
-
-  -- TAGS tab
-  local tags_label = tag_filter_count > 0 and string.format("TAGS (%d)", tag_filter_count) or "TAGS"
-  if was_tags then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, config.COLORS.selected_bg)
-  end
-  if ImGui.Button(ctx, tags_label, tab_width - 2, 24) then
-    state.left_panel_tab = "tags"
-  end
-  if was_tags then
-    ImGui.PopStyleColor(ctx)
-  end
-
-  ImGui.PopStyleColor(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
@@ -934,7 +803,7 @@ local function draw_template_context_menu(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Remove color button
-      if ImGui.Button(ctx, "Remove Color", -1, 0) then
+      if Button.draw_at_cursor(ctx, { label = "Remove Color", width = -1, height = 24 }, "remove_color") then
         if tmpl_metadata then
           tmpl_metadata.chip_color = nil
           local Persistence = require('TemplateBrowser.domain.persistence')
@@ -962,8 +831,17 @@ local function draw_template_rename_modal(ctx, state)
     ImGui.Text(ctx, "Current name: " .. (tmpl and tmpl.name or ""))
     ImGui.Spacing(ctx)
 
-    ImGui.SetNextItemWidth(ctx, 300)
-    local changed, new_name = ImGui.InputText(ctx, "##rename_input", state.rename_buffer)
+    -- Initialize field with current name
+    if Fields.get_text("template_rename_modal") == "" then
+      Fields.set_text("template_rename_modal", state.rename_buffer)
+    end
+
+    local changed, new_name = Fields.draw_at_cursor(ctx, {
+      width = 300,
+      height = 24,
+      text = state.rename_buffer,
+    }, "template_rename_modal")
+
     if changed then
       state.rename_buffer = new_name
     end
@@ -978,7 +856,8 @@ local function draw_template_rename_modal(ctx, state)
     ImGui.Spacing(ctx)
 
     -- Buttons
-    if ImGui.Button(ctx, "OK", 140, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
+    local ok_clicked = Button.draw_at_cursor(ctx, { label = "OK", width = 140, height = 24 }, "rename_ok")
+    if ok_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
       if state.rename_buffer ~= "" and state.rename_buffer ~= tmpl.name then
         local old_path = tmpl.path
         local success, new_path = FileOps.rename_template(tmpl.path, state.rename_buffer)
@@ -1015,7 +894,8 @@ local function draw_template_rename_modal(ctx, state)
     end
 
     ImGui.SameLine(ctx)
-    if ImGui.Button(ctx, "Cancel", 140, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+    local cancel_clicked = Button.draw_at_cursor(ctx, { label = "Cancel", width = 140, height = 24 }, "rename_cancel")
+    if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
       state.renaming_item = nil
       state.renaming_type = nil
       state.rename_buffer = ""
@@ -1058,17 +938,17 @@ local function draw_info_panel(ctx, state, config, width, height)
     ImGui.Spacing(ctx)
 
     -- Actions
-    if ImGui.Button(ctx, "Apply to Selected Track", -1, 32) then
+    if Button.draw_at_cursor(ctx, { label = "Apply to Selected Track", width = -1, height = 32 }, "apply_template") then
       reaper.ShowConsoleMsg("Applying template: " .. tmpl.name .. "\n")
       TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
     end
 
-    if ImGui.Button(ctx, "Insert as New Track", -1, 32) then
+    if Button.draw_at_cursor(ctx, { label = "Insert as New Track", width = -1, height = 32 }, "insert_template") then
       reaper.ShowConsoleMsg("Inserting template as new track: " .. tmpl.name .. "\n")
       TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
     end
 
-    if ImGui.Button(ctx, "Rename (F2)", -1, 32) then
+    if Button.draw_at_cursor(ctx, { label = "Rename (F2)", width = -1, height = 32 }, "rename_template") then
       state.renaming_item = tmpl
       state.renaming_type = "template"
       state.rename_buffer = tmpl.name
@@ -1083,8 +963,20 @@ local function draw_info_panel(ctx, state, config, width, height)
     ImGui.Spacing(ctx)
 
     local notes = (tmpl_metadata and tmpl_metadata.notes) or ""
-    ImGui.SetNextItemWidth(ctx, -1)
-    local notes_changed, new_notes = ImGui.InputTextMultiline(ctx, "##notes", notes, -1, 80)
+
+    -- Initialize field with current notes
+    local notes_field_id = "template_notes_" .. tmpl.uuid
+    if Fields.get_text(notes_field_id) ~= notes then
+      Fields.set_text(notes_field_id, notes)
+    end
+
+    local notes_changed, new_notes = Fields.draw_at_cursor(ctx, {
+      width = -1,
+      height = 80,
+      text = notes,
+      multiline = true,
+    }, notes_field_id)
+
     if notes_changed then
       Tags.set_template_notes(state.metadata, tmpl.uuid, new_notes)
       local Persistence = require('TemplateBrowser.domain.persistence')
@@ -1117,12 +1009,10 @@ local function draw_info_panel(ctx, state, config, width, height)
         end
 
         -- Color swatch with opacity based on assignment
-        local r = ((tag_data.color >> 16) & 0xFF) / 255.0
-        local g = ((tag_data.color >> 8) & 0xFF) / 255.0
-        local b = (tag_data.color & 0xFF) / 255.0
-        local alpha = is_assigned and 1.0 or 0.3
+        local alpha = is_assigned and 0xFF or 0x4D  -- Full opacity or 30%
+        local button_color = Colors.with_alpha(tag_data.color, alpha)
 
-        if ImGui.ColorButton(ctx, "##color", ImGui.ColorConvertDouble4ToU32(r, g, b, alpha), 0, 20, 20) then
+        if ImGui.ColorButton(ctx, "##color", button_color, 0, 20, 20) then
           -- Toggle tag assignment
           if is_assigned then
             Tags.remove_tag_from_template(state.metadata, tmpl.uuid, tag_name)
@@ -1137,7 +1027,7 @@ local function draw_info_panel(ctx, state, config, width, height)
 
         -- Tag name with opacity
         if not is_assigned then
-          ImGui.PushStyleColor(ctx, ImGui.Col_Text, ImGui.ColorConvertDouble4ToU32(0.5, 0.5, 0.5, 1.0))
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#808080"))
         end
         ImGui.Text(ctx, tag_name)
         if not is_assigned then
@@ -1225,7 +1115,7 @@ function GUI:draw(ctx, shell_state)
     local status_w = ImGui.CalcTextSize(ctx, status)
 
     ImGui.SetCursorPos(ctx, (SCREEN_W - status_w) * 0.5, status_y)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, ImGui.ColorConvertDouble4ToU32(0.7, 0.7, 0.7, 1.0))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#B3B3B3"))
     ImGui.Text(ctx, status)
     ImGui.PopStyleColor(ctx)
 

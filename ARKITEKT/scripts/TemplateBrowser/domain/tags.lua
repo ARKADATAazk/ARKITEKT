@@ -2,6 +2,8 @@
 -- TemplateBrowser/domain/tags.lua
 -- Tag management
 
+local Colors = require('rearkitekt.core.colors')
+
 local M = {}
 
 -- Create a new tag
@@ -13,7 +15,7 @@ function M.create_tag(metadata, tag_name, color)
 
   metadata.tags[tag_name] = {
     name = tag_name,
-    color = color or 0x3b82f6FF,  -- Default blue
+    color = color or Colors.hexrgb("#3B82F6"),  -- Default blue
     created = os.time()
   }
 
