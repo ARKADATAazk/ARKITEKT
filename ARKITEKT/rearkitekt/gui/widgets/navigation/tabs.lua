@@ -49,7 +49,7 @@ function M.draw_at_cursor(ctx, tabs, active_tab, user_config)
   -- Calculate tab width if not specified
   if not tab_width then
     local available_width = config.available_width or ImGui.GetContentRegionAvail(ctx)
-    tab_width = (available_width - (spacing * (#tabs - 1))) / #tabs
+    tab_width = math.floor((available_width - (spacing * (#tabs - 1))) / #tabs)
   end
 
   local clicked_tab = nil
@@ -64,7 +64,7 @@ function M.draw_at_cursor(ctx, tabs, active_tab, user_config)
     end
 
     -- Render tab button
-    local clicked = render_tab(ctx, tab.id, label, is_active, tab_width - 2, tab_height, config)
+    local clicked = render_tab(ctx, tab.id, label, is_active, tab_width, tab_height, config)
 
     if clicked then
       clicked_tab = tab.id
