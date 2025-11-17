@@ -136,23 +136,35 @@ local function render_tree_node(ctx, node, config, state, depth)
       ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + avail_w, cursor_y + line_height, bg_color, 2)
     end
 
-    -- Render tree node
-    local node_open = ImGui.TreeNodeEx(ctx, "##node", flags)
+    -- Get cursor position before rendering tree node for icon drawing
+    local pre_cursor_x, pre_cursor_y = ImGui.GetCursorScreenPos(ctx)
 
-    -- Draw folder icon and label on same line
-    ImGui.SameLine(ctx, 0, 0)
+    -- Render tree node with blank label (we'll draw icon+label ourselves)
+    local node_open = ImGui.TreeNodeEx(ctx, node_id, flags, "")
+
+    -- Draw folder icon and label on the same line as the tree arrow
+    -- We need to go back and draw over where ImGui placed the (empty) label
+    local post_cursor_x, post_cursor_y = ImGui.GetCursorScreenPos(ctx)
 
     local dl = ImGui.GetWindowDrawList(ctx)
-    local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
     local text_y_offset = (ImGui.GetTextLineHeight(ctx) - 12) * 0.5  -- Center icon vertically
 
+    -- Calculate where to draw the icon (after the tree arrow)
+    local label_start_x = pre_cursor_x + ImGui.GetTreeNodeToLabelSpacing(ctx)
+
     -- Draw folder icon
-    local icon_width = draw_folder_icon(ctx, dl, cursor_x, cursor_y + text_y_offset, 12,
+    local icon_width = draw_folder_icon(ctx, dl, label_start_x, pre_cursor_y + text_y_offset, 12,
                                        node_color or Colors.hexrgb("#888888"))
 
-    -- Draw node name
-    ImGui.SetCursorScreenPos(ctx, cursor_x + icon_width, cursor_y)
-    ImGui.Text(ctx, node.name)
+    -- Draw node name after icon
+    local text_x = label_start_x + icon_width
+    ImGui.DrawList_AddText(dl, text_x, pre_cursor_y, Colors.hexrgb("#FFFFFF"), node.name)
+
+    -- Make the entire line clickable by setting an invisible button
+    ImGui.SetCursorScreenPos(ctx, pre_cursor_x, pre_cursor_y)
+    local avail_w = ImGui.GetContentRegionAvail(ctx)
+    local line_height = ImGui.GetTextLineHeightWithSpacing(ctx)
+    ImGui.InvisibleButton(ctx, "##clickable_" .. node_id, avail_w, line_height)
 
     -- Handle clicks
     if ImGui.IsItemClicked(ctx) and not ImGui.IsItemToggledOpen(ctx) then
@@ -187,11 +199,13 @@ local function render_tree_node(ctx, node, config, state, depth)
     end
 
     -- Render children if node is open
-    if node_open and node.children and #node.children > 0 then
-      for _, child in ipairs(node.children) do
-        render_tree_node(ctx, child, config, state, depth + 1)
+    if node_open then
+      if node.children and #node.children > 0 then
+        for _, child in ipairs(node.children) do
+          render_tree_node(ctx, child, config, state, depth + 1)
+        end
       end
-      ImGui.TreePop(ctx)
+      ImGui.TreePop(ctx)  -- Always pop if node was opened, regardless of children
     end
   end
 
