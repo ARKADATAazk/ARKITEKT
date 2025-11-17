@@ -16,6 +16,7 @@ local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
 local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_config')
 local Tabs = require('rearkitekt.gui.widgets.navigation.tabs')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
+local Fields = require('rearkitekt.gui.widgets.primitives.fields')
 
 local M = {}
 local GUI = {}
@@ -210,8 +211,16 @@ local function draw_folder_node(ctx, node, state, config)
 
   -- If renaming, show input instead of tree node
   if is_renaming then
-    ImGui.SetNextItemWidth(ctx, -1)
-    local changed, new_name = ImGui.InputText(ctx, "##rename", state.rename_buffer)
+    -- Initialize field with current name
+    if Fields.get_text("folder_rename_" .. node_id) == "" then
+      Fields.set_text("folder_rename_" .. node_id, state.rename_buffer)
+    end
+
+    local changed, new_name = Fields.draw_at_cursor(ctx, {
+      width = -1,
+      height = 20,
+      text = state.rename_buffer,
+    }, "folder_rename_" .. node_id)
 
     if changed then
       state.rename_buffer = new_name
@@ -405,7 +414,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
   ImGui.Text(ctx, "Tags")
   ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING * 2)
 
-  if ImGui.Button(ctx, "+##createtag_dir", button_w, 0) then
+  if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "createtag_dir") then
     -- Create new tag - prompt for name
     local tag_num = 1
     local new_tag_name = "Tag " .. tag_num
@@ -495,7 +504,7 @@ local function draw_directory_content(ctx, state, config, width, height)
   ImGui.Text(ctx, "Explorer")
   ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING * 3)
 
-  if ImGui.Button(ctx, "+##folder", button_w, 0) then
+  if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "folder") then
     -- Create new folder
     local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
     local folder_num = 1
@@ -571,14 +580,19 @@ local function draw_vsts_content(ctx, state, config, width, height)
 
   -- Force Reparse button (two-click confirmation)
   local button_label = "Force Reparse All"
-  local was_armed = state.reparse_armed  -- Save state before button changes it
+  local button_config = { label = button_label, width = 120, height = 24 }
 
   if state.reparse_armed then
     button_label = "CONFIRM REPARSE?"
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, Colors.hexrgb("#CC3333"))
+    button_config = {
+      label = button_label,
+      width = 120,
+      height = 24,
+      bg_color = Colors.hexrgb("#CC3333")
+    }
   end
 
-  if ImGui.Button(ctx, button_label, 120, 0) then
+  if Button.draw_at_cursor(ctx, button_config, "force_reparse") then
     if state.reparse_armed then
       -- Second click - execute reparse
       reaper.ShowConsoleMsg("Force reparsing all templates...\n")
@@ -603,11 +617,6 @@ local function draw_vsts_content(ctx, state, config, width, height)
       -- First click - arm the button
       state.reparse_armed = true
     end
-  end
-
-  -- Pop the color we pushed (based on state BEFORE button was clicked)
-  if was_armed then
-    ImGui.PopStyleColor(ctx)
   end
 
   -- Auto-disarm after hovering away
@@ -662,7 +671,7 @@ local function draw_tags_content(ctx, state, config, width, height)
   ImGui.Text(ctx, header_text)
   ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING * 2)
 
-  if ImGui.Button(ctx, "+##createtag", button_w, 0) then
+  if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "createtag") then
     -- Create new tag - prompt for name
     local tag_num = 1
     local new_tag_name = "Tag " .. tag_num
@@ -703,8 +712,16 @@ local function draw_tags_content(ctx, state, config, width, height)
 
       if is_renaming then
         -- Rename mode
-        ImGui.SetNextItemWidth(ctx, -1)
-        local changed, new_name = ImGui.InputText(ctx, "##rename_tag", state.rename_buffer)
+        -- Initialize field with current name
+        if Fields.get_text("tag_rename_" .. tag_name) == "" then
+          Fields.set_text("tag_rename_" .. tag_name, state.rename_buffer)
+        end
+
+        local changed, new_name = Fields.draw_at_cursor(ctx, {
+          width = -1,
+          height = 20,
+          text = state.rename_buffer,
+        }, "tag_rename_" .. tag_name)
 
         if changed then
           state.rename_buffer = new_name
@@ -895,7 +912,7 @@ local function draw_template_context_menu(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Remove color button
-      if ImGui.Button(ctx, "Remove Color", -1, 0) then
+      if Button.draw_at_cursor(ctx, { label = "Remove Color", width = -1, height = 24 }, "remove_color") then
         if tmpl_metadata then
           tmpl_metadata.chip_color = nil
           local Persistence = require('TemplateBrowser.domain.persistence')
@@ -923,8 +940,17 @@ local function draw_template_rename_modal(ctx, state)
     ImGui.Text(ctx, "Current name: " .. (tmpl and tmpl.name or ""))
     ImGui.Spacing(ctx)
 
-    ImGui.SetNextItemWidth(ctx, 300)
-    local changed, new_name = ImGui.InputText(ctx, "##rename_input", state.rename_buffer)
+    -- Initialize field with current name
+    if Fields.get_text("template_rename_modal") == "" then
+      Fields.set_text("template_rename_modal", state.rename_buffer)
+    end
+
+    local changed, new_name = Fields.draw_at_cursor(ctx, {
+      width = 300,
+      height = 24,
+      text = state.rename_buffer,
+    }, "template_rename_modal")
+
     if changed then
       state.rename_buffer = new_name
     end
@@ -939,7 +965,8 @@ local function draw_template_rename_modal(ctx, state)
     ImGui.Spacing(ctx)
 
     -- Buttons
-    if ImGui.Button(ctx, "OK", 140, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
+    local ok_clicked = Button.draw_at_cursor(ctx, { label = "OK", width = 140, height = 24 }, "rename_ok")
+    if ok_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
       if state.rename_buffer ~= "" and state.rename_buffer ~= tmpl.name then
         local old_path = tmpl.path
         local success, new_path = FileOps.rename_template(tmpl.path, state.rename_buffer)
@@ -976,7 +1003,8 @@ local function draw_template_rename_modal(ctx, state)
     end
 
     ImGui.SameLine(ctx)
-    if ImGui.Button(ctx, "Cancel", 140, 0) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+    local cancel_clicked = Button.draw_at_cursor(ctx, { label = "Cancel", width = 140, height = 24 }, "rename_cancel")
+    if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
       state.renaming_item = nil
       state.renaming_type = nil
       state.rename_buffer = ""
@@ -1019,17 +1047,17 @@ local function draw_info_panel(ctx, state, config, width, height)
     ImGui.Spacing(ctx)
 
     -- Actions
-    if ImGui.Button(ctx, "Apply to Selected Track", -1, 32) then
+    if Button.draw_at_cursor(ctx, { label = "Apply to Selected Track", width = -1, height = 32 }, "apply_template") then
       reaper.ShowConsoleMsg("Applying template: " .. tmpl.name .. "\n")
       TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
     end
 
-    if ImGui.Button(ctx, "Insert as New Track", -1, 32) then
+    if Button.draw_at_cursor(ctx, { label = "Insert as New Track", width = -1, height = 32 }, "insert_template") then
       reaper.ShowConsoleMsg("Inserting template as new track: " .. tmpl.name .. "\n")
       TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
     end
 
-    if ImGui.Button(ctx, "Rename (F2)", -1, 32) then
+    if Button.draw_at_cursor(ctx, { label = "Rename (F2)", width = -1, height = 32 }, "rename_template") then
       state.renaming_item = tmpl
       state.renaming_type = "template"
       state.rename_buffer = tmpl.name
@@ -1044,8 +1072,20 @@ local function draw_info_panel(ctx, state, config, width, height)
     ImGui.Spacing(ctx)
 
     local notes = (tmpl_metadata and tmpl_metadata.notes) or ""
-    ImGui.SetNextItemWidth(ctx, -1)
-    local notes_changed, new_notes = ImGui.InputTextMultiline(ctx, "##notes", notes, -1, 80)
+
+    -- Initialize field with current notes
+    local notes_field_id = "template_notes_" .. tmpl.uuid
+    if Fields.get_text(notes_field_id) ~= notes then
+      Fields.set_text(notes_field_id, notes)
+    end
+
+    local notes_changed, new_notes = Fields.draw_at_cursor(ctx, {
+      width = -1,
+      height = 80,
+      text = notes,
+      multiline = true,
+    }, notes_field_id)
+
     if notes_changed then
       Tags.set_template_notes(state.metadata, tmpl.uuid, new_notes)
       local Persistence = require('TemplateBrowser.domain.persistence')
