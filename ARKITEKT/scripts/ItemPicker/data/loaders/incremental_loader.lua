@@ -280,13 +280,27 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
 
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
+  local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
+  local uuid = get_item_uuid(item)
 
+  -- Store in loader.samples for duplicate detection
   table.insert(loader.samples[filename], {
     item,
     item_name,
     track_muted = track_muted,
     item_muted = item_muted,
-    uuid = get_item_uuid(item)
+    uuid = uuid,
+  })
+
+  -- ALSO store in raw pool for reorganization
+  table.insert(loader.raw_audio_items, {
+    item = item,
+    item_name = item_name,
+    filename = filename,
+    track_color = track_color,
+    track_muted = track_muted,
+    item_muted = item_muted,
+    uuid = uuid,
   })
 end
 
@@ -344,13 +358,26 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
 
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
+  local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
+  local uuid = get_item_uuid(item)
 
+  -- Store in loader.midi_items for duplicate detection
   table.insert(loader.midi_items[item_name], {
     item,
-    item_name,  -- Display the actual take name
+    item_name,
     track_muted = track_muted,
     item_muted = item_muted,
-    uuid = get_item_uuid(item)
+    uuid = uuid,
+  })
+
+  -- ALSO store in raw pool for reorganization
+  table.insert(loader.raw_midi_items, {
+    item = item,
+    item_name = item_name,
+    track_color = track_color,
+    track_muted = track_muted,
+    item_muted = item_muted,
+    uuid = uuid,
   })
 end
 
