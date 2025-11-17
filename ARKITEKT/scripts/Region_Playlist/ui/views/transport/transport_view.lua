@@ -275,7 +275,7 @@ function TransportView:build_playback_dropdown(bridge_state)
       tooltip = "Playback Options",
       current_value = nil,
       options = {
-        { value = nil, label = "Playback" },
+        { value = nil, label = "", separator = "Playback" },
         {
           value = "override_transport",
           label = "Override Transport",
@@ -362,30 +362,76 @@ function TransportView:build_header_elements(bridge_state, available_width)
   local ultra_compact = available_width < LAYOUT.ultra_compact_width
   local compact = available_width < LAYOUT.compact_width
 
-  local elements = {}
-
-  -- PRIORITY 1: Play button (always show)
-  elements[#elements + 1] = self:build_play_button(bridge_state)
-
-  -- PRIORITY 2: Jump button (always show)
-  elements[#elements + 1] = self:build_jump_button(bridge_state)
-
-  -- Ultra-compact mode: Combine Quantize + Playback into single "PB" dropdown
+  -- Ultra-compact mode: Only Play, Jump, and combined PB dropdown
   if ultra_compact then
-    elements[#elements + 1] = self:build_combined_pb_dropdown(bridge_state)
-    return elements
+    return {
+      self:build_play_button(bridge_state),
+      self:build_jump_button(bridge_state),
+      self:build_combined_pb_dropdown(bridge_state),
+    }
   end
 
-  -- PRIORITY 3: Quantize dropdown
-  local used_width = BTN.play.width + BTN.jump.width + BTN.quantize.width
-  if available_width >= used_width then
+  -- Calculate which buttons to show based on priority
+  -- Always show: Play (1), Jump (2)
+  local always_width = BTN.play.width + BTN.jump.width
+  local remaining_width = available_width - always_width
+
+  -- Determine which optional buttons fit (by priority: lower number = higher priority)
+  local show_quantize = false
+  local show_playback = false
+  local show_loop = false
+  local show_stop = false
+
+  local playback_width = compact and BTN.playback.width_dropdown or BTN.playback.width_buttons
+
+  -- Check each priority level
+  local budget = remaining_width
+
+  -- Priority 3: Quantize
+  if budget >= BTN.quantize.width then
+    show_quantize = true
+    budget = budget - BTN.quantize.width
+  end
+
+  -- Priority 4: Playback
+  if budget >= playback_width then
+    show_playback = true
+    budget = budget - playback_width
+  end
+
+  -- Priority 5: Loop
+  if budget >= BTN.loop.width then
+    show_loop = true
+    budget = budget - BTN.loop.width
+  end
+
+  -- Priority 6: Stop
+  if budget >= BTN.stop.width then
+    show_stop = true
+    budget = budget - BTN.stop.width
+  end
+
+  -- Build elements array in VISUAL ORDER (not priority order)
+  -- Visual order: Play, Stop, Loop, Jump, Quantize, Playback
+  local elements = {}
+
+  elements[#elements + 1] = self:build_play_button(bridge_state)
+
+  if show_stop then
+    elements[#elements + 1] = self:build_stop_button()
+  end
+
+  if show_loop then
+    elements[#elements + 1] = self:build_loop_button(bridge_state)
+  end
+
+  elements[#elements + 1] = self:build_jump_button(bridge_state)
+
+  if show_quantize then
     elements[#elements + 1] = self:build_quantize_dropdown(bridge_state)
   end
 
-  -- PRIORITY 4: Playback controls (dropdown or buttons based on compact mode)
-  local playback_width = compact and BTN.playback.width_dropdown or BTN.playback.width_buttons
-  used_width = used_width + playback_width
-  if available_width >= used_width then
+  if show_playback then
     if compact then
       elements[#elements + 1] = self:build_playback_dropdown(bridge_state)
     else
@@ -396,18 +442,6 @@ function TransportView:build_header_elements(bridge_state, available_width)
     end
   end
 
-  -- PRIORITY 5: Loop button
-  used_width = used_width + BTN.loop.width
-  if available_width >= used_width then
-    elements[#elements + 1] = self:build_loop_button(bridge_state)
-  end
-
-  -- PRIORITY 6: Stop button (lowest priority)
-  used_width = used_width + BTN.stop.width
-  if available_width >= used_width then
-    elements[#elements + 1] = self:build_stop_button()
-  end
-
   return elements
 end
 
@@ -415,7 +449,7 @@ end
 function TransportView:build_combined_pb_dropdown(bridge_state)
   -- Combine quantize options and playback checkboxes into single dropdown
   local options = {
-    { value = nil, label = "PB", separator = "Quantize" },
+    { value = nil, label = "", separator = "Quantize" },
   }
 
   -- Add all quantize options
