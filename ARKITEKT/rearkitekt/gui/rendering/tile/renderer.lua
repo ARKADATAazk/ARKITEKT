@@ -168,8 +168,9 @@ function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fa
   -- Inset to stay inside rounded corners (same approach as specular highlight)
   local inset = min(2, rounding * 0.3)
 
-  -- Draw progress as a simple square fill with insets to avoid rounded corners
-  ImGui.DrawList_AddRectFilled(dl, x1 + inset, y1 + inset, progress_x, y2 - inset, progress_color, 0, 0)
+  -- Draw progress as a simple square fill with extra 1px margins on left/right
+  -- Start 1px further right, end 1px further left
+  ImGui.DrawList_AddRectFilled(dl, x1 + inset + 1, y1 + inset, progress_x - 1, y2 - inset, progress_color, 0, 0)
 
   -- Draw 1-pixel vertical cursor line at progress position (only if not at 100%)
   if progress < 1.0 then
@@ -178,8 +179,8 @@ function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fa
     local bar_color = Colors.components_to_rgba(r, g, b, bar_alpha)
     local bar_thickness = 1
 
-    -- Cursor line with inset to match progress fill
-    ImGui.DrawList_AddLine(dl, progress_x, y1 + inset, progress_x, y2 - inset, bar_color, bar_thickness)
+    -- Cursor line at progress edge (1px further left to match fill end)
+    ImGui.DrawList_AddLine(dl, progress_x - 1, y1 + inset, progress_x - 1, y2 - inset, bar_color, bar_thickness)
   end
 end
 
