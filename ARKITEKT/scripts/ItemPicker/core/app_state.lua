@@ -447,11 +447,13 @@ end
 function M.cleanup()
   M.persist_all()
 
-  -- Flush disk cache to save waveforms/thumbnails
-  local disk_cache_ok, disk_cache = pcall(require, 'ItemPicker.data.disk_cache')
-  if disk_cache_ok and disk_cache.flush then
-    disk_cache.flush()
-  end
+  -- Skip disk cache flush - causes 5 second UI freeze
+  -- Waveforms/MIDI will be regenerated on next open (fast with job queue)
+  -- If you want persistent cache, uncomment the code below:
+  -- local disk_cache_ok, disk_cache = pcall(require, 'ItemPicker.data.disk_cache')
+  -- if disk_cache_ok and disk_cache.flush then
+  --   disk_cache.flush()
+  -- end
 
   -- Stop preview using SWS command
   M.stop_preview()

@@ -48,7 +48,8 @@ function M.process_loading_batch(state)
     incremental_loader_module.get_results(state.incremental_loader, state)
     state.is_loading = false
     state.loading_progress = 1.0
-    state.incremental_loader = nil
+    -- Keep incremental_loader alive for reorganization (toggling group_by_name)
+    -- state.incremental_loader = nil
   else
     state.loading_progress = progress
   end
