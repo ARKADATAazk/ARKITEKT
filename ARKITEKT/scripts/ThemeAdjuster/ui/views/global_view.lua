@@ -21,9 +21,9 @@ function M.new(State, Config, settings)
     -- Slider values (loaded from theme parameters)
     -- Storage values (actual theme parameter values)
     gamma = 1000,         -- Storage: 500-2000, Display: 0.50-2.00, Default: 1000 (1.00)
-    highlights = 256,     -- Storage: 0-512, Display: 0.00-2.00, Default: 256 (1.00)
-    midtones = 256,       -- Storage: 0-512, Display: 0.00-2.00, Default: 256 (1.00)
-    shadows = 256,        -- Storage: 0-512, Display: 0.00-2.00, Default: 256 (1.00)
+    highlights = 0,       -- Storage: -256-256, Display: -2.00-2.00, Default: 0 (0.00)
+    midtones = 0,         -- Storage: -256-256, Display: -2.00-2.00, Default: 0 (0.00)
+    shadows = 0,          -- Storage: -256-256, Display: -2.00-2.00, Default: 0 (0.00)
     saturation = 256,     -- Storage: 0-512, Display: 0%-200%, Default: 256 (100%)
     tint = 192,           -- Storage: 0-384, Display: -180° to +180°, Default: 192 (0°)
 
@@ -71,9 +71,9 @@ end
 function GlobalView:reset_color_controls()
   -- Reset all color controls to defaults
   self.gamma = 1000
-  self.highlights = 256
-  self.midtones = 256
-  self.shadows = 256
+  self.highlights = 0
+  self.midtones = 0
+  self.shadows = 0
   self.saturation = 256
   self.tint = 192
 
@@ -173,54 +173,54 @@ function GlobalView:draw(ctx, shell_state)
       self:set_param(-1000, self.gamma, true)
     end
 
-    -- Highlights slider (Storage: 0-512, Display: -2.00 to 2.00, Default: 256 = 0.00)
-    local highlights_display = (self.highlights - 256) / 128  -- Map 0→-2.00, 256→0.00, 512→2.00
+    -- Highlights slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
+    local highlights_display = self.highlights / 128  -- Map -256→-2.00, 0→0.00, 256→2.00
     local changed, new_highlights_normalized = draw_slider_row(
       "Highlights",
       string.format("%.2f", highlights_display),
       HueSlider.draw_gamma,
       "##highlights",
-      (self.highlights / 512) * 100,  -- Map 0-512 to 0-100
-      {default = 50}  -- 256 is 50% of range (0.00)
+      ((self.highlights + 256) / 512) * 100,  -- Map -256-256 to 0-100
+      {default = 50}  -- 0 is 50% of range (0.00)
     )
     if changed then
-      self.highlights = math.floor((new_highlights_normalized / 100) * 512 + 0.5)
+      self.highlights = math.floor((new_highlights_normalized / 100) * 512 - 256 + 0.5)
       self:set_param(-1003, self.highlights, false)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1003, self.highlights, true)
     end
 
-    -- Midtones slider (Storage: 0-512, Display: -2.00 to 2.00, Default: 256 = 0.00)
-    local midtones_display = (self.midtones - 256) / 128  -- Map 0→-2.00, 256→0.00, 512→2.00
+    -- Midtones slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
+    local midtones_display = self.midtones / 128  -- Map -256→-2.00, 0→0.00, 256→2.00
     local changed, new_midtones_normalized = draw_slider_row(
       "Midtones",
       string.format("%.2f", midtones_display),
       HueSlider.draw_gamma,
       "##midtones",
-      (self.midtones / 512) * 100,  -- Map 0-512 to 0-100
-      {default = 50}  -- 256 is 50% of range (0.00)
+      ((self.midtones + 256) / 512) * 100,  -- Map -256-256 to 0-100
+      {default = 50}  -- 0 is 50% of range (0.00)
     )
     if changed then
-      self.midtones = math.floor((new_midtones_normalized / 100) * 512 + 0.5)
+      self.midtones = math.floor((new_midtones_normalized / 100) * 512 - 256 + 0.5)
       self:set_param(-1002, self.midtones, false)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1002, self.midtones, true)
     end
 
-    -- Shadows slider (Storage: 0-512, Display: -2.00 to 2.00, Default: 256 = 0.00)
-    local shadows_display = (self.shadows - 256) / 128  -- Map 0→-2.00, 256→0.00, 512→2.00
+    -- Shadows slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
+    local shadows_display = self.shadows / 128  -- Map -256→-2.00, 0→0.00, 256→2.00
     local changed, new_shadows_normalized = draw_slider_row(
       "Shadows",
       string.format("%.2f", shadows_display),
       HueSlider.draw_gamma,
       "##shadows",
-      (self.shadows / 512) * 100,  -- Map 0-512 to 0-100
-      {default = 50}  -- 256 is 50% of range (0.00)
+      ((self.shadows + 256) / 512) * 100,  -- Map -256-256 to 0-100
+      {default = 50}  -- 0 is 50% of range (0.00)
     )
     if changed then
-      self.shadows = math.floor((new_shadows_normalized / 100) * 512 + 0.5)
+      self.shadows = math.floor((new_shadows_normalized / 100) * 512 - 256 + 0.5)
       self:set_param(-1001, self.shadows, false)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
