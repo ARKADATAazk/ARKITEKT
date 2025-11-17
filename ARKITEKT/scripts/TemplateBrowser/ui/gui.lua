@@ -278,8 +278,8 @@ local function draw_folder_tree(ctx, state, config)
   TreeView.draw(ctx, tree_nodes, tree_state, {
     enable_rename = true,
     show_colors = true,
-    show_template_count = true,
-    enable_drag_drop = true,
+    show_template_count = false,  -- Disabled - causes lag
+    enable_drag_drop = false,  -- Disabled until properly implemented
 
     -- Selection callback
     on_select = function(node)
