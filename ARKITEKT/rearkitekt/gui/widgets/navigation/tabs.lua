@@ -13,7 +13,7 @@ local M = {}
 -- TAB RENDERING
 -- ============================================================================
 
-local function render_tab(ctx, label, is_active, width, height, config)
+local function render_tab(ctx, tab_id, label, is_active, width, height, config)
   local button_config = {
     label = label,
     width = width,
@@ -25,7 +25,7 @@ local function render_tab(ctx, label, is_active, width, height, config)
     rounding = config.rounding or 0,
   }
 
-  return Button.draw_at_cursor(ctx, button_config)
+  return Button.draw_at_cursor(ctx, button_config, "tab_" .. tab_id)
 end
 
 -- ============================================================================
@@ -64,7 +64,7 @@ function M.draw_at_cursor(ctx, tabs, active_tab, user_config)
     end
 
     -- Render tab button
-    local clicked = render_tab(ctx, label, is_active, tab_width - 2, tab_height, config)
+    local clicked = render_tab(ctx, tab.id, label, is_active, tab_width - 2, tab_height, config)
 
     if clicked then
       clicked_tab = tab.id
@@ -118,7 +118,7 @@ function M.draw_vertical(ctx, tabs, active_tab, user_config)
     end
 
     -- Render tab button
-    local clicked = render_tab(ctx, label, is_active, tab_width, tab_height, config)
+    local clicked = render_tab(ctx, tab.id, label, is_active, tab_width, tab_height, config)
 
     if clicked then
       clicked_tab = tab.id
