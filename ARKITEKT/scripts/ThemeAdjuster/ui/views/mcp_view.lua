@@ -141,14 +141,71 @@ function MCPView:draw(ctx, shell_state)
 
   ImGui.Dummy(ctx, 0, 12)
 
-  -- Layout Settings Section
+  -- Layout & Size Section (MOVED TO TOP)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "mcp_layout_section", avail_w, 220, 1) then
+  if ImGui.BeginChild(ctx, "mcp_layout_buttons", avail_w, 90, 1) then
     ImGui.Dummy(ctx, 0, 2)
 
     ImGui.Indent(ctx, 8)
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "LAYOUT SETTINGS")
+    ImGui.Text(ctx, "ACTIVE LAYOUT & SIZE")
+    ImGui.PopFont(ctx)
+    ImGui.Dummy(ctx, 0, 2)
+
+    -- Active Layout
+    ImGui.AlignTextToFramePadding(ctx)
+    ImGui.Text(ctx, "Active Layout")
+    ImGui.SameLine(ctx, 120)
+
+    for _, layout in ipairs({'A', 'B', 'C'}) do
+      local is_active = (self.active_layout == layout)
+      if is_active then
+        ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#2D4A37"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#3A5F48"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#47724F"))
+      end
+      if ImGui.Button(ctx, layout, 50, 24) then
+        self.active_layout = layout
+        -- TODO: Apply layout
+      end
+      if is_active then
+        ImGui.PopStyleColor(ctx, 3)
+      end
+      ImGui.SameLine(ctx, 0, 6)
+    end
+    ImGui.NewLine(ctx)
+
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Apply Size
+    ImGui.AlignTextToFramePadding(ctx)
+    ImGui.Text(ctx, "Apply Size")
+    ImGui.SameLine(ctx, 120)
+
+    for _, size in ipairs({'100%', '150%', '200%'}) do
+      if ImGui.Button(ctx, size, 70, 24) then
+        -- TODO: Apply size
+      end
+      ImGui.SameLine(ctx, 0, 6)
+    end
+    ImGui.NewLine(ctx)
+
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 2)
+    ImGui.EndChild(ctx)
+  end
+  ImGui.PopStyleColor(ctx)
+
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- Layout Settings Section (MOVED AFTER LAYOUT & SIZE)
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+  if ImGui.BeginChild(ctx, "mcp_layout_section", avail_w, 200, 1) then
+    ImGui.Dummy(ctx, 0, 2)
+
+    ImGui.Indent(ctx, 8)
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
+    ImGui.Text(ctx, "SIZING CONTROLS")
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 2)
 
@@ -156,7 +213,7 @@ function MCPView:draw(ctx, shell_state)
     local col_count = 3
     local col_w = (avail_w - 32) / col_count
     local label_w = 100  -- Fixed label width for consistency
-    
+
     local spinner_w = col_w - label_w - 16  -- Remaining for spinner
 
     -- Helper function to draw properly aligned spinner row
@@ -249,68 +306,11 @@ function MCPView:draw(ctx, shell_state)
   end
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 10)
-
-  -- Layout & Size Section
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "mcp_layout_buttons", avail_w, 100, 1) then
-    ImGui.Dummy(ctx, 0, 2)
-
-    ImGui.Indent(ctx, 8)
-    ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "ACTIVE LAYOUT & SIZE")
-    ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 2)
-
-    -- Active Layout
-    ImGui.AlignTextToFramePadding(ctx)
-    ImGui.Text(ctx, "Active Layout")
-    ImGui.SameLine(ctx, 120)
-
-    for _, layout in ipairs({'A', 'B', 'C'}) do
-      local is_active = (self.active_layout == layout)
-      if is_active then
-        ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#2D4A37"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#3A5F48"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#47724F"))
-      end
-      if ImGui.Button(ctx, layout, 50, 24) then
-        self.active_layout = layout
-        -- TODO: Apply layout
-      end
-      if is_active then
-        ImGui.PopStyleColor(ctx, 3)
-      end
-      ImGui.SameLine(ctx, 0, 6)
-    end
-    ImGui.NewLine(ctx)
-
-    ImGui.Dummy(ctx, 0, 4)
-
-    -- Apply Size
-    ImGui.AlignTextToFramePadding(ctx)
-    ImGui.Text(ctx, "Apply Size")
-    ImGui.SameLine(ctx, 120)
-
-    for _, size in ipairs({'100%', '150%', '200%'}) do
-      if ImGui.Button(ctx, size, 70, 24) then
-        -- TODO: Apply size
-      end
-      ImGui.SameLine(ctx, 0, 6)
-    end
-    ImGui.NewLine(ctx)
-
-    ImGui.Unindent(ctx, 8)
-    ImGui.Dummy(ctx, 0, 2)
-    ImGui.EndChild(ctx)
-  end
-  ImGui.PopStyleColor(ctx)
-
-  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Dummy(ctx, 0, 8)
 
   -- Options Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "mcp_options_section", avail_w, 80, 1) then
+  if ImGui.BeginChild(ctx, "mcp_options_section", avail_w, 70, 1) then
     ImGui.Dummy(ctx, 0, 2)
 
     ImGui.Indent(ctx, 8)
@@ -337,7 +337,7 @@ function MCPView:draw(ctx, shell_state)
   end
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Dummy(ctx, 0, 8)
 
   -- Visibility Table Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))

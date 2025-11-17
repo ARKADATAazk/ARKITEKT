@@ -95,78 +95,9 @@ function TransportView:draw(ctx, shell_state)
 
   ImGui.Dummy(ctx, 0, 12)
 
-  -- Layout Settings Section
+  -- Layout & Size Section (MOVED TO TOP)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "transport_layout_section", avail_w, 140, 1) then
-    ImGui.Dummy(ctx, 0, 2)
-
-    ImGui.Indent(ctx, 8)
-    ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-    ImGui.Text(ctx, "LAYOUT SETTINGS")
-    ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 2)
-
-    -- Column layout for spinners
-    local col_w = (avail_w - 32) / 2
-    local label_w = 100  -- Fixed label width for consistency
-    
-    local spinner_w = col_w - label_w - 16  -- Remaining for spinner
-
-    -- Helper function to draw properly aligned spinner row
-    local function draw_spinner_row(label, id, idx, values)
-      -- Label (right-aligned in label column)
-      local label_text_w = ImGui.CalcTextSize(ctx, label)
-      ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + label_w - label_text_w)
-      ImGui.AlignTextToFramePadding(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-      ImGui.Text(ctx, label)
-      ImGui.PopStyleColor(ctx)
-
-      -- Spinner (fixed position, fixed width)
-      ImGui.SameLine(ctx, 0, 8)
-      local changed, new_idx = Spinner.draw(ctx, id, idx, values, {w = spinner_w, h = 24})
-
-
-      ImGui.Dummy(ctx, 0, 2)
-      return changed, new_idx
-    end
-
-    ImGui.BeginGroup(ctx)
-    -- Left column
-    local changed, new_idx = draw_spinner_row("Rate Size", "trans_rateSize", self.trans_rateSize_idx, SPINNER_VALUES.trans_rateSize)
-    if changed then self.trans_rateSize_idx = new_idx end
-
-    changed, new_idx = draw_spinner_row("Rate Mode", "trans_rateMode", self.trans_rateMode_idx, SPINNER_VALUES.trans_rateMode)
-    if changed then self.trans_rateMode_idx = new_idx end
-
-    changed, new_idx = draw_spinner_row("Status Size", "trans_status_size", self.trans_status_size_idx, SPINNER_VALUES.trans_status_size)
-    if changed then self.trans_status_size_idx = new_idx end
-
-    ImGui.EndGroup(ctx)
-
-    ImGui.SameLine(ctx, col_w + 8)
-
-    ImGui.BeginGroup(ctx)
-    -- Right column
-    changed, new_idx = draw_spinner_row("BPM Editor", "trans_bpmEdit_size", self.trans_bpmEdit_size_idx, SPINNER_VALUES.trans_bpmEdit_size)
-    if changed then self.trans_bpmEdit_size_idx = new_idx end
-
-    changed, new_idx = draw_spinner_row("Time Editor", "trans_timeEdit_size", self.trans_timeEdit_size_idx, SPINNER_VALUES.trans_timeEdit_size)
-    if changed then self.trans_timeEdit_size_idx = new_idx end
-
-    ImGui.EndGroup(ctx)
-
-    ImGui.Unindent(ctx, 8)
-    ImGui.Dummy(ctx, 0, 2)
-    ImGui.EndChild(ctx)
-  end
-  ImGui.PopStyleColor(ctx)
-
-  ImGui.Dummy(ctx, 0, 10)
-
-  -- Layout & Size Section
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "transport_layout_buttons", avail_w, 100, 1) then
+  if ImGui.BeginChild(ctx, "transport_layout_buttons", avail_w, 90, 1) then
     ImGui.Dummy(ctx, 0, 2)
 
     ImGui.Indent(ctx, 8)
@@ -219,7 +150,76 @@ function TransportView:draw(ctx, shell_state)
   end
   ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- Layout Settings Section (MOVED AFTER LAYOUT & SIZE)
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+  if ImGui.BeginChild(ctx, "transport_layout_section", avail_w, 120, 1) then
+    ImGui.Dummy(ctx, 0, 2)
+
+    ImGui.Indent(ctx, 8)
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
+    ImGui.Text(ctx, "SIZING CONTROLS")
+    ImGui.PopFont(ctx)
+    ImGui.Dummy(ctx, 0, 2)
+
+    -- Column layout for spinners
+    local col_w = (avail_w - 32) / 2
+    local label_w = 100  -- Fixed label width for consistency
+
+    local spinner_w = col_w - label_w - 16  -- Remaining for spinner
+
+    -- Helper function to draw properly aligned spinner row
+    local function draw_spinner_row(label, id, idx, values)
+      -- Label (right-aligned in label column)
+      local label_text_w = ImGui.CalcTextSize(ctx, label)
+      ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + label_w - label_text_w)
+      ImGui.AlignTextToFramePadding(ctx)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+      ImGui.Text(ctx, label)
+      ImGui.PopStyleColor(ctx)
+
+      -- Spinner (fixed position, fixed width)
+      ImGui.SameLine(ctx, 0, 8)
+      local changed, new_idx = Spinner.draw(ctx, id, idx, values, {w = spinner_w, h = 24})
+
+
+      ImGui.Dummy(ctx, 0, 2)
+      return changed, new_idx
+    end
+
+    ImGui.BeginGroup(ctx)
+    -- Left column
+    local changed, new_idx = draw_spinner_row("Rate Size", "trans_rateSize", self.trans_rateSize_idx, SPINNER_VALUES.trans_rateSize)
+    if changed then self.trans_rateSize_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Rate Mode", "trans_rateMode", self.trans_rateMode_idx, SPINNER_VALUES.trans_rateMode)
+    if changed then self.trans_rateMode_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Status Size", "trans_status_size", self.trans_status_size_idx, SPINNER_VALUES.trans_status_size)
+    if changed then self.trans_status_size_idx = new_idx end
+
+    ImGui.EndGroup(ctx)
+
+    ImGui.SameLine(ctx, col_w + 8)
+
+    ImGui.BeginGroup(ctx)
+    -- Right column
+    changed, new_idx = draw_spinner_row("BPM Editor", "trans_bpmEdit_size", self.trans_bpmEdit_size_idx, SPINNER_VALUES.trans_bpmEdit_size)
+    if changed then self.trans_bpmEdit_size_idx = new_idx end
+
+    changed, new_idx = draw_spinner_row("Time Editor", "trans_timeEdit_size", self.trans_timeEdit_size_idx, SPINNER_VALUES.trans_timeEdit_size)
+    if changed then self.trans_timeEdit_size_idx = new_idx end
+
+    ImGui.EndGroup(ctx)
+
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 2)
+    ImGui.EndChild(ctx)
+  end
+  ImGui.PopStyleColor(ctx)
+
+  ImGui.Dummy(ctx, 0, 8)
 
   -- Element Visibility Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
