@@ -395,8 +395,8 @@ function M.reorganize_items(loader, group_by_name)
   for _, raw_item in ipairs(loader.raw_audio_items) do
     local group_key
     if group_by_name then
-      -- Group by filename (multiple items with same source file)
-      group_key = raw_item.filename
+      -- Group by item name (so all items named "Kick" are together, regardless of source file)
+      group_key = raw_item.item_name
     else
       -- Each item is separate (use UUID as unique key)
       group_key = raw_item.uuid
