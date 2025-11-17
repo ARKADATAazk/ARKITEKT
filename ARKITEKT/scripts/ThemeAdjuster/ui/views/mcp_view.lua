@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
+local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -299,14 +300,14 @@ function MCPView:draw(ctx, shell_state)
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    if ImGui.Checkbox(ctx, "Hide MCP of master track", self.hide_mcp_master) then
+    if Checkbox.draw_at_cursor(ctx, "Hide MCP of master track", self.hide_mcp_master, nil, "mcp_hide_master") then
       self.hide_mcp_master = not self.hide_mcp_master
       -- TODO: Set parameter
     end
 
     ImGui.Dummy(ctx, 0, 3)
 
-    if ImGui.Checkbox(ctx, "Indicate tracks that are folder parents", self.folder_parent_indicator) then
+    if Checkbox.draw_at_cursor(ctx, "Indicate tracks that are folder parents", self.folder_parent_indicator, nil, "mcp_folder_indicator") then
       self.folder_parent_indicator = not self.folder_parent_indicator
       -- TODO: Set parameter
     end

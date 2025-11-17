@@ -37,37 +37,37 @@ local function hsv_rgba_u32(h, s, v, a)
   return (R << 24) | (G << 16) | (B << 8) | A
 end
 
--- Render slider background (ROUNDED)
+-- Render slider background (FULL RECTANGLE - NO ROUNDING)
 local function render_slider(dl, x0, y0, x1, y1, gradient_fn, opt)
-  local rounding = 4.0
+  local rounding = 0  -- No rounding - full rectangle
   local border_thickness = 1.0
   local inset = border_thickness
-  
+
   -- Dark base
   ImGui.DrawList_AddRectFilled(dl, x0, y0, x1, y1, hexrgb("#1A1A1A"), rounding)
-  
-  -- Gradient (drawn inset to not interfere with rounded corners)
+
+  -- Gradient (drawn inset)
   gradient_fn(dl, x0 + inset, y0 + inset, x1 - inset, y1 - inset, opt)
-  
+
   -- Border
   ImGui.DrawList_AddRect(dl, x0, y0, x1, y1, hexrgb("#000000"), rounding, 0, border_thickness)
 end
 
--- Render grab handle (ROUNDED, DARKER)
+-- Render grab handle (FULL RECTANGLE - NO ROUNDING)
 local function render_grab(dl, gx, y0, y1, GRAB_W, active, hovered)
   local x_left = gx - GRAB_W / 2
   local x_right = gx + GRAB_W / 2
-  local rounding = 3.0
-  
-  -- Shadow (rounded)
-  ImGui.DrawList_AddRectFilled(dl, x_left + 1, y0 + 1, x_right + 1, y1 + 1, 
+  local rounding = 0  -- No rounding - full rectangle
+
+  -- Shadow
+  ImGui.DrawList_AddRectFilled(dl, x_left + 1, y0 + 1, x_right + 1, y1 + 1,
     hexrgb("#00000050"), rounding)
-  
-  -- Base (darker bluish-greys, rounded)
+
+  -- Base (darker bluish-greys)
   local grab_col = active and hexrgb("#585C65") or (hovered and hexrgb("#484C55") or hexrgb("#383C45"))
   ImGui.DrawList_AddRectFilled(dl, x_left, y0, x_right, y1, grab_col, rounding)
-  
-  -- Border (rounded)
+
+  -- Border
   ImGui.DrawList_AddRect(dl, x_left, y0, x_right, y1, hexrgb("#000000"), rounding, 0, 1.0)
 end
 

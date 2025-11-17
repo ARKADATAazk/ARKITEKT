@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
+local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -218,9 +219,9 @@ function TransportView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 2)
 
     -- Helper function for checkbox rows
-    local function draw_checkbox_row(label, checked)
+    local function draw_checkbox_row(label, checked, id)
       local result = checked
-      if ImGui.Checkbox(ctx, label, checked) then
+      if Checkbox.draw_at_cursor(ctx, label, checked, nil, id) then
         result = not checked
       end
       ImGui.Dummy(ctx, 0, 3)
@@ -233,12 +234,12 @@ function TransportView:draw(ctx, shell_state)
     ImGui.BeginGroup(ctx)
 
     -- Left column
-    self.show_play_position = draw_checkbox_row("Show play position", self.show_play_position)
-    self.show_playback_status = draw_checkbox_row("Show playback status", self.show_playback_status)
-    self.show_transport_state = draw_checkbox_row("Show transport state", self.show_transport_state)
-    self.show_record_status = draw_checkbox_row("Show record status", self.show_record_status)
-    self.show_loop_repeat = draw_checkbox_row("Show loop/repeat status", self.show_loop_repeat)
-    self.show_auto_crossfade = draw_checkbox_row("Show auto-crossfade", self.show_auto_crossfade)
+    self.show_play_position = draw_checkbox_row("Show play position", self.show_play_position, "trans_play_position")
+    self.show_playback_status = draw_checkbox_row("Show playback status", self.show_playback_status, "trans_playback_status")
+    self.show_transport_state = draw_checkbox_row("Show transport state", self.show_transport_state, "trans_transport_state")
+    self.show_record_status = draw_checkbox_row("Show record status", self.show_record_status, "trans_record_status")
+    self.show_loop_repeat = draw_checkbox_row("Show loop/repeat status", self.show_loop_repeat, "trans_loop_repeat")
+    self.show_auto_crossfade = draw_checkbox_row("Show auto-crossfade", self.show_auto_crossfade, "trans_auto_crossfade")
 
     ImGui.EndGroup(ctx)
 
@@ -247,12 +248,12 @@ function TransportView:draw(ctx, shell_state)
     ImGui.BeginGroup(ctx)
 
     -- Right column
-    self.show_midi_editor_btn = draw_checkbox_row("Show MIDI editor button", self.show_midi_editor_btn)
-    self.show_metronome = draw_checkbox_row("Show metronome", self.show_metronome)
-    self.show_tempo_bpm = draw_checkbox_row("Show tempo (BPM)", self.show_tempo_bpm)
-    self.show_time_signature = draw_checkbox_row("Show time signature", self.show_time_signature)
-    self.show_project_length = draw_checkbox_row("Show project length", self.show_project_length)
-    self.show_selection_length = draw_checkbox_row("Show selection length", self.show_selection_length)
+    self.show_midi_editor_btn = draw_checkbox_row("Show MIDI editor button", self.show_midi_editor_btn, "trans_midi_editor")
+    self.show_metronome = draw_checkbox_row("Show metronome", self.show_metronome, "trans_metronome")
+    self.show_tempo_bpm = draw_checkbox_row("Show tempo (BPM)", self.show_tempo_bpm, "trans_tempo_bpm")
+    self.show_time_signature = draw_checkbox_row("Show time signature", self.show_time_signature, "trans_time_signature")
+    self.show_project_length = draw_checkbox_row("Show project length", self.show_project_length, "trans_project_length")
+    self.show_selection_length = draw_checkbox_row("Show selection length", self.show_selection_length, "trans_selection_length")
 
     ImGui.EndGroup(ctx)
 

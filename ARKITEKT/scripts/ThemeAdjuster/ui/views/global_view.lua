@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local HueSlider = require('rearkitekt.gui.widgets.primitives.hue_slider')
+local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -115,12 +116,11 @@ function GlobalView:draw(ctx, shell_state)
     local SLIDER_HEIGHT = 24
     local SPACING = 12
     local MIN_SLIDER_WIDTH = 200
-    local MAX_SLIDER_WIDTH = 500
+    local HORIZONTAL_PADDING = 40  -- Total horizontal padding (20px on each side)
 
-    -- Calculate responsive slider width
-    local total_padding = 24 + (SPACING * 2) -- Left padding + gaps
-    local available_for_slider = avail_w - LABEL_WIDTH - VALUE_WIDTH - total_padding
-    local slider_w = math.max(MIN_SLIDER_WIDTH, math.min(MAX_SLIDER_WIDTH, available_for_slider))
+    -- Calculate responsive slider width (extends horizontally to window width)
+    local available_for_slider = avail_w - LABEL_WIDTH - VALUE_WIDTH - HORIZONTAL_PADDING - (SPACING * 2)
+    local slider_w = math.max(MIN_SLIDER_WIDTH, available_for_slider)
 
     -- Calculate starting X position for centered layout
     local total_row_width = LABEL_WIDTH + SPACING + slider_w + SPACING + VALUE_WIDTH
@@ -271,14 +271,17 @@ function GlobalView:draw(ctx, shell_state)
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 6)
 
-    if ImGui.Checkbox(ctx, "Custom color track names", self.custom_track_names) then
+    local dl = ImGui.GetWindowDrawList(ctx)
+    local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
+
+    if Checkbox.draw_at_cursor(ctx, "Custom color track names", self.custom_track_names, nil, "custom_track_names") then
       self.custom_track_names = not self.custom_track_names
       -- TODO: Set 'glb_track_label_color' parameter
     end
 
     ImGui.Dummy(ctx, 0, 4)
 
-    if ImGui.Checkbox(ctx, "Also affect project custom colors", self.affect_project_colors) then
+    if Checkbox.draw_at_cursor(ctx, "Also affect project custom colors", self.affect_project_colors, nil, "affect_project_colors") then
       self.affect_project_colors = not self.affect_project_colors
       self:set_param(-1006, self.affect_project_colors and 1 or 0, true)
     end

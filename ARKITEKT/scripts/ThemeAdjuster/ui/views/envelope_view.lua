@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
+local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -227,9 +228,9 @@ function EnvelopeView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 2)
 
     -- Helper function for checkbox rows
-    local function draw_checkbox_row(label, checked)
+    local function draw_checkbox_row(label, checked, id)
       local result = checked
-      if ImGui.Checkbox(ctx, label, checked) then
+      if Checkbox.draw_at_cursor(ctx, label, checked, nil, id) then
         result = not checked
       end
       ImGui.Dummy(ctx, 0, 3)
@@ -242,9 +243,9 @@ function EnvelopeView:draw(ctx, shell_state)
     ImGui.BeginGroup(ctx)
 
     -- Left column
-    self.show_env_volume = draw_checkbox_row("Show volume control", self.show_env_volume)
-    self.show_env_pan = draw_checkbox_row("Show pan control", self.show_env_pan)
-    self.show_env_fader = draw_checkbox_row("Show fader", self.show_env_fader)
+    self.show_env_volume = draw_checkbox_row("Show volume control", self.show_env_volume, "env_volume")
+    self.show_env_pan = draw_checkbox_row("Show pan control", self.show_env_pan, "env_pan")
+    self.show_env_fader = draw_checkbox_row("Show fader", self.show_env_fader, "env_fader")
 
     ImGui.EndGroup(ctx)
 
@@ -253,9 +254,9 @@ function EnvelopeView:draw(ctx, shell_state)
     ImGui.BeginGroup(ctx)
 
     -- Right column
-    self.show_env_values = draw_checkbox_row("Show values", self.show_env_values)
-    self.show_env_mod_values = draw_checkbox_row("Show modulation values", self.show_env_mod_values)
-    self.env_hide_tcp_env = draw_checkbox_row("Hide TCP envelope controls", self.env_hide_tcp_env)
+    self.show_env_values = draw_checkbox_row("Show values", self.show_env_values, "env_values")
+    self.show_env_mod_values = draw_checkbox_row("Show modulation values", self.show_env_mod_values, "env_mod_values")
+    self.env_hide_tcp_env = draw_checkbox_row("Hide TCP envelope controls", self.env_hide_tcp_env, "env_hide_tcp")
 
     ImGui.EndGroup(ctx)
 
