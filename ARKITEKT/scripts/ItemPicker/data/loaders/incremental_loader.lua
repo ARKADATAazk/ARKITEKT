@@ -50,36 +50,13 @@ function M.start_loading(loader, state, settings)
 
   loader.is_loading = true
   loader.current_index = 0
+  loader.initialization_complete = false
 
-  -- Get track chunks once (relatively fast)
-  loader.track_chunks = loader.reaper_interface.GetAllTrackStateChunks()
+  -- DON'T do ANY blocking work here!
+  -- Everything happens in first batch of process_batch()
 
-  -- PRE-COMPUTE track mute status once (instead of per-item!)
-  loader.track_muted_cache = {}
-  local all_tracks = loader.reaper_interface.GetAllTracks()
-
-  for _, track in pairs(all_tracks) do
-    local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
-    loader.track_muted_cache[track] = track_muted
-  end
-
-  -- Collect all items into a flat list
-  loader.all_items = {}
-
-  for _, track in pairs(all_tracks) do
-    if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") ~= 0 and
-       not loader.reaper_interface.IsParentFrozen(track, loader.track_chunks) then
-      local track_items = loader.reaper_interface.GetItemInTrack(track)
-      for _, item in pairs(track_items) do
-        if item and reaper.ValidatePtr2(0, item, "MediaItem*") then
-          table.insert(loader.all_items, {item = item, track = track})
-        end
-      end
-    end
-  end
-
-  reaper.ShowConsoleMsg(string.format("[ItemPicker] Found %d items to load (fast_mode: %s)\n",
-    #loader.all_items, tostring(loader.fast_mode or false)))
+  reaper.ShowConsoleMsg(string.format("[ItemPicker] Starting lazy loading (fast_mode: %s)\n",
+    tostring(loader.fast_mode or false)))
 
   -- Reset results
   loader.samples = {}
@@ -93,6 +70,63 @@ end
 -- Returns: is_complete, progress (0-1)
 function M.process_batch(loader, state, settings)
   if not loader.is_loading then return true, 1.0 end
+
+  -- FIRST BATCH: Do initialization (moved from start_loading to avoid blocking)
+  if not loader.initialization_complete then
+    local init_start = reaper.time_precise()
+
+    local all_tracks = loader.reaper_interface.GetAllTracks()
+
+    -- FAST MODE: Skip expensive frozen check and mute status computation
+    if loader.fast_mode then
+      -- Just collect all items from all visible tracks (NO frozen check, NO mute computation)
+      loader.all_items = {}
+      for _, track in pairs(all_tracks) do
+        if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") ~= 0 then
+          local track_items = loader.reaper_interface.GetItemInTrack(track)
+          for _, item in pairs(track_items) do
+            if item and reaper.ValidatePtr2(0, item, "MediaItem*") then
+              table.insert(loader.all_items, {item = item, track = track})
+            end
+          end
+        end
+      end
+
+      -- Minimal track_chunks for compatibility
+      loader.track_chunks = {}
+      loader.track_muted_cache = {}  -- Will compute on-demand per item
+    else
+      -- NORMAL MODE: Full initialization with frozen check and mute caching
+      loader.track_chunks = loader.reaper_interface.GetAllTrackStateChunks()
+
+      loader.track_muted_cache = {}
+      for _, track in pairs(all_tracks) do
+        local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
+        loader.track_muted_cache[track] = track_muted
+      end
+
+      loader.all_items = {}
+      for _, track in pairs(all_tracks) do
+        if reaper.GetMediaTrackInfo_Value(track, "B_SHOWINTCP") ~= 0 and
+           not loader.reaper_interface.IsParentFrozen(track, loader.track_chunks) then
+          local track_items = loader.reaper_interface.GetItemInTrack(track)
+          for _, item in pairs(track_items) do
+            if item and reaper.ValidatePtr2(0, item, "MediaItem*") then
+              table.insert(loader.all_items, {item = item, track = track})
+            end
+          end
+        end
+      end
+    end
+
+    loader.initialization_complete = true
+
+    local init_time = (reaper.time_precise() - init_start) * 1000
+    reaper.ShowConsoleMsg(string.format("[ItemPicker] Initialized: %d items in %.1fms\n", #loader.all_items, init_time))
+
+    -- Return to allow UI to update (don't process items this frame)
+    return false, 0.0
+  end
 
   local total_items = #loader.all_items
   if total_items == 0 then
@@ -195,8 +229,8 @@ function M.process_audio_item_fast(loader, item, track, state)
     item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$")
   end
 
-  -- Use pre-computed track mute status from cache
-  local track_muted = loader.track_muted_cache[track] or false
+  -- Compute mute status on-demand (no pre-caching in fast mode)
+  local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
 
   table.insert(loader.samples[filename], {
@@ -266,8 +300,8 @@ function M.process_midi_item_fast(loader, item, track, state)
     loader.midi_items[key] = {}
   end
 
-  -- Use pre-computed track mute status from cache
-  local track_muted = loader.track_muted_cache[track] or false
+  -- Compute mute status on-demand (no pre-caching in fast mode)
+  local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
 
   table.insert(loader.midi_items[key], {
