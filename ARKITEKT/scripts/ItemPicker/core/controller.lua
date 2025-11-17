@@ -17,10 +17,13 @@ function M.init(reaper_interface_module, utils_module)
 end
 
 -- Start incremental loading (non-blocking)
-function M.start_incremental_loading(state, batch_size)
+function M.start_incremental_loading(state, batch_size, fast_mode)
   if not state.incremental_loader then
     state.incremental_loader = incremental_loader_module.new(reaper_interface, batch_size or 50)
   end
+
+  -- Set fast mode flag (skips expensive chunk processing)
+  state.incremental_loader.fast_mode = fast_mode or false
 
   incremental_loader_module.start_loading(state.incremental_loader, state, state.settings)
   state.is_loading = true

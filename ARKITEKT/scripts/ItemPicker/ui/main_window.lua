@@ -75,7 +75,13 @@ function GUI:start_incremental_loading()
 
   -- Start incremental loading (non-blocking, processes batches per frame)
   self.loading_start_time = reaper.time_precise()
-  self.controller.start_incremental_loading(self.state, 100) -- 100 items per frame
+
+  -- FAST MODE: Skip expensive chunk processing for duplicate detection
+  -- This loads items with just basic info (name, color, mute state, UUID)
+  -- No chunk-based duplicate detection, no waveform/MIDI data (handled by job queue)
+  local fast_mode = true
+
+  self.controller.start_incremental_loading(self.state, 100, fast_mode) -- 100 items per frame, fast mode
 
   self.loading_started = true
 end

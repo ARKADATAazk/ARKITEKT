@@ -70,6 +70,9 @@ function M.start_loading(loader, state, settings)
     end
   end
 
+  reaper.ShowConsoleMsg(string.format("[ItemPicker] Found %d items to load (fast_mode: %s)\n",
+    #loader.all_items, tostring(loader.fast_mode or false)))
+
   -- Reset results
   loader.samples = {}
   loader.sample_indexes = {}
@@ -101,34 +104,49 @@ function M.process_batch(loader, state, settings)
     local item = entry.item
     local track = entry.track
 
-    -- Get and clean chunk for this item
-    local t1 = reaper.time_precise()
-    local _, chunk = reaper.GetItemStateChunk(item, "")
     local take = reaper.GetActiveTake(item)
-    local is_midi = take and reaper.TakeIsMIDI(take) or false
-    local t2 = reaper.time_precise()
-    reaper_time = reaper_time + (t2 - t1)
+    if not take then goto next_item end
 
-    local utils = require('ItemPicker.services.utils')
-    chunk = utils.RemoveKeyFromChunk(chunk, "POSITION")
-    chunk = utils.RemoveKeyFromChunk(chunk, "IGUID")
-    chunk = utils.RemoveKeyFromChunk(chunk, "IID")
-    chunk = utils.RemoveKeyFromChunk(chunk, "GUID")
-    local chunk_id = loader.reaper_interface.ItemChunkID(item)
-    loader.item_chunks[chunk_id] = chunk
+    local is_midi = reaper.TakeIsMIDI(take)
 
-    if take then
+    if loader.fast_mode then
+      -- FAST MODE: Skip expensive chunk processing, no duplicate detection
+      local t1 = reaper.time_precise()
+
       if is_midi then
-        -- Process MIDI item
+        M.process_midi_item_fast(loader, item, track, state)
+      else
+        M.process_audio_item_fast(loader, item, track, state)
+      end
+
+      local t2 = reaper.time_precise()
+      processing_time = processing_time + (t2 - t1)
+    else
+      -- NORMAL MODE: Full chunk processing for duplicate detection
+      local t1 = reaper.time_precise()
+      local _, chunk = reaper.GetItemStateChunk(item, "")
+      local t2 = reaper.time_precise()
+      reaper_time = reaper_time + (t2 - t1)
+
+      local utils = require('ItemPicker.services.utils')
+      chunk = utils.RemoveKeyFromChunk(chunk, "POSITION")
+      chunk = utils.RemoveKeyFromChunk(chunk, "IGUID")
+      chunk = utils.RemoveKeyFromChunk(chunk, "IID")
+      chunk = utils.RemoveKeyFromChunk(chunk, "GUID")
+      local chunk_id = loader.reaper_interface.ItemChunkID(item)
+      loader.item_chunks[chunk_id] = chunk
+
+      if is_midi then
         M.process_midi_item(loader, item, track, chunk, chunk_id, state)
       else
-        -- Process audio item
         M.process_audio_item(loader, item, track, chunk, chunk_id, state)
       end
+
+      local t3 = reaper.time_precise()
+      processing_time = processing_time + (t3 - t2)
     end
 
-    local t3 = reaper.time_precise()
-    processing_time = processing_time + (t3 - t2)
+    ::next_item::
   end
 
   loader.current_index = batch_end
@@ -148,6 +166,44 @@ function M.process_batch(loader, state, settings)
   return false, progress
 end
 
+-- Fast mode: Skip chunk-based duplicate detection
+function M.process_audio_item_fast(loader, item, track, state)
+  local take = reaper.GetActiveTake(item)
+  if not take then return end
+
+  local source = reaper.GetMediaItemTake_Source(take)
+  local _, _, _, _, _, reverse = reaper.BR_GetMediaSourceProperties(take)
+  if reverse then
+    source = reaper.GetMediaSourceParent(source)
+  end
+
+  local filename = reaper.GetMediaSourceFileName(source)
+  if not filename then return end
+
+  -- Initialize sample group
+  if not loader.samples[filename] then
+    table.insert(loader.sample_indexes, filename)
+    loader.samples[filename] = {}
+  end
+
+  local item_name = reaper.GetTakeName(take)
+  if not item_name or item_name == "" then
+    item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$")
+  end
+
+  local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
+  local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
+
+  table.insert(loader.samples[filename], {
+    item,
+    item_name,
+    track_muted = track_muted,
+    item_muted = item_muted,
+    uuid = get_item_uuid(item)
+  })
+end
+
+-- Normal mode: Full chunk-based duplicate detection
 function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
   local take = reaper.GetActiveTake(item)
 
@@ -172,7 +228,11 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
     loader.samples[filename] = {}
   end
 
-  local item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$")
+  local item_name = reaper.GetTakeName(take)
+  if not item_name or item_name == "" then
+    item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$")
+  end
+
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
 
@@ -185,6 +245,35 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
   })
 end
 
+-- Fast mode: Skip chunk-based duplicate detection
+function M.process_midi_item_fast(loader, item, track, state)
+  local settings = state.settings or {}
+
+  local track_guid = reaper.GetTrackGUID(track)
+  local track_name = ({reaper.GetTrackName(track)})[2] or "Unnamed Track"
+
+  local key = settings.split_midi_by_track and track_guid or "midi"
+  local display_name = settings.split_midi_by_track and track_name or "MIDI"
+
+  -- Initialize MIDI group
+  if not loader.midi_items[key] then
+    table.insert(loader.midi_indexes, key)
+    loader.midi_items[key] = {}
+  end
+
+  local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
+  local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
+
+  table.insert(loader.midi_items[key], {
+    item,
+    display_name,
+    track_muted = track_muted,
+    item_muted = item_muted,
+    uuid = get_item_uuid(item)
+  })
+end
+
+-- Normal mode: Full chunk-based duplicate detection
 function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
   local settings = state.settings or {}
 
