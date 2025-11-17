@@ -17,6 +17,7 @@ local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_c
 local Tabs = require('rearkitekt.gui.widgets.navigation.tabs')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Fields = require('rearkitekt.gui.widgets.primitives.fields')
+local TreeView = require('rearkitekt.gui.widgets.navigation.tree_view')
 
 local M = {}
 local GUI = {}
@@ -193,54 +194,82 @@ function GUI:initialize_once(ctx)
   self.initialized = true
 end
 
--- Draw folder tree recursively
-local _folder_counter = 0
-local function draw_folder_node(ctx, node, state, config)
-  _folder_counter = _folder_counter + 1
-  local node_id = _folder_counter
+-- Convert folder tree to TreeView format with colors from metadata
+local function prepare_tree_nodes(node, metadata)
+  if not node then return {} end
 
-  local is_selected = (state.selected_folder == node.path)
-  local has_children = #node.children > 0
-  local is_renaming = (state.renaming_item == node and state.renaming_type == "folder")
+  local function convert_node(n)
+    local tree_node = {
+      id = n.path,
+      name = n.name,
+      path = n.path,
+      full_path = n.full_path,
+      children = {},
+    }
 
-  -- Check if folder should be open (from state or default)
-  local is_open = state.folder_open_state[node.path]
-  if is_open == nil then is_open = false end
-
-  ImGui.PushID(ctx, node_id)
-
-  -- If renaming, show input instead of tree node
-  if is_renaming then
-    -- Initialize field with current name
-    if Fields.get_text("folder_rename_" .. node_id) == "" then
-      Fields.set_text("folder_rename_" .. node_id, state.rename_buffer)
+    -- Add color from metadata if available
+    if metadata and metadata.folders and metadata.folders[n.uuid] then
+      tree_node.color = metadata.folders[n.uuid].color
     end
 
-    local changed, new_name = Fields.draw_at_cursor(ctx, {
-      width = -1,
-      height = 20,
-      text = state.rename_buffer,
-    }, "folder_rename_" .. node_id)
-
-    if changed then
-      state.rename_buffer = new_name
+    -- Convert children recursively
+    if n.children then
+      for _, child in ipairs(n.children) do
+        table.insert(tree_node.children, convert_node(child))
+      end
     end
 
-    -- Auto-focus on first frame
-    if ImGui.IsWindowAppearing(ctx) then
-      ImGui.SetKeyboardFocusHere(ctx, 0)
-    end
+    return tree_node
+  end
 
-    -- Commit on Enter or deactivate
-    if ImGui.IsItemDeactivatedAfterEdit(ctx) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
-      if state.rename_buffer ~= "" and state.rename_buffer ~= node.name then
-        -- Perform rename
+  local root_nodes = {}
+  if node.children then
+    for _, child in ipairs(node.children) do
+      table.insert(root_nodes, convert_node(child))
+    end
+  end
+
+  return root_nodes
+end
+
+-- Draw folder tree using TreeView widget
+local function draw_folder_tree(ctx, state, config)
+  -- Prepare tree nodes from state.folders
+  local tree_nodes = prepare_tree_nodes(state.folders, state.metadata)
+
+  if #tree_nodes == 0 then
+    return
+  end
+
+  -- Map state variables to TreeView format
+  local tree_state = {
+    open_nodes = state.folder_open_state,  -- TreeView uses open_nodes
+    selected_node = state.selected_folder,  -- Map selected_folder to selected_node
+    renaming_node = state.renaming_item and state.renaming_item.path or nil,
+    rename_buffer = state.rename_buffer or "",
+  }
+
+  -- Draw tree with callbacks
+  TreeView.draw(ctx, tree_nodes, tree_state, {
+    enable_rename = true,
+    show_colors = true,
+
+    -- Selection callback
+    on_select = function(node)
+      state.selected_folder = node.path
+      local Scanner = require('TemplateBrowser.domain.scanner')
+      Scanner.filter_templates(state)
+    end,
+
+    -- Rename callback
+    on_rename = function(node, new_name)
+      if new_name ~= "" and new_name ~= node.name then
         local old_path = node.full_path
-        local success, new_path = FileOps.rename_folder(old_path, state.rename_buffer)
+        local success, new_path = FileOps.rename_folder(old_path, new_name)
         if success then
           -- Create undo operation
           state.undo_manager:push({
-            description = "Rename folder: " .. node.name .. " -> " .. state.rename_buffer,
+            description = "Rename folder: " .. node.name .. " -> " .. new_name,
             undo_fn = function()
               local undo_success = FileOps.rename_folder(new_path, node.name)
               if undo_success then
@@ -250,7 +279,7 @@ local function draw_folder_node(ctx, node, state, config)
               return undo_success
             end,
             redo_fn = function()
-              local redo_success = FileOps.rename_folder(old_path, state.rename_buffer)
+              local redo_success = FileOps.rename_folder(old_path, new_name)
               if redo_success then
                 local Scanner = require('TemplateBrowser.domain.scanner')
                 Scanner.scan_templates(state)
@@ -264,144 +293,11 @@ local function draw_folder_node(ctx, node, state, config)
           Scanner.scan_templates(state)
         end
       end
-      state.renaming_item = nil
-      state.renaming_type = nil
-      state.rename_buffer = ""
-    end
+    end,
+  })
 
-    -- Cancel on Escape
-    if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-      state.renaming_item = nil
-      state.renaming_type = nil
-      state.rename_buffer = ""
-    end
-  else
-    -- Normal tree node display
-    local flags = ImGui.TreeNodeFlags_SpanAvailWidth
-
-    if is_selected then
-      flags = flags | ImGui.TreeNodeFlags_Selected
-    end
-
-    if not has_children then
-      flags = flags | ImGui.TreeNodeFlags_Leaf
-    end
-
-    -- Set open state
-    if is_open then
-      ImGui.SetNextItemOpen(ctx, true)
-    end
-
-    local node_open = ImGui.TreeNode(ctx, node.name, flags)
-
-    -- Handle clicks
-    if ImGui.IsItemClicked(ctx) and not ImGui.IsItemToggledOpen(ctx) then
-      -- Single click: select folder and filter
-      state.selected_folder = node.path
-      local Scanner = require('TemplateBrowser.domain.scanner')
-      Scanner.filter_templates(state)
-    end
-
-    -- Track open state
-    state.folder_open_state[node.path] = node_open
-
-    -- Double-click to rename
-    if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
-      state.renaming_item = node
-      state.renaming_type = "folder"
-      state.rename_buffer = node.name
-    end
-
-    -- Drag source (folder drag)
-    if ImGui.BeginDragDropSource(ctx) then
-      ImGui.SetDragDropPayload(ctx, "FOLDER", node.full_path)
-      ImGui.Text(ctx, "Move: " .. node.name)
-      ImGui.EndDragDropSource(ctx)
-    end
-
-    -- Drop target (drop template or folder here)
-    if ImGui.BeginDragDropTarget(ctx) then
-      local payload, data = ImGui.AcceptDragDropPayload(ctx, "TEMPLATE")
-      if payload then
-        -- Move template to this folder
-        local old_path = data
-        local success, new_path = FileOps.move_template(data, node.full_path)
-        if success then
-          -- Create undo operation
-          local tmpl_filename = old_path:match("[^/\\]+$")
-          state.undo_manager:push({
-            description = "Move template: " .. tmpl_filename,
-            undo_fn = function()
-              local old_dir = old_path:match("^(.*)[/\\]")
-              local undo_success = FileOps.move_template(new_path, old_dir)
-              if undo_success then
-                local Scanner = require('TemplateBrowser.domain.scanner')
-                Scanner.scan_templates(state)
-              end
-              return undo_success
-            end,
-            redo_fn = function()
-              local redo_success = FileOps.move_template(old_path, node.full_path)
-              if redo_success then
-                local Scanner = require('TemplateBrowser.domain.scanner')
-                Scanner.scan_templates(state)
-              end
-              return redo_success
-            end
-          })
-
-          local Scanner = require('TemplateBrowser.domain.scanner')
-          Scanner.scan_templates(state)
-        end
-      end
-
-      local folder_payload, folder_data = ImGui.AcceptDragDropPayload(ctx, "FOLDER")
-      if folder_payload and folder_data ~= node.full_path then
-        -- Move folder into this folder
-        local old_path = folder_data
-        local success, new_path = FileOps.move_folder(folder_data, node.full_path)
-        if success then
-          -- Create undo operation
-          local folder_name = old_path:match("[^/\\]+$")
-          state.undo_manager:push({
-            description = "Move folder: " .. folder_name,
-            undo_fn = function()
-              local old_parent = old_path:match("^(.*)[/\\]")
-              local undo_success = FileOps.move_folder(new_path, old_parent)
-              if undo_success then
-                local Scanner = require('TemplateBrowser.domain.scanner')
-                Scanner.scan_templates(state)
-              end
-              return undo_success
-            end,
-            redo_fn = function()
-              local redo_success = FileOps.move_folder(old_path, node.full_path)
-              if redo_success then
-                local Scanner = require('TemplateBrowser.domain.scanner')
-                Scanner.scan_templates(state)
-              end
-              return redo_success
-            end
-          })
-
-          local Scanner = require('TemplateBrowser.domain.scanner')
-          Scanner.scan_templates(state)
-        end
-      end
-
-      ImGui.EndDragDropTarget(ctx)
-    end
-
-    -- Draw children if open
-    if node_open then
-      for _, child in ipairs(node.children) do
-        draw_folder_node(ctx, child, state, config)
-      end
-      ImGui.TreePop(ctx)
-    end
-  end
-
-  ImGui.PopID(ctx)
+  -- Sync TreeView state back to Template Browser state
+  state.selected_folder = tree_state.selected_node
 end
 
 -- Tags list for bottom of directory tab (with filtering)
