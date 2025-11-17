@@ -275,7 +275,7 @@ function TransportView:build_playback_dropdown(bridge_state)
       tooltip = "Playback Options",
       current_value = nil,
       options = {
-        { value = nil, label = "", separator = "Playback" },
+        { value = nil, label = "Playback" },  -- Button label, non-selectable header in menu
         {
           value = "override_transport",
           label = "Override Transport",
@@ -449,15 +449,16 @@ end
 function TransportView:build_combined_pb_dropdown(bridge_state)
   -- Combine quantize options and playback checkboxes into single dropdown
   local options = {
-    { value = nil, label = "", separator = "Quantize" },
+    { value = nil, label = "PB" },  -- Button label
   }
 
-  -- Add all quantize options
+  -- Add quantize separator and options
+  options[#options + 1] = { value = nil, label = "", separator = "Quantize" }
   for _, opt in ipairs(CoreConfig.QUANTIZE.options) do
     options[#options + 1] = opt
   end
 
-  -- Add separator and playback options
+  -- Add playback separator and options
   options[#options + 1] = { value = nil, label = "", separator = "Playback" }
   options[#options + 1] = {
     value = "override_transport",
