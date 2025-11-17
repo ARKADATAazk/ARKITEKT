@@ -140,7 +140,8 @@ local function render_tree_node(ctx, node, config, state, depth)
     local pre_cursor_x, pre_cursor_y = ImGui.GetCursorScreenPos(ctx)
 
     -- Render tree node with blank label (we'll draw icon+label ourselves)
-    local node_open = ImGui.TreeNodeEx(ctx, node_id, flags, "")
+    -- PushID above ensures unique ID, so we just pass empty label
+    local node_open = ImGui.TreeNodeEx(ctx, "", flags)
 
     -- Draw folder icon and label on the same line as the tree arrow
     -- We need to go back and draw over where ImGui placed the (empty) label
