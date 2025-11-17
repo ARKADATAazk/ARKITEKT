@@ -37,6 +37,7 @@ end
 local ImGui = require 'imgui' '0.10'
 local Runtime = require('rearkitekt.app.runtime')
 local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
+local ImGuiStyle = require('rearkitekt.gui.style.imgui_defaults')
 
 -- Load TemplateBrowser modules
 local Config = require('TemplateBrowser.core.config')
@@ -133,6 +134,7 @@ if USE_OVERLAY then
     content_padding = 30,
 
     render = function(ctx, alpha_val, bounds)
+      ImGuiStyle.PushMyStyle(ctx)
       ImGui.PushFont(ctx, fonts.default, fonts.default_size)
 
       local overlay_state = {
@@ -153,6 +155,7 @@ if USE_OVERLAY then
       end
 
       ImGui.PopFont(ctx)
+      ImGuiStyle.PopMyStyle(ctx)
     end,
 
     on_close = function()
