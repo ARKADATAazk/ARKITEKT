@@ -302,8 +302,31 @@ local function draw_folder_tree(ctx, state, config)
       end
 
       -- Move folder
-      local success = FileOps.move_folder(source_node.full_path, target_node.full_path)
+      local old_parent = source_node.full_path:match("^(.*)[/\\]")
+      local success, new_path = FileOps.move_folder(source_node.full_path, target_node.full_path)
       if success then
+        -- Create undo operation
+        state.undo_manager:push({
+          description = "Move folder: " .. source_node.name .. " -> " .. target_node.name,
+          undo_fn = function()
+            local undo_success = FileOps.move_folder(new_path, old_parent)
+            if undo_success then
+              local Scanner = require('TemplateBrowser.domain.scanner')
+              Scanner.scan_templates(state)
+            end
+            return undo_success
+          end,
+          redo_fn = function()
+            local redo_success, redo_new_path = FileOps.move_folder(source_node.full_path, target_node.full_path)
+            if redo_success then
+              new_path = redo_new_path  -- Update for subsequent operations
+              local Scanner = require('TemplateBrowser.domain.scanner')
+              Scanner.scan_templates(state)
+            end
+            return redo_success
+          end
+        })
+
         -- Rescan templates
         local Scanner = require('TemplateBrowser.domain.scanner')
         Scanner.scan_templates(state)
