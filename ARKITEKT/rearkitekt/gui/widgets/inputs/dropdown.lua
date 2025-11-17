@@ -77,11 +77,16 @@ end
 
 function Dropdown:get_display_text()
   local options = self.config.options or {}
-  
+
+  -- If button_label is configured, use it when current_value is nil
+  -- This allows the button to show a label without it appearing in the dropdown menu
   if not self.current_value then
+    if self.config.button_label then
+      return self.config.button_label
+    end
     return options[1] and (type(options[1]) == "table" and options[1].label or tostring(options[1])) or ""
   end
-  
+
   for _, opt in ipairs(options) do
     local value = type(opt) == "table" and opt.value or opt
     local label = type(opt) == "table" and opt.label or tostring(opt)
@@ -89,7 +94,7 @@ function Dropdown:get_display_text()
       return label
     end
   end
-  
+
   return ""
 end
 

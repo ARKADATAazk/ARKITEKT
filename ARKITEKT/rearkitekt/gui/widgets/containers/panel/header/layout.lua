@@ -579,7 +579,7 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     local center_x = math.floor(content_x + (content_width - center_width) / 2 + 0.5)
     render_elements(ctx, dl, center_x, content_y, center_width, content_height, center_elements, state, header_rounding, is_bottom, valign)
 
-    -- Draw clip edge borders if content overflows
+    -- Draw clip edge borders if content overflows (use actual rendered width, not allocated content_width)
     draw_clip_edge_borders(dl, x, y, width, height, center_x, center_x + center_width)
 
     ImGui.DrawList_PopClipRect(dl)
@@ -632,15 +632,25 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     local right_x = content_x + content_width - right_width
     render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom)
 
-    -- Draw clip edge borders if content overflows
+    -- Draw clip edge borders if content overflows (use actual rendered width)
     draw_clip_edge_borders(dl, x, y, width, height, right_x, right_x + right_width)
 
   else
     -- Only left-aligned elements (default)
+    -- Calculate actual element widths instead of using allocated content_width
+    local left_layout = layout_elements(ctx, left_elements, content_width, state)
+    local left_width = 0
+    for _, item in ipairs(left_layout) do
+      left_width = left_width + item.width
+      if item.element.spacing_before then
+        left_width = left_width + item.element.spacing_before
+      end
+    end
+
     render_elements(ctx, dl, content_x, content_y, content_width, content_height, left_elements, state, header_rounding, is_bottom)
 
-    -- Draw clip edge borders if content overflows
-    draw_clip_edge_borders(dl, x, y, width, height, content_x, content_x + content_width)
+    -- Draw clip edge borders if content overflows (use actual rendered width, not allocated content_width)
+    draw_clip_edge_borders(dl, x, y, width, height, content_x, content_x + left_width)
   end
 
   -- Always pop clip rect before returning

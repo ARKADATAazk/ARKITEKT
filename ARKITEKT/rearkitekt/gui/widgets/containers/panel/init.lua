@@ -795,12 +795,22 @@ function Panel:end_draw(ctx)
       local offset_y = CORNER_BUTTON_CONFIG.position_offset_y
       local panel_id = self.id
 
+      -- Apply clipping to prevent corner buttons from overflowing panel bounds
+      local dl = ImGui.GetWindowDrawList(ctx)
+      ImGui.DrawList_PushClipRect(dl, x1, y1, x1 + w, y1 + h, true)
+
+      -- Track button positions for clip edge border detection
+      local buttons_drawn = {}
+
       -- Create each corner button as its own child window
       -- These child windows are created AFTER the grid child, so they render on top
       -- But popups still render above these child windows
 
       local function create_corner_button_child(btn_config, btn_x, btn_y, position, suffix)
         if not btn_config then return end
+
+        -- Track button position for clipping detection
+        buttons_drawn[#buttons_drawn + 1] = {x = btn_x, y = btn_y, w = size, h = size}
 
         -- Position the child window at the button location
         ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
@@ -842,6 +852,26 @@ function Panel:end_draw(ctx)
         local btn_y = y1 + h - size - border_thickness - offset_y
         create_corner_button_child(cb.bottom_right, btn_x, btn_y, "br", "br")
       end
+
+      -- Draw clip edge borders for any button that extends beyond panel bounds
+      local border_color = 0x000000FF
+      for _, btn in ipairs(buttons_drawn) do
+        if btn.x < x1 then
+          ImGui.DrawList_AddLine(dl, x1, btn.y, x1, btn.y + btn.h, border_color, 1)
+        end
+        if btn.x + btn.w > x1 + w then
+          ImGui.DrawList_AddLine(dl, x1 + w, btn.y, x1 + w, btn.y + btn.h, border_color, 1)
+        end
+        if btn.y < y1 then
+          ImGui.DrawList_AddLine(dl, btn.x, y1, btn.x + btn.w, y1, border_color, 1)
+        end
+        if btn.y + btn.h > y1 + h then
+          ImGui.DrawList_AddLine(dl, btn.x, y1 + h, btn.x + btn.w, y1 + h, border_color, 1)
+        end
+      end
+
+      -- Pop clip rect after all corner buttons are drawn
+      ImGui.DrawList_PopClipRect(dl)
       end
     end
   end

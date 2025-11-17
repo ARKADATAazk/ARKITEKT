@@ -274,8 +274,8 @@ function TransportView:build_playback_dropdown(bridge_state)
     config = {
       tooltip = "Playback Options",
       current_value = nil,
+      button_label = "Playback",  -- Label shown on button (not in dropdown menu)
       options = {
-        { value = nil, label = "Playback" },  -- Button label, non-selectable header in menu
         {
           value = "override_transport",
           label = "Override Transport",
@@ -448,9 +448,7 @@ end
 -- Build combined "PB" dropdown for ultra-compact mode
 function TransportView:build_combined_pb_dropdown(bridge_state)
   -- Combine quantize options and playback checkboxes into single dropdown
-  local options = {
-    { value = nil, label = "PB" },  -- Button label
-  }
+  local options = {}
 
   -- Add quantize separator and options
   options[#options + 1] = { value = nil, label = "", separator = "Quantize" }
@@ -480,6 +478,7 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
     width = 60,  -- Compact "PB" label
     config = {
       tooltip = "Playback & Quantize Settings",
+      button_label = "PB",  -- Label shown on button (not in dropdown menu)
       current_value = bridge_state.quantize_mode,
       options = options,
       enable_mousewheel = true,
