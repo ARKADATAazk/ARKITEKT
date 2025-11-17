@@ -144,20 +144,20 @@ function MCPView:draw(ctx, shell_state)
   -- Layout Settings Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
   if ImGui.BeginChild(ctx, "mcp_layout_section", avail_w, 220, 1) then
-    ImGui.Dummy(ctx, 0, 6)
+    ImGui.Dummy(ctx, 0, 2)
 
     ImGui.Indent(ctx, 8)
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "LAYOUT SETTINGS")
     ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 6)
+    ImGui.Dummy(ctx, 0, 2)
 
     -- Calculate column widths
     local col_count = 3
     local col_w = (avail_w - 32) / col_count
     local label_w = 100  -- Fixed label width for consistency
-    local value_w = 60   -- Fixed value width for display
-    local spinner_w = col_w - label_w - value_w - 16  -- Remaining for spinner
+    
+    local spinner_w = col_w - label_w - 16  -- Remaining for spinner
 
     -- Helper function to draw properly aligned spinner row
     local function draw_spinner_row(label, id, idx, values)
@@ -173,15 +173,8 @@ function MCPView:draw(ctx, shell_state)
       ImGui.SameLine(ctx, 0, 8)
       local changed, new_idx = Spinner.draw(ctx, id, idx, values, {w = spinner_w, h = 24})
 
-      -- Value display (left-aligned)
-      ImGui.SameLine(ctx, 0, 8)
-      ImGui.AlignTextToFramePadding(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
-      local current_value = tostring(values[idx] or "")
-      ImGui.Text(ctx, current_value)
-      ImGui.PopStyleColor(ctx)
 
-      ImGui.Dummy(ctx, 0, 6)
+      ImGui.Dummy(ctx, 0, 2)
       return changed, new_idx
     end
 
@@ -251,7 +244,7 @@ function MCPView:draw(ctx, shell_state)
     ImGui.EndGroup(ctx)
 
     ImGui.Unindent(ctx, 8)
-    ImGui.Dummy(ctx, 0, 6)
+    ImGui.Dummy(ctx, 0, 2)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)
@@ -261,13 +254,13 @@ function MCPView:draw(ctx, shell_state)
   -- Layout & Size Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
   if ImGui.BeginChild(ctx, "mcp_layout_buttons", avail_w, 100, 1) then
-    ImGui.Dummy(ctx, 0, 6)
+    ImGui.Dummy(ctx, 0, 2)
 
     ImGui.Indent(ctx, 8)
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "ACTIVE LAYOUT & SIZE")
     ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 6)
+    ImGui.Dummy(ctx, 0, 2)
 
     -- Active Layout
     ImGui.AlignTextToFramePadding(ctx)
@@ -308,7 +301,7 @@ function MCPView:draw(ctx, shell_state)
     ImGui.NewLine(ctx)
 
     ImGui.Unindent(ctx, 8)
-    ImGui.Dummy(ctx, 0, 6)
+    ImGui.Dummy(ctx, 0, 2)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)
@@ -318,13 +311,13 @@ function MCPView:draw(ctx, shell_state)
   -- Options Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
   if ImGui.BeginChild(ctx, "mcp_options_section", avail_w, 80, 1) then
-    ImGui.Dummy(ctx, 0, 6)
+    ImGui.Dummy(ctx, 0, 2)
 
     ImGui.Indent(ctx, 8)
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "OPTIONS")
     ImGui.PopFont(ctx)
-    ImGui.Dummy(ctx, 0, 6)
+    ImGui.Dummy(ctx, 0, 2)
 
     if ImGui.Checkbox(ctx, "Hide MCP of master track", self.hide_mcp_master) then
       self.hide_mcp_master = not self.hide_mcp_master
@@ -339,7 +332,7 @@ function MCPView:draw(ctx, shell_state)
     end
 
     ImGui.Unindent(ctx, 8)
-    ImGui.Dummy(ctx, 0, 6)
+    ImGui.Dummy(ctx, 0, 2)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)
@@ -349,7 +342,7 @@ function MCPView:draw(ctx, shell_state)
   -- Visibility Table Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
   if ImGui.BeginChild(ctx, "mcp_visibility_section", avail_w, 0, 1) then
-    ImGui.Dummy(ctx, 0, 6)
+    ImGui.Dummy(ctx, 0, 2)
 
     ImGui.Indent(ctx, 8)
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
@@ -360,7 +353,7 @@ function MCPView:draw(ctx, shell_state)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
     ImGui.Text(ctx, "Control when mixer elements are visible")
     ImGui.PopStyleColor(ctx)
-    ImGui.Dummy(ctx, 0, 6)
+    ImGui.Dummy(ctx, 0, 2)
 
     -- Table
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_CellPadding, 6, 4)
@@ -402,7 +395,7 @@ function MCPView:draw(ctx, shell_state)
     ImGui.PopStyleVar(ctx)
 
     ImGui.Unindent(ctx, 8)
-    ImGui.Dummy(ctx, 0, 6)
+    ImGui.Dummy(ctx, 0, 2)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)
