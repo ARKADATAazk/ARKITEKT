@@ -170,7 +170,7 @@ function M.create(pkg, settings, theme)
         local new_size = current_size + (delta * step)
 
         -- Clamp to reasonable bounds
-        new_size = math.max(103, math.min(400, new_size))
+        new_size = math.max(180, math.min(400, new_size))
 
         pkg.tile = new_size
         if settings then settings:set('tile_size', new_size) end
