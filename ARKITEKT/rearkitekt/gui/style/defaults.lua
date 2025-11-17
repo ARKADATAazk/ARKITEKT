@@ -39,7 +39,7 @@ M.COLORS = {
 
   -- Borders
   BORDER_OUTER = hexrgb("#000000DD"),   -- Black outer border (strong contrast)
-  BORDER_INNER = hexrgb("#404040FF"),   -- Gray inner highlight border
+  BORDER_INNER = hexrgb("#2f2f2fff"),   -- Gray inner highlight border
   BORDER_HOVER = hexrgb("#505050FF"),   -- Lighter border on hover
   BORDER_ACTIVE = hexrgb("#B0B0B077"),  -- Active state border (semi-transparent)
   BORDER_FOCUS = hexrgb("#7B7B7BFF"),   -- Focus state border
@@ -137,12 +137,12 @@ M.BUTTON_COLORS = {
 
   -- WHITE variant: Classic white/gray toggle (high contrast)
   toggle_white = {
-    bg_on = hexrgb("#434343FF"),
-    bg_on_hover = hexrgb("#484848FF"),
-    bg_on_active = hexrgb("#3E3E3EFF"),
-    border_inner_on = hexrgb("#898989FF"),
-    border_inner_on_hover = hexrgb("#9A9A9AFF"),
-    border_inner_on_active = hexrgb("#7E7E7EFF"),
+    bg_on = hexrgb("#363636ff"),
+    bg_on_hover = hexrgb("#373737ff"),
+    bg_on_active = hexrgb("#343434ff"),
+    border_inner_on = hexrgb("#696969ff"),
+    border_inner_on_hover = hexrgb("#8b8b8bff"),
+    border_inner_on_active = hexrgb("#737373ff"),
     text_on = hexrgb("#FFFFFFFF"),
   },
 
