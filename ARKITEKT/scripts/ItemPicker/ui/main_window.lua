@@ -99,7 +99,8 @@ function GUI:draw(ctx, shell_state)
     local fast_mode = true
     self.state.skip_visualizations = true
 
-    self.controller.start_incremental_loading(self.state, 500, fast_mode)
+    -- Smaller batches for smoother UI (100 items per frame)
+    self.controller.start_incremental_loading(self.state, 100, fast_mode)
   end
 
   -- Process incremental loading batch every frame
@@ -177,14 +178,7 @@ function GUI:draw(ctx, shell_state)
   -- Handle tile size shortcuts
   self.coordinator:handle_tile_size_shortcuts(ctx)
 
-  -- Check if we need to recollect items (e.g., after toggling split_midi_by_track)
-  if self.state.needs_recollect then
-    self.controller.collect_project_items(self.state)
-    self.state.needs_recollect = false
-    self.state.last_change_count = reaper.GetProjectStateChangeCount(0)
-
-    -- Save updated state to disk
-  end
+  -- Removed slow recollect - no longer needed since we removed split_midi_by_track
 
   -- Periodically check for project changes (every 180 frames = ~5-6 seconds)
   -- Reduced frequency to avoid performance impact
