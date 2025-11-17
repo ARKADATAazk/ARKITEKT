@@ -60,8 +60,14 @@ local function render_tree_node(ctx, node, config, state, depth)
 
   -- If renaming, show input field (same as original working implementation)
   if is_renaming then
-    -- Add vertical offset to align with text position
-    ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) - 2)
+    -- Position the input field: 25px right, 8px up
+    ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 25)
+    ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) - 8)
+
+    -- Style: lighter background for input field
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#FFFFFF15"))  -- Light semi-transparent white
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#FFFFFF20"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#FFFFFF25"))
 
     -- Initialize field with current name
     local rename_field_id = "treeview_rename_" .. node_id
@@ -70,16 +76,44 @@ local function render_tree_node(ctx, node, config, state, depth)
     end
 
     local changed, new_name = Fields.draw_at_cursor(ctx, {
-      width = -1,
+      width = -25,  -- Account for right offset
       height = 18,
       text = state.rename_buffer,
     }, rename_field_id)
+
+    -- Auto-select all text when first shown
+    if ImGui.IsItemActivated(ctx) then
+      ImGui.SetKeyboardFocusHere(ctx, -1)  -- Focus this item
+    end
+
+    -- Select all text on first activation
+    local should_select_all = state.rename_just_started
+    if should_select_all == nil then
+      state.rename_just_started = true
+      should_select_all = true
+    end
+
+    if should_select_all and ImGui.IsItemActive(ctx) then
+      -- Select all text
+      local text_len = #state.rename_buffer
+      ImGui.SetKeyboardFocusHere(ctx, -1)
+      state.rename_just_started = false
+    end
+
+    ImGui.PopStyleColor(ctx, 3)
 
     if changed then
       state.rename_buffer = new_name
     end
 
-    -- Commit on Enter or deactivate
+    -- Clicking away closes the edit (cancel)
+    if not ImGui.IsItemActive(ctx) and not ImGui.IsItemHovered(ctx) and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) then
+      state.renaming_node = nil
+      state.rename_buffer = ""
+      state.rename_just_started = nil
+    end
+
+    -- Commit on Enter or deactivate after edit
     if ImGui.IsItemDeactivatedAfterEdit(ctx) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
       if state.rename_buffer ~= "" and state.rename_buffer ~= node.name then
         if config.on_rename then
@@ -88,12 +122,14 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
       state.renaming_node = nil
       state.rename_buffer = ""
+      state.rename_just_started = nil
     end
 
     -- Cancel on Escape
     if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
       state.renaming_node = nil
       state.rename_buffer = ""
+      state.rename_just_started = nil
     end
   else
     -- Normal tree node display
