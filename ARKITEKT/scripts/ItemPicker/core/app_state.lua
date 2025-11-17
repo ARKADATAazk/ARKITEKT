@@ -17,7 +17,6 @@ M.settings = {
   show_favorites_only = false,
   show_audio = true,
   show_midi = true,
-  split_midi_by_track = true,  -- Show each track's MIDI items separately with track names
   focus_keyboard_on_init = true,
   search_string = "",
   tile_width = nil,
@@ -29,8 +28,8 @@ M.settings = {
 -- Runtime state (volatile)
 M.samples = {}  -- { [filename] = { {item, name, track_muted, item_muted, uuid}, ...} }
 M.sample_indexes = {}  -- Ordered list of filenames
-M.midi_items = {}  -- { [track_guid] = { {item, name, track_muted, item_muted, uuid}, ...} }
-M.midi_indexes = {}  -- Ordered list of track GUIDs
+M.midi_items = {}  -- { [take_name] = { {item, name, track_muted, item_muted, uuid}, ...} }
+M.midi_indexes = {}  -- Ordered list of take names
 M.audio_item_lookup = {}  -- { [uuid] = item_data } for O(1) access
 M.midi_item_lookup = {}  -- { [uuid] = item_data } for O(1) access
 M.needs_recollect = false  -- Flag to trigger item recollection
@@ -200,8 +199,8 @@ function M.is_audio_disabled(filename)
   return M.disabled.audio[filename] == true
 end
 
-function M.is_midi_disabled(track_guid)
-  return M.disabled.midi[track_guid] == true
+function M.is_midi_disabled(item_name)
+  return M.disabled.midi[item_name] == true
 end
 
 function M.toggle_audio_disabled(filename)
@@ -213,11 +212,11 @@ function M.toggle_audio_disabled(filename)
   M.persist_disabled()
 end
 
-function M.toggle_midi_disabled(track_guid)
-  if M.disabled.midi[track_guid] then
-    M.disabled.midi[track_guid] = nil
+function M.toggle_midi_disabled(item_name)
+  if M.disabled.midi[item_name] then
+    M.disabled.midi[item_name] = nil
   else
-    M.disabled.midi[track_guid] = true
+    M.disabled.midi[item_name] = true
   end
   M.persist_disabled()
 end
@@ -227,8 +226,8 @@ function M.is_audio_favorite(filename)
   return M.favorites.audio[filename] == true
 end
 
-function M.is_midi_favorite(track_guid)
-  return M.favorites.midi[track_guid] == true
+function M.is_midi_favorite(item_name)
+  return M.favorites.midi[item_name] == true
 end
 
 function M.toggle_audio_favorite(filename)
@@ -240,11 +239,11 @@ function M.toggle_audio_favorite(filename)
   M.persist_favorites()
 end
 
-function M.toggle_midi_favorite(track_guid)
-  if M.favorites.midi[track_guid] then
-    M.favorites.midi[track_guid] = nil
+function M.toggle_midi_favorite(item_name)
+  if M.favorites.midi[item_name] then
+    M.favorites.midi[item_name] = nil
   else
-    M.favorites.midi[track_guid] = true
+    M.favorites.midi[item_name] = true
   end
   M.persist_favorites()
 end
@@ -263,17 +262,17 @@ function M.cycle_audio_item(filename, delta)
   M.box_current_item[filename] = current
 end
 
-function M.cycle_midi_item(track_guid, delta)
-  local content = M.midi_items[track_guid]
+function M.cycle_midi_item(item_name, delta)
+  local content = M.midi_items[item_name]
   if not content or #content == 0 then return end
 
-  local current = M.box_current_midi_track[track_guid] or 1
+  local current = M.box_current_midi_track[item_name] or 1
   current = current + delta
 
   if current > #content then current = 1 end
   if current < 1 then current = #content end
 
-  M.box_current_midi_track[track_guid] = current
+  M.box_current_midi_track[item_name] = current
 end
 
 -- Pending operations (for animations)

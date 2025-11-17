@@ -286,27 +286,28 @@ end
 
 -- Fast mode: Skip chunk-based duplicate detection
 function M.process_midi_item_fast(loader, item, track, state)
-  local settings = state.settings or {}
+  local take = reaper.GetActiveTake(item)
+  if not take then return end
 
-  local track_guid = reaper.GetTrackGUID(track)
-  local track_name = ({reaper.GetTrackName(track)})[2] or "Unnamed Track"
+  -- Get MIDI take name (like audio uses filename)
+  local item_name = reaper.GetTakeName(take)
+  if not item_name or item_name == "" then
+    item_name = "Unnamed MIDI"
+  end
 
-  local key = settings.split_midi_by_track and track_guid or "midi"
-  local display_name = settings.split_midi_by_track and track_name or "MIDI"
-
-  -- Initialize MIDI group
-  if not loader.midi_items[key] then
-    table.insert(loader.midi_indexes, key)
-    loader.midi_items[key] = {}
+  -- Group by take name (so all "Kick" MIDI items are together)
+  if not loader.midi_items[item_name] then
+    table.insert(loader.midi_indexes, item_name)
+    loader.midi_items[item_name] = {}
   end
 
   -- Compute mute status on-demand (no pre-caching in fast mode)
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
 
-  table.insert(loader.midi_items[key], {
+  table.insert(loader.midi_items[item_name], {
     item,
-    display_name,
+    item_name,  -- Display the actual take name
     track_muted = track_muted,
     item_muted = item_muted,
     uuid = get_item_uuid(item)
@@ -315,32 +316,33 @@ end
 
 -- Normal mode: Full chunk-based duplicate detection
 function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
-  local settings = state.settings or {}
+  local take = reaper.GetActiveTake(item)
+  if not take then return end
 
-  local track_guid = reaper.GetTrackGUID(track)
-  local track_name = ({reaper.GetTrackName(track)})[2] or "Unnamed Track"
-
-  local key = settings.split_midi_by_track and track_guid or "midi"
-  local display_name = settings.split_midi_by_track and track_name or "MIDI"
+  -- Get MIDI take name (like audio uses filename)
+  local item_name = reaper.GetTakeName(take)
+  if not item_name or item_name == "" then
+    item_name = "Unnamed MIDI"
+  end
 
   -- Check for duplicates
-  if loader.midi_items[key] then
-    for _, existing in ipairs(loader.midi_items[key]) do
+  if loader.midi_items[item_name] then
+    for _, existing in ipairs(loader.midi_items[item_name]) do
       if loader.item_chunks[chunk_id] == loader.item_chunks[loader.reaper_interface.ItemChunkID(existing[1])] then
         return -- Duplicate, skip
       end
     end
   else
-    table.insert(loader.midi_indexes, key)
-    loader.midi_items[key] = {}
+    table.insert(loader.midi_indexes, item_name)
+    loader.midi_items[item_name] = {}
   end
 
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
 
-  table.insert(loader.midi_items[key], {
+  table.insert(loader.midi_items[item_name], {
     item,
-    display_name,
+    item_name,  -- Display the actual take name
     track_muted = track_muted,
     item_muted = item_muted,
     uuid = get_item_uuid(item)
