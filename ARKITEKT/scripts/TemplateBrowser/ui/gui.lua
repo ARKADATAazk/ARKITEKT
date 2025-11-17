@@ -573,7 +573,7 @@ local function draw_vsts_content(ctx, state, config, width, height)
 
   if state.reparse_armed then
     button_label = "CONFIRM REPARSE?"
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, Colors.components_to_rgba(0.8, 0.2, 0.2, 1.0))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, Colors.hexrgb("#CC3333"))
   end
 
   if ImGui.Button(ctx, button_label, 120, 0) then
@@ -1127,7 +1127,7 @@ local function draw_info_panel(ctx, state, config, width, height)
 
         -- Tag name with opacity
         if not is_assigned then
-          ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.components_to_rgba(0.5, 0.5, 0.5, 1.0))
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#808080"))
         end
         ImGui.Text(ctx, tag_name)
         if not is_assigned then
@@ -1215,7 +1215,7 @@ function GUI:draw(ctx, shell_state)
     local status_w = ImGui.CalcTextSize(ctx, status)
 
     ImGui.SetCursorPos(ctx, (SCREEN_W - status_w) * 0.5, status_y)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.components_to_rgba(0.7, 0.7, 0.7, 1.0))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#B3B3B3"))
     ImGui.Text(ctx, status)
     ImGui.PopStyleColor(ctx)
 
