@@ -379,8 +379,45 @@ local function draw_folder_tree(ctx, state, config)
     on_rename = function(node, new_name)
       if new_name ~= "" and new_name ~= node.name then
         local old_path = node.full_path
+        local old_relative_path = node.path  -- e.g., "OldFolder" or "Parent/OldFolder"
+
         local success, new_path = FileOps.rename_folder(old_path, new_name)
         if success then
+          -- Calculate new relative path
+          local parent_path = old_relative_path:match("^(.+)[/\\][^/\\]+$")
+          local new_relative_path = parent_path and (parent_path .. "/" .. new_name) or new_name
+
+          -- Update metadata paths for this folder and all templates in it
+          local Persistence = require('TemplateBrowser.domain.persistence')
+
+          -- Update folder metadata
+          if state.metadata and state.metadata.folders then
+            for uuid, folder in pairs(state.metadata.folders) do
+              if folder.path == old_relative_path then
+                folder.name = new_name
+                folder.path = new_relative_path
+              elseif folder.path:find("^" .. old_relative_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") .. "[/\\]") then
+                -- Update subfolders
+                folder.path = folder.path:gsub("^" .. old_relative_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1"), new_relative_path)
+              end
+            end
+          end
+
+          -- Update template metadata paths (without re-parsing!)
+          if state.metadata and state.metadata.templates then
+            for uuid, tmpl in pairs(state.metadata.templates) do
+              local tmpl_path = tmpl.folder or ""
+              if tmpl_path == old_relative_path then
+                tmpl.folder = new_relative_path
+              elseif tmpl_path:find("^" .. old_relative_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") .. "[/\\]") then
+                tmpl.folder = tmpl_path:gsub("^" .. old_relative_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1"), new_relative_path)
+              end
+            end
+          end
+
+          -- Save updated metadata
+          Persistence.save_metadata(state.metadata)
+
           -- Create undo operation
           state.undo_manager:push({
             description = "Rename folder: " .. node.name .. " -> " .. new_name,
@@ -402,7 +439,7 @@ local function draw_folder_tree(ctx, state, config)
             end
           })
 
-          -- Rescan templates
+          -- Light rescan: just rebuild folder tree and template list from updated metadata
           local Scanner = require('TemplateBrowser.domain.scanner')
           Scanner.scan_templates(state)
         end

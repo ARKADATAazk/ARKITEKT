@@ -60,6 +60,9 @@ local function render_tree_node(ctx, node, config, state, depth)
 
   -- If renaming, show input field (same as original working implementation)
   if is_renaming then
+    -- Add vertical offset to align with text position
+    ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) - 2)
+
     -- Initialize field with current name
     local rename_field_id = "treeview_rename_" .. node_id
     if Fields.get_text(rename_field_id) == "" then
@@ -68,7 +71,7 @@ local function render_tree_node(ctx, node, config, state, depth)
 
     local changed, new_name = Fields.draw_at_cursor(ctx, {
       width = -1,
-      height = 20,
+      height = 18,
       text = state.rename_buffer,
     }, rename_field_id)
 
