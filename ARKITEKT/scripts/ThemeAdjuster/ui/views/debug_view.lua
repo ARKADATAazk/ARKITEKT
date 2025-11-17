@@ -134,10 +134,13 @@ function DebugView:create_container_config()
           config = {
             label = "<< Prev",
             on_click = function()
-              self.page_index = math.max(1, self.page_index - 1)
-              if self.settings then self.settings:set('debug_page_index', self.page_index) end
-              -- Clear cache to avoid invalid image handle errors
-              if self.image_cache then self.image_cache:clear() end
+              -- Only navigate if not already at first page
+              if self.page_index > 1 then
+                self.page_index = self.page_index - 1
+                if self.settings then self.settings:set('debug_page_index', self.page_index) end
+                -- Clear cache to avoid invalid image handle errors
+                if self.image_cache then self.image_cache:clear() end
+              end
             end,
           },
         },
@@ -150,10 +153,13 @@ function DebugView:create_container_config()
             label = "Next >>",
             on_click = function()
               local total_pages = self:get_total_pages()
-              self.page_index = math.min(total_pages, self.page_index + 1)
-              if self.settings then self.settings:set('debug_page_index', self.page_index) end
-              -- Clear cache to avoid invalid image handle errors
-              if self.image_cache then self.image_cache:clear() end
+              -- Only navigate if not already at last page
+              if self.page_index < total_pages then
+                self.page_index = self.page_index + 1
+                if self.settings then self.settings:set('debug_page_index', self.page_index) end
+                -- Clear cache to avoid invalid image handle errors
+                if self.image_cache then self.image_cache:clear() end
+              end
             end,
           },
         },
