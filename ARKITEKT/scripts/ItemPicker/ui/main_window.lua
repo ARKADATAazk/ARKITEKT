@@ -68,27 +68,16 @@ end
 function GUI:start_incremental_loading()
   if self.loading_started then return end
 
-  reaper.ShowConsoleMsg("=== ItemPicker: Starting incremental loading ===\n")
+  reaper.ShowConsoleMsg("=== ItemPicker: Starting lazy loading ===\n")
 
   local current_change_count = reaper.GetProjectStateChangeCount(0)
   self.state.last_change_count = current_change_count
 
-  -- Start incremental loading (non-blocking, processes batches per frame)
+  -- LAZY LOAD: Start loading on NEXT frame (not this one!)
+  -- This allows UI to show immediately
   self.loading_start_time = reaper.time_precise()
-
-  -- FAST MODE: Skip expensive chunk processing for duplicate detection
-  -- This loads items with just basic info (name, color, mute state, UUID)
-  -- No chunk-based duplicate detection, no waveform/MIDI data (handled by job queue)
-  local fast_mode = true
-
-  -- SKIP VISUALIZATIONS: Don't generate waveforms/MIDI at all during loading
-  -- Just show colored tiles with names for instant loading
-  self.state.skip_visualizations = true
-
-  -- Increased batch size to 500 (fast mode is much faster now with caching)
-  self.controller.start_incremental_loading(self.state, 500, fast_mode)
-
   self.loading_started = true
+  self.start_loading_next_frame = true
 end
 
 
@@ -100,9 +89,17 @@ function GUI:draw(ctx, shell_state)
     self.state.draw_list = ImGui.GetWindowDrawList(ctx)
   end
 
-  -- Start loading immediately on first frame
+  -- Start loading on SECOND frame (UI shows first)
   if not self.loading_started then
     self:start_incremental_loading()
+  elseif self.start_loading_next_frame and not self.state.is_loading then
+    -- Start actual loading NOW (after UI is shown)
+    self.start_loading_next_frame = false
+
+    local fast_mode = true
+    self.state.skip_visualizations = true
+
+    self.controller.start_incremental_loading(self.state, 500, fast_mode)
   end
 
   -- Process incremental loading batch every frame
@@ -113,16 +110,13 @@ function GUI:draw(ctx, shell_state)
       local elapsed = (reaper.time_precise() - self.loading_start_time) * 1000
       reaper.ShowConsoleMsg(string.format("=== ItemPicker: Loading complete! (%.1fms) ===\n", elapsed))
 
-      -- Pre-load disk cache into runtime cache now that items are loaded
-      -- Skip if skip_visualizations is enabled (fast mode)
+      -- Skip disk cache in fast mode
       if not self.state.skip_visualizations then
         local disk_cache = require('ItemPicker.data.disk_cache')
         local stats = disk_cache.preload_to_runtime(self.state.runtime_cache)
         if stats and stats.loaded > 0 then
           reaper.ShowConsoleMsg(string.format("[ItemPicker] Loaded %d cached visualizations from disk\n", stats.loaded))
         end
-      else
-        reaper.ShowConsoleMsg("[ItemPicker] Skipped loading visualizations (fast mode enabled)\n")
       end
 
       self.data_loaded = true
