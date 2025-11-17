@@ -113,30 +113,42 @@ function M.create_folder(parent_path, folder_name)
     return false, nil
   end
 
-  -- Use reaper's directory creation if available, otherwise try os
-  local success = false
-
   -- Try using lfs if available
   local has_lfs, lfs = pcall(require, "lfs")
   if has_lfs then
-    local result, err = lfs.mkdir(new_path)
-    success = (result == true or result == nil and err == nil)
+    lfs.mkdir(new_path)
   else
     -- Fallback: try platform-specific commands
     if sep == "\\" then
-      -- Windows: use system() which is more reliable
+      -- Windows
       local cmd = 'cmd /c mkdir "' .. new_path:gsub("/", "\\") .. '" 2>nul'
-      local result = os.execute(cmd)
-      -- Check if folder was created (with trailing slash for directory detection)
-      success = reaper.file_exists(new_path .. sep)
+      os.execute(cmd)
     else
       -- Unix/Mac
-      success = os.execute('mkdir -p "' .. new_path .. '"') == 0
+      os.execute('mkdir -p "' .. new_path .. '"')
     end
   end
 
-  -- Check with trailing slash for proper directory detection
-  if success or reaper.file_exists(new_path .. sep) then
+  -- Verify folder was created - try multiple methods
+  local exists = false
+
+  -- Try with trailing slash
+  if reaper.file_exists(new_path .. sep) then
+    exists = true
+  end
+
+  -- Try without trailing slash
+  if not exists and reaper.file_exists(new_path) then
+    exists = true
+  end
+
+  -- Try with lfs.attributes if available
+  if not exists and has_lfs then
+    local attrs = lfs.attributes(new_path)
+    exists = (attrs ~= nil and attrs.mode == "directory")
+  end
+
+  if exists then
     reaper.ShowConsoleMsg(string.format("Created folder: %s\n", new_path))
     return true, new_path
   else
