@@ -165,23 +165,20 @@ function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fa
   local alpha = (base_alpha * fade_alpha)//1
   local progress_color = Colors.components_to_rgba(r, g, b, alpha)
 
-  -- Match tile shape: round left corners, straight right edge (unless at 100%)
-  local corner_flags = (progress >= 1.0) and ImGui.DrawFlags_RoundCornersAll or ImGui.DrawFlags_RoundCornersLeft
-
-  -- Clip to tile bounds to ensure progress respects rounded corners
+  -- Clip to tile bounds - tile's rounded background will occlude corners
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, progress_x, y2, progress_color, rounding, corner_flags)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, progress_x, y2, progress_color, 0, 0)
   ImGui.DrawList_PopClipRect(dl)
 
-  -- Draw right edge indicator line (only if not at 100%)
+  -- Draw 1-pixel vertical cursor line at progress position (only if not at 100%)
   if progress < 1.0 then
     local base_bar_alpha = 0xAA
     local bar_alpha = (base_bar_alpha * fade_alpha)//1
     local bar_color = Colors.components_to_rgba(r, g, b, bar_alpha)
     local bar_thickness = 1
-    local inset = min(rounding * 0.5, 2)
 
-    ImGui.DrawList_AddLine(dl, progress_x, y1 + inset, progress_x, y2 - inset, bar_color, bar_thickness)
+    -- Full height cursor line
+    ImGui.DrawList_AddLine(dl, progress_x, y1, progress_x, y2, bar_color, bar_thickness)
   end
 end
 
