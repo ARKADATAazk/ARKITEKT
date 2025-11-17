@@ -10,7 +10,12 @@ local M = {}
 
 function M.create(ctx, config, state, visualization, animator)
   local function get_items()
-    if not state.sample_indexes then return {} end
+    if not state.sample_indexes then
+      reaper.ShowConsoleMsg("[AUDIO_GRID] No sample_indexes\n")
+      return {}
+    end
+
+    reaper.ShowConsoleMsg(string.format("[AUDIO_GRID] Processing %d audio sources\n", #state.sample_indexes))
 
     -- Compute filter hash to detect changes
     local settings = state.settings
@@ -153,6 +158,8 @@ function M.create(ctx, config, state, visualization, animator)
     -- Cache result for next frame
     state.runtime_cache.audio_filtered = filtered
     state.runtime_cache.audio_filter_hash = filter_hash
+
+    reaper.ShowConsoleMsg(string.format("[AUDIO_GRID] Filtered result: %d items passed filters\n", #filtered))
 
     return filtered
   end

@@ -111,6 +111,8 @@ function GUI:draw(ctx, shell_state)
     if is_complete then
       local elapsed = (reaper.time_precise() - self.loading_start_time) * 1000
       reaper.ShowConsoleMsg(string.format("=== ItemPicker: Loading complete! (%.1fms) ===\n", elapsed))
+      reaper.ShowConsoleMsg(string.format("[DEBUG] Loaded: %d audio groups, %d MIDI groups\n",
+        #(self.state.sample_indexes or {}), #(self.state.midi_indexes or {})))
 
       -- Skip disk cache in fast mode
       if not self.state.skip_visualizations then
