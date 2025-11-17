@@ -271,7 +271,6 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
       ImGui.TreePop(ctx)
     end
-  end
 
   ImGui.PopID(ctx)
 end
