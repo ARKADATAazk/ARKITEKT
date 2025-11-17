@@ -35,6 +35,11 @@ M.audio_item_lookup = {}  -- { [uuid] = item_data } for O(1) access
 M.midi_item_lookup = {}  -- { [uuid] = item_data } for O(1) access
 M.needs_recollect = false  -- Flag to trigger item recollection
 
+-- Loading state
+M.is_loading = false
+M.loading_progress = 0
+M.incremental_loader = nil
+
 M.box_current_sample = {}  -- { [filename] = sample_index }
 M.box_current_item = {}  -- { [filename] = item_index }
 M.box_current_midi_track = {}  -- { [track_guid] = item_index }
