@@ -34,7 +34,11 @@ function M.new(reaper_interface, batch_size)
     track_chunks = nil,
     item_chunks = {},
 
-    -- Results
+    -- Raw item pool (ALL items with metadata, before grouping)
+    raw_audio_items = {},  -- { {item, item_name, filename, track_color, track_muted, item_muted, uuid}, ... }
+    raw_midi_items = {},   -- { {item, item_name, track_color, track_muted, item_muted, uuid}, ... }
+
+    -- Results (organized by grouping)
     samples = {},
     sample_indexes = {},
     midi_items = {},
@@ -201,6 +205,8 @@ function M.process_batch(loader, state, settings)
     batch_end - loader.batch_size + 1, batch_end, batch_time, reaper_ms, processing_ms))
 
   if loader.current_index >= total_items then
+    -- All items loaded - now organize them based on grouping setting
+    M.reorganize_items(loader, state.settings.group_items_by_name)
     loader.is_loading = false
     return true, 1.0
   end
@@ -223,32 +229,22 @@ function M.process_audio_item_fast(loader, item, track, state)
     item_name = (filename:match("[^/\\]+$") or ""):match("(.+)%..+$") or filename:match("[^/\\]+$")
   end
 
-  -- Compute mute status on-demand (no pre-caching in fast mode)
+  -- Compute mute status and track color ONCE during loading
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
+  local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
 
-  -- Determine grouping key based on setting
-  local group_key
-  if state.settings.group_items_by_name then
-    -- Group by filename (multiple items with same source file)
-    group_key = filename
-  else
-    -- Each item is separate (use UUID as unique key)
-    group_key = get_item_uuid(item)
-  end
+  local uuid = get_item_uuid(item)
 
-  -- Initialize sample group
-  if not loader.samples[group_key] then
-    table.insert(loader.sample_indexes, group_key)
-    loader.samples[group_key] = {}
-  end
-
-  table.insert(loader.samples[group_key], {
-    item,
-    item_name,
+  -- Store in raw pool (before grouping)
+  table.insert(loader.raw_audio_items, {
+    item = item,
+    item_name = item_name,
+    filename = filename,
+    track_color = track_color,
     track_muted = track_muted,
     item_muted = item_muted,
-    uuid = get_item_uuid(item)
+    uuid = uuid,
   })
 end
 
@@ -305,31 +301,21 @@ function M.process_midi_item_fast(loader, item, track, state)
     item_name = "Unnamed MIDI"
   end
 
-  -- Compute mute status on-demand (no pre-caching in fast mode)
+  -- Compute mute status and track color ONCE during loading
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
+  local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
 
-  -- Determine grouping key based on setting
-  local group_key
-  if state.settings.group_items_by_name then
-    -- Group by take name (so all "Kick" MIDI items are together)
-    group_key = item_name
-  else
-    -- Each item is separate (use UUID as unique key)
-    group_key = get_item_uuid(item)
-  end
+  local uuid = get_item_uuid(item)
 
-  if not loader.midi_items[group_key] then
-    table.insert(loader.midi_indexes, group_key)
-    loader.midi_items[group_key] = {}
-  end
-
-  table.insert(loader.midi_items[group_key], {
-    item,
-    item_name,  -- Display the actual take name
+  -- Store in raw pool (before grouping)
+  table.insert(loader.raw_midi_items, {
+    item = item,
+    item_name = item_name,
+    track_color = track_color,
     track_muted = track_muted,
     item_muted = item_muted,
-    uuid = get_item_uuid(item)
+    uuid = uuid,
   })
 end
 
@@ -394,6 +380,67 @@ function M.get_results(loader, state)
         state.midi_item_lookup[item_data.uuid] = item_data
       end
     end
+  end
+end
+
+-- Reorganize items based on grouping setting (instant, no REAPER API calls)
+function M.reorganize_items(loader, group_by_name)
+  -- Clear grouped results
+  loader.samples = {}
+  loader.sample_indexes = {}
+  loader.midi_items = {}
+  loader.midi_indexes = {}
+
+  -- Reorganize audio items
+  for _, raw_item in ipairs(loader.raw_audio_items) do
+    local group_key
+    if group_by_name then
+      -- Group by filename (multiple items with same source file)
+      group_key = raw_item.filename
+    else
+      -- Each item is separate (use UUID as unique key)
+      group_key = raw_item.uuid
+    end
+
+    if not loader.samples[group_key] then
+      table.insert(loader.sample_indexes, group_key)
+      loader.samples[group_key] = {}
+    end
+
+    table.insert(loader.samples[group_key], {
+      raw_item.item,
+      raw_item.item_name,
+      track_muted = raw_item.track_muted,
+      item_muted = raw_item.item_muted,
+      uuid = raw_item.uuid,
+      track_color = raw_item.track_color,  -- Include cached color
+    })
+  end
+
+  -- Reorganize MIDI items
+  for _, raw_item in ipairs(loader.raw_midi_items) do
+    local group_key
+    if group_by_name then
+      -- Group by take name (so all "Kick" MIDI items are together)
+      group_key = raw_item.item_name
+    else
+      -- Each item is separate (use UUID as unique key)
+      group_key = raw_item.uuid
+    end
+
+    if not loader.midi_items[group_key] then
+      table.insert(loader.midi_indexes, group_key)
+      loader.midi_items[group_key] = {}
+    end
+
+    table.insert(loader.midi_items[group_key], {
+      raw_item.item,
+      raw_item.item_name,
+      track_muted = raw_item.track_muted,
+      item_muted = raw_item.item_muted,
+      uuid = raw_item.uuid,
+      track_color = raw_item.track_color,  -- Include cached color
+    })
   end
 end
 

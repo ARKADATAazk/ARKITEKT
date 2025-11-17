@@ -12,6 +12,25 @@ function M.create(ctx, config, state, visualization, animator)
   local function get_items()
     if not state.midi_indexes then return {} end
 
+    -- Compute filter hash to detect changes
+    local settings = state.settings
+    local filter_hash = string.format("%s|%s|%s|%s|%s|%s|%s|%d",
+      tostring(settings.show_favorites_only),
+      tostring(settings.show_disabled_items),
+      tostring(settings.show_muted_tracks),
+      tostring(settings.show_muted_items),
+      settings.search_string or "",
+      settings.sort_mode or "none",
+      table.concat(state.midi_indexes, ","),  -- Invalidate if items change
+      #state.midi_indexes
+    )
+
+    -- Return cached result if filters haven't changed
+    if state.runtime_cache.midi_filter_hash == filter_hash and state.runtime_cache.midi_filtered then
+      return state.runtime_cache.midi_filtered
+    end
+
+    -- Filters changed - rebuild filtered list
     local filtered = {}
     for _, track_guid in ipairs(state.midi_indexes) do
       -- Check favorites filter
@@ -60,15 +79,8 @@ function M.create(ctx, config, state, visualization, animator)
         goto continue
       end
 
-      -- Get track color (default grey if item is nil/invalid)
-      local track_color = 16576  -- Default grey code
-      if item and reaper.ValidatePtr2(0, item, "MediaItem*") then
-        local track = reaper.GetMediaItemTrack(item)
-        if track then
-          track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
-        end
-      end
-
+      -- Use cached track color (fetched during loading, not every frame!)
+      local track_color = entry.track_color or 16576  -- Default grey code
       local r, g, b = 85/256, 91/256, 91/256  -- Default grey
       if track_color ~= 16576 and track_color > 0 then
         local R = track_color & 255
@@ -138,6 +150,10 @@ function M.create(ctx, config, state, visualization, animator)
         return a.name:lower() < b.name:lower()
       end)
     end
+
+    -- Cache result for next frame
+    state.runtime_cache.midi_filtered = filtered
+    state.runtime_cache.midi_filter_hash = filter_hash
 
     return filtered
   end

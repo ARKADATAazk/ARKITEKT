@@ -178,7 +178,34 @@ function GUI:draw(ctx, shell_state)
   -- Handle tile size shortcuts
   self.coordinator:handle_tile_size_shortcuts(ctx)
 
-  -- Check if we need to recollect items (seamless using incremental loading)
+  -- Check if we need to reorganize items (instant, no reload)
+  if self.state.needs_reorganize and not self.state.is_loading then
+    self.state.needs_reorganize = false
+
+    -- Reorganize from raw pool (instant operation)
+    if self.state.incremental_loader then
+      local incremental_loader_module = require("ItemPicker.data.loaders.incremental_loader")
+      incremental_loader_module.reorganize_items(
+        self.state.incremental_loader,
+        self.state.settings.group_items_by_name
+      )
+
+      -- Copy results to state
+      self.state.samples = self.state.incremental_loader.samples
+      self.state.sample_indexes = self.state.incremental_loader.sample_indexes
+      self.state.midi_items = self.state.incremental_loader.midi_items
+      self.state.midi_indexes = self.state.incremental_loader.midi_indexes
+
+      -- Rebuild lookups
+      incremental_loader_module.get_results(self.state.incremental_loader, self.state)
+
+      -- Invalidate filter cache (items changed)
+      self.state.runtime_cache.audio_filter_hash = nil
+      self.state.runtime_cache.midi_filter_hash = nil
+    end
+  end
+
+  -- Check if we need to recollect items from REAPER (project changes)
   if self.state.needs_recollect and not self.state.is_loading then
     self.state.needs_recollect = false
 

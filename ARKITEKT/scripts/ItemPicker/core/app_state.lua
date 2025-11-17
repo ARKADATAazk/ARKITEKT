@@ -88,6 +88,11 @@ M.draw_list = nil
 M.runtime_cache = {
   waveforms = {},
   midi_thumbnails = {},
+  -- Filter cache to avoid recomputing filtered items every frame
+  audio_filtered = nil,
+  audio_filter_hash = nil,
+  midi_filtered = nil,
+  midi_filter_hash = nil,
 }
 M.overlay_alpha = 1.0
 M.exit = false
