@@ -278,6 +278,7 @@ function GlobalView:draw(ctx, shell_state)
       self.custom_track_names = not self.custom_track_names
       -- TODO: Set 'glb_track_label_color' parameter
     end
+    ImGui.NewLine(ctx)
 
     ImGui.Dummy(ctx, 0, 4)
 
@@ -285,6 +286,7 @@ function GlobalView:draw(ctx, shell_state)
       self.affect_project_colors = not self.affect_project_colors
       self:set_param(-1006, self.affect_project_colors and 1 or 0, true)
     end
+    ImGui.NewLine(ctx)
 
     ImGui.Dummy(ctx, 0, 10)
 

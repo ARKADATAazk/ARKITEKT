@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
+local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -157,17 +158,16 @@ function TCPView:draw(ctx, shell_state)
 
     for _, layout in ipairs({'A', 'B', 'C'}) do
       local is_active = (self.active_layout == layout)
-      if is_active then
-        ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#2D4A37"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#3A5F48"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#47724F"))
-      end
-      if ImGui.Button(ctx, layout, 50, 24) then
-        self.active_layout = layout
-        -- TODO: Apply layout
-      end
-      if is_active then
-        ImGui.PopStyleColor(ctx, 3)
+      if Button.draw_at_cursor(ctx, {
+        label = layout,
+        width = 50,
+        height = 24,
+        is_toggled = is_active,
+        on_click = function()
+          self.active_layout = layout
+          -- TODO: Apply layout
+        end
+      }, "tcp_layout_" .. layout) then
       end
       ImGui.SameLine(ctx, 0, 6)
     end
@@ -181,8 +181,14 @@ function TCPView:draw(ctx, shell_state)
     ImGui.SameLine(ctx, 120)
 
     for _, size in ipairs({'100%', '150%', '200%'}) do
-      if ImGui.Button(ctx, size, 70, 24) then
-        -- TODO: Apply size
+      if Button.draw_at_cursor(ctx, {
+        label = size,
+        width = 70,
+        height = 24,
+        on_click = function()
+          -- TODO: Apply size
+        end
+      }, "tcp_size_" .. size) then
       end
       ImGui.SameLine(ctx, 0, 6)
     end

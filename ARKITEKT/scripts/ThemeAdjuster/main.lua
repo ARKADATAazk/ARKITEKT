@@ -76,7 +76,7 @@ Shell.run({
   settings     = settings,
   style        = StyleOK and Style or nil,
   initial_pos  = { x = 80, y = 80 },
-  initial_size = { w = 980, h = 600 },
+  initial_size = { w = 1120, h = 820 },
   icon_color   = hexrgb("#00B88F"),
   icon_size    = 18,
   min_size     = { w = 700, h = 500 },
