@@ -5,22 +5,8 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local palette
-local Colors
-do
-  local ok, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
-  if ok and type(Style) == "table" and type(Style.palette) == "table" then
-    palette = Style.palette
-  end
-  
-  local ok2, C = pcall(require, "rearkitekt.core.colors")
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
-
-  if ok2 and type(C) == "table" then
-    Colors = C
-  end
-end
 
 local M = {}
 local _locks = {}

@@ -87,8 +87,17 @@ local function scan_package_folder(package_path, package_id)
       tags = {},
       mosaic = {},
       color = nil,
+      preview_path = nil,  -- Path to preview.png if exists
     },
   }
+
+  -- Check for preview.png first
+  local preview_path = package_path .. SEP .. "preview.png"
+  local preview_file = io.open(preview_path, "r")
+  if preview_file then
+    preview_file:close()
+    package.meta.preview_path = preview_path
+  end
 
   -- Try to load manifest.json (optional)
   local manifest_path = package_path .. SEP .. "manifest.json"
@@ -126,14 +135,17 @@ local function scan_package_folder(package_path, package_id)
         -- Extract key (filename without extension)
         local key = file:match("^(.+)%.png$")
 
-        -- Add to assets
-        package.assets[key] = {
-          path = package_path .. SEP .. file,
-          is_strip = false,  -- TODO: Detect multi-frame strips
-        }
+        -- Skip preview.png and manifest files (not theme assets)
+        if key ~= "preview" then
+          -- Add to assets
+          package.assets[key] = {
+            path = package_path .. SEP .. file,
+            is_strip = false,  -- TODO: Detect multi-frame strips
+          }
 
-        -- Add to keys_order
-        table.insert(package.keys_order, key)
+          -- Add to keys_order
+          table.insert(package.keys_order, key)
+        end
       end
     end
     i = i + 1

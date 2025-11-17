@@ -8,9 +8,17 @@ local ImGui = require 'imgui' '0.10'
 local Draw = require('rearkitekt.gui.draw')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local Colors = require('rearkitekt.core.colors')
+local ImageCache = require('rearkitekt.gui.images')
 
 local M = {}
 local hexrgb = Colors.hexrgb
+
+-- Shared image cache for package mosaic previews
+M._package_image_cache = M._package_image_cache or ImageCache.new({
+  budget = 20,      -- Load up to 20 images per frame
+  max_cache = 100,  -- Cache up to 100 images
+  no_crop = true,   -- Don't slice 3-state images
+})
 
 M.CONFIG = {
   tile = {
@@ -224,31 +232,230 @@ function M.TileRenderer.checkbox(ctx, pkg, P, cb_rects, tile_x, tile_y, tile_w, 
   end
 end
 
-function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w)
+function M.TileRenderer.mosaic(ctx, dl, theme, P, tile_x, tile_y, tile_w, tile_h)
   if not theme or not theme.color_from_key then return end
-  
+
+  -- Begin frame for image cache
+  M._package_image_cache:begin_frame()
+
+  -- Check for preview.png first - display as single full-width image
+  if P.meta and P.meta.preview_path then
+    local preview_path = P.meta.preview_path
+    local preview_drawn = false
+
+    -- Use image cache with validation
+    local rec = M._package_image_cache._cache[preview_path]
+    if rec then
+      -- Validate the cached record
+      local validate_record = function(cache, path, record)
+        if not record or not record.img then return nil end
+        if type(record.img) ~= "userdata" then
+          cache._cache[path] = nil
+          return nil
+        end
+        local ok, w, h = pcall(ImGui.Image_GetSize, record.img)
+        if ok and w and h and w > 0 and h > 0 then
+          record.w, record.h = w, h
+          return record
+        end
+        cache._cache[path] = nil
+        return nil
+      end
+      rec = validate_record(M._package_image_cache, preview_path, rec)
+    end
+
+    -- If not cached or invalid, try to load
+    if not rec and M._package_image_cache._creates_left > 0 then
+      local ok, img = pcall(ImGui.CreateImage, preview_path, ImGui.ImageFlags_NoErrors or 0)
+      if ok and img then
+        local ok_size, w, h = pcall(ImGui.Image_GetSize, img)
+        if ok_size and w and h then
+          rec = {
+            img = img,
+            w = w,
+            h = h,
+            src_x = 0,
+            src_y = 0,
+            src_w = w,
+            src_h = h,
+          }
+          M._package_image_cache._cache[preview_path] = rec
+          M._package_image_cache._creates_left = M._package_image_cache._creates_left - 1
+        end
+      end
+    end
+
+    if rec and rec.img then
+      -- Calculate available area for preview (use most of tile height above footer)
+      local preview_area_w = tile_w - M.CONFIG.mosaic.padding * 2
+      local preview_area_h = tile_h - M.CONFIG.mosaic.y_offset - M.CONFIG.footer.height - M.CONFIG.mosaic.padding
+
+      -- Fill mode: scale image to cover entire area (may crop)
+      local img_w, img_h = rec.src_w, rec.src_h
+      local aspect = img_w / img_h
+      local area_aspect = preview_area_w / preview_area_h
+      local draw_w, draw_h
+
+      if aspect > area_aspect then
+        -- Image wider than area - fit to height, crop width
+        draw_h = preview_area_h
+        draw_w = preview_area_h * aspect
+      else
+        -- Image taller than area - fit to width, crop height
+        draw_w = preview_area_w
+        draw_h = preview_area_w / aspect
+      end
+
+      -- Center the oversized image so it crops evenly
+      local clip_x1 = tile_x + M.CONFIG.mosaic.padding
+      local clip_y1 = tile_y + M.CONFIG.mosaic.y_offset
+      local clip_x2 = clip_x1 + preview_area_w
+      local clip_y2 = clip_y1 + preview_area_h
+
+      local preview_x = clip_x1 - math.floor((draw_w - preview_area_w) / 2)
+      local preview_y = clip_y1 - math.floor((draw_h - preview_area_h) / 2)
+
+      -- Clip to exact bounds and draw
+      ImGui.PushClipRect(ctx, clip_x1, clip_y1, clip_x2, clip_y2, true)
+      ImGui.SetCursorScreenPos(ctx, preview_x, preview_y)
+      local ok = pcall(ImGui.Image, ctx, rec.img, draw_w, draw_h)
+      ImGui.PopClipRect(ctx)
+
+      if ok then
+        preview_drawn = true
+        -- Draw border around clipped area
+        Draw.rect(dl, clip_x1, clip_y1, clip_x2, clip_y2,
+                  M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
+      end
+    end
+
+    -- If preview was drawn or attempted, don't show mosaic
+    return
+  end
+
+  -- No preview.png, fall back to mosaic of actual number of images (1, 2, or 3)
+  local preview_keys = P.meta and P.meta.mosaic or { P.keys_order[1], P.keys_order[2], P.keys_order[3] }
+  -- Filter out nil values
+  local valid_keys = {}
+  for _, key in ipairs(preview_keys) do
+    if key then
+      table.insert(valid_keys, key)
+    end
+  end
+  local num_images = math.min(M.CONFIG.mosaic.count, #valid_keys)
+
+  if num_images == 0 then return end
+
+  -- Calculate cell size with max constraint (but adapt to actual count for centering)
+  local available_w = tile_w - M.CONFIG.mosaic.padding * 2
+  local total_gap = (num_images - 1) * M.CONFIG.mosaic.gap
   local cell_size = math.min(
     M.CONFIG.mosaic.max_size,
-    math.floor((tile_w - M.CONFIG.mosaic.padding * 2 - (M.CONFIG.mosaic.count - 1) * M.CONFIG.mosaic.gap) / M.CONFIG.mosaic.count)
+    math.floor((available_w - total_gap) / num_images)
   )
-  local total_width = cell_size * M.CONFIG.mosaic.count + (M.CONFIG.mosaic.count - 1) * M.CONFIG.mosaic.gap
+
+  local total_width = cell_size * num_images + total_gap
   local mosaic_x = tile_x + math.floor((tile_w - total_width) / 2)
   local mosaic_y = tile_y + M.CONFIG.mosaic.y_offset
-  
-  local preview_keys = P.meta and P.meta.mosaic or { P.keys_order[1], P.keys_order[2], P.keys_order[3] }
-  for i = 1, math.min(M.CONFIG.mosaic.count, #preview_keys) do
-    local key = preview_keys[i]
+  for i = 1, num_images do
+    local key = valid_keys[i]
     if key then
-      local col = theme.color_from_key(key:gsub("%.%w+$", ""))
       local cx = mosaic_x + (i - 1) * (cell_size + M.CONFIG.mosaic.gap)
       local cy = mosaic_y
-      
-      Draw.rect_filled(dl, cx, cy, cx + cell_size, cy + cell_size, col, M.CONFIG.mosaic.rounding)
-      Draw.rect(dl, cx, cy, cx + cell_size, cy + cell_size, 
-                M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
-      
-      local label = key:sub(1, 3):upper()
-      Draw.centered_text(ctx, label, cx, cy, cx + cell_size, cy + cell_size, hexrgb("#FFFFFF"))
+
+      -- Try to load and display actual image
+      local asset = P.assets and P.assets[key]
+      local img_path = asset and asset.path
+      local img_drawn = false
+
+      if img_path and not img_path:match("^%(mock%)") then
+        -- Use image cache with validation
+        local rec = M._package_image_cache._cache[img_path]
+        if rec then
+          -- Validate the cached record
+          local validate_record = function(cache, path, record)
+            if not record or not record.img then return nil end
+            if type(record.img) ~= "userdata" then
+              cache._cache[path] = nil
+              return nil
+            end
+            local ok, w, h = pcall(ImGui.Image_GetSize, record.img)
+            if ok and w and h and w > 0 and h > 0 then
+              record.w, record.h = w, h
+              return record
+            end
+            cache._cache[path] = nil
+            return nil
+          end
+          rec = validate_record(M._package_image_cache, img_path, rec)
+        end
+
+        -- If not cached or invalid, try to load
+        if not rec and M._package_image_cache._creates_left > 0 then
+          local ok, img = pcall(ImGui.CreateImage, img_path, ImGui.ImageFlags_NoErrors or 0)
+          if ok and img then
+            local ok_size, w, h = pcall(ImGui.Image_GetSize, img)
+            if ok_size and w and h then
+              rec = {
+                img = img,
+                w = w,
+                h = h,
+                src_x = 0,
+                src_y = 0,
+                src_w = w,
+                src_h = h,
+              }
+              M._package_image_cache._cache[img_path] = rec
+              M._package_image_cache._creates_left = M._package_image_cache._creates_left - 1
+            end
+          end
+        end
+
+        if rec and rec.img then
+          -- Calculate aspect-preserving dimensions
+          local img_w, img_h = rec.src_w, rec.src_h
+          local aspect = img_w / img_h
+          local draw_w, draw_h
+
+          if aspect > 1 then
+            -- Wider than tall - fit to width
+            draw_w = cell_size
+            draw_h = cell_size / aspect
+          else
+            -- Taller than wide - fit to height
+            draw_h = cell_size
+            draw_w = cell_size * aspect
+          end
+
+          -- Center or clip if needed
+          local img_x = cx + math.floor((cell_size - draw_w) / 2)
+          local img_y = cy + math.floor((cell_size - draw_h) / 2)
+
+          -- Clip to cell bounds
+          ImGui.PushClipRect(ctx, cx, cy, cx + cell_size, cy + cell_size, true)
+          ImGui.SetCursorScreenPos(ctx, img_x, img_y)
+          local ok = pcall(ImGui.Image, ctx, rec.img, draw_w, draw_h)
+          ImGui.PopClipRect(ctx)
+
+          if ok then
+            img_drawn = true
+            -- Draw border around cell (not image)
+            Draw.rect(dl, cx, cy, cx + cell_size, cy + cell_size,
+                      M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
+          end
+        end
+      end
+
+      -- Fallback to colored square if image didn't load
+      if not img_drawn then
+        local col = theme.color_from_key(key:gsub("%.%w+$", ""))
+        Draw.rect_filled(dl, cx, cy, cx + cell_size, cy + cell_size, col, M.CONFIG.mosaic.rounding)
+        Draw.rect(dl, cx, cy, cx + cell_size, cy + cell_size,
+                  M.CONFIG.mosaic.border_color, M.CONFIG.mosaic.rounding, M.CONFIG.mosaic.border_thickness)
+
+        local label = key:sub(1, 3):upper()
+        Draw.centered_text(ctx, label, cx, cy, cx + cell_size, cy + cell_size, hexrgb("#FFFFFF"))
+      end
     end
   end
 end

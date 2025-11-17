@@ -62,7 +62,7 @@ local function draw_package_tile(ctx, pkg, theme, P, rect, state, settings, cust
   Renderer.TileRenderer.order_badge(ctx, dl, pkg, P, x1, y1)
   Renderer.TileRenderer.conflicts(ctx, dl, pkg, P, x1, y1, tile_w)
   Renderer.TileRenderer.checkbox(ctx, pkg, P, custom_state.checkbox_rects, x1, y1, tile_w, tile_h, settings)
-  Renderer.TileRenderer.mosaic(ctx, dl, theme, P, x1, y1, tile_w)
+  Renderer.TileRenderer.mosaic(ctx, dl, theme, P, x1, y1, tile_w, tile_h)
   Renderer.TileRenderer.footer(ctx, dl, pkg, P, x1, y1, tile_w, tile_h)
 end
 
@@ -166,11 +166,11 @@ function M.create(pkg, settings, theme)
       wheel_adjust = function(keys, delta)
         -- Adjust global tile size (CTRL+MouseWheel zoom)
         local current_size = pkg.tile or 220
-        local step = 10  -- Size change per wheel notch
+        local step = 20  -- Size change per wheel notch (2x for faster resize)
         local new_size = current_size + (delta * step)
 
         -- Clamp to reasonable bounds
-        new_size = math.max(120, math.min(400, new_size))
+        new_size = math.max(180, math.min(400, new_size))
 
         pkg.tile = new_size
         if settings then settings:set('tile_size', new_size) end
