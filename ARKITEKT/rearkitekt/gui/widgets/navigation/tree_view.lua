@@ -14,27 +14,22 @@ local M = {}
 -- FOLDER ICON RENDERING
 -- ============================================================================
 
-local function draw_folder_icon(ctx, dl, x, y, size, color)
-  local s = size or 12
-  local half = s * 0.5
+local function draw_folder_icon(ctx, dl, x, y, color)
+  -- Folder icon: 13x7 main body with 5x2 tab on top left
+  local main_w = 13
+  local main_h = 7
+  local tab_w = 5
+  local tab_h = 2
 
-  -- Back square (slightly offset)
-  local back_x1 = x + 2
-  local back_y1 = y + 2
-  local back_x2 = back_x1 + half
-  local back_y2 = back_y1 + half
+  local icon_color = color or Colors.hexrgb("#888888")
 
-  ImGui.DrawList_AddRectFilled(dl, back_x1, back_y1, back_x2, back_y2, color or Colors.hexrgb("#888888"), 1)
+  -- Draw tab (5x2 rectangle on top left)
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + tab_w, y + tab_h, icon_color, 0)
 
-  -- Front square
-  local front_x1 = x
-  local front_y1 = y
-  local front_x2 = front_x1 + half
-  local front_y2 = front_y1 + half
+  -- Draw main body (13x7 rectangle)
+  ImGui.DrawList_AddRectFilled(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, icon_color, 1)
 
-  ImGui.DrawList_AddRectFilled(dl, front_x1, front_y1, front_x2, front_y2, color or Colors.hexrgb("#AAAAAA"), 1)
-
-  return s + 4  -- Return width including spacing
+  return main_w + 4  -- Return width including spacing
 end
 
 -- ============================================================================
@@ -128,8 +123,26 @@ local function render_tree_node(ctx, node, config, state, depth)
       ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + avail_w, cursor_y + line_height, bg_color, 2)
     end
 
-    -- Render tree node - simple and clean like the original
-    local node_open = ImGui.TreeNode(ctx, node.name, flags)
+    -- Render tree node with folder icon
+    -- We need to draw the icon inline with the label, so use TreeNodeEx with custom rendering
+    local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
+
+    -- Render the tree node structure with empty label
+    local node_open = ImGui.TreeNodeEx(ctx, "##" .. node_id, flags)
+
+    -- Now draw the folder icon and name on the same line
+    ImGui.SameLine(ctx, 0, 0)
+
+    local dl = ImGui.GetWindowDrawList(ctx)
+    local icon_cursor_x, icon_cursor_y = ImGui.GetCursorScreenPos(ctx)
+    local text_y_offset = (ImGui.GetTextLineHeight(ctx) - 9) * 0.5  -- Center icon vertically (9 = tab_h + main_h)
+
+    -- Draw folder icon
+    local icon_width = draw_folder_icon(ctx, dl, icon_cursor_x, icon_cursor_y + text_y_offset, node_color)
+
+    -- Draw label after icon
+    ImGui.SetCursorScreenPos(ctx, icon_cursor_x + icon_width, icon_cursor_y)
+    ImGui.Text(ctx, node.name)
 
     -- Handle clicks
     if ImGui.IsItemClicked(ctx) and not ImGui.IsItemToggledOpen(ctx) then
