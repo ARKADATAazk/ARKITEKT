@@ -301,13 +301,25 @@ local function draw_folder_tree(ctx, state, config)
         return
       end
 
+      -- Store paths as strings before move (node references become stale after scan)
+      local source_full_path = source_node.full_path
+      local source_name = source_node.name
+      local target_full_path = target_node.full_path
+      local target_name = target_node.name
+
+      -- Extract old parent directory
+      local old_parent = source_full_path:match("^(.+)[/\\][^/\\]+$")
+      if not old_parent then
+        reaper.ShowConsoleMsg("ERROR: Cannot determine parent folder for: " .. source_full_path .. "\n")
+        return
+      end
+
       -- Move folder
-      local old_parent = source_node.full_path:match("^(.*)[/\\]")
-      local success, new_path = FileOps.move_folder(source_node.full_path, target_node.full_path)
+      local success, new_path = FileOps.move_folder(source_full_path, target_full_path)
       if success then
-        -- Create undo operation
+        -- Create undo operation with all paths captured as strings
         state.undo_manager:push({
-          description = "Move folder: " .. source_node.name .. " -> " .. target_node.name,
+          description = "Move folder: " .. source_name .. " -> " .. target_name,
           undo_fn = function()
             local undo_success = FileOps.move_folder(new_path, old_parent)
             if undo_success then
@@ -317,7 +329,11 @@ local function draw_folder_tree(ctx, state, config)
             return undo_success
           end,
           redo_fn = function()
-            local redo_success, redo_new_path = FileOps.move_folder(source_node.full_path, target_node.full_path)
+            -- Reconstruct original source path from captured strings
+            local sep = package.config:sub(1,1)
+            local original_source = old_parent .. sep .. source_name
+
+            local redo_success, redo_new_path = FileOps.move_folder(original_source, target_full_path)
             if redo_success then
               new_path = redo_new_path  -- Update for subsequent operations
               local Scanner = require('TemplateBrowser.domain.scanner')
