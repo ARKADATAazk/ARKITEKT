@@ -351,16 +351,21 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     local cfg = Style.apply_defaults(Style.BUTTON, button_config)
 
     -- CRITICAL: Check if should block interaction (popups/modals/overlays)
-    -- Check overlay manager first (prevents one-frame delay), then popups
+    -- Support ignore_modal flag for critical UI (close buttons, etc.)
     local OverlayManager = nil
     pcall(function()
       OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
     end)
 
-    local has_overlay = OverlayManager and OverlayManager.has_active_overlays()
-    local has_popup = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
+    local is_blocking = cfg.is_blocking or false
 
-    local is_blocking = cfg.is_blocking or has_overlay or has_popup
+    -- Only check modal blocking if ignore_modal is not set
+    if not cfg.ignore_modal then
+      local has_overlay = OverlayManager and OverlayManager.has_active_overlays()
+      local has_popup = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
+      is_blocking = is_blocking or has_overlay or has_popup
+    end
+
     local hovered = false
     local active = false
 

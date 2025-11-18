@@ -113,16 +113,21 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
   local inst = get_instance(unique_id)
 
   -- CRITICAL: Check if should block interaction (popups/modals/overlays)
-  -- Check overlay manager first (prevents one-frame delay), then popups
+  -- Support ignore_modal flag for critical UI (close buttons, etc.)
   local OverlayManager = nil
   pcall(function()
     OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
   end)
 
-  local has_overlay = OverlayManager and OverlayManager.has_active_overlays()
-  local has_popup = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
+  local is_blocking = config.is_blocking or false
 
-  local is_blocking = config.is_blocking or has_overlay or has_popup
+  -- Only check modal blocking if ignore_modal is not set
+  if not config.ignore_modal then
+    local has_overlay = OverlayManager and OverlayManager.has_active_overlays()
+    local has_popup = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
+    is_blocking = is_blocking or has_overlay or has_popup
+  end
+
   local hovered = false
   local active = false
 
