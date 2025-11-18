@@ -263,19 +263,19 @@ function M.cycle_audio_item(filename, delta)
 
   -- Build filtered list based on current settings
   local filtered = {}
-  local seen_names = {}  -- Track item names to exclude pooled duplicates
+  local seen_pools = {}  -- Track pool IDs to exclude pooled duplicates
 
   for i, entry in ipairs(content) do
     local should_include = true
 
-    -- Exclude pooled duplicates (only show first occurrence of each name)
-    local item_name = entry[2] or "Unnamed"
+    -- Exclude pooled duplicates (only show first occurrence of each pool)
     local pool_count = entry.pool_count or 1
-    if pool_count > 1 then
-      if seen_names[item_name] then
+    local pool_id = entry.pool_id
+    if pool_count > 1 and pool_id then
+      if seen_pools[pool_id] then
         should_include = false
       else
-        seen_names[item_name] = true
+        seen_pools[pool_id] = true
       end
     end
 
@@ -339,19 +339,19 @@ function M.cycle_midi_item(item_name, delta)
 
   -- Build filtered list based on current settings
   local filtered = {}
-  local seen_names = {}  -- Track item names to exclude pooled duplicates
+  local seen_pools = {}  -- Track pool IDs to exclude pooled duplicates
 
   for i, entry in ipairs(content) do
     local should_include = true
 
-    -- Exclude pooled duplicates (only show first occurrence of each name)
-    local item_name_text = entry[2] or "Unnamed"
+    -- Exclude pooled duplicates (only show first occurrence of each pool)
     local pool_count = entry.pool_count or 1
-    if pool_count > 1 then
-      if seen_names[item_name_text] then
+    local pool_id = entry.pool_id
+    if pool_count > 1 and pool_id then
+      if seen_pools[pool_id] then
         should_include = false
       else
-        seen_names[item_name_text] = true
+        seen_pools[pool_id] = true
       end
     end
 

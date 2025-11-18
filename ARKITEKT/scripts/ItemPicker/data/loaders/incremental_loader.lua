@@ -205,7 +205,9 @@ function M.process_batch(loader, state, settings)
     batch_end - loader.batch_size + 1, batch_end, batch_time, reaper_ms, processing_ms))
 
   if loader.current_index >= total_items then
-    -- All items loaded - now organize them based on grouping setting
+    -- All items loaded - calculate pool counts before organizing
+    M.calculate_pool_counts(loader)
+    -- Now organize them based on grouping setting
     M.reorganize_items(loader, state.settings.group_items_by_name)
     loader.is_loading = false
     return true, 1.0
@@ -410,6 +412,82 @@ function M.get_results(loader, state)
   end
 end
 
+-- Calculate pool counts based on REAPER's actual pooling (shared sources/MIDI data)
+function M.calculate_pool_counts(loader)
+  -- Count audio items by source pointer (REAPER's pooling for audio)
+  local source_pool_counts = {}
+  for _, raw_item in ipairs(loader.raw_audio_items) do
+    local item = raw_item.item
+    local take = reaper.GetActiveTake(item)
+    if take then
+      local source = reaper.GetMediaItemTake_Source(take)
+      -- Check for reverse (get parent source)
+      local _, _, _, _, _, reverse = reaper.BR_GetMediaSourceProperties(take)
+      if reverse then
+        source = reaper.GetMediaSourceParent(source)
+      end
+      local source_ptr = reaper.BR_GetMediaSourceProperties(source)
+      if source_ptr then
+        source_pool_counts[source_ptr] = (source_pool_counts[source_ptr] or 0) + 1
+      end
+    end
+  end
+
+  -- Assign pool counts to audio items
+  for _, raw_item in ipairs(loader.raw_audio_items) do
+    local item = raw_item.item
+    local take = reaper.GetActiveTake(item)
+    if take then
+      local source = reaper.GetMediaItemTake_Source(take)
+      local _, _, _, _, _, reverse = reaper.BR_GetMediaSourceProperties(take)
+      if reverse then
+        source = reaper.GetMediaSourceParent(source)
+      end
+      local source_ptr = reaper.BR_GetMediaSourceProperties(source)
+      raw_item.pool_count = source_pool_counts[source_ptr] or 1
+      raw_item.pool_id = tostring(source_ptr)  -- Store pool identifier
+    else
+      raw_item.pool_count = 1
+      raw_item.pool_id = raw_item.uuid  -- Unique ID for non-pooled items
+    end
+  end
+
+  -- Count MIDI items by MIDI data (REAPER's pooling for MIDI)
+  local midi_pool_counts = {}
+  for _, raw_item in ipairs(loader.raw_midi_items) do
+    local item = raw_item.item
+    local take = reaper.GetActiveTake(item)
+    if take then
+      local _, midi_data = reaper.MIDI_GetAllEvts(take, "")
+      if midi_data then
+        midi_pool_counts[midi_data] = (midi_pool_counts[midi_data] or 0) + 1
+      end
+    end
+  end
+
+  -- Assign pool counts to MIDI items
+  for _, raw_item in ipairs(loader.raw_midi_items) do
+    local item = raw_item.item
+    local take = reaper.GetActiveTake(item)
+    if take then
+      local _, midi_data = reaper.MIDI_GetAllEvts(take, "")
+      raw_item.pool_count = midi_pool_counts[midi_data] or 1
+      -- Use hash of MIDI data as pool ID
+      local hash = 0
+      for i = 1, #midi_data do
+        hash = (hash * 31 + string.byte(midi_data, i)) % 2147483647
+      end
+      raw_item.pool_id = tostring(hash)
+    else
+      raw_item.pool_count = 1
+      raw_item.pool_id = raw_item.uuid  -- Unique ID for non-pooled items
+    end
+  end
+
+  reaper.ShowConsoleMsg(string.format("[POOL_COUNT] Calculated pools for %d audio, %d MIDI items\n",
+    #loader.raw_audio_items, #loader.raw_midi_items))
+end
+
 -- Reorganize items based on grouping setting (instant, no REAPER API calls)
 function M.reorganize_items(loader, group_by_name)
   reaper.ShowConsoleMsg(string.format("[REORGANIZE] Called with group_by_name=%s, raw pools: audio=%d, midi=%d\n",
@@ -451,7 +529,8 @@ function M.reorganize_items(loader, group_by_name)
       item_muted = raw_item.item_muted,
       uuid = raw_item.uuid,
       track_color = raw_item.track_color,  -- Include cached color
-      pool_count = 1,  -- Will be updated in post-processing
+      pool_count = raw_item.pool_count or 1,  -- From REAPER pooling detection
+      pool_id = raw_item.pool_id,  -- Pool identifier for filtering
     })
 
     ::skip_audio::
@@ -487,40 +566,11 @@ function M.reorganize_items(loader, group_by_name)
       item_muted = raw_item.item_muted,
       uuid = raw_item.uuid,
       track_color = raw_item.track_color,  -- Include cached color
-      pool_count = 1,  -- Will be updated in post-processing
+      pool_count = raw_item.pool_count or 1,  -- From REAPER pooling detection
+      pool_id = raw_item.pool_id,  -- Pool identifier for filtering
     })
 
     ::skip_midi::
-  end
-
-  -- Post-process: Calculate pool counts for items with identical names in the same group
-  -- This helps identify pooled/duplicated items
-  for group_key, items in pairs(loader.samples) do
-    local name_counts = {}
-    -- Count occurrences of each item name
-    for _, entry in ipairs(items) do
-      local item_name = entry[2] or "Unnamed"
-      name_counts[item_name] = (name_counts[item_name] or 0) + 1
-    end
-    -- Assign pool counts
-    for _, entry in ipairs(items) do
-      local item_name = entry[2] or "Unnamed"
-      entry.pool_count = name_counts[item_name]
-    end
-  end
-
-  for group_key, items in pairs(loader.midi_items) do
-    local name_counts = {}
-    -- Count occurrences of each item name
-    for _, entry in ipairs(items) do
-      local item_name = entry[2] or "Unnamed"
-      name_counts[item_name] = (name_counts[item_name] or 0) + 1
-    end
-    -- Assign pool counts
-    for _, entry in ipairs(items) do
-      local item_name = entry[2] or "Unnamed"
-      entry.pool_count = name_counts[item_name]
-    end
   end
 end
 
