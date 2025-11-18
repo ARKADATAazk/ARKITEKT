@@ -6,7 +6,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Style = require('rearkitekt.gui.style.defaults')
-local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
+local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 
 local M = {}
 
@@ -29,11 +29,11 @@ function SplitButton.new(id)
   return instance
 end
 
-function SplitButton:update(dt, button_hovered, arrow_hovered, is_active)
+function SplitButton:update(dt, button_hovered, arrow_hovered, is_toggled)
   local alpha_speed = 12.0
 
-  -- Button hover
-  local button_target = (button_hovered or is_active) and 1.0 or 0.0
+  -- Button hover (also active when toggled)
+  local button_target = (button_hovered or is_toggled) and 1.0 or 0.0
   self.button_hover_alpha = self.button_hover_alpha + (button_target - self.button_hover_alpha) * alpha_speed * dt
   self.button_hover_alpha = math.max(0, math.min(1, self.button_hover_alpha))
 
@@ -74,6 +74,42 @@ local function resolve_context(config, state_or_id)
 end
 
 -- ============================================================================
+-- CORNER ROUNDING
+-- ============================================================================
+
+local function get_corner_flags(corner_rounding, is_left_part)
+  if not corner_rounding then
+    return 0
+  end
+
+  local flags = 0
+
+  if is_left_part then
+    -- Button part: only round left corners if specified
+    if corner_rounding.round_top_left then
+      flags = flags | ImGui.DrawFlags_RoundCornersTopLeft
+    end
+    if corner_rounding.round_bottom_left then
+      flags = flags | ImGui.DrawFlags_RoundCornersBottomLeft
+    end
+  else
+    -- Arrow part: only round right corners if specified
+    if corner_rounding.round_top_right then
+      flags = flags | ImGui.DrawFlags_RoundCornersTopRight
+    end
+    if corner_rounding.round_bottom_right then
+      flags = flags | ImGui.DrawFlags_RoundCornersBottomRight
+    end
+  end
+
+  if flags == 0 then
+    return ImGui.DrawFlags_RoundCornersNone
+  end
+
+  return flags
+end
+
+-- ============================================================================
 -- DRAWING
 -- ============================================================================
 
@@ -96,13 +132,14 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
   local dt = ImGui.GetDeltaTime(ctx)
   local mx, my = ImGui.GetMousePos(ctx)
 
-  -- Split button layout
+  -- Split button layout (overlap by 1px to share border)
   local arrow_width = 20
-  local button_width = width - arrow_width
+  local button_width = width - arrow_width + 1  -- +1 for overlap
+  local arrow_x = x + button_width - 1  -- Start 1px before button ends
 
   -- Check hover states
-  local button_hovered = mx >= x and mx < x + button_width and my >= y and my < y + height
-  local arrow_hovered = mx >= x + button_width and mx < x + width and my >= y and my < y + height
+  local button_hovered = mx >= x and mx < x + button_width - 1 and my >= y and my < y + height
+  local arrow_hovered = mx >= arrow_x and mx < x + width and my >= y and my < y + height
 
   -- Get config
   local is_toggled = config.is_toggled or false
@@ -111,72 +148,106 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
   -- Update animation
   instance:update(dt, button_hovered, arrow_hovered, is_toggled)
 
-  -- Use button config colors
-  local bg_off = config.bg_color
-  local bg_off_hover = config.bg_hover_color or config.bg_color
-  local bg_on = config.bg_on_color or config.bg_color
-  local bg_on_hover = config.bg_on_hover_color or bg_on
+  -- Calculate animated colors (same pattern as button.lua)
+  local bg_color, border_inner, border_outer, text_color
 
-  local border_off = config.border_outer_color
-  local border_on = config.border_outer_on_color or border_off
+  if is_toggled then
+    -- Toggle ON colors
+    bg_color = config.bg_on_color or config.bg_color
+    border_inner = config.border_inner_on_color or config.border_inner_color
+    border_outer = config.border_outer_on_color or config.border_outer_color
+    text_color = config.text_on_color or config.text_color
 
-  local text_off = config.text_color
-  local text_on = config.text_on_color or text_off
+    -- Button part hover
+    if instance.button_hover_alpha > 0.01 then
+      local button_bg_hover = config.bg_on_hover_color or bg_color
+      local button_border_hover = config.border_on_hover_color or border_inner
+      local button_text_hover = config.text_on_hover_color or text_color
 
-  -- Button background
-  local button_bg = is_toggled
-    and (button_hovered and bg_on_hover or bg_on)
-    or (button_hovered and bg_off_hover or bg_off)
+      bg_color = Style.RENDER.lerp_color(bg_color, button_bg_hover, instance.button_hover_alpha)
+      border_inner = Style.RENDER.lerp_color(border_inner, button_border_hover, instance.button_hover_alpha)
+      text_color = Style.RENDER.lerp_color(text_color, button_text_hover, instance.button_hover_alpha)
+    end
+  else
+    -- Normal colors
+    bg_color = config.bg_color
+    border_inner = config.border_inner_color
+    border_outer = config.border_outer_color
+    text_color = config.text_color
 
-  -- Arrow background
-  local arrow_bg = is_toggled
-    and (arrow_hovered and bg_on_hover or bg_on)
-    or (arrow_hovered and bg_off_hover or bg_off)
+    -- Button part hover
+    if instance.button_hover_alpha > 0.01 then
+      local button_bg_hover = config.bg_hover_color or bg_color
+      local button_border_hover = config.border_hover_color or border_inner
+      local button_text_hover = config.text_hover_color or text_color
 
-  local border_color = is_toggled and border_on or border_off
-  local text_color = is_toggled and text_on or text_off
+      bg_color = Style.RENDER.lerp_color(bg_color, button_bg_hover, instance.button_hover_alpha)
+      border_inner = Style.RENDER.lerp_color(border_inner, button_border_hover, instance.button_hover_alpha)
+      text_color = Style.RENDER.lerp_color(text_color, button_text_hover, instance.button_hover_alpha)
+    end
+  end
 
-  local rounding = 4
+  -- Arrow colors (separate hover state)
+  local arrow_bg = bg_color
+  local arrow_border_inner = border_inner
+  local arrow_text = text_color
 
-  -- Draw button part
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + button_width, y + height, button_bg, rounding, ImGui.DrawFlags_RoundCornersLeft)
-  ImGui.DrawList_AddRect(dl, x, y, x + button_width, y + height, border_color, rounding, ImGui.DrawFlags_RoundCornersLeft, 1)
+  if instance.arrow_hover_alpha > 0.01 then
+    local arrow_bg_hover = is_toggled and (config.bg_on_hover_color or bg_color) or (config.bg_hover_color or bg_color)
+    local arrow_border_hover = is_toggled and (config.border_on_hover_color or border_inner) or (config.border_hover_color or border_inner)
+    local arrow_text_hover = is_toggled and (config.text_on_hover_color or text_color) or (config.text_hover_color or text_color)
 
-  -- Draw arrow part
-  ImGui.DrawList_AddRectFilled(dl, x + button_width, y, x + width, y + height, arrow_bg, rounding, ImGui.DrawFlags_RoundCornersRight)
-  ImGui.DrawList_AddRect(dl, x + button_width, y, x + width, y + height, border_color, rounding, ImGui.DrawFlags_RoundCornersRight, 1)
+    arrow_bg = Style.RENDER.lerp_color(bg_color, arrow_bg_hover, instance.arrow_hover_alpha)
+    arrow_border_inner = Style.RENDER.lerp_color(border_inner, arrow_border_hover, instance.arrow_hover_alpha)
+    arrow_text = Style.RENDER.lerp_color(text_color, arrow_text_hover, instance.arrow_hover_alpha)
+  end
 
-  -- Draw separator line between button and arrow
-  ImGui.DrawList_AddLine(dl, x + button_width, y + 4, x + button_width, y + height - 4, border_color, 1)
+  -- Calculate rounding
+  local rounding = config.rounding or 0
+  if context.corner_rounding then
+    rounding = context.corner_rounding.rounding or rounding
+  end
+  local inner_rounding = math.max(0, rounding - 2)
 
-  -- Draw text
-  local tw, th = ImGui.CalcTextSize(ctx, label)
-  ImGui.DrawList_AddText(dl, x + (button_width - tw) / 2, y + (height - th) / 2, text_color, label)
+  -- Corner flags
+  local button_corner_flags = get_corner_flags(context.corner_rounding, true)
+  local arrow_corner_flags = get_corner_flags(context.corner_rounding, false)
+
+  -- Draw button part (left side)
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + button_width, y + height, bg_color, inner_rounding, button_corner_flags)
+  ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + button_width - 1, y + height - 1, border_inner, inner_rounding, button_corner_flags, 1)
+  ImGui.DrawList_AddRect(dl, x, y, x + button_width, y + height, border_outer, inner_rounding, button_corner_flags, 1)
+
+  -- Draw arrow part (right side, overlaps by 1px)
+  ImGui.DrawList_AddRectFilled(dl, arrow_x, y, x + width, y + height, arrow_bg, inner_rounding, arrow_corner_flags)
+  ImGui.DrawList_AddRect(dl, arrow_x + 1, y + 1, x + width - 1, y + height - 1, arrow_border_inner, inner_rounding, arrow_corner_flags, 1)
+  ImGui.DrawList_AddRect(dl, arrow_x, y, x + width, y + height, border_outer, inner_rounding, arrow_corner_flags, 1)
+
+  -- Draw button text
+  local tw = ImGui.CalcTextSize(ctx, label)
+  local text_x = x + (button_width - 1 - tw) * 0.5  -- -1 to account for overlap
+  local text_y = y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5
+  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
 
   -- Draw dropdown arrow (▼)
   local arrow_size = 6
-  local arrow_x = x + button_width + (arrow_width - arrow_size) / 2
-  local arrow_y = y + (height - arrow_size / 2) / 2
+  local arrow_icon_x = arrow_x + (arrow_width - arrow_size) * 0.5
+  local arrow_icon_y = y + (height - arrow_size * 0.5) * 0.5
 
-  -- Triangle pointing down
   ImGui.DrawList_AddTriangleFilled(dl,
-    arrow_x, arrow_y,  -- Top left
-    arrow_x + arrow_size, arrow_y,  -- Top right
-    arrow_x + arrow_size / 2, arrow_y + arrow_size / 2,  -- Bottom center
-    text_color
+    arrow_icon_x, arrow_icon_y,
+    arrow_icon_x + arrow_size, arrow_icon_y,
+    arrow_icon_x + arrow_size * 0.5, arrow_icon_y + arrow_size * 0.5,
+    arrow_text
   )
 
   -- Handle clicks
   ImGui.SetCursorScreenPos(ctx, x, y)
-
-  -- Button click
-  ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, context.unique_id .. "_button", button_width, height)
+  ImGui.InvisibleButton(ctx, "##" .. context.unique_id .. "_button", button_width - 1, height)
   local button_clicked = ImGui.IsItemClicked(ctx, 0)
 
-  -- Arrow click (dropdown)
-  ImGui.SetCursorScreenPos(ctx, x + button_width, y)
-  ImGui.InvisibleButton(ctx, context.unique_id .. "_arrow", arrow_width, height)
+  ImGui.SetCursorScreenPos(ctx, arrow_x, y)
+  ImGui.InvisibleButton(ctx, "##" .. context.unique_id .. "_arrow", arrow_width, height)
   local arrow_clicked = ImGui.IsItemClicked(ctx, 0)
 
   -- Tooltips
@@ -184,39 +255,48 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
     ImGui.SetTooltip(ctx, config.tooltip)
   end
 
-  -- Trigger callbacks
+  -- Trigger button callback
   if button_clicked and config.on_click then
     config.on_click()
   end
 
   -- Handle dropdown
   if arrow_clicked then
-    ImGui.OpenPopup(ctx, context.unique_id .. "_dropdown")
+    ImGui.OpenPopup(ctx, context.unique_id .. "_menu")
   end
 
-  -- Render dropdown menu
-  if config.dropdown_options and ImGui.BeginPopup(ctx, context.unique_id .. "_dropdown") then
-    for _, option in ipairs(config.dropdown_options) do
-      if option.type == "checkbox" then
-        local rv, new_checked = ImGui.Checkbox(ctx, option.label, option.checked or false)
-        if rv and option.on_change then
-          option.on_change(option.value, new_checked)
-        end
-      elseif option.type == "item" then
-        if ImGui.MenuItem(ctx, option.label) then
-          if option.on_click then
-            option.on_click(option.value)
+  -- Render dropdown using context_menu.lua
+  if config.dropdown_options then
+    if ContextMenu.begin(ctx, context.unique_id .. "_menu") then
+      for _, option in ipairs(config.dropdown_options) do
+        if option.type == "separator" then
+          ContextMenu.separator(ctx)
+        elseif option.type == "item" then
+          if ContextMenu.item(ctx, option.label) then
+            if option.on_click then
+              option.on_click(option.value)
+            end
           end
         end
       end
+      ContextMenu.end_menu(ctx)
     end
-    ImGui.EndPopup(ctx)
   end
 
-  return width
+  return width, button_clicked
 end
 
-function M.measure(ctx, config, state)
+function M.measure(ctx, user_config, state)
+  local base = Style.BUTTON
+  if user_config then
+    if user_config.preset_name and Style[user_config.preset_name] then
+      base = Style.apply_defaults(base, Style[user_config.preset_name])
+    elseif user_config.preset and type(user_config.preset) == 'table' then
+      base = Style.apply_defaults(base, user_config.preset)
+    end
+  end
+  local config = Style.apply_defaults(base, user_config)
+
   return config.width or 100
 end
 
