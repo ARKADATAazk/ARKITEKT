@@ -262,4 +262,61 @@ function M.set_region_colors_batch(proj, rids, rgba_color)
   return success_count
 end
 
+--- Rename multiple regions in a single batch operation
+--- @param proj number Project (0 for current)
+--- @param renames table Array of {rid = number, name = string} entries
+--- @return number count Number of successfully updated regions
+function M.set_region_names_batch(proj, renames)
+  proj = proj or 0
+
+  if not renames or #renames == 0 then
+    return 0
+  end
+
+  -- Single undo block for all changes
+  reaper.Undo_BeginBlock()
+
+  local success_count = 0
+
+  -- Update all regions
+  for _, entry in ipairs(renames) do
+    local target_rid = entry.rid
+    local new_name = entry.name
+
+    local rgn = M.get_region_by_rid(proj, target_rid)
+    if rgn then
+      -- Convert RGBA color back to REAPER's native format
+      local native_color = convert_rgba_to_reaper_color(rgn.color)
+
+      local success = reaper.SetProjectMarkerByIndex2(
+        proj,
+        rgn.index,
+        true,
+        rgn.start,
+        rgn["end"],
+        target_rid,
+        new_name,
+        native_color,
+        0
+      )
+      if success then
+        success_count = success_count + 1
+      end
+    end
+  end
+
+  if success_count > 0 then
+    reaper.MarkProjectDirty(proj)
+  end
+
+  reaper.Undo_EndBlock("Rename regions", -1)
+
+  -- Single UI refresh for all changes
+  reaper.UpdateTimeline()
+  reaper.UpdateArrange()
+  reaper.TrackList_AdjustWindows(false)
+
+  return success_count
+end
+
 return M
