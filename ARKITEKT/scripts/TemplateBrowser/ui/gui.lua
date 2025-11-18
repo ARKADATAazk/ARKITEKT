@@ -428,25 +428,58 @@ local function draw_folder_tree(ctx, state, config)
       end
     end,
 
-    -- Template drop callback
-    on_drop_template = function(template_uuid, target_node)
-      -- Find template by UUID
-      local template = nil
-      for _, tmpl in ipairs(state.templates) do
-        if tmpl.uuid == template_uuid then
-          template = tmpl
-          break
+    -- Template drop callback (supports multi-drag)
+    on_drop_template = function(template_payload, target_node)
+      if not target_node then return end
+
+      -- Parse payload (can be single UUID or newline-separated UUIDs)
+      local uuids = {}
+      if template_payload:find("\n") then
+        -- Multi-template drag
+        for uuid in template_payload:gmatch("[^\n]+") do
+          table.insert(uuids, uuid)
+        end
+      else
+        -- Single template
+        table.insert(uuids, template_payload)
+      end
+
+      -- Find templates and move them
+      local templates_to_move = {}
+      for _, uuid in ipairs(uuids) do
+        for _, tmpl in ipairs(state.templates) do
+          if tmpl.uuid == uuid then
+            table.insert(templates_to_move, tmpl)
+            break
+          end
         end
       end
 
-      if not template or not target_node then return end
+      if #templates_to_move == 0 then return end
 
-      -- Move template to target folder
-      local success = FileOps.move_template(template.path, target_node.full_path)
-      if success then
-        -- Rescan templates
+      -- Move all templates
+      local success_count = 0
+      local total_count = #templates_to_move
+      for _, tmpl in ipairs(templates_to_move) do
+        local success = FileOps.move_template(tmpl.path, target_node.full_path)
+        if success then
+          success_count = success_count + 1
+        else
+          state.set_status("Failed to move template: " .. tmpl.name, "error")
+        end
+      end
+
+      -- Rescan if any succeeded
+      if success_count > 0 then
         local Scanner = require('TemplateBrowser.domain.scanner')
         Scanner.scan_templates(state)
+
+        -- Success message
+        if total_count > 1 then
+          state.set_status("Moved " .. success_count .. " of " .. total_count .. " templates to " .. target_node.name, "success")
+        else
+          state.set_status("Moved " .. templates_to_move[1].name .. " to " .. target_node.name, "success")
+        end
       end
     end,
 

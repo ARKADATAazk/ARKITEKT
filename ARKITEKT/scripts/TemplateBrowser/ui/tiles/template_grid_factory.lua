@@ -67,19 +67,32 @@ function M.create(get_templates, metadata, animator, get_tile_width, on_select, 
         end
       end,
 
-      -- Drag start (for drag-drop to tracks)
-      drag_start = function(item_keys)
+      -- Drag start (for drag-drop to folders and tracks)
+      drag_start = function(item_keys, grid)
         local items = {}
+        local uuids = {}
+
         for _, key in ipairs(item_keys) do
           local uuid = key:match("template_(.+)")  -- Keep as string!
           local templates = get_templates()
           for _, tmpl in ipairs(templates) do
             if tmpl.uuid == uuid then
               table.insert(items, tmpl)
+              table.insert(uuids, uuid)
               break
             end
           end
         end
+
+        -- Set ImGui drag-drop payload for external drops (to folders)
+        if grid then
+          grid.drag_payload_type = "TEMPLATE"
+          grid.drag_payload_data = table.concat(uuids, "\n")  -- Multiple UUIDs separated by newline
+          grid.drag_label = #items > 1
+            and ("Move " .. #items .. " templates")
+            or ("Move: " .. items[1].name)
+        end
+
         return items
       end,
     },

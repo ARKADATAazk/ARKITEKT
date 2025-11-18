@@ -378,7 +378,7 @@ function M.check_start_drag(grid, ctx)
     end
 
     if grid.behaviors and grid.behaviors.drag_start then
-      grid.behaviors.drag_start(grid.drag.ids)
+      grid.behaviors.drag_start(grid.drag.ids, grid)
     end
   end
 end
