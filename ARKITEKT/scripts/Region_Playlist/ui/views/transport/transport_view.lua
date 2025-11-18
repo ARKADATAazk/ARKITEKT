@@ -266,6 +266,8 @@ function TransportView:build_quantize_dropdown(bridge_state)
 end
 
 function TransportView:build_playback_dropdown(bridge_state)
+  local current_shuffle_mode = bridge_state.shuffle_mode or "true_shuffle"
+
   return {
     type = "dropdown_field",
     id = "transport_playback",
@@ -276,6 +278,30 @@ function TransportView:build_playback_dropdown(bridge_state)
       current_value = nil,
       button_label = "Playback",  -- Label shown on button (not in dropdown menu)
       options = {
+        {
+          value = "shuffle",
+          label = "Shuffle",
+          checkbox = true,
+          checked = bridge_state.shuffle_enabled or false,
+        },
+        {
+          value = "true_shuffle",
+          label = "  True Shuffle",
+          checkbox = true,
+          checked = current_shuffle_mode == "true_shuffle",
+        },
+        {
+          value = "random",
+          label = "  Random",
+          checkbox = true,
+          checked = current_shuffle_mode == "random",
+        },
+        {
+          value = "reshuffle_now",
+          label = "  Re-shuffle Now",
+          checkbox = false,
+        },
+        { value = nil, label = "", separator = true },
         {
           value = "override_transport",
           label = "Override Transport",
@@ -289,12 +315,26 @@ function TransportView:build_playback_dropdown(bridge_state)
           checked = bridge_state.follow_viewport or false,
         },
       },
+      on_change = function(value)
+        local bridge = self.state.get_bridge()
+        if value == "reshuffle_now" then
+          local engine = bridge.engine
+          if engine and engine:get_shuffle_enabled() then
+            engine:set_shuffle_enabled(false)
+            engine:set_shuffle_enabled(true)
+          end
+        elseif value == "true_shuffle" or value == "random" then
+          bridge:set_shuffle_mode(value)
+        end
+      end,
       on_checkbox_change = function(value, new_checked)
         local bridge = self.state.get_bridge()
         local engine = bridge.engine
         if not engine then return end
 
-        if value == "override_transport" then
+        if value == "shuffle" then
+          bridge:set_shuffle_enabled(new_checked)
+        elseif value == "override_transport" then
           engine:set_transport_override(new_checked)
         elseif value == "follow_viewport" then
           engine:set_follow_viewport(new_checked)
@@ -304,8 +344,77 @@ function TransportView:build_playback_dropdown(bridge_state)
   }
 end
 
+-- Helper function to draw shuffle context menu
+function TransportView:draw_shuffle_context_menu(ctx)
+  local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
+  local bridge = self.state.get_bridge()
+  local engine = bridge and bridge.engine
+
+  if ContextMenu.begin(ctx, "shuffle_context_menu") then
+    local current_mode = engine and engine:get_shuffle_mode() or "true_shuffle"
+
+    -- Shuffle mode selection (mutually exclusive checkboxes)
+    if ContextMenu.checkbox_item(ctx, "True Shuffle", current_mode == "true_shuffle") then
+      if bridge then
+        bridge:set_shuffle_mode("true_shuffle")
+      end
+    end
+
+    if ContextMenu.checkbox_item(ctx, "Random", current_mode == "random") then
+      if bridge then
+        bridge:set_shuffle_mode("random")
+      end
+    end
+
+    ContextMenu.separator(ctx)
+
+    -- Re-shuffle Now
+    if ContextMenu.item(ctx, "Re-shuffle Now") then
+      if engine and engine:get_shuffle_enabled() then
+        engine:set_shuffle_enabled(false)
+        engine:set_shuffle_enabled(true)
+      end
+    end
+
+    ContextMenu.end_menu(ctx)
+  end
+end
+
 function TransportView:build_playback_buttons(bridge_state)
   return {
+    {
+      type = "custom",
+      id = "transport_shuffle",
+      align = "center",
+      width = 60,
+      config = {
+        on_draw = function(ctx, dl, x, y, width, height, state)
+          local Button = require('rearkitekt.gui.widgets.primitives.button')
+          local bridge = self.state.get_bridge()
+          local engine = bridge and bridge.engine
+
+          -- Draw button
+          Button.draw(ctx, dl, x, y, width, height, {
+            label = "Shuffle",
+            is_toggled = bridge_state.shuffle_enabled or false,
+            preset_name = "BUTTON_TOGGLE_WHITE",
+            tooltip = "Left-click: Toggle Shuffle\nRight-click: Shuffle Options",
+            on_click = function()
+              if engine then
+                local current_state = engine:get_shuffle_enabled()
+                engine:set_shuffle_enabled(not current_state)
+              end
+            end,
+            on_right_click = function()
+              ImGui.OpenPopup(ctx, "shuffle_context_menu")
+            end,
+          }, state)
+
+          -- Draw context menu
+          self:draw_shuffle_context_menu(ctx)
+        end,
+      },
+    },
     {
       type = "button",
       id = "transport_override",
@@ -449,6 +558,7 @@ end
 function TransportView:build_combined_pb_dropdown(bridge_state)
   -- Combine quantize options and playback checkboxes into single dropdown
   local options = {}
+  local current_shuffle_mode = bridge_state.shuffle_mode or "true_shuffle"
 
   -- Add quantize separator and options
   options[#options + 1] = { value = nil, label = "", separator = "Quantize" }
@@ -458,6 +568,29 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
 
   -- Add playback separator and options
   options[#options + 1] = { value = nil, label = "", separator = "Playback" }
+  options[#options + 1] = {
+    value = "shuffle",
+    label = "Shuffle",
+    checkbox = true,
+    checked = bridge_state.shuffle_enabled or false,
+  }
+  options[#options + 1] = {
+    value = "true_shuffle",
+    label = "  True Shuffle",
+    checkbox = true,
+    checked = current_shuffle_mode == "true_shuffle",
+  }
+  options[#options + 1] = {
+    value = "random",
+    label = "  Random",
+    checkbox = true,
+    checked = current_shuffle_mode == "random",
+  }
+  options[#options + 1] = {
+    value = "reshuffle_now",
+    label = "  Re-shuffle Now",
+    checkbox = false,
+  }
   options[#options + 1] = {
     value = "override_transport",
     label = "Override Transport",
@@ -483,9 +616,20 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
       options = options,
       enable_mousewheel = true,
       on_change = function(new_value)
+        local bridge = self.state.get_bridge()
+        -- Handle Re-shuffle Now
+        if new_value == "reshuffle_now" then
+          local engine = bridge.engine
+          if engine and engine:get_shuffle_enabled() then
+            engine:set_shuffle_enabled(false)
+            engine:set_shuffle_enabled(true)
+          end
+        -- Handle shuffle mode changes
+        elseif new_value == "true_shuffle" or new_value == "random" then
+          bridge:set_shuffle_mode(new_value)
         -- Handle quantize mode changes
-        if new_value and new_value ~= "override_transport" and new_value ~= "follow_viewport" then
-          self.state.get_bridge():set_quantize_mode(new_value)
+        elseif new_value and new_value ~= "shuffle" and new_value ~= "override_transport" and new_value ~= "follow_viewport" then
+          bridge:set_quantize_mode(new_value)
         end
       end,
       on_checkbox_change = function(value, new_checked)
@@ -493,7 +637,9 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
         local engine = bridge.engine
         if not engine then return end
 
-        if value == "override_transport" then
+        if value == "shuffle" then
+          bridge:set_shuffle_enabled(new_checked)
+        elseif value == "override_transport" then
           engine:set_transport_override(new_checked)
         elseif value == "follow_viewport" then
           engine:set_follow_viewport(new_checked)
@@ -557,6 +703,7 @@ function TransportView:draw(ctx, shell_state, is_blocking)
     loop_enabled = bridge:get_loop_playlist(),
     override_enabled = engine and engine:get_transport_override() or false,
     follow_viewport = engine and engine:get_follow_viewport() or false,
+    shuffle_enabled = engine and engine:get_shuffle_enabled() or false,
   }
 
   -- Inject icon font, size, and blocking state into corner buttons

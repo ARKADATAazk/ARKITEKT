@@ -23,7 +23,7 @@ M.CONFIG = {
   length_padding_x = 4,
   length_padding_y = 2,
   length_font_size = 0.82,
-  length_offset_x = 3,
+  length_offset_x = 5,  -- Additional offset from right edge
   playlist_chip_radius = 4,
   chip_offset = { x = 0, y = 0 },
   text_padding_left = 6,
@@ -175,7 +175,7 @@ function M.draw_marching_ants(dl, rect, color, fx_config)
     fx_config.ants_thickness or 1, M.CONFIG.rounding, fx_config.ants_dash, fx_config.ants_gap, fx_config.ants_speed)
 end
 
-function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_bound_x, grid, rect)
+function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_bound_x, grid, rect, item_key_override)
   local fx_config = TileFXConfig.get()
   local accent_color = Colors.with_alpha(Colors.same_hue_variant(base_color, fx_config.index_saturation, fx_config.index_brightness, 0xFF), text_alpha)
   local name_color = Colors.with_alpha(Colors.adjust_brightness(fx_config.name_base_color, fx_config.name_brightness), text_alpha)
@@ -208,9 +208,10 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   -- Check if inline editing mode (if grid is provided)
   if grid and rect then
     local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
-    local item_key = grid.key and grid.key(region) or region.rid
+    -- Use override key if provided, otherwise try to get from grid.key function
+    local item_key = item_key_override or (grid.key and grid.key(region)) or region.rid
     local is_editing, edited_text = GridInput.handle_inline_edit_input(grid, ctx, item_key,
-      {rect[1] + name_start_x - pos.x, rect[2], rect[3], rect[4]}, name_str)
+      {name_start_x, rect[2], right_bound_x, rect[4]}, name_str, base_color)
 
     if is_editing then
       -- Don't draw text while editing (InputText is drawn instead)
@@ -222,7 +223,7 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
 end
 
-function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, right_bound_x, name_color_override, actual_height, rect, grid)
+function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, right_bound_x, name_color_override, actual_height, rect, grid, base_color, item_key_override)
   local fx_config = TileFXConfig.get()
 
   local text_height = ImGui.CalcTextSize(ctx, "Tg")
@@ -269,9 +270,12 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
   -- Check if inline editing mode (if grid is provided)
   if grid and rect then
     local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
-    local item_key = grid.key and grid.key(playlist_data) or playlist_data.id
+    -- Use override key if provided, otherwise try to get from grid.key function
+    local item_key = item_key_override or (grid.key and grid.key(playlist_data)) or playlist_data.id
+    -- Use chip color for inline editing if available, otherwise use base_color
+    local edit_color = playlist_data.chip_color or base_color
     local is_editing, edited_text = GridInput.handle_inline_edit_input(grid, ctx, item_key,
-      {rect[1] + name_start_x - pos.x, rect[2], rect[3], rect[4]}, name_str)
+      {name_start_x, rect[2], right_bound_x, rect[4]}, name_str, edit_color)
 
     if is_editing then
       -- Don't draw text while editing (InputText is drawn instead)
@@ -295,7 +299,7 @@ function M.draw_length_display(ctx, dl, rect, region, base_color, text_alpha)
   local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
 
   -- Right-aligned: longer text extends left, position stays fixed relative to right edge
-  local length_x = x2 - length_w - scaled_margin
+  local length_x = x2 - length_w - scaled_margin - M.CONFIG.length_offset_x
   local length_y = y2 - length_h - scaled_margin
 
   local length_color = Colors.same_hue_variant(base_color, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
@@ -322,7 +326,7 @@ function M.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color
   local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
 
   -- Right-aligned: longer text extends left, position stays fixed relative to right edge
-  local length_x = x2 - length_w - scaled_margin
+  local length_x = x2 - length_w - scaled_margin - M.CONFIG.length_offset_x
   local length_y = y2 - length_h - scaled_margin
 
   -- Use chip color for playlist length display (same as region tiles use region color)

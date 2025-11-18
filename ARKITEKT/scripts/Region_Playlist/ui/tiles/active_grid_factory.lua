@@ -288,7 +288,18 @@ local function create_behaviors(rt)
           if rt.on_active_batch_rename then
             rt.on_active_batch_rename(selected_keys, pattern)
           end
-        end)
+        end, {
+          on_rename_and_recolor = function(pattern, color)
+            if rt.on_active_batch_rename_and_recolor then
+              rt.on_active_batch_rename_and_recolor(selected_keys, pattern, color)
+            end
+          end,
+          on_recolor = function(color)
+            if rt.on_active_batch_recolor then
+              rt.on_active_batch_recolor(selected_keys, color)
+            end
+          end
+        })
       end
     end,
   }

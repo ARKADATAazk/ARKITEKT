@@ -93,32 +93,84 @@ local function create_behaviors(rt)
       end
     end,
     
-    double_click = function(key)
+    -- Inline editing: Double-click to edit single tile
+    start_inline_edit = function(key)
+      local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
       local pool_items = rt.pool_grid.get_items()
-      local items_by_key = {}
       for _, item in ipairs(pool_items) do
-        local item_key = rt.pool_grid.key(item)
-        items_by_key[item_key] = item
-      end
-      
-      local item = items_by_key[key]
-      if item and item.is_disabled then
-        return
-      end
-      
-      local rid = tonumber(key:match("pool_(%d+)"))
-      if rid and rt.on_pool_double_click then
-        rt.on_pool_double_click(rid)
-        return
-      end
-      
-      local playlist_id = key:match("pool_playlist_(.+)")
-      if playlist_id and rt.on_pool_playlist_double_click then
-        rt.on_pool_playlist_double_click(playlist_id)
-        return
+        if rt.pool_grid.key(item) == key then
+          local current_name
+          if item.id and item.items then
+            -- It's a playlist
+            local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.id)
+            current_name = playlist and playlist.name or "Playlist"
+          else
+            -- It's a region
+            local State = require("Region_Playlist.core.app_state")
+            local region = State.get_region_by_rid(item.rid)
+            current_name = region and region.name or "Region"
+          end
+          GridInput.start_inline_edit(rt.pool_grid, key, current_name)
+          break
+        end
       end
     end,
-    
+
+    -- Inline edit complete callback
+    on_inline_edit_complete = function(key, new_name)
+      if rt.on_pool_rename then
+        rt.on_pool_rename(key, new_name)
+      end
+    end,
+
+    -- F2: Batch rename with wildcards
+    rename = function(selected_keys)
+      if not selected_keys or #selected_keys == 0 then return end
+
+      -- Single selection: start inline editing
+      if #selected_keys == 1 then
+        local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
+        local key = selected_keys[1]
+        local pool_items = rt.pool_grid.get_items()
+        for _, item in ipairs(pool_items) do
+          if rt.pool_grid.key(item) == key then
+            local current_name
+            if item.id and item.items then
+              -- It's a playlist
+              local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.id)
+              current_name = playlist and playlist.name or "Playlist"
+            else
+              -- It's a region
+              local State = require("Region_Playlist.core.app_state")
+              local region = State.get_region_by_rid(item.rid)
+              current_name = region and region.name or "Region"
+            end
+            GridInput.start_inline_edit(rt.pool_grid, key, current_name)
+            break
+          end
+        end
+      else
+        -- Multiple selection: open batch rename modal
+        local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
+        BatchRenameModal.open(#selected_keys, function(pattern)
+          if rt.on_pool_batch_rename then
+            rt.on_pool_batch_rename(selected_keys, pattern)
+          end
+        end, {
+          on_rename_and_recolor = function(pattern, color)
+            if rt.on_pool_batch_rename_and_recolor then
+              rt.on_pool_batch_rename_and_recolor(selected_keys, pattern, color)
+            end
+          end,
+          on_recolor = function(color)
+            if rt.on_pool_batch_recolor then
+              rt.on_pool_batch_recolor(selected_keys, color)
+            end
+          end
+        })
+      end
+    end,
+
     can_drag_item = function(key)
       local pool_items = rt.pool_grid.get_items()
       for _, item in ipairs(pool_items) do
@@ -200,10 +252,10 @@ local function create_copy_mode_check(rt)
 end
 
 local function create_render_tile(rt, tile_config)
-  return function(ctx, rect, region, state)
+  return function(ctx, rect, region, state, grid)
     local tile_height = rect[4] - rect[2]
-    PoolTile.render(ctx, rect, region, state, rt.pool_animator, rt.hover_config, 
-                    tile_height, tile_config.border_thickness)
+    PoolTile.render(ctx, rect, region, state, rt.pool_animator, rt.hover_config,
+                    tile_height, tile_config.border_thickness, grid)
   end
 end
 

@@ -463,16 +463,16 @@ end
 
 function M.restore_snapshot(snapshot)
   if not snapshot then return false end
-  
+
   if M.bridge and M.bridge.engine and M.bridge.engine.is_playing then
     M.bridge:stop()
   end
-  
-  local restored_playlists, restored_active = UndoBridge.restore_snapshot(
-    snapshot, 
+
+  local restored_playlists, restored_active, changes = UndoBridge.restore_snapshot(
+    snapshot,
     M.region_index
   )
-  
+
   M.playlists = restored_playlists
   M.active_playlist = restored_active
 
@@ -480,33 +480,87 @@ function M.restore_snapshot(snapshot)
 
   M.persist()
   M.clear_pending()
+
+  -- Refresh region cache to show updated region colors/names in UI
+  M.refresh_regions()
+
   if M.bridge then
     M.bridge:get_sequence()
   end
-  
+
   if M.on_state_restored then
     M.on_state_restored()
   end
-  
-  return true
+
+  return true, changes
 end
 
 function M.undo()
   if not M.undo_manager:can_undo() then
     return false
   end
-  
+
   local snapshot = M.undo_manager:undo()
-  return M.restore_snapshot(snapshot)
+  local success, changes = M.restore_snapshot(snapshot)
+
+  if success and changes then
+    -- Build status message from changes
+    local parts = {}
+    if changes.playlists_count > 0 then
+      table.insert(parts, string.format("%d playlist%s", changes.playlists_count, changes.playlists_count ~= 1 and "s" or ""))
+    end
+    if changes.items_count > 0 then
+      table.insert(parts, string.format("%d item%s", changes.items_count, changes.items_count ~= 1 and "s" or ""))
+    end
+    if changes.regions_renamed > 0 then
+      table.insert(parts, string.format("%d region%s renamed", changes.regions_renamed, changes.regions_renamed ~= 1 and "s" or ""))
+    end
+    if changes.regions_recolored > 0 then
+      table.insert(parts, string.format("%d region%s recolored", changes.regions_recolored, changes.regions_recolored ~= 1 and "s" or ""))
+    end
+
+    if #parts > 0 then
+      M.set_state_change_notification("Undo: " .. table.concat(parts, ", "))
+    else
+      M.set_state_change_notification("Undo")
+    end
+  end
+
+  return success
 end
 
 function M.redo()
   if not M.undo_manager:can_redo() then
     return false
   end
-  
+
   local snapshot = M.undo_manager:redo()
-  return M.restore_snapshot(snapshot)
+  local success, changes = M.restore_snapshot(snapshot)
+
+  if success and changes then
+    -- Build status message from changes
+    local parts = {}
+    if changes.playlists_count > 0 then
+      table.insert(parts, string.format("%d playlist%s", changes.playlists_count, changes.playlists_count ~= 1 and "s" or ""))
+    end
+    if changes.items_count > 0 then
+      table.insert(parts, string.format("%d item%s", changes.items_count, changes.items_count ~= 1 and "s" or ""))
+    end
+    if changes.regions_renamed > 0 then
+      table.insert(parts, string.format("%d region%s renamed", changes.regions_renamed, changes.regions_renamed ~= 1 and "s" or ""))
+    end
+    if changes.regions_recolored > 0 then
+      table.insert(parts, string.format("%d region%s recolored", changes.regions_recolored, changes.regions_recolored ~= 1 and "s" or ""))
+    end
+
+    if #parts > 0 then
+      M.set_state_change_notification("Redo: " .. table.concat(parts, ", "))
+    else
+      M.set_state_change_notification("Redo")
+    end
+  end
+
+  return success
 end
 
 function M.can_undo()

@@ -33,20 +33,20 @@ end
 
 function M.render_color_fill(dl, x1, y1, x2, y2, base_color, opacity, saturation, brightness, rounding)
   local r, g, b, _ = Colors.rgba_to_components(base_color)
-  
+
   if saturation ~= 1.0 then
     local gray = r * 0.299 + g * 0.587 + b * 0.114
     r = (r + (gray - r) * (1 - saturation))//1
     g = (g + (gray - g) * (1 - saturation))//1
     b = (b + (gray - b) * (1 - saturation))//1
   end
-  
+
   if brightness ~= 1.0 then
     r = min(255, max(0, (r * brightness)//1))
     g = min(255, max(0, (g * brightness)//1))
     b = min(255, max(0, (b * brightness)//1))
   end
-  
+
   local alpha = (255 * opacity)//1
   local fill_color = Colors.components_to_rgba(r, g, b, alpha)
   AddRectFilled(dl, x1, y1, x2, y2, fill_color, rounding, DrawFlags_RoundCornersAll)
@@ -54,26 +54,26 @@ end
 
 function M.render_gradient(dl, x1, y1, x2, y2, base_color, intensity, opacity, rounding)
   local r, g, b, _ = Colors.rgba_to_components(base_color)
-  
+
   local boost_top = 1.0 + intensity
   local boost_bottom = 1.0 - (intensity * 0.4)
-  
+
   local r_top = min(255, (r * boost_top)//1)
   local g_top = min(255, (g * boost_top)//1)
   local b_top = min(255, (b * boost_top)//1)
-  
+
   local r_bottom = max(0, (r * boost_bottom)//1)
   local g_bottom = max(0, (g * boost_bottom)//1)
   local b_bottom = max(0, (b * boost_bottom)//1)
-  
+
   local alpha = (255 * opacity)//1
   local color_top = Colors.components_to_rgba(r_top, g_top, b_top, alpha)
   local color_bottom = Colors.components_to_rgba(r_bottom, g_bottom, b_bottom, alpha)
-  
+
   -- Inset on all sides to stay inside rounded corners (AddRectFilledMultiColor doesn't support corner flags)
   local inset = min(2, rounding * 0.3)
-  PushClipRect(dl, x1, y1, x2, y2, true)
-  AddRectFilledMultiColor(dl, x1 + inset, y1 + inset, x2 - inset, y2 - inset,
+  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
+  ImGui.DrawList_AddRectFilledMultiColor(dl, x1 + inset, y1 + inset, x2 - inset, y2 - inset,
     color_top, color_top, color_bottom, color_bottom)
   PopClipRect(dl)
 end
@@ -82,20 +82,20 @@ function M.render_specular(dl, x1, y1, x2, y2, base_color, strength, coverage, r
   local height = y2 - y1
   local band_height = height * coverage
   local band_y2 = y1 + band_height
-  
+
   local r, g, b, _ = Colors.rgba_to_components(base_color)
-  
+
   local boost = 1.3
   local r_spec = min(255, (r * boost + 20)//1)
   local g_spec = min(255, (g * boost + 20)//1)
   local b_spec = min(255, (b * boost + 20)//1)
-  
+
   local alpha_top = (255 * strength * 0.6)//1
   local alpha_bottom = 0
-  
+
   local color_top = Colors.components_to_rgba(r_spec, g_spec, b_spec, alpha_top)
   local color_bottom = Colors.components_to_rgba(r_spec, g_spec, b_spec, alpha_bottom)
-  
+
   -- Inset on all sides to stay inside rounded corners (AddRectFilledMultiColor doesn't support corner flags)
   local inset = min(2, rounding * 0.3)
   PushClipRect(dl, x1, y1, x2, y2, true)
@@ -127,17 +127,17 @@ end
 
 function M.render_diagonal_stripes(dl, x1, y1, x2, y2, stripe_color, spacing, thickness, opacity, rounding)
   if opacity <= 0 then return end
-  
+
   local width = x2 - x1
   local height = y2 - y1
   local diagonal_length = math.sqrt(width * width + height * height)
-  
+
   local r, g, b, _ = Colors.rgba_to_components(stripe_color)
   local alpha = (255 * opacity)//1
   local line_color = Colors.components_to_rgba(r, g, b, alpha)
 
   -- Push clip rect to keep stripes within tile bounds
-  PushClipRect(dl, x1, y1, x2, y2, true)
+  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
 
   -- Draw diagonal lines at 45 degrees from top-left to bottom-right
   local start_offset = -height
@@ -149,7 +149,7 @@ function M.render_diagonal_stripes(dl, x1, y1, x2, y2, stripe_color, spacing, th
     local line_x2 = x1 + offset + height
     local line_y2 = y2
 
-    AddLine(dl, line_x1, line_y1, line_x2, line_y2, line_color, thickness)
+    ImGui.DrawList_AddLine(dl, line_x1, line_y1, line_x2, line_y2, line_color, thickness)
   end
 
   -- Pop clip rect
@@ -177,23 +177,32 @@ function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fa
   local alpha = (base_alpha * fade_alpha)//1
   local progress_color = Colors.components_to_rgba(r, g, b, alpha)
 
-  -- Match tile shape: round left corners, straight right edge (unless at 100%)
-  local corner_flags = (progress >= 1.0) and DrawFlags_RoundCornersAll or DrawFlags_RoundCornersLeft
+  -- Inset to stay inside rounded corners (same approach as specular highlight)
+  local inset = min(2, rounding * 0.3)
 
-  -- Clip to tile bounds to ensure progress respects rounded corners
-  PushClipRect(dl, x1, y1, x2, y2, true)
-  AddRectFilled(dl, x1, y1, progress_x, y2, progress_color, rounding, corner_flags)
-  PopClipRect(dl)
+  -- Draw progress as a simple square fill with insets to avoid rounded corners
+  ImGui.DrawList_AddRectFilled(dl, x1 + inset, y1 + inset, progress_x, y2 - inset, progress_color, 0, 0)
 
-  -- Draw right edge indicator line (only if not at 100%)
-  if progress < 1.0 then
+  -- Draw 1-pixel vertical cursor line at progress position
+  -- Only show between 2% and 98% to avoid corner clipping issues
+  if progress >= 0.02 and progress < 0.98 then
     local base_bar_alpha = 0xAA
     local bar_alpha = (base_bar_alpha * fade_alpha)//1
     local bar_color = Colors.components_to_rgba(r, g, b, bar_alpha)
     local bar_thickness = 1
-    local inset = min(rounding * 0.5, 2)
 
-    AddLine(dl, progress_x, y1 + inset, progress_x, y2 - inset, bar_color, bar_thickness)
+    -- Cursor line at progress position
+    ImGui.DrawList_AddLine(dl, progress_x, y1 + inset, progress_x, y2 - inset, bar_color, bar_thickness)
+  elseif progress >= 0.98 and progress < 1.0 then
+    -- Fade out cursor from 98% to 100%
+    local fade_range = 1.0 - 0.98
+    local fade_progress = (1.0 - progress) / fade_range
+    local base_bar_alpha = 0xAA
+    local bar_alpha = (base_bar_alpha * fade_alpha * fade_progress)//1
+    local bar_color = Colors.components_to_rgba(r, g, b, bar_alpha)
+    local bar_thickness = 1
+
+    ImGui.DrawList_AddLine(dl, progress_x, y1 + inset, progress_x, y2 - inset, bar_color, bar_thickness)
   end
 end
 
@@ -202,7 +211,7 @@ function M.render_border(dl, x1, y1, x2, y2, base_color, saturation, brightness,
   -- Use override color if provided (for playlist chip color)
   local color_source = border_color_override or base_color
   local border_color = Colors.same_hue_variant(color_source, saturation, brightness, alpha)
-  
+
   if is_selected and glow_layers > 0 then
     local r, g, b, _ = Colors.rgba_to_components(border_color)
     for i = glow_layers, 1, -1 do
@@ -212,25 +221,25 @@ function M.render_border(dl, x1, y1, x2, y2, base_color, saturation, brightness,
     end
   end
 
-  AddRect(dl, x1, y1, x2, y2, border_color, rounding, DrawFlags_RoundCornersAll, thickness)
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, ImGui.DrawFlags_RoundCornersAll, thickness)
 end
 
 function M.render_complete(dl, x1, y1, x2, y2, base_color, config, is_selected, hover_factor, playback_progress, playback_fade, border_color_override, progress_color_override, stripe_color, stripe_enabled)
   hover_factor = hover_factor or 0
   playback_progress = playback_progress or 0
   playback_fade = playback_fade or 0
-  
+
   local fill_opacity = config.fill_opacity + (hover_factor * config.hover_fill_boost)
   local specular_strength = config.specular_strength * (1 + hover_factor * config.hover_specular_boost)
-  
+
   M.render_base_fill(dl, x1, y1, x2, y2, config.rounding or 6)
-  
+
   if playback_progress > 0 and playback_fade > 0 then
     M.render_playback_progress(dl, x1, y1, x2, y2, base_color, playback_progress, playback_fade, config.rounding or 6, progress_color_override)
   end
-  
+
   M.render_color_fill(dl, x1, y1, x2, y2, base_color, fill_opacity, config.fill_saturation, config.fill_brightness, config.rounding or 6)
-  
+
   -- Diagonal stripes for playlists (if enabled)
   if stripe_enabled and stripe_color then
     local stripe_spacing = config.stripe_spacing or 10
@@ -238,13 +247,13 @@ function M.render_complete(dl, x1, y1, x2, y2, base_color, config, is_selected, 
     local stripe_opacity = config.stripe_opacity or 0.08
     M.render_diagonal_stripes(dl, x1, y1, x2, y2, stripe_color, stripe_spacing, stripe_thickness, stripe_opacity, config.rounding or 6)
   end
-  
+
   M.render_gradient(dl, x1, y1, x2, y2, base_color, config.gradient_intensity, config.gradient_opacity, config.rounding or 6)
   M.render_specular(dl, x1, y1, x2, y2, base_color, specular_strength, config.specular_coverage, config.rounding or 6)
   M.render_inner_shadow(dl, x1, y1, x2, y2, config.inner_shadow_strength, config.rounding or 6)
-  
+
   if not (is_selected and config.ants_enabled and config.ants_replace_border) then
-    M.render_border(dl, x1, y1, x2, y2, base_color, config.border_saturation, config.border_brightness, config.border_opacity, 
+    M.render_border(dl, x1, y1, x2, y2, base_color, config.border_saturation, config.border_brightness, config.border_opacity,
       config.border_thickness, config.rounding or 6, is_selected, config.glow_strength, config.glow_layers, border_color_override)
   end
 end

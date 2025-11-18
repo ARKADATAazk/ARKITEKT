@@ -83,20 +83,22 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
       -- Time-based fade: fade in when playing, fade out at 100% or when stopped
       local target_fade = (playback_progress > 0 and playback_progress < 1.0) and 1.0 or 0.0
       local current_fade = animator:get(item.key, 'progress_fade') or 0
-      -- Fast fade in (8.0), faster fade out (0.8 seconds)
-      local fade_speed = (target_fade > current_fade) and 8.0 or (1.0 / 0.8)
+      -- Fade speeds (empirically tuned, not linear with actual duration)
+      local fade_in_speed = 8.0    -- Very fast fade in
+      local fade_out_speed = 6.25  -- ~2 second fade out
+      local fade_speed = (target_fade > current_fade) and fade_in_speed or fade_out_speed
       animator:track(item.key, 'progress_fade', target_fade, fade_speed)
       playback_fade = animator:get(item.key, 'progress_fade')
     else
       -- Not currently playing this item, fade out at last known progress
       playback_progress = animator:get(item.key, 'last_progress') or 0
-      animator:track(item.key, 'progress_fade', 0.0, 1.0 / 0.8)  -- 0.8 second fade out
+      animator:track(item.key, 'progress_fade', 0.0, 6.25)  -- ~2 second fade out
       playback_fade = animator:get(item.key, 'progress_fade')
     end
   else
     -- Playback stopped, fade out at last known progress
     playback_progress = animator:get(item.key, 'last_progress') or 0
-    animator:track(item.key, 'progress_fade', 0.0, 1.0 / 0.8)  -- 0.8 second fade out
+    animator:track(item.key, 'progress_fade', 0.0, 6.25)  -- ~2 second fade out
     playback_fade = animator:get(item.key, 'progress_fade')
   end
   
@@ -124,7 +126,7 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
     local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
-    BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, text_alpha, right_bound_x, grid, rect)
+    BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, text_alpha, right_bound_x, grid, rect, item.key)
   end
   
   if show_badge then
@@ -223,20 +225,22 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
       -- Time-based fade: fade in when playing, fade out at 100% or when stopped
       local target_fade = (playback_progress > 0 and playback_progress < 1.0) and 1.0 or 0.0
       local current_fade = animator:get(item.key, 'progress_fade') or 0
-      -- Fast fade in (8.0), faster fade out (0.8 seconds)
-      local fade_speed = (target_fade > current_fade) and 8.0 or (1.0 / 0.8)
+      -- Fade speeds (empirically tuned, not linear with actual duration)
+      local fade_in_speed = 8.0    -- Very fast fade in
+      local fade_out_speed = 6.25  -- ~2 second fade out
+      local fade_speed = (target_fade > current_fade) and fade_in_speed or fade_out_speed
       animator:track(item.key, 'progress_fade', target_fade, fade_speed)
       playback_fade = animator:get(item.key, 'progress_fade')
     else
       -- Not currently playing this playlist, fade out at last known progress
       playback_progress = animator:get(item.key, 'last_progress') or 0
-      animator:track(item.key, 'progress_fade', 0.0, 1.0 / 0.8)  -- 0.8 second fade out
+      animator:track(item.key, 'progress_fade', 0.0, 6.25)  -- ~2 second fade out
       playback_fade = animator:get(item.key, 'progress_fade')
     end
   else
     -- Playback stopped, fade out at last known progress
     playback_progress = animator:get(item.key, 'last_progress') or 0
-    animator:track(item.key, 'progress_fade', 0.0, 1.0 / 0.8)  -- 0.8 second fade out
+    animator:track(item.key, 'progress_fade', 0.0, 6.25)  -- ~2 second fade out
     playback_fade = animator:get(item.key, 'progress_fade')
   end
 
@@ -267,7 +271,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
     local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
-    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, nil, actual_height, rect, grid)
+    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, nil, actual_height, rect, grid, base_color, item.key)
   end
 
   if show_badge then

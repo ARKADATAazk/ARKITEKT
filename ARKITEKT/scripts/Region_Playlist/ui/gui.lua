@@ -129,14 +129,261 @@ function M.create(State, AppConfig, settings)
     -- Single item rename (inline editing)
     on_active_rename = function(item_key, new_name)
       self.controller:rename_item(State.get_active_playlist_id(), item_key, new_name)
+      -- Refresh tabs in case a playlist was renamed
+      self.region_tiles.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
     end,
 
     -- Batch rename with wildcards
     on_active_batch_rename = function(item_keys, pattern)
       local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
       local new_names = BatchRenameModal.apply_pattern_to_items(pattern, #item_keys)
+      local Regions = require('rearkitekt.reaper.regions')
+
+      -- Separate regions and playlists
+      local region_renames = {}
+      local playlist_data = {}
+
+      local playlist_items = self.controller:get_playlist_items(State.get_active_playlist_id())
       for i, key in ipairs(item_keys) do
-        self.controller:rename_item(State.get_active_playlist_id(), key, new_names[i])
+        for _, item in ipairs(playlist_items) do
+          if item.key == key then
+            if item.type == "playlist" then
+              table.insert(playlist_data, {key = key, playlist_id = item.playlist_id, name = new_names[i]})
+            else
+              table.insert(region_renames, {rid = item.rid, name = new_names[i]})
+            end
+            break
+          end
+        end
+      end
+
+      -- Batch rename regions
+      if #region_renames > 0 then
+        Regions.set_region_names_batch(0, region_renames)
+      end
+
+      -- Rename playlists individually
+      for _, pl in ipairs(playlist_data) do
+        self.controller:rename_playlist(pl.playlist_id, pl.name)
+      end
+
+      -- Refresh tabs if any playlists were renamed
+      if #playlist_data > 0 then
+        self.region_tiles.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+      end
+    end,
+
+    -- Batch rename and recolor
+    on_active_batch_rename_and_recolor = function(item_keys, pattern, color)
+      local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
+      local new_names = BatchRenameModal.apply_pattern_to_items(pattern, #item_keys)
+      local Regions = require('rearkitekt.reaper.regions')
+
+      -- Separate regions and playlists
+      local region_renames = {}
+      local rids = {}
+      local playlist_items = {}
+
+      -- Get items from active grid
+      local playlist_items_data = self.region_tiles.active_grid.get_items()
+      for i, key in ipairs(item_keys) do
+        for _, item in ipairs(playlist_items_data) do
+          if item.key == key then
+            if item.type == "playlist" then
+              table.insert(playlist_items, {key = key, playlist_id = item.playlist_id, name = new_names[i]})
+            else
+              table.insert(region_renames, {rid = item.rid, name = new_names[i]})
+              table.insert(rids, item.rid)
+            end
+            break
+          end
+        end
+      end
+
+      -- Batch rename regions
+      if #region_renames > 0 then
+        Regions.set_region_names_batch(0, region_renames)
+      end
+
+      -- Batch recolor regions
+      if #rids > 0 then
+        self.controller:set_region_colors_batch(rids, color)
+      end
+
+      -- Handle playlists individually
+      for _, item in ipairs(playlist_items) do
+        self.controller:rename_playlist(item.playlist_id, item.name)
+        self.controller:set_playlist_color(item.playlist_id, color)
+      end
+
+      -- Refresh tabs if any playlists were renamed
+      if #playlist_items > 0 then
+        self.region_tiles.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+      end
+    end,
+
+    -- Batch recolor only
+    on_active_batch_recolor = function(item_keys, color)
+      -- Separate regions and playlists
+      local rids = {}
+      local playlist_ids = {}
+
+      -- Get items from active grid
+      local playlist_items = self.region_tiles.active_grid.get_items()
+      for _, key in ipairs(item_keys) do
+        for _, item in ipairs(playlist_items) do
+          if item.key == key then
+            if item.type == "playlist" then
+              table.insert(playlist_ids, item.playlist_id)
+            else
+              table.insert(rids, item.rid)
+            end
+            break
+          end
+        end
+      end
+
+      -- Batch recolor regions
+      if #rids > 0 then
+        self.controller:set_region_colors_batch(rids, color)
+      end
+
+      -- Recolor playlists individually
+      for _, playlist_id in ipairs(playlist_ids) do
+        self.controller:set_playlist_color(playlist_id, color)
+      end
+    end,
+
+    -- Single item rename from pool (inline editing)
+    on_pool_rename = function(item_key, new_name)
+      local rid = tonumber(item_key:match("pool_(%d+)"))
+      if rid then
+        -- Rename region directly
+        local Regions = require('rearkitekt.reaper.regions')
+        Regions.set_region_name(0, rid, new_name)
+      else
+        -- Rename playlist
+        local playlist_id = item_key:match("pool_playlist_(.+)")
+        if playlist_id then
+          self.controller:rename_playlist(playlist_id, new_name)
+          -- Refresh tabs to show updated playlist name
+          self.region_tiles.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+        end
+      end
+    end,
+
+    -- Batch rename from pool
+    on_pool_batch_rename = function(item_keys, pattern)
+      local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
+      local new_names = BatchRenameModal.apply_pattern_to_items(pattern, #item_keys)
+      local Regions = require('rearkitekt.reaper.regions')
+
+      -- Separate regions and playlists
+      local region_renames = {}
+      local playlist_data = {}
+
+      for i, key in ipairs(item_keys) do
+        local rid = tonumber(key:match("pool_(%d+)"))
+        if rid then
+          table.insert(region_renames, {rid = rid, name = new_names[i]})
+        else
+          local playlist_id = key:match("pool_playlist_(.+)")
+          if playlist_id then
+            table.insert(playlist_data, {id = playlist_id, name = new_names[i]})
+          end
+        end
+      end
+
+      -- Batch rename regions
+      if #region_renames > 0 then
+        Regions.set_region_names_batch(0, region_renames)
+      end
+
+      -- Rename playlists individually
+      for _, pl in ipairs(playlist_data) do
+        self.controller:rename_playlist(pl.id, pl.name)
+      end
+
+      -- Refresh tabs if any playlists were renamed
+      if #playlist_data > 0 then
+        self.region_tiles.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+      end
+    end,
+
+    -- Batch rename and recolor from pool
+    on_pool_batch_rename_and_recolor = function(item_keys, pattern, color)
+      local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
+      local new_names = BatchRenameModal.apply_pattern_to_items(pattern, #item_keys)
+      local Regions = require('rearkitekt.reaper.regions')
+
+      -- Separate regions and playlists
+      local region_renames = {}
+      local rids = {}
+      local playlist_data = {}
+
+      for i, key in ipairs(item_keys) do
+        local rid = tonumber(key:match("pool_(%d+)"))
+        if rid then
+          table.insert(region_renames, {rid = rid, name = new_names[i]})
+          table.insert(rids, rid)
+        else
+          local playlist_id = key:match("pool_playlist_(.+)")
+          if playlist_id then
+            table.insert(playlist_data, {id = playlist_id, name = new_names[i]})
+          end
+        end
+      end
+
+      -- Batch rename regions
+      if #region_renames > 0 then
+        Regions.set_region_names_batch(0, region_renames)
+      end
+
+      -- Batch recolor regions
+      if #rids > 0 then
+        self.controller:set_region_colors_batch(rids, color)
+      end
+
+      -- Handle playlists individually
+      for _, pl in ipairs(playlist_data) do
+        self.controller:rename_playlist(pl.id, pl.name)
+        self.controller:set_playlist_color(pl.id, color)
+      end
+
+      -- Refresh tabs if any playlists were renamed
+      if #playlist_data > 0 then
+        self.region_tiles.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+      end
+    end,
+
+    -- Batch recolor from pool
+    on_pool_batch_recolor = function(item_keys, color)
+      local Regions = require('rearkitekt.reaper.regions')
+
+      -- Separate regions and playlists
+      local rids = {}
+      local playlist_ids = {}
+
+      for _, key in ipairs(item_keys) do
+        local rid = tonumber(key:match("pool_(%d+)"))
+        if rid then
+          table.insert(rids, rid)
+        else
+          local playlist_id = key:match("pool_playlist_(.+)")
+          if playlist_id then
+            table.insert(playlist_ids, playlist_id)
+          end
+        end
+      end
+
+      -- Batch recolor regions
+      if #rids > 0 then
+        self.controller:set_region_colors_batch(rids, color)
+      end
+
+      -- Recolor playlists individually
+      for _, playlist_id in ipairs(playlist_ids) do
+        self.controller:set_playlist_color(playlist_id, color)
       end
     end,
 

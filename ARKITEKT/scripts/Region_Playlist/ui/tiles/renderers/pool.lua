@@ -103,51 +103,51 @@ local function draw_lock_icon(dl, cx, cy, config, color)
   ImGui.DrawList_AddRectFilled(dl, top_x1, top_y1, top_x2, top_y2, color, 0)
 end
 
-function M.render(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness)
+function M.render(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness, grid)
   if item.id and item.items then
-    M.render_playlist(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness)
+    M.render_playlist(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness, grid)
   else
-    M.render_region(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness)
+    M.render_region(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness, grid)
   end
 end
 
-function M.render_region(ctx, rect, region, state, animator, hover_config, tile_height, border_thickness)
+function M.render_region(ctx, rect, region, state, animator, hover_config, tile_height, border_thickness, grid)
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local key = "pool_" .. tostring(region.rid)
-  
+
   animator:track(key, 'hover', state.hover and 1.0 or 0.0, hover_config and hover_config.animation_speed_hover or 12.0)
   local hover_factor = animator:get(key, 'hover')
   local base_color = region.color or M.CONFIG.bg_base
   local fx_config = TileFXConfig.get()
-  
+
   BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor)
   if state.selected and fx_config.ants_enabled then BaseRenderer.draw_marching_ants(dl, rect, base_color, fx_config) end
-  
+
   local actual_height = tile_height or (y2 - y1)
   local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
   local show_length = actual_height >= M.CONFIG.responsive.hide_length_below
-  
+
   local right_elements = {}
-  
+
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
     local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
-    BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, 0xFF, right_bound_x)
+    BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, 0xFF, right_bound_x, grid, rect)
   end
-  
+
   if show_length then BaseRenderer.draw_length_display(ctx, dl, rect, region, base_color, 0xFF) end
 end
 
-function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness)
+function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness, grid)
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local key = "pool_playlist_" .. tostring(playlist.id)
   local is_disabled = playlist.is_disabled or false
-  
+
   -- Special rendering for circular reference tiles
   if is_disabled then
-    M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness)
+    M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness, grid)
     return
   end
   
@@ -212,7 +212,7 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
       name_color = Colors.hexrgb("#FFFFFF")
     end
 
-    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color, actual_height, rect)
+    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color, actual_height, rect, grid, base_color, key)
   end
   
   if show_badge then
@@ -254,7 +254,7 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   end
 end
 
-function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness)
+function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness, grid)
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local key = "pool_playlist_" .. tostring(playlist.id)
@@ -319,7 +319,7 @@ function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_
     }
     
     -- Draw playlist name with red color
-    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, circular_playlist_data, state, 0xFF, x2 - M.CONFIG.text_margin_right, M.CONFIG.circular.text_color)
+    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, circular_playlist_data, state, 0xFF, x2 - M.CONFIG.text_margin_right, M.CONFIG.circular.text_color, nil, rect, grid, base_color)
   end
   
   if show_badge then

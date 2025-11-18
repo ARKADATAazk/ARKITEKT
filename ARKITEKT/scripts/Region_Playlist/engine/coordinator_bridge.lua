@@ -55,6 +55,8 @@ function M.create(opts)
     transport_override = saved_settings.transport_override or false,
     loop_playlist = saved_settings.loop_playlist or false,
     follow_viewport = saved_settings.follow_viewport or false,
+    shuffle_enabled = saved_settings.shuffle_enabled or false,
+    shuffle_mode = saved_settings.shuffle_mode or "true_shuffle",
     on_repeat_cycle = nil,
     playlist_lookup = opts.get_playlist_by_id,
   })
@@ -262,6 +264,28 @@ function M.create(opts)
 
   function bridge:get_loop_playlist()
     return self.engine:get_loop_playlist()
+  end
+
+  function bridge:set_shuffle_enabled(enabled)
+    self.engine:set_shuffle_enabled(enabled)
+    local settings = RegionState.load_settings(self.proj)
+    settings.shuffle_enabled = enabled
+    RegionState.save_settings(settings, self.proj)
+  end
+
+  function bridge:get_shuffle_enabled()
+    return self.engine:get_shuffle_enabled()
+  end
+
+  function bridge:set_shuffle_mode(mode)
+    self.engine:set_shuffle_mode(mode)
+    local settings = RegionState.load_settings(self.proj)
+    settings.shuffle_mode = mode
+    RegionState.save_settings(settings, self.proj)
+  end
+
+  function bridge:get_shuffle_mode()
+    return self.engine:get_shuffle_mode()
   end
 
   function bridge:get_state()

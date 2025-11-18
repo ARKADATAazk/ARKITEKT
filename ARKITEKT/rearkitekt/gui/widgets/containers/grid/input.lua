@@ -203,10 +203,13 @@ function M.handle_wheel_input(grid, ctx, items)
 end
 
 function M.handle_tile_input(grid, ctx, item, rect)
-  -- Block ALL tile interaction when any popup is open (context menus, modals, etc.)
-  -- This prevents clicks, hover, and tooltips from triggering on tiles underneath popups
-  if ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId) then
-    return false
+  -- Skip tile input handling if this tile is being edited inline
+  -- This allows the InputText widget to receive mouse clicks
+  if M.is_editing_inline(grid) then
+    local key = grid.key(item)
+    if grid.editing_state.key == key then
+      return false  -- Let the InputText handle input
+    end
   end
 
   -- Block tile input when mouse is over a DIFFERENT window (e.g., popup on top of this grid)
@@ -309,6 +312,7 @@ function M.start_inline_edit(grid, key, initial_text)
     key = key,
     text = initial_text or "",
     focus_next_frame = true,
+    frames_active = 0,  -- Track frames to prevent immediate cancellation
   }
 end
 
@@ -327,17 +331,72 @@ function M.stop_inline_edit(grid, commit)
 end
 
 -- Handle inline editing input (call this during tile rendering)
-function M.handle_inline_edit_input(grid, ctx, key, rect, current_text)
+-- @param grid The grid instance
+-- @param ctx ImGui context
+-- @param key Item key being edited
+-- @param rect {x1, y1, x2, y2} Bounding rectangle for the input
+-- @param current_text Current text value
+-- @param tile_color (optional) RGBA color of the tile for styling
+function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_color)
   if not grid.editing_state or grid.editing_state.key ~= key then
     return false, current_text  -- Not editing this tile
   end
 
   local state = grid.editing_state
 
-  -- Set up input field position
-  local padding = 6
-  ImGui.SetCursorScreenPos(ctx, rect[1] + padding, rect[2] + padding)
-  ImGui.SetNextItemWidth(ctx, rect[3] - rect[1] - padding * 2)
+  -- Increment frame counter
+  state.frames_active = (state.frames_active or 0) + 1
+
+  local Colors = require('rearkitekt.core.colors')
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  -- Calculate text line dimensions
+  local text_height = ImGui.GetTextLineHeight(ctx)
+  local full_tile_height = rect[4] - rect[2]
+
+  -- Calculate vertical position (match text positioning logic)
+  local y_pos
+  if full_tile_height < 40 then  -- Small tiles - vertically centered
+    y_pos = rect[2] + (full_tile_height - text_height) / 2 - 1
+  else  -- Large tiles - top-aligned with padding
+    y_pos = rect[2] + 8
+  end
+
+  -- Input field bounds (horizontally: name start to right bound, vertically: text line only)
+  local padding_x = 4
+  local padding_y = 2
+  local input_x1 = rect[1] - padding_x
+  local input_y1 = y_pos - padding_y
+  local input_x2 = rect[3] + padding_x
+  local input_y2 = y_pos + text_height + padding_y
+
+  -- Draw custom backdrop using tile color
+  local bg_color, text_color, selection_color
+  if tile_color then
+    -- Create darker version of tile color for backdrop
+    bg_color = Colors.adjust_brightness(tile_color, 0.15)
+    bg_color = Colors.with_alpha(bg_color, 0xE0)
+
+    -- Use brighter version for text
+    text_color = Colors.adjust_brightness(tile_color, 1.8)
+
+    -- Selection highlight - medium bright variant
+    selection_color = Colors.adjust_brightness(tile_color, 0.8)
+    selection_color = Colors.with_alpha(selection_color, 0xAA)
+  else
+    -- Fallback colors
+    local hexrgb = Colors.hexrgb
+    bg_color = hexrgb("#1A1A1AE0")
+    text_color = hexrgb("#FFFFFFDD")
+    selection_color = hexrgb("#4444AAAA")
+  end
+
+  -- Draw backdrop (no borders)
+  ImGui.DrawList_AddRectFilled(dl, input_x1, input_y1, input_x2, input_y2, bg_color, 2, 0)
+
+  -- Position and size the input field
+  ImGui.SetCursorScreenPos(ctx, input_x1 + 4, y_pos - 1)
+  ImGui.SetNextItemWidth(ctx, input_x2 - input_x1 - 8)
 
   -- Focus input on first frame
   if state.focus_next_frame then
@@ -345,27 +404,46 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text)
     state.focus_next_frame = false
   end
 
-  -- Draw input field
+  -- Style the input field to be transparent (we drew our own backdrop)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Colors.hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
+  ImGui.PushStyleColor(ctx, ImGui.Col_TextSelectedBg, selection_color)
+
+  -- Draw input field with AutoSelectAll flag for better UX
   local changed, new_text = ImGui.InputText(
     ctx,
     "##inline_edit_" .. key,
     state.text,
-    ImGui.InputTextFlags_None
+    ImGui.InputTextFlags_AutoSelectAll
   )
+
+  ImGui.PopStyleColor(ctx, 6)
 
   if changed then
     state.text = new_text
   end
+
+  -- Track if item is hovered to detect clicks inside
+  local is_item_hovered = ImGui.IsItemHovered(ctx)
+  local is_item_clicked = ImGui.IsItemClicked(ctx, 0)
 
   -- Check for Enter (commit) or Escape (cancel)
   local is_active = ImGui.IsItemActive(ctx)
   local enter_pressed = ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter)
   local escape_pressed = ImGui.IsKeyPressed(ctx, ImGui.Key_Escape)
 
-  if enter_pressed and is_active then
+  -- Check Enter and Escape first (they work whether or not the item is active)
+  if enter_pressed then
     M.stop_inline_edit(grid, true)  -- Commit
     return true, state.text
-  elseif escape_pressed or (not is_active and ImGui.IsMouseClicked(ctx, 0)) then
+  elseif escape_pressed then
+    M.stop_inline_edit(grid, false)  -- Cancel on escape
+    return true, current_text
+  elseif ImGui.IsMouseClicked(ctx, 0) and state.frames_active > 2 and not is_item_hovered and not is_active then
+    -- Cancel only if clicked outside the input field (not hovered and not active)
     M.stop_inline_edit(grid, false)  -- Cancel
     return true, current_text
   end

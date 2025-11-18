@@ -97,77 +97,11 @@ function M.create(opts)
 
   rt._original_active_min_col_w = nil
   rt._imgui_ctx = nil
-  
-  local rt = setmetatable({
-    State = opts.State,
-    controller = opts.controller,
-    get_region_by_rid = opts.get_region_by_rid,
-    get_playlist_by_id = cached_get_playlist,
-    detect_circular_ref = opts.detect_circular_ref,
-    on_playlist_changed = opts.on_playlist_changed,
-    on_active_reorder = opts.on_active_reorder,
-    on_active_remove = opts.on_active_remove,
-    on_active_copy = opts.on_active_copy,
-    on_active_toggle_enabled = opts.on_active_toggle_enabled,
-    on_active_delete = opts.on_active_delete,
-    on_destroy_complete = opts.on_destroy_complete,
-    on_pool_to_active = opts.on_pool_to_active,
-    on_pool_playlist_to_active = opts.on_pool_playlist_to_active,
-    on_pool_reorder = opts.on_pool_reorder,
-    on_pool_playlist_reorder = opts.on_pool_playlist_reorder,
-    on_repeat_cycle = opts.on_repeat_cycle,
-    on_repeat_adjust = opts.on_repeat_adjust,
-    on_repeat_sync = opts.on_repeat_sync,
-    on_pool_double_click = opts.on_pool_double_click,
-    on_pool_playlist_double_click = opts.on_pool_playlist_double_click,
-    on_pool_search = opts.on_pool_search,
-    on_pool_sort = opts.on_pool_sort,
-    on_pool_sort_direction = opts.on_pool_sort_direction,
-    on_pool_mode_changed = opts.on_pool_mode_changed,
-    settings = opts.settings,
-    
-    allow_pool_reorder = opts.allow_pool_reorder ~= false,
-    
-    config = config,
-    layout_mode = config.layout_mode,
-    hover_config = config.hover_config,
-    responsive_config = config.responsive_config,
-    container_config = config.container,
-    wheel_config = config.wheel_config,
-    
-    selector = Selector.new(),
-    active_animator = TileAnim.new(config.hover_config.animation_speed_hover),
-    pool_animator = TileAnim.new(config.hover_config.animation_speed_hover),
-    
-    active_bounds = nil,
-    pool_bounds = nil,
-    
-    active_grid = nil,
-    pool_grid = nil,
-    bridge = nil,
-    app_bridge = nil,
-    
-    wheel_consumed_this_frame = false,
-    
-    active_height_stabilizer = HeightStabilizer.new({
-      stable_frames_required = config.responsive_config.stable_frames_required,
-      height_hysteresis = config.responsive_config.height_hysteresis,
-    }),
-    pool_height_stabilizer = HeightStabilizer.new({
-      stable_frames_required = config.responsive_config.stable_frames_required,
-      height_hysteresis = config.responsive_config.height_hysteresis,
-    }),
-    
-    current_active_tile_height = config.responsive_config.base_tile_height_active,
-    current_pool_tile_height = config.responsive_config.base_tile_height_pool,
-    
-    _original_active_min_col_w = nil,
-    _imgui_ctx = nil,
-  }, RegionTiles)
-  
+
+  -- Create grids after rt is fully initialized
   rt.active_grid = ActiveGridFactory.create(rt, config)
   rt._original_active_min_col_w = rt.active_grid.min_col_w_fn
-  
+
   rt.pool_grid = PoolGridFactory.create(rt, config)
 
   -- Helper: wrap controller action with auto-refresh on success
