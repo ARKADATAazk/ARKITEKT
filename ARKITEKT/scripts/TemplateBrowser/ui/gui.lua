@@ -813,7 +813,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
 
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
   ImGui.Text(ctx, "Tags")
-  ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING * 2)
+  ImGui.SameLine(ctx, width - button_w - 8)
 
   if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "createtag_dir") then
     -- Create new tag - prompt for name
@@ -896,20 +896,18 @@ end
 -- Draw directory content (folder tree + tags at bottom)
 local function draw_directory_content(ctx, state, config, width, height)
   -- Split into folder tree (top 70%) and tags (bottom 30%)
-  local folder_height = height * 0.7
-  local tags_height = height * 0.3 - 8
+  local folder_section_height = height * 0.7
+  local tags_section_height = height * 0.3 - 4
 
-  -- Folder tree section
-  BeginChildCompat(ctx, "DirectoryFolders", width - config.PANEL_PADDING * 2, folder_height, false)
-
+  -- === FOLDER SECTION ===
   -- Header with folder creation buttons
   local button_w = 24
   local button_spacing = 4
-  local header_height = 28  -- Height of header line
+  local header_height = 28
 
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
   ImGui.Text(ctx, "Explorer")
-  ImGui.SameLine(ctx, width - (button_w * 2 + button_spacing) - config.PANEL_PADDING * 3)
+  ImGui.SameLine(ctx, width - (button_w * 2 + button_spacing) - config.PANEL_PADDING * 2)
 
   -- Physical folder button
   if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "folder_physical") then
@@ -1125,19 +1123,17 @@ local function draw_directory_content(ctx, state, config, width, height)
   -- Calculate remaining height for folder tree (scrollable)
   -- Account for: header (28) + separator/spacing (10) + All Templates (24) + separator/spacing (10)
   local used_height = header_height + 10 + 24 + 10
-  local tree_height = folder_height - used_height
+  local tree_height = folder_section_height - used_height
 
   -- Folder tree in scrollable child
   BeginChildCompat(ctx, "FolderTreeScroll", 0, tree_height, false)
   draw_folder_tree(ctx, state, config)
   ImGui.EndChild(ctx)
 
-  ImGui.EndChild(ctx)
-
   ImGui.Spacing(ctx)
 
-  -- Tags section at bottom
-  draw_tags_mini_list(ctx, state, config, width - config.PANEL_PADDING * 2, tags_height)
+  -- === TAGS SECTION ===
+  draw_tags_mini_list(ctx, state, config, width, tags_section_height)
 end
 
 -- Draw VSTS content (list of all FX with filtering)
@@ -1667,14 +1663,14 @@ local function draw_info_panel(ctx, state, config, width, height)
       TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
     end
 
-    ImGui.Spacing(ctx, 4)
+    ImGui.Dummy(ctx, 0, 4)
 
     if Button.draw_at_cursor(ctx, { label = "Insert as New Track", width = -1, height = 28 }, "insert_template") then
       reaper.ShowConsoleMsg("Inserting template as new track: " .. tmpl.name .. "\n")
       TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
     end
 
-    ImGui.Spacing(ctx, 4)
+    ImGui.Dummy(ctx, 0, 4)
 
     if Button.draw_at_cursor(ctx, { label = "Rename (F2)", width = -1, height = 28 }, "rename_template") then
       state.renaming_item = tmpl
