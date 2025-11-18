@@ -458,12 +458,12 @@ local function draw_folder_tree(ctx, state, config)
   state.renaming_folder_path = tree_state.renaming_node
   state.rename_buffer = tree_state.rename_buffer
 
-  -- Render folder context menu
-  local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
-  local Colors = require('rearkitekt.core.colors')
+  -- Render folder context menu (must check state.context_menu_node first)
+  if state.context_menu_node then
+    local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
+    local Colors = require('rearkitekt.core.colors')
 
-  if ContextMenu.begin(ctx, "folder_context_menu") then
-    if state.context_menu_node then
+    if ContextMenu.begin(ctx, "folder_context_menu") then
       -- Predefined color palette
       local color_options = {
         { name = "None", color = nil },
@@ -512,11 +512,15 @@ local function draw_folder_tree(ctx, state, config)
           -- Rescan to update UI
           local Scanner = require('TemplateBrowser.domain.scanner')
           Scanner.scan_templates(state)
+
+          -- Clear context menu node and close popup
+          state.context_menu_node = nil
+          ImGui.CloseCurrentPopup(ctx)
         end
       end
-    end
 
-    ContextMenu.end_menu(ctx)
+      ContextMenu.end_menu(ctx)
+    end
   end
 end
 
