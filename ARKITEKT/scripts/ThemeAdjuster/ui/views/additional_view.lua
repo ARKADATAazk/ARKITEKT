@@ -387,7 +387,11 @@ function AdditionalView:draw(ctx, shell_state)
 
   -- LEFT PANEL: Parameter Library
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "param_library", left_width, 0, ImGui.ChildFlags_Border) then
+  -- Use modern 5-parameter API: BeginChild(ctx, id, w, h, child_flags, window_flags)
+  -- ChildFlags_None to disable border, WindowFlags_None for default window behavior
+  local child_flags = ImGui.ChildFlags_None or 0
+  local window_flags = ImGui.WindowFlags_None or 0
+  if ImGui.BeginChild(ctx, "param_library", left_width, 0, child_flags, window_flags) then
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
@@ -437,7 +441,7 @@ function AdditionalView:draw(ctx, shell_state)
   ImGui.SameLine(ctx, 0, panel_gap)
 
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "assignment_grid", right_width, 0, ImGui.ChildFlags_Border) then
+  if ImGui.BeginChild(ctx, "assignment_grid", right_width, 0, child_flags, window_flags) then
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
