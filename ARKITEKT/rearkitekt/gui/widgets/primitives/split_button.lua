@@ -225,7 +225,7 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
 
   -- Draw subtle separator between button and arrow (more inset to show they're connected)
   local separator_inset = 6
-  local separator_color = border_inner  -- Use inner border color for subtlety
+  local separator_color = arrow_bg  -- Use arrow background color for seamless look
   ImGui.DrawList_AddLine(dl, arrow_x, y + separator_inset, arrow_x, y + height - separator_inset, separator_color, 1)
 
   -- Draw button text (with padding)
@@ -236,15 +236,18 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
   local text_y = y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
 
-  -- Draw dropdown arrow (▼)
-  local arrow_size = 6
-  local arrow_icon_x = arrow_x + (arrow_width - arrow_size) * 0.5
-  local arrow_icon_y = y + (height - arrow_size * 0.5) * 0.5
+  -- Draw dropdown arrow (▼) - render to whole pixels for crisp display
+  local arrow_size = 8  -- Increased from 6
+  local arrow_center_x = math.floor(arrow_x + arrow_width * 0.5 + 0.5)  -- Pixel snap center
+  local arrow_center_y = math.floor(y + height * 0.5 + 0.5)
+  local arrow_half_width = math.floor(arrow_size * 0.5 + 0.5)
+  local arrow_height = math.floor(arrow_size * 0.4 + 0.5)  -- Slightly shorter for better proportions
 
+  -- Triangle pointing down (pixel-perfect coordinates)
   ImGui.DrawList_AddTriangleFilled(dl,
-    arrow_icon_x, arrow_icon_y,
-    arrow_icon_x + arrow_size, arrow_icon_y,
-    arrow_icon_x + arrow_size * 0.5, arrow_icon_y + arrow_size * 0.5,
+    arrow_center_x - arrow_half_width, arrow_center_y - arrow_height * 0.5,  -- Top left
+    arrow_center_x + arrow_half_width, arrow_center_y - arrow_height * 0.5,  -- Top right
+    arrow_center_x, arrow_center_y + arrow_height * 0.5,  -- Bottom center
     arrow_text
   )
 
