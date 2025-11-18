@@ -175,7 +175,7 @@ function M.draw_marching_ants(dl, rect, color, fx_config)
     fx_config.ants_thickness or 1, M.CONFIG.rounding, fx_config.ants_dash, fx_config.ants_gap, fx_config.ants_speed)
 end
 
-function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_bound_x, grid, rect)
+function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_bound_x, grid, rect, item_key_override)
   local fx_config = TileFXConfig.get()
   local accent_color = Colors.with_alpha(Colors.same_hue_variant(base_color, fx_config.index_saturation, fx_config.index_brightness, 0xFF), text_alpha)
   local name_color = Colors.with_alpha(Colors.adjust_brightness(fx_config.name_base_color, fx_config.name_brightness), text_alpha)
@@ -208,7 +208,8 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   -- Check if inline editing mode (if grid is provided)
   if grid and rect then
     local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
-    local item_key = grid.key and grid.key(region) or region.rid
+    -- Use override key if provided, otherwise try to get from grid.key function
+    local item_key = item_key_override or (grid.key and grid.key(region)) or region.rid
     local is_editing, edited_text = GridInput.handle_inline_edit_input(grid, ctx, item_key,
       {name_start_x, rect[2], right_bound_x, rect[4]}, name_str, base_color)
 
@@ -222,7 +223,7 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
 end
 
-function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, right_bound_x, name_color_override, actual_height, rect, grid, base_color)
+function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, right_bound_x, name_color_override, actual_height, rect, grid, base_color, item_key_override)
   local fx_config = TileFXConfig.get()
 
   local text_height = ImGui.CalcTextSize(ctx, "Tg")
@@ -269,7 +270,8 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
   -- Check if inline editing mode (if grid is provided)
   if grid and rect then
     local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
-    local item_key = grid.key and grid.key(playlist_data) or playlist_data.id
+    -- Use override key if provided, otherwise try to get from grid.key function
+    local item_key = item_key_override or (grid.key and grid.key(playlist_data)) or playlist_data.id
     -- Use chip color for inline editing if available, otherwise use base_color
     local edit_color = playlist_data.chip_color or base_color
     local is_editing, edited_text = GridInput.handle_inline_edit_input(grid, ctx, item_key,

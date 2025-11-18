@@ -126,7 +126,7 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
     local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
-    BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, text_alpha, right_bound_x, grid, rect)
+    BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, text_alpha, right_bound_x, grid, rect, item.key)
   end
   
   if show_badge then
@@ -271,7 +271,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
     local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
-    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, nil, actual_height, rect, grid, base_color)
+    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, nil, actual_height, rect, grid, base_color, item.key)
   end
 
   if show_badge then
