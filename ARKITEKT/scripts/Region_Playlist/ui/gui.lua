@@ -129,6 +129,8 @@ function M.create(State, AppConfig, settings)
     -- Single item rename (inline editing)
     on_active_rename = function(item_key, new_name)
       self.controller:rename_item(State.get_active_playlist_id(), item_key, new_name)
+      -- Refresh tabs in case a playlist was renamed
+      self.region_tiles.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
     end,
 
     -- Batch rename with wildcards
@@ -163,6 +165,11 @@ function M.create(State, AppConfig, settings)
       -- Rename playlists individually
       for _, pl in ipairs(playlist_data) do
         self.controller:rename_playlist(pl.playlist_id, pl.name)
+      end
+
+      -- Refresh tabs if any playlists were renamed
+      if #playlist_data > 0 then
+        self.region_tiles.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
       end
     end,
 
@@ -207,6 +214,11 @@ function M.create(State, AppConfig, settings)
       for _, item in ipairs(playlist_items) do
         self.controller:rename_playlist(item.playlist_id, item.name)
         self.controller:set_playlist_color(item.playlist_id, color)
+      end
+
+      -- Refresh tabs if any playlists were renamed
+      if #playlist_items > 0 then
+        self.region_tiles.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
       end
     end,
 
@@ -254,6 +266,8 @@ function M.create(State, AppConfig, settings)
         local playlist_id = item_key:match("pool_playlist_(.+)")
         if playlist_id then
           self.controller:rename_playlist(playlist_id, new_name)
+          -- Refresh tabs to show updated playlist name
+          self.region_tiles.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
         end
       end
     end,
@@ -288,6 +302,11 @@ function M.create(State, AppConfig, settings)
       -- Rename playlists individually
       for _, pl in ipairs(playlist_data) do
         self.controller:rename_playlist(pl.id, pl.name)
+      end
+
+      -- Refresh tabs if any playlists were renamed
+      if #playlist_data > 0 then
+        self.region_tiles.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
       end
     end,
 
@@ -329,6 +348,11 @@ function M.create(State, AppConfig, settings)
       for _, pl in ipairs(playlist_data) do
         self.controller:rename_playlist(pl.id, pl.name)
         self.controller:set_playlist_color(pl.id, color)
+      end
+
+      -- Refresh tabs if any playlists were renamed
+      if #playlist_data > 0 then
+        self.region_tiles.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
       end
     end,
 
