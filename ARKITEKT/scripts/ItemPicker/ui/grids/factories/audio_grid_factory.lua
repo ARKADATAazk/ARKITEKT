@@ -49,6 +49,22 @@ function M.create(ctx, config, state, visualization, animator)
         goto continue
       end
 
+      -- Calculate filtered count (excluding pooled duplicates)
+      local seen_pools = {}
+      local filtered_count = 0
+      for _, entry in ipairs(content) do
+        local pool_count = entry.pool_count or 1
+        local pool_id = entry.pool_id
+        if pool_count > 1 and pool_id then
+          if not seen_pools[pool_id] then
+            seen_pools[pool_id] = true
+            filtered_count = filtered_count + 1
+          end
+        else
+          filtered_count = filtered_count + 1
+        end
+      end
+
       -- Get current item index
       local current_idx = state.box_current_item[filename] or 1
       if current_idx > #content then current_idx = 1 end
@@ -99,7 +115,7 @@ function M.create(ctx, config, state, visualization, animator)
         item = item,
         name = item_name,
         index = current_idx,
-        total = #content,
+        total = filtered_count,  -- Show filtered count (excluding pooled duplicates)
         color = color,
         key = uuid,
         uuid = uuid,
@@ -122,6 +138,17 @@ function M.create(ctx, config, state, visualization, animator)
       -- Sort alphabetically by name
       table.sort(filtered, function(a, b)
         return a.name:lower() < b.name:lower()
+      end)
+    elseif sort_mode == "pool" then
+      -- Sort by pool count (descending), then by name
+      table.sort(filtered, function(a, b)
+        local a_pool = a.pool_count or 1
+        local b_pool = b.pool_count or 1
+        if a_pool ~= b_pool then
+          return a_pool > b_pool  -- Higher pool counts first
+        else
+          return (a.name or "") < (b.name or "")  -- Then alphabetically
+        end
       end)
     end
 
