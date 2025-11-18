@@ -139,23 +139,24 @@ end
 
 -- Detect if a parameter is a group header
 function M.is_group_header(param)
-  -- Group headers are typically toggles (0-1) with specific naming patterns
-  if param.min ~= 0 or param.max ~= 1 then
-    return false
-  end
-
-  -- Check if description suggests it's a group header
   local desc = param.description or ""
-  if desc:match("Parameters?$") or desc:match("^%-+") or desc:match("^%s*$") then
+  local name = param.name or ""
+
+  -- Primary detection: description ends with "Parameters" or "Parameter"
+  if desc:match("Parameters?%s*$") then
     return true
   end
 
-  -- Check if name matches group header patterns
-  local name = param.name or ""
+  -- Secondary detection: name patterns
   if name:match("Param$") or
      name == "defaultV6" or
      name == "reaperV6Def" or
      name:match("^user_notice") then
+    return true
+  end
+
+  -- Tertiary detection: separator lines (dashes or empty)
+  if desc:match("^%-+") or (desc:match("^%s*$") and param.max == 1) then
     return true
   end
 
