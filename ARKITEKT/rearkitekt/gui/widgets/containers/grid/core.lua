@@ -356,8 +356,7 @@ function Grid:draw(ctx)
 
     self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
 
-    ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
-    ImGui.InvisibleButton(ctx, self._cached_empty_id, extended_w, extended_h)
+    -- No InvisibleButton needed when inside child window
     ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
     -- Render destruction animations even when grid is empty
@@ -468,14 +467,11 @@ function Grid:draw(ctx)
   
   self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
 
-  -- Create InvisibleButton to claim the grid area (prevents window dragging)
-  -- But DON'T use IsItemClicked on it - use manual detection instead
-  -- This allows widgets rendered later to receive input while preventing window drag
-  ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
-  ImGui.InvisibleButton(ctx, self._cached_bg_id, extended_w, extended_h)
+  -- DON'T create InvisibleButton when inside a child window - the child window itself
+  -- prevents parent window dragging. InvisibleButton would block widget input.
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
-  -- Manual click detection (don't use IsItemClicked which would block widget input)
+  -- Manual click detection for background clicks and marquee selection
   local mx, my = ImGui.GetMousePos(ctx)
   local gb = self.grid_bounds
   local mouse_in_grid = gb and mx >= gb[1] and mx <= gb[3] and my >= gb[2] and my <= gb[4]
