@@ -234,9 +234,13 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
   -- Center the window
   local window_w = 500
   local window_h = 400
-  local viewport = ImGui.GetMainViewport(ctx)
-  local _, _, display_w, display_h = ImGui.Viewport_GetWorkSize(viewport)
-  ImGui.SetNextWindowPos(ctx, (display_w - window_w) / 2, (display_h - window_h) / 2, ImGui.Cond_Appearing)
+
+  -- Get parent window position and size for centering
+  local parent_x, parent_y = ImGui.GetWindowPos(ctx)
+  local parent_w, parent_h = ImGui.GetWindowSize(ctx)
+
+  -- Center relative to parent window
+  ImGui.SetNextWindowPos(ctx, parent_x + (parent_w - window_w) / 2, parent_y + (parent_h - window_h) / 2, ImGui.Cond_Appearing)
   ImGui.SetNextWindowSize(ctx, window_w, window_h, ImGui.Cond_Appearing)
 
   local flags = ImGui.WindowFlags_NoCollapse
