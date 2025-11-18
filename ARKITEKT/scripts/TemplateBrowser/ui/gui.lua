@@ -198,13 +198,15 @@ end
 local function prepare_tree_nodes(node, metadata, all_templates)
   if not node then return {} end
 
-  local function convert_node(n)
+  -- Convert physical folder node
+  local function convert_physical_node(n)
     local tree_node = {
       id = n.path,
       name = n.name,
       path = n.path,
       full_path = n.full_path,
       children = {},
+      is_virtual = false,
     }
 
     -- Add color from metadata if available
@@ -215,11 +217,37 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     -- Convert children recursively
     if n.children then
       for _, child in ipairs(n.children) do
-        table.insert(tree_node.children, convert_node(child))
+        table.insert(tree_node.children, convert_physical_node(child))
       end
     end
 
     return tree_node
+  end
+
+  -- Build tree from virtual folders
+  local function build_virtual_tree(parent_id)
+    local virtual_children = {}
+
+    if not metadata or not metadata.virtual_folders then
+      return virtual_children
+    end
+
+    for _, vfolder in pairs(metadata.virtual_folders) do
+      if vfolder.parent_id == parent_id then
+        local vnode = {
+          id = vfolder.id,
+          name = vfolder.name,
+          path = vfolder.id,  -- Use ID as path for virtual folders
+          is_virtual = true,
+          template_refs = vfolder.template_refs or {},
+          color = vfolder.color,
+          children = build_virtual_tree(vfolder.id),  -- Recursively add virtual children
+        }
+        table.insert(virtual_children, vnode)
+      end
+    end
+
+    return virtual_children
   end
 
   local root_nodes = {}
@@ -233,13 +261,20 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     full_path = template_path,
     children = {},
     is_root = true,  -- Flag to identify root node
+    is_virtual = false,
   }
 
-  -- All actual folders become children of ROOT
+  -- Add all physical folders as children of ROOT
   if node.children then
     for _, child in ipairs(node.children) do
-      table.insert(root_node.children, convert_node(child))
+      table.insert(root_node.children, convert_physical_node(child))
     end
+  end
+
+  -- Add all virtual folders that have ROOT as parent
+  local virtual_children = build_virtual_tree("__ROOT__")
+  for _, vchild in ipairs(virtual_children) do
+    table.insert(root_node.children, vchild)
   end
 
   table.insert(root_nodes, root_node)
@@ -464,7 +499,64 @@ local function draw_folder_tree(ctx, state, config)
         table.insert(uuids, template_payload)
       end
 
-      -- Find templates and move them
+      if #uuids == 0 then return end
+
+      -- Handle virtual folder (add references, don't move files)
+      if target_node.is_virtual then
+        local Persistence = require('TemplateBrowser.domain.persistence')
+
+        -- Get the virtual folder from metadata
+        local vfolder = state.metadata.virtual_folders[target_node.id]
+        if not vfolder then
+          state.set_status("Virtual folder not found", "error")
+          return
+        end
+
+        -- Ensure template_refs exists
+        if not vfolder.template_refs then
+          vfolder.template_refs = {}
+        end
+
+        -- Add new UUIDs (avoid duplicates)
+        local added_count = 0
+        for _, uuid in ipairs(uuids) do
+          -- Check if already exists
+          local already_exists = false
+          for _, existing_uuid in ipairs(vfolder.template_refs) do
+            if existing_uuid == uuid then
+              already_exists = true
+              break
+            end
+          end
+
+          if not already_exists then
+            table.insert(vfolder.template_refs, uuid)
+            added_count = added_count + 1
+          end
+        end
+
+        -- Save metadata
+        Persistence.save_metadata(state.metadata)
+
+        -- Success message
+        if added_count > 0 then
+          if #uuids > 1 then
+            state.set_status("Added " .. added_count .. " of " .. #uuids .. " templates to " .. target_node.name, "success")
+          else
+            state.set_status("Added template to " .. target_node.name, "success")
+          end
+        else
+          if #uuids > 1 then
+            state.set_status("Templates already in " .. target_node.name, "info")
+          else
+            state.set_status("Template already in " .. target_node.name, "info")
+          end
+        end
+
+        return
+      end
+
+      -- Handle physical folder (move files)
       local templates_to_move = {}
       for _, uuid in ipairs(uuids) do
         for _, tmpl in ipairs(state.templates) do
@@ -744,13 +836,15 @@ local function draw_directory_content(ctx, state, config, width, height)
   -- Folder tree section
   BeginChildCompat(ctx, "DirectoryFolders", width - config.PANEL_PADDING * 2, folder_height, false)
 
-  -- Header with "+" button
+  -- Header with folder creation buttons
   local button_w = 24
+  local button_spacing = 4
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
   ImGui.Text(ctx, "Explorer")
-  ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING * 3)
+  ImGui.SameLine(ctx, width - (button_w * 2 + button_spacing) - config.PANEL_PADDING * 3)
 
-  if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "folder") then
+  -- Physical folder button
+  if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "folder_physical") then
     -- Create new folder inside selected folder (or root if nothing selected)
     local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
     local parent_path = template_path
@@ -855,6 +949,78 @@ local function draw_directory_content(ctx, state, config, width, height)
     else
       state.set_status("Failed to create folder", "error")
     end
+  end
+
+  -- Virtual folder button
+  ImGui.SameLine(ctx, 0, button_spacing)
+  if Button.draw_at_cursor(ctx, { label = "V", width = button_w, height = 24 }, "folder_virtual") then
+    -- Create new virtual folder
+    local Persistence = require('TemplateBrowser.domain.persistence')
+
+    -- Determine parent folder from selection
+    local parent_id = "__ROOT__"  -- Default to root
+    if state.selected_folders and next(state.selected_folders) then
+      for folder_id, _ in pairs(state.selected_folders) do
+        parent_id = folder_id
+        break  -- Use first selected
+      end
+    elseif state.selected_folder then
+      parent_id = state.selected_folder
+    end
+
+    -- Find unique name for the virtual folder
+    local folder_num = 1
+    local new_folder_name = "New Virtual Folder"
+
+    local function virtual_folder_name_exists(name)
+      if not state.metadata or not state.metadata.virtual_folders then
+        return false
+      end
+
+      -- Check if any virtual folder with same parent has this name
+      for _, vfolder in pairs(state.metadata.virtual_folders) do
+        if vfolder.parent_id == parent_id and vfolder.name == name then
+          return true
+        end
+      end
+      return false
+    end
+
+    while virtual_folder_name_exists(new_folder_name) do
+      folder_num = folder_num + 1
+      new_folder_name = "New Virtual Folder " .. folder_num
+    end
+
+    -- Create the virtual folder in metadata
+    local new_id = Persistence.generate_uuid()
+    if not state.metadata.virtual_folders then
+      state.metadata.virtual_folders = {}
+    end
+
+    state.metadata.virtual_folders[new_id] = {
+      id = new_id,
+      name = new_folder_name,
+      parent_id = parent_id,
+      template_refs = {},
+      created = os.time()
+    }
+
+    -- Save metadata
+    Persistence.save_metadata(state.metadata)
+
+    -- Select the newly created virtual folder
+    state.selected_folders = {}
+    state.selected_folders[new_id] = true
+    state.selected_folder = new_id
+    state.last_clicked_folder = new_id
+
+    -- Open parent folder to show the new virtual folder
+    if parent_id ~= "__ROOT__" then
+      state.folder_open_state[parent_id] = true
+    end
+    state.folder_open_state["__ROOT__"] = true  -- Open ROOT
+
+    state.set_status("Created virtual folder: " .. new_folder_name, "success")
   end
 
   ImGui.PopStyleColor(ctx)

@@ -300,9 +300,29 @@ function M.filter_templates(state)
 
     -- Filter by folder
     if state.selected_folder and state.selected_folder ~= "" then
-      -- Exact match on relative_path
-      if tmpl.relative_path ~= state.selected_folder then
-        matches = false
+      -- Check if this is a virtual folder
+      local is_virtual_folder = state.metadata and state.metadata.virtual_folders and state.metadata.virtual_folders[state.selected_folder]
+
+      if is_virtual_folder then
+        -- Virtual folder: check if template UUID is in template_refs
+        local vfolder = state.metadata.virtual_folders[state.selected_folder]
+        local found = false
+        if vfolder.template_refs then
+          for _, ref_uuid in ipairs(vfolder.template_refs) do
+            if ref_uuid == tmpl.uuid then
+              found = true
+              break
+            end
+          end
+        end
+        if not found then
+          matches = false
+        end
+      else
+        -- Physical folder: exact match on relative_path
+        if tmpl.relative_path ~= state.selected_folder then
+          matches = false
+        end
       end
     end
 

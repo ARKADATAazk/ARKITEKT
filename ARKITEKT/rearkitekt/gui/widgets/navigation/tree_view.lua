@@ -36,6 +36,39 @@ local function draw_folder_icon(ctx, dl, x, y, color)
   return main_w + 4  -- Return width including spacing
 end
 
+local function draw_virtual_folder_icon(ctx, dl, x, y, color)
+  -- Virtual folder icon: hollow folder with dotted outline
+  local main_w = 13
+  local main_h = 7
+  local tab_w = 5
+  local tab_h = 2
+
+  -- Round to whole pixels to avoid aliasing
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  local icon_color = color or Colors.hexrgb("#888888")
+
+  -- Draw hollow folder outline with thicker lines (2px) for visibility
+  -- Tab outline
+  ImGui.DrawList_AddRect(dl, x, y, x + tab_w, y + tab_h, icon_color, 0, 0, 2)
+
+  -- Main body outline
+  ImGui.DrawList_AddRect(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, icon_color, 0, 0, 2)
+
+  -- Draw small "V" inside to indicate virtual
+  local v_color = Colors.with_alpha(icon_color, 0xFF)  -- Full opacity
+  local v_x = x + 4
+  local v_y = y + tab_h + 2
+  local v_size = 4
+  -- Left stroke
+  ImGui.DrawList_AddLine(dl, v_x, v_y, v_x + v_size/2, v_y + v_size, v_color, 1.5)
+  -- Right stroke
+  ImGui.DrawList_AddLine(dl, v_x + v_size/2, v_y + v_size, v_x + v_size, v_y, v_color, 1.5)
+
+  return main_w + 4  -- Return width including spacing
+end
+
 -- ============================================================================
 -- TREE NODE RENDERING
 -- ============================================================================
@@ -160,8 +193,13 @@ local function render_tree_node(ctx, node, config, state, depth)
     local text_y_offset = (ImGui.GetTextLineHeight(ctx) - 9) * 0.5  -- Center icon vertically (9 = tab_h + main_h)
     local icon_y = item_min_y + text_y_offset
 
-    -- Draw folder icon
-    local icon_width = draw_folder_icon(ctx, dl, icon_x, icon_y, node_color)
+    -- Draw folder icon (virtual or physical)
+    local icon_width
+    if node.is_virtual then
+      icon_width = draw_virtual_folder_icon(ctx, dl, icon_x, icon_y, node_color)
+    else
+      icon_width = draw_folder_icon(ctx, dl, icon_x, icon_y, node_color)
+    end
 
     -- Calculate text position
     local text_x = icon_x + icon_width

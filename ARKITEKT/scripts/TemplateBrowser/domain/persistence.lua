@@ -336,6 +336,16 @@ end
 --       last_seen = timestamp
 --     }
 --   },
+--   virtual_folders = {
+--     [uuid] = {
+--       id = "uuid",
+--       name = "Virtual Folder Name",
+--       parent_id = nil or "__ROOT__" or parent virtual folder uuid,
+--       template_refs = {"template-uuid-1", "template-uuid-2"},
+--       color = "#FF5733" (optional),
+--       created = timestamp
+--     }
+--   },
 --   tags = {
 --     "tag1" = {
 --       name = "Tag Name",
@@ -362,6 +372,10 @@ function M.load_metadata()
     data.folders = {}
   end
 
+  if not data.virtual_folders then
+    data.virtual_folders = {}
+  end
+
   if not data.tags then
     data.tags = {}
   end
@@ -383,6 +397,10 @@ function M.save_metadata(metadata)
 
   if not metadata.folders then
     metadata.folders = {}
+  end
+
+  if not metadata.virtual_folders then
+    metadata.virtual_folders = {}
   end
 
   if not metadata.tags then
@@ -451,6 +469,15 @@ function M.find_folder(metadata, uuid, name, path)
   end
 
   return nil
+end
+
+-- Find virtual folder by ID
+function M.find_virtual_folder(metadata, id)
+  if not metadata or not metadata.virtual_folders then
+    return nil
+  end
+
+  return metadata.virtual_folders[id]
 end
 
 return M
