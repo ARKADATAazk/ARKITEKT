@@ -3,6 +3,7 @@
 -- JSON-based theme parameter mappings
 
 local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
+local JSON = require('rearkitekt.core.json')
 
 local M = {}
 
@@ -28,23 +29,83 @@ local function load_json(path)
   local content = file:read("*all")
   file:close()
 
-  -- Simple JSON decode (we'll need a proper JSON library)
-  -- For now, return nil - will implement after testing basic structure
-  -- TODO: Integrate JSON library
-  return nil
+  if not content or content == "" then
+    return nil
+  end
+
+  -- Decode JSON using rearkitekt JSON library
+  local decoded = JSON.decode(content)
+  return decoded
 end
 
--- Save JSON file
+-- Save JSON file (with pretty formatting)
 local function save_json(path, data)
   local file = io.open(path, "w")
   if not file then return false end
 
-  -- Simple JSON encode
-  -- TODO: Integrate JSON library
-  file:write("{}")
+  -- Encode to JSON
+  local json_str = JSON.encode(data)
+
+  if not json_str then
+    file:close()
+    return false
+  end
+
+  -- Pretty-format the JSON (basic indentation)
+  local formatted = M.pretty_format_json(json_str)
+
+  file:write(formatted)
   file:close()
 
   return true
+end
+
+-- Pretty-format JSON with indentation
+function M.pretty_format_json(json_str)
+  local indent = 0
+  local result = {}
+  local in_string = false
+  local escape_next = false
+
+  for i = 1, #json_str do
+    local char = json_str:sub(i, i)
+
+    if escape_next then
+      table.insert(result, char)
+      escape_next = false
+    elseif char == '\\' and in_string then
+      table.insert(result, char)
+      escape_next = true
+    elseif char == '"' then
+      table.insert(result, char)
+      in_string = not in_string
+    elseif not in_string then
+      if char == '{' or char == '[' then
+        indent = indent + 1
+        table.insert(result, char)
+        table.insert(result, '\n')
+        table.insert(result, string.rep('  ', indent))
+      elseif char == '}' or char == ']' then
+        indent = indent - 1
+        table.insert(result, '\n')
+        table.insert(result, string.rep('  ', indent))
+        table.insert(result, char)
+      elseif char == ',' then
+        table.insert(result, char)
+        table.insert(result, '\n')
+        table.insert(result, string.rep('  ', indent))
+      elseif char == ':' then
+        table.insert(result, char)
+        table.insert(result, ' ')
+      elseif char ~= ' ' and char ~= '\n' and char ~= '\t' then
+        table.insert(result, char)
+      end
+    else
+      table.insert(result, char)
+    end
+  end
+
+  return table.concat(result)
 end
 
 -- Find companion JSON file in ColorThemes directory
@@ -130,8 +191,34 @@ function M.get_mapping(param_name)
   return nil
 end
 
+-- Create mapping structure from discovered parameters
+function M.create_mapping_from_params(params)
+  local mapping = {
+    theme_name = ParamDiscovery.get_current_theme_name(),
+    version = "1.0.0",
+    created_at = os.date("%Y-%m-%d %H:%M:%S"),
+    description = "Auto-generated parameter mappings for Theme Adjuster",
+    params = {}
+  }
+
+  for _, param in ipairs(params) do
+    mapping.params[param.name] = {
+      index = param.index,
+      display_name = param.name,
+      category = param.category or "Uncategorized",
+      type = param.type,
+      min = param.min,
+      max = param.max,
+      default = param.default,
+      description = param.description or "",
+    }
+  end
+
+  return mapping
+end
+
 -- Export current mappings to JSON
-function M.export_mappings()
+function M.export_mappings(params)
   local themes_dir = ParamDiscovery.get_colorthemes_dir()
   if not themes_dir then
     return false, "Could not find ColorThemes directory"
@@ -140,7 +227,10 @@ function M.export_mappings()
   local theme_name = M.current_theme_name or ParamDiscovery.get_current_theme_name()
   local json_path = themes_dir .. "/" .. theme_name .. ".json"
 
-  local success = save_json(json_path, M.current_mappings)
+  -- Create mapping structure
+  local mapping_data = M.create_mapping_from_params(params or {})
+
+  local success = save_json(json_path, mapping_data)
 
   if success then
     return true, json_path

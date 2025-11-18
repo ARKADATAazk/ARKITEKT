@@ -65,14 +65,27 @@ function AdditionalView:draw(ctx, shell_state)
 
   ImGui.SameLine(ctx, 0, 20)
 
-  -- Dev Mode toggle (for future phase)
-  -- if ImGui.Checkbox(ctx, "Dev Mode", self.dev_mode) then
-  --   self.dev_mode = not self.dev_mode
-  -- end
-
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
+  -- Export button
   local theme_name = ParamDiscovery.get_current_theme_name()
   local param_count = #self.unknown_params
+
+  if Button.draw_at_cursor(ctx, {
+    label = "Export to JSON",
+    width = 120,
+    height = 24,
+    on_click = function()
+      self:export_parameters()
+    end
+  }, "export_json") then
+  end
+
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.SetTooltip(ctx, "Export all discovered parameters to a JSON file in ColorThemes/")
+  end
+
+  ImGui.Dummy(ctx, 0, 4)
+
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
   ImGui.Text(ctx, string.format("Auto-discovered parameters from: %s (%d found)", theme_name, param_count))
   ImGui.PopStyleColor(ctx)
 
@@ -223,6 +236,29 @@ function AdditionalView:draw_control(ctx, param, width)
   end
 
   return changed, new_value
+end
+
+function AdditionalView:export_parameters()
+  -- Export all unknown parameters to JSON
+  local success, path_or_error = ThemeMapper.export_mappings(self.unknown_params)
+
+  if success then
+    reaper.ShowMessageBox(
+      "Parameters exported successfully!\n\nFile: " .. path_or_error .. "\n\n" ..
+      "This JSON file can be:\n" ..
+      "• Edited to customize parameter names, colors, and categories\n" ..
+      "• Shared with other users of this theme\n" ..
+      "• Version controlled alongside the theme",
+      "Export Successful",
+      0
+    )
+  else
+    reaper.ShowMessageBox(
+      "Failed to export parameters:\n\n" .. path_or_error,
+      "Export Failed",
+      0
+    )
+  end
 end
 
 return M
