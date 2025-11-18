@@ -80,9 +80,12 @@ function M.create(ctx, config, state, visualization, animator)
       end
 
       -- Use cached track color (fetched during loading, not every frame!)
-      local track_color = entry.track_color or 16576  -- Default grey code
+      local track_color = entry.track_color or 0
       local r, g, b = 85/256, 91/256, 91/256  -- Default grey
-      if track_color ~= 16576 and track_color > 0 then
+
+      -- REAPER's I_CUSTOMCOLOR: 0 = no custom color set, use default grey
+      -- Non-zero values are in Windows COLORREF format: 0x00BBGGRR
+      if track_color > 0 then
         local R = track_color & 255
         local G = (track_color >> 8) & 255
         local B = (track_color >> 16) & 255
