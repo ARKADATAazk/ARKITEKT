@@ -191,21 +191,33 @@ end
 
 function MCPView:draw_additional_param(ctx, param)
   -- Vertical stacked layout for narrow column
+  -- Use custom display name if available, otherwise use param name
+  local display_name = (param.display_name and param.display_name ~= "")
+    and param.display_name or param.name
+
   -- Label
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
-  ImGui.Text(ctx, param.name)
+  ImGui.Text(ctx, display_name)
   ImGui.PopStyleColor(ctx)
 
-  -- Tooltip
+  -- Tooltip with custom description or default info
   if ImGui.IsItemHovered(ctx) then
-    local tooltip = string.format(
-      "Type: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f",
-      param.type,
-      param.min,
-      param.max,
-      param.default,
-      param.value
-    )
+    local tooltip
+    if param.custom_description and param.custom_description ~= "" then
+      -- Use custom description
+      tooltip = param.custom_description
+    else
+      -- Use default technical info
+      tooltip = string.format(
+        "Parameter: %s\nType: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f",
+        param.name,
+        param.type,
+        param.min,
+        param.max,
+        param.default,
+        param.value
+      )
+    end
     ImGui.SetTooltip(ctx, tooltip)
   end
 

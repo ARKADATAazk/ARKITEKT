@@ -255,8 +255,8 @@ function M.load_current_mappings()
   return load_json(json_path)
 end
 
--- Save assignments to JSON
-function M.save_assignments(assignments)
+-- Save assignments and custom metadata to JSON
+function M.save_assignments(assignments, custom_metadata)
   local themes_dir = ParamDiscovery.get_colorthemes_dir()
   if not themes_dir then
     return false
@@ -274,8 +274,9 @@ function M.save_assignments(assignments)
     params = {},
   }
 
-  -- Update assignments
+  -- Update assignments and custom metadata
   data.assignments = assignments
+  data.custom_metadata = custom_metadata or {}
 
   return save_json(json_path, data)
 end

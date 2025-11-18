@@ -58,6 +58,9 @@ function M.new(State, Config, settings)
 
     -- Tab assignments: param_name -> {TCP = true, MCP = false, ...}
     assignments = {},
+
+    -- Custom metadata: param_name -> {display_name = "", description = ""}
+    custom_metadata = {},
   }, AdditionalView)
 
   -- Discover parameters on init
@@ -171,6 +174,14 @@ function AdditionalView:draw_param_row(ctx, param, shell_state)
   local control_w = 150
   local chips_start = control_start + control_w + 20
 
+  -- Initialize metadata if needed
+  if not self.custom_metadata[param.name] then
+    self.custom_metadata[param.name] = {
+      display_name = "",
+      description = ""
+    }
+  end
+
   -- Label (left side)
   ImGui.AlignTextToFramePadding(ctx)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
@@ -209,7 +220,44 @@ function AdditionalView:draw_param_row(ctx, param, shell_state)
     self:save_assignments()
   end
 
-  ImGui.Dummy(ctx, 0, 4)
+  ImGui.Dummy(ctx, 0, 2)
+
+  -- Second row: Custom name and description fields
+  ImGui.Indent(ctx, 20)
+
+  -- Custom Name field
+  ImGui.AlignTextToFramePadding(ctx)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+  ImGui.Text(ctx, "Name:")
+  ImGui.PopStyleColor(ctx)
+  ImGui.SameLine(ctx, 70)
+
+  ImGui.SetNextItemWidth(ctx, 180)
+  local name_changed, new_name = ImGui.InputText(ctx, "##name_" .. param.index,
+    self.custom_metadata[param.name].display_name)
+  if name_changed then
+    self.custom_metadata[param.name].display_name = new_name
+    self:save_assignments()
+  end
+
+  -- Description field
+  ImGui.SameLine(ctx, 265)
+  ImGui.AlignTextToFramePadding(ctx)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+  ImGui.Text(ctx, "Desc:")
+  ImGui.PopStyleColor(ctx)
+  ImGui.SameLine(ctx, 315)
+
+  ImGui.SetNextItemWidth(ctx, 280)
+  local desc_changed, new_desc = ImGui.InputText(ctx, "##desc_" .. param.index,
+    self.custom_metadata[param.name].description)
+  if desc_changed then
+    self.custom_metadata[param.name].description = new_desc
+    self:save_assignments()
+  end
+
+  ImGui.Unindent(ctx, 20)
+  ImGui.Dummy(ctx, 0, 6)
 end
 
 function AdditionalView:draw_control(ctx, param, width)
@@ -342,11 +390,17 @@ function AdditionalView:load_assignments()
   else
     self.assignments = {}
   end
+
+  if mappings and mappings.custom_metadata then
+    self.custom_metadata = mappings.custom_metadata
+  else
+    self.custom_metadata = {}
+  end
 end
 
 function AdditionalView:save_assignments()
-  -- Save assignments to JSON file
-  reaper.ShowConsoleMsg("Additional: Saving assignments...\n")
+  -- Save assignments and metadata to JSON file
+  reaper.ShowConsoleMsg("Additional: Saving assignments and metadata...\n")
   for param_name, assignment in pairs(self.assignments) do
     for tab_id, is_assigned in pairs(assignment) do
       if is_assigned then
@@ -355,16 +409,16 @@ function AdditionalView:save_assignments()
     end
   end
 
-  local success = ThemeMapper.save_assignments(self.assignments)
+  local success = ThemeMapper.save_assignments(self.assignments, self.custom_metadata)
   if success then
-    reaper.ShowConsoleMsg("Additional: Assignments saved successfully\n")
+    reaper.ShowConsoleMsg("Additional: Data saved successfully\n")
   else
-    reaper.ShowConsoleMsg("Additional: Failed to save assignments\n")
+    reaper.ShowConsoleMsg("Additional: Failed to save data\n")
   end
 end
 
 function AdditionalView:get_assigned_params(tab_id)
-  -- Return all parameters assigned to a specific tab
+  -- Return all parameters assigned to a specific tab with custom metadata
   local assigned = {}
 
   -- Get all discovered parameters
@@ -374,6 +428,16 @@ function AdditionalView:get_assigned_params(tab_id)
   for _, param in ipairs(all_params) do
     local assignment = self.assignments[param.name]
     if assignment and assignment[tab_id] then
+      -- Attach custom metadata if available
+      local metadata = self.custom_metadata[param.name]
+      if metadata then
+        param.display_name = metadata.display_name or param.name
+        param.custom_description = metadata.description or ""
+      else
+        param.display_name = param.name
+        param.custom_description = ""
+      end
+
       table.insert(assigned, param)
     end
   end
