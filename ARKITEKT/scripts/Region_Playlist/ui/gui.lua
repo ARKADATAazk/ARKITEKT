@@ -144,13 +144,14 @@ function M.create(State, AppConfig, settings)
     on_pool_rename = function(item_key, new_name)
       local rid = tonumber(item_key:match("pool_(%d+)"))
       if rid then
-        -- Rename region
-        State.rename_region_by_rid(rid, new_name)
+        -- Rename region directly
+        local Regions = require('rearkitekt.reaper.regions')
+        Regions.set_region_name(0, rid, new_name)
       else
         -- Rename playlist
         local playlist_id = item_key:match("pool_playlist_(.+)")
         if playlist_id then
-          State.rename_playlist(playlist_id, new_name)
+          self.controller:rename_playlist(playlist_id, new_name)
         end
       end
     end,
@@ -159,14 +160,15 @@ function M.create(State, AppConfig, settings)
     on_pool_batch_rename = function(item_keys, pattern)
       local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
       local new_names = BatchRenameModal.apply_pattern_to_items(pattern, #item_keys)
+      local Regions = require('rearkitekt.reaper.regions')
       for i, key in ipairs(item_keys) do
         local rid = tonumber(key:match("pool_(%d+)"))
         if rid then
-          State.rename_region_by_rid(rid, new_names[i])
+          Regions.set_region_name(0, rid, new_names[i])
         else
           local playlist_id = key:match("pool_playlist_(.+)")
           if playlist_id then
-            State.rename_playlist(playlist_id, new_names[i])
+            self.controller:rename_playlist(playlist_id, new_names[i])
           end
         end
       end
