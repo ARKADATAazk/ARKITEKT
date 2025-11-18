@@ -397,39 +397,31 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
 
   DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
 
-  -- Performance: Cache polyline points per uuid+width (300x faster)
+  -- Performance: Cache normalized point coordinates (20x faster)
   local cache_key = uuid and (uuid .. "_" .. width) or nil
   local cached_polylines = cache_key and cache and cache.waveform_polylines and cache.waveform_polylines[cache_key]
 
   if cached_polylines then
-    -- Use cached polyline arrays
-    if cached_polylines.top_array then
-      -- Build point positions on the fly (cheap), reuse downsampled data (expensive)
+    -- Use cached normalized coordinates - just scale to current tile dimensions
+    local norm_top = cached_polylines.norm_top
+    local norm_bottom = cached_polylines.norm_bottom
+
+    if norm_top and norm_bottom then
+      -- Build point arrays by scaling cached normalized coords (MUCH faster than before)
       local top_points_table = {}
       local top_idx = 1
-      local negative_index = #cached_polylines.downsampled / 2
-      for i = 1, negative_index do
-        local max_val = cached_polylines.downsampled[i]
-        if max_val then
-          local y = zero_line + waveform_height * max_val
-          local x = item_x1 + ((i - 1) / (negative_index - 1)) * item_w
-          top_points_table[top_idx] = x
-          top_points_table[top_idx + 1] = y
-          top_idx = top_idx + 2
-        end
+      for i = 1, #norm_top, 2 do
+        top_points_table[top_idx] = item_x1 + norm_top[i] * item_w  -- Scale X
+        top_points_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height  -- Scale Y
+        top_idx = top_idx + 2
       end
 
       local bottom_points_table = {}
       local bottom_idx = 1
-      for i = 1, negative_index do
-        local min_val = cached_polylines.downsampled[i + negative_index]
-        if min_val then
-          local y = zero_line + waveform_height * min_val
-          local x = item_x1 + ((i - 1) / (negative_index - 1)) * item_w
-          bottom_points_table[bottom_idx] = x
-          bottom_points_table[bottom_idx + 1] = y
-          bottom_idx = bottom_idx + 2
-        end
+      for i = 1, #norm_bottom, 2 do
+        bottom_points_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w  -- Scale X
+        bottom_points_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height  -- Scale Y
+        bottom_idx = bottom_idx + 2
       end
 
       if #top_points_table >= 4 then
@@ -443,37 +435,54 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
       end
     end
   else
-    -- Generate and cache polylines
+    -- Generate and cache normalized coordinates
     local display_waveform = M.DownsampleWaveform(waveform, width)
     if not display_waveform or #display_waveform == 0 then return end
 
     local negative_index = #display_waveform / 2
 
-    -- Build point arrays
-    local top_points_table = {}
-    local top_idx = 1
+    -- Build normalized point arrays (0-1 range) for caching
+    local norm_top = {}
+    local norm_top_idx = 1
     for i = 1, negative_index do
       local max_val = display_waveform[i]
       if max_val then
-        local y = zero_line + waveform_height * max_val
-        local x = item_x1 + ((i - 1) / (negative_index - 1)) * item_w
-        top_points_table[top_idx] = x
-        top_points_table[top_idx + 1] = y
-        top_idx = top_idx + 2
+        local norm_x = (i - 1) / (negative_index - 1)  -- Normalized X (0-1)
+        local norm_y = max_val  -- Already normalized (-1 to 1)
+        norm_top[norm_top_idx] = norm_x
+        norm_top[norm_top_idx + 1] = norm_y
+        norm_top_idx = norm_top_idx + 2
       end
+    end
+
+    local norm_bottom = {}
+    local norm_bottom_idx = 1
+    for i = 1, negative_index do
+      local min_val = display_waveform[i + negative_index]
+      if min_val then
+        local norm_x = (i - 1) / (negative_index - 1)  -- Normalized X (0-1)
+        local norm_y = min_val  -- Already normalized (-1 to 1)
+        norm_bottom[norm_bottom_idx] = norm_x
+        norm_bottom[norm_bottom_idx + 1] = norm_y
+        norm_bottom_idx = norm_bottom_idx + 2
+      end
+    end
+
+    -- Build actual point arrays for this frame
+    local top_points_table = {}
+    local top_idx = 1
+    for i = 1, #norm_top, 2 do
+      top_points_table[top_idx] = item_x1 + norm_top[i] * item_w
+      top_points_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height
+      top_idx = top_idx + 2
     end
 
     local bottom_points_table = {}
     local bottom_idx = 1
-    for i = 1, negative_index do
-      local min_val = display_waveform[i + negative_index]
-      if min_val then
-        local y = zero_line + waveform_height * min_val
-        local x = item_x1 + ((i - 1) / (negative_index - 1)) * item_w
-        bottom_points_table[bottom_idx] = x
-        bottom_points_table[bottom_idx + 1] = y
-        bottom_idx = bottom_idx + 2
-      end
+    for i = 1, #norm_bottom, 2 do
+      bottom_points_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w
+      bottom_points_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height
+      bottom_idx = bottom_idx + 2
     end
 
     if #top_points_table >= 4 then
@@ -486,11 +495,11 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
       DrawList_AddPolyline(draw_list, bottom_array, col_wave, ImGui.DrawFlags_None, 1.0)
     end
 
-    -- Cache the downsampled waveform for this uuid+width
+    -- Cache the normalized coordinates for this uuid+width
     if cache_key and cache and cache.waveform_polylines then
       cache.waveform_polylines[cache_key] = {
-        downsampled = display_waveform,
-        top_array = true,  -- Marker that arrays were created
+        norm_top = norm_top,
+        norm_bottom = norm_bottom,
       }
     end
   end
