@@ -121,9 +121,8 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
 
   local has_overlay = OverlayManager and OverlayManager.has_active_overlays()
   local has_popup = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
-  local want_capture_mouse = select(2, ImGui.GetConfigVar(ctx, ImGui.ConfigVar_WantCaptureMouse))
 
-  local is_blocking = config.is_blocking or has_overlay or has_popup or want_capture_mouse
+  local is_blocking = config.is_blocking or has_overlay or has_popup
   local hovered = false
   local active = false
 

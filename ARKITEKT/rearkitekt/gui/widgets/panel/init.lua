@@ -359,9 +359,8 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
 
     local has_overlay = OverlayManager and OverlayManager.has_active_overlays()
     local has_popup = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
-    local want_capture_mouse = select(2, ImGui.GetConfigVar(ctx, ImGui.ConfigVar_WantCaptureMouse))
 
-    local is_blocking = cfg.is_blocking or has_overlay or has_popup or want_capture_mouse
+    local is_blocking = cfg.is_blocking or has_overlay or has_popup
     local hovered = false
     local active = false
 

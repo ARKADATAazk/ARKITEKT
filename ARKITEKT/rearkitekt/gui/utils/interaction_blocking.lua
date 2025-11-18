@@ -43,12 +43,6 @@ function M.should_block_interaction(ctx, custom_blocking)
     return true
   end
 
-  -- Check WantCaptureMouse config var (legacy fallback)
-  local want_capture = select(2, ImGui.GetConfigVar(ctx, ImGui.ConfigVar_WantCaptureMouse))
-  if want_capture then
-    return true
-  end
-
   return false
 end
 
