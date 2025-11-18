@@ -778,14 +778,48 @@ local function draw_directory_content(ctx, state, config, width, height)
     local folder_num = 1
     local new_folder_name = "New Folder"
 
-    -- Find unique name by checking existing folders in the parent directory
-    local function folder_exists_in_parent(parent_path_check, name)
-      local sep = package.config:sub(1,1)
-      local check_path = parent_path_check .. sep .. name
-      return reaper.file_exists(check_path)
+    -- Find unique name by checking existing folders in the scanned folder tree
+    local function folder_exists_in_parent(parent_rel_path, name)
+      -- Navigate to parent folder in the tree
+      local function find_children_at_path(node, path)
+        if not path or path == "" then
+          -- Root level
+          return node.children or {}
+        end
+
+        -- Navigate to the target path
+        local parts = {}
+        for part in path:gmatch("[^"..package.config:sub(1,1).."]+") do
+          table.insert(parts, part)
+        end
+
+        local current = node
+        for _, part in ipairs(parts) do
+          if not current.children then return {} end
+          local found = false
+          for _, child in ipairs(current.children) do
+            if child.name == part then
+              current = child
+              found = true
+              break
+            end
+          end
+          if not found then return {} end
+        end
+
+        return current.children or {}
+      end
+
+      local siblings = find_children_at_path(state.folders or {}, parent_rel_path)
+      for _, sibling in ipairs(siblings) do
+        if sibling.name == name then
+          return true
+        end
+      end
+      return false
     end
 
-    while folder_exists_in_parent(parent_path, new_folder_name) do
+    while folder_exists_in_parent(parent_relative_path, new_folder_name) do
       folder_num = folder_num + 1
       new_folder_name = "New Folder " .. folder_num
     end
