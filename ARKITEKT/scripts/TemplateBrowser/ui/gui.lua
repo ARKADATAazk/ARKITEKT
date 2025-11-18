@@ -223,11 +223,26 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   end
 
   local root_nodes = {}
+
+  -- Add virtual ROOT node at the top
+  local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
+  local root_node = {
+    id = "",  -- Empty path represents root
+    name = "ROOT",
+    path = "",
+    full_path = template_path,
+    children = {},
+    is_root = true,  -- Flag to identify root node
+  }
+
+  -- All actual folders become children of ROOT
   if node.children then
     for _, child in ipairs(node.children) do
-      table.insert(root_nodes, convert_node(child))
+      table.insert(root_node.children, convert_node(child))
     end
   end
+
+  table.insert(root_nodes, root_node)
 
   return root_nodes
 end
@@ -239,6 +254,11 @@ local function draw_folder_tree(ctx, state, config)
 
   if #tree_nodes == 0 then
     return
+  end
+
+  -- Ensure ROOT node is open by default
+  if state.folder_open_state[""] == nil then
+    state.folder_open_state[""] = true
   end
 
   -- Map state variables to TreeView format
@@ -731,36 +751,69 @@ local function draw_directory_content(ctx, state, config, width, height)
   ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING * 3)
 
   if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "folder") then
-    -- Create new folder
+    -- Create new folder inside selected folder (or root if nothing selected)
     local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
+    local parent_path = template_path
+    local parent_relative_path = ""
+
+    -- Determine parent folder from selection
+    if state.selected_folders and next(state.selected_folders) then
+      -- Get first selected folder as parent
+      for folder_path, _ in pairs(state.selected_folders) do
+        parent_relative_path = folder_path
+        parent_path = template_path .. package.config:sub(1,1) .. folder_path
+        break  -- Use first selected
+      end
+    elseif state.selected_folder and state.selected_folder ~= "" then
+      parent_relative_path = state.selected_folder
+      parent_path = template_path .. package.config:sub(1,1) .. state.selected_folder
+    end
+
     local folder_num = 1
     local new_folder_name = "New Folder"
 
-    -- Find unique name by checking existing folders in the tree
-    local function folder_exists_in_tree(node, name)
-      if not node then return false end
-      if node.children then
-        for _, child in ipairs(node.children) do
-          if child.name == name and child.path == name then
-            return true
-          end
-          if folder_exists_in_tree(child, name) then
-            return true
-          end
-        end
-      end
-      return false
+    -- Find unique name by checking existing folders in the parent directory
+    local function folder_exists_in_parent(parent_path_check, name)
+      local sep = package.config:sub(1,1)
+      local check_path = parent_path_check .. sep .. name
+      return reaper.file_exists(check_path)
     end
 
-    while folder_exists_in_tree(state.folders, new_folder_name) do
+    while folder_exists_in_parent(parent_path, new_folder_name) do
       folder_num = folder_num + 1
       new_folder_name = "New Folder " .. folder_num
     end
 
-    local success, new_path = FileOps.create_folder(template_path, new_folder_name)
+    local success, new_path = FileOps.create_folder(parent_path, new_folder_name)
     if success then
       local Scanner = require('TemplateBrowser.domain.scanner')
       Scanner.scan_templates(state)
+
+      -- Select the newly created folder
+      local sep = package.config:sub(1,1)
+      local new_relative_path = parent_relative_path
+      if new_relative_path ~= "" then
+        new_relative_path = new_relative_path .. sep .. new_folder_name
+      else
+        new_relative_path = new_folder_name
+      end
+
+      -- Select the new folder
+      state.selected_folders = {}
+      state.selected_folders[new_relative_path] = true
+      state.selected_folder = new_relative_path
+      state.last_clicked_folder = new_relative_path
+
+      -- Open parent folder to show the new folder
+      if parent_relative_path ~= "" then
+        state.folder_open_state[parent_relative_path] = true
+      end
+      state.folder_open_state[""] = true  -- Open ROOT
+
+      -- Show status message
+      state.set_status("Created folder: " .. new_folder_name, "success")
+    else
+      state.set_status("Failed to create folder", "error")
     end
   end
 
