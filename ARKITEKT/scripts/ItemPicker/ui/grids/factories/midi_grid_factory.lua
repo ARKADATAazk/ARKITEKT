@@ -216,12 +216,8 @@ function M.create(ctx, config, state, visualization, animator)
       end
     end,
 
-    right_click = function(uuid, selected_uuids)
-      -- Toggle favorite state for all selected items
-      -- Need to get track_guid from UUID lookup
-      local item_data = state.midi_item_lookup[uuid]
-      if not item_data then return end
-
+    favorite = function(item_uuids)
+      -- Toggle favorite with F key
       local items = get_items()
       local track_guid_map = {}
       for _, data in ipairs(items) do
@@ -230,24 +226,24 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
 
-      if #selected_uuids > 1 then
-        -- Multi-select: toggle all to the opposite of clicked item's state
-        local clicked_track_guid = track_guid_map[uuid]
-        local new_state = not state.is_midi_favorite(clicked_track_guid)
-        for _, sel_uuid in ipairs(selected_uuids) do
-          local sel_track_guid = track_guid_map[sel_uuid]
-          if sel_track_guid then
+      if #item_uuids > 1 then
+        -- Multi-select: toggle all to opposite of first item's state
+        local first_track_guid = track_guid_map[item_uuids[1]]
+        local new_state = not state.is_midi_favorite(first_track_guid)
+        for _, uuid in ipairs(item_uuids) do
+          local track_guid = track_guid_map[uuid]
+          if track_guid then
             if new_state then
-              state.favorites.midi[sel_track_guid] = true
+              state.favorites.midi[track_guid] = true
             else
-              state.favorites.midi[sel_track_guid] = nil
+              state.favorites.midi[track_guid] = nil
             end
           end
         end
         state.persist_favorites()
       else
         -- Single item: toggle
-        local track_guid = track_guid_map[uuid]
+        local track_guid = track_guid_map[item_uuids[1]]
         if track_guid then
           state.toggle_midi_favorite(track_guid)
         end
@@ -288,24 +284,6 @@ function M.create(ctx, config, state, visualization, animator)
       state.persist_disabled()
     end,
 
-    alt_click = function(item_uuids)
-      -- Toggle disable with Alt+click
-      -- Convert UUIDs to track_guids
-      local items = get_items()
-      local track_guid_map = {}
-      for _, data in ipairs(items) do
-        if data.uuid then
-          track_guid_map[data.uuid] = data.track_guid
-        end
-      end
-
-      for _, uuid in ipairs(item_uuids) do
-        local track_guid = track_guid_map[uuid]
-        if track_guid then
-          state.toggle_midi_disabled(track_guid)
-        end
-      end
-    end,
 
     on_select = function(selected_keys)
       -- Update state with current selection count

@@ -14,6 +14,7 @@ M.SHORTCUT_REGISTRY = {
   { key = ImGui.Key_Delete, name = 'delete' },
   { key = ImGui.Key_Space, name = 'play' },
   { key = ImGui.Key_F2, name = 'rename' },
+  { key = ImGui.Key_F, name = 'favorite' },
   { key = ImGui.Key_A, ctrl = true, name = 'select_all' },
   { key = ImGui.Key_D, ctrl = true, name = 'deselect_all' },
   { key = ImGui.Key_I, ctrl = true, name = 'invert_selection' },
@@ -141,12 +142,24 @@ function M.handle_wheel_input(grid, ctx, items)
   local wheel_y = ImGui.GetMouseWheel(ctx)
   if wheel_y == 0 then return false end
 
-  -- Check if CTRL or ALT is held (tile resize modifiers)
+  -- Check modifiers
   local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
   local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+  local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
 
-  -- If CTRL or ALT is held, this is a global tile resize operation
-  -- Works anywhere in the grid, doesn't require hovering over a tile
+  -- SHIFT+Scroll: Cycle through item group (1/3, 2/3, 3/3)
+  if shift and not ctrl and not alt then
+    local selected_keys = grid.selection:selected_keys()
+    if #selected_keys > 0 then
+      local wheel_step = (grid.config and grid.config.wheel and grid.config.wheel.step) or 1
+      local delta = (wheel_y > 0) and wheel_step or -wheel_step
+      grid.behaviors.wheel_adjust(selected_keys, delta)
+      return true  -- Consume wheel to prevent scrolling
+    end
+    return false
+  end
+
+  -- CTRL or ALT: Tile resize operation (works anywhere in grid)
   if ctrl or alt then
     local wheel_step = (grid.config and grid.config.wheel and grid.config.wheel.step) or 1
     local delta = (wheel_y > 0) and wheel_step or -wheel_step
@@ -190,37 +203,22 @@ function M.handle_tile_input(grid, ctx, item, rect)
 
   if is_hovered and not grid.sel_rect:is_active() and not grid.drag.active and not M.is_external_drag_active(grid) then
     if ImGui.IsMouseClicked(ctx, 0) then
-      local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
-      
-      if alt then
-        if grid.behaviors and grid.behaviors.alt_click then
-          local was_selected = grid.selection:is_selected(key)
-          if was_selected and grid.selection:count() > 1 then
-            local keys_to_action = grid.selection:selected_keys()
-            grid.behaviors.alt_click(keys_to_action)
-          else
-            grid.behaviors.alt_click({key})
-          end
-        end
-        return is_hovered
-      end
-      
       local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
       local ctrl  = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl)  or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
       local was_selected = grid.selection:is_selected(key)
 
       if ctrl then
         grid.selection:toggle(key)
-        if grid.behaviors and grid.behaviors.on_select then 
-          grid.behaviors.on_select(grid.selection:selected_keys()) 
+        if grid.behaviors and grid.behaviors.on_select then
+          grid.behaviors.on_select(grid.selection:selected_keys())
         end
       elseif shift and grid.selection.last_clicked then
         local items = grid.get_items()
         local order = {}
         for _, it in ipairs(items) do order[#order+1] = grid.key(it) end
         grid.selection:range(order, grid.selection.last_clicked, key)
-        if grid.behaviors and grid.behaviors.on_select then 
-          grid.behaviors.on_select(grid.selection:selected_keys()) 
+        if grid.behaviors and grid.behaviors.on_select then
+          grid.behaviors.on_select(grid.selection:selected_keys())
         end
       else
         if not was_selected then
@@ -233,9 +231,17 @@ function M.handle_tile_input(grid, ctx, item, rect)
       grid.drag.press_pos = {mx, my}
     end
 
+    -- Right-click: Disable items (was: Toggle favorite)
     if ImGui.IsMouseClicked(ctx, 1) then
-      if grid.behaviors and grid.behaviors.right_click then
-        grid.behaviors.right_click(key, grid.selection:selected_keys())
+      if grid.behaviors and grid.behaviors.delete then
+        local selected_keys = grid.selection:selected_keys()
+        if grid.selection:is_selected(key) and #selected_keys > 1 then
+          -- Multi-select: disable all selected
+          grid.behaviors.delete(selected_keys)
+        else
+          -- Single item: disable just this one
+          grid.behaviors.delete({key})
+        end
       end
     end
 

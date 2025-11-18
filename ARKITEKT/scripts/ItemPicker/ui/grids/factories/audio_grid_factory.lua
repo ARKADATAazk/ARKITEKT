@@ -215,12 +215,8 @@ function M.create(ctx, config, state, visualization, animator)
       end
     end,
 
-    right_click = function(uuid, selected_uuids)
-      -- Toggle favorite state for all selected items
-      -- Need to get filename from UUID lookup
-      local item_data = state.audio_item_lookup[uuid]
-      if not item_data then return end
-
+    favorite = function(item_uuids)
+      -- Toggle favorite with F key
       local items = get_items()
       local filename_map = {}
       for _, data in ipairs(items) do
@@ -229,24 +225,24 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
 
-      if #selected_uuids > 1 then
-        -- Multi-select: toggle all to the opposite of clicked item's state
-        local clicked_filename = filename_map[uuid]
-        local new_state = not state.is_audio_favorite(clicked_filename)
-        for _, sel_uuid in ipairs(selected_uuids) do
-          local sel_filename = filename_map[sel_uuid]
-          if sel_filename then
+      if #item_uuids > 1 then
+        -- Multi-select: toggle all to opposite of first item's state
+        local first_filename = filename_map[item_uuids[1]]
+        local new_state = not state.is_audio_favorite(first_filename)
+        for _, uuid in ipairs(item_uuids) do
+          local filename = filename_map[uuid]
+          if filename then
             if new_state then
-              state.favorites.audio[sel_filename] = true
+              state.favorites.audio[filename] = true
             else
-              state.favorites.audio[sel_filename] = nil
+              state.favorites.audio[filename] = nil
             end
           end
         end
         state.persist_favorites()
       else
         -- Single item: toggle
-        local filename = filename_map[uuid]
+        local filename = filename_map[item_uuids[1]]
         if filename then
           state.toggle_audio_favorite(filename)
         end
@@ -287,24 +283,6 @@ function M.create(ctx, config, state, visualization, animator)
       state.persist_disabled()
     end,
 
-    alt_click = function(item_uuids)
-      -- Toggle disable with Alt+click
-      -- Convert UUIDs to filenames
-      local items = get_items()
-      local filename_map = {}
-      for _, data in ipairs(items) do
-        if data.uuid then
-          filename_map[data.uuid] = data.filename
-        end
-      end
-
-      for _, uuid in ipairs(item_uuids) do
-        local filename = filename_map[uuid]
-        if filename then
-          state.toggle_audio_disabled(filename)
-        end
-      end
-    end,
 
     on_select = function(selected_keys)
       -- Update state with current selection count
