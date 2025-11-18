@@ -193,9 +193,7 @@ function MCPView:draw_additional_param(ctx, param)
   -- Vertical stacked layout for narrow column
   -- Label
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
-  ImGui.PushFont(ctx, ImGui.GetFont(ctx))
   ImGui.Text(ctx, param.name)
-  ImGui.PopFont(ctx)
   ImGui.PopStyleColor(ctx)
 
   -- Tooltip
