@@ -311,19 +311,19 @@ local function draw_folder_tree(ctx, state, config)
       for _, id in ipairs(dragged_ids) do
         local source_node = find_node_by_id(tree_nodes, id)
         if not source_node or not target_node then
-          reaper.ShowConsoleMsg("Error: Cannot find source or target folder\n")
+          state.set_status("Error: Cannot find source or target folder", "error")
           return
         end
 
         -- Don't allow dropping onto self
         if source_node.id == target_node.id then
-          reaper.ShowConsoleMsg("Cannot move folder into itself\n")
+          state.set_status("Cannot move folder into itself", "error")
           return
         end
 
         -- Don't allow dropping into own descendants (circular reference)
         if is_descendant(source_node, target_node.id) then
-          reaper.ShowConsoleMsg("Cannot move folder into its own subfolder\n")
+          state.set_status("Cannot move folder into its own subfolder", "error")
           return
         end
 
@@ -344,7 +344,7 @@ local function draw_folder_tree(ctx, state, config)
         -- Extract old parent directory
         local old_parent = source_normalized:match("^(.+)[/\\][^/\\]+$")
         if not old_parent then
-          reaper.ShowConsoleMsg("ERROR: Cannot determine parent folder for: " .. source_full_path .. "\n")
+          state.set_status("Cannot determine parent folder for: " .. source_name, "error")
           return
         end
 
@@ -364,7 +364,7 @@ local function draw_folder_tree(ctx, state, config)
           op.new_path = new_path
         else
           all_success = false
-          reaper.ShowConsoleMsg("ERROR: Failed to move folder: " .. op.source_name .. "\n")
+          state.set_status("Failed to move folder: " .. op.source_name, "error")
           break
         end
       end
@@ -417,6 +417,14 @@ local function draw_folder_tree(ctx, state, config)
         -- Rescan templates
         local Scanner = require('TemplateBrowser.domain.scanner')
         Scanner.scan_templates(state)
+
+        -- Success message
+        local count = #folders_to_move
+        if count > 1 then
+          state.set_status("Successfully moved " .. count .. " folders to " .. target_name, "success")
+        else
+          state.set_status("Successfully moved " .. folders_to_move[1].name .. " to " .. target_name, "success")
+        end
       end
     end,
 
@@ -1435,10 +1443,11 @@ function GUI:draw(ctx, shell_state)
   local padding_left = 14
   local padding_right = 14
   local padding_bottom = 14
+  local status_bar_height = 24  -- Reserve space for status bar
 
   local cursor_y = ImGui.GetCursorPosY(ctx)
   local content_width = SCREEN_W - padding_left - padding_right
-  local panel_height = SCREEN_H - cursor_y - padding_bottom
+  local panel_height = SCREEN_H - cursor_y - padding_bottom - status_bar_height
 
   -- Get window's screen position for coordinate conversion
   -- The cursor is currently at (0, cursor_y) in window coords
@@ -1517,6 +1526,12 @@ function GUI:draw(ctx, shell_state)
   -- Template context menu and rename modal (must be drawn outside panels)
   draw_template_context_menu(ctx, self.state)
   draw_template_rename_modal(ctx, self.state)
+
+  -- Status bar at the bottom
+  local StatusBar = require('TemplateBrowser.ui.status_bar')
+  local status_bar_y = SCREEN_H - padding_bottom - status_bar_height
+  ImGui.SetCursorPos(ctx, padding_left, status_bar_y)
+  StatusBar.draw(ctx, self.state, content_width, status_bar_height)
 
   -- Handle exit
   if self.state.exit or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then

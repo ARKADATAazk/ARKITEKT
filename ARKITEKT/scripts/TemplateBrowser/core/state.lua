@@ -42,6 +42,11 @@ M.explorer_height_ratio = nil  -- Ratio for explorer vs tags panel height
 -- Undo manager
 M.undo_manager = nil
 
+-- Status bar
+M.status_message = ""        -- Current status message
+M.status_type = "info"       -- Message type: "error", "warning", "success", "info"
+M.status_timestamp = 0       -- When message was set (for auto-clear)
+
 -- Internal
 M.exit = false
 M.overlay_alpha = 1.0
@@ -71,6 +76,11 @@ function M.initialize(config)
   M.dragging_item = nil
   M.dragging_type = nil
 
+  -- Status bar
+  M.status_message = ""
+  M.status_type = "info"
+  M.status_timestamp = 0
+
   -- Panel layout defaults
   M.separator1_ratio = config.FOLDERS_PANEL_WIDTH_RATIO or 0.22
   M.separator2_ratio = (config.FOLDERS_PANEL_WIDTH_RATIO or 0.22) + (config.TEMPLATES_PANEL_WIDTH_RATIO or 0.50)
@@ -87,6 +97,22 @@ end
 
 function M.request_exit()
   M.exit = true
+end
+
+-- Set status bar message
+-- @param message string: Message to display
+-- @param msg_type string: "error", "warning", "success", "info" (default: "info")
+function M.set_status(message, msg_type)
+  M.status_message = message or ""
+  M.status_type = msg_type or "info"
+  M.status_timestamp = reaper.time_precise()
+end
+
+-- Clear status bar message
+function M.clear_status()
+  M.status_message = ""
+  M.status_type = "info"
+  M.status_timestamp = 0
 end
 
 return M
