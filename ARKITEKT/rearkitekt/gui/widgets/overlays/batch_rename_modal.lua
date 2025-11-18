@@ -5,6 +5,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
+local Style = require('rearkitekt.gui.style.defaults')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -76,7 +77,7 @@ function M.draw(ctx, item_count)
 
   -- Center modal on screen
   local viewport_w, viewport_h = ImGui.Viewport_GetSize(ImGui.GetWindowViewport(ctx))
-  local modal_w, modal_h = 400, 280
+  local modal_w, modal_h = 500, 340
   ImGui.SetNextWindowPos(ctx, (viewport_w - modal_w) * 0.5, (viewport_h - modal_h) * 0.5, ImGui.Cond_Appearing)
   ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
 
@@ -85,24 +86,39 @@ function M.draw(ctx, item_count)
                 ImGui.WindowFlags_NoResize |
                 ImGui.WindowFlags_NoDocking
 
+  -- Apply consistent styling
+  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, hexrgb("#1A1A1AFF"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#404040FF"))
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 16, 12)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 10)
+
   -- Begin modal popup
   local visible, open = ImGui.BeginPopupModal(ctx, "Batch Rename##batch_rename_modal", true, flags)
 
   if visible then
     -- Title
-    ImGui.TextColored(ctx, hexrgb("#FFFFFFFF"), string.format("Rename %d item%s", count, count > 1 and "s" or ""))
+    ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), string.format("Rename %d item%s", count, count > 1 and "s" or ""))
     ImGui.Spacing(ctx)
     ImGui.Separator(ctx)
     ImGui.Spacing(ctx)
 
-    -- Pattern input
+    -- Pattern input label
     ImGui.Text(ctx, "Rename Pattern:")
+    ImGui.Dummy(ctx, 0, 4)
+
     ImGui.SetNextItemWidth(ctx, -1)
 
     if state.focus_input then
       ImGui.SetKeyboardFocusHere(ctx)
       state.focus_input = false
     end
+
+    -- Apply input field styling
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Style.SEARCH_INPUT_COLORS.bg)
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Style.SEARCH_INPUT_COLORS.bg_hover)
+    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Style.SEARCH_INPUT_COLORS.bg_active)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Border, Style.SEARCH_INPUT_COLORS.border_outer)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Style.SEARCH_INPUT_COLORS.text)
 
     local changed, new_pattern = ImGui.InputTextWithHint(
       ctx,
@@ -112,52 +128,69 @@ function M.draw(ctx, item_count)
       ImGui.InputTextFlags_None
     )
 
+    ImGui.PopStyleColor(ctx, 5)
+
     if changed then
       state.pattern = new_pattern
       state.preview_items = generate_preview(new_pattern, count)
     end
 
-    ImGui.Spacing(ctx)
+    ImGui.Dummy(ctx, 0, 8)
 
     -- Wildcard help
-    ImGui.TextColored(ctx, hexrgb("#888888FF"), "Wildcards:")
-    ImGui.Indent(ctx, 20)
-    ImGui.TextColored(ctx, hexrgb("#AAAAААFF"), "$n  -  Sequential number (1, 2, 3...)")
-    ImGui.TextColored(ctx, hexrgb("#AAAAAAFF"), "$i  -  Index (0, 1, 2...)")
-    ImGui.TextColored(ctx, hexrgb("#AAAAAAFF"), "$N  -  Padded number (001, 002, 003...)")
-    ImGui.Unindent(ctx, 20)
+    ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards:")
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Indent(ctx, 16)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 6)
+    ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$n  —  Sequential number (1, 2, 3...)")
+    ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$i  —  Index (0, 1, 2...)")
+    ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$N  —  Padded number (001, 002, 003...)")
+    ImGui.PopStyleVar(ctx, 1)
+    ImGui.Unindent(ctx, 16)
 
-    ImGui.Spacing(ctx)
+    ImGui.Dummy(ctx, 0, 10)
     ImGui.Separator(ctx)
-    ImGui.Spacing(ctx)
+    ImGui.Dummy(ctx, 0, 10)
 
     -- Preview
     if #state.preview_items > 0 then
-      ImGui.TextColored(ctx, hexrgb("#888888FF"), "Preview:")
-      ImGui.Indent(ctx, 20)
+      ImGui.TextColored(ctx, hexrgb("#999999FF"), "Preview:")
+      ImGui.Dummy(ctx, 0, 4)
+      ImGui.Indent(ctx, 16)
+      ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 4)
       for _, name in ipairs(state.preview_items) do
-        ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), name)
+        ImGui.TextColored(ctx, hexrgb("#DDDDDDFF"), name)
       end
-      ImGui.Unindent(ctx, 20)
+      ImGui.PopStyleVar(ctx, 1)
+      ImGui.Unindent(ctx, 16)
     end
 
     -- Spacing before buttons
-    ImGui.Spacing(ctx)
-    ImGui.Spacing(ctx)
+    ImGui.Dummy(ctx, 0, 10)
+    ImGui.Separator(ctx)
+    ImGui.Dummy(ctx, 0, 8)
 
     -- Buttons
-    local button_w = 100
+    local button_w = 120
     local spacing = 10
     local total_w = button_w * 2 + spacing
     ImGui.SetCursorPosX(ctx, (modal_w - total_w) * 0.5)
 
-    -- Confirm button
+    -- Cancel button (left)
+    if ImGui.Button(ctx, "Cancel", button_w, 28) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+      state.is_open = false
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    ImGui.SameLine(ctx, 0, spacing)
+
+    -- Confirm button (right)
     local can_confirm = state.pattern ~= ""
     if not can_confirm then
       ImGui.BeginDisabled(ctx)
     end
 
-    if ImGui.Button(ctx, "Rename", button_w, 30) or (can_confirm and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
+    if ImGui.Button(ctx, "Rename", button_w, 28) or (can_confirm and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
       if state.on_confirm then
         state.on_confirm(state.pattern)
       end
@@ -169,16 +202,11 @@ function M.draw(ctx, item_count)
       ImGui.EndDisabled(ctx)
     end
 
-    ImGui.SameLine(ctx, 0, spacing)
-
-    -- Cancel button
-    if ImGui.Button(ctx, "Cancel", button_w, 30) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-      state.is_open = false
-      ImGui.CloseCurrentPopup(ctx)
-    end
-
     ImGui.EndPopup(ctx)
   end
+
+  ImGui.PopStyleVar(ctx, 2)
+  ImGui.PopStyleColor(ctx, 2)
 
   if not open then
     state.is_open = false
