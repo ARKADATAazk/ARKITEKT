@@ -270,6 +270,7 @@ function M.start_inline_edit(grid, key, initial_text)
     key = key,
     text = initial_text or "",
     focus_next_frame = true,
+    frames_active = 0,  -- Track frames to prevent immediate cancellation
   }
 end
 
@@ -294,6 +295,9 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text)
   end
 
   local state = grid.editing_state
+
+  -- Increment frame counter
+  state.frames_active = (state.frames_active or 0) + 1
 
   -- Set up input field position
   local padding = 6
@@ -326,7 +330,11 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text)
   if enter_pressed and is_active then
     M.stop_inline_edit(grid, true)  -- Commit
     return true, state.text
-  elseif escape_pressed or (not is_active and ImGui.IsMouseClicked(ctx, 0)) then
+  elseif escape_pressed then
+    M.stop_inline_edit(grid, false)  -- Cancel on escape
+    return true, current_text
+  elseif not is_active and ImGui.IsMouseClicked(ctx, 0) and state.frames_active > 2 then
+    -- Only cancel on click-away after a few frames to prevent double-click from canceling
     M.stop_inline_edit(grid, false)  -- Cancel
     return true, current_text
   end

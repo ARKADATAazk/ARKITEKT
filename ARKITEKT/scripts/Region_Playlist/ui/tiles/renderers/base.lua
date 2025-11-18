@@ -210,7 +210,7 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
     local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
     local item_key = grid.key and grid.key(region) or region.rid
     local is_editing, edited_text = GridInput.handle_inline_edit_input(grid, ctx, item_key,
-      {rect[1] + name_start_x - pos.x, rect[2], rect[3], rect[4]}, name_str)
+      {name_start_x, rect[2], right_bound_x, rect[4]}, name_str)
 
     if is_editing then
       -- Don't draw text while editing (InputText is drawn instead)
@@ -271,7 +271,7 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
     local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
     local item_key = grid.key and grid.key(playlist_data) or playlist_data.id
     local is_editing, edited_text = GridInput.handle_inline_edit_input(grid, ctx, item_key,
-      {rect[1] + name_start_x - pos.x, rect[2], rect[3], rect[4]}, name_str)
+      {name_start_x, rect[2], right_bound_x, rect[4]}, name_str)
 
     if is_editing then
       -- Don't draw text while editing (InputText is drawn instead)
