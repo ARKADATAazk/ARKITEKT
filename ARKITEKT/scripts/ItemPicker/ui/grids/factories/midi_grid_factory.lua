@@ -324,8 +324,7 @@ function M.create(ctx, config, state, visualization, animator)
           reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Cycling track: %s\n", data.track_guid))
           state.cycle_midi_item(data.track_guid, delta > 0 and 1 or -1)
 
-          -- Rebuild items list after cycling to get new UUID
-          state.runtime_cache.midi_filter_hash = nil  -- Force rebuild
+          -- Get updated items (will use cache update path to preserve sort order)
           local updated_items = get_items()
 
           -- Find the new item with the same track_guid
