@@ -34,7 +34,7 @@ function M.render(ctx, rect, item, state, view, tab_id)
   local BG_HOVER = hexrgb("#222230")
   local BRD_BASE = hexrgb("#2A2A2A")
   local BRD_HOVER = hexrgb("#5588FF")
-  local ANT_COLOR = hexrgb("#5588FFFF")
+  local ANT_COLOR = hexrgb("#5588FF7F")  -- 50% opacity for subtle effect
 
   -- Hover shadow effect (only when not selected)
   if hover_t > 0.01 and not state.selected then
