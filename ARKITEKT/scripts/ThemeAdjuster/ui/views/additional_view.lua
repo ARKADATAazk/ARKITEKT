@@ -24,11 +24,11 @@ AdditionalView.__index = AdditionalView
 
 -- Tab configurations
 local TAB_CONFIGS = {
-  {id = "TCP", label = "TCP", color = hexrgb("#4A90E2")},
-  {id = "MCP", label = "MCP", color = hexrgb("#E24A90")},
-  {id = "ENVCP", label = "ENV", color = hexrgb("#90E24A")},
-  {id = "TRANS", label = "TRN", color = hexrgb("#E2904A")},
-  {id = "GLOBAL", label = "GLB", color = hexrgb("#9B4AE2")},
+  {id = "TCP", label = "TCP", color = hexrgb("#4A90E2")},      -- Blue
+  {id = "MCP", label = "MCP", color = hexrgb("#E8C547")},      -- Yellow
+  {id = "ENVCP", label = "ENV", color = hexrgb("#4AE290")},    -- Green
+  {id = "TRANS", label = "TRN", color = hexrgb("#E24A4A")},    -- Red
+  {id = "GLOBAL", label = "GLB", color = hexrgb("#888888")},   -- Grey
 }
 
 function M.new(State, Config, settings)
@@ -69,12 +69,30 @@ function M.new(State, Config, settings)
     assignment_grids = {},  -- tab_id -> grid
     bridge = nil,
 
+    -- Tab color lookup
+    tab_colors = {},
+
     -- Callback to invalidate caches in TCP/MCP views
     cache_invalidation_callback = nil,
 
     -- ImGui context (needed for GridBridge)
     _imgui_ctx = nil,
+
+    -- Right-click selection state
+    right_click_sel = {
+      active = false,
+      start_x = 0,
+      start_y = 0,
+      current_x = 0,
+      current_y = 0,
+      target_grid = nil,
+    },
   }, AdditionalView)
+
+  -- Build tab color lookup table
+  for _, tab_config in ipairs(TAB_CONFIGS) do
+    self.tab_colors[tab_config.id] = tab_config.color
+  end
 
   -- Discover parameters on init
   self:refresh_params()
@@ -401,6 +419,9 @@ function AdditionalView:draw(ctx, shell_state)
       ImGui.PopStyleColor(ctx)
     else
       self.library_grid:draw(ctx)
+
+      -- Handle right-click drag selection for library grid
+      self:handle_right_click_selection(ctx, self.library_grid, "library")
     end
 
     ImGui.Unindent(ctx, 8)
@@ -445,6 +466,9 @@ function AdditionalView:draw(ctx, shell_state)
     local active_grid = self.assignment_grids[self.active_assignment_tab]
     if active_grid then
       active_grid:draw(ctx)
+
+      -- Handle right-click drag selection for assignment grid
+      self:handle_right_click_selection(ctx, active_grid, "assign_" .. self.active_assignment_tab)
     end
 
     ImGui.Unindent(ctx, 8)
@@ -895,6 +919,71 @@ function AdditionalView:save_group_filter()
 
   if self.cache_invalidation_callback then
     self.cache_invalidation_callback()
+  end
+end
+
+-- Right-click drag selection handler
+function AdditionalView:handle_right_click_selection(ctx, grid, grid_id)
+  if not grid or not grid.grid_bounds then return end
+
+  local mx, my = ImGui.GetMousePos(ctx)
+  local gb = grid.grid_bounds
+  local is_over_grid = mx >= gb[1] and mx <= gb[3] and my >= gb[2] and my <= gb[4]
+
+  -- Start right-click drag
+  if is_over_grid and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right) then
+    self.right_click_sel.active = true
+    self.right_click_sel.start_x = mx
+    self.right_click_sel.start_y = my
+    self.right_click_sel.current_x = mx
+    self.right_click_sel.current_y = my
+    self.right_click_sel.target_grid = grid_id
+  end
+
+  -- Update right-click drag
+  if self.right_click_sel.active and self.right_click_sel.target_grid == grid_id then
+    if ImGui.IsMouseDragging(ctx, ImGui.MouseButton_Right, 5) then
+      self.right_click_sel.current_x = mx
+      self.right_click_sel.current_y = my
+
+      -- Select items within rectangle
+      local x1 = math.min(self.right_click_sel.start_x, self.right_click_sel.current_x)
+      local y1 = math.min(self.right_click_sel.start_y, self.right_click_sel.current_y)
+      local x2 = math.max(self.right_click_sel.start_x, self.right_click_sel.current_x)
+      local y2 = math.max(self.right_click_sel.start_y, self.right_click_sel.current_y)
+
+      -- Check Ctrl for additive selection
+      local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+
+      if not ctrl then
+        grid.selection:clear()
+      end
+
+      -- Select all items intersecting the rectangle
+      local items = grid.get_items()
+      for _, item in ipairs(items) do
+        local key = grid.key(item)
+        local rect = grid.rect_track:get(key)
+        if rect then
+          local rx1, ry1, rx2, ry2 = rect[1], rect[2], rect[3], rect[4]
+          -- Check rectangle intersection
+          if not (rx2 < x1 or rx1 > x2 or ry2 < y1 or ry1 > y2) then
+            grid.selection.selected[key] = true
+          end
+        end
+      end
+
+      -- Draw selection rectangle
+      local dl = ImGui.GetWindowDrawList(ctx)
+      ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, hexrgb("#5588FF22"), 3)
+      ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, hexrgb("#5588FFAA"), 3, 0, 1.5)
+    end
+
+    -- End right-click drag
+    if ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Right) then
+      self.right_click_sel.active = false
+      self.right_click_sel.target_grid = nil
+    end
   end
 end
 

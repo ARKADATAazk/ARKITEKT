@@ -29,12 +29,23 @@ function M.render(ctx, rect, item, state, view, tab_id)
   local hover_t = Visuals.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
   M._anim[key].hover = hover_t
 
-  -- Color definitions
-  local BG_BASE = hexrgb("#1A1A22")
-  local BG_HOVER = hexrgb("#222230")
-  local BRD_BASE = hexrgb("#2A2A2A")
-  local BRD_HOVER = hexrgb("#5588FF")
-  local ANT_COLOR = hexrgb("#5588FF7F")  -- 50% opacity for subtle effect
+  -- Get tab color
+  local tab_color = view.tab_colors[tab_id] or hexrgb("#888888")
+
+  -- Color definitions - use tab color for base with very low opacity
+  local function dim_color(color, opacity)
+    local r = (color >> 24) & 0xFF
+    local g = (color >> 16) & 0xFF
+    local b = (color >> 8) & 0xFF
+    local a = math.floor(255 * opacity)
+    return (r << 24) | (g << 16) | (b << 8) | a
+  end
+
+  local BG_BASE = dim_color(tab_color, 0.12)  -- 12% opacity of tab color
+  local BG_HOVER = dim_color(tab_color, 0.18)  -- 18% opacity on hover
+  local BRD_BASE = dim_color(tab_color, 0.3)  -- 30% opacity for border
+  local BRD_HOVER = tab_color  -- Full tab color on hover
+  local ANT_COLOR = dim_color(tab_color, 0.5)  -- 50% opacity for marching ants
 
   -- Hover shadow effect (only when not selected)
   if hover_t > 0.01 and not state.selected then
