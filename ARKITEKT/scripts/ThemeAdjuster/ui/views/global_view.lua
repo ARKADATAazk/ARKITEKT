@@ -5,8 +5,14 @@
 local ImGui = require 'imgui' '0.10'
 local HueSlider = require('rearkitekt.gui.widgets.primitives.hue_slider')
 local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
+local Background = require('rearkitekt.gui.widgets.containers.panel.background')
+local Style = require('rearkitekt.gui.style.defaults')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
+local ThemeParams = require('ThemeAdjuster.core.theme_params')
+local Tooltips = require('ThemeAdjuster.ui.tooltips')
+
+local PC = Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
 local GlobalView = {}
@@ -21,9 +27,9 @@ function M.new(State, Config, settings)
     -- Slider values (loaded from theme parameters)
     -- Storage values (actual theme parameter values)
     gamma = 1000,         -- Storage: 500-2000, Display: 0.50-2.00, Default: 1000 (1.00)
-    highlights = 256,     -- Storage: 0-512, Display: 0.00-2.00, Default: 256 (1.00)
-    midtones = 256,       -- Storage: 0-512, Display: 0.00-2.00, Default: 256 (1.00)
-    shadows = 256,        -- Storage: 0-512, Display: 0.00-2.00, Default: 256 (1.00)
+    highlights = 0,       -- Storage: -256-256, Display: -2.00-2.00, Default: 0 (0.00)
+    midtones = 0,         -- Storage: -256-256, Display: -2.00-2.00, Default: 0 (0.00)
+    shadows = 0,          -- Storage: -256-256, Display: -2.00-2.00, Default: 0 (0.00)
     saturation = 256,     -- Storage: 0-512, Display: 0%-200%, Default: 256 (100%)
     tint = 192,           -- Storage: 0-384, Display: -180° to +180°, Default: 192 (0°)
 
@@ -39,24 +45,35 @@ function M.new(State, Config, settings)
 end
 
 function GlobalView:load_from_theme()
-  -- Load values from REAPER theme parameters
-  local ok, gamma = pcall(reaper.ThemeLayout_GetParameter, -1000)
-  if ok and type(gamma) == "number" then self.gamma = gamma end
+  -- Load values from REAPER theme parameters (using negative indices for global colors)
+  local ok, name, desc, value, default, min, max
 
-  local ok, highlights = pcall(reaper.ThemeLayout_GetParameter, -1003)
-  if ok and type(highlights) == "number" then self.highlights = highlights end
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1000)
+  if ok and type(value) == "number" then self.gamma = value end
 
-  local ok, midtones = pcall(reaper.ThemeLayout_GetParameter, -1002)
-  if ok and type(midtones) == "number" then self.midtones = midtones end
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1003)
+  if ok and type(value) == "number" then self.highlights = value end
 
-  local ok, shadows = pcall(reaper.ThemeLayout_GetParameter, -1001)
-  if ok and type(shadows) == "number" then self.shadows = shadows end
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1002)
+  if ok and type(value) == "number" then self.midtones = value end
 
-  local ok, saturation = pcall(reaper.ThemeLayout_GetParameter, -1004)
-  if ok and type(saturation) == "number" then self.saturation = saturation end
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1001)
+  if ok and type(value) == "number" then self.shadows = value end
 
-  local ok, tint = pcall(reaper.ThemeLayout_GetParameter, -1005)
-  if ok and type(tint) == "number" then self.tint = tint end
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1004)
+  if ok and type(value) == "number" then self.saturation = value end
+
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1005)
+  if ok and type(value) == "number" then self.tint = value end
+
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1006)
+  if ok and type(value) == "number" then self.affect_project_colors = (value ~= 0) end
+
+  -- Load glb_track_label_color (regular indexed parameter)
+  local param = ThemeParams.get_param('glb_track_label_color')
+  if param then
+    self.custom_track_names = (param.value ~= 0)
+  end
 end
 
 function GlobalView:set_param(param_id, value, save)
@@ -71,9 +88,9 @@ end
 function GlobalView:reset_color_controls()
   -- Reset all color controls to defaults
   self.gamma = 1000
-  self.highlights = 256
-  self.midtones = 256
-  self.shadows = 256
+  self.highlights = 0
+  self.midtones = 0
+  self.shadows = 0
   self.saturation = 256
   self.tint = 192
 
@@ -102,6 +119,31 @@ function GlobalView:draw(ctx, shell_state)
   -- Color Sliders Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
   if ImGui.BeginChild(ctx, "global_color_sliders", avail_w, 0, 1) then
+    -- Draw background pattern (grid/dots like assembler panel)
+    local child_x, child_y = ImGui.GetWindowPos(ctx)
+    local child_w, child_h = ImGui.GetWindowSize(ctx)
+    local dl = ImGui.GetWindowDrawList(ctx)
+
+    -- Background pattern configuration (using panel defaults)
+    local pattern_cfg = {
+      enabled = true,
+      primary = {
+        type = 'grid',
+        spacing = 50,
+        color = PC.pattern_primary,
+        line_thickness = 1.5,
+      },
+      secondary = {
+        enabled = true,
+        type = 'grid',
+        spacing = 5,
+        color = PC.pattern_secondary,
+        line_thickness = 0.5,
+      },
+    }
+
+    Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+
     ImGui.Dummy(ctx, 0, 8)
 
     ImGui.Indent(ctx, 12)
@@ -155,76 +197,88 @@ function GlobalView:draw(ctx, shell_state)
       return changed, new_val
     end
 
-    -- Gamma slider (Storage: 500-2000, Display: 0.50-2.00, Default: 1000)
+    -- Gamma slider (Storage: 500-2000, Display: 0.50-2.00, Default: 1000) - REVERSED
     local gamma_display = self.gamma / 1000
     local changed, new_gamma_normalized = draw_slider_row(
       "Gamma",
       string.format("%.2f", gamma_display),
       HueSlider.draw_gamma,
       "##gamma",
-      ((self.gamma - 500) / 1500) * 100,  -- Map 500-2000 to 0-100
-      {default = 33.33}  -- 1000 is 33.33% of range
+      ((2000 - self.gamma) / 1500) * 100,  -- Map 500-2000 to 100-0 (reversed)
+      {default = 66.67}  -- 1000 is 66.67% of reversed range
     )
     if changed then
-      self.gamma = math.floor((new_gamma_normalized / 100) * 1500 + 500 + 0.5)
+      self.gamma = math.floor(2000 - (new_gamma_normalized / 100) * 1500 + 0.5)  -- Reversed
       self:set_param(-1000, self.gamma, false)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1000, self.gamma, true)
     end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.gamma)
+    end
 
-    -- Highlights slider (Storage: 0-512, Display: 0.00-2.00, Default: 256)
-    local highlights_display = self.highlights / 256
+    -- Highlights slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
+    local highlights_display = self.highlights / 128  -- Map -256→-2.00, 0→0.00, 256→2.00
     local changed, new_highlights_normalized = draw_slider_row(
       "Highlights",
       string.format("%.2f", highlights_display),
       HueSlider.draw_gamma,
       "##highlights",
-      (self.highlights / 512) * 100,  -- Map 0-512 to 0-100
-      {default = 50}  -- 256 is 50% of range
+      ((self.highlights + 256) / 512) * 100,  -- Map -256-256 to 0-100
+      {default = 50}  -- 0 is 50% of range (0.00)
     )
     if changed then
-      self.highlights = math.floor((new_highlights_normalized / 100) * 512 + 0.5)
+      self.highlights = math.floor((new_highlights_normalized / 100) * 512 - 256 + 0.5)
       self:set_param(-1003, self.highlights, false)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1003, self.highlights, true)
     end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.highlights)
+    end
 
-    -- Midtones slider (Storage: 0-512, Display: 0.00-2.00, Default: 256)
-    local midtones_display = self.midtones / 256
+    -- Midtones slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
+    local midtones_display = self.midtones / 128  -- Map -256→-2.00, 0→0.00, 256→2.00
     local changed, new_midtones_normalized = draw_slider_row(
       "Midtones",
       string.format("%.2f", midtones_display),
       HueSlider.draw_gamma,
       "##midtones",
-      (self.midtones / 512) * 100,  -- Map 0-512 to 0-100
-      {default = 50}  -- 256 is 50% of range
+      ((self.midtones + 256) / 512) * 100,  -- Map -256-256 to 0-100
+      {default = 50}  -- 0 is 50% of range (0.00)
     )
     if changed then
-      self.midtones = math.floor((new_midtones_normalized / 100) * 512 + 0.5)
+      self.midtones = math.floor((new_midtones_normalized / 100) * 512 - 256 + 0.5)
       self:set_param(-1002, self.midtones, false)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1002, self.midtones, true)
     end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.midtones)
+    end
 
-    -- Shadows slider (Storage: 0-512, Display: 0.00-2.00, Default: 256)
-    local shadows_display = self.shadows / 256
+    -- Shadows slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
+    local shadows_display = self.shadows / 128  -- Map -256→-2.00, 0→0.00, 256→2.00
     local changed, new_shadows_normalized = draw_slider_row(
       "Shadows",
       string.format("%.2f", shadows_display),
       HueSlider.draw_gamma,
       "##shadows",
-      (self.shadows / 512) * 100,  -- Map 0-512 to 0-100
-      {default = 50}  -- 256 is 50% of range
+      ((self.shadows + 256) / 512) * 100,  -- Map -256-256 to 0-100
+      {default = 50}  -- 0 is 50% of range (0.00)
     )
     if changed then
-      self.shadows = math.floor((new_shadows_normalized / 100) * 512 + 0.5)
+      self.shadows = math.floor((new_shadows_normalized / 100) * 512 - 256 + 0.5)
       self:set_param(-1001, self.shadows, false)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1001, self.shadows, true)
+    end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.shadows)
     end
 
     -- Saturation slider (Storage: 0-512, Display: 0%-200%, Default: 256 = 100%)
@@ -244,6 +298,9 @@ function GlobalView:draw(ctx, shell_state)
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1004, self.saturation, true)
     end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.saturation)
+    end
 
     -- Tint slider (Storage: 0-384, Display: -180° to +180°, Default: 192 = 0°)
     local tint_degrees = math.floor(self.tint * 0.9375 - 180 + 0.5)
@@ -262,6 +319,9 @@ function GlobalView:draw(ctx, shell_state)
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1005, self.tint, true)
     end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.tint)
+    end
 
     ImGui.Dummy(ctx, 0, 10)
 
@@ -276,7 +336,10 @@ function GlobalView:draw(ctx, shell_state)
 
     if Checkbox.draw_at_cursor(ctx, "Custom color track names", self.custom_track_names, nil, "custom_track_names") then
       self.custom_track_names = not self.custom_track_names
-      -- TODO: Set 'glb_track_label_color' parameter
+      ThemeParams.set_param('glb_track_label_color', self.custom_track_names and 1 or 0, true)
+    end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.custom_color_track_names)
     end
     ImGui.NewLine(ctx)
 
@@ -285,6 +348,9 @@ function GlobalView:draw(ctx, shell_state)
     if Checkbox.draw_at_cursor(ctx, "Also affect project custom colors", self.affect_project_colors, nil, "affect_project_colors") then
       self.affect_project_colors = not self.affect_project_colors
       self:set_param(-1006, self.affect_project_colors and 1 or 0, true)
+    end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.affect_project_colors)
     end
     ImGui.NewLine(ctx)
 

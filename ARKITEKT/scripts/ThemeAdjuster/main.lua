@@ -42,6 +42,7 @@ addpath(join(REARKITEKT_ROOT, "?/init.lua"))
 local Shell = require("rearkitekt.app.shell")
 local Config = require("ThemeAdjuster.core.config")
 local State = require("ThemeAdjuster.core.state")
+local ThemeParams = require("ThemeAdjuster.core.theme_params")
 local GUI = require("ThemeAdjuster.ui.gui")
 local StatusConfig = require("ThemeAdjuster.ui.status")
 local Colors = require("rearkitekt.core.colors")
@@ -62,6 +63,9 @@ if SettingsOK and type(Settings.new) == "function" then
 end
 
 State.initialize(settings)
+
+-- Initialize theme parameter system (CRITICAL - must be before creating views)
+ThemeParams.initialize()
 
 local gui = GUI.create(State, Config, settings)
 
@@ -91,6 +95,7 @@ Shell.run({
       { id = "COLORS", label = "Colors" },
       { id = "ENVELOPES", label = "Envelopes" },
       { id = "TRANSPORT", label = "Transport" },
+      { id = "ADDITIONAL", label = "Additional" },
       { id = "DEBUG", label = "Debug" },
     },
     active = State.get_active_tab(),

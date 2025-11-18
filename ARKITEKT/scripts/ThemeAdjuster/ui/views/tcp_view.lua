@@ -5,8 +5,17 @@
 local ImGui = require 'imgui' '0.10'
 local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
+local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
+local Background = require('rearkitekt.gui.widgets.containers.panel.background')
+local Style = require('rearkitekt.gui.style.defaults')
+local ThemeParams = require('ThemeAdjuster.core.theme_params')
+local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
+local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
+local Tooltips = require('ThemeAdjuster.ui.tooltips')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
+
+local PC = Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
 local TCPView = {}
@@ -28,20 +37,20 @@ local SPINNER_VALUES = {
   tcp_width_size = {'MIN', 40, 60, 80, 100},
 }
 
--- Visibility elements with bitflags
+-- Visibility elements with bitflags (from Default 6.0)
 local VISIBILITY_ELEMENTS = {
-  {id = 'tcp_Record_Arm', label = 'Record Arm'},
-  {id = 'tcp_Monitor', label = 'Monitor'},
-  {id = 'tcp_Track_Name', label = 'Track Name'},
-  {id = 'tcp_Volume', label = 'Volume'},
-  {id = 'tcp_Routing', label = 'Routing'},
-  {id = 'tcp_Effects', label = 'Effects'},
-  {id = 'tcp_Envelope', label = 'Envelope'},
-  {id = 'tcp_Pan_&_Width', label = 'Pan & Width'},
-  {id = 'tcp_Record_Mode', label = 'Record Mode'},
-  {id = 'tcp_Input', label = 'Input'},
-  {id = 'tcp_Values', label = 'Values'},
-  {id = 'tcp_Meter_Values', label = 'Meter Values'},
+  {id = 'tcp_Record_Arm', label = 'RECORD ARM'},
+  {id = 'tcp_Monitor', label = 'MONITOR'},
+  {id = 'tcp_Track_Name', label = 'TRACK NAME'},
+  {id = 'tcp_Volume', label = 'VOLUME'},
+  {id = 'tcp_Routing', label = 'ROUTING'},
+  {id = 'tcp_Effects', label = 'INSERT FX'},
+  {id = 'tcp_Envelope', label = 'ENVELOPE'},
+  {id = 'tcp_Pan_&_Width', label = 'PAN & WIDTH'},
+  {id = 'tcp_Record_Mode', label = 'RECORD MODE'},
+  {id = 'tcp_Input', label = 'INPUT'},
+  {id = 'tcp_Values', label = 'LABELS & VALUES'},
+  {id = 'tcp_Meter_Values', label = 'METER VALUES'},
 }
 
 -- Bitflag column definitions
@@ -52,11 +61,12 @@ local VISIBILITY_COLUMNS = {
   {bit = 8, label = 'ALWAYS\nHIDE'},
 }
 
-function M.new(State, Config, settings)
+function M.new(State, Config, settings, additional_view)
   local self = setmetatable({
     State = State,
     Config = Config,
     settings = settings,
+    additional_view = additional_view,  -- Reference to shared assignment state
 
     -- Spinner indices (1-based)
     tcp_indent_idx = 1,
@@ -72,8 +82,8 @@ function M.new(State, Config, settings)
     tcp_pan_size_idx = 1,
     tcp_width_size_idx = 1,
 
-    -- Active layout (A/B/C)
-    active_layout = 'A',
+    -- Active layout (A/B/C) - sync with ThemeParams
+    active_layout = ThemeParams.get_active_layout('tcp'),
 
     -- Visibility values (loaded from theme)
     visibility = {},
@@ -91,8 +101,41 @@ function M.new(State, Config, settings)
 end
 
 function TCPView:load_from_theme()
-  -- TODO: Load spinner indices from theme parameters
-  -- For now, keep defaults
+  -- Load spinner values from current layout's theme parameters
+  -- NOTE: REAPER parameter values ARE already 1-based spinner indices
+  local spinners = {
+    'tcp_LabelSize', 'tcp_vol_size', 'tcp_MeterSize',
+    'tcp_InputSize', 'tcp_MeterLoc', 'tcp_sepSends',
+    'tcp_fxparms_size', 'tcp_recmon_size', 'tcp_pan_size', 'tcp_width_size'
+  }
+
+  for _, param_name in ipairs(spinners) do
+    local param = ThemeParams.get_param(param_name)
+    if param then
+      local idx_field = param_name .. '_idx'
+      -- REAPER value is already a 1-based index - use it directly
+      self[idx_field] = param.value
+    end
+  end
+
+  -- Load global parameters (affect all layouts)
+  local global_params = {'tcp_indent', 'tcp_control_align'}
+  for _, param_name in ipairs(global_params) do
+    local param = ThemeParams.get_param(param_name)
+    if param then
+      local idx_field = param_name .. '_idx'
+      -- REAPER value is already a 1-based index - use it directly
+      self[idx_field] = param.value
+    end
+  end
+
+  -- Load visibility flags
+  for _, elem in ipairs(VISIBILITY_ELEMENTS) do
+    local param = ThemeParams.get_param(elem.id)
+    if param then
+      self.visibility[elem.id] = param.value
+    end
+  end
 end
 
 function TCPView:get_param_index(param_name)
@@ -115,17 +158,156 @@ function TCPView:set_param(param, value, save)
 end
 
 function TCPView:toggle_bitflag(param_name, bit)
-  -- Get current value
-  local current = self.visibility[param_name] or 0
-  -- XOR toggle
-  local new_value = current ~ bit
-  self.visibility[param_name] = new_value
-  -- TODO: Set parameter in theme
-  -- self:set_param(param_name, new_value, true)
+  -- Toggle a visibility flag bit and write to theme
+  ThemeParams.toggle_flag(param_name, bit)
+  -- Reload to sync UI
+  local param = ThemeParams.get_param(param_name)
+  if param then
+    self.visibility[param_name] = param.value
+  end
+end
+
+function TCPView:get_default_layout()
+  -- Get the default TCP layout (returns layout name like "A", "B", "C")
+  local ok, layout_name = pcall(reaper.ThemeLayout_GetLayout, "tcp", -1)
+  if ok and layout_name and type(layout_name) == "string" then
+    -- Extract just the layout letter (might be "A", "150%_B", etc.)
+    local layout = string.match(layout_name, "([ABC])") or "A"
+    return layout
+  end
+  return "A"
+end
+
+function TCPView:set_default_layout(layout)
+  -- Set the default TCP layout for new tracks
+  local ok = pcall(reaper.ThemeLayout_SetLayout, "tcp", -1, layout)
+  return ok
+end
+
+function TCPView:get_additional_params()
+  -- Get parameters assigned to TCP tab from shared state (cached)
+  if not self.additional_view then
+    return {}
+  end
+
+  -- Cache the result to avoid recalculating every frame
+  if not self.cached_additional_params then
+    self.cached_additional_params = self.additional_view:get_assigned_params("TCP")
+  end
+
+  return self.cached_additional_params
+end
+
+function TCPView:refresh_additional_params()
+  -- Force refresh of cached additional params
+  self.cached_additional_params = nil
+end
+
+function TCPView:draw_additional_param(ctx, param)
+  -- Vertical stacked layout for narrow column
+  -- Use custom display name if available, otherwise use param name
+  local display_name = (param.display_name and param.display_name ~= "")
+    and param.display_name or param.name
+
+  -- Label
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
+  ImGui.Text(ctx, display_name)
+  ImGui.PopStyleColor(ctx)
+
+  -- Tooltip with custom description or default info
+  if ImGui.IsItemHovered(ctx) then
+    local tooltip
+    if param.custom_description and param.custom_description ~= "" then
+      -- Use custom description
+      tooltip = param.custom_description
+    else
+      -- Use default technical info
+      tooltip = string.format(
+        "Parameter: %s\nType: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f",
+        param.name,
+        param.type,
+        param.min,
+        param.max,
+        param.default,
+        param.value
+      )
+    end
+    ImGui.SetTooltip(ctx, tooltip)
+  end
+
+  ImGui.Dummy(ctx, 0, 2)
+
+  -- Control (full width)
+  local control_w = ImGui.GetContentRegionAvail(ctx) - 16
+
+  local changed = false
+  local new_value = param.value
+
+  if param.type == "toggle" then
+    local is_checked = (param.value ~= 0)
+    if Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "tcp_add_" .. param.index) then
+      changed = true
+      new_value = is_checked and 0 or 1
+    end
+
+  elseif param.type == "spinner" then
+    local values = {}
+    for i = param.min, param.max do
+      table.insert(values, tostring(i))
+    end
+
+    local current_idx = math.floor(param.value - param.min + 1)
+    current_idx = math.max(1, math.min(current_idx, #values))
+
+    local changed_spinner, new_idx = Spinner.draw(
+      ctx,
+      "##tcp_add_spinner_" .. param.index,
+      current_idx,
+      values,
+      {w = control_w, h = 24}
+    )
+
+    if changed_spinner then
+      changed = true
+      new_value = param.min + (new_idx - 1)
+    end
+
+  elseif param.type == "slider" then
+    ImGui.SetNextItemWidth(ctx, control_w)
+    local changed_slider, slider_value = ImGui.SliderDouble(
+      ctx,
+      "##tcp_add_slider_" .. param.index,
+      param.value,
+      param.min,
+      param.max,
+      "%.1f"
+    )
+
+    if changed_slider then
+      changed = true
+      new_value = slider_value
+    end
+
+  else
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+    ImGui.Text(ctx, string.format("%.1f", param.value))
+    ImGui.PopStyleColor(ctx)
+  end
+
+  if changed then
+    pcall(reaper.ThemeLayout_SetParameter, param.index, new_value, true)
+    pcall(reaper.ThemeLayout_RefreshAll)
+    param.value = new_value
+  end
+
+  ImGui.Dummy(ctx, 0, 8)
 end
 
 function TCPView:draw(ctx, shell_state)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
+
+  -- Get assigned parameters from shared state
+  local additional_params = self:get_additional_params()
 
   -- Title
   ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
@@ -138,9 +320,25 @@ function TCPView:draw(ctx, shell_state)
 
   ImGui.Dummy(ctx, 0, 8)
 
-  -- Single scrollable content area
+  -- Determine if we need two columns
+  local has_additional = #additional_params > 0
+  local left_width = has_additional and (avail_w * 0.6) or avail_w
+  local right_width = has_additional and (avail_w * 0.4 - 8) or 0
+
+  -- Left column (main controls)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "tcp_content", avail_w, 0, 1) then
+  if ImGui.BeginChild(ctx, "tcp_left", left_width, 0, 1) then
+    -- Draw background pattern (using panel defaults)
+    local child_x, child_y = ImGui.GetWindowPos(ctx)
+    local child_w, child_h = ImGui.GetWindowSize(ctx)
+    local dl = ImGui.GetWindowDrawList(ctx)
+    local pattern_cfg = {
+      enabled = true,
+      primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
+      secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
+    }
+    Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+
     ImGui.Dummy(ctx, 0, 4)
 
     ImGui.Indent(ctx, 8)
@@ -163,9 +361,13 @@ function TCPView:draw(ctx, shell_state)
         width = 50,
         height = 24,
         is_toggled = is_active,
+        preset_name = "BUTTON_TOGGLE_WHITE",
         on_click = function()
+          -- Update local and global active layout
           self.active_layout = layout
-          -- TODO: Apply layout
+          ThemeParams.set_active_layout('tcp', layout)
+          -- Reload all parameters from new layout
+          self:load_from_theme()
         end
       }, "tcp_layout_" .. layout) then
       end
@@ -186,11 +388,47 @@ function TCPView:draw(ctx, shell_state)
         width = 70,
         height = 24,
         on_click = function()
-          -- TODO: Apply size
+          -- Apply layout to selected tracks
+          local scale = (size == '100%') and '' or (size .. '_')
+          ThemeParams.apply_layout_to_tracks('tcp', self.active_layout, scale)
         end
       }, "tcp_size_" .. size) then
       end
       ImGui.SameLine(ctx, 0, 6)
+    end
+    ImGui.NewLine(ctx)
+
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Set Default Layout button
+    local default_layout = self:get_default_layout()
+    local is_default = (default_layout == self.active_layout)
+
+    ImGui.AlignTextToFramePadding(ctx)
+    if is_default then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#00FF88"))
+      ImGui.Text(ctx, "Default Layout")
+      ImGui.PopStyleColor(ctx)
+    else
+      ImGui.Text(ctx, "Default Layout")
+    end
+    ImGui.SameLine(ctx, 120)
+
+    if Button.draw_at_cursor(ctx, {
+      label = is_default and ("✓ " .. self.active_layout .. " is Default") or ("Set " .. self.active_layout .. " as Default"),
+      width = 200,
+      height = 24,
+      is_toggled = is_default,
+      preset_name = is_default and "BUTTON_TOGGLE_WHITE" or nil,
+      on_click = function()
+        if not is_default then
+          self:set_default_layout(self.active_layout)
+        end
+      end
+    }, "tcp_set_default") then
+    end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.format(Tooltips.TCP.set_default_layout, self.active_layout))
     end
     ImGui.NewLine(ctx)
 
@@ -236,16 +474,31 @@ function TCPView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 3)
 
     local changed, new_idx = draw_spinner_row("Indent", "tcp_indent", self.tcp_indent_idx, SPINNER_VALUES.tcp_indent)
-    if changed then self.tcp_indent_idx = new_idx end
+    if changed then
+      self.tcp_indent_idx = new_idx
+      -- Send spinner index directly (REAPER expects 1-based indices)
+      ThemeParams.set_param('tcp_indent', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Alignment", "tcp_control_align", self.tcp_control_align_idx, SPINNER_VALUES.tcp_control_align)
-    if changed then self.tcp_control_align_idx = new_idx end
+    if changed then
+      self.tcp_control_align_idx = new_idx
+      -- Send spinner index directly (REAPER expects 1-based indices)
+      ThemeParams.set_param('tcp_control_align', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Meter Loc", "tcp_MeterLoc", self.tcp_MeterLoc_idx, SPINNER_VALUES.tcp_MeterLoc)
-    if changed then self.tcp_MeterLoc_idx = new_idx end
+    if changed then
+      self.tcp_MeterLoc_idx = new_idx
+      -- Send spinner index directly (REAPER expects 1-based indices)
+      ThemeParams.set_param('tcp_MeterLoc', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Send List", "tcp_sepSends", self.tcp_sepSends_idx, SPINNER_VALUES.tcp_sepSends)
-    if changed then self.tcp_sepSends_idx = new_idx end
+    if changed then
+      self.tcp_sepSends_idx = new_idx
+      ThemeParams.set_param('tcp_sepSends', new_idx, true)
+    end
 
     ImGui.EndGroup(ctx)
 
@@ -258,16 +511,28 @@ function TCPView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 3)
 
     changed, new_idx = draw_spinner_row("Name", "tcp_LabelSize", self.tcp_LabelSize_idx, SPINNER_VALUES.tcp_LabelSize)
-    if changed then self.tcp_LabelSize_idx = new_idx end
+    if changed then
+      self.tcp_LabelSize_idx = new_idx
+      ThemeParams.set_param('tcp_LabelSize', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Volume", "tcp_vol_size", self.tcp_vol_size_idx, SPINNER_VALUES.tcp_vol_size)
-    if changed then self.tcp_vol_size_idx = new_idx end
+    if changed then
+      self.tcp_vol_size_idx = new_idx
+      ThemeParams.set_param('tcp_vol_size', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Meter", "tcp_MeterSize", self.tcp_MeterSize_idx, SPINNER_VALUES.tcp_MeterSize)
-    if changed then self.tcp_MeterSize_idx = new_idx end
+    if changed then
+      self.tcp_MeterSize_idx = new_idx
+      ThemeParams.set_param('tcp_MeterSize', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Input", "tcp_InputSize", self.tcp_InputSize_idx, SPINNER_VALUES.tcp_InputSize)
-    if changed then self.tcp_InputSize_idx = new_idx end
+    if changed then
+      self.tcp_InputSize_idx = new_idx
+      ThemeParams.set_param('tcp_InputSize', new_idx, true)
+    end
 
     ImGui.EndGroup(ctx)
 
@@ -280,16 +545,28 @@ function TCPView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 3)
 
     changed, new_idx = draw_spinner_row("FX Parms", "tcp_fxparms_size", self.tcp_fxparms_size_idx, SPINNER_VALUES.tcp_fxparms_size)
-    if changed then self.tcp_fxparms_size_idx = new_idx end
+    if changed then
+      self.tcp_fxparms_size_idx = new_idx
+      ThemeParams.set_param('tcp_fxparms_size', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Rec Mon", "tcp_recmon_size", self.tcp_recmon_size_idx, SPINNER_VALUES.tcp_recmon_size)
-    if changed then self.tcp_recmon_size_idx = new_idx end
+    if changed then
+      self.tcp_recmon_size_idx = new_idx
+      ThemeParams.set_param('tcp_recmon_size', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Pan", "tcp_pan_size", self.tcp_pan_size_idx, SPINNER_VALUES.tcp_pan_size)
-    if changed then self.tcp_pan_size_idx = new_idx end
+    if changed then
+      self.tcp_pan_size_idx = new_idx
+      ThemeParams.set_param('tcp_pan_size', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Width", "tcp_width_size", self.tcp_width_size_idx, SPINNER_VALUES.tcp_width_size)
-    if changed then self.tcp_width_size_idx = new_idx end
+    if changed then
+      self.tcp_width_size_idx = new_idx
+      ThemeParams.set_param('tcp_width_size', new_idx, true)
+    end
 
     ImGui.EndGroup(ctx)
 
@@ -337,6 +614,10 @@ function TCPView:draw(ctx, shell_state)
           if ImGui.Checkbox(ctx, "##check", is_checked) then
             self:toggle_bitflag(elem.id, col.bit)
           end
+          if ImGui.IsItemHovered(ctx) then
+            local tooltip = Tooltips.TCP_VIS_ELEMENTS[elem.id] or ("Toggle " .. elem.label)
+            ImGui.SetTooltip(ctx, tooltip)
+          end
           ImGui.PopID(ctx)
         end
       end
@@ -350,6 +631,45 @@ function TCPView:draw(ctx, shell_state)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)
+
+  -- Right column (additional parameters)
+  if has_additional then
+    ImGui.SameLine(ctx, 0, 8)
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+    if ImGui.BeginChild(ctx, "tcp_right", right_width, 0, 1) then
+      -- Draw background pattern
+      local child_x, child_y = ImGui.GetWindowPos(ctx)
+      local child_w, child_h = ImGui.GetWindowSize(ctx)
+      local dl = ImGui.GetWindowDrawList(ctx)
+      local pattern_cfg = {
+        enabled = true,
+        primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
+        secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
+      }
+      Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+
+      ImGui.Dummy(ctx, 0, 4)
+      ImGui.Indent(ctx, 8)
+
+      -- Additional Parameters Section
+      ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#4A90E2"))
+      ImGui.Text(ctx, "ADDITIONAL PARAMETERS")
+      ImGui.PopStyleColor(ctx)
+      ImGui.PopFont(ctx)
+      ImGui.Dummy(ctx, 0, 4)
+
+      for _, param in ipairs(additional_params) do
+        self:draw_additional_param(ctx, param)
+      end
+
+      ImGui.Unindent(ctx, 8)
+      ImGui.Dummy(ctx, 0, 2)
+      ImGui.EndChild(ctx)
+    end
+    ImGui.PopStyleColor(ctx)
+  end
 end
 
 return M

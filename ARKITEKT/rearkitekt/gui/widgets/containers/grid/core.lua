@@ -356,8 +356,7 @@ function Grid:draw(ctx)
 
     self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
 
-    ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
-    ImGui.InvisibleButton(ctx, self._cached_empty_id, extended_w, extended_h)
+    -- No InvisibleButton needed when inside child window
     ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
     -- Render destruction animations even when grid is empty
@@ -468,47 +467,27 @@ function Grid:draw(ctx)
   
   self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
 
-  ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
-  ImGui.InvisibleButton(ctx, self._cached_bg_id, extended_w, extended_h)
+  -- DON'T create InvisibleButton when inside a child window - the child window itself
+  -- prevents parent window dragging. InvisibleButton would block widget input.
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
-  local bg_clicked = ImGui.IsItemClicked(ctx, 0)
-  local bg_double_clicked = ImGui.IsItemClicked(ctx, 0) and ImGui.IsMouseDoubleClicked(ctx, 0)
+  -- Manual click detection for background clicks and marquee selection
+  local mx, my = ImGui.GetMousePos(ctx)
+  local gb = self.grid_bounds
+  local mouse_in_grid = gb and mx >= gb[1] and mx <= gb[3] and my >= gb[2] and my <= gb[4]
 
-  -- Optimized: Check if mouse is over any tile (inline to avoid function call overhead)
+  local bg_clicked = mouse_in_grid and ImGui.IsMouseClicked(ctx, 0)
+  local bg_double_clicked = mouse_in_grid and ImGui.IsMouseDoubleClicked(ctx, 0)
+
+  -- We'll check if click is over a tile AFTER rendering
+  -- For now, defer marquee selection start until we know
   local mouse_over_tile = false
   local double_clicked_tile_key = nil
+  local deferred_marquee_start = false
 
-  if bg_clicked or bg_double_clicked then
-    local mx, my = ImGui.GetMousePos(ctx)
-    for i = 1, num_items do
-      local item = items[i]
-      local key = self.key(item)
-      local r = self.rect_track:get(key)
-      if r and self:_rect_intersects_bounds(r) and Draw.point_in_rect(mx, my, r[1], r[2], r[3], r[4]) then
-        mouse_over_tile = true
-        if bg_double_clicked then
-          double_clicked_tile_key = key
-        end
-        break
-      end
-    end
-  end
-
-  -- Handle double-click on tile at grid level (before marquee selection)
-  if bg_double_clicked and double_clicked_tile_key and self.behaviors and self.behaviors.double_click then
-    self.behaviors.double_click(double_clicked_tile_key)
-  end
-
-  -- Handle left-click on empty space to start marquee selection (or SHIFT+click anywhere)
-  if bg_clicked and not mouse_over_tile and not Input.is_external_drag_active(self) then
-    local mx, my = ImGui.GetMousePos(ctx)
-    local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
-    local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
-    local mode = (ctrl or shift) and "add" or "replace"
-
-    self.sel_rect:begin(mx, my, mode, ctx)
-    if self.on_click_empty then self.on_click_empty() end
+  -- Don't start marquee yet - wait until after rendering to check if click is over a tile
+  if bg_clicked and not Input.is_external_drag_active(self) then
+    deferred_marquee_start = true
   end
 
   local marquee_threshold = (self.config.marquee and self.config.marquee.drag_threshold) or DEFAULTS.marquee.drag_threshold
@@ -675,8 +654,41 @@ function Grid:draw(ctx)
   if self.clip_rendering then
     ImGui.PopClipRect(ctx)
   end
-  
+
   self.animator:render_destroy_effects(ctx, dl)
+
+  -- NOW check if the deferred click was over a tile (after rendering, so we know where tiles are)
+  if deferred_marquee_start or bg_double_clicked then
+    local mx, my = ImGui.GetMousePos(ctx)
+    for i = 1, num_items do
+      local item = items[i]
+      local key = self.key(item)
+      local r = self.rect_track:get(key)
+      if r and Draw.point_in_rect(mx, my, r[1], r[2], r[3], r[4]) then
+        mouse_over_tile = true
+        if bg_double_clicked then
+          double_clicked_tile_key = key
+        end
+        break
+      end
+    end
+  end
+
+  -- Handle double-click on tile
+  if bg_double_clicked and double_clicked_tile_key and self.behaviors and self.behaviors.double_click then
+    self.behaviors.double_click(double_clicked_tile_key)
+  end
+
+  -- NOW start marquee selection if click was NOT over a tile
+  if deferred_marquee_start and not mouse_over_tile then
+    local mx, my = ImGui.GetMousePos(ctx)
+    local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+    local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
+    local mode = (ctrl or shift) and "add" or "replace"
+
+    self.sel_rect:begin(mx, my, mode, ctx)
+    if self.on_click_empty then self.on_click_empty() end
+  end
 
   if not self.block_all_input then
     Input.check_start_drag(self, ctx)
@@ -764,6 +776,18 @@ function Grid:draw(ctx)
 
   if self.render_overlays then
     self.render_overlays(ctx, self.current_rects)
+  end
+
+  -- Reserve vertical space for full grid height so scrollbar calculation is correct
+  -- Without this, ImGui doesn't know the true content height (due to viewport culling)
+  -- and the scrollbar stops short of the bottom tiles
+  if self.grid_bounds then
+    local origin_y = self.grid_bounds[2] - (self.extend_input_area.top or 0)
+    local grid_bottom = self.grid_bounds[4]
+    local full_height = grid_bottom - origin_y
+
+    -- Set cursor to reserve the space (Dummy doesn't work well here, use SetCursorPos)
+    ImGui.SetCursorPosY(ctx, full_height)
   end
 end
 
