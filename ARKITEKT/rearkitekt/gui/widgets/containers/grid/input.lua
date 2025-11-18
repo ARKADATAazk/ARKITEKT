@@ -353,6 +353,12 @@ end
 function M.check_right_click_release(grid, ctx)
   -- Check if right-click was released without dragging -> trigger disable
   if grid.right_click_press and ImGui.IsMouseReleased(ctx, 1) then
+    -- Don't trigger disable if marquee selection was active (user was dragging to select)
+    if grid.sel_rect:is_active() or grid.sel_rect:did_drag() then
+      grid.right_click_press = nil
+      return
+    end
+
     local mx, my = ImGui.GetMousePos(ctx)
     local press_pos = grid.right_click_press.pos
     local dx = mx - press_pos[1]
