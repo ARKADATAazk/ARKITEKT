@@ -357,7 +357,7 @@ end
 function M.check_start_drag(grid, ctx)
   if not grid.drag.pressed_id or grid.drag.active or M.is_external_drag_active(grid) then return end
 
-  local threshold = (grid.config and grid.config.drag and grid.config.drag.threshold) or 5
+  local threshold = (grid.config and grid.config.drag and grid.config.drag.threshold) or 12
   if ImGui.IsMouseDragging(ctx, 0, threshold) then
     grid.drag.pending_selection = nil
     grid.drag.active = true

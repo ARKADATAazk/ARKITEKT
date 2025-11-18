@@ -29,7 +29,7 @@ local hexrgb = Colors.hexrgb
 
 local DEFAULTS = {
   layout = { speed = 14.0, snap_epsilon = 0.5 },
-  drag = { threshold = 6 },
+  drag = { threshold = 12 },
   
   spawn = {
     enabled = true,
