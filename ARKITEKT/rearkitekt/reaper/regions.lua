@@ -101,15 +101,15 @@ function M.go_to_region(proj, target_rid)
   return true
 end
 
---- Set the color of a region by RID
+--- Set the color of a region by RID (internal - no undo block)
 --- @param proj number Project (0 for current)
 --- @param target_rid number Region ID (markrgnindexnumber)
 --- @param rgba_color number Color in RGBA format
 --- @return boolean success Whether the operation succeeded
-function M.set_region_color(proj, target_rid, rgba_color)
+local function set_region_color_raw(proj, target_rid, rgba_color)
   proj = proj or 0
 
-  reaper.ShowConsoleMsg(string.format("  Regions.set_region_color: rid=%d, rgba_color=%08X\n", target_rid, rgba_color))
+  reaper.ShowConsoleMsg(string.format("  Regions.set_region_color_raw: rid=%d, rgba_color=%08X\n", target_rid, rgba_color))
 
   -- Get the current region data
   local rgn = M.get_region_by_rid(proj, target_rid)
@@ -129,10 +129,6 @@ function M.set_region_color(proj, target_rid, rgba_color)
   local b = (rgba_color >> 8) & 0xFF
   reaper.ShowConsoleMsg(string.format("    -> RGBA(%d,%d,%d) -> native_color=%08X\n", r, g, b, native_color))
 
-  -- Update the region with new color using SetProjectMarkerByIndex2
-  -- Parameters: proj, index, isrgn, pos, rgnend, markrgnindexnumber, name, color, flags
-  reaper.Undo_BeginBlock()
-
   local success = reaper.SetProjectMarkerByIndex2(
     proj,
     rgn.index,        -- marker/region index
@@ -151,6 +147,17 @@ function M.set_region_color(proj, target_rid, rgba_color)
     reaper.MarkProjectDirty(proj)
   end
 
+  return success
+end
+
+--- Set the color of a region by RID
+--- @param proj number Project (0 for current)
+--- @param target_rid number Region ID (markrgnindexnumber)
+--- @param rgba_color number Color in RGBA format
+--- @return boolean success Whether the operation succeeded
+function M.set_region_color(proj, target_rid, rgba_color)
+  reaper.Undo_BeginBlock()
+  local success = set_region_color_raw(proj, target_rid, rgba_color)
   reaper.Undo_EndBlock("Set region color", -1)
 
   -- Force immediate visual update
@@ -161,12 +168,14 @@ function M.set_region_color(proj, target_rid, rgba_color)
   return success
 end
 
---- Set region name
+M.set_region_color_raw = set_region_color_raw
+
+--- Set region name (internal - no undo block)
 --- @param proj number Project (0 for current)
 --- @param target_rid number Region ID (markrgnindexnumber)
 --- @param new_name string New name for the region
 --- @return boolean success Whether the operation succeeded
-function M.set_region_name(proj, target_rid, new_name)
+local function set_region_name_raw(proj, target_rid, new_name)
   proj = proj or 0
 
   -- Get the current region data
@@ -174,9 +183,6 @@ function M.set_region_name(proj, target_rid, new_name)
   if not rgn then
     return false
   end
-
-  -- Update the region with new name using SetProjectMarkerByIndex2
-  reaper.Undo_BeginBlock()
 
   -- Convert RGBA color back to REAPER's native format
   local native_color = convert_rgba_to_reaper_color(rgn.color)
@@ -197,6 +203,17 @@ function M.set_region_name(proj, target_rid, new_name)
     reaper.MarkProjectDirty(proj)
   end
 
+  return success
+end
+
+--- Set region name
+--- @param proj number Project (0 for current)
+--- @param target_rid number Region ID (markrgnindexnumber)
+--- @param new_name string New name for the region
+--- @return boolean success Whether the operation succeeded
+function M.set_region_name(proj, target_rid, new_name)
+  reaper.Undo_BeginBlock()
+  local success = set_region_name_raw(proj, target_rid, new_name)
   reaper.Undo_EndBlock("Rename region", -1)
 
   -- Force immediate visual update
@@ -206,6 +223,8 @@ function M.set_region_name(proj, target_rid, new_name)
 
   return success
 end
+
+M.set_region_name_raw = set_region_name_raw
 
 --- Set colors for multiple regions in a single batch operation
 --- @param proj number Project (0 for current)

@@ -5,12 +5,36 @@
 local M = {}
 
 function M.capture_snapshot(playlists, active_playlist_id)
+  local Regions = require('rearkitekt.reaper.regions')
+
   local snapshot = {
     playlists = {},
     active_playlist = active_playlist_id,
+    regions = {},  -- Capture region state (name, color)
     timestamp = os.time(),
   }
-  
+
+  -- Collect all unique region IDs referenced in playlists
+  local region_rids = {}
+  for _, pl in ipairs(playlists) do
+    for _, item in ipairs(pl.items) do
+      if item.type == "region" and item.rid then
+        region_rids[item.rid] = true
+      end
+    end
+  end
+
+  -- Snapshot region properties (name, color)
+  for rid in pairs(region_rids) do
+    local region = Regions.get_region_by_rid(0, rid)
+    if region then
+      snapshot.regions[rid] = {
+        name = region.name,
+        color = region.color,
+      }
+    end
+  end
+
   for _, pl in ipairs(playlists) do
     local pl_copy = {
       id = pl.id,
@@ -36,12 +60,35 @@ function M.capture_snapshot(playlists, active_playlist_id)
 
     snapshot.playlists[#snapshot.playlists + 1] = pl_copy
   end
-  
+
   return snapshot
 end
 
 function M.restore_snapshot(snapshot, region_index)
+  local Regions = require('rearkitekt.reaper.regions')
   local restored_playlists = {}
+
+  -- Restore region properties (name, color) if snapshot contains region data
+  -- Use raw versions to avoid creating REAPER undo points (we have our own undo system)
+  if snapshot.regions then
+    for rid, region_data in pairs(snapshot.regions) do
+      local current_region = Regions.get_region_by_rid(0, rid)
+      if current_region then
+        -- Only restore if properties have changed
+        if current_region.name ~= region_data.name then
+          Regions.set_region_name_raw(0, rid, region_data.name)
+        end
+        if current_region.color ~= region_data.color then
+          Regions.set_region_color_raw(0, rid, region_data.color)
+        end
+      end
+    end
+
+    -- Force UI update after all region changes
+    reaper.UpdateTimeline()
+    reaper.UpdateArrange()
+    reaper.TrackList_AdjustWindows(false)
+  end
 
   for _, pl in ipairs(snapshot.playlists) do
     local pl_copy = {
