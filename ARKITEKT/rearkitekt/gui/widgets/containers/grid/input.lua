@@ -31,61 +31,6 @@ function M.is_external_drag_active(grid)
   return grid.external_drag_check() == true
 end
 
-function M.do_range_selection(grid, current_key, add_to_selection)
-  -- Perform range selection from last selected item to current item
-  local items = grid.get_items()
-  if not items or #items == 0 then return end
-
-  -- Find indices
-  local last_index = nil
-  local current_index = nil
-
-  -- Get last selected key
-  local last_key = grid.selection.last_selected
-
-  for i, item in ipairs(items) do
-    local key = grid.key(item)
-    if key == last_key then
-      last_index = i
-    end
-    if key == current_key then
-      current_index = i
-    end
-  end
-
-  -- If no previous selection, just select current
-  if not last_index then
-    if not add_to_selection then
-      grid.selection:clear()
-    end
-    grid.selection:add(current_key)
-    grid.selection.last_selected = current_key
-    if grid.behaviors and grid.behaviors.on_select then
-      grid.behaviors.on_select(grid.selection:selected_keys())
-    end
-    return
-  end
-
-  -- Select range
-  if not add_to_selection then
-    grid.selection:clear()
-  end
-
-  local start_idx = math.min(last_index, current_index)
-  local end_idx = math.max(last_index, current_index)
-
-  for i = start_idx, end_idx do
-    local key = grid.key(items[i])
-    grid.selection:add(key)
-  end
-
-  grid.selection.last_selected = current_key
-
-  if grid.behaviors and grid.behaviors.on_select then
-    grid.behaviors.on_select(grid.selection:selected_keys())
-  end
-end
-
 function M.is_rect_in_grid_bounds(grid, rect)
   if not grid.visual_bounds then return true end
   local vb = grid.visual_bounds
@@ -301,19 +246,29 @@ function M.handle_tile_input(grid, ctx, item, rect)
       local ctrl  = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl)  or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
       local was_selected = grid.selection:is_selected(key)
 
-      -- SHIFT+click: Range selection (click) or marquee selection (drag)
+      -- SHIFT+click: Range selection from last clicked to current
       if shift then
-        -- Record press for potential marquee drag
-        grid.drag.pressed_id = key
-        grid.drag.press_pos = {mx, my}
-        grid.drag.shift_pressed = true
+        if not ctrl then
+          grid.selection:clear()
+        end
 
-        -- Perform range selection immediately (will be used if no drag happens)
-        M.do_range_selection(grid, key, ctrl)
+        -- Get item order for range selection
+        local items = grid.get_items()
+        local order = {}
+        for _, item in ipairs(items) do
+          order[#order + 1] = grid.key(item)
+        end
+
+        -- Perform range selection using existing method
+        local from_key = grid.selection.last_clicked or key
+        grid.selection:range(order, from_key, key)
+
+        if grid.behaviors and grid.behaviors.on_select then
+          grid.behaviors.on_select(grid.selection:selected_keys())
+        end
         return is_hovered
       elseif ctrl then
         grid.selection:toggle(key)
-        grid.selection.last_selected = key  -- Track for range selection
         if grid.behaviors and grid.behaviors.on_select then
           grid.behaviors.on_select(grid.selection:selected_keys())
         end
@@ -325,7 +280,6 @@ function M.handle_tile_input(grid, ctx, item, rect)
         grid.drag.pressed_id = key
         grid.drag.pressed_was_selected = was_selected
         grid.drag.press_pos = {mx, my}
-        grid.selection.last_selected = key  -- Track for range selection
       end
     end
 
@@ -542,26 +496,11 @@ end
 function M.check_start_drag(grid, ctx)
   if not grid.drag.pressed_id or grid.drag.active or M.is_external_drag_active(grid) then return end
 
-  -- Don't start item drag if marquee selection is active (SHIFT+drag)
+  -- Don't start item drag if marquee selection is active
   if grid.sel_rect:is_active() then return end
 
   local threshold = (grid.config and grid.config.drag and grid.config.drag.threshold) or 5
   if ImGui.IsMouseDragging(ctx, 0, threshold) then
-    -- SHIFT+Drag: Start marquee selection instead of item drag
-    if grid.drag.shift_pressed then
-      local mx, my = ImGui.GetMousePos(ctx)
-      local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
-      local mode = ctrl and "add" or "replace"
-      grid.sel_rect:begin(grid.drag.press_pos[1], grid.drag.press_pos[2], mode, ctx)
-
-      -- Clear drag state
-      grid.drag.pressed_id = nil
-      grid.drag.press_pos = nil
-      grid.drag.shift_pressed = nil
-      return
-    end
-
-    -- Normal item drag
     grid.drag.pending_selection = nil
     grid.drag.active = true
 
