@@ -7,6 +7,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Style = require('rearkitekt.gui.style.defaults')
 local Colors = require('rearkitekt.core.colors')
+local InteractionBlocking = require('rearkitekt.gui.utils.interaction_blocking')
 
 local M = {}
 
@@ -92,7 +93,7 @@ local CHECKBOX_DEFAULTS = {
 
 local function render_checkbox(ctx, dl, x, y, config, instance, is_checked)
   local size = config.size
-  local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + size, y + size)
+  local is_hovered = InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, x, y, x + size, y + size, config.is_blocking)
   local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
 
   -- Update animation
