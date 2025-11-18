@@ -11,7 +11,7 @@ local Shapes = require('rearkitekt.gui.rendering.shapes')
 
 local M = {}
 
-function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state)
+function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local tile_w, tile_h = x2 - x1, y2 - y1
   local center_x, center_y = (x1 + x2) / 2, (y1 + y2) / 2
@@ -118,9 +118,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   fx_config.rounding = saved_rounding
   fx_config.ants_replace_border = saved_ants_replace
 
-  -- Render header
+  -- Render header (use render_color to match tile color, not base_color)
   BaseRenderer.render_header_bar(dl, scaled_x1, scaled_y1, scaled_x2, header_height,
-    base_color, combined_alpha, config)
+    render_color, combined_alpha, config)
 
   -- Render marching ants for selection
   if tile_state.selected and cascade_factor > 0.5 then
@@ -297,8 +297,17 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     else
       -- Normal text rendering
       local text_x2 = scaled_x2 - text_right_margin
+
+      -- Badge click callback to cycle through items
+      local on_badge_click = function()
+        if item_data.total and item_data.total > 1 then
+          state.cycle_midi_track(item_data.track_guid, 1)
+        end
+      end
+
       BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, text_x2, header_height,
-        item_data.name, item_data.index, item_data.total, base_color, text_alpha, config)
+        item_data.name, item_data.index, item_data.total, render_color, text_alpha, config,
+        item_data.uuid, badge_rects, on_badge_click)
     end
   end
 

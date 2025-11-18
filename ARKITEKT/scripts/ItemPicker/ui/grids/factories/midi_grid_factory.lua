@@ -171,6 +171,9 @@ function M.create(ctx, config, state, visualization, animator)
     return filtered
   end
 
+  -- Store badge rectangles for exclusion zones (tile_key -> rect)
+  local badge_rects = {}
+
   local grid = Grid.new({
     id = "midi_items",
     gap = config.TILE.GAP,
@@ -188,14 +191,58 @@ function M.create(ctx, config, state, visualization, animator)
       return item_data.uuid
     end,
 
+    get_exclusion_zones = function(item_data, rect)
+      -- Return badge rect as exclusion zone if it exists
+      local badge_rect = badge_rects[item_data.uuid]
+      return badge_rect and {badge_rect} or nil
+    end,
+
     render_tile = function(ctx, rect, item_data, tile_state)
       local dl = ImGui.GetWindowDrawList(ctx)
-      MidiRenderer.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state)
+      MidiRenderer.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects)
     end,
   })
 
   -- Behaviors
   grid.behaviors = {
+    right_click = function(key, selected_keys)
+      -- Right-click toggles disabled state
+      local items = get_items()
+      local track_guid_map = {}
+      for _, data in ipairs(items) do
+        if data.uuid then
+          track_guid_map[data.uuid] = data.track_guid
+        end
+      end
+
+      if #selected_keys > 1 then
+        -- Multi-select: toggle all to opposite of clicked item's state
+        local clicked_track_guid = track_guid_map[key]
+        local new_state = not state.disabled.midi[clicked_track_guid]
+        for _, uuid in ipairs(selected_keys) do
+          local track_guid = track_guid_map[uuid]
+          if track_guid then
+            if new_state then
+              state.disabled.midi[track_guid] = true
+            else
+              state.disabled.midi[track_guid] = nil
+            end
+          end
+        end
+      else
+        -- Single item: toggle
+        local track_guid = track_guid_map[key]
+        if track_guid then
+          if state.disabled.midi[track_guid] then
+            state.disabled.midi[track_guid] = nil
+          else
+            state.disabled.midi[track_guid] = true
+          end
+        end
+      end
+      state.persist_disabled()
+    end,
+
     drag_start = function(keys)
       reaper.ShowConsoleMsg(string.format("[DRAG_START MIDI] Called! keys=%d\n", keys and #keys or 0))
       if not keys or #keys == 0 then return end

@@ -170,6 +170,9 @@ function M.create(ctx, config, state, visualization, animator)
     return filtered
   end
 
+  -- Store badge rectangles for exclusion zones (tile_key -> rect)
+  local badge_rects = {}
+
   local grid = Grid.new({
     id = "audio_items",
     gap = config.TILE.GAP,
@@ -187,9 +190,15 @@ function M.create(ctx, config, state, visualization, animator)
       return item_data.uuid
     end,
 
+    get_exclusion_zones = function(item_data, rect)
+      -- Return badge rect as exclusion zone if it exists
+      local badge_rect = badge_rects[item_data.uuid]
+      return badge_rect and {badge_rect} or nil
+    end,
+
     render_tile = function(ctx, rect, item_data, tile_state)
       local dl = ImGui.GetWindowDrawList(ctx)
-      AudioRenderer.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state)
+      AudioRenderer.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects)
     end,
   })
 
@@ -231,6 +240,44 @@ function M.create(ctx, config, state, visualization, animator)
         reaper.ShowConsoleMsg(string.format("[DRAG_START] Starting drag for: %s\n", display_data.name))
         state.start_drag(display_data.item, display_data.name, display_data.color, drag_w, drag_h)
       end
+    end,
+
+    right_click = function(key, selected_keys)
+      -- Right-click toggles disabled state
+      local items = get_items()
+      local filename_map = {}
+      for _, data in ipairs(items) do
+        if data.uuid then
+          filename_map[data.uuid] = data.filename
+        end
+      end
+
+      if #selected_keys > 1 then
+        -- Multi-select: toggle all to opposite of clicked item's state
+        local clicked_filename = filename_map[key]
+        local new_state = not state.disabled.audio[clicked_filename]
+        for _, uuid in ipairs(selected_keys) do
+          local filename = filename_map[uuid]
+          if filename then
+            if new_state then
+              state.disabled.audio[filename] = true
+            else
+              state.disabled.audio[filename] = nil
+            end
+          end
+        end
+      else
+        -- Single item: toggle
+        local filename = filename_map[key]
+        if filename then
+          if state.disabled.audio[filename] then
+            state.disabled.audio[filename] = nil
+          else
+            state.disabled.audio[filename] = true
+          end
+        end
+      end
+      state.persist_disabled()
     end,
 
     favorite = function(item_uuids)

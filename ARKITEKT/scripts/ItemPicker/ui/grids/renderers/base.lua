@@ -132,7 +132,7 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
 end
 
 -- Render text with badge
-function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index, total, base_color, text_alpha, config)
+function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index, total, base_color, text_alpha, config, item_key, badge_rects, on_badge_click)
   local tile_render = config.TILE_RENDER
   local show_text = header_height >= (tile_render.responsive.hide_text_below - tile_render.header.min_height)
   local show_badge = header_height >= (tile_render.responsive.hide_badge_below - tile_render.header.min_height)
@@ -174,6 +174,20 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
 
     Draw.text(dl, badge_x + tile_render.badge.padding_x, badge_y + tile_render.badge.padding_y,
       Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
+
+    -- Store badge rect for exclusion zone and make it clickable
+    if badge_rects and item_key then
+      badge_rects[item_key] = {badge_x, badge_y, badge_x2, badge_y2}
+
+      -- Create invisible button over badge for click detection
+      ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
+      ImGui.InvisibleButton(ctx, "##badge_" .. item_key, badge_x2 - badge_x, badge_y2 - badge_y)
+
+      -- Handle badge click to cycle items
+      if ImGui.IsItemClicked(ctx, 0) and on_badge_click then
+        on_badge_click()
+      end
+    end
   end
 end
 
