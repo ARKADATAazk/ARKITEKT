@@ -195,19 +195,39 @@ function TCPView:load_additional_params()
 
   local mappings = ThemeMapper.load_current_mappings()
   if not mappings or not mappings.assignments then
+    -- Debug: Check why no mappings
+    local json_path = ThemeMapper.find_companion_json()
+    if not json_path then
+      reaper.ShowConsoleMsg("TCP: No companion JSON found\n")
+    else
+      reaper.ShowConsoleMsg("TCP: JSON found at " .. json_path .. " but no assignments\n")
+    end
     return
   end
 
   -- Get all discovered parameters
   local all_params = ParamDiscovery.discover_all_params()
+  reaper.ShowConsoleMsg("TCP: Discovered " .. #all_params .. " total params\n")
+
+  -- Debug: Print assignments
+  reaper.ShowConsoleMsg("TCP: Checking assignments...\n")
+  for param_name, assignment in pairs(mappings.assignments) do
+    if assignment.TCP then
+      reaper.ShowConsoleMsg("  - " .. param_name .. " is assigned to TCP\n")
+    end
+  end
 
   -- Filter to params assigned to TCP
+  local count = 0
   for _, param in ipairs(all_params) do
     local assignment = mappings.assignments[param.name]
     if assignment and assignment.TCP then
       table.insert(self.additional_params, param)
+      count = count + 1
     end
   end
+
+  reaper.ShowConsoleMsg("TCP: Found " .. count .. " params assigned to TCP\n")
 end
 
 function TCPView:draw_additional_param(ctx, param)

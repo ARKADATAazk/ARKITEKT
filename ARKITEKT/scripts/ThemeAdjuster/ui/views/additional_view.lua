@@ -346,7 +346,21 @@ end
 
 function AdditionalView:save_assignments()
   -- Save assignments to JSON file
-  ThemeMapper.save_assignments(self.assignments)
+  reaper.ShowConsoleMsg("Additional: Saving assignments...\n")
+  for param_name, assignment in pairs(self.assignments) do
+    for tab_id, is_assigned in pairs(assignment) do
+      if is_assigned then
+        reaper.ShowConsoleMsg("  - " .. param_name .. " -> " .. tab_id .. "\n")
+      end
+    end
+  end
+
+  local success = ThemeMapper.save_assignments(self.assignments)
+  if success then
+    reaper.ShowConsoleMsg("Additional: Assignments saved successfully\n")
+  else
+    reaper.ShowConsoleMsg("Additional: Failed to save assignments\n")
+  end
 end
 
 function AdditionalView:export_parameters()
