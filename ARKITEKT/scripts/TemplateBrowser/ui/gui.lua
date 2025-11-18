@@ -716,6 +716,19 @@ local function draw_folder_tree(ctx, state, config)
     -- Rename callback
     on_rename = function(node, new_name)
       if new_name ~= "" and new_name ~= node.name then
+        local Persistence = require('TemplateBrowser.domain.persistence')
+
+        -- Handle virtual folder rename (metadata only, no file operations)
+        if node.is_virtual then
+          if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+            state.metadata.virtual_folders[node.id].name = new_name
+            Persistence.save_metadata(state.metadata)
+            state.set_status("Renamed virtual folder to: " .. new_name, "success")
+          end
+          return
+        end
+
+        -- Handle physical folder rename (file operations + metadata update)
         local old_path = node.full_path
         local old_relative_path = node.path  -- e.g., "OldFolder" or "Parent/OldFolder"
 
@@ -726,8 +739,6 @@ local function draw_folder_tree(ctx, state, config)
           local new_relative_path = parent_path and (parent_path .. "/" .. new_name) or new_name
 
           -- Update metadata paths for this folder and all templates in it
-          local Persistence = require('TemplateBrowser.domain.persistence')
-
           -- Update folder metadata
           if state.metadata and state.metadata.folders then
             for uuid, folder in pairs(state.metadata.folders) do
