@@ -179,6 +179,10 @@ function M.create(ctx, config, state, visualization, animator)
 
     get_items = get_items,
 
+    config = {
+      drag = { threshold = 30 }
+    },
+
     key = function(item_data)
       return item_data.uuid
     end,
