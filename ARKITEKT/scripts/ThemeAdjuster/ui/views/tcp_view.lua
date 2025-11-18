@@ -321,6 +321,8 @@ function TCPView:draw_additional_param(ctx, param)
 end
 
 function TCPView:draw(ctx, shell_state)
+  reaper.ShowConsoleMsg("TCP: draw() called\n")
+
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
   -- Reload additional parameters (in case assignments changed)

@@ -191,19 +191,39 @@ function MCPView:load_additional_params()
 
   local mappings = ThemeMapper.load_current_mappings()
   if not mappings or not mappings.assignments then
+    -- Debug: Check why no mappings
+    local json_path = ThemeMapper.find_companion_json()
+    if not json_path then
+      reaper.ShowConsoleMsg("MCP: No companion JSON found\n")
+    else
+      reaper.ShowConsoleMsg("MCP: JSON found at " .. json_path .. " but no assignments\n")
+    end
     return
   end
 
   -- Get all discovered parameters
   local all_params = ParamDiscovery.discover_all_params()
+  reaper.ShowConsoleMsg("MCP: Discovered " .. #all_params .. " total params\n")
+
+  -- Debug: Print assignments
+  reaper.ShowConsoleMsg("MCP: Checking assignments...\n")
+  for param_name, assignment in pairs(mappings.assignments) do
+    if assignment.MCP then
+      reaper.ShowConsoleMsg("  - " .. param_name .. " is assigned to MCP\n")
+    end
+  end
 
   -- Filter to params assigned to MCP
+  local count = 0
   for _, param in ipairs(all_params) do
     local assignment = mappings.assignments[param.name]
     if assignment and assignment.MCP then
       table.insert(self.additional_params, param)
+      count = count + 1
     end
   end
+
+  reaper.ShowConsoleMsg("MCP: Found " .. count .. " params assigned to MCP\n")
 end
 
 function MCPView:draw_additional_param(ctx, param)
@@ -297,6 +317,8 @@ function MCPView:draw_additional_param(ctx, param)
 end
 
 function MCPView:draw(ctx, shell_state)
+  reaper.ShowConsoleMsg("MCP: draw() called\n")
+
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
   -- Reload additional parameters (in case assignments changed)
