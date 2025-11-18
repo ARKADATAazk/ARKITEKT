@@ -83,20 +83,24 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
       -- Time-based fade: fade in when playing, fade out at 100% or when stopped
       local target_fade = (playback_progress > 0 and playback_progress < 1.0) and 1.0 or 0.0
       local current_fade = animator:get(item.key, 'progress_fade') or 0
-      -- Fast fade in (8.0), fade out in 2 seconds (0.5 units/sec)
-      local fade_speed = (target_fade > current_fade) and 8.0 or 0.5
+      -- Fast fade in, slow fade out
+      local fade_in_duration = 0.125  -- seconds
+      local fade_out_duration = 2.0   -- seconds
+      local fade_speed = (target_fade > current_fade) and (1.0 / fade_in_duration) or (1.0 / fade_out_duration)
       animator:track(item.key, 'progress_fade', target_fade, fade_speed)
       playback_fade = animator:get(item.key, 'progress_fade')
     else
       -- Not currently playing this item, fade out at last known progress
       playback_progress = animator:get(item.key, 'last_progress') or 0
-      animator:track(item.key, 'progress_fade', 0.0, 0.5)  -- 2 second fade out
+      local fade_out_duration = 2.0  -- seconds
+      animator:track(item.key, 'progress_fade', 0.0, 1.0 / fade_out_duration)
       playback_fade = animator:get(item.key, 'progress_fade')
     end
   else
     -- Playback stopped, fade out at last known progress
     playback_progress = animator:get(item.key, 'last_progress') or 0
-    animator:track(item.key, 'progress_fade', 0.0, 0.5)  -- 2 second fade out
+    local fade_out_duration = 2.0  -- seconds
+    animator:track(item.key, 'progress_fade', 0.0, 1.0 / fade_out_duration)
     playback_fade = animator:get(item.key, 'progress_fade')
   end
   
@@ -223,20 +227,24 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
       -- Time-based fade: fade in when playing, fade out at 100% or when stopped
       local target_fade = (playback_progress > 0 and playback_progress < 1.0) and 1.0 or 0.0
       local current_fade = animator:get(item.key, 'progress_fade') or 0
-      -- Fast fade in (8.0), fade out in 2 seconds (0.5 units/sec)
-      local fade_speed = (target_fade > current_fade) and 8.0 or 0.5
+      -- Fast fade in, slow fade out
+      local fade_in_duration = 0.125  -- seconds
+      local fade_out_duration = 2.0   -- seconds
+      local fade_speed = (target_fade > current_fade) and (1.0 / fade_in_duration) or (1.0 / fade_out_duration)
       animator:track(item.key, 'progress_fade', target_fade, fade_speed)
       playback_fade = animator:get(item.key, 'progress_fade')
     else
       -- Not currently playing this playlist, fade out at last known progress
       playback_progress = animator:get(item.key, 'last_progress') or 0
-      animator:track(item.key, 'progress_fade', 0.0, 0.5)  -- 2 second fade out
+      local fade_out_duration = 2.0  -- seconds
+      animator:track(item.key, 'progress_fade', 0.0, 1.0 / fade_out_duration)
       playback_fade = animator:get(item.key, 'progress_fade')
     end
   else
     -- Playback stopped, fade out at last known progress
     playback_progress = animator:get(item.key, 'last_progress') or 0
-    animator:track(item.key, 'progress_fade', 0.0, 0.5)  -- 2 second fade out
+    local fade_out_duration = 2.0  -- seconds
+    animator:track(item.key, 'progress_fade', 0.0, 1.0 / fade_out_duration)
     playback_fade = animator:get(item.key, 'progress_fade')
   end
 
