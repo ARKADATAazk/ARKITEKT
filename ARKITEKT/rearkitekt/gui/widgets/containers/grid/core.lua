@@ -358,7 +358,6 @@ function Grid:draw(ctx)
 
     ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
     ImGui.InvisibleButton(ctx, self._cached_empty_id, extended_w, extended_h)
-    ImGui.SetItemAllowOverlap(ctx)  -- Allow widgets rendered later to overlap and receive input
     ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
     -- Render destruction animations even when grid is empty
@@ -469,13 +468,12 @@ function Grid:draw(ctx)
   
   self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
 
-  ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
-  ImGui.InvisibleButton(ctx, self._cached_bg_id, extended_w, extended_h)
-  ImGui.SetItemAllowOverlap(ctx)  -- Allow widgets rendered later to overlap and receive input
+  -- Don't use InvisibleButton - it blocks widget input
+  -- Instead, manually detect background clicks after rendering
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
-  local bg_clicked = ImGui.IsItemClicked(ctx, 0)
-  local bg_double_clicked = ImGui.IsItemClicked(ctx, 0) and ImGui.IsMouseDoubleClicked(ctx, 0)
+  local bg_clicked = false
+  local bg_double_clicked = false
 
   -- Optimized: Check if mouse is over any tile (inline to avoid function call overhead)
   local mouse_over_tile = false
@@ -653,8 +651,41 @@ function Grid:draw(ctx)
   if self.clip_rendering then
     ImGui.PopClipRect(ctx)
   end
-  
+
   self.animator:render_destroy_effects(ctx, dl)
+
+  -- Detect background clicks manually (after rendering, so we know where tiles are)
+  if ImGui.IsMouseClicked(ctx, 0) then
+    local mx, my = ImGui.GetMousePos(ctx)
+    local gb = self.grid_bounds
+    if gb and mx >= gb[1] and mx <= gb[3] and my >= gb[2] and my <= gb[4] then
+      -- Mouse clicked in grid bounds, check if it's over a tile
+      local clicked_on_tile = false
+      for i = 1, num_items do
+        local item = items[i]
+        local key = self.key(item)
+        local r = self.rect_track:get(key)
+        if r and Draw.point_in_rect(mx, my, r[1], r[2], r[3], r[4]) then
+          clicked_on_tile = true
+          if ImGui.IsMouseDoubleClicked(ctx, 0) then
+            double_clicked_tile_key = key
+          end
+          break
+        end
+      end
+      if not clicked_on_tile then
+        bg_clicked = true
+      end
+    end
+  end
+
+  if ImGui.IsMouseDoubleClicked(ctx, 0) then
+    local mx, my = ImGui.GetMousePos(ctx)
+    local gb = self.grid_bounds
+    if gb and mx >= gb[1] and mx <= gb[3] and my >= gb[2] and my <= gb[4] then
+      bg_double_clicked = true
+    end
+  end
 
   if not self.block_all_input then
     Input.check_start_drag(self, ctx)
