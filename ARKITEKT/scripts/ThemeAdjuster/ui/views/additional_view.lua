@@ -723,15 +723,20 @@ function AdditionalView:assign_param_to_tab_at_index(param_name, tab_id, index)
     for i, assignment in ipairs(self.assignments[tab_id]) do
       if assignment.param_name == param_name then
         local item = table.remove(self.assignments[tab_id], i)
-        table.insert(self.assignments[tab_id], index, item)
+        -- After removal, array is shorter - clamp index to valid range
+        local max_index = #self.assignments[tab_id] + 1
+        local safe_index = math.min(index, max_index)
+        table.insert(self.assignments[tab_id], safe_index, item)
         break
       end
     end
   else
-    -- Insert at specified index
-    table.insert(self.assignments[tab_id], index, {
+    -- Insert at specified index (clamp to valid range)
+    local max_index = #self.assignments[tab_id] + 1
+    local safe_index = math.min(index, max_index)
+    table.insert(self.assignments[tab_id], safe_index, {
       param_name = param_name,
-      order = index
+      order = safe_index
     })
   end
 
