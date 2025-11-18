@@ -25,6 +25,7 @@ function M.new(opts)
     loop_playlist = opts.loop_playlist,
     follow_viewport = opts.follow_viewport,
     shuffle_enabled = opts.shuffle_enabled,
+    shuffle_mode = opts.shuffle_mode,
   })
   
   self.transitions = EngineTransitions.new({
@@ -170,6 +171,14 @@ function Engine:get_shuffle_enabled()
   return self.transport:get_shuffle_enabled()
 end
 
+function Engine:set_shuffle_mode(mode)
+  self.transport:set_shuffle_mode(mode)
+end
+
+function Engine:get_shuffle_mode()
+  return self.transport:get_shuffle_mode()
+end
+
 function Engine:set_quantize_mode(mode)
   self.quantize_mode = mode
   self.quantize:set_quantize_mode(mode)
@@ -200,6 +209,7 @@ function Engine:get_state()
     loop_playlist = self.transport:get_loop_playlist(),
     follow_viewport = self.transport:get_follow_viewport(),
     shuffle_enabled = self.transport:get_shuffle_enabled(),
+    shuffle_mode = self.transport:get_shuffle_mode(),
     quantize_mode = self.quantize_mode,
     is_playing = self.transport.is_playing,
     has_sws = EngineTransport._has_sws(),

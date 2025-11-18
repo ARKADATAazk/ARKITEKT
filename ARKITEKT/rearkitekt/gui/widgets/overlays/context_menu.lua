@@ -90,34 +90,99 @@ end
 
 function M.item(ctx, label, config)
   config = config or {}
-  
+
   local item_height = config.item_height or DEFAULTS.item_height
   local item_padding_x = config.item_padding_x or DEFAULTS.item_padding_x
   local item_hover_color = config.item_hover_color or DEFAULTS.item_hover_color
   local item_text_color = config.item_text_color or DEFAULTS.item_text_color
   local item_text_hover_color = config.item_text_hover_color or DEFAULTS.item_text_hover_color
-  
+
   local dl = ImGui.GetWindowDrawList(ctx)
   local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
-  
+
   local text_w, text_h = ImGui.CalcTextSize(ctx, label)
   local item_w = math.max(avail_w, text_w + item_padding_x * 2)
-  
+
   local item_hovered = ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_height)
-  
+
   if item_hovered then
     ImGui.DrawList_AddRectFilled(dl, item_x, item_y, item_x + item_w, item_y + item_height, item_hover_color, 2)
   end
-  
+
   local text_color = item_hovered and item_text_hover_color or item_text_color
   local text_x = item_x + item_padding_x
   local text_y = item_y + (item_height - text_h) * 0.5
-  
+
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
-  
+
   ImGui.InvisibleButton(ctx, label .. "_item", item_w, item_height)
-  
+
+  return ImGui.IsItemClicked(ctx, 0)
+end
+
+function M.checkbox_item(ctx, label, checked, config)
+  config = config or {}
+
+  local item_height = config.item_height or DEFAULTS.item_height
+  local item_padding_x = config.item_padding_x or DEFAULTS.item_padding_x
+  local item_hover_color = config.item_hover_color or DEFAULTS.item_hover_color
+  local item_text_color = config.item_text_color or DEFAULTS.item_text_color
+  local item_text_hover_color = config.item_text_hover_color or DEFAULTS.item_text_hover_color
+
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+
+  local checkbox_size = 14
+  local checkbox_padding = 8
+  local text_w, text_h = ImGui.CalcTextSize(ctx, label)
+  local item_w = math.max(avail_w, text_w + item_padding_x * 2 + checkbox_size + checkbox_padding)
+
+  local item_hovered = ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_height)
+
+  if item_hovered then
+    ImGui.DrawList_AddRectFilled(dl, item_x, item_y, item_x + item_w, item_y + item_height, item_hover_color, 2)
+  end
+
+  -- Draw checkbox
+  local checkbox_x = item_x + item_padding_x
+  local checkbox_y = item_y + (item_height - checkbox_size) * 0.5
+
+  local checkbox_bg = checked and hexrgb("#4A9EFF40") or hexrgb("#00000000")
+  local checkbox_border = checked and hexrgb("#4A9EFF") or hexrgb("#404040")
+
+  ImGui.DrawList_AddRectFilled(dl, checkbox_x, checkbox_y, checkbox_x + checkbox_size, checkbox_y + checkbox_size, checkbox_bg, 2)
+  ImGui.DrawList_AddRect(dl, checkbox_x, checkbox_y, checkbox_x + checkbox_size, checkbox_y + checkbox_size, checkbox_border, 2, 0, 1)
+
+  -- Draw checkmark if checked
+  if checked then
+    local check_color = hexrgb("#4A9EFF")
+    local check_padding = 3
+    -- Draw checkmark using lines
+    ImGui.DrawList_AddLine(dl,
+      checkbox_x + check_padding,
+      checkbox_y + checkbox_size * 0.5,
+      checkbox_x + checkbox_size * 0.4,
+      checkbox_y + checkbox_size - check_padding,
+      check_color, 2)
+    ImGui.DrawList_AddLine(dl,
+      checkbox_x + checkbox_size * 0.4,
+      checkbox_y + checkbox_size - check_padding,
+      checkbox_x + checkbox_size - check_padding,
+      checkbox_y + check_padding,
+      check_color, 2)
+  end
+
+  -- Draw label text
+  local text_color = item_hovered and item_text_hover_color or item_text_color
+  local text_x = checkbox_x + checkbox_size + checkbox_padding
+  local text_y = item_y + (item_height - text_h) * 0.5
+
+  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
+
+  ImGui.InvisibleButton(ctx, label .. "_checkbox_item", item_w, item_height)
+
   return ImGui.IsItemClicked(ctx, 0)
 end
 

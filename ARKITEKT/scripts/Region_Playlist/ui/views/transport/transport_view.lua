@@ -338,24 +338,29 @@ function TransportView:build_playback_buttons(bridge_state)
 
           -- Draw context menu
           if ContextMenu.begin(ctx, "shuffle_context_menu") then
+            local current_mode = engine and engine:get_shuffle_mode() or "true_shuffle"
+
+            -- Shuffle mode selection (mutually exclusive checkboxes)
+            if ContextMenu.checkbox_item(ctx, "True Shuffle", current_mode == "true_shuffle") then
+              if bridge then
+                bridge:set_shuffle_mode("true_shuffle")
+              end
+            end
+
+            if ContextMenu.checkbox_item(ctx, "Random", current_mode == "random") then
+              if bridge then
+                bridge:set_shuffle_mode("random")
+              end
+            end
+
+            ContextMenu.separator(ctx)
+
             -- Re-shuffle Now
             if ContextMenu.item(ctx, "Re-shuffle Now") then
               if engine and engine:get_shuffle_enabled() then
                 engine:set_shuffle_enabled(false)
                 engine:set_shuffle_enabled(true)
               end
-            end
-
-            ContextMenu.separator(ctx)
-
-            -- Future shuffle modes
-            if ContextMenu.item(ctx, "Shuffle Mode: True Shuffle") then
-              -- TODO: Implement shuffle mode switching
-              -- Modes: True Shuffle / Random / Smart Shuffle
-            end
-
-            if ContextMenu.item(ctx, "Auto-reshuffle on Loop") then
-              -- TODO: Implement auto-reshuffle toggle
             end
 
             ContextMenu.end_menu(ctx)

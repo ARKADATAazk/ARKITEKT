@@ -41,6 +41,11 @@ function M.new(opts)
   self._old_repeat = nil
   self._old_smooth_scroll = nil
 
+  -- Set shuffle mode first if provided
+  if opts.shuffle_mode and self.state and self.state.set_shuffle_mode then
+    self.state:set_shuffle_mode(opts.shuffle_mode)
+  end
+
   -- Set shuffle after initialization to trigger state sync
   if opts.shuffle_enabled then
     self:set_shuffle_enabled(true)
@@ -283,6 +288,19 @@ end
 
 function Transport:get_shuffle_enabled()
   return self.shuffle_enabled
+end
+
+function Transport:set_shuffle_mode(mode)
+  if self.state and self.state.set_shuffle_mode then
+    self.state:set_shuffle_mode(mode)
+  end
+end
+
+function Transport:get_shuffle_mode()
+  if self.state and self.state.get_shuffle_mode then
+    return self.state:get_shuffle_mode()
+  end
+  return "true_shuffle"
 end
 
 function Transport:set_loop_playlist(enabled)

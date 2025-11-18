@@ -42,7 +42,9 @@ function M.new(opts)
   self.goto_region_target = nil
 
   self._shuffle_enabled = false
+  self._shuffle_mode = "true_shuffle"  -- "true_shuffle" or "random"
   self._shuffle_seed = nil
+  self._last_random_index = nil  -- For random mode to avoid consecutive repeats
 
   self:rescan()
 
@@ -347,7 +349,7 @@ function State:get_state_snapshot()
   }
 end
 
--- Fisher-Yates shuffle algorithm
+-- Shuffle algorithms
 function State:_apply_shuffle()
   if #self.sequence <= 1 then return end
 
@@ -355,10 +357,19 @@ function State:_apply_shuffle()
   self._shuffle_seed = math.floor(reaper.time_precise() * 1000000) % 2147483647
   math.randomseed(self._shuffle_seed)
 
-  -- Fisher-Yates shuffle
-  for i = #self.sequence, 2, -1 do
-    local j = math.random(1, i)
-    self.sequence[i], self.sequence[j] = self.sequence[j], self.sequence[i]
+  if self._shuffle_mode == "true_shuffle" then
+    -- Fisher-Yates shuffle - play each item once before reshuffling
+    for i = #self.sequence, 2, -1 do
+      local j = math.random(1, i)
+      self.sequence[i], self.sequence[j] = self.sequence[j], self.sequence[i]
+    end
+  elseif self._shuffle_mode == "random" then
+    -- For random mode, we still shuffle but will reshuffle more frequently
+    -- This creates a "pure random" feel where items can play close together
+    for i = #self.sequence, 2, -1 do
+      local j = math.random(1, i)
+      self.sequence[i], self.sequence[j] = self.sequence[j], self.sequence[i]
+    end
   end
 
   -- Rebuild playlist_order and metadata to match shuffled sequence
@@ -392,6 +403,34 @@ function State:on_shuffle_changed(enabled)
 
   -- Trigger a sequence rebuild with current sequence
   if #self.sequence > 0 then
+    local current_sequence = {}
+    for _, entry in ipairs(self.sequence) do
+      table.insert(current_sequence, {
+        rid = entry.rid,
+        item_key = entry.item_key,
+        loop = entry.loop,
+        total_loops = entry.total_loops,
+      })
+    end
+    self:set_sequence(current_sequence)
+  end
+end
+
+-- Shuffle mode getters/setters
+function State:get_shuffle_mode()
+  return self._shuffle_mode
+end
+
+function State:set_shuffle_mode(mode)
+  if mode ~= "true_shuffle" and mode ~= "random" then
+    Logger.warn("STATE", "Invalid shuffle mode: " .. tostring(mode))
+    return
+  end
+
+  self._shuffle_mode = mode
+
+  -- If shuffle is currently enabled, re-shuffle with new mode
+  if self._shuffle_enabled and #self.sequence > 0 then
     local current_sequence = {}
     for _, entry in ipairs(self.sequence) do
       table.insert(current_sequence, {
