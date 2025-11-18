@@ -620,40 +620,81 @@ local function draw_folder_tree(ctx, state, config)
 
         for _, color_opt in ipairs(color_options) do
           if ContextMenu.item(ctx_inner, color_opt.name) then
-            -- Update folder color in metadata
             local Persistence = require('TemplateBrowser.domain.persistence')
 
-            if not state.metadata.folders then
-              state.metadata.folders = {}
-            end
+            if node.is_virtual then
+              -- Update virtual folder color
+              if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+                state.metadata.virtual_folders[node.id].color = color_opt.color
+                Persistence.save_metadata(state.metadata)
 
-            -- Find or create folder metadata entry
-            local folder_uuid = nil
-            for uuid, folder in pairs(state.metadata.folders) do
-              if folder.path == node.path then
-                folder_uuid = uuid
-                break
+                -- No need to rescan, just update UI
+                local Scanner = require('TemplateBrowser.domain.scanner')
+                Scanner.scan_templates(state)
               end
+            else
+              -- Update physical folder color in metadata
+              if not state.metadata.folders then
+                state.metadata.folders = {}
+              end
+
+              -- Find or create folder metadata entry
+              local folder_uuid = nil
+              for uuid, folder in pairs(state.metadata.folders) do
+                if folder.path == node.path then
+                  folder_uuid = uuid
+                  break
+                end
+              end
+
+              if not folder_uuid then
+                -- Create new metadata entry
+                folder_uuid = reaper.genGuid("")
+                state.metadata.folders[folder_uuid] = {
+                  path = node.path,
+                  name = node.name,
+                }
+              end
+
+              -- Set color
+              state.metadata.folders[folder_uuid].color = color_opt.color
+
+              -- Save metadata
+              Persistence.save_metadata(state.metadata)
+
+              -- Rescan to update UI
+              local Scanner = require('TemplateBrowser.domain.scanner')
+              Scanner.scan_templates(state)
             end
 
-            if not folder_uuid then
-              -- Create new metadata entry
-              folder_uuid = reaper.genGuid("")
-              state.metadata.folders[folder_uuid] = {
-                path = node.path,
-                name = node.name,
-              }
+            ImGui.CloseCurrentPopup(ctx_inner)
+          end
+        end
+
+        -- Add separator and delete option for virtual folders
+        if node.is_virtual then
+          ContextMenu.separator(ctx_inner)
+
+          if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
+            local Persistence = require('TemplateBrowser.domain.persistence')
+
+            -- Remove from metadata
+            if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+              state.metadata.virtual_folders[node.id] = nil
+              Persistence.save_metadata(state.metadata)
+
+              -- Clear selection if this folder was selected
+              if state.selected_folder == node.id then
+                state.selected_folder = ""
+                state.selected_folders = {}
+              end
+
+              -- Refresh UI (no need to rescan templates, just rebuild tree)
+              local Scanner = require('TemplateBrowser.domain.scanner')
+              Scanner.filter_templates(state)
+
+              state.set_status("Deleted virtual folder: " .. node.name, "success")
             end
-
-            -- Set color
-            state.metadata.folders[folder_uuid].color = color_opt.color
-
-            -- Save metadata
-            Persistence.save_metadata(state.metadata)
-
-            -- Rescan to update UI
-            local Scanner = require('TemplateBrowser.domain.scanner')
-            Scanner.scan_templates(state)
 
             ImGui.CloseCurrentPopup(ctx_inner)
           end
@@ -1411,6 +1452,41 @@ local function draw_template_context_menu(ctx, state)
         end
         state.context_menu_template = nil
         ImGui.CloseCurrentPopup(ctx)
+      end
+
+      -- Add "Remove from Virtual Folder" button if viewing a virtual folder
+      if state.selected_folder and state.selected_folder ~= "" and state.metadata then
+        local vfolder = state.metadata.virtual_folders and state.metadata.virtual_folders[state.selected_folder]
+        if vfolder and tmpl then
+          ImGui.Spacing(ctx)
+          ImGui.Separator(ctx)
+          ImGui.Spacing(ctx)
+
+          if Button.draw_at_cursor(ctx, { label = "Remove from " .. vfolder.name, width = -1, height = 24 }, "remove_from_vfolder") then
+            local Persistence = require('TemplateBrowser.domain.persistence')
+
+            -- Remove template UUID from virtual folder's template_refs
+            if vfolder.template_refs then
+              for i, ref_uuid in ipairs(vfolder.template_refs) do
+                if ref_uuid == tmpl.uuid then
+                  table.remove(vfolder.template_refs, i)
+                  break
+                end
+              end
+            end
+
+            -- Save metadata
+            Persistence.save_metadata(state.metadata)
+
+            -- Refresh filtered templates
+            local Scanner = require('TemplateBrowser.domain.scanner')
+            Scanner.filter_templates(state)
+
+            state.set_status("Removed " .. tmpl.name .. " from " .. vfolder.name, "success")
+            state.context_menu_template = nil
+            ImGui.CloseCurrentPopup(ctx)
+          end
+        end
       end
     end
 
