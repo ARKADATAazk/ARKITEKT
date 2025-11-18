@@ -253,6 +253,7 @@ function M.handle_tile_input(grid, ctx, item, rect)
         key = key,
         time = reaper.time_precise()
       }
+      reaper.ShowConsoleMsg(string.format("[RIGHT_CLICK_PRESS] Set on key: %s at pos: %.2f, %.2f\n", tostring(key), mx, my))
     end
 
     if ImGui.IsMouseDoubleClicked(ctx, 0) then
@@ -352,7 +353,13 @@ end
 
 function M.check_right_click_release(grid, ctx)
   -- Check if right-click was released without dragging -> trigger disable
-  if grid.right_click_press and ImGui.IsMouseReleased(ctx, 1) then
+  local mouse_released = ImGui.IsMouseReleased(ctx, 1)
+
+  if grid.right_click_press then
+    reaper.ShowConsoleMsg(string.format("[RIGHT_CLICK_CHECK] press tracked, released=%s\n", tostring(mouse_released)))
+  end
+
+  if grid.right_click_press and mouse_released then
     reaper.ShowConsoleMsg(string.format("[RIGHT_CLICK_RELEASE] marquee_was_active=%s\n", tostring(grid.marquee_was_active_this_frame)))
 
     -- Don't trigger disable if marquee selection was used this frame (user was dragging to select)
