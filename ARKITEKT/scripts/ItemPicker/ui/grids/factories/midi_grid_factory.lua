@@ -110,19 +110,29 @@ function M.create(ctx, config, state, visualization, animator)
       -- Use cached track color (fetched during loading, not every frame!)
       local track_color = entry.track_color or 0
 
-      -- REAPER's I_CUSTOMCOLOR: 0 = no custom color set, use default grey
-      -- Positive values are in Windows COLORREF format: 0x00BBGGRR
-      -- Use a threshold to ensure we have a valid color value (not just 1, 2, 3...)
+      -- DEBUG: Log track color values
+      if not state._color_debug_logged then
+        state._color_debug_logged = {}
+      end
+      if not state._color_debug_logged[track_color] then
+        reaper.ShowConsoleMsg(string.format("[COLOR DEBUG MIDI] track_color = %d (0x%08X) for item: %s\n",
+          track_color, track_color, item_name))
+        state._color_debug_logged[track_color] = true
+      end
+
+      -- REAPER returns: ColorToNative(r,g,b) | 0x01000000 for colored items, 0 for no color
+      -- Need to mask off 0x01000000 before extracting RGB
       local color
-      if track_color and track_color > 255 then
-        -- Valid color: extract RGB from COLORREF
-        local R = track_color & 255
-        local G = (track_color >> 8) & 255
-        local B = (track_color >> 16) & 255
-        color = ImGui.ColorConvertDouble4ToU32(R/255, G/255, B/255, 1)
-      else
-        -- No color or invalid: use default grey (0xFF5B5B55 in ABGR)
+      if track_color == 0 then
+        -- No color: use default grey (0xFF5B5B55 in ABGR)
         color = 0xFF5B5B55
+      else
+        -- Has color: mask off 0x01000000 flag and extract RGB from COLORREF (0x00BBGGRR)
+        local colorref = track_color & 0x00FFFFFF
+        local R = colorref & 255
+        local G = (colorref >> 8) & 255
+        local B = (colorref >> 16) & 255
+        color = ImGui.ColorConvertDouble4ToU32(R/255, G/255, B/255, 1)
       end
 
       table.insert(filtered, {
