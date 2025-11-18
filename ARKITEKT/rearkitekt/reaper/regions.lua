@@ -178,6 +178,9 @@ function M.set_region_name(proj, target_rid, new_name)
   -- Update the region with new name using SetProjectMarkerByIndex2
   reaper.Undo_BeginBlock()
 
+  -- Convert RGBA color back to REAPER's native format
+  local native_color = convert_rgba_to_reaper_color(rgn.color)
+
   local success = reaper.SetProjectMarkerByIndex2(
     proj,
     rgn.index,        -- marker/region index
@@ -186,7 +189,7 @@ function M.set_region_name(proj, target_rid, new_name)
     rgn["end"],       -- region end
     target_rid,       -- markrgnindexnumber (RID) - BEFORE name!
     new_name,         -- name - AFTER markrgnindexnumber!
-    rgn.color,        -- keep existing color
+    native_color,     -- keep existing color (converted to native format)
     0                 -- flags
   )
 

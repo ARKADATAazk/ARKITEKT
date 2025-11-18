@@ -212,7 +212,7 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
       name_color = Colors.hexrgb("#FFFFFF")
     end
 
-    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color, actual_height, rect, grid)
+    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color, actual_height, rect, grid, base_color)
   end
   
   if show_badge then
@@ -319,7 +319,7 @@ function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_
     }
     
     -- Draw playlist name with red color
-    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, circular_playlist_data, state, 0xFF, x2 - M.CONFIG.text_margin_right, M.CONFIG.circular.text_color)
+    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, circular_playlist_data, state, 0xFF, x2 - M.CONFIG.text_margin_right, M.CONFIG.circular.text_color, nil, rect, grid, base_color)
   end
   
   if show_badge then

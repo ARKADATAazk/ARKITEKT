@@ -267,7 +267,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
     local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
-    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, nil, actual_height, rect, grid)
+    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, nil, actual_height, rect, grid, base_color)
   end
 
   if show_badge then

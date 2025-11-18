@@ -210,7 +210,7 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
     local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
     local item_key = grid.key and grid.key(region) or region.rid
     local is_editing, edited_text = GridInput.handle_inline_edit_input(grid, ctx, item_key,
-      {name_start_x, rect[2], right_bound_x, rect[4]}, name_str)
+      {name_start_x, rect[2], right_bound_x, rect[4]}, name_str, base_color)
 
     if is_editing then
       -- Don't draw text while editing (InputText is drawn instead)
@@ -222,7 +222,7 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   Draw.text(dl, name_start_x, pos.y, name_color, truncated_name)
 end
 
-function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, right_bound_x, name_color_override, actual_height, rect, grid)
+function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, right_bound_x, name_color_override, actual_height, rect, grid, base_color)
   local fx_config = TileFXConfig.get()
 
   local text_height = ImGui.CalcTextSize(ctx, "Tg")
@@ -270,8 +270,10 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
   if grid and rect then
     local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
     local item_key = grid.key and grid.key(playlist_data) or playlist_data.id
+    -- Use chip color for inline editing if available, otherwise use base_color
+    local edit_color = playlist_data.chip_color or base_color
     local is_editing, edited_text = GridInput.handle_inline_edit_input(grid, ctx, item_key,
-      {name_start_x, rect[2], right_bound_x, rect[4]}, name_str)
+      {name_start_x, rect[2], right_bound_x, rect[4]}, name_str, edit_color)
 
     if is_editing then
       -- Don't draw text while editing (InputText is drawn instead)

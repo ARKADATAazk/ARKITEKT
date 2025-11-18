@@ -289,7 +289,13 @@ function M.stop_inline_edit(grid, commit)
 end
 
 -- Handle inline editing input (call this during tile rendering)
-function M.handle_inline_edit_input(grid, ctx, key, rect, current_text)
+-- @param grid The grid instance
+-- @param ctx ImGui context
+-- @param key Item key being edited
+-- @param rect {x1, y1, x2, y2} Bounding rectangle for the input
+-- @param current_text Current text value
+-- @param tile_color (optional) RGBA color of the tile for styling
+function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_color)
   if not grid.editing_state or grid.editing_state.key ~= key then
     return false, current_text  -- Not editing this tile
   end
@@ -299,16 +305,67 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text)
   -- Increment frame counter
   state.frames_active = (state.frames_active or 0) + 1
 
-  -- Set up input field position
-  local padding = 6
-  ImGui.SetCursorScreenPos(ctx, rect[1] + padding, rect[2] + padding)
-  ImGui.SetNextItemWidth(ctx, rect[3] - rect[1] - padding * 2)
+  local Colors = require('rearkitekt.core.colors')
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  -- Set up input field position with padding
+  local padding_x = 8
+  local padding_y = 4
+  local input_x1 = rect[1] + padding_x
+  local input_y1 = rect[2] + padding_y
+  local input_x2 = rect[3] - padding_x
+  local input_y2 = rect[4] - padding_y
+
+  -- Draw custom backdrop using tile color
+  local bg_color, text_color, border_color
+  if tile_color then
+    -- Create darker version of tile color for backdrop (reduce brightness significantly)
+    bg_color = Colors.adjust_brightness(tile_color, 0.15)
+    bg_color = Colors.with_alpha(bg_color, 0xE0)  -- Slightly transparent
+
+    -- Use brighter version for text
+    text_color = Colors.adjust_brightness(tile_color, 1.8)
+
+    -- Border color - slightly darker than text
+    border_color = Colors.adjust_brightness(tile_color, 1.3)
+    border_color = Colors.with_alpha(border_color, 0xAA)
+  else
+    -- Fallback colors
+    local hexrgb = Colors.hexrgb
+    bg_color = hexrgb("#1A1A1AE0")
+    text_color = hexrgb("#FFFFFFDD")
+    border_color = hexrgb("#666666AA")
+  end
+
+  -- Draw backdrop
+  ImGui.DrawList_AddRectFilled(dl, input_x1, input_y1, input_x2, input_y2, bg_color, 2, 0)
+
+  -- Draw subtle outer border
+  ImGui.DrawList_AddRect(dl, input_x1, input_y1, input_x2, input_y2, border_color, 2, 0, 1.5)
+
+  -- Draw inner highlight border for focus effect
+  if tile_color then
+    local highlight_color = Colors.adjust_brightness(tile_color, 2.0)
+    highlight_color = Colors.with_alpha(highlight_color, 0x40)
+    ImGui.DrawList_AddRect(dl, input_x1 + 1, input_y1 + 1, input_x2 - 1, input_y2 - 1, highlight_color, 1.5, 0, 1)
+  end
+
+  -- Position and size the input field
+  ImGui.SetCursorScreenPos(ctx, input_x1 + 6, input_y1 + (input_y2 - input_y1 - ImGui.GetTextLineHeight(ctx)) / 2)
+  ImGui.SetNextItemWidth(ctx, input_x2 - input_x1 - 12)
 
   -- Focus input on first frame
   if state.focus_next_frame then
     ImGui.SetKeyboardFocusHere(ctx)
     state.focus_next_frame = false
   end
+
+  -- Style the input field to be transparent (we drew our own backdrop)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Colors.hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
 
   -- Draw input field
   local changed, new_text = ImGui.InputText(
@@ -317,6 +374,8 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text)
     state.text,
     ImGui.InputTextFlags_None
   )
+
+  ImGui.PopStyleColor(ctx, 5)
 
   if changed then
     state.text = new_text
@@ -327,7 +386,8 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text)
   local enter_pressed = ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter)
   local escape_pressed = ImGui.IsKeyPressed(ctx, ImGui.Key_Escape)
 
-  if enter_pressed and is_active then
+  -- Check Enter and Escape first (they work whether or not the item is active)
+  if enter_pressed then
     M.stop_inline_edit(grid, true)  -- Commit
     return true, state.text
   elseif escape_pressed then
