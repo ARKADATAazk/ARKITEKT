@@ -8,6 +8,7 @@ local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 local Style = require('rearkitekt.gui.style.defaults')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
+local Tooltips = require('ThemeAdjuster.ui.tooltips')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -33,20 +34,20 @@ local SPINNER_VALUES = {
   tcp_width_size = {'MIN', 40, 60, 80, 100},
 }
 
--- Visibility elements with bitflags
+-- Visibility elements with bitflags (from Default 6.0)
 local VISIBILITY_ELEMENTS = {
-  {id = 'tcp_Record_Arm', label = 'Record Arm'},
-  {id = 'tcp_Monitor', label = 'Monitor'},
-  {id = 'tcp_Track_Name', label = 'Track Name'},
-  {id = 'tcp_Volume', label = 'Volume'},
-  {id = 'tcp_Routing', label = 'Routing'},
-  {id = 'tcp_Effects', label = 'Effects'},
-  {id = 'tcp_Envelope', label = 'Envelope'},
-  {id = 'tcp_Pan_&_Width', label = 'Pan & Width'},
-  {id = 'tcp_Record_Mode', label = 'Record Mode'},
-  {id = 'tcp_Input', label = 'Input'},
-  {id = 'tcp_Values', label = 'Values'},
-  {id = 'tcp_Meter_Values', label = 'Meter Values'},
+  {id = 'tcp_Record_Arm', label = 'RECORD ARM'},
+  {id = 'tcp_Monitor', label = 'MONITOR'},
+  {id = 'tcp_Track_Name', label = 'TRACK NAME'},
+  {id = 'tcp_Volume', label = 'VOLUME'},
+  {id = 'tcp_Routing', label = 'ROUTING'},
+  {id = 'tcp_Effects', label = 'INSERT FX'},
+  {id = 'tcp_Envelope', label = 'ENVELOPE'},
+  {id = 'tcp_Pan_&_Width', label = 'PAN & WIDTH'},
+  {id = 'tcp_Record_Mode', label = 'RECORD MODE'},
+  {id = 'tcp_Input', label = 'INPUT'},
+  {id = 'tcp_Values', label = 'LABELS & VALUES'},
+  {id = 'tcp_Meter_Values', label = 'METER VALUES'},
 }
 
 -- Bitflag column definitions
@@ -153,13 +154,30 @@ function TCPView:set_param(param, value, save)
 end
 
 function TCPView:toggle_bitflag(param_name, bit)
-  -- Get current value
-  local current = self.visibility[param_name] or 0
-  -- XOR toggle
-  local new_value = current ~ bit
-  self.visibility[param_name] = new_value
-  -- TODO: Set parameter in theme
-  -- self:set_param(param_name, new_value, true)
+  -- Toggle a visibility flag bit and write to theme
+  ThemeParams.toggle_flag(param_name, bit)
+  -- Reload to sync UI
+  local param = ThemeParams.get_param(param_name)
+  if param then
+    self.visibility[param_name] = param.value
+  end
+end
+
+function TCPView:get_default_layout()
+  -- Get the default TCP layout (returns layout name like "A", "B", "C")
+  local ok, layout_name = pcall(reaper.ThemeLayout_GetLayout, "tcp", -1)
+  if ok and layout_name then
+    -- Extract just the layout letter (might be "A", "150%_B", etc.)
+    local layout = string.match(layout_name, "([ABC])") or "A"
+    return layout
+  end
+  return "A"
+end
+
+function TCPView:set_default_layout(layout)
+  -- Set the default TCP layout for new tracks
+  local ok = pcall(reaper.ThemeLayout_SetLayout, "tcp", -1, layout)
+  return ok
 end
 
 function TCPView:draw(ctx, shell_state)
@@ -246,6 +264,40 @@ function TCPView:draw(ctx, shell_state)
       }, "tcp_size_" .. size) then
       end
       ImGui.SameLine(ctx, 0, 6)
+    end
+    ImGui.NewLine(ctx)
+
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Set Default Layout button
+    local default_layout = self:get_default_layout()
+    local is_default = (default_layout == self.active_layout)
+
+    ImGui.AlignTextToFramePadding(ctx)
+    if is_default then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#00FF88"))
+      ImGui.Text(ctx, "Default Layout")
+      ImGui.PopStyleColor(ctx)
+    else
+      ImGui.Text(ctx, "Default Layout")
+    end
+    ImGui.SameLine(ctx, 120)
+
+    if Button.draw_at_cursor(ctx, {
+      label = is_default and ("✓ " .. self.active_layout .. " is Default") or ("Set " .. self.active_layout .. " as Default"),
+      width = 200,
+      height = 24,
+      is_toggled = is_default,
+      preset_name = is_default and "BUTTON_TOGGLE_WHITE" or nil,
+      on_click = function()
+        if not is_default then
+          self:set_default_layout(self.active_layout)
+        end
+      end
+    }, "tcp_set_default") then
+    end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.format(Tooltips.TCP.set_default_layout, self.active_layout))
     end
     ImGui.NewLine(ctx)
 
@@ -430,6 +482,10 @@ function TCPView:draw(ctx, shell_state)
           ImGui.PushID(ctx, elem.id .. "_" .. col.bit)
           if ImGui.Checkbox(ctx, "##check", is_checked) then
             self:toggle_bitflag(elem.id, col.bit)
+          end
+          if ImGui.IsItemHovered(ctx) then
+            local tooltip = Tooltips.TCP_VIS_ELEMENTS[elem.id] or ("Toggle " .. elem.label)
+            ImGui.SetTooltip(ctx, tooltip)
           end
           ImGui.PopID(ctx)
         end

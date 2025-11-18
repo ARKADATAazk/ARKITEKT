@@ -9,6 +9,7 @@ local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 local Style = require('rearkitekt.gui.style.defaults')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
+local Tooltips = require('ThemeAdjuster.ui.tooltips')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -34,28 +35,20 @@ local SPINNER_VALUES = {
   mcp_io_size = {'MIN', 50, 75, 100, 125},
 }
 
--- Visibility elements with bitflags
+-- Visibility elements with bitflags (from Default 6.0)
 local VISIBILITY_ELEMENTS = {
-  {id = 'mcp_Sidebar', label = 'Sidebar'},
-  {id = 'mcp_Narrow', label = 'Narrow'},
-  {id = 'mcp_Transport', label = 'Transport'},
-  {id = 'mcp_Sends', label = 'Sends'},
-  {id = 'mcp_Fader', label = 'Fader'},
-  {id = 'mcp_Pan', label = 'Pan'},
-  {id = 'mcp_Width', label = 'Width'},
-  {id = 'mcp_Volume', label = 'Volume'},
-  {id = 'mcp_Meter', label = 'Meter'},
-  {id = 'mcp_Fx_Group', label = 'FX Group'},
-  {id = 'mcp_Fx', label = 'FX'},
-  {id = 'mcp_Sendlist', label = 'Send List'},
+  {id = 'mcp_Sidebar', label = 'EXTEND WITH SIDEBAR'},
+  {id = 'mcp_Narrow', label = 'NARROW FORM'},
+  {id = 'mcp_Meter_Expansion', label = 'DO METER EXPANSION'},
+  {id = 'mcp_Labels', label = 'ELEMENT LABELS'},
 }
 
--- Bitflag column definitions
+-- Bitflag column definitions (from Default 6.0 - different from TCP!)
 local VISIBILITY_COLUMNS = {
-  {bit = 1, label = 'IF MIXER\nVISIBLE'},
+  {bit = 1, label = 'IF TRACK\nSELECTED'},
   {bit = 2, label = 'IF TRACK NOT\nSELECTED'},
-  {bit = 4, label = 'IF TRACK NOT\nARMED'},
-  {bit = 8, label = 'ALWAYS\nHIDE'},
+  {bit = 4, label = 'IF TRACK\nARMED'},
+  {bit = 8, label = 'IF TRACK NOT\nARMED'},
 }
 
 function M.new(State, Config, settings)
@@ -158,13 +151,30 @@ function MCPView:set_param(param, value, save)
 end
 
 function MCPView:toggle_bitflag(param_name, bit)
-  -- Get current value
-  local current = self.visibility[param_name] or 0
-  -- XOR toggle
-  local new_value = current ~ bit
-  self.visibility[param_name] = new_value
-  -- TODO: Set parameter in theme
-  -- self:set_param(param_name, new_value, true)
+  -- Toggle a visibility flag bit and write to theme
+  ThemeParams.toggle_flag(param_name, bit)
+  -- Reload to sync UI
+  local param = ThemeParams.get_param(param_name)
+  if param then
+    self.visibility[param_name] = param.value
+  end
+end
+
+function MCPView:get_default_layout()
+  -- Get the default MCP layout (returns layout name like "A", "B", "C")
+  local ok, layout_name = pcall(reaper.ThemeLayout_GetLayout, "mcp", -1)
+  if ok and layout_name then
+    -- Extract just the layout letter (might be "A", "150%_B", etc.)
+    local layout = string.match(layout_name, "([ABC])") or "A"
+    return layout
+  end
+  return "A"
+end
+
+function MCPView:set_default_layout(layout)
+  -- Set the default MCP layout for new tracks
+  local ok = pcall(reaper.ThemeLayout_SetLayout, "mcp", -1, layout)
+  return ok
 end
 
 function MCPView:draw(ctx, shell_state)
@@ -248,6 +258,40 @@ function MCPView:draw(ctx, shell_state)
       }, "mcp_size_" .. size) then
       end
       ImGui.SameLine(ctx, 0, 6)
+    end
+    ImGui.NewLine(ctx)
+
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Set Default Layout button
+    local default_layout = self:get_default_layout()
+    local is_default = (default_layout == self.active_layout)
+
+    ImGui.AlignTextToFramePadding(ctx)
+    if is_default then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#00FF88"))
+      ImGui.Text(ctx, "Default Layout")
+      ImGui.PopStyleColor(ctx)
+    else
+      ImGui.Text(ctx, "Default Layout")
+    end
+    ImGui.SameLine(ctx, 120)
+
+    if Button.draw_at_cursor(ctx, {
+      label = is_default and ("✓ " .. self.active_layout .. " is Default") or ("Set " .. self.active_layout .. " as Default"),
+      width = 200,
+      height = 24,
+      is_toggled = is_default,
+      preset_name = is_default and "BUTTON_TOGGLE_WHITE" or nil,
+      on_click = function()
+        if not is_default then
+          self:set_default_layout(self.active_layout)
+        end
+      end
+    }, "mcp_set_default") then
+    end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.format(Tooltips.MCP.set_default_layout, self.active_layout))
     end
     ImGui.NewLine(ctx)
 
@@ -410,6 +454,82 @@ function MCPView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 16)
 
+    -- Extended Mixer Controls Section
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
+    ImGui.Text(ctx, "EXTENDED MIXER CONTROLS")
+    ImGui.PopFont(ctx)
+    ImGui.Dummy(ctx, 0, 4)
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
+    ImGui.Text(ctx, "Toggle mixer display options")
+    ImGui.PopStyleColor(ctx)
+    ImGui.Dummy(ctx, 0, 6)
+
+    -- Helper function to draw action toggle button
+    local function draw_action_toggle(label, command_id, button_id)
+      local state = reaper.GetToggleCommandState(command_id)
+      local is_on = (state == 1)
+
+      if Button.draw_at_cursor(ctx, {
+        label = label,
+        width = 220,
+        height = 28,
+        is_toggled = is_on,
+        preset_name = "BUTTON_TOGGLE_WHITE",
+        on_click = function()
+          reaper.Main_OnCommand(command_id, 0)
+        end
+      }, button_id) then
+      end
+      return is_on
+    end
+
+    -- Row 1: Show FX & Show Params
+    draw_action_toggle("Show FX Inserts", 40549, "mcp_show_fx")
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.MCP.show_fx)
+    end
+
+    ImGui.SameLine(ctx, 0, 8)
+
+    draw_action_toggle("Show FX Parameters", 40910, "mcp_show_params")
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.MCP.show_params)
+    end
+    ImGui.NewLine(ctx)
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Row 2: Show Sends & Multi-row
+    draw_action_toggle("Show Sends", 40557, "mcp_show_sends")
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.MCP.show_sends)
+    end
+
+    ImGui.SameLine(ctx, 0, 8)
+
+    draw_action_toggle("Multi-row Mixer", 40371, "mcp_multi_row")
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.MCP.multi_row)
+    end
+    ImGui.NewLine(ctx)
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Row 3: Scroll to Selected & Show Icons
+    draw_action_toggle("Scroll to Selected", 40221, "mcp_scroll_selected")
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.MCP.scroll_to_selected)
+    end
+
+    ImGui.SameLine(ctx, 0, 8)
+
+    draw_action_toggle("Show Icons", 40903, "mcp_show_icons")
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.MCP.show_icons)
+    end
+    ImGui.NewLine(ctx)
+
+    ImGui.Dummy(ctx, 0, 16)
+
     -- Element Visibility Section
     ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
     ImGui.Text(ctx, "ELEMENT VISIBILITY")
@@ -451,6 +571,10 @@ function MCPView:draw(ctx, shell_state)
           ImGui.PushID(ctx, elem.id .. "_" .. col.bit)
           if ImGui.Checkbox(ctx, "##check", is_checked) then
             self:toggle_bitflag(elem.id, col.bit)
+          end
+          if ImGui.IsItemHovered(ctx) then
+            local tooltip = Tooltips.MCP_VIS_ELEMENTS[elem.id] or ("Toggle " .. elem.label)
+            ImGui.SetTooltip(ctx, tooltip)
           end
           ImGui.PopID(ctx)
         end

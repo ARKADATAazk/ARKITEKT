@@ -9,6 +9,7 @@ local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 local Style = require('rearkitekt.gui.style.defaults')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
+local Tooltips = require('ThemeAdjuster.ui.tooltips')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -186,6 +187,67 @@ function TransportView:draw(ctx, shell_state)
       self.trans_rate_size_idx = new_idx
       ThemeParams.set_param('trans_rate_size', new_idx, true)
     end
+
+    ImGui.Dummy(ctx, 0, 16)
+
+    -- Transport Preferences Section
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
+    ImGui.Text(ctx, "TRANSPORT PREFERENCES")
+    ImGui.PopFont(ctx)
+    ImGui.Dummy(ctx, 0, 4)
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
+    ImGui.Text(ctx, "Toggle transport display options")
+    ImGui.PopStyleColor(ctx)
+    ImGui.Dummy(ctx, 0, 6)
+
+    -- Helper function to draw action toggle button
+    local function draw_action_toggle(label, command_id, button_id)
+      local state = reaper.GetToggleCommandState(command_id)
+      local is_on = (state == 1)
+
+      if Button.draw_at_cursor(ctx, {
+        label = label,
+        width = 220,
+        height = 28,
+        is_toggled = is_on,
+        preset_name = "BUTTON_TOGGLE_WHITE",
+        on_click = function()
+          reaper.Main_OnCommand(command_id, 0)
+        end
+      }, button_id) then
+      end
+      return is_on
+    end
+
+    -- Row 1: Show Play Rate & Center Transport
+    draw_action_toggle("Show Play Rate", 40531, "trans_show_play_rate")
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.TRANSPORT.show_play_rate)
+    end
+
+    ImGui.SameLine(ctx, 0, 8)
+
+    draw_action_toggle("Center Transport", 40533, "trans_center_transport")
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.TRANSPORT.center_transport)
+    end
+    ImGui.NewLine(ctx)
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Row 2: Time Signature & Dock Transport
+    draw_action_toggle("Show Time Signature", 40680, "trans_time_sig")
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.TRANSPORT.time_signature)
+    end
+
+    ImGui.SameLine(ctx, 0, 8)
+
+    draw_action_toggle("Dock Transport", 41643, "trans_dock")
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.TRANSPORT.dock_transport)
+    end
+    ImGui.NewLine(ctx)
 
     ImGui.Dummy(ctx, 0, 16)
 

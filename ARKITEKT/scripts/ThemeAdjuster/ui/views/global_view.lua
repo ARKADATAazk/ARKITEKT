@@ -9,6 +9,8 @@ local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 local Style = require('rearkitekt.gui.style.defaults')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
+local ThemeParams = require('ThemeAdjuster.core.theme_params')
+local Tooltips = require('ThemeAdjuster.ui.tooltips')
 
 local PC = Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
@@ -66,6 +68,12 @@ function GlobalView:load_from_theme()
 
   ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1006)
   if ok and type(value) == "number" then self.affect_project_colors = (value ~= 0) end
+
+  -- Load glb_track_label_color (regular indexed parameter)
+  local param = ThemeParams.get_param('glb_track_label_color')
+  if param then
+    self.custom_track_names = (param.value ~= 0)
+  end
 end
 
 function GlobalView:set_param(param_id, value, save)
@@ -206,6 +214,9 @@ function GlobalView:draw(ctx, shell_state)
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1000, self.gamma, true)
     end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.gamma)
+    end
 
     -- Highlights slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
     local highlights_display = self.highlights / 128  -- Map -256→-2.00, 0→0.00, 256→2.00
@@ -223,6 +234,9 @@ function GlobalView:draw(ctx, shell_state)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1003, self.highlights, true)
+    end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.highlights)
     end
 
     -- Midtones slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
@@ -242,6 +256,9 @@ function GlobalView:draw(ctx, shell_state)
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1002, self.midtones, true)
     end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.midtones)
+    end
 
     -- Shadows slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
     local shadows_display = self.shadows / 128  -- Map -256→-2.00, 0→0.00, 256→2.00
@@ -259,6 +276,9 @@ function GlobalView:draw(ctx, shell_state)
     end
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1001, self.shadows, true)
+    end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.shadows)
     end
 
     -- Saturation slider (Storage: 0-512, Display: 0%-200%, Default: 256 = 100%)
@@ -278,6 +298,9 @@ function GlobalView:draw(ctx, shell_state)
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1004, self.saturation, true)
     end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.saturation)
+    end
 
     -- Tint slider (Storage: 0-384, Display: -180° to +180°, Default: 192 = 0°)
     local tint_degrees = math.floor(self.tint * 0.9375 - 180 + 0.5)
@@ -296,6 +319,9 @@ function GlobalView:draw(ctx, shell_state)
     if ImGui.IsItemDeactivatedAfterEdit(ctx) then
       self:set_param(-1005, self.tint, true)
     end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.tint)
+    end
 
     ImGui.Dummy(ctx, 0, 10)
 
@@ -310,10 +336,10 @@ function GlobalView:draw(ctx, shell_state)
 
     if Checkbox.draw_at_cursor(ctx, "Custom color track names", self.custom_track_names, nil, "custom_track_names") then
       self.custom_track_names = not self.custom_track_names
-      -- glb_track_label_color is a regular indexed parameter (not negative)
-      -- For now, we'll need ThemeParams to be integrated to get the index
-      -- This is a TODO for when ThemeParams is fully connected to all views
-      -- self:set_param(glb_track_label_color_idx, self.custom_track_names and 1 or 0, true)
+      ThemeParams.set_param('glb_track_label_color', self.custom_track_names and 1 or 0, true)
+    end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.custom_color_track_names)
     end
     ImGui.NewLine(ctx)
 
@@ -322,6 +348,9 @@ function GlobalView:draw(ctx, shell_state)
     if Checkbox.draw_at_cursor(ctx, "Also affect project custom colors", self.affect_project_colors, nil, "affect_project_colors") then
       self.affect_project_colors = not self.affect_project_colors
       self:set_param(-1006, self.affect_project_colors and 1 or 0, true)
+    end
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.affect_project_colors)
     end
     ImGui.NewLine(ctx)
 
