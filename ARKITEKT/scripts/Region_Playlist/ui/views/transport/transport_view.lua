@@ -307,7 +307,7 @@ end
 function TransportView:build_playback_buttons(bridge_state)
   return {
     {
-      type = "button",
+      type = "split_button",
       id = "transport_shuffle",
       align = "center",
       width = 60,
@@ -315,7 +315,7 @@ function TransportView:build_playback_buttons(bridge_state)
         label = "Shuffle",
         is_toggled = bridge_state.shuffle_enabled or false,
         preset_name = "BUTTON_TOGGLE_WHITE",
-        tooltip = "Shuffle Playlist Order",
+        tooltip = "Toggle Shuffle Mode",
         on_click = function()
           local bridge = self.state.get_bridge()
           local engine = bridge.engine
@@ -324,6 +324,22 @@ function TransportView:build_playback_buttons(bridge_state)
             engine:set_shuffle_enabled(not current_state)
           end
         end,
+        dropdown_options = {
+          {
+            type = "item",
+            label = "Re-shuffle Now",
+            value = "reshuffle",
+            on_click = function()
+              local bridge = self.state.get_bridge()
+              local engine = bridge.engine
+              if engine and engine:get_shuffle_enabled() then
+                -- Trigger a re-shuffle by toggling off and back on
+                engine:set_shuffle_enabled(false)
+                engine:set_shuffle_enabled(true)
+              end
+            end,
+          },
+        },
       },
     },
     {

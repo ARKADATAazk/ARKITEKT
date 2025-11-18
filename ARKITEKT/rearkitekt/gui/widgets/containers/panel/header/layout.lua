@@ -13,6 +13,7 @@ local M = {}
 -- Component registry - imports from controls/ directly for reusable components
 local COMPONENTS = {
   button = require('rearkitekt.gui.widgets.primitives.button'),
+  split_button = require('rearkitekt.gui.widgets.primitives.split_button'),
   checkbox = require('rearkitekt.gui.widgets.primitives.checkbox'),
   search_field = require('rearkitekt.gui.widgets.inputs.search_input'),
   dropdown_field = require('rearkitekt.gui.widgets.inputs.dropdown'),
