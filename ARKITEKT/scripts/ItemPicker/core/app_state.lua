@@ -272,14 +272,22 @@ end
 
 function M.cycle_midi_item(item_name, delta)
   local content = M.midi_items[item_name]
-  if not content or #content == 0 then return end
+  if not content or #content == 0 then
+    reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] No content for key: %s\n", tostring(item_name)))
+    return
+  end
+
+  reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] Group '%s' has %d items\n", tostring(item_name), #content))
 
   local current = M.box_current_midi_track[item_name] or 1
+  reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] Current index before: %d\n", current))
+
   current = current + delta
 
   if current > #content then current = 1 end
   if current < 1 then current = #content end
 
+  reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] New index after: %d\n", current))
   M.box_current_midi_track[item_name] = current
 end
 
