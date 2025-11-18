@@ -334,20 +334,6 @@ function AdditionalView:draw_param_tile(ctx, param, shell_state)
   ImGui.DrawList_AddRect(dl, cursor_x, cursor_y, cursor_x + avail_w, cursor_y + tile_h,
     border_color, 3, 0, 1)
 
-  -- Invisible button for drag source (full tile area)
-  ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y)
-  ImGui.InvisibleButton(ctx, "##tile_" .. param.index, avail_w, tile_h)
-
-  -- Drag source
-  if ImGui.BeginDragDropSource(ctx) then
-    ImGui.SetDragDropPayload(ctx, "PARAM", param.name)
-    ImGui.Text(ctx, param.name)
-    ImGui.EndDragDropSource(ctx)
-  end
-
-  -- Draw content on top of tile
-  ImGui.SetCursorScreenPos(ctx, cursor_x + 8, cursor_y + 4)
-
   -- Layout: [NAME 140px] [CONTROL 120px] [NAME INPUT 140px] [DESC INPUT 180px] [BADGE]
   local name_w = 140
   local control_w = 120
@@ -357,21 +343,33 @@ function AdditionalView:draw_param_tile(ctx, param, shell_state)
 
   ImGui.AlignTextToFramePadding(ctx)
 
-  -- 1. Parameter name (truncated, with tooltip)
+  -- 1. Parameter name (DRAGGABLE BUTTON - truncated, with tooltip)
   local truncated_name = param.name
   if #param.name > 20 then
     truncated_name = param.name:sub(1, 17) .. "..."
   end
 
-  ImGui.SetNextItemWidth(ctx, name_w)
+  -- Make the param name a selectable button for dragging
+  ImGui.PushStyleColor(ctx, ImGui.Col_Header, hexrgb("#00000000"))  -- Transparent
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, hexrgb("#FFFFFF15"))  -- Subtle hover
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, hexrgb("#FFFFFF25"))  -- Subtle active
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
-  ImGui.Text(ctx, truncated_name)
-  ImGui.PopStyleColor(ctx)
+
+  ImGui.Selectable(ctx, truncated_name .. "##name_" .. param.index, false, 0, name_w, tile_h - 8)
+
+  ImGui.PopStyleColor(ctx, 4)
+
+  -- Drag source from parameter name
+  if ImGui.BeginDragDropSource(ctx) then
+    ImGui.SetDragDropPayload(ctx, "PARAM", param.name)
+    ImGui.Text(ctx, param.name)
+    ImGui.EndDragDropSource(ctx)
+  end
 
   -- Tooltip with full technical info
   if ImGui.IsItemHovered(ctx) then
     local tooltip = string.format(
-      "Parameter: %s\nType: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f",
+      "Parameter: %s\nType: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f\n\nDrag to assign to tabs →",
       param.name,
       param.type,
       param.min,
@@ -382,7 +380,7 @@ function AdditionalView:draw_param_tile(ctx, param, shell_state)
     ImGui.SetTooltip(ctx, tooltip)
   end
 
-  ImGui.SameLine(ctx, cursor_x + 8 + name_w + spacing)
+  ImGui.SameLine(ctx, 0, spacing)
 
   -- 2. Live control (slider/spinner/checkbox)
   ImGui.SetNextItemWidth(ctx, control_w)
@@ -441,7 +439,7 @@ function AdditionalView:draw_param_tile(ctx, param, shell_state)
     param.value = new_value
   end
 
-  ImGui.SameLine(ctx, cursor_x + 8 + name_w + control_w + spacing * 2)
+  ImGui.SameLine(ctx, 0, spacing)
 
   -- 3. Name input
   ImGui.SetNextItemWidth(ctx, name_input_w)
@@ -452,7 +450,7 @@ function AdditionalView:draw_param_tile(ctx, param, shell_state)
     self:save_assignments()
   end
 
-  ImGui.SameLine(ctx, cursor_x + 8 + name_w + control_w + name_input_w + spacing * 3)
+  ImGui.SameLine(ctx, 0, spacing)
 
   -- 4. Description input
   ImGui.SetNextItemWidth(ctx, desc_input_w)
@@ -470,9 +468,6 @@ function AdditionalView:draw_param_tile(ctx, param, shell_state)
     ImGui.Text(ctx, string.format("(%d)", assignment_count))
     ImGui.PopStyleColor(ctx)
   end
-
-  -- Reset cursor for next tile
-  ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + tile_h)
 end
 
 -- Draw tab bar for assignment grid (right panel)
