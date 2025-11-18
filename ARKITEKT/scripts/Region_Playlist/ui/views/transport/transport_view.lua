@@ -277,6 +277,12 @@ function TransportView:build_playback_dropdown(bridge_state)
       button_label = "Playback",  -- Label shown on button (not in dropdown menu)
       options = {
         {
+          value = "shuffle",
+          label = "Shuffle",
+          checkbox = true,
+          checked = bridge_state.shuffle_enabled or false,
+        },
+        {
           value = "override_transport",
           label = "Override Transport",
           checkbox = true,
@@ -294,7 +300,9 @@ function TransportView:build_playback_dropdown(bridge_state)
         local engine = bridge.engine
         if not engine then return end
 
-        if value == "override_transport" then
+        if value == "shuffle" then
+          bridge:set_shuffle_enabled(new_checked)
+        elseif value == "override_transport" then
           engine:set_transport_override(new_checked)
         elseif value == "follow_viewport" then
           engine:set_follow_viewport(new_checked)
@@ -521,6 +529,12 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
   -- Add playback separator and options
   options[#options + 1] = { value = nil, label = "", separator = "Playback" }
   options[#options + 1] = {
+    value = "shuffle",
+    label = "Shuffle",
+    checkbox = true,
+    checked = bridge_state.shuffle_enabled or false,
+  }
+  options[#options + 1] = {
     value = "override_transport",
     label = "Override Transport",
     checkbox = true,
@@ -546,7 +560,7 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
       enable_mousewheel = true,
       on_change = function(new_value)
         -- Handle quantize mode changes
-        if new_value and new_value ~= "override_transport" and new_value ~= "follow_viewport" then
+        if new_value and new_value ~= "shuffle" and new_value ~= "override_transport" and new_value ~= "follow_viewport" then
           self.state.get_bridge():set_quantize_mode(new_value)
         end
       end,
@@ -555,7 +569,9 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
         local engine = bridge.engine
         if not engine then return end
 
-        if value == "override_transport" then
+        if value == "shuffle" then
+          bridge:set_shuffle_enabled(new_checked)
+        elseif value == "override_transport" then
           engine:set_transport_override(new_checked)
         elseif value == "follow_viewport" then
           engine:set_follow_viewport(new_checked)
