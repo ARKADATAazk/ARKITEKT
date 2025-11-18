@@ -56,6 +56,15 @@ local function create_external_drag_check(view, tab_id)
   end
 end
 
+local function create_copy_mode_check(view, tab_id)
+  return function()
+    if view.bridge then
+      return view.bridge:compute_copy_mode('assign_' .. tab_id)
+    end
+    return false
+  end
+end
+
 local function create_render_tile(view, tab_id)
   return function(ctx, rect, item, state)
     AssignmentTile.render(ctx, rect, item, state, view, tab_id)
@@ -67,6 +76,25 @@ function M.create(view, tab_id, config)
 
   local padding = config.padding or 8
 
+  -- Visual feedback configurations
+  local dim_config = config.dim_config or {
+    fill_color = hexrgb("#00000088"),
+    stroke_color = hexrgb("#FFFFFF33"),
+    stroke_thickness = 1.5,
+    rounding = 3,
+  }
+
+  local drop_config = config.drop_config or {
+    indicator_color = hexrgb("#5588FFAA"),
+    indicator_thickness = 2,
+    enabled = true,
+  }
+
+  local ghost_config = config.ghost_config or {
+    enabled = true,
+    opacity = 0.5,
+  }
+
   return Grid.new({
     id = "assign_" .. tab_id,
     gap = 2,  -- Compact spacing
@@ -77,7 +105,7 @@ function M.create(view, tab_id, config)
     key = function(item) return "assign_" .. item.param_name end,
 
     external_drag_check = create_external_drag_check(view, tab_id),
-    is_copy_mode_check = function() return false end,
+    is_copy_mode_check = create_copy_mode_check(view, tab_id),
 
     behaviors = create_behaviors(view, tab_id),
 
@@ -94,6 +122,9 @@ function M.create(view, tab_id, config)
     },
 
     config = {
+      ghost = ghost_config,
+      dim = dim_config,
+      drop = drop_config,
       drag = { threshold = 6 },
     },
   })

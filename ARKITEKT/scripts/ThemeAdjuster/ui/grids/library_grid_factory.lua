@@ -35,6 +35,15 @@ local function create_external_drag_check(view)
   end
 end
 
+local function create_copy_mode_check(view)
+  return function()
+    if view.bridge then
+      return view.bridge:compute_copy_mode('library')
+    end
+    return true  -- Library always copies
+  end
+end
+
 local function create_render_tile(view)
   return function(ctx, rect, param, state)
     LibraryTile.render(ctx, rect, param, state, view)
@@ -46,6 +55,19 @@ function M.create(view, config)
 
   local padding = config.padding or 8
 
+  -- Visual feedback configurations
+  local dim_config = config.dim_config or {
+    fill_color = hexrgb("#00000088"),
+    stroke_color = hexrgb("#FFFFFF33"),
+    stroke_thickness = 1.5,
+    rounding = 3,
+  }
+
+  local ghost_config = config.ghost_config or {
+    enabled = true,
+    opacity = 0.5,
+  }
+
   return Grid.new({
     id = "param_library",
     gap = 2,  -- Compact spacing
@@ -56,7 +78,7 @@ function M.create(view, config)
     key = function(param) return "lib_" .. tostring(param.index) end,
 
     external_drag_check = create_external_drag_check(view),
-    is_copy_mode_check = function() return false end,  -- Library always copies
+    is_copy_mode_check = create_copy_mode_check(view),
 
     behaviors = create_behaviors(view),
 
@@ -72,6 +94,8 @@ function M.create(view, config)
     },
 
     config = {
+      ghost = ghost_config,
+      dim = dim_config,
       drag = { threshold = 6 },
     },
   })
