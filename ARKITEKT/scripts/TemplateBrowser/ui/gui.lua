@@ -809,6 +809,8 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
 
   -- Header with "+" button
   local button_w = 24
+  local tag_header_height = 28
+
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
   ImGui.Text(ctx, "Tags")
   ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING * 2)
@@ -843,8 +845,11 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- List all tags with filtering
-  BeginChildCompat(ctx, "DirectoryTagsList", 0, 0, false)
+  -- Calculate remaining height for tags list
+  local tags_list_height = height - tag_header_height - 10  -- Account for header + separator/spacing
+
+  -- List all tags with filtering (scrollable)
+  BeginChildCompat(ctx, "DirectoryTagsList", 0, tags_list_height, false)
 
   if state.metadata and state.metadata.tags then
     for tag_name, tag_data in pairs(state.metadata.tags) do
@@ -900,6 +905,8 @@ local function draw_directory_content(ctx, state, config, width, height)
   -- Header with folder creation buttons
   local button_w = 24
   local button_spacing = 4
+  local header_height = 28  -- Height of header line
+
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
   ImGui.Text(ctx, "Explorer")
   ImGui.SameLine(ctx, width - (button_w * 2 + button_spacing) - config.PANEL_PADDING * 3)
@@ -1115,8 +1122,15 @@ local function draw_directory_content(ctx, state, config, width, height)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- Folder tree
+  -- Calculate remaining height for folder tree (scrollable)
+  -- Account for: header (28) + separator/spacing (10) + All Templates (24) + separator/spacing (10)
+  local used_height = header_height + 10 + 24 + 10
+  local tree_height = folder_height - used_height
+
+  -- Folder tree in scrollable child
+  BeginChildCompat(ctx, "FolderTreeScroll", 0, tree_height, false)
   draw_folder_tree(ctx, state, config)
+  ImGui.EndChild(ctx)
 
   ImGui.EndChild(ctx)
 
@@ -1611,14 +1625,21 @@ end
 
 -- Draw info & tag assignment panel (right)
 local function draw_info_panel(ctx, state, config, width, height)
+  -- Outer border container (non-scrollable)
   BeginChildCompat(ctx, "InfoPanel", width, height, true)
 
-  -- Header
+  -- Header (stays at top)
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
   ImGui.SeparatorText(ctx, "Info & Tags")
   ImGui.PopStyleColor(ctx)
 
   ImGui.Spacing(ctx)
+
+  -- Scrollable content region
+  local header_height = 30  -- SeparatorText + spacing
+  local content_height = height - header_height
+
+  BeginChildCompat(ctx, "InfoPanelContent", 0, content_height, false)
 
   if state.selected_template then
     local tmpl = state.selected_template
@@ -1641,17 +1662,21 @@ local function draw_info_panel(ctx, state, config, width, height)
     ImGui.Spacing(ctx)
 
     -- Actions
-    if Button.draw_at_cursor(ctx, { label = "Apply to Selected Track", width = -1, height = 32 }, "apply_template") then
+    if Button.draw_at_cursor(ctx, { label = "Apply to Selected Track", width = -1, height = 28 }, "apply_template") then
       reaper.ShowConsoleMsg("Applying template: " .. tmpl.name .. "\n")
       TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
     end
 
-    if Button.draw_at_cursor(ctx, { label = "Insert as New Track", width = -1, height = 32 }, "insert_template") then
+    ImGui.Spacing(ctx, 4)
+
+    if Button.draw_at_cursor(ctx, { label = "Insert as New Track", width = -1, height = 28 }, "insert_template") then
       reaper.ShowConsoleMsg("Inserting template as new track: " .. tmpl.name .. "\n")
       TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
     end
 
-    if Button.draw_at_cursor(ctx, { label = "Rename (F2)", width = -1, height = 32 }, "rename_template") then
+    ImGui.Spacing(ctx, 4)
+
+    if Button.draw_at_cursor(ctx, { label = "Rename (F2)", width = -1, height = 28 }, "rename_template") then
       state.renaming_item = tmpl
       state.renaming_type = "template"
       state.rename_buffer = tmpl.name
@@ -1675,7 +1700,7 @@ local function draw_info_panel(ctx, state, config, width, height)
 
     local notes_changed, new_notes = Fields.draw_at_cursor(ctx, {
       width = -1,
-      height = 80,
+      height = 120,  -- Increased from 80
       text = notes,
       multiline = true,
     }, notes_field_id)
@@ -1752,7 +1777,8 @@ local function draw_info_panel(ctx, state, config, width, height)
     ImGui.TextDisabled(ctx, "Select a template to view details")
   end
 
-  ImGui.EndChild(ctx)
+  ImGui.EndChild(ctx)  -- End InfoPanelContent
+  ImGui.EndChild(ctx)  -- End InfoPanel
 end
 
 function GUI:draw(ctx, shell_state)
