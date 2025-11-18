@@ -77,8 +77,19 @@ end
 -- DRAWING
 -- ============================================================================
 
-function M.draw(ctx, dl, x, y, width, height, config, state_or_id)
-  config = config or {}
+function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
+  -- Resolve base style with optional preset support
+  local base = Style.BUTTON
+  if user_config then
+    if user_config.preset_name and Style[user_config.preset_name] then
+      base = Style.apply_defaults(base, Style[user_config.preset_name])
+    elseif user_config.preset and type(user_config.preset) == 'table' then
+      base = Style.apply_defaults(base, user_config.preset)
+    end
+  end
+  -- Apply style defaults
+  local config = Style.apply_defaults(base, user_config)
+
   local context = resolve_context(config, state_or_id)
   local instance = get_or_create_instance(context.unique_id)
 
@@ -96,25 +107,21 @@ function M.draw(ctx, dl, x, y, width, height, config, state_or_id)
   -- Get config
   local is_toggled = config.is_toggled or false
   local label = config.label or "Button"
-  local preset = Style.get_preset(config.preset_name or "BUTTON_TOGGLE_WHITE")
 
   -- Update animation
   instance:update(dt, button_hovered, arrow_hovered, is_toggled)
 
-  -- Colors
-  local Colors = require('rearkitekt.core.colors')
-  local hexrgb = Colors.hexrgb
+  -- Use button config colors
+  local bg_off = config.bg_color
+  local bg_off_hover = config.bg_hover_color or config.bg_color
+  local bg_on = config.bg_on_color or config.bg_color
+  local bg_on_hover = config.bg_on_hover_color or bg_on
 
-  local bg_off = preset.bg_off or hexrgb("#252525")
-  local bg_off_hover = preset.bg_off_hover or hexrgb("#2F2F2F")
-  local bg_on = preset.bg_on or hexrgb("#4A9EFF40")
-  local bg_on_hover = preset.bg_on_hover or hexrgb("#4A9EFF50")
+  local border_off = config.border_outer_color
+  local border_on = config.border_outer_on_color or border_off
 
-  local border_off = preset.border_off or hexrgb("#404040")
-  local border_on = preset.border_on or hexrgb("#4A9EFF")
-
-  local text_off = preset.text_off or hexrgb("#999999")
-  local text_on = preset.text_on or hexrgb("#FFFFFF")
+  local text_off = config.text_color
+  local text_on = config.text_on_color or text_off
 
   -- Button background
   local button_bg = is_toggled
