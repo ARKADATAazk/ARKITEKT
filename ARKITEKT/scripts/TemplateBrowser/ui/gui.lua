@@ -228,7 +228,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
   local root_node = {
     id = "__ROOT__",  -- Unique ID for ImGui (must not be empty)
-    name = "ROOT",
+    name = "Physical Root",
     path = "",  -- Relative path is empty (represents TrackTemplates root)
     full_path = template_path,
     children = {},
@@ -760,11 +760,17 @@ local function draw_directory_content(ctx, state, config, width, height)
     if state.selected_folders and next(state.selected_folders) then
       -- Get first selected folder as parent
       for folder_path, _ in pairs(state.selected_folders) do
-        parent_relative_path = folder_path
-        parent_path = template_path .. package.config:sub(1,1) .. folder_path
+        -- Handle ROOT node: "__ROOT__" ID maps to "" path
+        if folder_path == "__ROOT__" then
+          parent_relative_path = ""
+          parent_path = template_path
+        else
+          parent_relative_path = folder_path
+          parent_path = template_path .. package.config:sub(1,1) .. folder_path
+        end
         break  -- Use first selected
       end
-    elseif state.selected_folder and state.selected_folder ~= "" then
+    elseif state.selected_folder and state.selected_folder ~= "" and state.selected_folder ~= "__ROOT__" then
       parent_relative_path = state.selected_folder
       parent_path = template_path .. package.config:sub(1,1) .. state.selected_folder
     end

@@ -73,6 +73,12 @@ local function render_tree_node(ctx, node, config, state, depth)
     -- Tree node flags (same as original working implementation)
     local flags = ImGui.TreeNodeFlags_SpanAvailWidth
 
+    -- Only allow expand/collapse by clicking arrow, not the whole item
+    flags = flags | ImGui.TreeNodeFlags_OpenOnArrow
+
+    -- DISABLED: Toggle on click behavior (keep for potential future use)
+    -- flags = flags | ImGui.TreeNodeFlags_OpenOnDoubleClick  -- Would allow double-click to toggle
+
     if is_selected then
       flags = flags | ImGui.TreeNodeFlags_Selected
     end
