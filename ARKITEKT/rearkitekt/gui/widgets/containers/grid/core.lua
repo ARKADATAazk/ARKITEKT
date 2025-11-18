@@ -647,6 +647,27 @@ function Grid:draw(ctx)
 
       self.render_tile(ctx, rect, item, state, self)
 
+      -- ImGui drag-drop source (for external drops)
+      if self.drag:is_active() and self.drag_payload_type and self.drag_payload_data then
+        -- Check if this tile is one of the dragged tiles
+        local is_dragged = false
+        for _, dragged_key in ipairs(self.drag.ids or {}) do
+          if dragged_key == key then
+            is_dragged = true
+            break
+          end
+        end
+
+        -- Create drag source on first dragged tile only
+        if is_dragged and key == self.drag.ids[1] then
+          if ImGui.BeginDragDropSource(ctx) then
+            ImGui.SetDragDropPayload(ctx, self.drag_payload_type, self.drag_payload_data)
+            ImGui.Text(ctx, self.drag_label or ("Dragging " .. #self.drag.ids .. " item(s)"))
+            ImGui.EndDragDropSource(ctx)
+          end
+        end
+      end
+
       ::continue::
     end
   end
@@ -717,10 +738,15 @@ function Grid:draw(ctx)
     local pending = self.drag:release()
     if pending and not Input.is_external_drag_active(self) then
       self.selection:single(pending)
-      if self.behaviors and self.behaviors.on_select then 
-        self.behaviors.on_select(self.selection:selected_keys()) 
+      if self.behaviors and self.behaviors.on_select then
+        self.behaviors.on_select(self.selection:selected_keys())
       end
     end
+
+    -- Clear ImGui drag payload
+    self.drag_payload_type = nil
+    self.drag_payload_data = nil
+    self.drag_label = nil
   end
 
   if not self.drag:is_active() and ImGui.IsMouseReleased(ctx, 0) and not Input.is_external_drag_active(self) then

@@ -107,29 +107,19 @@ function M.create_folder(parent_path, folder_name)
   parent_path = normalize_path(parent_path)
   local new_path = parent_path .. sep .. folder_name
 
-  -- Use reaper's directory creation if available, otherwise try os
-  local success = false
-
-  -- Try using lfs if available
-  local has_lfs, lfs = pcall(require, "lfs")
-  if has_lfs then
-    success = lfs.mkdir(new_path)
-  else
-    -- Fallback: try platform-specific commands
-    if sep == "\\" then
-      -- Windows
-      success = os.execute('mkdir "' .. new_path .. '"') == 0
+  -- Use REAPER's native directory creation function
+  if reaper.RecursiveCreateDirectory then
+    local success = reaper.RecursiveCreateDirectory(new_path, 0)
+    if success then
+      reaper.ShowConsoleMsg(string.format("Created folder: %s\n", new_path))
+      return true, new_path
     else
-      -- Unix/Mac
-      success = os.execute('mkdir -p "' .. new_path .. '"') == 0
+      reaper.ShowConsoleMsg(string.format("ERROR: Failed to create folder: %s\n", new_path))
+      return false, nil
     end
-  end
-
-  if success then
-    reaper.ShowConsoleMsg(string.format("Created folder: %s\n", new_path))
-    return true, new_path
   else
-    reaper.ShowConsoleMsg(string.format("ERROR: Failed to create folder: %s\n", new_path))
+    -- Fallback for older REAPER versions
+    reaper.ShowConsoleMsg("ERROR: RecursiveCreateDirectory not available\n")
     return false, nil
   end
 end

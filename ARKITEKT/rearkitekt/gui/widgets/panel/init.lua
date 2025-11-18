@@ -350,10 +350,22 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     -- Apply style defaults
     local cfg = Style.apply_defaults(Style.BUTTON, button_config)
 
-    -- CRITICAL: Check if ImGui wants to capture mouse input (modal/popup blocking)
-    -- Per ImGui docs: WantCaptureMouse is set when popups/modals are active
-    local want_capture_mouse = select(2, ImGui.GetConfigVar(ctx, ImGui.ConfigVar_WantCaptureMouse))
-    local is_blocking = cfg.is_blocking or want_capture_mouse
+    -- CRITICAL: Check if should block interaction (popups/modals/overlays)
+    -- Support ignore_modal flag for critical UI (close buttons, etc.)
+    local OverlayManager = nil
+    pcall(function()
+      OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
+    end)
+
+    local is_blocking = cfg.is_blocking or false
+
+    -- Only check modal blocking if ignore_modal is not set
+    if not cfg.ignore_modal then
+      local has_overlay = OverlayManager and OverlayManager.has_active_overlays()
+      local has_popup = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
+      is_blocking = is_blocking or has_overlay or has_popup
+    end
+
     local hovered = false
     local active = false
 

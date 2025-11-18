@@ -112,10 +112,22 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
   local config = Style.apply_defaults(Style.BUTTON, user_config)
   local inst = get_instance(unique_id)
 
-  -- CRITICAL: Check if ImGui wants to capture mouse input (modal/popup blocking)
-  -- Per ImGui docs: WantCaptureMouse is set when popups/modals are active
-  local want_capture_mouse = select(2, ImGui.GetConfigVar(ctx, ImGui.ConfigVar_WantCaptureMouse))
-  local is_blocking = config.is_blocking or want_capture_mouse
+  -- CRITICAL: Check if should block interaction (popups/modals/overlays)
+  -- Support ignore_modal flag for critical UI (close buttons, etc.)
+  local OverlayManager = nil
+  pcall(function()
+    OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
+  end)
+
+  local is_blocking = config.is_blocking or false
+
+  -- Only check modal blocking if ignore_modal is not set
+  if not config.ignore_modal then
+    local has_overlay = OverlayManager and OverlayManager.has_active_overlays()
+    local has_popup = ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
+    is_blocking = is_blocking or has_overlay or has_popup
+  end
+
   local hovered = false
   local active = false
 

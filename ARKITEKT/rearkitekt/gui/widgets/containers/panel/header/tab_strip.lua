@@ -7,6 +7,7 @@ local ImGui = require 'imgui' '0.10'
 local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local Style = require('rearkitekt.gui.style.defaults')
+local InteractionBlocking = require('rearkitekt.gui.utils.interaction_blocking')
 
 local Colors = require('rearkitekt.core.colors')
 
@@ -306,7 +307,7 @@ local function draw_plus_button(ctx, dl, x, y, width, height, config, unique_id,
     if btn_cfg[k] == nil then btn_cfg[k] = v end
   end
   
-  local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
+  local is_hovered = InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, x, y, x + width, y + height)
   local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
 
   local bg_color = btn_cfg.bg_color
@@ -364,7 +365,7 @@ local function draw_overflow_button(ctx, dl, x, y, width, height, config, hidden
   -- Use vertical ellipsis (⋮) when no overflow, count when overflow exists
   local display_text = (hidden_count > 0) and tostring(hidden_count) or "⋮"
 
-  local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
+  local is_hovered = InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, x, y, x + width, y + height)
   local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
 
   local bg_color = btn_cfg.bg_color
@@ -473,7 +474,7 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
     alpha_factor = 1.0 - destroy_factor
   end
 
-  local is_hovered = ImGui.IsMouseHoveringRect(ctx, render_x, render_y, render_x + render_w, render_y + render_h)
+  local is_hovered = InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, render_x, render_y, render_x + render_w, render_y + render_h)
   local is_pressed = ImGui.IsMouseDown(ctx, 0) and is_hovered and not state.dragging_tab
 
   local apply_alpha = function(color, factor)

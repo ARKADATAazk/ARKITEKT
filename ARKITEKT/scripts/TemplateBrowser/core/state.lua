@@ -11,7 +11,9 @@ M.filtered_templates = {}   -- Currently visible templates
 M.metadata = nil            -- Persistent metadata (tags, notes, UUIDs)
 
 -- UI State
-M.selected_folder = nil     -- Currently selected folder path
+M.selected_folder = nil     -- Currently selected folder path (single-select mode)
+M.selected_folders = {}     -- Selected folders (multi-select mode: path -> true)
+M.last_clicked_folder = nil -- Last clicked folder path (for shift-click range selection)
 M.selected_template = nil   -- Currently selected template
 M.search_query = ""         -- Search filter
 M.filter_tags = {}          -- Active tag filters
@@ -40,6 +42,11 @@ M.explorer_height_ratio = nil  -- Ratio for explorer vs tags panel height
 -- Undo manager
 M.undo_manager = nil
 
+-- Status bar
+M.status_message = ""        -- Current status message
+M.status_type = "info"       -- Message type: "error", "warning", "success", "info"
+M.status_timestamp = 0       -- When message was set (for auto-clear)
+
 -- Internal
 M.exit = false
 M.overlay_alpha = 1.0
@@ -53,6 +60,8 @@ function M.initialize(config)
   M.metadata = nil
   M.reparse_armed = false
   M.selected_folder = nil
+  M.selected_folders = {}
+  M.last_clicked_folder = nil
   M.selected_template = nil
   M.search_query = ""
   M.filter_tags = {}
@@ -66,6 +75,11 @@ function M.initialize(config)
   M.rename_buffer = ""
   M.dragging_item = nil
   M.dragging_type = nil
+
+  -- Status bar
+  M.status_message = ""
+  M.status_type = "info"
+  M.status_timestamp = 0
 
   -- Panel layout defaults
   M.separator1_ratio = config.FOLDERS_PANEL_WIDTH_RATIO or 0.22
@@ -83,6 +97,22 @@ end
 
 function M.request_exit()
   M.exit = true
+end
+
+-- Set status bar message
+-- @param message string: Message to display
+-- @param msg_type string: "error", "warning", "success", "info" (default: "info")
+function M.set_status(message, msg_type)
+  M.status_message = message or ""
+  M.status_type = msg_type or "info"
+  M.status_timestamp = reaper.time_precise()
+end
+
+-- Clear status bar message
+function M.clear_status()
+  M.status_message = ""
+  M.status_type = "info"
+  M.status_timestamp = 0
 end
 
 return M

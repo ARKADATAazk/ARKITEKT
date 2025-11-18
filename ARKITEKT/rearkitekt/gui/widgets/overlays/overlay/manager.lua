@@ -16,6 +16,10 @@ local M = {}
 M.__index = M
 local hexrgb = Colors.hexrgb
 
+-- Global state to track if ANY overlay manager has active overlays
+-- This is set BEFORE rendering, so grid input can check it synchronously
+M._global_active_overlay_count = 0
+
 -- ============================================================================
 -- SECTION 1: Easing Curves Support
 -- ============================================================================
@@ -181,6 +185,9 @@ function M:push(opts)
   }
 
   table.insert(self.stack, overlay)
+
+  -- Update global counter
+  M._global_active_overlay_count = M._global_active_overlay_count + 1
 end
 
 function M:pop(id)
@@ -189,11 +196,15 @@ function M:pop(id)
   if not id or id == top.id then
     if top.on_close then pcall(top.on_close) end
     table.remove(self.stack)
+    -- Update global counter
+    M._global_active_overlay_count = math.max(0, M._global_active_overlay_count - 1)
   else
     for i=#self.stack,1,-1 do
       if self.stack[i].id == id then
         local it = table.remove(self.stack, i)
         if it.on_close then pcall(it.on_close) end
+        -- Update global counter
+        M._global_active_overlay_count = math.max(0, M._global_active_overlay_count - 1)
         break
       end
     end
@@ -202,6 +213,18 @@ end
 
 function M:is_active()
   return #self.stack > 0
+end
+
+-- Get the ID of the currently active overlay (top of stack), or nil if none
+function M:get_active_id()
+  if #self.stack == 0 then return nil end
+  return self.stack[#self.stack].id
+end
+
+-- Global check: returns true if ANY overlay manager (across all instances) has active overlays
+-- This can be checked synchronously before rendering to block input
+function M.has_active_overlays()
+  return M._global_active_overlay_count > 0
 end
 
 function M:render(ctx, dt)

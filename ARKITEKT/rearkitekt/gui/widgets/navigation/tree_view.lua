@@ -21,13 +21,50 @@ local function draw_folder_icon(ctx, dl, x, y, color)
   local tab_w = 5
   local tab_h = 2
 
+  -- Round to whole pixels to avoid aliasing
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
   local icon_color = color or Colors.hexrgb("#888888")
 
   -- Draw tab (5x2 rectangle on top left)
   ImGui.DrawList_AddRectFilled(dl, x, y, x + tab_w, y + tab_h, icon_color, 0)
 
   -- Draw main body (13x7 rectangle)
-  ImGui.DrawList_AddRectFilled(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, icon_color, 1)
+  ImGui.DrawList_AddRectFilled(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, icon_color, 0)
+
+  return main_w + 4  -- Return width including spacing
+end
+
+local function draw_virtual_folder_icon(ctx, dl, x, y, color)
+  -- Virtual folder icon: hollow folder with dotted outline
+  local main_w = 13
+  local main_h = 7
+  local tab_w = 5
+  local tab_h = 2
+
+  -- Round to whole pixels to avoid aliasing
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  local icon_color = color or Colors.hexrgb("#888888")
+
+  -- Draw hollow folder outline with thicker lines (2px) for visibility
+  -- Tab outline
+  ImGui.DrawList_AddRect(dl, x, y, x + tab_w, y + tab_h, icon_color, 0, 0, 2)
+
+  -- Main body outline
+  ImGui.DrawList_AddRect(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, icon_color, 0, 0, 2)
+
+  -- Draw small "V" inside to indicate virtual
+  local v_color = Colors.with_alpha(icon_color, 0xFF)  -- Full opacity
+  local v_x = x + 4
+  local v_y = y + tab_h + 2
+  local v_size = 4
+  -- Left stroke
+  ImGui.DrawList_AddLine(dl, v_x, v_y, v_x + v_size/2, v_y + v_size, v_color, 1.5)
+  -- Right stroke
+  ImGui.DrawList_AddLine(dl, v_x + v_size/2, v_y + v_size, v_x + v_size, v_y, v_color, 1.5)
 
   return main_w + 4  -- Return width including spacing
 end
@@ -49,8 +86,13 @@ local function render_tree_node(ctx, node, config, state, depth)
   local is_open = state.open_nodes and state.open_nodes[node_id]
   if is_open == nil then is_open = false end
 
-  -- Check if node is selected
-  local is_selected = state.selected_node == node_id
+  -- Check if node is selected (support both single and multi-select)
+  local is_selected = false
+  if state.selected_nodes then
+    is_selected = state.selected_nodes[node_id] ~= nil
+  elseif state.selected_node then
+    is_selected = state.selected_node == node_id
+  end
 
   -- Check if renaming
   local is_renaming = state.renaming_node == node_id
@@ -58,45 +100,17 @@ local function render_tree_node(ctx, node, config, state, depth)
   -- Check if node has color
   local node_color = node.color
 
-  -- If renaming, show input field (same as original working implementation)
-  if is_renaming then
-    -- Initialize field with current name
-    local rename_field_id = "treeview_rename_" .. node_id
-    if Fields.get_text(rename_field_id) == "" then
-      Fields.set_text(rename_field_id, state.rename_buffer)
-    end
-
-    local changed, new_name = Fields.draw_at_cursor(ctx, {
-      width = -1,
-      height = 20,
-      text = state.rename_buffer,
-    }, rename_field_id)
-
-    if changed then
-      state.rename_buffer = new_name
-    end
-
-    -- Commit on Enter or deactivate
-    if ImGui.IsItemDeactivatedAfterEdit(ctx) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
-      if state.rename_buffer ~= "" and state.rename_buffer ~= node.name then
-        if config.on_rename then
-          config.on_rename(node, state.rename_buffer)
-        end
-      end
-      state.renaming_node = nil
-      state.rename_buffer = ""
-    end
-
-    -- Cancel on Escape
-    if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-      state.renaming_node = nil
-      state.rename_buffer = ""
-    end
-  else
-    -- Normal tree node display
+  -- Always draw tree node structure (even when renaming) to maintain proper layout
+  -- Normal tree node display
 
     -- Tree node flags (same as original working implementation)
     local flags = ImGui.TreeNodeFlags_SpanAvailWidth
+
+    -- Only allow expand/collapse by clicking arrow, not the whole item
+    flags = flags | ImGui.TreeNodeFlags_OpenOnArrow
+
+    -- DISABLED: Toggle on click behavior (keep for potential future use)
+    -- flags = flags | ImGui.TreeNodeFlags_OpenOnDoubleClick  -- Would allow double-click to toggle
 
     if is_selected then
       flags = flags | ImGui.TreeNodeFlags_Selected
@@ -111,45 +125,227 @@ local function render_tree_node(ctx, node, config, state, depth)
       ImGui.SetNextItemOpen(ctx, true)
     end
 
-    -- Draw colored background if node has color
-    if node_color and config.show_colors then
-      local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-      local avail_w = ImGui.GetContentRegionAvail(ctx)
-      local line_height = ImGui.GetTextLineHeightWithSpacing(ctx)
-      local dl = ImGui.GetWindowDrawList(ctx)
-
-      -- Draw semi-transparent colored background (20% opacity)
-      local bg_color = Colors.with_alpha(node_color, 0x33)  -- 20% opacity
-      ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + avail_w, cursor_y + line_height, bg_color, 2)
+    -- If renaming, allow InputText to overlap and take input priority
+    if is_renaming then
+      ImGui.SetNextItemAllowOverlap(ctx)
     end
 
-    -- Render tree node with folder icon
-    -- We need to draw the icon inline with the label, so use TreeNodeEx with custom rendering
-    local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
+    -- Use empty label and draw icon + text manually
+    -- TreeNodeEx(ctx, str_id, label, flags) - need all 4 params!
+    local node_open = ImGui.TreeNodeEx(ctx, node_id, "", flags)
 
-    -- Render the tree node structure with empty label (PushID above provides unique ID)
-    local node_open = ImGui.TreeNodeEx(ctx, "", flags)
+    -- Get the item rect for the tree node (full width due to SpanAvailWidth flag)
+    local tree_item_hovered = not is_renaming and ImGui.IsItemHovered(ctx)
+    local tree_item_clicked = not is_renaming and ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
+    local tree_item_right_clicked = not is_renaming and ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right)
+    local tree_item_double_clicked = not is_renaming and tree_item_hovered and ImGui.IsMouseDoubleClicked(ctx, ImGui.MouseButton_Left)
+    local tree_toggled = ImGui.IsItemToggledOpen(ctx)
 
-    -- Now draw the folder icon and name on the same line
-    ImGui.SameLine(ctx, 0, 0)
-
+    -- Get item rect for drawing overlays
+    local item_min_x, item_min_y = ImGui.GetItemRectMin(ctx)
+    local item_max_x, item_max_y = ImGui.GetItemRectMax(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
-    local icon_cursor_x, icon_cursor_y = ImGui.GetCursorScreenPos(ctx)
+
+    -- Draw colored background if node has color (BEFORE drawing icon/text)
+    if node_color and config.show_colors and not is_selected then
+      local bg_color = Colors.with_alpha(node_color, 0x0F)  -- 6% opacity (reduced from 20%)
+      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, bg_color, 0)
+    end
+
+    -- Draw hover effect
+    if tree_item_hovered and not is_selected then
+      local hover_color
+      if node_color and config.show_colors then
+        -- Subtle brightening of folder color for hover
+        hover_color = Colors.with_alpha(node_color, 0x25)  -- 15% opacity of folder color
+      else
+        -- Default subtle white overlay for non-colored items
+        hover_color = Colors.hexrgb("#FFFFFF08")  -- 3% opacity white
+      end
+      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, hover_color, 0)
+    end
+
+    -- Draw selection indicator
+    if is_selected then
+      -- Left edge accent bar
+      local selection_bar_width = 3
+      local selection_color
+      local selection_bg
+
+      if node_color and config.show_colors then
+        -- Use enhanced folder color for selection
+        selection_color = Colors.saturate(node_color, 0.2)  -- Slightly more saturated
+        selection_bg = Colors.with_alpha(node_color, 0x40)  -- 25% opacity (more opaque than unselected)
+      else
+        -- Default blue selection for non-colored folders
+        selection_color = Colors.hexrgb("#4A9EFFFF")  -- Bright blue
+        selection_bg = Colors.hexrgb("#4A9EFF30")  -- 18% opacity blue
+      end
+
+      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_min_x + selection_bar_width, item_max_y, selection_color, 0)
+      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, selection_bg, 0)
+    end
+
+    -- Now manually draw the folder icon and text (since label is empty)
+    -- Calculate positions (after the arrow/indent)
+    local arrow_width = ImGui.GetTreeNodeToLabelSpacing(ctx)
+    local icon_x = item_min_x + arrow_width
     local text_y_offset = (ImGui.GetTextLineHeight(ctx) - 9) * 0.5  -- Center icon vertically (9 = tab_h + main_h)
+    local icon_y = item_min_y + text_y_offset
 
-    -- Draw folder icon
-    local icon_width = draw_folder_icon(ctx, dl, icon_cursor_x, icon_cursor_y + text_y_offset, node_color)
+    -- Draw folder icon (virtual or physical)
+    local icon_width
+    if node.is_virtual then
+      icon_width = draw_virtual_folder_icon(ctx, dl, icon_x, icon_y, node_color)
+    else
+      icon_width = draw_folder_icon(ctx, dl, icon_x, icon_y, node_color)
+    end
 
-    -- Draw label after icon
-    ImGui.SetCursorScreenPos(ctx, icon_cursor_x + icon_width, icon_cursor_y)
-    ImGui.Text(ctx, node.name)
+    -- Calculate text position
+    local text_x = icon_x + icon_width
+    local text_y = item_min_y
 
-    -- Handle clicks
-    if ImGui.IsItemClicked(ctx) and not ImGui.IsItemToggledOpen(ctx) then
-      -- Single click: select node
-      state.selected_node = node_id
-      if config.on_select then
-        config.on_select(node)
+    -- If renaming, show input field inline instead of text
+    if is_renaming then
+      -- Save current cursor to restore later
+      local saved_cursor_x, saved_cursor_y = ImGui.GetCursorScreenPos(ctx)
+
+      -- Position using absolute screen coordinates
+      ImGui.SetCursorScreenPos(ctx, text_x, item_min_y)
+
+      -- Style: lighter background for input field
+      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#FFFFFF15"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#FFFFFF20"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#FFFFFF25"))
+
+      -- Auto-focus and select all text on first show
+      if not state.rename_focus_set then
+        ImGui.SetKeyboardFocusHere(ctx, 0)
+        state.rename_focus_set = true
+      end
+
+      -- Input field width: from text position to right edge minus padding
+      ImGui.SetNextItemWidth(ctx, item_max_x - text_x - 8)
+      local rv, buf = ImGui.InputText(ctx, "##rename_" .. node_id, state.rename_buffer, ImGui.InputTextFlags_AutoSelectAll)
+
+      if rv then
+        state.rename_buffer = buf
+      end
+
+      ImGui.PopStyleColor(ctx, 3)
+
+      -- Check input state before restoring cursor
+      local input_active = ImGui.IsItemActive(ctx)
+      local input_hovered = ImGui.IsItemHovered(ctx)
+
+      -- Restore cursor position to maintain tree layout
+      ImGui.SetCursorScreenPos(ctx, saved_cursor_x, saved_cursor_y)
+
+      -- Store input state for global click-away check
+      state.rename_input_active = input_active
+      state.rename_input_hovered = input_hovered
+
+      -- Commit on Enter
+      if ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter) then
+        if state.rename_buffer ~= "" and state.rename_buffer ~= node.name then
+          if config.on_rename then
+            config.on_rename(node, state.rename_buffer)
+          end
+        end
+        state.renaming_node = nil
+        state.rename_buffer = ""
+        state.rename_focus_set = nil
+      end
+
+      -- Cancel on Escape or lost focus
+      if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+        state.renaming_node = nil
+        state.rename_buffer = ""
+        state.rename_focus_set = nil
+      end
+    else
+      -- Draw text label after icon (normal display)
+      local text_color = Colors.hexrgb("#FFFFFFFF")  -- Always white text
+      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, node.name)
+
+      -- Draw template count if available (right-aligned)
+      if node.template_count and node.template_count > 0 and config.show_template_count then
+        local count_text = "(" .. node.template_count .. ")"
+        local count_w = ImGui.CalcTextSize(ctx, count_text)
+        local count_x = item_max_x - count_w - 8  -- 8px padding from right edge
+        local count_y = item_min_y
+        local count_color = Colors.hexrgb("#808080FF")  -- Gray
+        ImGui.DrawList_AddText(dl, count_x, count_y, count_color, count_text)
+      end
+    end
+
+    -- Handle click for selection (but not when renaming)
+    if tree_item_clicked and not tree_toggled and not is_renaming then
+      local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
+      local shift_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
+
+      if config.enable_multi_select and state.selected_nodes then
+        -- Multi-select mode
+        if shift_down and state.last_clicked_node then
+          -- Range selection: select all nodes between last clicked and current
+          if not state._flat_node_list then
+            state._flat_node_list = {}
+          end
+
+          local start_idx, end_idx
+          for i, flat_node_id in ipairs(state._flat_node_list) do
+            if flat_node_id == state.last_clicked_node then
+              start_idx = i
+            end
+            if flat_node_id == node_id then
+              end_idx = i
+            end
+          end
+
+          if start_idx and end_idx then
+            if start_idx > end_idx then
+              start_idx, end_idx = end_idx, start_idx
+            end
+
+            -- Clear selection if not holding ctrl
+            if not ctrl_down then
+              state.selected_nodes = {}
+            end
+
+            -- Select range
+            for i = start_idx, end_idx do
+              state.selected_nodes[state._flat_node_list[i]] = true
+            end
+          end
+        elseif ctrl_down then
+          -- Toggle selection
+          if state.selected_nodes[node_id] then
+            state.selected_nodes[node_id] = nil
+          else
+            state.selected_nodes[node_id] = true
+          end
+          state.last_clicked_node = node_id
+        else
+          -- Normal click without modifiers
+          -- If clicking on an already-selected item, don't clear the selection
+          -- This allows dragging multiple selected items
+          if not state.selected_nodes[node_id] then
+            -- Only clear selection if clicking on a non-selected item
+            state.selected_nodes = {}
+          end
+          state.selected_nodes[node_id] = true
+          state.last_clicked_node = node_id
+        end
+
+        if config.on_select then
+          config.on_select(node, state.selected_nodes)
+        end
+      else
+        -- Single select mode (backward compatibility)
+        state.selected_node = node_id
+        if config.on_select then
+          config.on_select(node)
+        end
       end
     end
 
@@ -158,8 +354,14 @@ local function render_tree_node(ctx, node, config, state, depth)
       state.open_nodes[node_id] = node_open
     end
 
+    -- Handle F2 key to start rename when this node is selected
+    if is_selected and config.enable_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_F2) and not is_renaming then
+      state.renaming_node = node_id
+      state.rename_buffer = node.name
+    end
+
     -- Handle double-click (rename by default if enabled)
-    if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, ImGui.MouseButton_Left) then
+    if tree_item_double_clicked and not is_renaming then
       if config.enable_rename then
         state.renaming_node = node_id
         state.rename_buffer = node.name
@@ -169,11 +371,69 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
     end
 
-    -- Handle right-click
-    if ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right) then
-      if config.on_right_click then
-        config.on_right_click(node)
+    -- Handle right-click context menu (but not when renaming)
+    if not is_renaming and config.context_menu_id then
+      -- Use OpenPopupOnItemClick for proper right-click handling
+      ImGui.OpenPopupOnItemClick(ctx, config.context_menu_id, ImGui.PopupFlags_MouseButtonRight)
+
+      -- Notify callback that this node was right-clicked (for setting state)
+      if ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Right) and tree_item_hovered then
+        if config.on_right_click then
+          config.on_right_click(node)
+        end
       end
+
+      -- Render context menu if callback provided
+      if config.render_context_menu then
+        config.render_context_menu(ctx, node)
+      end
+    end
+
+    -- Drag-drop source (for dragging folders)
+    if config.enable_drag_drop and ImGui.BeginDragDropSource(ctx) then
+      -- Support multi-drag: if this node is selected and multi-select is enabled
+      local drag_payload = node_id
+      local drag_label = "Move: " .. node.name
+
+      if config.enable_multi_select and state.selected_nodes then
+        -- Check if this node is selected
+        local is_node_selected = state.selected_nodes[node_id] ~= nil
+
+        -- Count selected nodes and collect their IDs
+        local selected_ids = {}
+        local count = 0
+        for id, _ in pairs(state.selected_nodes) do
+          table.insert(selected_ids, id)
+          count = count + 1
+        end
+
+        if is_node_selected and count > 1 then
+          -- Encode multiple node IDs (newline-separated)
+          drag_payload = table.concat(selected_ids, "\n")
+          drag_label = "Move: " .. count .. " folders"
+        end
+      end
+
+      ImGui.SetDragDropPayload(ctx, "TREENODE_FOLDER", drag_payload)
+      ImGui.Text(ctx, drag_label)
+      ImGui.EndDragDropSource(ctx)
+    end
+
+    -- Drag-drop target (for receiving folders and templates)
+    if config.enable_drag_drop and ImGui.BeginDragDropTarget(ctx) then
+      -- Accept folder drops
+      local accepted_folder, folder_payload = ImGui.AcceptDragDropPayload(ctx, "TREENODE_FOLDER")
+      if accepted_folder and folder_payload and config.on_drop_folder then
+        config.on_drop_folder(folder_payload, node)
+      end
+
+      -- Accept template drops
+      local accepted_template, template_payload = ImGui.AcceptDragDropPayload(ctx, "TEMPLATE")
+      if accepted_template and template_payload and config.on_drop_template then
+        config.on_drop_template(template_payload, node)
+      end
+
+      ImGui.EndDragDropTarget(ctx)
     end
 
     -- Render children if node is open
@@ -185,9 +445,26 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
       ImGui.TreePop(ctx)
     end
-  end
 
   ImGui.PopID(ctx)
+end
+
+-- ============================================================================
+-- HELPER FUNCTIONS
+-- ============================================================================
+
+-- Build flat list of all node IDs (for range selection)
+local function build_flat_node_list(nodes, flat_list)
+  flat_list = flat_list or {}
+  for _, node in ipairs(nodes) do
+    _node_counter = _node_counter + 1
+    local node_id = node.id or node.path or tostring(_node_counter)
+    table.insert(flat_list, node_id)
+    if node.children and #node.children > 0 then
+      build_flat_node_list(node.children, flat_list)
+    end
+  end
+  return flat_list
 end
 
 -- ============================================================================
@@ -213,12 +490,35 @@ function M.draw(ctx, nodes, state, user_config)
   config.enable_rename = config.enable_rename ~= false  -- default true
   config.show_colors = config.show_colors ~= false      -- default true
 
+  -- Build flat node list for range selection (if multi-select enabled)
+  if config.enable_multi_select then
+    _node_counter = 0
+    state._flat_node_list = build_flat_node_list(nodes)
+  end
+
   -- Reset counter for consistent IDs
   _node_counter = 0
 
   -- Render all root nodes
   for _, node in ipairs(nodes) do
     render_tree_node(ctx, node, config, state, 0)
+  end
+
+  -- Global click-away check for inline rename
+  -- Check AFTER all nodes are rendered to catch clicks anywhere (including below tree)
+  -- Only check if InputText has been shown at least once (prevents canceling on the frame rename starts)
+  if state.renaming_node and state.rename_focus_set then
+    local input_active = state.rename_input_active or false
+    local input_hovered = state.rename_input_hovered or false
+
+    if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) and not input_active and not input_hovered then
+      -- Cancel rename if clicked anywhere outside the InputText
+      state.renaming_node = nil
+      state.rename_buffer = ""
+      state.rename_focus_set = nil
+      state.rename_input_active = nil
+      state.rename_input_hovered = nil
+    end
   end
 end
 

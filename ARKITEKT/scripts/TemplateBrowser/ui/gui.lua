@@ -195,16 +195,18 @@ function GUI:initialize_once(ctx)
 end
 
 -- Convert folder tree to TreeView format with colors from metadata
-local function prepare_tree_nodes(node, metadata)
+local function prepare_tree_nodes(node, metadata, all_templates)
   if not node then return {} end
 
-  local function convert_node(n)
+  -- Convert physical folder node
+  local function convert_physical_node(n)
     local tree_node = {
       id = n.path,
       name = n.name,
       path = n.path,
       full_path = n.full_path,
       children = {},
+      is_virtual = false,
     }
 
     -- Add color from metadata if available
@@ -215,37 +217,102 @@ local function prepare_tree_nodes(node, metadata)
     -- Convert children recursively
     if n.children then
       for _, child in ipairs(n.children) do
-        table.insert(tree_node.children, convert_node(child))
+        table.insert(tree_node.children, convert_physical_node(child))
       end
     end
 
     return tree_node
   end
 
+  -- Build tree from virtual folders
+  local function build_virtual_tree(parent_id)
+    local virtual_children = {}
+
+    if not metadata or not metadata.virtual_folders then
+      return virtual_children
+    end
+
+    for _, vfolder in pairs(metadata.virtual_folders) do
+      if vfolder.parent_id == parent_id then
+        local vnode = {
+          id = vfolder.id,
+          name = vfolder.name,
+          path = vfolder.id,  -- Use ID as path for virtual folders
+          is_virtual = true,
+          template_refs = vfolder.template_refs or {},
+          color = vfolder.color,
+          children = build_virtual_tree(vfolder.id),  -- Recursively add virtual children
+        }
+        table.insert(virtual_children, vnode)
+      end
+    end
+
+    return virtual_children
+  end
+
   local root_nodes = {}
+
+  -- Add Physical Root node
+  local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
+  local physical_root = {
+    id = "__ROOT__",  -- Unique ID for ImGui (must not be empty)
+    name = "Physical Root",
+    path = "",  -- Relative path is empty (represents TrackTemplates root)
+    full_path = template_path,
+    children = {},
+    is_root = true,  -- Flag to identify root node
+    is_virtual = false,
+  }
+
+  -- Add all physical folders as children of Physical Root
   if node.children then
     for _, child in ipairs(node.children) do
-      table.insert(root_nodes, convert_node(child))
+      table.insert(physical_root.children, convert_physical_node(child))
     end
   end
+
+  table.insert(root_nodes, physical_root)
+
+  -- Add Virtual Root node (separate from physical)
+  local virtual_root = {
+    id = "__VIRTUAL_ROOT__",
+    name = "Virtual Root",
+    path = "__VIRTUAL_ROOT__",
+    children = build_virtual_tree("__VIRTUAL_ROOT__"),  -- All virtual folders go here
+    is_root = true,
+    is_virtual = true,
+  }
+
+  table.insert(root_nodes, virtual_root)
 
   return root_nodes
 end
 
+-- Helper functions removed - now using Chip component directly
+
 -- Draw folder tree using TreeView widget
 local function draw_folder_tree(ctx, state, config)
   -- Prepare tree nodes from state.folders
-  local tree_nodes = prepare_tree_nodes(state.folders, state.metadata)
+  local tree_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
 
   if #tree_nodes == 0 then
     return
   end
 
+  -- Ensure ROOT nodes are open by default
+  if state.folder_open_state["__ROOT__"] == nil then
+    state.folder_open_state["__ROOT__"] = true
+  end
+  if state.folder_open_state["__VIRTUAL_ROOT__"] == nil then
+    state.folder_open_state["__VIRTUAL_ROOT__"] = true
+  end
+
   -- Map state variables to TreeView format
   local tree_state = {
     open_nodes = state.folder_open_state,  -- TreeView uses open_nodes
-    selected_node = state.selected_folder,  -- Map selected_folder to selected_node
-    renaming_node = state.renaming_item and state.renaming_item.path or nil,
+    selected_nodes = state.selected_folders,  -- Multi-select mode
+    last_clicked_node = state.last_clicked_folder,  -- Last clicked for shift-range selection
+    renaming_node = state.renaming_folder_path or nil,  -- Track renaming by path
     rename_buffer = state.rename_buffer or "",
   }
 
@@ -253,20 +320,455 @@ local function draw_folder_tree(ctx, state, config)
   TreeView.draw(ctx, tree_nodes, tree_state, {
     enable_rename = true,
     show_colors = true,
+    enable_drag_drop = true,  -- Enable folder drag-and-drop
+    enable_multi_select = true,  -- Enable multi-select with Ctrl/Shift
+    context_menu_id = "folder_context_menu",  -- Enable context menu
 
     -- Selection callback
-    on_select = function(node)
+    on_select = function(node, selected_nodes)
+      -- Update state with selected folders
+      state.selected_folders = selected_nodes
+
+      -- For backward compatibility, set selected_folder to the clicked node
       state.selected_folder = node.path
+
       local Scanner = require('TemplateBrowser.domain.scanner')
       Scanner.filter_templates(state)
+    end,
+
+    -- Folder drop callback (supports multi-drag)
+    on_drop_folder = function(dragged_node_id, target_node)
+      -- Find the source node
+      local function find_node_by_id(nodes, id)
+        for _, n in ipairs(nodes) do
+          if n.id == id then return n end
+          if n.children then
+            local found = find_node_by_id(n.children, id)
+            if found then return found end
+          end
+        end
+        return nil
+      end
+
+      -- Check if target is a descendant of source
+      local function is_descendant(parent_node, potential_child_id)
+        if not parent_node.children then return false end
+        for _, child in ipairs(parent_node.children) do
+          if child.id == potential_child_id then return true end
+          if is_descendant(child, potential_child_id) then return true end
+        end
+        return false
+      end
+
+      -- Check if payload contains multiple IDs (newline-separated)
+      local dragged_ids = {}
+      if dragged_node_id:find("\n") then
+        -- Multi-drag: split by newline
+        for id in dragged_node_id:gmatch("[^\n]+") do
+          table.insert(dragged_ids, id)
+        end
+      else
+        -- Single drag
+        table.insert(dragged_ids, dragged_node_id)
+      end
+
+      -- Validate all folders before moving any
+      local folders_to_move = {}
+      for _, id in ipairs(dragged_ids) do
+        local source_node = find_node_by_id(tree_nodes, id)
+        if not source_node or not target_node then
+          state.set_status("Error: Cannot find source or target folder", "error")
+          return
+        end
+
+        -- Don't allow dropping onto self
+        if source_node.id == target_node.id then
+          state.set_status("Cannot move folder into itself", "error")
+          return
+        end
+
+        -- Don't allow dropping into own descendants (circular reference)
+        if is_descendant(source_node, target_node.id) then
+          state.set_status("Cannot move folder into its own subfolder", "error")
+          return
+        end
+
+        table.insert(folders_to_move, source_node)
+      end
+
+      -- Prepare move operations for all folders
+      local move_operations = {}
+      local target_full_path = target_node.full_path
+      local target_name = target_node.name
+      local target_normalized = target_full_path:gsub("[/\\]+$", "")
+
+      for _, source_node in ipairs(folders_to_move) do
+        local source_full_path = source_node.full_path
+        local source_name = source_node.name
+        local source_normalized = source_full_path:gsub("[/\\]+$", "")
+
+        -- Extract old parent directory
+        local old_parent = source_normalized:match("^(.+)[/\\][^/\\]+$")
+        if not old_parent then
+          state.set_status("Cannot determine parent folder for: " .. source_name, "error")
+          return
+        end
+
+        table.insert(move_operations, {
+          source_normalized = source_normalized,
+          source_name = source_name,
+          old_parent = old_parent,
+          new_path = nil  -- Will be set after move
+        })
+      end
+
+      -- Execute all moves
+      local all_success = true
+      for _, op in ipairs(move_operations) do
+        local success, new_path = FileOps.move_folder(op.source_normalized, target_normalized)
+        if success then
+          op.new_path = new_path
+        else
+          all_success = false
+          state.set_status("Failed to move folder: " .. op.source_name, "error")
+          break
+        end
+      end
+
+      if all_success then
+        -- Create batch undo operation
+        local description = #folders_to_move > 1
+          and ("Move " .. #folders_to_move .. " folders -> " .. target_name)
+          or ("Move folder: " .. move_operations[1].source_name .. " -> " .. target_name)
+
+        state.undo_manager:push({
+          description = description,
+          undo_fn = function()
+            local undo_success = true
+            -- Undo in reverse order
+            for i = #move_operations, 1, -1 do
+              local op = move_operations[i]
+              if not FileOps.move_folder(op.new_path, op.old_parent) then
+                undo_success = false
+                break
+              end
+            end
+            if undo_success then
+              local Scanner = require('TemplateBrowser.domain.scanner')
+              Scanner.scan_templates(state)
+            end
+            return undo_success
+          end,
+          redo_fn = function()
+            local redo_success = true
+            for _, op in ipairs(move_operations) do
+              local sep = package.config:sub(1,1)
+              local original_source = op.old_parent .. sep .. op.source_name
+              local success, new_path = FileOps.move_folder(original_source, target_normalized)
+              if success then
+                op.new_path = new_path
+              else
+                redo_success = false
+                break
+              end
+            end
+            if redo_success then
+              local Scanner = require('TemplateBrowser.domain.scanner')
+              Scanner.scan_templates(state)
+            end
+            return redo_success
+          end
+        })
+
+        -- Rescan templates
+        local Scanner = require('TemplateBrowser.domain.scanner')
+        Scanner.scan_templates(state)
+
+        -- Success message
+        local count = #folders_to_move
+        if count > 1 then
+          state.set_status("Successfully moved " .. count .. " folders to " .. target_name, "success")
+        else
+          state.set_status("Successfully moved " .. folders_to_move[1].name .. " to " .. target_name, "success")
+        end
+      end
+    end,
+
+    -- Template drop callback (supports multi-drag)
+    on_drop_template = function(template_payload, target_node)
+      if not target_node then return end
+
+      -- Parse payload (can be single UUID or newline-separated UUIDs)
+      local uuids = {}
+      if template_payload:find("\n") then
+        -- Multi-template drag
+        for uuid in template_payload:gmatch("[^\n]+") do
+          table.insert(uuids, uuid)
+        end
+      else
+        -- Single template
+        table.insert(uuids, template_payload)
+      end
+
+      if #uuids == 0 then return end
+
+      -- Handle virtual folder (add references, don't move files)
+      if target_node.is_virtual then
+        local Persistence = require('TemplateBrowser.domain.persistence')
+
+        -- Get the virtual folder from metadata
+        local vfolder = state.metadata.virtual_folders[target_node.id]
+        if not vfolder then
+          state.set_status("Virtual folder not found", "error")
+          return
+        end
+
+        -- Ensure template_refs exists
+        if not vfolder.template_refs then
+          vfolder.template_refs = {}
+        end
+
+        -- Add new UUIDs (avoid duplicates)
+        local added_count = 0
+        for _, uuid in ipairs(uuids) do
+          -- Check if already exists
+          local already_exists = false
+          for _, existing_uuid in ipairs(vfolder.template_refs) do
+            if existing_uuid == uuid then
+              already_exists = true
+              break
+            end
+          end
+
+          if not already_exists then
+            table.insert(vfolder.template_refs, uuid)
+            added_count = added_count + 1
+          end
+        end
+
+        -- Save metadata
+        Persistence.save_metadata(state.metadata)
+
+        -- Success message
+        if added_count > 0 then
+          if #uuids > 1 then
+            state.set_status("Added " .. added_count .. " of " .. #uuids .. " templates to " .. target_node.name, "success")
+          else
+            state.set_status("Added template to " .. target_node.name, "success")
+          end
+        else
+          if #uuids > 1 then
+            state.set_status("Templates already in " .. target_node.name, "info")
+          else
+            state.set_status("Template already in " .. target_node.name, "info")
+          end
+        end
+
+        return
+      end
+
+      -- Handle physical folder (move files)
+      local templates_to_move = {}
+      for _, uuid in ipairs(uuids) do
+        for _, tmpl in ipairs(state.templates) do
+          if tmpl.uuid == uuid then
+            table.insert(templates_to_move, tmpl)
+            break
+          end
+        end
+      end
+
+      if #templates_to_move == 0 then return end
+
+      -- Move all templates
+      local success_count = 0
+      local total_count = #templates_to_move
+      for _, tmpl in ipairs(templates_to_move) do
+        local success = FileOps.move_template(tmpl.path, target_node.full_path)
+        if success then
+          success_count = success_count + 1
+        else
+          state.set_status("Failed to move template: " .. tmpl.name, "error")
+        end
+      end
+
+      -- Rescan if any succeeded
+      if success_count > 0 then
+        local Scanner = require('TemplateBrowser.domain.scanner')
+        Scanner.scan_templates(state)
+
+        -- Success message
+        if total_count > 1 then
+          state.set_status("Moved " .. success_count .. " of " .. total_count .. " templates to " .. target_node.name, "success")
+        else
+          state.set_status("Moved " .. templates_to_move[1].name .. " to " .. target_node.name, "success")
+        end
+      end
+    end,
+
+    -- Right-click callback (sets state for context menu)
+    on_right_click = function(node)
+      state.context_menu_node = node
+    end,
+
+    -- Context menu renderer (called inline by TreeView)
+    render_context_menu = function(ctx_inner, node)
+      local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
+      local Colors = require('rearkitekt.core.colors')
+
+      if ContextMenu.begin(ctx_inner, "folder_context_menu") then
+        -- Predefined color palette
+        local color_options = {
+          { name = "None", color = nil },
+          { name = "Red", color = Colors.hexrgb("#FF6B6BFF") },
+          { name = "Orange", color = Colors.hexrgb("#FFA500FF") },
+          { name = "Yellow", color = Colors.hexrgb("#FFD93DFF") },
+          { name = "Green", color = Colors.hexrgb("#6BCF7FFF") },
+          { name = "Blue", color = Colors.hexrgb("#4A9EFFFF") },
+          { name = "Purple", color = Colors.hexrgb("#B57FFFFF") },
+          { name = "Pink", color = Colors.hexrgb("#FF69B4FF") },
+        }
+
+        for _, color_opt in ipairs(color_options) do
+          if ContextMenu.item(ctx_inner, color_opt.name) then
+            local Persistence = require('TemplateBrowser.domain.persistence')
+
+            if node.is_virtual then
+              -- Update virtual folder color
+              if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+                state.metadata.virtual_folders[node.id].color = color_opt.color
+                Persistence.save_metadata(state.metadata)
+
+                -- No need to rescan, just update UI
+                local Scanner = require('TemplateBrowser.domain.scanner')
+                Scanner.scan_templates(state)
+              end
+            else
+              -- Update physical folder color in metadata
+              if not state.metadata.folders then
+                state.metadata.folders = {}
+              end
+
+              -- Find or create folder metadata entry
+              local folder_uuid = nil
+              for uuid, folder in pairs(state.metadata.folders) do
+                if folder.path == node.path then
+                  folder_uuid = uuid
+                  break
+                end
+              end
+
+              if not folder_uuid then
+                -- Create new metadata entry
+                folder_uuid = reaper.genGuid("")
+                state.metadata.folders[folder_uuid] = {
+                  path = node.path,
+                  name = node.name,
+                }
+              end
+
+              -- Set color
+              state.metadata.folders[folder_uuid].color = color_opt.color
+
+              -- Save metadata
+              Persistence.save_metadata(state.metadata)
+
+              -- Rescan to update UI
+              local Scanner = require('TemplateBrowser.domain.scanner')
+              Scanner.scan_templates(state)
+            end
+
+            ImGui.CloseCurrentPopup(ctx_inner)
+          end
+        end
+
+        -- Add separator and delete option for virtual folders
+        if node.is_virtual then
+          ContextMenu.separator(ctx_inner)
+
+          if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
+            local Persistence = require('TemplateBrowser.domain.persistence')
+
+            -- Remove from metadata
+            if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+              state.metadata.virtual_folders[node.id] = nil
+              Persistence.save_metadata(state.metadata)
+
+              -- Clear selection if this folder was selected
+              if state.selected_folder == node.id then
+                state.selected_folder = ""
+                state.selected_folders = {}
+              end
+
+              -- Refresh UI (no need to rescan templates, just rebuild tree)
+              local Scanner = require('TemplateBrowser.domain.scanner')
+              Scanner.filter_templates(state)
+
+              state.set_status("Deleted virtual folder: " .. node.name, "success")
+            end
+
+            ImGui.CloseCurrentPopup(ctx_inner)
+          end
+        end
+
+        ContextMenu.end_menu(ctx_inner)
+      end
     end,
 
     -- Rename callback
     on_rename = function(node, new_name)
       if new_name ~= "" and new_name ~= node.name then
+        local Persistence = require('TemplateBrowser.domain.persistence')
+
+        -- Handle virtual folder rename (metadata only, no file operations)
+        if node.is_virtual then
+          if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+            state.metadata.virtual_folders[node.id].name = new_name
+            Persistence.save_metadata(state.metadata)
+            state.set_status("Renamed virtual folder to: " .. new_name, "success")
+          end
+          return
+        end
+
+        -- Handle physical folder rename (file operations + metadata update)
         local old_path = node.full_path
+        local old_relative_path = node.path  -- e.g., "OldFolder" or "Parent/OldFolder"
+
         local success, new_path = FileOps.rename_folder(old_path, new_name)
         if success then
+          -- Calculate new relative path
+          local parent_path = old_relative_path:match("^(.+)[/\\][^/\\]+$")
+          local new_relative_path = parent_path and (parent_path .. "/" .. new_name) or new_name
+
+          -- Update metadata paths for this folder and all templates in it
+          -- Update folder metadata
+          if state.metadata and state.metadata.folders then
+            for uuid, folder in pairs(state.metadata.folders) do
+              if folder.path == old_relative_path then
+                folder.name = new_name
+                folder.path = new_relative_path
+              elseif folder.path:find("^" .. old_relative_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") .. "[/\\]") then
+                -- Update subfolders
+                folder.path = folder.path:gsub("^" .. old_relative_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1"), new_relative_path)
+              end
+            end
+          end
+
+          -- Update template metadata paths (without re-parsing!)
+          if state.metadata and state.metadata.templates then
+            for uuid, tmpl in pairs(state.metadata.templates) do
+              local tmpl_path = tmpl.folder or ""
+              if tmpl_path == old_relative_path then
+                tmpl.folder = new_relative_path
+              elseif tmpl_path:find("^" .. old_relative_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") .. "[/\\]") then
+                tmpl.folder = tmpl_path:gsub("^" .. old_relative_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1"), new_relative_path)
+              end
+            end
+          end
+
+          -- Save updated metadata
+          Persistence.save_metadata(state.metadata)
+
           -- Create undo operation
           state.undo_manager:push({
             description = "Rename folder: " .. node.name .. " -> " .. new_name,
@@ -288,7 +790,7 @@ local function draw_folder_tree(ctx, state, config)
             end
           })
 
-          -- Rescan templates
+          -- Light rescan: just rebuild folder tree and template list from updated metadata
           local Scanner = require('TemplateBrowser.domain.scanner')
           Scanner.scan_templates(state)
         end
@@ -297,7 +799,10 @@ local function draw_folder_tree(ctx, state, config)
   })
 
   -- Sync TreeView state back to Template Browser state
-  state.selected_folder = tree_state.selected_node
+  state.selected_folders = tree_state.selected_nodes
+  state.last_clicked_folder = tree_state.last_clicked_node
+  state.renaming_folder_path = tree_state.renaming_node
+  state.rename_buffer = tree_state.rename_buffer
 end
 
 -- Tags list for bottom of directory tab (with filtering)
@@ -306,9 +811,11 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
 
   -- Header with "+" button
   local button_w = 24
+  local tag_header_height = 28
+
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
   ImGui.Text(ctx, "Tags")
-  ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING * 2)
+  ImGui.SameLine(ctx, width - button_w - 8)
 
   if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "createtag_dir") then
     -- Create new tag - prompt for name
@@ -340,8 +847,11 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- List all tags with filtering
-  BeginChildCompat(ctx, "DirectoryTagsList", 0, 0, false)
+  -- Calculate remaining height for tags list
+  local tags_list_height = height - tag_header_height - 10  -- Account for header + separator/spacing
+
+  -- List all tags with filtering (scrollable)
+  BeginChildCompat(ctx, "DirectoryTagsList", 0, tags_list_height, false)
 
   if state.metadata and state.metadata.tags then
     for tag_name, tag_data in pairs(state.metadata.tags) do
@@ -349,16 +859,17 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
 
       local is_selected = state.filter_tags[tag_name] or false
 
-      if is_selected then
-        ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.selected_bg)
-      end
+      -- Draw tag using Chip component (PILL style)
+      local clicked, chip_w, chip_h = Chip.draw(ctx, {
+        style = Chip.STYLE.PILL,
+        label = tag_name,
+        color = tag_data.color,
+        height = 24,
+        is_selected = is_selected,
+        interactive = true,
+      })
 
-      -- Color swatch
-      ImGui.ColorButton(ctx, "##color", tag_data.color, 0, 16, 16)
-      ImGui.SameLine(ctx)
-
-      -- Tag name as selectable
-      if ImGui.Selectable(ctx, tag_name, is_selected) then
+      if clicked then
         -- Toggle tag filter
         if is_selected then
           state.filter_tags[tag_name] = nil
@@ -369,10 +880,6 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
         -- Re-filter templates
         local Scanner = require('TemplateBrowser.domain.scanner')
         Scanner.filter_templates(state)
-      end
-
-      if is_selected then
-        ImGui.PopStyleColor(ctx)
       end
 
       ImGui.PopID(ctx)
@@ -388,39 +895,204 @@ end
 -- Draw directory content (folder tree + tags at bottom)
 local function draw_directory_content(ctx, state, config, width, height)
   -- Split into folder tree (top 70%) and tags (bottom 30%)
-  local folder_height = height * 0.7
-  local tags_height = height * 0.3 - 8
+  local folder_section_height = height * 0.7
+  local tags_section_height = height * 0.3 - 4
 
-  -- Folder tree section
-  BeginChildCompat(ctx, "DirectoryFolders", width - config.PANEL_PADDING * 2, folder_height, false)
-
-  -- Header with "+" button
+  -- === FOLDER SECTION ===
+  -- Header with folder creation buttons
   local button_w = 24
+  local button_spacing = 4
+  local header_height = 28
+
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
   ImGui.Text(ctx, "Explorer")
-  ImGui.SameLine(ctx, width - button_w - config.PANEL_PADDING * 3)
+  ImGui.SameLine(ctx, width - (button_w * 2 + button_spacing) - config.PANEL_PADDING * 2)
 
-  if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "folder") then
-    -- Create new folder
+  -- Physical folder button
+  if Button.draw_at_cursor(ctx, { label = "+", width = button_w, height = 24 }, "folder_physical") then
+    -- Create new folder inside selected folder (or root if nothing selected)
     local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
+    local parent_path = template_path
+    local parent_relative_path = ""
+
+    -- Determine parent folder from selection
+    if state.selected_folders and next(state.selected_folders) then
+      -- Get first selected folder as parent
+      for folder_path, _ in pairs(state.selected_folders) do
+        -- Handle ROOT node: "__ROOT__" ID maps to "" path
+        if folder_path == "__ROOT__" then
+          parent_relative_path = ""
+          parent_path = template_path
+        else
+          parent_relative_path = folder_path
+          parent_path = template_path .. package.config:sub(1,1) .. folder_path
+        end
+        break  -- Use first selected
+      end
+    elseif state.selected_folder and state.selected_folder ~= "" and state.selected_folder ~= "__ROOT__" then
+      parent_relative_path = state.selected_folder
+      parent_path = template_path .. package.config:sub(1,1) .. state.selected_folder
+    end
+
     local folder_num = 1
     local new_folder_name = "New Folder"
 
-    -- Find unique name
-    while true do
-      local test_path = template_path .. package.config:sub(1,1) .. new_folder_name
-      if not reaper.file_exists(test_path) then
-        break
+    -- Find unique name by checking existing folders in the scanned folder tree
+    local function folder_exists_in_parent(parent_rel_path, name)
+      -- Navigate to parent folder in the tree
+      local function find_children_at_path(node, path)
+        if not path or path == "" then
+          -- Root level
+          return node.children or {}
+        end
+
+        -- Navigate to the target path
+        local parts = {}
+        for part in path:gmatch("[^"..package.config:sub(1,1).."]+") do
+          table.insert(parts, part)
+        end
+
+        local current = node
+        for _, part in ipairs(parts) do
+          if not current.children then return {} end
+          local found = false
+          for _, child in ipairs(current.children) do
+            if child.name == part then
+              current = child
+              found = true
+              break
+            end
+          end
+          if not found then return {} end
+        end
+
+        return current.children or {}
       end
+
+      local siblings = find_children_at_path(state.folders or {}, parent_rel_path)
+      for _, sibling in ipairs(siblings) do
+        if sibling.name == name then
+          return true
+        end
+      end
+      return false
+    end
+
+    while folder_exists_in_parent(parent_relative_path, new_folder_name) do
       folder_num = folder_num + 1
       new_folder_name = "New Folder " .. folder_num
     end
 
-    local success, new_path = FileOps.create_folder(template_path, new_folder_name)
+    local success, new_path = FileOps.create_folder(parent_path, new_folder_name)
     if success then
       local Scanner = require('TemplateBrowser.domain.scanner')
       Scanner.scan_templates(state)
+
+      -- Select the newly created folder
+      local sep = package.config:sub(1,1)
+      local new_relative_path = parent_relative_path
+      if new_relative_path ~= "" then
+        new_relative_path = new_relative_path .. sep .. new_folder_name
+      else
+        new_relative_path = new_folder_name
+      end
+
+      -- Select the new folder
+      state.selected_folders = {}
+      state.selected_folders[new_relative_path] = true
+      state.selected_folder = new_relative_path
+      state.last_clicked_folder = new_relative_path
+
+      -- Open parent folder to show the new folder
+      if parent_relative_path ~= "" then
+        state.folder_open_state[parent_relative_path] = true
+      end
+      state.folder_open_state["__ROOT__"] = true  -- Open ROOT
+
+      -- Show status message
+      state.set_status("Created folder: " .. new_folder_name, "success")
+    else
+      state.set_status("Failed to create folder", "error")
     end
+  end
+
+  -- Virtual folder button
+  ImGui.SameLine(ctx, 0, button_spacing)
+  if Button.draw_at_cursor(ctx, { label = "V", width = button_w, height = 24 }, "folder_virtual") then
+    -- Create new virtual folder
+    local Persistence = require('TemplateBrowser.domain.persistence')
+
+    -- Determine parent folder from selection (only virtual folders/root)
+    local parent_id = "__VIRTUAL_ROOT__"  -- Default to virtual root
+    if state.selected_folders and next(state.selected_folders) then
+      for folder_id, _ in pairs(state.selected_folders) do
+        -- Only use as parent if it's a virtual folder
+        local is_virtual = state.metadata.virtual_folders and state.metadata.virtual_folders[folder_id]
+        if is_virtual or folder_id == "__VIRTUAL_ROOT__" then
+          parent_id = folder_id
+          break  -- Use first selected virtual folder
+        end
+      end
+    elseif state.selected_folder then
+      local is_virtual = state.metadata.virtual_folders and state.metadata.virtual_folders[state.selected_folder]
+      if is_virtual or state.selected_folder == "__VIRTUAL_ROOT__" then
+        parent_id = state.selected_folder
+      end
+    end
+
+    -- Find unique name for the virtual folder
+    local folder_num = 1
+    local new_folder_name = "New Virtual Folder"
+
+    local function virtual_folder_name_exists(name)
+      if not state.metadata or not state.metadata.virtual_folders then
+        return false
+      end
+
+      -- Check if any virtual folder with same parent has this name
+      for _, vfolder in pairs(state.metadata.virtual_folders) do
+        if vfolder.parent_id == parent_id and vfolder.name == name then
+          return true
+        end
+      end
+      return false
+    end
+
+    while virtual_folder_name_exists(new_folder_name) do
+      folder_num = folder_num + 1
+      new_folder_name = "New Virtual Folder " .. folder_num
+    end
+
+    -- Create the virtual folder in metadata
+    local new_id = Persistence.generate_uuid()
+    if not state.metadata.virtual_folders then
+      state.metadata.virtual_folders = {}
+    end
+
+    state.metadata.virtual_folders[new_id] = {
+      id = new_id,
+      name = new_folder_name,
+      parent_id = parent_id,
+      template_refs = {},
+      created = os.time()
+    }
+
+    -- Save metadata
+    Persistence.save_metadata(state.metadata)
+
+    -- Select the newly created virtual folder
+    state.selected_folders = {}
+    state.selected_folders[new_id] = true
+    state.selected_folder = new_id
+    state.last_clicked_folder = new_id
+
+    -- Open parent folder to show the new virtual folder
+    if parent_id ~= "__VIRTUAL_ROOT__" then
+      state.folder_open_state[parent_id] = true
+    end
+    state.folder_open_state["__VIRTUAL_ROOT__"] = true  -- Open Virtual Root
+
+    state.set_status("Created virtual folder: " .. new_folder_name, "success")
   end
 
   ImGui.PopStyleColor(ctx)
@@ -447,15 +1119,20 @@ local function draw_directory_content(ctx, state, config, width, height)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- Folder tree
-  draw_folder_tree(ctx, state, config)
+  -- Calculate remaining height for folder tree (scrollable)
+  -- Account for: header (28) + separator/spacing (10) + All Templates (24) + separator/spacing (10)
+  local used_height = header_height + 10 + 24 + 10
+  local tree_height = folder_section_height - used_height
 
+  -- Folder tree in scrollable child
+  BeginChildCompat(ctx, "FolderTreeScroll", 0, tree_height, false)
+  draw_folder_tree(ctx, state, config)
   ImGui.EndChild(ctx)
 
   ImGui.Spacing(ctx)
 
-  -- Tags section at bottom
-  draw_tags_mini_list(ctx, state, config, width - config.PANEL_PADDING * 2, tags_height)
+  -- === TAGS SECTION ===
+  draw_tags_mini_list(ctx, state, config, width, tags_section_height)
 end
 
 -- Draw VSTS content (list of all FX with filtering)
@@ -525,11 +1202,20 @@ local function draw_vsts_content(ctx, state, config, width, height)
 
     local is_selected = state.filter_fx[fx_name] or false
 
-    if is_selected then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.selected_bg)
-    end
+    -- Draw VST using Chip component (DOT style, blue like in template tiles)
+    local vst_color = Colors.hexrgb("#4A9EFF")
+    local clicked, chip_w, chip_h = Chip.draw(ctx, {
+      style = Chip.STYLE.DOT,
+      label = fx_name,
+      color = vst_color,
+      height = 28,
+      dot_size = 8,
+      dot_spacing = 10,
+      is_selected = is_selected,
+      interactive = true,
+    })
 
-    if ImGui.Selectable(ctx, fx_name, is_selected) then
+    if clicked then
       -- Toggle FX filter
       if is_selected then
         state.filter_fx[fx_name] = nil
@@ -540,10 +1226,6 @@ local function draw_vsts_content(ctx, state, config, width, height)
       -- Re-filter templates
       local Scanner = require('TemplateBrowser.domain.scanner')
       Scanner.filter_templates(state)
-    end
-
-    if is_selected then
-      ImGui.PopStyleColor(ctx)
     end
 
     ImGui.PopID(ctx)
@@ -638,13 +1320,15 @@ local function draw_tags_content(ctx, state, config, width, height)
           state.rename_buffer = ""
         end
       else
-        -- Normal display
-        -- Color swatch
-        ImGui.ColorButton(ctx, "##color", tag_data.color, 0, 16, 16)
-        ImGui.SameLine(ctx)
-
-        -- Tag name
-        ImGui.Text(ctx, tag_name)
+        -- Normal display - draw tag using Chip component (PILL style)
+        local clicked, chip_w, chip_h = Chip.draw(ctx, {
+          style = Chip.STYLE.PILL,
+          label = tag_name,
+          color = tag_data.color,
+          height = 24,
+          is_selected = false,
+          interactive = true,
+        })
 
         -- Double-click to rename
         if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
@@ -681,8 +1365,8 @@ local function draw_left_panel(ctx, state, config, width, height)
   -- Draw tabs using rearkitekt Tabs widget
   local tabs_def = {
     { id = "directory", label = "DIRECTORY" },
-    { id = "vsts", label = "VSTS", badge = fx_filter_count > 0 and fx_filter_count or nil },
-    { id = "tags", label = "TAGS", badge = tag_filter_count > 0 and tag_filter_count or nil },
+    { id = "vsts", label = "VSTS" },
+    { id = "tags", label = "TAGS" },
   }
 
   local clicked_tab = Tabs.draw_at_cursor(ctx, tabs_def, state.left_panel_tab, {
@@ -812,6 +1496,41 @@ local function draw_template_context_menu(ctx, state)
         state.context_menu_template = nil
         ImGui.CloseCurrentPopup(ctx)
       end
+
+      -- Add "Remove from Virtual Folder" button if viewing a virtual folder
+      if state.selected_folder and state.selected_folder ~= "" and state.metadata then
+        local vfolder = state.metadata.virtual_folders and state.metadata.virtual_folders[state.selected_folder]
+        if vfolder and tmpl then
+          ImGui.Spacing(ctx)
+          ImGui.Separator(ctx)
+          ImGui.Spacing(ctx)
+
+          if Button.draw_at_cursor(ctx, { label = "Remove from " .. vfolder.name, width = -1, height = 24 }, "remove_from_vfolder") then
+            local Persistence = require('TemplateBrowser.domain.persistence')
+
+            -- Remove template UUID from virtual folder's template_refs
+            if vfolder.template_refs then
+              for i, ref_uuid in ipairs(vfolder.template_refs) do
+                if ref_uuid == tmpl.uuid then
+                  table.remove(vfolder.template_refs, i)
+                  break
+                end
+              end
+            end
+
+            -- Save metadata
+            Persistence.save_metadata(state.metadata)
+
+            -- Refresh filtered templates
+            local Scanner = require('TemplateBrowser.domain.scanner')
+            Scanner.filter_templates(state)
+
+            state.set_status("Removed " .. tmpl.name .. " from " .. vfolder.name, "success")
+            state.context_menu_template = nil
+            ImGui.CloseCurrentPopup(ctx)
+          end
+        end
+      end
     end
 
     ImGui.EndPopup(ctx)
@@ -908,14 +1627,21 @@ end
 
 -- Draw info & tag assignment panel (right)
 local function draw_info_panel(ctx, state, config, width, height)
+  -- Outer border container (non-scrollable)
   BeginChildCompat(ctx, "InfoPanel", width, height, true)
 
-  -- Header
+  -- Header (stays at top)
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
   ImGui.SeparatorText(ctx, "Info & Tags")
   ImGui.PopStyleColor(ctx)
 
   ImGui.Spacing(ctx)
+
+  -- Scrollable content region
+  local header_height = 30  -- SeparatorText + spacing
+  local content_height = height - header_height
+
+  BeginChildCompat(ctx, "InfoPanelContent", 0, content_height, false)
 
   if state.selected_template then
     local tmpl = state.selected_template
@@ -938,17 +1664,21 @@ local function draw_info_panel(ctx, state, config, width, height)
     ImGui.Spacing(ctx)
 
     -- Actions
-    if Button.draw_at_cursor(ctx, { label = "Apply to Selected Track", width = -1, height = 32 }, "apply_template") then
+    if Button.draw_at_cursor(ctx, { label = "Apply to Selected Track", width = -1, height = 28 }, "apply_template") then
       reaper.ShowConsoleMsg("Applying template: " .. tmpl.name .. "\n")
       TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
     end
 
-    if Button.draw_at_cursor(ctx, { label = "Insert as New Track", width = -1, height = 32 }, "insert_template") then
+    ImGui.Dummy(ctx, 0, 4)
+
+    if Button.draw_at_cursor(ctx, { label = "Insert as New Track", width = -1, height = 28 }, "insert_template") then
       reaper.ShowConsoleMsg("Inserting template as new track: " .. tmpl.name .. "\n")
       TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
     end
 
-    if Button.draw_at_cursor(ctx, { label = "Rename (F2)", width = -1, height = 32 }, "rename_template") then
+    ImGui.Dummy(ctx, 0, 4)
+
+    if Button.draw_at_cursor(ctx, { label = "Rename (F2)", width = -1, height = 28 }, "rename_template") then
       state.renaming_item = tmpl
       state.renaming_type = "template"
       state.rename_buffer = tmpl.name
@@ -972,7 +1702,7 @@ local function draw_info_panel(ctx, state, config, width, height)
 
     local notes_changed, new_notes = Fields.draw_at_cursor(ctx, {
       width = -1,
-      height = 80,
+      height = 120,  -- Increased from 80
       text = notes,
       multiline = true,
     }, notes_field_id)
@@ -1008,11 +1738,17 @@ local function draw_info_panel(ctx, state, config, width, height)
           end
         end
 
-        -- Color swatch with opacity based on assignment
-        local alpha = is_assigned and 0xFF or 0x4D  -- Full opacity or 30%
-        local button_color = Colors.with_alpha(tag_data.color, alpha)
+        -- Draw tag using Chip component (PILL style)
+        local clicked, chip_w, chip_h = Chip.draw(ctx, {
+          style = Chip.STYLE.PILL,
+          label = tag_name,
+          color = tag_data.color,
+          height = 24,
+          is_selected = is_assigned,
+          interactive = true,
+        })
 
-        if ImGui.ColorButton(ctx, "##color", button_color, 0, 20, 20) then
+        if clicked then
           -- Toggle tag assignment
           if is_assigned then
             Tags.remove_tag_from_template(state.metadata, tmpl.uuid, tag_name)
@@ -1021,17 +1757,6 @@ local function draw_info_panel(ctx, state, config, width, height)
           end
           local Persistence = require('TemplateBrowser.domain.persistence')
           Persistence.save_metadata(state.metadata)
-        end
-
-        ImGui.SameLine(ctx)
-
-        -- Tag name with opacity
-        if not is_assigned then
-          ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#808080"))
-        end
-        ImGui.Text(ctx, tag_name)
-        if not is_assigned then
-          ImGui.PopStyleColor(ctx)
         end
 
         ImGui.PopID(ctx)
@@ -1049,7 +1774,8 @@ local function draw_info_panel(ctx, state, config, width, height)
     ImGui.TextDisabled(ctx, "Select a template to view details")
   end
 
-  ImGui.EndChild(ctx)
+  ImGui.EndChild(ctx)  -- End InfoPanelContent
+  ImGui.EndChild(ctx)  -- End InfoPanel
 end
 
 function GUI:draw(ctx, shell_state)
@@ -1135,10 +1861,11 @@ function GUI:draw(ctx, shell_state)
   local padding_left = 14
   local padding_right = 14
   local padding_bottom = 14
+  local status_bar_height = 24  -- Reserve space for status bar
 
   local cursor_y = ImGui.GetCursorPosY(ctx)
   local content_width = SCREEN_W - padding_left - padding_right
-  local panel_height = SCREEN_H - cursor_y - padding_bottom
+  local panel_height = SCREEN_H - cursor_y - padding_bottom - status_bar_height
 
   -- Get window's screen position for coordinate conversion
   -- The cursor is currently at (0, cursor_y) in window coords
@@ -1217,6 +1944,12 @@ function GUI:draw(ctx, shell_state)
   -- Template context menu and rename modal (must be drawn outside panels)
   draw_template_context_menu(ctx, self.state)
   draw_template_rename_modal(ctx, self.state)
+
+  -- Status bar at the bottom
+  local StatusBar = require('TemplateBrowser.ui.status_bar')
+  local status_bar_y = SCREEN_H - padding_bottom - status_bar_height
+  ImGui.SetCursorPos(ctx, padding_left, status_bar_y)
+  StatusBar.draw(ctx, self.state, content_width, status_bar_height)
 
   -- Handle exit
   if self.state.exit or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then

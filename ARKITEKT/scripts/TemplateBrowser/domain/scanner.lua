@@ -172,6 +172,12 @@ local function scan_directory(path, relative_path, metadata)
     -- Recursively scan subdirectory
     local sub_templates, sub_folders = scan_directory(sub_path, new_relative, metadata)
 
+    -- Get folder color from metadata if available
+    local folder_color = nil
+    if metadata.folders[folder_uuid] and metadata.folders[folder_uuid].color then
+      folder_color = metadata.folders[folder_uuid].color
+    end
+
     -- Add folder to list
     table.insert(folders, {
       uuid = folder_uuid,
@@ -179,6 +185,7 @@ local function scan_directory(path, relative_path, metadata)
       path = new_relative,
       full_path = sub_path,
       parent = relative_path,
+      color = folder_color,
     })
 
     -- Merge templates
@@ -224,6 +231,7 @@ local function build_folder_tree(folders)
       full_path = folder.full_path,
       children = {},
       parent = parent_node,
+      color = folder.color,  -- Pass color from metadata to tree node
     }
     table.insert(parent_node.children, node)
     path_to_node[folder.path] = node
@@ -292,9 +300,29 @@ function M.filter_templates(state)
 
     -- Filter by folder
     if state.selected_folder and state.selected_folder ~= "" then
-      -- Exact match on relative_path
-      if tmpl.relative_path ~= state.selected_folder then
-        matches = false
+      -- Check if this is a virtual folder
+      local is_virtual_folder = state.metadata and state.metadata.virtual_folders and state.metadata.virtual_folders[state.selected_folder]
+
+      if is_virtual_folder then
+        -- Virtual folder: check if template UUID is in template_refs
+        local vfolder = state.metadata.virtual_folders[state.selected_folder]
+        local found = false
+        if vfolder.template_refs then
+          for _, ref_uuid in ipairs(vfolder.template_refs) do
+            if ref_uuid == tmpl.uuid then
+              found = true
+              break
+            end
+          end
+        end
+        if not found then
+          matches = false
+        end
+      else
+        -- Physical folder: exact match on relative_path
+        if tmpl.relative_path ~= state.selected_folder then
+          matches = false
+        end
       end
     end
 
