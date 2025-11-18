@@ -8,6 +8,7 @@ local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 local Style = require('rearkitekt.gui.style.defaults')
+local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -17,14 +18,10 @@ local M = {}
 local EnvelopeView = {}
 EnvelopeView.__index = EnvelopeView
 
--- Spinner value lists
+-- Spinner value lists (from Default 6.0)
 local SPINNER_VALUES = {
-  env_vol_size = {'MIN', 40, 60, 80, 100, 120},
-  env_pan_size = {'MIN', 40, 60, 80, 100},
-  env_labelSize = {'MIN', 50, 75, 100, 125, 150},
-  env_MeterSize = {4, 10, 20, 40, 80},
-  env_type = {'NORMAL', 'COMPACT', 'TINY'},
-  env_min_height = {24, 40, 60, 80, 100, 120},
+  envcp_labelSize = {'AUTO', 20, 50, 80, 110, 140, 170},
+  envcp_fader_size = {'KNOB', 40, 70, 100, 130, 160, 190},
 }
 
 function M.new(State, Config, settings)
@@ -34,23 +31,11 @@ function M.new(State, Config, settings)
     settings = settings,
 
     -- Spinner indices (1-based)
-    env_vol_size_idx = 1,
-    env_pan_size_idx = 1,
-    env_labelSize_idx = 1,
-    env_MeterSize_idx = 1,
-    env_type_idx = 1,
-    env_min_height_idx = 1,
-
-    -- Active layout (A/B/C)
-    active_layout = 'A',
+    envcp_labelSize_idx = 1,
+    envcp_fader_size_idx = 1,
 
     -- Toggles
-    show_env_volume = true,
-    show_env_pan = true,
-    show_env_values = true,
-    show_env_mod_values = false,
-    show_env_fader = true,
-    env_hide_tcp_env = false,
+    envcp_folder_indent = false,
   }, EnvelopeView)
 
   -- Load initial values from theme
@@ -60,8 +45,24 @@ function M.new(State, Config, settings)
 end
 
 function EnvelopeView:load_from_theme()
-  -- TODO: Load spinner indices and toggle states from theme parameters
-  -- For now, keep defaults
+  -- Load spinner values from theme parameters
+  -- NOTE: REAPER parameter values ARE already 1-based spinner indices
+  local spinners = {'envcp_labelSize', 'envcp_fader_size'}
+
+  for _, param_name in ipairs(spinners) do
+    local param = ThemeParams.get_param(param_name)
+    if param then
+      local idx_field = param_name .. '_idx'
+      -- REAPER value is already a 1-based index - use it directly
+      self[idx_field] = param.value
+    end
+  end
+
+  -- Load folder indent toggle
+  local param = ThemeParams.get_param('envcp_folder_indent')
+  if param then
+    self.envcp_folder_indent = (param.value ~= 0)
+  end
 end
 
 function EnvelopeView:get_param_index(param_name)
@@ -146,7 +147,7 @@ function EnvelopeView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 4)
 
-    -- Apply Size
+    -- Apply Size (Envelope only has one layout, no A/B/C)
     ImGui.AlignTextToFramePadding(ctx)
     ImGui.Text(ctx, "Apply Size")
     ImGui.SameLine(ctx, 120)
@@ -157,7 +158,8 @@ function EnvelopeView:draw(ctx, shell_state)
         width = 70,
         height = 24,
         on_click = function()
-          -- TODO: Apply size
+          local scale = (size == '100%') and '' or (size .. '_')
+          ThemeParams.apply_layout_to_tracks('envcp', 'A', scale)
         end
       }, "env_size_" .. size) then
       end
@@ -206,33 +208,32 @@ function EnvelopeView:draw(ctx, shell_state)
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    local changed, new_idx = draw_spinner_row("Label Size", "env_labelSize", self.env_labelSize_idx, SPINNER_VALUES.env_labelSize)
-    if changed then self.env_labelSize_idx = new_idx end
+    local changed, new_idx = draw_spinner_row("Name Size", "envcp_labelSize", self.envcp_labelSize_idx, SPINNER_VALUES.envcp_labelSize)
+    if changed then
+      self.envcp_labelSize_idx = new_idx
+      ThemeParams.set_param('envcp_labelSize', new_idx, true)
+    end
 
-    changed, new_idx = draw_spinner_row("Volume", "env_vol_size", self.env_vol_size_idx, SPINNER_VALUES.env_vol_size)
-    if changed then self.env_vol_size_idx = new_idx end
-
-    changed, new_idx = draw_spinner_row("Pan", "env_pan_size", self.env_pan_size_idx, SPINNER_VALUES.env_pan_size)
-    if changed then self.env_pan_size_idx = new_idx end
+    changed, new_idx = draw_spinner_row("Fader Size", "envcp_fader_size", self.envcp_fader_size_idx, SPINNER_VALUES.envcp_fader_size)
+    if changed then
+      self.envcp_fader_size_idx = new_idx
+      ThemeParams.set_param('envcp_fader_size', new_idx, true)
+    end
 
     ImGui.EndGroup(ctx)
 
-    -- Column 2: Display Options
+    -- Column 2: Options
     ImGui.SameLine(ctx, col_w + 8)
     ImGui.BeginGroup(ctx)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
-    ImGui.Text(ctx, "Display Options")
+    ImGui.Text(ctx, "Options")
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    changed, new_idx = draw_spinner_row("Meter Size", "env_MeterSize", self.env_MeterSize_idx, SPINNER_VALUES.env_MeterSize)
-    if changed then self.env_MeterSize_idx = new_idx end
-
-    changed, new_idx = draw_spinner_row("Env Type", "env_type", self.env_type_idx, SPINNER_VALUES.env_type)
-    if changed then self.env_type_idx = new_idx end
-
-    changed, new_idx = draw_spinner_row("Min Height", "env_min_height", self.env_min_height_idx, SPINNER_VALUES.env_min_height)
-    if changed then self.env_min_height_idx = new_idx end
+    if Checkbox.draw_at_cursor(ctx, "Match folder indent", self.envcp_folder_indent, nil, "envcp_folder_indent") then
+      self.envcp_folder_indent = not self.envcp_folder_indent
+      ThemeParams.set_param('envcp_folder_indent', self.envcp_folder_indent and 1 or 0, true)
+    end
 
     ImGui.EndGroup(ctx)
 

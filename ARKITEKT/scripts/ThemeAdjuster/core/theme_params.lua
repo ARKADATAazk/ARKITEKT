@@ -229,12 +229,11 @@ M.SPINNER_VALUES = {
   mcp_io_size = {'MIN', 50, 75, 100, 125},
 
   -- ENVCP
-  envcp_labelSize = {'MIN', 50, 75, 100, 125, 150},
-  envcp_fader_size = {'KNOB', 40, 60, 80, 100, 120},
+  envcp_labelSize = {'AUTO', 20, 50, 80, 110, 140, 170},
+  envcp_fader_size = {'KNOB', 40, 70, 100, 130, 160, 190},
 
   -- TRANS
-  trans_rateSize = {'MIN', 60, 90, 120, 150, 180, 210},
-  trans_rateMode = {'RATE', 'FRAMES'},
+  trans_rate_size = {'KNOB', 80, 130, 160, 200, 250, 310, 380},
 }
 
 -- Get display string for a spinner value

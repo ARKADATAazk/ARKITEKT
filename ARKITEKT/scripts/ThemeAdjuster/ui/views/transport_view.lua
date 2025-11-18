@@ -8,6 +8,7 @@ local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 local Style = require('rearkitekt.gui.style.defaults')
+local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -19,11 +20,7 @@ TransportView.__index = TransportView
 
 -- Spinner value lists (from Default 6.0)
 local SPINNER_VALUES = {
-  trans_rateSize = {'MIN', 60, 90, 120, 150, 180, 210},
-  trans_rateMode = {'RATE', 'FRAMES'},
-  trans_status_size = {'MIN', 80, 120, 160, 200},
-  trans_bpmEdit_size = {'MIN', 60, 80, 100, 120},
-  trans_timeEdit_size = {'MIN', 100, 140, 180, 220},
+  trans_rate_size = {'KNOB', 80, 130, 160, 200, 250, 310, 380},
 }
 
 function M.new(State, Config, settings)
@@ -33,28 +30,7 @@ function M.new(State, Config, settings)
     settings = settings,
 
     -- Spinner indices (1-based)
-    trans_rateSize_idx = 1,
-    trans_rateMode_idx = 1,
-    trans_status_size_idx = 1,
-    trans_bpmEdit_size_idx = 1,
-    trans_timeEdit_size_idx = 1,
-
-    -- Active layout (A/B/C)
-    active_layout = 'A',
-
-    -- Toggles (action toggles from Default 6.0)
-    show_play_position = true,
-    show_playback_status = true,
-    show_transport_state = true,
-    show_record_status = true,
-    show_loop_repeat = true,
-    show_auto_crossfade = false,
-    show_midi_editor_btn = false,
-    show_metronome = true,
-    show_tempo_bpm = true,
-    show_time_signature = true,
-    show_project_length = false,
-    show_selection_length = false,
+    trans_rate_size_idx = 1,
   }, TransportView)
 
   -- Load initial values from theme
@@ -64,8 +40,13 @@ function M.new(State, Config, settings)
 end
 
 function TransportView:load_from_theme()
-  -- TODO: Load spinner indices and toggle states from theme parameters
-  -- For now, keep defaults
+  -- Load spinner values from theme parameters
+  -- NOTE: REAPER parameter values ARE already 1-based spinner indices
+  local param = ThemeParams.get_param('trans_rate_size')
+  if param then
+    -- REAPER value is already a 1-based index - use it directly
+    self.trans_rate_size_idx = param.value
+  end
 end
 
 function TransportView:get_param_index(param_name)
@@ -150,7 +131,7 @@ function TransportView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 4)
 
-    -- Apply Size
+    -- Apply Size (Transport only has one layout, no A/B/C)
     ImGui.AlignTextToFramePadding(ctx)
     ImGui.Text(ctx, "Apply Size")
     ImGui.SameLine(ctx, 120)
@@ -161,7 +142,8 @@ function TransportView:draw(ctx, shell_state)
         width = 70,
         height = 24,
         on_click = function()
-          -- TODO: Apply size
+          local scale = (size == '100%') and '' or (size .. '_')
+          ThemeParams.apply_layout_to_tracks('trans', 'A', scale)
         end
       }, "trans_size_" .. size) then
       end
@@ -177,11 +159,9 @@ function TransportView:draw(ctx, shell_state)
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    -- Column layout for spinners
-    local col_w = (avail_w - 32) / 2
+    -- Single column for the one spinner
     local label_w = 100  -- Fixed label width for consistency
-
-    local spinner_w = col_w - label_w - 16  -- Remaining for spinner
+    local spinner_w = 200  -- Fixed spinner width
 
     -- Helper function to draw properly aligned spinner row
     local function draw_spinner_row(label, id, idx, values)
@@ -197,35 +177,15 @@ function TransportView:draw(ctx, shell_state)
       ImGui.SameLine(ctx, 0, 8)
       local changed, new_idx = Spinner.draw(ctx, id, idx, values, {w = spinner_w, h = 24})
 
-
       ImGui.Dummy(ctx, 0, 2)
       return changed, new_idx
     end
 
-    ImGui.BeginGroup(ctx)
-    -- Left column
-    local changed, new_idx = draw_spinner_row("Rate Size", "trans_rateSize", self.trans_rateSize_idx, SPINNER_VALUES.trans_rateSize)
-    if changed then self.trans_rateSize_idx = new_idx end
-
-    changed, new_idx = draw_spinner_row("Rate Mode", "trans_rateMode", self.trans_rateMode_idx, SPINNER_VALUES.trans_rateMode)
-    if changed then self.trans_rateMode_idx = new_idx end
-
-    changed, new_idx = draw_spinner_row("Status Size", "trans_status_size", self.trans_status_size_idx, SPINNER_VALUES.trans_status_size)
-    if changed then self.trans_status_size_idx = new_idx end
-
-    ImGui.EndGroup(ctx)
-
-    ImGui.SameLine(ctx, col_w + 8)
-
-    ImGui.BeginGroup(ctx)
-    -- Right column
-    changed, new_idx = draw_spinner_row("BPM Editor", "trans_bpmEdit_size", self.trans_bpmEdit_size_idx, SPINNER_VALUES.trans_bpmEdit_size)
-    if changed then self.trans_bpmEdit_size_idx = new_idx end
-
-    changed, new_idx = draw_spinner_row("Time Editor", "trans_timeEdit_size", self.trans_timeEdit_size_idx, SPINNER_VALUES.trans_timeEdit_size)
-    if changed then self.trans_timeEdit_size_idx = new_idx end
-
-    ImGui.EndGroup(ctx)
+    local changed, new_idx = draw_spinner_row("Play Rate Size", "trans_rate_size", self.trans_rate_size_idx, SPINNER_VALUES.trans_rate_size)
+    if changed then
+      self.trans_rate_size_idx = new_idx
+      ThemeParams.set_param('trans_rate_size', new_idx, true)
+    end
 
     ImGui.Dummy(ctx, 0, 16)
 
