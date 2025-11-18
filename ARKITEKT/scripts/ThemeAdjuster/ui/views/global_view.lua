@@ -6,8 +6,11 @@ local ImGui = require 'imgui' '0.10'
 local HueSlider = require('rearkitekt.gui.widgets.primitives.hue_slider')
 local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
+local Style = require('rearkitekt.gui.style.defaults')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
+
+local PC = Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
 local GlobalView = {}
@@ -108,20 +111,20 @@ function GlobalView:draw(ctx, shell_state)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
 
-    -- Background pattern configuration (matching panel defaults)
+    -- Background pattern configuration (using panel defaults)
     local pattern_cfg = {
       enabled = true,
       primary = {
         type = 'grid',
         spacing = 50,
-        color = hexrgb("#2A2A2A"),  -- Subtle primary grid
+        color = PC.pattern_primary,
         line_thickness = 1.5,
       },
       secondary = {
         enabled = true,
         type = 'grid',
         spacing = 5,
-        color = hexrgb("#1E1E1E"),  -- Very subtle secondary grid
+        color = PC.pattern_secondary,
         line_thickness = 0.5,
       },
     }

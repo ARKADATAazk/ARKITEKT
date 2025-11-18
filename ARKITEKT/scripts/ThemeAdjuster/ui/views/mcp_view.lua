@@ -7,8 +7,11 @@ local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
 local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
+local Style = require('rearkitekt.gui.style.defaults')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
+
+local PC = Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
 local MCPView = {}
@@ -147,14 +150,14 @@ function MCPView:draw(ctx, shell_state)
   -- Single scrollable content area
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
   if ImGui.BeginChild(ctx, "mcp_content", avail_w, 0, 1) then
-    -- Draw background pattern (grid like assembler panel)
+    -- Draw background pattern (using panel defaults)
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
     local pattern_cfg = {
       enabled = true,
-      primary = {type = 'grid', spacing = 50, color = hexrgb("#2A2A2A"), line_thickness = 1.5},
-      secondary = {enabled = true, type = 'grid', spacing = 5, color = hexrgb("#1E1E1E"), line_thickness = 0.5},
+      primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
+      secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
     }
     Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
