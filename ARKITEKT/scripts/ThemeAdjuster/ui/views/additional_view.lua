@@ -72,6 +72,9 @@ function M.new(State, Config, settings)
     -- Tab color lookup
     tab_colors = {},
 
+    -- Control rectangles for exclusion zones (prevent drag on interactive controls)
+    control_rects = {},  -- param_index -> list of {x1, y1, x2, y2}
+
     -- Callback to invalidate caches in TCP/MCP views
     cache_invalidation_callback = nil,
 

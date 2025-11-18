@@ -107,6 +107,15 @@ function M.render(ctx, rect, param, state, view)
   ImGui.SameLine(ctx, 0, spacing)
 
   -- 2. Live control (slider/spinner/checkbox)
+  -- Store control rectangles for exclusion zones
+  if not view.control_rects[param.index] then
+    view.control_rects[param.index] = {}
+  end
+  local rects = view.control_rects[param.index]
+  rects[1] = nil  -- Clear previous control rect
+  rects[2] = nil  -- Clear previous name input rect
+  rects[3] = nil  -- Clear previous desc input rect
+
   ImGui.SetNextItemWidth(ctx, control_w)
   local changed = false
   local new_value = param.value
@@ -156,6 +165,11 @@ function M.render(ctx, rect, param, state, view)
     end
   end
 
+  -- Capture control rect
+  local ctrl_x1, ctrl_y1 = ImGui.GetItemRectMin(ctx)
+  local ctrl_x2, ctrl_y2 = ImGui.GetItemRectMax(ctx)
+  rects[1] = {ctrl_x1, ctrl_y1, ctrl_x2, ctrl_y2}
+
   -- Apply parameter change
   if changed then
     pcall(reaper.ThemeLayout_SetParameter, param.index, new_value, true)
@@ -174,6 +188,11 @@ function M.render(ctx, rect, param, state, view)
     view:save_assignments()
   end
 
+  -- Capture name input rect
+  local name_x1, name_y1 = ImGui.GetItemRectMin(ctx)
+  local name_x2, name_y2 = ImGui.GetItemRectMax(ctx)
+  rects[2] = {name_x1, name_y1, name_x2, name_y2}
+
   ImGui.SameLine(ctx, 0, spacing)
 
   -- 4. Description input
@@ -184,6 +203,11 @@ function M.render(ctx, rect, param, state, view)
     metadata.description = new_desc
     view:save_assignments()
   end
+
+  -- Capture description input rect
+  local desc_x1, desc_y1 = ImGui.GetItemRectMin(ctx)
+  local desc_x2, desc_y2 = ImGui.GetItemRectMax(ctx)
+  rects[3] = {desc_x1, desc_y1, desc_x2, desc_y2}
 
   -- 5. Assignment badge (at the end)
   if assignment_count > 0 then

@@ -50,6 +50,15 @@ local function create_render_tile(view)
   end
 end
 
+local function create_exclusion_zones(view)
+  return function(param, rect)
+    -- Return the stored control rectangles for this parameter
+    -- This prevents drag detection on interactive controls (sliders, checkboxes, text inputs)
+    local rects = view.control_rects[param.index]
+    return rects or nil
+  end
+end
+
 function M.create(view, config)
   config = config or {}
 
@@ -76,6 +85,8 @@ function M.create(view, config)
 
     get_items = function() return view:get_library_items() end,
     key = function(param) return "lib_" .. tostring(param.index) end,
+
+    get_exclusion_zones = create_exclusion_zones(view),
 
     external_drag_check = create_external_drag_check(view),
     is_copy_mode_check = create_copy_mode_check(view),
