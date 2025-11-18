@@ -317,28 +317,40 @@ function M.create(ctx, config, state, visualization, animator)
       end
       local uuid = uuids[1]
 
-      -- Get track_guid from UUID
-      local items = get_items()
-      for _, data in ipairs(items) do
+      -- Find item in cache directly (avoid full get_items() rebuild)
+      if not state.runtime_cache.midi_filtered then
+        return nil
+      end
+
+      for i, data in ipairs(state.runtime_cache.midi_filtered) do
         if data.uuid == uuid then
-          reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Cycling track: %s\n", data.track_guid))
-          state.cycle_midi_item(data.track_guid, delta > 0 and 1 or -1)
+          local track_guid = data.track_guid
+          reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Cycling track: %s\n", track_guid))
 
-          -- Get updated items (will use cache update path to preserve sort order)
-          local updated_items = get_items()
+          -- Cycle to next item
+          state.cycle_midi_item(track_guid, delta > 0 and 1 or -1)
 
-          -- Find the new item with the same track_guid
-          for _, updated_data in ipairs(updated_items) do
-            if updated_data.track_guid == data.track_guid then
-              reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] New UUID: %s\n", updated_data.uuid))
-              return updated_data.uuid
+          -- Update ONLY this cached item in-place (O(1) instead of O(n))
+          local current_idx = state.box_current_item[track_guid]
+          if current_idx then
+            local content = state.get_midi_content()
+            local entry = content[current_idx]
+            if entry then
+              -- Update display properties only (keep sort properties frozen)
+              data.item = entry[1]
+              data.name = entry[2]
+              data.uuid = entry.uuid
+
+              reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Updated cached item %d, new UUID: %s\n", i, data.uuid))
+              return data.uuid
             end
           end
 
-          return uuid  -- Fallback to old UUID if not found
+          return uuid  -- Fallback
         end
       end
-      reaper.ShowConsoleMsg("[WHEEL_ADJUST MIDI] UUID not found in items\n")
+
+      reaper.ShowConsoleMsg("[WHEEL_ADJUST MIDI] UUID not found in cache\n")
       return nil
     end,
 
