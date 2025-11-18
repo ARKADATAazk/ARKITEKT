@@ -172,6 +172,12 @@ local function scan_directory(path, relative_path, metadata)
     -- Recursively scan subdirectory
     local sub_templates, sub_folders = scan_directory(sub_path, new_relative, metadata)
 
+    -- Get folder color from metadata if available
+    local folder_color = nil
+    if metadata.folders[folder_uuid] and metadata.folders[folder_uuid].color then
+      folder_color = metadata.folders[folder_uuid].color
+    end
+
     -- Add folder to list
     table.insert(folders, {
       uuid = folder_uuid,
@@ -179,6 +185,7 @@ local function scan_directory(path, relative_path, metadata)
       path = new_relative,
       full_path = sub_path,
       parent = relative_path,
+      color = folder_color,
     })
 
     -- Merge templates
@@ -224,6 +231,7 @@ local function build_folder_tree(folders)
       full_path = folder.full_path,
       children = {},
       parent = parent_node,
+      color = folder.color,  -- Pass color from metadata to tree node
     }
     table.insert(parent_node.children, node)
     path_to_node[folder.path] = node

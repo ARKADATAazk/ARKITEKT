@@ -172,13 +172,9 @@ local function render_tree_node(ctx, node, config, state, depth)
       -- Restore cursor position to maintain tree layout
       ImGui.SetCursorScreenPos(ctx, saved_cursor_x, saved_cursor_y)
 
-      -- Clicking away closes the edit (cancel)
-      -- Close if we get a left click and the input is neither active nor hovered
-      if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) and not input_active and not input_hovered then
-        state.renaming_node = nil
-        state.rename_buffer = ""
-        state.rename_focus_set = nil
-      end
+      -- Store input state for global click-away check
+      state.rename_input_active = input_active
+      state.rename_input_hovered = input_hovered
 
       -- Commit on Enter
       if ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter) then
@@ -200,7 +196,12 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
     else
       -- Draw text label after icon (normal display)
-      ImGui.DrawList_AddText(dl, text_x, text_y, Colors.hexrgb("#FFFFFFFF"), node.name)
+      -- Use lightened version of folder color for text if folder has a color
+      local text_color = Colors.hexrgb("#FFFFFFFF")
+      if node_color and config.show_colors then
+        text_color = Colors.adjust_brightness(node_color, 1.5)  -- 50% brighter
+      end
+      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, node.name)
 
       -- Draw template count if available (right-aligned)
       if node.template_count and node.template_count > 0 and config.show_template_count then
@@ -316,6 +317,22 @@ function M.draw(ctx, nodes, state, user_config)
   -- Render all root nodes
   for _, node in ipairs(nodes) do
     render_tree_node(ctx, node, config, state, 0)
+  end
+
+  -- Global click-away check for inline rename
+  -- Check AFTER all nodes are rendered to catch clicks anywhere (including below tree)
+  if state.renaming_node then
+    local input_active = state.rename_input_active or false
+    local input_hovered = state.rename_input_hovered or false
+
+    if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) and not input_active and not input_hovered then
+      -- Cancel rename if clicked anywhere outside the InputText
+      state.renaming_node = nil
+      state.rename_buffer = ""
+      state.rename_focus_set = nil
+      state.rename_input_active = nil
+      state.rename_input_hovered = nil
+    end
   end
 end
 
