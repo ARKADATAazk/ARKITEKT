@@ -426,9 +426,10 @@ function M.calculate_pool_counts(loader)
       if reverse then
         source = reaper.GetMediaSourceParent(source)
       end
-      local source_ptr = reaper.BR_GetMediaSourceProperties(source)
-      if source_ptr then
-        source_pool_counts[source_ptr] = (source_pool_counts[source_ptr] or 0) + 1
+      -- Use source pointer address as unique identifier
+      local source_id = tostring(source)
+      if source_id then
+        source_pool_counts[source_id] = (source_pool_counts[source_id] or 0) + 1
       end
     end
   end
@@ -443,9 +444,10 @@ function M.calculate_pool_counts(loader)
       if reverse then
         source = reaper.GetMediaSourceParent(source)
       end
-      local source_ptr = reaper.BR_GetMediaSourceProperties(source)
-      raw_item.pool_count = source_pool_counts[source_ptr] or 1
-      raw_item.pool_id = tostring(source_ptr)  -- Store pool identifier
+      -- Use source pointer address as unique identifier
+      local source_id = tostring(source)
+      raw_item.pool_count = source_pool_counts[source_id] or 1
+      raw_item.pool_id = source_id  -- Store pool identifier
     else
       raw_item.pool_count = 1
       raw_item.pool_id = raw_item.uuid  -- Unique ID for non-pooled items
