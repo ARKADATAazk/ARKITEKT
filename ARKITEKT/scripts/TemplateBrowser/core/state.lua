@@ -11,7 +11,8 @@ M.filtered_templates = {}   -- Currently visible templates
 M.metadata = nil            -- Persistent metadata (tags, notes, UUIDs)
 
 -- UI State
-M.selected_folder = nil     -- Currently selected folder path
+M.selected_folder = nil     -- Currently selected folder path (single-select mode)
+M.selected_folders = {}     -- Selected folders (multi-select mode: path -> true)
 M.selected_template = nil   -- Currently selected template
 M.search_query = ""         -- Search filter
 M.filter_tags = {}          -- Active tag filters
@@ -53,6 +54,7 @@ function M.initialize(config)
   M.metadata = nil
   M.reparse_armed = false
   M.selected_folder = nil
+  M.selected_folders = {}
   M.selected_template = nil
   M.search_query = ""
   M.filter_tags = {}

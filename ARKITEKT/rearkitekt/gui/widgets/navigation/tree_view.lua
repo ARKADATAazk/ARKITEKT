@@ -21,13 +21,17 @@ local function draw_folder_icon(ctx, dl, x, y, color)
   local tab_w = 5
   local tab_h = 2
 
+  -- Round to whole pixels to avoid aliasing
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
   local icon_color = color or Colors.hexrgb("#888888")
 
   -- Draw tab (5x2 rectangle on top left)
   ImGui.DrawList_AddRectFilled(dl, x, y, x + tab_w, y + tab_h, icon_color, 0)
 
   -- Draw main body (13x7 rectangle)
-  ImGui.DrawList_AddRectFilled(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, icon_color, 1)
+  ImGui.DrawList_AddRectFilled(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, icon_color, 0)
 
   return main_w + 4  -- Return width including spacing
 end
@@ -49,8 +53,13 @@ local function render_tree_node(ctx, node, config, state, depth)
   local is_open = state.open_nodes and state.open_nodes[node_id]
   if is_open == nil then is_open = false end
 
-  -- Check if node is selected
-  local is_selected = state.selected_node == node_id
+  -- Check if node is selected (support both single and multi-select)
+  local is_selected = false
+  if state.selected_nodes then
+    is_selected = state.selected_nodes[node_id] ~= nil
+  elseif state.selected_node then
+    is_selected = state.selected_node == node_id
+  end
 
   -- Check if renaming
   local is_renaming = state.renaming_node == node_id
@@ -101,13 +110,20 @@ local function render_tree_node(ctx, node, config, state, depth)
     -- Draw colored background if node has color (BEFORE drawing icon/text)
     if node_color and config.show_colors and not is_selected then
       local bg_color = Colors.with_alpha(node_color, 0x0F)  -- 6% opacity (reduced from 20%)
-      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, bg_color, 2)
+      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, bg_color, 0)
     end
 
-    -- Draw hover effect (subtle white overlay)
+    -- Draw hover effect
     if tree_item_hovered and not is_selected then
-      local hover_color = Colors.hexrgb("#FFFFFF10")  -- 6% opacity white
-      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, hover_color, 2)
+      local hover_color
+      if node_color and config.show_colors then
+        -- Brighten folder color for hover
+        hover_color = Colors.with_alpha(Colors.adjust_brightness(node_color, 1.3), 0x20)  -- 12% opacity, 30% brighter
+      else
+        -- Default subtle white overlay for non-colored items
+        hover_color = Colors.hexrgb("#FFFFFF10")  -- 6% opacity white
+      end
+      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, hover_color, 0)
     end
 
     -- Draw selection indicator
@@ -128,7 +144,7 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
 
       ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_min_x + selection_bar_width, item_max_y, selection_color, 0)
-      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, selection_bg, 2)
+      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, selection_bg, 0)
     end
 
     -- Now manually draw the folder icon and text (since label is empty)
@@ -219,11 +235,68 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
     end
 
-    -- Handle single click for selection (but not when renaming)
+    -- Handle click for selection (but not when renaming)
     if tree_item_clicked and not tree_toggled and not is_renaming then
-      state.selected_node = node_id
-      if config.on_select then
-        config.on_select(node)
+      local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
+      local shift_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
+
+      if config.enable_multi_select and state.selected_nodes then
+        -- Multi-select mode
+        if shift_down and state.last_clicked_node then
+          -- Range selection: select all nodes between last clicked and current
+          if not state._flat_node_list then
+            state._flat_node_list = {}
+          end
+
+          local start_idx, end_idx
+          for i, flat_node_id in ipairs(state._flat_node_list) do
+            if flat_node_id == state.last_clicked_node then
+              start_idx = i
+            end
+            if flat_node_id == node_id then
+              end_idx = i
+            end
+          end
+
+          if start_idx and end_idx then
+            if start_idx > end_idx then
+              start_idx, end_idx = end_idx, start_idx
+            end
+
+            -- Clear selection if not holding ctrl
+            if not ctrl_down then
+              state.selected_nodes = {}
+            end
+
+            -- Select range
+            for i = start_idx, end_idx do
+              state.selected_nodes[state._flat_node_list[i]] = true
+            end
+          end
+        elseif ctrl_down then
+          -- Toggle selection
+          if state.selected_nodes[node_id] then
+            state.selected_nodes[node_id] = nil
+          else
+            state.selected_nodes[node_id] = true
+          end
+          state.last_clicked_node = node_id
+        else
+          -- Clear and select single
+          state.selected_nodes = {}
+          state.selected_nodes[node_id] = true
+          state.last_clicked_node = node_id
+        end
+
+        if config.on_select then
+          config.on_select(node, state.selected_nodes)
+        end
+      else
+        -- Single select mode (backward compatibility)
+        state.selected_node = node_id
+        if config.on_select then
+          config.on_select(node)
+        end
       end
     end
 
@@ -305,6 +378,24 @@ local function render_tree_node(ctx, node, config, state, depth)
 end
 
 -- ============================================================================
+-- HELPER FUNCTIONS
+-- ============================================================================
+
+-- Build flat list of all node IDs (for range selection)
+local function build_flat_node_list(nodes, flat_list)
+  flat_list = flat_list or {}
+  for _, node in ipairs(nodes) do
+    local node_id = node.id or node.path or tostring(_node_counter + 1)
+    _node_counter = _node_counter + 1
+    table.insert(flat_list, node_id)
+    if node.children and #node.children > 0 then
+      build_flat_node_list(node.children, flat_list)
+    end
+  end
+  return flat_list
+end
+
+-- ============================================================================
 -- PUBLIC API
 -- ============================================================================
 
@@ -326,6 +417,12 @@ function M.draw(ctx, nodes, state, user_config)
   -- Apply default config
   config.enable_rename = config.enable_rename ~= false  -- default true
   config.show_colors = config.show_colors ~= false      -- default true
+
+  -- Build flat node list for range selection (if multi-select enabled)
+  if config.enable_multi_select then
+    _node_counter = 0
+    state._flat_node_list = build_flat_node_list(nodes)
+  end
 
   -- Reset counter for consistent IDs
   _node_counter = 0

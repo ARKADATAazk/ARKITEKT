@@ -244,7 +244,7 @@ local function draw_folder_tree(ctx, state, config)
   -- Map state variables to TreeView format
   local tree_state = {
     open_nodes = state.folder_open_state,  -- TreeView uses open_nodes
-    selected_node = state.selected_folder,  -- Map selected_folder to selected_node
+    selected_nodes = state.selected_folders,  -- Multi-select mode
     renaming_node = state.renaming_folder_path or nil,  -- Track renaming by path
     rename_buffer = state.rename_buffer or "",
   }
@@ -254,11 +254,17 @@ local function draw_folder_tree(ctx, state, config)
     enable_rename = true,
     show_colors = true,
     enable_drag_drop = true,  -- Enable folder drag-and-drop
+    enable_multi_select = true,  -- Enable multi-select with Ctrl/Shift
     context_menu_id = "folder_context_menu",  -- Enable context menu
 
     -- Selection callback
-    on_select = function(node)
+    on_select = function(node, selected_nodes)
+      -- Update state with selected folders
+      state.selected_folders = selected_nodes
+
+      -- For backward compatibility, set selected_folder to the clicked node
       state.selected_folder = node.path
+
       local Scanner = require('TemplateBrowser.domain.scanner')
       Scanner.filter_templates(state)
     end,
@@ -517,7 +523,7 @@ local function draw_folder_tree(ctx, state, config)
   })
 
   -- Sync TreeView state back to Template Browser state
-  state.selected_folder = tree_state.selected_node
+  state.selected_folders = tree_state.selected_nodes
   state.renaming_folder_path = tree_state.renaming_node
   state.rename_buffer = tree_state.rename_buffer
 end
