@@ -307,39 +307,60 @@ end
 function TransportView:build_playback_buttons(bridge_state)
   return {
     {
-      type = "split_button",
+      type = "custom",
       id = "transport_shuffle",
       align = "center",
-      width = 80,
+      width = 60,
       config = {
-        label = "Shuffle",
-        is_toggled = bridge_state.shuffle_enabled or false,
-        preset_name = "BUTTON_TOGGLE_WHITE",
-        tooltip = "Toggle Shuffle Mode",
-        on_click = function()
+        on_draw = function(ctx, dl, x, y, width, height, state)
+          local Button = require('rearkitekt.gui.widgets.primitives.button')
+          local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
+
           local bridge = self.state.get_bridge()
-          local engine = bridge.engine
-          if engine then
-            local current_state = engine:get_shuffle_enabled()
-            engine:set_shuffle_enabled(not current_state)
-          end
-        end,
-        dropdown_options = {
-          {
-            type = "item",
-            label = "Re-shuffle Now",
-            value = "reshuffle",
+          local engine = bridge and bridge.engine
+
+          -- Draw button
+          local button_width, clicked = Button.draw(ctx, dl, x, y, width, height, {
+            label = "Shuffle",
+            is_toggled = bridge_state.shuffle_enabled or false,
+            preset_name = "BUTTON_TOGGLE_WHITE",
+            tooltip = "Left-click: Toggle Shuffle\nRight-click: Shuffle Options",
             on_click = function()
-              local bridge = self.state.get_bridge()
-              local engine = bridge.engine
+              if engine then
+                local current_state = engine:get_shuffle_enabled()
+                engine:set_shuffle_enabled(not current_state)
+              end
+            end,
+            on_right_click = function()
+              ImGui.OpenPopup(ctx, "shuffle_context_menu")
+            end,
+          }, state)
+
+          -- Draw context menu
+          if ContextMenu.begin(ctx, "shuffle_context_menu") then
+            -- Re-shuffle Now
+            if ContextMenu.item(ctx, "Re-shuffle Now") then
               if engine and engine:get_shuffle_enabled() then
-                -- Trigger a re-shuffle by toggling off and back on
                 engine:set_shuffle_enabled(false)
                 engine:set_shuffle_enabled(true)
               end
-            end,
-          },
-        },
+            end
+
+            ContextMenu.separator(ctx)
+
+            -- Future shuffle modes
+            if ContextMenu.item(ctx, "Shuffle Mode: True Shuffle") then
+              -- TODO: Implement shuffle mode switching
+              -- Modes: True Shuffle / Random / Smart Shuffle
+            end
+
+            if ContextMenu.item(ctx, "Auto-reshuffle on Loop") then
+              -- TODO: Implement auto-reshuffle toggle
+            end
+
+            ContextMenu.end_menu(ctx)
+          end
+        end,
       },
     },
     {
