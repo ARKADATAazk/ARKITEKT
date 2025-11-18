@@ -207,20 +207,18 @@ function MCPView:load_additional_params()
 end
 
 function MCPView:draw_additional_param(ctx, param)
-  local label_w = 200
-  local control_w = 150
-
+  -- Vertical stacked layout for narrow column
   -- Label
-  ImGui.AlignTextToFramePadding(ctx)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
+  ImGui.PushFont(ctx, ImGui.GetFont(ctx))
   ImGui.Text(ctx, param.name)
+  ImGui.PopFont(ctx)
   ImGui.PopStyleColor(ctx)
 
   -- Tooltip
   if ImGui.IsItemHovered(ctx) then
     local tooltip = string.format(
-      "Parameter: %s\nType: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f",
-      param.name,
+      "Type: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f",
       param.type,
       param.min,
       param.max,
@@ -230,8 +228,10 @@ function MCPView:draw_additional_param(ctx, param)
     ImGui.SetTooltip(ctx, tooltip)
   end
 
-  -- Control
-  ImGui.SameLine(ctx, label_w)
+  ImGui.Dummy(ctx, 0, 2)
+
+  -- Control (full width)
+  local control_w = ImGui.GetContentRegionAvail(ctx) - 16
 
   local changed = false
   local new_value = param.value
@@ -293,7 +293,7 @@ function MCPView:draw_additional_param(ctx, param)
     param.value = new_value
   end
 
-  ImGui.Dummy(ctx, 0, 4)
+  ImGui.Dummy(ctx, 0, 8)
 end
 
 function MCPView:draw(ctx, shell_state)
@@ -310,9 +310,14 @@ function MCPView:draw(ctx, shell_state)
 
   ImGui.Dummy(ctx, 0, 8)
 
-  -- Single scrollable content area
+  -- Determine if we need two columns
+  local has_additional = #self.additional_params > 0
+  local left_width = has_additional and (avail_w * 0.6) or avail_w
+  local right_width = has_additional and (avail_w * 0.4 - 8) or 0
+
+  -- Left column (main controls)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "mcp_content", avail_w, 0, 1) then
+  if ImGui.BeginChild(ctx, "mcp_left", left_width, 0, 1) then
     -- Draw background pattern (using panel defaults)
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
@@ -703,10 +708,33 @@ function MCPView:draw(ctx, shell_state)
     end
     ImGui.PopStyleVar(ctx)
 
-    -- Additional Parameters Section (assigned from Additional tab)
-    if #self.additional_params > 0 then
-      ImGui.Dummy(ctx, 0, 12)
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 2)
+    ImGui.EndChild(ctx)
+  end
+  ImGui.PopStyleColor(ctx)
 
+  -- Right column (additional parameters)
+  if has_additional then
+    ImGui.SameLine(ctx, 0, 8)
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+    if ImGui.BeginChild(ctx, "mcp_right", right_width, 0, 1) then
+      -- Draw background pattern
+      local child_x, child_y = ImGui.GetWindowPos(ctx)
+      local child_w, child_h = ImGui.GetWindowSize(ctx)
+      local dl = ImGui.GetWindowDrawList(ctx)
+      local pattern_cfg = {
+        enabled = true,
+        primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
+        secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
+      }
+      Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+
+      ImGui.Dummy(ctx, 0, 4)
+      ImGui.Indent(ctx, 8)
+
+      -- Additional Parameters Section
       ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
       ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#E24A90"))
       ImGui.Text(ctx, "ADDITIONAL PARAMETERS")
@@ -717,13 +745,13 @@ function MCPView:draw(ctx, shell_state)
       for _, param in ipairs(self.additional_params) do
         self:draw_additional_param(ctx, param)
       end
-    end
 
-    ImGui.Unindent(ctx, 8)
-    ImGui.Dummy(ctx, 0, 2)
-    ImGui.EndChild(ctx)
+      ImGui.Unindent(ctx, 8)
+      ImGui.Dummy(ctx, 0, 2)
+      ImGui.EndChild(ctx)
+    end
+    ImGui.PopStyleColor(ctx)
   end
-  ImGui.PopStyleColor(ctx)
 end
 
 return M
