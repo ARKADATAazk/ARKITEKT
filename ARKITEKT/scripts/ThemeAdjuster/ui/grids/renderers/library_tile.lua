@@ -71,19 +71,19 @@ function M.render(ctx, rect, param, state, view)
   -- Position cursor inside tile
   ImGui.SetCursorScreenPos(ctx, x1 + 4, y1 + 4)
 
-  -- Layout: [NAME 140px] [CONTROL 120px] [NAME INPUT 140px] [DESC INPUT 180px] [BADGE]
-  local name_w = 140
+  -- Layout: [NAME 200px] [CONTROL 120px] [NAME INPUT 140px] [DESC INPUT 140px] [BADGE]
+  local name_w = 200  -- Increased from 140px to give more breathing room
   local control_w = 120
   local name_input_w = 140
-  local desc_input_w = 180
+  local desc_input_w = 140  -- Reduced from 180px to compensate
   local spacing = 8
 
   ImGui.AlignTextToFramePadding(ctx)
 
   -- 1. Parameter name (DRAGGABLE - truncated, with tooltip)
   local truncated_name = param.name
-  if #param.name > 20 then
-    truncated_name = param.name:sub(1, 17) .. "..."
+  if #param.name > 30 then  -- Increased from 20 to 30 characters
+    truncated_name = param.name:sub(1, 27) .. "..."
   end
 
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))

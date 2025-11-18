@@ -24,11 +24,11 @@ AdditionalView.__index = AdditionalView
 
 -- Tab configurations
 local TAB_CONFIGS = {
-  {id = "TCP", label = "TCP", color = hexrgb("#4A90E2")},      -- Blue
-  {id = "MCP", label = "MCP", color = hexrgb("#E8C547")},      -- Yellow
-  {id = "ENVCP", label = "ENV", color = hexrgb("#4AE290")},    -- Green
-  {id = "TRANS", label = "TRN", color = hexrgb("#E24A4A")},    -- Red
-  {id = "GLOBAL", label = "GLB", color = hexrgb("#888888")},   -- Grey
+  {id = "TCP", label = "TCP", color = hexrgb("#4A90E2")},          -- Blue
+  {id = "MCP", label = "MCP", color = hexrgb("#E8C547")},          -- Yellow
+  {id = "ENVCP", label = "ENVCP", color = hexrgb("#4AE290")},      -- Green
+  {id = "TRANS", label = "TRANSPORT", color = hexrgb("#E24A4A")},  -- Red
+  {id = "GLOBAL", label = "GLOBAL", color = hexrgb("#888888")},    -- Grey
 }
 
 function M.new(State, Config, settings)

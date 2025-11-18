@@ -68,38 +68,47 @@ function M.render(ctx, rect, item, state, view, tab_id)
     ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 3, 0, 1)
   end
 
-  -- Position cursor inside tile
-  ImGui.SetCursorScreenPos(ctx, x1 + 8, y1 + 4)
+  -- Position cursor inside tile (moved 3 pixels up)
+  ImGui.SetCursorScreenPos(ctx, x1 + 8, y1 + 1)
 
   ImGui.AlignTextToFramePadding(ctx)
 
-  -- Display: [PARAM NAME] [CUSTOM NAME]
-  -- Format: "tcp_LabelSize" → "Label Size"
+  -- Display: [CUSTOM NAME] → [PARAM NAME] (when custom name exists)
+  -- Otherwise: [PARAM NAME]
 
-  -- Parameter name (muted color)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-  local display_name = param_name
-  if #display_name > 25 then
-    display_name = display_name:sub(1, 22) .. "..."
-  end
-  ImGui.Text(ctx, display_name)
-  ImGui.PopStyleColor(ctx)
-
-  -- Tooltip
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Parameter: " .. param_name)
-  end
-
-  -- Custom name (if set)
   if metadata.display_name and metadata.display_name ~= "" then
-    ImGui.SameLine(ctx, 0, 12)
+    -- Custom name on LEFT (bright color)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
     local custom_name = metadata.display_name
     if #custom_name > 30 then
       custom_name = custom_name:sub(1, 27) .. "..."
     end
-    ImGui.Text(ctx, "→ " .. custom_name)
+    ImGui.Text(ctx, custom_name)
     ImGui.PopStyleColor(ctx)
+
+    -- Parameter name on RIGHT (muted)
+    ImGui.SameLine(ctx, 0, 12)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+    local display_name = param_name
+    if #display_name > 25 then
+      display_name = display_name:sub(1, 22) .. "..."
+    end
+    ImGui.Text(ctx, "(" .. display_name .. ")")
+    ImGui.PopStyleColor(ctx)
+  else
+    -- No custom name - just show parameter name (muted color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+    local display_name = param_name
+    if #display_name > 25 then
+      display_name = display_name:sub(1, 22) .. "..."
+    end
+    ImGui.Text(ctx, display_name)
+    ImGui.PopStyleColor(ctx)
+
+    -- Tooltip
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetTooltip(ctx, "Parameter: " .. param_name)
+    end
   end
 
   -- Show order number for debugging (optional)
