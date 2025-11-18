@@ -35,35 +35,31 @@ function M.render(ctx, rect, param, state, view)
   local key = "lib_" .. param.index
   M._anim[key] = M._anim[key] or { hover = 0 }
 
-  local hover_t = Visuals.lerp(M._anim[key].hover, (state.is_hovered and not state.is_dragged) and 1 or 0, 12.0 * 0.016)
+  -- CORRECT: Grid passes state.hover and state.selected (not is_hovered/is_selected!)
+  local hover_t = Visuals.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
   M._anim[key].hover = hover_t
 
   -- Color definitions
   local BG_BASE = hexrgb("#252525")
   local BG_ASSIGNED = hexrgb("#2A2A35")
   local BG_HOVER = hexrgb("#2D2D2D")
-  local BG_DRAGGED = hexrgb("#303040")
   local BRD_BASE = hexrgb("#333333")
   local BRD_HOVER = hexrgb("#5588FF")
   local ANT_COLOR = hexrgb("#5588FFFF")
 
   -- Hover shadow effect (only when not selected)
-  if hover_t > 0.01 and not state.is_selected then
+  if hover_t > 0.01 and not state.selected then
     Visuals.draw_hover_shadow(dl, x1, y1, x2, y2, hover_t, 3)
   end
 
   -- Background color (with smooth transitions)
   local bg_color = (assignment_count > 0) and BG_ASSIGNED or BG_BASE
-  if state.is_dragged then
-    bg_color = BG_DRAGGED
-  else
-    bg_color = Visuals.color_lerp(bg_color, BG_HOVER, hover_t * 0.5)
-  end
+  bg_color = Visuals.color_lerp(bg_color, BG_HOVER, hover_t * 0.5)
 
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, 3)
 
   -- Border / Selection
-  if state.is_selected then
+  if state.selected then
     -- Marching ants for selection
     Visuals.draw_marching_ants_rounded(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5, ANT_COLOR, 1, 3)
   else
