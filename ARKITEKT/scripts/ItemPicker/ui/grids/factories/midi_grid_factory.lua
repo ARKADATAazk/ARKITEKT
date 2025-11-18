@@ -26,56 +26,9 @@ function M.create(ctx, config, state, visualization, animator)
       #state.midi_indexes
     )
 
-    -- Check if we need to rebuild
-    local cache_valid = state.runtime_cache.midi_filter_hash == filter_hash
-
-    -- If cache is valid, just update current items WITHOUT changing sort properties
-    if cache_valid and state.runtime_cache.midi_filtered then
-      -- Update current items in cached list (for cycling without re-sort)
-      local cached = state.runtime_cache.midi_filtered
-      for i, item_data in ipairs(cached) do
-        local track_guid = item_data.track_guid
-        local content = state.midi_items[track_guid]
-        if content then
-          local current_idx = state.box_current_midi_track[track_guid] or 1
-          if current_idx > #content then current_idx = 1 end
-          local entry = content[current_idx]
-          if entry then
-            -- ONLY update display properties, NOT sort properties (color, pool_count)
-            -- This keeps the tile in the same sorted position
-            item_data.item = entry[1]
-            item_data.name = entry[2]
-            item_data.uuid = entry.uuid
-            -- DO NOT update: color, pool_count (would affect sort)
-
-            -- Recalculate badge position
-            local seen_pools = {}
-            local filtered_list = {}
-            for j, e in ipairs(content) do
-              local pool_count = e.pool_count or 1
-              local pool_id = e.pool_id
-              if pool_count > 1 and pool_id then
-                if not seen_pools[pool_id] then
-                  seen_pools[pool_id] = true
-                  table.insert(filtered_list, {index = j})
-                end
-              else
-                table.insert(filtered_list, {index = j})
-              end
-            end
-            local current_position = 1
-            for pos, fitem in ipairs(filtered_list) do
-              if fitem.index == current_idx then
-                current_position = pos
-                break
-              end
-            end
-            item_data.index = current_position
-            item_data.total = #filtered_list
-          end
-        end
-      end
-      return cached
+    -- Return cached result if filters haven't changed
+    if state.runtime_cache.midi_filter_hash == filter_hash and state.runtime_cache.midi_filtered then
+      return state.runtime_cache.midi_filtered
     end
 
     -- Filters changed - rebuild filtered list
@@ -318,32 +271,29 @@ function M.create(ctx, config, state, visualization, animator)
       end
       local uuid = uuids[1]
 
-      -- Find track_guid from UUID
+      -- Get track_guid from UUID
       local items = get_items()
       for _, data in ipairs(items) do
         if data.uuid == uuid then
-          local track_guid = data.track_guid
-          reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Cycling track: %s\n", track_guid))
+          reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Cycling track: %s\n", data.track_guid))
+          state.cycle_midi_item(data.track_guid, delta > 0 and 1 or -1)
 
-          -- Cycle to next item
-          state.cycle_midi_item(track_guid, delta > 0 and 1 or -1)
-
-          -- Get updated items (cache will be updated with new item, sort properties frozen)
+          -- Rebuild items list after cycling to get new UUID
+          state.runtime_cache.midi_filter_hash = nil  -- Force rebuild
           local updated_items = get_items()
 
-          -- Find new UUID for the same track_guid
+          -- Find the new item with the same track_guid
           for _, updated_data in ipairs(updated_items) do
-            if updated_data.track_guid == track_guid then
+            if updated_data.track_guid == data.track_guid then
               reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] New UUID: %s\n", updated_data.uuid))
               return updated_data.uuid
             end
           end
 
-          return uuid  -- Fallback
+          return uuid  -- Fallback to old UUID if not found
         end
       end
-
-      reaper.ShowConsoleMsg("[WHEEL_ADJUST MIDI] UUID not found\n")
+      reaper.ShowConsoleMsg("[WHEEL_ADJUST MIDI] UUID not found in items\n")
       return nil
     end,
 
