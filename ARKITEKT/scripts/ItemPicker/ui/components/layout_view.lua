@@ -291,6 +291,59 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     button_x = button_x + button_w + button_gap
   end
 
+  -- Waveform Quality slider (after sort buttons)
+  local slider_x = button_x + 20
+  local slider_y = checkbox_y
+  local slider_width = 120
+  local slider_label = "Waveform Quality:"
+  local slider_label_width = ImGui.CalcTextSize(ctx, slider_label)
+
+  ImGui.DrawList_AddText(draw_list, slider_x, slider_y + 3, Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(ui_fade * 180)), slider_label)
+
+  -- Draw slider track
+  local track_x = slider_x + slider_label_width + 8
+  local track_y = slider_y + 7
+  local track_h = 6
+  local track_rounding = 3
+
+  local track_color = Colors.with_alpha(Colors.hexrgb("#1A1A1A"), math.floor(ui_fade * 200))
+  ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + slider_width, track_y + track_h, track_color, track_rounding)
+
+  -- Draw slider fill
+  local quality = self.state.settings.waveform_quality or 1.0
+  local fill_width = slider_width * quality
+  local fill_color = Colors.with_alpha(Colors.hexrgb("#4A9EFF"), math.floor(ui_fade * 200))
+  if fill_width > 1 then
+    ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + fill_width, track_y + track_h, fill_color, track_rounding)
+  end
+
+  -- Draw slider thumb
+  local thumb_x = track_x + fill_width
+  local thumb_y = track_y + track_h / 2
+  local thumb_radius = 6
+  local mx, my = ImGui.GetMousePos(ctx)
+  local is_thumb_hovered = (mx - thumb_x) * (mx - thumb_x) + (my - thumb_y) * (my - thumb_y) <= thumb_radius * thumb_radius
+
+  local thumb_color = is_thumb_hovered and Colors.hexrgb("#5AAFFF") or Colors.hexrgb("#4A9EFF")
+  thumb_color = Colors.with_alpha(thumb_color, math.floor(ui_fade * 255))
+  ImGui.DrawList_AddCircleFilled(draw_list, thumb_x, thumb_y, thumb_radius, thumb_color)
+
+  -- Slider interaction
+  local is_slider_hovered = mx >= track_x and mx < track_x + slider_width and my >= track_y - 4 and my < track_y + track_h + 4
+  if is_slider_hovered and ImGui.IsMouseDown(ctx, 0) then
+    local new_quality = math.max(0.1, math.min(1.0, (mx - track_x) / slider_width))
+    self.state.set_setting('waveform_quality', new_quality)
+    -- Clear waveform cache to force rebuild with new quality
+    if self.state.runtime_cache and self.state.runtime_cache.waveforms then
+      self.state.runtime_cache.waveforms = {}
+    end
+  end
+
+  -- Draw percentage value
+  local percent_text = string.format("%d%%", math.floor(quality * 100))
+  local percent_x = track_x + slider_width + 8
+  ImGui.DrawList_AddText(draw_list, percent_x, slider_y + 3, Colors.with_alpha(Colors.hexrgb("#AAAAAA"), math.floor(ui_fade * 180)), percent_text)
+
   ImGui.PopStyleVar(ctx)
 
   -- Track final checkbox Y position for search bar positioning

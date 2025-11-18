@@ -25,6 +25,7 @@ M.settings = {
   tile_height = nil,
   separator_position = nil,  -- MIDI section height (nil = use default from config)
   sort_mode = "none",  -- Options: "none", "color", "name", "pool"
+  waveform_quality = 1.0,  -- Waveform resolution multiplier (0.1-1.0, lower = better performance)
 }
 
 -- Runtime state (volatile)
