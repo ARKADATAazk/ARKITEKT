@@ -288,16 +288,34 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   return root_nodes
 end
 
--- Helper: Draw rectangular tag swatch (replaces rounded ColorButton)
-local function draw_tag_swatch(ctx, color, size)
+-- Helper: Draw rectangular tag tile (full tile with text, no rounded corners)
+local function draw_tag_tile(ctx, label, color, is_selected, width)
+  local height = 24
   local x, y = ImGui.GetCursorScreenPos(ctx)
   local dl = ImGui.GetWindowDrawList(ctx)
 
-  -- Draw rectangular swatch (no rounding)
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + size, y + size, color, 0)
+  -- Clickable area
+  local clicked = ImGui.InvisibleButton(ctx, "##" .. label, width or -1, height)
 
-  -- Advance cursor
-  ImGui.Dummy(ctx, size, size)
+  -- Background color (brighter if selected)
+  local bg_color = color
+  if is_selected then
+    bg_color = Colors.with_alpha(color, 0xFF)  -- Full opacity
+  else
+    bg_color = Colors.with_alpha(color, 0x99)  -- 60% opacity
+  end
+
+  -- Draw rectangular tile (no rounding)
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + (width or ImGui.GetItemRectSize(ctx)), y + height, bg_color, 0)
+
+  -- Draw text (centered, moved up 1px)
+  local text_w = ImGui.CalcTextSize(ctx, label)
+  local text_x = x + ((width or ImGui.GetItemRectSize(ctx)) - text_w) * 0.5
+  local text_y = y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5 - 1  -- Move up 1px
+  local text_color = Colors.hexrgb("#FFFFFFFF")
+  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
+
+  return clicked
 end
 
 -- Draw folder tree using TreeView widget
@@ -869,17 +887,8 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
 
       local is_selected = state.filter_tags[tag_name] or false
 
-      if is_selected then
-        ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.selected_bg)
-      end
-
-      -- Color swatch (rectangular)
-      draw_tag_swatch(ctx, tag_data.color, 16)
-      ImGui.SameLine(ctx)
-
-      -- Tag name as selectable (text moved up 1px)
-      ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) - 1)
-      if ImGui.Selectable(ctx, tag_name, is_selected) then
+      -- Draw tag as rectangular tile
+      if draw_tag_tile(ctx, tag_name, tag_data.color, is_selected) then
         -- Toggle tag filter
         if is_selected then
           state.filter_tags[tag_name] = nil
@@ -890,10 +899,6 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
         -- Re-filter templates
         local Scanner = require('TemplateBrowser.domain.scanner')
         Scanner.filter_templates(state)
-      end
-
-      if is_selected then
-        ImGui.PopStyleColor(ctx)
       end
 
       ImGui.PopID(ctx)
@@ -1216,11 +1221,9 @@ local function draw_vsts_content(ctx, state, config, width, height)
 
     local is_selected = state.filter_fx[fx_name] or false
 
-    if is_selected then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.selected_bg)
-    end
-
-    if ImGui.Selectable(ctx, fx_name, is_selected) then
+    -- Draw VST as rectangular tile (gray color)
+    local vst_color = Colors.hexrgb("#666666FF")
+    if draw_tag_tile(ctx, fx_name, vst_color, is_selected) then
       -- Toggle FX filter
       if is_selected then
         state.filter_fx[fx_name] = nil
@@ -1231,10 +1234,6 @@ local function draw_vsts_content(ctx, state, config, width, height)
       -- Re-filter templates
       local Scanner = require('TemplateBrowser.domain.scanner')
       Scanner.filter_templates(state)
-    end
-
-    if is_selected then
-      ImGui.PopStyleColor(ctx)
     end
 
     ImGui.PopID(ctx)
@@ -1329,14 +1328,8 @@ local function draw_tags_content(ctx, state, config, width, height)
           state.rename_buffer = ""
         end
       else
-        -- Normal display
-        -- Color swatch (rectangular)
-        draw_tag_swatch(ctx, tag_data.color, 16)
-        ImGui.SameLine(ctx)
-
-        -- Tag name (text moved up 1px)
-        ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) - 1)
-        ImGui.Text(ctx, tag_name)
+        -- Normal display - draw tag as rectangular tile
+        draw_tag_tile(ctx, tag_name, tag_data.color, false)
 
         -- Double-click to rename
         if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
@@ -1746,15 +1739,8 @@ local function draw_info_panel(ctx, state, config, width, height)
           end
         end
 
-        -- Color swatch with opacity based on assignment (rectangular, clickable)
-        local alpha = is_assigned and 0xFF or 0x4D  -- Full opacity or 30%
-        local button_color = Colors.with_alpha(tag_data.color, alpha)
-
-        local swatch_size = 20
-        local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
-
-        -- Clickable area
-        if ImGui.InvisibleButton(ctx, "##tag_swatch_" .. tag_name, swatch_size, swatch_size) then
+        -- Draw tag as rectangular tile
+        if draw_tag_tile(ctx, tag_name, tag_data.color, is_assigned) then
           -- Toggle tag assignment
           if is_assigned then
             Tags.remove_tag_from_template(state.metadata, tmpl.uuid, tag_name)
@@ -1763,22 +1749,6 @@ local function draw_info_panel(ctx, state, config, width, height)
           end
           local Persistence = require('TemplateBrowser.domain.persistence')
           Persistence.save_metadata(state.metadata)
-        end
-
-        -- Draw rectangular swatch
-        local dl = ImGui.GetWindowDrawList(ctx)
-        ImGui.DrawList_AddRectFilled(dl, start_x, start_y, start_x + swatch_size, start_y + swatch_size, button_color, 0)
-
-        ImGui.SameLine(ctx)
-
-        -- Tag name with opacity (text moved up 1px)
-        ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) - 1)
-        if not is_assigned then
-          ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#808080"))
-        end
-        ImGui.Text(ctx, tag_name)
-        if not is_assigned then
-          ImGui.PopStyleColor(ctx)
         end
 
         ImGui.PopID(ctx)
