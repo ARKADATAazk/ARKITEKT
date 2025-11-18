@@ -300,6 +300,253 @@ function AdditionalView:draw(ctx, shell_state)
   end
 end
 
+-- Draw a parameter tile in the library (left panel)
+function AdditionalView:draw_param_tile(ctx, param, shell_state)
+  local tile_w = ImGui.GetContentRegionAvail(ctx) - 16
+  local tile_h = 120  -- Fixed height for library tiles
+
+  -- Initialize metadata if needed
+  if not self.custom_metadata[param.name] then
+    self.custom_metadata[param.name] = {
+      display_name = "",
+      description = ""
+    }
+  end
+
+  local metadata = self.custom_metadata[param.name]
+  local display_name = (metadata.display_name and metadata.display_name ~= "")
+    and metadata.display_name or param.name
+
+  -- Get assignment count for badge
+  local assignment_count = self:get_assignment_count(param.name)
+
+  -- Tile background
+  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  -- Background rectangle
+  local bg_color = hexrgb("#252525")
+  if assignment_count > 0 then
+    bg_color = hexrgb("#2A2A35")  -- Slight tint if assigned
+  end
+
+  ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + tile_w, cursor_y + tile_h,
+    bg_color, 4)
+
+  -- Border
+  local border_color = hexrgb("#333333")
+  ImGui.DrawList_AddRect(dl, cursor_x, cursor_y, cursor_x + tile_w, cursor_y + tile_h,
+    border_color, 4, 0, 1)
+
+  -- Content
+  ImGui.BeginGroup(ctx)
+  ImGui.Dummy(ctx, tile_w, tile_h)
+  ImGui.EndGroup(ctx)
+
+  -- Draw content on top
+  ImGui.SetCursorScreenPos(ctx, cursor_x + 8, cursor_y + 8)
+  ImGui.BeginGroup(ctx)
+
+  -- Header: Param name + assignment badge
+  ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
+  ImGui.Text(ctx, param.name)
+  ImGui.PopFont(ctx)
+
+  if assignment_count > 0 then
+    ImGui.SameLine(ctx)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88AAFF"))
+    ImGui.Text(ctx, string.format("(%d)", assignment_count))
+    ImGui.PopStyleColor(ctx)
+  end
+
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Control (simplified for now - just show value)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+  ImGui.Text(ctx, string.format("Type: %s | Value: %.1f", param.type, param.value))
+  ImGui.PopStyleColor(ctx)
+
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- Name input
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
+  ImGui.Text(ctx, "Name:")
+  ImGui.PopStyleColor(ctx)
+  ImGui.SameLine(ctx)
+  ImGui.SetNextItemWidth(ctx, tile_w - 70)
+  local name_changed, new_name = ImGui.InputText(ctx, "##name_" .. param.index,
+    metadata.display_name)
+  if name_changed then
+    metadata.display_name = new_name
+    self:save_assignments()
+  end
+
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Description input
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
+  ImGui.Text(ctx, "Desc:")
+  ImGui.PopStyleColor(ctx)
+  ImGui.SameLine(ctx)
+  ImGui.SetNextItemWidth(ctx, tile_w - 70)
+  local desc_changed, new_desc = ImGui.InputText(ctx, "##desc_" .. param.index,
+    metadata.description)
+  if desc_changed then
+    metadata.description = new_desc
+    self:save_assignments()
+  end
+
+  ImGui.EndGroup(ctx)
+
+  -- Drag source
+  if ImGui.BeginDragDropSource(ctx) then
+    ImGui.SetDragDropPayload(ctx, "PARAM", param.name)
+    ImGui.Text(ctx, display_name)
+    ImGui.EndDragDropSource(ctx)
+    self.dragging_param = param.name
+    self.drag_source = "library"
+  end
+end
+
+-- Draw tab bar for assignment grid (right panel)
+function AdditionalView:draw_assignment_tab_bar(ctx, shell_state)
+  local tabs = {
+    {id = "TCP", label = "TCP", color = hexrgb("#4A90E2")},
+    {id = "MCP", label = "MCP", color = hexrgb("#E24A90")},
+    {id = "ENVCP", label = "ENV", color = hexrgb("#50C878")},
+    {id = "TRANS", label = "TRN", color = hexrgb("#FF8C42")},
+    {id = "GLOBAL", label = "GLB", color = hexrgb("#9B59B6")}
+  }
+
+  local tab_w = 60
+  local tab_h = 28
+
+  for i, tab in ipairs(tabs) do
+    local is_active = (self.active_assignment_tab == tab.id)
+    local assignment_count = #self.assignments[tab.id]
+
+    -- Button styling
+    local bg_color = is_active and tab.color or hexrgb("#2A2A2A")
+    local hover_color = is_active and lighten_color(tab.color, 0.2) or hexrgb("#353535")
+    local text_color = is_active and hexrgb("#FFFFFF") or hexrgb("#888888")
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, bg_color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hover_color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, tab.color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameRounding, 3)
+
+    local label = assignment_count > 0 and string.format("%s (%d)", tab.label, assignment_count) or tab.label
+
+    if ImGui.Button(ctx, label .. "##tab_" .. tab.id, tab_w + (assignment_count > 0 and 20 or 0), tab_h) then
+      self.active_assignment_tab = tab.id
+    end
+
+    ImGui.PopStyleVar(ctx)
+    ImGui.PopStyleColor(ctx, 4)
+
+    -- Drop target
+    if ImGui.BeginDragDropTarget(ctx) then
+      local ret, payload = ImGui.AcceptDragDropPayload(ctx, "PARAM")
+      if ret then
+        local param_name = payload
+        self:assign_param_to_tab(param_name, tab.id)
+      end
+      ImGui.EndDragDropTarget(ctx)
+    end
+
+    if i < #tabs then
+      ImGui.SameLine(ctx, 0, 4)
+    end
+  end
+end
+
+-- Draw assignment grid for active tab (right panel)
+function AdditionalView:draw_assignment_grid(ctx, shell_state)
+  local assignments = self.assignments[self.active_assignment_tab]
+
+  if not assignments or #assignments == 0 then
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+    ImGui.Text(ctx, "No parameters assigned")
+    ImGui.Text(ctx, "Drag from library to assign")
+    ImGui.PopStyleColor(ctx)
+    return
+  end
+
+  -- Build param lookup
+  local param_lookup = {}
+  for _, param in ipairs(self.unknown_params) do
+    param_lookup[param.name] = param
+  end
+
+  -- Draw assigned tiles
+  for i, assignment in ipairs(assignments) do
+    local param = param_lookup[assignment.param_name]
+    if param then
+      self:draw_assigned_tile(ctx, param, i, shell_state)
+      ImGui.Dummy(ctx, 0, 4)
+    end
+  end
+end
+
+-- Draw a simple assigned parameter tile (right panel)
+function AdditionalView:draw_assigned_tile(ctx, param, index, shell_state)
+  local tile_w = ImGui.GetContentRegionAvail(ctx) - 16
+  local tile_h = 50  -- Smaller for assigned tiles
+
+  local metadata = self.custom_metadata[param.name]
+  local display_name = (metadata and metadata.display_name and metadata.display_name ~= "")
+    and metadata.display_name or param.name
+
+  -- Tile background
+  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  local bg_color = hexrgb("#282828")
+  ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + tile_w, cursor_y + tile_h,
+    bg_color, 3)
+
+  local border_color = hexrgb("#404040")
+  ImGui.DrawList_AddRect(dl, cursor_x, cursor_y, cursor_x + tile_w, cursor_y + tile_h,
+    border_color, 3, 0, 1)
+
+  -- Clickable area
+  ImGui.BeginGroup(ctx)
+  ImGui.Dummy(ctx, tile_w, tile_h)
+  ImGui.EndGroup(ctx)
+
+  -- Content
+  ImGui.SetCursorScreenPos(ctx, cursor_x + 8, cursor_y + 12)
+  ImGui.BeginGroup(ctx)
+
+  -- Display name
+  ImGui.PushFont(ctx, shell_state.fonts.bold, 12)
+  ImGui.Text(ctx, display_name)
+  ImGui.PopFont(ctx)
+
+  -- Param name (if different)
+  if display_name ~= param.name then
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#777777"))
+    ImGui.Text(ctx, param.name)
+    ImGui.PopStyleColor(ctx)
+  end
+
+  ImGui.EndGroup(ctx)
+
+  -- Remove button
+  ImGui.SetCursorScreenPos(ctx, cursor_x + tile_w - 60, cursor_y + tile_h / 2 - 10)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#3A2020"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#5A3030"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FF6666"))
+  if ImGui.SmallButton(ctx, "Remove##" .. param.index) then
+    self:unassign_param_from_tab(param.name, self.active_assignment_tab)
+  end
+  ImGui.PopStyleColor(ctx, 3)
+
+  -- Drag source for reordering (simplified - no reordering yet)
+  -- TODO: Implement reordering in next iteration
+end
+
 function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
   -- Center the window
   local window_w = 500
