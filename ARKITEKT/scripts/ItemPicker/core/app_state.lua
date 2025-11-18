@@ -263,8 +263,21 @@ function M.cycle_audio_item(filename, delta)
 
   -- Build filtered list based on current settings
   local filtered = {}
+  local seen_names = {}  -- Track item names to exclude pooled duplicates
+
   for i, entry in ipairs(content) do
     local should_include = true
+
+    -- Exclude pooled duplicates (only show first occurrence of each name)
+    local item_name = entry[2] or "Unnamed"
+    local pool_count = entry.pool_count or 1
+    if pool_count > 1 then
+      if seen_names[item_name] then
+        should_include = false
+      else
+        seen_names[item_name] = true
+      end
+    end
 
     -- Apply disabled filter
     if not M.settings.show_disabled_items and M.disabled.audio[filename] then
@@ -284,7 +297,6 @@ function M.cycle_audio_item(filename, delta)
     -- Apply search filter
     local search = M.settings.search_string or ""
     if search ~= "" and entry[2] then
-      local item_name = entry[2]
       if not item_name:lower():find(search:lower(), 1, true) then
         should_include = false
       end
@@ -327,8 +339,21 @@ function M.cycle_midi_item(item_name, delta)
 
   -- Build filtered list based on current settings
   local filtered = {}
+  local seen_names = {}  -- Track item names to exclude pooled duplicates
+
   for i, entry in ipairs(content) do
     local should_include = true
+
+    -- Exclude pooled duplicates (only show first occurrence of each name)
+    local item_name_text = entry[2] or "Unnamed"
+    local pool_count = entry.pool_count or 1
+    if pool_count > 1 then
+      if seen_names[item_name_text] then
+        should_include = false
+      else
+        seen_names[item_name_text] = true
+      end
+    end
 
     -- Apply disabled filter
     if not M.settings.show_disabled_items and M.disabled.midi[item_name] then
@@ -348,7 +373,6 @@ function M.cycle_midi_item(item_name, delta)
     -- Apply search filter
     local search = M.settings.search_string or ""
     if search ~= "" and entry[2] then
-      local item_name_text = entry[2]
       if not item_name_text:lower():find(search:lower(), 1, true) then
         should_include = false
       end
