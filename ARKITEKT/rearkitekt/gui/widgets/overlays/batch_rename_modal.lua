@@ -198,7 +198,6 @@ function M.draw(ctx, item_count)
     local color_changed = ColorPickerWindow.render_inline(ctx, "batch_rename_picker", {
       size = picker_size,
       on_change = function(color)
-        reaper.ShowConsoleMsg(string.format("[BATCH RENAME MODAL] Color changed to: %08X\n", color))
         state.selected_color = color
       end
     })
@@ -263,14 +262,8 @@ function M.draw(ctx, item_count)
 
     -- Recolor button (always enabled)
     if ImGui.Button(ctx, "Recolor", button_w, 28) then
-      reaper.ShowConsoleMsg(string.format("[BATCH RENAME MODAL] Recolor clicked, color: %08X\n", state.selected_color))
-      reaper.ShowConsoleMsg(string.format("[BATCH RENAME MODAL] Callback exists: %s\n", tostring(state.on_recolor ~= nil)))
       if state.on_recolor then
-        reaper.ShowConsoleMsg("[BATCH RENAME MODAL] Calling on_recolor callback...\n")
         state.on_recolor(state.selected_color)
-        reaper.ShowConsoleMsg("[BATCH RENAME MODAL] on_recolor callback completed\n")
-      else
-        reaper.ShowConsoleMsg("[BATCH RENAME MODAL] ERROR: on_recolor callback is nil!\n")
       end
       state.is_open = false
       ImGui.CloseCurrentPopup(ctx)

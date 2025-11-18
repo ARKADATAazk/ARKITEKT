@@ -295,13 +295,8 @@ local function create_behaviors(rt)
             end
           end,
           on_recolor = function(color)
-            reaper.ShowConsoleMsg(string.format("[ACTIVE GRID FACTORY] on_recolor called with color: %08X\n", color))
-            reaper.ShowConsoleMsg(string.format("[ACTIVE GRID FACTORY] rt.on_active_batch_recolor exists: %s\n", tostring(rt.on_active_batch_recolor ~= nil)))
             if rt.on_active_batch_recolor then
-              reaper.ShowConsoleMsg(string.format("[ACTIVE GRID FACTORY] Calling rt.on_active_batch_recolor with %d keys\n", #selected_keys))
               rt.on_active_batch_recolor(selected_keys, color)
-            else
-              reaper.ShowConsoleMsg("[ACTIVE GRID FACTORY] ERROR: rt.on_active_batch_recolor is nil!\n")
             end
           end
         })

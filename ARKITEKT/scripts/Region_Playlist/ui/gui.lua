@@ -211,8 +211,6 @@ function M.create(State, AppConfig, settings)
 
     -- Batch recolor only
     on_active_batch_recolor = function(item_keys, color)
-      reaper.ShowConsoleMsg(string.format("[BATCH RECOLOR] Called with %d items, color: %08X\n", #item_keys, color))
-
       -- Separate regions and playlists
       local rids = {}
       local playlist_ids = {}
@@ -231,12 +229,9 @@ function M.create(State, AppConfig, settings)
         end
       end
 
-      reaper.ShowConsoleMsg(string.format("[BATCH RECOLOR] Found %d regions, %d playlists\n", #rids, #playlist_ids))
-
       -- Batch recolor regions
       if #rids > 0 then
-        local count = self.controller:set_region_colors_batch(rids, color)
-        reaper.ShowConsoleMsg(string.format("[BATCH RECOLOR] Recolored %d regions\n", count))
+        self.controller:set_region_colors_batch(rids, color)
       end
 
       -- Recolor playlists individually
@@ -337,8 +332,6 @@ function M.create(State, AppConfig, settings)
 
     -- Batch recolor from pool
     on_pool_batch_recolor = function(item_keys, color)
-      reaper.ShowConsoleMsg(string.format("[POOL BATCH RECOLOR] Called with %d items, color: %08X\n", #item_keys, color))
-
       local Regions = require('rearkitekt.reaper.regions')
 
       -- Separate regions and playlists
@@ -357,12 +350,9 @@ function M.create(State, AppConfig, settings)
         end
       end
 
-      reaper.ShowConsoleMsg(string.format("[POOL BATCH RECOLOR] Found %d regions, %d playlists\n", #rids, #playlist_ids))
-
       -- Batch recolor regions
       if #rids > 0 then
-        local count = self.controller:set_region_colors_batch(rids, color)
-        reaper.ShowConsoleMsg(string.format("[POOL BATCH RECOLOR] Recolored %d regions\n", count))
+        self.controller:set_region_colors_batch(rids, color)
       end
 
       -- Recolor playlists individually
