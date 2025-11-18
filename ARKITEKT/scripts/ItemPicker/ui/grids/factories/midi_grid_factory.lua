@@ -120,19 +120,19 @@ function M.create(ctx, config, state, visualization, animator)
         state._color_debug_logged[track_color] = true
       end
 
-      -- REAPER returns: ColorToNative(r,g,b) | 0x01000000 for colored items, 0 for no color
-      -- Need to mask off 0x01000000 before extracting RGB
+      -- REAPER returns: ColorToNative(r,g,b) | 0x01000000 for colored items
+      -- Check for the 0x01000000 flag to determine if item has a color
       local color
-      if track_color == 0 then
-        -- No color: use default grey (0xFF5B5B55 in ABGR)
-        color = 0xFF5B5B55
-      else
+      if (track_color & 0x01000000) ~= 0 then
         -- Has color: mask off 0x01000000 flag and extract RGB from COLORREF (0x00BBGGRR)
         local colorref = track_color & 0x00FFFFFF
         local R = colorref & 255
         local G = (colorref >> 8) & 255
         local B = (colorref >> 16) & 255
         color = ImGui.ColorConvertDouble4ToU32(R/255, G/255, B/255, 1)
+      else
+        -- No color flag: use default grey (0xFF5B5B55 in ABGR)
+        color = 0xFF5B5B55
       end
 
       table.insert(filtered, {
