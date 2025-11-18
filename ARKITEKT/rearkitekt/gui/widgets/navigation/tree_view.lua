@@ -289,8 +289,13 @@ local function render_tree_node(ctx, node, config, state, depth)
           end
           state.last_clicked_node = node_id
         else
-          -- Clear and select single
-          state.selected_nodes = {}
+          -- Normal click without modifiers
+          -- If clicking on an already-selected item, don't clear the selection
+          -- This allows dragging multiple selected items
+          if not state.selected_nodes[node_id] then
+            -- Only clear selection if clicking on a non-selected item
+            state.selected_nodes = {}
+          end
           state.selected_nodes[node_id] = true
           state.last_clicked_node = node_id
         end
