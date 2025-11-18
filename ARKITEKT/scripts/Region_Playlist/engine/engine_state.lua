@@ -41,6 +41,9 @@ function M.new(opts)
   self.goto_region_queued = false
   self.goto_region_target = nil
 
+  self._shuffle_enabled = false
+  self._shuffle_seed = nil
+
   self:rescan()
 
   return self
@@ -171,7 +174,13 @@ function State:set_sequence(sequence)
     end
   end
   Logger.info("STATE", "Final sequence has %d items", #self.sequence)
-  
+
+  -- Apply shuffle if enabled (before resolving pointers)
+  if self._shuffle_enabled and #self.sequence > 1 then
+    self:_apply_shuffle()
+    Logger.info("STATE", "Shuffle applied to sequence")
+  end
+
   Logger.debug("STATE", "playlist_order:")
   for i, rid in ipairs(self.playlist_order) do
     Logger.debug("STATE", "  [%d] rid=%d", i, rid)
@@ -336,6 +345,70 @@ function State:get_state_snapshot()
     sequence_version = self.sequence_version,
     sequence_length = #self.sequence,
   }
+end
+
+-- Fisher-Yates shuffle algorithm
+function State:_apply_shuffle()
+  if #self.sequence <= 1 then return end
+
+  -- Generate a new seed if we don't have one
+  if not self._shuffle_seed then
+    self._shuffle_seed = math.floor(reaper.time_precise() * 1000000) % 2147483647
+  end
+
+  math.randomseed(self._shuffle_seed)
+
+  -- Fisher-Yates shuffle
+  for i = #self.sequence, 2, -1 do
+    local j = math.random(1, i)
+    self.sequence[i], self.sequence[j] = self.sequence[j], self.sequence[i]
+  end
+
+  -- Rebuild playlist_order and metadata to match shuffled sequence
+  self.playlist_order = {}
+  self.playlist_metadata = {}
+  self.sequence_lookup_by_key = {}
+
+  for idx, entry in ipairs(self.sequence) do
+    self.playlist_order[idx] = entry.rid
+    self.playlist_metadata[idx] = {
+      key = entry.item_key,
+      reps = 1,
+      current_loop = 1,
+      loop = entry.loop,
+      total_loops = entry.total_loops,
+    }
+    if entry.item_key and not self.sequence_lookup_by_key[entry.item_key] then
+      self.sequence_lookup_by_key[entry.item_key] = idx
+    end
+  end
+end
+
+-- Called when shuffle state changes
+function State:on_shuffle_changed(enabled)
+  self._shuffle_enabled = enabled
+
+  if enabled then
+    -- Generate new shuffle seed when enabling
+    self._shuffle_seed = math.floor(reaper.time_precise() * 1000000) % 2147483647
+  else
+    -- Clear seed when disabling (will use original order on next set_sequence)
+    self._shuffle_seed = nil
+  end
+
+  -- Trigger a sequence rebuild with current sequence
+  if #self.sequence > 0 then
+    local current_sequence = {}
+    for _, entry in ipairs(self.sequence) do
+      table.insert(current_sequence, {
+        rid = entry.rid,
+        item_key = entry.item_key,
+        loop = entry.loop,
+        total_loops = entry.total_loops,
+      })
+    end
+    self:set_sequence(current_sequence)
+  end
 end
 
 return M

@@ -30,6 +30,7 @@ function M.new(opts)
   self.transport_override = (opts.transport_override == true)
   self.loop_playlist = (opts.loop_playlist == true)
   self.follow_viewport = (opts.follow_viewport == true)
+  self.shuffle_enabled = (opts.shuffle_enabled == true)
 
   self.is_playing = false
   self.last_seek_time = 0
@@ -265,6 +266,18 @@ end
 
 function Transport:get_follow_viewport()
   return self.follow_viewport
+end
+
+function Transport:set_shuffle_enabled(enabled)
+  self.shuffle_enabled = not not enabled
+  -- Notify state to reshuffle if needed
+  if self.state and self.state.on_shuffle_changed then
+    self.state:on_shuffle_changed(enabled)
+  end
+end
+
+function Transport:get_shuffle_enabled()
+  return self.shuffle_enabled
 end
 
 function Transport:set_loop_playlist(enabled)

@@ -308,6 +308,26 @@ function TransportView:build_playback_buttons(bridge_state)
   return {
     {
       type = "button",
+      id = "transport_shuffle",
+      align = "center",
+      width = 60,
+      config = {
+        label = "Shuffle",
+        is_toggled = bridge_state.shuffle_enabled or false,
+        preset_name = "BUTTON_TOGGLE_WHITE",
+        tooltip = "Shuffle Playlist Order",
+        on_click = function()
+          local bridge = self.state.get_bridge()
+          local engine = bridge.engine
+          if engine then
+            local current_state = engine:get_shuffle_enabled()
+            engine:set_shuffle_enabled(not current_state)
+          end
+        end,
+      },
+    },
+    {
+      type = "button",
       id = "transport_override",
       align = "center",
       width = 130,
@@ -557,6 +577,7 @@ function TransportView:draw(ctx, shell_state, is_blocking)
     loop_enabled = bridge:get_loop_playlist(),
     override_enabled = engine and engine:get_transport_override() or false,
     follow_viewport = engine and engine:get_follow_viewport() or false,
+    shuffle_enabled = engine and engine:get_shuffle_enabled() or false,
   }
 
   -- Inject icon font, size, and blocking state into corner buttons
