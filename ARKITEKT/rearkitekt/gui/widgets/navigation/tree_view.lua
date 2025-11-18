@@ -321,7 +321,8 @@ function M.draw(ctx, nodes, state, user_config)
 
   -- Global click-away check for inline rename
   -- Check AFTER all nodes are rendered to catch clicks anywhere (including below tree)
-  if state.renaming_node then
+  -- Only check if InputText has been shown at least once (prevents canceling on the frame rename starts)
+  if state.renaming_node and state.rename_focus_set then
     local input_active = state.rename_input_active or false
     local input_hovered = state.rename_input_hovered or false
 
