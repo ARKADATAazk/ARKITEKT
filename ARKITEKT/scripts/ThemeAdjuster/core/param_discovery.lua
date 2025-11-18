@@ -137,4 +137,76 @@ function M.get_colorthemes_dir()
   return dir
 end
 
+-- Detect if a parameter is a group header
+function M.is_group_header(param)
+  -- Group headers are typically toggles (0-1) with specific naming patterns
+  if param.min ~= 0 or param.max ~= 1 then
+    return false
+  end
+
+  -- Check if description suggests it's a group header
+  local desc = param.description or ""
+  if desc:match("Parameters?$") or desc:match("^%-+") or desc:match("^%s*$") then
+    return true
+  end
+
+  -- Check if name matches group header patterns
+  local name = param.name or ""
+  if name:match("Param$") or
+     name == "defaultV6" or
+     name == "reaperV6Def" or
+     name:match("^user_notice") then
+    return true
+  end
+
+  return false
+end
+
+-- Organize parameters into groups based on group headers
+function M.organize_into_groups(params)
+  local groups = {}
+  local current_group = {
+    name = "ungrouped",
+    display_name = "Ungrouped Parameters",
+    header_index = nil,
+    params = {}
+  }
+
+  for _, param in ipairs(params) do
+    if M.is_group_header(param) then
+      -- Save current group if it has parameters
+      if #current_group.params > 0 then
+        table.insert(groups, current_group)
+      end
+
+      -- Start new group
+      current_group = {
+        name = param.name,
+        display_name = param.description or param.name,
+        header_index = param.index,
+        params = {}
+      }
+    else
+      -- Add parameter to current group
+      table.insert(current_group.params, param)
+    end
+  end
+
+  -- Add final group
+  if #current_group.params > 0 then
+    table.insert(groups, current_group)
+  end
+
+  return groups
+end
+
+-- Get default disabled groups (V6 Parameters and notice lines)
+function M.get_default_disabled_groups()
+  return {
+    reaperV6Def = true,  -- V6 Parameters
+    user_notice = true,  -- Notice lines
+    user_notice_line = true,
+  }
+end
+
 return M

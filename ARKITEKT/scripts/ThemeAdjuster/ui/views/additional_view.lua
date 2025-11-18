@@ -53,8 +53,13 @@ function M.new(State, Config, settings)
     unknown_params = {},
     grouped_params = {},
 
+    -- Parameter groups (organized by group headers)
+    param_groups = {},
+    enabled_groups = {},  -- group_name -> true/false
+
     -- UI state
     dev_mode = false,
+    show_group_filter = false,  -- Show group filter dialog
 
     -- Tab assignments: param_name -> {TCP = true, MCP = false, ...}
     assignments = {},
@@ -80,13 +85,41 @@ function AdditionalView:refresh_params()
   self.all_params = ParamDiscovery.discover_all_params()
 
   -- Filter to only unknown params (not in ThemeParams.KNOWN_PARAMS)
-  self.unknown_params = ParamDiscovery.filter_unknown_params(
+  local all_unknown = ParamDiscovery.filter_unknown_params(
     self.all_params,
     ThemeParams.KNOWN_PARAMS or {}
   )
 
-  -- Group by category
+  -- Organize into groups based on group headers
+  self.param_groups = ParamDiscovery.organize_into_groups(all_unknown)
+
+  -- Initialize enabled_groups if not already set
+  if not next(self.enabled_groups) then
+    local disabled_by_default = ParamDiscovery.get_default_disabled_groups()
+    for _, group in ipairs(self.param_groups) do
+      -- Disable groups that are in the default disabled list
+      self.enabled_groups[group.name] = not disabled_by_default[group.name]
+    end
+  end
+
+  -- Filter unknown_params based on enabled groups
+  self:apply_group_filter()
+
+  -- Group by category (for existing UI)
   self.grouped_params = ParamDiscovery.group_by_category(self.unknown_params)
+end
+
+function AdditionalView:apply_group_filter()
+  -- Build filtered list of params based on enabled groups
+  self.unknown_params = {}
+
+  for _, group in ipairs(self.param_groups) do
+    if self.enabled_groups[group.name] then
+      for _, param in ipairs(group.params) do
+        table.insert(self.unknown_params, param)
+      end
+    end
+  end
 end
 
 function AdditionalView:draw(ctx, shell_state)
@@ -98,6 +131,27 @@ function AdditionalView:draw(ctx, shell_state)
   ImGui.PopFont(ctx)
 
   ImGui.SameLine(ctx, 0, 20)
+
+  -- Filter Groups button
+  if Button.draw_at_cursor(ctx, {
+    label = "Filter Groups",
+    width = 120,
+    height = 24,
+    on_click = function()
+      self.show_group_filter = not self.show_group_filter
+    end
+  }, "filter_groups") then
+  end
+
+  if ImGui.IsItemHovered(ctx) then
+    local enabled_count = 0
+    for _, enabled in pairs(self.enabled_groups) do
+      if enabled then enabled_count = enabled_count + 1 end
+    end
+    ImGui.SetTooltip(ctx, string.format("Show/hide parameter groups (%d/%d enabled)", enabled_count, #self.param_groups))
+  end
+
+  ImGui.SameLine(ctx, 0, 8)
 
   -- Export button
   local theme_name = ParamDiscovery.get_current_theme_name()
@@ -169,6 +223,131 @@ function AdditionalView:draw(ctx, shell_state)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)
+
+  -- Group filter dialog
+  if self.show_group_filter then
+    self:draw_group_filter_dialog(ctx, shell_state)
+  end
+end
+
+function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
+  -- Center the window
+  local window_w = 500
+  local window_h = 400
+  local viewport = ImGui.GetMainViewport(ctx)
+  local _, _, display_w, display_h = ImGui.Viewport_GetWorkSize(viewport)
+  ImGui.SetNextWindowPos(ctx, (display_w - window_w) / 2, (display_h - window_h) / 2, ImGui.Cond_Appearing)
+  ImGui.SetNextWindowSize(ctx, window_w, window_h, ImGui.Cond_Appearing)
+
+  local flags = ImGui.WindowFlags_NoCollapse
+  local visible, open = ImGui.Begin(ctx, "Parameter Group Filter##group_filter", true, flags)
+
+  if visible then
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
+    ImGui.Text(ctx, "Enable/Disable Parameter Groups")
+    ImGui.PopFont(ctx)
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
+    ImGui.Text(ctx, "Only parameters from enabled groups will be shown in the Additional tab")
+    ImGui.PopStyleColor(ctx)
+
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Buttons
+    if Button.draw_at_cursor(ctx, {
+      label = "Enable All",
+      width = 100,
+      height = 24,
+      on_click = function()
+        for group_name, _ in pairs(self.enabled_groups) do
+          self.enabled_groups[group_name] = true
+        end
+        self:apply_group_filter()
+        self:save_group_filter()
+      end
+    }, "enable_all_groups") then
+    end
+
+    ImGui.SameLine(ctx, 0, 8)
+
+    if Button.draw_at_cursor(ctx, {
+      label = "Disable All",
+      width = 100,
+      height = 24,
+      on_click = function()
+        for group_name, _ in pairs(self.enabled_groups) do
+          self.enabled_groups[group_name] = false
+        end
+        self:apply_group_filter()
+        self:save_group_filter()
+      end
+    }, "disable_all_groups") then
+    end
+
+    ImGui.SameLine(ctx, 0, 8)
+
+    if Button.draw_at_cursor(ctx, {
+      label = "Reset to Defaults",
+      width = 130,
+      height = 24,
+      on_click = function()
+        local disabled_by_default = ParamDiscovery.get_default_disabled_groups()
+        for _, group in ipairs(self.param_groups) do
+          self.enabled_groups[group.name] = not disabled_by_default[group.name]
+        end
+        self:apply_group_filter()
+        self:save_group_filter()
+      end
+    }, "reset_groups") then
+    end
+
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Group list
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+    if ImGui.BeginChild(ctx, "group_list", 0, -32, 1) then
+      ImGui.Indent(ctx, 8)
+      ImGui.Dummy(ctx, 0, 4)
+
+      for i, group in ipairs(self.param_groups) do
+        local is_enabled = self.enabled_groups[group.name]
+        local param_count = #group.params
+
+        -- Checkbox
+        if Checkbox.draw_at_cursor(ctx, "", is_enabled, nil, "group_check_" .. i) then
+          self.enabled_groups[group.name] = not is_enabled
+          self:apply_group_filter()
+          self:save_group_filter()
+        end
+
+        -- Group info
+        ImGui.SameLine(ctx, 0, 8)
+        ImGui.AlignTextToFramePadding(ctx)
+
+        local display_text = string.format("%s (%d params)", group.display_name, param_count)
+        if is_enabled then
+          ImGui.Text(ctx, display_text)
+        else
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+          ImGui.Text(ctx, display_text)
+          ImGui.PopStyleColor(ctx)
+        end
+
+        ImGui.Dummy(ctx, 0, 2)
+      end
+
+      ImGui.Unindent(ctx, 8)
+      ImGui.Dummy(ctx, 0, 4)
+      ImGui.EndChild(ctx)
+    end
+    ImGui.PopStyleColor(ctx)
+
+    ImGui.End(ctx)
+  end
+
+  if not open then
+    self.show_group_filter = false
+  end
 end
 
 function AdditionalView:draw_param_row(ctx, param, shell_state)
@@ -396,6 +575,16 @@ function AdditionalView:load_assignments()
   else
     self.custom_metadata = {}
   end
+
+  -- Load group filter state
+  if mappings and mappings.enabled_groups then
+    -- Merge with current enabled_groups (in case new groups were added)
+    for group_name, enabled in pairs(mappings.enabled_groups) do
+      self.enabled_groups[group_name] = enabled
+    end
+    -- Re-apply filter with loaded settings
+    self:apply_group_filter()
+  end
 end
 
 function AdditionalView:set_cache_invalidation_callback(callback)
@@ -404,8 +593,8 @@ function AdditionalView:set_cache_invalidation_callback(callback)
 end
 
 function AdditionalView:save_assignments()
-  -- Save assignments and metadata to JSON file
-  local success = ThemeMapper.save_assignments(self.assignments, self.custom_metadata)
+  -- Save assignments, metadata, and group filter to JSON file
+  local success = ThemeMapper.save_assignments(self.assignments, self.custom_metadata, self.enabled_groups)
 
   -- Invalidate TCP/MCP caches so they pick up the new assignments
   if self.cache_invalidation_callback then
@@ -413,6 +602,16 @@ function AdditionalView:save_assignments()
   end
 
   return success
+end
+
+function AdditionalView:save_group_filter()
+  -- Save only group filter state (lightweight save)
+  ThemeMapper.save_assignments(self.assignments, self.custom_metadata, self.enabled_groups)
+
+  -- Invalidate TCP/MCP caches since filtering might affect visible params
+  if self.cache_invalidation_callback then
+    self.cache_invalidation_callback()
+  end
 end
 
 function AdditionalView:get_assigned_params(tab_id)
