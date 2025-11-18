@@ -244,17 +244,24 @@ local function render_tree_node(ctx, node, config, state, depth)
         -- Multi-select mode
         if shift_down and state.last_clicked_node then
           -- Range selection: select all nodes between last clicked and current
+          reaper.ShowConsoleMsg("SHIFT-CLICK DETECTED: last=" .. tostring(state.last_clicked_node) .. " current=" .. tostring(node_id) .. "\n")
+
           if not state._flat_node_list then
+            reaper.ShowConsoleMsg("  ERROR: flat_node_list is nil!\n")
             state._flat_node_list = {}
+          else
+            reaper.ShowConsoleMsg("  flat_node_list has " .. #state._flat_node_list .. " items\n")
           end
 
           local start_idx, end_idx
           for i, flat_node_id in ipairs(state._flat_node_list) do
             if flat_node_id == state.last_clicked_node then
               start_idx = i
+              reaper.ShowConsoleMsg("  Found last_clicked at index " .. i .. "\n")
             end
             if flat_node_id == node_id then
               end_idx = i
+              reaper.ShowConsoleMsg("  Found current at index " .. i .. "\n")
             end
           end
 
@@ -269,16 +276,22 @@ local function render_tree_node(ctx, node, config, state, depth)
             end
 
             -- Select range
+            reaper.ShowConsoleMsg("  Selecting range " .. start_idx .. " to " .. end_idx .. "\n")
             for i = start_idx, end_idx do
               state.selected_nodes[state._flat_node_list[i]] = true
             end
+          else
+            reaper.ShowConsoleMsg("  ERROR: Could not find start or end index! start=" .. tostring(start_idx) .. " end=" .. tostring(end_idx) .. "\n")
           end
         elseif ctrl_down then
           -- Toggle selection
+          reaper.ShowConsoleMsg("CTRL-CLICK: Toggling " .. tostring(node_id) .. "\n")
           if state.selected_nodes[node_id] then
             state.selected_nodes[node_id] = nil
+            reaper.ShowConsoleMsg("  Deselected\n")
           else
             state.selected_nodes[node_id] = true
+            reaper.ShowConsoleMsg("  Selected\n")
           end
           state.last_clicked_node = node_id
         else
@@ -442,6 +455,10 @@ function M.draw(ctx, nodes, state, user_config)
   if config.enable_multi_select then
     _node_counter = 0
     state._flat_node_list = build_flat_node_list(nodes)
+    reaper.ShowConsoleMsg("Built flat_node_list with " .. #state._flat_node_list .. " items:\n")
+    for i, id in ipairs(state._flat_node_list) do
+      reaper.ShowConsoleMsg("  [" .. i .. "] = " .. tostring(id) .. "\n")
+    end
   end
 
   -- Reset counter for consistent IDs
