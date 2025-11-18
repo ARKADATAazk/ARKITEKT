@@ -182,11 +182,14 @@ function AdditionalView:draw_control(ctx, param, width)
 
   if param.type == "toggle" then
     -- Checkbox for 0/1 toggles
+    ImGui.Dummy(ctx, 0, 2)  -- Top padding
     local is_checked = (param.value ~= 0)
     if Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "param_" .. param.index) then
       changed = true
       new_value = is_checked and 0 or 1
     end
+    ImGui.SameLine(ctx, 0, 0)  -- Keep on same line
+    ImGui.Dummy(ctx, 0, 2)  -- Bottom padding
 
   elseif param.type == "spinner" then
     -- Spinner for discrete values

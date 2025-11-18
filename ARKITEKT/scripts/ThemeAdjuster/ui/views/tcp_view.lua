@@ -166,7 +166,7 @@ end
 function TCPView:get_default_layout()
   -- Get the default TCP layout (returns layout name like "A", "B", "C")
   local ok, layout_name = pcall(reaper.ThemeLayout_GetLayout, "tcp", -1)
-  if ok and layout_name then
+  if ok and layout_name and type(layout_name) == "string" then
     -- Extract just the layout letter (might be "A", "150%_B", etc.)
     local layout = string.match(layout_name, "([ABC])") or "A"
     return layout
