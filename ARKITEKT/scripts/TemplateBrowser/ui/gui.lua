@@ -227,9 +227,9 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   -- Add virtual ROOT node at the top
   local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
   local root_node = {
-    id = "",  -- Empty path represents root
+    id = "__ROOT__",  -- Unique ID for ImGui (must not be empty)
     name = "ROOT",
-    path = "",
+    path = "",  -- Relative path is empty (represents TrackTemplates root)
     full_path = template_path,
     children = {},
     is_root = true,  -- Flag to identify root node
@@ -257,8 +257,8 @@ local function draw_folder_tree(ctx, state, config)
   end
 
   -- Ensure ROOT node is open by default
-  if state.folder_open_state[""] == nil then
-    state.folder_open_state[""] = true
+  if state.folder_open_state["__ROOT__"] == nil then
+    state.folder_open_state["__ROOT__"] = true
   end
 
   -- Map state variables to TreeView format
@@ -808,7 +808,7 @@ local function draw_directory_content(ctx, state, config, width, height)
       if parent_relative_path ~= "" then
         state.folder_open_state[parent_relative_path] = true
       end
-      state.folder_open_state[""] = true  -- Open ROOT
+      state.folder_open_state["__ROOT__"] = true  -- Open ROOT
 
       -- Show status message
       state.set_status("Created folder: " .. new_folder_name, "success")
