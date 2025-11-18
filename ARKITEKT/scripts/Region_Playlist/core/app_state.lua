@@ -480,6 +480,10 @@ function M.restore_snapshot(snapshot)
 
   M.persist()
   M.clear_pending()
+
+  -- Refresh region cache to show updated region colors/names in UI
+  M.refresh_regions()
+
   if M.bridge then
     M.bridge:get_sequence()
   end
