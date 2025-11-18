@@ -441,17 +441,10 @@ function AdditionalView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 8)
 
-    -- Draw active assignment grid
+    -- Draw active assignment grid (ALWAYS draw, even when empty, to accept drops!)
     local active_grid = self.assignment_grids[self.active_assignment_tab]
     if active_grid then
-      local assigned_count = #self.assignments[self.active_assignment_tab]
-      if assigned_count == 0 then
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-        ImGui.Text(ctx, "Drag parameters here to assign")
-        ImGui.PopStyleColor(ctx)
-      else
-        active_grid:draw(ctx)
-      end
+      active_grid:draw(ctx)
     end
 
     ImGui.Unindent(ctx, 8)
