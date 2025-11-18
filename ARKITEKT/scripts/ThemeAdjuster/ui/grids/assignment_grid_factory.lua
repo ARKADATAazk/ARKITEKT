@@ -11,6 +11,15 @@ local M = {}
 
 local function create_behaviors(view, tab_id)
   return {
+    drag_start = function(item_keys)
+      -- When GridBridge exists, let it handle the drag coordination
+      if view.bridge then
+        return
+      end
+
+      -- Fallback: no bridge, handle drag locally (not used in ThemeAdjuster)
+    end,
+
     reorder = function(new_order)
       -- Handle reordering within assignment grid
       view:reorder_assignments(tab_id, new_order)

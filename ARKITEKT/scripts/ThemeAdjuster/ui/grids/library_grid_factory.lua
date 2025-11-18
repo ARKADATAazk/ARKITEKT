@@ -12,25 +12,12 @@ local M = {}
 local function create_behaviors(view)
   return {
     drag_start = function(item_keys)
-      -- Prepare payload with parameter names
-      local payload = {}
-      local params = view:get_library_items()
-      local params_by_key = {}
-      for _, param in ipairs(params) do
-        params_by_key[view.library_grid.key(param)] = param
-      end
-
-      for _, key in ipairs(item_keys) do
-        local param = params_by_key[key]
-        if param then
-          table.insert(payload, param.name)
-        end
-      end
-
-      -- Start drag via GridBridge
+      -- When GridBridge exists, let it handle the drag coordination
       if view.bridge then
-        view.bridge:start_drag('library', payload)
+        return
       end
+
+      -- Fallback: no bridge, handle drag locally (not used in ThemeAdjuster)
     end,
 
     on_select = function(selected_keys)
