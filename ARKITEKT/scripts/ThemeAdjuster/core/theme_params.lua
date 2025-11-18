@@ -219,6 +219,14 @@ M.SPINNER_VALUES = {
   mcp_align = {'BOTTOM', 'CENTER'},
   mcp_meterExpSize = {4, 10, 20, 40, 80, 160, 320},
   mcp_border = {'NONE', 'FILLED', 'BORDER'},
+  mcp_volText_pos = {'NORMAL', 'SEPARATE'},
+  mcp_panText_pos = {'NORMAL', 'SEPARATE'},
+  mcp_extmixer_mode = {'OFF', '1', '2', '3'},
+  mcp_labelSize = {'MIN', 50, 75, 100, 125, 150},
+  mcp_volSize = {'MIN', 40, 60, 80, 100, 120},
+  mcp_fxlist_size = {'MIN', 80, 120, 160, 200},
+  mcp_sendlist_size = {'MIN', 60, 90, 120, 150},
+  mcp_io_size = {'MIN', 50, 75, 100, 125},
 
   -- ENVCP
   envcp_labelSize = {'MIN', 50, 75, 100, 125, 150},

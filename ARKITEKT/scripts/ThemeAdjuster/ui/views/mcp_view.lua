@@ -8,6 +8,7 @@ local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 local Style = require('rearkitekt.gui.style.defaults')
+local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -78,7 +79,7 @@ function M.new(State, Config, settings)
     mcp_io_size_idx = 1,
 
     -- Active layout (A/B/C)
-    active_layout = 'A',
+    active_layout = ThemeParams.get_active_layout('mcp'),
 
     -- Toggles
     hide_mcp_master = false,
@@ -100,8 +101,41 @@ function M.new(State, Config, settings)
 end
 
 function MCPView:load_from_theme()
-  -- TODO: Load spinner indices from theme parameters
-  -- For now, keep defaults
+  -- Load spinner values from current layout's theme parameters
+  -- NOTE: REAPER parameter values ARE already 1-based spinner indices
+  local spinners = {
+    'mcp_meterExpSize', 'mcp_border', 'mcp_volText_pos', 'mcp_panText_pos',
+    'mcp_extmixer_mode', 'mcp_labelSize', 'mcp_volSize',
+    'mcp_fxlist_size', 'mcp_sendlist_size', 'mcp_io_size'
+  }
+
+  for _, param_name in ipairs(spinners) do
+    local param = ThemeParams.get_param(param_name)
+    if param then
+      local idx_field = param_name .. '_idx'
+      -- REAPER value is already a 1-based index - use it directly
+      self[idx_field] = param.value
+    end
+  end
+
+  -- Load global parameters (affect all layouts)
+  local global_params = {'mcp_indent', 'mcp_align'}
+  for _, param_name in ipairs(global_params) do
+    local param = ThemeParams.get_param(param_name)
+    if param then
+      local idx_field = param_name .. '_idx'
+      -- REAPER value is already a 1-based index - use it directly
+      self[idx_field] = param.value
+    end
+  end
+
+  -- Load visibility flags
+  for _, elem in ipairs(VISIBILITY_ELEMENTS) do
+    local param = ThemeParams.get_param(elem.id)
+    if param then
+      self.visibility[elem.id] = param.value
+    end
+  end
 end
 
 function MCPView:get_param_index(param_name)
@@ -186,7 +220,8 @@ function MCPView:draw(ctx, shell_state)
         preset_name = "BUTTON_TOGGLE_WHITE",
         on_click = function()
           self.active_layout = layout
-          -- TODO: Apply layout
+          ThemeParams.set_active_layout('mcp', layout)
+          self:load_from_theme()
         end
       }, "mcp_layout_" .. layout) then
       end
@@ -207,7 +242,8 @@ function MCPView:draw(ctx, shell_state)
         width = 70,
         height = 24,
         on_click = function()
-          -- TODO: Apply size
+          local scale = (size == '100%') and '' or (size .. '_')
+          ThemeParams.apply_layout_to_tracks('mcp', self.active_layout, scale)
         end
       }, "mcp_size_" .. size) then
       end
@@ -257,16 +293,28 @@ function MCPView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 3)
 
     local changed, new_idx = draw_spinner_row("Indent", "mcp_indent", self.mcp_indent_idx, SPINNER_VALUES.mcp_indent)
-    if changed then self.mcp_indent_idx = new_idx end
+    if changed then
+      self.mcp_indent_idx = new_idx
+      ThemeParams.set_param('mcp_indent', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Alignment", "mcp_align", self.mcp_align_idx, SPINNER_VALUES.mcp_align)
-    if changed then self.mcp_align_idx = new_idx end
+    if changed then
+      self.mcp_align_idx = new_idx
+      ThemeParams.set_param('mcp_align', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Border", "mcp_border", self.mcp_border_idx, SPINNER_VALUES.mcp_border)
-    if changed then self.mcp_border_idx = new_idx end
+    if changed then
+      self.mcp_border_idx = new_idx
+      ThemeParams.set_param('mcp_border', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Ext Mixer", "mcp_extmixer_mode", self.mcp_extmixer_mode_idx, SPINNER_VALUES.mcp_extmixer_mode)
-    if changed then self.mcp_extmixer_mode_idx = new_idx end
+    if changed then
+      self.mcp_extmixer_mode_idx = new_idx
+      ThemeParams.set_param('mcp_extmixer_mode', new_idx, true)
+    end
 
     ImGui.EndGroup(ctx)
 
@@ -279,16 +327,28 @@ function MCPView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 3)
 
     changed, new_idx = draw_spinner_row("Label", "mcp_labelSize", self.mcp_labelSize_idx, SPINNER_VALUES.mcp_labelSize)
-    if changed then self.mcp_labelSize_idx = new_idx end
+    if changed then
+      self.mcp_labelSize_idx = new_idx
+      ThemeParams.set_param('mcp_labelSize', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Volume", "mcp_volSize", self.mcp_volSize_idx, SPINNER_VALUES.mcp_volSize)
-    if changed then self.mcp_volSize_idx = new_idx end
+    if changed then
+      self.mcp_volSize_idx = new_idx
+      ThemeParams.set_param('mcp_volSize', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Meter Exp", "mcp_meterExpSize", self.mcp_meterExpSize_idx, SPINNER_VALUES.mcp_meterExpSize)
-    if changed then self.mcp_meterExpSize_idx = new_idx end
+    if changed then
+      self.mcp_meterExpSize_idx = new_idx
+      ThemeParams.set_param('mcp_meterExpSize', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("I/O", "mcp_io_size", self.mcp_io_size_idx, SPINNER_VALUES.mcp_io_size)
-    if changed then self.mcp_io_size_idx = new_idx end
+    if changed then
+      self.mcp_io_size_idx = new_idx
+      ThemeParams.set_param('mcp_io_size', new_idx, true)
+    end
 
     ImGui.EndGroup(ctx)
 
@@ -301,16 +361,28 @@ function MCPView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 3)
 
     changed, new_idx = draw_spinner_row("FX List", "mcp_fxlist_size", self.mcp_fxlist_size_idx, SPINNER_VALUES.mcp_fxlist_size)
-    if changed then self.mcp_fxlist_size_idx = new_idx end
+    if changed then
+      self.mcp_fxlist_size_idx = new_idx
+      ThemeParams.set_param('mcp_fxlist_size', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Send List", "mcp_sendlist_size", self.mcp_sendlist_size_idx, SPINNER_VALUES.mcp_sendlist_size)
-    if changed then self.mcp_sendlist_size_idx = new_idx end
+    if changed then
+      self.mcp_sendlist_size_idx = new_idx
+      ThemeParams.set_param('mcp_sendlist_size', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Vol Text", "mcp_volText_pos", self.mcp_volText_pos_idx, SPINNER_VALUES.mcp_volText_pos)
-    if changed then self.mcp_volText_pos_idx = new_idx end
+    if changed then
+      self.mcp_volText_pos_idx = new_idx
+      ThemeParams.set_param('mcp_volText_pos', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Pan Text", "mcp_panText_pos", self.mcp_panText_pos_idx, SPINNER_VALUES.mcp_panText_pos)
-    if changed then self.mcp_panText_pos_idx = new_idx end
+    if changed then
+      self.mcp_panText_pos_idx = new_idx
+      ThemeParams.set_param('mcp_panText_pos', new_idx, true)
+    end
 
     ImGui.EndGroup(ctx)
 
