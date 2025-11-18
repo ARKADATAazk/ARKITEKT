@@ -244,10 +244,21 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
     end
 
-    -- Handle right-click (but not when renaming)
-    if tree_item_right_clicked and not is_renaming then
-      if config.on_right_click then
-        config.on_right_click(node)
+    -- Handle right-click context menu (but not when renaming)
+    if not is_renaming and config.context_menu_id then
+      -- Use OpenPopupOnItemClick for proper right-click handling
+      ImGui.OpenPopupOnItemClick(ctx, config.context_menu_id, ImGui.PopupFlags_MouseButtonRight)
+
+      -- Notify callback that this node was right-clicked (for setting state)
+      if ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Right) and tree_item_hovered then
+        if config.on_right_click then
+          config.on_right_click(node)
+        end
+      end
+
+      -- Render context menu if callback provided
+      if config.render_context_menu then
+        config.render_context_menu(ctx, node)
       end
     end
 

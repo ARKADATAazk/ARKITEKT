@@ -254,6 +254,7 @@ local function draw_folder_tree(ctx, state, config)
     enable_rename = true,
     show_colors = true,
     enable_drag_drop = true,  -- Enable folder drag-and-drop
+    context_menu_id = "folder_context_menu",  -- Enable context menu
 
     -- Selection callback
     on_select = function(node)
@@ -375,10 +376,72 @@ local function draw_folder_tree(ctx, state, config)
       end
     end,
 
-    -- Right-click callback
+    -- Right-click callback (sets state for context menu)
     on_right_click = function(node)
       state.context_menu_node = node
-      ImGui.OpenPopup(ctx, "folder_context_menu")
+    end,
+
+    -- Context menu renderer (called inline by TreeView)
+    render_context_menu = function(ctx_inner, node)
+      local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
+      local Colors = require('rearkitekt.core.colors')
+
+      if ContextMenu.begin(ctx_inner, "folder_context_menu") then
+        -- Predefined color palette
+        local color_options = {
+          { name = "None", color = nil },
+          { name = "Red", color = Colors.hexrgb("#FF6B6BFF") },
+          { name = "Orange", color = Colors.hexrgb("#FFA500FF") },
+          { name = "Yellow", color = Colors.hexrgb("#FFD93DFF") },
+          { name = "Green", color = Colors.hexrgb("#6BCF7FFF") },
+          { name = "Blue", color = Colors.hexrgb("#4A9EFFFF") },
+          { name = "Purple", color = Colors.hexrgb("#B57FFFFF") },
+          { name = "Pink", color = Colors.hexrgb("#FF69B4FF") },
+        }
+
+        for _, color_opt in ipairs(color_options) do
+          if ContextMenu.item(ctx_inner, color_opt.name) then
+            -- Update folder color in metadata
+            local Persistence = require('TemplateBrowser.domain.persistence')
+
+            if not state.metadata.folders then
+              state.metadata.folders = {}
+            end
+
+            -- Find or create folder metadata entry
+            local folder_uuid = nil
+            for uuid, folder in pairs(state.metadata.folders) do
+              if folder.path == node.path then
+                folder_uuid = uuid
+                break
+              end
+            end
+
+            if not folder_uuid then
+              -- Create new metadata entry
+              folder_uuid = reaper.genGuid("")
+              state.metadata.folders[folder_uuid] = {
+                path = node.path,
+                name = node.name,
+              }
+            end
+
+            -- Set color
+            state.metadata.folders[folder_uuid].color = color_opt.color
+
+            -- Save metadata
+            Persistence.save_metadata(state.metadata)
+
+            -- Rescan to update UI
+            local Scanner = require('TemplateBrowser.domain.scanner')
+            Scanner.scan_templates(state)
+
+            ImGui.CloseCurrentPopup(ctx_inner)
+          end
+        end
+
+        ContextMenu.end_menu(ctx_inner)
+      end
     end,
 
     -- Rename callback
@@ -457,71 +520,6 @@ local function draw_folder_tree(ctx, state, config)
   state.selected_folder = tree_state.selected_node
   state.renaming_folder_path = tree_state.renaming_node
   state.rename_buffer = tree_state.rename_buffer
-
-  -- Render folder context menu (must check state.context_menu_node first)
-  if state.context_menu_node then
-    local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
-    local Colors = require('rearkitekt.core.colors')
-
-    if ContextMenu.begin(ctx, "folder_context_menu") then
-      -- Predefined color palette
-      local color_options = {
-        { name = "None", color = nil },
-        { name = "Red", color = Colors.hexrgb("#FF6B6BFF") },
-        { name = "Orange", color = Colors.hexrgb("#FFA500FF") },
-        { name = "Yellow", color = Colors.hexrgb("#FFD93DFF") },
-        { name = "Green", color = Colors.hexrgb("#6BCF7FFF") },
-        { name = "Blue", color = Colors.hexrgb("#4A9EFFFF") },
-        { name = "Purple", color = Colors.hexrgb("#B57FFFFF") },
-        { name = "Pink", color = Colors.hexrgb("#FF69B4FF") },
-      }
-
-      for _, color_opt in ipairs(color_options) do
-        if ContextMenu.item(ctx, color_opt.name) then
-          -- Update folder color in metadata
-          local Persistence = require('TemplateBrowser.domain.persistence')
-
-          if not state.metadata.folders then
-            state.metadata.folders = {}
-          end
-
-          -- Find or create folder metadata entry
-          local folder_uuid = nil
-          for uuid, folder in pairs(state.metadata.folders) do
-            if folder.path == state.context_menu_node.path then
-              folder_uuid = uuid
-              break
-            end
-          end
-
-          if not folder_uuid then
-            -- Create new metadata entry
-            folder_uuid = reaper.genGuid("")
-            state.metadata.folders[folder_uuid] = {
-              path = state.context_menu_node.path,
-              name = state.context_menu_node.name,
-            }
-          end
-
-          -- Set color
-          state.metadata.folders[folder_uuid].color = color_opt.color
-
-          -- Save metadata
-          Persistence.save_metadata(state.metadata)
-
-          -- Rescan to update UI
-          local Scanner = require('TemplateBrowser.domain.scanner')
-          Scanner.scan_templates(state)
-
-          -- Clear context menu node and close popup
-          state.context_menu_node = nil
-          ImGui.CloseCurrentPopup(ctx)
-        end
-      end
-
-      ContextMenu.end_menu(ctx)
-    end
-  end
 end
 
 -- Tags list for bottom of directory tab (with filtering)
