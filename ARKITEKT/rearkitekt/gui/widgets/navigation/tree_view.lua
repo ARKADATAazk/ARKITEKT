@@ -240,6 +240,9 @@ local function render_tree_node(ctx, node, config, state, depth)
       local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
       local shift_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
 
+      -- Debug: show what keys are pressed
+      reaper.ShowConsoleMsg("CLICK: ctrl=" .. tostring(ctrl_down) .. " shift=" .. tostring(shift_down) .. " last_clicked=" .. tostring(state.last_clicked_node) .. "\n")
+
       if config.enable_multi_select and state.selected_nodes then
         -- Multi-select mode
         if shift_down and state.last_clicked_node then
