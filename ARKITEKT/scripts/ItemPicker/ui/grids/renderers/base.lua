@@ -117,31 +117,18 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
   local time = reaper.time_precise()
   local rotation = (time * 3) % (math.pi * 2)  -- Rotates every ~2 seconds
 
-  -- Draw ring arc (3/4 circle, 1/4 gap)
+  -- Draw ring arc (3/4 circle, 1/4 gap) using PathArcTo
   local arc_length = math.pi * 1.5  -- 270 degrees (3/4 of circle)
-  local segments = 24
-  local thickness = math.max(1.5, size * 0.15)
+  local thickness = math.max(2, size * 0.2)
 
-  -- Draw the arc as a series of line segments
-  for i = 0, segments do
-    local t = i / segments
-    local angle = rotation + (t * arc_length)
-    local next_angle = rotation + ((i + 1) / segments * arc_length)
+  -- Start angle and end angle
+  local start_angle = rotation - math.pi / 2  -- Start at top
+  local end_angle = start_angle + arc_length
 
-    local x1_inner = center_x + math.cos(angle) * (size - thickness / 2)
-    local y1_inner = center_y + math.sin(angle) * (size - thickness / 2)
-    local x1_outer = center_x + math.cos(angle) * (size + thickness / 2)
-    local y1_outer = center_y + math.sin(angle) * (size + thickness / 2)
-
-    local x2_inner = center_x + math.cos(next_angle) * (size - thickness / 2)
-    local y2_inner = center_y + math.sin(next_angle) * (size - thickness / 2)
-    local x2_outer = center_x + math.cos(next_angle) * (size + thickness / 2)
-    local y2_outer = center_y + math.sin(next_angle) * (size + thickness / 2)
-
-    -- Draw quad for this segment
-    ImGui.DrawList_AddQuadFilled(dl, x1_outer, y1_outer, x2_outer, y2_outer,
-                                      x2_inner, y2_inner, x1_inner, y1_inner, spinner_color)
-  end
+  -- Draw the arc path
+  ImGui.DrawList_PathClear(dl)
+  ImGui.DrawList_PathArcTo(dl, center_x, center_y, size, start_angle, end_angle, 24)
+  ImGui.DrawList_PathStroke(dl, spinner_color, 0, thickness)
 end
 
 -- Render text with badge
