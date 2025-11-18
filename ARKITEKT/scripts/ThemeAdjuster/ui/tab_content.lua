@@ -27,16 +27,19 @@ function M.new(State, Config, settings)
     last_tab_id = nil,  -- Track tab changes for cache clearing
   }, TabContent)
 
+  -- Create AdditionalView first (holds shared assignment state)
+  local additional_view = AdditionalView.new(State, Config, settings)
+
   -- Register all views in a table for clean lookup
   self.views = {
     ASSEMBLER = AssemblerView.new(State, Config, settings),
     GLOBAL = GlobalView.new(State, Config, settings),
-    TCP = TCPView.new(State, Config, settings),
-    MCP = MCPView.new(State, Config, settings),
+    TCP = TCPView.new(State, Config, settings, additional_view),
+    MCP = MCPView.new(State, Config, settings, additional_view),
     TRANSPORT = TransportView.new(State, Config, settings),
     ENVELOPES = EnvelopeView.new(State, Config, settings),
     COLORS = ColorsView.new(State, Config, settings),
-    ADDITIONAL = AdditionalView.new(State, Config, settings),
+    ADDITIONAL = additional_view,
     DEBUG = DebugView.new(State, Config, settings),
   }
 

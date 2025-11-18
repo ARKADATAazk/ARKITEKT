@@ -53,11 +53,12 @@ local VISIBILITY_COLUMNS = {
   {bit = 8, label = 'IF TRACK NOT\nARMED'},
 }
 
-function M.new(State, Config, settings)
+function M.new(State, Config, settings, additional_view)
   local self = setmetatable({
     State = State,
     Config = Config,
     settings = settings,
+    additional_view = additional_view,  -- Reference to shared assignment state
 
     -- Spinner indices (1-based)
     mcp_indent_idx = 1,
@@ -82,9 +83,6 @@ function M.new(State, Config, settings)
 
     -- Visibility values (loaded from theme)
     visibility = {},
-
-    -- Additional parameters assigned to this tab
-    additional_params = {},
   }, MCPView)
 
   -- Initialize visibility values
@@ -94,9 +92,6 @@ function M.new(State, Config, settings)
 
   -- Load initial values from theme
   self:load_from_theme()
-
-  -- Load assigned additional parameters
-  self:load_additional_params()
 
   return self
 end
@@ -185,45 +180,13 @@ function MCPView:set_default_layout(layout)
   return ok
 end
 
-function MCPView:load_additional_params()
-  -- Load parameters assigned to MCP tab from JSON
-  self.additional_params = {}
-
-  local mappings = ThemeMapper.load_current_mappings()
-  if not mappings or not mappings.assignments then
-    -- Debug: Check why no mappings
-    local json_path = ThemeMapper.find_companion_json()
-    if not json_path then
-      reaper.ShowConsoleMsg("MCP: No companion JSON found\n")
-    else
-      reaper.ShowConsoleMsg("MCP: JSON found at " .. json_path .. " but no assignments\n")
-    end
-    return
+function MCPView:get_additional_params()
+  -- Get parameters assigned to MCP tab from shared state
+  if not self.additional_view then
+    return {}
   end
 
-  -- Get all discovered parameters
-  local all_params = ParamDiscovery.discover_all_params()
-  reaper.ShowConsoleMsg("MCP: Discovered " .. #all_params .. " total params\n")
-
-  -- Debug: Print assignments
-  reaper.ShowConsoleMsg("MCP: Checking assignments...\n")
-  for param_name, assignment in pairs(mappings.assignments) do
-    if assignment.MCP then
-      reaper.ShowConsoleMsg("  - " .. param_name .. " is assigned to MCP\n")
-    end
-  end
-
-  -- Filter to params assigned to MCP
-  local count = 0
-  for _, param in ipairs(all_params) do
-    local assignment = mappings.assignments[param.name]
-    if assignment and assignment.MCP then
-      table.insert(self.additional_params, param)
-      count = count + 1
-    end
-  end
-
-  reaper.ShowConsoleMsg("MCP: Found " .. count .. " params assigned to MCP\n")
+  return self.additional_view:get_assigned_params("MCP")
 end
 
 function MCPView:draw_additional_param(ctx, param)
@@ -317,12 +280,10 @@ function MCPView:draw_additional_param(ctx, param)
 end
 
 function MCPView:draw(ctx, shell_state)
-  reaper.ShowConsoleMsg("MCP: draw() called\n")
-
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
-  -- Reload additional parameters (in case assignments changed)
-  self:load_additional_params()
+  -- Get assigned parameters from shared state
+  local additional_params = self:get_additional_params()
 
   -- Title
   ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
@@ -336,7 +297,7 @@ function MCPView:draw(ctx, shell_state)
   ImGui.Dummy(ctx, 0, 8)
 
   -- Determine if we need two columns
-  local has_additional = #self.additional_params > 0
+  local has_additional = #additional_params > 0
   local left_width = has_additional and (avail_w * 0.6) or avail_w
   local right_width = has_additional and (avail_w * 0.4 - 8) or 0
 
@@ -767,7 +728,7 @@ function MCPView:draw(ctx, shell_state)
       ImGui.PopFont(ctx)
       ImGui.Dummy(ctx, 0, 4)
 
-      for _, param in ipairs(self.additional_params) do
+      for _, param in ipairs(additional_params) do
         self:draw_additional_param(ctx, param)
       end
 

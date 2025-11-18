@@ -61,11 +61,12 @@ local VISIBILITY_COLUMNS = {
   {bit = 8, label = 'ALWAYS\nHIDE'},
 }
 
-function M.new(State, Config, settings)
+function M.new(State, Config, settings, additional_view)
   local self = setmetatable({
     State = State,
     Config = Config,
     settings = settings,
+    additional_view = additional_view,  -- Reference to shared assignment state
 
     -- Spinner indices (1-based)
     tcp_indent_idx = 1,
@@ -86,9 +87,6 @@ function M.new(State, Config, settings)
 
     -- Visibility values (loaded from theme)
     visibility = {},
-
-    -- Additional parameters assigned to this tab
-    additional_params = {},
   }, TCPView)
 
   -- Initialize visibility values
@@ -98,9 +96,6 @@ function M.new(State, Config, settings)
 
   -- Load initial values from theme
   self:load_from_theme()
-
-  -- Load assigned additional parameters
-  self:load_additional_params()
 
   return self
 end
@@ -189,45 +184,13 @@ function TCPView:set_default_layout(layout)
   return ok
 end
 
-function TCPView:load_additional_params()
-  -- Load parameters assigned to TCP tab from JSON
-  self.additional_params = {}
-
-  local mappings = ThemeMapper.load_current_mappings()
-  if not mappings or not mappings.assignments then
-    -- Debug: Check why no mappings
-    local json_path = ThemeMapper.find_companion_json()
-    if not json_path then
-      reaper.ShowConsoleMsg("TCP: No companion JSON found\n")
-    else
-      reaper.ShowConsoleMsg("TCP: JSON found at " .. json_path .. " but no assignments\n")
-    end
-    return
+function TCPView:get_additional_params()
+  -- Get parameters assigned to TCP tab from shared state
+  if not self.additional_view then
+    return {}
   end
 
-  -- Get all discovered parameters
-  local all_params = ParamDiscovery.discover_all_params()
-  reaper.ShowConsoleMsg("TCP: Discovered " .. #all_params .. " total params\n")
-
-  -- Debug: Print assignments
-  reaper.ShowConsoleMsg("TCP: Checking assignments...\n")
-  for param_name, assignment in pairs(mappings.assignments) do
-    if assignment.TCP then
-      reaper.ShowConsoleMsg("  - " .. param_name .. " is assigned to TCP\n")
-    end
-  end
-
-  -- Filter to params assigned to TCP
-  local count = 0
-  for _, param in ipairs(all_params) do
-    local assignment = mappings.assignments[param.name]
-    if assignment and assignment.TCP then
-      table.insert(self.additional_params, param)
-      count = count + 1
-    end
-  end
-
-  reaper.ShowConsoleMsg("TCP: Found " .. count .. " params assigned to TCP\n")
+  return self.additional_view:get_assigned_params("TCP")
 end
 
 function TCPView:draw_additional_param(ctx, param)
@@ -321,12 +284,10 @@ function TCPView:draw_additional_param(ctx, param)
 end
 
 function TCPView:draw(ctx, shell_state)
-  reaper.ShowConsoleMsg("TCP: draw() called\n")
-
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
-  -- Reload additional parameters (in case assignments changed)
-  self:load_additional_params()
+  -- Get assigned parameters from shared state
+  local additional_params = self:get_additional_params()
 
   -- Title
   ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
@@ -340,7 +301,7 @@ function TCPView:draw(ctx, shell_state)
   ImGui.Dummy(ctx, 0, 8)
 
   -- Determine if we need two columns
-  local has_additional = #self.additional_params > 0
+  local has_additional = #additional_params > 0
   local left_width = has_additional and (avail_w * 0.6) or avail_w
   local right_width = has_additional and (avail_w * 0.4 - 8) or 0
 
@@ -679,7 +640,7 @@ function TCPView:draw(ctx, shell_state)
       ImGui.PopFont(ctx)
       ImGui.Dummy(ctx, 0, 4)
 
-      for _, param in ipairs(self.additional_params) do
+      for _, param in ipairs(additional_params) do
         self:draw_additional_param(ctx, param)
       end
 

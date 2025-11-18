@@ -363,6 +363,26 @@ function AdditionalView:save_assignments()
   end
 end
 
+function AdditionalView:get_assigned_params(tab_id)
+  -- Return all parameters assigned to a specific tab
+  local assigned = {}
+
+  -- Get all discovered parameters
+  local all_params = ParamDiscovery.discover_all_params()
+
+  -- Filter to params assigned to this tab
+  for _, param in ipairs(all_params) do
+    local assignment = self.assignments[param.name]
+    if assignment and assignment[tab_id] then
+      table.insert(assigned, param)
+    end
+  end
+
+  reaper.ShowConsoleMsg(tab_id .. ": get_assigned_params() returning " .. #assigned .. " params\n")
+
+  return assigned
+end
+
 function AdditionalView:export_parameters()
   -- Export all unknown parameters to JSON
   local success, path_or_error = ThemeMapper.export_mappings(self.unknown_params)
