@@ -5,9 +5,12 @@
 local ImGui = require 'imgui' '0.10'
 local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
+local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 local Style = require('rearkitekt.gui.style.defaults')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
+local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
+local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
 local Tooltips = require('ThemeAdjuster.ui.tooltips')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
@@ -83,6 +86,9 @@ function M.new(State, Config, settings)
 
     -- Visibility values (loaded from theme)
     visibility = {},
+
+    -- Additional parameters assigned to this tab
+    additional_params = {},
   }, TCPView)
 
   -- Initialize visibility values
@@ -92,6 +98,9 @@ function M.new(State, Config, settings)
 
   -- Load initial values from theme
   self:load_from_theme()
+
+  -- Load assigned additional parameters
+  self:load_additional_params()
 
   return self
 end
@@ -178,6 +187,117 @@ function TCPView:set_default_layout(layout)
   -- Set the default TCP layout for new tracks
   local ok = pcall(reaper.ThemeLayout_SetLayout, "tcp", -1, layout)
   return ok
+end
+
+function TCPView:load_additional_params()
+  -- Load parameters assigned to TCP tab from JSON
+  self.additional_params = {}
+
+  local mappings = ThemeMapper.load_current_mappings()
+  if not mappings or not mappings.assignments then
+    return
+  end
+
+  -- Get all discovered parameters
+  local all_params = ParamDiscovery.discover_all_params()
+
+  -- Filter to params assigned to TCP
+  for _, param in ipairs(all_params) do
+    local assignment = mappings.assignments[param.name]
+    if assignment and assignment.TCP then
+      table.insert(self.additional_params, param)
+    end
+  end
+end
+
+function TCPView:draw_additional_param(ctx, param)
+  local label_w = 200
+  local control_w = 150
+
+  -- Label
+  ImGui.AlignTextToFramePadding(ctx)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+  ImGui.Text(ctx, param.name)
+  ImGui.PopStyleColor(ctx)
+
+  -- Tooltip
+  if ImGui.IsItemHovered(ctx) then
+    local tooltip = string.format(
+      "Parameter: %s\nType: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f",
+      param.name,
+      param.type,
+      param.min,
+      param.max,
+      param.default,
+      param.value
+    )
+    ImGui.SetTooltip(ctx, tooltip)
+  end
+
+  -- Control
+  ImGui.SameLine(ctx, label_w)
+
+  local changed = false
+  local new_value = param.value
+
+  if param.type == "toggle" then
+    local is_checked = (param.value ~= 0)
+    if Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "tcp_add_" .. param.index) then
+      changed = true
+      new_value = is_checked and 0 or 1
+    end
+
+  elseif param.type == "spinner" then
+    local values = {}
+    for i = param.min, param.max do
+      table.insert(values, tostring(i))
+    end
+
+    local current_idx = math.floor(param.value - param.min + 1)
+    current_idx = math.max(1, math.min(current_idx, #values))
+
+    local changed_spinner, new_idx = Spinner.draw(
+      ctx,
+      "##tcp_add_spinner_" .. param.index,
+      current_idx,
+      values,
+      {w = control_w, h = 24}
+    )
+
+    if changed_spinner then
+      changed = true
+      new_value = param.min + (new_idx - 1)
+    end
+
+  elseif param.type == "slider" then
+    ImGui.SetNextItemWidth(ctx, control_w)
+    local changed_slider, slider_value = ImGui.SliderDouble(
+      ctx,
+      "##tcp_add_slider_" .. param.index,
+      param.value,
+      param.min,
+      param.max,
+      "%.1f"
+    )
+
+    if changed_slider then
+      changed = true
+      new_value = slider_value
+    end
+
+  else
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+    ImGui.Text(ctx, string.format("%.1f", param.value))
+    ImGui.PopStyleColor(ctx)
+  end
+
+  if changed then
+    pcall(reaper.ThemeLayout_SetParameter, param.index, new_value, true)
+    pcall(reaper.ThemeLayout_RefreshAll)
+    param.value = new_value
+  end
+
+  ImGui.Dummy(ctx, 0, 4)
 end
 
 function TCPView:draw(ctx, shell_state)
@@ -494,6 +614,22 @@ function TCPView:draw(ctx, shell_state)
       ImGui.EndTable(ctx)
     end
     ImGui.PopStyleVar(ctx)
+
+    -- Additional Parameters Section (assigned from Additional tab)
+    if #self.additional_params > 0 then
+      ImGui.Dummy(ctx, 0, 12)
+
+      ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#4A90E2"))
+      ImGui.Text(ctx, "ADDITIONAL PARAMETERS")
+      ImGui.PopStyleColor(ctx)
+      ImGui.PopFont(ctx)
+      ImGui.Dummy(ctx, 0, 4)
+
+      for _, param in ipairs(self.additional_params) do
+        self:draw_additional_param(ctx, param)
+      end
+    end
 
     ImGui.Unindent(ctx, 8)
     ImGui.Dummy(ctx, 0, 2)
