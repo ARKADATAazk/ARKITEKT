@@ -299,6 +299,9 @@ end
 function MCPView:draw(ctx, shell_state)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
 
+  -- Reload additional parameters (in case assignments changed)
+  self:load_additional_params()
+
   -- Title
   ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
   ImGui.Text(ctx, "Mixer Control Panel")
