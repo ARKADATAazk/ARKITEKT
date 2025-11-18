@@ -268,6 +268,9 @@ function M.cycle_audio_item(filename, delta)
   if current < 1 then current = #content end
 
   M.box_current_item[filename] = current
+
+  -- Invalidate filter cache to force UI refresh
+  M.runtime_cache.audio_filter_hash = nil
 end
 
 function M.cycle_midi_item(item_name, delta)
@@ -289,6 +292,9 @@ function M.cycle_midi_item(item_name, delta)
 
   reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] New index after: %d\n", current))
   M.box_current_midi_track[item_name] = current
+
+  -- Invalidate filter cache to force UI refresh
+  M.runtime_cache.midi_filter_hash = nil
 end
 
 -- Pending operations (for animations)
