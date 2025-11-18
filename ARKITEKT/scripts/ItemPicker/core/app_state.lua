@@ -326,8 +326,9 @@ function M.cycle_audio_item(filename, delta)
 
   M.box_current_item[filename] = filtered[current_pos].index
 
-  -- Invalidate filter cache to force UI refresh
-  M.runtime_cache.audio_filter_hash = nil
+  -- NOTE: We don't invalidate the cache here to prevent re-sorting
+  -- The grid will pick up the new item on next frame without jumping position
+  -- M.runtime_cache.audio_filter_hash = nil
 end
 
 function M.cycle_midi_item(item_name, delta)
@@ -411,8 +412,9 @@ function M.cycle_midi_item(item_name, delta)
 
   M.box_current_midi_track[item_name] = filtered[current_pos].index
 
-  -- Invalidate filter cache to force UI refresh
-  M.runtime_cache.midi_filter_hash = nil
+  -- NOTE: We don't invalidate the cache here to prevent re-sorting
+  -- The grid will pick up the new item on next frame without jumping position
+  -- M.runtime_cache.midi_filter_hash = nil
 end
 
 -- Pending operations (for animations)
