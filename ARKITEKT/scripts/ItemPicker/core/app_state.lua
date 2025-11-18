@@ -261,13 +261,58 @@ function M.cycle_audio_item(filename, delta)
   local content = M.samples[filename]
   if not content or #content == 0 then return end
 
+  -- Build filtered list based on current settings
+  local filtered = {}
+  for i, entry in ipairs(content) do
+    local should_include = true
+
+    -- Apply disabled filter
+    if not M.settings.show_disabled_items and M.disabled.audio[filename] then
+      should_include = false
+    end
+
+    -- Apply mute filters
+    local track_muted = entry.track_muted or false
+    local item_muted = entry.item_muted or false
+    if not M.settings.show_muted_tracks and track_muted then
+      should_include = false
+    end
+    if not M.settings.show_muted_items and item_muted then
+      should_include = false
+    end
+
+    -- Apply search filter
+    local search = M.settings.search_string or ""
+    if search ~= "" and entry[2] then
+      local item_name = entry[2]
+      if not item_name:lower():find(search:lower(), 1, true) then
+        should_include = false
+      end
+    end
+
+    if should_include then
+      table.insert(filtered, {index = i, entry = entry})
+    end
+  end
+
+  if #filtered == 0 then return end
+
+  -- Find current position in filtered list
   local current = M.box_current_item[filename] or 1
-  current = current + delta
+  local current_pos = 1
+  for i, item in ipairs(filtered) do
+    if item.index == current then
+      current_pos = i
+      break
+    end
+  end
 
-  if current > #content then current = 1 end
-  if current < 1 then current = #content end
+  -- Cycle through filtered list
+  current_pos = current_pos + delta
+  if current_pos > #filtered then current_pos = 1 end
+  if current_pos < 1 then current_pos = #filtered end
 
-  M.box_current_item[filename] = current
+  M.box_current_item[filename] = filtered[current_pos].index
 
   -- Invalidate filter cache to force UI refresh
   M.runtime_cache.audio_filter_hash = nil
@@ -280,18 +325,67 @@ function M.cycle_midi_item(item_name, delta)
     return
   end
 
-  reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] Group '%s' has %d items\n", tostring(item_name), #content))
+  -- Build filtered list based on current settings
+  local filtered = {}
+  for i, entry in ipairs(content) do
+    local should_include = true
 
+    -- Apply disabled filter
+    if not M.settings.show_disabled_items and M.disabled.midi[item_name] then
+      should_include = false
+    end
+
+    -- Apply mute filters
+    local track_muted = entry.track_muted or false
+    local item_muted = entry.item_muted or false
+    if not M.settings.show_muted_tracks and track_muted then
+      should_include = false
+    end
+    if not M.settings.show_muted_items and item_muted then
+      should_include = false
+    end
+
+    -- Apply search filter
+    local search = M.settings.search_string or ""
+    if search ~= "" and entry[2] then
+      local item_name_text = entry[2]
+      if not item_name_text:lower():find(search:lower(), 1, true) then
+        should_include = false
+      end
+    end
+
+    if should_include then
+      table.insert(filtered, {index = i, entry = entry})
+    end
+  end
+
+  if #filtered == 0 then
+    reaper.ShowConsoleMsg("[CYCLE_MIDI] No items pass filters\n")
+    return
+  end
+
+  reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] Group '%s' has %d items (%d after filters)\n", tostring(item_name), #content, #filtered))
+
+  -- Find current position in filtered list
   local current = M.box_current_midi_track[item_name] or 1
-  reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] Current index before: %d\n", current))
+  local current_pos = 1
+  for i, item in ipairs(filtered) do
+    if item.index == current then
+      current_pos = i
+      break
+    end
+  end
 
-  current = current + delta
+  reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] Current filtered position: %d/%d\n", current_pos, #filtered))
 
-  if current > #content then current = 1 end
-  if current < 1 then current = #content end
+  -- Cycle through filtered list
+  current_pos = current_pos + delta
+  if current_pos > #filtered then current_pos = 1 end
+  if current_pos < 1 then current_pos = #filtered end
 
-  reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] New index after: %d\n", current))
-  M.box_current_midi_track[item_name] = current
+  reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] New filtered position: %d/%d (absolute index: %d)\n", current_pos, #filtered, filtered[current_pos].index))
+
+  M.box_current_midi_track[item_name] = filtered[current_pos].index
 
   -- Invalidate filter cache to force UI refresh
   M.runtime_cache.midi_filter_hash = nil
