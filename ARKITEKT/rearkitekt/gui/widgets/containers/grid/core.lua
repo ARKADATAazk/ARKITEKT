@@ -569,7 +569,9 @@ function Grid:draw(ctx)
   end
 
   -- Support both left-click and right-click release to finish marquee selection
+  local marquee_was_active = false
   if self.sel_rect:is_active() and (ImGui.IsMouseReleased(ctx, 0) or ImGui.IsMouseReleased(ctx, 1)) then
+    marquee_was_active = true  -- Track that marquee was used this frame
     if not self.sel_rect:did_drag() then
       self.selection:clear()
       if self.behaviors and self.behaviors.on_select then
@@ -578,6 +580,9 @@ function Grid:draw(ctx)
     end
     self.sel_rect:clear()
   end
+
+  -- Store flag for right-click release check
+  self.marquee_was_active_this_frame = marquee_was_active
 
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
