@@ -98,6 +98,7 @@ REAPER/ColorThemes/
 | `created_at` | string | ISO timestamp of creation |
 | `description` | string | Human-readable description |
 | `params` | object | Parameter definitions (key = parameter name) |
+| `assignments` | object | Tab assignments (param_name -> tab assignments) |
 
 ### Parameter Definition
 
@@ -153,12 +154,52 @@ Common categories (auto-detected by prefix):
 3. Add custom `display_name`, `description`, `category`
 4. Share your improved mappings with the community
 
-## Future Enhancements (Phase 3)
+## Tab Assignments
 
-- **Dev Mode**: Visual UI for assigning parameters to existing tabs
+Parameters can be assigned to specific tabs using the assignable chips in the Additional tab UI. This allows you to organize parameters and make them available in their respective tab views.
+
+### Assignments Format
+
+```json
+{
+  "theme_name": "MyTheme",
+  "params": { ... },
+  "assignments": {
+    "tcp_custom_meter": {
+      "TCP": true,
+      "MCP": false,
+      "ENVCP": false,
+      "TRANS": false,
+      "GLOBAL": false
+    },
+    "mcp_custom_fader": {
+      "TCP": false,
+      "MCP": true,
+      "ENVCP": false,
+      "TRANS": false,
+      "GLOBAL": false
+    }
+  }
+}
+```
+
+### Using Assignments
+
+1. **In Additional Tab**: Click the colored chips (TCP, MCP, ENV, TRN, GLB) to assign parameters
+2. **Chip Colors**:
+   - Blue: TCP (Track Control Panel)
+   - Pink: MCP (Mixer Control Panel)
+   - Green: ENVCP (Envelope Control Panel)
+   - Orange: TRANS (Transport)
+   - Purple: GLOBAL (Global)
+3. **Persistence**: Assignments are automatically saved to the JSON file
+4. **Future Integration**: Assigned parameters will appear in their respective tabs
+
+## Future Enhancements
+
+- **Tab Integration**: Make assigned params appear in TCP/MCP/etc tabs
 - **Custom Colors**: Per-parameter color coding
 - **Tooltips**: Rich tooltip customization
-- **Integration**: Move mapped params into TCP/MCP/etc tabs
 - **Community Repository**: Centralized mapping database
 
 ## Example Use Cases

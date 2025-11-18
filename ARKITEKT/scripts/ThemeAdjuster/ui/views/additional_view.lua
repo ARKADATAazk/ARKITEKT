@@ -20,6 +20,28 @@ local M = {}
 local AdditionalView = {}
 AdditionalView.__index = AdditionalView
 
+-- Helper function to lighten a hex color
+local function lighten_color(color_int, factor)
+  -- Extract RGBA components
+  local r = (color_int >> 24) & 0xFF
+  local g = (color_int >> 16) & 0xFF
+  local b = (color_int >> 8) & 0xFF
+  local a = color_int & 0xFF
+
+  -- Lighten by mixing with white
+  r = math.floor(r + (255 - r) * factor)
+  g = math.floor(g + (255 - g) * factor)
+  b = math.floor(b + (255 - b) * factor)
+
+  -- Clamp values
+  r = math.min(255, math.max(0, r))
+  g = math.min(255, math.max(0, g))
+  b = math.min(255, math.max(0, b))
+
+  -- Reconstruct color
+  return (r << 24) | (g << 16) | (b << 8) | a
+end
+
 function M.new(State, Config, settings)
   local self = setmetatable({
     State = State,
@@ -33,10 +55,16 @@ function M.new(State, Config, settings)
 
     -- UI state
     dev_mode = false,
+
+    -- Tab assignments: param_name -> {TCP = true, MCP = false, ...}
+    assignments = {},
   }, AdditionalView)
 
   -- Discover parameters on init
   self:refresh_params()
+
+  -- Load assignments from JSON if available
+  self:load_assignments()
 
   return self
 end
@@ -138,7 +166,8 @@ function AdditionalView:draw(ctx, shell_state)
 end
 
 function AdditionalView:draw_param_row(ctx, param, shell_state)
-  local label_w = 200
+  local label_w = 220
+  local chips_start = label_w + 10
   local control_w = 150
 
   -- Label (left side)
@@ -161,7 +190,15 @@ function AdditionalView:draw_param_row(ctx, param, shell_state)
     ImGui.SetTooltip(ctx, tooltip)
   end
 
-  ImGui.SameLine(ctx, label_w)
+  -- Draw assignable tab chips
+  ImGui.SameLine(ctx, chips_start)
+  local assignment_changed = self:draw_assignment_chips(ctx, param)
+  if assignment_changed then
+    self:save_assignments()
+  end
+
+  -- Position control on the right side
+  ImGui.SameLine(ctx, chips_start + 280)
 
   -- Draw the appropriate control
   local changed, new_value = self:draw_control(ctx, param, control_w)
@@ -239,6 +276,81 @@ function AdditionalView:draw_control(ctx, param, width)
   end
 
   return changed, new_value
+end
+
+function AdditionalView:draw_assignment_chips(ctx, param)
+  -- Available tabs for assignment
+  local tabs = {
+    {id = "TCP", label = "TCP", color = hexrgb("#4A90E2")},
+    {id = "MCP", label = "MCP", color = hexrgb("#E24A90")},
+    {id = "ENVCP", label = "ENV", color = hexrgb("#90E24A")},
+    {id = "TRANS", label = "TRN", color = hexrgb("#E2904A")},
+    {id = "GLOBAL", label = "GLB", color = hexrgb("#9B4AE2")},
+  }
+
+  -- Initialize assignment state for this param if needed
+  if not self.assignments[param.name] then
+    self.assignments[param.name] = {}
+  end
+
+  local changed = false
+  local chip_w = 48
+  local chip_h = 20
+  local chip_spacing = 4
+
+  for i, tab in ipairs(tabs) do
+    if i > 1 then
+      ImGui.SameLine(ctx, 0, chip_spacing)
+    end
+
+    local is_assigned = self.assignments[param.name][tab.id] or false
+    local chip_id = "chip_" .. param.index .. "_" .. tab.id
+
+    -- Draw chip button
+    local bg_color = is_assigned and tab.color or hexrgb("#333333")
+    local hover_color = is_assigned and lighten_color(tab.color, 0.2) or hexrgb("#444444")
+    local text_color = is_assigned and hexrgb("#FFFFFF") or hexrgb("#888888")
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, bg_color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hover_color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, tab.color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameRounding, 3)
+
+    if ImGui.Button(ctx, tab.label .. "##" .. chip_id, chip_w, chip_h) then
+      self.assignments[param.name][tab.id] = not is_assigned
+      changed = true
+    end
+
+    ImGui.PopStyleVar(ctx)
+    ImGui.PopStyleColor(ctx, 4)
+
+    -- Tooltip
+    if ImGui.IsItemHovered(ctx) then
+      local tooltip = is_assigned
+        and string.format("Remove from %s tab", tab.label)
+        or string.format("Assign to %s tab", tab.label)
+      ImGui.SetTooltip(ctx, tooltip)
+    end
+  end
+
+  return changed
+end
+
+function AdditionalView:load_assignments()
+  -- Load assignments from JSON file
+  local mappings = ThemeMapper.load_current_mappings()
+
+  if mappings and mappings.assignments then
+    self.assignments = mappings.assignments
+  else
+    self.assignments = {}
+  end
+end
+
+function AdditionalView:save_assignments()
+  -- Save assignments to JSON file
+  ThemeMapper.save_assignments(self.assignments)
 end
 
 function AdditionalView:export_parameters()

@@ -230,6 +230,12 @@ function M.export_mappings(params)
   -- Create mapping structure
   local mapping_data = M.create_mapping_from_params(params or {})
 
+  -- Preserve existing assignments if any
+  local existing = load_json(json_path)
+  if existing and existing.assignments then
+    mapping_data.assignments = existing.assignments
+  end
+
   local success = save_json(json_path, mapping_data)
 
   if success then
@@ -237,6 +243,41 @@ function M.export_mappings(params)
   else
     return false, "Failed to write JSON file"
   end
+end
+
+-- Load current mappings from JSON
+function M.load_current_mappings()
+  local json_path = M.find_companion_json()
+  if not json_path then
+    return nil
+  end
+
+  return load_json(json_path)
+end
+
+-- Save assignments to JSON
+function M.save_assignments(assignments)
+  local themes_dir = ParamDiscovery.get_colorthemes_dir()
+  if not themes_dir then
+    return false
+  end
+
+  local theme_name = M.current_theme_name or ParamDiscovery.get_current_theme_name()
+  local json_path = themes_dir .. "/" .. theme_name .. ".json"
+
+  -- Load existing data or create new
+  local data = load_json(json_path) or {
+    theme_name = theme_name,
+    version = "1.0.0",
+    created_at = os.date("%Y-%m-%d %H:%M:%S"),
+    description = "Auto-generated parameter mappings for Theme Adjuster",
+    params = {},
+  }
+
+  -- Update assignments
+  data.assignments = assignments
+
+  return save_json(json_path, data)
 end
 
 return M
