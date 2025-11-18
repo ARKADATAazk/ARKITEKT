@@ -764,11 +764,17 @@ function Grid:draw(ctx)
   if not self.drag:is_active() and ImGui.IsMouseReleased(ctx, 0) and not Input.is_external_drag_active(self) then
     if self.drag:has_pending_selection() then
       self.selection:single(self.drag:get_pending_selection())
-      if self.behaviors and self.behaviors.on_select then 
-        self.behaviors.on_select(self.selection:selected_keys()) 
+      self.selection.last_selected = self.drag:get_pending_selection()  -- Track for range selection
+      if self.behaviors and self.behaviors.on_select then
+        self.behaviors.on_select(self.selection:selected_keys())
       end
     end
-    
+
+    -- Clear shift pressed flag (for SHIFT+Click without drag)
+    if self.drag.shift_pressed then
+      self.drag.shift_pressed = nil
+    end
+
     self.drag:release()
   end
 
