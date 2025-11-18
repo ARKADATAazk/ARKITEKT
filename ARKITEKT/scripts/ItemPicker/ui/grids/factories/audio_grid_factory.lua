@@ -29,7 +29,7 @@ function M.create(ctx, config, state, visualization, animator)
     -- Check if we need to rebuild
     local cache_valid = state.runtime_cache.audio_filter_hash == filter_hash
 
-    -- If cache is valid, just update current items without re-sorting
+    -- If cache is valid, just update current items WITHOUT changing sort properties
     if cache_valid and state.runtime_cache.audio_filtered then
       -- Update current items in cached list (for cycling without re-sort)
       local cached = state.runtime_cache.audio_filtered
@@ -41,11 +41,13 @@ function M.create(ctx, config, state, visualization, animator)
           if current_idx > #content then current_idx = 1 end
           local entry = content[current_idx]
           if entry then
-            -- Update to new item without changing position
+            -- ONLY update display properties, NOT sort properties (color, pool_count)
+            -- This keeps the tile in the same sorted position
             item_data.item = entry[1]
             item_data.name = entry[2]
-            item_data.pool_count = entry.pool_count or 1
-            -- Recalculate position in filtered list
+            -- DO NOT update: color, pool_count (would affect sort)
+
+            -- Recalculate badge position
             local seen_pools = {}
             local filtered_list = {}
             for j, e in ipairs(content) do
