@@ -212,7 +212,7 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
       name_color = Colors.hexrgb("#FFFFFF")
     end
 
-    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color, actual_height, rect, grid, base_color, playlist_data)
+    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color, actual_height, rect, grid, base_color, key)
   end
   
   if show_badge then
