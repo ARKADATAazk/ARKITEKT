@@ -23,9 +23,11 @@ M.settings = {
   search_string = "",
   tile_width = nil,
   tile_height = nil,
-  separator_position = nil,  -- MIDI section height (nil = use default from config)
+  separator_position = nil,  -- MIDI section height for vertical layout
+  separator_position_horizontal = nil,  -- MIDI section width for horizontal layout
   sort_mode = "none",  -- Options: "none", "color", "name", "pool"
   waveform_quality = 1.0,  -- Waveform resolution multiplier (0.1-1.0, lower = better performance)
+  layout_mode = "vertical",  -- Options: "vertical" (top/bottom), "horizontal" (left/right)
 }
 
 -- Runtime state (volatile)

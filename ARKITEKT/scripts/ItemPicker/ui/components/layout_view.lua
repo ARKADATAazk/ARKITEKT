@@ -344,6 +344,42 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local percent_x = track_x + slider_width + 8
   ImGui.DrawList_AddText(draw_list, percent_x, slider_y + 3, Colors.with_alpha(Colors.hexrgb("#AAAAAA"), math.floor(ui_fade * 180)), percent_text)
 
+  -- Layout mode toggle button (only show when both MIDI and Audio are visible)
+  if self.state.settings.show_audio and self.state.settings.show_midi then
+    local layout_button_x = percent_x + ImGui.CalcTextSize(ctx, percent_text) + 30
+    local layout_button_y = checkbox_y
+    local layout_button_h = 20
+
+    local layout_mode = self.state.settings.layout_mode or "vertical"
+    local button_label = layout_mode == "vertical" and "⬍⬍" or "⬌⬌"  -- Vertical or Horizontal arrows
+    local label_width = ImGui.CalcTextSize(ctx, button_label)
+    local button_w = label_width + 16
+
+    local mx, my = ImGui.GetMousePos(ctx)
+    local is_hovered = mx >= layout_button_x and mx < layout_button_x + button_w and my >= layout_button_y and my < layout_button_y + layout_button_h
+
+    -- Button background
+    local bg_color = is_hovered and Colors.hexrgb("#2A2A2A") or Colors.hexrgb("#1A1A1A")
+    bg_color = Colors.with_alpha(bg_color, math.floor(ui_fade * 200))
+    ImGui.DrawList_AddRectFilled(draw_list, layout_button_x, layout_button_y, layout_button_x + button_w, layout_button_y + layout_button_h, bg_color, 3)
+
+    -- Button border
+    local border_color = Colors.hexrgb("#3A3A3A")
+    border_color = Colors.with_alpha(border_color, math.floor(ui_fade * 255))
+    ImGui.DrawList_AddRect(draw_list, layout_button_x, layout_button_y, layout_button_x + button_w, layout_button_y + layout_button_h, border_color, 3, 0, 1)
+
+    -- Button text
+    local text_color = Colors.hexrgb("#FFFFFF")
+    text_color = Colors.with_alpha(text_color, math.floor(ui_fade * 255))
+    ImGui.DrawList_AddText(draw_list, layout_button_x + 8, layout_button_y + 2, text_color, button_label)
+
+    -- Click detection
+    if is_hovered and ImGui.IsMouseClicked(ctx, 0) then
+      local new_mode = layout_mode == "vertical" and "horizontal" or "vertical"
+      self.state.set_setting('layout_mode', new_mode)
+    end
+  end
+
   ImGui.PopStyleVar(ctx)
 
   -- Track final checkbox Y position for search bar positioning

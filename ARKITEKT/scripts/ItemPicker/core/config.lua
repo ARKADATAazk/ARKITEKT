@@ -19,7 +19,7 @@ M.TILE = {
   DEFAULT_HEIGHT = 140,
   HEIGHT_STEP = 30,
 
-  GAP = 4,
+  GAP = 8,
   ROUNDING = 0,
 }
 

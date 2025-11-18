@@ -176,6 +176,7 @@ function M.create(ctx, config, state, visualization, animator)
     gap = config.TILE.GAP,
     min_col_w = function() return state:get_tile_width() end,
     fixed_tile_h = state:get_tile_height(),
+    layout_speed = 28.0,  -- 2x faster than default (14.0)
 
     get_items = get_items,
 
