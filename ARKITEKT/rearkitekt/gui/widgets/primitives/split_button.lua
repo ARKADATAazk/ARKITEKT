@@ -223,10 +223,11 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
   ImGui.DrawList_AddRect(dl, arrow_x + 1, y + 1, x + width - 1, y + height - 1, arrow_border_inner, inner_rounding, arrow_corner_flags, 1)
   ImGui.DrawList_AddRect(dl, arrow_x, y, x + width, y + height, border_outer, inner_rounding, arrow_corner_flags, 1)
 
-  -- Draw subtle separator between button and arrow (more inset to show they're connected)
+  -- Draw separator between button and arrow using base fill color (no animation)
+  -- This creates a clean split while keeping the outer border intact
   local separator_inset = 6
-  local separator_color = arrow_bg  -- Use arrow background color for seamless look
-  ImGui.DrawList_AddLine(dl, arrow_x, y + separator_inset, arrow_x, y + height - separator_inset, separator_color, 1)
+  local base_bg = is_toggled and (config.bg_on_color or config.bg_color) or config.bg_color
+  ImGui.DrawList_AddLine(dl, arrow_x, y + separator_inset, arrow_x, y + height - separator_inset, base_bg, 1)
 
   -- Draw button text (with padding)
   local text_padding_x = 8  -- Horizontal padding for text
@@ -236,18 +237,27 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
   local text_y = y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
 
-  -- Draw dropdown arrow (▼) - render to whole pixels for crisp display
-  local arrow_size = 8  -- Increased from 6
-  local arrow_center_x = math.floor(arrow_x + arrow_width * 0.5 + 0.5)  -- Pixel snap center
-  local arrow_center_y = math.floor(y + height * 0.5 + 0.5)
-  local arrow_half_width = math.floor(arrow_size * 0.5 + 0.5)
-  local arrow_height = math.floor(arrow_size * 0.4 + 0.5)  -- Slightly shorter for better proportions
+  -- Draw dropdown arrow (▼) - pixel-perfect rendering
+  local arrow_width_px = 8  -- Width at base
+  local arrow_height_px = 4  -- Height of triangle
 
-  -- Triangle pointing down (pixel-perfect coordinates)
+  -- Calculate center and snap to whole pixels
+  local center_x = math.floor(arrow_x + arrow_width * 0.5 + 0.5)
+  local center_y = math.floor(y + height * 0.5 + 0.5)
+
+  -- Calculate triangle vertices (all whole pixels)
+  local top_left_x = math.floor(center_x - arrow_width_px * 0.5 + 0.5)
+  local top_left_y = math.floor(center_y - arrow_height_px * 0.5 + 0.5)
+  local top_right_x = math.floor(center_x + arrow_width_px * 0.5 + 0.5)
+  local top_right_y = top_left_y
+  local bottom_x = center_x
+  local bottom_y = math.floor(center_y + arrow_height_px * 0.5 + 0.5)
+
+  -- Triangle pointing down with pixel-perfect coordinates
   ImGui.DrawList_AddTriangleFilled(dl,
-    arrow_center_x - arrow_half_width, arrow_center_y - arrow_height * 0.5,  -- Top left
-    arrow_center_x + arrow_half_width, arrow_center_y - arrow_height * 0.5,  -- Top right
-    arrow_center_x, arrow_center_y + arrow_height * 0.5,  -- Bottom center
+    top_left_x, top_left_y,      -- Top left
+    top_right_x, top_right_y,    -- Top right
+    bottom_x, bottom_y,          -- Bottom center
     arrow_text
   )
 
