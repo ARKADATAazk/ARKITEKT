@@ -5,6 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
+local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -141,6 +142,17 @@ function TCPView:draw(ctx, shell_state)
   -- Single scrollable content area
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
   if ImGui.BeginChild(ctx, "tcp_content", avail_w, 0, 1) then
+    -- Draw background pattern (grid like assembler panel)
+    local child_x, child_y = ImGui.GetWindowPos(ctx)
+    local child_w, child_h = ImGui.GetWindowSize(ctx)
+    local dl = ImGui.GetWindowDrawList(ctx)
+    local pattern_cfg = {
+      enabled = true,
+      primary = {type = 'grid', spacing = 50, color = hexrgb("#2A2A2A"), line_thickness = 1.5},
+      secondary = {enabled = true, type = 'grid', spacing = 5, color = hexrgb("#1E1E1E"), line_thickness = 0.5},
+    }
+    Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+
     ImGui.Dummy(ctx, 0, 4)
 
     ImGui.Indent(ctx, 8)

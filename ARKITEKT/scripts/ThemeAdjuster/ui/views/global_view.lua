@@ -5,6 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local HueSlider = require('rearkitekt.gui.widgets.primitives.hue_slider')
 local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
+local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -102,6 +103,31 @@ function GlobalView:draw(ctx, shell_state)
   -- Color Sliders Section
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
   if ImGui.BeginChild(ctx, "global_color_sliders", avail_w, 0, 1) then
+    -- Draw background pattern (grid/dots like assembler panel)
+    local child_x, child_y = ImGui.GetWindowPos(ctx)
+    local child_w, child_h = ImGui.GetWindowSize(ctx)
+    local dl = ImGui.GetWindowDrawList(ctx)
+
+    -- Background pattern configuration (matching panel defaults)
+    local pattern_cfg = {
+      enabled = true,
+      primary = {
+        type = 'grid',
+        spacing = 50,
+        color = hexrgb("#2A2A2A"),  -- Subtle primary grid
+        line_thickness = 1.5,
+      },
+      secondary = {
+        enabled = true,
+        type = 'grid',
+        spacing = 5,
+        color = hexrgb("#1E1E1E"),  -- Very subtle secondary grid
+        line_thickness = 0.5,
+      },
+    }
+
+    Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+
     ImGui.Dummy(ctx, 0, 8)
 
     ImGui.Indent(ctx, 12)
