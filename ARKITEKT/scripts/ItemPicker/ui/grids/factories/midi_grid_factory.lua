@@ -31,63 +31,51 @@ function M.create(ctx, config, state, visualization, animator)
 
     -- If cache is valid, just update current items WITHOUT changing sort properties
     if cache_valid and state.runtime_cache.midi_filtered then
-      -- Build a hash of current item indices to detect if anything changed
-      local current_items_hash = {}
-      for track_guid, idx in pairs(state.box_current_midi_track) do
-        table.insert(current_items_hash, track_guid .. ":" .. idx)
-      end
-      table.sort(current_items_hash)
-      local items_hash_str = table.concat(current_items_hash, "|")
+      -- Update current items in cached list (for cycling without re-sort)
+      local cached = state.runtime_cache.midi_filtered
+      for i, item_data in ipairs(cached) do
+        local track_guid = item_data.track_guid
+        local content = state.midi_items[track_guid]
+        if content then
+          local current_idx = state.box_current_midi_track[track_guid] or 1
+          if current_idx > #content then current_idx = 1 end
+          local entry = content[current_idx]
+          if entry then
+            -- ONLY update display properties, NOT sort properties (color, pool_count)
+            -- This keeps the tile in the same sorted position
+            item_data.item = entry[1]
+            item_data.name = entry[2]
+            item_data.uuid = entry.uuid
+            -- DO NOT update: color, pool_count (would affect sort)
 
-      -- Only update cache if current items have changed
-      if state.runtime_cache.midi_items_hash ~= items_hash_str then
-        state.runtime_cache.midi_items_hash = items_hash_str
-
-        -- Update current items in cached list (for cycling without re-sort)
-        local cached = state.runtime_cache.midi_filtered
-        for i, item_data in ipairs(cached) do
-          local track_guid = item_data.track_guid
-          local content = state.midi_items[track_guid]
-          if content then
-            local current_idx = state.box_current_midi_track[track_guid] or 1
-            if current_idx > #content then current_idx = 1 end
-            local entry = content[current_idx]
-            if entry then
-              -- ONLY update display properties, NOT sort properties (color, pool_count)
-              -- This keeps the tile in the same sorted position
-              item_data.item = entry[1]
-              item_data.name = entry[2]
-              -- DO NOT update: color, pool_count (would affect sort)
-
-              -- Recalculate badge position
-              local seen_pools = {}
-              local filtered_list = {}
-              for j, e in ipairs(content) do
-                local pool_count = e.pool_count or 1
-                local pool_id = e.pool_id
-                if pool_count > 1 and pool_id then
-                  if not seen_pools[pool_id] then
-                    seen_pools[pool_id] = true
-                    table.insert(filtered_list, {index = j})
-                  end
-                else
+            -- Recalculate badge position
+            local seen_pools = {}
+            local filtered_list = {}
+            for j, e in ipairs(content) do
+              local pool_count = e.pool_count or 1
+              local pool_id = e.pool_id
+              if pool_count > 1 and pool_id then
+                if not seen_pools[pool_id] then
+                  seen_pools[pool_id] = true
                   table.insert(filtered_list, {index = j})
                 end
+              else
+                table.insert(filtered_list, {index = j})
               end
-              local current_position = 1
-              for pos, fitem in ipairs(filtered_list) do
-                if fitem.index == current_idx then
-                  current_position = pos
-                  break
-                end
-              end
-              item_data.index = current_position
-              item_data.total = #filtered_list
             end
+            local current_position = 1
+            for pos, fitem in ipairs(filtered_list) do
+              if fitem.index == current_idx then
+                current_position = pos
+                break
+              end
+            end
+            item_data.index = current_position
+            item_data.total = #filtered_list
           end
         end
       end
-      return state.runtime_cache.midi_filtered
+      return cached
     end
 
     -- Filters changed - rebuild filtered list
@@ -330,12 +318,9 @@ function M.create(ctx, config, state, visualization, animator)
       end
       local uuid = uuids[1]
 
-      -- Find item in cache directly (avoid full get_items() rebuild)
-      if not state.runtime_cache.midi_filtered then
-        return nil
-      end
-
-      for i, data in ipairs(state.runtime_cache.midi_filtered) do
+      -- Find track_guid from UUID
+      local items = get_items()
+      for _, data in ipairs(items) do
         if data.uuid == uuid then
           local track_guid = data.track_guid
           reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Cycling track: %s\n", track_guid))
@@ -343,19 +328,14 @@ function M.create(ctx, config, state, visualization, animator)
           -- Cycle to next item
           state.cycle_midi_item(track_guid, delta > 0 and 1 or -1)
 
-          -- Update ONLY this cached item in-place (O(1) instead of O(n))
-          local current_idx = state.box_current_item[track_guid]
-          if current_idx then
-            local content = state.get_midi_content()
-            local entry = content[current_idx]
-            if entry then
-              -- Update display properties only (keep sort properties frozen)
-              data.item = entry[1]
-              data.name = entry[2]
-              data.uuid = entry.uuid
+          -- Get updated items (cache will be updated with new item, sort properties frozen)
+          local updated_items = get_items()
 
-              reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Updated cached item %d, new UUID: %s\n", i, data.uuid))
-              return data.uuid
+          -- Find new UUID for the same track_guid
+          for _, updated_data in ipairs(updated_items) do
+            if updated_data.track_guid == track_guid then
+              reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] New UUID: %s\n", updated_data.uuid))
+              return updated_data.uuid
             end
           end
 
@@ -363,7 +343,7 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
 
-      reaper.ShowConsoleMsg("[WHEEL_ADJUST MIDI] UUID not found in cache\n")
+      reaper.ShowConsoleMsg("[WHEEL_ADJUST MIDI] UUID not found\n")
       return nil
     end,
 
