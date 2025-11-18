@@ -240,15 +240,11 @@ local function render_tree_node(ctx, node, config, state, depth)
       local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
       local shift_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
 
-      -- Debug: show what keys are pressed
-      reaper.ShowConsoleMsg("CLICK: ctrl=" .. tostring(ctrl_down) .. " shift=" .. tostring(shift_down) .. " last_clicked=" .. tostring(state.last_clicked_node) .. "\n")
-
       if config.enable_multi_select and state.selected_nodes then
         -- Multi-select mode
         if shift_down and state.last_clicked_node then
           -- Range selection: select all nodes between last clicked and current
           if not state._flat_node_list then
-            reaper.ShowConsoleMsg("SHIFT-CLICK ERROR: flat_node_list is nil!\n")
             state._flat_node_list = {}
           end
 
@@ -276,9 +272,6 @@ local function render_tree_node(ctx, node, config, state, depth)
             for i = start_idx, end_idx do
               state.selected_nodes[state._flat_node_list[i]] = true
             end
-            reaper.ShowConsoleMsg("SHIFT-CLICK: Selected range [" .. start_idx .. " to " .. end_idx .. "] = " .. (end_idx - start_idx + 1) .. " folders\n")
-          else
-            reaper.ShowConsoleMsg("SHIFT-CLICK ERROR: Could not find indices (start=" .. tostring(start_idx) .. " end=" .. tostring(end_idx) .. ")\n")
           end
         elseif ctrl_down then
           -- Toggle selection
@@ -370,15 +363,10 @@ local function render_tree_node(ctx, node, config, state, depth)
           count = count + 1
         end
 
-        reaper.ShowConsoleMsg("DRAG START: node=" .. tostring(node_id) .. " is_selected=" .. tostring(is_node_selected) .. " total_selected=" .. count .. "\n")
-
         if is_node_selected and count > 1 then
           -- Encode multiple node IDs (newline-separated)
           drag_payload = table.concat(selected_ids, "\n")
           drag_label = "Move: " .. count .. " folders"
-          reaper.ShowConsoleMsg("  Multi-drag enabled: " .. count .. " folders\n")
-        else
-          reaper.ShowConsoleMsg("  Single drag\n")
         end
       end
 
