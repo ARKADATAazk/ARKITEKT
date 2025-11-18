@@ -6,6 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Style = require('rearkitekt.gui.style.defaults')
+local ColorPickerWindow = require('rearkitekt.gui.widgets.tools.color_picker_window')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -16,9 +17,12 @@ local state = {
   pattern = "",
   preview_items = {},
   on_confirm = nil,
+  on_rename_and_recolor = nil,
+  on_recolor = nil,
   focus_input = false,
   item_count = 0,
   popup_opened = false,
+  selected_color = 0xFF5733FF,  -- Default color (RGBA)
 }
 
 -- Wildcard pattern processing
@@ -46,11 +50,15 @@ local function generate_preview(pattern, count)
 end
 
 -- Open the batch rename modal
-function M.open(item_count, on_confirm_callback)
+function M.open(item_count, on_confirm_callback, opts)
+  opts = opts or {}
   state.is_open = true
   state.pattern = ""
   state.preview_items = {}
   state.on_confirm = on_confirm_callback
+  state.on_rename_and_recolor = opts.on_rename_and_recolor
+  state.on_recolor = opts.on_recolor
+  state.selected_color = opts.initial_color or 0xFF5733FF
   state.focus_input = true
   state.item_count = item_count
   state.popup_opened = false
@@ -77,7 +85,7 @@ function M.draw(ctx, item_count)
 
   -- Center modal on screen
   local viewport_w, viewport_h = ImGui.Viewport_GetSize(ImGui.GetWindowViewport(ctx))
-  local modal_w, modal_h = 500, 340
+  local modal_w, modal_h = 520, 600  -- Increased height for color picker
   ImGui.SetNextWindowPos(ctx, (viewport_w - modal_w) * 0.5, (viewport_h - modal_h) * 0.5, ImGui.Cond_Appearing)
   ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
 
@@ -165,18 +173,43 @@ function M.draw(ctx, item_count)
       ImGui.Unindent(ctx, 16)
     end
 
+    ImGui.Dummy(ctx, 0, 10)
+    ImGui.Separator(ctx)
+    ImGui.Dummy(ctx, 0, 10)
+
+    -- Color picker section
+    ImGui.TextColored(ctx, hexrgb("#999999FF"), "Color:")
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Center the color picker
+    local picker_size = 195
+    local picker_x = (modal_w - picker_size) * 0.5
+    ImGui.SetCursorPosX(ctx, picker_x)
+
+    -- Initialize color picker if first time
+    ColorPickerWindow.show_inline("batch_rename_picker", state.selected_color)
+
+    -- Render the inline color picker
+    local color_changed = ColorPickerWindow.render_inline(ctx, "batch_rename_picker", {
+      size = picker_size,
+      initial_color = state.selected_color,
+      on_change = function(color)
+        state.selected_color = color
+      end
+    })
+
     -- Spacing before buttons
     ImGui.Dummy(ctx, 0, 10)
     ImGui.Separator(ctx)
     ImGui.Dummy(ctx, 0, 8)
 
-    -- Buttons
-    local button_w = 120
-    local spacing = 10
-    local total_w = button_w * 2 + spacing
+    -- Buttons (4 buttons: Cancel, Rename, Rename & Recolor, Recolor)
+    local button_w = 110
+    local spacing = 8
+    local total_w = button_w * 4 + spacing * 3
     ImGui.SetCursorPosX(ctx, (modal_w - total_w) * 0.5)
 
-    -- Cancel button (left)
+    -- Cancel button
     if ImGui.Button(ctx, "Cancel", button_w, 28) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
       state.is_open = false
       ImGui.CloseCurrentPopup(ctx)
@@ -184,13 +217,13 @@ function M.draw(ctx, item_count)
 
     ImGui.SameLine(ctx, 0, spacing)
 
-    -- Confirm button (right)
-    local can_confirm = state.pattern ~= ""
-    if not can_confirm then
+    -- Rename button (needs pattern)
+    local can_rename = state.pattern ~= ""
+    if not can_rename then
       ImGui.BeginDisabled(ctx)
     end
 
-    if ImGui.Button(ctx, "Rename", button_w, 28) or (can_confirm and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
+    if ImGui.Button(ctx, "Rename", button_w, 28) or (can_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
       if state.on_confirm then
         state.on_confirm(state.pattern)
       end
@@ -198,8 +231,38 @@ function M.draw(ctx, item_count)
       ImGui.CloseCurrentPopup(ctx)
     end
 
-    if not can_confirm then
+    if not can_rename then
       ImGui.EndDisabled(ctx)
+    end
+
+    ImGui.SameLine(ctx, 0, spacing)
+
+    -- Rename and Recolor button (needs pattern)
+    if not can_rename then
+      ImGui.BeginDisabled(ctx)
+    end
+
+    if ImGui.Button(ctx, "Rename & Recolor", button_w, 28) then
+      if state.on_rename_and_recolor then
+        state.on_rename_and_recolor(state.pattern, state.selected_color)
+      end
+      state.is_open = false
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if not can_rename then
+      ImGui.EndDisabled(ctx)
+    end
+
+    ImGui.SameLine(ctx, 0, spacing)
+
+    -- Recolor button (always enabled)
+    if ImGui.Button(ctx, "Recolor", button_w, 28) then
+      if state.on_recolor then
+        state.on_recolor(state.selected_color)
+      end
+      state.is_open = false
+      ImGui.CloseCurrentPopup(ctx)
     end
 
     ImGui.EndPopup(ctx)

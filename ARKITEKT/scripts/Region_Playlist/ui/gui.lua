@@ -140,6 +140,23 @@ function M.create(State, AppConfig, settings)
       end
     end,
 
+    -- Batch rename and recolor
+    on_active_batch_rename_and_recolor = function(item_keys, pattern, color)
+      local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
+      local new_names = BatchRenameModal.apply_pattern_to_items(pattern, #item_keys)
+      for i, key in ipairs(item_keys) do
+        self.controller:rename_item(State.get_active_playlist_id(), key, new_names[i])
+        self.controller:recolor_item(State.get_active_playlist_id(), key, color)
+      end
+    end,
+
+    -- Batch recolor only
+    on_active_batch_recolor = function(item_keys, color)
+      for _, key in ipairs(item_keys) do
+        self.controller:recolor_item(State.get_active_playlist_id(), key, color)
+      end
+    end,
+
     -- Single item rename from pool (inline editing)
     on_pool_rename = function(item_key, new_name)
       local rid = tonumber(item_key:match("pool_(%d+)"))
@@ -169,6 +186,42 @@ function M.create(State, AppConfig, settings)
           local playlist_id = key:match("pool_playlist_(.+)")
           if playlist_id then
             self.controller:rename_playlist(playlist_id, new_names[i])
+          end
+        end
+      end
+    end,
+
+    -- Batch rename and recolor from pool
+    on_pool_batch_rename_and_recolor = function(item_keys, pattern, color)
+      local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
+      local new_names = BatchRenameModal.apply_pattern_to_items(pattern, #item_keys)
+      local Regions = require('rearkitekt.reaper.regions')
+      for i, key in ipairs(item_keys) do
+        local rid = tonumber(key:match("pool_(%d+)"))
+        if rid then
+          Regions.set_region_name(0, rid, new_names[i])
+          Regions.set_region_color(0, rid, color)
+        else
+          local playlist_id = key:match("pool_playlist_(.+)")
+          if playlist_id then
+            self.controller:rename_playlist(playlist_id, new_names[i])
+            self.controller:set_playlist_color(playlist_id, color)
+          end
+        end
+      end
+    end,
+
+    -- Batch recolor from pool
+    on_pool_batch_recolor = function(item_keys, color)
+      local Regions = require('rearkitekt.reaper.regions')
+      for _, key in ipairs(item_keys) do
+        local rid = tonumber(key:match("pool_(%d+)"))
+        if rid then
+          Regions.set_region_color(0, rid, color)
+        else
+          local playlist_id = key:match("pool_playlist_(.+)")
+          if playlist_id then
+            self.controller:set_playlist_color(playlist_id, color)
           end
         end
       end
