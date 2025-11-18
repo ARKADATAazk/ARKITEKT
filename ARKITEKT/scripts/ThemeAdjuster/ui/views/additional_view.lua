@@ -166,9 +166,10 @@ function AdditionalView:draw(ctx, shell_state)
 end
 
 function AdditionalView:draw_param_row(ctx, param, shell_state)
-  local label_w = 220
-  local chips_start = label_w + 10
+  local label_w = 250
+  local control_start = label_w
   local control_w = 150
+  local chips_start = control_start + control_w + 20
 
   -- Label (left side)
   ImGui.AlignTextToFramePadding(ctx)
@@ -190,17 +191,8 @@ function AdditionalView:draw_param_row(ctx, param, shell_state)
     ImGui.SetTooltip(ctx, tooltip)
   end
 
-  -- Draw assignable tab chips
-  ImGui.SameLine(ctx, chips_start)
-  local assignment_changed = self:draw_assignment_chips(ctx, param)
-  if assignment_changed then
-    self:save_assignments()
-  end
-
-  -- Position control on the right side
-  ImGui.SameLine(ctx, chips_start + 280)
-
-  -- Draw the appropriate control
+  -- Draw the control (checkbox/slider/spinner)
+  ImGui.SameLine(ctx, control_start)
   local changed, new_value = self:draw_control(ctx, param, control_w)
 
   if changed then
@@ -208,6 +200,13 @@ function AdditionalView:draw_param_row(ctx, param, shell_state)
     pcall(reaper.ThemeLayout_SetParameter, param.index, new_value, true)
     pcall(reaper.ThemeLayout_RefreshAll)
     param.value = new_value
+  end
+
+  -- Draw assignable tab chips (right side)
+  ImGui.SameLine(ctx, chips_start)
+  local assignment_changed = self:draw_assignment_chips(ctx, param)
+  if assignment_changed then
+    self:save_assignments()
   end
 
   ImGui.Dummy(ctx, 0, 4)
@@ -219,14 +218,11 @@ function AdditionalView:draw_control(ctx, param, width)
 
   if param.type == "toggle" then
     -- Checkbox for 0/1 toggles
-    ImGui.Dummy(ctx, 0, 2)  -- Top padding
     local is_checked = (param.value ~= 0)
     if Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "param_" .. param.index) then
       changed = true
       new_value = is_checked and 0 or 1
     end
-    ImGui.SameLine(ctx, 0, 0)  -- Keep on same line
-    ImGui.Dummy(ctx, 0, 2)  -- Bottom padding
 
   elseif param.type == "spinner" then
     -- Spinner for discrete values
