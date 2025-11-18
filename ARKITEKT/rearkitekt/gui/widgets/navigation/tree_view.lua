@@ -133,10 +133,11 @@ local function render_tree_node(ctx, node, config, state, depth)
 
     -- If renaming, show input field inline instead of text
     if is_renaming then
-      -- Position cursor right after icon
-      ImGui.SameLine(ctx, 0, 0)
-      ImGui.SetCursorPosX(ctx, text_x)
-      ImGui.SetCursorPosY(ctx, item_min_y - ImGui.GetWindowPos(ctx))
+      -- Save current cursor to restore later
+      local saved_cursor_x, saved_cursor_y = ImGui.GetCursorScreenPos(ctx)
+
+      -- Position using absolute screen coordinates
+      ImGui.SetCursorScreenPos(ctx, text_x, item_min_y)
 
       -- Style: lighter background for input field
       ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#FFFFFF15"))
@@ -159,18 +160,16 @@ local function render_tree_node(ctx, node, config, state, depth)
 
       ImGui.PopStyleColor(ctx, 3)
 
+      -- Restore cursor position to maintain tree layout
+      ImGui.SetCursorScreenPos(ctx, saved_cursor_x, saved_cursor_y)
+
       local input_active = ImGui.IsItemActive(ctx)
-      local input_hovered = ImGui.IsItemHovered(ctx)
 
       -- Clicking away closes the edit (cancel)
       if not input_active and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) then
-        -- Check if click was outside the input
-        local mx, my = ImGui.GetMousePos(ctx)
-        if not (mx >= text_x and mx <= item_max_x and my >= item_min_y and my <= item_max_y) then
-          state.renaming_node = nil
-          state.rename_buffer = ""
-          state.rename_focus_set = nil
-        end
+        state.renaming_node = nil
+        state.rename_buffer = ""
+        state.rename_focus_set = nil
       end
 
       -- Commit on Enter
