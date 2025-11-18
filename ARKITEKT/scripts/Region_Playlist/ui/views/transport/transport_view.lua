@@ -310,7 +310,7 @@ function TransportView:build_playback_buttons(bridge_state)
       type = "split_button",
       id = "transport_shuffle",
       align = "center",
-      width = 60,
+      width = 80,
       config = {
         label = "Shuffle",
         is_toggled = bridge_state.shuffle_enabled or false,

@@ -223,9 +223,16 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
   ImGui.DrawList_AddRect(dl, arrow_x + 1, y + 1, x + width - 1, y + height - 1, arrow_border_inner, inner_rounding, arrow_corner_flags, 1)
   ImGui.DrawList_AddRect(dl, arrow_x, y, x + width, y + height, border_outer, inner_rounding, arrow_corner_flags, 1)
 
-  -- Draw button text
+  -- Draw subtle separator between button and arrow (more inset to show they're connected)
+  local separator_inset = 6
+  local separator_color = border_inner  -- Use inner border color for subtlety
+  ImGui.DrawList_AddLine(dl, arrow_x, y + separator_inset, arrow_x, y + height - separator_inset, separator_color, 1)
+
+  -- Draw button text (with padding)
+  local text_padding_x = 8  -- Horizontal padding for text
   local tw = ImGui.CalcTextSize(ctx, label)
-  local text_x = x + (button_width - 1 - tw) * 0.5  -- -1 to account for overlap
+  local text_area_width = button_width - 1 - (text_padding_x * 2)  -- -1 for overlap, -padding on both sides
+  local text_x = x + text_padding_x + (text_area_width - tw) * 0.5
   local text_y = y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
 
