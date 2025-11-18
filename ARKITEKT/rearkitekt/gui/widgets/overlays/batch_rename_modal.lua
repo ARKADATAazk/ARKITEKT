@@ -16,6 +16,8 @@ local state = {
   preview_items = {},
   on_confirm = nil,
   focus_input = false,
+  item_count = 0,
+  popup_opened = false,
 }
 
 -- Wildcard pattern processing
@@ -49,7 +51,9 @@ function M.open(item_count, on_confirm_callback)
   state.preview_items = {}
   state.on_confirm = on_confirm_callback
   state.focus_input = true
-  ImGui.OpenPopup(nil, "Batch Rename##batch_rename_modal")
+  state.item_count = item_count
+  state.popup_opened = false
+  -- Note: ImGui.OpenPopup will be called in draw() when we have the context
 end
 
 -- Check if modal is open
@@ -60,6 +64,15 @@ end
 -- Draw the modal
 function M.draw(ctx, item_count)
   if not state.is_open then return false end
+
+  -- Open popup once when modal is first opened
+  if not state.popup_opened then
+    ImGui.OpenPopup(ctx, "Batch Rename##batch_rename_modal")
+    state.popup_opened = true
+  end
+
+  -- Use item_count from state if not provided as parameter
+  local count = item_count or state.item_count
 
   -- Center modal on screen
   local viewport_w, viewport_h = ImGui.Viewport_GetSize(ImGui.GetWindowViewport(ctx))
@@ -77,7 +90,7 @@ function M.draw(ctx, item_count)
 
   if visible then
     -- Title
-    ImGui.TextColored(ctx, hexrgb("#FFFFFFFF"), string.format("Rename %d item%s", item_count, item_count > 1 and "s" or ""))
+    ImGui.TextColored(ctx, hexrgb("#FFFFFFFF"), string.format("Rename %d item%s", count, count > 1 and "s" or ""))
     ImGui.Spacing(ctx)
     ImGui.Separator(ctx)
     ImGui.Spacing(ctx)
@@ -101,7 +114,7 @@ function M.draw(ctx, item_count)
 
     if changed then
       state.pattern = new_pattern
-      state.preview_items = generate_preview(new_pattern, item_count)
+      state.preview_items = generate_preview(new_pattern, count)
     end
 
     ImGui.Spacing(ctx)
