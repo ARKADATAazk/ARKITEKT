@@ -245,18 +245,14 @@ function M.handle_tile_input(grid, ctx, item, rect)
       grid.drag.press_pos = {mx, my}
     end
 
-    -- Right-click: Disable items (was: Toggle favorite)
+    -- Right-click: Track press for potential disable or marquee selection
     if ImGui.IsMouseClicked(ctx, 1) then
-      if grid.behaviors and grid.behaviors.delete then
-        local selected_keys = grid.selection:selected_keys()
-        if grid.selection:is_selected(key) and #selected_keys > 1 then
-          -- Multi-select: disable all selected
-          grid.behaviors.delete(selected_keys)
-        else
-          -- Single item: disable just this one
-          grid.behaviors.delete({key})
-        end
-      end
+      -- Store right-click press info
+      grid.right_click_press = {
+        pos = {mx, my},
+        key = key,
+        time = reaper.time_precise()
+      }
     end
 
     if ImGui.IsMouseDoubleClicked(ctx, 0) then
@@ -352,6 +348,33 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text)
   end
 
   return true, state.text  -- Still editing
+end
+
+function M.check_right_click_release(grid, ctx)
+  -- Check if right-click was released without dragging -> trigger disable
+  if grid.right_click_press and ImGui.IsMouseReleased(ctx, 1) then
+    local mx, my = ImGui.GetMousePos(ctx)
+    local press_pos = grid.right_click_press.pos
+    local dx = mx - press_pos[1]
+    local dy = my - press_pos[2]
+    local dist = math.sqrt(dx * dx + dy * dy)
+
+    -- If moved less than threshold, consider it a click (not a drag)
+    local threshold = 5
+    if dist < threshold and grid.behaviors and grid.behaviors.delete then
+      local key = grid.right_click_press.key
+      local selected_keys = grid.selection:selected_keys()
+      if grid.selection:is_selected(key) and #selected_keys > 1 then
+        -- Multi-select: disable all selected
+        grid.behaviors.delete(selected_keys)
+      else
+        -- Single item: disable just this one
+        grid.behaviors.delete({key})
+      end
+    end
+
+    grid.right_click_press = nil
+  end
 end
 
 function M.check_start_drag(grid, ctx)

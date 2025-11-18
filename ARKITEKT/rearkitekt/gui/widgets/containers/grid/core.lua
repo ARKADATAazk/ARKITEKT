@@ -500,19 +500,23 @@ function Grid:draw(ctx)
     self.behaviors.double_click(double_clicked_tile_key)
   end
 
-  if bg_clicked and not mouse_over_tile and not Input.is_external_drag_active(self) then
+  -- Handle left-click or right-click on empty space to start marquee selection
+  local bg_right_clicked = ImGui.IsMouseClicked(ctx, 1) and not mouse_over_tile
+  if (bg_clicked or bg_right_clicked) and not mouse_over_tile and not Input.is_external_drag_active(self) then
     local mx, my = ImGui.GetMousePos(ctx)
     local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
     local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
     local mode = (ctrl or shift) and "add" or "replace"
-    
+
     self.sel_rect:begin(mx, my, mode, ctx)
     if self.on_click_empty then self.on_click_empty() end
   end
 
   local marquee_threshold = (self.config.marquee and self.config.marquee.drag_threshold) or DEFAULTS.marquee.drag_threshold
-  
-  if self.sel_rect:is_active() and ImGui.IsMouseDragging(ctx, 0, marquee_threshold) and not Input.is_external_drag_active(self) then
+
+  -- Support both left-click and right-click dragging for marquee selection
+  local is_dragging = (ImGui.IsMouseDragging(ctx, 0, marquee_threshold) or ImGui.IsMouseDragging(ctx, 1, marquee_threshold))
+  if self.sel_rect:is_active() and is_dragging and not Input.is_external_drag_active(self) then
     local mx, my = ImGui.GetMousePos(ctx)
     self.sel_rect:update(mx, my)
 
@@ -564,11 +568,12 @@ function Grid:draw(ctx)
     end
   end
 
-  if self.sel_rect:is_active() and ImGui.IsMouseReleased(ctx, 0) then
+  -- Support both left-click and right-click release to finish marquee selection
+  if self.sel_rect:is_active() and (ImGui.IsMouseReleased(ctx, 0) or ImGui.IsMouseReleased(ctx, 1)) then
     if not self.sel_rect:did_drag() then
       self.selection:clear()
-      if self.behaviors and self.behaviors.on_select then 
-        self.behaviors.on_select(self.selection:selected_keys()) 
+      if self.behaviors and self.behaviors.on_select then
+        self.behaviors.on_select(self.selection:selected_keys())
       end
     end
     self.sel_rect:clear()
@@ -656,8 +661,9 @@ function Grid:draw(ctx)
 
   if not self.block_all_input then
     Input.check_start_drag(self, ctx)
+    Input.check_right_click_release(self, ctx)
   end
-  
+
   if (not self.block_all_input) and self.drag:is_active() then
     self:_draw_drag_visuals(ctx, dl)
   end
