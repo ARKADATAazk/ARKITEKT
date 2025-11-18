@@ -43,24 +43,29 @@ function M.new(State, Config, settings)
 end
 
 function GlobalView:load_from_theme()
-  -- Load values from REAPER theme parameters
-  local ok, gamma = pcall(reaper.ThemeLayout_GetParameter, -1000)
-  if ok and type(gamma) == "number" then self.gamma = gamma end
+  -- Load values from REAPER theme parameters (using negative indices for global colors)
+  local ok, name, desc, value, default, min, max
 
-  local ok, highlights = pcall(reaper.ThemeLayout_GetParameter, -1003)
-  if ok and type(highlights) == "number" then self.highlights = highlights end
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1000)
+  if ok and type(value) == "number" then self.gamma = value end
 
-  local ok, midtones = pcall(reaper.ThemeLayout_GetParameter, -1002)
-  if ok and type(midtones) == "number" then self.midtones = midtones end
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1003)
+  if ok and type(value) == "number" then self.highlights = value end
 
-  local ok, shadows = pcall(reaper.ThemeLayout_GetParameter, -1001)
-  if ok and type(shadows) == "number" then self.shadows = shadows end
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1002)
+  if ok and type(value) == "number" then self.midtones = value end
 
-  local ok, saturation = pcall(reaper.ThemeLayout_GetParameter, -1004)
-  if ok and type(saturation) == "number" then self.saturation = saturation end
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1001)
+  if ok and type(value) == "number" then self.shadows = value end
 
-  local ok, tint = pcall(reaper.ThemeLayout_GetParameter, -1005)
-  if ok and type(tint) == "number" then self.tint = tint end
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1004)
+  if ok and type(value) == "number" then self.saturation = value end
+
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1005)
+  if ok and type(value) == "number" then self.tint = value end
+
+  ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, -1006)
+  if ok and type(value) == "number" then self.affect_project_colors = (value ~= 0) end
 end
 
 function GlobalView:set_param(param_id, value, save)
@@ -305,7 +310,10 @@ function GlobalView:draw(ctx, shell_state)
 
     if Checkbox.draw_at_cursor(ctx, "Custom color track names", self.custom_track_names, nil, "custom_track_names") then
       self.custom_track_names = not self.custom_track_names
-      -- TODO: Set 'glb_track_label_color' parameter
+      -- glb_track_label_color is a regular indexed parameter (not negative)
+      -- For now, we'll need ThemeParams to be integrated to get the index
+      -- This is a TODO for when ThemeParams is fully connected to all views
+      -- self:set_param(glb_track_label_color_idx, self.custom_track_names and 1 or 0, true)
     end
     ImGui.NewLine(ctx)
 

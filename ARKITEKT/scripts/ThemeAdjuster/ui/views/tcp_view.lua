@@ -7,6 +7,7 @@ local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 local Style = require('rearkitekt.gui.style.defaults')
+local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -76,8 +77,8 @@ function M.new(State, Config, settings)
     tcp_pan_size_idx = 1,
     tcp_width_size_idx = 1,
 
-    -- Active layout (A/B/C)
-    active_layout = 'A',
+    -- Active layout (A/B/C) - sync with ThemeParams
+    active_layout = ThemeParams.get_active_layout('tcp'),
 
     -- Visibility values (loaded from theme)
     visibility = {},
@@ -95,8 +96,38 @@ function M.new(State, Config, settings)
 end
 
 function TCPView:load_from_theme()
-  -- TODO: Load spinner indices from theme parameters
-  -- For now, keep defaults
+  -- Load spinner values from current layout's theme parameters
+  local spinners = {
+    'tcp_LabelSize', 'tcp_vol_size', 'tcp_MeterSize',
+    'tcp_InputSize', 'tcp_MeterLoc', 'tcp_sepSends',
+    'tcp_fxparms_size', 'tcp_recmon_size', 'tcp_pan_size', 'tcp_width_size'
+  }
+
+  for _, param_name in ipairs(spinners) do
+    local param = ThemeParams.get_param(param_name)
+    if param then
+      local idx_field = param_name .. '_idx'
+      self[idx_field] = ThemeParams.get_spinner_index(param_name, param.value)
+    end
+  end
+
+  -- Load global parameters (affect all layouts)
+  local global_params = {'tcp_indent', 'tcp_control_align'}
+  for _, param_name in ipairs(global_params) do
+    local param = ThemeParams.get_param(param_name)
+    if param then
+      local idx_field = param_name .. '_idx'
+      self[idx_field] = ThemeParams.get_spinner_index(param_name, param.value)
+    end
+  end
+
+  -- Load visibility flags
+  for _, elem in ipairs(VISIBILITY_ELEMENTS) do
+    local param = ThemeParams.get_param(elem.id)
+    if param then
+      self.visibility[elem.id] = param.value
+    end
+  end
 end
 
 function TCPView:get_param_index(param_name)
@@ -180,8 +211,11 @@ function TCPView:draw(ctx, shell_state)
         is_toggled = is_active,
         preset_name = "BUTTON_TOGGLE_WHITE",
         on_click = function()
+          -- Update local and global active layout
           self.active_layout = layout
-          -- TODO: Apply layout
+          ThemeParams.set_active_layout('tcp', layout)
+          -- Reload all parameters from new layout
+          self:load_from_theme()
         end
       }, "tcp_layout_" .. layout) then
       end
@@ -202,7 +236,9 @@ function TCPView:draw(ctx, shell_state)
         width = 70,
         height = 24,
         on_click = function()
-          -- TODO: Apply size
+          -- Apply layout to selected tracks
+          local scale = (size == '100%') and '' or (size .. '_')
+          ThemeParams.apply_layout_to_tracks('tcp', self.active_layout, scale)
         end
       }, "tcp_size_" .. size) then
       end
@@ -252,13 +288,25 @@ function TCPView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 3)
 
     local changed, new_idx = draw_spinner_row("Indent", "tcp_indent", self.tcp_indent_idx, SPINNER_VALUES.tcp_indent)
-    if changed then self.tcp_indent_idx = new_idx end
+    if changed then
+      self.tcp_indent_idx = new_idx
+      local value = ThemeParams.get_spinner_value('tcp_indent', new_idx)
+      ThemeParams.set_param('tcp_indent', value, true)
+    end
 
     changed, new_idx = draw_spinner_row("Alignment", "tcp_control_align", self.tcp_control_align_idx, SPINNER_VALUES.tcp_control_align)
-    if changed then self.tcp_control_align_idx = new_idx end
+    if changed then
+      self.tcp_control_align_idx = new_idx
+      local value = ThemeParams.get_spinner_value('tcp_control_align', new_idx)
+      ThemeParams.set_param('tcp_control_align', value, true)
+    end
 
     changed, new_idx = draw_spinner_row("Meter Loc", "tcp_MeterLoc", self.tcp_MeterLoc_idx, SPINNER_VALUES.tcp_MeterLoc)
-    if changed then self.tcp_MeterLoc_idx = new_idx end
+    if changed then
+      self.tcp_MeterLoc_idx = new_idx
+      local value = ThemeParams.get_spinner_value('tcp_MeterLoc', new_idx)
+      ThemeParams.set_param('tcp_MeterLoc', value, true)
+    end
 
     changed, new_idx = draw_spinner_row("Send List", "tcp_sepSends", self.tcp_sepSends_idx, SPINNER_VALUES.tcp_sepSends)
     if changed then self.tcp_sepSends_idx = new_idx end
