@@ -340,7 +340,7 @@ end
 --     [uuid] = {
 --       id = "uuid",
 --       name = "Virtual Folder Name",
---       parent_id = nil or "__ROOT__" or parent virtual folder uuid,
+--       parent_id = "__VIRTUAL_ROOT__" or parent virtual folder uuid,
 --       template_refs = {"template-uuid-1", "template-uuid-2"},
 --       color = "#FF5733" (optional),
 --       created = timestamp

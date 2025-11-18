@@ -252,9 +252,9 @@ local function prepare_tree_nodes(node, metadata, all_templates)
 
   local root_nodes = {}
 
-  -- Add virtual ROOT node at the top
+  -- Add Physical Root node
   local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
-  local root_node = {
+  local physical_root = {
     id = "__ROOT__",  -- Unique ID for ImGui (must not be empty)
     name = "Physical Root",
     path = "",  -- Relative path is empty (represents TrackTemplates root)
@@ -264,20 +264,26 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     is_virtual = false,
   }
 
-  -- Add all physical folders as children of ROOT
+  -- Add all physical folders as children of Physical Root
   if node.children then
     for _, child in ipairs(node.children) do
-      table.insert(root_node.children, convert_physical_node(child))
+      table.insert(physical_root.children, convert_physical_node(child))
     end
   end
 
-  -- Add all virtual folders that have ROOT as parent
-  local virtual_children = build_virtual_tree("__ROOT__")
-  for _, vchild in ipairs(virtual_children) do
-    table.insert(root_node.children, vchild)
-  end
+  table.insert(root_nodes, physical_root)
 
-  table.insert(root_nodes, root_node)
+  -- Add Virtual Root node (separate from physical)
+  local virtual_root = {
+    id = "__VIRTUAL_ROOT__",
+    name = "Virtual Root",
+    path = "__VIRTUAL_ROOT__",
+    children = build_virtual_tree("__VIRTUAL_ROOT__"),  -- All virtual folders go here
+    is_root = true,
+    is_virtual = true,
+  }
+
+  table.insert(root_nodes, virtual_root)
 
   return root_nodes
 end
@@ -291,9 +297,12 @@ local function draw_folder_tree(ctx, state, config)
     return
   end
 
-  -- Ensure ROOT node is open by default
+  -- Ensure ROOT nodes are open by default
   if state.folder_open_state["__ROOT__"] == nil then
     state.folder_open_state["__ROOT__"] = true
+  end
+  if state.folder_open_state["__VIRTUAL_ROOT__"] == nil then
+    state.folder_open_state["__VIRTUAL_ROOT__"] = true
   end
 
   -- Map state variables to TreeView format
@@ -998,15 +1007,22 @@ local function draw_directory_content(ctx, state, config, width, height)
     -- Create new virtual folder
     local Persistence = require('TemplateBrowser.domain.persistence')
 
-    -- Determine parent folder from selection
-    local parent_id = "__ROOT__"  -- Default to root
+    -- Determine parent folder from selection (only virtual folders/root)
+    local parent_id = "__VIRTUAL_ROOT__"  -- Default to virtual root
     if state.selected_folders and next(state.selected_folders) then
       for folder_id, _ in pairs(state.selected_folders) do
-        parent_id = folder_id
-        break  -- Use first selected
+        -- Only use as parent if it's a virtual folder
+        local is_virtual = state.metadata.virtual_folders and state.metadata.virtual_folders[folder_id]
+        if is_virtual or folder_id == "__VIRTUAL_ROOT__" then
+          parent_id = folder_id
+          break  -- Use first selected virtual folder
+        end
       end
     elseif state.selected_folder then
-      parent_id = state.selected_folder
+      local is_virtual = state.metadata.virtual_folders and state.metadata.virtual_folders[state.selected_folder]
+      if is_virtual or state.selected_folder == "__VIRTUAL_ROOT__" then
+        parent_id = state.selected_folder
+      end
     end
 
     -- Find unique name for the virtual folder
@@ -1056,10 +1072,10 @@ local function draw_directory_content(ctx, state, config, width, height)
     state.last_clicked_folder = new_id
 
     -- Open parent folder to show the new virtual folder
-    if parent_id ~= "__ROOT__" then
+    if parent_id ~= "__VIRTUAL_ROOT__" then
       state.folder_open_state[parent_id] = true
     end
-    state.folder_open_state["__ROOT__"] = true  -- Open ROOT
+    state.folder_open_state["__VIRTUAL_ROOT__"] = true  -- Open Virtual Root
 
     state.set_status("Created virtual folder: " .. new_folder_name, "success")
   end
