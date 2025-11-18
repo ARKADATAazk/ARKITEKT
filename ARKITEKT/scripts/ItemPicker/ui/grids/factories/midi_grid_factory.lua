@@ -49,25 +49,36 @@ function M.create(ctx, config, state, visualization, animator)
         goto continue
       end
 
-      -- Calculate filtered count (excluding pooled duplicates)
+      -- Get current item index (absolute position in full array)
+      local current_idx = state.box_current_midi_track[track_guid] or 1
+      if current_idx > #content then current_idx = 1 end
+
+      -- Build filtered list to calculate position and count
       local seen_pools = {}
-      local filtered_count = 0
-      for _, entry in ipairs(content) do
+      local filtered_list = {}
+      for i, entry in ipairs(content) do
         local pool_count = entry.pool_count or 1
         local pool_id = entry.pool_id
         if pool_count > 1 and pool_id then
           if not seen_pools[pool_id] then
             seen_pools[pool_id] = true
-            filtered_count = filtered_count + 1
+            table.insert(filtered_list, {index = i, entry = entry})
           end
         else
-          filtered_count = filtered_count + 1
+          table.insert(filtered_list, {index = i, entry = entry})
         end
       end
 
-      -- Get current item index
-      local current_idx = state.box_current_midi_track[track_guid] or 1
-      if current_idx > #content then current_idx = 1 end
+      -- Find current position in filtered list
+      local current_position = 1
+      for pos, item in ipairs(filtered_list) do
+        if item.index == current_idx then
+          current_position = pos
+          break
+        end
+      end
+
+      local filtered_count = #filtered_list
 
       local entry = content[current_idx]
       if not entry or not entry[2] then  -- Only require name, not item pointer
@@ -114,8 +125,8 @@ function M.create(ctx, config, state, visualization, animator)
         track_guid = track_guid,
         item = item,
         name = item_name,
-        index = current_idx,
-        total = filtered_count,  -- Show filtered count (excluding pooled duplicates)
+        index = current_position,  -- Position in filtered list (1, 2, 3...)
+        total = filtered_count,  -- Total items in filtered list
         color = color,
         key = uuid,
         uuid = uuid,
