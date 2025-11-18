@@ -451,6 +451,7 @@ function M.reorganize_items(loader, group_by_name)
       item_muted = raw_item.item_muted,
       uuid = raw_item.uuid,
       track_color = raw_item.track_color,  -- Include cached color
+      pool_count = 1,  -- Will be updated in post-processing
     })
 
     ::skip_audio::
@@ -486,9 +487,40 @@ function M.reorganize_items(loader, group_by_name)
       item_muted = raw_item.item_muted,
       uuid = raw_item.uuid,
       track_color = raw_item.track_color,  -- Include cached color
+      pool_count = 1,  -- Will be updated in post-processing
     })
 
     ::skip_midi::
+  end
+
+  -- Post-process: Calculate pool counts for items with identical names in the same group
+  -- This helps identify pooled/duplicated items
+  for group_key, items in pairs(loader.samples) do
+    local name_counts = {}
+    -- Count occurrences of each item name
+    for _, entry in ipairs(items) do
+      local item_name = entry[2] or "Unnamed"
+      name_counts[item_name] = (name_counts[item_name] or 0) + 1
+    end
+    -- Assign pool counts
+    for _, entry in ipairs(items) do
+      local item_name = entry[2] or "Unnamed"
+      entry.pool_count = name_counts[item_name]
+    end
+  end
+
+  for group_key, items in pairs(loader.midi_items) do
+    local name_counts = {}
+    -- Count occurrences of each item name
+    for _, entry in ipairs(items) do
+      local item_name = entry[2] or "Unnamed"
+      name_counts[item_name] = (name_counts[item_name] or 0) + 1
+    end
+    -- Assign pool counts
+    for _, entry in ipairs(items) do
+      local item_name = entry[2] or "Unnamed"
+      entry.pool_count = name_counts[item_name]
+    end
   end
 end
 
