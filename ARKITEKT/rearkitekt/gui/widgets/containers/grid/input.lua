@@ -150,7 +150,7 @@ function M.handle_wheel_input(grid, ctx, items)
   -- SHIFT+Scroll: Cycle through item group (1/3, 2/3, 3/3)
   if shift and not ctrl and not alt then
     local selected_keys = grid.selection:selected_keys()
-    if #selected_keys > 0 then
+    if #selected_keys > 0 and grid.behaviors and grid.behaviors.wheel_adjust then
       local wheel_step = (grid.config and grid.config.wheel and grid.config.wheel.step) or 1
       local delta = (wheel_y > 0) and wheel_step or -wheel_step
       grid.behaviors.wheel_adjust(selected_keys, delta)

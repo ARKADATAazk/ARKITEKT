@@ -112,40 +112,37 @@ function M.create(ctx, config, state, visualization, animator)
     -- Apply sorting
     local sort_mode = state.settings.sort_mode or "none"
     if sort_mode == "color" then
-      -- Sort by color (hue-based for visual grouping)
+      -- Sort by color using HSV for better visual grouping
+      -- Sort priority: Hue → Saturation → Value
       table.sort(filtered, function(a, b)
-        -- Extract RGB from ImGui color (ABGR format)
-        local ar = (a.color >> 16) & 0xFF
-        local ag = (a.color >> 8) & 0xFF
-        local ab = a.color & 0xFF
+        -- Use ImGui's color conversion for accuracy
+        local ar, ag, ab = ImGui.ColorConvertU32ToDouble4(a.color)
+        local br, bg, bb = ImGui.ColorConvertU32ToDouble4(b.color)
 
-        local br = (b.color >> 16) & 0xFF
-        local bg = (b.color >> 8) & 0xFF
-        local bb = b.color & 0xFF
+        local ah, as, av = ImGui.ColorConvertRGBtoHSV(ar, ag, ab)
+        local bh, bs, bv = ImGui.ColorConvertRGBtoHSV(br, bg, bb)
 
-        -- Convert to HSV for better color sorting
-        local function rgb_to_hue(r, g, b)
-          r, g, b = r/255, g/255, b/255
-          local max = math.max(r, g, b)
-          local min = math.min(r, g, b)
-          if max == min then return 0 end
+        -- Group grays/desaturated colors together at the start (saturation < 0.1)
+        local a_is_gray = as < 0.1
+        local b_is_gray = bs < 0.1
 
-          local hue
-          if max == r then
-            hue = (g - b) / (max - min)
-          elseif max == g then
-            hue = 2 + (b - r) / (max - min)
+        if a_is_gray and not b_is_gray then
+          return true  -- Gray comes first
+        elseif not a_is_gray and b_is_gray then
+          return false  -- Color comes after gray
+        elseif a_is_gray and b_is_gray then
+          -- Both gray: sort by value (brightness)
+          return av < bv
+        else
+          -- Both colored: sort by hue, then saturation, then value
+          if math.abs(ah - bh) > 0.02 then  -- Hue difference threshold
+            return ah < bh
+          elseif math.abs(as - bs) > 0.05 then  -- Saturation difference threshold
+            return as < bs
           else
-            hue = 4 + (r - g) / (max - min)
+            return av < bv
           end
-          hue = hue * 60
-          if hue < 0 then hue = hue + 360 end
-          return hue
         end
-
-        local a_hue = rgb_to_hue(ar, ag, ab)
-        local b_hue = rgb_to_hue(br, bg, bb)
-        return a_hue < b_hue
       end)
     elseif sort_mode == "name" then
       -- Sort alphabetically by name
@@ -268,7 +265,7 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     delete = function(item_uuids)
-      -- Disable all selected items
+      -- Toggle disable state for all selected items
       -- Convert UUIDs to track_guids
       local items = get_items()
       local track_guid_map = {}
@@ -278,10 +275,20 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
 
-      for _, uuid in ipairs(item_uuids) do
-        local track_guid = track_guid_map[uuid]
-        if track_guid then
-          state.disabled.midi[track_guid] = true
+      -- Determine toggle state: if first item is disabled, enable all; otherwise disable all
+      if #item_uuids > 0 then
+        local first_track_guid = track_guid_map[item_uuids[1]]
+        local new_state = not state.disabled.midi[first_track_guid]
+
+        for _, uuid in ipairs(item_uuids) do
+          local track_guid = track_guid_map[uuid]
+          if track_guid then
+            if new_state then
+              state.disabled.midi[track_guid] = true
+            else
+              state.disabled.midi[track_guid] = nil
+            end
+          end
         end
       end
       state.persist_disabled()
