@@ -10,6 +10,7 @@ local MCPView = require("ThemeAdjuster.ui.views.mcp_view")
 local TransportView = require("ThemeAdjuster.ui.views.transport_view")
 local EnvelopeView = require("ThemeAdjuster.ui.views.envelope_view")
 local ColorsView = require("ThemeAdjuster.ui.views.colors_view")
+local AdditionalView = require("ThemeAdjuster.ui.views.additional_view")
 local DebugView = require("ThemeAdjuster.ui.views.debug_view")
 local Renderer = require("rearkitekt.gui.widgets.media.package_tiles.renderer")
 
@@ -35,6 +36,7 @@ function M.new(State, Config, settings)
     TRANSPORT = TransportView.new(State, Config, settings),
     ENVELOPES = EnvelopeView.new(State, Config, settings),
     COLORS = ColorsView.new(State, Config, settings),
+    ADDITIONAL = AdditionalView.new(State, Config, settings),
     DEBUG = DebugView.new(State, Config, settings),
   }
 

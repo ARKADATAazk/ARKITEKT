@@ -95,6 +95,7 @@ Shell.run({
       { id = "COLORS", label = "Colors" },
       { id = "ENVELOPES", label = "Envelopes" },
       { id = "TRANSPORT", label = "Transport" },
+      { id = "ADDITIONAL", label = "Additional" },
       { id = "DEBUG", label = "Debug" },
     },
     active = State.get_active_tab(),
