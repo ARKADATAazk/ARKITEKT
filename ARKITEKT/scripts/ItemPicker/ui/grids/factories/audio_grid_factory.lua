@@ -131,8 +131,8 @@ function M.create(ctx, config, state, visualization, animator)
         local B = (colorref >> 16) & 255
         color = ImGui.ColorConvertDouble4ToU32(R/255, G/255, B/255, 1)
       else
-        -- No color flag: use default grey (0xFF5B5B55 in ABGR)
-        color = 0xFF5B5B55
+        -- No color flag: use default grey
+        color = ImGui.ColorConvertDouble4ToU32(85/255, 91/255, 91/255, 1)
       end
 
       table.insert(filtered, {
