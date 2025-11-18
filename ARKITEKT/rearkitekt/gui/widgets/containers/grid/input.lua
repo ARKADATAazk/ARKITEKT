@@ -397,9 +397,14 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
     M.stop_inline_edit(grid, false)  -- Cancel on escape
     return true, current_text
   elseif not is_active and ImGui.IsMouseClicked(ctx, 0) and state.frames_active > 2 then
-    -- Only cancel on click-away after a few frames to prevent double-click from canceling
-    M.stop_inline_edit(grid, false)  -- Cancel
-    return true, current_text
+    -- Only cancel on click-away if click is outside the input bounds
+    local mx, my = ImGui.GetMousePos(ctx)
+    local clicked_outside = mx < input_x1 or mx > input_x2 or my < input_y1 or my > input_y2
+
+    if clicked_outside then
+      M.stop_inline_edit(grid, false)  -- Cancel
+      return true, current_text
+    end
   end
 
   return true, state.text  -- Still editing
