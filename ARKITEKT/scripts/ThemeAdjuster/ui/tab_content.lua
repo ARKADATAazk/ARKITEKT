@@ -43,6 +43,16 @@ function M.new(State, Config, settings)
     DEBUG = DebugView.new(State, Config, settings),
   }
 
+  -- Give AdditionalView a callback to invalidate TCP/MCP caches when assignments change
+  additional_view:set_cache_invalidation_callback(function()
+    if self.views.TCP and self.views.TCP.refresh_additional_params then
+      self.views.TCP:refresh_additional_params()
+    end
+    if self.views.MCP and self.views.MCP.refresh_additional_params then
+      self.views.MCP:refresh_additional_params()
+    end
+  end)
+
   return self
 end
 

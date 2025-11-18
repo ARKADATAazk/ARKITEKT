@@ -61,6 +61,9 @@ function M.new(State, Config, settings)
 
     -- Custom metadata: param_name -> {display_name = "", description = ""}
     custom_metadata = {},
+
+    -- Callback to invalidate caches in TCP/MCP views
+    cache_invalidation_callback = nil,
   }, AdditionalView)
 
   -- Discover parameters on init
@@ -173,6 +176,8 @@ function AdditionalView:draw_param_row(ctx, param, shell_state)
   local control_start = label_w
   local control_w = 150
   local chips_start = control_start + control_w + 20
+  local name_start = chips_start + 280
+  local desc_start = name_start + 200
 
   -- Initialize metadata if needed
   if not self.custom_metadata[param.name] then
@@ -213,26 +218,22 @@ function AdditionalView:draw_param_row(ctx, param, shell_state)
     param.value = new_value
   end
 
-  -- Draw assignable tab chips (right side)
+  -- Draw assignable tab chips
   ImGui.SameLine(ctx, chips_start)
   local assignment_changed = self:draw_assignment_chips(ctx, param)
   if assignment_changed then
     self:save_assignments()
   end
 
-  ImGui.Dummy(ctx, 0, 2)
-
-  -- Second row: Custom name and description fields
-  ImGui.Indent(ctx, 20)
-
   -- Custom Name field
+  ImGui.SameLine(ctx, name_start)
   ImGui.AlignTextToFramePadding(ctx)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-  ImGui.Text(ctx, "Name:")
+  ImGui.Text(ctx, "N:")
   ImGui.PopStyleColor(ctx)
-  ImGui.SameLine(ctx, 70)
+  ImGui.SameLine(ctx, 0, 4)
 
-  ImGui.SetNextItemWidth(ctx, 180)
+  ImGui.SetNextItemWidth(ctx, 140)
   local name_changed, new_name = ImGui.InputText(ctx, "##name_" .. param.index,
     self.custom_metadata[param.name].display_name)
   if name_changed then
@@ -241,14 +242,14 @@ function AdditionalView:draw_param_row(ctx, param, shell_state)
   end
 
   -- Description field
-  ImGui.SameLine(ctx, 265)
+  ImGui.SameLine(ctx, desc_start)
   ImGui.AlignTextToFramePadding(ctx)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
-  ImGui.Text(ctx, "Desc:")
+  ImGui.Text(ctx, "D:")
   ImGui.PopStyleColor(ctx)
-  ImGui.SameLine(ctx, 315)
+  ImGui.SameLine(ctx, 0, 4)
 
-  ImGui.SetNextItemWidth(ctx, 280)
+  ImGui.SetNextItemWidth(ctx, 200)
   local desc_changed, new_desc = ImGui.InputText(ctx, "##desc_" .. param.index,
     self.custom_metadata[param.name].description)
   if desc_changed then
@@ -256,8 +257,7 @@ function AdditionalView:draw_param_row(ctx, param, shell_state)
     self:save_assignments()
   end
 
-  ImGui.Unindent(ctx, 20)
-  ImGui.Dummy(ctx, 0, 6)
+  ImGui.Dummy(ctx, 0, 4)
 end
 
 function AdditionalView:draw_control(ctx, param, width)
@@ -398,34 +398,29 @@ function AdditionalView:load_assignments()
   end
 end
 
+function AdditionalView:set_cache_invalidation_callback(callback)
+  -- Set callback to invalidate TCP/MCP caches when assignments change
+  self.cache_invalidation_callback = callback
+end
+
 function AdditionalView:save_assignments()
   -- Save assignments and metadata to JSON file
-  reaper.ShowConsoleMsg("Additional: Saving assignments and metadata...\n")
-  for param_name, assignment in pairs(self.assignments) do
-    for tab_id, is_assigned in pairs(assignment) do
-      if is_assigned then
-        reaper.ShowConsoleMsg("  - " .. param_name .. " -> " .. tab_id .. "\n")
-      end
-    end
+  local success = ThemeMapper.save_assignments(self.assignments, self.custom_metadata)
+
+  -- Invalidate TCP/MCP caches so they pick up the new assignments
+  if self.cache_invalidation_callback then
+    self.cache_invalidation_callback()
   end
 
-  local success = ThemeMapper.save_assignments(self.assignments, self.custom_metadata)
-  if success then
-    reaper.ShowConsoleMsg("Additional: Data saved successfully\n")
-  else
-    reaper.ShowConsoleMsg("Additional: Failed to save data\n")
-  end
+  return success
 end
 
 function AdditionalView:get_assigned_params(tab_id)
   -- Return all parameters assigned to a specific tab with custom metadata
   local assigned = {}
 
-  -- Get all discovered parameters
-  local all_params = ParamDiscovery.discover_all_params()
-
-  -- Filter to params assigned to this tab
-  for _, param in ipairs(all_params) do
+  -- Filter to params assigned to this tab from cached unknown_params
+  for _, param in ipairs(self.unknown_params) do
     local assignment = self.assignments[param.name]
     if assignment and assignment[tab_id] then
       -- Attach custom metadata if available
@@ -441,8 +436,6 @@ function AdditionalView:get_assigned_params(tab_id)
       table.insert(assigned, param)
     end
   end
-
-  reaper.ShowConsoleMsg(tab_id .. ": get_assigned_params() returning " .. #assigned .. " params\n")
 
   return assigned
 end

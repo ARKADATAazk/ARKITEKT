@@ -185,12 +185,22 @@ function TCPView:set_default_layout(layout)
 end
 
 function TCPView:get_additional_params()
-  -- Get parameters assigned to TCP tab from shared state
+  -- Get parameters assigned to TCP tab from shared state (cached)
   if not self.additional_view then
     return {}
   end
 
-  return self.additional_view:get_assigned_params("TCP")
+  -- Cache the result to avoid recalculating every frame
+  if not self.cached_additional_params then
+    self.cached_additional_params = self.additional_view:get_assigned_params("TCP")
+  end
+
+  return self.cached_additional_params
+end
+
+function TCPView:refresh_additional_params()
+  -- Force refresh of cached additional params
+  self.cached_additional_params = nil
 end
 
 function TCPView:draw_additional_param(ctx, param)
