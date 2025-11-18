@@ -13,7 +13,7 @@ function M.create(ctx, config, state, visualization, animator)
   local function get_items()
     if not state.midi_indexes then return {} end
 
-    -- Compute filter hash to detect changes
+    -- Compute filter hash to detect changes (EXCLUDING indices to prevent re-sort)
     local settings = state.settings
     local filter_hash = string.format("%s|%s|%s|%s|%s|%s|%s|%d",
       tostring(settings.show_favorites_only),
@@ -26,9 +26,53 @@ function M.create(ctx, config, state, visualization, animator)
       #state.midi_indexes
     )
 
-    -- Return cached result if filters haven't changed
-    if state.runtime_cache.midi_filter_hash == filter_hash and state.runtime_cache.midi_filtered then
-      return state.runtime_cache.midi_filtered
+    -- Check if we need to rebuild
+    local cache_valid = state.runtime_cache.midi_filter_hash == filter_hash
+
+    -- If cache is valid, just update current items without re-sorting
+    if cache_valid and state.runtime_cache.midi_filtered then
+      -- Update current items in cached list (for cycling without re-sort)
+      local cached = state.runtime_cache.midi_filtered
+      for i, item_data in ipairs(cached) do
+        local track_guid = item_data.track_guid
+        local content = state.midi_items[track_guid]
+        if content then
+          local current_idx = state.box_current_midi_track[track_guid] or 1
+          if current_idx > #content then current_idx = 1 end
+          local entry = content[current_idx]
+          if entry then
+            -- Update to new item without changing position
+            item_data.item = entry[1]
+            item_data.name = entry[2]
+            item_data.pool_count = entry.pool_count or 1
+            -- Recalculate position in filtered list
+            local seen_pools = {}
+            local filtered_list = {}
+            for j, e in ipairs(content) do
+              local pool_count = e.pool_count or 1
+              local pool_id = e.pool_id
+              if pool_count > 1 and pool_id then
+                if not seen_pools[pool_id] then
+                  seen_pools[pool_id] = true
+                  table.insert(filtered_list, {index = j})
+                end
+              else
+                table.insert(filtered_list, {index = j})
+              end
+            end
+            local current_position = 1
+            for pos, fitem in ipairs(filtered_list) do
+              if fitem.index == current_idx then
+                current_position = pos
+                break
+              end
+            end
+            item_data.index = current_position
+            item_data.total = #filtered_list
+          end
+        end
+      end
+      return cached
     end
 
     -- Filters changed - rebuild filtered list
