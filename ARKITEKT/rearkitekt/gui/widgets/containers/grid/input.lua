@@ -353,8 +353,11 @@ end
 function M.check_right_click_release(grid, ctx)
   -- Check if right-click was released without dragging -> trigger disable
   if grid.right_click_press and ImGui.IsMouseReleased(ctx, 1) then
+    reaper.ShowConsoleMsg(string.format("[RIGHT_CLICK_RELEASE] marquee_was_active=%s\n", tostring(grid.marquee_was_active_this_frame)))
+
     -- Don't trigger disable if marquee selection was used this frame (user was dragging to select)
     if grid.marquee_was_active_this_frame then
+      reaper.ShowConsoleMsg("[RIGHT_CLICK_RELEASE] Skipping disable because marquee was active\n")
       grid.right_click_press = nil
       return
     end
@@ -365,10 +368,13 @@ function M.check_right_click_release(grid, ctx)
     local dy = my - press_pos[2]
     local dist = math.sqrt(dx * dx + dy * dy)
 
+    reaper.ShowConsoleMsg(string.format("[RIGHT_CLICK_RELEASE] Distance moved: %.2f pixels\n", dist))
+
     -- If moved less than threshold, consider it a click (not a drag)
     local threshold = 5
     if dist < threshold and grid.behaviors and grid.behaviors.delete then
       local key = grid.right_click_press.key
+      reaper.ShowConsoleMsg(string.format("[RIGHT_CLICK_RELEASE] Triggering disable for key: %s\n", tostring(key)))
       local selected_keys = grid.selection:selected_keys()
       if grid.selection:is_selected(key) and #selected_keys > 1 then
         -- Multi-select: disable all selected
@@ -377,6 +383,8 @@ function M.check_right_click_release(grid, ctx)
         -- Single item: disable just this one
         grid.behaviors.delete({key})
       end
+    else
+      reaper.ShowConsoleMsg("[RIGHT_CLICK_RELEASE] Not triggering disable (distance too far or no behavior)\n")
     end
 
     grid.right_click_press = nil
