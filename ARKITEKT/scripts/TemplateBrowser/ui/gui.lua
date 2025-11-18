@@ -269,7 +269,7 @@ local function draw_folder_tree(ctx, state, config)
       Scanner.filter_templates(state)
     end,
 
-    -- Folder drop callback
+    -- Folder drop callback (supports multi-drag)
     on_drop_folder = function(dragged_node_id, target_node)
       -- Find the source node
       local function find_node_by_id(nodes, id)
@@ -293,46 +293,99 @@ local function draw_folder_tree(ctx, state, config)
         return false
       end
 
-      local source_node = find_node_by_id(tree_nodes, dragged_node_id)
-      if not source_node or not target_node then return end
-
-      -- Don't allow dropping onto self
-      if source_node.id == target_node.id then
-        reaper.ShowConsoleMsg("Cannot move folder into itself\n")
-        return
+      -- Check if payload contains multiple IDs (newline-separated)
+      local dragged_ids = {}
+      if dragged_node_id:find("\n") then
+        -- Multi-drag: split by newline
+        for id in dragged_node_id:gmatch("[^\n]+") do
+          table.insert(dragged_ids, id)
+        end
+      else
+        -- Single drag
+        table.insert(dragged_ids, dragged_node_id)
       end
 
-      -- Don't allow dropping into own descendants (circular reference)
-      if is_descendant(source_node, target_node.id) then
-        reaper.ShowConsoleMsg("Cannot move folder into its own subfolder\n")
-        return
+      -- Validate all folders before moving any
+      local folders_to_move = {}
+      for _, id in ipairs(dragged_ids) do
+        local source_node = find_node_by_id(tree_nodes, id)
+        if not source_node or not target_node then
+          reaper.ShowConsoleMsg("Error: Cannot find source or target folder\n")
+          return
+        end
+
+        -- Don't allow dropping onto self
+        if source_node.id == target_node.id then
+          reaper.ShowConsoleMsg("Cannot move folder into itself\n")
+          return
+        end
+
+        -- Don't allow dropping into own descendants (circular reference)
+        if is_descendant(source_node, target_node.id) then
+          reaper.ShowConsoleMsg("Cannot move folder into its own subfolder\n")
+          return
+        end
+
+        table.insert(folders_to_move, source_node)
       end
 
-      -- Store paths as strings before move (node references become stale after scan)
-      local source_full_path = source_node.full_path
-      local source_name = source_node.name
+      -- Prepare move operations for all folders
+      local move_operations = {}
       local target_full_path = target_node.full_path
       local target_name = target_node.name
-
-      -- Strip trailing slashes from paths (full_path includes trailing separator)
-      local source_normalized = source_full_path:gsub("[/\\]+$", "")
       local target_normalized = target_full_path:gsub("[/\\]+$", "")
 
-      -- Extract old parent directory
-      local old_parent = source_normalized:match("^(.+)[/\\][^/\\]+$")
-      if not old_parent then
-        reaper.ShowConsoleMsg("ERROR: Cannot determine parent folder for: " .. source_full_path .. "\n")
-        return
+      for _, source_node in ipairs(folders_to_move) do
+        local source_full_path = source_node.full_path
+        local source_name = source_node.name
+        local source_normalized = source_full_path:gsub("[/\\]+$", "")
+
+        -- Extract old parent directory
+        local old_parent = source_normalized:match("^(.+)[/\\][^/\\]+$")
+        if not old_parent then
+          reaper.ShowConsoleMsg("ERROR: Cannot determine parent folder for: " .. source_full_path .. "\n")
+          return
+        end
+
+        table.insert(move_operations, {
+          source_normalized = source_normalized,
+          source_name = source_name,
+          old_parent = old_parent,
+          new_path = nil  -- Will be set after move
+        })
       end
 
-      -- Move folder (use normalized paths without trailing slashes)
-      local success, new_path = FileOps.move_folder(source_normalized, target_normalized)
-      if success then
-        -- Create undo operation with all paths captured as strings
+      -- Execute all moves
+      local all_success = true
+      for _, op in ipairs(move_operations) do
+        local success, new_path = FileOps.move_folder(op.source_normalized, target_normalized)
+        if success then
+          op.new_path = new_path
+        else
+          all_success = false
+          reaper.ShowConsoleMsg("ERROR: Failed to move folder: " .. op.source_name .. "\n")
+          break
+        end
+      end
+
+      if all_success then
+        -- Create batch undo operation
+        local description = #folders_to_move > 1
+          and ("Move " .. #folders_to_move .. " folders -> " .. target_name)
+          or ("Move folder: " .. move_operations[1].source_name .. " -> " .. target_name)
+
         state.undo_manager:push({
-          description = "Move folder: " .. source_name .. " -> " .. target_name,
+          description = description,
           undo_fn = function()
-            local undo_success = FileOps.move_folder(new_path, old_parent)
+            local undo_success = true
+            -- Undo in reverse order
+            for i = #move_operations, 1, -1 do
+              local op = move_operations[i]
+              if not FileOps.move_folder(op.new_path, op.old_parent) then
+                undo_success = false
+                break
+              end
+            end
             if undo_success then
               local Scanner = require('TemplateBrowser.domain.scanner')
               Scanner.scan_templates(state)
@@ -340,13 +393,19 @@ local function draw_folder_tree(ctx, state, config)
             return undo_success
           end,
           redo_fn = function()
-            -- Reconstruct original source path from captured strings
-            local sep = package.config:sub(1,1)
-            local original_source = old_parent .. sep .. source_name
-
-            local redo_success, redo_new_path = FileOps.move_folder(original_source, target_normalized)
+            local redo_success = true
+            for _, op in ipairs(move_operations) do
+              local sep = package.config:sub(1,1)
+              local original_source = op.old_parent .. sep .. op.source_name
+              local success, new_path = FileOps.move_folder(original_source, target_normalized)
+              if success then
+                op.new_path = new_path
+              else
+                redo_success = false
+                break
+              end
+            end
             if redo_success then
-              new_path = redo_new_path  -- Update for subsequent operations
               local Scanner = require('TemplateBrowser.domain.scanner')
               Scanner.scan_templates(state)
             end

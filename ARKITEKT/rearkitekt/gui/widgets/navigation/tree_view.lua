@@ -117,11 +117,11 @@ local function render_tree_node(ctx, node, config, state, depth)
     if tree_item_hovered and not is_selected then
       local hover_color
       if node_color and config.show_colors then
-        -- Brighten folder color for hover
-        hover_color = Colors.with_alpha(Colors.adjust_brightness(node_color, 1.3), 0x20)  -- 12% opacity, 30% brighter
+        -- Subtle brightening of folder color for hover
+        hover_color = Colors.with_alpha(node_color, 0x25)  -- 15% opacity of folder color
       else
         -- Default subtle white overlay for non-colored items
-        hover_color = Colors.hexrgb("#FFFFFF10")  -- 6% opacity white
+        hover_color = Colors.hexrgb("#FFFFFF08")  -- 3% opacity white
       end
       ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, hover_color, 0)
     end
@@ -342,8 +342,28 @@ local function render_tree_node(ctx, node, config, state, depth)
 
     -- Drag-drop source (for dragging folders)
     if config.enable_drag_drop and ImGui.BeginDragDropSource(ctx) then
-      ImGui.SetDragDropPayload(ctx, "TREENODE_FOLDER", node_id)
-      ImGui.Text(ctx, "Move: " .. node.name)
+      -- Support multi-drag: if this node is selected and multi-select is enabled
+      local drag_payload = node_id
+      local drag_label = "Move: " .. node.name
+
+      if config.enable_multi_select and state.selected_nodes and state.selected_nodes[node_id] then
+        -- Count selected nodes and collect their IDs
+        local selected_ids = {}
+        local count = 0
+        for id, _ in pairs(state.selected_nodes) do
+          table.insert(selected_ids, id)
+          count = count + 1
+        end
+
+        if count > 1 then
+          -- Encode multiple node IDs (newline-separated)
+          drag_payload = table.concat(selected_ids, "\n")
+          drag_label = "Move: " .. count .. " folders"
+        end
+      end
+
+      ImGui.SetDragDropPayload(ctx, "TREENODE_FOLDER", drag_payload)
+      ImGui.Text(ctx, drag_label)
       ImGui.EndDragDropSource(ctx)
     end
 
@@ -385,8 +405,8 @@ end
 local function build_flat_node_list(nodes, flat_list)
   flat_list = flat_list or {}
   for _, node in ipairs(nodes) do
-    local node_id = node.id or node.path or tostring(_node_counter + 1)
     _node_counter = _node_counter + 1
+    local node_id = node.id or node.path or tostring(_node_counter)
     table.insert(flat_list, node_id)
     if node.children and #node.children > 0 then
       build_flat_node_list(node.children, flat_list)
