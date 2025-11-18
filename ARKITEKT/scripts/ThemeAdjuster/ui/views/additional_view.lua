@@ -60,12 +60,26 @@ function M.new(State, Config, settings)
     -- UI state
     dev_mode = false,
     show_group_filter = false,  -- Show group filter dialog
+    active_assignment_tab = "TCP",  -- Currently selected tab in assignment grid
 
-    -- Tab assignments: param_name -> {TCP = true, MCP = false, ...}
-    assignments = {},
+    -- NEW: Tab assignments with ordering
+    -- Structure: { TCP = { {param_name = "...", order = 1}, ... }, MCP = {...}, ... }
+    assignments = {
+      TCP = {},
+      MCP = {},
+      ENVCP = {},
+      TRANS = {},
+      GLOBAL = {}
+    },
 
     -- Custom metadata: param_name -> {display_name = "", description = ""}
     custom_metadata = {},
+
+    -- Drag and drop state
+    dragging_param = nil,  -- Currently dragged parameter
+    drag_source = nil,  -- "library" or tab_id
+    drag_over_tab = nil,  -- Tab being hovered over
+    drag_insert_index = nil,  -- Index to insert at when reordering
 
     -- Callback to invalidate caches in TCP/MCP views
     cache_invalidation_callback = nil,
@@ -143,10 +157,11 @@ end
 
 function AdditionalView:draw(ctx, shell_state)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
+  local avail_h = ImGui.GetContentRegionAvail(ctx)
 
-  -- Title
+  -- Title and buttons
   ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
-  ImGui.Text(ctx, "Additional Parameters")
+  ImGui.Text(ctx, "Parameter Manager")
   ImGui.PopFont(ctx)
 
   ImGui.SameLine(ctx, 0, 20)
@@ -173,9 +188,6 @@ function AdditionalView:draw(ctx, shell_state)
   ImGui.SameLine(ctx, 0, 8)
 
   -- Export button
-  local theme_name = ParamDiscovery.get_current_theme_name()
-  local param_count = #self.unknown_params
-
   if Button.draw_at_cursor(ctx, {
     label = "Export to JSON",
     width = 120,
@@ -186,25 +198,21 @@ function AdditionalView:draw(ctx, shell_state)
   }, "export_json") then
   end
 
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "Export all discovered parameters to a JSON file in ColorThemes/")
-  end
-
-  ImGui.Dummy(ctx, 0, 4)
-
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
-  ImGui.Text(ctx, string.format("Auto-discovered parameters from: %s (%d found)", theme_name, param_count))
-  ImGui.PopStyleColor(ctx)
-
   ImGui.Dummy(ctx, 0, 8)
 
-  -- Scrollable content area
+  -- Two-panel layout: LEFT = Parameter Library | RIGHT = Assignment Grid
+  local panel_gap = 16
+  local left_width = avail_w * 0.55
+  local right_width = avail_w * 0.45 - panel_gap
+
+  -- LEFT PANEL: Parameter Library
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
-  if ImGui.BeginChild(ctx, "additional_content", avail_w, 0, 1) then
-    -- Draw background pattern
+  if ImGui.BeginChild(ctx, "param_library", left_width, 0, 1) then
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
+
+    -- Background pattern
     local pattern_cfg = {
       enabled = true,
       primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
@@ -212,33 +220,76 @@ function AdditionalView:draw(ctx, shell_state)
     }
     Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
-    ImGui.Dummy(ctx, 0, 4)
     ImGui.Indent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 4)
 
-    -- Display grouped parameters
+    -- Header
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
+    ImGui.Text(ctx, "PARAMETER LIBRARY")
+    ImGui.PopFont(ctx)
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+    local param_count = #self.unknown_params
+    ImGui.Text(ctx, string.format("%d parameters • Drag to assign", param_count))
+    ImGui.PopStyleColor(ctx)
+
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Draw parameter tiles
     if param_count == 0 then
-      ImGui.Dummy(ctx, 0, 20)
       ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-      ImGui.Text(ctx, "No additional parameters found.")
-      ImGui.Text(ctx, "All theme parameters are already mapped to their respective tabs.")
+      ImGui.Text(ctx, "No additional parameters found")
       ImGui.PopStyleColor(ctx)
     else
-      for category, params in pairs(self.grouped_params) do
-        ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
-        ImGui.Text(ctx, category:upper())
-        ImGui.PopFont(ctx)
-        ImGui.Dummy(ctx, 0, 4)
-
-        for _, param in ipairs(params) do
-          self:draw_param_row(ctx, param, shell_state)
-        end
-
-        ImGui.Dummy(ctx, 0, 12)
+      for _, param in ipairs(self.unknown_params) do
+        self:draw_param_tile(ctx, param, shell_state)
+        ImGui.Dummy(ctx, 0, 8)
       end
     end
 
     ImGui.Unindent(ctx, 8)
-    ImGui.Dummy(ctx, 0, 2)
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.EndChild(ctx)
+  end
+  ImGui.PopStyleColor(ctx)
+
+  -- RIGHT PANEL: Assignment Grid
+  ImGui.SameLine(ctx, 0, panel_gap)
+
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+  if ImGui.BeginChild(ctx, "assignment_grid", right_width, 0, 1) then
+    local child_x, child_y = ImGui.GetWindowPos(ctx)
+    local child_w, child_h = ImGui.GetWindowSize(ctx)
+    local dl = ImGui.GetWindowDrawList(ctx)
+
+    -- Background pattern
+    local pattern_cfg = {
+      enabled = true,
+      primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
+      secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
+    }
+    Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+
+    ImGui.Indent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Header
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
+    ImGui.Text(ctx, "ACTIVE ASSIGNMENTS")
+    ImGui.PopFont(ctx)
+
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Tab bar
+    self:draw_assignment_tab_bar(ctx, shell_state)
+
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Draw assigned parameter tiles for active tab
+    self:draw_assignment_grid(ctx, shell_state)
+
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 4)
     ImGui.EndChild(ctx)
   end
   ImGui.PopStyleColor(ctx)
@@ -588,9 +639,60 @@ function AdditionalView:load_assignments()
   local mappings = ThemeMapper.load_current_mappings()
 
   if mappings and mappings.assignments then
-    self.assignments = mappings.assignments
+    -- Check if it's the old format (param_name -> {TCP = true, ...})
+    -- or new format (TCP -> [{param_name = "...", order = 1}, ...])
+    local is_old_format = false
+    for key, value in pairs(mappings.assignments) do
+      if type(value) == "table" and value.TCP ~= nil then
+        is_old_format = true
+        break
+      elseif type(value) == "table" and type(value[1]) == "table" then
+        is_old_format = false
+        break
+      end
+    end
+
+    if is_old_format then
+      -- Convert old format to new format
+      local new_assignments = {
+        TCP = {},
+        MCP = {},
+        ENVCP = {},
+        TRANS = {},
+        GLOBAL = {}
+      }
+
+      for param_name, assignment in pairs(mappings.assignments) do
+        for tab_id, is_assigned in pairs(assignment) do
+          if is_assigned and new_assignments[tab_id] then
+            table.insert(new_assignments[tab_id], {
+              param_name = param_name,
+              order = #new_assignments[tab_id] + 1
+            })
+          end
+        end
+      end
+
+      self.assignments = new_assignments
+    else
+      -- Already new format
+      self.assignments = mappings.assignments
+      -- Ensure all tabs exist
+      for _, tab_id in ipairs({"TCP", "MCP", "ENVCP", "TRANS", "GLOBAL"}) do
+        if not self.assignments[tab_id] then
+          self.assignments[tab_id] = {}
+        end
+      end
+    end
   else
-    self.assignments = {}
+    -- Initialize empty assignments
+    self.assignments = {
+      TCP = {},
+      MCP = {},
+      ENVCP = {},
+      TRANS = {},
+      GLOBAL = {}
+    }
   end
 
   if mappings and mappings.custom_metadata then
@@ -637,25 +739,132 @@ function AdditionalView:save_group_filter()
   end
 end
 
+-- NEW: Check if parameter is assigned to a tab
+function AdditionalView:is_param_assigned(param_name, tab_id)
+  if not self.assignments[tab_id] then return false end
+
+  for _, assignment in ipairs(self.assignments[tab_id]) do
+    if assignment.param_name == param_name then
+      return true
+    end
+  end
+
+  return false
+end
+
+-- NEW: Get assignment count for a parameter (how many tabs it's assigned to)
+function AdditionalView:get_assignment_count(param_name)
+  local count = 0
+  for tab_id, assignments in pairs(self.assignments) do
+    for _, assignment in ipairs(assignments) do
+      if assignment.param_name == param_name then
+        count = count + 1
+        break
+      end
+    end
+  end
+  return count
+end
+
+-- NEW: Add parameter to tab (drag from library)
+function AdditionalView:assign_param_to_tab(param_name, tab_id)
+  if not self.assignments[tab_id] then
+    self.assignments[tab_id] = {}
+  end
+
+  -- Check if already assigned
+  if self:is_param_assigned(param_name, tab_id) then
+    return false
+  end
+
+  -- Add to end of list
+  local order = #self.assignments[tab_id] + 1
+  table.insert(self.assignments[tab_id], {
+    param_name = param_name,
+    order = order
+  })
+
+  self:save_assignments()
+  return true
+end
+
+-- NEW: Remove parameter from tab
+function AdditionalView:unassign_param_from_tab(param_name, tab_id)
+  if not self.assignments[tab_id] then return false end
+
+  for i, assignment in ipairs(self.assignments[tab_id]) do
+    if assignment.param_name == param_name then
+      table.remove(self.assignments[tab_id], i)
+      -- Reorder remaining params
+      for j, a in ipairs(self.assignments[tab_id]) do
+        a.order = j
+      end
+      self:save_assignments()
+      return true
+    end
+  end
+
+  return false
+end
+
+-- NEW: Reorder parameter within tab
+function AdditionalView:reorder_param(tab_id, from_index, to_index)
+  if not self.assignments[tab_id] then return false end
+
+  local assignments = self.assignments[tab_id]
+  if from_index < 1 or from_index > #assignments then return false end
+  if to_index < 1 or to_index > #assignments then return false end
+
+  -- Remove from old position
+  local assignment = table.remove(assignments, from_index)
+
+  -- Insert at new position
+  table.insert(assignments, to_index, assignment)
+
+  -- Update order values
+  for i, a in ipairs(assignments) do
+    a.order = i
+  end
+
+  self:save_assignments()
+  return true
+end
+
+-- UPDATED: Get assigned params for a tab (sorted by order)
 function AdditionalView:get_assigned_params(tab_id)
-  -- Return all parameters assigned to a specific tab with custom metadata
   local assigned = {}
 
-  -- Filter to params assigned to this tab from cached unknown_params
+  if not self.assignments[tab_id] then
+    return assigned
+  end
+
+  -- Build param lookup table for quick access
+  local param_lookup = {}
   for _, param in ipairs(self.unknown_params) do
-    local assignment = self.assignments[param.name]
-    if assignment and assignment[tab_id] then
-      -- Attach custom metadata if available
-      local metadata = self.custom_metadata[param.name]
-      if metadata then
-        param.display_name = metadata.display_name or param.name
-        param.custom_description = metadata.description or ""
-      else
-        param.display_name = param.name
-        param.custom_description = ""
+    param_lookup[param.name] = param
+  end
+
+  -- Get assigned params in order
+  for _, assignment in ipairs(self.assignments[tab_id]) do
+    local param = param_lookup[assignment.param_name]
+    if param then
+      -- Clone param to avoid modifying original
+      local param_copy = {}
+      for k, v in pairs(param) do
+        param_copy[k] = v
       end
 
-      table.insert(assigned, param)
+      -- Attach custom metadata
+      local metadata = self.custom_metadata[param.name]
+      if metadata then
+        param_copy.display_name = metadata.display_name or param.name
+        param_copy.custom_description = metadata.description or ""
+      else
+        param_copy.display_name = param.name
+        param_copy.custom_description = ""
+      end
+
+      table.insert(assigned, param_copy)
     end
   end
 
