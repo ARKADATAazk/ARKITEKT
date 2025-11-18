@@ -23,6 +23,7 @@ local state = {
   item_count = 0,
   popup_opened = false,
   selected_color = 0xFF5733FF,  -- Default color (RGBA)
+  picker_initialized = false,    -- Track if color picker has been initialized
 }
 
 -- Wildcard pattern processing
@@ -62,6 +63,7 @@ function M.open(item_count, on_confirm_callback, opts)
   state.focus_input = true
   state.item_count = item_count
   state.popup_opened = false
+  state.picker_initialized = false  -- Reset picker initialization flag
   -- Note: ImGui.OpenPopup will be called in draw() when we have the context
 end
 
@@ -186,14 +188,17 @@ function M.draw(ctx, item_count)
     local picker_x = (modal_w - picker_size) * 0.5
     ImGui.SetCursorPosX(ctx, picker_x)
 
-    -- Initialize color picker if first time
-    ColorPickerWindow.show_inline("batch_rename_picker", state.selected_color)
+    -- Initialize color picker only once per modal open
+    if not state.picker_initialized then
+      ColorPickerWindow.show_inline("batch_rename_picker", state.selected_color)
+      state.picker_initialized = true
+    end
 
     -- Render the inline color picker
     local color_changed = ColorPickerWindow.render_inline(ctx, "batch_rename_picker", {
       size = picker_size,
-      initial_color = state.selected_color,
       on_change = function(color)
+        reaper.ShowConsoleMsg(string.format("[BATCH RENAME MODAL] Color changed to: %08X\n", color))
         state.selected_color = color
       end
     })
@@ -258,6 +263,7 @@ function M.draw(ctx, item_count)
 
     -- Recolor button (always enabled)
     if ImGui.Button(ctx, "Recolor", button_w, 28) then
+      reaper.ShowConsoleMsg(string.format("[BATCH RENAME MODAL] Recolor clicked, color: %08X\n", state.selected_color))
       if state.on_recolor then
         state.on_recolor(state.selected_color)
       end
