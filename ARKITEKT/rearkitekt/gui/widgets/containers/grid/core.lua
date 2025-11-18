@@ -358,6 +358,7 @@ function Grid:draw(ctx)
 
     ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
     ImGui.InvisibleButton(ctx, self._cached_empty_id, extended_w, extended_h)
+    ImGui.SetItemAllowOverlap(ctx)  -- Allow widgets rendered later to overlap and receive input
     ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
     -- Render destruction animations even when grid is empty
@@ -470,6 +471,7 @@ function Grid:draw(ctx)
 
   ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
   ImGui.InvisibleButton(ctx, self._cached_bg_id, extended_w, extended_h)
+  ImGui.SetItemAllowOverlap(ctx)  -- Allow widgets rendered later to overlap and receive input
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
   local bg_clicked = ImGui.IsItemClicked(ctx, 0)
