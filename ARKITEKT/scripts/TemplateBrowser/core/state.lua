@@ -13,6 +13,7 @@ M.metadata = nil            -- Persistent metadata (tags, notes, UUIDs)
 -- UI State
 M.selected_folder = nil     -- Currently selected folder path (single-select mode)
 M.selected_folders = {}     -- Selected folders (multi-select mode: path -> true)
+M.last_clicked_folder = nil -- Last clicked folder path (for shift-click range selection)
 M.selected_template = nil   -- Currently selected template
 M.search_query = ""         -- Search filter
 M.filter_tags = {}          -- Active tag filters
@@ -55,6 +56,7 @@ function M.initialize(config)
   M.reparse_armed = false
   M.selected_folder = nil
   M.selected_folders = {}
+  M.last_clicked_folder = nil
   M.selected_template = nil
   M.search_query = ""
   M.filter_tags = {}

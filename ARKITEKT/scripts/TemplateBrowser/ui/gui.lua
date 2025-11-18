@@ -245,6 +245,7 @@ local function draw_folder_tree(ctx, state, config)
   local tree_state = {
     open_nodes = state.folder_open_state,  -- TreeView uses open_nodes
     selected_nodes = state.selected_folders,  -- Multi-select mode
+    last_clicked_node = state.last_clicked_folder,  -- Last clicked for shift-range selection
     renaming_node = state.renaming_folder_path or nil,  -- Track renaming by path
     rename_buffer = state.rename_buffer or "",
   }
@@ -583,6 +584,7 @@ local function draw_folder_tree(ctx, state, config)
 
   -- Sync TreeView state back to Template Browser state
   state.selected_folders = tree_state.selected_nodes
+  state.last_clicked_folder = tree_state.last_clicked_node
   state.renaming_folder_path = tree_state.renaming_node
   state.rename_buffer = tree_state.rename_buffer
 end
