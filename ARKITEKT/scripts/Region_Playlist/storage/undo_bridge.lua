@@ -68,6 +68,14 @@ function M.restore_snapshot(snapshot, region_index)
   local Regions = require('rearkitekt.reaper.regions')
   local restored_playlists = {}
 
+  -- Track what was changed for status reporting
+  local changes = {
+    regions_renamed = 0,
+    regions_recolored = 0,
+    playlists_count = 0,
+    items_count = 0,
+  }
+
   -- Restore region properties (name, color) if snapshot contains region data
   -- Use raw versions to avoid creating REAPER undo points (we have our own undo system)
   if snapshot.regions then
@@ -77,9 +85,11 @@ function M.restore_snapshot(snapshot, region_index)
         -- Only restore if properties have changed
         if current_region.name ~= region_data.name then
           Regions.set_region_name_raw(0, rid, region_data.name)
+          changes.regions_renamed = changes.regions_renamed + 1
         end
         if current_region.color ~= region_data.color then
           Regions.set_region_color_raw(0, rid, region_data.color)
+          changes.regions_recolored = changes.regions_recolored + 1
         end
       end
     end
@@ -114,13 +124,15 @@ function M.restore_snapshot(snapshot, region_index)
           item_copy.playlist_id = item.playlist_id
         end
         pl_copy.items[#pl_copy.items + 1] = item_copy
+        changes.items_count = changes.items_count + 1
       end
     end
 
     restored_playlists[#restored_playlists + 1] = pl_copy
+    changes.playlists_count = changes.playlists_count + 1
   end
 
-  return restored_playlists, snapshot.active_playlist
+  return restored_playlists, snapshot.active_playlist, changes
 end
 
 function M.should_capture(old_playlists, new_playlists)
