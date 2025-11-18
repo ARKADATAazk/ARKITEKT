@@ -514,12 +514,127 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end
 
   else
-    -- MIXED mode - use draggable separator
-    local sep_config = self.config.SEPARATOR
-    local min_midi_height = sep_config.min_midi_height
-    local min_audio_height = sep_config.min_audio_height
-    local separator_gap = sep_config.gap
-    local min_total_height = min_midi_height + min_audio_height + separator_gap
+    -- MIXED mode - check layout mode
+    local layout_mode = self.state.settings.layout_mode or "vertical"
+
+    if layout_mode == "horizontal" then
+      -- HORIZONTAL LAYOUT: MIDI left, Audio right with vertical separator
+      local sep_config = self.config.SEPARATOR
+      local min_midi_width = 200  -- Minimum MIDI section width
+      local min_audio_width = 300  -- Minimum Audio section width
+      local separator_gap = sep_config.gap
+      local min_total_width = min_midi_width + min_audio_width + separator_gap
+
+      local midi_width, audio_width
+
+      if content_width < min_total_width then
+        -- Not enough space - scale proportionally
+        local ratio = content_width / min_total_width
+        midi_width = (min_midi_width * ratio)//1
+        audio_width = content_width - midi_width - separator_gap
+
+        if midi_width < 100 then midi_width = 100 end
+        if audio_width < 150 then audio_width = 150 end
+
+        audio_width = max(1, content_width - midi_width - separator_gap)
+      else
+        -- Use saved horizontal separator position
+        midi_width = self.state.settings.separator_position_horizontal or 400
+        midi_width = max(min_midi_width, min(midi_width, content_width - min_audio_width - separator_gap))
+        audio_width = content_width - midi_width - separator_gap
+      end
+
+      midi_width = max(1, midi_width)
+      audio_width = max(1, audio_width)
+
+      -- Check if separator is being interacted with
+      local sep_thickness = sep_config.thickness
+      local sep_x = start_x + midi_width + separator_gap/2
+      local mx, my = ImGui.GetMousePos(ctx)
+      local over_sep = (my >= start_y and my < start_y + header_height + content_height and
+                        mx >= sep_x - sep_thickness/2 and mx < sep_x + sep_thickness/2)
+      local block_input = self.separator:is_dragging() or (over_sep and ImGui.IsMouseDown(ctx, 0))
+
+      -- MIDI section (left)
+      local panel_padding = 4
+      local panel_rounding = 6
+      local midi_panel_x1 = start_x
+      local midi_panel_y1 = start_y
+      local midi_panel_x2 = start_x + midi_width
+      local midi_panel_y2 = start_y + header_height + content_height
+
+      draw_panel(draw_list, midi_panel_x1, midi_panel_y1, midi_panel_x2, midi_panel_y2, panel_rounding, section_fade)
+
+      ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
+      ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + panel_padding)
+      ImGui.PushFont(ctx, title_font, 14)
+      ImGui.Text(ctx, "MIDI Tracks")
+      ImGui.PopFont(ctx)
+      ImGui.PopStyleVar(ctx)
+
+      local midi_content_y = start_y + header_height
+      local midi_content_h = content_height - panel_padding
+      local midi_grid_width = midi_width - panel_padding * 2
+      ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, midi_content_y)
+
+      if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_content_h, 0,
+        ImGui.WindowFlags_NoScrollbar) then
+        if self.coordinator.midi_grid then
+          self.coordinator.midi_grid.block_all_input = block_input
+        end
+        self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_content_h)
+        ImGui.EndChild(ctx)
+      end
+
+      -- Vertical separator
+      local separator_x = sep_x
+      local action, value = self.separator:draw_vertical(ctx, separator_x, start_y, content_height, content_width, sep_config)
+
+      if action == "reset" then
+        self.state.set_setting('separator_position_horizontal', 400)
+      elseif action == "drag" and content_width >= min_total_width then
+        local new_midi_width = value - start_x - separator_gap/2
+        new_midi_width = max(min_midi_width, min(new_midi_width, content_width - min_audio_width - separator_gap))
+        self.state.set_setting('separator_position_horizontal', new_midi_width)
+      end
+
+      -- Audio section (right)
+      local audio_start_x = start_x + midi_width + separator_gap
+      local audio_panel_x1 = audio_start_x
+      local audio_panel_y1 = start_y
+      local audio_panel_x2 = audio_start_x + audio_width
+      local audio_panel_y2 = start_y + header_height + content_height
+
+      draw_panel(draw_list, audio_panel_x1, audio_panel_y1, audio_panel_x2, audio_panel_y2, panel_rounding, section_fade)
+
+      ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
+      ImGui.SetCursorScreenPos(ctx, audio_start_x + panel_padding, start_y + panel_padding)
+      ImGui.PushFont(ctx, title_font, 15)
+      ImGui.Text(ctx, "Audio Sources")
+      ImGui.PopFont(ctx)
+      ImGui.PopStyleVar(ctx)
+
+      local audio_content_y = start_y + header_height
+      local audio_content_h = content_height - panel_padding
+      local audio_grid_width = audio_width - panel_padding * 2
+      ImGui.SetCursorScreenPos(ctx, audio_start_x + panel_padding, audio_content_y)
+
+      if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_content_h, 0,
+        ImGui.WindowFlags_NoScrollbar) then
+        if self.coordinator.audio_grid then
+          self.coordinator.audio_grid.block_all_input = block_input
+        end
+        self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_content_h)
+        ImGui.EndChild(ctx)
+      end
+
+    else
+      -- VERTICAL LAYOUT: MIDI top, Audio bottom with horizontal separator (existing code)
+      local sep_config = self.config.SEPARATOR
+      local min_midi_height = sep_config.min_midi_height
+      local min_audio_height = sep_config.min_audio_height
+      local separator_gap = sep_config.gap
+      local min_total_height = min_midi_height + min_audio_height + separator_gap
 
     local midi_height, audio_height
 
@@ -632,16 +747,17 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       ImGui.EndChild(ctx)
     end
 
-    -- Unblock input after separator interaction
-    if not self.separator:is_dragging() and not (over_sep and ImGui.IsMouseDown(ctx, 0)) then
-      if self.coordinator.midi_grid then
-        self.coordinator.midi_grid.block_all_input = false
+      -- Unblock input after separator interaction
+      if not self.separator:is_dragging() and not (over_sep and ImGui.IsMouseDown(ctx, 0)) then
+        if self.coordinator.midi_grid then
+          self.coordinator.midi_grid.block_all_input = false
+        end
+        if self.coordinator.audio_grid then
+          self.coordinator.audio_grid.block_all_input = false
+        end
       end
-      if self.coordinator.audio_grid then
-        self.coordinator.audio_grid.block_all_input = false
-      end
-    end
-  end
+    end  -- end of vertical layout
+  end  -- end of MIXED mode (view_mode else)
 
   -- Only end window if we created one (not in overlay mode)
   if not is_overlay_mode then
