@@ -303,6 +303,7 @@ end
 -- Draw a parameter tile in the library (left panel) - COMPACT SINGLE LINE
 function AdditionalView:draw_param_tile(ctx, param, shell_state)
   local avail_w = ImGui.GetContentRegionAvail(ctx) - 16
+  local tile_h = 32  -- Compact height
 
   -- Initialize metadata if needed
   if not self.custom_metadata[param.name] then
@@ -315,23 +316,57 @@ function AdditionalView:draw_param_tile(ctx, param, shell_state)
   local metadata = self.custom_metadata[param.name]
   local assignment_count = self:get_assignment_count(param.name)
 
-  -- Layout: [NAME 120px] [CONTROL 100px] [NAME INPUT 120px] [DESC INPUT 150px] [BADGE]
-  local name_w = 120
-  local control_w = 100
-  local name_input_w = 120
-  local desc_input_w = 150
+  -- Tile background and border
+  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  -- Background
+  local bg_color = hexrgb("#252525")
+  if assignment_count > 0 then
+    bg_color = hexrgb("#2A2A35")  -- Tint if assigned
+  end
+
+  ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + avail_w, cursor_y + tile_h,
+    bg_color, 3)
+
+  -- Border
+  local border_color = hexrgb("#333333")
+  ImGui.DrawList_AddRect(dl, cursor_x, cursor_y, cursor_x + avail_w, cursor_y + tile_h,
+    border_color, 3, 0, 1)
+
+  -- Invisible button for drag source (full tile area)
+  ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y)
+  ImGui.InvisibleButton(ctx, "##tile_" .. param.index, avail_w, tile_h)
+
+  -- Drag source
+  if ImGui.BeginDragDropSource(ctx) then
+    ImGui.SetDragDropPayload(ctx, "PARAM", param.name)
+    ImGui.Text(ctx, param.name)
+    ImGui.EndDragDropSource(ctx)
+  end
+
+  -- Draw content on top of tile
+  ImGui.SetCursorScreenPos(ctx, cursor_x + 8, cursor_y + 4)
+
+  -- Layout: [NAME 140px] [CONTROL 120px] [NAME INPUT 140px] [DESC INPUT 180px] [BADGE]
+  local name_w = 140
+  local control_w = 120
+  local name_input_w = 140
+  local desc_input_w = 180
   local spacing = 8
 
   ImGui.AlignTextToFramePadding(ctx)
 
   -- 1. Parameter name (truncated, with tooltip)
   local truncated_name = param.name
-  if #param.name > 18 then
-    truncated_name = param.name:sub(1, 15) .. "..."
+  if #param.name > 20 then
+    truncated_name = param.name:sub(1, 17) .. "..."
   end
 
   ImGui.SetNextItemWidth(ctx, name_w)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
   ImGui.Text(ctx, truncated_name)
+  ImGui.PopStyleColor(ctx)
 
   -- Tooltip with full technical info
   if ImGui.IsItemHovered(ctx) then
@@ -347,14 +382,7 @@ function AdditionalView:draw_param_tile(ctx, param, shell_state)
     ImGui.SetTooltip(ctx, tooltip)
   end
 
-  -- Make name a drag source
-  if ImGui.IsItemActive(ctx) and ImGui.BeginDragDropSource(ctx) then
-    ImGui.SetDragDropPayload(ctx, "PARAM", param.name)
-    ImGui.Text(ctx, param.name)
-    ImGui.EndDragDropSource(ctx)
-  end
-
-  ImGui.SameLine(ctx, name_w + spacing)
+  ImGui.SameLine(ctx, cursor_x + 8 + name_w + spacing)
 
   -- 2. Live control (slider/spinner/checkbox)
   ImGui.SetNextItemWidth(ctx, control_w)
@@ -413,7 +441,7 @@ function AdditionalView:draw_param_tile(ctx, param, shell_state)
     param.value = new_value
   end
 
-  ImGui.SameLine(ctx, name_w + control_w + spacing * 2)
+  ImGui.SameLine(ctx, cursor_x + 8 + name_w + control_w + spacing * 2)
 
   -- 3. Name input
   ImGui.SetNextItemWidth(ctx, name_input_w)
@@ -424,7 +452,7 @@ function AdditionalView:draw_param_tile(ctx, param, shell_state)
     self:save_assignments()
   end
 
-  ImGui.SameLine(ctx, name_w + control_w + name_input_w + spacing * 3)
+  ImGui.SameLine(ctx, cursor_x + 8 + name_w + control_w + name_input_w + spacing * 3)
 
   -- 4. Description input
   ImGui.SetNextItemWidth(ctx, desc_input_w)
@@ -435,13 +463,16 @@ function AdditionalView:draw_param_tile(ctx, param, shell_state)
     self:save_assignments()
   end
 
-  -- 5. Assignment badge
+  -- 5. Assignment badge (at the end)
   if assignment_count > 0 then
     ImGui.SameLine(ctx)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88AAFF"))
     ImGui.Text(ctx, string.format("(%d)", assignment_count))
     ImGui.PopStyleColor(ctx)
   end
+
+  -- Reset cursor for next tile
+  ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + tile_h)
 end
 
 -- Draw tab bar for assignment grid (right panel)
