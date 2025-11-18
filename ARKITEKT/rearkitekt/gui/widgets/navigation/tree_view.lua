@@ -99,8 +99,8 @@ local function render_tree_node(ctx, node, config, state, depth)
     local dl = ImGui.GetWindowDrawList(ctx)
 
     -- Draw colored background if node has color (BEFORE drawing icon/text)
-    if node_color and config.show_colors then
-      local bg_color = Colors.with_alpha(node_color, 0x33)  -- 20% opacity
+    if node_color and config.show_colors and not is_selected then
+      local bg_color = Colors.with_alpha(node_color, 0x0F)  -- 6% opacity (reduced from 20%)
       ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, bg_color, 2)
     end
 
@@ -114,11 +114,20 @@ local function render_tree_node(ctx, node, config, state, depth)
     if is_selected then
       -- Left edge accent bar
       local selection_bar_width = 3
-      local selection_color = Colors.hexrgb("#4A9EFFFF")  -- Bright blue
-      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_min_x + selection_bar_width, item_max_y, selection_color, 0)
+      local selection_color
+      local selection_bg
 
-      -- Selection background
-      local selection_bg = Colors.hexrgb("#4A9EFF30")  -- 18% opacity blue
+      if node_color and config.show_colors then
+        -- Use enhanced folder color for selection
+        selection_color = Colors.saturate(node_color, 0.2)  -- Slightly more saturated
+        selection_bg = Colors.with_alpha(node_color, 0x40)  -- 25% opacity (more opaque than unselected)
+      else
+        -- Default blue selection for non-colored folders
+        selection_color = Colors.hexrgb("#4A9EFFFF")  -- Bright blue
+        selection_bg = Colors.hexrgb("#4A9EFF30")  -- 18% opacity blue
+      end
+
+      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_min_x + selection_bar_width, item_max_y, selection_color, 0)
       ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, selection_bg, 2)
     end
 
@@ -196,11 +205,7 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
     else
       -- Draw text label after icon (normal display)
-      -- Use lightened version of folder color for text if folder has a color
-      local text_color = Colors.hexrgb("#FFFFFFFF")
-      if node_color and config.show_colors then
-        text_color = Colors.adjust_brightness(node_color, 1.5)  -- 50% brighter
-      end
+      local text_color = Colors.hexrgb("#FFFFFFFF")  -- Always white text
       ImGui.DrawList_AddText(dl, text_x, text_y, text_color, node.name)
 
       -- Draw template count if available (right-aligned)
