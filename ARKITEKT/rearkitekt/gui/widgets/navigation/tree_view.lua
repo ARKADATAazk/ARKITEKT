@@ -353,7 +353,10 @@ local function render_tree_node(ctx, node, config, state, depth)
       local drag_payload = node_id
       local drag_label = "Move: " .. node.name
 
-      if config.enable_multi_select and state.selected_nodes and state.selected_nodes[node_id] then
+      if config.enable_multi_select and state.selected_nodes then
+        -- Check if this node is selected
+        local is_node_selected = state.selected_nodes[node_id] ~= nil
+
         -- Count selected nodes and collect their IDs
         local selected_ids = {}
         local count = 0
@@ -362,10 +365,15 @@ local function render_tree_node(ctx, node, config, state, depth)
           count = count + 1
         end
 
-        if count > 1 then
+        reaper.ShowConsoleMsg("DRAG START: node=" .. tostring(node_id) .. " is_selected=" .. tostring(is_node_selected) .. " total_selected=" .. count .. "\n")
+
+        if is_node_selected and count > 1 then
           -- Encode multiple node IDs (newline-separated)
           drag_payload = table.concat(selected_ids, "\n")
           drag_label = "Move: " .. count .. " folders"
+          reaper.ShowConsoleMsg("  Multi-drag enabled: " .. count .. " folders\n")
+        else
+          reaper.ShowConsoleMsg("  Single drag\n")
         end
       end
 
