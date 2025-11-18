@@ -81,11 +81,27 @@ local function render_tree_node(ctx, node, config, state, depth)
     -- TreeNodeEx(ctx, str_id, label, flags) - need all 4 params!
     local node_open = ImGui.TreeNodeEx(ctx, node_id, "", flags)
 
+    -- If renaming, immediately place an invisible button over the tree node to block clicks
+    if is_renaming then
+      local inv_x, inv_y = ImGui.GetItemRectMin(ctx)
+      local inv_max_x, inv_max_y = ImGui.GetItemRectMax(ctx)
+
+      -- Save cursor and position at tree node location
+      local saved_x, saved_y = ImGui.GetCursorScreenPos(ctx)
+      ImGui.SetCursorScreenPos(ctx, inv_x, inv_y)
+
+      -- InvisibleButton blocks all input from passing through
+      ImGui.InvisibleButton(ctx, "##block_" .. node_id, inv_max_x - inv_x, inv_max_y - inv_y)
+
+      -- Restore cursor
+      ImGui.SetCursorScreenPos(ctx, saved_x, saved_y)
+    end
+
     -- Get the item rect for the tree node (full width due to SpanAvailWidth flag)
-    local tree_item_hovered = ImGui.IsItemHovered(ctx)
-    local tree_item_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
-    local tree_item_right_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right)
-    local tree_item_double_clicked = tree_item_hovered and ImGui.IsMouseDoubleClicked(ctx, ImGui.MouseButton_Left)
+    local tree_item_hovered = not is_renaming and ImGui.IsItemHovered(ctx)
+    local tree_item_clicked = not is_renaming and ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
+    local tree_item_right_clicked = not is_renaming and ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right)
+    local tree_item_double_clicked = not is_renaming and tree_item_hovered and ImGui.IsMouseDoubleClicked(ctx, ImGui.MouseButton_Left)
     local tree_toggled = ImGui.IsItemToggledOpen(ctx)
 
     -- Get item rect for drawing overlays
