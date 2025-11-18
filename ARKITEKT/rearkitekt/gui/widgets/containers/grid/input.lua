@@ -160,6 +160,15 @@ function M.handle_wheel_input(grid, ctx, items)
 end
 
 function M.handle_tile_input(grid, ctx, item, rect)
+  -- Skip tile input handling if this tile is being edited inline
+  -- This allows the InputText widget to receive mouse clicks
+  if M.is_editing_inline(grid) then
+    local key = grid.key(item)
+    if grid.editing_state.key == key then
+      return false  -- Let the InputText handle input
+    end
+  end
+
   -- Block tile input when mouse is over a DIFFERENT window (e.g., popup on top of this grid)
   local is_current_window_hovered = ImGui.IsWindowHovered(ctx)
   local is_any_window_hovered = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AnyWindow)
