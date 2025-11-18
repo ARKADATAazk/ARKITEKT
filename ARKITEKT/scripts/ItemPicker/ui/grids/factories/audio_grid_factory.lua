@@ -109,17 +109,21 @@ function M.create(ctx, config, state, visualization, animator)
 
       -- Use cached track color (fetched during loading, not every frame!)
       local track_color = entry.track_color or 0
-      local r, g, b = 85/256, 91/256, 91/256  -- Default grey
 
       -- REAPER's I_CUSTOMCOLOR: 0 = no custom color set, use default grey
-      -- Non-zero values are in Windows COLORREF format: 0x00BBGGRR
-      if track_color > 0 then
+      -- Positive values are in Windows COLORREF format: 0x00BBGGRR
+      -- Use a threshold to ensure we have a valid color value (not just 1, 2, 3...)
+      local color
+      if track_color and track_color > 255 then
+        -- Valid color: extract RGB from COLORREF
         local R = track_color & 255
         local G = (track_color >> 8) & 255
         local B = (track_color >> 16) & 255
-        r, g, b = R/255, G/255, B/255
+        color = ImGui.ColorConvertDouble4ToU32(R/255, G/255, B/255, 1)
+      else
+        -- No color or invalid: use default grey (0xFF5B5B55 in ABGR)
+        color = 0xFF5B5B55
       end
-      local color = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
 
       table.insert(filtered, {
         filename = filename,

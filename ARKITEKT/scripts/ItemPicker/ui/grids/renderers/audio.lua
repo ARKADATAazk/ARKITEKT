@@ -301,6 +301,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local on_badge_click = function()
         if item_data.total and item_data.total > 1 then
           state.cycle_audio_item(item_data.filename, 1)
+          -- Force cache invalidation to update display (same as wheel_adjust)
+          state.runtime_cache.audio_filter_hash = nil
         end
       end
 
