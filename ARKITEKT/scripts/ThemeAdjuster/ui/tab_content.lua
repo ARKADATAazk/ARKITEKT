@@ -9,6 +9,7 @@ local TCPView = require("ThemeAdjuster.ui.views.tcp_view")
 local MCPView = require("ThemeAdjuster.ui.views.mcp_view")
 local TransportView = require("ThemeAdjuster.ui.views.transport_view")
 local EnvelopeView = require("ThemeAdjuster.ui.views.envelope_view")
+local ColorsView = require("ThemeAdjuster.ui.views.colors_view")
 local DebugView = require("ThemeAdjuster.ui.views.debug_view")
 local Renderer = require("rearkitekt.gui.widgets.media.package_tiles.renderer")
 
@@ -33,6 +34,7 @@ function M.new(State, Config, settings)
     MCP = MCPView.new(State, Config, settings),
     TRANSPORT = TransportView.new(State, Config, settings),
     ENVELOPES = EnvelopeView.new(State, Config, settings),
+    COLORS = ColorsView.new(State, Config, settings),
     DEBUG = DebugView.new(State, Config, settings),
   }
 
@@ -66,8 +68,6 @@ function TabContent:draw(ctx, tab_id, shell_state)
 
   if view then
     view:draw(ctx, shell_state)
-  elseif tab_id == "COLORS" then
-    ImGui.Text(ctx, "Colors tab - Coming soon")
   else
     ImGui.Text(ctx, "Unknown tab: " .. tostring(tab_id))
   end
