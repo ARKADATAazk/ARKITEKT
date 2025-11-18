@@ -148,12 +148,26 @@ function M.handle_wheel_input(grid, ctx, items)
   local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
 
   -- SHIFT+Scroll: Cycle through item group (1/3, 2/3, 3/3)
+  -- Uses hovered item instead of selection
   if shift and not ctrl and not alt then
-    local selected_keys = grid.selection:selected_keys()
-    if #selected_keys > 0 and grid.behaviors and grid.behaviors.wheel_adjust then
+    -- Use hovered item if available
+    local target_key = grid.hover_id
+
+    if target_key and grid.behaviors and grid.behaviors.wheel_adjust then
       local wheel_step = (grid.config and grid.config.wheel and grid.config.wheel.step) or 1
       local delta = (wheel_y > 0) and wheel_step or -wheel_step
-      grid.behaviors.wheel_adjust(selected_keys, delta)
+
+      -- Call wheel_adjust which will cycle and return the new UUID
+      local new_uuid = grid.behaviors.wheel_adjust({target_key}, delta)
+
+      -- Update selection to the new item if cycling succeeded
+      if new_uuid and new_uuid ~= target_key then
+        grid.selection:single(new_uuid)
+        if grid.behaviors and grid.behaviors.on_select then
+          grid.behaviors.on_select(grid.selection:selected_keys())
+        end
+      end
+
       return true  -- Consume wheel to prevent scrolling
     end
     return false

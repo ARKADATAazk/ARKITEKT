@@ -228,7 +228,7 @@ function M.create(ctx, config, state, visualization, animator)
       reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST] Called! uuids=%d, delta=%d\n", uuids and #uuids or 0, delta or 0))
       if not uuids or #uuids == 0 then
         reaper.ShowConsoleMsg("[WHEEL_ADJUST] Empty uuids, returning\n")
-        return
+        return nil
       end
       local uuid = uuids[1]
 
@@ -238,10 +238,24 @@ function M.create(ctx, config, state, visualization, animator)
         if data.uuid == uuid then
           reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST] Cycling item: %s\n", data.filename))
           state.cycle_audio_item(data.filename, delta > 0 and 1 or -1)
-          return
+
+          -- Rebuild items list after cycling to get new UUID
+          state.runtime_cache.audio_filter_hash = nil  -- Force rebuild
+          local updated_items = get_items()
+
+          -- Find the new item with the same filename
+          for _, updated_data in ipairs(updated_items) do
+            if updated_data.filename == data.filename then
+              reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST] New UUID: %s\n", updated_data.uuid))
+              return updated_data.uuid
+            end
+          end
+
+          return uuid  -- Fallback to old UUID if not found
         end
       end
       reaper.ShowConsoleMsg("[WHEEL_ADJUST] UUID not found in items\n")
+      return nil
     end,
 
     delete = function(item_uuids)
