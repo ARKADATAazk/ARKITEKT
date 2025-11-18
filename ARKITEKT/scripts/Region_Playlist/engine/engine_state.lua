@@ -351,11 +351,8 @@ end
 function State:_apply_shuffle()
   if #self.sequence <= 1 then return end
 
-  -- Generate a new seed if we don't have one
-  if not self._shuffle_seed then
-    self._shuffle_seed = math.floor(reaper.time_precise() * 1000000) % 2147483647
-  end
-
+  -- Always generate a new seed for each shuffle (new random order every time)
+  self._shuffle_seed = math.floor(reaper.time_precise() * 1000000) % 2147483647
   math.randomseed(self._shuffle_seed)
 
   -- Fisher-Yates shuffle
@@ -388,10 +385,7 @@ end
 function State:on_shuffle_changed(enabled)
   self._shuffle_enabled = enabled
 
-  if enabled then
-    -- Generate new shuffle seed when enabling
-    self._shuffle_seed = math.floor(reaper.time_precise() * 1000000) % 2147483647
-  else
+  if not enabled then
     -- Clear seed when disabling (will use original order on next set_sequence)
     self._shuffle_seed = nil
   end
