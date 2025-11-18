@@ -198,6 +198,7 @@ end
 -- ============================================================================
 
 -- These map spinner values to REAPER parameter values
+-- NOTE: These are for display only - REAPER uses 1-based numeric indices
 M.SPINNER_VALUES = {
   -- TCP
   tcp_indent = {'NONE', '1/8', '1/4', '1/2', 1, 2, 'MAX'},
@@ -208,6 +209,10 @@ M.SPINNER_VALUES = {
   tcp_InputSize = {'MIN', 25, 40, 60, 90, 150, 200},
   tcp_MeterLoc = {'LEFT', 'RIGHT', 'LEFT IF ARMED'},
   tcp_sepSends = {'OFF', 'ON'},
+  tcp_fxparms_size = {'MIN', 50, 75, 100, 125, 150},
+  tcp_recmon_size = {'MIN', 20, 30, 40, 50},
+  tcp_pan_size = {'MIN', 40, 60, 80, 100},
+  tcp_width_size = {'MIN', 40, 60, 80, 100},
 
   -- MCP
   mcp_indent = {'NONE', '1/8', '1/4', '1/2', 1, 2, 'MAX'},
@@ -224,35 +229,35 @@ M.SPINNER_VALUES = {
   trans_rateMode = {'RATE', 'FRAMES'},
 }
 
--- Get spinner index (1-based) from parameter value
-function M.get_spinner_index(param, value)
+-- Get display string for a spinner value
+-- REAPER parameter values are already 1-based indices
+-- This function just returns the display string (e.g., 'AUTO', 'KNOB')
+function M.get_spinner_display(param, index)
   local values = M.SPINNER_VALUES[param]
-  if not values then return 1 end
+  if not values then return tostring(index) end
 
-  for i, v in ipairs(values) do
-    if v == value then return i end
-  end
-  return 1  -- Default to first
-end
-
--- Get parameter value from spinner index (1-based)
-function M.get_spinner_value(param, index)
-  local values = M.SPINNER_VALUES[param]
-  if not values then return nil end
-
-  return values[index] or values[1]
+  return tostring(values[index] or values[1])
 end
 
 -- ============================================================================
 -- INITIALIZATION
 -- ============================================================================
 
+-- Helper to count table entries
+local function count_table(t)
+  local count = 0
+  for _ in pairs(t) do count = count + 1 end
+  return count
+end
+
 -- Call this on startup
 function M.initialize()
   M.index_parameters()
-  reaper.ShowConsoleMsg("ThemeAdjuster: Indexed " ..
-    (#paramsIdx.A or 0) + (#paramsIdx.B or 0) + (#paramsIdx.C or 0) +
-    " theme parameters\n")
+
+  local total = count_table(paramsIdx.A) + count_table(paramsIdx.B) +
+                count_table(paramsIdx.C) + count_table(paramsIdx.global)
+
+  reaper.ShowConsoleMsg("ThemeAdjuster: Indexed " .. total .. " theme parameters\n")
 end
 
 return M

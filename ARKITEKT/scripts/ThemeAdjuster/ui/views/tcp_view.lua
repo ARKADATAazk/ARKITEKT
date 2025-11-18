@@ -97,6 +97,7 @@ end
 
 function TCPView:load_from_theme()
   -- Load spinner values from current layout's theme parameters
+  -- NOTE: REAPER parameter values ARE already 1-based spinner indices
   local spinners = {
     'tcp_LabelSize', 'tcp_vol_size', 'tcp_MeterSize',
     'tcp_InputSize', 'tcp_MeterLoc', 'tcp_sepSends',
@@ -107,7 +108,8 @@ function TCPView:load_from_theme()
     local param = ThemeParams.get_param(param_name)
     if param then
       local idx_field = param_name .. '_idx'
-      self[idx_field] = ThemeParams.get_spinner_index(param_name, param.value)
+      -- REAPER value is already a 1-based index - use it directly
+      self[idx_field] = param.value
     end
   end
 
@@ -117,7 +119,8 @@ function TCPView:load_from_theme()
     local param = ThemeParams.get_param(param_name)
     if param then
       local idx_field = param_name .. '_idx'
-      self[idx_field] = ThemeParams.get_spinner_index(param_name, param.value)
+      -- REAPER value is already a 1-based index - use it directly
+      self[idx_field] = param.value
     end
   end
 
@@ -290,26 +293,29 @@ function TCPView:draw(ctx, shell_state)
     local changed, new_idx = draw_spinner_row("Indent", "tcp_indent", self.tcp_indent_idx, SPINNER_VALUES.tcp_indent)
     if changed then
       self.tcp_indent_idx = new_idx
-      local value = ThemeParams.get_spinner_value('tcp_indent', new_idx)
-      ThemeParams.set_param('tcp_indent', value, true)
+      -- Send spinner index directly (REAPER expects 1-based indices)
+      ThemeParams.set_param('tcp_indent', new_idx, true)
     end
 
     changed, new_idx = draw_spinner_row("Alignment", "tcp_control_align", self.tcp_control_align_idx, SPINNER_VALUES.tcp_control_align)
     if changed then
       self.tcp_control_align_idx = new_idx
-      local value = ThemeParams.get_spinner_value('tcp_control_align', new_idx)
-      ThemeParams.set_param('tcp_control_align', value, true)
+      -- Send spinner index directly (REAPER expects 1-based indices)
+      ThemeParams.set_param('tcp_control_align', new_idx, true)
     end
 
     changed, new_idx = draw_spinner_row("Meter Loc", "tcp_MeterLoc", self.tcp_MeterLoc_idx, SPINNER_VALUES.tcp_MeterLoc)
     if changed then
       self.tcp_MeterLoc_idx = new_idx
-      local value = ThemeParams.get_spinner_value('tcp_MeterLoc', new_idx)
-      ThemeParams.set_param('tcp_MeterLoc', value, true)
+      -- Send spinner index directly (REAPER expects 1-based indices)
+      ThemeParams.set_param('tcp_MeterLoc', new_idx, true)
     end
 
     changed, new_idx = draw_spinner_row("Send List", "tcp_sepSends", self.tcp_sepSends_idx, SPINNER_VALUES.tcp_sepSends)
-    if changed then self.tcp_sepSends_idx = new_idx end
+    if changed then
+      self.tcp_sepSends_idx = new_idx
+      ThemeParams.set_param('tcp_sepSends', new_idx, true)
+    end
 
     ImGui.EndGroup(ctx)
 
@@ -322,16 +328,28 @@ function TCPView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 3)
 
     changed, new_idx = draw_spinner_row("Name", "tcp_LabelSize", self.tcp_LabelSize_idx, SPINNER_VALUES.tcp_LabelSize)
-    if changed then self.tcp_LabelSize_idx = new_idx end
+    if changed then
+      self.tcp_LabelSize_idx = new_idx
+      ThemeParams.set_param('tcp_LabelSize', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Volume", "tcp_vol_size", self.tcp_vol_size_idx, SPINNER_VALUES.tcp_vol_size)
-    if changed then self.tcp_vol_size_idx = new_idx end
+    if changed then
+      self.tcp_vol_size_idx = new_idx
+      ThemeParams.set_param('tcp_vol_size', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Meter", "tcp_MeterSize", self.tcp_MeterSize_idx, SPINNER_VALUES.tcp_MeterSize)
-    if changed then self.tcp_MeterSize_idx = new_idx end
+    if changed then
+      self.tcp_MeterSize_idx = new_idx
+      ThemeParams.set_param('tcp_MeterSize', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Input", "tcp_InputSize", self.tcp_InputSize_idx, SPINNER_VALUES.tcp_InputSize)
-    if changed then self.tcp_InputSize_idx = new_idx end
+    if changed then
+      self.tcp_InputSize_idx = new_idx
+      ThemeParams.set_param('tcp_InputSize', new_idx, true)
+    end
 
     ImGui.EndGroup(ctx)
 
@@ -344,16 +362,28 @@ function TCPView:draw(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 3)
 
     changed, new_idx = draw_spinner_row("FX Parms", "tcp_fxparms_size", self.tcp_fxparms_size_idx, SPINNER_VALUES.tcp_fxparms_size)
-    if changed then self.tcp_fxparms_size_idx = new_idx end
+    if changed then
+      self.tcp_fxparms_size_idx = new_idx
+      ThemeParams.set_param('tcp_fxparms_size', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Rec Mon", "tcp_recmon_size", self.tcp_recmon_size_idx, SPINNER_VALUES.tcp_recmon_size)
-    if changed then self.tcp_recmon_size_idx = new_idx end
+    if changed then
+      self.tcp_recmon_size_idx = new_idx
+      ThemeParams.set_param('tcp_recmon_size', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Pan", "tcp_pan_size", self.tcp_pan_size_idx, SPINNER_VALUES.tcp_pan_size)
-    if changed then self.tcp_pan_size_idx = new_idx end
+    if changed then
+      self.tcp_pan_size_idx = new_idx
+      ThemeParams.set_param('tcp_pan_size', new_idx, true)
+    end
 
     changed, new_idx = draw_spinner_row("Width", "tcp_width_size", self.tcp_width_size_idx, SPINNER_VALUES.tcp_width_size)
-    if changed then self.tcp_width_size_idx = new_idx end
+    if changed then
+      self.tcp_width_size_idx = new_idx
+      ThemeParams.set_param('tcp_width_size', new_idx, true)
+    end
 
     ImGui.EndGroup(ctx)
 
