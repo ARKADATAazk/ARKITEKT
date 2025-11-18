@@ -267,16 +267,42 @@ function M.handle_tile_input(grid, ctx, item, rect)
       end
     end
 
-    -- Right-click: Toggle disable immediately (simple, works reliably)
+    -- Right-click: Toggle enabled/disabled state (disable tiles, not delete)
     if ImGui.IsMouseClicked(ctx, 1) then
-      if grid.behaviors and grid.behaviors.delete then
+      if grid.behaviors and grid.behaviors.right_click then
+        local selected_keys = grid.selection:selected_keys()
+        grid.behaviors.right_click(key, selected_keys)
+      elseif grid.behaviors and grid.behaviors.toggle_enabled then
         local selected_keys = grid.selection:selected_keys()
         if grid.selection:is_selected(key) and #selected_keys > 1 then
-          -- Multi-select: disable all selected
-          grid.behaviors.delete(selected_keys)
+          -- Multi-select: toggle all selected
+          grid.behaviors.toggle_enabled(selected_keys)
         else
-          -- Single item: disable just this one
-          grid.behaviors.delete({key})
+          -- Single item: toggle just this one
+          grid.behaviors.toggle_enabled({key})
+        end
+      end
+    end
+
+    -- ALT+Click: Delete items (removal from grid)
+    if ImGui.IsMouseClicked(ctx, 0) then
+      local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+      if alt and grid.behaviors and (grid.behaviors.alt_click or grid.behaviors.delete) then
+        local selected_keys = grid.selection:selected_keys()
+        if grid.selection:is_selected(key) and #selected_keys > 1 then
+          -- Multi-select: delete all selected
+          if grid.behaviors.alt_click then
+            grid.behaviors.alt_click(selected_keys)
+          else
+            grid.behaviors.delete(selected_keys)
+          end
+        else
+          -- Single item: delete just this one
+          if grid.behaviors.alt_click then
+            grid.behaviors.alt_click({key})
+          else
+            grid.behaviors.delete({key})
+          end
         end
       end
     end

@@ -786,8 +786,9 @@ function Grid:draw(ctx)
     local grid_bottom = self.grid_bounds[4]
     local full_height = grid_bottom - origin_y
 
-    -- Set cursor to reserve the space (Dummy doesn't work well here, use SetCursorPos)
+    -- Set cursor to reserve the space and add Dummy to expand window boundaries
     ImGui.SetCursorPosY(ctx, full_height)
+    ImGui.Dummy(ctx, 0, 0)  -- Required after SetCursorPos to expand window boundaries
   end
 end
 
