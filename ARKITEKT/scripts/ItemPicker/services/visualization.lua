@@ -107,7 +107,12 @@ function M.GetItemWaveform(cache, item, uuid)
       table.insert(ret_tab, -val / 2)
     end
   else
-    ret_tab = buf.table()
+    -- Mono: clamp values to prevent waveform exceeding tile bounds
+    local tab = buf.table()
+    ret_tab = {}
+    for i = 1, #tab do
+      table.insert(ret_tab, utils.SampleLimit(tab[i]))
+    end
   end
 
   -- Store in runtime cache
@@ -151,7 +156,8 @@ function M.DownsampleWaveform(waveform, target_width)
       end
     end
 
-    downsampled[idx] = max_val
+    -- Clamp to prevent waveform exceeding tile bounds
+    downsampled[idx] = max(-1, min(1, max_val))
     idx = idx + 1
   end
 
@@ -167,7 +173,8 @@ function M.DownsampleWaveform(waveform, target_width)
       end
     end
 
-    downsampled[idx] = min_val
+    -- Clamp to prevent waveform exceeding tile bounds
+    downsampled[idx] = max(-1, min(1, min_val))
     idx = idx + 1
   end
 
