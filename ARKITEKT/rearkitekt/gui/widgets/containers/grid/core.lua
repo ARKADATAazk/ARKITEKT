@@ -468,10 +468,14 @@ function Grid:draw(ctx)
   
   self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
 
-  -- Detect background clicks EARLY (before rendering) for marquee selection to work
-  -- But check against tiles later (after rendering) to know if click was on empty space
+  -- Create InvisibleButton to claim the grid area (prevents window dragging)
+  -- But DON'T use IsItemClicked on it - use manual detection instead
+  -- This allows widgets rendered later to receive input while preventing window drag
+  ImGui.SetCursorScreenPos(ctx, extended_x, extended_y)
+  ImGui.InvisibleButton(ctx, self._cached_bg_id, extended_w, extended_h)
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
+  -- Manual click detection (don't use IsItemClicked which would block widget input)
   local mx, my = ImGui.GetMousePos(ctx)
   local gb = self.grid_bounds
   local mouse_in_grid = gb and mx >= gb[1] and mx <= gb[3] and my >= gb[2] and my <= gb[4]
