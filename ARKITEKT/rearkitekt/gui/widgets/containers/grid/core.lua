@@ -749,6 +749,18 @@ function Grid:draw(ctx)
   if self.render_overlays then
     self.render_overlays(ctx, self.current_rects)
   end
+
+  -- Reserve vertical space for full grid height so scrollbar calculation is correct
+  -- Without this, ImGui doesn't know the true content height (due to viewport culling)
+  -- and the scrollbar stops short of the bottom tiles
+  if self.grid_bounds then
+    local origin_y = self.grid_bounds[2] - (self.extend_input_area.top or 0)
+    local grid_bottom = self.grid_bounds[4]
+    local full_height = grid_bottom - origin_y
+
+    -- Set cursor to reserve the space (Dummy doesn't work well here, use SetCursorPos)
+    ImGui.SetCursorPosY(ctx, full_height)
+  end
 end
 
 function Grid:clear()
