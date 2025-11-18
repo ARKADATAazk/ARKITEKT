@@ -288,35 +288,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   return root_nodes
 end
 
--- Helper: Draw rectangular tag tile (full tile with text, no rounded corners)
-local function draw_tag_tile(ctx, label, color, is_selected, width)
-  local height = 24
-  local x, y = ImGui.GetCursorScreenPos(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
-
-  -- Clickable area
-  local clicked = ImGui.InvisibleButton(ctx, "##" .. label, width or -1, height)
-
-  -- Background color (brighter if selected)
-  local bg_color = color
-  if is_selected then
-    bg_color = Colors.with_alpha(color, 0xFF)  -- Full opacity
-  else
-    bg_color = Colors.with_alpha(color, 0x99)  -- 60% opacity
-  end
-
-  -- Draw rectangular tile (no rounding)
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + (width or ImGui.GetItemRectSize(ctx)), y + height, bg_color, 0)
-
-  -- Draw text (centered, moved up 1px)
-  local text_w = ImGui.CalcTextSize(ctx, label)
-  local text_x = x + ((width or ImGui.GetItemRectSize(ctx)) - text_w) * 0.5
-  local text_y = y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5 - 1  -- Move up 1px
-  local text_color = Colors.hexrgb("#FFFFFFFF")
-  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
-
-  return clicked
-end
+-- Helper functions removed - now using Chip component directly
 
 -- Draw folder tree using TreeView widget
 local function draw_folder_tree(ctx, state, config)
@@ -887,8 +859,17 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
 
       local is_selected = state.filter_tags[tag_name] or false
 
-      -- Draw tag as rectangular tile
-      if draw_tag_tile(ctx, tag_name, tag_data.color, is_selected) then
+      -- Draw tag using Chip component (PILL style)
+      local clicked, chip_w, chip_h = Chip.draw(ctx, {
+        style = Chip.STYLE.PILL,
+        label = tag_name,
+        color = tag_data.color,
+        height = 24,
+        is_selected = is_selected,
+        interactive = true,
+      })
+
+      if clicked then
         -- Toggle tag filter
         if is_selected then
           state.filter_tags[tag_name] = nil
@@ -1221,9 +1202,20 @@ local function draw_vsts_content(ctx, state, config, width, height)
 
     local is_selected = state.filter_fx[fx_name] or false
 
-    -- Draw VST as rectangular tile (gray color)
-    local vst_color = Colors.hexrgb("#666666FF")
-    if draw_tag_tile(ctx, fx_name, vst_color, is_selected) then
+    -- Draw VST using Chip component (DOT style, blue like in template tiles)
+    local vst_color = Colors.hexrgb("#4A9EFF")
+    local clicked, chip_w, chip_h = Chip.draw(ctx, {
+      style = Chip.STYLE.DOT,
+      label = fx_name,
+      color = vst_color,
+      height = 28,
+      dot_size = 8,
+      dot_spacing = 10,
+      is_selected = is_selected,
+      interactive = true,
+    })
+
+    if clicked then
       -- Toggle FX filter
       if is_selected then
         state.filter_fx[fx_name] = nil
@@ -1328,8 +1320,15 @@ local function draw_tags_content(ctx, state, config, width, height)
           state.rename_buffer = ""
         end
       else
-        -- Normal display - draw tag as rectangular tile
-        draw_tag_tile(ctx, tag_name, tag_data.color, false)
+        -- Normal display - draw tag using Chip component (PILL style)
+        local clicked, chip_w, chip_h = Chip.draw(ctx, {
+          style = Chip.STYLE.PILL,
+          label = tag_name,
+          color = tag_data.color,
+          height = 24,
+          is_selected = false,
+          interactive = true,
+        })
 
         -- Double-click to rename
         if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
@@ -1739,8 +1738,17 @@ local function draw_info_panel(ctx, state, config, width, height)
           end
         end
 
-        -- Draw tag as rectangular tile
-        if draw_tag_tile(ctx, tag_name, tag_data.color, is_assigned) then
+        -- Draw tag using Chip component (PILL style)
+        local clicked, chip_w, chip_h = Chip.draw(ctx, {
+          style = Chip.STYLE.PILL,
+          label = tag_name,
+          color = tag_data.color,
+          height = 24,
+          is_selected = is_assigned,
+          interactive = true,
+        })
+
+        if clicked then
           -- Toggle tag assignment
           if is_assigned then
             Tags.remove_tag_from_template(state.metadata, tmpl.uuid, tag_name)

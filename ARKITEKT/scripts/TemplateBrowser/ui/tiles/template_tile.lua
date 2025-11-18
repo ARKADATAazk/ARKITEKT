@@ -150,28 +150,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local content_y = y1 + M.CONFIG.text_margin
   local content_w = tile_w - (M.CONFIG.text_margin * 2)
 
-  -- Draw colored chip indicator if template has color
-  if chip_color then
-    local chip_x = content_x + M.CONFIG.chip_radius
-    local chip_y = content_y + 10
-
-    Chip.draw(ctx, {
-      style = Chip.STYLE.INDICATOR,
-      color = chip_color,
-      draw_list = dl,
-      x = chip_x,
-      y = chip_y,
-      radius = M.CONFIG.chip_radius,
-      is_selected = state.selected,
-      is_hovered = state.hover,
-      show_glow = state.selected or state.hover,
-      glow_layers = state.selected and 3 or 2,
-      alpha_factor = text_alpha / 255,
-    })
-
-    content_x = content_x + (M.CONFIG.chip_radius * 2) + M.CONFIG.chip_spacing + 4
-    content_w = content_w - (M.CONFIG.chip_radius * 2) - M.CONFIG.chip_spacing - 4
-  end
+  -- Chip indicator removed - color is shown via diagonal stripes only
 
   -- Template name
   local name_color = Colors.with_alpha(hexrgb("#FFFFFF"), text_alpha)
