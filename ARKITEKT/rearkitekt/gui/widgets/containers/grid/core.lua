@@ -500,9 +500,8 @@ function Grid:draw(ctx)
     self.behaviors.double_click(double_clicked_tile_key)
   end
 
-  -- Handle left-click or right-click on empty space to start marquee selection
-  local bg_right_clicked = ImGui.IsMouseClicked(ctx, 1) and not mouse_over_tile
-  if (bg_clicked or bg_right_clicked) and not mouse_over_tile and not Input.is_external_drag_active(self) then
+  -- Handle left-click on empty space to start marquee selection (or SHIFT+click anywhere)
+  if bg_clicked and not mouse_over_tile and not Input.is_external_drag_active(self) then
     local mx, my = ImGui.GetMousePos(ctx)
     local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
     local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
@@ -514,9 +513,8 @@ function Grid:draw(ctx)
 
   local marquee_threshold = (self.config.marquee and self.config.marquee.drag_threshold) or DEFAULTS.marquee.drag_threshold
 
-  -- Support both left-click and right-click dragging for marquee selection
-  local is_dragging = (ImGui.IsMouseDragging(ctx, 0, marquee_threshold) or ImGui.IsMouseDragging(ctx, 1, marquee_threshold))
-  if self.sel_rect:is_active() and is_dragging and not Input.is_external_drag_active(self) then
+  -- Marquee selection with left-click drag (SHIFT disables tile drag, enables marquee)
+  if self.sel_rect:is_active() and ImGui.IsMouseDragging(ctx, 0, marquee_threshold) and not Input.is_external_drag_active(self) then
     local mx, my = ImGui.GetMousePos(ctx)
     self.sel_rect:update(mx, my)
 
@@ -568,8 +566,8 @@ function Grid:draw(ctx)
     end
   end
 
-  -- Support both left-click and right-click release to finish marquee selection
-  if self.sel_rect:is_active() and (ImGui.IsMouseReleased(ctx, 0) or ImGui.IsMouseReleased(ctx, 1)) then
+  -- Finish marquee selection on left-click release
+  if self.sel_rect:is_active() and ImGui.IsMouseReleased(ctx, 0) then
     if not self.sel_rect:did_drag() then
       self.selection:clear()
       if self.behaviors and self.behaviors.on_select then

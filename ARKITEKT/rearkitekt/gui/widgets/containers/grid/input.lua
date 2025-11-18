@@ -221,16 +221,13 @@ function M.handle_tile_input(grid, ctx, item, rect)
       local ctrl  = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl)  or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
       local was_selected = grid.selection:is_selected(key)
 
-      if ctrl then
+      -- SHIFT+click: Start marquee selection (no drag behavior on tile)
+      if shift then
+        local mode = ctrl and "add" or "replace"
+        grid.sel_rect:begin(mx, my, mode, ctx)
+        return is_hovered
+      elseif ctrl then
         grid.selection:toggle(key)
-        if grid.behaviors and grid.behaviors.on_select then
-          grid.behaviors.on_select(grid.selection:selected_keys())
-        end
-      elseif shift and grid.selection.last_clicked then
-        local items = grid.get_items()
-        local order = {}
-        for _, it in ipairs(items) do order[#order+1] = grid.key(it) end
-        grid.selection:range(order, grid.selection.last_clicked, key)
         if grid.behaviors and grid.behaviors.on_select then
           grid.behaviors.on_select(grid.selection:selected_keys())
         end
@@ -238,11 +235,11 @@ function M.handle_tile_input(grid, ctx, item, rect)
         if not was_selected then
           grid.drag.pending_selection = key
         end
-      end
 
-      grid.drag.pressed_id = key
-      grid.drag.pressed_was_selected = was_selected
-      grid.drag.press_pos = {mx, my}
+        grid.drag.pressed_id = key
+        grid.drag.pressed_was_selected = was_selected
+        grid.drag.press_pos = {mx, my}
+      end
     end
 
     -- Right-click: Toggle disable immediately (simple, works reliably)
@@ -356,6 +353,9 @@ end
 
 function M.check_start_drag(grid, ctx)
   if not grid.drag.pressed_id or grid.drag.active or M.is_external_drag_active(grid) then return end
+
+  -- Don't start item drag if marquee selection is active (SHIFT+drag)
+  if grid.sel_rect:is_active() then return end
 
   local threshold = (grid.config and grid.config.drag and grid.config.drag.threshold) or 5
   if ImGui.IsMouseDragging(ctx, 0, threshold) then
