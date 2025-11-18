@@ -84,14 +84,30 @@ function AdditionalView:refresh_params()
   -- Discover all theme parameters
   self.all_params = ParamDiscovery.discover_all_params()
 
-  -- Filter to only unknown params (not in ThemeParams.KNOWN_PARAMS)
-  local all_unknown = ParamDiscovery.filter_unknown_params(
-    self.all_params,
-    ThemeParams.KNOWN_PARAMS or {}
-  )
+  -- Organize ALL params into groups (including group headers)
+  -- This ensures group headers aren't filtered out before we can detect them
+  self.param_groups = ParamDiscovery.organize_into_groups(self.all_params)
 
-  -- Organize into groups based on group headers
-  self.param_groups = ParamDiscovery.organize_into_groups(all_unknown)
+  -- Filter out known params from each group (but keep the group structure)
+  local known_params = ThemeParams.KNOWN_PARAMS or {}
+  for _, group in ipairs(self.param_groups) do
+    local filtered_params = {}
+    for _, param in ipairs(group.params) do
+      if not known_params[param.name] then
+        table.insert(filtered_params, param)
+      end
+    end
+    group.params = filtered_params
+  end
+
+  -- Remove empty groups
+  local non_empty_groups = {}
+  for _, group in ipairs(self.param_groups) do
+    if #group.params > 0 then
+      table.insert(non_empty_groups, group)
+    end
+  end
+  self.param_groups = non_empty_groups
 
   -- Initialize enabled_groups if not already set
   if not next(self.enabled_groups) then
@@ -120,6 +136,9 @@ function AdditionalView:apply_group_filter()
       end
     end
   end
+
+  -- Rebuild category groups for display
+  self.grouped_params = ParamDiscovery.group_by_category(self.unknown_params)
 end
 
 function AdditionalView:draw(ctx, shell_state)
