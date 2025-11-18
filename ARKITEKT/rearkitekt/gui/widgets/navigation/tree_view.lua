@@ -160,13 +160,16 @@ local function render_tree_node(ctx, node, config, state, depth)
 
       ImGui.PopStyleColor(ctx, 3)
 
+      -- Check input state before restoring cursor
+      local input_active = ImGui.IsItemActive(ctx)
+      local input_hovered = ImGui.IsItemHovered(ctx)
+
       -- Restore cursor position to maintain tree layout
       ImGui.SetCursorScreenPos(ctx, saved_cursor_x, saved_cursor_y)
 
-      local input_active = ImGui.IsItemActive(ctx)
-
       -- Clicking away closes the edit (cancel)
-      if not input_active and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) then
+      -- Close if we get a left click and the input is neither active nor hovered
+      if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) and not input_active and not input_hovered then
         state.renaming_node = nil
         state.rename_buffer = ""
         state.rename_focus_set = nil
@@ -205,8 +208,8 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
     end
 
-    -- Handle single click for selection
-    if tree_item_clicked and not tree_toggled then
+    -- Handle single click for selection (but not when renaming)
+    if tree_item_clicked and not tree_toggled and not is_renaming then
       state.selected_node = node_id
       if config.on_select then
         config.on_select(node)
@@ -219,13 +222,13 @@ local function render_tree_node(ctx, node, config, state, depth)
     end
 
     -- Handle F2 key to start rename when this node is selected
-    if is_selected and config.enable_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_F2) then
+    if is_selected and config.enable_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_F2) and not is_renaming then
       state.renaming_node = node_id
       state.rename_buffer = node.name
     end
 
     -- Handle double-click (rename by default if enabled)
-    if tree_item_double_clicked then
+    if tree_item_double_clicked and not is_renaming then
       if config.enable_rename then
         state.renaming_node = node_id
         state.rename_buffer = node.name
@@ -235,8 +238,8 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
     end
 
-    -- Handle right-click
-    if tree_item_right_clicked then
+    -- Handle right-click (but not when renaming)
+    if tree_item_right_clicked and not is_renaming then
       if config.on_right_click then
         config.on_right_click(node)
       end
