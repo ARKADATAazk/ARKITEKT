@@ -112,37 +112,11 @@ function M.create(ctx, config, state, visualization, animator)
     -- Apply sorting
     local sort_mode = state.settings.sort_mode or "none"
     if sort_mode == "color" then
-      -- Sort by color using HSV for better visual grouping
-      -- Sort priority: Hue → Saturation → Value
+      -- Sort by color using library's color comparison
+      -- Uses HSL: Hue → Saturation (desc) → Lightness (desc)
+      -- Grays (sat < 0.08) are grouped at the end
       table.sort(filtered, function(a, b)
-        -- Use ImGui's color conversion for accuracy
-        local ar, ag, ab = ImGui.ColorConvertU32ToDouble4(a.color)
-        local br, bg, bb = ImGui.ColorConvertU32ToDouble4(b.color)
-
-        local ah, as, av = ImGui.ColorConvertRGBtoHSV(ar, ag, ab)
-        local bh, bs, bv = ImGui.ColorConvertRGBtoHSV(br, bg, bb)
-
-        -- Group grays/desaturated colors together at the start (saturation < 0.1)
-        local a_is_gray = as < 0.1
-        local b_is_gray = bs < 0.1
-
-        if a_is_gray and not b_is_gray then
-          return true  -- Gray comes first
-        elseif not a_is_gray and b_is_gray then
-          return false  -- Color comes after gray
-        elseif a_is_gray and b_is_gray then
-          -- Both gray: sort by value (brightness)
-          return av < bv
-        else
-          -- Both colored: sort by hue, then saturation, then value
-          if math.abs(ah - bh) > 0.02 then  -- Hue difference threshold
-            return ah < bh
-          elseif math.abs(as - bs) > 0.05 then  -- Saturation difference threshold
-            return as < bs
-          else
-            return av < bv
-          end
-        end
+        return Colors.compare_colors(a.color, b.color)
       end)
     elseif sort_mode == "name" then
       -- Sort alphabetically by name
