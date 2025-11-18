@@ -379,12 +379,12 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
   ImGui.PushStyleColor(ctx, ImGui.Col_TextSelectedBg, selection_color)
 
-  -- Draw input field
+  -- Draw input field with AutoSelectAll flag for better UX
   local changed, new_text = ImGui.InputText(
     ctx,
     "##inline_edit_" .. key,
     state.text,
-    ImGui.InputTextFlags_None
+    ImGui.InputTextFlags_AutoSelectAll
   )
 
   ImGui.PopStyleColor(ctx, 6)
@@ -392,6 +392,10 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   if changed then
     state.text = new_text
   end
+
+  -- Track if item is hovered to detect clicks inside
+  local is_item_hovered = ImGui.IsItemHovered(ctx)
+  local is_item_clicked = ImGui.IsItemClicked(ctx, 0)
 
   -- Check for Enter (commit) or Escape (cancel)
   local is_active = ImGui.IsItemActive(ctx)
@@ -405,15 +409,10 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   elseif escape_pressed then
     M.stop_inline_edit(grid, false)  -- Cancel on escape
     return true, current_text
-  elseif not is_active and ImGui.IsMouseClicked(ctx, 0) and state.frames_active > 2 then
-    -- Only cancel on click-away if click is outside the input bounds
-    local mx, my = ImGui.GetMousePos(ctx)
-    local clicked_outside = mx < input_x1 or mx > input_x2 or my < input_y1 or my > input_y2
-
-    if clicked_outside then
-      M.stop_inline_edit(grid, false)  -- Cancel
-      return true, current_text
-    end
+  elseif ImGui.IsMouseClicked(ctx, 0) and state.frames_active > 2 and not is_item_hovered and not is_active then
+    -- Cancel only if clicked outside the input field (not hovered and not active)
+    M.stop_inline_edit(grid, false)  -- Cancel
+    return true, current_text
   end
 
   return true, state.text  -- Still editing
