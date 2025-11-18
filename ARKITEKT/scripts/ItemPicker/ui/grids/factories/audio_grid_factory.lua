@@ -225,17 +225,23 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     wheel_adjust = function(uuids, delta)
-      if not uuids or #uuids == 0 then return end
+      reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST] Called! uuids=%d, delta=%d\n", uuids and #uuids or 0, delta or 0))
+      if not uuids or #uuids == 0 then
+        reaper.ShowConsoleMsg("[WHEEL_ADJUST] Empty uuids, returning\n")
+        return
+      end
       local uuid = uuids[1]
 
       -- Get filename from UUID
       local items = get_items()
       for _, data in ipairs(items) do
         if data.uuid == uuid then
+          reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST] Cycling item: %s\n", data.filename))
           state.cycle_audio_item(data.filename, delta > 0 and 1 or -1)
           return
         end
       end
+      reaper.ShowConsoleMsg("[WHEEL_ADJUST] UUID not found in items\n")
     end,
 
     delete = function(item_uuids)

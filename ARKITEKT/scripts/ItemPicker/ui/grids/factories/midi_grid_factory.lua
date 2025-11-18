@@ -226,17 +226,23 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     wheel_adjust = function(uuids, delta)
-      if not uuids or #uuids == 0 then return end
+      reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Called! uuids=%d, delta=%d\n", uuids and #uuids or 0, delta or 0))
+      if not uuids or #uuids == 0 then
+        reaper.ShowConsoleMsg("[WHEEL_ADJUST MIDI] Empty uuids, returning\n")
+        return
+      end
       local uuid = uuids[1]
 
       -- Get track_guid from UUID
       local items = get_items()
       for _, data in ipairs(items) do
         if data.uuid == uuid then
+          reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Cycling track: %s\n", data.track_guid))
           state.cycle_midi_item(data.track_guid, delta > 0 and 1 or -1)
           return
         end
       end
+      reaper.ShowConsoleMsg("[WHEEL_ADJUST MIDI] UUID not found in items\n")
     end,
 
     delete = function(item_uuids)
