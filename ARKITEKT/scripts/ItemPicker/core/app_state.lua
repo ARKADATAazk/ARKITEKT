@@ -89,6 +89,7 @@ M.draw_list = nil
 M.runtime_cache = {
   waveforms = {},
   midi_thumbnails = {},
+  waveform_polylines = {},  -- Performance: Cache downsampled polyline points per uuid+width
   -- Filter cache to avoid recomputing filtered items every frame
   audio_filtered = nil,
   audio_filter_hash = nil,

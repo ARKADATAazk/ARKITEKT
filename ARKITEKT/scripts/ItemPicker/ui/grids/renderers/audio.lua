@@ -327,7 +327,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local waveform = state.runtime_cache and state.runtime_cache.waveforms[item_data.uuid]
       if waveform then
         if visualization.DisplayWaveformTransparent then
-          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, content_w)
+          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, content_w, item_data.uuid, state.runtime_cache)
         end
       else
         -- Show placeholder and queue waveform generation
