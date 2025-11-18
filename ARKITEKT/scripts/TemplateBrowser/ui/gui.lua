@@ -288,6 +288,18 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   return root_nodes
 end
 
+-- Helper: Draw rectangular tag swatch (replaces rounded ColorButton)
+local function draw_tag_swatch(ctx, color, size)
+  local x, y = ImGui.GetCursorScreenPos(ctx)
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  -- Draw rectangular swatch (no rounding)
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + size, y + size, color, 0)
+
+  -- Advance cursor
+  ImGui.Dummy(ctx, size, size)
+end
+
 -- Draw folder tree using TreeView widget
 local function draw_folder_tree(ctx, state, config)
   -- Prepare tree nodes from state.folders
@@ -861,11 +873,12 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
         ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.selected_bg)
       end
 
-      -- Color swatch
-      ImGui.ColorButton(ctx, "##color", tag_data.color, 0, 16, 16)
+      -- Color swatch (rectangular)
+      draw_tag_swatch(ctx, tag_data.color, 16)
       ImGui.SameLine(ctx)
 
-      -- Tag name as selectable
+      -- Tag name as selectable (text moved up 1px)
+      ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) - 1)
       if ImGui.Selectable(ctx, tag_name, is_selected) then
         -- Toggle tag filter
         if is_selected then
@@ -1317,11 +1330,12 @@ local function draw_tags_content(ctx, state, config, width, height)
         end
       else
         -- Normal display
-        -- Color swatch
-        ImGui.ColorButton(ctx, "##color", tag_data.color, 0, 16, 16)
+        -- Color swatch (rectangular)
+        draw_tag_swatch(ctx, tag_data.color, 16)
         ImGui.SameLine(ctx)
 
-        -- Tag name
+        -- Tag name (text moved up 1px)
+        ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) - 1)
         ImGui.Text(ctx, tag_name)
 
         -- Double-click to rename
@@ -1359,8 +1373,8 @@ local function draw_left_panel(ctx, state, config, width, height)
   -- Draw tabs using rearkitekt Tabs widget
   local tabs_def = {
     { id = "directory", label = "DIRECTORY" },
-    { id = "vsts", label = "VSTS", badge = fx_filter_count > 0 and fx_filter_count or nil },
-    { id = "tags", label = "TAGS", badge = tag_filter_count > 0 and tag_filter_count or nil },
+    { id = "vsts", label = "VSTS" },
+    { id = "tags", label = "TAGS" },
   }
 
   local clicked_tab = Tabs.draw_at_cursor(ctx, tabs_def, state.left_panel_tab, {
@@ -1732,11 +1746,15 @@ local function draw_info_panel(ctx, state, config, width, height)
           end
         end
 
-        -- Color swatch with opacity based on assignment
+        -- Color swatch with opacity based on assignment (rectangular, clickable)
         local alpha = is_assigned and 0xFF or 0x4D  -- Full opacity or 30%
         local button_color = Colors.with_alpha(tag_data.color, alpha)
 
-        if ImGui.ColorButton(ctx, "##color", button_color, 0, 20, 20) then
+        local swatch_size = 20
+        local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
+
+        -- Clickable area
+        if ImGui.InvisibleButton(ctx, "##tag_swatch_" .. tag_name, swatch_size, swatch_size) then
           -- Toggle tag assignment
           if is_assigned then
             Tags.remove_tag_from_template(state.metadata, tmpl.uuid, tag_name)
@@ -1747,9 +1765,14 @@ local function draw_info_panel(ctx, state, config, width, height)
           Persistence.save_metadata(state.metadata)
         end
 
+        -- Draw rectangular swatch
+        local dl = ImGui.GetWindowDrawList(ctx)
+        ImGui.DrawList_AddRectFilled(dl, start_x, start_y, start_x + swatch_size, start_y + swatch_size, button_color, 0)
+
         ImGui.SameLine(ctx)
 
-        -- Tag name with opacity
+        -- Tag name with opacity (text moved up 1px)
+        ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) - 1)
         if not is_assigned then
           ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#808080"))
         end
