@@ -24,7 +24,7 @@ M.settings = {
   tile_width = nil,
   tile_height = nil,
   separator_position = nil,  -- MIDI section height (nil = use default from config)
-  sort_mode = "none",  -- Options: "none", "color", "name"
+  sort_mode = "none",  -- Options: "none", "color", "name", "pool"
 }
 
 -- Runtime state (volatile)

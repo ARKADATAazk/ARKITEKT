@@ -252,6 +252,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     {id = "none", label = "None"},
     {id = "color", label = "Color"},
     {id = "name", label = "Name"},
+    {id = "pool", label = "Pool"},
   }
 
   local current_sort = self.state.settings.sort_mode or "none"
