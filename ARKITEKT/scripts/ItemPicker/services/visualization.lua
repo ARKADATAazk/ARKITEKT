@@ -81,6 +81,11 @@ function M.GetItemWaveform(cache, item, uuid)
   local channels = reaper.GetMediaSourceNumChannels(source)
   channels = math.min(channels, 2)
 
+  -- Validate channels to prevent crash
+  if channels <= 0 then
+    return nil
+  end
+
   local buf = reaper.new_array(WAVEFORM_RESOLUTION * 2 * channels)
 
   reaper.GetMediaItemTake_Peaks(

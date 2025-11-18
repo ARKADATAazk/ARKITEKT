@@ -235,16 +235,17 @@ function GUI:draw(ctx, shell_state)
     self.controller.start_incremental_loading(self.state, 100, fast_mode)
   end
 
-  -- Periodically check for project changes (every 180 frames = ~5-6 seconds)
-  -- Reduced frequency to avoid performance impact
-  self.state.frame_count = (self.state.frame_count or 0) + 1
-  if self.state.frame_count % 180 == 0 then
-    local current_change_count = reaper.GetProjectStateChangeCount(0)
-    if self.state.last_change_count and current_change_count ~= self.state.last_change_count then
-      -- Project changed, trigger recollection
-      self.state.needs_recollect = true
-    end
-  end
+  -- DISABLED: Auto-reload on project changes (was triggering on playback)
+  -- Playback changes project state count, causing reload loop
+  -- User can manually reload if items are added/removed
+  --
+  -- self.state.frame_count = (self.state.frame_count or 0) + 1
+  -- if self.state.frame_count % 180 == 0 then
+  --   local current_change_count = reaper.GetProjectStateChangeCount(0)
+  --   if self.state.last_change_count and current_change_count ~= self.state.last_change_count then
+  --     self.state.needs_recollect = true
+  --   end
+  -- end
 
   ImGui.PushFont(ctx, mini_font, mini_font_size)
   reaper.PreventUIRefresh(1)
