@@ -388,9 +388,9 @@ function AdditionalView:draw(ctx, shell_state)
   -- LEFT PANEL: Parameter Library
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
   -- Use modern 5-parameter API: BeginChild(ctx, id, w, h, child_flags, window_flags)
-  -- ChildFlags_None to disable border, WindowFlags_None for default window behavior
+  -- Add WindowFlags_NoMove to prevent child window from being moved (prevents parent drag)
   local child_flags = ImGui.ChildFlags_None or 0
-  local window_flags = ImGui.WindowFlags_None or 0
+  local window_flags = (ImGui.WindowFlags_NoMove or 0) | (ImGui.WindowFlags_NoScrollbar or 0) | (ImGui.WindowFlags_NoScrollWithMouse or 0)
   if ImGui.BeginChild(ctx, "param_library", left_width, 0, child_flags, window_flags) then
     local child_x, child_y = ImGui.GetWindowPos(ctx)
     local child_w, child_h = ImGui.GetWindowSize(ctx)
