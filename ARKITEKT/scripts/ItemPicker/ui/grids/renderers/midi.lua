@@ -301,7 +301,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Badge click callback to cycle through items
       local on_badge_click = function()
         if item_data.total and item_data.total > 1 then
-          state.cycle_midi_track(item_data.track_guid, 1)
+          state.cycle_midi_item(item_data.track_guid, 1)
         end
       end
 
