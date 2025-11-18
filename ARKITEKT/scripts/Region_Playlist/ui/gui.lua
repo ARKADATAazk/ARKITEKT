@@ -177,7 +177,8 @@ function M.create(State, AppConfig, settings)
       local rids = {}
       local playlist_items = {}
 
-      local playlist_items_data = self.controller:get_playlist_items(State.get_active_playlist_id())
+      -- Get items from active grid
+      local playlist_items_data = self.region_tiles.active_grid.get_items()
       for i, key in ipairs(item_keys) do
         for _, item in ipairs(playlist_items_data) do
           if item.key == key then
@@ -215,7 +216,8 @@ function M.create(State, AppConfig, settings)
       local rids = {}
       local playlist_ids = {}
 
-      local playlist_items = self.controller:get_playlist_items(State.get_active_playlist_id())
+      -- Get items from active grid
+      local playlist_items = self.region_tiles.active_grid.get_items()
       for _, key in ipairs(item_keys) do
         for _, item in ipairs(playlist_items) do
           if item.key == key then

@@ -23,7 +23,7 @@ M.CONFIG = {
   length_padding_x = 4,
   length_padding_y = 2,
   length_font_size = 0.82,
-  length_offset_x = 8,  -- Additional offset from right edge (increased by 5px)
+  length_offset_x = 5,  -- Additional offset from right edge
   playlist_chip_radius = 4,
   chip_offset = { x = 0, y = 0 },
   text_padding_left = 6,
