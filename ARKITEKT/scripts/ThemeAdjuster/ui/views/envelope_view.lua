@@ -133,6 +133,7 @@ function EnvelopeView:draw(ctx, shell_state)
         width = 50,
         height = 24,
         is_toggled = is_active,
+        preset_name = "BUTTON_TOGGLE_WHITE",
         on_click = function()
           self.active_layout = layout
           -- TODO: Apply layout

@@ -55,8 +55,8 @@ end
 
 -- Render grab handle (FULL RECTANGLE - NO ROUNDING)
 local function render_grab(dl, gx, y0, y1, GRAB_W, active, hovered)
-  local x_left = gx - GRAB_W / 2
-  local x_right = gx + GRAB_W / 2
+  local x_left = math.floor(gx - GRAB_W / 2 + 0.5)
+  local x_right = math.floor(gx + GRAB_W / 2 + 0.5)
   local rounding = 0  -- No rounding - full rectangle
 
   -- Shadow
@@ -134,9 +134,10 @@ local function draw_slider_base(ctx, id, value, min_val, max_val, default_val, g
   -- Render slider background
   render_slider(dl, x0, y0, x1, y1, gradient_fn, opt)
   
-  -- Render grab
+  -- Render grab (snap to whole pixels to prevent aliasing)
   local t = (value - min_val) / (max_val - min_val)
   local gx = clamp(x0 + t * W, x0 + GRAB_W / 2, x1 - GRAB_W / 2)
+  gx = math.floor(gx + 0.5)  -- Snap to nearest pixel
   render_grab(dl, gx, y0, y1, GRAB_W, active, hovered)
   
   -- Tooltip
