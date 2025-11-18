@@ -110,11 +110,6 @@ end
 function M.handle_shortcuts(grid, ctx)
   if not grid.behaviors then return false end
 
-  -- Block shortcuts when any overlay is active (checked before popups are opened)
-  if OverlayManager and OverlayManager.has_active_overlays() then
-    return false
-  end
-
   -- Block shortcuts when any popup is open
   if ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId) then
     return false
@@ -146,11 +141,6 @@ end
 
 function M.handle_wheel_input(grid, ctx, items)
   if not grid.behaviors or not grid.behaviors.wheel_adjust then return false end
-
-  -- Block wheel input when any overlay is active (checked before popups are opened)
-  if OverlayManager and OverlayManager.has_active_overlays() then
-    return false
-  end
 
   -- Block wheel input when any popup is open
   if ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId) then
@@ -186,12 +176,6 @@ function M.handle_wheel_input(grid, ctx, items)
 end
 
 function M.handle_tile_input(grid, ctx, item, rect)
-  -- Block ALL tile interaction when any overlay is active (checked BEFORE popups are opened)
-  -- This prevents the one-frame delay where overlays are visible but popups aren't registered yet
-  if OverlayManager and OverlayManager.has_active_overlays() then
-    return false
-  end
-
   -- Block ALL tile interaction when any popup is open (context menus, modals, etc.)
   -- This prevents clicks, hover, and tooltips from triggering on tiles underneath popups
   if ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId) then

@@ -106,11 +106,13 @@ function M.create(get_templates, metadata, animator, get_tile_width, on_select, 
         duration = 0.2,
       },
 
-      -- Marquee selection box
+      -- Marquee selection box (use ARKITEKT library defaults)
       marquee = {
-        fill_color = Colors.hexrgb("#FFFFFF") | 0x22,  -- Semi-transparent white
-        stroke_color = Colors.hexrgb("#FFFFFF") | 0xAA,
+        fill_color = Colors.hexrgb("#FFFFFF22"),  -- 13% opacity white
+        fill_color_add = Colors.hexrgb("#FFFFFF33"),  -- 20% opacity for additive selection
+        stroke_color = Colors.hexrgb("#FFFFFF"),  -- Full white stroke
         stroke_thickness = 1,
+        rounding = 0,
       },
 
       -- Drag threshold
