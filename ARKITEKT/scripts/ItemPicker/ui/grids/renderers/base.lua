@@ -96,31 +96,51 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
   local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
 
-  s = s * 0.3
-  v = v * 0.2
+  -- Darker background
+  s = s * 0.2
+  v = v * 0.15
 
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
   local placeholder_color = ImGui.ColorConvertDouble4ToU32(r, g, b, alpha)
 
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, placeholder_color)
 
-  -- Spinner
+  -- Simple rotating ring spinner (standard loading indicator)
   local center_x = (x1 + x2) / 2
   local center_y = (y1 + y2) / 2
-  local size = math.min(x2 - x1, y2 - y1) * 0.15
+  local size = math.min(x2 - x1, y2 - y1) * 0.2
 
-  local spinner_alpha = math.floor(alpha * 128)
-  local spinner_color = Colors.with_alpha(hexrgb("#FFFFFF"), spinner_alpha)
+  -- Dark spinner color (slightly lighter than background)
+  local spinner_alpha = math.floor(alpha * 100)
+  local spinner_color = Colors.with_alpha(hexrgb("#808080"), spinner_alpha)
 
   local time = reaper.time_precise()
-  local angle = (time * 2) % (math.pi * 2)
+  local rotation = (time * 3) % (math.pi * 2)  -- Rotates every ~2 seconds
 
-  for i = 0, 7 do
-    local a = angle + (i * math.pi / 4)
-    local radius = size * (0.3 + 0.7 * ((i + 1) / 8))
-    local px = center_x + math.cos(a) * size
-    local py = center_y + math.sin(a) * size
-    ImGui.DrawList_AddCircleFilled(dl, px, py, radius, spinner_color)
+  -- Draw ring arc (3/4 circle, 1/4 gap)
+  local arc_length = math.pi * 1.5  -- 270 degrees (3/4 of circle)
+  local segments = 24
+  local thickness = math.max(1.5, size * 0.15)
+
+  -- Draw the arc as a series of line segments
+  for i = 0, segments do
+    local t = i / segments
+    local angle = rotation + (t * arc_length)
+    local next_angle = rotation + ((i + 1) / segments * arc_length)
+
+    local x1_inner = center_x + math.cos(angle) * (size - thickness / 2)
+    local y1_inner = center_y + math.sin(angle) * (size - thickness / 2)
+    local x1_outer = center_x + math.cos(angle) * (size + thickness / 2)
+    local y1_outer = center_y + math.sin(angle) * (size + thickness / 2)
+
+    local x2_inner = center_x + math.cos(next_angle) * (size - thickness / 2)
+    local y2_inner = center_y + math.sin(next_angle) * (size - thickness / 2)
+    local x2_outer = center_x + math.cos(next_angle) * (size + thickness / 2)
+    local y2_outer = center_y + math.sin(next_angle) * (size + thickness / 2)
+
+    -- Draw quad for this segment
+    ImGui.DrawList_AddQuadFilled(dl, x1_outer, y1_outer, x2_outer, y2_outer,
+                                      x2_inner, y2_inner, x1_inner, y1_inner, spinner_color)
   end
 end
 
