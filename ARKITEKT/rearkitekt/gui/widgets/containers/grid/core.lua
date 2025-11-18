@@ -468,46 +468,26 @@ function Grid:draw(ctx)
   
   self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
 
-  -- Don't use InvisibleButton - it blocks widget input
-  -- Instead, manually detect background clicks after rendering
+  -- Detect background clicks EARLY (before rendering) for marquee selection to work
+  -- But check against tiles later (after rendering) to know if click was on empty space
   ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
 
-  local bg_clicked = false
-  local bg_double_clicked = false
+  local mx, my = ImGui.GetMousePos(ctx)
+  local gb = self.grid_bounds
+  local mouse_in_grid = gb and mx >= gb[1] and mx <= gb[3] and my >= gb[2] and my <= gb[4]
 
-  -- Optimized: Check if mouse is over any tile (inline to avoid function call overhead)
+  local bg_clicked = mouse_in_grid and ImGui.IsMouseClicked(ctx, 0)
+  local bg_double_clicked = mouse_in_grid and ImGui.IsMouseDoubleClicked(ctx, 0)
+
+  -- We'll check if click is over a tile AFTER rendering
+  -- For now, defer marquee selection start until we know
   local mouse_over_tile = false
   local double_clicked_tile_key = nil
+  local deferred_marquee_start = false
 
-  if bg_clicked or bg_double_clicked then
-    local mx, my = ImGui.GetMousePos(ctx)
-    for i = 1, num_items do
-      local item = items[i]
-      local key = self.key(item)
-      local r = self.rect_track:get(key)
-      if r and self:_rect_intersects_bounds(r) and Draw.point_in_rect(mx, my, r[1], r[2], r[3], r[4]) then
-        mouse_over_tile = true
-        if bg_double_clicked then
-          double_clicked_tile_key = key
-        end
-        break
-      end
-    end
-  end
-
-  -- Handle double-click on tile at grid level (before marquee selection)
-  if bg_double_clicked and double_clicked_tile_key and self.behaviors and self.behaviors.double_click then
-    self.behaviors.double_click(double_clicked_tile_key)
-  end
-
-  if bg_clicked and not mouse_over_tile and not Input.is_external_drag_active(self) then
-    local mx, my = ImGui.GetMousePos(ctx)
-    local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
-    local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
-    local mode = (ctrl or shift) and "add" or "replace"
-    
-    self.sel_rect:begin(mx, my, mode, ctx)
-    if self.on_click_empty then self.on_click_empty() end
+  -- Don't start marquee yet - wait until after rendering to check if click is over a tile
+  if bg_clicked and not Input.is_external_drag_active(self) then
+    deferred_marquee_start = true
   end
 
   local marquee_threshold = (self.config.marquee and self.config.marquee.drag_threshold) or DEFAULTS.marquee.drag_threshold
@@ -654,37 +634,37 @@ function Grid:draw(ctx)
 
   self.animator:render_destroy_effects(ctx, dl)
 
-  -- Detect background clicks manually (after rendering, so we know where tiles are)
-  if ImGui.IsMouseClicked(ctx, 0) then
+  -- NOW check if the deferred click was over a tile (after rendering, so we know where tiles are)
+  if deferred_marquee_start or bg_double_clicked then
     local mx, my = ImGui.GetMousePos(ctx)
-    local gb = self.grid_bounds
-    if gb and mx >= gb[1] and mx <= gb[3] and my >= gb[2] and my <= gb[4] then
-      -- Mouse clicked in grid bounds, check if it's over a tile
-      local clicked_on_tile = false
-      for i = 1, num_items do
-        local item = items[i]
-        local key = self.key(item)
-        local r = self.rect_track:get(key)
-        if r and Draw.point_in_rect(mx, my, r[1], r[2], r[3], r[4]) then
-          clicked_on_tile = true
-          if ImGui.IsMouseDoubleClicked(ctx, 0) then
-            double_clicked_tile_key = key
-          end
-          break
+    for i = 1, num_items do
+      local item = items[i]
+      local key = self.key(item)
+      local r = self.rect_track:get(key)
+      if r and Draw.point_in_rect(mx, my, r[1], r[2], r[3], r[4]) then
+        mouse_over_tile = true
+        if bg_double_clicked then
+          double_clicked_tile_key = key
         end
-      end
-      if not clicked_on_tile then
-        bg_clicked = true
+        break
       end
     end
   end
 
-  if ImGui.IsMouseDoubleClicked(ctx, 0) then
+  -- Handle double-click on tile
+  if bg_double_clicked and double_clicked_tile_key and self.behaviors and self.behaviors.double_click then
+    self.behaviors.double_click(double_clicked_tile_key)
+  end
+
+  -- NOW start marquee selection if click was NOT over a tile
+  if deferred_marquee_start and not mouse_over_tile then
     local mx, my = ImGui.GetMousePos(ctx)
-    local gb = self.grid_bounds
-    if gb and mx >= gb[1] and mx <= gb[3] and my >= gb[2] and my <= gb[4] then
-      bg_double_clicked = true
-    end
+    local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+    local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
+    local mode = (ctrl or shift) and "add" or "replace"
+
+    self.sel_rect:begin(mx, my, mode, ctx)
+    if self.on_click_empty then self.on_click_empty() end
   end
 
   if not self.block_all_input then
