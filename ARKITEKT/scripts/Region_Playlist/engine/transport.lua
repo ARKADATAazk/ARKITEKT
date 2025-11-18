@@ -30,7 +30,7 @@ function M.new(opts)
   self.transport_override = (opts.transport_override == true)
   self.loop_playlist = (opts.loop_playlist == true)
   self.follow_viewport = (opts.follow_viewport == true)
-  self.shuffle_enabled = (opts.shuffle_enabled == true)
+  self.shuffle_enabled = false  -- Initialize to false, will be set properly below
 
   self.is_playing = false
   self.last_seek_time = 0
@@ -40,6 +40,11 @@ function M.new(opts)
   self._old_smoothseek = nil
   self._old_repeat = nil
   self._old_smooth_scroll = nil
+
+  -- Set shuffle after initialization to trigger state sync
+  if opts.shuffle_enabled then
+    self:set_shuffle_enabled(true)
+  end
 
   return self
 end
