@@ -23,7 +23,7 @@ M.CONFIG = {
   length_padding_x = 4,
   length_padding_y = 2,
   length_font_size = 0.82,
-  length_offset_x = 3,
+  length_offset_x = 8,  -- Additional offset from right edge (increased by 5px)
   playlist_chip_radius = 4,
   chip_offset = { x = 0, y = 0 },
   text_padding_left = 6,
@@ -297,7 +297,7 @@ function M.draw_length_display(ctx, dl, rect, region, base_color, text_alpha)
   local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
 
   -- Right-aligned: longer text extends left, position stays fixed relative to right edge
-  local length_x = x2 - length_w - scaled_margin
+  local length_x = x2 - length_w - scaled_margin - M.CONFIG.length_offset_x
   local length_y = y2 - length_h - scaled_margin
 
   local length_color = Colors.same_hue_variant(base_color, fx_config.duration_saturation, fx_config.duration_brightness, fx_config.duration_alpha)
@@ -324,7 +324,7 @@ function M.draw_playlist_length_display(ctx, dl, rect, playlist_data, base_color
   local length_w, length_h = ImGui.CalcTextSize(ctx, length_str)
 
   -- Right-aligned: longer text extends left, position stays fixed relative to right edge
-  local length_x = x2 - length_w - scaled_margin
+  local length_x = x2 - length_w - scaled_margin - M.CONFIG.length_offset_x
   local length_y = y2 - length_h - scaled_margin
 
   -- Use chip color for playlist length display (same as region tiles use region color)
