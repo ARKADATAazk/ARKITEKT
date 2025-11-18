@@ -107,14 +107,16 @@ function M.render(ctx, rect, param, state, view)
   ImGui.SameLine(ctx, 0, spacing)
 
   -- 2. Live control (slider/spinner/checkbox)
-  -- Store control rectangles for exclusion zones
+  -- Calculate and store control rectangles BEFORE drawing (for exclusion zones)
   if not view.control_rects[param.index] then
     view.control_rects[param.index] = {}
   end
   local rects = view.control_rects[param.index]
-  rects[1] = nil  -- Clear previous control rect
-  rects[2] = nil  -- Clear previous name input rect
-  rects[3] = nil  -- Clear previous desc input rect
+
+  -- Get current cursor position to calculate control rect
+  local ctrl_x, ctrl_y = ImGui.GetCursorScreenPos(ctx)
+  local ctrl_h = 24  -- Standard control height
+  rects[1] = {ctrl_x, ctrl_y, ctrl_x + control_w, ctrl_y + ctrl_h}
 
   ImGui.SetNextItemWidth(ctx, control_w)
   local changed = false
@@ -165,11 +167,6 @@ function M.render(ctx, rect, param, state, view)
     end
   end
 
-  -- Capture control rect
-  local ctrl_x1, ctrl_y1 = ImGui.GetItemRectMin(ctx)
-  local ctrl_x2, ctrl_y2 = ImGui.GetItemRectMax(ctx)
-  rects[1] = {ctrl_x1, ctrl_y1, ctrl_x2, ctrl_y2}
-
   -- Apply parameter change
   if changed then
     pcall(reaper.ThemeLayout_SetParameter, param.index, new_value, true)
@@ -180,6 +177,11 @@ function M.render(ctx, rect, param, state, view)
   ImGui.SameLine(ctx, 0, spacing)
 
   -- 3. Name input
+  -- Calculate rect before drawing
+  local name_x, name_y = ImGui.GetCursorScreenPos(ctx)
+  local input_h = 24
+  rects[2] = {name_x, name_y, name_x + name_input_w, name_y + input_h}
+
   ImGui.SetNextItemWidth(ctx, name_input_w)
   local name_changed, new_name = ImGui.InputTextWithHint(ctx, "##name_" .. param.index,
     "Custom name...", metadata.display_name)
@@ -188,14 +190,13 @@ function M.render(ctx, rect, param, state, view)
     view:save_assignments()
   end
 
-  -- Capture name input rect
-  local name_x1, name_y1 = ImGui.GetItemRectMin(ctx)
-  local name_x2, name_y2 = ImGui.GetItemRectMax(ctx)
-  rects[2] = {name_x1, name_y1, name_x2, name_y2}
-
   ImGui.SameLine(ctx, 0, spacing)
 
   -- 4. Description input
+  -- Calculate rect before drawing
+  local desc_x, desc_y = ImGui.GetCursorScreenPos(ctx)
+  rects[3] = {desc_x, desc_y, desc_x + desc_input_w, desc_y + input_h}
+
   ImGui.SetNextItemWidth(ctx, desc_input_w)
   local desc_changed, new_desc = ImGui.InputTextWithHint(ctx, "##desc_" .. param.index,
     "Description...", metadata.description)
@@ -203,11 +204,6 @@ function M.render(ctx, rect, param, state, view)
     metadata.description = new_desc
     view:save_assignments()
   end
-
-  -- Capture description input rect
-  local desc_x1, desc_y1 = ImGui.GetItemRectMin(ctx)
-  local desc_x2, desc_y2 = ImGui.GetItemRectMax(ctx)
-  rects[3] = {desc_x1, desc_y1, desc_x2, desc_y2}
 
   -- 5. Assignment badge (at the end)
   if assignment_count > 0 then
