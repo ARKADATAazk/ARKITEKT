@@ -5,34 +5,15 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local function init_arkitekt()
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, "S").source:sub(2)
-  local dir = src:match("(.*"..sep..")")
-
-  -- Scan upward for bootstrap
-  local path = dir
-  while path and #path > 3 do
-    local bootstrap = path .. "rearkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
-    local f = io.open(bootstrap, "r")
-    if f then
-      f:close()
-      return dofile(bootstrap)(path)
-    end
-    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
-  end
-
-  reaper.MB("ARKITEKT bootstrap not found!", "FATAL ERROR", 0)
-  return nil
-end
-
-local ARK = init_arkitekt()
+local Init = require('rearkitekt.app.init')
+local ARK = Init.bootstrap()
 if not ARK then return end
 
 -- Load required modules
 local ImGui = ARK.ImGui
 local Runtime = require('rearkitekt.app.runtime')
 local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
+local OverlayDefaults = require('rearkitekt.gui.widgets.overlays.overlay.defaults')
 local ImGuiStyle = require('rearkitekt.gui.style.imgui_defaults')
 
 -- Load TemplateBrowser modules
@@ -110,22 +91,11 @@ if USE_OVERLAY then
   -- Create overlay manager
   local overlay_mgr = OverlayManager.new()
 
-  -- Push overlay onto stack
-  local Colors = require('rearkitekt.core.colors')
-  overlay_mgr:push({
+  -- Push overlay onto stack using centralized defaults
+  overlay_mgr:push(OverlayDefaults.create_overlay_config({
     id = "template_browser_main",
-    use_viewport = true,
-    fade_duration = 0.25,
-    fade_curve = 'ease_out_quad',
-    show_close_button = true,
-    close_on_background_click = false,
-    close_on_background_right_click = true,
-    close_on_scrim = false,
-    esc_to_close = true,
-    close_button_size = 28,
-    close_button_margin = 16,
-    close_button_proximity = 140,
-    content_padding = 30,
+    -- All other settings use framework defaults from constants.lua
+    -- Only override if truly app-specific
 
     render = function(ctx, alpha_val, bounds)
       ImGuiStyle.PushMyStyle(ctx, { window_bg = false, modal_dim_bg = false })
@@ -152,10 +122,8 @@ if USE_OVERLAY then
       ImGuiStyle.PopMyStyle(ctx)
     end,
 
-    on_close = function()
-      cleanup()
-    end,
-  })
+    on_close = cleanup,
+  }))
 
   -- Create runtime
   local runtime = Runtime.new({

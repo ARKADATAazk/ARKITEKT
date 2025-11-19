@@ -16,28 +16,8 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local function init_arkitekt()
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, "S").source:sub(2)
-  local dir = src:match("(.*"..sep..")")
-
-  -- Scan upward for bootstrap
-  local path = dir
-  while path and #path > 3 do
-    local bootstrap = path .. "rearkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
-    local f = io.open(bootstrap, "r")
-    if f then
-      f:close()
-      return dofile(bootstrap)(path)
-    end
-    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
-  end
-
-  reaper.MB("ARKITEKT bootstrap not found!", "FATAL ERROR", 0)
-  return nil
-end
-
-local ARK = init_arkitekt()
+local Init = require('rearkitekt.app.init')
+local ARK = Init.bootstrap()
 if not ARK then return end
 
 local ImGui = ARK.ImGui

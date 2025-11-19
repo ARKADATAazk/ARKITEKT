@@ -4,6 +4,7 @@
 
 local Colors = require('rearkitekt.core.colors')
 local ConfigUtil = require('rearkitekt.core.config')
+local Constants = require('rearkitekt.app.constants')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -90,6 +91,72 @@ end
 
 function M.reset()
   current_config = nil
+end
+
+-- ============================================================================
+-- OVERLAY MANAGER CONFIGURATION HELPER
+-- ============================================================================
+
+-- Create a complete overlay configuration using framework defaults
+-- Only override what's truly app-specific (like render function, ID, etc.)
+-- @param opts Table with optional overrides:
+--   - id: Required, unique overlay ID
+--   - render: Required, render function(ctx, alpha, bounds)
+--   - on_close: Optional, cleanup function
+--   - use_viewport: Optional, boolean (default: true)
+--   - fade_duration: Optional, number in seconds
+--   - fade_curve: Optional, easing curve name
+--   - show_close_button: Optional, boolean
+--   - close_on_background_click: Optional, boolean
+--   - close_on_background_right_click: Optional, boolean
+--   - close_on_scrim: Optional, boolean
+--   - esc_to_close: Optional, boolean
+--   - close_button_size: Optional, number
+--   - close_button_margin: Optional, number
+--   - close_button_proximity: Optional, number
+--   - content_padding: Optional, number
+--   - scrim_color: Optional, color int
+--   - scrim_opacity: Optional, 0.0-1.0
+-- @return Complete overlay configuration table
+function M.create_overlay_config(opts)
+  assert(opts and opts.id, "Overlay config requires 'id' field")
+  assert(opts.render, "Overlay config requires 'render' function")
+
+  local C = Constants.OVERLAY
+  local A = Constants.ANIMATION
+  local config = M.get()
+
+  return {
+    id = opts.id,
+    use_viewport = opts.use_viewport ~= nil and opts.use_viewport or C.DEFAULT_USE_VIEWPORT,
+
+    -- Animation
+    fade_duration = opts.fade_duration or A.FADE_NORMAL,
+    fade_curve = opts.fade_curve or A.DEFAULT_FADE_CURVE,
+
+    -- Close button
+    show_close_button = opts.show_close_button ~= nil and opts.show_close_button or C.DEFAULT_SHOW_CLOSE_BUTTON,
+    close_button_size = opts.close_button_size or C.CLOSE_BUTTON_SIZE,
+    close_button_margin = opts.close_button_margin or C.CLOSE_BUTTON_MARGIN,
+    close_button_proximity = opts.close_button_proximity or C.CLOSE_BUTTON_PROXIMITY,
+
+    -- Close behavior
+    close_on_background_click = opts.close_on_background_click or C.DEFAULT_CLOSE_ON_BG_CLICK,
+    close_on_background_right_click = opts.close_on_background_right_click ~= nil and opts.close_on_background_right_click or C.DEFAULT_CLOSE_ON_BG_RIGHT_CLICK,
+    close_on_scrim = opts.close_on_scrim or C.DEFAULT_CLOSE_ON_SCRIM,
+    esc_to_close = opts.esc_to_close ~= nil and opts.esc_to_close or C.DEFAULT_ESC_TO_CLOSE,
+
+    -- Layout
+    content_padding = opts.content_padding or C.CONTENT_PADDING,
+
+    -- Appearance
+    scrim_color = opts.scrim_color or config.scrim.color,
+    scrim_opacity = opts.scrim_opacity or C.SCRIM_OPACITY,
+
+    -- Required callbacks
+    render = opts.render,
+    on_close = opts.on_close,
+  }
 end
 
 return M
