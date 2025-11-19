@@ -5,6 +5,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local Constants = require('rearkitekt.app.init.constants')
 
 local M = {}
 local hexrgb
@@ -24,7 +25,7 @@ end
 local Colors = nil
 do
   local ok, mod = pcall(require, 'rearkitekt.core.colors')
-  if ok then 
+  if ok then
     Colors = mod
     hexrgb = Colors.hexrgb
   end
@@ -39,62 +40,6 @@ end
 local WF_None = 0
 
 local function floor(n) return math.floor(n + 0.5) end
-
-local DEFAULTS = {}
-do
-  local ok, Config = pcall(require, 'rearkitekt.app.init.constants')
-  if ok and Config and Config.get_defaults then
-    DEFAULTS = Config.get_defaults()
-  else
-    DEFAULTS = {
-      window = {
-        content_padding = 12,
-        initial_pos = { x = 100, y = 100 },
-        initial_size = { w = 900, h = 600 },
-        min_size = { w = 400, h = 300 },
-        fullscreen = {
-          enabled = false,
-          use_viewport = true,
-          fade_in_duration = 0.3,
-          fade_out_duration = 0.3,
-          scrim_enabled = true,
-          scrim_color = hexrgb and hexrgb("#000000") or 0x000000FF,
-          scrim_opacity = 0.85,
-          window_bg_override = nil,
-          window_opacity = 1.0,
-          hide_titlebar = true,
-          no_resize = true,
-          no_move = true,
-          no_collapse = true,
-          no_scrollbar = true,
-          no_scroll_with_mouse = true,
-          show_close_button = true,
-          close_on_background_click = true,
-          close_on_background_left_click = false,
-          close_button_proximity = 150,
-          close_button = {
-            size = 32,
-            margin = 16,
-            bg_color = hexrgb and hexrgb("#000000") or 0x000000FF,
-            bg_opacity = 0.6,
-            bg_opacity_hover = 0.8,
-            icon_color = hexrgb and hexrgb("#FFFFFF") or 0xFFFFFFFF,
-            hover_color = hexrgb and hexrgb("#FF4444") or 0xFF4444FF,
-            active_color = hexrgb and hexrgb("#FF0000") or 0xFF0000FF,
-          },
-        },
-      },
-      status_bar = {
-        height = 28,
-      },
-      titlebar = {
-        height = 26,
-        pad_h = 12,
-        pad_v = 0,
-      },
-    }
-  end
-end
 
 local function smootherstep(t)
   t = math.max(0.0, math.min(1.0, t))
@@ -139,31 +84,31 @@ end
 function M.new(opts)
   opts = opts or {}
 
-  local fullscreen_opts = opts.fullscreen or DEFAULTS.window.fullscreen
+  local fullscreen_opts = opts.fullscreen or Constants.WINDOW.fullscreen
   local is_fullscreen = fullscreen_opts.enabled or false
 
   local win = {
     settings        = opts.settings,
-    title           = opts.title or DEFAULTS.window.title or "Window",
+    title           = opts.title or Constants.WINDOW.title,
     version         = opts.version,
     flags           = opts.flags or WF_None,
 
-    content_padding = opts.content_padding or DEFAULTS.window.content_padding,
+    content_padding = opts.content_padding or Constants.WINDOW.content_padding,
     titlebar_pad_h  = opts.titlebar_pad_h,
-    titlebar_pad_v  = opts.titlebar_pad_v or DEFAULTS.titlebar.pad_v,
+    titlebar_pad_v  = opts.titlebar_pad_v or Constants.TITLEBAR.pad_v,
     title_font      = opts.title_font,
     title_font_size = opts.title_font_size or 16,
     version_font    = opts.version_font,
     version_font_size = opts.version_font_size or 13,
     version_color   = opts.version_color,
 
-    initial_pos     = opts.initial_pos  or DEFAULTS.window.initial_pos,
-    initial_size    = opts.initial_size or DEFAULTS.window.initial_size,
-    min_size        = opts.min_size     or DEFAULTS.window.min_size,
+    initial_pos     = opts.initial_pos  or Constants.WINDOW.initial_pos,
+    initial_size    = opts.initial_size or Constants.WINDOW.initial_size,
+    min_size        = opts.min_size     or Constants.WINDOW.min_size,
 
-    bg_color_floating = opts.bg_color_floating or DEFAULTS.window.bg_color_floating,
-    bg_color_docked   = opts.bg_color_docked or DEFAULTS.window.bg_color_docked,
-    
+    bg_color_floating = opts.bg_color_floating or Constants.WINDOW.bg_color_floating,
+    bg_color_docked   = opts.bg_color_docked or Constants.WINDOW.bg_color_docked,
+
     status_bar      = nil,
     tabs            = nil,
     active_tab      = nil,
@@ -171,14 +116,14 @@ function M.new(opts)
     fullscreen = {
       enabled = is_fullscreen,
       use_viewport = fullscreen_opts.use_viewport,
-      fade_in_duration = fullscreen_opts.fade_in_duration or 0.3,
-      fade_out_duration = fullscreen_opts.fade_out_duration or 0.3,
+      fade_in_duration = fullscreen_opts.fade_in_duration or Constants.ANIMATION.FADE_NORMAL,
+      fade_out_duration = fullscreen_opts.fade_out_duration or Constants.ANIMATION.FADE_NORMAL,
       scrim_enabled = fullscreen_opts.scrim_enabled,
       scrim_color = fullscreen_opts.scrim_color or hexrgb("#000000"),
-      scrim_opacity = fullscreen_opts.scrim_opacity or 0.85,
+      scrim_opacity = fullscreen_opts.scrim_opacity or Constants.OVERLAY.SCRIM_OPACITY,
       window_bg_override = fullscreen_opts.window_bg_override,
       window_opacity = fullscreen_opts.window_opacity or 1.0,
-      alpha = create_alpha_tracker(fullscreen_opts.fade_in_duration or 0.3),
+      alpha = create_alpha_tracker(fullscreen_opts.fade_in_duration or Constants.ANIMATION.FADE_NORMAL),
       close_requested = false,
       is_closing = false,
       show_close_button = fullscreen_opts.show_close_button ~= false,
@@ -189,12 +134,12 @@ function M.new(opts)
     },
 
     titlebar_opts   = {
-      height          = opts.titlebar_height or DEFAULTS.titlebar.height,
-      pad_h           = opts.titlebar_pad_h or DEFAULTS.titlebar.pad_h,
-      pad_v           = opts.titlebar_pad_v or DEFAULTS.titlebar.pad_v,
-      button_width    = opts.titlebar_button_width or DEFAULTS.titlebar.button_width,
-      button_spacing  = opts.titlebar_button_spacing or DEFAULTS.titlebar.button_spacing,
-      button_style    = opts.titlebar_button_style or DEFAULTS.titlebar.button_style,
+      height          = opts.titlebar_height or Constants.TITLEBAR.height,
+      pad_h           = opts.titlebar_pad_h or Constants.TITLEBAR.pad_h,
+      pad_v           = opts.titlebar_pad_v or Constants.TITLEBAR.pad_v,
+      button_width    = opts.titlebar_button_width or Constants.TITLEBAR.button_width,
+      button_spacing  = opts.titlebar_button_spacing or Constants.TITLEBAR.button_spacing,
+      button_style    = opts.titlebar_button_style or Constants.TITLEBAR.button_style,
       separator       = opts.titlebar_separator,
       bg_color        = opts.titlebar_bg_color,
       bg_color_active = opts.titlebar_bg_color_active,
@@ -288,7 +233,7 @@ function M.new(opts)
       if ok and StatusBar and StatusBar.new then
         local status_height_compensation = 6
         win.status_bar = StatusBar.new({
-          height = DEFAULTS.status_bar.height + status_height_compensation,
+          height = Constants.STATUS_BAR.height + status_height_compensation,
           get_status = opts.get_status_func or function() return { text = "READY", color = hexrgb("#41E0A3") } end,
           style = opts.style and { palette = opts.style.palette } or nil
         })
@@ -371,9 +316,9 @@ local hexrgb = Colors.hexrgb
   if is_fullscreen and win.fullscreen.show_close_button and CloseButton then
     local btn_opts = fullscreen_opts.close_button or {}
     win.fullscreen.close_button = CloseButton.new({
-      size = btn_opts.size or 32,
-      margin = btn_opts.margin or 16,
-      proximity_distance = fullscreen_opts.close_button_proximity or 150,
+      size = btn_opts.size or Constants.OVERLAY.CLOSE_BUTTON_SIZE,
+      margin = btn_opts.margin or Constants.OVERLAY.CLOSE_BUTTON_MARGIN,
+      proximity_distance = fullscreen_opts.close_button_proximity or Constants.OVERLAY.CLOSE_BUTTON_PROXIMITY,
       bg_color = btn_opts.bg_color or hexrgb("#000000"),
       bg_opacity = btn_opts.bg_opacity or 0.6,
       bg_opacity_hover = btn_opts.bg_opacity_hover or 0.8,

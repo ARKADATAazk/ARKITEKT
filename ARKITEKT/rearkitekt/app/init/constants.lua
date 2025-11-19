@@ -87,13 +87,12 @@ M.WINDOW = {
   fullscreen = {
     enabled = false,  -- Whether to use fullscreen/viewport mode
     use_viewport = true,  -- Use full REAPER viewport vs parent window
-    fade_in_duration = 0.3,  -- seconds
-    fade_out_duration = 0.3,  -- seconds
+    -- Note: fade durations should use M.ANIMATION.FADE_NORMAL (0.3s) instead of hardcoding
     fade_speed = 10.0,  -- Animation speed multiplier (higher = faster)
 
     scrim_enabled = true,  -- Show dark background scrim
     scrim_color = hexrgb("#000000"),
-    scrim_opacity = 0.85,
+    -- Note: scrim_opacity should use M.OVERLAY.SCRIM_OPACITY instead of hardcoding
 
     window_bg_override = nil,  -- Override window background color (nil = use default)
     window_opacity = 1.0,  -- Overall window content opacity
@@ -102,19 +101,7 @@ M.WINDOW = {
     show_close_button = true,  -- Show floating close button on hover
     close_on_background_click = true,  -- Right-click on scrim/background to close
     close_on_background_left_click = false,  -- Left-click on background to close
-    close_button_proximity = 150,  -- Distance in pixels to show close button
-
-    -- Close button styling
-    close_button = {
-      size = 32,
-      margin = 16,
-      bg_color = hexrgb("#000000"),
-      bg_opacity = 0.6,
-      bg_opacity_hover = 0.8,
-      icon_color = hexrgb("#FFFFFF"),
-      hover_color = hexrgb("#FF4444"),
-      active_color = hexrgb("#FF0000"),
-    },
+    -- Note: close_button styling values (size, margin, proximity, colors) should reference M.OVERLAY constants
   },
 }
 

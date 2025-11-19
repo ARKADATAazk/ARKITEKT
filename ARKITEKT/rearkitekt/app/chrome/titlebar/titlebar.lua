@@ -7,6 +7,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
+local Constants = require('rearkitekt.app.init.constants')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -17,42 +18,9 @@ do
   if ok then Icon = mod end
 end
 
-local DEFAULTS = {}
-do
-  local ok, Config = pcall(require, 'rearkitekt.app.init.constants')
-  if ok and Config and Config.get_defaults then
-    DEFAULTS = Config.get_defaults().titlebar or {}
-  else
-    DEFAULTS = {
-      height          = 26,
-      pad_h           = 12,
-      pad_v           = 0,
-      button_width    = 44,
-      button_spacing  = 0,
-      button_style    = "minimal",
-      icon_size       = 18,
-      icon_spacing    = 8,
-      version_spacing = 6,
-      version_color   = hexrgb("#888888"),
-      button_maximize_normal  = hexrgb("#00000000"),
-      button_maximize_hovered = hexrgb("#57C290"),
-      button_maximize_active  = hexrgb("#60FFFF"),
-      button_close_normal     = hexrgb("#00000000"),
-      button_close_hovered    = hexrgb("#CC3333"),
-      button_close_active     = hexrgb("#FF1111"),
-      button_maximize_filled_normal  = hexrgb("#808080"),
-      button_maximize_filled_hovered = hexrgb("#999999"),
-      button_maximize_filled_active  = hexrgb("#666666"),
-      button_close_filled_normal     = hexrgb("#CC3333"),
-      button_close_filled_hovered    = hexrgb("#FF4444"),
-      button_close_filled_active     = hexrgb("#FF1111"),
-    }
-  end
-end
-
 function M.new(opts)
   opts = opts or {}
-  
+
   local titlebar = {
     title           = opts.title or "Window",
     version         = opts.version,
@@ -60,30 +28,30 @@ function M.new(opts)
     title_font_size = opts.title_font_size or 16,
     version_font    = opts.version_font,
     version_font_size = opts.version_font_size or 13,
-    
-    height          = opts.height or DEFAULTS.height or 26,
-    pad_h           = opts.pad_h or DEFAULTS.pad_h or 12,
-    pad_v           = opts.pad_v or DEFAULTS.pad_v or 0,
-    button_width    = opts.button_width or DEFAULTS.button_width or 44,
-    button_spacing  = opts.button_spacing or DEFAULTS.button_spacing or 0,
-    button_style    = opts.button_style or DEFAULTS.button_style or "minimal",
+
+    height          = opts.height or Constants.TITLEBAR.height,
+    pad_h           = opts.pad_h or Constants.TITLEBAR.pad_h,
+    pad_v           = opts.pad_v or Constants.TITLEBAR.pad_v,
+    button_width    = opts.button_width or Constants.TITLEBAR.button_width,
+    button_spacing  = opts.button_spacing or Constants.TITLEBAR.button_spacing,
+    button_style    = opts.button_style or Constants.TITLEBAR.button_style,
     separator       = opts.separator ~= false,
-    
+
     bg_color        = opts.bg_color,
     bg_color_active = opts.bg_color_active,
     text_color      = opts.text_color,
-    version_color   = opts.version_color or DEFAULTS.version_color or hexrgb("#888888"),
-    version_spacing = opts.version_spacing or DEFAULTS.version_spacing or 6,
-    
+    version_color   = opts.version_color or Constants.TITLEBAR.version_color,
+    version_spacing = opts.version_spacing or Constants.TITLEBAR.version_spacing,
+
     show_icon       = opts.show_icon ~= false,
-    icon_size       = opts.icon_size or DEFAULTS.icon_size or 18,
-    icon_spacing    = opts.icon_spacing or DEFAULTS.icon_spacing or 8,
+    icon_size       = opts.icon_size or Constants.TITLEBAR.icon_size,
+    icon_spacing    = opts.icon_spacing or Constants.TITLEBAR.icon_spacing,
     icon_color      = opts.icon_color,
     icon_draw       = opts.icon_draw,
-    
+
     enable_maximize = opts.enable_maximize ~= false,
     is_maximized    = false,
-    
+
     on_close        = opts.on_close,
     on_maximize     = opts.on_maximize,
     on_icon_click   = opts.on_icon_click,

@@ -8,38 +8,11 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui   = require 'imgui' '0.10'
+local Constants = require('rearkitekt.app.init.constants')
 local Runtime = require('rearkitekt.app.runtime.runtime')
 local Window  = require('rearkitekt.app.chrome.window.window')
 
 local M = {}
-
-local DEFAULTS = {}
-do
-  local ok, Config = pcall(require, 'rearkitekt.app.init.constants')
-  if ok and Config and Config.get_defaults then
-    DEFAULTS = Config.get_defaults()
-  else
-    DEFAULTS = {
-      window = {
-        title           = 'ReArkitekt App',
-        content_padding = 12,
-        min_size        = { w = 400, h = 300 },
-        initial_size    = { w = 900, h = 600 },
-        initial_pos     = { x = 100, y = 100 },
-      },
-      fonts = {
-        default        = 13,
-        title          = 16,
-        version        = 13,
-        titlebar_version = nil,
-        monospace      = 13,
-        family_regular = 'Inter_18pt-Regular.ttf',
-        family_bold    = 'Inter_18pt-SemiBold.ttf',
-        family_mono    = 'JetBrainsMono-Regular.ttf',
-      },
-    }
-  end
-end
 
 local function merge(dst, src)
   if not src then return dst end
@@ -55,17 +28,17 @@ end
 
 local function load_fonts(ctx, font_cfg)
   font_cfg = merge({
-    default        = (DEFAULTS.fonts and DEFAULTS.fonts.default) or 13,
-    title          = (DEFAULTS.fonts and DEFAULTS.fonts.title) or 16,
-    version        = (DEFAULTS.fonts and DEFAULTS.fonts.version) or 13,
-    titlebar_version = (DEFAULTS.fonts and DEFAULTS.fonts.titlebar_version) or nil,
-    monospace      = (DEFAULTS.fonts and DEFAULTS.fonts.monospace) or 13,
-    time_display   = (DEFAULTS.fonts and DEFAULTS.fonts.time_display) or nil,
-    icons          = (DEFAULTS.fonts and DEFAULTS.fonts.icons) or nil,
-    family_regular = (DEFAULTS.fonts and DEFAULTS.fonts.family_regular) or 'Inter_18pt-Regular.ttf',
-    family_bold    = (DEFAULTS.fonts and DEFAULTS.fonts.family_bold) or 'Inter_18pt-SemiBold.ttf',
-    family_mono    = (DEFAULTS.fonts and DEFAULTS.fonts.family_mono) or 'JetBrainsMono-Regular.ttf',
-    family_icons   = (DEFAULTS.fonts and DEFAULTS.fonts.family_icons) or 'remixicon.ttf',
+    default        = Constants.FONTS.default,
+    title          = Constants.FONTS.title,
+    version        = Constants.FONTS.version,
+    titlebar_version = Constants.FONTS.titlebar_version_monospace,
+    monospace      = Constants.TYPOGRAPHY.CODE,
+    time_display   = nil,
+    icons          = nil,
+    family_regular = Constants.FONTS.family_regular,
+    family_bold    = Constants.FONTS.family_bold,
+    family_mono    = Constants.FONTS.family_mono,
+    family_icons   = 'remixicon.ttf',
   }, font_cfg or {})
 
   local SEP      = package.config:sub(1,1)
@@ -157,31 +130,21 @@ end
 function M.run(opts)
   opts = opts or {}
 
-  local cfg = {
-    window = DEFAULTS.window,
-    fonts  = DEFAULTS.fonts,
-  }
-
-  if opts.window then merge(cfg.window, opts.window) end
-  if opts.fonts  or opts.font_sizes then
-    merge(cfg.fonts, (opts.fonts or opts.font_sizes))
-  end
-
-  local title    = opts.title or cfg.window.title
+  local title    = opts.title or Constants.WINDOW.title
   local version  = opts.version
   local draw_fn  = opts.draw or function(ctx) ImGui.Text(ctx, 'No draw function provided') end
   local style    = opts.style
   local settings = opts.settings
   local raw_content = (opts.raw_content == true)
   local enable_profiling = opts.enable_profiling ~= false
-  
+
   local show_icon = opts.window and opts.window.show_icon
   if show_icon == nil then
     show_icon = opts.show_icon
   end
 
   local ctx   = ImGui.CreateContext(title)
-  local fonts = load_fonts(ctx, cfg.fonts)
+  local fonts = load_fonts(ctx, opts.fonts or opts.font_sizes)
 
   local window = Window.new({
     fullscreen      = opts.fullscreen,
@@ -193,15 +156,15 @@ function M.run(opts)
     version_font_size = fonts.titlebar_version_size or fonts.version_size,
     version_color   = opts.version_color,
     settings        = settings and settings:sub('ui') or nil,
-    initial_pos     = opts.initial_pos  or cfg.window.initial_pos,
-    initial_size    = opts.initial_size or cfg.window.initial_size,
-    min_size        = opts.min_size     or cfg.window.min_size,
+    initial_pos     = opts.initial_pos  or Constants.WINDOW.initial_pos,
+    initial_size    = opts.initial_size or Constants.WINDOW.initial_size,
+    min_size        = opts.min_size     or Constants.WINDOW.min_size,
     show_status_bar = opts.show_status_bar,
     show_titlebar   = opts.show_titlebar,
     show_icon       = show_icon,
     get_status_func = opts.get_status_func,
-    status_bar_height = DEFAULTS.status_bar and DEFAULTS.status_bar.height or 28,
-    content_padding = opts.content_padding or cfg.window.content_padding,
+    status_bar_height = Constants.STATUS_BAR.height,
+    content_padding = opts.content_padding or Constants.WINDOW.content_padding,
     titlebar_pad_h  = opts.titlebar_pad_h,
     titlebar_pad_v  = opts.titlebar_pad_v,
     flags           = opts.flags,
