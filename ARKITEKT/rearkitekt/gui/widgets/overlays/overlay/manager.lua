@@ -158,7 +158,9 @@ function M:push(opts)
     close_on_scrim = (opts.close_on_scrim ~= false),
     esc_to_close = (opts.esc_to_close ~= false),
     use_viewport = (opts.use_viewport == true),
-    non_blocking = (opts.non_blocking == true),  -- Allow window controls while modal is open
+    -- Non-blocking is default for in-window overlays (allows titlebar/resize)
+    -- Only use blocking mode when explicitly requested
+    non_blocking = (opts.non_blocking ~= false) and not opts.use_viewport,
 
     -- Scrim customization
     scrim_color = opts.scrim_color,
