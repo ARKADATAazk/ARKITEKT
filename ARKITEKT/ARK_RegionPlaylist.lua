@@ -1,46 +1,44 @@
 -- @noindex
 
+-- ============================================================================
+-- UNIVERSAL PATH RESOLUTION - Find ARKITEKT root automatically
+-- ============================================================================
+local sep = package.config:sub(1,1)
+local script_path = debug.getinfo(1, "S").source:sub(2)
+local script_dir = script_path:match("(.*"..sep..")")
 
--- Auto-injected package path setup for relocated script
+-- Find ARKITEKT root by scanning upward until folder "rearkitekt" exists
+local function find_root(path)
+  while path and #path > 3 do
+    local test = path .. "rearkitekt" .. sep
+    local f = io.open(test .. "app" .. sep .. "shell.lua", "r")
+    if f then f:close(); return path end
+    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
+  end
+end
 
--- Package path setup for relocated script
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
-local root_path = script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
+local root_path = find_root(script_dir)
+if not root_path then
+  reaper.MB("ARKITEKT root not found! Cannot locate rearkitekt/app/shell.lua", "FATAL ERROR", 0)
+  return
+end
 
--- Ensure root_path ends with a slash
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
-
--- Add both module search paths
-local arkitekt_path= root_path .. "ARKITEKT/"
-local scripts_path = root_path .. "ARKITEKT/scripts/"
-package.path = arkitekt_path.. "?.lua;" .. arkitekt_path.. "?/init.lua;" .. 
-               scripts_path .. "?.lua;" .. scripts_path .. "?/init.lua;" .. 
-               package.path
-
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
-local root_path = script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
-package.path = root_path .. "?.lua;" .. root_path .. "?/init.lua;" .. package.path
+-- Build module search paths
+package.path =
+    root_path .. "rearkitekt" .. sep .. "?.lua;" ..
+    root_path .. "rearkitekt" .. sep .. "?" .. sep .. "init.lua;" ..
+    root_path .. "scripts" .. sep .. "?.lua;" ..
+    root_path .. "scripts" .. sep .. "?" .. sep .. "init.lua;" ..
+    package.path
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
+-- Utility functions
 local function dirname(p) return p:match("^(.*)[/\\]") end
 local function join(a,b) local s=package.config:sub(1,1); return (a:sub(-1)==s) and (a..b) or (a..s..b) end
-local function addpath(p) if p and p~="" and not package.path:find(p,1,true) then package.path = p .. ";" .. package.path end end
 
-local SRC   = debug.getinfo(1,"S").source:sub(2)
-local HERE  = dirname(SRC) or "."
-local REARKITEKT_ROOT = dirname(HERE or ".") or "."
-local SCRIPTS_ROOT = dirname(REARKITEKT_ROOT or ".") or "."
-
-addpath(join(SCRIPTS_ROOT, "?.lua"))
-addpath(join(SCRIPTS_ROOT, "?/init.lua"))
-addpath(join(REARKITEKT_ROOT, "?.lua"))
-addpath(join(REARKITEKT_ROOT, "?/init.lua"))
+local SRC = debug.getinfo(1,"S").source:sub(2)
+local HERE = dirname(SRC) or "."
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
