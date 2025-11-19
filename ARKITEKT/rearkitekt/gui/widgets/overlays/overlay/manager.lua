@@ -158,23 +158,21 @@ function M:push(opts)
     close_on_scrim = (opts.close_on_scrim ~= false),
     esc_to_close = (opts.esc_to_close ~= false),
     use_viewport = (opts.use_viewport == true),
+    -- Non-blocking is default for in-window overlays (allows titlebar/resize)
+    -- Only use blocking mode when explicitly requested
+    non_blocking = (opts.non_blocking ~= false) and not opts.use_viewport,
 
     -- Scrim customization
     scrim_color = opts.scrim_color,
     scrim_opacity = opts.scrim_opacity,
 
-    -- Close button support
-    show_close_button = (opts.show_close_button == true),
+    -- Close button support (enabled by default for all modals)
+    show_close_button = (opts.show_close_button ~= false),
     close_button_size = opts.close_button_size or 32,
-    close_button_margin = opts.close_button_margin or 16,
-    close_button_proximity = opts.close_button_proximity or 150,
-    close_button_color = opts.close_button_color or hexrgb("#FFFFFFFF"),
-    close_button_hover_color = opts.close_button_hover_color or hexrgb("#FF4444FF"),
-    close_button_bg_color = opts.close_button_bg_color or hexrgb("#000000FF"),
-    close_button_bg_opacity = opts.close_button_bg_opacity or 0.6,
-    close_button_bg_opacity_hover = opts.close_button_bg_opacity_hover or 0.8,
-    close_button_hovered = false,
-    close_button_alpha = 0.0,
+    close_button_margin = opts.close_button_margin or 12,
+    close_button_color = opts.close_button_color or hexrgb("#FFFFFF"),
+    close_button_alpha_normal = opts.close_button_alpha_normal or 0.3,
+    close_button_alpha_hover = opts.close_button_alpha_hover or 0.6,
 
     -- Background click support
     close_on_background_click = (opts.close_on_background_click == true),
@@ -305,26 +303,43 @@ function M:render(ctx, dt)
   local scrim_alpha = base_scrim_opacity * alpha_val
   local scrim_color = (base_scrim_color & 0xFFFFFF00) | math.floor(255 * scrim_alpha + 0.5)
 
-  -- HYBRID APPROACH: Use BeginPopupModal for input blocking, custom rendering for visuals
-  -- Set modal dim background to fully transparent (we render our own scrim)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ModalWindowDimBg, 0x00000000)  -- Transparent
+  local visible
 
-  -- Set window background to scrim color for custom appearance
-  ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, scrim_color)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, alpha_val)
+  if top.non_blocking then
+    -- NON-BLOCKING MODE: Create child windows for layering, allows window controls
+    -- First create fullscreen child for scrim (bottom layer)
+    ImGui.SetCursorScreenPos(ctx, x, y)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, scrim_color)
+    local scrim_flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoInputs
+    ImGui.BeginChild(ctx, '##overlay_scrim_' .. top.id, w, h, ImGui.ChildFlags_None, scrim_flags)
+    ImGui.EndChild(ctx)
+    ImGui.PopStyleColor(ctx, 1)
+    ImGui.PopStyleVar(ctx, 1)
 
-  -- Open popup modal if not already open
-  local popup_id = "##modal_overlay_" .. top.id
-  if not ImGui.IsPopupOpen(ctx, popup_id, ImGui.PopupFlags_None) then
-    ImGui.OpenPopup(ctx, popup_id)
+    visible = true
+  else
+    -- BLOCKING MODE: Use BeginPopupModal for input blocking, custom rendering for visuals
+    -- Set modal dim background to fully transparent (we render our own scrim)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ModalWindowDimBg, 0x00000000)  -- Transparent
+
+    -- Set window background to scrim color for custom appearance
+    ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, scrim_color)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, alpha_val)
+
+    -- Open popup modal if not already open
+    local popup_id = "##modal_overlay_" .. top.id
+    if not ImGui.IsPopupOpen(ctx, popup_id, ImGui.PopupFlags_None) then
+      ImGui.OpenPopup(ctx, popup_id)
+    end
+
+    visible = ImGui.BeginPopupModal(ctx, popup_id, nil, window_flags)
   end
 
-  local visible = ImGui.BeginPopupModal(ctx, popup_id, nil, window_flags)
-
   if visible then
-    local dl = ImGui.GetWindowDrawList(ctx)
+    local dl = top.non_blocking and ImGui.GetForegroundDrawList(ctx) or ImGui.GetWindowDrawList(ctx)
 
     -- Check for escape key
     if top.esc_to_close and ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
@@ -378,12 +393,14 @@ function M:render(ctx, dt)
       end
     end
 
-    ImGui.EndPopup(ctx)
+    -- Only end popup and pop styles for blocking mode
+    if not top.non_blocking then
+      ImGui.EndPopup(ctx)
+      -- Pop in reverse order (matching old overlay.lua)
+      ImGui.PopStyleVar(ctx, 3)    -- Alpha, WindowBorderSize, WindowPadding
+      ImGui.PopStyleColor(ctx, 2)  -- WindowBg, ModalWindowDimBg
+    end
   end
-
-  -- Pop in reverse order (matching old overlay.lua)
-  ImGui.PopStyleVar(ctx, 3)    -- Alpha, WindowBorderSize, WindowPadding
-  ImGui.PopStyleColor(ctx, 2)  -- WindowBg, ModalWindowDimBg
 end
 
 -- ============================================================================
@@ -394,48 +411,27 @@ function M:draw_close_button(ctx, overlay, vp_x, vp_y, vp_w, vp_h, dt)
   local btn_x = vp_x + vp_w - overlay.close_button_size - overlay.close_button_margin
   local btn_y = vp_y + overlay.close_button_margin
 
-  local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
-  local dist = math.sqrt((mouse_x - (btn_x + overlay.close_button_size/2))^2 +
-                        (mouse_y - (btn_y + overlay.close_button_size/2))^2)
-  local in_proximity = dist < overlay.close_button_proximity
-
-  local target_alpha = in_proximity and 1.0 or 0.3
-  overlay.close_button_alpha = overlay.close_button_alpha +
-                               (target_alpha - overlay.close_button_alpha) *
-                               (1.0 - math.exp(-10.0 * dt))
-
   ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
   ImGui.InvisibleButton(ctx, "##overlay_close_btn_" .. overlay.id,
                         overlay.close_button_size, overlay.close_button_size)
-  overlay.close_button_hovered = ImGui.IsItemHovered(ctx)
+  local is_hovered = ImGui.IsItemHovered(ctx)
 
   if ImGui.IsItemClicked(ctx) then
     self:pop(overlay.id)
   end
 
   local dl = ImGui.GetForegroundDrawList(ctx)
-  local alpha_val = overlay.alpha:value() * overlay.close_button_alpha
 
-  local bg_opacity = overlay.close_button_hovered and
-                    overlay.close_button_bg_opacity_hover or
-                    overlay.close_button_bg_opacity
-  local bg_alpha = bg_opacity * alpha_val
-  local bg_color = (overlay.close_button_bg_color & hexrgb("#FFFFFF00")) |
-                   math.floor(255 * bg_alpha + 0.5)
-  ImGui.DrawList_AddRectFilled(dl, btn_x, btn_y,
-                               btn_x + overlay.close_button_size,
-                               btn_y + overlay.close_button_size,
-                               bg_color, overlay.close_button_size/2)
+  -- Simple cross with opacity-based visibility (no background circle)
+  local base_alpha = is_hovered and overlay.close_button_alpha_hover or overlay.close_button_alpha_normal
+  local alpha_val = overlay.alpha:value() * base_alpha
+  local icon_color = (overlay.close_button_color & 0x00FFFFFF) | (math.floor(255 * alpha_val) << 24)
 
-  local icon_color = overlay.close_button_hovered and
-                    overlay.close_button_hover_color or
-                    overlay.close_button_color
-  icon_color = (icon_color & hexrgb("#FFFFFF00")) | math.floor(255 * alpha_val + 0.5)
-
-  local padding = overlay.close_button_size * 0.3
+  -- Draw X with diagonal lines
+  local padding = overlay.close_button_size * 0.25
   local x1, y1 = btn_x + padding, btn_y + padding
   local x2, y2 = btn_x + overlay.close_button_size - padding,
-                btn_y + overlay.close_button_size - padding
+                 btn_y + overlay.close_button_size - padding
   ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, icon_color, 2)
   ImGui.DrawList_AddLine(dl, x2, y1, x1, y2, icon_color, 2)
 end

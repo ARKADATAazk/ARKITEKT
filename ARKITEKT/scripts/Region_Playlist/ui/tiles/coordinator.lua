@@ -136,10 +136,10 @@ function M.create(opts)
       return ctrl:delete_playlist(id)
     end),
 
-    on_tab_rename = function(id)
-      rt._rename_playlist_id = id
-      rt._rename_input_visible = true
-    end,
+    on_tab_rename = controller_action(function(ctrl, id, new_name)
+      ctrl:rename_playlist(id, new_name)
+      rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
+    end),
 
     on_tab_duplicate = controller_action(function(ctrl, id)
       return ctrl:duplicate_playlist(id)

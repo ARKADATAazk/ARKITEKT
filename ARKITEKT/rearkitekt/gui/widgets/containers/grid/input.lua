@@ -324,11 +324,27 @@ function M.handle_tile_input(grid, ctx, item, rect)
     end
 
     if ImGui.IsMouseDoubleClicked(ctx, 0) then
-      -- Double-click triggers inline editing for single tile
-      if grid.behaviors and grid.behaviors.start_inline_edit then
-        grid.behaviors.start_inline_edit(key)
-      elseif grid.behaviors and grid.behaviors.double_click then
-        grid.behaviors.double_click(key)
+      -- Check if double-click is within text zone
+      local in_text_zone = false
+      if grid.text_zones and grid.text_zones[key] then
+        local text_zone = grid.text_zones[key]
+        if Draw.point_in_rect(mx, my, text_zone[1], text_zone[2], text_zone[3], text_zone[4]) then
+          in_text_zone = true
+        end
+      end
+
+      if in_text_zone then
+        -- Double-click on text zone triggers inline editing
+        if grid.behaviors and grid.behaviors.start_inline_edit then
+          grid.behaviors.start_inline_edit(key)
+        end
+      else
+        -- Double-click outside text zone triggers seek/cursor movement
+        if grid.behaviors and grid.behaviors.double_click_seek then
+          grid.behaviors.double_click_seek(key)
+        elseif grid.behaviors and grid.behaviors.double_click then
+          grid.behaviors.double_click(key)
+        end
       end
     end
   end

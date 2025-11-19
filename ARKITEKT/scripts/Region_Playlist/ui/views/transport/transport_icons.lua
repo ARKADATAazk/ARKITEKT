@@ -241,4 +241,52 @@ function M.draw_tool(dl, x, y, width, height, color)
   ImGui.DrawList_AddRectFilled(dl, k3_x, k3_y, k3_x + knob_w, k3_y + knob_h, color, 1)
 end
 
+-- Timeline mode icon: three horizontal bars stacked
+function M.draw_timeline(dl, x, y, width, height, color)
+  local icon_size = 16
+  local cx = floor(x + width / 2 + 0.5)
+  local cy = floor(y + height / 2 + 0.5)
+  local icon_x = floor(cx - icon_size / 2 + 0.5)
+  local icon_y = floor(cy - icon_size / 2 + 0.5)
+
+  -- Three horizontal bars stacked
+  ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y, icon_x + icon_size, icon_y + 2, color, 0)
+  ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y + 4, icon_x + icon_size, icon_y + 7, color, 0)
+  ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y + 9, icon_x + icon_size, icon_y + icon_size, color, 0)
+end
+
+-- List mode icon: horizontal bar at top + two vertical columns below
+function M.draw_list(dl, x, y, width, height, color)
+  local icon_size = 16
+  local cx = floor(x + width / 2 + 0.5)
+  local cy = floor(y + height / 2 + 0.5)
+  local icon_x = floor(cx - icon_size / 2 + 0.5)
+  local icon_y = floor(cy - icon_size / 2 + 0.5)
+
+  -- Horizontal bar at top
+  ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y, icon_x + icon_size, icon_y + 2, color, 0)
+  -- Two vertical columns below
+  ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y + 4, icon_x + 4, icon_y + icon_size, color, 0)
+  ImGui.DrawList_AddRectFilled(dl, icon_x + 6, icon_y + 4, icon_x + icon_size, icon_y + icon_size, color, 0)
+end
+
+-- Close icon: X shape
+function M.draw_close(dl, x, y, width, height, color)
+  local icon_size = 10
+  local cx = floor(x + width / 2 + 0.5)
+  local cy = floor(y + height / 2 + 0.5)
+  local thickness = 1.5
+
+  -- Calculate X endpoints
+  local half = icon_size / 2
+  local x1 = floor(cx - half + 0.5)
+  local y1 = floor(cy - half + 0.5)
+  local x2 = floor(cx + half + 0.5)
+  local y2 = floor(cy + half + 0.5)
+
+  -- Draw X with two diagonal lines
+  ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, color, thickness)
+  ImGui.DrawList_AddLine(dl, x2, y1, x1, y2, color, thickness)
+end
+
 return M

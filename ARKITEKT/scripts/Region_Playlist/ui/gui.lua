@@ -469,7 +469,10 @@ function M.create(State, AppConfig, settings)
   self.region_tiles:set_pool_mode(State.get_pool_mode())
   
   State.active_search_filter = ""
-  
+
+  -- Initialize viewmode button in config (needs state module reference)
+  Config.set_viewmode_button(State)
+
   self.transport_view = TransportView.new(Config.TRANSPORT, State)
   self.transport_view.config.quantize_lookahead = self.quantize_lookahead
   -- Pass settings to transport_view for persistence

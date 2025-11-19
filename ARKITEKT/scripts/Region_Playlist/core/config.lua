@@ -27,30 +27,45 @@ M.DIM = {
   STROKE = hexrgb("#FFFFFF33"),
 }
 
+-- Function to create viewmode corner button config (needs state module reference)
+local function create_viewmode_button(state_module)
+  return {
+    custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
+      local current_mode = state_module.get_layout_mode()
+      if current_mode == 'horizontal' then
+        -- Show timeline icon (currently in timeline mode)
+        TransportIcons.draw_timeline(dl, x, y, width, height, color)
+      else
+        -- Show list icon (currently in list mode)
+        TransportIcons.draw_list(dl, x, y, width, height, color)
+      end
+    end,
+    tooltip_fn = function()
+      local current_mode = state_module.get_layout_mode()
+      return current_mode == 'horizontal' and "Switch to List Mode" or "Switch to Timeline Mode"
+    end,
+    on_click = function()
+      local new_mode = (state_module.get_layout_mode() == 'horizontal') and 'vertical' or 'horizontal'
+      state_module.set_layout_mode(new_mode)
+      state_module.persist_ui_prefs()
+    end,
+  }
+end
+
 -- Transport dimensions and styling (using library design language)
+-- Note: corner_buttons.top_left must be set via set_viewmode_button() after state module is available
 M.TRANSPORT = {
   height = 72,
   padding = 12,
   spacing = 12,
   panel_bg_color = hexrgb("#131313c9"),
-  
-  -- View mode button (bottom-left corner)
-  view_mode = {
-    size = 30,  -- Match settings icon size
-    rounding = 4,
-    bg_color = hexrgb("#252525"),
-    bg_hover = hexrgb("#2A2A2A"),
-    border_inner = hexrgb("#404040"),
-    border_hover = hexrgb("#505050"),
-    border_outer = hexrgb("#000000DD"),
-    icon_color = hexrgb("#CCCCCC"),
-    animation_speed = 12.0,
-  },
 
   -- Corner buttons (panel feature)
   corner_buttons = {
     size = 30,
     margin = 8,
+    inner_rounding = 7,  -- Inner corner (circular, pointing inward)
+    bottom_left = nil,  -- Set via set_viewmode_button() after state module is available
     bottom_right = {
       custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
         TransportIcons.draw_tool(dl, x, y, width, height, color)
@@ -207,6 +222,7 @@ function M.get_active_container_config(callbacks)
     corner_buttons = {
       size = 24,
       margin = 8,
+      inner_rounding = 12,  -- Smaller buttons need smaller inner rounding
       bottom_left = {
         custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
           TransportIcons.draw_bolt(dl, x, y, width, height, color)
@@ -281,6 +297,7 @@ function M.get_pool_container_config(callbacks)
     corner_buttons = {
       size = 24,
       margin = 8,
+      inner_rounding = 12,  -- Smaller buttons need smaller inner rounding
       bottom_left = {
         custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
           TransportIcons.draw_bolt(dl, x, y, width, height, color)
@@ -465,6 +482,11 @@ function M.get_region_tiles_config(layout_mode)
       step = 1,
     },
   }
+end
+
+-- Helper to set viewmode button dynamically (call after state module is initialized)
+function M.set_viewmode_button(state_module)
+  M.TRANSPORT.corner_buttons.bottom_left = create_viewmode_button(state_module)
 end
 
 return M

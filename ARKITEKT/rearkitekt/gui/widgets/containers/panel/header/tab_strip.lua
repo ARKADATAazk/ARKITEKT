@@ -437,11 +437,142 @@ local function draw_track(ctx, dl, x, y, width, height, config, corner_rounding)
   end
 end
 
+-- Check if currently editing a tab inline
+local function is_editing_inline(state)
+  return state.editing_state and state.editing_state.active
+end
+
+-- Start inline editing for a tab
+local function start_inline_edit(state, id, initial_text)
+  state.editing_state = {
+    active = true,
+    id = id,
+    text = initial_text or "",
+    focus_next_frame = true,
+    frames_active = 0,
+  }
+end
+
+-- Stop inline editing (commit or cancel)
+local function stop_inline_edit(state, commit, config)
+  if not state.editing_state or not state.editing_state.active then return end
+
+  local id = state.editing_state.id
+  local new_text = state.editing_state.text
+
+  state.editing_state = nil
+
+  if commit and config.on_tab_rename then
+    config.on_tab_rename(id, new_text)
+  end
+end
+
+-- Handle inline editing input for tabs
+local function handle_inline_edit_input(ctx, dl, state, id, x, y, width, height, chip_color)
+  if not state.editing_state or state.editing_state.id ~= id then
+    return false  -- Not editing this tab
+  end
+
+  local edit_state = state.editing_state
+
+  -- Increment frame counter
+  edit_state.frames_active = (edit_state.frames_active or 0) + 1
+
+  -- Calculate text line dimensions
+  local text_height = ImGui.GetTextLineHeight(ctx)
+
+  -- Calculate vertical position (vertically centered)
+  local y_pos = y + (height - text_height) / 2
+
+  -- Input field bounds
+  local padding_x = 6
+  local padding_y = 1
+  local input_x1 = x + padding_x
+  local input_y1 = y_pos - padding_y
+  local input_x2 = x + width - padding_x
+  local input_y2 = y_pos + text_height + padding_y
+
+  -- Draw custom backdrop
+  local bg_color
+  if chip_color then
+    -- Create darker version of chip color for backdrop
+    bg_color = Colors.adjust_brightness(chip_color, 0.15)
+    bg_color = Colors.with_alpha(bg_color, 0xE0)
+  else
+    bg_color = hexrgb("#1A1A1AE0")
+  end
+
+  -- Draw backdrop with rounded corners
+  ImGui.DrawList_AddRectFilled(dl, input_x1, input_y1, input_x2, input_y2, bg_color, 2, 0)
+
+  -- Position and size the input field
+  ImGui.SetCursorScreenPos(ctx, input_x1 + 4, y_pos - 1)
+  ImGui.SetNextItemWidth(ctx, input_x2 - input_x1 - 8)
+
+  -- Focus input on first frame
+  if edit_state.focus_next_frame then
+    ImGui.SetKeyboardFocusHere(ctx)
+    edit_state.focus_next_frame = false
+  end
+
+  -- Calculate text and selection colors
+  local text_color, selection_color
+  if chip_color then
+    text_color = Colors.adjust_brightness(chip_color, 1.8)
+    selection_color = Colors.adjust_brightness(chip_color, 0.8)
+    selection_color = Colors.with_alpha(selection_color, 0xAA)
+  else
+    text_color = hexrgb("#FFFFFFDD")
+    selection_color = hexrgb("#4444AAAA")
+  end
+
+  -- Style the input field to be transparent
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#00000000"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
+  ImGui.PushStyleColor(ctx, ImGui.Col_TextSelectedBg, selection_color)
+
+  -- Draw input field
+  local changed, new_text = ImGui.InputText(
+    ctx,
+    "##tab_inline_edit_" .. id,
+    edit_state.text,
+    ImGui.InputTextFlags_AutoSelectAll
+  )
+
+  ImGui.PopStyleColor(ctx, 6)
+
+  if changed then
+    edit_state.text = new_text
+  end
+
+  -- Track if item is hovered
+  local is_item_hovered = ImGui.IsItemHovered(ctx)
+  local is_active = ImGui.IsItemActive(ctx)
+
+  -- Check for Enter (commit) or Escape (cancel)
+  local enter_pressed = ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter)
+  local escape_pressed = ImGui.IsKeyPressed(ctx, ImGui.Key_Escape)
+
+  if enter_pressed then
+    return true, true  -- editing_active, should_commit
+  elseif escape_pressed then
+    return true, false  -- editing_active, should_cancel
+  elseif ImGui.IsMouseClicked(ctx, 0) and edit_state.frames_active > 2 and not is_item_hovered and not is_active then
+    -- Cancel if clicked outside
+    return true, false  -- editing_active, should_cancel
+  end
+
+  return true, nil  -- Still editing, no action
+end
+
 local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height, state, config, unique_id, animator, corner_rounding)
   for k, v in pairs(DEFAULTS) do
     if config[k] == nil then config[k] = v end
   end
-  
+
   local label = tab_data.label or "Tab"
   local id = tab_data.id
   local chip_color = tab_data.chip_color
@@ -519,54 +650,79 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
   ImGui.DrawList_AddRect(dl, render_x, render_y, render_x + render_w, render_y + render_h, 
                          border_outer, inner_rounding, corner_flags, 1)
 
-  local content_x = render_x + (config.padding_x or 5)
-  
-  if has_chip then
-    local chip_x = content_x + 2
-    local chip_y = render_y + render_h * 0.5
-    
-    Chip.draw(ctx, {
-      style = Chip.STYLE.INDICATOR,
-      color = chip_color,
-      draw_list = dl,
-      x = chip_x,
-      y = chip_y,
-      radius = config.chip_radius or 4,
-      is_selected = is_active,
-      is_hovered = is_hovered,
-      show_glow = is_active or is_hovered,
-      glow_layers = 2,
-      alpha_factor = alpha_factor,
-    })
-    
-    content_x = content_x + 12
-  end
+  -- Check if currently editing this tab
+  local is_being_edited = is_editing_inline(state) and state.editing_state.id == id
 
-  local text_w, text_h = ImGui.CalcTextSize(ctx, label)
-  local text_x = content_x - 3
-  local text_y = render_y + (render_h - text_h) * 0.5
+  -- Render label and chip OR inline editor
+  if is_being_edited then
+    -- Handle inline editing input
+    local edit_result, edit_action = handle_inline_edit_input(ctx, dl, state, id, render_x, render_y, render_w, render_h, chip_color)
 
-  -- Extend text rendering to 2px from edge (inner border)
-  local text_max_w = render_x + render_w - text_x - 2
-  if text_w > text_max_w then
-    ImGui.DrawList_PushClipRect(dl, text_x, render_y,
-                                render_x + render_w - 2, render_y + render_h, true)
-    ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
-    ImGui.DrawList_PopClipRect(dl)
+    if edit_action == true then
+      -- Commit
+      stop_inline_edit(state, true, config)
+    elseif edit_action == false then
+      -- Cancel
+      stop_inline_edit(state, false, config)
+    end
   else
-    ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
+    -- Render normal label and chip
+    local content_x = render_x + (config.padding_x or 5)
+
+    if has_chip then
+      local chip_x = content_x + 2
+      local chip_y = render_y + render_h * 0.5
+
+      Chip.draw(ctx, {
+        style = Chip.STYLE.INDICATOR,
+        color = chip_color,
+        draw_list = dl,
+        x = chip_x,
+        y = chip_y,
+        radius = config.chip_radius or 4,
+        is_selected = is_active,
+        is_hovered = is_hovered,
+        show_glow = is_active or is_hovered,
+        glow_layers = 2,
+        alpha_factor = alpha_factor,
+      })
+
+      content_x = content_x + 12
+    end
+
+    local text_w, text_h = ImGui.CalcTextSize(ctx, label)
+    local text_x = content_x - 3
+    local text_y = render_y + (render_h - text_h) * 0.5
+
+    -- Extend text rendering to 2px from edge (inner border)
+    local text_max_w = render_x + render_w - text_x - 2
+    if text_w > text_max_w then
+      ImGui.DrawList_PushClipRect(dl, text_x, render_y,
+                                  render_x + render_w - 2, render_y + render_h, true)
+      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
+      ImGui.DrawList_PopClipRect(dl)
+    else
+      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
+    end
   end
 
   ImGui.SetCursorScreenPos(ctx, render_x, render_y)
   ImGui.InvisibleButton(ctx, "##tab_" .. id .. "_" .. unique_id, render_w, render_h)
 
   local clicked = ImGui.IsItemClicked(ctx, 0)
+  local double_clicked = ImGui.IsItemClicked(ctx, 0) and ImGui.IsMouseDoubleClicked(ctx, 0)
   local right_clicked = ImGui.IsItemClicked(ctx, 1)
+
+  -- Double-click to start inline editing (if not currently editing)
+  if double_clicked and not is_editing_inline(state) then
+    start_inline_edit(state, id, label)
+    clicked = false  -- Don't trigger tab selection when starting edit
+  end
 
   -- Check for Alt+click to delete
   local alt_held = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
 
-  if ImGui.IsItemActive(ctx) and not state.dragging_tab then
+  if ImGui.IsItemActive(ctx) and not state.dragging_tab and not is_being_edited then
     local drag_delta_x, drag_delta_y = ImGui.GetMouseDragDelta(ctx, 0)
     local drag_distance = math.sqrt(drag_delta_x * drag_delta_x + drag_delta_y * drag_delta_y)
     
@@ -615,13 +771,6 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
   }
 
   if ContextMenu.begin(ctx, "##tab_context_" .. id .. "_" .. unique_id, config.context_menu) then
-    if ContextMenu.item(ctx, "Rename Playlist", config.context_menu) then
-      if config.on_tab_rename then
-        config.on_tab_rename(id)
-      end
-      ImGui.CloseCurrentPopup(ctx)
-    end
-
     if ContextMenu.item(ctx, "Duplicate Playlist", config.context_menu) then
       if config.on_tab_duplicate then
         config.on_tab_duplicate(id)

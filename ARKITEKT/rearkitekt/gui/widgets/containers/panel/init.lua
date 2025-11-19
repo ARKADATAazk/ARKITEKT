@@ -267,8 +267,9 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
   ImGui.DrawList_PushClipRect(dl, x, y, x + w, y + h, true)
 
   -- Get rounding from config
-  local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
-  local outer_rounding = CORNER_BUTTON_CONFIG.outer_corner_rounding
+  local outer_rounding = config.rounding or CORNER_BUTTON_CONFIG.outer_corner_rounding
+  -- Inner rounding is configurable separately
+  local inner_rounding = cb.inner_rounding or 3
 
   -- Get position offsets
   local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
@@ -517,8 +518,9 @@ local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, panel_
   end
 
   -- Get rounding from config
-  local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
-  local outer_rounding = CORNER_BUTTON_CONFIG.outer_corner_rounding
+  local outer_rounding = config.rounding or CORNER_BUTTON_CONFIG.outer_corner_rounding
+  -- Inner rounding is configurable separately
+  local inner_rounding = cb.inner_rounding or 3
 
   -- Get position offsets
   local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
@@ -789,8 +791,9 @@ function Panel:end_draw(ctx)
       if cb then
         local size = cb.size or 30
       local border_thickness = 1
-      local outer_rounding = self.config.rounding or 8
-      local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
+      local outer_rounding = self.config.rounding or CORNER_BUTTON_CONFIG.outer_corner_rounding
+      -- Inner rounding is configurable separately
+      local inner_rounding = cb.inner_rounding or 3
       local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
       local offset_y = CORNER_BUTTON_CONFIG.position_offset_y
       local panel_id = self.id

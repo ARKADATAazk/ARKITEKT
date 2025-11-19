@@ -23,7 +23,6 @@ function M.new(config, state_module)
     config = config,
     state = state_module,
     container = nil,
-    view_mode_button = ButtonWidgets.ViewModeButton_new(config.view_mode),
     transport_display = DisplayWidget.new(config.display),
   }, TransportView)
   
@@ -798,22 +797,10 @@ function TransportView:draw(ctx, shell_state, is_blocking)
   local display_h = content_h
   
   local time_font = shell_state and shell_state.fonts and shell_state.fonts.time_display or nil
-  self.transport_display:draw(ctx, display_x, display_y, display_w, display_h, 
+  self.transport_display:draw(ctx, display_x, display_y, display_w, display_h,
     bridge_state, current_region, next_region, playlist_data, region_colors, time_font)
-  
-  self.container:end_draw(ctx)
-  
-  local view_mode_size = self.config.view_mode.size
-  local view_mode_margin = 8  -- Match corner button margin
-  local view_x = transport_start_x + view_mode_margin
-  local view_y = transport_start_y + transport_height - view_mode_size - view_mode_margin
 
-  -- Use foreground drawlist so button appears above child window content
-  self.view_mode_button:draw(ctx, view_x, view_y, self.state.get_layout_mode(), function()
-    local new_mode = (self.state.get_layout_mode() == 'horizontal') and 'vertical' or 'horizontal'
-    self.state.set_layout_mode(new_mode)
-    self.state.persist_ui_prefs()
-  end, true, is_blocking)
+  self.container:end_draw(ctx)
 
   ImGui.SetCursorScreenPos(ctx, transport_start_x, transport_start_y + transport_height)
 end

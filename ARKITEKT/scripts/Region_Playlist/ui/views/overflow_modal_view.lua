@@ -5,8 +5,9 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Sheet = require('rearkitekt.gui.widgets.overlays.overlay.sheet')
+local Container = require('rearkitekt.gui.widgets.overlays.overlay.container')
 local ChipList = require('rearkitekt.gui.widgets.data.chip_list')
+local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -154,25 +155,33 @@ function OverflowModalView:draw(ctx, window)
         self:close()
       end,
       render = function(ctx, alpha, bounds)
-        Sheet.render(ctx, alpha, bounds, function(ctx, w, h, a)
-          local padding_h = 16
-          
-          ImGui.SetCursorPos(ctx, padding_h, 16)
+        Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a, padding)
           ImGui.Text(ctx, "All Playlists:")
-          ImGui.SetCursorPosX(ctx, padding_h)
-          ImGui.SetNextItemWidth(ctx, w - padding_h * 2)
-          local changed, text = ImGui.InputTextWithHint(ctx, "##tab_search", "Search playlists...", self.search_text)
-          if changed then 
-            self.search_text = text 
-          end
-          
+          ImGui.Dummy(ctx, 0, 8)
+
+          -- Search input using primitive
+          local search_height = 28
+          local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
+
+          SearchInput.draw_at_cursor(ctx, {
+            id = "overflow_search",
+            width = content_w,
+            height = search_height,
+            placeholder = "Search playlists...",
+            value = self.search_text,
+            on_change = function(new_text)
+              self.search_text = new_text
+            end
+          })
+
+          -- Manually advance cursor down after primitive
+          ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + search_height)
           ImGui.Dummy(ctx, 0, 12)
-          ImGui.SetCursorPosX(ctx, padding_h)
+
           ImGui.Separator(ctx)
           ImGui.Dummy(ctx, 0, 12)
-          
-          ImGui.SetCursorPosX(ctx, padding_h)
-          
+
+          -- Playlist grid
           local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
             selected_ids = selected_ids,
             search_text = self.search_text,
@@ -186,7 +195,7 @@ function OverflowModalView:draw(ctx, window)
             column_spacing = 16,
             item_spacing = 4,
           })
-          
+
           if clicked_tab then
             self.state.set_active_playlist(clicked_tab, true)
             if self.on_tab_selected then
@@ -196,26 +205,7 @@ function OverflowModalView:draw(ctx, window)
             self.is_open = false
             self:close()
           end
-          
-          ImGui.Dummy(ctx, 0, 20)
-          ImGui.SetCursorPosX(ctx, padding_h)
-          ImGui.Separator(ctx)
-          ImGui.Dummy(ctx, 0, 12)
-          
-          local button_w = 100
-          local start_x = (w - button_w) * 0.5
-          
-          ImGui.SetCursorPosX(ctx, start_x)
-          if ImGui.Button(ctx, "Close", button_w, 32) then
-            window.overlay:pop('overflow-tabs')
-            self.is_open = false
-            self:close()
-          end
-        end, { 
-          title = "Select Playlist", 
-          width = 0.6, 
-          height = 0.7 
-        })
+        end)
       end
     })
   end
