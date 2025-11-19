@@ -64,7 +64,8 @@ M.TRANSPORT = {
   corner_buttons = {
     size = 30,
     margin = 8,
-    top_left = nil,  -- Set via set_viewmode_button() after state module is available
+    rounding = 3,
+    bottom_left = nil,  -- Set via set_viewmode_button() after state module is available
     bottom_right = {
       custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
         TransportIcons.draw_tool(dl, x, y, width, height, color)
@@ -483,7 +484,7 @@ end
 
 -- Helper to set viewmode button dynamically (call after state module is initialized)
 function M.set_viewmode_button(state_module)
-  M.TRANSPORT.corner_buttons.top_left = create_viewmode_button(state_module)
+  M.TRANSPORT.corner_buttons.bottom_left = create_viewmode_button(state_module)
 end
 
 return M
