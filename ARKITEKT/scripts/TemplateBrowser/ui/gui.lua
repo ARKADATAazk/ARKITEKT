@@ -1615,6 +1615,13 @@ local function draw_recent_templates(ctx, gui, width, available_height)
     ImGui.SetCursorScreenPos(ctx, x2 + tile_gap, y1)
   end
 
+  -- Add dummy to consume the space used by horizontally positioned tiles
+  -- This prevents SetCursorPos error when EndChild is called
+  if #recent_templates > 0 then
+    local total_width = (#recent_templates * tile_width) + ((#recent_templates - 1) * tile_gap)
+    ImGui.Dummy(ctx, total_width, tile_height)
+  end
+
   ImGui.EndChild(ctx)
 
   -- Separator after recent templates
