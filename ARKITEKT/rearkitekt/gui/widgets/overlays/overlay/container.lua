@@ -12,9 +12,9 @@ local M = {}
 -- Default container styling - simple squares with 1px black border
 local DEFAULTS = {
   width = 0.6,           -- Percentage of bounds width
-  height = 0.7,          -- Percentage of bounds height
+  height = 0.8,          -- Percentage of bounds height
   rounding = 0,          -- Square corners (no rounding)
-  bg_color = hexrgb("#101010"),  -- Darker background
+  bg_color = hexrgb("#1e1e1e"),  -- Slightly lighter dark background
   bg_opacity = 1.0,
   border_color = hexrgb("#000000"),  -- Black border
   border_opacity = 1.0,
@@ -53,7 +53,7 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, bg_color)
 
   local child_flags = ImGui.ChildFlags_None or 0
-  local window_flags = ImGui.WindowFlags_NoScrollbar
+  local window_flags = 0  -- Allow scrolling
   ImGui.BeginChild(ctx, '##modal_container', w, h, child_flags, window_flags)
 
   -- Draw simple 1px black border
