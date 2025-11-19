@@ -1,6 +1,6 @@
 -- @description ARKITEKT Toolkit
 -- @author ARKADATA
--- @version 1.0.2
+-- @version 1.0.4
 -- @provides
 --   [main] ARK_RegionPlaylist.lua
 --   [main] ARK_ItemPicker.lua
