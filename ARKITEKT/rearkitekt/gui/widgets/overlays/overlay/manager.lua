@@ -309,11 +309,16 @@ function M:render(ctx, dt)
   local visible
 
   if top.non_blocking then
-    -- NON-BLOCKING MODE: Render on foreground draw list, allows window controls
-    local dl = ImGui.GetForegroundDrawList(ctx)
-
-    -- Draw scrim
-    ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, scrim_color, 0)
+    -- NON-BLOCKING MODE: Create child windows for layering, allows window controls
+    -- First create fullscreen child for scrim (bottom layer)
+    ImGui.SetCursorScreenPos(ctx, x, y)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, scrim_color)
+    local scrim_flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoInputs
+    ImGui.BeginChild(ctx, '##overlay_scrim_' .. top.id, w, h, ImGui.ChildFlags_None, scrim_flags)
+    ImGui.EndChild(ctx)
+    ImGui.PopStyleColor(ctx, 1)
+    ImGui.PopStyleVar(ctx, 1)
 
     visible = true
   else

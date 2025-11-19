@@ -164,26 +164,29 @@ function OverflowModalView:draw(ctx, window)
         local y = math.floor(bounds.y + (bounds.h - h) * 0.5)
         local r = 10
 
-        -- Create interactive child window for content
+        -- Create child window for container (renders above scrim)
         ImGui.SetCursorScreenPos(ctx, x, y)
-        local child_flags = ImGui.ChildFlags_None or 0
+        ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
+        ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, r)
+
+        -- Dark background color for child
+        local bg_color = Colors.with_alpha(hexrgb("#1A1A1A"), math.floor(255 * 0.98 * alpha))
+        ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, bg_color)
+
+        local child_flags = ImGui.ChildFlags_Border
         local window_flags = ImGui.WindowFlags_NoScrollbar
         ImGui.BeginChild(ctx, '##overflow_content', w, h, child_flags, window_flags)
 
-        -- Draw container background on child's draw list (renders behind content)
+        -- Draw borders on child's draw list
         local dl = ImGui.GetWindowDrawList(ctx)
-
-        -- Darker background
-        local bg_color = Colors.with_alpha(hexrgb("#1A1A1A"), math.floor(255 * 0.98 * alpha))
-        ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color, r)
-
-        -- Dark outer border
         local border_color = Colors.with_alpha(hexrgb("#000000"), math.floor(255 * 0.9 * alpha))
         ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_color, r, 0, 2)
 
-        -- Subtle inner highlight
         local inner_border = Colors.with_alpha(hexrgb("#404040"), math.floor(255 * 0.4 * alpha))
         ImGui.DrawList_AddRect(dl, x + 2, y + 2, x + w - 2, y + h - 2, inner_border, r - 2, 0, 1)
+
+        ImGui.PopStyleColor(ctx, 1)
+        ImGui.PopStyleVar(ctx, 2)
           local padding_h = 16
           
           ImGui.SetCursorPos(ctx, padding_h, 16)
