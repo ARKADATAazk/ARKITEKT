@@ -78,18 +78,14 @@ function M.render(ctx, rect, item, state, view, tab_id)
   -- Otherwise: [PARAM NAME]
 
   -- Check link status for visual indicator
-  local is_linked = ParameterLinkManager.is_linked(param_name)
-  local is_parent = ParameterLinkManager.is_parent(param_name)
+  local is_in_group = ParameterLinkManager.is_in_group(param_name)
   local link_prefix = ""
   local link_color = hexrgb("#FFFFFF")
 
-  if is_linked then
+  if is_in_group then
     local mode = ParameterLinkManager.get_link_mode(param_name)
     link_prefix = mode == ParameterLinkManager.LINK_MODE.LINK and "⇄ " or "⇉ "
     link_color = hexrgb("#4AE290")  -- Green for linked
-  elseif is_parent then
-    link_prefix = "⇶ "
-    link_color = hexrgb("#5588FF")  -- Blue for parent
   end
 
   if metadata.display_name and metadata.display_name ~= "" then
@@ -142,13 +138,15 @@ function M.render(ctx, rect, item, state, view, tab_id)
     -- Tooltip
     if ImGui.IsItemHovered(ctx) then
       local tooltip = "Parameter: " .. param_name
-      if is_linked then
-        local parent = ParameterLinkManager.get_parent(param_name)
+      if is_in_group then
+        local other_params = ParameterLinkManager.get_other_group_params(param_name)
         local mode = ParameterLinkManager.get_link_mode(param_name)
         local mode_text = mode == ParameterLinkManager.LINK_MODE.LINK and "LINK" or "SYNC"
-        tooltip = tooltip .. string.format("\nLinked to: %s [%s]", parent, mode_text)
-      elseif is_parent then
-        tooltip = tooltip .. "\nParent of linked parameters"
+        if #other_params > 0 then
+          tooltip = tooltip .. string.format("\nGrouped with: %s [%s]", table.concat(other_params, ", "), mode_text)
+        else
+          tooltip = tooltip .. string.format("\nIn group [%s]", mode_text)
+        end
       end
       ImGui.SetTooltip(ctx, tooltip)
     end

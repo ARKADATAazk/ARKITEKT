@@ -133,22 +133,26 @@ function ParamLinkModal:render(ctx, shell_state)
   ImGui.Text(ctx, self.source_param_type or "unknown")
 
   -- Show current link status
-  local is_linked = ParameterLinkManager.is_linked(self.source_param)
-  if is_linked then
-    local parent = ParameterLinkManager.get_parent(self.source_param)
+  local is_in_group = ParameterLinkManager.is_in_group(self.source_param)
+  if is_in_group then
+    local other_params = ParameterLinkManager.get_other_group_params(self.source_param)
     local mode = ParameterLinkManager.get_link_mode(self.source_param)
     local mode_text = mode == ParameterLinkManager.LINK_MODE.LINK and "LINK" or "SYNC"
 
     ImGui.Spacing(ctx)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#4AE290"))
-    ImGui.Text(ctx, string.format("Currently linked to: %s [%s]", parent, mode_text))
+    if #other_params > 0 then
+      ImGui.Text(ctx, string.format("Currently grouped with: %s [%s]", table.concat(other_params, ", "), mode_text))
+    else
+      ImGui.Text(ctx, string.format("In group [%s]", mode_text))
+    end
     ImGui.PopStyleColor(ctx)
 
     ImGui.Spacing(ctx)
 
-    -- Remove link button
-    if ImGui.Button(ctx, "Remove Link", 120, 0) then
-      self:remove_link()
+    -- Remove from group button
+    if ImGui.Button(ctx, "Remove from Group", 140, 0) then
+      self:remove_from_group()
       ImGui.CloseCurrentPopup(ctx)
       ImGui.EndPopup(ctx)
       return
@@ -157,44 +161,6 @@ function ParamLinkModal:render(ctx, shell_state)
 
   ImGui.Dummy(ctx, 0, 8)
   ImGui.Separator(ctx)
-  ImGui.Dummy(ctx, 0, 8)
-
-  -- Link mode selector
-  ImGui.Text(ctx, "Link Mode:")
-  ImGui.SameLine(ctx, 0, 10)
-
-  -- LINK mode button
-  local link_active = self.link_mode == ParameterLinkManager.LINK_MODE.LINK
-  if link_active then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#4AE290"))
-  end
-  if ImGui.Button(ctx, "LINK", 80, 0) then
-    self.link_mode = ParameterLinkManager.LINK_MODE.LINK
-  end
-  if link_active then
-    ImGui.PopStyleColor(ctx)
-  end
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "LINK: Parameters move by same delta")
-  end
-
-  ImGui.SameLine(ctx, 0, 8)
-
-  -- SYNC mode button
-  local sync_active = self.link_mode == ParameterLinkManager.LINK_MODE.SYNC
-  if sync_active then
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#4AE290"))
-  end
-  if ImGui.Button(ctx, "SYNC", 80, 0) then
-    self.link_mode = ParameterLinkManager.LINK_MODE.SYNC
-  end
-  if sync_active then
-    ImGui.PopStyleColor(ctx)
-  end
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetTooltip(ctx, "SYNC: Child mirrors parent value")
-  end
-
   ImGui.Dummy(ctx, 0, 8)
 
   -- Search box
@@ -234,7 +200,7 @@ function ParamLinkModal:render(ctx, shell_state)
     })
 
     if clicked_param then
-      self:create_link(clicked_param)
+      self:add_to_group(clicked_param)
       ImGui.CloseCurrentPopup(ctx)
       ImGui.EndChild(ctx)
       ImGui.EndPopup(ctx)

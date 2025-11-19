@@ -253,8 +253,7 @@ function M.render_link_handle(ctx, dl, rect, param_name, view, control_rects)
   local is_hovered = mx >= handle_x1 and mx <= handle_x2 and my >= handle_y1 and my <= handle_y2
 
   -- Check link status
-  local is_linked = ParameterLinkManager.is_linked(param_name)
-  local is_parent = ParameterLinkManager.is_parent(param_name)
+  local is_in_group = ParameterLinkManager.is_in_group(param_name)
   local link_mode = ParameterLinkManager.get_link_mode(param_name)
 
   -- Colors
@@ -268,12 +267,12 @@ function M.render_link_handle(ctx, dl, rect, param_name, view, control_rects)
   local bg_color, icon_color
   local base_color = hexrgb("#4A90E2")  -- Blue for library
 
-  if is_linked or is_parent then
-    -- Linked: show with color
+  if is_in_group then
+    -- In group: show with color
     bg_color = alpha_blend(base_color, 0.3)
     icon_color = alpha_blend(base_color, 1.0)
   else
-    -- Not linked: subtle gray
+    -- Not in group: subtle gray
     bg_color = hexrgb("#00000000")  -- Transparent
     icon_color = hexrgb("#666666")
   end
@@ -335,13 +334,12 @@ function M.render_link_handle(ctx, dl, rect, param_name, view, control_rects)
       end
 
       if source_type and target_type and ParameterLinkManager.are_types_compatible(source_type, target_type) then
-        -- Create link: source (drag) -> target (drop)
-        -- Target becomes parent, source becomes child
-        local success, error_msg = ParameterLinkManager.create_link(param_name, source_param, ParameterLinkManager.LINK_MODE.LINK)
+        -- Add source to same group as target (or create new group)
+        local success, error_msg = ParameterLinkManager.add_to_group(source_param, source_type, param_name)
         if success then
           view:save_assignments()
         else
-          print("Failed to create link: " .. (error_msg or "Incompatible types"))
+          print("Failed to add to group: " .. (error_msg or "Incompatible types"))
         end
       end
     end
@@ -351,17 +349,14 @@ function M.render_link_handle(ctx, dl, rect, param_name, view, control_rects)
 
   -- Tooltip
   if is_hovered and not ImGui.IsMouseDragging(ctx, ImGui.MouseButton_Left) then
-    if is_linked then
-      local parent = ParameterLinkManager.get_parent(param_name)
+    if is_in_group then
+      local other_params = ParameterLinkManager.get_other_group_params(param_name)
       local mode_text = link_mode == ParameterLinkManager.LINK_MODE.LINK and "LINK" or "SYNC"
-      ImGui.SetTooltip(ctx, string.format("Linked to: %s\nMode: %s\nDrag to another param to link\nRight-click for options", parent, mode_text))
-    elseif is_parent then
-      local children = ParameterLinkManager.get_children(param_name)
-      local child_names = {}
-      for _, child_info in ipairs(children) do
-        table.insert(child_names, child_info.name)
+      if #other_params > 0 then
+        ImGui.SetTooltip(ctx, string.format("Grouped with: %s\nMode: %s\nDrag to another param to link\nRight-click for options", table.concat(other_params, ", "), mode_text))
+      else
+        ImGui.SetTooltip(ctx, string.format("In group\nMode: %s\nDrag to another param to link\nRight-click for options", mode_text))
       end
-      ImGui.SetTooltip(ctx, string.format("Parent of: %s\nDrag to another param to link\nRight-click for options", table.concat(child_names, ", ")))
     else
       ImGui.SetTooltip(ctx, "Drag to another param to link\nRight-click for options")
     end
