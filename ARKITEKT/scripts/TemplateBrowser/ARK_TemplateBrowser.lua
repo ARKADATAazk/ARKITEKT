@@ -121,8 +121,7 @@ if USE_OVERLAY then
     use_viewport = true,
     fade_duration = 0.25,
     fade_curve = 'ease_out_quad',
-    scrim_color = Colors.hexrgb("#0a0a0a"),  -- Very dark grey
-    scrim_opacity = 0.90,
+    scrim_color = Colors.hexrgb("#21ec06"),  -- Very dark grey
     show_close_button = true,
     close_on_background_click = false,
     close_on_background_right_click = true,
