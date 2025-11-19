@@ -232,8 +232,20 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.needs_reorganize = true
   end
 
-  -- Show Visualization in Small Tiles checkbox on same line
+  -- Enable TileFX checkbox on same line
   prev_width = prev_width + ImGui.CalcTextSize(ctx, "Group Items of Same Name") + 18 + 8 + spacing
+  local enable_fx_x = checkbox_x + prev_width
+  local enable_fx = self.state.settings.enable_tile_fx
+  if enable_fx == nil then enable_fx = true end
+  _, clicked = Checkbox.draw(ctx, draw_list, enable_fx_x, checkbox_y,
+    "Tile FX",
+    enable_fx, checkbox_config, "enable_fx")
+  if clicked then
+    self.state.set_setting('enable_tile_fx', not enable_fx)
+  end
+
+  -- Show Visualization in Small Tiles checkbox on same line
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Tile FX") + 18 + 8 + spacing
   local show_viz_small_x = checkbox_x + prev_width
   local show_viz_small = self.state.settings.show_visualization_in_small_tiles
   if show_viz_small == nil then show_viz_small = true end
