@@ -18,6 +18,8 @@ local Tabs = require('rearkitekt.gui.widgets.navigation.tabs')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Fields = require('rearkitekt.gui.widgets.primitives.fields')
 local TreeView = require('rearkitekt.gui.widgets.navigation.tree_view')
+local Shortcuts = require('TemplateBrowser.core.shortcuts')
+local Tooltips = require('TemplateBrowser.core.tooltips')
 
 local M = {}
 local GUI = {}
@@ -1967,6 +1969,7 @@ local function draw_info_panel(ctx, state, config, width, height)
       reaper.ShowConsoleMsg("Applying template: " .. tmpl.name .. "\n")
       TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
     end
+    Tooltips.show(ctx, ImGui, "template_apply")
 
     ImGui.Dummy(ctx, 0, 4)
 
@@ -1974,6 +1977,7 @@ local function draw_info_panel(ctx, state, config, width, height)
       reaper.ShowConsoleMsg("Inserting template as new track: " .. tmpl.name .. "\n")
       TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
     end
+    Tooltips.show(ctx, ImGui, "template_insert")
 
     ImGui.Dummy(ctx, 0, 4)
 
@@ -1982,6 +1986,7 @@ local function draw_info_panel(ctx, state, config, width, height)
       state.renaming_type = "template"
       state.rename_buffer = tmpl.name
     end
+    Tooltips.show(ctx, ImGui, "template_rename")
 
     ImGui.Spacing(ctx)
     ImGui.Separator(ctx)
@@ -1989,6 +1994,7 @@ local function draw_info_panel(ctx, state, config, width, height)
 
     -- Notes
     ImGui.Text(ctx, "Notes:")
+    Tooltips.show(ctx, ImGui, "notes_field")
     ImGui.Spacing(ctx)
 
     local notes = (tmpl_metadata and tmpl_metadata.notes) or ""
@@ -2121,21 +2127,47 @@ function GUI:draw(ctx, shell_state)
     self.state.conflict_resolution = nil
   end
 
-  -- Handle undo/redo
-  if ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl) and ImGui.IsKeyPressed(ctx, ImGui.Key_Z) then
-    if ImGui.IsKeyDown(ctx, ImGui.Mod_Shift) then
-      self.state.undo_manager:redo()
-    else
+  -- Handle keyboard shortcuts
+  local action = Shortcuts.check_shortcuts(ctx, ImGui)
+  if action then
+    if action == "undo" then
       self.state.undo_manager:undo()
-    end
-  end
-
-  -- F2 to rename selected template or folder
-  if ImGui.IsKeyPressed(ctx, ImGui.Key_F2) then
-    if self.state.selected_template then
-      self.state.renaming_item = self.state.selected_template
-      self.state.renaming_type = "template"
-      self.state.rename_buffer = self.state.selected_template.name
+    elseif action == "redo" then
+      self.state.undo_manager:redo()
+    elseif action == "rename_template" then
+      if self.state.selected_template then
+        self.state.renaming_item = self.state.selected_template
+        self.state.renaming_type = "template"
+        self.state.rename_buffer = self.state.selected_template.name
+      end
+    elseif action == "archive_template" then
+      if self.state.selected_template then
+        local success, archive_path = FileOps.delete_template(self.state.selected_template.path)
+        if success then
+          self.state.set_status("Archived: " .. self.state.selected_template.name, "success")
+          -- Rescan templates
+          local Scanner = require('TemplateBrowser.domain.scanner')
+          Scanner.scan_templates(self.state)
+          self.state.selected_template = nil
+        else
+          self.state.set_status("Failed to archive template", "error")
+        end
+      end
+    elseif action == "apply_template" then
+      if self.state.selected_template then
+        TemplateOps.apply_to_selected_track(self.state.selected_template.path, self.state.selected_template.uuid, self.state)
+      end
+    elseif action == "insert_template" then
+      if self.state.selected_template then
+        TemplateOps.insert_as_new_track(self.state.selected_template.path, self.state.selected_template.uuid, self.state)
+      end
+    elseif action == "focus_search" then
+      -- Focus search box (will be handled by container)
+      self.state.focus_search = true
+    elseif action == "navigate_left" or action == "navigate_right" or
+           action == "navigate_up" or action == "navigate_down" then
+      -- Grid navigation (will be handled by grid widget)
+      self.state.grid_navigation = action
     end
   end
 

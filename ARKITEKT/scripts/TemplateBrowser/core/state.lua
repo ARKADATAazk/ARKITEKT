@@ -51,6 +51,10 @@ M.status_message = ""        -- Current status message
 M.status_type = "info"       -- Message type: "error", "warning", "success", "info"
 M.status_timestamp = 0       -- When message was set (for auto-clear)
 
+-- Keyboard shortcuts
+M.focus_search = false       -- Request to focus search box
+M.grid_navigation = nil      -- Grid navigation action: "navigate_left", "navigate_right", etc.
+
 -- Internal
 M.exit = false
 M.overlay_alpha = 1.0
@@ -88,6 +92,10 @@ function M.initialize(config)
   M.status_message = ""
   M.status_type = "info"
   M.status_timestamp = 0
+
+  -- Keyboard shortcuts
+  M.focus_search = false
+  M.grid_navigation = nil
 
   -- Panel layout defaults
   M.separator1_ratio = config.FOLDERS_PANEL_WIDTH_RATIO or 0.22
