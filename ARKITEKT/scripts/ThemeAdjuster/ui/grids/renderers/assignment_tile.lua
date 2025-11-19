@@ -5,12 +5,16 @@
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
+local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
 local hexrgb = Colors.hexrgb
 
 local M = {}
 
 -- Animation state storage (persistent across frames)
 M._anim = M._anim or {}
+
+-- Link handle state (for drag detection)
+M._link_handle_rects = M._link_handle_rects or {}
 
 function M.render(ctx, rect, item, state, view, tab_id)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
@@ -76,12 +80,36 @@ function M.render(ctx, rect, item, state, view, tab_id)
   -- Display: [CUSTOM NAME] → [PARAM NAME] (when custom name exists)
   -- Otherwise: [PARAM NAME]
 
+  -- Check link status for visual indicator
+  local is_linked = ParameterLinkManager.is_linked(param_name)
+  local is_parent = ParameterLinkManager.is_parent(param_name)
+  local link_prefix = ""
+  local link_color = hexrgb("#FFFFFF")
+
+  if is_linked then
+    local mode = ParameterLinkManager.get_link_mode(param_name)
+    link_prefix = mode == ParameterLinkManager.LINK_MODE.LINK and "⇄ " or "⇉ "
+    link_color = hexrgb("#4AE290")  -- Green for linked
+  elseif is_parent then
+    link_prefix = "⇶ "
+    link_color = hexrgb("#5588FF")  -- Blue for parent
+  end
+
   if metadata.display_name and metadata.display_name ~= "" then
+    -- Link indicator
+    if link_prefix ~= "" then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, link_color)
+      ImGui.Text(ctx, link_prefix)
+      ImGui.PopStyleColor(ctx)
+      ImGui.SameLine(ctx, 0, 0)
+    end
+
     -- Custom name on LEFT (bright color)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
     local custom_name = metadata.display_name
-    if #custom_name > 30 then
-      custom_name = custom_name:sub(1, 27) .. "..."
+    local max_len = link_prefix ~= "" and 26 or 30
+    if #custom_name > max_len then
+      custom_name = custom_name:sub(1, max_len - 3) .. "..."
     end
     ImGui.Text(ctx, custom_name)
     ImGui.PopStyleColor(ctx)
@@ -96,20 +124,41 @@ function M.render(ctx, rect, item, state, view, tab_id)
     ImGui.Text(ctx, "(" .. display_name .. ")")
     ImGui.PopStyleColor(ctx)
   else
+    -- Link indicator
+    if link_prefix ~= "" then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, link_color)
+      ImGui.Text(ctx, link_prefix)
+      ImGui.PopStyleColor(ctx)
+      ImGui.SameLine(ctx, 0, 0)
+    end
+
     -- No custom name - just show parameter name (muted color)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
     local display_name = param_name
-    if #display_name > 25 then
-      display_name = display_name:sub(1, 22) .. "..."
+    local max_len = link_prefix ~= "" and 21 or 25
+    if #display_name > max_len then
+      display_name = display_name:sub(1, max_len - 3) .. "..."
     end
     ImGui.Text(ctx, display_name)
     ImGui.PopStyleColor(ctx)
 
     -- Tooltip
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, "Parameter: " .. param_name)
+      local tooltip = "Parameter: " .. param_name
+      if is_linked then
+        local parent = ParameterLinkManager.get_parent(param_name)
+        local mode = ParameterLinkManager.get_link_mode(param_name)
+        local mode_text = mode == ParameterLinkManager.LINK_MODE.LINK and "LINK" or "SYNC"
+        tooltip = tooltip .. string.format("\nLinked to: %s [%s]", parent, mode_text)
+      elseif is_parent then
+        tooltip = tooltip .. "\nParent of linked parameters"
+      end
+      ImGui.SetTooltip(ctx, tooltip)
     end
   end
+
+  -- Link handle (right side of tile)
+  M.render_link_handle(ctx, dl, rect, param_name, tab_color, view)
 
   -- Show order number for debugging (optional)
   if view.dev_mode and item.order then
@@ -117,6 +166,89 @@ function M.render(ctx, rect, item, state, view, tab_id)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#555555"))
     ImGui.Text(ctx, string.format("#%d", item.order))
     ImGui.PopStyleColor(ctx)
+  end
+end
+
+-- Render link handle on the right side of the tile
+function M.render_link_handle(ctx, dl, rect, param_name, tab_color, view)
+  local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+  local h = y2 - y1
+
+  -- Link handle dimensions
+  local handle_size = h - 4  -- Leave 2px margin top/bottom
+  local handle_x1 = x2 - handle_size - 4
+  local handle_y1 = y1 + 2
+  local handle_x2 = x2 - 4
+  local handle_y2 = y2 - 2
+
+  -- Store rect for interaction detection
+  local handle_key = "handle_" .. param_name
+  M._link_handle_rects[handle_key] = {handle_x1, handle_y1, handle_x2, handle_y2}
+
+  -- Check if mouse is over handle
+  local mx, my = ImGui.GetMousePos(ctx)
+  local is_hovered = mx >= handle_x1 and mx <= handle_x2 and my >= handle_y1 and my <= handle_y2
+
+  -- Check link status
+  local is_linked = ParameterLinkManager.is_linked(param_name)
+  local is_parent = ParameterLinkManager.is_parent(param_name)
+  local link_mode = ParameterLinkManager.get_link_mode(param_name)
+
+  -- Colors
+  local function alpha_blend(color, alpha)
+    local r = (color >> 24) & 0xFF
+    local g = (color >> 16) & 0xFF
+    local b = (color >> 8) & 0xFF
+    return (r << 24) | (g << 16) | (b << 8) | math.floor(255 * alpha)
+  end
+
+  local bg_color, icon_color
+  if is_linked or is_parent then
+    -- Linked: show with tab color
+    bg_color = alpha_blend(tab_color, 0.3)
+    icon_color = alpha_blend(tab_color, 1.0)
+  else
+    -- Not linked: subtle gray
+    bg_color = hexrgb("#00000000")  -- Transparent
+    icon_color = hexrgb("#666666")
+  end
+
+  if is_hovered then
+    bg_color = alpha_blend(tab_color, 0.5)
+    icon_color = hexrgb("#FFFFFF")
+  end
+
+  -- Draw background
+  if bg_color ~= hexrgb("#00000000") then
+    ImGui.DrawList_AddRectFilled(dl, handle_x1, handle_y1, handle_x2, handle_y2, bg_color, 2)
+  end
+
+  -- Draw link icon (chain links)
+  local center_x = (handle_x1 + handle_x2) / 2
+  local center_y = (handle_y1 + handle_y2) / 2
+  local icon_size = handle_size * 0.5
+
+  -- Draw two interlocking circles (chain link symbol)
+  local offset = icon_size * 0.25
+  ImGui.DrawList_AddCircle(dl, center_x - offset, center_y, icon_size * 0.3, icon_color, 0, 1.5)
+  ImGui.DrawList_AddCircle(dl, center_x + offset, center_y, icon_size * 0.3, icon_color, 0, 1.5)
+
+  -- Tooltip
+  if is_hovered then
+    if is_linked then
+      local parent = ParameterLinkManager.get_parent(param_name)
+      local mode_text = link_mode == ParameterLinkManager.LINK_MODE.LINK and "LINK" or "SYNC"
+      ImGui.SetTooltip(ctx, string.format("Linked to: %s\nMode: %s\nRight-click to change", parent, mode_text))
+    elseif is_parent then
+      local children = ParameterLinkManager.get_children(param_name)
+      local child_names = {}
+      for _, child_info in ipairs(children) do
+        table.insert(child_names, child_info.name)
+      end
+      ImGui.SetTooltip(ctx, string.format("Parent of: %s\nDrag to link other parameters", table.concat(child_names, ", ")))
+    else
+      ImGui.SetTooltip(ctx, "Drag to link parameters\nRight-click to select from list")
+    end
   end
 end
 

@@ -255,8 +255,8 @@ function M.load_current_mappings()
   return load_json(json_path)
 end
 
--- Save assignments, custom metadata, and group filter to JSON
-function M.save_assignments(assignments, custom_metadata, enabled_groups)
+-- Save assignments, custom metadata, group filter, and parameter links to JSON
+function M.save_assignments(assignments, custom_metadata, enabled_groups, param_links, virtual_values)
   local themes_dir = ParamDiscovery.get_colorthemes_dir()
   if not themes_dir then
     return false
@@ -274,10 +274,12 @@ function M.save_assignments(assignments, custom_metadata, enabled_groups)
     params = {},
   }
 
-  -- Update assignments, custom metadata, and group filter
+  -- Update assignments, custom metadata, group filter, and parameter links
   data.assignments = assignments
   data.custom_metadata = custom_metadata or {}
   data.enabled_groups = enabled_groups or {}
+  data.parameter_links = param_links or {}
+  data.virtual_values = virtual_values or {}
 
   return save_json(json_path, data)
 end

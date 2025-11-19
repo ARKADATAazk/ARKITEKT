@@ -7,6 +7,7 @@ local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
 local Colors = require('rearkitekt.core.colors')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
+local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -169,9 +170,17 @@ function M.render(ctx, rect, param, state, view)
 
   -- Apply parameter change
   if changed then
+    local old_value = param.value
+
+    -- Apply to this parameter
     pcall(reaper.ThemeLayout_SetParameter, param.index, new_value, true)
-    pcall(reaper.ThemeLayout_RefreshAll)
     param.value = new_value
+
+    -- Propagate to linked parameters
+    M.propagate_to_linked_params(param.name, old_value, new_value, param, view)
+
+    -- Refresh all after propagation
+    pcall(reaper.ThemeLayout_RefreshAll)
   end
 
   ImGui.SameLine(ctx, 0, spacing)
@@ -211,6 +220,39 @@ function M.render(ctx, rect, param, state, view)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88AAFF"))
     ImGui.Text(ctx, string.format("(%d)", assignment_count))
     ImGui.PopStyleColor(ctx)
+  end
+end
+
+-- Propagate parameter changes to linked parameters
+function M.propagate_to_linked_params(param_name, old_value, new_value, param, view)
+  -- Get propagations from ParameterLinkManager
+  local propagations = ParameterLinkManager.propagate_value_change(param_name, old_value, new_value, param)
+
+  -- Apply each propagation
+  for _, prop in ipairs(propagations) do
+    local child_param_name = prop.param_name
+    local child_new_value = prop.new_value
+
+    -- Find the child parameter definition
+    for _, child_param in ipairs(view.all_params) do
+      if child_param.name == child_param_name then
+        -- Clamp value to parameter limits for Reaper
+        local clamped_value = math.max(child_param.min, math.min(child_param.max, child_new_value))
+
+        -- Apply the change to Reaper
+        pcall(reaper.ThemeLayout_SetParameter, child_param.index, clamped_value, true)
+
+        -- Update local value
+        child_param.value = clamped_value
+
+        break
+      end
+    end
+  end
+
+  -- Save virtual values
+  if #propagations > 0 then
+    view:save_assignments()
   end
 end
 

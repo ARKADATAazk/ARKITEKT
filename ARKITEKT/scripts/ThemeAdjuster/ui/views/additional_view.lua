@@ -12,9 +12,11 @@ local hexrgb = Colors.hexrgb
 local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
 local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
+local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
 local GridBridge = require('rearkitekt.gui.widgets.containers.grid.grid_bridge')
 local LibraryGridFactory = require('ThemeAdjuster.ui.grids.library_grid_factory')
 local AssignmentGridFactory = require('ThemeAdjuster.ui.grids.assignment_grid_factory')
+local ParamLinkModal = require('ThemeAdjuster.ui.views.param_link_modal')
 
 local PC = Style.PANEL_COLORS
 
@@ -105,6 +107,9 @@ function M.new(State, Config, settings)
 
   -- Create grids
   self:create_grids()
+
+  -- Create parameter link modal
+  self.param_link_modal = ParamLinkModal.new(self)
 
   return self
 end
@@ -487,6 +492,14 @@ function AdditionalView:draw(ctx, shell_state)
   -- Group filter dialog
   if self.show_group_filter then
     self:draw_group_filter_dialog(ctx, shell_state)
+  end
+
+  -- Handle link handle interactions
+  self:handle_link_handle_interactions(ctx)
+
+  -- Parameter link modal
+  if self.param_link_modal then
+    self.param_link_modal:render(ctx)
   end
 end
 
@@ -909,6 +922,16 @@ function AdditionalView:load_assignments()
     end
     self:apply_group_filter()
   end
+
+  -- Load parameter links
+  if mappings and mappings.parameter_links then
+    ParameterLinkManager.set_all_links(mappings.parameter_links)
+  end
+
+  -- Load virtual values
+  if mappings and mappings.virtual_values then
+    ParameterLinkManager.set_all_virtual_values(mappings.virtual_values)
+  end
 end
 
 function AdditionalView:set_cache_invalidation_callback(callback)
@@ -916,7 +939,15 @@ function AdditionalView:set_cache_invalidation_callback(callback)
 end
 
 function AdditionalView:save_assignments()
-  local success = ThemeMapper.save_assignments(self.assignments, self.custom_metadata, self.enabled_groups)
+  local param_links = ParameterLinkManager.get_all_links()
+  local virtual_values = ParameterLinkManager.get_all_virtual_values()
+  local success = ThemeMapper.save_assignments(
+    self.assignments,
+    self.custom_metadata,
+    self.enabled_groups,
+    param_links,
+    virtual_values
+  )
 
   -- Invalidate TCP/MCP caches
   if self.cache_invalidation_callback then
@@ -927,7 +958,15 @@ function AdditionalView:save_assignments()
 end
 
 function AdditionalView:save_group_filter()
-  ThemeMapper.save_assignments(self.assignments, self.custom_metadata, self.enabled_groups)
+  local param_links = ParameterLinkManager.get_all_links()
+  local virtual_values = ParameterLinkManager.get_all_virtual_values()
+  ThemeMapper.save_assignments(
+    self.assignments,
+    self.custom_metadata,
+    self.enabled_groups,
+    param_links,
+    virtual_values
+  )
 
   if self.cache_invalidation_callback then
     self.cache_invalidation_callback()
@@ -995,6 +1034,37 @@ function AdditionalView:handle_right_click_selection(ctx, grid, grid_id)
     if ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Right) then
       self.right_click_sel.active = false
       self.right_click_sel.target_grid = nil
+    end
+  end
+end
+
+-- Handle link handle interactions (right-click to open modal)
+function AdditionalView:handle_link_handle_interactions(ctx)
+  local AssignmentTile = require('ThemeAdjuster.ui.grids.renderers.assignment_tile')
+
+  -- Check for right-click on any link handle
+  if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right) then
+    local mx, my = ImGui.GetMousePos(ctx)
+
+    -- Check all stored link handle rects
+    for handle_key, rect in pairs(AssignmentTile._link_handle_rects) do
+      local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+
+      if mx >= x1 and mx <= x2 and my >= y1 and my <= y2 then
+        -- Extract param name from handle key
+        local param_name = handle_key:gsub("^handle_", "")
+
+        -- Find the parameter to get its type
+        for _, param in ipairs(self.all_params) do
+          if param.name == param_name then
+            -- Open the modal
+            self.param_link_modal:show(param_name, param.type)
+            break
+          end
+        end
+
+        break  -- Only handle one click
+      end
     end
   end
 end
