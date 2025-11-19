@@ -1,3 +1,4 @@
+-- @noindex
 local M = {}
 local disk_cache = require('ItemPicker.data.disk_cache')
 

@@ -1,3 +1,4 @@
+-- @noindex
 -- Incremental project item loader
 -- Processes items in small batches per frame to avoid blocking UI
 

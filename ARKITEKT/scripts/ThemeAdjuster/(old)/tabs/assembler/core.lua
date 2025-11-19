@@ -1,3 +1,4 @@
+-- @noindex
 -- tabs/assembler/core.lua
 -- Enhanced core: shared state, scanning, helpers, selection management, and settings persistence.
 

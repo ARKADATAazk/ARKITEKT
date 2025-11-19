@@ -1,3 +1,4 @@
+-- @noindex
 sTitle = 'Default_6.0 theme adjuster'
 reaper.ClearConsole()
 

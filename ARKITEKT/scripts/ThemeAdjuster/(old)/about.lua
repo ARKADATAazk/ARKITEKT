@@ -1,3 +1,4 @@
+-- @noindex
 -- core/about.lua
 -- About dialog for Enhanced 6.0 Theme Adjuster
 

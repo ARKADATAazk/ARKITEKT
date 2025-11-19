@@ -1,3 +1,4 @@
+-- @noindex
 -- tabs/assembler/packages_mm.lua
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path

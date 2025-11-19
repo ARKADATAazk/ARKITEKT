@@ -1,3 +1,4 @@
+-- @noindex
 -- style.lua
 -- Shared style helpers for ReaImGui
 -- Exports:

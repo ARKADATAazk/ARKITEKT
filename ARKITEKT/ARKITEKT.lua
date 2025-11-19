@@ -1,6 +1,11 @@
 -- @description ARKITEKT Toolkit
 -- @author ARKADATA
 -- @version 1.0.0
+-- @provides
+--   [main] scripts/Region_Playlist/ARK_RegionPlaylist.lua
+--   [main] scripts/ItemPicker/ARK_ItemPicker.lua
+--   [main] scripts/TemplateBrowser/ARK_TemplateBrowser.lua
+--   [main] scripts/ThemeAdjuster/ARK_ThemeAdjuster.lua
 
 -- Package path setup
 local script_path = debug.getinfo(1, "S").source:match("@?(.*)") or ""

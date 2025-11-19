@@ -1,3 +1,4 @@
+-- @noindex
 -- core/app.lua
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path

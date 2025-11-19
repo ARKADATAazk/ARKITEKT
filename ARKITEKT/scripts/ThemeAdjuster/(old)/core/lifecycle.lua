@@ -1,3 +1,4 @@
+-- @noindex
 -- core/lifecycle.lua
 -- Generic lifecycle manager for any UI view (tab, panel, popup...).
 -- Handles per-frame resets and cleanup for registered resources.

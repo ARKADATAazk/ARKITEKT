@@ -1,3 +1,4 @@
+-- @noindex
 -- Debug logging utility for ItemPicker
 local M = {}
 

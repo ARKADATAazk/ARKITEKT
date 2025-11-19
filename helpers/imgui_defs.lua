@@ -1,3 +1,4 @@
+-- @noindex
 --- ReaImGui LuaCATS definitions
 ---
 --- Generated for version 0.10.0.2 - API version 0.10

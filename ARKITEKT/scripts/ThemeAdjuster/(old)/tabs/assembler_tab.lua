@@ -1,3 +1,4 @@
+-- @noindex
 -- tabs/assembler_tab.lua
 -- Subtabs in a child + sticky bottom footer with centered "Assemble" button.
 -- No custom styles applied; child scrollbars disabled (ImGui 0.9/0.10 compatible).

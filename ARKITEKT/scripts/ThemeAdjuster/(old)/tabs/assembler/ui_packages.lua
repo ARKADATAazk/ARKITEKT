@@ -1,3 +1,4 @@
+-- @noindex
 -- tabs/assembler/ui_packages.lua
 -- Packages grid UI with rotating rounded-dash selection,
 -- multi-select drag reordering (before/after with side indicator),

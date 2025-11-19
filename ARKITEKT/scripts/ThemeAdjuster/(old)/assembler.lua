@@ -1,3 +1,4 @@
+-- @noindex
 -- assembler.lua — variants manager + packing (auto elements)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path

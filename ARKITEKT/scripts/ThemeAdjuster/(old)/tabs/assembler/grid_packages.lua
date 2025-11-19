@@ -1,3 +1,4 @@
+-- @noindex
 -- tabs/assembler/package_tiles.lua
 -- Wires the generic grid to your Packages domain: toolbar + tile overlays + persistence.
 

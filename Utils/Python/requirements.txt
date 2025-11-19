@@ -1,3 +1,4 @@
+# @noindex
 # Python dependencies for ARKITEKT development utilities
 
 # SVG to Lua path converter

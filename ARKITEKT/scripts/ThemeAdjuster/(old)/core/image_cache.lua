@@ -1,3 +1,4 @@
+-- @noindex
 -- core/image_cache.lua
 -- Metadata-driven 3-state image detection and caching
 -- Now supports opts.no_crop=true to bypass 3-state slicing (show full image)

@@ -1,3 +1,4 @@
+-- @noindex
 -- core/theme.lua â€“ Streamlined theme/cache management with JSON-based linking
 local M = {}
 local SEP = package.config:sub(1,1)

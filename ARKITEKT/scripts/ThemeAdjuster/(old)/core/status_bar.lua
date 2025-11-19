@@ -1,3 +1,4 @@
+-- @noindex
 -- core/status_bar.lua
 -- Footer drawn INSIDE a child window (no bleed; fully clickable; flush-ready)
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path

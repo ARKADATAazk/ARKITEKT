@@ -1,3 +1,4 @@
+-- @noindex
 -- tabs/assembler/grid.lua
 -- Generic tile grid: layout, hover, selection (click/ctrl/shift/rectangle),
 -- drag-reorder visuals + callback, marching-ants selection, rounded tiles,

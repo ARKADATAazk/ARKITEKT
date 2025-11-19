@@ -1,3 +1,4 @@
+-- @noindex
 -- tabs/assembler/ui_assets.lua
 -- Assets gallery (popup picker, stale-handle fix) scanning under /Assembler/Assets/
 -- CHANGE: expose M.on_leave(core) to drop popups + clear image handles on tab switch.

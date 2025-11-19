@@ -1,3 +1,4 @@
+# @noindex
 #!/usr/bin/env python3
 """
 SVG to Lua Path Converter for ReaImGui

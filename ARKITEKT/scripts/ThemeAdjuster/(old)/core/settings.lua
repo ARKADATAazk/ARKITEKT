@@ -1,3 +1,4 @@
+-- @noindex
 -- core/settings.lua - debounced settings store in /cache/settings.json
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path

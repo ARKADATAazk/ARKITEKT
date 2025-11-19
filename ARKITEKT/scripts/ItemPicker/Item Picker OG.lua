@@ -1,3 +1,4 @@
+-- @noindex
 local _, script_filename, _, _, _, _, _ = reaper.get_action_context()
 SCRIPT_DIRECTORY = script_filename:match('(.*)[%\\/]') .. "\\"
 

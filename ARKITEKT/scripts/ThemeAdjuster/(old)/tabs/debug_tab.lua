@@ -1,3 +1,4 @@
+-- @noindex
 -- tabs/debug_tab.lua – Debug tab with streamlined theme integration
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
