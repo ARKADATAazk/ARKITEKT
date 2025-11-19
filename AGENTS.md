@@ -31,3 +31,56 @@ This file is a quick-start and pointer, not a duplicate.
   -- >>> WIRING: CONTROLLER/VIEW (BEGIN)
   -- ...
   -- <<< WIRING: CONTROLLER/VIEW (END)
+  ```
+
+## Framework Patterns (Jan 2025)
+
+### Entry Point Bootstrap
+**Always use** the 3-line bootstrap pattern:
+```lua
+local Init = require('rearkitekt.app.init')
+local ARK = Init.bootstrap()
+if not ARK then return end
+```
+**Never** duplicate the 20-line bootstrap finder logic in entry points.
+
+### Constants & Defaults
+- Use `rearkitekt.app.constants` for all magic numbers (overlay sizes, animation timings, typography scale)
+- Framework controls defaults; apps override **only** when truly app-specific
+- **Anti-pattern:** Hardcoding `32` or `0.3` in app code — use `Constants.OVERLAY.CLOSE_BUTTON_SIZE` or `Constants.ANIMATION.FADE_NORMAL`
+
+### Overlay Configuration
+Use `OverlayDefaults.create_overlay_config()` helper:
+```lua
+overlay_mgr:push(OverlayDefaults.create_overlay_config({
+  id = "my_overlay",
+  -- Override only if app-specific (most apps: don't override anything!)
+  render = function(ctx, alpha_val, bounds) ... end,
+  on_close = cleanup,
+}))
+```
+**Don't** manually specify all 15+ overlay config fields — let framework provide defaults.
+
+### Font Loading
+Use centralized loader:
+```lua
+local Fonts = require('rearkitekt.app.fonts')
+local fonts = Fonts.load(ImGui, ctx)  -- Uses constants.lua defaults
+-- OR with app-specific sizes:
+local fonts = Fonts.load(ImGui, ctx, { title_size = 24 })
+```
+**Don't** duplicate 35-line `load_fonts()` function in entry points.
+
+### Settings Instances
+Use `Settings.new()` to create fresh instances:
+```lua
+local Settings = require('rearkitekt.core.settings')
+local settings = Settings.new(cache_dir, "my_app.json")
+```
+**Never** assume singleton behavior — each app gets its own instance.
+
+## Documentation
+- **Refactoring summaries:** Add dated docs to `Documentation/` folder (format: `YYYY-MM-DD_Description.md`)
+- **Architecture changes:** Update `AGENTS.md` (this file)
+- **Module-specific:** Add `README.md` in module directory (e.g., `rearkitekt/gui/widgets/foo/README.md`)
+- **Reference:** See `Documentation/2025-01-19_Framework_Consolidation.md` for latest refactoring details
