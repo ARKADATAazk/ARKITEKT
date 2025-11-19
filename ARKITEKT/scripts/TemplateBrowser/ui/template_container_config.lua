@@ -6,9 +6,13 @@ local Colors = require('rearkitekt.core.colors')
 
 local M = {}
 
-function M.create(callbacks)
+function M.create(callbacks, is_overlay_mode)
+  -- In overlay mode, use transparent backgrounds to show the overlay scrim
+  local panel_bg = is_overlay_mode and Colors.hexrgb("#00000000") or Colors.hexrgb("#1A1A1A")
+  local header_bg = is_overlay_mode and Colors.hexrgb("#00000000") or Colors.hexrgb("#252525")
+
   return {
-    bg_color = Colors.hexrgb("#1A1A1A"),
+    bg_color = panel_bg,
     border_thickness = 0,
     border_color = Colors.hexrgb("#3A3A3A"),
     rounding = 0,
@@ -17,7 +21,7 @@ function M.create(callbacks)
     header = {
       enabled = true,
       height = 56,  -- Height for two rows: controls (26px) + spacing (4px) + chips (18px + padding)
-      bg_color = Colors.hexrgb("#252525"),
+      bg_color = header_bg,
       padding = {
         left = 8,
         right = 8,

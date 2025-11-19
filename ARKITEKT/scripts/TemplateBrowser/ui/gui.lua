@@ -70,9 +70,10 @@ function M.new(config, state, scanner)
   return self
 end
 
-function GUI:initialize_once(ctx)
+function GUI:initialize_once(ctx, is_overlay_mode)
   if self.initialized then return end
   self.ctx = ctx
+  self.is_overlay_mode = is_overlay_mode or false
 
   -- Create template grid
   self.template_grid = TemplateGridFactory.create(
@@ -233,7 +234,7 @@ function GUI:initialize_once(ctx)
       local Scanner = require('TemplateBrowser.domain.scanner')
       Scanner.filter_templates(self.state)
     end,
-  })
+  }, self.is_overlay_mode)  -- Pass overlay mode to use transparent backgrounds
 
   self.template_container = TilesContainer.new({
     id = "templates_container",
@@ -2103,7 +2104,8 @@ local function draw_info_panel(ctx, state, config, width, height)
 end
 
 function GUI:draw(ctx, shell_state)
-  self:initialize_once(ctx)
+  local is_overlay_mode = shell_state.is_overlay_mode == true
+  self:initialize_once(ctx, is_overlay_mode)
 
   -- Process background FX parsing queue (5 templates per frame)
   FXQueue.process_batch(self.state, 5)
