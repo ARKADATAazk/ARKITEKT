@@ -17,6 +17,7 @@ local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_c
 local Tabs = require('rearkitekt.gui.widgets.navigation.tabs')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Fields = require('rearkitekt.gui.widgets.primitives.fields')
+local MarkdownField = require('rearkitekt.gui.widgets.primitives.markdown_field')
 local TreeView = require('rearkitekt.gui.widgets.navigation.tree_view')
 local Shortcuts = require('TemplateBrowser.core.shortcuts')
 local Tooltips = require('TemplateBrowser.core.tooltips')
@@ -2003,24 +2004,24 @@ local function draw_info_panel(ctx, state, config, width, height)
     ImGui.Separator(ctx)
     ImGui.Spacing(ctx)
 
-    -- Notes
+    -- Notes (Markdown field with view/edit modes)
     ImGui.Text(ctx, "Notes:")
     Tooltips.show(ctx, ImGui, "notes_field")
     ImGui.Spacing(ctx)
 
     local notes = (tmpl_metadata and tmpl_metadata.notes) or ""
 
-    -- Initialize field with current notes
+    -- Initialize markdown field with current notes
     local notes_field_id = "template_notes_" .. tmpl.uuid
-    if Fields.get_text(notes_field_id) ~= notes then
-      Fields.set_text(notes_field_id, notes)
+    if MarkdownField.get_text(notes_field_id) ~= notes and not MarkdownField.is_editing(notes_field_id) then
+      MarkdownField.set_text(notes_field_id, notes)
     end
 
-    local notes_changed, new_notes = Fields.draw_at_cursor(ctx, {
+    local notes_changed, new_notes = MarkdownField.draw_at_cursor(ctx, {
       width = -1,
-      height = 120,  -- Increased from 80
+      height = 200,  -- Taller for better markdown viewing
       text = notes,
-      multiline = true,
+      placeholder = "Double-click to add notes...\n\nSupports Markdown:\n• **bold** and *italic*\n• # Headers\n• - Lists\n• [links](url)",
     }, notes_field_id)
 
     if notes_changed then
