@@ -80,6 +80,15 @@ local function load_fonts(ctx, font_cfg)
   local I = fontsdir .. font_cfg.family_icons
 
   local function exists(p) local f = io.open(p, 'rb'); if f then f:close(); return true end end
+
+  -- Track attached fonts to avoid double-attaching when fonts fallback to same object
+  local attached = {}
+  local function attach_once(font)
+    if font and not attached[font] then
+      ImGui.Attach(ctx, font)
+      attached[font] = true
+    end
+  end
   -- Original working pattern: CreateFont(path, size) with Attach
   local default_font   = exists(R) and ImGui.CreateFont(R, font_cfg.default)
                                 or ImGui.CreateFont('sans-serif', font_cfg.default)
@@ -94,7 +103,7 @@ local function load_fonts(ctx, font_cfg)
   if font_cfg.time_display then
     time_display_font = exists(B) and ImGui.CreateFont(B, font_cfg.time_display)
                                    or ImGui.CreateFont('sans-serif', font_cfg.time_display)
-    ImGui.Attach(ctx, time_display_font)
+    attach_once(time_display_font)
   end
 
   local titlebar_version_font = nil
@@ -102,7 +111,7 @@ local function load_fonts(ctx, font_cfg)
   if font_cfg.titlebar_version then
     titlebar_version_font = exists(R) and ImGui.CreateFont(R, font_cfg.titlebar_version)
                                        or version_font
-    ImGui.Attach(ctx, titlebar_version_font)
+    attach_once(titlebar_version_font)
   end
 
   local icons_font = nil
@@ -111,7 +120,7 @@ local function load_fonts(ctx, font_cfg)
       icons_font = ImGui.CreateFont(I, font_cfg.icons)
       if icons_font then
         reaper.ShowConsoleMsg(string.format("[Shell] Icon font loaded: %s (size: %d, obj: %s)\n", I, font_cfg.icons, tostring(icons_font)))
-        ImGui.Attach(ctx, icons_font)
+        attach_once(icons_font)
       else
         reaper.ShowConsoleMsg(string.format("[Shell] ERROR: Icon font failed to load: %s\n", I))
         icons_font = default_font
@@ -122,10 +131,10 @@ local function load_fonts(ctx, font_cfg)
     end
   end
 
-  ImGui.Attach(ctx, default_font)
-  ImGui.Attach(ctx, title_font)
-  ImGui.Attach(ctx, version_font)
-  ImGui.Attach(ctx, monospace_font)
+  attach_once(default_font)
+  attach_once(title_font)
+  attach_once(version_font)
+  attach_once(monospace_font)
 
   return {
     default = default_font,
