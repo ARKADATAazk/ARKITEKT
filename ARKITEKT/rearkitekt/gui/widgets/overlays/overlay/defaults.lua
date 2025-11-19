@@ -10,13 +10,13 @@ local hexrgb = Colors.hexrgb
 
 local default_config = {
   scrim = {
-    color = hexrgb("#101010"),
+    color = hexrgb("#161616"),
     opacity = 0.99,
   },
   
   sheet = {
     background = {
-      color = hexrgb("#101010"),
+      color = hexrgb("#161616"),
       opacity = 0.99,
     },
     
