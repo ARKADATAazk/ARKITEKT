@@ -305,7 +305,7 @@ function M.new(opts)
 
     if opts.show_titlebar ~= false then
       do
-        local ok, Titlebar = pcall(require('rearkitekt.app.chrome.titlebar.titlebar')
+        local ok, Titlebar = pcall(require('rearkitekt.app.chrome.titlebar.titlebar'))
         if ok and Titlebar and Titlebar.new then
           win.titlebar_opts.title = win.title
           win.titlebar_opts.version = win.version
