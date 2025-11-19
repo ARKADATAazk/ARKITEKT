@@ -14,8 +14,8 @@ M.TILE = {
   DEFAULT_WIDTH = 120,
   WIDTH_STEP = 30,
 
-  MIN_HEIGHT = 60,
-  MAX_HEIGHT = 400,
+  MIN_HEIGHT = 30,
+  MAX_HEIGHT = 150,
   DEFAULT_HEIGHT = 140,
   HEIGHT_STEP = 30,
 
@@ -149,8 +149,8 @@ M.TILE_RENDER = {
     glow_strength = 0.4,
     glow_layers = 3,
 
-    hover_fill_boost = 0.08,
-    hover_specular_boost = 0.6,
+    hover_fill_boost = 0.16,  -- 2x increase for more noticeable hover effect
+    hover_specular_boost = 1.2,  -- 2x increase for more noticeable hover effect
   },
 
   animation_speed_hover = 12.0,
@@ -167,6 +167,14 @@ M.TILE_RENDER = {
   responsive = {
     hide_text_below = 35,
     hide_badge_below = 25,
+    small_tile_height = 50,  -- Below this height, use compact display mode
+  },
+
+  -- Small tile display mode (when tile height < responsive.small_tile_height)
+  small_tile = {
+    header_covers_tile = true,  -- Header extends to cover entire tile
+    header_alpha = 0.8,  -- 80% transparency for header (0xCC in hex)
+    hide_pool_count = true,  -- Hide pool count badge in small mode
   },
 }
 
