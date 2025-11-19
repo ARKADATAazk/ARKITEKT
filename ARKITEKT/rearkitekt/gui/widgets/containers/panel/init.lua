@@ -268,7 +268,7 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
 
   -- Get rounding from config
   local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
-  local outer_rounding = CORNER_BUTTON_CONFIG.outer_corner_rounding
+  local outer_rounding = cb.rounding or CORNER_BUTTON_CONFIG.outer_corner_rounding
 
   -- Get position offsets
   local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
@@ -518,7 +518,7 @@ local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, panel_
 
   -- Get rounding from config
   local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
-  local outer_rounding = CORNER_BUTTON_CONFIG.outer_corner_rounding
+  local outer_rounding = cb.rounding or CORNER_BUTTON_CONFIG.outer_corner_rounding
 
   -- Get position offsets
   local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
