@@ -8,7 +8,6 @@ local ImGui = require 'imgui' '0.10'
 local Container = require('rearkitekt.gui.widgets.overlays.overlay.container')
 local ChipList = require('rearkitekt.gui.widgets.data.chip_list')
 local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
-local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -156,15 +155,13 @@ function OverflowModalView:draw(ctx, window)
         self:close()
       end,
       render = function(ctx, alpha, bounds)
-        Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a, padding)
-          -- Don't reset cursor - Container already applies padding
+        local close_clicked = Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a, padding)
           ImGui.Text(ctx, "All Playlists:")
-
           ImGui.Dummy(ctx, 0, 8)
 
-          -- Use arkitekt SearchInput primitive
+          -- Search input
           local search_height = 28
-          local search_state = SearchInput.draw_at_cursor(ctx, {
+          SearchInput.draw_at_cursor(ctx, {
             id = "overflow_search",
             width = content_w,
             height = search_height,
@@ -174,17 +171,12 @@ function OverflowModalView:draw(ctx, window)
               self.search_text = new_text
             end
           })
-          -- Advance cursor down to next line and reset X position
-          ImGui.SetCursorPosX(ctx, padding)
-          ImGui.Dummy(ctx, 0, search_height)
+          ImGui.Dummy(ctx, 0, search_height + 12)
 
-          ImGui.SetCursorPosX(ctx, padding)
-          ImGui.Dummy(ctx, 0, 12)
-          ImGui.SetCursorPosX(ctx, padding)
           ImGui.Separator(ctx)
           ImGui.Dummy(ctx, 0, 12)
-          ImGui.SetCursorPosX(ctx, padding)
 
+          -- Playlist grid
           local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
             selected_ids = selected_ids,
             search_text = self.search_text,
@@ -198,7 +190,7 @@ function OverflowModalView:draw(ctx, window)
             column_spacing = 16,
             item_spacing = 4,
           })
-          
+
           if clicked_tab then
             self.state.set_active_playlist(clicked_tab, true)
             if self.on_tab_selected then
@@ -208,38 +200,14 @@ function OverflowModalView:draw(ctx, window)
             self.is_open = false
             self:close()
           end
-
-          ImGui.SetCursorPosX(ctx, padding)
-          ImGui.Dummy(ctx, 0, 20)
-          ImGui.SetCursorPosX(ctx, padding)
-          ImGui.Separator(ctx)
-          ImGui.Dummy(ctx, 0, 12)
-
-          -- Use arkitekt Button primitive
-          local button_w = 100
-          local button_h = 32
-          local start_x = (content_w - button_w) * 0.5
-          ImGui.SetCursorPosX(ctx, padding + start_x)
-
-          local clicked = Button.draw_at_cursor(ctx, {
-            id = "close_button",
-            label = "Close",
-            width = button_w,
-            height = button_h,
-          })
-          -- Advance cursor down to account for button height
-          ImGui.SetCursorPosX(ctx, padding)
-          ImGui.Dummy(ctx, 0, button_h)
-
-          if clicked then
-            window.overlay:pop('overflow-tabs')
-            self.is_open = false
-            self:close()
-          end
-
-          -- Add bottom padding
-          ImGui.Dummy(ctx, 0, padding)
         end)
+
+        -- Handle close button click
+        if close_clicked then
+          window.overlay:pop('overflow-tabs')
+          self.is_open = false
+          self:close()
+        end
       end
     })
   end

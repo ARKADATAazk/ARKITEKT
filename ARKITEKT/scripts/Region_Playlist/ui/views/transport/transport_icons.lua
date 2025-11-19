@@ -270,4 +270,23 @@ function M.draw_list(dl, x, y, width, height, color)
   ImGui.DrawList_AddRectFilled(dl, icon_x + 6, icon_y + 4, icon_x + icon_size, icon_y + icon_size, color, 0)
 end
 
+-- Close icon: X shape
+function M.draw_close(dl, x, y, width, height, color)
+  local icon_size = 10
+  local cx = floor(x + width / 2 + 0.5)
+  local cy = floor(y + height / 2 + 0.5)
+  local thickness = 1.5
+
+  -- Calculate X endpoints
+  local half = icon_size / 2
+  local x1 = floor(cx - half + 0.5)
+  local y1 = floor(cy - half + 0.5)
+  local x2 = floor(cx + half + 0.5)
+  local y2 = floor(cy + half + 0.5)
+
+  -- Draw X with two diagonal lines
+  ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, color, thickness)
+  ImGui.DrawList_AddLine(dl, x2, y1, x1, y2, color, thickness)
+end
+
 return M
