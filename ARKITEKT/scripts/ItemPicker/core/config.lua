@@ -70,8 +70,30 @@ M.GRID = {
 M.TILE_RENDER = {
   -- Base tile fill (color adjustments applied to tile background)
   base_fill = {
+    -- Normal mode
     saturation_factor = 0.9,  -- Multiply saturation (0.0-1.0, lower = more desaturated)
     brightness_factor = 0.6, -- Multiply brightness (0.0-1.0, lower = darker)
+
+    -- Compact mode (small tiles)
+    compact_saturation_factor = 0.7,  -- Multiply saturation in compact mode
+    compact_brightness_factor = 0.75, -- Multiply brightness in compact mode
+  },
+
+  -- Hover effect (applied to base fill)
+  hover = {
+    brightness_boost = 0.15,  -- Add to brightness on hover (0.0-1.0)
+  },
+
+  -- Selection (marching ants)
+  selection = {
+    border_saturation = 0.8,
+    border_brightness = 0.9,
+    ants_alpha = 0xFF,
+    ants_thickness = 2,
+    ants_inset = 1,
+    ants_dash = 8,
+    ants_gap = 4,
+    ants_speed = 0.05,
   },
 
   -- Disabled state

@@ -4,7 +4,6 @@
 
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
-local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
 local Shapes = require('rearkitekt.gui.rendering.shapes')
@@ -72,6 +71,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Get base color from item
   local base_color = item_data.color or 0xFF555555
 
+  -- Check if we're in small tile mode (need this early for color adjustments)
+  local is_small_tile = scaled_h < config.TILE_RENDER.responsive.small_tile_height
+
   -- Apply disabled state
   local render_color = base_color
   if enabled_factor < 1.0 then
@@ -80,9 +82,17 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       1.0 - (1.0 - config.TILE_RENDER.disabled.brightness) * (1.0 - enabled_factor))
   end
 
-  -- Apply base tile fill adjustments (darken and desaturate for subtle look)
-  render_color = Colors.desaturate(render_color, 1.0 - config.TILE_RENDER.base_fill.saturation_factor)
-  render_color = Colors.adjust_brightness(render_color, config.TILE_RENDER.base_fill.brightness_factor)
+  -- Apply base tile fill adjustments (use compact mode values for small tiles)
+  local sat_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_saturation_factor or config.TILE_RENDER.base_fill.saturation_factor
+  local bright_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_brightness_factor or config.TILE_RENDER.base_fill.brightness_factor
+  render_color = Colors.desaturate(render_color, 1.0 - sat_factor)
+  render_color = Colors.adjust_brightness(render_color, bright_factor)
+
+  -- Apply hover effect (brightness boost)
+  if hover_factor > 0.001 then
+    local hover_boost = config.TILE_RENDER.hover.brightness_boost * hover_factor
+    render_color = Colors.adjust_brightness(render_color, 1.0 + hover_boost)
+  end
 
   -- Apply cascade/enabled alpha with minimum for disabled items
   local min_alpha_factor = (config.TILE_RENDER.disabled.min_alpha or 0x33) / 255
@@ -93,9 +103,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   render_color = Colors.with_alpha(render_color, math.floor(final_alpha * 255))
 
   local text_alpha = math.floor(0xFF * combined_alpha)
-
-  -- Check if we're in small tile mode
-  local is_small_tile = scaled_h < config.TILE_RENDER.responsive.small_tile_height
 
   -- Calculate header height
   local header_height
@@ -185,23 +192,24 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Render marching ants for selection
   if tile_state.selected and cascade_factor > 0.5 then
+    local selection_config = config.TILE_RENDER.selection
     local ant_color = Colors.same_hue_variant(
       base_color,
-      config.TILE_RENDER.tile_fx.border_saturation,
-      config.TILE_RENDER.tile_fx.border_brightness,
-      math.floor(config.TILE_RENDER.tile_fx.ants_alpha * combined_alpha)
+      selection_config.border_saturation,
+      selection_config.border_brightness,
+      math.floor(selection_config.ants_alpha * combined_alpha)
     )
 
-    local inset = config.TILE_RENDER.tile_fx.ants_inset
+    local inset = selection_config.ants_inset
     MarchingAnts.draw(
       dl,
       scaled_x1 + inset, scaled_y1 + inset, scaled_x2 - inset, scaled_y2 - inset,
       ant_color,
-      config.TILE_RENDER.tile_fx.ants_thickness,
+      selection_config.ants_thickness,
       config.TILE.ROUNDING,
-      config.TILE_RENDER.tile_fx.ants_dash,
-      config.TILE_RENDER.tile_fx.ants_gap,
-      config.TILE_RENDER.tile_fx.ants_speed
+      selection_config.ants_dash,
+      selection_config.ants_gap,
+      selection_config.ants_speed
     )
   end
 
