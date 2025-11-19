@@ -277,16 +277,17 @@ function M.render(ctx, rect, template, state, metadata, animator)
     star_color = is_star_hovered and Colors.hexrgb("#AAAAAA") or Colors.hexrgb("#555555")  -- Gray when not favorited
   end
 
-  -- Draw star using path
+  -- Draw star using ImGui Path API
   local function draw_star(cx, cy, radius, color)
-    local points = {}
+    ImGui.DrawList_PathClear(dl)
     for i = 0, 9 do
       local angle = (i * 36 - 90) * math.pi / 180  -- 5 points, starting from top
       local r = (i % 2 == 0) and radius or radius * 0.4  -- Outer and inner radius
-      table.insert(points, cx + r * math.cos(angle))
-      table.insert(points, cy + r * math.sin(angle))
+      local px = cx + r * math.cos(angle)
+      local py = cy + r * math.sin(angle)
+      ImGui.DrawList_PathLineTo(dl, px, py)
     end
-    ImGui.DrawList_AddConvexPolyFilled(dl, points, color)
+    ImGui.DrawList_PathFillConvex(dl, color)
   end
 
   draw_star(star_center_x, star_center_y, star_size / 2, star_color)
