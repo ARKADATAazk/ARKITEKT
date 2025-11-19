@@ -11,7 +11,7 @@
 --   [nomain] scripts/TemplateBrowser/**/*.lua
 --   [nomain] scripts/ThemeAdjuster/**/*.lua
 --   [nomain] rearkitekt/**/*.lua
---   [data] rearkitekt/**/*.{png,jpg,svg,ttf,json,txt}
+--   [nomain] rearkitekt/**/*.{png,jpg,svg,ttf,json,txt}
 
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
