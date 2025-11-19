@@ -11,43 +11,37 @@
 --   [nomain] scripts/TemplateBrowser/**/*.lua
 --   [nomain] scripts/ThemeAdjuster/**/*.lua
 --   [nomain] rearkitekt/**/*.lua
---   [data] rearkitekt/**/*.{png,jpg,svg,ttf,json,txt}
+--   [nomain] rearkitekt/**/*.{png,jpg,svg,ttf,json,txt}
 
 -- ============================================================================
--- UNIVERSAL PATH RESOLUTION - Find ARKITEKT root automatically
+-- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local sep = package.config:sub(1,1)
-local script_path = debug.getinfo(1, "S").source:sub(2)
-local script_dir = script_path:match("(.*"..sep..")")
+local function init_arkitekt()
+  local sep = package.config:sub(1,1)
+  local src = debug.getinfo(1, "S").source:sub(2)
+  local dir = src:match("(.*"..sep..")")
 
--- Find ARKITEKT root by scanning upward until folder "rearkitekt" exists
-local function find_root(path)
+  -- Scan upward for bootstrap
+  local path = dir
   while path and #path > 3 do
-    local test = path .. "rearkitekt" .. sep
-    local f = io.open(test .. "app" .. sep .. "shell.lua", "r")
-    if f then f:close(); return path end
+    local bootstrap = path .. "rearkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
+    local f = io.open(bootstrap, "r")
+    if f then
+      f:close()
+      return dofile(bootstrap)(path)
+    end
     path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
   end
+
+  reaper.MB("ARKITEKT bootstrap not found!", "FATAL ERROR", 0)
+  return nil
 end
 
-local root_path = find_root(script_dir)
-if not root_path then
-  reaper.MB("ARKITEKT root not found! Cannot locate rearkitekt/app/shell.lua", "FATAL ERROR", 0)
-  return
-end
+local ARK = init_arkitekt()
+if not ARK then return end
 
--- Build module search paths
-package.path =
-    root_path .. "?.lua;" ..
-    root_path .. "?" .. sep .. "init.lua;" ..
-    root_path .. "scripts" .. sep .. "?.lua;" ..
-    root_path .. "scripts" .. sep .. "?" .. sep .. "init.lua;" ..
-    package.path
-
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
-
-local function join(a,b) local s=package.config:sub(1,1); return (a:sub(-1)==s) and (a..b) or (a..s..b) end
+local ImGui = ARK.ImGui
+local script_dir = ARK.root_path
 
 local Shell = require("rearkitekt.app.shell")
 local Hub = require("rearkitekt.app.hub")
@@ -64,7 +58,7 @@ local hexrgb = Colors.hexrgb
 
 local settings = nil
 if SettingsOK and type(Settings.new)=="function" then
-  local ok, inst = pcall(Settings.new, join(script_dir,"cache"), "arkitekt_hub.json")
+  local ok, inst = pcall(Settings.new, ARK.join(script_dir,"cache"), "arkitekt_hub.json")
   if ok then settings = inst end
 end
 

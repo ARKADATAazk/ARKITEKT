@@ -2,37 +2,31 @@
 -- ItemPicker main launcher with clean overlay support
 
 -- ============================================================================
--- UNIVERSAL PATH RESOLUTION - Find ARKITEKT root automatically
+-- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local sep = package.config:sub(1,1)
-local script_path = debug.getinfo(1, "S").source:sub(2)
-local script_dir = script_path:match("(.*"..sep..")")
+local function init_arkitekt()
+  local sep = package.config:sub(1,1)
+  local src = debug.getinfo(1, "S").source:sub(2)
+  local dir = src:match("(.*"..sep..")")
 
--- Find ARKITEKT root by scanning upward until folder "rearkitekt" exists
-local function find_root(path)
+  -- Scan upward for bootstrap
+  local path = dir
   while path and #path > 3 do
-    local test = path .. "rearkitekt" .. sep
-    local f = io.open(test .. "app" .. sep .. "shell.lua", "r")
-    if f then f:close(); return path end
+    local bootstrap = path .. "rearkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
+    local f = io.open(bootstrap, "r")
+    if f then
+      f:close()
+      return dofile(bootstrap)(path)
+    end
     path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
   end
+
+  reaper.MB("ARKITEKT bootstrap not found!", "FATAL ERROR", 0)
+  return nil
 end
 
-local root_path = find_root(script_dir)
-if not root_path then
-  reaper.MB("ARKITEKT root not found! Cannot locate rearkitekt/app/shell.lua", "FATAL ERROR", 0)
-  return
-end
-
--- Build module search paths
-package.path =
-    root_path .. "?.lua;" ..
-    root_path .. "?" .. sep .. "init.lua;" ..
-    root_path .. "scripts" .. sep .. "?.lua;" ..
-    root_path .. "scripts" .. sep .. "?" .. sep .. "init.lua;" ..
-    package.path
-
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
+local ARK = init_arkitekt()
+if not ARK then return end
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
@@ -48,20 +42,8 @@ else
   reaper.ShowConsoleMsg("[ItemPicker]   Install profiler: ReaPack > Browse > Search 'cfillion Lua profiler'\n")
 end
 
--- Check dependencies
-local has_imgui, imgui_test = pcall(require, 'imgui')
-if not has_imgui then
-  reaper.MB("Missing dependency: ReaImGui extension.\nDownload it via Reapack ReaTeam extension repository.", "Error", 0)
-  return false
-end
-
-local reaimgui_shim_file_path = reaper.GetResourcePath() .. '/Scripts/ReaTeam Extensions/API/imgui.lua'
-if reaper.file_exists(reaimgui_shim_file_path) then
-  dofile(reaimgui_shim_file_path)('0.10')
-end
-
 -- Load required modules
-local ImGui = require 'imgui' '0.10'
+local ImGui = ARK.ImGui
 local Runtime = require('rearkitekt.app.runtime')
 local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
 
