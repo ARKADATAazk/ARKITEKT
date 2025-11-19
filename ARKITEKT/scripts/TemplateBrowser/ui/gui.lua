@@ -372,6 +372,17 @@ local function draw_folder_tree(ctx, state, config)
     enable_multi_select = true,  -- Enable multi-select with Ctrl/Shift
     context_menu_id = "folder_context_menu",  -- Enable context menu
 
+    -- Check if node can be renamed (prevent renaming system folders)
+    can_rename = function(node)
+      if node.is_virtual then
+        local vfolder = state.metadata.virtual_folders and state.metadata.virtual_folders[node.id]
+        if vfolder and vfolder.is_system then
+          return false  -- System folders cannot be renamed
+        end
+      end
+      return true  -- All other nodes can be renamed
+    end,
+
     -- Selection callback
     on_select = function(node, selected_nodes)
       -- Update state with selected folders
