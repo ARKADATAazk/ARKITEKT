@@ -157,21 +157,26 @@ function OverflowModalView:draw(ctx, window)
       end,
       render = function(ctx, alpha, bounds)
         Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a)
-          ImGui.SetCursorPos(ctx, 0, 0)
+          -- Don't reset cursor - Container already applies padding
           ImGui.Text(ctx, "All Playlists:")
-          ImGui.SetCursorPosX(ctx, 0)
-          ImGui.SetNextItemWidth(ctx, content_w)
-          local changed, text = ImGui.InputTextWithHint(ctx, "##tab_search", "Search playlists...", self.search_text)
-          if changed then 
-            self.search_text = text 
-          end
+
+          ImGui.Dummy(ctx, 0, 8)
+
+          -- Use arkitekt SearchInput primitive
+          local search_state = SearchInput.draw_at_cursor(ctx, {
+            id = "overflow_search",
+            width = content_w,
+            height = 28,
+            placeholder = "Search playlists...",
+            value = self.search_text,
+            on_change = function(new_text)
+              self.search_text = new_text
+            end
+          })
 
           ImGui.Dummy(ctx, 0, 12)
-          ImGui.SetCursorPosX(ctx, 0)
           ImGui.Separator(ctx)
           ImGui.Dummy(ctx, 0, 12)
-
-          ImGui.SetCursorPosX(ctx, 0)
           
           local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
             selected_ids = selected_ids,
@@ -198,15 +203,22 @@ function OverflowModalView:draw(ctx, window)
           end
 
           ImGui.Dummy(ctx, 0, 20)
-          ImGui.SetCursorPosX(ctx, 0)
           ImGui.Separator(ctx)
           ImGui.Dummy(ctx, 0, 12)
 
+          -- Use arkitekt Button primitive
           local button_w = 100
           local start_x = (content_w - button_w) * 0.5
-
           ImGui.SetCursorPosX(ctx, start_x)
-          if ImGui.Button(ctx, "Close", button_w, 32) then
+
+          local clicked = Button.draw_at_cursor(ctx, {
+            id = "close_button",
+            label = "Close",
+            width = button_w,
+            height = 32,
+          })
+
+          if clicked then
             window.overlay:pop('overflow-tabs')
             self.is_open = false
             self:close()
