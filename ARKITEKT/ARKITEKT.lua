@@ -1,11 +1,17 @@
 -- @description ARKITEKT Toolkit
 -- @author ARKADATA
--- @version 1.0.1
+-- @version 1.0.2
 -- @provides
---   [main] scripts/Region_Playlist/ARK_RegionPlaylist.lua
---   [main] scripts/ItemPicker/ARK_ItemPicker.lua
---   [main] scripts/TemplateBrowser/ARK_TemplateBrowser.lua
---   [main] scripts/ThemeAdjuster/ARK_ThemeAdjuster.lua
+--   [main] ARKITEKT/scripts/Region_Playlist/ARK_RegionPlaylist.lua
+--   [main] ARKITEKT/scripts/ItemPicker/ARK_ItemPicker.lua
+--   [main] ARKITEKT/scripts/TemplateBrowser/ARK_TemplateBrowser.lua
+--   [main] ARKITEKT/scripts/ThemeAdjuster/ARK_ThemeAdjuster.lua
+--   [nomain] ARKITEKT/scripts/Region_Playlist/**/*.lua
+--   [nomain] ARKITEKT/scripts/ItemPicker/**/*.lua
+--   [nomain] ARKITEKT/scripts/TemplateBrowser/**/*.lua
+--   [nomain] ARKITEKT/scripts/ThemeAdjuster/**/*.lua
+--   [nomain] ARKITEKT/rearkitekt/**/*.lua
+--   [data] ARKITEKT/rearkitekt/**/*.{png,jpg,svg,ttf,json,txt}
 
 -- Package path setup
 local script_path = debug.getinfo(1, "S").source:match("@?(.*)") or ""
