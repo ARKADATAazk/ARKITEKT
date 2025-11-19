@@ -168,16 +168,11 @@ function M:push(opts)
 
     -- Close button support (enabled by default for all modals)
     show_close_button = (opts.show_close_button ~= false),
-    close_button_size = opts.close_button_size or 24,
+    close_button_size = opts.close_button_size or 32,
     close_button_margin = opts.close_button_margin or 12,
-    close_button_proximity = opts.close_button_proximity or 150,
-    close_button_color = opts.close_button_color or hexrgb("#FFFFFFFF"),
-    close_button_hover_color = opts.close_button_hover_color or hexrgb("#FF4444FF"),
-    close_button_bg_color = opts.close_button_bg_color or hexrgb("#000000FF"),
-    close_button_bg_opacity = opts.close_button_bg_opacity or 0.6,
-    close_button_bg_opacity_hover = opts.close_button_bg_opacity_hover or 0.8,
-    close_button_hovered = false,
-    close_button_alpha = 0.0,
+    close_button_color = opts.close_button_color or hexrgb("#FFFFFF"),
+    close_button_alpha_normal = opts.close_button_alpha_normal or 0.3,
+    close_button_alpha_hover = opts.close_button_alpha_hover or 0.6,
 
     -- Background click support
     close_on_background_click = (opts.close_on_background_click == true),
@@ -416,48 +411,27 @@ function M:draw_close_button(ctx, overlay, vp_x, vp_y, vp_w, vp_h, dt)
   local btn_x = vp_x + vp_w - overlay.close_button_size - overlay.close_button_margin
   local btn_y = vp_y + overlay.close_button_margin
 
-  local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
-  local dist = math.sqrt((mouse_x - (btn_x + overlay.close_button_size/2))^2 +
-                        (mouse_y - (btn_y + overlay.close_button_size/2))^2)
-  local in_proximity = dist < overlay.close_button_proximity
-
-  local target_alpha = in_proximity and 1.0 or 0.3
-  overlay.close_button_alpha = overlay.close_button_alpha +
-                               (target_alpha - overlay.close_button_alpha) *
-                               (1.0 - math.exp(-10.0 * dt))
-
   ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
   ImGui.InvisibleButton(ctx, "##overlay_close_btn_" .. overlay.id,
                         overlay.close_button_size, overlay.close_button_size)
-  overlay.close_button_hovered = ImGui.IsItemHovered(ctx)
+  local is_hovered = ImGui.IsItemHovered(ctx)
 
   if ImGui.IsItemClicked(ctx) then
     self:pop(overlay.id)
   end
 
   local dl = ImGui.GetForegroundDrawList(ctx)
-  local alpha_val = overlay.alpha:value() * overlay.close_button_alpha
 
-  local bg_opacity = overlay.close_button_hovered and
-                    overlay.close_button_bg_opacity_hover or
-                    overlay.close_button_bg_opacity
-  local bg_alpha = bg_opacity * alpha_val
-  local bg_color = (overlay.close_button_bg_color & hexrgb("#FFFFFF00")) |
-                   math.floor(255 * bg_alpha + 0.5)
-  ImGui.DrawList_AddRectFilled(dl, btn_x, btn_y,
-                               btn_x + overlay.close_button_size,
-                               btn_y + overlay.close_button_size,
-                               bg_color, overlay.close_button_size/2)
+  -- Simple cross with opacity-based visibility (no background circle)
+  local base_alpha = is_hovered and overlay.close_button_alpha_hover or overlay.close_button_alpha_normal
+  local alpha_val = overlay.alpha:value() * base_alpha
+  local icon_color = (overlay.close_button_color & 0x00FFFFFF) | (math.floor(255 * alpha_val) << 24)
 
-  local icon_color = overlay.close_button_hovered and
-                    overlay.close_button_hover_color or
-                    overlay.close_button_color
-  icon_color = (icon_color & hexrgb("#FFFFFF00")) | math.floor(255 * alpha_val + 0.5)
-
-  local padding = overlay.close_button_size * 0.3
+  -- Draw X with diagonal lines
+  local padding = overlay.close_button_size * 0.25
   local x1, y1 = btn_x + padding, btn_y + padding
   local x2, y2 = btn_x + overlay.close_button_size - padding,
-                btn_y + overlay.close_button_size - padding
+                 btn_y + overlay.close_button_size - padding
   ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, icon_color, 2)
   ImGui.DrawList_AddLine(dl, x2, y1, x1, y2, icon_color, 2)
 end

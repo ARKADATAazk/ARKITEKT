@@ -7,7 +7,6 @@ local ImGui = require 'imgui' '0.10'
 
 local Container = require('rearkitekt.gui.widgets.overlays.overlay.container')
 local ChipList = require('rearkitekt.gui.widgets.data.chip_list')
-local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -160,21 +159,13 @@ function OverflowModalView:draw(ctx, window)
           ImGui.Dummy(ctx, 0, 8)
 
           -- Search input
-          local search_height = 28
-          local cur_y = ImGui.GetCursorPosY(ctx)
-          SearchInput.draw_at_cursor(ctx, {
-            id = "overflow_search",
-            width = content_w,
-            height = search_height,
-            placeholder = "Search playlists...",
-            value = self.search_text,
-            on_change = function(new_text)
-              self.search_text = new_text
-            end
-          })
-          -- Reset cursor after primitive (primitives advance horizontally)
-          ImGui.SetCursorPos(ctx, padding, cur_y + search_height + 12)
+          ImGui.SetNextItemWidth(ctx, content_w)
+          local changed, text = ImGui.InputTextWithHint(ctx, "##overflow_search", "Search playlists...", self.search_text)
+          if changed then
+            self.search_text = text
+          end
 
+          ImGui.Dummy(ctx, 0, 12)
           ImGui.Separator(ctx)
           ImGui.Dummy(ctx, 0, 12)
 
