@@ -222,6 +222,7 @@ function M.get_active_container_config(callbacks)
     corner_buttons = {
       size = 24,
       margin = 8,
+      inner_rounding = 2,  -- Smaller buttons need smaller inner rounding
       bottom_left = {
         custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
           TransportIcons.draw_bolt(dl, x, y, width, height, color)
@@ -296,6 +297,7 @@ function M.get_pool_container_config(callbacks)
     corner_buttons = {
       size = 24,
       margin = 8,
+      inner_rounding = 2,  -- Smaller buttons need smaller inner rounding
       bottom_left = {
         custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
           TransportIcons.draw_bolt(dl, x, y, width, height, color)
