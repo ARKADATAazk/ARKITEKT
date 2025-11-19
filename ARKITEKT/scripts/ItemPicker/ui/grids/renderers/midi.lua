@@ -106,13 +106,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     )
   end
 
-  -- Render base tile fill
-  ImGui.DrawList_PathClear(dl)
-  ImGui.DrawList_PathLineTo(dl, scaled_x1, scaled_y1)
-  ImGui.DrawList_PathLineTo(dl, scaled_x2, scaled_y1)
-  ImGui.DrawList_PathLineTo(dl, scaled_x2, scaled_y2)
-  ImGui.DrawList_PathLineTo(dl, scaled_x1, scaled_y2)
-  ImGui.DrawList_PathFillConvex(dl, render_color)
+  -- Render base tile fill with rounding
+  ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
 
   -- Apply TileFX (optimized: reuse config table instead of copying)
   local fx_config = config.TILE_RENDER.tile_fx
