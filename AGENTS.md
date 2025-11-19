@@ -36,13 +36,31 @@ This file is a quick-start and pointer, not a duplicate.
 ## Framework Patterns (Jan 2025)
 
 ### Entry Point Bootstrap
-**Always use** the 3-line bootstrap pattern:
+**Always use** this bootstrap pattern (finds and loads init.lua via dofile):
 ```lua
-local Init = require('rearkitekt.app.init')
-local ARK = Init.bootstrap()
-if not ARK then return end
+local ARK
+do
+  local sep = package.config:sub(1,1)
+  local src = debug.getinfo(1, "S").source:sub(2)
+  local path = src:match("(.*"..sep..")")
+  while path and #path > 3 do
+    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init.lua"
+    local f = io.open(init, "r")
+    if f then
+      f:close()
+      local Init = dofile(init)
+      ARK = Init.bootstrap()
+      break
+    end
+    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
+  end
+  if not ARK then
+    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
+    return
+  end
+end
 ```
-**Never** duplicate the 20-line bootstrap finder logic in entry points.
+**Why dofile, not require?** The init.lua module can't be `require()`'d until after bootstrap runs and sets up package.path. This creates a chicken-and-egg problem, so we use `dofile()` to load it directly.
 
 ### Constants & Defaults
 - Use `rearkitekt.app.constants` for all magic numbers (overlay sizes, animation timings, typography scale)
