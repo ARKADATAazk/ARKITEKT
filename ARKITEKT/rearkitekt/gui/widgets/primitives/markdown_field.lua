@@ -51,18 +51,18 @@ local function get_markdown_renderer(ctx, id, state)
       height = 0,  -- Auto height
     }, {
       -- Apply teal accents to markdown elements
-      h1 = { color = teal_accent, padding_left = 0 },
-      h2 = { color = teal_accent, padding_left = 0 },
-      h3 = { color = teal_accent, padding_left = 0 },
-      h4 = { padding_left = 0 },
-      h5 = { padding_left = 0 },
+      h1 = { base_color = teal_accent, bold_color = teal_accent, padding_left = 0 },
+      h2 = { base_color = teal_accent, bold_color = teal_accent, padding_left = 0 },
+      h3 = { base_color = teal_accent, bold_color = teal_accent, padding_left = 0 },
+      h4 = { base_color = teal_accent, bold_color = teal_accent, padding_left = 0 },
+      h5 = { base_color = teal_accent, bold_color = teal_accent, padding_left = 0 },
       paragraph = { padding_left = 0 },  -- Remove default 30px indent
       list = { padding_left = 20 },  -- Reduce from 40px to 20px for lists
       table = { padding_left = 0 },  -- Remove default 30px indent
-      code = { color = teal_dim, padding_left = 0 },  -- Remove default 30px indent
-      code_block = { color = teal_dim },
-      link = { color = teal_accent },
-      strong = { color = teal_dim },  -- Slightly dimmer teal for bold
+      code = { base_color = teal_dim, bold_color = teal_dim, padding_left = 0 },  -- Remove default 30px indent
+      code_block = { base_color = teal_dim, bold_color = teal_dim },
+      link = { base_color = teal_accent, bold_color = teal_accent },
+      strong = { base_color = teal_dim, bold_color = teal_dim },  -- Slightly dimmer teal for bold
     })
   end
 
