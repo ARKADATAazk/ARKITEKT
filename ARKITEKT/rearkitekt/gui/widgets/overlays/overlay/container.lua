@@ -9,20 +9,17 @@ local hexrgb = Colors.hexrgb
 
 local M = {}
 
--- Default container styling
+-- Default container styling - simple squares with 1px black border
 local DEFAULTS = {
   width = 0.6,           -- Percentage of bounds width
   height = 0.7,          -- Percentage of bounds height
-  rounding = 10,         -- Corner rounding
-  bg_color = hexrgb("#1A1A1A"),
-  bg_opacity = 0.98,
-  border_color = hexrgb("#000000"),
-  border_opacity = 0.9,
-  border_thickness = 2,
-  inner_border_color = hexrgb("#404040"),
-  inner_border_opacity = 0.4,
-  inner_border_thickness = 1,
-  padding = 16,          -- Internal padding for content
+  rounding = 0,          -- Square corners (no rounding)
+  bg_color = hexrgb("#101010"),  -- Darker background
+  bg_opacity = 1.0,
+  border_color = hexrgb("#000000"),  -- Black border
+  border_opacity = 1.0,
+  border_thickness = 1,  -- 1 pixel border
+  padding = 12,          -- Subtle internal padding
 }
 
 -- Render a dark container with content
@@ -59,16 +56,10 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
   local window_flags = ImGui.WindowFlags_NoScrollbar
   ImGui.BeginChild(ctx, '##modal_container', w, h, child_flags, window_flags)
 
-  -- Draw borders on child's draw list
+  -- Draw simple 1px black border
   local dl = ImGui.GetWindowDrawList(ctx)
-
-  -- Outer border
   local border_color = Colors.with_alpha(config.border_color, math.floor(255 * config.border_opacity * alpha))
   ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_color, r, 0, config.border_thickness)
-
-  -- Inner highlight border
-  local inner_border = Colors.with_alpha(config.inner_border_color, math.floor(255 * config.inner_border_opacity * alpha))
-  ImGui.DrawList_AddRect(dl, x + 2, y + 2, x + w - 2, y + h - 2, inner_border, r - 2, 0, config.inner_border_thickness)
 
   ImGui.PopStyleColor(ctx, 1)
   ImGui.PopStyleVar(ctx, 2)

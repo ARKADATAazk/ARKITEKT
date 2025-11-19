@@ -211,7 +211,7 @@ function OverflowModalView:draw(ctx, window)
             self.is_open = false
             self:close()
           end
-        end, { width = 0.6, height = 0.7 })
+        end)
       end
     })
   end
