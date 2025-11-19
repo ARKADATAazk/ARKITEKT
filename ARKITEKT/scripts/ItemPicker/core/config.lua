@@ -87,13 +87,13 @@ M.TILE_RENDER = {
   -- Selection (marching ants)
   selection = {
     border_saturation = 0.8,
-    border_brightness = 0.9,
+    border_brightness = 1.4,
     ants_alpha = 0xFF,
-    ants_thickness = 2,
-    ants_inset = 1,
+    ants_thickness = 1,
+    ants_inset = 0,
     ants_dash = 8,
-    ants_gap = 4,
-    ants_speed = 0.05,
+    ants_gap = 6,
+    ants_speed = 20,
   },
 
   -- Disabled state
