@@ -71,7 +71,7 @@ M.TILE_RENDER = {
   -- Base tile fill (color adjustments applied to tile background)
   base_fill = {
     saturation_factor = 0.9,  -- Multiply saturation (0.0-1.0, lower = more desaturated)
-    brightness_factor = 0.85, -- Multiply brightness (0.0-1.0, lower = darker)
+    brightness_factor = 0.6, -- Multiply brightness (0.0-1.0, lower = darker)
   },
 
   -- Disabled state
@@ -90,8 +90,8 @@ M.TILE_RENDER = {
     rounding_offset = 2,      -- Subtract from TILE.ROUNDING for tighter corner alignment
 
     -- Color controls (HSV transformation from base tile color)
-    saturation_factor = 1.1,  -- Multiply tile saturation by this
-    brightness_factor = 0.7,  -- Multiply tile brightness by this
+    saturation_factor = 0.7,  -- Multiply tile saturation by this
+    brightness_factor = 1,  -- Multiply tile brightness by this
     alpha = 0xDD,             -- Base alpha/opacity (0x00-0xFF)
 
     -- Overlay
@@ -194,7 +194,7 @@ M.TILE_RENDER = {
 
     -- Header color controls (HSV transformation from base tile color)
     -- Note: These only apply when disable_header_fill is false
-    header_saturation_factor = 1.1,  -- Multiply tile saturation by this
+    header_saturation_factor = 0.6,  -- Multiply tile saturation by this
     header_brightness_factor = 0.7,  -- Multiply tile brightness by this
     header_alpha = 0.0,              -- Transparency multiplier (0.0-1.0), applied to base header alpha
 
