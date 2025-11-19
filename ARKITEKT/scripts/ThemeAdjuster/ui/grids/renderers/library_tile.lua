@@ -15,6 +15,9 @@ local M = {}
 -- Animation state storage (persistent across frames)
 M._anim = M._anim or {}
 
+-- Link handle state (for drag detection)
+M._link_handle_rects = M._link_handle_rects or {}
+
 function M.render(ctx, rect, param, state, view)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local w = x2 - x1
@@ -214,12 +217,103 @@ function M.render(ctx, rect, param, state, view)
     view:save_assignments()
   end
 
-  -- 5. Assignment badge (at the end)
+  -- 5. Link handle (right side of tile, before assignment badge)
+  M.render_link_handle(ctx, dl, rect, param.name, view, rects)
+
+  -- 6. Assignment badge (at the end)
   if assignment_count > 0 then
     ImGui.SameLine(ctx)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88AAFF"))
     ImGui.Text(ctx, string.format("(%d)", assignment_count))
     ImGui.PopStyleColor(ctx)
+  end
+end
+
+-- Render link handle on the right side of the tile
+function M.render_link_handle(ctx, dl, rect, param_name, view, control_rects)
+  local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+  local h = y2 - y1
+
+  -- Link handle dimensions (smaller for library tiles)
+  local handle_size = h - 6  -- Leave 3px margin top/bottom
+  local handle_x1 = x2 - handle_size - 6
+  local handle_y1 = y1 + 3
+  local handle_x2 = x2 - 6
+  local handle_y2 = y2 - 3
+
+  -- Store rect for interaction detection AND add to control rects to prevent dragging
+  local handle_key = "handle_" .. param_name
+  M._link_handle_rects[handle_key] = {handle_x1, handle_y1, handle_x2, handle_y2}
+
+  -- Add to control_rects to prevent tile dragging on this area
+  table.insert(control_rects, {handle_x1, handle_y1, handle_x2, handle_y2})
+
+  -- Check if mouse is over handle
+  local mx, my = ImGui.GetMousePos(ctx)
+  local is_hovered = mx >= handle_x1 and mx <= handle_x2 and my >= handle_y1 and my <= handle_y2
+
+  -- Check link status
+  local is_linked = ParameterLinkManager.is_linked(param_name)
+  local is_parent = ParameterLinkManager.is_parent(param_name)
+  local link_mode = ParameterLinkManager.get_link_mode(param_name)
+
+  -- Colors
+  local function alpha_blend(color, alpha)
+    local r = (color >> 24) & 0xFF
+    local g = (color >> 16) & 0xFF
+    local b = (color >> 8) & 0xFF
+    return (r << 24) | (g << 16) | (b << 8) | math.floor(255 * alpha)
+  end
+
+  local bg_color, icon_color
+  local base_color = hexrgb("#4A90E2")  -- Blue for library
+
+  if is_linked or is_parent then
+    -- Linked: show with color
+    bg_color = alpha_blend(base_color, 0.3)
+    icon_color = alpha_blend(base_color, 1.0)
+  else
+    -- Not linked: subtle gray
+    bg_color = hexrgb("#00000000")  -- Transparent
+    icon_color = hexrgb("#666666")
+  end
+
+  if is_hovered then
+    bg_color = alpha_blend(base_color, 0.5)
+    icon_color = hexrgb("#FFFFFF")
+  end
+
+  -- Draw background
+  if bg_color ~= hexrgb("#00000000") then
+    ImGui.DrawList_AddRectFilled(dl, handle_x1, handle_y1, handle_x2, handle_y2, bg_color, 2)
+  end
+
+  -- Draw link icon (chain links)
+  local center_x = (handle_x1 + handle_x2) / 2
+  local center_y = (handle_y1 + handle_y2) / 2
+  local icon_size = handle_size * 0.4
+
+  -- Draw two interlocking circles (chain link symbol)
+  local offset = icon_size * 0.3
+  ImGui.DrawList_AddCircle(dl, center_x - offset, center_y, icon_size * 0.3, icon_color, 0, 1.5)
+  ImGui.DrawList_AddCircle(dl, center_x + offset, center_y, icon_size * 0.3, icon_color, 0, 1.5)
+
+  -- Tooltip
+  if is_hovered then
+    if is_linked then
+      local parent = ParameterLinkManager.get_parent(param_name)
+      local mode_text = link_mode == ParameterLinkManager.LINK_MODE.LINK and "LINK" or "SYNC"
+      ImGui.SetTooltip(ctx, string.format("Linked to: %s\nMode: %s\nRight-click to change", parent, mode_text))
+    elseif is_parent then
+      local children = ParameterLinkManager.get_children(param_name)
+      local child_names = {}
+      for _, child_info in ipairs(children) do
+        table.insert(child_names, child_info.name)
+      end
+      ImGui.SetTooltip(ctx, string.format("Parent of: %s\nRight-click to manage", table.concat(child_names, ", ")))
+    else
+      ImGui.SetTooltip(ctx, "Right-click to link parameters")
+    end
   end
 end
 

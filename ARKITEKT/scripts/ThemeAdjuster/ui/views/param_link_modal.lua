@@ -110,7 +110,8 @@ function ParamLinkModal:render(ctx)
   local title = "Link Parameter: " .. (self.source_param or "")
 
   -- Center the modal
-  local display_w, display_h = ImGui.GetMainViewport(ctx):GetSize()
+  local viewport = ImGui.GetMainViewport(ctx)
+  local display_w, display_h = ImGui.Viewport_GetSize(viewport)
   local modal_w = 600
   local modal_h = 500
   ImGui.SetNextWindowPos(ctx, (display_w - modal_w) / 2, (display_h - modal_h) / 2, ImGui.Cond_Appearing)

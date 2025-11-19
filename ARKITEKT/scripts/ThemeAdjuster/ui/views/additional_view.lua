@@ -1040,14 +1040,14 @@ end
 
 -- Handle link handle interactions (right-click to open modal)
 function AdditionalView:handle_link_handle_interactions(ctx)
-  local AssignmentTile = require('ThemeAdjuster.ui.grids.renderers.assignment_tile')
+  local LibraryTile = require('ThemeAdjuster.ui.grids.renderers.library_tile')
 
   -- Check for right-click on any link handle
   if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right) then
     local mx, my = ImGui.GetMousePos(ctx)
 
     -- Check all stored link handle rects
-    for handle_key, rect in pairs(AssignmentTile._link_handle_rects) do
+    for handle_key, rect in pairs(LibraryTile._link_handle_rects) do
       local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
 
       if mx >= x1 and mx <= x2 and my >= y1 and my <= y2 then
