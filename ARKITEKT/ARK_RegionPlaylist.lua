@@ -25,8 +25,8 @@ end
 
 -- Build module search paths
 package.path =
-    root_path .. "rearkitekt" .. sep .. "?.lua;" ..
-    root_path .. "rearkitekt" .. sep .. "?" .. sep .. "init.lua;" ..
+    root_path .. "?.lua;" ..
+    root_path .. "?" .. sep .. "init.lua;" ..
     root_path .. "scripts" .. sep .. "?.lua;" ..
     root_path .. "scripts" .. sep .. "?" .. sep .. "init.lua;" ..
     package.path
