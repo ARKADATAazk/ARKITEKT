@@ -16,6 +16,7 @@ local ParseMarkdown = require "reaimgui_markdown/markdown-ast"
 local ImGuiMdCore   = require "reaimgui_markdown/markdown-imgui"
 
 local function deepMerge(t1, t2)
+    if not t2 then return t1 end  -- Guard against nil
     for k,v in pairs(t2) do
         if type(v) == "table" then
             if type(t1[k] or false) == "table" then
