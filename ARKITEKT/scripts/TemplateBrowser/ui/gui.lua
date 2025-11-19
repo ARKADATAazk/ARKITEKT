@@ -116,6 +116,52 @@ function GUI:initialize_once(ctx)
         -- Set context menu template for color picker
         self.state.context_menu_template = template
       end
+    end,
+    -- on_star_click (receives template object from factory)
+    function(template)
+      if template then
+        local Persistence = require('TemplateBrowser.domain.persistence')
+        local favorites_id = "__FAVORITES__"
+
+        -- Get favorites folder
+        local favorites = self.state.metadata.virtual_folders[favorites_id]
+        if not favorites then
+          -- This should not happen due to initialization, but handle gracefully
+          self.state.set_status("Favorites folder not found", "error")
+          return
+        end
+
+        -- Check if template is already favorited
+        local is_favorited = false
+        local favorite_index = nil
+        for idx, ref_uuid in ipairs(favorites.template_refs) do
+          if ref_uuid == template.uuid then
+            is_favorited = true
+            favorite_index = idx
+            break
+          end
+        end
+
+        -- Toggle favorite status
+        if is_favorited then
+          -- Remove from favorites
+          table.remove(favorites.template_refs, favorite_index)
+          self.state.set_status("Removed from Favorites: " .. template.name, "success")
+        else
+          -- Add to favorites
+          table.insert(favorites.template_refs, template.uuid)
+          self.state.set_status("Added to Favorites: " .. template.name, "success")
+        end
+
+        -- Save metadata
+        Persistence.save_metadata(self.state.metadata)
+
+        -- If currently viewing Favorites folder, refresh the filter
+        if self.state.selected_folder == favorites_id then
+          local Scanner = require('TemplateBrowser.domain.scanner')
+          Scanner.filter_templates(self.state)
+        end
+      end
     end
   )
 
@@ -682,32 +728,37 @@ local function draw_folder_tree(ctx, state, config)
           end
         end
 
-        -- Add separator and delete option for virtual folders
+        -- Add separator and delete option for virtual folders (except system folders)
         if node.is_virtual then
-          ContextMenu.separator(ctx_inner)
+          local vfolder = state.metadata.virtual_folders and state.metadata.virtual_folders[node.id]
+          local is_system_folder = vfolder and vfolder.is_system
 
-          if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
-            local Persistence = require('TemplateBrowser.domain.persistence')
+          if not is_system_folder then
+            ContextMenu.separator(ctx_inner)
 
-            -- Remove from metadata
-            if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
-              state.metadata.virtual_folders[node.id] = nil
-              Persistence.save_metadata(state.metadata)
+            if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
+              local Persistence = require('TemplateBrowser.domain.persistence')
 
-              -- Clear selection if this folder was selected
-              if state.selected_folder == node.id then
-                state.selected_folder = ""
-                state.selected_folders = {}
+              -- Remove from metadata
+              if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+                state.metadata.virtual_folders[node.id] = nil
+                Persistence.save_metadata(state.metadata)
+
+                -- Clear selection if this folder was selected
+                if state.selected_folder == node.id then
+                  state.selected_folder = ""
+                  state.selected_folders = {}
+                end
+
+                -- Refresh UI (no need to rescan templates, just rebuild tree)
+                local Scanner = require('TemplateBrowser.domain.scanner')
+                Scanner.filter_templates(state)
+
+                state.set_status("Deleted virtual folder: " .. node.name, "success")
               end
 
-              -- Refresh UI (no need to rescan templates, just rebuild tree)
-              local Scanner = require('TemplateBrowser.domain.scanner')
-              Scanner.filter_templates(state)
-
-              state.set_status("Deleted virtual folder: " .. node.name, "success")
+              ImGui.CloseCurrentPopup(ctx_inner)
             end
-
-            ImGui.CloseCurrentPopup(ctx_inner)
           end
         end
 
@@ -723,6 +774,13 @@ local function draw_folder_tree(ctx, state, config)
         -- Handle virtual folder rename (metadata only, no file operations)
         if node.is_virtual then
           if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+            -- Prevent renaming system folders
+            local vfolder = state.metadata.virtual_folders[node.id]
+            if vfolder.is_system then
+              state.set_status("Cannot rename system folder: " .. node.name, "error")
+              return false
+            end
+
             state.metadata.virtual_folders[node.id].name = new_name
             Persistence.save_metadata(state.metadata)
             state.set_status("Renamed virtual folder to: " .. new_name, "success")
@@ -1397,25 +1455,167 @@ local function draw_left_panel(ctx, state, config, width, height)
   ImGui.EndChild(ctx)
 end
 
+-- Get recent templates (up to max_count)
+local function get_recent_templates(state, max_count)
+  max_count = max_count or 10
+
+  local recent = {}
+
+  -- Collect templates with last_used timestamp
+  for _, tmpl in ipairs(state.templates) do
+    local metadata = state.metadata and state.metadata.templates[tmpl.uuid]
+    if metadata and metadata.last_used then
+      table.insert(recent, {
+        template = tmpl,
+        last_used = metadata.last_used,
+      })
+    end
+  end
+
+  -- Sort by last_used (most recent first)
+  table.sort(recent, function(a, b)
+    return a.last_used > b.last_used
+  end)
+
+  -- Extract just the templates
+  local result = {}
+  for i = 1, math.min(max_count, #recent) do
+    table.insert(result, recent[i].template)
+  end
+
+  return result
+end
+
+-- Draw recent templates horizontal row
+local function draw_recent_templates(ctx, gui, width, available_height)
+  local state = gui.state
+  local recent_templates = get_recent_templates(state, 10)
+
+  if #recent_templates == 0 then
+    return 0  -- No height consumed
+  end
+
+  local section_height = 120  -- Height for recent templates section
+  local tile_height = 80
+  local tile_width = 140
+  local tile_gap = 8
+  local header_height = 24
+  local padding = 8
+
+  -- Draw section header
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#B3B3B3"))
+  ImGui.Text(ctx, "Recent Templates")
+  ImGui.PopStyleColor(ctx)
+  ImGui.Spacing(ctx)
+
+  -- Scroll area for horizontal tiles
+  local scroll_height = tile_height + padding * 2
+  BeginChildCompat(ctx, "RecentTemplatesScroll", width, scroll_height, false, ImGui.WindowFlags_HorizontalScrollbar)
+
+  -- Draw tiles horizontally
+  local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
+
+  for idx, tmpl in ipairs(recent_templates) do
+    local x1, y1 = ImGui.GetCursorScreenPos(ctx)
+    local x2 = x1 + tile_width
+    local y2 = y1 + tile_height
+
+    -- Create tile state for rendering
+    local tile_state = {
+      hover = false,
+      selected = state.selected_template and state.selected_template.uuid == tmpl.uuid,
+      star_clicked = false,
+    }
+
+    -- Check hover
+    local mx, my = ImGui.GetMousePos(ctx)
+    tile_state.hover = mx >= x1 and mx <= x2 and my >= y1 and my <= y2
+
+    -- Render tile
+    TemplateTile.render(ctx, {x1, y1, x2, y2}, tmpl, tile_state, state.metadata, gui.template_animator)
+
+    -- Handle tile click
+    if tile_state.hover and ImGui.IsMouseClicked(ctx, 0) and not tile_state.star_clicked then
+      state.selected_template = tmpl
+    end
+
+    -- Handle star click
+    if tile_state.star_clicked then
+      local Persistence = require('TemplateBrowser.domain.persistence')
+      local favorites_id = "__FAVORITES__"
+      local favorites = state.metadata.virtual_folders[favorites_id]
+
+      if favorites then
+        -- Toggle favorite
+        local is_favorited = false
+        local favorite_index = nil
+        for i, ref_uuid in ipairs(favorites.template_refs) do
+          if ref_uuid == tmpl.uuid then
+            is_favorited = true
+            favorite_index = i
+            break
+          end
+        end
+
+        if is_favorited then
+          table.remove(favorites.template_refs, favorite_index)
+          state.set_status("Removed from Favorites: " .. tmpl.name, "success")
+        else
+          table.insert(favorites.template_refs, tmpl.uuid)
+          state.set_status("Added to Favorites: " .. tmpl.name, "success")
+        end
+
+        Persistence.save_metadata(state.metadata)
+      end
+    end
+
+    -- Handle double-click
+    if tile_state.hover and ImGui.IsMouseDoubleClicked(ctx, 0) then
+      TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
+    end
+
+    -- Move cursor for next tile
+    ImGui.SetCursorScreenPos(ctx, x2 + tile_gap, y1)
+  end
+
+  ImGui.EndChild(ctx)
+
+  -- Separator after recent templates
+  ImGui.Spacing(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
+  return section_height
+end
+
 -- Draw template list panel (middle)
 -- Draw template panel using TilesContainer
 local function draw_template_panel(ctx, gui, width, height)
   local state = gui.state
 
-  -- Set container dimensions
-  gui.template_container.width = width
-  gui.template_container.height = height
+  -- Begin outer container
+  BeginChildCompat(ctx, "TemplatePanel", width, height, true)
+
+  -- Draw recent templates section
+  local recent_height = draw_recent_templates(ctx, gui, width - 16, height)  -- Account for padding
+
+  -- Calculate remaining height for main grid
+  local grid_height = height - recent_height - 32  -- Account for container padding
+
+  -- Set container dimensions for main grid
+  gui.template_container.width = width - 16
+  gui.template_container.height = grid_height
 
   -- Begin panel drawing
-  if not gui.template_container:begin_draw(ctx) then
-    return
+  if gui.template_container:begin_draw(ctx) then
+    -- Draw template grid
+    gui.template_grid:draw(ctx)
+
+    -- End panel drawing
+    gui.template_container:end_draw(ctx)
   end
 
-  -- Draw template grid
-  gui.template_grid:draw(ctx)
-
-  -- End panel drawing
-  gui.template_container:end_draw(ctx)
+  ImGui.EndChild(ctx)
 end
 
 -- Draw template context menu (color picker)
