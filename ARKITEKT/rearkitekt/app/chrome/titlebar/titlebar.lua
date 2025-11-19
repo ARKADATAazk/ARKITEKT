@@ -367,9 +367,9 @@ function M.new(opts)
     local icon_color = ImGui.GetColor(ctx, ImGui.Col_Text)
 
     if self.enable_maximize then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_maximize_normal or hexrgb("#00000000"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_maximize_hovered or hexrgb("#57C290"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_maximize_active or hexrgb("#60FFFF"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, Constants.TITLEBAR.button_maximize_normal)
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, Constants.TITLEBAR.button_maximize_hovered)
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, Constants.TITLEBAR.button_maximize_active)
 
       if ImGui.Button(ctx, "##max", self.button_width, self.height) then
         clicked_maximize = true
@@ -380,9 +380,9 @@ function M.new(opts)
       
       local current_button_bg
       if is_active then
-        current_button_bg = DEFAULTS.button_maximize_active or hexrgb("#60FFFF")
+        current_button_bg = Constants.TITLEBAR.button_maximize_active
       elseif is_hovered then
-        current_button_bg = DEFAULTS.button_maximize_hovered or hexrgb("#57C290")
+        current_button_bg = Constants.TITLEBAR.button_maximize_hovered
       else
         current_button_bg = bg_color
       end
@@ -401,9 +401,9 @@ function M.new(opts)
       ImGui.SameLine(ctx)
     end
 
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_close_normal or hexrgb("#00000000"))
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_close_hovered or hexrgb("#CC3333"))
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_close_active or hexrgb("#FF1111"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, Constants.TITLEBAR.button_close_normal)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, Constants.TITLEBAR.button_close_hovered)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, Constants.TITLEBAR.button_close_active)
 
     if ImGui.Button(ctx, "##close", self.button_width, self.height) then
       clicked_close = true
@@ -411,12 +411,12 @@ function M.new(opts)
 
     local is_hovered = ImGui.IsItemHovered(ctx)
     local is_active = ImGui.IsItemActive(ctx)
-    
+
     local current_button_bg
     if is_active then
-      current_button_bg = DEFAULTS.button_close_active or hexrgb("#FF1111")
+      current_button_bg = Constants.TITLEBAR.button_close_active
     elseif is_hovered then
-      current_button_bg = DEFAULTS.button_close_hovered or hexrgb("#CC3333")
+      current_button_bg = Constants.TITLEBAR.button_close_hovered
     else
       current_button_bg = bg_color
     end
@@ -445,10 +445,10 @@ function M.new(opts)
     
     if self.enable_maximize then
       local icon = self.is_maximized and "⊡" or "▢"
-      
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_maximize_filled_normal or hexrgb("#808080"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_maximize_filled_hovered or hexrgb("#999999"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_maximize_filled_active or hexrgb("#666666"))
+
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, Constants.TITLEBAR.button_maximize_filled_normal)
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, Constants.TITLEBAR.button_maximize_filled_hovered)
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, Constants.TITLEBAR.button_maximize_filled_active)
       
       if ImGui.Button(ctx, icon .. "##max", self.button_width, self.height) then
         clicked_maximize = true
@@ -463,9 +463,9 @@ function M.new(opts)
       ImGui.SameLine(ctx)
     end
     
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, DEFAULTS.button_close_filled_normal or hexrgb("#CC3333"))
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, DEFAULTS.button_close_filled_hovered or hexrgb("#FF4444"))
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, DEFAULTS.button_close_filled_active or hexrgb("#FF1111"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, Constants.TITLEBAR.button_close_filled_normal)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, Constants.TITLEBAR.button_close_filled_hovered)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, Constants.TITLEBAR.button_close_filled_active)
     
     if ImGui.Button(ctx, "X##close", self.button_width, self.height) then
       clicked_close = true
