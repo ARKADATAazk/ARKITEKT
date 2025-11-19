@@ -18,12 +18,11 @@ function M.new(view)
 
     -- Modal state
     open = false,
-    source_param = nil,  -- The parameter we're creating a link from
+    source_param = nil,  -- The parameter we're adding to a group
     source_param_type = nil,
 
     -- UI state
     search_text = "",
-    link_mode = ParameterLinkManager.LINK_MODE.LINK, -- Default mode
   }, ParamLinkModal)
 
   return self
@@ -35,13 +34,6 @@ function ParamLinkModal:show(param_name, param_type)
   self.source_param = param_name
   self.source_param_type = param_type
   self.search_text = ""
-
-  -- If already linked, use its current mode
-  if ParameterLinkManager.is_linked(param_name) then
-    self.link_mode = ParameterLinkManager.get_link_mode(param_name)
-  else
-    self.link_mode = ParameterLinkManager.LINK_MODE.LINK
-  end
 end
 
 function ParamLinkModal:close()
@@ -76,9 +68,9 @@ function ParamLinkModal:get_compatible_params()
   return compatible
 end
 
--- Create link and close modal
-function ParamLinkModal:create_link(target_param)
-  local success, error_msg = ParameterLinkManager.create_link(self.source_param, target_param, self.link_mode)
+-- Add parameter to link group and close modal
+function ParamLinkModal:add_to_group(target_param)
+  local success, error_msg = ParameterLinkManager.add_to_group(self.source_param, self.source_param_type, target_param)
 
   if success then
     -- Save assignments to persist link data
@@ -86,16 +78,16 @@ function ParamLinkModal:create_link(target_param)
     self:close()
   else
     -- Show error (could use a toast notification system if available)
-    print("Failed to create link: " .. (error_msg or "Unknown error"))
+    print("Failed to add to group: " .. (error_msg or "Unknown error"))
   end
 
   return success
 end
 
--- Remove link
-function ParamLinkModal:remove_link()
-  if ParameterLinkManager.is_linked(self.source_param) then
-    ParameterLinkManager.remove_link(self.source_param)
+-- Remove from link group
+function ParamLinkModal:remove_from_group()
+  if ParameterLinkManager.is_in_group(self.source_param) then
+    ParameterLinkManager.remove_from_group(self.source_param)
     self.view:save_assignments()
     self:close()
   end

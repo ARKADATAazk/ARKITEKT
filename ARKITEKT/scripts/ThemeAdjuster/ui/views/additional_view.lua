@@ -923,14 +923,9 @@ function AdditionalView:load_assignments()
     self:apply_group_filter()
   end
 
-  -- Load parameter links
-  if mappings and mappings.parameter_links then
-    ParameterLinkManager.set_all_links(mappings.parameter_links)
-  end
-
-  -- Load virtual values
-  if mappings and mappings.virtual_values then
-    ParameterLinkManager.set_all_virtual_values(mappings.virtual_values)
+  -- Load parameter link groups
+  if mappings and mappings.parameter_link_data then
+    ParameterLinkManager.set_all_data(mappings.parameter_link_data)
   end
 end
 
@@ -939,14 +934,12 @@ function AdditionalView:set_cache_invalidation_callback(callback)
 end
 
 function AdditionalView:save_assignments()
-  local param_links = ParameterLinkManager.get_all_links()
-  local virtual_values = ParameterLinkManager.get_all_virtual_values()
+  local param_link_data = ParameterLinkManager.get_all_data()
   local success = ThemeMapper.save_assignments(
     self.assignments,
     self.custom_metadata,
     self.enabled_groups,
-    param_links,
-    virtual_values
+    param_link_data
   )
 
   -- Invalidate TCP/MCP caches
@@ -958,14 +951,12 @@ function AdditionalView:save_assignments()
 end
 
 function AdditionalView:save_group_filter()
-  local param_links = ParameterLinkManager.get_all_links()
-  local virtual_values = ParameterLinkManager.get_all_virtual_values()
+  local param_link_data = ParameterLinkManager.get_all_data()
   ThemeMapper.save_assignments(
     self.assignments,
     self.custom_metadata,
     self.enabled_groups,
-    param_links,
-    virtual_values
+    param_link_data
   )
 
   if self.cache_invalidation_callback then

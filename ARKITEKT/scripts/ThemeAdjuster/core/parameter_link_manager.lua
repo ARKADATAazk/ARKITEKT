@@ -1,6 +1,6 @@
 -- @noindex
 -- ThemeAdjuster/core/parameter_link_manager.lua
--- Parameter linking and synchronization system
+-- Parameter linking and synchronization system (GROUP-BASED)
 
 local M = {}
 
@@ -11,7 +11,7 @@ local M = {}
 M.LINK_MODE = {
   UNLINKED = "unlinked",
   LINK = "link",        -- Delta-based: parameters move together by same value
-  SYNC = "sync",        -- Absolute: child mirrors parent's exact value
+  SYNC = "sync",        -- Absolute: parameter syncs to group's source value
 }
 
 M.PARAM_TYPE = {
@@ -25,12 +25,21 @@ M.PARAM_TYPE = {
 -- ============================================================================
 
 local state = {
-  -- Link relationships: { [child_param_name] = { parent = "parent_name", mode = "link|sync" } }
-  links = {},
+  -- Link groups: { [group_id] = { params = {param1, param2, ...}, type = "float|int|bool" } }
+  groups = {},
+
+  -- Parameter to group mapping: { [param_name] = group_id }
+  param_to_group = {},
+
+  -- Link modes per parameter: { [param_name] = "unlinked|link|sync" }
+  link_modes = {},
 
   -- Virtual values (can exceed Reaper limits for LINK mode)
   -- { [param_name] = virtual_value }
   virtual_values = {},
+
+  -- Next group ID
+  next_group_id = 1,
 
   -- Change listeners for UI updates
   listeners = {},
@@ -66,140 +75,178 @@ function M.are_types_compatible(type_a, type_b)
 end
 
 -- ============================================================================
--- LINK MANAGEMENT
+-- GROUP MANAGEMENT
 -- ============================================================================
 
--- Create a link from parent to child
-function M.create_link(parent_name, child_name, mode)
-  mode = mode or M.LINK_MODE.SYNC
-
-  -- Validate mode
-  if mode ~= M.LINK_MODE.LINK and mode ~= M.LINK_MODE.SYNC then
-    return false, "Invalid link mode"
+-- Add a parameter to a link group (creates group if needed)
+function M.add_to_group(param_name, param_type, target_param_name)
+  -- Get normalized type
+  local norm_type = normalize_param_type(param_type)
+  if not norm_type then
+    return false, "Invalid parameter type"
   end
 
-  -- Prevent self-linking
-  if parent_name == child_name then
-    return false, "Cannot link parameter to itself"
-  end
+  -- Check if target is in a group
+  local target_group_id = state.param_to_group[target_param_name]
 
-  -- Prevent circular links
-  if M.get_parent(parent_name) then
-    return false, "Parent is already a child of another parameter"
-  end
+  if target_group_id then
+    -- Add to existing group
+    local group = state.groups[target_group_id]
 
-  -- Check if child is already a parent
-  for child_param, link_data in pairs(state.links) do
-    if link_data.parent == child_name then
-      return false, "Child is already a parent of another parameter"
+    -- Verify type compatibility
+    if group.type ~= norm_type then
+      return false, "Type mismatch with group"
+    end
+
+    -- Remove from old group if exists
+    M.remove_from_group(param_name)
+
+    -- Add to group
+    table.insert(group.params, param_name)
+    state.param_to_group[param_name] = target_group_id
+
+    -- Set default mode to LINK
+    if not state.link_modes[param_name] then
+      state.link_modes[param_name] = M.LINK_MODE.LINK
+    end
+
+    M.notify_listeners('param_added_to_group', { param = param_name, group_id = target_group_id })
+    return true
+  else
+    -- Create new group with both parameters
+    local group_id = state.next_group_id
+    state.next_group_id = state.next_group_id + 1
+
+    state.groups[group_id] = {
+      params = { target_param_name, param_name },
+      type = norm_type,
+    }
+
+    -- Remove from old groups if exist
+    M.remove_from_group(target_param_name)
+    M.remove_from_group(param_name)
+
+    -- Map both to new group
+    state.param_to_group[target_param_name] = group_id
+    state.param_to_group[param_name] = group_id
+
+    -- Set default modes
+    if not state.link_modes[target_param_name] then
+      state.link_modes[target_param_name] = M.LINK_MODE.LINK
+    end
+    if not state.link_modes[param_name] then
+      state.link_modes[param_name] = M.LINK_MODE.LINK
+    end
+
+    M.notify_listeners('group_created', { group_id = group_id, params = { target_param_name, param_name } })
+    return true
+  end
+end
+
+-- Remove a parameter from its group
+function M.remove_from_group(param_name)
+  local group_id = state.param_to_group[param_name]
+  if not group_id then return false end
+
+  local group = state.groups[group_id]
+  if not group then return false end
+
+  -- Remove from group params list
+  for i, p in ipairs(group.params) do
+    if p == param_name then
+      table.remove(group.params, i)
+      break
     end
   end
 
-  -- Remove existing link if any
-  M.remove_link(child_name)
+  -- Remove mapping
+  state.param_to_group[param_name] = nil
 
-  -- Create the link
-  state.links[child_name] = {
-    parent = parent_name,
-    mode = mode,
-  }
-
-  -- Notify listeners
-  M.notify_listeners('link_created', { parent = parent_name, child = child_name, mode = mode })
-
-  return true
-end
-
--- Remove a link
-function M.remove_link(child_name)
-  local link_data = state.links[child_name]
-  if not link_data then return false end
-
-  local parent_name = link_data.parent
-  state.links[child_name] = nil
+  -- Set mode to UNLINKED
+  state.link_modes[param_name] = M.LINK_MODE.UNLINKED
 
   -- Clear virtual value
-  state.virtual_values[child_name] = nil
+  state.virtual_values[param_name] = nil
 
-  -- Notify listeners
-  M.notify_listeners('link_removed', { parent = parent_name, child = child_name })
+  -- If group is now empty or has only one param, delete it
+  if #group.params <= 1 then
+    if #group.params == 1 then
+      local last_param = group.params[1]
+      state.param_to_group[last_param] = nil
+      state.link_modes[last_param] = M.LINK_MODE.UNLINKED
+      state.virtual_values[last_param] = nil
+    end
+    state.groups[group_id] = nil
+  end
 
+  M.notify_listeners('param_removed_from_group', { param = param_name, group_id = group_id })
   return true
 end
 
--- Get parent of a parameter (if linked)
-function M.get_parent(child_name)
-  local link_data = state.links[child_name]
-  return link_data and link_data.parent or nil
+-- Get group ID for a parameter
+function M.get_group_id(param_name)
+  return state.param_to_group[param_name]
 end
 
--- Get all children of a parameter
-function M.get_children(parent_name)
-  local children = {}
-  for child_name, link_data in pairs(state.links) do
-    if link_data.parent == parent_name then
-      table.insert(children, {
-        name = child_name,
-        mode = link_data.mode,
-      })
+-- Get all parameters in the same group as param_name
+function M.get_group_params(param_name)
+  local group_id = state.param_to_group[param_name]
+  if not group_id then return {} end
+
+  local group = state.groups[group_id]
+  if not group then return {} end
+
+  return group.params
+end
+
+-- Get all parameters in a group except param_name
+function M.get_other_group_params(param_name)
+  local all_params = M.get_group_params(param_name)
+  local others = {}
+
+  for _, p in ipairs(all_params) do
+    if p ~= param_name then
+      table.insert(others, p)
     end
   end
-  return children
+
+  return others
 end
+
+-- Check if parameter is in a group
+function M.is_in_group(param_name)
+  return state.param_to_group[param_name] ~= nil
+end
+
+-- ============================================================================
+-- LINK MODE MANAGEMENT
+-- ============================================================================
 
 -- Get link mode for a parameter
 function M.get_link_mode(param_name)
-  local link_data = state.links[param_name]
-  if not link_data then return M.LINK_MODE.UNLINKED end
-  return link_data.mode
+  return state.link_modes[param_name] or M.LINK_MODE.UNLINKED
 end
 
--- Set link mode (without changing parent)
-function M.set_link_mode(child_name, mode)
-  local link_data = state.links[child_name]
-  if not link_data then return false end
-
+-- Set link mode for a parameter
+function M.set_link_mode(param_name, mode)
   -- Validate mode
-  if mode ~= M.LINK_MODE.LINK and mode ~= M.LINK_MODE.SYNC then
+  if mode ~= M.LINK_MODE.UNLINKED and
+     mode ~= M.LINK_MODE.LINK and
+     mode ~= M.LINK_MODE.SYNC then
     return false
   end
 
-  link_data.mode = mode
-
-  -- Notify listeners
-  M.notify_listeners('link_mode_changed', {
-    parent = link_data.parent,
-    child = child_name,
-    mode = mode
-  })
-
-  return true
-end
-
--- Check if a parameter is linked (as child)
-function M.is_linked(param_name)
-  return state.links[param_name] ~= nil
-end
-
--- Check if a parameter is a parent
-function M.is_parent(param_name)
-  for _, link_data in pairs(state.links) do
-    if link_data.parent == param_name then
-      return true
-    end
+  -- If setting to UNLINKED, remove from group
+  if mode == M.LINK_MODE.UNLINKED then
+    M.remove_from_group(param_name)
+    return true
   end
-  return false
-end
 
--- Get all links (for serialization)
-function M.get_all_links()
-  return state.links
-end
+  -- Otherwise just set the mode
+  state.link_modes[param_name] = mode
 
--- Set all links (for deserialization)
-function M.set_all_links(links)
-  state.links = links or {}
-  M.notify_listeners('links_loaded', {})
+  M.notify_listeners('link_mode_changed', { param = param_name, mode = mode })
+  return true
 end
 
 -- ============================================================================
@@ -221,57 +268,54 @@ function M.clear_virtual_value(param_name)
   state.virtual_values[param_name] = nil
 end
 
--- Get all virtual values (for serialization)
-function M.get_all_virtual_values()
-  return state.virtual_values
-end
-
--- Set all virtual values (for deserialization)
-function M.set_all_virtual_values(values)
-  state.virtual_values = values or {}
-end
-
 -- ============================================================================
 -- VALUE PROPAGATION
 -- ============================================================================
 
--- Propagate value change from parent to children
+-- Propagate value change to other parameters in the group
 -- Returns: array of { param_name, new_value, clamped_value }
-function M.propagate_value_change(parent_name, old_value, new_value, param_def)
+function M.propagate_value_change(param_name, old_value, new_value)
   local propagations = {}
 
-  local children = M.get_children(parent_name)
-  if #children == 0 then return propagations end
+  -- Get group
+  local group_id = state.param_to_group[param_name]
+  if not group_id then return propagations end
+
+  local group = state.groups[group_id]
+  if not group then return propagations end
 
   local delta = new_value - old_value
 
-  for _, child_info in ipairs(children) do
-    local child_name = child_info.name
-    local mode = child_info.mode
+  -- Propagate to other parameters in group
+  for _, other_param in ipairs(group.params) do
+    if other_param ~= param_name then
+      local mode = state.link_modes[other_param]
 
-    if mode == M.LINK_MODE.SYNC then
-      -- SYNC: Child mirrors parent's exact value
-      table.insert(propagations, {
-        param_name = child_name,
-        new_value = new_value,
-        clamped_value = new_value,  -- Will be clamped by caller if needed
-      })
+      if mode == M.LINK_MODE.SYNC then
+        -- SYNC: Match exact value
+        table.insert(propagations, {
+          param_name = other_param,
+          new_value = new_value,
+          clamped_value = new_value,
+        })
 
-    elseif mode == M.LINK_MODE.LINK then
-      -- LINK: Apply delta to child's current value
-      local child_virtual = state.virtual_values[child_name]
-      local child_current = child_virtual or param_def.value  -- Use virtual or actual
-      local child_new = child_current + delta
+      elseif mode == M.LINK_MODE.LINK then
+        -- LINK: Apply delta
+        local other_virtual = state.virtual_values[other_param]
+        local other_current = other_virtual or old_value  -- Assume same starting value if no virtual
+        local other_new = other_current + delta
 
-      -- Store unclamped virtual value
-      state.virtual_values[child_name] = child_new
+        -- Store unclamped virtual value
+        state.virtual_values[other_param] = other_new
 
-      table.insert(propagations, {
-        param_name = child_name,
-        new_value = child_new,
-        clamped_value = child_new,  -- Will be clamped by caller if needed
-        virtual_value = child_new,
-      })
+        table.insert(propagations, {
+          param_name = other_param,
+          new_value = other_new,
+          clamped_value = other_new,
+          virtual_value = other_new,
+        })
+      end
+      -- UNLINKED mode: do nothing
     end
   end
 
@@ -279,25 +323,30 @@ function M.propagate_value_change(parent_name, old_value, new_value, param_def)
 end
 
 -- ============================================================================
--- FILTERING (For UI)
+-- SERIALIZATION
 -- ============================================================================
 
--- Filter parameters by type compatibility
-function M.filter_compatible_parameters(source_param, all_params)
-  local compatible = {}
-  local source_type = source_param.type
+-- Get all data for serialization
+function M.get_all_data()
+  return {
+    groups = state.groups,
+    param_to_group = state.param_to_group,
+    link_modes = state.link_modes,
+    virtual_values = state.virtual_values,
+    next_group_id = state.next_group_id,
+  }
+end
 
-  for _, param in ipairs(all_params) do
-    -- Skip self
-    if param.name ~= source_param.name then
-      -- Check type compatibility
-      if M.are_types_compatible(source_type, param.type) then
-        table.insert(compatible, param)
-      end
-    end
+-- Set all data from deserialization
+function M.set_all_data(data)
+  if data then
+    state.groups = data.groups or {}
+    state.param_to_group = data.param_to_group or {}
+    state.link_modes = data.link_modes or {}
+    state.virtual_values = data.virtual_values or {}
+    state.next_group_id = data.next_group_id or 1
   end
-
-  return compatible
+  M.notify_listeners('data_loaded', {})
 end
 
 -- ============================================================================
@@ -328,8 +377,11 @@ end
 -- ============================================================================
 
 function M.reset()
-  state.links = {}
+  state.groups = {}
+  state.param_to_group = {}
+  state.link_modes = {}
   state.virtual_values = {}
+  state.next_group_id = 1
   M.notify_listeners('reset', {})
 end
 
