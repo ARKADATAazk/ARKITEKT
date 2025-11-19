@@ -341,7 +341,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
           -- Apply waveform quality multiplier to reduce resolution (better performance with many items)
           local quality = state.settings.waveform_quality or 1.0
           local target_width = math.floor(content_w * quality)
-          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache)
+          local use_filled = state.settings.waveform_filled
+          if use_filled == nil then use_filled = true end
+          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled)
         end
       else
         -- Show placeholder and queue waveform generation

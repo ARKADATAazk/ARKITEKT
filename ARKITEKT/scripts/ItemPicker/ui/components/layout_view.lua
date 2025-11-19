@@ -344,9 +344,47 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local percent_x = track_x + slider_width + 8
   ImGui.DrawList_AddText(draw_list, percent_x, slider_y + 3, Colors.with_alpha(Colors.hexrgb("#AAAAAA"), math.floor(ui_fade * 180)), percent_text)
 
+  -- Waveform fill toggle button
+  local fill_button_x = percent_x + ImGui.CalcTextSize(ctx, percent_text) + 20
+  local fill_button_y = checkbox_y
+  local fill_button_h = 20
+
+  local waveform_filled = self.state.settings.waveform_filled
+  if waveform_filled == nil then waveform_filled = true end
+  local fill_button_label = waveform_filled and "■■" or "□□"  -- Filled or outline
+  local fill_label_width = ImGui.CalcTextSize(ctx, fill_button_label)
+  local fill_button_w = fill_label_width + 16
+
+  local mx, my = ImGui.GetMousePos(ctx)
+  local is_fill_hovered = mx >= fill_button_x and mx < fill_button_x + fill_button_w and my >= fill_button_y and my < fill_button_y + fill_button_h
+
+  -- Button background
+  local fill_bg_color = is_fill_hovered and Colors.hexrgb("#2A2A2A") or Colors.hexrgb("#1A1A1A")
+  fill_bg_color = Colors.with_alpha(fill_bg_color, math.floor(ui_fade * 200))
+  ImGui.DrawList_AddRectFilled(draw_list, fill_button_x, fill_button_y, fill_button_x + fill_button_w, fill_button_y + fill_button_h, fill_bg_color, 3)
+
+  -- Button border
+  local fill_border_color = Colors.hexrgb("#3A3A3A")
+  fill_border_color = Colors.with_alpha(fill_border_color, math.floor(ui_fade * 255))
+  ImGui.DrawList_AddRect(draw_list, fill_button_x, fill_button_y, fill_button_x + fill_button_w, fill_button_y + fill_button_h, fill_border_color, 3, 0, 1)
+
+  -- Button text
+  local fill_text_color = Colors.hexrgb("#FFFFFF")
+  fill_text_color = Colors.with_alpha(fill_text_color, math.floor(ui_fade * 255))
+  ImGui.DrawList_AddText(draw_list, fill_button_x + 8, fill_button_y + 2, fill_text_color, fill_button_label)
+
+  -- Click detection
+  if is_fill_hovered and ImGui.IsMouseClicked(ctx, 0) then
+    self.state.set_setting('waveform_filled', not waveform_filled)
+    -- Clear polyline cache to force rebuild with new style
+    if self.state.runtime_cache and self.state.runtime_cache.waveform_polylines then
+      self.state.runtime_cache.waveform_polylines = {}
+    end
+  end
+
   -- Layout mode toggle button (only show when both MIDI and Audio are visible)
   if self.state.settings.show_audio and self.state.settings.show_midi then
-    local layout_button_x = percent_x + ImGui.CalcTextSize(ctx, percent_text) + 30
+    local layout_button_x = fill_button_x + fill_button_w + 10
     local layout_button_y = checkbox_y
     local layout_button_h = 20
 
