@@ -1,11 +1,11 @@
 -- @description ARKITEKT Toolkit
 -- @author ARKADATA
--- @version 1.0.1
+-- @version 1.0.2
 -- @provides
---   [main] scripts/Region_Playlist/ARK_RegionPlaylist.lua
---   [main] scripts/ItemPicker/ARK_ItemPicker.lua
---   [main] scripts/TemplateBrowser/ARK_TemplateBrowser.lua
---   [main] scripts/ThemeAdjuster/ARK_ThemeAdjuster.lua
+--   [main] ARK_RegionPlaylist.lua
+--   [main] ARK_ItemPicker.lua
+--   [main] ARK_TemplateBrowser.lua
+--   [main] ARK_ThemeAdjuster.lua
 --   [nomain] scripts/Region_Playlist/**/*.lua
 --   [nomain] scripts/ItemPicker/**/*.lua
 --   [nomain] scripts/TemplateBrowser/**/*.lua
