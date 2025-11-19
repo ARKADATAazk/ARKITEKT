@@ -298,10 +298,12 @@ function M:render(ctx, dt)
                      | ImGui.WindowFlags_NoScrollWithMouse
                      | ImGui.WindowFlags_NoNav
 
-  -- Calculate scrim color with alpha (like old overlay.lua)
+  -- Calculate scrim color with alpha
   local config = OverlayConfig.get()
   local base_scrim_color = top.scrim_color or config.scrim.color
   local base_scrim_opacity = top.scrim_opacity or config.scrim.opacity
+
+  -- Apply alpha_val for fade-in animation
   local scrim_alpha = base_scrim_opacity * alpha_val
   local scrim_color = (base_scrim_color & 0xFFFFFF00) | math.floor(255 * scrim_alpha + 0.5)
 
@@ -313,7 +315,8 @@ function M:render(ctx, dt)
   ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, scrim_color)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowBorderSize, 0)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, alpha_val)
+  -- DON'T apply global alpha - it's already baked into scrim_color
+  -- ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, alpha_val)
 
   -- Open popup modal if not already open
   local popup_id = "##modal_overlay_" .. top.id
