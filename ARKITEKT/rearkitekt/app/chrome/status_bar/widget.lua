@@ -4,7 +4,8 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local StatusBarConfig = require('rearkitekt.app.chrome.status_bar.defaults')
+local Config = require('rearkitekt.core.config')
+local Constants = require('rearkitekt.app.init.constants')
 local Colors = require('rearkitekt.core.colors')
 
 local M = {}
@@ -17,11 +18,8 @@ local function add_text(dl, x, y, col_u32, s)
 end
 
 function M.new(config)
-  config = config or {}
-
-  -- Merge with defaults and optional preset
-  local preset_name = config.preset
-  config = StatusBarConfig.merge(config, preset_name)
+  -- Merge user config with framework defaults
+  config = Config.deep_merge(Constants.STATUS_BAR, config or {})
 
   local H         = config.height
   local LEFT_PAD  = config.left_pad

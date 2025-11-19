@@ -42,7 +42,7 @@ local function floor(n) return math.floor(n + 0.5) end
 
 local DEFAULTS = {}
 do
-  local ok, Config = pcall(require, 'rearkitekt.app.app_defaults')
+  local ok, Config = pcall(require('rearkitekt.app.init.constants')
   if ok and Config and Config.get_defaults then
     DEFAULTS = Config.get_defaults()
   else
@@ -305,7 +305,7 @@ function M.new(opts)
 
     if opts.show_titlebar ~= false then
       do
-        local ok, Titlebar = pcall(require, 'rearkitekt.app.titlebar')
+        local ok, Titlebar = pcall(require('rearkitekt.app.chrome.titlebar.titlebar')
         if ok and Titlebar and Titlebar.new then
           win.titlebar_opts.title = win.title
           win.titlebar_opts.version = win.version

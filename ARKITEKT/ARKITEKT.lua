@@ -16,35 +16,33 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local function init_arkitekt()
+local ARK
+do
   local sep = package.config:sub(1,1)
   local src = debug.getinfo(1, "S").source:sub(2)
-  local dir = src:match("(.*"..sep..")")
-
-  -- Scan upward for bootstrap
-  local path = dir
+  local path = src:match("(.*"..sep..")")
   while path and #path > 3 do
-    local bootstrap = path .. "rearkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
-    local f = io.open(bootstrap, "r")
+    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
+    local f = io.open(init, "r")
     if f then
       f:close()
-      return dofile(bootstrap)(path)
+      local Init = dofile(init)
+      ARK = Init.bootstrap()
+      break
     end
     path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
   end
-
-  reaper.MB("ARKITEKT bootstrap not found!", "FATAL ERROR", 0)
-  return nil
+  if not ARK then
+    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
+    return
+  end
 end
-
-local ARK = init_arkitekt()
-if not ARK then return end
 
 local ImGui = ARK.ImGui
 local script_dir = ARK.root_path
 
-local Shell = require("rearkitekt.app.shell")
-local Hub = require("rearkitekt.app.hub")
+local Shell = require("rearkitekt.app.runtime.shell")
+local Hub = require("hub.hub")
 local PackageGrid = require("rearkitekt.gui.widgets.media.package_tiles.grid")
 local Micromanage = require("rearkitekt.gui.widgets.media.package_tiles.micromanage")
 local TilesContainer = require("rearkitekt.gui.widgets.containers.panel")

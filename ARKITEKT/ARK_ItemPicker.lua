@@ -4,29 +4,27 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local function init_arkitekt()
+local ARK
+do
   local sep = package.config:sub(1,1)
   local src = debug.getinfo(1, "S").source:sub(2)
-  local dir = src:match("(.*"..sep..")")
-
-  -- Scan upward for bootstrap
-  local path = dir
+  local path = src:match("(.*"..sep..")")
   while path and #path > 3 do
-    local bootstrap = path .. "rearkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
-    local f = io.open(bootstrap, "r")
+    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
+    local f = io.open(init, "r")
     if f then
       f:close()
-      return dofile(bootstrap)(path)
+      local Init = dofile(init)
+      ARK = Init.bootstrap()
+      break
     end
     path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
   end
-
-  reaper.MB("ARKITEKT bootstrap not found!", "FATAL ERROR", 0)
-  return nil
+  if not ARK then
+    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
+    return
+  end
 end
-
-local ARK = init_arkitekt()
-if not ARK then return end
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
@@ -44,8 +42,10 @@ end
 
 -- Load required modules
 local ImGui = ARK.ImGui
-local Runtime = require('rearkitekt.app.runtime')
+local Runtime = require('rearkitekt.app.runtime.runtime')
+local Fonts = require('rearkitekt.app.assets.fonts')
 local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
+local OverlayDefaults = require('rearkitekt.gui.widgets.overlays.overlay.defaults')
 
 -- Load new refactored modules
 local Config = require('ItemPicker.core.config')
@@ -97,64 +97,20 @@ end
 
 SetButtonState(1)
 
--- Font loading
-local function load_fonts(ctx)
-  local SEP = package.config:sub(1,1)
-  local src = debug.getinfo(1, 'S').source:sub(2)
-  local this_dir = src:match('(.*'..SEP..')') or ('.'..SEP)
-  local parent = this_dir:match('^(.*'..SEP..')[^'..SEP..']*'..SEP..'$') or this_dir
-  local fontsdir = parent .. 'rearkitekt' .. SEP .. 'fonts' .. SEP
-
-  local regular = fontsdir .. 'Inter_18pt-Regular.ttf'
-  local bold = fontsdir .. 'Inter_18pt-SemiBold.ttf'
-  local mono = fontsdir .. 'JetBrainsMono-Regular.ttf'
-
-  local function exists(p)
-    local f = io.open(p, 'rb')
-    if f then f:close(); return true end
-  end
-
-  local fonts = {
-    default = exists(regular) and ImGui.CreateFont(regular, 14) or ImGui.CreateFont('sans-serif', 14),
-    default_size = 14,
-    title = exists(bold) and ImGui.CreateFont(bold, 24) or ImGui.CreateFont('sans-serif', 24),
-    title_size = 24,
-    monospace = exists(mono) and ImGui.CreateFont(mono, 14) or ImGui.CreateFont('sans-serif', 14),
-    monospace_size = 14,
-  }
-
-  for _, font in pairs(fonts) do
-    if font and type(font) ~= "number" then
-      ImGui.Attach(ctx, font)
-    end
-  end
-
-  return fonts
-end
-
 -- Run based on mode
 if USE_OVERLAY then
   -- OVERLAY MODE
   local ctx = ImGui.CreateContext("Item Picker" .. (profiler_enabled and " [Profiling]" or ""))
-  local fonts = load_fonts(ctx)
+  local fonts = Fonts.load(ImGui, ctx, { title_size = 24, monospace_size = 14 })  -- App-specific overrides
 
   -- Create overlay manager
   local overlay_mgr = OverlayManager.new()
 
-  -- Push overlay onto stack
-  local Colors = require('rearkitekt.core.colors')
-  overlay_mgr:push({
+  -- Push overlay onto stack using centralized defaults
+  overlay_mgr:push(OverlayDefaults.create_overlay_config({
     id = "item_picker_main",
-    use_viewport = true,
-    show_close_button = true,
-    close_on_background_click = false,
-    close_on_background_right_click = true,
-    close_on_scrim = false,
-    esc_to_close = false,  -- We'll handle ESC in the GUI
-    close_button_size = 32,
-    close_button_margin = 16,
-    close_button_proximity = 150,
-    content_padding = 20,
+    esc_to_close = false,  -- App-specific: GUI handles ESC for special behavior
+    -- All other settings use framework defaults
 
     render = function(ctx, alpha_val, bounds)
       -- Push font for content with size
@@ -182,10 +138,8 @@ if USE_OVERLAY then
       ImGui.PopFont(ctx)
     end,
 
-    on_close = function()
-      cleanup()
-    end,
-  })
+    on_close = cleanup,
+  }))
 
   -- Create runtime
   local runtime = Runtime.new({
@@ -225,7 +179,7 @@ if USE_OVERLAY then
 
 else
   -- NORMAL WINDOW MODE (using Shell)
-  local Shell = require('rearkitekt.app.shell')
+  local Shell = require('rearkitekt.app.runtime.shell')
 
   Shell.run({
     title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),

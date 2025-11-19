@@ -97,22 +97,41 @@ function Settings:flush()
 end
 
 -- Factory
-local singleton -- reuse one store across modules
 local M = {}
 
-function M.open(cache_dir, filename)
-  if singleton then return singleton end
+-- Create a new settings instance
+-- @param cache_dir Directory to store settings file
+-- @param filename Name of the settings file (default: "settings.json")
+-- @return Settings instance
+function M.new(cache_dir, filename)
   cache_dir = cache_dir or "."
   filename  = filename  or "settings.json"
   local path = cache_dir .. ((cache_dir:sub(-1)==SEP) and "" or SEP) .. filename
+
+  -- Load existing data if file exists
   local t = {}
   local s = read_file(path)
-  if s then t = json.decode(s) or {} end
-  singleton = setmetatable({
-    _data = t, _dir = cache_dir, _path = path,
-    _dirty = false, _last_touch = 0, _last_write = 0, _interval = 0.5
+  if s then
+    local ok, decoded = pcall(json.decode, s)
+    if ok and decoded then
+      t = decoded
+    end
+  end
+
+  -- Create and return new instance
+  return setmetatable({
+    _data = t,
+    _dir = cache_dir,
+    _path = path,
+    _dirty = false,
+    _last_touch = 0,
+    _last_write = 0,
+    _interval = 0.5
   }, Settings)
-  return singleton
 end
+
+-- Alias for backward compatibility
+-- NOTE: No longer returns singleton - creates new instance each time
+M.open = M.new
 
 return M

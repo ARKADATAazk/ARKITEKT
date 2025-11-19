@@ -2,7 +2,7 @@
 -- rearkitekt/debug/console_window.lua
 -- Standalone debug console window using proper ARKITEKT window system
 
-local Shell = require('rearkitekt.app.shell')
+local Shell = require('rearkitekt.app.runtime.shell')
 local Console = require('rearkitekt.debug.console')
 local Logger = require('rearkitekt.debug.logger')
 
