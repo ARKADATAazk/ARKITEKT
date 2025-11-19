@@ -2146,9 +2146,15 @@ function GUI:draw(ctx, shell_state)
     self.state.conflict_resolution = nil
   end
 
-  -- Handle keyboard shortcuts
+  -- Handle keyboard shortcuts (but not while editing markdown)
+  local is_editing_markdown = false
+  if self.state.selected_template then
+    local notes_field_id = "template_notes_" .. self.state.selected_template.uuid
+    is_editing_markdown = MarkdownField.is_editing(notes_field_id)
+  end
+
   local action = Shortcuts.check_shortcuts(ctx)
-  if action then
+  if action and not is_editing_markdown then
     if action == "undo" then
       self.state.undo_manager:undo()
     elseif action == "redo" then

@@ -5,6 +5,12 @@
 
 -- This is the core widget's logic
 
+-- Set up package path to find submodules
+local script_path = debug.getinfo(1, "S").source:match("@(.*)[\\/]")
+if script_path then
+    package.path = script_path .. "/?.lua;" .. package.path
+end
+
 local ImGui         = require "reaimgui_markdown/ext/imgui"
 local ParseMarkdown = require "reaimgui_markdown/markdown-ast"
 local ImGuiMdCore   = require "reaimgui_markdown/markdown-imgui"
