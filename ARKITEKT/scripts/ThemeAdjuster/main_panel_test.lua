@@ -39,7 +39,7 @@ addpath(join(REARKITEKT_ROOT, "?/init.lua"))
 -- LOAD MODULES
 -- ============================================================================
 
-local Shell = require("rearkitekt.app.shell")
+local Shell = require("rearkitekt.app.runtime.shell"))
 local Config = require("ThemeAdjuster.core.config")
 local State = require("ThemeAdjuster.core.state")
 local GUI = require("ThemeAdjuster.ui.gui_panel_test")  -- Use test version

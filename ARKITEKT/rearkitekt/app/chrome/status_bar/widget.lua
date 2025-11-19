@@ -4,7 +4,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local StatusBarConfig = require('rearkitekt.app.chrome.status_bar.defaults')
+local StatusBarConfig = require('rearkitekt.app.chrome.status_bar.constants'))
 local Colors = require('rearkitekt.core.colors')
 
 local M = {}

@@ -198,7 +198,7 @@ M.TITLEBAR = {
 -- STATUS BAR
 -- ============================================================================
 M.STATUS_BAR = {
-  height = 20,
+  height = 28,
   compensation = 6,  -- Adjustment for layout alignment
 }
 
@@ -207,7 +207,7 @@ M.STATUS_BAR = {
 -- ============================================================================
 M.CHROME = {
   TITLEBAR_HEIGHT = 26,
-  STATUS_BAR_HEIGHT = 20,
+  STATUS_BAR_HEIGHT = 28,
   STATUS_BAR_COMPENSATION = 6,
   TAB_HEIGHT = 30,
 }

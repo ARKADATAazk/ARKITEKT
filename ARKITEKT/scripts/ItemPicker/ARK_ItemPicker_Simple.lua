@@ -10,7 +10,7 @@ do
   local src = debug.getinfo(1, "S").source:sub(2)
   local path = src:match("(.*"..sep..")")
   while path and #path > 3 do
-    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init.lua"
+    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
     local f = io.open(init, "r")
     if f then
       f:close()
@@ -50,8 +50,8 @@ reaper.SetExtState(ext_section, ext_running, "1", false)
 -- ============================================================================
 
 local ImGui = ARK.ImGui
-local Runtime = require('rearkitekt.app.runtime')
-local Fonts = require('rearkitekt.app.fonts')
+local Runtime = require('rearkitekt.app.runtime.runtime'))
+local Fonts = require('rearkitekt.app.assets.fonts'))
 local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
 local OverlayDefaults = require('rearkitekt.gui.widgets.overlays.overlay.defaults')
 

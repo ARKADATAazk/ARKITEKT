@@ -43,7 +43,7 @@ addpath(join(HERE,  "ReArkitekt/?.lua"))
 addpath(join(HERE,  "ReArkitekt/?/init.lua"))
 addpath(join(HERE,  "ReArkitekt/?/?.lua"))
 
-local Shell          = require("rearkitekt.app.shell")
+local Shell          = require("rearkitekt.app.runtime.shell"))
 local PackageGrid    = require("rearkitekt.gui.widgets.media.package_tiles.grid")
 local Micromanage    = require("rearkitekt.gui.widgets.media.package_tiles.micromanage")
 local TilesContainer = require("rearkitekt.gui.widgets.containers.panel")

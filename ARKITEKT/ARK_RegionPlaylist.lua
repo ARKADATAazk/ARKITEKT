@@ -9,7 +9,7 @@ do
   local src = debug.getinfo(1, "S").source:sub(2)
   local path = src:match("(.*"..sep..")")
   while path and #path > 3 do
-    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init.lua"
+    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
     local f = io.open(init, "r")
     if f then
       f:close()
@@ -39,7 +39,7 @@ local profiler_enabled = ProfilerInit.init()
 -- LOAD MODULES
 -- ============================================================================
 
-local Shell = require("rearkitekt.app.shell")
+local Shell = require("rearkitekt.app.runtime.shell"))
 local Config = require("Region_Playlist.core.config")
 local State = require("Region_Playlist.core.app_state")
 local GUI = require("Region_Playlist.ui.gui")

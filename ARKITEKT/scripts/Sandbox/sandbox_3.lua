@@ -12,7 +12,7 @@ local arkitekt_path = root_path .. "ARKITEKT/"
 package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. package.path
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
-local Shell = require('rearkitekt.app.shell')
+local Shell = require('rearkitekt.app.runtime.shell'))
 local Arkit = require('rearkitekt.arkit')
 local Console = require('rearkitekt.debug.console')
 local Logger = require('rearkitekt.debug.logger')

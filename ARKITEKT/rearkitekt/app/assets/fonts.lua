@@ -2,7 +2,7 @@
 -- Centralized font loading for ARKITEKT applications
 -- Eliminates duplication of font loading logic across entry points
 
-local Constants = require('rearkitekt.app.constants')
+local Constants = require('rearkitekt.app.init.constants'))
 
 local M = {}
 

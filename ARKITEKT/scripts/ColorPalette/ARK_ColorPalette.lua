@@ -13,7 +13,7 @@ do
   local src = debug.getinfo(1, "S").source:sub(2)
   local path = src:match("(.*"..sep..")")
   while path and #path > 3 do
-    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init.lua"
+    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
     local f = io.open(init, "r")
     if f then
       f:close()
@@ -34,7 +34,7 @@ local SRC = debug.getinfo(1,"S").source:sub(2)
 local HERE = ARK.dirname(SRC) or "."
 
 -- Load dependencies
-local Shell = require("rearkitekt.app.shell")
+local Shell = require("rearkitekt.app.runtime.shell"))
 local State = require("ColorPalette.app.state")
 local GUI = require("ColorPalette.app.gui")
 local OverlayManager = require("rearkitekt.gui.widgets.overlays.overlay.manager")
