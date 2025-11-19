@@ -116,8 +116,13 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Render MIDI visualization BEFORE header so header can overlay with transparency
   -- (show even when disabled, just with toned down color)
   if item_data.item and cascade_factor > 0.2 then
-    -- In small tile mode with visualization enabled, render over entire tile
+    -- In small tile mode with visualization disabled, skip entirely for performance
     local show_viz_in_small = is_small_tile and (state.settings.show_visualization_in_small_tiles ~= false)
+    if is_small_tile and not show_viz_in_small then
+      -- Skip MIDI rendering in small tile mode when visualization is disabled
+      goto skip_midi
+    end
+
     local content_y1, content_h
 
     if show_viz_in_small then
@@ -166,6 +171,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       end
     end
   end
+
+  ::skip_midi::
 
   -- Render header (use render_color to match tile color, not base_color)
   -- In small tile mode, use reduced alpha for more transparent header
