@@ -326,6 +326,12 @@ function M:render(ctx, dt)
   if visible then
     local dl = ImGui.GetWindowDrawList(ctx)
 
+    -- Draw the scrim explicitly so debug colors remain even if later style pushes
+    -- override WindowBg/ModalWindowDimBg (e.g. TemplateBrowser style stack)
+    if scrim_alpha > 0 then
+      Draw.rect_filled(dl, x, y, x + w, y + h, scrim_color, 0)
+    end
+
     -- Check for escape key
     if top.esc_to_close and ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
       self:pop()
