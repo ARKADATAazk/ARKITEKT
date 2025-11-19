@@ -156,7 +156,7 @@ function OverflowModalView:draw(ctx, window)
         self:close()
       end,
       render = function(ctx, alpha, bounds)
-        Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a)
+        Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a, padding)
           -- Don't reset cursor - Container already applies padding
           ImGui.Text(ctx, "All Playlists:")
 
@@ -209,7 +209,7 @@ function OverflowModalView:draw(ctx, window)
           -- Use arkitekt Button primitive
           local button_w = 100
           local start_x = (content_w - button_w) * 0.5
-          ImGui.SetCursorPosX(ctx, start_x)
+          ImGui.SetCursorPosX(ctx, padding + start_x)
 
           local clicked = Button.draw_at_cursor(ctx, {
             id = "close_button",

@@ -72,7 +72,7 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
   ImGui.SetCursorPos(ctx, padding, padding)
 
   if content_fn then
-    content_fn(ctx, content_w, content_h, w, h, alpha)
+    content_fn(ctx, content_w, content_h, w, h, alpha, padding)
   end
 
   ImGui.EndChild(ctx)
