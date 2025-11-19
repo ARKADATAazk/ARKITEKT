@@ -18,7 +18,7 @@ function M.bootstrap()
   -- Scan upward for bootstrap.lua
   local path = dir
   while path and #path > 3 do
-    local bootstrap = path .. "rearkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
+    local bootstrap = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "bootstrap.lua"
     local f = io.open(bootstrap, "r")
     if f then
       f:close()
