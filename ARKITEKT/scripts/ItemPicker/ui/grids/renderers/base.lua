@@ -116,9 +116,11 @@ function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, c
   local text_shadow = is_small_tile and small_tile_config.header_text_shadow or header_config.text_shadow
 
   -- Round only top corners of header (top-left and top-right)
+  -- Use slightly less rounding than tile for better visual alignment
+  local header_rounding = math.max(0, config.TILE.ROUNDING - header_config.rounding_offset)
   local round_flags = ImGui.DrawFlags_RoundCornersTop
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, header_color, config.TILE.ROUNDING, round_flags)
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, text_shadow, config.TILE.ROUNDING, round_flags)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, header_color, header_rounding, round_flags)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, text_shadow, header_rounding, round_flags)
 end
 
 -- Render placeholder with loading spinner

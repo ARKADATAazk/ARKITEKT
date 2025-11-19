@@ -81,6 +81,7 @@ M.TILE_RENDER = {
     -- Sizing
     height_ratio = 0.15,
     min_height = 22,
+    rounding_offset = 2,      -- Subtract from TILE.ROUNDING for tighter corner alignment
 
     -- Color controls (HSV transformation from base tile color)
     saturation_factor = 1.1,  -- Multiply tile saturation by this
