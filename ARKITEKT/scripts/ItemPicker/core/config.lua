@@ -211,6 +211,7 @@ M.TILE_RENDER = {
   },
 
   animation_speed_hover = 12.0,
+  animation_speed_header_transition = 25.0,  -- Fast and smooth header size/fade transition between compact/normal modes
 
   -- Cascade animation
   cascade = {

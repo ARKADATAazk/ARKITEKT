@@ -31,16 +31,22 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local scaled_x2 = center_x + scaled_w / 2
   local scaled_y2 = center_y + scaled_h / 2 + y_offset
 
+  -- Check if we're in small tile mode (need this early for animations)
+  local is_small_tile = scaled_h < config.TILE_RENDER.responsive.small_tile_height
+
   -- Track animations
   local is_disabled = state.disabled and state.disabled.audio and state.disabled.audio[item_data.filename]
 
   if animator and item_data.key then
     animator:track(item_data.key, 'hover', tile_state.hover and 1.0 or 0.0, config.TILE_RENDER.animation_speed_hover)
     animator:track(item_data.key, 'enabled', is_disabled and 0.0 or 1.0, config.TILE_RENDER.disabled.fade_speed)
+    -- Track compact mode for header transition (1.0 = compact/small, 0.0 = normal)
+    animator:track(item_data.key, 'compact_mode', is_small_tile and 1.0 or 0.0, config.TILE_RENDER.animation_speed_header_transition)
   end
 
   local hover_factor = animator and animator:get(item_data.key, 'hover') or (tile_state.hover and 1.0 or 0.0)
   local enabled_factor = animator and animator:get(item_data.key, 'enabled') or (is_disabled and 0.0 or 1.0)
+  local compact_factor = animator and animator:get(item_data.key, 'compact_mode') or (is_small_tile and 1.0 or 0.0)
 
   -- Track playback progress
   local playback_progress, playback_fade = 0, 0
@@ -70,9 +76,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Get base color from item
   local base_color = item_data.color or 0xFF555555
-
-  -- Check if we're in small tile mode (need this early for color adjustments)
-  local is_small_tile = scaled_h < config.TILE_RENDER.responsive.small_tile_height
 
   -- Apply disabled state
   local render_color = base_color
@@ -104,18 +107,21 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   local text_alpha = math.floor(0xFF * combined_alpha)
 
-  -- Calculate header height
-  local header_height
-  if is_small_tile and config.TILE_RENDER.small_tile.header_covers_tile then
-    -- In small tile mode, header covers entire tile
-    header_height = scaled_h
-  else
-    -- Normal header height calculation
-    header_height = math.max(
-      config.TILE_RENDER.header.min_height,
-      scaled_h * config.TILE_RENDER.header.height_ratio
-    )
-  end
+  -- Calculate header height with animated transition
+  local normal_header_height = math.max(
+    config.TILE_RENDER.header.min_height,
+    scaled_h * config.TILE_RENDER.header.height_ratio
+  )
+  local full_tile_height = scaled_h
+
+  -- Interpolate between normal and full based on compact_factor
+  -- compact_factor: 0.0 = normal mode, 1.0 = compact mode
+  local header_height = normal_header_height + (full_tile_height - normal_header_height) * compact_factor
+
+  -- Calculate header fade (fade out when going to compact, fade in when going to normal)
+  -- In compact mode (compact_factor = 1.0), header alpha should be 0
+  -- In normal mode (compact_factor = 0.0), header alpha should be normal
+  local header_alpha_factor = 1.0 - compact_factor
 
   -- Render base tile fill with rounding
   ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
@@ -185,10 +191,11 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   ::skip_waveform::
 
-  -- Render header (use render_color to match tile color, not base_color)
-  -- In small tile mode, use reduced alpha for more transparent header
-  local header_alpha = combined_alpha
-  if is_small_tile then
+  -- Render header with animated fade and size transition
+  -- Apply header_alpha_factor for transition fade (fades out when going to compact, fades in when going to normal)
+  local header_alpha = combined_alpha * header_alpha_factor
+  if is_small_tile and header_alpha_factor < 0.1 then
+    -- When mostly faded out in compact mode, apply small tile header alpha
     header_alpha = combined_alpha * config.TILE_RENDER.small_tile.header_alpha
   end
   BaseRenderer.render_header_bar(dl, scaled_x1, scaled_y1, scaled_x2, header_height,
