@@ -20,7 +20,7 @@ M.TILE = {
   HEIGHT_STEP = 30,
 
   GAP = 8,
-  ROUNDING = 0,
+  ROUNDING = 8,
 }
 
 -- Layout
@@ -189,7 +189,7 @@ M.TILE_RENDER = {
     -- Note: These only apply when disable_header_fill is false
     header_saturation_factor = 1.1,  -- Multiply tile saturation by this
     header_brightness_factor = 0.7,  -- Multiply tile brightness by this
-    header_alpha = 0.8,              -- Transparency multiplier (0.0-1.0), applied to base header alpha
+    header_alpha = 0.0,              -- Transparency multiplier (0.0-1.0), applied to base header alpha
 
     -- Overlay
     header_text_shadow = hexrgb("#00000099"),  -- Shadow overlay color
