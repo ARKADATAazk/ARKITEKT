@@ -162,27 +162,28 @@ function OverflowModalView:draw(ctx, window)
         local h = math.floor(bounds.h * 0.7)
         local x = math.floor(bounds.x + (bounds.w - w) * 0.5)
         local y = math.floor(bounds.y + (bounds.h - h) * 0.5)
-        local r = 8
-
-        local dl = bounds.dl
-
-        -- Dark background
-        local bg_color = Colors.with_alpha(hexrgb("#0D0D0D"), math.floor(255 * 0.96 * alpha))
-        ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color, r)
-
-        -- Dark border
-        local border_color = Colors.with_alpha(hexrgb("#000000"), math.floor(255 * 0.8 * alpha))
-        ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_color, r, 0, 2)
-
-        -- Subtle inner border
-        local inner_border = Colors.with_alpha(hexrgb("#333333"), math.floor(255 * 0.3 * alpha))
-        ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + w - 1, y + h - 1, inner_border, r - 1, 0, 1)
+        local r = 10
 
         -- Create interactive child window for content
         ImGui.SetCursorScreenPos(ctx, x, y)
         local child_flags = ImGui.ChildFlags_None or 0
-        local window_flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoBackground
+        local window_flags = ImGui.WindowFlags_NoScrollbar
         ImGui.BeginChild(ctx, '##overflow_content', w, h, child_flags, window_flags)
+
+        -- Draw container background on child's draw list (renders behind content)
+        local dl = ImGui.GetWindowDrawList(ctx)
+
+        -- Darker background
+        local bg_color = Colors.with_alpha(hexrgb("#1A1A1A"), math.floor(255 * 0.98 * alpha))
+        ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color, r)
+
+        -- Dark outer border
+        local border_color = Colors.with_alpha(hexrgb("#000000"), math.floor(255 * 0.9 * alpha))
+        ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_color, r, 0, 2)
+
+        -- Subtle inner highlight
+        local inner_border = Colors.with_alpha(hexrgb("#404040"), math.floor(255 * 0.4 * alpha))
+        ImGui.DrawList_AddRect(dl, x + 2, y + 2, x + w - 2, y + h - 2, inner_border, r - 2, 0, 1)
           local padding_h = 16
           
           ImGui.SetCursorPos(ctx, padding_h, 16)
