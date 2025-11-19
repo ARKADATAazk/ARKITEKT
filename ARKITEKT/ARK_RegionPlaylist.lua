@@ -39,7 +39,7 @@ local profiler_enabled = ProfilerInit.init()
 -- LOAD MODULES
 -- ============================================================================
 
-local Shell = require("rearkitekt.app.runtime.shell"))
+local Shell = require("rearkitekt.app.runtime.shell")
 local Config = require("Region_Playlist.core.config")
 local State = require("Region_Playlist.core.app_state")
 local GUI = require("Region_Playlist.ui.gui")

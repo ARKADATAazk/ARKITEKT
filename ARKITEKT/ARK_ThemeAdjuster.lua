@@ -35,7 +35,7 @@ local HERE = ARK.dirname(SRC) or "."
 -- LOAD MODULES
 -- ============================================================================
 
-local Shell = require("rearkitekt.app.runtime.shell"))
+local Shell = require("rearkitekt.app.runtime.shell")
 local Config = require("ThemeAdjuster.core.config")
 local State = require("ThemeAdjuster.core.state")
 local ThemeParams = require("ThemeAdjuster.core.theme_params")

@@ -34,7 +34,7 @@ local SRC = debug.getinfo(1,"S").source:sub(2)
 local HERE = ARK.dirname(SRC) or "."
 
 -- Load dependencies
-local Shell = require("rearkitekt.app.runtime.shell"))
+local Shell = require("rearkitekt.app.runtime.shell")
 local State = require("ColorPalette.app.state")
 local GUI = require("ColorPalette.app.gui")
 local OverlayManager = require("rearkitekt.gui.widgets.overlays.overlay.manager")

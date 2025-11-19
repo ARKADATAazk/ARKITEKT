@@ -50,8 +50,8 @@ reaper.SetExtState(ext_section, ext_running, "1", false)
 -- ============================================================================
 
 local ImGui = ARK.ImGui
-local Runtime = require('rearkitekt.app.runtime.runtime'))
-local Fonts = require('rearkitekt.app.assets.fonts'))
+local Runtime = require('rearkitekt.app.runtime.runtime')
+local Fonts = require('rearkitekt.app.assets.fonts')
 local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
 local OverlayDefaults = require('rearkitekt.gui.widgets.overlays.overlay.defaults')
 

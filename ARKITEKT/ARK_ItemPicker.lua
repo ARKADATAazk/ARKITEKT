@@ -42,8 +42,8 @@ end
 
 -- Load required modules
 local ImGui = ARK.ImGui
-local Runtime = require('rearkitekt.app.runtime.runtime'))
-local Fonts = require('rearkitekt.app.assets.fonts'))
+local Runtime = require('rearkitekt.app.runtime.runtime')
+local Fonts = require('rearkitekt.app.assets.fonts')
 local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
 local OverlayDefaults = require('rearkitekt.gui.widgets.overlays.overlay.defaults')
 
@@ -179,7 +179,7 @@ if USE_OVERLAY then
 
 else
   -- NORMAL WINDOW MODE (using Shell)
-  local Shell = require('rearkitekt.app.runtime.shell'))
+  local Shell = require('rearkitekt.app.runtime.shell')
 
   Shell.run({
     title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),

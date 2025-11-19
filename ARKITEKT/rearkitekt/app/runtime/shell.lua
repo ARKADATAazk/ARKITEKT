@@ -8,14 +8,14 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui   = require 'imgui' '0.10'
-local Runtime = require('rearkitekt.app.runtime.runtime'))
-local Window  = require('rearkitekt.app.chrome.window.window'))
+local Runtime = require('rearkitekt.app.runtime.runtime')
+local Window  = require('rearkitekt.app.chrome.window.window')
 
 local M = {}
 
 local DEFAULTS = {}
 do
-  local ok, Config = pcall(require('rearkitekt.app.init.constants'))
+  local ok, Config = pcall(require('rearkitekt.app.init.constants')
   if ok and Config and Config.get_defaults then
     DEFAULTS = Config.get_defaults()
   else

@@ -6,7 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 -- Import system
-local Shell = require('rearkitekt.app.runtime.shell'))
+local Shell = require('rearkitekt.app.runtime.shell')
 
 -- Import base controls
 local Button = require('rearkitekt.gui.widgets.primitives.button')

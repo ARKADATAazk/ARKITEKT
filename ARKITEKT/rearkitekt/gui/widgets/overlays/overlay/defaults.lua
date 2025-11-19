@@ -4,7 +4,7 @@
 
 local Colors = require('rearkitekt.core.colors')
 local ConfigUtil = require('rearkitekt.core.config')
-local Constants = require('rearkitekt.app.init.constants'))
+local Constants = require('rearkitekt.app.init.constants')
 
 local M = {}
 local hexrgb = Colors.hexrgb

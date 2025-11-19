@@ -41,7 +41,7 @@ end
 local ImGui = ARK.ImGui
 local script_dir = ARK.root_path
 
-local Shell = require("rearkitekt.app.runtime.shell"))
+local Shell = require("rearkitekt.app.runtime.shell")
 local Hub = require("hub.hub")
 local PackageGrid = require("rearkitekt.gui.widgets.media.package_tiles.grid")
 local Micromanage = require("rearkitekt.gui.widgets.media.package_tiles.micromanage")
