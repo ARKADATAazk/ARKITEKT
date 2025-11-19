@@ -82,10 +82,8 @@ function ReaImGuiMd:updateCtx(ctx)
 end
 
 function ReaImGuiMd:_createFontsIfNeeded(ctx)
-
-    self.font_ctx  = nil
-
-    if self.fonts and self.ctx == self.font_ctx then return end
+    -- Check if fonts already created for this context
+    if self.fonts and self.font_ctx == ctx then return end
 
     local fonts = {}
     local style = self.style
