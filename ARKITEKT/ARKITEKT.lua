@@ -1,6 +1,6 @@
--- @description ARKITEKT Toolkit Hub
+-- @description ARKITEKT Toolkit
 -- @author ARKADATA
--- @version 0.2.0
+-- @version 1.0.0
 
 -- Package path setup
 local script_path = debug.getinfo(1, "S").source:match("@?(.*)") or ""
