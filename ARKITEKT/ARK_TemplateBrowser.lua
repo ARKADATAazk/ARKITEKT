@@ -2,22 +2,36 @@
 -- TemplateBrowser main launcher with overlay support
 -- Three-panel UI: Folders | Templates | Tags
 
--- Package path setup (following ItemPicker pattern)
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
-local root_path = script_path
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path  -- Go up one level from TemplateBrowser
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path  -- Go up to ARKITEKT
-root_path = root_path:match("(.*)[\\/][^\\/]+[\\/]?$") or root_path  -- Go up to project root
+-- ============================================================================
+-- UNIVERSAL PATH RESOLUTION - Find ARKITEKT root automatically
+-- ============================================================================
+local sep = package.config:sub(1,1)
+local script_path = debug.getinfo(1, "S").source:sub(2)
+local script_dir = script_path:match("(.*"..sep..")")
 
--- Ensure root_path ends with a slash
-if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
+-- Find ARKITEKT root by scanning upward until folder "rearkitekt" exists
+local function find_root(path)
+  while path and #path > 3 do
+    local test = path .. "rearkitekt" .. sep
+    local f = io.open(test .. "app" .. sep .. "shell.lua", "r")
+    if f then f:close(); return path end
+    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
+  end
+end
 
--- Add both module search paths
-local arkitekt_path = root_path .. "ARKITEKT/"
-local scripts_path = root_path .. "ARKITEKT/scripts/"
-package.path = arkitekt_path.. "?.lua;" .. arkitekt_path.. "?/init.lua;" ..
-               scripts_path .. "?.lua;" .. scripts_path .. "?/init.lua;" ..
-               package.path
+local root_path = find_root(script_dir)
+if not root_path then
+  reaper.MB("ARKITEKT root not found! Cannot locate rearkitekt/app/shell.lua", "FATAL ERROR", 0)
+  return
+end
+
+-- Build module search paths
+package.path =
+    root_path .. "rearkitekt" .. sep .. "?.lua;" ..
+    root_path .. "rearkitekt" .. sep .. "?" .. sep .. "init.lua;" ..
+    root_path .. "scripts" .. sep .. "?.lua;" ..
+    root_path .. "scripts" .. sep .. "?" .. sep .. "init.lua;" ..
+    package.path
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 

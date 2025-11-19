@@ -13,13 +13,36 @@
 --   [nomain] rearkitekt/**/*.lua
 --   [data] rearkitekt/**/*.{png,jpg,svg,ttf,json,txt}
 
--- Package path setup
-local script_path = debug.getinfo(1, "S").source:match("@?(.*)") or ""
-local script_dir = script_path:match("(.+)[/\\]") or "."
+-- ============================================================================
+-- UNIVERSAL PATH RESOLUTION - Find ARKITEKT root automatically
+-- ============================================================================
+local sep = package.config:sub(1,1)
+local script_path = debug.getinfo(1, "S").source:sub(2)
+local script_dir = script_path:match("(.*"..sep..")")
 
-package.path = script_dir .. "/?.lua;" .. 
-               script_dir .. "/?/init.lua;" .. 
-               package.path
+-- Find ARKITEKT root by scanning upward until folder "rearkitekt" exists
+local function find_root(path)
+  while path and #path > 3 do
+    local test = path .. "rearkitekt" .. sep
+    local f = io.open(test .. "app" .. sep .. "shell.lua", "r")
+    if f then f:close(); return path end
+    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
+  end
+end
+
+local root_path = find_root(script_dir)
+if not root_path then
+  reaper.MB("ARKITEKT root not found! Cannot locate rearkitekt/app/shell.lua", "FATAL ERROR", 0)
+  return
+end
+
+-- Build module search paths
+package.path =
+    root_path .. "rearkitekt" .. sep .. "?.lua;" ..
+    root_path .. "rearkitekt" .. sep .. "?" .. sep .. "init.lua;" ..
+    root_path .. "scripts" .. sep .. "?.lua;" ..
+    root_path .. "scripts" .. sep .. "?" .. sep .. "init.lua;" ..
+    package.path
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
