@@ -133,7 +133,7 @@ function M.render_region(ctx, rect, region, state, animator, hover_config, tile_
   if show_text then
     local right_bound_x = BaseRenderer.calculate_text_right_bound(ctx, x2, M.CONFIG.text_margin_right, right_elements)
     local text_pos = BaseRenderer.calculate_text_position(ctx, rect, actual_height)
-    BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, 0xFF, right_bound_x, grid, rect)
+    BaseRenderer.draw_region_text(ctx, dl, text_pos, region, base_color, 0xFF, right_bound_x, grid, rect, key)
   end
 
   if show_length then BaseRenderer.draw_length_display(ctx, dl, rect, region, base_color, 0xFF) end
@@ -319,7 +319,7 @@ function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_
     }
     
     -- Draw playlist name with red color
-    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, circular_playlist_data, state, 0xFF, x2 - M.CONFIG.text_margin_right, M.CONFIG.circular.text_color, nil, rect, grid, base_color)
+    BaseRenderer.draw_playlist_text(ctx, dl, text_pos, circular_playlist_data, state, 0xFF, x2 - M.CONFIG.text_margin_right, M.CONFIG.circular.text_color, nil, rect, grid, base_color, key)
   end
   
   if show_badge then
