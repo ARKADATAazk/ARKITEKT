@@ -157,7 +157,32 @@ function OverflowModalView:draw(ctx, window)
         self:close()
       end,
       render = function(ctx, alpha, bounds)
-        Sheet.render(ctx, alpha, bounds, function(ctx, w, h, a)
+        -- Simplified dark container rendering
+        local w = math.floor(bounds.w * 0.6)
+        local h = math.floor(bounds.h * 0.7)
+        local x = math.floor(bounds.x + (bounds.w - w) * 0.5)
+        local y = math.floor(bounds.y + (bounds.h - h) * 0.5)
+        local r = 8
+
+        local dl = bounds.dl
+
+        -- Dark background
+        local bg_color = Colors.with_alpha(hexrgb("#0D0D0D"), math.floor(255 * 0.96 * alpha))
+        ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color, r)
+
+        -- Dark border
+        local border_color = Colors.with_alpha(hexrgb("#000000"), math.floor(255 * 0.8 * alpha))
+        ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_color, r, 0, 2)
+
+        -- Subtle inner border
+        local inner_border = Colors.with_alpha(hexrgb("#333333"), math.floor(255 * 0.3 * alpha))
+        ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + w - 1, y + h - 1, inner_border, r - 1, 0, 1)
+
+        -- Create interactive child window for content
+        ImGui.SetCursorScreenPos(ctx, x, y)
+        local child_flags = ImGui.ChildFlags_None or 0
+        local window_flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoBackground
+        ImGui.BeginChild(ctx, '##overflow_content', w, h, child_flags, window_flags)
           local padding_h = 16
           
           ImGui.SetCursorPos(ctx, padding_h, 16)
@@ -214,11 +239,8 @@ function OverflowModalView:draw(ctx, window)
             self.is_open = false
             self:close()
           end
-        end, { 
-          title = "Select Playlist", 
-          width = 0.6, 
-          height = 0.7 
-        })
+
+        ImGui.EndChild(ctx)
       end
     })
   end
