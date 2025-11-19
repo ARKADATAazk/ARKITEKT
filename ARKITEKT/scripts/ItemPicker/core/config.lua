@@ -20,7 +20,7 @@ M.TILE = {
   HEIGHT_STEP = 30,
 
   GAP = 8,
-  ROUNDING = 8,
+  ROUNDING = 3,
 }
 
 -- Layout
