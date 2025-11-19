@@ -25,6 +25,7 @@ local function get_or_create_state(id)
       markdown_renderer = nil,
       focus_set = false,
       hovered = false,
+      hover_alpha = 0.0,  -- For animating hover background
     }
   end
   return field_state[id]
@@ -146,8 +147,8 @@ function M.draw_at_cursor(ctx, config, id)
     local is_input_active = ImGui.IsItemActive(ctx)
     local is_input_hovered = ImGui.IsItemHovered(ctx)
 
-    -- Exit edit mode on Ctrl+Enter
-    if ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl) and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
+    -- Exit edit mode on Enter (normal Enter key to save)
+    if ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter) then
       state.editing = false
       state.focus_set = false
       changed = true
@@ -180,7 +181,6 @@ function M.draw_at_cursor(ctx, config, id)
     -- ========================================================================
 
     local view_bg = config.view_bg_color or hexrgb("#0D0D0D")
-    local view_border = config.view_border_color or hexrgb("#2A2A2A")
     local placeholder_color = config.placeholder_color or hexrgb("#666666")
     local placeholder_text = config.placeholder or "Double-click to edit..."
 
@@ -191,18 +191,18 @@ function M.draw_at_cursor(ctx, config, id)
 
     state.hovered = is_hovered
 
-    -- Adjust colors on hover
-    local current_bg = view_bg
-    local current_border = view_border
-    if is_hovered then
-      current_bg = Colors.adjust_brightness(view_bg, 1.15)
-      current_border = Colors.adjust_brightness(view_border, 1.5)
-    end
+    -- Animate hover alpha
+    local target_alpha = is_hovered and 1.0 or 0.0
+    local fade_speed = 10.0
+    local alpha_delta = (target_alpha - state.hover_alpha) * fade_speed * ImGui.GetDeltaTime(ctx)
+    state.hover_alpha = math.max(0.0, math.min(1.0, state.hover_alpha + alpha_delta))
 
-    -- Draw background and border
-    local dl = ImGui.GetWindowDrawList(ctx)
-    ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + actual_width, cursor_y + height, current_bg, rounding)
-    ImGui.DrawList_AddRect(dl, cursor_x, cursor_y, cursor_x + actual_width, cursor_y + height, current_border, rounding, 0, 1)
+    -- Draw background only when hovering (faded in)
+    if state.hover_alpha > 0.01 then
+      local dl = ImGui.GetWindowDrawList(ctx)
+      local hover_bg = Colors.with_alpha(view_bg, math.floor(state.hover_alpha * 0x30))  -- Very subtle
+      ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + actual_width, cursor_y + height, hover_bg, rounding)
+    end
 
     -- Position cursor for content (don't create extra BeginChild - markdown renderer creates its own)
     ImGui.SetCursorScreenPos(ctx, cursor_x + padding, cursor_y + padding)

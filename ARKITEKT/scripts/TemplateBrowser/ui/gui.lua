@@ -2028,7 +2028,7 @@ local function draw_info_panel(ctx, state, config, width, height)
       width = -1,
       height = 200,  -- Taller for better markdown viewing
       text = notes,
-      placeholder = "Double-click to add notes...\n\nSupports Markdown:\n• **bold** and *italic*\n• # Headers\n• - Lists\n• [links](url)",
+      placeholder = "Double-click to add notes...\n\nSupports Markdown:\n• **bold** and *italic*\n• # Headers\n• - Lists\n• [links](url)\n\nPress Enter to save, Esc to cancel",
     }, notes_field_id)
 
     if notes_changed then
