@@ -108,13 +108,13 @@ M.TILE_RENDER = {
   waveform = {
     -- Color computation: HSV transformation from base tile color
     -- These multipliers are applied to derive visualization colors (used in visualization.lua)
-    saturation_multiplier = 0.64,  -- Multiply tile saturation by this (0-1)
-    brightness_multiplier = 0.35,  -- Multiply tile brightness/value by this (0-1)
+    saturation_multiplier = 0.0,  -- Multiply tile saturation by this (0-1)
+    brightness_multiplier = 1.0,  -- Multiply tile brightness/value by this (0-1)
 
     -- Display appearance: Fixed HSV values (used in base renderer for display)
-    saturation = 0.3,      -- Fixed saturation for waveform display
-    brightness = 0.15,     -- Fixed brightness for waveform display
-    line_alpha = 0.8,      -- Alpha transparency for waveform/MIDI lines
+    saturation = 0.5,      -- Fixed saturation for waveform display
+    brightness = 0.1,     -- Fixed brightness for waveform display
+    line_alpha = 0.9,      -- Alpha transparency for waveform/MIDI lines
     zero_line_alpha = 0.3, -- Alpha transparency for zero line
   },
 
