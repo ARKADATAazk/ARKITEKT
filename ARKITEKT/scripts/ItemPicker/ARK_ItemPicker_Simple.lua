@@ -155,7 +155,7 @@ overlay_mgr:push({
   use_viewport = true,
   fade_duration = 0.3,
   fade_curve = 'ease_out_quad',
-  scrim_color = Colors.hexrgb("#101010"),
+  scrim_color = Colors.hexrgb("#FF0000"),
   scrim_opacity = 0.92,
   show_close_button = true,
   close_on_background_click = false,
