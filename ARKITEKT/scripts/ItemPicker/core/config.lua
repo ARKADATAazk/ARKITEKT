@@ -112,9 +112,9 @@ M.TILE_RENDER = {
     brightness_multiplier = 1.0,  -- Multiply tile brightness/value by this (0-1)
 
     -- Display appearance: Fixed HSV values (used in base renderer for display)
-    saturation = 0.5,      -- Fixed saturation for waveform display
+    saturation = 0.3,      -- Fixed saturation for waveform display
     brightness = 0.1,     -- Fixed brightness for waveform display
-    line_alpha = 0.9,      -- Alpha transparency for waveform/MIDI lines
+    line_alpha = 0.95,      -- Alpha transparency for waveform/MIDI lines
     zero_line_alpha = 0.3, -- Alpha transparency for zero line
   },
 
