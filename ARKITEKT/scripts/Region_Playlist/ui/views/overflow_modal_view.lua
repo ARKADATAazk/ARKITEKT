@@ -163,21 +163,28 @@ function OverflowModalView:draw(ctx, window)
           ImGui.Dummy(ctx, 0, 8)
 
           -- Use arkitekt SearchInput primitive
+          local search_height = 28
           local search_state = SearchInput.draw_at_cursor(ctx, {
             id = "overflow_search",
             width = content_w,
-            height = 28,
+            height = search_height,
             placeholder = "Search playlists...",
             value = self.search_text,
             on_change = function(new_text)
               self.search_text = new_text
             end
           })
+          -- Advance cursor down to next line and reset X position
+          ImGui.SetCursorPosX(ctx, padding)
+          ImGui.Dummy(ctx, 0, search_height)
 
+          ImGui.SetCursorPosX(ctx, padding)
           ImGui.Dummy(ctx, 0, 12)
+          ImGui.SetCursorPosX(ctx, padding)
           ImGui.Separator(ctx)
           ImGui.Dummy(ctx, 0, 12)
-          
+          ImGui.SetCursorPosX(ctx, padding)
+
           local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
             selected_ids = selected_ids,
             search_text = self.search_text,
@@ -202,12 +209,15 @@ function OverflowModalView:draw(ctx, window)
             self:close()
           end
 
+          ImGui.SetCursorPosX(ctx, padding)
           ImGui.Dummy(ctx, 0, 20)
+          ImGui.SetCursorPosX(ctx, padding)
           ImGui.Separator(ctx)
           ImGui.Dummy(ctx, 0, 12)
 
           -- Use arkitekt Button primitive
           local button_w = 100
+          local button_h = 32
           local start_x = (content_w - button_w) * 0.5
           ImGui.SetCursorPosX(ctx, padding + start_x)
 
@@ -215,14 +225,20 @@ function OverflowModalView:draw(ctx, window)
             id = "close_button",
             label = "Close",
             width = button_w,
-            height = 32,
+            height = button_h,
           })
+          -- Advance cursor down to account for button height
+          ImGui.SetCursorPosX(ctx, padding)
+          ImGui.Dummy(ctx, 0, button_h)
 
           if clicked then
             window.overlay:pop('overflow-tabs')
             self.is_open = false
             self:close()
           end
+
+          -- Add bottom padding
+          ImGui.Dummy(ctx, 0, padding)
         end)
       end
     })
