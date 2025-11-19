@@ -1,9 +1,23 @@
 -- @noindex
 -- rearkitekt/app/constants.lua
--- Central repository for all framework constants
--- Single source of truth for overlay configs, animation timings, sizes, etc.
+-- Central repository for ALL framework constants and defaults
+-- Single source of truth for overlay configs, animation timings, sizes, colors, etc.
+
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
 
 local M = {}
+
+-- ============================================================================
+-- PROFILER
+-- ============================================================================
+M.PROFILER_ENABLED = false  -- Global toggle for profiler
+
+M.PROFILER = {
+  ENABLED_BY_DEFAULT = false,
+  WINDOW_WIDTH = 800,
+  WINDOW_HEIGHT = 600,
+}
 
 -- ============================================================================
 -- OVERLAY SYSTEM
@@ -47,7 +61,7 @@ M.ANIMATION = {
 }
 
 -- ============================================================================
--- WINDOW PRESETS
+-- WINDOW DEFAULTS
 -- ============================================================================
 M.WINDOW = {
   -- Size presets
@@ -57,6 +71,51 @@ M.WINDOW = {
 
   -- Default positioning offset from top-left
   DEFAULT_OFFSET = { x = 100, y = 100 },
+
+  -- Default window config
+  title           = "Arkitekt App",
+  content_padding = 12,
+  min_size        = { w = 400, h = 300 },
+  initial_size    = { w = 900, h = 600 },
+  initial_pos     = { x = 100, y = 100 },
+
+  -- Background colors
+  bg_color_floating = nil,  -- nil = use ImGui default
+  bg_color_docked   = hexrgb("#282828"),  -- Slightly lighter for docked mode
+
+  -- Fullscreen/Viewport mode settings
+  fullscreen = {
+    enabled = false,  -- Whether to use fullscreen/viewport mode
+    use_viewport = true,  -- Use full REAPER viewport vs parent window
+    fade_in_duration = 0.3,  -- seconds
+    fade_out_duration = 0.3,  -- seconds
+    fade_speed = 10.0,  -- Animation speed multiplier (higher = faster)
+
+    scrim_enabled = true,  -- Show dark background scrim
+    scrim_color = hexrgb("#000000"),
+    scrim_opacity = 0.85,
+
+    window_bg_override = nil,  -- Override window background color (nil = use default)
+    window_opacity = 1.0,  -- Overall window content opacity
+
+    -- Close behavior
+    show_close_button = true,  -- Show floating close button on hover
+    close_on_background_click = true,  -- Right-click on scrim/background to close
+    close_on_background_left_click = false,  -- Left-click on background to close
+    close_button_proximity = 150,  -- Distance in pixels to show close button
+
+    -- Close button styling
+    close_button = {
+      size = 32,
+      margin = 16,
+      bg_color = hexrgb("#000000"),
+      bg_opacity = 0.6,
+      bg_opacity_hover = 0.8,
+      icon_color = hexrgb("#FFFFFF"),
+      hover_color = hexrgb("#FF4444"),
+      active_color = hexrgb("#FF0000"),
+    },
+  },
 }
 
 -- ============================================================================
@@ -79,28 +138,78 @@ M.TYPOGRAPHY = {
 }
 
 -- ============================================================================
--- CHROME (Titlebar, Status Bar, etc.)
+-- FONTS
 -- ============================================================================
-M.CHROME = {
-  TITLEBAR_HEIGHT = 26,
-  STATUS_BAR_HEIGHT = 28,
-  STATUS_BAR_COMPENSATION = 6,  -- Adjustment for layout alignment
-  TAB_HEIGHT = 30,
+M.FONTS = {
+  -- Default sizes
+  default = 13,
+  title = 13,
+  version = 11,
+  titlebar_version_monospace = 10,
+
+  -- Font families
+  family_regular = "Inter_18pt-Regular.ttf",
+  family_bold = "Inter_18pt-SemiBold.ttf",
+  family_mono = 'JetBrainsMono-Regular.ttf',
 }
 
 -- ============================================================================
--- COLORS (Common UI element colors)
+-- TITLEBAR
 -- ============================================================================
--- Note: Actual color values defined in rearkitekt/gui/theme/colors.lua
--- This just defines semantic color roles
-M.COLOR_ROLES = {
-  PRIMARY = "primary",
-  SECONDARY = "secondary",
-  ACCENT = "accent",
-  SUCCESS = "success",
-  WARNING = "warning",
-  DANGER = "danger",
-  INFO = "info",
+M.TITLEBAR = {
+  -- Layout
+  height = 26,
+  pad_h = 12,
+  pad_v = 0,
+  button_width = 44,
+  button_spacing = 0,
+  button_style = "minimal",
+  separator = true,
+  icon_size = 18,
+  icon_spacing = 8,
+  version_spacing = 6,
+  show_icon = true,
+  enable_maximize = true,
+
+  -- Colors
+  bg_color = nil,
+  bg_color_active = nil,
+  text_color = nil,
+  version_color = hexrgb("#ffffff5b"),
+
+  -- Button colors (minimal style)
+  button_maximize_normal = hexrgb("#00000000"),
+  button_maximize_hovered = hexrgb("#57C290"),
+  button_maximize_active = hexrgb("#60FFFF"),
+  button_close_normal = hexrgb("#00000000"),
+  button_close_hovered = hexrgb("#CC3333"),
+  button_close_active = hexrgb("#FF1111"),
+
+  -- Button colors (filled style)
+  button_maximize_filled_normal = hexrgb("#808080"),
+  button_maximize_filled_hovered = hexrgb("#999999"),
+  button_maximize_filled_active = hexrgb("#666666"),
+  button_close_filled_normal = hexrgb("#CC3333"),
+  button_close_filled_hovered = hexrgb("#FF4444"),
+  button_close_filled_active = hexrgb("#FF1111"),
+}
+
+-- ============================================================================
+-- STATUS BAR
+-- ============================================================================
+M.STATUS_BAR = {
+  height = 20,
+  compensation = 6,  -- Adjustment for layout alignment
+}
+
+-- ============================================================================
+-- CHROME (Combined Chrome Constants)
+-- ============================================================================
+M.CHROME = {
+  TITLEBAR_HEIGHT = 26,
+  STATUS_BAR_HEIGHT = 20,
+  STATUS_BAR_COMPENSATION = 6,
+  TAB_HEIGHT = 30,
 }
 
 -- ============================================================================
@@ -122,12 +231,72 @@ M.LAYOUT = {
 }
 
 -- ============================================================================
--- PROFILER
+-- COLORS (Common UI element colors)
 -- ============================================================================
-M.PROFILER = {
-  ENABLED_BY_DEFAULT = false,
-  WINDOW_WIDTH = 800,
-  WINDOW_HEIGHT = 600,
+-- Note: Actual color values defined in rearkitekt/core/colors.lua
+-- This just defines semantic color roles
+M.COLOR_ROLES = {
+  PRIMARY = "primary",
+  SECONDARY = "secondary",
+  ACCENT = "accent",
+  SUCCESS = "success",
+  WARNING = "warning",
+  DANGER = "danger",
+  INFO = "info",
 }
+
+-- ============================================================================
+-- DEPENDENCIES
+-- ============================================================================
+M.DEPENDENCIES = {
+  hub_path = "ARKITEKT.lua",  -- Relative path to the hub/launcher file from project root
+}
+
+-- ============================================================================
+-- ACCESSOR METHODS (for backward compatibility with app_defaults.lua)
+-- ============================================================================
+
+-- Returns entire defaults structure in old format
+function M.get_defaults()
+  return {
+    window = M.WINDOW,
+    fonts = M.FONTS,
+    titlebar = M.TITLEBAR,
+    status_bar = M.STATUS_BAR,
+    dependencies = M.DEPENDENCIES,
+  }
+end
+
+-- Get a specific default value by dot-path (e.g., "titlebar.height")
+function M.get(path)
+  local keys = {}
+  for key in path:gmatch("[^.]+") do
+    table.insert(keys, key)
+  end
+
+  -- Map old paths to new structure
+  local root_map = {
+    window = M.WINDOW,
+    fonts = M.FONTS,
+    titlebar = M.TITLEBAR,
+    status_bar = M.STATUS_BAR,
+    dependencies = M.DEPENDENCIES,
+  }
+
+  local value = root_map[keys[1]]
+  if not value then
+    return nil
+  end
+
+  -- Navigate remaining keys
+  for i = 2, #keys do
+    if type(value) ~= "table" then
+      return nil
+    end
+    value = value[keys[i]]
+  end
+
+  return value
+end
 
 return M
