@@ -7,6 +7,7 @@ local hexrgb = Colors.hexrgb
 local M = {}
 local utils
 local SCRIPT_DIRECTORY
+local config
 
 local WAVEFORM_RESOLUTION = 2000
 local MIDI_CACHE_WIDTH = 400
@@ -18,6 +19,7 @@ local waveform_color_cache = {}
 setmetatable(waveform_color_cache, {__mode = "kv"})
 
 -- Performance: Compute waveform color with caching
+-- Uses config values for HSV transformation multipliers
 local function compute_waveform_color(base_color)
   if waveform_color_cache[base_color] then
     return waveform_color_cache[base_color]
@@ -25,8 +27,13 @@ local function compute_waveform_color(base_color)
 
   local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-  s = s * 0.64
-  v = v * 0.35
+
+  -- Use config values for HSV transformation
+  local sat_mult = config and config.TILE_RENDER.waveform.saturation_multiplier or 0.64
+  local bright_mult = config and config.TILE_RENDER.waveform.brightness_multiplier or 0.35
+
+  s = s * sat_mult
+  v = v * bright_mult
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
   local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
@@ -34,9 +41,10 @@ local function compute_waveform_color(base_color)
   return col_wave
 end
 
-function M.init(utils_module, script_dir)
+function M.init(utils_module, script_dir, config_module)
   utils = utils_module
   SCRIPT_DIRECTORY = script_dir
+  config = config_module
 end
 
 function M.GetItemWaveform(cache, item, uuid)
@@ -203,8 +211,13 @@ function M.DisplayWaveform(ctx, waveform, color, draw_list, target_width)
   DrawList_AddRectFilled(draw_list, item_x1, item_y1, item_x2, item_y2, color)
   local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-  s = s * 0.64
-  v = v * 0.35
+
+  -- Use config values for HSV transformation
+  local sat_mult = config and config.TILE_RENDER.waveform.saturation_multiplier or 0.64
+  local bright_mult = config and config.TILE_RENDER.waveform.brightness_multiplier or 0.35
+
+  s = s * sat_mult
+  v = v * bright_mult
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
   local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
@@ -364,8 +377,13 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
 
   local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-  s = s * 0.64
-  v = v * 0.35
+
+  -- Use config values for HSV transformation
+  local sat_mult = config and config.TILE_RENDER.waveform.saturation_multiplier or 0.64
+  local bright_mult = config and config.TILE_RENDER.waveform.brightness_multiplier or 0.35
+
+  s = s * sat_mult
+  v = v * bright_mult
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
   local col_note = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
