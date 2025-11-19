@@ -475,36 +475,52 @@ function AdditionalView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 8)
 
-    -- Draw parameter tiles with controls for active tab
+    -- Get assigned params and active grid
     local assigned_params = self:get_assigned_params(self.active_assignment_tab)
     local tab_color = self.tab_colors[self.active_assignment_tab] or hexrgb("#888888")
+    local active_grid = self.assignment_grids[self.active_assignment_tab]
 
     if #assigned_params == 0 then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
-      ImGui.Text(ctx, "No parameters assigned to this tab")
-      ImGui.PopStyleColor(ctx)
-      ImGui.Text(ctx, "Drag parameters from the library to assign them")
+      -- No params: show the grid for drag-drop target
+      if active_grid then
+        active_grid:draw(ctx)
+        -- Handle right-click drag selection for empty assignment grid
+        self:handle_right_click_selection(ctx, active_grid, "assign_" .. self.active_assignment_tab)
+      end
     else
-      -- Scrollable area for parameter tiles
+      -- Has params: show parameter tiles with controls
       ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))
       if ImGui.BeginChild(ctx, "param_tiles_" .. self.active_assignment_tab, 0, 0, 0, 0) then
+        -- Make the child window a drop target
+        if ImGui.BeginDragDropTarget(ctx) then
+          local ret, payload = ImGui.AcceptDragDropPayload(ctx, "REARKITEKT_GRID_PAYLOAD")
+          if ret and payload then
+            -- Payload contains dragged parameter names
+            local bridge_payload = self.bridge.active_drag.payload
+            if bridge_payload and type(bridge_payload) == "table" then
+              for _, param_name in ipairs(bridge_payload) do
+                self:assign_param_to_tab(param_name, self.active_assignment_tab)
+              end
+            end
+          end
+          ImGui.EndDragDropTarget(ctx)
+        end
+
         for _, param in ipairs(assigned_params) do
           AdditionalParamTile.render(ctx, param, tab_color, shell_state, self)
         end
         ImGui.EndChild(ctx)
       end
       ImGui.PopStyleColor(ctx)
-    end
 
-    -- Still draw the hidden assignment grid for drag-drop functionality
-    -- (Draw it off-screen to maintain drag-drop support)
-    local saved_x, saved_y = ImGui.GetCursorScreenPos(ctx)
-    ImGui.SetCursorScreenPos(ctx, -10000, -10000)
-    local active_grid = self.assignment_grids[self.active_assignment_tab]
-    if active_grid then
-      active_grid:draw(ctx)
+      -- Draw assignment grid off-screen to maintain drag-drop registration with bridge
+      local saved_x, saved_y = ImGui.GetCursorScreenPos(ctx)
+      ImGui.SetCursorScreenPos(ctx, -10000, -10000)
+      if active_grid then
+        active_grid:draw(ctx)
+      end
+      ImGui.SetCursorScreenPos(ctx, saved_x, saved_y)
     end
-    ImGui.SetCursorScreenPos(ctx, saved_x, saved_y)
 
     ImGui.Unindent(ctx, 8)
     ImGui.Dummy(ctx, 0, 4)

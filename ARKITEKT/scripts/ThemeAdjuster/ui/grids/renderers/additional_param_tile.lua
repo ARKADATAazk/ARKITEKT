@@ -17,9 +17,11 @@ local TILE_PADDING = 8
 local CONTROL_WIDTH = 200
 
 -- Read/write parameter value from Reaper theme
-local function get_param_value(param_name, param_type)
-  local value = reaper.ThemeLayout_GetParameter(param_name)
-  if value == nil then
+local function get_param_value(param_index, param_type)
+  if not param_index then return param_type == "bool" and 0 or 0.0 end
+
+  local ok, name, desc, value = pcall(reaper.ThemeLayout_GetParameter, param_index)
+  if not ok or value == nil then
     -- Default values based on type
     if param_type == "bool" then
       return 0
@@ -32,18 +34,20 @@ local function get_param_value(param_name, param_type)
   return value
 end
 
-local function set_param_value(param_name, value)
-  reaper.ThemeLayout_SetParameter(param_name, value)
+local function set_param_value(param_index, value)
+  if not param_index then return end
+  pcall(reaper.ThemeLayout_SetParameter, param_index, value, true)
 end
 
 -- Render a single parameter tile
 function M.render(ctx, param, tab_color, shell_state, view)
   local param_name = param.name
+  local param_index = param.index
   local param_type = param.type
   local metadata = view.custom_metadata[param_name] or {}
 
   -- Get current value from Reaper
-  local current_value = get_param_value(param_name, param_type)
+  local current_value = get_param_value(param_index, param_type)
 
   -- Get link status
   local is_in_group = ParameterLinkManager.is_in_group(param_name)
@@ -204,7 +208,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
 
   -- Handle value change and propagation
   if value_changed then
-    set_param_value(param_name, new_value)
+    set_param_value(param_index, new_value)
 
     -- Propagate to linked parameters
     if is_in_group and link_mode ~= ParameterLinkManager.LINK_MODE.UNLINKED then
@@ -212,7 +216,13 @@ function M.render(ctx, param, tab_color, shell_state, view)
 
       -- Apply propagated changes to other parameters
       for _, prop in ipairs(propagations) do
-        set_param_value(prop.param_name, prop.clamped_value)
+        -- Find the parameter index for the linked param
+        for _, p in ipairs(view.all_params) do
+          if p.name == prop.param_name then
+            set_param_value(p.index, prop.clamped_value)
+            break
+          end
+        end
       end
     end
   end
