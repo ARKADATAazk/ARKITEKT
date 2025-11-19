@@ -123,6 +123,37 @@ local function create_behaviors(rt)
       end
     end,
 
+    -- Double-click outside text zone: Move cursor and seek to region/playlist
+    double_click_seek = function(key)
+      local pool_items = rt.pool_grid.get_items()
+      for _, item in ipairs(pool_items) do
+        if rt.pool_grid.key(item) == key then
+          if item.id and item.items then
+            -- For playlists, seek to the first item in the playlist
+            local playlist = rt.get_playlist_by_id and rt.get_playlist_by_id(item.id)
+            if playlist and playlist.items and #playlist.items > 0 then
+              local first_item = playlist.items[1]
+              if first_item.rid then
+                local State = require("Region_Playlist.core.app_state")
+                local region = State.get_region_by_rid(first_item.rid)
+                if region and region.start then
+                  reaper.SetEditCurPos(region.start, true, true)
+                end
+              end
+            end
+          else
+            -- For regions, seek to region start
+            local State = require("Region_Playlist.core.app_state")
+            local region = State.get_region_by_rid(item.rid)
+            if region and region.start then
+              reaper.SetEditCurPos(region.start, true, true)
+            end
+          end
+          break
+        end
+      end
+    end,
+
     -- F2: Batch rename with wildcards
     rename = function(selected_keys)
       if not selected_keys or #selected_keys == 0 then return end
