@@ -53,7 +53,8 @@ local StyleOK, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
 
 local settings = nil
 if SettingsOK and type(Settings.new) == "function" then
-  local ok, inst = pcall(Settings.new, ARK.join(HERE, "cache"), "region_playlist.json")
+  local data_dir = ARK.get_data_dir("RegionPlaylist")
+  local ok, inst = pcall(Settings.new, data_dir, "settings.json")
   if ok then settings = inst end
 end
 

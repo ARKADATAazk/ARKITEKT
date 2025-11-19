@@ -237,7 +237,8 @@ end
 -- Optional settings
 local settings = nil
 if Settings and type(Settings.new)=="function" then
-  local ok,inst = pcall(Settings.new, join(HERE,"cache"), "demo_colorblocks.json")
+  local data_dir = ARK.get_data_dir("demos")
+  local ok,inst = pcall(Settings.new, data_dir, "widget_demo.json")
   if ok then settings = inst end
 end
 

@@ -71,6 +71,25 @@ return function(root_path)
     return (a:sub(-1) == s) and (a .. b) or (a .. s .. b)
   end
 
+  -- Get REAPER Data directory for ARKITEKT app storage
+  -- Returns: REAPER_RESOURCE_PATH/Data/ARKITEKT/{app_name}/
+  -- Creates the directory if it doesn't exist
+  local function get_data_dir(app_name)
+    if not app_name or app_name == "" then
+      error("get_data_dir: app_name is required")
+    end
+
+    local resource_path = reaper.GetResourcePath()
+    local data_dir = resource_path .. sep .. "Data" .. sep .. "ARKITEKT" .. sep .. app_name
+
+    -- Create directory if it doesn't exist
+    if reaper.RecursiveCreateDirectory then
+      reaper.RecursiveCreateDirectory(data_dir, 0)
+    end
+
+    return data_dir
+  end
+
   -- ============================================================================
   -- RETURN CONTEXT
   -- ============================================================================
@@ -83,6 +102,7 @@ return function(root_path)
     -- Utility functions
     dirname = dirname,
     join = join,
+    get_data_dir = get_data_dir,
 
     -- Pre-loaded ImGui
     ImGui = ImGui,

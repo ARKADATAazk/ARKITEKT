@@ -56,7 +56,8 @@ local hexrgb = Colors.hexrgb
 
 local settings = nil
 if SettingsOK and type(Settings.new)=="function" then
-  local ok, inst = pcall(Settings.new, ARK.join(script_dir,"cache"), "arkitekt_hub.json")
+  local data_dir = ARK.get_data_dir("ARKITEKT")
+  local ok, inst = pcall(Settings.new, data_dir, "settings.json")
   if ok then settings = inst end
 end
 

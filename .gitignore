@@ -1,2 +1,3 @@
 *local/
-**/ThemeAdjuster/cache/
+**/cache/
+*.json

@@ -57,7 +57,8 @@ local StyleOK, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
 
 local settings = nil
 if SettingsOK and type(Settings.new) == "function" then
-  local ok, inst = pcall(Settings.new, join(HERE, "cache"), "theme_adjuster.json")
+  local data_dir = ARK.get_data_dir("ThemeAdjuster")
+  local ok, inst = pcall(Settings.new, data_dir, "main_panel_test.json")
   if ok then settings = inst end
 end
 
