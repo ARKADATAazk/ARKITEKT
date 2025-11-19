@@ -789,7 +789,7 @@ function Panel:end_draw(ctx)
       if cb then
         local size = cb.size or 30
       local border_thickness = 1
-      local outer_rounding = self.config.rounding or 8
+      local outer_rounding = cb.rounding or CORNER_BUTTON_CONFIG.outer_corner_rounding
       local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
       local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
       local offset_y = CORNER_BUTTON_CONFIG.position_offset_y
