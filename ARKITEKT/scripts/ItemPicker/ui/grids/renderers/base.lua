@@ -79,10 +79,9 @@ function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, c
   local header_config = config.TILE_RENDER.header
   local small_tile_config = config.TILE_RENDER.small_tile
 
-  -- In small tile mode with disable_header_fill, only render text shadow (no colored background)
+  -- In small tile mode with disable_header_fill, don't render anything
+  -- (base tile color is bright enough, no darkening overlay needed)
   if is_small_tile and small_tile_config.disable_header_fill then
-    local text_shadow = small_tile_config.header_text_shadow
-    ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, text_shadow, config.TILE.ROUNDING)
     return
   end
 
