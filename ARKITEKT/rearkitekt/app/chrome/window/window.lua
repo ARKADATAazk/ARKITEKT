@@ -42,7 +42,7 @@ local function floor(n) return math.floor(n + 0.5) end
 
 local DEFAULTS = {}
 do
-  local ok, Config = pcall(require('rearkitekt.app.init.constants')
+  local ok, Config = pcall(require('rearkitekt.app.init.constants'))
   if ok and Config and Config.get_defaults then
     DEFAULTS = Config.get_defaults()
   else

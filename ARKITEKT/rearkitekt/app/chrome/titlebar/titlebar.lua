@@ -13,13 +13,13 @@ local hexrgb = Colors.hexrgb
 
 local Icon = nil
 do
-  local ok, mod = pcall(require('rearkitekt.app.assets.icon')
+  local ok, mod = pcall(require('rearkitekt.app.assets.icon'))
   if ok then Icon = mod end
 end
 
 local DEFAULTS = {}
 do
-  local ok, Config = pcall(require('rearkitekt.app.init.constants')
+  local ok, Config = pcall(require('rearkitekt.app.init.constants'))
   if ok and Config and Config.get_defaults then
     DEFAULTS = Config.get_defaults().titlebar or {}
   else
