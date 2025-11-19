@@ -335,8 +335,15 @@ function M:render(ctx, dt)
         self:draw_close_button(ctx, top, x, y, w, h, dt)
       end
 
-      -- Render content
-      top.render(ctx, alpha_val, {x=x, y=y, w=w, h=h, dl=dl})
+      -- Render content (apply content_padding to bounds)
+      local padding = top.content_padding or 0
+      top.render(ctx, alpha_val, {
+        x = x + padding,
+        y = y + padding,
+        w = w - (padding * 2),
+        h = h - (padding * 2),
+        dl = dl
+      })
 
       -- Handle scrim clicks (check if click is outside content area)
       if top.close_on_scrim and not ImGui.IsAnyItemHovered(ctx) then
