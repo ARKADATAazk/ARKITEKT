@@ -298,48 +298,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
     BatchRenameModal.draw(ctx, selected_count)
   end
 
-  -- Open rename playlist modal
-  if self._rename_input_visible then
-    -- Find current name
-    local playlists = State.get_playlists()
-    reaper.ShowConsoleMsg("[Debug] Looking for playlist ID: " .. tostring(self._rename_playlist_id) .. "\n")
-    for _, pl in ipairs(playlists) do
-      reaper.ShowConsoleMsg("[Debug] Checking playlist ID: " .. tostring(pl.id) .. " name: " .. tostring(pl.name) .. "\n")
-      if pl.id == self._rename_playlist_id then
-        rename_initial_text = pl.name or ""
-        reaper.ShowConsoleMsg("[Debug] Found matching playlist!\n")
-        break
-      end
-    end
-    if not rename_initial_text then
-      reaper.ShowConsoleMsg("[Debug] ERROR: No matching playlist found!\n")
-    end
-    self._rename_input_visible = false
-  end
-
-  -- Show rename playlist modal
-  if rename_initial_text then
-    ModalDialog.show_input(ctx, window, "Rename Playlist", rename_initial_text, {
-      id = "##rename_playlist",
-      placeholder = "Enter playlist name",
-      confirm_label = "Rename",
-      cancel_label = "Cancel",
-      width = 0.4,
-      height = 0.25,
-      on_confirm = function(new_name)
-        if self.controller and self._rename_playlist_id then
-          self.controller:rename_playlist(self._rename_playlist_id, new_name)
-          self.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
-        end
-        rename_initial_text = nil
-        self._rename_playlist_id = nil
-      end,
-      on_cancel = function()
-        rename_initial_text = nil
-        self._rename_playlist_id = nil
-      end
-    })
-  end
+  -- Modal dialog for playlist renaming removed - now using inline editing
 
   if self.bridge:is_drag_active() and self.bridge:get_source_grid() == 'active' and ImGui.IsMouseReleased(ctx, 0) then
     if not self.bridge:is_mouse_over_grid(ctx, 'active') then
