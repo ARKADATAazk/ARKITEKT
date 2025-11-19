@@ -419,31 +419,51 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
     local norm_bottom = cached_polylines.norm_bottom
 
     if norm_top and norm_bottom then
-      -- Build point arrays by scaling cached normalized coords (MUCH faster than before)
-      local top_points_table = {}
+      -- Build filled polygon arrays (waveform + zero line closure)
+      local top_fill_table = {}
       local top_idx = 1
+
+      -- Top waveform points (left to right)
       for i = 1, #norm_top, 2 do
-        top_points_table[top_idx] = item_x1 + norm_top[i] * item_w  -- Scale X
-        top_points_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height  -- Scale Y
+        top_fill_table[top_idx] = item_x1 + norm_top[i] * item_w  -- Scale X
+        top_fill_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height  -- Scale Y
         top_idx = top_idx + 2
       end
 
-      local bottom_points_table = {}
+      -- Close polygon along zero line (right to left)
+      top_fill_table[top_idx] = item_x2
+      top_fill_table[top_idx + 1] = zero_line
+      top_idx = top_idx + 2
+      top_fill_table[top_idx] = item_x1
+      top_fill_table[top_idx + 1] = zero_line
+
+      -- Bottom polygon
+      local bottom_fill_table = {}
       local bottom_idx = 1
+
+      -- Bottom waveform points (left to right)
       for i = 1, #norm_bottom, 2 do
-        bottom_points_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w  -- Scale X
-        bottom_points_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height  -- Scale Y
+        bottom_fill_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w  -- Scale X
+        bottom_fill_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height  -- Scale Y
         bottom_idx = bottom_idx + 2
       end
 
-      if #top_points_table >= 4 then
-        local top_array = reaper.new_array(top_points_table)
-        DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
+      -- Close polygon along zero line (right to left)
+      bottom_fill_table[bottom_idx] = item_x2
+      bottom_fill_table[bottom_idx + 1] = zero_line
+      bottom_idx = bottom_idx + 2
+      bottom_fill_table[bottom_idx] = item_x1
+      bottom_fill_table[bottom_idx + 1] = zero_line
+
+      -- Fill polygons
+      if #top_fill_table >= 8 then  -- Need at least 4 points (8 values) for a polygon
+        local top_fill_array = reaper.new_array(top_fill_table)
+        ImGui.DrawList_AddConvexPolyFilled(draw_list, top_fill_array, col_wave)
       end
 
-      if #bottom_points_table >= 4 then
-        local bottom_array = reaper.new_array(bottom_points_table)
-        DrawList_AddPolyline(draw_list, bottom_array, col_wave, ImGui.DrawFlags_None, 1.0)
+      if #bottom_fill_table >= 8 then
+        local bottom_fill_array = reaper.new_array(bottom_fill_table)
+        ImGui.DrawList_AddConvexPolyFilled(draw_list, bottom_fill_array, col_wave)
       end
     end
   else
@@ -480,31 +500,51 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
       end
     end
 
-    -- Build actual point arrays for this frame
-    local top_points_table = {}
+    -- Build filled polygon arrays for this frame
+    local top_fill_table = {}
     local top_idx = 1
+
+    -- Top waveform points
     for i = 1, #norm_top, 2 do
-      top_points_table[top_idx] = item_x1 + norm_top[i] * item_w
-      top_points_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height
+      top_fill_table[top_idx] = item_x1 + norm_top[i] * item_w
+      top_fill_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height
       top_idx = top_idx + 2
     end
 
-    local bottom_points_table = {}
+    -- Close polygon along zero line
+    top_fill_table[top_idx] = item_x2
+    top_fill_table[top_idx + 1] = zero_line
+    top_idx = top_idx + 2
+    top_fill_table[top_idx] = item_x1
+    top_fill_table[top_idx + 1] = zero_line
+
+    -- Bottom polygon
+    local bottom_fill_table = {}
     local bottom_idx = 1
+
+    -- Bottom waveform points
     for i = 1, #norm_bottom, 2 do
-      bottom_points_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w
-      bottom_points_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height
+      bottom_fill_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w
+      bottom_fill_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height
       bottom_idx = bottom_idx + 2
     end
 
-    if #top_points_table >= 4 then
-      local top_array = reaper.new_array(top_points_table)
-      DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
+    -- Close polygon along zero line
+    bottom_fill_table[bottom_idx] = item_x2
+    bottom_fill_table[bottom_idx + 1] = zero_line
+    bottom_idx = bottom_idx + 2
+    bottom_fill_table[bottom_idx] = item_x1
+    bottom_fill_table[bottom_idx + 1] = zero_line
+
+    -- Fill polygons
+    if #top_fill_table >= 8 then
+      local top_fill_array = reaper.new_array(top_fill_table)
+      ImGui.DrawList_AddConvexPolyFilled(draw_list, top_fill_array, col_wave)
     end
 
-    if #bottom_points_table >= 4 then
-      local bottom_array = reaper.new_array(bottom_points_table)
-      DrawList_AddPolyline(draw_list, bottom_array, col_wave, ImGui.DrawFlags_None, 1.0)
+    if #bottom_fill_table >= 8 then
+      local bottom_fill_array = reaper.new_array(bottom_fill_table)
+      ImGui.DrawList_AddConvexPolyFilled(draw_list, bottom_fill_array, col_wave)
     end
 
     -- Cache the normalized coordinates for this uuid+width
