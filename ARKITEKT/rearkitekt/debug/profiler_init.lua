@@ -24,7 +24,7 @@ function M.init()
   end
   
   -- Check config flag
-  local ok, Config = pcall(require('rearkitekt.app.init.constants'))
+  local ok, Config = pcall(require, 'rearkitekt.app.init.constants')
   if not ok or not Config or not Config.PROFILER_ENABLED then
     return false
   end
