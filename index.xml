@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" commit="7e712daf4e5e7d6f23ef7d9c492f6fd459506119">
+<index version="1" commit="87d09bf68decdc2f6e9213018aac31be1a6b1fea">
   <category name="ARKITEKT">
-    <reapack name="ARKITEKT.lua" type="script" desc="ARKITEKT Toolkit Hub">
+    <reapack name="ARKITEKT.lua" type="script" desc="ARKITEKT Toolkit">
       <metadata/>
       <version name="0.2.0" author="ARKADATA" time="2025-10-13T02:51:01Z">
         <changelog><![CDATA[Initial beta release]]></changelog>
@@ -124,6 +124,9 @@
         <source file="scripts/demos/demo3.lua">https://github.com/ARKADATAazk/ARKITEKT-Project/raw/bb8fee7412ee0d860ae2a3e392a91447fb5243bf/ARKITEKT/scripts/demos/demo3.lua</source>
         <source file="scripts/demos/demo_modal_overlay.lua">https://github.com/ARKADATAazk/ARKITEKT-Project/raw/bb8fee7412ee0d860ae2a3e392a91447fb5243bf/ARKITEKT/scripts/demos/demo_modal_overlay.lua</source>
         <source file="scripts/demos/widget_demo.lua">https://github.com/ARKADATAazk/ARKITEKT-Project/raw/bb8fee7412ee0d860ae2a3e392a91447fb5243bf/ARKITEKT/scripts/demos/widget_demo.lua</source>
+      </version>
+      <version name="1.0.0" author="ARKADATA" time="2025-11-19T12:35:48Z">
+        <source main="main">https://github.com/ARKADATAazk/ARKITEKT-Project/raw/87d09bf68decdc2f6e9213018aac31be1a6b1fea/ARKITEKT/ARKITEKT.lua</source>
       </version>
     </reapack>
   </category>
