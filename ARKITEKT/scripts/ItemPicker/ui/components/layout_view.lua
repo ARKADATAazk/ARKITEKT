@@ -232,8 +232,32 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.needs_reorganize = true
   end
 
-  -- Sort mode buttons (on same line after Group Items checkbox)
-  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Group Items of Same Name") + 18 + 8 + 40  -- Extra spacing
+  -- Enable TileFX checkbox on same line
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Group Items of Same Name") + 18 + 8 + spacing
+  local enable_fx_x = checkbox_x + prev_width
+  local enable_fx = self.state.settings.enable_tile_fx
+  if enable_fx == nil then enable_fx = true end
+  _, clicked = Checkbox.draw(ctx, draw_list, enable_fx_x, checkbox_y,
+    "Tile FX",
+    enable_fx, checkbox_config, "enable_fx")
+  if clicked then
+    self.state.set_setting('enable_tile_fx', not enable_fx)
+  end
+
+  -- Show Visualization in Small Tiles checkbox on same line
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Tile FX") + 18 + 8 + spacing
+  local show_viz_small_x = checkbox_x + prev_width
+  local show_viz_small = self.state.settings.show_visualization_in_small_tiles
+  if show_viz_small == nil then show_viz_small = true end
+  _, clicked = Checkbox.draw(ctx, draw_list, show_viz_small_x, checkbox_y,
+    "Show Viz in Small Tiles",
+    show_viz_small, checkbox_config, "show_viz_small")
+  if clicked then
+    self.state.set_setting('show_visualization_in_small_tiles', not show_viz_small)
+  end
+
+  -- Sort mode buttons (on same line after checkboxes)
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Viz in Small Tiles") + 18 + 8 + 40  -- Extra spacing
   local sort_button_x = checkbox_x + prev_width
 
   -- Draw sort mode label and buttons
@@ -344,9 +368,42 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local percent_x = track_x + slider_width + 8
   ImGui.DrawList_AddText(draw_list, percent_x, slider_y + 3, Colors.with_alpha(Colors.hexrgb("#AAAAAA"), math.floor(ui_fade * 180)), percent_text)
 
+  -- Waveform fill checkbox (next to quality slider)
+  local fill_checkbox_x = percent_x + ImGui.CalcTextSize(ctx, percent_text) + 20
+  local fill_checkbox_y = checkbox_y
+
+  local waveform_filled = self.state.settings.waveform_filled
+  if waveform_filled == nil then waveform_filled = true end
+
+  local _, fill_clicked = Checkbox.draw(ctx, draw_list, fill_checkbox_x, fill_checkbox_y,
+    "Fill",
+    waveform_filled, checkbox_config, "waveform_filled")
+  if fill_clicked then
+    self.state.set_setting('waveform_filled', not waveform_filled)
+    -- Clear polyline cache to force rebuild with new style
+    if self.state.runtime_cache and self.state.runtime_cache.waveform_polylines then
+      self.state.runtime_cache.waveform_polylines = {}
+    end
+  end
+
+  -- Zero line checkbox (next to Fill checkbox)
+  local fill_label_width = ImGui.CalcTextSize(ctx, "Fill")
+  local zero_line_checkbox_x = fill_checkbox_x + fill_label_width + 18 + 8
+  local zero_line_checkbox_y = checkbox_y
+
+  local waveform_zero_line = self.state.settings.waveform_zero_line or false
+
+  local _, zero_line_clicked = Checkbox.draw(ctx, draw_list, zero_line_checkbox_x, zero_line_checkbox_y,
+    "Zero Line",
+    waveform_zero_line, checkbox_config, "waveform_zero_line")
+  if zero_line_clicked then
+    self.state.set_setting('waveform_zero_line', not waveform_zero_line)
+  end
+
   -- Layout mode toggle button (only show when both MIDI and Audio are visible)
   if self.state.settings.show_audio and self.state.settings.show_midi then
-    local layout_button_x = percent_x + ImGui.CalcTextSize(ctx, percent_text) + 30
+    local zero_line_label_width = ImGui.CalcTextSize(ctx, "Zero Line")
+    local layout_button_x = zero_line_checkbox_x + zero_line_label_width + 18 + 8 + 10
     local layout_button_y = checkbox_y
     local layout_button_h = 20
 

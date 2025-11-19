@@ -193,7 +193,7 @@ function M.create(ctx, config, state, visualization, animator)
     gap = config.TILE.GAP,
     min_col_w = function() return state:get_tile_width() end,
     fixed_tile_h = state:get_tile_height(),
-    layout_speed = 20.0,
+    layout_speed = 12.0,
 
     get_items = get_items,
 
@@ -255,6 +255,8 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
       state.persist_disabled()
+      -- Force cache invalidation to refresh grid
+      state.runtime_cache.midi_filter_hash = nil
     end,
 
     drag_start = function(keys)
@@ -391,6 +393,8 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
       state.persist_disabled()
+      -- Force cache invalidation to refresh grid
+      state.runtime_cache.midi_filter_hash = nil
     end,
 
 

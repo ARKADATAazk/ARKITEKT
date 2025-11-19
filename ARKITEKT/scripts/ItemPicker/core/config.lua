@@ -14,13 +14,13 @@ M.TILE = {
   DEFAULT_WIDTH = 120,
   WIDTH_STEP = 30,
 
-  MIN_HEIGHT = 60,
-  MAX_HEIGHT = 400,
+  MIN_HEIGHT = 30,
+  MAX_HEIGHT = 150,
   DEFAULT_HEIGHT = 140,
   HEIGHT_STEP = 30,
 
   GAP = 8,
-  ROUNDING = 0,
+  ROUNDING = 2,
 }
 
 -- Layout
@@ -68,32 +68,89 @@ M.GRID = {
 
 -- Tile rendering config
 M.TILE_RENDER = {
-  -- Disabled state
-  disabled = {
-    desaturate = 0.8,
-    brightness = 0.4,
-    min_alpha = 0x33,
-    fade_speed = 20.0,
+  -- === TILE COLOR PARAMETERS ===
+
+  -- Base tile fill (color adjustments applied to tile background)
+  base_fill = {
+    -- Normal mode
+    saturation_factor = 0.9,  -- Multiply saturation (0.0-1.0, lower = more desaturated)
+    brightness_factor = 0.6, -- Multiply brightness (0.0-1.0, lower = darker)
+
+    -- Compact mode (small tiles)
+    compact_saturation_factor = 0.7,  -- Multiply saturation in compact mode
+    compact_brightness_factor = 0.4, -- Multiply brightness in compact mode
   },
 
-  -- Header
+  -- Hover effect (applied to base fill)
+  hover = {
+    brightness_boost = 0.50,  -- Add to brightness on hover (0.0-1.0)
+  },
+
+  -- Selection (marching ants)
+  selection = {
+    border_saturation = 0.8,
+    border_brightness = 1.4,
+    ants_alpha = 0xFF,
+    ants_thickness = 1,
+    ants_inset = 0,
+    ants_dash = 8,
+    ants_gap = 6,
+    ants_speed = 20,
+  },
+
+  -- Disabled state (20% opacity with colorful appearance)
+  disabled = {
+    desaturate = 0.3,    -- Desaturate by 30% (0.0-1.0, lower = more colorful)
+    brightness = 0.65,   -- Brighten to 65% (0.0-1.0, higher = brighter/more visible)
+    min_alpha = 0x33,    -- Minimum alpha/opacity (0x33 = ~20% opacity)
+    fade_speed = 20.0,   -- Animation speed for fade in/out
+  },
+
+  -- Header (Normal tile mode)
   header = {
+    -- Sizing
     height_ratio = 0.15,
     min_height = 22,
-    saturation_factor = 1.1,
-    brightness_factor = 0.7,
-    alpha = 0xDD,
-    text_shadow = hexrgb("#00000099"),
+    rounding_offset = 2,      -- Subtract from TILE.ROUNDING for tighter corner alignment
+
+    -- Color controls (HSV transformation from base tile color)
+    saturation_factor = 0.7,  -- Multiply tile saturation by this
+    brightness_factor = 1,  -- Multiply tile brightness by this
+    alpha = 0xDD,             -- Base alpha/opacity (0x00-0xFF)
+
+    -- Overlay
+    text_shadow = hexrgb("#00000099"),  -- Shadow overlay color
   },
 
-  -- Badge
-  badge = {
-    padding_x = 6,
-    padding_y = -1,  -- Reduced by 4 per side (8 pixels total height reduction from original)
-    margin = 6,
-    rounding = 4,
-    bg = hexrgb("#14181C"),
-    border_alpha = 0x33,
+  -- Badges (unified configuration for all badge types)
+  badges = {
+    -- Cycle badge (index/total in header)
+    cycle = {
+      padding_x = 5,
+      padding_y = 1,
+      margin = 6,
+      rounding = 3,
+      bg = hexrgb("#14181C"),
+      border_darken = 0.4,  -- Darken tile color by this amount for border
+      border_alpha = 0x66,
+    },
+
+    -- Pool count badge (bottom right)
+    pool = {
+      padding_x = 4,
+      padding_y = 0,  -- Smaller vertically
+      margin = 4,
+      rounding = 3,
+      bg = hexrgb("#14181C"),
+      border_darken = 0.4,
+      border_alpha = 0x55,
+    },
+
+    -- Favorite star
+    favorite = {
+      size = 16,  -- Smaller star
+      padding = 3,
+    },
   },
 
   -- Text
@@ -104,12 +161,18 @@ M.TILE_RENDER = {
     margin_right = 6,
   },
 
-  -- Waveform
+  -- Waveform & MIDI Visualization Colors
   waveform = {
-    saturation = 0.3,
-    brightness = 0.15,
-    line_alpha = 0.8,
-    zero_line_alpha = 0.3,
+    -- Color computation: HSV transformation from base tile color
+    -- These multipliers are applied to derive visualization colors (used in visualization.lua)
+    saturation_multiplier = 0.0,  -- Multiply tile saturation by this (0-1)
+    brightness_multiplier = 1.0,  -- Multiply tile brightness/value by this (0-1)
+
+    -- Display appearance: Fixed HSV values (used in base renderer for display)
+    saturation = 0.3,      -- Fixed saturation for waveform display
+    brightness = 0.1,     -- Fixed brightness for waveform display
+    line_alpha = 0.95,      -- Alpha transparency for waveform/MIDI lines
+    zero_line_alpha = 0.3, -- Alpha transparency for zero line
   },
 
   -- Tile FX
@@ -143,11 +206,12 @@ M.TILE_RENDER = {
     glow_strength = 0.4,
     glow_layers = 3,
 
-    hover_fill_boost = 0.08,
-    hover_specular_boost = 0.6,
+    hover_fill_boost = 0.16,  -- 2x increase for more noticeable hover effect
+    hover_specular_boost = 1.2,  -- 2x increase for more noticeable hover effect
   },
 
   animation_speed_hover = 12.0,
+  animation_speed_header_transition = 25.0,  -- Fast and smooth header size/fade transition between compact/normal modes
 
   -- Cascade animation
   cascade = {
@@ -161,6 +225,27 @@ M.TILE_RENDER = {
   responsive = {
     hide_text_below = 35,
     hide_badge_below = 25,
+    small_tile_height = 50,  -- Below this height, use compact display mode
+  },
+
+  -- Small tile display mode (when tile height < responsive.small_tile_height)
+  small_tile = {
+    -- Behavior
+    header_covers_tile = true,  -- Header extends to cover entire tile
+    hide_pool_count = true,     -- Hide pool count badge in small mode
+    disable_header_fill = true, -- Don't fill header background, only render text shadow
+
+    -- Visualization
+    visualization_alpha = 0.1,  -- Very low opacity for waveform/MIDI in compact mode
+
+    -- Header color controls (HSV transformation from base tile color)
+    -- Note: These only apply when disable_header_fill is false
+    header_saturation_factor = 0.6,  -- Multiply tile saturation by this
+    header_brightness_factor = 0.7,  -- Multiply tile brightness by this
+    header_alpha = 0.0,              -- Transparency multiplier (0.0-1.0), applied to base header alpha
+
+    -- Overlay
+    header_text_shadow = hexrgb("#00000099"),  -- Shadow overlay color
   },
 }
 

@@ -82,7 +82,7 @@ State.initialize(Config)
 
 -- Initialize domain modules
 reaper_interface.init(utils)
-visualization.init(utils, SCRIPT_DIRECTORY)
+visualization.init(utils, SCRIPT_DIRECTORY, Config)
 
 -- Initialize controller
 Controller.init(reaper_interface, utils)

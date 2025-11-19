@@ -7,6 +7,7 @@ local hexrgb = Colors.hexrgb
 local M = {}
 local utils
 local SCRIPT_DIRECTORY
+local config
 
 local WAVEFORM_RESOLUTION = 2000
 local MIDI_CACHE_WIDTH = 400
@@ -18,6 +19,7 @@ local waveform_color_cache = {}
 setmetatable(waveform_color_cache, {__mode = "kv"})
 
 -- Performance: Compute waveform color with caching
+-- Uses config values for HSV transformation multipliers
 local function compute_waveform_color(base_color)
   if waveform_color_cache[base_color] then
     return waveform_color_cache[base_color]
@@ -25,8 +27,13 @@ local function compute_waveform_color(base_color)
 
   local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-  s = s * 0.64
-  v = v * 0.35
+
+  -- Use config values for HSV transformation
+  local sat_mult = config and config.TILE_RENDER.waveform.saturation_multiplier or 0.64
+  local bright_mult = config and config.TILE_RENDER.waveform.brightness_multiplier or 0.35
+
+  s = s * sat_mult
+  v = v * bright_mult
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
   local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
@@ -34,9 +41,10 @@ local function compute_waveform_color(base_color)
   return col_wave
 end
 
-function M.init(utils_module, script_dir)
+function M.init(utils_module, script_dir, config_module)
   utils = utils_module
   SCRIPT_DIRECTORY = script_dir
+  config = config_module
 end
 
 function M.GetItemWaveform(cache, item, uuid)
@@ -203,8 +211,13 @@ function M.DisplayWaveform(ctx, waveform, color, draw_list, target_width)
   DrawList_AddRectFilled(draw_list, item_x1, item_y1, item_x2, item_y2, color)
   local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-  s = s * 0.64
-  v = v * 0.35
+
+  -- Use config values for HSV transformation
+  local sat_mult = config and config.TILE_RENDER.waveform.saturation_multiplier or 0.64
+  local bright_mult = config and config.TILE_RENDER.waveform.brightness_multiplier or 0.35
+
+  s = s * sat_mult
+  v = v * bright_mult
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
   local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
@@ -364,8 +377,13 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
 
   local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-  s = s * 0.64
-  v = v * 0.35
+
+  -- Use config values for HSV transformation
+  local sat_mult = config and config.TILE_RENDER.waveform.saturation_multiplier or 0.64
+  local bright_mult = config and config.TILE_RENDER.waveform.brightness_multiplier or 0.35
+
+  s = s * sat_mult
+  v = v * bright_mult
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
   local col_note = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
@@ -383,7 +401,11 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
   end
 end
 
-function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width, uuid, cache)
+function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width, uuid, cache, use_filled, show_zero_line)
+  -- Default to filled if not specified (for backwards compatibility)
+  if use_filled == nil then use_filled = true end
+  if show_zero_line == nil then show_zero_line = false end
+
   -- Cache ImGui functions for performance
   local GetItemRectMin = ImGui.GetItemRectMin
   local GetItemRectMax = ImGui.GetItemRectMax
@@ -400,14 +422,17 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
 
   local width = floor(target_width or item_w)
 
-  -- Performance: Use cached color conversion (5-10% faster)
-  local col_wave = compute_waveform_color(color)
+  -- Use the color directly - it's already been transformed by get_dark_waveform_color
+  local col_wave = color
   local col_zero_line = col_wave
 
   local waveform_height = item_h / 2 * 0.95
   local zero_line = item_y1 + item_h / 2
 
-  DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
+  -- Draw zero line (optional)
+  if show_zero_line then
+    DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
+  end
 
   -- Performance: Cache normalized point coordinates (20x faster)
   local cache_key = uuid and (uuid .. "_" .. width) or nil
@@ -419,31 +444,81 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
     local norm_bottom = cached_polylines.norm_bottom
 
     if norm_top and norm_bottom then
-      -- Build point arrays by scaling cached normalized coords (MUCH faster than before)
-      local top_points_table = {}
-      local top_idx = 1
-      for i = 1, #norm_top, 2 do
-        top_points_table[top_idx] = item_x1 + norm_top[i] * item_w  -- Scale X
-        top_points_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height  -- Scale Y
+      if use_filled then
+        -- Build filled polygon arrays (waveform + zero line closure)
+        local top_fill_table = {}
+        local top_idx = 1
+
+        -- Top waveform points (left to right)
+        for i = 1, #norm_top, 2 do
+          top_fill_table[top_idx] = item_x1 + norm_top[i] * item_w  -- Scale X
+          top_fill_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height  -- Scale Y
+          top_idx = top_idx + 2
+        end
+
+        -- Close polygon along zero line (right to left)
+        top_fill_table[top_idx] = item_x2
+        top_fill_table[top_idx + 1] = zero_line
         top_idx = top_idx + 2
-      end
+        top_fill_table[top_idx] = item_x1
+        top_fill_table[top_idx + 1] = zero_line
 
-      local bottom_points_table = {}
-      local bottom_idx = 1
-      for i = 1, #norm_bottom, 2 do
-        bottom_points_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w  -- Scale X
-        bottom_points_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height  -- Scale Y
+        -- Bottom polygon
+        local bottom_fill_table = {}
+        local bottom_idx = 1
+
+        -- Bottom waveform points (left to right)
+        for i = 1, #norm_bottom, 2 do
+          bottom_fill_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w  -- Scale X
+          bottom_fill_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height  -- Scale Y
+          bottom_idx = bottom_idx + 2
+        end
+
+        -- Close polygon along zero line (right to left)
+        bottom_fill_table[bottom_idx] = item_x2
+        bottom_fill_table[bottom_idx + 1] = zero_line
         bottom_idx = bottom_idx + 2
-      end
+        bottom_fill_table[bottom_idx] = item_x1
+        bottom_fill_table[bottom_idx + 1] = zero_line
 
-      if #top_points_table >= 4 then
-        local top_array = reaper.new_array(top_points_table)
-        DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
-      end
+        -- Fill polygons
+        if #top_fill_table >= 8 then  -- Need at least 4 points (8 values) for a polygon
+          local top_fill_array = reaper.new_array(top_fill_table)
+          ImGui.DrawList_AddConvexPolyFilled(draw_list, top_fill_array, col_wave)
+        end
 
-      if #bottom_points_table >= 4 then
-        local bottom_array = reaper.new_array(bottom_points_table)
-        DrawList_AddPolyline(draw_list, bottom_array, col_wave, ImGui.DrawFlags_None, 1.0)
+        if #bottom_fill_table >= 8 then
+          local bottom_fill_array = reaper.new_array(bottom_fill_table)
+          ImGui.DrawList_AddConvexPolyFilled(draw_list, bottom_fill_array, col_wave)
+        end
+      else
+        -- Build outline polyline arrays (just waveform points)
+        local top_points_table = {}
+        local top_idx = 1
+        for i = 1, #norm_top, 2 do
+          top_points_table[top_idx] = item_x1 + norm_top[i] * item_w  -- Scale X
+          top_points_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height  -- Scale Y
+          top_idx = top_idx + 2
+        end
+
+        local bottom_points_table = {}
+        local bottom_idx = 1
+        for i = 1, #norm_bottom, 2 do
+          bottom_points_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w  -- Scale X
+          bottom_points_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height  -- Scale Y
+          bottom_idx = bottom_idx + 2
+        end
+
+        -- Draw outline polylines
+        if #top_points_table >= 4 then
+          local top_array = reaper.new_array(top_points_table)
+          DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
+        end
+
+        if #bottom_points_table >= 4 then
+          local bottom_array = reaper.new_array(bottom_points_table)
+          DrawList_AddPolyline(draw_list, bottom_array, col_wave, ImGui.DrawFlags_None, 1.0)
+        end
       end
     end
   else
@@ -480,31 +555,82 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
       end
     end
 
-    -- Build actual point arrays for this frame
-    local top_points_table = {}
-    local top_idx = 1
-    for i = 1, #norm_top, 2 do
-      top_points_table[top_idx] = item_x1 + norm_top[i] * item_w
-      top_points_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height
+    -- Build and render arrays for this frame
+    if use_filled then
+      -- Build filled polygon arrays
+      local top_fill_table = {}
+      local top_idx = 1
+
+      -- Top waveform points
+      for i = 1, #norm_top, 2 do
+        top_fill_table[top_idx] = item_x1 + norm_top[i] * item_w
+        top_fill_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height
+        top_idx = top_idx + 2
+      end
+
+      -- Close polygon along zero line
+      top_fill_table[top_idx] = item_x2
+      top_fill_table[top_idx + 1] = zero_line
       top_idx = top_idx + 2
-    end
+      top_fill_table[top_idx] = item_x1
+      top_fill_table[top_idx + 1] = zero_line
 
-    local bottom_points_table = {}
-    local bottom_idx = 1
-    for i = 1, #norm_bottom, 2 do
-      bottom_points_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w
-      bottom_points_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height
+      -- Bottom polygon
+      local bottom_fill_table = {}
+      local bottom_idx = 1
+
+      -- Bottom waveform points
+      for i = 1, #norm_bottom, 2 do
+        bottom_fill_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w
+        bottom_fill_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height
+        bottom_idx = bottom_idx + 2
+      end
+
+      -- Close polygon along zero line
+      bottom_fill_table[bottom_idx] = item_x2
+      bottom_fill_table[bottom_idx + 1] = zero_line
       bottom_idx = bottom_idx + 2
-    end
+      bottom_fill_table[bottom_idx] = item_x1
+      bottom_fill_table[bottom_idx + 1] = zero_line
 
-    if #top_points_table >= 4 then
-      local top_array = reaper.new_array(top_points_table)
-      DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
-    end
+      -- Fill polygons
+      if #top_fill_table >= 8 then
+        local top_fill_array = reaper.new_array(top_fill_table)
+        ImGui.DrawList_AddConvexPolyFilled(draw_list, top_fill_array, col_wave)
+      end
 
-    if #bottom_points_table >= 4 then
-      local bottom_array = reaper.new_array(bottom_points_table)
-      DrawList_AddPolyline(draw_list, bottom_array, col_wave, ImGui.DrawFlags_None, 1.0)
+      if #bottom_fill_table >= 8 then
+        local bottom_fill_array = reaper.new_array(bottom_fill_table)
+        ImGui.DrawList_AddConvexPolyFilled(draw_list, bottom_fill_array, col_wave)
+      end
+    else
+      -- Build outline polyline arrays
+      local top_points_table = {}
+      local top_idx = 1
+      for i = 1, #norm_top, 2 do
+        top_points_table[top_idx] = item_x1 + norm_top[i] * item_w
+        top_points_table[top_idx + 1] = zero_line + norm_top[i + 1] * waveform_height
+        top_idx = top_idx + 2
+      end
+
+      local bottom_points_table = {}
+      local bottom_idx = 1
+      for i = 1, #norm_bottom, 2 do
+        bottom_points_table[bottom_idx] = item_x1 + norm_bottom[i] * item_w
+        bottom_points_table[bottom_idx + 1] = zero_line + norm_bottom[i + 1] * waveform_height
+        bottom_idx = bottom_idx + 2
+      end
+
+      -- Draw outline polylines
+      if #top_points_table >= 4 then
+        local top_array = reaper.new_array(top_points_table)
+        DrawList_AddPolyline(draw_list, top_array, col_wave, ImGui.DrawFlags_None, 1.0)
+      end
+
+      if #bottom_points_table >= 4 then
+        local bottom_array = reaper.new_array(bottom_points_table)
+        DrawList_AddPolyline(draw_list, bottom_array, col_wave, ImGui.DrawFlags_None, 1.0)
+      end
     end
 
     -- Cache the normalized coordinates for this uuid+width
@@ -532,8 +658,8 @@ function M.DisplayMidiItemTransparent(ctx, thumbnail, color, draw_list)
   local scale_x = display_w / MIDI_CACHE_WIDTH
   local scale_y = display_h / MIDI_CACHE_HEIGHT
 
-  -- Performance: Use cached color conversion (5-10% faster)
-  local col_note = compute_waveform_color(color)
+  -- Use the color directly - it's already been transformed by get_dark_waveform_color
+  local col_note = color
 
   -- Use indexed loop instead of pairs() for better performance
   local num_notes = #thumbnail

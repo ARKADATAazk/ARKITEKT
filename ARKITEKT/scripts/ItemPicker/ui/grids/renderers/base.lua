@@ -75,20 +75,52 @@ function M.get_dark_waveform_color(base_color, config)
 end
 
 -- Render header bar
-function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, config)
+function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, config, is_small_tile)
+  local header_config = config.TILE_RENDER.header
+  local small_tile_config = config.TILE_RENDER.small_tile
+
+  -- In small tile mode with disable_header_fill, don't render anything
+  -- (base tile color is bright enough, no darkening overlay needed)
+  if is_small_tile and small_tile_config.disable_header_fill then
+    return
+  end
+
+  -- Normal header rendering with colored background
   local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
 
-  s = s * config.TILE_RENDER.header.saturation_factor
-  v = v * config.TILE_RENDER.header.brightness_factor
+  -- Choose appropriate config section based on tile mode
+  if is_small_tile then
+    s = s * small_tile_config.header_saturation_factor
+    v = v * small_tile_config.header_brightness_factor
+  else
+    s = s * header_config.saturation_factor
+    v = v * header_config.brightness_factor
+  end
 
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local final_alpha = math.floor((config.TILE_RENDER.header.alpha / 255) * alpha * 255)
+  -- For small tiles, header_alpha is a multiplier (0.0-1.0), so convert it
+  local base_header_alpha = header_config.alpha / 255
+  local final_alpha
+  if is_small_tile then
+    -- In small tile mode, alpha is already pre-multiplied by header_alpha in the caller
+    final_alpha = math.floor(alpha * 255)
+  else
+    final_alpha = math.floor(base_header_alpha * alpha * 255)
+  end
+
   local header_color = ImGui.ColorConvertDouble4ToU32(r, g, b, final_alpha / 255)
 
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, header_color, config.TILE.ROUNDING)
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, config.TILE_RENDER.header.text_shadow, config.TILE.ROUNDING)
+  -- Choose appropriate text shadow
+  local text_shadow = is_small_tile and small_tile_config.header_text_shadow or header_config.text_shadow
+
+  -- Round only top corners of header (top-left and top-right)
+  -- Use slightly less rounding than tile for better visual alignment
+  local header_rounding = math.max(0, config.TILE.ROUNDING - header_config.rounding_offset)
+  local round_flags = ImGui.DrawFlags_RoundCornersTop
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, header_color, header_rounding, round_flags)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, text_shadow, header_rounding, round_flags)
 end
 
 -- Render placeholder with loading spinner
@@ -146,7 +178,8 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   if show_badge and total and total > 1 then
     local badge_text = string.format("%d/%d", index or 1, total)
     local bw, _ = ImGui.CalcTextSize(ctx, badge_text)
-    right_bound_x = right_bound_x - (bw + tile_render.badge.padding_x * 2 + tile_render.badge.margin)
+    local badge_cfg = tile_render.badges.cycle
+    right_bound_x = right_bound_x - (bw + badge_cfg.padding_x * 2 + badge_cfg.margin)
   end
 
   local available_width = right_bound_x - text_x
@@ -154,25 +187,34 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
 
   Draw.text(dl, text_x, text_y, Colors.with_alpha(tile_render.text.primary_color, text_alpha), truncated_name)
 
-  -- Render badge
+  -- Render cycle badge (vertically centered in header)
   if show_badge and total and total > 1 then
+    local badge_cfg = tile_render.badges.cycle
     local badge_text = string.format("%d/%d", index or 1, total)
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
 
-    local badge_x = x2 - bw - tile_render.badge.padding_x * 2 - tile_render.badge.margin
-    local badge_y = y1 + (header_height - (bh + tile_render.badge.padding_y * 2)) / 2
-    local badge_x2 = badge_x + bw + tile_render.badge.padding_x * 2
-    local badge_y2 = badge_y + bh + tile_render.badge.padding_y * 2
+    -- Calculate badge dimensions
+    local badge_w = bw + badge_cfg.padding_x * 2
+    local badge_h = bh + badge_cfg.padding_y * 2
 
-    local badge_bg_alpha = math.floor((tile_render.badge.bg & 0xFF) * (text_alpha / 255))
-    local badge_bg = (tile_render.badge.bg & 0xFFFFFF00) | badge_bg_alpha
+    -- Center vertically in header
+    local badge_x = x2 - badge_w - badge_cfg.margin
+    local badge_y = y1 + (header_height - badge_h) / 2
+    local badge_x2 = badge_x + badge_w
+    local badge_y2 = badge_y + badge_h
 
-    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, tile_render.badge.rounding)
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2,
-      Colors.with_alpha(base_color, tile_render.badge.border_alpha),
-      tile_render.badge.rounding, 0, 0.5)
+    -- Background
+    local badge_bg_alpha = math.floor((badge_cfg.bg & 0xFF) * (text_alpha / 255))
+    local badge_bg = (badge_cfg.bg & 0xFFFFFF00) | badge_bg_alpha
+    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, badge_cfg.rounding)
 
-    Draw.text(dl, badge_x + tile_render.badge.padding_x, badge_y + tile_render.badge.padding_y,
+    -- Border using darker tile color
+    local border_color = Colors.adjust_brightness(base_color, badge_cfg.border_darken)
+    border_color = Colors.with_alpha(border_color, badge_cfg.border_alpha)
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, border_color, badge_cfg.rounding, 0, 0.5)
+
+    -- Text
+    Draw.text(dl, badge_x + badge_cfg.padding_x, badge_y + badge_cfg.padding_y,
       Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
 
     -- Store badge rect for exclusion zone and make it clickable

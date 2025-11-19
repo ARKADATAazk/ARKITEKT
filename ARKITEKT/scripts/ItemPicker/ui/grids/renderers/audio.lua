@@ -4,7 +4,6 @@
 
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
-local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
 local Shapes = require('rearkitekt.gui.rendering.shapes')
@@ -32,16 +31,22 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local scaled_x2 = center_x + scaled_w / 2
   local scaled_y2 = center_y + scaled_h / 2 + y_offset
 
+  -- Check if we're in small tile mode (need this early for animations)
+  local is_small_tile = scaled_h < config.TILE_RENDER.responsive.small_tile_height
+
   -- Track animations
   local is_disabled = state.disabled and state.disabled.audio and state.disabled.audio[item_data.filename]
 
   if animator and item_data.key then
     animator:track(item_data.key, 'hover', tile_state.hover and 1.0 or 0.0, config.TILE_RENDER.animation_speed_hover)
     animator:track(item_data.key, 'enabled', is_disabled and 0.0 or 1.0, config.TILE_RENDER.disabled.fade_speed)
+    -- Track compact mode for header transition (1.0 = compact/small, 0.0 = normal)
+    animator:track(item_data.key, 'compact_mode', is_small_tile and 1.0 or 0.0, config.TILE_RENDER.animation_speed_header_transition)
   end
 
   local hover_factor = animator and animator:get(item_data.key, 'hover') or (tile_state.hover and 1.0 or 0.0)
   local enabled_factor = animator and animator:get(item_data.key, 'enabled') or (is_disabled and 0.0 or 1.0)
+  local compact_factor = animator and animator:get(item_data.key, 'compact_mode') or (is_small_tile and 1.0 or 0.0)
 
   -- Track playback progress
   local playback_progress, playback_fade = 0, 0
@@ -80,6 +85,18 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       1.0 - (1.0 - config.TILE_RENDER.disabled.brightness) * (1.0 - enabled_factor))
   end
 
+  -- Apply base tile fill adjustments (use compact mode values for small tiles)
+  local sat_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_saturation_factor or config.TILE_RENDER.base_fill.saturation_factor
+  local bright_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_brightness_factor or config.TILE_RENDER.base_fill.brightness_factor
+  render_color = Colors.desaturate(render_color, 1.0 - sat_factor)
+  render_color = Colors.adjust_brightness(render_color, bright_factor)
+
+  -- Apply hover effect (brightness boost)
+  if hover_factor > 0.001 then
+    local hover_boost = config.TILE_RENDER.hover.brightness_boost * hover_factor
+    render_color = Colors.adjust_brightness(render_color, 1.0 + hover_boost)
+  end
+
   -- Apply cascade/enabled alpha with minimum for disabled items
   local min_alpha_factor = (config.TILE_RENDER.disabled.min_alpha or 0x33) / 255
   local alpha_factor = min_alpha_factor + (1.0 - min_alpha_factor) * enabled_factor
@@ -90,57 +107,120 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   local text_alpha = math.floor(0xFF * combined_alpha)
 
-  -- Calculate header height
-  local header_height = math.max(
+  -- Calculate header height with animated transition
+  local normal_header_height = math.max(
     config.TILE_RENDER.header.min_height,
     scaled_h * config.TILE_RENDER.header.height_ratio
   )
+  local full_tile_height = scaled_h
 
-  -- Render base tile fill
-  ImGui.DrawList_PathClear(dl)
-  ImGui.DrawList_PathLineTo(dl, scaled_x1, scaled_y1)
-  ImGui.DrawList_PathLineTo(dl, scaled_x2, scaled_y1)
-  ImGui.DrawList_PathLineTo(dl, scaled_x2, scaled_y2)
-  ImGui.DrawList_PathLineTo(dl, scaled_x1, scaled_y2)
-  ImGui.DrawList_PathFillConvex(dl, render_color)
+  -- Interpolate between normal and full based on compact_factor
+  -- compact_factor: 0.0 = normal mode, 1.0 = compact mode
+  local header_height = normal_header_height + (full_tile_height - normal_header_height) * compact_factor
 
-  -- Apply TileFX (optimized: reuse config table instead of copying)
-  local fx_config = config.TILE_RENDER.tile_fx
-  local saved_rounding = fx_config.rounding
-  local saved_ants_replace = fx_config.ants_replace_border
-  fx_config.rounding = config.TILE.ROUNDING
-  fx_config.ants_replace_border = false
+  -- Calculate header fade (fade out when going to compact, fade in when going to normal)
+  -- In compact mode (compact_factor = 1.0), header alpha should be 0
+  -- In normal mode (compact_factor = 0.0), header alpha should be normal
+  local header_alpha_factor = 1.0 - compact_factor
 
-  TileFX.render_complete(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color,
-    fx_config, tile_state.selected, hover_factor, playback_progress, playback_fade)
+  -- Render base tile fill with rounding
+  ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
 
-  -- Restore original values
-  fx_config.rounding = saved_rounding
-  fx_config.ants_replace_border = saved_ants_replace
+  -- Render waveform BEFORE header so header can overlay with transparency
+  -- (show even when disabled, just with toned down color)
+  if item_data.item and cascade_factor > 0.2 then
+    -- In small tile mode with visualization disabled, skip entirely for performance
+    local show_viz_in_small = is_small_tile and (state.settings.show_visualization_in_small_tiles ~= false)
+    if is_small_tile and not show_viz_in_small then
+      -- Skip waveform rendering in small tile mode when visualization is disabled
+      goto skip_waveform
+    end
 
-  -- Render header (use render_color to match tile color, not base_color)
+    local content_y1, content_h
+
+    if show_viz_in_small then
+      -- Render visualization over entire tile (header will overlay with transparency)
+      content_y1 = scaled_y1
+      content_h = scaled_h
+    else
+      -- Normal mode: render in content area below header
+      content_y1 = scaled_y1 + header_height
+      content_h = scaled_y2 - content_y1
+    end
+
+    local content_w = scaled_w
+
+    ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
+    ImGui.Dummy(ctx, content_w, content_h)
+
+    local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config)
+    local waveform_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
+
+    -- In small tile mode, apply very low opacity for subtle visualization
+    if show_viz_in_small then
+      waveform_alpha = waveform_alpha * config.TILE_RENDER.small_tile.visualization_alpha
+    end
+
+    dark_color = Colors.with_alpha(dark_color, math.floor(waveform_alpha * 255))
+
+    -- Skip all waveform rendering if skip_visualizations is enabled (fast mode)
+    if not state.skip_visualizations then
+      -- Check runtime cache for waveform
+      local waveform = state.runtime_cache and state.runtime_cache.waveforms[item_data.uuid]
+      if waveform then
+        if visualization.DisplayWaveformTransparent then
+          -- Apply waveform quality multiplier to reduce resolution (better performance with many items)
+          local quality = state.settings.waveform_quality or 1.0
+          local target_width = math.floor(content_w * quality)
+          local use_filled = state.settings.waveform_filled
+          if use_filled == nil then use_filled = true end
+          local show_zero_line = state.settings.waveform_zero_line or false
+          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled, show_zero_line)
+        end
+      else
+        -- Show placeholder and queue waveform generation
+        BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
+
+        -- Queue waveform job
+        if state.job_queue and state.job_queue.add_waveform_job then
+          state.job_queue.add_waveform_job(item_data.item, item_data.uuid)
+        end
+      end
+    end
+  end
+
+  ::skip_waveform::
+
+  -- Render header with animated fade and size transition
+  -- Apply header_alpha_factor for transition fade (fades out when going to compact, fades in when going to normal)
+  local header_alpha = combined_alpha * header_alpha_factor
+  if is_small_tile and header_alpha_factor < 0.1 then
+    -- When mostly faded out in compact mode, apply small tile header alpha
+    header_alpha = combined_alpha * config.TILE_RENDER.small_tile.header_alpha
+  end
   BaseRenderer.render_header_bar(dl, scaled_x1, scaled_y1, scaled_x2, header_height,
-    render_color, combined_alpha, config)
+    render_color, header_alpha, config, is_small_tile)
 
   -- Render marching ants for selection
   if tile_state.selected and cascade_factor > 0.5 then
+    local selection_config = config.TILE_RENDER.selection
     local ant_color = Colors.same_hue_variant(
       base_color,
-      config.TILE_RENDER.tile_fx.border_saturation,
-      config.TILE_RENDER.tile_fx.border_brightness,
-      math.floor(config.TILE_RENDER.tile_fx.ants_alpha * combined_alpha)
+      selection_config.border_saturation,
+      selection_config.border_brightness,
+      math.floor(selection_config.ants_alpha * combined_alpha)
     )
 
-    local inset = config.TILE_RENDER.tile_fx.ants_inset
+    local inset = selection_config.ants_inset
     MarchingAnts.draw(
       dl,
       scaled_x1 + inset, scaled_y1 + inset, scaled_x2 - inset, scaled_y2 - inset,
       ant_color,
-      config.TILE_RENDER.tile_fx.ants_thickness,
+      selection_config.ants_thickness,
       config.TILE.ROUNDING,
-      config.TILE_RENDER.tile_fx.ants_dash,
-      config.TILE_RENDER.tile_fx.ants_gap,
-      config.TILE_RENDER.tile_fx.ants_speed
+      selection_config.ants_dash,
+      selection_config.ants_gap,
+      selection_config.ants_speed
     )
   end
 
@@ -148,8 +228,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local is_favorite = state.favorites and state.favorites.audio and state.favorites.audio[item_data.filename]
 
   -- Calculate star badge space
-  local star_badge_size = 18
-  local star_padding = 4
+  local fav_cfg = config.TILE_RENDER.badges.favorite
+  local star_badge_size = fav_cfg.size
+  local star_padding = fav_cfg.padding
   local text_right_margin = is_favorite and (star_badge_size + star_padding * 2) or 0
 
   -- Check if this tile is being renamed
@@ -312,74 +393,42 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     end
   end
 
-  -- Render favorite star badge
+  -- Render favorite star badge (vertically centered in header)
   if cascade_factor > 0.5 and is_favorite then
     local star_x = scaled_x2 - star_badge_size - star_padding
-    local star_y = scaled_y1 + star_padding
+    local star_y = scaled_y1 + (header_height - star_badge_size) / 2
     Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite)
   end
 
-  -- Render waveform (show even when disabled, just with toned down color)
-  if item_data.item and cascade_factor > 0.2 then
-    local content_y1 = scaled_y1 + header_height
-    local content_w = scaled_w
-    local content_h = scaled_y2 - content_y1
-
-    ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
-    ImGui.Dummy(ctx, content_w, content_h)
-
-    local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config)
-    local waveform_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
-    dark_color = Colors.with_alpha(dark_color, math.floor(waveform_alpha * 255))
-
-    -- Skip all waveform rendering if skip_visualizations is enabled (fast mode)
-    if not state.skip_visualizations then
-      -- Check runtime cache for waveform
-      local waveform = state.runtime_cache and state.runtime_cache.waveforms[item_data.uuid]
-      if waveform then
-        if visualization.DisplayWaveformTransparent then
-          -- Apply waveform quality multiplier to reduce resolution (better performance with many items)
-          local quality = state.settings.waveform_quality or 1.0
-          local target_width = math.floor(content_w * quality)
-          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache)
-        end
-      else
-        -- Show placeholder and queue waveform generation
-        BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
-
-        -- Queue waveform job
-        if state.job_queue and state.job_queue.add_waveform_job then
-          state.job_queue.add_waveform_job(item_data.item, item_data.uuid)
-        end
-      end
-    end
-  end
-
   -- Render pool count badge (bottom right) if more than 1 instance
-  if item_data.pool_count and item_data.pool_count > 1 and cascade_factor > 0.5 then
+  -- Hide in small tile mode to prioritize the name display
+  local should_show_pool_count = item_data.pool_count and item_data.pool_count > 1 and cascade_factor > 0.5
+  if is_small_tile and config.TILE_RENDER.small_tile.hide_pool_count then
+    should_show_pool_count = false
+  end
+  if should_show_pool_count then
+    local pool_cfg = config.TILE_RENDER.badges.pool
     local pool_text = "×" .. tostring(item_data.pool_count)
     local text_w, text_h = ImGui.CalcTextSize(ctx, pool_text)
-    local badge_padding = 4
-    local badge_w = text_w + badge_padding * 2
-    local badge_h = text_h + badge_padding * 2
-    local badge_x = scaled_x2 - badge_w - 4
-    local badge_y = scaled_y2 - badge_h - 4
-    local badge_rounding = 3
+    local badge_w = text_w + pool_cfg.padding_x * 2
+    local badge_h = text_h + pool_cfg.padding_y * 2
+    local badge_x = scaled_x2 - badge_w - pool_cfg.margin
+    local badge_y = scaled_y2 - badge_h - pool_cfg.margin
 
     -- Badge background
-    local badge_bg = Colors.hexrgb("#14181C")
-    badge_bg = Colors.with_alpha(badge_bg, math.floor(combined_alpha * 200))
-    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, badge_rounding)
+    local badge_bg_alpha = math.floor((pool_cfg.bg & 0xFF) * combined_alpha)
+    local badge_bg = (pool_cfg.bg & 0xFFFFFF00) | badge_bg_alpha
+    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, pool_cfg.rounding)
 
-    -- Badge border
-    local badge_border = Colors.hexrgb("#2A2A2A")
-    badge_border = Colors.with_alpha(badge_border, math.floor(combined_alpha * 100))
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_border, badge_rounding, 0, 1)
+    -- Border using darker tile color
+    local border_color = Colors.adjust_brightness(render_color, pool_cfg.border_darken)
+    border_color = Colors.with_alpha(border_color, pool_cfg.border_alpha)
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, border_color, pool_cfg.rounding, 0, 0.5)
 
     -- Pool count text
     local text_color = Colors.hexrgb("#AAAAAA")
     text_color = Colors.with_alpha(text_color, math.floor(combined_alpha * 255))
-    ImGui.DrawList_AddText(dl, badge_x + badge_padding, badge_y + badge_padding, text_color, pool_text)
+    ImGui.DrawList_AddText(dl, badge_x + pool_cfg.padding_x, badge_y + pool_cfg.padding_y, text_color, pool_text)
   end
 end
 

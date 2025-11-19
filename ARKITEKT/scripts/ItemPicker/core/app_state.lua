@@ -27,6 +27,10 @@ M.settings = {
   separator_position_horizontal = nil,  -- MIDI section width for horizontal layout
   sort_mode = "none",  -- Options: "none", "color", "name", "pool"
   waveform_quality = 1.0,  -- Waveform resolution multiplier (0.1-1.0, lower = better performance)
+  waveform_filled = true,  -- Use filled polygons for waveforms (false = outline only)
+  waveform_zero_line = false,  -- Show zero line in waveforms
+  show_visualization_in_small_tiles = false,  -- Show waveform/MIDI in compact display mode (toggle)
+  enable_tile_fx = true,  -- Enable TileFX rendering (hover/selection effects) - disable for performance testing
   layout_mode = "vertical",  -- Options: "vertical" (top/bottom), "horizontal" (left/right)
 }
 
