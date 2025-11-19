@@ -337,9 +337,21 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Render MIDI visualization (show even when disabled, just with toned down color)
   if item_data.item and cascade_factor > 0.2 then
-    local content_y1 = scaled_y1 + header_height
+    -- In small tile mode with visualization enabled, render over entire tile
+    local show_viz_in_small = is_small_tile and (state.settings.show_visualization_in_small_tiles ~= false)
+    local content_y1, content_h
+
+    if show_viz_in_small then
+      -- Render visualization over entire tile (header will overlay with transparency)
+      content_y1 = scaled_y1
+      content_h = scaled_h
+    else
+      -- Normal mode: render in content area below header
+      content_y1 = scaled_y1 + header_height
+      content_h = scaled_y2 - content_y1
+    end
+
     local content_w = scaled_w
-    local content_h = scaled_y2 - content_y1
 
     ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
     ImGui.Dummy(ctx, content_w, content_h)

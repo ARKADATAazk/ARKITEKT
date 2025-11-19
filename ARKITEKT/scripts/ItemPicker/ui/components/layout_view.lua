@@ -232,8 +232,20 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.needs_reorganize = true
   end
 
-  -- Sort mode buttons (on same line after Group Items checkbox)
-  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Group Items of Same Name") + 18 + 8 + 40  -- Extra spacing
+  -- Show Visualization in Small Tiles checkbox on same line
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Group Items of Same Name") + 18 + 8 + spacing
+  local show_viz_small_x = checkbox_x + prev_width
+  local show_viz_small = self.state.settings.show_visualization_in_small_tiles
+  if show_viz_small == nil then show_viz_small = true end
+  _, clicked = Checkbox.draw(ctx, draw_list, show_viz_small_x, checkbox_y,
+    "Show Viz in Small Tiles",
+    show_viz_small, checkbox_config, "show_viz_small")
+  if clicked then
+    self.state.set_setting('show_visualization_in_small_tiles', not show_viz_small)
+  end
+
+  -- Sort mode buttons (on same line after checkboxes)
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Viz in Small Tiles") + 18 + 8 + 40  -- Extra spacing
   local sort_button_x = checkbox_x + prev_width
 
   -- Draw sort mode label and buttons
