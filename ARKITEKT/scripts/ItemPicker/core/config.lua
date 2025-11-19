@@ -68,6 +68,12 @@ M.GRID = {
 
 -- Tile rendering config
 M.TILE_RENDER = {
+  -- Base tile fill (color adjustments applied to tile background)
+  base_fill = {
+    saturation_factor = 0.9,  -- Multiply saturation (0.0-1.0, lower = more desaturated)
+    brightness_factor = 0.85, -- Multiply brightness (0.0-1.0, lower = darker)
+  },
+
   -- Disabled state
   disabled = {
     desaturate = 0.8,

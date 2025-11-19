@@ -80,6 +80,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       1.0 - (1.0 - config.TILE_RENDER.disabled.brightness) * (1.0 - enabled_factor))
   end
 
+  -- Apply base tile fill adjustments (darken and desaturate for subtle look)
+  render_color = Colors.desaturate(render_color, 1.0 - config.TILE_RENDER.base_fill.saturation_factor)
+  render_color = Colors.adjust_brightness(render_color, config.TILE_RENDER.base_fill.brightness_factor)
+
   -- Apply cascade/enabled alpha with minimum for disabled items
   local min_alpha_factor = (config.TILE_RENDER.disabled.min_alpha or 0x33) / 255
   local alpha_factor = min_alpha_factor + (1.0 - min_alpha_factor) * enabled_factor
@@ -108,25 +112,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Render base tile fill with rounding
   ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
-
-  -- Apply TileFX (toggle for performance testing)
-  if state.settings.enable_tile_fx ~= false then
-    local has_effects = hover_factor > 0.001 or tile_state.selected or playback_fade > 0.001
-    if has_effects then
-      local fx_config = config.TILE_RENDER.tile_fx
-      local saved_rounding = fx_config.rounding
-      local saved_ants_replace = fx_config.ants_replace_border
-      fx_config.rounding = config.TILE.ROUNDING
-      fx_config.ants_replace_border = false
-
-      TileFX.render_complete(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color,
-        fx_config, tile_state.selected, hover_factor, playback_progress, playback_fade)
-
-      -- Restore original values
-      fx_config.rounding = saved_rounding
-      fx_config.ants_replace_border = saved_ants_replace
-    end
-  end
 
   -- Render MIDI visualization BEFORE header so header can overlay with transparency
   -- (show even when disabled, just with toned down color)
