@@ -17,6 +17,7 @@ local GridBridge = require('rearkitekt.gui.widgets.containers.grid.grid_bridge')
 local LibraryGridFactory = require('ThemeAdjuster.ui.grids.library_grid_factory')
 local AssignmentGridFactory = require('ThemeAdjuster.ui.grids.assignment_grid_factory')
 local ParamLinkModal = require('ThemeAdjuster.ui.views.param_link_modal')
+local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
 
 local PC = Style.PANEL_COLORS
 
@@ -474,14 +475,36 @@ function AdditionalView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 8)
 
-    -- Draw active assignment grid (ALWAYS draw, even when empty, to accept drops!)
+    -- Draw parameter tiles with controls for active tab
+    local assigned_params = self:get_assigned_params(self.active_assignment_tab)
+    local tab_color = self.tab_colors[self.active_assignment_tab] or hexrgb("#888888")
+
+    if #assigned_params == 0 then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+      ImGui.Text(ctx, "No parameters assigned to this tab")
+      ImGui.PopStyleColor(ctx)
+      ImGui.Text(ctx, "Drag parameters from the library to assign them")
+    else
+      -- Scrollable area for parameter tiles
+      ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))
+      if ImGui.BeginChild(ctx, "param_tiles_" .. self.active_assignment_tab, 0, 0, 0, 0) then
+        for _, param in ipairs(assigned_params) do
+          AdditionalParamTile.render(ctx, param, tab_color, shell_state, self)
+        end
+        ImGui.EndChild(ctx)
+      end
+      ImGui.PopStyleColor(ctx)
+    end
+
+    -- Still draw the hidden assignment grid for drag-drop functionality
+    -- (Draw it off-screen to maintain drag-drop support)
+    local saved_x, saved_y = ImGui.GetCursorScreenPos(ctx)
+    ImGui.SetCursorScreenPos(ctx, -10000, -10000)
     local active_grid = self.assignment_grids[self.active_assignment_tab]
     if active_grid then
       active_grid:draw(ctx)
-
-      -- Handle right-click drag selection for assignment grid
-      self:handle_right_click_selection(ctx, active_grid, "assign_" .. self.active_assignment_tab)
     end
+    ImGui.SetCursorScreenPos(ctx, saved_x, saved_y)
 
     ImGui.Unindent(ctx, 8)
     ImGui.Dummy(ctx, 0, 4)
