@@ -255,6 +255,8 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
       state.persist_disabled()
+      -- Force cache invalidation to refresh grid
+      state.runtime_cache.midi_filter_hash = nil
     end,
 
     drag_start = function(keys)
@@ -391,6 +393,8 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
       state.persist_disabled()
+      -- Force cache invalidation to refresh grid
+      state.runtime_cache.midi_filter_hash = nil
     end,
 
 

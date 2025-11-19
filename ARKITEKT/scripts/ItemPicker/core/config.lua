@@ -68,6 +68,8 @@ M.GRID = {
 
 -- Tile rendering config
 M.TILE_RENDER = {
+  -- === TILE COLOR PARAMETERS ===
+
   -- Base tile fill (color adjustments applied to tile background)
   base_fill = {
     -- Normal mode
@@ -96,12 +98,12 @@ M.TILE_RENDER = {
     ants_speed = 20,
   },
 
-  -- Disabled state
+  -- Disabled state (20% opacity with colorful appearance)
   disabled = {
-    desaturate = 0.8,
-    brightness = 0.4,
-    min_alpha = 0x33,
-    fade_speed = 20.0,
+    desaturate = 0.3,    -- Desaturate by 30% (0.0-1.0, lower = more colorful)
+    brightness = 0.65,   -- Brighten to 65% (0.0-1.0, higher = brighter/more visible)
+    min_alpha = 0x33,    -- Minimum alpha/opacity (0x33 = ~20% opacity)
+    fade_speed = 20.0,   -- Animation speed for fade in/out
   },
 
   -- Header (Normal tile mode)

@@ -292,6 +292,8 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
       state.persist_disabled()
+      -- Force cache invalidation to refresh grid
+      state.runtime_cache.audio_filter_hash = nil
     end,
 
     favorite = function(item_uuids)
@@ -390,6 +392,8 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
       state.persist_disabled()
+      -- Force cache invalidation to refresh grid
+      state.runtime_cache.audio_filter_hash = nil
     end,
 
 
