@@ -102,7 +102,7 @@ function ParamLinkModal:remove_link()
 end
 
 -- Render the modal
-function ParamLinkModal:render(ctx)
+function ParamLinkModal:render(ctx, shell_state)
   if not self.open then return end
 
   if not ImGui.IsPopupOpen(ctx, "##param_link_popup") then
@@ -120,9 +120,13 @@ function ParamLinkModal:render(ctx)
   end
 
   -- Header
-  ImGui.PushFont(ctx, 0, 16)  -- Bold font if available
-  ImGui.Text(ctx, "Link Parameter")
-  ImGui.PopFont(ctx)
+  if shell_state and shell_state.fonts and shell_state.fonts.bold then
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
+    ImGui.Text(ctx, "Link Parameter")
+    ImGui.PopFont(ctx)
+  else
+    ImGui.Text(ctx, "Link Parameter")
+  end
 
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 0, 8)

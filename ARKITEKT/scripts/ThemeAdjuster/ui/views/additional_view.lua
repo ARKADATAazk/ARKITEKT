@@ -499,7 +499,7 @@ function AdditionalView:draw(ctx, shell_state)
 
   -- Parameter link modal
   if self.param_link_modal then
-    self.param_link_modal:render(ctx)
+    self.param_link_modal:render(ctx, shell_state)
   end
 end
 
