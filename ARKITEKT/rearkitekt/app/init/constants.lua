@@ -198,7 +198,7 @@ M.TITLEBAR = {
 -- STATUS BAR
 -- ============================================================================
 M.STATUS_BAR = {
-  height = 28,
+  height = 20,
   compensation = 6,  -- Adjustment for layout alignment
 
   -- Padding and spacing
@@ -210,16 +210,6 @@ M.STATUS_BAR = {
   show_resize_handle = true,
   resize_square_size = 3,
   resize_spacing = 1,
-}
-
--- ============================================================================
--- CHROME (Combined Chrome Constants)
--- ============================================================================
-M.CHROME = {
-  TITLEBAR_HEIGHT = 26,
-  STATUS_BAR_HEIGHT = 28,
-  STATUS_BAR_COMPENSATION = 6,
-  TAB_HEIGHT = 30,
 }
 
 -- ============================================================================
