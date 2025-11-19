@@ -267,8 +267,9 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
   ImGui.DrawList_PushClipRect(dl, x, y, x + w, y + h, true)
 
   -- Get rounding from config
-  local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
   local outer_rounding = cb.rounding or CORNER_BUTTON_CONFIG.outer_corner_rounding
+  -- Make inner rounding match outer rounding for consistent appearance
+  local inner_rounding = outer_rounding
 
   -- Get position offsets
   local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
@@ -517,8 +518,9 @@ local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, panel_
   end
 
   -- Get rounding from config
-  local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
   local outer_rounding = cb.rounding or CORNER_BUTTON_CONFIG.outer_corner_rounding
+  -- Make inner rounding match outer rounding for consistent appearance
+  local inner_rounding = outer_rounding
 
   -- Get position offsets
   local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
@@ -791,7 +793,8 @@ function Panel:end_draw(ctx)
       local border_thickness = 1
       reaper.ShowConsoleMsg(string.format("[DEBUG] cb.rounding = %s, CORNER_BUTTON_CONFIG.outer_corner_rounding = %s\n", tostring(cb.rounding), tostring(CORNER_BUTTON_CONFIG.outer_corner_rounding)))
       local outer_rounding = cb.rounding or CORNER_BUTTON_CONFIG.outer_corner_rounding
-      local inner_rounding = size * CORNER_BUTTON_CONFIG.inner_corner_rounding_multiplier
+      -- Make inner rounding match outer rounding for consistent appearance
+      local inner_rounding = outer_rounding
       local offset_x = CORNER_BUTTON_CONFIG.position_offset_x
       local offset_y = CORNER_BUTTON_CONFIG.position_offset_y
       local panel_id = self.id
