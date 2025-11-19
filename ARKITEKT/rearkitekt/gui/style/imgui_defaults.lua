@@ -88,7 +88,7 @@ function M.PushMyStyle(ctx)
   local A = M.with_alpha
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, C.white)
   ImGui.PushStyleColor(ctx, ImGui.Col_TextDisabled, hexrgb("#848484FF"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, C.grey_14)
+  -- WindowBg is NOT pushed here - let overlay manager or caller control it
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#0D0D0D00"))
   ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, A(C.grey_08, 0xF0))
   ImGui.PushStyleColor(ctx, ImGui.Col_Border, C.border_soft)
@@ -143,7 +143,7 @@ function M.PushMyStyle(ctx)
 end
 
 function M.PopMyStyle(ctx)
-  ImGui.PopStyleColor(ctx, 51)
+  ImGui.PopStyleColor(ctx, 50)  -- Reduced from 51 since we removed WindowBg
   ImGui.PopStyleVar(ctx, 31)
 end
 
