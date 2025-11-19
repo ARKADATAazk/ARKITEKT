@@ -34,6 +34,10 @@ M.rename_buffer = ""        -- Text input buffer for rename
 M.dragging_item = nil       -- Item being dragged
 M.dragging_type = nil       -- "folder" or "template"
 
+-- Conflict resolution state
+M.conflict_pending = nil    -- Pending conflict info { templates, target_folder, operation }
+M.conflict_resolution = nil -- User's choice: "overwrite", "keep_both", "cancel"
+
 -- Panel layout state
 M.separator1_ratio = nil    -- Ratio for first separator (left column width)
 M.separator2_ratio = nil    -- Ratio for second separator (left+middle width)
@@ -46,6 +50,10 @@ M.undo_manager = nil
 M.status_message = ""        -- Current status message
 M.status_type = "info"       -- Message type: "error", "warning", "success", "info"
 M.status_timestamp = 0       -- When message was set (for auto-clear)
+
+-- Keyboard shortcuts
+M.focus_search = false       -- Request to focus search box
+M.grid_navigation = nil      -- Grid navigation action: "navigate_left", "navigate_right", etc.
 
 -- Internal
 M.exit = false
@@ -76,10 +84,18 @@ function M.initialize(config)
   M.dragging_item = nil
   M.dragging_type = nil
 
+  -- Conflict resolution
+  M.conflict_pending = nil
+  M.conflict_resolution = nil
+
   -- Status bar
   M.status_message = ""
   M.status_type = "info"
   M.status_timestamp = 0
+
+  -- Keyboard shortcuts
+  M.focus_search = false
+  M.grid_navigation = nil
 
   -- Panel layout defaults
   M.separator1_ratio = config.FOLDERS_PANEL_WIDTH_RATIO or 0.22

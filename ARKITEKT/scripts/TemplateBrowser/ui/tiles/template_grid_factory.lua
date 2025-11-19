@@ -8,7 +8,7 @@ local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
 
 local M = {}
 
-function M.create(get_templates, metadata, animator, get_tile_width, on_select, on_double_click, on_right_click)
+function M.create(get_templates, metadata, animator, get_tile_width, on_select, on_double_click, on_right_click, on_star_click)
   return Grid.new({
     id = "template_grid",
     gap = TemplateTile.CONFIG.gap,
@@ -26,6 +26,12 @@ function M.create(get_templates, metadata, animator, get_tile_width, on_select, 
     -- Tile rendering
     render_tile = function(ctx, rect, template, state)
       TemplateTile.render(ctx, rect, template, state, metadata, animator)
+
+      -- Handle star click
+      if state.star_clicked and on_star_click then
+        on_star_click(template)
+        state.star_clicked = false  -- Reset flag
+      end
     end,
 
     -- Behaviors

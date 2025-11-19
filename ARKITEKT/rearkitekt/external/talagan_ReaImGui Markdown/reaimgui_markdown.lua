@@ -5,11 +5,18 @@
 
 -- This is the core widget's logic
 
+-- Set up package path to find submodules
+local script_path = debug.getinfo(1, "S").source:match("@(.*)[\\/]")
+if script_path then
+    package.path = script_path .. "/?.lua;" .. package.path
+end
+
 local ImGui         = require "reaimgui_markdown/ext/imgui"
 local ParseMarkdown = require "reaimgui_markdown/markdown-ast"
 local ImGuiMdCore   = require "reaimgui_markdown/markdown-imgui"
 
 local function deepMerge(t1, t2)
+    if not t2 then return t1 end  -- Guard against nil
     for k,v in pairs(t2) do
         if type(v) == "table" then
             if type(t1[k] or false) == "table" then
@@ -75,10 +82,8 @@ function ReaImGuiMd:updateCtx(ctx)
 end
 
 function ReaImGuiMd:_createFontsIfNeeded(ctx)
-
-    self.font_ctx  = nil
-
-    if self.fonts and self.ctx == self.font_ctx then return end
+    -- Check if fonts already created for this context
+    if self.fonts and self.font_ctx == ctx then return end
 
     local fonts = {}
     local style = self.style
@@ -130,6 +135,10 @@ function ReaImGuiMd:render(ctx)
 
     if ImGui.BeginChild(ctx, "##" .. self.id, self.options.width, self.options.height, child_flags, window_flags) then
         self.max_x, self.max_y, self.interaction = ImGuiMdCore.ASTToImgui(ctx, self.ast, self.fonts, self.style, self.options)
+        -- Add dummy to consume space and prevent SetCursorPos errors
+        if self.max_x and self.max_y then
+            ImGui.Dummy(ctx, self.max_x, self.max_y)
+        end
         ImGui.EndChild(ctx)
     end
 

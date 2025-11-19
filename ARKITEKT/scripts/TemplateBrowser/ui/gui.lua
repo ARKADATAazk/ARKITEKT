@@ -17,7 +17,10 @@ local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_c
 local Tabs = require('rearkitekt.gui.widgets.navigation.tabs')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Fields = require('rearkitekt.gui.widgets.primitives.fields')
+local MarkdownField = require('rearkitekt.gui.widgets.primitives.markdown_field')
 local TreeView = require('rearkitekt.gui.widgets.navigation.tree_view')
+local Shortcuts = require('TemplateBrowser.core.shortcuts')
+local Tooltips = require('TemplateBrowser.core.tooltips')
 
 local M = {}
 local GUI = {}
@@ -67,9 +70,10 @@ function M.new(config, state, scanner)
   return self
 end
 
-function GUI:initialize_once(ctx)
+function GUI:initialize_once(ctx, is_overlay_mode)
   if self.initialized then return end
   self.ctx = ctx
+  self.is_overlay_mode = is_overlay_mode or false
 
   -- Create template grid
   self.template_grid = TemplateGridFactory.create(
@@ -115,6 +119,52 @@ function GUI:initialize_once(ctx)
       if template then
         -- Set context menu template for color picker
         self.state.context_menu_template = template
+      end
+    end,
+    -- on_star_click (receives template object from factory)
+    function(template)
+      if template then
+        local Persistence = require('TemplateBrowser.domain.persistence')
+        local favorites_id = "__FAVORITES__"
+
+        -- Get favorites folder
+        local favorites = self.state.metadata.virtual_folders[favorites_id]
+        if not favorites then
+          -- This should not happen due to initialization, but handle gracefully
+          self.state.set_status("Favorites folder not found", "error")
+          return
+        end
+
+        -- Check if template is already favorited
+        local is_favorited = false
+        local favorite_index = nil
+        for idx, ref_uuid in ipairs(favorites.template_refs) do
+          if ref_uuid == template.uuid then
+            is_favorited = true
+            favorite_index = idx
+            break
+          end
+        end
+
+        -- Toggle favorite status
+        if is_favorited then
+          -- Remove from favorites
+          table.remove(favorites.template_refs, favorite_index)
+          self.state.set_status("Removed from Favorites: " .. template.name, "success")
+        else
+          -- Add to favorites
+          table.insert(favorites.template_refs, template.uuid)
+          self.state.set_status("Added to Favorites: " .. template.name, "success")
+        end
+
+        -- Save metadata
+        Persistence.save_metadata(self.state.metadata)
+
+        -- If currently viewing Favorites folder, refresh the filter
+        if self.state.selected_folder == favorites_id then
+          local Scanner = require('TemplateBrowser.domain.scanner')
+          Scanner.filter_templates(self.state)
+        end
       end
     end
   )
@@ -184,7 +234,7 @@ function GUI:initialize_once(ctx)
       local Scanner = require('TemplateBrowser.domain.scanner')
       Scanner.filter_templates(self.state)
     end,
-  })
+  }, self.is_overlay_mode)  -- Pass overlay mode to use transparent backgrounds
 
   self.template_container = TilesContainer.new({
     id = "templates_container",
@@ -323,6 +373,17 @@ local function draw_folder_tree(ctx, state, config)
     enable_drag_drop = true,  -- Enable folder drag-and-drop
     enable_multi_select = true,  -- Enable multi-select with Ctrl/Shift
     context_menu_id = "folder_context_menu",  -- Enable context menu
+
+    -- Check if node can be renamed (prevent renaming system folders)
+    can_rename = function(node)
+      if node.is_virtual then
+        local vfolder = state.metadata.virtual_folders and state.metadata.virtual_folders[node.id]
+        if vfolder and vfolder.is_system then
+          return false  -- System folders cannot be renamed
+        end
+      end
+      return true  -- All other nodes can be renamed
+    end,
 
     -- Selection callback
     on_select = function(node, selected_nodes)
@@ -580,11 +641,34 @@ local function draw_folder_tree(ctx, state, config)
 
       if #templates_to_move == 0 then return end
 
-      -- Move all templates
+      -- Check for conflicts (only for physical folders)
+      local has_conflict = false
+      if not target_node.is_virtual then
+        for _, tmpl in ipairs(templates_to_move) do
+          local conflict_exists = FileOps.check_template_conflict(tmpl.name, target_node.full_path)
+          if conflict_exists then
+            has_conflict = true
+            break
+          end
+        end
+      end
+
+      -- If conflict detected, set up pending conflict and show modal
+      if has_conflict then
+        state.conflict_pending = {
+          templates = templates_to_move,
+          target_folder = target_node,
+          operation = "move"
+        }
+        return  -- Wait for user decision in modal (processed in main draw loop)
+      end
+
+      -- Move all templates (no conflict or virtual folder - virtual folders can have duplicates)
       local success_count = 0
       local total_count = #templates_to_move
+
       for _, tmpl in ipairs(templates_to_move) do
-        local success = FileOps.move_template(tmpl.path, target_node.full_path)
+        local success, new_path, conflict_detected = FileOps.move_template(tmpl.path, target_node.full_path, nil)
         if success then
           success_count = success_count + 1
         else
@@ -682,32 +766,37 @@ local function draw_folder_tree(ctx, state, config)
           end
         end
 
-        -- Add separator and delete option for virtual folders
+        -- Add separator and delete option for virtual folders (except system folders)
         if node.is_virtual then
-          ContextMenu.separator(ctx_inner)
+          local vfolder = state.metadata.virtual_folders and state.metadata.virtual_folders[node.id]
+          local is_system_folder = vfolder and vfolder.is_system
 
-          if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
-            local Persistence = require('TemplateBrowser.domain.persistence')
+          if not is_system_folder then
+            ContextMenu.separator(ctx_inner)
 
-            -- Remove from metadata
-            if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
-              state.metadata.virtual_folders[node.id] = nil
-              Persistence.save_metadata(state.metadata)
+            if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
+              local Persistence = require('TemplateBrowser.domain.persistence')
 
-              -- Clear selection if this folder was selected
-              if state.selected_folder == node.id then
-                state.selected_folder = ""
-                state.selected_folders = {}
+              -- Remove from metadata
+              if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+                state.metadata.virtual_folders[node.id] = nil
+                Persistence.save_metadata(state.metadata)
+
+                -- Clear selection if this folder was selected
+                if state.selected_folder == node.id then
+                  state.selected_folder = ""
+                  state.selected_folders = {}
+                end
+
+                -- Refresh UI (no need to rescan templates, just rebuild tree)
+                local Scanner = require('TemplateBrowser.domain.scanner')
+                Scanner.filter_templates(state)
+
+                state.set_status("Deleted virtual folder: " .. node.name, "success")
               end
 
-              -- Refresh UI (no need to rescan templates, just rebuild tree)
-              local Scanner = require('TemplateBrowser.domain.scanner')
-              Scanner.filter_templates(state)
-
-              state.set_status("Deleted virtual folder: " .. node.name, "success")
+              ImGui.CloseCurrentPopup(ctx_inner)
             end
-
-            ImGui.CloseCurrentPopup(ctx_inner)
           end
         end
 
@@ -723,6 +812,13 @@ local function draw_folder_tree(ctx, state, config)
         -- Handle virtual folder rename (metadata only, no file operations)
         if node.is_virtual then
           if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+            -- Prevent renaming system folders
+            local vfolder = state.metadata.virtual_folders[node.id]
+            if vfolder.is_system then
+              state.set_status("Cannot rename system folder: " .. node.name, "error")
+              return false
+            end
+
             state.metadata.virtual_folders[node.id].name = new_name
             Persistence.save_metadata(state.metadata)
             state.set_status("Renamed virtual folder to: " .. new_name, "success")
@@ -1397,25 +1493,174 @@ local function draw_left_panel(ctx, state, config, width, height)
   ImGui.EndChild(ctx)
 end
 
+-- Get recent templates (up to max_count)
+local function get_recent_templates(state, max_count)
+  max_count = max_count or 10
+
+  local recent = {}
+
+  -- Collect templates with last_used timestamp
+  for _, tmpl in ipairs(state.templates) do
+    local metadata = state.metadata and state.metadata.templates[tmpl.uuid]
+    if metadata and metadata.last_used then
+      table.insert(recent, {
+        template = tmpl,
+        last_used = metadata.last_used,
+      })
+    end
+  end
+
+  -- Sort by last_used (most recent first)
+  table.sort(recent, function(a, b)
+    return a.last_used > b.last_used
+  end)
+
+  -- Extract just the templates
+  local result = {}
+  for i = 1, math.min(max_count, #recent) do
+    table.insert(result, recent[i].template)
+  end
+
+  return result
+end
+
+-- Draw recent templates horizontal row
+local function draw_recent_templates(ctx, gui, width, available_height)
+  local state = gui.state
+  local recent_templates = get_recent_templates(state, 10)
+
+  if #recent_templates == 0 then
+    return 0  -- No height consumed
+  end
+
+  local section_height = 120  -- Height for recent templates section
+  local tile_height = 80
+  local tile_width = 140
+  local tile_gap = 8
+  local header_height = 24
+  local padding = 8
+
+  -- Draw section header
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#B3B3B3"))
+  ImGui.Text(ctx, "Recent Templates")
+  ImGui.PopStyleColor(ctx)
+  ImGui.Spacing(ctx)
+
+  -- Scroll area for horizontal tiles
+  local scroll_height = tile_height + padding * 2
+  BeginChildCompat(ctx, "RecentTemplatesScroll", width, scroll_height, false, ImGui.WindowFlags_HorizontalScrollbar)
+
+  -- Draw tiles horizontally
+  local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
+
+  for idx, tmpl in ipairs(recent_templates) do
+    local x1, y1 = ImGui.GetCursorScreenPos(ctx)
+    local x2 = x1 + tile_width
+    local y2 = y1 + tile_height
+
+    -- Create tile state for rendering
+    local tile_state = {
+      hover = false,
+      selected = state.selected_template and state.selected_template.uuid == tmpl.uuid,
+      star_clicked = false,
+    }
+
+    -- Check hover
+    local mx, my = ImGui.GetMousePos(ctx)
+    tile_state.hover = mx >= x1 and mx <= x2 and my >= y1 and my <= y2
+
+    -- Render tile
+    TemplateTile.render(ctx, {x1, y1, x2, y2}, tmpl, tile_state, state.metadata, gui.template_animator)
+
+    -- Handle tile click
+    if tile_state.hover and ImGui.IsMouseClicked(ctx, 0) and not tile_state.star_clicked then
+      state.selected_template = tmpl
+    end
+
+    -- Handle star click
+    if tile_state.star_clicked then
+      local Persistence = require('TemplateBrowser.domain.persistence')
+      local favorites_id = "__FAVORITES__"
+      local favorites = state.metadata.virtual_folders[favorites_id]
+
+      if favorites then
+        -- Toggle favorite
+        local is_favorited = false
+        local favorite_index = nil
+        for i, ref_uuid in ipairs(favorites.template_refs) do
+          if ref_uuid == tmpl.uuid then
+            is_favorited = true
+            favorite_index = i
+            break
+          end
+        end
+
+        if is_favorited then
+          table.remove(favorites.template_refs, favorite_index)
+          state.set_status("Removed from Favorites: " .. tmpl.name, "success")
+        else
+          table.insert(favorites.template_refs, tmpl.uuid)
+          state.set_status("Added to Favorites: " .. tmpl.name, "success")
+        end
+
+        Persistence.save_metadata(state.metadata)
+      end
+    end
+
+    -- Handle double-click
+    if tile_state.hover and ImGui.IsMouseDoubleClicked(ctx, 0) then
+      TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
+    end
+
+    -- Move cursor for next tile
+    ImGui.SetCursorScreenPos(ctx, x2 + tile_gap, y1)
+  end
+
+  -- Add dummy to consume the space used by horizontally positioned tiles
+  -- This prevents SetCursorPos error when EndChild is called
+  if #recent_templates > 0 then
+    local total_width = (#recent_templates * tile_width) + ((#recent_templates - 1) * tile_gap)
+    ImGui.Dummy(ctx, total_width, tile_height)
+  end
+
+  ImGui.EndChild(ctx)
+
+  -- Separator after recent templates
+  ImGui.Spacing(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
+  return section_height
+end
+
 -- Draw template list panel (middle)
 -- Draw template panel using TilesContainer
 local function draw_template_panel(ctx, gui, width, height)
   local state = gui.state
 
-  -- Set container dimensions
-  gui.template_container.width = width
-  gui.template_container.height = height
+  -- Begin outer container
+  BeginChildCompat(ctx, "TemplatePanel", width, height, true)
+
+  -- Draw recent templates section
+  local recent_height = draw_recent_templates(ctx, gui, width - 16, height)  -- Account for padding
+
+  -- Calculate remaining height for main grid
+  local grid_height = height - recent_height - 32  -- Account for container padding
+
+  -- Set container dimensions for main grid
+  gui.template_container.width = width - 16
+  gui.template_container.height = grid_height
 
   -- Begin panel drawing
-  if not gui.template_container:begin_draw(ctx) then
-    return
+  if gui.template_container:begin_draw(ctx) then
+    -- Draw template grid
+    gui.template_grid:draw(ctx)
+
+    -- End panel drawing
+    gui.template_container:end_draw(ctx)
   end
 
-  -- Draw template grid
-  gui.template_grid:draw(ctx)
-
-  -- End panel drawing
-  gui.template_container:end_draw(ctx)
+  ImGui.EndChild(ctx)
 end
 
 -- Draw template context menu (color picker)
@@ -1625,6 +1870,82 @@ local function draw_template_rename_modal(ctx, state)
   end
 end
 
+-- Draw conflict resolution modal
+local function draw_conflict_resolution_modal(ctx, state)
+  -- Show conflict modal when conflict is pending
+  if state.conflict_pending then
+    ImGui.OpenPopup(ctx, "File Conflict")
+  end
+
+  if ImGui.BeginPopupModal(ctx, "File Conflict", nil, ImGui.WindowFlags_AlwaysAutoResize) then
+    local conflict = state.conflict_pending
+
+    if conflict then
+      ImGui.Text(ctx, "A file with the same name already exists in the target folder.")
+      ImGui.Spacing(ctx)
+
+      -- Show conflict details
+      if #conflict.templates == 1 then
+        ImGui.Text(ctx, string.format("File: %s", conflict.templates[1].name))
+      else
+        ImGui.Text(ctx, string.format("Files: %d templates", #conflict.templates))
+      end
+
+      ImGui.Text(ctx, string.format("Target: %s", conflict.target_folder.name or "Root"))
+
+      ImGui.Spacing(ctx)
+      ImGui.Separator(ctx)
+      ImGui.Spacing(ctx)
+
+      ImGui.Text(ctx, "What would you like to do?")
+      ImGui.Spacing(ctx)
+
+      -- Overwrite button
+      local overwrite_clicked = Button.draw_at_cursor(ctx, {
+        label = "Overwrite (Archives existing)",
+        width = 250,
+        height = 32
+      }, "conflict_overwrite")
+
+      if overwrite_clicked then
+        state.conflict_resolution = "overwrite"
+        ImGui.CloseCurrentPopup(ctx)
+      end
+
+      ImGui.Spacing(ctx)
+
+      -- Keep Both button
+      local keep_both_clicked = Button.draw_at_cursor(ctx, {
+        label = "Keep Both (Rename new)",
+        width = 250,
+        height = 32
+      }, "conflict_keep_both")
+
+      if keep_both_clicked then
+        state.conflict_resolution = "keep_both"
+        ImGui.CloseCurrentPopup(ctx)
+      end
+
+      ImGui.Spacing(ctx)
+
+      -- Cancel button
+      local cancel_clicked = Button.draw_at_cursor(ctx, {
+        label = "Cancel",
+        width = 250,
+        height = 32
+      }, "conflict_cancel")
+
+      if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+        state.conflict_resolution = "cancel"
+        state.conflict_pending = nil  -- Clear pending conflict
+        ImGui.CloseCurrentPopup(ctx)
+      end
+    end
+
+    ImGui.EndPopup(ctx)
+  end
+end
+
 -- Draw info & tag assignment panel (right)
 local function draw_info_panel(ctx, state, config, width, height)
   -- Outer border container (non-scrollable)
@@ -1668,6 +1989,7 @@ local function draw_info_panel(ctx, state, config, width, height)
       reaper.ShowConsoleMsg("Applying template: " .. tmpl.name .. "\n")
       TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
     end
+    Tooltips.show(ctx, ImGui, "template_apply")
 
     ImGui.Dummy(ctx, 0, 4)
 
@@ -1675,6 +1997,7 @@ local function draw_info_panel(ctx, state, config, width, height)
       reaper.ShowConsoleMsg("Inserting template as new track: " .. tmpl.name .. "\n")
       TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
     end
+    Tooltips.show(ctx, ImGui, "template_insert")
 
     ImGui.Dummy(ctx, 0, 4)
 
@@ -1683,28 +2006,30 @@ local function draw_info_panel(ctx, state, config, width, height)
       state.renaming_type = "template"
       state.rename_buffer = tmpl.name
     end
+    Tooltips.show(ctx, ImGui, "template_rename")
 
     ImGui.Spacing(ctx)
     ImGui.Separator(ctx)
     ImGui.Spacing(ctx)
 
-    -- Notes
+    -- Notes (Markdown field with view/edit modes)
     ImGui.Text(ctx, "Notes:")
+    Tooltips.show(ctx, ImGui, "notes_field")
     ImGui.Spacing(ctx)
 
     local notes = (tmpl_metadata and tmpl_metadata.notes) or ""
 
-    -- Initialize field with current notes
+    -- Initialize markdown field with current notes
     local notes_field_id = "template_notes_" .. tmpl.uuid
-    if Fields.get_text(notes_field_id) ~= notes then
-      Fields.set_text(notes_field_id, notes)
+    if MarkdownField.get_text(notes_field_id) ~= notes and not MarkdownField.is_editing(notes_field_id) then
+      MarkdownField.set_text(notes_field_id, notes)
     end
 
-    local notes_changed, new_notes = Fields.draw_at_cursor(ctx, {
+    local notes_changed, new_notes = MarkdownField.draw_at_cursor(ctx, {
       width = -1,
-      height = 120,  -- Increased from 80
+      height = 200,  -- Taller for better markdown viewing
       text = notes,
-      multiline = true,
+      placeholder = "Double-click to add notes...\n\nSupports Markdown:\n• **bold** and *italic*\n• # Headers\n• - Lists\n• [links](url)\n\nShift+Enter for line breaks\nEnter to save, Esc to cancel",
     }, notes_field_id)
 
     if notes_changed then
@@ -1779,26 +2104,97 @@ local function draw_info_panel(ctx, state, config, width, height)
 end
 
 function GUI:draw(ctx, shell_state)
-  self:initialize_once(ctx)
+  local is_overlay_mode = shell_state.is_overlay_mode == true
+  self:initialize_once(ctx, is_overlay_mode)
 
   -- Process background FX parsing queue (5 templates per frame)
   FXQueue.process_batch(self.state, 5)
 
-  -- Handle undo/redo
-  if ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl) and ImGui.IsKeyPressed(ctx, ImGui.Key_Z) then
-    if ImGui.IsKeyDown(ctx, ImGui.Mod_Shift) then
-      self.state.undo_manager:redo()
-    else
-      self.state.undo_manager:undo()
+  -- Process conflict resolution if user made a choice
+  if self.state.conflict_resolution and self.state.conflict_pending then
+    local conflict = self.state.conflict_pending
+    local resolution = self.state.conflict_resolution
+
+    if resolution ~= "cancel" and conflict.operation == "move" then
+      local success_count = 0
+      local total_count = #conflict.templates
+      local target_node = conflict.target_folder
+
+      for _, tmpl in ipairs(conflict.templates) do
+        local success, new_path, conflict_detected = FileOps.move_template(tmpl.path, target_node.full_path, resolution)
+        if success then
+          success_count = success_count + 1
+        else
+          self.state.set_status("Failed to move template: " .. tmpl.name, "error")
+        end
+      end
+
+      -- Rescan if any succeeded
+      if success_count > 0 then
+        local Scanner = require('TemplateBrowser.domain.scanner')
+        Scanner.scan_templates(self.state)
+
+        -- Success message
+        if total_count > 1 then
+          self.state.set_status("Moved " .. success_count .. " of " .. total_count .. " templates to " .. target_node.name, "success")
+        else
+          self.state.set_status("Moved " .. conflict.templates[1].name .. " to " .. target_node.name, "success")
+        end
+      end
     end
+
+    -- Clear conflict state
+    self.state.conflict_pending = nil
+    self.state.conflict_resolution = nil
   end
 
-  -- F2 to rename selected template or folder
-  if ImGui.IsKeyPressed(ctx, ImGui.Key_F2) then
-    if self.state.selected_template then
-      self.state.renaming_item = self.state.selected_template
-      self.state.renaming_type = "template"
-      self.state.rename_buffer = self.state.selected_template.name
+  -- Handle keyboard shortcuts (but not while editing markdown)
+  local is_editing_markdown = false
+  if self.state.selected_template then
+    local notes_field_id = "template_notes_" .. self.state.selected_template.uuid
+    is_editing_markdown = MarkdownField.is_editing(notes_field_id)
+  end
+
+  local action = Shortcuts.check_shortcuts(ctx)
+  if action and not is_editing_markdown then
+    if action == "undo" then
+      self.state.undo_manager:undo()
+    elseif action == "redo" then
+      self.state.undo_manager:redo()
+    elseif action == "rename_template" then
+      if self.state.selected_template then
+        self.state.renaming_item = self.state.selected_template
+        self.state.renaming_type = "template"
+        self.state.rename_buffer = self.state.selected_template.name
+      end
+    elseif action == "archive_template" then
+      if self.state.selected_template then
+        local success, archive_path = FileOps.delete_template(self.state.selected_template.path)
+        if success then
+          self.state.set_status("Archived: " .. self.state.selected_template.name, "success")
+          -- Rescan templates
+          local Scanner = require('TemplateBrowser.domain.scanner')
+          Scanner.scan_templates(self.state)
+          self.state.selected_template = nil
+        else
+          self.state.set_status("Failed to archive template", "error")
+        end
+      end
+    elseif action == "apply_template" then
+      if self.state.selected_template then
+        TemplateOps.apply_to_selected_track(self.state.selected_template.path, self.state.selected_template.uuid, self.state)
+      end
+    elseif action == "insert_template" then
+      if self.state.selected_template then
+        TemplateOps.insert_as_new_track(self.state.selected_template.path, self.state.selected_template.uuid, self.state)
+      end
+    elseif action == "focus_search" then
+      -- Focus search box (will be handled by container)
+      self.state.focus_search = true
+    elseif action == "navigate_left" or action == "navigate_right" or
+           action == "navigate_up" or action == "navigate_down" then
+      -- Grid navigation (will be handled by grid widget)
+      self.state.grid_navigation = action
     end
   end
 
@@ -1944,6 +2340,7 @@ function GUI:draw(ctx, shell_state)
   -- Template context menu and rename modal (must be drawn outside panels)
   draw_template_context_menu(ctx, self.state)
   draw_template_rename_modal(ctx, self.state)
+  draw_conflict_resolution_modal(ctx, self.state)
 
   -- Status bar at the bottom
   local StatusBar = require('TemplateBrowser.ui.status_bar')

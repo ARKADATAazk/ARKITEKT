@@ -380,6 +380,23 @@ function M.load_metadata()
     data.tags = {}
   end
 
+  -- Ensure Favorites virtual folder exists (non-deletable)
+  local favorites_id = "__FAVORITES__"
+  if not data.virtual_folders[favorites_id] then
+    data.virtual_folders[favorites_id] = {
+      id = favorites_id,
+      name = "Favorites",
+      parent_id = "__VIRTUAL_ROOT__",
+      template_refs = {},
+      is_system = true,  -- Mark as non-deletable system folder
+      created = os.time(),
+    }
+    reaper.ShowConsoleMsg("Created default Favorites virtual folder\n")
+  elseif not data.virtual_folders[favorites_id].is_system then
+    -- Mark existing Favorites as system folder
+    data.virtual_folders[favorites_id].is_system = true
+  end
+
   return data
 end
 
