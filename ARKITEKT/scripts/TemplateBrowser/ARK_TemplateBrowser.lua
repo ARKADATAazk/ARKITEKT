@@ -134,7 +134,7 @@ if USE_OVERLAY then
     content_padding = 30,
 
     render = function(ctx, alpha_val, bounds)
-      ImGuiStyle.PushMyStyle(ctx)
+      ImGuiStyle.PushMyStyle(ctx, { window_bg = false, modal_dim_bg = false })
       ImGui.PushFont(ctx, fonts.default, fonts.default_size)
 
       local overlay_state = {

@@ -9,6 +9,7 @@ local Colors = require('rearkitekt.core.colors')
 
 local M = {}
 local hexrgb = Colors.hexrgb
+local style_color_stack = {}
 
 -- ImGui-specific color palette
 -- These are primarily for native ImGui widgets (buttons, sliders, etc.)
@@ -52,7 +53,17 @@ end
 
 M.palette = C
 
-function M.PushMyStyle(ctx)
+function M.PushMyStyle(ctx, opts)
+  opts = opts or {}
+  local push_window_bg = (opts.window_bg ~= false)
+  local push_modal_dim_bg = (opts.modal_dim_bg ~= false)
+
+  local color_pushes = 0
+  local function push_color(...)
+    ImGui.PushStyleColor(ctx, ...)
+    color_pushes = color_pushes + 1
+  end
+
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, 1)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_DisabledAlpha, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 8, 8)
@@ -86,65 +97,73 @@ function M.PushMyStyle(ctx)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_SeparatorTextPadding, 20, 3)
 
   local A = M.with_alpha
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, C.white)
-  ImGui.PushStyleColor(ctx, ImGui.Col_TextDisabled, hexrgb("#848484FF"))
-    ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, C.grey_14)
-  -- WindowBg is NOT pushed here - let overlay manager or caller control it
-  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#0D0D0D00"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, A(C.grey_08, 0xF0))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, C.border_soft)
-  ImGui.PushStyleColor(ctx, ImGui.Col_BorderShadow, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, A(C.grey_06, 0x8A))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, A(C.grey_08, 0x66))
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, A(C.grey_18, 0xAB))
-  ImGui.PushStyleColor(ctx, ImGui.Col_TitleBg, C.grey_06)
-  ImGui.PushStyleColor(ctx, ImGui.Col_TitleBgActive, C.grey_08)
-  ImGui.PushStyleColor(ctx, ImGui.Col_TitleBgCollapsed, hexrgb("#00000082"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_MenuBarBg, C.grey_14)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ScrollbarBg, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ScrollbarGrab, hexrgb("#4A4A4AFF"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ScrollbarGrabHovered, hexrgb("#5A5A5AFF"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ScrollbarGrabActive, hexrgb("#6A6A6AFF"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_CheckMark, hexrgb("#7b7b7bff"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, hexrgb("#444444ff"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, hexrgb("#6c6c6cff"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Button, A(C.grey_05, 0x66))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, C.grey_20)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, C.grey_18)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, hexrgb("#0000004F"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, C.teal_dark)
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, hexrgb("#42FAD6FF"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Separator, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_SeparatorHovered, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_SeparatorActive, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ResizeGrip, C.grey_18)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ResizeGripHovered, C.grey_18)
-  ImGui.PushStyleColor(ctx, ImGui.Col_ResizeGripActive, C.grey_20)
-  ImGui.PushStyleColor(ctx, ImGui.Col_TabHovered, hexrgb("#42FA8FCC"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Tab, hexrgb("#000000DC"))
+  push_color(ImGui.Col_Text, C.white)
+  push_color(ImGui.Col_TextDisabled, hexrgb("#848484FF"))
+  if push_window_bg then
+    push_color(ImGui.Col_WindowBg, opts.window_bg_color or C.grey_14)
+  end
+  push_color(ImGui.Col_ChildBg, hexrgb("#0D0D0D00"))
+  push_color(ImGui.Col_PopupBg, A(C.grey_08, 0xF0))
+  push_color(ImGui.Col_Border, C.border_soft)
+  push_color(ImGui.Col_BorderShadow, hexrgb("#00000000"))
+  push_color(ImGui.Col_FrameBg, A(C.grey_06, 0x8A))
+  push_color(ImGui.Col_FrameBgHovered, A(C.grey_08, 0x66))
+  push_color(ImGui.Col_FrameBgActive, A(C.grey_18, 0xAB))
+  push_color(ImGui.Col_TitleBg, C.grey_06)
+  push_color(ImGui.Col_TitleBgActive, C.grey_08)
+  push_color(ImGui.Col_TitleBgCollapsed, hexrgb("#00000082"))
+  push_color(ImGui.Col_MenuBarBg, C.grey_14)
+  push_color(ImGui.Col_ScrollbarBg, hexrgb("#00000000"))
+  push_color(ImGui.Col_ScrollbarGrab, hexrgb("#4A4A4AFF"))
+  push_color(ImGui.Col_ScrollbarGrabHovered, hexrgb("#5A5A5AFF"))
+  push_color(ImGui.Col_ScrollbarGrabActive, hexrgb("#6A6A6AFF"))
+  push_color(ImGui.Col_CheckMark, hexrgb("#7b7b7bff"))
+  push_color(ImGui.Col_SliderGrab, hexrgb("#444444ff"))
+  push_color(ImGui.Col_SliderGrabActive, hexrgb("#6c6c6cff"))
+  push_color(ImGui.Col_Button, A(C.grey_05, 0x66))
+  push_color(ImGui.Col_ButtonHovered, C.grey_20)
+  push_color(ImGui.Col_ButtonActive, C.grey_18)
+  push_color(ImGui.Col_Header, hexrgb("#0000004F"))
+  push_color(ImGui.Col_HeaderHovered, C.teal_dark)
+  push_color(ImGui.Col_HeaderActive, hexrgb("#42FAD6FF"))
+  push_color(ImGui.Col_Separator, hexrgb("#00000000"))
+  push_color(ImGui.Col_SeparatorHovered, hexrgb("#00000000"))
+  push_color(ImGui.Col_SeparatorActive, hexrgb("#00000000"))
+  push_color(ImGui.Col_ResizeGrip, C.grey_18)
+  push_color(ImGui.Col_ResizeGripHovered, C.grey_18)
+  push_color(ImGui.Col_ResizeGripActive, C.grey_20)
+  push_color(ImGui.Col_TabHovered, hexrgb("#42FA8FCC"))
+  push_color(ImGui.Col_Tab, hexrgb("#000000DC"))
   --ImGui.PushStyleColor(ctx, ImGui.Col_TabActive, C.grey_08)
   --ImGui.PushStyleColor(ctx, ImGui.Col_TabUnfocused, hexrgb("#11261FF8"))
   --ImGui.PushStyleColor(ctx, ImGui.Col_TabUnfocusedActive, hexrgb("#236C42FF"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_DockingPreview, hexrgb("#42FAAAB3"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_DockingEmptyBg, C.grey_20)
-  ImGui.PushStyleColor(ctx, ImGui.Col_PlotLines, hexrgb("#9C9C9CFF"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_PlotLinesHovered, hexrgb("#FF6E59FF"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_PlotHistogram, hexrgb("#E6B300FF"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_PlotHistogramHovered, hexrgb("#FF9900FF"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_TableHeaderBg, C.grey_05)
-  ImGui.PushStyleColor(ctx, ImGui.Col_TableBorderStrong, C.border_strong)
-  ImGui.PushStyleColor(ctx, ImGui.Col_TableBorderLight, C.grey_07)
-  ImGui.PushStyleColor(ctx, ImGui.Col_TableRowBg, hexrgb("#0000000A"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_TableRowBgAlt, hexrgb("#B0B0B00F"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_TextSelectedBg, hexrgb("#41E0A366"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_DragDropTarget, hexrgb("#FFFF00E6"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_NavWindowingHighlight, hexrgb("#FFFFFFB3"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_NavWindowingDimBg, hexrgb("#CCCCCC33"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_ModalWindowDimBg, hexrgb("#CCCCCC59"))
+  push_color(ImGui.Col_DockingPreview, hexrgb("#42FAAAB3"))
+  push_color(ImGui.Col_DockingEmptyBg, C.grey_20)
+  push_color(ImGui.Col_PlotLines, hexrgb("#9C9C9CFF"))
+  push_color(ImGui.Col_PlotLinesHovered, hexrgb("#FF6E59FF"))
+  push_color(ImGui.Col_PlotHistogram, hexrgb("#E6B300FF"))
+  push_color(ImGui.Col_PlotHistogramHovered, hexrgb("#FF9900FF"))
+  push_color(ImGui.Col_TableHeaderBg, C.grey_05)
+  push_color(ImGui.Col_TableBorderStrong, C.border_strong)
+  push_color(ImGui.Col_TableBorderLight, C.grey_07)
+  push_color(ImGui.Col_TableRowBg, hexrgb("#0000000A"))
+  push_color(ImGui.Col_TableRowBgAlt, hexrgb("#B0B0B00F"))
+  push_color(ImGui.Col_TextSelectedBg, hexrgb("#41E0A366"))
+  push_color(ImGui.Col_DragDropTarget, hexrgb("#FFFF00E6"))
+  push_color(ImGui.Col_NavWindowingHighlight, hexrgb("#FFFFFFB3"))
+  push_color(ImGui.Col_NavWindowingDimBg, hexrgb("#CCCCCC33"))
+  if push_modal_dim_bg then
+    push_color(ImGui.Col_ModalWindowDimBg, hexrgb("#CCCCCC59"))
+  end
+
+  table.insert(style_color_stack, color_pushes)
 end
 
 function M.PopMyStyle(ctx)
-  ImGui.PopStyleColor(ctx, 51)  -- Reduced from 51 since we removed WindowBg
+  local color_pushes = table.remove(style_color_stack) or 0
+  if color_pushes > 0 then
+    ImGui.PopStyleColor(ctx, color_pushes)
+  end
   ImGui.PopStyleVar(ctx, 31)
 end
 
