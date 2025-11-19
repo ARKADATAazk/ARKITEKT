@@ -13,6 +13,7 @@ local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
 local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
 local Tooltips = require('ThemeAdjuster.ui.tooltips')
 local Colors = require('rearkitekt.core.colors')
+local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
 local hexrgb = Colors.hexrgb
 
 local PC = Style.PANEL_COLORS  -- Panel colors including pattern defaults
@@ -748,8 +749,9 @@ function MCPView:draw(ctx, shell_state)
       ImGui.PopFont(ctx)
       ImGui.Dummy(ctx, 0, 4)
 
+      local tab_color = hexrgb("#E8C547")  -- MCP yellow color
       for _, param in ipairs(additional_params) do
-        self:draw_additional_param(ctx, param)
+        AdditionalParamTile.render(ctx, param, tab_color, shell_state, self.additional_view)
       end
 
       ImGui.Unindent(ctx, 8)

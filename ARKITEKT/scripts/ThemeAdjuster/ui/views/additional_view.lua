@@ -475,51 +475,13 @@ function AdditionalView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 8)
 
-    -- Get assigned params and active grid
-    local assigned_params = self:get_assigned_params(self.active_assignment_tab)
-    local tab_color = self.tab_colors[self.active_assignment_tab] or hexrgb("#888888")
+    -- Draw active assignment grid (ALWAYS draw, even when empty, to accept drops!)
     local active_grid = self.assignment_grids[self.active_assignment_tab]
+    if active_grid then
+      active_grid:draw(ctx)
 
-    if #assigned_params == 0 then
-      -- No params: show the grid for drag-drop target
-      if active_grid then
-        active_grid:draw(ctx)
-        -- Handle right-click drag selection for empty assignment grid
-        self:handle_right_click_selection(ctx, active_grid, "assign_" .. self.active_assignment_tab)
-      end
-    else
-      -- Has params: show parameter tiles with controls
-      ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))
-      if ImGui.BeginChild(ctx, "param_tiles_" .. self.active_assignment_tab, 0, 0, 0, 0) then
-        -- Make the child window a drop target
-        if ImGui.BeginDragDropTarget(ctx) then
-          local ret, payload = ImGui.AcceptDragDropPayload(ctx, "REARKITEKT_GRID_PAYLOAD")
-          if ret and payload then
-            -- Payload contains dragged parameter names
-            local bridge_payload = self.bridge.active_drag.payload
-            if bridge_payload and type(bridge_payload) == "table" then
-              for _, param_name in ipairs(bridge_payload) do
-                self:assign_param_to_tab(param_name, self.active_assignment_tab)
-              end
-            end
-          end
-          ImGui.EndDragDropTarget(ctx)
-        end
-
-        for _, param in ipairs(assigned_params) do
-          AdditionalParamTile.render(ctx, param, tab_color, shell_state, self)
-        end
-        ImGui.EndChild(ctx)
-      end
-      ImGui.PopStyleColor(ctx)
-
-      -- Draw assignment grid off-screen to maintain drag-drop registration with bridge
-      local saved_x, saved_y = ImGui.GetCursorScreenPos(ctx)
-      ImGui.SetCursorScreenPos(ctx, -10000, -10000)
-      if active_grid then
-        active_grid:draw(ctx)
-      end
-      ImGui.SetCursorScreenPos(ctx, saved_x, saved_y)
+      -- Handle right-click drag selection for assignment grid
+      self:handle_right_click_selection(ctx, active_grid, "assign_" .. self.active_assignment_tab)
     end
 
     ImGui.Unindent(ctx, 8)
