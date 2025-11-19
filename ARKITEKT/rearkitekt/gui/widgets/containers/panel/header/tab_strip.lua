@@ -486,7 +486,7 @@ local function handle_inline_edit_input(ctx, dl, state, id, x, y, width, height,
 
   -- Input field bounds
   local padding_x = 6
-  local padding_y = 2
+  local padding_y = 1
   local input_x1 = x + padding_x
   local input_y1 = y_pos - padding_y
   local input_x2 = x + width - padding_x
