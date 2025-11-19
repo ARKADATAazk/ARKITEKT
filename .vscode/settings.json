@@ -78,7 +78,7 @@
         },
         {
             "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\ItemPicker\\",
-            "color": "foldercolorizer.color_6666ff"
+            "color": "foldercolorizer.color_00cc00"
         },
         {
             "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\app\\",
@@ -91,6 +91,10 @@
         {
             "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\gui\\widgets\\nodal\\",
             "color": "foldercolorizer.color_cc66ff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\TemplateBrowser\\",
+            "color": "foldercolorizer.color_3333ff"
         }
     ],
     "python-envs.defaultEnvManager": "ms-python.python:conda",
