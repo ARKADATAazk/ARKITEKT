@@ -128,6 +128,58 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   fx_config.rounding = saved_rounding
   fx_config.ants_replace_border = saved_ants_replace
 
+  -- Render waveform BEFORE header so header can overlay with transparency
+  -- (show even when disabled, just with toned down color)
+  if item_data.item and cascade_factor > 0.2 then
+    -- In small tile mode with visualization enabled, render over entire tile
+    local show_viz_in_small = is_small_tile and (state.settings.show_visualization_in_small_tiles ~= false)
+    local content_y1, content_h
+
+    if show_viz_in_small then
+      -- Render visualization over entire tile (header will overlay with transparency)
+      content_y1 = scaled_y1
+      content_h = scaled_h
+    else
+      -- Normal mode: render in content area below header
+      content_y1 = scaled_y1 + header_height
+      content_h = scaled_y2 - content_y1
+    end
+
+    local content_w = scaled_w
+
+    ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
+    ImGui.Dummy(ctx, content_w, content_h)
+
+    local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config)
+    local waveform_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
+    dark_color = Colors.with_alpha(dark_color, math.floor(waveform_alpha * 255))
+
+    -- Skip all waveform rendering if skip_visualizations is enabled (fast mode)
+    if not state.skip_visualizations then
+      -- Check runtime cache for waveform
+      local waveform = state.runtime_cache and state.runtime_cache.waveforms[item_data.uuid]
+      if waveform then
+        if visualization.DisplayWaveformTransparent then
+          -- Apply waveform quality multiplier to reduce resolution (better performance with many items)
+          local quality = state.settings.waveform_quality or 1.0
+          local target_width = math.floor(content_w * quality)
+          local use_filled = state.settings.waveform_filled
+          if use_filled == nil then use_filled = true end
+          local show_zero_line = state.settings.waveform_zero_line or false
+          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled, show_zero_line)
+        end
+      else
+        -- Show placeholder and queue waveform generation
+        BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
+
+        -- Queue waveform job
+        if state.job_queue and state.job_queue.add_waveform_job then
+          state.job_queue.add_waveform_job(item_data.item, item_data.uuid)
+        end
+      end
+    end
+  end
+
   -- Render header (use render_color to match tile color, not base_color)
   -- In small tile mode, use reduced alpha for more transparent header
   local header_alpha = combined_alpha
@@ -332,57 +384,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local star_x = scaled_x2 - star_badge_size - star_padding
     local star_y = scaled_y1 + star_padding
     Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite)
-  end
-
-  -- Render waveform (show even when disabled, just with toned down color)
-  if item_data.item and cascade_factor > 0.2 then
-    -- In small tile mode with visualization enabled, render over entire tile
-    local show_viz_in_small = is_small_tile and (state.settings.show_visualization_in_small_tiles ~= false)
-    local content_y1, content_h
-
-    if show_viz_in_small then
-      -- Render visualization over entire tile (header will overlay with transparency)
-      content_y1 = scaled_y1
-      content_h = scaled_h
-    else
-      -- Normal mode: render in content area below header
-      content_y1 = scaled_y1 + header_height
-      content_h = scaled_y2 - content_y1
-    end
-
-    local content_w = scaled_w
-
-    ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
-    ImGui.Dummy(ctx, content_w, content_h)
-
-    local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config)
-    local waveform_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
-    dark_color = Colors.with_alpha(dark_color, math.floor(waveform_alpha * 255))
-
-    -- Skip all waveform rendering if skip_visualizations is enabled (fast mode)
-    if not state.skip_visualizations then
-      -- Check runtime cache for waveform
-      local waveform = state.runtime_cache and state.runtime_cache.waveforms[item_data.uuid]
-      if waveform then
-        if visualization.DisplayWaveformTransparent then
-          -- Apply waveform quality multiplier to reduce resolution (better performance with many items)
-          local quality = state.settings.waveform_quality or 1.0
-          local target_width = math.floor(content_w * quality)
-          local use_filled = state.settings.waveform_filled
-          if use_filled == nil then use_filled = true end
-          local show_zero_line = state.settings.waveform_zero_line or false
-          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled, show_zero_line)
-        end
-      else
-        -- Show placeholder and queue waveform generation
-        BaseRenderer.render_placeholder(dl, scaled_x1, content_y1, scaled_x2, scaled_y2, render_color, combined_alpha)
-
-        -- Queue waveform job
-        if state.job_queue and state.job_queue.add_waveform_job then
-          state.job_queue.add_waveform_job(item_data.item, item_data.uuid)
-        end
-      end
-    end
   end
 
   -- Render pool count badge (bottom right) if more than 1 instance
