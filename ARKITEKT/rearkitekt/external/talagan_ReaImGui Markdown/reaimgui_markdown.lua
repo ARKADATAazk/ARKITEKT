@@ -130,6 +130,10 @@ function ReaImGuiMd:render(ctx)
 
     if ImGui.BeginChild(ctx, "##" .. self.id, self.options.width, self.options.height, child_flags, window_flags) then
         self.max_x, self.max_y, self.interaction = ImGuiMdCore.ASTToImgui(ctx, self.ast, self.fonts, self.style, self.options)
+        -- Add dummy to consume space and prevent SetCursorPos errors
+        if self.max_x and self.max_y then
+            ImGui.Dummy(ctx, self.max_x, self.max_y)
+        end
         ImGui.EndChild(ctx)
     end
 
