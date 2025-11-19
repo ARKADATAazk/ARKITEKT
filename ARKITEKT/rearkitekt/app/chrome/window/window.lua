@@ -284,7 +284,7 @@ function M.new(opts)
 
   if not is_fullscreen then
     if opts.show_status_bar ~= false then
-      local ok, StatusBar = pcall(require, 'rearkitekt.app.chrome.status_bar')
+      local ok, StatusBar = pcall(require, 'rearkitekt.app.chrome.status_bar.widget')
       if ok and StatusBar and StatusBar.new then
         local status_height_compensation = 6
         win.status_bar = StatusBar.new({

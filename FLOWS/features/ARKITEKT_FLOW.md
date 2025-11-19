@@ -1146,7 +1146,7 @@ Generated: 2025-10-17 00:44:31
 **Classes**: `M`
 **Exports**:
   - `M.create(State, Style)` → Instance
-**Requires**: `rearkitekt.app.chrome.status_bar`
+**Requires**: `rearkitekt.app.chrome.status_bar.widget`
 
 ### `ARKITEKT/scripts/Region_Playlist/engine/coordinator_bridge.lua` (290 lines)
 > @noindex
@@ -1320,7 +1320,7 @@ Generated: 2025-10-17 00:44:31
 > @noindex
 **Modules**: `pads`
 **Private**: 6 helpers
-**Requires**: `rearkitekt.app.shell, rearkitekt.gui.widgets.displays.status_pad, rearkitekt.app.chrome.status_bar`
+**Requires**: `rearkitekt.app.shell, rearkitekt.gui.widgets.displays.status_pad, rearkitekt.app.chrome.status_bar.widget`
 
 ### `ARKITEKT/scripts/demos/demo_modal_overlay.lua` (451 lines)
 > @noindex

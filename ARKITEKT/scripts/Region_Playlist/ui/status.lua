@@ -2,7 +2,7 @@
 -- Region_Playlist/ui/status.lua
 -- Status bar configuration
 
-local StatusBar = require("rearkitekt.app.chrome.status_bar")
+local StatusBar = require("rearkitekt.app.chrome.status_bar.widget")
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

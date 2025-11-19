@@ -872,7 +872,7 @@ Generated: 2025-10-15 19:22:52
 **Classes**: `M`
 **Exports**:
   - `M.create(State, Style)` → Instance
-**Requires**: `rearkitekt.app.chrome.status_bar`
+**Requires**: `rearkitekt.app.chrome.status_bar.widget`
 
 ### `ARKITEKT/scripts/Region_Playlist/components/modal_manager.lua` (214 lines)
 **Modules**: `ModalManager, tab_items, selected_ids`
@@ -1185,7 +1185,7 @@ Generated: 2025-10-15 19:22:52
 > @noindex
 **Modules**: `pads`
 **Private**: 6 helpers
-**Requires**: `rearkitekt.app.shell, rearkitekt.gui.widgets.displays.status_pad, rearkitekt.app.chrome.status_bar`
+**Requires**: `rearkitekt.app.shell, rearkitekt.gui.widgets.displays.status_pad, rearkitekt.app.chrome.status_bar.widget`
 
 ### `ARKITEKT/scripts/demos/demo_modal_overlay.lua` (451 lines)
 > @noindex

@@ -43,7 +43,7 @@ addpath(join(HERE,  "ReArkitekt/?.lua")); addpath(join(HERE, "ReArkitekt/?/init.
 
 local Shell = require("rearkitekt.app.runtime.shell")
 local StatusPad = require("rearkitekt.gui.widgets.data.status_pad")
-local StatusBar = require("rearkitekt.app.chrome.status_bar")
+local StatusBar = require("rearkitekt.app.chrome.status_bar.widget")
 
 local style_ok, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
 local Colors = require('rearkitekt.core.colors')
