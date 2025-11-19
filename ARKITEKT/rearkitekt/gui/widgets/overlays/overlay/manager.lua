@@ -297,6 +297,7 @@ function M:render(ctx, dt)
                      | ImGui.WindowFlags_NoScrollbar
                      | ImGui.WindowFlags_NoScrollWithMouse
                      | ImGui.WindowFlags_NoNav
+                     | ImGui.WindowFlags_NoBackground
 
   -- Calculate scrim color with alpha (like old overlay.lua)
   local config = OverlayConfig.get()
@@ -328,9 +329,7 @@ function M:render(ctx, dt)
 
     -- Draw the scrim explicitly so debug colors remain even if later style pushes
     -- override WindowBg/ModalWindowDimBg (e.g. TemplateBrowser style stack)
-    if scrim_alpha > 0 then
-      Draw.rect_filled(dl, x, y, x + w, y + h, scrim_color, 0)
-    end
+    Draw.rect_filled(dl, x, y, x + w, y + h, scrim_color, 0)
 
     -- Check for escape key
     if top.esc_to_close and ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
