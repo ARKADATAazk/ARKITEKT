@@ -5,6 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
+local ChipList = require('rearkitekt.gui.widgets.data.chip_list')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -22,7 +23,7 @@ function M.new(view)
 
     -- UI state
     search_text = "",
-    selected_target = nil,
+    link_mode = ParameterLinkManager.LINK_MODE.LINK, -- Default mode
   }, ParamLinkModal)
 
   return self
@@ -34,7 +35,13 @@ function ParamLinkModal:show(param_name, param_type)
   self.source_param = param_name
   self.source_param_type = param_type
   self.search_text = ""
-  self.selected_target = nil
+
+  -- If already linked, use its current mode
+  if ParameterLinkManager.is_linked(param_name) then
+    self.link_mode = ParameterLinkManager.get_link_mode(param_name)
+  else
+    self.link_mode = ParameterLinkManager.LINK_MODE.LINK
+  end
 end
 
 function ParamLinkModal:close()
@@ -42,35 +49,26 @@ function ParamLinkModal:close()
   self.source_param = nil
   self.source_param_type = nil
   self.search_text = ""
-  self.selected_target = nil
 end
 
 -- Get compatible parameters (filtered by type)
 function ParamLinkModal:get_compatible_params()
   local compatible = {}
 
-  -- Get all assigned parameters from all tabs
-  for tab_id, assignments in pairs(self.view.assignments) do
-    for _, assignment in ipairs(assignments) do
-      local param_name = assignment.param_name
+  -- Get all parameters from library (not just assigned)
+  for _, param in ipairs(self.view.all_params) do
+    local param_name = param.name
 
-      -- Skip self
-      if param_name ~= self.source_param then
-        -- Find the parameter definition
-        for _, param in ipairs(self.view.all_params) do
-          if param.name == param_name then
-            -- Check type compatibility
-            if ParameterLinkManager.are_types_compatible(self.source_param_type, param.type) then
-              table.insert(compatible, {
-                name = param_name,
-                type = param.type,
-                tab = tab_id,
-                description = param.description or "",
-              })
-            end
-            break
-          end
-        end
+    -- Skip self
+    if param_name ~= self.source_param then
+      -- Check type compatibility
+      if ParameterLinkManager.are_types_compatible(self.source_param_type, param.type) then
+        table.insert(compatible, {
+          id = param_name,
+          name = param_name,
+          type = param.type,
+          description = param.description or "",
+        })
       end
     end
   end
@@ -79,8 +77,8 @@ function ParamLinkModal:get_compatible_params()
 end
 
 -- Create link and close modal
-function ParamLinkModal:create_link(target_param, mode)
-  local success, error_msg = ParameterLinkManager.create_link(self.source_param, target_param, mode)
+function ParamLinkModal:create_link(target_param)
+  local success, error_msg = ParameterLinkManager.create_link(self.source_param, target_param, self.link_mode)
 
   if success then
     -- Save assignments to persist link data
@@ -107,173 +105,163 @@ end
 function ParamLinkModal:render(ctx)
   if not self.open then return end
 
-  local title = "Link Parameter: " .. (self.source_param or "")
+  if not ImGui.IsPopupOpen(ctx, "##param_link_popup") then
+    ImGui.OpenPopup(ctx, "##param_link_popup")
+  end
 
-  -- Center the modal
-  local viewport = ImGui.GetMainViewport(ctx)
-  local display_w, display_h = ImGui.Viewport_GetSize(viewport)
-  local modal_w = 600
-  local modal_h = 500
-  ImGui.SetNextWindowPos(ctx, (display_w - modal_w) / 2, (display_h - modal_h) / 2, ImGui.Cond_Appearing)
-  ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
+  ImGui.SetNextWindowSize(ctx, 700, 600, ImGui.Cond_FirstUseEver)
 
-  local visible, open = ImGui.Begin(ctx, title, true, ImGui.WindowFlags_NoCollapse)
+  local visible = ImGui.BeginPopupModal(ctx, "##param_link_popup", true, ImGui.WindowFlags_NoTitleBar)
 
-  if not open then
+  if not visible then
+    self.open = false
+    self:close()
+    return
+  end
+
+  -- Header
+  ImGui.PushFont(ctx, 0, 16)  -- Bold font if available
+  ImGui.Text(ctx, "Link Parameter")
+  ImGui.PopFont(ctx)
+
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- Source parameter info
+  ImGui.TextColored(ctx, hexrgb("#AAAAAA"), "Source:")
+  ImGui.SameLine(ctx)
+  ImGui.Text(ctx, self.source_param)
+  ImGui.SameLine(ctx, 0, 20)
+  ImGui.TextColored(ctx, hexrgb("#AAAAAA"), "Type:")
+  ImGui.SameLine(ctx)
+  ImGui.Text(ctx, self.source_param_type or "unknown")
+
+  -- Show current link status
+  local is_linked = ParameterLinkManager.is_linked(self.source_param)
+  if is_linked then
+    local parent = ParameterLinkManager.get_parent(self.source_param)
+    local mode = ParameterLinkManager.get_link_mode(self.source_param)
+    local mode_text = mode == ParameterLinkManager.LINK_MODE.LINK and "LINK" or "SYNC"
+
+    ImGui.Spacing(ctx)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#4AE290"))
+    ImGui.Text(ctx, string.format("Currently linked to: %s [%s]", parent, mode_text))
+    ImGui.PopStyleColor(ctx)
+
+    ImGui.Spacing(ctx)
+
+    -- Remove link button
+    if ImGui.Button(ctx, "Remove Link", 120, 0) then
+      self:remove_link()
+      ImGui.CloseCurrentPopup(ctx)
+      ImGui.EndPopup(ctx)
+      return
+    end
+  end
+
+  ImGui.Dummy(ctx, 0, 8)
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- Link mode selector
+  ImGui.Text(ctx, "Link Mode:")
+  ImGui.SameLine(ctx, 0, 10)
+
+  -- LINK mode button
+  local link_active = self.link_mode == ParameterLinkManager.LINK_MODE.LINK
+  if link_active then
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#4AE290"))
+  end
+  if ImGui.Button(ctx, "LINK", 80, 0) then
+    self.link_mode = ParameterLinkManager.LINK_MODE.LINK
+  end
+  if link_active then
+    ImGui.PopStyleColor(ctx)
+  end
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.SetTooltip(ctx, "LINK: Parameters move by same delta")
+  end
+
+  ImGui.SameLine(ctx, 0, 8)
+
+  -- SYNC mode button
+  local sync_active = self.link_mode == ParameterLinkManager.LINK_MODE.SYNC
+  if sync_active then
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#4AE290"))
+  end
+  if ImGui.Button(ctx, "SYNC", 80, 0) then
+    self.link_mode = ParameterLinkManager.LINK_MODE.SYNC
+  end
+  if sync_active then
+    ImGui.PopStyleColor(ctx)
+  end
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.SetTooltip(ctx, "SYNC: Child mirrors parent value")
+  end
+
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- Search box
+  ImGui.SetNextItemWidth(ctx, -1)
+  local changed, new_text = ImGui.InputTextWithHint(ctx, "##search", "Search parameters...", self.search_text)
+  if changed then
+    self.search_text = new_text
+  end
+
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- Compatible parameters list using ChipList
+  if ImGui.BeginChild(ctx, "##param_list", 0, -40) then
+    local compatible = self:get_compatible_params()
+
+    -- Convert to chip items
+    local chip_items = {}
+    for _, param_info in ipairs(compatible) do
+      table.insert(chip_items, {
+        id = param_info.id,
+        label = param_info.name,
+        color = hexrgb("#4A90E2"),  -- Blue for parameters
+      })
+    end
+
+    local clicked_param = ChipList.draw_columns(ctx, chip_items, {
+      search_text = self.search_text,
+      use_dot_style = true,
+      bg_color = hexrgb("#252530"),
+      dot_size = 7,
+      dot_spacing = 7,
+      rounding = 5,
+      padding_h = 12,
+      column_width = 220,
+      column_spacing = 16,
+      item_spacing = 4,
+    })
+
+    if clicked_param then
+      self:create_link(clicked_param)
+      ImGui.CloseCurrentPopup(ctx)
+      ImGui.EndChild(ctx)
+      ImGui.EndPopup(ctx)
+      return
+    end
+
+    ImGui.EndChild(ctx)
+  end
+
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Close button (centered)
+  local button_w = 100
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+  ImGui.SetCursorPosX(ctx, (avail_w - button_w) * 0.5)
+
+  if ImGui.Button(ctx, "Cancel", button_w, 0) then
+    ImGui.CloseCurrentPopup(ctx)
     self:close()
   end
 
-  if visible then
-    -- Source parameter info
-    ImGui.TextColored(ctx, hexrgb("#AAAAAA"), "Source Parameter:")
-    ImGui.SameLine(ctx)
-    ImGui.Text(ctx, self.source_param)
-    ImGui.SameLine(ctx, 0, 20)
-    ImGui.TextColored(ctx, hexrgb("#AAAAAA"), "Type:")
-    ImGui.SameLine(ctx)
-    ImGui.Text(ctx, self.source_param_type or "unknown")
-
-    -- Show current link status
-    local is_linked = ParameterLinkManager.is_linked(self.source_param)
-    if is_linked then
-      local parent = ParameterLinkManager.get_parent(self.source_param)
-      local mode = ParameterLinkManager.get_link_mode(self.source_param)
-      local mode_text = mode == ParameterLinkManager.LINK_MODE.LINK and "LINK" or "SYNC"
-
-      ImGui.Spacing(ctx)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#4AE290"))
-      ImGui.Text(ctx, string.format("Currently linked to: %s", parent))
-      ImGui.PopStyleColor(ctx)
-
-      ImGui.Spacing(ctx)
-      ImGui.Text(ctx, "Link Mode:")
-      ImGui.SameLine(ctx)
-
-      -- LINK mode button
-      local link_color = mode == ParameterLinkManager.LINK_MODE.LINK and hexrgb("#4AE290") or hexrgb("#555555")
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, link_color)
-      if ImGui.Button(ctx, "LINK", 80, 0) then
-        ParameterLinkManager.set_link_mode(self.source_param, ParameterLinkManager.LINK_MODE.LINK)
-        self.view:save_assignments()
-      end
-      ImGui.PopStyleColor(ctx)
-
-      if ImGui.IsItemHovered(ctx) then
-        ImGui.SetTooltip(ctx, "LINK: Parameters move together by same delta value")
-      end
-
-      ImGui.SameLine(ctx, 0, 8)
-
-      -- SYNC mode button
-      local sync_color = mode == ParameterLinkManager.LINK_MODE.SYNC and hexrgb("#4AE290") or hexrgb("#555555")
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, sync_color)
-      if ImGui.Button(ctx, "SYNC", 80, 0) then
-        ParameterLinkManager.set_link_mode(self.source_param, ParameterLinkManager.LINK_MODE.SYNC)
-        self.view:save_assignments()
-      end
-      ImGui.PopStyleColor(ctx)
-
-      if ImGui.IsItemHovered(ctx) then
-        ImGui.SetTooltip(ctx, "SYNC: Child mirrors parent's exact value")
-      end
-
-      ImGui.Spacing(ctx)
-
-      -- Remove link button
-      if ImGui.Button(ctx, "Remove Link", 100, 0) then
-        self:remove_link()
-        return  -- Modal closed
-      end
-    end
-
-    ImGui.Separator(ctx)
-    ImGui.Spacing(ctx)
-
-    -- Search box
-    ImGui.PushItemWidth(ctx, -1)
-    local changed, new_text = ImGui.InputTextWithHint(ctx, "##search", "Search parameters...", self.search_text)
-    if changed then
-      self.search_text = new_text
-    end
-    ImGui.PopItemWidth(ctx)
-
-    ImGui.Spacing(ctx)
-
-    -- Compatible parameters list
-    ImGui.Text(ctx, "Compatible Parameters:")
-    ImGui.Spacing(ctx)
-
-    local compatible = self:get_compatible_params()
-
-    -- Table for parameters
-    local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
-    local table_flags = ImGui.TableFlags_ScrollY |
-                       ImGui.TableFlags_RowBg |
-                       ImGui.TableFlags_BordersOuter |
-                       ImGui.TableFlags_BordersV
-
-    if ImGui.BeginTable(ctx, "param_link_table", 3, table_flags, avail_w, avail_h - 60) then
-      ImGui.TableSetupScrollFreeze(ctx, 0, 1)
-      ImGui.TableSetupColumn(ctx, "Parameter", ImGui.TableColumnFlags_WidthStretch)
-      ImGui.TableSetupColumn(ctx, "Tab", ImGui.TableColumnFlags_WidthFixed, 80)
-      ImGui.TableSetupColumn(ctx, "Actions", ImGui.TableColumnFlags_WidthFixed, 150)
-      ImGui.TableHeadersRow(ctx)
-
-      -- Render rows
-      for _, param_info in ipairs(compatible) do
-        local param_name = param_info.name
-
-        -- Filter by search
-        if self.search_text == "" or param_name:lower():find(self.search_text:lower(), 1, true) then
-          ImGui.TableNextRow(ctx)
-
-          -- Column 0: Parameter name
-          ImGui.TableSetColumnIndex(ctx, 0)
-          ImGui.Text(ctx, param_name)
-
-          -- Column 1: Tab
-          ImGui.TableSetColumnIndex(ctx, 1)
-          local tab_color = self.view.tab_colors[param_info.tab] or hexrgb("#888888")
-          ImGui.PushStyleColor(ctx, ImGui.Col_Text, tab_color)
-          ImGui.Text(ctx, param_info.tab)
-          ImGui.PopStyleColor(ctx)
-
-          -- Column 2: Actions
-          ImGui.TableSetColumnIndex(ctx, 2)
-
-          -- Link button
-          if ImGui.Button(ctx, "LINK##" .. param_name, 65, 0) then
-            self:create_link(param_name, ParameterLinkManager.LINK_MODE.LINK)
-            return  -- Modal closed on success
-          end
-
-          ImGui.SameLine(ctx, 0, 5)
-
-          -- Sync button
-          if ImGui.Button(ctx, "SYNC##" .. param_name, 65, 0) then
-            self:create_link(param_name, ParameterLinkManager.LINK_MODE.SYNC)
-            return  -- Modal closed on success
-          end
-
-          -- Tooltip
-          if ImGui.IsItemHovered(ctx) then
-            ImGui.SetTooltip(ctx, "LINK: Move together by same delta\nSYNC: Mirror exact value")
-          end
-        end
-      end
-
-      ImGui.EndTable(ctx)
-    end
-
-    ImGui.Spacing(ctx)
-
-    -- Close button
-    if ImGui.Button(ctx, "Cancel", 100, 0) then
-      self:close()
-    end
-
-    ImGui.End(ctx)
-  end
+  ImGui.EndPopup(ctx)
 end
 
 return M

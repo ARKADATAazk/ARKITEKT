@@ -298,21 +298,72 @@ function M.render_link_handle(ctx, dl, rect, param_name, view, control_rects)
   ImGui.DrawList_AddCircle(dl, center_x - offset, center_y, icon_size * 0.3, icon_color, 0, 1.5)
   ImGui.DrawList_AddCircle(dl, center_x + offset, center_y, icon_size * 0.3, icon_color, 0, 1.5)
 
+  -- Make link handle an invisible button for drag-and-drop
+  ImGui.SetCursorScreenPos(ctx, handle_x1, handle_y1)
+  ImGui.InvisibleButton(ctx, "##link_handle_" .. param_name, handle_x2 - handle_x1, handle_y2 - handle_y1)
+
+  -- Drag source - drag THIS parameter to link TO another
+  if ImGui.BeginDragDropSource(ctx) then
+    -- Find param type for payload
+    local param_type = nil
+    for _, param in ipairs(view.all_params) do
+      if param.name == param_name then
+        param_type = param.type
+        break
+      end
+    end
+
+    -- Set payload
+    ImGui.SetDragDropPayload(ctx, "PARAM_LINK", param_name)
+
+    -- Show drag preview
+    ImGui.Text(ctx, "Link: " .. param_name)
+    ImGui.EndDragDropSource(ctx)
+  end
+
+  -- Drag target - accept drops to create links
+  if ImGui.BeginDragDropTarget(ctx) then
+    local rv, payload = ImGui.AcceptDragDropPayload(ctx, "PARAM_LINK")
+    if rv then
+      local source_param = payload
+
+      -- Check type compatibility
+      local source_type, target_type = nil, nil
+      for _, param in ipairs(view.all_params) do
+        if param.name == source_param then source_type = param.type end
+        if param.name == param_name then target_type = param.type end
+      end
+
+      if source_type and target_type and ParameterLinkManager.are_types_compatible(source_type, target_type) then
+        -- Create link: source (drag) -> target (drop)
+        -- Target becomes parent, source becomes child
+        local success, error_msg = ParameterLinkManager.create_link(param_name, source_param, ParameterLinkManager.LINK_MODE.LINK)
+        if success then
+          view:save_assignments()
+        else
+          print("Failed to create link: " .. (error_msg or "Incompatible types"))
+        end
+      end
+    end
+
+    ImGui.EndDragDropTarget(ctx)
+  end
+
   -- Tooltip
-  if is_hovered then
+  if is_hovered and not ImGui.IsMouseDragging(ctx, ImGui.MouseButton_Left) then
     if is_linked then
       local parent = ParameterLinkManager.get_parent(param_name)
       local mode_text = link_mode == ParameterLinkManager.LINK_MODE.LINK and "LINK" or "SYNC"
-      ImGui.SetTooltip(ctx, string.format("Linked to: %s\nMode: %s\nRight-click to change", parent, mode_text))
+      ImGui.SetTooltip(ctx, string.format("Linked to: %s\nMode: %s\nDrag to another param to link\nRight-click for options", parent, mode_text))
     elseif is_parent then
       local children = ParameterLinkManager.get_children(param_name)
       local child_names = {}
       for _, child_info in ipairs(children) do
         table.insert(child_names, child_info.name)
       end
-      ImGui.SetTooltip(ctx, string.format("Parent of: %s\nRight-click to manage", table.concat(child_names, ", ")))
+      ImGui.SetTooltip(ctx, string.format("Parent of: %s\nDrag to another param to link\nRight-click for options", table.concat(child_names, ", ")))
     else
-      ImGui.SetTooltip(ctx, "Right-click to link parameters")
+      ImGui.SetTooltip(ctx, "Drag to another param to link\nRight-click for options")
     end
   end
 end
