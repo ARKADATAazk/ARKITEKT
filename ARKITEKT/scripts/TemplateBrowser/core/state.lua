@@ -34,6 +34,10 @@ M.rename_buffer = ""        -- Text input buffer for rename
 M.dragging_item = nil       -- Item being dragged
 M.dragging_type = nil       -- "folder" or "template"
 
+-- Conflict resolution state
+M.conflict_pending = nil    -- Pending conflict info { templates, target_folder, operation }
+M.conflict_resolution = nil -- User's choice: "overwrite", "keep_both", "cancel"
+
 -- Panel layout state
 M.separator1_ratio = nil    -- Ratio for first separator (left column width)
 M.separator2_ratio = nil    -- Ratio for second separator (left+middle width)
@@ -75,6 +79,10 @@ function M.initialize(config)
   M.rename_buffer = ""
   M.dragging_item = nil
   M.dragging_type = nil
+
+  -- Conflict resolution
+  M.conflict_pending = nil
+  M.conflict_resolution = nil
 
   -- Status bar
   M.status_message = ""

@@ -626,11 +626,34 @@ local function draw_folder_tree(ctx, state, config)
 
       if #templates_to_move == 0 then return end
 
-      -- Move all templates
+      -- Check for conflicts (only for physical folders)
+      local has_conflict = false
+      if not target_node.is_virtual then
+        for _, tmpl in ipairs(templates_to_move) do
+          local conflict_exists = FileOps.check_template_conflict(tmpl.name, target_node.full_path)
+          if conflict_exists then
+            has_conflict = true
+            break
+          end
+        end
+      end
+
+      -- If conflict detected, set up pending conflict and show modal
+      if has_conflict then
+        state.conflict_pending = {
+          templates = templates_to_move,
+          target_folder = target_node,
+          operation = "move"
+        }
+        return  -- Wait for user decision in modal (processed in main draw loop)
+      end
+
+      -- Move all templates (no conflict or virtual folder - virtual folders can have duplicates)
       local success_count = 0
       local total_count = #templates_to_move
+
       for _, tmpl in ipairs(templates_to_move) do
-        local success = FileOps.move_template(tmpl.path, target_node.full_path)
+        local success, new_path, conflict_detected = FileOps.move_template(tmpl.path, target_node.full_path, nil)
         if success then
           success_count = success_count + 1
         else
@@ -1825,6 +1848,82 @@ local function draw_template_rename_modal(ctx, state)
   end
 end
 
+-- Draw conflict resolution modal
+local function draw_conflict_resolution_modal(ctx, state)
+  -- Show conflict modal when conflict is pending
+  if state.conflict_pending then
+    ImGui.OpenPopup(ctx, "File Conflict")
+  end
+
+  if ImGui.BeginPopupModal(ctx, "File Conflict", nil, ImGui.WindowFlags_AlwaysAutoResize) then
+    local conflict = state.conflict_pending
+
+    if conflict then
+      ImGui.Text(ctx, "A file with the same name already exists in the target folder.")
+      ImGui.Spacing(ctx)
+
+      -- Show conflict details
+      if #conflict.templates == 1 then
+        ImGui.Text(ctx, string.format("File: %s", conflict.templates[1].name))
+      else
+        ImGui.Text(ctx, string.format("Files: %d templates", #conflict.templates))
+      end
+
+      ImGui.Text(ctx, string.format("Target: %s", conflict.target_folder.name or "Root"))
+
+      ImGui.Spacing(ctx)
+      ImGui.Separator(ctx)
+      ImGui.Spacing(ctx)
+
+      ImGui.Text(ctx, "What would you like to do?")
+      ImGui.Spacing(ctx)
+
+      -- Overwrite button
+      local overwrite_clicked = Button.draw_at_cursor(ctx, {
+        label = "Overwrite (Archives existing)",
+        width = 250,
+        height = 32
+      }, "conflict_overwrite")
+
+      if overwrite_clicked then
+        state.conflict_resolution = "overwrite"
+        ImGui.CloseCurrentPopup(ctx)
+      end
+
+      ImGui.Spacing(ctx)
+
+      -- Keep Both button
+      local keep_both_clicked = Button.draw_at_cursor(ctx, {
+        label = "Keep Both (Rename new)",
+        width = 250,
+        height = 32
+      }, "conflict_keep_both")
+
+      if keep_both_clicked then
+        state.conflict_resolution = "keep_both"
+        ImGui.CloseCurrentPopup(ctx)
+      end
+
+      ImGui.Spacing(ctx)
+
+      -- Cancel button
+      local cancel_clicked = Button.draw_at_cursor(ctx, {
+        label = "Cancel",
+        width = 250,
+        height = 32
+      }, "conflict_cancel")
+
+      if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+        state.conflict_resolution = "cancel"
+        state.conflict_pending = nil  -- Clear pending conflict
+        ImGui.CloseCurrentPopup(ctx)
+      end
+    end
+
+    ImGui.EndPopup(ctx)
+  end
+end
+
 -- Draw info & tag assignment panel (right)
 local function draw_info_panel(ctx, state, config, width, height)
   -- Outer border container (non-scrollable)
@@ -1983,6 +2082,44 @@ function GUI:draw(ctx, shell_state)
 
   -- Process background FX parsing queue (5 templates per frame)
   FXQueue.process_batch(self.state, 5)
+
+  -- Process conflict resolution if user made a choice
+  if self.state.conflict_resolution and self.state.conflict_pending then
+    local conflict = self.state.conflict_pending
+    local resolution = self.state.conflict_resolution
+
+    if resolution ~= "cancel" and conflict.operation == "move" then
+      local success_count = 0
+      local total_count = #conflict.templates
+      local target_node = conflict.target_folder
+
+      for _, tmpl in ipairs(conflict.templates) do
+        local success, new_path, conflict_detected = FileOps.move_template(tmpl.path, target_node.full_path, resolution)
+        if success then
+          success_count = success_count + 1
+        else
+          self.state.set_status("Failed to move template: " .. tmpl.name, "error")
+        end
+      end
+
+      -- Rescan if any succeeded
+      if success_count > 0 then
+        local Scanner = require('TemplateBrowser.domain.scanner')
+        Scanner.scan_templates(self.state)
+
+        -- Success message
+        if total_count > 1 then
+          self.state.set_status("Moved " .. success_count .. " of " .. total_count .. " templates to " .. target_node.name, "success")
+        else
+          self.state.set_status("Moved " .. conflict.templates[1].name .. " to " .. target_node.name, "success")
+        end
+      end
+    end
+
+    -- Clear conflict state
+    self.state.conflict_pending = nil
+    self.state.conflict_resolution = nil
+  end
 
   -- Handle undo/redo
   if ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl) and ImGui.IsKeyPressed(ctx, ImGui.Key_Z) then
@@ -2144,6 +2281,7 @@ function GUI:draw(ctx, shell_state)
   -- Template context menu and rename modal (must be drawn outside panels)
   draw_template_context_menu(ctx, self.state)
   draw_template_rename_modal(ctx, self.state)
+  draw_conflict_resolution_modal(ctx, self.state)
 
   -- Status bar at the bottom
   local StatusBar = require('TemplateBrowser.ui.status_bar')
