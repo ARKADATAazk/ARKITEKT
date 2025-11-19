@@ -173,7 +173,7 @@ function OverflowModalView:draw(ctx, window)
         local bg_color = Colors.with_alpha(hexrgb("#1A1A1A"), math.floor(255 * 0.98 * alpha))
         ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, bg_color)
 
-        local child_flags = ImGui.ChildFlags_Border
+        local child_flags = ImGui.ChildFlags_None or 0
         local window_flags = ImGui.WindowFlags_NoScrollbar
         ImGui.BeginChild(ctx, '##overflow_content', w, h, child_flags, window_flags)
 
