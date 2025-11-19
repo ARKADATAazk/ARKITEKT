@@ -90,11 +90,21 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   local text_alpha = math.floor(0xFF * combined_alpha)
 
+  -- Check if we're in small tile mode
+  local is_small_tile = scaled_h < config.TILE_RENDER.responsive.small_tile_height
+
   -- Calculate header height
-  local header_height = math.max(
-    config.TILE_RENDER.header.min_height,
-    scaled_h * config.TILE_RENDER.header.height_ratio
-  )
+  local header_height
+  if is_small_tile and config.TILE_RENDER.small_tile.header_covers_tile then
+    -- In small tile mode, header covers entire tile
+    header_height = scaled_h
+  else
+    -- Normal header height calculation
+    header_height = math.max(
+      config.TILE_RENDER.header.min_height,
+      scaled_h * config.TILE_RENDER.header.height_ratio
+    )
+  end
 
   -- Render base tile fill
   ImGui.DrawList_PathClear(dl)
@@ -119,8 +129,13 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   fx_config.ants_replace_border = saved_ants_replace
 
   -- Render header (use render_color to match tile color, not base_color)
+  -- In small tile mode, use reduced alpha for more transparent header
+  local header_alpha = combined_alpha
+  if is_small_tile then
+    header_alpha = combined_alpha * config.TILE_RENDER.small_tile.header_alpha
+  end
   BaseRenderer.render_header_bar(dl, scaled_x1, scaled_y1, scaled_x2, header_height,
-    render_color, combined_alpha, config)
+    render_color, header_alpha, config)
 
   -- Render marching ants for selection
   if tile_state.selected and cascade_factor > 0.5 then
@@ -356,7 +371,12 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   -- Render pool count badge (bottom right) if more than 1 instance
-  if item_data.pool_count and item_data.pool_count > 1 and cascade_factor > 0.5 then
+  -- Hide in small tile mode to prioritize the name display
+  local should_show_pool_count = item_data.pool_count and item_data.pool_count > 1 and cascade_factor > 0.5
+  if is_small_tile and config.TILE_RENDER.small_tile.hide_pool_count then
+    should_show_pool_count = false
+  end
+  if should_show_pool_count then
     local pool_text = "×" .. tostring(item_data.pool_count)
     local text_w, text_h = ImGui.CalcTextSize(ctx, pool_text)
     local badge_padding = 4
