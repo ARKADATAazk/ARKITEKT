@@ -39,12 +39,30 @@ local function get_markdown_renderer(ctx, id, state)
   if not state.markdown_renderer then
     local ReaImGuiMd = require('rearkitekt.external.talagan_ReaImGui Markdown.reaimgui_markdown')
 
-    -- Create markdown renderer with custom style
+    -- Teal accent color from style defaults
+    local teal_accent = hexrgb("#41E0A3FF")
+    local teal_dim = hexrgb("#37775FFF")
+
+    -- Create markdown renderer with custom teal-accented style
     state.markdown_renderer = ReaImGuiMd:new(ctx, id, {
       wrap = true,
       horizontal_scrollbar = false,
       width = 0,  -- Auto width
       height = 0,  -- Auto height
+    }, {
+      -- Apply teal accents to markdown elements
+      h1 = { color = teal_accent, padding_left = 0 },
+      h2 = { color = teal_accent, padding_left = 0 },
+      h3 = { color = teal_accent, padding_left = 0 },
+      h4 = { padding_left = 0 },
+      h5 = { padding_left = 0 },
+      paragraph = { padding_left = 0 },  -- Remove default 30px indent
+      list = { padding_left = 20 },  -- Reduce from 40px to 20px for lists
+      table = { padding_left = 0 },  -- Remove default 30px indent
+      code = { color = teal_dim, padding_left = 0 },  -- Remove default 30px indent
+      code_block = { color = teal_dim },
+      link = { color = teal_accent },
+      strong = { color = teal_dim },  -- Slightly dimmer teal for bold
     })
   end
 
@@ -147,8 +165,9 @@ function M.draw_at_cursor(ctx, config, id)
     local is_input_active = ImGui.IsItemActive(ctx)
     local is_input_hovered = ImGui.IsItemHovered(ctx)
 
-    -- Exit edit mode on Enter (normal Enter key to save)
-    if ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter) then
+    -- Exit edit mode on Enter (but NOT Shift+Enter - that's for line breaks)
+    local shift_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
+    if not shift_down and (ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter)) then
       state.editing = false
       state.focus_set = false
       changed = true
