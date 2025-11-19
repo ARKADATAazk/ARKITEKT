@@ -7,6 +7,8 @@ local ImGui = require 'imgui' '0.10'
 
 local Sheet = require('rearkitekt.gui.widgets.overlays.overlay.sheet')
 local ChipList = require('rearkitekt.gui.widgets.data.chip_list')
+local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
+local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -147,6 +149,7 @@ function OverflowModalView:draw(ctx, window)
     
     window.overlay:push({
       id = 'overflow-tabs',
+      non_blocking = true,  -- Allow window controls while modal is open
       close_on_scrim = true,
       esc_to_close = true,
       on_close = function()
