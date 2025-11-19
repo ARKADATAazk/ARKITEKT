@@ -422,8 +422,8 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
 
   local width = floor(target_width or item_w)
 
-  -- Performance: Use cached color conversion (5-10% faster)
-  local col_wave = compute_waveform_color(color)
+  -- Use the color directly - it's already been transformed by get_dark_waveform_color
+  local col_wave = color
   local col_zero_line = col_wave
 
   local waveform_height = item_h / 2 * 0.95
@@ -658,8 +658,8 @@ function M.DisplayMidiItemTransparent(ctx, thumbnail, color, draw_list)
   local scale_x = display_w / MIDI_CACHE_WIDTH
   local scale_y = display_h / MIDI_CACHE_HEIGHT
 
-  -- Performance: Use cached color conversion (5-10% faster)
-  local col_note = compute_waveform_color(color)
+  -- Use the color directly - it's already been transformed by get_dark_waveform_color
+  local col_note = color
 
   -- Use indexed loop instead of pairs() for better performance
   local num_notes = #thumbnail
