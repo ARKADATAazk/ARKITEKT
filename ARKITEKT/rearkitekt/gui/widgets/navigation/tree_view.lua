@@ -356,15 +356,29 @@ local function render_tree_node(ctx, node, config, state, depth)
 
     -- Handle F2 key to start rename when this node is selected
     if is_selected and config.enable_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_F2) and not is_renaming then
-      state.renaming_node = node_id
-      state.rename_buffer = node.name
+      -- Check if this specific node can be renamed
+      local can_rename = true
+      if config.can_rename then
+        can_rename = config.can_rename(node)
+      end
+      if can_rename then
+        state.renaming_node = node_id
+        state.rename_buffer = node.name
+      end
     end
 
     -- Handle double-click (rename by default if enabled)
     if tree_item_double_clicked and not is_renaming then
       if config.enable_rename then
-        state.renaming_node = node_id
-        state.rename_buffer = node.name
+        -- Check if this specific node can be renamed
+        local can_rename = true
+        if config.can_rename then
+          can_rename = config.can_rename(node)
+        end
+        if can_rename then
+          state.renaming_node = node_id
+          state.rename_buffer = node.name
+        end
       end
       if config.on_double_click then
         config.on_double_click(node)
