@@ -39,9 +39,9 @@ local function get_markdown_renderer(ctx, id, state)
   if not state.markdown_renderer then
     local ReaImGuiMd = require('rearkitekt.external.talagan_ReaImGui Markdown.reaimgui_markdown')
 
-    -- Teal accent color from style defaults
-    local teal_accent = hexrgb("#41E0A3FF")
-    local teal_dim = hexrgb("#37775FFF")
+    -- Teal accent color from style defaults (as hex strings for markdown lib)
+    local teal_accent = "#41E0A3"
+    local teal_dim = "#37775F"
 
     -- Create markdown renderer with custom teal-accented style
     state.markdown_renderer = ReaImGuiMd:new(ctx, id, {
@@ -50,7 +50,7 @@ local function get_markdown_renderer(ctx, id, state)
       width = 0,  -- Auto width
       height = 0,  -- Auto height
     }, {
-      -- Apply teal accents to markdown elements
+      -- Apply teal accents to markdown elements (colors as hex strings)
       h1 = { base_color = teal_accent, bold_color = teal_accent, padding_left = 0 },
       h2 = { base_color = teal_accent, bold_color = teal_accent, padding_left = 0 },
       h3 = { base_color = teal_accent, bold_color = teal_accent, padding_left = 0 },
