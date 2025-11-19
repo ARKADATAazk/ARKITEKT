@@ -23,16 +23,25 @@ M.PROFILER = {
 -- OVERLAY SYSTEM
 -- ============================================================================
 M.OVERLAY = {
-  -- Close button
+  -- Close button sizing
   CLOSE_BUTTON_SIZE = 32,
   CLOSE_BUTTON_MARGIN = 16,
   CLOSE_BUTTON_PROXIMITY = 150,  -- Distance at which button starts to fade in
+
+  -- Close button colors
+  CLOSE_BUTTON_BG_COLOR = hexrgb("#000000"),
+  CLOSE_BUTTON_BG_OPACITY = 0.6,
+  CLOSE_BUTTON_BG_OPACITY_HOVER = 0.8,
+  CLOSE_BUTTON_ICON_COLOR = hexrgb("#FFFFFF"),
+  CLOSE_BUTTON_HOVER_COLOR = hexrgb("#FF4444"),
+  CLOSE_BUTTON_ACTIVE_COLOR = hexrgb("#FF0000"),
 
   -- Layout
   CONTENT_PADDING = 24,
 
   -- Scrim/backdrop
   SCRIM_OPACITY = 0.85,
+  SCRIM_COLOR = hexrgb("#000000"),
 
   -- Behavior defaults
   DEFAULT_USE_VIEWPORT = true,

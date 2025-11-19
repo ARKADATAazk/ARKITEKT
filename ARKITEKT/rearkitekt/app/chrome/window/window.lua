@@ -50,7 +50,7 @@ local function create_alpha_tracker(duration)
   return {
     current = 0.0,
     target = 0.0,
-    duration = duration or 0.3,
+    duration = duration or Constants.ANIMATION.FADE_NORMAL,
     elapsed = 0.0,
     set_target = function(self, t) 
       self.target = t 
@@ -97,9 +97,9 @@ function M.new(opts)
     titlebar_pad_h  = opts.titlebar_pad_h,
     titlebar_pad_v  = opts.titlebar_pad_v or Constants.TITLEBAR.pad_v,
     title_font      = opts.title_font,
-    title_font_size = opts.title_font_size or 16,
+    title_font_size = opts.title_font_size or Constants.TYPOGRAPHY.MEDIUM,
     version_font    = opts.version_font,
-    version_font_size = opts.version_font_size or 13,
+    version_font_size = opts.version_font_size or Constants.TYPOGRAPHY.DEFAULT,
     version_color   = opts.version_color,
 
     initial_pos     = opts.initial_pos  or Constants.WINDOW.initial_pos,
@@ -119,10 +119,10 @@ function M.new(opts)
       fade_in_duration = fullscreen_opts.fade_in_duration or Constants.ANIMATION.FADE_NORMAL,
       fade_out_duration = fullscreen_opts.fade_out_duration or Constants.ANIMATION.FADE_NORMAL,
       scrim_enabled = fullscreen_opts.scrim_enabled,
-      scrim_color = fullscreen_opts.scrim_color or hexrgb("#000000"),
+      scrim_color = fullscreen_opts.scrim_color or Constants.OVERLAY.SCRIM_COLOR,
       scrim_opacity = fullscreen_opts.scrim_opacity or Constants.OVERLAY.SCRIM_OPACITY,
       window_bg_override = fullscreen_opts.window_bg_override,
-      window_opacity = fullscreen_opts.window_opacity or 1.0,
+      window_opacity = fullscreen_opts.window_opacity,
       alpha = create_alpha_tracker(fullscreen_opts.fade_in_duration or Constants.ANIMATION.FADE_NORMAL),
       close_requested = false,
       is_closing = false,
@@ -146,9 +146,9 @@ function M.new(opts)
       text_color      = opts.titlebar_text_color,
       enable_maximize = opts.enable_maximize ~= false,
       title_font      = opts.title_font,
-      title_font_size = opts.title_font_size or 16,
+      title_font_size = opts.title_font_size or Constants.TYPOGRAPHY.MEDIUM,
       version_font    = opts.version_font,
-      version_font_size = opts.version_font_size or 13,
+      version_font_size = opts.version_font_size or Constants.TYPOGRAPHY.DEFAULT,
       version_color   = opts.version_color,
       show_icon       = opts.show_icon,
       icon_size       = opts.icon_size,
@@ -319,12 +319,12 @@ local hexrgb = Colors.hexrgb
       size = btn_opts.size or Constants.OVERLAY.CLOSE_BUTTON_SIZE,
       margin = btn_opts.margin or Constants.OVERLAY.CLOSE_BUTTON_MARGIN,
       proximity_distance = fullscreen_opts.close_button_proximity or Constants.OVERLAY.CLOSE_BUTTON_PROXIMITY,
-      bg_color = btn_opts.bg_color or hexrgb("#000000"),
-      bg_opacity = btn_opts.bg_opacity or 0.6,
-      bg_opacity_hover = btn_opts.bg_opacity_hover or 0.8,
-      icon_color = btn_opts.icon_color or hexrgb("#FFFFFF"),
-      hover_color = btn_opts.hover_color or hexrgb("#FF4444"),
-      active_color = btn_opts.active_color or hexrgb("#FF0000"),
+      bg_color = btn_opts.bg_color or Constants.OVERLAY.CLOSE_BUTTON_BG_COLOR,
+      bg_opacity = btn_opts.bg_opacity or Constants.OVERLAY.CLOSE_BUTTON_BG_OPACITY,
+      bg_opacity_hover = btn_opts.bg_opacity_hover or Constants.OVERLAY.CLOSE_BUTTON_BG_OPACITY_HOVER,
+      icon_color = btn_opts.icon_color or Constants.OVERLAY.CLOSE_BUTTON_ICON_COLOR,
+      hover_color = btn_opts.hover_color or Constants.OVERLAY.CLOSE_BUTTON_HOVER_COLOR,
+      active_color = btn_opts.active_color or Constants.OVERLAY.CLOSE_BUTTON_ACTIVE_COLOR,
       on_click = function()
         win:request_close()
       end,
@@ -675,7 +675,7 @@ local hexrgb = Colors.hexrgb
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
         do
           local sf = self.version_font or self.title_font
-          local ss = (self.version_font_size or 13)
+          local ss = (self.version_font_size or Constants.TYPOGRAPHY.DEFAULT)
           if sf and ss and ss > 0 then
             ImGui.PushFont(ctx, sf, ss)
             self.status_bar.render(ctx)

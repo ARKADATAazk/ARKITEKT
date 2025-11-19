@@ -25,9 +25,9 @@ function M.new(opts)
     title           = opts.title or "Window",
     version         = opts.version,
     title_font      = opts.title_font,
-    title_font_size = opts.title_font_size or 16,
+    title_font_size = opts.title_font_size or Constants.TYPOGRAPHY.MEDIUM,
     version_font    = opts.version_font,
-    version_font_size = opts.version_font_size or 13,
+    version_font_size = opts.version_font_size or Constants.TYPOGRAPHY.DEFAULT,
 
     height          = opts.height or Constants.TITLEBAR.height,
     pad_h           = opts.pad_h or Constants.TITLEBAR.pad_h,
@@ -143,7 +143,7 @@ function M.new(opts)
     end
     
     local text_color = self.text_color or ImGui.GetColor(ctx, ImGui.Col_Text)
-    local version_color = self.version_color or hexrgb("#888888")
+    local version_color = self.version_color or Constants.TITLEBAR.version_color
     
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, self.button_spacing, 0)
