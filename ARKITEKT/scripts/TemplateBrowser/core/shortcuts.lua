@@ -2,6 +2,8 @@
 -- TemplateBrowser/core/shortcuts.lua
 -- Keyboard shortcuts configuration and handling
 
+local ImGui = require 'imgui' '0.10'
+
 local M = {}
 
 -- Shortcut definitions
@@ -161,7 +163,7 @@ end
 
 -- Check if a shortcut is triggered
 -- Returns: action_name (string or nil)
-function M.check_shortcuts(ctx, ImGui)
+function M.check_shortcuts(ctx)
   for _, shortcut in ipairs(M.SHORTCUTS) do
     local key_constant = get_key_constant(ctx, shortcut.key)
 

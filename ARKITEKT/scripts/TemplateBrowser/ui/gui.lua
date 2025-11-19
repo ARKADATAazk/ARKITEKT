@@ -2128,7 +2128,7 @@ function GUI:draw(ctx, shell_state)
   end
 
   -- Handle keyboard shortcuts
-  local action = Shortcuts.check_shortcuts(ctx, ImGui)
+  local action = Shortcuts.check_shortcuts(ctx)
   if action then
     if action == "undo" then
       self.state.undo_manager:undo()
