@@ -119,8 +119,11 @@ function M.archive_file(file_path)
     ext = ""
   end
 
-  -- Create archived filename with timestamp
-  local archive_name = string.format("%s_archived_%s%s", name, timestamp, ext)
+  -- Create base archived filename with timestamp
+  local base_archive_name = string.format("%s_archived_%s", name, timestamp)
+
+  -- Generate unique name to avoid conflicts in archive folder
+  local archive_name = generate_unique_name(archive_dir, base_archive_name, ext)
   local archive_path = archive_dir .. sep .. archive_name
 
   -- Move file to archive
@@ -306,8 +309,12 @@ function M.delete_folder(folder_path)
   local archive_dir = get_archive_dir()
   local timestamp = os.date("%Y%m%d_%H%M%S")
 
-  -- Create archived folder name with timestamp
-  local archive_name = string.format("%s_archived_%s", folder_name, timestamp)
+  -- Create base archived folder name with timestamp
+  local base_archive_name = string.format("%s_archived_%s", folder_name, timestamp)
+
+  -- Generate unique name to avoid conflicts in archive folder
+  -- For folders, we don't have an extension, so pass empty string
+  local archive_name = generate_unique_name(archive_dir, base_archive_name, "")
   local archive_path = archive_dir .. sep .. archive_name
 
   -- Move entire folder to archive
