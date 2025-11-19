@@ -204,35 +204,26 @@ function M.draw_at_cursor(ctx, config, id)
     ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + actual_width, cursor_y + height, current_bg, rounding)
     ImGui.DrawList_AddRect(dl, cursor_x, cursor_y, cursor_x + actual_width, cursor_y + height, current_border, rounding, 0, 1)
 
-    -- Create child window for markdown rendering or placeholder
-    ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y)
+    -- Position cursor for content (don't create extra BeginChild - markdown renderer creates its own)
+    ImGui.SetCursorScreenPos(ctx, cursor_x + padding, cursor_y + padding)
 
-    local child_flags = ImGui.ChildFlags_None
-    local window_flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse
+    if state.text == "" or state.text == nil then
+      -- Show placeholder text
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, placeholder_color)
+      ImGui.PushTextWrapPos(ctx, cursor_x + actual_width - padding)
+      ImGui.Text(ctx, placeholder_text)
+      ImGui.PopTextWrapPos(ctx)
+      ImGui.PopStyleColor(ctx)
+    else
+      -- Render markdown (renderer creates its own child window)
+      local renderer = get_markdown_renderer(ctx, id, state)
+      renderer:setText(state.text)
 
-    if ImGui.BeginChild(ctx, "##view_" .. id, actual_width, height, child_flags, window_flags) then
-      if state.text == "" or state.text == nil then
-        -- Show placeholder
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, placeholder_color)
-        ImGui.SetCursorPos(ctx, padding, padding)
-        ImGui.TextWrapped(ctx, placeholder_text)
-        ImGui.PopStyleColor(ctx)
-      else
-        -- Render markdown
-        local renderer = get_markdown_renderer(ctx, id, state)
-        renderer:setText(state.text)
-
-        -- Add padding before rendering
-        ImGui.SetCursorPos(ctx, padding, padding)
-
-        -- Render markdown with constrained width
-        local saved_cursor_x, saved_cursor_y = ImGui.GetCursorPos(ctx)
-        renderer.options.width = actual_width - padding * 2
-        renderer.options.height = height - padding * 2
-        renderer:render(ctx)
-      end
-
-      ImGui.EndChild(ctx)
+      -- Configure renderer dimensions
+      renderer.options.width = actual_width - padding * 2
+      renderer.options.height = height - padding * 2
+      renderer.options.horizontal_scrollbar = false
+      renderer:render(ctx)
     end
 
     -- Detect double-click to enter edit mode
@@ -241,7 +232,7 @@ function M.draw_at_cursor(ctx, config, id)
       state.focus_set = false
     end
 
-    -- Move cursor to end of field
+    -- Move cursor to end of field and consume space
     ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + height)
     ImGui.Dummy(ctx, actual_width, 0)  -- Ensure proper layout
   end
