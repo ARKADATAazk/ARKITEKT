@@ -362,10 +362,24 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end
   end
 
+  -- Zero line checkbox (next to Fill checkbox)
+  local fill_label_width = ImGui.CalcTextSize(ctx, "Fill")
+  local zero_line_checkbox_x = fill_checkbox_x + fill_label_width + 18 + 8
+  local zero_line_checkbox_y = checkbox_y
+
+  local waveform_zero_line = self.state.settings.waveform_zero_line or false
+
+  local _, zero_line_clicked = Checkbox.draw(ctx, draw_list, zero_line_checkbox_x, zero_line_checkbox_y,
+    "Zero Line",
+    waveform_zero_line, checkbox_config, "waveform_zero_line")
+  if zero_line_clicked then
+    self.state.set_setting('waveform_zero_line', not waveform_zero_line)
+  end
+
   -- Layout mode toggle button (only show when both MIDI and Audio are visible)
   if self.state.settings.show_audio and self.state.settings.show_midi then
-    local fill_label_width = ImGui.CalcTextSize(ctx, "Fill")
-    local layout_button_x = fill_checkbox_x + fill_label_width + 18 + 8 + 10
+    local zero_line_label_width = ImGui.CalcTextSize(ctx, "Zero Line")
+    local layout_button_x = zero_line_checkbox_x + zero_line_label_width + 18 + 8 + 10
     local layout_button_y = checkbox_y
     local layout_button_h = 20
 

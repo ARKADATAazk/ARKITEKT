@@ -383,9 +383,10 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
   end
 end
 
-function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width, uuid, cache, use_filled)
+function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width, uuid, cache, use_filled, show_zero_line)
   -- Default to filled if not specified (for backwards compatibility)
   if use_filled == nil then use_filled = true end
+  if show_zero_line == nil then show_zero_line = false end
 
   -- Cache ImGui functions for performance
   local GetItemRectMin = ImGui.GetItemRectMin
@@ -410,7 +411,10 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
   local waveform_height = item_h / 2 * 0.95
   local zero_line = item_y1 + item_h / 2
 
-  DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
+  -- Draw zero line (optional)
+  if show_zero_line then
+    DrawList_AddLine(draw_list, item_x1, zero_line, item_x2, zero_line, col_zero_line)
+  end
 
   -- Performance: Cache normalized point coordinates (20x faster)
   local cache_key = uuid and (uuid .. "_" .. width) or nil

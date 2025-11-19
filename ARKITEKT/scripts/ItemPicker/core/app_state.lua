@@ -28,6 +28,7 @@ M.settings = {
   sort_mode = "none",  -- Options: "none", "color", "name", "pool"
   waveform_quality = 1.0,  -- Waveform resolution multiplier (0.1-1.0, lower = better performance)
   waveform_filled = true,  -- Use filled polygons for waveforms (false = outline only)
+  waveform_zero_line = false,  -- Show zero line in waveforms
   layout_mode = "vertical",  -- Options: "vertical" (top/bottom), "horizontal" (left/right)
 }
 

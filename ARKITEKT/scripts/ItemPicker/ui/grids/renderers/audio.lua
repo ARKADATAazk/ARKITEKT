@@ -343,7 +343,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
           local target_width = math.floor(content_w * quality)
           local use_filled = state.settings.waveform_filled
           if use_filled == nil then use_filled = true end
-          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled)
+          local show_zero_line = state.settings.waveform_zero_line or false
+          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled, show_zero_line)
         end
       else
         -- Show placeholder and queue waveform generation
