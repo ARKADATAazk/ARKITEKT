@@ -29,7 +29,7 @@ M.settings = {
   waveform_quality = 1.0,  -- Waveform resolution multiplier (0.1-1.0, lower = better performance)
   waveform_filled = true,  -- Use filled polygons for waveforms (false = outline only)
   waveform_zero_line = false,  -- Show zero line in waveforms
-  show_visualization_in_small_tiles = true,  -- Show waveform/MIDI in compact display mode
+  show_visualization_in_small_tiles = false,  -- Show waveform/MIDI in compact display mode (toggle)
   layout_mode = "vertical",  -- Options: "vertical" (top/bottom), "horizontal" (left/right)
 }
 
