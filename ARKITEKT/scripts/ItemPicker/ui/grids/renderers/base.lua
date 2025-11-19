@@ -76,14 +76,24 @@ end
 
 -- Render header bar
 function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, config, is_small_tile)
+  local header_config = config.TILE_RENDER.header
+  local small_tile_config = config.TILE_RENDER.small_tile
+
+  -- In small tile mode with disable_header_fill, only render text shadow (no colored background)
+  if is_small_tile and small_tile_config.disable_header_fill then
+    local text_shadow = small_tile_config.header_text_shadow
+    ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, text_shadow, config.TILE.ROUNDING)
+    return
+  end
+
+  -- Normal header rendering with colored background
   local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
 
   -- Choose appropriate config section based on tile mode
-  local header_config = config.TILE_RENDER.header
   if is_small_tile then
-    s = s * config.TILE_RENDER.small_tile.header_saturation_factor
-    v = v * config.TILE_RENDER.small_tile.header_brightness_factor
+    s = s * small_tile_config.header_saturation_factor
+    v = v * small_tile_config.header_brightness_factor
   else
     s = s * header_config.saturation_factor
     v = v * header_config.brightness_factor
@@ -104,7 +114,7 @@ function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, c
   local header_color = ImGui.ColorConvertDouble4ToU32(r, g, b, final_alpha / 255)
 
   -- Choose appropriate text shadow
-  local text_shadow = is_small_tile and config.TILE_RENDER.small_tile.header_text_shadow or header_config.text_shadow
+  local text_shadow = is_small_tile and small_tile_config.header_text_shadow or header_config.text_shadow
 
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, header_color, config.TILE.ROUNDING)
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + header_height, text_shadow, config.TILE.ROUNDING)

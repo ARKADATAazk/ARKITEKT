@@ -180,8 +180,13 @@ M.TILE_RENDER = {
     -- Behavior
     header_covers_tile = true,  -- Header extends to cover entire tile
     hide_pool_count = true,     -- Hide pool count badge in small mode
+    disable_header_fill = true, -- Don't fill header background, only render text shadow
+
+    -- Visualization
+    visualization_alpha = 0.1,  -- Very low opacity for waveform/MIDI in compact mode
 
     -- Header color controls (HSV transformation from base tile color)
+    -- Note: These only apply when disable_header_fill is false
     header_saturation_factor = 1.1,  -- Multiply tile saturation by this
     header_brightness_factor = 0.7,  -- Multiply tile brightness by this
     header_alpha = 0.8,              -- Transparency multiplier (0.0-1.0), applied to base header alpha

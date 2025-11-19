@@ -152,6 +152,12 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
     local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config)
     local waveform_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
+
+    -- In small tile mode, apply very low opacity for subtle visualization
+    if show_viz_in_small then
+      waveform_alpha = waveform_alpha * config.TILE_RENDER.small_tile.visualization_alpha
+    end
+
     dark_color = Colors.with_alpha(dark_color, math.floor(waveform_alpha * 255))
 
     -- Skip all waveform rendering if skip_visualizations is enabled (fast mode)
