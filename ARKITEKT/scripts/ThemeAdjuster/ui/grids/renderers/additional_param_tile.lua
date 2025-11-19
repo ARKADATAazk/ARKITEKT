@@ -103,7 +103,8 @@ function M.render(ctx, param, tab_color, shell_state, view)
   -- Linked params indicator (same line, right side)
   if is_in_group and #other_params > 0 then
     ImGui.SameLine(ctx, avail_w - 250)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#4AE290"))
+    local group_color = ParameterLinkManager.get_group_color(param_name) or hexrgb("#4AE290")
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, group_color)
     local linked_text = "Linked: " .. table.concat(other_params, ", ")
     if #linked_text > 30 then
       linked_text = linked_text:sub(1, 27) .. "..."

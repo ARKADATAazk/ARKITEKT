@@ -2,6 +2,9 @@
 -- ThemeAdjuster/core/parameter_link_manager.lua
 -- Parameter linking and synchronization system (GROUP-BASED)
 
+local Colors = require('rearkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+
 local M = {}
 
 -- ============================================================================
@@ -18,6 +21,26 @@ M.PARAM_TYPE = {
   FLOAT = "float",
   INT = "int",
   BOOL = "bool",
+}
+
+-- 16 distinct colors for link groups (cycling)
+M.GROUP_COLORS = {
+  hexrgb("#E74C3C"), -- Red
+  hexrgb("#3498DB"), -- Blue
+  hexrgb("#2ECC71"), -- Green
+  hexrgb("#F39C12"), -- Orange
+  hexrgb("#9B59B6"), -- Purple
+  hexrgb("#1ABC9C"), -- Turquoise
+  hexrgb("#E91E63"), -- Pink
+  hexrgb("#00BCD4"), -- Cyan
+  hexrgb("#FF9800"), -- Amber
+  hexrgb("#8BC34A"), -- Light Green
+  hexrgb("#673AB7"), -- Deep Purple
+  hexrgb("#FF5722"), -- Deep Orange
+  hexrgb("#009688"), -- Teal
+  hexrgb("#FFC107"), -- Yellow
+  hexrgb("#795548"), -- Brown
+  hexrgb("#607D8B"), -- Blue Grey
 }
 
 -- ============================================================================
@@ -186,6 +209,16 @@ end
 -- Get group ID for a parameter
 function M.get_group_id(param_name)
   return state.param_to_group[param_name]
+end
+
+-- Get color for a group (cycles through 16 colors)
+function M.get_group_color(param_name)
+  local group_id = state.param_to_group[param_name]
+  if not group_id then return nil end
+
+  -- Cycle through colors based on group ID
+  local color_index = ((group_id - 1) % 16) + 1
+  return M.GROUP_COLORS[color_index]
 end
 
 -- Get all parameters in the same group as param_name

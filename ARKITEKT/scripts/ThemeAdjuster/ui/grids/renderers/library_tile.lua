@@ -265,10 +265,10 @@ function M.render_link_handle(ctx, dl, rect, param_name, view, control_rects)
   end
 
   local bg_color, icon_color
-  local base_color = hexrgb("#4A90E2")  -- Blue for library
+  local base_color = is_in_group and ParameterLinkManager.get_group_color(param_name) or hexrgb("#4A90E2")
 
   if is_in_group then
-    -- In group: show with color
+    -- In group: show with group color
     bg_color = alpha_blend(base_color, 0.3)
     icon_color = alpha_blend(base_color, 1.0)
   else
@@ -278,7 +278,7 @@ function M.render_link_handle(ctx, dl, rect, param_name, view, control_rects)
   end
 
   if is_hovered then
-    bg_color = alpha_blend(base_color, 0.5)
+    bg_color = alpha_blend(base_color or hexrgb("#4A90E2"), 0.5)
     icon_color = hexrgb("#FFFFFF")
   end
 

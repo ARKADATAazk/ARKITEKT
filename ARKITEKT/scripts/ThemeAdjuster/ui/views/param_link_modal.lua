@@ -47,20 +47,35 @@ end
 function ParamLinkModal:get_compatible_params()
   local compatible = {}
 
+  -- Build param to group mapping from param_groups
+  local param_to_group = {}
+  for _, group in ipairs(self.view.param_groups) do
+    for _, param in ipairs(group.params) do
+      param_to_group[param.name] = group.name
+    end
+  end
+
   -- Get all parameters from library (not just assigned)
   for _, param in ipairs(self.view.all_params) do
     local param_name = param.name
 
     -- Skip self
     if param_name ~= self.source_param then
-      -- Check type compatibility
-      if ParameterLinkManager.are_types_compatible(self.source_param_type, param.type) then
-        table.insert(compatible, {
-          id = param_name,
-          name = param_name,
-          type = param.type,
-          description = param.description or "",
-        })
+      -- Check if parameter's group is enabled
+      local param_group = param_to_group[param_name]
+      local group_enabled = param_group and self.view.enabled_groups[param_group]
+
+      -- Only include if group is enabled (or no group)
+      if group_enabled or not param_group then
+        -- Check type compatibility
+        if ParameterLinkManager.are_types_compatible(self.source_param_type, param.type) then
+          table.insert(compatible, {
+            id = param_name,
+            name = param_name,
+            type = param.type,
+            description = param.description or "",
+          })
+        end
       end
     end
   end

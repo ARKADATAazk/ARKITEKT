@@ -85,7 +85,7 @@ function M.render(ctx, rect, item, state, view, tab_id)
   if is_in_group then
     local mode = ParameterLinkManager.get_link_mode(param_name)
     link_prefix = mode == ParameterLinkManager.LINK_MODE.LINK and "⇄ " or "⇉ "
-    link_color = hexrgb("#4AE290")  -- Green for linked
+    link_color = ParameterLinkManager.get_group_color(param_name) or hexrgb("#4AE290")
   end
 
   if metadata.display_name and metadata.display_name ~= "" then
