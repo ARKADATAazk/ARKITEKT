@@ -155,12 +155,13 @@ function OverflowModalView:draw(ctx, window)
         self:close()
       end,
       render = function(ctx, alpha, bounds)
-        local close_clicked = Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a, padding)
+        Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a, padding)
           ImGui.Text(ctx, "All Playlists:")
           ImGui.Dummy(ctx, 0, 8)
 
           -- Search input
           local search_height = 28
+          local cur_y = ImGui.GetCursorPosY(ctx)
           SearchInput.draw_at_cursor(ctx, {
             id = "overflow_search",
             width = content_w,
@@ -171,7 +172,8 @@ function OverflowModalView:draw(ctx, window)
               self.search_text = new_text
             end
           })
-          ImGui.Dummy(ctx, 0, search_height + 12)
+          -- Reset cursor after primitive (primitives advance horizontally)
+          ImGui.SetCursorPos(ctx, padding, cur_y + search_height + 12)
 
           ImGui.Separator(ctx)
           ImGui.Dummy(ctx, 0, 12)
@@ -201,13 +203,6 @@ function OverflowModalView:draw(ctx, window)
             self:close()
           end
         end)
-
-        -- Handle close button click
-        if close_clicked then
-          window.overlay:pop('overflow-tabs')
-          self.is_open = false
-          self:close()
-        end
       end
     })
   end

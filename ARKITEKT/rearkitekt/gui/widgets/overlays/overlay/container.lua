@@ -6,7 +6,6 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
-local TransportIcons = require('scripts.Region_Playlist.ui.views.transport.transport_icons')
 
 local M = {}
 
@@ -21,14 +20,11 @@ local DEFAULTS = {
   border_opacity = 1.0,
   border_thickness = 1,  -- 1 pixel border
   padding = 12,          -- Subtle internal padding
-  show_close_button = true,  -- Show X button in top-right
-  close_button_size = 24,    -- Size of close button hit area
 }
 
 -- Render a dark container with content
--- Returns: close_button_clicked (boolean)
 -- Usage in overlay render callback:
---   local close_clicked = Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h)
+--   Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h)
 --     -- Your content here
 --   end, { width = 0.5, height = 0.6 })
 function M.render(ctx, alpha, bounds, content_fn, opts)
@@ -79,30 +75,7 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
     content_fn(ctx, content_w, content_h, w, h, alpha, padding)
   end
 
-  -- Draw close button in top-right corner if enabled
-  local close_clicked = false
-  if config.show_close_button then
-    local btn_size = config.close_button_size
-    local btn_x = x + w - btn_size - padding
-    local btn_y = y + padding
-
-    -- Check for mouse interaction
-    local mx, my = ImGui.GetMousePos(ctx)
-    local is_hovered = mx >= btn_x and mx < btn_x + btn_size and my >= btn_y and my < btn_y + btn_size
-    local is_clicked = is_hovered and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)
-
-    if is_clicked then
-      close_clicked = true
-    end
-
-    -- Draw close icon
-    local icon_color = is_hovered and 0xFFFFFFFF or 0xFFAAAAAA
-    TransportIcons.draw_close(dl, btn_x, btn_y, btn_size, btn_size, icon_color)
-  end
-
   ImGui.EndChild(ctx)
-
-  return close_clicked
 end
 
 return M

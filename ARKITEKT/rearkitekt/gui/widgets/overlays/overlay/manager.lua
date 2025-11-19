@@ -166,10 +166,10 @@ function M:push(opts)
     scrim_color = opts.scrim_color,
     scrim_opacity = opts.scrim_opacity,
 
-    -- Close button support
-    show_close_button = (opts.show_close_button == true),
-    close_button_size = opts.close_button_size or 32,
-    close_button_margin = opts.close_button_margin or 16,
+    -- Close button support (enabled by default for all modals)
+    show_close_button = (opts.show_close_button ~= false),
+    close_button_size = opts.close_button_size or 24,
+    close_button_margin = opts.close_button_margin or 12,
     close_button_proximity = opts.close_button_proximity or 150,
     close_button_color = opts.close_button_color or hexrgb("#FFFFFFFF"),
     close_button_hover_color = opts.close_button_hover_color or hexrgb("#FF4444FF"),
