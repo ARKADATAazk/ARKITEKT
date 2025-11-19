@@ -85,7 +85,6 @@ local function draw_rounded_rect_path(dl, x1, y1, x2, y2, color, filled, rt, rr,
 end
 
 local function draw_corner_shape(dl, x, y, size, bg, border_inner, border_outer, outer_rounding, inner_rounding, position)
-  reaper.ShowConsoleMsg(string.format("[CORNER_BUTTON] outer_rounding=%s, inner_rounding=%s, position=%s\n", tostring(outer_rounding), tostring(inner_rounding), tostring(position)))
   local rtl, rtr, rbr, rbl = 0, 0, 0, 0
   if position == 'tl' then
     rtl = outer_rounding; rbr = inner_rounding
@@ -101,7 +100,6 @@ local function draw_corner_shape(dl, x, y, size, bg, border_inner, border_outer,
   local itr = math.max(0, rtr - 2)
   local ibr = math.max(0, rbr - 2)
   local ibl = math.max(0, rbl - 2)
-  reaper.ShowConsoleMsg(string.format("[CORNER_BUTTON] final corners: tl=%s, tr=%s, br=%s, bl=%s\n", tostring(itl), tostring(itr), tostring(ibr), tostring(ibl)))
 
   draw_rounded_rect_path(dl, x, y, x + size, y + size, bg, true, itl, itr, ibr, ibl)
   draw_rounded_rect_path(dl, x + 1, y + 1, x + size - 1, y + size - 1, border_inner, false, itl, itr, ibr, ibl, 1)

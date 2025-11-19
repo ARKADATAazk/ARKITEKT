@@ -791,7 +791,6 @@ function Panel:end_draw(ctx)
       if cb then
         local size = cb.size or 30
       local border_thickness = 1
-      reaper.ShowConsoleMsg(string.format("[DEBUG] cb.rounding = %s, CORNER_BUTTON_CONFIG.outer_corner_rounding = %s\n", tostring(cb.rounding), tostring(CORNER_BUTTON_CONFIG.outer_corner_rounding)))
       local outer_rounding = self.config.rounding or CORNER_BUTTON_CONFIG.outer_corner_rounding
       -- Inner rounding is configurable separately
       local inner_rounding = cb.inner_rounding or 3
