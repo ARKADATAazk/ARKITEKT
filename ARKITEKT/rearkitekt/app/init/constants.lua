@@ -200,6 +200,16 @@ M.TITLEBAR = {
 M.STATUS_BAR = {
   height = 28,
   compensation = 6,  -- Adjustment for layout alignment
+
+  -- Padding and spacing
+  left_pad = 10,
+  text_pad = 8,
+  right_pad = 10,
+
+  -- Resize handle configuration
+  show_resize_handle = true,
+  resize_square_size = 3,
+  resize_spacing = 1,
 }
 
 -- ============================================================================
