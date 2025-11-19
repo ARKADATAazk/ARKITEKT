@@ -217,8 +217,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local is_favorite = state.favorites and state.favorites.midi and state.favorites.midi[item_data.track_guid]
 
   -- Calculate star badge space
-  local star_badge_size = 18
-  local star_padding = 4
+  local fav_cfg = config.TILE_RENDER.badges.favorite
+  local star_badge_size = fav_cfg.size
+  local star_padding = fav_cfg.padding
   local text_right_margin = is_favorite and (star_badge_size + star_padding * 2) or 0
 
   -- Check if this tile is being renamed
@@ -382,10 +383,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     end
   end
 
-  -- Render favorite star badge
+  -- Render favorite star badge (vertically centered in header)
   if cascade_factor > 0.5 and is_favorite then
     local star_x = scaled_x2 - star_badge_size - star_padding
-    local star_y = scaled_y1 + star_padding
+    local star_y = scaled_y1 + (header_height - star_badge_size) / 2
     Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite)
   end
 
@@ -396,29 +397,28 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     should_show_pool_count = false
   end
   if should_show_pool_count then
+    local pool_cfg = config.TILE_RENDER.badges.pool
     local pool_text = "×" .. tostring(item_data.pool_count)
     local text_w, text_h = ImGui.CalcTextSize(ctx, pool_text)
-    local badge_padding = 4
-    local badge_w = text_w + badge_padding * 2
-    local badge_h = text_h + badge_padding * 2
-    local badge_x = scaled_x2 - badge_w - 4
-    local badge_y = scaled_y2 - badge_h - 4
-    local badge_rounding = 3
+    local badge_w = text_w + pool_cfg.padding_x * 2
+    local badge_h = text_h + pool_cfg.padding_y * 2
+    local badge_x = scaled_x2 - badge_w - pool_cfg.margin
+    local badge_y = scaled_y2 - badge_h - pool_cfg.margin
 
     -- Badge background
-    local badge_bg = Colors.hexrgb("#14181C")
-    badge_bg = Colors.with_alpha(badge_bg, math.floor(combined_alpha * 200))
-    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, badge_rounding)
+    local badge_bg_alpha = math.floor((pool_cfg.bg & 0xFF) * combined_alpha)
+    local badge_bg = (pool_cfg.bg & 0xFFFFFF00) | badge_bg_alpha
+    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, pool_cfg.rounding)
 
-    -- Badge border
-    local badge_border = Colors.hexrgb("#2A2A2A")
-    badge_border = Colors.with_alpha(badge_border, math.floor(combined_alpha * 100))
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_border, badge_rounding, 0, 1)
+    -- Border using darker tile color
+    local border_color = Colors.adjust_brightness(render_color, pool_cfg.border_darken)
+    border_color = Colors.with_alpha(border_color, pool_cfg.border_alpha)
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, border_color, pool_cfg.rounding, 0, 0.5)
 
     -- Pool count text
     local text_color = Colors.hexrgb("#AAAAAA")
     text_color = Colors.with_alpha(text_color, math.floor(combined_alpha * 255))
-    ImGui.DrawList_AddText(dl, badge_x + badge_padding, badge_y + badge_padding, text_color, pool_text)
+    ImGui.DrawList_AddText(dl, badge_x + pool_cfg.padding_x, badge_y + pool_cfg.padding_y, text_color, pool_text)
   end
 end
 

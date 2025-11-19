@@ -178,7 +178,8 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   if show_badge and total and total > 1 then
     local badge_text = string.format("%d/%d", index or 1, total)
     local bw, _ = ImGui.CalcTextSize(ctx, badge_text)
-    right_bound_x = right_bound_x - (bw + tile_render.badge.padding_x * 2 + tile_render.badge.margin)
+    local badge_cfg = tile_render.badges.cycle
+    right_bound_x = right_bound_x - (bw + badge_cfg.padding_x * 2 + badge_cfg.margin)
   end
 
   local available_width = right_bound_x - text_x
@@ -186,25 +187,34 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
 
   Draw.text(dl, text_x, text_y, Colors.with_alpha(tile_render.text.primary_color, text_alpha), truncated_name)
 
-  -- Render badge
+  -- Render cycle badge (vertically centered in header)
   if show_badge and total and total > 1 then
+    local badge_cfg = tile_render.badges.cycle
     local badge_text = string.format("%d/%d", index or 1, total)
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
 
-    local badge_x = x2 - bw - tile_render.badge.padding_x * 2 - tile_render.badge.margin
-    local badge_y = y1 + (header_height - (bh + tile_render.badge.padding_y * 2)) / 2
-    local badge_x2 = badge_x + bw + tile_render.badge.padding_x * 2
-    local badge_y2 = badge_y + bh + tile_render.badge.padding_y * 2
+    -- Calculate badge dimensions
+    local badge_w = bw + badge_cfg.padding_x * 2
+    local badge_h = bh + badge_cfg.padding_y * 2
 
-    local badge_bg_alpha = math.floor((tile_render.badge.bg & 0xFF) * (text_alpha / 255))
-    local badge_bg = (tile_render.badge.bg & 0xFFFFFF00) | badge_bg_alpha
+    -- Center vertically in header
+    local badge_x = x2 - badge_w - badge_cfg.margin
+    local badge_y = y1 + (header_height - badge_h) / 2
+    local badge_x2 = badge_x + badge_w
+    local badge_y2 = badge_y + badge_h
 
-    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, tile_render.badge.rounding)
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2,
-      Colors.with_alpha(base_color, tile_render.badge.border_alpha),
-      tile_render.badge.rounding, 0, 0.5)
+    -- Background
+    local badge_bg_alpha = math.floor((badge_cfg.bg & 0xFF) * (text_alpha / 255))
+    local badge_bg = (badge_cfg.bg & 0xFFFFFF00) | badge_bg_alpha
+    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, badge_cfg.rounding)
 
-    Draw.text(dl, badge_x + tile_render.badge.padding_x, badge_y + tile_render.badge.padding_y,
+    -- Border using darker tile color
+    local border_color = Colors.adjust_brightness(base_color, badge_cfg.border_darken)
+    border_color = Colors.with_alpha(border_color, badge_cfg.border_alpha)
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, border_color, badge_cfg.rounding, 0, 0.5)
+
+    -- Text
+    Draw.text(dl, badge_x + badge_cfg.padding_x, badge_y + badge_cfg.padding_y,
       Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
 
     -- Store badge rect for exclusion zone and make it clickable

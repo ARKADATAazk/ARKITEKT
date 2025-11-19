@@ -120,14 +120,35 @@ M.TILE_RENDER = {
     text_shadow = hexrgb("#00000099"),  -- Shadow overlay color
   },
 
-  -- Badge
-  badge = {
-    padding_x = 6,
-    padding_y = -1,  -- Reduced by 4 per side (8 pixels total height reduction from original)
-    margin = 6,
-    rounding = 4,
-    bg = hexrgb("#14181C"),
-    border_alpha = 0x33,
+  -- Badges (unified configuration for all badge types)
+  badges = {
+    -- Cycle badge (index/total in header)
+    cycle = {
+      padding_x = 5,
+      padding_y = 1,
+      margin = 6,
+      rounding = 3,
+      bg = hexrgb("#14181C"),
+      border_darken = 0.4,  -- Darken tile color by this amount for border
+      border_alpha = 0x66,
+    },
+
+    -- Pool count badge (bottom right)
+    pool = {
+      padding_x = 4,
+      padding_y = 0,  -- Smaller vertically
+      margin = 4,
+      rounding = 3,
+      bg = hexrgb("#14181C"),
+      border_darken = 0.4,
+      border_alpha = 0x55,
+    },
+
+    -- Favorite star
+    favorite = {
+      size = 16,  -- Smaller star
+      padding = 3,
+    },
   },
 
   -- Text
