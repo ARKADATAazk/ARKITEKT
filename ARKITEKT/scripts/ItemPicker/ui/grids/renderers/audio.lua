@@ -135,7 +135,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     header_alpha = combined_alpha * config.TILE_RENDER.small_tile.header_alpha
   end
   BaseRenderer.render_header_bar(dl, scaled_x1, scaled_y1, scaled_x2, header_height,
-    render_color, header_alpha, config)
+    render_color, header_alpha, config, is_small_tile)
 
   -- Render marching ants for selection
   if tile_state.selected and cascade_factor > 0.5 then

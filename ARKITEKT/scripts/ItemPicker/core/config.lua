@@ -76,14 +76,19 @@ M.TILE_RENDER = {
     fade_speed = 20.0,
   },
 
-  -- Header
+  -- Header (Normal tile mode)
   header = {
+    -- Sizing
     height_ratio = 0.15,
     min_height = 22,
-    saturation_factor = 1.1,
-    brightness_factor = 0.7,
-    alpha = 0xDD,
-    text_shadow = hexrgb("#00000099"),
+
+    -- Color controls (HSV transformation from base tile color)
+    saturation_factor = 1.1,  -- Multiply tile saturation by this
+    brightness_factor = 0.7,  -- Multiply tile brightness by this
+    alpha = 0xDD,             -- Base alpha/opacity (0x00-0xFF)
+
+    -- Overlay
+    text_shadow = hexrgb("#00000099"),  -- Shadow overlay color
   },
 
   -- Badge
@@ -172,9 +177,17 @@ M.TILE_RENDER = {
 
   -- Small tile display mode (when tile height < responsive.small_tile_height)
   small_tile = {
+    -- Behavior
     header_covers_tile = true,  -- Header extends to cover entire tile
-    header_alpha = 0.8,  -- 80% transparency for header (0xCC in hex)
-    hide_pool_count = true,  -- Hide pool count badge in small mode
+    hide_pool_count = true,     -- Hide pool count badge in small mode
+
+    -- Header color controls (HSV transformation from base tile color)
+    header_saturation_factor = 1.1,  -- Multiply tile saturation by this
+    header_brightness_factor = 0.7,  -- Multiply tile brightness by this
+    header_alpha = 0.8,              -- Transparency multiplier (0.0-1.0), applied to base header alpha
+
+    -- Overlay
+    header_text_shadow = hexrgb("#00000099"),  -- Shadow overlay color
   },
 }
 
