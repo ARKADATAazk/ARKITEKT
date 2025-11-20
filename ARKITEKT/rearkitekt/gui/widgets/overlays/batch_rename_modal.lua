@@ -97,13 +97,9 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   -- SECTION 1: Pattern input and color picker side by side
   -- ========================================================================
 
-  local input_width = modal_w * 0.58  -- ~58% for input field
-  local picker_size = 195
+  local input_width = modal_w * 0.62  -- ~62% for input field
+  local picker_size = 137  -- 30% smaller than original 195
   local gap = 12  -- Gap between input and picker
-
-  -- Pattern input label
-  ImGui.Text(ctx, "Rename Pattern:")
-  ImGui.Dummy(ctx, 0, 4)
 
   -- Save cursor position for side-by-side layout
   local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
@@ -127,7 +123,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   local changed, new_pattern = ImGui.InputTextWithHint(
     ctx,
     "##pattern_input",
-    "combat$n",
+    "pattern$wildcard",
     self.pattern,
     ImGui.InputTextFlags_None
   )
@@ -139,12 +135,8 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
     self.preview_items = generate_preview(new_pattern, count)
   end
 
-  -- RIGHT: Color picker label and widget
+  -- RIGHT: Color picker widget (no label)
   ImGui.SetCursorScreenPos(ctx, start_x + input_width + gap, start_y)
-  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Color:")
-
-  local picker_y = start_y + ImGui.GetTextLineHeight(ctx) + 4
-  ImGui.SetCursorScreenPos(ctx, start_x + input_width + gap, picker_y)
 
   -- Initialize color picker only once per modal open
   if not self.picker_initialized then
@@ -162,17 +154,17 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
 
   -- Move cursor below the taller element (color picker)
   local input_height = 28  -- Approximate input field height
-  local next_y = start_y + math.max(input_height, picker_size + ImGui.GetTextLineHeight(ctx) + 4)
+  local next_y = start_y + math.max(input_height, picker_size)
   ImGui.SetCursorScreenPos(ctx, start_x, next_y)
 
-  ImGui.Dummy(ctx, 0, 8)
+  ImGui.Dummy(ctx, 0, 4)
 
   -- ========================================================================
   -- SECTION 2: Wildcard chips (clickable)
   -- ========================================================================
 
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards:")
-  ImGui.Dummy(ctx, 0, 4)
+  ImGui.Dummy(ctx, 0, 2)
 
   local wildcard_chips = {
     {label = "number ($n)", wildcard = "$n"},
@@ -180,7 +172,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
     {label = "padded ($N)", wildcard = "$N"},
   }
 
-  local chip_spacing = 8
+  local chip_spacing = 6
 
   for i, chip_data in ipairs(wildcard_chips) do
     if i > 1 then
@@ -203,14 +195,14 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
     end
   end
 
-  ImGui.Dummy(ctx, 0, 8)
+  ImGui.Dummy(ctx, 0, 4)
 
   -- ========================================================================
   -- SECTION 3: Common name chips (clickable)
   -- ========================================================================
 
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Common Names:")
-  ImGui.Dummy(ctx, 0, 4)
+  ImGui.Dummy(ctx, 0, 2)
 
   local common_names = {"combat", "ambience", "tension"}
 
@@ -239,9 +231,9 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
     end
   end
 
-  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Dummy(ctx, 0, 6)
   ImGui.Separator(ctx)
-  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Dummy(ctx, 0, 6)
 
   -- ========================================================================
   -- SECTION 4: Preview
@@ -249,9 +241,9 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
 
   if #self.preview_items > 0 then
     ImGui.TextColored(ctx, hexrgb("#999999FF"), "Preview:")
-    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Dummy(ctx, 0, 2)
     ImGui.Indent(ctx, 16)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 4)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 3)
     for _, name in ipairs(self.preview_items) do
       ImGui.TextColored(ctx, hexrgb("#DDDDDDFF"), name)
     end
@@ -259,9 +251,9 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
     ImGui.Unindent(ctx, 16)
   end
 
-  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Dummy(ctx, 0, 6)
   ImGui.Separator(ctx)
-  ImGui.Dummy(ctx, 0, 8)
+  ImGui.Dummy(ctx, 0, 6)
 
   -- ========================================================================
   -- SECTION 5: Action buttons using primitives
@@ -333,7 +325,8 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   end
 
   -- Advance cursor past buttons
-  ImGui.SetCursorScreenPos(ctx, button_start_x, button_y + button_h)
+  ImGui.SetCursorScreenPos(ctx, start_x, button_y + button_h)
+  ImGui.Dummy(ctx, 0, 8)  -- Add spacing at bottom
 
   return should_close
 end
@@ -366,7 +359,7 @@ function BatchRenameModal:draw(ctx, item_count, window)
               self:close()
               self.overlay_pushed = false
             end
-          end, { width = 0.45, height = 0.75 })
+          end, { width = 0.45, height = 0.65 })
         end
       })
     end
