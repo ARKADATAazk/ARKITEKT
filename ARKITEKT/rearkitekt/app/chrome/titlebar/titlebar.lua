@@ -10,6 +10,7 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Config = require('rearkitekt.core.config')
 local Constants = require('rearkitekt.app.init.constants')
+local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -223,30 +224,30 @@ function M.new(opts)
         self:_draw_icon(ctx, icon_x, icon_y, draw_color)
 
         -- Context menu on right-click
-        if ImGui.BeginPopup(ctx, "##icon_context_menu") then
-          if ImGui.MenuItem(ctx, "Open Hub") then
+        if ContextMenu.begin(ctx, "##icon_context_menu") then
+          if ContextMenu.item(ctx, "Open Hub") then
             icon_clicked = true
           end
 
-          if ImGui.MenuItem(ctx, "Show Metrics") then
+          if ContextMenu.item(ctx, "Show Metrics") then
             icon_shift_clicked = true
           end
 
-          ImGui.Separator(ctx)
+          ContextMenu.separator(ctx)
 
-          if ImGui.MenuItem(ctx, "Debug Console") then
+          if ContextMenu.item(ctx, "Debug Console") then
             local ok, ConsoleWindow = pcall(require, 'rearkitekt.debug.console_window')
             if ok and ConsoleWindow and ConsoleWindow.launch then
               ConsoleWindow.launch()
             end
           end
 
-          if ImGui.MenuItem(ctx, "Lua Profiler") then
+          if ContextMenu.item(ctx, "Lua Profiler") then
             -- Trigger profiler (originally CTRL+SHIFT+ALT+CLICK)
             -- You can add profiler launch logic here if needed
           end
 
-          ImGui.EndPopup(ctx)
+          ContextMenu.end_menu(ctx)
         end
 
         title_x_offset = self.icon_size + self.icon_spacing
@@ -315,24 +316,19 @@ function M.new(opts)
       local azk_text = "AZK"
       local azk_font_size = self.height * 0.65  -- Large text based on titlebar height
       if self.title_font then ImGui.PushFont(ctx, self.title_font, azk_font_size) end
-      local azk_text_w = ImGui.CalcTextSize(ctx, azk_text)
-      if self.title_font then ImGui.PopFont(ctx) end
+      local azk_text_w, azk_text_h = ImGui.CalcTextSize(ctx, azk_text)
 
       local azk_x = (win_w - azk_text_w) * 0.5
-      local azk_y = (self.height - (azk_font_size * 0.7)) * 0.5  -- Approximate vertical centering
+      local azk_y = (self.height - azk_text_h) * 0.5
 
-      -- Color with 15% transparency (alpha = 217 out of 255, which is 85% opacity)
-      local azk_alpha = 217
-      local r = (text_color >> 24) & 0xFF
-      local g = (text_color >> 16) & 0xFF
-      local b = (text_color >> 8) & 0xFF
-      local azk_color = (r << 24) | (g << 16) | (b << 8) | azk_alpha
+      -- Color with 15% transparency (85% opacity = 0xD9 alpha)
+      local azk_color = Colors.with_alpha(text_color, 0xD9)
 
-      ImGui.SetCursorPos(ctx, azk_x, azk_y)
-      if self.title_font then ImGui.PushFont(ctx, self.title_font, azk_font_size) end
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, azk_color)
-      ImGui.Text(ctx, azk_text)
-      ImGui.PopStyleColor(ctx)
+      -- Use DrawList to properly render with alpha
+      local win_x, win_y = ImGui.GetWindowPos(ctx)
+      local draw_list = ImGui.GetWindowDrawList(ctx)
+      ImGui.DrawList_AddText(draw_list, win_x + azk_x, win_y + azk_y, azk_color, azk_text)
+
       if self.title_font then ImGui.PopFont(ctx) end
 
       ImGui.SetCursorPos(ctx, win_w - total_button_width, 0)
