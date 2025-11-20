@@ -144,6 +144,8 @@ function M.run(opts)
     version_color   = config.version_color,
     azk_font        = fonts.orbitron,  -- Pass Orbitron font for AZK branding
     azk_font_size   = fonts.orbitron_size,
+    azk_text        = Constants.TITLEBAR.azk_text,
+    azk_opacity     = Constants.TITLEBAR.azk_opacity,
     settings        = settings and settings:sub('ui') or nil,
     initial_pos     = config.initial_pos,
     initial_size    = config.initial_size,
