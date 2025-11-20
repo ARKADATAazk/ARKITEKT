@@ -344,10 +344,15 @@ function M:render(ctx, dt)
 
       -- Handle scrim clicks (check if click is outside content area)
       -- Right-click closes modal when NOT over containers/content
-      -- Check for any items hovered (containers, buttons, inputs, etc.)
-      if top.close_on_scrim and not ImGui.IsAnyItemHovered(ctx) then
-        if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right) then
-          self:pop()
+      -- Check both items AND child windows to detect modal containers
+      if top.close_on_scrim then
+        local over_item = ImGui.IsAnyItemHovered(ctx)
+        local over_child_window = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_ChildWindows)
+
+        if not over_item and not over_child_window then
+          if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right) then
+            self:pop()
+          end
         end
       end
 
