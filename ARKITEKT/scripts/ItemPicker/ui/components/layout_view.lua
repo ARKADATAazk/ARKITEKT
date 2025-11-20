@@ -164,7 +164,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.settings_hover_alpha = 0
   end
   local target_settings_alpha = is_hovering_settings and 1.0 or 0.0
-  local fade_speed = 12.0 * frame_dt
+  local fade_speed = 0.2  -- Fixed interpolation speed (frame-rate independent enough for smooth fade)
   self.state.settings_hover_alpha = self.state.settings_hover_alpha + (target_settings_alpha - self.state.settings_hover_alpha) * fade_speed
   local settings_alpha = self.state.settings_hover_alpha * ui_fade
 
@@ -556,7 +556,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       self.state.filter_hover_alpha = 0
     end
     local target_filter_alpha = is_hovering_filter and 1.0 or 0.0
-    self.state.filter_hover_alpha = self.state.filter_hover_alpha + (target_filter_alpha - self.state.filter_hover_alpha) * fade_speed
+    local filter_fade_speed = 0.2  -- Fixed interpolation speed
+    self.state.filter_hover_alpha = self.state.filter_hover_alpha + (target_filter_alpha - self.state.filter_hover_alpha) * filter_fade_speed
     local filter_alpha = self.state.filter_hover_alpha * ui_fade
 
     -- Calculate total width needed for all chips
