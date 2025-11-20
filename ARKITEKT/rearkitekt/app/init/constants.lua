@@ -40,7 +40,7 @@ M.OVERLAY = {
   CONTENT_PADDING = 24,
 
   -- Scrim/backdrop
-  SCRIM_OPACITY = 0.85,
+  SCRIM_OPACITY = 0.99,
   SCRIM_COLOR = hexrgb("#000000"),
 
   -- Behavior defaults
