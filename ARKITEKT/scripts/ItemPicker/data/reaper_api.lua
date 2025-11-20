@@ -469,6 +469,13 @@ function M.InsertItemAtMousePos(item, state)
 end
 
 function M.GetRegionsForItem(item)
+  -- DEBUG: Always return fake regions for testing
+  local test_regions = {"TEST1", "TEST2", "TEST3"}
+  reaper.ShowConsoleMsg(string.format("[REGION_TAGS] DEBUG: Returning fake regions: %s\n",
+    table.concat(test_regions, ", ")))
+  return test_regions
+
+  --[[ ORIGINAL CODE - COMMENTED OUT FOR DEBUG
   -- Get item position and length
   local item_start = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
   local item_length = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
@@ -505,6 +512,7 @@ function M.GetRegionsForItem(item)
   end
 
   return regions
+  --]]
 end
 
 return M
