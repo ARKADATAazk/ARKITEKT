@@ -15,14 +15,6 @@ local ConfigUtil = require('rearkitekt.core.config')
 
 local M = {}
 
--- Helper: Convert hex color to integer
-local function hexrgb(hex)
-  if hex:sub(1, 1) == "#" then hex = hex:sub(2) end
-  local h = tonumber(hex, 16)
-  if not h then return hexrgb("#FFFFFF") end
-  return (#hex == 8) and h or ((h << 8) | 0xFF)
-end
-
 -- ============================================================================
 -- SHARED PRIMITIVES (Used across multiple components)
 -- ============================================================================
@@ -137,10 +129,10 @@ M.BUTTON_COLORS = {
 
   -- WHITE variant: Classic white/gray toggle (high contrast)
   toggle_white = {
-    bg_on = hexrgb("#363636ff"),
+    bg_on = hexrgb("#2f2f2fff"),
     bg_on_hover = hexrgb("#373737ff"),
     bg_on_active = hexrgb("#343434ff"),
-    border_inner_on = hexrgb("#696969ff"),
+    border_inner_on = hexrgb("#585858ff"),
     border_inner_on_hover = hexrgb("#8b8b8bff"),
     border_inner_on_active = hexrgb("#737373ff"),
     text_on = hexrgb("#FFFFFFFF"),
@@ -219,14 +211,14 @@ M.DROPDOWN_COLORS = {
 -- Input fields are recessed/inset elements, so darker background emphasizes depth
 
 M.SEARCH_INPUT_COLORS = {
-  bg = hexrgb("#1A1A1AFF"),           -- Much darker background (input is recessed)
-  bg_hover = hexrgb("#1E1E1EFF"),     -- Slightly lighter on hover
-  bg_active = hexrgb("#212121FF"),    -- Slightly lighter when active/typing
+  bg = M.COLORS.BG_BASE,
+  bg_hover = M.COLORS.BG_HOVER,
+  bg_active = M.COLORS.BG_ACTIVE,
   border_outer = M.COLORS.BORDER_OUTER,
-  border_inner = hexrgb("#282828ff"), -- Darker inner border for recessed look
-  border_hover = hexrgb("#353535FF"), -- Subtle highlight on hover
-  border_active = hexrgb("#404040FF"), -- More visible when active
-  text = hexrgb("#AAAAAAFF"),         -- More transparent/dimmed text
+  border_inner = M.COLORS.BORDER_INNER,
+  border_hover = M.COLORS.BORDER_HOVER,
+  border_active = M.COLORS.BORDER_ACTIVE,
+  text = M.COLORS.TEXT_NORMAL,         -- More transparent/dimmed text
 }
 
 -- ============================================================================

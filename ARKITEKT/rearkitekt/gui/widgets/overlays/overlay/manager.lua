@@ -278,7 +278,7 @@ function M:render(ctx, dt)
 
     if not self.is_docked then
       offset_y = self.titlebar_height
-      adjusted_h = parent_h - self.titlebar_height - self.statusbar_height + 2
+      adjusted_h = parent_h - self.titlebar_height - self.statusbar_height + 4
     end
 
     x = parent_x
