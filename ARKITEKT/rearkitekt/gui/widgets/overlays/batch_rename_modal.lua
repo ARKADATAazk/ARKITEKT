@@ -351,15 +351,45 @@ function BatchRenameModal:draw(ctx, item_count, window)
           self.overlay_pushed = false
         end,
         render = function(ctx, alpha, bounds)
-          Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a, padding)
+          -- Calculate modal dimensions directly
+          local modal_w = math.floor(bounds.w * 0.50)  -- 50% of screen width
+          local modal_h = math.floor(bounds.h * 0.60)  -- 60% of screen height
+          local modal_x = math.floor(bounds.x + (bounds.w - modal_w) * 0.5)
+          local modal_y = math.floor(bounds.y + (bounds.h - modal_h) * 0.5)
+
+          local padding = 20
+          local content_w = modal_w - padding * 2
+          local content_h = modal_h - padding * 2
+
+          -- Draw modal background
+          local dl = ImGui.GetWindowDrawList(ctx)
+          local bg_color = Colors.with_alpha(hexrgb("#1e1e1e"), math.floor(255 * alpha))
+          local border_color = Colors.with_alpha(hexrgb("#000000"), math.floor(255 * alpha))
+
+          ImGui.DrawList_AddRectFilled(dl, modal_x, modal_y, modal_x + modal_w, modal_y + modal_h, bg_color, 0)
+          ImGui.DrawList_AddRect(dl, modal_x, modal_y, modal_x + modal_w, modal_y + modal_h, border_color, 0, 0, 1)
+
+          -- Create child window for content (no scrollbar - NoScrollbar flag)
+          ImGui.SetCursorScreenPos(ctx, modal_x + padding, modal_y + padding)
+
+          local child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
+          local window_flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse
+
+          ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))  -- Transparent
+          if ImGui.BeginChild(ctx, '##batch_rename_content', content_w, content_h, child_flags, window_flags) then
             local should_close = self:draw_content(ctx, count, true, content_w, content_h)
+
+            ImGui.EndChild(ctx)
+            ImGui.PopStyleColor(ctx, 1)
 
             if should_close then
               window.overlay:pop('batch-rename-modal')
               self:close()
               self.overlay_pushed = false
             end
-          end, { width = 0.40, height = 0.50 })
+          else
+            ImGui.PopStyleColor(ctx, 1)
+          end
         end
       })
     end
