@@ -165,17 +165,32 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Settings area ABOVE search (slides down when hovering above search field)
   local settings_area_max_height = 70  -- Maximum height when fully expanded
-  local settings_hover_padding = 20
 
-  -- Hover detection: trigger when mouse is above search field area
-  local is_hovering_settings = mouse_y >= (search_base_y - settings_hover_padding - settings_area_max_height) and
-                               mouse_y <= (search_base_y + settings_hover_padding)
+  -- Sticky hover behavior: trigger only when close above search, hide only when below search
+  local trigger_zone_padding = 15  -- Small zone above search to trigger
+  local is_in_trigger_zone = mouse_y >= (search_base_y - trigger_zone_padding) and
+                             mouse_y < search_base_y
+
+  -- Once triggered, stay visible until mouse goes below search field
+  local is_below_search = mouse_y > (search_base_y + search_height)
+
+  -- Initialize sticky state
+  if self.state.settings_sticky_visible == nil then
+    self.state.settings_sticky_visible = false
+  end
+
+  -- Update sticky state
+  if is_in_trigger_zone then
+    self.state.settings_sticky_visible = true
+  elseif is_below_search then
+    self.state.settings_sticky_visible = false
+  end
 
   -- Smooth slide for settings area
   if not self.state.settings_slide_progress then
     self.state.settings_slide_progress = 0
   end
-  local target_slide = is_hovering_settings and 1.0 or 0.0
+  local target_slide = self.state.settings_sticky_visible and 1.0 or 0.0
   local slide_speed = 0.15  -- Fixed interpolation speed
   self.state.settings_slide_progress = self.state.settings_slide_progress + (target_slide - self.state.settings_slide_progress) * slide_speed
 
