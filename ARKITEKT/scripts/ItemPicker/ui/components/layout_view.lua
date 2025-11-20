@@ -476,6 +476,15 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end
   end
 
+  -- Content filter button (replaces Show Audio/MIDI checkboxes)
+  local content_button_width = 65
+  local content_filter_mode = "BOTH"  -- Default
+  if self.state.settings.show_audio and not self.state.settings.show_midi then
+    content_filter_mode = "AUDIO"
+  elseif self.state.settings.show_midi and not self.state.settings.show_audio then
+    content_filter_mode = "MIDI"
+  end
+
   -- Calculate layout toggle dimensions
   local layout_button_width = 0
   if self.state.settings.show_audio and self.state.settings.show_midi then
@@ -486,13 +495,41 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local search_width = screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO
   local search_x = coord_offset_x + math.floor((screen_w - search_width) / 2)
 
-  -- Position layout toggle button immediately LEFT of search
+  -- Position buttons left of search: [Content] [Layout] [Search]
+  local buttons_left_x = search_x
+  local current_x = buttons_left_x
+
+  -- Content filter button (leftmost)
+  current_x = current_x - content_button_width - button_gap
+  Button.draw(ctx, draw_list, current_x, search_y, content_button_width, button_height, {
+    label = content_filter_mode,
+    is_toggled = content_filter_mode ~= "BOTH",
+    preset_name = "BUTTON_TOGGLE_WHITE",
+    tooltip = "Left: Toggle MIDI/AUDIO | Right: Show both",
+    on_click = function()
+      -- Left click: toggle between MIDI and AUDIO
+      if content_filter_mode == "MIDI" then
+        self.state.set_setting('show_audio', true)
+        self.state.set_setting('show_midi', false)
+      else  -- AUDIO or BOTH
+        self.state.set_setting('show_audio', false)
+        self.state.set_setting('show_midi', true)
+      end
+    end,
+    on_right_click = function()
+      -- Right click: set to MIXED (both)
+      self.state.set_setting('show_audio', true)
+      self.state.set_setting('show_midi', true)
+    end,
+  }, "content_filter_button")
+
+  -- Layout toggle button (if both are visible)
   if layout_button_width > 0 then
+    current_x = current_x - layout_button_width - button_gap
     local layout_mode = self.state.settings.layout_mode or "vertical"
-    local layout_button_x = search_x - layout_button_width - button_gap
     local is_vertical = layout_mode == "vertical"
 
-    Button.draw(ctx, draw_list, layout_button_x, search_y, layout_button_width, button_height, {
+    Button.draw(ctx, draw_list, current_x, search_y, layout_button_width, button_height, {
       label = is_vertical and "⬍⬍" or "⬌⬌",
       is_toggled = not is_vertical,  -- Toggle state shows when in horizontal mode
       preset_name = "BUTTON_TOGGLE_WHITE",
