@@ -153,15 +153,265 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Mouse-based hover detection for responsive UI (slide/push behavior)
   local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
 
-  -- Search fade with different offset (always visible at top)
+  -- Search fade with different offset (always visible)
   local search_fade = smootherstep(math.max(0, (overlay_alpha - 0.05) / 0.95))
   local search_y_offset = 25 * (1.0 - search_fade)
 
-  -- Calculate search bar area (with buttons on left and right)
-  local search_y = coord_offset_y + 14 + ui_y_offset + search_y_offset
+  -- Base position for search (before settings push it down)
+  local search_base_y = coord_offset_y + 14 + ui_y_offset + search_y_offset
   local search_height = 28
   local button_height = search_height
   local button_gap = 4  -- Gap between buttons and search
+
+  -- Settings area ABOVE search (slides down when hovering above search field)
+  local settings_area_max_height = 70  -- Maximum height when fully expanded
+  local settings_hover_padding = 20
+
+  -- Hover detection: trigger when mouse is above search field area
+  local is_hovering_settings = mouse_y >= (search_base_y - settings_hover_padding - settings_area_max_height) and
+                               mouse_y <= (search_base_y + settings_hover_padding)
+
+  -- Smooth slide for settings area
+  if not self.state.settings_slide_progress then
+    self.state.settings_slide_progress = 0
+  end
+  local target_slide = is_hovering_settings and 1.0 or 0.0
+  local slide_speed = 0.15  -- Fixed interpolation speed
+  self.state.settings_slide_progress = self.state.settings_slide_progress + (target_slide - self.state.settings_slide_progress) * slide_speed
+
+  -- Calculate animated settings height and alpha
+  local settings_height = settings_area_max_height * self.state.settings_slide_progress
+  local settings_alpha = self.state.settings_slide_progress * ui_fade
+
+  -- Settings panel positioned above search, pushes search down
+  local settings_y = search_base_y - settings_height
+
+  -- Actual search position (pushed down by settings)
+  local search_y = search_base_y + settings_height
+
+  -- Render settings panel ABOVE search (only if visible)
+  if settings_height > 1 then
+    -- Render checkboxes with slide animation and 14px padding (organized in 2 lines)
+    local checkbox_x = coord_offset_x + 14
+    local checkbox_y = settings_y
+    local checkbox_config = { alpha = settings_alpha }
+    local spacing = 20  -- Horizontal spacing between checkboxes
+
+    -- Line 1: Play Item Through Track | Show Muted Tracks | Show Muted Items | Show Disabled Items
+    local total_width, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
+      "Play Item Through Track (will add delay to preview playback)",
+      self.state.settings.play_item_through_track, checkbox_config, "play_item_through_track")
+    if clicked then
+      self.state.set_setting('play_item_through_track', not self.state.settings.play_item_through_track)
+    end
+
+    -- Show Muted Tracks on same line
+    local prev_width = ImGui.CalcTextSize(ctx, "Play Item Through Track (will add delay to preview playback)") + 18 + 8 + spacing
+    local muted_tracks_x = checkbox_x + prev_width
+    _, clicked = Checkbox.draw(ctx, draw_list, muted_tracks_x, checkbox_y,
+      "Show Muted Tracks",
+      self.state.settings.show_muted_tracks, checkbox_config, "show_muted_tracks")
+    if clicked then
+      self.state.set_setting('show_muted_tracks', not self.state.settings.show_muted_tracks)
+    end
+
+    -- Show Muted Items on same line
+    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Muted Tracks") + 18 + 8 + spacing
+    local muted_items_x = checkbox_x + prev_width
+    _, clicked = Checkbox.draw(ctx, draw_list, muted_items_x, checkbox_y,
+      "Show Muted Items",
+      self.state.settings.show_muted_items, checkbox_config, "show_muted_items")
+    if clicked then
+      self.state.set_setting('show_muted_items', not self.state.settings.show_muted_items)
+    end
+
+    -- Show Disabled Items on same line
+    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Muted Items") + 18 + 8 + spacing
+    local disabled_x = checkbox_x + prev_width
+    _, clicked = Checkbox.draw(ctx, draw_list, disabled_x, checkbox_y,
+      "Show Disabled Items",
+      self.state.settings.show_disabled_items, checkbox_config, "show_disabled_items")
+    if clicked then
+      self.state.set_setting('show_disabled_items', not self.state.settings.show_disabled_items)
+    end
+
+    -- Line 2: Show Favorites Only | Show Audio | Show MIDI | Group Items | Tile FX | Show Viz | Enable Regions | Show on Tiles
+    checkbox_y = checkbox_y + 24
+    _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
+      "Show Favorites Only",
+      self.state.settings.show_favorites_only, checkbox_config, "show_favorites_only")
+    if clicked then
+      self.state.set_setting('show_favorites_only', not self.state.settings.show_favorites_only)
+    end
+
+    -- Show Audio on same line
+    prev_width = ImGui.CalcTextSize(ctx, "Show Favorites Only") + 18 + 8 + spacing
+    local show_audio_x = checkbox_x + prev_width
+    _, clicked = Checkbox.draw(ctx, draw_list, show_audio_x, checkbox_y,
+      "Show Audio",
+      self.state.settings.show_audio, checkbox_config, "show_audio")
+    if clicked then
+      self.state.set_setting('show_audio', not self.state.settings.show_audio)
+    end
+
+    -- Show MIDI on same line
+    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Audio") + 18 + 8 + spacing
+    local show_midi_x = checkbox_x + prev_width
+    _, clicked = Checkbox.draw(ctx, draw_list, show_midi_x, checkbox_y,
+      "Show MIDI",
+      self.state.settings.show_midi, checkbox_config, "show_midi")
+    if clicked then
+      self.state.set_setting('show_midi', not self.state.settings.show_midi)
+    end
+
+    -- Group Items of Same Name checkbox on same line
+    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show MIDI") + 18 + 8 + spacing
+    local group_items_x = checkbox_x + prev_width
+    _, clicked = Checkbox.draw(ctx, draw_list, group_items_x, checkbox_y,
+      "Group Items of Same Name",
+      self.state.settings.group_items_by_name, checkbox_config, "group_items_by_name")
+    if clicked then
+      self.state.set_setting('group_items_by_name', not self.state.settings.group_items_by_name)
+      self.state.needs_reorganize = true
+    end
+
+    -- Enable TileFX checkbox on same line
+    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Group Items of Same Name") + 18 + 8 + spacing
+    local enable_fx_x = checkbox_x + prev_width
+    local enable_fx = self.state.settings.enable_tile_fx
+    if enable_fx == nil then enable_fx = true end
+    _, clicked = Checkbox.draw(ctx, draw_list, enable_fx_x, checkbox_y,
+      "Tile FX",
+      enable_fx, checkbox_config, "enable_fx")
+    if clicked then
+      self.state.set_setting('enable_tile_fx', not enable_fx)
+    end
+
+    -- Show Visualization in Small Tiles checkbox on same line
+    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Tile FX") + 18 + 8 + spacing
+    local show_viz_small_x = checkbox_x + prev_width
+    local show_viz_small = self.state.settings.show_visualization_in_small_tiles
+    if show_viz_small == nil then show_viz_small = true end
+    _, clicked = Checkbox.draw(ctx, draw_list, show_viz_small_x, checkbox_y,
+      "Show Viz in Small Tiles",
+      show_viz_small, checkbox_config, "show_viz_small")
+    if clicked then
+      self.state.set_setting('show_visualization_in_small_tiles', not show_viz_small)
+    end
+
+    -- Enable Region Processing checkbox on same line
+    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Viz in Small Tiles") + 18 + 8 + spacing
+    local enable_regions_x = checkbox_x + prev_width
+    local enable_regions = self.state.settings.enable_region_processing
+    if enable_regions == nil then enable_regions = false end
+    _, clicked = Checkbox.draw(ctx, draw_list, enable_regions_x, checkbox_y,
+      "Enable Regions",
+      enable_regions, checkbox_config, "enable_regions")
+    if clicked then
+      self.state.set_setting('enable_region_processing', not enable_regions)
+      if not enable_regions then
+        self.state.all_regions = require('ItemPicker.data.reaper_api').GetAllProjectRegions()
+      else
+        self.state.all_regions = {}
+        self.state.selected_regions = {}
+      end
+      self.state.needs_recollect = true
+    end
+
+    -- Show Region Tags checkbox on same line (only affects display on tiles)
+    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Enable Regions") + 18 + 8 + spacing
+    local show_region_tags_x = checkbox_x + prev_width
+    local show_region_tags = self.state.settings.show_region_tags
+    if show_region_tags == nil then show_region_tags = false end
+    _, clicked = Checkbox.draw(ctx, draw_list, show_region_tags_x, checkbox_y,
+      "Show on Tiles",
+      show_region_tags, checkbox_config, "show_region_tags")
+    if clicked then
+      self.state.set_setting('show_region_tags', not show_region_tags)
+    end
+
+    -- Waveform Quality slider on line 3
+    checkbox_y = checkbox_y + 24
+    local waveform_x = checkbox_x
+    local waveform_y = checkbox_y
+
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, settings_alpha)
+
+    local slider_label = "Waveform Quality:"
+    local slider_label_width = ImGui.CalcTextSize(ctx, slider_label)
+    ImGui.DrawList_AddText(draw_list, waveform_x, waveform_y + 3, Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(settings_alpha * 180)), slider_label)
+
+    -- Draw slider
+    local slider_width = 120
+    local track_x = waveform_x + slider_label_width + 8
+    local track_y = waveform_y + 7
+    local track_h = 6
+    local track_rounding = 3
+
+    local track_color = Colors.with_alpha(Colors.hexrgb("#1A1A1A"), math.floor(settings_alpha * 200))
+    ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + slider_width, track_y + track_h, track_color, track_rounding)
+
+    local quality = self.state.settings.waveform_quality or 1.0
+    local fill_width = slider_width * quality
+    local fill_color = Colors.with_alpha(Colors.hexrgb("#4A9EFF"), math.floor(settings_alpha * 200))
+    if fill_width > 1 then
+      ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + fill_width, track_y + track_h, fill_color, track_rounding)
+    end
+
+    -- Slider thumb
+    local thumb_x = track_x + fill_width
+    local thumb_y = track_y + track_h / 2
+    local thumb_radius = 6
+    local is_thumb_hovered = (mouse_x - thumb_x) * (mouse_x - thumb_x) + (mouse_y - thumb_y) * (mouse_y - thumb_y) <= thumb_radius * thumb_radius
+
+    local thumb_color = is_thumb_hovered and Colors.hexrgb("#5AAFFF") or Colors.hexrgb("#4A9EFF")
+    thumb_color = Colors.with_alpha(thumb_color, math.floor(settings_alpha * 255))
+    ImGui.DrawList_AddCircleFilled(draw_list, thumb_x, thumb_y, thumb_radius, thumb_color)
+
+    -- Slider interaction
+    local is_slider_hovered = mouse_x >= track_x and mouse_x < track_x + slider_width and mouse_y >= track_y - 4 and mouse_y < track_y + track_h + 4
+    if is_slider_hovered and ImGui.IsMouseDown(ctx, 0) then
+      local new_quality = math.max(0.1, math.min(1.0, (mouse_x - track_x) / slider_width))
+      self.state.set_setting('waveform_quality', new_quality)
+      if self.state.runtime_cache and self.state.runtime_cache.waveforms then
+        self.state.runtime_cache.waveforms = {}
+      end
+    end
+
+    -- Percentage value
+    local percent_text = string.format("%d%%", math.floor(quality * 100))
+    local percent_x = track_x + slider_width + 8
+    ImGui.DrawList_AddText(draw_list, percent_x, waveform_y + 3, Colors.with_alpha(Colors.hexrgb("#AAAAAA"), math.floor(settings_alpha * 180)), percent_text)
+
+    -- Waveform Fill checkbox
+    local fill_checkbox_x = percent_x + ImGui.CalcTextSize(ctx, percent_text) + 20
+    local waveform_filled = self.state.settings.waveform_filled
+    if waveform_filled == nil then waveform_filled = true end
+
+    local _, fill_clicked = Checkbox.draw(ctx, draw_list, fill_checkbox_x, waveform_y,
+      "Fill",
+      waveform_filled, checkbox_config, "waveform_filled")
+    if fill_clicked then
+      self.state.set_setting('waveform_filled', not waveform_filled)
+      if self.state.runtime_cache and self.state.runtime_cache.waveform_polylines then
+        self.state.runtime_cache.waveform_polylines = {}
+      end
+    end
+
+    -- Zero Line checkbox
+    local fill_label_width = ImGui.CalcTextSize(ctx, "Fill")
+    local zero_line_checkbox_x = fill_checkbox_x + fill_label_width + 18 + 8
+    local waveform_zero_line = self.state.settings.waveform_zero_line or false
+
+    local _, zero_line_clicked = Checkbox.draw(ctx, draw_list, zero_line_checkbox_x, waveform_y,
+      "Zero Line",
+      waveform_zero_line, checkbox_config, "waveform_zero_line")
+    if zero_line_clicked then
+      self.state.set_setting('waveform_zero_line', not waveform_zero_line)
+    end
+
+    ImGui.PopStyleVar(ctx)
+  end
 
   -- Layout toggle button (LEFT of search) - only show when both MIDI and Audio visible
   local layout_button_width = 0
@@ -310,256 +560,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end
   end
 
-  -- Settings area with slide animation (positioned below filter bar)
-  local settings_y = search_y + search_height + filter_bar_height + 8
-  local settings_area_max_height = 70  -- Maximum height when fully expanded
-  local settings_hover_padding = 20
-
-  -- Hover detection for settings area
-  local is_hovering_settings = mouse_y >= (settings_y - settings_hover_padding) and
-                               mouse_y <= (settings_y + settings_area_max_height + settings_hover_padding)
-
-  -- Smooth slide for settings area (interpolate height from 0 to max)
-  if not self.state.settings_slide_progress then
-    self.state.settings_slide_progress = 0
-  end
-  local target_slide = is_hovering_settings and 1.0 or 0.0
-  local slide_speed = 0.15  -- Fixed interpolation speed for smooth slide
-  self.state.settings_slide_progress = self.state.settings_slide_progress + (target_slide - self.state.settings_slide_progress) * slide_speed
-
-  -- Calculate actual height and alpha based on slide progress
-  local settings_height = settings_area_max_height * self.state.settings_slide_progress
-  local settings_alpha = self.state.settings_slide_progress * ui_fade
-
-  -- Only render settings if there's visible height
-  if settings_height > 1 then
-    -- Render checkboxes with slide animation and 14px padding (organized in 2 lines)
-    local checkbox_x = coord_offset_x + 14
-    local checkbox_y = settings_y
-    local checkbox_config = { alpha = settings_alpha }
-    local spacing = 20  -- Horizontal spacing between checkboxes
-
-    -- Line 1: Play Item Through Track | Show Muted Tracks | Show Muted Items | Show Disabled Items
-    local total_width, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
-      "Play Item Through Track (will add delay to preview playback)",
-      self.state.settings.play_item_through_track, checkbox_config, "play_item_through_track")
-    if clicked then
-      self.state.set_setting('play_item_through_track', not self.state.settings.play_item_through_track)
-    end
-
-    -- Show Muted Tracks on same line
-    local prev_width = ImGui.CalcTextSize(ctx, "Play Item Through Track (will add delay to preview playback)") + 18 + 8 + spacing
-    local muted_tracks_x = checkbox_x + prev_width
-    _, clicked = Checkbox.draw(ctx, draw_list, muted_tracks_x, checkbox_y,
-      "Show Muted Tracks",
-      self.state.settings.show_muted_tracks, checkbox_config, "show_muted_tracks")
-    if clicked then
-      self.state.set_setting('show_muted_tracks', not self.state.settings.show_muted_tracks)
-    end
-
-    -- Show Muted Items on same line
-    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Muted Tracks") + 18 + 8 + spacing
-    local muted_items_x = checkbox_x + prev_width
-    _, clicked = Checkbox.draw(ctx, draw_list, muted_items_x, checkbox_y,
-      "Show Muted Items",
-      self.state.settings.show_muted_items, checkbox_config, "show_muted_items")
-    if clicked then
-      self.state.set_setting('show_muted_items', not self.state.settings.show_muted_items)
-    end
-
-    -- Show Disabled Items on same line
-    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Muted Items") + 18 + 8 + spacing
-    local disabled_x = checkbox_x + prev_width
-    _, clicked = Checkbox.draw(ctx, draw_list, disabled_x, checkbox_y,
-      "Show Disabled Items",
-      self.state.settings.show_disabled_items, checkbox_config, "show_disabled_items")
-    if clicked then
-      self.state.set_setting('show_disabled_items', not self.state.settings.show_disabled_items)
-    end
-
-    -- Line 2: Show Favorites Only | Show Audio | Show MIDI | Group Items | Tile FX | Show Viz | Enable Regions | Show on Tiles
-    checkbox_y = checkbox_y + 24
-    _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
-      "Show Favorites Only",
-      self.state.settings.show_favorites_only, checkbox_config, "show_favorites_only")
-    if clicked then
-      self.state.set_setting('show_favorites_only', not self.state.settings.show_favorites_only)
-    end
-
-    -- Show Audio on same line
-    prev_width = ImGui.CalcTextSize(ctx, "Show Favorites Only") + 18 + 8 + spacing
-    local show_audio_x = checkbox_x + prev_width
-    _, clicked = Checkbox.draw(ctx, draw_list, show_audio_x, checkbox_y,
-      "Show Audio",
-      self.state.settings.show_audio, checkbox_config, "show_audio")
-    if clicked then
-      self.state.set_setting('show_audio', not self.state.settings.show_audio)
-    end
-
-    -- Show MIDI on same line
-    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Audio") + 18 + 8 + spacing
-    local show_midi_x = checkbox_x + prev_width
-    _, clicked = Checkbox.draw(ctx, draw_list, show_midi_x, checkbox_y,
-      "Show MIDI",
-      self.state.settings.show_midi, checkbox_config, "show_midi")
-    if clicked then
-      self.state.set_setting('show_midi', not self.state.settings.show_midi)
-    end
-
-    -- Group Items of Same Name checkbox on same line
-    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show MIDI") + 18 + 8 + spacing
-    local group_items_x = checkbox_x + prev_width
-    _, clicked = Checkbox.draw(ctx, draw_list, group_items_x, checkbox_y,
-      "Group Items of Same Name",
-      self.state.settings.group_items_by_name, checkbox_config, "group_items_by_name")
-    if clicked then
-      self.state.set_setting('group_items_by_name', not self.state.settings.group_items_by_name)
-      self.state.needs_reorganize = true
-    end
-
-    -- Enable TileFX checkbox on same line
-    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Group Items of Same Name") + 18 + 8 + spacing
-    local enable_fx_x = checkbox_x + prev_width
-    local enable_fx = self.state.settings.enable_tile_fx
-    if enable_fx == nil then enable_fx = true end
-    _, clicked = Checkbox.draw(ctx, draw_list, enable_fx_x, checkbox_y,
-      "Tile FX",
-      enable_fx, checkbox_config, "enable_fx")
-    if clicked then
-      self.state.set_setting('enable_tile_fx', not enable_fx)
-    end
-
-    -- Show Visualization in Small Tiles checkbox on same line
-    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Tile FX") + 18 + 8 + spacing
-    local show_viz_small_x = checkbox_x + prev_width
-    local show_viz_small = self.state.settings.show_visualization_in_small_tiles
-    if show_viz_small == nil then show_viz_small = true end
-    _, clicked = Checkbox.draw(ctx, draw_list, show_viz_small_x, checkbox_y,
-      "Show Viz in Small Tiles",
-      show_viz_small, checkbox_config, "show_viz_small")
-    if clicked then
-      self.state.set_setting('show_visualization_in_small_tiles', not show_viz_small)
-    end
-
-    -- Enable Region Processing checkbox on same line
-    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Viz in Small Tiles") + 18 + 8 + spacing
-    local enable_regions_x = checkbox_x + prev_width
-    local enable_regions = self.state.settings.enable_region_processing
-    if enable_regions == nil then enable_regions = false end
-    _, clicked = Checkbox.draw(ctx, draw_list, enable_regions_x, checkbox_y,
-      "Enable Regions",
-      enable_regions, checkbox_config, "enable_regions")
-    if clicked then
-      self.state.set_setting('enable_region_processing', not enable_regions)
-      if not enable_regions then
-        self.state.all_regions = require('ItemPicker.data.reaper_api').GetAllProjectRegions()
-      else
-        self.state.all_regions = {}
-        self.state.selected_regions = {}
-      end
-      self.state.needs_recollect = true
-    end
-
-    -- Show Region Tags checkbox on same line (only affects display on tiles)
-    prev_width = prev_width + ImGui.CalcTextSize(ctx, "Enable Regions") + 18 + 8 + spacing
-    local show_region_tags_x = checkbox_x + prev_width
-    local show_region_tags = self.state.settings.show_region_tags
-    if show_region_tags == nil then show_region_tags = false end
-    _, clicked = Checkbox.draw(ctx, draw_list, show_region_tags_x, checkbox_y,
-      "Show on Tiles",
-      show_region_tags, checkbox_config, "show_region_tags")
-    if clicked then
-      self.state.set_setting('show_region_tags', not show_region_tags)
-    end
-
-    -- Waveform Quality slider (add extra spacing and new line if needed)
-    checkbox_y = checkbox_y + 24  -- Move to potential line 3
-    local waveform_x = checkbox_x
-    local waveform_y = checkbox_y
-
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, settings_alpha)
-
-    local slider_label = "Waveform Quality:"
-    local slider_label_width = ImGui.CalcTextSize(ctx, slider_label)
-    ImGui.DrawList_AddText(draw_list, waveform_x, waveform_y + 3, Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(settings_alpha * 180)), slider_label)
-
-    -- Draw slider
-    local slider_width = 120
-    local track_x = waveform_x + slider_label_width + 8
-    local track_y = waveform_y + 7
-    local track_h = 6
-    local track_rounding = 3
-
-    local track_color = Colors.with_alpha(Colors.hexrgb("#1A1A1A"), math.floor(settings_alpha * 200))
-    ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + slider_width, track_y + track_h, track_color, track_rounding)
-
-    local quality = self.state.settings.waveform_quality or 1.0
-    local fill_width = slider_width * quality
-    local fill_color = Colors.with_alpha(Colors.hexrgb("#4A9EFF"), math.floor(settings_alpha * 200))
-    if fill_width > 1 then
-      ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + fill_width, track_y + track_h, fill_color, track_rounding)
-    end
-
-    -- Slider thumb
-    local thumb_x = track_x + fill_width
-    local thumb_y = track_y + track_h / 2
-    local thumb_radius = 6
-    local is_thumb_hovered = (mouse_x - thumb_x) * (mouse_x - thumb_x) + (mouse_y - thumb_y) * (mouse_y - thumb_y) <= thumb_radius * thumb_radius
-
-    local thumb_color = is_thumb_hovered and Colors.hexrgb("#5AAFFF") or Colors.hexrgb("#4A9EFF")
-    thumb_color = Colors.with_alpha(thumb_color, math.floor(settings_alpha * 255))
-    ImGui.DrawList_AddCircleFilled(draw_list, thumb_x, thumb_y, thumb_radius, thumb_color)
-
-    -- Slider interaction
-    local is_slider_hovered = mouse_x >= track_x and mouse_x < track_x + slider_width and mouse_y >= track_y - 4 and mouse_y < track_y + track_h + 4
-    if is_slider_hovered and ImGui.IsMouseDown(ctx, 0) then
-      local new_quality = math.max(0.1, math.min(1.0, (mouse_x - track_x) / slider_width))
-      self.state.set_setting('waveform_quality', new_quality)
-      if self.state.runtime_cache and self.state.runtime_cache.waveforms then
-        self.state.runtime_cache.waveforms = {}
-      end
-    end
-
-    -- Percentage value
-    local percent_text = string.format("%d%%", math.floor(quality * 100))
-    local percent_x = track_x + slider_width + 8
-    ImGui.DrawList_AddText(draw_list, percent_x, waveform_y + 3, Colors.with_alpha(Colors.hexrgb("#AAAAAA"), math.floor(settings_alpha * 180)), percent_text)
-
-    -- Waveform Fill checkbox
-    local fill_checkbox_x = percent_x + ImGui.CalcTextSize(ctx, percent_text) + 20
-    local waveform_filled = self.state.settings.waveform_filled
-    if waveform_filled == nil then waveform_filled = true end
-
-    local _, fill_clicked = Checkbox.draw(ctx, draw_list, fill_checkbox_x, waveform_y,
-      "Fill",
-      waveform_filled, checkbox_config, "waveform_filled")
-    if fill_clicked then
-      self.state.set_setting('waveform_filled', not waveform_filled)
-      if self.state.runtime_cache and self.state.runtime_cache.waveform_polylines then
-        self.state.runtime_cache.waveform_polylines = {}
-      end
-    end
-
-    -- Zero Line checkbox
-    local fill_label_width = ImGui.CalcTextSize(ctx, "Fill")
-    local zero_line_checkbox_x = fill_checkbox_x + fill_label_width + 18 + 8
-    local waveform_zero_line = self.state.settings.waveform_zero_line or false
-
-    local _, zero_line_clicked = Checkbox.draw(ctx, draw_list, zero_line_checkbox_x, waveform_y,
-      "Zero Line",
-      waveform_zero_line, checkbox_config, "waveform_zero_line")
-    if zero_line_clicked then
-      self.state.set_setting('waveform_zero_line', not waveform_zero_line)
-    end
-
-    ImGui.PopStyleVar(ctx)
-  end
-
   -- Section fade
   local section_fade = smootherstep(math.max(0, (overlay_alpha - 0.1) / 0.9))
 
-  -- Calculate panel start position (below search bar, filter bar, and settings area)
-  local panels_start_y = search_y + search_height + filter_bar_height + settings_height + 20  -- 20px spacing
+  -- Calculate panel start position (below search bar and filter bar)
+  -- Settings are already accounted for in search_y (pushed it down)
+  local panels_start_y = search_y + search_height + filter_bar_height + 20  -- 20px spacing
   local panels_end_y = coord_offset_y + screen_h - 40  -- Leave some bottom margin
   local content_height = panels_end_y - panels_start_y
   local content_width = screen_w - (self.config.LAYOUT.PADDING * 2)
