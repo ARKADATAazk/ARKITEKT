@@ -244,13 +244,16 @@ function M.draw(ctx, opts)
     end
     
     -- Draw border: 1px grey when not selected, 1px colored when selected
+    -- Use DrawList_AddRect directly with 0.5 offset for crisp 1px borders
     if is_selected then
       local border_color = Colors.with_alpha(Colors.adjust_brightness(color, 1.8), 255)
-      Draw.rect(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, border_color, rounding, 1)
+      ImGui.DrawList_AddRect(dl, start_x + 0.5, start_y + 0.5, start_x + chip_w - 0.5, start_y + chip_h - 0.5,
+                             border_color, rounding, 0, 1)
     else
       -- Grey border matching background when not selected
       local border_color = Colors.with_alpha(Colors.adjust_brightness(bg_color, 1.2), 180)
-      Draw.rect(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, border_color, rounding, 1)
+      ImGui.DrawList_AddRect(dl, start_x + 0.5, start_y + 0.5, start_x + chip_w - 0.5, start_y + chip_h - 0.5,
+                             border_color, rounding, 0, 1)
     end
 
     local dot_x = start_x + padding_h + (dot_size * 0.5)
