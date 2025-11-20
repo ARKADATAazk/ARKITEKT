@@ -149,11 +149,30 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local coord_offset_x = window_x
   local coord_offset_y = window_y
 
+  -- Mouse-based hover detection for responsive UI
+  local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
+
+  -- Define hover zones
+  local settings_area_y = coord_offset_y + 14 + ui_y_offset
+  local settings_area_height = 70  -- Covers both checkbox lines + sort buttons
+  local settings_hover_padding = 20  -- Extra padding for easier hover
+  local is_hovering_settings = mouse_y >= (settings_area_y - settings_hover_padding) and
+                               mouse_y <= (settings_area_y + settings_area_height + settings_hover_padding)
+
+  -- Smooth fade for settings area
+  if not self.state.settings_hover_alpha then
+    self.state.settings_hover_alpha = 0
+  end
+  local target_settings_alpha = is_hovering_settings and 1.0 or 0.0
+  local fade_speed = 12.0 * frame_dt
+  self.state.settings_hover_alpha = self.state.settings_hover_alpha + (target_settings_alpha - self.state.settings_hover_alpha) * fade_speed
+  local settings_alpha = self.state.settings_hover_alpha * ui_fade
+
   -- Render checkboxes with fade animation and 14px padding (organized in 2 lines)
   -- Note: We pass alpha as config param instead of using PushStyleVar to keep interaction working
   local checkbox_x = coord_offset_x + 14
   local checkbox_y = coord_offset_y + 14 + ui_y_offset
-  local checkbox_config = { alpha = ui_fade }
+  local checkbox_config = { alpha = settings_alpha }  -- Use settings_alpha instead of ui_fade
   local spacing = 20  -- Horizontal spacing between checkboxes
 
   -- Line 1: Play Item Through Track | Show Muted Tracks | Show Muted Items | Show Disabled Items
@@ -308,10 +327,10 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local sort_button_x = checkbox_x + prev_width
 
   -- Draw sort mode label and buttons
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, ui_fade)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, settings_alpha)
   local sort_label = "Sort:"
   local sort_label_width = ImGui.CalcTextSize(ctx, sort_label)
-  ImGui.DrawList_AddText(draw_list, sort_button_x, checkbox_y + 3, Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(ui_fade * 180)), sort_label)
+  ImGui.DrawList_AddText(draw_list, sort_button_x, checkbox_y + 3, Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(settings_alpha * 180)), sort_label)
 
   -- Sort buttons
   local button_x = sort_button_x + sort_label_width + 8
@@ -341,7 +360,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     if is_hovered and not is_active then
       bg_color = Colors.hexrgb("#222222")
     end
-    bg_color = Colors.with_alpha(bg_color, math.floor(ui_fade * 200))
+    bg_color = Colors.with_alpha(bg_color, math.floor(settings_alpha * 200))
     ImGui.DrawList_AddRectFilled(draw_list, button_x, button_y, button_x + button_w, button_y + button_h, bg_color, 3)
 
     -- Button border
@@ -464,7 +483,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
     -- Button background
     local bg_color = is_hovered and Colors.hexrgb("#2A2A2A") or Colors.hexrgb("#1A1A1A")
-    bg_color = Colors.with_alpha(bg_color, math.floor(ui_fade * 200))
+    bg_color = Colors.with_alpha(bg_color, math.floor(settings_alpha * 200))
     ImGui.DrawList_AddRectFilled(draw_list, layout_button_x, layout_button_y, layout_button_x + button_w, layout_button_y + layout_button_h, bg_color, 3)
 
     -- Button border
@@ -524,6 +543,22 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local enable_region_processing = self.state.settings.enable_region_processing or self.state.settings.show_region_tags
   if enable_region_processing and self.state.all_regions and #self.state.all_regions > 0 then
     local filter_bar_y = search_y + search_height + 8  -- 8px spacing below search
+
+    -- Hover detection for filter bar area
+    local filter_bar_estimated_height = 30  -- Approximate height
+    local filter_hover_padding = 20
+    local is_hovering_filter = (mouse_y >= (filter_bar_y - filter_hover_padding) and
+                                mouse_y <= (filter_bar_y + filter_bar_estimated_height + filter_hover_padding)) or
+                               (mouse_y >= (search_y - 10) and mouse_y <= (search_y + search_height + 10))  -- Also show when near search
+
+    -- Smooth fade for filter bar
+    if not self.state.filter_hover_alpha then
+      self.state.filter_hover_alpha = 0
+    end
+    local target_filter_alpha = is_hovering_filter and 1.0 or 0.0
+    self.state.filter_hover_alpha = self.state.filter_hover_alpha + (target_filter_alpha - self.state.filter_hover_alpha) * fade_speed
+    local filter_alpha = self.state.filter_hover_alpha * ui_fade
+
     -- Calculate total width needed for all chips
     local total_chips_width = 0
     local chip_cfg = self.config.REGION_TAGS.chip
@@ -537,7 +572,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end
     -- Center the filter bar
     local filter_bar_x = coord_offset_x + math.floor((screen_w - total_chips_width) / 2 + 0.5)
-    filter_bar_height = RegionFilterBar.draw(ctx, draw_list, filter_bar_x, filter_bar_y, total_chips_width + 100, self.state, self.config)
+    filter_bar_height = RegionFilterBar.draw(ctx, draw_list, filter_bar_x, filter_bar_y, total_chips_width + 100, self.state, self.config, filter_alpha)
   end
 
   -- Section fade

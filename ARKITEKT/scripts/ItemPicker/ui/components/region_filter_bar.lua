@@ -17,7 +17,8 @@ local function ensure_min_lightness(color, min_lightness)
   return Colors.components_to_rgba(r, g, b, 0xFF)
 end
 
-function M.draw(ctx, draw_list, x, y, width, state, config)
+function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
+  alpha = alpha or 1.0  -- Default to fully visible if not specified
   local chip_cfg = config.REGION_TAGS.chip
 
   -- Render clickable region chips in a horizontal row
@@ -48,6 +49,7 @@ function M.draw(ctx, draw_list, x, y, width, state, config)
     if is_hovered and not is_selected then
       bg_alpha = 0x99  -- 60% opacity when hovered
     end
+    bg_alpha = math.floor(bg_alpha * alpha)  -- Apply hover fade
     local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha
 
     -- Draw chip background
@@ -56,6 +58,7 @@ function M.draw(ctx, draw_list, x, y, width, state, config)
     -- Chip text (region color with minimum lightness, dimmed when unselected)
     local text_color = ensure_min_lightness(region_color, chip_cfg.text_min_lightness)
     local text_alpha = is_selected and 0xFF or 0x66
+    text_alpha = math.floor(text_alpha * alpha)  -- Apply hover fade
     text_color = (text_color & 0xFFFFFF00) | text_alpha
     local text_x = chip_x + chip_cfg.padding_x
     local text_y = chip_y + (chip_height - text_h) / 2
