@@ -108,7 +108,7 @@ function M.create(ctx, config, state, visualization, animator)
 
       -- Check search filter
       local search = state.settings.search_string or ""
-      if search ~= "" and not item_name:lower():find(search:lower(), 1, true) then
+      if type(search) == "string" and search ~= "" and not item_name:lower():find(search:lower(), 1, true) then
         goto continue
       end
 
