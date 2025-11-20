@@ -315,19 +315,21 @@ function M.new(opts)
       -- Draw stylized "AZK" in center of titlebar with 15% transparency
       local azk_text = "AZK"
       local azk_font_size = self.height * 0.65  -- Large text based on titlebar height
+
+      -- Calculate text size with large font
       if self.title_font then ImGui.PushFont(ctx, self.title_font, azk_font_size) end
       local azk_text_w, azk_text_h = ImGui.CalcTextSize(ctx, azk_text)
 
       local azk_x = (win_w - azk_text_w) * 0.5
       local azk_y = (self.height - azk_text_h) * 0.5
 
-      -- Color with 15% transparency (85% opacity = 0xD9 alpha)
-      local azk_color = Colors.with_alpha(text_color, 0xD9)
-
-      -- Use DrawList to properly render with alpha
-      local win_x, win_y = ImGui.GetWindowPos(ctx)
-      local draw_list = ImGui.GetWindowDrawList(ctx)
-      ImGui.DrawList_AddText(draw_list, win_x + azk_x, win_y + azk_y, azk_color, azk_text)
+      -- Use StyleVar_Alpha to set transparency (0.15 = 15% opacity)
+      ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, 0.15)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
+      ImGui.SetCursorPos(ctx, azk_x, azk_y)
+      ImGui.Text(ctx, azk_text)
+      ImGui.PopStyleColor(ctx)
+      ImGui.PopStyleVar(ctx)
 
       if self.title_font then ImGui.PopFont(ctx) end
 
