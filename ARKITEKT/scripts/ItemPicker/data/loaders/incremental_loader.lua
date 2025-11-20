@@ -573,6 +573,7 @@ function M.reorganize_items(loader, group_by_name)
       track_color = raw_item.track_color,  -- Include cached color
       pool_count = raw_item.pool_count or 1,  -- From REAPER pooling detection
       pool_id = raw_item.pool_id,  -- Pool identifier for filtering
+      regions = raw_item.regions,  -- Region tags
     })
 
     ::skip_audio::
@@ -610,6 +611,7 @@ function M.reorganize_items(loader, group_by_name)
       track_color = raw_item.track_color,  -- Include cached color
       pool_count = raw_item.pool_count or 1,  -- From REAPER pooling detection
       pool_id = raw_item.pool_id,  -- Pool identifier for filtering
+      regions = raw_item.regions,  -- Region tags
     })
 
     ::skip_midi::
