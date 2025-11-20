@@ -55,42 +55,38 @@ local function load_fonts(ctx, font_cfg)
     end
   end
 
-  -- Original working pattern: CreateFont(path, size) with Attach
-  local default_font   = exists(R) and ImGui.CreateFont(R, font_cfg.default)
-                                or ImGui.CreateFont('sans-serif', font_cfg.default)
-  local title_font     = exists(B) and ImGui.CreateFont(B, font_cfg.title)
+  -- Use CreateFontFromFile for TTF file paths (not CreateFont which expects family names)
+  local default_font   = exists(R) and ImGui.CreateFontFromFile(R, 0, 0)
+                                or ImGui.CreateFont('sans-serif', 0)
+  local title_font     = exists(B) and ImGui.CreateFontFromFile(B, 0, 0)
                                 or default_font
-  local version_font   = exists(R) and ImGui.CreateFont(R, font_cfg.version)
+  local version_font   = exists(R) and ImGui.CreateFontFromFile(R, 0, 0)
                                 or default_font
-  local monospace_font = exists(M) and ImGui.CreateFont(M, font_cfg.monospace)
+  local monospace_font = exists(M) and ImGui.CreateFontFromFile(M, 0, 0)
                                 or default_font
 
-  -- TEMP TEST: Try CreateFontFromFile with proper API for Orbitron
+  -- Load Orbitron for AZK branding
   local orbitron_size = font_cfg.orbitron or Constants.TITLEBAR.azk_font_size
-  local orbitron_font = nil
-  if exists(O) then
-    orbitron_font = ImGui.CreateFontFromFile(O, 0, 0)  -- index=0, flags=0
-    reaper.ShowConsoleMsg(string.format("[Shell] Orbitron via CreateFontFromFile: %s\n", tostring(orbitron_font)))
-  end
+  local orbitron_font = exists(O) and ImGui.CreateFontFromFile(O, 0, 0) or nil
 
   local time_display_font = nil
   if font_cfg.time_display then
-    time_display_font = exists(B) and ImGui.CreateFont(B, font_cfg.time_display)
-                                   or ImGui.CreateFont('sans-serif', font_cfg.time_display)
+    time_display_font = exists(B) and ImGui.CreateFontFromFile(B, 0, 0)
+                                   or ImGui.CreateFont('sans-serif', 0)
     attach_once(time_display_font)
   end
 
   local titlebar_version_font = nil
   local titlebar_version_size = font_cfg.titlebar_version or font_cfg.version
   if font_cfg.titlebar_version then
-    titlebar_version_font = exists(R) and ImGui.CreateFont(R, font_cfg.titlebar_version)
+    titlebar_version_font = exists(R) and ImGui.CreateFontFromFile(R, 0, 0)
                                        or version_font
     attach_once(titlebar_version_font)
   end
 
   local icons_font = nil
   if font_cfg.icons then
-    icons_font = exists(I) and ImGui.CreateFont(I, font_cfg.icons) or default_font
+    icons_font = exists(I) and ImGui.CreateFontFromFile(I, 0, 0) or default_font
     attach_once(icons_font)
   end
 
@@ -102,7 +98,7 @@ local function load_fonts(ctx, font_cfg)
 
   return {
     default = default_font,
-    default_size = orbitron_font and orbitron_size or font_cfg.default,  -- TEMP: Use Orbitron size when it's default
+    default_size = font_cfg.default,
     title = title_font,
     title_size = font_cfg.title,
     version = version_font,

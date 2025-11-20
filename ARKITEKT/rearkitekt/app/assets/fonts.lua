@@ -46,18 +46,18 @@ function M.load(ImGui, ctx, opts)
   local mono = fonts_dir .. 'JetBrainsMono-Regular.ttf'
   local orbitron = fonts_dir .. 'Orbitron-Bold.ttf'
 
-  -- Create fonts with fallback to sans-serif
+  -- Create fonts - use CreateFontFromFile for TTF files, CreateFont for system fonts
   local fonts = {
-    default = file_exists(regular) and ImGui.CreateFont(regular, default_size) or ImGui.CreateFont('sans-serif', default_size),
+    default = file_exists(regular) and ImGui.CreateFontFromFile(regular, 0, 0) or ImGui.CreateFont('sans-serif', 0),
     default_size = default_size,
 
-    title = file_exists(bold) and ImGui.CreateFont(bold, title_size) or ImGui.CreateFont('sans-serif', title_size),
+    title = file_exists(bold) and ImGui.CreateFontFromFile(bold, 0, 0) or ImGui.CreateFont('sans-serif', 0),
     title_size = title_size,
 
-    monospace = file_exists(mono) and ImGui.CreateFont(mono, monospace_size) or ImGui.CreateFont('sans-serif', monospace_size),
+    monospace = file_exists(mono) and ImGui.CreateFontFromFile(mono, 0, 0) or ImGui.CreateFont('monospace', 0),
     monospace_size = monospace_size,
 
-    orbitron = file_exists(orbitron) and ImGui.CreateFont(orbitron, orbitron_size) or nil,
+    orbitron = file_exists(orbitron) and ImGui.CreateFontFromFile(orbitron, 0, 0) or nil,
     orbitron_size = orbitron_size,
   }
 
