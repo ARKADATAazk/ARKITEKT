@@ -33,7 +33,9 @@ local function load_fonts(ctx, font_cfg)
   local SEP      = package.config:sub(1,1)
   local src      = debug.getinfo(1, 'S').source:sub(2)
   local this_dir = src:match('(.*'..SEP..')') or ('.'..SEP)
-  local parent   = this_dir:match('^(.*'..SEP..')[^'..SEP..']*'..SEP..'$') or this_dir
+  -- Go up TWO levels: runtime/ -> app/ -> rearkitekt/
+  local parent   = this_dir:match('^(.*'..SEP..')[^'..SEP..']*'..SEP..'$') or this_dir  -- app/
+  parent = parent:match('^(.*'..SEP..')[^'..SEP..']*'..SEP..'$') or parent  -- rearkitekt/
   local fontsdir = parent .. 'fonts' .. SEP
 
   local R = fontsdir .. font_cfg.family_regular
