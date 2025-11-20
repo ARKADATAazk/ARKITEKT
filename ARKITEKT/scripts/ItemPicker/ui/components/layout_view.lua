@@ -557,9 +557,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local temp_filter_height = filter_bar_max_height * (self.state.filter_slide_progress or 0)
     local temp_panels_start_y = search_y + search_height + temp_filter_height + 20
 
-    -- Show filter when hovering above the panels (between search and panels)
-    local is_hovering_above_panels = (mouse_y >= (search_y + search_height) and
-                                       mouse_y < temp_panels_start_y)
+    -- Show filter when hovering anywhere above the panels (including search/settings area)
+    local is_hovering_above_panels = mouse_y < temp_panels_start_y
 
     -- Show filters when hovering above panels OR when settings are visible
     local filters_should_show = is_hovering_above_panels or self.state.settings_sticky_visible
