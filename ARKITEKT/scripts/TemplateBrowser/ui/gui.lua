@@ -2382,6 +2382,9 @@ M.draw_functions = {
   draw_left_panel = draw_left_panel,
   draw_template_panel = draw_template_panel,
   draw_info_panel = draw_info_panel,
+  draw_template_context_menu = draw_template_context_menu,
+  draw_template_rename_modal = draw_template_rename_modal,
+  draw_conflict_resolution_modal = draw_conflict_resolution_modal,
 }
 
 return M

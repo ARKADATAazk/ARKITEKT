@@ -7,6 +7,13 @@ local ImGui = require 'imgui' '0.10'
 local Separator = require('rearkitekt.gui.widgets.primitives.separator')
 local Colors = require('rearkitekt.core.colors')
 
+-- Import domain modules for background processing
+local FXQueue = require('TemplateBrowser.domain.fx_queue')
+local FileOps = require('TemplateBrowser.domain.file_ops')
+local TemplateOps = require('TemplateBrowser.domain.template_ops')
+local Shortcuts = require('TemplateBrowser.core.shortcuts')
+local MarkdownField = require('rearkitekt.gui.widgets.primitives.markdown_field')
+
 -- Import view modules
 local LeftPanelView = require('TemplateBrowser.ui.views.left_panel_view')
 local TemplatePanelView = require('TemplateBrowser.ui.views.template_panel_view')
@@ -52,6 +59,100 @@ function MainWindow:draw(ctx, shell_state)
     overlay_alpha = overlay.alpha:value()
   end
   self.state.overlay_alpha = overlay_alpha
+
+  -- Initialize gui instance (creates template_grid and template_container)
+  self.gui:initialize_once(ctx, is_overlay_mode)
+
+  -- Process background FX parsing queue (5 templates per frame)
+  FXQueue.process_batch(self.state, 5)
+
+  -- Process conflict resolution if user made a choice
+  if self.state.conflict_resolution and self.state.conflict_pending then
+    local conflict = self.state.conflict_pending
+    local resolution = self.state.conflict_resolution
+
+    if resolution ~= "cancel" and conflict.operation == "move" then
+      local success_count = 0
+      local total_count = #conflict.templates
+      local target_node = conflict.target_folder
+
+      for _, tmpl in ipairs(conflict.templates) do
+        local success, new_path, conflict_detected = FileOps.move_template(tmpl.path, target_node.full_path, resolution)
+        if success then
+          success_count = success_count + 1
+        else
+          self.state.set_status("Failed to move template: " .. tmpl.name, "error")
+        end
+      end
+
+      -- Rescan if any succeeded
+      if success_count > 0 then
+        local Scanner = require('TemplateBrowser.domain.scanner')
+        Scanner.scan_templates(self.state)
+
+        -- Success message
+        if total_count > 1 then
+          self.state.set_status("Moved " .. success_count .. " of " .. total_count .. " templates to " .. target_node.name, "success")
+        else
+          self.state.set_status("Moved " .. conflict.templates[1].name .. " to " .. target_node.name, "success")
+        end
+      end
+    end
+
+    -- Clear conflict state
+    self.state.conflict_pending = nil
+    self.state.conflict_resolution = nil
+  end
+
+  -- Handle keyboard shortcuts (but not while editing markdown)
+  local is_editing_markdown = false
+  if self.state.selected_template then
+    local notes_field_id = "template_notes_" .. self.state.selected_template.uuid
+    is_editing_markdown = MarkdownField.is_editing(notes_field_id)
+  end
+
+  local action = Shortcuts.check_shortcuts(ctx)
+  if action and not is_editing_markdown then
+    if action == "undo" then
+      self.state.undo_manager:undo()
+    elseif action == "redo" then
+      self.state.undo_manager:redo()
+    elseif action == "rename_template" then
+      if self.state.selected_template then
+        self.state.renaming_item = self.state.selected_template
+        self.state.renaming_type = "template"
+        self.state.rename_buffer = self.state.selected_template.name
+      end
+    elseif action == "archive_template" then
+      if self.state.selected_template then
+        local success, archive_path = FileOps.delete_template(self.state.selected_template.path)
+        if success then
+          self.state.set_status("Archived: " .. self.state.selected_template.name, "success")
+          -- Rescan templates
+          local Scanner = require('TemplateBrowser.domain.scanner')
+          Scanner.scan_templates(self.state)
+          self.state.selected_template = nil
+        else
+          self.state.set_status("Failed to archive template", "error")
+        end
+      end
+    elseif action == "apply_template" then
+      if self.state.selected_template then
+        TemplateOps.apply_to_selected_track(self.state.selected_template.path, self.state.selected_template.uuid, self.state)
+      end
+    elseif action == "insert_template" then
+      if self.state.selected_template then
+        TemplateOps.insert_as_new_track(self.state.selected_template.path, self.state.selected_template.uuid, self.state)
+      end
+    elseif action == "focus_search" then
+      -- Focus search box (will be handled by container)
+      self.state.focus_search = true
+    elseif action == "navigate_left" or action == "navigate_right" or
+           action == "navigate_up" or action == "navigate_down" then
+      -- Grid navigation (will be handled by grid widget)
+      self.state.grid_navigation = action
+    end
+  end
 
   -- Get screen dimensions (same as original gui.lua)
   local SCREEN_W, SCREEN_H
@@ -161,6 +262,11 @@ function MainWindow:draw(ctx, shell_state)
   -- === RIGHT PANEL (Info & Tags) ===
   ImGui.SetCursorPos(ctx, sep2_x_local + separator_thickness / 2, cursor_y)
   self.info_panel:draw(ctx, info_width, panel_height)
+
+  -- Template context menu and rename modal (must be drawn outside panels)
+  GUI_Module.draw_functions.draw_template_context_menu(ctx, self.state)
+  GUI_Module.draw_functions.draw_template_rename_modal(ctx, self.state)
+  GUI_Module.draw_functions.draw_conflict_resolution_modal(ctx, self.state)
 
   -- Status bar
   local StatusBar = require('TemplateBrowser.ui.status_bar')
