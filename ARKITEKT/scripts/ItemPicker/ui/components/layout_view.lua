@@ -93,7 +93,7 @@ function LayoutView:handle_shortcuts(ctx)
   -- ESC to clear search
   if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
     if self.state.settings.search_string and self.state.settings.search_string ~= "" then
-      self.state:set_search_filter("")
+      self.state.set_search_filter("")
     end
   end
 end
@@ -511,7 +511,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Get updated search text
   local new_search = SearchInput.get_text("item_picker_search")
   if new_search ~= current_search then
-    self.state:set_search_filter(new_search)
+    self.state.set_search_filter(new_search)
   end
 
   -- Advance cursor past search widget
