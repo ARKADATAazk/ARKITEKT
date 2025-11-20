@@ -173,7 +173,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   end
 
   -- Sticky hover behavior: trigger zone now higher up thanks to padding
-  local trigger_zone_padding = 30  -- Larger zone above search to trigger (was 15)
+  local trigger_zone_padding = 40  -- Wait 10 more pixels above search (was 30)
 
   -- Calculate temporary search position for hover detection
   local temp_settings_height = settings_area_max_height * self.state.settings_slide_progress
@@ -471,21 +471,40 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local search_width = screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO
   local search_x = coord_offset_x + math.floor((screen_w - search_width) / 2)
 
+  -- Button colors for ARKITEKT styling
+  local button_style = {
+    rounding = 4,
+    bg_color = Colors.hexrgb("#1A1A1A"),
+    bg_hover_color = Colors.hexrgb("#252525"),
+    bg_active_color = Colors.hexrgb("#2A2A2A"),
+    bg_on_color = Colors.hexrgb("#2A2A2A"),  -- Toggle ON background
+    bg_on_hover_color = Colors.hexrgb("#353535"),
+    border_inner_color = Colors.hexrgb("#2A2A2A"),
+    border_inner_on_color = Colors.hexrgb("#4A4A4A"),  -- Toggle ON inner border
+    border_outer_color = Colors.hexrgb("#0A0A0A"),
+    text_color = Colors.hexrgb("#AAAAAA"),
+    text_hover_color = Colors.hexrgb("#FFFFFF"),
+    text_on_color = Colors.hexrgb("#FFFFFF"),  -- Toggle ON text (white)
+    is_blocking = true,
+  }
+
   -- Position layout toggle button immediately LEFT of search
   if layout_button_width > 0 then
     local layout_mode = self.state.settings.layout_mode or "vertical"
     local layout_button_x = search_x - layout_button_width - button_gap
     local is_vertical = layout_mode == "vertical"
 
-    Button.draw(ctx, draw_list, layout_button_x, search_y, layout_button_width, button_height, {
-      label = is_vertical and "⬍⬍" or "⬌⬌",
-      is_toggled = false,
-      tooltip = is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout",
-      on_click = function()
-        local new_mode = layout_mode == "vertical" and "horizontal" or "vertical"
-        self.state.set_setting('layout_mode', new_mode)
-      end,
-    }, "layout_toggle_button")
+    local layout_config = {}
+    for k, v in pairs(button_style) do layout_config[k] = v end
+    layout_config.label = is_vertical and "⬍⬍" or "⬌⬌"
+    layout_config.is_toggled = false
+    layout_config.tooltip = is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout"
+    layout_config.on_click = function()
+      local new_mode = layout_mode == "vertical" and "horizontal" or "vertical"
+      self.state.set_setting('layout_mode', new_mode)
+    end
+
+    Button.draw(ctx, draw_list, layout_button_x, search_y, layout_button_width, button_height, layout_config, "layout_toggle_button")
   end
 
   -- Position sort buttons immediately RIGHT of search
@@ -494,13 +513,15 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local button_w = sort_button_widths[i]
     local is_active = (current_sort == mode.id)
 
-    Button.draw(ctx, draw_list, sort_x, search_y, button_w, button_height, {
-      label = mode.label,
-      is_toggled = is_active,
-      on_click = function()
-        self.state.set_setting('sort_mode', mode.id)
-      end,
-    }, "sort_button_" .. mode.id)
+    local sort_config = {}
+    for k, v in pairs(button_style) do sort_config[k] = v end
+    sort_config.label = mode.label
+    sort_config.is_toggled = is_active
+    sort_config.on_click = function()
+      self.state.set_setting('sort_mode', mode.id)
+    end
+
+    Button.draw(ctx, draw_list, sort_x, search_y, button_w, button_height, sort_config, "sort_button_" .. mode.id)
 
     sort_x = sort_x + button_w + button_gap
   end
@@ -537,9 +558,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local filter_bar_base_y = search_y + search_height + 8  -- 8px spacing below search
 
     -- Hover detection for filter bar area OR if settings are visible
-    local filter_hover_padding = 20
-    local is_hovering_filter = (mouse_y >= (filter_bar_base_y - filter_hover_padding) and
-                                mouse_y <= (filter_bar_base_y + filter_bar_max_height + filter_hover_padding)) or
+    local filter_hover_padding = -10  -- Start detecting 10px BELOW the filter bar (was 20 above)
+    local is_hovering_filter = (mouse_y >= (filter_bar_base_y + filter_hover_padding) and
+                                mouse_y <= (filter_bar_base_y + filter_bar_max_height + 20)) or
                                (mouse_y >= (search_y - 10) and mouse_y <= (search_y + search_height + 10))  -- Also show when near search
 
     -- Show filters when settings are visible
