@@ -351,25 +351,20 @@ function BatchRenameModal:draw(ctx, item_count, window)
           self.overlay_pushed = false
         end,
         render = function(ctx, alpha, bounds)
-          -- Calculate modal dimensions directly
-          local modal_w = math.floor(bounds.w * 0.55)  -- 55% of screen width
-          local modal_h = math.floor(bounds.h * 0.65)  -- 65% of screen height
+          -- Calculate modal dimensions - much larger, invisible bounds for layout
+          local modal_w = math.floor(bounds.w * 0.80)  -- 80% of screen width
+          local modal_h = math.floor(bounds.h * 0.75)  -- 75% of screen height
           local modal_x = math.floor(bounds.x + (bounds.w - modal_w) * 0.5)
           local modal_y = math.floor(bounds.y + (bounds.h - modal_h) * 0.5)
 
-          local padding = 20
+          local padding = 40
           local content_w = modal_w - padding * 2
           local content_h = modal_h - padding * 2
 
-          -- Draw modal background
-          local dl = ImGui.GetWindowDrawList(ctx)
-          local bg_color = Colors.with_alpha(hexrgb("#1e1e1e"), math.floor(255 * alpha))
-          local border_color = Colors.with_alpha(hexrgb("#000000"), math.floor(255 * alpha))
+          -- No background rectangle - content floats on scrim
+          -- The modal_x/y/w/h still define the layout bounds and right-click exit zone
 
-          ImGui.DrawList_AddRectFilled(dl, modal_x, modal_y, modal_x + modal_w, modal_y + modal_h, bg_color, 0)
-          ImGui.DrawList_AddRect(dl, modal_x, modal_y, modal_x + modal_w, modal_y + modal_h, border_color, 0, 0, 1)
-
-          -- Render content directly at absolute position (no child window)
+          -- Render content directly at absolute position (centered)
           ImGui.SetCursorScreenPos(ctx, modal_x + padding, modal_y + padding)
 
           local should_close = self:draw_content(ctx, count, true, content_w, content_h)
