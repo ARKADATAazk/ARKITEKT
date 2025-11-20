@@ -319,6 +319,13 @@ function M.new(opts)
       local azk_font = self.azk_font or self.title_font  -- Use Orbitron or fallback to title font
       local azk_font_size = self.azk_font_size or self.title_font_size  -- Use exact font creation size
 
+      -- Debug: Log font usage (only once per session)
+      if not self._azk_debug_logged then
+        reaper.ShowConsoleMsg(string.format("[Titlebar] AZK font: %s, size: %d (has azk_font: %s)\n",
+          tostring(azk_font), azk_font_size, tostring(self.azk_font ~= nil)))
+        self._azk_debug_logged = true
+      end
+
       -- Calculate text size with Orbitron font at its creation size
       if azk_font then ImGui.PushFont(ctx, azk_font, azk_font_size) end
       local azk_text_w, azk_text_h = ImGui.CalcTextSize(ctx, azk_text)
