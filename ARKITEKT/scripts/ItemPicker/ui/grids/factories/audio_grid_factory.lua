@@ -150,6 +150,7 @@ function M.create(ctx, config, state, visualization, animator)
         key = uuid,
         uuid = uuid,
         pool_count = pool_count,  -- Number of pooled items (from Reaper pooling)
+        regions = entry.regions,  -- Region tags from loader
       })
 
       ::continue::

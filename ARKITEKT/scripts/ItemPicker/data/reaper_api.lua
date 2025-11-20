@@ -489,9 +489,12 @@ function M.GetRegionsForItem(item)
       -- Check if region overlaps with item
       -- Regions overlap if: region_start < item_end AND region_end > item_start
       if pos < item_end and rgnend > item_start then
-        reaper.ShowConsoleMsg(string.format("[REGION_TAGS]   -> Found overlap with region '%s' (%.2f-%.2f)\n",
-          name, pos, rgnend))
-        table.insert(regions, name)
+        -- Skip empty region names
+        if name and name ~= "" then
+          reaper.ShowConsoleMsg(string.format("[REGION_TAGS]   -> Found overlap with region '%s' (%.2f-%.2f)\n",
+            name, pos, rgnend))
+          table.insert(regions, name)
+        end
       end
     end
   end
