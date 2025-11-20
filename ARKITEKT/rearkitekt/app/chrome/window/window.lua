@@ -231,9 +231,8 @@ function M.new(opts)
     if opts.show_status_bar ~= false then
       local ok, StatusBar = pcall(require, 'rearkitekt.app.chrome.status_bar.widget')
       if ok and StatusBar and StatusBar.new then
-        local status_height_compensation = 6
         win.status_bar = StatusBar.new({
-          height = Constants.STATUS_BAR.height + status_height_compensation,
+          height = Constants.STATUS_BAR.height + Constants.STATUS_BAR.compensation,
           get_status = opts.get_status_func or function() return { text = "READY", color = hexrgb("#41E0A3") } end,
           style = opts.style and { palette = opts.style.palette } or nil
         })

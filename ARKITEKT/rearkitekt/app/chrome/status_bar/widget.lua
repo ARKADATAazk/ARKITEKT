@@ -89,7 +89,7 @@ function M.new(config)
     local gap   = RESIZE_SPACING
 
     local total_width   = (sz * 3) + (gap * 2) + 6
-    local handle_padding = 8
+    local handle_padding = Constants.LAYOUT.PADDING_MEDIUM
 
     local handle_right = bar_x + bar_w - 6
     local center_y     = bar_y + (bar_h / 2)
@@ -185,13 +185,13 @@ function M.new(config)
     local left_text_w = text_w or 0
     local cursor_x = LEFT_PAD + left_text_w + 10
 
-    local button_height = math.min(20, h - 8)
+    local button_height = math.min(20, h - Constants.LAYOUT.PADDING_MEDIUM)
     local button_y = center_y - (button_height / 2)
 
     if status.buttons then
       for i, btn in ipairs(status.buttons) do
         ImGui.SetCursorScreenPos(ctx, sx + cursor_x, sy + button_y)
-        local btn_w = math.max(100, (select(1, ImGui.CalcTextSize(ctx, btn.label)) or 0) + 16)
+        local btn_w = math.max(100, (select(1, ImGui.CalcTextSize(ctx, btn.label)) or 0) + Constants.LAYOUT.PADDING_XLARGE)
         if ImGui.Button(ctx, btn.label .. "##statusbar_" .. i, btn_w, button_height) then
           if btn.action then btn.action(ctx) end
           if btn.popup  then
@@ -224,14 +224,14 @@ function M.new(config)
         total_right_w = total_right_w + tw + 10
       elseif type(item) == "table" and item.type == "button" then
         local btn = item.data
-        local bw = btn.width or math.max(80, (select(1, ImGui.CalcTextSize(ctx, btn.label)) or 0) + 16)
+        local bw = btn.width or math.max(80, (select(1, ImGui.CalcTextSize(ctx, btn.label)) or 0) + Constants.LAYOUT.PADDING_XLARGE)
         table.insert(item_widths, { type = "button", width = bw, data = btn })
         total_right_w = total_right_w + bw + 10
       end
     end
     if #right_items > 1 then total_right_w = total_right_w + 20 end
 
-    local right_x = w - RIGHT_PAD - total_right_w - resize_handle_width_final - 8
+    local right_x = w - RIGHT_PAD - total_right_w - resize_handle_width_final - Constants.LAYOUT.PADDING_MEDIUM
 
     for i, info in ipairs(item_widths) do
       if info.type == "text" then
