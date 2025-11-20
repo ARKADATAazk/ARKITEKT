@@ -163,28 +163,26 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local button_height = search_height
   local button_gap = 4  -- Gap between buttons and search
 
-  -- Settings area ABOVE search (fades in, doesn't move)
+  -- Settings area ABOVE search (slides down with search)
   local settings_area_max_height = 70  -- Maximum height when fully expanded
-  local settings_y = search_base_y - settings_area_max_height  -- Fixed position
 
-  -- Calculate actual search position FIRST (pushed down by settings)
-  -- This is needed for hover detection
-  local settings_height = 0  -- Will be calculated after
-
-  -- Temporary calculation for hover zones
+  -- Calculate slide progress first
   if not self.state.settings_slide_progress then
     self.state.settings_slide_progress = 0
   end
-  local temp_settings_height = settings_area_max_height * self.state.settings_slide_progress
-  local search_y = search_base_y + temp_settings_height
 
   -- Sticky hover behavior: trigger only when close above search base, hide only when below actual search
   local trigger_zone_padding = 15  -- Small zone above search to trigger
+
+  -- Calculate temporary search position for hover detection
+  local temp_settings_height = settings_area_max_height * self.state.settings_slide_progress
+  local temp_search_y = search_base_y + temp_settings_height
+
   local is_in_trigger_zone = mouse_y >= (search_base_y - trigger_zone_padding) and
                              mouse_y < search_base_y
 
   -- Once triggered, stay visible until mouse goes below the ACTUAL search field position
-  local is_below_search = mouse_y > (search_y + search_height)
+  local is_below_search = mouse_y > (temp_search_y + search_height)
 
   -- Initialize sticky state
   if self.state.settings_sticky_visible == nil then
@@ -198,17 +196,20 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.settings_sticky_visible = false
   end
 
-  -- Smooth fade for settings area (alpha only, no movement)
+  -- Smooth slide for settings area
   local target_slide = self.state.settings_sticky_visible and 1.0 or 0.0
   local slide_speed = 0.15  -- Fixed interpolation speed
   self.state.settings_slide_progress = self.state.settings_slide_progress + (target_slide - self.state.settings_slide_progress) * slide_speed
 
-  -- Calculate settings height (for pushing content) and alpha (for fading)
-  settings_height = settings_area_max_height * self.state.settings_slide_progress
+  -- Calculate settings height and alpha
+  local settings_height = settings_area_max_height * self.state.settings_slide_progress
   local settings_alpha = self.state.settings_slide_progress * ui_fade
 
-  -- Recalculate actual search position with final settings height
-  search_y = search_base_y + settings_height
+  -- Settings panel slides down from above (starts off-screen)
+  local settings_y = search_base_y - settings_area_max_height + settings_height
+
+  -- Search position (pushed down by settings)
+  local search_y = search_base_y + settings_height
 
   -- Render settings panel ABOVE search (only if visible)
   if settings_height > 1 then
@@ -542,17 +543,20 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   if enable_region_processing and self.state.all_regions and #self.state.all_regions > 0 then
     local filter_bar_base_y = search_y + search_height + 8  -- 8px spacing below search
 
-    -- Hover detection for filter bar area
+    -- Hover detection for filter bar area OR if settings are visible
     local filter_hover_padding = 20
     local is_hovering_filter = (mouse_y >= (filter_bar_base_y - filter_hover_padding) and
                                 mouse_y <= (filter_bar_base_y + filter_bar_max_height + filter_hover_padding)) or
                                (mouse_y >= (search_y - 10) and mouse_y <= (search_y + search_height + 10))  -- Also show when near search
 
+    -- Show filters when settings are visible
+    local filters_should_show = is_hovering_filter or self.state.settings_sticky_visible
+
     -- Smooth slide for filter bar
     if not self.state.filter_slide_progress then
       self.state.filter_slide_progress = 0
     end
-    local target_filter_slide = is_hovering_filter and 1.0 or 0.0
+    local target_filter_slide = filters_should_show and 1.0 or 0.0
     local filter_slide_speed = 0.15  -- Fixed interpolation speed
     self.state.filter_slide_progress = self.state.filter_slide_progress + (target_filter_slide - self.state.filter_slide_progress) * filter_slide_speed
 
