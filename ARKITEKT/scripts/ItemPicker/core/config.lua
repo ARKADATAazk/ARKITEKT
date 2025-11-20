@@ -259,12 +259,11 @@ M.REGION_TAGS = {
     padding_x = 5,
     padding_y = 2,
     margin_x = 3,         -- Spacing between chips
-    margin_top = 4,       -- Margin from top of content area
+    margin_bottom = 4,    -- Margin from bottom of tile
     margin_left = 4,      -- Margin from left edge
-    rounding = 0,         -- Rectangle chips (no rounding)
-    bg_color = hexrgb("#FFFFFF"),  -- White background
-    text_color = hexrgb("#000000"), -- Black text
-    alpha = 0xDD,         -- Slightly transparent
+    rounding = 3,         -- Slight rounding for chips
+    text_color = hexrgb("#FFFFFF"), -- White text
+    alpha = 0xEE,         -- Slightly transparent
   },
 
   -- Behavior

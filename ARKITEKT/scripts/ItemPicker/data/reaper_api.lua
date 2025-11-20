@@ -468,6 +468,33 @@ function M.InsertItemAtMousePos(item, state)
   end
 end
 
+-- Get all project regions (for filter bar)
+function M.GetAllProjectRegions()
+  local regions = {}
+  local _, num_markers, num_regions = reaper.CountProjectMarkers(0)
+
+  for i = 0, num_markers + num_regions - 1 do
+    local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color =
+      reaper.EnumProjectMarkers3(0, i)
+
+    if isrgn and name and name ~= "" then
+      -- Convert REAPER color to RGBA format
+      local rgba_color
+      if color and color ~= 0 then
+        local color_int = color & 0xFFFFFF
+        local r, g, b = reaper.ColorFromNative(color_int)
+        rgba_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+      else
+        rgba_color = 0x4A5A6AFF  -- Fallback gray color
+      end
+
+      table.insert(regions, {name = name, color = rgba_color})
+    end
+  end
+
+  return regions
+end
+
 function M.GetRegionsForItem(item)
   -- Get item position and length
   local item_start = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
@@ -477,12 +504,6 @@ function M.GetRegionsForItem(item)
   -- Get all regions and check for overlaps
   local regions = {}
   local _, num_markers, num_regions = reaper.CountProjectMarkers(0)
-
-  -- Debug: Log item position
-  if num_regions > 0 then
-    reaper.ShowConsoleMsg(string.format("[REGION_TAGS] Checking item at %.3f-%.3f (project has %d regions)\n",
-      item_start, item_end, num_regions))
-  end
 
   for i = 0, num_markers + num_regions - 1 do
     local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color =
@@ -494,17 +515,20 @@ function M.GetRegionsForItem(item)
       if pos < item_end and rgnend > item_start then
         -- Skip empty region names
         if name and name ~= "" then
-          reaper.ShowConsoleMsg(string.format("[REGION_TAGS]   ✓ Overlap with region '%s' (%.3f-%.3f)\n",
-            name, pos, rgnend))
-          table.insert(regions, name)
+          -- Convert REAPER color to RGBA format
+          local rgba_color
+          if color and color ~= 0 then
+            local color_int = color & 0xFFFFFF
+            local r, g, b = reaper.ColorFromNative(color_int)
+            rgba_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+          else
+            rgba_color = 0x4A5A6AFF  -- Fallback gray color
+          end
+
+          table.insert(regions, {name = name, color = rgba_color})
         end
       end
     end
-  end
-
-  if #regions > 0 then
-    reaper.ShowConsoleMsg(string.format("[REGION_TAGS] → Item has %d region(s): %s\n",
-      #regions, table.concat(regions, ", ")))
   end
 
   return regions

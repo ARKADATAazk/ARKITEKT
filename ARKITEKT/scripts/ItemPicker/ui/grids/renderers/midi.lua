@@ -397,48 +397,39 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite)
   end
 
-  -- Render region tags (only on larger tiles, not compact mode)
-  -- Debug: Log item_data.regions to see if regions are present
-  if item_data.regions then
-    reaper.ShowConsoleMsg(string.format("[MIDI RENDER] Item has %d regions: %s\n",
-      #item_data.regions, table.concat(item_data.regions, ", ")))
-  end
-
+  -- Render region tags (bottom left, only on larger tiles)
   if item_data.regions and #item_data.regions > 0 and
      not is_small_tile and scaled_h >= config.REGION_TAGS.min_tile_height and
      cascade_factor > 0.5 then
-    reaper.ShowConsoleMsg(string.format("[MIDI RENDER] Rendering region chips! (tile height: %.1f, is_small: %s, cascade: %.2f)\n",
-      scaled_h, tostring(is_small_tile), cascade_factor))
 
     local chip_cfg = config.REGION_TAGS.chip
     local chip_x = scaled_x1 + chip_cfg.margin_left
-    local chip_y = scaled_y1 + header_height + chip_cfg.margin_top
+    local chip_y = scaled_y2 - chip_cfg.height - chip_cfg.margin_bottom
 
     -- Limit number of chips displayed
     local max_chips = config.REGION_TAGS.max_chips_per_tile
     local num_chips = math.min(#item_data.regions, max_chips)
 
     for i = 1, num_chips do
-      local region_name = item_data.regions[i]
+      local region = item_data.regions[i]
+      local region_name = region.name or region  -- Support both {name, color} and plain string
+      local region_color = region.color or 0x4A5A6AFF  -- Default gray if no color
+
       local text_w, text_h = ImGui.CalcTextSize(ctx, region_name)
       local chip_w = text_w + chip_cfg.padding_x * 2
       local chip_h = chip_cfg.height
 
-      reaper.ShowConsoleMsg(string.format("[MIDI RENDER]   Chip %d: '%s' at (%.1f, %.1f) size (%.1f x %.1f)\n",
-        i, region_name, chip_x, chip_y, chip_w, chip_h))
-
       -- Check if chip fits within tile width
       if chip_x + chip_w > scaled_x2 - chip_cfg.margin_left then
-        reaper.ShowConsoleMsg("[MIDI RENDER]   -> Chip doesn't fit, stopping\n")
         break  -- Stop rendering if we run out of space
       end
 
-      -- Chip background with alpha
+      -- Chip background using region color with alpha
       local bg_alpha = math.floor(chip_cfg.alpha * combined_alpha)
-      local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha
+      local bg_color = (region_color & 0xFFFFFF00) | bg_alpha
       ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, chip_cfg.rounding)
 
-      -- Chip text
+      -- Chip text (white)
       local text_alpha_val = math.floor(combined_alpha * 255)
       local text_color = (chip_cfg.text_color & 0xFFFFFF00) | text_alpha_val
       local text_x = chip_x + chip_cfg.padding_x
@@ -448,9 +439,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Move to next chip position
       chip_x = chip_x + chip_w + chip_cfg.margin_x
     end
-  elseif item_data.regions and #item_data.regions > 0 then
-    reaper.ShowConsoleMsg(string.format("[MIDI RENDER] NOT rendering region chips: is_small=%s, height=%.1f (min=%.1f), cascade=%.2f\n",
-      tostring(is_small_tile), scaled_h, config.REGION_TAGS.min_tile_height, cascade_factor))
   end
 
   -- Render pool count badge (bottom right) if more than 1 instance
