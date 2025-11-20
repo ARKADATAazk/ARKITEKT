@@ -158,7 +158,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local search_y_offset = 25 * (1.0 - search_fade)
 
   -- Base position for search (before settings push it down)
-  local search_base_y = coord_offset_y + 14 + ui_y_offset + search_y_offset
+  local search_top_padding = 18  -- Extra padding on top
+  local search_base_y = coord_offset_y + 14 + ui_y_offset + search_y_offset + search_top_padding
   local search_height = 28
   local button_height = search_height
   local button_gap = 4  -- Gap between buttons and search
@@ -171,8 +172,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.settings_slide_progress = 0
   end
 
-  -- Sticky hover behavior: trigger only when close above search base, hide only when below actual search
-  local trigger_zone_padding = 15  -- Small zone above search to trigger
+  -- Sticky hover behavior: trigger zone now higher up thanks to padding
+  local trigger_zone_padding = 30  -- Larger zone above search to trigger (was 15)
 
   -- Calculate temporary search position for hover detection
   local temp_settings_height = settings_area_max_height * self.state.settings_slide_progress
@@ -435,33 +436,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     ImGui.PopStyleVar(ctx)
   end
 
-  -- Layout toggle button (LEFT of search) - only show when both MIDI and Audio visible
-  local layout_button_width = 0
-  if self.state.settings.show_audio and self.state.settings.show_midi then
-    local layout_mode = self.state.settings.layout_mode or "vertical"
-    layout_button_width = 60  -- Fixed width for layout toggle
-
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, search_fade)
-    ImGui.PushFont(ctx, title_font, 14)
-
-    local layout_button_x = coord_offset_x + 14
-    local is_vertical = layout_mode == "vertical"
-
-    Button.draw(ctx, draw_list, layout_button_x, search_y, layout_button_width, button_height, {
-      label = is_vertical and "⬍⬍" or "⬌⬌",
-      is_toggled = false,
-      tooltip = is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout",
-      on_click = function()
-        local new_mode = layout_mode == "vertical" and "horizontal" or "vertical"
-        self.state.set_setting('layout_mode', new_mode)
-      end,
-    }, "layout_toggle_button")
-
-    ImGui.PopFont(ctx)
-    ImGui.PopStyleVar(ctx)
-  end
-
-  -- Sort buttons (RIGHT of search)
+  -- Calculate sort buttons dimensions first
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, search_fade)
   ImGui.PushFont(ctx, title_font, 14)
 
@@ -486,17 +461,35 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end
   end
 
-  -- Calculate search width and position (centered between layout button and sort buttons)
-  local left_reserved = layout_button_width > 0 and (layout_button_width + button_gap) or 0
-  local right_reserved = total_sort_width + button_gap
-  local available_search_width = screen_w - 28 - left_reserved - right_reserved  -- 28 = left/right padding
-  local search_width = math.min(screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO, available_search_width)
+  -- Calculate layout toggle dimensions
+  local layout_button_width = 0
+  if self.state.settings.show_audio and self.state.settings.show_midi then
+    layout_button_width = 60  -- Fixed width for layout toggle
+  end
 
-  -- Center the search field in available space
-  local search_x = coord_offset_x + 14 + left_reserved + math.floor((available_search_width - search_width) / 2)
+  -- Calculate search width and center it
+  local search_width = screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO
+  local search_x = coord_offset_x + math.floor((screen_w - search_width) / 2)
 
-  -- Draw sort buttons (from right to left)
-  local sort_x = coord_offset_x + screen_w - 14 - total_sort_width
+  -- Position layout toggle button immediately LEFT of search
+  if layout_button_width > 0 then
+    local layout_mode = self.state.settings.layout_mode or "vertical"
+    local layout_button_x = search_x - layout_button_width - button_gap
+    local is_vertical = layout_mode == "vertical"
+
+    Button.draw(ctx, draw_list, layout_button_x, search_y, layout_button_width, button_height, {
+      label = is_vertical and "⬍⬍" or "⬌⬌",
+      is_toggled = false,
+      tooltip = is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout",
+      on_click = function()
+        local new_mode = layout_mode == "vertical" and "horizontal" or "vertical"
+        self.state.set_setting('layout_mode', new_mode)
+      end,
+    }, "layout_toggle_button")
+  end
+
+  -- Position sort buttons immediately RIGHT of search
+  local sort_x = search_x + search_width + button_gap
   for i, mode in ipairs(sort_modes) do
     local button_w = sort_button_widths[i]
     local is_active = (current_sort == mode.id)
