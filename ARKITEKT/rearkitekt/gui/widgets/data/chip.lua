@@ -246,55 +246,55 @@ function M.draw(ctx, opts)
     -- Draw border: 1px grey when not selected, 1px colored when selected
     if is_selected then
       local border_color = Colors.with_alpha(Colors.adjust_brightness(color, 1.8), 255)
-      Draw.rect(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, border_color, rounding, 1.0)
+      Draw.rect(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, border_color, rounding, 1)
     else
       -- Grey border matching background when not selected
       local border_color = Colors.with_alpha(Colors.adjust_brightness(bg_color, 1.2), 180)
-      Draw.rect(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, border_color, rounding, 1.0)
+      Draw.rect(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, border_color, rounding, 1)
     end
-    
+
     local dot_x = start_x + padding_h + (dot_size * 0.5)
     local dot_y = start_y + chip_h * 0.5
     local dot_color = _apply_state(color, false, is_hovered, is_selected)
-    
+
     if dot_shape == SHAPE.CIRCLE then
       ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, (dot_size * 0.5) + 1, Colors.with_alpha(hexrgb("#000000"), 80))
-      
+
       if is_selected or is_hovered then
         _render_glow(dl, dot_x, dot_y, dot_size * 0.5, dot_color, 4)
       end
-      
+
       ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_size * 0.5, dot_color)
     elseif dot_shape == SHAPE.SQUARE then
       local half_dot = dot_size * 0.5
-      Draw.rect_filled(dl, 
-        dot_x - half_dot, 
-        dot_y - half_dot, 
-        dot_x + half_dot, 
-        dot_y + half_dot, 
-        Colors.with_alpha(hexrgb("#000000"), 80), 
+      Draw.rect_filled(dl,
+        dot_x - half_dot,
+        dot_y - half_dot,
+        dot_x + half_dot,
+        dot_y + half_dot,
+        Colors.with_alpha(hexrgb("#000000"), 80),
         dot_rounding)
-      
+
       if is_selected or is_hovered then
         _render_square_glow(dl, dot_x, dot_y, dot_size, dot_color, dot_rounding, 4)
       end
-      
-      Draw.rect_filled(dl, 
-        dot_x - half_dot + 1, 
-        dot_y - half_dot + 1, 
-        dot_x + half_dot - 1, 
-        dot_y + half_dot - 1, 
-        dot_color, 
+
+      Draw.rect_filled(dl,
+        dot_x - half_dot + 1,
+        dot_y - half_dot + 1,
+        dot_x + half_dot - 1,
+        dot_y + half_dot - 1,
+        dot_color,
         dot_rounding)
     end
-    
+
     local text_color = (is_hovered or is_selected) and hexrgb("#FFFFFF") or Colors.with_alpha(hexrgb("#FFFFFF"), 200)
     local content_x = start_x + padding_h + dot_size + dot_spacing
     local available_w = chip_w - (content_x - start_x) - padding_h
-    
-    local text_x = content_x + (text_align == "right" and (available_w - text_w) or 
-                                 text_align == "center" and ((available_w - text_w) * 0.5) or 0)
-    local text_y = start_y + (chip_h - text_h) * 0.5
+
+    local text_x = content_x + (text_align == "right" and (available_w - text_w) or
+                                 text_align == "center" and ((available_w - text_w) * 0.5) or 0) - 3  -- Move left 3px
+    local text_y = start_y + (chip_h - text_h) * 0.5 - 1  -- Move up 1px
     Draw.text(dl, text_x, text_y, text_color, label)
   else
     local hover_factor = is_active and 1.3 or (is_hovered and 1.0 or 0.0)

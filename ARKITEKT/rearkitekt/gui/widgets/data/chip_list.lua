@@ -185,11 +185,20 @@ function M.draw_columns(ctx, items, opts)
   local max_height = opts.max_height or avail_h
   local items_per_column = math.floor(max_height / (item_height + item_spacing))
   if items_per_column < 1 then items_per_column = 1 end
-  
+
   local num_columns = math.ceil(#filtered / items_per_column)
   local start_x = ImGui.GetCursorPosX(ctx)
   local start_y = ImGui.GetCursorPosY(ctx)
-  
+
+  -- Center items when sparse (fewer items than fill a column)
+  if opts.center_when_sparse and #filtered < items_per_column then
+    local total_grid_width = num_columns * (column_width + column_spacing) - column_spacing
+    local center_offset = math.floor((avail_w - total_grid_width) / 2)
+    if center_offset > 0 then
+      start_x = start_x + center_offset
+    end
+  end
+
   for col = 0, num_columns - 1 do
     for row = 0, items_per_column - 1 do
       local idx = col * items_per_column + row + 1

@@ -104,11 +104,12 @@ function OverflowModalView:draw(ctx, window)
         item_height = text_h + 1,  -- Further reduced (was text_h + 4, now ~30% smaller)
         dot_size = 7,
         dot_spacing = 7,
-        rounding = 5,
+        rounding = 3,  -- Reduced from 5
         padding_h = 6,  -- Reduced by 50% (was 12)
         column_width = 200,
         column_spacing = 16,
         item_spacing = 4,
+        center_when_sparse = true,  -- Center items when there aren't many
       })
       
       if clicked_tab then
@@ -186,11 +187,12 @@ function OverflowModalView:draw(ctx, window)
             item_height = text_h + 1,  -- Further reduced (was text_h + 4, now ~30% smaller)
             dot_size = 7,
             dot_spacing = 7,
-            rounding = 5,
+            rounding = 3,  -- Reduced from 5
             padding_h = 6,  -- Reduced by 50% (was 12)
             column_width = 200,
             column_spacing = 16,
             item_spacing = 4,
+            center_when_sparse = true,  -- Center items when there aren't many
           })
 
           if clicked_tab then
