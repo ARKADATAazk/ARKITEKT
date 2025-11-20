@@ -2214,8 +2214,9 @@ function GUI:draw(ctx, shell_state)
     SCREEN_W = shell_state.overlay_state.width
     SCREEN_H = shell_state.overlay_state.height
   else
-    local viewport = ImGui.GetMainViewport(ctx)
-    SCREEN_W, SCREEN_H = ImGui.Viewport_GetSize(viewport)
+    -- Normal mode, use monitor detection utility for proper multi-monitor support
+    local MonitorDetection = require('rearkitekt.app.utils.monitor_detection')
+    SCREEN_W, SCREEN_H = MonitorDetection.get_reaper_window_size(ctx)
   end
 
   -- Title (moved up by 15 pixels)
