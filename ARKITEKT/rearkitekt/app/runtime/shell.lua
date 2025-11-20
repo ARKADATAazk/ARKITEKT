@@ -55,19 +55,23 @@ local function load_fonts(ctx, font_cfg)
     end
   end
 
-  -- TEMP TEST: Load Orbitron FIRST and use as default to verify font loading works
-  local orbitron_size = font_cfg.orbitron or Constants.TITLEBAR.azk_font_size
-  local orbitron_font = exists(O) and ImGui.CreateFont(O, orbitron_size) or nil
-
   -- Original working pattern: CreateFont(path, size) with Attach
-  local default_font   = orbitron_font or (exists(R) and ImGui.CreateFont(R, font_cfg.default)
-                                or ImGui.CreateFont('sans-serif', font_cfg.default))
+  local default_font   = exists(R) and ImGui.CreateFont(R, font_cfg.default)
+                                or ImGui.CreateFont('sans-serif', font_cfg.default)
   local title_font     = exists(B) and ImGui.CreateFont(B, font_cfg.title)
                                 or default_font
   local version_font   = exists(R) and ImGui.CreateFont(R, font_cfg.version)
                                 or default_font
   local monospace_font = exists(M) and ImGui.CreateFont(M, font_cfg.monospace)
                                 or default_font
+
+  -- TEMP TEST: Try CreateFontFromFile with proper API for Orbitron
+  local orbitron_size = font_cfg.orbitron or Constants.TITLEBAR.azk_font_size
+  local orbitron_font = nil
+  if exists(O) then
+    orbitron_font = ImGui.CreateFontFromFile(O, 0, 0)  -- index=0, flags=0
+    reaper.ShowConsoleMsg(string.format("[Shell] Orbitron via CreateFontFromFile: %s\n", tostring(orbitron_font)))
+  end
 
   local time_display_font = nil
   if font_cfg.time_display then
