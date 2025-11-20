@@ -9,6 +9,7 @@ local Style = require('rearkitekt.gui.style.defaults')
 local Container = require('rearkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('rearkitekt.gui.widgets.tools.color_picker_window')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
+local Fields = require('rearkitekt.gui.widgets.primitives.fields')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local hexrgb = Colors.hexrgb
 
@@ -94,75 +95,40 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   ImGui.Spacing(ctx)
 
   -- ========================================================================
-  -- SECTION 1: Pattern input and color picker side by side
+  -- TWO COLUMN LAYOUT: Left (input + chips) | Right (color picker)
   -- ========================================================================
 
-  local input_width = modal_w * 0.62  -- ~62% for input field
+  local left_col_width = modal_w * 0.60  -- 60% for left column
   local picker_size = 137  -- 30% smaller than original 195
-  local gap = 12  -- Gap between input and picker
+  local col_gap = 12  -- Gap between columns
 
-  -- Save cursor position for side-by-side layout
   local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
 
-  -- LEFT: Pattern input field
-  ImGui.SetCursorScreenPos(ctx, start_x, start_y)
-  ImGui.SetNextItemWidth(ctx, input_width)
+  -- ========================================================================
+  -- LEFT COLUMN: Pattern input + wildcards + common names
+  -- ========================================================================
 
-  if self.focus_input then
-    ImGui.SetKeyboardFocusHere(ctx)
-    self.focus_input = false
-  end
+  -- Pattern input field using Fields primitive
+  local input_height = 28
+  local field_changed, new_pattern = Fields.draw(ctx, dl, start_x, start_y, left_col_width, input_height, {
+    id = "batch_rename_pattern",
+    text = self.pattern,
+    hint = "pattern$wildcard",
+    on_change = function(text)
+      self.pattern = text
+      self.preview_items = generate_preview(text, count)
+    end,
+  }, "batch_rename_pattern")
 
-  -- Apply input field styling
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Style.SEARCH_INPUT_COLORS.bg)
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Style.SEARCH_INPUT_COLORS.bg_hover)
-  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Style.SEARCH_INPUT_COLORS.bg_active)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Style.SEARCH_INPUT_COLORS.border_outer)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, Style.SEARCH_INPUT_COLORS.text)
-
-  local changed, new_pattern = ImGui.InputTextWithHint(
-    ctx,
-    "##pattern_input",
-    "pattern$wildcard",
-    self.pattern,
-    ImGui.InputTextFlags_None
-  )
-
-  ImGui.PopStyleColor(ctx, 5)
-
-  if changed then
+  if field_changed then
     self.pattern = new_pattern
     self.preview_items = generate_preview(new_pattern, count)
   end
 
-  -- RIGHT: Color picker widget (no label)
-  ImGui.SetCursorScreenPos(ctx, start_x + input_width + gap, start_y)
+  -- Move cursor below input field
+  ImGui.SetCursorScreenPos(ctx, start_x, start_y + input_height + 6)
 
-  -- Initialize color picker only once per modal open
-  if not self.picker_initialized then
-    ColorPickerWindow.show_inline("batch_rename_picker", self.selected_color)
-    self.picker_initialized = true
-  end
-
-  -- Render the inline color picker
-  local color_changed = ColorPickerWindow.render_inline(ctx, "batch_rename_picker", {
-    size = picker_size,
-    on_change = function(color)
-      self.selected_color = color
-    end
-  })
-
-  -- Move cursor below the taller element (color picker)
-  local input_height = 28  -- Approximate input field height
-  local next_y = start_y + math.max(input_height, picker_size)
-  ImGui.SetCursorScreenPos(ctx, start_x, next_y)
-
-  ImGui.Dummy(ctx, 0, 4)
-
-  -- ========================================================================
-  -- SECTION 2: Wildcard chips (clickable)
-  -- ========================================================================
-
+  -- Wildcards label and chips
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards:")
   ImGui.Dummy(ctx, 0, 2)
 
@@ -197,10 +163,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
 
   ImGui.Dummy(ctx, 0, 4)
 
-  -- ========================================================================
-  -- SECTION 3: Common name chips (clickable)
-  -- ========================================================================
-
+  -- Common names label and chips
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Common Names:")
   ImGui.Dummy(ctx, 0, 2)
 
@@ -231,9 +194,34 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
     end
   end
 
-  ImGui.Dummy(ctx, 0, 6)
+  -- ========================================================================
+  -- RIGHT COLUMN: Color picker
+  -- ========================================================================
+
+  ImGui.SetCursorScreenPos(ctx, start_x + left_col_width + col_gap, start_y)
+
+  -- Initialize color picker only once per modal open
+  if not self.picker_initialized then
+    ColorPickerWindow.show_inline("batch_rename_picker", self.selected_color)
+    self.picker_initialized = true
+  end
+
+  -- Render the inline color picker
+  local color_changed = ColorPickerWindow.render_inline(ctx, "batch_rename_picker", {
+    size = picker_size,
+    on_change = function(color)
+      self.selected_color = color
+    end
+  })
+
+  -- Move cursor below both columns
+  local left_col_bottom = start_y + input_height + 6 + ImGui.GetTextLineHeight(ctx) + 2 + 24 + 4 + ImGui.GetTextLineHeight(ctx) + 2 + 24 + 6
+  local right_col_bottom = start_y + picker_size
+  local next_y = math.max(left_col_bottom, right_col_bottom) + 6
+
+  ImGui.SetCursorScreenPos(ctx, start_x, next_y)
   ImGui.Separator(ctx)
-  ImGui.Dummy(ctx, 0, 6)
+  ImGui.Dummy(ctx, 0, 4)
 
   -- ========================================================================
   -- SECTION 4: Preview
@@ -242,18 +230,18 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   if #self.preview_items > 0 then
     ImGui.TextColored(ctx, hexrgb("#999999FF"), "Preview:")
     ImGui.Dummy(ctx, 0, 2)
-    ImGui.Indent(ctx, 16)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 3)
+    ImGui.Indent(ctx, 12)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 2)
     for _, name in ipairs(self.preview_items) do
       ImGui.TextColored(ctx, hexrgb("#DDDDDDFF"), name)
     end
     ImGui.PopStyleVar(ctx, 1)
-    ImGui.Unindent(ctx, 16)
+    ImGui.Unindent(ctx, 12)
   end
 
-  ImGui.Dummy(ctx, 0, 6)
+  ImGui.Dummy(ctx, 0, 4)
   ImGui.Separator(ctx)
-  ImGui.Dummy(ctx, 0, 6)
+  ImGui.Dummy(ctx, 0, 4)
 
   -- ========================================================================
   -- SECTION 5: Action buttons using primitives
@@ -326,7 +314,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
 
   -- Advance cursor past buttons
   ImGui.SetCursorScreenPos(ctx, start_x, button_y + button_h)
-  ImGui.Dummy(ctx, 0, 8)  -- Add spacing at bottom
+  ImGui.Dummy(ctx, 0, 4)  -- Add spacing at bottom
 
   return should_close
 end
@@ -359,7 +347,7 @@ function BatchRenameModal:draw(ctx, item_count, window)
               self:close()
               self.overlay_pushed = false
             end
-          end, { width = 0.45, height = 0.65 })
+          end, { width = 0.42, height = 0.55 })
         end
       })
     end
