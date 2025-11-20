@@ -55,13 +55,12 @@ local function load_fonts(ctx, font_cfg)
     end
   end
 
-  -- Use CreateFontFromFile for TTF file paths (not CreateFont which expects family names)
-  local default_font   = exists(R) and ImGui.CreateFontFromFile(R, 0, 0)
-                                or ImGui.CreateFont('sans-serif', 0)
-  local title_font     = exists(B) and ImGui.CreateFontFromFile(B, 0, 0)
-                                or default_font
-  local version_font   = exists(R) and ImGui.CreateFontFromFile(R, 0, 0)
-                                or default_font
+  -- Use ImGui's built-in fallback font instead of Inter TTF files
+  local default_font   = ImGui.CreateFont('sans-serif', 0)
+  local title_font     = ImGui.CreateFont('sans-serif', 0)
+  local version_font   = ImGui.CreateFont('sans-serif', 0)
+
+  -- Keep loading specific fonts from TTF files
   local monospace_font = exists(M) and ImGui.CreateFontFromFile(M, 0, 0)
                                 or default_font
 
@@ -71,16 +70,14 @@ local function load_fonts(ctx, font_cfg)
 
   local time_display_font = nil
   if font_cfg.time_display then
-    time_display_font = exists(B) and ImGui.CreateFontFromFile(B, 0, 0)
-                                   or ImGui.CreateFont('sans-serif', 0)
+    time_display_font = ImGui.CreateFont('sans-serif', 0)
     attach_once(time_display_font)
   end
 
   local titlebar_version_font = nil
   local titlebar_version_size = font_cfg.titlebar_version or font_cfg.version
   if font_cfg.titlebar_version then
-    titlebar_version_font = exists(R) and ImGui.CreateFontFromFile(R, 0, 0)
-                                       or version_font
+    titlebar_version_font = ImGui.CreateFont('sans-serif', 0)
     attach_once(titlebar_version_font)
   end
 
