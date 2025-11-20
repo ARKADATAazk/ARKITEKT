@@ -73,8 +73,9 @@ function Coordinator:handle_tile_size_shortcuts(ctx)
   return true
 end
 
-function Coordinator:render_audio_grid(ctx, avail_w, avail_h)
+function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
   if not self.audio_grid then return end
+  header_offset = header_offset or 0
 
   if ImGui.BeginChild(ctx, "audio_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
     -- Check for CTRL/ALT+wheel BEFORE grid draws (prevents scroll)
@@ -91,6 +92,12 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h)
       end
     end
 
+    -- Offset grid rendering down if there's a header above
+    if header_offset > 0 then
+      local origin_x, origin_y = ImGui.GetCursorScreenPos(ctx)
+      ImGui.SetCursorScreenPos(ctx, origin_x, origin_y + header_offset)
+    end
+
     self.audio_grid:draw(ctx)
 
     -- Restore scroll if we consumed wheel for resize
@@ -102,8 +109,9 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h)
   end
 end
 
-function Coordinator:render_midi_grid(ctx, avail_w, avail_h)
+function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
   if not self.midi_grid then return end
+  header_offset = header_offset or 0
 
   if ImGui.BeginChild(ctx, "midi_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
     -- Check for CTRL/ALT+wheel BEFORE grid draws (prevents scroll)
@@ -118,6 +126,12 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h)
         -- Save scroll position to restore after grid processes wheel
         saved_scroll = ImGui.GetScrollY(ctx)
       end
+    end
+
+    -- Offset grid rendering down if there's a header above
+    if header_offset > 0 then
+      local origin_x, origin_y = ImGui.GetCursorScreenPos(ctx)
+      ImGui.SetCursorScreenPos(ctx, origin_x, origin_y + header_offset)
     end
 
     self.midi_grid:draw(ctx)

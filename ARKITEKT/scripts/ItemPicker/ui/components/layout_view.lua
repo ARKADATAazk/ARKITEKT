@@ -640,10 +640,10 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       -- MIDI header (centered) - drawn inside child
       draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14)
 
-      -- Grid content area
-      ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
-      local midi_content_h = content_height - panel_padding
-      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_content_h)
+      -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
+      -- Pass full height so inner child includes header area for selection rendering
+      local midi_grid_full_h = header_height + content_height - panel_padding
+      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_grid_full_h, header_height)
       ImGui.EndChild(ctx)
     end
 
@@ -669,10 +669,10 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       -- Audio header (centered) - drawn inside child
       draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 15)
 
-      -- Grid content area
-      ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
-      local audio_content_h = content_height - panel_padding
-      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_content_h)
+      -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
+      -- Pass full height so inner child includes header area for selection rendering
+      local audio_grid_full_h = header_height + content_height - panel_padding
+      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_grid_full_h, header_height)
       ImGui.EndChild(ctx)
     end
 
@@ -738,13 +738,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
         -- MIDI header (centered) - drawn inside child
         draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14)
 
-        -- Grid content area
-        ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
+        -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
         if self.coordinator.midi_grid then
           self.coordinator.midi_grid.block_all_input = block_input
         end
-        local midi_content_h = content_height - panel_padding
-        self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_content_h)
+        local midi_grid_full_h = header_height + content_height - panel_padding
+        self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_grid_full_h, header_height)
         ImGui.EndChild(ctx)
       end
 
@@ -779,13 +778,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
         -- Audio header (centered) - drawn inside child
         draw_panel_title(ctx, draw_list, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15)
 
-        -- Grid content area
-        ImGui.SetCursorScreenPos(ctx, audio_start_x + panel_padding, start_y + header_height)
+        -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
         if self.coordinator.audio_grid then
           self.coordinator.audio_grid.block_all_input = block_input
         end
-        local audio_content_h = content_height - panel_padding
-        self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_content_h)
+        local audio_grid_full_h = header_height + content_height - panel_padding
+        self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_grid_full_h, header_height)
         ImGui.EndChild(ctx)
       end
 
@@ -848,14 +846,13 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       -- MIDI header (centered) - drawn inside child
       draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14)
 
-      -- Grid content area
-      ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
+      -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
       -- Block grid input during separator drag
       if self.coordinator.midi_grid then
         self.coordinator.midi_grid.block_all_input = block_input
       end
-      local midi_content_h = midi_height - panel_padding
-      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_content_h)
+      local midi_grid_full_h = header_height + midi_height - panel_padding
+      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_grid_full_h, header_height)
       ImGui.EndChild(ctx)
     end
 
@@ -891,14 +888,13 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       -- Audio header (centered) - drawn inside child
       draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15)
 
-      -- Grid content area
-      ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_start_y + header_height)
+      -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
       -- Block grid input during separator drag
       if self.coordinator.audio_grid then
         self.coordinator.audio_grid.block_all_input = block_input
       end
-      local audio_content_h = audio_height - panel_padding
-      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_content_h)
+      local audio_grid_full_h = header_height + audio_height - panel_padding
+      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_grid_full_h, header_height)
       ImGui.EndChild(ctx)
     end
 
