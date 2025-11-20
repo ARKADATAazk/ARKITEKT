@@ -278,7 +278,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   local can_rename = self.pattern ~= ""
 
   -- Cancel button
-  local cancel_clicked = Button.draw(ctx, dl, button_start_x, button_y, button_w, button_h, {
+  local _, cancel_clicked = Button.draw(ctx, dl, button_start_x, button_y, button_w, button_h, {
     id = "cancel_btn",
     label = "Cancel",
     height = button_h,
@@ -289,7 +289,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   end
 
   -- Rename button (disabled when no pattern)
-  local rename_clicked = Button.draw(ctx, dl, button_start_x + button_w + spacing, button_y, button_w, button_h, {
+  local _, rename_clicked = Button.draw(ctx, dl, button_start_x + button_w + spacing, button_y, button_w, button_h, {
     id = "rename_btn",
     label = "Rename",
     height = button_h,
@@ -304,7 +304,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   end
 
   -- Rename & Recolor button (disabled when no pattern)
-  local rename_recolor_clicked = Button.draw(ctx, dl, button_start_x + (button_w + spacing) * 2, button_y, button_w, button_h, {
+  local _, rename_recolor_clicked = Button.draw(ctx, dl, button_start_x + (button_w + spacing) * 2, button_y, button_w, button_h, {
     id = "rename_recolor_btn",
     label = "Rename & Recolor",
     height = button_h,
@@ -319,7 +319,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   end
 
   -- Recolor button (always enabled)
-  local recolor_clicked = Button.draw(ctx, dl, button_start_x + (button_w + spacing) * 3, button_y, button_w, button_h, {
+  local _, recolor_clicked = Button.draw(ctx, dl, button_start_x + (button_w + spacing) * 3, button_y, button_w, button_h, {
     id = "recolor_btn",
     label = "Recolor",
     height = button_h,
