@@ -315,8 +315,8 @@ runtime:start()
 ### 2025-01-19: Status Bar Config Consolidation
 - **Deleted:** `chrome/status_bar/constants.lua` (143 lines)
   - Removed dead code: chip config and presets (never used by widget.lua)
-  - Removed duplicate `deep_merge`/`merge` functions (already in `core/config`)
-- **Updated:** `status_bar/widget.lua` now uses `core/config.deep_merge()` and loads constants from `init/constants.lua`
+  - Removed duplicate `deepMerge`/`merge` functions (already in `core/config`)
+- **Updated:** `status_bar/widget.lua` now uses `core/config.deepMerge()` and loads constants from `init/constants.lua`
 - **Impact:** -143 lines, single source of truth for config
 
 ### 2025-01-19: App Folder Reorganization
@@ -342,7 +342,7 @@ runtime:start()
 ### ✅ DO:
 - Use `Constants` for all framework defaults
 - Override only when truly app-specific
-- Use `core/config.deep_merge()` for config merging
+- Use `core/config.deepMerge()` for config merging
 - Document why you're overriding a default
 
 ### ❌ DON'T:

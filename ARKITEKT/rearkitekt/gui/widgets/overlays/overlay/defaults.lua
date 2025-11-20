@@ -73,7 +73,7 @@ local current_config = nil
 function M.get()
   if not current_config then
     -- Deep copy default config on first access
-    current_config = ConfigUtil.deep_merge({}, default_config)
+    current_config = ConfigUtil.deepMerge({}, default_config)
   end
   return current_config
 end
@@ -82,11 +82,11 @@ function M.override(overrides)
   local config = M.get()
 
   if not overrides then
-    return ConfigUtil.deep_merge({}, config)  -- Return deep copy
+    return ConfigUtil.deepMerge({}, config)  -- Return deep copy
   end
 
   -- Deep merge config with overrides
-  return ConfigUtil.deep_merge(config, overrides)
+  return ConfigUtil.deepMerge(config, overrides)
 end
 
 function M.reset()

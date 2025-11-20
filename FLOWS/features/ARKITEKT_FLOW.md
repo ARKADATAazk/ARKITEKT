@@ -45,7 +45,7 @@ Generated: 2025-10-17 00:44:31
 > @noindex
 **Modules**: `M, result`
 **Exports**:
-  - `M.deep_merge(base, override)`
+  - `M.deepMerge(base, override)`
   - `M.merge(user_config, preset_name)`
 **Requires**: `rearkitekt.gui.widgets.component.chip`
 

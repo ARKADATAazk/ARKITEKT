@@ -57,7 +57,7 @@ BASE DEFAULTS < PRESET < CONTEXT DEFAULTS < USER CONFIG
 ❌ **DON'T:** Merge at multiple levels without clear rules
 ```lua
 -- Panel merges first
-config = deep_merge(ELEMENT_STYLE, user_config)
+config = deepMerge(ELEMENT_STYLE, user_config)
 -- Then button tries to apply preset (too late!)
 config = apply_defaults(PRESET, config)
 ```
@@ -142,7 +142,7 @@ local bg = config.bg or DEFAULTS.bg
 ❌ **DON'T:** Always deep merge everything
 ```lua
 -- Unnecessarily complex for flat configs
-config = deep_merge(defaults, user_config)
+config = deepMerge(defaults, user_config)
 ```
 
 ✅ **DO:** Match strategy to structure
@@ -156,7 +156,7 @@ end
 
 -- Nested config (e.g., popup.styles.item)? Deep merge
 if type(v) == "table" and type(config[k]) == "table" then
-  config[k] = deep_merge(v, config[k])
+  config[k] = deepMerge(v, config[k])
 else
   config[k] = v
 end
@@ -249,7 +249,7 @@ function M.merge(base, override)
 end
 
 -- Deep merge (for nested configs)
-function M.deep_merge(base, override)
+function M.deepMerge(base, override)
   if type(base) ~= "table" then return override end
   if type(override) ~= "table" then return base end
 
@@ -258,7 +258,7 @@ function M.deep_merge(base, override)
 
   for k, v in pairs(override) do
     if type(v) == "table" and type(result[k]) == "table" then
-      result[k] = M.deep_merge(result[k], v)
+      result[k] = M.deepMerge(result[k], v)
     else
       result[k] = v
     end
@@ -276,7 +276,7 @@ function M.apply_defaults(defaults, user_config, deep_keys)
   -- Handle defaults
   for k, v in pairs(defaults) do
     if deep_keys[k] and type(v) == "table" and type(user_config[k]) == "table" then
-      result[k] = M.deep_merge(v, user_config[k])
+      result[k] = M.deepMerge(v, user_config[k])
     else
       result[k] = user_config[k] ~= nil and user_config[k] or v
     end
@@ -394,8 +394,8 @@ BASE → PRESET → CONTEXT → USER
 - [ ] `widgets/controls/button.lua` - Apply preset before context merge
 
 ### Medium Priority (Inconsistent Patterns)
-- [ ] `widgets/overlay/config.lua` - Replace triple-nest with deep_merge
-- [ ] `widgets/nodal/config.lua` - Replace triple-nest with deep_merge
+- [ ] `widgets/overlay/config.lua` - Replace triple-nest with deepMerge
+- [ ] `widgets/nodal/config.lua` - Replace triple-nest with deepMerge
 - [ ] `widgets/navigation/menutabs.lua` - Use standard merge utilities
 
 ### Low Priority (Already Working)

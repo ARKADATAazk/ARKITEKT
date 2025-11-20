@@ -145,11 +145,11 @@ end
 
 function M.override(overrides)
   if not overrides then
-    return ConfigUtil.deep_merge({}, M.DEFAULT)  -- Return deep copy
+    return ConfigUtil.deepMerge({}, M.DEFAULT)  -- Return deep copy
   end
 
   -- Deep merge DEFAULT with overrides
-  return ConfigUtil.deep_merge(M.DEFAULT, overrides)
+  return ConfigUtil.deepMerge(M.DEFAULT, overrides)
 end
 
 return M

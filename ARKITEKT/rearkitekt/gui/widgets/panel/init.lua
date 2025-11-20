@@ -37,7 +37,7 @@ function M.new(opts)
   local panel = setmetatable({
     id = id,
     _panel_id = id,  -- CRITICAL: Required for header elements to detect panel context
-    config = ConfigUtil.deep_merge(DEFAULTS, opts.config),
+    config = ConfigUtil.deepMerge(DEFAULTS, opts.config),
     
     width = opts.width,
     height = opts.height,
