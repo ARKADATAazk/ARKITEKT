@@ -82,16 +82,18 @@ local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
 end
 
--- Draw a centered panel title
-local function draw_panel_title(ctx, title_font, title, panel_x, panel_y, panel_width, padding, alpha, font_size)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, alpha)
+-- Draw a centered panel title (using DrawList to not block mouse input)
+local function draw_panel_title(ctx, draw_list, title_font, title, panel_x, panel_y, panel_width, padding, alpha, font_size)
   ImGui.PushFont(ctx, title_font, font_size)
   local title_width = ImGui.CalcTextSize(ctx, title)
   local title_x = panel_x + (panel_width - title_width) / 2
-  ImGui.SetCursorScreenPos(ctx, title_x, panel_y + padding)
-  ImGui.Text(ctx, title)
+  local title_y = panel_y + padding + 3  -- 3 pixels lower
+
+  -- Use DrawList to avoid blocking mouse input for selection rectangle
+  local text_color = Colors.hexrgb("#FFFFFF")
+  text_color = Colors.with_alpha(text_color, math.floor(alpha * 255))
+  ImGui.DrawList_AddText(draw_list, title_x, title_y, text_color, title)
   ImGui.PopFont(ctx)
-  ImGui.PopStyleVar(ctx)
 end
 
 function LayoutView:handle_shortcuts(ctx)
@@ -629,7 +631,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     draw_panel(draw_list, panel_x1, panel_y1, panel_x2, panel_y2, panel_rounding, section_fade)
 
     -- MIDI header (centered)
-    draw_panel_title(ctx, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14)
+    draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14)
 
     -- MIDI grid
     local midi_content_y = start_y + header_height
@@ -656,7 +658,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     draw_panel(draw_list, panel_x1, panel_y1, panel_x2, panel_y2, panel_rounding, section_fade)
 
     -- Audio header (centered)
-    draw_panel_title(ctx, title_font, "Audio Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 15)
+    draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 15)
 
     -- Audio grid
     local audio_content_y = start_y + header_height
@@ -723,7 +725,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       draw_panel(draw_list, midi_panel_x1, midi_panel_y1, midi_panel_x2, midi_panel_y2, panel_rounding, section_fade)
 
       -- MIDI header (centered)
-      draw_panel_title(ctx, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14)
+      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14)
 
       local midi_content_y = start_y + header_height
       local midi_content_h = content_height - panel_padding
@@ -761,7 +763,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       draw_panel(draw_list, audio_panel_x1, audio_panel_y1, audio_panel_x2, audio_panel_y2, panel_rounding, section_fade)
 
       -- Audio header (centered)
-      draw_panel_title(ctx, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15)
+      draw_panel_title(ctx, draw_list, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15)
 
       local audio_content_y = start_y + header_height
       local audio_content_h = content_height - panel_padding
@@ -827,7 +829,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     draw_panel(draw_list, midi_panel_x1, midi_panel_y1, midi_panel_x2, midi_panel_y2, panel_rounding, section_fade)
 
     -- MIDI header (centered)
-    draw_panel_title(ctx, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14)
+    draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14)
 
     -- MIDI grid container
     local midi_content_y = start_y + header_height
@@ -868,7 +870,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     draw_panel(draw_list, audio_panel_x1, audio_panel_y1, audio_panel_x2, audio_panel_y2, panel_rounding, section_fade)
 
     -- Audio header (centered)
-    draw_panel_title(ctx, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15)
+    draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15)
 
     -- Audio grid container
     local audio_content_y = audio_start_y + header_height
