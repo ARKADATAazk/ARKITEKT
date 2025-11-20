@@ -99,11 +99,13 @@ function OverflowModalView:draw(ctx, window)
     ImGui.Dummy(ctx, 0, 8)
     
     if ImGui.BeginChild(ctx, "##tab_list", 0, -40) then
+      local text_h = ImGui.GetTextLineHeight(ctx)
       local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
         selected_ids = selected_ids,
         search_text = self.search_text,
         use_dot_style = true,
-        bg_color = hexrgb("#252530"),
+        bg_color = hexrgb("#3a3a3a"),  -- Grey fill
+        item_height = text_h + 4,  -- Reduced from default (text_h + 8)
         dot_size = 7,
         dot_spacing = 7,
         rounding = 5,
@@ -182,11 +184,13 @@ function OverflowModalView:draw(ctx, window)
           ImGui.Dummy(ctx, 0, 12)
 
           -- Playlist grid
+          local text_h = ImGui.GetTextLineHeight(ctx)
           local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
             selected_ids = selected_ids,
             search_text = self.search_text,
             use_dot_style = true,
-            bg_color = hexrgb("#252530"),
+            bg_color = hexrgb("#3a3a3a"),  -- Grey fill
+            item_height = text_h + 4,  -- Reduced from default (text_h + 8)
             dot_size = 7,
             dot_spacing = 7,
             rounding = 5,
