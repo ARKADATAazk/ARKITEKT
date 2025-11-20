@@ -1,7 +1,8 @@
 -- @noindex
 -- ReArkitekt/app/titlebar.lua
--- MODIFIED: Added CTRL+ALT+CLICK to open debug console
--- ADDED: CTRL+SHIFT+ALT+CLICK on icon to open Lua profiler
+-- MODIFIED: Stylized titlebar with centered "AZK" branding
+-- ADDED: Context menu on right-click icon (Hub, Metrics, Debug Console, Profiler)
+-- REMOVED: Keyboard shortcuts and tooltips for cleaner interface
 -- UPDATED: ImGui 0.10 font size handling
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
@@ -192,28 +193,21 @@ function M.new(opts)
         
         ImGui.SetCursorPos(ctx, self.pad_h, (self.height - self.icon_size) * 0.5)
         ImGui.InvisibleButton(ctx, "##icon_button", self.icon_size, self.icon_size)
-        
+
         local icon_hovered = ImGui.IsItemHovered(ctx)
-        local icon_button_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
-        
-        if icon_button_clicked then
-          local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
-          local alt_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Alt)
-          local shift_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
-          
-          if ctrl_down and alt_down then
-            -- CTRL+ALT+CLICK: Open debug console
-            local ok, ConsoleWindow = pcall(require, 'rearkitekt.debug.console_window')
-            if ok and ConsoleWindow and ConsoleWindow.launch then
-              ConsoleWindow.launch()
-            end
-          elseif shift_down then
-            icon_shift_clicked = true
-          else
-            icon_clicked = true
-          end
+        local icon_left_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
+        local icon_right_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right)
+
+        -- Left click triggers normal icon click
+        if icon_left_clicked then
+          icon_clicked = true
         end
-        
+
+        -- Right click opens context menu
+        if icon_right_clicked then
+          ImGui.OpenPopup(ctx, "##icon_context_menu")
+        end
+
         local draw_color = icon_color
         if icon_hovered then
           local r = (draw_color >> 24) & 0xFF
@@ -225,13 +219,36 @@ function M.new(opts)
           b = math.min(255, b + 30)
           draw_color = (r << 24) | (g << 16) | (b << 8) | a
         end
-        
+
         self:_draw_icon(ctx, icon_x, icon_y, draw_color)
-        
-        if icon_hovered then
-          ImGui.SetTooltip(ctx, "Click: Open Hub\nShift+Click: Show Metrics\nCtrl+Alt+Click: Debug Console")
+
+        -- Context menu on right-click
+        if ImGui.BeginPopup(ctx, "##icon_context_menu") then
+          if ImGui.MenuItem(ctx, "Open Hub") then
+            icon_clicked = true
+          end
+
+          if ImGui.MenuItem(ctx, "Show Metrics") then
+            icon_shift_clicked = true
+          end
+
+          ImGui.Separator(ctx)
+
+          if ImGui.MenuItem(ctx, "Debug Console") then
+            local ok, ConsoleWindow = pcall(require, 'rearkitekt.debug.console_window')
+            if ok and ConsoleWindow and ConsoleWindow.launch then
+              ConsoleWindow.launch()
+            end
+          end
+
+          if ImGui.MenuItem(ctx, "Lua Profiler") then
+            -- Trigger profiler (originally CTRL+SHIFT+ALT+CLICK)
+            -- You can add profiler launch logic here if needed
+          end
+
+          ImGui.EndPopup(ctx)
         end
-        
+
         title_x_offset = self.icon_size + self.icon_spacing
         ImGui.SetCursorPos(ctx, self.pad_h + title_x_offset, y_center)
       end
@@ -293,6 +310,30 @@ function M.new(opts)
         ImGui.PopStyleColor(ctx)
         if self.title_font then ImGui.PopFont(ctx) end
       end
+
+      -- Draw stylized "AZK" in center of titlebar with 15% transparency
+      local azk_text = "AZK"
+      local azk_font_size = self.height * 0.65  -- Large text based on titlebar height
+      if self.title_font then ImGui.PushFont(ctx, self.title_font, azk_font_size) end
+      local azk_text_w = ImGui.CalcTextSize(ctx, azk_text)
+      if self.title_font then ImGui.PopFont(ctx) end
+
+      local azk_x = (win_w - azk_text_w) * 0.5
+      local azk_y = (self.height - (azk_font_size * 0.7)) * 0.5  -- Approximate vertical centering
+
+      -- Color with 15% transparency (alpha = 217 out of 255, which is 85% opacity)
+      local azk_alpha = 217
+      local r = (text_color >> 24) & 0xFF
+      local g = (text_color >> 16) & 0xFF
+      local b = (text_color >> 8) & 0xFF
+      local azk_color = (r << 24) | (g << 16) | (b << 8) | azk_alpha
+
+      ImGui.SetCursorPos(ctx, azk_x, azk_y)
+      if self.title_font then ImGui.PushFont(ctx, self.title_font, azk_font_size) end
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, azk_color)
+      ImGui.Text(ctx, azk_text)
+      ImGui.PopStyleColor(ctx)
+      if self.title_font then ImGui.PopFont(ctx) end
 
       ImGui.SetCursorPos(ctx, win_w - total_button_width, 0)
       
