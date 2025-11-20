@@ -112,6 +112,25 @@ function M.create(ctx, config, state, visualization, animator)
         goto continue
       end
 
+      -- Check region filter (if any regions are selected)
+      local has_selected_regions = state.selected_regions and next(state.selected_regions) ~= nil
+      if has_selected_regions then
+        -- Item must have at least one of the selected regions
+        local item_has_selected_region = false
+        if entry.regions then
+          for _, region in ipairs(entry.regions) do
+            local region_name = type(region) == "table" and region.name or region
+            if state.selected_regions[region_name] then
+              item_has_selected_region = true
+              break
+            end
+          end
+        end
+        if not item_has_selected_region then
+          goto continue
+        end
+      end
+
       -- Use cached track color (fetched during loading, not every frame!)
       local track_color = entry.track_color or 0
 

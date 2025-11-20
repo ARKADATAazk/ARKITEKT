@@ -479,18 +479,6 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Track final checkbox Y position for search bar positioning
   local checkboxes_end_y = checkbox_y + 24 + 10  -- Add some spacing after checkboxes
 
-  -- Render region filter bar (if region tags enabled and regions available)
-  if show_region_tags and self.state.all_regions and #self.state.all_regions > 0 then
-    reaper.ShowConsoleMsg(string.format("[REGION_FILTER_BAR] Rendering with %d regions at y=%.1f\n", #self.state.all_regions, checkboxes_end_y))
-    local filter_bar_y = checkboxes_end_y
-    local filter_bar_height = RegionFilterBar.draw(ctx, draw_list, coord_offset_x, filter_bar_y, screen_w, self.state, self.config)
-    checkboxes_end_y = filter_bar_y + filter_bar_height
-    reaper.ShowConsoleMsg(string.format("[REGION_FILTER_BAR] Filter bar height: %.1f, new checkboxes_end_y: %.1f\n", filter_bar_height, checkboxes_end_y))
-  else
-    reaper.ShowConsoleMsg(string.format("[REGION_FILTER_BAR] NOT rendering: show_region_tags=%s, all_regions=%s, #all_regions=%d\n",
-      tostring(show_region_tags), tostring(self.state.all_regions ~= nil), self.state.all_regions and #self.state.all_regions or 0))
-  end
-
   -- Search fade with different offset
   local search_fade = smootherstep(math.max(0, (overlay_alpha - 0.05) / 0.95))
   local search_y_offset = 25 * (1.0 - search_fade)
@@ -532,11 +520,31 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   ImGui.PopFont(ctx)
   ImGui.PopStyleVar(ctx)
 
+  -- Render region filter bar centered below search (if region tags enabled and regions available)
+  local filter_bar_height = 0
+  if show_region_tags and self.state.all_regions and #self.state.all_regions > 0 then
+    local filter_bar_y = search_y + search_height + 8  -- 8px spacing below search
+    -- Calculate total width needed for all chips
+    local total_chips_width = 0
+    local chip_cfg = self.config.REGION_TAGS.chip
+    for i, region in ipairs(self.state.all_regions) do
+      local text_w = ImGui.CalcTextSize(ctx, region.name)
+      local chip_w = text_w + chip_cfg.padding_x * 2
+      total_chips_width = total_chips_width + chip_w
+      if i < #self.state.all_regions then
+        total_chips_width = total_chips_width + chip_cfg.margin_x
+      end
+    end
+    -- Center the filter bar
+    local filter_bar_x = coord_offset_x + math.floor((screen_w - total_chips_width) / 2 + 0.5)
+    filter_bar_height = RegionFilterBar.draw(ctx, draw_list, filter_bar_x, filter_bar_y, total_chips_width + 100, self.state, self.config)
+  end
+
   -- Section fade
   local section_fade = smootherstep(math.max(0, (overlay_alpha - 0.1) / 0.9))
 
-  -- Calculate panel start position (below search bar)
-  local panels_start_y = search_y + search_height + 20  -- 20px spacing below search
+  -- Calculate panel start position (below search bar and filter bar)
+  local panels_start_y = search_y + search_height + filter_bar_height + 20  -- 20px spacing below search/filter
   local panels_end_y = coord_offset_y + screen_h - 40  -- Leave some bottom margin
   local content_height = panels_end_y - panels_start_y
   local content_width = screen_w - (self.config.LAYOUT.PADDING * 2)
