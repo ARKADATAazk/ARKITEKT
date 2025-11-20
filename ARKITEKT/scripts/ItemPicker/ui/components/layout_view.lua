@@ -3,7 +3,7 @@
 -- Main layout view with absolute positioning and fade animations
 
 local ImGui = require 'imgui' '0.10'
-local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
+local SearchWithMode = require('ItemPicker.ui.components.search_with_mode')
 local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local DraggableSeparator = require('rearkitekt.gui.widgets.primitives.separator')
 local StatusBar = require('ItemPicker.ui.components.status_bar')
@@ -500,19 +500,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.focus_search = false
   end
 
-  -- Use rearkitekt search widget
-  local current_search = self.state.settings.search_string or ""
-  SearchInput.draw(ctx, self.state.draw_list, search_x, search_y, search_width, search_height, {
-    id = "item_picker_search",
-    placeholder = "Search items...",
-    value = current_search,
-  }, "item_picker_search")
-
-  -- Get updated search text
-  local new_search = SearchInput.get_text("item_picker_search")
-  if new_search ~= current_search then
-    self.state.set_search_filter(new_search)
-  end
+  -- Use custom search widget with mode selector
+  SearchWithMode.draw(ctx, self.state.draw_list, search_x, search_y, search_width, search_height, self.state, self.config)
 
   -- Advance cursor past search widget
   ImGui.SetCursorScreenPos(ctx, search_x, search_y + search_height)

@@ -33,6 +33,7 @@ local function get_default_settings()
     enable_tile_fx = true,
     layout_mode = "vertical",
     show_region_tags = false,  -- Show region tags on item tiles (toggle)
+    search_mode = "items",  -- Search mode: "items", "tracks", "regions", "mixed"
   }
 end
 

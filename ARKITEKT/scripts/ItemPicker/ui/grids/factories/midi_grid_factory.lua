@@ -15,12 +15,13 @@ function M.create(ctx, config, state, visualization, animator)
 
     -- Compute filter hash to detect changes (EXCLUDING indices to prevent re-sort)
     local settings = state.settings
-    local filter_hash = string.format("%s|%s|%s|%s|%s|%s|%s|%d",
+    local filter_hash = string.format("%s|%s|%s|%s|%s|%s|%s|%s|%d",
       tostring(settings.show_favorites_only),
       tostring(settings.show_disabled_items),
       tostring(settings.show_muted_tracks),
       tostring(settings.show_muted_items),
       settings.search_string or "",
+      settings.search_mode or "items",
       settings.sort_mode or "none",
       table.concat(state.midi_indexes, ","),  -- Invalidate if items change
       #state.midi_indexes
@@ -91,6 +92,7 @@ function M.create(ctx, config, state, visualization, animator)
       local item_muted = entry.item_muted or false
       local uuid = entry.uuid
       local pool_count = entry.pool_count or 1
+      local track_name = entry.track_name or ""
 
       -- Safety check: ensure item_name is a valid string
       if not item_name or type(item_name) ~= "string" then
@@ -106,10 +108,47 @@ function M.create(ctx, config, state, visualization, animator)
         goto continue
       end
 
-      -- Check search filter
+      -- Check search filter (mode-based)
       local search = state.settings.search_string or ""
-      if type(search) == "string" and search ~= "" and not item_name:lower():find(search:lower(), 1, true) then
-        goto continue
+      if type(search) == "string" and search ~= "" then
+        local search_mode = state.settings.search_mode or "items"
+        local found = false
+
+        if search_mode == "items" then
+          -- Search only item names
+          found = item_name:lower():find(search:lower(), 1, true) ~= nil
+        elseif search_mode == "tracks" then
+          -- Search only track names
+          found = track_name:lower():find(search:lower(), 1, true) ~= nil
+        elseif search_mode == "regions" then
+          -- Search only region names
+          if entry.regions then
+            for _, region in ipairs(entry.regions) do
+              local region_name = type(region) == "table" and region.name or region
+              if region_name:lower():find(search:lower(), 1, true) then
+                found = true
+                break
+              end
+            end
+          end
+        elseif search_mode == "mixed" then
+          -- Search all: item names, track names, and region names
+          found = item_name:lower():find(search:lower(), 1, true) ~= nil or
+                  track_name:lower():find(search:lower(), 1, true) ~= nil
+          if not found and entry.regions then
+            for _, region in ipairs(entry.regions) do
+              local region_name = type(region) == "table" and region.name or region
+              if region_name:lower():find(search:lower(), 1, true) then
+                found = true
+                break
+              end
+            end
+          end
+        end
+
+        if not found then
+          goto continue
+        end
       end
 
       -- Check region filter (if any regions are selected)
@@ -170,6 +209,7 @@ function M.create(ctx, config, state, visualization, animator)
         uuid = uuid,
         is_midi = true,
         pool_count = pool_count,  -- Number of pooled items (from Reaper pooling)
+        track_name = track_name,  -- Track name for search
         regions = entry.regions,  -- Region tags from loader
       })
 
