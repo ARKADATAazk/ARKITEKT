@@ -163,16 +163,28 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local button_height = search_height
   local button_gap = 4  -- Gap between buttons and search
 
-  -- Settings area ABOVE search (slides down when hovering above search field)
+  -- Settings area ABOVE search (fades in, doesn't move)
   local settings_area_max_height = 70  -- Maximum height when fully expanded
+  local settings_y = search_base_y - settings_area_max_height  -- Fixed position
 
-  -- Sticky hover behavior: trigger only when close above search, hide only when below search
+  -- Calculate actual search position FIRST (pushed down by settings)
+  -- This is needed for hover detection
+  local settings_height = 0  -- Will be calculated after
+
+  -- Temporary calculation for hover zones
+  if not self.state.settings_slide_progress then
+    self.state.settings_slide_progress = 0
+  end
+  local temp_settings_height = settings_area_max_height * self.state.settings_slide_progress
+  local search_y = search_base_y + temp_settings_height
+
+  -- Sticky hover behavior: trigger only when close above search base, hide only when below actual search
   local trigger_zone_padding = 15  -- Small zone above search to trigger
   local is_in_trigger_zone = mouse_y >= (search_base_y - trigger_zone_padding) and
                              mouse_y < search_base_y
 
-  -- Once triggered, stay visible until mouse goes below search field
-  local is_below_search = mouse_y > (search_base_y + search_height)
+  -- Once triggered, stay visible until mouse goes below the ACTUAL search field position
+  local is_below_search = mouse_y > (search_y + search_height)
 
   -- Initialize sticky state
   if self.state.settings_sticky_visible == nil then
@@ -186,23 +198,17 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.settings_sticky_visible = false
   end
 
-  -- Smooth slide for settings area
-  if not self.state.settings_slide_progress then
-    self.state.settings_slide_progress = 0
-  end
+  -- Smooth fade for settings area (alpha only, no movement)
   local target_slide = self.state.settings_sticky_visible and 1.0 or 0.0
   local slide_speed = 0.15  -- Fixed interpolation speed
   self.state.settings_slide_progress = self.state.settings_slide_progress + (target_slide - self.state.settings_slide_progress) * slide_speed
 
-  -- Calculate animated settings height and alpha
-  local settings_height = settings_area_max_height * self.state.settings_slide_progress
+  -- Calculate settings height (for pushing content) and alpha (for fading)
+  settings_height = settings_area_max_height * self.state.settings_slide_progress
   local settings_alpha = self.state.settings_slide_progress * ui_fade
 
-  -- Settings panel positioned above search, pushes search down
-  local settings_y = search_base_y - settings_height
-
-  -- Actual search position (pushed down by settings)
-  local search_y = search_base_y + settings_height
+  -- Recalculate actual search position with final settings height
+  search_y = search_base_y + settings_height
 
   -- Render settings panel ABOVE search (only if visible)
   if settings_height > 1 then
