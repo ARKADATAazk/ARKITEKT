@@ -335,21 +335,18 @@ function M:render(ctx, dt)
     if top.esc_to_close and ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
       self:pop()
     else
-      -- Render close button if enabled
-      if top.show_close_button and alpha_val > 0.1 then
-        self:draw_close_button(ctx, top, x, y, w, h, dt)
-      end
-
       -- Render content
       top.render(ctx, alpha_val, {x=x, y=y, w=w, h=h, dl=dl})
 
+      -- Always render close button
+      self:draw_close_button(ctx, top, x, y, w, h, dt)
+
       -- Handle scrim clicks (check if click is outside content area)
-      -- Only right-click closes modal, left-click does nothing
-      -- Check both items AND child windows to avoid closing when clicking inside containers
+      -- Right-click closes modal when NOT over containers
+      -- Check child windows to avoid closing when clicking inside containers
       if top.close_on_scrim then
-        local over_content = ImGui.IsAnyItemHovered(ctx) or
-                            ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_ChildWindows)
-        if not over_content and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right) then
+        local over_child_window = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_ChildWindows | ImGui.HoveredFlags_AllowWhenBlockedByActiveItem)
+        if not over_child_window and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right) then
           self:pop()
         end
       end
@@ -399,53 +396,40 @@ end
 -- ============================================================================
 
 function M:draw_close_button(ctx, overlay, vp_x, vp_y, vp_w, vp_h, dt)
-  local btn_x = vp_x + vp_w - overlay.close_button_size - overlay.close_button_margin
-  local btn_y = vp_y + overlay.close_button_margin
+  local btn_size = 40
+  local btn_margin = 20
+  local btn_x = vp_x + vp_w - btn_size - btn_margin
+  local btn_y = vp_y + btn_margin
 
-  local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
-  local dist = math.sqrt((mouse_x - (btn_x + overlay.close_button_size/2))^2 +
-                        (mouse_y - (btn_y + overlay.close_button_size/2))^2)
-  local in_proximity = dist < overlay.close_button_proximity
-
-  local target_alpha = in_proximity and 1.0 or 0.3
-  overlay.close_button_alpha = overlay.close_button_alpha +
-                               (target_alpha - overlay.close_button_alpha) *
-                               (1.0 - math.exp(-10.0 * dt))
-
+  -- Create invisible button for interaction
   ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
-  ImGui.InvisibleButton(ctx, "##overlay_close_btn_" .. overlay.id,
-                        overlay.close_button_size, overlay.close_button_size)
-  overlay.close_button_hovered = ImGui.IsItemHovered(ctx)
+  ImGui.InvisibleButton(ctx, "##overlay_close_btn_" .. overlay.id, btn_size, btn_size)
 
+  local is_hovered = ImGui.IsItemHovered(ctx)
+  local is_active = ImGui.IsItemActive(ctx)
+
+  -- Click to close
   if ImGui.IsItemClicked(ctx) then
     self:pop(overlay.id)
   end
 
-  local dl = ImGui.GetForegroundDrawList(ctx)
-  local alpha_val = overlay.alpha:value() * overlay.close_button_alpha
+  -- Simple opacity states: 0.2 default, 0.4 hover, 0.5 click
+  local opacity = 0.2
+  if is_active then
+    opacity = 0.5
+  elseif is_hovered then
+    opacity = 0.4
+  end
 
-  local bg_opacity = overlay.close_button_hovered and
-                    overlay.close_button_bg_opacity_hover or
-                    overlay.close_button_bg_opacity
-  local bg_alpha = bg_opacity * alpha_val
-  local bg_color = (overlay.close_button_bg_color & hexrgb("#f1000000")) |
-                   math.floor(255 * bg_alpha + 0.5)
-  ImGui.DrawList_AddRectFilled(dl, btn_x, btn_y,
-                               btn_x + overlay.close_button_size,
-                               btn_y + overlay.close_button_size,
-                               bg_color, overlay.close_button_size/2)
-
-  local icon_color = overlay.close_button_hovered and
-                    overlay.close_button_hover_color or
-                    overlay.close_button_color
-  icon_color = (icon_color & hexrgb("#ff040400")) | math.floor(255 * alpha_val + 0.5)
-
-  local padding = overlay.close_button_size * 0.3
+  -- Draw white X
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local white = 0xFFFFFF00 | math.floor(255 * opacity)
+  local padding = btn_size * 0.25
   local x1, y1 = btn_x + padding, btn_y + padding
-  local x2, y2 = btn_x + overlay.close_button_size - padding,
-                btn_y + overlay.close_button_size - padding
-  ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, icon_color, 2)
-  ImGui.DrawList_AddLine(dl, x2, y1, x1, y2, icon_color, 2)
+  local x2, y2 = btn_x + btn_size - padding, btn_y + btn_size - padding
+
+  ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, white, 3)
+  ImGui.DrawList_AddLine(dl, x2, y1, x1, y2, white, 3)
 end
 
 return M
