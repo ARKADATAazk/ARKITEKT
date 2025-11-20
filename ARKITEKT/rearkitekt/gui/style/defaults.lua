@@ -215,16 +215,18 @@ M.DROPDOWN_COLORS = {
 -- ============================================================================
 -- SEARCH INPUT COLORS
 -- ============================================================================
+-- Darker than buttons/combobox for clear visual distinction
+-- Input fields are recessed/inset elements, so darker background emphasizes depth
 
 M.SEARCH_INPUT_COLORS = {
-  bg = M.COLORS.BG_BASE,
-  bg_hover = M.COLORS.BG_HOVER,
-  bg_active = M.COLORS.BG_ACTIVE,
+  bg = hexrgb("#1A1A1AFF"),           -- Much darker background (input is recessed)
+  bg_hover = hexrgb("#1E1E1EFF"),     -- Slightly lighter on hover
+  bg_active = hexrgb("#212121FF"),    -- Slightly lighter when active/typing
   border_outer = M.COLORS.BORDER_OUTER,
-  border_inner = M.COLORS.BORDER_INNER,
-  border_hover = M.COLORS.BORDER_HOVER,
-  border_active = M.COLORS.BORDER_ACTIVE,
-  text = M.COLORS.TEXT_NORMAL,
+  border_inner = hexrgb("#282828ff"), -- Darker inner border for recessed look
+  border_hover = hexrgb("#353535FF"), -- Subtle highlight on hover
+  border_active = hexrgb("#404040FF"), -- More visible when active
+  text = hexrgb("#AAAAAAFF"),         -- More transparent/dimmed text
 }
 
 -- ============================================================================
