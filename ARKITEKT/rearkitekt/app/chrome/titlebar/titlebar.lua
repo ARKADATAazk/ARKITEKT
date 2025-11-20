@@ -314,7 +314,7 @@ function M.new(opts)
         if self.title_font then ImGui.PopFont(ctx) end
       end
 
-      -- Draw stylized "AZK" in center of titlebar with 15% transparency
+      -- Draw stylized "AZK" in center of titlebar with Orbitron Bold
       local azk_text = "AZK"
       local azk_font = self.azk_font or self.title_font  -- Use Orbitron or fallback to title font
       local azk_font_size = self.azk_font_size or self.title_font_size  -- Use exact font creation size
@@ -334,9 +334,9 @@ function M.new(opts)
       local azk_x = (win_w - azk_text_w) * 0.5
       local azk_y = (self.height - azk_text_h) * 0.5
 
-      -- Render AZK text with 15% opacity
+      -- Render AZK text with 30% opacity (more visible Orbitron style)
       if azk_font then ImGui.PushFont(ctx, azk_font, azk_font_size) end
-      ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, 0.15)
+      ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, 0.30)
       ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
       ImGui.SetCursorPos(ctx, azk_x, azk_y)
       ImGui.Text(ctx, azk_text)
