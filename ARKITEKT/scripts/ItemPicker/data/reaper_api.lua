@@ -215,13 +215,20 @@ function M.GetProjectSamples(settings, state)
         -- Get pool count for this source
         local pool_count = source_pool_counts[source_ptr] or 1
 
+        -- Get regions if enabled
+        local regions = nil
+        if settings.show_region_tags then
+          regions = M.GetRegionsForItem(item)
+        end
+
         table.insert(samples[filename], {
           item,
           item_name,
           track_muted = track_muted,
           item_muted = item_muted,
           uuid = get_item_uuid(item),
-          pool_count = pool_count
+          pool_count = pool_count,
+          regions = regions
         })
 
         -- Mark this source as collected
@@ -325,13 +332,20 @@ function M.GetProjectMIDI(settings, state)
         -- Get pool count for this MIDI data
         local pool_count = midi_pool_counts[midi] or 1
 
+        -- Get regions if enabled
+        local regions = nil
+        if settings.show_region_tags then
+          regions = M.GetRegionsForItem(item)
+        end
+
         local item_data = {
           item,
           item_name,
           track_muted = track_muted,
           item_muted = item_muted,
           uuid = get_item_uuid(item),
-          pool_count = pool_count
+          pool_count = pool_count,
+          regions = regions
         }
 
         if split_mode then
@@ -446,6 +460,32 @@ function M.InsertItemAtMousePos(item, state)
     state.dragging_keys = nil
     state.dragging_is_audio = nil
   end
+end
+
+function M.GetRegionsForItem(item)
+  -- Get item position and length
+  local item_start = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+  local item_length = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+  local item_end = item_start + item_length
+
+  -- Get all regions and check for overlaps
+  local regions = {}
+  local _, num_markers, num_regions = reaper.CountProjectMarkers(0)
+
+  for i = 0, num_markers + num_regions - 1 do
+    local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color =
+      reaper.EnumProjectMarkers3(0, i)
+
+    if isrgn then
+      -- Check if region overlaps with item
+      -- Regions overlap if: region_start < item_end AND region_end > item_start
+      if pos < item_end and rgnend > item_start then
+        table.insert(regions, name)
+      end
+    end
+  end
+
+  return regions
 end
 
 return M

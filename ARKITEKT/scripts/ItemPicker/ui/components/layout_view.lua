@@ -262,8 +262,22 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.set_setting('show_visualization_in_small_tiles', not show_viz_small)
   end
 
+  -- Show Region Tags checkbox on same line
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Viz in Small Tiles") + 18 + 8 + spacing
+  local show_region_tags_x = checkbox_x + prev_width
+  local show_region_tags = self.state.settings.show_region_tags
+  if show_region_tags == nil then show_region_tags = false end
+  _, clicked = Checkbox.draw(ctx, draw_list, show_region_tags_x, checkbox_y,
+    "Show Region Tags",
+    show_region_tags, checkbox_config, "show_region_tags")
+  if clicked then
+    self.state.set_setting('show_region_tags', not show_region_tags)
+    -- Trigger data reload when region tags are toggled
+    self.state.needs_reload = true
+  end
+
   -- Sort mode buttons (on same line after checkboxes)
-  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Viz in Small Tiles") + 18 + 8 + 40  -- Extra spacing
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Region Tags") + 18 + 8 + 40  -- Extra spacing
   local sort_button_x = checkbox_x + prev_width
 
   -- Draw sort mode label and buttons

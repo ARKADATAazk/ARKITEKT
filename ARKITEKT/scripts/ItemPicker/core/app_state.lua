@@ -32,6 +32,7 @@ M.settings = {
   show_visualization_in_small_tiles = false,  -- Show waveform/MIDI in compact display mode (toggle)
   enable_tile_fx = true,  -- Enable TileFX rendering (hover/selection effects) - disable for performance testing
   layout_mode = "vertical",  -- Options: "vertical" (top/bottom), "horizontal" (left/right)
+  show_region_tags = false,  -- Show region tags on item tiles (toggle)
 }
 
 -- Runtime state (volatile)

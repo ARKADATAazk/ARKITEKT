@@ -249,6 +249,29 @@ M.TILE_RENDER = {
   },
 }
 
+-- Region tags
+M.REGION_TAGS = {
+  enabled = false,  -- Toggle for showing region tags (also controls processing)
+
+  -- Chip styling
+  chip = {
+    height = 16,
+    padding_x = 5,
+    padding_y = 2,
+    margin_x = 3,         -- Spacing between chips
+    margin_top = 4,       -- Margin from top of content area
+    margin_left = 4,      -- Margin from left edge
+    rounding = 2,
+    bg_color = hexrgb("#FFFFFF"),  -- White background
+    text_color = hexrgb("#000000"), -- Black text
+    alpha = 0xDD,         -- Slightly transparent
+  },
+
+  -- Behavior
+  min_tile_height = 50,  -- Only show on tiles taller than this (not in compact mode)
+  max_chips_per_tile = 3,  -- Maximum number of region chips to show per tile
+}
+
 function M.validate()
   assert(M.TILE.MIN_WIDTH <= M.TILE.DEFAULT_WIDTH, "MIN_WIDTH must be <= DEFAULT_WIDTH")
   assert(M.TILE.DEFAULT_WIDTH <= M.TILE.MAX_WIDTH, "DEFAULT_WIDTH must be <= MAX_WIDTH")

@@ -397,6 +397,46 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite)
   end
 
+  -- Render region tags (only on larger tiles, not compact mode)
+  if item_data.regions and #item_data.regions > 0 and
+     not is_small_tile and scaled_h >= config.REGION_TAGS.min_tile_height and
+     cascade_factor > 0.5 then
+    local chip_cfg = config.REGION_TAGS.chip
+    local chip_x = scaled_x1 + chip_cfg.margin_left
+    local chip_y = scaled_y1 + header_height + chip_cfg.margin_top
+
+    -- Limit number of chips displayed
+    local max_chips = config.REGION_TAGS.max_chips_per_tile
+    local num_chips = math.min(#item_data.regions, max_chips)
+
+    for i = 1, num_chips do
+      local region_name = item_data.regions[i]
+      local text_w, text_h = ImGui.CalcTextSize(ctx, region_name)
+      local chip_w = text_w + chip_cfg.padding_x * 2
+      local chip_h = chip_cfg.height
+
+      -- Check if chip fits within tile width
+      if chip_x + chip_w > scaled_x2 - chip_cfg.margin_left then
+        break  -- Stop rendering if we run out of space
+      end
+
+      -- Chip background with alpha
+      local bg_alpha = math.floor(chip_cfg.alpha * combined_alpha)
+      local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha
+      ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, chip_cfg.rounding)
+
+      -- Chip text
+      local text_alpha_val = math.floor(combined_alpha * 255)
+      local text_color = (chip_cfg.text_color & 0xFFFFFF00) | text_alpha_val
+      local text_x = chip_x + chip_cfg.padding_x
+      local text_y = chip_y + (chip_h - text_h) / 2
+      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, region_name)
+
+      -- Move to next chip position
+      chip_x = chip_x + chip_w + chip_cfg.margin_x
+    end
+  end
+
   -- Render pool count badge (bottom right) if more than 1 instance
   -- Hide in small tile mode to prioritize the name display
   local should_show_pool_count = item_data.pool_count and item_data.pool_count > 1 and cascade_factor > 0.5
