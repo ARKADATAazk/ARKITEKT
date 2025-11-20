@@ -45,7 +45,11 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
 
   -- Create child window for container (renders above scrim)
   ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
+
+  -- Use built-in WindowPadding instead of manual cursor positioning
+  -- This ensures all ImGui elements respect the padding automatically
+  local padding = config.padding
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, r)
 
   -- Dark background color for child
@@ -64,12 +68,9 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
   ImGui.PopStyleColor(ctx, 1)
   ImGui.PopStyleVar(ctx, 2)
 
-  -- Render content with padding
-  local padding = config.padding
+  -- Content dimensions account for padding (applied via WindowPadding)
   local content_w = w - padding * 2
   local content_h = h - padding * 2
-
-  ImGui.SetCursorPos(ctx, padding, padding)
 
   if content_fn then
     content_fn(ctx, content_w, content_h, w, h, alpha, padding)

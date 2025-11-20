@@ -81,8 +81,8 @@ function BatchRenameModal:close()
 end
 
 -- Draw modal content (shared between popup and overlay modes)
-function BatchRenameModal:draw_content(ctx, count, is_overlay_mode)
-  local modal_w = 520
+function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
+  local modal_w = content_w or 520  -- Use provided content_w or fallback to 520
 
   -- Title
   ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), string.format("Rename %d item%s", count, count > 1 and "s" or ""))
@@ -94,7 +94,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode)
   ImGui.Text(ctx, "Rename Pattern:")
   ImGui.Dummy(ctx, 0, 4)
 
-  ImGui.SetNextItemWidth(ctx, -1)
+  ImGui.SetNextItemWidth(ctx, modal_w)
 
   if self.focus_input then
     ImGui.SetKeyboardFocusHere(ctx)
@@ -268,7 +268,7 @@ function BatchRenameModal:draw(ctx, item_count, window)
         end,
         render = function(ctx, alpha, bounds)
           Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a, padding)
-            local should_close = self:draw_content(ctx, count, true)
+            local should_close = self:draw_content(ctx, count, true, content_w)
 
             if should_close then
               window.overlay:pop('batch-rename-modal')
