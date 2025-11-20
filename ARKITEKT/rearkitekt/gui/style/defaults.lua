@@ -295,6 +295,11 @@ M.BUTTON = {
   text_color = M.BUTTON_COLORS.text,
   text_hover_color = M.BUTTON_COLORS.text_hover,
   text_active_color = M.BUTTON_COLORS.text_active,
+  -- Disabled state colors
+  bg_disabled_color = hexrgb("#1a1a1a"),  -- Darker, dimmed background
+  border_inner_disabled_color = hexrgb("#202020"),  -- Very dark inner border
+  border_outer_disabled_color = hexrgb("#000000DD"),  -- Same outer border as normal
+  text_disabled_color = hexrgb("#555555"),  -- Dimmed text
   padding_x = 10,
   padding_y = 6,
   rounding = 0,

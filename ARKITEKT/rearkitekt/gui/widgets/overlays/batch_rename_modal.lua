@@ -8,6 +8,8 @@ local Colors = require('rearkitekt.core.colors')
 local Style = require('rearkitekt.gui.style.defaults')
 local Container = require('rearkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('rearkitekt.gui.widgets.tools.color_picker_window')
+local Button = require('rearkitekt.gui.widgets.primitives.button')
+local Chip = require('rearkitekt.gui.widgets.data.chip')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -83,6 +85,7 @@ end
 -- Draw modal content (shared between popup and overlay modes)
 function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   local modal_w = content_w or 520  -- Use provided content_w or fallback to 520
+  local dl = ImGui.GetWindowDrawList(ctx)
 
   -- Title
   ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), string.format("Rename %d item%s", count, count > 1 and "s" or ""))
@@ -90,11 +93,24 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
+  -- ========================================================================
+  -- SECTION 1: Pattern input and color picker side by side
+  -- ========================================================================
+
+  local input_width = modal_w * 0.58  -- ~58% for input field
+  local picker_size = 195
+  local gap = 12  -- Gap between input and picker
+
   -- Pattern input label
   ImGui.Text(ctx, "Rename Pattern:")
   ImGui.Dummy(ctx, 0, 4)
 
-  ImGui.SetNextItemWidth(ctx, modal_w)
+  -- Save cursor position for side-by-side layout
+  local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
+
+  -- LEFT: Pattern input field
+  ImGui.SetCursorScreenPos(ctx, start_x, start_y)
+  ImGui.SetNextItemWidth(ctx, input_width)
 
   if self.focus_input then
     ImGui.SetKeyboardFocusHere(ctx)
@@ -123,48 +139,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
     self.preview_items = generate_preview(new_pattern, count)
   end
 
-  ImGui.Dummy(ctx, 0, 8)
-
-  -- Wildcard help
-  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards:")
-  ImGui.Dummy(ctx, 0, 4)
-  ImGui.Indent(ctx, 16)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 6)
-  ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$n  —  Sequential number (1, 2, 3...)")
-  ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$i  —  Index (0, 1, 2...)")
-  ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$N  —  Padded number (001, 002, 003...)")
-  ImGui.PopStyleVar(ctx, 1)
-  ImGui.Unindent(ctx, 16)
-
-  ImGui.Dummy(ctx, 0, 10)
-  ImGui.Separator(ctx)
-  ImGui.Dummy(ctx, 0, 10)
-
-  -- Preview
-  if #self.preview_items > 0 then
-    ImGui.TextColored(ctx, hexrgb("#999999FF"), "Preview:")
-    ImGui.Dummy(ctx, 0, 4)
-    ImGui.Indent(ctx, 16)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 4)
-    for _, name in ipairs(self.preview_items) do
-      ImGui.TextColored(ctx, hexrgb("#DDDDDDFF"), name)
-    end
-    ImGui.PopStyleVar(ctx, 1)
-    ImGui.Unindent(ctx, 16)
-  end
-
-  ImGui.Dummy(ctx, 0, 10)
-  ImGui.Separator(ctx)
-  ImGui.Dummy(ctx, 0, 10)
-
-  -- Color picker section
+  -- RIGHT: Color picker label and widget
+  ImGui.SetCursorScreenPos(ctx, start_x + input_width + gap, start_y)
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Color:")
-  ImGui.Dummy(ctx, 0, 4)
 
-  -- Center the color picker
-  local picker_size = 195
-  local picker_x = (modal_w - picker_size) * 0.5
-  ImGui.SetCursorPosX(ctx, picker_x)
+  local picker_y = start_y + ImGui.GetTextLineHeight(ctx) + 4
+  ImGui.SetCursorScreenPos(ctx, start_x + input_width + gap, picker_y)
 
   -- Initialize color picker only once per modal open
   if not self.picker_initialized then
@@ -180,69 +160,188 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
     end
   })
 
-  -- Spacing before buttons
+  -- Move cursor below the taller element (color picker)
+  local input_height = 28  -- Approximate input field height
+  local next_y = start_y + math.max(input_height, picker_size + ImGui.GetTextLineHeight(ctx) + 4)
+  ImGui.SetCursorScreenPos(ctx, start_x, next_y)
+
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- ========================================================================
+  -- SECTION 2: Wildcard chips (clickable)
+  -- ========================================================================
+
+  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards:")
+  ImGui.Dummy(ctx, 0, 4)
+
+  local chip_cursor_x, chip_cursor_y = ImGui.GetCursorScreenPos(ctx)
+  local wildcard_chips = {
+    {label = "$n", desc = "Sequential (1, 2, 3...)"},
+    {label = "$i", desc = "Index (0, 1, 2...)"},
+    {label = "$N", desc = "Padded (001, 002, 003...)"},
+  }
+
+  local chip_height = 24
+  local chip_spacing = 8
+  local chip_x = chip_cursor_x
+
+  for i, chip_data in ipairs(wildcard_chips) do
+    local chip_w = ImGui.CalcTextSize(ctx, chip_data.label) + 20
+
+    local clicked = Chip.draw(ctx, dl, chip_x, chip_cursor_y, chip_w, chip_height, {
+      label = chip_data.label,
+      bg_color = hexrgb("#2a2a2a"),
+      text_color = hexrgb("#BBBBBB"),
+      border_color = hexrgb("#404040"),
+      hover_bg = hexrgb("#353535"),
+      rounding = 4,
+      is_interactive = true,
+    })
+
+    if clicked then
+      self.pattern = self.pattern .. chip_data.label
+      self.preview_items = generate_preview(self.pattern, count)
+    end
+
+    chip_x = chip_x + chip_w + chip_spacing
+  end
+
+  ImGui.SetCursorScreenPos(ctx, chip_cursor_x, chip_cursor_y + chip_height)
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- ========================================================================
+  -- SECTION 3: Common name chips (clickable)
+  -- ========================================================================
+
+  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Common Names:")
+  ImGui.Dummy(ctx, 0, 4)
+
+  local name_cursor_x, name_cursor_y = ImGui.GetCursorScreenPos(ctx)
+  local common_names = {"combat", "ambience", "tension"}
+
+  local name_chip_x = name_cursor_x
+
+  for i, name in ipairs(common_names) do
+    local name_w = ImGui.CalcTextSize(ctx, name) + 20
+
+    local clicked = Chip.draw(ctx, dl, name_chip_x, name_cursor_y, name_w, chip_height, {
+      label = name,
+      bg_color = hexrgb("#2a3a4a"),
+      text_color = hexrgb("#AABBCC"),
+      border_color = hexrgb("#405060"),
+      hover_bg = hexrgb("#354555"),
+      rounding = 4,
+      is_interactive = true,
+    })
+
+    if clicked then
+      -- Append the name (with separator if pattern is not empty)
+      if self.pattern ~= "" and not self.pattern:match("%s$") then
+        self.pattern = self.pattern .. "_"
+      end
+      self.pattern = self.pattern .. name
+      self.preview_items = generate_preview(self.pattern, count)
+    end
+
+    name_chip_x = name_chip_x + name_w + chip_spacing
+  end
+
+  ImGui.SetCursorScreenPos(ctx, name_cursor_x, name_cursor_y + chip_height)
+  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 0, 10)
+
+  -- ========================================================================
+  -- SECTION 4: Preview
+  -- ========================================================================
+
+  if #self.preview_items > 0 then
+    ImGui.TextColored(ctx, hexrgb("#999999FF"), "Preview:")
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Indent(ctx, 16)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 4)
+    for _, name in ipairs(self.preview_items) do
+      ImGui.TextColored(ctx, hexrgb("#DDDDDDFF"), name)
+    end
+    ImGui.PopStyleVar(ctx, 1)
+    ImGui.Unindent(ctx, 16)
+  end
+
   ImGui.Dummy(ctx, 0, 10)
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 0, 8)
 
-  -- Buttons (4 buttons: Cancel, Rename, Rename & Recolor, Recolor)
+  -- ========================================================================
+  -- SECTION 5: Action buttons using primitives
+  -- ========================================================================
+
   local button_w = 110
+  local button_h = 28
   local spacing = 8
   local total_w = button_w * 4 + spacing * 3
-  ImGui.SetCursorPosX(ctx, (modal_w - total_w) * 0.5)
+  local button_start_x = start_x + (modal_w - total_w) * 0.5
+  local button_y, _ = ImGui.GetCursorScreenPos(ctx)
+
+  local should_close = false
+  local can_rename = self.pattern ~= ""
 
   -- Cancel button
-  local should_close = false
-  if ImGui.Button(ctx, "Cancel", button_w, 28) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+  local cancel_clicked = Button.draw(ctx, dl, button_start_x, button_y, button_w, button_h, {
+    id = "cancel_btn",
+    label = "Cancel",
+    height = button_h,
+  }, "batch_rename_cancel")
+
+  if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
     should_close = true
   end
 
-  ImGui.SameLine(ctx, 0, spacing)
+  -- Rename button (disabled when no pattern)
+  local rename_clicked = Button.draw(ctx, dl, button_start_x + button_w + spacing, button_y, button_w, button_h, {
+    id = "rename_btn",
+    label = "Rename",
+    height = button_h,
+    is_disabled = not can_rename,
+  }, "batch_rename_rename")
 
-  -- Rename button (needs pattern)
-  local can_rename = self.pattern ~= ""
-  if not can_rename then
-    ImGui.BeginDisabled(ctx)
-  end
-
-  if ImGui.Button(ctx, "Rename", button_w, 28) or (can_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
+  if rename_clicked or (can_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
     if self.on_confirm then
       self.on_confirm(self.pattern)
     end
     should_close = true
   end
 
-  if not can_rename then
-    ImGui.EndDisabled(ctx)
-  end
+  -- Rename & Recolor button (disabled when no pattern)
+  local rename_recolor_clicked = Button.draw(ctx, dl, button_start_x + (button_w + spacing) * 2, button_y, button_w, button_h, {
+    id = "rename_recolor_btn",
+    label = "Rename & Recolor",
+    height = button_h,
+    is_disabled = not can_rename,
+  }, "batch_rename_both")
 
-  ImGui.SameLine(ctx, 0, spacing)
-
-  -- Rename and Recolor button (needs pattern)
-  if not can_rename then
-    ImGui.BeginDisabled(ctx)
-  end
-
-  if ImGui.Button(ctx, "Rename & Recolor", button_w, 28) then
+  if rename_recolor_clicked then
     if self.on_rename_and_recolor then
       self.on_rename_and_recolor(self.pattern, self.selected_color)
     end
     should_close = true
   end
 
-  if not can_rename then
-    ImGui.EndDisabled(ctx)
-  end
-
-  ImGui.SameLine(ctx, 0, spacing)
-
   -- Recolor button (always enabled)
-  if ImGui.Button(ctx, "Recolor", button_w, 28) then
+  local recolor_clicked = Button.draw(ctx, dl, button_start_x + (button_w + spacing) * 3, button_y, button_w, button_h, {
+    id = "recolor_btn",
+    label = "Recolor",
+    height = button_h,
+  }, "batch_rename_recolor")
+
+  if recolor_clicked then
     if self.on_recolor then
       self.on_recolor(self.selected_color)
     end
     should_close = true
   end
+
+  -- Advance cursor past buttons
+  ImGui.SetCursorScreenPos(ctx, button_start_x, button_y + button_h)
 
   return should_close
 end
