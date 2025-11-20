@@ -295,7 +295,8 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
     if self.active_grid and self.active_grid.selection then
       selected_count = self.active_grid.selection:count()
     end
-    BatchRenameModal.draw(ctx, selected_count)
+    -- Pass window object to enable overlay mode
+    BatchRenameModal.draw(ctx, selected_count, window)
   end
 
   -- Modal dialog for playlist renaming removed - now using inline editing

@@ -6,25 +6,14 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Style = require('rearkitekt.gui.style.defaults')
+local Container = require('rearkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('rearkitekt.gui.widgets.tools.color_picker_window')
 local hexrgb = Colors.hexrgb
 
 local M = {}
 
--- Modal state
-local state = {
-  is_open = false,
-  pattern = "",
-  preview_items = {},
-  on_confirm = nil,
-  on_rename_and_recolor = nil,
-  on_recolor = nil,
-  focus_input = false,
-  item_count = 0,
-  popup_opened = false,
-  selected_color = 0xFF5733FF,  -- Default color (RGBA)
-  picker_initialized = false,    -- Track if color picker has been initialized
-}
+local BatchRenameModal = {}
+BatchRenameModal.__index = BatchRenameModal
 
 -- Wildcard pattern processing
 local function apply_pattern(pattern, index)
@@ -50,44 +39,259 @@ local function generate_preview(pattern, count)
   return previews
 end
 
+-- Create new batch rename modal instance
+function M.new()
+  return setmetatable({
+    is_open = false,
+    pattern = "",
+    preview_items = {},
+    on_confirm = nil,
+    on_rename_and_recolor = nil,
+    on_recolor = nil,
+    focus_input = false,
+    item_count = 0,
+    selected_color = 0xFF5733FF,  -- Default color (RGBA)
+    picker_initialized = false,
+  }, BatchRenameModal)
+end
+
 -- Open the batch rename modal
-function M.open(item_count, on_confirm_callback, opts)
+function BatchRenameModal:open(item_count, on_confirm_callback, opts)
   opts = opts or {}
-  state.is_open = true
-  state.pattern = ""
-  state.preview_items = {}
-  state.on_confirm = on_confirm_callback
-  state.on_rename_and_recolor = opts.on_rename_and_recolor
-  state.on_recolor = opts.on_recolor
-  state.selected_color = opts.initial_color or 0xFF5733FF
-  state.focus_input = true
-  state.item_count = item_count
-  state.popup_opened = false
-  state.picker_initialized = false  -- Reset picker initialization flag
-  -- Note: ImGui.OpenPopup will be called in draw() when we have the context
+  self.is_open = true
+  self.pattern = ""
+  self.preview_items = {}
+  self.on_confirm = on_confirm_callback
+  self.on_rename_and_recolor = opts.on_rename_and_recolor
+  self.on_recolor = opts.on_recolor
+  self.selected_color = opts.initial_color or 0xFF5733FF
+  self.focus_input = true
+  self.item_count = item_count
+  self.picker_initialized = false
 end
 
--- Check if modal is open
-function M.is_open()
-  return state.is_open
+-- Check if modal should be shown
+function BatchRenameModal:should_show()
+  return self.is_open
 end
 
--- Draw the modal
-function M.draw(ctx, item_count)
-  if not state.is_open then return false end
+-- Close the modal
+function BatchRenameModal:close()
+  self.is_open = false
+end
 
-  -- Open popup once when modal is first opened
-  if not state.popup_opened then
-    ImGui.OpenPopup(ctx, "Batch Rename##batch_rename_modal")
-    state.popup_opened = true
+-- Draw modal content (shared between popup and overlay modes)
+function BatchRenameModal:draw_content(ctx, count, is_overlay_mode)
+  local modal_w = 520
+
+  -- Title
+  ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), string.format("Rename %d item%s", count, count > 1 and "s" or ""))
+  ImGui.Spacing(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
+  -- Pattern input label
+  ImGui.Text(ctx, "Rename Pattern:")
+  ImGui.Dummy(ctx, 0, 4)
+
+  ImGui.SetNextItemWidth(ctx, -1)
+
+  if self.focus_input then
+    ImGui.SetKeyboardFocusHere(ctx)
+    self.focus_input = false
   end
 
-  -- Use item_count from state if not provided as parameter
-  local count = item_count or state.item_count
+  -- Apply input field styling
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Style.SEARCH_INPUT_COLORS.bg)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Style.SEARCH_INPUT_COLORS.bg_hover)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Style.SEARCH_INPUT_COLORS.bg_active)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Style.SEARCH_INPUT_COLORS.border_outer)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, Style.SEARCH_INPUT_COLORS.text)
+
+  local changed, new_pattern = ImGui.InputTextWithHint(
+    ctx,
+    "##pattern_input",
+    "combat$n",
+    self.pattern,
+    ImGui.InputTextFlags_None
+  )
+
+  ImGui.PopStyleColor(ctx, 5)
+
+  if changed then
+    self.pattern = new_pattern
+    self.preview_items = generate_preview(new_pattern, count)
+  end
+
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- Wildcard help
+  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards:")
+  ImGui.Dummy(ctx, 0, 4)
+  ImGui.Indent(ctx, 16)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 6)
+  ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$n  —  Sequential number (1, 2, 3...)")
+  ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$i  —  Index (0, 1, 2...)")
+  ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$N  —  Padded number (001, 002, 003...)")
+  ImGui.PopStyleVar(ctx, 1)
+  ImGui.Unindent(ctx, 16)
+
+  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 0, 10)
+
+  -- Preview
+  if #self.preview_items > 0 then
+    ImGui.TextColored(ctx, hexrgb("#999999FF"), "Preview:")
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Indent(ctx, 16)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 4)
+    for _, name in ipairs(self.preview_items) do
+      ImGui.TextColored(ctx, hexrgb("#DDDDDDFF"), name)
+    end
+    ImGui.PopStyleVar(ctx, 1)
+    ImGui.Unindent(ctx, 16)
+  end
+
+  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 0, 10)
+
+  -- Color picker section
+  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Color:")
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Center the color picker
+  local picker_size = 195
+  local picker_x = (modal_w - picker_size) * 0.5
+  ImGui.SetCursorPosX(ctx, picker_x)
+
+  -- Initialize color picker only once per modal open
+  if not self.picker_initialized then
+    ColorPickerWindow.show_inline("batch_rename_picker", self.selected_color)
+    self.picker_initialized = true
+  end
+
+  -- Render the inline color picker
+  local color_changed = ColorPickerWindow.render_inline(ctx, "batch_rename_picker", {
+    size = picker_size,
+    on_change = function(color)
+      self.selected_color = color
+    end
+  })
+
+  -- Spacing before buttons
+  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- Buttons (4 buttons: Cancel, Rename, Rename & Recolor, Recolor)
+  local button_w = 110
+  local spacing = 8
+  local total_w = button_w * 4 + spacing * 3
+  ImGui.SetCursorPosX(ctx, (modal_w - total_w) * 0.5)
+
+  -- Cancel button
+  local should_close = false
+  if ImGui.Button(ctx, "Cancel", button_w, 28) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+    should_close = true
+  end
+
+  ImGui.SameLine(ctx, 0, spacing)
+
+  -- Rename button (needs pattern)
+  local can_rename = self.pattern ~= ""
+  if not can_rename then
+    ImGui.BeginDisabled(ctx)
+  end
+
+  if ImGui.Button(ctx, "Rename", button_w, 28) or (can_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
+    if self.on_confirm then
+      self.on_confirm(self.pattern)
+    end
+    should_close = true
+  end
+
+  if not can_rename then
+    ImGui.EndDisabled(ctx)
+  end
+
+  ImGui.SameLine(ctx, 0, spacing)
+
+  -- Rename and Recolor button (needs pattern)
+  if not can_rename then
+    ImGui.BeginDisabled(ctx)
+  end
+
+  if ImGui.Button(ctx, "Rename & Recolor", button_w, 28) then
+    if self.on_rename_and_recolor then
+      self.on_rename_and_recolor(self.pattern, self.selected_color)
+    end
+    should_close = true
+  end
+
+  if not can_rename then
+    ImGui.EndDisabled(ctx)
+  end
+
+  ImGui.SameLine(ctx, 0, spacing)
+
+  -- Recolor button (always enabled)
+  if ImGui.Button(ctx, "Recolor", button_w, 28) then
+    if self.on_recolor then
+      self.on_recolor(self.selected_color)
+    end
+    should_close = true
+  end
+
+  return should_close
+end
+
+-- Draw the modal (supports both popup and overlay modes)
+function BatchRenameModal:draw(ctx, item_count, window)
+  if not self.is_open then return false end
+
+  local count = item_count or self.item_count
+
+  -- Use overlay mode if window.overlay is available
+  if window and window.overlay then
+    if not self.overlay_pushed then
+      self.overlay_pushed = true
+
+      window.overlay:push({
+        id = 'batch-rename-modal',
+        close_on_scrim = true,
+        esc_to_close = true,
+        on_close = function()
+          self:close()
+          self.overlay_pushed = false
+        end,
+        render = function(ctx, alpha, bounds)
+          Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a, padding)
+            local should_close = self:draw_content(ctx, count, true)
+
+            if should_close then
+              window.overlay:pop('batch-rename-modal')
+              self:close()
+              self.overlay_pushed = false
+            end
+          end, { width = 0.45, height = 0.75 })
+        end
+      })
+    end
+
+    return self.is_open
+  end
+
+  -- Fallback to BeginPopupModal when overlay is not available
+  if not self.popup_opened then
+    ImGui.OpenPopup(ctx, "Batch Rename##batch_rename_modal")
+    self.popup_opened = true
+  end
 
   -- Center modal on screen
   local viewport_w, viewport_h = ImGui.Viewport_GetSize(ImGui.GetWindowViewport(ctx))
-  local modal_w, modal_h = 520, 600  -- Increased height for color picker
+  local modal_w, modal_h = 520, 600
   ImGui.SetNextWindowPos(ctx, (viewport_w - modal_w) * 0.5, (viewport_h - modal_h) * 0.5, ImGui.Cond_Appearing)
   ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
 
@@ -106,166 +310,11 @@ function M.draw(ctx, item_count)
   local visible, open = ImGui.BeginPopupModal(ctx, "Batch Rename##batch_rename_modal", true, flags)
 
   if visible then
-    -- Title
-    ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), string.format("Rename %d item%s", count, count > 1 and "s" or ""))
-    ImGui.Spacing(ctx)
-    ImGui.Separator(ctx)
-    ImGui.Spacing(ctx)
+    local should_close = self:draw_content(ctx, count, false)
 
-    -- Pattern input label
-    ImGui.Text(ctx, "Rename Pattern:")
-    ImGui.Dummy(ctx, 0, 4)
-
-    ImGui.SetNextItemWidth(ctx, -1)
-
-    if state.focus_input then
-      ImGui.SetKeyboardFocusHere(ctx)
-      state.focus_input = false
-    end
-
-    -- Apply input field styling
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Style.SEARCH_INPUT_COLORS.bg)
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Style.SEARCH_INPUT_COLORS.bg_hover)
-    ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Style.SEARCH_INPUT_COLORS.bg_active)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Border, Style.SEARCH_INPUT_COLORS.border_outer)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Style.SEARCH_INPUT_COLORS.text)
-
-    local changed, new_pattern = ImGui.InputTextWithHint(
-      ctx,
-      "##pattern_input",
-      "combat$n",
-      state.pattern,
-      ImGui.InputTextFlags_None
-    )
-
-    ImGui.PopStyleColor(ctx, 5)
-
-    if changed then
-      state.pattern = new_pattern
-      state.preview_items = generate_preview(new_pattern, count)
-    end
-
-    ImGui.Dummy(ctx, 0, 8)
-
-    -- Wildcard help
-    ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards:")
-    ImGui.Dummy(ctx, 0, 4)
-    ImGui.Indent(ctx, 16)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 6)
-    ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$n  —  Sequential number (1, 2, 3...)")
-    ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$i  —  Index (0, 1, 2...)")
-    ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$N  —  Padded number (001, 002, 003...)")
-    ImGui.PopStyleVar(ctx, 1)
-    ImGui.Unindent(ctx, 16)
-
-    ImGui.Dummy(ctx, 0, 10)
-    ImGui.Separator(ctx)
-    ImGui.Dummy(ctx, 0, 10)
-
-    -- Preview
-    if #state.preview_items > 0 then
-      ImGui.TextColored(ctx, hexrgb("#999999FF"), "Preview:")
-      ImGui.Dummy(ctx, 0, 4)
-      ImGui.Indent(ctx, 16)
-      ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 4)
-      for _, name in ipairs(state.preview_items) do
-        ImGui.TextColored(ctx, hexrgb("#DDDDDDFF"), name)
-      end
-      ImGui.PopStyleVar(ctx, 1)
-      ImGui.Unindent(ctx, 16)
-    end
-
-    ImGui.Dummy(ctx, 0, 10)
-    ImGui.Separator(ctx)
-    ImGui.Dummy(ctx, 0, 10)
-
-    -- Color picker section
-    ImGui.TextColored(ctx, hexrgb("#999999FF"), "Color:")
-    ImGui.Dummy(ctx, 0, 4)
-
-    -- Center the color picker
-    local picker_size = 195
-    local picker_x = (modal_w - picker_size) * 0.5
-    ImGui.SetCursorPosX(ctx, picker_x)
-
-    -- Initialize color picker only once per modal open
-    if not state.picker_initialized then
-      ColorPickerWindow.show_inline("batch_rename_picker", state.selected_color)
-      state.picker_initialized = true
-    end
-
-    -- Render the inline color picker
-    local color_changed = ColorPickerWindow.render_inline(ctx, "batch_rename_picker", {
-      size = picker_size,
-      on_change = function(color)
-        state.selected_color = color
-      end
-    })
-
-    -- Spacing before buttons
-    ImGui.Dummy(ctx, 0, 10)
-    ImGui.Separator(ctx)
-    ImGui.Dummy(ctx, 0, 8)
-
-    -- Buttons (4 buttons: Cancel, Rename, Rename & Recolor, Recolor)
-    local button_w = 110
-    local spacing = 8
-    local total_w = button_w * 4 + spacing * 3
-    ImGui.SetCursorPosX(ctx, (modal_w - total_w) * 0.5)
-
-    -- Cancel button
-    if ImGui.Button(ctx, "Cancel", button_w, 28) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-      state.is_open = false
-      ImGui.CloseCurrentPopup(ctx)
-    end
-
-    ImGui.SameLine(ctx, 0, spacing)
-
-    -- Rename button (needs pattern)
-    local can_rename = state.pattern ~= ""
-    if not can_rename then
-      ImGui.BeginDisabled(ctx)
-    end
-
-    if ImGui.Button(ctx, "Rename", button_w, 28) or (can_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
-      if state.on_confirm then
-        state.on_confirm(state.pattern)
-      end
-      state.is_open = false
-      ImGui.CloseCurrentPopup(ctx)
-    end
-
-    if not can_rename then
-      ImGui.EndDisabled(ctx)
-    end
-
-    ImGui.SameLine(ctx, 0, spacing)
-
-    -- Rename and Recolor button (needs pattern)
-    if not can_rename then
-      ImGui.BeginDisabled(ctx)
-    end
-
-    if ImGui.Button(ctx, "Rename & Recolor", button_w, 28) then
-      if state.on_rename_and_recolor then
-        state.on_rename_and_recolor(state.pattern, state.selected_color)
-      end
-      state.is_open = false
-      ImGui.CloseCurrentPopup(ctx)
-    end
-
-    if not can_rename then
-      ImGui.EndDisabled(ctx)
-    end
-
-    ImGui.SameLine(ctx, 0, spacing)
-
-    -- Recolor button (always enabled)
-    if ImGui.Button(ctx, "Recolor", button_w, 28) then
-      if state.on_recolor then
-        state.on_recolor(state.selected_color)
-      end
-      state.is_open = false
+    if should_close then
+      self:close()
+      self.popup_opened = false
       ImGui.CloseCurrentPopup(ctx)
     end
 
@@ -276,10 +325,11 @@ function M.draw(ctx, item_count)
   ImGui.PopStyleColor(ctx, 2)
 
   if not open then
-    state.is_open = false
+    self:close()
+    self.popup_opened = false
   end
 
-  return state.is_open
+  return self.is_open
 end
 
 -- Apply pattern to a list of items (returns new names in order)
@@ -289,6 +339,26 @@ function M.apply_pattern_to_items(pattern, count)
     results[i] = apply_pattern(pattern, i)
   end
   return results
+end
+
+-- Legacy API compatibility (singleton pattern for backward compatibility)
+local _legacy_instance = nil
+
+function M.open(item_count, on_confirm_callback, opts)
+  if not _legacy_instance then
+    _legacy_instance = M.new()
+  end
+  _legacy_instance:open(item_count, on_confirm_callback, opts)
+end
+
+function M.is_open()
+  if not _legacy_instance then return false end
+  return _legacy_instance:should_show()
+end
+
+function M.draw(ctx, item_count, window)
+  if not _legacy_instance then return false end
+  return _legacy_instance:draw(ctx, item_count, window)
 end
 
 return M
