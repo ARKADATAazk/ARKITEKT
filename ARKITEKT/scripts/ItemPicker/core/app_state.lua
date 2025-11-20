@@ -162,6 +162,11 @@ end
 function M.set_search_filter(filter)
   M.settings.search_string = filter or ""
   M.persist_settings()
+  -- Invalidate grid cache to refresh with new search filter
+  if M.runtime_cache then
+    M.runtime_cache.audio_filter_hash = nil
+    M.runtime_cache.midi_filter_hash = nil
+  end
 end
 
 -- Tile size management
