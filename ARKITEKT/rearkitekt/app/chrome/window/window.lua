@@ -5,6 +5,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local Config = require('rearkitekt.core.config')
 local Constants = require('rearkitekt.app.init.constants')
 
 local M = {}
@@ -82,32 +83,45 @@ local function create_alpha_tracker(duration)
 end
 
 function M.new(opts)
-  opts = opts or {}
+  -- Merge user opts with framework defaults
+  local config = Config.deepMerge(Constants.WINDOW, opts or {})
 
-  local fullscreen_opts = opts.fullscreen or Constants.WINDOW.fullscreen
-  local is_fullscreen = fullscreen_opts.enabled or false
+  -- Deep merge fullscreen config
+  local fullscreen_config = Config.deepMerge(Constants.WINDOW.fullscreen, config.fullscreen or {})
+  local is_fullscreen = fullscreen_config.enabled or false
+
+  -- Apply typography constants for font sizes if not explicitly provided
+  if not opts or not opts.title_font_size then
+    config.title_font_size = Constants.TYPOGRAPHY.MEDIUM
+  end
+  if not opts or not opts.version_font_size then
+    config.version_font_size = Constants.TYPOGRAPHY.DEFAULT
+  end
+  if not opts or not opts.titlebar_pad_v then
+    config.titlebar_pad_v = Constants.TITLEBAR.pad_v
+  end
 
   local win = {
-    settings        = opts.settings,
-    title           = opts.title or Constants.WINDOW.title,
-    version         = opts.version,
-    flags           = opts.flags or WF_None,
+    settings        = config.settings,
+    title           = config.title,
+    version         = config.version,
+    flags           = config.flags or WF_None,
 
-    content_padding = opts.content_padding or Constants.WINDOW.content_padding,
-    titlebar_pad_h  = opts.titlebar_pad_h,
-    titlebar_pad_v  = opts.titlebar_pad_v or Constants.TITLEBAR.pad_v,
-    title_font      = opts.title_font,
-    title_font_size = opts.title_font_size or Constants.TYPOGRAPHY.MEDIUM,
-    version_font    = opts.version_font,
-    version_font_size = opts.version_font_size or Constants.TYPOGRAPHY.DEFAULT,
-    version_color   = opts.version_color,
+    content_padding = config.content_padding,
+    titlebar_pad_h  = config.titlebar_pad_h,
+    titlebar_pad_v  = config.titlebar_pad_v,
+    title_font      = config.title_font,
+    title_font_size = config.title_font_size,
+    version_font    = config.version_font,
+    version_font_size = config.version_font_size,
+    version_color   = config.version_color,
 
-    initial_pos     = opts.initial_pos  or Constants.WINDOW.initial_pos,
-    initial_size    = opts.initial_size or Constants.WINDOW.initial_size,
-    min_size        = opts.min_size     or Constants.WINDOW.min_size,
+    initial_pos     = config.initial_pos,
+    initial_size    = config.initial_size,
+    min_size        = config.min_size,
 
-    bg_color_floating = opts.bg_color_floating or Constants.WINDOW.bg_color_floating,
-    bg_color_docked   = opts.bg_color_docked or Constants.WINDOW.bg_color_docked,
+    bg_color_floating = config.bg_color_floating,
+    bg_color_docked   = config.bg_color_docked,
 
     status_bar      = nil,
     tabs            = nil,
@@ -115,46 +129,46 @@ function M.new(opts)
 
     fullscreen = {
       enabled = is_fullscreen,
-      use_viewport = fullscreen_opts.use_viewport,
-      fade_in_duration = fullscreen_opts.fade_in_duration or Constants.ANIMATION.FADE_NORMAL,
-      fade_out_duration = fullscreen_opts.fade_out_duration or Constants.ANIMATION.FADE_NORMAL,
-      scrim_enabled = fullscreen_opts.scrim_enabled,
-      scrim_color = fullscreen_opts.scrim_color or Constants.OVERLAY.SCRIM_COLOR,
-      scrim_opacity = fullscreen_opts.scrim_opacity or Constants.OVERLAY.SCRIM_OPACITY,
-      window_bg_override = fullscreen_opts.window_bg_override,
-      window_opacity = fullscreen_opts.window_opacity,
-      alpha = create_alpha_tracker(fullscreen_opts.fade_in_duration or Constants.ANIMATION.FADE_NORMAL),
+      use_viewport = fullscreen_config.use_viewport,
+      fade_in_duration = fullscreen_config.fade_in_duration or Constants.ANIMATION.FADE_NORMAL,
+      fade_out_duration = fullscreen_config.fade_out_duration or Constants.ANIMATION.FADE_NORMAL,
+      scrim_enabled = fullscreen_config.scrim_enabled,
+      scrim_color = fullscreen_config.scrim_color or Constants.OVERLAY.SCRIM_COLOR,
+      scrim_opacity = fullscreen_config.scrim_opacity or Constants.OVERLAY.SCRIM_OPACITY,
+      window_bg_override = fullscreen_config.window_bg_override,
+      window_opacity = fullscreen_config.window_opacity,
+      alpha = create_alpha_tracker(fullscreen_config.fade_in_duration or Constants.ANIMATION.FADE_NORMAL),
       close_requested = false,
       is_closing = false,
-      show_close_button = fullscreen_opts.show_close_button ~= false,
-      close_on_background_click = fullscreen_opts.close_on_background_click ~= false,
-      close_on_background_left_click = fullscreen_opts.close_on_background_left_click == true,
+      show_close_button = fullscreen_config.show_close_button ~= false,
+      close_on_background_click = fullscreen_config.close_on_background_click ~= false,
+      close_on_background_left_click = fullscreen_config.close_on_background_left_click == true,
       close_button = nil,
       background_clicked = false,
     },
 
     titlebar_opts   = {
-      height          = opts.titlebar_height or Constants.TITLEBAR.height,
-      pad_h           = opts.titlebar_pad_h or Constants.TITLEBAR.pad_h,
-      pad_v           = opts.titlebar_pad_v or Constants.TITLEBAR.pad_v,
-      button_width    = opts.titlebar_button_width or Constants.TITLEBAR.button_width,
-      button_spacing  = opts.titlebar_button_spacing or Constants.TITLEBAR.button_spacing,
-      button_style    = opts.titlebar_button_style or Constants.TITLEBAR.button_style,
-      separator       = opts.titlebar_separator,
-      bg_color        = opts.titlebar_bg_color,
-      bg_color_active = opts.titlebar_bg_color_active,
-      text_color      = opts.titlebar_text_color,
-      enable_maximize = opts.enable_maximize ~= false,
-      title_font      = opts.title_font,
-      title_font_size = opts.title_font_size or Constants.TYPOGRAPHY.MEDIUM,
-      version_font    = opts.version_font,
-      version_font_size = opts.version_font_size or Constants.TYPOGRAPHY.DEFAULT,
-      version_color   = opts.version_color,
-      show_icon       = opts.show_icon,
-      icon_size       = opts.icon_size,
-      icon_spacing    = opts.icon_spacing,
-      icon_color      = opts.icon_color,
-      icon_draw       = opts.icon_draw,
+      height          = config.titlebar_height or Constants.TITLEBAR.height,
+      pad_h           = config.titlebar_pad_h or Constants.TITLEBAR.pad_h,
+      pad_v           = config.titlebar_pad_v or Constants.TITLEBAR.pad_v,
+      button_width    = config.titlebar_button_width or Constants.TITLEBAR.button_width,
+      button_spacing  = config.titlebar_button_spacing or Constants.TITLEBAR.button_spacing,
+      button_style    = config.titlebar_button_style or Constants.TITLEBAR.button_style,
+      separator       = config.titlebar_separator,
+      bg_color        = config.titlebar_bg_color,
+      bg_color_active = config.titlebar_bg_color_active,
+      text_color      = config.titlebar_text_color,
+      enable_maximize = config.enable_maximize ~= false,
+      title_font      = config.title_font,
+      title_font_size = config.title_font_size,
+      version_font    = config.version_font,
+      version_font_size = config.version_font_size,
+      version_color   = config.version_color,
+      show_icon       = config.show_icon,
+      icon_size       = config.icon_size,
+      icon_spacing    = config.icon_spacing,
+      icon_color      = config.icon_color,
+      icon_draw       = config.icon_draw,
     },
 
     _is_maximized   = false,
@@ -183,22 +197,22 @@ function M.new(opts)
   }
 
   if is_fullscreen then
-    if fullscreen_opts.hide_titlebar and ImGui.WindowFlags_NoTitleBar then
+    if fullscreen_config.hide_titlebar and ImGui.WindowFlags_NoTitleBar then
       win.flags = win.flags | ImGui.WindowFlags_NoTitleBar
     end
-    if fullscreen_opts.no_resize and ImGui.WindowFlags_NoResize then
+    if fullscreen_config.no_resize and ImGui.WindowFlags_NoResize then
       win.flags = win.flags | ImGui.WindowFlags_NoResize
     end
-    if fullscreen_opts.no_move and ImGui.WindowFlags_NoMove then
+    if fullscreen_config.no_move and ImGui.WindowFlags_NoMove then
       win.flags = win.flags | ImGui.WindowFlags_NoMove
     end
-    if fullscreen_opts.no_collapse and ImGui.WindowFlags_NoCollapse then
+    if fullscreen_config.no_collapse and ImGui.WindowFlags_NoCollapse then
       win.flags = win.flags | ImGui.WindowFlags_NoCollapse
     end
-    if fullscreen_opts.no_scrollbar and ImGui.WindowFlags_NoScrollbar then
+    if fullscreen_config.no_scrollbar and ImGui.WindowFlags_NoScrollbar then
       win.flags = win.flags | ImGui.WindowFlags_NoScrollbar
     end
-    if fullscreen_opts.no_scroll_with_mouse and ImGui.WindowFlags_NoScrollWithMouse then
+    if fullscreen_config.no_scroll_with_mouse and ImGui.WindowFlags_NoScrollWithMouse then
       win.flags = win.flags | ImGui.WindowFlags_NoScrollWithMouse
     end
     if ImGui.WindowFlags_NoBackground then
@@ -313,11 +327,11 @@ local hexrgb = Colors.hexrgb
   end
 
   if is_fullscreen and win.fullscreen.show_close_button and CloseButton then
-    local btn_opts = fullscreen_opts.close_button or {}
+    local btn_opts = fullscreen_config.close_button or {}
     win.fullscreen.close_button = CloseButton.new({
       size = btn_opts.size or Constants.OVERLAY.CLOSE_BUTTON_SIZE,
       margin = btn_opts.margin or Constants.OVERLAY.CLOSE_BUTTON_MARGIN,
-      proximity_distance = fullscreen_opts.close_button_proximity or Constants.OVERLAY.CLOSE_BUTTON_PROXIMITY,
+      proximity_distance = fullscreen_config.close_button_proximity or Constants.OVERLAY.CLOSE_BUTTON_PROXIMITY,
       bg_color = btn_opts.bg_color or Constants.OVERLAY.CLOSE_BUTTON_BG_COLOR,
       bg_opacity = btn_opts.bg_opacity or Constants.OVERLAY.CLOSE_BUTTON_BG_OPACITY,
       bg_opacity_hover = btn_opts.bg_opacity_hover or Constants.OVERLAY.CLOSE_BUTTON_BG_OPACITY_HOVER,

@@ -7,6 +7,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
+local Config = require('rearkitekt.core.config')
 local Constants = require('rearkitekt.app.init.constants')
 
 local M = {}
@@ -19,42 +20,59 @@ do
 end
 
 function M.new(opts)
-  opts = opts or {}
+  -- Merge user opts with framework defaults
+  local config = Config.deepMerge(Constants.TITLEBAR, opts or {})
+
+  -- Apply typography constants for font sizes
+  if not opts or not opts.title_font_size then
+    config.title_font_size = Constants.TYPOGRAPHY.MEDIUM
+  end
+  if not opts or not opts.version_font_size then
+    config.version_font_size = Constants.TYPOGRAPHY.DEFAULT
+  end
 
   local titlebar = {
-    title           = opts.title or "Window",
-    version         = opts.version,
-    title_font      = opts.title_font,
-    title_font_size = opts.title_font_size or Constants.TYPOGRAPHY.MEDIUM,
-    version_font    = opts.version_font,
-    version_font_size = opts.version_font_size or Constants.TYPOGRAPHY.DEFAULT,
+    -- Text content
+    title           = config.title or "Window",
+    version         = config.version,
 
-    height          = opts.height or Constants.TITLEBAR.height,
-    pad_h           = opts.pad_h or Constants.TITLEBAR.pad_h,
-    pad_v           = opts.pad_v or Constants.TITLEBAR.pad_v,
-    button_width    = opts.button_width or Constants.TITLEBAR.button_width,
-    button_spacing  = opts.button_spacing or Constants.TITLEBAR.button_spacing,
-    button_style    = opts.button_style or Constants.TITLEBAR.button_style,
-    separator       = opts.separator ~= false,
+    -- Fonts
+    title_font      = config.title_font,
+    title_font_size = config.title_font_size,
+    version_font    = config.version_font,
+    version_font_size = config.version_font_size,
 
-    bg_color        = opts.bg_color,
-    bg_color_active = opts.bg_color_active,
-    text_color      = opts.text_color,
-    version_color   = opts.version_color or Constants.TITLEBAR.version_color,
-    version_spacing = opts.version_spacing or Constants.TITLEBAR.version_spacing,
+    -- Layout (from merged config)
+    height          = config.height,
+    pad_h           = config.pad_h,
+    pad_v           = config.pad_v,
+    button_width    = config.button_width,
+    button_spacing  = config.button_spacing,
+    button_style    = config.button_style,
+    separator       = config.separator ~= false,
 
-    show_icon       = opts.show_icon ~= false,
-    icon_size       = opts.icon_size or Constants.TITLEBAR.icon_size,
-    icon_spacing    = opts.icon_spacing or Constants.TITLEBAR.icon_spacing,
-    icon_color      = opts.icon_color,
-    icon_draw       = opts.icon_draw,
+    -- Colors
+    bg_color        = config.bg_color,
+    bg_color_active = config.bg_color_active,
+    text_color      = config.text_color,
+    version_color   = config.version_color,
+    version_spacing = config.version_spacing,
 
-    enable_maximize = opts.enable_maximize ~= false,
+    -- Icon
+    show_icon       = config.show_icon ~= false,
+    icon_size       = config.icon_size,
+    icon_spacing    = config.icon_spacing,
+    icon_color      = config.icon_color,
+    icon_draw       = config.icon_draw,
+
+    -- State
+    enable_maximize = config.enable_maximize ~= false,
     is_maximized    = false,
 
-    on_close        = opts.on_close,
-    on_maximize     = opts.on_maximize,
-    on_icon_click   = opts.on_icon_click,
+    -- Callbacks
+    on_close        = config.on_close,
+    on_maximize     = config.on_maximize,
+    on_icon_click   = config.on_icon_click,
   }
   
   function titlebar:_truncate_text(ctx, text, max_width, font, font_size)

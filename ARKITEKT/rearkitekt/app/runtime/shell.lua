@@ -8,26 +8,15 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui   = require 'imgui' '0.10'
+local Config = require('rearkitekt.core.config')
 local Constants = require('rearkitekt.app.init.constants')
 local Runtime = require('rearkitekt.app.runtime.runtime')
 local Window  = require('rearkitekt.app.chrome.window.window')
 
 local M = {}
 
-local function merge(dst, src)
-  if not src then return dst end
-  for k,v in pairs(src) do
-    if type(v) == 'table' and type(dst[k]) == 'table' then
-      merge(dst[k], v)
-    else
-      dst[k] = v
-    end
-  end
-  return dst
-end
-
 local function load_fonts(ctx, font_cfg)
-  font_cfg = merge({
+  font_cfg = Config.deepMerge({
     default        = Constants.FONTS.default,
     title          = Constants.FONTS.title,
     version        = Constants.FONTS.version,
@@ -128,55 +117,56 @@ local function load_fonts(ctx, font_cfg)
 end
 
 function M.run(opts)
-  opts = opts or {}
+  -- Merge user opts with framework defaults
+  local config = Config.deepMerge(Constants.WINDOW, opts or {})
 
-  local title    = opts.title or Constants.WINDOW.title
-  local version  = opts.version
-  local draw_fn  = opts.draw or function(ctx) ImGui.Text(ctx, 'No draw function provided') end
-  local style    = opts.style
-  local settings = opts.settings
-  local raw_content = (opts.raw_content == true)
-  local enable_profiling = opts.enable_profiling ~= false
+  local title    = config.title
+  local version  = config.version
+  local draw_fn  = config.draw or function(ctx) ImGui.Text(ctx, 'No draw function provided') end
+  local style    = config.style
+  local settings = config.settings
+  local raw_content = (config.raw_content == true)
+  local enable_profiling = config.enable_profiling ~= false
 
-  local show_icon = opts.window and opts.window.show_icon
+  local show_icon = config.window and config.window.show_icon
   if show_icon == nil then
-    show_icon = opts.show_icon
+    show_icon = config.show_icon
   end
 
   local ctx   = ImGui.CreateContext(title)
-  local fonts = load_fonts(ctx, opts.fonts or opts.font_sizes)
+  local fonts = load_fonts(ctx, config.fonts or config.font_sizes)
 
   local window = Window.new({
-    fullscreen      = opts.fullscreen,
+    fullscreen      = config.fullscreen,
     title           = title,
     version         = version,
     title_font      = fonts.title,
     title_font_size = fonts.title_size,
     version_font    = fonts.titlebar_version or fonts.version,
     version_font_size = fonts.titlebar_version_size or fonts.version_size,
-    version_color   = opts.version_color,
+    version_color   = config.version_color,
     settings        = settings and settings:sub('ui') or nil,
-    initial_pos     = opts.initial_pos  or Constants.WINDOW.initial_pos,
-    initial_size    = opts.initial_size or Constants.WINDOW.initial_size,
-    min_size        = opts.min_size     or Constants.WINDOW.min_size,
-    show_status_bar = opts.show_status_bar,
-    show_titlebar   = opts.show_titlebar,
+    initial_pos     = config.initial_pos,
+    initial_size    = config.initial_size,
+    min_size        = config.min_size,
+    show_status_bar = config.show_status_bar,
+    show_titlebar   = config.show_titlebar,
     show_icon       = show_icon,
-    get_status_func = opts.get_status_func,
+    get_status_func = config.get_status_func,
     status_bar_height = Constants.STATUS_BAR.height,
-    content_padding = opts.content_padding or Constants.WINDOW.content_padding,
-    titlebar_pad_h  = opts.titlebar_pad_h,
-    titlebar_pad_v  = opts.titlebar_pad_v,
-    flags           = opts.flags,
+    content_padding = config.content_padding,
+    titlebar_pad_h  = config.titlebar_pad_h,
+    titlebar_pad_v  = config.titlebar_pad_v,
+    flags           = config.flags,
     style           = style,
-    tabs            = opts.tabs,
-    bg_color_floating = opts.bg_color_floating,
-    bg_color_docked   = opts.bg_color_docked,
+    tabs            = config.tabs,
+    bg_color_floating = config.bg_color_floating,
+    bg_color_docked   = config.bg_color_docked,
   })
-    
-  
-  if opts.overlay then
-    window.overlay = opts.overlay
+
+
+  if config.overlay then
+    window.overlay = config.overlay
   end
 
   local state = {

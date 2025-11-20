@@ -19,7 +19,7 @@ end
 
 function M.new(config)
   -- Merge user config with framework defaults
-  config = Config.deep_merge(Constants.STATUS_BAR, config or {})
+  config = Config.deepMerge(Constants.STATUS_BAR, config or {})
 
   local H         = config.height
   local LEFT_PAD  = config.left_pad

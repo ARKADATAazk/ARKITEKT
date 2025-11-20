@@ -45,7 +45,7 @@ end
 --- @param base table Base configuration
 --- @param override table Override configuration
 --- @return table New table with deeply merged values
-function M.deep_merge(base, override)
+function M.deepMerge(base, override)
   -- Handle non-table cases
   if type(base) ~= "table" then return override end
   if type(override) ~= "table" then return base end
@@ -60,7 +60,7 @@ function M.deep_merge(base, override)
   -- Recursively merge override
   for k, v in pairs(override) do
     if type(v) == "table" and type(result[k]) == "table" then
-      result[k] = M.deep_merge(result[k], v)
+      result[k] = M.deepMerge(result[k], v)
     else
       result[k] = v
     end
@@ -89,7 +89,7 @@ function M.apply_defaults(defaults, user_config, deep_keys)
   for k, v in pairs(defaults) do
     if deep_keys[k] and type(v) == "table" and type(user_config[k]) == "table" then
       -- Deep merge for specified keys (e.g., nested popup config)
-      result[k] = M.deep_merge(v, user_config[k])
+      result[k] = M.deepMerge(v, user_config[k])
     else
       -- Shallow: user value wins, fall back to default
       result[k] = user_config[k] ~= nil and user_config[k] or v
