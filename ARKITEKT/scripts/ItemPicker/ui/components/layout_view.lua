@@ -462,11 +462,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end
   end
 
-  -- Calculate layout toggle dimensions (always show when both types exist)
+  -- Calculate layout toggle dimensions
   local layout_button_width = 0
-  local has_audio = self.coordinator and self.coordinator.audio_grid and self.coordinator.audio_grid.items and #self.coordinator.audio_grid.items > 0
-  local has_midi = self.coordinator and self.coordinator.midi_grid and self.coordinator.midi_grid.items and #self.coordinator.midi_grid.items > 0
-  if has_audio and has_midi then
+  if self.state.settings.show_audio and self.state.settings.show_midi then
     layout_button_width = 60  -- Fixed width for layout toggle
   end
 
