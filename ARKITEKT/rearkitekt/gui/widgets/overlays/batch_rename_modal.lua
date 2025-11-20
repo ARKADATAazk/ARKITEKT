@@ -87,22 +87,35 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local modal_w = content_w or 520  -- Use provided content_w or fallback to 520
   local dl = ImGui.GetWindowDrawList(ctx)
 
-  -- Title
-  ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), string.format("Rename %d item%s", count, count > 1 and "s" or ""))
-  ImGui.Spacing(ctx)
+  -- Calculate total content width for centering
+  local content_max_w = 700  -- Maximum content width
+  local actual_content_w = math.min(modal_w, content_max_w)
+  local center_offset_x = (modal_w - actual_content_w) * 0.5
+
+  -- Title centered
+  local title_text = string.format("Rename %d item%s", count, count > 1 and "s" or "")
+  local title_w = ImGui.CalcTextSize(ctx, title_text)
+  ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + (modal_w - title_w) * 0.5)
+  ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), title_text)
+  ImGui.Dummy(ctx, 0, 10)
+  ImGui.SetCursorPosX(ctx, start_x)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Separator, hexrgb("#404040FF"))
   ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
+  ImGui.PopStyleColor(ctx)
+  ImGui.Dummy(ctx, 0, 16)
 
   -- ========================================================================
   -- TWO COLUMN LAYOUT: Left (input + chips) | Right (color picker)
   -- ========================================================================
 
-  local left_col_width = modal_w * 0.60  -- 60% for left column
+  local left_col_width = actual_content_w * 0.58  -- 58% for left column
   local picker_size = 137  -- 30% smaller than original 195
-  local col_gap = 12  -- Gap between columns
+  local col_gap = 16  -- Gap between columns
 
-  local start_x = ImGui.GetCursorPosX(ctx)
+  local start_x = ImGui.GetCursorPosX(ctx) + center_offset_x
   local start_y = ImGui.GetCursorPosY(ctx)
+
+  ImGui.SetCursorPosX(ctx, start_x)
 
   -- ========================================================================
   -- LEFT COLUMN: Pattern input + wildcards + common names
@@ -131,11 +144,14 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     self.preview_items = generate_preview(new_pattern, count)
   end
 
-  ImGui.Dummy(ctx, 0, 4)
+  ImGui.SetCursorPosX(ctx, start_x)
+  ImGui.Dummy(ctx, 0, 6)
 
   -- Wildcards label and chips
+  ImGui.SetCursorPosX(ctx, start_x)
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards:")
-  ImGui.Dummy(ctx, 0, 2)
+  ImGui.Dummy(ctx, 0, 4)
+  ImGui.SetCursorPosX(ctx, start_x)
 
   local wildcard_chips = {
     {label = "number ($n)", wildcard = "$n"},
@@ -168,11 +184,14 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     end
   end
 
-  ImGui.Dummy(ctx, 0, 4)
+  ImGui.SetCursorPosX(ctx, start_x)
+  ImGui.Dummy(ctx, 0, 8)
 
   -- Common names label and chips
+  ImGui.SetCursorPosX(ctx, start_x)
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Common Names:")
-  ImGui.Dummy(ctx, 0, 2)
+  ImGui.Dummy(ctx, 0, 4)
+  ImGui.SetCursorPosX(ctx, start_x)
 
   local common_names = {"combat", "ambience", "tension"}
 
@@ -228,29 +247,36 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local right_col_end_y = start_y + picker_size
   local final_y = math.max(left_col_cursor_y, right_col_end_y)
 
-  ImGui.SetCursorPosY(ctx, final_y + 4)
+  ImGui.SetCursorPosY(ctx, final_y + 8)
+  ImGui.SetCursorPosX(ctx, start_x)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Separator, hexrgb("#404040FF"))
   ImGui.Separator(ctx)
-  ImGui.Dummy(ctx, 0, 4)
+  ImGui.PopStyleColor(ctx)
+  ImGui.Dummy(ctx, 0, 8)
 
   -- ========================================================================
   -- SECTION 4: Preview
   -- ========================================================================
 
   if #self.preview_items > 0 then
+    ImGui.SetCursorPosX(ctx, start_x)
     ImGui.TextColored(ctx, hexrgb("#999999FF"), "Preview:")
-    ImGui.Dummy(ctx, 0, 2)
-    ImGui.Indent(ctx, 12)
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Indent(ctx, start_x + 12)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 2)
     for _, name in ipairs(self.preview_items) do
       ImGui.TextColored(ctx, hexrgb("#DDDDDDFF"), name)
     end
     ImGui.PopStyleVar(ctx, 1)
-    ImGui.Unindent(ctx, 12)
+    ImGui.Unindent(ctx, start_x + 12)
   end
 
-  ImGui.Dummy(ctx, 0, 4)
+  ImGui.Dummy(ctx, 0, 8)
+  ImGui.SetCursorPosX(ctx, start_x)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Separator, hexrgb("#404040FF"))
   ImGui.Separator(ctx)
-  ImGui.Dummy(ctx, 0, 4)
+  ImGui.PopStyleColor(ctx)
+  ImGui.Dummy(ctx, 0, 12)
 
   -- ========================================================================
   -- SECTION 5: Action buttons using primitives
@@ -260,9 +286,9 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local button_h = 28
   local spacing = 8
   local total_w = button_w * 4 + spacing * 3
-  local button_start_x = (modal_w - total_w) * 0.5
+  local button_start_x = start_x + (actual_content_w - total_w) * 0.5
 
-  -- Center buttons horizontally
+  -- Center buttons horizontally within content area
   ImGui.SetCursorPosX(ctx, button_start_x)
   local button_y = ImGui.GetCursorPosY(ctx)
   local screen_x, screen_y = ImGui.GetCursorScreenPos(ctx)
