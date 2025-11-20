@@ -173,7 +173,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   end
 
   -- Sticky hover behavior: trigger zone now higher up thanks to padding
-  local trigger_zone_padding = 40  -- Wait 10 more pixels above search (was 30)
+  local trigger_zone_padding = 30  -- Wait 10 pixels above search before triggering settings
 
   -- Calculate temporary search position for hover detection
   local temp_settings_height = settings_area_max_height * self.state.settings_slide_progress
@@ -479,7 +479,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
     Button.draw(ctx, draw_list, layout_button_x, search_y, layout_button_width, button_height, {
       label = is_vertical and "⬍⬍" or "⬌⬌",
-      is_toggled = false,
+      is_toggled = not is_vertical,  -- Toggle state shows when in horizontal mode
       preset_name = "BUTTON_TOGGLE_WHITE",
       tooltip = is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout",
       on_click = function()
@@ -539,7 +539,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local filter_bar_base_y = search_y + search_height + 8  -- 8px spacing below search
 
     -- Hover detection for filter bar area OR if settings are visible
-    local filter_hover_padding = -10  -- Start detecting 10px BELOW the filter bar (was 20 above)
+    local filter_hover_padding = 20  -- Start detecting 20px below filter bar start (delayed by 30px from previous -10)
     local is_hovering_filter = (mouse_y >= (filter_bar_base_y + filter_hover_padding) and
                                 mouse_y <= (filter_bar_base_y + filter_bar_max_height + 20)) or
                                (mouse_y >= (search_y - 10) and mouse_y <= (search_y + search_height + 10))  -- Also show when near search
