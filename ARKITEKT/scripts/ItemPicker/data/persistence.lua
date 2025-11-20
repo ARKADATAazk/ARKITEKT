@@ -32,7 +32,8 @@ local function get_default_settings()
     show_visualization_in_small_tiles = false,
     enable_tile_fx = true,
     layout_mode = "vertical",
-    show_region_tags = false,  -- Show region tags on item tiles (toggle)
+    enable_region_processing = false,  -- Enable region detection and filtering
+    show_region_tags = false,  -- Show region tags on item tiles (only if processing enabled)
     search_mode = "items",  -- Search mode: "items", "tracks", "regions", "mixed"
   }
 end

@@ -411,7 +411,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   -- Render region tags (bottom left, only on larger tiles)
-  if item_data.regions and #item_data.regions > 0 and
+  -- Only show region chips if show_region_tags is enabled (regions are already processed if enable_region_processing is true)
+  local show_region_tags = state.settings and state.settings.show_region_tags
+  if show_region_tags and item_data.regions and #item_data.regions > 0 and
      not is_small_tile and scaled_h >= config.REGION_TAGS.min_tile_height and
      cascade_factor > 0.5 then
 

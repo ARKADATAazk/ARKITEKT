@@ -248,7 +248,7 @@ function M.process_audio_item_fast(loader, item, track, state)
 
   -- Get regions if enabled
   local regions = nil
-  if loader.settings and loader.settings.show_region_tags then
+  if loader.settings and loader.settings.enable_region_processing then
     regions = loader.reaper_interface.GetRegionsForItem(item)
   end
 
@@ -303,7 +303,7 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
 
   -- Get regions if enabled
   local regions = nil
-  if loader.settings and loader.settings.show_region_tags then
+  if loader.settings and loader.settings.enable_region_processing then
     regions = loader.reaper_interface.GetRegionsForItem(item)
   end
 
@@ -355,7 +355,7 @@ function M.process_midi_item_fast(loader, item, track, state)
 
   -- Get regions if enabled
   local regions = nil
-  if loader.settings and loader.settings.show_region_tags then
+  if loader.settings and loader.settings.enable_region_processing then
     regions = loader.reaper_interface.GetRegionsForItem(item)
   end
 
@@ -406,7 +406,7 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
 
   -- Get regions if enabled
   local regions = nil
-  if loader.settings and loader.settings.show_region_tags then
+  if loader.settings and loader.settings.enable_region_processing then
     regions = loader.reaper_interface.GetRegionsForItem(item)
   end
 

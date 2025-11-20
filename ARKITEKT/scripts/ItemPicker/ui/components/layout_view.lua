@@ -101,8 +101,8 @@ end
 function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, screen_h, is_overlay_mode)
   self:handle_shortcuts(ctx)
 
-  -- Initialize all_regions if show_region_tags is enabled but all_regions is empty
-  if self.state.settings.show_region_tags and (not self.state.all_regions or #self.state.all_regions == 0) then
+  -- Initialize all_regions if region processing is enabled but all_regions is empty
+  if self.state.settings.enable_region_processing and (not self.state.all_regions or #self.state.all_regions == 0) then
     self.state.all_regions = require('ItemPicker.data.reaper_api').GetAllProjectRegions()
     reaper.ShowConsoleMsg(string.format("[REGION_TAGS] Initialized all_regions: %d regions found\n", #self.state.all_regions))
   end
@@ -269,32 +269,42 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.set_setting('show_visualization_in_small_tiles', not show_viz_small)
   end
 
-  -- Show Region Tags checkbox on same line
+  -- Enable Region Processing checkbox on same line
   prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Viz in Small Tiles") + 18 + 8 + spacing
-  local show_region_tags_x = checkbox_x + prev_width
-  local show_region_tags = self.state.settings.show_region_tags
-  if show_region_tags == nil then show_region_tags = false end
-  _, clicked = Checkbox.draw(ctx, draw_list, show_region_tags_x, checkbox_y,
-    "Show Region Tags",
-    show_region_tags, checkbox_config, "show_region_tags")
+  local enable_regions_x = checkbox_x + prev_width
+  local enable_regions = self.state.settings.enable_region_processing
+  if enable_regions == nil then enable_regions = false end
+  _, clicked = Checkbox.draw(ctx, draw_list, enable_regions_x, checkbox_y,
+    "Enable Regions",
+    enable_regions, checkbox_config, "enable_regions")
   if clicked then
-    reaper.ShowConsoleMsg(string.format("[REGION_TAGS] Checkbox clicked! Old value: %s, New value: %s\n",
-      tostring(show_region_tags), tostring(not show_region_tags)))
-    self.state.set_setting('show_region_tags', not show_region_tags)
+    self.state.set_setting('enable_region_processing', not enable_regions)
     -- Load all project regions when enabling
-    if not show_region_tags then
+    if not enable_regions then
       self.state.all_regions = require('ItemPicker.data.reaper_api').GetAllProjectRegions()
     else
       self.state.all_regions = {}
       self.state.selected_regions = {}
     end
-    -- Trigger data reload when region tags are toggled
+    -- Trigger data reload when region processing is toggled
     self.state.needs_recollect = true
-    reaper.ShowConsoleMsg("[REGION_TAGS] Triggered needs_recollect\n")
+  end
+
+  -- Show Region Tags checkbox on same line (only affects display on tiles)
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Enable Regions") + 18 + 8 + spacing
+  local show_region_tags_x = checkbox_x + prev_width
+  local show_region_tags = self.state.settings.show_region_tags
+  if show_region_tags == nil then show_region_tags = false end
+  _, clicked = Checkbox.draw(ctx, draw_list, show_region_tags_x, checkbox_y,
+    "Show on Tiles",
+    show_region_tags, checkbox_config, "show_region_tags")
+  if clicked then
+    self.state.set_setting('show_region_tags', not show_region_tags)
+    -- No needs_recollect - only affects display
   end
 
   -- Sort mode buttons (on same line after checkboxes)
-  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Region Tags") + 18 + 8 + 40  -- Extra spacing
+  prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show on Tiles") + 18 + 8 + 40  -- Extra spacing
   local sort_button_x = checkbox_x + prev_width
 
   -- Draw sort mode label and buttons
@@ -509,9 +519,10 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   ImGui.PopFont(ctx)
   ImGui.PopStyleVar(ctx)
 
-  -- Render region filter bar centered below search (if region tags enabled and regions available)
+  -- Render region filter bar centered below search (if region processing enabled and regions available)
   local filter_bar_height = 0
-  if show_region_tags and self.state.all_regions and #self.state.all_regions > 0 then
+  local enable_region_processing = self.state.settings.enable_region_processing
+  if enable_region_processing and self.state.all_regions and #self.state.all_regions > 0 then
     local filter_bar_y = search_y + search_height + 8  -- 8px spacing below search
     -- Calculate total width needed for all chips
     local total_chips_width = 0
