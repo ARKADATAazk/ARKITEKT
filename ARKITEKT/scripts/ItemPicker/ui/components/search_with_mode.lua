@@ -65,8 +65,10 @@ function M.draw(ctx, draw_list, x, y, width, height, state, config)
     ImGui.OpenPopup(ctx, "search_mode_menu")
   end
 
-  -- Draw context menu
-  if ContextMenu.begin(ctx, "search_mode_menu") then
+  -- Draw context menu (smaller width)
+  if ContextMenu.begin(ctx, "search_mode_menu", {
+    min_width = 100,  -- Smaller than default 180
+  }) then
     for _, mode in ipairs(MODES) do
       local menu_label = mode.letter .. " - " .. mode.label
       if ContextMenu.item(ctx, menu_label) then
@@ -76,6 +78,8 @@ function M.draw(ctx, draw_list, x, y, width, height, state, config)
           state.runtime_cache.audio_filter_hash = nil
           state.runtime_cache.midi_filter_hash = nil
         end
+        -- Close the popup after selection
+        ImGui.CloseCurrentPopup(ctx)
       end
     end
     ContextMenu.end_menu(ctx)
