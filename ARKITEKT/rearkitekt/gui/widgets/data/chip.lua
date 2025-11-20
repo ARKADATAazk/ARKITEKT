@@ -235,31 +235,23 @@ function M.draw(ctx, opts)
     local dot_shape = opts.dot_shape or SHAPE.CIRCLE
     local dot_rounding = opts.dot_rounding or 0
     
+    -- Draw border: 1px grey when not selected, 1px colored when selected
+    -- Use dual filled rects method for exact 1px border control
+    local border_color = is_selected and
+                        Colors.with_alpha(Colors.adjust_brightness(color, 1.8), 255) or
+                        Colors.with_alpha(Colors.adjust_brightness(bg_color, 1.2), 180)
+
+    -- Draw outer rect with border color (1px larger on all sides)
+    Draw.rect_filled(dl, start_x - 1, start_y - 1, start_x + chip_w + 1, start_y + chip_h + 1,
+                     border_color, rounding)
+
+    -- Draw inner rect with background color (creates 1px border)
     local draw_bg = _apply_state(bg_color, is_active, is_hovered, is_selected)
     Draw.rect_filled(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, draw_bg, rounding)
-    
+
     if is_hovered or is_selected then
       local inner_shadow = Colors.with_alpha(hexrgb("#000000"), 40)
       Draw.rect_filled(dl, start_x, start_y, start_x + chip_w, start_y + 2, inner_shadow, 0)
-    end
-    
-    -- Draw border: 1px grey when not selected, 1px colored when selected
-    -- Snap to pixel boundaries first, then offset by 0.5 for crisp 1px lines
-    local snap = function(x) return (x + 0.5)//1 end
-    local x1 = snap(start_x)
-    local y1 = snap(start_y)
-    local x2 = snap(start_x + chip_w)
-    local y2 = snap(start_y + chip_h)
-
-    if is_selected then
-      local border_color = Colors.with_alpha(Colors.adjust_brightness(color, 1.8), 255)
-      ImGui.DrawList_AddRect(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5,
-                             border_color, rounding, 0, 1)
-    else
-      -- Grey border matching background when not selected
-      local border_color = Colors.with_alpha(Colors.adjust_brightness(bg_color, 1.2), 180)
-      ImGui.DrawList_AddRect(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5,
-                             border_color, rounding, 0, 1)
     end
 
     local dot_x = start_x + padding_h + (dot_size * 0.5)
