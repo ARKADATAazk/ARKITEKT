@@ -1,0 +1,317 @@
+-- @noindex
+-- TemplateBrowser/ui/views/template_modals_view.lua
+-- Template Browser modals and context menus
+
+local ImGui = require 'imgui' '0.10'
+local FileOps = require('TemplateBrowser.domain.file_ops')
+local Button = require('rearkitekt.gui.widgets.primitives.button')
+local Fields = require('rearkitekt.gui.widgets.primitives.fields')
+local Chip = require('rearkitekt.gui.widgets.data.chip')
+local Colors = require('rearkitekt.core.colors')
+
+local M = {}
+
+-- Color preset palette for template chips
+local PRESET_COLORS = {
+  Colors.hexrgb("#FF0000"), -- Red
+  Colors.hexrgb("#FF6000"), -- Red-Orange
+  Colors.hexrgb("#FF9900"), -- Orange
+  Colors.hexrgb("#FFCC00"), -- Yellow-Orange
+  Colors.hexrgb("#FFFF00"), -- Yellow
+  Colors.hexrgb("#CCFF00"), -- Yellow-Green
+  Colors.hexrgb("#66FF00"), -- Lime
+  Colors.hexrgb("#00FF00"), -- Green
+  Colors.hexrgb("#00FF66"), -- Green-Cyan
+  Colors.hexrgb("#00FFCC"), -- Cyan-Green
+  Colors.hexrgb("#00FFFF"), -- Cyan
+  Colors.hexrgb("#00CCFF"), -- Cyan-Blue
+  Colors.hexrgb("#0066FF"), -- Blue
+  Colors.hexrgb("#0000FF"), -- Deep Blue
+  Colors.hexrgb("#6600FF"), -- Blue-Purple
+  Colors.hexrgb("#CC00FF"), -- Purple
+}
+
+-- Draw template context menu (color picker)
+function M.draw_template_context_menu(ctx, state)
+  -- Context menu with color picker (MUST be outside BeginChild for popups to work)
+  if state.context_menu_template then
+    ImGui.OpenPopup(ctx, "template_color_picker")
+  end
+
+  if ImGui.BeginPopup(ctx, "template_color_picker") then
+    local tmpl = state.context_menu_template
+    if tmpl then
+      ImGui.Text(ctx, "Set Template Color")
+      ImGui.Separator(ctx)
+      ImGui.Spacing(ctx)
+
+      -- Get template metadata
+      local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
+      local current_color = tmpl_metadata and tmpl_metadata.chip_color or nil
+
+      -- Draw 4x4 color grid
+      local grid_cols = 4
+      local chip_size = 20
+      local chip_radius = chip_size / 2
+
+      for idx, color in ipairs(PRESET_COLORS) do
+        local col_idx = (idx - 1) % grid_cols
+
+        if col_idx > 0 then
+          ImGui.SameLine(ctx)
+        end
+
+        -- Position for color button
+        local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
+
+        -- Clickable area
+        if ImGui.InvisibleButton(ctx, "##color_" .. idx, chip_size, chip_size) then
+          -- Set color
+          if tmpl_metadata then
+            tmpl_metadata.chip_color = color
+            local Persistence = require('TemplateBrowser.domain.persistence')
+            Persistence.save_metadata(state.metadata)
+          end
+          state.context_menu_template = nil
+          ImGui.CloseCurrentPopup(ctx)
+        end
+
+        local is_hovered = ImGui.IsItemHovered(ctx)
+        local is_this_color = (current_color == color)
+
+        -- Draw chip
+        local chip_x = start_x + chip_radius
+        local chip_y = start_y + chip_radius
+        Chip.draw(ctx, {
+          style = Chip.STYLE.INDICATOR,
+          x = chip_x,
+          y = chip_y,
+          radius = chip_radius - 2,
+          color = color,
+          is_selected = is_this_color,
+          is_hovered = is_hovered,
+          show_glow = is_this_color or is_hovered,
+          glow_layers = is_this_color and 6 or 3,
+        })
+      end
+
+      ImGui.Spacing(ctx)
+      ImGui.Separator(ctx)
+      ImGui.Spacing(ctx)
+
+      -- Remove color button
+      if Button.draw_at_cursor(ctx, { label = "Remove Color", width = -1, height = 24 }, "remove_color") then
+        if tmpl_metadata then
+          tmpl_metadata.chip_color = nil
+          local Persistence = require('TemplateBrowser.domain.persistence')
+          Persistence.save_metadata(state.metadata)
+        end
+        state.context_menu_template = nil
+        ImGui.CloseCurrentPopup(ctx)
+      end
+
+      -- Add "Remove from Virtual Folder" button if viewing a virtual folder
+      if state.selected_folder and state.selected_folder ~= "" and state.metadata then
+        local vfolder = state.metadata.virtual_folders and state.metadata.virtual_folders[state.selected_folder]
+        if vfolder and tmpl then
+          ImGui.Spacing(ctx)
+          ImGui.Separator(ctx)
+          ImGui.Spacing(ctx)
+
+          if Button.draw_at_cursor(ctx, { label = "Remove from " .. vfolder.name, width = -1, height = 24 }, "remove_from_vfolder") then
+            local Persistence = require('TemplateBrowser.domain.persistence')
+
+            -- Remove template UUID from virtual folder's template_refs
+            if vfolder.template_refs then
+              for i, ref_uuid in ipairs(vfolder.template_refs) do
+                if ref_uuid == tmpl.uuid then
+                  table.remove(vfolder.template_refs, i)
+                  break
+                end
+              end
+            end
+
+            -- Save metadata
+            Persistence.save_metadata(state.metadata)
+
+            -- Refresh filtered templates
+            local Scanner = require('TemplateBrowser.domain.scanner')
+            Scanner.filter_templates(state)
+
+            state.set_status("Removed " .. tmpl.name .. " from " .. vfolder.name, "success")
+            state.context_menu_template = nil
+            ImGui.CloseCurrentPopup(ctx)
+          end
+        end
+      end
+    end
+
+    ImGui.EndPopup(ctx)
+  end
+end
+
+-- Draw template rename modal
+function M.draw_template_rename_modal(ctx, state)
+  -- Rename modal popup (for F2 or Ctrl+double-click)
+  if state.renaming_item and state.renaming_type == "template" then
+    ImGui.OpenPopup(ctx, "Rename Template")
+  end
+
+  if ImGui.BeginPopupModal(ctx, "Rename Template", nil, ImGui.WindowFlags_AlwaysAutoResize) then
+    local tmpl = state.renaming_item
+
+    ImGui.Text(ctx, "Current name: " .. (tmpl and tmpl.name or ""))
+    ImGui.Spacing(ctx)
+
+    -- Initialize field with current name
+    if Fields.get_text("template_rename_modal") == "" then
+      Fields.set_text("template_rename_modal", state.rename_buffer)
+    end
+
+    local changed, new_name = Fields.draw_at_cursor(ctx, {
+      width = 300,
+      height = 24,
+      text = state.rename_buffer,
+    }, "template_rename_modal")
+
+    if changed then
+      state.rename_buffer = new_name
+    end
+
+    -- Auto-focus input on first frame
+    if ImGui.IsWindowAppearing(ctx) then
+      ImGui.SetKeyboardFocusHere(ctx, -1)
+    end
+
+    ImGui.Spacing(ctx)
+    ImGui.Separator(ctx)
+    ImGui.Spacing(ctx)
+
+    -- Buttons
+    local ok_clicked = Button.draw_at_cursor(ctx, { label = "OK", width = 140, height = 24 }, "rename_ok")
+    if ok_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
+      if state.rename_buffer ~= "" and state.rename_buffer ~= tmpl.name then
+        local old_path = tmpl.path
+        local success, new_path = FileOps.rename_template(tmpl.path, state.rename_buffer)
+        if success then
+          -- Create undo operation
+          state.undo_manager:push({
+            description = "Rename template: " .. tmpl.name .. " -> " .. state.rename_buffer,
+            undo_fn = function()
+              local undo_success = FileOps.rename_template(new_path, tmpl.name)
+              if undo_success then
+                local Scanner = require('TemplateBrowser.domain.scanner')
+                Scanner.scan_templates(state)
+              end
+              return undo_success
+            end,
+            redo_fn = function()
+              local redo_success = FileOps.rename_template(old_path, state.rename_buffer)
+              if redo_success then
+                local Scanner = require('TemplateBrowser.domain.scanner')
+                Scanner.scan_templates(state)
+              end
+              return redo_success
+            end
+          })
+
+          local Scanner = require('TemplateBrowser.domain.scanner')
+          Scanner.scan_templates(state)
+        end
+      end
+      state.renaming_item = nil
+      state.renaming_type = nil
+      state.rename_buffer = ""
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    ImGui.SameLine(ctx)
+    local cancel_clicked = Button.draw_at_cursor(ctx, { label = "Cancel", width = 140, height = 24 }, "rename_cancel")
+    if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+      state.renaming_item = nil
+      state.renaming_type = nil
+      state.rename_buffer = ""
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    ImGui.EndPopup(ctx)
+  end
+end
+
+-- Draw conflict resolution modal
+function M.draw_conflict_resolution_modal(ctx, state)
+  -- Show conflict modal when conflict is pending
+  if state.conflict_pending then
+    ImGui.OpenPopup(ctx, "File Conflict")
+  end
+
+  if ImGui.BeginPopupModal(ctx, "File Conflict", nil, ImGui.WindowFlags_AlwaysAutoResize) then
+    local conflict = state.conflict_pending
+
+    if conflict then
+      ImGui.Text(ctx, "A file with the same name already exists in the target folder.")
+      ImGui.Spacing(ctx)
+
+      -- Show conflict details
+      if #conflict.templates == 1 then
+        ImGui.Text(ctx, string.format("File: %s", conflict.templates[1].name))
+      else
+        ImGui.Text(ctx, string.format("Files: %d templates", #conflict.templates))
+      end
+
+      ImGui.Text(ctx, string.format("Target: %s", conflict.target_folder.name or "Root"))
+
+      ImGui.Spacing(ctx)
+      ImGui.Separator(ctx)
+      ImGui.Spacing(ctx)
+
+      ImGui.Text(ctx, "What would you like to do?")
+      ImGui.Spacing(ctx)
+
+      -- Overwrite button
+      local overwrite_clicked = Button.draw_at_cursor(ctx, {
+        label = "Overwrite (Archives existing)",
+        width = 250,
+        height = 32
+      }, "conflict_overwrite")
+
+      if overwrite_clicked then
+        state.conflict_resolution = "overwrite"
+        ImGui.CloseCurrentPopup(ctx)
+      end
+
+      ImGui.Spacing(ctx)
+
+      -- Keep Both button
+      local keep_both_clicked = Button.draw_at_cursor(ctx, {
+        label = "Keep Both (Rename new)",
+        width = 250,
+        height = 32
+      }, "conflict_keep_both")
+
+      if keep_both_clicked then
+        state.conflict_resolution = "keep_both"
+        ImGui.CloseCurrentPopup(ctx)
+      end
+
+      ImGui.Spacing(ctx)
+
+      -- Cancel button
+      local cancel_clicked = Button.draw_at_cursor(ctx, {
+        label = "Cancel",
+        width = 250,
+        height = 32
+      }, "conflict_cancel")
+
+      if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+        state.conflict_resolution = "cancel"
+        state.conflict_pending = nil  -- Clear pending conflict
+        ImGui.CloseCurrentPopup(ctx)
+      end
+    end
+
+    ImGui.EndPopup(ctx)
+  end
+end
+
+return M
