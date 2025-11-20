@@ -62,8 +62,8 @@ local function load_fonts(ctx, font_cfg)
   local monospace_font = exists(M) and ImGui.CreateFont(M, font_cfg.monospace)
                                 or default_font
 
-  -- Load Orbitron for AZK branding (slightly larger than title)
-  local orbitron_size = font_cfg.orbitron or (font_cfg.title * 1.2)
+  -- Load Orbitron for AZK branding at fixed size from Constants
+  local orbitron_size = font_cfg.orbitron or Constants.TITLEBAR.azk_font_size
   local orbitron_font = exists(O) and ImGui.CreateFont(O, orbitron_size) or nil
 
   local time_display_font = nil

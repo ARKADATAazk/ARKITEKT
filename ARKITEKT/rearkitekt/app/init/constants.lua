@@ -167,6 +167,9 @@ M.TITLEBAR = {
   show_icon = true,
   enable_maximize = true,
 
+  -- AZK branding font size (Orbitron)
+  azk_font_size = 18,  -- Fixed size for consistent branding
+
   -- Colors
   bg_color = nil,
   bg_color_active = nil,

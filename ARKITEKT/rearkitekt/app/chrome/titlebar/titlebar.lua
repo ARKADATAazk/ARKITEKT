@@ -317,23 +317,24 @@ function M.new(opts)
       -- Draw stylized "AZK" in center of titlebar with 15% transparency
       local azk_text = "AZK"
       local azk_font = self.azk_font or self.title_font  -- Use Orbitron or fallback to title font
-      local azk_font_size = self.azk_font_size or (self.height * 0.65)  -- Use config size or calculate
+      local azk_font_size = self.azk_font_size or self.title_font_size  -- Use exact font creation size
 
-      -- Calculate text size with Orbitron font
+      -- Calculate text size with Orbitron font at its creation size
       if azk_font then ImGui.PushFont(ctx, azk_font, azk_font_size) end
       local azk_text_w, azk_text_h = ImGui.CalcTextSize(ctx, azk_text)
+      if azk_font then ImGui.PopFont(ctx) end
 
       local azk_x = (win_w - azk_text_w) * 0.5
       local azk_y = (self.height - azk_text_h) * 0.5
 
-      -- Use StyleVar_Alpha to set transparency (0.15 = 15% opacity)
+      -- Render AZK text with 15% opacity
+      if azk_font then ImGui.PushFont(ctx, azk_font, azk_font_size) end
       ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, 0.15)
       ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
       ImGui.SetCursorPos(ctx, azk_x, azk_y)
       ImGui.Text(ctx, azk_text)
       ImGui.PopStyleColor(ctx)
       ImGui.PopStyleVar(ctx)
-
       if azk_font then ImGui.PopFont(ctx) end
 
       ImGui.SetCursorPos(ctx, win_w - total_button_width, 0)
