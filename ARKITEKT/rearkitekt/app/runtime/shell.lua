@@ -66,15 +66,7 @@ local function load_fonts(ctx, font_cfg)
 
   -- Load Orbitron for AZK branding at fixed size from Constants
   local orbitron_size = font_cfg.orbitron or Constants.TITLEBAR.azk_font_size
-  local orbitron_exists = exists(O)
-  local orbitron_font = orbitron_exists and ImGui.CreateFont(O, orbitron_size) or nil
-
-  -- Debug: Log Orbitron font loading
-  if orbitron_font then
-    reaper.ShowConsoleMsg(string.format("[Shell] ✓ Orbitron font loaded: %s (size: %d, obj: %s)\n", O, orbitron_size, tostring(orbitron_font)))
-  else
-    reaper.ShowConsoleMsg(string.format("[Shell] ✗ Orbitron font FAILED to load: %s (exists: %s)\n", O, tostring(orbitron_exists)))
-  end
+  local orbitron_font = exists(O) and ImGui.CreateFont(O, orbitron_size) or nil
 
   local time_display_font = nil
   if font_cfg.time_display then
@@ -93,19 +85,8 @@ local function load_fonts(ctx, font_cfg)
 
   local icons_font = nil
   if font_cfg.icons then
-    if exists(I) then
-      icons_font = ImGui.CreateFont(I, font_cfg.icons)
-      if icons_font then
-        reaper.ShowConsoleMsg(string.format("[Shell] Icon font loaded: %s (size: %d, obj: %s)\n", I, font_cfg.icons, tostring(icons_font)))
-        attach_once(icons_font)
-      else
-        reaper.ShowConsoleMsg(string.format("[Shell] ERROR: Icon font failed to load: %s\n", I))
-        icons_font = default_font
-      end
-    else
-      reaper.ShowConsoleMsg(string.format("[Shell] WARNING: Icon font file not found: %s\n", I))
-      icons_font = default_font
-    end
+    icons_font = exists(I) and ImGui.CreateFont(I, font_cfg.icons) or default_font
+    attach_once(icons_font)
   end
 
   attach_once(default_font)

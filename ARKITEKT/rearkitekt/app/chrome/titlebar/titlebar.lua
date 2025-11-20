@@ -316,40 +316,25 @@ function M.new(opts)
 
       -- Draw stylized "AZK" in center of titlebar with Orbitron Bold
       local azk_text = "AZK"
-      local azk_font = self.azk_font or self.title_font  -- Use Orbitron or fallback to title font
-      local azk_font_size = self.azk_font_size or self.title_font_size  -- Use exact font creation size
+      local azk_font = self.azk_font or self.title_font
+      local azk_font_size = self.azk_font_size or self.title_font_size
 
-      -- Debug: Log font usage (only once per session)
-      if not self._azk_debug_logged then
-        reaper.ShowConsoleMsg(string.format("[Titlebar] AZK font: %s, size: %d (has azk_font: %s)\n",
-          tostring(azk_font), azk_font_size, tostring(self.azk_font ~= nil)))
-        self._azk_debug_logged = true
-      end
-
-      -- Calculate text size with Orbitron font at its creation size
-      if azk_font then ImGui.PushFont(ctx, azk_font) end  -- NO SIZE - let font use creation size!
+      -- Calculate text size with proper ImGui 0.10 API
+      if azk_font then ImGui.PushFont(ctx, azk_font, azk_font_size) end
       local azk_text_w, azk_text_h = ImGui.CalcTextSize(ctx, azk_text)
       if azk_font then ImGui.PopFont(ctx) end
 
       local azk_x = (win_w - azk_text_w) * 0.5
       local azk_y = (self.height - azk_text_h) * 0.5
 
-      -- Render AZK text with 30% opacity (more visible Orbitron style)
-      if azk_font then
-        ImGui.PushFont(ctx, azk_font)  -- NO SIZE - let font use creation size!
-        if not self._azk_font_push_logged then
-          reaper.ShowConsoleMsg(string.format("[Titlebar] Pushing Orbitron font WITHOUT size (obj: %s)\n", tostring(azk_font)))
-          self._azk_font_push_logged = true
-        end
-      end
-
-      ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, 1.0)  -- TEMP: 100% to clearly see font
+      -- Render AZK text with Orbitron font and 30% opacity
+      if azk_font then ImGui.PushFont(ctx, azk_font, azk_font_size) end
+      ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, 0.3)
       ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
       ImGui.SetCursorPos(ctx, azk_x, azk_y)
       ImGui.Text(ctx, azk_text)
       ImGui.PopStyleColor(ctx)
       ImGui.PopStyleVar(ctx)
-
       if azk_font then ImGui.PopFont(ctx) end
 
       ImGui.SetCursorPos(ctx, win_w - total_button_width, 0)
