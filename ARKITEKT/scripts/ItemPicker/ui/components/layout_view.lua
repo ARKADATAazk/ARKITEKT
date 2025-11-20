@@ -172,18 +172,19 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.settings_slide_progress = 0
   end
 
-  -- Sticky hover behavior: trigger zone now higher up thanks to padding
-  local trigger_zone_padding = 30  -- Wait 10 pixels above search before triggering settings
+  -- Sticky hover behavior: trigger zone above actual search position
+  local trigger_zone_padding = 10  -- 10 pixels above the ACTUAL search field before triggering settings
 
   -- Calculate temporary search position for hover detection
   local temp_settings_height = settings_area_max_height * self.state.settings_slide_progress
   local temp_search_y = search_base_y + temp_settings_height
 
-  local is_in_trigger_zone = mouse_y >= (search_base_y - trigger_zone_padding) and
-                             mouse_y < search_base_y
+  -- Trigger when mouse is 10px above the ACTUAL search position (not base)
+  local is_in_trigger_zone = mouse_y >= (temp_search_y - trigger_zone_padding) and
+                             mouse_y < temp_search_y
 
-  -- Once triggered, stay visible until mouse goes below the ACTUAL search field position
-  local is_below_search = mouse_y > (temp_search_y + search_height)
+  -- Once triggered, stay visible until mouse goes below the search field (with buffer)
+  local is_below_search = mouse_y > (temp_search_y + search_height + 10)
 
   -- Initialize sticky state
   if self.state.settings_sticky_visible == nil then
@@ -461,9 +462,11 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end
   end
 
-  -- Calculate layout toggle dimensions
+  -- Calculate layout toggle dimensions (always show when both types exist)
   local layout_button_width = 0
-  if self.state.settings.show_audio and self.state.settings.show_midi then
+  local has_audio = self.coordinator and self.coordinator.audio_grid and self.coordinator.audio_grid.items and #self.coordinator.audio_grid.items > 0
+  local has_midi = self.coordinator and self.coordinator.midi_grid and self.coordinator.midi_grid.items and #self.coordinator.midi_grid.items > 0
+  if has_audio and has_midi then
     layout_button_width = 60  -- Fixed width for layout toggle
   end
 
@@ -538,11 +541,10 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   if enable_region_processing and self.state.all_regions and #self.state.all_regions > 0 then
     local filter_bar_base_y = search_y + search_height + 8  -- 8px spacing below search
 
-    -- Hover detection for filter bar area OR if settings are visible
-    local filter_hover_padding = 20  -- Start detecting 20px below filter bar start (delayed by 30px from previous -10)
+    -- Hover detection for filter bar area (delayed trigger to prevent early activation)
+    local filter_hover_padding = 30  -- Start detecting 30px AFTER the filter bar starts (not before)
     local is_hovering_filter = (mouse_y >= (filter_bar_base_y + filter_hover_padding) and
-                                mouse_y <= (filter_bar_base_y + filter_bar_max_height + 20)) or
-                               (mouse_y >= (search_y - 10) and mouse_y <= (search_y + search_height + 10))  -- Also show when near search
+                                mouse_y <= (filter_bar_base_y + filter_bar_max_height + 20))
 
     -- Show filters when settings are visible
     local filters_should_show = is_hovering_filter or self.state.settings_sticky_visible
