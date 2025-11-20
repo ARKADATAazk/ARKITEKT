@@ -9,34 +9,27 @@ local Button = require('rearkitekt.gui.widgets.primitives.button')
 local MarkdownField = require('rearkitekt.gui.widgets.primitives.markdown_field')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local Tooltips = require('TemplateBrowser.core.tooltips')
+local Helpers = require('TemplateBrowser.ui.views.helpers')
+local UI = require('TemplateBrowser.ui.ui_constants')
 
 local M = {}
-
--- ImGui compatibility for BeginChild
-local function BeginChildCompat(ctx, id, w, h, want_border, window_flags)
-  local child_flags = want_border and 1 or 0
-  return ImGui.BeginChild(ctx, id, w, h, child_flags, window_flags or 0)
-end
 
 -- Draw info & tag assignment panel (right)
 local function draw_info_panel(ctx, state, config, width, height)
   -- Outer border container (non-scrollable)
-  if not BeginChildCompat(ctx, "InfoPanel", width, height, true) then
+  if not Helpers.begin_child_compat(ctx, "InfoPanel", width, height, true) then
     return
   end
 
   -- Header (stays at top)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.SeparatorText(ctx, "Info & Tags")
-  ImGui.PopStyleColor(ctx)
+  Helpers.section_separator_text(ctx, "Info & Tags", config)
 
   ImGui.Spacing(ctx)
 
   -- Scrollable content region
-  local header_height = 30  -- SeparatorText + spacing
-  local content_height = height - header_height
+  local content_height = height - UI.HEADER.SEPARATOR_TEXT
 
-  if BeginChildCompat(ctx, "InfoPanelContent", 0, content_height, false) then
+  if Helpers.begin_child_compat(ctx, "InfoPanelContent", 0, content_height, false) then
     if state.selected_template then
     local tmpl = state.selected_template
     local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
@@ -58,23 +51,35 @@ local function draw_info_panel(ctx, state, config, width, height)
     ImGui.Spacing(ctx)
 
     -- Actions
-    if Button.draw_at_cursor(ctx, { label = "Apply to Selected Track", width = -1, height = 28 }, "apply_template") then
+    if Button.draw_at_cursor(ctx, {
+      label = "Apply to Selected Track",
+      width = -1,
+      height = UI.BUTTON.HEIGHT_ACTION
+    }, "apply_template") then
       reaper.ShowConsoleMsg("Applying template: " .. tmpl.name .. "\n")
       TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
     end
     Tooltips.show(ctx, ImGui, "template_apply")
 
-    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Dummy(ctx, 0, UI.PADDING.SMALL)
 
-    if Button.draw_at_cursor(ctx, { label = "Insert as New Track", width = -1, height = 28 }, "insert_template") then
+    if Button.draw_at_cursor(ctx, {
+      label = "Insert as New Track",
+      width = -1,
+      height = UI.BUTTON.HEIGHT_ACTION
+    }, "insert_template") then
       reaper.ShowConsoleMsg("Inserting template as new track: " .. tmpl.name .. "\n")
       TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
     end
     Tooltips.show(ctx, ImGui, "template_insert")
 
-    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Dummy(ctx, 0, UI.PADDING.SMALL)
 
-    if Button.draw_at_cursor(ctx, { label = "Rename (F2)", width = -1, height = 28 }, "rename_template") then
+    if Button.draw_at_cursor(ctx, {
+      label = "Rename (F2)",
+      width = -1,
+      height = UI.BUTTON.HEIGHT_ACTION
+    }, "rename_template") then
       state.renaming_item = tmpl
       state.renaming_type = "template"
       state.rename_buffer = tmpl.name
@@ -100,7 +105,7 @@ local function draw_info_panel(ctx, state, config, width, height)
 
     local notes_changed, new_notes = MarkdownField.draw_at_cursor(ctx, {
       width = -1,
-      height = 200,  -- Taller for better markdown viewing
+      height = UI.FIELD.NOTES_HEIGHT,
       text = notes,
       placeholder = "Double-click to add notes...\n\nSupports Markdown:\n• **bold** and *italic*\n• # Headers\n• - Lists\n• [links](url)\n\nShift+Enter for line breaks\nEnter to save, Esc to cancel",
     }, notes_field_id)
@@ -141,7 +146,7 @@ local function draw_info_panel(ctx, state, config, width, height)
           style = Chip.STYLE.PILL,
           label = tag_name,
           color = tag_data.color,
-          height = 24,
+          height = UI.CHIP.HEIGHT_DEFAULT,
           is_selected = is_assigned,
           interactive = true,
         })

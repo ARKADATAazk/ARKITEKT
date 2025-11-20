@@ -8,6 +8,7 @@ local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Fields = require('rearkitekt.gui.widgets.primitives.fields')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local Colors = require('rearkitekt.core.colors')
+local UI = require('TemplateBrowser.ui.ui_constants')
 
 local M = {}
 
@@ -50,8 +51,8 @@ function M.draw_template_context_menu(ctx, state)
       local current_color = tmpl_metadata and tmpl_metadata.chip_color or nil
 
       -- Draw 4x4 color grid
-      local grid_cols = 4
-      local chip_size = 20
+      local grid_cols = UI.COLOR_PICKER.GRID_COLS
+      local chip_size = UI.COLOR_PICKER.CHIP_SIZE
       local chip_radius = chip_size / 2
 
       for idx, color in ipairs(PRESET_COLORS) do
@@ -100,7 +101,11 @@ function M.draw_template_context_menu(ctx, state)
       ImGui.Spacing(ctx)
 
       -- Remove color button
-      if Button.draw_at_cursor(ctx, { label = "Remove Color", width = -1, height = 24 }, "remove_color") then
+      if Button.draw_at_cursor(ctx, {
+        label = "Remove Color",
+        width = -1,
+        height = UI.BUTTON.HEIGHT_DEFAULT
+      }, "remove_color") then
         if tmpl_metadata then
           tmpl_metadata.chip_color = nil
           local Persistence = require('TemplateBrowser.domain.persistence')
@@ -118,7 +123,11 @@ function M.draw_template_context_menu(ctx, state)
           ImGui.Separator(ctx)
           ImGui.Spacing(ctx)
 
-          if Button.draw_at_cursor(ctx, { label = "Remove from " .. vfolder.name, width = -1, height = 24 }, "remove_from_vfolder") then
+          if Button.draw_at_cursor(ctx, {
+            label = "Remove from " .. vfolder.name,
+            width = -1,
+            height = UI.BUTTON.HEIGHT_DEFAULT
+          }, "remove_from_vfolder") then
             local Persistence = require('TemplateBrowser.domain.persistence')
 
             -- Remove template UUID from virtual folder's template_refs
@@ -169,8 +178,8 @@ function M.draw_template_rename_modal(ctx, state)
     end
 
     local changed, new_name = Fields.draw_at_cursor(ctx, {
-      width = 300,
-      height = 24,
+      width = UI.FIELD.RENAME_WIDTH,
+      height = UI.FIELD.RENAME_HEIGHT,
       text = state.rename_buffer,
     }, "template_rename_modal")
 
@@ -188,7 +197,11 @@ function M.draw_template_rename_modal(ctx, state)
     ImGui.Spacing(ctx)
 
     -- Buttons
-    local ok_clicked = Button.draw_at_cursor(ctx, { label = "OK", width = 140, height = 24 }, "rename_ok")
+    local ok_clicked = Button.draw_at_cursor(ctx, {
+      label = "OK",
+      width = 140,
+      height = UI.BUTTON.HEIGHT_DEFAULT
+    }, "rename_ok")
     if ok_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
       if state.rename_buffer ~= "" and state.rename_buffer ~= tmpl.name then
         local old_path = tmpl.path
@@ -226,7 +239,11 @@ function M.draw_template_rename_modal(ctx, state)
     end
 
     ImGui.SameLine(ctx)
-    local cancel_clicked = Button.draw_at_cursor(ctx, { label = "Cancel", width = 140, height = 24 }, "rename_cancel")
+    local cancel_clicked = Button.draw_at_cursor(ctx, {
+      label = "Cancel",
+      width = 140,
+      height = UI.BUTTON.HEIGHT_DEFAULT
+    }, "rename_cancel")
     if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
       state.renaming_item = nil
       state.renaming_type = nil
@@ -271,8 +288,8 @@ function M.draw_conflict_resolution_modal(ctx, state)
       -- Overwrite button
       local overwrite_clicked = Button.draw_at_cursor(ctx, {
         label = "Overwrite (Archives existing)",
-        width = 250,
-        height = 32
+        width = UI.MODAL.CONFLICT_WIDTH,
+        height = UI.BUTTON.HEIGHT_MODAL
       }, "conflict_overwrite")
 
       if overwrite_clicked then
@@ -285,8 +302,8 @@ function M.draw_conflict_resolution_modal(ctx, state)
       -- Keep Both button
       local keep_both_clicked = Button.draw_at_cursor(ctx, {
         label = "Keep Both (Rename new)",
-        width = 250,
-        height = 32
+        width = UI.MODAL.CONFLICT_WIDTH,
+        height = UI.BUTTON.HEIGHT_MODAL
       }, "conflict_keep_both")
 
       if keep_both_clicked then
@@ -299,8 +316,8 @@ function M.draw_conflict_resolution_modal(ctx, state)
       -- Cancel button
       local cancel_clicked = Button.draw_at_cursor(ctx, {
         label = "Cancel",
-        width = 250,
-        height = 32
+        width = UI.MODAL.CONFLICT_WIDTH,
+        height = UI.BUTTON.HEIGHT_MODAL
       }, "conflict_cancel")
 
       if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then

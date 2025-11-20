@@ -5,14 +5,10 @@
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local TemplateOps = require('TemplateBrowser.domain.template_ops')
+local Helpers = require('TemplateBrowser.ui.views.helpers')
+local UI = require('TemplateBrowser.ui.ui_constants')
 
 local M = {}
-
--- ImGui compatibility for BeginChild
-local function BeginChildCompat(ctx, id, w, h, want_border, window_flags)
-  local child_flags = want_border and 1 or 0
-  return ImGui.BeginChild(ctx, id, w, h, child_flags, window_flags or 0)
-end
 
 -- Get recent templates (up to max_count)
 local function get_recent_templates(state, max_count)
@@ -54,12 +50,10 @@ local function draw_recent_templates(ctx, gui, width, available_height)
     return 0  -- No height consumed
   end
 
-  local section_height = 120  -- Height for recent templates section
-  local tile_height = 80
-  local tile_width = 140
-  local tile_gap = 8
-  local header_height = 24
-  local padding = 8
+  local section_height = UI.TILE.RECENT_SECTION_HEIGHT
+  local tile_height = UI.TILE.RECENT_HEIGHT
+  local tile_width = UI.TILE.RECENT_WIDTH
+  local tile_gap = UI.TILE.GAP
 
   -- Draw section header
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#B3B3B3"))
@@ -68,8 +62,8 @@ local function draw_recent_templates(ctx, gui, width, available_height)
   ImGui.Spacing(ctx)
 
   -- Scroll area for horizontal tiles
-  local scroll_height = tile_height + padding * 2
-  if BeginChildCompat(ctx, "RecentTemplatesScroll", width, scroll_height, false, ImGui.WindowFlags_HorizontalScrollbar) then
+  local scroll_height = tile_height + UI.PADDING.PANEL_INNER * 2
+  if Helpers.begin_child_compat(ctx, "RecentTemplatesScroll", width, scroll_height, false, ImGui.WindowFlags_HorizontalScrollbar) then
     -- Draw tiles horizontally
     local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
 
@@ -160,7 +154,7 @@ local function draw_template_panel(ctx, gui, width, height)
   local state = gui.state
 
   -- Begin outer container
-  if not BeginChildCompat(ctx, "TemplatePanel", width, height, true) then
+  if not Helpers.begin_child_compat(ctx, "TemplatePanel", width, height, true) then
     return
   end
 
