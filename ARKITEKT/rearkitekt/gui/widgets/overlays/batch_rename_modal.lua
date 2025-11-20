@@ -92,6 +92,13 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local actual_content_w = math.min(modal_w, content_max_w)
   local center_offset_x = (modal_w - actual_content_w) * 0.5
 
+  -- Calculate layout variables early
+  local left_col_width = actual_content_w * 0.58  -- 58% for left column
+  local picker_size = 137  -- 30% smaller than original 195
+  local col_gap = 16  -- Gap between columns
+
+  local start_x = ImGui.GetCursorPosX(ctx) + center_offset_x
+
   -- Title centered
   local title_text = string.format("Rename %d item%s", count, count > 1 and "s" or "")
   local title_w = ImGui.CalcTextSize(ctx, title_text)
@@ -108,11 +115,6 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- TWO COLUMN LAYOUT: Left (input + chips) | Right (color picker)
   -- ========================================================================
 
-  local left_col_width = actual_content_w * 0.58  -- 58% for left column
-  local picker_size = 137  -- 30% smaller than original 195
-  local col_gap = 16  -- Gap between columns
-
-  local start_x = ImGui.GetCursorPosX(ctx) + center_offset_x
   local start_y = ImGui.GetCursorPosY(ctx)
 
   ImGui.SetCursorPosX(ctx, start_x)
