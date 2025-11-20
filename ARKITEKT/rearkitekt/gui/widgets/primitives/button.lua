@@ -227,11 +227,12 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, "##" .. context.unique_id, width, height)
 
-  -- Get hover/click state from ImGui (more reliable than manual detection)
-  local is_hovered = ImGui.IsItemHovered(ctx)
-  local is_active = ImGui.IsItemActive(ctx)
-  local clicked = ImGui.IsItemClicked(ctx, 0)
-  local right_clicked = ImGui.IsItemClicked(ctx, 1)
+  -- Get hover/click state from ImGui, respecting blocking
+  local should_block = InteractionBlocking.should_block_interaction(ctx, config.is_blocking)
+  local is_hovered = not should_block and ImGui.IsItemHovered(ctx)
+  local is_active = not should_block and ImGui.IsItemActive(ctx)
+  local clicked = not should_block and ImGui.IsItemClicked(ctx, 0)
+  local right_clicked = not should_block and ImGui.IsItemClicked(ctx, 1)
 
   -- Render button with the hover state (draw list renders after all ImGui calls)
   render_button(ctx, dl, x, y, width, height, config, context, instance, is_hovered, is_active)
