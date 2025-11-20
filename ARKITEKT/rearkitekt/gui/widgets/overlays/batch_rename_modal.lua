@@ -174,39 +174,35 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards:")
   ImGui.Dummy(ctx, 0, 4)
 
-  local chip_cursor_x, chip_cursor_y = ImGui.GetCursorScreenPos(ctx)
   local wildcard_chips = {
-    {label = "$n", desc = "Sequential (1, 2, 3...)"},
-    {label = "$i", desc = "Index (0, 1, 2...)"},
-    {label = "$N", desc = "Padded (001, 002, 003...)"},
+    {label = "number ($n)", wildcard = "$n"},
+    {label = "index ($i)", wildcard = "$i"},
+    {label = "padded ($N)", wildcard = "$N"},
   }
 
-  local chip_height = 24
   local chip_spacing = 8
-  local chip_x = chip_cursor_x
 
   for i, chip_data in ipairs(wildcard_chips) do
-    local chip_w = ImGui.CalcTextSize(ctx, chip_data.label) + 20
+    if i > 1 then
+      ImGui.SameLine(ctx, 0, chip_spacing)
+    end
 
-    local clicked = Chip.draw(ctx, dl, chip_x, chip_cursor_y, chip_w, chip_height, {
+    local clicked = Chip.draw(ctx, {
       label = chip_data.label,
+      style = Chip.STYLE.PILL,
+      interactive = true,
+      id = "wildcard_" .. i,
       bg_color = hexrgb("#2a2a2a"),
       text_color = hexrgb("#BBBBBB"),
-      border_color = hexrgb("#404040"),
-      hover_bg = hexrgb("#353535"),
       rounding = 4,
-      is_interactive = true,
     })
 
     if clicked then
-      self.pattern = self.pattern .. chip_data.label
+      self.pattern = self.pattern .. chip_data.wildcard
       self.preview_items = generate_preview(self.pattern, count)
     end
-
-    chip_x = chip_x + chip_w + chip_spacing
   end
 
-  ImGui.SetCursorScreenPos(ctx, chip_cursor_x, chip_cursor_y + chip_height)
   ImGui.Dummy(ctx, 0, 8)
 
   -- ========================================================================
@@ -216,22 +212,21 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Common Names:")
   ImGui.Dummy(ctx, 0, 4)
 
-  local name_cursor_x, name_cursor_y = ImGui.GetCursorScreenPos(ctx)
   local common_names = {"combat", "ambience", "tension"}
 
-  local name_chip_x = name_cursor_x
-
   for i, name in ipairs(common_names) do
-    local name_w = ImGui.CalcTextSize(ctx, name) + 20
+    if i > 1 then
+      ImGui.SameLine(ctx, 0, chip_spacing)
+    end
 
-    local clicked = Chip.draw(ctx, dl, name_chip_x, name_cursor_y, name_w, chip_height, {
+    local clicked = Chip.draw(ctx, {
       label = name,
+      style = Chip.STYLE.PILL,
+      interactive = true,
+      id = "common_name_" .. i,
       bg_color = hexrgb("#2a3a4a"),
       text_color = hexrgb("#AABBCC"),
-      border_color = hexrgb("#405060"),
-      hover_bg = hexrgb("#354555"),
       rounding = 4,
-      is_interactive = true,
     })
 
     if clicked then
@@ -242,11 +237,8 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
       self.pattern = self.pattern .. name
       self.preview_items = generate_preview(self.pattern, count)
     end
-
-    name_chip_x = name_chip_x + name_w + chip_spacing
   end
 
-  ImGui.SetCursorScreenPos(ctx, name_cursor_x, name_cursor_y + chip_height)
   ImGui.Dummy(ctx, 0, 10)
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 0, 10)
