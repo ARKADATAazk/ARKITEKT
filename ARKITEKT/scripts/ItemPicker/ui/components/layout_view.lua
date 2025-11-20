@@ -82,6 +82,18 @@ local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
 end
 
+-- Draw a centered panel title
+local function draw_panel_title(ctx, title_font, title, panel_x, panel_y, panel_width, padding, alpha, font_size)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, alpha)
+  ImGui.PushFont(ctx, title_font, font_size)
+  local title_width = ImGui.CalcTextSize(ctx, title)
+  local title_x = panel_x + (panel_width - title_width) / 2
+  ImGui.SetCursorScreenPos(ctx, title_x, panel_y + padding)
+  ImGui.Text(ctx, title)
+  ImGui.PopFont(ctx)
+  ImGui.PopStyleVar(ctx)
+end
+
 function LayoutView:handle_shortcuts(ctx)
   -- Ctrl+F to focus search
   local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
@@ -617,16 +629,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     draw_panel(draw_list, panel_x1, panel_y1, panel_x2, panel_y2, panel_rounding, section_fade)
 
     -- MIDI header (centered)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
-    ImGui.PushFont(ctx, title_font, 14)
-    local midi_title = "MIDI Items"
-    local midi_title_width = ImGui.CalcTextSize(ctx, midi_title)
-    local midi_panel_width = content_width - panel_right_padding
-    local midi_title_x = start_x + (midi_panel_width - midi_title_width) / 2
-    ImGui.SetCursorScreenPos(ctx, midi_title_x, start_y + panel_padding)
-    ImGui.Text(ctx, midi_title)
-    ImGui.PopFont(ctx)
-    ImGui.PopStyleVar(ctx)
+    draw_panel_title(ctx, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14)
 
     -- MIDI grid
     local midi_content_y = start_y + header_height
@@ -653,16 +656,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     draw_panel(draw_list, panel_x1, panel_y1, panel_x2, panel_y2, panel_rounding, section_fade)
 
     -- Audio header (centered)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
-    ImGui.PushFont(ctx, title_font, 15)
-    local audio_title = "Audio Items"
-    local audio_title_width = ImGui.CalcTextSize(ctx, audio_title)
-    local audio_panel_width = content_width - panel_right_padding
-    local audio_title_x = start_x + (audio_panel_width - audio_title_width) / 2
-    ImGui.SetCursorScreenPos(ctx, audio_title_x, start_y + panel_padding)
-    ImGui.Text(ctx, audio_title)
-    ImGui.PopFont(ctx)
-    ImGui.PopStyleVar(ctx)
+    draw_panel_title(ctx, title_font, "Audio Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 15)
 
     -- Audio grid
     local audio_content_y = start_y + header_height
@@ -728,12 +722,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
       draw_panel(draw_list, midi_panel_x1, midi_panel_y1, midi_panel_x2, midi_panel_y2, panel_rounding, section_fade)
 
-      ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
-      ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + panel_padding)
-      ImGui.PushFont(ctx, title_font, 14)
-      ImGui.Text(ctx, "MIDI Tracks")
-      ImGui.PopFont(ctx)
-      ImGui.PopStyleVar(ctx)
+      -- MIDI header (centered)
+      draw_panel_title(ctx, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14)
 
       local midi_content_y = start_y + header_height
       local midi_content_h = content_height - panel_padding
@@ -771,15 +761,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       draw_panel(draw_list, audio_panel_x1, audio_panel_y1, audio_panel_x2, audio_panel_y2, panel_rounding, section_fade)
 
       -- Audio header (centered)
-      ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
-      ImGui.PushFont(ctx, title_font, 15)
-      local audio_title = "Audio Items"
-      local audio_title_width = ImGui.CalcTextSize(ctx, audio_title)
-      local audio_title_x = audio_start_x + (audio_width - audio_title_width) / 2
-      ImGui.SetCursorScreenPos(ctx, audio_title_x, start_y + panel_padding)
-      ImGui.Text(ctx, audio_title)
-      ImGui.PopFont(ctx)
-      ImGui.PopStyleVar(ctx)
+      draw_panel_title(ctx, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15)
 
       local audio_content_y = start_y + header_height
       local audio_content_h = content_height - panel_padding
@@ -845,16 +827,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     draw_panel(draw_list, midi_panel_x1, midi_panel_y1, midi_panel_x2, midi_panel_y2, panel_rounding, section_fade)
 
     -- MIDI header (centered)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
-    ImGui.PushFont(ctx, title_font, 14)
-    local midi_title = "MIDI Items"
-    local midi_title_width = ImGui.CalcTextSize(ctx, midi_title)
-    local midi_panel_width = content_width - panel_right_padding
-    local midi_title_x = start_x + (midi_panel_width - midi_title_width) / 2
-    ImGui.SetCursorScreenPos(ctx, midi_title_x, start_y + panel_padding)
-    ImGui.Text(ctx, midi_title)
-    ImGui.PopFont(ctx)
-    ImGui.PopStyleVar(ctx)
+    draw_panel_title(ctx, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14)
 
     -- MIDI grid container
     local midi_content_y = start_y + header_height
@@ -895,16 +868,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     draw_panel(draw_list, audio_panel_x1, audio_panel_y1, audio_panel_x2, audio_panel_y2, panel_rounding, section_fade)
 
     -- Audio header (centered)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, section_fade)
-    ImGui.PushFont(ctx, title_font, 15)
-    local audio_title = "Audio Items"
-    local audio_title_width = ImGui.CalcTextSize(ctx, audio_title)
-    local audio_panel_width = content_width - panel_right_padding
-    local audio_title_x = start_x + (audio_panel_width - audio_title_width) / 2
-    ImGui.SetCursorScreenPos(ctx, audio_title_x, audio_start_y + panel_padding)
-    ImGui.Text(ctx, audio_title)
-    ImGui.PopFont(ctx)
-    ImGui.PopStyleVar(ctx)
+    draw_panel_title(ctx, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15)
 
     -- Audio grid container
     local audio_content_y = audio_start_y + header_height
