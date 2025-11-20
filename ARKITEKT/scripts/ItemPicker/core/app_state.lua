@@ -60,6 +60,10 @@ M.item_chunks = {}
 
 M.tile_sizes = { width = nil, height = nil }  -- nil = use config default
 
+-- Region filter state
+M.selected_regions = {}  -- { [region_name] = true } for active filters
+M.all_regions = {}  -- Cached list of {name, color} from GetAllProjectRegions()
+
 -- Drag state
 M.dragging = nil
 M.item_to_add = nil
