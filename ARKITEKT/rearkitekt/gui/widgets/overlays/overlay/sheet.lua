@@ -125,7 +125,9 @@ function Sheet.render(ctx, alpha, bounds, content_fn, opts)
   -- Use built-in WindowPadding for consistent automatic padding
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
 
-  local child_flags = ImGui.ChildFlags_None or 0
+  -- CRITICAL: AlwaysUseWindowPadding flag ensures WindowPadding style var is applied
+  -- Without this flag, child windows ignore WindowPadding by default
+  local child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
   local window_flags = ImGui.WindowFlags_NoScrollbar or 0
   ImGui.BeginChild(ctx, '##sheet', w, h - hh, child_flags, window_flags)
 

@@ -56,7 +56,9 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
   local bg_color = Colors.with_alpha(config.bg_color, math.floor(255 * config.bg_opacity * alpha))
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, bg_color)
 
-  local child_flags = ImGui.ChildFlags_None or 0
+  -- CRITICAL: AlwaysUseWindowPadding flag ensures WindowPadding style var is applied
+  -- Without this flag, child windows ignore WindowPadding by default
+  local child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
   local window_flags = 0  -- Allow scrolling
   ImGui.BeginChild(ctx, '##modal_container', w, h, child_flags, window_flags)
 
