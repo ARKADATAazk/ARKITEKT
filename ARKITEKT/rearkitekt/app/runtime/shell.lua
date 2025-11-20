@@ -54,19 +54,20 @@ local function load_fonts(ctx, font_cfg)
       attached[font] = true
     end
   end
+
+  -- TEMP TEST: Load Orbitron FIRST and use as default to verify font loading works
+  local orbitron_size = font_cfg.orbitron or Constants.TITLEBAR.azk_font_size
+  local orbitron_font = exists(O) and ImGui.CreateFont(O, orbitron_size) or nil
+
   -- Original working pattern: CreateFont(path, size) with Attach
-  local default_font   = exists(R) and ImGui.CreateFont(R, font_cfg.default)
-                                or ImGui.CreateFont('sans-serif', font_cfg.default)
+  local default_font   = orbitron_font or (exists(R) and ImGui.CreateFont(R, font_cfg.default)
+                                or ImGui.CreateFont('sans-serif', font_cfg.default))
   local title_font     = exists(B) and ImGui.CreateFont(B, font_cfg.title)
                                 or default_font
   local version_font   = exists(R) and ImGui.CreateFont(R, font_cfg.version)
                                 or default_font
   local monospace_font = exists(M) and ImGui.CreateFont(M, font_cfg.monospace)
                                 or default_font
-
-  -- Load Orbitron for AZK branding at fixed size from Constants
-  local orbitron_size = font_cfg.orbitron or Constants.TITLEBAR.azk_font_size
-  local orbitron_font = exists(O) and ImGui.CreateFont(O, orbitron_size) or nil
 
   local time_display_font = nil
   if font_cfg.time_display then
@@ -97,7 +98,7 @@ local function load_fonts(ctx, font_cfg)
 
   return {
     default = default_font,
-    default_size = font_cfg.default,
+    default_size = orbitron_font and orbitron_size or font_cfg.default,  -- TEMP: Use Orbitron size when it's default
     title = title_font,
     title_size = font_cfg.title,
     version = version_font,
