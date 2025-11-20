@@ -327,7 +327,7 @@ function M.new(opts)
       end
 
       -- Calculate text size with Orbitron font at its creation size
-      if azk_font then ImGui.PushFont(ctx, azk_font, azk_font_size) end
+      if azk_font then ImGui.PushFont(ctx, azk_font) end  -- NO SIZE - let font use creation size!
       local azk_text_w, azk_text_h = ImGui.CalcTextSize(ctx, azk_text)
       if azk_font then ImGui.PopFont(ctx) end
 
@@ -336,9 +336,9 @@ function M.new(opts)
 
       -- Render AZK text with 30% opacity (more visible Orbitron style)
       if azk_font then
-        ImGui.PushFont(ctx, azk_font, azk_font_size)
+        ImGui.PushFont(ctx, azk_font)  -- NO SIZE - let font use creation size!
         if not self._azk_font_push_logged then
-          reaper.ShowConsoleMsg(string.format("[Titlebar] Pushing Orbitron font for rendering (obj: %s, size: %d)\n", tostring(azk_font), azk_font_size))
+          reaper.ShowConsoleMsg(string.format("[Titlebar] Pushing Orbitron font WITHOUT size (obj: %s)\n", tostring(azk_font)))
           self._azk_font_push_logged = true
         end
       end
