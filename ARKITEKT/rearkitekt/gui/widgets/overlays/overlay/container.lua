@@ -19,7 +19,7 @@ local DEFAULTS = {
   border_color = hexrgb("#000000"),  -- Black border
   border_opacity = 1.0,
   border_thickness = 1,  -- 1 pixel border
-  padding = 12,          -- Subtle internal padding
+  padding = 20,          -- Internal padding for content spacing
 }
 
 -- Render a dark container with content

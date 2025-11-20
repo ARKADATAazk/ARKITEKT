@@ -142,11 +142,8 @@ function M.show_message(ctx, window, title, message, opts)
       end,
       render = function(ctx, alpha, bounds)
         Sheet.render(ctx, alpha, bounds, function(ctx, w, h, a)
-          local padding = DEFAULTS.padding_x
-
-          -- Message text
-          ImGui.SetCursorPos(ctx, padding, padding)
-          ImGui.PushTextWrapPos(ctx, w - padding)
+          -- Message text (Sheet now handles padding)
+          ImGui.PushTextWrapPos(ctx, w)
           ImGui.Text(ctx, message)
           ImGui.PopTextWrapPos(ctx)
 
@@ -207,11 +204,8 @@ function M.show_confirm(ctx, window, title, message, opts)
       end,
       render = function(ctx, alpha, bounds)
         Sheet.render(ctx, alpha, bounds, function(ctx, w, h, a)
-          local padding = DEFAULTS.padding_x
-
-          -- Message text
-          ImGui.SetCursorPos(ctx, padding, padding)
-          ImGui.PushTextWrapPos(ctx, w - padding)
+          -- Message text (Sheet now handles padding)
+          ImGui.PushTextWrapPos(ctx, w)
           ImGui.Text(ctx, message)
           ImGui.PopTextWrapPos(ctx)
 
@@ -291,16 +285,15 @@ function M.show_input(ctx, window, title, initial_text, opts)
       end,
       render = function(ctx, alpha, bounds)
         Sheet.render(ctx, alpha, bounds, function(ctx, w, h, a)
-          local padding = DEFAULTS.padding_x
           local state = input_state[id]
 
           if not state then
             return
           end
 
-          -- Input field
-          ImGui.SetCursorPos(ctx, padding, padding + 10)
-          ImGui.SetNextItemWidth(ctx, w - padding * 2)
+          -- Input field (Sheet now handles padding)
+          ImGui.Dummy(ctx, 0, 4)
+          ImGui.SetNextItemWidth(ctx, w)
 
           ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Style.SEARCH_INPUT_COLORS.bg)
           ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Style.SEARCH_INPUT_COLORS.bg_hover)
