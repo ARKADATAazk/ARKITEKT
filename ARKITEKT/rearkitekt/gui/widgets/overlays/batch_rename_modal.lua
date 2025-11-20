@@ -9,7 +9,6 @@ local Style = require('rearkitekt.gui.style.defaults')
 local Container = require('rearkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('rearkitekt.gui.widgets.tools.color_picker_window')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
-local Fields = require('rearkitekt.gui.widgets.primitives.fields')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local hexrgb = Colors.hexrgb
 
@@ -84,7 +83,7 @@ function BatchRenameModal:close()
 end
 
 -- Draw modal content (shared between popup and overlay modes)
-function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
+function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, content_h)
   local modal_w = content_w or 520  -- Use provided content_w or fallback to 520
   local dl = ImGui.GetWindowDrawList(ctx)
 
@@ -102,31 +101,37 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   local picker_size = 137  -- 30% smaller than original 195
   local col_gap = 12  -- Gap between columns
 
-  local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
+  local start_x = ImGui.GetCursorPosX(ctx)
+  local start_y = ImGui.GetCursorPosY(ctx)
 
   -- ========================================================================
   -- LEFT COLUMN: Pattern input + wildcards + common names
   -- ========================================================================
 
-  -- Pattern input field using Fields primitive
-  local input_height = 28
-  local field_changed, new_pattern = Fields.draw(ctx, dl, start_x, start_y, left_col_width, input_height, {
-    id = "batch_rename_pattern",
-    text = self.pattern,
-    hint = "pattern$wildcard",
-    on_change = function(text)
-      self.pattern = text
-      self.preview_items = generate_preview(text, count)
-    end,
-  }, "batch_rename_pattern")
+  -- Pattern input field with Style.SEARCH_INPUT_COLORS
+  ImGui.SetNextItemWidth(ctx, left_col_width)
 
-  if field_changed then
+  if self.focus_input then
+    ImGui.SetKeyboardFocusHere(ctx)
+    self.focus_input = false
+  end
+
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Style.SEARCH_INPUT_COLORS.bg)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Style.SEARCH_INPUT_COLORS.bg_hover)
+  ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Style.SEARCH_INPUT_COLORS.bg_active)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Style.SEARCH_INPUT_COLORS.border_outer)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, Style.SEARCH_INPUT_COLORS.text)
+
+  local changed, new_pattern = ImGui.InputTextWithHint(ctx, "##pattern_input", "pattern$wildcard", self.pattern, ImGui.InputTextFlags_None)
+
+  ImGui.PopStyleColor(ctx, 5)
+
+  if changed then
     self.pattern = new_pattern
     self.preview_items = generate_preview(new_pattern, count)
   end
 
-  -- Move cursor below input field
-  ImGui.SetCursorScreenPos(ctx, start_x, start_y + input_height + 6)
+  ImGui.Dummy(ctx, 0, 4)
 
   -- Wildcards label and chips
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards:")
@@ -198,7 +203,8 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   -- RIGHT COLUMN: Color picker
   -- ========================================================================
 
-  ImGui.SetCursorScreenPos(ctx, start_x + left_col_width + col_gap, start_y)
+  local left_col_cursor_y = ImGui.GetCursorPosY(ctx)
+  ImGui.SetCursorPos(ctx, start_x + left_col_width + col_gap, start_y)
 
   -- Initialize color picker only once per modal open
   if not self.picker_initialized then
@@ -215,11 +221,10 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   })
 
   -- Move cursor below both columns
-  local left_col_bottom = start_y + input_height + 6 + ImGui.GetTextLineHeight(ctx) + 2 + 24 + 4 + ImGui.GetTextLineHeight(ctx) + 2 + 24 + 6
-  local right_col_bottom = start_y + picker_size
-  local next_y = math.max(left_col_bottom, right_col_bottom) + 6
+  local right_col_end_y = start_y + picker_size
+  local final_y = math.max(left_col_cursor_y, right_col_end_y)
 
-  ImGui.SetCursorScreenPos(ctx, start_x, next_y)
+  ImGui.SetCursorPosY(ctx, final_y + 4)
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 0, 4)
 
@@ -251,14 +256,18 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   local button_h = 28
   local spacing = 8
   local total_w = button_w * 4 + spacing * 3
-  local button_start_x = start_x + (modal_w - total_w) * 0.5
-  local button_y, _ = ImGui.GetCursorScreenPos(ctx)
+  local button_start_x = (modal_w - total_w) * 0.5
+
+  -- Center buttons horizontally
+  ImGui.SetCursorPosX(ctx, button_start_x)
+  local button_y = ImGui.GetCursorPosY(ctx)
+  local screen_x, screen_y = ImGui.GetCursorScreenPos(ctx)
 
   local should_close = false
   local can_rename = self.pattern ~= ""
 
   -- Cancel button
-  local _, cancel_clicked = Button.draw(ctx, dl, button_start_x, button_y, button_w, button_h, {
+  local _, cancel_clicked = Button.draw(ctx, dl, screen_x, screen_y, button_w, button_h, {
     id = "cancel_btn",
     label = "Cancel",
     height = button_h,
@@ -269,7 +278,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   end
 
   -- Rename button (disabled when no pattern)
-  local _, rename_clicked = Button.draw(ctx, dl, button_start_x + button_w + spacing, button_y, button_w, button_h, {
+  local _, rename_clicked = Button.draw(ctx, dl, screen_x + button_w + spacing, screen_y, button_w, button_h, {
     id = "rename_btn",
     label = "Rename",
     height = button_h,
@@ -284,7 +293,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   end
 
   -- Rename & Recolor button (disabled when no pattern)
-  local _, rename_recolor_clicked = Button.draw(ctx, dl, button_start_x + (button_w + spacing) * 2, button_y, button_w, button_h, {
+  local _, rename_recolor_clicked = Button.draw(ctx, dl, screen_x + (button_w + spacing) * 2, screen_y, button_w, button_h, {
     id = "rename_recolor_btn",
     label = "Rename & Recolor",
     height = button_h,
@@ -299,7 +308,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   end
 
   -- Recolor button (always enabled)
-  local _, recolor_clicked = Button.draw(ctx, dl, button_start_x + (button_w + spacing) * 3, button_y, button_w, button_h, {
+  local _, recolor_clicked = Button.draw(ctx, dl, screen_x + (button_w + spacing) * 3, screen_y, button_w, button_h, {
     id = "recolor_btn",
     label = "Recolor",
     height = button_h,
@@ -313,8 +322,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w)
   end
 
   -- Advance cursor past buttons
-  ImGui.SetCursorScreenPos(ctx, start_x, button_y + button_h)
-  ImGui.Dummy(ctx, 0, 4)  -- Add spacing at bottom
+  ImGui.SetCursorPosY(ctx, button_y + button_h)
 
   return should_close
 end
@@ -340,14 +348,14 @@ function BatchRenameModal:draw(ctx, item_count, window)
         end,
         render = function(ctx, alpha, bounds)
           Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a, padding)
-            local should_close = self:draw_content(ctx, count, true, content_w)
+            local should_close = self:draw_content(ctx, count, true, content_w, content_h)
 
             if should_close then
               window.overlay:pop('batch-rename-modal')
               self:close()
               self.overlay_pushed = false
             end
-          end, { width = 0.42, height = 0.55 })
+          end, { width = 0.40, height = 0.50 })
         end
       })
     end
