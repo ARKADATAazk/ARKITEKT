@@ -10,8 +10,9 @@ local M = {}
 local DraggableSeparator = {}
 DraggableSeparator.__index = DraggableSeparator
 
-function M.new()
+function M.new(id)
   return setmetatable({
+    id = id or "separator",
     drag_state = {
       is_dragging = false,
       drag_offset = 0
@@ -19,8 +20,11 @@ function M.new()
   }, DraggableSeparator)
 end
 
-function DraggableSeparator:draw_horizontal(ctx, x, y, width, height, config)
-  local separator_thickness = config.thickness
+function DraggableSeparator:draw_horizontal(ctx, x, y, width, height, config_or_thickness)
+  -- Support both config table and direct thickness param
+  local separator_thickness = type(config_or_thickness) == "table"
+    and config_or_thickness.thickness
+    or (config_or_thickness or 8)
 
   local mx, my = ImGui.GetMousePos(ctx)
   local is_hovered = mx >= x and mx < x + width and
@@ -31,7 +35,7 @@ function DraggableSeparator:draw_horizontal(ctx, x, y, width, height, config)
   end
 
   ImGui.SetCursorScreenPos(ctx, x, y - separator_thickness/2)
-  ImGui.InvisibleButton(ctx, "##hseparator", width, separator_thickness)
+  ImGui.InvisibleButton(ctx, "##hsep_" .. self.id, width, separator_thickness)
 
   if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
     return "reset", 0
@@ -52,8 +56,11 @@ function DraggableSeparator:draw_horizontal(ctx, x, y, width, height, config)
   return "none", y
 end
 
-function DraggableSeparator:draw_vertical(ctx, x, y, width, height, config)
-  local separator_thickness = config.thickness
+function DraggableSeparator:draw_vertical(ctx, x, y, width, height, config_or_thickness)
+  -- Support both config table and direct thickness param
+  local separator_thickness = type(config_or_thickness) == "table"
+    and config_or_thickness.thickness
+    or (config_or_thickness or 8)
 
   local mx, my = ImGui.GetMousePos(ctx)
   local is_hovered = mx >= x - separator_thickness/2 and mx < x + separator_thickness/2 and
@@ -64,7 +71,7 @@ function DraggableSeparator:draw_vertical(ctx, x, y, width, height, config)
   end
 
   ImGui.SetCursorScreenPos(ctx, x - separator_thickness/2, y)
-  ImGui.InvisibleButton(ctx, "##vseparator", separator_thickness, height)
+  ImGui.InvisibleButton(ctx, "##vsep_" .. self.id, separator_thickness, height)
 
   if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
     return "reset", 0
