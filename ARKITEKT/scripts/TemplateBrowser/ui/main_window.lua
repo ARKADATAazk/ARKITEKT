@@ -154,14 +154,16 @@ function MainWindow:draw(ctx, shell_state)
     end
   end
 
-  -- Get screen dimensions (same as original gui.lua)
+  -- Get screen dimensions
   local SCREEN_W, SCREEN_H
   if is_overlay_mode and shell_state.overlay_state then
+    -- Overlay mode: bounds already account for multi-monitor via overlay manager's JS API
     SCREEN_W = shell_state.overlay_state.width
     SCREEN_H = shell_state.overlay_state.height
   else
-    local MonitorDetection = require('rearkitekt.app.utils.monitor_detection')
-    SCREEN_W, SCREEN_H = MonitorDetection.get_reaper_window_size(ctx)
+    -- Normal window mode: use viewport
+    local viewport = ImGui.GetMainViewport(ctx)
+    SCREEN_W, SCREEN_H = ImGui.Viewport_GetSize(viewport)
   end
 
   -- Title (moved up by 15 pixels)
