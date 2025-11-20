@@ -17,6 +17,7 @@ local STYLE = {
   PILL = "pill",
   DOT = "dot",
   INDICATOR = "indicator",
+  ACTION = "action",
 }
 
 local SHAPE = {
@@ -206,8 +207,8 @@ function M.draw(ctx, opts)
     return false, 0, 0
   end
   
-  local rounding = opts.rounding or (style == STYLE.PILL and height * 0.5 or 6)
-  local padding_h = opts.padding_h or (style == STYLE.DOT and 12 or 14)
+  local rounding = opts.rounding or (style == STYLE.PILL and height * 0.5 or (style == STYLE.ACTION and 2 or 6))
+  local padding_h = opts.padding_h or (style == STYLE.DOT and 12 or (style == STYLE.ACTION and 8 or 14))
   local explicit_width = opts.explicit_width
   local text_align = opts.text_align or "center"
   local interactive = opts.interactive ~= false
@@ -299,6 +300,38 @@ function M.draw(ctx, opts)
     local text_x = content_x + (text_align == "right" and (available_w - text_w) or
                                  text_align == "center" and ((available_w - text_w) * 0.5) or 0) - 3  -- Move left 3px
     local text_y = start_y + (chip_h - text_h) * 0.5 - 1  -- Move up 1px
+    Draw.text(dl, text_x, text_y, text_color, label)
+  elseif style == STYLE.ACTION then
+    -- Simple colored rectangles with dark text for action chips
+    local bg_color = opts.bg_color or hexrgb("#5B8FB9")
+    local text_color = opts.text_color or hexrgb("#1a1a1a")
+    local border_color = opts.border_color or Colors.with_alpha(hexrgb("#000000"), 100)
+
+    -- Apply state changes to background
+    local draw_bg = bg_color
+    if is_active then
+      draw_bg = Colors.adjust_brightness(bg_color, 0.85)  -- Darken on click
+    elseif is_hovered then
+      draw_bg = Colors.adjust_brightness(bg_color, 1.15)  -- Brighten on hover
+    end
+
+    -- Filled background
+    ImGui.DrawList_AddRectFilled(dl, start_x, start_y, start_x + chip_w, start_y + chip_h,
+                                 draw_bg, rounding)
+
+    -- Subtle dark border
+    ImGui.DrawList_AddRect(dl, start_x, start_y, start_x + chip_w, start_y + chip_h,
+                           border_color, rounding, 0, 1)
+
+    -- Subtle inner shadow when active
+    if is_active then
+      local inner_shadow = Colors.with_alpha(hexrgb("#000000"), 60)
+      Draw.rect_filled(dl, start_x, start_y, start_x + chip_w, start_y + 2, inner_shadow, 0)
+    end
+
+    -- Centered text
+    local text_x = start_x + (chip_w - text_w) * 0.5
+    local text_y = start_y + (chip_h - text_h) * 0.5
     Draw.text(dl, text_x, text_y, text_color, label)
   else
     local hover_factor = is_active and 1.3 or (is_hovered and 1.0 or 0.0)

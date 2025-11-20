@@ -152,12 +152,14 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
     local clicked = Chip.draw(ctx, {
       label = chip_data.label,
-      style = Chip.STYLE.PILL,
+      style = Chip.STYLE.ACTION,
       interactive = true,
       id = "wildcard_" .. i,
-      bg_color = hexrgb("#2a2a2a"),
-      text_color = hexrgb("#BBBBBB"),
-      rounding = 4,
+      bg_color = Style.ACTION_CHIP_WILDCARD.bg_color,
+      text_color = Style.ACTION_CHIP_WILDCARD.text_color,
+      border_color = Style.ACTION_CHIP_WILDCARD.border_color,
+      rounding = Style.ACTION_CHIP_WILDCARD.rounding,
+      padding_h = Style.ACTION_CHIP_WILDCARD.padding_h,
     })
 
     if clicked then
@@ -181,12 +183,14 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
     local clicked = Chip.draw(ctx, {
       label = name,
-      style = Chip.STYLE.PILL,
+      style = Chip.STYLE.ACTION,
       interactive = true,
       id = "common_name_" .. i,
-      bg_color = hexrgb("#2a3a4a"),
-      text_color = hexrgb("#AABBCC"),
-      rounding = 4,
+      bg_color = Style.ACTION_CHIP_TAG.bg_color,
+      text_color = Style.ACTION_CHIP_TAG.text_color,
+      border_color = Style.ACTION_CHIP_TAG.border_color,
+      rounding = Style.ACTION_CHIP_TAG.rounding,
+      padding_h = Style.ACTION_CHIP_TAG.padding_h,
     })
 
     if clicked then

@@ -330,6 +330,23 @@ M.SEARCH_INPUT = {
   tooltip_delay = 0.5,
 }
 
+-- Action chip presets - colored rectangles with dark text
+M.ACTION_CHIP_WILDCARD = {
+  bg_color = hexrgb("#5B8FB9"),  -- Muted blue for technical wildcards
+  text_color = hexrgb("#1a1a1a"),  -- Dark text
+  border_color = Colors.with_alpha(hexrgb("#000000"), 100),
+  rounding = 2,
+  padding_h = 8,
+}
+
+M.ACTION_CHIP_TAG = {
+  bg_color = hexrgb("#8B7355"),  -- Warm amber for tags/names
+  text_color = hexrgb("#1a1a1a"),  -- Dark text
+  border_color = Colors.with_alpha(hexrgb("#000000"), 100),
+  rounding = 2,
+  padding_h = 8,
+}
+
 M.DROPDOWN = {
   bg_color = M.DROPDOWN_COLORS.bg,
   bg_hover_color = M.DROPDOWN_COLORS.bg_hover,
