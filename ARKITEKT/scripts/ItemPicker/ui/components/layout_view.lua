@@ -275,8 +275,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       tostring(show_region_tags), tostring(not show_region_tags)))
     self.state.set_setting('show_region_tags', not show_region_tags)
     -- Trigger data reload when region tags are toggled
-    self.state.needs_reload = true
-    reaper.ShowConsoleMsg("[REGION_TAGS] Triggered needs_reload\n")
+    self.state.needs_recollect = true
+    reaper.ShowConsoleMsg("[REGION_TAGS] Triggered needs_recollect\n")
   end
 
   -- Sort mode buttons (on same line after checkboxes)
