@@ -164,6 +164,8 @@ function M.new(opts)
       version_font    = config.version_font,
       version_font_size = config.version_font_size,
       version_color   = config.version_color,
+      azk_font        = config.azk_font,  -- Orbitron for AZK branding
+      azk_font_size   = config.azk_font_size,
       show_icon       = config.show_icon,
       icon_size       = config.icon_size,
       icon_spacing    = config.icon_spacing,

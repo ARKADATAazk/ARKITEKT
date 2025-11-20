@@ -40,6 +40,7 @@ local function load_fonts(ctx, font_cfg)
   local B = fontsdir .. font_cfg.family_bold
   local M = fontsdir .. font_cfg.family_mono
   local I = fontsdir .. font_cfg.family_icons
+  local O = fontsdir .. 'Orbitron-Bold.ttf'  -- Orbitron for branding
 
   local function exists(p) local f = io.open(p, 'rb'); if f then f:close(); return true end end
 
@@ -60,6 +61,10 @@ local function load_fonts(ctx, font_cfg)
                                 or default_font
   local monospace_font = exists(M) and ImGui.CreateFont(M, font_cfg.monospace)
                                 or default_font
+
+  -- Load Orbitron for AZK branding (slightly larger than title)
+  local orbitron_size = font_cfg.orbitron or (font_cfg.title * 1.2)
+  local orbitron_font = exists(O) and ImGui.CreateFont(O, orbitron_size) or nil
 
   local time_display_font = nil
   if font_cfg.time_display then
@@ -97,6 +102,7 @@ local function load_fonts(ctx, font_cfg)
   attach_once(title_font)
   attach_once(version_font)
   attach_once(monospace_font)
+  attach_once(orbitron_font)
 
   return {
     default = default_font,
@@ -113,6 +119,8 @@ local function load_fonts(ctx, font_cfg)
     time_display_size = font_cfg.time_display,
     icons = icons_font,
     icons_size = font_cfg.icons,
+    orbitron = orbitron_font,
+    orbitron_size = orbitron_size,
   }
 end
 
@@ -145,6 +153,8 @@ function M.run(opts)
     version_font    = fonts.titlebar_version or fonts.version,
     version_font_size = fonts.titlebar_version_size or fonts.version_size,
     version_color   = config.version_color,
+    azk_font        = fonts.orbitron,  -- Pass Orbitron font for AZK branding
+    azk_font_size   = fonts.orbitron_size,
     settings        = settings and settings:sub('ui') or nil,
     initial_pos     = config.initial_pos,
     initial_size    = config.initial_size,

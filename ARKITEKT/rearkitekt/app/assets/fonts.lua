@@ -28,7 +28,7 @@ end
 ---Load standard ARKITEKT fonts and attach to ImGui context
 ---@param ImGui table ReaImGui module
 ---@param ctx userdata ImGui context to attach fonts to
----@param opts? table Optional size overrides: { default_size, title_size, monospace_size }
+---@param opts? table Optional size overrides: { default_size, title_size, monospace_size, orbitron_size }
 ---@return table fonts Table with font objects and their sizes
 function M.load(ImGui, ctx, opts)
   opts = opts or {}
@@ -37,12 +37,14 @@ function M.load(ImGui, ctx, opts)
   local default_size = opts.default_size or Constants.TYPOGRAPHY.BODY
   local title_size = opts.title_size or Constants.TYPOGRAPHY.HEADING
   local monospace_size = opts.monospace_size or Constants.TYPOGRAPHY.CODE
+  local orbitron_size = opts.orbitron_size or (Constants.TYPOGRAPHY.HEADING * 1.5)  -- Larger for branding
 
   -- Find fonts directory
   local fonts_dir = find_fonts_dir()
   local regular = fonts_dir .. 'Inter_18pt-Regular.ttf'
   local bold = fonts_dir .. 'Inter_18pt-SemiBold.ttf'
   local mono = fonts_dir .. 'JetBrainsMono-Regular.ttf'
+  local orbitron = fonts_dir .. 'Orbitron-Bold.ttf'
 
   -- Create fonts with fallback to sans-serif
   local fonts = {
@@ -54,6 +56,9 @@ function M.load(ImGui, ctx, opts)
 
     monospace = file_exists(mono) and ImGui.CreateFont(mono, monospace_size) or ImGui.CreateFont('sans-serif', monospace_size),
     monospace_size = monospace_size,
+
+    orbitron = file_exists(orbitron) and ImGui.CreateFont(orbitron, orbitron_size) or nil,
+    orbitron_size = orbitron_size,
   }
 
   -- Attach all font objects to context

@@ -43,6 +43,8 @@ function M.new(opts)
     title_font_size = config.title_font_size,
     version_font    = config.version_font,
     version_font_size = config.version_font_size,
+    azk_font        = config.azk_font,  -- Orbitron for AZK branding
+    azk_font_size   = config.azk_font_size,
 
     -- Layout (from merged config)
     height          = config.height,
@@ -314,10 +316,11 @@ function M.new(opts)
 
       -- Draw stylized "AZK" in center of titlebar with 15% transparency
       local azk_text = "AZK"
-      local azk_font_size = self.height * 0.65  -- Large text based on titlebar height
+      local azk_font = self.azk_font or self.title_font  -- Use Orbitron or fallback to title font
+      local azk_font_size = self.azk_font_size or (self.height * 0.65)  -- Use config size or calculate
 
-      -- Calculate text size with large font
-      if self.title_font then ImGui.PushFont(ctx, self.title_font, azk_font_size) end
+      -- Calculate text size with Orbitron font
+      if azk_font then ImGui.PushFont(ctx, azk_font, azk_font_size) end
       local azk_text_w, azk_text_h = ImGui.CalcTextSize(ctx, azk_text)
 
       local azk_x = (win_w - azk_text_w) * 0.5
@@ -331,7 +334,7 @@ function M.new(opts)
       ImGui.PopStyleColor(ctx)
       ImGui.PopStyleVar(ctx)
 
-      if self.title_font then ImGui.PopFont(ctx) end
+      if azk_font then ImGui.PopFont(ctx) end
 
       ImGui.SetCursorPos(ctx, win_w - total_button_width, 0)
       
