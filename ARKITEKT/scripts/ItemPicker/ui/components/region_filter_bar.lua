@@ -32,28 +32,19 @@ function M.draw(ctx, draw_list, x, y, width, state, config)
     local is_hovered = mouse_x >= chip_x and mouse_x <= chip_x + chip_w and
                        mouse_y >= chip_y and mouse_y <= chip_y + chip_height
 
-    -- Chip background color (dimmed by default, bright when selected)
+    -- Chip background (dark grey, dimmed by default, bright when selected)
     local bg_alpha = is_selected and 0xFF or 0x66  -- 40% opacity when unselected
     if is_hovered and not is_selected then
       bg_alpha = 0x99  -- 60% opacity when hovered
     end
-    local bg_color = (region_color & 0xFFFFFF00) | bg_alpha
+    local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha
 
     -- Draw chip background
     ImGui.DrawList_AddRectFilled(draw_list, chip_x, chip_y, chip_x + chip_w, chip_y + chip_height, bg_color, chip_cfg.rounding)
 
-    -- Draw border (darker version of region color)
-    local r = ((region_color >> 24) & 0xFF) * (1 - chip_cfg.border_darken)
-    local g = ((region_color >> 16) & 0xFF) * (1 - chip_cfg.border_darken)
-    local b = ((region_color >> 8) & 0xFF) * (1 - chip_cfg.border_darken)
-    local border_alpha = is_selected and 0xFF or 0x66
-    local border_color = (math.floor(r) << 24) | (math.floor(g) << 16) | (math.floor(b) << 8) | border_alpha
-    local border_width = is_selected and 2 or chip_cfg.border_width
-    ImGui.DrawList_AddRect(draw_list, chip_x, chip_y, chip_x + chip_w, chip_y + chip_height, border_color, chip_cfg.rounding, 0, border_width)
-
-    -- Chip text (dimmed when unselected)
+    -- Chip text (region color, dimmed when unselected)
     local text_alpha = is_selected and 0xFF or 0x66
-    local text_color = (chip_cfg.text_color & 0xFFFFFF00) | text_alpha
+    local text_color = (region_color & 0xFFFFFF00) | text_alpha
     local text_x = chip_x + chip_cfg.padding_x
     local text_y = chip_y + (chip_height - text_h) / 2
     ImGui.DrawList_AddText(draw_list, text_x, text_y, text_color, region_name)
