@@ -244,15 +244,21 @@ function M.draw(ctx, opts)
     end
     
     -- Draw border: 1px grey when not selected, 1px colored when selected
-    -- Use DrawList_AddRect directly with 0.5 offset for crisp 1px borders
+    -- Snap to pixel boundaries first, then offset by 0.5 for crisp 1px lines
+    local snap = function(x) return (x + 0.5)//1 end
+    local x1 = snap(start_x)
+    local y1 = snap(start_y)
+    local x2 = snap(start_x + chip_w)
+    local y2 = snap(start_y + chip_h)
+
     if is_selected then
       local border_color = Colors.with_alpha(Colors.adjust_brightness(color, 1.8), 255)
-      ImGui.DrawList_AddRect(dl, start_x + 0.5, start_y + 0.5, start_x + chip_w - 0.5, start_y + chip_h - 0.5,
+      ImGui.DrawList_AddRect(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5,
                              border_color, rounding, 0, 1)
     else
       -- Grey border matching background when not selected
       local border_color = Colors.with_alpha(Colors.adjust_brightness(bg_color, 1.2), 180)
-      ImGui.DrawList_AddRect(dl, start_x + 0.5, start_y + 0.5, start_x + chip_w - 0.5, start_y + chip_h - 0.5,
+      ImGui.DrawList_AddRect(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5,
                              border_color, rounding, 0, 1)
     end
 
