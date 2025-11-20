@@ -170,26 +170,44 @@ function MainWindow:draw(ctx, shell_state)
   local title = "Template Browser"
   local title_w = ImGui.CalcTextSize(ctx, title)
   local title_y = ImGui.GetCursorPosY(ctx) + title_y_offset
-  ImGui.SetCursorPosY(ctx, title_y)
-  ImGui.SetCursorPosX(ctx, (SCREEN_W - title_w) * 0.5)
-
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#E0E0E0"))
+  ImGui.SetCursorPos(ctx, (SCREEN_W - title_w) * 0.5, title_y)
   ImGui.Text(ctx, title)
-  ImGui.PopStyleColor(ctx)
   ImGui.PopFont(ctx)
 
-  -- Panel layout configuration (same as original)
-  local padding_top = 50
-  local padding_bottom = 30
-  local padding_left = 12
-  local padding_right = 12
+  -- FX parsing progress indicator
+  if not FXQueue.is_complete(self.state) then
+    local status = FXQueue.get_status(self.state)
+    local progress = FXQueue.get_progress(self.state)
 
+    local status_y = title_y + 25
+    local status_w = ImGui.CalcTextSize(ctx, status)
+
+    ImGui.SetCursorPos(ctx, (SCREEN_W - status_w) * 0.5, status_y)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#B3B3B3"))
+    ImGui.Text(ctx, status)
+    ImGui.PopStyleColor(ctx)
+
+    -- Small progress bar
+    local bar_width = 200
+    local bar_height = 3
+    ImGui.SetCursorPos(ctx, (SCREEN_W - bar_width) * 0.5, status_y + 18)
+    ImGui.PushStyleColor(ctx, ImGui.Col_PlotHistogram, self.config.COLORS.selected_bg)
+    ImGui.ProgressBar(ctx, progress, bar_width, bar_height, "")
+    ImGui.PopStyleColor(ctx)
+  end
+
+  -- Adjust spacing after title
+  ImGui.SetCursorPosY(ctx, title_y + 30)
+
+  -- Padding
+  local padding_left = 14
+  local padding_right = 14
+  local padding_bottom = 14
+  local status_bar_height = 24  -- Reserve space for status bar
+
+  local cursor_y = ImGui.GetCursorPosY(ctx)
   local content_width = SCREEN_W - padding_left - padding_right
-  local panel_height = SCREEN_H - padding_top - padding_bottom - 30  -- Reserve space for status bar
-
-  -- Set cursor for layout
-  local cursor_y = padding_top
-  ImGui.SetCursorPos(ctx, padding_left, cursor_y)
+  local panel_height = SCREEN_H - cursor_y - padding_bottom - status_bar_height
 
   -- Get cursor position for separator coordinate conversion
   local cursor_screen_x, cursor_screen_y = ImGui.GetCursorScreenPos(ctx)
@@ -270,7 +288,6 @@ function MainWindow:draw(ctx, shell_state)
 
   -- Status bar
   local StatusBar = require('TemplateBrowser.ui.status_bar')
-  local status_bar_height = 24
   local status_bar_y = SCREEN_H - padding_bottom - status_bar_height
   ImGui.SetCursorPos(ctx, padding_left, status_bar_y)
   StatusBar.draw(ctx, self.state, content_width, status_bar_height)
