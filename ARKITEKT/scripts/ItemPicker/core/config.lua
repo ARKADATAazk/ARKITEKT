@@ -272,6 +272,35 @@ M.REGION_TAGS = {
   max_chips_per_tile = 3,  -- Maximum number of region chips to show per tile
 }
 
+-- UI Panels (responsive hover behavior)
+M.UI_PANELS = {
+  -- Search bar
+  search = {
+    top_padding = 18,  -- Extra padding on top for easier trigger zones
+  },
+
+  -- Settings panel (slides down from above search)
+  settings = {
+    max_height = 70,  -- Maximum height when fully expanded
+    trigger_above_search = 10,  -- Pixels above search field before triggering
+    close_below_search = 50,  -- Pixels below search before closing (larger = stays visible longer)
+    slide_speed = 0.15,  -- Interpolation speed for smooth animation
+  },
+
+  -- Filter bar (slides down below search)
+  filter = {
+    max_height = 30,  -- Maximum height when visible
+    trigger_into_panels = 10,  -- Pixels into panel area before triggering (larger = opens later)
+    spacing_below_search = 8,  -- Spacing between search and filter bar
+  },
+
+  -- Panel headers (MIDI Items / Audio Items titles)
+  header = {
+    height = 28,  -- Used for extend_input_area to enable selection on header
+    title_offset_down = 5,  -- Additional pixels to move title down from padding
+  },
+}
+
 function M.validate()
   assert(M.TILE.MIN_WIDTH <= M.TILE.DEFAULT_WIDTH, "MIN_WIDTH must be <= DEFAULT_WIDTH")
   assert(M.TILE.DEFAULT_WIDTH <= M.TILE.MAX_WIDTH, "DEFAULT_WIDTH must be <= MAX_WIDTH")

@@ -262,7 +262,7 @@ function M.create(ctx, config, state, visualization, animator)
     get_items = get_items,
 
     -- Extend input area upward to include panel header for selection rectangle
-    extend_input_area = { left = 0, right = 0, top = 28, bottom = 0 },
+    extend_input_area = { left = 0, right = 0, top = config.UI_PANELS.header.height, bottom = 0 },
 
     config = {
       drag = { threshold = 30 }

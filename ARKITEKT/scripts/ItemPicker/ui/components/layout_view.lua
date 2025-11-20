@@ -83,11 +83,11 @@ local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
 end
 
 -- Draw a centered panel title (using DrawList to not block mouse input)
-local function draw_panel_title(ctx, draw_list, title_font, title, panel_x, panel_y, panel_width, padding, alpha, font_size)
+local function draw_panel_title(ctx, draw_list, title_font, title, panel_x, panel_y, panel_width, padding, alpha, font_size, config)
   ImGui.PushFont(ctx, title_font, font_size)
   local title_width = ImGui.CalcTextSize(ctx, title)
   local title_x = panel_x + (panel_width - title_width) / 2
-  local title_y = panel_y + padding + 5  -- 5 pixels lower total
+  local title_y = panel_y + padding + config.UI_PANELS.header.title_offset_down
 
   -- Use DrawList to avoid blocking mouse input for selection rectangle
   local text_color = Colors.hexrgb("#FFFFFF")
@@ -172,14 +172,14 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local search_y_offset = 25 * (1.0 - search_fade)
 
   -- Base position for search (before settings push it down)
-  local search_top_padding = 18  -- Extra padding on top
+  local search_top_padding = self.config.UI_PANELS.search.top_padding
   local search_base_y = coord_offset_y + 14 + ui_y_offset + search_y_offset + search_top_padding
   local search_height = 28
   local button_height = search_height
   local button_gap = 4  -- Gap between buttons and search
 
   -- Settings area ABOVE search (slides down with search)
-  local settings_area_max_height = 70  -- Maximum height when fully expanded
+  local settings_area_max_height = self.config.UI_PANELS.settings.max_height
 
   -- Calculate slide progress first
   if not self.state.settings_slide_progress then
@@ -187,18 +187,18 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   end
 
   -- Sticky hover behavior: trigger zone above actual search position
-  local trigger_zone_padding = 10  -- 10 pixels above the ACTUAL search field before triggering settings
+  local trigger_zone_padding = self.config.UI_PANELS.settings.trigger_above_search
 
   -- Calculate temporary search position for hover detection
   local temp_settings_height = settings_area_max_height * self.state.settings_slide_progress
   local temp_search_y = search_base_y + temp_settings_height
 
-  -- Trigger when mouse is 10px above the ACTUAL search position (not base)
+  -- Trigger when mouse is above the ACTUAL search position
   local is_in_trigger_zone = mouse_y >= (temp_search_y - trigger_zone_padding) and
                              mouse_y < temp_search_y
 
   -- Once triggered, stay visible until mouse goes below the search field (with buffer)
-  local is_below_search = mouse_y > (temp_search_y + search_height + 50)  -- 50px buffer before closing
+  local is_below_search = mouse_y > (temp_search_y + search_height + self.config.UI_PANELS.settings.close_below_search)
 
   -- Initialize sticky state
   if self.state.settings_sticky_visible == nil then
@@ -214,7 +214,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Smooth slide for settings area
   local target_slide = self.state.settings_sticky_visible and 1.0 or 0.0
-  local slide_speed = 0.15  -- Fixed interpolation speed
+  local slide_speed = self.config.UI_PANELS.settings.slide_speed
   self.state.settings_slide_progress = self.state.settings_slide_progress + (target_slide - self.state.settings_slide_progress) * slide_speed
 
   -- Calculate settings height and alpha
@@ -548,17 +548,17 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Render region filter bar with slide animation (if region processing enabled and regions available)
   local filter_bar_height = 0
-  local filter_bar_max_height = 30  -- Maximum height when visible
+  local filter_bar_max_height = self.config.UI_PANELS.filter.max_height
   local enable_region_processing = self.state.settings.enable_region_processing or self.state.settings.show_region_tags
   if enable_region_processing and self.state.all_regions and #self.state.all_regions > 0 then
-    local filter_bar_base_y = search_y + search_height + 8  -- 8px spacing below search
+    local filter_bar_base_y = search_y + search_height + self.config.UI_PANELS.filter.spacing_below_search
 
     -- Calculate panel start position to determine where we need to show filters
     local temp_filter_height = filter_bar_max_height * (self.state.filter_slide_progress or 0)
     local temp_panels_start_y = search_y + search_height + temp_filter_height + 20
 
-    -- Show filter when hovering anywhere above the panels (10px lower threshold)
-    local is_hovering_above_panels = mouse_y < (temp_panels_start_y + 10)
+    -- Show filter when hovering anywhere above the panels (trigger threshold into panels)
+    local is_hovering_above_panels = mouse_y < (temp_panels_start_y + self.config.UI_PANELS.filter.trigger_into_panels)
 
     -- Show filters when hovering above panels OR when settings are visible
     local filters_should_show = is_hovering_above_panels or self.state.settings_sticky_visible
@@ -568,7 +568,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       self.state.filter_slide_progress = 0
     end
     local target_filter_slide = filters_should_show and 1.0 or 0.0
-    local filter_slide_speed = 0.15  -- Fixed interpolation speed
+    local filter_slide_speed = self.config.UI_PANELS.settings.slide_speed  -- Reuse settings slide speed
     self.state.filter_slide_progress = self.state.filter_slide_progress + (target_filter_slide - self.state.filter_slide_progress) * filter_slide_speed
 
     -- Calculate animated height and alpha
@@ -640,7 +640,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
       -- MIDI header (centered) - drawn inside child
-      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14)
+      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config)
 
       -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
       -- Pass full height so inner child includes header area for selection rendering
@@ -669,7 +669,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
       -- Audio header (centered) - drawn inside child
-      draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 15)
+      draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config)
 
       -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
       -- Pass full height so inner child includes header area for selection rendering
@@ -738,7 +738,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
         ImGui.WindowFlags_NoScrollbar) then
         -- MIDI header (centered) - drawn inside child
-        draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14)
+        draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14, self.config)
 
         -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
         if self.coordinator.midi_grid then
@@ -778,7 +778,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
         ImGui.WindowFlags_NoScrollbar) then
         -- Audio header (centered) - drawn inside child
-        draw_panel_title(ctx, draw_list, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15)
+        draw_panel_title(ctx, draw_list, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15, self.config)
 
         -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
         if self.coordinator.audio_grid then
@@ -846,7 +846,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
       -- MIDI header (centered) - drawn inside child
-      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14)
+      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config)
 
       -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
       -- Block grid input during separator drag
@@ -888,7 +888,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
       -- Audio header (centered) - drawn inside child
-      draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15)
+      draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config)
 
       -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
       -- Block grid input during separator drag
