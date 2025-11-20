@@ -101,6 +101,12 @@ end
 function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, screen_h, is_overlay_mode)
   self:handle_shortcuts(ctx)
 
+  -- Initialize all_regions if show_region_tags is enabled but all_regions is empty
+  if self.state.settings.show_region_tags and (not self.state.all_regions or #self.state.all_regions == 0) then
+    self.state.all_regions = require('ItemPicker.data.reaper_api').GetAllProjectRegions()
+    reaper.ShowConsoleMsg(string.format("[REGION_TAGS] Initialized all_regions: %d regions found\n", #self.state.all_regions))
+  end
+
   -- In overlay mode, skip window creation (overlay manager already created the window)
   local imgui_visible = true
   if not is_overlay_mode then
@@ -475,9 +481,14 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Render region filter bar (if region tags enabled and regions available)
   if show_region_tags and self.state.all_regions and #self.state.all_regions > 0 then
+    reaper.ShowConsoleMsg(string.format("[REGION_FILTER_BAR] Rendering with %d regions at y=%d\n", #self.state.all_regions, checkboxes_end_y))
     local filter_bar_y = checkboxes_end_y
     local filter_bar_height = RegionFilterBar.draw(ctx, draw_list, coord_offset_x, filter_bar_y, screen_w, self.state, self.config)
     checkboxes_end_y = filter_bar_y + filter_bar_height
+    reaper.ShowConsoleMsg(string.format("[REGION_FILTER_BAR] Filter bar height: %d, new checkboxes_end_y: %d\n", filter_bar_height, checkboxes_end_y))
+  else
+    reaper.ShowConsoleMsg(string.format("[REGION_FILTER_BAR] NOT rendering: show_region_tags=%s, all_regions=%s, #all_regions=%d\n",
+      tostring(show_region_tags), tostring(self.state.all_regions ~= nil), self.state.all_regions and #self.state.all_regions or 0))
   end
 
   -- Search fade with different offset
