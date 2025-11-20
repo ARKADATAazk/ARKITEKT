@@ -903,7 +903,9 @@ end
 
 -- Tags list for bottom of directory tab (with filtering)
 local function draw_tags_mini_list(ctx, state, config, width, height)
-  BeginChildCompat(ctx, "DirectoryTags", width, height, true)
+  if not BeginChildCompat(ctx, "DirectoryTags", width, height, true) then
+    return
+  end
 
   -- Header with "+" button
   local button_w = 24
@@ -947,45 +949,46 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
   local tags_list_height = height - tag_header_height - 10  -- Account for header + separator/spacing
 
   -- List all tags with filtering (scrollable)
-  BeginChildCompat(ctx, "DirectoryTagsList", 0, tags_list_height, false)
+  if BeginChildCompat(ctx, "DirectoryTagsList", 0, tags_list_height, false) then
+    if state.metadata and state.metadata.tags then
+      for tag_name, tag_data in pairs(state.metadata.tags) do
+        ImGui.PushID(ctx, tag_name)
 
-  if state.metadata and state.metadata.tags then
-    for tag_name, tag_data in pairs(state.metadata.tags) do
-      ImGui.PushID(ctx, tag_name)
+        local is_selected = state.filter_tags[tag_name] or false
 
-      local is_selected = state.filter_tags[tag_name] or false
+        -- Draw tag using Chip component (PILL style)
+        local clicked, chip_w, chip_h = Chip.draw(ctx, {
+          style = Chip.STYLE.PILL,
+          label = tag_name,
+          color = tag_data.color,
+          height = 24,
+          is_selected = is_selected,
+          interactive = true,
+        })
 
-      -- Draw tag using Chip component (PILL style)
-      local clicked, chip_w, chip_h = Chip.draw(ctx, {
-        style = Chip.STYLE.PILL,
-        label = tag_name,
-        color = tag_data.color,
-        height = 24,
-        is_selected = is_selected,
-        interactive = true,
-      })
+        if clicked then
+          -- Toggle tag filter
+          if is_selected then
+            state.filter_tags[tag_name] = nil
+          else
+            state.filter_tags[tag_name] = true
+          end
 
-      if clicked then
-        -- Toggle tag filter
-        if is_selected then
-          state.filter_tags[tag_name] = nil
-        else
-          state.filter_tags[tag_name] = true
+          -- Re-filter templates
+          local Scanner = require('TemplateBrowser.domain.scanner')
+          Scanner.filter_templates(state)
         end
 
-        -- Re-filter templates
-        local Scanner = require('TemplateBrowser.domain.scanner')
-        Scanner.filter_templates(state)
+        ImGui.PopID(ctx)
       end
-
-      ImGui.PopID(ctx)
+    else
+      ImGui.TextDisabled(ctx, "No tags yet")
     end
-  else
-    ImGui.TextDisabled(ctx, "No tags yet")
+
+    ImGui.EndChild(ctx)  -- End DirectoryTagsList
   end
 
-  ImGui.EndChild(ctx)
-  ImGui.EndChild(ctx)
+  ImGui.EndChild(ctx)  -- End DirectoryTags
 end
 
 -- Draw directory content (folder tree + tags at bottom)
@@ -1221,9 +1224,10 @@ local function draw_directory_content(ctx, state, config, width, height)
   local tree_height = folder_section_height - used_height
 
   -- Folder tree in scrollable child
-  BeginChildCompat(ctx, "FolderTreeScroll", 0, tree_height, false)
-  draw_folder_tree(ctx, state, config)
-  ImGui.EndChild(ctx)
+  if BeginChildCompat(ctx, "FolderTreeScroll", 0, tree_height, false) then
+    draw_folder_tree(ctx, state, config)
+    ImGui.EndChild(ctx)
+  end
 
   ImGui.Spacing(ctx)
 
@@ -1291,43 +1295,43 @@ local function draw_vsts_content(ctx, state, config, width, height)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  BeginChildCompat(ctx, "VSTsList", width - config.PANEL_PADDING * 2, height - 60, false)
+  if BeginChildCompat(ctx, "VSTsList", width - config.PANEL_PADDING * 2, height - 60, false) then
+    for _, fx_name in ipairs(all_fx) do
+      ImGui.PushID(ctx, fx_name)
 
-  for _, fx_name in ipairs(all_fx) do
-    ImGui.PushID(ctx, fx_name)
+      local is_selected = state.filter_fx[fx_name] or false
 
-    local is_selected = state.filter_fx[fx_name] or false
+      -- Draw VST using Chip component (DOT style, blue like in template tiles)
+      local vst_color = Colors.hexrgb("#4A9EFF")
+      local clicked, chip_w, chip_h = Chip.draw(ctx, {
+        style = Chip.STYLE.DOT,
+        label = fx_name,
+        color = vst_color,
+        height = 28,
+        dot_size = 8,
+        dot_spacing = 10,
+        is_selected = is_selected,
+        interactive = true,
+      })
 
-    -- Draw VST using Chip component (DOT style, blue like in template tiles)
-    local vst_color = Colors.hexrgb("#4A9EFF")
-    local clicked, chip_w, chip_h = Chip.draw(ctx, {
-      style = Chip.STYLE.DOT,
-      label = fx_name,
-      color = vst_color,
-      height = 28,
-      dot_size = 8,
-      dot_spacing = 10,
-      is_selected = is_selected,
-      interactive = true,
-    })
+      if clicked then
+        -- Toggle FX filter
+        if is_selected then
+          state.filter_fx[fx_name] = nil
+        else
+          state.filter_fx[fx_name] = true
+        end
 
-    if clicked then
-      -- Toggle FX filter
-      if is_selected then
-        state.filter_fx[fx_name] = nil
-      else
-        state.filter_fx[fx_name] = true
+        -- Re-filter templates
+        local Scanner = require('TemplateBrowser.domain.scanner')
+        Scanner.filter_templates(state)
       end
 
-      -- Re-filter templates
-      local Scanner = require('TemplateBrowser.domain.scanner')
-      Scanner.filter_templates(state)
+      ImGui.PopID(ctx)
     end
 
-    ImGui.PopID(ctx)
+    ImGui.EndChild(ctx)
   end
-
-  ImGui.EndChild(ctx)
 end
 
 -- Draw TAGS content (full tag management)
@@ -1371,9 +1375,8 @@ local function draw_tags_content(ctx, state, config, width, height)
   ImGui.Spacing(ctx)
 
   -- List all tags
-  BeginChildCompat(ctx, "TagsList", width - config.PANEL_PADDING * 2, height - 30, false)
-
-  if state.metadata and state.metadata.tags then
+  if BeginChildCompat(ctx, "TagsList", width - config.PANEL_PADDING * 2, height - 30, false) then
+    if state.metadata and state.metadata.tags then
     for tag_name, tag_data in pairs(state.metadata.tags) do
       local is_renaming = (state.renaming_item == tag_name and state.renaming_type == "tag")
 
@@ -1436,16 +1439,19 @@ local function draw_tags_content(ctx, state, config, width, height)
 
       ImGui.PopID(ctx)
     end
-  else
-    ImGui.TextDisabled(ctx, "No tags yet")
-  end
+    else
+      ImGui.TextDisabled(ctx, "No tags yet")
+    end
 
-  ImGui.EndChild(ctx)
+    ImGui.EndChild(ctx)
+  end
 end
 
 -- Draw tabbed left panel (DIRECTORY / VSTS / TAGS)
 local function draw_left_panel(ctx, state, config, width, height)
-  BeginChildCompat(ctx, "LeftPanel", width, height, true)
+  if not BeginChildCompat(ctx, "LeftPanel", width, height, true) then
+    return
+  end
 
   -- Count active filters for badges
   local fx_filter_count = 0
@@ -1548,10 +1554,9 @@ local function draw_recent_templates(ctx, gui, width, available_height)
 
   -- Scroll area for horizontal tiles
   local scroll_height = tile_height + padding * 2
-  BeginChildCompat(ctx, "RecentTemplatesScroll", width, scroll_height, false, ImGui.WindowFlags_HorizontalScrollbar)
-
-  -- Draw tiles horizontally
-  local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
+  if BeginChildCompat(ctx, "RecentTemplatesScroll", width, scroll_height, false, ImGui.WindowFlags_HorizontalScrollbar) then
+    -- Draw tiles horizontally
+    local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
 
   for idx, tmpl in ipairs(recent_templates) do
     local x1, y1 = ImGui.GetCursorScreenPos(ctx)
@@ -1623,7 +1628,8 @@ local function draw_recent_templates(ctx, gui, width, available_height)
     ImGui.Dummy(ctx, total_width, tile_height)
   end
 
-  ImGui.EndChild(ctx)
+    ImGui.EndChild(ctx)
+  end
 
   -- Separator after recent templates
   ImGui.Spacing(ctx)
@@ -1639,7 +1645,9 @@ local function draw_template_panel(ctx, gui, width, height)
   local state = gui.state
 
   -- Begin outer container
-  BeginChildCompat(ctx, "TemplatePanel", width, height, true)
+  if not BeginChildCompat(ctx, "TemplatePanel", width, height, true) then
+    return
+  end
 
   -- Draw recent templates section
   local recent_height = draw_recent_templates(ctx, gui, width - 16, height)  -- Account for padding
@@ -1949,7 +1957,9 @@ end
 -- Draw info & tag assignment panel (right)
 local function draw_info_panel(ctx, state, config, width, height)
   -- Outer border container (non-scrollable)
-  BeginChildCompat(ctx, "InfoPanel", width, height, true)
+  if not BeginChildCompat(ctx, "InfoPanel", width, height, true) then
+    return
+  end
 
   -- Header (stays at top)
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
@@ -1962,9 +1972,8 @@ local function draw_info_panel(ctx, state, config, width, height)
   local header_height = 30  -- SeparatorText + spacing
   local content_height = height - header_height
 
-  BeginChildCompat(ctx, "InfoPanelContent", 0, content_height, false)
-
-  if state.selected_template then
+  if BeginChildCompat(ctx, "InfoPanelContent", 0, content_height, false) then
+    if state.selected_template then
     local tmpl = state.selected_template
     local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
 
@@ -2095,11 +2104,13 @@ local function draw_info_panel(ctx, state, config, width, height)
       ImGui.TextDisabled(ctx, "No tags available")
     end
 
-  else
-    ImGui.TextDisabled(ctx, "Select a template to view details")
+    else
+      ImGui.TextDisabled(ctx, "Select a template to view details")
+    end
+
+    ImGui.EndChild(ctx)  -- End InfoPanelContent
   end
 
-  ImGui.EndChild(ctx)  -- End InfoPanelContent
   ImGui.EndChild(ctx)  -- End InfoPanel
 end
 
