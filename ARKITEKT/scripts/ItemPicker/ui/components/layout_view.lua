@@ -271,9 +271,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     "Show Region Tags",
     show_region_tags, checkbox_config, "show_region_tags")
   if clicked then
+    reaper.ShowConsoleMsg(string.format("[REGION_TAGS] Checkbox clicked! Old value: %s, New value: %s\n",
+      tostring(show_region_tags), tostring(not show_region_tags)))
     self.state.set_setting('show_region_tags', not show_region_tags)
     -- Trigger data reload when region tags are toggled
     self.state.needs_reload = true
+    reaper.ShowConsoleMsg("[REGION_TAGS] Triggered needs_reload\n")
   end
 
   -- Sort mode buttons (on same line after checkboxes)

@@ -472,6 +472,9 @@ function M.GetRegionsForItem(item)
   local regions = {}
   local _, num_markers, num_regions = reaper.CountProjectMarkers(0)
 
+  reaper.ShowConsoleMsg(string.format("[REGION_TAGS] Scanning for item at pos %.2f-%.2f (found %d regions in project)\n",
+    item_start, item_end, num_regions))
+
   for i = 0, num_markers + num_regions - 1 do
     local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color =
       reaper.EnumProjectMarkers3(0, i)
@@ -480,9 +483,16 @@ function M.GetRegionsForItem(item)
       -- Check if region overlaps with item
       -- Regions overlap if: region_start < item_end AND region_end > item_start
       if pos < item_end and rgnend > item_start then
+        reaper.ShowConsoleMsg(string.format("[REGION_TAGS]   -> Found overlap with region '%s' (%.2f-%.2f)\n",
+          name, pos, rgnend))
         table.insert(regions, name)
       end
     end
+  end
+
+  if #regions > 0 then
+    reaper.ShowConsoleMsg(string.format("[REGION_TAGS] Item has %d region(s): %s\n",
+      #regions, table.concat(regions, ", ")))
   end
 
   return regions

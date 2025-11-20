@@ -401,9 +401,18 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   -- Render region tags (only on larger tiles, not compact mode)
+  -- Debug: Log item_data.regions to see if regions are present
+  if item_data.regions then
+    reaper.ShowConsoleMsg(string.format("[RENDER] Item has %d regions: %s\n",
+      #item_data.regions, table.concat(item_data.regions, ", ")))
+  end
+
   if item_data.regions and #item_data.regions > 0 and
      not is_small_tile and scaled_h >= config.REGION_TAGS.min_tile_height and
      cascade_factor > 0.5 then
+    reaper.ShowConsoleMsg(string.format("[RENDER] Rendering region chips! (tile height: %.1f, is_small: %s, cascade: %.2f)\n",
+      scaled_h, tostring(is_small_tile), cascade_factor))
+
     local chip_cfg = config.REGION_TAGS.chip
     local chip_x = scaled_x1 + chip_cfg.margin_left
     local chip_y = scaled_y1 + header_height + chip_cfg.margin_top
@@ -418,8 +427,12 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local chip_w = text_w + chip_cfg.padding_x * 2
       local chip_h = chip_cfg.height
 
+      reaper.ShowConsoleMsg(string.format("[RENDER]   Chip %d: '%s' at (%.1f, %.1f) size (%.1f x %.1f)\n",
+        i, region_name, chip_x, chip_y, chip_w, chip_h))
+
       -- Check if chip fits within tile width
       if chip_x + chip_w > scaled_x2 - chip_cfg.margin_left then
+        reaper.ShowConsoleMsg("[RENDER]   -> Chip doesn't fit, stopping\n")
         break  -- Stop rendering if we run out of space
       end
 
@@ -438,6 +451,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Move to next chip position
       chip_x = chip_x + chip_w + chip_cfg.margin_x
     end
+  elseif item_data.regions and #item_data.regions > 0 then
+    reaper.ShowConsoleMsg(string.format("[RENDER] NOT rendering region chips: is_small=%s, height=%.1f (min=%.1f), cascade=%.2f\n",
+      tostring(is_small_tile), scaled_h, config.REGION_TAGS.min_tile_height, cascade_factor))
   end
 
   -- Render pool count badge (bottom right) if more than 1 instance
