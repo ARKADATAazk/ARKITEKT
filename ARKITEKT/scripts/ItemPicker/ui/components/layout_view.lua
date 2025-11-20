@@ -198,7 +198,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
                              mouse_y < temp_search_y
 
   -- Once triggered, stay visible until mouse goes below the search field (with buffer)
-  local is_below_search = mouse_y > (temp_search_y + search_height + 10)
+  local is_below_search = mouse_y > (temp_search_y + search_height + 50)  -- 50px buffer before closing
 
   -- Initialize sticky state
   if self.state.settings_sticky_visible == nil then
@@ -557,8 +557,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local temp_filter_height = filter_bar_max_height * (self.state.filter_slide_progress or 0)
     local temp_panels_start_y = search_y + search_height + temp_filter_height + 20
 
-    -- Show filter when hovering anywhere above the panels (including search/settings area)
-    local is_hovering_above_panels = mouse_y < temp_panels_start_y
+    -- Show filter when hovering anywhere above the panels (10px delay to avoid instant trigger)
+    local is_hovering_above_panels = mouse_y < (temp_panels_start_y - 10)
 
     -- Show filters when hovering above panels OR when settings are visible
     local filters_should_show = is_hovering_above_panels or self.state.settings_sticky_visible
