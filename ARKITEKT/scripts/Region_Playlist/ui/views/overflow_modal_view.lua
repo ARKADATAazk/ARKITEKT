@@ -86,18 +86,14 @@ function OverflowModalView:draw(ctx, window)
       return
     end
     
-    ImGui.Text(ctx, "All Playlists:")
-    ImGui.Separator(ctx)
-    ImGui.Dummy(ctx, 0, 8)
-    
     ImGui.SetNextItemWidth(ctx, -1)
     local changed, text = ImGui.InputTextWithHint(ctx, "##tab_search", "Search playlists...", self.search_text)
-    if changed then 
-      self.search_text = text 
+    if changed then
+      self.search_text = text
     end
-    
+
     ImGui.Dummy(ctx, 0, 8)
-    
+
     if ImGui.BeginChild(ctx, "##tab_list", 0, -40) then
       local text_h = ImGui.GetTextLineHeight(ctx)
       local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
@@ -105,11 +101,11 @@ function OverflowModalView:draw(ctx, window)
         search_text = self.search_text,
         use_dot_style = true,
         bg_color = hexrgb("#3a3a3a"),  -- Grey fill
-        item_height = text_h + 4,  -- Reduced from default (text_h + 8)
+        item_height = text_h + 1,  -- Further reduced (was text_h + 4, now ~30% smaller)
         dot_size = 7,
         dot_spacing = 7,
         rounding = 5,
-        padding_h = 12,
+        padding_h = 6,  -- Reduced by 50% (was 12)
         column_width = 200,
         column_spacing = 16,
         item_spacing = 4,
@@ -158,9 +154,6 @@ function OverflowModalView:draw(ctx, window)
       end,
       render = function(ctx, alpha, bounds)
         Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a, padding)
-          ImGui.Text(ctx, "All Playlists:")
-          ImGui.Dummy(ctx, 0, 8)
-
           -- Search input using primitive
           local search_height = 28
           local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
@@ -190,11 +183,11 @@ function OverflowModalView:draw(ctx, window)
             search_text = self.search_text,
             use_dot_style = true,
             bg_color = hexrgb("#3a3a3a"),  -- Grey fill
-            item_height = text_h + 4,  -- Reduced from default (text_h + 8)
+            item_height = text_h + 1,  -- Further reduced (was text_h + 4, now ~30% smaller)
             dot_size = 7,
             dot_spacing = 7,
             rounding = 5,
-            padding_h = 12,
+            padding_h = 6,  -- Reduced by 50% (was 12)
             column_width = 200,
             column_spacing = 16,
             item_spacing = 4,
