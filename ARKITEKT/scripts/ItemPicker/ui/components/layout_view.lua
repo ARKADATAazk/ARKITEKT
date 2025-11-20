@@ -189,15 +189,19 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Sticky hover behavior: trigger zone above actual search position
   local trigger_zone_padding = self.config.UI_PANELS.settings.trigger_above_search
 
-  -- Calculate temporary search position for hover detection
+  -- Use TARGET positions (fully expanded) for trigger detection, not current animated positions
+  -- This prevents race conditions when moving cursor quickly
+  local target_search_y_when_visible = search_base_y + settings_area_max_height
+
+  -- Trigger when mouse is above the TARGET search position (where it would be if settings are open)
+  local is_in_trigger_zone = mouse_y >= (target_search_y_when_visible - trigger_zone_padding) and
+                             mouse_y < target_search_y_when_visible
+
+  -- Calculate current search position for close detection
   local temp_settings_height = settings_area_max_height * self.state.settings_slide_progress
   local temp_search_y = search_base_y + temp_settings_height
 
-  -- Trigger when mouse is above the ACTUAL search position
-  local is_in_trigger_zone = mouse_y >= (temp_search_y - trigger_zone_padding) and
-                             mouse_y < temp_search_y
-
-  -- Once triggered, stay visible until mouse goes below the search field (with buffer)
+  -- Once triggered, stay visible until mouse goes below the CURRENT search field (with buffer)
   local is_below_search = mouse_y > (temp_search_y + search_height + self.config.UI_PANELS.settings.close_below_search)
 
   -- Initialize sticky state
@@ -553,12 +557,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   if enable_region_processing and self.state.all_regions and #self.state.all_regions > 0 then
     local filter_bar_base_y = search_y + search_height + self.config.UI_PANELS.filter.spacing_below_search
 
-    -- Calculate panel start position to determine where we need to show filters
-    local temp_filter_height = filter_bar_max_height * (self.state.filter_slide_progress or 0)
-    local temp_panels_start_y = search_y + search_height + temp_filter_height + 20
+    -- Use TARGET position (where panels would be if filter is fully visible) for trigger detection
+    -- This prevents race conditions when moving cursor quickly
+    local target_panels_start_y = search_y + search_height + filter_bar_max_height + 20
 
-    -- Show filter when hovering anywhere above the panels (trigger threshold into panels)
-    local is_hovering_above_panels = mouse_y < (temp_panels_start_y + self.config.UI_PANELS.filter.trigger_into_panels)
+    -- Show filter when hovering anywhere above the TARGET panel position (trigger threshold into panels)
+    local is_hovering_above_panels = mouse_y < (target_panels_start_y + self.config.UI_PANELS.filter.trigger_into_panels)
 
     -- Show filters when hovering above panels OR when settings are visible
     local filters_should_show = is_hovering_above_panels or self.state.settings_sticky_visible
