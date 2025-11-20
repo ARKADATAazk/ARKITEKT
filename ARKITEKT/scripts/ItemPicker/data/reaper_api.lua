@@ -117,6 +117,9 @@ function M.ItemChunkID(item)
 end
 
 function M.GetProjectSamples(settings, state)
+  reaper.ShowConsoleMsg(string.format("[REGION_TAGS] GetProjectSamples called with show_region_tags = %s\n",
+    tostring(settings.show_region_tags)))
+
   local all_tracks = M.GetAllTracks()
   local samples = {}
   local sample_indexes = {}
@@ -242,6 +245,9 @@ function M.GetProjectSamples(settings, state)
 end
 
 function M.GetProjectMIDI(settings, state)
+  reaper.ShowConsoleMsg(string.format("[REGION_TAGS] GetProjectMIDI called with show_region_tags = %s\n",
+    tostring(settings.show_region_tags)))
+
   local all_tracks = M.GetAllTracks()
   local midi_items = {}
   local midi_indexes = {}

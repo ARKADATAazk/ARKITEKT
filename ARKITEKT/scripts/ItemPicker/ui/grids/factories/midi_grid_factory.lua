@@ -92,6 +92,11 @@ function M.create(ctx, config, state, visualization, animator)
       local uuid = entry.uuid
       local pool_count = entry.pool_count or 1
 
+      -- Safety check: ensure item_name is a valid string
+      if not item_name or type(item_name) ~= "string" then
+        goto continue
+      end
+
       -- Check mute filters
       if not state.settings.show_muted_tracks and track_muted then
         goto continue
