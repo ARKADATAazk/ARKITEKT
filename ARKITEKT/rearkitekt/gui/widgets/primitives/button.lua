@@ -113,9 +113,11 @@ end
 -- RENDERING
 -- ============================================================================
 
-local function render_button(ctx, dl, x, y, width, height, config, context, instance, is_hovered, is_active)
+local function render_button(ctx, dl, x, y, width, height, config, context, instance)
+  local is_hovered = InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, x, y, x + width, y + height, config.is_blocking)
+  local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
   local is_toggled = config.is_toggled or false
-  
+
   -- Update animation
   local dt = ImGui.GetDeltaTime(ctx)
   instance:update(dt, is_hovered, is_active)
@@ -223,19 +225,15 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
   -- Get or create instance for animation
   local instance = get_or_create_instance(context.unique_id)
 
-  -- Create invisible button for interaction FIRST to get hover state
+  -- Render button (gets hover state internally)
+  local is_hovered, is_active = render_button(ctx, dl, x, y, width, height, config, context, instance)
+
+  -- Create invisible button for interaction
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, "##" .. context.unique_id, width, height)
 
-  -- Get hover/click state from ImGui, respecting blocking
-  local should_block = InteractionBlocking.should_block_interaction(ctx, config.is_blocking)
-  local is_hovered = not should_block and ImGui.IsItemHovered(ctx)
-  local is_active = not should_block and ImGui.IsItemActive(ctx)
-  local clicked = not should_block and ImGui.IsItemClicked(ctx, 0)
-  local right_clicked = not should_block and ImGui.IsItemClicked(ctx, 1)
-
-  -- Render button with the hover state (draw list renders after all ImGui calls)
-  render_button(ctx, dl, x, y, width, height, config, context, instance, is_hovered, is_active)
+  local clicked = ImGui.IsItemClicked(ctx, 0)
+  local right_clicked = ImGui.IsItemClicked(ctx, 1)
   
   -- Handle click callbacks
   if clicked and config.on_click then
