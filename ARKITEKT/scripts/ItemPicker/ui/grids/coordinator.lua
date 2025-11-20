@@ -100,6 +100,11 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
 
     self.audio_grid:draw(ctx)
 
+    -- Add Dummy to extend child bounds when using SetCursorScreenPos
+    if header_offset > 0 then
+      ImGui.Dummy(ctx, 0, 0)
+    end
+
     -- Restore scroll if we consumed wheel for resize
     if saved_scroll then
       ImGui.SetScrollY(ctx, saved_scroll)
@@ -135,6 +140,11 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
     end
 
     self.midi_grid:draw(ctx)
+
+    -- Add Dummy to extend child bounds when using SetCursorScreenPos
+    if header_offset > 0 then
+      ImGui.Dummy(ctx, 0, 0)
+    end
 
     -- Restore scroll if we consumed wheel for resize
     if saved_scroll then
