@@ -361,18 +361,30 @@ function BatchRenameModal:draw(ctx, item_count, window)
           local content_w = modal_w - padding * 2
           local content_h = modal_h - padding * 2
 
-          -- No background rectangle - content floats on scrim
-          -- The modal_x/y/w/h still define the layout bounds and right-click exit zone
+          -- Invisible child window to block right-clicks on content (defines "safe zone")
+          ImGui.SetCursorScreenPos(ctx, modal_x, modal_y)
 
-          -- Render content directly at absolute position (centered)
-          ImGui.SetCursorScreenPos(ctx, modal_x + padding, modal_y + padding)
+          local child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
+          local window_flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse
 
-          local should_close = self:draw_content(ctx, count, true, content_w, content_h)
+          ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))  -- Completely transparent
+          ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
 
-          if should_close then
-            window.overlay:pop('batch-rename-modal')
-            self:close()
-            self.overlay_pushed = false
+          if ImGui.BeginChild(ctx, '##batch_rename_zone', modal_w, modal_h, child_flags, window_flags) then
+            local should_close = self:draw_content(ctx, count, true, content_w, content_h)
+
+            ImGui.EndChild(ctx)
+            ImGui.PopStyleVar(ctx, 1)
+            ImGui.PopStyleColor(ctx, 1)
+
+            if should_close then
+              window.overlay:pop('batch-rename-modal')
+              self:close()
+              self.overlay_pushed = false
+            end
+          else
+            ImGui.PopStyleVar(ctx, 1)
+            ImGui.PopStyleColor(ctx, 1)
           end
         end
       })
