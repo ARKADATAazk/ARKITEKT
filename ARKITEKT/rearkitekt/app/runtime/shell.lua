@@ -64,13 +64,14 @@ local function load_fonts(ctx, font_cfg)
 
   -- Load Orbitron for AZK branding at fixed size from Constants
   local orbitron_size = font_cfg.orbitron or Constants.TITLEBAR.azk_font_size
-  local orbitron_font = exists(O) and ImGui.CreateFont(O, orbitron_size) or nil
+  local orbitron_exists = exists(O)
+  local orbitron_font = orbitron_exists and ImGui.CreateFont(O, orbitron_size) or nil
 
   -- Debug: Log Orbitron font loading
   if orbitron_font then
     reaper.ShowConsoleMsg(string.format("[Shell] ✓ Orbitron font loaded: %s (size: %d, obj: %s)\n", O, orbitron_size, tostring(orbitron_font)))
   else
-    reaper.ShowConsoleMsg(string.format("[Shell] ✗ Orbitron font FAILED to load: %s (exists: %s)\n", O, tostring(exists(O))))
+    reaper.ShowConsoleMsg(string.format("[Shell] ✗ Orbitron font FAILED to load: %s (exists: %s)\n", O, tostring(orbitron_exists)))
   end
 
   local time_display_font = nil
