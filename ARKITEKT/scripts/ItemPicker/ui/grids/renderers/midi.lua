@@ -10,6 +10,16 @@ local Shapes = require('rearkitekt.gui.rendering.shapes')
 
 local M = {}
 
+-- Ensure color has minimum lightness for readability
+local function ensure_min_lightness(color, min_lightness)
+  local h, s, l = Colors.rgb_to_hsl(color)
+  if l < min_lightness then
+    l = min_lightness
+  end
+  local r, g, b = Colors.hsl_to_rgb(h, s, l)
+  return Colors.components_to_rgba(r, g, b, 0xFF)
+end
+
 function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local tile_w, tile_h = x2 - x1, y2 - y1
@@ -429,9 +439,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha
       ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, chip_cfg.rounding)
 
-      -- Chip text (region color)
+      -- Chip text (region color with minimum lightness for readability)
+      local text_color = ensure_min_lightness(region_color, chip_cfg.text_min_lightness)
       local text_alpha_val = math.floor(combined_alpha * 255)
-      local text_color = (region_color & 0xFFFFFF00) | text_alpha_val
+      text_color = (text_color & 0xFFFFFF00) | text_alpha_val
       local text_x = chip_x + chip_cfg.padding_x
       local text_y = chip_y + (chip_h - text_h) / 2
       ImGui.DrawList_AddText(dl, text_x, text_y, text_color, region_name)

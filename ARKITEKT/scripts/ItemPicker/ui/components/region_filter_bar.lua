@@ -3,8 +3,19 @@
 -- Region filter bar - clickable chips to filter items by region
 
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
 
 local M = {}
+
+-- Ensure color has minimum lightness for readability
+local function ensure_min_lightness(color, min_lightness)
+  local h, s, l = Colors.rgb_to_hsl(color)
+  if l < min_lightness then
+    l = min_lightness
+  end
+  local r, g, b = Colors.hsl_to_rgb(h, s, l)
+  return Colors.components_to_rgba(r, g, b, 0xFF)
+end
 
 function M.draw(ctx, draw_list, x, y, width, state, config)
   local chip_cfg = config.REGION_TAGS.chip
@@ -42,9 +53,10 @@ function M.draw(ctx, draw_list, x, y, width, state, config)
     -- Draw chip background
     ImGui.DrawList_AddRectFilled(draw_list, chip_x, chip_y, chip_x + chip_w, chip_y + chip_height, bg_color, chip_cfg.rounding)
 
-    -- Chip text (region color, dimmed when unselected)
+    -- Chip text (region color with minimum lightness, dimmed when unselected)
+    local text_color = ensure_min_lightness(region_color, chip_cfg.text_min_lightness)
     local text_alpha = is_selected and 0xFF or 0x66
-    local text_color = (region_color & 0xFFFFFF00) | text_alpha
+    text_color = (text_color & 0xFFFFFF00) | text_alpha
     local text_x = chip_x + chip_cfg.padding_x
     local text_y = chip_y + (chip_height - text_h) / 2
     ImGui.DrawList_AddText(draw_list, text_x, text_y, text_color, region_name)

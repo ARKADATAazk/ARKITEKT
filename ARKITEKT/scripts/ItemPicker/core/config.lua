@@ -261,9 +261,10 @@ M.REGION_TAGS = {
     margin_x = 3,         -- Spacing between chips
     margin_bottom = 4,    -- Margin from bottom of tile
     margin_left = 4,      -- Margin from left edge
-    rounding = 2,         -- Slight rounding
-    bg_color = hexrgb("#333333"),  -- Dark grey background
+    rounding = 0,         -- No rounding (square chips)
+    bg_color = hexrgb("#14181C"),  -- Dark grey background (same as pool badge)
     alpha = 0xFF,         -- Fully opaque
+    text_min_lightness = 0.35,  -- Minimum lightness for text (0-1), ensures readability
   },
 
   -- Behavior
