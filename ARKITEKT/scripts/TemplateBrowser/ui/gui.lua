@@ -2374,4 +2374,14 @@ function GUI:draw(ctx, shell_state)
   end
 end
 
+-- Export internal draw functions for use by view modules
+M.draw_functions = {
+  draw_directory_content = draw_directory_content,
+  draw_vsts_content = draw_vsts_content,
+  draw_tags_content = draw_tags_content,
+  draw_left_panel = draw_left_panel,
+  draw_template_panel = draw_template_panel,
+  draw_info_panel = draw_info_panel,
+}
+
 return M
