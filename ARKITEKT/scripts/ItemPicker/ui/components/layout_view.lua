@@ -136,10 +136,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Get current window draw list (not cached)
   local draw_list = ImGui.GetWindowDrawList(ctx)
 
+  -- Get window position for coordinate offset (critical for multi-monitor support)
+  -- When overlay is on a secondary monitor, we need to offset all coordinates
+  local window_x, window_y = ImGui.GetWindowPos(ctx)
+  local coord_offset_x = window_x
+  local coord_offset_y = window_y
+
   -- Render checkboxes with fade animation and 14px padding (organized in 2 lines)
   -- Note: We pass alpha as config param instead of using PushStyleVar to keep interaction working
-  local checkbox_x = 14
-  local checkbox_y = 14 + ui_y_offset
+  local checkbox_x = coord_offset_x + 14
+  local checkbox_y = coord_offset_y + 14 + ui_y_offset
   local checkbox_config = { alpha = ui_fade }
   local spacing = 20  -- Horizontal spacing between checkboxes
 
@@ -450,8 +456,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, search_fade)
   ImGui.PushFont(ctx, title_font, 14)
 
-  local search_x = math.floor(screen_w / 2 - (screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO) / 2 + 0.5)
-  local search_y = math.floor(checkboxes_end_y + search_y_offset + 0.5)
+  local search_x = coord_offset_x + math.floor(screen_w / 2 - (screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO) / 2 + 0.5)
+  local search_y = coord_offset_y + math.floor(checkboxes_end_y - coord_offset_y + search_y_offset + 0.5)
   local search_width = screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO
   local search_height = 28  -- Increased by 4 pixels
 
@@ -488,7 +494,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Calculate panel start position (below search bar)
   local panels_start_y = search_y + search_height + 20  -- 20px spacing below search
-  local panels_end_y = screen_h - 40  -- Leave some bottom margin
+  local panels_end_y = coord_offset_y + screen_h - 40  -- Leave some bottom margin
   local content_height = panels_end_y - panels_start_y
   local content_width = screen_w - (self.config.LAYOUT.PADDING * 2)
 
@@ -496,7 +502,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local view_mode = self.state.get_view_mode()
 
   -- Calculate section heights based on view mode
-  local start_x = self.config.LAYOUT.PADDING
+  local start_x = coord_offset_x + self.config.LAYOUT.PADDING
   local start_y = panels_start_y
   local header_height = self.config.LAYOUT.HEADER_HEIGHT
 
