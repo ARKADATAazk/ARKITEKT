@@ -480,6 +480,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     Button.draw(ctx, draw_list, layout_button_x, search_y, layout_button_width, button_height, {
       label = is_vertical and "⬍⬍" or "⬌⬌",
       is_toggled = false,
+      preset_name = "BUTTON_TOGGLE_WHITE",
       tooltip = is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout",
       on_click = function()
         local new_mode = layout_mode == "vertical" and "horizontal" or "vertical"
@@ -497,6 +498,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     Button.draw(ctx, draw_list, sort_x, search_y, button_w, button_height, {
       label = mode.label,
       is_toggled = is_active,
+      preset_name = "BUTTON_TOGGLE_WHITE",
       on_click = function()
         self.state.set_setting('sort_mode', mode.id)
       end,
