@@ -104,7 +104,7 @@ function OverflowModalView:draw(ctx, window)
         item_height = text_h + 1,  -- Further reduced (was text_h + 4, now ~30% smaller)
         dot_size = 7,
         dot_spacing = 7,
-        rounding = 3,  -- Reduced from 5
+        rounding = 0,  -- Square tiles like tabstrip
         padding_h = 6,  -- Reduced by 50% (was 12)
         column_width = 200,
         column_spacing = 16,
@@ -187,7 +187,7 @@ function OverflowModalView:draw(ctx, window)
             item_height = text_h + 1,  -- Further reduced (was text_h + 4, now ~30% smaller)
             dot_size = 7,
             dot_spacing = 7,
-            rounding = 3,  -- Reduced from 5
+            rounding = 0,  -- Square tiles like tabstrip
             padding_h = 6,  -- Reduced by 50% (was 12)
             column_width = 200,
             column_spacing = 16,

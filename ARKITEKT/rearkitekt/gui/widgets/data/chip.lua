@@ -235,19 +235,22 @@ function M.draw(ctx, opts)
     local dot_shape = opts.dot_shape or SHAPE.CIRCLE
     local dot_rounding = opts.dot_rounding or 0
     
-    -- Draw border: 1px grey when not selected, 1px colored when selected
-    -- Use dual filled rects method for exact 1px border control
-    local border_color = is_selected and
-                        Colors.with_alpha(Colors.adjust_brightness(color, 1.8), 255) or
-                        Colors.with_alpha(Colors.adjust_brightness(bg_color, 1.2), 180)
-
-    -- Draw outer rect with border color (1px larger on all sides)
-    Draw.rect_filled(dl, start_x - 1, start_y - 1, start_x + chip_w + 1, start_y + chip_h + 1,
-                     border_color, rounding)
-
-    -- Draw inner rect with background color (creates 1px border)
+    -- Tabstrip-style borders: dark outer + lighter inner (like tabs)
     local draw_bg = _apply_state(bg_color, is_active, is_hovered, is_selected)
-    Draw.rect_filled(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, draw_bg, rounding)
+
+    -- Filled background
+    ImGui.DrawList_AddRectFilled(dl, start_x, start_y, start_x + chip_w, start_y + chip_h,
+                                 draw_bg, rounding)
+
+    -- Inner border (lighter on select, darker otherwise)
+    local border_inner = is_selected and hexrgb("#7B7B7BFF") or hexrgb("#2f2f2fff")
+    ImGui.DrawList_AddRect(dl, start_x + 1, start_y + 1, start_x + chip_w - 1, start_y + chip_h - 1,
+                           border_inner, rounding, 0, 1)
+
+    -- Outer border (always dark black)
+    local border_outer = hexrgb("#000000DD")
+    ImGui.DrawList_AddRect(dl, start_x, start_y, start_x + chip_w, start_y + chip_h,
+                           border_outer, rounding, 0, 1)
 
     if is_hovered or is_selected then
       local inner_shadow = Colors.with_alpha(hexrgb("#000000"), 40)
