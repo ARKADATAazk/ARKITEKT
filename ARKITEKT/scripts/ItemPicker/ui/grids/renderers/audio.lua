@@ -432,7 +432,15 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local bg_color = (region_color & 0xFFFFFF00) | bg_alpha
       ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, chip_cfg.rounding)
 
-      -- Chip text (white)
+      -- Chip border (darker version of region color)
+      local r = ((region_color >> 24) & 0xFF) * (1 - chip_cfg.border_darken)
+      local g = ((region_color >> 16) & 0xFF) * (1 - chip_cfg.border_darken)
+      local b = ((region_color >> 8) & 0xFF) * (1 - chip_cfg.border_darken)
+      local border_alpha = math.floor(chip_cfg.alpha * combined_alpha)
+      local border_color = (math.floor(r) << 24) | (math.floor(g) << 16) | (math.floor(b) << 8) | border_alpha
+      ImGui.DrawList_AddRect(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, border_color, chip_cfg.rounding, 0, chip_cfg.border_width)
+
+      -- Chip text (black)
       local text_alpha_val = math.floor(combined_alpha * 255)
       local text_color = (chip_cfg.text_color & 0xFFFFFF00) | text_alpha_val
       local text_x = chip_x + chip_cfg.padding_x

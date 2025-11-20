@@ -7,6 +7,7 @@ local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
 local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local DraggableSeparator = require('rearkitekt.gui.widgets.primitives.separator')
 local StatusBar = require('ItemPicker.ui.components.status_bar')
+local RegionFilterBar = require('ItemPicker.ui.components.region_filter_bar')
 local Colors = require('rearkitekt.core.colors')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 
@@ -274,6 +275,13 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     reaper.ShowConsoleMsg(string.format("[REGION_TAGS] Checkbox clicked! Old value: %s, New value: %s\n",
       tostring(show_region_tags), tostring(not show_region_tags)))
     self.state.set_setting('show_region_tags', not show_region_tags)
+    -- Load all project regions when enabling
+    if not show_region_tags then
+      self.state.all_regions = require('ItemPicker.data.reaper_api').GetAllProjectRegions()
+    else
+      self.state.all_regions = {}
+      self.state.selected_regions = {}
+    end
     -- Trigger data reload when region tags are toggled
     self.state.needs_recollect = true
     reaper.ShowConsoleMsg("[REGION_TAGS] Triggered needs_recollect\n")
@@ -464,6 +472,13 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Track final checkbox Y position for search bar positioning
   local checkboxes_end_y = checkbox_y + 24 + 10  -- Add some spacing after checkboxes
+
+  -- Render region filter bar (if region tags enabled and regions available)
+  if show_region_tags and self.state.all_regions and #self.state.all_regions > 0 then
+    local filter_bar_y = checkboxes_end_y
+    local filter_bar_height = RegionFilterBar.draw(ctx, draw_list, coord_offset_x, filter_bar_y, screen_w, self.state, self.config)
+    checkboxes_end_y = filter_bar_y + filter_bar_height
+  end
 
   -- Search fade with different offset
   local search_fade = smootherstep(math.max(0, (overlay_alpha - 0.05) / 0.95))

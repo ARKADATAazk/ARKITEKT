@@ -42,13 +42,16 @@ function M.draw(ctx, draw_list, x, y, width, state, config)
     -- Draw chip background
     ImGui.DrawList_AddRectFilled(draw_list, chip_x, chip_y, chip_x + chip_w, chip_y + chip_height, bg_color, chip_cfg.rounding)
 
-    -- Draw border if selected
-    if is_selected then
-      local border_color = 0xFFFFFFFF
-      ImGui.DrawList_AddRect(draw_list, chip_x, chip_y, chip_x + chip_w, chip_y + chip_height, border_color, chip_cfg.rounding, 0, 2)
-    end
+    -- Draw border (darker version of region color)
+    local r = ((region_color >> 24) & 0xFF) * (1 - chip_cfg.border_darken)
+    local g = ((region_color >> 16) & 0xFF) * (1 - chip_cfg.border_darken)
+    local b = ((region_color >> 8) & 0xFF) * (1 - chip_cfg.border_darken)
+    local border_alpha = 0xFF
+    local border_color = (math.floor(r) << 24) | (math.floor(g) << 16) | (math.floor(b) << 8) | border_alpha
+    local border_width = is_selected and 2 or chip_cfg.border_width
+    ImGui.DrawList_AddRect(draw_list, chip_x, chip_y, chip_x + chip_w, chip_y + chip_height, border_color, chip_cfg.rounding, 0, border_width)
 
-    -- Chip text
+    -- Chip text (black)
     local text_color = chip_cfg.text_color
     local text_x = chip_x + chip_cfg.padding_x
     local text_y = chip_y + (chip_height - text_h) / 2
