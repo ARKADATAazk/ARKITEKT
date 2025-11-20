@@ -261,11 +261,9 @@ M.REGION_TAGS = {
     margin_x = 3,         -- Spacing between chips
     margin_bottom = 4,    -- Margin from bottom of tile
     margin_left = 4,      -- Margin from left edge
-    rounding = 0,         -- No rounding (square chips)
-    text_color = hexrgb("#000000"), -- Black text
-    alpha = 0xEE,         -- Slightly transparent
-    border_width = 1,     -- Border thickness
-    border_darken = 0.3,  -- Darken factor for border (0-1)
+    rounding = 2,         -- Slight rounding
+    bg_color = hexrgb("#333333"),  -- Dark grey background
+    alpha = 0xFF,         -- Fully opaque
   },
 
   -- Behavior

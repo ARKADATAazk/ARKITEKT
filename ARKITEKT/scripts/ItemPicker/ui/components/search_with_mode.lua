@@ -96,9 +96,12 @@ function M.draw(ctx, draw_list, x, y, width, height, state, config)
     local item_height = 26
     local dropdown_height = #MODES * item_height
 
+    -- Use foreground draw list to render above all other UI
+    local fg_draw_list = ImGui.GetForegroundDrawList(ctx)
+
     -- Dropdown background
-    ImGui.DrawList_AddRectFilled(draw_list, dropdown_x, dropdown_y, dropdown_x + dropdown_width, dropdown_y + dropdown_height, Style.COLORS.BG_BASE, 2)
-    ImGui.DrawList_AddRect(draw_list, dropdown_x, dropdown_y, dropdown_x + dropdown_width, dropdown_y + dropdown_height, border_outer, 2, 0, 1)
+    ImGui.DrawList_AddRectFilled(fg_draw_list, dropdown_x, dropdown_y, dropdown_x + dropdown_width, dropdown_y + dropdown_height, Style.COLORS.BG_BASE, 2)
+    ImGui.DrawList_AddRect(fg_draw_list, dropdown_x, dropdown_y, dropdown_x + dropdown_width, dropdown_y + dropdown_height, border_outer, 2, 0, 1)
 
     -- Menu items
     for i, mode in ipairs(MODES) do
@@ -109,7 +112,7 @@ function M.draw(ctx, draw_list, x, y, width, height, state, config)
 
       -- Highlight on hover
       if is_item_hovered then
-        ImGui.DrawList_AddRectFilled(draw_list, dropdown_x, item_y, dropdown_x + dropdown_width, item_y + item_height, Style.COLORS.BG_HOVER, 2)
+        ImGui.DrawList_AddRectFilled(fg_draw_list, dropdown_x, item_y, dropdown_x + dropdown_width, item_y + item_height, Style.COLORS.BG_HOVER, 2)
       end
 
       -- Text: "I - Items"
@@ -117,7 +120,7 @@ function M.draw(ctx, draw_list, x, y, width, height, state, config)
       local item_text_color = is_item_hovered and Style.COLORS.TEXT_HOVER or Style.COLORS.TEXT_NORMAL
       local text_x = dropdown_x + 12
       local text_y = item_y + (item_height - 14) / 2
-      ImGui.DrawList_AddText(draw_list, text_x, text_y, item_text_color, item_text)
+      ImGui.DrawList_AddText(fg_draw_list, text_x, text_y, item_text_color, item_text)
 
       -- Handle click
       if is_item_hovered and ImGui.IsMouseClicked(ctx, 0) then
