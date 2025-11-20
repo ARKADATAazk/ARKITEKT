@@ -343,13 +343,19 @@ function M:render(ctx, dt)
       self:draw_close_button(ctx, top, x, y, w, h, dt)
 
       -- Handle scrim clicks (check if click is outside content area)
-      -- Right-click closes modal when NOT over containers/content
-      -- Check both items AND child windows to detect modal containers
+      -- Right-click closes modal when over SCRIM, not when over containers/content
+      -- Distinguish between modal popup window (scrim) and child windows (containers)
       if top.close_on_scrim then
         local over_item = ImGui.IsAnyItemHovered(ctx)
-        local over_child_window = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_ChildWindows)
 
-        if not over_item and not over_child_window then
+        -- Check if hovering with ChildWindows flag vs without it
+        -- If ChildWindows is true but default is false, we're over a child window (container)
+        local with_children = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_ChildWindows | ImGui.HoveredFlags_AllowWhenBlockedByActiveItem)
+        local without_children = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AllowWhenBlockedByActiveItem)
+        local over_child_container = with_children and not without_children
+
+        -- Close only if NOT over items and NOT over child containers (i.e., on scrim only)
+        if not over_item and not over_child_container then
           if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right) then
             self:pop()
           end
