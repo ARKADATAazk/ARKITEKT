@@ -102,7 +102,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   self:handle_shortcuts(ctx)
 
   -- Initialize all_regions if region processing is enabled but all_regions is empty
-  if self.state.settings.enable_region_processing and (not self.state.all_regions or #self.state.all_regions == 0) then
+  if (self.state.settings.enable_region_processing or self.state.settings.show_region_tags) and (not self.state.all_regions or #self.state.all_regions == 0) then
     self.state.all_regions = require('ItemPicker.data.reaper_api').GetAllProjectRegions()
     reaper.ShowConsoleMsg(string.format("[REGION_TAGS] Initialized all_regions: %d regions found\n", #self.state.all_regions))
   end
@@ -521,7 +521,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Render region filter bar centered below search (if region processing enabled and regions available)
   local filter_bar_height = 0
-  local enable_region_processing = self.state.settings.enable_region_processing
+  local enable_region_processing = self.state.settings.enable_region_processing or self.state.settings.show_region_tags
   if enable_region_processing and self.state.all_regions and #self.state.all_regions > 0 then
     local filter_bar_y = search_y + search_height + 8  -- 8px spacing below search
     -- Calculate total width needed for all chips

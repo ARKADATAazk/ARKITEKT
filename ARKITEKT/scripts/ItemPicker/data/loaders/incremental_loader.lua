@@ -246,9 +246,9 @@ function M.process_audio_item_fast(loader, item, track, state)
 
   local uuid = get_item_uuid(item)
 
-  -- Get regions if enabled
+  -- Get regions if enabled (check both settings for backwards compatibility)
   local regions = nil
-  if loader.settings and loader.settings.enable_region_processing then
+  if loader.settings and (loader.settings.enable_region_processing or loader.settings.show_region_tags) then
     regions = loader.reaper_interface.GetRegionsForItem(item)
   end
 
@@ -301,9 +301,9 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
   local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
   local uuid = get_item_uuid(item)
 
-  -- Get regions if enabled
+  -- Get regions if enabled (check both settings for backwards compatibility)
   local regions = nil
-  if loader.settings and loader.settings.enable_region_processing then
+  if loader.settings and (loader.settings.enable_region_processing or loader.settings.show_region_tags) then
     regions = loader.reaper_interface.GetRegionsForItem(item)
   end
 
@@ -353,9 +353,9 @@ function M.process_midi_item_fast(loader, item, track, state)
   local _, track_name = reaper.GetTrackName(track)
   track_name = track_name or ""
 
-  -- Get regions if enabled
+  -- Get regions if enabled (check both settings for backwards compatibility)
   local regions = nil
-  if loader.settings and loader.settings.enable_region_processing then
+  if loader.settings and (loader.settings.enable_region_processing or loader.settings.show_region_tags) then
     regions = loader.reaper_interface.GetRegionsForItem(item)
   end
 
@@ -404,9 +404,9 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
   local _, track_name = reaper.GetTrackName(track)
   track_name = track_name or ""
 
-  -- Get regions if enabled
+  -- Get regions if enabled (check both settings for backwards compatibility)
   local regions = nil
-  if loader.settings and loader.settings.enable_region_processing then
+  if loader.settings and (loader.settings.enable_region_processing or loader.settings.show_region_tags) then
     regions = loader.reaper_interface.GetRegionsForItem(item)
   end
 
