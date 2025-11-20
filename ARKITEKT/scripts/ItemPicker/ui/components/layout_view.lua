@@ -553,13 +553,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   if enable_region_processing and self.state.all_regions and #self.state.all_regions > 0 then
     local filter_bar_base_y = search_y + search_height + 8  -- 8px spacing below search
 
-    -- Hover detection for filter bar area (delayed trigger to prevent early activation)
-    local filter_hover_padding = 30  -- Start detecting 30px AFTER the filter bar starts (not before)
-    local is_hovering_filter = (mouse_y >= (filter_bar_base_y + filter_hover_padding) and
-                                mouse_y <= (filter_bar_base_y + filter_bar_max_height + 20))
+    -- Calculate panel start position to determine where we need to show filters
+    local temp_filter_height = filter_bar_max_height * (self.state.filter_slide_progress or 0)
+    local temp_panels_start_y = search_y + search_height + temp_filter_height + 20
 
-    -- Show filters when settings are visible
-    local filters_should_show = is_hovering_filter or self.state.settings_sticky_visible
+    -- Show filter when hovering above the panels (between search and panels)
+    local is_hovering_above_panels = (mouse_y >= (search_y + search_height) and
+                                       mouse_y < temp_panels_start_y)
+
+    -- Show filters when hovering above panels OR when settings are visible
+    local filters_should_show = is_hovering_above_panels or self.state.settings_sticky_visible
 
     -- Smooth slide for filter bar
     if not self.state.filter_slide_progress then
