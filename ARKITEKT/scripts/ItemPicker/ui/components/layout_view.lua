@@ -481,11 +481,11 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Render region filter bar (if region tags enabled and regions available)
   if show_region_tags and self.state.all_regions and #self.state.all_regions > 0 then
-    reaper.ShowConsoleMsg(string.format("[REGION_FILTER_BAR] Rendering with %d regions at y=%d\n", #self.state.all_regions, checkboxes_end_y))
+    reaper.ShowConsoleMsg(string.format("[REGION_FILTER_BAR] Rendering with %d regions at y=%.1f\n", #self.state.all_regions, checkboxes_end_y))
     local filter_bar_y = checkboxes_end_y
     local filter_bar_height = RegionFilterBar.draw(ctx, draw_list, coord_offset_x, filter_bar_y, screen_w, self.state, self.config)
     checkboxes_end_y = filter_bar_y + filter_bar_height
-    reaper.ShowConsoleMsg(string.format("[REGION_FILTER_BAR] Filter bar height: %d, new checkboxes_end_y: %d\n", filter_bar_height, checkboxes_end_y))
+    reaper.ShowConsoleMsg(string.format("[REGION_FILTER_BAR] Filter bar height: %.1f, new checkboxes_end_y: %.1f\n", filter_bar_height, checkboxes_end_y))
   else
     reaper.ShowConsoleMsg(string.format("[REGION_FILTER_BAR] NOT rendering: show_region_tags=%s, all_regions=%s, #all_regions=%d\n",
       tostring(show_region_tags), tostring(self.state.all_regions ~= nil), self.state.all_regions and #self.state.all_regions or 0))
