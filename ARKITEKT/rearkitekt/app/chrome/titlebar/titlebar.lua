@@ -43,10 +43,11 @@ function M.new(opts)
     title_font_size = config.title_font_size,
     version_font    = config.version_font,
     version_font_size = config.version_font_size,
-    azk_font        = config.azk_font,  -- Orbitron for AZK branding
-    azk_font_size   = config.azk_font_size,
-    azk_text        = config.azk_text,
-    azk_opacity     = config.azk_opacity,
+    branding_font   = config.branding_font,
+    branding_font_size = config.branding_font_size,
+    branding_text   = config.branding_text,
+    branding_opacity = config.branding_opacity,
+    branding_color  = config.branding_color,
 
     -- Layout (from merged config)
     height          = config.height,
@@ -316,29 +317,32 @@ function M.new(opts)
         if self.title_font then ImGui.PopFont(ctx) end
       end
 
-      -- Draw stylized AZK branding in center of titlebar
-      local azk_text = self.azk_text or "AZK"
-      local azk_font = self.azk_font or self.title_font
-      local azk_font_size = self.azk_font_size or self.title_font_size
-      local azk_opacity = self.azk_opacity or 0.15
+      -- Draw branding text in center of titlebar
+      if self.branding_text then
+        local branding_text = self.branding_text
+        local branding_font = self.branding_font or self.title_font
+        local branding_font_size = self.branding_font_size or self.title_font_size
+        local branding_opacity = self.branding_opacity or 0.15
+        local branding_color = self.branding_color or text_color
 
-      -- Calculate text size with proper ImGui 0.10 API
-      if azk_font then ImGui.PushFont(ctx, azk_font, azk_font_size) end
-      local azk_text_w, azk_text_h = ImGui.CalcTextSize(ctx, azk_text)
-      if azk_font then ImGui.PopFont(ctx) end
+        -- Calculate text size with proper ImGui 0.10 API
+        if branding_font then ImGui.PushFont(ctx, branding_font, branding_font_size) end
+        local branding_text_w, branding_text_h = ImGui.CalcTextSize(ctx, branding_text)
+        if branding_font then ImGui.PopFont(ctx) end
 
-      local azk_x = (win_w - azk_text_w) * 0.5
-      local azk_y = (self.height - azk_text_h) * 0.5
+        local branding_x = (win_w - branding_text_w) * 0.5
+        local branding_y = (self.height - branding_text_h) * 0.5
 
-      -- Render AZK text with Orbitron font at configured opacity
-      if azk_font then ImGui.PushFont(ctx, azk_font, azk_font_size) end
-      ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, azk_opacity)
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
-      ImGui.SetCursorPos(ctx, azk_x, azk_y)
-      ImGui.Text(ctx, azk_text)
-      ImGui.PopStyleColor(ctx)
-      ImGui.PopStyleVar(ctx)
-      if azk_font then ImGui.PopFont(ctx) end
+        -- Render branding text with custom font at configured opacity and color
+        if branding_font then ImGui.PushFont(ctx, branding_font, branding_font_size) end
+        ImGui.PushStyleVar(ctx, ImGui.StyleVar_Alpha, branding_opacity)
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, branding_color)
+        ImGui.SetCursorPos(ctx, branding_x, branding_y)
+        ImGui.Text(ctx, branding_text)
+        ImGui.PopStyleColor(ctx)
+        ImGui.PopStyleVar(ctx)
+        if branding_font then ImGui.PopFont(ctx) end
+      end
 
       ImGui.SetCursorPos(ctx, win_w - total_button_width, 0)
       

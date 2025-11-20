@@ -64,8 +64,8 @@ local function load_fonts(ctx, font_cfg)
   local monospace_font = exists(M) and ImGui.CreateFontFromFile(M, 0, 0)
                                 or default_font
 
-  -- Load Orbitron for AZK branding
-  local orbitron_size = font_cfg.orbitron or Constants.TITLEBAR.azk_font_size
+  -- Load Orbitron for branding text
+  local orbitron_size = font_cfg.orbitron or Constants.TITLEBAR.branding_font_size
   local orbitron_font = exists(O) and ImGui.CreateFontFromFile(O, 0, 0) or nil
 
   local time_display_font = nil
@@ -142,10 +142,11 @@ function M.run(opts)
     version_font    = fonts.titlebar_version or fonts.version,
     version_font_size = fonts.titlebar_version_size or fonts.version_size,
     version_color   = config.version_color,
-    azk_font        = fonts.orbitron,  -- Pass Orbitron font for AZK branding
-    azk_font_size   = fonts.orbitron_size,
-    azk_text        = Constants.TITLEBAR.azk_text,
-    azk_opacity     = Constants.TITLEBAR.azk_opacity,
+    branding_font   = fonts.orbitron,  -- Pass custom font for branding text
+    branding_font_size = fonts.orbitron_size,
+    branding_text   = Constants.TITLEBAR.branding_text,
+    branding_opacity = Constants.TITLEBAR.branding_opacity,
+    branding_color  = Constants.TITLEBAR.branding_color,
     settings        = settings and settings:sub('ui') or nil,
     initial_pos     = config.initial_pos,
     initial_size    = config.initial_size,

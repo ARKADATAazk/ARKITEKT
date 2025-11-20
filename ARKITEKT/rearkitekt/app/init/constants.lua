@@ -167,10 +167,11 @@ M.TITLEBAR = {
   show_icon = true,
   enable_maximize = true,
 
-  -- AZK branding configuration
-  azk_font_size = 22,  -- Larger for more visible Orbitron geometric style
-  azk_text = "A Z K",  -- Spaced letters for wider appearance
-  azk_opacity = 0.15,  -- Low opacity for subtle branding
+  -- Branding text configuration (centered text with custom font)
+  branding_font_size = 22,  -- Larger for more visible custom font
+  branding_text = "A Z K",  -- Text to display (spaces for wider appearance)
+  branding_opacity = 0.15,  -- Low opacity for subtle branding
+  branding_color = nil,  -- nil = use titlebar text color, or set custom color
 
   -- Colors
   bg_color = nil,
