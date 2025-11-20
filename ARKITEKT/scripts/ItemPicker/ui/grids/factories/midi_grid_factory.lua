@@ -140,14 +140,6 @@ function M.create(ctx, config, state, visualization, animator)
         color = ImGui.ColorConvertDouble4ToU32(85/255, 91/255, 91/255, 1)
       end
 
-      -- Debug: Log regions being passed to renderer
-      if entry.regions then
-        reaper.ShowConsoleMsg(string.format("[GRID_FACTORY] MIDI item '%s' has %d regions: %s\n",
-          item_name, #entry.regions, table.concat(entry.regions, ", ")))
-      else
-        reaper.ShowConsoleMsg(string.format("[GRID_FACTORY] MIDI item '%s' has NO regions (entry.regions is nil)\n", item_name))
-      end
-
       table.insert(filtered, {
         track_guid = track_guid,
         item = item,

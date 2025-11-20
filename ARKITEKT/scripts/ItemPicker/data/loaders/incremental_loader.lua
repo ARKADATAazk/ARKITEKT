@@ -244,10 +244,7 @@ function M.process_audio_item_fast(loader, item, track, state)
 
   -- Get regions if enabled
   local regions = nil
-  reaper.ShowConsoleMsg(string.format("[INCREMENTAL] Audio fast: loader.settings=%s, show_region_tags=%s\n",
-    tostring(loader.settings), tostring(loader.settings and loader.settings.show_region_tags)))
   if loader.settings and loader.settings.show_region_tags then
-    reaper.ShowConsoleMsg("[INCREMENTAL] Calling GetRegionsForItem for audio item (fast mode)\n")
     regions = loader.reaper_interface.GetRegionsForItem(item)
   end
 
@@ -348,10 +345,7 @@ function M.process_midi_item_fast(loader, item, track, state)
 
   -- Get regions if enabled
   local regions = nil
-  reaper.ShowConsoleMsg(string.format("[INCREMENTAL] MIDI fast: loader.settings=%s, show_region_tags=%s\n",
-    tostring(loader.settings), tostring(loader.settings and loader.settings.show_region_tags)))
   if loader.settings and loader.settings.show_region_tags then
-    reaper.ShowConsoleMsg("[INCREMENTAL] Calling GetRegionsForItem for MIDI item (fast mode)\n")
     regions = loader.reaper_interface.GetRegionsForItem(item)
   end
 

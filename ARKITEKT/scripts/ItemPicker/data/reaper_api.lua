@@ -469,13 +469,6 @@ function M.InsertItemAtMousePos(item, state)
 end
 
 function M.GetRegionsForItem(item)
-  -- DEBUG: Always return fake regions for testing
-  local test_regions = {"TEST1", "TEST2", "TEST3"}
-  reaper.ShowConsoleMsg(string.format("[REGION_TAGS] DEBUG: Returning fake regions: %s\n",
-    table.concat(test_regions, ", ")))
-  return test_regions
-
-  --[[ ORIGINAL CODE - COMMENTED OUT FOR DEBUG
   -- Get item position and length
   local item_start = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
   local item_length = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
@@ -485,8 +478,11 @@ function M.GetRegionsForItem(item)
   local regions = {}
   local _, num_markers, num_regions = reaper.CountProjectMarkers(0)
 
-  reaper.ShowConsoleMsg(string.format("[REGION_TAGS] Scanning for item at pos %.2f-%.2f (found %d regions in project)\n",
-    item_start, item_end, num_regions))
+  -- Debug: Log item position
+  if num_regions > 0 then
+    reaper.ShowConsoleMsg(string.format("[REGION_TAGS] Checking item at %.3f-%.3f (project has %d regions)\n",
+      item_start, item_end, num_regions))
+  end
 
   for i = 0, num_markers + num_regions - 1 do
     local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color =
@@ -498,7 +494,7 @@ function M.GetRegionsForItem(item)
       if pos < item_end and rgnend > item_start then
         -- Skip empty region names
         if name and name ~= "" then
-          reaper.ShowConsoleMsg(string.format("[REGION_TAGS]   -> Found overlap with region '%s' (%.2f-%.2f)\n",
+          reaper.ShowConsoleMsg(string.format("[REGION_TAGS]   ✓ Overlap with region '%s' (%.3f-%.3f)\n",
             name, pos, rgnend))
           table.insert(regions, name)
         end
@@ -507,12 +503,11 @@ function M.GetRegionsForItem(item)
   end
 
   if #regions > 0 then
-    reaper.ShowConsoleMsg(string.format("[REGION_TAGS] Item has %d region(s): %s\n",
+    reaper.ShowConsoleMsg(string.format("[REGION_TAGS] → Item has %d region(s): %s\n",
       #regions, table.concat(regions, ", ")))
   end
 
   return regions
-  --]]
 end
 
 return M
