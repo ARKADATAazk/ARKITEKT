@@ -109,8 +109,6 @@ function M.reset_shortcut_states(ctx, state)
 end
 
 function M.handle_shortcuts(grid, ctx)
-  if not grid.behaviors then return false end
-
   -- Block shortcuts when any popup is open
   if ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId) then
     return false
@@ -127,11 +125,50 @@ function M.handle_shortcuts(grid, ctx)
 
   for _, shortcut in ipairs(M.SHORTCUT_REGISTRY) do
     if M.is_shortcut_pressed(ctx, shortcut, grid.shortcut_state) then
-      local behavior = grid.behaviors[shortcut.name]
-      if behavior then
-        local selected_keys = grid.selection:selected_keys()
-        behavior(selected_keys)
+      local shortcut_name = shortcut.name
+
+      -- Handle built-in selection shortcuts (work for all grids)
+      if shortcut_name == 'select_all' then
+        local items = grid.get_items()
+        local order = {}
+        for _, item in ipairs(items) do
+          order[#order + 1] = grid.key(item)
+        end
+        grid.selection:select_all(order)
+        if grid.behaviors and grid.behaviors.on_select then
+          grid.behaviors.on_select(grid.selection:selected_keys())
+        end
         return true
+
+      elseif shortcut_name == 'deselect_all' then
+        grid.selection:clear()
+        if grid.behaviors and grid.behaviors.on_select then
+          grid.behaviors.on_select(grid.selection:selected_keys())
+        end
+        return true
+
+      elseif shortcut_name == 'invert_selection' then
+        local items = grid.get_items()
+        local order = {}
+        for _, item in ipairs(items) do
+          order[#order + 1] = grid.key(item)
+        end
+        grid.selection:invert(order)
+        if grid.behaviors and grid.behaviors.on_select then
+          grid.behaviors.on_select(grid.selection:selected_keys())
+        end
+        return true
+
+      else
+        -- Handle custom shortcuts via behaviors
+        if grid.behaviors then
+          local behavior = grid.behaviors[shortcut_name]
+          if behavior then
+            local selected_keys = grid.selection:selected_keys()
+            behavior(selected_keys)
+            return true
+          end
+        end
       end
     end
   end
