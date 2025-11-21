@@ -74,7 +74,7 @@ function M.draw(ctx, label, is_selected, opts)
   -- If selected, draw 10x10 #BBBBBB circle in center
   if is_selected then
     local selected_radius = 5  -- 10px diameter
-    ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, selected_radius, hexrgb("#BBBBBB"))
+    ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, selected_radius, hexrgb("#7e7e7e"))
   end
 
   -- Draw label
