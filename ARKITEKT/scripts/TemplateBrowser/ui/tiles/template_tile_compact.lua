@@ -14,16 +14,16 @@ local hexrgb = Colors.hexrgb
 
 -- Configuration for compact tiles
 M.CONFIG = {
-  tile_height = 36,  -- Fixed compact height
-  color_bar_width = 4,  -- Left edge color indicator
-  text_margin = 10,
-  chip_spacing = 4,
-  name_width_fraction = 0.35,  -- Name takes ~35% of tile width
-  vst_section_width = 120,
-  tag_section_width = 150,
-  star_size = 14,
-  star_margin = 8,
-  chip_height = 18,
+  tile_height = 18,  -- Fixed compact height (50% smaller than before)
+  color_bar_width = 3,  -- Left edge color indicator
+  text_margin = 6,
+  chip_spacing = 3,
+  name_width_fraction = 0.4,  -- Name takes ~40% of tile width
+  vst_section_width = 100,
+  tag_section_width = 120,
+  star_size = 10,
+  star_margin = 4,
+  chip_height = 14,
 }
 
 -- Truncate text to fit width
@@ -135,10 +135,10 @@ function M.render(ctx, rect, template, state, metadata, animator)
   end
 
   -- Horizontal layout sections with internal padding (like Parameter Library tiles)
-  local padding = 6
+  local padding = 3
   local color_stripe_width = chip_color and M.CONFIG.color_bar_width or 0
   local cursor_x = x1 + padding + color_stripe_width
-  local cursor_y = y1 + (tile_h / 2) - 7  -- Vertically center text
+  local cursor_y = y1 + (tile_h / 2) - 6  -- Vertically center text (adjusted for smaller height)
 
   -- Section 1: Template Name (left-aligned, takes ~35% width)
   local available_width = tile_w - (padding * 2) - color_stripe_width
@@ -152,72 +152,21 @@ function M.render(ctx, rect, template, state, metadata, animator)
   Draw.text(dl, cursor_x, cursor_y, name_color, truncated_name)
   cursor_x = cursor_x + name_width
 
-  -- Section 2: VST Info (chips or count badge)
+  -- Section 2: VST Info (just show count badge, no chips due to small height)
   if template.fx and #template.fx > 0 then
-    ImGui.SetCursorScreenPos(ctx, cursor_x, y1 + (tile_h / 2) - (M.CONFIG.chip_height / 2))
-
-    -- Show first VST chip
-    local vst_color = hexrgb("#4A9EFF")
-    local chip_clicked, chip_w, chip_h = Chip.draw(ctx, {
-      style = Chip.STYLE.DOT,
-      label = template.fx[1],
-      color = vst_color,
-      height = M.CONFIG.chip_height,
-      dot_size = 5,
-      dot_spacing = 5,
-      padding_h = 6,
-      is_selected = false,
-      is_hovered = state.hover,
-      interactive = false,
-    })
-
-    cursor_x = cursor_x + chip_w + M.CONFIG.chip_spacing
-
-    -- Show count badge if more than 1 VST
-    if #template.fx > 1 then
-      local count_text = string.format("+%d", #template.fx - 1)
-      local count_color = Colors.with_alpha(hexrgb("#A0A0A0"), 200)
-      Draw.text(dl, cursor_x, cursor_y, count_color, count_text)
-      cursor_x = cursor_x + ImGui.CalcTextSize(ctx, count_text) + M.CONFIG.chip_spacing * 2
-    else
-      cursor_x = cursor_x + M.CONFIG.chip_spacing
-    end
+    local vst_text = string.format("VST:%d", #template.fx)
+    local vst_color = Colors.with_alpha(hexrgb("#6A9EFF"), 200)
+    Draw.text(dl, cursor_x, cursor_y, vst_color, vst_text)
+    cursor_x = cursor_x + ImGui.CalcTextSize(ctx, vst_text) + 12
   else
     cursor_x = cursor_x + M.CONFIG.vst_section_width
   end
 
-  -- Section 3: Tags (show first 1-2 tags as chips)
+  -- Section 3: Tags (just show count, no chips due to small height)
   if tmpl_meta and tmpl_meta.tags and #tmpl_meta.tags > 0 then
-    ImGui.SetCursorScreenPos(ctx, cursor_x, y1 + (tile_h / 2) - (M.CONFIG.chip_height / 2))
-
-    local tags_shown = 0
-    for idx, tag_name in ipairs(tmpl_meta.tags) do
-      if tags_shown >= 2 then break end  -- Limit to 2 tags
-
-      local tag_data = metadata.tags and metadata.tags[tag_name]
-      local tag_color = tag_data and tag_data.color or hexrgb("#666666")
-
-      local chip_clicked, chip_w, chip_h = Chip.draw(ctx, {
-        style = Chip.STYLE.PILL,
-        label = tag_name,
-        color = tag_color,
-        height = M.CONFIG.chip_height,
-        padding_h = 6,
-        is_selected = false,
-        is_hovered = state.hover,
-        interactive = false,
-      })
-
-      cursor_x = cursor_x + chip_w + M.CONFIG.chip_spacing
-      tags_shown = tags_shown + 1
-    end
-
-    -- More indicator
-    if #tmpl_meta.tags > 2 then
-      local more_text = string.format("+%d", #tmpl_meta.tags - 2)
-      local more_color = Colors.with_alpha(hexrgb("#808080"), 180)
-      Draw.text(dl, cursor_x, cursor_y, more_color, more_text)
-    end
+    local tags_text = string.format("Tags:%d", #tmpl_meta.tags)
+    local tags_color = Colors.with_alpha(hexrgb("#888888"), 180)
+    Draw.text(dl, cursor_x, cursor_y, tags_color, tags_text)
   end
 
   -- Section 4: Favorite Star (right-aligned)
