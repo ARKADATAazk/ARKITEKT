@@ -234,24 +234,37 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local help_x, help_y = ImGui.GetCursorScreenPos(ctx)
   local help_size = 32
 
-  -- Draw help icon circle with "?" text
-  local center_x = help_x + help_size * 0.5
-  local center_y = help_y + help_size * 0.5
-  local radius = help_size * 0.4
-
   -- Check if hovering
   local is_help_hovered = ImGui.IsMouseHoveringRect(ctx, help_x, help_y, help_x + help_size, help_y + help_size)
 
-  local circle_color = is_help_hovered and hexrgb("#5C7CB8") or hexrgb("#666666")
-  local text_color = is_help_hovered and hexrgb("#FFFFFF") or hexrgb("#CCCCCC")
+  local icon_color = is_help_hovered and hexrgb("#5C7CB8") or hexrgb("#888888")
 
-  -- Draw circle
-  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, radius, circle_color)
+  -- Get icon font from shell_state
+  local icon_font = self.shell_state and self.shell_state.fonts and self.shell_state.fonts.icons
+  local icon_size = self.shell_state and self.shell_state.fonts and self.shell_state.fonts.icons_size or 28
 
-  -- Draw "?" in the middle
-  local help_text = "?"
-  local text_w, text_h = ImGui.CalcTextSize(ctx, help_text)
-  ImGui.DrawList_AddText(dl, center_x - text_w * 0.5, center_y - text_h * 0.5, text_color, help_text)
+  if icon_font then
+    -- Draw using RemixIcon font (question-fill icon: U+F044)
+    ImGui.PushFont(ctx, icon_font)
+    ImGui.SetFontScale(ctx, icon_size / 14)
+    local icon_text = "\xEF\x81\x84"  -- &#xF044; in UTF-8
+    local text_w, text_h = ImGui.CalcTextSize(ctx, icon_text)
+    local center_x = help_x + (help_size - text_w) * 0.5
+    local center_y = help_y + (help_size - text_h) * 0.5
+    ImGui.DrawList_AddText(dl, center_x, center_y, icon_color, icon_text)
+    ImGui.SetFontScale(ctx, 1.0)
+    ImGui.PopFont(ctx)
+  else
+    -- Fallback to circle with "?" if icon font not available
+    local center_x = help_x + help_size * 0.5
+    local center_y = help_y + help_size * 0.5
+    local radius = help_size * 0.4
+    ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, radius, icon_color)
+    local help_text = "?"
+    local text_w, text_h = ImGui.CalcTextSize(ctx, help_text)
+    local text_color = is_help_hovered and hexrgb("#FFFFFF") or hexrgb("#CCCCCC")
+    ImGui.DrawList_AddText(dl, center_x - text_w * 0.5, center_y - text_h * 0.5, text_color, help_text)
+  end
 
   -- Make it clickable
   ImGui.SetCursorPos(ctx, start_x + (picker_size - 32) * 0.5, start_y + picker_size + 8)
@@ -761,10 +774,13 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 end
 
 -- Draw the modal (supports both popup and overlay modes)
-function BatchRenameModal:draw(ctx, item_count, window)
+function BatchRenameModal:draw(ctx, item_count, window, shell_state)
   if not self.is_open then return false end
 
   local count = item_count or self.item_count
+
+  -- Store shell_state for access to fonts
+  self.shell_state = shell_state
 
   -- Use overlay mode if window.overlay is available
   if window and window.overlay then
@@ -893,9 +909,9 @@ function M.is_open()
   return _legacy_instance:should_show()
 end
 
-function M.draw(ctx, item_count, window)
+function M.draw(ctx, item_count, window, shell_state)
   if not _legacy_instance then return false end
-  return _legacy_instance:draw(ctx, item_count, window)
+  return _legacy_instance:draw(ctx, item_count, window, shell_state)
 end
 
 return M
