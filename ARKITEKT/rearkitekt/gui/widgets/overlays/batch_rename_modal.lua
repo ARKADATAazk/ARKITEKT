@@ -10,6 +10,8 @@ local Container = require('rearkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('rearkitekt.gui.widgets.tools.color_picker_window')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
+local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
+local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local hexrgb = Colors.hexrgb
 
@@ -310,65 +312,61 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     end
 
     -- Context menu for number wildcard
-    if chip_data.type == "number" and ImGui.BeginPopup(ctx, "wildcard_context_number") then
-      ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), "Number Options:")
-      ImGui.Separator(ctx)
+    if chip_data.type == "number" and ContextMenu.begin(ctx, "wildcard_context_number") then
+      ImGui.TextColored(ctx, hexrgb("#999999FF"), "Number Options")
+      ContextMenu.separator(ctx)
 
-      -- Start from
-      if ImGui.BeginMenu(ctx, "Start from") then
-        if ImGui.MenuItem(ctx, "0", nil, self.start_index == 0) then
-          self.start_index = 0
-          save_start_index_preference(0)
-          self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
-        end
-        if ImGui.MenuItem(ctx, "1", nil, self.start_index == 1) then
-          self.start_index = 1
-          save_start_index_preference(1)
-          self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
-        end
-        ImGui.EndMenu(ctx)
+      -- Start from options
+      if ContextMenu.checkbox_item(ctx, "Start from 0", self.start_index == 0) then
+        self.start_index = 0
+        save_start_index_preference(0)
+        self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
+      end
+      if ContextMenu.checkbox_item(ctx, "Start from 1", self.start_index == 1) then
+        self.start_index = 1
+        save_start_index_preference(1)
+        self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
       end
 
-      -- Padding
-      if ImGui.BeginMenu(ctx, "Padding") then
-        if ImGui.MenuItem(ctx, "None", nil, self.padding == 0) then
-          self.padding = 0
-          save_padding_preference(0)
-          self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
-        end
-        if ImGui.MenuItem(ctx, "01 (2 digits)", nil, self.padding == 2) then
-          self.padding = 2
-          save_padding_preference(2)
-          self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
-        end
-        if ImGui.MenuItem(ctx, "001 (3 digits)", nil, self.padding == 3) then
-          self.padding = 3
-          save_padding_preference(3)
-          self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
-        end
-        ImGui.EndMenu(ctx)
+      ContextMenu.separator(ctx)
+
+      -- Padding options
+      if ContextMenu.checkbox_item(ctx, "No padding", self.padding == 0) then
+        self.padding = 0
+        save_padding_preference(0)
+        self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
+      end
+      if ContextMenu.checkbox_item(ctx, "Padding: 01", self.padding == 2) then
+        self.padding = 2
+        save_padding_preference(2)
+        self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
+      end
+      if ContextMenu.checkbox_item(ctx, "Padding: 001", self.padding == 3) then
+        self.padding = 3
+        save_padding_preference(3)
+        self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
       end
 
-      ImGui.EndPopup(ctx)
+      ContextMenu.end_menu(ctx)
     end
 
     -- Context menu for letter wildcard
-    if chip_data.type == "letter" and ImGui.BeginPopup(ctx, "wildcard_context_letter") then
-      ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), "Letter Options:")
-      ImGui.Separator(ctx)
+    if chip_data.type == "letter" and ContextMenu.begin(ctx, "wildcard_context_letter") then
+      ImGui.TextColored(ctx, hexrgb("#999999FF"), "Letter Case")
+      ContextMenu.separator(ctx)
 
-      if ImGui.MenuItem(ctx, "lowercase (a, b, c...)", nil, self.letter_case == "lowercase") then
+      if ContextMenu.checkbox_item(ctx, "lowercase (a, b, c...)", self.letter_case == "lowercase") then
         self.letter_case = "lowercase"
         save_letter_case_preference("lowercase")
         self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
       end
-      if ImGui.MenuItem(ctx, "UPPERCASE (A, B, C...)", nil, self.letter_case == "uppercase") then
+      if ContextMenu.checkbox_item(ctx, "UPPERCASE (A, B, C...)", self.letter_case == "uppercase") then
         self.letter_case = "uppercase"
         save_letter_case_preference("uppercase")
         self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
       end
 
-      ImGui.EndPopup(ctx)
+      ContextMenu.end_menu(ctx)
     end
   end
 
@@ -379,18 +377,25 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.SetCursorPosX(ctx, right_col_x)
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Common Names:")
   ImGui.SameLine(ctx, 0, 12)
-  ImGui.SetNextItemWidth(ctx, 120)
-  if ImGui.BeginCombo(ctx, "##names_category", self.names_category == "game" and "Game Music" or "General Music") then
-    if ImGui.Selectable(ctx, "Game Music", self.names_category == "game") then
-      self.names_category = "game"
-      save_names_category_preference("game")
-    end
-    if ImGui.Selectable(ctx, "General Music", self.names_category == "general") then
-      self.names_category = "general"
-      save_names_category_preference("general")
-    end
-    ImGui.EndCombo(ctx)
-  end
+
+  local dropdown_x, dropdown_y = ImGui.GetCursorScreenPos(ctx)
+  local dropdown_w = 120
+  local dropdown_h = 24
+
+  local category_changed, new_category = Dropdown.draw(ctx, dl, dropdown_x, dropdown_y, dropdown_w, dropdown_h, {
+    id = "names_category",
+    options = {
+      {value = "game", label = "Game Music"},
+      {value = "general", label = "General Music"},
+    },
+    current_value = self.names_category,
+    on_change = function(value)
+      self.names_category = value
+      save_names_category_preference(value)
+    end,
+  }, "names_category_dropdown")
+
+  ImGui.SetCursorScreenPos(ctx, dropdown_x, dropdown_y + dropdown_h)
   ImGui.Dummy(ctx, 0, 6)
   ImGui.SetCursorPosX(ctx, right_col_x)
 
@@ -411,24 +416,27 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   local common_names = self.names_category == "game" and game_music_names or general_music_names
 
-  -- Render common names with wrapping
-  local chip_x_start = right_col_x
-  local chip_x = chip_x_start
-  local chip_y = ImGui.GetCursorPosY(ctx)
-  local max_width = right_col_width
-  local line_height = 24  -- Approximate chip height + spacing
+  -- Render common names with proper wrapping
+  local max_x = right_col_x + right_col_width
+  local line_height = 30
 
   for i, name in ipairs(common_names) do
-    local chip_width = ImGui.CalcTextSize(ctx, name) + 16  -- Approximate chip width
+    -- Calculate chip width (text + padding from chip style, NOT including spacing)
+    local text_w = ImGui.CalcTextSize(ctx, name)
+    local chip_width = text_w + (Style.ACTION_CHIP_TAG.padding_h or 8) * 2
 
-    -- Check if chip fits on current line
-    if chip_x + chip_width - chip_x_start > max_width and i > 1 then
-      -- Move to next line
-      chip_x = chip_x_start
-      chip_y = chip_y + line_height
-      ImGui.SetCursorPos(ctx, chip_x, chip_y)
-    else
-      if i > 1 then
+    if i > 1 then
+      -- Get current cursor position BEFORE potentially adding spacing
+      local cur_screen_x, cur_screen_y = ImGui.GetCursorScreenPos(ctx)
+
+      -- Check if chip would fit on current line (including spacing before it)
+      if cur_screen_x + chip_spacing + chip_width > max_x then
+        -- Won't fit, start new line
+        ImGui.SetCursorPosX(ctx, right_col_x)
+        ImGui.Dummy(ctx, 0, line_height)
+        ImGui.SetCursorPosX(ctx, right_col_x)
+      else
+        -- Will fit, add spacing and continue on same line
         ImGui.SameLine(ctx, 0, chip_spacing)
       end
     end
@@ -453,11 +461,6 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       self.pattern = self.pattern .. name
       self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
     end
-
-    -- Update chip position for next iteration
-    local cur_x, cur_y = ImGui.GetCursorPos(ctx)
-    chip_x = cur_x
-    chip_y = cur_y
   end
 
   ImGui.SetCursorPosX(ctx, right_col_x)
