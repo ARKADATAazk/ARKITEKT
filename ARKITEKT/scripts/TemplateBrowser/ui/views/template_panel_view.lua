@@ -134,12 +134,12 @@ local function draw_quick_access_panel(ctx, gui, width, height)
   local rounding = 8
 
   -- Draw panel background
-  ImGui.DrawList_AddRectFilled(dl, panel_x, panel_y, panel_x + width, panel_y + height, panel_bg, rounding)
-  ImGui.DrawList_AddRect(dl, panel_x, panel_y, panel_x + width, panel_y + height, panel_border, rounding, 0, 1)
+  ImGui.DrawList_AddRectFilled(dl, panel_x, panel_y, panel_x + width, panel_y + height, panel_bg, rounding, ImGui.DrawFlags_RoundCornersAll)
+  ImGui.DrawList_AddRect(dl, panel_x, panel_y, panel_x + width, panel_y + height, panel_border, rounding, ImGui.DrawFlags_RoundCornersAll, 1)
 
   -- Header with dropdown
   local header_height = 32
-  ImGui.DrawList_AddRectFilled(dl, panel_x, panel_y, panel_x + width, panel_y + header_height, header_bg, rounding, 1 | 2)  -- Round top corners
+  ImGui.DrawList_AddRectFilled(dl, panel_x, panel_y, panel_x + width, panel_y + header_height, header_bg, rounding, ImGui.DrawFlags_RoundCornersTop)
 
   -- Position dropdown in header
   ImGui.SetCursorScreenPos(ctx, panel_x + 8, panel_y + 6)
