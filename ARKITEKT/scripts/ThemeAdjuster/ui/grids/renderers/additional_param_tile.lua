@@ -16,6 +16,10 @@ local TILE_HEIGHT = 60
 local TILE_PADDING = 8
 local CONTROL_WIDTH = 200
 
+-- Throttle refresh calls during drag
+local last_refresh_time = 0
+local REFRESH_INTERVAL = 0.1  -- 100ms = 10 fps max
+
 -- Read/write parameter value from Reaper theme
 local function get_param_value(param_index, param_type)
   if not param_index then return param_type == "bool" and 0 or 0.0 end
@@ -121,6 +125,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
   ImGui.SetCursorScreenPos(ctx, x1 + TILE_PADDING, y1 + TILE_PADDING + 20)
 
   local value_changed = false
+  local was_deactivated = false
   local new_value = current_value
   local control_id = "##" .. param_name
 
@@ -130,6 +135,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
     if Checkbox.draw_at_cursor(ctx, param_name, checked, nil, "param_" .. param_name) then
       new_value = checked and 0 or 1
       value_changed = true
+      was_deactivated = true  -- Immediate
     end
   elseif param_type == "int" or param_type == "enum" then
     -- SliderInt with IsItemActive for continuous updates
@@ -143,6 +149,10 @@ function M.render(ctx, param, tab_color, shell_state, view)
       new_value = val
       value_changed = true
     end
+
+    if ImGui.IsItemDeactivated(ctx) then
+      was_deactivated = true
+    end
   else
     -- SliderDouble with IsItemActive (REAPER parameters are integers, so we round)
     ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
@@ -154,6 +164,10 @@ function M.render(ctx, param, tab_color, shell_state, view)
     if changed or is_active then
       new_value = math.floor(val + 0.5)  -- Round to integer for REAPER
       value_changed = true
+    end
+
+    if ImGui.IsItemDeactivated(ctx) then
+      was_deactivated = true
     end
   end
 
@@ -235,8 +249,14 @@ function M.render(ctx, param, tab_color, shell_state, view)
       end
     end
 
-    -- Refresh all after propagation (like library_tile.lua)
-    pcall(reaper.ThemeLayout_RefreshAll)
+    -- Throttled refresh during drag, immediate on release
+    local current_time = reaper.time_precise()
+    local should_refresh = was_deactivated or ((current_time - last_refresh_time) >= REFRESH_INTERVAL)
+
+    if should_refresh then
+      pcall(reaper.ThemeLayout_RefreshAll)
+      last_refresh_time = current_time
+    end
   end
 
   -- Move cursor to next tile position

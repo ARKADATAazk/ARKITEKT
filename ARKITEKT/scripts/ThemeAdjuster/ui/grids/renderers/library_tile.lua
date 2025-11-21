@@ -18,6 +18,10 @@ M._anim = M._anim or {}
 -- Link handle state (for drag detection)
 M._link_handle_rects = M._link_handle_rects or {}
 
+-- Throttle refresh calls during drag
+local last_refresh_time = 0
+local REFRESH_INTERVAL = 0.1  -- 100ms = 10 fps max
+
 function M.render(ctx, rect, param, state, view)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local w = x2 - x1
@@ -168,16 +172,24 @@ function M.render(ctx, rect, param, state, view)
 
     -- Check if slider is being actively manipulated (even if value didn't "change")
     local is_active = ImGui.IsItemActive(ctx)
+    local was_active = ImGui.IsItemDeactivated(ctx)
 
     if changed_slider or is_active then
       changed = true
       new_value = math.floor(slider_value + 0.5)  -- Round to integer
+    end
+
+    -- Store deactivation state for final refresh
+    if was_active then
+      changed = true
+      new_value = math.floor(slider_value + 0.5)
     end
   end
 
   -- Apply parameter change
   if changed then
     local old_value = param.value
+    local was_deactivated = ImGui.IsItemDeactivated(ctx)
 
     -- Apply to this parameter
     pcall(reaper.ThemeLayout_SetParameter, param.index, new_value, true)
@@ -186,8 +198,14 @@ function M.render(ctx, rect, param, state, view)
     -- Propagate to linked parameters
     M.propagate_to_linked_params(param.name, old_value, new_value, param, view)
 
-    -- Refresh all after propagation
-    pcall(reaper.ThemeLayout_RefreshAll)
+    -- Throttled refresh during drag, immediate on release
+    local current_time = reaper.time_precise()
+    local should_refresh = was_deactivated or ((current_time - last_refresh_time) >= REFRESH_INTERVAL)
+
+    if should_refresh then
+      pcall(reaper.ThemeLayout_RefreshAll)
+      last_refresh_time = current_time
+    end
   end
 
   ImGui.SameLine(ctx, 0, spacing)
