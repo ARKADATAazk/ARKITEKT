@@ -135,9 +135,9 @@ M.QUANTIZE = {
   -- Quantize mode options for UI dropdowns
   -- Values map to quantize.lua mode detection: strings for named modes, numbers for grid divisions
   options = {
-    { value = "4bar", label = "4 Bars" },
-    { value = "2bar", label = "2 Bars" },
     { value = "measure", label = "1 Bar" },
+    { value = "2bar", label = "2 Bars" },
+    { value = "4bar", label = "4 Bars" },
     { value = "beat", label = "Beat" },
     { value = 1, label = "1/1" },
     { value = 0.5, label = "1/2" },

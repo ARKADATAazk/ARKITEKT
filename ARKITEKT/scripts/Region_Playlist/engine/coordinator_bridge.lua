@@ -32,6 +32,9 @@ function M.create(opts)
 
   local saved_settings = RegionState.load_settings(opts.proj or 0)
 
+  -- Debug: Log what quantize mode was loaded
+  Logger.debug("BRIDGE", "Loaded quantize_mode from settings: %s", tostring(saved_settings.quantize_mode))
+
   local bridge = {
     proj = opts.proj or 0,
     controller = nil,
@@ -62,20 +65,29 @@ function M.create(opts)
     playlist_lookup = opts.get_playlist_by_id,
   })
 
-  -- Save defaults if settings were empty (ensures persistence on first run)
+  -- Save defaults if settings were empty or invalid (ensures persistence on first run)
   local needs_save = false
-  if not saved_settings.quantize_mode then
+
+  -- Migrate old "none" quantize mode to "measure" (1 Bar)
+  -- Also set default if not present
+  if not saved_settings.quantize_mode or saved_settings.quantize_mode == "none" then
+    Logger.debug("BRIDGE", "Migrating quantize_mode from '%s' to 'measure'", tostring(saved_settings.quantize_mode))
     saved_settings.quantize_mode = "measure"
     needs_save = true
+  else
+    Logger.debug("BRIDGE", "Using saved quantize_mode: '%s'", tostring(saved_settings.quantize_mode))
   end
+
   if saved_settings.shuffle_enabled == nil then
     saved_settings.shuffle_enabled = false
     needs_save = true
   end
+
   if not saved_settings.shuffle_mode then
     saved_settings.shuffle_mode = "true_shuffle"
     needs_save = true
   end
+
   if needs_save then
     RegionState.save_settings(saved_settings, bridge.proj)
   end
