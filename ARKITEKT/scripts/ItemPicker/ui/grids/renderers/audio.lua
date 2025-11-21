@@ -566,8 +566,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         ImGui.PopFont(ctx)
       end
 
-      local margin_x = 11  -- Horizontal margin (2px more left from original 9px)
-      local margin_y = 0   -- Vertical margin (9px down from original 9px = 0)
+      local margin_x = 4  -- Horizontal margin (7px right from previous)
+      local margin_y = 3  -- Vertical margin (3px up from previous)
       local text_x = scaled_x2 - text_w - margin_x
       local text_y = scaled_y2 - text_h - margin_y
 
