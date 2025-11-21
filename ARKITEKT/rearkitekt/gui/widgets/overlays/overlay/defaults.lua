@@ -11,7 +11,7 @@ local hexrgb = Colors.hexrgb
 
 local default_config = {
   scrim = {
-    color = hexrgb("#242424"),
+    color = hexrgb("#121212"),
     opacity = 0.99,
   },
   
