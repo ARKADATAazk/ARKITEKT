@@ -209,26 +209,25 @@ function M.render(ctx, rect, template, state, metadata, animator)
     state.star_clicked = true
   end
 
-  -- Render favorite badge if template is favorited (compact version)
+  -- Render favorite badge if template is favorited (compact icon badge matching ItemPicker style)
   if is_favorite then
-    local badge_text = "FAV"  -- Shorter text for compact view
-    local badge_x = x1 + 4  -- Left side with small margin
-    local badge_y = y1 + 2  -- Top with small margin (adjusted for compact height)
+    local badge_size = 12  -- Smaller badge size for compact view
+    local badge_margin = 4
+    local badge_x = x1 + badge_margin  -- Left side with small margin
+    local badge_y = y1 + (tile_h - badge_size) / 2  -- Vertically centered
 
-    -- Badge configuration (smaller for compact view)
+    -- Badge configuration (matching ItemPicker style, scaled for compact view)
     local badge_config = {
-      padding_x = 4,
-      padding_y = 1,
       rounding = 2,
-      bg = Colors.hexrgb("#FFA50088"),  -- Orange background with transparency
-      border_alpha = 0x99,
-      border_darken = 0.3,
-      text_color = Colors.hexrgb("#FFFFFF"),
+      bg = hexrgb("#14181C"),
+      border_alpha = 0x66,
+      border_darken = 0.4,
+      icon_color = hexrgb("#FFA500"),  -- Orange star icon
     }
 
-    -- Render the badge
-    Badge.render_text_badge(ctx, dl, badge_x, badge_y, badge_text,
-                           chip_color or hexrgb("#FFA500"), 255, badge_config)
+    -- Render using standardized favorite badge method
+    Badge.render_favorite_badge(ctx, dl, badge_x, badge_y, badge_size, 255, is_favorite,
+                               nil, nil, chip_color or hexrgb("#555555"), badge_config)
   end
 end
 

@@ -288,26 +288,25 @@ function M.render(ctx, rect, template, state, metadata, animator)
     state.star_clicked = true
   end
 
-  -- Render favorite badge if template is favorited
+  -- Render favorite badge if template is favorited (icon badge matching ItemPicker style)
   if is_favorite then
-    local badge_text = "Favorite"
-    local badge_x = x1 + 6  -- Left side with small margin
-    local badge_y = y1 + 6  -- Top with small margin
+    local badge_size = 18  -- Badge size
+    local badge_margin = 6
+    local badge_x = x1 + badge_margin  -- Left side with margin
+    local badge_y = y1 + badge_margin  -- Top with margin
 
-    -- Badge configuration
+    -- Badge configuration (matching ItemPicker style)
     local badge_config = {
-      padding_x = 6,
-      padding_y = 2,
       rounding = 3,
-      bg = Colors.hexrgb("#FFA50088"),  -- Orange background with transparency
-      border_alpha = 0x99,
-      border_darken = 0.3,
-      text_color = Colors.hexrgb("#FFFFFF"),
+      bg = hexrgb("#14181C"),
+      border_alpha = 0x66,
+      border_darken = 0.4,
+      icon_color = hexrgb("#FFA500"),  -- Orange star icon
     }
 
-    -- Render the badge
-    Badge.render_text_badge(ctx, dl, badge_x, badge_y, badge_text,
-                           chip_color or hexrgb("#FFA500"), 255, badge_config)
+    -- Render using standardized favorite badge method
+    Badge.render_favorite_badge(ctx, dl, badge_x, badge_y, badge_size, 255, is_favorite,
+                               nil, nil, chip_color or hexrgb("#555555"), badge_config)
   end
 end
 
