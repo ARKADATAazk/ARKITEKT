@@ -9,7 +9,7 @@ local Style = require('rearkitekt.gui.style.defaults')
 local Container = require('rearkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('rearkitekt.gui.widgets.tools.color_picker_window')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
-local Fields = require('rearkitekt.gui.widgets.primitives.fields')
+local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local hexrgb = Colors.hexrgb
 
@@ -159,7 +159,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local right_col_x = math.floor(start_x + picker_size + col_gap)
   ImGui.SetCursorPos(ctx, right_col_x, start_y)
 
-  -- Pattern input field using Fields primitive
+  -- Pattern input field using SearchInput primitive
   local input_height = 32
   local screen_x, screen_y = ImGui.GetCursorScreenPos(ctx)
 
@@ -168,32 +168,20 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     self.focus_input = false
   end
 
-  -- Set text in Fields component
-  Fields.set_text("batch_rename_pattern", self.pattern)
+  -- Set text in SearchInput component
+  SearchInput.set_text("batch_rename_pattern", self.pattern)
 
-  local changed, new_pattern = Fields.draw(ctx, dl, screen_x, screen_y, right_col_width, input_height, {
+  local _, changed = SearchInput.draw(ctx, dl, screen_x, screen_y, right_col_width, input_height, {
     id = "batch_rename_pattern",
-    hint = "pattern$wildcard",
-    text = self.pattern,
-    bg_color = Style.SEARCH_INPUT_COLORS.bg,
-    bg_hover_color = Style.SEARCH_INPUT_COLORS.bg_hover,
-    bg_active_color = Style.SEARCH_INPUT_COLORS.bg_active,
-    border_color = Style.SEARCH_INPUT_COLORS.border_outer,
-    text_color = Style.SEARCH_INPUT_COLORS.text,
-    rounding = 4,
+    placeholder = "pattern$wildcard",
     on_change = function(text)
       self.pattern = text
       self.preview_items = generate_preview(text, count)
     end
   }, "batch_rename_pattern")
 
-  if changed then
-    self.pattern = new_pattern
-    self.preview_items = generate_preview(new_pattern, count)
-  end
-
   -- Advance cursor
-  ImGui.SetCursorPosX(ctx, right_col_x)
+  ImGui.SetCursorScreenPos(ctx, screen_x, screen_y + input_height)
   ImGui.Dummy(ctx, 0, 10)
 
   -- Wildcards label and chips
@@ -363,6 +351,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     id = "cancel_btn",
     label = "Cancel",
     rounding = 4,
+    ignore_modal = true,
   }, "batch_rename_cancel")
 
   if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
@@ -375,6 +364,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     label = "Rename",
     rounding = 4,
     is_disabled = not can_rename,
+    ignore_modal = true,
   }, "batch_rename_rename")
 
   if rename_clicked or (can_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
@@ -390,6 +380,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     label = "Rename & Recolor",
     rounding = 4,
     is_disabled = not can_rename,
+    ignore_modal = true,
   }, "batch_rename_both")
 
   if rename_recolor_clicked then
@@ -404,6 +395,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     id = "recolor_btn",
     label = "Recolor",
     rounding = 4,
+    ignore_modal = true,
   }, "batch_rename_recolor")
 
   if recolor_clicked then
