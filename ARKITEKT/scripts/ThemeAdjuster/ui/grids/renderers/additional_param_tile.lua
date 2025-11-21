@@ -235,14 +235,36 @@ function M.render(ctx, param, tab_color, shell_state, view)
 
     -- Propagate to linked parameters
     if is_in_group and link_mode ~= ParameterLinkManager.LINK_MODE.UNLINKED then
-      local propagations = ParameterLinkManager.propagate_value_change(param_name, old_value, new_value)
+      local propagations = ParameterLinkManager.propagate_value_change(param_name, old_value, new_value, param)
 
       -- Apply propagated changes to other parameters
       for _, prop in ipairs(propagations) do
-        -- Find the parameter index for the linked param
+        -- Find the parameter definition for the linked param
         for _, p in ipairs(view.all_params) do
           if p.name == prop.param_name then
-            set_param_value(p.index, prop.clamped_value)
+            local target_min = p.min or 0
+            local target_max = p.max or 100
+            local target_range = target_max - target_min
+            local target_new_value
+
+            if prop.mode == "sync" then
+              -- SYNC: Set to same percentage position in target's range
+              target_new_value = target_min + (prop.percent * target_range)
+            elseif prop.mode == "link" then
+              -- LINK: Apply percentage delta to target's range
+              local current_value = get_param_value(p.index, p.type)
+              local current_percent = (current_value - target_min) / target_range
+              local new_percent = current_percent + prop.delta_percent
+              target_new_value = target_min + (new_percent * target_range)
+            end
+
+            -- Round to integer for REAPER
+            target_new_value = math.floor(target_new_value + 0.5)
+
+            -- Clamp to target's range
+            local clamped_value = math.max(target_min, math.min(target_max, target_new_value))
+
+            set_param_value(p.index, clamped_value)
             break
           end
         end

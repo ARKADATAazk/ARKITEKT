@@ -306,8 +306,9 @@ end
 -- ============================================================================
 
 -- Propagate value change to other parameters in the group
+-- param: source parameter object with {min, max} properties
 -- Returns: array of { param_name, new_value, clamped_value }
-function M.propagate_value_change(param_name, old_value, new_value)
+function M.propagate_value_change(param_name, old_value, new_value, param)
   local propagations = {}
 
   -- Get group
@@ -317,7 +318,18 @@ function M.propagate_value_change(param_name, old_value, new_value)
   local group = state.groups[group_id]
   if not group then return propagations end
 
-  local delta = new_value - old_value
+  -- Calculate source parameter's range and percentage
+  local source_min = param and param.min or 0
+  local source_max = param and param.max or 100
+  local source_range = source_max - source_min
+
+  -- Avoid division by zero
+  if source_range == 0 then return propagations end
+
+  -- Calculate percentage position and delta
+  local old_percent = (old_value - source_min) / source_range
+  local new_percent = (new_value - source_min) / source_range
+  local delta_percent = new_percent - old_percent
 
   -- Propagate to other parameters in group
   for _, other_param in ipairs(group.params) do
@@ -325,27 +337,20 @@ function M.propagate_value_change(param_name, old_value, new_value)
       local mode = state.link_modes[other_param]
 
       if mode == M.LINK_MODE.SYNC then
-        -- SYNC: Match exact value
+        -- SYNC: Match same percentage position in target's range
+        -- This requires target parameter info, which we'll get from the caller
         table.insert(propagations, {
           param_name = other_param,
-          new_value = new_value,
-          clamped_value = new_value,
+          mode = "sync",
+          percent = new_percent,  -- Position as percentage (0-1)
         })
 
       elseif mode == M.LINK_MODE.LINK then
-        -- LINK: Apply delta
-        local other_virtual = state.virtual_values[other_param]
-        local other_current = other_virtual or old_value  -- Assume same starting value if no virtual
-        local other_new = other_current + delta
-
-        -- Store unclamped virtual value
-        state.virtual_values[other_param] = other_new
-
+        -- LINK: Apply percentage delta to target's range
         table.insert(propagations, {
           param_name = other_param,
-          new_value = other_new,
-          clamped_value = other_new,
-          virtual_value = other_new,
+          mode = "link",
+          delta_percent = delta_percent,  -- Delta as percentage of range
         })
       end
       -- UNLINKED mode: do nothing
