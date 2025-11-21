@@ -23,6 +23,8 @@ local EXTSTATE_SECTION = "REARKITEKT_BATCH_RENAME"
 local EXTSTATE_SEPARATOR = "wildcard_separator"
 local EXTSTATE_START_INDEX = "wildcard_start_index"
 local EXTSTATE_PADDING = "wildcard_padding"
+local EXTSTATE_LETTER_CASE = "wildcard_letter_case"
+local EXTSTATE_NAMES_CATEGORY = "common_names_category"
 
 -- Load separator preference from global REAPER settings
 local function load_separator_preference()
@@ -61,11 +63,32 @@ local function save_padding_preference(padding)
   reaper.SetExtState(EXTSTATE_SECTION, EXTSTATE_PADDING, tostring(padding), true)
 end
 
+-- Load letter case preference (lowercase, uppercase)
+local function load_letter_case_preference()
+  local value = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_LETTER_CASE)
+  return value == "uppercase" and "uppercase" or "lowercase"
+end
+
+-- Save letter case preference
+local function save_letter_case_preference(letter_case)
+  reaper.SetExtState(EXTSTATE_SECTION, EXTSTATE_LETTER_CASE, letter_case, true)
+end
+
+-- Load common names category preference
+local function load_names_category_preference()
+  local value = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_NAMES_CATEGORY)
+  return value == "general" and "general" or "game"
+end
+
+-- Save common names category preference
+local function save_names_category_preference(category)
+  reaper.SetExtState(EXTSTATE_SECTION, EXTSTATE_NAMES_CATEGORY, category, true)
+end
+
 -- Wildcard pattern processing
-local function apply_pattern(pattern, index, start_index, padding)
+local function apply_pattern(pattern, index, start_index, padding, letter_case)
   -- $n - number (with options for start index and padding)
-  -- $l - lowercase letter (a, b, c, ...)
-  -- $L - uppercase letter (A, B, C, ...)
+  -- $l - letter (lowercase or uppercase based on letter_case setting)
   local result = pattern
 
   -- Calculate actual index based on start preference
@@ -80,26 +103,24 @@ local function apply_pattern(pattern, index, start_index, padding)
     result = result:gsub("%$n", tostring(num_value))
   end
 
-  -- Apply lowercase letter wildcard (a=0, b=1, etc)
+  -- Apply letter wildcard (case based on preference)
   result = result:gsub("%$l", function()
     local letter_index = (num_value) % 26
-    return string.char(97 + letter_index)  -- 97 is 'a'
-  end)
-
-  -- Apply uppercase letter wildcard (A=0, B=1, etc)
-  result = result:gsub("%$L", function()
-    local letter_index = (num_value) % 26
-    return string.char(65 + letter_index)  -- 65 is 'A'
+    if letter_case == "uppercase" then
+      return string.char(65 + letter_index)  -- 65 is 'A'
+    else
+      return string.char(97 + letter_index)  -- 97 is 'a'
+    end
   end)
 
   return result
 end
 
 -- Generate preview of renamed items
-local function generate_preview(pattern, count, start_index, padding)
+local function generate_preview(pattern, count, start_index, padding, letter_case)
   local previews = {}
   for i = 1, math.min(count, 5) do  -- Show max 5 previews
-    previews[i] = apply_pattern(pattern, i, start_index, padding)
+    previews[i] = apply_pattern(pattern, i, start_index, padding, letter_case)
   end
   if count > 5 then
     previews[#previews + 1] = "..."
@@ -123,6 +144,8 @@ function M.new()
     separator = "none",  -- Wildcard separator: "none", "underscore", "space"
     start_index = 1,  -- Start from: 0 or 1
     padding = 0,  -- Padding: 0 (none), 2 (01), 3 (001)
+    letter_case = "lowercase",  -- Letter case: "lowercase" or "uppercase"
+    names_category = "game",  -- Common names category: "game" or "general"
   }, BatchRenameModal)
 end
 
@@ -142,6 +165,8 @@ function BatchRenameModal:open(item_count, on_confirm_callback, opts)
   self.separator = load_separator_preference()  -- Load saved separator preference
   self.start_index = load_start_index_preference()  -- Load saved start index preference
   self.padding = load_padding_preference()  -- Load saved padding preference
+  self.letter_case = load_letter_case_preference()  -- Load saved letter case preference
+  self.names_category = load_names_category_preference()  -- Load saved names category preference
 end
 
 -- Check if modal should be shown
@@ -228,7 +253,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     placeholder = "pattern$wildcard",
     on_change = function(text)
       self.pattern = text
-      self.preview_items = generate_preview(text, count, self.start_index, self.padding)
+      self.preview_items = generate_preview(text, count, self.start_index, self.padding, self.letter_case)
     end
   }, "batch_rename_pattern")
 
@@ -236,16 +261,15 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.SetCursorScreenPos(ctx, screen_x, screen_y + input_height)
   ImGui.Dummy(ctx, 0, 6)
 
-  -- Wildcards label and chips
+  -- Wildcards label and chips (with right-click context menus)
   ImGui.SetCursorPosX(ctx, right_col_x)
-  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards:")
+  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards (right-click for options):")
   ImGui.Dummy(ctx, 0, 6)
   ImGui.SetCursorPosX(ctx, right_col_x)
 
   local wildcard_chips = {
-    {label = "number ($n)", wildcard = "$n"},
-    {label = "letter ($l)", wildcard = "$l"},
-    {label = "LETTER ($L)", wildcard = "$L"},
+    {label = "number ($n)", wildcard = "$n", type = "number"},
+    {label = self.letter_case == "uppercase" and "LETTER ($l)" or "letter ($l)", wildcard = "$l", type = "letter"},
   }
 
   local chip_spacing = 6
@@ -255,7 +279,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       ImGui.SameLine(ctx, 0, chip_spacing)
     end
 
-    local clicked = Chip.draw(ctx, {
+    local clicked, right_clicked = Chip.draw(ctx, {
       label = chip_data.label,
       style = Chip.STYLE.ACTION,
       interactive = true,
@@ -267,6 +291,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       padding_h = Style.ACTION_CHIP_WILDCARD.padding_h,
     })
 
+    -- Left click - insert wildcard
     if clicked then
       -- Insert separator before wildcard if enabled
       local sep = ""
@@ -276,80 +301,115 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
         sep = " "
       end
       self.pattern = self.pattern .. sep .. chip_data.wildcard
-      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
+      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
+    end
+
+    -- Right click - show context menu
+    if ImGui.IsItemHovered(ctx) and ImGui.IsMouseClicked(ctx, 1) then
+      ImGui.OpenPopup(ctx, "wildcard_context_" .. chip_data.type)
+    end
+
+    -- Context menu for number wildcard
+    if chip_data.type == "number" and ImGui.BeginPopup(ctx, "wildcard_context_number") then
+      ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), "Number Options:")
+      ImGui.Separator(ctx)
+
+      -- Start from
+      if ImGui.BeginMenu(ctx, "Start from") then
+        if ImGui.MenuItem(ctx, "0", nil, self.start_index == 0) then
+          self.start_index = 0
+          save_start_index_preference(0)
+          self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
+        end
+        if ImGui.MenuItem(ctx, "1", nil, self.start_index == 1) then
+          self.start_index = 1
+          save_start_index_preference(1)
+          self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
+        end
+        ImGui.EndMenu(ctx)
+      end
+
+      -- Padding
+      if ImGui.BeginMenu(ctx, "Padding") then
+        if ImGui.MenuItem(ctx, "None", nil, self.padding == 0) then
+          self.padding = 0
+          save_padding_preference(0)
+          self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
+        end
+        if ImGui.MenuItem(ctx, "01 (2 digits)", nil, self.padding == 2) then
+          self.padding = 2
+          save_padding_preference(2)
+          self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
+        end
+        if ImGui.MenuItem(ctx, "001 (3 digits)", nil, self.padding == 3) then
+          self.padding = 3
+          save_padding_preference(3)
+          self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
+        end
+        ImGui.EndMenu(ctx)
+      end
+
+      ImGui.EndPopup(ctx)
+    end
+
+    -- Context menu for letter wildcard
+    if chip_data.type == "letter" and ImGui.BeginPopup(ctx, "wildcard_context_letter") then
+      ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), "Letter Options:")
+      ImGui.Separator(ctx)
+
+      if ImGui.MenuItem(ctx, "lowercase (a, b, c...)", nil, self.letter_case == "lowercase") then
+        self.letter_case = "lowercase"
+        save_letter_case_preference("lowercase")
+        self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
+      end
+      if ImGui.MenuItem(ctx, "UPPERCASE (A, B, C...)", nil, self.letter_case == "uppercase") then
+        self.letter_case = "uppercase"
+        save_letter_case_preference("uppercase")
+        self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
+      end
+
+      ImGui.EndPopup(ctx)
     end
   end
 
   ImGui.SetCursorPosX(ctx, right_col_x)
   ImGui.Dummy(ctx, 0, 6)
 
-  -- Wildcard options
-  ImGui.SetCursorPosX(ctx, right_col_x)
-  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcard Options:")
-  ImGui.Dummy(ctx, 0, 6)
-  ImGui.SetCursorPosX(ctx, right_col_x)
-
-  -- Start from dropdown
-  ImGui.Text(ctx, "Start from:")
-  ImGui.SameLine(ctx, 0, 8)
-  ImGui.SetNextItemWidth(ctx, 60)
-  if ImGui.BeginCombo(ctx, "##start_index", self.start_index == 0 and "0" or "1") then
-    if ImGui.Selectable(ctx, "0", self.start_index == 0) then
-      self.start_index = 0
-      save_start_index_preference(0)
-      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
-    end
-    if ImGui.Selectable(ctx, "1", self.start_index == 1) then
-      self.start_index = 1
-      save_start_index_preference(1)
-      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
-    end
-    ImGui.EndCombo(ctx)
-  end
-
-  ImGui.SameLine(ctx, 0, 16)
-
-  -- Padding dropdown
-  ImGui.Text(ctx, "Padding:")
-  ImGui.SameLine(ctx, 0, 8)
-  ImGui.SetNextItemWidth(ctx, 80)
-  local padding_label = self.padding == 0 and "None" or (self.padding == 2 and "01" or "001")
-  if ImGui.BeginCombo(ctx, "##padding", padding_label) then
-    if ImGui.Selectable(ctx, "None", self.padding == 0) then
-      self.padding = 0
-      save_padding_preference(0)
-      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
-    end
-    if ImGui.Selectable(ctx, "01 (2 digits)", self.padding == 2) then
-      self.padding = 2
-      save_padding_preference(2)
-      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
-    end
-    if ImGui.Selectable(ctx, "001 (3 digits)", self.padding == 3) then
-      self.padding = 3
-      save_padding_preference(3)
-      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
-    end
-    ImGui.EndCombo(ctx)
-  end
-
-  ImGui.SetCursorPosX(ctx, right_col_x)
-  ImGui.Dummy(ctx, 0, 6)
-
-  -- Common names label and chips
+  -- Common names label with category dropdown
   ImGui.SetCursorPosX(ctx, right_col_x)
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Common Names:")
+  ImGui.SameLine(ctx, 0, 12)
+  ImGui.SetNextItemWidth(ctx, 120)
+  if ImGui.BeginCombo(ctx, "##names_category", self.names_category == "game" and "Game Music" or "General Music") then
+    if ImGui.Selectable(ctx, "Game Music", self.names_category == "game") then
+      self.names_category = "game"
+      save_names_category_preference("game")
+    end
+    if ImGui.Selectable(ctx, "General Music", self.names_category == "general") then
+      self.names_category = "general"
+      save_names_category_preference("general")
+    end
+    ImGui.EndCombo(ctx)
+  end
   ImGui.Dummy(ctx, 0, 6)
   ImGui.SetCursorPosX(ctx, right_col_x)
 
-  -- Music and game audio related common names
-  local common_names = {
+  -- Common names organized by category
+  local game_music_names = {
     "combat", "battle", "boss", "ambience", "tension", "suspense",
-    "intro", "outro", "stinger", "loop", "part",
-    "partA", "partB", "partC", "verse", "chorus", "refrain", "bridge", "break",
+    "intro", "outro", "stinger", "loop",
     "calm", "peaceful", "explore", "menu", "theme", "victory", "defeat",
     "action", "stealth", "puzzle", "cutscene", "cinematic",
   }
+
+  local general_music_names = {
+    "intro", "outro", "verse", "chorus", "refrain", "bridge", "break",
+    "partA", "partB", "partC", "part",
+    "theme", "variation", "reprise", "coda", "interlude",
+    "solo", "tutti", "crescendo", "diminuendo",
+  }
+
+  local common_names = self.names_category == "game" and game_music_names or general_music_names
 
   -- Render common names with wrapping
   local chip_x_start = right_col_x
@@ -391,7 +451,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
         self.pattern = self.pattern .. "_"
       end
       self.pattern = self.pattern .. name
-      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
+      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
     end
 
     -- Update chip position for next iteration
@@ -658,10 +718,11 @@ function M.apply_pattern_to_items(pattern, count)
   -- Load global preferences for wildcard processing
   local start_index = load_start_index_preference()
   local padding = load_padding_preference()
+  local letter_case = load_letter_case_preference()
 
   local results = {}
   for i = 1, count do
-    results[i] = apply_pattern(pattern, i, start_index, padding)
+    results[i] = apply_pattern(pattern, i, start_index, padding, letter_case)
   end
   return results
 end
