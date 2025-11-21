@@ -6,7 +6,6 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
-local HueSlider = require('rearkitekt.gui.widgets.primitives.hue_slider')
 local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
 local hexrgb = Colors.hexrgb
 
@@ -16,11 +15,6 @@ local M = {}
 local TILE_HEIGHT = 60
 local TILE_PADDING = 8
 local CONTROL_WIDTH = 200
-
--- Refresh throttling: Track last refresh time globally
-local last_refresh_time = 0
-local REFRESH_INTERVAL = 0.1  -- 100ms between refreshes (10 fps max)
-local refresh_needed = false
 
 -- Read/write parameter value from Reaper theme
 local function get_param_value(param_index, param_type)
@@ -42,24 +36,7 @@ end
 
 local function set_param_value(param_index, value)
   if not param_index then return end
-  -- Always persist parameter (save=true) like original Theme Adjuster
-  local ok = pcall(reaper.ThemeLayout_SetParameter, param_index, value, true)
-  if ok then
-    refresh_needed = true  -- Flag that refresh is needed
-  end
-  return ok
-end
-
--- Call this at the end of render to do throttled refresh
-local function do_throttled_refresh()
-  if not refresh_needed then return end
-
-  local current_time = reaper.time_precise()
-  if (current_time - last_refresh_time) >= REFRESH_INTERVAL then
-    pcall(reaper.ThemeLayout_RefreshAll)
-    last_refresh_time = current_time
-    refresh_needed = false
-  end
+  pcall(reaper.ThemeLayout_SetParameter, param_index, value, true)
 end
 
 -- Render a single parameter tile
@@ -144,7 +121,6 @@ function M.render(ctx, param, tab_color, shell_state, view)
   ImGui.SetCursorScreenPos(ctx, x1 + TILE_PADDING, y1 + TILE_PADDING + 20)
 
   local value_changed = false
-  local item_deactivated = false
   local new_value = current_value
   local control_id = "##" .. param_name
 
@@ -154,51 +130,28 @@ function M.render(ctx, param, tab_color, shell_state, view)
     if Checkbox.draw_at_cursor(ctx, param_name, checked, nil, "param_" .. param_name) then
       new_value = checked and 0 or 1
       value_changed = true
-      item_deactivated = true  -- Checkbox is immediate
     end
   elseif param_type == "int" or param_type == "enum" then
-    -- HueSlider for integers
+    -- DragInt for integers
+    ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
     local min_val = param.min or 0
     local max_val = param.max or 100
-    local range = max_val - min_val
-
-    -- Convert to 0-100 range for HueSlider
-    local normalized = range > 0 and ((current_value - min_val) / range) * 100 or 50
-    local default_normalized = range > 0 and ((param.default - min_val) / range) * 100 or 50
-
-    local changed, val = HueSlider.draw_gamma(ctx, control_id, normalized,
-      {w = CONTROL_WIDTH, h = 24, default = default_normalized})
-
+    local changed, val = ImGui.DragInt(ctx, control_id, current_value, 1, min_val, max_val)
     if changed then
-      -- Convert back and round to integer
-      new_value = math.floor(min_val + (val / 100) * range + 0.5)
+      new_value = val
       value_changed = true
     end
-    -- Check if mouse was released
-    if ImGui.IsItemDeactivated(ctx) then
-      item_deactivated = true
-    end
   else
-    -- HueSlider for floats
+    -- DragDouble for floats
+    ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
     local min_val = param.min or 0.0
     local max_val = param.max or 1.0
     local range = max_val - min_val
-
-    -- Convert to 0-100 range for HueSlider
-    local normalized = range > 0 and ((current_value - min_val) / range) * 100 or 50
-    local default_normalized = range > 0 and ((param.default - min_val) / range) * 100 or 50
-
-    local changed, val = HueSlider.draw_gamma(ctx, control_id, normalized,
-      {w = CONTROL_WIDTH, h = 24, default = default_normalized})
-
+    local speed = math.max(range * 0.01, 0.01)
+    local changed, val = ImGui.DragDouble(ctx, control_id, current_value, speed, min_val, max_val, "%.2f")
     if changed then
-      -- Convert back to actual range
-      new_value = min_val + (val / 100) * range
+      new_value = val
       value_changed = true
-    end
-    -- Check if mouse was released
-    if ImGui.IsItemDeactivated(ctx) then
-      item_deactivated = true
     end
   end
 
@@ -257,14 +210,16 @@ function M.render(ctx, param, tab_color, shell_state, view)
     ImGui.SetTooltip(ctx, "SYNC mode - parameter mirrors exact value")
   end
 
-  -- Handle value change and propagation
+  -- Handle value change and propagation (match library_tile.lua pattern)
   if value_changed then
-    -- Always set parameter value (persisted immediately, like original Theme Adjuster)
+    local old_value = current_value
+
+    -- Apply to this parameter
     set_param_value(param_index, new_value)
 
     -- Propagate to linked parameters
     if is_in_group and link_mode ~= ParameterLinkManager.LINK_MODE.UNLINKED then
-      local propagations = ParameterLinkManager.propagate_value_change(param_name, current_value, new_value)
+      local propagations = ParameterLinkManager.propagate_value_change(param_name, old_value, new_value)
 
       -- Apply propagated changes to other parameters
       for _, prop in ipairs(propagations) do
@@ -277,16 +232,9 @@ function M.render(ctx, param, tab_color, shell_state, view)
         end
       end
     end
-  end
 
-  -- ALWAYS force refresh on mouse release - don't rely on flags that might get cleared
-  if item_deactivated then
+    -- Refresh all after propagation (like library_tile.lua)
     pcall(reaper.ThemeLayout_RefreshAll)
-    last_refresh_time = reaper.time_precise()
-    refresh_needed = false
-  else
-    -- Only do throttled refresh if NOT deactivating (during active drag)
-    do_throttled_refresh()
   end
 
   -- Move cursor to next tile position
