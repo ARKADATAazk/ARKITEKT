@@ -276,6 +276,15 @@ function GUI:draw(ctx, shell_state)
       local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
       local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
 
+      -- Debug: Log exact key states
+      reaper.ShowConsoleMsg(string.format("[KEY DEBUG] LeftShift=%s RightShift=%s LeftCtrl=%s RightCtrl=%s => shift=%s ctrl=%s\n",
+        tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift)),
+        tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)),
+        tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl)),
+        tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)),
+        tostring(shift), tostring(ctrl)
+      ))
+
       -- Set close flag BEFORE inserting for normal drops to block any drag_start calls
       if not shift and not ctrl then
         reaper.ShowConsoleMsg("[NORMAL DROP] Setting close flag\n")
