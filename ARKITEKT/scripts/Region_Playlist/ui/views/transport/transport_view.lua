@@ -207,6 +207,7 @@ function TransportView:build_jump_button(bridge_state)
 end
 
 function TransportView:build_quantize_dropdown(bridge_state)
+  reaper.ShowConsoleMsg("DROPDOWN: Building with quantize_mode = " .. tostring(bridge_state.quantize_mode) .. "\n")
   return {
     type = "dropdown_field",
     id = "transport_quantize",
@@ -218,6 +219,7 @@ function TransportView:build_quantize_dropdown(bridge_state)
       options = CoreConfig.QUANTIZE.options,
       enable_mousewheel = true,
       on_change = function(new_value)
+        reaper.ShowConsoleMsg("DROPDOWN: on_change called with: " .. tostring(new_value) .. "\n")
         self.state.get_bridge():set_quantize_mode(new_value)
       end,
       footer_content = function(footer_ctx)
