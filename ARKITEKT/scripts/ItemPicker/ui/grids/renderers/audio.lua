@@ -100,6 +100,14 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   render_color = Colors.desaturate(render_color, 1.0 - sat_factor)
   render_color = Colors.adjust_brightness(render_color, bright_factor)
 
+  -- Ensure minimum luminance (no true black tiles, minimum dark grey)
+  local min_luminance = 0.15  -- Minimum luminance threshold
+  local current_luminance = Colors.luminance(render_color)
+  if current_luminance < min_luminance then
+    local boost_factor = min_luminance / math.max(current_luminance, 0.001)
+    render_color = Colors.adjust_brightness(render_color, boost_factor)
+  end
+
   -- Apply hover effect (brightness boost)
   if hover_factor > 0.001 then
     local hover_boost = config.TILE_RENDER.hover.brightness_boost * hover_factor
@@ -571,22 +579,19 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local text_x = scaled_x2 - text_w - margin_x
       local text_y = scaled_y2 - text_h - margin_y
 
-      -- Adaptive color: darken much earlier, lighter only for very dark tiles
+      -- Adaptive color: use tile color with adjusted brightness while preserving hue
       local luminance = Colors.luminance(render_color)
-      local brightness_factor
+      local text_color
       if luminance > 0.25 then
-        -- Any tile with luminance > 0.25: darken significantly
-        brightness_factor = 0.15
+        -- Bright/medium tile: darken significantly while preserving color
+        text_color = Colors.same_hue_variant(render_color, 1.0, 0.35, math.floor(combined_alpha * 255))
       elseif luminance > 0.15 then
-        -- Low luminance tile: darken moderately
-        brightness_factor = 0.35
+        -- Low luminance tile: darken moderately while preserving color
+        text_color = Colors.same_hue_variant(render_color, 1.0, 0.55, math.floor(combined_alpha * 255))
       else
-        -- Very dark tile: lighten the duration text
-        brightness_factor = 1.6
+        -- Very dark tile: lighten while preserving color
+        text_color = Colors.same_hue_variant(render_color, 1.0, 1.8, math.floor(combined_alpha * 255))
       end
-
-      local text_color = Colors.adjust_brightness(render_color, brightness_factor)
-      text_color = Colors.with_alpha(text_color, math.floor(combined_alpha * 255))
 
       -- Draw with monospace font for better readability
       if state.monospace_font then
