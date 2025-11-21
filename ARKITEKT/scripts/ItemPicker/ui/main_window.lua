@@ -309,12 +309,15 @@ function GUI:draw(ctx, shell_state)
       if shift then
         -- SHIFT: Keep dragging active for multi-drop
         -- Wait for next click/release cycle before allowing another drop
-        reaper.ShowConsoleMsg("[SHIFT DROP] Setting up for next drop\n")
+        reaper.ShowConsoleMsg("[SHIFT DROP] Setting up for next drop, capturing modifier state\n")
         self.state.drop_completed = false
         self.state.waiting_for_new_click = true
         self.state.mouse_was_pressed_after_drop = false
         self.state.should_close_after_drop = false  -- Explicitly clear close flag
-        -- Keep captured state for next drop in sequence
+        -- IMPORTANT: Capture modifier state NOW while we still have focus
+        -- ImGui will lose focus when user clicks on arrange view
+        self.state.captured_shift = shift
+        self.state.captured_ctrl = ctrl
       elseif ctrl then
         -- CTRL: End drag but keep ItemPicker open
         self.state.end_drag()
@@ -336,19 +339,8 @@ function GUI:draw(ctx, shell_state)
     end
 
     -- Clear waiting flag once mouse is pressed again (for SHIFT mode)
-    -- IMPORTANT: Capture modifier keys HERE (on press) not on release, because ImGui loses focus
     if self.state.waiting_for_new_click and self.state.mouse_was_pressed_after_drop then
-      -- Capture modifier state while we still have focus
-      local shift_on_press = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
-      local ctrl_on_press = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
-
-      reaper.ShowConsoleMsg(string.format("[SHIFT MODE] Clearing waiting flag, captured keys: shift=%s ctrl=%s\n",
-        tostring(shift_on_press), tostring(ctrl_on_press)))
-
-      -- Store captured modifier state for use when mouse is released
-      self.state.captured_shift = shift_on_press
-      self.state.captured_ctrl = ctrl_on_press
-
+      reaper.ShowConsoleMsg("[SHIFT MODE] Clearing waiting flag, ready for next drop\n")
       self.state.waiting_for_new_click = false
       self.state.drop_completed = false  -- Also reset drop_completed to allow next drop
     end
