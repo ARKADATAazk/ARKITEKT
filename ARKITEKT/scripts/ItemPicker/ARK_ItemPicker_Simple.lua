@@ -92,14 +92,6 @@ local function cleanup()
   SetButtonState()
   reaper.Main_OnCommand(reaper.NamedCommandLookup("_SWS_STOPPREVIEW"), 0)
   State.cleanup()
-
-  -- Explicitly close any active overlays
-  if overlay_mgr then
-    while overlay_mgr:is_active() do
-      overlay_mgr:pop()
-    end
-  end
-
   reaper.DeleteExtState(ext_section, ext_running, false)
   reaper.DeleteExtState(ext_section, "close_request", false)
 end
@@ -202,9 +194,6 @@ local runtime = Runtime.new({
     cleanup()
   end,
 })
-
--- Register cleanup
-reaper.atexit(cleanup)
 
 -- Start
 runtime:start()
