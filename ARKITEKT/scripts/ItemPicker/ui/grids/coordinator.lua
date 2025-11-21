@@ -55,10 +55,14 @@ function Coordinator:handle_tile_size_shortcuts(ctx)
     -- CTRL+MouseWheel: adjust tile height (vertical size)
     local new_height = current_h + (delta * self.config.TILE.HEIGHT_STEP)
     self.state:set_tile_size(current_w, new_height)
+    reaper.ShowConsoleMsg(string.format("[TILE_RESIZE] CTRL+Wheel: old_height=%d, new_height=%d, actual=%d\n",
+      current_h, new_height, self.state:get_tile_height()))
   elseif shift then
     -- SHIFT+MouseWheel: adjust tile width (horizontal size)
     local new_width = current_w + (delta * self.config.TILE.WIDTH_STEP)
     self.state:set_tile_size(new_width, current_h)
+    reaper.ShowConsoleMsg(string.format("[TILE_RESIZE] SHIFT+Wheel: old_width=%d, new_width=%d, actual=%d\n",
+      current_w, new_width, self.state:get_tile_width()))
   end
 
   -- Grids automatically read tile size dynamically, no manual update needed
