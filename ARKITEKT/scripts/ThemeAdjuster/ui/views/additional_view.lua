@@ -850,6 +850,18 @@ function AdditionalView:get_assigned_params(tab_id)
   return assigned
 end
 
+-- Get the assignment object for a specific parameter (searches all tabs)
+function AdditionalView:get_assignment_for_param(param_name)
+  for tab_id, assignments in pairs(self.assignments) do
+    for _, assignment in ipairs(assignments) do
+      if assignment.param_name == param_name then
+        return assignment
+      end
+    end
+  end
+  return nil
+end
+
 function AdditionalView:load_assignments()
   -- Load assignments from JSON file
   local mappings = ThemeMapper.load_current_mappings()
