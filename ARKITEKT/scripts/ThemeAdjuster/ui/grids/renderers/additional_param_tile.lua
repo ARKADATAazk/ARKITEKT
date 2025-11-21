@@ -143,7 +143,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
   ImGui.SetCursorScreenPos(ctx, x1 + TILE_PADDING, y1 + TILE_PADDING + 20)
 
   local value_changed = false
-  local should_force_refresh = false
+  local item_deactivated = false
   local new_value = current_value
   local control_id = "##" .. param_name
 
@@ -153,7 +153,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
     if Checkbox.draw_at_cursor(ctx, param_name, checked, nil, "param_" .. param_name) then
       new_value = checked and 0 or 1
       value_changed = true
-      should_force_refresh = true  -- Checkbox is immediate
+      item_deactivated = true  -- Checkbox is immediate
     end
   elseif param_type == "int" or param_type == "enum" then
     -- Spinner for integers
@@ -165,9 +165,9 @@ function M.render(ctx, param, tab_color, shell_state, view)
       new_value = val
       value_changed = true
     end
-    -- Check if mouse was released (regardless of whether ImGui considers it an "edit")
-    if ImGui.IsItemDeactivated(ctx) and value_changed then
-      should_force_refresh = true
+    -- Check if mouse was released
+    if ImGui.IsItemDeactivated(ctx) then
+      item_deactivated = true
     end
   else
     -- Drag control for floats (smoother than SliderDouble)
@@ -182,9 +182,9 @@ function M.render(ctx, param, tab_color, shell_state, view)
       new_value = val
       value_changed = true
     end
-    -- Check if mouse was released (regardless of whether ImGui considers it an "edit")
-    if ImGui.IsItemDeactivated(ctx) and value_changed then
-      should_force_refresh = true
+    -- Check if mouse was released
+    if ImGui.IsItemDeactivated(ctx) then
+      item_deactivated = true
     end
   end
 
@@ -265,8 +265,9 @@ function M.render(ctx, param, tab_color, shell_state, view)
     end
   end
 
-  -- Force refresh on mouse release or checkbox toggle
-  if should_force_refresh and refresh_needed then
+  -- Force refresh on mouse release if there are ANY pending changes
+  -- This handles the frame-timing issue where value changes and deactivation happen on different frames
+  if item_deactivated and refresh_needed then
     pcall(reaper.ThemeLayout_RefreshAll)
     last_refresh_time = reaper.time_precise()
     refresh_needed = false
