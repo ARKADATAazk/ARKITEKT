@@ -130,9 +130,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
       dl,
       x1, y1,
       x1 + M.CONFIG.color_bar_width, y1 + tile_h,
-      bar_color,
-      rounding,  -- Match tile rounding
-      1 | 8  -- Only round left corners
+      bar_color
     )
   end
 

@@ -142,7 +142,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Draw color indicator stripe on left edge if template has color
   if chip_color then
     local stripe_color = Colors.same_hue_variant(chip_color, 1.0, 1.1, 200)
-    ImGui.DrawList_AddRectFilled(dl, x1, y1, x1 + 3, y2, stripe_color, rounding, 1 | 8)  -- Only round left corners
+    ImGui.DrawList_AddRectFilled(dl, x1, y1, x1 + 3, y2, stripe_color)
   end
 
   -- Calculate text alpha based on tile height
