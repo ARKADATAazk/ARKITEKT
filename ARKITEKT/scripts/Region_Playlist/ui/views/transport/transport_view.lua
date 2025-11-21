@@ -163,7 +163,11 @@ function TransportView:build_loop_button(bridge_state)
   }
 end
 
-function TransportView:build_jump_button(bridge_state)
+function TransportView:build_jump_button(bridge_state, shell_state)
+  -- Get icon font from shell_state
+  local icon_font = shell_state and shell_state.fonts and shell_state.fonts.icons
+  local icon_size = 16  -- Size for button icons
+
   return {
     type = "button",
     id = "transport_jump",
@@ -171,7 +175,20 @@ function TransportView:build_jump_button(bridge_state)
     width = CoreConfig.TRANSPORT_BUTTONS.jump.width,
     config = {
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
-        TransportIcons.draw_jump(dl, bx, by, bw, bh, text_color)
+        -- Try to use Remix icon first if available
+        if icon_font then
+          local icon_text = "\xEF\x92\x8D"  -- U+F48D
+          ImGui.PushFont(ctx, icon_font, icon_size)
+          local text_w = ImGui.CalcTextSize(ctx, icon_text)
+          local text_h = ImGui.GetTextLineHeight(ctx)
+          local text_x = bx + (bw - text_w) * 0.5
+          local text_y = by + (bh - text_h) * 0.5
+          ImGui.DrawList_AddText(dl, text_x, text_y, text_color, icon_text)
+          ImGui.PopFont(ctx)
+        else
+          -- Fallback to custom drawn icon
+          TransportIcons.draw_jump(dl, bx, by, bw, bh, text_color)
+        end
       end,
       tooltip = "Jump Forward",
       on_click = function()
@@ -485,7 +502,7 @@ function TransportView:build_header_elements(bridge_state, available_width, shel
   if ultra_compact then
     return {
       self:build_play_button(bridge_state),
-      self:build_jump_button(bridge_state),
+      self:build_jump_button(bridge_state, shell_state),
       self:build_combined_pb_dropdown(bridge_state),
     }
   end
@@ -544,7 +561,7 @@ function TransportView:build_header_elements(bridge_state, available_width, shel
     elements[#elements + 1] = self:build_loop_button(bridge_state)
   end
 
-  elements[#elements + 1] = self:build_jump_button(bridge_state)
+  elements[#elements + 1] = self:build_jump_button(bridge_state, shell_state)
 
   if show_quantize then
     elements[#elements + 1] = self:build_quantize_dropdown(bridge_state)
