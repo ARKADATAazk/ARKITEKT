@@ -34,6 +34,7 @@ function M.new(config, state, scanner)
     initialized = false,
     separator1 = Separator.new("sep1"),
     separator2 = Separator.new("sep2"),
+    quick_access_separator = Separator.new("quick_access_sep"),
     template_animator = TileAnim.new(16.0),  -- Animation speed
     template_grid = nil,  -- Initialized in initialize_once
     template_container = nil,  -- Initialized in initialize_once
