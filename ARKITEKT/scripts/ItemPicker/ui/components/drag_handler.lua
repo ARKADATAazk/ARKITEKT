@@ -108,14 +108,59 @@ function M.handle_drag_logic(ctx, state, mini_font)
 
   -- Draw insertion preview
   if rect_x1 then
-    local preview_color = ImGui.ColorConvertDouble4ToU32(177 / 256, 180 / 256, 180 / 256, 1)
-    local line_color = ImGui.ColorConvertDouble4ToU32(16 / 256, 133 / 256, 130 / 256, 1)
+    -- Grey crosshair lines instead of blue
+    local line_color = ImGui.ColorConvertDouble4ToU32(0.5, 0.5, 0.5, 0.8)
 
-    ImGui.DrawList_AddRectFilled(state.draw_list, rect_x1, rect_y1, rect_x2, rect_y2, preview_color)
+    -- Get the items being dragged
+    local dragging_count = (state.dragging_keys and #state.dragging_keys) or 1
+    local current_x = rect_x1
 
-    -- Crosshair lines
+    -- Draw each item being dragged with its actual color
+    for i = 1, dragging_count do
+      local item_data = get_item_data(state, i)
+      local media_item = item_data.media_item
+
+      if media_item and reaper.ValidatePtr2(0, media_item, "MediaItem*") then
+        local item_take = reaper.GetActiveTake(media_item)
+        if item_take then
+          local item_source = reaper.GetMediaItemTake_Source(item_take)
+          local item_len = item_source and reaper.GetMediaSourceLength(item_source) or 0
+          local item_width = item_len * arrange_zoom_level
+
+          -- Get the item's actual color
+          local item_color = item_data.color
+
+          -- Apply base fill adjustments for consistency with tiles
+          if item_color then
+            -- Convert to RGB components and desaturate/adjust brightness
+            local r, g, b = ImGui.ColorConvertU32ToDouble4(item_color)
+            local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
+            s = s * 0.7  -- Desaturate a bit
+            v = v * 0.5  -- Darken for preview
+            r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
+            item_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 0.4)  -- Semi-transparent
+          else
+            -- Fallback to grey
+            item_color = ImGui.ColorConvertDouble4ToU32(177 / 256, 180 / 256, 180 / 256, 0.4)
+          end
+
+          -- Draw this item's preview rectangle
+          ImGui.DrawList_AddRectFilled(state.draw_list,
+            current_x, rect_y1,
+            current_x + item_width, rect_y2,
+            item_color)
+
+          current_x = current_x + item_width
+        end
+      end
+    end
+
+    -- Calculate total width for crosshair placement
+    local total_x2 = current_x
+
+    -- Crosshair lines (grey)
     ImGui.DrawList_AddLine(state.draw_list, rect_x1, w_y1, rect_x1, w_y2, line_color, 2)
-    ImGui.DrawList_AddLine(state.draw_list, rect_x2, w_y1, rect_x2, w_y2, line_color, 2)
+    ImGui.DrawList_AddLine(state.draw_list, total_x2, w_y1, total_x2, w_y2, line_color, 2)
     ImGui.DrawList_AddLine(state.draw_list, w_x1, rect_y1, w_x2, rect_y1, line_color, 2)
     ImGui.DrawList_AddLine(state.draw_list, w_x1, rect_y2, w_x2, rect_y2, line_color, 2)
   end
