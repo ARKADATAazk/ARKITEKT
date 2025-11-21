@@ -13,6 +13,10 @@ local M = {}
 -- Animation state storage (persistent across frames)
 M._anim = M._anim or {}
 
+-- Template configuration state
+M._template_config_open = M._template_config_open or {}  -- keyed by param_name
+M._template_config_state = M._template_config_state or {}  -- editing state for open dialogs
+
 function M.render(ctx, rect, item, state, view, tab_id)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local w = x2 - x1
@@ -158,6 +162,190 @@ function M.render(ctx, rect, item, state, view, tab_id)
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#555555"))
     ImGui.Text(ctx, string.format("#%d", item.order))
     ImGui.PopStyleColor(ctx)
+  end
+
+  -- Invisible button covering whole tile for right-click detection
+  ImGui.SetCursorScreenPos(ctx, x1, y1)
+  ImGui.InvisibleButton(ctx, "##tile_interact_" .. param_name .. "_" .. tab_id, w, h)
+
+  -- Right-click context menu
+  if ImGui.BeginPopupContextItem(ctx, "tile_context_" .. param_name .. "_" .. tab_id) then
+    if ImGui.MenuItem(ctx, "Configure Template...") then
+      M._template_config_open[param_name] = true
+
+      -- Initialize config state - load existing template or create new
+      local assignment = view:get_assignment_for_param(param_name)
+      if assignment and assignment.template then
+        -- Load existing template
+        M._template_config_state[param_name] = {
+          template_type = assignment.template.type or "none",
+          presets = assignment.template.presets or {},
+        }
+      else
+        -- Create new config
+        M._template_config_state[param_name] = {
+          template_type = "none",
+          presets = {},
+        }
+      end
+    end
+
+    -- Show current template info
+    local assignment = view:get_assignment_for_param(param_name)
+    if assignment and assignment.template then
+      ImGui.Separator(ctx)
+      ImGui.Text(ctx, "Current: " .. (assignment.template.type or "unknown"))
+
+      if ImGui.MenuItem(ctx, "Remove Template") then
+        assignment.template = nil
+        view:save_assignments()
+      end
+    end
+
+    ImGui.EndPopup(ctx)
+  end
+end
+
+-- Render template configuration dialog (called from view's draw function)
+function M.render_template_config_dialogs(ctx, view)
+  -- Iterate through all open dialogs
+  for param_name, is_open in pairs(M._template_config_open) do
+    if is_open then
+      local state = M._template_config_state[param_name]
+      if not state then
+        M._template_config_open[param_name] = false
+        goto continue
+      end
+
+      -- Get parameter info
+      local param = nil
+      for _, p in ipairs(view.all_params) do
+        if p.name == param_name then
+          param = p
+          break
+        end
+      end
+
+      if not param then
+        M._template_config_open[param_name] = false
+        goto continue
+      end
+
+      -- Center the modal on screen
+      local display_w, display_h = ImGui.GetMainViewport(ctx)
+      local modal_w, modal_h = 500, 400
+
+      ImGui.SetNextWindowPos(ctx, (display_w - modal_w) / 2, (display_h - modal_h) / 2, ImGui.Cond_Appearing)
+      ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
+
+      local flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoDocking
+      local visible, open = ImGui.Begin(ctx, "Template Configuration: " .. param_name, true, flags)
+
+      if visible then
+        ImGui.Text(ctx, "Template Type:")
+        ImGui.Separator(ctx)
+        ImGui.Dummy(ctx, 0, 8)
+
+        -- Template type selector
+        if ImGui.RadioButton(ctx, "None (Default Control)", state.template_type == "none") then
+          state.template_type = "none"
+        end
+
+        ImGui.Dummy(ctx, 0, 4)
+
+        if ImGui.RadioButton(ctx, "Preset Spinner", state.template_type == "preset_spinner") then
+          state.template_type = "preset_spinner"
+          -- Initialize with some defaults if empty
+          if #state.presets == 0 then
+            state.presets = {
+              {value = param.min or 0, label = "Off"},
+              {value = ((param.max or 100) - (param.min or 0)) * 0.3 + (param.min or 0), label = "Low"},
+              {value = ((param.max or 100) - (param.min or 0)) * 0.5 + (param.min or 0), label = "Medium"},
+              {value = ((param.max or 100) - (param.min or 0)) * 0.7 + (param.min or 0), label = "High"},
+            }
+          end
+        end
+
+        ImGui.Dummy(ctx, 0, 12)
+
+        -- Preset editor (only for preset_spinner)
+        if state.template_type == "preset_spinner" then
+          ImGui.Text(ctx, "Presets:")
+          ImGui.Separator(ctx)
+          ImGui.Dummy(ctx, 0, 8)
+
+          -- Show existing presets
+          local to_remove = nil
+          for i, preset in ipairs(state.presets) do
+            ImGui.PushID(ctx, i)
+
+            ImGui.SetNextItemWidth(ctx, 100)
+            local changed_val, new_val = ImGui.InputDouble(ctx, "##value", preset.value)
+            if changed_val then
+              preset.value = new_val
+            end
+
+            ImGui.SameLine(ctx, 0, 8)
+            ImGui.SetNextItemWidth(ctx, 200)
+            local changed_label, new_label = ImGui.InputText(ctx, "##label", preset.label)
+            if changed_label then
+              preset.label = new_label
+            end
+
+            ImGui.SameLine(ctx, 0, 8)
+            if ImGui.Button(ctx, "Remove") then
+              to_remove = i
+            end
+
+            ImGui.PopID(ctx)
+          end
+
+          if to_remove then
+            table.remove(state.presets, to_remove)
+          end
+
+          ImGui.Dummy(ctx, 0, 8)
+          if ImGui.Button(ctx, "Add Preset") then
+            table.insert(state.presets, {value = param.min or 0, label = "New Preset"})
+          end
+        end
+
+        -- Bottom buttons
+        ImGui.Dummy(ctx, 0, 12)
+        ImGui.Separator(ctx)
+        ImGui.Dummy(ctx, 0, 8)
+
+        if ImGui.Button(ctx, "Save", 100, 28) then
+          -- Apply template to assignment
+          local assignment = view:get_assignment_for_param(param_name)
+          if assignment then
+            if state.template_type == "none" then
+              assignment.template = nil
+            else
+              assignment.template = {
+                type = state.template_type,
+                presets = state.template_type == "preset_spinner" and state.presets or nil,
+              }
+            end
+            view:save_assignments()
+          end
+          M._template_config_open[param_name] = false
+        end
+
+        ImGui.SameLine(ctx, 0, 8)
+        if ImGui.Button(ctx, "Cancel", 100, 28) then
+          M._template_config_open[param_name] = false
+        end
+
+        ImGui.End(ctx)
+      end
+
+      if not open then
+        M._template_config_open[param_name] = false
+      end
+
+      ::continue::
+    end
   end
 end
 

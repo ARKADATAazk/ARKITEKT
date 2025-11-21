@@ -502,6 +502,10 @@ function AdditionalView:draw(ctx, shell_state)
   if self.param_link_modal then
     self.param_link_modal:render(ctx, shell_state)
   end
+
+  -- Template configuration dialogs (from assignment tiles)
+  local AssignmentTile = require('ThemeAdjuster.ui.grids.renderers.assignment_tile')
+  AssignmentTile.render_template_config_dialogs(ctx, self)
 end
 
 function AdditionalView:draw_assignment_tab_bar(ctx, shell_state)
