@@ -579,11 +579,14 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local text_color = Colors.adjust_brightness(render_color, brightness_factor)
       text_color = Colors.with_alpha(text_color, math.floor(combined_alpha * 255))
 
-      -- Draw bold text by rendering multiple times with pixel offsets
+      -- Draw with monospace font for better readability
+      if state.monospace_font then
+        ImGui.PushFont(ctx, state.monospace_font, state.monospace_font_size)
+      end
       Draw.text(dl, text_x, text_y, text_color, duration_text)
-      Draw.text(dl, text_x + 1, text_y, text_color, duration_text)
-      Draw.text(dl, text_x, text_y + 1, text_color, duration_text)
-      Draw.text(dl, text_x + 1, text_y + 1, text_color, duration_text)
+      if state.monospace_font then
+        ImGui.PopFont(ctx)
+      end
     end
   end
 end
