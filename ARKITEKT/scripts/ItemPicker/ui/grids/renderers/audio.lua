@@ -588,7 +588,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Adaptive color: dark grey with subtle tile coloring for most tiles, light only for very dark
       local luminance = Colors.luminance(render_color)
       local text_color
-      if luminance < 0.32 then
+      if luminance < 0.15 then
         -- Very dark tile only: use light text
         text_color = Colors.same_hue_variant(render_color, 1.0, 2.2, math.floor(combined_alpha * 255))
       else
