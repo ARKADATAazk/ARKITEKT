@@ -242,11 +242,11 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local _, text_h = ImGui.CalcTextSize(ctx, "1")  -- Get text height to match cycle badge
   local star_badge_size = text_h + (config.TILE_RENDER.badges.cycle.padding_y * 2)  -- Match cycle badge calculation
 
-  -- Calculate text right margin to reserve space for favorite badge
-  -- (cycle badge space is handled in base renderer)
-  local text_right_margin = 0
+  -- Calculate extra text margin to reserve space for favorite badge (text truncation only)
+  -- This doesn't affect cycle badge position, only text truncation
+  local extra_text_margin = 0
   if is_favorite then
-    text_right_margin = star_badge_size + (fav_cfg.spacing or 4)
+    extra_text_margin = star_badge_size + (fav_cfg.spacing or 4)
   end
 
   -- Check if this tile is being renamed
@@ -263,7 +263,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Render inline rename input
       local input_x = scaled_x1 + 8
       local input_y = scaled_y1 + 4
-      local input_w = (scaled_x2 - text_right_margin) - input_x - 4
+      local input_w = (scaled_x2 - extra_text_margin) - input_x - 4
       local input_h = header_height - 8
 
       ImGui.SetCursorScreenPos(ctx, input_x, input_y)
@@ -392,8 +392,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       ImGui.PopStyleVar(ctx)
     else
       -- Normal text rendering
-      local text_x2 = scaled_x2 - text_right_margin
-
       -- Badge click callback to cycle through items
       local on_badge_click = function()
         if item_data.total and item_data.total > 1 then
@@ -403,9 +401,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         end
       end
 
-      BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, text_x2, header_height,
+      -- Pass full x2 (cycle badge position stays fixed), use extra_text_margin for text truncation only
+      BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, scaled_x2, header_height,
         item_data.name, item_data.index, item_data.total, render_color, text_alpha, config,
-        item_data.uuid, badge_rects, on_badge_click)
+        item_data.uuid, badge_rects, on_badge_click, extra_text_margin)
     end
   end
 
