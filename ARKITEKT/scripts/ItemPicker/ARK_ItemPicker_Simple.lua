@@ -157,7 +157,7 @@ local runtime = Runtime.new({
       return false  -- Stop running
     end
 
-    -- Check if should close after drop
+    -- Check if should close after drop (before AND after rendering)
     if State.should_close_after_drop then
       cleanup()
       return false  -- Stop running
@@ -173,9 +173,22 @@ local runtime = Runtime.new({
         is_overlay_mode = true,
       })
       ImGui.PopFont(ctx)
+
+      -- Check again after draw in case flag was set during draw
+      if State.should_close_after_drop then
+        cleanup()
+        return false  -- Stop running
+      end
+
       return true  -- Keep running
     else
       -- Normal mode: let overlay manager handle everything
+      -- Don't render if we should close
+      if State.should_close_after_drop then
+        cleanup()
+        return false
+      end
+
       overlay_mgr:render(ctx)
       return overlay_mgr:is_active()
     end
