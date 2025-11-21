@@ -39,12 +39,10 @@ local ImGuiStyle = require('rearkitekt.gui.style.imgui_defaults')
 local Config = require('TemplateBrowser.core.config')
 local State = require('TemplateBrowser.core.state')
 local GUI = require('TemplateBrowser.ui.gui')
-local MainWindow = require('TemplateBrowser.ui.main_window')
 local Scanner = require('TemplateBrowser.domain.scanner')
 
 -- Configuration
 local USE_OVERLAY = true  -- Set to false for normal window mode
-local USE_REFACTORED_UI = true  -- Set to false to use original monolithic GUI
 
 local function SetButtonState(set)
   local is_new_value, filename, sec, cmd, mode, resolution, val = reaper.get_action_context()
@@ -58,13 +56,8 @@ State.initialize(Config)
 -- Initialize scanner and load templates
 Scanner.scan_templates(State)
 
--- Create GUI (always needed for template_container)
-local gui_instance = GUI.new(Config, State, Scanner)
-
--- Create main window (refactored or original)
-local gui = USE_REFACTORED_UI
-  and MainWindow.new(Config, State, Scanner, gui_instance)
-  or gui_instance
+-- Create GUI instance
+local gui = GUI.new(Config, State, Scanner)
 
 local function cleanup()
   SetButtonState()
