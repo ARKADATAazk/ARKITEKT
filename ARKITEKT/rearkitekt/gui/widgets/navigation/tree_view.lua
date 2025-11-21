@@ -189,7 +189,13 @@ local function render_tree_node(ctx, node, config, state, depth)
 
     -- Draw selection indicator
     if is_selected then
+      local selection_bar_width = 3
+      local selection_color = Colors.hexrgb("#FFFFFFFF")  -- White accent bar
       local selection_bg = Colors.hexrgb("#FFFFFF15")  -- Light grey/white background
+
+      -- Draw left edge white accent bar
+      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_min_x + selection_bar_width, item_max_y, selection_color, 0)
+      -- Draw background
       ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, selection_bg, 0)
     end
 
