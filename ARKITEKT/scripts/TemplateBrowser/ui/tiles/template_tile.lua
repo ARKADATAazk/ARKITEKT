@@ -180,6 +180,43 @@ function M.render(ctx, rect, template, state, metadata, animator)
     Draw.text(dl, content_x, path_y, path_color, truncated_path)
   end
 
+  -- Show first VST chip (if height allows and VSTs exist)
+  if tile_h >= M.CONFIG.hide_chips_below and template.fx and #template.fx > 0 then
+    local chip_y = tile_h >= M.CONFIG.compact_mode_below and (content_y + 40) or (content_y + 24)
+    local chip_x = content_x
+
+    -- Get first VST name
+    local first_vst = template.fx[1]
+    local vst_color = hexrgb("#4A9EFF")
+
+    -- Use DrawList directly to avoid cursor position issues
+    local chip_w = ImGui.CalcTextSize(ctx, first_vst) + 26  -- text width + padding + dot
+    local chip_h = 20
+
+    -- Background
+    local bg_color = hexrgb("#1E1E1E")
+    ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, 6)
+
+    -- Borders (tabstrip style)
+    local border_inner = hexrgb("#2f2f2fff")
+    ImGui.DrawList_AddRect(dl, chip_x + 1, chip_y + 1, chip_x + chip_w - 1, chip_y + chip_h - 1, border_inner, 6, 0, 1)
+    local border_outer = hexrgb("#000000DD")
+    ImGui.DrawList_AddRect(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, border_outer, 6, 0, 1)
+
+    -- Dot
+    local dot_x = chip_x + 12
+    local dot_y = chip_y + chip_h * 0.5
+    local dot_radius = 3
+    ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius + 1, Colors.with_alpha(hexrgb("#000000"), 80))
+    ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius, vst_color)
+
+    -- Text
+    local text_x = chip_x + 12 + 6 + 10 - 3  -- padding + dot + spacing - adjustment
+    local text_y = chip_y + (chip_h - ImGui.CalcTextSize(ctx, first_vst)) * 0.5 - 1
+    local text_color = Colors.with_alpha(hexrgb("#FFFFFF"), 200)
+    Draw.text(dl, text_x, text_y, text_color, first_vst)
+  end
+
   -- Render favorite badge in top-right corner (replaces old star icon)
   local badge_size = 24  -- Larger badge size for grid tiles
   local badge_margin = 6
