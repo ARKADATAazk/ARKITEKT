@@ -48,6 +48,12 @@ end
 
 -- Render a single parameter tile
 function M.render(ctx, param, tab_color, shell_state, view)
+  -- Check if this is a group control (macro)
+  if param.is_group then
+    M.render_group(ctx, param, tab_color, shell_state, view)
+    return
+  end
+
   local param_name = param.name
   local param_index = param.index
   local param_type = param.type
@@ -365,6 +371,143 @@ function M.render(ctx, param, tab_color, shell_state, view)
     if should_refresh then
       pcall(reaper.ThemeLayout_RefreshAll)
       last_refresh_time = current_time
+    end
+  end
+
+  -- Move cursor to next tile position
+  ImGui.SetCursorScreenPos(ctx, x1, y2 + 4)
+  ImGui.Dummy(ctx, avail_w, 0)
+end
+
+-- Render a group control tile (macro that controls multiple parameters at once)
+function M.render_group(ctx, group_param, tab_color, shell_state, view)
+  local group_id = group_param.group_id
+  local group_name = group_param.display_name
+
+  -- Find the group
+  local group = nil
+  for _, g in ipairs(view.template_groups) do
+    if g.id == group_id then
+      group = g
+      break
+    end
+  end
+
+  if not group then
+    -- Group not found, render placeholder
+    ImGui.Text(ctx, "Group not found: " .. group_name)
+    return
+  end
+
+  -- Get presets from the group's first template
+  local presets = nil
+  local first_template_id = group.template_ids and group.template_ids[1]
+  if first_template_id then
+    local first_template = view.templates[first_template_id]
+    if first_template and first_template.config and first_template.config.presets then
+      presets = first_template.config.presets
+    end
+  end
+
+  if not presets or #presets == 0 then
+    -- No presets configured
+    ImGui.Text(ctx, group_name .. " (no presets)")
+    return
+  end
+
+  -- Tile background
+  local x1, y1 = ImGui.GetCursorScreenPos(ctx)
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+  local x2, y2 = x1 + avail_w, y1 + TILE_HEIGHT
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  -- Background with tab color tint
+  local function dim_color(color, opacity)
+    local r = (color >> 24) & 0xFF
+    local g = (color >> 16) & 0xFF
+    local b = (color >> 8) & 0xFF
+    local a = math.floor(255 * opacity)
+    return (r << 24) | (g << 16) | (b << 8) | a
+  end
+
+  local bg_color = dim_color(tab_color, 0.12)
+  local border_color = dim_color(tab_color, 0.3)
+
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, 3)
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 3, 0, 1)
+
+  -- Start tile content
+  ImGui.SetCursorScreenPos(ctx, x1 + TILE_PADDING, y1 + TILE_PADDING)
+
+  -- TOP ROW: Group name
+  ImGui.PushFont(ctx, shell_state.fonts.bold, 13)
+  local display_name = group_name
+  if #display_name > 35 then
+    display_name = display_name:sub(1, 32) .. "..."
+  end
+  ImGui.Text(ctx, display_name)
+  ImGui.PopFont(ctx)
+
+  -- Tooltip with group info
+  if ImGui.IsItemHovered(ctx) then
+    local tooltip = "Group: " .. group_name
+    tooltip = tooltip .. "\nTemplates: " .. #(group.template_ids or {})
+    tooltip = tooltip .. "\nPresets: " .. #presets
+    ImGui.SetTooltip(ctx, tooltip)
+  end
+
+  -- MIDDLE ROW: Preset spinner
+  ImGui.SetCursorScreenPos(ctx, x1 + TILE_PADDING, y1 + TILE_PADDING + 20)
+
+  -- Build preset labels
+  local preset_labels = {}
+  for _, preset in ipairs(presets) do
+    table.insert(preset_labels, preset.label or "Unnamed")
+  end
+
+  -- Track spinner state
+  if not M._preset_spinner_states[group_id] then
+    M._preset_spinner_states[group_id] = {
+      current_idx = 1
+    }
+  end
+
+  local spinner_state = M._preset_spinner_states[group_id]
+
+  local changed_spinner, new_idx = Spinner.draw(
+    ctx,
+    "##group_spinner_" .. group_id,
+    spinner_state.current_idx,
+    preset_labels,
+    {w = CONTROL_WIDTH, h = 24}
+  )
+
+  if changed_spinner then
+    spinner_state.current_idx = new_idx
+    local selected_preset = presets[new_idx]
+
+    -- Apply all preset values to all parameters in the group
+    if selected_preset and selected_preset.values then
+      for _, template_id in ipairs(group.template_ids or {}) do
+        local template = view.templates[template_id]
+        if template then
+          for _, param_name in ipairs(template.params or {}) do
+            local value = selected_preset.values[param_name]
+            if value ~= nil then
+              -- Find parameter and set its value
+              for _, p in ipairs(view.all_params) do
+                if p.name == param_name then
+                  set_param_value(p.index, value)
+                  break
+                end
+              end
+            end
+          end
+        end
+      end
+
+      -- Refresh the theme
+      pcall(reaper.ThemeLayout_RefreshAll)
     end
   end
 

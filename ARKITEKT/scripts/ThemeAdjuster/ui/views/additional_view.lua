@@ -1012,39 +1012,16 @@ function AdditionalView:get_assigned_params(tab_id)
         end
       end
 
-      -- Expand group into all its template parameters
+      -- Create a single "group control" pseudo-parameter (macro)
       if group then
-        for _, template_id in ipairs(group.template_ids or {}) do
-          local template = self.templates[template_id]
-          if template then
-            -- Add all parameters from this template
-            for _, param_name in ipairs(template.params or {}) do
-              local param = param_lookup[param_name]
-              if param then
-                -- Clone param
-                local param_copy = {}
-                for k, v in pairs(param) do
-                  param_copy[k] = v
-                end
-
-                -- Attach template reference so additional_param_tile can find presets
-                param_copy.template_id = template_id
-
-                -- Attach custom metadata
-                local metadata = self.custom_metadata[param.name]
-                if metadata then
-                  param_copy.display_name = metadata.display_name or param.name
-                  param_copy.description = metadata.description or ""
-                else
-                  param_copy.display_name = param.name
-                  param_copy.description = ""
-                end
-
-                table.insert(assigned, param_copy)
-              end
-            end
-          end
-        end
+        table.insert(assigned, {
+          type = "group",
+          group_id = group.id,
+          name = group.name or "Unnamed Group",
+          display_name = group.name or "Unnamed Group",
+          description = "Group macro controlling " .. #(group.template_ids or {}) .. " templates",
+          is_group = true,  -- Flag for special rendering
+        })
       end
 
     -- Regular parameter assignment
