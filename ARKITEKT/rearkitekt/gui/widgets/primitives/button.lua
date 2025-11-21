@@ -231,8 +231,8 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
   
   -- Get or create instance for animation
   local instance = get_or_create_instance(context.unique_id)
-  
-  -- Render button
+
+  -- Render button (gets hover state internally)
   local is_hovered, is_active = render_button(ctx, dl, x, y, width, height, config, context, instance)
   
   -- Create invisible button for interaction (unless disabled)

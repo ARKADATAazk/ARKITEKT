@@ -32,6 +32,7 @@ M.settings = {
   show_visualization_in_small_tiles = false,  -- Show waveform/MIDI in compact display mode (toggle)
   enable_tile_fx = true,  -- Enable TileFX rendering (hover/selection effects) - disable for performance testing
   layout_mode = "vertical",  -- Options: "vertical" (top/bottom), "horizontal" (left/right)
+  show_region_tags = false,  -- Show region tags on item tiles (toggle)
 }
 
 -- Runtime state (volatile)
@@ -58,6 +59,10 @@ M.track_chunks = {}
 M.item_chunks = {}
 
 M.tile_sizes = { width = nil, height = nil }  -- nil = use config default
+
+-- Region filter state
+M.selected_regions = {}  -- { [region_name] = true } for active filters
+M.all_regions = {}  -- Cached list of {name, color} from GetAllProjectRegions()
 
 -- Drag state
 M.dragging = nil
@@ -157,6 +162,11 @@ end
 function M.set_search_filter(filter)
   M.settings.search_string = filter or ""
   M.persist_settings()
+  -- Invalidate grid cache to refresh with new search filter
+  if M.runtime_cache then
+    M.runtime_cache.audio_filter_hash = nil
+    M.runtime_cache.midi_filter_hash = nil
+  end
 end
 
 -- Tile size management

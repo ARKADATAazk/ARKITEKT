@@ -10,6 +10,16 @@ local Shapes = require('rearkitekt.gui.rendering.shapes')
 
 local M = {}
 
+-- Ensure color has minimum lightness for readability
+local function ensure_min_lightness(color, min_lightness)
+  local h, s, l = Colors.rgb_to_hsl(color)
+  if l < min_lightness then
+    l = min_lightness
+  end
+  local r, g, b = Colors.hsl_to_rgb(h, s, l)
+  return Colors.components_to_rgba(r, g, b, 0xFF)
+end
+
 function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local tile_w, tile_h = x2 - x1, y2 - y1
@@ -398,6 +408,53 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local star_x = scaled_x2 - star_badge_size - star_padding
     local star_y = scaled_y1 + (header_height - star_badge_size) / 2
     Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite)
+  end
+
+  -- Render region tags (bottom left, only on larger tiles)
+  -- Only show region chips if show_region_tags is enabled (regions are already processed if enable_region_processing is true)
+  local show_region_tags = state.settings and state.settings.show_region_tags
+  if show_region_tags and item_data.regions and #item_data.regions > 0 and
+     not is_small_tile and scaled_h >= config.REGION_TAGS.min_tile_height and
+     cascade_factor > 0.5 then
+
+    local chip_cfg = config.REGION_TAGS.chip
+    local chip_x = scaled_x1 + chip_cfg.margin_left
+    local chip_y = scaled_y2 - chip_cfg.height - chip_cfg.margin_bottom
+
+    -- Limit number of chips displayed
+    local max_chips = config.REGION_TAGS.max_chips_per_tile
+    local num_chips = math.min(#item_data.regions, max_chips)
+
+    for i = 1, num_chips do
+      local region = item_data.regions[i]
+      local region_name = region.name or region  -- Support both {name, color} and plain string
+      local region_color = region.color or 0x4A5A6AFF  -- Default gray if no color
+
+      local text_w, text_h = ImGui.CalcTextSize(ctx, region_name)
+      local chip_w = text_w + chip_cfg.padding_x * 2
+      local chip_h = chip_cfg.height
+
+      -- Check if chip fits within tile width
+      if chip_x + chip_w > scaled_x2 - chip_cfg.margin_left then
+        break  -- Stop rendering if we run out of space
+      end
+
+      -- Chip background (dark grey)
+      local bg_alpha = math.floor(chip_cfg.alpha * combined_alpha)
+      local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha
+      ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, chip_cfg.rounding)
+
+      -- Chip text (region color with minimum lightness for readability)
+      local text_color = ensure_min_lightness(region_color, chip_cfg.text_min_lightness)
+      local text_alpha_val = math.floor(combined_alpha * 255)
+      text_color = (text_color & 0xFFFFFF00) | text_alpha_val
+      local text_x = chip_x + chip_cfg.padding_x
+      local text_y = chip_y + (chip_h - text_h) / 2
+      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, region_name)
+
+      -- Move to next chip position
+      chip_x = chip_x + chip_w + chip_cfg.margin_x
+    end
   end
 
   -- Render pool count badge (bottom right) if more than 1 instance

@@ -117,6 +117,9 @@ function M.ItemChunkID(item)
 end
 
 function M.GetProjectSamples(settings, state)
+  reaper.ShowConsoleMsg(string.format("[REGION_TAGS] GetProjectSamples called with show_region_tags = %s\n",
+    tostring(settings.show_region_tags)))
+
   local all_tracks = M.GetAllTracks()
   local samples = {}
   local sample_indexes = {}
@@ -215,13 +218,20 @@ function M.GetProjectSamples(settings, state)
         -- Get pool count for this source
         local pool_count = source_pool_counts[source_ptr] or 1
 
+        -- Get regions if enabled
+        local regions = nil
+        if settings.show_region_tags then
+          regions = M.GetRegionsForItem(item)
+        end
+
         table.insert(samples[filename], {
           item,
           item_name,
           track_muted = track_muted,
           item_muted = item_muted,
           uuid = get_item_uuid(item),
-          pool_count = pool_count
+          pool_count = pool_count,
+          regions = regions
         })
 
         -- Mark this source as collected
@@ -235,6 +245,9 @@ function M.GetProjectSamples(settings, state)
 end
 
 function M.GetProjectMIDI(settings, state)
+  reaper.ShowConsoleMsg(string.format("[REGION_TAGS] GetProjectMIDI called with show_region_tags = %s\n",
+    tostring(settings.show_region_tags)))
+
   local all_tracks = M.GetAllTracks()
   local midi_items = {}
   local midi_indexes = {}
@@ -325,13 +338,20 @@ function M.GetProjectMIDI(settings, state)
         -- Get pool count for this MIDI data
         local pool_count = midi_pool_counts[midi] or 1
 
+        -- Get regions if enabled
+        local regions = nil
+        if settings.show_region_tags then
+          regions = M.GetRegionsForItem(item)
+        end
+
         local item_data = {
           item,
           item_name,
           track_muted = track_muted,
           item_muted = item_muted,
           uuid = get_item_uuid(item),
-          pool_count = pool_count
+          pool_count = pool_count,
+          regions = regions
         }
 
         if split_mode then
@@ -446,6 +466,72 @@ function M.InsertItemAtMousePos(item, state)
     state.dragging_keys = nil
     state.dragging_is_audio = nil
   end
+end
+
+-- Get all project regions (for filter bar)
+function M.GetAllProjectRegions()
+  local regions = {}
+  local _, num_markers, num_regions = reaper.CountProjectMarkers(0)
+
+  for i = 0, num_markers + num_regions - 1 do
+    local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color =
+      reaper.EnumProjectMarkers3(0, i)
+
+    if isrgn and name and name ~= "" then
+      -- Convert REAPER color to RGBA format
+      local rgba_color
+      if color and color ~= 0 then
+        local color_int = color & 0xFFFFFF
+        local r, g, b = reaper.ColorFromNative(color_int)
+        rgba_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+      else
+        rgba_color = 0x4A5A6AFF  -- Fallback gray color
+      end
+
+      table.insert(regions, {name = name, color = rgba_color})
+    end
+  end
+
+  return regions
+end
+
+function M.GetRegionsForItem(item)
+  -- Get item position and length
+  local item_start = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+  local item_length = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+  local item_end = item_start + item_length
+
+  -- Get all regions and check for overlaps
+  local regions = {}
+  local _, num_markers, num_regions = reaper.CountProjectMarkers(0)
+
+  for i = 0, num_markers + num_regions - 1 do
+    local retval, isrgn, pos, rgnend, name, markrgnindexnumber, color =
+      reaper.EnumProjectMarkers3(0, i)
+
+    if isrgn then
+      -- Check if region overlaps with item
+      -- Regions overlap if: region_start < item_end AND region_end > item_start
+      if pos < item_end and rgnend > item_start then
+        -- Skip empty region names
+        if name and name ~= "" then
+          -- Convert REAPER color to RGBA format
+          local rgba_color
+          if color and color ~= 0 then
+            local color_int = color & 0xFFFFFF
+            local r, g, b = reaper.ColorFromNative(color_int)
+            rgba_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+          else
+            rgba_color = 0x4A5A6AFF  -- Fallback gray color
+          end
+
+          table.insert(regions, {name = name, color = rgba_color})
+        end
+      end
+    end
+  end
+
+  return regions
 end
 
 return M

@@ -76,6 +76,9 @@ end
 function M.process_batch(loader, state, settings)
   if not loader.is_loading then return true, 1.0 end
 
+  -- Store settings reference for item processing functions
+  loader.settings = settings
+
   -- FIRST BATCH: Do initialization (moved from start_loading to avoid blocking)
   if not loader.initialization_complete then
     local init_start = reaper.time_precise()
@@ -237,17 +240,29 @@ function M.process_audio_item_fast(loader, item, track, state)
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
   local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
 
+  -- Get track name for search
+  local _, track_name = reaper.GetTrackName(track)
+  track_name = track_name or ""
+
   local uuid = get_item_uuid(item)
+
+  -- Get regions if enabled (check both settings for backwards compatibility)
+  local regions = nil
+  if loader.settings and (loader.settings.enable_region_processing or loader.settings.show_region_tags) then
+    regions = loader.reaper_interface.GetRegionsForItem(item)
+  end
 
   -- Store in raw pool (before grouping)
   table.insert(loader.raw_audio_items, {
     item = item,
     item_name = item_name,
     filename = filename,
+    track_name = track_name,
     track_color = track_color,
     track_muted = track_muted,
     item_muted = item_muted,
     uuid = uuid,
+    regions = regions,
   })
 end
 
@@ -286,6 +301,12 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
   local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
   local uuid = get_item_uuid(item)
 
+  -- Get regions if enabled (check both settings for backwards compatibility)
+  local regions = nil
+  if loader.settings and (loader.settings.enable_region_processing or loader.settings.show_region_tags) then
+    regions = loader.reaper_interface.GetRegionsForItem(item)
+  end
+
   -- Store in loader.samples for duplicate detection
   table.insert(loader.samples[filename], {
     item,
@@ -293,6 +314,7 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
     track_muted = track_muted,
     item_muted = item_muted,
     uuid = uuid,
+    regions = regions,
   })
 
   -- ALSO store in raw pool for reorganization
@@ -300,10 +322,12 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
     item = item,
     item_name = item_name,
     filename = filename,
+    track_name = track_name,
     track_color = track_color,
     track_muted = track_muted,
     item_muted = item_muted,
     uuid = uuid,
+    regions = regions,
   })
 end
 
@@ -325,6 +349,16 @@ function M.process_midi_item_fast(loader, item, track, state)
 
   local uuid = get_item_uuid(item)
 
+  -- Get track name for search
+  local _, track_name = reaper.GetTrackName(track)
+  track_name = track_name or ""
+
+  -- Get regions if enabled (check both settings for backwards compatibility)
+  local regions = nil
+  if loader.settings and (loader.settings.enable_region_processing or loader.settings.show_region_tags) then
+    regions = loader.reaper_interface.GetRegionsForItem(item)
+  end
+
   -- Store in raw pool (before grouping)
   table.insert(loader.raw_midi_items, {
     item = item,
@@ -333,6 +367,8 @@ function M.process_midi_item_fast(loader, item, track, state)
     track_muted = track_muted,
     item_muted = item_muted,
     uuid = uuid,
+    track_name = track_name,
+    regions = regions,
   })
 end
 
@@ -364,6 +400,16 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
   local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
   local uuid = get_item_uuid(item)
 
+  -- Get track name for search
+  local _, track_name = reaper.GetTrackName(track)
+  track_name = track_name or ""
+
+  -- Get regions if enabled (check both settings for backwards compatibility)
+  local regions = nil
+  if loader.settings and (loader.settings.enable_region_processing or loader.settings.show_region_tags) then
+    regions = loader.reaper_interface.GetRegionsForItem(item)
+  end
+
   -- Store in loader.midi_items for duplicate detection
   table.insert(loader.midi_items[item_name], {
     item,
@@ -371,6 +417,8 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
     track_muted = track_muted,
     item_muted = item_muted,
     uuid = uuid,
+    track_name = track_name,
+    regions = regions,
   })
 
   -- ALSO store in raw pool for reorganization
@@ -381,6 +429,8 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
     track_muted = track_muted,
     item_muted = item_muted,
     uuid = uuid,
+    track_name = track_name,
+    regions = regions,
   })
 end
 
@@ -534,6 +584,8 @@ function M.reorganize_items(loader, group_by_name)
       track_color = raw_item.track_color,  -- Include cached color
       pool_count = raw_item.pool_count or 1,  -- From REAPER pooling detection
       pool_id = raw_item.pool_id,  -- Pool identifier for filtering
+      track_name = raw_item.track_name,  -- Track name for search
+      regions = raw_item.regions,  -- Region tags
     })
 
     ::skip_audio::
@@ -571,6 +623,8 @@ function M.reorganize_items(loader, group_by_name)
       track_color = raw_item.track_color,  -- Include cached color
       pool_count = raw_item.pool_count or 1,  -- From REAPER pooling detection
       pool_id = raw_item.pool_id,  -- Pool identifier for filtering
+      track_name = raw_item.track_name,  -- Track name for search
+      regions = raw_item.regions,  -- Region tags
     })
 
     ::skip_midi::

@@ -21,6 +21,20 @@ local function get_default_settings()
     search_string = "",
     tile_width = nil,  -- nil = use config default
     tile_height = nil,  -- nil = use config default
+    split_midi_by_track = false,
+    group_items_by_name = true,
+    separator_position = nil,
+    separator_position_horizontal = nil,
+    sort_mode = "none",
+    waveform_quality = 1.0,
+    waveform_filled = true,
+    waveform_zero_line = false,
+    show_visualization_in_small_tiles = false,
+    enable_tile_fx = true,
+    layout_mode = "vertical",
+    enable_region_processing = false,  -- Enable region detection and filtering
+    show_region_tags = false,  -- Show region tags on item tiles (only if processing enabled)
+    search_mode = "items",  -- Search mode: "items", "tracks", "regions", "mixed"
   }
 end
 
