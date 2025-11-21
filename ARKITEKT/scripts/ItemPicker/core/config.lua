@@ -100,7 +100,7 @@ M.TILE_RENDER = {
 
   -- Disabled state (dark backdrop with reduced opacity)
   disabled = {
-    desaturate = 0.3,    -- Desaturate by 30% (0.0-1.0, lower = more colorful)
+    desaturate = 0.15,   -- Desaturate by 15% (0.0-1.0, lower = more colorful - shows more original color)
     brightness = 0.65,   -- Brighten to 65% (0.0-1.0, higher = brighter/more visible)
     min_alpha = 0x33,    -- Minimum alpha/opacity (0x33 = ~20% opacity)
     fade_speed = 20.0,   -- Animation speed for fade in/out
@@ -108,12 +108,12 @@ M.TILE_RENDER = {
     backdrop_alpha = 0xCC,  -- Backdrop opacity (0xCC = ~80% opacity)
   },
 
-  -- Muted state (red text with slight dimming)
+  -- Muted state (darker red text with dimming)
   muted = {
-    text_color = hexrgb("#FF4444"),  -- Red text color for muted items
-    desaturate = 0.15,   -- Desaturate by 15% (less than disabled)
-    brightness = 0.85,   -- Dim to 85% brightness (less dim than disabled)
-    alpha_factor = 0.90, -- Reduce alpha to 90% (subtle dimming)
+    text_color = hexrgb("#CC2222"),  -- Dark true red text color for muted items
+    desaturate = 0.25,   -- Desaturate by 25% for darker appearance
+    brightness = 0.70,   -- Dim to 70% brightness for darker appearance
+    alpha_factor = 0.85, -- Reduce alpha to 85% for darker visual layer
     fade_speed = 20.0,   -- Animation speed for fade in/out
   },
 
