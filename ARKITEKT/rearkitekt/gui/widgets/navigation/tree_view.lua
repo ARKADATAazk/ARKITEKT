@@ -189,20 +189,7 @@ local function render_tree_node(ctx, node, config, state, depth)
 
     -- Draw selection indicator
     if is_selected then
-      -- Left edge accent bar
-      local selection_bar_width = 3
-      local selection_color
       local selection_bg = Colors.hexrgb("#FFFFFF15")  -- Light grey/white background
-
-      if node_color and config.show_colors then
-        -- Use folder color for selection bar
-        selection_color = Colors.saturate(node_color, 0.2)  -- Slightly more saturated
-      else
-        -- Default white for non-colored folders
-        selection_color = Colors.hexrgb("#FFFFFFFF")  -- White
-      end
-
-      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_min_x + selection_bar_width, item_max_y, selection_color, 0)
       ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, selection_bg, 0)
     end
 
