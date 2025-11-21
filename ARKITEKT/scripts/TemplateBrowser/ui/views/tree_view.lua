@@ -70,11 +70,12 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     local archive_path = FileOps.get_archive_path()
     local sep = package.config:sub(1,1)
 
-    -- Recursively scan archive directory
+    -- Recursively scan archive directory for both folders and files
     local function scan_archive_dir(path, relative_path)
-      local folders = {}
-      local idx = 0
+      local nodes = {}
 
+      -- Scan subdirectories
+      local idx = 0
       while true do
         local subdir = reaper.EnumerateSubdirectories(path, idx)
         if not subdir then break end
@@ -90,17 +91,46 @@ local function prepare_tree_nodes(node, metadata, all_templates)
           full_path = sub_full_path,
           children = scan_archive_dir(sub_path, sub_relative),
           is_archive = true,
+          is_folder = true,
         }
 
-        table.insert(folders, folder_node)
+        table.insert(nodes, folder_node)
         idx = idx + 1
       end
 
-      return folders
+      -- Scan files in this directory
+      idx = 0
+      while true do
+        local file = reaper.EnumerateFiles(path, idx)
+        if not file then break end
+
+        local file_relative = relative_path ~= "" and (relative_path .. sep .. file) or file
+        local file_full_path = path .. file
+
+        local file_node = {
+          id = "__ARCHIVE_FILE__" .. sep .. file_relative,
+          name = file,
+          path = file_relative,
+          full_path = file_full_path,
+          children = {},  -- Files have no children
+          is_archive = true,
+          is_file = true,
+        }
+
+        table.insert(nodes, file_node)
+        idx = idx + 1
+      end
+
+      return nodes
     end
 
-    -- Only scan if archive directory exists
-    if reaper.file_exists(archive_path) then
+    -- Check if archive directory exists by trying to enumerate it
+    local test_idx = 0
+    local test_subdir = reaper.EnumerateSubdirectories(archive_path .. sep, test_idx)
+    local test_file = reaper.EnumerateFiles(archive_path .. sep, 0)
+
+    -- If we can enumerate (even if empty), directory exists
+    if test_subdir ~= nil or test_file ~= nil or reaper.file_exists(archive_path .. sep .. "dummy") == false then
       archive_children = scan_archive_dir(archive_path .. sep, "")
     end
 

@@ -71,6 +71,33 @@ local function draw_folder_icon(ctx, dl, x, y, color)
   return main_w + 4  -- Return width including spacing
 end
 
+local function draw_file_icon(ctx, dl, x, y, color)
+  -- File icon: simple document/page shape (10x12 rectangle with folded corner)
+  local main_w = 10
+  local main_h = 12
+  local fold_size = 3
+
+  -- Round to whole pixels to avoid aliasing
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  local icon_color = color or Colors.hexrgb("#888888")
+
+  -- Draw main document body (rectangle with cut corner)
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + main_w - fold_size, y + main_h, icon_color, 0)
+  ImGui.DrawList_AddRectFilled(dl, x, y + fold_size, x + main_w, y + main_h, icon_color, 0)
+
+  -- Draw folded corner (small triangle in top-right)
+  local corner_color = Colors.hexrgb("#555555")
+  ImGui.DrawList_AddTriangleFilled(dl,
+    x + main_w - fold_size, y + fold_size,  -- Bottom-left of triangle
+    x + main_w, y + fold_size,              -- Bottom-right
+    x + main_w - fold_size, y,              -- Top-left
+    corner_color)
+
+  return main_w + 4  -- Return width including spacing
+end
+
 local function draw_virtual_folder_icon(ctx, dl, x, y, color)
   -- Virtual folder icon: hollow folder with dotted outline
   local main_w = 13
@@ -216,9 +243,11 @@ local function render_tree_node(ctx, node, config, state, depth)
       draw_tree_arrow(ctx, dl, arrow_x, arrow_y, is_open)
     end
 
-    -- Draw folder icon (virtual or physical)
+    -- Draw icon (file, virtual folder, or physical folder)
     local icon_width
-    if node.is_virtual then
+    if node.is_file then
+      icon_width = draw_file_icon(ctx, dl, icon_x, icon_y, node_color)
+    elseif node.is_virtual then
       icon_width = draw_virtual_folder_icon(ctx, dl, icon_x, icon_y, node_color)
     else
       icon_width = draw_folder_icon(ctx, dl, icon_x, icon_y, node_color)
