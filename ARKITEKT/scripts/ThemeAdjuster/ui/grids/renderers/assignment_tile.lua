@@ -231,11 +231,8 @@ function M.render_template_config_dialogs(ctx, view)
         goto continue
       end
 
-      -- Center the modal on screen
-      local display_w, display_h = ImGui.GetMainViewport(ctx)
+      -- Set modal size and let ImGui position it
       local modal_w, modal_h = 500, 400
-
-      ImGui.SetNextWindowPos(ctx, (display_w - modal_w) / 2, (display_h - modal_h) / 2, ImGui.Cond_Appearing)
       ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
 
       local flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoDocking
