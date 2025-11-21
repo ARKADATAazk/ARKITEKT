@@ -63,17 +63,90 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     return virtual_children
   end
 
+  -- Build archive tree from .archive folder
+  local function build_archive_tree()
+    local archive_children = {}
+    local FileOps = require('TemplateBrowser.domain.file_ops')
+    local archive_path = FileOps.get_archive_path()
+    local sep = package.config:sub(1,1)
+
+    -- Recursively scan archive directory for both folders and files
+    local function scan_archive_dir(path, relative_path)
+      local nodes = {}
+
+      -- Scan subdirectories
+      local idx = 0
+      while true do
+        local subdir = reaper.EnumerateSubdirectories(path, idx)
+        if not subdir then break end
+
+        local sub_relative = relative_path ~= "" and (relative_path .. sep .. subdir) or subdir
+        local sub_path = path .. subdir .. sep
+        local sub_full_path = sub_path:sub(1, -2)  -- Remove trailing separator
+
+        local folder_node = {
+          id = "__ARCHIVE__" .. sep .. sub_relative,
+          name = subdir,
+          path = sub_relative,
+          full_path = sub_full_path,
+          children = scan_archive_dir(sub_path, sub_relative),
+          is_archive = true,
+          is_folder = true,
+        }
+
+        table.insert(nodes, folder_node)
+        idx = idx + 1
+      end
+
+      -- Scan files in this directory
+      idx = 0
+      while true do
+        local file = reaper.EnumerateFiles(path, idx)
+        if not file then break end
+
+        local file_relative = relative_path ~= "" and (relative_path .. sep .. file) or file
+        local file_full_path = path .. file
+
+        local file_node = {
+          id = "__ARCHIVE_FILE__" .. sep .. file_relative,
+          name = file,
+          path = file_relative,
+          full_path = file_full_path,
+          children = {},  -- Files have no children
+          is_archive = true,
+          is_file = true,
+        }
+
+        table.insert(nodes, file_node)
+        idx = idx + 1
+      end
+
+      return nodes
+    end
+
+    -- Check if archive directory exists by trying to enumerate it
+    local test_idx = 0
+    local test_subdir = reaper.EnumerateSubdirectories(archive_path .. sep, test_idx)
+    local test_file = reaper.EnumerateFiles(archive_path .. sep, 0)
+
+    -- If we can enumerate (even if empty), directory exists
+    if test_subdir ~= nil or test_file ~= nil or reaper.file_exists(archive_path .. sep .. "dummy") == false then
+      archive_children = scan_archive_dir(archive_path .. sep, "")
+    end
+
+    return archive_children
+  end
+
   local root_nodes = {}
 
   -- Add Physical Root node
   local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
   local physical_root = {
     id = "__ROOT__",  -- Unique ID for ImGui (must not be empty)
-    name = "Physical Root",
+    name = "Physical Directory",
     path = "",  -- Relative path is empty (represents TrackTemplates root)
     full_path = template_path,
     children = {},
-    is_root = true,  -- Flag to identify root node
     is_virtual = false,
   }
 
@@ -89,46 +162,62 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   -- Add Virtual Root node (separate from physical)
   local virtual_root = {
     id = "__VIRTUAL_ROOT__",
-    name = "Virtual Root",
+    name = "Virtual Directory",
     path = "__VIRTUAL_ROOT__",
     children = build_virtual_tree("__VIRTUAL_ROOT__"),  -- All virtual folders go here
-    is_root = true,
     is_virtual = true,
   }
 
   table.insert(root_nodes, virtual_root)
 
+  -- Add Archive Root node
+  local archive_root = {
+    id = "__ARCHIVE_ROOT__",
+    name = "Archive",
+    path = "__ARCHIVE_ROOT__",
+    children = build_archive_tree(),
+    is_archive = true,
+  }
+
+  table.insert(root_nodes, archive_root)
+
   return root_nodes
 end
 
--- Draw folder tree using TreeView widget
-function M.draw_folder_tree(ctx, state, config)
+-- Draw physical folder tree only
+function M.draw_physical_tree(ctx, state, config)
   -- Prepare tree nodes from state.folders
-  local tree_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
+  local all_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
 
-  if #tree_nodes == 0 then
+  -- Get only physical root node
+  local physical_nodes = {}
+  for _, node in ipairs(all_nodes) do
+    if node.id == "__ROOT__" then
+      physical_nodes = {node}
+      break
+    end
+  end
+
+  if #physical_nodes == 0 then
     return
   end
 
-  -- Ensure ROOT nodes are open by default
+  -- Ensure ROOT node is open by default
   if state.folder_open_state["__ROOT__"] == nil then
     state.folder_open_state["__ROOT__"] = true
-  end
-  if state.folder_open_state["__VIRTUAL_ROOT__"] == nil then
-    state.folder_open_state["__VIRTUAL_ROOT__"] = true
   end
 
   -- Map state variables to TreeView format
   local tree_state = {
-    open_nodes = state.folder_open_state,  -- TreeView uses open_nodes
-    selected_nodes = state.selected_folders,  -- Multi-select mode
-    last_clicked_node = state.last_clicked_folder,  -- Last clicked for shift-range selection
-    renaming_node = state.renaming_folder_path or nil,  -- Track renaming by path
+    open_nodes = state.folder_open_state,
+    selected_nodes = state.selected_folders,
+    last_clicked_node = state.last_clicked_folder,
+    renaming_node = state.renaming_folder_path or nil,
     rename_buffer = state.rename_buffer or "",
   }
 
   -- Draw tree with callbacks
-  TreeView.draw(ctx, tree_nodes, tree_state, {
+  TreeView.draw(ctx, physical_nodes, tree_state, {
     enable_rename = true,
     show_colors = true,
     enable_drag_drop = true,  -- Enable folder drag-and-drop
@@ -660,6 +749,102 @@ function M.draw_folder_tree(ctx, state, config)
         end
       end
     end,
+
+    -- Delete callback (Delete key)
+    on_delete = function(node)
+      -- Don't allow deleting root nodes or virtual folders (only physical)
+      if node.id == "__ROOT__" or node.id == "__VIRTUAL_ROOT__" or node.is_virtual then
+        return
+      end
+
+      local FileOps = require('TemplateBrowser.domain.file_ops')
+      local Scanner = require('TemplateBrowser.domain.scanner')
+
+      -- Count templates in folder and subfolders
+      local template_count = 0
+      for _, tmpl in ipairs(state.templates) do
+        local sep = package.config:sub(1,1)
+        local tmpl_path = tmpl.relative_path or ""
+        if tmpl_path == node.path or tmpl_path:find("^" .. node.path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") .. sep) then
+          template_count = template_count + 1
+        end
+      end
+
+      local success, archive_path
+
+      if template_count == 0 then
+        -- Empty folder: attempt to delete directly (will only work if truly empty)
+        success = os.remove(node.full_path)
+        if success then
+          state.set_status("Deleted empty folder: " .. node.name, "success")
+        else
+          -- Folder might have subdirectories - try archiving instead
+          success, archive_path = FileOps.delete_folder(node.full_path)
+          if success then
+            state.set_status(string.format("Folder has subdirectories, archived to %s", archive_path), "success")
+          else
+            state.set_status("Failed to delete folder: " .. node.name, "error")
+            return
+          end
+        end
+      else
+        -- Folder with templates: archive with structure
+        success, archive_path = FileOps.delete_folder(node.full_path)
+        if success then
+          state.set_status(string.format("Deleted folder with %d template%s, archived to %s",
+            template_count,
+            template_count == 1 and "" or "s",
+            archive_path), "success")
+        else
+          state.set_status("Failed to archive folder: " .. node.name, "error")
+          return
+        end
+      end
+
+      -- Create undo operation
+      if success then
+        state.undo_manager:push({
+          description = "Delete folder: " .. node.name,
+          undo_fn = function()
+            if archive_path then
+              -- Restore from archive
+              local restore_success = os.rename(archive_path, node.full_path)
+              if restore_success then
+                Scanner.scan_templates(state)
+              end
+              return restore_success
+            else
+              -- Cannot restore simple deletion
+              return false
+            end
+          end,
+          redo_fn = function()
+            if template_count == 0 then
+              local redo_success = os.remove(node.full_path)
+              if not redo_success then
+                redo_success, archive_path = FileOps.delete_folder(node.full_path)
+              end
+              if redo_success then
+                Scanner.scan_templates(state)
+              end
+              return redo_success
+            else
+              local redo_success, redo_archive = FileOps.delete_folder(node.full_path)
+              if redo_success then
+                archive_path = redo_archive
+                Scanner.scan_templates(state)
+              end
+              return redo_success
+            end
+          end
+        })
+
+        -- Clear selection and rescan
+        state.selected_folder = ""
+        state.selected_folders = {}
+        Scanner.scan_templates(state)
+      end
+    end,
   })
 
   -- Sync TreeView state back to Template Browser state
@@ -667,6 +852,301 @@ function M.draw_folder_tree(ctx, state, config)
   state.last_clicked_folder = tree_state.last_clicked_node
   state.renaming_folder_path = tree_state.renaming_node
   state.rename_buffer = tree_state.rename_buffer
+end
+
+-- Draw virtual folder tree only
+function M.draw_virtual_tree(ctx, state, config)
+  -- Prepare tree nodes from state.folders
+  local all_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
+
+  -- Get only virtual root node
+  local virtual_nodes = {}
+  for _, node in ipairs(all_nodes) do
+    if node.id == "__VIRTUAL_ROOT__" then
+      virtual_nodes = {node}
+      break
+    end
+  end
+
+  if #virtual_nodes == 0 then
+    return
+  end
+
+  -- Ensure VIRTUAL_ROOT node is open by default
+  if state.folder_open_state["__VIRTUAL_ROOT__"] == nil then
+    state.folder_open_state["__VIRTUAL_ROOT__"] = true
+  end
+
+  -- Map state variables to TreeView format (same as physical tree)
+  local tree_state = {
+    open_nodes = state.folder_open_state,
+    selected_nodes = state.selected_folders,
+    last_clicked_node = state.last_clicked_folder,
+    renaming_node = state.renaming_folder_path or nil,
+    rename_buffer = state.rename_buffer or "",
+  }
+
+  -- Draw tree with same callbacks as physical tree (they handle both types)
+  TreeView.draw(ctx, virtual_nodes, tree_state, {
+    enable_rename = true,
+    show_colors = true,
+    enable_drag_drop = true,
+    enable_multi_select = true,
+    context_menu_id = "folder_context_menu",
+
+    can_rename = function(node)
+      if node.is_virtual then
+        local vfolder = state.metadata.virtual_folders and state.metadata.virtual_folders[node.id]
+        if vfolder and vfolder.is_system then
+          return false
+        end
+      end
+      return true
+    end,
+
+    on_select = function(node, selected_nodes)
+      state.selected_folders = selected_nodes
+      state.selected_folder = node.path
+      local Scanner = require('TemplateBrowser.domain.scanner')
+      Scanner.filter_templates(state)
+    end,
+
+    on_drop_folder = function(dragged_node_id, target_node)
+      -- Virtual tree doesn't support folder moves (only template drops)
+      -- Physical folders can't be moved to virtual and vice versa
+    end,
+
+    on_drop_template = function(template_payload, target_node)
+      if not target_node then return end
+      local FileOps = require('TemplateBrowser.domain.file_ops')
+
+      -- Parse payload
+      local uuids = {}
+      if template_payload:find("\n") then
+        for uuid in template_payload:gmatch("[^\n]+") do
+          table.insert(uuids, uuid)
+        end
+      else
+        table.insert(uuids, template_payload)
+      end
+
+      if #uuids == 0 then return end
+
+      -- Only handle virtual folder drops (add references)
+      if target_node.is_virtual then
+        local Persistence = require('TemplateBrowser.domain.persistence')
+        local vfolder = state.metadata.virtual_folders[target_node.id]
+        if not vfolder then
+          state.set_status("Virtual folder not found", "error")
+          return
+        end
+
+        if not vfolder.template_refs then
+          vfolder.template_refs = {}
+        end
+
+        local added_count = 0
+        for _, uuid in ipairs(uuids) do
+          local already_exists = false
+          for _, existing_uuid in ipairs(vfolder.template_refs) do
+            if existing_uuid == uuid then
+              already_exists = true
+              break
+            end
+          end
+
+          if not already_exists then
+            table.insert(vfolder.template_refs, uuid)
+            added_count = added_count + 1
+          end
+        end
+
+        Persistence.save_metadata(state.metadata)
+
+        if added_count > 0 then
+          if #uuids > 1 then
+            state.set_status("Added " .. added_count .. " of " .. #uuids .. " templates to " .. target_node.name, "success")
+          else
+            state.set_status("Added template to " .. target_node.name, "success")
+          end
+        else
+          if #uuids > 1 then
+            state.set_status("Templates already in " .. target_node.name, "info")
+          else
+            state.set_status("Template already in " .. target_node.name, "info")
+          end
+        end
+      end
+    end,
+
+    on_right_click = function(node)
+      state.context_menu_node = node
+    end,
+
+    render_context_menu = function(ctx_inner, node)
+      local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
+      local Colors = require('rearkitekt.core.colors')
+
+      if ContextMenu.begin(ctx_inner, "folder_context_menu") then
+        local color_options = {
+          { name = "None", color = nil },
+          { name = "Red", color = Colors.hexrgb("#FF6B6BFF") },
+          { name = "Orange", color = Colors.hexrgb("#FFA500FF") },
+          { name = "Yellow", color = Colors.hexrgb("#FFD93DFF") },
+          { name = "Green", color = Colors.hexrgb("#6BCF7FFF") },
+          { name = "Blue", color = Colors.hexrgb("#4A9EFFFF") },
+          { name = "Purple", color = Colors.hexrgb("#B57FFFFF") },
+          { name = "Pink", color = Colors.hexrgb("#FF69B4FF") },
+        }
+
+        for _, color_opt in ipairs(color_options) do
+          if ContextMenu.item(ctx_inner, color_opt.name) then
+            local Persistence = require('TemplateBrowser.domain.persistence')
+            local ImGui = require('imgui') '0.10'
+
+            if node.is_virtual then
+              if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+                state.metadata.virtual_folders[node.id].color = color_opt.color
+                Persistence.save_metadata(state.metadata)
+                local Scanner = require('TemplateBrowser.domain.scanner')
+                Scanner.scan_templates(state)
+              end
+            end
+
+            ImGui.CloseCurrentPopup(ctx_inner)
+          end
+        end
+
+        if node.is_virtual then
+          local vfolder = state.metadata.virtual_folders and state.metadata.virtual_folders[node.id]
+          local is_system_folder = vfolder and vfolder.is_system
+
+          if not is_system_folder then
+            ContextMenu.separator(ctx_inner)
+
+            if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
+              local Persistence = require('TemplateBrowser.domain.persistence')
+              local ImGui = require('imgui') '0.10'
+
+              if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+                state.metadata.virtual_folders[node.id] = nil
+                Persistence.save_metadata(state.metadata)
+
+                if state.selected_folder == node.id then
+                  state.selected_folder = ""
+                  state.selected_folders = {}
+                end
+
+                local Scanner = require('TemplateBrowser.domain.scanner')
+                Scanner.filter_templates(state)
+
+                state.set_status("Deleted virtual folder: " .. node.name, "success")
+              end
+
+              ImGui.CloseCurrentPopup(ctx_inner)
+            end
+          end
+        end
+
+        ContextMenu.end_menu(ctx_inner)
+      end
+    end,
+
+    on_rename = function(node, new_name)
+      if new_name ~= "" and new_name ~= node.name then
+        local Persistence = require('TemplateBrowser.domain.persistence')
+
+        if node.is_virtual then
+          if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+            local vfolder = state.metadata.virtual_folders[node.id]
+            if vfolder.is_system then
+              state.set_status("Cannot rename system folder: " .. node.name, "error")
+              return false
+            end
+
+            state.metadata.virtual_folders[node.id].name = new_name
+            Persistence.save_metadata(state.metadata)
+            state.set_status("Renamed virtual folder to: " .. new_name, "success")
+          end
+        end
+      end
+    end,
+
+    -- Delete callback (Delete key) - virtual folders use context menu delete
+    on_delete = function(node)
+      -- Virtual folders are deleted via context menu, not Delete key
+      -- This is intentionally empty for virtual tree
+    end,
+  })
+
+  -- Sync TreeView state back to Template Browser state
+  state.selected_folders = tree_state.selected_nodes
+  state.last_clicked_folder = tree_state.last_clicked_node
+  state.renaming_folder_path = tree_state.renaming_node
+  state.rename_buffer = tree_state.rename_buffer
+end
+
+-- Draw archive folder tree only
+function M.draw_archive_tree(ctx, state, config)
+  -- Prepare tree nodes from state.folders
+  local all_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
+
+  -- Get only archive root node
+  local archive_nodes = {}
+  for _, node in ipairs(all_nodes) do
+    if node.id == "__ARCHIVE_ROOT__" then
+      archive_nodes = {node}
+      break
+    end
+  end
+
+  if #archive_nodes == 0 then
+    return
+  end
+
+  -- Ensure ARCHIVE_ROOT node is open by default
+  if state.folder_open_state["__ARCHIVE_ROOT__"] == nil then
+    state.folder_open_state["__ARCHIVE_ROOT__"] = true
+  end
+
+  -- Map state variables to TreeView format
+  local tree_state = {
+    open_nodes = state.folder_open_state,
+    selected_nodes = state.selected_folders,
+    last_clicked_node = state.last_clicked_folder,
+    renaming_node = nil,  -- Archive folders cannot be renamed
+    rename_buffer = "",
+  }
+
+  -- Draw tree with minimal callbacks (archive is read-only)
+  TreeView.draw(ctx, archive_nodes, tree_state, {
+    enable_rename = false,  -- No renaming in archive
+    show_colors = false,  -- No colors for archive
+    enable_drag_drop = false,  -- No drag-drop in archive
+    enable_multi_select = true,
+    context_menu_id = nil,  -- No context menu for archive
+
+    on_select = function(node, selected_nodes)
+      -- Archive folders don't filter templates
+      -- Just update selection state
+      state.selected_folders = selected_nodes
+      state.last_clicked_folder = node.path
+    end,
+
+    -- No delete for archive folders
+    on_delete = function(node)
+      -- Archive folders cannot be deleted via Delete key
+    end,
+  })
+
+  -- Sync TreeView state back to Template Browser state
+  state.selected_folders = tree_state.selected_nodes
+  state.last_clicked_folder = tree_state.last_clicked_node
+end
+
+-- Legacy function that draws both trees (kept for compatibility)
+function M.draw_folder_tree(ctx, state, config)
+  M.draw_physical_tree(ctx, state, config)
 end
 
 return M

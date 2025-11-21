@@ -24,6 +24,9 @@ M.template_view_mode = "grid"    -- Template view mode: "grid" or "list"
 M.grid_tile_width = 180     -- Grid mode tile width (adjustable with SHIFT+MouseWheel)
 M.list_tile_width = 450     -- List mode tile width (adjustable with SHIFT+MouseWheel)
 M.quick_access_mode = "recents" -- Quick access mode: "recents", "favorites", "most_used"
+M.quick_access_search = ""  -- Quick access panel search query
+M.quick_access_sort = "alphabetical" -- Quick access sort: "alphabetical", "color", "insertion"
+M.quick_access_view_mode = "grid" -- Quick access view mode: "grid" or "list"
 
 -- Folder open/close state (path -> bool)
 M.folder_open_state = {}
@@ -45,6 +48,7 @@ M.conflict_resolution = nil -- User's choice: "overwrite", "keep_both", "cancel"
 M.separator1_ratio = nil    -- Ratio for first separator (left column width)
 M.separator2_ratio = nil    -- Ratio for second separator (left+middle width)
 M.explorer_height_ratio = nil  -- Ratio for explorer vs tags panel height
+M.quick_access_separator_position = nil  -- Height of main grid (above quick access panel)
 
 -- Undo manager
 M.undo_manager = nil
@@ -83,6 +87,9 @@ function M.initialize(config)
   M.grid_tile_width = config.TILE and config.TILE.GRID_DEFAULT_WIDTH or 180
   M.list_tile_width = config.TILE and config.TILE.LIST_DEFAULT_WIDTH or 450
   M.quick_access_mode = "recents"
+  M.quick_access_search = ""
+  M.quick_access_sort = "alphabetical"
+  M.quick_access_view_mode = "grid"
   M.folder_open_state = {}
   M.renaming_item = nil
   M.renaming_type = nil
@@ -107,6 +114,7 @@ function M.initialize(config)
   M.separator1_ratio = config.FOLDERS_PANEL_WIDTH_RATIO or 0.22
   M.separator2_ratio = (config.FOLDERS_PANEL_WIDTH_RATIO or 0.22) + (config.TEMPLATES_PANEL_WIDTH_RATIO or 0.50)
   M.explorer_height_ratio = 0.6
+  M.quick_access_separator_position = 350  -- Default main grid height (px)
 
   -- Create undo manager
   local Undo = require('TemplateBrowser.domain.undo')

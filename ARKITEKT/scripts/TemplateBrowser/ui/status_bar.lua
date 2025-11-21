@@ -23,22 +23,18 @@ function M.draw(ctx, state, width, height)
   local x, y = ImGui.GetCursorScreenPos(ctx)
   local dl = ImGui.GetWindowDrawList(ctx)
 
-  -- Background color based on message type
-  local bg_color
-  local text_color = Colors.hexrgb("#FFFFFFFF")
+  -- Transparent background with colored text based on message type
+  local text_color
 
   if state.status_type == "error" then
-    bg_color = Colors.hexrgb("#8B2C2C80")  -- Dark red, 50% opacity
+    text_color = Colors.hexrgb("#FF4444FF")  -- Bright red
   elseif state.status_type == "warning" then
-    bg_color = Colors.hexrgb("#8B7B2C80")  -- Dark yellow, 50% opacity
+    text_color = Colors.hexrgb("#FFA500FF")  -- Orange
   elseif state.status_type == "success" then
-    bg_color = Colors.hexrgb("#2C8B3680")  -- Dark green, 50% opacity
+    text_color = Colors.hexrgb("#4AFF4AFF")  -- Bright green
   else  -- info
-    bg_color = Colors.hexrgb("#2C4A8B80")  -- Dark blue, 50% opacity
+    text_color = Colors.hexrgb("#FFFFFFFF")  -- White
   end
-
-  -- Draw background
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, 0)
 
   -- Draw text with padding
   local text_x = x + 8

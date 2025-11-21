@@ -1,51 +1,96 @@
 -- @noindex
 -- TemplateBrowser/ui/recent_panel_config.lua
 -- Panel container configuration for recent/favorites templates
+-- All visual styling comes from library defaults
 
-local Colors = require('rearkitekt.core.colors')
+local ImGui = require 'imgui' '0.10'
 
 local M = {}
 
 function M.create(callbacks, is_overlay_mode)
-  -- In overlay mode, use transparent backgrounds to show the overlay scrim
-  local panel_bg = is_overlay_mode and Colors.hexrgb("#00000000") or Colors.hexrgb("#1E1E1E")
-  local header_bg = is_overlay_mode and Colors.hexrgb("#00000000") or Colors.hexrgb("#252525")
-
   return {
-    bg_color = panel_bg,
-    border_thickness = 1,
-    border_color = Colors.hexrgb("#333333"),
-    rounding = 4,
-    padding = 12,
-
     header = {
       enabled = true,
-      height = 32,  -- Compact header with just dropdown
-      bg_color = header_bg,
-      padding = {
-        left = 8,
-        right = 8,
-        top = 4,
-        bottom = 4,
-      },
+      height = 30,
       elements = {
-        -- Quick access dropdown (Recents/Favorites/Most Used)
+        -- Quick access mode dropdown (left side)
         {
-          id = "quick_access_dropdown",
-          type = "quick_access_dropdown",
-          flex = 0,
+          id = "quick_access_mode",
+          type = "dropdown_field",
+          width = 120,
           spacing_before = 0,
           config = {
-            get_mode = callbacks.get_quick_access_mode,
-            on_mode_changed = callbacks.on_quick_access_mode_changed,
+            tooltip = "Quick Access",
+            tooltip_delay = 0.5,
+            enable_sort = false,
+            get_value = callbacks.get_quick_access_mode,
+            options = {
+              { value = "recents", label = "Recents" },
+              { value = "favorites", label = "Favorites" },
+              { value = "most_used", label = "Most Used" },
+            },
+            enable_mousewheel = true,
+            on_change = callbacks.on_quick_access_mode_changed,
+          },
+        },
+        -- Spacer
+        {
+          id = "spacer1",
+          type = "separator",
+          flex = 1,
+          spacing_before = 0,
+          config = { show_line = false },
+        },
+        -- Search field (right side, grouped with sort and view)
+        {
+          id = "search",
+          type = "search_field",
+          width = 150,
+          spacing_before = 0,
+          config = {
+            placeholder = "Search...",
+            get_value = callbacks.get_search_query,
+            on_change = callbacks.on_search_changed,
+          },
+        },
+        -- Sort dropdown (grouped with search and view, no spacing)
+        {
+          id = "sort",
+          type = "dropdown_field",
+          width = 120,
+          spacing_before = 0,
+          config = {
+            tooltip = "Sort by",
+            tooltip_delay = 0.5,
+            enable_sort = false,
+            get_value = callbacks.get_sort_mode,
+            options = {
+              { value = "alphabetical", label = "Alphabetical" },
+              { value = "color", label = "Color" },
+              { value = "insertion", label = "Recently Added" },
+            },
+            enable_mousewheel = true,
+            on_change = callbacks.on_sort_changed,
+          },
+        },
+        -- Grid/List toggle button (grouped with search and sort, no spacing)
+        {
+          id = "view_toggle",
+          type = "button",
+          width = 60,
+          spacing_before = 0,
+          config = {
+            label = callbacks.get_view_mode_label,  -- Function-based dynamic label
+            on_click = callbacks.on_view_toggle,
+            tooltip = "Toggle view mode",
+            tooltip_delay = 0.5,
           },
         },
       },
     },
 
     scroll = {
-      enabled = true,
-      flags = 0,
+      flags = ImGui.WindowFlags_HorizontalScrollbar,
     },
   }
 end

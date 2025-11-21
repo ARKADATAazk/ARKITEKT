@@ -3,6 +3,7 @@
 -- Tags tab: Full tag management
 
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
 local Tags = require('TemplateBrowser.domain.tags')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Fields = require('rearkitekt.gui.widgets.primitives.fields')
@@ -15,11 +16,11 @@ local M = {}
 -- Draw TAGS content (full tag management)
 function M.draw(ctx, state, config, width, height)
   -- Header with "+" button
-  local header_text = "Tags"
-
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.Text(ctx, header_text)
-  ImGui.SameLine(ctx, width - UI.BUTTON.WIDTH_SMALL - config.PANEL_PADDING * 2)
+
+  -- Position button at the right
+  local button_x = width - UI.BUTTON.WIDTH_SMALL - config.PANEL_PADDING * 2
+  ImGui.SetCursorPosX(ctx, button_x)
 
   if Button.draw_at_cursor(ctx, {
     label = "+",
@@ -100,12 +101,15 @@ function M.draw(ctx, state, config, width, height)
             state.rename_buffer = ""
           end
         else
-          -- Normal display - draw tag using Chip component (PILL style)
+          -- Normal display - draw tag using Chip component (ACTION style)
           local clicked, chip_w, chip_h = Chip.draw(ctx, {
-            style = Chip.STYLE.PILL,
+            style = Chip.STYLE.ACTION,
             label = tag_name,
-            color = tag_data.color,
+            bg_color = tag_data.color,
+            text_color = Colors.auto_text_color(tag_data.color),
             height = UI.CHIP.HEIGHT_DEFAULT,
+            padding_h = 8,
+            rounding = 2,
             is_selected = false,
             interactive = true,
           })

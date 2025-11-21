@@ -3,6 +3,7 @@
 -- Directory tab: Folder tree + folder creation + tags mini-list
 
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
 local Tags = require('TemplateBrowser.domain.tags')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
@@ -21,8 +22,10 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
 
   -- Header with "+" button
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.Text(ctx, "Tags")
-  ImGui.SameLine(ctx, width - UI.BUTTON.WIDTH_SMALL - 8)
+
+  -- Position button at the right
+  local button_x = width - UI.BUTTON.WIDTH_SMALL - 8
+  ImGui.SetCursorPosX(ctx, button_x)
 
   if Button.draw_at_cursor(ctx, {
     label = "+",
@@ -69,12 +72,15 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
 
         local is_selected = state.filter_tags[tag_name] or false
 
-        -- Draw tag using Chip component (PILL style)
+        -- Draw tag using Chip component (ACTION style)
         local clicked, chip_w, chip_h = Chip.draw(ctx, {
-          style = Chip.STYLE.PILL,
+          style = Chip.STYLE.ACTION,
           label = tag_name,
-          color = tag_data.color,
+          bg_color = tag_data.color,
+          text_color = Colors.auto_text_color(tag_data.color),
           height = UI.CHIP.HEIGHT_DEFAULT,
+          padding_h = 8,
+          rounding = 2,
           is_selected = is_selected,
           interactive = true,
         })
@@ -113,8 +119,10 @@ function M.draw(ctx, state, config, width, height)
   -- === FOLDER SECTION ===
   -- Header with folder creation buttons
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.Text(ctx, "Explorer")
-  ImGui.SameLine(ctx, width - (UI.BUTTON.WIDTH_SMALL * 2 + UI.BUTTON.SPACING) - config.PANEL_PADDING * 2)
+
+  -- Position buttons at the top right
+  local button_x = width - (UI.BUTTON.WIDTH_SMALL * 2 + UI.BUTTON.SPACING) - config.PANEL_PADDING * 2
+  ImGui.SetCursorPosX(ctx, button_x)
 
   -- Physical folder button
   if Button.draw_at_cursor(ctx, {
@@ -335,20 +343,69 @@ function M.draw(ctx, state, config, width, height)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- Calculate remaining height for folder tree (scrollable)
+  -- Calculate remaining height for folder trees (scrollable)
   -- Account for: header (28) + separator/spacing (10) + All Templates (24) + separator/spacing (10)
-  local used_height = UI.HEADER.DEFAULT + UI.PADDING.SEPARATOR_SPACING + 24 + UI.PADDING.SEPARATOR_SPACING
-  local tree_height = folder_section_height - used_height
+  -- Also account for section headers: 3 headers * (text height + separator + spacing) ≈ 3 * 22 = 66
+  local used_height = UI.HEADER.DEFAULT + UI.PADDING.SEPARATOR_SPACING + 24 + UI.PADDING.SEPARATOR_SPACING + 66
+  local total_tree_height = folder_section_height - used_height
 
-  -- Folder tree in scrollable child
-  if Helpers.begin_child_compat(ctx, "FolderTreeScroll", 0, tree_height, false) then
-    TreeViewModule.draw_folder_tree(ctx, state, config)
+  -- Split height: 50% for physical, 25% for virtual, 25% for archive
+  local physical_tree_height = math.floor(total_tree_height * 0.5)
+  local virtual_tree_height = math.floor(total_tree_height * 0.25)
+  local archive_tree_height = total_tree_height - physical_tree_height - virtual_tree_height - 16  -- 16px gaps
+
+  -- === PHYSICAL FOLDERS SECTION HEADER ===
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, config.COLORS.text_dim or config.COLORS.text)
+  ImGui.Text(ctx, "PHYSICAL FOLDERS")
+  ImGui.PopStyleColor(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
+  -- Physical folder tree in scrollable child
+  if Helpers.begin_child_compat(ctx, "PhysicalTreeScroll", 0, physical_tree_height, false) then
+    TreeViewModule.draw_physical_tree(ctx, state, config)
+    ImGui.EndChild(ctx)
+  end
+
+  ImGui.Spacing(ctx)
+
+  -- === VIRTUAL FOLDERS SECTION HEADER ===
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, config.COLORS.text_dim or config.COLORS.text)
+  ImGui.Text(ctx, "VIRTUAL FOLDERS")
+  ImGui.PopStyleColor(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
+  -- Virtual folder tree in scrollable child (separate scroll area)
+  if Helpers.begin_child_compat(ctx, "VirtualTreeScroll", 0, virtual_tree_height, false) then
+    TreeViewModule.draw_virtual_tree(ctx, state, config)
+    ImGui.EndChild(ctx)
+  end
+
+  ImGui.Spacing(ctx)
+
+  -- === ARCHIVE SECTION HEADER ===
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, config.COLORS.text_dim or config.COLORS.text)
+  ImGui.Text(ctx, "ARCHIVE")
+  ImGui.PopStyleColor(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
+  -- Archive tree in scrollable child (separate scroll area)
+  if Helpers.begin_child_compat(ctx, "ArchiveTreeScroll", 0, archive_tree_height, false) then
+    TreeViewModule.draw_archive_tree(ctx, state, config)
     ImGui.EndChild(ctx)
   end
 
   ImGui.Spacing(ctx)
 
   -- === TAGS SECTION ===
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, config.COLORS.text_dim or config.COLORS.text)
+  ImGui.Text(ctx, "TAGS")
+  ImGui.PopStyleColor(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
   draw_tags_mini_list(ctx, state, config, width, tags_section_height)
 end
 

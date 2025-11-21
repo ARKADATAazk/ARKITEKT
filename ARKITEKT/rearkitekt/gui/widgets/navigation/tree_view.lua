@@ -11,6 +11,41 @@ local Fields = require('rearkitekt.gui.widgets.primitives.fields')
 local M = {}
 
 -- ============================================================================
+-- TREE ARROW RENDERING
+-- ============================================================================
+
+local function draw_tree_arrow(ctx, dl, x, y, is_open)
+  -- Custom arrow to overlay native ImGui arrow for better appearance
+  -- Arrow size: 5x5 pixels
+  local size = 5
+
+  -- Round to whole pixels for crisp rendering
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  -- Slightly darker arrow color for better visibility
+  local arrow_color = Colors.hexrgb("#B0B0B0FF")
+
+  if is_open then
+    -- Down-pointing triangle (opened folder)
+    -- Points: top-left, top-right, bottom-center
+    local x1, y1 = x, y
+    local x2, y2 = x + size, y
+    local x3, y3 = math.floor(x + size / 2 + 0.5), y + size  -- Round center point to whole pixel
+
+    ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, arrow_color)
+  else
+    -- Right-pointing triangle (closed folder)
+    -- Points: left-top, left-bottom, right-center
+    local x1, y1 = x, y
+    local x2, y2 = x, y + size
+    local x3, y3 = x + size, y + size / 2  -- Keep fractional for this arrow (was working fine)
+
+    ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, arrow_color)
+  end
+end
+
+-- ============================================================================
 -- FOLDER ICON RENDERING
 -- ============================================================================
 
@@ -32,6 +67,33 @@ local function draw_folder_icon(ctx, dl, x, y, color)
 
   -- Draw main body (13x7 rectangle)
   ImGui.DrawList_AddRectFilled(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, icon_color, 0)
+
+  return main_w + 4  -- Return width including spacing
+end
+
+local function draw_file_icon(ctx, dl, x, y, color)
+  -- File icon: simple document/page shape (10x12 rectangle with folded corner)
+  local main_w = 10
+  local main_h = 12
+  local fold_size = 3
+
+  -- Round to whole pixels to avoid aliasing
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  local icon_color = color or Colors.hexrgb("#888888")
+
+  -- Draw main document body (rectangle with cut corner)
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + main_w - fold_size, y + main_h, icon_color, 0)
+  ImGui.DrawList_AddRectFilled(dl, x, y + fold_size, x + main_w, y + main_h, icon_color, 0)
+
+  -- Draw folded corner (small triangle in top-right)
+  local corner_color = Colors.hexrgb("#555555")
+  ImGui.DrawList_AddTriangleFilled(dl,
+    x + main_w - fold_size, y + fold_size,  -- Bottom-left of triangle
+    x + main_w, y + fold_size,              -- Bottom-right
+    x + main_w - fold_size, y,              -- Top-left
+    corner_color)
 
   return main_w + 4  -- Return width including spacing
 end
@@ -104,7 +166,7 @@ local function render_tree_node(ctx, node, config, state, depth)
   -- Normal tree node display
 
     -- Tree node flags (same as original working implementation)
-    local flags = ImGui.TreeNodeFlags_SpanAvailWidth
+    local flags = ImGui.TreeNodeFlags_SpanAvailWidth | ImGui.TreeNodeFlags_DrawLinesFull
 
     -- Only allow expand/collapse by clicking arrow, not the whole item
     flags = flags | ImGui.TreeNodeFlags_OpenOnArrow
@@ -146,43 +208,21 @@ local function render_tree_node(ctx, node, config, state, depth)
     local item_max_x, item_max_y = ImGui.GetItemRectMax(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
 
-    -- Draw colored background if node has color (BEFORE drawing icon/text)
-    if node_color and config.show_colors and not is_selected then
-      local bg_color = Colors.with_alpha(node_color, 0x0F)  -- 6% opacity (reduced from 20%)
-      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, bg_color, 0)
-    end
-
-    -- Draw hover effect
+    -- Draw hover effect (subtle for all items)
     if tree_item_hovered and not is_selected then
-      local hover_color
-      if node_color and config.show_colors then
-        -- Subtle brightening of folder color for hover
-        hover_color = Colors.with_alpha(node_color, 0x25)  -- 15% opacity of folder color
-      else
-        -- Default subtle white overlay for non-colored items
-        hover_color = Colors.hexrgb("#FFFFFF08")  -- 3% opacity white
-      end
+      local hover_color = Colors.hexrgb("#FFFFFF08")  -- 3% opacity white
       ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, hover_color, 0)
     end
 
     -- Draw selection indicator
     if is_selected then
-      -- Left edge accent bar
       local selection_bar_width = 3
-      local selection_color
-      local selection_bg
+      local selection_color = Colors.hexrgb("#FFFFFFFF")  -- White accent bar
+      local selection_bg = Colors.hexrgb("#FFFFFF15")  -- Light grey/white background
 
-      if node_color and config.show_colors then
-        -- Use enhanced folder color for selection
-        selection_color = Colors.saturate(node_color, 0.2)  -- Slightly more saturated
-        selection_bg = Colors.with_alpha(node_color, 0x40)  -- 25% opacity (more opaque than unselected)
-      else
-        -- Default blue selection for non-colored folders
-        selection_color = Colors.hexrgb("#4A9EFFFF")  -- Bright blue
-        selection_bg = Colors.hexrgb("#4A9EFF30")  -- 18% opacity blue
-      end
-
+      -- Draw left edge white accent bar
       ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_min_x + selection_bar_width, item_max_y, selection_color, 0)
+      -- Draw background
       ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, selection_bg, 0)
     end
 
@@ -193,9 +233,21 @@ local function render_tree_node(ctx, node, config, state, depth)
     local text_y_offset = (ImGui.GetTextLineHeight(ctx) - 9) * 0.5  -- Center icon vertically (9 = tab_h + main_h)
     local icon_y = item_min_y + text_y_offset
 
-    -- Draw folder icon (virtual or physical)
+    -- Draw custom arrow overlay (only for non-leaf nodes)
+    if node.children and #node.children > 0 then
+      -- Arrow position: centered in the arrow_width space, slightly to the right of the left edge
+      local arrow_x = item_min_x + (arrow_width / 2) - 2.5  -- Center horizontally in arrow space
+      local arrow_y = item_min_y + (item_max_y - item_min_y) / 2 - 2.5  -- Center vertically
+      -- Round arrow_y to whole pixel to avoid aliasing
+      arrow_y = math.floor(arrow_y + 0.5)
+      draw_tree_arrow(ctx, dl, arrow_x, arrow_y, is_open)
+    end
+
+    -- Draw icon (file, virtual folder, or physical folder)
     local icon_width
-    if node.is_virtual then
+    if node.is_file then
+      icon_width = draw_file_icon(ctx, dl, icon_x, icon_y, node_color)
+    elseif node.is_virtual then
       icon_width = draw_virtual_folder_icon(ctx, dl, icon_x, icon_y, node_color)
     else
       icon_width = draw_folder_icon(ctx, dl, icon_x, icon_y, node_color)
@@ -265,7 +317,14 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
     else
       -- Draw text label after icon (normal display)
-      local text_color = Colors.hexrgb("#FFFFFFFF")  -- Always white text
+      -- Use node color for text if available, otherwise white
+      local text_color
+      if node_color and config.show_colors then
+        -- Make text much lighter by lerping toward white (preserves hue)
+        text_color = Colors.lerp(node_color, Colors.hexrgb("#FFFFFFFF"), 0.7)  -- 70% toward white
+      else
+        text_color = Colors.hexrgb("#FFFFFFFF")  -- Default white text
+      end
       ImGui.DrawList_AddText(dl, text_x, text_y, text_color, node.name)
 
       -- Draw template count if available (right-aligned)
@@ -364,6 +423,13 @@ local function render_tree_node(ctx, node, config, state, depth)
       if can_rename then
         state.renaming_node = node_id
         state.rename_buffer = node.name
+      end
+    end
+
+    -- Handle Delete key to delete folder when selected
+    if is_selected and ImGui.IsKeyPressed(ctx, ImGui.Key_Delete) and not is_renaming then
+      if config.on_delete then
+        config.on_delete(node)
       end
     end
 

@@ -228,11 +228,13 @@ function M.render(ctx, rect, template, state, metadata, animator)
         local tag_color = tag_data and tag_data.color or hexrgb("#666666")
 
         local chip_clicked, chip_w, chip_h = Chip.draw(ctx, {
-          style = Chip.STYLE.PILL,
+          style = Chip.STYLE.ACTION,
           label = tag_name,
-          color = tag_color,
+          bg_color = tag_color,
+          text_color = Colors.auto_text_color(tag_color),
           height = 18,
-          padding_h = 8,
+          padding_h = 6,
+          rounding = 2,
           is_selected = false,
           is_hovered = state.hover,
           interactive = false,

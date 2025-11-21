@@ -1,10 +1,8 @@
 -- @noindex
 -- TemplateBrowser/ui/views/left_panel_view.lua
--- Left tabbed panel view: Directory / VSTs / Tags (refactored)
+-- Left panel view: Directory / VSTs / Tags (using panel container)
 
 local ImGui = require 'imgui' '0.10'
-local Tabs = require('rearkitekt.gui.widgets.navigation.tabs')
-local Helpers = require('TemplateBrowser.ui.views.helpers')
 
 -- Import tab modules
 local DirectoryTab = require('TemplateBrowser.ui.views.left_panel.directory_tab')
@@ -13,57 +11,32 @@ local TagsTab = require('TemplateBrowser.ui.views.left_panel.tags_tab')
 
 local M = {}
 
--- Draw tabbed left panel (DIRECTORY / VSTS / TAGS)
-function M.draw_left_panel(ctx, state, config, width, height)
-  if not Helpers.begin_child_compat(ctx, "LeftPanel", width, height, true) then
-    return
+-- Draw left panel with container
+function M.draw_left_panel(ctx, gui, width, height)
+  -- Set container dimensions
+  gui.left_panel_container.width = width
+  gui.left_panel_container.height = height
+
+  -- Begin panel drawing (includes background, border, header)
+  if gui.left_panel_container:begin_draw(ctx) then
+    local state = gui.state
+
+    -- Calculate content height after header
+    local header_height = gui.left_panel_container.config.header and gui.left_panel_container.config.header.height or 30
+    local padding = gui.left_panel_container.config.padding or 8
+    local content_height = height - header_height - (padding * 2)
+
+    -- Draw content based on active tab
+    if state.left_panel_tab == "directory" then
+      DirectoryTab.draw(ctx, state, gui.config, width, content_height)
+    elseif state.left_panel_tab == "vsts" then
+      VstsTab.draw(ctx, state, gui.config, width, content_height)
+    elseif state.left_panel_tab == "tags" then
+      TagsTab.draw(ctx, state, gui.config, width, content_height)
+    end
+
+    gui.left_panel_container:end_draw(ctx)
   end
-
-  -- Count active filters for badges (future enhancement)
-  local fx_filter_count = 0
-  for _ in pairs(state.filter_fx) do
-    fx_filter_count = fx_filter_count + 1
-  end
-
-  local tag_filter_count = 0
-  for _ in pairs(state.filter_tags) do
-    tag_filter_count = tag_filter_count + 1
-  end
-
-  -- Draw tabs using rearkitekt Tabs widget
-  local tabs_def = {
-    { id = "directory", label = "DIRECTORY" },
-    { id = "vsts", label = "VSTS" },
-    { id = "tags", label = "TAGS" },
-  }
-
-  local clicked_tab = Tabs.draw_at_cursor(ctx, tabs_def, state.left_panel_tab, {
-    height = 24,
-    available_width = width,
-    bg_color = config.COLORS.header_bg,
-    active_color = config.COLORS.selected_bg,
-    text_color = config.COLORS.text,
-  })
-
-  if clicked_tab then
-    state.left_panel_tab = clicked_tab
-  end
-
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
-
-  -- Draw content based on active tab
-  local content_height = height - 35  -- Account for tab bar
-
-  if state.left_panel_tab == "directory" then
-    DirectoryTab.draw(ctx, state, config, width, content_height)
-  elseif state.left_panel_tab == "vsts" then
-    VstsTab.draw(ctx, state, config, width, content_height)
-  elseif state.left_panel_tab == "tags" then
-    TagsTab.draw(ctx, state, config, width, content_height)
-  end
-
-  ImGui.EndChild(ctx)
 end
 
 return M
