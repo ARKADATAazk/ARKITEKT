@@ -664,6 +664,93 @@ function M.draw_physical_tree(ctx, state, config)
         end
       end
     end,
+
+    -- Delete callback (Delete key)
+    on_delete = function(node)
+      -- Don't allow deleting root nodes or virtual folders (only physical)
+      if node.id == "__ROOT__" or node.id == "__VIRTUAL_ROOT__" or node.is_virtual then
+        return
+      end
+
+      local FileOps = require('TemplateBrowser.domain.file_ops')
+      local Scanner = require('TemplateBrowser.domain.scanner')
+
+      -- Count templates in folder and subfolders
+      local template_count = 0
+      for _, tmpl in ipairs(state.templates) do
+        local sep = package.config:sub(1,1)
+        local tmpl_path = tmpl.relative_path or ""
+        if tmpl_path == node.path or tmpl_path:find("^" .. node.path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") .. sep) then
+          template_count = template_count + 1
+        end
+      end
+
+      local success, archive_path
+
+      if template_count == 0 then
+        -- Empty folder - just delete it
+        success = os.remove(node.full_path)
+        if success then
+          state.set_status("Deleted empty folder: " .. node.name, "success")
+        else
+          state.set_status("Failed to delete folder: " .. node.name, "error")
+          return
+        end
+      else
+        -- Folder has templates - archive it
+        success, archive_path = FileOps.delete_folder(node.full_path)
+        if success then
+          state.set_status(string.format("Deleted folder with %d template%s, archived to %s",
+            template_count,
+            template_count == 1 and "" or "s",
+            archive_path), "success")
+        else
+          state.set_status("Failed to archive folder: " .. node.name, "error")
+          return
+        end
+      end
+
+      -- Create undo operation
+      if success then
+        state.undo_manager:push({
+          description = "Delete folder: " .. node.name,
+          undo_fn = function()
+            if archive_path then
+              -- Restore from archive
+              local restore_success = os.rename(archive_path, node.full_path)
+              if restore_success then
+                Scanner.scan_templates(state)
+              end
+              return restore_success
+            else
+              -- Cannot restore empty folder deletion
+              return false
+            end
+          end,
+          redo_fn = function()
+            if template_count == 0 then
+              local redo_success = os.remove(node.full_path)
+              if redo_success then
+                Scanner.scan_templates(state)
+              end
+              return redo_success
+            else
+              local redo_success, redo_archive = FileOps.delete_folder(node.full_path)
+              if redo_success then
+                archive_path = redo_archive
+                Scanner.scan_templates(state)
+              end
+              return redo_success
+            end
+          end
+        })
+
+        -- Clear selection and rescan
+        state.selected_folder = ""
+        state.selected_folders = {}
+        Scanner.scan_templates(state)
+      end
+    end,
   })
 
   -- Sync TreeView state back to Template Browser state
@@ -889,6 +976,12 @@ function M.draw_virtual_tree(ctx, state, config)
           end
         end
       end
+    end,
+
+    -- Delete callback (Delete key) - virtual folders use context menu delete
+    on_delete = function(node)
+      -- Virtual folders are deleted via context menu, not Delete key
+      -- This is intentionally empty for virtual tree
     end,
   })
 

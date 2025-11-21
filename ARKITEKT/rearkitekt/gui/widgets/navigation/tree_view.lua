@@ -397,6 +397,13 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
     end
 
+    -- Handle Delete key to delete folder when selected
+    if is_selected and ImGui.IsKeyPressed(ctx, ImGui.Key_Delete) and not is_renaming then
+      if config.on_delete then
+        config.on_delete(node)
+      end
+    end
+
     -- Handle double-click (rename by default if enabled)
     if tree_item_double_clicked and not is_renaming then
       if config.enable_rename then
