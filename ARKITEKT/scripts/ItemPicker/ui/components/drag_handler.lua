@@ -224,13 +224,6 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
     local total_width = state.item_to_add_width + (visible_count - 1) * stack_offset_x
     local total_height = state.item_to_add_height + (visible_count - 1) * stack_offset_y
 
-    -- Draw shadow for the entire stack (subtle, like original tiles)
-    local shadow_color = hexrgb("#00000040")
-    ImGui.DrawList_AddRectFilled(state.draw_list,
-      base_x - glow_size, base_y - glow_size,
-      base_x + total_width + glow_size, base_y + total_height + glow_size,
-      shadow_color, tile_rounding + 2)
-
     -- Draw stacked tiles from back to front
     for i = visible_count, 1, -1 do
       local offset_x = (i - 1) * stack_offset_x
@@ -258,6 +251,22 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
 
       -- Apply opacity to the tile fill color
       local tile_fill_color = apply_alpha(render_color, opacity)
+
+      -- Draw shadow for this tile (layered shadows for depth)
+      local shadow_offset = 3
+      local shadow_blur = 4
+
+      -- Multiple shadow layers for soft blur effect
+      for layer = shadow_blur, 1, -1 do
+        local shadow_alpha = (0.15 / layer) * opacity  -- Softer shadows for back tiles
+        local shadow_color = apply_alpha(hexrgb("#000000FF"), shadow_alpha)
+        local blur_offset = shadow_offset + layer
+
+        ImGui.DrawList_AddRectFilled(state.draw_list,
+          x1 + blur_offset, y1 + blur_offset,
+          x2 + blur_offset, y2 + blur_offset,
+          shadow_color, tile_rounding)
+      end
 
       -- Base tile fill (matching original: just filled rectangle with rounding)
       ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y2, tile_fill_color, tile_rounding)
@@ -339,15 +348,6 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       local text_x = x1 + 8
       local text_y = y1 + (header_height - ImGui.GetTextLineHeight(ctx)) / 2
       ImGui.DrawList_AddText(state.draw_list, text_x, text_y, name_color, item_data.name)
-    end
-
-    -- Optional: subtle outer glow for multi-item stacks (very minimal, not a heavy border)
-    if visible_count > 1 then
-      -- Just a very subtle glow to show multiple items are stacked
-      local glow_color = apply_alpha(hexrgb("#FFFFFF"), 0.08)
-      ImGui.DrawList_AddRect(state.draw_list, base_x - 1, base_y - 1,
-        base_x + total_width + 1, base_y + total_height + 1,
-        glow_color, tile_rounding + 1, 0, 2)
     end
 
     -- Count badge (small, subtle, positioned at top-right)
