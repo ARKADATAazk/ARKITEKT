@@ -229,6 +229,54 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     end
   })
 
+  -- Help icon below color picker
+  ImGui.SetCursorPos(ctx, start_x + (picker_size - 32) * 0.5, start_y + picker_size + 8)
+  local help_x, help_y = ImGui.GetCursorScreenPos(ctx)
+  local help_size = 32
+
+  -- Draw help icon (question-fill from remix icon)
+  ImGui.PushFont(ctx, ImGui.Font_RemixIcon)
+  local icon_text = "\xEF\x81\x84"  -- &#xF044; in UTF-8
+  local icon_w, icon_h = ImGui.CalcTextSize(ctx, icon_text)
+  local icon_color = hexrgb("#888888")
+
+  -- Check if hovering
+  local is_help_hovered = ImGui.IsMouseHoveringRect(ctx, help_x, help_y, help_x + help_size, help_y + help_size)
+  if is_help_hovered then
+    icon_color = hexrgb("#CCCCCC")
+  end
+
+  ImGui.DrawList_AddText(dl, help_x + (help_size - icon_w) * 0.5, help_y + (help_size - icon_h) * 0.5, icon_color, icon_text)
+  ImGui.PopFont(ctx)
+
+  -- Make it clickable
+  ImGui.SetCursorPos(ctx, start_x + (picker_size - 32) * 0.5, start_y + picker_size + 8)
+  ImGui.InvisibleButton(ctx, "help_icon", help_size, help_size)
+
+  -- Show tooltip on hover
+  if is_help_hovered then
+    ImGui.BeginTooltip(ctx)
+    ImGui.PushTextWrapPos(ctx, 400)
+    ImGui.TextColored(ctx, hexrgb("#EEEEEE"), "Batch Rename & Recolor Help")
+    ImGui.Separator(ctx)
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.TextColored(ctx, hexrgb("#CCCCCC"), "Wildcards:")
+    ImGui.BulletText(ctx, "$n = number (0, 1, 2... or 1, 2, 3...)")
+    ImGui.BulletText(ctx, "$l = letter (a, b, c... or A, B, C...)")
+    ImGui.BulletText(ctx, "Right-click wildcards for options")
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.TextColored(ctx, hexrgb("#CCCCCC"), "Common Names:")
+    ImGui.BulletText(ctx, "Click to insert into pattern")
+    ImGui.BulletText(ctx, "Color-coded by category/emotion")
+    ImGui.BulletText(ctx, "SHIFT+Click = insert without separator")
+    ImGui.BulletText(ctx, "SHIFT+CTRL+Click = capitalize & no separator")
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.TextColored(ctx, hexrgb("#CCCCCC"), "Separator:")
+    ImGui.BulletText(ctx, "Added before wildcards automatically")
+    ImGui.PopTextWrapPos(ctx)
+    ImGui.EndTooltip(ctx)
+  end
+
   -- ========================================================================
   -- RIGHT COLUMN: Pattern input + wildcards + common names + separator
   -- ========================================================================
@@ -286,21 +334,31 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       id = "wildcard_" .. i,
       bg_color = Style.ACTION_CHIP_WILDCARD.bg_color,
       text_color = Style.ACTION_CHIP_WILDCARD.text_color,
-      border_color = Style.ACTION_CHIP_WILDCARD.border_color,
+      border_color = hexrgb("#00000000"),  -- Transparent border (flat color fill)
       rounding = Style.ACTION_CHIP_WILDCARD.rounding,
       padding_h = Style.ACTION_CHIP_WILDCARD.padding_h,
     })
 
     -- Left click - insert wildcard
     if clicked then
-      -- Insert separator before wildcard if enabled
+      -- Check for modifier keys
+      local is_shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
+      local is_ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+
+      -- Insert separator before wildcard (unless shift is held)
       local sep = ""
-      if self.separator == "underscore" then
-        sep = "_"
-      elseif self.separator == "space" then
-        sep = " "
+      if not is_shift then
+        if self.separator == "underscore" then
+          sep = "_"
+        elseif self.separator == "space" then
+          sep = " "
+        end
       end
-      self.pattern = self.pattern .. sep .. chip_data.wildcard
+
+      local wildcard_text = chip_data.wildcard
+      -- Capitalize if shift+ctrl (not applicable for wildcards, but keeping for consistency)
+
+      self.pattern = self.pattern .. sep .. wildcard_text
       self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
     end
 
@@ -508,7 +566,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
         id = "common_name_" .. i,
         bg_color = color,
         text_color = Style.ACTION_CHIP_TAG.text_color,
-        border_color = Style.ACTION_CHIP_TAG.border_color,
+        border_color = hexrgb("#00000000"),  -- Transparent border (flat color fill)
         rounding = Style.ACTION_CHIP_TAG.rounding,
         padding_h = Style.ACTION_CHIP_TAG.padding_h,
       })
@@ -517,11 +575,29 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       cur_line_x = cur_line_x + chip_width
 
       if clicked then
-        -- Append the name (with separator if pattern is not empty)
-        if self.pattern ~= "" and not self.pattern:match("%s$") then
-          self.pattern = self.pattern .. "_"
+        -- Check for modifier keys
+        local is_shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
+        local is_ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+
+        local name_text = name
+
+        -- Capitalize first letter if shift+ctrl is held
+        if is_shift and is_ctrl then
+          name_text = name:sub(1, 1):upper() .. name:sub(2)
         end
-        self.pattern = self.pattern .. name
+
+        -- Append with separator (unless shift is held to force no separator)
+        if is_shift then
+          -- No separator when shift is held
+          self.pattern = self.pattern .. name_text
+        else
+          -- Add separator if pattern is not empty
+          if self.pattern ~= "" and not self.pattern:match("%s$") then
+            self.pattern = self.pattern .. "_"
+          end
+          self.pattern = self.pattern .. name_text
+        end
+
         self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
       end
     end
