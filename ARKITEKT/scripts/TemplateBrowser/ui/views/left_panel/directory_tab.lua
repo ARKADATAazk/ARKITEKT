@@ -14,6 +14,47 @@ local UI = require('TemplateBrowser.ui.ui_constants')
 
 local M = {}
 
+-- Custom collapsible header with minimal design (bold text, no fill, no borders)
+local function draw_custom_collapsible_header(ctx, label, is_open, width, config)
+  local header_height = 24
+  local padding = 4
+
+  -- Get position
+  local x, y = ImGui.GetCursorScreenPos(ctx)
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  -- Invisible button for interaction
+  ImGui.InvisibleButton(ctx, "##header_" .. label, width, header_height)
+  local clicked = ImGui.IsItemClicked(ctx)
+  local hovered = ImGui.IsItemHovered(ctx)
+
+  -- Very subtle hover background (optional - can be removed for pure minimal)
+  if hovered then
+    local hover_color = Colors.hexrgba(config.COLORS.header_hover or config.COLORS.header_bg, 0.3) -- 30% alpha
+    ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + header_height, hover_color, 0)
+  end
+
+  -- Draw chevron icon (left-aligned)
+  local chevron = is_open and "▼" or "▶"
+  local chevron_x = x + padding
+  local chevron_y = y + (header_height - ImGui.GetTextLineHeight(ctx)) / 2
+
+  ImGui.DrawList_AddText(dl, chevron_x, chevron_y, config.COLORS.text, chevron)
+
+  -- Calculate chevron width for text offset
+  local chevron_width = ImGui.CalcTextSize(ctx, chevron)
+
+  -- Draw label text (bold) - we'll use regular font but with slight offset for "bold" effect
+  local text_x = chevron_x + chevron_width + padding * 2
+  local text_y = chevron_y
+
+  -- Draw text with slight shadow for bold effect
+  ImGui.DrawList_AddText(dl, text_x + 0.5, text_y + 0.5, Colors.hexrgba(config.COLORS.text, 0.5), label)
+  ImGui.DrawList_AddText(dl, text_x, text_y, config.COLORS.text, label)
+
+  return clicked
+end
+
 -- Tags list for bottom of directory tab (with filtering)
 local function draw_tags_mini_list(ctx, state, config, width, height)
   if not Helpers.begin_child_compat(ctx, "DirectoryTags", width, height, true) then
@@ -350,7 +391,7 @@ function M.draw(ctx, state, config, width, height, gui)
   -- Initialize section heights from state (3 sections: Physical, Virtual, Archive)
   local separator_height = 3  -- Thin 3-pixel separator line
   local min_section_height = 80
-  local header_height = 22  -- CollapsingHeader height
+  local header_height = 24  -- Custom collapsible header height
 
   -- Initialize stored section height ratios if not set
   state.physical_section_height = state.physical_section_height or math.floor(total_tree_height * 0.40)
@@ -444,17 +485,13 @@ function M.draw(ctx, state, config, width, height, gui)
   local dl = ImGui.GetWindowDrawList(ctx)
 
   -- === PHYSICAL DIRECTORY SECTION (no separator above first section) ===
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
+  local physical_clicked = draw_custom_collapsible_header(ctx, "Physical Directory", state.physical_section_open, width, config)
 
-  local physical_open = ImGui.CollapsingHeader(ctx, "Physical Directory", nil,
-    state.physical_section_open and ImGui.TreeNodeFlags_DefaultOpen or 0)
-
-  ImGui.PopStyleColor(ctx, 3)
-
-  -- Update open state
-  state.physical_section_open = physical_open
+  -- Update open state on click
+  if physical_clicked then
+    state.physical_section_open = not state.physical_section_open
+  end
+  local physical_open = state.physical_section_open
 
   if physical_open then
     local scroll_height = physical_actual_height - header_height
@@ -507,17 +544,13 @@ function M.draw(ctx, state, config, width, height, gui)
   end
 
   -- === VIRTUAL DIRECTORY SECTION ===
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
+  local virtual_clicked = draw_custom_collapsible_header(ctx, "Virtual Directory", state.virtual_section_open, width, config)
 
-  local virtual_open = ImGui.CollapsingHeader(ctx, "Virtual Directory", nil,
-    state.virtual_section_open and ImGui.TreeNodeFlags_DefaultOpen or 0)
-
-  ImGui.PopStyleColor(ctx, 3)
-
-  -- Update open state
-  state.virtual_section_open = virtual_open
+  -- Update open state on click
+  if virtual_clicked then
+    state.virtual_section_open = not state.virtual_section_open
+  end
+  local virtual_open = state.virtual_section_open
 
   if virtual_open then
     local scroll_height = virtual_actual_height - header_height
@@ -570,17 +603,13 @@ function M.draw(ctx, state, config, width, height, gui)
   end
 
   -- === ARCHIVE SECTION ===
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
+  local archive_clicked = draw_custom_collapsible_header(ctx, "Archive", state.archive_section_open, width, config)
 
-  local archive_open = ImGui.CollapsingHeader(ctx, "Archive", nil,
-    state.archive_section_open and ImGui.TreeNodeFlags_DefaultOpen or 0)
-
-  ImGui.PopStyleColor(ctx, 3)
-
-  -- Update open state
-  state.archive_section_open = archive_open
+  -- Update open state on click
+  if archive_clicked then
+    state.archive_section_open = not state.archive_section_open
+  end
+  local archive_open = state.archive_section_open
 
   if archive_open then
     local scroll_height = archive_actual_height - header_height
