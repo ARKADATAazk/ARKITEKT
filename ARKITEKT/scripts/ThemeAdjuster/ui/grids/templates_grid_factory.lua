@@ -13,7 +13,7 @@ local M = {}
 local function create_behaviors(view)
   return {
     drag_start = function(item_keys)
-      -- Templates can be dragged to assignment grids
+      -- Templates and groups can be dragged to assignment grids
       if view.bridge then
         return
       end
@@ -25,11 +25,20 @@ local function create_behaviors(view)
     end,
 
     delete = function(item_keys)
-      -- Delete templates
+      -- Delete templates or groups
       for _, key in ipairs(item_keys) do
-        local template_id = key:match("^template_(.+)")
-        if template_id then
-          view:delete_template(template_id)
+        if key:match("^template_group_header_") then
+          -- Delete group
+          local group_id = key:match("^template_group_header_(.+)")
+          if group_id then
+            view:delete_template_group(group_id)
+          end
+        else
+          -- Delete template
+          local template_id = key:match("^template_(.+)")
+          if template_id then
+            view:delete_template(template_id)
+          end
         end
       end
     end,

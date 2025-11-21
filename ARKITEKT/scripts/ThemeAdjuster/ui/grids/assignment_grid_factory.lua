@@ -26,11 +26,20 @@ local function create_behaviors(view, tab_id)
     end,
 
     delete = function(item_keys)
-      -- Remove parameters from this tab
+      -- Remove parameters or groups from this tab
       for _, key in ipairs(item_keys) do
-        local param_name = key:match("^assign_(.+)")
-        if param_name then
-          view:unassign_param_from_tab(param_name, tab_id)
+        if key:match("^assign_group_") then
+          -- This is a group
+          local group_id = key:match("^assign_group_(.+)")
+          if group_id then
+            view:unassign_group_from_tab(group_id, tab_id)
+          end
+        else
+          -- This is a parameter
+          local param_name = key:match("^assign_(.+)")
+          if param_name then
+            view:unassign_param_from_tab(param_name, tab_id)
+          end
         end
       end
     end,
@@ -102,7 +111,13 @@ function M.create(view, tab_id, config)
     fixed_tile_h = 28,  -- Slightly smaller for assignment tiles
 
     get_items = function() return view:get_assignment_items(tab_id) end,
-    key = function(item) return "assign_" .. item.param_name end,
+    key = function(item)
+      if item.type == "group" then
+        return "assign_group_" .. item.group_id
+      else
+        return "assign_" .. item.param_name
+      end
+    end,
 
     external_drag_check = create_external_drag_check(view, tab_id),
     is_copy_mode_check = create_copy_mode_check(view, tab_id),

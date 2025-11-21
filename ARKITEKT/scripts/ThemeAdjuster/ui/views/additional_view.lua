@@ -177,11 +177,17 @@ function AdditionalView:create_grids()
         return
       end
 
-      -- Templates → Assignment: assign template
+      -- Templates → Assignment: assign template or group
       if source_id == 'templates' and target_id:match("^assign_(.+)") then
         local tab_id = target_id:match("^assign_(.+)")
-        for i, template_id in ipairs(payload) do
-          self:assign_template_to_tab(template_id, tab_id, insert_index + i - 1)
+        for i, item in ipairs(payload) do
+          if item.type == "group" then
+            -- Assign group
+            self:assign_template_group_to_tab(item.id, tab_id, insert_index + i - 1)
+          elseif item.type == "template" then
+            -- Assign individual template
+            self:assign_template_to_tab(item.id, tab_id, insert_index + i - 1)
+          end
         end
         return
       end
@@ -260,16 +266,25 @@ function AdditionalView:create_grids()
   self.bridge:register_grid('templates', self.templates_grid, {
     accepts_drops_from = {'library'},
     on_drag_start = function(item_keys)
-      -- Extract template IDs from keys
-      local template_ids = {}
+      -- Extract template IDs and group IDs from keys
+      local payload = {}
       for _, key in ipairs(item_keys) do
-        local template_id = key:match("^template_(.+)")
-        if template_id then
-          table.insert(template_ids, template_id)
+        if key:match("^template_group_header_") then
+          -- This is a group
+          local group_id = key:match("^template_group_header_(.+)")
+          if group_id then
+            table.insert(payload, {type = "group", id = group_id})
+          end
+        else
+          -- This is a template
+          local template_id = key:match("^template_(.+)")
+          if template_id then
+            table.insert(payload, {type = "template", id = template_id})
+          end
         end
       end
 
-      self.bridge:start_drag('templates', template_ids)
+      self.bridge:start_drag('templates', payload)
     end,
   })
 
@@ -399,8 +414,17 @@ function AdditionalView:get_assignment_items(tab_id)
   -- Convert assignments to items with metadata
   local items = {}
   for _, assignment in ipairs(self.assignments[tab_id]) do
-    if param_lookup[assignment.param_name] then
+    if assignment.type == "group" then
+      -- This is a group assignment
       table.insert(items, {
+        type = "group",
+        group_id = assignment.group_id,
+        order = assignment.order,
+      })
+    elseif assignment.param_name and param_lookup[assignment.param_name] then
+      -- This is a parameter assignment
+      table.insert(items, {
+        type = "param",
         param_name = assignment.param_name,
         order = assignment.order,
       })
@@ -904,6 +928,24 @@ function AdditionalView:unassign_param_from_tab(param_name, tab_id)
   return false
 end
 
+function AdditionalView:unassign_group_from_tab(group_id, tab_id)
+  if not self.assignments[tab_id] then return false end
+
+  for i, assignment in ipairs(self.assignments[tab_id]) do
+    if assignment.type == "group" and assignment.group_id == group_id then
+      table.remove(self.assignments[tab_id], i)
+      -- Reorder remaining assignments
+      for j, a in ipairs(self.assignments[tab_id]) do
+        a.order = j
+      end
+      self:save_assignments()
+      return true
+    end
+  end
+
+  return false
+end
+
 function AdditionalView:reorder_assignments(tab_id, new_order_keys)
   if not self.assignments[tab_id] then return false end
 
@@ -1152,6 +1194,63 @@ function AdditionalView:assign_template_to_tab(template_id, tab_id, index)
   end
 
   self:save_assignments()
+end
+
+-- Assign template group to tab (as a unified control)
+function AdditionalView:assign_template_group_to_tab(group_id, tab_id, index)
+  if not self.assignments[tab_id] then
+    self.assignments[tab_id] = {}
+  end
+
+  -- Find the group
+  local group = nil
+  for _, g in ipairs(self.template_groups) do
+    if g.id == group_id then
+      group = g
+      break
+    end
+  end
+
+  if not group then return end
+
+  -- Insert at specified index (clamp to valid range)
+  local max_index = #self.assignments[tab_id] + 1
+  local safe_index = index and math.min(index, max_index) or max_index
+
+  -- Create a group assignment (different from individual param assignment)
+  table.insert(self.assignments[tab_id], safe_index, {
+    type = "group",
+    group_id = group_id,
+    order = safe_index
+  })
+
+  -- Reorder remaining assignments
+  for i, a in ipairs(self.assignments[tab_id]) do
+    a.order = i
+  end
+
+  self:save_assignments()
+end
+
+-- Delete template group
+function AdditionalView:delete_template_group(group_id)
+  -- Remove from template_groups array
+  for i, group in ipairs(self.template_groups) do
+    if group.id == group_id then
+      -- Delete all templates in the group
+      for _, template_id in ipairs(group.template_ids or {}) do
+        self.templates[template_id] = nil
+      end
+
+      table.remove(self.template_groups, i)
+      break
+    end
+  end
+
+  -- Remove from collapsed states
+  self.template_group_collapsed_states[group_id] = nil
+
+  self:save_templates()
 end
 
 -- Save templates to disk
