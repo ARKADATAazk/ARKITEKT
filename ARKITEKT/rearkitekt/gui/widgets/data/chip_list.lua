@@ -185,30 +185,47 @@ function M.draw_columns(ctx, items, opts)
   local max_height = opts.max_height or avail_h
   local items_per_column = math.floor(max_height / (item_height + item_spacing))
   if items_per_column < 1 then items_per_column = 1 end
-  
+
   local num_columns = math.ceil(#filtered / items_per_column)
+
+  -- Single column should fill full width (honoring padding)
+  local actual_column_width = column_width
+  if num_columns == 1 then
+    actual_column_width = avail_w
+    draw_opts.explicit_width = actual_column_width
+  end
+
   local start_x = ImGui.GetCursorPosX(ctx)
   local start_y = ImGui.GetCursorPosY(ctx)
-  
+
+  -- Center items when sparse (fewer items than fill a column) and NOT single column
+  if opts.center_when_sparse and #filtered < items_per_column and num_columns > 1 then
+    local total_grid_width = num_columns * (actual_column_width + column_spacing) - column_spacing
+    local center_offset = math.floor((avail_w - total_grid_width) / 2)
+    if center_offset > 0 then
+      start_x = start_x + center_offset
+    end
+  end
+
   for col = 0, num_columns - 1 do
     for row = 0, items_per_column - 1 do
       local idx = col * items_per_column + row + 1
       if idx > #filtered then break end
-      
-      ImGui.SetCursorPos(ctx, 
-        start_x + col * (column_width + column_spacing), 
+
+      ImGui.SetCursorPos(ctx,
+        start_x + col * (actual_column_width + column_spacing),
         start_y + row * (item_height + item_spacing))
-      
+
       local clicked = _draw_chip(ctx, filtered[idx], selected_ids[filtered[idx].id], draw_opts)
       if clicked then clicked_id = filtered[idx].id end
     end
   end
   
   local total_height = math.min(#filtered, items_per_column) * (item_height + item_spacing)
-  local total_width = num_columns * (column_width + column_spacing) - column_spacing
+  local total_width = num_columns * (actual_column_width + column_spacing) - column_spacing
   ImGui.SetCursorPos(ctx, start_x, start_y + total_height)
   ImGui.Dummy(ctx, total_width, 0)
-  
+
   return clicked_id
 end
 

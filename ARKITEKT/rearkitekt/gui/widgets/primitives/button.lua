@@ -114,18 +114,25 @@ end
 -- ============================================================================
 
 local function render_button(ctx, dl, x, y, width, height, config, context, instance)
-  local is_hovered = InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, x, y, x + width, y + height, config.is_blocking)
-  local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
+  local is_disabled = config.is_disabled or false
+  local is_hovered = not is_disabled and InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, x, y, x + width, y + height, config.is_blocking)
+  local is_active = not is_disabled and ImGui.IsMouseDown(ctx, 0) and is_hovered
   local is_toggled = config.is_toggled or false
-  
+
   -- Update animation
   local dt = ImGui.GetDeltaTime(ctx)
   instance:update(dt, is_hovered, is_active)
-  
-  -- Get animated colors (considering toggle state)
+
+  -- Get animated colors (considering toggle state and disabled state)
   local bg_color, border_inner, border_outer, text_color
-  
-  if is_toggled then
+
+  if is_disabled then
+    -- Use disabled colors
+    bg_color = config.bg_disabled_color or config.bg_color
+    border_inner = config.border_inner_disabled_color or config.border_inner_color
+    border_outer = config.border_outer_disabled_color or config.border_outer_color
+    text_color = config.text_disabled_color or config.text_color
+  elseif is_toggled then
     -- Use toggle ON colors
     bg_color = config.bg_on_color or config.bg_color
     border_inner = config.border_inner_on_color or config.border_inner_color
@@ -228,18 +235,18 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
   -- Render button
   local is_hovered, is_active = render_button(ctx, dl, x, y, width, height, config, context, instance)
   
-  -- Create invisible button for interaction
+  -- Create invisible button for interaction (unless disabled)
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, "##" .. context.unique_id, width, height)
-  
-  local clicked = ImGui.IsItemClicked(ctx, 0)
-  local right_clicked = ImGui.IsItemClicked(ctx, 1)
-  
+
+  local clicked = not config.is_disabled and ImGui.IsItemClicked(ctx, 0)
+  local right_clicked = not config.is_disabled and ImGui.IsItemClicked(ctx, 1)
+
   -- Handle click callbacks
   if clicked and config.on_click then
     config.on_click()
   end
-  
+
   if right_clicked and config.on_right_click then
     config.on_right_click()
   end

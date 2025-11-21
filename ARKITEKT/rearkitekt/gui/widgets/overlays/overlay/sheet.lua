@@ -115,12 +115,26 @@ function Sheet.render(ctx, alpha, bounds, content_fn, opts)
     Draw.line(dl, x + divider_gradient_w, divider_y + 1, x + w - divider_gradient_w, divider_y + 1, highlight, config.sheet.header.highlight_thickness)
   end
 
+  -- Apply padding to content area using WindowPadding for automatic padding
+  local padding = opts.padding or 20  -- Default internal padding
+  local content_w = w - (padding * 2)
+  local content_h = h - hh - (padding * 2)
+
   ImGui.SetCursorScreenPos(ctx, x, y + hh)
-  local child_flags = ImGui.ChildFlags_None or 0
+
+  -- Use built-in WindowPadding for consistent automatic padding
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
+
+  -- CRITICAL: AlwaysUseWindowPadding flag ensures WindowPadding style var is applied
+  -- Without this flag, child windows ignore WindowPadding by default
+  local child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
   local window_flags = ImGui.WindowFlags_NoScrollbar or 0
   ImGui.BeginChild(ctx, '##sheet', w, h - hh, child_flags, window_flags)
-  if content_fn then content_fn(ctx, w, h - hh, alpha) end
+
+  if content_fn then content_fn(ctx, content_w, content_h, alpha) end
+
   ImGui.EndChild(ctx)
+  ImGui.PopStyleVar(ctx, 1)
 end
 
 return Sheet

@@ -86,31 +86,30 @@ function OverflowModalView:draw(ctx, window)
       return
     end
     
-    ImGui.Text(ctx, "All Playlists:")
-    ImGui.Separator(ctx)
-    ImGui.Dummy(ctx, 0, 8)
-    
     ImGui.SetNextItemWidth(ctx, -1)
     local changed, text = ImGui.InputTextWithHint(ctx, "##tab_search", "Search playlists...", self.search_text)
-    if changed then 
-      self.search_text = text 
+    if changed then
+      self.search_text = text
     end
-    
+
     ImGui.Dummy(ctx, 0, 8)
-    
+
     if ImGui.BeginChild(ctx, "##tab_list", 0, -40) then
+      local text_h = ImGui.GetTextLineHeight(ctx)
       local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
         selected_ids = selected_ids,
         search_text = self.search_text,
         use_dot_style = true,
-        bg_color = hexrgb("#252530"),
+        bg_color = hexrgb("#3a3a3a"),  -- Grey fill
+        item_height = text_h + 1,  -- Further reduced (was text_h + 4, now ~30% smaller)
         dot_size = 7,
         dot_spacing = 7,
-        rounding = 5,
-        padding_h = 12,
+        rounding = 0,  -- Square tiles like tabstrip
+        padding_h = 6,  -- Reduced by 50% (was 12)
         column_width = 200,
         column_spacing = 16,
         item_spacing = 4,
+        center_when_sparse = true,  -- Center items when there aren't many
       })
       
       if clicked_tab then
@@ -156,9 +155,6 @@ function OverflowModalView:draw(ctx, window)
       end,
       render = function(ctx, alpha, bounds)
         Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a, padding)
-          ImGui.Text(ctx, "All Playlists:")
-          ImGui.Dummy(ctx, 0, 8)
-
           -- Search input using primitive
           local search_height = 28
           local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
@@ -182,18 +178,21 @@ function OverflowModalView:draw(ctx, window)
           ImGui.Dummy(ctx, 0, 12)
 
           -- Playlist grid
+          local text_h = ImGui.GetTextLineHeight(ctx)
           local clicked_tab = ChipList.draw_columns(ctx, tab_items, {
             selected_ids = selected_ids,
             search_text = self.search_text,
             use_dot_style = true,
-            bg_color = hexrgb("#252530"),
+            bg_color = hexrgb("#3a3a3a"),  -- Grey fill
+            item_height = text_h + 1,  -- Further reduced (was text_h + 4, now ~30% smaller)
             dot_size = 7,
             dot_spacing = 7,
-            rounding = 5,
-            padding_h = 12,
+            rounding = 0,  -- Square tiles like tabstrip
+            padding_h = 6,  -- Reduced by 50% (was 12)
             column_width = 200,
             column_spacing = 16,
             item_spacing = 4,
+            center_when_sparse = true,  -- Center items when there aren't many
           })
 
           if clicked_tab then

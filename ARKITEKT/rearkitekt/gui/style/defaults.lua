@@ -295,6 +295,11 @@ M.BUTTON = {
   text_color = M.BUTTON_COLORS.text,
   text_hover_color = M.BUTTON_COLORS.text_hover,
   text_active_color = M.BUTTON_COLORS.text_active,
+  -- Disabled state colors
+  bg_disabled_color = hexrgb("#1a1a1a"),  -- Darker, dimmed background
+  border_inner_disabled_color = hexrgb("#202020"),  -- Very dark inner border
+  border_outer_disabled_color = hexrgb("#000000DD"),  -- Same outer border as normal
+  text_disabled_color = hexrgb("#555555"),  -- Dimmed text
   padding_x = 10,
   padding_y = 6,
   rounding = 0,
@@ -323,6 +328,23 @@ M.SEARCH_INPUT = {
   padding_x = 6,
   rounding = 0,
   tooltip_delay = 0.5,
+}
+
+-- Action chip presets - colored rectangles with dark text
+M.ACTION_CHIP_WILDCARD = {
+  bg_color = hexrgb("#5B8FB9"),  -- Muted blue for technical wildcards
+  text_color = hexrgb("#1a1a1a"),  -- Dark text
+  border_color = Colors.with_alpha(hexrgb("#000000"), 100),
+  rounding = 2,
+  padding_h = 8,
+}
+
+M.ACTION_CHIP_TAG = {
+  bg_color = hexrgb("#8B7355"),  -- Warm amber for tags/names
+  text_color = hexrgb("#1a1a1a"),  -- Dark text
+  border_color = Colors.with_alpha(hexrgb("#000000"), 100),
+  rounding = 2,
+  padding_h = 8,
 }
 
 M.DROPDOWN = {

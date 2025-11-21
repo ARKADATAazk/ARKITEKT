@@ -19,7 +19,7 @@ local DEFAULTS = {
   border_color = hexrgb("#000000"),  -- Black border
   border_opacity = 1.0,
   border_thickness = 1,  -- 1 pixel border
-  padding = 12,          -- Subtle internal padding
+  padding = 20,          -- Internal padding for content spacing
 }
 
 -- Render a dark container with content
@@ -45,14 +45,20 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
 
   -- Create child window for container (renders above scrim)
   ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
+
+  -- Use built-in WindowPadding instead of manual cursor positioning
+  -- This ensures all ImGui elements respect the padding automatically
+  local padding = config.padding
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, r)
 
   -- Dark background color for child
   local bg_color = Colors.with_alpha(config.bg_color, math.floor(255 * config.bg_opacity * alpha))
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, bg_color)
 
-  local child_flags = ImGui.ChildFlags_None or 0
+  -- CRITICAL: AlwaysUseWindowPadding flag ensures WindowPadding style var is applied
+  -- Without this flag, child windows ignore WindowPadding by default
+  local child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
   local window_flags = 0  -- Allow scrolling
   ImGui.BeginChild(ctx, '##modal_container', w, h, child_flags, window_flags)
 
@@ -64,12 +70,9 @@ function M.render(ctx, alpha, bounds, content_fn, opts)
   ImGui.PopStyleColor(ctx, 1)
   ImGui.PopStyleVar(ctx, 2)
 
-  -- Render content with padding
-  local padding = config.padding
+  -- Content dimensions account for padding (applied via WindowPadding)
   local content_w = w - padding * 2
   local content_h = h - padding * 2
-
-  ImGui.SetCursorPos(ctx, padding, padding)
 
   if content_fn then
     content_fn(ctx, content_w, content_h, w, h, alpha, padding)

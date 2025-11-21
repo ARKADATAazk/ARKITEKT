@@ -11,6 +11,7 @@ local Draw   = require('rearkitekt.gui.draw')
 local Colors = require('rearkitekt.core.colors')
 local Style  = require('rearkitekt.gui.style.imgui_defaults')
 local OverlayConfig = require('rearkitekt.gui.widgets.overlays.overlay.defaults')
+local Constants = require('rearkitekt.app.init.constants')
 
 local M = {}
 M.__index = M
@@ -165,14 +166,14 @@ function M:push(opts)
 
     -- Close button support
     show_close_button = (opts.show_close_button == true),
-    close_button_size = opts.close_button_size or 32,
-    close_button_margin = opts.close_button_margin or 16,
-    close_button_proximity = opts.close_button_proximity or 150,
-    close_button_color = opts.close_button_color or hexrgb("#ff0000ff"),
-    close_button_hover_color = opts.close_button_hover_color or hexrgb("#FF4444FF"),
-    close_button_bg_color = opts.close_button_bg_color or hexrgb("#e42d2dff"),
-    close_button_bg_opacity = opts.close_button_bg_opacity or 0.6,
-    close_button_bg_opacity_hover = opts.close_button_bg_opacity_hover or 0.8,
+    close_button_size = opts.close_button_size or Constants.OVERLAY.CLOSE_BUTTON_SIZE,
+    close_button_margin = opts.close_button_margin or Constants.OVERLAY.CLOSE_BUTTON_MARGIN,
+    close_button_proximity = opts.close_button_proximity or Constants.OVERLAY.CLOSE_BUTTON_PROXIMITY,
+    close_button_color = opts.close_button_color or Constants.OVERLAY.CLOSE_BUTTON_ICON_COLOR,
+    close_button_hover_color = opts.close_button_hover_color or Constants.OVERLAY.CLOSE_BUTTON_HOVER_COLOR,
+    close_button_bg_color = opts.close_button_bg_color or Constants.OVERLAY.CLOSE_BUTTON_BG_COLOR,
+    close_button_bg_opacity = opts.close_button_bg_opacity or Constants.OVERLAY.CLOSE_BUTTON_BG_OPACITY,
+    close_button_bg_opacity_hover = opts.close_button_bg_opacity_hover or Constants.OVERLAY.CLOSE_BUTTON_BG_OPACITY_HOVER,
     close_button_hovered = false,
     close_button_alpha = 0.0,
 
@@ -335,19 +336,29 @@ function M:render(ctx, dt)
     if top.esc_to_close and ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
       self:pop()
     else
-      -- Render close button if enabled
-      if top.show_close_button and alpha_val > 0.1 then
-        self:draw_close_button(ctx, top, x, y, w, h, dt)
-      end
-
       -- Render content
       top.render(ctx, alpha_val, {x=x, y=y, w=w, h=h, dl=dl})
 
+      -- Always render close button
+      self:draw_close_button(ctx, top, x, y, w, h, dt)
+
       -- Handle scrim clicks (check if click is outside content area)
-      if top.close_on_scrim and not ImGui.IsAnyItemHovered(ctx) then
-        if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) or
-           ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right) then
-          self:pop()
+      -- Right-click closes modal when over SCRIM, not when over containers/content
+      -- Distinguish between modal popup window (scrim) and child windows (containers)
+      if top.close_on_scrim then
+        local over_item = ImGui.IsAnyItemHovered(ctx)
+
+        -- Check if hovering with ChildWindows flag vs without it
+        -- If ChildWindows is true but default is false, we're over a child window (container)
+        local with_children = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_ChildWindows | ImGui.HoveredFlags_AllowWhenBlockedByActiveItem)
+        local without_children = ImGui.IsWindowHovered(ctx, ImGui.HoveredFlags_AllowWhenBlockedByActiveItem)
+        local over_child_container = with_children and not without_children
+
+        -- Close only if NOT over items and NOT over child containers (i.e., on scrim only)
+        if not over_item and not over_child_container then
+          if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right) then
+            self:pop()
+          end
         end
       end
 
@@ -425,7 +436,7 @@ function M:draw_close_button(ctx, overlay, vp_x, vp_y, vp_w, vp_h, dt)
                     overlay.close_button_bg_opacity_hover or
                     overlay.close_button_bg_opacity
   local bg_alpha = bg_opacity * alpha_val
-  local bg_color = (overlay.close_button_bg_color & hexrgb("#f1000000")) |
+  local bg_color = (overlay.close_button_bg_color & 0xFFFFFF00) |
                    math.floor(255 * bg_alpha + 0.5)
   ImGui.DrawList_AddRectFilled(dl, btn_x, btn_y,
                                btn_x + overlay.close_button_size,
@@ -435,7 +446,7 @@ function M:draw_close_button(ctx, overlay, vp_x, vp_y, vp_w, vp_h, dt)
   local icon_color = overlay.close_button_hovered and
                     overlay.close_button_hover_color or
                     overlay.close_button_color
-  icon_color = (icon_color & hexrgb("#ff040400")) | math.floor(255 * alpha_val + 0.5)
+  icon_color = (icon_color & 0xFFFFFF00) | math.floor(255 * alpha_val + 0.5)
 
   local padding = overlay.close_button_size * 0.3
   local x1, y1 = btn_x + padding, btn_y + padding

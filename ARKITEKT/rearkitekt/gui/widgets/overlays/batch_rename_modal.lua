@@ -8,6 +8,8 @@ local Colors = require('rearkitekt.core.colors')
 local Style = require('rearkitekt.gui.style.defaults')
 local Container = require('rearkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('rearkitekt.gui.widgets.tools.color_picker_window')
+local Button = require('rearkitekt.gui.widgets.primitives.button')
+local Chip = require('rearkitekt.gui.widgets.data.chip')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -81,40 +83,61 @@ function BatchRenameModal:close()
 end
 
 -- Draw modal content (shared between popup and overlay modes)
-function BatchRenameModal:draw_content(ctx, count, is_overlay_mode)
-  local modal_w = 520
+function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, content_h)
+  local modal_w = content_w or 520  -- Use provided content_w or fallback to 520
+  local dl = ImGui.GetWindowDrawList(ctx)
 
-  -- Title
-  ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), string.format("Rename %d item%s", count, count > 1 and "s" or ""))
-  ImGui.Spacing(ctx)
+  -- Calculate total content width for centering
+  local content_max_w = 700  -- Maximum content width
+  local actual_content_w = math.min(modal_w, content_max_w)
+  local center_offset_x = (modal_w - actual_content_w) * 0.5
+
+  -- Calculate layout variables early
+  local left_col_width = actual_content_w * 0.58  -- 58% for left column
+  local picker_size = 137  -- 30% smaller than original 195
+  local col_gap = 16  -- Gap between columns
+
+  local start_x = ImGui.GetCursorPosX(ctx) + center_offset_x
+
+  -- Title centered
+  local title_text = string.format("Rename %d item%s", count, count > 1 and "s" or "")
+  local title_w = ImGui.CalcTextSize(ctx, title_text)
+  ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + (modal_w - title_w) * 0.5)
+  ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), title_text)
+  ImGui.Dummy(ctx, 0, 10)
+  ImGui.SetCursorPosX(ctx, start_x)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Separator, hexrgb("#404040FF"))
   ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
+  ImGui.PopStyleColor(ctx)
+  ImGui.Dummy(ctx, 0, 16)
 
-  -- Pattern input label
-  ImGui.Text(ctx, "Rename Pattern:")
-  ImGui.Dummy(ctx, 0, 4)
+  -- ========================================================================
+  -- TWO COLUMN LAYOUT: Left (input + chips) | Right (color picker)
+  -- ========================================================================
 
-  ImGui.SetNextItemWidth(ctx, -1)
+  local start_y = ImGui.GetCursorPosY(ctx)
+
+  ImGui.SetCursorPosX(ctx, start_x)
+
+  -- ========================================================================
+  -- LEFT COLUMN: Pattern input + wildcards + common names
+  -- ========================================================================
+
+  -- Pattern input field with Style.SEARCH_INPUT_COLORS
+  ImGui.SetNextItemWidth(ctx, left_col_width)
 
   if self.focus_input then
     ImGui.SetKeyboardFocusHere(ctx)
     self.focus_input = false
   end
 
-  -- Apply input field styling
   ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Style.SEARCH_INPUT_COLORS.bg)
   ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Style.SEARCH_INPUT_COLORS.bg_hover)
   ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Style.SEARCH_INPUT_COLORS.bg_active)
   ImGui.PushStyleColor(ctx, ImGui.Col_Border, Style.SEARCH_INPUT_COLORS.border_outer)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, Style.SEARCH_INPUT_COLORS.text)
 
-  local changed, new_pattern = ImGui.InputTextWithHint(
-    ctx,
-    "##pattern_input",
-    "combat$n",
-    self.pattern,
-    ImGui.InputTextFlags_None
-  )
+  local changed, new_pattern = ImGui.InputTextWithHint(ctx, "##pattern_input", "pattern$wildcard", self.pattern, ImGui.InputTextFlags_None)
 
   ImGui.PopStyleColor(ctx, 5)
 
@@ -123,48 +146,90 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode)
     self.preview_items = generate_preview(new_pattern, count)
   end
 
-  ImGui.Dummy(ctx, 0, 8)
+  ImGui.SetCursorPosX(ctx, start_x)
+  ImGui.Dummy(ctx, 0, 6)
 
-  -- Wildcard help
+  -- Wildcards label and chips
+  ImGui.SetCursorPosX(ctx, start_x)
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcards:")
   ImGui.Dummy(ctx, 0, 4)
-  ImGui.Indent(ctx, 16)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 6)
-  ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$n  —  Sequential number (1, 2, 3...)")
-  ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$i  —  Index (0, 1, 2...)")
-  ImGui.TextColored(ctx, hexrgb("#BBBBBBFF"), "$N  —  Padded number (001, 002, 003...)")
-  ImGui.PopStyleVar(ctx, 1)
-  ImGui.Unindent(ctx, 16)
+  ImGui.SetCursorPosX(ctx, start_x)
 
-  ImGui.Dummy(ctx, 0, 10)
-  ImGui.Separator(ctx)
-  ImGui.Dummy(ctx, 0, 10)
+  local wildcard_chips = {
+    {label = "number ($n)", wildcard = "$n"},
+    {label = "index ($i)", wildcard = "$i"},
+    {label = "padded ($N)", wildcard = "$N"},
+  }
 
-  -- Preview
-  if #self.preview_items > 0 then
-    ImGui.TextColored(ctx, hexrgb("#999999FF"), "Preview:")
-    ImGui.Dummy(ctx, 0, 4)
-    ImGui.Indent(ctx, 16)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 4)
-    for _, name in ipairs(self.preview_items) do
-      ImGui.TextColored(ctx, hexrgb("#DDDDDDFF"), name)
+  local chip_spacing = 6
+
+  for i, chip_data in ipairs(wildcard_chips) do
+    if i > 1 then
+      ImGui.SameLine(ctx, 0, chip_spacing)
     end
-    ImGui.PopStyleVar(ctx, 1)
-    ImGui.Unindent(ctx, 16)
+
+    local clicked = Chip.draw(ctx, {
+      label = chip_data.label,
+      style = Chip.STYLE.ACTION,
+      interactive = true,
+      id = "wildcard_" .. i,
+      bg_color = Style.ACTION_CHIP_WILDCARD.bg_color,
+      text_color = Style.ACTION_CHIP_WILDCARD.text_color,
+      border_color = Style.ACTION_CHIP_WILDCARD.border_color,
+      rounding = Style.ACTION_CHIP_WILDCARD.rounding,
+      padding_h = Style.ACTION_CHIP_WILDCARD.padding_h,
+    })
+
+    if clicked then
+      self.pattern = self.pattern .. chip_data.wildcard
+      self.preview_items = generate_preview(self.pattern, count)
+    end
   end
 
-  ImGui.Dummy(ctx, 0, 10)
-  ImGui.Separator(ctx)
-  ImGui.Dummy(ctx, 0, 10)
+  ImGui.SetCursorPosX(ctx, start_x)
+  ImGui.Dummy(ctx, 0, 8)
 
-  -- Color picker section
-  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Color:")
+  -- Common names label and chips
+  ImGui.SetCursorPosX(ctx, start_x)
+  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Common Names:")
   ImGui.Dummy(ctx, 0, 4)
+  ImGui.SetCursorPosX(ctx, start_x)
 
-  -- Center the color picker
-  local picker_size = 195
-  local picker_x = (modal_w - picker_size) * 0.5
-  ImGui.SetCursorPosX(ctx, picker_x)
+  local common_names = {"combat", "ambience", "tension"}
+
+  for i, name in ipairs(common_names) do
+    if i > 1 then
+      ImGui.SameLine(ctx, 0, chip_spacing)
+    end
+
+    local clicked = Chip.draw(ctx, {
+      label = name,
+      style = Chip.STYLE.ACTION,
+      interactive = true,
+      id = "common_name_" .. i,
+      bg_color = Style.ACTION_CHIP_TAG.bg_color,
+      text_color = Style.ACTION_CHIP_TAG.text_color,
+      border_color = Style.ACTION_CHIP_TAG.border_color,
+      rounding = Style.ACTION_CHIP_TAG.rounding,
+      padding_h = Style.ACTION_CHIP_TAG.padding_h,
+    })
+
+    if clicked then
+      -- Append the name (with separator if pattern is not empty)
+      if self.pattern ~= "" and not self.pattern:match("%s$") then
+        self.pattern = self.pattern .. "_"
+      end
+      self.pattern = self.pattern .. name
+      self.preview_items = generate_preview(self.pattern, count)
+    end
+  end
+
+  -- ========================================================================
+  -- RIGHT COLUMN: Color picker
+  -- ========================================================================
+
+  local left_col_cursor_y = ImGui.GetCursorPosY(ctx)
+  ImGui.SetCursorPos(ctx, start_x + left_col_width + col_gap, start_y)
 
   -- Initialize color picker only once per modal open
   if not self.picker_initialized then
@@ -180,69 +245,116 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode)
     end
   })
 
-  -- Spacing before buttons
-  ImGui.Dummy(ctx, 0, 10)
+  -- Move cursor below both columns
+  local right_col_end_y = start_y + picker_size
+  local final_y = math.max(left_col_cursor_y, right_col_end_y)
+
+  ImGui.SetCursorPosY(ctx, final_y + 8)
+  ImGui.SetCursorPosX(ctx, start_x)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Separator, hexrgb("#404040FF"))
   ImGui.Separator(ctx)
+  ImGui.PopStyleColor(ctx)
   ImGui.Dummy(ctx, 0, 8)
 
-  -- Buttons (4 buttons: Cancel, Rename, Rename & Recolor, Recolor)
+  -- ========================================================================
+  -- SECTION 4: Preview
+  -- ========================================================================
+
+  if #self.preview_items > 0 then
+    ImGui.SetCursorPosX(ctx, start_x)
+    ImGui.TextColored(ctx, hexrgb("#999999FF"), "Preview:")
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Indent(ctx, start_x + 12)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 2)
+    for _, name in ipairs(self.preview_items) do
+      ImGui.TextColored(ctx, hexrgb("#DDDDDDFF"), name)
+    end
+    ImGui.PopStyleVar(ctx, 1)
+    ImGui.Unindent(ctx, start_x + 12)
+  end
+
+  ImGui.Dummy(ctx, 0, 8)
+  ImGui.SetCursorPosX(ctx, start_x)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Separator, hexrgb("#404040FF"))
+  ImGui.Separator(ctx)
+  ImGui.PopStyleColor(ctx)
+  ImGui.Dummy(ctx, 0, 12)
+
+  -- ========================================================================
+  -- SECTION 5: Action buttons using primitives
+  -- ========================================================================
+
   local button_w = 110
+  local button_h = 28
   local spacing = 8
   local total_w = button_w * 4 + spacing * 3
-  ImGui.SetCursorPosX(ctx, (modal_w - total_w) * 0.5)
+  local button_start_x = start_x + (actual_content_w - total_w) * 0.5
+
+  -- Center buttons horizontally within content area
+  ImGui.SetCursorPosX(ctx, button_start_x)
+  local button_y = ImGui.GetCursorPosY(ctx)
+  local screen_x, screen_y = ImGui.GetCursorScreenPos(ctx)
+
+  local should_close = false
+  local can_rename = self.pattern ~= ""
 
   -- Cancel button
-  local should_close = false
-  if ImGui.Button(ctx, "Cancel", button_w, 28) or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+  local _, cancel_clicked = Button.draw(ctx, dl, screen_x, screen_y, button_w, button_h, {
+    id = "cancel_btn",
+    label = "Cancel",
+    height = button_h,
+  }, "batch_rename_cancel")
+
+  if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
     should_close = true
   end
 
-  ImGui.SameLine(ctx, 0, spacing)
+  -- Rename button (disabled when no pattern)
+  local _, rename_clicked = Button.draw(ctx, dl, screen_x + button_w + spacing, screen_y, button_w, button_h, {
+    id = "rename_btn",
+    label = "Rename",
+    height = button_h,
+    is_disabled = not can_rename,
+  }, "batch_rename_rename")
 
-  -- Rename button (needs pattern)
-  local can_rename = self.pattern ~= ""
-  if not can_rename then
-    ImGui.BeginDisabled(ctx)
-  end
-
-  if ImGui.Button(ctx, "Rename", button_w, 28) or (can_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
+  if rename_clicked or (can_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
     if self.on_confirm then
       self.on_confirm(self.pattern)
     end
     should_close = true
   end
 
-  if not can_rename then
-    ImGui.EndDisabled(ctx)
-  end
+  -- Rename & Recolor button (disabled when no pattern)
+  local _, rename_recolor_clicked = Button.draw(ctx, dl, screen_x + (button_w + spacing) * 2, screen_y, button_w, button_h, {
+    id = "rename_recolor_btn",
+    label = "Rename & Recolor",
+    height = button_h,
+    is_disabled = not can_rename,
+  }, "batch_rename_both")
 
-  ImGui.SameLine(ctx, 0, spacing)
-
-  -- Rename and Recolor button (needs pattern)
-  if not can_rename then
-    ImGui.BeginDisabled(ctx)
-  end
-
-  if ImGui.Button(ctx, "Rename & Recolor", button_w, 28) then
+  if rename_recolor_clicked then
     if self.on_rename_and_recolor then
       self.on_rename_and_recolor(self.pattern, self.selected_color)
     end
     should_close = true
   end
 
-  if not can_rename then
-    ImGui.EndDisabled(ctx)
-  end
-
-  ImGui.SameLine(ctx, 0, spacing)
-
   -- Recolor button (always enabled)
-  if ImGui.Button(ctx, "Recolor", button_w, 28) then
+  local _, recolor_clicked = Button.draw(ctx, dl, screen_x + (button_w + spacing) * 3, screen_y, button_w, button_h, {
+    id = "recolor_btn",
+    label = "Recolor",
+    height = button_h,
+  }, "batch_rename_recolor")
+
+  if recolor_clicked then
     if self.on_recolor then
       self.on_recolor(self.selected_color)
     end
     should_close = true
   end
+
+  -- Advance cursor past buttons
+  ImGui.SetCursorPosY(ctx, button_y + button_h)
 
   return should_close
 end
@@ -267,15 +379,41 @@ function BatchRenameModal:draw(ctx, item_count, window)
           self.overlay_pushed = false
         end,
         render = function(ctx, alpha, bounds)
-          Container.render(ctx, alpha, bounds, function(ctx, content_w, content_h, w, h, a, padding)
-            local should_close = self:draw_content(ctx, count, true)
+          -- Calculate modal dimensions - much larger, invisible bounds for layout
+          local modal_w = math.floor(bounds.w * 0.80)  -- 80% of screen width
+          local modal_h = math.floor(bounds.h * 0.75)  -- 75% of screen height
+          local modal_x = math.floor(bounds.x + (bounds.w - modal_w) * 0.5)
+          local modal_y = math.floor(bounds.y + (bounds.h - modal_h) * 0.5)
+
+          local padding = 40
+          local content_w = modal_w - padding * 2
+          local content_h = modal_h - padding * 2
+
+          -- Invisible child window to block right-clicks on content (defines "safe zone")
+          ImGui.SetCursorScreenPos(ctx, modal_x, modal_y)
+
+          local child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
+          local window_flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse
+
+          ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))  -- Completely transparent
+          ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
+
+          if ImGui.BeginChild(ctx, '##batch_rename_zone', modal_w, modal_h, child_flags, window_flags) then
+            local should_close = self:draw_content(ctx, count, true, content_w, content_h)
+
+            ImGui.EndChild(ctx)
+            ImGui.PopStyleVar(ctx, 1)
+            ImGui.PopStyleColor(ctx, 1)
 
             if should_close then
               window.overlay:pop('batch-rename-modal')
               self:close()
               self.overlay_pushed = false
             end
-          end, { width = 0.45, height = 0.75 })
+          else
+            ImGui.PopStyleVar(ctx, 1)
+            ImGui.PopStyleColor(ctx, 1)
+          end
         end
       })
     end
