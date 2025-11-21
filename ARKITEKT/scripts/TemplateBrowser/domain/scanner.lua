@@ -298,31 +298,103 @@ function M.filter_templates(state)
   for _, tmpl in ipairs(state.templates) do
     local matches = true
 
-    -- Filter by folder
+    -- Filter by folder (supports multi-select and includes subfolders)
     if state.selected_folder and state.selected_folder ~= "" then
-      -- Check if this is a virtual folder
-      local is_virtual_folder = state.metadata and state.metadata.virtual_folders and state.metadata.virtual_folders[state.selected_folder]
+      -- Build list of selected folders (support both single and multi-select)
+      local selected_folders = {}
 
-      if is_virtual_folder then
-        -- Virtual folder: check if template UUID is in template_refs
-        local vfolder = state.metadata.virtual_folders[state.selected_folder]
-        local found = false
-        if vfolder.template_refs then
-          for _, ref_uuid in ipairs(vfolder.template_refs) do
-            if ref_uuid == tmpl.uuid then
-              found = true
+      -- Check if we have multi-selection
+      if state.selected_folders and next(state.selected_folders) then
+        -- Multi-select: use all selected folders
+        for folder_path, _ in pairs(state.selected_folders) do
+          table.insert(selected_folders, folder_path)
+        end
+      else
+        -- Single select: use state.selected_folder
+        table.insert(selected_folders, state.selected_folder)
+      end
+
+      -- Check if template matches any of the selected folders (including subfolders)
+      local found_in_folder = false
+
+      for _, folder_path in ipairs(selected_folders) do
+        -- Check if this is a virtual folder
+        local is_virtual_folder = state.metadata and state.metadata.virtual_folders and state.metadata.virtual_folders[folder_path]
+
+        if is_virtual_folder then
+          -- Special case: __VIRTUAL_ROOT__ means show all templates from all virtual folders
+          if folder_path == "__VIRTUAL_ROOT__" then
+            -- Check if template exists in ANY virtual folder
+            for _, vfolder in pairs(state.metadata.virtual_folders) do
+              if vfolder.template_refs then
+                for _, ref_uuid in ipairs(vfolder.template_refs) do
+                  if ref_uuid == tmpl.uuid then
+                    found_in_folder = true
+                    break
+                  end
+                end
+              end
+              if found_in_folder then break end
+            end
+            if found_in_folder then break end
+          else
+            -- Virtual folder: check if template UUID is in template_refs (recursive check)
+            local function check_virtual_folder_recursive(vfolder_id)
+              local vfolder = state.metadata.virtual_folders[vfolder_id]
+              if not vfolder then return false end
+
+              -- Check direct references
+              if vfolder.template_refs then
+                for _, ref_uuid in ipairs(vfolder.template_refs) do
+                  if ref_uuid == tmpl.uuid then
+                    return true
+                  end
+                end
+              end
+
+              -- Check child virtual folders
+              for _, child_vfolder in pairs(state.metadata.virtual_folders) do
+                if child_vfolder.parent_id == vfolder_id then
+                  if check_virtual_folder_recursive(child_vfolder.id) then
+                    return true
+                  end
+                end
+              end
+
+              return false
+            end
+
+            if check_virtual_folder_recursive(folder_path) then
+              found_in_folder = true
               break
             end
           end
+        else
+          -- Physical folder: check if template is in this folder or any subfolder
+          -- Special case: __ROOT__ means show all physical templates
+          if folder_path == "__ROOT__" or folder_path == "" then
+            found_in_folder = true
+            break
+          end
+
+          -- Check exact match OR if template path starts with folder path + separator
+          local tmpl_path = tmpl.relative_path or ""
+          local sep = package.config:sub(1,1)
+
+          if tmpl_path == folder_path then
+            -- Exact match: template is directly in this folder
+            found_in_folder = true
+            break
+          elseif tmpl_path:find("^" .. folder_path:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1") .. sep) then
+            -- Template is in a subfolder
+            found_in_folder = true
+            break
+          end
         end
-        if not found then
-          matches = false
-        end
-      else
-        -- Physical folder: exact match on relative_path
-        if tmpl.relative_path ~= state.selected_folder then
-          matches = false
-        end
+      end
+
+      if not found_in_folder then
+        matches = false
       end
     end
 
