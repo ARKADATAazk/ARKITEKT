@@ -17,23 +17,6 @@ local M = {}
 local BatchRenameModal = {}
 BatchRenameModal.__index = BatchRenameModal
 
--- Global settings persistence (REAPER-wide, not per-project)
-local EXTSTATE_SECTION = "REARKITEKT_BATCH_RENAME"
-local EXTSTATE_SEPARATOR = "wildcard_separator"
-
--- Load separator preference from global REAPER settings
-local function load_separator_preference()
-  local value = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_SEPARATOR)
-  if value == "underscore" then return "underscore"
-  elseif value == "space" then return "space"
-  else return "none" end
-end
-
--- Save separator preference to global REAPER settings
-local function save_separator_preference(separator)
-  reaper.SetExtState(EXTSTATE_SECTION, EXTSTATE_SEPARATOR, separator, true)  -- persist=true saves to reaper.ini
-end
-
 -- Wildcard pattern processing
 local function apply_pattern(pattern, index)
   -- $n - sequential number starting from 1
@@ -71,7 +54,6 @@ function M.new()
     item_count = 0,
     selected_color = 0xFF5733FF,  -- Default color (RGBA)
     picker_initialized = false,
-    separator = "none",  -- Wildcard separator: "none", "underscore", "space"
   }, BatchRenameModal)
 end
 
@@ -88,7 +70,6 @@ function BatchRenameModal:open(item_count, on_confirm_callback, opts)
   self.focus_input = true
   self.item_count = item_count
   self.picker_initialized = false
-  self.separator = load_separator_preference()  -- Load saved separator preference
 end
 
 -- Check if modal should be shown
@@ -109,19 +90,19 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- Calculate total content width for centering
   local content_max_w = 700  -- Maximum content width
   local actual_content_w = math.min(modal_w, content_max_w)
-  local center_offset_x = (modal_w - actual_content_w) * 0.5
+  local center_offset_x = math.floor((modal_w - actual_content_w) * 0.5)
 
   -- Calculate layout variables early
-  local left_col_width = actual_content_w * 0.58  -- 58% for left column
+  local left_col_width = math.floor(actual_content_w * 0.58)  -- 58% for left column
   local picker_size = 137  -- 30% smaller than original 195
   local col_gap = 16  -- Gap between columns
 
-  local start_x = ImGui.GetCursorPosX(ctx) + center_offset_x
+  local start_x = math.floor(ImGui.GetCursorPosX(ctx) + center_offset_x)
 
   -- Title centered
   local title_text = string.format("Rename %d item%s", count, count > 1 and "s" or "")
   local title_w = ImGui.CalcTextSize(ctx, title_text)
-  ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + (modal_w - title_w) * 0.5)
+  ImGui.SetCursorPosX(ctx, math.floor(ImGui.GetCursorPosX(ctx) + (modal_w - title_w) * 0.5))
   ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), title_text)
   ImGui.Dummy(ctx, 0, 10)
   ImGui.SetCursorPosX(ctx, start_x)
@@ -200,14 +181,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     })
 
     if clicked then
-      -- Insert separator before wildcard if enabled
-      local sep = ""
-      if self.separator == "underscore" then
-        sep = "_"
-      elseif self.separator == "space" then
-        sep = " "
-      end
-      self.pattern = self.pattern .. sep .. chip_data.wildcard
+      self.pattern = self.pattern .. chip_data.wildcard
       self.preview_items = generate_preview(self.pattern, count)
     end
   end
@@ -250,43 +224,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     end
   end
 
-  ImGui.SetCursorPosX(ctx, start_x)
-  ImGui.Dummy(ctx, 0, 12)
-
-  -- Wildcard separator radio buttons
-  ImGui.SetCursorPosX(ctx, start_x)
-  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcard Separator:")
-  ImGui.Dummy(ctx, 0, 4)
-  ImGui.SetCursorPosX(ctx, start_x)
-
-  -- Radio button for "None"
-  if ImGui.RadioButton(ctx, "None##sep_none", self.separator == "none") then
-    self.separator = "none"
-    save_separator_preference("none")
-  end
-
-  ImGui.SameLine(ctx, 0, 16)
-
-  -- Radio button for "Underscore"
-  if ImGui.RadioButton(ctx, "Underscore (_)##sep_underscore", self.separator == "underscore") then
-    self.separator = "underscore"
-    save_separator_preference("underscore")
-  end
-
-  ImGui.SameLine(ctx, 0, 16)
-
-  -- Radio button for "Space"
-  if ImGui.RadioButton(ctx, "Space ( )##sep_space", self.separator == "space") then
-    self.separator = "space"
-    save_separator_preference("space")
-  end
-
   -- ========================================================================
   -- RIGHT COLUMN: Color picker
   -- ========================================================================
 
   local left_col_cursor_y = ImGui.GetCursorPosY(ctx)
-  ImGui.SetCursorPos(ctx, start_x + left_col_width + col_gap, start_y)
+  ImGui.SetCursorPos(ctx, math.floor(start_x + left_col_width + col_gap), start_y)
 
   -- Initialize color picker only once per modal open
   if not self.picker_initialized then
@@ -345,7 +288,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local button_h = 28
   local spacing = 8
   local total_w = button_w * 4 + spacing * 3
-  local button_start_x = start_x + (actual_content_w - total_w) * 0.5
+  local button_start_x = math.floor(start_x + (actual_content_w - total_w) * 0.5)
 
   -- Center buttons horizontally within content area
   ImGui.SetCursorPosX(ctx, button_start_x)
@@ -436,37 +379,26 @@ function BatchRenameModal:draw(ctx, item_count, window)
           self.overlay_pushed = false
         end,
         render = function(ctx, alpha, bounds)
-          -- Full screen modal - render directly on scrim without container
-          local modal_w = bounds.w
-          local modal_h = bounds.h
-          local modal_x = bounds.x
-          local modal_y = bounds.y
+          -- Center modal in viewport
+          local modal_w = 800
+          local modal_h = 600
 
-          local padding = 40
+          -- Center in viewport
+          local modal_x = bounds.x + math.floor((bounds.w - modal_w) * 0.5)
+          local modal_y = bounds.y + math.floor((bounds.h - modal_h) * 0.5)
+
+          local padding = 32
           local content_w = modal_w - padding * 2
           local content_h = modal_h - padding * 2
 
-          local should_close = false
+          -- Draw modal background
+          local dl = ImGui.GetWindowDrawList(ctx)
+          ImGui.DrawList_AddRectFilled(dl, modal_x, modal_y, modal_x + modal_w, modal_y + modal_h, hexrgb("#1A1A1AFF"), 4)
+          ImGui.DrawList_AddRect(dl, modal_x, modal_y, modal_x + modal_w, modal_y + modal_h, hexrgb("#404040FF"), 4, 0, 1)
 
-          -- Draw close button (X) in top-right corner - on scrim
-          local close_btn_size = 32
-          local close_btn_x = modal_x + modal_w - close_btn_size - padding
-          local close_btn_y = modal_y + padding
-
-          ImGui.SetCursorScreenPos(ctx, close_btn_x, close_btn_y)
-          ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#00000000"))  -- Transparent
-          ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#FFFFFF20"))
-          ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#FFFFFF30"))
-          ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFFFF"))
-          if ImGui.Button(ctx, "X##close_batch_rename", close_btn_size, close_btn_size) then
-            should_close = true
-          end
-          ImGui.PopStyleColor(ctx, 4)
-
-          -- Draw content directly on scrim
+          -- Draw content
           ImGui.SetCursorScreenPos(ctx, modal_x + padding, modal_y + padding)
-          local content_should_close = self:draw_content(ctx, count, true, content_w, content_h)
-          should_close = should_close or content_should_close
+          local should_close = self:draw_content(ctx, count, true, content_w, content_h)
 
           -- Handle close
           if should_close then
