@@ -89,21 +89,25 @@ end
 function M.save_settings(settings, proj)
   proj = proj or 0
   local json_str = JSON.encode(settings)
+  reaper.ShowConsoleMsg("PERSIST: Saving settings: " .. json_str .. "\n")
   reaper.SetProjExtState(proj, EXT_STATE_SECTION, KEY_SETTINGS, json_str)
 end
 
 function M.load_settings(proj)
   proj = proj or 0
   local ok, json_str = reaper.GetProjExtState(proj, EXT_STATE_SECTION, KEY_SETTINGS)
+  reaper.ShowConsoleMsg("PERSIST: Loading settings: ok=" .. tostring(ok) .. ", json=" .. tostring(json_str) .. "\n")
   if ok ~= 1 or not json_str or json_str == "" then
+    reaper.ShowConsoleMsg("PERSIST: Returning empty settings\n")
     return {}
   end
-  
+
   local success, settings = pcall(JSON.decode, json_str)
   if not success then
+    reaper.ShowConsoleMsg("PERSIST: JSON decode failed\n")
     return {}
   end
-  
+
   return settings or {}
 end
 
