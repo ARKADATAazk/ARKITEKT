@@ -237,9 +237,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Check if item is favorited
   local is_favorite = state.favorites and state.favorites.audio and state.favorites.audio[item_data.filename]
 
-  -- Calculate star badge space
+  -- Calculate star badge space - match cycle badge height dynamically
   local fav_cfg = config.TILE_RENDER.badges.favorite
-  local star_badge_size = fav_cfg.size
+  local _, text_h = ImGui.CalcTextSize(ctx, "1")  -- Get text height to match cycle badge
+  local star_badge_size = text_h + (config.TILE_RENDER.badges.cycle.padding_y * 2)  -- Match cycle badge calculation
   local star_margin = fav_cfg.margin
   local text_right_margin = is_favorite and (star_badge_size + star_margin) or 0
 

@@ -148,8 +148,8 @@ M.TILE_RENDER = {
 
     -- Favorite star (icon badge in header)
     favorite = {
-      size = 16,  -- Match cycle badge height (~15-16px)
-      icon_size = 14,  -- Larger icon font size for better visibility within badge
+      -- Note: size is calculated dynamically in renderers to match cycle badge height
+      icon_size = 14,  -- Icon font size for star visibility within badge
       margin = 6,  -- Match cycle badge margin
       rounding = 3,  -- Match cycle badge rounding
       bg = hexrgb("#14181C"),  -- Match cycle badge background
