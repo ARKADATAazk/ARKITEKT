@@ -5,6 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
+local HueSlider = require('rearkitekt.gui.widgets.primitives.hue_slider')
 local Colors = require('rearkitekt.core.colors')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
@@ -156,18 +157,22 @@ function M.render(ctx, rect, param, state, view)
     end
 
   elseif param.type == "slider" then
-    local changed_slider, slider_value = ImGui.SliderDouble(
+    -- Convert to 0-100 range for HueSlider
+    local range = param.max - param.min
+    local normalized = ((param.value - param.min) / range) * 100
+    local default_normalized = ((param.default - param.min) / range) * 100
+
+    local changed_slider, slider_value = HueSlider.draw_gamma(
       ctx,
       "##lib_slider_" .. param.index,
-      param.value,
-      param.min,
-      param.max,
-      "%.1f"
+      normalized,
+      {w = control_w, h = 24, default = default_normalized}
     )
 
     if changed_slider then
       changed = true
-      new_value = slider_value
+      -- Convert back from 0-100 to actual range
+      new_value = param.min + (slider_value / 100) * range
     end
   end
 
