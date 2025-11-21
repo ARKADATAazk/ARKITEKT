@@ -585,18 +585,15 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local text_x = scaled_x2 - text_w - margin_x
       local text_y = scaled_y2 - text_h - margin_y
 
-      -- Adaptive color: use tile color with adjusted brightness while preserving hue
+      -- Adaptive color: dark grey with subtle tile coloring for most tiles, light only for very dark
       local luminance = Colors.luminance(render_color)
       local text_color
-      if luminance > 0.45 then
-        -- Bright tile: darken significantly while preserving color
-        text_color = Colors.same_hue_variant(render_color, 1.0, 0.3, math.floor(combined_alpha * 255))
-      elseif luminance > 0.35 then
-        -- Medium luminance tile: darken moderately while preserving color
-        text_color = Colors.same_hue_variant(render_color, 1.0, 0.5, math.floor(combined_alpha * 255))
-      else
-        -- Dark tile (< 0.35): lighten significantly while preserving color
+      if luminance < 0.32 then
+        -- Very dark tile only: use light text
         text_color = Colors.same_hue_variant(render_color, 1.0, 2.2, math.floor(combined_alpha * 255))
+      else
+        -- All other tiles: dark grey with subtle tile color (low saturation, low value)
+        text_color = Colors.same_hue_variant(render_color, 0.4, 0.18, math.floor(combined_alpha * 255))
       end
 
       -- Draw with monospace font for better readability
