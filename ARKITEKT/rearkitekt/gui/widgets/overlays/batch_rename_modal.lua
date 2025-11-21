@@ -436,7 +436,7 @@ function BatchRenameModal:draw(ctx, item_count, window)
           self.overlay_pushed = false
         end,
         render = function(ctx, alpha, bounds)
-          -- Full screen modal - take entire bounds
+          -- Full screen modal - render directly on scrim without container
           local modal_w = bounds.w
           local modal_h = bounds.h
           local modal_x = bounds.x
@@ -448,28 +448,7 @@ function BatchRenameModal:draw(ctx, item_count, window)
 
           local should_close = false
 
-          -- Invisible child window for content
-          ImGui.SetCursorScreenPos(ctx, modal_x, modal_y)
-
-          local child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
-          local window_flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse
-
-          ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))  -- Completely transparent
-          ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
-
-          if ImGui.BeginChild(ctx, '##batch_rename_zone', modal_w, modal_h, child_flags, window_flags) then
-            local content_should_close = self:draw_content(ctx, count, true, content_w, content_h)
-            should_close = should_close or content_should_close
-
-            ImGui.EndChild(ctx)
-            ImGui.PopStyleVar(ctx, 1)
-            ImGui.PopStyleColor(ctx, 1)
-          else
-            ImGui.PopStyleVar(ctx, 1)
-            ImGui.PopStyleColor(ctx, 1)
-          end
-
-          -- Draw close button (X) in top-right corner - AFTER child window so it's on top
+          -- Draw close button (X) in top-right corner - on scrim
           local close_btn_size = 32
           local close_btn_x = modal_x + modal_w - close_btn_size - padding
           local close_btn_y = modal_y + padding
@@ -483,6 +462,11 @@ function BatchRenameModal:draw(ctx, item_count, window)
             should_close = true
           end
           ImGui.PopStyleColor(ctx, 4)
+
+          -- Draw content directly on scrim
+          ImGui.SetCursorScreenPos(ctx, modal_x + padding, modal_y + padding)
+          local content_should_close = self:draw_content(ctx, count, true, content_w, content_h)
+          should_close = should_close or content_should_close
 
           -- Handle close
           if should_close then
