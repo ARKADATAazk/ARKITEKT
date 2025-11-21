@@ -372,24 +372,24 @@ function BatchRenameModal:draw(ctx, item_count, window)
 
       window.overlay:push({
         id = 'batch-rename-modal',
-        close_on_scrim = true,
+        close_on_scrim = false,  -- Disable right-click scrim exit
         esc_to_close = true,
         on_close = function()
           self:close()
           self.overlay_pushed = false
         end,
         render = function(ctx, alpha, bounds)
-          -- Calculate modal dimensions - much larger, invisible bounds for layout
-          local modal_w = math.floor(bounds.w * 0.80)  -- 80% of screen width
-          local modal_h = math.floor(bounds.h * 0.75)  -- 75% of screen height
-          local modal_x = math.floor(bounds.x + (bounds.w - modal_w) * 0.5)
-          local modal_y = math.floor(bounds.y + (bounds.h - modal_h) * 0.5)
+          -- Full screen modal - take entire bounds
+          local modal_w = bounds.w
+          local modal_h = bounds.h
+          local modal_x = bounds.x
+          local modal_y = bounds.y
 
           local padding = 40
           local content_w = modal_w - padding * 2
           local content_h = modal_h - padding * 2
 
-          -- Invisible child window to block right-clicks on content (defines "safe zone")
+          -- Invisible child window for content
           ImGui.SetCursorScreenPos(ctx, modal_x, modal_y)
 
           local child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
