@@ -12,6 +12,7 @@ local TileAnim = require('rearkitekt.gui.rendering.tile.animator')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
 local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
 local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_config')
+local RecentPanelConfig = require('TemplateBrowser.ui.recent_panel_config')
 local MarkdownField = require('rearkitekt.gui.widgets.primitives.markdown_field')
 local Shortcuts = require('TemplateBrowser.core.shortcuts')
 
@@ -36,6 +37,7 @@ function M.new(config, state, scanner)
     template_animator = TileAnim.new(16.0),  -- Animation speed
     template_grid = nil,  -- Initialized in initialize_once
     template_container = nil,  -- Initialized in initialize_once
+    recent_container = nil,  -- Initialized in initialize_once
   }, GUI)
 
   return self
@@ -216,6 +218,21 @@ function GUI:initialize_once(ctx, is_overlay_mode)
   self.template_container = TilesContainer.new({
     id = "templates_container",
     config = container_config,
+  })
+
+  -- Create quick access panel container (recent/favorites/most used)
+  local recent_config = RecentPanelConfig.create({
+    get_quick_access_mode = function()
+      return self.state.quick_access_mode or "recents"
+    end,
+    on_quick_access_mode_changed = function(new_mode)
+      self.state.quick_access_mode = new_mode
+    end,
+  }, self.is_overlay_mode)
+
+  self.recent_container = TilesContainer.new({
+    id = "recent_container",
+    config = recent_config,
   })
 
   self.initialized = true

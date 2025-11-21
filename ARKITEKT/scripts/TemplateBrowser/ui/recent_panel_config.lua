@@ -2,6 +2,7 @@
 -- TemplateBrowser/ui/recent_panel_config.lua
 -- Panel container configuration for recent/favorites templates
 
+local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 
 local M = {}
@@ -36,7 +37,7 @@ function M.create(callbacks, is_overlay_mode)
 
     header = {
       enabled = true,
-      height = 32,  -- Compact header with just dropdown
+      height = 32,  -- Compact header with dropdown and view toggle
       bg_color = header_bg,
       padding = {
         left = 8,
@@ -45,23 +46,46 @@ function M.create(callbacks, is_overlay_mode)
         bottom = 4,
       },
       elements = {
-        -- Quick access dropdown (Recents/Favorites/Most Used)
+        -- Quick access mode dropdown (left side)
         {
-          id = "quick_access_dropdown",
-          type = "quick_access_dropdown",
-          flex = 0,
+          id = "quick_access_mode",
+          type = "dropdown_field",
+          align = "left",
+          width = 140,
           spacing_before = 0,
           config = {
-            get_mode = callbacks.get_quick_access_mode,
-            on_mode_changed = callbacks.on_quick_access_mode_changed,
+            tooltip = "Quick Access Mode",
+            tooltip_delay = 0.5,
+            enable_sort = false,
+            get_value = callbacks.get_quick_access_mode,
+            options = {
+              { value = "recents", label = "Recents" },
+              { value = "favorites", label = "Favorites" },
+              { value = "most_used", label = "Most Used" },
+            },
+            enable_mousewheel = true,
+            on_change = callbacks.on_quick_access_mode_changed,
           },
         },
+        -- View mode toggle (right side) - optional, can be added if needed
+        -- {
+        --   id = "view_toggle",
+        --   type = "button",
+        --   align = "right",
+        --   width = 60,
+        --   spacing_before = 8,
+        --   config = {
+        --     label = "Grid",  -- or "List"
+        --     on_click = callbacks.on_view_mode_toggle,
+        --   },
+        -- },
       },
     },
 
     scroll = {
       enabled = true,
-      flags = 0,
+      flags = ImGui.WindowFlags_HorizontalScrollbar,
+      custom_scrollbar = false,
     },
   }
 end

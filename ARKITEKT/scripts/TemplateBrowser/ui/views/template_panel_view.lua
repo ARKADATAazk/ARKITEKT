@@ -119,59 +119,23 @@ end
 -- Draw quick access panel (recent/favorites/most used templates)
 local function draw_quick_access_panel(ctx, gui, width, height)
   local state = gui.state
-  local dl = ImGui.GetWindowDrawList(ctx)
   local quick_access_templates = get_quick_access_templates(state, 10)
 
   if #quick_access_templates == 0 then
     return  -- Don't draw panel if no templates
   end
 
-  -- Panel background (solid, matching Region Playlist)
-  local panel_x, panel_y = ImGui.GetCursorScreenPos(ctx)
-  local panel_bg = Colors.hexrgb("#1A1A1AFF")
-  local panel_border = Colors.hexrgb("#000000DD")
-  local header_bg = Colors.hexrgb("#1E1E1EFF")
-  local rounding = 8
+  -- Set container dimensions
+  gui.recent_container.width = width
+  gui.recent_container.height = height
 
-  -- Draw panel background
-  ImGui.DrawList_AddRectFilled(dl, panel_x, panel_y, panel_x + width, panel_y + height, panel_bg, rounding, ImGui.DrawFlags_RoundCornersAll)
-  ImGui.DrawList_AddRect(dl, panel_x, panel_y, panel_x + width, panel_y + height, panel_border, rounding, ImGui.DrawFlags_RoundCornersAll, 1)
-
-  -- Header with dropdown
-  local header_height = 32
-  ImGui.DrawList_AddRectFilled(dl, panel_x, panel_y, panel_x + width, panel_y + header_height, header_bg, rounding, ImGui.DrawFlags_RoundCornersTop)
-
-  -- Position dropdown in header
-  ImGui.SetCursorScreenPos(ctx, panel_x + 8, panel_y + 6)
-  ImGui.SetNextItemWidth(ctx, 140)
-
-  local mode_names = {"Recents", "Favorites", "Most Used"}
-  local mode_values = {"recents", "favorites", "most_used"}
-  local current_idx = 1
-  for i, val in ipairs(mode_values) do
-    if val == state.quick_access_mode then
-      current_idx = i
-      break
-    end
-  end
-
-  local changed, new_idx = ImGui.Combo(ctx, "##quick_access_mode", current_idx - 1, table.concat(mode_names, "\0") .. "\0")
-  if changed then
-    state.quick_access_mode = mode_values[new_idx + 1]
-  end
-
-  -- Content area (horizontal scrolling tiles)
-  local content_y = panel_y + header_height + 8
-  local content_height = height - header_height - 16
-  local tile_height = UI.TILE.RECENT_HEIGHT
-  local tile_width = UI.TILE.RECENT_WIDTH
-  local tile_gap = UI.TILE.GAP
-
-  ImGui.SetCursorScreenPos(ctx, panel_x + 12, content_y)
-
-  if Helpers.begin_child_compat(ctx, "QuickAccessScroll", width - 24, content_height, false, ImGui.WindowFlags_HorizontalScrollbar) then
-    -- Draw tiles horizontally
+  -- Begin panel drawing (includes background, border, header)
+  if gui.recent_container:begin_draw(ctx) then
+    -- Draw tiles horizontally in the content area
     local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
+    local tile_height = UI.TILE.RECENT_HEIGHT
+    local tile_width = UI.TILE.RECENT_WIDTH
+    local tile_gap = UI.TILE.GAP
 
     for idx, tmpl in ipairs(quick_access_templates) do
       local x1, y1 = ImGui.GetCursorScreenPos(ctx)
@@ -232,7 +196,7 @@ local function draw_quick_access_panel(ctx, gui, width, height)
         TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
       end
 
-      -- Move cursor for next tile
+      -- Move cursor for next tile (horizontal layout)
       ImGui.SetCursorScreenPos(ctx, x2 + tile_gap, y1)
     end
 
@@ -242,7 +206,8 @@ local function draw_quick_access_panel(ctx, gui, width, height)
       ImGui.Dummy(ctx, total_width, tile_height)
     end
 
-    ImGui.EndChild(ctx)
+    -- End panel drawing
+    gui.recent_container:end_draw(ctx)
   end
 end
 
