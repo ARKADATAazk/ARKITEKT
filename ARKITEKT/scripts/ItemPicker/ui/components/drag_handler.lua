@@ -69,7 +69,7 @@ local function get_item_data(state, item_index)
   }
 end
 
-function M.handle_drag_logic(ctx, state, mini_font)
+function M.handle_drag_logic(ctx, state, mini_font, visualization)
   local mouse_key = reaper.JS_Mouse_GetState(-1)
   local left_mouse_down = (mouse_key & 1) == 1
 

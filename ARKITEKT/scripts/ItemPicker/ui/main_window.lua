@@ -270,7 +270,7 @@ function GUI:draw(ctx, shell_state)
     -- Dragging mode - don't create main window at all
     -- The drag_handler creates its own windows (drag_target_window and MouseFollower)
     -- which allows the arrange window to receive mouse input
-    local should_insert = self.drag_handler.handle_drag_logic(ctx, self.state, mini_font)
+    local should_insert = self.drag_handler.handle_drag_logic(ctx, self.state, mini_font, self.visualization)
     if should_insert and not self.state.drop_completed then
       -- Check modifier keys for drop behavior
       -- If we have captured state (from multi-drop sequence), verify keys are still held
