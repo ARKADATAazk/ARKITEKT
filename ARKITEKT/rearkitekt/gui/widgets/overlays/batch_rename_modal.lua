@@ -186,17 +186,15 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local modal_w = content_w or 520  -- Use provided content_w or fallback to 520
   local dl = ImGui.GetWindowDrawList(ctx)
 
-  -- Calculate total content width for centering
-  local content_max_w = 800  -- Maximum content width (increased from 700)
-  local actual_content_w = math.min(modal_w, content_max_w)
-  local center_offset_x = math.floor((modal_w - actual_content_w) * 0.5)
+  -- Use full available width without centering constraint
+  local actual_content_w = modal_w
 
   -- Calculate layout variables early
   local picker_size = 160  -- Color picker size (left column)
-  local col_gap = 20  -- Gap between columns
+  local col_gap = 24  -- Gap between columns
   local right_col_width = actual_content_w - picker_size - col_gap  -- Right column takes remaining space
 
-  local start_x = math.floor(ImGui.GetCursorPosX(ctx) + center_offset_x)
+  local start_x = math.floor(ImGui.GetCursorPosX(ctx))
 
   -- Title centered
   local title_text = string.format("Rename %d item%s", count, count > 1 and "s" or "")
@@ -416,11 +414,11 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   local common_names = self.names_category == "game" and game_music_names or general_music_names
 
-  -- Render common names with proper wrapping
-  -- Get screen coordinates for the right column boundary
-  local window_x, window_y = ImGui.GetWindowPos(ctx)
-  local max_screen_x = window_x + right_col_x + right_col_width
+  -- Render common names with proper wrapping using actual available width
+  ImGui.SetCursorPosX(ctx, right_col_x)
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
   local line_height = 30
+  local line_start_x = right_col_x
 
   for i, name in ipairs(common_names) do
     -- Use Chip.calculate_width to get the accurate chip width
@@ -430,11 +428,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     })
 
     if i > 1 then
-      -- Get current cursor position BEFORE potentially adding spacing
-      local cur_screen_x, cur_screen_y = ImGui.GetCursorScreenPos(ctx)
+      -- Get current window-relative position
+      local cur_x = ImGui.GetCursorPosX(ctx)
+      local used_width = cur_x - line_start_x
 
       -- Check if chip would fit on current line (including spacing before it)
-      if cur_screen_x + chip_spacing + chip_width > max_screen_x then
+      if used_width + chip_spacing + chip_width > right_col_width then
         -- Won't fit, start new line
         ImGui.SetCursorPosX(ctx, right_col_x)
         ImGui.Dummy(ctx, 0, line_height)
@@ -637,20 +636,20 @@ function BatchRenameModal:draw(ctx, item_count, window)
         end,
         render = function(ctx, alpha, bounds)
           -- Responsive sizing with constraints
-          local max_w = 800
-          local max_h = 600
-          local min_w = 600
-          local min_h = 400
+          local max_w = 900
+          local max_h = 700
+          local min_w = 700
+          local min_h = 450
 
-          -- Use 80% of viewport width/height, clamped to min/max
-          local modal_w = math.floor(math.max(min_w, math.min(max_w, bounds.w * 0.8)))
-          local modal_h = math.floor(math.max(min_h, math.min(max_h, bounds.h * 0.8)))
+          -- Use 85% of viewport width/height, clamped to min/max
+          local modal_w = math.floor(math.max(min_w, math.min(max_w, bounds.w * 0.85)))
+          local modal_h = math.floor(math.max(min_h, math.min(max_h, bounds.h * 0.85)))
 
           -- Center in viewport
           local modal_x = bounds.x + math.floor((bounds.w - modal_w) * 0.5)
           local modal_y = bounds.y + math.floor((bounds.h - modal_h) * 0.5)
 
-          local padding = 32
+          local padding = 40
           local content_w = modal_w - padding * 2
           local content_h = modal_h - padding * 2
 
