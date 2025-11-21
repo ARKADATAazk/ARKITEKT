@@ -293,42 +293,81 @@ local function draw_template_panel(ctx, gui, width, height)
   local panel_y = content_y + button_h + button_margin
   local panel_height = height - (button_h + button_margin)
 
-  -- Reserve space for quick access panel at bottom (if any)
+  -- 2. CALCULATE SEPARATOR POSITION AND PANEL HEIGHTS
   local quick_access_templates = get_quick_access_templates(state, 10)
-  -- Calculate height: header(32) + padding(8*2) + tile_height(80) + scrollbar_space(8)
-  local quick_access_height = #quick_access_templates > 0 and 144 or 0
+  local has_quick_access = #quick_access_templates > 0
 
-  -- 2. MAIN TEMPLATE GRID PANEL (with background)
-  local spacing_between_panels = 8
-  local grid_panel_height = panel_height - quick_access_height
-  if quick_access_height > 0 then
-    grid_panel_height = grid_panel_height - spacing_between_panels
+  if not has_quick_access then
+    -- No quick access panel - use full height for main grid
+    gui.template_container.width = width
+    gui.template_container.height = panel_height
+
+    -- Update grid layout properties for current view mode
+    TemplateGridFactory.update_for_view_mode(gui.template_grid)
+
+    -- Begin panel drawing
+    if gui.template_container:begin_draw(ctx) then
+      gui.template_grid:draw(ctx)
+      gui.template_container:end_draw(ctx)
+    end
+    return
   end
+
+  -- Quick access panel enabled - use separator
+  local separator_gap = 8
+  local min_grid_height = 200
+  local min_quick_access_height = 120
+
+  -- Get separator position from state (default to 350)
+  local grid_panel_height = state.quick_access_separator_position or 350
+
+  -- Clamp to valid range
+  grid_panel_height = math.max(min_grid_height, math.min(grid_panel_height, panel_height - min_quick_access_height - separator_gap))
+  local quick_access_height = panel_height - grid_panel_height - separator_gap
+
+  -- 3. DRAW MAIN TEMPLATE GRID PANEL
+  gui.template_container.width = width
+  gui.template_container.height = grid_panel_height
 
   -- Update grid layout properties for current view mode
   TemplateGridFactory.update_for_view_mode(gui.template_grid)
 
-  -- Set container dimensions for main grid
-  gui.template_container.width = width
-  gui.template_container.height = grid_panel_height
-
   -- Begin panel drawing
   if gui.template_container:begin_draw(ctx) then
-    -- Draw template grid
     gui.template_grid:draw(ctx)
-
-    -- End panel drawing
     gui.template_container:end_draw(ctx)
   end
 
-  -- 3. QUICK ACCESS PANEL AT THE BOTTOM (Recents/Favorites/Most Used)
-  if #quick_access_templates > 0 then
-    -- Explicitly set cursor position for quick access panel
-    local quick_panel_y = panel_y + grid_panel_height + spacing_between_panels
-    ImGui.SetCursorScreenPos(ctx, content_x, quick_panel_y)
+  -- 4. DRAW DRAGGABLE SEPARATOR
+  local sep_y = panel_y + grid_panel_height + separator_gap / 2
+  local sep_action, sep_value = gui.quick_access_separator:draw_horizontal(
+    ctx,
+    content_x,
+    sep_y,
+    width,
+    panel_height,
+    {
+      thickness = 6,
+      gap = separator_gap,
+      default_position = 350,
+      min_active_height = min_grid_height,
+      min_pool_height = min_quick_access_height,
+    }
+  )
 
-    draw_quick_access_panel(ctx, gui, width, quick_access_height)
+  if sep_action == "reset" then
+    state.quick_access_separator_position = 350
+  elseif sep_action == "drag" then
+    local new_grid_height = sep_value - panel_y - separator_gap / 2
+    new_grid_height = math.max(min_grid_height, math.min(new_grid_height, panel_height - min_quick_access_height - separator_gap))
+    state.quick_access_separator_position = new_grid_height
   end
+
+  -- 5. DRAW QUICK ACCESS PANEL AT THE BOTTOM
+  local quick_panel_y = panel_y + grid_panel_height + separator_gap
+  ImGui.SetCursorScreenPos(ctx, content_x, quick_panel_y)
+
+  draw_quick_access_panel(ctx, gui, width, quick_access_height)
 end
 
 -- Export the main draw function
