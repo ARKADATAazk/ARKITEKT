@@ -132,24 +132,26 @@ function M.render(ctx, param, tab_color, shell_state, view)
       value_changed = true
     end
   elseif param_type == "int" or param_type == "enum" then
-    -- DragInt for integers
+    -- SliderInt with IsItemActive for continuous updates
     ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
     local min_val = param.min or 0
     local max_val = param.max or 100
-    local changed, val = ImGui.DragInt(ctx, control_id, current_value, 1, min_val, max_val)
-    if changed then
+    local changed, val = ImGui.SliderInt(ctx, control_id, current_value, min_val, max_val)
+    local is_active = ImGui.IsItemActive(ctx)
+
+    if changed or is_active then
       new_value = val
       value_changed = true
     end
   else
-    -- DragDouble for floats (but REAPER parameters are integers, so we round)
+    -- SliderDouble with IsItemActive (REAPER parameters are integers, so we round)
     ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
     local min_val = param.min or 0.0
     local max_val = param.max or 1.0
-    local range = max_val - min_val
-    local speed = math.max(range * 0.01, 0.01)
-    local changed, val = ImGui.DragDouble(ctx, control_id, current_value, speed, min_val, max_val, "%.0f")
-    if changed then
+    local changed, val = ImGui.SliderDouble(ctx, control_id, current_value, min_val, max_val, "%.0f")
+    local is_active = ImGui.IsItemActive(ctx)
+
+    if changed or is_active then
       new_value = math.floor(val + 0.5)  -- Round to integer for REAPER
       value_changed = true
     end
