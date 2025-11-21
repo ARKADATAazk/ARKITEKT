@@ -255,38 +255,40 @@ function M.render_drag_preview(ctx, state, mini_font, visualization)
       -- Calculate header height
       local header_height = ImGui.GetTextLineHeightWithSpacing(ctx)
       local content_y = y1 + header_height
+      local content_h = y2 - content_y
+      local content_w = x2 - x1
 
       -- Render visualization BEFORE header (so header overlays it, matching original tiles)
-      if item_data.media_item and reaper.ValidatePtr2(0, item_data.media_item, "MediaItem*") then
+      -- Get the UUID for this item to look up in runtime cache
+      local item_uuid = state.dragging_keys and state.dragging_keys[i]
+
+      if item_uuid and state.runtime_cache and not state.skip_visualizations then
+        -- Get dark waveform color for visualization (matching original tiles)
+        local r, g, b = ImGui.ColorConvertU32ToDouble4(item_color)
+        local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
+        s = 0.3  -- Saturation from config.TILE_RENDER.waveform.saturation
+        v = 0.15  -- Brightness from config.TILE_RENDER.waveform.brightness
+        r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
+        local dark_color = ImGui.ColorConvertDouble4ToU32(r, g, b, opacity * 0.8)
+
         if item_data.is_midi then
-          -- MIDI visualization
-          local thumbnail = visualization.GetMidiThumbnail(ctx, state.cache, item_data.media_item)
-          if thumbnail then
-            local saved_cursor_x, saved_cursor_y = ImGui.GetCursorPos(ctx)
-            ImGui.DrawList_PushClipRect(state.draw_list, x1, content_y, x2, y2)
-            ImGui.SetCursorPos(ctx, x1 - cursor_x, content_y - cursor_y)
-
-            -- Visualization uses base color with opacity
-            local viz_color = apply_alpha(item_color, opacity * 0.8)
-            visualization.DisplayMidiItem(ctx, thumbnail, viz_color, state.draw_list)
-
-            ImGui.DrawList_PopClipRect(state.draw_list)
-            ImGui.SetCursorPos(ctx, saved_cursor_x, saved_cursor_y)
+          -- MIDI visualization from runtime cache
+          local thumbnail = state.runtime_cache.midi_thumbnails and state.runtime_cache.midi_thumbnails[item_uuid]
+          if thumbnail and visualization.DisplayMidiItemTransparent then
+            ImGui.SetCursorScreenPos(ctx, x1, content_y)
+            ImGui.Dummy(ctx, content_w, content_h)
+            visualization.DisplayMidiItemTransparent(ctx, thumbnail, dark_color, state.draw_list)
           end
         else
-          -- Audio waveform visualization
-          local waveform = visualization.GetItemWaveform(state.cache, item_data.media_item)
-          if waveform then
-            local saved_cursor_x, saved_cursor_y = ImGui.GetCursorPos(ctx)
-            ImGui.DrawList_PushClipRect(state.draw_list, x1, content_y, x2, y2)
-            ImGui.SetCursorPos(ctx, x1 - cursor_x, content_y - cursor_y)
-
-            -- Visualization uses base color with opacity
-            local viz_color = apply_alpha(item_color, opacity * 0.8)
-            visualization.DisplayWaveform(ctx, waveform, viz_color, state.draw_list, state.item_to_add_width)
-
-            ImGui.DrawList_PopClipRect(state.draw_list)
-            ImGui.SetCursorPos(ctx, saved_cursor_x, saved_cursor_y)
+          -- Audio waveform visualization from runtime cache
+          local waveform = state.runtime_cache.waveforms and state.runtime_cache.waveforms[item_uuid]
+          if waveform and visualization.DisplayWaveformTransparent then
+            ImGui.SetCursorScreenPos(ctx, x1, content_y)
+            ImGui.Dummy(ctx, content_w, content_h)
+            local use_filled = true
+            local show_zero_line = false
+            visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, state.draw_list,
+              math.floor(content_w), item_uuid, state.runtime_cache, use_filled, show_zero_line)
           end
         end
       end
