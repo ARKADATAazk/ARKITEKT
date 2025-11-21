@@ -414,57 +414,67 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   local common_names = self.names_category == "game" and game_music_names or general_music_names
 
-  -- Render common names with proper wrapping using actual available width
+  -- Render common names in a clipped child window to prevent overflow
   ImGui.SetCursorPosX(ctx, right_col_x)
-  local avail_w = ImGui.GetContentRegionAvail(ctx)
-  local line_height = 30
-  local line_start_x = right_col_x
+  local chips_height = 150  -- Fixed height for chip area
 
-  for i, name in ipairs(common_names) do
-    -- Use Chip.calculate_width to get the accurate chip width
-    local chip_width = Chip.calculate_width(ctx, name, {
-      style = Chip.STYLE.ACTION,
-      padding_h = Style.ACTION_CHIP_TAG.padding_h,
-    })
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
-    if i > 1 then
-      -- Get current window-relative position
-      local cur_x = ImGui.GetCursorPosX(ctx)
-      local used_width = cur_x - line_start_x
+  if ImGui.BeginChild(ctx, "common_names_child", right_col_width, chips_height, false, ImGui.WindowFlags_NoScrollbar) then
+    local cur_line_x = 0
+    local cur_line_y = 0
+    local line_height = 30
 
-      -- Check if chip would fit on current line (including spacing before it)
-      if used_width + chip_spacing + chip_width > right_col_width then
-        -- Won't fit, start new line
-        ImGui.SetCursorPosX(ctx, right_col_x)
-        ImGui.Dummy(ctx, 0, line_height)
-        ImGui.SetCursorPosX(ctx, right_col_x)
-      else
-        -- Will fit, add spacing and continue on same line
-        ImGui.SameLine(ctx, 0, chip_spacing)
+    for i, name in ipairs(common_names) do
+      -- Use Chip.calculate_width to get the accurate chip width
+      local chip_width = Chip.calculate_width(ctx, name, {
+        style = Chip.STYLE.ACTION,
+        padding_h = Style.ACTION_CHIP_TAG.padding_h,
+      })
+
+      -- Check if chip fits on current line
+      if i > 1 and cur_line_x + chip_spacing + chip_width > right_col_width then
+        -- Start new line
+        cur_line_x = 0
+        cur_line_y = cur_line_y + line_height
+      elseif i > 1 then
+        -- Add spacing between chips on same line
+        cur_line_x = cur_line_x + chip_spacing
+      end
+
+      -- Set cursor position for this chip
+      ImGui.SetCursorPos(ctx, cur_line_x, cur_line_y)
+
+      local clicked = Chip.draw(ctx, {
+        label = name,
+        style = Chip.STYLE.ACTION,
+        interactive = true,
+        id = "common_name_" .. i,
+        bg_color = Style.ACTION_CHIP_TAG.bg_color,
+        text_color = Style.ACTION_CHIP_TAG.text_color,
+        border_color = Style.ACTION_CHIP_TAG.border_color,
+        rounding = Style.ACTION_CHIP_TAG.rounding,
+        padding_h = Style.ACTION_CHIP_TAG.padding_h,
+      })
+
+      -- Advance x position for next chip
+      cur_line_x = cur_line_x + chip_width
+
+      if clicked then
+        -- Append the name (with separator if pattern is not empty)
+        if self.pattern ~= "" and not self.pattern:match("%s$") then
+          self.pattern = self.pattern .. "_"
+        end
+        self.pattern = self.pattern .. name
+        self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
       end
     end
 
-    local clicked = Chip.draw(ctx, {
-      label = name,
-      style = Chip.STYLE.ACTION,
-      interactive = true,
-      id = "common_name_" .. i,
-      bg_color = Style.ACTION_CHIP_TAG.bg_color,
-      text_color = Style.ACTION_CHIP_TAG.text_color,
-      border_color = Style.ACTION_CHIP_TAG.border_color,
-      rounding = Style.ACTION_CHIP_TAG.rounding,
-      padding_h = Style.ACTION_CHIP_TAG.padding_h,
-    })
-
-    if clicked then
-      -- Append the name (with separator if pattern is not empty)
-      if self.pattern ~= "" and not self.pattern:match("%s$") then
-        self.pattern = self.pattern .. "_"
-      end
-      self.pattern = self.pattern .. name
-      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding, self.letter_case)
-    end
+    ImGui.EndChild(ctx)
   end
+
+  ImGui.PopStyleVar(ctx, 2)
 
   ImGui.SetCursorPosX(ctx, right_col_x)
   ImGui.Dummy(ctx, 0, 6)
