@@ -251,11 +251,8 @@ function M.render(ctx, param, tab_color, shell_state, view)
               -- SYNC: Set to same percentage position in target's range
               target_new_value = target_min + (prop.percent * target_range)
             elseif prop.mode == "link" then
-              -- LINK: Apply percentage delta to target's range
-              local current_value = get_param_value(p.index, p.type)
-              local current_percent = (current_value - target_min) / target_range
-              local new_percent = current_percent + prop.delta_percent
-              target_new_value = target_min + (new_percent * target_range)
+              -- LINK: Use virtual value (can be negative), clamp for REAPER
+              target_new_value = prop.virtual_value
             end
 
             -- Round to integer for REAPER

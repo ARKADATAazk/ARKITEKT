@@ -269,13 +269,7 @@ function M.set_link_mode(param_name, mode)
     return false
   end
 
-  -- If setting to UNLINKED, remove from group
-  if mode == M.LINK_MODE.UNLINKED then
-    M.remove_from_group(param_name)
-    return true
-  end
-
-  -- Otherwise just set the mode
+  -- UNLINKED is now just a bypass - doesn't remove from group
   state.link_modes[param_name] = mode
 
   M.notify_listeners('link_mode_changed', { param = param_name, mode = mode })
@@ -307,7 +301,7 @@ end
 
 -- Propagate value change to other parameters in the group
 -- param: source parameter object with {min, max} properties
--- Returns: array of { param_name, new_value, clamped_value }
+-- Returns: array of { param_name, mode, percent/delta_percent, virtual_value }
 function M.propagate_value_change(param_name, old_value, new_value, param)
   local propagations = {}
 
@@ -326,10 +320,14 @@ function M.propagate_value_change(param_name, old_value, new_value, param)
   -- Avoid division by zero
   if source_range == 0 then return propagations end
 
-  -- Calculate percentage position and delta
-  local old_percent = (old_value - source_min) / source_range
+  -- Calculate absolute delta (not percentage)
+  local delta = new_value - old_value
+
+  -- Calculate percentage position for SYNC mode
   local new_percent = (new_value - source_min) / source_range
-  local delta_percent = new_percent - old_percent
+
+  -- Update source virtual value for LINK mode tracking
+  state.virtual_values[param_name] = new_value
 
   -- Propagate to other parameters in group
   for _, other_param in ipairs(group.params) do
@@ -338,7 +336,6 @@ function M.propagate_value_change(param_name, old_value, new_value, param)
 
       if mode == M.LINK_MODE.SYNC then
         -- SYNC: Match same percentage position in target's range
-        -- This requires target parameter info, which we'll get from the caller
         table.insert(propagations, {
           param_name = other_param,
           mode = "sync",
@@ -346,11 +343,25 @@ function M.propagate_value_change(param_name, old_value, new_value, param)
         })
 
       elseif mode == M.LINK_MODE.LINK then
-        -- LINK: Apply percentage delta to target's range
+        -- LINK: Apply absolute delta maintaining virtual offset
+        -- Get or initialize virtual value for linked param
+        local other_virtual = state.virtual_values[other_param]
+        if not other_virtual then
+          -- First time - store current value as virtual
+          state.virtual_values[other_param] = old_value
+          other_virtual = old_value
+        end
+
+        -- Apply delta to virtual value (can go negative)
+        local new_virtual = other_virtual + delta
+
+        -- Store updated virtual value
+        state.virtual_values[other_param] = new_virtual
+
         table.insert(propagations, {
           param_name = other_param,
           mode = "link",
-          delta_percent = delta_percent,  -- Delta as percentage of range
+          virtual_value = new_virtual,  -- Virtual value (can be negative)
         })
       end
       -- UNLINKED mode: do nothing

@@ -406,10 +406,8 @@ function M.propagate_to_linked_params(param_name, old_value, new_value, param, v
           -- SYNC: Set to same percentage position in target's range
           child_new_value = child_min + (prop.percent * child_range)
         elseif prop.mode == "link" then
-          -- LINK: Apply percentage delta to target's range
-          local current_percent = (child_param.value - child_min) / child_range
-          local new_percent = current_percent + prop.delta_percent
-          child_new_value = child_min + (new_percent * child_range)
+          -- LINK: Use virtual value (can be negative), clamp for REAPER
+          child_new_value = prop.virtual_value
         end
 
         -- Round to integer for REAPER
