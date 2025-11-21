@@ -17,6 +17,23 @@ local M = {}
 local BatchRenameModal = {}
 BatchRenameModal.__index = BatchRenameModal
 
+-- Global settings persistence (REAPER-wide, not per-project)
+local EXTSTATE_SECTION = "REARKITEKT_BATCH_RENAME"
+local EXTSTATE_SEPARATOR = "wildcard_separator"
+
+-- Load separator preference from global REAPER settings
+local function load_separator_preference()
+  local value = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_SEPARATOR)
+  if value == "underscore" then return "underscore"
+  elseif value == "space" then return "space"
+  else return "none" end
+end
+
+-- Save separator preference to global REAPER settings
+local function save_separator_preference(separator)
+  reaper.SetExtState(EXTSTATE_SECTION, EXTSTATE_SEPARATOR, separator, true)  -- persist=true saves to reaper.ini
+end
+
 -- Wildcard pattern processing
 local function apply_pattern(pattern, index)
   -- $n - sequential number starting from 1
@@ -54,6 +71,7 @@ function M.new()
     item_count = 0,
     selected_color = 0xFF5733FF,  -- Default color (RGBA)
     picker_initialized = false,
+    separator = "none",  -- Wildcard separator: "none", "underscore", "space"
   }, BatchRenameModal)
 end
 
@@ -70,6 +88,7 @@ function BatchRenameModal:open(item_count, on_confirm_callback, opts)
   self.focus_input = true
   self.item_count = item_count
   self.picker_initialized = false
+  self.separator = load_separator_preference()  -- Load saved separator preference
 end
 
 -- Check if modal should be shown
@@ -176,7 +195,14 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     })
 
     if clicked then
-      self.pattern = self.pattern .. chip_data.wildcard
+      -- Insert separator before wildcard if enabled
+      local sep = ""
+      if self.separator == "underscore" then
+        sep = "_"
+      elseif self.separator == "space" then
+        sep = " "
+      end
+      self.pattern = self.pattern .. sep .. chip_data.wildcard
       self.preview_items = generate_preview(self.pattern, count)
     end
   end
@@ -217,6 +243,37 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       self.pattern = self.pattern .. name
       self.preview_items = generate_preview(self.pattern, count)
     end
+  end
+
+  ImGui.SetCursorPosX(ctx, start_x)
+  ImGui.Dummy(ctx, 0, 12)
+
+  -- Wildcard separator radio buttons
+  ImGui.SetCursorPosX(ctx, start_x)
+  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcard Separator:")
+  ImGui.Dummy(ctx, 0, 4)
+  ImGui.SetCursorPosX(ctx, start_x)
+
+  -- Radio button for "None"
+  if ImGui.RadioButton(ctx, "None##sep_none", self.separator == "none") then
+    self.separator = "none"
+    save_separator_preference("none")
+  end
+
+  ImGui.SameLine(ctx, 0, 16)
+
+  -- Radio button for "Underscore"
+  if ImGui.RadioButton(ctx, "Underscore (_)##sep_underscore", self.separator == "underscore") then
+    self.separator = "underscore"
+    save_separator_preference("underscore")
+  end
+
+  ImGui.SameLine(ctx, 0, 16)
+
+  -- Radio button for "Space"
+  if ImGui.RadioButton(ctx, "Space ( )##sep_space", self.separator == "space") then
+    self.separator = "space"
+    save_separator_preference("space")
   end
 
   -- ========================================================================
