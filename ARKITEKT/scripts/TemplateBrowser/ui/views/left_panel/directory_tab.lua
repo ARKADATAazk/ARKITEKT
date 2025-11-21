@@ -350,7 +350,6 @@ function M.draw(ctx, state, config, width, height, gui)
 
   -- Initialize section heights from state (default to 33% each)
   local separator_height = 3  -- Thin 3-pixel separator line
-  local separator_padding = 2  -- Small padding around separator
   local min_section_height = 80
   local header_height = 22  -- CollapsingHeader height
 
@@ -359,15 +358,17 @@ function M.draw(ctx, state, config, width, height, gui)
 
   -- Clamp values
   state.physical_section_height = math.max(min_section_height, math.min(state.physical_section_height,
-    total_tree_height - min_section_height * 2 - (separator_height + separator_padding * 2) * 2))
+    total_tree_height - min_section_height * 2 - separator_height * 2))
   state.virtual_section_height = math.max(min_section_height, math.min(state.virtual_section_height,
-    total_tree_height - state.physical_section_height - min_section_height - (separator_height + separator_padding * 2) * 2))
+    total_tree_height - state.physical_section_height - min_section_height - separator_height * 2))
 
-  local archive_section_height = total_tree_height - state.physical_section_height - state.virtual_section_height - (separator_height + separator_padding * 2) * 2
+  local archive_section_height = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_height * 2
 
-  -- Initialize hover tracking for separators
+  -- Initialize hover tracking and drag state for separators
   state.sep1_hover_time = state.sep1_hover_time or 0
   state.sep2_hover_time = state.sep2_hover_time or 0
+  state.sep1_drag_start_height = state.sep1_drag_start_height or nil
+  state.sep2_drag_start_height = state.sep2_drag_start_height or nil
   local hover_threshold = 1.0  -- 1 second
 
   -- Helper function to draw thin separator line above header
@@ -402,8 +403,6 @@ function M.draw(ctx, state, config, width, height, gui)
     end
   end
 
-  ImGui.Dummy(ctx, 0, separator_padding)
-
   -- === SEPARATOR 1 (before Virtual Directory) ===
   local sep1_x, sep1_y = ImGui.GetCursorScreenPos(ctx)
   local mx, my = ImGui.GetMousePos(ctx)
@@ -428,17 +427,21 @@ function M.draw(ctx, state, config, width, height, gui)
     ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
   end
 
+  -- Handle drag with proper initial height tracking
   if ImGui.IsItemActive(ctx) then
-    local delta = ImGui.GetMouseDragDelta(ctx, 0, 0)
-    ImGui.ResetMouseDragDelta(ctx, 0)
-    state.physical_section_height = state.physical_section_height + delta
+    if not state.sep1_drag_start_height then
+      state.sep1_drag_start_height = state.physical_section_height
+    end
+    local _, delta_y = ImGui.GetMouseDragDelta(ctx, 0, 0)
+    state.physical_section_height = state.sep1_drag_start_height + delta_y
     state.physical_section_height = math.max(min_section_height,
       math.min(state.physical_section_height,
-        total_tree_height - min_section_height * 2 - (separator_height + separator_padding * 2) * 2))
+        total_tree_height - min_section_height * 2 - separator_height * 2))
+  else
+    state.sep1_drag_start_height = nil
   end
 
   ImGui.SetCursorScreenPos(ctx, sep1_x, sep1_y + separator_height)
-  ImGui.Dummy(ctx, 0, separator_padding)
 
   -- === VIRTUAL DIRECTORY SECTION ===
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
@@ -456,8 +459,6 @@ function M.draw(ctx, state, config, width, height, gui)
       ImGui.EndChild(ctx)
     end
   end
-
-  ImGui.Dummy(ctx, 0, separator_padding)
 
   -- === SEPARATOR 2 (before Archive) ===
   local sep2_x, sep2_y = ImGui.GetCursorScreenPos(ctx)
@@ -482,17 +483,21 @@ function M.draw(ctx, state, config, width, height, gui)
     ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
   end
 
+  -- Handle drag with proper initial height tracking
   if ImGui.IsItemActive(ctx) then
-    local delta = ImGui.GetMouseDragDelta(ctx, 0, 0)
-    ImGui.ResetMouseDragDelta(ctx, 0)
-    state.virtual_section_height = state.virtual_section_height + delta
+    if not state.sep2_drag_start_height then
+      state.sep2_drag_start_height = state.virtual_section_height
+    end
+    local _, delta_y = ImGui.GetMouseDragDelta(ctx, 0, 0)
+    state.virtual_section_height = state.sep2_drag_start_height + delta_y
     state.virtual_section_height = math.max(min_section_height,
       math.min(state.virtual_section_height,
-        total_tree_height - state.physical_section_height - min_section_height - (separator_height + separator_padding * 2) * 2))
+        total_tree_height - state.physical_section_height - min_section_height - separator_height * 2))
+  else
+    state.sep2_drag_start_height = nil
   end
 
   ImGui.SetCursorScreenPos(ctx, sep2_x, sep2_y + separator_height)
-  ImGui.Dummy(ctx, 0, separator_padding)
 
   -- === ARCHIVE SECTION ===
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
