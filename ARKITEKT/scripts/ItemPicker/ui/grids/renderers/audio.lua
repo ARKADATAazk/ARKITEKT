@@ -557,9 +557,17 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       end
 
       -- Calculate text dimensions and position (right-aligned at bottom-right)
+      -- Push font first to get correct text measurements
+      if state.monospace_font then
+        ImGui.PushFont(ctx, state.monospace_font, state.monospace_font_size)
+      end
       local text_w, text_h = ImGui.CalcTextSize(ctx, duration_text)
-      local margin_x = 11  -- Horizontal margin (2px more left from previous)
-      local margin_y = 18  -- Vertical margin (9px more down from previous)
+      if state.monospace_font then
+        ImGui.PopFont(ctx)
+      end
+
+      local margin_x = 11  -- Horizontal margin (2px more left from original 9px)
+      local margin_y = 0   -- Vertical margin (9px down from original 9px = 0)
       local text_x = scaled_x2 - text_w - margin_x
       local text_y = scaled_y2 - text_h - margin_y
 
