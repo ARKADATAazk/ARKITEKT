@@ -349,22 +349,23 @@ function M.draw(ctx, state, config, width, height, gui)
   local total_tree_height = folder_section_height - used_height
 
   -- Initialize section heights from state (default to 33% each)
-  local separator_thickness = 8
+  local separator_gap = 8
   local min_section_height = 80
+  local header_height = 22  -- CollapsingHeader height
 
   state.physical_section_height = state.physical_section_height or math.floor(total_tree_height * 0.40)
   state.virtual_section_height = state.virtual_section_height or math.floor(total_tree_height * 0.30)
 
   -- Clamp values
   state.physical_section_height = math.max(min_section_height, math.min(state.physical_section_height,
-    total_tree_height - min_section_height * 2 - separator_thickness * 2))
+    total_tree_height - min_section_height * 2 - separator_gap * 2))
   state.virtual_section_height = math.max(min_section_height, math.min(state.virtual_section_height,
-    total_tree_height - state.physical_section_height - min_section_height - separator_thickness * 2))
+    total_tree_height - state.physical_section_height - min_section_height - separator_gap * 2))
 
-  local archive_section_height = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_thickness * 2
+  local archive_section_height = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_gap * 2
 
-  local current_y = ImGui.GetCursorPosY(ctx)
-  local content_x = ImGui.GetCursorPosX(ctx)
+  -- Get screen positions for separator drawing
+  local start_screen_x, start_screen_y = ImGui.GetCursorScreenPos(ctx)
 
   -- === PHYSICAL DIRECTORY SECTION ===
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
@@ -376,33 +377,37 @@ function M.draw(ctx, state, config, width, height, gui)
   ImGui.PopStyleColor(ctx, 3)
 
   if physical_open then
-    local header_height = 20  -- Approximate header height
     local scroll_height = state.physical_section_height - header_height
-    if Helpers.begin_child_compat(ctx, "PhysicalTreeScroll", 0, scroll_height, false) then
+    if scroll_height > 10 and Helpers.begin_child_compat(ctx, "PhysicalTreeScroll", 0, scroll_height, false) then
       TreeViewModule.draw_physical_tree(ctx, state, config)
       ImGui.EndChild(ctx)
     end
+  else
+    -- Reserve space even when collapsed
+    ImGui.Dummy(ctx, 0, 0)
   end
 
   -- DRAGGABLE SEPARATOR 1 (between Physical and Virtual)
-  local sep1_y = ImGui.GetCursorScreenPos(ctx)
+  local sep1_screen_x, sep1_screen_y = ImGui.GetCursorScreenPos(ctx)
   local sep_action1, sep_value1 = gui.dir_separator1:draw_horizontal(
     ctx,
-    content_x,
-    sep1_y + separator_thickness / 2,
+    sep1_screen_x,
+    sep1_screen_y + separator_gap / 2,
     width,
     0,
-    separator_thickness
+    separator_gap
   )
 
   if sep_action1 == "drag" then
-    local delta = (sep_value1 - (sep1_y + separator_thickness / 2))
+    local delta = (sep_value1 - (sep1_screen_y + separator_gap / 2))
+    state.physical_section_height = state.physical_section_height + delta
+    -- Clamp
     state.physical_section_height = math.max(min_section_height,
-      math.min(state.physical_section_height + delta,
-        total_tree_height - min_section_height * 2 - separator_thickness * 2))
+      math.min(state.physical_section_height,
+        total_tree_height - min_section_height * 2 - separator_gap * 2))
   end
 
-  ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) + separator_thickness)
+  ImGui.Dummy(ctx, 0, separator_gap)
 
   -- === VIRTUAL DIRECTORY SECTION ===
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
@@ -414,33 +419,36 @@ function M.draw(ctx, state, config, width, height, gui)
   ImGui.PopStyleColor(ctx, 3)
 
   if virtual_open then
-    local header_height = 20
     local scroll_height = state.virtual_section_height - header_height
-    if Helpers.begin_child_compat(ctx, "VirtualTreeScroll", 0, scroll_height, false) then
+    if scroll_height > 10 and Helpers.begin_child_compat(ctx, "VirtualTreeScroll", 0, scroll_height, false) then
       TreeViewModule.draw_virtual_tree(ctx, state, config)
       ImGui.EndChild(ctx)
     end
+  else
+    ImGui.Dummy(ctx, 0, 0)
   end
 
   -- DRAGGABLE SEPARATOR 2 (between Virtual and Archive)
-  local sep2_y = ImGui.GetCursorScreenPos(ctx)
+  local sep2_screen_x, sep2_screen_y = ImGui.GetCursorScreenPos(ctx)
   local sep_action2, sep_value2 = gui.dir_separator2:draw_horizontal(
     ctx,
-    content_x,
-    sep2_y + separator_thickness / 2,
+    sep2_screen_x,
+    sep2_screen_y + separator_gap / 2,
     width,
     0,
-    separator_thickness
+    separator_gap
   )
 
   if sep_action2 == "drag" then
-    local delta = (sep_value2 - (sep2_y + separator_thickness / 2))
+    local delta = (sep_value2 - (sep2_screen_y + separator_gap / 2))
+    state.virtual_section_height = state.virtual_section_height + delta
+    -- Clamp
     state.virtual_section_height = math.max(min_section_height,
-      math.min(state.virtual_section_height + delta,
-        total_tree_height - state.physical_section_height - min_section_height - separator_thickness * 2))
+      math.min(state.virtual_section_height,
+        total_tree_height - state.physical_section_height - min_section_height - separator_gap * 2))
   end
 
-  ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) + separator_thickness)
+  ImGui.Dummy(ctx, 0, separator_gap)
 
   -- === ARCHIVE SECTION ===
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
@@ -452,12 +460,13 @@ function M.draw(ctx, state, config, width, height, gui)
   ImGui.PopStyleColor(ctx, 3)
 
   if archive_open then
-    local header_height = 20
     local scroll_height = archive_section_height - header_height
-    if Helpers.begin_child_compat(ctx, "ArchiveTreeScroll", 0, scroll_height, false) then
+    if scroll_height > 10 and Helpers.begin_child_compat(ctx, "ArchiveTreeScroll", 0, scroll_height, false) then
       TreeViewModule.draw_archive_tree(ctx, state, config)
       ImGui.EndChild(ctx)
     end
+  else
+    ImGui.Dummy(ctx, 0, 0)
   end
 
   ImGui.Spacing(ctx)
