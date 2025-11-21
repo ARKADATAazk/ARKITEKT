@@ -218,44 +218,79 @@ function M.render_preset_config(ctx, state)
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 0, 8)
 
-  -- Scrollable region for presets
-  if ImGui.BeginChild(ctx, "group_preset_list", 0, 180) then
+  ImGui.Text(ctx, "Presets (each row = spinner enum):")
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Table for presets
+  local table_flags = ImGui.TableFlags_Borders |
+                      ImGui.TableFlags_RowBg |
+                      ImGui.TableFlags_ScrollY |
+                      ImGui.TableFlags_SizingStretchProp
+
+  if ImGui.BeginTable(ctx, "group_preset_table", 3, table_flags, 0, 180) then
+    -- Setup columns
+    ImGui.TableSetupColumn(ctx, "#", ImGui.TableColumnFlags_WidthFixed, 30)
+    ImGui.TableSetupColumn(ctx, "Value", ImGui.TableColumnFlags_WidthFixed, 120)
+    ImGui.TableSetupColumn(ctx, "Label", ImGui.TableColumnFlags_WidthStretch)
+    ImGui.TableSetupScrollFreeze(ctx, 0, 1)
+    ImGui.TableHeadersRow(ctx)
+
+    -- Render preset rows
     local to_remove = nil
     for i, preset in ipairs(state.preset_config.presets) do
+      ImGui.TableNextRow(ctx)
       ImGui.PushID(ctx, i)
 
-      ImGui.SetNextItemWidth(ctx, 100)
+      -- Column 0: Index with remove button
+      ImGui.TableSetColumnIndex(ctx, 0)
+      ImGui.AlignTextToFramePadding(ctx)
+      ImGui.Text(ctx, tostring(i))
+      if ImGui.IsItemHovered(ctx) then
+        ImGui.SetTooltip(ctx, "Right-click to remove")
+      end
+
+      -- Right-click to remove
+      if ImGui.BeginPopupContextItem(ctx, "preset_ctx_" .. i) then
+        if ImGui.MenuItem(ctx, "Remove") then
+          to_remove = i
+        end
+        ImGui.EndPopup(ctx)
+      end
+
+      -- Column 1: Value input
+      ImGui.TableSetColumnIndex(ctx, 1)
+      ImGui.SetNextItemWidth(ctx, -1)
       local changed_val, new_val = ImGui.InputDouble(ctx, "##value", preset.value)
       if changed_val then
         preset.value = new_val
       end
 
-      ImGui.SameLine(ctx, 0, 8)
-      ImGui.SetNextItemWidth(ctx, 200)
+      -- Column 2: Label input
+      ImGui.TableSetColumnIndex(ctx, 2)
+      ImGui.SetNextItemWidth(ctx, -1)
       local changed_label, new_label = ImGui.InputText(ctx, "##label", preset.label)
       if changed_label then
         preset.label = new_label
       end
 
-      ImGui.SameLine(ctx, 0, 8)
-      if ImGui.Button(ctx, "Remove") then
-        to_remove = i
-      end
-
       ImGui.PopID(ctx)
     end
 
+    -- Handle removal
     if to_remove then
       table.remove(state.preset_config.presets, to_remove)
     end
 
-    ImGui.EndChild(ctx)
+    ImGui.EndTable(ctx)
   end
 
   ImGui.Dummy(ctx, 0, 8)
-  if ImGui.Button(ctx, "Add Preset") then
+  if ImGui.Button(ctx, "Add Preset", 120, 0) then
     table.insert(state.preset_config.presets, {value = 0, label = "New Preset"})
   end
+
+  ImGui.SameLine(ctx)
+  ImGui.TextDisabled(ctx, "(Right-click row # to remove)")
 end
 
 --- Initialize default presets for a group
