@@ -421,7 +421,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
-  if ImGui.BeginChild(ctx, "common_names_child", right_col_width, chips_height, false, ImGui.WindowFlags_NoScrollbar) then
+  if ImGui.BeginChild(ctx, "common_names_child", right_col_width, chips_height, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
     local cur_line_x = 0
     local cur_line_y = 0
     local line_height = 30
