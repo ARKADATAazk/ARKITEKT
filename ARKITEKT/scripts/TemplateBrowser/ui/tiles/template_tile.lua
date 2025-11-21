@@ -185,6 +185,9 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local chip_y = tile_h >= M.CONFIG.compact_mode_below and (content_y + 40) or (content_y + 24)
     local chip_x_offset = content_x
 
+    -- Save cursor position before chip rendering
+    local saved_cursor_x, saved_cursor_y = ImGui.GetCursorScreenPos(ctx)
+
     ImGui.SetCursorScreenPos(ctx, chip_x_offset, chip_y)
 
     -- VST chips (DOT style)
@@ -244,6 +247,9 @@ function M.render(ctx, rect, template, state, metadata, animator)
         ImGui.SameLine(ctx, 0, 4)
       end
     end
+
+    -- Restore cursor position after chip rendering to prevent position leaks
+    ImGui.SetCursorScreenPos(ctx, saved_cursor_x, saved_cursor_y)
   end
 
   -- Render favorite badge in top-right corner (replaces old star icon)
