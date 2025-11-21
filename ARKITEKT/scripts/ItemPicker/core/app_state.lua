@@ -25,7 +25,8 @@ M.settings = {
   tile_height = nil,
   separator_position = nil,  -- MIDI section height for vertical layout
   separator_position_horizontal = nil,  -- MIDI section width for horizontal layout
-  sort_mode = "none",  -- Options: "none", "color", "name", "pool"
+  sort_mode = "none",  -- Options: "none", "color", "name", "pool", "length"
+  sort_reverse = false,  -- Reverse sort order (descending vs ascending)
   waveform_quality = 1.0,  -- Waveform resolution multiplier (0.1-1.0, lower = better performance)
   waveform_filled = true,  -- Use filled polygons for waveforms (false = outline only)
   waveform_zero_line = false,  -- Show zero line in waveforms

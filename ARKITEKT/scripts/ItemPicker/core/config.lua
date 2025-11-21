@@ -86,6 +86,27 @@ M.TILE_RENDER = {
     brightness_boost = 0.50,  -- Add to brightness on hover (0.0-1.0)
   },
 
+  -- Minimum lightness enforcement (prevents black tiles)
+  min_lightness = 0.20,  -- Minimum HSL lightness for tile background (0.0-1.0, enforced after all adjustments)
+
+  -- Duration text (bottom-right time/length display)
+  duration_text = {
+    -- Positioning
+    margin_x = 4,  -- Horizontal margin from right edge
+    margin_y = 3,  -- Vertical margin from bottom edge
+
+    -- Color thresholds and parameters
+    dark_tile_threshold = 0.80,  -- Luminance threshold: below this uses light text
+
+    -- Light text (for very dark tiles, luminance < dark_tile_threshold)
+    light_saturation = 0.2,  -- Saturation multiplier for light text
+    light_value = 4.2,       -- Value/brightness multiplier for light text
+
+    -- Dark text (for normal/bright tiles, luminance >= dark_tile_threshold)
+    dark_saturation = 0.4,   -- Saturation for dark grey text with subtle tile coloring
+    dark_value = 0.18,       -- Value/brightness for dark grey text
+  },
+
   -- Selection (marching ants)
   selection = {
     border_saturation = 0.8,

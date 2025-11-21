@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
+local Draw = require('rearkitekt.gui.draw')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
 local Shapes = require('rearkitekt.gui.rendering.shapes')
@@ -98,6 +99,20 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local bright_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_brightness_factor or config.TILE_RENDER.base_fill.brightness_factor
   render_color = Colors.desaturate(render_color, 1.0 - sat_factor)
   render_color = Colors.adjust_brightness(render_color, bright_factor)
+
+  -- ABSOLUTE MINIMUM LUMINANCE - NO BLACK TILES ALLOWED
+  -- Enforce AFTER base_fill adjustments (which can make tiles very dark)
+  -- but BEFORE hover effect (so all tiles meet minimum, not just hovered ones)
+  -- Use HSL to set minimum lightness (works even for pure black colors)
+  local min_lightness = config.TILE_RENDER.min_lightness
+  local r, g, b, a = Colors.rgba_to_components(render_color)
+  local h, s, l = Colors.rgb_to_hsl(render_color)
+  if l < min_lightness then
+    -- Set minimum lightness while preserving hue and saturation
+    l = min_lightness
+    local r_new, g_new, b_new = Colors.hsl_to_rgb(h, s, l)
+    render_color = Colors.components_to_rgba(r_new, g_new, b_new, a)
+  end
 
   -- Apply hover effect (brightness boost)
   if hover_factor > 0.001 then
@@ -241,11 +256,20 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local _, text_h = ImGui.CalcTextSize(ctx, "1")  -- Get text height to match cycle badge
   local star_badge_size = text_h + (config.TILE_RENDER.badges.cycle.padding_y * 2)  -- Match cycle badge calculation
 
-  -- Calculate extra text margin to reserve space for favorite badge (text truncation only)
+  -- Calculate extra text margin to reserve space for favorite and pool badges (text truncation only)
   -- This doesn't affect cycle badge position, only text truncation
   local extra_text_margin = 0
   if is_favorite then
     extra_text_margin = star_badge_size + (fav_cfg.spacing or 4)
+  end
+
+  -- Add pool badge space if needed
+  if item_data.pool_count and item_data.pool_count > 1 and cascade_factor > 0.5 then
+    local pool_cfg = config.TILE_RENDER.badges.pool
+    local pool_text = "×" .. tostring(item_data.pool_count)
+    local pool_w, _ = ImGui.CalcTextSize(ctx, pool_text)
+    local pool_badge_w = pool_w + pool_cfg.padding_x * 2
+    extra_text_margin = extra_text_margin + pool_badge_w + (pool_cfg.spacing or 4)
   end
 
   -- Check if this tile is being renamed
@@ -526,8 +550,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     ImGui.DrawList_AddText(dl, badge_x + pool_cfg.padding_x, badge_y + pool_cfg.padding_y, text_color, pool_text)
   end
 
-  -- Render duration badge at bottom right (in bars.beats format for MIDI)
-  if cascade_factor > 0.3 and item_data.item then
+  -- Render duration text at bottom right (plain text, no badge - matches Region Playlist style)
+  -- Don't render on compact tiles
+  if cascade_factor > 0.3 and compact_factor < 0.5 and item_data.item then
     local duration = reaper.GetMediaItemInfo_Value(item_data.item, "D_LENGTH")
     if duration > 0 then
       -- Get item position to calculate bars/beats
@@ -546,27 +571,26 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Format as bars.beats
       local duration_text = string.format("%d.%d", bars, beats)
 
-      local duration_cfg = config.TILE_RENDER.badges.pool  -- Reuse pool badge styling
+      -- Calculate text dimensions and position (right-aligned at bottom-right)
       local text_w, text_h = ImGui.CalcTextSize(ctx, duration_text)
-      local badge_w = text_w + duration_cfg.padding_x * 2
-      local badge_h = text_h + duration_cfg.padding_y * 2
-      local badge_x = scaled_x2 - badge_w - duration_cfg.margin
-      local badge_y = scaled_y2 - badge_h - duration_cfg.margin
 
-      -- Badge background
-      local badge_bg_alpha = math.floor((duration_cfg.bg & 0xFF) * combined_alpha)
-      local badge_bg = (duration_cfg.bg & 0xFFFFFF00) | badge_bg_alpha
-      ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, duration_cfg.rounding)
+      local dt_cfg = config.TILE_RENDER.duration_text
+      local text_x = scaled_x2 - text_w - dt_cfg.margin_x
+      local text_y = scaled_y2 - text_h - dt_cfg.margin_y
 
-      -- Border
-      local border_color = Colors.adjust_brightness(render_color, duration_cfg.border_darken)
-      border_color = Colors.with_alpha(border_color, duration_cfg.border_alpha)
-      ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, border_color, duration_cfg.rounding, 0, 0.5)
+      -- Adaptive color: dark grey with subtle tile coloring for most tiles, light only for very dark
+      local luminance = Colors.luminance(render_color)
+      local text_color
+      if luminance < dt_cfg.dark_tile_threshold then
+        -- Very dark tile only: use light text
+        text_color = Colors.same_hue_variant(render_color, dt_cfg.light_saturation, dt_cfg.light_value, math.floor(combined_alpha * 255))
+      else
+        -- All other tiles: dark grey with subtle tile color
+        text_color = Colors.same_hue_variant(render_color, dt_cfg.dark_saturation, dt_cfg.dark_value, math.floor(combined_alpha * 255))
+      end
 
-      -- Duration text
-      local duration_text_color = Colors.hexrgb("#FFFFFFDD")
-      duration_text_color = Colors.with_alpha(duration_text_color, math.floor(combined_alpha * 255))
-      ImGui.DrawList_AddText(dl, badge_x + duration_cfg.padding_x, badge_y + duration_cfg.padding_y, duration_text_color, duration_text)
+      -- Draw duration text
+      Draw.text(dl, text_x, text_y, text_color, duration_text)
     end
   end
 end

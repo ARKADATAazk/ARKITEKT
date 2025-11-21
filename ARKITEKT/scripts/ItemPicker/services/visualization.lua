@@ -371,6 +371,10 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
 
   DrawList_AddRectFilled(draw_list, x1, y1, x2, y2, color)
 
+  -- Push clip rect to prevent MIDI notes from overflowing tile bounds
+  -- Use intersect=true to respect parent panel clipping
+  ImGui.DrawList_PushClipRect(draw_list, x1, y1, x2, y2, true)
+
   -- Calculate scale factors using fixed cache resolution
   local scale_x = display_w / MIDI_CACHE_WIDTH
   local scale_y = display_h / MIDI_CACHE_HEIGHT
@@ -399,6 +403,9 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
     local note_y2 = y1 + (note.y2 * scale_y)
     DrawList_AddRectFilled(draw_list, note_x1, note_y1, note_x2, note_y2, col_note)
   end
+
+  -- Pop clip rect to restore previous clipping state
+  ImGui.DrawList_PopClipRect(draw_list)
 end
 
 function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_width, uuid, cache, use_filled, show_zero_line)
@@ -654,6 +661,10 @@ function M.DisplayMidiItemTransparent(ctx, thumbnail, color, draw_list)
   local display_w = x2 - x1
   local display_h = y2 - y1
 
+  -- Push clip rect to prevent MIDI notes from overflowing tile bounds
+  -- Use intersect=true to respect parent panel clipping
+  ImGui.DrawList_PushClipRect(draw_list, x1, y1, x2, y2, true)
+
   -- Calculate scale factors using fixed cache resolution
   local scale_x = display_w / MIDI_CACHE_WIDTH
   local scale_y = display_h / MIDI_CACHE_HEIGHT
@@ -672,6 +683,9 @@ function M.DisplayMidiItemTransparent(ctx, thumbnail, color, draw_list)
     local note_y2 = y1 + (note.y2 * scale_y)
     DrawList_AddRectFilled(draw_list, note_x1, note_y1, note_x2, note_y2, col_note)
   end
+
+  -- Pop clip rect to restore previous clipping state
+  ImGui.DrawList_PopClipRect(draw_list)
 end
 
 function M.DisplayPreviewLine(ctx, preview_start, preview_end, draw_list)
