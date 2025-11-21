@@ -3,6 +3,7 @@
 -- Tags tab: Full tag management
 
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
 local Tags = require('TemplateBrowser.domain.tags')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Fields = require('rearkitekt.gui.widgets.primitives.fields')

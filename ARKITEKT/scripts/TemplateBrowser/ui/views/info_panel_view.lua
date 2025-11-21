@@ -3,6 +3,7 @@
 -- Right panel view: Template info & tag assignment
 
 local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
 local TemplateOps = require('TemplateBrowser.domain.template_ops')
 local Tags = require('TemplateBrowser.domain.tags')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
