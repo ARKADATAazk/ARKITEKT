@@ -302,10 +302,12 @@ function M.create(opts)
   end
 
   function bridge:set_quantize_mode(mode)
+    Logger.debug("BRIDGE", "set_quantize_mode called with: %s (type: %s)", tostring(mode), type(mode))
     self.engine:set_quantize_mode(mode)
     local settings = RegionState.load_settings(self.proj)
     settings.quantize_mode = mode
     RegionState.save_settings(settings, self.proj)
+    Logger.debug("BRIDGE", "Saved quantize_mode to settings: %s", tostring(mode))
   end
 
   function bridge:set_loop_playlist(enabled)

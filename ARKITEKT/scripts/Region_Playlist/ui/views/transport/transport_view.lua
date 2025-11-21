@@ -702,6 +702,11 @@ function TransportView:draw(ctx, shell_state, is_blocking)
     shuffle_enabled = engine and engine:get_shuffle_enabled() or false,
   }
 
+  -- Debug: Log what quantize_mode the UI is seeing
+  local Logger = require("rearkitekt.debug.logger")
+  Logger.debug("TRANSPORT_VIEW", "bridge_state.quantize_mode = %s (type: %s)",
+    tostring(bridge_state.quantize_mode), type(bridge_state.quantize_mode))
+
   -- Inject icon font, size, and blocking state into corner buttons
   local icons_font = shell_state and shell_state.fonts and shell_state.fonts.icons
   local icons_size = shell_state and shell_state.fonts and shell_state.fonts.icons_size
