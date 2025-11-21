@@ -104,12 +104,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local title_w = ImGui.CalcTextSize(ctx, title_text)
   ImGui.SetCursorPosX(ctx, math.floor(ImGui.GetCursorPosX(ctx) + (modal_w - title_w) * 0.5))
   ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), title_text)
-  ImGui.Dummy(ctx, 0, 10)
-  ImGui.SetCursorPosX(ctx, start_x)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Separator, hexrgb("#404040FF"))
-  ImGui.Separator(ctx)
-  ImGui.PopStyleColor(ctx)
-  ImGui.Dummy(ctx, 0, 16)
+  ImGui.Dummy(ctx, 0, 20)
 
   -- ========================================================================
   -- TWO COLUMN LAYOUT: Left (input + chips) | Right (color picker)
@@ -249,12 +244,8 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local right_col_end_y = start_y + picker_size
   local final_y = math.max(left_col_cursor_y, right_col_end_y)
 
-  ImGui.SetCursorPosY(ctx, final_y + 8)
+  ImGui.SetCursorPosY(ctx, final_y + 16)
   ImGui.SetCursorPosX(ctx, start_x)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Separator, hexrgb("#404040FF"))
-  ImGui.Separator(ctx)
-  ImGui.PopStyleColor(ctx)
-  ImGui.Dummy(ctx, 0, 8)
 
   -- ========================================================================
   -- SECTION 4: Preview
@@ -273,12 +264,8 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     ImGui.Unindent(ctx, start_x + 12)
   end
 
-  ImGui.Dummy(ctx, 0, 8)
+  ImGui.Dummy(ctx, 0, 20)
   ImGui.SetCursorPosX(ctx, start_x)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Separator, hexrgb("#404040FF"))
-  ImGui.Separator(ctx)
-  ImGui.PopStyleColor(ctx)
-  ImGui.Dummy(ctx, 0, 12)
 
   -- ========================================================================
   -- SECTION 5: Action buttons using primitives
@@ -379,9 +366,15 @@ function BatchRenameModal:draw(ctx, item_count, window)
           self.overlay_pushed = false
         end,
         render = function(ctx, alpha, bounds)
-          -- Center modal in viewport
-          local modal_w = 800
-          local modal_h = 600
+          -- Responsive sizing with constraints
+          local max_w = 800
+          local max_h = 600
+          local min_w = 600
+          local min_h = 400
+
+          -- Use 80% of viewport width/height, clamped to min/max
+          local modal_w = math.floor(math.max(min_w, math.min(max_w, bounds.w * 0.8)))
+          local modal_h = math.floor(math.max(min_h, math.min(max_h, bounds.h * 0.8)))
 
           -- Center in viewport
           local modal_x = bounds.x + math.floor((bounds.w - modal_w) * 0.5)
@@ -391,12 +384,7 @@ function BatchRenameModal:draw(ctx, item_count, window)
           local content_w = modal_w - padding * 2
           local content_h = modal_h - padding * 2
 
-          -- Draw modal background
-          local dl = ImGui.GetWindowDrawList(ctx)
-          ImGui.DrawList_AddRectFilled(dl, modal_x, modal_y, modal_x + modal_w, modal_y + modal_h, hexrgb("#1A1A1AFF"), 4)
-          ImGui.DrawList_AddRect(dl, modal_x, modal_y, modal_x + modal_w, modal_y + modal_h, hexrgb("#404040FF"), 4, 0, 1)
-
-          -- Draw content
+          -- Draw content directly without container background
           ImGui.SetCursorScreenPos(ctx, modal_x + padding, modal_y + padding)
           local should_close = self:draw_content(ctx, count, true, content_w, content_h)
 
