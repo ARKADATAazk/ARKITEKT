@@ -410,7 +410,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local star_y = scaled_y1 + (header_height - star_badge_size) / 2
     local icon_size = fav_cfg.icon_size or state.icon_font_size
     Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite,
-      state.icon_font, icon_size, base_color, fav_cfg)
+      state.icon_font, icon_size, render_color, fav_cfg)
   end
 
   -- Render region tags (bottom left, only on larger tiles)
@@ -485,8 +485,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     border_color = Colors.with_alpha(border_color, pool_cfg.border_alpha)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, border_color, pool_cfg.rounding, 0, 0.5)
 
-    -- Pool count text
-    local text_color = Colors.hexrgb("#AAAAAA")
+    -- Pool count text (match cycle badge brightness)
+    local text_color = Colors.hexrgb("#FFFFFFDD")
     text_color = Colors.with_alpha(text_color, math.floor(combined_alpha * 255))
     ImGui.DrawList_AddText(dl, badge_x + pool_cfg.padding_x, badge_y + pool_cfg.padding_y, text_color, pool_text)
   end
