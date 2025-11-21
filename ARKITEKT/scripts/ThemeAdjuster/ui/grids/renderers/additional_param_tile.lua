@@ -141,11 +141,14 @@ function M.render(ctx, param, tab_color, shell_state, view)
       value_changed = true
     end
   else
-    -- Slider for floats
+    -- Drag control for floats (smoother than SliderDouble)
     ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
     local min_val = param.min or 0.0
     local max_val = param.max or 1.0
-    local changed, val = ImGui.SliderDouble(ctx, "##" .. param_name, current_value, min_val, max_val, "%.2f")
+    -- Calculate appropriate drag speed based on range (1% of range, minimum 0.01)
+    local range = max_val - min_val
+    local speed = math.max(range * 0.01, 0.01)
+    local changed, val = ImGui.DragDouble(ctx, "##" .. param_name, current_value, speed, min_val, max_val, "%.2f")
     if changed then
       new_value = val
       value_changed = true
