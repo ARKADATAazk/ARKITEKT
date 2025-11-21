@@ -34,9 +34,14 @@ local function get_param_value(param_index, param_type)
   return value
 end
 
-local function set_param_value(param_index, value)
+local function set_param_value(param_index, value, save)
   if not param_index then return end
-  pcall(reaper.ThemeLayout_SetParameter, param_index, value, true)
+  save = save == nil and true or save
+  local ok = pcall(reaper.ThemeLayout_SetParameter, param_index, value, save)
+  if ok and save then
+    pcall(reaper.ThemeLayout_RefreshAll)
+  end
+  return ok
 end
 
 -- Render a single parameter tile
@@ -121,6 +126,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
   ImGui.SetCursorScreenPos(ctx, x1 + TILE_PADDING, y1 + TILE_PADDING + 20)
 
   local value_changed = false
+  local value_deactivated = false
   local new_value = current_value
 
   if param_type == "bool" then
@@ -129,6 +135,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
     if Checkbox.draw_at_cursor(ctx, param_name, checked, nil, "param_" .. param_name) then
       new_value = checked and 0 or 1
       value_changed = true
+      value_deactivated = true  -- Checkbox is immediate
     end
   elseif param_type == "int" or param_type == "enum" then
     -- Spinner for integers
@@ -139,6 +146,9 @@ function M.render(ctx, param, tab_color, shell_state, view)
     if changed then
       new_value = val
       value_changed = true
+    end
+    if ImGui.IsItemDeactivatedAfterEdit(ctx) then
+      value_deactivated = true
     end
   else
     -- Drag control for floats (smoother than SliderDouble)
@@ -152,6 +162,9 @@ function M.render(ctx, param, tab_color, shell_state, view)
     if changed then
       new_value = val
       value_changed = true
+    end
+    if ImGui.IsItemDeactivatedAfterEdit(ctx) then
+      value_deactivated = true
     end
   end
 
@@ -212,9 +225,10 @@ function M.render(ctx, param, tab_color, shell_state, view)
 
   -- Handle value change and propagation
   if value_changed then
-    set_param_value(param_index, new_value)
+    -- Update value without refresh while dragging
+    set_param_value(param_index, new_value, false)
 
-    -- Propagate to linked parameters
+    -- Propagate to linked parameters (also without refresh)
     if is_in_group and link_mode ~= ParameterLinkManager.LINK_MODE.UNLINKED then
       local propagations = ParameterLinkManager.propagate_value_change(param_name, current_value, new_value)
 
@@ -223,7 +237,25 @@ function M.render(ctx, param, tab_color, shell_state, view)
         -- Find the parameter index for the linked param
         for _, p in ipairs(view.all_params) do
           if p.name == prop.param_name then
-            set_param_value(p.index, prop.clamped_value)
+            set_param_value(p.index, prop.clamped_value, false)
+            break
+          end
+        end
+      end
+    end
+  end
+
+  -- Only refresh when user finishes editing (mouse-up)
+  if value_deactivated then
+    set_param_value(param_index, new_value, true)
+
+    -- Also refresh linked parameters
+    if is_in_group and link_mode ~= ParameterLinkManager.LINK_MODE.UNLINKED then
+      local propagations = ParameterLinkManager.propagate_value_change(param_name, current_value, new_value)
+      for _, prop in ipairs(propagations) do
+        for _, p in ipairs(view.all_params) do
+          if p.name == prop.param_name then
+            set_param_value(p.index, prop.clamped_value, true)
             break
           end
         end
