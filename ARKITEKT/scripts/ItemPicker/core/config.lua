@@ -117,6 +117,15 @@ M.TILE_RENDER = {
     fade_speed = 20.0,   -- Animation speed for fade in/out
   },
 
+  -- Tile border (optional dark border around tiles)
+  border = {
+    enabled = true,           -- Enable tile borders
+    thickness = 1.0,          -- Border thickness in pixels
+    brightness_factor = 0.4,  -- Darken tile color to this brightness (darker than header)
+    saturation_factor = 0.8,  -- Saturation adjustment
+    alpha = 0xFF,             -- Border opacity (0x00-0xFF)
+  },
+
   -- Header (Normal tile mode)
   header = {
     -- Sizing

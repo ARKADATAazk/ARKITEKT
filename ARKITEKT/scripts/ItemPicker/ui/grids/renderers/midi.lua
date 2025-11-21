@@ -161,6 +161,22 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Render base tile fill with rounding
   ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
 
+  -- Render tile border (dark outline derived from tile color)
+  if config.TILE_RENDER.border.enabled then
+    local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
+    local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
+
+    -- Apply border color transformations (darker than header)
+    s = s * config.TILE_RENDER.border.saturation_factor
+    v = v * config.TILE_RENDER.border.brightness_factor
+
+    r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
+    local border_alpha = math.floor(config.TILE_RENDER.border.alpha * combined_alpha)
+    local border_color = ImGui.ColorConvertDouble4ToU32(r, g, b, border_alpha / 255)
+
+    ImGui.DrawList_AddRect(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, border_color, config.TILE.ROUNDING, 0, config.TILE_RENDER.border.thickness)
+  end
+
   -- Render dark backdrop for disabled items
   if enabled_factor < 0.999 then
     local backdrop_alpha = config.TILE_RENDER.disabled.backdrop_alpha * (1.0 - enabled_factor) * cascade_factor
