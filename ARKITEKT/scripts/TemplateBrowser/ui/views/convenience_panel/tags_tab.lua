@@ -1,0 +1,111 @@
+-- @noindex
+-- TemplateBrowser/ui/views/convenience_panel/tags_tab.lua
+-- Mini tags tab for convenience panel
+
+local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
+local Tags = require('TemplateBrowser.domain.tags')
+local Button = require('rearkitekt.gui.widgets.primitives.button')
+local Chip = require('rearkitekt.gui.widgets.data.chip')
+local Helpers = require('TemplateBrowser.ui.views.helpers')
+local UI = require('TemplateBrowser.ui.ui_constants')
+
+local M = {}
+
+-- Draw mini tags list with filtering
+function M.draw(ctx, state, config, width, height)
+  if not Helpers.begin_child_compat(ctx, "ConvenienceTags", width, height, false) then
+    return
+  end
+
+  -- Header with "+" button
+  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
+
+  -- Position button at the right
+  local button_x = width - UI.BUTTON.WIDTH_SMALL - 8
+  ImGui.SetCursorPosX(ctx, button_x)
+
+  if Button.draw_at_cursor(ctx, {
+    label = "+",
+    width = UI.BUTTON.WIDTH_SMALL,
+    height = UI.BUTTON.HEIGHT_DEFAULT
+  }, "createtag_conv") then
+    -- Create new tag - prompt for name
+    local tag_num = 1
+    local new_tag_name = "Tag " .. tag_num
+
+    -- Find unique name
+    if state.metadata and state.metadata.tags then
+      while state.metadata.tags[new_tag_name] do
+        tag_num = tag_num + 1
+        new_tag_name = "Tag " .. tag_num
+      end
+    end
+
+    -- Create tag with random color
+    local r = math.random(50, 255) / 255.0
+    local g = math.random(50, 255) / 255.0
+    local b = math.random(50, 255) / 255.0
+    local color = (math.floor(r * 255) << 16) | (math.floor(g * 255) << 8) | math.floor(b * 255)
+
+    Tags.create_tag(state.metadata, new_tag_name, color)
+
+    -- Save metadata
+    local Persistence = require('TemplateBrowser.domain.persistence')
+    Persistence.save_metadata(state.metadata)
+  end
+
+  ImGui.PopStyleColor(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
+  -- Calculate remaining height for tags list
+  local tags_list_height = height - UI.HEADER.DEFAULT - UI.PADDING.SEPARATOR_SPACING
+
+  -- List all tags with filtering (scrollable)
+  if Helpers.begin_child_compat(ctx, "ConvenienceTagsList", 0, tags_list_height, false) then
+    if state.metadata and state.metadata.tags then
+      for tag_name, tag_data in pairs(state.metadata.tags) do
+        ImGui.PushID(ctx, tag_name)
+
+        local is_selected = state.filter_tags[tag_name] or false
+
+        -- Draw tag using Chip component (ACTION style)
+        local clicked, chip_w, chip_h = Chip.draw(ctx, {
+          style = Chip.STYLE.ACTION,
+          label = tag_name,
+          bg_color = tag_data.color,
+          text_color = Colors.auto_text_color(tag_data.color),
+          height = UI.CHIP.HEIGHT_DEFAULT,
+          padding_h = 8,
+          rounding = 2,
+          is_selected = is_selected,
+          interactive = true,
+        })
+
+        if clicked then
+          -- Toggle tag filter
+          if is_selected then
+            state.filter_tags[tag_name] = nil
+          else
+            state.filter_tags[tag_name] = true
+          end
+
+          -- Re-filter templates
+          local Scanner = require('TemplateBrowser.domain.scanner')
+          Scanner.filter_templates(state)
+        end
+
+        ImGui.PopID(ctx)
+      end
+    else
+      ImGui.TextDisabled(ctx, "No tags yet")
+    end
+
+    ImGui.EndChild(ctx)  -- End ConvenienceTagsList
+  end
+
+  ImGui.EndChild(ctx)  -- End ConvenienceTags
+end
+
+return M

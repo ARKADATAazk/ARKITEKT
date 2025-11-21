@@ -14,11 +14,13 @@ local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
 local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_config')
 local RecentPanelConfig = require('TemplateBrowser.ui.recent_panel_config')
 local LeftPanelConfig = require('TemplateBrowser.ui.left_panel_config')
+local ConveniencePanelConfig = require('TemplateBrowser.ui.convenience_panel_config')
 local MarkdownField = require('rearkitekt.gui.widgets.primitives.markdown_field')
 local Shortcuts = require('TemplateBrowser.core.shortcuts')
 
 -- Import view modules
 local LeftPanelView = require('TemplateBrowser.ui.views.left_panel_view')
+local ConveniencePanelView = require('TemplateBrowser.ui.views.convenience_panel_view')
 local TemplatePanelView = require('TemplateBrowser.ui.views.template_panel_view')
 local InfoPanelView = require('TemplateBrowser.ui.views.info_panel_view')
 local TemplateModalsView = require('TemplateBrowser.ui.views.template_modals_view')
@@ -36,6 +38,7 @@ function M.new(config, state, scanner)
     separator1 = Separator.new("sep1"),
     separator2 = Separator.new("sep2"),
     quick_access_separator = Separator.new("quick_access_sep"),
+    left_panel_separator = Separator.new("left_panel_sep"),  -- Between left_panel and convenience_panel
     dir_separator1 = Separator.new("dir_sep1"),  -- Between Physical and Virtual
     dir_separator2 = Separator.new("dir_sep2"),  -- Between Virtual and Archive
     template_animator = TileAnim.new(16.0),  -- Animation speed
@@ -44,6 +47,7 @@ function M.new(config, state, scanner)
     template_container = nil,  -- Initialized in initialize_once
     recent_container = nil,  -- Initialized in initialize_once
     left_panel_container = nil,  -- Initialized in initialize_once
+    convenience_panel_container = nil,  -- Initialized in initialize_once
   }, GUI)
 
   return self
@@ -433,6 +437,21 @@ function GUI:initialize_once(ctx, is_overlay_mode)
   self.left_panel_container = TilesContainer.new({
     id = "left_panel_container",
     config = left_panel_config,
+  })
+
+  -- Create convenience panel container (Tags/VSTs mini tabs for quick access)
+  local convenience_panel_config = ConveniencePanelConfig.create({
+    get_active_tab = function()
+      return self.state.convenience_panel_tab or "tags"
+    end,
+    on_tab_change = function(tab_id)
+      self.state.convenience_panel_tab = tab_id
+    end,
+  }, self.is_overlay_mode)
+
+  self.convenience_panel_container = TilesContainer.new({
+    id = "convenience_panel_container",
+    config = convenience_panel_config,
   })
 
   self.initialized = true

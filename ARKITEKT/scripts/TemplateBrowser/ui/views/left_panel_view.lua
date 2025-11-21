@@ -1,6 +1,6 @@
 -- @noindex
 -- TemplateBrowser/ui/views/left_panel_view.lua
--- Left panel view: Directory / VSTs / Tags (using panel container)
+-- Left panel view: Directory / VSTs / Tags (using panel container) + Convenience panel (mini Tags/VSTs)
 
 local ImGui = require 'imgui' '0.10'
 
@@ -8,23 +8,59 @@ local ImGui = require 'imgui' '0.10'
 local DirectoryTab = require('TemplateBrowser.ui.views.left_panel.directory_tab')
 local VstsTab = require('TemplateBrowser.ui.views.left_panel.vsts_tab')
 local TagsTab = require('TemplateBrowser.ui.views.left_panel.tags_tab')
+local ConveniencePanelView = require('TemplateBrowser.ui.views.convenience_panel_view')
 
 local M = {}
 
--- Draw left panel with container
+-- Draw left column: split into two panels vertically (left_panel + convenience_panel)
 function M.draw_left_panel(ctx, gui, width, height)
-  -- Set container dimensions
+  local state = gui.state
+
+  -- Separator configuration
+  local separator_thickness = 8
+  local min_panel_height = 100
+
+  -- Initialize separator ratio if not set (default 65% top, 35% bottom)
+  state.left_panel_separator_ratio = state.left_panel_separator_ratio or 0.65
+
+  -- Calculate positions
+  local sep_y_local = height * state.left_panel_separator_ratio
+
+  -- Get window's screen position
+  local cursor_screen_x, cursor_screen_y = ImGui.GetCursorScreenPos(ctx)
+  local sep_y_screen = cursor_screen_y + sep_y_local
+
+  -- Handle separator dragging
+  local sep_action, sep_new_y_screen = gui.left_panel_separator:draw_horizontal(ctx, cursor_screen_x, sep_y_screen, width, 0, separator_thickness)
+  if sep_action == "drag" then
+    -- Convert back to local coordinates
+    local sep_new_y = sep_new_y_screen - cursor_screen_y
+    -- Clamp to valid range
+    local min_y = min_panel_height
+    local max_y = height - min_panel_height
+    sep_new_y = math.max(min_y, math.min(sep_new_y, max_y))
+    state.left_panel_separator_ratio = sep_new_y / height
+    sep_y_local = sep_new_y
+    sep_y_screen = cursor_screen_y + sep_y_local
+  elseif sep_action == "reset" then
+    state.left_panel_separator_ratio = 0.65
+    sep_y_local = height * state.left_panel_separator_ratio
+    sep_y_screen = cursor_screen_y + sep_y_local
+  end
+
+  -- Calculate panel heights (accounting for separator thickness)
+  local top_panel_height = sep_y_local - separator_thickness / 2
+  local bottom_panel_height = height - sep_y_local - separator_thickness / 2
+
+  -- Draw top panel (main left panel with Directory/VSTs/Tags tabs)
   gui.left_panel_container.width = width
-  gui.left_panel_container.height = height
+  gui.left_panel_container.height = top_panel_height
 
-  -- Begin panel drawing (includes background, border, header)
   if gui.left_panel_container:begin_draw(ctx) then
-    local state = gui.state
-
     -- Calculate content height after header
     local header_height = gui.left_panel_container.config.header and gui.left_panel_container.config.header.height or 30
     local padding = gui.left_panel_container.config.padding or 8
-    local content_height = height - header_height - (padding * 2)
+    local content_height = top_panel_height - header_height - (padding * 2)
 
     -- Draw content based on active tab
     if state.left_panel_tab == "directory" then
@@ -37,6 +73,14 @@ function M.draw_left_panel(ctx, gui, width, height)
 
     gui.left_panel_container:end_draw(ctx)
   end
+
+  -- Draw bottom panel (convenience panel with mini Tags/VSTs tabs)
+  -- Position cursor at bottom panel start (after separator)
+  local bottom_panel_start_x = cursor_screen_x
+  local bottom_panel_start_y = sep_y_screen + separator_thickness / 2
+  ImGui.SetCursorScreenPos(ctx, bottom_panel_start_x, bottom_panel_start_y)
+
+  ConveniencePanelView.draw_convenience_panel(ctx, gui, width, bottom_panel_height)
 end
 
 return M

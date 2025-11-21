@@ -110,9 +110,9 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
   ImGui.EndChild(ctx)  -- End DirectoryTags
 end
 
--- Draw directory content (folder tree + tags at bottom)
+-- Draw directory content (folder trees only - tags moved to convenience panel)
 function M.draw(ctx, state, config, width, height, gui)
-  -- Use full height - tags is now integrated as a fourth collapsible section
+  -- Use full height for directory trees
   local folder_section_height = height
 
   -- === FOLDER SECTION ===
@@ -347,32 +347,27 @@ function M.draw(ctx, state, config, width, height, gui)
   local used_height = UI.HEADER.DEFAULT + UI.PADDING.SEPARATOR_SPACING + 24 + UI.PADDING.SEPARATOR_SPACING
   local total_tree_height = folder_section_height - used_height
 
-  -- Initialize section heights from state (4 sections now)
+  -- Initialize section heights from state (3 sections: Physical, Virtual, Archive)
   local separator_height = 3  -- Thin 3-pixel separator line
   local min_section_height = 80
   local header_height = 22  -- CollapsingHeader height
 
-  state.physical_section_height = state.physical_section_height or math.floor(total_tree_height * 0.30)
-  state.virtual_section_height = state.virtual_section_height or math.floor(total_tree_height * 0.20)
-  state.archive_section_height = state.archive_section_height or math.floor(total_tree_height * 0.20)
+  state.physical_section_height = state.physical_section_height or math.floor(total_tree_height * 0.40)
+  state.virtual_section_height = state.virtual_section_height or math.floor(total_tree_height * 0.30)
 
   -- Clamp values
   state.physical_section_height = math.max(min_section_height, math.min(state.physical_section_height,
-    total_tree_height - min_section_height * 3 - separator_height * 3))
+    total_tree_height - min_section_height * 2 - separator_height * 2))
   state.virtual_section_height = math.max(min_section_height, math.min(state.virtual_section_height,
-    total_tree_height - state.physical_section_height - min_section_height * 2 - separator_height * 3))
-  state.archive_section_height = math.max(min_section_height, math.min(state.archive_section_height,
-    total_tree_height - state.physical_section_height - state.virtual_section_height - min_section_height - separator_height * 3))
+    total_tree_height - state.physical_section_height - min_section_height - separator_height * 2))
 
-  local tags_section_height = total_tree_height - state.physical_section_height - state.virtual_section_height - state.archive_section_height - separator_height * 3
+  local archive_section_height = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_height * 2
 
   -- Initialize hover tracking and drag state for separators
   state.sep1_hover_time = state.sep1_hover_time or 0
   state.sep2_hover_time = state.sep2_hover_time or 0
-  state.sep3_hover_time = state.sep3_hover_time or 0
   state.sep1_drag_start_height = state.sep1_drag_start_height or nil
   state.sep2_drag_start_height = state.sep2_drag_start_height or nil
-  state.sep3_drag_start_height = state.sep3_drag_start_height or nil
   local hover_threshold = 1.0  -- 1 second
 
   -- Helper function to draw thin separator line above header
@@ -496,7 +491,7 @@ function M.draw(ctx, state, config, width, height, gui)
     state.virtual_section_height = state.sep2_drag_start_height + delta_y
     state.virtual_section_height = math.max(min_section_height,
       math.min(state.virtual_section_height,
-        total_tree_height - state.physical_section_height - min_section_height * 2 - separator_height * 3))
+        total_tree_height - state.physical_section_height - min_section_height - separator_height * 2))
   else
     state.sep2_drag_start_height = nil
   end
@@ -513,65 +508,10 @@ function M.draw(ctx, state, config, width, height, gui)
   ImGui.PopStyleColor(ctx, 3)
 
   if archive_open then
-    local scroll_height = state.archive_section_height - header_height
+    local scroll_height = archive_section_height - header_height
     if scroll_height > 10 and Helpers.begin_child_compat(ctx, "ArchiveTreeScroll", 0, scroll_height, false) then
       TreeViewModule.draw_archive_tree(ctx, state, config)
       ImGui.EndChild(ctx)
-    end
-  end
-
-  -- === SEPARATOR 3 (before Tags) ===
-  local sep3_x, sep3_y = ImGui.GetCursorScreenPos(ctx)
-  local sep3_hovered = mx >= sep3_x and mx < sep3_x + width and
-                       my >= sep3_y and my < sep3_y + separator_height + 4
-
-  -- Track hover time
-  if sep3_hovered then
-    state.sep3_hover_time = state.sep3_hover_time + (1/60)
-  else
-    state.sep3_hover_time = 0
-  end
-
-  -- Draw separator line
-  draw_thin_separator(ctx, dl, sep3_x, sep3_y + separator_height / 2, width, sep3_hovered, state.sep3_hover_time)
-
-  -- Invisible button for drag interaction
-  ImGui.SetCursorScreenPos(ctx, sep3_x, sep3_y - 2)
-  ImGui.InvisibleButton(ctx, "##sep3", width, separator_height + 4)
-
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
-  end
-
-  -- Handle drag with proper initial height tracking
-  if ImGui.IsItemActive(ctx) then
-    if not state.sep3_drag_start_height then
-      state.sep3_drag_start_height = state.archive_section_height
-    end
-    local _, delta_y = ImGui.GetMouseDragDelta(ctx, 0, 0)
-    state.archive_section_height = state.sep3_drag_start_height + delta_y
-    state.archive_section_height = math.max(min_section_height,
-      math.min(state.archive_section_height,
-        total_tree_height - state.physical_section_height - state.virtual_section_height - min_section_height - separator_height * 3))
-  else
-    state.sep3_drag_start_height = nil
-  end
-
-  ImGui.SetCursorScreenPos(ctx, sep3_x, sep3_y + separator_height)
-
-  -- === TAGS SECTION ===
-  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
-  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
-
-  local tags_open = ImGui.CollapsingHeader(ctx, "Tags", nil, ImGui.TreeNodeFlags_DefaultOpen)
-
-  ImGui.PopStyleColor(ctx, 3)
-
-  if tags_open then
-    local scroll_height = tags_section_height - header_height
-    if scroll_height > 10 then
-      draw_tags_mini_list(ctx, state, config, width, scroll_height)
     end
   end
 end
