@@ -104,7 +104,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Enforce AFTER base_fill adjustments (which can make tiles very dark)
   -- but BEFORE hover effect (so all tiles meet minimum, not just hovered ones)
   -- Use HSL to set minimum lightness (works even for pure black colors)
-  local min_lightness = 0.28  -- Minimum HSL lightness (dark grey)
+  local min_lightness = config.TILE_RENDER.min_lightness
   local r, g, b, a = Colors.rgba_to_components(render_color)
   local h, s, l = Colors.rgb_to_hsl(render_color)
   if l < min_lightness then
@@ -572,39 +572,25 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local duration_text = string.format("%d.%d", bars, beats)
 
       -- Calculate text dimensions and position (right-aligned at bottom-right)
-      -- Push font first to get correct text measurements
-      if state.monospace_font then
-        ImGui.PushFont(ctx, state.monospace_font, state.monospace_font_size)
-      end
       local text_w, text_h = ImGui.CalcTextSize(ctx, duration_text)
-      if state.monospace_font then
-        ImGui.PopFont(ctx)
-      end
 
-      local margin_x = 4  -- Horizontal margin (7px right from previous)
-      local margin_y = 3  -- Vertical margin (3px up from previous)
-      local text_x = scaled_x2 - text_w - margin_x
-      local text_y = scaled_y2 - text_h - margin_y
+      local dt_cfg = config.TILE_RENDER.duration_text
+      local text_x = scaled_x2 - text_w - dt_cfg.margin_x
+      local text_y = scaled_y2 - text_h - dt_cfg.margin_y
 
       -- Adaptive color: dark grey with subtle tile coloring for most tiles, light only for very dark
       local luminance = Colors.luminance(render_color)
       local text_color
-      if luminance < 0.15 then
+      if luminance < dt_cfg.dark_tile_threshold then
         -- Very dark tile only: use light text
-        text_color = Colors.same_hue_variant(render_color, 1.0, 2.2, math.floor(combined_alpha * 255))
+        text_color = Colors.same_hue_variant(render_color, dt_cfg.light_saturation, dt_cfg.light_value, math.floor(combined_alpha * 255))
       else
-        -- All other tiles: dark grey with subtle tile color (low saturation, low value)
-        text_color = Colors.same_hue_variant(render_color, 0.4, 0.18, math.floor(combined_alpha * 255))
+        -- All other tiles: dark grey with subtle tile color
+        text_color = Colors.same_hue_variant(render_color, dt_cfg.dark_saturation, dt_cfg.dark_value, math.floor(combined_alpha * 255))
       end
 
-      -- Draw with monospace font for better readability
-      if state.monospace_font then
-        ImGui.PushFont(ctx, state.monospace_font, state.monospace_font_size)
-      end
+      -- Draw duration text
       Draw.text(dl, text_x, text_y, text_color, duration_text)
-      if state.monospace_font then
-        ImGui.PopFont(ctx)
-      end
     end
   end
 end
