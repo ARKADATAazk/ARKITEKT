@@ -267,6 +267,7 @@ function GUI:draw(ctx, shell_state)
       -- Only insert once
       self.controller.insert_item_at_mouse(self.state.item_to_add, self.state)
       self.state.drop_completed = true  -- Mark as completed
+      self.state.end_drag()  -- Clear drag state
       self.state.request_exit()  -- Exit immediately after insertion
     end
 
@@ -278,6 +279,11 @@ function GUI:draw(ctx, shell_state)
 
   -- Handle exit
   if self.state.exit or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+    -- Clear drag state if still dragging on exit (e.g., Escape pressed)
+    if self.state.dragging then
+      self.state.end_drag()
+    end
+
     if is_overlay_mode then
       if overlay and overlay.close then
         overlay:close()
