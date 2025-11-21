@@ -87,7 +87,7 @@ M.TILE_RENDER = {
   },
 
   -- Minimum lightness enforcement (prevents black tiles)
-  min_lightness = 0.28,  -- Minimum HSL lightness for tile background (0.0-1.0, enforced after all adjustments)
+  min_lightness = 0.20,  -- Minimum HSL lightness for tile background (0.0-1.0, enforced after all adjustments)
 
   -- Duration text (bottom-right time/length display)
   duration_text = {
@@ -96,11 +96,11 @@ M.TILE_RENDER = {
     margin_y = 3,  -- Vertical margin from bottom edge
 
     -- Color thresholds and parameters
-    dark_tile_threshold = 0.15,  -- Luminance threshold: below this uses light text
+    dark_tile_threshold = 0.80,  -- Luminance threshold: below this uses light text
 
     -- Light text (for very dark tiles, luminance < dark_tile_threshold)
-    light_saturation = 1.0,  -- Saturation multiplier for light text
-    light_value = 2.2,       -- Value/brightness multiplier for light text
+    light_saturation = 0.2,  -- Saturation multiplier for light text
+    light_value = 4.2,       -- Value/brightness multiplier for light text
 
     -- Dark text (for normal/bright tiles, luminance >= dark_tile_threshold)
     dark_saturation = 0.4,   -- Saturation for dark grey text with subtle tile coloring
