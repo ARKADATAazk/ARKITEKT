@@ -143,8 +143,9 @@ function M.render(ctx, param, tab_color, shell_state, view)
   ImGui.SetCursorScreenPos(ctx, x1 + TILE_PADDING, y1 + TILE_PADDING + 20)
 
   local value_changed = false
-  local value_deactivated = false
+  local should_force_refresh = false
   local new_value = current_value
+  local control_id = "##" .. param_name
 
   if param_type == "bool" then
     -- Checkbox
@@ -152,20 +153,21 @@ function M.render(ctx, param, tab_color, shell_state, view)
     if Checkbox.draw_at_cursor(ctx, param_name, checked, nil, "param_" .. param_name) then
       new_value = checked and 0 or 1
       value_changed = true
-      value_deactivated = true  -- Checkbox is immediate
+      should_force_refresh = true  -- Checkbox is immediate
     end
   elseif param_type == "int" or param_type == "enum" then
     -- Spinner for integers
     ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
     local min_val = param.min or 0
     local max_val = param.max or 100
-    local changed, val = ImGui.DragInt(ctx, "##" .. param_name, current_value, 1, min_val, max_val)
+    local changed, val = ImGui.DragInt(ctx, control_id, current_value, 1, min_val, max_val)
     if changed then
       new_value = val
       value_changed = true
     end
-    if ImGui.IsItemDeactivatedAfterEdit(ctx) then
-      value_deactivated = true
+    -- Check if mouse was released (regardless of whether ImGui considers it an "edit")
+    if ImGui.IsItemDeactivated(ctx) and value_changed then
+      should_force_refresh = true
     end
   else
     -- Drag control for floats (smoother than SliderDouble)
@@ -175,13 +177,14 @@ function M.render(ctx, param, tab_color, shell_state, view)
     -- Calculate appropriate drag speed based on range (1% of range, minimum 0.01)
     local range = max_val - min_val
     local speed = math.max(range * 0.01, 0.01)
-    local changed, val = ImGui.DragDouble(ctx, "##" .. param_name, current_value, speed, min_val, max_val, "%.2f")
+    local changed, val = ImGui.DragDouble(ctx, control_id, current_value, speed, min_val, max_val, "%.2f")
     if changed then
       new_value = val
       value_changed = true
     end
-    if ImGui.IsItemDeactivatedAfterEdit(ctx) then
-      value_deactivated = true
+    -- Check if mouse was released (regardless of whether ImGui considers it an "edit")
+    if ImGui.IsItemDeactivated(ctx) and value_changed then
+      should_force_refresh = true
     end
   end
 
@@ -262,8 +265,8 @@ function M.render(ctx, param, tab_color, shell_state, view)
     end
   end
 
-  -- Force refresh on mouse-up to ensure final value is visible
-  if value_deactivated then
+  -- Force refresh on mouse release or checkbox toggle
+  if should_force_refresh and refresh_needed then
     pcall(reaper.ThemeLayout_RefreshAll)
     last_refresh_time = reaper.time_precise()
     refresh_needed = false
