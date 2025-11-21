@@ -146,10 +146,14 @@ M.TILE_RENDER = {
       border_alpha = 0x55,
     },
 
-    -- Favorite star
+    -- Favorite star (icon badge in header)
     favorite = {
-      size = 16,  -- Smaller star
-      padding = 3,
+      size = 24,  -- Larger badge to match cycle badge prominence
+      margin = 6,  -- Match cycle badge margin
+      rounding = 3,  -- Match cycle badge rounding
+      bg = hexrgb("#14181C"),  -- Match cycle badge background
+      border_darken = 0.4,  -- Match cycle badge border
+      border_alpha = 0x66,  -- Match cycle badge border alpha
     },
   },
 
