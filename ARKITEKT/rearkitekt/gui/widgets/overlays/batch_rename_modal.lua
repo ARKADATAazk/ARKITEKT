@@ -446,6 +446,8 @@ function BatchRenameModal:draw(ctx, item_count, window)
           local content_w = modal_w - padding * 2
           local content_h = modal_h - padding * 2
 
+          local should_close = false
+
           -- Invisible child window for content
           ImGui.SetCursorScreenPos(ctx, modal_x, modal_y)
 
@@ -456,20 +458,37 @@ function BatchRenameModal:draw(ctx, item_count, window)
           ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
 
           if ImGui.BeginChild(ctx, '##batch_rename_zone', modal_w, modal_h, child_flags, window_flags) then
-            local should_close = self:draw_content(ctx, count, true, content_w, content_h)
+            local content_should_close = self:draw_content(ctx, count, true, content_w, content_h)
+            should_close = should_close or content_should_close
 
             ImGui.EndChild(ctx)
             ImGui.PopStyleVar(ctx, 1)
             ImGui.PopStyleColor(ctx, 1)
-
-            if should_close then
-              window.overlay:pop('batch-rename-modal')
-              self:close()
-              self.overlay_pushed = false
-            end
           else
             ImGui.PopStyleVar(ctx, 1)
             ImGui.PopStyleColor(ctx, 1)
+          end
+
+          -- Draw close button (X) in top-right corner - AFTER child window so it's on top
+          local close_btn_size = 32
+          local close_btn_x = modal_x + modal_w - close_btn_size - padding
+          local close_btn_y = modal_y + padding
+
+          ImGui.SetCursorScreenPos(ctx, close_btn_x, close_btn_y)
+          ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#00000000"))  -- Transparent
+          ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#FFFFFF20"))
+          ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#FFFFFF30"))
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFFFF"))
+          if ImGui.Button(ctx, "X##close_batch_rename", close_btn_size, close_btn_size) then
+            should_close = true
+          end
+          ImGui.PopStyleColor(ctx, 4)
+
+          -- Handle close
+          if should_close then
+            window.overlay:pop('batch-rename-modal')
+            self:close()
+            self.overlay_pushed = false
           end
         end
       })
