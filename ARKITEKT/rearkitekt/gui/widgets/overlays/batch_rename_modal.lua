@@ -13,6 +13,7 @@ local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
 local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
 local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
+local RadioButton = require('rearkitekt.gui.widgets.primitives.radio_button')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -141,6 +142,7 @@ function M.new()
     on_recolor = nil,
     focus_input = false,
     item_count = 0,
+    item_type = "items",  -- Default item type label
     selected_color = 0xFF5733FF,  -- Default color (RGBA)
     picker_initialized = false,
     separator = "none",  -- Wildcard separator: "none", "underscore", "space"
@@ -161,6 +163,7 @@ function BatchRenameModal:open(item_count, on_confirm_callback, opts)
   self.on_rename_and_recolor = opts.on_rename_and_recolor
   self.on_recolor = opts.on_recolor
   self.selected_color = opts.initial_color or 0xFF5733FF
+  self.item_type = opts.item_type or "items"  -- Configurable item type label
   self.focus_input = true
   self.item_count = item_count
   self.picker_initialized = false
@@ -196,8 +199,8 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   local start_x = math.floor(ImGui.GetCursorPosX(ctx))
 
-  -- Title centered
-  local title_text = string.format("Rename %d item%s", count, count > 1 and "s" or "")
+  -- Title centered with configurable item type
+  local title_text = string.format("Rename %d %s", count, self.item_type or "items")
   local title_w = ImGui.CalcTextSize(ctx, title_text)
   ImGui.SetCursorPosX(ctx, math.floor(ImGui.GetCursorPosX(ctx) + (modal_w - title_w) * 0.5))
   ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), title_text)
@@ -243,26 +246,14 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local icon_font = self.shell_state and self.shell_state.fonts and self.shell_state.fonts.icons
   local icon_size = self.shell_state and self.shell_state.fonts and self.shell_state.fonts.icons_size or 28
 
-  if icon_font then
-    -- Draw using RemixIcon font (question-fill icon: U+F044)
-    ImGui.PushFont(ctx, icon_font, icon_size)
-    local icon_text = "\xEF\x81\x84"  -- &#xF044; in UTF-8
-    local text_w, text_h = ImGui.CalcTextSize(ctx, icon_text)
-    local center_x = help_x + (help_size - text_w) * 0.5
-    local center_y = help_y + (help_size - text_h) * 0.5
-    ImGui.DrawList_AddText(dl, center_x, center_y, icon_color, icon_text)
-    ImGui.PopFont(ctx)
-  else
-    -- Fallback to circle with "?" if icon font not available
-    local center_x = help_x + help_size * 0.5
-    local center_y = help_y + help_size * 0.5
-    local radius = help_size * 0.4
-    ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, radius, icon_color)
-    local help_text = "?"
-    local text_w, text_h = ImGui.CalcTextSize(ctx, help_text)
-    local text_color = is_help_hovered and hexrgb("#FFFFFF") or hexrgb("#CCCCCC")
-    ImGui.DrawList_AddText(dl, center_x - text_w * 0.5, center_y - text_h * 0.5, text_color, help_text)
-  end
+  -- Draw using RemixIcon font (question-fill icon: U+F044)
+  ImGui.PushFont(ctx, icon_font, icon_size)
+  local icon_text = "\xEF\x81\x84"  -- &#xF044; in UTF-8
+  local text_w, text_h = ImGui.CalcTextSize(ctx, icon_text)
+  local center_x = help_x + (help_size - text_w) * 0.5
+  local center_y = help_y + (help_size - text_h) * 0.5
+  ImGui.DrawList_AddText(dl, center_x, center_y, icon_color, icon_text)
+  ImGui.PopFont(ctx)
 
   -- Make it clickable
   ImGui.SetCursorPos(ctx, start_x + (picker_size - 32) * 0.5, start_y + picker_size + 8)
@@ -628,27 +619,25 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- Wildcard separator radio buttons
   ImGui.SetCursorPosX(ctx, right_col_x)
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Separator before wildcard:")
-  ImGui.Dummy(ctx, 0, 6)
-  ImGui.SetCursorPosX(ctx, right_col_x)
+  ImGui.Dummy(ctx, 0, 8)
 
   -- Radio button for "None"
-  if ImGui.RadioButton(ctx, "None##sep_none", self.separator == "none") then
+  ImGui.SetCursorPosX(ctx, right_col_x)
+  if RadioButton.draw(ctx, "None", self.separator == "none", {id = "sep_none"}) then
     self.separator = "none"
     save_separator_preference("none")
   end
 
-  ImGui.SameLine(ctx, 0, 12)
-
   -- Radio button for "Underscore"
-  if ImGui.RadioButton(ctx, "Underscore (_)##sep_underscore", self.separator == "underscore") then
+  ImGui.SetCursorPosX(ctx, right_col_x)
+  if RadioButton.draw(ctx, "Underscore (_)", self.separator == "underscore", {id = "sep_underscore"}) then
     self.separator = "underscore"
     save_separator_preference("underscore")
   end
 
-  ImGui.SameLine(ctx, 0, 12)
-
   -- Radio button for "Space"
-  if ImGui.RadioButton(ctx, "Space ( )##sep_space", self.separator == "space") then
+  ImGui.SetCursorPosX(ctx, right_col_x)
+  if RadioButton.draw(ctx, "Space ( )", self.separator == "space", {id = "sep_space"}) then
     self.separator = "space"
     save_separator_preference("space")
   end
