@@ -254,6 +254,24 @@ function GUI:draw(ctx, shell_state)
   ImGui.PushFont(ctx, mini_font, mini_font_size)
   reaper.PreventUIRefresh(1)
 
+  -- If we should close, don't render anything - just exit immediately
+  if self.state.should_close_after_drop then
+    reaper.PreventUIRefresh(-1)
+    ImGui.PopFont(ctx)
+
+    -- Close the window/overlay
+    if is_overlay_mode then
+      if overlay and overlay.close then
+        overlay:close()
+      end
+    else
+      if shell_state.window and shell_state.window.request_close then
+        shell_state.window:request_close()
+      end
+    end
+    return
+  end
+
   -- Check if dragging
   if not self.state.dragging then
     -- Normal mode - show main UI
@@ -288,13 +306,10 @@ function GUI:draw(ctx, shell_state)
         self.state.end_drag()
         self.state.waiting_for_new_click = false
       else
-        -- Normal drop: End drag and close ItemPicker immediately
+        -- Normal drop: End drag and flag for closure
         self.state.end_drag()
         self.state.waiting_for_new_click = false
-        -- Don't render anything else, just return
-        reaper.PreventUIRefresh(-1)
-        ImGui.PopFont(ctx)
-        return
+        -- Flag is already set before insert, will close on next render
       end
     end
 
