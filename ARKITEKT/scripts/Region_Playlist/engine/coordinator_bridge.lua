@@ -51,7 +51,7 @@ function M.create(opts)
 
   bridge.engine = Engine.new({
     proj = bridge.proj,
-    quantize_mode = saved_settings.quantize_mode or "none",
+    quantize_mode = saved_settings.quantize_mode or "measure",
     follow_playhead = saved_settings.follow_playhead or false,
     transport_override = saved_settings.transport_override or false,
     loop_playlist = saved_settings.loop_playlist or false,

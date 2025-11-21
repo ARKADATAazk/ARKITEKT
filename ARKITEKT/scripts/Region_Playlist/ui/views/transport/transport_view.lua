@@ -398,9 +398,10 @@ function TransportView:build_playback_buttons(bridge_state)
             preset_name = "BUTTON_TOGGLE_WHITE",
             tooltip = "Left-click: Toggle Shuffle\nRight-click: Shuffle Options",
             on_click = function()
-              if engine then
-                local current_state = engine:get_shuffle_enabled()
-                engine:set_shuffle_enabled(not current_state)
+              local bridge = self.state.get_bridge()
+              if bridge then
+                local current_state = bridge:get_shuffle_enabled()
+                bridge:set_shuffle_enabled(not current_state)
               end
             end,
             on_right_click = function()
