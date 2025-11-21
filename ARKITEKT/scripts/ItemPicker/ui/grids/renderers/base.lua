@@ -164,9 +164,65 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
   ImGui.DrawList_PathStroke(dl, spinner_color, 0, thickness)
 end
 
+-- Apply muted and disabled state effects to render color
+function M.apply_state_effects(base_color, muted_factor, enabled_factor, config)
+  local render_color = base_color
+
+  -- Apply muted state first (lighter effect than disabled)
+  if muted_factor > 0.001 then
+    render_color = Colors.desaturate(render_color, config.TILE_RENDER.muted.desaturate * muted_factor)
+    render_color = Colors.adjust_brightness(render_color,
+      1.0 - (1.0 - config.TILE_RENDER.muted.brightness) * muted_factor)
+  end
+
+  -- Apply disabled state (stronger effect, overrides muted)
+  if enabled_factor < 1.0 then
+    render_color = Colors.desaturate(render_color, config.TILE_RENDER.disabled.desaturate * (1.0 - enabled_factor))
+    render_color = Colors.adjust_brightness(render_color,
+      1.0 - (1.0 - config.TILE_RENDER.disabled.brightness) * (1.0 - enabled_factor))
+  end
+
+  return render_color
+end
+
+-- Calculate combined alpha with muted and disabled effects
+function M.calculate_combined_alpha(cascade_factor, enabled_factor, muted_factor, base_alpha, config)
+  local min_alpha_factor = (config.TILE_RENDER.disabled.min_alpha or 0x33) / 255
+  local alpha_factor = min_alpha_factor + (1.0 - min_alpha_factor) * enabled_factor
+
+  -- Apply muted alpha reduction
+  if muted_factor > 0.001 then
+    alpha_factor = alpha_factor * (1.0 - (1.0 - config.TILE_RENDER.muted.alpha_factor) * muted_factor)
+  end
+
+  local combined_alpha = cascade_factor * alpha_factor
+  local final_alpha = base_alpha * combined_alpha
+
+  return combined_alpha, final_alpha
+end
+
+-- Get text color with muted state applied
+function M.get_text_color(muted_factor, config)
+  local text_color = config.TILE_RENDER.text.primary_color
+
+  -- Apply red text color for muted items
+  if muted_factor > 0.001 then
+    local muted_text = config.TILE_RENDER.muted.text_color
+    local r1, g1, b1 = ImGui.ColorConvertU32ToDouble4(text_color)
+    local r2, g2, b2 = ImGui.ColorConvertU32ToDouble4(muted_text)
+    local r = r1 + (r2 - r1) * muted_factor
+    local g = g1 + (g2 - g1) * muted_factor
+    local b = b1 + (b2 - b1) * muted_factor
+    text_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0)
+  end
+
+  return text_color
+end
+
 -- Render text with badge
 -- @param extra_text_margin Optional extra margin for text truncation only (doesn't affect badge position)
-function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index, total, base_color, text_alpha, config, item_key, badge_rects, on_badge_click, extra_text_margin)
+-- @param text_color Optional custom text color (defaults to config primary_color)
+function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index, total, base_color, text_alpha, config, item_key, badge_rects, on_badge_click, extra_text_margin, text_color)
   local tile_render = config.TILE_RENDER
   local show_text = header_height >= (tile_render.responsive.hide_text_below - tile_render.header.min_height)
   local show_badge = header_height >= (tile_render.responsive.hide_badge_below - tile_render.header.min_height)
@@ -188,7 +244,9 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   local available_width = right_bound_x - text_x
   local truncated_name = M.truncate_text(ctx, item_name, available_width)
 
-  Draw.text(dl, text_x, text_y, Colors.with_alpha(tile_render.text.primary_color, text_alpha), truncated_name)
+  -- Use custom text color if provided, otherwise use primary color
+  local final_text_color = text_color or tile_render.text.primary_color
+  Draw.text(dl, text_x, text_y, Colors.with_alpha(final_text_color, text_alpha), truncated_name)
 
   -- Render cycle badge (vertically centered in header)
   if show_badge and total and total > 1 then

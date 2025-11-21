@@ -314,7 +314,7 @@ function M.cycle_audio_item(filename, delta)
     -- Apply search filter
     local search = M.settings.search_string or ""
     if search ~= "" and entry[2] then
-      if not item_name:lower():find(search:lower(), 1, true) then
+      if not entry[2]:lower():find(search:lower(), 1, true) then
         should_include = false
       end
     end
@@ -391,7 +391,7 @@ function M.cycle_midi_item(item_name, delta)
     -- Apply search filter
     local search = M.settings.search_string or ""
     if search ~= "" and entry[2] then
-      if not item_name_text:lower():find(search:lower(), 1, true) then
+      if not entry[2]:lower():find(search:lower(), 1, true) then
         should_include = false
       end
     end
@@ -476,6 +476,12 @@ function M.end_drag()
   M.item_to_add_height = nil
   M.drag_waveform = nil
   M.out_of_bounds = nil
+  M.waiting_for_new_click = nil
+  M.mouse_was_pressed_after_drop = nil
+  M.drop_completed = nil
+  M.captured_shift = nil
+  M.captured_ctrl = nil
+  -- Don't clear should_close_after_drop here - it needs to persist to next frame
 end
 
 function M.request_exit()

@@ -83,15 +83,26 @@ local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
 end
 
 -- Draw a centered panel title (using DrawList to not block mouse input)
-local function draw_panel_title(ctx, draw_list, title_font, title, panel_x, panel_y, panel_width, padding, alpha, font_size, config)
+local function draw_panel_title(ctx, draw_list, title_font, title, panel_x, panel_y, panel_width, padding, alpha, font_size, config, scroll_y)
   ImGui.PushFont(ctx, title_font, font_size)
   local title_width = ImGui.CalcTextSize(ctx, title)
   local title_x = panel_x + (panel_width - title_width) / 2
   local title_y = panel_y + padding + config.UI_PANELS.header.title_offset_down
 
+  -- Calculate fade based on scroll position
+  local final_alpha = alpha
+  if config.UI_PANELS.header.fade_on_scroll and scroll_y then
+    local threshold = config.UI_PANELS.header.fade_scroll_threshold
+    local distance = config.UI_PANELS.header.fade_scroll_distance
+    if scroll_y > threshold then
+      local fade_progress = math.min(1.0, (scroll_y - threshold) / distance)
+      final_alpha = alpha * (1.0 - fade_progress)
+    end
+  end
+
   -- Use DrawList to avoid blocking mouse input for selection rectangle
   local text_color = Colors.hexrgb("#FFFFFF")
-  text_color = Colors.with_alpha(text_color, math.floor(alpha * 255))
+  text_color = Colors.with_alpha(text_color, math.floor(final_alpha * 255))
   ImGui.DrawList_AddText(draw_list, title_x, title_y, text_color, title)
   ImGui.PopFont(ctx)
 end
@@ -478,18 +489,15 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Content filter button (replaces Show Audio/MIDI checkboxes)
   local content_button_width = 65
-  local content_filter_mode = "BOTH"  -- Default
+  local content_filter_mode = "MIXED"  -- Default
   if self.state.settings.show_audio and not self.state.settings.show_midi then
     content_filter_mode = "AUDIO"
   elseif self.state.settings.show_midi and not self.state.settings.show_audio then
     content_filter_mode = "MIDI"
   end
 
-  -- Calculate layout toggle dimensions
-  local layout_button_width = 0
-  if self.state.settings.show_audio and self.state.settings.show_midi then
-    layout_button_width = 60  -- Fixed width for layout toggle
-  end
+  -- Layout toggle button (always visible)
+  local layout_button_width = button_height  -- Square button (same as height)
 
   -- Calculate search width and center it
   local search_width = screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO
@@ -503,7 +511,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   current_x = current_x - content_button_width - button_gap
   Button.draw(ctx, draw_list, current_x, search_y, content_button_width, button_height, {
     label = content_filter_mode,
-    is_toggled = content_filter_mode ~= "BOTH",
+    is_toggled = content_filter_mode == "MIXED",  -- Toggled when showing MIXED
     preset_name = "BUTTON_TOGGLE_WHITE",
     tooltip = "Left: Toggle MIDI/AUDIO | Right: Show both",
     on_click = function()
@@ -511,7 +519,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       if content_filter_mode == "MIDI" then
         self.state.set_setting('show_audio', true)
         self.state.set_setting('show_midi', false)
-      else  -- AUDIO or BOTH
+      else  -- AUDIO or MIXED
         self.state.set_setting('show_audio', false)
         self.state.set_setting('show_midi', true)
       end
@@ -523,26 +531,68 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end,
   }, "content_filter_button")
 
-  -- Layout toggle button (if both are visible)
-  if layout_button_width > 0 then
-    current_x = current_x - layout_button_width - button_gap
-    local layout_mode = self.state.settings.layout_mode or "vertical"
-    local is_vertical = layout_mode == "vertical"
+  -- Layout toggle button (always visible, enables MIXED mode if needed)
+  current_x = current_x - layout_button_width - button_gap
+  local layout_mode = self.state.settings.layout_mode or "vertical"
+  local is_vertical = layout_mode == "vertical"
+  local is_mixed_mode = content_filter_mode == "MIXED"
 
-    Button.draw(ctx, draw_list, current_x, search_y, layout_button_width, button_height, {
-      label = is_vertical and "⬍⬍" or "⬌⬌",
-      is_toggled = not is_vertical,  -- Toggle state shows when in horizontal mode
-      preset_name = "BUTTON_TOGGLE_WHITE",
-      tooltip = is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout",
-      on_click = function()
-        local new_mode = layout_mode == "vertical" and "horizontal" or "vertical"
-        self.state.set_setting('layout_mode', new_mode)
-      end,
-    }, "layout_toggle_button")
+  -- Draw layout icon using rectangles (no text, pure shapes)
+  -- We'll draw it directly on the button using a custom render function
+  local icon_color = Colors.hexrgb("#AAAAAA")
+  local draw_layout_icon = function(btn_draw_list, icon_x, icon_y)
+    local icon_size = 14
+    local gap = 2
+
+    if is_vertical then
+      -- Vertical mode: 2 rectangles stacked (top and bottom)
+      local rect_h = (icon_size - gap) / 2
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + icon_size, icon_y + rect_h, icon_color, 0)
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y + rect_h + gap, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
+    else
+      -- Horizontal mode: 2 rectangles side by side (left and right)
+      local rect_w = (icon_size - gap) / 2
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + rect_w, icon_y + icon_size, icon_color, 0)
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x + rect_w + gap, icon_y, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
+    end
   end
 
-  -- Position sort buttons immediately RIGHT of search
+  -- Draw button first
+  Button.draw(ctx, draw_list, current_x, search_y, layout_button_width, button_height, {
+    label = "",  -- No text, icon is drawn manually
+    is_toggled = is_mixed_mode,  -- Toggled whenever in MIXED mode
+    preset_name = "BUTTON_TOGGLE_WHITE",
+    tooltip = not is_mixed_mode and "Enable Split View (MIXED mode)" or
+              (is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout"),
+    on_click = function()
+      if not is_mixed_mode then
+        -- Enable MIXED mode (both AUDIO and MIDI)
+        self.state.set_setting('show_audio', true)
+        self.state.set_setting('show_midi', true)
+      else
+        -- Toggle layout mode
+        local new_mode = layout_mode == "vertical" and "horizontal" or "vertical"
+        self.state.set_setting('layout_mode', new_mode)
+      end
+    end,
+  }, "layout_toggle_button")
+
+  -- Calculate center position for icon and draw it on top of button
+  local icon_x = (current_x + (layout_button_width - 14) / 2 + 0.5)//1
+  local icon_y = (search_y + (button_height - 14) / 2 + 0.5)//1
+  draw_layout_icon(draw_list, icon_x, icon_y)
+
+  -- Add "Sorting:" label before sort buttons
   local sort_x = search_x + search_width + button_gap
+  local sort_label = "Sorting:"
+  local sort_label_width = ImGui.CalcTextSize(ctx, sort_label)
+  local sort_label_color = Colors.hexrgb("#AAAAAA")
+  sort_label_color = Colors.with_alpha(sort_label_color, math.floor(search_fade * 200))
+  -- Note: Raw text vertical alignment baseline is search_y + 4 (2px up from buttons for better centering)
+  ImGui.DrawList_AddText(draw_list, sort_x, search_y + 4, sort_label_color, sort_label)
+
+  -- Position sort buttons after label
+  sort_x = sort_x + sort_label_width + 8
   for i, mode in ipairs(sort_modes) do
     local button_w = sort_button_widths[i]
     local is_active = (current_sort == mode.id)
@@ -677,7 +727,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
       -- MIDI header (centered) - drawn inside child
-      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config)
+      local scroll_y = ImGui.GetScrollY(ctx)
+      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config, scroll_y)
 
       -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
       -- Pass full height so inner child includes header area for selection rendering
@@ -706,7 +757,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
       -- Audio header (centered) - drawn inside child
-      draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config)
+      local scroll_y = ImGui.GetScrollY(ctx)
+      draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config, scroll_y)
 
       -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
       -- Pass full height so inner child includes header area for selection rendering
@@ -775,7 +827,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
         ImGui.WindowFlags_NoScrollbar) then
         -- MIDI header (centered) - drawn inside child
-        draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14, self.config)
+        local scroll_y = ImGui.GetScrollY(ctx)
+        draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14, self.config, scroll_y)
 
         -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
         if self.coordinator.midi_grid then
@@ -815,7 +868,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
         ImGui.WindowFlags_NoScrollbar) then
         -- Audio header (centered) - drawn inside child
-        draw_panel_title(ctx, draw_list, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15, self.config)
+        local scroll_y = ImGui.GetScrollY(ctx)
+        draw_panel_title(ctx, draw_list, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15, self.config, scroll_y)
 
         -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
         if self.coordinator.audio_grid then
@@ -883,7 +937,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
       -- MIDI header (centered) - drawn inside child
-      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config)
+      local scroll_y = ImGui.GetScrollY(ctx)
+      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config, scroll_y)
 
       -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
       -- Block grid input during separator drag
@@ -925,7 +980,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
       -- Audio header (centered) - drawn inside child
-      draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config)
+      local scroll_y = ImGui.GetScrollY(ctx)
+      draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config, scroll_y)
 
       -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
       -- Block grid input during separator drag

@@ -152,6 +152,11 @@ if USE_OVERLAY then
         ImGui.ShowMetricsWindow(ctx, true)
       end
 
+      -- Check if should close after drop
+      if State.should_close_after_drop then
+        return false  -- Stop running, on_destroy will call cleanup
+      end
+
       -- When dragging, skip overlay entirely and just render drag handlers
       if State.dragging then
         ImGui.PushFont(ctx, fonts.default, fonts.default_size)
@@ -162,6 +167,12 @@ if USE_OVERLAY then
           is_overlay_mode = true,
         })
         ImGui.PopFont(ctx)
+
+        -- Check again after draw in case flag was set during draw
+        if State.should_close_after_drop then
+          return false  -- Stop running, on_destroy will call cleanup
+        end
+
         return true  -- Keep running
       else
         -- Normal mode: let overlay manager handle everything

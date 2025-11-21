@@ -46,16 +46,19 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Track animations
   local is_disabled = state.disabled and state.disabled.audio and state.disabled.audio[item_data.filename]
+  local is_muted = (item_data.track_muted or item_data.item_muted) and true or false
 
   if animator and item_data.key then
     animator:track(item_data.key, 'hover', tile_state.hover and 1.0 or 0.0, config.TILE_RENDER.animation_speed_hover)
     animator:track(item_data.key, 'enabled', is_disabled and 0.0 or 1.0, config.TILE_RENDER.disabled.fade_speed)
+    animator:track(item_data.key, 'muted', is_muted and 1.0 or 0.0, config.TILE_RENDER.muted.fade_speed)
     -- Track compact mode for header transition (1.0 = compact/small, 0.0 = normal)
     animator:track(item_data.key, 'compact_mode', is_small_tile and 1.0 or 0.0, config.TILE_RENDER.animation_speed_header_transition)
   end
 
   local hover_factor = animator and animator:get(item_data.key, 'hover') or (tile_state.hover and 1.0 or 0.0)
   local enabled_factor = animator and animator:get(item_data.key, 'enabled') or (is_disabled and 0.0 or 1.0)
+  local muted_factor = animator and animator:get(item_data.key, 'muted') or (is_muted and 1.0 or 0.0)
   local compact_factor = animator and animator:get(item_data.key, 'compact_mode') or (is_small_tile and 1.0 or 0.0)
 
   -- Track playback progress
@@ -87,13 +90,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Get base color from item
   local base_color = item_data.color or 0xFF555555
 
-  -- Apply disabled state
-  local render_color = base_color
-  if enabled_factor < 1.0 then
-    render_color = Colors.desaturate(render_color, config.TILE_RENDER.disabled.desaturate * (1.0 - enabled_factor))
-    render_color = Colors.adjust_brightness(render_color,
-      1.0 - (1.0 - config.TILE_RENDER.disabled.brightness) * (1.0 - enabled_factor))
-  end
+  -- Apply muted and disabled state effects
+  local render_color = BaseRenderer.apply_state_effects(base_color, muted_factor, enabled_factor, config)
 
   -- Apply base tile fill adjustments (use compact mode values for small tiles)
   local sat_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_saturation_factor or config.TILE_RENDER.base_fill.saturation_factor
@@ -107,15 +105,13 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     render_color = Colors.adjust_brightness(render_color, 1.0 + hover_boost)
   end
 
-  -- Apply cascade/enabled alpha with minimum for disabled items
-  local min_alpha_factor = (config.TILE_RENDER.disabled.min_alpha or 0x33) / 255
-  local alpha_factor = min_alpha_factor + (1.0 - min_alpha_factor) * enabled_factor
-  local combined_alpha = cascade_factor * alpha_factor
+  -- Calculate combined alpha with state effects
   local base_alpha = (render_color & 0xFF) / 255
-  local final_alpha = base_alpha * combined_alpha
+  local combined_alpha, final_alpha = BaseRenderer.calculate_combined_alpha(cascade_factor, enabled_factor, muted_factor, base_alpha, config)
   render_color = Colors.with_alpha(render_color, math.floor(final_alpha * 255))
 
   local text_alpha = math.floor(0xFF * combined_alpha)
+  local text_color = BaseRenderer.get_text_color(muted_factor, config)
 
   -- Calculate header height with animated transition
   local normal_header_height = math.max(
@@ -135,6 +131,13 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Render base tile fill with rounding
   ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
+
+  -- Render dark backdrop for disabled items
+  if enabled_factor < 0.999 then
+    local backdrop_alpha = config.TILE_RENDER.disabled.backdrop_alpha * (1.0 - enabled_factor) * cascade_factor
+    local backdrop_color = Colors.with_alpha(config.TILE_RENDER.disabled.backdrop_color, math.floor(backdrop_alpha))
+    ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, backdrop_color, config.TILE.ROUNDING)
+  end
 
   -- Render waveform BEFORE header so header can overlay with transparency
   -- (show even when disabled, just with toned down color)
@@ -393,9 +396,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     else
       -- Normal text rendering
       -- Badge click callback to cycle through items
-      local on_badge_click = function()
+      -- Left-click: delta=1 (next), Right-click: delta=-1 (previous)
+      local on_badge_click = function(delta)
         if item_data.total and item_data.total > 1 then
-          state.cycle_audio_item(item_data.filename, 1)
+          state.cycle_audio_item(item_data.filename, delta)
           -- Force cache invalidation to update display (same as wheel_adjust)
           state.runtime_cache.audio_filter_hash = nil
         end
@@ -404,7 +408,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Pass full x2 (cycle badge position stays fixed), use extra_text_margin for text truncation only
       BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, scaled_x2, header_height,
         item_data.name, item_data.index, item_data.total, render_color, text_alpha, config,
-        item_data.uuid, badge_rects, on_badge_click, extra_text_margin)
+        item_data.uuid, badge_rects, on_badge_click, extra_text_margin, text_color)
     end
   end
 

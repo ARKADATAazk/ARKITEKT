@@ -147,9 +147,13 @@ function M.render_clickable_text_badge(ctx, dl, x, y, text, base_color, alpha, u
   ImGui.SetCursorScreenPos(ctx, x1, y1)
   ImGui.InvisibleButton(ctx, "##badge_" .. unique_id, x2 - x1, y2 - y1)
 
-  -- Handle click
-  if ImGui.IsItemClicked(ctx, 0) and on_click then
-    on_click()
+  -- Handle left-click (increment) and right-click (decrement)
+  if on_click then
+    if ImGui.IsItemClicked(ctx, 0) then
+      on_click(1)  -- Left-click: increment (+1)
+    elseif ImGui.IsItemClicked(ctx, 1) then
+      on_click(-1)  -- Right-click: decrement (-1)
+    end
   end
 
   return x1, y1, x2, y2

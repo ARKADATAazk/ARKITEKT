@@ -254,6 +254,14 @@ function GUI:draw(ctx, shell_state)
   ImGui.PushFont(ctx, mini_font, mini_font_size)
   reaper.PreventUIRefresh(1)
 
+  -- If we should close, don't render anything - just exit immediately
+  -- Runtime loop will detect the flag and handle cleanup/close
+  if self.state.should_close_after_drop then
+    reaper.PreventUIRefresh(-1)
+    ImGui.PopFont(ctx)
+    return
+  end
+
   -- Check if dragging
   if not self.state.dragging then
     -- Normal mode - show main UI
@@ -264,10 +272,107 @@ function GUI:draw(ctx, shell_state)
     -- which allows the arrange window to receive mouse input
     local should_insert = self.drag_handler.handle_drag_logic(ctx, self.state, mini_font)
     if should_insert and not self.state.drop_completed then
-      -- Only insert once
+      -- Check modifier keys for drop behavior
+      -- If we have captured state (from multi-drop sequence), verify keys are still held
+      local shift, ctrl
+      if self.state.captured_shift ~= nil or self.state.captured_ctrl ~= nil then
+        -- Check if keys are ACTUALLY still pressed using Reaper API (works without ImGui focus)
+        local mouse_state = reaper.JS_Mouse_GetState(0xFF)
+        local shift_actual = (mouse_state & 8) ~= 0  -- Bit 3 = Shift
+        local ctrl_actual = (mouse_state & 4) ~= 0   -- Bit 2 = Ctrl
+
+        -- Check if user switched modifiers (e.g., pressing CTRL during SHIFT multi-drop)
+        if self.state.captured_shift and ctrl_actual and not shift_actual then
+          reaper.ShowConsoleMsg("[KEY DEBUG] Switched to CTRL during SHIFT sequence - returning to picker\n")
+          shift = false
+          ctrl = true
+          -- Clear captured state - switching modes
+          self.state.captured_shift = nil
+          self.state.captured_ctrl = nil
+        -- If captured state says SHIFT but key is no longer pressed, treat as normal drop
+        elseif self.state.captured_shift and not shift_actual then
+          reaper.ShowConsoleMsg("[KEY DEBUG] SHIFT released (via JS API) - exiting multi-drop mode\n")
+          shift = false
+          ctrl = false
+          -- Clear captured state
+          self.state.captured_shift = nil
+          self.state.captured_ctrl = nil
+        elseif self.state.captured_ctrl and not ctrl_actual then
+          reaper.ShowConsoleMsg("[KEY DEBUG] CTRL released (via JS API) - exiting multi-drop mode\n")
+          shift = false
+          ctrl = false
+          -- Clear captured state
+          self.state.captured_shift = nil
+          self.state.captured_ctrl = nil
+        else
+          -- Keys still held - use captured state
+          shift = self.state.captured_shift or false
+          ctrl = self.state.captured_ctrl or false
+          reaper.ShowConsoleMsg(string.format("[KEY DEBUG] Using CAPTURED state: shift=%s ctrl=%s (verified via JS API: shift_actual=%s ctrl_actual=%s)\n",
+            tostring(shift), tostring(ctrl), tostring(shift_actual), tostring(ctrl_actual)))
+        end
+      else
+        -- First drop - check keys directly
+        shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
+        ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+        reaper.ShowConsoleMsg(string.format("[KEY DEBUG] LeftShift=%s RightShift=%s LeftCtrl=%s RightCtrl=%s => shift=%s ctrl=%s\n",
+          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift)),
+          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)),
+          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl)),
+          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)),
+          tostring(shift), tostring(ctrl)
+        ))
+      end
+
+      -- Set close flag BEFORE inserting for normal drops to block any drag_start calls
+      if not shift and not ctrl then
+        reaper.ShowConsoleMsg("[NORMAL DROP] Setting close flag\n")
+        self.state.should_close_after_drop = true
+      else
+        reaper.ShowConsoleMsg(string.format("[MODIFIER DROP] shift=%s ctrl=%s\n", tostring(shift), tostring(ctrl)))
+      end
+
+      -- Insert the item
       self.controller.insert_item_at_mouse(self.state.item_to_add, self.state)
       self.state.drop_completed = true  -- Mark as completed
-      self.state.request_exit()  -- Exit immediately after insertion
+
+      if shift then
+        -- SHIFT: Keep dragging active for multi-drop
+        -- Wait for next click/release cycle before allowing another drop
+        reaper.ShowConsoleMsg("[SHIFT DROP] Setting up for next drop, capturing modifier state\n")
+        self.state.drop_completed = false
+        self.state.waiting_for_new_click = true
+        self.state.mouse_was_pressed_after_drop = false
+        self.state.should_close_after_drop = false  -- Explicitly clear close flag
+        -- IMPORTANT: Capture modifier state NOW while we still have focus
+        -- ImGui will lose focus when user clicks on arrange view
+        self.state.captured_shift = shift
+        self.state.captured_ctrl = ctrl
+      elseif ctrl then
+        -- CTRL: End drag but keep ItemPicker open
+        self.state.end_drag()
+        self.state.waiting_for_new_click = false
+        self.state.should_close_after_drop = false  -- Explicitly clear close flag
+        -- Clear captured state
+        self.state.captured_shift = nil
+        self.state.captured_ctrl = nil
+      else
+        -- Normal drop: DON'T end drag - keep State.dragging active
+        -- This keeps us in the dragging branch (no overlay render)
+        -- Cleanup will handle clearing drag state
+        self.state.waiting_for_new_click = false
+        -- Clear captured state
+        self.state.captured_shift = nil
+        self.state.captured_ctrl = nil
+        -- Flag is already set before insert, will close on next render
+      end
+    end
+
+    -- Clear waiting flag once mouse is pressed again (for SHIFT mode)
+    if self.state.waiting_for_new_click and self.state.mouse_was_pressed_after_drop then
+      reaper.ShowConsoleMsg("[SHIFT MODE] Clearing waiting flag, ready for next drop\n")
+      self.state.waiting_for_new_click = false
+      self.state.drop_completed = false  -- Also reset drop_completed to allow next drop
     end
 
     self.drag_handler.render_drag_preview(ctx, self.state, mini_font, self.visualization)
@@ -278,6 +383,11 @@ function GUI:draw(ctx, shell_state)
 
   -- Handle exit
   if self.state.exit or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+    -- Clear drag state if still dragging on exit (e.g., Escape pressed)
+    if self.state.dragging then
+      self.state.end_drag()
+    end
+
     if is_overlay_mode then
       if overlay and overlay.close then
         overlay:close()
