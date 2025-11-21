@@ -187,6 +187,11 @@ local function draw_template_panel(ctx, gui, width, height)
     gui.template_container.width = width
     gui.template_container.height = grid_panel_height
 
+    -- Set panel clip bounds for grid input isolation
+    if gui.template_container.visible_bounds then
+      gui.template_grid.panel_clip_bounds = gui.template_container.visible_bounds
+    end
+
     -- Update grid layout properties for current view mode
     TemplateGridFactory.update_for_view_mode(gui.template_grid)
 
@@ -230,6 +235,11 @@ local function draw_template_panel(ctx, gui, width, height)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
   if ImGui.BeginChild(ctx, "##quick_access_panel", width, quick_access_height, ImGui.ChildFlags_None, 0) then
+    -- Set panel clip bounds for grid input isolation
+    if gui.recent_container.visible_bounds then
+      gui.quick_access_grid.panel_clip_bounds = gui.recent_container.visible_bounds
+    end
+
     draw_quick_access_panel(ctx, gui, width, quick_access_height)
   end
   ImGui.EndChild(ctx)
