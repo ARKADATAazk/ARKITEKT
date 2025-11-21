@@ -146,57 +146,68 @@ function M.render(ctx, param, tab_color, shell_state, view)
   end
 
   local presets = template and ((template.config and template.config.presets) or template.presets)
-  if template and template.type == "preset_spinner" and presets then
+  if template and template.type == "preset_spinner" and presets and #presets > 0 then
     -- Render preset spinner
     local preset_values = {}
     local preset_labels = {}
     for _, preset in ipairs(presets) do
-      table.insert(preset_values, preset.value)
-      table.insert(preset_labels, preset.label)
-    end
-
-    -- Get or initialize spinner state
-    if not M._preset_spinner_states[param_name] then
-      M._preset_spinner_states[param_name] = {
-        last_value = current_value,
-        current_idx = 1
-      }
-    end
-
-    local spinner_state = M._preset_spinner_states[param_name]
-
-    -- Only recalculate closest index if the value changed externally (not from our spinner)
-    if math.abs(current_value - spinner_state.last_value) > 0.1 then
-      -- Value changed externally, find closest preset
-      local closest_idx = 1
-      local min_diff = math.abs(current_value - preset_values[1])
-      for i = 2, #preset_values do
-        local diff = math.abs(current_value - preset_values[i])
-        if diff < min_diff then
-          min_diff = diff
-          closest_idx = i
-        end
+      -- New format: preset.values[param_name] for multi-parameter support
+      -- Old format: preset.value for single value (backwards compat)
+      local value = preset.values and preset.values[param.name] or preset.value
+      if value then
+        table.insert(preset_values, value)
+        table.insert(preset_labels, preset.label or "Unnamed")
       end
-      spinner_state.current_idx = closest_idx
-      spinner_state.last_value = current_value
     end
 
-    local changed_spinner, new_idx = Spinner.draw(
-      ctx,
-      "##preset_spinner_" .. param.name,
-      spinner_state.current_idx,
-      preset_labels,
-      {w = CONTROL_WIDTH, h = 24}
-    )
+    -- Only render spinner if we have valid preset values
+    if #preset_values > 0 then
+      -- Get or initialize spinner state
+      if not M._preset_spinner_states[param_name] then
+        M._preset_spinner_states[param_name] = {
+          last_value = current_value,
+          current_idx = 1
+        }
+      end
 
-    if changed_spinner then
-      new_value = preset_values[new_idx]
-      value_changed = true
-      was_deactivated = true  -- Spinner changes are immediate
+      local spinner_state = M._preset_spinner_states[param_name]
 
-      -- Update state to track this change
-      spinner_state.current_idx = new_idx
-      spinner_state.last_value = new_value
+      -- Only recalculate closest index if the value changed externally (not from our spinner)
+      if math.abs(current_value - spinner_state.last_value) > 0.1 then
+        -- Value changed externally, find closest preset
+        local closest_idx = 1
+        local min_diff = math.abs(current_value - preset_values[1])
+        for i = 2, #preset_values do
+          local diff = math.abs(current_value - preset_values[i])
+          if diff < min_diff then
+            min_diff = diff
+            closest_idx = i
+          end
+        end
+        spinner_state.current_idx = closest_idx
+        spinner_state.last_value = current_value
+      end
+
+      local changed_spinner, new_idx = Spinner.draw(
+        ctx,
+        "##preset_spinner_" .. param.name,
+        spinner_state.current_idx,
+        preset_labels,
+        {w = CONTROL_WIDTH, h = 24}
+      )
+
+      if changed_spinner then
+        new_value = preset_values[new_idx]
+        value_changed = true
+        was_deactivated = true  -- Spinner changes are immediate
+
+        -- Update state to track this change
+        spinner_state.current_idx = new_idx
+        spinner_state.last_value = new_value
+      end
+    else
+      -- No valid presets, fall through to default controls
+      template = nil
     end
 
   elseif param_type == "bool" then
