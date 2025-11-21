@@ -234,20 +234,24 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local help_x, help_y = ImGui.GetCursorScreenPos(ctx)
   local help_size = 32
 
-  -- Draw help icon (question-fill from remix icon)
-  ImGui.PushFont(ctx, ImGui.Font_RemixIcon)
-  local icon_text = "\xEF\x81\x84"  -- &#xF044; in UTF-8
-  local icon_w, icon_h = ImGui.CalcTextSize(ctx, icon_text)
-  local icon_color = hexrgb("#888888")
+  -- Draw help icon circle with "?" text
+  local center_x = help_x + help_size * 0.5
+  local center_y = help_y + help_size * 0.5
+  local radius = help_size * 0.4
 
   -- Check if hovering
   local is_help_hovered = ImGui.IsMouseHoveringRect(ctx, help_x, help_y, help_x + help_size, help_y + help_size)
-  if is_help_hovered then
-    icon_color = hexrgb("#CCCCCC")
-  end
 
-  ImGui.DrawList_AddText(dl, help_x + (help_size - icon_w) * 0.5, help_y + (help_size - icon_h) * 0.5, icon_color, icon_text)
-  ImGui.PopFont(ctx)
+  local circle_color = is_help_hovered and hexrgb("#5C7CB8") or hexrgb("#666666")
+  local text_color = is_help_hovered and hexrgb("#FFFFFF") or hexrgb("#CCCCCC")
+
+  -- Draw circle
+  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, radius, circle_color)
+
+  -- Draw "?" in the middle
+  local help_text = "?"
+  local text_w, text_h = ImGui.CalcTextSize(ctx, help_text)
+  ImGui.DrawList_AddText(dl, center_x - text_w * 0.5, center_y - text_h * 0.5, text_color, help_text)
 
   -- Make it clickable
   ImGui.SetCursorPos(ctx, start_x + (picker_size - 32) * 0.5, start_y + picker_size + 8)
