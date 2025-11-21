@@ -295,10 +295,15 @@ local function draw_template_panel(ctx, gui, width, height)
 
   -- Reserve space for quick access panel at bottom (if any)
   local quick_access_templates = get_quick_access_templates(state, 10)
-  local quick_access_height = #quick_access_templates > 0 and (UI.TILE.RECENT_SECTION_HEIGHT + 16) or 0
+  -- Calculate height: header(32) + padding(8*2) + tile_height(80) + scrollbar_space(8)
+  local quick_access_height = #quick_access_templates > 0 and 144 or 0
 
   -- 2. MAIN TEMPLATE GRID PANEL (with background)
+  local spacing_between_panels = 8
   local grid_panel_height = panel_height - quick_access_height
+  if quick_access_height > 0 then
+    grid_panel_height = grid_panel_height - spacing_between_panels
+  end
 
   -- Update grid layout properties for current view mode
   TemplateGridFactory.update_for_view_mode(gui.template_grid)
@@ -318,7 +323,9 @@ local function draw_template_panel(ctx, gui, width, height)
 
   -- 3. QUICK ACCESS PANEL AT THE BOTTOM (Recents/Favorites/Most Used)
   if #quick_access_templates > 0 then
-    ImGui.Spacing(ctx)
+    -- Explicitly set cursor position for quick access panel
+    local quick_panel_y = panel_y + grid_panel_height + spacing_between_panels
+    ImGui.SetCursorScreenPos(ctx, content_x, quick_panel_y)
 
     draw_quick_access_panel(ctx, gui, width, quick_access_height)
   end
