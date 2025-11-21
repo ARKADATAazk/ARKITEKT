@@ -289,6 +289,11 @@ function M.create(ctx, config, state, visualization, animator)
   -- Behaviors
   grid.behaviors = {
     drag_start = function(keys)
+      -- Don't start drag if we're closing
+      if state.should_close_after_drop then
+        return
+      end
+
       reaper.ShowConsoleMsg(string.format("[DRAG_START] Called! keys=%d\n", keys and #keys or 0))
       if not keys or #keys == 0 then return end
 

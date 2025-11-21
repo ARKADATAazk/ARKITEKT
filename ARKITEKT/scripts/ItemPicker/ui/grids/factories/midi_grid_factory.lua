@@ -330,6 +330,11 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     drag_start = function(keys)
+      -- Don't start drag if we're closing
+      if state.should_close_after_drop then
+        return
+      end
+
       reaper.ShowConsoleMsg(string.format("[DRAG_START MIDI] Called! keys=%d\n", keys and #keys or 0))
       if not keys or #keys == 0 then return end
 
