@@ -24,34 +24,61 @@ function M.draw(ctx, label, is_selected, opts)
   local dl = ImGui.GetWindowDrawList(ctx)
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
 
-  -- Radio circle properties
-  local circle_radius = 7
-  local circle_center_x = cursor_x + circle_radius
-  local circle_center_y = cursor_y + circle_radius + 2  -- Vertically center with text
+  -- Circle properties (22x22 outer circle)
+  local outer_radius = 11  -- 22px diameter
+  local center_x = cursor_x + outer_radius
+  local center_y = cursor_y + outer_radius
 
   -- Calculate dimensions
   local text_w, text_h = ImGui.CalcTextSize(ctx, label)
-  local total_w = circle_radius * 2 + spacing + text_w
-  local total_h = math.max(circle_radius * 2 + 4, text_h)
+  local total_w = outer_radius * 2 + spacing + text_w
+  local total_h = math.max(outer_radius * 2, text_h)
 
-  -- Check hover
+  -- Check hover and active states
   local is_hovered = ImGui.IsMouseHoveringRect(ctx, cursor_x, cursor_y, cursor_x + total_w, cursor_y + total_h)
+  local is_active = is_hovered and ImGui.IsMouseDown(ctx, 0)
 
-  -- Colors - use ARKITEKT neutral whites/grays
-  local outer_color = is_selected and Style.COLORS.TEXT_NORMAL or (is_hovered and Style.COLORS.BORDER_HOVER or Style.COLORS.BORDER_INNER)
-  local inner_color = Style.COLORS.TEXT_NORMAL  -- White fill when selected
+  -- Colors for button fill (with hover/active lighting)
+  local fill_color = Style.COLORS.BG_BASE
+  if is_active then
+    fill_color = Style.COLORS.BG_ACTIVE
+  elseif is_hovered then
+    fill_color = Style.COLORS.BG_HOVER
+  end
+
+  -- Inner circle slightly darker fill
+  local inner_fill = Colors.adjust_brightness(fill_color, 0.85)
+
+  -- Text color
   local text_color = is_hovered and Style.COLORS.TEXT_HOVER or Style.COLORS.TEXT_NORMAL
 
-  -- Draw outer circle
-  ImGui.DrawList_AddCircle(dl, circle_center_x, circle_center_y, circle_radius, outer_color, 0, 1.5)
+  -- Draw 22x22 outer circle
+  -- Fill
+  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, outer_radius, fill_color)
 
-  -- Draw inner filled circle if selected
+  -- 1px inner border (lighter)
+  ImGui.DrawList_AddCircle(dl, center_x, center_y, outer_radius - 1, Style.COLORS.BORDER_INNER, 0, 1.0)
+
+  -- 1px outer border (black)
+  ImGui.DrawList_AddCircle(dl, center_x, center_y, outer_radius, Style.COLORS.BORDER_OUTER, 0, 1.0)
+
+  -- Draw 14x14 inner circle
+  local inner_radius = 7  -- 14px diameter
+
+  -- Slightly darker fill
+  ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, inner_radius, inner_fill)
+
+  -- Black border (no inner border)
+  ImGui.DrawList_AddCircle(dl, center_x, center_y, inner_radius, Style.COLORS.BORDER_OUTER, 0, 1.0)
+
+  -- If selected, draw 10x10 #BBBBBB circle in center
   if is_selected then
-    ImGui.DrawList_AddCircleFilled(dl, circle_center_x, circle_center_y, circle_radius - 3, inner_color)
+    local selected_radius = 5  -- 10px diameter
+    ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, selected_radius, hexrgb("#BBBBBB"))
   end
 
   -- Draw label
-  local label_x = cursor_x + circle_radius * 2 + spacing
+  local label_x = cursor_x + outer_radius * 2 + spacing
   local label_y = cursor_y + (total_h - text_h) * 0.5
   ImGui.DrawList_AddText(dl, label_x, label_y, text_color, label)
 
