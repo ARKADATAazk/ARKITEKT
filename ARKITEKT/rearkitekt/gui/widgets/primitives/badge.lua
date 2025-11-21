@@ -159,4 +159,39 @@ function M.render_clickable_text_badge(ctx, dl, x, y, text, base_color, alpha, u
   return x1, y1, x2, y2
 end
 
+---Render a favorite badge (star icon badge) with consistent styling
+---@param ctx userdata ImGui context
+---@param dl userdata DrawList
+---@param x number X position (top-left)
+---@param y number Y position (top-left)
+---@param size number Badge size (square)
+---@param alpha number Overall alpha multiplier (0-255)
+---@param is_favorite boolean Whether the item is favorited
+---@param icon_font? userdata Optional icon font object (remixicon)
+---@param icon_font_size? number Optional icon font size
+---@param base_color? number Optional base tile color for border derivation (defaults to neutral gray)
+---@param config? table Optional config overrides
+---@return number, number, number, number Badge rect (x1, y1, x2, y2)
+function M.render_favorite_badge(ctx, dl, x, y, size, alpha, is_favorite, icon_font, icon_font_size, base_color, config)
+  if not is_favorite then
+    return x, y, x, y  -- Return empty rect if not favorited
+  end
+
+  -- Use remixicon star-fill if available, otherwise fallback to Unicode star
+  local star_char
+  if icon_font then
+    -- Remixicon star-fill: U+F186
+    star_char = utf8.char(0xF186)
+  else
+    -- Fallback to Unicode star character
+    star_char = "★"  -- U+2605 BLACK STAR
+  end
+
+  -- Default base color if not provided
+  base_color = base_color or Colors.hexrgb("#555555")
+
+  -- Render using modular badge system
+  return M.render_icon_badge(ctx, dl, x, y, size, star_char, base_color, alpha, icon_font, icon_font_size, config)
+end
+
 return M
