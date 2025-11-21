@@ -17,7 +17,6 @@ function M.create(callbacks, is_overlay_mode)
         {
           id = "quick_access_mode",
           type = "dropdown_field",
-          align = "left",
           width = 120,
           spacing_before = 0,
           config = {
@@ -42,11 +41,10 @@ function M.create(callbacks, is_overlay_mode)
           spacing_before = 0,
           config = { show_line = false },
         },
-        -- Search field
+        -- Search field (right side, grouped with sort and view)
         {
           id = "search",
           type = "search_field",
-          align = "right",
           width = 150,
           spacing_before = 0,
           config = {
@@ -55,13 +53,12 @@ function M.create(callbacks, is_overlay_mode)
             on_change = callbacks.on_search_changed,
           },
         },
-        -- Sort dropdown
+        -- Sort dropdown (grouped with search and view, no spacing)
         {
           id = "sort",
           type = "dropdown_field",
-          align = "right",
           width = 120,
-          spacing_before = 8,
+          spacing_before = 0,
           config = {
             tooltip = "Sort by",
             tooltip_delay = 0.5,
@@ -76,15 +73,14 @@ function M.create(callbacks, is_overlay_mode)
             on_change = callbacks.on_sort_changed,
           },
         },
-        -- Grid/List toggle button
+        -- Grid/List toggle button (grouped with search and sort, no spacing)
         {
           id = "view_toggle",
           type = "button",
-          align = "right",
           width = 60,
-          spacing_before = 8,
+          spacing_before = 0,
           config = {
-            get_label = callbacks.get_view_mode_label,
+            label = callbacks.get_view_mode_label,  -- Function-based dynamic label
             on_click = callbacks.on_view_toggle,
             tooltip = "Toggle view mode",
             tooltip_delay = 0.5,
