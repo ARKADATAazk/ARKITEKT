@@ -417,20 +417,24 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local common_names = self.names_category == "game" and game_music_names or general_music_names
 
   -- Render common names with proper wrapping
-  local max_x = right_col_x + right_col_width
+  -- Get screen coordinates for the right column boundary
+  local window_x, window_y = ImGui.GetWindowPos(ctx)
+  local max_screen_x = window_x + right_col_x + right_col_width
   local line_height = 30
 
   for i, name in ipairs(common_names) do
-    -- Calculate chip width (text + padding from chip style, NOT including spacing)
-    local text_w = ImGui.CalcTextSize(ctx, name)
-    local chip_width = text_w + (Style.ACTION_CHIP_TAG.padding_h or 8) * 2
+    -- Use Chip.calculate_width to get the accurate chip width
+    local chip_width = Chip.calculate_width(ctx, name, {
+      style = Chip.STYLE.ACTION,
+      padding_h = Style.ACTION_CHIP_TAG.padding_h,
+    })
 
     if i > 1 then
       -- Get current cursor position BEFORE potentially adding spacing
       local cur_screen_x, cur_screen_y = ImGui.GetCursorScreenPos(ctx)
 
       -- Check if chip would fit on current line (including spacing before it)
-      if cur_screen_x + chip_spacing + chip_width > max_x then
+      if cur_screen_x + chip_spacing + chip_width > max_screen_x then
         -- Won't fit, start new line
         ImGui.SetCursorPosX(ctx, right_col_x)
         ImGui.Dummy(ctx, 0, line_height)
