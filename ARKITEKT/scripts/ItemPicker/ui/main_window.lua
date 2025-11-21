@@ -255,20 +255,10 @@ function GUI:draw(ctx, shell_state)
   reaper.PreventUIRefresh(1)
 
   -- If we should close, don't render anything - just exit immediately
+  -- Runtime loop will detect the flag and handle cleanup/close
   if self.state.should_close_after_drop then
     reaper.PreventUIRefresh(-1)
     ImGui.PopFont(ctx)
-
-    -- Close the window/overlay
-    if is_overlay_mode then
-      if overlay and overlay.close then
-        overlay:close()
-      end
-    else
-      if shell_state.window and shell_state.window.request_close then
-        shell_state.window:request_close()
-      end
-    end
     return
   end
 
