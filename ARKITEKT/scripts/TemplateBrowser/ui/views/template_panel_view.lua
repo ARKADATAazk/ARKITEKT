@@ -7,6 +7,7 @@ local Colors = require('rearkitekt.core.colors')
 local TemplateOps = require('TemplateBrowser.domain.template_ops')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.ui_constants')
+local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
 
 local M = {}
 
@@ -203,6 +204,9 @@ local function draw_template_panel(ctx, gui, width, height)
   -- Set container dimensions for main grid
   gui.template_container.width = width - 16
   gui.template_container.height = grid_height
+
+  -- Update grid layout properties for current view mode
+  TemplateGridFactory.update_for_view_mode(gui.template_grid)
 
   -- Begin panel drawing
   if gui.template_container:begin_draw(ctx) then

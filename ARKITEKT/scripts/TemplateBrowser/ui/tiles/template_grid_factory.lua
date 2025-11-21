@@ -10,21 +10,15 @@ local TemplateTileCompact = require('TemplateBrowser.ui.tiles.template_tile_comp
 local M = {}
 
 function M.create(get_templates, metadata, animator, get_tile_width, get_view_mode, on_select, on_double_click, on_right_click, on_star_click)
-  return Grid.new({
+  local grid = Grid.new({
     id = "template_grid",
-    gap = function()
-      local view_mode = get_view_mode and get_view_mode() or "grid"
-      return view_mode == "list" and 4 or TemplateTile.CONFIG.gap
-    end,
+    gap = TemplateTile.CONFIG.gap,  -- Initial value for grid mode
     min_col_w = function()
       local view_mode = get_view_mode and get_view_mode() or "grid"
       -- In list mode, tiles take full width (return a large value to force 1 column)
       return view_mode == "list" and 9999 or get_tile_width()
     end,
-    fixed_tile_h = function()
-      local view_mode = get_view_mode and get_view_mode() or "grid"
-      return view_mode == "list" and TemplateTileCompact.CONFIG.tile_height or TemplateTile.CONFIG.base_tile_height
-    end,
+    fixed_tile_h = TemplateTile.CONFIG.base_tile_height,  -- Initial value for grid mode
 
     -- Data source
     get_items = get_templates,
@@ -158,6 +152,26 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
       },
     },
   })
+
+  -- Store view mode getter for dynamic updates
+  grid._get_view_mode = get_view_mode
+
+  return grid
+end
+
+-- Update grid layout properties based on current view mode
+function M.update_for_view_mode(grid)
+  if not grid._get_view_mode then return end
+
+  local view_mode = grid._get_view_mode()
+
+  if view_mode == "list" then
+    grid.gap = 4
+    grid.fixed_tile_h = TemplateTileCompact.CONFIG.tile_height
+  else
+    grid.gap = TemplateTile.CONFIG.gap
+    grid.fixed_tile_h = TemplateTile.CONFIG.base_tile_height
+  end
 end
 
 return M
