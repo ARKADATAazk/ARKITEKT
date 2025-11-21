@@ -206,12 +206,17 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
 
     ImGui.PushFont(ctx, mini_font, 13)
 
+    local dragging_count = (state.dragging_keys and #state.dragging_keys) or 1
+    local visible_count = math.min(dragging_count, 4)  -- Show max 4 stacked items
+
+    -- Reserve space at top for badge if dragging multiples (so it doesn't get clipped)
+    if dragging_count > 1 then
+      ImGui.Dummy(ctx, 1, 12)  -- Reserve 12px at top for half the badge
+    end
+
     local cursor_x, cursor_y = ImGui.GetItemRectMin(ctx)
     local base_x = cursor_x + ImGui.StyleVar_ChildBorderSize
     local base_y = cursor_y + ImGui.StyleVar_ChildBorderSize
-
-    local dragging_count = (state.dragging_keys and #state.dragging_keys) or 1
-    local visible_count = math.min(dragging_count, 4)  -- Show max 4 stacked items
 
     -- Configuration for stacking (matching original tile design)
     local stack_offset_x = 8
