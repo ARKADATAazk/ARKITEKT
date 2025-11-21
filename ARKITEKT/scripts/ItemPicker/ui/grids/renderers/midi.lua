@@ -558,7 +558,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       -- Calculate text dimensions and position (right-aligned at bottom-right)
       local text_w, text_h = ImGui.CalcTextSize(ctx, duration_text)
-      local margin = 6
+      local margin = 9  -- Increased margin for better positioning
       local text_x = scaled_x2 - text_w - margin
       local text_y = scaled_y2 - text_h - margin
 
