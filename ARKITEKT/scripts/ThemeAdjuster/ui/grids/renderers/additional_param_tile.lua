@@ -16,6 +16,10 @@ local TILE_HEIGHT = 60
 local TILE_PADDING = 8
 local CONTROL_WIDTH = 200
 
+-- Refresh throttling: Track last refresh time per parameter
+local last_refresh_times = {}
+local REFRESH_INTERVAL = 0.25  -- 250ms between refreshes during drag
+
 -- Read/write parameter value from Reaper theme
 local function get_param_value(param_index, param_type)
   if not param_index then return param_type == "bool" and 0 or 0.0 end
@@ -225,10 +229,19 @@ function M.render(ctx, param, tab_color, shell_state, view)
 
   -- Handle value change and propagation
   if value_changed then
-    -- Update value without refresh while dragging
-    set_param_value(param_index, new_value, false)
+    -- Check if enough time has passed for a periodic refresh
+    local current_time = reaper.time_precise()
+    local last_refresh = last_refresh_times[param_name] or 0
+    local should_refresh = (current_time - last_refresh) >= REFRESH_INTERVAL
 
-    -- Propagate to linked parameters (also without refresh)
+    -- Update value (with periodic refresh if threshold exceeded)
+    set_param_value(param_index, new_value, should_refresh)
+
+    if should_refresh then
+      last_refresh_times[param_name] = current_time
+    end
+
+    -- Propagate to linked parameters
     if is_in_group and link_mode ~= ParameterLinkManager.LINK_MODE.UNLINKED then
       local propagations = ParameterLinkManager.propagate_value_change(param_name, current_value, new_value)
 
@@ -237,7 +250,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
         -- Find the parameter index for the linked param
         for _, p in ipairs(view.all_params) do
           if p.name == prop.param_name then
-            set_param_value(p.index, prop.clamped_value, false)
+            set_param_value(p.index, prop.clamped_value, should_refresh)
             break
           end
         end
@@ -245,9 +258,10 @@ function M.render(ctx, param, tab_color, shell_state, view)
     end
   end
 
-  -- Only refresh when user finishes editing (mouse-up)
+  -- Final refresh when user finishes editing (mouse-up)
   if value_deactivated then
     set_param_value(param_index, new_value, true)
+    last_refresh_times[param_name] = reaper.time_precise()
 
     -- Also refresh linked parameters
     if is_in_group and link_mode ~= ParameterLinkManager.LINK_MODE.UNLINKED then
