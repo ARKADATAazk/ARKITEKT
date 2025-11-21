@@ -50,9 +50,17 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
     local saved_scroll = nil
     local wheel_y = ImGui.GetMouseWheel(ctx)
 
+    local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+    local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
+
+    -- DEBUG: Log when wheel or modifiers are active
+    if wheel_y ~= 0 or ctrl or shift then
+      local is_hovered = ImGui.IsWindowHovered(ctx)
+      reaper.ShowConsoleMsg(string.format("[AUDIO_GRID] wheel=%0.2f, ctrl=%s, shift=%s, hovered=%s\n",
+        wheel_y, tostring(ctrl), tostring(shift), tostring(is_hovered)))
+    end
+
     if wheel_y ~= 0 then
-      local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
-      local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
 
       if ctrl or shift then
         -- Handle tile size adjustment
@@ -110,9 +118,17 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
     local saved_scroll = nil
     local wheel_y = ImGui.GetMouseWheel(ctx)
 
+    local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+    local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
+
+    -- DEBUG: Log when wheel or modifiers are active
+    if wheel_y ~= 0 or ctrl or shift then
+      local is_hovered = ImGui.IsWindowHovered(ctx)
+      reaper.ShowConsoleMsg(string.format("[MIDI_GRID] wheel=%0.2f, ctrl=%s, shift=%s, hovered=%s\n",
+        wheel_y, tostring(ctrl), tostring(shift), tostring(is_hovered)))
+    end
+
     if wheel_y ~= 0 then
-      local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
-      local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
 
       if ctrl or shift then
         -- Handle tile size adjustment
