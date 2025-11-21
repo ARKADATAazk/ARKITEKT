@@ -170,64 +170,33 @@ function M.render(ctx, rect, template, state, metadata, animator)
     Draw.text(dl, cursor_x, cursor_y, tags_color, tags_text)
   end
 
-  -- Section 4: Favorite Star (right-aligned)
-  local star_x = x2 - M.CONFIG.star_size - M.CONFIG.star_margin
-  local star_y = y1 + (tile_h / 2) - (M.CONFIG.star_size / 2)
-  local star_center_x = star_x + M.CONFIG.star_size / 2
-  local star_center_y = star_y + M.CONFIG.star_size / 2
+  -- Section 4: Favorite Badge (right-aligned, replaces old star icon)
+  local badge_size = 14  -- Compact badge size for list view
+  local badge_margin = 4
+  local badge_x = x2 - badge_size - badge_margin  -- Right side
+  local badge_y = y1 + (tile_h - badge_size) / 2  -- Vertically centered
 
-  -- Check if mouse is over star icon
+  -- Check if mouse is over badge for click detection
   local mx, my = ImGui.GetMousePos(ctx)
-  local is_star_hovered = mx >= star_x and mx <= star_x + M.CONFIG.star_size and
-                          my >= star_y and my <= star_y + M.CONFIG.star_size
+  local is_badge_hovered = mx >= badge_x and mx <= badge_x + badge_size and
+                           my >= badge_y and my <= badge_y + badge_size
 
-  -- Star color based on favorite status and hover
-  local star_color
-  if is_favorite then
-    star_color = is_star_hovered and hexrgb("#FFD700") or hexrgb("#FFA500")  -- Gold/Orange when favorited
-  else
-    star_color = is_star_hovered and hexrgb("#AAAAAA") or hexrgb("#555555")  -- Gray when not favorited
-  end
+  -- Badge configuration (matching ItemPicker style, scaled for compact view)
+  local badge_config = {
+    rounding = 2,
+    bg = hexrgb("#14181C"),
+    border_alpha = 0x66,
+    border_darken = 0.4,
+    icon_color = is_favorite and hexrgb("#FFA500") or hexrgb("#555555"),  -- Orange when favorited, gray otherwise
+  }
 
-  -- Draw star using ImGui Path API
-  local function draw_star(cx, cy, radius, color)
-    ImGui.DrawList_PathClear(dl)
-    for i = 0, 9 do
-      local angle = (i * 36 - 90) * math.pi / 180  -- 5 points, starting from top
-      local r = (i % 2 == 0) and radius or radius * 0.4  -- Outer and inner radius
-      local px = cx + r * math.cos(angle)
-      local py = cy + r * math.sin(angle)
-      ImGui.DrawList_PathLineTo(dl, px, py)
-    end
-    ImGui.DrawList_PathFillConvex(dl, color)
-  end
+  -- Always render badge (not just when favorited) so it's clickable
+  Badge.render_favorite_badge(ctx, dl, badge_x, badge_y, badge_size, 255, true,
+                             nil, nil, chip_color or hexrgb("#555555"), badge_config)
 
-  draw_star(star_center_x, star_center_y, M.CONFIG.star_size / 2, star_color)
-
-  -- Handle star click
-  if is_star_hovered and ImGui.IsMouseClicked(ctx, 0) then
+  -- Handle badge click to toggle favorite
+  if is_badge_hovered and ImGui.IsMouseClicked(ctx, 0) then
     state.star_clicked = true
-  end
-
-  -- Render favorite badge if template is favorited (compact icon badge matching ItemPicker style)
-  if is_favorite then
-    local badge_size = 12  -- Smaller badge size for compact view
-    local badge_margin = 4
-    local badge_x = x1 + badge_margin  -- Left side with small margin
-    local badge_y = y1 + (tile_h - badge_size) / 2  -- Vertically centered
-
-    -- Badge configuration (matching ItemPicker style, scaled for compact view)
-    local badge_config = {
-      rounding = 2,
-      bg = hexrgb("#14181C"),
-      border_alpha = 0x66,
-      border_darken = 0.4,
-      icon_color = hexrgb("#FFA500"),  -- Orange star icon
-    }
-
-    -- Render using standardized favorite badge method
-    Badge.render_favorite_badge(ctx, dl, badge_x, badge_y, badge_size, 255, is_favorite,
-                               nil, nil, chip_color or hexrgb("#555555"), badge_config)
   end
 end
 
