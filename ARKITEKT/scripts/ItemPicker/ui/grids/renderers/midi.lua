@@ -233,11 +233,17 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Check if item is favorited
   local is_favorite = state.favorites and state.favorites.midi and state.favorites.midi[item_data.track_guid]
 
-  -- Calculate star badge space
+  -- Calculate star badge space - match cycle badge height dynamically
   local fav_cfg = config.TILE_RENDER.badges.favorite
-  local star_badge_size = fav_cfg.size
-  local star_padding = fav_cfg.padding
-  local text_right_margin = is_favorite and (star_badge_size + star_padding * 2) or 0
+  local _, text_h = ImGui.CalcTextSize(ctx, "1")  -- Get text height to match cycle badge
+  local star_badge_size = text_h + (config.TILE_RENDER.badges.cycle.padding_y * 2)  -- Match cycle badge calculation
+
+  -- Calculate extra text margin to reserve space for favorite badge (text truncation only)
+  -- This doesn't affect cycle badge position, only text truncation
+  local extra_text_margin = 0
+  if is_favorite then
+    extra_text_margin = star_badge_size + (fav_cfg.spacing or 4)
+  end
 
   -- Check if this tile is being renamed
   local is_renaming = state.rename_active and state.rename_uuid == item_data.uuid and not state.rename_is_audio
@@ -253,7 +259,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Render inline rename input
       local input_x = scaled_x1 + 8
       local input_y = scaled_y1 + 4
-      local input_w = (scaled_x2 - text_right_margin) - input_x - 4
+      local input_w = (scaled_x2 - extra_text_margin) - input_x - 4
       local input_h = header_height - 8
 
       ImGui.SetCursorScreenPos(ctx, input_x, input_y)
@@ -383,8 +389,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       ImGui.PopStyleVar(ctx)
     else
       -- Normal text rendering
-      local text_x2 = scaled_x2 - text_right_margin
-
       -- Badge click callback to cycle through items
       local on_badge_click = function()
         if item_data.total and item_data.total > 1 then
@@ -394,17 +398,35 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         end
       end
 
-      BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, text_x2, header_height,
+      -- Pass full x2 (cycle badge position stays fixed), use extra_text_margin for text truncation only
+      BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, scaled_x2, header_height,
         item_data.name, item_data.index, item_data.total, render_color, text_alpha, config,
-        item_data.uuid, badge_rects, on_badge_click)
+        item_data.uuid, badge_rects, on_badge_click, extra_text_margin)
     end
   end
 
-  -- Render favorite star badge (vertically centered in header)
+  -- Render favorite star badge (vertically centered in header, to the left of cycle badge)
   if cascade_factor > 0.5 and is_favorite then
-    local star_x = scaled_x2 - star_badge_size - star_padding
+    local star_x
+    -- Position favorite to the left of cycle badge (if it exists)
+    if item_data.total and item_data.total > 1 then
+      -- Calculate where cycle badge will be positioned
+      local cycle_cfg = config.TILE_RENDER.badges.cycle
+      local cycle_text = string.format("%d/%d", item_data.index or 1, item_data.total)
+      local cycle_w, _ = ImGui.CalcTextSize(ctx, cycle_text)
+      local cycle_badge_w = cycle_w + cycle_cfg.padding_x * 2
+      local cycle_x = scaled_x2 - cycle_badge_w - cycle_cfg.margin
+      -- Position favorite to the left of cycle badge
+      star_x = cycle_x - star_badge_size - (fav_cfg.spacing or 4)
+    else
+      -- No cycle badge, position at right edge
+      star_x = scaled_x2 - star_badge_size - fav_cfg.margin
+    end
+
     local star_y = scaled_y1 + (header_height - star_badge_size) / 2
-    Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite)
+    local icon_size = fav_cfg.icon_size or state.icon_font_size
+    Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite,
+      state.icon_font, icon_size, render_color, fav_cfg)
   end
 
   -- Render region tags (bottom left, only on larger tiles)
@@ -479,8 +501,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     border_color = Colors.with_alpha(border_color, pool_cfg.border_alpha)
     ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, border_color, pool_cfg.rounding, 0, 0.5)
 
-    -- Pool count text
-    local text_color = Colors.hexrgb("#AAAAAA")
+    -- Pool count text (match cycle badge brightness)
+    local text_color = Colors.hexrgb("#FFFFFFDD")
     text_color = Colors.with_alpha(text_color, math.floor(combined_alpha * 255))
     ImGui.DrawList_AddText(dl, badge_x + pool_cfg.padding_x, badge_y + pool_cfg.padding_y, text_color, pool_text)
   end

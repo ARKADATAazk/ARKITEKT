@@ -8,6 +8,7 @@ local hexrgb = Colors.hexrgb
 local Draw = require('rearkitekt.gui.draw')
 local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
+local Badge = require('rearkitekt.gui.widgets.primitives.badge')
 
 local M = {}
 
@@ -164,7 +165,8 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
 end
 
 -- Render text with badge
-function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index, total, base_color, text_alpha, config, item_key, badge_rects, on_badge_click)
+-- @param extra_text_margin Optional extra margin for text truncation only (doesn't affect badge position)
+function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index, total, base_color, text_alpha, config, item_key, badge_rects, on_badge_click, extra_text_margin)
   local tile_render = config.TILE_RENDER
   local show_text = header_height >= (tile_render.responsive.hide_text_below - tile_render.header.min_height)
   local show_badge = header_height >= (tile_render.responsive.hide_badge_below - tile_render.header.min_height)
@@ -172,9 +174,10 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   if not show_text then return end
 
   local text_x = x1 + tile_render.text.padding_left
-  local text_y = y1 + (header_height - ImGui.GetTextLineHeight(ctx)) / 2
+  local text_y = y1 + (header_height - ImGui.GetTextLineHeight(ctx)) / 2 - (4 - tile_render.text.padding_top)
 
-  local right_bound_x = x2 - tile_render.text.margin_right
+  -- Calculate text truncation boundary (includes extra margin for favorite badge, etc.)
+  local right_bound_x = x2 - tile_render.text.margin_right - (extra_text_margin or 0)
   if show_badge and total and total > 1 then
     local badge_text = string.format("%d/%d", index or 1, total)
     local bw, _ = ImGui.CalcTextSize(ctx, badge_text)
@@ -193,42 +196,23 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
     local badge_text = string.format("%d/%d", index or 1, total)
     local bw, bh = ImGui.CalcTextSize(ctx, badge_text)
 
-    -- Calculate badge dimensions
+    -- Calculate badge dimensions with padding
     local badge_w = bw + badge_cfg.padding_x * 2
     local badge_h = bh + badge_cfg.padding_y * 2
 
     -- Center vertically in header
     local badge_x = x2 - badge_w - badge_cfg.margin
     local badge_y = y1 + (header_height - badge_h) / 2
-    local badge_x2 = badge_x + badge_w
-    local badge_y2 = badge_y + badge_h
 
-    -- Background
-    local badge_bg_alpha = math.floor((badge_cfg.bg & 0xFF) * (text_alpha / 255))
-    local badge_bg = (badge_cfg.bg & 0xFFFFFF00) | badge_bg_alpha
-    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, badge_cfg.rounding)
+    -- Render using modular badge system (clickable)
+    local x1, y1, x2_badge, y2_badge = Badge.render_clickable_text_badge(
+      ctx, dl, badge_x, badge_y, badge_text, base_color, text_alpha,
+      item_key, on_badge_click, badge_cfg
+    )
 
-    -- Border using darker tile color
-    local border_color = Colors.adjust_brightness(base_color, badge_cfg.border_darken)
-    border_color = Colors.with_alpha(border_color, badge_cfg.border_alpha)
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, border_color, badge_cfg.rounding, 0, 0.5)
-
-    -- Text
-    Draw.text(dl, badge_x + badge_cfg.padding_x, badge_y + badge_cfg.padding_y,
-      Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
-
-    -- Store badge rect for exclusion zone and make it clickable
+    -- Store badge rect for exclusion zones
     if badge_rects and item_key then
-      badge_rects[item_key] = {badge_x, badge_y, badge_x2, badge_y2}
-
-      -- Create invisible button over badge for click detection
-      ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
-      ImGui.InvisibleButton(ctx, "##badge_" .. item_key, badge_x2 - badge_x, badge_y2 - badge_y)
-
-      -- Handle badge click to cycle items
-      if ImGui.IsItemClicked(ctx, 0) and on_badge_click then
-        on_badge_click()
-      end
+      badge_rects[item_key] = {x1, y1, x2_badge, y2_badge}
     end
   end
 end

@@ -28,7 +28,7 @@ end
 ---Load standard ARKITEKT fonts and attach to ImGui context
 ---@param ImGui table ReaImGui module
 ---@param ctx userdata ImGui context to attach fonts to
----@param opts? table Optional size overrides: { default_size, title_size, monospace_size, orbitron_size }
+---@param opts? table Optional size overrides: { default_size, title_size, monospace_size, orbitron_size, icons_size }
 ---@return table fonts Table with font objects and their sizes
 function M.load(ImGui, ctx, opts)
   opts = opts or {}
@@ -38,6 +38,7 @@ function M.load(ImGui, ctx, opts)
   local title_size = opts.title_size or Constants.TYPOGRAPHY.HEADING
   local monospace_size = opts.monospace_size or Constants.TYPOGRAPHY.CODE
   local orbitron_size = opts.orbitron_size or (Constants.TYPOGRAPHY.HEADING * 1.5)  -- Larger for branding
+  local icons_size = opts.icons_size or 14  -- Default icon font size
 
   -- Find fonts directory
   local fonts_dir = find_fonts_dir()
@@ -45,6 +46,7 @@ function M.load(ImGui, ctx, opts)
   local bold = fonts_dir .. 'Inter_18pt-SemiBold.ttf'
   local mono = fonts_dir .. 'JetBrainsMono-Regular.ttf'
   local orbitron = fonts_dir .. 'Orbitron-Bold.ttf'
+  local remixicon = fonts_dir .. 'remixicon.ttf'
 
   -- Create fonts - use CreateFontFromFile for TTF files, CreateFont for system fonts
   local fonts = {
@@ -59,6 +61,9 @@ function M.load(ImGui, ctx, opts)
 
     orbitron = file_exists(orbitron) and ImGui.CreateFontFromFile(orbitron, 0, 0) or nil,
     orbitron_size = orbitron_size,
+
+    icons = file_exists(remixicon) and ImGui.CreateFontFromFile(remixicon, 0, 0) or nil,
+    icons_size = icons_size,
   }
 
   -- Attach all font objects to context

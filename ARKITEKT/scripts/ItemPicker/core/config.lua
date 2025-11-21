@@ -110,7 +110,7 @@ M.TILE_RENDER = {
   header = {
     -- Sizing
     height_ratio = 0.15,
-    min_height = 22,
+    min_height = 21,  -- Reduced by 1px for tighter header
     rounding_offset = 2,      -- Subtract from TILE.ROUNDING for tighter corner alignment
 
     -- Color controls (HSV transformation from base tile color)
@@ -127,8 +127,8 @@ M.TILE_RENDER = {
     -- Cycle badge (index/total in header)
     cycle = {
       padding_x = 5,
-      padding_y = 1,
-      margin = 6,
+      padding_y = 0,  -- Reduced by 1px (no vertical padding for tighter badge)
+      margin = 4,  -- Match pool badge margin (balanced edge spacing)
       rounding = 3,
       bg = hexrgb("#14181C"),
       border_darken = 0.4,  -- Darken tile color by this amount for border
@@ -146,18 +146,24 @@ M.TILE_RENDER = {
       border_alpha = 0x55,
     },
 
-    -- Favorite star
+    -- Favorite star (icon badge in header)
     favorite = {
-      size = 16,  -- Smaller star
-      padding = 3,
+      -- Note: size is calculated dynamically in renderers to match cycle badge height
+      icon_size = 14,  -- Icon font size for star visibility within badge
+      margin = 4,  -- Match pool badge margin (balanced edge spacing)
+      spacing = 4,  -- Space between favorite and cycle badge
+      rounding = 3,  -- Match cycle badge rounding
+      bg = hexrgb("#14181C"),  -- Match cycle badge background
+      border_darken = 0.4,  -- Match cycle badge border
+      border_alpha = 0x66,  -- Match cycle badge border alpha
     },
   },
 
   -- Text
   text = {
     primary_color = hexrgb("#FFFFFF"),
-    padding_left = 6,
-    padding_top = 4,
+    padding_left = 4,  -- Match badge margins (balanced edge spacing)
+    padding_top = 3,  -- Reduced by 1px to move text up
     margin_right = 6,
   },
 

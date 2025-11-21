@@ -5,6 +5,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
+local Badge = require('rearkitekt.gui.widgets.primitives.badge')
 
 local M = {}
 
@@ -85,48 +86,41 @@ function M.draw_star_outline(dl, cx, cy, outer_radius, inner_radius, color, thic
   ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, thickness)
 end
 
--- Draw a favorite star indicator with simple badge styling
+-- Draw a favorite star indicator using modular badge system
 -- @param ctx ImGui context
 -- @param dl DrawList
 -- @param x X position (top-left of bounds)
 -- @param y Y position (top-left of bounds)
 -- @param size Size of the badge
--- @param alpha Overall alpha multiplier
+-- @param alpha Overall alpha multiplier (0.0-1.0)
 -- @param is_favorite Whether the item is favorited
-function M.draw_favorite_star(ctx, dl, x, y, size, alpha, is_favorite)
-  alpha = alpha or 1.0
-
+-- @param icon_font Optional icon font to use (remixicon), falls back to Unicode star
+-- @param icon_font_size Optional icon font size
+-- @param base_color Optional base tile color for border derivation (defaults to neutral gray)
+-- @param config Optional badge config overrides
+function M.draw_favorite_star(ctx, dl, x, y, size, alpha, is_favorite, icon_font, icon_font_size, base_color, config)
   if not is_favorite then
     return  -- Only draw if favorited
   end
 
-  local padding = 3
-  local badge_rounding = 3
+  -- Convert alpha from 0.0-1.0 to 0-255 for badge system
+  local alpha_255 = math.floor(alpha * 255)
 
-  -- Badge background
-  local bg_alpha = math.floor(alpha * 200)  -- Slightly transparent
-  local bg_color = Colors.hexrgb("#14181C")  -- Dark background
-  bg_color = Colors.with_alpha(bg_color, bg_alpha)
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + size, y + size, bg_color, badge_rounding)
+  -- Use remixicon star-fill if available, otherwise fallback to Unicode star
+  local star_char
+  if icon_font then
+    -- Remixicon star-fill: U+F186
+    star_char = utf8.char(0xF186)
+  else
+    -- Fallback to Unicode star character for cleaner rendering (no aliasing)
+    star_char = "★"  -- U+2605 BLACK STAR
+  end
 
-  -- Badge border
-  local border_alpha = math.floor(alpha * 100)
-  local border_color = Colors.hexrgb("#2A2A2A")
-  border_color = Colors.with_alpha(border_color, border_alpha)
-  ImGui.DrawList_AddRect(dl, x, y, x + size, y + size, border_color, badge_rounding, 0, 1)
+  -- Default base color if not provided
+  base_color = base_color or Colors.hexrgb("#555555")
 
-  -- Use Unicode star character for cleaner rendering (no aliasing)
-  local star_char = "★"  -- U+2605 BLACK STAR
-  local star_alpha = math.floor(alpha * 255)
-  local star_color = Colors.hexrgb("#FFFFFF")
-  star_color = Colors.with_alpha(star_color, star_alpha)
-
-  -- Center the star text within the badge
-  local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)
-  local text_x = x + (size - text_w) / 2
-  local text_y = y + (size - text_h) / 2
-
-  ImGui.DrawList_AddText(dl, text_x, text_y, star_color, star_char)
+  -- Render using modular badge system
+  Badge.render_icon_badge(ctx, dl, x, y, size, star_char, base_color, alpha_255, icon_font, icon_font_size, config)
 end
 
 return M
