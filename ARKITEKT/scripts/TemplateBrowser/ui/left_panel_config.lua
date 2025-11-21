@@ -7,8 +7,8 @@ local M = {}
 function M.create(callbacks, is_overlay_mode)
   return {
     -- Disable grid pattern background
-    background = {
-      grid_pattern = false,
+    background_pattern = {
+      enabled = false,
     },
 
     header = {
