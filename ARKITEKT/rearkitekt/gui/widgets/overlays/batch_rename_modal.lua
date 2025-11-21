@@ -244,7 +244,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Get icon font from shell_state
   local icon_font = self.shell_state and self.shell_state.fonts and self.shell_state.fonts.icons
-  local icon_size = self.shell_state and self.shell_state.fonts and self.shell_state.fonts.icons_size or 28
+  local icon_size = 40  -- Use 40px for better visibility
 
   -- Draw using RemixIcon font (question-fill icon: U+F044)
   ImGui.PushFont(ctx, icon_font, icon_size)
