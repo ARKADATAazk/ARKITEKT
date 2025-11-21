@@ -155,6 +155,10 @@ function GUI:draw(ctx, shell_state)
   local big_font = shell_state.fonts.title
   local big_font_size = shell_state.fonts.title_size or 24
 
+  -- Store icon font in state for renderers
+  self.state.icon_font = shell_state.fonts.icons
+  self.state.icon_font_size = shell_state.fonts.icons_size or 14
+
   -- Process async jobs for waveform/thumbnail generation
   -- Skip job processing entirely if skip_visualizations is enabled
   if not self.state.skip_visualizations and self.state.job_queue and self.state.runtime_cache then

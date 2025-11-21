@@ -404,7 +404,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   if cascade_factor > 0.5 and is_favorite then
     local star_x = scaled_x2 - star_badge_size - star_padding
     local star_y = scaled_y1 + (header_height - star_badge_size) / 2
-    Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite)
+    Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite,
+      state.icon_font, state.icon_font_size)
   end
 
   -- Render region tags (bottom left, only on larger tiles)

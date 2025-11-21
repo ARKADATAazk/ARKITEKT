@@ -93,7 +93,9 @@ end
 -- @param size Size of the badge
 -- @param alpha Overall alpha multiplier
 -- @param is_favorite Whether the item is favorited
-function M.draw_favorite_star(ctx, dl, x, y, size, alpha, is_favorite)
+-- @param icon_font Optional icon font to use (remixicon), falls back to Unicode star
+-- @param icon_font_size Optional icon font size
+function M.draw_favorite_star(ctx, dl, x, y, size, alpha, is_favorite, icon_font, icon_font_size)
   alpha = alpha or 1.0
 
   if not is_favorite then
@@ -115,8 +117,17 @@ function M.draw_favorite_star(ctx, dl, x, y, size, alpha, is_favorite)
   border_color = Colors.with_alpha(border_color, border_alpha)
   ImGui.DrawList_AddRect(dl, x, y, x + size, y + size, border_color, badge_rounding, 0, 1)
 
-  -- Use Unicode star character for cleaner rendering (no aliasing)
-  local star_char = "★"  -- U+2605 BLACK STAR
+  -- Use remixicon star-fill if available, otherwise fallback to Unicode star
+  local star_char
+  if icon_font then
+    -- Remixicon star-fill: U+F186
+    star_char = utf8.char(0xF186)
+    ImGui.PushFont(ctx, icon_font, icon_font_size or 14)
+  else
+    -- Fallback to Unicode star character for cleaner rendering (no aliasing)
+    star_char = "★"  -- U+2605 BLACK STAR
+  end
+
   local star_alpha = math.floor(alpha * 255)
   local star_color = Colors.hexrgb("#FFFFFF")
   star_color = Colors.with_alpha(star_color, star_alpha)
@@ -127,6 +138,10 @@ function M.draw_favorite_star(ctx, dl, x, y, size, alpha, is_favorite)
   local text_y = y + (size - text_h) / 2
 
   ImGui.DrawList_AddText(dl, text_x, text_y, star_color, star_char)
+
+  if icon_font then
+    ImGui.PopFont(ctx)
+  end
 end
 
 return M
