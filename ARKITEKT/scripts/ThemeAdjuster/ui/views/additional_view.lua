@@ -49,6 +49,7 @@ function M.new(State, Config, settings)
     -- Parameter groups (organized by group headers)
     param_groups = {},
     enabled_groups = {},  -- group_name -> true/false
+    group_collapsed_states = {},  -- group_name -> true/false (collapsed state)
 
     -- UI state
     dev_mode = false,
@@ -351,7 +352,32 @@ end
 
 -- Grid data provider methods
 function AdditionalView:get_library_items()
-  return self.unknown_params
+  -- Use TileGroup to flatten param_groups into a flat list for the Grid
+  local TileGroup = require('rearkitekt.gui.widgets.containers.tile_group')
+
+  -- Convert param_groups to TileGroup structures
+  local tile_groups = {}
+  for _, group in ipairs(self.param_groups) do
+    -- Only include enabled groups
+    if self.enabled_groups[group.name] then
+      -- Get collapsed state from persisted data (default to false)
+      local collapsed = self.group_collapsed_states[group.name]
+      if collapsed == nil then
+        collapsed = false
+      end
+
+      table.insert(tile_groups, TileGroup.create_group({
+        id = group.name,
+        name = group.display_name or group.name,
+        color = group.color,
+        collapsed = collapsed,
+        items = group.params
+      }))
+    end
+  end
+
+  -- Flatten groups into a single list (no ungrouped items since all params are grouped)
+  return TileGroup.flatten_groups(tile_groups, {})
 end
 
 function AdditionalView:get_assignment_items(tab_id)
@@ -1121,6 +1147,13 @@ function AdditionalView:load_assignments()
     self:apply_group_filter()
   end
 
+  -- Load group collapsed states
+  if mappings and mappings.group_collapsed_states then
+    for group_name, collapsed in pairs(mappings.group_collapsed_states) do
+      self.group_collapsed_states[group_name] = collapsed
+    end
+  end
+
   -- Load parameter link groups
   if mappings and mappings.parameter_link_data then
     ParameterLinkManager.set_all_data(mappings.parameter_link_data)
@@ -1152,7 +1185,8 @@ function AdditionalView:save_assignments()
     self.custom_metadata,
     self.enabled_groups,
     param_link_data,
-    self.templates
+    self.templates,
+    self.group_collapsed_states
   )
 
   -- Invalidate TCP/MCP caches
@@ -1170,7 +1204,8 @@ function AdditionalView:save_group_filter()
     self.custom_metadata,
     self.enabled_groups,
     param_link_data,
-    self.templates
+    self.templates,
+    self.group_collapsed_states
   )
 
   if self.cache_invalidation_callback then

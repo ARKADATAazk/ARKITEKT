@@ -4,6 +4,7 @@
 
 local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
 local LibraryTile = require('ThemeAdjuster.ui.grids.renderers.library_tile')
+local TileGroup = require('rearkitekt.gui.widgets.containers.tile_group')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -45,8 +46,31 @@ local function create_copy_mode_check(view)
 end
 
 local function create_render_tile(view)
-  return function(ctx, rect, param, state)
-    LibraryTile.render(ctx, rect, param, state, view)
+  return function(ctx, rect, item, state, grid)
+    -- Check if this is a group header
+    if TileGroup.is_group_header(item) then
+      -- Render group header
+      local clicked = TileGroup.render_header(ctx, rect, item, state)
+      if clicked then
+        -- Toggle group collapse state
+        TileGroup.toggle_group(item)
+
+        -- Persist the collapsed state
+        view.group_collapsed_states[item.__group_id] = item.__group_ref.collapsed
+        view:save_group_filter()
+      end
+    else
+      -- Render regular parameter tile (extract original item if wrapped)
+      local param = TileGroup.get_original_item(item)
+      local indent = TileGroup.get_indent(item)
+
+      -- Apply indent to rect if needed
+      if indent > 0 then
+        rect = {rect[1] + indent, rect[2], rect[3], rect[4]}
+      end
+
+      LibraryTile.render(ctx, rect, param, state, view)
+    end
   end
 end
 
@@ -84,7 +108,16 @@ function M.create(view, config)
     fixed_tile_h = 32,  -- Compact tile height
 
     get_items = function() return view:get_library_items() end,
-    key = function(param) return "lib_" .. tostring(param.index) end,
+    key = function(item)
+      -- Handle group headers
+      if TileGroup.is_group_header(item) then
+        return "group_header_" .. item.__group_id
+      end
+
+      -- Handle regular or grouped parameter items
+      local param = TileGroup.get_original_item(item)
+      return "lib_" .. tostring(param.index)
+    end,
 
     get_exclusion_zones = create_exclusion_zones(view),
 
