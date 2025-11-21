@@ -499,7 +499,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Calculate layout toggle dimensions
   local layout_button_width = 0
   if self.state.settings.show_audio and self.state.settings.show_midi then
-    layout_button_width = 60  -- Fixed width for layout toggle
+    layout_button_width = 40  -- Smaller width for layout toggle
   end
 
   -- Calculate search width and center it
@@ -540,8 +540,11 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local layout_mode = self.state.settings.layout_mode or "vertical"
     local is_vertical = layout_mode == "vertical"
 
+    -- Use rectangles to represent layout: ▐▌ for horizontal (side by side), ≡ for vertical (stacked)
+    local layout_icon = is_vertical and "≡" or "▐▌"
+
     Button.draw(ctx, draw_list, current_x, search_y, layout_button_width, button_height, {
-      label = is_vertical and "⬍⬍" or "⬌⬌",
+      label = layout_icon,
       is_toggled = not is_vertical,  -- Toggle state shows when in horizontal mode
       preset_name = "BUTTON_TOGGLE_WHITE",
       tooltip = is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout",
@@ -552,8 +555,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     }, "layout_toggle_button")
   end
 
-  -- Position sort buttons immediately RIGHT of search
+  -- Add "Sorting:" label before sort buttons
   local sort_x = search_x + search_width + button_gap
+  local sort_label = "Sorting:"
+  local sort_label_width = ImGui.CalcTextSize(ctx, sort_label)
+  local sort_label_color = Colors.hexrgb("#AAAAAA")
+  sort_label_color = Colors.with_alpha(sort_label_color, math.floor(search_fade * 200))
+  ImGui.DrawList_AddText(draw_list, sort_x, search_y + 6, sort_label_color, sort_label)
+
+  -- Position sort buttons after label
+  sort_x = sort_x + sort_label_width + 8
   for i, mode in ipairs(sort_modes) do
     local button_w = sort_button_widths[i]
     local is_active = (current_sort == mode.id)
