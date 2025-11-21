@@ -185,12 +185,26 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local chip_y = tile_h >= M.CONFIG.compact_mode_below and (content_y + 40) or (content_y + 24)
     local chip_x = content_x
 
-    -- Get first VST name
+    -- Get first VST name and truncate if needed
     local first_vst = template.fx[1]
     local vst_color = hexrgb("#4A9EFF")
 
+    -- Calculate max width for chip (leave room for favorite badge and margin)
+    local max_chip_width = content_w - 40
+
+    -- Truncate VST name if it's too long
+    local display_vst = first_vst
+    local text_width = ImGui.CalcTextSize(ctx, first_vst)
+    local chip_content_width = 12 + 6 + 10 + 8  -- padding + dot + spacing + end padding
+    if text_width + chip_content_width > max_chip_width then
+      -- Truncate with ellipsis
+      local available_width = max_chip_width - chip_content_width - ImGui.CalcTextSize(ctx, "...")
+      display_vst = truncate_text(ctx, first_vst, available_width)
+      text_width = ImGui.CalcTextSize(ctx, display_vst)
+    end
+
     -- Use DrawList directly to avoid cursor position issues
-    local chip_w = ImGui.CalcTextSize(ctx, first_vst) + 26  -- text width + padding + dot
+    local chip_w = text_width + chip_content_width
     local chip_h = 20
 
     -- Background
@@ -205,16 +219,17 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
     -- Dot
     local dot_x = chip_x + 12
-    local dot_y = chip_y + chip_h * 0.5
+    local dot_y = chip_y + (chip_h * 0.5)
     local dot_radius = 3
     ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius + 1, Colors.with_alpha(hexrgb("#000000"), 80))
     ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius, vst_color)
 
-    -- Text
+    -- Text (use fixed text height for vertical centering)
+    local text_height = 13  -- Approximate default font height
     local text_x = chip_x + 12 + 6 + 10 - 3  -- padding + dot + spacing - adjustment
-    local text_y = chip_y + (chip_h - ImGui.CalcTextSize(ctx, first_vst)) * 0.5 - 1
+    local text_y = chip_y + ((chip_h - text_height) * 0.5)
     local text_color = Colors.with_alpha(hexrgb("#FFFFFF"), 200)
-    Draw.text(dl, text_x, text_y, text_color, first_vst)
+    Draw.text(dl, text_x, text_y, text_color, display_vst)
   end
 
   -- Render favorite badge in top-right corner (replaces old star icon)
