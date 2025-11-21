@@ -405,17 +405,22 @@ end
 
 local function get_or_create_instance(context, config, state_or_id)
   local instance = instances[context.unique_id]
-  
+
   if not instance then
     -- Get initial values from state (if panel context)
     local initial_value = nil
     local initial_direction = "asc"
-    
+
     if context.is_panel_context then
       initial_value = state_or_id.dropdown_value
       initial_direction = state_or_id.dropdown_direction or "asc"
     end
-    
+
+    -- Prefer config.current_value over panel state (allows explicit control)
+    if config.current_value ~= nil then
+      initial_value = config.current_value
+    end
+
     instance = Dropdown.new(context.unique_id, config, initial_value, initial_direction)
     instances[context.unique_id] = instance
   else
