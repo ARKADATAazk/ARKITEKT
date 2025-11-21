@@ -218,6 +218,8 @@ local function render_tree_node(ctx, node, config, state, depth)
       -- Arrow position: centered in the arrow_width space, slightly to the right of the left edge
       local arrow_x = item_min_x + (arrow_width / 2) - 2.5  -- Center horizontally in arrow space
       local arrow_y = item_min_y + (item_max_y - item_min_y) / 2 - 2.5  -- Center vertically
+      -- Round arrow_y to whole pixel to avoid aliasing
+      arrow_y = math.floor(arrow_y + 0.5)
       draw_tree_arrow(ctx, dl, arrow_x, arrow_y, is_open)
     end
 
@@ -296,7 +298,8 @@ local function render_tree_node(ctx, node, config, state, depth)
       -- Use node color for text if available, otherwise white
       local text_color
       if node_color and config.show_colors then
-        text_color = node_color  -- Use folder color for text
+        -- Make text much lighter/subtler than the folder color
+        text_color = Colors.adjust_brightness(node_color, 2.5)  -- 2.5x brighter for subtle tint
       else
         text_color = Colors.hexrgb("#FFFFFFFF")  -- Default white text
       end
