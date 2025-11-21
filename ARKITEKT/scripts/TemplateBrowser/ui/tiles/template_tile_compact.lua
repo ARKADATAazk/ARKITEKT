@@ -6,8 +6,6 @@
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Draw = require('rearkitekt.gui.draw')
-local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
-local TileFXConfig = require('rearkitekt.gui.rendering.tile.defaults')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 
@@ -81,66 +79,48 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local chip_color = tmpl_meta and tmpl_meta.chip_color
   local is_favorite = is_favorited(template.uuid, metadata)
 
-  -- Use neutral base color for tile
-  local base_color = hexrgb("#2A2A2A")
-
   -- Animation tracking
   animator:track(template.uuid, 'hover', state.hover and 1.0 or 0.0, 12.0)
   local hover_factor = animator:get(template.uuid, 'hover')
 
-  -- Configure visual effects
-  local fx_config = TileFXConfig.override({
-    fill_opacity = 0.4,
-    fill_saturation = 0.6,
-    fill_brightness = 0.7,
-    gradient_intensity = 0.2,
-    gradient_opacity = 0.6,
-    specular_strength = state.hover and 0.3 or 0.15,
-    specular_coverage = 0.3,
-    inner_shadow_strength = 0.25,
-    border_saturation = 1.0,
-    border_brightness = 1.2,
-    border_opacity = 0.7,
-    border_thickness = 1.0,
-    glow_strength = 0.0,
-    stripe_enabled = chip_color ~= nil,  -- Subtle stripes if template has color
-    stripe_spacing = 8,
-    stripe_thickness = 3,
-    stripe_opacity = 0.03,
-    ants_enabled = state.selected,  -- Marching ants for selection
-    ants_replace_border = true,
-    ants_thickness = 2,
-    ants_dash = 8,
-    ants_gap = 6,
-    ants_speed = 20,
-    ants_inset = 0,
-    ants_alpha = 0xFF,
-    rounding = 4,  -- Less rounding for compact tiles
-  })
+  -- Color definitions (inspired by Parameter Library)
+  local BG_BASE = hexrgb("#252525")
+  local BG_HOVER = hexrgb("#2D2D2D")
+  local BRD_BASE = hexrgb("#333333")
+  local BRD_HOVER = hexrgb("#5588FF")
+  local rounding = 3
 
-  -- Render base tile
-  TileFX.render_complete(dl, x1, y1, x2, y1 + tile_h, base_color, fx_config,
-    state.selected, hover_factor, nil, nil, nil, nil, chip_color, chip_color ~= nil)
+  -- Background color with smooth hover transition
+  local bg_color = BG_BASE
+  if hover_factor > 0.01 then
+    local r1, g1, b1 = (BG_BASE >> 24) & 0xFF, (BG_BASE >> 16) & 0xFF, (BG_BASE >> 8) & 0xFF
+    local r2, g2, b2 = (BG_HOVER >> 24) & 0xFF, (BG_HOVER >> 16) & 0xFF, (BG_HOVER >> 8) & 0xFF
+    local r = math.floor(r1 + (r2 - r1) * hover_factor * 0.5)
+    local g = math.floor(g1 + (g2 - g1) * hover_factor * 0.5)
+    local b = math.floor(b1 + (b2 - b1) * hover_factor * 0.5)
+    bg_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+  end
 
-  -- Draw marching ants on selected tiles
-  if state.selected and fx_config.ants_enabled then
-    local ants_color = Colors.same_hue_variant(
-      chip_color or base_color,
-      fx_config.border_saturation,
-      fx_config.border_brightness,
-      fx_config.ants_alpha or 0xFF
-    )
-    local inset = fx_config.ants_inset or 0
-    MarchingAnts.draw(
-      dl,
-      x1 + inset, y1 + inset, x2 - inset, y1 + tile_h - inset,
-      ants_color,
-      fx_config.ants_thickness,
-      fx_config.rounding,
-      fx_config.ants_dash,
-      fx_config.ants_gap,
-      fx_config.ants_speed
-    )
+  -- Draw background
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y1 + tile_h, bg_color, rounding)
+
+  -- Draw border or marching ants
+  if state.selected then
+    -- Marching ants for selection
+    local ant_color = chip_color and Colors.same_hue_variant(chip_color, 1.0, 1.2, 0x7F) or hexrgb("#5588FF7F")
+    MarchingAnts.draw(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y1 + tile_h - 0.5, ant_color, 1.5, rounding, 8, 6, 20)
+  else
+    -- Normal border with hover highlight
+    local border_color = BRD_BASE
+    if hover_factor > 0.01 then
+      local r1, g1, b1 = (BRD_BASE >> 24) & 0xFF, (BRD_BASE >> 16) & 0xFF, (BRD_BASE >> 8) & 0xFF
+      local r2, g2, b2 = (BRD_HOVER >> 24) & 0xFF, (BRD_HOVER >> 16) & 0xFF, (BRD_HOVER >> 8) & 0xFF
+      local r = math.floor(r1 + (r2 - r1) * hover_factor)
+      local g = math.floor(g1 + (g2 - g1) * hover_factor)
+      local b = math.floor(b1 + (b2 - b1) * hover_factor)
+      border_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+    end
+    ImGui.DrawList_AddRect(dl, x1, y1, x2, y1 + tile_h, border_color, rounding, 0, 1)
   end
 
   -- Draw color indicator bar on left edge (if template has color)
@@ -151,23 +131,26 @@ function M.render(ctx, rect, template, state, metadata, animator)
       x1, y1,
       x1 + M.CONFIG.color_bar_width, y1 + tile_h,
       bar_color,
-      fx_config.rounding,  -- Match tile rounding
+      rounding,  -- Match tile rounding
       1 | 8  -- Only round left corners
     )
   end
 
-  -- Horizontal layout sections
-  local cursor_x = x1 + M.CONFIG.text_margin + M.CONFIG.color_bar_width
+  -- Horizontal layout sections with internal padding (like Parameter Library tiles)
+  local padding = 6
+  local color_stripe_width = chip_color and M.CONFIG.color_bar_width or 0
+  local cursor_x = x1 + padding + color_stripe_width
   local cursor_y = y1 + (tile_h / 2) - 7  -- Vertically center text
 
   -- Section 1: Template Name (left-aligned, takes ~35% width)
-  local name_width = math.floor(tile_w * M.CONFIG.name_width_fraction)
-  local name_color = hexrgb("#FFFFFF")
+  local available_width = tile_w - (padding * 2) - color_stripe_width
+  local name_width = math.floor(available_width * M.CONFIG.name_width_fraction)
+  local name_color = hexrgb("#CCCCCC")  -- Match Parameter Library text color
   if state.selected or state.hover then
-    name_color = Colors.adjust_brightness(name_color, 1.2)
+    name_color = hexrgb("#FFFFFF")
   end
 
-  local truncated_name = truncate_text(ctx, template.name, name_width - M.CONFIG.text_margin)
+  local truncated_name = truncate_text(ctx, template.name, name_width - 8)
   Draw.text(dl, cursor_x, cursor_y, name_color, truncated_name)
   cursor_x = cursor_x + name_width
 
