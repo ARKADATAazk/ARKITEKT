@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
+local Draw = require('rearkitekt.gui.draw')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
 local Shapes = require('rearkitekt.gui.rendering.shapes')
@@ -529,7 +530,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     ImGui.DrawList_AddText(dl, badge_x + pool_cfg.padding_x, badge_y + pool_cfg.padding_y, text_color, pool_text)
   end
 
-  -- Render duration badge at bottom right
+  -- Render duration text at bottom right (plain text, no badge - matches Region Playlist style)
   if cascade_factor > 0.3 and item_data.item then
     local duration = reaper.GetMediaItemInfo_Value(item_data.item, "D_LENGTH")
     if duration > 0 then
@@ -546,27 +547,21 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         duration_text = string.format("%d:%02d", minutes, seconds)
       end
 
-      local duration_cfg = config.TILE_RENDER.badges.pool  -- Reuse pool badge styling
+      -- Calculate text dimensions and position (right-aligned at bottom-right)
       local text_w, text_h = ImGui.CalcTextSize(ctx, duration_text)
-      local badge_w = text_w + duration_cfg.padding_x * 2
-      local badge_h = text_h + duration_cfg.padding_y * 2
-      local badge_x = scaled_x2 - badge_w - duration_cfg.margin
-      local badge_y = scaled_y2 - badge_h - duration_cfg.margin
+      local margin = 6
+      local text_x = scaled_x2 - text_w - margin
+      local text_y = scaled_y2 - text_h - margin
 
-      -- Badge background
-      local badge_bg_alpha = math.floor((duration_cfg.bg & 0xFF) * combined_alpha)
-      local badge_bg = (duration_cfg.bg & 0xFFFFFF00) | badge_bg_alpha
-      ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, duration_cfg.rounding)
+      -- Create color variant based on tile color (matches Region Playlist duration styling)
+      local duration_saturation = 0.3
+      local duration_brightness = 1.0
+      local duration_alpha = 0x88
+      local text_color = Colors.same_hue_variant(render_color, duration_saturation, duration_brightness, duration_alpha)
+      text_color = Colors.with_alpha(text_color, math.floor(combined_alpha * 255))
 
-      -- Border
-      local border_color = Colors.adjust_brightness(render_color, duration_cfg.border_darken)
-      border_color = Colors.with_alpha(border_color, duration_cfg.border_alpha)
-      ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, border_color, duration_cfg.rounding, 0, 0.5)
-
-      -- Duration text
-      local duration_text_color = Colors.hexrgb("#FFFFFFDD")
-      duration_text_color = Colors.with_alpha(duration_text_color, math.floor(combined_alpha * 255))
-      ImGui.DrawList_AddText(dl, badge_x + duration_cfg.padding_x, badge_y + duration_cfg.padding_y, duration_text_color, duration_text)
+      -- Draw plain text (no background or border)
+      Draw.text(dl, text_x, text_y, text_color, duration_text)
     end
   end
 end
