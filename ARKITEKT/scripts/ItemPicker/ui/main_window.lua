@@ -273,17 +273,26 @@ function GUI:draw(ctx, shell_state)
     local should_insert = self.drag_handler.handle_drag_logic(ctx, self.state, mini_font)
     if should_insert and not self.state.drop_completed then
       -- Check modifier keys for drop behavior
-      local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
-      local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
-
-      -- Debug: Log exact key states
-      reaper.ShowConsoleMsg(string.format("[KEY DEBUG] LeftShift=%s RightShift=%s LeftCtrl=%s RightCtrl=%s => shift=%s ctrl=%s\n",
-        tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift)),
-        tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)),
-        tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl)),
-        tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)),
-        tostring(shift), tostring(ctrl)
-      ))
+      -- If we have captured state (from multi-drop sequence), use that instead
+      local shift, ctrl
+      if self.state.captured_shift ~= nil or self.state.captured_ctrl ~= nil then
+        -- Use captured state from when mouse was pressed
+        shift = self.state.captured_shift or false
+        ctrl = self.state.captured_ctrl or false
+        reaper.ShowConsoleMsg(string.format("[KEY DEBUG] Using CAPTURED state: shift=%s ctrl=%s\n",
+          tostring(shift), tostring(ctrl)))
+      else
+        -- First drop - check keys directly
+        shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
+        ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+        reaper.ShowConsoleMsg(string.format("[KEY DEBUG] LeftShift=%s RightShift=%s LeftCtrl=%s RightCtrl=%s => shift=%s ctrl=%s\n",
+          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift)),
+          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)),
+          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl)),
+          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)),
+          tostring(shift), tostring(ctrl)
+        ))
+      end
 
       -- Set close flag BEFORE inserting for normal drops to block any drag_start calls
       if not shift and not ctrl then
@@ -305,23 +314,41 @@ function GUI:draw(ctx, shell_state)
         self.state.waiting_for_new_click = true
         self.state.mouse_was_pressed_after_drop = false
         self.state.should_close_after_drop = false  -- Explicitly clear close flag
+        -- Keep captured state for next drop in sequence
       elseif ctrl then
         -- CTRL: End drag but keep ItemPicker open
         self.state.end_drag()
         self.state.waiting_for_new_click = false
         self.state.should_close_after_drop = false  -- Explicitly clear close flag
+        -- Clear captured state
+        self.state.captured_shift = nil
+        self.state.captured_ctrl = nil
       else
         -- Normal drop: DON'T end drag - keep State.dragging active
         -- This keeps us in the dragging branch (no overlay render)
         -- Cleanup will handle clearing drag state
         self.state.waiting_for_new_click = false
+        -- Clear captured state
+        self.state.captured_shift = nil
+        self.state.captured_ctrl = nil
         -- Flag is already set before insert, will close on next render
       end
     end
 
     -- Clear waiting flag once mouse is pressed again (for SHIFT mode)
+    -- IMPORTANT: Capture modifier keys HERE (on press) not on release, because ImGui loses focus
     if self.state.waiting_for_new_click and self.state.mouse_was_pressed_after_drop then
-      reaper.ShowConsoleMsg("[SHIFT MODE] Clearing waiting flag, resetting drop_completed\n")
+      -- Capture modifier state while we still have focus
+      local shift_on_press = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
+      local ctrl_on_press = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+
+      reaper.ShowConsoleMsg(string.format("[SHIFT MODE] Clearing waiting flag, captured keys: shift=%s ctrl=%s\n",
+        tostring(shift_on_press), tostring(ctrl_on_press)))
+
+      -- Store captured modifier state for use when mouse is released
+      self.state.captured_shift = shift_on_press
+      self.state.captured_ctrl = ctrl_on_press
+
       self.state.waiting_for_new_click = false
       self.state.drop_completed = false  -- Also reset drop_completed to allow next drop
     end
