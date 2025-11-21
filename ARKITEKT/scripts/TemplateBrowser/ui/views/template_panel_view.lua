@@ -105,15 +105,50 @@ local function get_most_used_templates(state, max_count)
   return result
 end
 
--- Get quick access templates based on mode
+-- Get quick access templates based on mode, with search and sort
 local function get_quick_access_templates(state, max_count)
+  local templates
   if state.quick_access_mode == "favorites" then
-    return get_favorite_templates(state, max_count)
+    templates = get_favorite_templates(state, 100)  -- Get more for filtering
   elseif state.quick_access_mode == "most_used" then
-    return get_most_used_templates(state, max_count)
+    templates = get_most_used_templates(state, 100)
   else
-    return get_recent_templates(state, max_count)
+    templates = get_recent_templates(state, 100)
   end
+
+  -- Apply search filter
+  local search_query = (state.quick_access_search or ""):lower()
+  if search_query ~= "" then
+    local filtered = {}
+    for _, tmpl in ipairs(templates) do
+      if tmpl.name:lower():find(search_query, 1, true) then
+        table.insert(filtered, tmpl)
+      end
+    end
+    templates = filtered
+  end
+
+  -- Apply sort
+  local sort_mode = state.quick_access_sort or "alphabetical"
+  if sort_mode == "alphabetical" then
+    table.sort(templates, function(a, b) return a.name:lower() < b.name:lower() end)
+  elseif sort_mode == "color" then
+    table.sort(templates, function(a, b)
+      local a_color = (state.metadata and state.metadata.templates[a.uuid] and state.metadata.templates[a.uuid].color) or 0
+      local b_color = (state.metadata and state.metadata.templates[b.uuid] and state.metadata.templates[b.uuid].color) or 0
+      return a_color < b_color
+    end)
+  elseif sort_mode == "insertion" then
+    -- Keep original order (insertion order)
+  end
+
+  -- Limit to max_count
+  local result = {}
+  for i = 1, math.min(max_count, #templates) do
+    table.insert(result, templates[i])
+  end
+
+  return result
 end
 
 -- Draw quick access panel (recent/favorites/most used templates)

@@ -11,17 +11,17 @@ function M.create(callbacks, is_overlay_mode)
   return {
     header = {
       enabled = true,
-      height = 32,  -- Compact header with dropdown
+      height = 30,
       elements = {
         -- Quick access mode dropdown (left side)
         {
           id = "quick_access_mode",
           type = "dropdown_field",
           align = "left",
-          width = 140,
+          width = 120,
           spacing_before = 0,
           config = {
-            tooltip = "Quick Access Mode",
+            tooltip = "Quick Access",
             tooltip_delay = 0.5,
             enable_sort = false,
             get_value = callbacks.get_quick_access_mode,
@@ -32,6 +32,62 @@ function M.create(callbacks, is_overlay_mode)
             },
             enable_mousewheel = true,
             on_change = callbacks.on_quick_access_mode_changed,
+          },
+        },
+        -- Spacer
+        {
+          id = "spacer1",
+          type = "separator",
+          flex = 1,
+          spacing_before = 0,
+          config = { show_line = false },
+        },
+        -- Search field
+        {
+          id = "search",
+          type = "search_field",
+          align = "right",
+          width = 150,
+          spacing_before = 0,
+          config = {
+            placeholder = "Search...",
+            get_value = callbacks.get_search_query,
+            on_change = callbacks.on_search_changed,
+          },
+        },
+        -- Sort dropdown
+        {
+          id = "sort",
+          type = "dropdown_field",
+          align = "right",
+          width = 120,
+          spacing_before = 8,
+          config = {
+            tooltip = "Sort by",
+            tooltip_delay = 0.5,
+            enable_sort = false,
+            get_value = callbacks.get_sort_mode,
+            options = {
+              { value = "alphabetical", label = "Alphabetical" },
+              { value = "color", label = "Color" },
+              { value = "insertion", label = "Recently Added" },
+            },
+            enable_mousewheel = true,
+            on_change = callbacks.on_sort_changed,
+          },
+        },
+        -- Grid/List toggle button
+        {
+          id = "view_toggle",
+          type = "button",
+          align = "right",
+          width = 60,
+          spacing_before = 8,
+          config = {
+            get_label = callbacks.get_view_mode_label,
+            on_click = callbacks.on_view_toggle,
+            tooltip = "Toggle view mode",
+            tooltip_delay = 0.5,
           },
         },
       },

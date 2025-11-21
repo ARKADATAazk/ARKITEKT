@@ -229,6 +229,24 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     on_quick_access_mode_changed = function(new_mode)
       self.state.quick_access_mode = new_mode
     end,
+    get_search_query = function()
+      return self.state.quick_access_search or ""
+    end,
+    on_search_changed = function(new_query)
+      self.state.quick_access_search = new_query
+    end,
+    get_sort_mode = function()
+      return self.state.quick_access_sort or "alphabetical"
+    end,
+    on_sort_changed = function(new_mode)
+      self.state.quick_access_sort = new_mode
+    end,
+    get_view_mode_label = function()
+      return (self.state.quick_access_view_mode == "grid") and "Grid" or "List"
+    end,
+    on_view_toggle = function()
+      self.state.quick_access_view_mode = (self.state.quick_access_view_mode == "grid") and "list" or "grid"
+    end,
   }, self.is_overlay_mode)
 
   self.recent_container = TilesContainer.new({
