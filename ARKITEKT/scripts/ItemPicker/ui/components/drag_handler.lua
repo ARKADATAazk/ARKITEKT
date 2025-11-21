@@ -8,6 +8,67 @@ local hexrgb = Colors.hexrgb
 
 local M = {}
 
+-- Helper function to apply alpha to color
+local function apply_alpha(color, alpha_factor)
+  local current_alpha = color & 0xFF
+  local new_alpha = math.floor(current_alpha * alpha_factor)
+  return (color & 0xFFFFFF00) | math.min(255, math.max(0, new_alpha))
+end
+
+-- Get item data and color for stacked items
+local function get_item_data(state, item_index)
+  if not state.dragging_keys or item_index > #state.dragging_keys then
+    -- Return data for the primary dragged item
+    local take = state.item_to_add and reaper.GetActiveTake(state.item_to_add)
+    return {
+      media_item = state.item_to_add,
+      name = state.item_to_add_name,
+      color = state.item_to_add_color or hexrgb("#42E896FF"),
+      is_midi = take and reaper.TakeIsMIDI(take) or false,
+    }
+  end
+
+  -- Get item from lookup table
+  local uuid = state.dragging_keys[item_index]
+  local lookup = state.dragging_is_audio and state.audio_item_lookup or state.midi_item_lookup
+  local item_data = lookup and lookup[uuid]
+
+  if not item_data then
+    return {
+      media_item = state.item_to_add,
+      name = state.item_to_add_name,
+      color = state.item_to_add_color or hexrgb("#42E896FF"),
+      is_midi = false,
+    }
+  end
+
+  -- Extract color from track_color field
+  local color
+  local track_color = item_data.track_color or 0
+  if (track_color & 0x01000000) ~= 0 then
+    -- Has color: extract RGB from COLORREF (0x00BBGGRR)
+    local colorref = track_color & 0x00FFFFFF
+    local R = colorref & 255
+    local G = (colorref >> 8) & 255
+    local B = (colorref >> 16) & 255
+    color = ImGui.ColorConvertDouble4ToU32(R/255, G/255, B/255, 1)
+  else
+    -- No color flag: use default grey
+    color = ImGui.ColorConvertDouble4ToU32(85/255, 91/255, 91/255, 1)
+  end
+
+  local media_item = item_data[1]  -- MediaItem pointer
+  local name = item_data[2] or "Unknown"
+  local take = media_item and reaper.GetActiveTake(media_item)
+
+  return {
+    media_item = media_item,
+    name = name,
+    color = color,
+    is_midi = take and reaper.TakeIsMIDI(take) or false,
+  }
+end
+
 function M.handle_drag_logic(ctx, state, mini_font)
   local mouse_key = reaper.JS_Mouse_GetState(-1)
   local left_mouse_down = (mouse_key & 1) == 1
@@ -169,67 +230,6 @@ function M.handle_drag_logic(ctx, state, mini_font)
   ImGui.End(ctx)
 
   return false  -- Continue dragging
-end
-
--- Helper function to apply alpha to color
-local function apply_alpha(color, alpha_factor)
-  local current_alpha = color & 0xFF
-  local new_alpha = math.floor(current_alpha * alpha_factor)
-  return (color & 0xFFFFFF00) | math.min(255, math.max(0, new_alpha))
-end
-
--- Get item data and color for stacked items
-local function get_item_data(state, item_index)
-  if not state.dragging_keys or item_index > #state.dragging_keys then
-    -- Return data for the primary dragged item
-    local take = state.item_to_add and reaper.GetActiveTake(state.item_to_add)
-    return {
-      media_item = state.item_to_add,
-      name = state.item_to_add_name,
-      color = state.item_to_add_color or hexrgb("#42E896FF"),
-      is_midi = take and reaper.TakeIsMIDI(take) or false,
-    }
-  end
-
-  -- Get item from lookup table
-  local uuid = state.dragging_keys[item_index]
-  local lookup = state.dragging_is_audio and state.audio_item_lookup or state.midi_item_lookup
-  local item_data = lookup and lookup[uuid]
-
-  if not item_data then
-    return {
-      media_item = state.item_to_add,
-      name = state.item_to_add_name,
-      color = state.item_to_add_color or hexrgb("#42E896FF"),
-      is_midi = false,
-    }
-  end
-
-  -- Extract color from track_color field
-  local color
-  local track_color = item_data.track_color or 0
-  if (track_color & 0x01000000) ~= 0 then
-    -- Has color: extract RGB from COLORREF (0x00BBGGRR)
-    local colorref = track_color & 0x00FFFFFF
-    local R = colorref & 255
-    local G = (colorref >> 8) & 255
-    local B = (colorref >> 16) & 255
-    color = ImGui.ColorConvertDouble4ToU32(R/255, G/255, B/255, 1)
-  else
-    -- No color flag: use default grey
-    color = ImGui.ColorConvertDouble4ToU32(85/255, 91/255, 91/255, 1)
-  end
-
-  local media_item = item_data[1]  -- MediaItem pointer
-  local name = item_data[2] or "Unknown"
-  local take = media_item and reaper.GetActiveTake(media_item)
-
-  return {
-    media_item = media_item,
-    name = name,
-    color = color,
-    is_midi = take and reaper.TakeIsMIDI(take) or false,
-  }
 end
 
 function M.render_drag_preview(ctx, state, mini_font, visualization, config)
