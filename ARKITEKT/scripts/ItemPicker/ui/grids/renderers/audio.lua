@@ -106,13 +106,17 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     render_color = Colors.adjust_brightness(render_color, 1.0 + hover_boost)
   end
 
-  -- Ensure minimum luminance (no true black tiles, minimum dark grey)
-  -- Apply AFTER all brightness adjustments but BEFORE alpha
-  local min_luminance = 0.2  -- Minimum luminance threshold (dark grey)
+  -- ABSOLUTE MINIMUM LUMINANCE - NO BLACK TILES ALLOWED
+  -- This is the FINAL enforcement - nothing after this can darken tiles
+  local min_luminance = 0.25  -- Minimum luminance threshold (enforced dark grey minimum)
   local current_luminance = Colors.luminance(render_color)
   if current_luminance < min_luminance then
-    local boost_factor = min_luminance / math.max(current_luminance, 0.001)
-    render_color = Colors.adjust_brightness(render_color, boost_factor)
+    -- Use HSV to preserve hue while enforcing minimum brightness
+    local r, g, b, a = Colors.rgba_to_components(render_color)
+    local h, s, v = Colors.rgb_to_hsl(render_color)
+    -- Boost value to meet minimum luminance
+    local boost = min_luminance / math.max(current_luminance, 0.001)
+    render_color = Colors.adjust_brightness(render_color, boost)
   end
 
   -- Calculate combined alpha with state effects
