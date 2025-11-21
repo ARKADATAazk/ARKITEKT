@@ -476,6 +476,9 @@ local function draw_template_panel(ctx, gui, width, height)
     -- Update grid layout properties for current view mode
     TemplateGridFactory.update_for_view_mode(gui.template_grid)
 
+    -- Set explicit position for container to ensure proper clipping
+    ImGui.SetCursorScreenPos(ctx, content_x, panel_y)
+
     -- Begin panel drawing
     if gui.template_container:begin_draw(ctx) then
       gui.template_grid:draw(ctx)
@@ -502,6 +505,9 @@ local function draw_template_panel(ctx, gui, width, height)
 
   -- Update grid layout properties for current view mode
   TemplateGridFactory.update_for_view_mode(gui.template_grid)
+
+  -- Set explicit position for container to ensure proper clipping
+  ImGui.SetCursorScreenPos(ctx, content_x, panel_y)
 
   -- Begin panel drawing
   if gui.template_container:begin_draw(ctx) then
