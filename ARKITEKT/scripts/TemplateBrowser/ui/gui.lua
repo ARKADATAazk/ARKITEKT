@@ -214,6 +214,12 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       local Scanner = require('TemplateBrowser.domain.scanner')
       Scanner.filter_templates(self.state)
     end,
+    get_view_mode_label = function()
+      return (self.state.template_view_mode == "grid") and "Grid" or "List"
+    end,
+    on_view_toggle = function()
+      self.state.template_view_mode = (self.state.template_view_mode == "grid") and "list" or "grid"
+    end,
   }, self.is_overlay_mode)  -- Pass overlay mode to use transparent backgrounds
 
   self.template_container = TilesContainer.new({

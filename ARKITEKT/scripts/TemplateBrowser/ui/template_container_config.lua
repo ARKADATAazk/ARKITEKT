@@ -9,22 +9,60 @@ function M.create(callbacks, is_overlay_mode)
   return {
     header = {
       enabled = true,
-      height = 56,  -- Height for two rows: controls (26px) + spacing (4px) + chips (18px + padding)
+      height = 30,
       elements = {
-        -- All-in-one header controls (search, sort, filter chips)
+        -- Search field (left side)
         {
-          id = "template_header_controls",
-          type = "template_header_controls",
-          flex = 1,
+          id = "search",
+          type = "search_field",
+          width = 200,
           spacing_before = 0,
           config = {
-            get_template_count = callbacks.get_template_count,
-            get_search_query = callbacks.get_search_query,
-            on_search_changed = callbacks.on_search_changed,
-            get_sort_mode = callbacks.get_sort_mode,
-            on_sort_changed = callbacks.on_sort_changed,
-            get_filter_items = callbacks.get_filter_items,
-            on_filter_remove = callbacks.on_filter_remove,
+            placeholder = "Search templates...",
+            get_value = callbacks.get_search_query,
+            on_change = callbacks.on_search_changed,
+          },
+        },
+        -- Spacer
+        {
+          id = "spacer1",
+          type = "separator",
+          flex = 1,
+          spacing_before = 0,
+          config = { show_line = false },
+        },
+        -- Sort dropdown (right side, grouped)
+        {
+          id = "sort",
+          type = "dropdown_field",
+          width = 120,
+          spacing_before = 0,
+          config = {
+            tooltip = "Sort by",
+            tooltip_delay = 0.5,
+            enable_sort = false,
+            get_value = callbacks.get_sort_mode,
+            options = {
+              { value = "alphabetical", label = "Alphabetical" },
+              { value = "usage", label = "Most Used" },
+              { value = "insertion", label = "Recently Added" },
+              { value = "color", label = "Color" },
+            },
+            enable_mousewheel = true,
+            on_change = callbacks.on_sort_changed,
+          },
+        },
+        -- Grid/List toggle button (grouped with sort, no spacing)
+        {
+          id = "view_toggle",
+          type = "button",
+          width = 60,
+          spacing_before = 0,
+          config = {
+            label = callbacks.get_view_mode_label,
+            on_click = callbacks.on_view_toggle,
+            tooltip = "Toggle view mode",
+            tooltip_delay = 0.5,
           },
         },
       },
