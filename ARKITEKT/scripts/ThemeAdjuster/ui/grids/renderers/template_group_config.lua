@@ -141,11 +141,17 @@ function M.render_config_dialogs(ctx, view)
 
         -- Convert hex to ImGui color format (0xRRGGBB)
         local color_int = M.hex_to_color_int(state.color)
-        ImGui.SetNextItemWidth(ctx, 150)
-        local changed_color, new_color_int = ImGui.ColorEdit3(ctx, "##group_color", color_int, ImGui.ColorEditFlags_NoInputs)
+
+        -- Color button that opens the picker
+        local changed_color, new_color_int = ImGui.ColorEdit3(ctx, "##group_color", color_int,
+          ImGui.ColorEditFlags_NoInputs | ImGui.ColorEditFlags_PickerHueWheel)
         if changed_color then
           state.color = M.color_int_to_hex(new_color_int)
         end
+
+        -- Show hex color text
+        ImGui.SameLine(ctx)
+        ImGui.TextDisabled(ctx, state.color)
 
         ImGui.Dummy(ctx, 0, 12)
         ImGui.Separator(ctx)
@@ -234,9 +240,8 @@ function M.render_preset_config(ctx, state, view)
 
     -- Add column for each parameter
     for _, param_name in ipairs(param_order) do
-      -- Shorten parameter name for column header
-      local short_name = param_name:gsub("^tcp_", ""):gsub("^mcp_", "")
-      ImGui.TableSetupColumn(ctx, short_name, ImGui.TableColumnFlags_WidthFixed, 100)
+      -- Use full parameter name
+      ImGui.TableSetupColumn(ctx, param_name, ImGui.TableColumnFlags_WidthFixed, 150)
     end
 
     ImGui.TableSetupScrollFreeze(ctx, 2, 1)  -- Freeze first 2 columns and header

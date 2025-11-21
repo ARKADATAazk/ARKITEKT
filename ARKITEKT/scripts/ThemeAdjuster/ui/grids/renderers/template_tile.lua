@@ -262,9 +262,8 @@ function M.render_preset_config(ctx, state, view, template)
 
     -- Add column for each parameter
     for _, param_name in ipairs(param_order) do
-      -- Shorten parameter name for column header
-      local short_name = param_name:gsub("^tcp_", ""):gsub("^mcp_", "")
-      ImGui.TableSetupColumn(ctx, short_name, ImGui.TableColumnFlags_WidthFixed, 100)
+      -- Use full parameter name
+      ImGui.TableSetupColumn(ctx, param_name, ImGui.TableColumnFlags_WidthFixed, 150)
     end
 
     ImGui.TableSetupScrollFreeze(ctx, 2, 1)  -- Freeze first 2 columns and header

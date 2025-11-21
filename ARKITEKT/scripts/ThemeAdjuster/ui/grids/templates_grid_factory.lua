@@ -109,10 +109,23 @@ local function create_render_tile(view)
         local flags = ImGui.InputTextFlags_EnterReturnsTrue
         local rv, new_name = ImGui.InputText(ctx, "##group_rename_" .. group_id, M._group_rename_state[group_id].buffer, flags)
 
-        if rv or (ImGui.IsItemDeactivated(ctx) and not ImGui.IsItemActive(ctx)) then
-          -- Save the new name
+        -- Check if we should finish renaming
+        local should_finish = rv  -- Enter was pressed
+        if not should_finish and ImGui.IsItemDeactivated(ctx) then
+          -- Lost focus, finish renaming
+          should_finish = true
+        end
+
+        if should_finish then
+          -- Save the new name to the actual group object
           if new_name and new_name ~= "" then
-            group_ref.name = new_name
+            -- Find and update the actual group object in view.template_groups
+            for _, g in ipairs(view.template_groups) do
+              if g.id == group_id then
+                g.name = new_name
+                break
+              end
+            end
             view:save_templates()
           end
           -- Exit rename mode

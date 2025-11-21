@@ -1175,14 +1175,51 @@ function AdditionalView:delete_template(template_id)
   self:save_templates()
 end
 
--- Reorder templates
+-- Reorder templates and handle group membership changes
 function AdditionalView:reorder_templates(new_order_keys)
-  for new_idx, key in ipairs(new_order_keys) do
-    local template_id = key:match("^template_(.+)")
-    if template_id and self.templates[template_id] then
-      self.templates[template_id].order = new_idx
+  -- Build a map to track which group each position belongs to
+  local current_group_id = nil
+  local position_to_group = {}  -- position -> group_id or nil
+  local new_group_memberships = {}  -- group_id -> {template_ids}
+
+  -- Initialize group memberships
+  for _, group in ipairs(self.template_groups) do
+    new_group_memberships[group.id] = {}
+  end
+
+  -- Analyze the new order to determine group memberships
+  for pos, key in ipairs(new_order_keys) do
+    if key:match("^template_group_header_") then
+      -- This is a group header
+      local group_id = key:match("^template_group_header_(.+)")
+      current_group_id = group_id
+      position_to_group[pos] = nil  -- Headers don't belong to groups
+    else
+      -- This is a template
+      local template_id = key:match("^template_(.+)")
+      if template_id then
+        if current_group_id then
+          -- Template is inside a group
+          table.insert(new_group_memberships[current_group_id], template_id)
+        end
+        -- Update template order
+        if self.templates[template_id] then
+          self.templates[template_id].order = pos
+        end
+      end
     end
   end
+
+  -- Update all group memberships
+  for group_id, new_template_ids in pairs(new_group_memberships) do
+    for _, group in ipairs(self.template_groups) do
+      if group.id == group_id then
+        group.template_ids = new_template_ids
+        break
+      end
+    end
+  end
+
   self:save_templates()
 end
 
