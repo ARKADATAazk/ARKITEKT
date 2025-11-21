@@ -311,6 +311,39 @@ function M.create(opts)
     return self.engine:get_shuffle_mode()
   end
 
+  function bridge:set_follow_playhead(enabled)
+    self.engine:set_follow_playhead(enabled)
+    local settings = RegionState.load_settings(self.proj)
+    settings.follow_playhead = enabled
+    RegionState.save_settings(settings, self.proj)
+  end
+
+  function bridge:get_follow_playhead()
+    return self.engine.follow_playhead
+  end
+
+  function bridge:set_transport_override(enabled)
+    self.engine:set_transport_override(enabled)
+    local settings = RegionState.load_settings(self.proj)
+    settings.transport_override = enabled
+    RegionState.save_settings(settings, self.proj)
+  end
+
+  function bridge:get_transport_override()
+    return self.engine:get_transport_override()
+  end
+
+  function bridge:set_follow_viewport(enabled)
+    self.engine:set_follow_viewport(enabled)
+    local settings = RegionState.load_settings(self.proj)
+    settings.follow_viewport = enabled
+    RegionState.save_settings(settings, self.proj)
+  end
+
+  function bridge:get_follow_viewport()
+    return self.engine:get_follow_viewport()
+  end
+
   function bridge:get_playing_playlist_id()
     -- Return the ID of the playlist that is currently playing
     -- Returns nil if not playing or no playlist is locked

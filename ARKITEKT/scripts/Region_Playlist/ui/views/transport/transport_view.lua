@@ -328,15 +328,14 @@ function TransportView:build_playback_dropdown(bridge_state)
       end,
       on_checkbox_change = function(value, new_checked)
         local bridge = self.state.get_bridge()
-        local engine = bridge.engine
-        if not engine then return end
+        if not bridge then return end
 
         if value == "shuffle" then
           bridge:set_shuffle_enabled(new_checked)
         elseif value == "override_transport" then
-          engine:set_transport_override(new_checked)
+          bridge:set_transport_override(new_checked)
         elseif value == "follow_viewport" then
-          engine:set_follow_viewport(new_checked)
+          bridge:set_follow_viewport(new_checked)
         end
       end,
     },
@@ -426,10 +425,9 @@ function TransportView:build_playback_buttons(bridge_state)
         tooltip = "Override Transport Quantization",
         on_click = function()
           local bridge = self.state.get_bridge()
-          local engine = bridge.engine
-          if engine then
-            local current_state = engine:get_transport_override()
-            engine:set_transport_override(not current_state)
+          if bridge then
+            local current_state = bridge:get_transport_override()
+            bridge:set_transport_override(not current_state)
           end
         end,
       },
@@ -446,10 +444,9 @@ function TransportView:build_playback_buttons(bridge_state)
         tooltip = "Follow Playhead in Viewport (Continuous Scrolling)",
         on_click = function()
           local bridge = self.state.get_bridge()
-          local engine = bridge.engine
-          if engine then
-            local current_state = engine:get_follow_viewport()
-            engine:set_follow_viewport(not current_state)
+          if bridge then
+            local current_state = bridge:get_follow_viewport()
+            bridge:set_follow_viewport(not current_state)
           end
         end,
       },
@@ -633,15 +630,14 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
       end,
       on_checkbox_change = function(value, new_checked)
         local bridge = self.state.get_bridge()
-        local engine = bridge.engine
-        if not engine then return end
+        if not bridge then return end
 
         if value == "shuffle" then
           bridge:set_shuffle_enabled(new_checked)
         elseif value == "override_transport" then
-          engine:set_transport_override(new_checked)
+          bridge:set_transport_override(new_checked)
         elseif value == "follow_viewport" then
-          engine:set_follow_viewport(new_checked)
+          bridge:set_follow_viewport(new_checked)
         end
       end,
       footer_content = function(footer_ctx)
