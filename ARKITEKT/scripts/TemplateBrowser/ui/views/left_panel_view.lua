@@ -16,39 +16,49 @@ local M = {}
 function M.draw_left_panel(ctx, gui, width, height)
   local state = gui.state
 
-  -- Separator configuration
-  local separator_thickness = 8
-  local min_panel_height = 100
-
-  -- Initialize separator ratio if not set (default 65% top, 35% bottom)
-  state.left_panel_separator_ratio = state.left_panel_separator_ratio or 0.65
+  -- Only show convenience panel when on Directory tab
+  local show_convenience_panel = (state.left_panel_tab == "directory" or not state.left_panel_tab)
 
   -- Get window's screen position and save for panel positioning
   local initial_x, initial_y = ImGui.GetCursorScreenPos(ctx)
 
-  -- Calculate separator position
-  local sep_y_local = height * state.left_panel_separator_ratio
-  local sep_y_screen = initial_y + sep_y_local
+  local top_panel_height, bottom_panel_height
 
-  -- Handle separator dragging
-  local sep_action, sep_new_y_screen = gui.left_panel_separator:draw_horizontal(ctx, initial_x, sep_y_screen, width, 0, separator_thickness)
-  if sep_action == "drag" then
-    -- Convert back to local coordinates
-    local sep_new_y = sep_new_y_screen - initial_y
-    -- Clamp to valid range
-    local min_y = min_panel_height
-    local max_y = height - min_panel_height
-    sep_new_y = math.max(min_y, math.min(sep_new_y, max_y))
-    state.left_panel_separator_ratio = sep_new_y / height
-    sep_y_local = sep_new_y
-  elseif sep_action == "reset" then
-    state.left_panel_separator_ratio = 0.65
-    sep_y_local = height * state.left_panel_separator_ratio
+  if show_convenience_panel then
+    -- Separator configuration
+    local separator_thickness = 8
+    local min_panel_height = 100
+
+    -- Initialize separator ratio if not set (default 65% top, 35% bottom)
+    state.left_panel_separator_ratio = state.left_panel_separator_ratio or 0.65
+
+    -- Calculate separator position
+    local sep_y_local = height * state.left_panel_separator_ratio
+    local sep_y_screen = initial_y + sep_y_local
+
+    -- Handle separator dragging
+    local sep_action, sep_new_y_screen = gui.left_panel_separator:draw_horizontal(ctx, initial_x, sep_y_screen, width, 0, separator_thickness)
+    if sep_action == "drag" then
+      -- Convert back to local coordinates
+      local sep_new_y = sep_new_y_screen - initial_y
+      -- Clamp to valid range
+      local min_y = min_panel_height
+      local max_y = height - min_panel_height
+      sep_new_y = math.max(min_y, math.min(sep_new_y, max_y))
+      state.left_panel_separator_ratio = sep_new_y / height
+      sep_y_local = sep_new_y
+    elseif sep_action == "reset" then
+      state.left_panel_separator_ratio = 0.65
+      sep_y_local = height * state.left_panel_separator_ratio
+    end
+
+    -- Calculate panel heights (accounting for separator thickness)
+    top_panel_height = sep_y_local - separator_thickness / 2
+    bottom_panel_height = height - sep_y_local - separator_thickness / 2
+  else
+    -- No convenience panel, use full height for main panel
+    top_panel_height = height
   end
-
-  -- Calculate panel heights (accounting for separator thickness)
-  local top_panel_height = sep_y_local - separator_thickness / 2
-  local bottom_panel_height = height - sep_y_local - separator_thickness / 2
 
   -- Draw top panel (main left panel with Directory/VSTs/Tags tabs)
   -- Explicitly position at the top
@@ -75,12 +85,15 @@ function M.draw_left_panel(ctx, gui, width, height)
     gui.left_panel_container:end_draw(ctx)
   end
 
-  -- Draw bottom panel (convenience panel with mini Tags/VSTs tabs)
-  -- Position cursor at bottom panel start (after separator)
-  local bottom_panel_start_y = initial_y + sep_y_local + separator_thickness / 2
-  ImGui.SetCursorScreenPos(ctx, initial_x, bottom_panel_start_y)
+  -- Draw bottom panel (convenience panel with mini Tags/VSTs tabs) only on Directory tab
+  if show_convenience_panel then
+    local separator_thickness = 8
+    local sep_y_local = height * state.left_panel_separator_ratio
+    local bottom_panel_start_y = initial_y + sep_y_local + separator_thickness / 2
+    ImGui.SetCursorScreenPos(ctx, initial_x, bottom_panel_start_y)
 
-  ConveniencePanelView.draw_convenience_panel(ctx, gui, width, bottom_panel_height)
+    ConveniencePanelView.draw_convenience_panel(ctx, gui, width, bottom_panel_height)
+  end
 end
 
 return M
