@@ -375,7 +375,7 @@ function GUI:draw(ctx, shell_state)
       self.state.drop_completed = false  -- Also reset drop_completed to allow next drop
     end
 
-    self.drag_handler.render_drag_preview(ctx, self.state, mini_font, self.visualization)
+    self.drag_handler.render_drag_preview(ctx, self.state, mini_font, self.visualization, self.config)
   end
 
   reaper.PreventUIRefresh(-1)

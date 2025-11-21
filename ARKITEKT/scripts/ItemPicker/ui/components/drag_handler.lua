@@ -187,7 +187,7 @@ local function get_item_data(state, item_index)
   }
 end
 
-function M.render_drag_preview(ctx, state, mini_font, visualization)
+function M.render_drag_preview(ctx, state, mini_font, visualization, config)
   if not state.item_to_add_width or not state.item_to_add_height then
     return
   end
@@ -217,7 +217,7 @@ function M.render_drag_preview(ctx, state, mini_font, visualization)
     local stack_offset_x = 8
     local stack_offset_y = 8
     local opacity_levels = {1.0, 0.75, 0.55, 0.40}  -- Opacity for each layer
-    local tile_rounding = 4  -- Match config.TILE.ROUNDING
+    local tile_rounding = config and config.TILE.ROUNDING or 4
     local glow_size = 4
 
     -- Calculate total bounds including stacking
@@ -244,10 +244,20 @@ function M.render_drag_preview(ctx, state, mini_font, visualization)
 
       -- Get item data with proper color and info
       local item_data = get_item_data(state, i)
-      local item_color = item_data.color
+      local base_color = item_data.color
 
-      -- Apply opacity to the entire tile color (matching original tile rendering)
-      local tile_fill_color = apply_alpha(item_color, opacity)
+      -- Apply base tile fill adjustments (matching original tiles)
+      -- Note: We skip muted/disabled effects - always show items as normal
+      local render_color = base_color
+      if config and config.TILE_RENDER then
+        local sat_factor = config.TILE_RENDER.base_fill.saturation_factor
+        local bright_factor = config.TILE_RENDER.base_fill.brightness_factor
+        render_color = Colors.desaturate(render_color, 1.0 - sat_factor)
+        render_color = Colors.adjust_brightness(render_color, bright_factor)
+      end
+
+      -- Apply opacity to the tile fill color
+      local tile_fill_color = apply_alpha(render_color, opacity)
 
       -- Base tile fill (matching original: just filled rectangle with rounding)
       ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y2, tile_fill_color, tile_rounding)
@@ -264,12 +274,16 @@ function M.render_drag_preview(ctx, state, mini_font, visualization)
 
       if item_uuid and state.runtime_cache and not state.skip_visualizations then
         -- Get dark waveform color for visualization (matching original tiles)
-        local r, g, b = ImGui.ColorConvertU32ToDouble4(item_color)
+        local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
         local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-        s = 0.3  -- Saturation from config.TILE_RENDER.waveform.saturation
-        v = 0.15  -- Brightness from config.TILE_RENDER.waveform.brightness
+        -- Use config values or defaults
+        local waveform_sat = (config and config.TILE_RENDER and config.TILE_RENDER.waveform.saturation) or 0.3
+        local waveform_bright = (config and config.TILE_RENDER and config.TILE_RENDER.waveform.brightness) or 0.15
+        local waveform_alpha = (config and config.TILE_RENDER and config.TILE_RENDER.waveform.line_alpha) or 0.8
+        s = waveform_sat
+        v = waveform_bright
         r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
-        local dark_color = ImGui.ColorConvertDouble4ToU32(r, g, b, opacity * 0.8)
+        local dark_color = ImGui.ColorConvertDouble4ToU32(r, g, b, opacity * waveform_alpha)
 
         if item_data.is_midi then
           -- MIDI visualization from runtime cache
@@ -293,14 +307,35 @@ function M.render_drag_preview(ctx, state, mini_font, visualization)
         end
       end
 
-      -- Render header bar overlay (matching original tile style with transparency)
-      -- This creates a darker overlay on top of the base color, with rounded top corners
-      local header_overlay = apply_alpha(hexrgb("#00000040"), opacity)
-      local round_flags = ImGui.DrawFlags_RoundCornersTop
-      ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y1 + header_height, header_overlay, tile_rounding, round_flags)
+      -- Render header bar overlay (matching original tile rendering)
+      -- Calculate header color with saturation/brightness adjustments
+      local header_color = render_color
+      if config and config.TILE_RENDER and config.TILE_RENDER.header then
+        local r, g, b = ImGui.ColorConvertU32ToDouble4(render_color)
+        local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
+        s = s * config.TILE_RENDER.header.saturation_factor
+        v = v * config.TILE_RENDER.header.brightness_factor
+        r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
+        local header_alpha = (config.TILE_RENDER.header.alpha / 255) * opacity
+        header_color = ImGui.ColorConvertDouble4ToU32(r, g, b, header_alpha)
+      else
+        -- Fallback: dark overlay
+        header_color = apply_alpha(hexrgb("#00000040"), opacity)
+      end
 
-      -- Item name
-      local name_color = apply_alpha(hexrgb("#FFFFFFFF"), opacity)
+      -- Add text shadow overlay
+      local text_shadow = hexrgb("#00000000")
+      if config and config.TILE_RENDER and config.TILE_RENDER.header then
+        text_shadow = apply_alpha(config.TILE_RENDER.header.text_shadow, opacity)
+      end
+
+      local round_flags = ImGui.DrawFlags_RoundCornersTop
+      ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y1 + header_height, header_color, tile_rounding, round_flags)
+      ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y1 + header_height, text_shadow, tile_rounding, round_flags)
+
+      -- Item name (use config text color or default white)
+      local text_color = (config and config.TILE_RENDER and config.TILE_RENDER.text.primary_color) or hexrgb("#FFFFFFFF")
+      local name_color = apply_alpha(text_color, opacity)
       local text_x = x1 + 8
       local text_y = y1 + (header_height - ImGui.GetTextLineHeight(ctx)) / 2
       ImGui.DrawList_AddText(state.draw_list, text_x, text_y, name_color, item_data.name)
