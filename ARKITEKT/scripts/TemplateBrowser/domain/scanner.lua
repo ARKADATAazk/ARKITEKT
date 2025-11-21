@@ -144,67 +144,63 @@ local function scan_directory(path, relative_path, metadata)
     if not subdir then break end
 
     -- Skip .archive folder (it's managed separately)
-    if subdir == ".archive" then
-      idx = idx + 1
-      goto continue
-    end
+    if subdir ~= ".archive" then
+      local new_relative = relative_path ~= "" and (relative_path .. sep .. subdir) or subdir
+      local sub_path = path .. subdir .. sep
 
-    local new_relative = relative_path ~= "" and (relative_path .. sep .. subdir) or subdir
-    local sub_path = path .. subdir .. sep
+      -- Try to find existing folder in metadata
+      local existing_folder = Persistence.find_folder(metadata, nil, subdir, new_relative)
 
-    -- Try to find existing folder in metadata
-    local existing_folder = Persistence.find_folder(metadata, nil, subdir, new_relative)
+      local folder_uuid
+      if existing_folder then
+        folder_uuid = existing_folder.uuid
+        existing_folder.name = subdir
+        existing_folder.path = new_relative
+        existing_folder.last_seen = os.time()
+      else
+        -- Create new UUID and metadata entry
+        folder_uuid = Persistence.generate_uuid()
+        metadata.folders[folder_uuid] = {
+          uuid = folder_uuid,
+          name = subdir,
+          path = new_relative,
+          tags = {},
+          created = os.time(),
+          last_seen = os.time()
+        }
+        reaper.ShowConsoleMsg("New folder UUID: " .. subdir .. " -> " .. folder_uuid .. "\n")
+      end
 
-    local folder_uuid
-    if existing_folder then
-      folder_uuid = existing_folder.uuid
-      existing_folder.name = subdir
-      existing_folder.path = new_relative
-      existing_folder.last_seen = os.time()
-    else
-      -- Create new UUID and metadata entry
-      folder_uuid = Persistence.generate_uuid()
-      metadata.folders[folder_uuid] = {
+      -- Recursively scan subdirectory
+      local sub_templates, sub_folders = scan_directory(sub_path, new_relative, metadata)
+
+      -- Get folder color from metadata if available
+      local folder_color = nil
+      if metadata.folders[folder_uuid] and metadata.folders[folder_uuid].color then
+        folder_color = metadata.folders[folder_uuid].color
+      end
+
+      -- Add folder to list
+      table.insert(folders, {
         uuid = folder_uuid,
         name = subdir,
         path = new_relative,
-        tags = {},
-        created = os.time(),
-        last_seen = os.time()
-      }
-      reaper.ShowConsoleMsg("New folder UUID: " .. subdir .. " -> " .. folder_uuid .. "\n")
+        full_path = sub_path,
+        parent = relative_path,
+        color = folder_color,
+      })
+
+      -- Merge templates
+      for _, tmpl in ipairs(sub_templates) do
+        table.insert(templates, tmpl)
+      end
+
+      -- Merge folders
+      for _, fld in ipairs(sub_folders) do
+        table.insert(folders, fld)
+      end
     end
 
-    -- Recursively scan subdirectory
-    local sub_templates, sub_folders = scan_directory(sub_path, new_relative, metadata)
-
-    -- Get folder color from metadata if available
-    local folder_color = nil
-    if metadata.folders[folder_uuid] and metadata.folders[folder_uuid].color then
-      folder_color = metadata.folders[folder_uuid].color
-    end
-
-    -- Add folder to list
-    table.insert(folders, {
-      uuid = folder_uuid,
-      name = subdir,
-      path = new_relative,
-      full_path = sub_path,
-      parent = relative_path,
-      color = folder_color,
-    })
-
-    -- Merge templates
-    for _, tmpl in ipairs(sub_templates) do
-      table.insert(templates, tmpl)
-    end
-
-    -- Merge folders
-    for _, fld in ipairs(sub_folders) do
-      table.insert(folders, fld)
-    end
-
-    ::continue::
     idx = idx + 1
   end
 
