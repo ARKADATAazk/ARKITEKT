@@ -345,13 +345,14 @@ function M.draw(ctx, state, config, width, height)
 
   -- Calculate remaining height for folder trees (scrollable)
   -- Account for: header (28) + separator/spacing (10) + All Templates (24) + separator/spacing (10)
-  -- Also account for section headers: 2 headers * (text height + separator + spacing) ≈ 2 * 22 = 44
-  local used_height = UI.HEADER.DEFAULT + UI.PADDING.SEPARATOR_SPACING + 24 + UI.PADDING.SEPARATOR_SPACING + 44
+  -- Also account for section headers: 3 headers * (text height + separator + spacing) ≈ 3 * 22 = 66
+  local used_height = UI.HEADER.DEFAULT + UI.PADDING.SEPARATOR_SPACING + 24 + UI.PADDING.SEPARATOR_SPACING + 66
   local total_tree_height = folder_section_height - used_height
 
-  -- Split height: 70% for physical, 30% for virtual
-  local physical_tree_height = math.floor(total_tree_height * 0.7)
-  local virtual_tree_height = total_tree_height - physical_tree_height - 8  -- 8px gap
+  -- Split height: 50% for physical, 25% for virtual, 25% for archive
+  local physical_tree_height = math.floor(total_tree_height * 0.5)
+  local virtual_tree_height = math.floor(total_tree_height * 0.25)
+  local archive_tree_height = total_tree_height - physical_tree_height - virtual_tree_height - 16  -- 16px gaps
 
   -- === PHYSICAL FOLDERS SECTION HEADER ===
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, config.COLORS.text_dim or config.COLORS.text)
@@ -378,6 +379,21 @@ function M.draw(ctx, state, config, width, height)
   -- Virtual folder tree in scrollable child (separate scroll area)
   if Helpers.begin_child_compat(ctx, "VirtualTreeScroll", 0, virtual_tree_height, false) then
     TreeViewModule.draw_virtual_tree(ctx, state, config)
+    ImGui.EndChild(ctx)
+  end
+
+  ImGui.Spacing(ctx)
+
+  -- === ARCHIVE SECTION HEADER ===
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, config.COLORS.text_dim or config.COLORS.text)
+  ImGui.Text(ctx, "ARCHIVE")
+  ImGui.PopStyleColor(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
+  -- Archive tree in scrollable child (separate scroll area)
+  if Helpers.begin_child_compat(ctx, "ArchiveTreeScroll", 0, archive_tree_height, false) then
+    TreeViewModule.draw_archive_tree(ctx, state, config)
     ImGui.EndChild(ctx)
   end
 

@@ -63,6 +63,50 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     return virtual_children
   end
 
+  -- Build archive tree from .archive folder
+  local function build_archive_tree()
+    local archive_children = {}
+    local FileOps = require('TemplateBrowser.domain.file_ops')
+    local archive_path = FileOps.get_archive_path()
+    local sep = package.config:sub(1,1)
+
+    -- Recursively scan archive directory
+    local function scan_archive_dir(path, relative_path)
+      local folders = {}
+      local idx = 0
+
+      while true do
+        local subdir = reaper.EnumerateSubdirectories(path, idx)
+        if not subdir then break end
+
+        local sub_relative = relative_path ~= "" and (relative_path .. sep .. subdir) or subdir
+        local sub_path = path .. subdir .. sep
+        local sub_full_path = sub_path:sub(1, -2)  -- Remove trailing separator
+
+        local folder_node = {
+          id = "__ARCHIVE__" .. sep .. sub_relative,
+          name = subdir,
+          path = sub_relative,
+          full_path = sub_full_path,
+          children = scan_archive_dir(sub_path, sub_relative),
+          is_archive = true,
+        }
+
+        table.insert(folders, folder_node)
+        idx = idx + 1
+      end
+
+      return folders
+    end
+
+    -- Only scan if archive directory exists
+    if reaper.file_exists(archive_path) then
+      archive_children = scan_archive_dir(archive_path .. sep, "")
+    end
+
+    return archive_children
+  end
+
   local root_nodes = {}
 
   -- Add Physical Root node
@@ -95,6 +139,17 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   }
 
   table.insert(root_nodes, virtual_root)
+
+  -- Add Archive Root node
+  local archive_root = {
+    id = "__ARCHIVE_ROOT__",
+    name = "Archive",
+    path = "__ARCHIVE_ROOT__",
+    children = build_archive_tree(),
+    is_archive = true,
+  }
+
+  table.insert(root_nodes, archive_root)
 
   return root_nodes
 end
@@ -999,6 +1054,64 @@ function M.draw_virtual_tree(ctx, state, config)
   state.last_clicked_folder = tree_state.last_clicked_node
   state.renaming_folder_path = tree_state.renaming_node
   state.rename_buffer = tree_state.rename_buffer
+end
+
+-- Draw archive folder tree only
+function M.draw_archive_tree(ctx, state, config)
+  -- Prepare tree nodes from state.folders
+  local all_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
+
+  -- Get only archive root node
+  local archive_nodes = {}
+  for _, node in ipairs(all_nodes) do
+    if node.id == "__ARCHIVE_ROOT__" then
+      archive_nodes = {node}
+      break
+    end
+  end
+
+  if #archive_nodes == 0 then
+    return
+  end
+
+  -- Ensure ARCHIVE_ROOT node is open by default
+  if state.folder_open_state["__ARCHIVE_ROOT__"] == nil then
+    state.folder_open_state["__ARCHIVE_ROOT__"] = true
+  end
+
+  -- Map state variables to TreeView format
+  local tree_state = {
+    open_nodes = state.folder_open_state,
+    selected_nodes = state.selected_folders,
+    last_clicked_node = state.last_clicked_folder,
+    renaming_node = nil,  -- Archive folders cannot be renamed
+    rename_buffer = "",
+  }
+
+  -- Draw tree with minimal callbacks (archive is read-only)
+  TreeView.draw(ctx, archive_nodes, tree_state, {
+    enable_rename = false,  -- No renaming in archive
+    show_colors = false,  -- No colors for archive
+    enable_drag_drop = false,  -- No drag-drop in archive
+    enable_multi_select = true,
+    context_menu_id = nil,  -- No context menu for archive
+
+    on_select = function(node, selected_nodes)
+      -- Archive folders don't filter templates
+      -- Just update selection state
+      state.selected_folders = selected_nodes
+      state.last_clicked_folder = node.path
+    end,
+
+    -- No delete for archive folders
+    on_delete = function(node)
+      -- Archive folders cannot be deleted via Delete key
+    end,
+  })
+
+  -- Sync TreeView state back to Template Browser state
+  state.selected_folders = tree_state.selected_nodes
+  state.last_clicked_folder = tree_state.last_clicked_node
 end
 
 -- Legacy function that draws both trees (kept for compatibility)
