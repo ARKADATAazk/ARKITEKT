@@ -114,12 +114,35 @@ function M.render(ctx, rect, item, state, view)
   if ImGui.BeginPopupContextItem(ctx, "template_context_" .. template_id) then
     if ImGui.MenuItem(ctx, "Configure...") then
       M._template_config_open[template_id] = true
-      -- Load existing config
+      -- Load existing config and convert to new format if needed
+      local presets = {}
+      if template.config and template.config.presets then
+        for _, preset in ipairs(template.config.presets) do
+          local new_preset = {
+            label = preset.label or "Unnamed",
+            values = {}
+          }
+
+          -- Convert old single-value format to new multi-parameter format
+          if preset.value then
+            -- Old format: apply value to all parameters
+            for _, param_name in ipairs(template.params or {}) do
+              new_preset.values[param_name] = preset.value
+            end
+          else
+            -- Already new format
+            new_preset.values = preset.values or {}
+          end
+
+          table.insert(presets, new_preset)
+        end
+      end
+
       M._template_config_state[template_id] = {
         name = template.name or "",
         template_type = template.type or "preset_spinner",
-        presets = (template.config and template.config.presets) or {},
-        compound_mappings = (template.config and template.config.mappings) or {},
+        presets = presets,
+        param_order = template.params or {},
       }
     end
 
@@ -173,37 +196,12 @@ function M.render_template_config_dialogs(ctx, view)
         ImGui.Text(ctx, "Template Type:")
         ImGui.Dummy(ctx, 0, 4)
 
-        if ImGui.RadioButton(ctx, "Preset Spinner", state.template_type == "preset_spinner") then
-          state.template_type = "preset_spinner"
-          -- Initialize presets if empty
-          if #state.presets == 0 and #template.params > 0 then
-            local param_name = template.params[1]
-            local param = view:get_param_by_name(param_name)
-            if param then
-              state.presets = {
-                {value = param.min or 0, label = "Off"},
-                {value = ((param.max or 100) - (param.min or 0)) * 0.3 + (param.min or 0), label = "Low"},
-                {value = ((param.max or 100) - (param.min or 0)) * 0.5 + (param.min or 0), label = "Medium"},
-                {value = ((param.max or 100) - (param.min or 0)) * 0.7 + (param.min or 0), label = "High"},
-              }
-            end
-          end
-        end
+        -- Template type selection (always preset spinner)
+        ImGui.Text(ctx, "Template Type: Preset Spinner")
+        ImGui.Dummy(ctx, 0, 8)
 
-        ImGui.SameLine(ctx, 0, 12)
-
-        if ImGui.RadioButton(ctx, "Compound Boolean", state.template_type == "compound_bool") then
-          state.template_type = "compound_bool"
-        end
-
-        ImGui.Dummy(ctx, 0, 12)
-
-        -- Type-specific configuration
-        if state.template_type == "preset_spinner" then
-          M.render_preset_config(ctx, state)
-        elseif state.template_type == "compound_bool" then
-          M.render_compound_config(ctx, state, template)
-        end
+        -- Preset configuration
+        M.render_preset_config(ctx, state, view, template)
 
         -- Bottom buttons
         ImGui.Dummy(ctx, 0, 12)
@@ -213,10 +211,9 @@ function M.render_template_config_dialogs(ctx, view)
         if ImGui.Button(ctx, "Save", 100, 28) then
           -- Apply configuration
           template.name = state.name
-          template.type = state.template_type
+          template.type = "preset_spinner"
           template.config = {
-            presets = state.template_type == "preset_spinner" and state.presets or nil,
-            mappings = state.template_type == "compound_bool" and state.compound_mappings or nil,
+            presets = state.presets
           }
           view:save_templates()
           M._template_config_open[template_id] = false
@@ -239,24 +236,38 @@ function M.render_template_config_dialogs(ctx, view)
   end
 end
 
--- Render preset spinner configuration
-function M.render_preset_config(ctx, state)
+-- Render preset spinner configuration with parameter columns
+function M.render_preset_config(ctx, state, view, template)
   ImGui.Text(ctx, "Presets (each row = spinner enum):")
   ImGui.Separator(ctx)
   ImGui.Dummy(ctx, 0, 8)
+
+  local param_order = state.param_order or {}
+  local num_params = #param_order
+
+  -- Calculate number of columns: # + Label + one per parameter
+  local num_columns = 2 + num_params
 
   -- Table for presets
   local table_flags = ImGui.TableFlags_Borders |
                       ImGui.TableFlags_RowBg |
                       ImGui.TableFlags_ScrollY |
-                      ImGui.TableFlags_SizingStretchProp
+                      ImGui.TableFlags_ScrollX |
+                      ImGui.TableFlags_SizingFixedFit
 
-  if ImGui.BeginTable(ctx, "preset_table", 3, table_flags, 0, 250) then
+  if ImGui.BeginTable(ctx, "preset_table", num_columns, table_flags, 0, 250) then
     -- Setup columns
     ImGui.TableSetupColumn(ctx, "#", ImGui.TableColumnFlags_WidthFixed, 30)
-    ImGui.TableSetupColumn(ctx, "Value", ImGui.TableColumnFlags_WidthFixed, 120)
-    ImGui.TableSetupColumn(ctx, "Label", ImGui.TableColumnFlags_WidthStretch)
-    ImGui.TableSetupScrollFreeze(ctx, 0, 1)
+    ImGui.TableSetupColumn(ctx, "Label", ImGui.TableColumnFlags_WidthFixed, 120)
+
+    -- Add column for each parameter
+    for _, param_name in ipairs(param_order) do
+      -- Shorten parameter name for column header
+      local short_name = param_name:gsub("^tcp_", ""):gsub("^mcp_", "")
+      ImGui.TableSetupColumn(ctx, short_name, ImGui.TableColumnFlags_WidthFixed, 100)
+    end
+
+    ImGui.TableSetupScrollFreeze(ctx, 2, 1)  -- Freeze first 2 columns and header
     ImGui.TableHeadersRow(ctx)
 
     -- Render preset rows
@@ -281,20 +292,70 @@ function M.render_preset_config(ctx, state)
         ImGui.EndPopup(ctx)
       end
 
-      -- Column 1: Value input
+      -- Column 1: Label input
       ImGui.TableSetColumnIndex(ctx, 1)
       ImGui.SetNextItemWidth(ctx, -1)
-      local changed_val, new_val = ImGui.InputDouble(ctx, "##value", preset.value)
-      if changed_val then
-        preset.value = new_val
-      end
-
-      -- Column 2: Label input
-      ImGui.TableSetColumnIndex(ctx, 2)
-      ImGui.SetNextItemWidth(ctx, -1)
-      local changed_label, new_label = ImGui.InputText(ctx, "##label", preset.label)
+      local changed_label, new_label = ImGui.InputText(ctx, "##label", preset.label or "")
       if changed_label then
         preset.label = new_label
+      end
+
+      -- Columns 2+: Parameter value controls
+      for col_idx, param_name in ipairs(param_order) do
+        ImGui.TableSetColumnIndex(ctx, 1 + col_idx)
+
+        -- Get parameter info
+        local param = view:get_param_by_name(param_name)
+        if param then
+          -- Initialize value if not set
+          if preset.values[param_name] == nil then
+            preset.values[param_name] = param.default or param.min or 0
+          end
+
+          -- Render control based on parameter type
+          ImGui.SetNextItemWidth(ctx, -1)
+          local changed = false
+          local new_value = preset.values[param_name]
+
+          if param.type == "toggle" then
+            -- Checkbox for boolean
+            local is_checked = (preset.values[param_name] ~= 0)
+            local rv, new_checked = ImGui.Checkbox(ctx, "##" .. param_name, is_checked)
+            if rv then
+              changed = true
+              new_value = new_checked and 1 or 0
+            end
+
+          elseif param.type == "spinner" then
+            -- Combo box for enum
+            local current_idx = math.floor(preset.values[param_name] - param.min + 1)
+            local values = {}
+            for v = param.min, param.max do
+              table.insert(values, tostring(v))
+            end
+
+            local rv, new_idx = ImGui.Combo(ctx, "##" .. param_name, current_idx, table.concat(values, "\0") .. "\0")
+            if rv then
+              changed = true
+              new_value = param.min + (new_idx - 1)
+            end
+
+          else
+            -- InputDouble for int/float/slider
+            local rv, new_val = ImGui.InputDouble(ctx, "##" .. param_name, preset.values[param_name])
+            if rv then
+              changed = true
+              new_value = new_val
+              -- Clamp to min/max
+              if param.min and new_value < param.min then new_value = param.min end
+              if param.max and new_value > param.max then new_value = param.max end
+            end
+          end
+
+          if changed then
+            preset.values[param_name] = new_value
+          end
+        end
       end
 
       ImGui.PopID(ctx)
@@ -310,26 +371,26 @@ function M.render_preset_config(ctx, state)
 
   ImGui.Dummy(ctx, 0, 8)
   if ImGui.Button(ctx, "Add Preset", 120, 0) then
-    table.insert(state.presets, {value = 0, label = "New Preset"})
+    -- Create new preset with default values for all parameters
+    local new_preset = {
+      label = "New Preset",
+      values = {}
+    }
+
+    for _, param_name in ipairs(param_order) do
+      local param = view:get_param_by_name(param_name)
+      if param then
+        new_preset.values[param_name] = param.default or param.min or 0
+      end
+    end
+
+    table.insert(state.presets, new_preset)
   end
 
   ImGui.SameLine(ctx)
   ImGui.TextDisabled(ctx, "(Right-click row # to remove)")
 end
 
--- Render compound boolean configuration
-function M.render_compound_config(ctx, state, template)
-  ImGui.Text(ctx, "Compound Boolean Mapping:")
-  ImGui.Separator(ctx)
-  ImGui.Dummy(ctx, 0, 8)
-
-  ImGui.TextWrapped(ctx, "Define states for compound parameters. Each state sets values for all parameters in this template.")
-  ImGui.Dummy(ctx, 0, 8)
-
-  -- TODO: Implement compound configuration UI
-  -- For now, placeholder
-  ImGui.TextColored(ctx, hexrgb("#FFAA44"), "Compound boolean configuration coming soon...")
-  ImGui.TextWrapped(ctx, "This will allow you to map enum/spinner values to multiple boolean parameters.")
-end
+-- Removed compound boolean config - no longer needed
 
 return M
