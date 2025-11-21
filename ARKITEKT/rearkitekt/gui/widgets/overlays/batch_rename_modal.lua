@@ -21,6 +21,8 @@ BatchRenameModal.__index = BatchRenameModal
 -- Global settings persistence (REAPER-wide, not per-project)
 local EXTSTATE_SECTION = "REARKITEKT_BATCH_RENAME"
 local EXTSTATE_SEPARATOR = "wildcard_separator"
+local EXTSTATE_START_INDEX = "wildcard_start_index"
+local EXTSTATE_PADDING = "wildcard_padding"
 
 -- Load separator preference from global REAPER settings
 local function load_separator_preference()
@@ -35,23 +37,69 @@ local function save_separator_preference(separator)
   reaper.SetExtState(EXTSTATE_SECTION, EXTSTATE_SEPARATOR, separator, true)  -- persist=true saves to reaper.ini
 end
 
+-- Load start index preference (0 or 1)
+local function load_start_index_preference()
+  local value = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_START_INDEX)
+  return value == "0" and 0 or 1
+end
+
+-- Save start index preference
+local function save_start_index_preference(start_index)
+  reaper.SetExtState(EXTSTATE_SECTION, EXTSTATE_START_INDEX, tostring(start_index), true)
+end
+
+-- Load padding preference (none, 2, 3)
+local function load_padding_preference()
+  local value = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_PADDING)
+  if value == "2" then return 2
+  elseif value == "3" then return 3
+  else return 0 end  -- none
+end
+
+-- Save padding preference
+local function save_padding_preference(padding)
+  reaper.SetExtState(EXTSTATE_SECTION, EXTSTATE_PADDING, tostring(padding), true)
+end
+
 -- Wildcard pattern processing
-local function apply_pattern(pattern, index)
-  -- $n - sequential number starting from 1
-  -- $i - index starting from 0
-  -- $N - zero-padded 3-digit number (001, 002, etc)
+local function apply_pattern(pattern, index, start_index, padding)
+  -- $n - number (with options for start index and padding)
+  -- $l - lowercase letter (a, b, c, ...)
+  -- $L - uppercase letter (A, B, C, ...)
   local result = pattern
-  result = result:gsub("%$n", tostring(index))
-  result = result:gsub("%$i", tostring(index - 1))
-  result = result:gsub("%$N", string.format("%03d", index))
+
+  -- Calculate actual index based on start preference
+  local num_value = index - 1 + start_index  -- index is 1-based loop counter
+
+  -- Apply number wildcard with padding
+  if padding == 2 then
+    result = result:gsub("%$n", string.format("%02d", num_value))
+  elseif padding == 3 then
+    result = result:gsub("%$n", string.format("%03d", num_value))
+  else
+    result = result:gsub("%$n", tostring(num_value))
+  end
+
+  -- Apply lowercase letter wildcard (a=0, b=1, etc)
+  result = result:gsub("%$l", function()
+    local letter_index = (num_value) % 26
+    return string.char(97 + letter_index)  -- 97 is 'a'
+  end)
+
+  -- Apply uppercase letter wildcard (A=0, B=1, etc)
+  result = result:gsub("%$L", function()
+    local letter_index = (num_value) % 26
+    return string.char(65 + letter_index)  -- 65 is 'A'
+  end)
+
   return result
 end
 
 -- Generate preview of renamed items
-local function generate_preview(pattern, count)
+local function generate_preview(pattern, count, start_index, padding)
   local previews = {}
   for i = 1, math.min(count, 5) do  -- Show max 5 previews
-    previews[i] = apply_pattern(pattern, i)
+    previews[i] = apply_pattern(pattern, i, start_index, padding)
   end
   if count > 5 then
     previews[#previews + 1] = "..."
@@ -73,6 +121,8 @@ function M.new()
     selected_color = 0xFF5733FF,  -- Default color (RGBA)
     picker_initialized = false,
     separator = "none",  -- Wildcard separator: "none", "underscore", "space"
+    start_index = 1,  -- Start from: 0 or 1
+    padding = 0,  -- Padding: 0 (none), 2 (01), 3 (001)
   }, BatchRenameModal)
 end
 
@@ -90,6 +140,8 @@ function BatchRenameModal:open(item_count, on_confirm_callback, opts)
   self.item_count = item_count
   self.picker_initialized = false
   self.separator = load_separator_preference()  -- Load saved separator preference
+  self.start_index = load_start_index_preference()  -- Load saved start index preference
+  self.padding = load_padding_preference()  -- Load saved padding preference
 end
 
 -- Check if modal should be shown
@@ -108,7 +160,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local dl = ImGui.GetWindowDrawList(ctx)
 
   -- Calculate total content width for centering
-  local content_max_w = 700  -- Maximum content width
+  local content_max_w = 800  -- Maximum content width (increased from 700)
   local actual_content_w = math.min(modal_w, content_max_w)
   local center_offset_x = math.floor((modal_w - actual_content_w) * 0.5)
 
@@ -176,13 +228,13 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     placeholder = "pattern$wildcard",
     on_change = function(text)
       self.pattern = text
-      self.preview_items = generate_preview(text, count)
+      self.preview_items = generate_preview(text, count, self.start_index, self.padding)
     end
   }, "batch_rename_pattern")
 
   -- Advance cursor
   ImGui.SetCursorScreenPos(ctx, screen_x, screen_y + input_height)
-  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Dummy(ctx, 0, 6)
 
   -- Wildcards label and chips
   ImGui.SetCursorPosX(ctx, right_col_x)
@@ -192,8 +244,8 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   local wildcard_chips = {
     {label = "number ($n)", wildcard = "$n"},
-    {label = "index ($i)", wildcard = "$i"},
-    {label = "padded ($N)", wildcard = "$N"},
+    {label = "letter ($l)", wildcard = "$l"},
+    {label = "LETTER ($L)", wildcard = "$L"},
   }
 
   local chip_spacing = 6
@@ -224,12 +276,65 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
         sep = " "
       end
       self.pattern = self.pattern .. sep .. chip_data.wildcard
-      self.preview_items = generate_preview(self.pattern, count)
+      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
     end
   end
 
   ImGui.SetCursorPosX(ctx, right_col_x)
-  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Dummy(ctx, 0, 6)
+
+  -- Wildcard options
+  ImGui.SetCursorPosX(ctx, right_col_x)
+  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcard Options:")
+  ImGui.Dummy(ctx, 0, 6)
+  ImGui.SetCursorPosX(ctx, right_col_x)
+
+  -- Start from dropdown
+  ImGui.Text(ctx, "Start from:")
+  ImGui.SameLine(ctx, 0, 8)
+  ImGui.SetNextItemWidth(ctx, 60)
+  if ImGui.BeginCombo(ctx, "##start_index", self.start_index == 0 and "0" or "1") then
+    if ImGui.Selectable(ctx, "0", self.start_index == 0) then
+      self.start_index = 0
+      save_start_index_preference(0)
+      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
+    end
+    if ImGui.Selectable(ctx, "1", self.start_index == 1) then
+      self.start_index = 1
+      save_start_index_preference(1)
+      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
+    end
+    ImGui.EndCombo(ctx)
+  end
+
+  ImGui.SameLine(ctx, 0, 16)
+
+  -- Padding dropdown
+  ImGui.Text(ctx, "Padding:")
+  ImGui.SameLine(ctx, 0, 8)
+  ImGui.SetNextItemWidth(ctx, 80)
+  local padding_label = self.padding == 0 and "None" or (self.padding == 2 and "01" or "001")
+  if ImGui.BeginCombo(ctx, "##padding", padding_label) then
+    if ImGui.Selectable(ctx, "None", self.padding == 0) then
+      self.padding = 0
+      save_padding_preference(0)
+      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
+    end
+    if ImGui.Selectable(ctx, "01 (2 digits)", self.padding == 2) then
+      self.padding = 2
+      save_padding_preference(2)
+      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
+    end
+    if ImGui.Selectable(ctx, "001 (3 digits)", self.padding == 3) then
+      self.padding = 3
+      save_padding_preference(3)
+      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
+    end
+    ImGui.EndCombo(ctx)
+  end
+
+  ImGui.SetCursorPosX(ctx, right_col_x)
+  ImGui.Dummy(ctx, 0, 6)
 
   -- Common names label and chips
   ImGui.SetCursorPosX(ctx, right_col_x)
@@ -237,11 +342,35 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.Dummy(ctx, 0, 6)
   ImGui.SetCursorPosX(ctx, right_col_x)
 
-  local common_names = {"combat", "ambience", "tension"}
+  -- Music and game audio related common names
+  local common_names = {
+    "combat", "battle", "boss", "ambience", "tension", "suspense",
+    "intro", "outro", "stinger", "loop", "part",
+    "partA", "partB", "partC", "verse", "chorus", "refrain", "bridge", "break",
+    "calm", "peaceful", "explore", "menu", "theme", "victory", "defeat",
+    "action", "stealth", "puzzle", "cutscene", "cinematic",
+  }
+
+  -- Render common names with wrapping
+  local chip_x_start = right_col_x
+  local chip_x = chip_x_start
+  local chip_y = ImGui.GetCursorPosY(ctx)
+  local max_width = right_col_width
+  local line_height = 24  -- Approximate chip height + spacing
 
   for i, name in ipairs(common_names) do
-    if i > 1 then
-      ImGui.SameLine(ctx, 0, chip_spacing)
+    local chip_width = ImGui.CalcTextSize(ctx, name) + 16  -- Approximate chip width
+
+    -- Check if chip fits on current line
+    if chip_x + chip_width - chip_x_start > max_width and i > 1 then
+      -- Move to next line
+      chip_x = chip_x_start
+      chip_y = chip_y + line_height
+      ImGui.SetCursorPos(ctx, chip_x, chip_y)
+    else
+      if i > 1 then
+        ImGui.SameLine(ctx, 0, chip_spacing)
+      end
     end
 
     local clicked = Chip.draw(ctx, {
@@ -262,16 +391,21 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
         self.pattern = self.pattern .. "_"
       end
       self.pattern = self.pattern .. name
-      self.preview_items = generate_preview(self.pattern, count)
+      self.preview_items = generate_preview(self.pattern, count, self.start_index, self.padding)
     end
+
+    -- Update chip position for next iteration
+    local cur_x, cur_y = ImGui.GetCursorPos(ctx)
+    chip_x = cur_x
+    chip_y = cur_y
   end
 
   ImGui.SetCursorPosX(ctx, right_col_x)
-  ImGui.Dummy(ctx, 0, 10)
+  ImGui.Dummy(ctx, 0, 6)
 
   -- Wildcard separator radio buttons
   ImGui.SetCursorPosX(ctx, right_col_x)
-  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Wildcard Separator:")
+  ImGui.TextColored(ctx, hexrgb("#999999FF"), "Separator before wildcard:")
   ImGui.Dummy(ctx, 0, 6)
   ImGui.SetCursorPosX(ctx, right_col_x)
 
@@ -281,7 +415,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     save_separator_preference("none")
   end
 
-  ImGui.SameLine(ctx, 0, 16)
+  ImGui.SameLine(ctx, 0, 12)
 
   -- Radio button for "Underscore"
   if ImGui.RadioButton(ctx, "Underscore (_)##sep_underscore", self.separator == "underscore") then
@@ -289,7 +423,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     save_separator_preference("underscore")
   end
 
-  ImGui.SameLine(ctx, 0, 16)
+  ImGui.SameLine(ctx, 0, 12)
 
   -- Radio button for "Space"
   if ImGui.RadioButton(ctx, "Space ( )##sep_space", self.separator == "space") then
@@ -332,10 +466,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- SECTION 5: Action buttons using primitives
   -- ========================================================================
 
-  local button_w = 110
+  -- Use more of the available width for buttons
   local button_h = 32
   local spacing = 10
-  local total_w = button_w * 4 + spacing * 3
+  local button_w_small = 100  -- Cancel, Rename, Recolor
+  local button_w_large = 150  -- Rename & Recolor (wider to fit text)
+  local total_w = button_w_small * 3 + button_w_large + spacing * 3
   local button_start_x = math.floor(start_x + (actual_content_w - total_w) * 0.5)
 
   -- Center buttons horizontally within content area
@@ -347,7 +483,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local can_rename = self.pattern ~= ""
 
   -- Cancel button
-  local _, cancel_clicked = Button.draw(ctx, dl, screen_x, screen_y, button_w, button_h, {
+  local _, cancel_clicked = Button.draw(ctx, dl, screen_x, screen_y, button_w_small, button_h, {
     id = "cancel_btn",
     label = "Cancel",
     rounding = 4,
@@ -359,7 +495,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   end
 
   -- Rename button (disabled when no pattern)
-  local _, rename_clicked = Button.draw(ctx, dl, screen_x + button_w + spacing, screen_y, button_w, button_h, {
+  local _, rename_clicked = Button.draw(ctx, dl, screen_x + button_w_small + spacing, screen_y, button_w_small, button_h, {
     id = "rename_btn",
     label = "Rename",
     rounding = 4,
@@ -374,8 +510,9 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     should_close = true
   end
 
-  -- Rename & Recolor button (disabled when no pattern)
-  local _, rename_recolor_clicked = Button.draw(ctx, dl, screen_x + (button_w + spacing) * 2, screen_y, button_w, button_h, {
+  -- Rename & Recolor button (disabled when no pattern) - WIDER
+  local rename_recolor_x = screen_x + (button_w_small + spacing) * 2
+  local _, rename_recolor_clicked = Button.draw(ctx, dl, rename_recolor_x, screen_y, button_w_large, button_h, {
     id = "rename_recolor_btn",
     label = "Rename & Recolor",
     rounding = 4,
@@ -391,7 +528,8 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   end
 
   -- Recolor button (always enabled)
-  local _, recolor_clicked = Button.draw(ctx, dl, screen_x + (button_w + spacing) * 3, screen_y, button_w, button_h, {
+  local recolor_x = rename_recolor_x + button_w_large + spacing
+  local _, recolor_clicked = Button.draw(ctx, dl, recolor_x, screen_y, button_w_small, button_h, {
     id = "recolor_btn",
     label = "Recolor",
     rounding = 4,
@@ -517,9 +655,13 @@ end
 
 -- Apply pattern to a list of items (returns new names in order)
 function M.apply_pattern_to_items(pattern, count)
+  -- Load global preferences for wildcard processing
+  local start_index = load_start_index_preference()
+  local padding = load_padding_preference()
+
   local results = {}
   for i = 1, count do
-    results[i] = apply_pattern(pattern, i)
+    results[i] = apply_pattern(pattern, i, start_index, padding)
   end
   return results
 end
