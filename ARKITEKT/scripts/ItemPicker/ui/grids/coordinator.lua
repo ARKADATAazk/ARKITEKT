@@ -43,18 +43,20 @@ function Coordinator:handle_tile_size_shortcuts(ctx)
   if wheel == 0 then return false end
 
   local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
-  local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+  local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
 
-  if not ctrl and not alt then return false end
+  if not ctrl and not shift then return false end
 
   local delta = wheel > 0 and 1 or -1
   local current_w = self.state:get_tile_width()
   local current_h = self.state:get_tile_height()
 
   if ctrl then
+    -- CTRL+MouseWheel: adjust tile height (vertical size)
     local new_height = current_h + (delta * self.config.TILE.HEIGHT_STEP)
     self.state:set_tile_size(current_w, new_height)
-  elseif alt then
+  elseif shift then
+    -- SHIFT+MouseWheel: adjust tile width (horizontal size)
     local new_width = current_w + (delta * self.config.TILE.WIDTH_STEP)
     self.state:set_tile_size(new_width, current_h)
   end
@@ -78,15 +80,15 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
   header_offset = header_offset or 0
 
   if ImGui.BeginChild(ctx, "audio_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
-    -- Check for CTRL/ALT+wheel BEFORE grid draws (prevents scroll)
+    -- Check for CTRL/SHIFT+wheel BEFORE grid draws (prevents scroll)
     local saved_scroll = nil
     local wheel_y = ImGui.GetMouseWheel(ctx)
 
     if wheel_y ~= 0 then
       local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
-      local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+      local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
 
-      if ctrl or alt then
+      if ctrl or shift then
         -- Save scroll position to restore after grid processes wheel
         saved_scroll = ImGui.GetScrollY(ctx)
       end
@@ -119,15 +121,15 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
   header_offset = header_offset or 0
 
   if ImGui.BeginChild(ctx, "midi_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
-    -- Check for CTRL/ALT+wheel BEFORE grid draws (prevents scroll)
+    -- Check for CTRL/SHIFT+wheel BEFORE grid draws (prevents scroll)
     local saved_scroll = nil
     local wheel_y = ImGui.GetMouseWheel(ctx)
 
     if wheel_y ~= 0 then
       local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
-      local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+      local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
 
-      if ctrl or alt then
+      if ctrl or shift then
         -- Save scroll position to restore after grid processes wheel
         saved_scroll = ImGui.GetScrollY(ctx)
       end
