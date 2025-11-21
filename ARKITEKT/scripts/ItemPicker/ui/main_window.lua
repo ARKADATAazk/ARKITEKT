@@ -268,6 +268,11 @@ function GUI:draw(ctx, shell_state)
       local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
       local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
 
+      -- Set close flag BEFORE inserting for normal drops to block any drag_start calls
+      if not shift and not ctrl then
+        self.state.should_close_after_drop = true
+      end
+
       -- Insert the item
       self.controller.insert_item_at_mouse(self.state.item_to_add, self.state)
       self.state.drop_completed = true  -- Mark as completed
@@ -286,7 +291,6 @@ function GUI:draw(ctx, shell_state)
         -- Normal drop: End drag and close ItemPicker immediately
         self.state.end_drag()
         self.state.waiting_for_new_click = false
-        self.state.should_close_after_drop = true  -- Signal runtime to stop
         -- Don't render anything else, just return
         reaper.PreventUIRefresh(-1)
         ImGui.PopFont(ctx)
