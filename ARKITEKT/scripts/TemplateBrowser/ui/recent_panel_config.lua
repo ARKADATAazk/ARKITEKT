@@ -1,6 +1,6 @@
 -- @noindex
--- TemplateBrowser/ui/template_container_config.lua
--- Panel container configuration for template grid
+-- TemplateBrowser/ui/recent_panel_config.lua
+-- Panel container configuration for recent/favorites templates
 
 local Colors = require('rearkitekt.core.colors')
 
@@ -20,7 +20,7 @@ function M.create(callbacks, is_overlay_mode)
 
     header = {
       enabled = true,
-      height = 56,  -- Height for two rows: controls (26px) + spacing (4px) + chips (18px + padding)
+      height = 32,  -- Compact header with just dropdown
       bg_color = header_bg,
       padding = {
         left = 8,
@@ -29,20 +29,15 @@ function M.create(callbacks, is_overlay_mode)
         bottom = 4,
       },
       elements = {
-        -- All-in-one header controls (search, sort, filter chips)
+        -- Quick access dropdown (Recents/Favorites/Most Used)
         {
-          id = "template_header_controls",
-          type = "template_header_controls",
-          flex = 1,
+          id = "quick_access_dropdown",
+          type = "quick_access_dropdown",
+          flex = 0,
           spacing_before = 0,
           config = {
-            get_template_count = callbacks.get_template_count,
-            get_search_query = callbacks.get_search_query,
-            on_search_changed = callbacks.on_search_changed,
-            get_sort_mode = callbacks.get_sort_mode,
-            on_sort_changed = callbacks.on_sort_changed,
-            get_filter_items = callbacks.get_filter_items,
-            on_filter_remove = callbacks.on_filter_remove,
+            get_mode = callbacks.get_quick_access_mode,
+            on_mode_changed = callbacks.on_quick_access_mode_changed,
           },
         },
       },

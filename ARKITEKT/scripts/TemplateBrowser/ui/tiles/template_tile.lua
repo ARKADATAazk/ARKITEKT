@@ -5,8 +5,6 @@
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Draw = require('rearkitekt.gui.draw')
-local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
-local TileFXConfig = require('rearkitekt.gui.rendering.tile.defaults')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 
@@ -97,67 +95,54 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local chip_color = tmpl_meta and tmpl_meta.chip_color
   local is_favorite = is_favorited(template.uuid, metadata)
 
-  -- Use neutral base color for tile, chip_color only affects stripes and chip
-  local base_color = hexrgb("#2A2A2A")
-
   -- Animation tracking
   animator:track(template.uuid, 'hover', state.hover and 1.0 or 0.0, 12.0)
   local hover_factor = animator:get(template.uuid, 'hover')
 
-  -- Configure visual effects with diagonal stripes if template has color
-  local fx_config = TileFXConfig.override({
-    fill_opacity = 0.4,
-    fill_saturation = 0.6,
-    fill_brightness = 0.7,
-    gradient_intensity = 0.2,
-    gradient_opacity = 0.6,
-    specular_strength = state.hover and 0.3 or 0.15,
-    specular_coverage = 0.3,
-    inner_shadow_strength = 0.25,
-    border_saturation = 1.0,
-    border_brightness = 1.2,
-    border_opacity = 0.7,
-    border_thickness = 1.0,
-    glow_strength = 0.0,  -- No glow (using marching ants instead)
-    glow_layers = 0,
-    stripe_enabled = chip_color ~= nil,  -- Enable stripes if template has color
-    stripe_spacing = 10,
-    stripe_thickness = 4,
-    stripe_opacity = 0.04,
-    ants_enabled = state.selected,  -- Marching ants for selection
-    ants_replace_border = true,
-    ants_thickness = 2,
-    ants_dash = 8,
-    ants_gap = 6,
-    ants_speed = 20,
-    ants_inset = 0,
-    ants_alpha = 0xFF,
-    rounding = 6,
-  })
+  -- Color definitions (inspired by Parameter Library)
+  local BG_BASE = hexrgb("#252525")
+  local BG_HOVER = hexrgb("#2D2D2D")
+  local BRD_BASE = hexrgb("#333333")
+  local BRD_HOVER = hexrgb("#5588FF")
+  local rounding = 4
 
-  -- Render base tile with stripe_color for diagonals (chip_color affects only stripes)
-  TileFX.render_complete(dl, x1, y1, x2, y2, base_color, fx_config,
-    state.selected, hover_factor, nil, nil, nil, nil, chip_color, chip_color ~= nil)
+  -- Background color with smooth hover transition
+  local bg_color = BG_BASE
+  if hover_factor > 0.01 then
+    local r1, g1, b1 = (BG_BASE >> 24) & 0xFF, (BG_BASE >> 16) & 0xFF, (BG_BASE >> 8) & 0xFF
+    local r2, g2, b2 = (BG_HOVER >> 24) & 0xFF, (BG_HOVER >> 16) & 0xFF, (BG_HOVER >> 8) & 0xFF
+    local r = math.floor(r1 + (r2 - r1) * hover_factor * 0.5)
+    local g = math.floor(g1 + (g2 - g1) * hover_factor * 0.5)
+    local b = math.floor(b1 + (b2 - b1) * hover_factor * 0.5)
+    bg_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+  end
 
-  -- Draw marching ants on selected tiles
-  if state.selected and fx_config.ants_enabled then
-    local ants_color = Colors.same_hue_variant(
-      chip_color or base_color,
-      fx_config.border_saturation,
-      fx_config.border_brightness,
-      fx_config.ants_alpha or 0xFF
-    )
-    local inset = fx_config.ants_inset or 0
-    MarchingAnts.draw(
-      dl,
-      x1 + inset, y1 + inset, x2 - inset, y2 - inset,
-      ants_color,
-      fx_config.ants_thickness,
-      fx_config.rounding,
-      fx_config.ants_dash,
-      fx_config.ants_gap,
-      fx_config.ants_speed
-    )
+  -- Draw background
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, rounding)
+
+  -- Draw border or marching ants
+  if state.selected then
+    -- Marching ants for selection
+    local ant_color = chip_color and Colors.same_hue_variant(chip_color, 1.0, 1.2, 0x7F) or hexrgb("#5588FF7F")
+    MarchingAnts.draw(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5, ant_color, 1.5, rounding, 8, 6, 20)
+  else
+    -- Normal border with hover highlight
+    local border_color = BRD_BASE
+    if hover_factor > 0.01 then
+      local r1, g1, b1 = (BRD_BASE >> 24) & 0xFF, (BRD_BASE >> 16) & 0xFF, (BRD_BASE >> 8) & 0xFF
+      local r2, g2, b2 = (BRD_HOVER >> 24) & 0xFF, (BRD_HOVER >> 16) & 0xFF, (BRD_HOVER >> 8) & 0xFF
+      local r = math.floor(r1 + (r2 - r1) * hover_factor)
+      local g = math.floor(g1 + (g2 - g1) * hover_factor)
+      local b = math.floor(b1 + (b2 - b1) * hover_factor)
+      border_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+    end
+    ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
+  end
+
+  -- Draw color indicator stripe on left edge if template has color
+  if chip_color then
+    local stripe_color = Colors.same_hue_variant(chip_color, 1.0, 1.1, 200)
+    ImGui.DrawList_AddRectFilled(dl, x1, y1, x1 + 3, y2, stripe_color)
   end
 
   -- Calculate text alpha based on tile height
@@ -166,17 +151,19 @@ function M.render(ctx, rect, template, state, metadata, animator)
     text_alpha = math.floor(255 * (tile_h / M.CONFIG.hide_path_below))
   end
 
-  -- Content positioning
-  local content_x = x1 + M.CONFIG.text_margin
-  local content_y = y1 + M.CONFIG.text_margin
-  local content_w = tile_w - (M.CONFIG.text_margin * 2)
+  -- Content positioning with internal padding (like Parameter Library tiles)
+  local padding = 6
+  local color_stripe_width = chip_color and 3 or 0
+  local content_x = x1 + padding + color_stripe_width
+  local content_y = y1 + padding
+  local content_w = tile_w - (padding * 2) - color_stripe_width
 
   -- Chip indicator removed - color is shown via diagonal stripes only
 
   -- Template name
-  local name_color = Colors.with_alpha(hexrgb("#FFFFFF"), text_alpha)
+  local name_color = Colors.with_alpha(hexrgb("#CCCCCC"), text_alpha)  -- Match Parameter Library text color
   if state.selected or state.hover then
-    name_color = Colors.adjust_brightness(name_color, 1.2)
+    name_color = Colors.with_alpha(hexrgb("#FFFFFF"), text_alpha)
   end
 
   local truncated_name = truncate_text(ctx, template.name, content_w)
