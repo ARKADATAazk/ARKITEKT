@@ -156,13 +156,17 @@ function M.render(ctx, rect, param, state, view)
     end
 
   elseif param.type == "slider" then
-    local changed_slider, slider_value = ImGui.SliderDouble(
+    -- Use DragDouble like additional_param_tile.lua (works better)
+    local range = param.max - param.min
+    local speed = math.max(range * 0.01, 0.01)
+    local changed_slider, slider_value = ImGui.DragDouble(
       ctx,
       "##lib_slider_" .. param.index,
       param.value,
+      speed,
       param.min,
       param.max,
-      "%.1f"
+      "%.2f"
     )
 
     if changed_slider then
