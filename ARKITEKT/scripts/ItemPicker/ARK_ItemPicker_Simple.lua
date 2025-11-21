@@ -88,9 +88,6 @@ Controller.init(reaper_interface, utils)
 -- Create GUI
 local gui = GUI.new(Config, State, Controller, visualization, drag_handler)
 
--- Forward declare runtime so cleanup can access it
-local runtime = nil
-
 local function cleanup()
   SetButtonState()
   reaper.Main_OnCommand(reaper.NamedCommandLookup("_SWS_STOPPREVIEW"), 0)
@@ -101,11 +98,6 @@ local function cleanup()
     while overlay_mgr:is_active() do
       overlay_mgr:pop()
     end
-  end
-
-  -- Explicitly stop the runtime defer loop
-  if runtime then
-    runtime:request_close()
   end
 
   reaper.DeleteExtState(ext_section, ext_running, false)
@@ -159,8 +151,8 @@ overlay_mgr:push(OverlayDefaults.create_overlay_config({
   on_close = cleanup,
 }))
 
--- Create runtime (assign to forward-declared variable)
-runtime = Runtime.new({
+-- Create runtime
+local runtime = Runtime.new({
   title = "Item Picker",
   ctx = ctx,
 
@@ -169,14 +161,12 @@ runtime = Runtime.new({
     local close_req = reaper.GetExtState(ext_section, "close_request")
     if close_req == "1" then
       reaper.SetExtState(ext_section, "close_request", "", false)
-      cleanup()
-      return false  -- Stop running
+      return false  -- Stop running, on_destroy will call cleanup
     end
 
     -- Check if should close after drop (before AND after rendering)
     if State.should_close_after_drop then
-      cleanup()
-      return false  -- Stop running
+      return false  -- Stop running, on_destroy will call cleanup
     end
 
     -- When dragging, skip overlay and just render drag handlers
@@ -192,8 +182,7 @@ runtime = Runtime.new({
 
       -- Check again after draw in case flag was set during draw
       if State.should_close_after_drop then
-        cleanup()
-        return false  -- Stop running
+        return false  -- Stop running, on_destroy will call cleanup
       end
 
       return true  -- Keep running
@@ -201,8 +190,7 @@ runtime = Runtime.new({
       -- Normal mode: let overlay manager handle everything
       -- Don't render if we should close
       if State.should_close_after_drop then
-        cleanup()
-        return false
+        return false  -- Stop running, on_destroy will call cleanup
       end
 
       overlay_mgr:render(ctx)
