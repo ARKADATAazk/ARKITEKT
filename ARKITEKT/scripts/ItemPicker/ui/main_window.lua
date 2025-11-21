@@ -296,8 +296,9 @@ function GUI:draw(ctx, shell_state)
         self.state.end_drag()
         self.state.waiting_for_new_click = false
       else
-        -- Normal drop: End drag and flag for closure
-        self.state.end_drag()
+        -- Normal drop: DON'T end drag - keep State.dragging active
+        -- This keeps us in the dragging branch (no overlay render)
+        -- Cleanup will handle clearing drag state
         self.state.waiting_for_new_click = false
         -- Flag is already set before insert, will close on next render
       end
