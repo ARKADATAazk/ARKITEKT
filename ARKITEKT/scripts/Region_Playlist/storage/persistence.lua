@@ -14,43 +14,6 @@ local KEY_PLAYLISTS = "playlists"
 local KEY_ACTIVE = "active_playlist"
 local KEY_SETTINGS = "settings"
 
--- (No changes to migrate functions)
-local function migrate_playlist_items(items)
-  for _, item in ipairs(items) do
-    if not item.type then
-      item.type = "region"
-    end
-    if item.type == "region" and not item.reps then
-      item.reps = 1
-    end
-    if item.enabled == nil then
-      item.enabled = true
-    end
-  end
-  return items
-end
-
-local function migrate_playlists(playlists, proj)
-  local needs_save = false
-  
-  for _, pl in ipairs(playlists) do
-    if pl.items then
-      migrate_playlist_items(pl.items)
-    end
-    if not pl.chip_color then
-      pl.chip_color = M.generate_chip_color()
-      needs_save = true
-    end
-  end
-  
-  if needs_save then
-    M.save_playlists(playlists, proj)
-  end
-  
-  return playlists
-end
-
--- (No changes to save/load functions)
 function M.save_playlists(playlists, proj)
   proj = proj or 0
   local json_str = JSON.encode(playlists)
@@ -63,13 +26,13 @@ function M.load_playlists(proj)
   if ok ~= 1 or not json_str or json_str == "" then
     return {}
   end
-  
+
   local success, playlists = pcall(JSON.decode, json_str)
   if not success then
     return {}
   end
-  
-  return migrate_playlists(playlists or {}, proj)
+
+  return playlists or {}
 end
 
 function M.save_active_playlist(playlist_id, proj)
@@ -98,12 +61,12 @@ function M.load_settings(proj)
   if ok ~= 1 or not json_str or json_str == "" then
     return {}
   end
-  
+
   local success, settings = pcall(JSON.decode, json_str)
   if not success then
     return {}
   end
-  
+
   return settings or {}
 end
 

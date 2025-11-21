@@ -328,15 +328,14 @@ function TransportView:build_playback_dropdown(bridge_state)
       end,
       on_checkbox_change = function(value, new_checked)
         local bridge = self.state.get_bridge()
-        local engine = bridge.engine
-        if not engine then return end
+        if not bridge then return end
 
         if value == "shuffle" then
           bridge:set_shuffle_enabled(new_checked)
         elseif value == "override_transport" then
-          engine:set_transport_override(new_checked)
+          bridge:set_transport_override(new_checked)
         elseif value == "follow_viewport" then
-          engine:set_follow_viewport(new_checked)
+          bridge:set_follow_viewport(new_checked)
         end
       end,
     },
@@ -399,9 +398,10 @@ function TransportView:build_playback_buttons(bridge_state)
             preset_name = "BUTTON_TOGGLE_WHITE",
             tooltip = "Left-click: Toggle Shuffle\nRight-click: Shuffle Options",
             on_click = function()
-              if engine then
-                local current_state = engine:get_shuffle_enabled()
-                engine:set_shuffle_enabled(not current_state)
+              local bridge = self.state.get_bridge()
+              if bridge then
+                local current_state = bridge:get_shuffle_enabled()
+                bridge:set_shuffle_enabled(not current_state)
               end
             end,
             on_right_click = function()
@@ -426,10 +426,9 @@ function TransportView:build_playback_buttons(bridge_state)
         tooltip = "Override Transport Quantization",
         on_click = function()
           local bridge = self.state.get_bridge()
-          local engine = bridge.engine
-          if engine then
-            local current_state = engine:get_transport_override()
-            engine:set_transport_override(not current_state)
+          if bridge then
+            local current_state = bridge:get_transport_override()
+            bridge:set_transport_override(not current_state)
           end
         end,
       },
@@ -446,10 +445,9 @@ function TransportView:build_playback_buttons(bridge_state)
         tooltip = "Follow Playhead in Viewport (Continuous Scrolling)",
         on_click = function()
           local bridge = self.state.get_bridge()
-          local engine = bridge.engine
-          if engine then
-            local current_state = engine:get_follow_viewport()
-            engine:set_follow_viewport(not current_state)
+          if bridge then
+            local current_state = bridge:get_follow_viewport()
+            bridge:set_follow_viewport(not current_state)
           end
         end,
       },
@@ -633,15 +631,14 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
       end,
       on_checkbox_change = function(value, new_checked)
         local bridge = self.state.get_bridge()
-        local engine = bridge.engine
-        if not engine then return end
+        if not bridge then return end
 
         if value == "shuffle" then
           bridge:set_shuffle_enabled(new_checked)
         elseif value == "override_transport" then
-          engine:set_transport_override(new_checked)
+          bridge:set_transport_override(new_checked)
         elseif value == "follow_viewport" then
-          engine:set_follow_viewport(new_checked)
+          bridge:set_follow_viewport(new_checked)
         end
       end,
       footer_content = function(footer_ctx)
@@ -760,13 +757,24 @@ function TransportView:draw(ctx, shell_state, is_blocking)
   local content_w, content_h = self.container:begin_draw(ctx, region_colors, current_rid)
   
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  
-  local active_playlist = self.state.get_active_playlist()
-  local playlist_data = active_playlist and {
-    name = active_playlist.name,
-    color = active_playlist.chip_color or hexrgb("#888888"),
+
+  -- Show the playing playlist when playback is active, otherwise show the selected playlist
+  local playlist_to_display = self.state.get_active_playlist()
+  if bridge and bridge_state.is_playing then
+    local playing_playlist_id = bridge:get_playing_playlist_id()
+    if playing_playlist_id then
+      local playing_playlist = self.state.get_playlist_by_id(playing_playlist_id)
+      if playing_playlist then
+        playlist_to_display = playing_playlist
+      end
+    end
+  end
+
+  local playlist_data = playlist_to_display and {
+    name = playlist_to_display.name,
+    color = playlist_to_display.chip_color or hexrgb("#888888"),
   } or nil
-  
+
   local current_region = nil
   local next_region = nil
   

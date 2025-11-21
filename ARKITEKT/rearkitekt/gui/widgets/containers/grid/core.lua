@@ -476,8 +476,14 @@ function Grid:draw(ctx)
   local gb = self.grid_bounds
   local mouse_in_grid = gb and mx >= gb[1] and mx <= gb[3] and my >= gb[2] and my <= gb[4]
 
-  local bg_clicked = mouse_in_grid and ImGui.IsMouseClicked(ctx, 0)
-  local bg_double_clicked = mouse_in_grid and ImGui.IsMouseDoubleClicked(ctx, 0)
+  -- Check if background clicks should be blocked (e.g., when overlays/popups are open)
+  -- Also block if mouse is over other UI elements (buttons, widgets, child windows)
+  local is_over_ui_element = ImGui.IsAnyItemHovered(ctx) or
+                              ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
+  local allow_background_interaction = not self.disable_background_clicks and not is_over_ui_element
+
+  local bg_clicked = mouse_in_grid and ImGui.IsMouseClicked(ctx, 0) and allow_background_interaction
+  local bg_double_clicked = mouse_in_grid and ImGui.IsMouseDoubleClicked(ctx, 0) and allow_background_interaction
 
   -- We'll check if click is over a tile AFTER rendering
   -- For now, defer marquee selection start until we know

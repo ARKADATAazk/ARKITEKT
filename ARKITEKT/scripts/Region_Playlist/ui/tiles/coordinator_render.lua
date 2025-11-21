@@ -353,6 +353,11 @@ function M.draw_pool(self, ctx, regions, height)
   self.pool_grid.fixed_tile_h = responsive_height
   self.pool_grid.gap = raw_gap
 
+  -- Disable background deselection when color picker or action menu is visible
+  local should_block_background_clicks = self._pool_color_picker_visible or
+                                          ImGui.IsPopupOpen(ctx, "PoolActionsMenu")
+  self.pool_grid.disable_background_clicks = should_block_background_clicks
+
   self.pool_grid:draw(ctx)
 
   self.pool_container:end_draw(ctx)

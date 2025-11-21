@@ -90,26 +90,21 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- Calculate total content width for centering
   local content_max_w = 700  -- Maximum content width
   local actual_content_w = math.min(modal_w, content_max_w)
-  local center_offset_x = (modal_w - actual_content_w) * 0.5
+  local center_offset_x = math.floor((modal_w - actual_content_w) * 0.5)
 
   -- Calculate layout variables early
-  local left_col_width = actual_content_w * 0.58  -- 58% for left column
+  local left_col_width = math.floor(actual_content_w * 0.58)  -- 58% for left column
   local picker_size = 137  -- 30% smaller than original 195
   local col_gap = 16  -- Gap between columns
 
-  local start_x = ImGui.GetCursorPosX(ctx) + center_offset_x
+  local start_x = math.floor(ImGui.GetCursorPosX(ctx) + center_offset_x)
 
   -- Title centered
   local title_text = string.format("Rename %d item%s", count, count > 1 and "s" or "")
   local title_w = ImGui.CalcTextSize(ctx, title_text)
-  ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + (modal_w - title_w) * 0.5)
+  ImGui.SetCursorPosX(ctx, math.floor(ImGui.GetCursorPosX(ctx) + (modal_w - title_w) * 0.5))
   ImGui.TextColored(ctx, hexrgb("#CCCCCCFF"), title_text)
-  ImGui.Dummy(ctx, 0, 10)
-  ImGui.SetCursorPosX(ctx, start_x)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Separator, hexrgb("#404040FF"))
-  ImGui.Separator(ctx)
-  ImGui.PopStyleColor(ctx)
-  ImGui.Dummy(ctx, 0, 16)
+  ImGui.Dummy(ctx, 0, 20)
 
   -- ========================================================================
   -- TWO COLUMN LAYOUT: Left (input + chips) | Right (color picker)
@@ -229,7 +224,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- ========================================================================
 
   local left_col_cursor_y = ImGui.GetCursorPosY(ctx)
-  ImGui.SetCursorPos(ctx, start_x + left_col_width + col_gap, start_y)
+  ImGui.SetCursorPos(ctx, math.floor(start_x + left_col_width + col_gap), start_y)
 
   -- Initialize color picker only once per modal open
   if not self.picker_initialized then
@@ -249,12 +244,8 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local right_col_end_y = start_y + picker_size
   local final_y = math.max(left_col_cursor_y, right_col_end_y)
 
-  ImGui.SetCursorPosY(ctx, final_y + 8)
+  ImGui.SetCursorPosY(ctx, final_y + 16)
   ImGui.SetCursorPosX(ctx, start_x)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Separator, hexrgb("#404040FF"))
-  ImGui.Separator(ctx)
-  ImGui.PopStyleColor(ctx)
-  ImGui.Dummy(ctx, 0, 8)
 
   -- ========================================================================
   -- SECTION 4: Preview
@@ -273,12 +264,8 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     ImGui.Unindent(ctx, start_x + 12)
   end
 
-  ImGui.Dummy(ctx, 0, 8)
+  ImGui.Dummy(ctx, 0, 20)
   ImGui.SetCursorPosX(ctx, start_x)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Separator, hexrgb("#404040FF"))
-  ImGui.Separator(ctx)
-  ImGui.PopStyleColor(ctx)
-  ImGui.Dummy(ctx, 0, 12)
 
   -- ========================================================================
   -- SECTION 5: Action buttons using primitives
@@ -288,7 +275,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local button_h = 28
   local spacing = 8
   local total_w = button_w * 4 + spacing * 3
-  local button_start_x = start_x + (actual_content_w - total_w) * 0.5
+  local button_start_x = math.floor(start_x + (actual_content_w - total_w) * 0.5)
 
   -- Center buttons horizontally within content area
   ImGui.SetCursorPosX(ctx, button_start_x)
@@ -372,47 +359,40 @@ function BatchRenameModal:draw(ctx, item_count, window)
 
       window.overlay:push({
         id = 'batch-rename-modal',
-        close_on_scrim = true,
+        close_on_scrim = false,  -- Disable right-click scrim exit
         esc_to_close = true,
         on_close = function()
           self:close()
           self.overlay_pushed = false
         end,
         render = function(ctx, alpha, bounds)
-          -- Calculate modal dimensions - much larger, invisible bounds for layout
-          local modal_w = math.floor(bounds.w * 0.80)  -- 80% of screen width
-          local modal_h = math.floor(bounds.h * 0.75)  -- 75% of screen height
-          local modal_x = math.floor(bounds.x + (bounds.w - modal_w) * 0.5)
-          local modal_y = math.floor(bounds.y + (bounds.h - modal_h) * 0.5)
+          -- Responsive sizing with constraints
+          local max_w = 800
+          local max_h = 600
+          local min_w = 600
+          local min_h = 400
 
-          local padding = 40
+          -- Use 80% of viewport width/height, clamped to min/max
+          local modal_w = math.floor(math.max(min_w, math.min(max_w, bounds.w * 0.8)))
+          local modal_h = math.floor(math.max(min_h, math.min(max_h, bounds.h * 0.8)))
+
+          -- Center in viewport
+          local modal_x = bounds.x + math.floor((bounds.w - modal_w) * 0.5)
+          local modal_y = bounds.y + math.floor((bounds.h - modal_h) * 0.5)
+
+          local padding = 32
           local content_w = modal_w - padding * 2
           local content_h = modal_h - padding * 2
 
-          -- Invisible child window to block right-clicks on content (defines "safe zone")
-          ImGui.SetCursorScreenPos(ctx, modal_x, modal_y)
+          -- Draw content directly without container background
+          ImGui.SetCursorScreenPos(ctx, modal_x + padding, modal_y + padding)
+          local should_close = self:draw_content(ctx, count, true, content_w, content_h)
 
-          local child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
-          local window_flags = ImGui.WindowFlags_NoScrollbar | ImGui.WindowFlags_NoScrollWithMouse
-
-          ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#00000000"))  -- Completely transparent
-          ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
-
-          if ImGui.BeginChild(ctx, '##batch_rename_zone', modal_w, modal_h, child_flags, window_flags) then
-            local should_close = self:draw_content(ctx, count, true, content_w, content_h)
-
-            ImGui.EndChild(ctx)
-            ImGui.PopStyleVar(ctx, 1)
-            ImGui.PopStyleColor(ctx, 1)
-
-            if should_close then
-              window.overlay:pop('batch-rename-modal')
-              self:close()
-              self.overlay_pushed = false
-            end
-          else
-            ImGui.PopStyleVar(ctx, 1)
-            ImGui.PopStyleColor(ctx, 1)
+          -- Handle close
+          if should_close then
+            window.overlay:pop('batch-rename-modal')
+            self:close()
+            self.overlay_pushed = false
           end
         end
       })

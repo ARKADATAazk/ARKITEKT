@@ -573,12 +573,12 @@ end
 
 function M.set_active_playlist(playlist_id, move_to_end)
   M.active_playlist = playlist_id
-  
+
   -- Optionally move the playlist to the front (first visible tab)
   if move_to_end then
     M.move_playlist_to_front(playlist_id)
   end
-  
+
   M.persist()
   if M.bridge then
     M.bridge:get_sequence()

@@ -46,11 +46,12 @@ function M.create(opts)
     _last_known_item_key = nil,
     _last_reported_loop_key = nil,
     _last_reported_loop = nil,
+    _playing_playlist_id = nil,  -- Track which playlist is currently being played
   }
 
   bridge.engine = Engine.new({
     proj = bridge.proj,
-    quantize_mode = saved_settings.quantize_mode or "none",
+    quantize_mode = saved_settings.quantize_mode or "measure",
     follow_playhead = saved_settings.follow_playhead or false,
     transport_override = saved_settings.transport_override or false,
     loop_playlist = saved_settings.loop_playlist or false,
@@ -60,6 +61,28 @@ function M.create(opts)
     on_repeat_cycle = nil,
     playlist_lookup = opts.get_playlist_by_id,
   })
+
+  -- Save defaults only if settings were empty (first run only)
+  local needs_save = false
+
+  if saved_settings.quantize_mode == nil then
+    saved_settings.quantize_mode = "measure"
+    needs_save = true
+  end
+
+  if saved_settings.shuffle_enabled == nil then
+    saved_settings.shuffle_enabled = false
+    needs_save = true
+  end
+
+  if saved_settings.shuffle_mode == nil then
+    saved_settings.shuffle_mode = "true_shuffle"
+    needs_save = true
+  end
+
+  if needs_save then
+    RegionState.save_settings(saved_settings, bridge.proj)
+  end
 
   bridge.playback = Playback.new(bridge.engine, {
     on_region_change = opts.on_region_change,
@@ -108,6 +131,18 @@ function M.create(opts)
 
   local function rebuild_sequence()
     local playlist = resolve_active_playlist()
+    local active_playlist_id = safe_call(bridge.get_active_playlist_id)
+    local is_playing = bridge.engine and bridge.engine:get_is_playing()
+
+    -- Don't rebuild sequence if we're currently playing
+    -- This prevents the transport from switching playlists when user changes tabs during playback
+    if is_playing and bridge._playing_playlist_id then
+      Logger.debug("BRIDGE", "Skipping sequence rebuild - currently playing playlist %s (active: %s)",
+        tostring(bridge._playing_playlist_id), tostring(active_playlist_id))
+      bridge.sequence_cache_dirty = false
+      return
+    end
+
     local sequence = {}
     local playlist_map = {}
 
@@ -118,17 +153,17 @@ function M.create(opts)
     bridge.sequence_cache = sequence
     bridge.sequence_lookup = {}
     bridge.playlist_ranges = {}
-    
+
     for idx, entry in ipairs(sequence) do
       if entry.item_key and not bridge.sequence_lookup[entry.item_key] then
         bridge.sequence_lookup[entry.item_key] = idx
         Logger.debug("BRIDGE", "Mapping key '%s' -> idx %d", entry.item_key, idx)
       end
     end
-    
-    Logger.debug("BRIDGE", "Final sequence_lookup built with %d entries", 
+
+    Logger.debug("BRIDGE", "Final sequence_lookup built with %d entries",
       (function() local count = 0; for _ in pairs(bridge.sequence_lookup) do count = count + 1 end; return count end)())
-    
+
     for playlist_key, range_info in pairs(playlist_map) do
       bridge.playlist_ranges[playlist_key] = range_info
       if not bridge.sequence_lookup[playlist_key] then
@@ -154,6 +189,11 @@ function M.create(opts)
     bridge._last_reported_loop_key = nil
     bridge._last_reported_loop = nil
     bridge.sequence_cache_dirty = false
+
+    -- Remember which playlist we're playing
+    if not is_playing then
+      bridge._playing_playlist_id = active_playlist_id
+    end
   end
 
   function bridge:invalidate_sequence()
@@ -229,10 +269,15 @@ function M.create(opts)
 
   function bridge:play()
     self:_ensure_sequence()
+    -- Remember which playlist we're playing when playback starts
+    self._playing_playlist_id = safe_call(self.get_active_playlist_id)
     return self.engine:play()
   end
 
   function bridge:stop()
+    -- Clear the playing playlist ID when stopping
+    -- This allows the sequence to be rebuilt for a different playlist on next play
+    self._playing_playlist_id = nil
     return self.engine:stop()
   end
 
@@ -286,6 +331,45 @@ function M.create(opts)
 
   function bridge:get_shuffle_mode()
     return self.engine:get_shuffle_mode()
+  end
+
+  function bridge:set_follow_playhead(enabled)
+    self.engine:set_follow_playhead(enabled)
+    local settings = RegionState.load_settings(self.proj)
+    settings.follow_playhead = enabled
+    RegionState.save_settings(settings, self.proj)
+  end
+
+  function bridge:get_follow_playhead()
+    return self.engine.follow_playhead
+  end
+
+  function bridge:set_transport_override(enabled)
+    self.engine:set_transport_override(enabled)
+    local settings = RegionState.load_settings(self.proj)
+    settings.transport_override = enabled
+    RegionState.save_settings(settings, self.proj)
+  end
+
+  function bridge:get_transport_override()
+    return self.engine:get_transport_override()
+  end
+
+  function bridge:set_follow_viewport(enabled)
+    self.engine:set_follow_viewport(enabled)
+    local settings = RegionState.load_settings(self.proj)
+    settings.follow_viewport = enabled
+    RegionState.save_settings(settings, self.proj)
+  end
+
+  function bridge:get_follow_viewport()
+    return self.engine:get_follow_viewport()
+  end
+
+  function bridge:get_playing_playlist_id()
+    -- Return the ID of the playlist that is currently playing
+    -- Returns nil if not playing or no playlist is locked
+    return self._playing_playlist_id
   end
 
   function bridge:get_state()
