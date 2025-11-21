@@ -13,6 +13,7 @@ local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_fact
 local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
 local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_config')
 local RecentPanelConfig = require('TemplateBrowser.ui.recent_panel_config')
+local LeftPanelConfig = require('TemplateBrowser.ui.left_panel_config')
 local MarkdownField = require('rearkitekt.gui.widgets.primitives.markdown_field')
 local Shortcuts = require('TemplateBrowser.core.shortcuts')
 
@@ -40,6 +41,7 @@ function M.new(config, state, scanner)
     quick_access_grid = nil,  -- Initialized in initialize_once
     template_container = nil,  -- Initialized in initialize_once
     recent_container = nil,  -- Initialized in initialize_once
+    left_panel_container = nil,  -- Initialized in initialize_once
   }, GUI)
 
   return self
@@ -416,6 +418,21 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     config = recent_config,
   })
 
+  -- Create left panel container (Directory/VSTs/Tags tabs)
+  local left_panel_config = LeftPanelConfig.create({
+    get_active_tab = function()
+      return self.state.left_panel_tab or "directory"
+    end,
+    on_tab_change = function(tab_id)
+      self.state.left_panel_tab = tab_id
+    end,
+  }, self.is_overlay_mode)
+
+  self.left_panel_container = TilesContainer.new({
+    id = "left_panel_container",
+    config = left_panel_config,
+  })
+
   self.initialized = true
 end
 
@@ -645,7 +662,7 @@ function GUI:draw(ctx, shell_state)
   -- Draw panels with padding using view modules
   -- Left column: Tabbed panel (DIRECTORY / VSTS / TAGS)
   ImGui.SetCursorPos(ctx, padding_left, cursor_y)
-  LeftPanelView.draw_left_panel(ctx, self.state, self.config, left_column_width, panel_height)
+  LeftPanelView.draw_left_panel(ctx, self, left_column_width, panel_height)
 
   -- Middle panel: Templates
   ImGui.SetCursorPos(ctx, sep1_x_local + separator_thickness / 2, cursor_y)
