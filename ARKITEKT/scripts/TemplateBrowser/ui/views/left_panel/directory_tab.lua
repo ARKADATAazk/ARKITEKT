@@ -343,14 +343,26 @@ function M.draw(ctx, state, config, width, height)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- Calculate remaining height for folder tree (scrollable)
+  -- Calculate remaining height for folder trees (scrollable)
   -- Account for: header (28) + separator/spacing (10) + All Templates (24) + separator/spacing (10)
   local used_height = UI.HEADER.DEFAULT + UI.PADDING.SEPARATOR_SPACING + 24 + UI.PADDING.SEPARATOR_SPACING
-  local tree_height = folder_section_height - used_height
+  local total_tree_height = folder_section_height - used_height
 
-  -- Folder tree in scrollable child
-  if Helpers.begin_child_compat(ctx, "FolderTreeScroll", 0, tree_height, false) then
-    TreeViewModule.draw_folder_tree(ctx, state, config)
+  -- Split height: 70% for physical, 30% for virtual
+  local physical_tree_height = math.floor(total_tree_height * 0.7)
+  local virtual_tree_height = total_tree_height - physical_tree_height - 8  -- 8px gap
+
+  -- Physical folder tree in scrollable child
+  if Helpers.begin_child_compat(ctx, "PhysicalTreeScroll", 0, physical_tree_height, false) then
+    TreeViewModule.draw_physical_tree(ctx, state, config)
+    ImGui.EndChild(ctx)
+  end
+
+  ImGui.Spacing(ctx)
+
+  -- Virtual folder tree in scrollable child (separate scroll area)
+  if Helpers.begin_child_compat(ctx, "VirtualTreeScroll", 0, virtual_tree_height, false) then
+    TreeViewModule.draw_virtual_tree(ctx, state, config)
     ImGui.EndChild(ctx)
   end
 

@@ -104,7 +104,7 @@ local function render_tree_node(ctx, node, config, state, depth)
   -- Normal tree node display
 
     -- Tree node flags (same as original working implementation)
-    local flags = ImGui.TreeNodeFlags_SpanAvailWidth
+    local flags = ImGui.TreeNodeFlags_SpanAvailWidth | ImGui.TreeNodeFlags_DrawLinesFull
 
     -- Only allow expand/collapse by clicking arrow, not the whole item
     flags = flags | ImGui.TreeNodeFlags_OpenOnArrow
