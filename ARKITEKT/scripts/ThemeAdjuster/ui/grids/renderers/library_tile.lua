@@ -163,7 +163,7 @@ function M.render(ctx, rect, param, state, view)
       param.value,
       param.min,
       param.max,
-      "%.2f"
+      "%.0f"  -- Display as integer
     )
 
     -- Check if slider is being actively manipulated (even if value didn't "change")
@@ -171,7 +171,7 @@ function M.render(ctx, rect, param, state, view)
 
     if changed_slider or is_active then
       changed = true
-      new_value = slider_value
+      new_value = math.floor(slider_value + 0.5)  -- Round to integer
     end
   end
 

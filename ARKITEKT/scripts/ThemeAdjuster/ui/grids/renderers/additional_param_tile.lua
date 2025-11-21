@@ -142,15 +142,15 @@ function M.render(ctx, param, tab_color, shell_state, view)
       value_changed = true
     end
   else
-    -- DragDouble for floats
+    -- DragDouble for floats (but REAPER parameters are integers, so we round)
     ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
     local min_val = param.min or 0.0
     local max_val = param.max or 1.0
     local range = max_val - min_val
     local speed = math.max(range * 0.01, 0.01)
-    local changed, val = ImGui.DragDouble(ctx, control_id, current_value, speed, min_val, max_val, "%.2f")
+    local changed, val = ImGui.DragDouble(ctx, control_id, current_value, speed, min_val, max_val, "%.0f")
     if changed then
-      new_value = val
+      new_value = math.floor(val + 0.5)  -- Round to integer for REAPER
       value_changed = true
     end
   end
