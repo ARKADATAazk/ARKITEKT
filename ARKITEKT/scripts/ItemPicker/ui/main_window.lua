@@ -281,8 +281,16 @@ function GUI:draw(ctx, shell_state)
         local shift_actual = (mouse_state & 8) ~= 0  -- Bit 3 = Shift
         local ctrl_actual = (mouse_state & 4) ~= 0   -- Bit 2 = Ctrl
 
+        -- Check if user switched modifiers (e.g., pressing CTRL during SHIFT multi-drop)
+        if self.state.captured_shift and ctrl_actual and not shift_actual then
+          reaper.ShowConsoleMsg("[KEY DEBUG] Switched to CTRL during SHIFT sequence - returning to picker\n")
+          shift = false
+          ctrl = true
+          -- Clear captured state - switching modes
+          self.state.captured_shift = nil
+          self.state.captured_ctrl = nil
         -- If captured state says SHIFT but key is no longer pressed, treat as normal drop
-        if self.state.captured_shift and not shift_actual then
+        elseif self.state.captured_shift and not shift_actual then
           reaper.ShowConsoleMsg("[KEY DEBUG] SHIFT released (via JS API) - exiting multi-drop mode\n")
           shift = false
           ctrl = false
