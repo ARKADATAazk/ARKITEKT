@@ -499,7 +499,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Calculate layout toggle dimensions
   local layout_button_width = 0
   if self.state.settings.show_audio and self.state.settings.show_midi then
-    layout_button_width = 40  -- Smaller width for layout toggle
+    layout_button_width = button_height  -- Square button (same as height)
   end
 
   -- Calculate search width and center it
@@ -584,7 +584,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local sort_label_width = ImGui.CalcTextSize(ctx, sort_label)
   local sort_label_color = Colors.hexrgb("#AAAAAA")
   sort_label_color = Colors.with_alpha(sort_label_color, math.floor(search_fade * 200))
-  ImGui.DrawList_AddText(draw_list, sort_x, search_y + 6, sort_label_color, sort_label)
+  -- Note: Raw text vertical alignment baseline is search_y + 4 (2px up from buttons for better centering)
+  ImGui.DrawList_AddText(draw_list, sort_x, search_y + 4, sort_label_color, sort_label)
 
   -- Position sort buttons after label
   sort_x = sort_x + sort_label_width + 8
