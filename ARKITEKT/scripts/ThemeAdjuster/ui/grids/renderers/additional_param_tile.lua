@@ -265,20 +265,19 @@ function M.render(ctx, param, tab_color, shell_state, view)
     end
   end
 
-  -- Force refresh on mouse release if there are ANY pending changes
-  -- This handles the frame-timing issue where value changes and deactivation happen on different frames
-  if item_deactivated and refresh_needed then
+  -- ALWAYS force refresh on mouse release - don't rely on flags that might get cleared
+  if item_deactivated then
     pcall(reaper.ThemeLayout_RefreshAll)
     last_refresh_time = reaper.time_precise()
     refresh_needed = false
+  else
+    -- Only do throttled refresh if NOT deactivating (during active drag)
+    do_throttled_refresh()
   end
 
   -- Move cursor to next tile position
   ImGui.SetCursorScreenPos(ctx, x1, y2 + 4)
   ImGui.Dummy(ctx, avail_w, 0)
-
-  -- Do throttled refresh (batched across all parameters)
-  do_throttled_refresh()
 end
 
 return M
