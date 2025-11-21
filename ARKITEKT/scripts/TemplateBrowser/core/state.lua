@@ -23,6 +23,7 @@ M.sort_mode = "alphabetical"     -- Template sorting: "alphabetical", "usage", "
 M.template_view_mode = "grid"    -- Template view mode: "grid" or "list"
 M.grid_tile_width = 180     -- Grid mode tile width (adjustable with SHIFT+MouseWheel)
 M.list_tile_width = 450     -- List mode tile width (adjustable with SHIFT+MouseWheel)
+M.quick_access_mode = "recents" -- Quick access mode: "recents", "favorites", "most_used"
 
 -- Folder open/close state (path -> bool)
 M.folder_open_state = {}
@@ -81,6 +82,7 @@ function M.initialize(config)
   M.template_view_mode = "grid"
   M.grid_tile_width = config.TILE and config.TILE.GRID_DEFAULT_WIDTH or 180
   M.list_tile_width = config.TILE and config.TILE.LIST_DEFAULT_WIDTH or 450
+  M.quick_access_mode = "recents"
   M.folder_open_state = {}
   M.renaming_item = nil
   M.renaming_type = nil
