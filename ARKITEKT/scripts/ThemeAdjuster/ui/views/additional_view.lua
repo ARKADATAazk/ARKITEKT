@@ -649,6 +649,10 @@ function AdditionalView:draw(ctx, shell_state)
   -- Template configuration dialogs (from template tiles)
   local TemplateTile = require('ThemeAdjuster.ui.grids.renderers.template_tile')
   TemplateTile.render_template_config_dialogs(ctx, self)
+
+  -- Template group configuration dialogs
+  local TemplateGroupConfig = require('ThemeAdjuster.ui.grids.renderers.template_group_config')
+  TemplateGroupConfig.render_config_dialogs(ctx, self)
 end
 
 function AdditionalView:draw_assignment_tab_bar(ctx, shell_state)

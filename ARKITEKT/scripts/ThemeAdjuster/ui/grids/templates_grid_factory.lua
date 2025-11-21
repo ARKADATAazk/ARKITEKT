@@ -4,6 +4,7 @@
 
 local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
 local TemplateTile = require('ThemeAdjuster.ui.grids.renderers.template_tile')
+local TemplateGroupConfig = require('ThemeAdjuster.ui.grids.renderers.template_group_config')
 local TileGroup = require('rearkitekt.gui.widgets.containers.tile_group')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
@@ -77,6 +78,8 @@ local function create_render_tile(view)
   return function(ctx, rect, item, state, grid)
     -- Check if this is a group header
     if TileGroup.is_group_header(item) then
+      local ImGui = require 'imgui' '0.10'
+
       -- Render group header
       local clicked = TileGroup.render_header(ctx, rect, item, state)
       if clicked then
@@ -86,6 +89,26 @@ local function create_render_tile(view)
         -- Persist the collapsed state
         view.template_group_collapsed_states[item.__group_id] = item.__group_ref.collapsed
         view:save_templates()
+      end
+
+      -- Add invisible button for right-click context menu
+      local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+      ImGui.SetCursorScreenPos(ctx, x1, y1)
+      ImGui.InvisibleButton(ctx, "##group_header_interact_" .. item.__group_id, x2 - x1, y2 - y1)
+
+      -- Right-click context menu for group
+      if ImGui.BeginPopupContextItem(ctx, "group_context_" .. item.__group_id) then
+        if ImGui.MenuItem(ctx, "Configure Group...") then
+          TemplateGroupConfig.open_config(item.__group_id, view)
+        end
+
+        ImGui.Separator(ctx)
+
+        if ImGui.MenuItem(ctx, "Delete Group") then
+          view:delete_template_group(item.__group_id)
+        end
+
+        ImGui.EndPopup(ctx)
       end
     else
       -- Render regular template tile (extract original item if wrapped)
