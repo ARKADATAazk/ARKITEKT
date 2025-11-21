@@ -16,9 +16,10 @@ local TILE_HEIGHT = 60
 local TILE_PADDING = 8
 local CONTROL_WIDTH = 200
 
--- Refresh throttling: Track last refresh time per parameter
-local last_refresh_times = {}
-local REFRESH_INTERVAL = 0.25  -- 250ms between refreshes during drag
+-- Refresh throttling: Track last refresh time globally
+local last_refresh_time = 0
+local REFRESH_INTERVAL = 0.1  -- 100ms between refreshes (10 fps max)
+local refresh_needed = false
 
 -- Read/write parameter value from Reaper theme
 local function get_param_value(param_index, param_type)
@@ -38,14 +39,26 @@ local function get_param_value(param_index, param_type)
   return value
 end
 
-local function set_param_value(param_index, value, save)
+local function set_param_value(param_index, value)
   if not param_index then return end
-  save = save == nil and true or save
-  local ok = pcall(reaper.ThemeLayout_SetParameter, param_index, value, save)
-  if ok and save then
-    pcall(reaper.ThemeLayout_RefreshAll)
+  -- Always persist parameter (save=true) like original Theme Adjuster
+  local ok = pcall(reaper.ThemeLayout_SetParameter, param_index, value, true)
+  if ok then
+    refresh_needed = true  -- Flag that refresh is needed
   end
   return ok
+end
+
+-- Call this at the end of render to do throttled refresh
+local function do_throttled_refresh()
+  if not refresh_needed then return end
+
+  local current_time = reaper.time_precise()
+  if (current_time - last_refresh_time) >= REFRESH_INTERVAL then
+    pcall(reaper.ThemeLayout_RefreshAll)
+    last_refresh_time = current_time
+    refresh_needed = false
+  end
 end
 
 -- Render a single parameter tile
@@ -229,17 +242,8 @@ function M.render(ctx, param, tab_color, shell_state, view)
 
   -- Handle value change and propagation
   if value_changed then
-    -- Check if enough time has passed for a periodic refresh
-    local current_time = reaper.time_precise()
-    local last_refresh = last_refresh_times[param_name] or 0
-    local should_refresh = (current_time - last_refresh) >= REFRESH_INTERVAL
-
-    -- Update value (with periodic refresh if threshold exceeded)
-    set_param_value(param_index, new_value, should_refresh)
-
-    if should_refresh then
-      last_refresh_times[param_name] = current_time
-    end
+    -- Always set parameter value (persisted immediately, like original Theme Adjuster)
+    set_param_value(param_index, new_value)
 
     -- Propagate to linked parameters
     if is_in_group and link_mode ~= ParameterLinkManager.LINK_MODE.UNLINKED then
@@ -250,7 +254,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
         -- Find the parameter index for the linked param
         for _, p in ipairs(view.all_params) do
           if p.name == prop.param_name then
-            set_param_value(p.index, prop.clamped_value, should_refresh)
+            set_param_value(p.index, prop.clamped_value)
             break
           end
         end
@@ -258,28 +262,19 @@ function M.render(ctx, param, tab_color, shell_state, view)
     end
   end
 
-  -- Final refresh when user finishes editing (mouse-up)
+  -- Force refresh on mouse-up to ensure final value is visible
   if value_deactivated then
-    set_param_value(param_index, new_value, true)
-    last_refresh_times[param_name] = reaper.time_precise()
-
-    -- Also refresh linked parameters
-    if is_in_group and link_mode ~= ParameterLinkManager.LINK_MODE.UNLINKED then
-      local propagations = ParameterLinkManager.propagate_value_change(param_name, current_value, new_value)
-      for _, prop in ipairs(propagations) do
-        for _, p in ipairs(view.all_params) do
-          if p.name == prop.param_name then
-            set_param_value(p.index, prop.clamped_value, true)
-            break
-          end
-        end
-      end
-    end
+    pcall(reaper.ThemeLayout_RefreshAll)
+    last_refresh_time = reaper.time_precise()
+    refresh_needed = false
   end
 
   -- Move cursor to next tile position
   ImGui.SetCursorScreenPos(ctx, x1, y2 + 4)
   ImGui.Dummy(ctx, avail_w, 0)
+
+  -- Do throttled refresh (batched across all parameters)
+  do_throttled_refresh()
 end
 
 return M
