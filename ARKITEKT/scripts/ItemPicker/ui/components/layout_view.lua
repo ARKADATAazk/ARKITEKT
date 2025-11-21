@@ -496,11 +496,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     content_filter_mode = "MIDI"
   end
 
-  -- Calculate layout toggle dimensions
-  local layout_button_width = 0
-  if self.state.settings.show_audio and self.state.settings.show_midi then
-    layout_button_width = button_height  -- Square button (same as height)
-  end
+  -- Layout toggle button (always visible)
+  local layout_button_width = button_height  -- Square button (same as height)
 
   -- Calculate search width and center it
   local search_width = screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO
@@ -534,49 +531,56 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end,
   }, "content_filter_button")
 
-  -- Layout toggle button (if both are visible)
-  if layout_button_width > 0 then
-    current_x = current_x - layout_button_width - button_gap
-    local layout_mode = self.state.settings.layout_mode or "vertical"
-    local is_vertical = layout_mode == "vertical"
+  -- Layout toggle button (always visible, enables MIXED mode if needed)
+  current_x = current_x - layout_button_width - button_gap
+  local layout_mode = self.state.settings.layout_mode or "vertical"
+  local is_vertical = layout_mode == "vertical"
+  local is_mixed_mode = content_filter_mode == "BOTH"
 
-    -- Draw layout icon using rectangles (no text, pure shapes)
-    -- We'll draw it directly on the button using a custom render function
-    local icon_color = Colors.hexrgb("#AAAAAA")
-    local draw_layout_icon = function(btn_draw_list, icon_x, icon_y)
-      local icon_size = 14
-      local gap = 2
+  -- Draw layout icon using rectangles (no text, pure shapes)
+  -- We'll draw it directly on the button using a custom render function
+  local icon_color = Colors.hexrgb("#AAAAAA")
+  local draw_layout_icon = function(btn_draw_list, icon_x, icon_y)
+    local icon_size = 14
+    local gap = 2
 
-      if is_vertical then
-        -- Vertical mode: 2 rectangles stacked (top and bottom)
-        local rect_h = (icon_size - gap) / 2
-        ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + icon_size, icon_y + rect_h, icon_color, 0)
-        ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y + rect_h + gap, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
-      else
-        -- Horizontal mode: 2 rectangles side by side (left and right)
-        local rect_w = (icon_size - gap) / 2
-        ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + rect_w, icon_y + icon_size, icon_color, 0)
-        ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x + rect_w + gap, icon_y, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
-      end
+    if is_vertical then
+      -- Vertical mode: 2 rectangles stacked (top and bottom)
+      local rect_h = (icon_size - gap) / 2
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + icon_size, icon_y + rect_h, icon_color, 0)
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y + rect_h + gap, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
+    else
+      -- Horizontal mode: 2 rectangles side by side (left and right)
+      local rect_w = (icon_size - gap) / 2
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + rect_w, icon_y + icon_size, icon_color, 0)
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x + rect_w + gap, icon_y, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
     end
+  end
 
-    -- Draw button first
-    Button.draw(ctx, draw_list, current_x, search_y, layout_button_width, button_height, {
-      label = "",  -- No text, icon is drawn manually
-      is_toggled = not is_vertical,  -- Toggle state shows when in horizontal mode
-      preset_name = "BUTTON_TOGGLE_WHITE",
-      tooltip = is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout",
-      on_click = function()
+  -- Draw button first
+  Button.draw(ctx, draw_list, current_x, search_y, layout_button_width, button_height, {
+    label = "",  -- No text, icon is drawn manually
+    is_toggled = is_mixed_mode and not is_vertical,  -- Only toggle state when in MIXED mode and horizontal
+    preset_name = "BUTTON_TOGGLE_WHITE",
+    tooltip = not is_mixed_mode and "Enable Split View (MIXED mode)" or
+              (is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout"),
+    on_click = function()
+      if not is_mixed_mode then
+        -- Enable MIXED mode (both AUDIO and MIDI)
+        self.state.set_setting('show_audio', true)
+        self.state.set_setting('show_midi', true)
+      else
+        -- Toggle layout mode
         local new_mode = layout_mode == "vertical" and "horizontal" or "vertical"
         self.state.set_setting('layout_mode', new_mode)
-      end,
-    }, "layout_toggle_button")
+      end
+    end,
+  }, "layout_toggle_button")
 
-    -- Calculate center position for icon and draw it on top of button
-    local icon_x = (current_x + (layout_button_width - 14) / 2 + 0.5)//1
-    local icon_y = (search_y + (button_height - 14) / 2 + 0.5)//1
-    draw_layout_icon(draw_list, icon_x, icon_y)
-  end
+  -- Calculate center position for icon and draw it on top of button
+  local icon_x = (current_x + (layout_button_width - 14) / 2 + 0.5)//1
+  local icon_y = (search_y + (button_height - 14) / 2 + 0.5)//1
+  draw_layout_icon(draw_list, icon_x, icon_y)
 
   -- Add "Sorting:" label before sort buttons
   local sort_x = search_x + search_width + button_gap
