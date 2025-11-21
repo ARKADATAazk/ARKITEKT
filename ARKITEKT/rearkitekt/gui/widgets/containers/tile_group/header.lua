@@ -65,10 +65,8 @@ function M.render(ctx, rect, group, state, config)
   local icon = group.collapsed and Defaults.ICONS.collapsed or Defaults.ICONS.expanded
   local icon_color = state.hover and cfg.collapse_icon_color_hover or cfg.collapse_icon_color
 
-  -- Use larger font for icon
-  ImGui.PushFont(ctx, 0)  -- Default font for icon (will be larger due to unicode)
+  -- DrawList_AddText doesn't use font stack, so no PushFont needed
   ImGui.DrawList_AddText(dl, cursor_x, cursor_y, icon_color, icon)
-  ImGui.PopFont(ctx)
 
   cursor_x = cursor_x + cfg.icon_size + cfg.icon_spacing
 
