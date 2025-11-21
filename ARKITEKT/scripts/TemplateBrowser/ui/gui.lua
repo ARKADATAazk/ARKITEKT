@@ -37,6 +37,7 @@ function M.new(config, state, scanner)
     quick_access_separator = Separator.new("quick_access_sep"),
     template_animator = TileAnim.new(16.0),  -- Animation speed
     template_grid = nil,  -- Initialized in initialize_once
+    quick_access_grid = nil,  -- Initialized in initialize_once
     template_container = nil,  -- Initialized in initialize_once
     recent_container = nil,  -- Initialized in initialize_once
   }, GUI)
@@ -141,6 +142,161 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         Persistence.save_metadata(self.state.metadata)
 
         -- If currently viewing Favorites folder, refresh the filter
+        if self.state.selected_folder == favorites_id then
+          local Scanner = require('TemplateBrowser.domain.scanner')
+          Scanner.filter_templates(self.state)
+        end
+      end
+    end
+  )
+
+  -- Get quick access templates helper
+  local function get_quick_access_templates()
+    local templates
+    if self.state.quick_access_mode == "favorites" then
+      -- Get favorites
+      if not self.state.metadata or not self.state.metadata.virtual_folders then
+        return {}
+      end
+      local favorites = self.state.metadata.virtual_folders["__FAVORITES__"]
+      if not favorites or not favorites.template_refs then
+        return {}
+      end
+      templates = {}
+      for _, ref_uuid in ipairs(favorites.template_refs) do
+        for _, tmpl in ipairs(self.state.templates) do
+          if tmpl.uuid == ref_uuid then
+            table.insert(templates, tmpl)
+            break
+          end
+        end
+      end
+    elseif self.state.quick_access_mode == "most_used" then
+      -- Get most used
+      local usage_list = {}
+      for _, tmpl in ipairs(self.state.templates) do
+        local metadata = self.state.metadata and self.state.metadata.templates[tmpl.uuid]
+        local usage_count = metadata and metadata.usage_count or 0
+        if usage_count > 0 then
+          table.insert(usage_list, {template = tmpl, usage_count = usage_count})
+        end
+      end
+      table.sort(usage_list, function(a, b) return a.usage_count > b.usage_count end)
+      templates = {}
+      for i = 1, math.min(100, #usage_list) do
+        table.insert(templates, usage_list[i].template)
+      end
+    else
+      -- Get recents
+      local recent = {}
+      for _, tmpl in ipairs(self.state.templates) do
+        local metadata = self.state.metadata and self.state.metadata.templates[tmpl.uuid]
+        if metadata and metadata.last_used then
+          table.insert(recent, {template = tmpl, last_used = metadata.last_used})
+        end
+      end
+      table.sort(recent, function(a, b) return a.last_used > b.last_used end)
+      templates = {}
+      for i = 1, math.min(100, #recent) do
+        table.insert(templates, recent[i].template)
+      end
+    end
+
+    -- Apply search filter
+    local search_query = (self.state.quick_access_search or ""):lower()
+    if search_query ~= "" then
+      local filtered = {}
+      for _, tmpl in ipairs(templates) do
+        if tmpl.name:lower():find(search_query, 1, true) then
+          table.insert(filtered, tmpl)
+        end
+      end
+      templates = filtered
+    end
+
+    -- Apply sort
+    local sort_mode = self.state.quick_access_sort or "alphabetical"
+    if sort_mode == "alphabetical" then
+      table.sort(templates, function(a, b) return a.name:lower() < b.name:lower() end)
+    elseif sort_mode == "color" then
+      table.sort(templates, function(a, b)
+        local a_color = (self.state.metadata and self.state.metadata.templates[a.uuid] and self.state.metadata.templates[a.uuid].color) or 0
+        local b_color = (self.state.metadata and self.state.metadata.templates[b.uuid] and self.state.metadata.templates[b.uuid].color) or 0
+        return a_color < b_color
+      end)
+    end
+
+    return templates
+  end
+
+  -- Create quick access grid (similar to main grid but for quick access)
+  self.quick_access_grid = TemplateGridFactory.create(
+    get_quick_access_templates,
+    self.state.metadata,
+    self.template_animator,
+    function()
+      -- Return appropriate tile width based on view mode
+      return self.state.quick_access_view_mode == "list"
+        and self.state.list_tile_width
+        or self.state.grid_tile_width
+    end,  -- get_tile_width
+    function() return self.state.quick_access_view_mode end,  -- get_view_mode
+    -- on_select
+    function(selected_keys)
+      -- Update selected template from grid selection
+      if selected_keys and #selected_keys > 0 then
+        local key = selected_keys[1]
+        local uuid = key:match("template_(.+)")
+        local templates = get_quick_access_templates()
+        for _, tmpl in ipairs(templates) do
+          if tmpl.uuid == uuid then
+            self.state.selected_template = tmpl
+            break
+          end
+        end
+      else
+        self.state.selected_template = nil
+      end
+    end,
+    -- on_double_click
+    function(template)
+      if template then
+        TemplateOps.apply_to_selected_track(template.path, template.uuid, self.state)
+      end
+    end,
+    -- on_right_click
+    function(template, selected_keys)
+      if template then
+        self.state.context_menu_template = template
+      end
+    end,
+    -- on_star_click
+    function(template)
+      if template then
+        local Persistence = require('TemplateBrowser.domain.persistence')
+        local favorites_id = "__FAVORITES__"
+        local favorites = self.state.metadata.virtual_folders[favorites_id]
+        if not favorites then
+          self.state.set_status("Favorites folder not found", "error")
+          return
+        end
+        local is_favorited = false
+        local favorite_index = nil
+        for idx, ref_uuid in ipairs(favorites.template_refs) do
+          if ref_uuid == template.uuid then
+            is_favorited = true
+            favorite_index = idx
+            break
+          end
+        end
+        if is_favorited then
+          table.remove(favorites.template_refs, favorite_index)
+          self.state.set_status("Removed from Favorites: " .. template.name, "success")
+        else
+          table.insert(favorites.template_refs, template.uuid)
+          self.state.set_status("Added to Favorites: " .. template.name, "success")
+        end
+        Persistence.save_metadata(self.state.metadata)
         if self.state.selected_folder == favorites_id then
           local Scanner = require('TemplateBrowser.domain.scanner')
           Scanner.filter_templates(self.state)
