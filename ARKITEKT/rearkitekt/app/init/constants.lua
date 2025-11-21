@@ -169,7 +169,7 @@ M.TITLEBAR = {
 
   -- Branding text configuration (centered text with custom font)
   branding_font_size = 22,  -- Larger for more visible custom font
-  branding_text = "A Z K",  -- Text to display (spaces for wider appearance)
+  branding_text = "",  -- Text to display (spaces for wider appearance)
   branding_opacity = 0.15,  -- Low opacity for subtle branding
   branding_color = nil,  -- nil = use titlebar text color, or set custom color
 

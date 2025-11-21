@@ -115,7 +115,7 @@ end
 
 local function render_button(ctx, dl, x, y, width, height, config, context, instance)
   local is_disabled = config.is_disabled or false
-  local is_hovered = not is_disabled and InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, x, y, x + width, y + height, config.is_blocking)
+  local is_hovered = not is_disabled and InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, x, y, x + width, y + height, config.is_blocking, config.ignore_modal)
   local is_active = not is_disabled and ImGui.IsMouseDown(ctx, 0) and is_hovered
   local is_toggled = config.is_toggled or false
 

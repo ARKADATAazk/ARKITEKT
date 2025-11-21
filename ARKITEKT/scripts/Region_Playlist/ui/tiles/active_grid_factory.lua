@@ -318,6 +318,7 @@ local function create_behaviors(rt)
             rt.on_active_batch_rename(selected_keys, pattern)
           end
         end, {
+          item_type = "regions",  -- Label for Region Playlist items
           on_rename_and_recolor = function(pattern, color)
             if rt.on_active_batch_rename_and_recolor then
               rt.on_active_batch_rename_and_recolor(selected_keys, pattern, color)
