@@ -9,21 +9,30 @@ ARKITEKT-Project/
 │       ├── codex-pipeline.yml (286 lines)
 │       └── deploy.yml (28 lines)
 ├── ARKITEKT/
+│   ├── hub/
+│   │   └── hub.lua (93 lines)
 │   ├── rearkitekt/
 │   │   ├── app/
+│   │   │   ├── assets/
+│   │   │   │   ├── fonts.lua (74 lines)
+│   │   │   │   └── icon.lua (124 lines)
 │   │   │   ├── chrome/
-│   │   │   │   └── status_bar/
-│   │   │   │       ├── defaults.lua (142 lines)
-│   │   │   │       ├── init.lua (2 lines)
-│   │   │   │       └── widget.lua (277 lines)
-│   │   │   ├── app_defaults.lua (134 lines)
-│   │   │   ├── config.lua (134 lines)
-│   │   │   ├── hub.lua (93 lines)
-│   │   │   ├── icon.lua (124 lines)
-│   │   │   ├── runtime.lua (69 lines)
-│   │   │   ├── shell.lua (340 lines)
-│   │   │   ├── titlebar.lua (519 lines)
-│   │   │   └── window.lua (796 lines)
+│   │   │   │   ├── status_bar/
+│   │   │   │   │   └── widget.lua (275 lines)
+│   │   │   │   ├── titlebar/
+│   │   │   │   │   └── titlebar.lua (555 lines)
+│   │   │   │   └── window/
+│   │   │   │       └── window.lua (759 lines)
+│   │   │   ├── init/
+│   │   │   │   ├── bootstrap.lua (115 lines)
+│   │   │   │   ├── constants.lua (304 lines)
+│   │   │   │   └── init.lua (36 lines)
+│   │   │   ├── runtime/
+│   │   │   │   ├── runtime.lua (69 lines)
+│   │   │   │   └── shell.lua (304 lines)
+│   │   │   ├── utils/
+│   │   │   │   └── monitor_detection.lua (61 lines)
+│   │   │   └── README.md (414 lines)
 │   │   ├── core/
 │   │   │   ├── theme_manager/
 │   │   │   │   └── lua (0 lines)
@@ -32,7 +41,7 @@ ARKITEKT-Project/
 │   │   │   ├── json.lua (120 lines)
 │   │   │   ├── lifecycle.lua (80 lines)
 │   │   │   ├── math.lua (52 lines)
-│   │   │   ├── settings.lua (118 lines)
+│   │   │   ├── settings.lua (137 lines)
 │   │   │   ├── undo_manager.lua (70 lines)
 │   │   │   └── uuid.lua (36 lines)
 │   │   ├── debug/
@@ -59,6 +68,9 @@ ARKITEKT-Project/
 │   │   │   ├── JetBrainsMono-SemiBold.ttf (1572 lines)
 │   │   │   ├── NotoSans-Regular.ttf (3901 lines)
 │   │   │   ├── NotoSans-SemiBold.ttf (3822 lines)
+│   │   │   ├── Orbitron-Bold.ttf (70 lines)
+│   │   │   ├── Orbitron-Medium.ttf (607 lines)
+│   │   │   ├── Orbitron-Regular.ttf (73 lines)
 │   │   │   ├── remixicon.ttf (3422 lines)
 │   │   │   ├── Roboto-Bold.ttf (659 lines)
 │   │   │   ├── Roboto-Medium.ttf (669 lines)
@@ -80,7 +92,7 @@ ARKITEKT-Project/
 │   │   │   │   ├── effects.lua (54 lines)
 │   │   │   │   └── shapes.lua (132 lines)
 │   │   │   ├── style/
-│   │   │   │   ├── defaults.lua (514 lines)
+│   │   │   │   ├── defaults.lua (530 lines)
 │   │   │   │   ├── imgui_defaults.lua (170 lines)
 │   │   │   │   └── README.md (113 lines)
 │   │   │   ├── systems/
@@ -117,8 +129,8 @@ ARKITEKT-Project/
 │   │   │   │   ├── controls/
 │   │   │   │   │   └── corner_button.lua (199 lines)
 │   │   │   │   ├── data/
-│   │   │   │   │   ├── chip.lua (340 lines)
-│   │   │   │   │   ├── chip_list.lua (306 lines)
+│   │   │   │   │   ├── chip.lua (375 lines)
+│   │   │   │   │   ├── chip_list.lua (323 lines)
 │   │   │   │   │   ├── selection_rectangle.lua (124 lines)
 │   │   │   │   │   └── status_pad.lua (148 lines)
 │   │   │   │   ├── editors/
@@ -156,18 +168,19 @@ ARKITEKT-Project/
 │   │   │   │   │   └── tree_view.lua (639 lines)
 │   │   │   │   ├── overlays/
 │   │   │   │   │   ├── overlay/
-│   │   │   │   │   │   ├── container.lua (81 lines)
-│   │   │   │   │   │   ├── defaults.lua (95 lines)
-│   │   │   │   │   │   ├── manager.lua (448 lines)
-│   │   │   │   │   │   ├── modal_dialog.lua (370 lines)
-│   │   │   │   │   │   └── sheet.lua (126 lines)
-│   │   │   │   │   ├── batch_rename_modal.lua (294 lines)
+│   │   │   │   │   │   ├── container.lua (84 lines)
+│   │   │   │   │   │   ├── defaults.lua (162 lines)
+│   │   │   │   │   │   ├── manager.lua (459 lines)
+│   │   │   │   │   │   ├── modal_dialog.lua (363 lines)
+│   │   │   │   │   │   ├── README.md (555 lines)
+│   │   │   │   │   │   └── sheet.lua (140 lines)
+│   │   │   │   │   ├── batch_rename_modal.lua (502 lines)
 │   │   │   │   │   ├── context_menu.lua (204 lines)
 │   │   │   │   │   └── tooltip.lua (132 lines)
 │   │   │   │   ├── panel/
 │   │   │   │   │   └── init.lua (949 lines)
 │   │   │   │   ├── primitives/
-│   │   │   │   │   ├── button.lua (303 lines)
+│   │   │   │   │   ├── button.lua (310 lines)
 │   │   │   │   │   ├── checkbox.lua (322 lines)
 │   │   │   │   │   ├── close_button.lua (149 lines)
 │   │   │   │   │   ├── corner_button.lua (184 lines)
@@ -175,7 +188,7 @@ ARKITEKT-Project/
 │   │   │   │   │   ├── hue_slider.lua (266 lines)
 │   │   │   │   │   ├── markdown_field.lua (296 lines)
 │   │   │   │   │   ├── scrollbar.lua (241 lines)
-│   │   │   │   │   ├── separator.lua (92 lines)
+│   │   │   │   │   ├── separator.lua (99 lines)
 │   │   │   │   │   └── spinner.lua (238 lines)
 │   │   │   │   ├── text/
 │   │   │   │   │   └── colored_text_view.lua (499 lines)
@@ -214,48 +227,49 @@ ARKITEKT-Project/
 │   │   │   │   └── state.lua (273 lines)
 │   │   │   ├── widgets/
 │   │   │   │   └── color_grid.lua (144 lines)
-│   │   │   └── ARK_ColorPalette.lua (119 lines)
+│   │   │   └── ARK_ColorPalette.lua (98 lines)
 │   │   ├── demos/
 │   │   │   ├── controls_test.lua (241 lines)
-│   │   │   ├── demo.lua (386 lines)
+│   │   │   ├── demo.lua (387 lines)
 │   │   │   ├── demo2.lua (213 lines)
 │   │   │   ├── demo3.lua (151 lines)
 │   │   │   ├── demo_modal_overlay.lua (454 lines)
-│   │   │   └── widget_demo.lua (253 lines)
+│   │   │   └── widget_demo.lua (254 lines)
 │   │   ├── ItemPicker/
 │   │   │   ├── core/
-│   │   │   │   ├── app_state.lua (604 lines)
-│   │   │   │   ├── config.lua (262 lines)
+│   │   │   │   ├── app_state.lua (614 lines)
+│   │   │   │   ├── config.lua (314 lines)
 │   │   │   │   └── controller.lua (110 lines)
 │   │   │   ├── data/
 │   │   │   │   ├── loaders/
-│   │   │   │   │   └── incremental_loader.lua (580 lines)
+│   │   │   │   │   └── incremental_loader.lua (634 lines)
 │   │   │   │   ├── disk_cache.lua (440 lines)
 │   │   │   │   ├── job_queue.lua (188 lines)
-│   │   │   │   ├── persistence.lua (162 lines)
-│   │   │   │   └── reaper_api.lua (451 lines)
+│   │   │   │   ├── persistence.lua (176 lines)
+│   │   │   │   └── reaper_api.lua (537 lines)
 │   │   │   ├── services/
 │   │   │   │   ├── utils.lua (36 lines)
 │   │   │   │   └── visualization.lua (690 lines)
 │   │   │   ├── ui/
 │   │   │   │   ├── components/
 │   │   │   │   │   ├── drag_handler.lua (205 lines)
-│   │   │   │   │   ├── layout_view.lua (825 lines)
+│   │   │   │   │   ├── layout_view.lua (958 lines)
+│   │   │   │   │   ├── region_filter_bar.lua (87 lines)
+│   │   │   │   │   ├── search_with_mode.lua (67 lines)
 │   │   │   │   │   └── status_bar.lua (87 lines)
 │   │   │   │   ├── grids/
 │   │   │   │   │   ├── factories/
-│   │   │   │   │   │   ├── audio_grid_factory.lua (466 lines)
-│   │   │   │   │   │   └── midi_grid_factory.lua (467 lines)
+│   │   │   │   │   │   ├── audio_grid_factory.lua (534 lines)
+│   │   │   │   │   │   └── midi_grid_factory.lua (535 lines)
 │   │   │   │   │   ├── renderers/
-│   │   │   │   │   │   ├── audio.lua (435 lines)
+│   │   │   │   │   │   ├── audio.lua (492 lines)
 │   │   │   │   │   │   ├── base.lua (236 lines)
-│   │   │   │   │   │   └── midi.lua (432 lines)
-│   │   │   │   │   └── coordinator.lua (134 lines)
+│   │   │   │   │   │   └── midi.lua (489 lines)
+│   │   │   │   │   └── coordinator.lua (158 lines)
 │   │   │   │   └── main_window.lua (289 lines)
 │   │   │   ├── utils/
 │   │   │   │   └── logger.lua (44 lines)
-│   │   │   ├── ARK_ItemPicker.lua (263 lines)
-│   │   │   ├── ARK_ItemPicker_Simple.lua (239 lines)
+│   │   │   ├── ARK_ItemPicker_Simple.lua (187 lines)
 │   │   │   ├── init.lua (30 lines)
 │   │   │   ├── Item Picker OG.lua (1135 lines)
 │   │   │   └── UNIFIED_DAEMON_README.md (319 lines)
@@ -285,7 +299,7 @@ ARKITEKT-Project/
 │   │   │   │   │   │   └── pool.lua (354 lines)
 │   │   │   │   │   ├── active_grid_factory.lua (432 lines)
 │   │   │   │   │   ├── coordinator.lua (681 lines)
-│   │   │   │   │   ├── coordinator_render.lua (559 lines)
+│   │   │   │   │   ├── coordinator_render.lua (560 lines)
 │   │   │   │   │   ├── pool_grid_factory.lua (349 lines)
 │   │   │   │   │   └── selector.lua (99 lines)
 │   │   │   │   ├── views/
@@ -297,13 +311,11 @@ ARKITEKT-Project/
 │   │   │   │   │   │   ├── transport_icons.lua (292 lines)
 │   │   │   │   │   │   └── transport_view.lua (808 lines)
 │   │   │   │   │   ├── layout_view.lua (250 lines)
-│   │   │   │   │   ├── overflow_modal_view.lua (214 lines)
-│   │   │   │   │   └── separator_view.lua (92 lines)
+│   │   │   │   │   └── overflow_modal_view.lua (213 lines)
 │   │   │   │   ├── gui.lua (572 lines)
 │   │   │   │   ├── shortcuts.lua (85 lines)
 │   │   │   │   └── status.lua (177 lines)
-│   │   │   ├── widgets/
-│   │   │   └── ARK_RegionPlaylist.lua (105 lines)
+│   │   │   └── widgets/
 │   │   ├── Sandbox/
 │   │   │   ├── sandbox_1.lua (238 lines)
 │   │   │   ├── sandbox_2.lua (182 lines)
@@ -318,7 +330,7 @@ ARKITEKT-Project/
 │   │   │   ├── core/
 │   │   │   │   ├── config.lua (48 lines)
 │   │   │   │   ├── shortcuts.lua (209 lines)
-│   │   │   │   ├── state.lua (134 lines)
+│   │   │   │   ├── state.lua (136 lines)
 │   │   │   │   └── tooltips.lua (212 lines)
 │   │   │   ├── domain/
 │   │   │   │   ├── file_ops.lua (336 lines)
@@ -331,13 +343,25 @@ ARKITEKT-Project/
 │   │   │   │   └── undo.lua (104 lines)
 │   │   │   ├── ui/
 │   │   │   │   ├── tiles/
-│   │   │   │   │   ├── template_grid_factory.lua (145 lines)
-│   │   │   │   │   └── template_tile.lua (302 lines)
-│   │   │   │   ├── gui.lua (2365 lines)
-│   │   │   │   ├── separator.lua (96 lines)
+│   │   │   │   │   ├── template_grid_factory.lua (163 lines)
+│   │   │   │   │   ├── template_tile.lua (302 lines)
+│   │   │   │   │   └── template_tile_compact.lua (282 lines)
+│   │   │   │   ├── views/
+│   │   │   │   │   ├── left_panel/
+│   │   │   │   │   │   ├── directory_tab.lua (355 lines)
+│   │   │   │   │   │   ├── tags_tab.lua (131 lines)
+│   │   │   │   │   │   └── vsts_tab.lua (117 lines)
+│   │   │   │   │   ├── helpers.lua (33 lines)
+│   │   │   │   │   ├── info_panel_view.lua (189 lines)
+│   │   │   │   │   ├── left_panel_view.lua (69 lines)
+│   │   │   │   │   ├── template_modals_view.lua (334 lines)
+│   │   │   │   │   ├── template_panel_view.lua (222 lines)
+│   │   │   │   │   └── tree_view.lua (672 lines)
+│   │   │   │   ├── gui.lua (480 lines)
 │   │   │   │   ├── status_bar.lua (53 lines)
-│   │   │   │   └── template_container_config.lua (58 lines)
-│   │   │   └── ARK_TemplateBrowser.lua (209 lines)
+│   │   │   │   ├── template_container_config.lua (58 lines)
+│   │   │   │   └── ui_constants.lua (93 lines)
+│   │   │   └── README.md (344 lines)
 │   │   └── ThemeAdjuster/
 │   │       ├── (old)/
 │   │       │   ├── core/
@@ -938,16 +962,21 @@ ARKITEKT-Project/
 │   │       │   ├── status.lua (79 lines)
 │   │       │   ├── tab_content.lua (91 lines)
 │   │       │   └── tooltips.lua (182 lines)
-│   │       ├── ARK_ThemeAdjuster.lua (117 lines)
 │   │       ├── Default_6.0_theme_adjuster.lua (2149 lines)
 │   │       ├── INTEGRATION_STATUS.md (232 lines)
-│   │       ├── main_panel_test.lua (87 lines)
+│   │       ├── main_panel_test.lua (88 lines)
 │   │       ├── PARAMETER_GROUPING.md (250 lines)
 │   │       ├── PARAMETER_MAPPINGS.md (263 lines)
 │   │       ├── prd (342 lines)
 │   │       └── THEME_INTEGRATION.md (365 lines)
 │   ├── utils/
-│   └── ARKITEKT.lua (367 lines)
+│   ├── ARK_ItemPicker.lua (213 lines)
+│   ├── ARK_RegionPlaylist.lua (93 lines)
+│   ├── ARK_TemplateBrowser.lua (157 lines)
+│   ├── ARK_ThemeAdjuster.lua (114 lines)
+│   └── ARKITEKT.lua (383 lines)
+├── Documentation/
+│   └── 2025-01-19_Framework_Consolidation.md (643 lines)
 ├── FLOWS/
 │   ├── features/
 │   │   ├── ARKITEKT_FLOW.md (1711 lines)
@@ -972,20 +1001,20 @@ ARKITEKT-Project/
 │       ├── svg_to_lua.py (438 lines)
 │       └── test_complex.svg (11 lines)
 ├── .codemap (59 lines)
-├── .gitignore (2 lines)
+├── .gitignore (3 lines)
 ├── .reapack-index.conf (4 lines)
 ├── .windsurfrules (43 lines)
-├── AGENTS.md (33 lines)
+├── AGENTS.md (147 lines)
 ├── ARKITEKT_Codex_Playbook_v5.md (295 lines)
 ├── arkitekt_FLOW.md (1575 lines)
 ├── ARKITEKT_Generic.md (154 lines)
 ├── DEPENDENCIES.md (849 lines)
 ├── DOCS_CONFIG_BEST_PRACTICES.md (438 lines)
-├── index.xml (193 lines)
+├── index.xml (1013 lines)
 ├── lua_perf_guide.md (391 lines)
 ├── METRICS.json (3855 lines)
 ├── PROJECT_FLOW.md (270 lines)
-├── PROJECT_STRUCTURE.txt (290 lines)
+├── PROJECT_STRUCTURE.txt (1002 lines)
 ├── README.md (71 lines)
 ├── REFACTOR_SUMMARY.md (183 lines)
 ├── refactoring ideas (424 lines)
@@ -994,9 +1023,9 @@ ARKITEKT-Project/
 ├── SWS_IMPORT_GUIDE.md (450 lines)
 └── System_Prompt_ARKITEKT_OnePager.md (66 lines)
 
-Total files: 354
-Total lines (with comments): 156,444
-Total lines (code only): 106,085
-Code/Total Ratio: 67.8% is actual code
+Total files: 373
+Total lines (with comments): 162,383
+Total lines (code only): 110,956
+Code/Total Ratio: 68.3% is actual code
 
 Generated: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\PROJECT_STRUCTURE.txt
