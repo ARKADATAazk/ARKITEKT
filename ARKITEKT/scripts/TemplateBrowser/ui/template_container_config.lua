@@ -7,16 +7,32 @@ local Colors = require('rearkitekt.core.colors')
 local M = {}
 
 function M.create(callbacks, is_overlay_mode)
-  -- In overlay mode, use transparent backgrounds to show the overlay scrim
-  local panel_bg = is_overlay_mode and Colors.hexrgb("#00000000") or Colors.hexrgb("#1E1E1E")
-  local header_bg = is_overlay_mode and Colors.hexrgb("#00000000") or Colors.hexrgb("#252525")
+  -- Use solid backgrounds like Region Playlist (no transparency)
+  local panel_bg = Colors.hexrgb("#1A1A1AFF")
+  local header_bg = Colors.hexrgb("#1E1E1EFF")
 
   return {
     bg_color = panel_bg,
     border_thickness = 1,
-    border_color = Colors.hexrgb("#333333"),
-    rounding = 4,
-    padding = 12,
+    border_color = Colors.hexrgb("#000000DD"),
+    rounding = 8,
+    padding = 8,
+
+    -- Background pattern matching Region Playlist
+    background_pattern = {
+      enabled = true,
+      primary = {
+        type = 'grid',
+        spacing = 50,
+        line_thickness = 1.5,
+      },
+      secondary = {
+        enabled = true,
+        type = 'grid',
+        spacing = 5,
+        line_thickness = 0.5,
+      },
+    },
 
     header = {
       enabled = true,

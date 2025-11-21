@@ -126,12 +126,12 @@ local function draw_quick_access_panel(ctx, gui, width, height)
     return  -- Don't draw panel if no templates
   end
 
-  -- Panel background
+  -- Panel background (solid, matching Region Playlist)
   local panel_x, panel_y = ImGui.GetCursorScreenPos(ctx)
-  local panel_bg = Colors.hexrgb("#1E1E1E")
-  local panel_border = Colors.hexrgb("#333333")
-  local header_bg = Colors.hexrgb("#252525")
-  local rounding = 4
+  local panel_bg = Colors.hexrgb("#1A1A1AFF")
+  local panel_border = Colors.hexrgb("#000000DD")
+  local header_bg = Colors.hexrgb("#1E1E1EFF")
+  local rounding = 8
 
   -- Draw panel background
   ImGui.DrawList_AddRectFilled(dl, panel_x, panel_y, panel_x + width, panel_y + height, panel_bg, rounding)
