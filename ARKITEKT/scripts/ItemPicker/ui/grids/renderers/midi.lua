@@ -551,7 +551,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   -- Render duration text at bottom right (plain text, no badge - matches Region Playlist style)
-  if cascade_factor > 0.3 and item_data.item then
+  -- Don't render on compact tiles
+  if cascade_factor > 0.3 and compact_factor < 0.5 and item_data.item then
     local duration = reaper.GetMediaItemInfo_Value(item_data.item, "D_LENGTH")
     if duration > 0 then
       -- Get item position to calculate bars/beats
