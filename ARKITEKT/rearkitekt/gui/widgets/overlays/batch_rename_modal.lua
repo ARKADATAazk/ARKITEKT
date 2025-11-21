@@ -245,14 +245,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   if icon_font then
     -- Draw using RemixIcon font (question-fill icon: U+F044)
-    ImGui.PushFont(ctx, icon_font)
-    ImGui.SetFontScale(ctx, icon_size / 14)
+    ImGui.PushFont(ctx, icon_font, icon_size)
     local icon_text = "\xEF\x81\x84"  -- &#xF044; in UTF-8
     local text_w, text_h = ImGui.CalcTextSize(ctx, icon_text)
     local center_x = help_x + (help_size - text_w) * 0.5
     local center_y = help_y + (help_size - text_h) * 0.5
     ImGui.DrawList_AddText(dl, center_x, center_y, icon_color, icon_text)
-    ImGui.SetFontScale(ctx, 1.0)
     ImGui.PopFont(ctx)
   else
     -- Fallback to circle with "?" if icon font not available
