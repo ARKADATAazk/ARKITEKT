@@ -28,7 +28,7 @@ function M.draw_left_panel(ctx, gui, width, height)
 
     -- Draw content based on active tab
     if state.left_panel_tab == "directory" then
-      DirectoryTab.draw(ctx, state, gui.config, width, content_height)
+      DirectoryTab.draw(ctx, state, gui.config, width, content_height, gui)
     elseif state.left_panel_tab == "vsts" then
       VstsTab.draw(ctx, state, gui.config, width, content_height)
     elseif state.left_panel_tab == "tags" then

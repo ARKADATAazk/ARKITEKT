@@ -36,6 +36,8 @@ function M.new(config, state, scanner)
     separator1 = Separator.new("sep1"),
     separator2 = Separator.new("sep2"),
     quick_access_separator = Separator.new("quick_access_sep"),
+    dir_separator1 = Separator.new("dir_sep1"),  -- Between Physical and Virtual
+    dir_separator2 = Separator.new("dir_sep2"),  -- Between Virtual and Archive
     template_animator = TileAnim.new(16.0),  -- Animation speed
     template_grid = nil,  -- Initialized in initialize_once
     quick_access_grid = nil,  -- Initialized in initialize_once

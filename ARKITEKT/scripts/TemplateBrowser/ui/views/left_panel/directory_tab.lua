@@ -111,7 +111,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
 end
 
 -- Draw directory content (folder tree + tags at bottom)
-function M.draw(ctx, state, config, width, height)
+function M.draw(ctx, state, config, width, height, gui)
   -- Split into folder tree (top 70%) and tags (bottom 30%)
   local folder_section_height = height * 0.7
   local tags_section_height = height * 0.3 - UI.PADDING.SMALL
@@ -343,57 +343,121 @@ function M.draw(ctx, state, config, width, height)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- Calculate remaining height for folder trees (scrollable)
+  -- Calculate remaining height for folder trees
   -- Account for: header (28) + separator/spacing (10) + All Templates (24) + separator/spacing (10)
   local used_height = UI.HEADER.DEFAULT + UI.PADDING.SEPARATOR_SPACING + 24 + UI.PADDING.SEPARATOR_SPACING
   local total_tree_height = folder_section_height - used_height
 
-  -- Create scrollable child for all tree sections
-  if Helpers.begin_child_compat(ctx, "AllTreesScroll", 0, total_tree_height, false) then
-    -- === PHYSICAL DIRECTORY COLLAPSIBLE HEADER ===
-    ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-    ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
-    ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
+  -- Initialize section heights from state (default to 33% each)
+  local separator_thickness = 8
+  local min_section_height = 80
 
-    local physical_open = ImGui.CollapsingHeader(ctx, "Physical Directory", nil, ImGui.TreeNodeFlags_DefaultOpen)
+  state.physical_section_height = state.physical_section_height or math.floor(total_tree_height * 0.40)
+  state.virtual_section_height = state.virtual_section_height or math.floor(total_tree_height * 0.30)
 
-    ImGui.PopStyleColor(ctx, 3)
+  -- Clamp values
+  state.physical_section_height = math.max(min_section_height, math.min(state.physical_section_height,
+    total_tree_height - min_section_height * 2 - separator_thickness * 2))
+  state.virtual_section_height = math.max(min_section_height, math.min(state.virtual_section_height,
+    total_tree_height - state.physical_section_height - min_section_height - separator_thickness * 2))
 
-    if physical_open then
+  local archive_section_height = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_thickness * 2
+
+  local current_y = ImGui.GetCursorPosY(ctx)
+  local content_x = ImGui.GetCursorPosX(ctx)
+
+  -- === PHYSICAL DIRECTORY SECTION ===
+  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
+
+  local physical_open = ImGui.CollapsingHeader(ctx, "Physical Directory", nil, ImGui.TreeNodeFlags_DefaultOpen)
+
+  ImGui.PopStyleColor(ctx, 3)
+
+  if physical_open then
+    local header_height = 20  -- Approximate header height
+    local scroll_height = state.physical_section_height - header_height
+    if Helpers.begin_child_compat(ctx, "PhysicalTreeScroll", 0, scroll_height, false) then
       TreeViewModule.draw_physical_tree(ctx, state, config)
+      ImGui.EndChild(ctx)
     end
+  end
 
-    ImGui.Spacing(ctx)
+  -- DRAGGABLE SEPARATOR 1 (between Physical and Virtual)
+  local sep1_y = ImGui.GetCursorScreenPos(ctx)
+  local sep_action1, sep_value1 = gui.dir_separator1:draw_horizontal(
+    ctx,
+    content_x,
+    sep1_y + separator_thickness / 2,
+    width,
+    0,
+    separator_thickness
+  )
 
-    -- === VIRTUAL DIRECTORY COLLAPSIBLE HEADER ===
-    ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-    ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
-    ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
+  if sep_action1 == "drag" then
+    local delta = (sep_value1 - (sep1_y + separator_thickness / 2))
+    state.physical_section_height = math.max(min_section_height,
+      math.min(state.physical_section_height + delta,
+        total_tree_height - min_section_height * 2 - separator_thickness * 2))
+  end
 
-    local virtual_open = ImGui.CollapsingHeader(ctx, "Virtual Directory", nil, ImGui.TreeNodeFlags_DefaultOpen)
+  ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) + separator_thickness)
 
-    ImGui.PopStyleColor(ctx, 3)
+  -- === VIRTUAL DIRECTORY SECTION ===
+  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
 
-    if virtual_open then
+  local virtual_open = ImGui.CollapsingHeader(ctx, "Virtual Directory", nil, ImGui.TreeNodeFlags_DefaultOpen)
+
+  ImGui.PopStyleColor(ctx, 3)
+
+  if virtual_open then
+    local header_height = 20
+    local scroll_height = state.virtual_section_height - header_height
+    if Helpers.begin_child_compat(ctx, "VirtualTreeScroll", 0, scroll_height, false) then
       TreeViewModule.draw_virtual_tree(ctx, state, config)
+      ImGui.EndChild(ctx)
     end
+  end
 
-    ImGui.Spacing(ctx)
+  -- DRAGGABLE SEPARATOR 2 (between Virtual and Archive)
+  local sep2_y = ImGui.GetCursorScreenPos(ctx)
+  local sep_action2, sep_value2 = gui.dir_separator2:draw_horizontal(
+    ctx,
+    content_x,
+    sep2_y + separator_thickness / 2,
+    width,
+    0,
+    separator_thickness
+  )
 
-    -- === ARCHIVE COLLAPSIBLE HEADER ===
-    ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-    ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
-    ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
+  if sep_action2 == "drag" then
+    local delta = (sep_value2 - (sep2_y + separator_thickness / 2))
+    state.virtual_section_height = math.max(min_section_height,
+      math.min(state.virtual_section_height + delta,
+        total_tree_height - state.physical_section_height - min_section_height - separator_thickness * 2))
+  end
 
-    local archive_open = ImGui.CollapsingHeader(ctx, "Archive", nil, ImGui.TreeNodeFlags_DefaultOpen)
+  ImGui.SetCursorPosY(ctx, ImGui.GetCursorPosY(ctx) + separator_thickness)
 
-    ImGui.PopStyleColor(ctx, 3)
+  -- === ARCHIVE SECTION ===
+  ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
 
-    if archive_open then
+  local archive_open = ImGui.CollapsingHeader(ctx, "Archive", nil, ImGui.TreeNodeFlags_DefaultOpen)
+
+  ImGui.PopStyleColor(ctx, 3)
+
+  if archive_open then
+    local header_height = 20
+    local scroll_height = archive_section_height - header_height
+    if Helpers.begin_child_compat(ctx, "ArchiveTreeScroll", 0, scroll_height, false) then
       TreeViewModule.draw_archive_tree(ctx, state, config)
+      ImGui.EndChild(ctx)
     end
-
-    ImGui.EndChild(ctx)
   end
 
   ImGui.Spacing(ctx)
