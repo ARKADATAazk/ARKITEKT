@@ -540,11 +540,29 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local layout_mode = self.state.settings.layout_mode or "vertical"
     local is_vertical = layout_mode == "vertical"
 
-    -- Use rectangles to represent layout: ▐▌ for horizontal (side by side), ≡ for vertical (stacked)
-    local layout_icon = is_vertical and "≡" or "▐▌"
+    -- Draw layout icon using rectangles (no text, pure shapes)
+    -- We'll draw it directly on the button using a custom render function
+    local icon_color = Colors.hexrgb("#AAAAAA")
+    local draw_layout_icon = function(btn_draw_list, icon_x, icon_y)
+      local icon_size = 14
+      local gap = 2
 
+      if is_vertical then
+        -- Vertical mode: 2 rectangles stacked (top and bottom)
+        local rect_h = (icon_size - gap) / 2
+        ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + icon_size, icon_y + rect_h, icon_color, 0)
+        ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y + rect_h + gap, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
+      else
+        -- Horizontal mode: 2 rectangles side by side (left and right)
+        local rect_w = (icon_size - gap) / 2
+        ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + rect_w, icon_y + icon_size, icon_color, 0)
+        ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x + rect_w + gap, icon_y, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
+      end
+    end
+
+    -- Draw button first
     Button.draw(ctx, draw_list, current_x, search_y, layout_button_width, button_height, {
-      label = layout_icon,
+      label = "",  -- No text, icon is drawn manually
       is_toggled = not is_vertical,  -- Toggle state shows when in horizontal mode
       preset_name = "BUTTON_TOGGLE_WHITE",
       tooltip = is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout",
@@ -553,6 +571,11 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
         self.state.set_setting('layout_mode', new_mode)
       end,
     }, "layout_toggle_button")
+
+    -- Calculate center position for icon and draw it on top of button
+    local icon_x = (current_x + (layout_button_width - 14) / 2 + 0.5)//1
+    local icon_y = (search_y + (button_height - 14) / 2 + 0.5)//1
+    draw_layout_icon(draw_list, icon_x, icon_y)
   end
 
   -- Add "Sorting:" label before sort buttons
