@@ -21,13 +21,18 @@ function M.draw_left_panel(ctx, gui, width, height)
   if gui.left_panel_container:begin_draw(ctx) then
     local state = gui.state
 
+    -- Calculate content height after header
+    local header_height = gui.left_panel_container.config.header and gui.left_panel_container.config.header.height or 30
+    local padding = gui.left_panel_container.config.padding or 8
+    local content_height = height - header_height - (padding * 2)
+
     -- Draw content based on active tab
     if state.left_panel_tab == "directory" then
-      DirectoryTab.draw(ctx, state, gui.config, width)
+      DirectoryTab.draw(ctx, state, gui.config, width, content_height)
     elseif state.left_panel_tab == "vsts" then
-      VstsTab.draw(ctx, state, gui.config, width)
+      VstsTab.draw(ctx, state, gui.config, width, content_height)
     elseif state.left_panel_tab == "tags" then
-      TagsTab.draw(ctx, state, gui.config, width)
+      TagsTab.draw(ctx, state, gui.config, width, content_height)
     end
 
     gui.left_panel_container:end_draw(ctx)
