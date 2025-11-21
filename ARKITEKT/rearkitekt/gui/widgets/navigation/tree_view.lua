@@ -39,7 +39,7 @@ local function draw_tree_arrow(ctx, dl, x, y, is_open)
     -- Points: left-top, left-bottom, right-center
     local x1, y1 = x, y
     local x2, y2 = x, y + size
-    local x3, y3 = x + size, math.floor(y + size / 2 + 0.5)  -- Round center point to whole pixel
+    local x3, y3 = x + size, y + size / 2  -- Keep fractional for this arrow (was working fine)
 
     ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, arrow_color)
   end
