@@ -421,7 +421,13 @@ local function get_or_create_instance(context, config, state_or_id)
   else
     -- Update config
     instance.config = config
-    
+
+    -- If config provides a current_value, update the instance
+    -- This allows external state to control the dropdown value
+    if config.current_value ~= nil then
+      instance.current_value = config.current_value
+    end
+
     -- Don't auto-sync from panel state on every frame
     -- The instance is the source of truth during interaction
     -- Sync happens via sync_to_state after draw
