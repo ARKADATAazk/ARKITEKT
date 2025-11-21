@@ -349,7 +349,8 @@ function M.draw(ctx, state, config, width, height, gui)
   local total_tree_height = folder_section_height - used_height
 
   -- Initialize section heights from state (default to 33% each)
-  local separator_gap = 8
+  local separator_height = 3  -- Thin 3-pixel separator line
+  local separator_padding = 2  -- Small padding around separator
   local min_section_height = 80
   local header_height = 22  -- CollapsingHeader height
 
@@ -358,16 +359,33 @@ function M.draw(ctx, state, config, width, height, gui)
 
   -- Clamp values
   state.physical_section_height = math.max(min_section_height, math.min(state.physical_section_height,
-    total_tree_height - min_section_height * 2 - separator_gap * 2))
+    total_tree_height - min_section_height * 2 - (separator_height + separator_padding * 2) * 2))
   state.virtual_section_height = math.max(min_section_height, math.min(state.virtual_section_height,
-    total_tree_height - state.physical_section_height - min_section_height - separator_gap * 2))
+    total_tree_height - state.physical_section_height - min_section_height - (separator_height + separator_padding * 2) * 2))
 
-  local archive_section_height = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_gap * 2
+  local archive_section_height = total_tree_height - state.physical_section_height - state.virtual_section_height - (separator_height + separator_padding * 2) * 2
 
-  -- Get screen positions for separator drawing
-  local start_screen_x, start_screen_y = ImGui.GetCursorScreenPos(ctx)
+  -- Initialize hover tracking for separators
+  state.sep1_hover_time = state.sep1_hover_time or 0
+  state.sep2_hover_time = state.sep2_hover_time or 0
+  local hover_threshold = 1.0  -- 1 second
 
-  -- === PHYSICAL DIRECTORY SECTION ===
+  -- Helper function to draw thin separator line above header
+  local function draw_thin_separator(ctx, dl, x, y, width, is_hovered, hover_time)
+    local line_color = Colors.hexrgb("#333333")  -- Default dark
+
+    -- If hovered for more than 1 second, highlight light grey
+    if is_hovered and hover_time >= hover_threshold then
+      line_color = Colors.hexrgb("#666666")  -- Light grey highlight
+    end
+
+    -- Draw thin horizontal line
+    ImGui.DrawList_AddLine(dl, x, y, x + width, y, line_color, separator_height)
+  end
+
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  -- === PHYSICAL DIRECTORY SECTION (no separator above first section) ===
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
   ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
   ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
@@ -382,32 +400,45 @@ function M.draw(ctx, state, config, width, height, gui)
       TreeViewModule.draw_physical_tree(ctx, state, config)
       ImGui.EndChild(ctx)
     end
-  else
-    -- Reserve space even when collapsed
-    ImGui.Dummy(ctx, 0, 0)
   end
 
-  -- DRAGGABLE SEPARATOR 1 (between Physical and Virtual)
-  local sep1_screen_x, sep1_screen_y = ImGui.GetCursorScreenPos(ctx)
-  local sep_action1, sep_value1 = gui.dir_separator1:draw_horizontal(
-    ctx,
-    sep1_screen_x,
-    sep1_screen_y + separator_gap / 2,
-    width,
-    0,
-    separator_gap
-  )
+  ImGui.Dummy(ctx, 0, separator_padding)
 
-  if sep_action1 == "drag" then
-    local delta = (sep_value1 - (sep1_screen_y + separator_gap / 2))
+  -- === SEPARATOR 1 (before Virtual Directory) ===
+  local sep1_x, sep1_y = ImGui.GetCursorScreenPos(ctx)
+  local mx, my = ImGui.GetMousePos(ctx)
+  local sep1_hovered = mx >= sep1_x and mx < sep1_x + width and
+                       my >= sep1_y and my < sep1_y + separator_height + 4
+
+  -- Track hover time
+  if sep1_hovered then
+    state.sep1_hover_time = state.sep1_hover_time + (1/60)  -- Approximate frame time
+  else
+    state.sep1_hover_time = 0
+  end
+
+  -- Draw separator line
+  draw_thin_separator(ctx, dl, sep1_x, sep1_y + separator_height / 2, width, sep1_hovered, state.sep1_hover_time)
+
+  -- Invisible button for drag interaction
+  ImGui.SetCursorScreenPos(ctx, sep1_x, sep1_y - 2)
+  ImGui.InvisibleButton(ctx, "##sep1", width, separator_height + 4)
+
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
+  end
+
+  if ImGui.IsItemActive(ctx) then
+    local delta = ImGui.GetMouseDragDelta(ctx, 0, 0)
+    ImGui.ResetMouseDragDelta(ctx, 0)
     state.physical_section_height = state.physical_section_height + delta
-    -- Clamp
     state.physical_section_height = math.max(min_section_height,
       math.min(state.physical_section_height,
-        total_tree_height - min_section_height * 2 - separator_gap * 2))
+        total_tree_height - min_section_height * 2 - (separator_height + separator_padding * 2) * 2))
   end
 
-  ImGui.Dummy(ctx, 0, separator_gap)
+  ImGui.SetCursorScreenPos(ctx, sep1_x, sep1_y + separator_height)
+  ImGui.Dummy(ctx, 0, separator_padding)
 
   -- === VIRTUAL DIRECTORY SECTION ===
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
@@ -424,31 +455,44 @@ function M.draw(ctx, state, config, width, height, gui)
       TreeViewModule.draw_virtual_tree(ctx, state, config)
       ImGui.EndChild(ctx)
     end
-  else
-    ImGui.Dummy(ctx, 0, 0)
   end
 
-  -- DRAGGABLE SEPARATOR 2 (between Virtual and Archive)
-  local sep2_screen_x, sep2_screen_y = ImGui.GetCursorScreenPos(ctx)
-  local sep_action2, sep_value2 = gui.dir_separator2:draw_horizontal(
-    ctx,
-    sep2_screen_x,
-    sep2_screen_y + separator_gap / 2,
-    width,
-    0,
-    separator_gap
-  )
+  ImGui.Dummy(ctx, 0, separator_padding)
 
-  if sep_action2 == "drag" then
-    local delta = (sep_value2 - (sep2_screen_y + separator_gap / 2))
+  -- === SEPARATOR 2 (before Archive) ===
+  local sep2_x, sep2_y = ImGui.GetCursorScreenPos(ctx)
+  local sep2_hovered = mx >= sep2_x and mx < sep2_x + width and
+                       my >= sep2_y and my < sep2_y + separator_height + 4
+
+  -- Track hover time
+  if sep2_hovered then
+    state.sep2_hover_time = state.sep2_hover_time + (1/60)
+  else
+    state.sep2_hover_time = 0
+  end
+
+  -- Draw separator line
+  draw_thin_separator(ctx, dl, sep2_x, sep2_y + separator_height / 2, width, sep2_hovered, state.sep2_hover_time)
+
+  -- Invisible button for drag interaction
+  ImGui.SetCursorScreenPos(ctx, sep2_x, sep2_y - 2)
+  ImGui.InvisibleButton(ctx, "##sep2", width, separator_height + 4)
+
+  if ImGui.IsItemHovered(ctx) then
+    ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
+  end
+
+  if ImGui.IsItemActive(ctx) then
+    local delta = ImGui.GetMouseDragDelta(ctx, 0, 0)
+    ImGui.ResetMouseDragDelta(ctx, 0)
     state.virtual_section_height = state.virtual_section_height + delta
-    -- Clamp
     state.virtual_section_height = math.max(min_section_height,
       math.min(state.virtual_section_height,
-        total_tree_height - state.physical_section_height - min_section_height - separator_gap * 2))
+        total_tree_height - state.physical_section_height - min_section_height - (separator_height + separator_padding * 2) * 2))
   end
 
-  ImGui.Dummy(ctx, 0, separator_gap)
+  ImGui.SetCursorScreenPos(ctx, sep2_x, sep2_y + separator_height)
+  ImGui.Dummy(ctx, 0, separator_padding)
 
   -- === ARCHIVE SECTION ===
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
@@ -465,8 +509,6 @@ function M.draw(ctx, state, config, width, height, gui)
       TreeViewModule.draw_archive_tree(ctx, state, config)
       ImGui.EndChild(ctx)
     end
-  else
-    ImGui.Dummy(ctx, 0, 0)
   end
 
   ImGui.Spacing(ctx)
