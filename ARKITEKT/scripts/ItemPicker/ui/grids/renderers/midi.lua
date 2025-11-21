@@ -480,20 +480,35 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     end
   end
 
-  -- Render pool count badge (bottom right) if more than 1 instance
-  -- Hide in small tile mode to prioritize the name display
+  -- Render pool count badge in header (left of favorite/cycle badge) if more than 1 instance
   local should_show_pool_count = item_data.pool_count and item_data.pool_count > 1 and cascade_factor > 0.5
-  if is_small_tile and config.TILE_RENDER.small_tile.hide_pool_count then
-    should_show_pool_count = false
-  end
   if should_show_pool_count then
     local pool_cfg = config.TILE_RENDER.badges.pool
     local pool_text = "×" .. tostring(item_data.pool_count)
     local text_w, text_h = ImGui.CalcTextSize(ctx, pool_text)
     local badge_w = text_w + pool_cfg.padding_x * 2
     local badge_h = text_h + pool_cfg.padding_y * 2
+
+    -- Position left of favorite/cycle badge
     local badge_x = scaled_x2 - badge_w - pool_cfg.margin
-    local badge_y = scaled_y2 - badge_h - pool_cfg.margin
+
+    -- Adjust position if favorite is visible
+    if is_favorite then
+      local fav_cfg = config.TILE_RENDER.badges.favorite
+      local star_badge_size = text_h + (config.TILE_RENDER.badges.cycle.padding_y * 2)
+      badge_x = badge_x - star_badge_size - (fav_cfg.spacing or 4)
+    end
+
+    -- Adjust position if cycle badge is visible
+    if item_data.total and item_data.total > 1 then
+      local cycle_badge_text = string.format("%d/%d", item_data.index or 1, item_data.total)
+      local cycle_w, _ = ImGui.CalcTextSize(ctx, cycle_badge_text)
+      local cycle_cfg = config.TILE_RENDER.badges.cycle
+      local cycle_badge_w = cycle_w + cycle_cfg.padding_x * 2
+      badge_x = badge_x - cycle_badge_w - cycle_cfg.margin
+    end
+
+    local badge_y = scaled_y1 + (header_height - badge_h) / 2
 
     -- Badge background
     local badge_bg_alpha = math.floor((pool_cfg.bg & 0xFF) * combined_alpha)
@@ -509,6 +524,50 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local text_color = Colors.hexrgb("#FFFFFFDD")
     text_color = Colors.with_alpha(text_color, math.floor(combined_alpha * 255))
     ImGui.DrawList_AddText(dl, badge_x + pool_cfg.padding_x, badge_y + pool_cfg.padding_y, text_color, pool_text)
+  end
+
+  -- Render duration badge at bottom right (in bars.beats format for MIDI)
+  if cascade_factor > 0.3 and item_data.item then
+    local duration = reaper.GetMediaItemInfo_Value(item_data.item, "D_LENGTH")
+    if duration > 0 then
+      -- Get item position to calculate bars/beats
+      local item_pos = reaper.GetMediaItemInfo_Value(item_data.item, "D_POSITION")
+      local item_end = item_pos + duration
+
+      -- Get bar/beat position at start and end
+      local _, _, _, start_beat = reaper.TimeMap2_timeToBeats(0, item_pos)
+      local _, _, _, end_beat = reaper.TimeMap2_timeToBeats(0, item_end)
+
+      -- Calculate total beats
+      local total_beats = end_beat - start_beat
+      local bars = math.floor(total_beats / 4)  -- Assuming 4/4 time signature
+      local beats = math.floor(total_beats % 4)
+
+      -- Format as bars.beats
+      local duration_text = string.format("%d.%d", bars, beats)
+
+      local duration_cfg = config.TILE_RENDER.badges.pool  -- Reuse pool badge styling
+      local text_w, text_h = ImGui.CalcTextSize(ctx, duration_text)
+      local badge_w = text_w + duration_cfg.padding_x * 2
+      local badge_h = text_h + duration_cfg.padding_y * 2
+      local badge_x = scaled_x2 - badge_w - duration_cfg.margin
+      local badge_y = scaled_y2 - badge_h - duration_cfg.margin
+
+      -- Badge background
+      local badge_bg_alpha = math.floor((duration_cfg.bg & 0xFF) * combined_alpha)
+      local badge_bg = (duration_cfg.bg & 0xFFFFFF00) | badge_bg_alpha
+      ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, duration_cfg.rounding)
+
+      -- Border
+      local border_color = Colors.adjust_brightness(render_color, duration_cfg.border_darken)
+      border_color = Colors.with_alpha(border_color, duration_cfg.border_alpha)
+      ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, border_color, duration_cfg.rounding, 0, 0.5)
+
+      -- Duration text
+      local duration_text_color = Colors.hexrgb("#FFFFFFDD")
+      duration_text_color = Colors.with_alpha(duration_text_color, math.floor(combined_alpha * 255))
+      ImGui.DrawList_AddText(dl, badge_x + duration_cfg.padding_x, badge_y + duration_cfg.padding_y, duration_text_color, duration_text)
+    end
   end
 end
 
