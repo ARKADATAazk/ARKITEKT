@@ -411,15 +411,6 @@ function Grid:draw(ctx)
   -- Support both function (preferred) and static value (backward compat)
   local fixed_tile_h = self.fixed_tile_h_fn and self.fixed_tile_h_fn() or self.fixed_tile_h
 
-  -- DEBUG: Log tile dimensions for ItemPicker grids
-  if self.id == "midi_items" or self.id == "audio_items" then
-    if not self._last_logged_height or self._last_logged_height ~= fixed_tile_h then
-      reaper.ShowConsoleMsg(string.format("[GRID %s] Layout: w=%d, h=%d, gap=%d\n",
-        self.id, math.floor(min_col_w), math.floor(fixed_tile_h), self.gap))
-      self._last_logged_height = fixed_tile_h
-    end
-  end
-
   local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, num_items, origin_x, origin_y, fixed_tile_h)
 
   self.last_layout_cols = cols

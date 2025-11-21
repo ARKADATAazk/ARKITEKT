@@ -182,7 +182,8 @@ function GUI:draw(ctx, shell_state)
   -- Update animations
   self.coordinator:update_animations(0.016)
 
-  -- NOTE: Tile size shortcuts handled in coordinator render functions
+  -- Handle tile size shortcuts
+  self.coordinator:handle_tile_size_shortcuts(ctx)
 
   -- Check if we need to reorganize items (instant, no reload)
   if self.state.needs_reorganize and not self.state.is_loading then

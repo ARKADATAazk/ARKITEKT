@@ -38,50 +38,55 @@ function Coordinator:update_animations(dt)
   end
 end
 
--- NOTE: Tile size shortcuts are now handled directly in render_audio_grid and render_midi_grid
--- where the ImGui context is correct for capturing mouse wheel events
+function Coordinator:handle_tile_size_shortcuts(ctx)
+  local wheel = ImGui.GetMouseWheel(ctx)
+  if wheel == 0 then return false end
+
+  local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+  local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+
+  if not ctrl and not alt then return false end
+
+  local delta = wheel > 0 and 1 or -1
+  local current_w = self.state:get_tile_width()
+  local current_h = self.state:get_tile_height()
+
+  if ctrl then
+    local new_height = current_h + (delta * self.config.TILE.HEIGHT_STEP)
+    self.state:set_tile_size(current_w, new_height)
+  elseif alt then
+    local new_width = current_w + (delta * self.config.TILE.WIDTH_STEP)
+    self.state:set_tile_size(new_width, current_h)
+  end
+
+  -- Update grids with new size
+  if self.midi_grid then
+    self.midi_grid.min_col_w_fn = function() return self.state:get_tile_width() end
+    self.midi_grid.fixed_tile_h = self.state:get_tile_height()
+  end
+
+  if self.audio_grid then
+    self.audio_grid.min_col_w_fn = function() return self.state:get_tile_width() end
+    self.audio_grid.fixed_tile_h = self.state:get_tile_height()
+  end
+
+  return true
+end
 
 function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
   if not self.audio_grid then return end
   header_offset = header_offset or 0
 
   if ImGui.BeginChild(ctx, "audio_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
-    -- Check for CTRL/SHIFT+wheel BEFORE grid draws (prevents scroll)
+    -- Check for CTRL/ALT+wheel BEFORE grid draws (prevents scroll)
     local saved_scroll = nil
     local wheel_y = ImGui.GetMouseWheel(ctx)
 
-    local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
-    local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
-
-    -- DEBUG: Log when wheel or modifiers are active
-    if wheel_y ~= 0 or ctrl or shift then
-      local is_hovered = ImGui.IsWindowHovered(ctx)
-      reaper.ShowConsoleMsg(string.format("[AUDIO_GRID] wheel=%0.2f, ctrl=%s, shift=%s, hovered=%s\n",
-        wheel_y, tostring(ctrl), tostring(shift), tostring(is_hovered)))
-    end
-
     if wheel_y ~= 0 then
+      local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+      local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
 
-      if ctrl or shift then
-        -- Handle tile size adjustment
-        local delta = wheel_y > 0 and 1 or -1
-        local current_w = self.state:get_tile_width()
-        local current_h = self.state:get_tile_height()
-
-        if ctrl then
-          -- CTRL+MouseWheel: adjust tile height (vertical size)
-          local new_height = current_h + (delta * self.config.TILE.HEIGHT_STEP)
-          self.state:set_tile_size(current_w, new_height)
-          reaper.ShowConsoleMsg(string.format("[AUDIO TILE_RESIZE] CTRL+Wheel: old=%d, new=%d, actual=%d\n",
-            current_h, new_height, self.state:get_tile_height()))
-        elseif shift then
-          -- SHIFT+MouseWheel: adjust tile width (horizontal size)
-          local new_width = current_w + (delta * self.config.TILE.WIDTH_STEP)
-          self.state:set_tile_size(new_width, current_h)
-          reaper.ShowConsoleMsg(string.format("[AUDIO TILE_RESIZE] SHIFT+Wheel: old=%d, new=%d, actual=%d\n",
-            current_w, new_width, self.state:get_tile_width()))
-        end
-
+      if ctrl or alt then
         -- Save scroll position to restore after grid processes wheel
         saved_scroll = ImGui.GetScrollY(ctx)
       end
@@ -114,42 +119,15 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
   header_offset = header_offset or 0
 
   if ImGui.BeginChild(ctx, "midi_grid", avail_w, avail_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar) then
-    -- Check for CTRL/SHIFT+wheel BEFORE grid draws (prevents scroll)
+    -- Check for CTRL/ALT+wheel BEFORE grid draws (prevents scroll)
     local saved_scroll = nil
     local wheel_y = ImGui.GetMouseWheel(ctx)
 
-    local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
-    local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
-
-    -- DEBUG: Log when wheel or modifiers are active
-    if wheel_y ~= 0 or ctrl or shift then
-      local is_hovered = ImGui.IsWindowHovered(ctx)
-      reaper.ShowConsoleMsg(string.format("[MIDI_GRID] wheel=%0.2f, ctrl=%s, shift=%s, hovered=%s\n",
-        wheel_y, tostring(ctrl), tostring(shift), tostring(is_hovered)))
-    end
-
     if wheel_y ~= 0 then
+      local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+      local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
 
-      if ctrl or shift then
-        -- Handle tile size adjustment
-        local delta = wheel_y > 0 and 1 or -1
-        local current_w = self.state:get_tile_width()
-        local current_h = self.state:get_tile_height()
-
-        if ctrl then
-          -- CTRL+MouseWheel: adjust tile height (vertical size)
-          local new_height = current_h + (delta * self.config.TILE.HEIGHT_STEP)
-          self.state:set_tile_size(current_w, new_height)
-          reaper.ShowConsoleMsg(string.format("[MIDI TILE_RESIZE] CTRL+Wheel: old=%d, new=%d, actual=%d\n",
-            current_h, new_height, self.state:get_tile_height()))
-        elseif shift then
-          -- SHIFT+MouseWheel: adjust tile width (horizontal size)
-          local new_width = current_w + (delta * self.config.TILE.WIDTH_STEP)
-          self.state:set_tile_size(new_width, current_h)
-          reaper.ShowConsoleMsg(string.format("[MIDI TILE_RESIZE] SHIFT+Wheel: old=%d, new=%d, actual=%d\n",
-            current_w, new_width, self.state:get_tile_width()))
-        end
-
+      if ctrl or alt then
         -- Save scroll position to restore after grid processes wheel
         saved_scroll = ImGui.GetScrollY(ctx)
       end
