@@ -141,22 +141,58 @@ local function draw_tile(dl, x1, y1, x2, y2, fill_color, border_color, border_th
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, border_thickness)
 end
 
--- Get item color for stacked items (with fallback)
-local function get_item_color(state, item_index)
+-- Get item data and color for stacked items
+local function get_item_data(state, item_index)
   if not state.dragging_keys or item_index > #state.dragging_keys then
-    return state.item_to_add_color or hexrgb("#42E896FF")
+    -- Return data for the primary dragged item
+    local take = state.item_to_add and reaper.GetActiveTake(state.item_to_add)
+    return {
+      media_item = state.item_to_add,
+      name = state.item_to_add_name,
+      color = state.item_to_add_color or hexrgb("#42E896FF"),
+      is_midi = take and reaper.TakeIsMIDI(take) or false,
+    }
   end
 
-  -- Try to get the actual item's color if available
-  local item_key = state.dragging_keys[item_index]
-  if state.selected_items and state.selected_items[item_key] then
-    local item = state.selected_items[item_key]
-    if item and item.color then
-      return item.color
-    end
+  -- Get item from lookup table
+  local uuid = state.dragging_keys[item_index]
+  local lookup = state.dragging_is_audio and state.audio_item_lookup or state.midi_item_lookup
+  local item_data = lookup and lookup[uuid]
+
+  if not item_data then
+    return {
+      media_item = state.item_to_add,
+      name = state.item_to_add_name,
+      color = state.item_to_add_color or hexrgb("#42E896FF"),
+      is_midi = false,
+    }
   end
 
-  return state.item_to_add_color or hexrgb("#42E896FF")
+  -- Extract color from track_color field
+  local color
+  local track_color = item_data.track_color or 0
+  if (track_color & 0x01000000) ~= 0 then
+    -- Has color: extract RGB from COLORREF (0x00BBGGRR)
+    local colorref = track_color & 0x00FFFFFF
+    local R = colorref & 255
+    local G = (colorref >> 8) & 255
+    local B = (colorref >> 16) & 255
+    color = ImGui.ColorConvertDouble4ToU32(R/255, G/255, B/255, 1)
+  else
+    -- No color flag: use default grey
+    color = ImGui.ColorConvertDouble4ToU32(85/255, 91/255, 91/255, 1)
+  end
+
+  local media_item = item_data[1]  -- MediaItem pointer
+  local name = item_data[2] or "Unknown"
+  local take = media_item and reaper.GetActiveTake(media_item)
+
+  return {
+    media_item = media_item,
+    name = name,
+    color = color,
+    is_midi = take and reaper.TakeIsMIDI(take) or false,
+  }
 end
 
 function M.render_drag_preview(ctx, state, mini_font, visualization)
@@ -216,15 +252,16 @@ function M.render_drag_preview(ctx, state, mini_font, visualization)
 
       local opacity = opacity_levels[visible_count - i + 1] or 0.3
 
-      -- Get item color (different for each item if possible)
-      local item_color = get_item_color(state, i)
+      -- Get item data with proper color and info
+      local item_data = get_item_data(state, i)
+      local item_color = item_data.color
       local base_color = apply_alpha(hexrgb("#1A1A1AFF"), opacity)
       local border_color = apply_alpha(hexrgb("#42E896FF"), opacity * 0.9)
 
       -- Background tile
       ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y2, base_color, tile_rounding)
 
-      -- Header with color
+      -- Header with item's actual color
       local header_height = ImGui.GetTextLineHeightWithSpacing(ctx)
       local header_color = apply_alpha(item_color, opacity)
       ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y1 + header_height, header_color, tile_rounding)
@@ -233,34 +270,50 @@ function M.render_drag_preview(ctx, state, mini_font, visualization)
       local overlay_color = apply_alpha(hexrgb("#00000030"), opacity)
       ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y1 + header_height, overlay_color, tile_rounding)
 
-      -- Only draw content for the front tile
-      if i == 1 then
-        -- Item name
-        local name_color = apply_alpha(hexrgb("#FFFFFFFF"), opacity)
-        ImGui.DrawList_AddText(state.draw_list, x1 + 8, y1 + 4, name_color, state.item_to_add_name)
+      -- Item name
+      local name_color = apply_alpha(hexrgb("#FFFFFFFF"), opacity)
+      ImGui.DrawList_AddText(state.draw_list, x1 + 8, y1 + 4, name_color, item_data.name)
 
-        -- Content area with visualization
-        local content_y = y1 + header_height
-        local take = reaper.GetActiveTake(state.item_to_add)
+      -- Content area with visualization for EACH tile
+      local content_y = y1 + header_height
 
-        if take and reaper.TakeIsMIDI(take) then
-          local thumbnail = visualization.GetMidiThumbnail(ctx, state.cache, state.item_to_add)
+      if item_data.media_item and reaper.ValidatePtr2(0, item_data.media_item, "MediaItem*") then
+        if item_data.is_midi then
+          -- MIDI visualization
+          local thumbnail = visualization.GetMidiThumbnail(ctx, state.cache, item_data.media_item)
           if thumbnail then
-            -- Save current cursor, draw visualization, restore cursor
+            -- Save current cursor, draw visualization with opacity, restore cursor
             local saved_cursor_x, saved_cursor_y = ImGui.GetCursorPos(ctx)
+
+            -- Push clip rect to contain visualization within this tile
+            ImGui.DrawList_PushClipRect(state.draw_list, x1, content_y, x2, y2)
+
             ImGui.SetCursorPos(ctx, x1 - cursor_x, content_y - cursor_y)
-            visualization.DisplayMidiItem(ctx, thumbnail, item_color, state.draw_list)
+
+            -- Apply opacity to the visualization color
+            local viz_color = apply_alpha(item_color, opacity)
+            visualization.DisplayMidiItem(ctx, thumbnail, viz_color, state.draw_list)
+
+            ImGui.DrawList_PopClipRect(state.draw_list)
             ImGui.SetCursorPos(ctx, saved_cursor_x, saved_cursor_y)
           end
-        elseif take then
-          if not state.drag_waveform then
-            state.drag_waveform = visualization.GetItemWaveform(state.cache, state.item_to_add)
-          end
-          if state.drag_waveform then
-            -- Save current cursor, draw visualization, restore cursor
+        else
+          -- Audio waveform visualization
+          local waveform = visualization.GetItemWaveform(state.cache, item_data.media_item)
+          if waveform then
+            -- Save current cursor, draw visualization with opacity, restore cursor
             local saved_cursor_x, saved_cursor_y = ImGui.GetCursorPos(ctx)
+
+            -- Push clip rect to contain visualization within this tile
+            ImGui.DrawList_PushClipRect(state.draw_list, x1, content_y, x2, y2)
+
             ImGui.SetCursorPos(ctx, x1 - cursor_x, content_y - cursor_y)
-            visualization.DisplayWaveform(ctx, state.drag_waveform, item_color, state.draw_list, state.item_to_add_width)
+
+            -- Apply opacity to the visualization color
+            local viz_color = apply_alpha(item_color, opacity)
+            visualization.DisplayWaveform(ctx, waveform, viz_color, state.draw_list, state.item_to_add_width)
+
+            ImGui.DrawList_PopClipRect(state.draw_list)
             ImGui.SetCursorPos(ctx, saved_cursor_x, saved_cursor_y)
           end
         end
