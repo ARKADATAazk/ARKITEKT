@@ -16,11 +16,11 @@ local M = {}
 -- Draw TAGS content (full tag management)
 function M.draw(ctx, state, config, width, height)
   -- Header with "+" button
-  local header_text = "Tags"
-
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.Text(ctx, header_text)
-  ImGui.SameLine(ctx, width - UI.BUTTON.WIDTH_SMALL - config.PANEL_PADDING * 2)
+
+  -- Position button at the right
+  local button_x = width - UI.BUTTON.WIDTH_SMALL - config.PANEL_PADDING * 2
+  ImGui.SetCursorPosX(ctx, button_x)
 
   if Button.draw_at_cursor(ctx, {
     label = "+",

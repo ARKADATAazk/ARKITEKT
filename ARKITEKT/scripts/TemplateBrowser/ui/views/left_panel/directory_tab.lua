@@ -22,8 +22,10 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
 
   -- Header with "+" button
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.Text(ctx, "Tags")
-  ImGui.SameLine(ctx, width - UI.BUTTON.WIDTH_SMALL - 8)
+
+  -- Position button at the right
+  local button_x = width - UI.BUTTON.WIDTH_SMALL - 8
+  ImGui.SetCursorPosX(ctx, button_x)
 
   if Button.draw_at_cursor(ctx, {
     label = "+",
@@ -117,8 +119,10 @@ function M.draw(ctx, state, config, width, height)
   -- === FOLDER SECTION ===
   -- Header with folder creation buttons
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
-  ImGui.Text(ctx, "Explorer")
-  ImGui.SameLine(ctx, width - (UI.BUTTON.WIDTH_SMALL * 2 + UI.BUTTON.SPACING) - config.PANEL_PADDING * 2)
+
+  -- Position buttons at the top right
+  local button_x = width - (UI.BUTTON.WIDTH_SMALL * 2 + UI.BUTTON.SPACING) - config.PANEL_PADDING * 2
+  ImGui.SetCursorPosX(ctx, button_x)
 
   -- Physical folder button
   if Button.draw_at_cursor(ctx, {
