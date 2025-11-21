@@ -278,7 +278,10 @@ function GUI:draw(ctx, shell_state)
 
       -- Set close flag BEFORE inserting for normal drops to block any drag_start calls
       if not shift and not ctrl then
+        reaper.ShowConsoleMsg("[NORMAL DROP] Setting close flag\n")
         self.state.should_close_after_drop = true
+      else
+        reaper.ShowConsoleMsg(string.format("[MODIFIER DROP] shift=%s ctrl=%s\n", tostring(shift), tostring(ctrl)))
       end
 
       -- Insert the item
@@ -288,13 +291,16 @@ function GUI:draw(ctx, shell_state)
       if shift then
         -- SHIFT: Keep dragging active for multi-drop
         -- Wait for next click/release cycle before allowing another drop
+        reaper.ShowConsoleMsg("[SHIFT DROP] Setting up for next drop\n")
         self.state.drop_completed = false
         self.state.waiting_for_new_click = true
         self.state.mouse_was_pressed_after_drop = false
+        self.state.should_close_after_drop = false  -- Explicitly clear close flag
       elseif ctrl then
         -- CTRL: End drag but keep ItemPicker open
         self.state.end_drag()
         self.state.waiting_for_new_click = false
+        self.state.should_close_after_drop = false  -- Explicitly clear close flag
       else
         -- Normal drop: DON'T end drag - keep State.dragging active
         -- This keeps us in the dragging branch (no overlay render)
@@ -306,6 +312,7 @@ function GUI:draw(ctx, shell_state)
 
     -- Clear waiting flag once mouse is pressed again (for SHIFT mode)
     if self.state.waiting_for_new_click and self.state.mouse_was_pressed_after_drop then
+      reaper.ShowConsoleMsg("[SHIFT MODE] Clearing waiting flag\n")
       self.state.waiting_for_new_click = false
     end
 
