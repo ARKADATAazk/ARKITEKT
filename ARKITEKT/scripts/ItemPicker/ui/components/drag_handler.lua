@@ -176,7 +176,7 @@ function M.handle_drag_logic(ctx, state, mini_font)
     local dragging_count = (state.dragging_keys and #state.dragging_keys) or 1
     local current_x = rect_x1
 
-    -- Draw each item being dragged with its actual color
+    -- Draw each item being dragged with its actual color and visualization
     for i = 1, dragging_count do
       local item_data = get_item_data(state, i)
       local media_item = item_data.media_item
@@ -188,9 +188,9 @@ function M.handle_drag_logic(ctx, state, mini_font)
 
         local item_take = reaper.GetActiveTake(media_item)
         if item_take then
-
           -- Get the item's actual color
-          local item_color = item_data.color
+          local base_color = item_data.color
+          local item_color = base_color
 
           -- Apply base fill adjustments for consistency with tiles
           if item_color then
@@ -200,17 +200,48 @@ function M.handle_drag_logic(ctx, state, mini_font)
             s = s * 0.7  -- Desaturate a bit
             v = v * 0.5  -- Darken for preview
             r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
-            item_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 0.4)  -- Semi-transparent
+            item_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 0.8)  -- 80% opacity
           else
             -- Fallback to grey
-            item_color = ImGui.ColorConvertDouble4ToU32(177 / 256, 180 / 256, 180 / 256, 0.4)
+            item_color = ImGui.ColorConvertDouble4ToU32(177 / 256, 180 / 256, 180 / 256, 0.8)
           end
 
-          -- Draw this item's preview rectangle
+          -- Draw base rectangle with item color
           ImGui.DrawList_AddRectFilled(state.draw_list,
             current_x, rect_y1,
             current_x + item_width, rect_y2,
             item_color)
+
+          -- Add visualization if available
+          local item_uuid = state.dragging_keys and state.dragging_keys[i]
+          if item_uuid and state.runtime_cache and not state.skip_visualizations then
+            -- Get dark waveform color for visualization
+            local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
+            local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
+            s = 0.3
+            v = 0.15
+            r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
+            local viz_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 0.7)
+
+            if item_data.is_midi then
+              -- MIDI visualization
+              local thumbnail = state.runtime_cache.midi_thumbnails and state.runtime_cache.midi_thumbnails[item_uuid]
+              if thumbnail and visualization.DisplayMidiItemTransparent then
+                ImGui.SetCursorScreenPos(ctx, current_x, rect_y1)
+                ImGui.Dummy(ctx, item_width, rect_y2 - rect_y1)
+                visualization.DisplayMidiItemTransparent(ctx, thumbnail, viz_color, state.draw_list)
+              end
+            else
+              -- Audio waveform visualization
+              local waveform = state.runtime_cache.waveforms and state.runtime_cache.waveforms[item_uuid]
+              if waveform and visualization.DisplayWaveformTransparent then
+                ImGui.SetCursorScreenPos(ctx, current_x, rect_y1)
+                ImGui.Dummy(ctx, item_width, rect_y2 - rect_y1)
+                visualization.DisplayWaveformTransparent(ctx, waveform, viz_color, state.draw_list,
+                  math.floor(item_width), item_uuid, state.runtime_cache, true, false)
+              end
+            end
+          end
 
           current_x = current_x + item_width
         end
