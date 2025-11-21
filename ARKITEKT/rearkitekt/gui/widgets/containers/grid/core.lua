@@ -104,11 +104,13 @@ function M.new(opts)
 
   local grid_id = opts.id or "grid"
 
-  local grid = setmetatable({
+  local grid
+  grid = setmetatable({
     id               = grid_id,
     gap              = opts.gap or 12,
     min_col_w_fn     = type(opts.min_col_w) == "function" and opts.min_col_w or function() return opts.min_col_w or 160 end,
-    fixed_tile_h_fn  = type(opts.fixed_tile_h) == "function" and opts.fixed_tile_h or function() return opts.fixed_tile_h end,
+    -- fixed_tile_h_fn: If opts provides function, use it. Otherwise create function that reads from grid.fixed_tile_h
+    fixed_tile_h_fn  = type(opts.fixed_tile_h) == "function" and opts.fixed_tile_h or function() return grid.fixed_tile_h end,
     fixed_tile_h     = opts.fixed_tile_h,  -- Keep for backward compatibility with direct assignment
     get_items        = opts.get_items or function() return {} end,
     key              = opts.key or function(item) return tostring(item) end,
