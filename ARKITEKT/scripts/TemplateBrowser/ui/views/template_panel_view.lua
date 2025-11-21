@@ -166,79 +166,156 @@ local function draw_quick_access_panel(ctx, gui, width, height)
 
   -- Begin panel drawing (includes background, border, header)
   if gui.recent_container:begin_draw(ctx) then
-    -- Draw tiles horizontally in the content area
+    -- Determine view mode (grid or list)
+    local view_mode = state.quick_access_view_mode or "grid"
     local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
-    local tile_height = UI.TILE.RECENT_HEIGHT
-    local tile_width = UI.TILE.RECENT_WIDTH
-    local tile_gap = UI.TILE.GAP
+    local TemplateTileCompact = require('TemplateBrowser.ui.tiles.template_tile_compact')
 
-    for idx, tmpl in ipairs(quick_access_templates) do
-      local x1, y1 = ImGui.GetCursorScreenPos(ctx)
-      local x2 = x1 + tile_width
-      local y2 = y1 + tile_height
+    if view_mode == "list" then
+      -- LIST VIEW - Vertical stack of compact tiles
+      local tile_height = 18
+      local tile_gap = 4
 
-      -- Create tile state for rendering
-      local tile_state = {
-        hover = false,
-        selected = state.selected_template and state.selected_template.uuid == tmpl.uuid,
-        star_clicked = false,
-      }
+      for idx, tmpl in ipairs(quick_access_templates) do
+        local x1, y1 = ImGui.GetCursorScreenPos(ctx)
+        local x2 = x1 + width - 16  -- Account for padding
+        local y2 = y1 + tile_height
 
-      -- Check hover
-      local mx, my = ImGui.GetMousePos(ctx)
-      tile_state.hover = mx >= x1 and mx <= x2 and my >= y1 and my <= y2
+        -- Create tile state for rendering
+        local tile_state = {
+          hover = false,
+          selected = state.selected_template and state.selected_template.uuid == tmpl.uuid,
+          star_clicked = false,
+        }
 
-      -- Render tile
-      TemplateTile.render(ctx, {x1, y1, x2, y2}, tmpl, tile_state, state.metadata, gui.template_animator)
+        -- Check hover
+        local mx, my = ImGui.GetMousePos(ctx)
+        tile_state.hover = mx >= x1 and mx <= x2 and my >= y1 and my <= y2
 
-      -- Handle tile click
-      if tile_state.hover and ImGui.IsMouseClicked(ctx, 0) and not tile_state.star_clicked then
-        state.selected_template = tmpl
-      end
+        -- Render compact tile
+        TemplateTileCompact.render(ctx, {x1, y1, x2, y2}, tmpl, tile_state, state.metadata, gui.template_animator)
 
-      -- Handle star click
-      if tile_state.star_clicked then
-        local Persistence = require('TemplateBrowser.domain.persistence')
-        local favorites_id = "__FAVORITES__"
-        local favorites = state.metadata.virtual_folders[favorites_id]
-
-        if favorites then
-          -- Toggle favorite
-          local is_favorited = false
-          local favorite_index = nil
-          for i, ref_uuid in ipairs(favorites.template_refs) do
-            if ref_uuid == tmpl.uuid then
-              is_favorited = true
-              favorite_index = i
-              break
-            end
-          end
-
-          if is_favorited then
-            table.remove(favorites.template_refs, favorite_index)
-            state.set_status("Removed from Favorites: " .. tmpl.name, "success")
-          else
-            table.insert(favorites.template_refs, tmpl.uuid)
-            state.set_status("Added to Favorites: " .. tmpl.name, "success")
-          end
-
-          Persistence.save_metadata(state.metadata)
+        -- Handle tile click
+        if tile_state.hover and ImGui.IsMouseClicked(ctx, 0) and not tile_state.star_clicked then
+          state.selected_template = tmpl
         end
+
+        -- Handle star click
+        if tile_state.star_clicked then
+          local Persistence = require('TemplateBrowser.domain.persistence')
+          local favorites_id = "__FAVORITES__"
+          local favorites = state.metadata.virtual_folders[favorites_id]
+
+          if favorites then
+            local is_favorited = false
+            local favorite_index = nil
+            for i, ref_uuid in ipairs(favorites.template_refs) do
+              if ref_uuid == tmpl.uuid then
+                is_favorited = true
+                favorite_index = i
+                break
+              end
+            end
+
+            if is_favorited then
+              table.remove(favorites.template_refs, favorite_index)
+              state.set_status("Removed from Favorites: " .. tmpl.name, "success")
+            else
+              table.insert(favorites.template_refs, tmpl.uuid)
+              state.set_status("Added to Favorites: " .. tmpl.name, "success")
+            end
+
+            Persistence.save_metadata(state.metadata)
+          end
+        end
+
+        -- Handle double-click
+        if tile_state.hover and ImGui.IsMouseDoubleClicked(ctx, 0) then
+          TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
+        end
+
+        -- Move cursor for next tile (vertical layout)
+        ImGui.SetCursorScreenPos(ctx, x1, y2 + tile_gap)
       end
 
-      -- Handle double-click
-      if tile_state.hover and ImGui.IsMouseDoubleClicked(ctx, 0) then
-        TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
+      -- Add dummy for total height
+      if #quick_access_templates > 0 then
+        local total_height = (#quick_access_templates * tile_height) + ((#quick_access_templates - 1) * tile_gap)
+        ImGui.Dummy(ctx, 0, total_height)
+      end
+    else
+      -- GRID VIEW - Horizontal scrolling tiles
+      local tile_height = UI.TILE.RECENT_HEIGHT
+      local tile_width = UI.TILE.RECENT_WIDTH
+      local tile_gap = UI.TILE.GAP
+
+      for idx, tmpl in ipairs(quick_access_templates) do
+        local x1, y1 = ImGui.GetCursorScreenPos(ctx)
+        local x2 = x1 + tile_width
+        local y2 = y1 + tile_height
+
+        -- Create tile state for rendering
+        local tile_state = {
+          hover = false,
+          selected = state.selected_template and state.selected_template.uuid == tmpl.uuid,
+          star_clicked = false,
+        }
+
+        -- Check hover
+        local mx, my = ImGui.GetMousePos(ctx)
+        tile_state.hover = mx >= x1 and mx <= x2 and my >= y1 and my <= y2
+
+        -- Render tile
+        TemplateTile.render(ctx, {x1, y1, x2, y2}, tmpl, tile_state, state.metadata, gui.template_animator)
+
+        -- Handle tile click
+        if tile_state.hover and ImGui.IsMouseClicked(ctx, 0) and not tile_state.star_clicked then
+          state.selected_template = tmpl
+        end
+
+        -- Handle star click
+        if tile_state.star_clicked then
+          local Persistence = require('TemplateBrowser.domain.persistence')
+          local favorites_id = "__FAVORITES__"
+          local favorites = state.metadata.virtual_folders[favorites_id]
+
+          if favorites then
+            local is_favorited = false
+            local favorite_index = nil
+            for i, ref_uuid in ipairs(favorites.template_refs) do
+              if ref_uuid == tmpl.uuid then
+                is_favorited = true
+                favorite_index = i
+                break
+              end
+            end
+
+            if is_favorited then
+              table.remove(favorites.template_refs, favorite_index)
+              state.set_status("Removed from Favorites: " .. tmpl.name, "success")
+            else
+              table.insert(favorites.template_refs, tmpl.uuid)
+              state.set_status("Added to Favorites: " .. tmpl.name, "success")
+            end
+
+            Persistence.save_metadata(state.metadata)
+          end
+        end
+
+        -- Handle double-click
+        if tile_state.hover and ImGui.IsMouseDoubleClicked(ctx, 0) then
+          TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
+        end
+
+        -- Move cursor for next tile (horizontal layout)
+        ImGui.SetCursorScreenPos(ctx, x2 + tile_gap, y1)
       end
 
-      -- Move cursor for next tile (horizontal layout)
-      ImGui.SetCursorScreenPos(ctx, x2 + tile_gap, y1)
-    end
-
-    -- Add dummy to consume the space used by horizontally positioned tiles
-    if #quick_access_templates > 0 then
-      local total_width = (#quick_access_templates * tile_width) + ((#quick_access_templates - 1) * tile_gap)
-      ImGui.Dummy(ctx, total_width, tile_height)
+      -- Add dummy to consume the space used by horizontally positioned tiles
+      if #quick_access_templates > 0 then
+        local total_width = (#quick_access_templates * tile_width) + ((#quick_access_templates - 1) * tile_gap)
+        ImGui.Dummy(ctx, total_width, tile_height)
+      end
     end
 
     -- End panel drawing
