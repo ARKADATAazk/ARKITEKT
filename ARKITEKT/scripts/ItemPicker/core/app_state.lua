@@ -314,7 +314,7 @@ function M.cycle_audio_item(filename, delta)
     -- Apply search filter
     local search = M.settings.search_string or ""
     if search ~= "" and entry[2] then
-      if not item_name:lower():find(search:lower(), 1, true) then
+      if not entry[2]:lower():find(search:lower(), 1, true) then
         should_include = false
       end
     end
@@ -391,7 +391,7 @@ function M.cycle_midi_item(item_name, delta)
     -- Apply search filter
     local search = M.settings.search_string or ""
     if search ~= "" and entry[2] then
-      if not item_name_text:lower():find(search:lower(), 1, true) then
+      if not entry[2]:lower():find(search:lower(), 1, true) then
         should_include = false
       end
     end
