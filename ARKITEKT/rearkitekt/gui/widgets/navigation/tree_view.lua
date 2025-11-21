@@ -192,14 +192,14 @@ local function render_tree_node(ctx, node, config, state, depth)
       -- Left edge accent bar
       local selection_bar_width = 3
       local selection_color
-      local selection_bg = Colors.hexrgb("#4A9EFF30")  -- 18% opacity blue
+      local selection_bg = Colors.hexrgb("#FFFFFF15")  -- Light grey/white background
 
       if node_color and config.show_colors then
         -- Use folder color for selection bar
         selection_color = Colors.saturate(node_color, 0.2)  -- Slightly more saturated
       else
-        -- Default blue selection for non-colored folders
-        selection_color = Colors.hexrgb("#4A9EFFFF")  -- Bright blue
+        -- Default white for non-colored folders
+        selection_color = Colors.hexrgb("#FFFFFFFF")  -- White
       end
 
       ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_min_x + selection_bar_width, item_max_y, selection_color, 0)
