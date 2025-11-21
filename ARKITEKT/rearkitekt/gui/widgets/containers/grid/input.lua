@@ -247,11 +247,8 @@ function M.handle_tile_input(grid, ctx, item, rect)
       local was_selected = grid.selection:is_selected(key)
 
       -- SHIFT+click: Range selection from last clicked to current
+      -- Standard behavior: extends selection without clearing
       if shift then
-        if not ctrl then
-          grid.selection:clear()
-        end
-
         -- Get item order for range selection
         local items = grid.get_items()
         local order = {}
@@ -260,6 +257,7 @@ function M.handle_tile_input(grid, ctx, item, rect)
         end
 
         -- Perform range selection using existing method
+        -- This extends the selection, keeping previously selected items
         local from_key = grid.selection.last_clicked or key
         grid.selection:range(order, from_key, key)
 
