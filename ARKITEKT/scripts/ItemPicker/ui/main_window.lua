@@ -264,11 +264,25 @@ function GUI:draw(ctx, shell_state)
     -- which allows the arrange window to receive mouse input
     local should_insert = self.drag_handler.handle_drag_logic(ctx, self.state, mini_font)
     if should_insert and not self.state.drop_completed then
-      -- Only insert once
+      -- Check modifier keys for drop behavior
+      local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
+      local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+
+      -- Insert the item
       self.controller.insert_item_at_mouse(self.state.item_to_add, self.state)
       self.state.drop_completed = true  -- Mark as completed
-      self.state.end_drag()  -- Clear drag state
-      self.state.request_exit()  -- Exit immediately after insertion
+
+      if shift then
+        -- SHIFT: Keep dragging active for multi-drop (reset drop_completed to allow next drop)
+        self.state.drop_completed = false
+      elseif ctrl then
+        -- CTRL: End drag but keep ItemPicker open
+        self.state.end_drag()
+      else
+        -- Normal drop: End drag and exit
+        self.state.end_drag()
+        self.state.request_exit()
+      end
     end
 
     self.drag_handler.render_drag_preview(ctx, self.state, mini_font, self.visualization)
