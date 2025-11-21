@@ -62,15 +62,10 @@ function M.create(opts)
     playlist_lookup = opts.get_playlist_by_id,
   })
 
-  -- Save defaults if settings were empty or invalid (ensures persistence on first run)
+  -- Save defaults only if settings were empty (first run only)
   local needs_save = false
 
-  -- Migrate quantize mode to "measure" (1 Bar) if not present or if it's an old numeric/string value
-  if not saved_settings.quantize_mode or
-     saved_settings.quantize_mode == "none" or
-     type(saved_settings.quantize_mode) == "number" or
-     saved_settings.quantize_mode == "4bar" or
-     saved_settings.quantize_mode == "2bar" then
+  if saved_settings.quantize_mode == nil then
     saved_settings.quantize_mode = "measure"
     needs_save = true
   end
@@ -80,7 +75,7 @@ function M.create(opts)
     needs_save = true
   end
 
-  if not saved_settings.shuffle_mode then
+  if saved_settings.shuffle_mode == nil then
     saved_settings.shuffle_mode = "true_shuffle"
     needs_save = true
   end
