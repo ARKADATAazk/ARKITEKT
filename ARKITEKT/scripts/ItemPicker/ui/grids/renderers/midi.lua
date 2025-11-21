@@ -90,20 +90,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Get base color from item
   local base_color = item_data.color or 0xFF555555
 
-  -- Apply muted state first (lighter effect than disabled)
-  local render_color = base_color
-  if muted_factor > 0.001 then
-    render_color = Colors.desaturate(render_color, config.TILE_RENDER.muted.desaturate * muted_factor)
-    render_color = Colors.adjust_brightness(render_color,
-      1.0 - (1.0 - config.TILE_RENDER.muted.brightness) * muted_factor)
-  end
-
-  -- Apply disabled state (stronger effect, overrides muted)
-  if enabled_factor < 1.0 then
-    render_color = Colors.desaturate(render_color, config.TILE_RENDER.disabled.desaturate * (1.0 - enabled_factor))
-    render_color = Colors.adjust_brightness(render_color,
-      1.0 - (1.0 - config.TILE_RENDER.disabled.brightness) * (1.0 - enabled_factor))
-  end
+  -- Apply muted and disabled state effects
+  local render_color = BaseRenderer.apply_state_effects(base_color, muted_factor, enabled_factor, config)
 
   -- Apply base tile fill adjustments (use compact mode values for small tiles)
   local sat_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_saturation_factor or config.TILE_RENDER.base_fill.saturation_factor
@@ -117,30 +105,13 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     render_color = Colors.adjust_brightness(render_color, 1.0 + hover_boost)
   end
 
-  -- Apply cascade/enabled/muted alpha with minimum for disabled items
-  local min_alpha_factor = (config.TILE_RENDER.disabled.min_alpha or 0x33) / 255
-  local alpha_factor = min_alpha_factor + (1.0 - min_alpha_factor) * enabled_factor
-  -- Apply muted alpha reduction (subtle)
-  if muted_factor > 0.001 then
-    alpha_factor = alpha_factor * (1.0 - (1.0 - config.TILE_RENDER.muted.alpha_factor) * muted_factor)
-  end
-  local combined_alpha = cascade_factor * alpha_factor
+  -- Calculate combined alpha with state effects
   local base_alpha = (render_color & 0xFF) / 255
-  local final_alpha = base_alpha * combined_alpha
+  local combined_alpha, final_alpha = BaseRenderer.calculate_combined_alpha(cascade_factor, enabled_factor, muted_factor, base_alpha, config)
   render_color = Colors.with_alpha(render_color, math.floor(final_alpha * 255))
 
   local text_alpha = math.floor(0xFF * combined_alpha)
-  local text_color = config.TILE_RENDER.text.primary_color
-  -- Apply red text color for muted items
-  if muted_factor > 0.001 then
-    local muted_text = config.TILE_RENDER.muted.text_color
-    local r1, g1, b1 = ImGui.ColorConvertU32ToDouble4(text_color)
-    local r2, g2, b2 = ImGui.ColorConvertU32ToDouble4(muted_text)
-    local r = r1 + (r2 - r1) * muted_factor
-    local g = g1 + (g2 - g1) * muted_factor
-    local b = b1 + (b2 - b1) * muted_factor
-    text_color = ImGui.ColorConvertDouble4ToU32(r, g, b, 1.0)
-  end
+  local text_color = BaseRenderer.get_text_color(muted_factor, config)
 
   -- Calculate header height with animated transition
   local normal_header_height = math.max(
@@ -160,22 +131,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Render base tile fill with rounding
   ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
-
-  -- Render tile border (dark outline derived from tile color)
-  if config.TILE_RENDER.border.enabled then
-    local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
-    local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-
-    -- Apply border color transformations (darker than header)
-    s = s * config.TILE_RENDER.border.saturation_factor
-    v = v * config.TILE_RENDER.border.brightness_factor
-
-    r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
-    local border_alpha = math.floor(config.TILE_RENDER.border.alpha * combined_alpha)
-    local border_color = ImGui.ColorConvertDouble4ToU32(r, g, b, border_alpha / 255)
-
-    ImGui.DrawList_AddRect(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, border_color, config.TILE.ROUNDING, 0, config.TILE_RENDER.border.thickness)
-  end
 
   -- Render dark backdrop for disabled items
   if enabled_factor < 0.999 then
