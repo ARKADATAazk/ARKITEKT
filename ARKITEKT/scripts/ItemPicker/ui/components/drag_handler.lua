@@ -351,28 +351,44 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       ImGui.DrawList_AddText(state.draw_list, text_x, text_y, name_color, item_data.name)
     end
 
-    -- Count badge (small, subtle, positioned at top-right)
+    -- Count badge (top-right, matching tile badge style)
     if dragging_count > 1 then
       local badge_text = tostring(dragging_count)
       local badge_w, badge_h = ImGui.CalcTextSize(ctx, badge_text)
-      local padding = 6
-      local badge_size = math.max(badge_w, badge_h) + padding * 2
-      local badge_x = base_x + total_width - badge_size / 2
-      local badge_y = base_y - badge_size / 2
 
-      -- Subtle shadow
-      ImGui.DrawList_AddCircleFilled(state.draw_list, badge_x + 1, badge_y + 1, badge_size / 2 + 2, hexrgb("#00000066"))
+      -- Badge styling (matching tile badges)
+      local padding_x = 8
+      local padding_y = 4
+      local badge_width = badge_w + padding_x * 2
+      local badge_height = badge_h + padding_y * 2
+      local rounding = 4
 
-      -- Badge background (dark, semi-transparent)
-      ImGui.DrawList_AddCircleFilled(state.draw_list, badge_x, badge_y, badge_size / 2, hexrgb("#1A1A1ADD"))
+      -- Position at top-right corner
+      local badge_x = base_x + total_width - badge_width - 4
+      local badge_y = base_y - badge_height / 2
 
-      -- Subtle accent ring
-      ImGui.DrawList_AddCircle(state.draw_list, badge_x, badge_y, badge_size / 2, hexrgb("#FFFFFF66"), 0, 1.5)
+      -- Badge shadow
+      ImGui.DrawList_AddRectFilled(state.draw_list,
+        badge_x + 2, badge_y + 2,
+        badge_x + badge_width + 2, badge_y + badge_height + 2,
+        hexrgb("#00000066"), rounding)
 
-      -- Badge text
-      local text_x = badge_x - badge_w / 2
-      local text_y = badge_y - badge_h / 2
-      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, hexrgb("#FFFFFFEE"), badge_text)
+      -- Badge background (90% opacity dark grey)
+      ImGui.DrawList_AddRectFilled(state.draw_list,
+        badge_x, badge_y,
+        badge_x + badge_width, badge_y + badge_height,
+        hexrgb("#1A1A1AE6"), rounding)
+
+      -- Badge border (subtle)
+      ImGui.DrawList_AddRect(state.draw_list,
+        badge_x, badge_y,
+        badge_x + badge_width, badge_y + badge_height,
+        hexrgb("#FFFFFF33"), rounding, 0, 1)
+
+      -- Badge text (centered)
+      local text_x = badge_x + padding_x
+      local text_y = badge_y + padding_y
+      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, hexrgb("#FFFFFFFF"), badge_text)
     end
 
     -- Dummy to reserve space
