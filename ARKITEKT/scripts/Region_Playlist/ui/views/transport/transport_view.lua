@@ -760,13 +760,24 @@ function TransportView:draw(ctx, shell_state, is_blocking)
   local content_w, content_h = self.container:begin_draw(ctx, region_colors, current_rid)
   
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  
-  local active_playlist = self.state.get_active_playlist()
-  local playlist_data = active_playlist and {
-    name = active_playlist.name,
-    color = active_playlist.chip_color or hexrgb("#888888"),
+
+  -- Show the playing playlist when playback is active, otherwise show the selected playlist
+  local playlist_to_display = self.state.get_active_playlist()
+  if bridge and bridge_state.is_playing then
+    local playing_playlist_id = bridge:get_playing_playlist_id()
+    if playing_playlist_id then
+      local playing_playlist = self.state.get_playlist_by_id(playing_playlist_id)
+      if playing_playlist then
+        playlist_to_display = playing_playlist
+      end
+    end
+  end
+
+  local playlist_data = playlist_to_display and {
+    name = playlist_to_display.name,
+    color = playlist_to_display.chip_color or hexrgb("#888888"),
   } or nil
-  
+
   local current_region = nil
   local next_region = nil
   

@@ -311,6 +311,12 @@ function M.create(opts)
     return self.engine:get_shuffle_mode()
   end
 
+  function bridge:get_playing_playlist_id()
+    -- Return the ID of the playlist that is currently playing
+    -- Returns nil if not playing or no playlist is locked
+    return self._playing_playlist_id
+  end
+
   function bridge:get_state()
     local engine_state = self.engine:get_state()
     return {
