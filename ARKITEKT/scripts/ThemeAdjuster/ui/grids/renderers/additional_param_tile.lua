@@ -6,6 +6,7 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
 local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
+local HueSlider = require('rearkitekt.gui.widgets.primitives.hue_slider')
 local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
 local hexrgb = Colors.hexrgb
 
@@ -156,13 +157,21 @@ function M.render(ctx, param, tab_color, shell_state, view)
       item_deactivated = true  -- Checkbox is immediate
     end
   elseif param_type == "int" or param_type == "enum" then
-    -- Spinner for integers
-    ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
+    -- HueSlider for integers
     local min_val = param.min or 0
     local max_val = param.max or 100
-    local changed, val = ImGui.DragInt(ctx, control_id, current_value, 1, min_val, max_val)
+    local range = max_val - min_val
+
+    -- Convert to 0-100 range for HueSlider
+    local normalized = range > 0 and ((current_value - min_val) / range) * 100 or 50
+    local default_normalized = range > 0 and ((param.default - min_val) / range) * 100 or 50
+
+    local changed, val = HueSlider.draw_gamma(ctx, control_id, normalized,
+      {w = CONTROL_WIDTH, h = 24, default = default_normalized})
+
     if changed then
-      new_value = val
+      -- Convert back and round to integer
+      new_value = math.floor(min_val + (val / 100) * range + 0.5)
       value_changed = true
     end
     -- Check if mouse was released
@@ -170,16 +179,21 @@ function M.render(ctx, param, tab_color, shell_state, view)
       item_deactivated = true
     end
   else
-    -- Drag control for floats (smoother than SliderDouble)
-    ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
+    -- HueSlider for floats
     local min_val = param.min or 0.0
     local max_val = param.max or 1.0
-    -- Calculate appropriate drag speed based on range (1% of range, minimum 0.01)
     local range = max_val - min_val
-    local speed = math.max(range * 0.01, 0.01)
-    local changed, val = ImGui.DragDouble(ctx, control_id, current_value, speed, min_val, max_val, "%.2f")
+
+    -- Convert to 0-100 range for HueSlider
+    local normalized = range > 0 and ((current_value - min_val) / range) * 100 or 50
+    local default_normalized = range > 0 and ((param.default - min_val) / range) * 100 or 50
+
+    local changed, val = HueSlider.draw_gamma(ctx, control_id, normalized,
+      {w = CONTROL_WIDTH, h = 24, default = default_normalized})
+
     if changed then
-      new_value = val
+      -- Convert back to actual range
+      new_value = min_val + (val / 100) * range
       value_changed = true
     end
     -- Check if mouse was released
