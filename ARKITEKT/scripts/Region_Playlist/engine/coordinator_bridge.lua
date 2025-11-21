@@ -46,6 +46,7 @@ function M.create(opts)
     _last_known_item_key = nil,
     _last_reported_loop_key = nil,
     _last_reported_loop = nil,
+    _playing_playlist_id = nil,  -- Track which playlist is currently being played
   }
 
   bridge.engine = Engine.new({
@@ -108,6 +109,18 @@ function M.create(opts)
 
   local function rebuild_sequence()
     local playlist = resolve_active_playlist()
+    local active_playlist_id = safe_call(bridge.get_active_playlist_id)
+    local is_playing = bridge.engine and bridge.engine:get_is_playing()
+
+    -- Don't rebuild sequence if we're currently playing
+    -- This prevents the transport from switching playlists when user changes tabs during playback
+    if is_playing and bridge._playing_playlist_id then
+      Logger.debug("BRIDGE", "Skipping sequence rebuild - currently playing playlist %s (active: %s)",
+        tostring(bridge._playing_playlist_id), tostring(active_playlist_id))
+      bridge.sequence_cache_dirty = false
+      return
+    end
+
     local sequence = {}
     local playlist_map = {}
 
@@ -118,17 +131,17 @@ function M.create(opts)
     bridge.sequence_cache = sequence
     bridge.sequence_lookup = {}
     bridge.playlist_ranges = {}
-    
+
     for idx, entry in ipairs(sequence) do
       if entry.item_key and not bridge.sequence_lookup[entry.item_key] then
         bridge.sequence_lookup[entry.item_key] = idx
         Logger.debug("BRIDGE", "Mapping key '%s' -> idx %d", entry.item_key, idx)
       end
     end
-    
-    Logger.debug("BRIDGE", "Final sequence_lookup built with %d entries", 
+
+    Logger.debug("BRIDGE", "Final sequence_lookup built with %d entries",
       (function() local count = 0; for _ in pairs(bridge.sequence_lookup) do count = count + 1 end; return count end)())
-    
+
     for playlist_key, range_info in pairs(playlist_map) do
       bridge.playlist_ranges[playlist_key] = range_info
       if not bridge.sequence_lookup[playlist_key] then
@@ -154,6 +167,11 @@ function M.create(opts)
     bridge._last_reported_loop_key = nil
     bridge._last_reported_loop = nil
     bridge.sequence_cache_dirty = false
+
+    -- Remember which playlist we're playing
+    if not is_playing then
+      bridge._playing_playlist_id = active_playlist_id
+    end
   end
 
   function bridge:invalidate_sequence()
@@ -229,10 +247,15 @@ function M.create(opts)
 
   function bridge:play()
     self:_ensure_sequence()
+    -- Remember which playlist we're playing when playback starts
+    self._playing_playlist_id = safe_call(self.get_active_playlist_id)
     return self.engine:play()
   end
 
   function bridge:stop()
+    -- Clear the playing playlist ID when stopping
+    -- This allows the sequence to be rebuilt for a different playlist on next play
+    self._playing_playlist_id = nil
     return self.engine:stop()
   end
 
