@@ -182,11 +182,12 @@ function M.handle_drag_logic(ctx, state, mini_font)
       local media_item = item_data.media_item
 
       if media_item and reaper.ValidatePtr2(0, media_item, "MediaItem*") then
+        -- Get actual item length (works correctly for both audio and MIDI)
+        local item_len = reaper.GetMediaItemInfo_Value(media_item, "D_LENGTH")
+        local item_width = item_len * arrange_zoom_level
+
         local item_take = reaper.GetActiveTake(media_item)
         if item_take then
-          local item_source = reaper.GetMediaItemTake_Source(item_take)
-          local item_len = item_source and reaper.GetMediaSourceLength(item_source) or 0
-          local item_width = item_len * arrange_zoom_level
 
           -- Get the item's actual color
           local item_color = item_data.color
