@@ -166,7 +166,8 @@ end
 
 -- Render text with badge
 -- @param extra_text_margin Optional extra margin for text truncation only (doesn't affect badge position)
-function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index, total, base_color, text_alpha, config, item_key, badge_rects, on_badge_click, extra_text_margin)
+-- @param text_color Optional custom text color (defaults to config primary_color)
+function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index, total, base_color, text_alpha, config, item_key, badge_rects, on_badge_click, extra_text_margin, text_color)
   local tile_render = config.TILE_RENDER
   local show_text = header_height >= (tile_render.responsive.hide_text_below - tile_render.header.min_height)
   local show_badge = header_height >= (tile_render.responsive.hide_badge_below - tile_render.header.min_height)
@@ -188,7 +189,9 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   local available_width = right_bound_x - text_x
   local truncated_name = M.truncate_text(ctx, item_name, available_width)
 
-  Draw.text(dl, text_x, text_y, Colors.with_alpha(tile_render.text.primary_color, text_alpha), truncated_name)
+  -- Use custom text color if provided, otherwise use primary color
+  local final_text_color = text_color or tile_render.text.primary_color
+  Draw.text(dl, text_x, text_y, Colors.with_alpha(final_text_color, text_alpha), truncated_name)
 
   -- Render cycle badge (vertically centered in header)
   if show_badge and total and total > 1 then

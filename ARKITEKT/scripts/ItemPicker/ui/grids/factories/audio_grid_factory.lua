@@ -210,6 +210,8 @@ function M.create(ctx, config, state, visualization, animator)
         pool_count = pool_count,  -- Number of pooled items (from Reaper pooling)
         track_name = track_name,  -- Track name for search
         regions = entry.regions,  -- Region tags from loader
+        track_muted = track_muted,  -- Track mute state
+        item_muted = item_muted,  -- Item mute state
       })
 
       ::continue::

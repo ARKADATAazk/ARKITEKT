@@ -98,11 +98,22 @@ M.TILE_RENDER = {
     ants_speed = 20,
   },
 
-  -- Disabled state (20% opacity with colorful appearance)
+  -- Disabled state (dark backdrop with reduced opacity)
   disabled = {
     desaturate = 0.3,    -- Desaturate by 30% (0.0-1.0, lower = more colorful)
     brightness = 0.65,   -- Brighten to 65% (0.0-1.0, higher = brighter/more visible)
     min_alpha = 0x33,    -- Minimum alpha/opacity (0x33 = ~20% opacity)
+    fade_speed = 20.0,   -- Animation speed for fade in/out
+    backdrop_color = hexrgb("#1A1A1A"),  -- Dark grey backdrop behind disabled items
+    backdrop_alpha = 0xCC,  -- Backdrop opacity (0xCC = ~80% opacity)
+  },
+
+  -- Muted state (red text with slight dimming)
+  muted = {
+    text_color = hexrgb("#FF4444"),  -- Red text color for muted items
+    desaturate = 0.15,   -- Desaturate by 15% (less than disabled)
+    brightness = 0.85,   -- Dim to 85% brightness (less dim than disabled)
+    alpha_factor = 0.90, -- Reduce alpha to 90% (subtle dimming)
     fade_speed = 20.0,   -- Animation speed for fade in/out
   },
 
@@ -304,6 +315,9 @@ M.UI_PANELS = {
   header = {
     height = 28,  -- Used for extend_input_area to enable selection on header
     title_offset_down = 5,  -- Additional pixels to move title down from padding
+    fade_on_scroll = true,  -- Fade out title when scrolling
+    fade_scroll_threshold = 10,  -- Start fading after this many pixels of scroll
+    fade_scroll_distance = 30,  -- Complete fade by this many pixels
   },
 }
 
