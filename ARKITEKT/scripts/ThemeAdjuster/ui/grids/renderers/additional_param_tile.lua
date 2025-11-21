@@ -133,15 +133,24 @@ function M.render(ctx, param, tab_color, shell_state, view)
   local control_id = "##" .. param_name
 
   -- Check if this parameter has a template configured
-  local assignment = view:get_assignment_for_param(param.name)
   local template = nil
-  if assignment then
-    -- New system: template_id references view.templates
-    if assignment.template_id and view.templates then
-      template = view.templates[assignment.template_id]
-    -- Old system: inline template (backwards compat)
-    elseif assignment.template then
-      template = assignment.template
+
+  -- First check if param has template_id attached (from group expansion or template assignment)
+  if param.template_id and view.templates then
+    template = view.templates[param.template_id]
+  end
+
+  -- Fall back to assignment lookup for backward compatibility
+  if not template then
+    local assignment = view:get_assignment_for_param(param.name)
+    if assignment then
+      -- New system: template_id references view.templates
+      if assignment.template_id and view.templates then
+        template = view.templates[assignment.template_id]
+      -- Old system: inline template (backwards compat)
+      elseif assignment.template then
+        template = assignment.template
+      end
     end
   end
 

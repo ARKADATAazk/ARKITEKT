@@ -189,7 +189,7 @@ function M.render_config_dialogs(ctx, view)
         ImGui.Separator(ctx)
         ImGui.Dummy(ctx, 0, 8)
 
-        if ImGui.Button(ctx, "Apply to All Templates", 180, 28) then
+        if ImGui.Button(ctx, "Apply", 180, 28) then
           -- Apply configuration to the group and all its templates
           M.apply_group_config(group, state, view)
           M._group_config_open[group_id] = false
