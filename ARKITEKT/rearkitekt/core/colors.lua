@@ -18,15 +18,33 @@ function M.hexrgb(hex_string)
   if hex_string:sub(1, 1) == "#" then
     hex_string = hex_string:sub(2)
   end
-  
+
   local hex = tonumber(hex_string, 16)
   if not hex then return 0xFFFFFFFF end
-  
+
   if #hex_string == 8 then
     return hex
   else
     return (hex << 8) | 0xFF
   end
+end
+
+-- Convert hex string or color to 0xRRGGBBAA format with specified alpha
+-- If first param is a string, converts from hex. If number, uses as-is.
+-- Alpha is a float 0.0-1.0 that gets converted to 0-255 range
+function M.hexrgba(hex_or_color, alpha)
+  local color
+  if type(hex_or_color) == "string" then
+    color = M.hexrgb(hex_or_color)
+  else
+    color = hex_or_color or 0xFFFFFFFF
+  end
+
+  -- Convert alpha from 0.0-1.0 to 0-255 range
+  local alpha_byte = math.floor((alpha or 1.0) * 255 + 0.5)
+  alpha_byte = math.max(0, math.min(255, alpha_byte))
+
+  return M.with_alpha(color, alpha_byte)
 end
 
 -- ============================================================================

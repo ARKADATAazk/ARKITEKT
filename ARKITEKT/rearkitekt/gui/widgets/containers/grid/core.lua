@@ -104,11 +104,14 @@ function M.new(opts)
 
   local grid_id = opts.id or "grid"
 
-  local grid = setmetatable({
+  local grid
+  grid = setmetatable({
     id               = grid_id,
     gap              = opts.gap or 12,
     min_col_w_fn     = type(opts.min_col_w) == "function" and opts.min_col_w or function() return opts.min_col_w or 160 end,
-    fixed_tile_h     = opts.fixed_tile_h,
+    -- fixed_tile_h_fn: If opts provides function, use it. Otherwise create function that reads from grid.fixed_tile_h
+    fixed_tile_h_fn  = type(opts.fixed_tile_h) == "function" and opts.fixed_tile_h or function() return grid.fixed_tile_h end,
+    fixed_tile_h     = opts.fixed_tile_h,  -- Keep for backward compatibility with direct assignment
     get_items        = opts.get_items or function() return {} end,
     key              = opts.key or function(item) return tostring(item) end,
     get_exclusion_zones = opts.get_exclusion_zones,
@@ -295,22 +298,32 @@ end
 
 function Grid:_draw_marquee(ctx, dl)
   if not self.sel_rect:is_active() or not self.sel_rect.start_pos then return end
-  
+
   local x1, y1, x2, y2 = self.sel_rect:aabb_visual()
   if not x1 then return end
-  
+
   if not self.sel_rect:did_drag() then return end
-  
+
   local cfg = self.config.marquee or DEFAULTS.marquee
-  local fill = (self.sel_rect.mode == "add") and 
+  local fill = (self.sel_rect.mode == "add") and
               (cfg.fill_color_add or DEFAULTS.marquee.fill_color_add) or
               (cfg.fill_color or DEFAULTS.marquee.fill_color)
   local stroke = cfg.stroke_color or DEFAULTS.marquee.stroke_color
   local thickness = cfg.stroke_thickness or DEFAULTS.marquee.stroke_thickness
   local rounding = cfg.rounding or DEFAULTS.marquee.rounding
-  
+
+  -- Clip marquee to visual bounds to prevent bleeding into other panels
+  -- Always clip marquee regardless of clip_rendering flag for proper panel isolation
+  if self.visual_bounds then
+    ImGui.DrawList_PushClipRect(dl, self.visual_bounds[1], self.visual_bounds[2], self.visual_bounds[3], self.visual_bounds[4], true)
+  end
+
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, fill, rounding)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, stroke, rounding, 0, thickness)
+
+  if self.visual_bounds then
+    ImGui.DrawList_PopClipRect(dl)
+  end
 end
 
 function Grid:get_drop_target_index()
@@ -395,7 +408,10 @@ function Grid:draw(ctx)
   self.current_rects = {}
 
   local min_col_w = self.min_col_w_fn()
-  local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, num_items, origin_x, origin_y, self.fixed_tile_h)
+  -- Support both function (preferred) and static value (backward compat)
+  local fixed_tile_h = self.fixed_tile_h_fn and self.fixed_tile_h_fn() or self.fixed_tile_h
+
+  local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, num_items, origin_x, origin_y, fixed_tile_h)
 
   self.last_layout_cols = cols
 

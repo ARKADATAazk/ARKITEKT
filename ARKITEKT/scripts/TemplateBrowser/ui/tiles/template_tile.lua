@@ -180,70 +180,56 @@ function M.render(ctx, rect, template, state, metadata, animator)
     Draw.text(dl, content_x, path_y, path_color, truncated_path)
   end
 
-  -- VST and Tag chips (if height allows)
-  if tile_h >= M.CONFIG.hide_chips_below then
+  -- Show first VST chip (if height allows and VSTs exist)
+  if tile_h >= M.CONFIG.hide_chips_below and template.fx and #template.fx > 0 then
     local chip_y = tile_h >= M.CONFIG.compact_mode_below and (content_y + 40) or (content_y + 24)
-    local chip_x_offset = content_x
+    local chip_x = content_x
 
-    ImGui.SetCursorScreenPos(ctx, chip_x_offset, chip_y)
+    -- Get first VST name and truncate if needed
+    local first_vst = template.fx[1]
+    local vst_color = hexrgb("#4A9EFF")
 
-    -- VST chips (DOT style)
-    if template.fx and #template.fx > 0 then
-      for idx, fx_name in ipairs(template.fx) do
-        if idx > 3 then break end  -- Limit to 3 VSTs
+    -- Calculate max width for chip (leave room for favorite badge and margin)
+    local max_chip_width = content_w - 40
 
-        local vst_color = hexrgb("#4A9EFF")
-        local chip_clicked, chip_w, chip_h = Chip.draw(ctx, {
-          style = Chip.STYLE.DOT,
-          label = fx_name,
-          color = vst_color,
-          height = 20,
-          dot_size = 6,
-          dot_spacing = 6,
-          padding_h = 8,
-          is_selected = false,
-          is_hovered = state.hover,
-          interactive = false,
-        })
-
-        ImGui.SameLine(ctx, 0, 4)
-      end
-
-      -- More indicator
-      if #template.fx > 3 then
-        local more_text = string.format("+%d", #template.fx - 3)
-        local more_color = Colors.with_alpha(hexrgb("#808080"), text_alpha)
-        local cx, cy = ImGui.GetCursorScreenPos(ctx)
-        Draw.text(dl, cx, cy + 4, more_color, more_text)
-      end
+    -- Truncate VST name if it's too long
+    local display_vst = first_vst
+    local text_width = ImGui.CalcTextSize(ctx, first_vst)
+    local chip_content_width = 12 + 6 + 10 + 8  -- padding + dot + spacing + end padding
+    if text_width + chip_content_width > max_chip_width then
+      -- Truncate with ellipsis
+      local available_width = max_chip_width - chip_content_width - ImGui.CalcTextSize(ctx, "...")
+      display_vst = truncate_text(ctx, first_vst, available_width)
+      text_width = ImGui.CalcTextSize(ctx, display_vst)
     end
 
-    -- Tag chips (PILL style) - on next line if both present
-    if tmpl_meta and tmpl_meta.tags and #tmpl_meta.tags > 0 and tile_h >= M.CONFIG.compact_mode_below + 20 then
-      ImGui.SetCursorScreenPos(ctx, chip_x_offset, chip_y + 24)
+    -- Use DrawList directly to avoid cursor position issues
+    local chip_w = text_width + chip_content_width
+    local chip_h = 20
 
-      for idx, tag_name in ipairs(tmpl_meta.tags) do
-        if idx > 2 then break end  -- Limit to 2 tags
+    -- Background
+    local bg_color = hexrgb("#1E1E1E")
+    ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, 6)
 
-        local tag_data = metadata.tags and metadata.tags[tag_name]
-        local tag_color = tag_data and tag_data.color or hexrgb("#666666")
+    -- Borders (tabstrip style)
+    local border_inner = hexrgb("#2f2f2fff")
+    ImGui.DrawList_AddRect(dl, chip_x + 1, chip_y + 1, chip_x + chip_w - 1, chip_y + chip_h - 1, border_inner, 6, 0, 1)
+    local border_outer = hexrgb("#000000DD")
+    ImGui.DrawList_AddRect(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, border_outer, 6, 0, 1)
 
-        local chip_clicked, chip_w, chip_h = Chip.draw(ctx, {
-          style = Chip.STYLE.ACTION,
-          label = tag_name,
-          bg_color = tag_color,
-          text_color = Colors.auto_text_color(tag_color),
-          height = 18,
-          padding_h = 6,
-          rounding = 2,
-          is_selected = false,
-          is_hovered = state.hover,
-          interactive = false,
-        })
+    -- Dot
+    local dot_x = chip_x + 12
+    local dot_y = chip_y + (chip_h * 0.5)
+    local dot_radius = 3
+    ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius + 1, Colors.with_alpha(hexrgb("#000000"), 80))
+    ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius, vst_color)
 
-        ImGui.SameLine(ctx, 0, 4)
-      end
-    end
+    -- Text (use fixed text height for vertical centering)
+    local text_height = 13  -- Approximate default font height
+    local text_x = chip_x + 12 + 6 + 10 - 3  -- padding + dot + spacing - adjustment
+    local text_y = chip_y + ((chip_h - text_height) * 0.5)
+    local text_color = Colors.with_alpha(hexrgb("#FFFFFF"), 200)
+    Draw.text(dl, text_x, text_y, text_color, display_vst)
   end
 
   -- Render favorite badge in top-right corner (replaces old star icon)

@@ -108,6 +108,26 @@ function Selection:clear()
   self.last_clicked = nil
 end
 
+-- Select all items from given order
+-- order: array of all item ids
+function Selection:select_all(order)
+  if not order then return end
+  self.selected = {}
+  for _, id in ipairs(order) do
+    self.selected[id] = true
+  end
+  -- Keep last_clicked unchanged so SHIFT+click still works
+end
+
+-- Invert selection from given order
+-- order: array of all item ids
+function Selection:invert(order)
+  if not order then return end
+  for _, id in ipairs(order) do
+    self.selected[id] = not self.selected[id]
+  end
+end
+
 -- Get count of selected items
 function Selection:count()
   local n = 0
