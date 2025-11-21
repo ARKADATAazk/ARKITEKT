@@ -397,26 +397,78 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.Dummy(ctx, 0, 6)
   ImGui.SetCursorPosX(ctx, right_col_x)
 
-  -- Common names organized by category
+  -- Common names organized by category with color coding
+  -- Color palette: 16 desaturated colors for different musical/emotional categories
+  local COLORS = {
+    intense_red = hexrgb("#B85C5C"),      -- Combat, battle, boss, action
+    tension_yellow = hexrgb("#B8A55C"),   -- Tension, suspense
+    calm_green = hexrgb("#6B9B7C"),       -- Calm, peaceful, ambience, explore
+    structure_gray = hexrgb("#8B8B8B"),   -- Intro, outro, verse, chorus, refrain, bridge, part
+    special_purple = hexrgb("#9B7CB8"),   -- Break, stinger, loop
+    victory_gold = hexrgb("#B89B5C"),     -- Victory, theme
+    defeat_dark = hexrgb("#6B5C5C"),      -- Defeat
+    menu_blue = hexrgb("#5C7CB8"),        -- Menu, interlude
+    musical_teal = hexrgb("#5C9B9B"),     -- Solo, tutti, crescendo, diminuendo
+    stealth_indigo = hexrgb("#6B6B8B"),   -- Stealth
+    puzzle_cyan = hexrgb("#5C9BB8"),      -- Puzzle
+    cinematic_slate = hexrgb("#7C7C8B"),  -- Cinematic, cutscene
+    variation_brown = hexrgb("#9B8B6B"),  -- Variation, reprise, coda
+  }
+
   local game_music_names = {
-    "combat", "battle", "boss", "ambience", "tension", "suspense",
-    "intro", "outro", "stinger", "loop",
-    "calm", "peaceful", "explore", "menu", "theme", "victory", "defeat",
-    "action", "stealth", "puzzle", "cutscene", "cinematic",
+    {name = "combat", color = COLORS.intense_red},
+    {name = "battle", color = COLORS.intense_red},
+    {name = "boss", color = COLORS.intense_red},
+    {name = "action", color = COLORS.intense_red},
+    {name = "tension", color = COLORS.tension_yellow},
+    {name = "suspense", color = COLORS.tension_yellow},
+    {name = "ambience", color = COLORS.calm_green},
+    {name = "calm", color = COLORS.calm_green},
+    {name = "peaceful", color = COLORS.calm_green},
+    {name = "explore", color = COLORS.calm_green},
+    {name = "intro", color = COLORS.structure_gray},
+    {name = "outro", color = COLORS.structure_gray},
+    {name = "break", color = COLORS.special_purple},
+    {name = "stinger", color = COLORS.special_purple},
+    {name = "loop", color = COLORS.special_purple},
+    {name = "menu", color = COLORS.menu_blue},
+    {name = "theme", color = COLORS.victory_gold},
+    {name = "victory", color = COLORS.victory_gold},
+    {name = "defeat", color = COLORS.defeat_dark},
+    {name = "stealth", color = COLORS.stealth_indigo},
+    {name = "puzzle", color = COLORS.puzzle_cyan},
+    {name = "cutscene", color = COLORS.cinematic_slate},
+    {name = "cinematic", color = COLORS.cinematic_slate},
   }
 
   local general_music_names = {
-    "intro", "outro", "verse", "chorus", "refrain", "bridge", "break",
-    "partA", "partB", "partC", "part",
-    "theme", "variation", "reprise", "coda", "interlude",
-    "solo", "tutti", "crescendo", "diminuendo",
+    {name = "intro", color = COLORS.structure_gray},
+    {name = "outro", color = COLORS.structure_gray},
+    {name = "verse", color = COLORS.structure_gray},
+    {name = "chorus", color = COLORS.structure_gray},
+    {name = "refrain", color = COLORS.structure_gray},
+    {name = "bridge", color = COLORS.structure_gray},
+    {name = "break", color = COLORS.special_purple},
+    {name = "partA", color = COLORS.structure_gray},
+    {name = "partB", color = COLORS.structure_gray},
+    {name = "partC", color = COLORS.structure_gray},
+    {name = "part", color = COLORS.structure_gray},
+    {name = "theme", color = COLORS.victory_gold},
+    {name = "variation", color = COLORS.variation_brown},
+    {name = "reprise", color = COLORS.variation_brown},
+    {name = "coda", color = COLORS.variation_brown},
+    {name = "interlude", color = COLORS.menu_blue},
+    {name = "solo", color = COLORS.musical_teal},
+    {name = "tutti", color = COLORS.musical_teal},
+    {name = "crescendo", color = COLORS.musical_teal},
+    {name = "diminuendo", color = COLORS.musical_teal},
   }
 
   local common_names = self.names_category == "game" and game_music_names or general_music_names
 
   -- Render common names in a clipped child window to prevent overflow
   ImGui.SetCursorPosX(ctx, right_col_x)
-  local chips_height = 150  -- Fixed height for chip area
+  local chips_height = 110  -- Fixed height for chip area (reduced from 150)
 
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
@@ -426,7 +478,10 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
     local cur_line_y = 0
     local line_height = 30
 
-    for i, name in ipairs(common_names) do
+    for i, name_data in ipairs(common_names) do
+      local name = name_data.name
+      local color = name_data.color
+
       -- Use Chip.calculate_width to get the accurate chip width
       local chip_width = Chip.calculate_width(ctx, name, {
         style = Chip.STYLE.ACTION,
@@ -451,7 +506,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
         style = Chip.STYLE.ACTION,
         interactive = true,
         id = "common_name_" .. i,
-        bg_color = Style.ACTION_CHIP_TAG.bg_color,
+        bg_color = color,
         text_color = Style.ACTION_CHIP_TAG.text_color,
         border_color = Style.ACTION_CHIP_TAG.border_color,
         rounding = Style.ACTION_CHIP_TAG.rounding,
