@@ -372,7 +372,8 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
   DrawList_AddRectFilled(draw_list, x1, y1, x2, y2, color)
 
   -- Push clip rect to prevent MIDI notes from overflowing tile bounds
-  ImGui.DrawList_PushClipRect(draw_list, x1, y1, x2, y2)
+  -- Use intersect=true to respect parent panel clipping
+  ImGui.DrawList_PushClipRect(draw_list, x1, y1, x2, y2, true)
 
   -- Calculate scale factors using fixed cache resolution
   local scale_x = display_w / MIDI_CACHE_WIDTH
@@ -661,7 +662,8 @@ function M.DisplayMidiItemTransparent(ctx, thumbnail, color, draw_list)
   local display_h = y2 - y1
 
   -- Push clip rect to prevent MIDI notes from overflowing tile bounds
-  ImGui.DrawList_PushClipRect(draw_list, x1, y1, x2, y2)
+  -- Use intersect=true to respect parent panel clipping
+  ImGui.DrawList_PushClipRect(draw_list, x1, y1, x2, y2, true)
 
   -- Calculate scale factors using fixed cache resolution
   local scale_x = display_w / MIDI_CACHE_WIDTH
