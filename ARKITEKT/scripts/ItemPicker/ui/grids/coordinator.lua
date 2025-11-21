@@ -61,17 +61,7 @@ function Coordinator:handle_tile_size_shortcuts(ctx)
     self.state:set_tile_size(new_width, current_h)
   end
 
-  -- Update grids with new size
-  if self.midi_grid then
-    self.midi_grid.min_col_w_fn = function() return self.state:get_tile_width() end
-    self.midi_grid.fixed_tile_h = self.state:get_tile_height()
-  end
-
-  if self.audio_grid then
-    self.audio_grid.min_col_w_fn = function() return self.state:get_tile_width() end
-    self.audio_grid.fixed_tile_h = self.state:get_tile_height()
-  end
-
+  -- Grids automatically read tile size dynamically, no manual update needed
   return true
 end
 

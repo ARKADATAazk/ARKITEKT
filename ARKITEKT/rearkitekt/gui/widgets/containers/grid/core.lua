@@ -108,7 +108,8 @@ function M.new(opts)
     id               = grid_id,
     gap              = opts.gap or 12,
     min_col_w_fn     = type(opts.min_col_w) == "function" and opts.min_col_w or function() return opts.min_col_w or 160 end,
-    fixed_tile_h     = opts.fixed_tile_h,
+    fixed_tile_h_fn  = type(opts.fixed_tile_h) == "function" and opts.fixed_tile_h or function() return opts.fixed_tile_h end,
+    fixed_tile_h     = opts.fixed_tile_h,  -- Keep for backward compatibility with direct assignment
     get_items        = opts.get_items or function() return {} end,
     key              = opts.key or function(item) return tostring(item) end,
     get_exclusion_zones = opts.get_exclusion_zones,
@@ -405,7 +406,9 @@ function Grid:draw(ctx)
   self.current_rects = {}
 
   local min_col_w = self.min_col_w_fn()
-  local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, num_items, origin_x, origin_y, self.fixed_tile_h)
+  -- Support both function (preferred) and static value (backward compat)
+  local fixed_tile_h = self.fixed_tile_h_fn and self.fixed_tile_h_fn() or self.fixed_tile_h
+  local cols, rows, rects = LayoutGrid.calculate(avail_w, min_col_w, self.gap, num_items, origin_x, origin_y, fixed_tile_h)
 
   self.last_layout_cols = cols
 
