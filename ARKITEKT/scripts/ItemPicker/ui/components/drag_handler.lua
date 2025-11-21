@@ -216,7 +216,8 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
     -- Configuration for stacking (matching original tile design)
     local stack_offset_x = 8
     local stack_offset_y = 8
-    local opacity_levels = {1.0, 0.75, 0.55, 0.40}  -- Opacity for each layer
+    -- When dragging multiples, make front tile slightly transparent so you can see others behind
+    local opacity_levels = visible_count > 1 and {0.85, 0.70, 0.50, 0.35} or {1.0, 0.75, 0.55, 0.40}
     local tile_rounding = config and config.TILE.ROUNDING or 4
     local glow_size = 4
 
@@ -253,20 +254,19 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       -- Apply opacity to the tile fill color
       local tile_fill_color = apply_alpha(render_color, opacity)
 
-      -- Draw shadow for this tile (straight down, no angle)
-      local shadow_offset = 4
-      local shadow_blur = 4
+      -- Draw halo/glow shadow around the tile (all sides)
+      local shadow_layers = 5
 
-      -- Multiple shadow layers for soft blur effect (straight down only)
-      for layer = shadow_blur, 1, -1 do
-        local shadow_alpha = (0.15 / layer) * opacity  -- Softer shadows for back tiles
+      -- Multiple shadow layers for soft glow effect
+      for layer = shadow_layers, 1, -1 do
+        local shadow_alpha = (0.12 / layer) * opacity  -- Softer shadows for back tiles
         local shadow_color = apply_alpha(hexrgb("#000000FF"), shadow_alpha)
-        local blur_offset = shadow_offset + layer
+        local expand = layer * 1.5
 
         ImGui.DrawList_AddRectFilled(state.draw_list,
-          x1, y1 + blur_offset,
-          x2, y2 + blur_offset,
-          shadow_color, tile_rounding)
+          x1 - expand, y1 - expand,
+          x2 + expand, y2 + expand,
+          shadow_color, tile_rounding + expand)
       end
 
       -- Base tile fill (matching original: just filled rectangle with rounding)
