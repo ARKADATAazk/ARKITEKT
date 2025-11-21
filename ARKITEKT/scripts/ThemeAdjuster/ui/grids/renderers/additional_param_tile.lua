@@ -20,6 +20,9 @@ local CONTROL_WIDTH = 200
 local last_refresh_time = 0
 local REFRESH_INTERVAL = 0.1  -- 100ms = 10 fps max
 
+-- Track last set values for preset spinners to avoid recalculating index
+M._preset_spinner_states = M._preset_spinner_states or {}  -- keyed by param_name
+
 -- Read/write parameter value from Reaper theme
 local function get_param_value(param_index, param_type)
   if not param_index then return param_type == "bool" and 0 or 0.0 end
@@ -142,21 +145,36 @@ function M.render(ctx, param, tab_color, shell_state, view)
       table.insert(preset_labels, preset.label)
     end
 
-    -- Find closest preset to current value
-    local closest_idx = 1
-    local min_diff = math.abs(current_value - preset_values[1])
-    for i = 2, #preset_values do
-      local diff = math.abs(current_value - preset_values[i])
-      if diff < min_diff then
-        min_diff = diff
-        closest_idx = i
+    -- Get or initialize spinner state
+    if not M._preset_spinner_states[param_name] then
+      M._preset_spinner_states[param_name] = {
+        last_value = current_value,
+        current_idx = 1
+      }
+    end
+
+    local spinner_state = M._preset_spinner_states[param_name]
+
+    -- Only recalculate closest index if the value changed externally (not from our spinner)
+    if math.abs(current_value - spinner_state.last_value) > 0.1 then
+      -- Value changed externally, find closest preset
+      local closest_idx = 1
+      local min_diff = math.abs(current_value - preset_values[1])
+      for i = 2, #preset_values do
+        local diff = math.abs(current_value - preset_values[i])
+        if diff < min_diff then
+          min_diff = diff
+          closest_idx = i
+        end
       end
+      spinner_state.current_idx = closest_idx
+      spinner_state.last_value = current_value
     end
 
     local changed_spinner, new_idx = Spinner.draw(
       ctx,
       "##preset_spinner_" .. param.name,
-      closest_idx,
+      spinner_state.current_idx,
       preset_labels,
       {w = CONTROL_WIDTH, h = 24}
     )
@@ -165,6 +183,10 @@ function M.render(ctx, param, tab_color, shell_state, view)
       new_value = preset_values[new_idx]
       value_changed = true
       was_deactivated = true  -- Spinner changes are immediate
+
+      -- Update state to track this change
+      spinner_state.current_idx = new_idx
+      spinner_state.last_value = new_value
     end
 
   elseif param_type == "bool" then
