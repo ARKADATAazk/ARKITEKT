@@ -125,12 +125,12 @@ function M.render_config_dialogs(ctx, view)
         ImGui.Text(ctx, "Group Color:")
         ImGui.SameLine(ctx)
 
-        -- Parse color for color picker
-        local r, g, b = M.parse_hex_color(state.color)
+        -- Convert hex to ImGui color format (0xRRGGBB)
+        local color_int = M.hex_to_color_int(state.color)
         ImGui.SetNextItemWidth(ctx, 150)
-        local changed_color, new_r, new_g, new_b = ImGui.ColorEdit3(ctx, "##group_color", r, g, b, ImGui.ColorEditFlags_NoInputs)
+        local changed_color, new_color_int = ImGui.ColorEdit3(ctx, "##group_color", color_int, ImGui.ColorEditFlags_NoInputs)
         if changed_color then
-          state.color = M.rgb_to_hex(new_r, new_g, new_b)
+          state.color = M.color_int_to_hex(new_color_int)
         end
 
         ImGui.Dummy(ctx, 0, 12)
@@ -318,22 +318,15 @@ function M.apply_group_config(group, state, view)
   view:save_templates()
 end
 
---- Parse hex color string to RGB (0-1 range)
-function M.parse_hex_color(hex)
+--- Convert hex color string to ImGui color integer (0xRRGGBB)
+function M.hex_to_color_int(hex)
   hex = hex:gsub("#", "")
-  local r = tonumber(hex:sub(1, 2), 16) / 255
-  local g = tonumber(hex:sub(3, 4), 16) / 255
-  local b = tonumber(hex:sub(5, 6), 16) / 255
-  return r, g, b
+  return tonumber(hex, 16)
 end
 
---- Convert RGB (0-1 range) to hex color string
-function M.rgb_to_hex(r, g, b)
-  return string.format("#%02X%02X%02X",
-    math.floor(r * 255 + 0.5),
-    math.floor(g * 255 + 0.5),
-    math.floor(b * 255 + 0.5)
-  )
+--- Convert ImGui color integer (0xRRGGBB) to hex color string
+function M.color_int_to_hex(color_int)
+  return string.format("#%06X", color_int & 0xFFFFFF)
 end
 
 return M

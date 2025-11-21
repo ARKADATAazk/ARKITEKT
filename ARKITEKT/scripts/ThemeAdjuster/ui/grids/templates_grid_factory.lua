@@ -11,6 +11,9 @@ local hexrgb = Colors.hexrgb
 
 local M = {}
 
+-- State for inline group renaming
+M._group_rename_state = M._group_rename_state or {}
+
 local function create_behaviors(view)
   return {
     drag_start = function(item_keys)
@@ -79,36 +82,87 @@ local function create_render_tile(view)
     -- Check if this is a group header
     if TileGroup.is_group_header(item) then
       local ImGui = require 'imgui' '0.10'
+      local group_id = item.__group_id
+      local group_ref = item.__group_ref
 
-      -- Render group header
-      local clicked = TileGroup.render_header(ctx, rect, item, state)
-      if clicked then
-        -- Toggle group collapse state
-        TileGroup.toggle_group(item)
+      -- Check if this group is being renamed
+      local is_renaming = M._group_rename_state[group_id]
 
-        -- Persist the collapsed state
-        view.template_group_collapsed_states[item.__group_id] = item.__group_ref.collapsed
-        view:save_templates()
-      end
+      if is_renaming then
+        -- Render rename input
+        local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+        ImGui.SetCursorScreenPos(ctx, x1 + 8, y1 + 6)
+        ImGui.SetNextItemWidth(ctx, (x2 - x1) - 16)
 
-      -- Add invisible button for right-click context menu
-      local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-      ImGui.SetCursorScreenPos(ctx, x1, y1)
-      ImGui.InvisibleButton(ctx, "##group_header_interact_" .. item.__group_id, x2 - x1, y2 - y1)
-
-      -- Right-click context menu for group
-      if ImGui.BeginPopupContextItem(ctx, "group_context_" .. item.__group_id) then
-        if ImGui.MenuItem(ctx, "Configure Group...") then
-          TemplateGroupConfig.open_config(item.__group_id, view)
+        -- Initialize rename buffer if not set
+        if not M._group_rename_state[group_id].buffer then
+          M._group_rename_state[group_id].buffer = group_ref.name or ""
+          M._group_rename_state[group_id].set_focus = true
         end
 
-        ImGui.Separator(ctx)
-
-        if ImGui.MenuItem(ctx, "Delete Group") then
-          view:delete_template_group(item.__group_id)
+        -- Set focus on first frame
+        if M._group_rename_state[group_id].set_focus then
+          ImGui.SetKeyboardFocusHere(ctx)
+          M._group_rename_state[group_id].set_focus = false
         end
 
-        ImGui.EndPopup(ctx)
+        local flags = ImGui.InputTextFlags_EnterReturnsTrue
+        local rv, new_name = ImGui.InputText(ctx, "##group_rename_" .. group_id, M._group_rename_state[group_id].buffer, flags)
+
+        if rv or (ImGui.IsItemDeactivated(ctx) and not ImGui.IsItemActive(ctx)) then
+          -- Save the new name
+          if new_name and new_name ~= "" then
+            group_ref.name = new_name
+            view:save_templates()
+          end
+          -- Exit rename mode
+          M._group_rename_state[group_id] = nil
+        else
+          -- Update buffer
+          M._group_rename_state[group_id].buffer = new_name
+        end
+      else
+        -- Render group header normally
+        local clicked = TileGroup.render_header(ctx, rect, item, state)
+        if clicked then
+          -- Toggle group collapse state
+          TileGroup.toggle_group(item)
+
+          -- Persist the collapsed state
+          view.template_group_collapsed_states[group_id] = group_ref.collapsed
+          view:save_templates()
+        end
+
+        -- Add invisible button for interactions
+        local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+        ImGui.SetCursorScreenPos(ctx, x1, y1)
+        ImGui.InvisibleButton(ctx, "##group_header_interact_" .. group_id, x2 - x1, y2 - y1)
+
+        -- Double-click to rename
+        if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
+          M._group_rename_state[group_id] = { buffer = nil, set_focus = true }
+        end
+
+        -- Right-click context menu for group
+        if ImGui.BeginPopupContextItem(ctx, "group_context_" .. group_id) then
+          if ImGui.MenuItem(ctx, "Rename") then
+            M._group_rename_state[group_id] = { buffer = nil, set_focus = true }
+          end
+
+          ImGui.Separator(ctx)
+
+          if ImGui.MenuItem(ctx, "Configure Group...") then
+            TemplateGroupConfig.open_config(group_id, view)
+          end
+
+          ImGui.Separator(ctx)
+
+          if ImGui.MenuItem(ctx, "Delete Group") then
+            view:delete_template_group(group_id)
+          end
+
+          ImGui.EndPopup(ctx)
+        end
       end
     else
       -- Render regular template tile (extract original item if wrapped)

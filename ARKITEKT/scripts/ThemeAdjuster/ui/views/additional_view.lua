@@ -244,6 +244,7 @@ function AdditionalView:create_grids()
     accepts_drops_from = {},  -- Library doesn't accept drops
     on_drag_start = function(item_keys)
       -- Extract parameter names from keys
+      -- Filter out group headers - they should not be draggable
       local param_names = {}
       local params = self:get_library_items()
       local params_by_key = {}
@@ -252,13 +253,19 @@ function AdditionalView:create_grids()
       end
 
       for _, key in ipairs(item_keys) do
-        local param = params_by_key[key]
-        if param then
-          table.insert(param_names, param.name)
+        -- Skip group headers
+        if not key:match("^group_header_") then
+          local param = params_by_key[key]
+          if param then
+            table.insert(param_names, param.name)
+          end
         end
       end
 
-      self.bridge:start_drag('library', param_names)
+      -- Only start drag if we have actual parameters
+      if #param_names > 0 then
+        self.bridge:start_drag('library', param_names)
+      end
     end,
   })
 
