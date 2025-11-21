@@ -169,28 +169,30 @@ local function draw_template_panel(ctx, gui, width, height)
   ImGui.SameLine(ctx, 0, 8)
 
   -- Grid button
-  if state.template_view_mode == "grid" then
+  local grid_active = state.template_view_mode == "grid"
+  if grid_active then
     ImGui.PushStyleColor(ctx, ImGui.Col_Button, Colors.hexrgb("#4A9EFF"))
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#FFFFFF"))
   end
   if ImGui.Button(ctx, "Grid##ViewMode", UI.BUTTON.WIDTH_MEDIUM * 0.7, UI.BUTTON.HEIGHT_DEFAULT) then
     state.template_view_mode = "grid"
   end
-  if state.template_view_mode == "grid" then
+  if grid_active then
     ImGui.PopStyleColor(ctx, 2)
   end
 
   ImGui.SameLine(ctx, 0, 4)
 
   -- List button
-  if state.template_view_mode == "list" then
+  local list_active = state.template_view_mode == "list"
+  if list_active then
     ImGui.PushStyleColor(ctx, ImGui.Col_Button, Colors.hexrgb("#4A9EFF"))
     ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#FFFFFF"))
   end
   if ImGui.Button(ctx, "List##ViewMode", UI.BUTTON.WIDTH_MEDIUM * 0.7, UI.BUTTON.HEIGHT_DEFAULT) then
     state.template_view_mode = "list"
   end
-  if state.template_view_mode == "list" then
+  if list_active then
     ImGui.PopStyleColor(ctx, 2)
   end
 
