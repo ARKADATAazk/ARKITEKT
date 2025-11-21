@@ -62,6 +62,24 @@ function M.create(opts)
     playlist_lookup = opts.get_playlist_by_id,
   })
 
+  -- Save defaults if settings were empty (ensures persistence on first run)
+  local needs_save = false
+  if not saved_settings.quantize_mode then
+    saved_settings.quantize_mode = "measure"
+    needs_save = true
+  end
+  if saved_settings.shuffle_enabled == nil then
+    saved_settings.shuffle_enabled = false
+    needs_save = true
+  end
+  if not saved_settings.shuffle_mode then
+    saved_settings.shuffle_mode = "true_shuffle"
+    needs_save = true
+  end
+  if needs_save then
+    RegionState.save_settings(saved_settings, bridge.proj)
+  end
+
   bridge.playback = Playback.new(bridge.engine, {
     on_region_change = opts.on_region_change,
     on_playback_start = opts.on_playback_start,
