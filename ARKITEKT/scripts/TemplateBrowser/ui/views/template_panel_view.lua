@@ -191,25 +191,18 @@ local function draw_template_panel(ctx, gui, width, height)
   local config = gui.config
   local dl = ImGui.GetWindowDrawList(ctx)
 
-  -- Begin outer container
-  if not Helpers.begin_child_compat(ctx, "TemplatePanel", width, height, true) then
-    return
-  end
-
   -- Handle tile resizing with SHIFT/CTRL + MouseWheel
   if handle_tile_resize(ctx, state, config) then
-    -- Consumed wheel event, prevent scrolling
-    ImGui.SetScrollY(ctx, ImGui.GetScrollY(ctx))
+    -- Consumed wheel event, prevent scrolling (if we're in a scrollable area)
   end
 
   local content_x, content_y = ImGui.GetCursorScreenPos(ctx)
-  local available_height = height - 16  -- Account for padding
 
   -- 1. VIEW MODE TOGGLE BUTTONS AT THE TOP (using Button primitive)
   local button_w = 60
   local button_h = 24
   local button_gap = 2
-  local total_button_width = (button_w * 2) + button_gap
+  local button_margin = 8
 
   -- Grid button
   local grid_clicked = Button.draw(ctx, dl, content_x, content_y, button_w, button_h, {
@@ -234,26 +227,24 @@ local function draw_template_panel(ctx, gui, width, height)
   end
 
   -- Move cursor past buttons
-  ImGui.SetCursorScreenPos(ctx, content_x, content_y + button_h + 8)
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
+  ImGui.SetCursorScreenPos(ctx, content_x, content_y + button_h + button_margin)
 
-  local after_buttons_y = content_y + button_h + 16  -- 8px spacing + separator
-  local remaining_height = available_height - (button_h + 16)
+  local panel_y = content_y + button_h + button_margin
+  local panel_height = height - (button_h + button_margin)
 
-  -- 2. MAIN TEMPLATE GRID IN THE MIDDLE
   -- Reserve space for recent templates at bottom (if any)
   local recent_templates = get_recent_templates(state, 10)
-  local recent_section_height = #recent_templates > 0 and UI.TILE.RECENT_SECTION_HEIGHT or 0
+  local recent_section_height = #recent_templates > 0 and (UI.TILE.RECENT_SECTION_HEIGHT + 16) or 0
 
-  local grid_height = remaining_height - recent_section_height
+  -- 2. MAIN TEMPLATE GRID PANEL (with background)
+  local grid_panel_height = panel_height - recent_section_height
 
   -- Update grid layout properties for current view mode
   TemplateGridFactory.update_for_view_mode(gui.template_grid)
 
   -- Set container dimensions for main grid
-  gui.template_container.width = width - 16
-  gui.template_container.height = grid_height
+  gui.template_container.width = width
+  gui.template_container.height = grid_panel_height
 
   -- Begin panel drawing
   if gui.template_container:begin_draw(ctx) then
@@ -267,13 +258,9 @@ local function draw_template_panel(ctx, gui, width, height)
   -- 3. RECENT TEMPLATES AT THE BOTTOM
   if #recent_templates > 0 then
     ImGui.Spacing(ctx)
-    ImGui.Separator(ctx)
-    ImGui.Spacing(ctx)
 
-    draw_recent_templates(ctx, gui, width - 16, recent_section_height)
+    draw_recent_templates(ctx, gui, width, recent_section_height)
   end
-
-  ImGui.EndChild(ctx)
 end
 
 -- Export the main draw function

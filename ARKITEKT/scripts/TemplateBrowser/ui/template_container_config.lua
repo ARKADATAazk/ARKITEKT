@@ -8,15 +8,15 @@ local M = {}
 
 function M.create(callbacks, is_overlay_mode)
   -- In overlay mode, use transparent backgrounds to show the overlay scrim
-  local panel_bg = is_overlay_mode and Colors.hexrgb("#00000000") or Colors.hexrgb("#1A1A1A")
+  local panel_bg = is_overlay_mode and Colors.hexrgb("#00000000") or Colors.hexrgb("#1E1E1E")
   local header_bg = is_overlay_mode and Colors.hexrgb("#00000000") or Colors.hexrgb("#252525")
 
   return {
     bg_color = panel_bg,
-    border_thickness = 0,
-    border_color = Colors.hexrgb("#3A3A3A"),
-    rounding = 0,
-    padding = 10,
+    border_thickness = 1,
+    border_color = Colors.hexrgb("#333333"),
+    rounding = 4,
+    padding = 12,
 
     header = {
       enabled = true,
