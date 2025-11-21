@@ -32,9 +32,6 @@ function M.create(opts)
 
   local saved_settings = RegionState.load_settings(opts.proj or 0)
 
-  -- Debug: Log what quantize mode was loaded
-  reaper.ShowConsoleMsg("BRIDGE: Loaded quantize_mode from settings: " .. tostring(saved_settings.quantize_mode) .. "\n")
-
   local bridge = {
     proj = opts.proj or 0,
     controller = nil,
@@ -68,14 +65,14 @@ function M.create(opts)
   -- Save defaults if settings were empty or invalid (ensures persistence on first run)
   local needs_save = false
 
-  -- Migrate old "none" quantize mode to "measure" (1 Bar)
-  -- Also set default if not present
-  if not saved_settings.quantize_mode or saved_settings.quantize_mode == "none" then
-    reaper.ShowConsoleMsg("BRIDGE: Migrating quantize_mode from '" .. tostring(saved_settings.quantize_mode) .. "' to 'measure'\n")
+  -- Migrate quantize mode to "measure" (1 Bar) if not present or if it's an old numeric/string value
+  if not saved_settings.quantize_mode or
+     saved_settings.quantize_mode == "none" or
+     type(saved_settings.quantize_mode) == "number" or
+     saved_settings.quantize_mode == "4bar" or
+     saved_settings.quantize_mode == "2bar" then
     saved_settings.quantize_mode = "measure"
     needs_save = true
-  else
-    reaper.ShowConsoleMsg("BRIDGE: Using saved quantize_mode: '" .. tostring(saved_settings.quantize_mode) .. "'\n")
   end
 
   if saved_settings.shuffle_enabled == nil then
@@ -302,12 +299,10 @@ function M.create(opts)
   end
 
   function bridge:set_quantize_mode(mode)
-    reaper.ShowConsoleMsg("BRIDGE: set_quantize_mode called with: " .. tostring(mode) .. " (type: " .. type(mode) .. ")\n")
     self.engine:set_quantize_mode(mode)
     local settings = RegionState.load_settings(self.proj)
     settings.quantize_mode = mode
     RegionState.save_settings(settings, self.proj)
-    reaper.ShowConsoleMsg("BRIDGE: Saved quantize_mode to settings: " .. tostring(mode) .. "\n")
   end
 
   function bridge:set_loop_playlist(enabled)

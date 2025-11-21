@@ -702,9 +702,6 @@ function TransportView:draw(ctx, shell_state, is_blocking)
     shuffle_enabled = engine and engine:get_shuffle_enabled() or false,
   }
 
-  -- Debug: Log what quantize_mode the UI is seeing
-  reaper.ShowConsoleMsg("TRANSPORT_VIEW: bridge_state.quantize_mode = " .. tostring(bridge_state.quantize_mode) .. " (type: " .. type(bridge_state.quantize_mode) .. ")\n")
-
   -- Inject icon font, size, and blocking state into corner buttons
   local icons_font = shell_state and shell_state.fonts and shell_state.fonts.icons
   local icons_size = shell_state and shell_state.fonts and shell_state.fonts.icons_size
