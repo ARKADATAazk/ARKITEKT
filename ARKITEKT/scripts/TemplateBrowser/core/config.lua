@@ -45,4 +45,19 @@ M.TAG_COLORS = {
   hexrgb("#F97316"), -- Orange
 }
 
+-- Tile sizing (adjustable with SHIFT/CTRL + MouseWheel)
+M.TILE = {
+  -- Grid mode tile width
+  GRID_MIN_WIDTH = 120,
+  GRID_MAX_WIDTH = 300,
+  GRID_DEFAULT_WIDTH = 180,
+  GRID_WIDTH_STEP = 20,
+
+  -- List mode tile width
+  LIST_MIN_WIDTH = 300,
+  LIST_MAX_WIDTH = 800,
+  LIST_DEFAULT_WIDTH = 450,
+  LIST_WIDTH_STEP = 50,
+}
+
 return M

@@ -150,15 +150,56 @@ local function draw_recent_templates(ctx, gui, width, available_height)
   return section_height
 end
 
+-- Handle tile size adjustment with SHIFT/CTRL + MouseWheel
+local function handle_tile_resize(ctx, state, config)
+  local wheel = ImGui.GetMouseWheel(ctx)
+  if wheel == 0 then return false end
+
+  local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
+  local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+
+  if not shift and not ctrl then return false end
+
+  local is_list_mode = state.template_view_mode == "list"
+  local delta = wheel > 0 and 1 or -1
+
+  if shift then
+    -- SHIFT+MouseWheel: adjust tile width
+    if is_list_mode then
+      local step = config.TILE.LIST_WIDTH_STEP
+      local new_width = state.list_tile_width + (delta * step)
+      state.list_tile_width = math.max(config.TILE.LIST_MIN_WIDTH, math.min(config.TILE.LIST_MAX_WIDTH, new_width))
+    else
+      local step = config.TILE.GRID_WIDTH_STEP
+      local new_width = state.grid_tile_width + (delta * step)
+      state.grid_tile_width = math.max(config.TILE.GRID_MIN_WIDTH, math.min(config.TILE.GRID_MAX_WIDTH, new_width))
+    end
+    return true
+  elseif ctrl then
+    -- CTRL+MouseWheel: reserved for future height adjustment
+    -- Currently tiles have fixed heights, but this can be implemented later
+    return true
+  end
+
+  return false
+end
+
 -- Draw template list panel (middle)
 -- Draw template panel using TilesContainer
 local function draw_template_panel(ctx, gui, width, height)
   local state = gui.state
+  local config = gui.config
   local dl = ImGui.GetWindowDrawList(ctx)
 
   -- Begin outer container
   if not Helpers.begin_child_compat(ctx, "TemplatePanel", width, height, true) then
     return
+  end
+
+  -- Handle tile resizing with SHIFT/CTRL + MouseWheel
+  if handle_tile_resize(ctx, state, config) then
+    -- Consumed wheel event, prevent scrolling
+    ImGui.SetScrollY(ctx, ImGui.GetScrollY(ctx))
   end
 
   local content_x, content_y = ImGui.GetCursorScreenPos(ctx)

@@ -13,12 +13,7 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
   local grid = Grid.new({
     id = "template_grid",
     gap = TemplateTile.CONFIG.gap,  -- Initial value for grid mode
-    min_col_w = function()
-      local view_mode = get_view_mode and get_view_mode() or "grid"
-      -- In list mode, use larger min width (allows 1-2 columns typically)
-      -- In grid mode, use user-adjustable tile width
-      return view_mode == "list" and 450 or get_tile_width()
-    end,
+    min_col_w = get_tile_width,  -- Use dynamic tile width function
     fixed_tile_h = TemplateTile.CONFIG.base_tile_height,  -- Initial value for grid mode
 
     -- Data source

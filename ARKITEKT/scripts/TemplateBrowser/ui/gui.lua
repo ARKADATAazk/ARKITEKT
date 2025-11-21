@@ -51,7 +51,12 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     function() return self.state.filtered_templates end,
     self.state.metadata,
     self.template_animator,
-    function() return self.state.tile_width end,  -- get_tile_width
+    function()
+      -- Return appropriate tile width based on view mode
+      return self.state.template_view_mode == "list"
+        and self.state.list_tile_width
+        or self.state.grid_tile_width
+    end,  -- get_tile_width
     function() return self.state.template_view_mode end,  -- get_view_mode
     -- on_select
     function(selected_keys)
