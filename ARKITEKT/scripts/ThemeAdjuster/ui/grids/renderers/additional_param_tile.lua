@@ -134,13 +134,23 @@ function M.render(ctx, param, tab_color, shell_state, view)
 
   -- Check if this parameter has a template configured
   local assignment = view:get_assignment_for_param(param.name)
-  local template = assignment and assignment.template
+  local template = nil
+  if assignment then
+    -- New system: template_id references view.templates
+    if assignment.template_id and view.templates then
+      template = view.templates[assignment.template_id]
+    -- Old system: inline template (backwards compat)
+    elseif assignment.template then
+      template = assignment.template
+    end
+  end
 
-  if template and template.type == "preset_spinner" and template.presets then
+  local presets = template and ((template.config and template.config.presets) or template.presets)
+  if template and template.type == "preset_spinner" and presets then
     -- Render preset spinner
     local preset_values = {}
     local preset_labels = {}
-    for _, preset in ipairs(template.presets) do
+    for _, preset in ipairs(presets) do
       table.insert(preset_values, preset.value)
       table.insert(preset_labels, preset.label)
     end

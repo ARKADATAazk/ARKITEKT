@@ -15,6 +15,7 @@ local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
 local GridBridge = require('rearkitekt.gui.widgets.containers.grid.grid_bridge')
 local LibraryGridFactory = require('ThemeAdjuster.ui.grids.library_grid_factory')
+local TemplatesGridFactory = require('ThemeAdjuster.ui.grids.templates_grid_factory')
 local AssignmentGridFactory = require('ThemeAdjuster.ui.grids.assignment_grid_factory')
 local ParamLinkModal = require('ThemeAdjuster.ui.views.param_link_modal')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
@@ -67,8 +68,13 @@ function M.new(State, Config, settings)
     -- Custom metadata: param_name -> {display_name = "", description = ""}
     custom_metadata = {},
 
+    -- Templates: id -> {id, name, type, params[], config{}}
+    templates = {},
+    next_template_id = 1,
+
     -- Grid instances
     library_grid = nil,
+    templates_grid = nil,
     assignment_grids = {},  -- tab_id -> grid
     bridge = nil,
 
@@ -119,6 +125,9 @@ function AdditionalView:create_grids()
   -- Create library grid
   self.library_grid = LibraryGridFactory.create(self, {padding = 8})
 
+  -- Create templates grid
+  self.templates_grid = TemplatesGridFactory.create(self, {padding = 8})
+
   -- Create assignment grids for each tab
   for _, tab_config in ipairs(TAB_CONFIGS) do
     self.assignment_grids[tab_config.id] = AssignmentGridFactory.create(self, tab_config.id, {padding = 8})
@@ -127,8 +136,8 @@ function AdditionalView:create_grids()
   -- Create GridBridge to coordinate drag-drop
   self.bridge = GridBridge.new({
     copy_mode_detector = function(source, target, payload)
-      -- Library → Assignment: always copy
-      if source == 'library' then
+      -- Library → Templates/Assignment: always copy
+      if source == 'library' or source == 'templates' then
         return true
       end
       -- Assignment → Assignment: copy if Ctrl held
@@ -156,7 +165,22 @@ function AdditionalView:create_grids()
       local payload = drop_info.payload
       local insert_index = drop_info.insert_index
 
-      -- Library → Assignment: assign parameters
+      -- Library → Templates: create template from parameters
+      if source_id == 'library' and target_id == 'templates' then
+        self:create_template_from_params(payload, insert_index)
+        return
+      end
+
+      -- Templates → Assignment: assign template
+      if source_id == 'templates' and target_id:match("^assign_(.+)") then
+        local tab_id = target_id:match("^assign_(.+)")
+        for i, template_id in ipairs(payload) do
+          self:assign_template_to_tab(template_id, tab_id, insert_index + i - 1)
+        end
+        return
+      end
+
+      -- Library → Assignment: assign parameters directly (backwards compat)
       if source_id == 'library' and target_id:match("^assign_(.+)") then
         local tab_id = target_id:match("^assign_(.+)")
         for i, param_name in ipairs(payload) do
@@ -226,13 +250,30 @@ function AdditionalView:create_grids()
     end,
   })
 
+  -- Register templates grid
+  self.bridge:register_grid('templates', self.templates_grid, {
+    accepts_drops_from = {'library'},
+    on_drag_start = function(item_keys)
+      -- Extract template IDs from keys
+      local template_ids = {}
+      for _, key in ipairs(item_keys) do
+        local template_id = key:match("^template_(.+)")
+        if template_id then
+          table.insert(template_ids, template_id)
+        end
+      end
+
+      self.bridge:start_drag('templates', template_ids)
+    end,
+  })
+
   -- Register assignment grids
   for _, tab_config in ipairs(TAB_CONFIGS) do
     local grid_id = "assign_" .. tab_config.id
     local grid = self.assignment_grids[tab_config.id]
 
     self.bridge:register_grid(grid_id, grid, {
-      accepts_drops_from = {'library', 'assign_TCP', 'assign_MCP', 'assign_ENVCP', 'assign_TRANS', 'assign_GLOBAL'},
+      accepts_drops_from = {'library', 'templates', 'assign_TCP', 'assign_MCP', 'assign_ENVCP', 'assign_TRANS', 'assign_GLOBAL'},
       on_drag_start = function(item_keys)
         -- Extract parameter names from keys
         local param_names = {}
@@ -386,10 +427,11 @@ function AdditionalView:draw(ctx, shell_state)
 
   ImGui.Dummy(ctx, 0, 8)
 
-  -- Two-panel layout: LEFT = Parameter Library | RIGHT = Assignment Grid
-  local panel_gap = 16
-  local left_width = avail_w * 0.55
-  local right_width = avail_w * 0.45 - panel_gap
+  -- Three-panel layout: LEFT = Parameter Library | MIDDLE = Templates | RIGHT = Assignment Grid
+  local panel_gap = 12
+  local left_width = avail_w * 0.35 - panel_gap
+  local middle_width = avail_w * 0.25 - panel_gap
+  local right_width = avail_w * 0.40
 
   -- LEFT PANEL: Parameter Library
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
@@ -436,6 +478,48 @@ function AdditionalView:draw(ctx, shell_state)
       -- Handle right-click drag selection for library grid
       self:handle_right_click_selection(ctx, self.library_grid, "library")
     end
+
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.EndChild(ctx)
+  end
+  ImGui.PopStyleColor(ctx)
+
+  -- MIDDLE PANEL: Templates
+  ImGui.SameLine(ctx, 0, panel_gap)
+
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1E1E28"))
+  if ImGui.BeginChild(ctx, "templates_grid", middle_width, 0, child_flags, window_flags) then
+    local child_x, child_y = ImGui.GetWindowPos(ctx)
+    local child_w, child_h = ImGui.GetWindowSize(ctx)
+    local dl = ImGui.GetWindowDrawList(ctx)
+
+    -- Background pattern
+    local pattern_cfg = {
+      enabled = true,
+      primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
+      secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
+    }
+    Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+
+    ImGui.Indent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Header
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
+    ImGui.Text(ctx, "TEMPLATES")
+    ImGui.PopFont(ctx)
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+    local template_count = 0
+    for _ in pairs(self.templates) do template_count = template_count + 1 end
+    ImGui.Text(ctx, string.format("%d templates • Drag to use", template_count))
+    ImGui.PopStyleColor(ctx)
+
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Draw templates grid
+    self.templates_grid:draw(ctx)
 
     ImGui.Unindent(ctx, 8)
     ImGui.Dummy(ctx, 0, 4)
@@ -506,6 +590,10 @@ function AdditionalView:draw(ctx, shell_state)
   -- Template configuration dialogs (from assignment tiles)
   local AssignmentTile = require('ThemeAdjuster.ui.grids.renderers.assignment_tile')
   AssignmentTile.render_template_config_dialogs(ctx, self)
+
+  -- Template configuration dialogs (from template tiles)
+  local TemplateTile = require('ThemeAdjuster.ui.grids.renderers.template_tile')
+  TemplateTile.render_template_config_dialogs(ctx, self)
 end
 
 function AdditionalView:draw_assignment_tab_bar(ctx, shell_state)
@@ -866,6 +954,99 @@ function AdditionalView:get_assignment_for_param(param_name)
   return nil
 end
 
+-- Helper to get param by name
+function AdditionalView:get_param_by_name(param_name)
+  for _, param in ipairs(self.all_params) do
+    if param.name == param_name then
+      return param
+    end
+  end
+  return nil
+end
+
+--- Template Management Methods ---
+
+-- Get template items for grid
+function AdditionalView:get_template_items()
+  local items = {}
+  for id, template in pairs(self.templates) do
+    table.insert(items, {
+      id = id,
+      order = template.order or 0
+    })
+  end
+
+  -- Sort by order
+  table.sort(items, function(a, b) return a.order < b.order end)
+
+  return items
+end
+
+-- Create template from parameters
+function AdditionalView:create_template_from_params(param_names, insert_index)
+  local template_id = tostring(self.next_template_id)
+  self.next_template_id = self.next_template_id + 1
+
+  -- Create template
+  local template = {
+    id = template_id,
+    name = #param_names == 1 and param_names[1] or "Template " .. template_id,
+    type = "preset_spinner",  -- Default type
+    params = param_names,
+    config = {},
+    order = insert_index or #self.templates + 1
+  }
+
+  self.templates[template_id] = template
+  self:save_templates()
+
+  return template_id
+end
+
+-- Delete template
+function AdditionalView:delete_template(template_id)
+  self.templates[template_id] = nil
+  self:save_templates()
+end
+
+-- Reorder templates
+function AdditionalView:reorder_templates(new_order_keys)
+  for new_idx, key in ipairs(new_order_keys) do
+    local template_id = key:match("^template_(.+)")
+    if template_id and self.templates[template_id] then
+      self.templates[template_id].order = new_idx
+    end
+  end
+  self:save_templates()
+end
+
+-- Assign template to tab
+function AdditionalView:assign_template_to_tab(template_id, tab_id, index)
+  local template = self.templates[template_id]
+  if not template then return end
+
+  -- For now, just assign all params from the template
+  -- Later we'll store template reference in assignment
+  for i, param_name in ipairs(template.params) do
+    local target_index = index and (index + i - 1) or nil
+    self:assign_param_to_tab_at_index(param_name, tab_id, target_index)
+
+    -- Mark assignment as using template
+    local assignment = self:get_assignment_for_param(param_name)
+    if assignment then
+      assignment.template_id = template_id
+    end
+  end
+
+  self:save_assignments()
+end
+
+-- Save templates to disk
+function AdditionalView:save_templates()
+  -- Templates are saved as part of assignments
+  self:save_assignments()
+end
+
 function AdditionalView:load_assignments()
   -- Load assignments from JSON file
   local mappings = ThemeMapper.load_current_mappings()
@@ -944,6 +1125,20 @@ function AdditionalView:load_assignments()
   if mappings and mappings.parameter_link_data then
     ParameterLinkManager.set_all_data(mappings.parameter_link_data)
   end
+
+  -- Load templates
+  if mappings and mappings.templates then
+    self.templates = mappings.templates
+    -- Find max template ID
+    local max_id = 0
+    for id, _ in pairs(self.templates) do
+      local num_id = tonumber(id)
+      if num_id and num_id > max_id then
+        max_id = num_id
+      end
+    end
+    self.next_template_id = max_id + 1
+  end
 end
 
 function AdditionalView:set_cache_invalidation_callback(callback)
@@ -956,7 +1151,8 @@ function AdditionalView:save_assignments()
     self.assignments,
     self.custom_metadata,
     self.enabled_groups,
-    param_link_data
+    param_link_data,
+    self.templates
   )
 
   -- Invalidate TCP/MCP caches
@@ -973,7 +1169,8 @@ function AdditionalView:save_group_filter()
     self.assignments,
     self.custom_metadata,
     self.enabled_groups,
-    param_link_data
+    param_link_data,
+    self.templates
   )
 
   if self.cache_invalidation_callback then
