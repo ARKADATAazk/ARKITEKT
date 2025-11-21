@@ -189,11 +189,12 @@ function M.draw_physical_tree(ctx, state, config)
   -- Prepare tree nodes from state.folders
   local all_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
 
-  -- Get only physical root node
+  -- Get physical root node and extract its children (start one level down)
   local physical_nodes = {}
   for _, node in ipairs(all_nodes) do
     if node.id == "__ROOT__" then
-      physical_nodes = {node}
+      -- Use children of root directly, not the root itself
+      physical_nodes = node.children or {}
       break
     end
   end
@@ -202,7 +203,7 @@ function M.draw_physical_tree(ctx, state, config)
     return
   end
 
-  -- Ensure ROOT node is open by default
+  -- Ensure ROOT node is open by default (for state consistency)
   if state.folder_open_state["__ROOT__"] == nil then
     state.folder_open_state["__ROOT__"] = true
   end
@@ -859,11 +860,12 @@ function M.draw_virtual_tree(ctx, state, config)
   -- Prepare tree nodes from state.folders
   local all_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
 
-  -- Get only virtual root node
+  -- Get virtual root node and extract its children (start one level down)
   local virtual_nodes = {}
   for _, node in ipairs(all_nodes) do
     if node.id == "__VIRTUAL_ROOT__" then
-      virtual_nodes = {node}
+      -- Use children of root directly, not the root itself
+      virtual_nodes = node.children or {}
       break
     end
   end
@@ -872,7 +874,7 @@ function M.draw_virtual_tree(ctx, state, config)
     return
   end
 
-  -- Ensure VIRTUAL_ROOT node is open by default
+  -- Ensure VIRTUAL_ROOT node is open by default (for state consistency)
   if state.folder_open_state["__VIRTUAL_ROOT__"] == nil then
     state.folder_open_state["__VIRTUAL_ROOT__"] = true
   end
@@ -1091,11 +1093,12 @@ function M.draw_archive_tree(ctx, state, config)
   -- Prepare tree nodes from state.folders
   local all_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
 
-  -- Get only archive root node
+  -- Get archive root node and extract its children (start one level down)
   local archive_nodes = {}
   for _, node in ipairs(all_nodes) do
     if node.id == "__ARCHIVE_ROOT__" then
-      archive_nodes = {node}
+      -- Use children of root directly, not the root itself
+      archive_nodes = node.children or {}
       break
     end
   end
@@ -1104,7 +1107,7 @@ function M.draw_archive_tree(ctx, state, config)
     return
   end
 
-  -- Ensure ARCHIVE_ROOT node is open by default
+  -- Ensure ARCHIVE_ROOT node is open by default (for state consistency)
   if state.folder_open_state["__ARCHIVE_ROOT__"] == nil then
     state.folder_open_state["__ARCHIVE_ROOT__"] = true
   end
