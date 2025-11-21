@@ -352,16 +352,74 @@ function M.draw(ctx, state, config, width, height, gui)
   local min_section_height = 80
   local header_height = 22  -- CollapsingHeader height
 
+  -- Initialize stored section height ratios if not set
   state.physical_section_height = state.physical_section_height or math.floor(total_tree_height * 0.40)
   state.virtual_section_height = state.virtual_section_height or math.floor(total_tree_height * 0.30)
 
-  -- Clamp values
-  state.physical_section_height = math.max(min_section_height, math.min(state.physical_section_height,
-    total_tree_height - min_section_height * 2 - separator_height * 2))
-  state.virtual_section_height = math.max(min_section_height, math.min(state.virtual_section_height,
-    total_tree_height - state.physical_section_height - min_section_height - separator_height * 2))
+  -- Track section open states (initialize if not set)
+  state.physical_section_open = state.physical_section_open == nil and true or state.physical_section_open
+  state.virtual_section_open = state.virtual_section_open == nil and true or state.virtual_section_open
+  state.archive_section_open = state.archive_section_open == nil and true or state.archive_section_open
 
-  local archive_section_height = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_height * 2
+  -- Count open sections and calculate available height
+  local open_sections = {}
+  if state.physical_section_open then table.insert(open_sections, "physical") end
+  if state.virtual_section_open then table.insert(open_sections, "virtual") end
+  if state.archive_section_open then table.insert(open_sections, "archive") end
+
+  local num_open = #open_sections
+  local num_closed = 3 - num_open
+  local num_separators = math.max(0, num_open - 1)  -- Separators only between open sections
+
+  -- Calculate available height for open sections
+  local closed_headers_height = num_closed * header_height
+  local separators_total_height = num_separators * separator_height
+  local available_height = total_tree_height - closed_headers_height - separators_total_height
+
+  -- Distribute available height among open sections based on their stored ratios
+  local physical_actual_height, virtual_actual_height, archive_actual_height
+
+  if num_open == 0 then
+    -- All collapsed
+    physical_actual_height = header_height
+    virtual_actual_height = header_height
+    archive_actual_height = header_height
+  elseif num_open == 1 then
+    -- One open - takes all available height
+    physical_actual_height = state.physical_section_open and available_height or header_height
+    virtual_actual_height = state.virtual_section_open and available_height or header_height
+    archive_actual_height = state.archive_section_open and available_height or header_height
+  elseif num_open == 2 then
+    -- Two open - distribute based on ratios
+    if state.physical_section_open and state.virtual_section_open then
+      local total_ratio = state.physical_section_height + state.virtual_section_height
+      physical_actual_height = math.floor(available_height * (state.physical_section_height / total_ratio))
+      virtual_actual_height = available_height - physical_actual_height
+      archive_actual_height = header_height
+    elseif state.physical_section_open and state.archive_section_open then
+      local archive_stored = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_height * 2
+      local total_ratio = state.physical_section_height + archive_stored
+      physical_actual_height = math.floor(available_height * (state.physical_section_height / total_ratio))
+      archive_actual_height = available_height - physical_actual_height
+      virtual_actual_height = header_height
+    else  -- virtual and archive open
+      local archive_stored = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_height * 2
+      local total_ratio = state.virtual_section_height + archive_stored
+      virtual_actual_height = math.floor(available_height * (state.virtual_section_height / total_ratio))
+      archive_actual_height = available_height - virtual_actual_height
+      physical_actual_height = header_height
+    end
+  else
+    -- All three open - use normal distribution
+    state.physical_section_height = math.max(min_section_height, math.min(state.physical_section_height,
+      total_tree_height - min_section_height * 2 - separator_height * 2))
+    state.virtual_section_height = math.max(min_section_height, math.min(state.virtual_section_height,
+      total_tree_height - state.physical_section_height - min_section_height - separator_height * 2))
+
+    physical_actual_height = state.physical_section_height
+    virtual_actual_height = state.virtual_section_height
+    archive_actual_height = total_tree_height - state.physical_section_height - state.virtual_section_height - separator_height * 2
+  end
 
   -- Initialize hover tracking and drag state for separators
   state.sep1_hover_time = state.sep1_hover_time or 0
@@ -390,125 +448,142 @@ function M.draw(ctx, state, config, width, height, gui)
   ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
   ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
 
-  local physical_open = ImGui.CollapsingHeader(ctx, "Physical Directory", nil, ImGui.TreeNodeFlags_DefaultOpen)
+  local physical_open = ImGui.CollapsingHeader(ctx, "Physical Directory", nil,
+    state.physical_section_open and ImGui.TreeNodeFlags_DefaultOpen or 0)
 
   ImGui.PopStyleColor(ctx, 3)
 
+  -- Update open state
+  state.physical_section_open = physical_open
+
   if physical_open then
-    local scroll_height = state.physical_section_height - header_height
+    local scroll_height = physical_actual_height - header_height
     if scroll_height > 10 and Helpers.begin_child_compat(ctx, "PhysicalTreeScroll", 0, scroll_height, false) then
       TreeViewModule.draw_physical_tree(ctx, state, config)
       ImGui.EndChild(ctx)
     end
   end
 
-  -- === SEPARATOR 1 (before Virtual Directory) ===
-  local sep1_x, sep1_y = ImGui.GetCursorScreenPos(ctx)
-  local mx, my = ImGui.GetMousePos(ctx)
-  local sep1_hovered = mx >= sep1_x and mx < sep1_x + width and
-                       my >= sep1_y and my < sep1_y + separator_height + 4
+  -- === SEPARATOR 1 (before Virtual Directory) - only if physical is open ===
+  if physical_open then
+    local sep1_x, sep1_y = ImGui.GetCursorScreenPos(ctx)
+    local mx, my = ImGui.GetMousePos(ctx)
+    local sep1_hovered = mx >= sep1_x and mx < sep1_x + width and
+                         my >= sep1_y and my < sep1_y + separator_height + 4
 
-  -- Track hover time
-  if sep1_hovered then
-    state.sep1_hover_time = state.sep1_hover_time + (1/60)  -- Approximate frame time
-  else
-    state.sep1_hover_time = 0
-  end
-
-  -- Draw separator line
-  draw_thin_separator(ctx, dl, sep1_x, sep1_y + separator_height / 2, width, sep1_hovered, state.sep1_hover_time)
-
-  -- Invisible button for drag interaction
-  ImGui.SetCursorScreenPos(ctx, sep1_x, sep1_y - 2)
-  ImGui.InvisibleButton(ctx, "##sep1", width, separator_height + 4)
-
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
-  end
-
-  -- Handle drag with proper initial height tracking
-  if ImGui.IsItemActive(ctx) then
-    if not state.sep1_drag_start_height then
-      state.sep1_drag_start_height = state.physical_section_height
+    -- Track hover time
+    if sep1_hovered then
+      state.sep1_hover_time = state.sep1_hover_time + (1/60)  -- Approximate frame time
+    else
+      state.sep1_hover_time = 0
     end
-    local _, delta_y = ImGui.GetMouseDragDelta(ctx, 0, 0)
-    state.physical_section_height = state.sep1_drag_start_height + delta_y
-    state.physical_section_height = math.max(min_section_height,
-      math.min(state.physical_section_height,
-        total_tree_height - min_section_height * 2 - separator_height * 2))
-  else
-    state.sep1_drag_start_height = nil
-  end
 
-  ImGui.SetCursorScreenPos(ctx, sep1_x, sep1_y + separator_height)
+    -- Draw separator line
+    draw_thin_separator(ctx, dl, sep1_x, sep1_y + separator_height / 2, width, sep1_hovered, state.sep1_hover_time)
+
+    -- Invisible button for drag interaction (only if virtual is also open)
+    ImGui.SetCursorScreenPos(ctx, sep1_x, sep1_y - 2)
+    ImGui.InvisibleButton(ctx, "##sep1", width, separator_height + 4)
+
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
+    end
+
+    -- Handle drag with proper initial height tracking (only when both sections open)
+    if num_open >= 2 and ImGui.IsItemActive(ctx) then
+      if not state.sep1_drag_start_height then
+        state.sep1_drag_start_height = state.physical_section_height
+      end
+      local _, delta_y = ImGui.GetMouseDragDelta(ctx, 0, 0)
+      state.physical_section_height = state.sep1_drag_start_height + delta_y
+      state.physical_section_height = math.max(min_section_height,
+        math.min(state.physical_section_height,
+          total_tree_height - min_section_height * 2 - separator_height * 2))
+    else
+      state.sep1_drag_start_height = nil
+    end
+
+    ImGui.SetCursorScreenPos(ctx, sep1_x, sep1_y + separator_height)
+  end
 
   -- === VIRTUAL DIRECTORY SECTION ===
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
   ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
   ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
 
-  local virtual_open = ImGui.CollapsingHeader(ctx, "Virtual Directory", nil, ImGui.TreeNodeFlags_DefaultOpen)
+  local virtual_open = ImGui.CollapsingHeader(ctx, "Virtual Directory", nil,
+    state.virtual_section_open and ImGui.TreeNodeFlags_DefaultOpen or 0)
 
   ImGui.PopStyleColor(ctx, 3)
 
+  -- Update open state
+  state.virtual_section_open = virtual_open
+
   if virtual_open then
-    local scroll_height = state.virtual_section_height - header_height
+    local scroll_height = virtual_actual_height - header_height
     if scroll_height > 10 and Helpers.begin_child_compat(ctx, "VirtualTreeScroll", 0, scroll_height, false) then
       TreeViewModule.draw_virtual_tree(ctx, state, config)
       ImGui.EndChild(ctx)
     end
   end
 
-  -- === SEPARATOR 2 (before Archive) ===
-  local sep2_x, sep2_y = ImGui.GetCursorScreenPos(ctx)
-  local sep2_hovered = mx >= sep2_x and mx < sep2_x + width and
-                       my >= sep2_y and my < sep2_y + separator_height + 4
+  -- === SEPARATOR 2 (before Archive) - only if virtual is open ===
+  if virtual_open then
+    local sep2_x, sep2_y = ImGui.GetCursorScreenPos(ctx)
+    local mx, my = ImGui.GetMousePos(ctx)
+    local sep2_hovered = mx >= sep2_x and mx < sep2_x + width and
+                         my >= sep2_y and my < sep2_y + separator_height + 4
 
-  -- Track hover time
-  if sep2_hovered then
-    state.sep2_hover_time = state.sep2_hover_time + (1/60)
-  else
-    state.sep2_hover_time = 0
-  end
-
-  -- Draw separator line
-  draw_thin_separator(ctx, dl, sep2_x, sep2_y + separator_height / 2, width, sep2_hovered, state.sep2_hover_time)
-
-  -- Invisible button for drag interaction
-  ImGui.SetCursorScreenPos(ctx, sep2_x, sep2_y - 2)
-  ImGui.InvisibleButton(ctx, "##sep2", width, separator_height + 4)
-
-  if ImGui.IsItemHovered(ctx) then
-    ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
-  end
-
-  -- Handle drag with proper initial height tracking
-  if ImGui.IsItemActive(ctx) then
-    if not state.sep2_drag_start_height then
-      state.sep2_drag_start_height = state.virtual_section_height
+    -- Track hover time
+    if sep2_hovered then
+      state.sep2_hover_time = state.sep2_hover_time + (1/60)
+    else
+      state.sep2_hover_time = 0
     end
-    local _, delta_y = ImGui.GetMouseDragDelta(ctx, 0, 0)
-    state.virtual_section_height = state.sep2_drag_start_height + delta_y
-    state.virtual_section_height = math.max(min_section_height,
-      math.min(state.virtual_section_height,
-        total_tree_height - state.physical_section_height - min_section_height - separator_height * 2))
-  else
-    state.sep2_drag_start_height = nil
-  end
 
-  ImGui.SetCursorScreenPos(ctx, sep2_x, sep2_y + separator_height)
+    -- Draw separator line
+    draw_thin_separator(ctx, dl, sep2_x, sep2_y + separator_height / 2, width, sep2_hovered, state.sep2_hover_time)
+
+    -- Invisible button for drag interaction
+    ImGui.SetCursorScreenPos(ctx, sep2_x, sep2_y - 2)
+    ImGui.InvisibleButton(ctx, "##sep2", width, separator_height + 4)
+
+    if ImGui.IsItemHovered(ctx) then
+      ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNS)
+    end
+
+    -- Handle drag with proper initial height tracking (only when multiple sections open)
+    if num_open >= 2 and ImGui.IsItemActive(ctx) then
+      if not state.sep2_drag_start_height then
+        state.sep2_drag_start_height = state.virtual_section_height
+      end
+      local _, delta_y = ImGui.GetMouseDragDelta(ctx, 0, 0)
+      state.virtual_section_height = state.sep2_drag_start_height + delta_y
+      state.virtual_section_height = math.max(min_section_height,
+        math.min(state.virtual_section_height,
+          total_tree_height - state.physical_section_height - min_section_height - separator_height * 2))
+    else
+      state.sep2_drag_start_height = nil
+    end
+
+    ImGui.SetCursorScreenPos(ctx, sep2_x, sep2_y + separator_height)
+  end
 
   -- === ARCHIVE SECTION ===
   ImGui.PushStyleColor(ctx, ImGui.Col_Header, config.COLORS.header_bg)
   ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, config.COLORS.header_hover or config.COLORS.header_bg)
   ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, config.COLORS.header_active or config.COLORS.header_bg)
 
-  local archive_open = ImGui.CollapsingHeader(ctx, "Archive", nil, ImGui.TreeNodeFlags_DefaultOpen)
+  local archive_open = ImGui.CollapsingHeader(ctx, "Archive", nil,
+    state.archive_section_open and ImGui.TreeNodeFlags_DefaultOpen or 0)
 
   ImGui.PopStyleColor(ctx, 3)
 
+  -- Update open state
+  state.archive_section_open = archive_open
+
   if archive_open then
-    local scroll_height = archive_section_height - header_height
+    local scroll_height = archive_actual_height - header_height
     if scroll_height > 10 and Helpers.begin_child_compat(ctx, "ArchiveTreeScroll", 0, scroll_height, false) then
       TreeViewModule.draw_archive_tree(ctx, state, config)
       ImGui.EndChild(ctx)
