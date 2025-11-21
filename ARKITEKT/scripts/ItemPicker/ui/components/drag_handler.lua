@@ -133,14 +133,6 @@ local function apply_alpha(color, alpha_factor)
   return (color & 0xFFFFFF00) | math.min(255, math.max(0, new_alpha))
 end
 
--- Helper function to draw a single tile with border
-local function draw_tile(dl, x1, y1, x2, y2, fill_color, border_color, border_thickness, rounding)
-  -- Fill
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, fill_color, rounding)
-  -- Border
-  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, border_thickness)
-end
-
 -- Get item data and color for stacked items
 local function get_item_data(state, item_index)
   if not state.dragging_keys or item_index > #state.dragging_keys then
@@ -221,25 +213,23 @@ function M.render_drag_preview(ctx, state, mini_font, visualization)
     local dragging_count = (state.dragging_keys and #state.dragging_keys) or 1
     local visible_count = math.min(dragging_count, 4)  -- Show max 4 stacked items
 
-    -- Configuration for stacking
+    -- Configuration for stacking (matching original tile design)
     local stack_offset_x = 8
     local stack_offset_y = 8
     local opacity_levels = {1.0, 0.75, 0.55, 0.40}  -- Opacity for each layer
-    local border_thickness = 2.5
-    local tile_rounding = 6
-    local outer_border_thickness = 3
+    local tile_rounding = 4  -- Match config.TILE.ROUNDING
     local glow_size = 4
 
     -- Calculate total bounds including stacking
     local total_width = state.item_to_add_width + (visible_count - 1) * stack_offset_x
     local total_height = state.item_to_add_height + (visible_count - 1) * stack_offset_y
 
-    -- Draw outer glow/shadow for the entire stack
-    local glow_color = hexrgb("#00000040")
+    -- Draw shadow for the entire stack (subtle, like original tiles)
+    local shadow_color = hexrgb("#00000040")
     ImGui.DrawList_AddRectFilled(state.draw_list,
       base_x - glow_size, base_y - glow_size,
       base_x + total_width + glow_size, base_y + total_height + glow_size,
-      glow_color, tile_rounding + 2)
+      shadow_color, tile_rounding + 2)
 
     -- Draw stacked tiles from back to front
     for i = visible_count, 1, -1 do
@@ -255,43 +245,29 @@ function M.render_drag_preview(ctx, state, mini_font, visualization)
       -- Get item data with proper color and info
       local item_data = get_item_data(state, i)
       local item_color = item_data.color
-      local base_color = apply_alpha(hexrgb("#1A1A1AFF"), opacity)
-      local border_color = apply_alpha(hexrgb("#42E896FF"), opacity * 0.9)
 
-      -- Background tile
-      ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y2, base_color, tile_rounding)
+      -- Apply opacity to the entire tile color (matching original tile rendering)
+      local tile_fill_color = apply_alpha(item_color, opacity)
 
-      -- Header with item's actual color
+      -- Base tile fill (matching original: just filled rectangle with rounding)
+      ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y2, tile_fill_color, tile_rounding)
+
+      -- Calculate header height
       local header_height = ImGui.GetTextLineHeightWithSpacing(ctx)
-      local header_color = apply_alpha(item_color, opacity)
-      ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y1 + header_height, header_color, tile_rounding)
-
-      -- Header overlay for depth
-      local overlay_color = apply_alpha(hexrgb("#00000030"), opacity)
-      ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y1 + header_height, overlay_color, tile_rounding)
-
-      -- Item name
-      local name_color = apply_alpha(hexrgb("#FFFFFFFF"), opacity)
-      ImGui.DrawList_AddText(state.draw_list, x1 + 8, y1 + 4, name_color, item_data.name)
-
-      -- Content area with visualization for EACH tile
       local content_y = y1 + header_height
 
+      -- Render visualization BEFORE header (so header overlays it, matching original tiles)
       if item_data.media_item and reaper.ValidatePtr2(0, item_data.media_item, "MediaItem*") then
         if item_data.is_midi then
           -- MIDI visualization
           local thumbnail = visualization.GetMidiThumbnail(ctx, state.cache, item_data.media_item)
           if thumbnail then
-            -- Save current cursor, draw visualization with opacity, restore cursor
             local saved_cursor_x, saved_cursor_y = ImGui.GetCursorPos(ctx)
-
-            -- Push clip rect to contain visualization within this tile
             ImGui.DrawList_PushClipRect(state.draw_list, x1, content_y, x2, y2)
-
             ImGui.SetCursorPos(ctx, x1 - cursor_x, content_y - cursor_y)
 
-            -- Apply opacity to the visualization color
-            local viz_color = apply_alpha(item_color, opacity)
+            -- Visualization uses base color with opacity
+            local viz_color = apply_alpha(item_color, opacity * 0.8)
             visualization.DisplayMidiItem(ctx, thumbnail, viz_color, state.draw_list)
 
             ImGui.DrawList_PopClipRect(state.draw_list)
@@ -301,16 +277,12 @@ function M.render_drag_preview(ctx, state, mini_font, visualization)
           -- Audio waveform visualization
           local waveform = visualization.GetItemWaveform(state.cache, item_data.media_item)
           if waveform then
-            -- Save current cursor, draw visualization with opacity, restore cursor
             local saved_cursor_x, saved_cursor_y = ImGui.GetCursorPos(ctx)
-
-            -- Push clip rect to contain visualization within this tile
             ImGui.DrawList_PushClipRect(state.draw_list, x1, content_y, x2, y2)
-
             ImGui.SetCursorPos(ctx, x1 - cursor_x, content_y - cursor_y)
 
-            -- Apply opacity to the visualization color
-            local viz_color = apply_alpha(item_color, opacity)
+            -- Visualization uses base color with opacity
+            local viz_color = apply_alpha(item_color, opacity * 0.8)
             visualization.DisplayWaveform(ctx, waveform, viz_color, state.draw_list, state.item_to_add_width)
 
             ImGui.DrawList_PopClipRect(state.draw_list)
@@ -319,66 +291,50 @@ function M.render_drag_preview(ctx, state, mini_font, visualization)
         end
       end
 
-      -- Inner glow for accent
-      if i == 1 then
-        local glow_color_inner = apply_alpha(hexrgb("#42E89633"), opacity)
-        for g = 1, 2 do
-          ImGui.DrawList_AddRect(state.draw_list, x1 + g, y1 + g, x2 - g, y2 - g,
-            glow_color_inner, tile_rounding - g, 0, 1)
-        end
-      end
+      -- Render header bar overlay (matching original tile style with transparency)
+      -- This creates a darker overlay on top of the base color, with rounded top corners
+      local header_overlay = apply_alpha(hexrgb("#00000040"), opacity)
+      local round_flags = ImGui.DrawFlags_RoundCornersTop
+      ImGui.DrawList_AddRectFilled(state.draw_list, x1, y1, x2, y1 + header_height, header_overlay, tile_rounding, round_flags)
 
-      -- Tile border
-      ImGui.DrawList_AddRect(state.draw_list, x1, y1, x2, y2, border_color, tile_rounding, 0, border_thickness)
+      -- Item name
+      local name_color = apply_alpha(hexrgb("#FFFFFFFF"), opacity)
+      local text_x = x1 + 8
+      local text_y = y1 + (header_height - ImGui.GetTextLineHeight(ctx)) / 2
+      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, name_color, item_data.name)
     end
 
-    -- Draw outer border around entire stack
+    -- Optional: subtle outer glow for multi-item stacks (very minimal, not a heavy border)
     if visible_count > 1 then
-      local outer_border_color = hexrgb("#42E896DD")
-      local outer_x1 = base_x - 2
-      local outer_y1 = base_y - 2
-      local outer_x2 = base_x + total_width + 2
-      local outer_y2 = base_y + total_height + 2
-
-      -- Outer glow
-      for g = 1, 3 do
-        local glow_alpha = (4 - g) * 0.15
-        local outer_glow = apply_alpha(hexrgb("#42E896FF"), glow_alpha)
-        ImGui.DrawList_AddRect(state.draw_list,
-          outer_x1 - g, outer_y1 - g,
-          outer_x2 + g, outer_y2 + g,
-          outer_glow, tile_rounding + 4, 0, outer_border_thickness + g * 0.5)
-      end
-
-      -- Main outer border
-      ImGui.DrawList_AddRect(state.draw_list, outer_x1, outer_y1, outer_x2, outer_y2,
-        outer_border_color, tile_rounding + 2, 0, outer_border_thickness)
+      -- Just a very subtle glow to show multiple items are stacked
+      local glow_color = apply_alpha(hexrgb("#FFFFFF"), 0.08)
+      ImGui.DrawList_AddRect(state.draw_list, base_x - 1, base_y - 1,
+        base_x + total_width + 1, base_y + total_height + 1,
+        glow_color, tile_rounding + 1, 0, 2)
     end
 
-    -- Count badge (positioned at top-right of the entire stack)
+    -- Count badge (small, subtle, positioned at top-right)
     if dragging_count > 1 then
       local badge_text = tostring(dragging_count)
       local badge_w, badge_h = ImGui.CalcTextSize(ctx, badge_text)
-      local badge_size = math.max(badge_w, badge_h) + 16
+      local padding = 6
+      local badge_size = math.max(badge_w, badge_h) + padding * 2
       local badge_x = base_x + total_width - badge_size / 2
       local badge_y = base_y - badge_size / 2
 
-      -- Badge glow
-      ImGui.DrawList_AddCircleFilled(state.draw_list, badge_x, badge_y, badge_size / 2 + 4, hexrgb("#00000040"))
+      -- Subtle shadow
+      ImGui.DrawList_AddCircleFilled(state.draw_list, badge_x + 1, badge_y + 1, badge_size / 2 + 2, hexrgb("#00000066"))
 
-      -- Badge background
-      ImGui.DrawList_AddCircleFilled(state.draw_list, badge_x, badge_y, badge_size / 2, hexrgb("#1A1A1AEE"))
+      -- Badge background (dark, semi-transparent)
+      ImGui.DrawList_AddCircleFilled(state.draw_list, badge_x, badge_y, badge_size / 2, hexrgb("#1A1A1ADD"))
 
-      -- Badge accent ring
-      ImGui.DrawList_AddCircle(state.draw_list, badge_x, badge_y, badge_size / 2, hexrgb("#42E896FF"), 0, 2.5)
-
-      -- Inner glow ring
-      ImGui.DrawList_AddCircle(state.draw_list, badge_x, badge_y, badge_size / 2 - 2, hexrgb("#42E89666"), 0, 1.5)
+      -- Subtle accent ring
+      ImGui.DrawList_AddCircle(state.draw_list, badge_x, badge_y, badge_size / 2, hexrgb("#FFFFFF66"), 0, 1.5)
 
       -- Badge text
       local text_x = badge_x - badge_w / 2
       local text_y = badge_y - badge_h / 2
-      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, hexrgb("#FFFFFFFF"), badge_text)
+      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, hexrgb("#FFFFFFEE"), badge_text)
     end
 
     -- Dummy to reserve space
