@@ -479,6 +479,7 @@ function M.end_drag()
   M.waiting_for_new_click = nil
   M.mouse_was_pressed_after_drop = nil
   M.drop_completed = nil
+  -- Don't clear should_close_after_drop here - it needs to persist to next frame
 end
 
 function M.request_exit()

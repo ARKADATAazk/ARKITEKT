@@ -286,16 +286,7 @@ function GUI:draw(ctx, shell_state)
         -- Normal drop: End drag and close ItemPicker immediately
         self.state.end_drag()
         self.state.waiting_for_new_click = false
-        -- Close overlay immediately
-        if is_overlay_mode then
-          if overlay and overlay.close then
-            overlay:close()
-          end
-        else
-          if shell_state.window and shell_state.window.request_close then
-            shell_state.window:request_close()
-          end
-        end
+        self.state.should_close_after_drop = true  -- Signal runtime to stop
         -- Don't render anything else, just return
         reaper.PreventUIRefresh(-1)
         ImGui.PopFont(ctx)

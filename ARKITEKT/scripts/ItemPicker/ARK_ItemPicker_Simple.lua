@@ -157,6 +157,12 @@ local runtime = Runtime.new({
       return false  -- Stop running
     end
 
+    -- Check if should close after drop
+    if State.should_close_after_drop then
+      cleanup()
+      return false  -- Stop running
+    end
+
     -- When dragging, skip overlay and just render drag handlers
     if State.dragging then
       ImGui.PushFont(ctx, fonts.default, fonts.default_size)
