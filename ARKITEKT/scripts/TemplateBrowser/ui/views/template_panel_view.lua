@@ -184,30 +184,22 @@ local function draw_template_panel(ctx, gui, width, height)
   local quick_access_height = panel_height - grid_panel_height - separator_gap
 
   -- 3. DRAW MAIN TEMPLATE GRID PANEL
-  -- Wrap in BeginChild to create proper clipping boundary
-  ImGui.SetCursorScreenPos(ctx, content_x, panel_y)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
+  gui.template_container.width = width
+  gui.template_container.height = grid_panel_height
 
-  if ImGui.BeginChild(ctx, "##main_template_grid", width, grid_panel_height, ImGui.ChildFlags_None, 0) then
-    gui.template_container.width = width
-    gui.template_container.height = grid_panel_height
+  -- Update grid layout properties for current view mode
+  TemplateGridFactory.update_for_view_mode(gui.template_grid)
 
-    -- Update grid layout properties for current view mode
-    TemplateGridFactory.update_for_view_mode(gui.template_grid)
-
-    -- Begin panel drawing
-    if gui.template_container:begin_draw(ctx) then
-      -- Set panel clip bounds AFTER begin_draw when visible_bounds is calculated
-      if gui.template_container.visible_bounds then
-        gui.template_grid.panel_clip_bounds = gui.template_container.visible_bounds
-      end
-
-      gui.template_grid:draw(ctx)
-      gui.template_container:end_draw(ctx)
+  -- Begin panel drawing
+  if gui.template_container:begin_draw(ctx) then
+    -- Set panel clip bounds AFTER begin_draw when visible_bounds is calculated
+    if gui.template_container.visible_bounds then
+      gui.template_grid.panel_clip_bounds = gui.template_container.visible_bounds
     end
+
+    gui.template_grid:draw(ctx)
+    gui.template_container:end_draw(ctx)
   end
-  ImGui.EndChild(ctx)
-  ImGui.PopStyleVar(ctx)
 
   -- 4. DRAW DRAGGABLE SEPARATOR
   local sep_y = panel_y + grid_panel_height + separator_gap / 2
@@ -237,13 +229,8 @@ local function draw_template_panel(ctx, gui, width, height)
   -- 5. DRAW QUICK ACCESS PANEL AT THE BOTTOM
   local quick_panel_y = panel_y + grid_panel_height + separator_gap
   ImGui.SetCursorScreenPos(ctx, content_x, quick_panel_y)
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
-  if ImGui.BeginChild(ctx, "##quick_access_panel", width, quick_access_height, ImGui.ChildFlags_None, 0) then
-    draw_quick_access_panel(ctx, gui, width, quick_access_height)
-  end
-  ImGui.EndChild(ctx)
-  ImGui.PopStyleVar(ctx)
+  draw_quick_access_panel(ctx, gui, width, quick_access_height)
 end
 
 -- Export the main draw function
