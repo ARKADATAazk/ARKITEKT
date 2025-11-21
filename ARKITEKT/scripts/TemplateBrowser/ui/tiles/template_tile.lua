@@ -7,6 +7,7 @@ local Colors = require('rearkitekt.core.colors')
 local Draw = require('rearkitekt.gui.draw')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
+local Badge = require('rearkitekt.gui.widgets.primitives.badge')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -285,6 +286,28 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Store star click state in template state for parent to handle
   if is_star_hovered and ImGui.IsMouseClicked(ctx, 0) then
     state.star_clicked = true
+  end
+
+  -- Render favorite badge if template is favorited
+  if is_favorite then
+    local badge_text = "Favorite"
+    local badge_x = x1 + 6  -- Left side with small margin
+    local badge_y = y1 + 6  -- Top with small margin
+
+    -- Badge configuration
+    local badge_config = {
+      padding_x = 6,
+      padding_y = 2,
+      rounding = 3,
+      bg = Colors.hexrgb("#FFA50088"),  -- Orange background with transparency
+      border_alpha = 0x99,
+      border_darken = 0.3,
+      text_color = Colors.hexrgb("#FFFFFF"),
+    }
+
+    -- Render the badge
+    Badge.render_text_badge(ctx, dl, badge_x, badge_y, badge_text,
+                           chip_color or hexrgb("#FFA500"), 255, badge_config)
   end
 end
 
