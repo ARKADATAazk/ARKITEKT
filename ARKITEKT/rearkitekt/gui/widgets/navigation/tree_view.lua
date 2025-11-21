@@ -146,22 +146,9 @@ local function render_tree_node(ctx, node, config, state, depth)
     local item_max_x, item_max_y = ImGui.GetItemRectMax(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
 
-    -- Draw colored background if node has color (BEFORE drawing icon/text)
-    if node_color and config.show_colors and not is_selected then
-      local bg_color = Colors.with_alpha(node_color, 0x0F)  -- 6% opacity (reduced from 20%)
-      ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, bg_color, 0)
-    end
-
-    -- Draw hover effect
+    -- Draw hover effect (subtle for all items)
     if tree_item_hovered and not is_selected then
-      local hover_color
-      if node_color and config.show_colors then
-        -- Subtle brightening of folder color for hover
-        hover_color = Colors.with_alpha(node_color, 0x25)  -- 15% opacity of folder color
-      else
-        -- Default subtle white overlay for non-colored items
-        hover_color = Colors.hexrgb("#FFFFFF08")  -- 3% opacity white
-      end
+      local hover_color = Colors.hexrgb("#FFFFFF08")  -- 3% opacity white
       ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_max_x, item_max_y, hover_color, 0)
     end
 
@@ -170,16 +157,14 @@ local function render_tree_node(ctx, node, config, state, depth)
       -- Left edge accent bar
       local selection_bar_width = 3
       local selection_color
-      local selection_bg
+      local selection_bg = Colors.hexrgb("#4A9EFF30")  -- 18% opacity blue
 
       if node_color and config.show_colors then
-        -- Use enhanced folder color for selection
+        -- Use folder color for selection bar
         selection_color = Colors.saturate(node_color, 0.2)  -- Slightly more saturated
-        selection_bg = Colors.with_alpha(node_color, 0x40)  -- 25% opacity (more opaque than unselected)
       else
         -- Default blue selection for non-colored folders
         selection_color = Colors.hexrgb("#4A9EFFFF")  -- Bright blue
-        selection_bg = Colors.hexrgb("#4A9EFF30")  -- 18% opacity blue
       end
 
       ImGui.DrawList_AddRectFilled(dl, item_min_x, item_min_y, item_min_x + selection_bar_width, item_max_y, selection_color, 0)
@@ -265,7 +250,13 @@ local function render_tree_node(ctx, node, config, state, depth)
       end
     else
       -- Draw text label after icon (normal display)
-      local text_color = Colors.hexrgb("#FFFFFFFF")  -- Always white text
+      -- Use node color for text if available, otherwise white
+      local text_color
+      if node_color and config.show_colors then
+        text_color = node_color  -- Use folder color for text
+      else
+        text_color = Colors.hexrgb("#FFFFFFFF")  -- Default white text
+      end
       ImGui.DrawList_AddText(dl, text_x, text_y, text_color, node.name)
 
       -- Draw template count if available (right-aligned)
