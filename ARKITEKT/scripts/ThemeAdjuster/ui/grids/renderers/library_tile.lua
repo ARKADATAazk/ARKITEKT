@@ -156,20 +156,20 @@ function M.render(ctx, rect, param, state, view)
     end
 
   elseif param.type == "slider" then
-    -- Use DragDouble like additional_param_tile.lua (works better)
-    local range = param.max - param.min
-    local speed = math.max(range * 0.01, 0.01)
-    local changed_slider, slider_value = ImGui.DragDouble(
+    -- Use SliderDouble with IsItemActive check for continuous updates
+    local changed_slider, slider_value = ImGui.SliderDouble(
       ctx,
       "##lib_slider_" .. param.index,
       param.value,
-      speed,
       param.min,
       param.max,
       "%.2f"
     )
 
-    if changed_slider then
+    -- Check if slider is being actively manipulated (even if value didn't "change")
+    local is_active = ImGui.IsItemActive(ctx)
+
+    if changed_slider or is_active then
       changed = true
       new_value = slider_value
     end
