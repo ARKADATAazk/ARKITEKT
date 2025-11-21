@@ -553,11 +553,18 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local text_x = scaled_x2 - text_w - margin
       local text_y = scaled_y2 - text_h - margin
 
-      -- Create color variant based on tile color (matches Region Playlist duration styling)
-      local duration_saturation = 0.3
-      local duration_brightness = 1.0
-      local duration_alpha = 0x88
-      local text_color = Colors.same_hue_variant(render_color, duration_saturation, duration_brightness, duration_alpha)
+      -- Adaptive color: darker for bright tiles, lighter for dark tiles
+      local luminance = Colors.luminance(render_color)
+      local brightness_factor
+      if luminance > 0.5 then
+        -- Bright tile: darken the duration text
+        brightness_factor = 0.4
+      else
+        -- Dark tile: lighten the duration text
+        brightness_factor = 1.6
+      end
+
+      local text_color = Colors.adjust_brightness(render_color, brightness_factor)
       text_color = Colors.with_alpha(text_color, math.floor(combined_alpha * 255))
 
       -- Draw plain text (no background or border)
