@@ -685,29 +685,21 @@ function M.draw_physical_tree(ctx, state, config)
         end
       end
 
-      local success, archive_path
+      -- Always archive folders (os.remove doesn't work on directories)
+      local success, archive_path = FileOps.delete_folder(node.full_path)
 
-      if template_count == 0 then
-        -- Empty folder - just delete it
-        success = os.remove(node.full_path)
-        if success then
-          state.set_status("Deleted empty folder: " .. node.name, "success")
+      if success then
+        if template_count == 0 then
+          state.set_status(string.format("Deleted empty folder, archived to %s", archive_path), "success")
         else
-          state.set_status("Failed to delete folder: " .. node.name, "error")
-          return
-        end
-      else
-        -- Folder has templates - archive it
-        success, archive_path = FileOps.delete_folder(node.full_path)
-        if success then
           state.set_status(string.format("Deleted folder with %d template%s, archived to %s",
             template_count,
             template_count == 1 and "" or "s",
             archive_path), "success")
-        else
-          state.set_status("Failed to archive folder: " .. node.name, "error")
-          return
         end
+      else
+        state.set_status("Failed to delete folder: " .. node.name, "error")
+        return
       end
 
       -- Create undo operation
@@ -715,33 +707,21 @@ function M.draw_physical_tree(ctx, state, config)
         state.undo_manager:push({
           description = "Delete folder: " .. node.name,
           undo_fn = function()
-            if archive_path then
-              -- Restore from archive
-              local restore_success = os.rename(archive_path, node.full_path)
-              if restore_success then
-                Scanner.scan_templates(state)
-              end
-              return restore_success
-            else
-              -- Cannot restore empty folder deletion
-              return false
+            -- Restore from archive
+            local restore_success = os.rename(archive_path, node.full_path)
+            if restore_success then
+              Scanner.scan_templates(state)
             end
+            return restore_success
           end,
           redo_fn = function()
-            if template_count == 0 then
-              local redo_success = os.remove(node.full_path)
-              if redo_success then
-                Scanner.scan_templates(state)
-              end
-              return redo_success
-            else
-              local redo_success, redo_archive = FileOps.delete_folder(node.full_path)
-              if redo_success then
-                archive_path = redo_archive
-                Scanner.scan_templates(state)
-              end
-              return redo_success
+            -- Re-archive folder
+            local redo_success, redo_archive = FileOps.delete_folder(node.full_path)
+            if redo_success then
+              archive_path = redo_archive
+              Scanner.scan_templates(state)
             end
+            return redo_success
           end
         })
 
