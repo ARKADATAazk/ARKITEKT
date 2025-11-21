@@ -18,6 +18,13 @@ M._template_config_open = M._template_config_open or {}  -- keyed by param_name
 M._template_config_state = M._template_config_state or {}  -- editing state for open dialogs
 
 function M.render(ctx, rect, item, state, view, tab_id)
+  -- Check if this is a group assignment
+  if item.type == "group" then
+    M.render_group(ctx, rect, item, state, view, tab_id)
+    return
+  end
+
+  -- Otherwise render as parameter tile
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local w = x2 - x1
   local h = y2 - y1
@@ -343,6 +350,155 @@ function M.render_template_config_dialogs(ctx, view)
 
       ::continue::
     end
+  end
+end
+
+-- Render a group assignment (unified control for all templates in group)
+function M.render_group(ctx, rect, item, state, view, tab_id)
+  local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+  local w = x2 - x1
+  local h = y2 - y1
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  local group_id = item.group_id
+
+  -- Find the group
+  local group = nil
+  for _, g in ipairs(view.template_groups) do
+    if g.id == group_id then
+      group = g
+      break
+    end
+  end
+
+  if not group then
+    -- Group not found, render error placeholder
+    ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, hexrgb("#440000"), 3)
+    ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, hexrgb("#880000"), 3, 0, 1)
+    ImGui.SetCursorScreenPos(ctx, x1 + 8, y1 + 4)
+    ImGui.Text(ctx, "Group not found: " .. group_id)
+    return
+  end
+
+  -- Animation state
+  local key = "assign_group_" .. tab_id .. "_" .. group_id
+  M._anim[key] = M._anim[key] or { hover = 0 }
+  local hover_t = Visuals.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
+  M._anim[key].hover = hover_t
+
+  -- Get tab color
+  local tab_color = view.tab_colors[tab_id] or hexrgb("#888888")
+
+  -- Parse group color
+  local group_color = group.color
+  if type(group_color) == "string" then
+    group_color = hexrgb(group_color)
+  end
+
+  -- Color definitions
+  local function dim_color(color, opacity)
+    local r = (color >> 24) & 0xFF
+    local g = (color >> 16) & 0xFF
+    local b = (color >> 8) & 0xFF
+    local a = math.floor(255 * opacity)
+    return (r << 24) | (g << 16) | (b << 8) | a
+  end
+
+  local BG_BASE = dim_color(tab_color, 0.15)
+  local BG_HOVER = dim_color(tab_color, 0.22)
+  local BRD_BASE = dim_color(tab_color, 0.4)
+  local BRD_HOVER = tab_color
+  local ANT_COLOR = dim_color(tab_color, 0.5)
+
+  -- Hover shadow
+  if hover_t > 0.01 and not state.selected then
+    Visuals.draw_hover_shadow(dl, x1, y1, x2, y2, hover_t, 3)
+  end
+
+  -- Background
+  local bg_color = BG_BASE
+  bg_color = Visuals.color_lerp(bg_color, BG_HOVER, hover_t * 0.5)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, 3)
+
+  -- Border / Selection
+  if state.selected then
+    Visuals.draw_marching_ants_rounded(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5, ANT_COLOR, 1, 3)
+  else
+    local border_color = Visuals.color_lerp(BRD_BASE, BRD_HOVER, hover_t)
+    ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 3, 0, 1)
+  end
+
+  -- Color badge (left side)
+  local badge_size = 4
+  local badge_x = x1 + 8
+  local badge_y = y1 + (h / 2) - (badge_size / 2)
+  ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_size, badge_y + badge_size, group_color, 1)
+
+  -- Group name
+  ImGui.SetCursorScreenPos(ctx, x1 + 8 + badge_size + 6, y1 + 1)
+  ImGui.AlignTextToFramePadding(ctx)
+
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
+  local display_name = group.name or ("Group " .. group_id)
+  if #display_name > 30 then
+    display_name = display_name:sub(1, 27) .. "..."
+  end
+  ImGui.Text(ctx, display_name)
+  ImGui.PopStyleColor(ctx)
+
+  -- Member count
+  ImGui.SameLine(ctx, 0, 8)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+  local count = #(group.template_ids or {})
+  ImGui.Text(ctx, string.format("(%d template%s)", count, count == 1 and "" or "s"))
+  ImGui.PopStyleColor(ctx)
+
+  -- Invisible button for interaction
+  ImGui.SetCursorScreenPos(ctx, x1, y1)
+  ImGui.InvisibleButton(ctx, "##group_tile_interact_" .. group_id .. "_" .. tab_id, w, h)
+
+  -- Right-click context menu
+  if ImGui.BeginPopupContextItem(ctx, "group_context_" .. group_id .. "_" .. tab_id) then
+    if ImGui.MenuItem(ctx, "Configure Group...") then
+      -- TODO: Open group configuration dialog
+      -- M._group_config_open[group_id] = true
+    end
+
+    ImGui.Separator(ctx)
+
+    if ImGui.MenuItem(ctx, "Rename Group...") then
+      -- TODO: Rename dialog
+    end
+
+    if ImGui.MenuItem(ctx, "Change Color...") then
+      -- TODO: Color picker
+    end
+
+    ImGui.Separator(ctx)
+
+    if ImGui.MenuItem(ctx, "Remove from Tab") then
+      view:unassign_group_from_tab(group_id, tab_id)
+    end
+
+    ImGui.EndPopup(ctx)
+  end
+
+  -- Tooltip
+  if ImGui.IsItemHovered(ctx) then
+    local tooltip = string.format("Group: %s\nContains %d template%s", group.name, count, count == 1 and "" or "s")
+
+    -- List template names
+    if count > 0 then
+      tooltip = tooltip .. "\n\nTemplates:"
+      for i, template_id in ipairs(group.template_ids) do
+        local template = view.templates[template_id]
+        if template then
+          tooltip = tooltip .. "\n  • " .. template.name
+        end
+      end
+    end
+
+    ImGui.SetTooltip(ctx, tooltip)
   end
 end
 

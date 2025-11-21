@@ -15,8 +15,8 @@ M.HEADER = {
   padding_y = 10,
   color_badge_size = 4,
   color_badge_spacing = 8,
-  icon_size = 12,
-  icon_spacing = 8,
+  icon_size = 16,  -- Increased from 12 for bigger arrow
+  icon_spacing = 10,
 
   -- Colors
   bg_color = hexrgb("#2A2A2AEE"),

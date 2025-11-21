@@ -43,14 +43,15 @@ function M.render(ctx, rect, group, state, config)
   -- Draw border
   ImGui.DrawList_AddRect(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5, cfg.border_color, cfg.rounding, 0, cfg.border_thickness)
 
-  -- Calculate positions
+  -- Calculate positions with better vertical centering
+  local content_height = cfg.icon_size  -- Use icon size as baseline for vertical alignment
   local cursor_x = x1 + cfg.padding_x
-  local cursor_y = y1 + cfg.padding_y
+  local cursor_y = y1 + ((y2 - y1) / 2) - (content_height / 2)  -- Center vertically
 
   -- Draw color badge (if group has a color)
   if group.color then
     local badge_x = cursor_x
-    local badge_y = cursor_y + (cfg.icon_size / 2) - (cfg.color_badge_size / 2)
+    local badge_y = cursor_y + (content_height / 2) - (cfg.color_badge_size / 2)
     local badge_size = cfg.color_badge_size
 
     -- Parse color if it's a hex string
@@ -60,22 +61,31 @@ function M.render(ctx, rect, group, state, config)
     cursor_x = cursor_x + cfg.color_badge_size + cfg.color_badge_spacing
   end
 
-  -- Draw collapse/expand icon
+  -- Draw collapse/expand icon (bigger and centered)
   local icon = group.collapsed and Defaults.ICONS.collapsed or Defaults.ICONS.expanded
   local icon_color = state.hover and cfg.collapse_icon_color_hover or cfg.collapse_icon_color
 
+  -- Use larger font for icon
+  ImGui.PushFont(ctx, 0)  -- Default font for icon (will be larger due to unicode)
   ImGui.DrawList_AddText(dl, cursor_x, cursor_y, icon_color, icon)
+  ImGui.PopFont(ctx)
+
   cursor_x = cursor_x + cfg.icon_size + cfg.icon_spacing
 
-  -- Draw group name
-  ImGui.DrawList_AddText(dl, cursor_x, cursor_y, cfg.text_color, group.name or "Unnamed Group")
+  -- Draw group name (with better vertical alignment)
+  -- Calculate text height for vertical centering
+  local text_size_x, text_size_y = ImGui.CalcTextSize(ctx, group.name or "Unnamed Group")
+  local text_y = cursor_y + (content_height / 2) - (text_size_y / 2)
+
+  ImGui.DrawList_AddText(dl, cursor_x, text_y, cfg.text_color, group.name or "Unnamed Group")
 
   -- Draw item count (if available)
   if group.count and group.count > 0 then
     local count_text = string.format("(%d)", group.count)
-    local text_w = ImGui.CalcTextSize(ctx, count_text)
-    local count_x = x2 - cfg.padding_x - text_w
-    ImGui.DrawList_AddText(dl, count_x, cursor_y, cfg.text_color_secondary, count_text)
+    local count_w, count_h = ImGui.CalcTextSize(ctx, count_text)
+    local count_x = x2 - cfg.padding_x - count_w
+    local count_y = cursor_y + (content_height / 2) - (count_h / 2)
+    ImGui.DrawList_AddText(dl, count_x, count_y, cfg.text_color_secondary, count_text)
   end
 
   -- Check for click
