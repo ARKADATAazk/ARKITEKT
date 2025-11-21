@@ -293,40 +293,99 @@ local function draw_template_panel(ctx, gui, width, height)
   end
 
   local content_x, content_y = ImGui.GetCursorScreenPos(ctx)
+  local panel_y = content_y
+  local panel_height = height
 
-  -- 1. VIEW MODE TOGGLE BUTTONS AT THE TOP (using Button primitive)
-  local button_w = 60
-  local button_h = 24
-  local button_gap = 2
-  local button_margin = 8
+  -- 1. FILTER CHIPS (Tags and FX) - Below header, before grid
+  local Chip = require('rearkitekt.gui.widgets.data.chip')
+  local Colors = require('rearkitekt.core.colors')
 
-  -- Grid button
-  local grid_clicked = Button.draw(ctx, dl, content_x, content_y, button_w, button_h, {
-    id = "grid_view_btn",
-    label = "Grid",
-    is_toggled = state.template_view_mode == "grid",
-  }, "template_panel_view_mode_grid")
+  local filter_chip_height = 0
+  local has_filters = (next(state.filter_tags) ~= nil) or (next(state.filter_fx) ~= nil)
 
-  if grid_clicked then
-    state.template_view_mode = "grid"
+  if has_filters then
+    local chip_y_start = content_y
+    local chip_x = content_x + 8
+    local chip_y = chip_y_start + 4
+    local chip_spacing = 4
+    local chip_height = 22
+    local max_chip_x = content_x + width - 8
+
+    -- Draw tag filter chips
+    for tag_name, _ in pairs(state.filter_tags) do
+      local tag_data = state.metadata and state.metadata.tags and state.metadata.tags[tag_name]
+      if tag_data then
+        local chip_w = Chip.calculate_width(ctx, tag_name, { style = Chip.STYLE.ACTION, padding_h = 8 })
+
+        -- Wrap to next line if needed
+        if chip_x + chip_w > max_chip_x and chip_x > content_x + 8 then
+          chip_x = content_x + 8
+          chip_y = chip_y + chip_height + chip_spacing
+        end
+
+        ImGui.SetCursorScreenPos(ctx, chip_x, chip_y)
+        local clicked = Chip.draw(ctx, {
+          style = Chip.STYLE.ACTION,
+          label = tag_name,
+          bg_color = tag_data.color,
+          text_color = Colors.auto_text_color(tag_data.color),
+          height = chip_height,
+          padding_h = 8,
+          rounding = 2,
+          is_selected = true,
+          interactive = true,
+        })
+
+        if clicked then
+          state.filter_tags[tag_name] = nil
+          local Scanner = require('TemplateBrowser.domain.scanner')
+          Scanner.filter_templates(state)
+        end
+
+        chip_x = chip_x + chip_w + chip_spacing
+      end
+    end
+
+    -- Draw FX filter chips
+    for fx_name, _ in pairs(state.filter_fx) do
+      local chip_w = Chip.calculate_width(ctx, fx_name, { style = Chip.STYLE.ACTION, padding_h = 8 })
+
+      -- Wrap to next line if needed
+      if chip_x + chip_w > max_chip_x and chip_x > content_x + 8 then
+        chip_x = content_x + 8
+        chip_y = chip_y + chip_height + chip_spacing
+      end
+
+      ImGui.SetCursorScreenPos(ctx, chip_x, chip_y)
+      local clicked = Chip.draw(ctx, {
+        style = Chip.STYLE.ACTION,
+        label = fx_name,
+        bg_color = Colors.hexrgb("#888888"),
+        text_color = Colors.hexrgb("#000000"),
+        height = chip_height,
+        padding_h = 8,
+        rounding = 2,
+        is_selected = true,
+        interactive = true,
+      })
+
+      if clicked then
+        state.filter_fx[fx_name] = nil
+        local Scanner = require('TemplateBrowser.domain.scanner')
+        Scanner.filter_templates(state)
+      end
+
+      chip_x = chip_x + chip_w + chip_spacing
+    end
+
+    -- Calculate total height used by filter chips
+    filter_chip_height = (chip_y - chip_y_start) + chip_height + 8
+    panel_y = panel_y + filter_chip_height
+    panel_height = panel_height - filter_chip_height
+
+    -- Set cursor after chips
+    ImGui.SetCursorScreenPos(ctx, content_x, panel_y)
   end
-
-  -- List button
-  local list_clicked = Button.draw(ctx, dl, content_x + button_w + button_gap, content_y, button_w, button_h, {
-    id = "list_view_btn",
-    label = "List",
-    is_toggled = state.template_view_mode == "list",
-  }, "template_panel_view_mode_list")
-
-  if list_clicked then
-    state.template_view_mode = "list"
-  end
-
-  -- Move cursor past buttons
-  ImGui.SetCursorScreenPos(ctx, content_x, content_y + button_h + button_margin)
-
-  local panel_y = content_y + button_h + button_margin
-  local panel_height = height - (button_h + button_margin)
 
   -- 2. CALCULATE SEPARATOR POSITION AND PANEL HEIGHTS
   local quick_access_templates = get_quick_access_templates(state, 10)
