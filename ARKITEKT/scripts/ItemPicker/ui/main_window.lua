@@ -312,8 +312,9 @@ function GUI:draw(ctx, shell_state)
 
     -- Clear waiting flag once mouse is pressed again (for SHIFT mode)
     if self.state.waiting_for_new_click and self.state.mouse_was_pressed_after_drop then
-      reaper.ShowConsoleMsg("[SHIFT MODE] Clearing waiting flag\n")
+      reaper.ShowConsoleMsg("[SHIFT MODE] Clearing waiting flag, resetting drop_completed\n")
       self.state.waiting_for_new_click = false
+      self.state.drop_completed = false  -- Also reset drop_completed to allow next drop
     end
 
     self.drag_handler.render_drag_preview(ctx, self.state, mini_font, self.visualization)
