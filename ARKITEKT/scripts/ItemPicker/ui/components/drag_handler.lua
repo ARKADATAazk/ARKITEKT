@@ -233,7 +233,8 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       local x2 = x1 + state.item_to_add_width
       local y2 = y1 + state.item_to_add_height
 
-      local opacity = opacity_levels[visible_count - i + 1] or 0.3
+      -- Front tile (i=1) should be fully opaque, back tiles should fade
+      local opacity = opacity_levels[i] or 0.3
 
       -- Get item data with proper color and info
       local item_data = get_item_data(state, i)
@@ -252,19 +253,19 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       -- Apply opacity to the tile fill color
       local tile_fill_color = apply_alpha(render_color, opacity)
 
-      -- Draw shadow for this tile (layered shadows for depth)
-      local shadow_offset = 3
+      -- Draw shadow for this tile (straight down, no angle)
+      local shadow_offset = 4
       local shadow_blur = 4
 
-      -- Multiple shadow layers for soft blur effect
+      -- Multiple shadow layers for soft blur effect (straight down only)
       for layer = shadow_blur, 1, -1 do
         local shadow_alpha = (0.15 / layer) * opacity  -- Softer shadows for back tiles
         local shadow_color = apply_alpha(hexrgb("#000000FF"), shadow_alpha)
         local blur_offset = shadow_offset + layer
 
         ImGui.DrawList_AddRectFilled(state.draw_list,
-          x1 + blur_offset, y1 + blur_offset,
-          x2 + blur_offset, y2 + blur_offset,
+          x1, y1 + blur_offset,
+          x2, y2 + blur_offset,
           shadow_color, tile_rounding)
       end
 
