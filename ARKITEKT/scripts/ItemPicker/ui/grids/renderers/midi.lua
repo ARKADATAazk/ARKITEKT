@@ -558,9 +558,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       -- Calculate text dimensions and position (right-aligned at bottom-right)
       local text_w, text_h = ImGui.CalcTextSize(ctx, duration_text)
-      local margin = 9  -- Increased margin for better positioning
-      local text_x = scaled_x2 - text_w - margin
-      local text_y = scaled_y2 - text_h - margin
+      local margin_x = 11  -- Horizontal margin (2px more left from previous)
+      local margin_y = 18  -- Vertical margin (9px more down from previous)
+      local text_x = scaled_x2 - text_w - margin_x
+      local text_y = scaled_y2 - text_h - margin_y
 
       -- Adaptive color: darken much earlier, lighter only for very dark tiles
       local luminance = Colors.luminance(render_color)
