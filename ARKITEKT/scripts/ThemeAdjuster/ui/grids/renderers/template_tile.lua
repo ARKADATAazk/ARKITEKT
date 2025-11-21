@@ -1,0 +1,303 @@
+-- @noindex
+-- ThemeAdjuster/ui/grids/renderers/template_tile.lua
+-- Renders template tiles in the templates grid
+
+local ImGui = require 'imgui' '0.10'
+local Colors = require('rearkitekt.core.colors')
+local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
+local hexrgb = Colors.hexrgb
+
+local M = {}
+
+-- Animation state storage (persistent across frames)
+M._anim = M._anim or {}
+
+-- Template configuration state
+M._template_config_open = M._template_config_open or {}
+M._template_config_state = M._template_config_state or {}
+
+function M.render(ctx, rect, item, state, view)
+  local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+  local w = x2 - x1
+  local h = y2 - y1
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  local template_id = item.id
+  local template = view.templates[template_id]
+  if not template then return end
+
+  -- Animation state
+  local key = "template_" .. template_id
+  M._anim[key] = M._anim[key] or { hover = 0 }
+
+  local hover_t = Visuals.lerp(M._anim[key].hover, state.hover and 1 or 0, 12.0 * 0.016)
+  M._anim[key].hover = hover_t
+
+  -- Color definitions
+  local BG_BASE = hexrgb("#252530")
+  local BG_HOVER = hexrgb("#2D2D3D")
+  local BRD_BASE = hexrgb("#444455")
+  local BRD_HOVER = hexrgb("#7788FF")
+  local ANT_COLOR = hexrgb("#7788FF7F")
+
+  -- Hover shadow effect
+  if hover_t > 0.01 and not state.selected then
+    Visuals.draw_hover_shadow(dl, x1, y1, x2, y2, hover_t, 3)
+  end
+
+  -- Background
+  local bg_color = Visuals.color_lerp(BG_BASE, BG_HOVER, hover_t * 0.5)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, 3)
+
+  -- Border / Selection
+  if state.selected then
+    Visuals.draw_marching_ants_rounded(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5, ANT_COLOR, 1, 3)
+  else
+    local border_color = Visuals.color_lerp(BRD_BASE, BRD_HOVER, hover_t)
+    ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 3, 0, 1)
+  end
+
+  -- Content
+  ImGui.SetCursorScreenPos(ctx, x1 + 8, y1 + 4)
+  ImGui.AlignTextToFramePadding(ctx)
+
+  -- Template name
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCFF"))
+  local display_name = template.name or "Unnamed Template"
+  if #display_name > 30 then
+    display_name = display_name:sub(1, 27) .. "..."
+  end
+  ImGui.Text(ctx, display_name)
+  ImGui.PopStyleColor(ctx)
+
+  -- Template type indicator
+  ImGui.SameLine(ctx)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#8888AA"))
+  local type_label = template.type == "preset_spinner" and "[Preset]" or
+                     template.type == "compound_bool" and "[Compound]" or
+                     "[Custom]"
+  ImGui.Text(ctx, type_label)
+  ImGui.PopStyleColor(ctx)
+
+  -- Parameter list (second line)
+  ImGui.SetCursorScreenPos(ctx, x1 + 8, y1 + 20)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#777788"))
+
+  local param_names = {}
+  for _, param_name in ipairs(template.params or {}) do
+    table.insert(param_names, param_name)
+  end
+
+  local params_text = table.concat(param_names, ", ")
+  if #params_text > 50 then
+    params_text = params_text:sub(1, 47) .. "..."
+  end
+  ImGui.Text(ctx, params_text)
+  ImGui.PopStyleColor(ctx)
+
+  -- Tooltip
+  if ImGui.IsItemHovered(ctx) then
+    local tooltip = "Template: " .. (template.name or "Unnamed")
+    tooltip = tooltip .. "\nType: " .. (template.type or "unknown")
+    tooltip = tooltip .. "\nParameters: " .. table.concat(param_names, ", ")
+    if template.type == "preset_spinner" and template.config and template.config.presets then
+      tooltip = tooltip .. "\nPresets: " .. #template.config.presets
+    end
+    ImGui.SetTooltip(ctx, tooltip)
+  end
+
+  -- Invisible button for right-click
+  ImGui.SetCursorScreenPos(ctx, x1, y1)
+  ImGui.InvisibleButton(ctx, "##template_interact_" .. template_id, w, h)
+
+  -- Right-click context menu
+  if ImGui.BeginPopupContextItem(ctx, "template_context_" .. template_id) then
+    if ImGui.MenuItem(ctx, "Configure...") then
+      M._template_config_open[template_id] = true
+      -- Load existing config
+      M._template_config_state[template_id] = {
+        name = template.name or "",
+        template_type = template.type or "preset_spinner",
+        presets = (template.config and template.config.presets) or {},
+        compound_mappings = (template.config and template.config.mappings) or {},
+      }
+    end
+
+    ImGui.Separator(ctx)
+
+    if ImGui.MenuItem(ctx, "Delete") then
+      view:delete_template(template_id)
+    end
+
+    ImGui.EndPopup(ctx)
+  end
+end
+
+-- Render template configuration dialogs
+function M.render_template_config_dialogs(ctx, view)
+  for template_id, is_open in pairs(M._template_config_open) do
+    if is_open then
+      local state = M._template_config_state[template_id]
+      if not state then
+        M._template_config_open[template_id] = false
+        goto continue
+      end
+
+      local template = view.templates[template_id]
+      if not template then
+        M._template_config_open[template_id] = false
+        goto continue
+      end
+
+      -- Modal window
+      local modal_w, modal_h = 600, 500
+      ImGui.SetNextWindowSize(ctx, modal_w, modal_h, ImGui.Cond_Appearing)
+
+      local flags = ImGui.WindowFlags_NoCollapse | ImGui.WindowFlags_NoDocking
+      local visible, open = ImGui.Begin(ctx, "Template Configuration: " .. (state.name ~= "" and state.name or "Unnamed"), true, flags)
+
+      if visible then
+        -- Template name
+        ImGui.Text(ctx, "Template Name:")
+        ImGui.SetNextItemWidth(ctx, 300)
+        local changed_name, new_name = ImGui.InputText(ctx, "##template_name", state.name)
+        if changed_name then
+          state.name = new_name
+        end
+
+        ImGui.Dummy(ctx, 0, 12)
+        ImGui.Separator(ctx)
+        ImGui.Dummy(ctx, 0, 8)
+
+        -- Template type
+        ImGui.Text(ctx, "Template Type:")
+        ImGui.Dummy(ctx, 0, 4)
+
+        if ImGui.RadioButton(ctx, "Preset Spinner", state.template_type == "preset_spinner") then
+          state.template_type = "preset_spinner"
+          -- Initialize presets if empty
+          if #state.presets == 0 and #template.params > 0 then
+            local param_name = template.params[1]
+            local param = view:get_param_by_name(param_name)
+            if param then
+              state.presets = {
+                {value = param.min or 0, label = "Off"},
+                {value = ((param.max or 100) - (param.min or 0)) * 0.3 + (param.min or 0), label = "Low"},
+                {value = ((param.max or 100) - (param.min or 0)) * 0.5 + (param.min or 0), label = "Medium"},
+                {value = ((param.max or 100) - (param.min or 0)) * 0.7 + (param.min or 0), label = "High"},
+              }
+            end
+          end
+        end
+
+        ImGui.SameLine(ctx, 0, 12)
+
+        if ImGui.RadioButton(ctx, "Compound Boolean", state.template_type == "compound_bool") then
+          state.template_type = "compound_bool"
+        end
+
+        ImGui.Dummy(ctx, 0, 12)
+
+        -- Type-specific configuration
+        if state.template_type == "preset_spinner" then
+          M.render_preset_config(ctx, state)
+        elseif state.template_type == "compound_bool" then
+          M.render_compound_config(ctx, state, template)
+        end
+
+        -- Bottom buttons
+        ImGui.Dummy(ctx, 0, 12)
+        ImGui.Separator(ctx)
+        ImGui.Dummy(ctx, 0, 8)
+
+        if ImGui.Button(ctx, "Save", 100, 28) then
+          -- Apply configuration
+          template.name = state.name
+          template.type = state.template_type
+          template.config = {
+            presets = state.template_type == "preset_spinner" and state.presets or nil,
+            mappings = state.template_type == "compound_bool" and state.compound_mappings or nil,
+          }
+          view:save_templates()
+          M._template_config_open[template_id] = false
+        end
+
+        ImGui.SameLine(ctx, 0, 8)
+        if ImGui.Button(ctx, "Cancel", 100, 28) then
+          M._template_config_open[template_id] = false
+        end
+
+        ImGui.End(ctx)
+      end
+
+      if not open then
+        M._template_config_open[template_id] = false
+      end
+
+      ::continue::
+    end
+  end
+end
+
+-- Render preset spinner configuration
+function M.render_preset_config(ctx, state)
+  ImGui.Text(ctx, "Presets:")
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- Scrollable region for presets
+  if ImGui.BeginChild(ctx, "preset_list", 0, 250) then
+    local to_remove = nil
+    for i, preset in ipairs(state.presets) do
+      ImGui.PushID(ctx, i)
+
+      ImGui.SetNextItemWidth(ctx, 100)
+      local changed_val, new_val = ImGui.InputDouble(ctx, "##value", preset.value)
+      if changed_val then
+        preset.value = new_val
+      end
+
+      ImGui.SameLine(ctx, 0, 8)
+      ImGui.SetNextItemWidth(ctx, 200)
+      local changed_label, new_label = ImGui.InputText(ctx, "##label", preset.label)
+      if changed_label then
+        preset.label = new_label
+      end
+
+      ImGui.SameLine(ctx, 0, 8)
+      if ImGui.Button(ctx, "Remove") then
+        to_remove = i
+      end
+
+      ImGui.PopID(ctx)
+    end
+
+    if to_remove then
+      table.remove(state.presets, to_remove)
+    end
+
+    ImGui.EndChild(ctx)
+  end
+
+  ImGui.Dummy(ctx, 0, 8)
+  if ImGui.Button(ctx, "Add Preset") then
+    table.insert(state.presets, {value = 0, label = "New Preset"})
+  end
+end
+
+-- Render compound boolean configuration
+function M.render_compound_config(ctx, state, template)
+  ImGui.Text(ctx, "Compound Boolean Mapping:")
+  ImGui.Separator(ctx)
+  ImGui.Dummy(ctx, 0, 8)
+
+  ImGui.TextWrapped(ctx, "Define states for compound parameters. Each state sets values for all parameters in this template.")
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- TODO: Implement compound configuration UI
+  -- For now, placeholder
+  ImGui.TextColored(ctx, hexrgb("#FFAA44"), "Compound boolean configuration coming soon...")
+  ImGui.TextWrapped(ctx, "This will allow you to map enum/spinner values to multiple boolean parameters.")
+end
+
+return M

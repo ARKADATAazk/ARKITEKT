@@ -16,6 +16,13 @@ local TILE_HEIGHT = 60
 local TILE_PADDING = 8
 local CONTROL_WIDTH = 200
 
+-- Throttle refresh calls during drag
+local last_refresh_time = 0
+local REFRESH_INTERVAL = 0.1  -- 100ms = 10 fps max
+
+-- Track last set values for preset spinners to avoid recalculating index
+M._preset_spinner_states = M._preset_spinner_states or {}  -- keyed by param_name
+
 -- Read/write parameter value from Reaper theme
 local function get_param_value(param_index, param_type)
   if not param_index then return param_type == "bool" and 0 or 0.0 end
@@ -121,34 +128,116 @@ function M.render(ctx, param, tab_color, shell_state, view)
   ImGui.SetCursorScreenPos(ctx, x1 + TILE_PADDING, y1 + TILE_PADDING + 20)
 
   local value_changed = false
+  local was_deactivated = false
   local new_value = current_value
+  local control_id = "##" .. param_name
 
-  if param_type == "bool" then
+  -- Check if this parameter has a template configured
+  local assignment = view:get_assignment_for_param(param.name)
+  local template = nil
+  if assignment then
+    -- New system: template_id references view.templates
+    if assignment.template_id and view.templates then
+      template = view.templates[assignment.template_id]
+    -- Old system: inline template (backwards compat)
+    elseif assignment.template then
+      template = assignment.template
+    end
+  end
+
+  local presets = template and ((template.config and template.config.presets) or template.presets)
+  if template and template.type == "preset_spinner" and presets then
+    -- Render preset spinner
+    local preset_values = {}
+    local preset_labels = {}
+    for _, preset in ipairs(presets) do
+      table.insert(preset_values, preset.value)
+      table.insert(preset_labels, preset.label)
+    end
+
+    -- Get or initialize spinner state
+    if not M._preset_spinner_states[param_name] then
+      M._preset_spinner_states[param_name] = {
+        last_value = current_value,
+        current_idx = 1
+      }
+    end
+
+    local spinner_state = M._preset_spinner_states[param_name]
+
+    -- Only recalculate closest index if the value changed externally (not from our spinner)
+    if math.abs(current_value - spinner_state.last_value) > 0.1 then
+      -- Value changed externally, find closest preset
+      local closest_idx = 1
+      local min_diff = math.abs(current_value - preset_values[1])
+      for i = 2, #preset_values do
+        local diff = math.abs(current_value - preset_values[i])
+        if diff < min_diff then
+          min_diff = diff
+          closest_idx = i
+        end
+      end
+      spinner_state.current_idx = closest_idx
+      spinner_state.last_value = current_value
+    end
+
+    local changed_spinner, new_idx = Spinner.draw(
+      ctx,
+      "##preset_spinner_" .. param.name,
+      spinner_state.current_idx,
+      preset_labels,
+      {w = CONTROL_WIDTH, h = 24}
+    )
+
+    if changed_spinner then
+      new_value = preset_values[new_idx]
+      value_changed = true
+      was_deactivated = true  -- Spinner changes are immediate
+
+      -- Update state to track this change
+      spinner_state.current_idx = new_idx
+      spinner_state.last_value = new_value
+    end
+
+  elseif param_type == "bool" then
     -- Checkbox
     local checked = current_value ~= 0
     if Checkbox.draw_at_cursor(ctx, param_name, checked, nil, "param_" .. param_name) then
       new_value = checked and 0 or 1
       value_changed = true
+      was_deactivated = true  -- Immediate
     end
   elseif param_type == "int" or param_type == "enum" then
-    -- Spinner for integers
+    -- SliderInt with IsItemActive for continuous updates
     ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
     local min_val = param.min or 0
     local max_val = param.max or 100
-    local changed, val = ImGui.DragInt(ctx, "##" .. param_name, current_value, 1, min_val, max_val)
-    if changed then
+    local changed, val = ImGui.SliderInt(ctx, control_id, current_value, min_val, max_val)
+    local is_active = ImGui.IsItemActive(ctx)
+
+    if changed or is_active then
       new_value = val
       value_changed = true
     end
+
+    if ImGui.IsItemDeactivated(ctx) then
+      was_deactivated = true
+    end
   else
-    -- Slider for floats
+    -- SliderDouble with IsItemActive (REAPER parameters are integers, so we round)
     ImGui.SetNextItemWidth(ctx, CONTROL_WIDTH)
     local min_val = param.min or 0.0
     local max_val = param.max or 1.0
-    local changed, val = ImGui.SliderDouble(ctx, "##" .. param_name, current_value, min_val, max_val, "%.2f")
-    if changed then
-      new_value = val
+    local changed, val = ImGui.SliderDouble(ctx, control_id, current_value, min_val, max_val, "%.0f")
+    local is_active = ImGui.IsItemActive(ctx)
+
+    if changed or is_active then
+      new_value = math.floor(val + 0.5)  -- Round to integer for REAPER
       value_changed = true
+    end
+
+    if ImGui.IsItemDeactivated(ctx) then
+      was_deactivated = true
     end
   end
 
@@ -207,24 +296,55 @@ function M.render(ctx, param, tab_color, shell_state, view)
     ImGui.SetTooltip(ctx, "SYNC mode - parameter mirrors exact value")
   end
 
-  -- Handle value change and propagation
+  -- Handle value change and propagation (match library_tile.lua pattern)
   if value_changed then
+    local old_value = current_value
+
+    -- Apply to this parameter
     set_param_value(param_index, new_value)
 
     -- Propagate to linked parameters
     if is_in_group and link_mode ~= ParameterLinkManager.LINK_MODE.UNLINKED then
-      local propagations = ParameterLinkManager.propagate_value_change(param_name, current_value, new_value)
+      local propagations = ParameterLinkManager.propagate_value_change(param_name, old_value, new_value, param)
 
       -- Apply propagated changes to other parameters
       for _, prop in ipairs(propagations) do
-        -- Find the parameter index for the linked param
+        -- Find the parameter definition for the linked param
         for _, p in ipairs(view.all_params) do
           if p.name == prop.param_name then
-            set_param_value(p.index, prop.clamped_value)
+            local target_min = p.min or 0
+            local target_max = p.max or 100
+            local target_range = target_max - target_min
+            local target_new_value
+
+            if prop.mode == "sync" then
+              -- SYNC: Set to same percentage position in target's range
+              target_new_value = target_min + (prop.percent * target_range)
+            elseif prop.mode == "link" then
+              -- LINK: Use virtual value (can be negative), clamp for REAPER
+              target_new_value = prop.virtual_value
+            end
+
+            -- Round to integer for REAPER
+            target_new_value = math.floor(target_new_value + 0.5)
+
+            -- Clamp to target's range
+            local clamped_value = math.max(target_min, math.min(target_max, target_new_value))
+
+            set_param_value(p.index, clamped_value)
             break
           end
         end
       end
+    end
+
+    -- Throttled refresh during drag, immediate on release
+    local current_time = reaper.time_precise()
+    local should_refresh = was_deactivated or ((current_time - last_refresh_time) >= REFRESH_INTERVAL)
+
+    if should_refresh then
+      pcall(reaper.ThemeLayout_RefreshAll)
+      last_refresh_time = current_time
     end
   end
 
