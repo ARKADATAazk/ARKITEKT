@@ -476,6 +476,9 @@ function M.end_drag()
   M.item_to_add_height = nil
   M.drag_waveform = nil
   M.out_of_bounds = nil
+  M.waiting_for_new_click = nil
+  M.mouse_was_pressed_after_drop = nil
+  M.drop_completed = nil
 end
 
 function M.request_exit()

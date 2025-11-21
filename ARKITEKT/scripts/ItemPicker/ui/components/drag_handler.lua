@@ -12,7 +12,16 @@ function M.handle_drag_logic(ctx, state, mini_font)
   local mouse_key = reaper.JS_Mouse_GetState(-1)
   local left_mouse_down = (mouse_key & 1) == 1
 
+  -- Track mouse state for SHIFT multi-drop behavior
+  if left_mouse_down then
+    state.mouse_was_pressed_after_drop = true
+  end
+
   if not left_mouse_down then
+    -- Only allow drop if mouse was pressed since last drop (or this is the first drop)
+    if state.waiting_for_new_click then
+      return false  -- Continue dragging, don't drop yet
+    end
     return true  -- Mouse released, insert item
   end
 

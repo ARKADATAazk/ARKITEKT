@@ -273,16 +273,31 @@ function GUI:draw(ctx, shell_state)
       self.state.drop_completed = true  -- Mark as completed
 
       if shift then
-        -- SHIFT: Keep dragging active for multi-drop (reset drop_completed to allow next drop)
+        -- SHIFT: Keep dragging active for multi-drop
+        -- Wait for next click/release cycle before allowing another drop
         self.state.drop_completed = false
+        self.state.waiting_for_new_click = true
+        self.state.mouse_was_pressed_after_drop = false
       elseif ctrl then
         -- CTRL: End drag but keep ItemPicker open
         self.state.end_drag()
+        self.state.waiting_for_new_click = false
       else
-        -- Normal drop: End drag and exit
+        -- Normal drop: End drag and close ItemPicker immediately
         self.state.end_drag()
-        self.state.request_exit()
+        self.state.waiting_for_new_click = false
+        -- Close overlay immediately
+        if shell_state.overlay and shell_state.overlay.close then
+          shell_state.overlay:close()
+        elseif shell_state.window and shell_state.window.request_close then
+          shell_state.window:request_close()
+        end
       end
+    end
+
+    -- Clear waiting flag once mouse is pressed again (for SHIFT mode)
+    if self.state.waiting_for_new_click and self.state.mouse_was_pressed_after_drop then
+      self.state.waiting_for_new_click = false
     end
 
     self.drag_handler.render_drag_preview(ctx, self.state, mini_font, self.visualization)
