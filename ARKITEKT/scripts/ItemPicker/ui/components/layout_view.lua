@@ -489,7 +489,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Content filter button (replaces Show Audio/MIDI checkboxes)
   local content_button_width = 65
-  local content_filter_mode = "BOTH"  -- Default
+  local content_filter_mode = "MIXED"  -- Default
   if self.state.settings.show_audio and not self.state.settings.show_midi then
     content_filter_mode = "AUDIO"
   elseif self.state.settings.show_midi and not self.state.settings.show_audio then
@@ -511,7 +511,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   current_x = current_x - content_button_width - button_gap
   Button.draw(ctx, draw_list, current_x, search_y, content_button_width, button_height, {
     label = content_filter_mode,
-    is_toggled = content_filter_mode ~= "BOTH",
+    is_toggled = content_filter_mode == "MIXED",  -- Toggled when showing MIXED
     preset_name = "BUTTON_TOGGLE_WHITE",
     tooltip = "Left: Toggle MIDI/AUDIO | Right: Show both",
     on_click = function()
@@ -519,7 +519,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       if content_filter_mode == "MIDI" then
         self.state.set_setting('show_audio', true)
         self.state.set_setting('show_midi', false)
-      else  -- AUDIO or BOTH
+      else  -- AUDIO or MIXED
         self.state.set_setting('show_audio', false)
         self.state.set_setting('show_midi', true)
       end
@@ -535,7 +535,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   current_x = current_x - layout_button_width - button_gap
   local layout_mode = self.state.settings.layout_mode or "vertical"
   local is_vertical = layout_mode == "vertical"
-  local is_mixed_mode = content_filter_mode == "BOTH"
+  local is_mixed_mode = content_filter_mode == "MIXED"
 
   -- Draw layout icon using rectangles (no text, pure shapes)
   -- We'll draw it directly on the button using a custom render function
@@ -560,7 +560,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Draw button first
   Button.draw(ctx, draw_list, current_x, search_y, layout_button_width, button_height, {
     label = "",  -- No text, icon is drawn manually
-    is_toggled = is_mixed_mode and not is_vertical,  -- Only toggle state when in MIXED mode and horizontal
+    is_toggled = is_mixed_mode,  -- Toggled whenever in MIXED mode
     preset_name = "BUTTON_TOGGLE_WHITE",
     tooltip = not is_mixed_mode and "Enable Split View (MIXED mode)" or
               (is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout"),
