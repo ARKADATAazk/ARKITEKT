@@ -562,25 +562,28 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local text_x = scaled_x2 - text_w - margin
       local text_y = scaled_y2 - text_h - margin
 
-      -- Adaptive color: much darker for bright tiles, lighter for dark tiles
+      -- Adaptive color: darken much earlier, lighter only for very dark tiles
       local luminance = Colors.luminance(render_color)
       local brightness_factor
-      if luminance > 0.5 then
-        -- Bright tile: darken the duration text very significantly
+      if luminance > 0.25 then
+        -- Any tile with luminance > 0.25: darken significantly
         brightness_factor = 0.15
-      elseif luminance > 0.3 then
-        -- Medium luminance tile: darken moderately
+      elseif luminance > 0.15 then
+        -- Low luminance tile: darken moderately
         brightness_factor = 0.35
       else
-        -- Dark tile: lighten the duration text
+        -- Very dark tile: lighten the duration text
         brightness_factor = 1.6
       end
 
       local text_color = Colors.adjust_brightness(render_color, brightness_factor)
       text_color = Colors.with_alpha(text_color, math.floor(combined_alpha * 255))
 
-      -- Draw plain text (no background or border)
+      -- Draw bold text by rendering multiple times with pixel offsets
       Draw.text(dl, text_x, text_y, text_color, duration_text)
+      Draw.text(dl, text_x + 1, text_y, text_color, duration_text)
+      Draw.text(dl, text_x, text_y + 1, text_color, duration_text)
+      Draw.text(dl, text_x + 1, text_y + 1, text_color, duration_text)
     end
   end
 end
