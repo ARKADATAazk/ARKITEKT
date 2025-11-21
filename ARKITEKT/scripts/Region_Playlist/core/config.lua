@@ -154,7 +154,7 @@ M.TRANSPORT_BUTTONS = {
   play = { priority = 1, width = 34 },      -- Always show
   jump = { priority = 2, width = 46 },      -- Always show
   quantize = { priority = 3, width = 85 },
-  playback = { priority = 4, width_dropdown = 90, width_buttons = 300 },  -- Shuffle(60) + Override(130) + Follow(110)
+  playback = { priority = 4, width_dropdown = 90, width_buttons = 120 },  -- Shuffle(40) + Override(40) + Follow(40) - now using icons
   loop = { priority = 5, width = 34 },
   stop = { priority = 6, width = 34 },
 }

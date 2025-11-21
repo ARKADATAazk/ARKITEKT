@@ -378,13 +378,17 @@ function TransportView:draw_shuffle_context_menu(ctx)
   end
 end
 
-function TransportView:build_playback_buttons(bridge_state)
+function TransportView:build_playback_buttons(bridge_state, shell_state)
+  -- Get icon font from shell_state
+  local icon_font = shell_state and shell_state.fonts and shell_state.fonts.icons
+  local icon_size = 16  -- Size for button icons
+
   return {
     {
       type = "custom",
       id = "transport_shuffle",
       align = "center",
-      width = 60,
+      width = 40,
       config = {
         on_draw = function(ctx, dl, x, y, width, height, state)
           local Button = require('rearkitekt.gui.widgets.primitives.button')
@@ -393,7 +397,10 @@ function TransportView:build_playback_buttons(bridge_state)
 
           -- Draw button
           Button.draw(ctx, dl, x, y, width, height, {
-            label = "Shuffle",
+            icon = "\xEF\x84\xA4",  -- shuffle-line (U+F124)
+            icon_font = icon_font,
+            icon_size = icon_size,
+            label = "",
             is_toggled = bridge_state.shuffle_enabled or false,
             preset_name = "BUTTON_TOGGLE_WHITE",
             tooltip = "Left-click: Toggle Shuffle\nRight-click: Shuffle Options",
@@ -418,9 +425,12 @@ function TransportView:build_playback_buttons(bridge_state)
       type = "button",
       id = "transport_override",
       align = "center",
-      width = 130,
+      width = 40,
       config = {
-        label = "Override Transport",
+        icon = "\xEE\xB1\x94",  -- U+EC54
+        icon_font = icon_font,
+        icon_size = icon_size,
+        label = "",
         is_toggled = bridge_state.override_enabled or false,
         preset_name = "BUTTON_TOGGLE_WHITE",
         tooltip = "Override Transport Quantization",
@@ -437,9 +447,12 @@ function TransportView:build_playback_buttons(bridge_state)
       type = "button",
       id = "transport_follow",
       align = "center",
-      width = 110,
+      width = 40,
       config = {
-        label = "Follow Viewport",
+        icon = "\xEF\x8C\xA4",  -- expand-right-fill (U+F324)
+        icon_font = icon_font,
+        icon_size = icon_size,
+        label = "",
         is_toggled = bridge_state.follow_viewport or false,
         preset_name = "BUTTON_TOGGLE_WHITE",
         tooltip = "Follow Playhead in Viewport (Continuous Scrolling)",
@@ -457,7 +470,7 @@ end
 
 -- <<< MODULAR BUTTON BUILDERS (END)
 
-function TransportView:build_header_elements(bridge_state, available_width)
+function TransportView:build_header_elements(bridge_state, available_width, shell_state)
   bridge_state = bridge_state or {}
   available_width = available_width or math.huge
 
@@ -541,7 +554,7 @@ function TransportView:build_header_elements(bridge_state, available_width)
     if compact then
       elements[#elements + 1] = self:build_playback_dropdown(bridge_state)
     else
-      local buttons = self:build_playback_buttons(bridge_state)
+      local buttons = self:build_playback_buttons(bridge_state, shell_state)
       for _, btn in ipairs(buttons) do
         elements[#elements + 1] = btn
       end
@@ -739,7 +752,7 @@ function TransportView:draw(ctx, shell_state, is_blocking)
 
   -- Get available width for responsive header layout
   local available_width = ImGui.GetContentRegionAvail(ctx)
-  self.container:set_header_elements(self:build_header_elements(bridge_state, available_width))
+  self.container:set_header_elements(self:build_header_elements(bridge_state, available_width, shell_state))
   
   local spacing = self.config.spacing
   local transport_height = self.config.height

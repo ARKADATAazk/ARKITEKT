@@ -195,15 +195,55 @@ local function render_button(ctx, dl, x, y, width, height, config, context, inst
   -- Draw content (text or custom)
   local label = config.label or ""
   local icon = config.icon or ""
-  local display_text = icon .. (icon ~= "" and label ~= "" and " " or "") .. label
-  
+  local icon_font = config.icon_font
+  local icon_size = config.icon_size
+
   if config.custom_draw then
     config.custom_draw(ctx, dl, x, y, width, height, is_hovered, is_active, text_color)
-  elseif display_text ~= "" then
-    local text_w = ImGui.CalcTextSize(ctx, display_text)
-    local text_x = x + (width - text_w) * 0.5
-    local text_y = y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5
-    ImGui.DrawList_AddText(dl, text_x, text_y, text_color, display_text)
+  elseif icon ~= "" or label ~= "" then
+    -- If we have both icon and label, or just one
+    if icon_font and icon ~= "" then
+      -- Draw icon with icon font and label with regular font
+      local icon_w, icon_h = 0, 0
+      local label_w, label_h = 0, 0
+
+      -- Calculate icon dimensions
+      ImGui.PushFont(ctx, icon_font, icon_size or 16)
+      icon_w = ImGui.CalcTextSize(ctx, icon)
+      icon_h = ImGui.GetTextLineHeight(ctx)
+      ImGui.PopFont(ctx)
+
+      -- Calculate label dimensions
+      if label ~= "" then
+        label_w = ImGui.CalcTextSize(ctx, label)
+        label_h = ImGui.GetTextLineHeight(ctx)
+      end
+
+      -- Calculate total width (icon + spacing + label)
+      local spacing = (icon ~= "" and label ~= "") and 4 or 0
+      local total_w = icon_w + spacing + label_w
+      local start_x = x + (width - total_w) * 0.5
+
+      -- Draw icon
+      local icon_y = y + (height - icon_h) * 0.5
+      ImGui.PushFont(ctx, icon_font, icon_size or 16)
+      ImGui.DrawList_AddText(dl, start_x, icon_y, text_color, icon)
+      ImGui.PopFont(ctx)
+
+      -- Draw label
+      if label ~= "" then
+        local label_x = start_x + icon_w + spacing
+        local label_y = y + (height - label_h) * 0.5
+        ImGui.DrawList_AddText(dl, label_x, label_y, text_color, label)
+      end
+    else
+      -- Simple case: no icon font, just draw text normally
+      local display_text = icon .. (icon ~= "" and label ~= "" and " " or "") .. label
+      local text_w = ImGui.CalcTextSize(ctx, display_text)
+      local text_x = x + (width - text_w) * 0.5
+      local text_y = y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5
+      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, display_text)
+    end
   end
   
   return is_hovered, is_active
