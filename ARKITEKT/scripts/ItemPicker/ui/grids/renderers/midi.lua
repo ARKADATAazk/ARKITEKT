@@ -237,8 +237,13 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local fav_cfg = config.TILE_RENDER.badges.favorite
   local _, text_h = ImGui.CalcTextSize(ctx, "1")  -- Get text height to match cycle badge
   local star_badge_size = text_h + (config.TILE_RENDER.badges.cycle.padding_y * 2)  -- Match cycle badge calculation
-  local star_margin = fav_cfg.margin
-  local text_right_margin = is_favorite and (star_badge_size + star_margin) or 0
+
+  -- Calculate text right margin to reserve space for favorite badge
+  -- (cycle badge space is handled in base renderer)
+  local text_right_margin = 0
+  if is_favorite then
+    text_right_margin = star_badge_size + (fav_cfg.spacing or 4)
+  end
 
   -- Check if this tile is being renamed
   local is_renaming = state.rename_active and state.rename_uuid == item_data.uuid and not state.rename_is_audio
@@ -401,9 +406,24 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     end
   end
 
-  -- Render favorite star badge (vertically centered in header)
+  -- Render favorite star badge (vertically centered in header, to the left of cycle badge)
   if cascade_factor > 0.5 and is_favorite then
-    local star_x = scaled_x2 - star_badge_size - star_margin
+    local star_x
+    -- Position favorite to the left of cycle badge (if it exists)
+    if item_data.total and item_data.total > 1 then
+      -- Calculate where cycle badge will be positioned
+      local cycle_cfg = config.TILE_RENDER.badges.cycle
+      local cycle_text = string.format("%d/%d", item_data.index or 1, item_data.total)
+      local cycle_w, _ = ImGui.CalcTextSize(ctx, cycle_text)
+      local cycle_badge_w = cycle_w + cycle_cfg.padding_x * 2
+      local cycle_x = scaled_x2 - cycle_badge_w - cycle_cfg.margin
+      -- Position favorite to the left of cycle badge
+      star_x = cycle_x - star_badge_size - (fav_cfg.spacing or 4)
+    else
+      -- No cycle badge, position at right edge
+      star_x = scaled_x2 - star_badge_size - fav_cfg.margin
+    end
+
     local star_y = scaled_y1 + (header_height - star_badge_size) / 2
     local icon_size = fav_cfg.icon_size or state.icon_font_size
     Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite,

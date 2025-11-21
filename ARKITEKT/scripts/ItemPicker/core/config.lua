@@ -128,7 +128,7 @@ M.TILE_RENDER = {
     cycle = {
       padding_x = 5,
       padding_y = 0,  -- Reduced by 1px (no vertical padding for tighter badge)
-      margin = 6,
+      margin = 4,  -- Match pool badge margin (balanced edge spacing)
       rounding = 3,
       bg = hexrgb("#14181C"),
       border_darken = 0.4,  -- Darken tile color by this amount for border
@@ -150,7 +150,8 @@ M.TILE_RENDER = {
     favorite = {
       -- Note: size is calculated dynamically in renderers to match cycle badge height
       icon_size = 14,  -- Icon font size for star visibility within badge
-      margin = 6,  -- Match cycle badge margin
+      margin = 4,  -- Match pool badge margin (balanced edge spacing)
+      spacing = 4,  -- Space between favorite and cycle badge
       rounding = 3,  -- Match cycle badge rounding
       bg = hexrgb("#14181C"),  -- Match cycle badge background
       border_darken = 0.4,  -- Match cycle badge border
@@ -161,7 +162,7 @@ M.TILE_RENDER = {
   -- Text
   text = {
     primary_color = hexrgb("#FFFFFF"),
-    padding_left = 6,
+    padding_left = 4,  -- Match badge margins (balanced edge spacing)
     padding_top = 3,  -- Reduced by 1px to move text up
     margin_right = 6,
   },
