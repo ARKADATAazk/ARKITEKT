@@ -345,12 +345,20 @@ function M.draw(ctx, state, config, width, height)
 
   -- Calculate remaining height for folder trees (scrollable)
   -- Account for: header (28) + separator/spacing (10) + All Templates (24) + separator/spacing (10)
-  local used_height = UI.HEADER.DEFAULT + UI.PADDING.SEPARATOR_SPACING + 24 + UI.PADDING.SEPARATOR_SPACING
+  -- Also account for section headers: 2 headers * (text height + separator + spacing) ≈ 2 * 22 = 44
+  local used_height = UI.HEADER.DEFAULT + UI.PADDING.SEPARATOR_SPACING + 24 + UI.PADDING.SEPARATOR_SPACING + 44
   local total_tree_height = folder_section_height - used_height
 
   -- Split height: 70% for physical, 30% for virtual
   local physical_tree_height = math.floor(total_tree_height * 0.7)
   local virtual_tree_height = total_tree_height - physical_tree_height - 8  -- 8px gap
+
+  -- === PHYSICAL FOLDERS SECTION HEADER ===
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, config.COLORS.text_dim or config.COLORS.text)
+  ImGui.Text(ctx, "PHYSICAL FOLDERS")
+  ImGui.PopStyleColor(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
 
   -- Physical folder tree in scrollable child
   if Helpers.begin_child_compat(ctx, "PhysicalTreeScroll", 0, physical_tree_height, false) then
@@ -358,6 +366,13 @@ function M.draw(ctx, state, config, width, height)
     ImGui.EndChild(ctx)
   end
 
+  ImGui.Spacing(ctx)
+
+  -- === VIRTUAL FOLDERS SECTION HEADER ===
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, config.COLORS.text_dim or config.COLORS.text)
+  ImGui.Text(ctx, "VIRTUAL FOLDERS")
+  ImGui.PopStyleColor(ctx)
+  ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
   -- Virtual folder tree in scrollable child (separate scroll area)
@@ -369,6 +384,12 @@ function M.draw(ctx, state, config, width, height)
   ImGui.Spacing(ctx)
 
   -- === TAGS SECTION ===
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, config.COLORS.text_dim or config.COLORS.text)
+  ImGui.Text(ctx, "TAGS")
+  ImGui.PopStyleColor(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
   draw_tags_mini_list(ctx, state, config, width, tags_section_height)
 end
 
