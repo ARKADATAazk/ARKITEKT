@@ -5,15 +5,26 @@
 local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
 local Colors = require('rearkitekt.core.colors')
 local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
+local TemplateTileCompact = require('TemplateBrowser.ui.tiles.template_tile_compact')
 
 local M = {}
 
-function M.create(get_templates, metadata, animator, get_tile_width, on_select, on_double_click, on_right_click, on_star_click)
+function M.create(get_templates, metadata, animator, get_tile_width, get_view_mode, on_select, on_double_click, on_right_click, on_star_click)
   return Grid.new({
     id = "template_grid",
-    gap = TemplateTile.CONFIG.gap,
-    min_col_w = get_tile_width,  -- Use function to get dynamic tile width
-    fixed_tile_h = TemplateTile.CONFIG.base_tile_height,
+    gap = function()
+      local view_mode = get_view_mode and get_view_mode() or "grid"
+      return view_mode == "list" and 4 or TemplateTile.CONFIG.gap
+    end,
+    min_col_w = function()
+      local view_mode = get_view_mode and get_view_mode() or "grid"
+      -- In list mode, tiles take full width (return a large value to force 1 column)
+      return view_mode == "list" and 9999 or get_tile_width()
+    end,
+    fixed_tile_h = function()
+      local view_mode = get_view_mode and get_view_mode() or "grid"
+      return view_mode == "list" and TemplateTileCompact.CONFIG.tile_height or TemplateTile.CONFIG.base_tile_height
+    end,
 
     -- Data source
     get_items = get_templates,
@@ -25,7 +36,14 @@ function M.create(get_templates, metadata, animator, get_tile_width, on_select, 
 
     -- Tile rendering
     render_tile = function(ctx, rect, template, state)
-      TemplateTile.render(ctx, rect, template, state, metadata, animator)
+      local view_mode = get_view_mode and get_view_mode() or "grid"
+
+      -- Use appropriate tile renderer based on view mode
+      if view_mode == "list" then
+        TemplateTileCompact.render(ctx, rect, template, state, metadata, animator)
+      else
+        TemplateTile.render(ctx, rect, template, state, metadata, animator)
+      end
 
       -- Handle star click
       if state.star_clicked and on_star_click then

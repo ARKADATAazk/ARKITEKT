@@ -161,8 +161,44 @@ local function draw_template_panel(ctx, gui, width, height)
   -- Draw recent templates section
   local recent_height = draw_recent_templates(ctx, gui, width - 16, height)  -- Account for padding
 
+  -- Draw view mode toggle buttons (Grid/List)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#B3B3B3"))
+  ImGui.Text(ctx, "View:")
+  ImGui.PopStyleColor(ctx)
+  ImGui.SameLine(ctx, 0, 8)
+
+  -- Grid button
+  if state.template_view_mode == "grid" then
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, Colors.hexrgb("#4A9EFF"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#FFFFFF"))
+  end
+  if ImGui.Button(ctx, "Grid##ViewMode", UI.BUTTON.WIDTH_MEDIUM * 0.7, UI.BUTTON.HEIGHT_DEFAULT) then
+    state.template_view_mode = "grid"
+  end
+  if state.template_view_mode == "grid" then
+    ImGui.PopStyleColor(ctx, 2)
+  end
+
+  ImGui.SameLine(ctx, 0, 4)
+
+  -- List button
+  if state.template_view_mode == "list" then
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, Colors.hexrgb("#4A9EFF"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#FFFFFF"))
+  end
+  if ImGui.Button(ctx, "List##ViewMode", UI.BUTTON.WIDTH_MEDIUM * 0.7, UI.BUTTON.HEIGHT_DEFAULT) then
+    state.template_view_mode = "list"
+  end
+  if state.template_view_mode == "list" then
+    ImGui.PopStyleColor(ctx, 2)
+  end
+
+  ImGui.Spacing(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
   -- Calculate remaining height for main grid
-  local grid_height = height - recent_height - 32  -- Account for container padding
+  local grid_height = height - recent_height - 68  -- Account for container padding + toggle buttons
 
   -- Set container dimensions for main grid
   gui.template_container.width = width - 16

@@ -52,6 +52,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     self.state.metadata,
     self.template_animator,
     function() return self.state.tile_width end,  -- get_tile_width
+    function() return self.state.template_view_mode end,  -- get_view_mode
     -- on_select
     function(selected_keys)
       -- Update selected template from grid selection
