@@ -295,22 +295,32 @@ end
 
 function Grid:_draw_marquee(ctx, dl)
   if not self.sel_rect:is_active() or not self.sel_rect.start_pos then return end
-  
+
   local x1, y1, x2, y2 = self.sel_rect:aabb_visual()
   if not x1 then return end
-  
+
   if not self.sel_rect:did_drag() then return end
-  
+
   local cfg = self.config.marquee or DEFAULTS.marquee
-  local fill = (self.sel_rect.mode == "add") and 
+  local fill = (self.sel_rect.mode == "add") and
               (cfg.fill_color_add or DEFAULTS.marquee.fill_color_add) or
               (cfg.fill_color or DEFAULTS.marquee.fill_color)
   local stroke = cfg.stroke_color or DEFAULTS.marquee.stroke_color
   local thickness = cfg.stroke_thickness or DEFAULTS.marquee.stroke_thickness
   local rounding = cfg.rounding or DEFAULTS.marquee.rounding
-  
+
+  -- Clip marquee to visual bounds to prevent bleeding into other panels
+  -- Always clip marquee regardless of clip_rendering flag for proper panel isolation
+  if self.visual_bounds then
+    ImGui.DrawList_PushClipRect(dl, self.visual_bounds[1], self.visual_bounds[2], self.visual_bounds[3], self.visual_bounds[4], true)
+  end
+
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, fill, rounding)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, stroke, rounding, 0, thickness)
+
+  if self.visual_bounds then
+    ImGui.DrawList_PopClipRect(dl)
+  end
 end
 
 function Grid:get_drop_target_index()
