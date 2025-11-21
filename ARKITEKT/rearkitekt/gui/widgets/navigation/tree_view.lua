@@ -11,6 +11,41 @@ local Fields = require('rearkitekt.gui.widgets.primitives.fields')
 local M = {}
 
 -- ============================================================================
+-- TREE ARROW RENDERING
+-- ============================================================================
+
+local function draw_tree_arrow(ctx, dl, x, y, is_open)
+  -- Custom arrow to overlay native ImGui arrow for better appearance
+  -- Arrow size: 5x5 pixels
+  local size = 5
+
+  -- Round to whole pixels for crisp rendering
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  -- Slightly darker arrow color for better visibility
+  local arrow_color = Colors.hexrgb("#B0B0B0FF")
+
+  if is_open then
+    -- Down-pointing triangle (opened folder)
+    -- Points: top-left, top-right, bottom-center
+    local x1, y1 = x, y
+    local x2, y2 = x + size, y
+    local x3, y3 = x + size / 2, y + size
+
+    ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, arrow_color)
+  else
+    -- Right-pointing triangle (closed folder)
+    -- Points: left-top, left-bottom, right-center
+    local x1, y1 = x, y
+    local x2, y2 = x, y + size
+    local x3, y3 = x + size, y + size / 2
+
+    ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, arrow_color)
+  end
+end
+
+-- ============================================================================
 -- FOLDER ICON RENDERING
 -- ============================================================================
 
@@ -177,6 +212,14 @@ local function render_tree_node(ctx, node, config, state, depth)
     local icon_x = item_min_x + arrow_width
     local text_y_offset = (ImGui.GetTextLineHeight(ctx) - 9) * 0.5  -- Center icon vertically (9 = tab_h + main_h)
     local icon_y = item_min_y + text_y_offset
+
+    -- Draw custom arrow overlay (only for non-leaf nodes)
+    if node.children and #node.children > 0 then
+      -- Arrow position: centered in the arrow_width space, slightly to the right of the left edge
+      local arrow_x = item_min_x + (arrow_width / 2) - 2.5  -- Center horizontally in arrow space
+      local arrow_y = item_min_y + (item_max_y - item_min_y) / 2 - 2.5  -- Center vertically
+      draw_tree_arrow(ctx, dl, arrow_x, arrow_y, is_open)
+    end
 
     -- Draw folder icon (virtual or physical)
     local icon_width
