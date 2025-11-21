@@ -273,14 +273,35 @@ function GUI:draw(ctx, shell_state)
     local should_insert = self.drag_handler.handle_drag_logic(ctx, self.state, mini_font)
     if should_insert and not self.state.drop_completed then
       -- Check modifier keys for drop behavior
-      -- If we have captured state (from multi-drop sequence), use that instead
+      -- If we have captured state (from multi-drop sequence), verify keys are still held
       local shift, ctrl
       if self.state.captured_shift ~= nil or self.state.captured_ctrl ~= nil then
-        -- Use captured state from when mouse was pressed
-        shift = self.state.captured_shift or false
-        ctrl = self.state.captured_ctrl or false
-        reaper.ShowConsoleMsg(string.format("[KEY DEBUG] Using CAPTURED state: shift=%s ctrl=%s\n",
-          tostring(shift), tostring(ctrl)))
+        -- Check if keys are ACTUALLY still pressed
+        local shift_actual = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
+        local ctrl_actual = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+
+        -- If captured state says SHIFT but key is no longer pressed, treat as normal drop
+        if self.state.captured_shift and not shift_actual then
+          reaper.ShowConsoleMsg("[KEY DEBUG] SHIFT released - exiting multi-drop mode\n")
+          shift = false
+          ctrl = false
+          -- Clear captured state
+          self.state.captured_shift = nil
+          self.state.captured_ctrl = nil
+        elseif self.state.captured_ctrl and not ctrl_actual then
+          reaper.ShowConsoleMsg("[KEY DEBUG] CTRL released - exiting multi-drop mode\n")
+          shift = false
+          ctrl = false
+          -- Clear captured state
+          self.state.captured_shift = nil
+          self.state.captured_ctrl = nil
+        else
+          -- Keys still held - use captured state
+          shift = self.state.captured_shift or false
+          ctrl = self.state.captured_ctrl or false
+          reaper.ShowConsoleMsg(string.format("[KEY DEBUG] Using CAPTURED state: shift=%s ctrl=%s (verified still pressed)\n",
+            tostring(shift), tostring(ctrl)))
+        end
       else
         -- First drop - check keys directly
         shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
