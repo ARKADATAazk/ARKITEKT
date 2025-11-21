@@ -69,11 +69,10 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   local template_path = reaper.GetResourcePath() .. package.config:sub(1,1) .. "TrackTemplates"
   local physical_root = {
     id = "__ROOT__",  -- Unique ID for ImGui (must not be empty)
-    name = "Physical Root",
+    name = "Physical Directory",
     path = "",  -- Relative path is empty (represents TrackTemplates root)
     full_path = template_path,
     children = {},
-    is_root = true,  -- Flag to identify root node
     is_virtual = false,
   }
 
@@ -89,10 +88,9 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   -- Add Virtual Root node (separate from physical)
   local virtual_root = {
     id = "__VIRTUAL_ROOT__",
-    name = "Virtual Root",
+    name = "Virtual Directory",
     path = "__VIRTUAL_ROOT__",
     children = build_virtual_tree("__VIRTUAL_ROOT__"),  -- All virtual folders go here
-    is_root = true,
     is_virtual = true,
   }
 
@@ -677,19 +675,15 @@ end
 
 -- Draw virtual folder tree only
 function M.draw_virtual_tree(ctx, state, config)
-  -- Just call the physical tree but with virtual nodes only
-  -- This is a simplified version - the physical tree function already handles both types
-  local ImGui = require('imgui') '0.10'
-
-  -- For now, we'll extract just the virtual root from all nodes and draw it
-  -- This uses the same logic as draw_physical_tree
+  -- Prepare tree nodes from state.folders
   local all_nodes = prepare_tree_nodes(state.folders, state.metadata, state.templates)
 
-  -- Filter to only virtual root
+  -- Get only virtual root node
   local virtual_nodes = {}
   for _, node in ipairs(all_nodes) do
     if node.id == "__VIRTUAL_ROOT__" then
-      table.insert(virtual_nodes, node)
+      virtual_nodes = {node}
+      break
     end
   end
 
@@ -697,16 +691,212 @@ function M.draw_virtual_tree(ctx, state, config)
     return
   end
 
-  -- Ensure root is open
+  -- Ensure VIRTUAL_ROOT node is open by default
   if state.folder_open_state["__VIRTUAL_ROOT__"] == nil then
     state.folder_open_state["__VIRTUAL_ROOT__"] = true
   end
 
-  -- Call physical tree function but pass virtual nodes
-  -- Since they share the same callbacks, we can reuse the logic
-  -- NOTE: This is a temporary solution - ideally we'd refactor to share callback code
-  ImGui.Text(ctx, "Virtual Folders")
-  ImGui.Separator(ctx)
+  -- Map state variables to TreeView format (same as physical tree)
+  local tree_state = {
+    open_nodes = state.folder_open_state,
+    selected_nodes = state.selected_folders,
+    last_clicked_node = state.last_clicked_folder,
+    renaming_node = state.renaming_folder_path or nil,
+    rename_buffer = state.rename_buffer or "",
+  }
+
+  -- Draw tree with same callbacks as physical tree (they handle both types)
+  TreeView.draw(ctx, virtual_nodes, tree_state, {
+    enable_rename = true,
+    show_colors = true,
+    enable_drag_drop = true,
+    enable_multi_select = true,
+    context_menu_id = "folder_context_menu",
+
+    can_rename = function(node)
+      if node.is_virtual then
+        local vfolder = state.metadata.virtual_folders and state.metadata.virtual_folders[node.id]
+        if vfolder and vfolder.is_system then
+          return false
+        end
+      end
+      return true
+    end,
+
+    on_select = function(node, selected_nodes)
+      state.selected_folders = selected_nodes
+      state.selected_folder = node.path
+      local Scanner = require('TemplateBrowser.domain.scanner')
+      Scanner.filter_templates(state)
+    end,
+
+    on_drop_folder = function(dragged_node_id, target_node)
+      -- Virtual tree doesn't support folder moves (only template drops)
+      -- Physical folders can't be moved to virtual and vice versa
+    end,
+
+    on_drop_template = function(template_payload, target_node)
+      if not target_node then return end
+      local FileOps = require('TemplateBrowser.domain.file_ops')
+
+      -- Parse payload
+      local uuids = {}
+      if template_payload:find("\n") then
+        for uuid in template_payload:gmatch("[^\n]+") do
+          table.insert(uuids, uuid)
+        end
+      else
+        table.insert(uuids, template_payload)
+      end
+
+      if #uuids == 0 then return end
+
+      -- Only handle virtual folder drops (add references)
+      if target_node.is_virtual then
+        local Persistence = require('TemplateBrowser.domain.persistence')
+        local vfolder = state.metadata.virtual_folders[target_node.id]
+        if not vfolder then
+          state.set_status("Virtual folder not found", "error")
+          return
+        end
+
+        if not vfolder.template_refs then
+          vfolder.template_refs = {}
+        end
+
+        local added_count = 0
+        for _, uuid in ipairs(uuids) do
+          local already_exists = false
+          for _, existing_uuid in ipairs(vfolder.template_refs) do
+            if existing_uuid == uuid then
+              already_exists = true
+              break
+            end
+          end
+
+          if not already_exists then
+            table.insert(vfolder.template_refs, uuid)
+            added_count = added_count + 1
+          end
+        end
+
+        Persistence.save_metadata(state.metadata)
+
+        if added_count > 0 then
+          if #uuids > 1 then
+            state.set_status("Added " .. added_count .. " of " .. #uuids .. " templates to " .. target_node.name, "success")
+          else
+            state.set_status("Added template to " .. target_node.name, "success")
+          end
+        else
+          if #uuids > 1 then
+            state.set_status("Templates already in " .. target_node.name, "info")
+          else
+            state.set_status("Template already in " .. target_node.name, "info")
+          end
+        end
+      end
+    end,
+
+    on_right_click = function(node)
+      state.context_menu_node = node
+    end,
+
+    render_context_menu = function(ctx_inner, node)
+      local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
+      local Colors = require('rearkitekt.core.colors')
+
+      if ContextMenu.begin(ctx_inner, "folder_context_menu") then
+        local color_options = {
+          { name = "None", color = nil },
+          { name = "Red", color = Colors.hexrgb("#FF6B6BFF") },
+          { name = "Orange", color = Colors.hexrgb("#FFA500FF") },
+          { name = "Yellow", color = Colors.hexrgb("#FFD93DFF") },
+          { name = "Green", color = Colors.hexrgb("#6BCF7FFF") },
+          { name = "Blue", color = Colors.hexrgb("#4A9EFFFF") },
+          { name = "Purple", color = Colors.hexrgb("#B57FFFFF") },
+          { name = "Pink", color = Colors.hexrgb("#FF69B4FF") },
+        }
+
+        for _, color_opt in ipairs(color_options) do
+          if ContextMenu.item(ctx_inner, color_opt.name) then
+            local Persistence = require('TemplateBrowser.domain.persistence')
+            local ImGui = require('imgui') '0.10'
+
+            if node.is_virtual then
+              if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+                state.metadata.virtual_folders[node.id].color = color_opt.color
+                Persistence.save_metadata(state.metadata)
+                local Scanner = require('TemplateBrowser.domain.scanner')
+                Scanner.scan_templates(state)
+              end
+            end
+
+            ImGui.CloseCurrentPopup(ctx_inner)
+          end
+        end
+
+        if node.is_virtual then
+          local vfolder = state.metadata.virtual_folders and state.metadata.virtual_folders[node.id]
+          local is_system_folder = vfolder and vfolder.is_system
+
+          if not is_system_folder then
+            ContextMenu.separator(ctx_inner)
+
+            if ContextMenu.item(ctx_inner, "Delete Virtual Folder") then
+              local Persistence = require('TemplateBrowser.domain.persistence')
+              local ImGui = require('imgui') '0.10'
+
+              if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+                state.metadata.virtual_folders[node.id] = nil
+                Persistence.save_metadata(state.metadata)
+
+                if state.selected_folder == node.id then
+                  state.selected_folder = ""
+                  state.selected_folders = {}
+                end
+
+                local Scanner = require('TemplateBrowser.domain.scanner')
+                Scanner.filter_templates(state)
+
+                state.set_status("Deleted virtual folder: " .. node.name, "success")
+              end
+
+              ImGui.CloseCurrentPopup(ctx_inner)
+            end
+          end
+        end
+
+        ContextMenu.end_menu(ctx_inner)
+      end
+    end,
+
+    on_rename = function(node, new_name)
+      if new_name ~= "" and new_name ~= node.name then
+        local Persistence = require('TemplateBrowser.domain.persistence')
+
+        if node.is_virtual then
+          if state.metadata.virtual_folders and state.metadata.virtual_folders[node.id] then
+            local vfolder = state.metadata.virtual_folders[node.id]
+            if vfolder.is_system then
+              state.set_status("Cannot rename system folder: " .. node.name, "error")
+              return false
+            end
+
+            state.metadata.virtual_folders[node.id].name = new_name
+            Persistence.save_metadata(state.metadata)
+            state.set_status("Renamed virtual folder to: " .. new_name, "success")
+          end
+        end
+      end
+    end,
+  })
+
+  -- Sync TreeView state back to Template Browser state
+  state.selected_folders = tree_state.selected_nodes
+  state.last_clicked_folder = tree_state.last_clicked_node
+  state.renaming_folder_path = tree_state.renaming_node
+  state.rename_buffer = tree_state.rename_buffer
 end
 
 -- Legacy function that draws both trees (kept for compatibility)
