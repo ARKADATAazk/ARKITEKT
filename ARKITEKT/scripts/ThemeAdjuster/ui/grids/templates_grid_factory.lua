@@ -4,6 +4,7 @@
 
 local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
 local TemplateTile = require('ThemeAdjuster.ui.grids.renderers.template_tile')
+local TileGroup = require('rearkitekt.gui.widgets.containers.tile_group')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -64,8 +65,31 @@ local function create_copy_mode_check(view)
 end
 
 local function create_render_tile(view)
-  return function(ctx, rect, item, state)
-    TemplateTile.render(ctx, rect, item, state, view)
+  return function(ctx, rect, item, state, grid)
+    -- Check if this is a group header
+    if TileGroup.is_group_header(item) then
+      -- Render group header
+      local clicked = TileGroup.render_header(ctx, rect, item, state)
+      if clicked then
+        -- Toggle group collapse state
+        TileGroup.toggle_group(item)
+
+        -- Persist the collapsed state
+        view.template_group_collapsed_states[item.__group_id] = item.__group_ref.collapsed
+        view:save_templates()
+      end
+    else
+      -- Render regular template tile (extract original item if wrapped)
+      local template_item = TileGroup.get_original_item(item)
+      local indent = TileGroup.get_indent(item)
+
+      -- Apply indent to rect if needed
+      if indent > 0 then
+        rect = {rect[1] + indent, rect[2], rect[3], rect[4]}
+      end
+
+      TemplateTile.render(ctx, rect, template_item, state, view)
+    end
   end
 end
 
@@ -100,7 +124,16 @@ function M.create(view, config)
     fixed_tile_h = 32,
 
     get_items = function() return view:get_template_items() end,
-    key = function(item) return "template_" .. item.id end,
+    key = function(item)
+      -- Handle group headers
+      if TileGroup.is_group_header(item) then
+        return "template_group_header_" .. item.__group_id
+      end
+
+      -- Handle regular or grouped template items
+      local template_item = TileGroup.get_original_item(item)
+      return "template_" .. template_item.id
+    end,
 
     external_drag_check = create_external_drag_check(view),
     is_copy_mode_check = create_copy_mode_check(view),

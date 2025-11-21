@@ -73,6 +73,11 @@ function M.new(State, Config, settings)
     templates = {},
     next_template_id = 1,
 
+    -- Template groups: organized into collapsible groups
+    template_groups = {},  -- array of {id, name, color, collapsed, template_ids[]}
+    next_template_group_id = 1,
+    template_group_collapsed_states = {},  -- group_id -> true/false
+
     -- Grid instances
     library_grid = nil,
     templates_grid = nil,
@@ -994,39 +999,121 @@ end
 
 -- Get template items for grid
 function AdditionalView:get_template_items()
-  local items = {}
-  for id, template in pairs(self.templates) do
-    table.insert(items, {
-      id = id,
-      order = template.order or 0
-    })
+  local TileGroup = require('rearkitekt.gui.widgets.containers.tile_group')
+
+  -- Build tile groups from template_groups
+  local tile_groups = {}
+  for _, group in ipairs(self.template_groups) do
+    -- Get collapsed state
+    local collapsed = self.template_group_collapsed_states[group.id]
+    if collapsed == nil then
+      collapsed = false
+    end
+
+    -- Build items array for this group
+    local group_items = {}
+    for _, template_id in ipairs(group.template_ids or {}) do
+      if self.templates[template_id] then
+        table.insert(group_items, {
+          id = template_id,
+          order = self.templates[template_id].order or 0
+        })
+      end
+    end
+
+    table.insert(tile_groups, TileGroup.create_group({
+      id = group.id,
+      name = group.name or ("Group " .. group.id),
+      color = group.color,
+      collapsed = collapsed,
+      items = group_items
+    }))
   end
 
-  -- Sort by order
-  table.sort(items, function(a, b) return a.order < b.order end)
+  -- Get ungrouped templates
+  local grouped_template_ids = {}
+  for _, group in ipairs(self.template_groups) do
+    for _, template_id in ipairs(group.template_ids or {}) do
+      grouped_template_ids[template_id] = true
+    end
+  end
 
-  return items
+  local ungrouped = {}
+  for id, template in pairs(self.templates) do
+    if not grouped_template_ids[id] then
+      table.insert(ungrouped, {
+        id = id,
+        order = template.order or 0
+      })
+    end
+  end
+
+  -- Sort ungrouped by order
+  table.sort(ungrouped, function(a, b) return a.order < b.order end)
+
+  -- Flatten groups into a single list
+  return TileGroup.flatten_groups(tile_groups, ungrouped)
 end
 
 -- Create template from parameters
 function AdditionalView:create_template_from_params(param_names, insert_index)
-  local template_id = tostring(self.next_template_id)
-  self.next_template_id = self.next_template_id + 1
+  -- If single param, create a simple template (ungrouped)
+  if #param_names == 1 then
+    local template_id = tostring(self.next_template_id)
+    self.next_template_id = self.next_template_id + 1
 
-  -- Create template
-  local template = {
-    id = template_id,
-    name = #param_names == 1 and param_names[1] or "Template " .. template_id,
-    type = "preset_spinner",  -- Default type
-    params = param_names,
-    config = {},
-    order = insert_index or #self.templates + 1
+    local template = {
+      id = template_id,
+      name = param_names[1],
+      type = "preset_spinner",  -- Default type
+      params = param_names,
+      config = {},
+      order = insert_index or (#self.templates + 1)
+    }
+
+    self.templates[template_id] = template
+    self:save_templates()
+
+    return template_id
+  end
+
+  -- If multiple params, create a template group
+  local group_id = tostring(self.next_template_group_id)
+  self.next_template_group_id = self.next_template_group_id + 1
+
+  local template_ids = {}
+
+  -- Create a template for each parameter
+  for _, param_name in ipairs(param_names) do
+    local template_id = tostring(self.next_template_id)
+    self.next_template_id = self.next_template_id + 1
+
+    local template = {
+      id = template_id,
+      name = param_name,
+      type = "preset_spinner",
+      params = {param_name},
+      config = {},
+      order = self.next_template_id
+    }
+
+    self.templates[template_id] = template
+    table.insert(template_ids, template_id)
+  end
+
+  -- Create the template group
+  local group = {
+    id = group_id,
+    name = "Group " .. group_id,  -- User can rename later
+    color = string.format("#%06X", math.random(0x333333, 0xCCCCCC)),  -- Random color
+    collapsed = false,
+    template_ids = template_ids
   }
 
-  self.templates[template_id] = template
+  table.insert(self.template_groups, group)
   self:save_templates()
 
-  return template_id
+  return group_id
 end
 
 -- Delete template
@@ -1172,6 +1259,25 @@ function AdditionalView:load_assignments()
     end
     self.next_template_id = max_id + 1
   end
+
+  -- Load template groups
+  if mappings and mappings.template_groups then
+    self.template_groups = mappings.template_groups
+    -- Find max template group ID
+    local max_group_id = 0
+    for _, group in ipairs(self.template_groups) do
+      local num_id = tonumber(group.id)
+      if num_id and num_id > max_group_id then
+        max_group_id = num_id
+      end
+    end
+    self.next_template_group_id = max_group_id + 1
+  end
+
+  -- Load template group collapsed states
+  if mappings and mappings.template_group_collapsed_states then
+    self.template_group_collapsed_states = mappings.template_group_collapsed_states
+  end
 end
 
 function AdditionalView:set_cache_invalidation_callback(callback)
@@ -1186,7 +1292,9 @@ function AdditionalView:save_assignments()
     self.enabled_groups,
     param_link_data,
     self.templates,
-    self.group_collapsed_states
+    self.group_collapsed_states,
+    self.template_groups,
+    self.template_group_collapsed_states
   )
 
   -- Invalidate TCP/MCP caches
@@ -1205,7 +1313,9 @@ function AdditionalView:save_group_filter()
     self.enabled_groups,
     param_link_data,
     self.templates,
-    self.group_collapsed_states
+    self.group_collapsed_states,
+    self.template_groups,
+    self.template_group_collapsed_states
   )
 
   if self.cache_invalidation_callback then
