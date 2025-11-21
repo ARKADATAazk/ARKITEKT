@@ -468,6 +468,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   local sort_modes = {
     {id = "none", label = "None"},
+    {id = "length", label = "Length"},
     {id = "color", label = "Color"},
     {id = "name", label = "Name"},
     {id = "pool", label = "Pool"},
@@ -602,7 +603,15 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       is_toggled = is_active,
       preset_name = "BUTTON_TOGGLE_WHITE",
       on_click = function()
-        self.state.set_setting('sort_mode', mode.id)
+        if current_sort == mode.id then
+          -- Clicking the same sort mode toggles ascending/descending
+          local current_reverse = self.state.settings.sort_reverse or false
+          self.state.set_setting('sort_reverse', not current_reverse)
+        else
+          -- Switching to a new sort mode resets to ascending
+          self.state.set_setting('sort_mode', mode.id)
+          self.state.set_setting('sort_reverse', false)
+        end
       end,
     }, "sort_button_" .. mode.id)
 

@@ -26,6 +26,7 @@ local function get_default_settings()
     separator_position = nil,
     separator_position_horizontal = nil,
     sort_mode = "none",
+    sort_reverse = false,
     waveform_quality = 1.0,
     waveform_filled = true,
     waveform_zero_line = false,

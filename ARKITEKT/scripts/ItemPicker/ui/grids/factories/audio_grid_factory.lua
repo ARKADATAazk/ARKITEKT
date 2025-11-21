@@ -15,7 +15,7 @@ function M.create(ctx, config, state, visualization, animator)
 
     -- Compute filter hash to detect changes (EXCLUDING indices to prevent re-sort)
     local settings = state.settings
-    local filter_hash = string.format("%s|%s|%s|%s|%s|%s|%s|%s|%d",
+    local filter_hash = string.format("%s|%s|%s|%s|%s|%s|%s|%s|%s|%d",
       tostring(settings.show_favorites_only),
       tostring(settings.show_disabled_items),
       tostring(settings.show_muted_tracks),
@@ -23,6 +23,7 @@ function M.create(ctx, config, state, visualization, animator)
       settings.search_string or "",
       settings.search_mode or "items",
       settings.sort_mode or "none",
+      tostring(settings.sort_reverse or false),
       table.concat(state.sample_indexes, ","),  -- Invalidate if items change
       #state.sample_indexes
     )
@@ -219,17 +220,44 @@ function M.create(ctx, config, state, visualization, animator)
 
     -- Apply sorting
     local sort_mode = state.settings.sort_mode or "none"
-    if sort_mode == "color" then
+    local sort_reverse = state.settings.sort_reverse or false
+
+    if sort_mode == "length" then
+      -- Sort by item length/duration
+      table.sort(filtered, function(a, b)
+        local a_len = 0
+        local b_len = 0
+        if a.item then
+          a_len = reaper.GetMediaItemInfo_Value(a.item, "D_LENGTH")
+        end
+        if b.item then
+          b_len = reaper.GetMediaItemInfo_Value(b.item, "D_LENGTH")
+        end
+        if sort_reverse then
+          return a_len > b_len  -- Longest first
+        else
+          return a_len < b_len  -- Shortest first
+        end
+      end)
+    elseif sort_mode == "color" then
       -- Sort by color using library's color comparison
       -- Uses HSL: Hue → Saturation (desc) → Lightness (desc)
       -- Grays (sat < 0.08) are grouped at the end
       table.sort(filtered, function(a, b)
-        return Colors.compare_colors(a.color, b.color)
+        if sort_reverse then
+          return Colors.compare_colors(b.color, a.color)
+        else
+          return Colors.compare_colors(a.color, b.color)
+        end
       end)
     elseif sort_mode == "name" then
       -- Sort alphabetically by name
       table.sort(filtered, function(a, b)
-        return a.name:lower() < b.name:lower()
+        if sort_reverse then
+          return a.name:lower() > b.name:lower()
+        else
+          return a.name:lower() < b.name:lower()
+        end
       end)
     elseif sort_mode == "pool" then
       -- Sort by pool count (descending), then by name
@@ -237,7 +265,11 @@ function M.create(ctx, config, state, visualization, animator)
         local a_pool = a.pool_count or 1
         local b_pool = b.pool_count or 1
         if a_pool ~= b_pool then
-          return a_pool > b_pool  -- Higher pool counts first
+          if sort_reverse then
+            return a_pool < b_pool  -- Lower pool counts first
+          else
+            return a_pool > b_pool  -- Higher pool counts first
+          end
         else
           return (a.name or "") < (b.name or "")  -- Then alphabetically
         end

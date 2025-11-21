@@ -557,8 +557,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local luminance = Colors.luminance(render_color)
       local brightness_factor
       if luminance > 0.5 then
-        -- Bright tile: darken the duration text
-        brightness_factor = 0.4
+        -- Bright tile: darken the duration text significantly
+        brightness_factor = 0.25
       else
         -- Dark tile: lighten the duration text
         brightness_factor = 1.6
