@@ -69,12 +69,15 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
 
         local is_selected = state.filter_tags[tag_name] or false
 
-        -- Draw tag using Chip component (PILL style)
+        -- Draw tag using Chip component (ACTION style)
         local clicked, chip_w, chip_h = Chip.draw(ctx, {
-          style = Chip.STYLE.PILL,
+          style = Chip.STYLE.ACTION,
           label = tag_name,
-          color = tag_data.color,
+          bg_color = tag_data.color,
+          text_color = Colors.auto_text_color(tag_data.color),
           height = UI.CHIP.HEIGHT_DEFAULT,
+          padding_h = 8,
+          rounding = 2,
           is_selected = is_selected,
           interactive = true,
         })
