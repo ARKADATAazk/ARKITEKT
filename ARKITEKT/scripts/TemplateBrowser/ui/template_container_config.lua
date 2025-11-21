@@ -1,49 +1,15 @@
 -- @noindex
 -- TemplateBrowser/ui/template_container_config.lua
 -- Panel container configuration for template grid
-
-local Colors = require('rearkitekt.core.colors')
+-- All visual styling comes from library defaults
 
 local M = {}
 
 function M.create(callbacks, is_overlay_mode)
-  -- Use solid backgrounds like Region Playlist (no transparency)
-  local panel_bg = Colors.hexrgb("#1A1A1AFF")
-  local header_bg = Colors.hexrgb("#1E1E1EFF")
-
   return {
-    bg_color = panel_bg,
-    border_thickness = 1,
-    border_color = Colors.hexrgb("#000000DD"),
-    rounding = 8,
-    padding = 8,
-
-    -- Background pattern matching Region Playlist
-    background_pattern = {
-      enabled = true,
-      primary = {
-        type = 'grid',
-        spacing = 50,
-        line_thickness = 1.5,
-      },
-      secondary = {
-        enabled = true,
-        type = 'grid',
-        spacing = 5,
-        line_thickness = 0.5,
-      },
-    },
-
     header = {
       enabled = true,
       height = 56,  -- Height for two rows: controls (26px) + spacing (4px) + chips (18px + padding)
-      bg_color = header_bg,
-      padding = {
-        left = 8,
-        right = 8,
-        top = 4,
-        bottom = 4,
-      },
       elements = {
         -- All-in-one header controls (search, sort, filter chips)
         {
@@ -62,11 +28,6 @@ function M.create(callbacks, is_overlay_mode)
           },
         },
       },
-    },
-
-    scroll = {
-      enabled = true,
-      flags = 0,
     },
   }
 end
