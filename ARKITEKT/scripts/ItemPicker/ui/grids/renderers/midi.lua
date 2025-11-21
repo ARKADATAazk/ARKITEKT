@@ -242,11 +242,20 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   local _, text_h = ImGui.CalcTextSize(ctx, "1")  -- Get text height to match cycle badge
   local star_badge_size = text_h + (config.TILE_RENDER.badges.cycle.padding_y * 2)  -- Match cycle badge calculation
 
-  -- Calculate extra text margin to reserve space for favorite badge (text truncation only)
+  -- Calculate extra text margin to reserve space for favorite and pool badges (text truncation only)
   -- This doesn't affect cycle badge position, only text truncation
   local extra_text_margin = 0
   if is_favorite then
     extra_text_margin = star_badge_size + (fav_cfg.spacing or 4)
+  end
+
+  -- Add pool badge space if needed
+  if item_data.pool_count and item_data.pool_count > 1 and cascade_factor > 0.5 then
+    local pool_cfg = config.TILE_RENDER.badges.pool
+    local pool_text = "×" .. tostring(item_data.pool_count)
+    local pool_w, _ = ImGui.CalcTextSize(ctx, pool_text)
+    local pool_badge_w = pool_w + pool_cfg.padding_x * 2
+    extra_text_margin = extra_text_margin + pool_badge_w + (pool_cfg.spacing or 4)
   end
 
   -- Check if this tile is being renamed
@@ -553,12 +562,15 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local text_x = scaled_x2 - text_w - margin
       local text_y = scaled_y2 - text_h - margin
 
-      -- Adaptive color: darker for bright tiles, lighter for dark tiles
+      -- Adaptive color: much darker for bright tiles, lighter for dark tiles
       local luminance = Colors.luminance(render_color)
       local brightness_factor
       if luminance > 0.5 then
-        -- Bright tile: darken the duration text significantly
-        brightness_factor = 0.25
+        -- Bright tile: darken the duration text very significantly
+        brightness_factor = 0.15
+      elseif luminance > 0.3 then
+        -- Medium luminance tile: darken moderately
+        brightness_factor = 0.35
       else
         -- Dark tile: lighten the duration text
         brightness_factor = 1.6
