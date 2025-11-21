@@ -298,8 +298,8 @@ local function render_tree_node(ctx, node, config, state, depth)
       -- Use node color for text if available, otherwise white
       local text_color
       if node_color and config.show_colors then
-        -- Make text much lighter/subtler than the folder color
-        text_color = Colors.adjust_brightness(node_color, 2.5)  -- 2.5x brighter for subtle tint
+        -- Make text much lighter by lerping toward white (preserves hue)
+        text_color = Colors.lerp(node_color, Colors.hexrgb("#FFFFFFFF"), 0.7)  -- 70% toward white
       else
         text_color = Colors.hexrgb("#FFFFFFFF")  -- Default white text
       end
