@@ -5,6 +5,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
+local Style = require('rearkitekt.gui.style.defaults')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -36,10 +37,10 @@ function M.draw(ctx, label, is_selected, opts)
   -- Check hover
   local is_hovered = ImGui.IsMouseHoveringRect(ctx, cursor_x, cursor_y, cursor_x + total_w, cursor_y + total_h)
 
-  -- Colors
-  local outer_color = is_selected and hexrgb("#5C7CB8") or (is_hovered and hexrgb("#666666") or hexrgb("#555555"))
-  local inner_color = hexrgb("#5C7CB8")
-  local text_color = is_hovered and hexrgb("#FFFFFF") or hexrgb("#CCCCCC")
+  -- Colors - use ARKITEKT neutral whites/grays
+  local outer_color = is_selected and Style.COLORS.TEXT_NORMAL or (is_hovered and Style.COLORS.BORDER_HOVER or Style.COLORS.BORDER_INNER)
+  local inner_color = Style.COLORS.TEXT_NORMAL  -- White fill when selected
+  local text_color = is_hovered and Style.COLORS.TEXT_HOVER or Style.COLORS.TEXT_NORMAL
 
   -- Draw outer circle
   ImGui.DrawList_AddCircle(dl, circle_center_x, circle_center_y, circle_radius, outer_color, 0, 1.5)

@@ -240,7 +240,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- Check if hovering
   local is_help_hovered = ImGui.IsMouseHoveringRect(ctx, help_x, help_y, help_x + help_size, help_y + help_size)
 
-  local icon_color = is_help_hovered and hexrgb("#5C7CB8") or hexrgb("#888888")
+  local icon_color = is_help_hovered and hexrgb("#FFFFFF") or hexrgb("#888888")
 
   -- Get icon font from shell_state
   local icon_font = self.shell_state and self.shell_state.fonts and self.shell_state.fonts.icons
@@ -619,24 +619,26 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- Wildcard separator radio buttons
   ImGui.SetCursorPosX(ctx, right_col_x)
   ImGui.TextColored(ctx, hexrgb("#999999FF"), "Separator before wildcard:")
-  ImGui.Dummy(ctx, 0, 8)
+  ImGui.Dummy(ctx, 0, 6)
+  ImGui.SetCursorPosX(ctx, right_col_x)
 
   -- Radio button for "None"
-  ImGui.SetCursorPosX(ctx, right_col_x)
   if RadioButton.draw(ctx, "None", self.separator == "none", {id = "sep_none"}) then
     self.separator = "none"
     save_separator_preference("none")
   end
 
+  ImGui.SameLine(ctx, 0, 12)
+
   -- Radio button for "Underscore"
-  ImGui.SetCursorPosX(ctx, right_col_x)
   if RadioButton.draw(ctx, "Underscore (_)", self.separator == "underscore", {id = "sep_underscore"}) then
     self.separator = "underscore"
     save_separator_preference("underscore")
   end
 
+  ImGui.SameLine(ctx, 0, 12)
+
   -- Radio button for "Space"
-  ImGui.SetCursorPosX(ctx, right_col_x)
   if RadioButton.draw(ctx, "Space ( )", self.separator == "space", {id = "sep_space"}) then
     self.separator = "space"
     save_separator_preference("space")
