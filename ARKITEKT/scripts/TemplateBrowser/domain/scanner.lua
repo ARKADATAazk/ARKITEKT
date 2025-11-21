@@ -143,6 +143,12 @@ local function scan_directory(path, relative_path, metadata)
     local subdir = reaper.EnumerateSubdirectories(path, idx)
     if not subdir then break end
 
+    -- Skip .archive folder (it's managed separately)
+    if subdir == ".archive" then
+      idx = idx + 1
+      goto continue
+    end
+
     local new_relative = relative_path ~= "" and (relative_path .. sep .. subdir) or subdir
     local sub_path = path .. subdir .. sep
 
@@ -198,6 +204,7 @@ local function scan_directory(path, relative_path, metadata)
       table.insert(folders, fld)
     end
 
+    ::continue::
     idx = idx + 1
   end
 
