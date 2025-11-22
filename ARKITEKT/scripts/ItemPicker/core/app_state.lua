@@ -491,7 +491,8 @@ function M.request_exit()
 end
 
 -- Preview management (using SWS extension commands)
-function M.start_preview(item)
+-- force_mode: nil (use setting), "through_track" (force with FX), "direct" (force no FX)
+function M.start_preview(item, force_mode)
   if not item then return end
 
   -- Stop current preview
@@ -525,8 +526,15 @@ function M.start_preview(item)
       M.preview_duration = item_len
     end
   else
-    -- Audio: Check play_item_through_track setting (matching OG behavior)
-    if M.settings.play_item_through_track then
+    -- Audio: Check force_mode or fall back to setting
+    local use_through_track = M.settings.play_item_through_track
+    if force_mode == "through_track" then
+      use_through_track = true
+    elseif force_mode == "direct" then
+      use_through_track = false
+    end
+
+    if use_through_track then
       -- Preview through track with FX
       local cmd_id = reaper.NamedCommandLookup("_SWS_PREVIEWTRACK")
       if cmd_id and cmd_id ~= 0 then

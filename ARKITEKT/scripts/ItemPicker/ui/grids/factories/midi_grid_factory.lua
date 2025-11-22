@@ -523,6 +523,7 @@ function M.create(ctx, config, state, visualization, animator)
           if state.is_previewing(item_data.item) then
             state.stop_preview()
           else
+            -- MIDI always uses preview through track, modifier keys don't apply
             state.start_preview(item_data.item)
           end
           return

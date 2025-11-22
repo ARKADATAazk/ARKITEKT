@@ -522,7 +522,19 @@ function M.create(ctx, config, state, visualization, animator)
           if state.is_previewing(item_data.item) then
             state.stop_preview()
           else
-            state.start_preview(item_data.item)
+            -- Check for modifier keys to override play mode (audio only)
+            local force_mode = nil
+            local take = reaper.GetActiveTake(item_data.item)
+            if take and not reaper.TakeIsMIDI(take) then
+              -- CTRL+SPACE: Force play through track (with FX)
+              if ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl) then
+                force_mode = "through_track"
+              -- SHIFT+SPACE: Force direct preview (no FX)
+              elseif ImGui.IsKeyDown(ctx, ImGui.Mod_Shift) then
+                force_mode = "direct"
+              end
+            end
+            state.start_preview(item_data.item, force_mode)
           end
           return
         end
