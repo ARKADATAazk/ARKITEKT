@@ -11,7 +11,7 @@ local Draw   = require('rearkitekt.gui.draw')
 local Colors = require('rearkitekt.core.colors')
 local Style  = require('rearkitekt.gui.style.imgui_defaults')
 local OverlayConfig = require('rearkitekt.gui.widgets.overlays.overlay.defaults')
-local Constants = require('rearkitekt.app.init.constants')
+local Constants = require('rearkitekt.defs.app')
 
 local M = {}
 M.__index = M

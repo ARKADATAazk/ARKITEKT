@@ -75,7 +75,7 @@ local ARK = Init.bootstrap()  -- Returns context table or nil
 
 **API:**
 ```lua
-local Constants = require('rearkitekt.app.init.constants')
+local Constants = require('rearkitekt.defs.app')
 local height = Constants.STATUS_BAR.height
 local fade_speed = Constants.ANIMATION.FADE_NORMAL
 ```

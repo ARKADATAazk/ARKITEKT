@@ -9,7 +9,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Config = require('rearkitekt.core.config')
-local Constants = require('rearkitekt.app.init.constants')
+local Constants = require('rearkitekt.defs.app')
 local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 
 local M = {}

@@ -168,6 +168,62 @@ M.DEPENDENCIES = {
 }
 
 -- ============================================================================
+-- FONTS (backward compatibility - re-export from typography)
+-- ============================================================================
+M.FONTS = {
+    default = Typography.SIZE.md,
+    title = Typography.SIZE.md,
+    version = Typography.SIZE.sm,
+    titlebar_version_monospace = Typography.SIZE.xs,
+    family_regular = Typography.FAMILY.regular,
+    family_bold = Typography.FAMILY.bold,
+    family_mono = Typography.FAMILY.mono,
+}
+
+-- ============================================================================
+-- TYPOGRAPHY (backward compatibility - re-export from typography)
+-- ============================================================================
+M.TYPOGRAPHY = {
+    SMALL = Typography.SIZE.sm,
+    DEFAULT = Typography.SIZE.md,
+    MEDIUM = Typography.SIZE.lg,
+    LARGE = Typography.SIZE.xl,
+    XLARGE = Typography.SIZE.xxl,
+    BODY = Typography.SEMANTIC.body,
+    HEADING = Typography.SEMANTIC.heading,
+    TITLE = Typography.SEMANTIC.title,
+    CAPTION = Typography.SEMANTIC.caption,
+    CODE = Typography.SEMANTIC.code,
+}
+
+-- ============================================================================
+-- LAYOUT (backward compatibility - re-export from layout)
+-- ============================================================================
+M.LAYOUT = {
+    PADDING_NONE = Layout.PADDING.none,
+    PADDING_SMALL = Layout.PADDING.sm,
+    PADDING_MEDIUM = Layout.PADDING.md,
+    PADDING_LARGE = Layout.PADDING.lg,
+    PADDING_XLARGE = Layout.PADDING.xl,
+    ROUNDING_NONE = Layout.ROUNDING.none,
+    ROUNDING_SMALL = Layout.ROUNDING.sm,
+    ROUNDING_MEDIUM = Layout.ROUNDING.md,
+    ROUNDING_LARGE = Layout.ROUNDING.lg,
+}
+
+-- ============================================================================
+-- ANIMATION (backward compatibility - re-export from timing)
+-- ============================================================================
+M.ANIMATION = {
+    FADE_INSTANT = Timing.FADE.instant,
+    FADE_FAST = Timing.FADE.fast,
+    FADE_NORMAL = Timing.FADE.normal,
+    FADE_SLOW = Timing.FADE.slow,
+    DEFAULT_FADE_CURVE = Timing.EASING.default_fade,
+    HOVER_SPEED = Timing.SPEED.hover,
+}
+
+-- ============================================================================
 -- ACCESSOR METHODS (backward compatibility)
 -- ============================================================================
 
