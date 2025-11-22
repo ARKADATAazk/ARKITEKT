@@ -7,17 +7,23 @@ Converts SVG paths to ReaImGui DrawList API calls using svgpathtools
 Requires: pip install svgpathtools
 
 Usage:
+    # Single file conversion
     python svg_to_lua.py input.svg [--output output.lua] [--function-name draw_icon]
+
+    # Batch conversion from svg/ folder
+    python svg_to_lua.py --batch [--output-dir output/]
 
 Example:
     python svg_to_lua.py arkitekt_logo.svg --function-name draw_arkitekt_accurate -o icon.lua
+    python svg_to_lua.py --batch --output-dir lua_icons/
 """
 
 import argparse
 import sys
 import math
+import re
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 
 try:
     from svgpathtools import svg2paths, Line, QuadraticBezier, CubicBezier, Arc
@@ -28,6 +34,45 @@ except ImportError:
     sys.exit(1)
 
 import xml.etree.ElementTree as ET
+
+
+def parse_style_attribute(style_str: str) -> Dict[str, str]:
+    """Parse CSS-style attribute string into a dictionary."""
+    styles = {}
+    if not style_str:
+        return styles
+
+    for item in style_str.split(';'):
+        item = item.strip()
+        if ':' in item:
+            key, value = item.split(':', 1)
+            styles[key.strip()] = value.strip()
+
+    return styles
+
+
+def get_element_style(element, attr_name: str, default: str = 'none') -> str:
+    """Get style attribute from element, checking both direct attribute and style string."""
+    # First check direct attribute
+    value = element.get(attr_name)
+    if value:
+        return value
+
+    # Then check style attribute
+    style_str = element.get('style', '')
+    styles = parse_style_attribute(style_str)
+    return styles.get(attr_name, default)
+
+
+def sanitize_function_name(name: str) -> str:
+    """Convert filename to valid Lua function name."""
+    # Remove extension and replace invalid chars
+    name = Path(name).stem
+    name = re.sub(r'[^a-zA-Z0-9_]', '_', name)
+    # Ensure starts with letter or underscore
+    if name and name[0].isdigit():
+        name = '_' + name
+    return name or 'draw_icon'
 
 
 class LuaCodeGenerator:
@@ -73,43 +118,71 @@ class LuaCodeGenerator:
         return f"{normalized:.6f}"
 
     def _arc_to_lua(self, arc: Arc, lua_lines: List[str]):
-        """Convert Arc to ImGui PathArcTo or approximate with bezier."""
-        # Get arc parameters
-        start = arc.start
-        end = arc.end
-        radius = arc.radius
+        """Convert Arc to ImGui PathArcTo or approximate with bezier.
 
-        # For ReaImGui, we'll approximate arcs with cubic bezier curves
-        # This is more compatible than trying to use PathArcTo with elliptical arcs
-        # svgpathtools can help us sample the arc
+        Uses proper cubic bezier approximation for arc segments.
+        For best accuracy, arcs are split into segments of at most 90 degrees.
+        """
+        # Calculate arc angle span for determining number of segments
+        # Larger arcs need more segments for accuracy
+        theta = arc.theta
+        delta = arc.delta
 
-        # Sample the arc at multiple points for better approximation
-        num_samples = 4
-        for i in range(num_samples):
-            t_start = i / num_samples
-            t_end = (i + 1) / num_samples
+        # Determine number of segments (max 90 degrees per segment)
+        num_segments = max(1, int(math.ceil(abs(delta) / 90.0)))
 
+        for i in range(num_segments):
+            t_start = i / num_segments
+            t_end = (i + 1) / num_segments
+
+            # Get arc points at segment boundaries
             p0 = arc.point(t_start)
             p3 = arc.point(t_end)
 
-            # Approximate with cubic bezier
-            # Control points at 1/3 and 2/3 along the arc
-            p1 = arc.point(t_start + (t_end - t_start) * 0.33)
-            p2 = arc.point(t_start + (t_end - t_start) * 0.67)
+            # Calculate proper cubic bezier control points for arc segment
+            # Using the standard arc-to-bezier approximation formula
+            segment_angle = abs(delta) / num_segments * math.pi / 180.0
+
+            # The magic number for cubic bezier arc approximation
+            # k = (4/3) * tan(angle/4)
+            if segment_angle > 0:
+                k = (4.0 / 3.0) * math.tan(segment_angle / 4.0)
+            else:
+                k = 0
+
+            # Get tangent directions at start and end of segment
+            # Derivative at a point gives tangent direction
+            d0 = arc.derivative(t_start)
+            d3 = arc.derivative(t_end)
+
+            # Normalize tangent lengths based on segment
+            arc_len = abs(arc.length() * (t_end - t_start))
+            if arc_len > 0:
+                scale = arc_len * k / 3.0
+                d0_norm = abs(d0)
+                d3_norm = abs(d3)
+
+                if d0_norm > 0:
+                    p1 = p0 + (d0 / d0_norm) * scale
+                else:
+                    p1 = p0 + (p3 - p0) * 0.33
+
+                if d3_norm > 0:
+                    p2 = p3 - (d3 / d3_norm) * scale
+                else:
+                    p2 = p0 + (p3 - p0) * 0.67
+            else:
+                p1 = p0 + (p3 - p0) * 0.33
+                p2 = p0 + (p3 - p0) * 0.67
 
             self._update_bounds(p3.real, p3.imag)
 
-            nx0 = self._normalize_coord(p0.real, True)
-            ny0 = self._normalize_coord(p0.imag, False)
             nx1 = self._normalize_coord(p1.real, True)
             ny1 = self._normalize_coord(p1.imag, False)
             nx2 = self._normalize_coord(p2.real, True)
             ny2 = self._normalize_coord(p2.imag, False)
             nx3 = self._normalize_coord(p3.real, True)
             ny3 = self._normalize_coord(p3.imag, False)
-
-            if i == 0:
-                lua_lines.append(f"  ImGui.DrawList_PathLineTo(dl, x + s*{nx0}, y + s*{ny0})")
 
             lua_lines.append(f"  ImGui.DrawList_PathBezierCubicCurveTo(dl, x + s*{nx1}, y + s*{ny1}, x + s*{nx2}, y + s*{ny2}, x + s*{nx3}, y + s*{ny3})")
 
@@ -243,43 +316,103 @@ def parse_viewbox(svg_root) -> Optional[Tuple[float, float, float, float]]:
 
 
 def parse_basic_shapes(svg_root) -> List[Tuple[str, str, str, float]]:
-    """Convert basic SVG shapes (circle, rect, ellipse, polygon) to path strings."""
+    """Convert basic SVG shapes (circle, rect, ellipse, polygon, line, polyline) to path strings."""
     shapes = []
     ns = {'svg': 'http://www.w3.org/2000/svg'}
 
+    def find_elements(tag):
+        """Find elements with or without SVG namespace."""
+        return svg_root.findall(f'.//svg:{tag}', ns) + svg_root.findall(f'.//{tag}')
+
     # Circles
-    for circle in svg_root.findall('.//svg:circle', ns) + svg_root.findall('.//circle'):
+    for circle in find_elements('circle'):
         cx = float(circle.get('cx', 0))
         cy = float(circle.get('cy', 0))
         r = float(circle.get('r', 0))
-        fill = circle.get('fill', 'black')
-        stroke = circle.get('stroke', 'none')
-        stroke_width = float(circle.get('stroke-width', 1))
+        fill = get_element_style(circle, 'fill', 'black')
+        stroke = get_element_style(circle, 'stroke', 'none')
+        stroke_width = float(get_element_style(circle, 'stroke-width', '1'))
 
         # Convert circle to path using arc commands
         path_d = f"M {cx-r},{cy} A {r},{r} 0 1,0 {cx+r},{cy} A {r},{r} 0 1,0 {cx-r},{cy} Z"
         shapes.append((path_d, fill, stroke, stroke_width))
 
+    # Ellipses
+    for ellipse in find_elements('ellipse'):
+        cx = float(ellipse.get('cx', 0))
+        cy = float(ellipse.get('cy', 0))
+        rx = float(ellipse.get('rx', 0))
+        ry = float(ellipse.get('ry', 0))
+        fill = get_element_style(ellipse, 'fill', 'black')
+        stroke = get_element_style(ellipse, 'stroke', 'none')
+        stroke_width = float(get_element_style(ellipse, 'stroke-width', '1'))
+
+        # Convert ellipse to path using arc commands
+        path_d = f"M {cx-rx},{cy} A {rx},{ry} 0 1,0 {cx+rx},{cy} A {rx},{ry} 0 1,0 {cx-rx},{cy} Z"
+        shapes.append((path_d, fill, stroke, stroke_width))
+
     # Rectangles
-    for rect in svg_root.findall('.//svg:rect', ns) + svg_root.findall('.//rect'):
+    for rect in find_elements('rect'):
         x = float(rect.get('x', 0))
         y = float(rect.get('y', 0))
         w = float(rect.get('width', 0))
         h = float(rect.get('height', 0))
-        fill = rect.get('fill', 'black')
-        stroke = rect.get('stroke', 'none')
-        stroke_width = float(rect.get('stroke-width', 1))
+        rx = float(rect.get('rx', 0))
+        ry = float(rect.get('ry', rx))  # ry defaults to rx
+        fill = get_element_style(rect, 'fill', 'black')
+        stroke = get_element_style(rect, 'stroke', 'none')
+        stroke_width = float(get_element_style(rect, 'stroke-width', '1'))
 
-        # Convert rect to path
-        path_d = f"M {x},{y} L {x+w},{y} L {x+w},{y+h} L {x},{y+h} Z"
+        # Convert rect to path (with optional rounded corners)
+        if rx > 0 or ry > 0:
+            # Rounded rectangle
+            path_d = (f"M {x+rx},{y} "
+                     f"L {x+w-rx},{y} "
+                     f"A {rx},{ry} 0 0,1 {x+w},{y+ry} "
+                     f"L {x+w},{y+h-ry} "
+                     f"A {rx},{ry} 0 0,1 {x+w-rx},{y+h} "
+                     f"L {x+rx},{y+h} "
+                     f"A {rx},{ry} 0 0,1 {x},{y+h-ry} "
+                     f"L {x},{y+ry} "
+                     f"A {rx},{ry} 0 0,1 {x+rx},{y} Z")
+        else:
+            path_d = f"M {x},{y} L {x+w},{y} L {x+w},{y+h} L {x},{y+h} Z"
         shapes.append((path_d, fill, stroke, stroke_width))
 
+    # Lines
+    for line in find_elements('line'):
+        x1 = float(line.get('x1', 0))
+        y1 = float(line.get('y1', 0))
+        x2 = float(line.get('x2', 0))
+        y2 = float(line.get('y2', 0))
+        stroke = get_element_style(line, 'stroke', 'black')
+        stroke_width = float(get_element_style(line, 'stroke-width', '1'))
+
+        path_d = f"M {x1},{y1} L {x2},{y2}"
+        shapes.append((path_d, 'none', stroke, stroke_width))
+
+    # Polylines (like polygon but not closed)
+    for polyline in find_elements('polyline'):
+        points_str = polyline.get('points', '')
+        fill = get_element_style(polyline, 'fill', 'none')
+        stroke = get_element_style(polyline, 'stroke', 'black')
+        stroke_width = float(get_element_style(polyline, 'stroke-width', '1'))
+
+        if points_str:
+            points = points_str.replace(',', ' ').split()
+            if len(points) >= 2:
+                path_d = f"M {points[0]} {points[1]}"
+                for i in range(2, len(points), 2):
+                    if i+1 < len(points):
+                        path_d += f" L {points[i]} {points[i+1]}"
+                shapes.append((path_d, fill, stroke, stroke_width))
+
     # Polygons
-    for polygon in svg_root.findall('.//svg:polygon', ns) + svg_root.findall('.//polygon'):
+    for polygon in find_elements('polygon'):
         points_str = polygon.get('points', '')
-        fill = polygon.get('fill', 'black')
-        stroke = polygon.get('stroke', 'none')
-        stroke_width = float(polygon.get('stroke-width', 1))
+        fill = get_element_style(polygon, 'fill', 'black')
+        stroke = get_element_style(polygon, 'stroke', 'none')
+        stroke_width = float(get_element_style(polygon, 'stroke-width', '1'))
 
         if points_str:
             points = points_str.replace(',', ' ').split()
@@ -367,6 +500,90 @@ def generate_lua_function(svg_path: Path, function_name: str = "draw_icon",
     return '\n'.join(lua_lines)
 
 
+def process_batch(svg_dir: Path, output_dir: Optional[Path] = None,
+                  normalize: bool = True, verbose: bool = True) -> Tuple[int, int]:
+    """Process all SVG files in a directory.
+
+    Args:
+        svg_dir: Directory containing SVG files
+        output_dir: Output directory for Lua files (default: prints to stdout)
+        normalize: Whether to normalize coordinates
+        verbose: Print progress information
+
+    Returns:
+        Tuple of (success_count, error_count)
+    """
+    svg_files = list(svg_dir.glob('*.svg'))
+
+    if not svg_files:
+        if verbose:
+            print(f"No SVG files found in: {svg_dir}", file=sys.stderr)
+        return 0, 0
+
+    if output_dir:
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    success_count = 0
+    error_count = 0
+    total = len(svg_files)
+
+    if verbose:
+        print(f"Processing {total} SVG file(s) from: {svg_dir}")
+        if output_dir:
+            print(f"Output directory: {output_dir}")
+        print()
+
+    for idx, svg_file in enumerate(svg_files, 1):
+        function_name = f"draw_{sanitize_function_name(svg_file.name)}"
+
+        try:
+            lua_code = generate_lua_function(
+                svg_file,
+                function_name,
+                normalize=normalize
+            )
+
+            if output_dir:
+                # Write to file
+                output_file = output_dir / f"{svg_file.stem}.lua"
+                full_code = [
+                    "-- @noindex",
+                    f"-- Generated from {svg_file.name}",
+                    "package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path",
+                    "local ImGui = require 'imgui' '0.10'",
+                    "",
+                    "local M = {}",
+                    "",
+                    lua_code,
+                    "",
+                    "return M"
+                ]
+                output_file.write_text('\n'.join(full_code))
+
+                if verbose:
+                    print(f"[{idx}/{total}] OK: {svg_file.name} -> {output_file.name}")
+            else:
+                # Print to stdout with separator
+                print(f"-- {'=' * 60}")
+                print(f"-- File: {svg_file.name}")
+                print(f"-- {'=' * 60}")
+                print(lua_code)
+                print()
+
+            success_count += 1
+
+        except Exception as e:
+            error_count += 1
+            if verbose:
+                print(f"[{idx}/{total}] ERROR: {svg_file.name}: {e}", file=sys.stderr)
+
+    if verbose:
+        print()
+        print(f"Completed: {success_count} succeeded, {error_count} failed")
+
+    return success_count, error_count
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Convert SVG to ReaImGui Lua DrawList code using svgpathtools',
@@ -379,6 +596,12 @@ Examples:
   # With custom function name and output file
   python svg_to_lua.py logo.svg -f draw_arkitekt_logo -o icon.lua
 
+  # Batch conversion from svg/ folder
+  python svg_to_lua.py --batch
+
+  # Batch conversion with custom directories
+  python svg_to_lua.py --batch --svg-dir my_icons/ --output-dir lua_output/
+
   # Without normalization
   python svg_to_lua.py icon.svg --no-normalize
 
@@ -387,14 +610,50 @@ Requirements:
         """
     )
 
-    parser.add_argument('input', type=Path, help='Input SVG file')
+    parser.add_argument('input', type=Path, nargs='?', help='Input SVG file')
     parser.add_argument('-o', '--output', type=Path, help='Output Lua file (default: stdout)')
     parser.add_argument('-f', '--function-name', default='draw_icon',
                        help='Lua function name (default: draw_icon)')
     parser.add_argument('--no-normalize', action='store_true',
                        help='Do not normalize coordinates')
+    parser.add_argument('--batch', action='store_true',
+                       help='Batch process all SVG files in svg/ folder')
+    parser.add_argument('--svg-dir', type=Path, default=None,
+                       help='SVG input directory for batch mode (default: svg/)')
+    parser.add_argument('--output-dir', type=Path, default=None,
+                       help='Output directory for batch mode (default: prints to stdout)')
+    parser.add_argument('-q', '--quiet', action='store_true',
+                       help='Suppress progress output')
 
     args = parser.parse_args()
+
+    # Batch mode
+    if args.batch:
+        # Determine SVG directory
+        if args.svg_dir:
+            svg_dir = args.svg_dir
+        else:
+            # Look for svg/ folder relative to script location
+            script_dir = Path(__file__).parent
+            svg_dir = script_dir / 'svg'
+
+        if not svg_dir.exists():
+            print(f"Error: SVG directory not found: {svg_dir}", file=sys.stderr)
+            print(f"Create it with: mkdir -p {svg_dir}", file=sys.stderr)
+            sys.exit(1)
+
+        success, errors = process_batch(
+            svg_dir,
+            args.output_dir,
+            normalize=not args.no_normalize,
+            verbose=not args.quiet
+        )
+
+        sys.exit(0 if errors == 0 else 1)
+
+    # Single file mode
+    if not args.input:
+        parser.error("Either provide an input SVG file or use --batch mode")
 
     if not args.input.exists():
         print(f"Error: File not found: {args.input}", file=sys.stderr)
@@ -423,7 +682,7 @@ Requirements:
             ]
 
             args.output.write_text('\n'.join(full_code))
-            print(f"✓ Generated Lua code written to: {args.output}")
+            print(f"Generated Lua code written to: {args.output}")
         else:
             print(lua_code)
 
