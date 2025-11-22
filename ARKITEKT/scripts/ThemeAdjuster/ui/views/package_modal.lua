@@ -7,6 +7,7 @@ local Colors = require('rearkitekt.core.colors')
 local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Constants = require('ThemeAdjuster.defs.constants')
+local Images = require('ThemeAdjuster.core.images')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -41,52 +42,9 @@ local AREA_COLORS = {
   Other = TC.other_slate,
 }
 
--- Image cache for tooltips
-local image_cache = {}
-
--- Helper to create/get cached image with proper lifecycle management
-local function get_cached_image(ctx, path)
-  if not path or path == "" then return nil end
-  if path:find("^%(mock%)") then return nil end  -- Demo packages have no real images
-
-  local entry = image_cache[path]
-
-  -- Check if we have a cached entry
-  if entry ~= nil then
-    if entry == false then
-      return nil  -- Previously failed to load
-    end
-
-    -- Validate the image is still valid
-    local ok, w, h = pcall(ImGui.Image_GetSize, entry)
-    if ok and w and w > 0 then
-      return entry  -- Image is still valid
-    else
-      -- Image became invalid, clear it
-      image_cache[path] = nil
-    end
-  end
-
-  -- Try to create new image
-  local ok, img = pcall(ImGui.CreateImage, path)
-  if ok and img then
-    -- Attach to context to prevent garbage collection
-    ImGui.Attach(ctx, img)
-
-    -- Verify it loaded correctly
-    local ok2, w, h = pcall(ImGui.Image_GetSize, img)
-    if ok2 and w and w > 0 then
-      image_cache[path] = img
-      return img
-    else
-      image_cache[path] = false
-      return nil
-    end
-  else
-    image_cache[path] = false  -- Mark as failed
-    return nil
-  end
-end
+-- Image cache for tooltips (uses Images module for proper lifecycle management)
+-- See ThemeAdjuster/core/images.lua for documentation on image handling
+local image_cache = Images.new_cache()
 
 -- Helper to check if DPI variant exists
 local function check_dpi_variants(base_path)
@@ -445,11 +403,11 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   if hovered then
     ImGui.BeginTooltip(ctx)
 
-    -- Show image preview if available
-    local img = get_cached_image(ctx, asset_path)
+    -- Show image preview if available (uses Images module for lifecycle management)
+    local img = image_cache:get(ctx, asset_path)
     if img then
-      local ok, img_w, img_h = pcall(ImGui.Image_GetSize, img)
-      if ok and img_w and img_w > 0 then
+      local img_w, img_h = image_cache:get_size(img)
+      if img_w > 0 then
         -- Scale down large images
         local max_size = 200
         if img_w > max_size or img_h > max_size then
