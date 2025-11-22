@@ -28,12 +28,6 @@ local function find_fonts_dir()
   local rearkitekt_dir = app_dir:match('^(.*'..sep..')[^'..sep..']*'..sep..'$') or app_dir
   -- Now add fonts/
   local fonts_dir = rearkitekt_dir .. 'fonts' .. sep
-
-  reaper.ShowConsoleMsg("FONTS.LUA DEBUG: src = " .. tostring(src) .. "\n")
-  reaper.ShowConsoleMsg("FONTS.LUA DEBUG: this_dir = " .. tostring(this_dir) .. "\n")
-  reaper.ShowConsoleMsg("FONTS.LUA DEBUG: app_dir = " .. tostring(app_dir) .. "\n")
-  reaper.ShowConsoleMsg("FONTS.LUA DEBUG: rearkitekt_dir = " .. tostring(rearkitekt_dir) .. "\n")
-  reaper.ShowConsoleMsg("FONTS.LUA DEBUG: fonts_dir = " .. tostring(fonts_dir) .. "\n")
   return fonts_dir
 end
 

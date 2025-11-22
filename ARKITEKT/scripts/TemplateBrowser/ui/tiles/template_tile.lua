@@ -290,34 +290,11 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Render star using remix icon font
   local star_char = utf8.char(0xF186)  -- Remix star-fill icon
 
-  -- DEBUG: Track font availability (only log once per session)
-  if not M._debug_logged then
-    M._debug_logged = true
-    reaper.ShowConsoleMsg("\n=== STAR FONT DEBUG ===\n")
-    reaper.ShowConsoleMsg("state.fonts exists: " .. tostring(state.fonts ~= nil) .. "\n")
-    if state.fonts then
-      reaper.ShowConsoleMsg("state.fonts.icons exists: " .. tostring(state.fonts.icons ~= nil) .. "\n")
-      reaper.ShowConsoleMsg("state.fonts.icons_size: " .. tostring(state.fonts.icons_size) .. "\n")
-      reaper.ShowConsoleMsg("state.fonts type: " .. type(state.fonts) .. "\n")
-      if state.fonts.icons then
-        reaper.ShowConsoleMsg("state.fonts.icons type: " .. type(state.fonts.icons) .. "\n")
-      end
-    end
-    reaper.ShowConsoleMsg("========================\n")
-  end
-
   -- Use icon font if available in state
   if state.fonts and state.fonts.icons then
     local base_size = state.fonts.icons_size or 14
     local font_size = math.floor(base_size * 3)  -- 3x size
 
-    -- DEBUG: Log sizes
-    if not M._debug_sizes_logged then
-      M._debug_sizes_logged = true
-      reaper.ShowConsoleMsg("USING ICON FONT - base_size: " .. base_size .. ", font_size: " .. font_size .. "\n")
-    end
-
-    -- Push font, calc size, draw with 5-param DrawList_AddText (uses pushed font implicitly)
     ImGui.PushFont(ctx, state.fonts.icons, font_size)
     local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)
     local star_text_x = star_x + (star_size - text_w) * 0.5
@@ -325,15 +302,6 @@ function M.render(ctx, rect, template, state, metadata, animator)
     ImGui.DrawList_AddText(dl, star_text_x, star_text_y, star_color, star_char)
     ImGui.PopFont(ctx)
   else
-    -- DEBUG: Log fallback
-    if not M._debug_fallback_logged then
-      M._debug_fallback_logged = true
-      reaper.ShowConsoleMsg("USING FALLBACK - state.fonts: " .. tostring(state.fonts) .. "\n")
-      if state.fonts then
-        reaper.ShowConsoleMsg("FALLBACK - state.fonts.icons: " .. tostring(state.fonts.icons) .. "\n")
-      end
-    end
-
     -- Fallback to Unicode star if no icon font
     local star_char_fallback = "★"
     local text_w, text_h = ImGui.CalcTextSize(ctx, star_char_fallback)
