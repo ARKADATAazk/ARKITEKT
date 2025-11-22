@@ -14,7 +14,7 @@ M.TRANSPORT = {
 
   shuffle = "Shuffle\nLeft-click: Toggle shuffle mode\nRight-click: Shuffle options (True Shuffle / Random / Re-shuffle)",
 
-  override_transport = "Override Transport\nWhen enabled, playing from REAPER transport will use Region Playlist instead of normal playback",
+  override_transport = "Hijack Transport\nWhen playback reaches a region in the playlist, Region Playlist takes over and continues playing through the playlist",
 
   follow_viewport = "Follow Viewport\nAutomatically scroll viewport to follow playhead during playlist playback (continuous scrolling)",
 }
@@ -30,8 +30,8 @@ M.VIEW_MODES = {
 
 -- Status bar messages
 M.STATUS_MESSAGES = {
-  override_enabled = "Override Transport: Enabled - REAPER transport now uses Region Playlist",
-  override_disabled = "Override Transport: Disabled - REAPER transport uses normal playback",
+  override_enabled = "Hijack Transport: Enabled - Playlist takes over when reaching playlist regions",
+  override_disabled = "Hijack Transport: Disabled - Normal timeline playback",
 
   follow_viewport_enabled = "Follow Viewport: Enabled - Viewport will follow playhead",
   follow_viewport_disabled = "Follow Viewport: Disabled - Viewport position locked",
