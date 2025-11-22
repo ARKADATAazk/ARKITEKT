@@ -792,6 +792,144 @@ function M.load_zip_theme(zip_path)
 end
 
 -- ============================================================================
+-- STATE PERSISTENCE (assembler.json per theme)
+-- ============================================================================
+
+-- Simple JSON encoder for state
+local function encode_json(tbl)
+  local function escape_str(s)
+    return s:gsub('\\', '\\\\'):gsub('"', '\\"'):gsub('\n', '\\n'):gsub('\r', '\\r'):gsub('\t', '\\t')
+  end
+
+  local function encode_value(v)
+    if type(v) == "table" then
+      -- Check if array (sequential integer keys starting at 1)
+      local is_array = true
+      local max_idx = 0
+      for k, _ in pairs(v) do
+        if type(k) ~= "number" or k ~= math.floor(k) or k < 1 then
+          is_array = false
+          break
+        end
+        if k > max_idx then max_idx = k end
+      end
+      if is_array and max_idx == #v then
+        -- Array
+        local parts = {}
+        for i = 1, #v do
+          parts[i] = encode_value(v[i])
+        end
+        return "[" .. table.concat(parts, ",") .. "]"
+      else
+        -- Object
+        local parts = {}
+        for k, val in pairs(v) do
+          parts[#parts + 1] = '"' .. escape_str(tostring(k)) .. '":' .. encode_value(val)
+        end
+        return "{" .. table.concat(parts, ",") .. "}"
+      end
+    elseif type(v) == "string" then
+      return '"' .. escape_str(v) .. '"'
+    elseif type(v) == "number" then
+      return tostring(v)
+    elseif type(v) == "boolean" then
+      return v and "true" or "false"
+    end
+    return "null"
+  end
+
+  return encode_value(tbl)
+end
+
+-- Simple JSON decoder for state
+local function decode_json(str)
+  if not str or str == "" then return nil end
+  -- Use Lua's load to parse JSON-like structure
+  -- Convert JSON to Lua table syntax
+  local lua_str = str
+    :gsub('null', 'nil')
+    :gsub('%[', '{')
+    :gsub('%]', '}')
+    :gsub('("[^"]*")%s*:', '[%1]=')
+  local fn = load("return " .. lua_str)
+  if fn then
+    local ok, result = pcall(fn)
+    if ok then return result end
+  end
+  return nil
+end
+
+-- Get path to assembler.json for a theme
+function M.get_state_path(theme_root)
+  if not theme_root then return nil end
+  local cache_dir = get_cache_dir()
+  local theme_id = theme_id_from_path(theme_root)
+  return cache_dir .. SEP .. theme_id .. SEP .. "assembler.json"
+end
+
+-- Save assembler state for a theme
+function M.save_state(theme_root, state_data)
+  if not theme_root then return false, "No theme root" end
+
+  local state_path = M.get_state_path(theme_root)
+  if not state_path then return false, "Cannot determine state path" end
+
+  -- Ensure directory exists
+  local state_dir = state_path:match("^(.*)" .. SEP)
+  if state_dir then
+    reaper.RecursiveCreateDirectory(state_dir, 0)
+  end
+
+  -- Build state object
+  local state = {
+    version = 1,
+    active_order = state_data.active_order or {},
+    pins = state_data.pins or {},
+    exclusions = state_data.exclusions or {},
+    last_saved = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+  }
+
+  -- Encode and write
+  local json = encode_json(state)
+  if not write_all(state_path, json) then
+    return false, "Failed to write state file"
+  end
+
+  return true
+end
+
+-- Load assembler state for a theme
+function M.load_state(theme_root)
+  if not theme_root then return nil end
+
+  local state_path = M.get_state_path(theme_root)
+  if not state_path then return nil end
+
+  local json = read_all(state_path)
+  if not json then return nil end
+
+  local state = decode_json(json)
+  if not state then return nil end
+
+  return {
+    active_order = state.active_order or {},
+    pins = state.pins or {},
+    exclusions = state.exclusions or {},
+  }
+end
+
+-- Delete state file for a theme
+function M.delete_state(theme_root)
+  if not theme_root then return false end
+  local state_path = M.get_state_path(theme_root)
+  if state_path then
+    os.remove(state_path)
+    return true
+  end
+  return false
+end
+
+-- ============================================================================
 -- FILTERING
 -- ============================================================================
 
