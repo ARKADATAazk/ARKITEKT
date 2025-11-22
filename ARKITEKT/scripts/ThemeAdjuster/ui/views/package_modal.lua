@@ -17,7 +17,7 @@ PackageModal.__index = PackageModal
 local SEP = package.config:sub(1,1)
 
 -- Tile constants - wide rectangles
-local TILE_WIDTH = 130
+local TILE_WIDTH = 195
 local TILE_HEIGHT = 32
 local TILE_SPACING = 4
 
@@ -317,6 +317,7 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   local selected = self.selected_assets[key] or false
   local pinned_to = self:get_pinned_provider(key)
   local is_pinned = pinned_to == pkg.id
+  local is_pinned_elsewhere = pinned_to and pinned_to ~= pkg.id
 
   -- Get asset info
   local asset = pkg.assets and pkg.assets[key]
@@ -352,7 +353,6 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   ImGui.InvisibleButton(ctx, "##tile_" .. key, TILE_WIDTH, TILE_HEIGHT)
 
   local clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
-  local right_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right)
   local hovered = ImGui.IsItemHovered(ctx)
 
   -- Handle click
@@ -366,18 +366,37 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
     end
   end
 
-  -- Right-click for pin
-  if right_clicked then
-    if is_pinned then
-      self:set_pinned_provider(key, nil)  -- Unpin
-    else
-      self:set_pinned_provider(key, pkg.id)  -- Pin to this package
+  -- Right-click context menu for pin options
+  if ImGui.BeginPopupContextItem(ctx, "tile_pin_menu_" .. key) then
+    -- Show current pin status
+    if pinned_to then
+      ImGui.TextColored(ctx, hexrgb("#888888"), "Currently pinned to:")
+      ImGui.TextColored(ctx, is_pinned and hexrgb("#4AE290") or hexrgb("#E8A54A"), pinned_to)
+      ImGui.Separator(ctx)
     end
+
+    -- Pin options
+    if is_pinned then
+      if ImGui.MenuItem(ctx, "Unpin from this package") then
+        self:set_pinned_provider(key, nil)
+      end
+    else
+      if ImGui.MenuItem(ctx, "Pin to this package") then
+        self:set_pinned_provider(key, pkg.id)
+      end
+      if is_pinned_elsewhere then
+        if ImGui.MenuItem(ctx, "Override pin (take from " .. pinned_to .. ")") then
+          self:set_pinned_provider(key, pkg.id)
+        end
+      end
+    end
+
+    ImGui.EndPopup(ctx)
   end
 
   -- Draw key name (truncated) - more space for wider tiles
   local display_name = key
-  local max_chars = 16
+  local max_chars = 24
   if #display_name > max_chars then
     display_name = display_name:sub(1, max_chars - 2) .. ".."
   end
@@ -391,21 +410,28 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
 
   -- BADGE SYSTEM for status indicators (right side of tile)
 
-  -- Excluded badge (red circle with X)
+  -- Excluded badge (red circle)
   if not included then
-    local badge_x = x2 - 28
+    local badge_x = x2 - 42
     local badge_y = y1 + TILE_HEIGHT * 0.5
     ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb("#CC3333"))
   end
 
-  -- Pinned badge (green dot)
+  -- Pinned elsewhere badge (orange dot)
+  if is_pinned_elsewhere then
+    local badge_x = x2 - 28
+    local badge_y = y1 + TILE_HEIGHT * 0.5
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb("#E8A54A"))
+  end
+
+  -- Pinned here badge (green dot)
   if is_pinned then
     local badge_x = x2 - 14
     local badge_y = y1 + TILE_HEIGHT * 0.5
     ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb("#4AE290"))
   end
 
-  -- DPI badge (right side, smaller text)
+  -- DPI badge (top right, smaller text)
   if has_150 or has_200 then
     local dpi_text = has_200 and "2x" or "1.5"
     local dpi_w = ImGui.CalcTextSize(ctx, dpi_text)
@@ -443,7 +469,9 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
       ImGui.TextColored(ctx, hexrgb("#FF6666"), "EXCLUDED")
     end
     if is_pinned then
-      ImGui.TextColored(ctx, hexrgb("#4AE290"), "PINNED")
+      ImGui.TextColored(ctx, hexrgb("#4AE290"), "PINNED HERE")
+    elseif is_pinned_elsewhere then
+      ImGui.TextColored(ctx, hexrgb("#E8A54A"), "Pinned to: " .. pinned_to)
     end
 
     -- DPI info
@@ -457,7 +485,7 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
     -- Help text
     ImGui.Spacing(ctx)
     ImGui.TextColored(ctx, hexrgb("#666666"), "Click: Toggle include/exclude")
-    ImGui.TextColored(ctx, hexrgb("#666666"), "Right-click: Toggle pin")
+    ImGui.TextColored(ctx, hexrgb("#666666"), "Right-click: Pin options")
     ImGui.TextColored(ctx, hexrgb("#666666"), "Shift+Click: Select")
 
     ImGui.EndTooltip(ctx)
