@@ -234,19 +234,15 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local chip_w = text_width + chip_content_width
     local chip_h = 20
 
-    -- Background (ACTION style: teal background)
-    local chip_bg = hexrgb("#35504C")
+    -- Background (ACTION style: steel blue)
+    local chip_bg = hexrgb("#3D5A80")
     ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, chip_bg, 2)
 
-    -- Border (dark, square style)
-    local chip_border = hexrgb("#181818")
-    ImGui.DrawList_AddRect(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, chip_border, 2, 0, 1)
-
-    -- Text (centered, teal)
+    -- Text (centered, white)
     local _, actual_text_height = ImGui.CalcTextSize(ctx, display_vst)
     local text_x = chip_x + (chip_w - text_width) * 0.5
     local text_y = chip_y + math.floor((chip_h - actual_text_height) * 0.5)
-    local text_color = hexrgb("#42DDA2")
+    local text_color = hexrgb("#FFFFFF")
     Draw.text(dl, text_x, text_y, text_color, display_vst)
   end
 

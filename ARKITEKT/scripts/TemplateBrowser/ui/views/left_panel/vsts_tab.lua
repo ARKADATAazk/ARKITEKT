@@ -82,13 +82,12 @@ function M.draw(ctx, state, config, width, height)
       local is_selected = state.filter_fx[fx_name] or false
 
       -- Draw VST using Chip component (ACTION style, consistent across Template Browser)
-      local bg_color = is_selected and Colors.hexrgb("#4A7A74") or Colors.hexrgb("#35504C")
+      local bg_color = is_selected and Colors.hexrgb("#5A7A9D") or Colors.hexrgb("#3D5A80")
       local clicked, chip_w, chip_h = Chip.draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
         bg_color = bg_color,
-        text_color = Colors.hexrgb("#42DDA2"),
-        border_color = Colors.hexrgb("#181818"),
+        text_color = Colors.hexrgb("#FFFFFF"),
         height = 22,
         padding_h = 8,
         rounding = 2,
