@@ -127,9 +127,9 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
     local behavior = grid.behaviors and (grid.behaviors['click:alt'] or grid.behaviors.delete)
     if behavior then
       if grid.selection:is_selected(key) and #selected_keys > 1 then
-        behavior(selected_keys)
+        behavior(grid, selected_keys)
       else
-        behavior({key})
+        behavior(grid, {key})
       end
       return true
     end
@@ -139,7 +139,7 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
   -- Right-click: context menu or toggle
   ['click:right'] = function(grid, key, selected_keys)
     if grid.behaviors and grid.behaviors['click:right'] then
-      grid.behaviors['click:right'](key, selected_keys)
+      grid.behaviors['click:right'](grid, key, selected_keys)
       return true
     elseif grid.behaviors and grid.behaviors.toggle_enabled then
       if grid.selection:is_selected(key) and #selected_keys > 1 then
