@@ -13,7 +13,7 @@ local M = {}
 
 -- Default configuration
 local DEFAULTS = {
-  chip_size = 12,           -- Size for square chips
+  chip_size = 15,           -- Size for square chips
   chip_radius = 7,          -- Radius for circle chips (legacy)
   columns = 7,              -- 7 columns for 28 colors (4 rows)
   show_none_option = true,
