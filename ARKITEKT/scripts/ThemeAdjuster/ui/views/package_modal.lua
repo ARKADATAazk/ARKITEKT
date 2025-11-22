@@ -7,7 +7,7 @@ local Colors = require('rearkitekt.core.colors')
 local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Constants = require('ThemeAdjuster.defs.constants')
-local Images = require('ThemeAdjuster.core.images')
+local ImageCache = require('rearkitekt.gui.images')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -42,9 +42,13 @@ local AREA_COLORS = {
   Other = TC.other_slate,
 }
 
--- Image cache for tooltips (uses Images module for proper lifecycle management)
--- See ThemeAdjuster/core/images.lua for documentation on image handling
-local image_cache = Images.new_cache()
+-- Image cache for tooltips (uses rearkitekt.gui.images for proper lifecycle management)
+-- See rearkitekt/gui/images.lua for full documentation
+local image_cache = ImageCache.new({
+  budget = 10,      -- Max images to load per frame
+  max_cache = 100,  -- Max total cached images
+  no_crop = true,   -- Don't slice 3-state images
+})
 
 -- Helper to check if DPI variant exists
 local function check_dpi_variants(base_path)
@@ -403,19 +407,19 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   if hovered then
     ImGui.BeginTooltip(ctx)
 
-    -- Show image preview if available (uses Images module for lifecycle management)
-    local img = image_cache:get(ctx, asset_path)
-    if img then
-      local img_w, img_h = image_cache:get_size(img)
+    -- Show image preview if available (uses rearkitekt.gui.images)
+    local rec = image_cache:get_validated(asset_path)
+    if rec and rec.img then
+      local img_w, img_h = rec.src_w, rec.src_h
       if img_w > 0 then
         -- Scale down large images
         local max_size = 200
         if img_w > max_size or img_h > max_size then
           local scale = max_size / math.max(img_w, img_h)
-          img_w = img_w * scale
-          img_h = img_h * scale
+          img_w = math.floor(img_w * scale)
+          img_h = math.floor(img_h * scale)
         end
-        ImGui.Image(ctx, img, img_w, img_h)
+        image_cache:draw_fit(ctx, asset_path, img_w, img_h)
         ImGui.Separator(ctx)
       end
     end
@@ -600,6 +604,9 @@ end
 function PackageModal:draw_content(ctx, bounds)
   local pkg = self.package_data
   if not pkg then return true end  -- Close if no package
+
+  -- Reset image cache budget for this frame
+  image_cache:begin_frame()
 
   local dl = ImGui.GetWindowDrawList(ctx)
   local padding = 12
