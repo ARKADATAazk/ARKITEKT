@@ -173,7 +173,7 @@ M.TRANSPORT_LAYOUT = {
 -- All icons use UTF-8 encoding
 M.REMIX_ICONS = {
   shuffle = "\xEF\x84\xA4",           -- U+F124 (shuffle-line)
-  override_transport = "\xEE\xB5\x8B", -- U+ED4B
+  override_transport = "\xEE\xB4\xB8", -- U+ED38
   follow_viewport = "\xEF\x8C\xA4",    -- U+F324 (expand-right-fill)
 }
 
