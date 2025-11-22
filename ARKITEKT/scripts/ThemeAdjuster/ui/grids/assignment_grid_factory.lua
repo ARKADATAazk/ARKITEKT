@@ -11,7 +11,7 @@ local M = {}
 
 local function create_behaviors(view, tab_id)
   return {
-    drag_start = function(item_keys)
+    drag_start = function(grid, item_keys)
       -- When GridBridge exists, let it handle the drag coordination
       if view.bridge then
         return
@@ -20,12 +20,12 @@ local function create_behaviors(view, tab_id)
       -- Fallback: no bridge, handle drag locally (not used in ThemeAdjuster)
     end,
 
-    reorder = function(new_order)
+    reorder = function(grid, new_order)
       -- Handle reordering within assignment grid
       view:reorder_assignments(tab_id, new_order)
     end,
 
-    delete = function(item_keys)
+    delete = function(grid, item_keys)
       -- Remove parameters or groups from this tab
       for _, key in ipairs(item_keys) do
         if key:match("^assign_group_") then
@@ -44,7 +44,7 @@ local function create_behaviors(view, tab_id)
       end
     end,
 
-    on_select = function(selected_keys)
+    on_select = function(grid, selected_keys)
       -- Optional: Update selection state
     end,
   }
