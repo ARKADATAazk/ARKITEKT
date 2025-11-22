@@ -37,10 +37,11 @@ M.UI = {
   text_bright = "#000000FF",
 
   -- Backgrounds
-  bg_base = "#FFFFFFFF",
-  bg_panel = "#FAFAFAFF",
-  bg_elevated = "#F5F5F5FF",
-  bg_hover = "#E5E5E5FF",
+  bg_deep = "#FFFFFFFF",
+  bg_base = "#FAFAFAFF",
+  bg_panel = "#F5F5F5FF",
+  bg_elevated = "#E5E5E5FF",
+  bg_hover = "#D4D4D4FF",
   bg_selected = "#DBEAFEFF",
 
   -- Borders

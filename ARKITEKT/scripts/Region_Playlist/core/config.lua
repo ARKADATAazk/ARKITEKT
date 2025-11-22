@@ -66,9 +66,13 @@ M.TRANSPORT = {
       custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
         TransportIcons.draw_tool(dl, x, y, width, height, color)
       end,
-      tooltip = Strings.TRANSPORT.settings,
+      tooltip = "Toggle Theme (Dark/Light)",
       on_click = function()
-        reaper.ShowConsoleMsg("Settings button clicked (coming soon)\n")
+        local ColorDefs = require('rearkitekt.defs.colors')
+        local current = ColorDefs.get_current_theme()
+        local new_theme = current == "default" and "light" or "default"
+        ColorDefs.set_theme(new_theme)
+        reaper.ShowConsoleMsg("Theme switched to: " .. new_theme .. "\n")
       end,
     },
   },
