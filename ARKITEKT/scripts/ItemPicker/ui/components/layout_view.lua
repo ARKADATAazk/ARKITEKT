@@ -53,13 +53,13 @@ local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
   alpha = alpha or 1.0
   rounding = rounding or 6
 
-  -- Panel background (semi-transparent, lighter)
-  local bg_color = Colors.hexrgb("#0F0F0F")
-  bg_color = Colors.with_alpha(bg_color, math.floor(alpha * 0x99))  -- 60% opacity (lighter)
+  -- Panel background (lighter)
+  local bg_color = Colors.hexrgb("#1A1A1A")
+  bg_color = Colors.with_alpha(bg_color, math.floor(alpha * 0x99))  -- 60% opacity
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, rounding)
 
-  -- Panel border
-  local border_color = Colors.hexrgb("#1A1A1A")
+  -- Panel border (even lighter)
+  local border_color = Colors.hexrgb("#2A2A2A")
   border_color = Colors.with_alpha(border_color, math.floor(alpha * 0xAA))
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
 end
@@ -596,7 +596,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local draw_layout_icon = function(btn_draw_list, icon_x, icon_y)
     local icon_size = 14
     local gap = 2
-    local top_bar_h = 2  -- Top bar representing search/settings
+    local top_bar_h = 1  -- Top bar representing search/settings
     local top_padding = 2  -- Padding between top bar and panels
 
     -- Draw top bar (represents search bar/top panel)
