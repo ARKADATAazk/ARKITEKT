@@ -28,33 +28,33 @@ M.PROFILER = {
 -- OVERLAY SYSTEM
 -- ============================================================================
 M.OVERLAY = {
-    -- Close button
-    close_button_size = 32,
-    close_button_margin = 16,
-    close_button_proximity = 150,
+    -- Close button sizing
+    CLOSE_BUTTON_SIZE = 32,
+    CLOSE_BUTTON_MARGIN = 16,
+    CLOSE_BUTTON_PROXIMITY = 150,
 
     -- Close button colors
-    close_button_bg_color = hexrgb(Colors.BASE.black),
-    close_button_bg_opacity = 0.6,
-    close_button_bg_opacity_hover = 0.8,
-    close_button_icon_color = hexrgb(Colors.BASE.white),
-    close_button_hover_color = hexrgb("#FF4444"),
-    close_button_active_color = hexrgb("#FF0000"),
+    CLOSE_BUTTON_BG_COLOR = hexrgb(Colors.BASE.black),
+    CLOSE_BUTTON_BG_OPACITY = 0.6,
+    CLOSE_BUTTON_BG_OPACITY_HOVER = 0.8,
+    CLOSE_BUTTON_ICON_COLOR = hexrgb(Colors.BASE.white),
+    CLOSE_BUTTON_HOVER_COLOR = hexrgb("#FF4444"),
+    CLOSE_BUTTON_ACTIVE_COLOR = hexrgb("#FF0000"),
 
     -- Layout
-    content_padding = Layout.PADDING.xxl,
+    CONTENT_PADDING = Layout.PADDING.xxl,
 
     -- Scrim/backdrop
-    scrim_opacity = 0.99,
-    scrim_color = hexrgb(Colors.BASE.black),
+    SCRIM_OPACITY = 0.99,
+    SCRIM_COLOR = hexrgb(Colors.BASE.black),
 
     -- Behavior defaults
-    default_use_viewport = true,
-    default_show_close_button = true,
-    default_esc_to_close = true,
-    default_close_on_bg_click = false,
-    default_close_on_bg_right_click = true,
-    default_close_on_scrim = false,
+    DEFAULT_USE_VIEWPORT = true,
+    DEFAULT_SHOW_CLOSE_BUTTON = true,
+    DEFAULT_ESC_TO_CLOSE = true,
+    DEFAULT_CLOSE_ON_BG_CLICK = false,
+    DEFAULT_CLOSE_ON_BG_RIGHT_CLICK = true,
+    DEFAULT_CLOSE_ON_SCRIM = false,
 }
 
 -- ============================================================================
