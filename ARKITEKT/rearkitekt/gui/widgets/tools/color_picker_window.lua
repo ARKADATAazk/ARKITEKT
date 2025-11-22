@@ -7,7 +7,6 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
-local CustomPicker = require('rearkitekt.gui.widgets.tools.custom_color_picker')
 
 local M = {}
 local hexrgb = Colors.hexrgb
