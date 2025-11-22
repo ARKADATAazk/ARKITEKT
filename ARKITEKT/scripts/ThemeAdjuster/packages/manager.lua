@@ -99,6 +99,23 @@ local function scan_package_folder(package_path, package_id)
     package.meta.preview_path = preview_path
   end
 
+  -- Check for rtconfig files (rtconfig.txt or rtconfig)
+  local rtconfig_found = false
+  local rtconfig_patterns = {"rtconfig.txt", "rtconfig"}
+  for _, rtconfig_name in ipairs(rtconfig_patterns) do
+    local rtconfig_path = package_path .. SEP .. rtconfig_name
+    local rtconfig_file = io.open(rtconfig_path, "r")
+    if rtconfig_file then
+      rtconfig_file:close()
+      rtconfig_found = true
+      break
+    end
+  end
+
+  if rtconfig_found then
+    table.insert(package.meta.tags, "RTCONFIG")
+  end
+
   -- Try to load manifest.json (optional)
   local manifest_path = package_path .. SEP .. "manifest.json"
   local manifest_file = io.open(manifest_path, "r")

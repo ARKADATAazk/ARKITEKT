@@ -114,16 +114,19 @@ M.CONFIG = {
       MIDI = "MIDI",
       Track = "TCP",         -- Track consolidated into TCP
       Global = "GLB",
+      RTCONFIG = "RTC",      -- RTConfig present
     },
+    -- Color palette matching active assignment tagging system
     colors = {
-      TCP = hexrgb("#5A7A9A"),      -- Desaturated blue
-      MCP = hexrgb("#9A5A7A"),      -- Desaturated pink
-      TRS = hexrgb("#7A9A5A"),      -- Desaturated green
-      TBAR = hexrgb("#9A7A5A"),     -- Desaturated orange
-      ENV = hexrgb("#7A5A9A"),      -- Desaturated purple
-      ITEM = hexrgb("#9A9A5A"),     -- Desaturated yellow
-      MIDI = hexrgb("#5A9A7A"),     -- Desaturated teal (not cyan)
-      GLB = hexrgb("#6A6A6A"),      -- Dark gray
+      TCP = hexrgb("#5A7A9A"),      -- Blue
+      MCP = hexrgb("#9A9A5A"),      -- Yellow
+      ENV = hexrgb("#5A9A8A"),      -- Teal
+      TRS = hexrgb("#9A5A5A"),      -- Red
+      GLB = hexrgb("#6A6A6A"),      -- Grey
+      TBAR = hexrgb("#8A6A5A"),     -- Brown/orange
+      ITEM = hexrgb("#7A8A5A"),     -- Olive
+      MIDI = hexrgb("#6A5A8A"),     -- Purple
+      RTC = hexrgb("#5AAA5A"),      -- Green (important!)
     },
     text_color = hexrgb("#000000"),  -- Black text
   },
@@ -277,23 +280,30 @@ function M.TileRenderer.conflicts(ctx, dl, pkg, P, tile_x, tile_y, tile_w)
 end
 
 function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w)
-  -- Get tags from package meta or auto-generate from metadata
-  local tags = P.meta and P.meta.tags
+  -- Start with manual tags from package meta (like RTCONFIG)
+  local manual_tags = P.meta and P.meta.tags or {}
 
-  -- Only use meta tags if they exist AND are not empty
-  if not tags or #tags == 0 then
-    -- Auto-generate tags from assets using metadata
-    local metadata = get_metadata()
-    if metadata then
-      local image_names = {}
-      for key, _ in pairs(P.assets or {}) do
-        table.insert(image_names, key)
-      end
-      tags = metadata.suggest_tags(image_names, 0.2)
+  -- Auto-generate area tags from assets using metadata
+  local auto_tags = {}
+  local metadata = get_metadata()
+  if metadata then
+    local image_names = {}
+    for key, _ in pairs(P.assets or {}) do
+      table.insert(image_names, key)
     end
+    auto_tags = metadata.suggest_tags(image_names, 0.2) or {}
   end
 
-  if not tags or #tags == 0 then return end
+  -- Combine manual tags (like RTCONFIG) with auto-generated area tags
+  local tags = {}
+  for _, tag in ipairs(manual_tags) do
+    table.insert(tags, tag)
+  end
+  for _, tag in ipairs(auto_tags) do
+    table.insert(tags, tag)
+  end
+
+  if #tags == 0 then return end
 
   -- Convert to abbreviated display names and deduplicate
   local seen = {}
