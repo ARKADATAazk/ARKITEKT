@@ -81,16 +81,17 @@ function M.draw(ctx, state, config, width, height)
 
       local is_selected = state.filter_fx[fx_name] or false
 
-      -- Draw VST using Chip component (DOT style, blue like in template tiles)
-      local vst_color = Colors.hexrgb("#4A9EFF")
+      -- Draw VST using Chip component (ACTION style, consistent across Template Browser)
+      local bg_color = is_selected and Colors.hexrgb("#4A7A74") or Colors.hexrgb("#35504C")
       local clicked, chip_w, chip_h = Chip.draw(ctx, {
-        style = Chip.STYLE.DOT,
+        style = Chip.STYLE.ACTION,
         label = fx_name,
-        color = vst_color,
-        height = UI.CHIP.HEIGHT_LARGE,
-        dot_size = UI.CHIP.DOT_SIZE,
-        dot_spacing = UI.CHIP.DOT_SPACING,
-        is_selected = is_selected,
+        bg_color = bg_color,
+        text_color = Colors.hexrgb("#FFFFFF"),
+        border_color = Colors.hexrgb("#181818"),
+        height = 22,
+        padding_h = 8,
+        rounding = 2,
         interactive = true,
       })
 

@@ -215,7 +215,6 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
     -- Get first VST name and truncate if needed
     local first_vst = template.fx[1]
-    local vst_color = hexrgb("#4A9EFF")
 
     -- Calculate max width for chip (leave room for favorite badge and margin)
     local max_chip_width = content_w - 40
@@ -223,7 +222,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
     -- Truncate VST name if it's too long
     local display_vst = first_vst
     local text_width = ImGui.CalcTextSize(ctx, first_vst)
-    local chip_content_width = 12 + 6 + 10 + 8  -- padding + dot + spacing + end padding
+    local chip_content_width = 16  -- padding on both sides (8 + 8)
     if text_width + chip_content_width > max_chip_width then
       -- Truncate with ellipsis
       local available_width = max_chip_width - chip_content_width - ImGui.CalcTextSize(ctx, "...")
@@ -235,28 +234,19 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local chip_w = text_width + chip_content_width
     local chip_h = 20
 
-    -- Background
-    local bg_color = hexrgb("#1E1E1E")
-    ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, 6)
+    -- Background (ACTION style: teal background)
+    local chip_bg = hexrgb("#35504C")
+    ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, chip_bg, 2)
 
-    -- Borders (tabstrip style)
-    local border_inner = hexrgb("#2f2f2fff")
-    ImGui.DrawList_AddRect(dl, chip_x + 1, chip_y + 1, chip_x + chip_w - 1, chip_y + chip_h - 1, border_inner, 6, 0, 1)
-    local border_outer = hexrgb("#000000DD")
-    ImGui.DrawList_AddRect(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, border_outer, 6, 0, 1)
+    -- Border (dark, square style)
+    local chip_border = hexrgb("#181818")
+    ImGui.DrawList_AddRect(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, chip_border, 2, 0, 1)
 
-    -- Dot
-    local dot_x = chip_x + 12
-    local dot_y = chip_y + (chip_h * 0.5)
-    local dot_radius = 3
-    ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius + 1, Colors.with_alpha(hexrgb("#000000"), 80))
-    ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius, vst_color)
-
-    -- Text (use fixed text height for vertical centering)
+    -- Text (centered, white)
     local text_height = 13  -- Approximate default font height
-    local text_x = chip_x + 12 + 6 + 10 - 3  -- padding + dot + spacing - adjustment
+    local text_x = chip_x + (chip_w - text_width) * 0.5
     local text_y = chip_y + ((chip_h - text_height) * 0.5)
-    local text_color = Colors.with_alpha(hexrgb("#FFFFFF"), 200)
+    local text_color = hexrgb("#FFFFFF")
     Draw.text(dl, text_x, text_y, text_color, display_vst)
   end
 

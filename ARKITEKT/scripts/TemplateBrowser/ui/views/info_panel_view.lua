@@ -62,9 +62,18 @@ local function draw_info_panel(ctx, gui, width, height)
         draw_section_header(ctx, "FX CHAIN")
 
         for i, fx_name in ipairs(tmpl.fx) do
-          ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#6A9EFF"))
-          ImGui.Text(ctx, string.format("%d. %s", i, fx_name))
-          ImGui.PopStyleColor(ctx)
+          Chip.draw(ctx, {
+            style = Chip.STYLE.ACTION,
+            label = fx_name,
+            bg_color = hexrgb("#35504C"),
+            text_color = hexrgb("#FFFFFF"),
+            border_color = hexrgb("#181818"),
+            height = 22,
+            padding_h = 8,
+            rounding = 2,
+            interactive = false,
+          })
+          ImGui.Dummy(ctx, 0, 2)  -- Small spacing between chips
         end
       end
 
