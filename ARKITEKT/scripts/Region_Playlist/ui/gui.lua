@@ -529,7 +529,7 @@ function GUI:update_state(ctx, window)
     end
     
     if self.region_tiles.active_grid.behaviors and self.region_tiles.active_grid.behaviors.on_select and self.region_tiles.active_grid.selection then
-      self.region_tiles.active_grid.behaviors.on_select(self.region_tiles.active_grid.selection:selected_keys())
+      self.region_tiles.active_grid.behaviors.on_select(self.region_tiles.active_grid, self.region_tiles.active_grid.selection:selected_keys())
     end
     has_pending = true
   end

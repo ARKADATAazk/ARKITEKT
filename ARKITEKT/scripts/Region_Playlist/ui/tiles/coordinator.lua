@@ -365,7 +365,7 @@ function M.create(opts)
           end
           
           if rt.active_grid.behaviors and rt.active_grid.behaviors.on_select and rt.active_grid.selection then
-            rt.active_grid.behaviors.on_select(rt.active_grid.selection:selected_keys())
+            rt.active_grid.behaviors.on_select(rt.active_grid, rt.active_grid.selection:selected_keys())
           end
         end
       end
@@ -373,7 +373,7 @@ function M.create(opts)
     
     on_drag_canceled = function(cancel_info)
       if cancel_info.source_grid == 'active' and rt.active_grid and rt.active_grid.behaviors and rt.active_grid.behaviors.delete then
-        rt.active_grid.behaviors.delete(cancel_info.payload or {})
+        rt.active_grid.behaviors.delete(rt.active_grid, cancel_info.payload or {})
       end
     end,
   })
