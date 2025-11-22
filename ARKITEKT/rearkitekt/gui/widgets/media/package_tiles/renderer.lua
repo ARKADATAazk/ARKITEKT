@@ -17,9 +17,32 @@ local hexrgb = Colors.hexrgb
 local Metadata = nil
 local function get_metadata()
   if not Metadata then
-    local ok, mod = pcall(require, 'ThemeAdjuster.packages.metadata')
-    if ok then
-      Metadata = mod
+    -- Get script directory from debug info
+    local info = debug.getinfo(1, "S")
+    local script_dir = info.source:match("@(.+[\\/])") or ""
+
+    -- Navigate from rearkitekt/gui/widgets/media/package_tiles/ to scripts/ThemeAdjuster/packages/
+    -- Go up 5 levels (package_tiles -> media -> widgets -> gui -> rearkitekt) then into scripts/ThemeAdjuster/packages
+    local metadata_path = script_dir .. "../../../../../scripts/ThemeAdjuster/packages/metadata.lua"
+
+    -- Try loading directly
+    local chunk, err = loadfile(metadata_path)
+    if chunk then
+      Metadata = chunk()
+    else
+      -- Fallback: try require paths
+      local paths_to_try = {
+        'ThemeAdjuster.packages.metadata',
+        'scripts.ThemeAdjuster.packages.metadata',
+      }
+
+      for _, path in ipairs(paths_to_try) do
+        local ok, mod = pcall(require, path)
+        if ok then
+          Metadata = mod
+          break
+        end
+      end
     end
   end
   return Metadata
