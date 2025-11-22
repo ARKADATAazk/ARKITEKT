@@ -94,39 +94,38 @@ M.CONFIG = {
   footer = { height = 32, padding_x = 10 },
 
   tags = {
-    y_offset = 10,           -- Aligned with badge/checkbox
-    height = 16,             -- Taller for padding
-    width = 36,              -- Wider for text padding
+    bottom_offset = 6,       -- Distance from footer
+    height = 14,             -- Tag chip height
     padding_x = 4,           -- Horizontal padding inside chip
     gap = 3,                 -- Gap between chips
-    margin_x = 38,           -- Start after badge (leave room for #1)
+    margin_x = 10,           -- Margin from tile edges
     rounding = 3,            -- Corner rounding
     max_tags = 10,           -- Maximum tags to show
-    -- Abbreviated display names
+    -- Full display names
     display = {
       TCP = "TCP",
       MCP = "MCP",
-      Transport = "TRS",
-      Toolbar = "TBAR",
-      Meter = "GLB",         -- Meter consolidated into Global
-      EnvCP = "ENV",
-      Items = "ITEM",
+      Transport = "TRANSPORT",
+      Toolbar = "TOOLBARS",
+      Meter = "GLOBAL",      -- Meter consolidated into Global
+      EnvCP = "ENVCP",
+      Items = "ITEMS",
       MIDI = "MIDI",
       Track = "TCP",         -- Track consolidated into TCP
-      Global = "GLB",
-      RTCONFIG = "RTC",      -- RTConfig present
+      Global = "GLOBAL",
+      RTCONFIG = "RTCONFIG",
     },
     -- Color palette matching active assignment tagging system
     colors = {
       TCP = hexrgb("#5A7A9A"),      -- Blue
       MCP = hexrgb("#9A9A5A"),      -- Yellow
-      ENV = hexrgb("#5A9A8A"),      -- Teal
-      TRS = hexrgb("#9A5A5A"),      -- Red
-      GLB = hexrgb("#6A6A6A"),      -- Grey
-      TBAR = hexrgb("#8A6A5A"),     -- Brown/orange
-      ITEM = hexrgb("#7A8A5A"),     -- Olive
+      ENVCP = hexrgb("#5A9A8A"),    -- Teal
+      TRANSPORT = hexrgb("#9A5A5A"),-- Red
+      GLOBAL = hexrgb("#6A6A6A"),   -- Grey
+      TOOLBARS = hexrgb("#8A6A5A"), -- Brown/orange
+      ITEMS = hexrgb("#7A8A5A"),    -- Olive
       MIDI = hexrgb("#6A5A8A"),     -- Purple
-      RTC = hexrgb("#5AAA5A"),      -- Green (important!)
+      RTCONFIG = hexrgb("#5AAA5A"), -- Green (important!)
     },
     text_color = hexrgb("#000000"),  -- Black text
   },
@@ -279,7 +278,7 @@ function M.TileRenderer.conflicts(ctx, dl, pkg, P, tile_x, tile_y, tile_w)
   end
 end
 
-function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w)
+function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w, tile_h)
   -- Start with manual tags from package meta (like RTCONFIG)
   local manual_tags = P.meta and P.meta.tags or {}
 
@@ -305,14 +304,14 @@ function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w)
 
   if #tags == 0 then return end
 
-  -- Convert to abbreviated display names and deduplicate
+  -- Convert to display names and deduplicate
   local seen = {}
   local display_tags = {}
   for _, tag in ipairs(tags) do
-    local abbrev = M.CONFIG.tags.display[tag] or tag
-    if not seen[abbrev] then
-      seen[abbrev] = true
-      table.insert(display_tags, abbrev)
+    local display_name = M.CONFIG.tags.display[tag] or tag
+    if not seen[display_name] then
+      seen[display_name] = true
+      table.insert(display_tags, display_name)
       if #display_tags >= M.CONFIG.tags.max_tags then
         break
       end
@@ -321,38 +320,45 @@ function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w)
 
   if #display_tags == 0 then return end
 
-  -- Calculate total width of all tags
-  local chip_w = M.CONFIG.tags.width
+  -- Calculate chip widths based on text
   local chip_h = M.CONFIG.tags.height
-  local total_width = (#display_tags * chip_w) + ((#display_tags - 1) * M.CONFIG.tags.gap)
-
-  -- Calculate centered position
-  local y = tile_y + M.CONFIG.tags.y_offset
-  local available_start = tile_x + M.CONFIG.tags.margin_x
-  local available_end = tile_x + tile_w - 30  -- Leave room for checkbox
-  local available_width = available_end - available_start
-
-  -- Center the tags in available space
-  local x = available_start + math.floor((available_width - total_width) / 2)
-  x = math.max(x, available_start)  -- Don't go past badge
+  local chips = {}
+  local total_width = 0
 
   for _, tag in ipairs(display_tags) do
+    local text_w, _ = ImGui.CalcTextSize(ctx, tag)
+    local chip_w = text_w + M.CONFIG.tags.padding_x * 2
+    table.insert(chips, {text = tag, width = chip_w})
+    total_width = total_width + chip_w
+  end
+  total_width = total_width + (#chips - 1) * M.CONFIG.tags.gap
+
+  -- Position at bottom of tile, above footer
+  local footer_y = tile_y + tile_h - M.CONFIG.footer.height
+  local y = footer_y - chip_h - M.CONFIG.tags.bottom_offset
+
+  -- Calculate horizontal position (left-aligned with margin)
+  local available_start = tile_x + M.CONFIG.tags.margin_x
+  local available_end = tile_x + tile_w - M.CONFIG.tags.margin_x
+  local x = available_start
+
+  for _, chip in ipairs(chips) do
     -- Get tag color
-    local bg_color = M.CONFIG.tags.colors[tag] or M.CONFIG.tags.colors.GLB
+    local bg_color = M.CONFIG.tags.colors[chip.text] or M.CONFIG.tags.colors.GLOBAL
 
     -- Check if chip fits
-    if x + chip_w > available_end then
+    if x + chip.width > available_end then
       break
     end
 
     -- Draw chip background
-    Draw.rect_filled(dl, x, y, x + chip_w, y + chip_h, bg_color, M.CONFIG.tags.rounding)
+    Draw.rect_filled(dl, x, y, x + chip.width, y + chip_h, bg_color, M.CONFIG.tags.rounding)
 
     -- Draw text centered in chip
-    Draw.centered_text(ctx, tag, x, y, x + chip_w, y + chip_h, M.CONFIG.tags.text_color)
+    Draw.centered_text(ctx, chip.text, x, y, x + chip.width, y + chip_h, M.CONFIG.tags.text_color)
 
     -- Move to next chip position
-    x = x + chip_w + M.CONFIG.tags.gap
+    x = x + chip.width + M.CONFIG.tags.gap
   end
 end
 
