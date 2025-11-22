@@ -112,27 +112,23 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
   -- Apply very subtle color tint if template has color
   if chip_color then
-    local cr = (chip_color >> 24) & 0xFF
-    local cg = (chip_color >> 16) & 0xFF
-    local cb = (chip_color >> 8) & 0xFF
-    local br = (BG_BASE >> 24) & 0xFF
-    local bg = (BG_BASE >> 16) & 0xFF
-    local bb = (BG_BASE >> 8) & 0xFF
+    local cr, cg, cb = Colors.rgba_to_components(chip_color)
+    local br, bg_c, bb = Colors.rgba_to_components(BG_BASE)
     -- Very subtle 8% color influence
     local blend = 0.08
     local r = math.floor(br * (1 - blend) + cr * blend)
-    local g = math.floor(bg * (1 - blend) + cg * blend)
+    local g = math.floor(bg_c * (1 - blend) + cg * blend)
     local b = math.floor(bb * (1 - blend) + cb * blend)
-    bg_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+    bg_color = Colors.components_to_rgba(r, g, b, 255)
   end
 
   if hover_factor > 0.01 then
-    local r1, g1, b1 = (bg_color >> 24) & 0xFF, (bg_color >> 16) & 0xFF, (bg_color >> 8) & 0xFF
-    local r2, g2, b2 = (BG_HOVER >> 24) & 0xFF, (BG_HOVER >> 16) & 0xFF, (BG_HOVER >> 8) & 0xFF
+    local r1, g1, b1 = Colors.rgba_to_components(bg_color)
+    local r2, g2, b2 = Colors.rgba_to_components(BG_HOVER)
     local r = math.floor(r1 + (r2 - r1) * hover_factor * 0.5)
     local g = math.floor(g1 + (g2 - g1) * hover_factor * 0.5)
     local b = math.floor(b1 + (b2 - b1) * hover_factor * 0.5)
-    bg_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+    bg_color = Colors.components_to_rgba(r, g, b, 255)
   end
 
   -- Draw background
@@ -144,15 +140,13 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local ant_color
     if chip_color then
       -- Extract RGB from chip color and blend with light grey
-      local cr = (chip_color >> 24) & 0xFF
-      local cg = (chip_color >> 16) & 0xFF
-      local cb = (chip_color >> 8) & 0xFF
+      local cr, cg, cb = Colors.rgba_to_components(chip_color)
       -- Light grey base (180) with 15% chip color influence
       local blend = 0.15
       local r = math.floor(180 * (1 - blend) + cr * blend)
       local g = math.floor(180 * (1 - blend) + cg * blend)
       local b = math.floor(180 * (1 - blend) + cb * blend)
-      ant_color = (r << 24) | (g << 16) | (b << 8) | 0x99
+      ant_color = Colors.components_to_rgba(r, g, b, 0x99)
     else
       ant_color = hexrgb("#B0B0B099")  -- Light grey with 60% opacity
     end
@@ -161,12 +155,12 @@ function M.render(ctx, rect, template, state, metadata, animator)
     -- Normal border with hover highlight
     local border_color = BRD_BASE
     if hover_factor > 0.01 then
-      local r1, g1, b1 = (BRD_BASE >> 24) & 0xFF, (BRD_BASE >> 16) & 0xFF, (BRD_BASE >> 8) & 0xFF
-      local r2, g2, b2 = (BRD_HOVER >> 24) & 0xFF, (BRD_HOVER >> 16) & 0xFF, (BRD_HOVER >> 8) & 0xFF
+      local r1, g1, b1 = Colors.rgba_to_components(BRD_BASE)
+      local r2, g2, b2 = Colors.rgba_to_components(BRD_HOVER)
       local r = math.floor(r1 + (r2 - r1) * hover_factor)
       local g = math.floor(g1 + (g2 - g1) * hover_factor)
       local b = math.floor(b1 + (b2 - b1) * hover_factor)
-      border_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+      border_color = Colors.components_to_rgba(r, g, b, 255)
     end
     ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
   end
