@@ -174,6 +174,11 @@ function M.new(State, settings)
     selected_assets = {},  -- {key = true/false}
     view_mode = "grid",    -- "grid" or "tree"
     group_by_area = true,
+
+    -- Performance caches (populated on show)
+    _dpi_cache = {},       -- key -> {has_150, has_200}
+    _area_cache = {},      -- key -> area string
+    _grouped_cache = nil,  -- cached grouped assets
   }, PackageModal)
 
   return self
@@ -186,6 +191,26 @@ function PackageModal:show(package_data)
   self.search_text = ""
   self.selected_assets = {}
   self.overlay_pushed = false
+
+  -- Pre-compute caches for performance
+  self._dpi_cache = {}
+  self._area_cache = {}
+  self._grouped_cache = nil
+
+  -- Cache area detection and DPI variants for all keys
+  for _, key in ipairs(package_data.keys_order or {}) do
+    -- Cache area
+    self._area_cache[key] = get_area_from_key(key)
+
+    -- Cache DPI variants
+    local asset = package_data.assets and package_data.assets[key]
+    local asset_path = asset and asset.path
+    local has_150, has_200 = check_dpi_variants(asset_path)
+    self._dpi_cache[key] = {has_150 = has_150, has_200 = has_200}
+  end
+
+  -- Pre-compute grouped assets
+  self._grouped_cache = self:_compute_grouped_assets(package_data.keys_order or {})
 end
 
 function PackageModal:close()
@@ -195,6 +220,10 @@ function PackageModal:close()
   self.package_data = nil
   self.search_text = ""
   self.selected_assets = {}
+  -- Clear caches
+  self._dpi_cache = {}
+  self._area_cache = {}
+  self._grouped_cache = nil
 end
 
 function PackageModal:get_package_exclusions(pkg_id)
@@ -240,8 +269,8 @@ function PackageModal:set_pinned_provider(key, pkg_id)
   self.State.set_package_pins(pins)
 end
 
--- Group assets by area
-function PackageModal:group_assets_by_area(keys_order)
+-- Pre-compute grouped assets (called once on show)
+function PackageModal:_compute_grouped_assets(keys_order)
   local groups = {}
   local group_order = {"TCP", "MCP", "ENVCP", "Items", "MIDI", "Transport", "Toolbar", "Meter", "Docker", "FX", "Menu", "Global", "Other"}
 
@@ -250,9 +279,31 @@ function PackageModal:group_assets_by_area(keys_order)
     groups[area] = {}
   end
 
-  -- Categorize keys
+  -- Categorize keys using cached area
   for _, key in ipairs(keys_order) do
-    local area = get_area_from_key(key)
+    local area = self._area_cache[key] or get_area_from_key(key)
+    table.insert(groups[area], key)
+  end
+
+  return {groups = groups, order = group_order}
+end
+
+-- Group assets by area (uses cache)
+function PackageModal:group_assets_by_area(keys_order)
+  if self._grouped_cache then
+    return self._grouped_cache.groups, self._grouped_cache.order
+  end
+
+  -- Fallback if cache not available
+  local groups = {}
+  local group_order = {"TCP", "MCP", "ENVCP", "Items", "MIDI", "Transport", "Toolbar", "Meter", "Docker", "FX", "Menu", "Global", "Other"}
+
+  for _, area in ipairs(group_order) do
+    groups[area] = {}
+  end
+
+  for _, key in ipairs(keys_order) do
+    local area = self._area_cache[key] or get_area_from_key(key)
     table.insert(groups[area], key)
   end
 
@@ -271,11 +322,12 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   local asset = pkg.assets and pkg.assets[key]
   local asset_path = asset and asset.path
 
-  -- Check DPI variants
-  local has_150, has_200 = check_dpi_variants(asset_path)
+  -- Use cached DPI variants
+  local dpi_info = self._dpi_cache[key] or {}
+  local has_150, has_200 = dpi_info.has_150, dpi_info.has_200
 
-  -- Get area color for tile background
-  local area = get_area_from_key(key)
+  -- Use cached area for tile color
+  local area = self._area_cache[key] or "Other"
   local base_color = AREA_COLORS[area] or hexrgb("#444455")
 
   -- Apply opacity based on included state
@@ -412,14 +464,28 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   end
 end
 
--- Draw assets in grid view
+-- Draw assets in grid view with virtualization
 function PackageModal:draw_grid_view(ctx, pkg)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
   local columns = math.max(1, math.floor(avail_w / (TILE_WIDTH + TILE_SPACING)))
 
+  -- Get scroll info for virtualization
+  local scroll_y = ImGui.GetScrollY(ctx)
+  local window_h = ImGui.GetWindowHeight(ctx)
+  local visible_top = scroll_y
+  local visible_bottom = scroll_y + window_h
+
+  -- Constants for virtualization
+  local row_height = TILE_HEIGHT + TILE_SPACING
+  local header_height = 40  -- Approximate height for group headers
+
   if self.group_by_area then
-    -- Grouped view
+    -- Grouped view with virtualization
     local groups, group_order = self:group_assets_by_area(pkg.keys_order or {})
+
+    -- First pass: calculate total height and build render list
+    local current_y = 0
+    local render_items = {}  -- {type = "header"/"tiles", y = ..., data = ...}
 
     for _, area in ipairs(group_order) do
       local keys = groups[area]
@@ -433,49 +499,113 @@ function PackageModal:draw_grid_view(ctx, pkg)
         end
 
         if #filtered_keys > 0 then
-          -- Group header
-          ImGui.Spacing(ctx)
-          ImGui.TextColored(ctx, hexrgb("#888888"), area .. " (" .. #filtered_keys .. ")")
-          ImGui.Separator(ctx)
-          ImGui.Spacing(ctx)
+          -- Header
+          table.insert(render_items, {
+            type = "header",
+            y = current_y,
+            height = header_height,
+            area = area,
+            count = #filtered_keys
+          })
+          current_y = current_y + header_height
 
-          -- Draw tiles
-          local col = 0
-          for _, key in ipairs(filtered_keys) do
-            if col > 0 then
-              ImGui.SameLine(ctx, 0, TILE_SPACING)
+          -- Calculate rows for this group
+          local num_rows = math.ceil(#filtered_keys / columns)
+          for row = 0, num_rows - 1 do
+            local row_keys = {}
+            for col = 0, columns - 1 do
+              local idx = row * columns + col + 1
+              if idx <= #filtered_keys then
+                table.insert(row_keys, filtered_keys[idx])
+              end
             end
 
-            self:draw_asset_tile(ctx, pkg, key)
-
-            col = col + 1
-            if col >= columns then
-              col = 0
+            if #row_keys > 0 then
+              table.insert(render_items, {
+                type = "row",
+                y = current_y,
+                height = row_height,
+                keys = row_keys
+              })
+              current_y = current_y + row_height
             end
           end
 
+          -- Spacing after group
+          current_y = current_y + 8
+        end
+      end
+    end
+
+    -- Set content height for proper scrolling
+    local total_height = current_y
+
+    -- Second pass: render only visible items
+    for _, item in ipairs(render_items) do
+      local item_top = item.y
+      local item_bottom = item.y + item.height
+
+      -- Check if visible (with some buffer for smooth scrolling)
+      local buffer = row_height * 2
+      if item_bottom >= visible_top - buffer and item_top <= visible_bottom + buffer then
+        -- Position cursor
+        ImGui.SetCursorPosY(ctx, item_top)
+
+        if item.type == "header" then
           ImGui.Spacing(ctx)
+          ImGui.TextColored(ctx, hexrgb("#888888"), item.area .. " (" .. item.count .. ")")
+          ImGui.Separator(ctx)
+          ImGui.Spacing(ctx)
+        elseif item.type == "row" then
+          for i, key in ipairs(item.keys) do
+            if i > 1 then
+              ImGui.SameLine(ctx, 0, TILE_SPACING)
+            end
+            self:draw_asset_tile(ctx, pkg, key)
+          end
         end
       end
     end
+
+    -- Ensure scroll area has correct height
+    ImGui.SetCursorPosY(ctx, total_height)
+    ImGui.Dummy(ctx, 0, 0)
+
   else
-    -- Flat view
-    local col = 0
+    -- Flat view with virtualization
+    local filtered_keys = {}
     for _, key in ipairs(pkg.keys_order or {}) do
-      -- Filter by search
       if self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true) then
-        if col > 0 then
-          ImGui.SameLine(ctx, 0, TILE_SPACING)
-        end
+        table.insert(filtered_keys, key)
+      end
+    end
 
-        self:draw_asset_tile(ctx, pkg, key)
+    local num_rows = math.ceil(#filtered_keys / columns)
+    local total_height = num_rows * row_height
 
-        col = col + 1
-        if col >= columns then
-          col = 0
+    -- Calculate visible row range
+    local first_visible_row = math.max(0, math.floor(visible_top / row_height) - 2)
+    local last_visible_row = math.min(num_rows - 1, math.ceil(visible_bottom / row_height) + 2)
+
+    -- Render only visible rows
+    for row = first_visible_row, last_visible_row do
+      local y_pos = row * row_height
+      ImGui.SetCursorPosY(ctx, y_pos)
+
+      for col = 0, columns - 1 do
+        local idx = row * columns + col + 1
+        if idx <= #filtered_keys then
+          if col > 0 then
+            ImGui.SameLine(ctx, 0, TILE_SPACING)
+          end
+          self:draw_asset_tile(ctx, pkg, filtered_keys[idx])
         end
       end
     end
+
+    -- Ensure scroll area has correct height
+    ImGui.SetCursorPosY(ctx, total_height)
+    ImGui.Dummy(ctx, 0, 0)
   end
 end
 
