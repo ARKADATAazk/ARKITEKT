@@ -103,9 +103,11 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
         window_x + avail_w,
         window_y + avail_h
       }
+      self.audio_grid.clip_rendering = true  -- Enable actual rendering clipping
       ImGui.SetCursorScreenPos(ctx, origin_x, origin_y + header_offset)
     else
       self.audio_grid.panel_clip_bounds = nil
+      self.audio_grid.clip_rendering = false
     end
 
     self.audio_grid:draw(ctx)
@@ -154,9 +156,11 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
         window_x + avail_w,
         window_y + avail_h
       }
+      self.midi_grid.clip_rendering = true  -- Enable actual rendering clipping
       ImGui.SetCursorScreenPos(ctx, origin_x, origin_y + header_offset)
     else
       self.midi_grid.panel_clip_bounds = nil
+      self.midi_grid.clip_rendering = false
     end
 
     self.midi_grid:draw(ctx)
