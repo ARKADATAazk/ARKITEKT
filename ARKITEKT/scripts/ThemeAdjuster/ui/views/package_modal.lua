@@ -25,9 +25,15 @@ local AREA_COLORS = {
   TCP = hexrgb("#5C7CB8"),        -- Blue
   MCP = hexrgb("#6B9B7C"),        -- Green
   Transport = hexrgb("#B8A55C"),  -- Yellow/Gold
+  Toolbar = hexrgb("#B8A55C"),    -- Yellow/Gold (same as Transport)
   ENVCP = hexrgb("#9B7CB8"),      -- Purple
   Meter = hexrgb("#5C9BB8"),      -- Cyan
   Global = hexrgb("#8B8B8B"),     -- Gray
+  Items = hexrgb("#B85C8B"),      -- Pink
+  MIDI = hexrgb("#5CB8A5"),       -- Teal
+  Docker = hexrgb("#8B6B5C"),     -- Brown
+  FX = hexrgb("#B87C5C"),         -- Orange
+  Menu = hexrgb("#7C8BB8"),       -- Periwinkle
   Other = hexrgb("#6B6B8B"),      -- Slate
 }
 
@@ -107,12 +113,30 @@ end
 
 -- Helper to extract area from key (tcp_, mcp_, transport_, etc.)
 local function get_area_from_key(key)
-  if key:match("^tcp_") then return "TCP"
-  elseif key:match("^mcp_") then return "MCP"
-  elseif key:match("^transport_") then return "Transport"
-  elseif key:match("^global_") or key:match("^gen_") then return "Global"
-  elseif key:match("^envcp_") then return "ENVCP"
+  -- TCP / Track
+  if key:match("^tcp_") or key:match("^track_") then return "TCP"
+  -- MCP / Master / Mixer
+  elseif key:match("^mcp_") or key:match("^master_") or key:match("^mixer_") then return "MCP"
+  -- Transport
+  elseif key:match("^transport_") or key:match("^trans_") then return "Transport"
+  -- Toolbar
+  elseif key:match("^toolbar_") or key:match("^tb_") then return "Toolbar"
+  -- ENVCP / Envelope
+  elseif key:match("^envcp_") or key:match("^env_") then return "ENVCP"
+  -- Meter
   elseif key:match("^meter_") then return "Meter"
+  -- Items
+  elseif key:match("^item_") or key:match("^mi_") then return "Items"
+  -- MIDI
+  elseif key:match("^midi_") or key:match("^piano_") then return "MIDI"
+  -- Docker
+  elseif key:match("^docker_") or key:match("^dock_") then return "Docker"
+  -- FX
+  elseif key:match("^fx_") or key:match("^vst_") then return "FX"
+  -- Menu
+  elseif key:match("^menu_") then return "Menu"
+  -- Global / General
+  elseif key:match("^global_") or key:match("^gen_") or key:match("^generic_") then return "Global"
   else return "Other"
   end
 end
@@ -215,7 +239,7 @@ end
 -- Group assets by area
 function PackageModal:group_assets_by_area(keys_order)
   local groups = {}
-  local group_order = {"TCP", "MCP", "Transport", "ENVCP", "Meter", "Global", "Other"}
+  local group_order = {"TCP", "MCP", "ENVCP", "Items", "MIDI", "Transport", "Toolbar", "Meter", "Docker", "FX", "Menu", "Global", "Other"}
 
   -- Initialize groups
   for _, area in ipairs(group_order) do
