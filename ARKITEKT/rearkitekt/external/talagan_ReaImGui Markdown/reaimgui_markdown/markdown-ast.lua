@@ -87,15 +87,15 @@ local function parse_inline(text, base_offset)
   local nodes = {}
   local i = 1
   local len = #text
-  local buffer = ""
+  local buffer = {}
   local buffer_start = base_offset + 1
 
   local function flush_buffer()
-    if buffer ~= "" then
-      table.insert(nodes, new_node("Text", buffer, nil, {
+    if #buffer > 0 then
+      table.insert(nodes, new_node("Text", table.concat(buffer), nil, {
         source_offset = { start = buffer_start, end_pos = base_offset + i - 1 }
       }))
-      buffer = ""
+      buffer = {}
       buffer_start = base_offset + i
     end
   end
@@ -109,7 +109,7 @@ local function parse_inline(text, base_offset)
     -- ========================================================================
     if char == "\\" and i < len and not is_escaped(text, i) then
       -- Add the next character to buffer without the backslash
-      buffer = buffer .. text:sub(i + 1, i + 1)
+      buffer[#buffer + 1] = text:sub(i + 1, i + 1)
       i = i + 2
       goto continue
     end
@@ -121,11 +121,12 @@ local function parse_inline(text, base_offset)
       flush_buffer()
 
       local j = i + 1
-      local content = ""
+      local content_buf = {}
       local found = false
 
       while j <= len do
         if text:sub(j, j) == "`" and not is_escaped(text, j) then
+          local content = table.concat(content_buf)
           local color, clean_content = extract_color(content)
           table.insert(nodes, new_node("Code", nil, {
             new_node("Text", clean_content)
@@ -137,12 +138,12 @@ local function parse_inline(text, base_offset)
           found = true
           break
         end
-        content = content .. text:sub(j, j)
+        content_buf[#content_buf + 1] = text:sub(j, j)
         j = j + 1
       end
 
       if not found then
-        buffer = buffer .. "`"
+        buffer[#buffer + 1] = "`"
         -- Don't update buffer_start, keep accumulating
         i = i + 1
       end
@@ -236,12 +237,12 @@ local function parse_inline(text, base_offset)
             i = k + 1
           end
         else
-          buffer = buffer .. text:sub(i, j)
+          buffer[#buffer + 1] = text:sub(i, j)
           buffer_start = base_offset + i
           i = j + 1
         end
       else
-        buffer = buffer .. text:sub(i, j)
+        buffer[#buffer + 1] = text:sub(i, j)
         buffer_start = base_offset + i
         i = j + 1
       end
@@ -321,12 +322,12 @@ local function parse_inline(text, base_offset)
             ))
             i = k + 1
           else
-            buffer = buffer .. text:sub(i, j)
+            buffer[#buffer + 1] = text:sub(i, j)
             buffer_start = base_offset + i
             i = j + 1
           end
         else
-           buffer = buffer .. text:sub(i, j)
+           buffer[#buffer + 1] = text:sub(i, j)
           buffer_start = base_offset + i
           i = j + 1
         end
@@ -346,11 +347,12 @@ local function parse_inline(text, base_offset)
         -- Handle *** or ___
         local marker = char .. char .. char
         local j = i + 3
-        local content = ""
+        local content_buf = {}
         local found = false
 
         while j <= len do
           if text:sub(j, j + 2) == marker and not is_escaped(text, j) then
+            local content = table.concat(content_buf)
             local color, clean_content = extract_color(content)
             -- Create Bold containing Italic
             table.insert(nodes, new_node("Bold", nil, {
@@ -364,19 +366,19 @@ local function parse_inline(text, base_offset)
             found = true
             break
           end
-          content = content .. text:sub(j, j)
+          content_buf[#content_buf + 1] = text:sub(j, j)
           j = j + 1
         end
 
         if not found then
-          buffer = buffer .. marker
+          buffer[#buffer + 1] = marker
           i = i + 3  -- *** = 3 characters
         end
       else
         -- Handle ** or __
         local marker = char .. char
         local j = i + 2
-        local content = ""
+        local content_buf = {}
         local found = false
 
         while j <= len do
@@ -389,13 +391,14 @@ local function parse_inline(text, base_offset)
               -- If it's *** (exactly 3), reject. If it's **** (4+), accept.
               if after_next ~= char then
                 -- It's exactly ***, reject this match
-                content = content .. text:sub(j, j)
+                content_buf[#content_buf + 1] = text:sub(j, j)
                 j = j + 1
                 goto continue_bold_search
               end
               -- It's ****, accept the first **
             end
 
+            local content = table.concat(content_buf)
             local color, clean_content = extract_color(content)
             table.insert(nodes, new_node("Bold", nil,
               parse_inline(clean_content, base_offset + i + 2),
@@ -408,13 +411,13 @@ local function parse_inline(text, base_offset)
             found = true
             break
           end
-          content = content .. text:sub(j, j)
+          content_buf[#content_buf + 1] = text:sub(j, j)
           j = j + 1
           ::continue_bold_search::
         end
 
         if not found then
-          buffer = buffer .. marker
+          buffer[#buffer + 1] = marker
           i = i + 2  -- ** = 2 characters
         end
       end
@@ -427,11 +430,12 @@ local function parse_inline(text, base_offset)
 
       local marker = char
       local j = i + 1
-      local content = ""
+      local content_buf = {}
       local found = false
 
       while j <= len do
         if text:sub(j, j) == marker and not is_escaped(text, j) then
+          local content = table.concat(content_buf)
           local color, clean_content = extract_color(content)
           table.insert(nodes, new_node("Italic", nil,
             parse_inline(clean_content, base_offset + i + 1),
@@ -444,12 +448,12 @@ local function parse_inline(text, base_offset)
           found = true
           break
         end
-        content = content .. text:sub(j, j)
+        content_buf[#content_buf + 1] = text:sub(j, j)
         j = j + 1
       end
 
       if not found then
-        buffer = buffer .. marker
+        buffer[#buffer + 1] = marker
         i = i + 1
       end
 
@@ -460,11 +464,12 @@ local function parse_inline(text, base_offset)
       flush_buffer()
 
       local j = i + 1
-      local content = ""
+      local content_buf = {}
       local found = false
 
       while j <= len do
         if text:sub(j, j) == "$" and not is_escaped(text, j) then
+          local content = table.concat(content_buf)
           local color, clean_content = extract_color(content)
           table.insert(nodes, new_node("Span", nil,
             parse_inline(clean_content, base_offset + i + 1),
@@ -477,12 +482,12 @@ local function parse_inline(text, base_offset)
           found = true
           break
         end
-        content = content .. text:sub(j, j)
+        content_buf[#content_buf + 1] = text:sub(j, j)
         j = j + 1
       end
 
       if not found then
-        buffer = buffer .. "$"
+        buffer[#buffer + 1] = "$"
         i = i + 1
       end
 
@@ -490,7 +495,7 @@ local function parse_inline(text, base_offset)
     -- DEFAULT: Regular text
     -- ========================================================================
     else
-      buffer = buffer .. char
+      buffer[#buffer + 1] = char
       i = i + 1
     end
 

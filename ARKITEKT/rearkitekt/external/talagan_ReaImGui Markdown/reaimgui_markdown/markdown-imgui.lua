@@ -98,14 +98,14 @@ local function split_into_words_and_spaces(str)
     while i <= len do
         local char = str:sub(i, i)
         if is_white_space(char) then
-            table.insert(result, char)
+            result[#result + 1] = char
             i = i + 1
         else
-            local word = ""
+            local word_chars = {}
 
             -- Aggregate characters (letters or anything)
             while i <= len and not is_white_space(char) do
-                word = word .. char
+                word_chars[#word_chars + 1] = char
                 i = i + 1
                 char = str:sub(i, i)
             end
@@ -118,11 +118,12 @@ local function split_into_words_and_spaces(str)
                 local next_char = str:sub(next_i, next_i)
 
                 if next_i <= len and punctuations[next_char] then
-                    word = word .. " " .. next_char
+                    word_chars[#word_chars + 1] = " "
+                    word_chars[#word_chars + 1] = next_char
                     i = next_i + 1
                 end
             end
-            table.insert(result, word)
+            result[#result + 1] = table.concat(word_chars)
         end
     end
 
