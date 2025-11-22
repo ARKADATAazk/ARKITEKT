@@ -148,7 +148,8 @@ function M.render(ctx, opts)
 
     -- Draw paint-fill icon for selected color
     if is_selected and opts.icon_font then
-      ImGui.PushFont(ctx, opts.icon_font)
+      local icon_size = opts.icon_font_size or 12
+      ImGui.PushFont(ctx, opts.icon_font, icon_size)
       local icon_color = hexrgb("#000000FF")  -- Black icon
       local text_w, text_h = ImGui.CalcTextSize(ctx, ICON_PAINT_FILL)
       local icon_x = chip_cx - text_w * 0.5

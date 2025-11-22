@@ -638,6 +638,7 @@ function RegionTiles:draw_active(ctx, playlist, height, shell_state)
       for _, element in ipairs(header.elements) do
         if element.type == "tab_strip" and element.config then
           element.config.icon_font = icons_font
+          element.config.icon_font_size = icons_size or 12
         end
       end
     end
