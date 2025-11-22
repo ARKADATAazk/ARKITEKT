@@ -551,6 +551,237 @@ function M.get_backup_status(theme_root)
 end
 
 -- ============================================================================
+-- ZIP THEME SUPPORT
+-- ============================================================================
+
+-- Helper: Check if directory exists
+local function dir_exists(path)
+  return path and (reaper.EnumerateFiles(path, 0) or reaper.EnumerateSubdirectories(path, 0)) ~= nil
+end
+
+-- Helper: Read entire file
+local function read_all(path)
+  local f = io.open(path, "rb")
+  if not f then return nil end
+  local s = f:read("*a")
+  f:close()
+  return s
+end
+
+-- Helper: Write entire file
+local function write_all(path, data)
+  local f = io.open(path, "wb")
+  if not f then return false end
+  f:write(data or "")
+  f:close()
+  return true
+end
+
+-- Helper: Remove directory recursively
+local function rm_rf(dir)
+  if not dir_exists(dir) then return end
+  local i = 0
+  while true do
+    local f = reaper.EnumerateFiles(dir, i)
+    if not f then break end
+    os.remove(dir .. SEP .. f)
+    i = i + 1
+  end
+  local j = 0
+  local subs = {}
+  while true do
+    local s = reaper.EnumerateSubdirectories(dir, j)
+    if not s then break end
+    subs[#subs + 1] = dir .. SEP .. s
+    j = j + 1
+  end
+  for _, sd in ipairs(subs) do rm_rf(sd) end
+  os.remove(dir)
+end
+
+-- Helper: Copy directory tree
+local function copy_tree(src, dst)
+  reaper.RecursiveCreateDirectory(dst, 0)
+  local i = 0
+  while true do
+    local f = reaper.EnumerateFiles(src, i)
+    if not f then break end
+    local ok = copy_file(src .. SEP .. f, dst .. SEP .. f)
+    if not ok then return false end
+    i = i + 1
+  end
+  local j = 0
+  while true do
+    local s = reaper.EnumerateSubdirectories(src, j)
+    if not s then break end
+    local ok = copy_tree(src .. SEP .. s, dst .. SEP .. s)
+    if not ok then return false end
+    j = j + 1
+  end
+  return true
+end
+
+-- Helper: Create ZIP file
+local function try_run(cmd)
+  local r = os.execute(cmd)
+  return r == true or r == 0
+end
+
+local function make_zip(src_dir, out_zip)
+  local osname = reaper.GetOS() or ""
+  if osname:find("Win") then
+    local ps = ([[powershell -NoProfile -Command "Set-Location '%s'; if (Test-Path '%s') {Remove-Item '%s' -Force}; Compress-Archive -Path * -DestinationPath '%s' -Force"]])
+      :format(src_dir:gsub("'", "''"), out_zip:gsub("'", "''"), out_zip:gsub("'", "''"), out_zip:gsub("'", "''"))
+    return try_run(ps)
+  else
+    local zip = ([[cd "%s" && rm -f "%s" && zip -qr "%s" *]]):format(src_dir, out_zip, out_zip)
+    return try_run(zip)
+  end
+end
+
+-- Helper: Count PNGs in directory (recursive)
+local function count_pngs(dir)
+  local n = 0
+  local i = 0
+  while true do
+    local f = reaper.EnumerateFiles(dir, i)
+    if not f then break end
+    if f:lower():sub(-4) == ".png" then n = n + 1 end
+    i = i + 1
+  end
+  local j = 0
+  while true do
+    local s = reaper.EnumerateSubdirectories(dir, j)
+    if not s then break end
+    n = n + count_pngs(dir .. SEP .. s)
+    j = j + 1
+  end
+  return n
+end
+
+-- Helper: Find ui_img directory (directory with most PNGs)
+local function find_ui_img_dir(root)
+  local best, bestN = root, count_pngs(root)
+  local j = 0
+  while true do
+    local s = reaper.EnumerateSubdirectories(root, j)
+    if not s then break end
+    local d = root .. SEP .. s
+    local n = count_pngs(d)
+    if n > bestN then best, bestN = d, n end
+    j = j + 1
+  end
+  return best
+end
+
+-- Apply resolved map to ZIP theme
+-- cache_dir: extracted ZIP location
+-- themes_dir: ColorThemes directory
+-- theme_name: base name for output
+-- Returns: { ok = bool, files_copied = n, output_path = path, errors = {} }
+function M.apply_to_zip_theme(cache_dir, themes_dir, theme_name, resolved_map)
+  local result = {
+    ok = true,
+    files_copied = 0,
+    output_path = nil,
+    errors = {},
+  }
+
+  if not cache_dir or not dir_exists(cache_dir) then
+    result.ok = false
+    table.insert(result.errors, "Cache directory not found")
+    return result
+  end
+
+  -- Set up work directory
+  local script_cache = get_cache_dir()
+  local work_dir = script_cache .. SEP .. "work_theme"
+
+  -- Clone cache to work directory
+  rm_rf(work_dir)
+  reaper.RecursiveCreateDirectory(work_dir, 0)
+  if not copy_tree(cache_dir, work_dir) then
+    result.ok = false
+    table.insert(result.errors, "Failed to clone cache to work directory")
+    return result
+  end
+
+  -- Find ui_img directory in work copy
+  local ui_work = find_ui_img_dir(work_dir)
+
+  -- Copy resolved assets
+  for key, asset in pairs(resolved_map) do
+    local src_path = asset.path
+    local dst_path = ui_work .. SEP .. key .. ".png"
+
+    -- Skip mock paths (demo mode)
+    if src_path:match("^%(mock%)") then
+      goto continue
+    end
+
+    -- Check source exists
+    if not file_exists(src_path) then
+      table.insert(result.errors, "Source not found: " .. src_path)
+      goto continue
+    end
+
+    -- Copy asset
+    local ok, err = copy_file(src_path, dst_path)
+    if ok then
+      result.files_copied = result.files_copied + 1
+    else
+      table.insert(result.errors, "Copy failed for " .. key .. ": " .. (err or "unknown"))
+    end
+
+    ::continue::
+  end
+
+  -- Create output ZIP
+  local patched_name = (theme_name or "Theme") .. "_packages.ReaperThemeZip"
+  local out_zip = script_cache .. SEP .. patched_name
+
+  if not make_zip(work_dir, out_zip) then
+    result.ok = false
+    table.insert(result.errors, "ZIP creation failed")
+    return result
+  end
+
+  -- Move to ColorThemes directory
+  local final_path = themes_dir .. SEP .. patched_name
+  local data = read_all(out_zip)
+  if not data then
+    result.ok = false
+    table.insert(result.errors, "Failed to read created ZIP")
+    return result
+  end
+
+  os.remove(final_path)
+  if not write_all(final_path, data) then
+    result.ok = false
+    table.insert(result.errors, "Failed to move ZIP to ColorThemes")
+    return result
+  end
+
+  result.output_path = final_path
+
+  -- Clean up work directory
+  rm_rf(work_dir)
+  os.remove(out_zip)
+
+  return result
+end
+
+-- Load created ZIP theme in REAPER
+function M.load_zip_theme(zip_path)
+  if not file_exists(zip_path) then
+    return false, "ZIP file not found"
+  end
+  reaper.OpenColorThemeFile(zip_path)
+  reaper.ThemeLayout_RefreshAll()
+  return true
+end
+
+-- ============================================================================
 -- FILTERING
 -- ============================================================================
 

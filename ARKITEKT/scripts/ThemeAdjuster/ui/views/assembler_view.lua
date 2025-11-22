@@ -310,10 +310,16 @@ function AssemblerView:do_apply()
     return
   end
 
-  -- Get theme root
-  local theme_root = Theme.get_theme_root_path()
-  if not theme_root then
-    reaper.ShowMessageBox("No theme loaded or theme root not found.", "Apply Error", 0)
+  -- Get theme status and info
+  local status, cache_dir, zip_name = Theme.get_status()
+  local info = Theme.get_theme_info()
+
+  -- Determine apply mode
+  local is_zip_mode = (status == "linked-ready" or status == "zip-ready")
+  local is_direct_mode = (status == "direct")
+
+  if not is_zip_mode and not is_direct_mode then
+    reaper.ShowMessageBox("Theme not ready.\nLink a ZIP or use a folder theme.", "Apply Error", 0)
     return
   end
 
@@ -335,43 +341,101 @@ function AssemblerView:do_apply()
     return
   end
 
-  -- Confirm apply
-  local confirm = reaper.ShowMessageBox(
-    string.format("Apply %d assets to theme?\n\nTheme: %s\n\nOriginal files will be backed up.", active_count, theme_root),
-    "Confirm Apply",
-    4  -- Yes/No
-  )
+  local result
 
-  if confirm ~= 6 then  -- 6 = Yes
-    return
-  end
-
-  -- Do the apply
-  local result = PackageManager.apply_to_theme(theme_root, resolved)
-  self.last_apply_result = result
-
-  -- Show result
-  if result.ok then
-    local msg = string.format(
-      "Apply completed!\n\nFiles copied: %d\nFiles backed up: %d",
-      result.files_copied,
-      result.files_backed_up
-    )
-    if #result.errors > 0 then
-      msg = msg .. string.format("\nWarnings: %d", #result.errors)
+  if is_direct_mode then
+    -- Folder theme: apply directly with backups
+    local theme_root = Theme.get_theme_root_path()
+    if not theme_root then
+      reaper.ShowMessageBox("No theme root found.", "Apply Error", 0)
+      return
     end
-    reaper.ShowMessageBox(msg, "Apply Complete", 0)
 
-    -- Refresh REAPER theme
-    Theme.reload_theme_in_reaper()
-  else
-    local msg = string.format(
-      "Apply failed!\n\nFiles copied: %d\nErrors: %d\n\n%s",
-      result.files_copied,
-      #result.errors,
-      table.concat(result.errors, "\n")
+    -- Confirm apply
+    local confirm = reaper.ShowMessageBox(
+      string.format("Apply %d assets to folder theme?\n\nTheme: %s\n\nOriginal files will be backed up.", active_count, theme_root),
+      "Confirm Apply",
+      4  -- Yes/No
     )
-    reaper.ShowMessageBox(msg, "Apply Error", 0)
+
+    if confirm ~= 6 then return end
+
+    -- Do the apply
+    result = PackageManager.apply_to_theme(theme_root, resolved)
+    self.last_apply_result = result
+
+    -- Show result
+    if result.ok then
+      local msg = string.format(
+        "Apply completed!\n\nFiles copied: %d\nFiles backed up: %d",
+        result.files_copied,
+        result.files_backed_up
+      )
+      if #result.errors > 0 then
+        msg = msg .. string.format("\nWarnings: %d", #result.errors)
+      end
+      reaper.ShowMessageBox(msg, "Apply Complete", 0)
+
+      -- Refresh REAPER theme
+      Theme.reload_theme_in_reaper()
+    else
+      local msg = string.format(
+        "Apply failed!\n\nFiles copied: %d\nErrors: %d\n\n%s",
+        result.files_copied,
+        #result.errors,
+        table.concat(result.errors, "\n")
+      )
+      reaper.ShowMessageBox(msg, "Apply Error", 0)
+    end
+
+  else
+    -- ZIP theme: create patched ZIP
+    if not cache_dir then
+      reaper.ShowMessageBox("Cache directory not found.\nRebuild cache first.", "Apply Error", 0)
+      return
+    end
+
+    local output_name = (info.theme_name or "Theme") .. "_packages.ReaperThemeZip"
+
+    -- Confirm apply
+    local confirm = reaper.ShowMessageBox(
+      string.format("Apply %d assets and create new ZIP?\n\nOutput: %s\n\nLoad theme after creation?", active_count, output_name),
+      "Confirm Apply (ZIP)",
+      3  -- Yes/No/Cancel
+    )
+
+    if confirm == 2 then return end  -- Cancel
+    local load_after = (confirm == 6)  -- Yes
+
+    -- Do the apply
+    result = PackageManager.apply_to_zip_theme(cache_dir, info.themes_dir, info.theme_name, resolved)
+    self.last_apply_result = result
+
+    -- Show result
+    if result.ok then
+      local msg = string.format(
+        "ZIP created!\n\nFiles copied: %d\nOutput: %s",
+        result.files_copied,
+        result.output_path
+      )
+      if #result.errors > 0 then
+        msg = msg .. string.format("\nWarnings: %d", #result.errors)
+      end
+      reaper.ShowMessageBox(msg, "Apply Complete", 0)
+
+      -- Load theme if requested
+      if load_after and result.output_path then
+        PackageManager.load_zip_theme(result.output_path)
+      end
+    else
+      local msg = string.format(
+        "ZIP creation failed!\n\nFiles copied: %d\nErrors: %d\n\n%s",
+        result.files_copied,
+        #result.errors,
+        table.concat(result.errors, "\n")
+      )
+      reaper.ShowMessageBox(msg, "Apply Error", 0)
+    end
   end
 end
 
