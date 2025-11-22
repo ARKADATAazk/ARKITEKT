@@ -592,17 +592,26 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local draw_layout_icon = function(btn_draw_list, icon_x, icon_y)
     local icon_size = 14
     local gap = 2
+    local top_bar_h = 1  -- Top bar representing search/settings
+    local top_padding = 1  -- Padding between top bar and panels
+
+    -- Draw top bar (represents search bar/top panel)
+    ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + icon_size, icon_y + top_bar_h, icon_color, 0)
+
+    -- Calculate remaining height for panels (reduced by top bar + padding)
+    local panels_start_y = icon_y + top_bar_h + top_padding
+    local panels_height = icon_size - top_bar_h - top_padding
 
     if is_vertical then
       -- Vertical mode: 2 rectangles stacked (top and bottom)
-      local rect_h = (icon_size - gap) / 2
-      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + icon_size, icon_y + rect_h, icon_color, 0)
-      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y + rect_h + gap, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
+      local rect_h = (panels_height - gap) / 2
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, panels_start_y, icon_x + icon_size, panels_start_y + rect_h, icon_color, 0)
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, panels_start_y + rect_h + gap, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
     else
       -- Horizontal mode: 2 rectangles side by side (left and right)
       local rect_w = (icon_size - gap) / 2
-      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + rect_w, icon_y + icon_size, icon_color, 0)
-      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x + rect_w + gap, icon_y, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, panels_start_y, icon_x + rect_w, icon_y + icon_size, icon_color, 0)
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x + rect_w + gap, panels_start_y, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
     end
   end
 
