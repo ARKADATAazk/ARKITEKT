@@ -389,7 +389,13 @@ function M.suggest_tags(image_names, threshold)
   threshold = threshold or 0.3
 
   local distribution = M.calculate_area_distribution(image_names)
-  local total = #image_names
+
+  -- Calculate total from MATCHED images only (not all images)
+  -- This prevents dilution when package has many images not in metadata
+  local total = 0
+  for _, count in pairs(distribution) do
+    total = total + count
+  end
 
   if total == 0 then
     return {}
