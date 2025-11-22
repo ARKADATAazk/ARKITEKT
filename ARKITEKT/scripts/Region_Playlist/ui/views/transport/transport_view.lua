@@ -489,7 +489,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
       config = {
         icon = CoreConfig.REMIX_ICONS.follow_viewport,
         icon_font = icon_font,
-        icon_size = icon_size,
+        icon_size = 14,  -- Slightly smaller to fit in button
         label = "",
         is_toggled = bridge_state.follow_viewport or false,
         preset_name = "BUTTON_TOGGLE_WHITE",
