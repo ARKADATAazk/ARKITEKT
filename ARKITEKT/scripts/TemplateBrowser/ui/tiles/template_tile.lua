@@ -295,15 +295,12 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local base_size = state.fonts.icons_size or 14
     local font_size = math.floor(base_size * 3)  -- 3x size
 
-    -- Push font and use ImGui.Text which respects current font
+    -- Push font, calc size, draw with 5-param DrawList_AddText (uses pushed font implicitly)
     ImGui.PushFont(ctx, state.fonts.icons, font_size)
     local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)
     local star_text_x = star_x + (star_size - text_w) * 0.5
     local star_text_y = star_y + (star_size - text_h) * 0.5
-
-    -- Draw using DrawList with current font (uses GetFont internally)
-    local current_font = ImGui.GetFont(ctx)
-    ImGui.DrawList_AddText(dl, current_font, font_size, star_text_x, star_text_y, star_color, star_char)
+    ImGui.DrawList_AddText(dl, star_text_x, star_text_y, star_color, star_char)
     ImGui.PopFont(ctx)
   else
     -- Fallback to Unicode star if no icon font
