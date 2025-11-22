@@ -13,10 +13,17 @@ local M = {}
 function M.begin_child(ctx, id, width, height, scroll_config, container)
   local flags = scroll_config.flags or 0
   local scroll_bg = scroll_config.bg_color or PC.bg_scrollbar
-  
+
   ImGui.PushStyleColor(ctx, ImGui.Col_ScrollbarBg, scroll_bg)
-  
-  local success = ImGui.BeginChild(ctx, id .. "_scroll", width, height, ImGui.ChildFlags_None, flags)
+
+  -- Use AlwaysUseWindowPadding flag when padding is configured
+  -- Without this flag, child windows ignore WindowPadding by default
+  local child_flags = ImGui.ChildFlags_None
+  if container and container.config and container.config.padding and container.config.padding > 0 then
+    child_flags = ImGui.ChildFlags_AlwaysUseWindowPadding or 0
+  end
+
+  local success = ImGui.BeginChild(ctx, id .. "_scroll", width, height, child_flags, flags)
   
   if not success then
     -- BeginChild failed - pop immediately and clean up
