@@ -304,7 +304,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
   end
 
   -- Generate 5-pointed star polygon
-  local points = {}
+  local points = reaper.new_array(20)  -- 10 points * 2 coordinates
   local inner_radius = star_radius * 0.4
   local rotation = -math.pi / 2  -- Start from top point
 
@@ -313,17 +313,12 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local radius = (i % 2 == 0) and star_radius or inner_radius
     local px = star_center_x + math.cos(angle) * radius
     local py = star_center_y + math.sin(angle) * radius
-    table.insert(points, px)
-    table.insert(points, py)
+    points[i * 2 + 1] = px
+    points[i * 2 + 2] = py
   end
 
   -- Draw filled star
   ImGui.DrawList_AddConvexPolyFilled(dl, points, star_color)
-
-  -- Draw border if not active
-  if border_color then
-    ImGui.DrawList_AddPolyline(dl, points, border_color, ImGui.DrawFlags_Closed, 1.5)
-  end
 
   -- Handle star click to toggle favorite
   if is_star_hovered and ImGui.IsMouseClicked(ctx, 0) then
