@@ -454,8 +454,8 @@ function PackageModal:draw_content(ctx, bounds)
   local pkg = self.package_data
   if not pkg then return true end  -- Close if no package
 
-  local content_w = bounds.w - 40
-  local start_x = 20
+  local content_w = bounds.w - 20
+  local start_x = 10
 
   -- Header
   ImGui.SetCursorPosX(ctx, start_x)
@@ -602,14 +602,14 @@ function PackageModal:draw(ctx, window)
         self:close()
       end,
       render = function(render_ctx, alpha, bounds)
-        -- Responsive sizing
-        local max_w = 900
-        local max_h = 700
+        -- Use most of the viewport
+        local max_w = 1400
+        local max_h = 900
         local min_w = 600
         local min_h = 400
 
-        local modal_w = math.floor(math.max(min_w, math.min(max_w, bounds.w * 0.85)))
-        local modal_h = math.floor(math.max(min_h, math.min(max_h, bounds.h * 0.85)))
+        local modal_w = math.floor(math.max(min_w, math.min(max_w, bounds.w * 0.95)))
+        local modal_h = math.floor(math.max(min_h, math.min(max_h, bounds.h * 0.90)))
 
         -- Center in viewport
         local modal_x = bounds.x + math.floor((bounds.w - modal_w) * 0.5)
