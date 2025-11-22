@@ -137,7 +137,8 @@ function EnvelopeView:draw(ctx, shell_state)
         preset_name = "BUTTON_TOGGLE_WHITE",
         on_click = function()
           self.active_layout = layout
-          -- TODO: Apply layout
+          ThemeParams.set_active_layout('envcp', layout)
+          self:load_from_theme()
         end
       }, "env_layout_" .. layout) then
       end
