@@ -331,6 +331,226 @@ function M.resolve_packages(packages, active_packages, package_order, exclusions
 end
 
 -- ============================================================================
+-- APPLY PIPELINE
+-- ============================================================================
+
+-- Helper: Check if file exists
+local function file_exists(path)
+  local f = io.open(path, "rb")
+  if f then f:close() return true end
+  return false
+end
+
+-- Helper: Copy file
+local function copy_file(src, dst)
+  local src_file = io.open(src, "rb")
+  if not src_file then return false, "Cannot open source: " .. src end
+
+  local content = src_file:read("*all")
+  src_file:close()
+
+  -- Ensure destination directory exists
+  local dst_dir = dst:match("^(.*)" .. SEP)
+  if dst_dir then
+    reaper.RecursiveCreateDirectory(dst_dir, 0)
+  end
+
+  local dst_file = io.open(dst, "wb")
+  if not dst_file then return false, "Cannot write destination: " .. dst end
+
+  dst_file:write(content)
+  dst_file:close()
+  return true
+end
+
+-- Helper: Get script cache directory
+local function get_cache_dir()
+  local info = debug.getinfo(1, 'S')
+  local script_path = info.source:sub(2)
+  local script_dir = script_path:match("^(.*)" .. SEP)
+  return script_dir .. SEP .. "cache"
+end
+
+-- Helper: Generate theme ID from path (short hash)
+local function theme_id_from_path(theme_root)
+  if not theme_root then return "unknown" end
+  local hash = 0
+  for i = 1, #theme_root do
+    hash = (hash * 31 + string.byte(theme_root, i)) % 0xFFFFFFFF
+  end
+  return string.format("%08x", hash)
+end
+
+-- Apply resolved map to theme folder
+-- Returns: { ok = bool, files_copied = n, files_backed_up = n, errors = {}, backups_dir = path }
+function M.apply_to_theme(theme_root, resolved_map, opts)
+  opts = opts or {}
+  local result = {
+    ok = true,
+    files_copied = 0,
+    files_backed_up = 0,
+    errors = {},
+    backups_dir = nil,
+  }
+
+  if not theme_root or theme_root == "" then
+    result.ok = false
+    table.insert(result.errors, "No theme root specified")
+    return result
+  end
+
+  -- Set up backups directory
+  local cache_dir = get_cache_dir()
+  local theme_id = theme_id_from_path(theme_root)
+  local backups_dir = cache_dir .. SEP .. theme_id .. SEP .. "backups"
+  result.backups_dir = backups_dir
+
+  -- Track which files we've already backed up (from previous applies)
+  local backed_up_files = {}
+
+  -- Process each resolved asset
+  for key, asset in pairs(resolved_map) do
+    local src_path = asset.path
+    local dst_path = theme_root .. SEP .. key .. ".png"
+
+    -- Skip mock paths (demo mode)
+    if src_path:match("^%(mock%)") then
+      goto continue
+    end
+
+    -- Check source exists
+    if not file_exists(src_path) then
+      table.insert(result.errors, "Source not found: " .. src_path)
+      goto continue
+    end
+
+    -- Backup original if it exists and hasn't been backed up before
+    local backup_path = backups_dir .. SEP .. key .. ".png"
+    if file_exists(dst_path) and not file_exists(backup_path) then
+      local ok, err = copy_file(dst_path, backup_path)
+      if ok then
+        result.files_backed_up = result.files_backed_up + 1
+        backed_up_files[key] = true
+      else
+        table.insert(result.errors, "Backup failed for " .. key .. ": " .. (err or "unknown"))
+      end
+    end
+
+    -- Copy resolved asset to theme
+    local ok, err = copy_file(src_path, dst_path)
+    if ok then
+      result.files_copied = result.files_copied + 1
+    else
+      result.ok = false
+      table.insert(result.errors, "Copy failed for " .. key .. ": " .. (err or "unknown"))
+    end
+
+    ::continue::
+  end
+
+  return result
+end
+
+-- Revert last apply by restoring from backups
+-- Returns: { ok = bool, files_restored = n, errors = {} }
+function M.revert_last_apply(theme_root)
+  local result = {
+    ok = true,
+    files_restored = 0,
+    errors = {},
+  }
+
+  if not theme_root or theme_root == "" then
+    result.ok = false
+    table.insert(result.errors, "No theme root specified")
+    return result
+  end
+
+  -- Find backups directory
+  local cache_dir = get_cache_dir()
+  local theme_id = theme_id_from_path(theme_root)
+  local backups_dir = cache_dir .. SEP .. theme_id .. SEP .. "backups"
+
+  -- Check if backups exist
+  local first_backup = reaper.EnumerateFiles(backups_dir, 0)
+  if not first_backup then
+    result.ok = false
+    table.insert(result.errors, "No backups found")
+    return result
+  end
+
+  -- Restore all backed up files
+  local i = 0
+  repeat
+    local file = reaper.EnumerateFiles(backups_dir, i)
+    if file then
+      local backup_path = backups_dir .. SEP .. file
+      local dst_path = theme_root .. SEP .. file
+
+      local ok, err = copy_file(backup_path, dst_path)
+      if ok then
+        result.files_restored = result.files_restored + 1
+      else
+        result.ok = false
+        table.insert(result.errors, "Restore failed for " .. file .. ": " .. (err or "unknown"))
+      end
+    end
+    i = i + 1
+  until not file
+
+  return result
+end
+
+-- Clear backups for a theme
+function M.clear_backups(theme_root)
+  if not theme_root then return false end
+
+  local cache_dir = get_cache_dir()
+  local theme_id = theme_id_from_path(theme_root)
+  local backups_dir = cache_dir .. SEP .. theme_id .. SEP .. "backups"
+
+  -- Remove all files in backups directory
+  local i = 0
+  repeat
+    local file = reaper.EnumerateFiles(backups_dir, i)
+    if file then
+      os.remove(backups_dir .. SEP .. file)
+    end
+    i = i + 1
+  until not file
+
+  -- Remove the directory itself
+  os.remove(backups_dir)
+  return true
+end
+
+-- Get backup status for a theme
+-- Returns: { has_backups = bool, file_count = n, backups_dir = path }
+function M.get_backup_status(theme_root)
+  if not theme_root then
+    return { has_backups = false, file_count = 0, backups_dir = nil }
+  end
+
+  local cache_dir = get_cache_dir()
+  local theme_id = theme_id_from_path(theme_root)
+  local backups_dir = cache_dir .. SEP .. theme_id .. SEP .. "backups"
+
+  local count = 0
+  local i = 0
+  repeat
+    local file = reaper.EnumerateFiles(backups_dir, i)
+    if file then count = count + 1 end
+    i = i + 1
+  until not file
+
+  return {
+    has_backups = count > 0,
+    file_count = count,
+    backups_dir = backups_dir,
+  }
+end
+
+-- ============================================================================
 -- FILTERING
 -- ============================================================================
 

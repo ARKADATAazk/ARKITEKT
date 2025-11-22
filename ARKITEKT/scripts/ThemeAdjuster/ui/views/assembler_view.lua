@@ -30,6 +30,9 @@ function M.new(State, AppConfig, settings)
     -- ZIP linking state
     selected_zip_index = 0,
     available_zips = {},
+
+    -- Apply state
+    last_apply_result = nil,
   }, AssemblerView)
 
   -- Create package modal
@@ -87,7 +90,7 @@ function M.new(State, AppConfig, settings)
     end,
   }, filters)
 
-  -- Add footer with ZIP linking status (left) and Rebuild Cache (right)
+  -- Add footer with ZIP linking status (left) and action buttons (right)
   container_config.footer = {
     enabled = true,
     height = 32,
@@ -106,20 +109,29 @@ function M.new(State, AppConfig, settings)
           end,
         },
       },
-      -- Right: Rebuild Cache button
+      -- Revert button
       {
-        id = "rebuild_cache",
+        id = "revert",
         type = "button",
-        width = 110,
-        spacing_before = 0,
+        width = 70,
+        spacing_before = 8,
         config = {
-          label = "Rebuild Cache",
+          label = "Revert",
           on_click = function()
-            State.set_cache_status("rebuilding")
-            -- TODO: Actual cache rebuild
-            reaper.defer(function()
-              State.set_cache_status("ready")
-            end)
+            self:do_revert()
+          end,
+        },
+      },
+      -- Apply button
+      {
+        id = "apply",
+        type = "button",
+        width = 70,
+        spacing_before = 8,
+        config = {
+          label = "Apply",
+          on_click = function()
+            self:do_apply()
           end,
         },
       },
@@ -202,8 +214,8 @@ function AssemblerView:create_package_model()
     index = State.get_packages(),  -- All packages (required by grid)
     active = State.get_active_packages(),
     order = State.get_package_order(),
-    excl = {},  -- TODO: Load from state
-    pins = {},  -- TODO: Load from state
+    excl = State.get_package_exclusions(),
+    pins = State.get_package_pins(),
     demo = State.get_demo_mode(),
     search = State.get_search_text(),
     filters = State.get_filters(),
@@ -286,6 +298,138 @@ function AssemblerView:update(dt)
   -- Update animations
   if self.grid and self.grid.custom_state and self.grid.custom_state.animator then
     self.grid.custom_state.animator:update(dt)
+  end
+end
+
+function AssemblerView:do_apply()
+  local State = self.State
+
+  -- Check if in demo mode
+  if State.get_demo_mode() then
+    reaper.ShowMessageBox("Cannot apply in Demo Mode.\nDisable Demo Mode and link a real theme first.", "Apply", 0)
+    return
+  end
+
+  -- Get theme root
+  local theme_root = Theme.get_theme_root_path()
+  if not theme_root then
+    reaper.ShowMessageBox("No theme loaded or theme root not found.", "Apply Error", 0)
+    return
+  end
+
+  -- Get resolved map from current state
+  local resolved = PackageManager.resolve_packages(
+    State.get_packages(),
+    State.get_active_packages(),
+    State.get_package_order(),
+    State.get_package_exclusions(),
+    State.get_package_pins()
+  )
+
+  -- Count active assets
+  local active_count = 0
+  for _ in pairs(resolved) do active_count = active_count + 1 end
+
+  if active_count == 0 then
+    reaper.ShowMessageBox("No assets to apply.\nActivate some packages first.", "Apply", 0)
+    return
+  end
+
+  -- Confirm apply
+  local confirm = reaper.ShowMessageBox(
+    string.format("Apply %d assets to theme?\n\nTheme: %s\n\nOriginal files will be backed up.", active_count, theme_root),
+    "Confirm Apply",
+    4  -- Yes/No
+  )
+
+  if confirm ~= 6 then  -- 6 = Yes
+    return
+  end
+
+  -- Do the apply
+  local result = PackageManager.apply_to_theme(theme_root, resolved)
+  self.last_apply_result = result
+
+  -- Show result
+  if result.ok then
+    local msg = string.format(
+      "Apply completed!\n\nFiles copied: %d\nFiles backed up: %d",
+      result.files_copied,
+      result.files_backed_up
+    )
+    if #result.errors > 0 then
+      msg = msg .. string.format("\nWarnings: %d", #result.errors)
+    end
+    reaper.ShowMessageBox(msg, "Apply Complete", 0)
+
+    -- Refresh REAPER theme
+    Theme.reload_theme_in_reaper()
+  else
+    local msg = string.format(
+      "Apply failed!\n\nFiles copied: %d\nErrors: %d\n\n%s",
+      result.files_copied,
+      #result.errors,
+      table.concat(result.errors, "\n")
+    )
+    reaper.ShowMessageBox(msg, "Apply Error", 0)
+  end
+end
+
+function AssemblerView:do_revert()
+  local State = self.State
+
+  -- Check if in demo mode
+  if State.get_demo_mode() then
+    reaper.ShowMessageBox("Cannot revert in Demo Mode.", "Revert", 0)
+    return
+  end
+
+  -- Get theme root
+  local theme_root = Theme.get_theme_root_path()
+  if not theme_root then
+    reaper.ShowMessageBox("No theme loaded or theme root not found.", "Revert Error", 0)
+    return
+  end
+
+  -- Check if backups exist
+  local backup_status = PackageManager.get_backup_status(theme_root)
+  if not backup_status.has_backups then
+    reaper.ShowMessageBox("No backups found.\nNothing to revert.", "Revert", 0)
+    return
+  end
+
+  -- Confirm revert
+  local confirm = reaper.ShowMessageBox(
+    string.format("Revert %d files from backup?\n\nThis will restore original theme files.", backup_status.file_count),
+    "Confirm Revert",
+    4  -- Yes/No
+  )
+
+  if confirm ~= 6 then  -- 6 = Yes
+    return
+  end
+
+  -- Do the revert
+  local result = PackageManager.revert_last_apply(theme_root)
+
+  -- Show result
+  if result.ok then
+    reaper.ShowMessageBox(
+      string.format("Revert completed!\n\nFiles restored: %d", result.files_restored),
+      "Revert Complete",
+      0
+    )
+
+    -- Refresh REAPER theme
+    Theme.reload_theme_in_reaper()
+  else
+    local msg = string.format(
+      "Revert failed!\n\nFiles restored: %d\nErrors: %d\n\n%s",
+      result.files_restored,
+      #result.errors,
+      table.concat(result.errors, "\n")
+    )
+    reaper.ShowMessageBox(msg, "Revert Error", 0)
   end
 end
 

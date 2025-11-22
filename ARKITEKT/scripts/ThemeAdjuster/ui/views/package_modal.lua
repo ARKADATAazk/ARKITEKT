@@ -23,17 +23,7 @@ function M.new(State, settings)
     -- UI state
     search_text = "",
     selected_assets = {},  -- {key = true/false}
-
-    -- Settings
-    exclusions = {},  -- {pkg_id = {key = true}}
-    pins = {},        -- {key = pkg_id}
   }, PackageModal)
-
-  -- Load settings
-  if settings then
-    self.exclusions = settings:get('pkg_exclusions', {})
-    self.pins = settings:get('pkg_pins', {})
-  end
 
   return self
 end
@@ -54,46 +44,47 @@ function PackageModal:close()
   self.selected_assets = {}
 end
 
-function PackageModal:save_settings()
-  if self.settings then
-    self.settings:set('pkg_exclusions', self.exclusions)
-    self.settings:set('pkg_pins', self.pins)
-  end
-end
-
 function PackageModal:get_package_exclusions(pkg_id)
-  if not self.exclusions[pkg_id] then
-    self.exclusions[pkg_id] = {}
+  local all_exclusions = self.State.get_package_exclusions()
+  if not all_exclusions[pkg_id] then
+    all_exclusions[pkg_id] = {}
   end
-  return self.exclusions[pkg_id]
+  return all_exclusions[pkg_id]
 end
 
 function PackageModal:is_asset_included(pkg_id, key)
-  local excl = self.get_package_exclusions(self, pkg_id)
+  local excl = self:get_package_exclusions(pkg_id)
   return not excl[key]
 end
 
 function PackageModal:toggle_asset_inclusion(pkg_id, key)
-  local excl = self:get_package_exclusions(pkg_id)
-  if excl[key] then
-    excl[key] = nil  -- Include
-  else
-    excl[key] = true  -- Exclude
+  local all_exclusions = self.State.get_package_exclusions()
+  if not all_exclusions[pkg_id] then
+    all_exclusions[pkg_id] = {}
   end
-  self:save_settings()
+
+  if all_exclusions[pkg_id][key] then
+    all_exclusions[pkg_id][key] = nil  -- Include
+  else
+    all_exclusions[pkg_id][key] = true  -- Exclude
+  end
+
+  self.State.set_package_exclusions(all_exclusions)
 end
 
 function PackageModal:get_pinned_provider(key)
-  return self.pins[key]
+  local pins = self.State.get_package_pins()
+  return pins[key]
 end
 
 function PackageModal:set_pinned_provider(key, pkg_id)
+  local pins = self.State.get_package_pins()
   if pkg_id then
-    self.pins[key] = pkg_id
+    pins[key] = pkg_id
   else
-    self.pins[key] = nil
+    pins[key] = nil
   end
-  self:save_settings()
+  self.State.set_package_pins(pins)
 end
 
 function PackageModal:draw_toolbar(ctx)
@@ -127,33 +118,41 @@ function PackageModal:draw_bulk_actions(ctx, pkg)
 
   ImGui.SameLine(ctx)
   if ImGui.Button(ctx, "Include Selected") then
-    local excl = self:get_package_exclusions(pkg.id)
+    local all_exclusions = self.State.get_package_exclusions()
+    if not all_exclusions[pkg.id] then
+      all_exclusions[pkg.id] = {}
+    end
     for key, selected in pairs(self.selected_assets) do
       if selected then
-        excl[key] = nil
+        all_exclusions[pkg.id][key] = nil
       end
     end
-    self:save_settings()
+    self.State.set_package_exclusions(all_exclusions)
   end
 
   ImGui.SameLine(ctx)
   if ImGui.Button(ctx, "Exclude Selected") then
-    local excl = self:get_package_exclusions(pkg.id)
+    local all_exclusions = self.State.get_package_exclusions()
+    if not all_exclusions[pkg.id] then
+      all_exclusions[pkg.id] = {}
+    end
     for key, selected in pairs(self.selected_assets) do
       if selected then
-        excl[key] = true
+        all_exclusions[pkg.id][key] = true
       end
     end
-    self:save_settings()
+    self.State.set_package_exclusions(all_exclusions)
   end
 
   ImGui.SameLine(ctx)
   if ImGui.Button(ctx, "Pin Selected to Package") then
+    local pins = self.State.get_package_pins()
     for key, selected in pairs(self.selected_assets) do
       if selected then
-        self:set_pinned_provider(key, pkg.id)
+        pins[key] = pkg.id
       end
     end
+    self.State.set_package_pins(pins)
   end
 end
 
