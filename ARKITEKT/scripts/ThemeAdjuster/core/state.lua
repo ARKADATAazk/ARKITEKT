@@ -13,10 +13,19 @@ local state = {
 
   -- Package management
   packages = {},
-  active_packages = {},
-  package_order = {},
-  package_exclusions = {},
-  package_pins = {},
+
+  -- Configurations system - multiple named assembler presets
+  configurations = {
+    active = "Default",
+    items = {
+      ["Default"] = {
+        active_packages = {},
+        package_order = {},
+        package_exclusions = {},
+        package_pins = {},
+      }
+    }
+  },
 
   -- UI state
   active_tab = "ASSEMBLER",
@@ -49,11 +58,43 @@ function M.initialize(settings)
     state.search_text = settings:get('search_text', "")
     state.filters = settings:get('filters', state.filters)
     state.tile_size = settings:get('tile_size', 220)
-    state.active_packages = settings:get('active_packages', {})
-    state.package_order = settings:get('package_order', {})
-    state.package_exclusions = settings:get('package_exclusions', {})
-    state.package_pins = settings:get('package_pins', {})
+
+    -- Load configurations
+    local saved_configs = settings:get('configurations', nil)
+    if saved_configs and saved_configs.items and saved_configs.active then
+      state.configurations = saved_configs
+      -- Ensure Default always exists
+      if not state.configurations.items["Default"] then
+        state.configurations.items["Default"] = {
+          active_packages = {},
+          package_order = {},
+          package_exclusions = {},
+          package_pins = {},
+        }
+      end
+      -- Ensure active config exists
+      if not state.configurations.items[state.configurations.active] then
+        state.configurations.active = "Default"
+      end
+    end
   end
+end
+
+-- Helper to get current active configuration
+local function get_active_config()
+  local name = state.configurations.active
+  local config = state.configurations.items[name]
+  if not config then
+    -- Create if missing
+    config = {
+      active_packages = {},
+      package_order = {},
+      package_exclusions = {},
+      package_pins = {},
+    }
+    state.configurations.items[name] = config
+  end
+  return config
 end
 
 -- ============================================================================
@@ -66,13 +107,19 @@ function M.get_search_text() return state.search_text end
 function M.get_filters() return state.filters end
 function M.get_tile_size() return state.tile_size end
 function M.get_packages() return state.packages end
-function M.get_active_packages() return state.active_packages end
-function M.get_package_order() return state.package_order end
 function M.get_theme_status() return state.theme_status end
 function M.get_theme_name() return state.theme_name end
 function M.get_cache_status() return state.cache_status end
-function M.get_package_exclusions() return state.package_exclusions end
-function M.get_package_pins() return state.package_pins end
+
+-- Configuration-aware getters
+function M.get_active_packages() return get_active_config().active_packages end
+function M.get_package_order() return get_active_config().package_order end
+function M.get_package_exclusions() return get_active_config().package_exclusions end
+function M.get_package_pins() return get_active_config().package_pins end
+
+-- Configuration management getters
+function M.get_configurations() return state.configurations end
+function M.get_active_configuration_name() return state.configurations.active end
 
 -- ============================================================================
 -- SETTERS
@@ -103,28 +150,35 @@ function M.set_tile_size(value)
   if state.settings then state.settings:set('tile_size', value) end
 end
 
+-- Helper to save configurations
+local function save_configurations()
+  if state.settings then
+    state.settings:set('configurations', state.configurations)
+  end
+end
+
 function M.set_active_packages(packages)
-  state.active_packages = packages
-  if state.settings then state.settings:set('active_packages', packages) end
+  get_active_config().active_packages = packages
+  save_configurations()
   M.update_resolution()
 end
 
 function M.set_package_order(order)
-  state.package_order = order
-  if state.settings then state.settings:set('package_order', order) end
+  get_active_config().package_order = order
+  save_configurations()
   M.update_resolution()
 end
 
 function M.set_packages(packages)
   state.packages = packages
 
-  -- Initialize order for new packages
-  local order = state.package_order
-  if #order == 0 then
+  -- Initialize order for new packages in active config
+  local config = get_active_config()
+  if #config.package_order == 0 then
     for _, pkg in ipairs(packages) do
-      order[#order + 1] = pkg.id
+      config.package_order[#config.package_order + 1] = pkg.id
     end
-    state.package_order = order
+    save_configurations()
   end
 
   -- Try to load saved state for this theme (if not in demo mode)
@@ -148,23 +202,99 @@ end
 -- ============================================================================
 
 function M.toggle_package(package_id)
-  state.active_packages[package_id] = not state.active_packages[package_id]
-  if state.settings then state.settings:set('active_packages', state.active_packages) end
-
-  -- Trigger resolution update
+  local config = get_active_config()
+  config.active_packages[package_id] = not config.active_packages[package_id]
+  save_configurations()
   M.update_resolution()
 end
 
 function M.set_package_exclusions(exclusions)
-  state.package_exclusions = exclusions
-  if state.settings then state.settings:set('package_exclusions', exclusions) end
+  get_active_config().package_exclusions = exclusions
+  save_configurations()
   M.update_resolution()
 end
 
 function M.set_package_pins(pins)
-  state.package_pins = pins
-  if state.settings then state.settings:set('package_pins', pins) end
+  get_active_config().package_pins = pins
+  save_configurations()
   M.update_resolution()
+end
+
+-- ============================================================================
+-- CONFIGURATION MANAGEMENT
+-- ============================================================================
+
+function M.switch_configuration(name)
+  if not state.configurations.items[name] then return false end
+  state.configurations.active = name
+  save_configurations()
+  M.update_resolution()
+  return true
+end
+
+function M.add_configuration(name, clone_from_current)
+  if state.configurations.items[name] then return false end  -- Already exists
+
+  if clone_from_current then
+    -- Deep copy current config
+    local current = get_active_config()
+    local new_config = {
+      active_packages = {},
+      package_order = {},
+      package_exclusions = {},
+      package_pins = {},
+    }
+    for k, v in pairs(current.active_packages) do new_config.active_packages[k] = v end
+    for i, v in ipairs(current.package_order) do new_config.package_order[i] = v end
+    for pkg_id, keys in pairs(current.package_exclusions) do
+      new_config.package_exclusions[pkg_id] = {}
+      for k, v in pairs(keys) do new_config.package_exclusions[pkg_id][k] = v end
+    end
+    for k, v in pairs(current.package_pins) do new_config.package_pins[k] = v end
+    state.configurations.items[name] = new_config
+  else
+    state.configurations.items[name] = {
+      active_packages = {},
+      package_order = {},
+      package_exclusions = {},
+      package_pins = {},
+    }
+  end
+
+  save_configurations()
+  return true
+end
+
+function M.delete_configuration(name)
+  if name == "Default" then return false end  -- Can't delete default
+  if not state.configurations.items[name] then return false end
+
+  state.configurations.items[name] = nil
+
+  -- Switch to Default if we deleted the active one
+  if state.configurations.active == name then
+    state.configurations.active = "Default"
+    M.update_resolution()
+  end
+
+  save_configurations()
+  return true
+end
+
+function M.rename_configuration(old_name, new_name)
+  if old_name == "Default" then return false end  -- Can't rename default
+  if not state.configurations.items[old_name] then return false end
+  if state.configurations.items[new_name] then return false end  -- Name taken
+
+  state.configurations.items[new_name] = state.configurations.items[old_name]
+  state.configurations.items[old_name] = nil
+
+  if state.configurations.active == old_name then
+    state.configurations.active = new_name
+  end
+
+  save_configurations()
+  return true
 end
 
 -- ============================================================================
@@ -176,12 +306,13 @@ function M.update_resolution()
   local PackageManager = require('ThemeAdjuster.packages.manager')
   local ImageMap = require('ThemeAdjuster.packages.image_map')
 
+  local config = get_active_config()
   local resolved = PackageManager.resolve_packages(
     state.packages,
-    state.active_packages,
-    state.package_order,
-    state.package_exclusions,
-    state.package_pins
+    config.active_packages,
+    config.package_order,
+    config.package_exclusions,
+    config.package_pins
   )
 
   ImageMap.apply(resolved)
@@ -199,17 +330,19 @@ function M.save_assembler_state()
   local theme_root = Theme.get_theme_root_path()
   if not theme_root then return false end
 
+  local config = get_active_config()
+
   -- Build active_order from active packages in order
   local active_order = {}
-  for _, pkg_id in ipairs(state.package_order) do
-    if state.active_packages[pkg_id] then
+  for _, pkg_id in ipairs(config.package_order) do
+    if config.active_packages[pkg_id] then
       active_order[#active_order + 1] = pkg_id
     end
   end
 
   -- Convert exclusions from {pkg_id = {key = true}} to {pkg_id = [keys]}
   local exclusions = {}
-  for pkg_id, keys in pairs(state.package_exclusions) do
+  for pkg_id, keys in pairs(config.package_exclusions) do
     local key_list = {}
     for key, _ in pairs(keys) do
       key_list[#key_list + 1] = key
@@ -221,7 +354,7 @@ function M.save_assembler_state()
 
   return PackageManager.save_state(theme_root, {
     active_order = active_order,
-    pins = state.package_pins,
+    pins = config.package_pins,
     exclusions = exclusions,
   })
 end
@@ -237,89 +370,45 @@ function M.load_assembler_state()
   local saved_state = PackageManager.load_state(theme_root)
   if not saved_state then return false end
 
+  local config = get_active_config()
+
   -- Restore active packages from active_order
-  state.active_packages = {}
-  state.package_order = {}
+  config.active_packages = {}
+  config.package_order = {}
   for _, pkg_id in ipairs(saved_state.active_order) do
-    state.active_packages[pkg_id] = true
-    state.package_order[#state.package_order + 1] = pkg_id
+    config.active_packages[pkg_id] = true
+    config.package_order[#config.package_order + 1] = pkg_id
   end
 
   -- Add inactive packages to order (maintain full list)
   for _, pkg in ipairs(state.packages) do
     local found = false
-    for _, id in ipairs(state.package_order) do
+    for _, id in ipairs(config.package_order) do
       if id == pkg.id then
         found = true
         break
       end
     end
     if not found then
-      state.package_order[#state.package_order + 1] = pkg.id
+      config.package_order[#config.package_order + 1] = pkg.id
     end
   end
 
   -- Restore pins
-  state.package_pins = saved_state.pins or {}
+  config.package_pins = saved_state.pins or {}
 
   -- Convert exclusions from {pkg_id = [keys]} to {pkg_id = {key = true}}
-  state.package_exclusions = {}
+  config.package_exclusions = {}
   for pkg_id, key_list in pairs(saved_state.exclusions or {}) do
-    state.package_exclusions[pkg_id] = {}
+    config.package_exclusions[pkg_id] = {}
     for _, key in ipairs(key_list) do
-      state.package_exclusions[pkg_id][key] = true
+      config.package_exclusions[pkg_id][key] = true
     end
   end
 
-  -- Save to settings too
-  if state.settings then
-    state.settings:set('active_packages', state.active_packages)
-    state.settings:set('package_order', state.package_order)
-    state.settings:set('package_exclusions', state.package_exclusions)
-    state.settings:set('package_pins', state.package_pins)
-  end
-
+  save_configurations()
   M.update_resolution()
   return true
-end
-
--- Auto-save on state changes (debounced in practice by UI interactions)
-local function auto_save()
-  -- Only save if not in demo mode
-  if not state.demo_mode then
-    M.save_assembler_state()
-  end
-end
-
--- Override setters to auto-save
-local original_set_active_packages = M.set_active_packages
-function M.set_active_packages(packages)
-  original_set_active_packages(packages)
-  auto_save()
-end
-
-local original_set_package_order = M.set_package_order
-function M.set_package_order(order)
-  original_set_package_order(order)
-  auto_save()
-end
-
-local original_set_package_exclusions = M.set_package_exclusions
-function M.set_package_exclusions(exclusions)
-  original_set_package_exclusions(exclusions)
-  auto_save()
-end
-
-local original_set_package_pins = M.set_package_pins
-function M.set_package_pins(pins)
-  original_set_package_pins(pins)
-  auto_save()
-end
-
-local original_toggle_package = M.toggle_package
-function M.toggle_package(package_id)
-  original_toggle_package(package_id)
-  auto_save()
 end
 
 return M
