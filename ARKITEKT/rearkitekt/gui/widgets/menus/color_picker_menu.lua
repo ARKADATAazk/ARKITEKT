@@ -13,9 +13,9 @@ local M = {}
 
 -- Default configuration
 local DEFAULTS = {
-  chip_size = 15,           -- Size for square chips
+  chip_size = 17,           -- Size for square chips
   chip_radius = 7,          -- Radius for circle chips (legacy)
-  columns = 14,             -- 14 columns for 28 colors (2 rows)
+  columns = 7,              -- 7 columns for 28 colors (4 rows)
   show_none_option = true,
   none_label = "Remove Color",
   shape = Chip.SHAPE.SQUARE, -- Default to square like Wwise
@@ -56,7 +56,7 @@ function M.render(ctx, opts)
   local effective_size = is_square and chip_size or (chip_radius * 2)
 
   -- Calculate minimum width needed for grid
-  local chip_gap = 4  -- Gap between chips
+  local chip_gap = 3  -- Gap between chips
   local item_padding_x = 12
   local min_grid_width = (columns * effective_size) + ((columns - 1) * chip_gap) + (item_padding_x * 2)
 
