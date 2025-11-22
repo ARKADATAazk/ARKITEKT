@@ -80,6 +80,63 @@ local function create_dot_texture(spacing, dot_size, color)
   return img, tex_size
 end
 
+-- Create a baked grid pattern texture
+local function create_grid_texture(spacing, line_thickness, color)
+  -- Texture size matches spacing for perfect tiling
+  local tex_size = spacing
+
+  -- Check if CreateImageFromSize is available (ImGui 0.10+)
+  if not ImGui.CreateImageFromSize then
+    return nil
+  end
+
+  -- Create blank texture
+  local img = ImGui.CreateImageFromSize(tex_size, tex_size)
+  if not img then return nil end
+
+  -- Create pixel array
+  local pixels = reaper.new_array(tex_size * tex_size)
+
+  -- Extract color components (color is 0xRRGGBBAA)
+  local r = (color >> 24) & 0xFF
+  local g = (color >> 16) & 0xFF
+  local b = (color >> 8) & 0xFF
+  local a = color & 0xFF
+
+  -- Pack as 0xAABBGGRR for ReaImGui
+  local line_pixel = a * 0x1000000 + b * 0x10000 + g * 0x100 + r
+  local clear_pixel = 0x00000000
+
+  -- Fill with transparent
+  for i = 1, tex_size * tex_size do
+    pixels[i] = clear_pixel
+  end
+
+  -- Draw grid lines at edges (they connect when tiled)
+  local thickness = math.max(1, math.floor(line_thickness))
+
+  -- Horizontal line at top (y=0)
+  for py = 0, thickness - 1 do
+    for px = 0, tex_size - 1 do
+      local idx = py * tex_size + px + 1
+      pixels[idx] = line_pixel
+    end
+  end
+
+  -- Vertical line at left (x=0)
+  for py = 0, tex_size - 1 do
+    for px = 0, thickness - 1 do
+      local idx = py * tex_size + px + 1
+      pixels[idx] = line_pixel
+    end
+  end
+
+  -- Upload pixels to texture
+  ImGui.Image_SetPixels_Array(img, 0, 0, tex_size, tex_size, pixels)
+
+  return img, tex_size
+end
+
 -- Get or create a cached pattern texture
 local function get_pattern_texture(pattern_type, spacing, size, color)
   local key = get_pattern_cache_key(pattern_type, spacing, size, color)
@@ -99,6 +156,8 @@ local function get_pattern_texture(pattern_type, spacing, size, color)
   local img, tex_size
   if pattern_type == 'dots' then
     img, tex_size = create_dot_texture(spacing, size, color)
+  elseif pattern_type == 'grid' then
+    img, tex_size = create_grid_texture(spacing, size, color)
   end
 
   if img then
@@ -199,6 +258,20 @@ local function draw_dots_auto(dl, x1, y1, x2, y2, spacing, color, dot_size, offs
   draw_dot_pattern(dl, x1, y1, x2, y2, spacing, color, dot_size, offset_x, offset_y)
 end
 
+-- Helper to draw grid with automatic texture baking
+local function draw_grid_auto(dl, x1, y1, x2, y2, spacing, color, line_thickness, offset_x, offset_y, use_texture)
+  -- Default to using textures for performance (set use_texture=false to disable)
+  if use_texture ~= false then
+    local img, tex_size = get_pattern_texture('grid', spacing, line_thickness, color)
+    if img then
+      draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, color, offset_x, offset_y)
+      return
+    end
+  end
+  -- Fallback to immediate mode
+  draw_grid_pattern(dl, x1, y1, x2, y2, spacing, color, line_thickness, offset_x, offset_y)
+end
+
 -- Draw pattern with automatic texture baking for dot patterns
 -- Set pattern_cfg.use_texture = false to disable texture baking
 function M.draw(dl, x1, y1, x2, y2, pattern_cfg)
@@ -209,7 +282,7 @@ function M.draw(dl, x1, y1, x2, y2, pattern_cfg)
   if pattern_cfg.secondary and pattern_cfg.secondary.enabled then
     local sec = pattern_cfg.secondary
     if sec.type == 'grid' then
-      draw_grid_pattern(dl, x1, y1, x2, y2, sec.spacing, sec.color, sec.line_thickness, sec.offset_x, sec.offset_y)
+      draw_grid_auto(dl, x1, y1, x2, y2, sec.spacing, sec.color, sec.line_thickness, sec.offset_x, sec.offset_y, pattern_cfg.use_texture)
     elseif sec.type == 'dots' then
       draw_dots_auto(dl, x1, y1, x2, y2, sec.spacing, sec.color, sec.dot_size, sec.offset_x, sec.offset_y, pattern_cfg.use_texture)
     end
@@ -218,7 +291,7 @@ function M.draw(dl, x1, y1, x2, y2, pattern_cfg)
   if pattern_cfg.primary then
     local pri = pattern_cfg.primary
     if pri.type == 'grid' then
-      draw_grid_pattern(dl, x1, y1, x2, y2, pri.spacing, pri.color, pri.line_thickness, pri.offset_x, pri.offset_y)
+      draw_grid_auto(dl, x1, y1, x2, y2, pri.spacing, pri.color, pri.line_thickness, pri.offset_x, pri.offset_y, pattern_cfg.use_texture)
     elseif pri.type == 'dots' then
       draw_dots_auto(dl, x1, y1, x2, y2, pri.spacing, pri.color, pri.dot_size, pri.offset_x, pri.offset_y, pattern_cfg.use_texture)
     end
