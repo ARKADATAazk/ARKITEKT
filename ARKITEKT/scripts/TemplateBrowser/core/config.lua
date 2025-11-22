@@ -1,63 +1,35 @@
 -- @noindex
 -- TemplateBrowser/core/config.lua
--- Configuration settings
+-- Configuration settings (re-exports from defs for backward compatibility)
 
-local Colors = require('rearkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local Constants = require('TemplateBrowser.defs.constants')
 
 local M = {}
 
--- UI Layout
-M.PANEL_SPACING = 12
-M.PANEL_PADDING = 16
-M.PANEL_ROUNDING = 6
+-- Re-export constants for backward compatibility
+M.PANEL_SPACING = Constants.PANEL.SPACING
+M.PANEL_PADDING = Constants.PANEL.PADDING
+M.PANEL_ROUNDING = Constants.PANEL.ROUNDING
 
--- Panel widths (proportions)
-M.FOLDERS_PANEL_WIDTH_RATIO = 0.22   -- 22% for folder navigation
-M.TEMPLATES_PANEL_WIDTH_RATIO = 0.50 -- 50% for template list
-M.TAGS_PANEL_WIDTH_RATIO = 0.22      -- 22% for tags panel
+M.FOLDERS_PANEL_WIDTH_RATIO = Constants.PANEL_RATIOS.LEFT_DEFAULT
+M.TEMPLATES_PANEL_WIDTH_RATIO = Constants.PANEL_RATIOS.TEMPLATE_DEFAULT
+M.TAGS_PANEL_WIDTH_RATIO = Constants.PANEL_RATIOS.INFO_DEFAULT
 
--- Colors (placeholder - can be themed later)
-M.COLORS = {
-  panel_bg = hexrgb("#1A1A1A"),
-  panel_border = hexrgb("#333333"),
-  header_bg = hexrgb("#252525"),
-  selected_bg = hexrgb("#2A5599"),
-  hover_bg = hexrgb("#2A2A2A"),
-  text = hexrgb("#FFFFFF"),
-  text_dim = hexrgb("#888888"),
-  separator = hexrgb("#404040"),
-}
+M.COLORS = Constants.COLORS
+M.TAG_COLORS = Constants.TAG_COLORS
 
--- Template display
-M.TEMPLATE_ITEM_HEIGHT = 32
-M.FOLDER_ITEM_HEIGHT = 28
+M.TEMPLATE_ITEM_HEIGHT = Constants.ITEM.TEMPLATE_HEIGHT
+M.FOLDER_ITEM_HEIGHT = Constants.ITEM.FOLDER_HEIGHT
 
--- Tags
-M.TAG_COLORS = {
-  hexrgb("#3B82F6"), -- Blue
-  hexrgb("#10B981"), -- Green
-  hexrgb("#F59E0B"), -- Amber
-  hexrgb("#EF4444"), -- Red
-  hexrgb("#8B5CF6"), -- Purple
-  hexrgb("#EC4899"), -- Pink
-  hexrgb("#14B8A6"), -- Teal
-  hexrgb("#F97316"), -- Orange
-}
-
--- Tile sizing (adjustable with SHIFT/CTRL + MouseWheel)
 M.TILE = {
-  -- Grid mode tile width
-  GRID_MIN_WIDTH = 120,
-  GRID_MAX_WIDTH = 300,
-  GRID_DEFAULT_WIDTH = 180,
-  GRID_WIDTH_STEP = 20,
-
-  -- List mode tile width
-  LIST_MIN_WIDTH = 300,
-  LIST_MAX_WIDTH = 800,
-  LIST_DEFAULT_WIDTH = 450,
-  LIST_WIDTH_STEP = 50,
+  GRID_MIN_WIDTH = Constants.TILE.GRID_MIN_WIDTH,
+  GRID_MAX_WIDTH = Constants.TILE.GRID_MAX_WIDTH,
+  GRID_DEFAULT_WIDTH = Constants.TILE.GRID_DEFAULT_WIDTH,
+  GRID_WIDTH_STEP = Constants.TILE.GRID_WIDTH_STEP,
+  LIST_MIN_WIDTH = Constants.TILE.LIST_MIN_WIDTH,
+  LIST_MAX_WIDTH = Constants.TILE.LIST_MAX_WIDTH,
+  LIST_DEFAULT_WIDTH = Constants.TILE.LIST_DEFAULT_WIDTH,
+  LIST_WIDTH_STEP = Constants.TILE.LIST_WIDTH_STEP,
 }
 
 return M

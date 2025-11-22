@@ -2,66 +2,14 @@
 -- TemplateBrowser/core/tooltips.lua
 -- Tooltip configuration and utilities
 
+local Strings = require('TemplateBrowser.defs.strings')
+local Defaults = require('TemplateBrowser.defs.defaults')
+
 local M = {}
 
--- Tooltip strings storage
-M.TOOLTIPS = {
-  -- Template actions
-  template_apply = "Apply template to selected track\nShortcut: Enter",
-  template_insert = "Insert template as new track\nShortcut: Shift+Enter",
-  template_rename = "Rename template\nShortcut: F2",
-  template_archive = "Archive template (safe deletion)\nShortcut: Delete",
-  template_star = "Add to Favorites",
-  template_unstar = "Remove from Favorites",
-
-  -- Folder actions
-  folder_create_physical = "Create physical folder (filesystem)",
-  folder_create_virtual = "Create virtual folder (metadata only)",
-  folder_rename = "Rename folder\nDouble-click to rename",
-  folder_color = "Set folder color",
-  folder_delete_virtual = "Delete virtual folder (templates not affected)",
-
-  -- Search and filter
-  search_box = "Search templates by name\nShortcut: Ctrl+F",
-  sort_alphabetical = "Sort alphabetically",
-  sort_usage = "Sort by usage count (most used first)",
-  sort_insertion = "Sort by insertion date (newest first)",
-  sort_color = "Sort by color (colored first)",
-  filter_clear = "Clear all active filters",
-
-  -- Tags
-  tag_create = "Create new tag",
-  tag_rename = "Double-click to rename tag",
-  tag_assign = "Click to assign/unassign tag",
-  tag_filter = "Click to filter by this tag",
-
-  -- VSTs
-  vst_filter = "Click to filter templates with this VST",
-  vst_reparse = "Force re-scan all templates for VSTs\nClick twice to confirm",
-
-  -- Virtual folders
-  virtual_folder_info = "Virtual folder - templates can be in multiple virtual folders",
-  favorites_folder = "Favorites folder - click star on templates to add here",
-
-  -- Archive
-  archive_folder = "Archive folder - safely stores deleted files",
-
-  -- Notes
-  notes_field = "Template notes - use for descriptions, credits, etc.",
-
-  -- Status bar
-  status_message = "Status messages appear here",
-}
-
--- Tooltip configuration
-M.CONFIG = {
-  delay = 0.5,        -- Delay in seconds before showing tooltip
-  wrap_width = 300,   -- Maximum width for tooltip text wrapping
-  bg_color = 0x1E1E1EFF,  -- Dark background
-  border_color = 0x4A4A4AFF,  -- Medium border
-  text_color = 0xFFFFFFFF,  -- White text
-  padding = 8,        -- Internal padding
-}
+-- Re-export from defs for backward compatibility
+M.TOOLTIPS = Strings.TOOLTIPS
+M.CONFIG = Defaults.TOOLTIP
 
 -- Show a tooltip if mouse is hovering
 -- Returns: true if tooltip was shown
