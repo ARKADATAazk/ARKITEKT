@@ -36,12 +36,8 @@ function M.new(opts)
   self.last_seek_time = 0
   self.seek_throttle = 0.06
 
-  -- Pause state tracking
+  -- Pause state tracking - simpler approach
   self.is_paused = false
-  self.paused_playlist_pointer = nil
-  self.paused_time_position = nil
-  self.paused_current_idx = nil
-  self.paused_next_idx = nil
 
   self._playlist_mode = false
   self._old_smoothseek = nil
@@ -138,36 +134,6 @@ function Transport:_seek_to_region(region_num)
 end
 
 function Transport:play()
-  -- If resuming from pause, restore the paused state
-  if self.is_paused and self.paused_playlist_pointer ~= nil then
-    -- Restore all saved state
-    self.state.playlist_pointer = self.paused_playlist_pointer
-    if self.paused_current_idx then
-      self.state.current_idx = self.paused_current_idx
-    end
-    if self.paused_next_idx then
-      self.state.next_idx = self.paused_next_idx
-    end
-
-    -- Restore timeline position
-    if self.paused_time_position then
-      reaper.SetEditCurPos2(self.proj, self.paused_time_position, false, false)
-    end
-
-    -- Clear pause state
-    self.is_paused = false
-    self.paused_playlist_pointer = nil
-    self.paused_time_position = nil
-    self.paused_current_idx = nil
-    self.paused_next_idx = nil
-
-    -- Resume playback (playlist mode should still be active)
-    reaper.OnPlayButton()
-    self.is_playing = true
-    self.state:update_bounds()
-    return true
-  end
-
   local rid = self.state:get_current_rid()
   if not rid then return false end
 
@@ -176,17 +142,27 @@ function Transport:play()
 
   self:_enter_playlist_mode_if_needed()
 
+  -- Detect pause/resume: if is_paused flag is set, we're resuming
+  local is_resuming = self.is_paused
+
   if _is_playing(self.proj) then
     local region_num = region.rid
     self:_seek_to_region(region_num)
   else
-    reaper.SetEditCurPos2(self.proj, region.start, false, false)
-    reaper.OnPlayButton()
+    if is_resuming then
+      -- Resuming from pause - just unpause without seeking
+      reaper.OnPlayButton()
+      self.is_paused = false  -- Clear pause flag
+    else
+      -- Starting fresh - seek to region start and reset indices
+      reaper.SetEditCurPos2(self.proj, region.start, false, false)
+      reaper.OnPlayButton()
+      self.state.current_idx = -1
+      self.state.next_idx = self.state.playlist_pointer
+    end
   end
 
   self.is_playing = true
-  self.state.current_idx = -1
-  self.state.next_idx = self.state.playlist_pointer
   self.state:update_bounds()
 
   return true
@@ -195,34 +171,21 @@ end
 function Transport:stop()
   reaper.OnStopButton()
   self.is_playing = false
+  self.is_paused = false  -- Clear pause flag
   self.state.current_idx = -1
   self.state.next_idx = -1
-
-  -- Clear pause state on stop
-  self.is_paused = false
-  self.paused_playlist_pointer = nil
-  self.paused_time_position = nil
-  self.paused_current_idx = nil
-  self.paused_next_idx = nil
+  self.state.playlist_pointer = 1  -- Reset to beginning for next play
 
   self:_leave_playlist_mode_if_needed()
 end
 
 function Transport:pause()
-  -- Save current state before pausing
-  if self.is_playing or _is_playing(self.proj) then
-    self.is_paused = true
-    self.paused_playlist_pointer = self.state.playlist_pointer
-    self.paused_time_position = _get_play_pos(self.proj)
-    self.paused_current_idx = self.state.current_idx
-    self.paused_next_idx = self.state.next_idx
-    self.is_playing = false
-
-    -- NOTE: We DON'T leave playlist mode here - we want to stay in playlist mode
-    -- so that when we resume, we're still in the right context
-  end
-
+  -- Pause without resetting playlist state (for resume)
   reaper.OnPauseButton()
+  self.is_playing = false
+  self.is_paused = true  -- Set pause flag so resume detection works
+  -- Don't reset current_idx, next_idx, or playlist_pointer - keep for resume
+  -- Don't leave playlist mode - we might resume
 end
 
 function Transport:next()
