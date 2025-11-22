@@ -25,15 +25,22 @@ function M.get_assembler_container_config(callbacks, filters)
       enabled = true,
       height = 32,
       elements = {
-        -- Left: Demo button (small)
+        -- Left: Configuration tab_strip
         {
-          id = "demo_toggle",
-          type = "button",
-          width = 60,
+          id = "config_tabs",
+          type = "tab_strip",
+          width = 300,
           spacing_before = 0,
           config = {
-            label = "Demo",
-            on_click = callbacks.on_demo_toggle,
+            spacing = 0,
+            min_width = 60,
+            max_width = 120,
+            padding_x = 8,
+            chip_radius = 4,
+            on_tab_change = callbacks.on_config_select,
+            on_tab_delete = callbacks.on_config_delete,
+            on_tab_create = callbacks.on_config_add,
+            on_tab_rename = callbacks.on_config_rename,
           },
         },
         -- Center: Empty spacer

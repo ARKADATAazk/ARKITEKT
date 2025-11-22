@@ -49,22 +49,31 @@ function M.new(State, AppConfig, settings)
   local filters = State.get_filters()
 
   local container_config = Config.get_assembler_container_config({
-    on_demo_toggle = function()
-      local new_demo = not State.get_demo_mode()
-      State.set_demo_mode(new_demo)
-      self.package_model.demo = new_demo
-      -- Trigger rescan
-      local theme_root = new_demo and nil or Theme.get_theme_root_path()
-      local packages = PackageManager.scan_packages(theme_root, new_demo)
-      State.set_packages(packages)
-      self.package_model.index = packages
-      -- Reinitialize order
-      local order = {}
-      for _, pkg in ipairs(packages) do
-        order[#order + 1] = pkg.id
+    on_config_select = function(tab_id)
+      if State.switch_configuration(tab_id) then
+        self:refresh_package_model()
       end
-      State.set_package_order(order)
-      self.package_model.order = order
+    end,
+
+    on_config_add = function(tab_id)
+      if State.add_configuration(tab_id, true) then  -- Clone from current
+        State.switch_configuration(tab_id)
+        self:refresh_tabs()
+        self:refresh_package_model()
+      end
+    end,
+
+    on_config_delete = function(tab_id)
+      if State.delete_configuration(tab_id) then
+        self:refresh_tabs()
+        self:refresh_package_model()
+      end
+    end,
+
+    on_config_rename = function(old_id, new_id)
+      if State.rename_configuration(old_id, new_id) then
+        self:refresh_tabs()
+      end
     end,
 
     on_search_changed = function(text)
@@ -142,6 +151,9 @@ function M.new(State, AppConfig, settings)
     id = "assembler_container",
     config = container_config,
   })
+
+  -- Set initial configuration tabs
+  self:refresh_tabs()
 
   -- Create grid
   self.grid = PackageTilesGrid.create(
@@ -292,6 +304,43 @@ function AssemblerView:create_package_model()
   }
 
   return setmetatable(model, mt)
+end
+
+function AssemblerView:refresh_tabs()
+  local State = self.State
+  local configs = State.get_configurations()
+  local active_name = State.get_active_configuration_name()
+
+  -- Build tab items from configurations
+  local tab_items = {}
+  for name, _ in pairs(configs.items) do
+    table.insert(tab_items, {
+      id = name,
+      label = name,
+    })
+  end
+
+  -- Sort alphabetically but keep Default first
+  table.sort(tab_items, function(a, b)
+    if a.id == "Default" then return true end
+    if b.id == "Default" then return false end
+    return a.id < b.id
+  end)
+
+  -- Set tabs on container
+  if self.container and self.container.set_tabs then
+    self.container:set_tabs(tab_items, active_name)
+  end
+end
+
+function AssemblerView:refresh_package_model()
+  local State = self.State
+
+  -- Update package model with current configuration's data
+  self.package_model.active = State.get_active_packages()
+  self.package_model.order = State.get_package_order()
+  self.package_model.excl = State.get_package_exclusions()
+  self.package_model.pins = State.get_package_pins()
 end
 
 function AssemblerView:update(dt)
