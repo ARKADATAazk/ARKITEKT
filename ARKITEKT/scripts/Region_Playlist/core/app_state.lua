@@ -15,29 +15,16 @@ local RegionState = require("Region_Playlist.storage.persistence")
 local UndoManager = require("rearkitekt.core.undo_manager")
 local UndoBridge = require("Region_Playlist.storage.undo_bridge")
 local Colors = require("rearkitekt.core.colors")
+local Constants = require("Region_Playlist.defs.constants")
 
 local M = {}
 
 package.loaded["Region_Playlist.core.app_state"] = M
 
--- >>> MODE CONSTANTS (BEGIN)
--- Valid mode values for state validation
-M.POOL_MODES = {
-  REGIONS = "regions",
-  PLAYLISTS = "playlists",
-  MIXED = "mixed"
-}
-
-M.LAYOUT_MODES = {
-  HORIZONTAL = "horizontal",
-  VERTICAL = "vertical"
-}
-
-M.SORT_DIRECTIONS = {
-  ASC = "asc",
-  DESC = "desc"
-}
--- <<< MODE CONSTANTS (END)
+-- Re-export mode constants for backward compatibility
+M.POOL_MODES = Constants.POOL_MODES
+M.LAYOUT_MODES = Constants.LAYOUT_MODES
+M.SORT_DIRECTIONS = Constants.SORT_DIRECTIONS
 
 -- Flattened state structure (no nested .state table)
 M.active_playlist = nil
@@ -69,12 +56,12 @@ M.graph_dirty = true
 M.selection_info = { region_count = 0, playlist_count = 0 }
 M.circular_dependency_error = nil
 M.circular_dependency_error_timestamp = nil
-M.circular_dependency_error_timeout = 6.0  -- seconds (doubled)
+M.circular_dependency_error_timeout = Constants.TIMEOUTS.circular_dependency_error
 
 -- Temporary state change notifications
 M.state_change_notification = nil
 M.state_change_notification_timestamp = nil
-M.state_change_notification_timeout = 4.0  -- seconds (doubled)
+M.state_change_notification_timeout = Constants.TIMEOUTS.state_change_notification
 
 M.last_override_state = false
 

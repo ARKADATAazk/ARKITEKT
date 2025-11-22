@@ -10,7 +10,7 @@ local TransportIcons = require('Region_Playlist.ui.views.transport.transport_ico
 local ButtonWidgets = require('Region_Playlist.ui.views.transport.button_widgets')
 local DisplayWidget = require('Region_Playlist.ui.views.transport.display_widget')
 local CoreConfig = require('Region_Playlist.core.config')
-local Tooltips = require('Region_Playlist.ui.tooltips')
+local Strings = require('Region_Playlist.defs.strings')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -104,7 +104,7 @@ function TransportView:build_play_button(bridge_state)
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
         TransportIcons.draw_play(dl, bx, by, bw, bh, text_color)
       end,
-      tooltip = Tooltips.TRANSPORT.play,
+      tooltip = Strings.TRANSPORT.play,
       on_click = function()
         local bridge = self.state.get_bridge()
         local is_playing = bridge:get_state().is_playing
@@ -131,7 +131,7 @@ function TransportView:build_stop_button()
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
         TransportIcons.draw_stop(dl, bx, by, bw, bh, text_color)
       end,
-      tooltip = Tooltips.TRANSPORT.stop,
+      tooltip = Strings.TRANSPORT.stop,
       on_click = function()
         self.state.get_bridge():stop()
         if self.container then
@@ -158,7 +158,7 @@ function TransportView:build_pause_button(bridge_state)
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
         TransportIcons.draw_pause(dl, bx, by, bw, bh, text_color)
       end,
-      tooltip = Tooltips.TRANSPORT.pause,
+      tooltip = Strings.TRANSPORT.pause,
       on_click = function()
         local bridge = self.state.get_bridge()
         -- If already paused, resume by calling play instead
@@ -184,7 +184,7 @@ function TransportView:build_loop_button(bridge_state)
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
         TransportIcons.draw_loop(dl, bx, by, bw, bh, text_color)
       end,
-      tooltip = Tooltips.TRANSPORT.loop,
+      tooltip = Strings.TRANSPORT.loop,
       on_click = function()
         local bridge = self.state.get_bridge()
         local current_state = bridge:get_loop_playlist()
@@ -204,7 +204,7 @@ function TransportView:build_jump_button(bridge_state)
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
         TransportIcons.draw_jump(dl, bx, by, bw, bh, text_color)
       end,
-      tooltip = Tooltips.TRANSPORT.jump,
+      tooltip = Strings.TRANSPORT.jump,
       on_click = function()
         local bridge = self.state.get_bridge()
         local target_rid = nil
@@ -434,7 +434,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
             label = "",
             is_toggled = bridge_state.shuffle_enabled or false,
             preset_name = "BUTTON_TOGGLE_WHITE",
-            tooltip = Tooltips.TRANSPORT.shuffle,
+            tooltip = Strings.TRANSPORT.shuffle,
             on_click = function()
               local bridge = self.state.get_bridge()
               if bridge then
@@ -464,7 +464,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
         label = "",
         is_toggled = bridge_state.override_enabled or false,
         preset_name = "BUTTON_TOGGLE_WHITE",
-        tooltip = Tooltips.TRANSPORT.override_transport,
+        tooltip = Strings.TRANSPORT.override_transport,
         on_click = function()
           local bridge = self.state.get_bridge()
           if bridge then
@@ -474,7 +474,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
 
             -- Show status message
             if self.state.set_state_change_notification then
-              local msg = new_state and Tooltips.STATUS_MESSAGES.override_enabled or Tooltips.STATUS_MESSAGES.override_disabled
+              local msg = new_state and Strings.STATUS.override_enabled or Strings.STATUS.override_disabled
               self.state.set_state_change_notification(msg)
             end
           end
@@ -493,7 +493,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
         label = "",
         is_toggled = bridge_state.follow_viewport or false,
         preset_name = "BUTTON_TOGGLE_WHITE",
-        tooltip = Tooltips.TRANSPORT.follow_viewport,
+        tooltip = Strings.TRANSPORT.follow_viewport,
         on_click = function()
           local bridge = self.state.get_bridge()
           if bridge then
@@ -503,7 +503,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
 
             -- Show status message
             if self.state.set_state_change_notification then
-              local msg = new_state and Tooltips.STATUS_MESSAGES.follow_viewport_enabled or Tooltips.STATUS_MESSAGES.follow_viewport_disabled
+              local msg = new_state and Strings.STATUS.follow_viewport_enabled or Strings.STATUS.follow_viewport_disabled
               self.state.set_state_change_notification(msg)
             end
           end

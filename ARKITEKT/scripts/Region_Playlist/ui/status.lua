@@ -3,9 +3,7 @@
 -- Status bar configuration
 
 local StatusBar = require("rearkitekt.app.chrome.status_bar.widget")
-local Colors = require('rearkitekt.core.colors')
-local hexrgb = Colors.hexrgb
-
+local Constants = require('Region_Playlist.defs.constants')
 
 local M = {}
 
@@ -16,14 +14,7 @@ local M = {}
 -- 4. Playing (light grey)
 -- 5. Ready (light grey)
 
-local STATUS_COLORS = {
-  ERROR = hexrgb("#E04141"),     -- Red
-  WARNING = hexrgb("#E0B341"),  -- Yellow/Orange
-  INFO = hexrgb("#CCCCCC"),     -- Light grey
-  PLAYING = hexrgb("#CCCCCC"),  -- Light grey
-  READY = hexrgb("#CCCCCC"),    -- Light grey
-  IDLE = hexrgb("#888888"),     -- Gray
-}
+local STATUS_COLORS = Constants.STATUS
 
 local function get_app_status(State)
   return function()

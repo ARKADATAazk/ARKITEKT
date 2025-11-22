@@ -1,30 +1,30 @@
 -- @noindex
 -- Region_Playlist/core/config.lua
--- Structural config + semantic colors (widget chrome comes from library defaults)
+-- Config builders using defs (factory functions for dynamic configs)
 
 local Colors = require('rearkitekt.core.colors')
 local TransportIcons = require('Region_Playlist.ui.views.transport.transport_icons')
+local Constants = require('Region_Playlist.defs.constants')
+local Defaults = require('Region_Playlist.defs.defaults')
+local Strings = require('Region_Playlist.defs.strings')
 
 local M = {}
 local hexrgb = Colors.hexrgb
 
--- Animation speeds
-M.ANIMATION = {
-  HOVER_SPEED = 12.0,
-  FADE_SPEED = 8.0,
-}
-
--- Semantic operation colors (move/copy/delete visual feedback)
-M.ACCENT = {
-  GREEN = hexrgb("#42E896"),   -- Move operation
-  PURPLE = hexrgb("#9C87E8"),  -- Copy operation
-  RED = hexrgb("#E84A4A"),     -- Delete operation
-}
-
--- Dimmed tile appearance
-M.DIM = {
-  FILL = hexrgb("#00000088"),
-  STROKE = hexrgb("#FFFFFF33"),
+-- Re-export constants for backward compatibility during migration
+M.ANIMATION = Constants.ANIMATION
+M.ACCENT = Constants.ACCENT
+M.DIM = Constants.DIM
+M.SEPARATOR = Constants.SEPARATOR
+M.TRANSPORT_BUTTONS = Constants.TRANSPORT_BUTTONS
+M.TRANSPORT_LAYOUT = Constants.TRANSPORT_LAYOUT
+M.REMIX_ICONS = Constants.REMIX_ICONS
+M.QUANTIZE = {
+  default_mode = Defaults.QUANTIZE.default_mode,
+  default_lookahead = Defaults.QUANTIZE.default_lookahead,
+  min_lookahead = Defaults.QUANTIZE.min_lookahead,
+  max_lookahead = Defaults.QUANTIZE.max_lookahead,
+  options = Constants.QUANTIZE_OPTIONS,
 }
 
 -- Function to create viewmode corner button config (needs state module reference)
@@ -33,16 +33,14 @@ local function create_viewmode_button(state_module)
     custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
       local current_mode = state_module.get_layout_mode()
       if current_mode == 'horizontal' then
-        -- Show timeline icon (currently in timeline mode)
         TransportIcons.draw_timeline(dl, x, y, width, height, color)
       else
-        -- Show list icon (currently in list mode)
         TransportIcons.draw_list(dl, x, y, width, height, color)
       end
     end,
     tooltip_fn = function()
       local current_mode = state_module.get_layout_mode()
-      return current_mode == 'horizontal' and "Switch to List Mode" or "Switch to Timeline Mode"
+      return current_mode == 'horizontal' and Strings.VIEW_MODES.switch_to_list or Strings.VIEW_MODES.switch_to_timeline
     end,
     on_click = function()
       local new_mode = (state_module.get_layout_mode() == 'horizontal') and 'vertical' or 'horizontal'
@@ -52,162 +50,45 @@ local function create_viewmode_button(state_module)
   }
 end
 
--- Transport dimensions and styling (using library design language)
--- Note: corner_buttons.top_left must be set via set_viewmode_button() after state module is available
+-- Transport dimensions and styling
 M.TRANSPORT = {
-  height = 72,
-  padding = 12,
-  spacing = 12,
-  panel_bg_color = hexrgb("#131313c9"),
+  height = Defaults.TRANSPORT.height,
+  padding = Defaults.TRANSPORT.padding,
+  spacing = Defaults.TRANSPORT.spacing,
+  panel_bg_color = Defaults.TRANSPORT.panel_bg_color,
 
-  -- Corner buttons (panel feature)
   corner_buttons = {
-    size = 30,
-    margin = 8,
-    inner_rounding = 7,  -- Inner corner (circular, pointing inward)
-    bottom_left = nil,  -- Set via set_viewmode_button() after state module is available
+    size = Defaults.TRANSPORT.corner_buttons.size,
+    margin = Defaults.TRANSPORT.corner_buttons.margin,
+    inner_rounding = Defaults.TRANSPORT.corner_buttons.inner_rounding,
+    bottom_left = nil,  -- Set via set_viewmode_button()
     bottom_right = {
       custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
         TransportIcons.draw_tool(dl, x, y, width, height, color)
       end,
-      tooltip = "Settings (coming soon)",
+      tooltip = Strings.TRANSPORT.settings,
       on_click = function()
         reaper.ShowConsoleMsg("Settings button clicked (coming soon)\n")
       end,
     },
   },
 
-  -- Central display (library-styled double border)
-  display = {
-    bg_color = hexrgb("#252525"),
-    border_inner = hexrgb("#404040"),
-    border_outer = hexrgb("#000000DD"),
-    rounding = 6,
-    time_color = hexrgb("#CCCCCC"),
-    time_playing_color = hexrgb("#FFFFFF"),
-    status_color = hexrgb("#888888"),
-    region_color = hexrgb("#CCCCCC"),
-    track_color = hexrgb("#404040"),  -- Lighter track for better visibility
-    fill_color = hexrgb("#41E0A3"),
-    progress_height = 3,
-  },
-  
-  -- Transport FX (background, gradient, glow, border)
-  fx = {
-    rounding = 8,
-    specular = { height = 40, strength = 0.02 },
-    inner_glow = { size = 20, strength = 0.08 },
-    border = { color = hexrgb("#000000"), thickness = 1 },
-    hover = { specular_boost = 1.5, glow_boost = 1.3, transition_speed = 6.0 },
-    gradient = {
-      fade_speed = 8.0,
-      ready_color = hexrgb("#838383ff"),  -- Dark grey when not playing
-      fill_opacity = 0.3,      -- transparency of region gradient over panel bg
-      fill_saturation = 0.8,
-      fill_brightness = 0.8,
-    },
-    jump_flash = {
-      fade_speed = 3.0,        -- How fast the flash fades out (higher = faster)
-      max_opacity = 0.85,      -- Maximum gradient opacity during flash
-    },
-    progress = { height = 3, track_color = hexrgb("#1D1D1D") },
-  },
-  
-  -- Background pattern (panel grid/dots behind gradient)
-  background_pattern = {
-    primary = { type = 'dots', spacing = 50, color = hexrgb("#0000001c"), dot_size = 2.5 },
-    secondary = { enabled = true, type = 'dots', spacing = 5, color = hexrgb("#141414d0"), dot_size = 1.5 },
-  },
-  
-  -- Jump controls (compact, library-styled)
-  jump = {
-    height = 28,
-  },
-}
-
--- Quantize settings (single source of truth)
-M.QUANTIZE = {
-  default_mode = "measure",
-  default_lookahead = 0.30,
-  min_lookahead = 0.20,
-  max_lookahead = 1.0,
-
-  -- Quantize mode options for UI dropdowns
-  -- Values map to quantize.lua mode detection: strings for named modes, numbers for grid divisions
-  options = {
-    { value = "4bar", label = "4 Bars" },
-    { value = "2bar", label = "2 Bars" },
-    { value = "measure", label = "1 Bar" },
-    { value = "beat", label = "Beat" },
-    { value = 1, label = "1/1" },
-    { value = 0.5, label = "1/2" },
-    { value = 0.25, label = "1/4" },
-    { value = 0.125, label = "1/8" },
-    { value = 0.0625, label = "1/16" },
-    { value = 0.03125, label = "1/32" },
-  },
-}
-
--- Transport button layout priorities (modular system)
--- Lower priority = more important (shown first, hidden last)
-M.TRANSPORT_BUTTONS = {
-  play = { priority = 1, width = 34 },      -- Always show
-  jump = { priority = 2, width = 46 },      -- Always show
-  quantize = { priority = 3, width = 85 },
-  playback = { priority = 4, width_dropdown = 90, width_buttons = 120 },  -- Shuffle(40) + Override(40) + Follow(40) - now using icons
-  loop = { priority = 5, width = 34 },
-  pause = { priority = 6, width = 34 },
-  stop = { priority = 7, width = 34 },
-}
-
--- Responsive breakpoints for transport layout
-M.TRANSPORT_LAYOUT = {
-  -- When to combine quantize + playback into single "PB" dropdown
-  ultra_compact_width = 250,
-
-  -- When to use playback dropdown instead of separate buttons
-  compact_width = 400,
-}
-
--- Remix icon unicode values for transport buttons
--- All icons use UTF-8 encoding
-M.REMIX_ICONS = {
-  shuffle = "\xEF\x84\xA4",           -- U+F124 (shuffle-line)
-  override_transport = "\xEE\xB4\xB8", -- U+ED38
-  follow_viewport = "\xEF\x8C\xA4",    -- U+F324 (expand-right-fill)
-}
-
--- Separator dimensions
-M.SEPARATOR = {
-  horizontal = {
-    default_position = 180,
-    min_active_height = 100,
-    min_pool_height = 100,
-    gap = 8,
-    thickness = 6,
-  },
-  vertical = {
-    default_position = 280,
-    min_active_width = 200,
-    min_pool_width = 200,
-    gap = 8,
-    thickness = 6,
-  },
+  display = Defaults.TRANSPORT.display,
+  fx = Defaults.TRANSPORT.fx,
+  background_pattern = Defaults.TRANSPORT.background_pattern,
+  jump = Defaults.TRANSPORT.jump,
 }
 
 -- Active container: tabs only
--- All visual styling comes from library defaults
 function M.get_active_container_config(callbacks)
-  -- Base config
   local tab_config = {
-    spacing = 0,
-    min_width = 60,
-    max_width = 150,
-    padding_x = 8,
-    chip_radius = 4,
+    spacing = Defaults.CONTAINER.active.tab.spacing,
+    min_width = Defaults.CONTAINER.active.tab.min_width,
+    max_width = Defaults.CONTAINER.active.tab.max_width,
+    padding_x = Defaults.CONTAINER.active.tab.padding_x,
+    chip_radius = Defaults.CONTAINER.active.tab.chip_radius,
   }
 
-  -- Auto-merge all callbacks (no manual whitelist needed)
   for key, value in pairs(callbacks or {}) do
     if type(key) == "string" and key:match("^on_") and type(value) == "function" then
       tab_config[key] = value
@@ -217,7 +98,7 @@ function M.get_active_container_config(callbacks)
   return {
     header = {
       enabled = true,
-      height = 24,
+      height = Defaults.CONTAINER.active.header_height,
       elements = {
         {
           id = "tabs",
@@ -229,14 +110,14 @@ function M.get_active_container_config(callbacks)
       },
     },
     corner_buttons = {
-      size = 24,
-      margin = 8,
-      inner_rounding = 12,  -- Smaller buttons need smaller inner rounding
+      size = Defaults.CONTAINER.active.corner_button_size,
+      margin = Defaults.CONTAINER.active.corner_button_margin,
+      inner_rounding = Defaults.CONTAINER.active.corner_button_inner_rounding,
       bottom_left = {
         custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
           TransportIcons.draw_bolt(dl, x, y, width, height, color)
         end,
-        tooltip = "Actions",
+        tooltip = Strings.POOL.actions_tooltip,
         on_click = callbacks.on_actions_button_click,
       },
     },
@@ -245,20 +126,19 @@ function M.get_active_container_config(callbacks)
 end
 
 -- Pool container: mode toggle, search, sort
--- All visual styling comes from library defaults
 function M.get_pool_container_config(callbacks)
   return {
     header = {
       enabled = true,
-      height = 30,
+      height = Defaults.CONTAINER.pool.header_height,
       elements = {
         {
           id = "mode_toggle",
           type = "button",
-          width = 100,
+          width = Defaults.CONTAINER.pool.mode_toggle_width,
           spacing_before = 0,
           config = {
-            label = "Regions",
+            label = Strings.POOL.mode_toggle_label,
             on_click = callbacks.on_mode_toggle,
             on_right_click = callbacks.on_mode_toggle_right,
           },
@@ -273,28 +153,28 @@ function M.get_pool_container_config(callbacks)
         {
           id = "search",
           type = "search_field",
-          width = 200,
+          width = Defaults.CONTAINER.pool.search_width,
           spacing_before = 0,
           config = {
-            placeholder = "Search...",
+            placeholder = Strings.POOL.search_placeholder,
             on_change = callbacks.on_search_changed,
           },
         },
         {
           id = "sort",
           type = "dropdown_field",
-          width = 120,
+          width = Defaults.CONTAINER.pool.sort_width,
           spacing_before = 0,
           config = {
-            tooltip = "Sort by",
+            tooltip = Strings.POOL.sort_tooltip,
             tooltip_delay = 0.5,
             enable_sort = true,
             options = {
-              { value = nil, label = "No Sort" },
-              { value = "color", label = "Color" },
-              { value = "index", label = "Index" },
-              { value = "alpha", label = "Alphabetical" },
-              { value = "length", label = "Length" },
+              { value = nil, label = Strings.POOL.sort_options.no_sort },
+              { value = "color", label = Strings.POOL.sort_options.color },
+              { value = "index", label = Strings.POOL.sort_options.index },
+              { value = "alpha", label = Strings.POOL.sort_options.alpha },
+              { value = "length", label = Strings.POOL.sort_options.length },
             },
             enable_mousewheel = true,
             on_change = callbacks.on_sort_changed,
@@ -304,14 +184,14 @@ function M.get_pool_container_config(callbacks)
       },
     },
     corner_buttons = {
-      size = 24,
-      margin = 8,
-      inner_rounding = 12,  -- Smaller buttons need smaller inner rounding
+      size = Defaults.CONTAINER.pool.corner_button_size,
+      margin = Defaults.CONTAINER.pool.corner_button_margin,
+      inner_rounding = Defaults.CONTAINER.pool.corner_button_inner_rounding,
       bottom_left = {
         custom_draw = function(ctx, dl, x, y, width, height, is_hovered, is_active, color)
           TransportIcons.draw_bolt(dl, x, y, width, height, color)
         end,
-        tooltip = "Actions",
+        tooltip = Strings.POOL.actions_tooltip,
         on_click = function()
           if callbacks.on_actions_click then
             callbacks.on_actions_click()
@@ -325,175 +205,31 @@ end
 
 -- Region tiles structural config
 function M.get_region_tiles_config(layout_mode)
+  local tiles = Defaults.REGION_TILES
   return {
     layout_mode = layout_mode or 'horizontal',
-    
-    tile_config = {
-      border_thickness = 0.5,
-      rounding = 6,
-    },
-    
-    container = {
-      border_thickness = 1,
-      rounding = 8,
-      padding = 8,
-      
-      scroll = {
-        flags = 0,
-        custom_scrollbar = false,
-      },
-      
-      anti_jitter = {
-        enabled = true,
-        track_scrollbar = true,
-        height_threshold = 5,
-      },
-      
-      background_pattern = {
-        enabled = true,
-        primary = {
-          type = 'grid',
-          spacing = 50,
-          line_thickness = 1.5,
-        },
-        secondary = {
-          enabled = true,
-          type = 'grid',
-          spacing = 5,
-          line_thickness = 0.5,
-        },
-      },
-      
-      header = {
-        enabled = false,
-      },
-    },
-    
-    responsive_config = {
-      enabled = true,
-      min_tile_height = 30,
-      base_tile_height_active = 72,
-      base_tile_height_pool = 72,
-      scrollbar_buffer = 24,
-      height_hysteresis = 12,
-      stable_frames_required = 2,
-      round_to_multiple = 1,
-      gap_scaling = {
-        enabled = true,
-        min_gap = 3,
-        max_gap = 12,
-      },
-    },
-    
+
+    tile_config = tiles.tile,
+    container = tiles.container,
+    responsive_config = tiles.responsive,
+
     hover_config = {
-      animation_speed_hover = M.ANIMATION.HOVER_SPEED,
-      hover_brightness_factor = 1.5,
-      hover_border_lerp = 0.5,
-      base_fill_desaturation = 0.4,
-      base_fill_brightness = 0.4,
-      base_fill_alpha = hexrgb("#00000066"),
-    },
-    
-    dim_config = {
-      fill_color = M.DIM.FILL,
-      stroke_color = M.DIM.STROKE,
-      stroke_thickness = 1.5,
-      rounding = 6,
-    },
-    
-    drop_config = {
-      move_mode = {
-        line = { 
-          width = 2, 
-          color = M.ACCENT.GREEN,
-          glow_width = 12, 
-          glow_color = hexrgb("#42E89633") 
-        },
-        caps = { 
-          width = 8, 
-          height = 3, 
-          color = M.ACCENT.GREEN,
-          rounding = 0, 
-          glow_size = 3, 
-          glow_color = hexrgb("#42E89644") 
-        },
-      },
-      copy_mode = {
-        line = { 
-          width = 2, 
-          color = M.ACCENT.PURPLE,
-          glow_width = 12, 
-          glow_color = hexrgb("#9C87E833") 
-        },
-        caps = { 
-          width = 8, 
-          height = 3, 
-          color = M.ACCENT.PURPLE,
-          rounding = 0, 
-          glow_size = 3, 
-          glow_color = hexrgb("#9C87E844") 
-        },
-      },
-      pulse_speed = 2.5,
-    },
-    
-    ghost_config = {
-      tile = {
-        width = 60,
-        height = 40,
-        stroke_thickness = 1.5,
-        rounding = 4,
-        global_opacity = 0.70,
-      },
-      stack = {
-        max_visible = 3,
-        offset_x = 3,
-        offset_y = 3,
-        scale_factor = 0.94,
-        opacity_falloff = 0.70,
-      },
-      badge = {
-        border_thickness = 1,
-        rounding = 6,
-        padding_x = 6,
-        padding_y = 3,
-        offset_x = 35,
-        offset_y = -35,
-        min_width = 20,
-        min_height = 18,
-        shadow = {
-          enabled = true,
-          offset = 2,
-        },
-      },
-      copy_mode = {
-        stroke_color = M.ACCENT.PURPLE,
-        glow_color = hexrgb("#9C87E833"),
-        badge_accent = M.ACCENT.PURPLE,
-        indicator_text = "+",
-        indicator_color = M.ACCENT.PURPLE,
-      },
-      move_mode = {
-        stroke_color = M.ACCENT.GREEN,
-        glow_color = Colors.hexrgb("#42E89633"),
-        badge_accent = M.ACCENT.GREEN,
-      },
-      delete_mode = {
-        stroke_color = M.ACCENT.RED,
-        glow_color = Colors.hexrgb("#E84A4A33"),
-        badge_accent = M.ACCENT.RED,
-        indicator_text = "-",
-        indicator_color = M.ACCENT.RED,
-      },
+      animation_speed_hover = tiles.hover.animation_speed,
+      hover_brightness_factor = tiles.hover.brightness_factor,
+      hover_border_lerp = tiles.hover.border_lerp,
+      base_fill_desaturation = tiles.hover.base_fill_desaturation,
+      base_fill_brightness = tiles.hover.base_fill_brightness,
+      base_fill_alpha = tiles.hover.base_fill_alpha,
     },
 
-    wheel_config = {
-      step = 1,
-    },
+    dim_config = tiles.dim,
+    drop_config = tiles.drop,
+    ghost_config = tiles.ghost,
+    wheel_config = tiles.wheel,
   }
 end
 
--- Helper to set viewmode button dynamically (call after state module is initialized)
+-- Helper to set viewmode button dynamically
 function M.set_viewmode_button(state_module)
   M.TRANSPORT.corner_buttons.bottom_left = create_viewmode_button(state_module)
 end
