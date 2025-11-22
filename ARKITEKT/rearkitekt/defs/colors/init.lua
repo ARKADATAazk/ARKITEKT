@@ -4,7 +4,7 @@
 
 local Common = require('rearkitekt.defs.colors.common')
 local Default = require('rearkitekt.defs.colors.default')
--- local Light = require('rearkitekt.defs.colors.light')
+local ThemeStorage = require('rearkitekt.core.theme_storage')
 
 local M = {}
 
@@ -12,8 +12,8 @@ local M = {}
 -- CURRENT THEME
 -- =============================================================================
 
--- TODO: Make this configurable via user settings
-local current_theme = "default"
+-- Load theme from persistent storage
+local current_theme = ThemeStorage.get_theme()
 
 -- Load theme colors based on current theme
 local function get_theme_colors()
@@ -51,6 +51,7 @@ M.get_color_by_name = Common.get_color_by_name
 
 function M.set_theme(theme_name)
   current_theme = theme_name
+  ThemeStorage.set_theme(theme_name)
   local new_theme = get_theme_colors()
   M.BASE = new_theme.BASE
   M.UI = new_theme.UI

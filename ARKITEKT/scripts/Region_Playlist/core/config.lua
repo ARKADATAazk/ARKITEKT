@@ -72,7 +72,8 @@ M.TRANSPORT = {
         local current = ColorDefs.get_current_theme()
         local new_theme = current == "default" and "light" or "default"
         ColorDefs.set_theme(new_theme)
-        reaper.ShowConsoleMsg("Theme switched to: " .. new_theme .. "\n")
+        reaper.ShowConsoleMsg("Theme set to: " .. new_theme .. ". Restart script to apply.\n")
+        reaper.MB("Theme set to: " .. new_theme .. "\n\nRestart the script to apply the new theme.", "Theme Changed", 0)
       end,
     },
   },
