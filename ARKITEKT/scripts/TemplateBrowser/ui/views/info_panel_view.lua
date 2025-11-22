@@ -34,9 +34,8 @@ local function draw_info_panel(ctx, gui, width, height)
 
   -- Begin panel drawing (includes background, border, header)
   if gui.info_container:begin_draw(ctx) then
-    -- Get available content width and subtract padding for right margin
-    local padding = gui.info_container.config.padding or 0
-    local content_w = ImGui.GetContentRegionAvail(ctx) - padding
+    -- Get available content width (padding is handled by WindowPadding style)
+    local content_w = ImGui.GetContentRegionAvail(ctx)
 
     if state.selected_template then
       local tmpl = state.selected_template

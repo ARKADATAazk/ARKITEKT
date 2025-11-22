@@ -728,24 +728,23 @@ function Panel:begin_draw(ctx)
       bg_color = scroll_config.bg_color,
     }
   end
-  
+
+  -- Apply padding as window padding style (affects all content, not just first item)
+  local padding = self.config.padding or 0
+  if padding > 0 then
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
+    self._padding_style_pushed = true
+  else
+    self._padding_style_pushed = false
+  end
+
   -- Pass self (container) to begin_child for state tracking
   local success = Content.begin_child(ctx, self.id, child_w, child_h, scroll_config, self)
-  
+
   if success then
     local win_x, win_y = ImGui.GetWindowPos(ctx)
     local win_w, win_h = ImGui.GetWindowSize(ctx)
     self.visible_bounds = {win_x, win_y, win_x + win_w, win_y + win_h}
-    
-    if self.config.padding > 0 then
-      local px = self.config.padding
-      local py = self.config.padding
-      if px > child_w - 1 then px = math.max(0, child_w - 1) end
-      if py > child_h - 1 then py = math.max(0, child_h - 1) end
-      if px < 0 then px = 0 end
-      if py < 0 then py = 0 end
-      ImGui.SetCursorPos(ctx, px, py)
-    end
   end
   
   return success
@@ -757,17 +756,17 @@ function Panel:end_draw(ctx)
     local content_height = ImGui.GetCursorPosY(ctx)
     local scroll_y = ImGui.GetScrollY(ctx)
     local scroll_max_y = ImGui.GetScrollMaxY(ctx)
-    
+
     if self.scrollbar then
       self.scrollbar:set_content_height(content_height)
       self.scrollbar:set_visible_height(self.child_height)
       self.scrollbar:set_scroll_pos(scroll_y)
-      
+
       if self.scrollbar.is_dragging then
         ImGui.SetScrollY(ctx, self.scrollbar:get_scroll_pos())
       end
     end
-    
+
     Content.end_child(ctx, self)
 
     if self.scrollbar and self.scrollbar:is_scrollable() then
@@ -776,6 +775,12 @@ function Panel:end_draw(ctx)
 
       self.scrollbar:draw(ctx, scrollbar_x, scrollbar_y, self.child_height)
     end
+  end
+
+  -- Pop padding style if it was pushed
+  if self._padding_style_pushed then
+    ImGui.PopStyleVar(ctx)
+    self._padding_style_pushed = false
   end
 
   -- CRITICAL: Corner button z-order fix
