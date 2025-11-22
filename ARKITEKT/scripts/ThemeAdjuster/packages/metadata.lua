@@ -383,23 +383,10 @@ end
 
 --- Suggest tags for a package based on its assets
 -- @param image_names table Array of image names in the package
--- @param threshold number Minimum percentage (0-1) to trigger a tag (default 0.3)
+-- @param threshold number (ignored, kept for compatibility)
 -- @return table Array of suggested tag names
 function M.suggest_tags(image_names, threshold)
-  threshold = threshold or 0.3
-
   local distribution = M.calculate_area_distribution(image_names)
-
-  -- Calculate total from MATCHED images only (not all images)
-  -- This prevents dilution when package has many images not in metadata
-  local total = 0
-  for _, count in pairs(distribution) do
-    total = total + count
-  end
-
-  if total == 0 then
-    return {}
-  end
 
   local tags = {}
 
@@ -417,10 +404,9 @@ function M.suggest_tags(image_names, threshold)
     global = "Global"
   }
 
-  -- Calculate percentages and suggest tags
+  -- Add tag for every area present in the package
   for area, count in pairs(distribution) do
-    local percentage = count / total
-    if percentage >= threshold then
+    if count > 0 then
       local tag = area_to_tag[area]
       if tag then
         table.insert(tags, tag)
