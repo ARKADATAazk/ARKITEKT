@@ -6,6 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local Colors = require('rearkitekt.core.colors')
+local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -137,23 +138,8 @@ function M.render_diagonal_stripes(dl, x1, y1, x2, y2, stripe_color, spacing, th
   local line_color = Colors.components_to_rgba(r, g, b, alpha)
 
   -- Push clip rect to keep stripes within tile bounds
-  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
-
-  -- Draw diagonal lines at 45 degrees from top-left to bottom-right
-  local start_offset = -height
-  local end_offset = width
-
-  for offset = start_offset, end_offset, spacing do
-    local line_x1 = x1 + offset
-    local line_y1 = y1
-    local line_x2 = x1 + offset + height
-    local line_y2 = y2
-
-    ImGui.DrawList_AddLine(dl, line_x1, line_y1, line_x2, line_y2, line_color, thickness)
-  end
-
-  -- Pop clip rect
-  PopClipRect(dl)
+  -- Use baked texture for performance (25+ lines → 1 draw call)
+  Background.draw_diagonal_stripes(dl, x1, y1, x2, y2, spacing, line_color, thickness)
 end
 
 function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fade_alpha, rounding, progress_color_override)

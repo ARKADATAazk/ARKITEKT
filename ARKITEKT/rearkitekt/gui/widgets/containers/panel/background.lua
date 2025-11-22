@@ -137,6 +137,67 @@ local function create_grid_texture(spacing, line_thickness, color)
   return img, tex_size
 end
 
+-- Create a baked diagonal stripe pattern texture (45-degree lines)
+local function create_diagonal_stripe_texture(spacing, line_thickness, color)
+  -- Texture size matches spacing for perfect tiling
+  local tex_size = spacing
+
+  -- Check if CreateImageFromSize is available (ImGui 0.10+)
+  if not ImGui.CreateImageFromSize then
+    return nil
+  end
+
+  -- Create blank texture
+  local img = ImGui.CreateImageFromSize(tex_size, tex_size)
+  if not img then return nil end
+
+  -- Create pixel array
+  local pixels = reaper.new_array(tex_size * tex_size)
+
+  -- Extract color components (color is 0xRRGGBBAA)
+  local r = (color >> 24) & 0xFF
+  local g = (color >> 16) & 0xFF
+  local b = (color >> 8) & 0xFF
+  local a = color & 0xFF
+
+  -- Pack as 0xRRGGBBAA (native RGBA format)
+  local line_pixel = r * 0x1000000 + g * 0x10000 + b * 0x100 + a
+  local clear_pixel = 0x00000000
+
+  -- Fill with transparent
+  for i = 1, tex_size * tex_size do
+    pixels[i] = clear_pixel
+  end
+
+  -- Draw diagonal line from top-left to bottom-right
+  -- For tiling, we draw lines that wrap around
+  local half_thick = line_thickness * 0.5
+
+  for py = 0, tex_size - 1 do
+    for px = 0, tex_size - 1 do
+      -- Distance from the diagonal line y = x (in tile coordinates)
+      -- For a 45-degree line, distance = |x - y| / sqrt(2)
+      local dist = math.abs(px - py) / 1.414
+
+      -- Also check wrapped diagonal (for seamless tiling)
+      local wrapped_dist = math.abs(px - py + tex_size) / 1.414
+      local wrapped_dist2 = math.abs(px - py - tex_size) / 1.414
+
+      local min_dist = math.min(dist, wrapped_dist, wrapped_dist2)
+
+      if min_dist <= half_thick then
+        local idx = py * tex_size + px + 1
+        pixels[idx] = line_pixel
+      end
+    end
+  end
+
+  -- Upload pixels to texture
+  ImGui.Image_SetPixels_Array(img, 0, 0, tex_size, tex_size, pixels)
+
+  return img, tex_size
+end
+
 -- Get or create a cached pattern texture
 local function get_pattern_texture(pattern_type, spacing, size, color)
   local key = get_pattern_cache_key(pattern_type, spacing, size, color)
@@ -158,6 +219,8 @@ local function get_pattern_texture(pattern_type, spacing, size, color)
     img, tex_size = create_dot_texture(spacing, size, color)
   elseif pattern_type == 'grid' then
     img, tex_size = create_grid_texture(spacing, size, color)
+  elseif pattern_type == 'diagonal_stripes' then
+    img, tex_size = create_diagonal_stripe_texture(spacing, size, color)
   end
 
   if img then
@@ -270,6 +333,42 @@ local function draw_grid_auto(dl, x1, y1, x2, y2, spacing, color, line_thickness
   end
   -- Fallback to immediate mode
   draw_grid_pattern(dl, x1, y1, x2, y2, spacing, color, line_thickness, offset_x, offset_y)
+end
+
+-- Fallback immediate mode diagonal stripe drawing
+local function draw_diagonal_stripe_pattern(dl, x1, y1, x2, y2, spacing, color, thickness)
+  local width = x2 - x1
+  local height = y2 - y1
+  local start_offset = -height
+  local end_offset = width
+
+  for offset = start_offset, end_offset, spacing do
+    local line_x1 = x1 + offset
+    local line_y1 = y1
+    local line_x2 = x1 + offset + height
+    local line_y2 = y2
+    ImGui.DrawList_AddLine(dl, line_x1, line_y1, line_x2, line_y2, color, thickness)
+  end
+end
+
+-- Public API: Draw diagonal stripes with automatic texture baking
+-- This is a high-performance replacement for line-by-line stripe drawing
+function M.draw_diagonal_stripes(dl, x1, y1, x2, y2, spacing, color, thickness, use_texture)
+  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
+
+  -- Default to using textures for performance
+  if use_texture ~= false then
+    local img, tex_size = get_pattern_texture('diagonal_stripes', spacing, thickness, color)
+    if img then
+      draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, color, 0, 0)
+      ImGui.DrawList_PopClipRect(dl)
+      return
+    end
+  end
+
+  -- Fallback to immediate mode
+  draw_diagonal_stripe_pattern(dl, x1, y1, x2, y2, spacing, color, thickness)
+  ImGui.DrawList_PopClipRect(dl)
 end
 
 -- Draw pattern with automatic texture baking for dot patterns

@@ -10,6 +10,7 @@ local Draw = require('rearkitekt.gui.draw')
 local TileFXConfig = require('rearkitekt.gui.rendering.tile.defaults')
 local TileUtil = require('RegionPlaylist.core.tile_utilities')
 local BaseRenderer = require('RegionPlaylist.ui.tiles.renderers.base')
+local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -279,29 +280,12 @@ function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_
     BaseRenderer.draw_marching_ants(dl, rect, border_color, fx_config)
   end
   
-  -- Draw diagonal stripe pattern
+  -- Draw diagonal stripe pattern (baked to texture for performance)
   local stripe_w = M.CONFIG.circular.stripe_width
   local stripe_spacing = M.CONFIG.circular.stripe_spacing
   local stripe_color = M.CONFIG.circular.stripe_color
-  
-  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
-  
-  local tile_w = x2 - x1
-  local tile_h = y2 - y1
-  local diagonal_length = sqrt(tile_w * tile_w + tile_h * tile_h)
-  local num_stripes = -(-((diagonal_length / stripe_spacing))//1) + 2
-  
-  for i = -num_stripes, num_stripes do
-    local offset = i * stripe_spacing
-    local sx1 = x1 + offset
-    local sy1 = y1
-    local sx2 = x1 + offset + tile_h
-    local sy2 = y2
-    
-    ImGui.DrawList_AddLine(dl, sx1, sy1, sx2, sy2, stripe_color, stripe_w)
-  end
-  
-  ImGui.DrawList_PopClipRect(dl)
+
+  Background.draw_diagonal_stripes(dl, x1, y1, x2, y2, stripe_spacing, stripe_color, stripe_w)
   
   local actual_height = tile_height or (y2 - y1)
   local show_text = actual_height >= M.CONFIG.responsive.hide_text_below
