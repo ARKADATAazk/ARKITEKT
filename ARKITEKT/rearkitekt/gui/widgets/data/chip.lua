@@ -354,7 +354,7 @@ function M.draw(ctx, opts)
       }
     })
     
-    TileFX.render_complete(dl, start_x, start_y, start_x + chip_w, start_y + chip_h, 
+    TileFX.render_complete(ctx, dl, start_x, start_y, start_x + chip_w, start_y + chip_h,
       color, fx_config, is_selected, hover_factor, nil, nil)
     
     local text_color = Colors.auto_text_color(color)

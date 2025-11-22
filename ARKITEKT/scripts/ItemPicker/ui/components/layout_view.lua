@@ -171,7 +171,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       offset_y = 0,
     }
   }
-  Background.draw(draw_list, coord_offset_x, coord_offset_y,
+  Background.draw(ctx, draw_list, coord_offset_x, coord_offset_y,
       coord_offset_x + screen_w, coord_offset_y + screen_h, overlay_pattern_config)
 
   -- Mouse-based hover detection for responsive UI (slide/push behavior)

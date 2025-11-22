@@ -199,7 +199,7 @@ local function create_diagonal_stripe_texture(spacing, line_thickness, color)
 end
 
 -- Get or create a cached pattern texture
-local function get_pattern_texture(pattern_type, spacing, size, color)
+local function get_pattern_texture(ctx, pattern_type, spacing, size, color)
   local key = get_pattern_cache_key(pattern_type, spacing, size, color)
 
   if texture_cache[key] then
@@ -224,6 +224,10 @@ local function get_pattern_texture(pattern_type, spacing, size, color)
   end
 
   if img then
+    -- Attach to context to prevent garbage collection
+    if ctx and ImGui.Attach then
+      ImGui.Attach(ctx, img)
+    end
     texture_cache[key] = { img = img, size = tex_size }
   end
 
@@ -308,10 +312,10 @@ end
 -- ============================================================================
 
 -- Helper to draw dots with automatic texture baking
-local function draw_dots_auto(dl, x1, y1, x2, y2, spacing, color, dot_size, offset_x, offset_y, use_texture)
+local function draw_dots_auto(ctx, dl, x1, y1, x2, y2, spacing, color, dot_size, offset_x, offset_y, use_texture)
   -- Default to using textures for performance (set use_texture=false to disable)
   if use_texture ~= false then
-    local img, tex_size = get_pattern_texture('dots', spacing, dot_size, color)
+    local img, tex_size = get_pattern_texture(ctx, 'dots', spacing, dot_size, color)
     if img then
       draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, color, offset_x, offset_y)
       return
@@ -322,10 +326,10 @@ local function draw_dots_auto(dl, x1, y1, x2, y2, spacing, color, dot_size, offs
 end
 
 -- Helper to draw grid with automatic texture baking
-local function draw_grid_auto(dl, x1, y1, x2, y2, spacing, color, line_thickness, offset_x, offset_y, use_texture)
+local function draw_grid_auto(ctx, dl, x1, y1, x2, y2, spacing, color, line_thickness, offset_x, offset_y, use_texture)
   -- Default to using textures for performance (set use_texture=false to disable)
   if use_texture ~= false then
-    local img, tex_size = get_pattern_texture('grid', spacing, line_thickness, color)
+    local img, tex_size = get_pattern_texture(ctx, 'grid', spacing, line_thickness, color)
     if img then
       draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, color, offset_x, offset_y)
       return
@@ -353,12 +357,12 @@ end
 
 -- Public API: Draw diagonal stripes with automatic texture baking
 -- This is a high-performance replacement for line-by-line stripe drawing
-function M.draw_diagonal_stripes(dl, x1, y1, x2, y2, spacing, color, thickness, use_texture)
+function M.draw_diagonal_stripes(ctx, dl, x1, y1, x2, y2, spacing, color, thickness, use_texture)
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
 
   -- Default to using textures for performance
   if use_texture ~= false then
-    local img, tex_size = get_pattern_texture('diagonal_stripes', spacing, thickness, color)
+    local img, tex_size = get_pattern_texture(ctx, 'diagonal_stripes', spacing, thickness, color)
     if img then
       draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, color, 0, 0)
       ImGui.DrawList_PopClipRect(dl)
@@ -373,7 +377,7 @@ end
 
 -- Draw pattern with automatic texture baking for dot patterns
 -- Set pattern_cfg.use_texture = false to disable texture baking
-function M.draw(dl, x1, y1, x2, y2, pattern_cfg)
+function M.draw(ctx, dl, x1, y1, x2, y2, pattern_cfg)
   if not pattern_cfg or not pattern_cfg.enabled then return end
 
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
@@ -381,18 +385,18 @@ function M.draw(dl, x1, y1, x2, y2, pattern_cfg)
   if pattern_cfg.secondary and pattern_cfg.secondary.enabled then
     local sec = pattern_cfg.secondary
     if sec.type == 'grid' then
-      draw_grid_auto(dl, x1, y1, x2, y2, sec.spacing, sec.color, sec.line_thickness, sec.offset_x, sec.offset_y, pattern_cfg.use_texture)
+      draw_grid_auto(ctx, dl, x1, y1, x2, y2, sec.spacing, sec.color, sec.line_thickness, sec.offset_x, sec.offset_y, pattern_cfg.use_texture)
     elseif sec.type == 'dots' then
-      draw_dots_auto(dl, x1, y1, x2, y2, sec.spacing, sec.color, sec.dot_size, sec.offset_x, sec.offset_y, pattern_cfg.use_texture)
+      draw_dots_auto(ctx, dl, x1, y1, x2, y2, sec.spacing, sec.color, sec.dot_size, sec.offset_x, sec.offset_y, pattern_cfg.use_texture)
     end
   end
 
   if pattern_cfg.primary then
     local pri = pattern_cfg.primary
     if pri.type == 'grid' then
-      draw_grid_auto(dl, x1, y1, x2, y2, pri.spacing, pri.color, pri.line_thickness, pri.offset_x, pri.offset_y, pattern_cfg.use_texture)
+      draw_grid_auto(ctx, dl, x1, y1, x2, y2, pri.spacing, pri.color, pri.line_thickness, pri.offset_x, pri.offset_y, pattern_cfg.use_texture)
     elseif pri.type == 'dots' then
-      draw_dots_auto(dl, x1, y1, x2, y2, pri.spacing, pri.color, pri.dot_size, pri.offset_x, pri.offset_y, pattern_cfg.use_texture)
+      draw_dots_auto(ctx, dl, x1, y1, x2, y2, pri.spacing, pri.color, pri.dot_size, pri.offset_x, pri.offset_y, pattern_cfg.use_texture)
     end
   end
 

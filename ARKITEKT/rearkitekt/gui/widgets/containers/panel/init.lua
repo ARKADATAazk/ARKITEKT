@@ -652,7 +652,7 @@ function Panel:begin_draw(ctx)
     local clip_rounding = math.max(0, self.config.rounding - border_inset)
     ImGui.DrawList_PushClipRect(dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, true)
 
-    Background.draw(dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, self.config.background_pattern)
+    Background.draw(ctx, dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, self.config.background_pattern)
 
     ImGui.DrawList_PopClipRect(dl)
   end

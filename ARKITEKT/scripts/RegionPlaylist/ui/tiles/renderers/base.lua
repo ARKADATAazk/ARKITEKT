@@ -158,13 +158,13 @@ M.truncate_text = truncate_text
 -- TILE RENDERING FUNCTIONS
 -- ========================================
 
-function M.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade, override_color)
+function M.draw_base_tile(ctx, dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade, override_color)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local border_color = override_color or base_color
   local progress_color = override_color or base_color
   local stripe_color = override_color
   local stripe_enabled = (override_color ~= nil) and fx_config.stripe_enabled
-  TileFX.render_complete(dl, x1, y1, x2, y2, base_color, fx_config, state.selected, hover_factor, playback_progress or 0, playback_fade or 0, border_color, progress_color, stripe_color, stripe_enabled)
+  TileFX.render_complete(ctx, dl, x1, y1, x2, y2, base_color, fx_config, state.selected, hover_factor, playback_progress or 0, playback_fade or 0, border_color, progress_color, stripe_color, stripe_enabled)
 end
 
 function M.draw_marching_ants(dl, rect, color, fx_config)
