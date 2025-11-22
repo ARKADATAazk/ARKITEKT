@@ -280,8 +280,8 @@ function M.create(ctx, config, state, visualization, animator)
   local grid = Grid.new({
     id = "audio_items",
     gap = config.TILE.GAP,
-    min_col_w = function() return state:get_tile_width() end,
-    fixed_tile_h = state:get_tile_height(),
+    min_col_w = function() return state.get_tile_width() end,
+    fixed_tile_h = state.get_tile_height(),
     layout_speed = 12.0,
 
     get_items = get_items,
@@ -328,8 +328,8 @@ function M.create(ctx, config, state, visualization, animator)
         return
       end
 
-      local drag_w = math.min(200, state:get_tile_width())
-      local drag_h = math.min(120, state:get_tile_height())
+      local drag_w = math.min(200, state.get_tile_width())
+      local drag_h = math.min(120, state.get_tile_height())
 
       -- Store all selected keys for batch insert
       state.dragging_keys = keys
@@ -485,16 +485,16 @@ function M.create(ctx, config, state, visualization, animator)
       state.runtime_cache.audio_filter_hash = nil
     end,
 
-    on_select = function(grid, selected_keys)
+    on_select = function(grid, keys)
       -- Update state with current selection count
-      state.audio_selection_count = #selected_keys
+      state.audio_selection_count = #keys
     end,
 
     -- SPACE: Preview (default mode)
-    space = function(grid, selected_keys)
-      if not selected_keys or #selected_keys == 0 then return end
+    space = function(grid, keys)
+      if not keys or #keys == 0 then return end
 
-      local key = selected_keys[1]
+      local key = keys[1]
       local items = get_items()
 
       for _, item_data in ipairs(items) do
@@ -511,10 +511,10 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     -- CTRL+SPACE: Force play through track (with FX)
-    ['space:ctrl'] = function(grid, selected_keys)
-      if not selected_keys or #selected_keys == 0 then return end
+    ['space:ctrl'] = function(grid, keys)
+      if not keys or #keys == 0 then return end
 
-      local key = selected_keys[1]
+      local key = keys[1]
       local items = get_items()
 
       for _, item_data in ipairs(items) do
@@ -530,10 +530,10 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     -- SHIFT+SPACE: Force direct preview (no FX)
-    ['space:shift'] = function(grid, selected_keys)
-      if not selected_keys or #selected_keys == 0 then return end
+    ['space:shift'] = function(grid, keys)
+      if not keys or #keys == 0 then return end
 
-      local key = selected_keys[1]
+      local key = keys[1]
       local items = get_items()
 
       for _, item_data in ipairs(items) do
@@ -564,11 +564,11 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     -- F2: batch rename
-    f2 = function(grid, selected_keys)
-      if not selected_keys or #selected_keys == 0 then return end
+    f2 = function(grid, keys)
+      if not keys or #keys == 0 then return end
 
       -- Start with first selected item
-      local uuid = selected_keys[1]
+      local uuid = keys[1]
       local items = get_items()
 
       for _, item_data in ipairs(items) do
@@ -578,7 +578,7 @@ function M.create(ctx, config, state, visualization, animator)
           state.rename_text = item_data.name
           state.rename_is_audio = true
           state.rename_focused = false  -- Reset focus flag
-          state.rename_queue = selected_keys  -- Store all selected for batch rename
+          state.rename_queue = keys  -- Store all selected for batch rename
           state.rename_queue_index = 1
           return
         end

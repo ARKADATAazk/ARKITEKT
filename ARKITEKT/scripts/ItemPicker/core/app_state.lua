@@ -151,15 +151,15 @@ function M.set_search_filter(filter)
 end
 
 -- Tile size management
-function M:get_tile_width()
+function M.get_tile_width()
   return M.tile_sizes.width or M.config.TILE.DEFAULT_WIDTH
 end
 
-function M:get_tile_height()
+function M.get_tile_height()
   return M.tile_sizes.height or M.config.TILE.DEFAULT_HEIGHT
 end
 
-function M:set_tile_size(width, height)
+function M.set_tile_size(width, height)
   local config = M.config
   local clamped_width = math.max(config.TILE.MIN_WIDTH, math.min(config.TILE.MAX_WIDTH, width))
   local clamped_height = math.max(config.TILE.MIN_HEIGHT, math.min(config.TILE.MAX_HEIGHT, height))

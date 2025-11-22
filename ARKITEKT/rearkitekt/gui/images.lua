@@ -127,6 +127,16 @@ local function image_size(img)
   return nil, nil
 end
 
+-- Helper to remove a path from cache order (LRU tracking)
+local function remove_from_cache_order(self, path)
+  for i, p in ipairs(self._cache_order) do
+    if p == path then
+      table.remove(self._cache_order, i)
+      break
+    end
+  end
+end
+
 local function get_image_name(path)
   if not path then return nil end
   local name = path:match("[^\\/]+$") or path
@@ -186,14 +196,7 @@ function Cache:unload(path)
   local rec = self._cache[path]
   if rec and rec.img then destroy_image(rec.img) end
   self._cache[path] = nil
-
-  -- Remove from cache order
-  for i, p in ipairs(self._cache_order) do
-    if p == path then
-      table.remove(self._cache_order, i)
-      break
-    end
-  end
+  remove_from_cache_order(self, path)
 end
 
 function Cache:set_no_crop(b)
@@ -265,13 +268,7 @@ local function validate_record(self, path, rec)
   -- Check if userdata is still valid type
   if type(rec.img) ~= "userdata" then
     self._cache[path] = nil
-    -- Remove from cache order
-    for i, p in ipairs(self._cache_order) do
-      if p == path then
-        table.remove(self._cache_order, i)
-        break
-      end
-    end
+    remove_from_cache_order(self, path)
     return ensure_record(self, path)
   end
 
@@ -286,12 +283,7 @@ local function validate_record(self, path, rec)
       -- Image pointer is invalid, destroy old handle and recreate
       destroy_image(rec.img)
       self._cache[path] = nil
-      for i, p in ipairs(self._cache_order) do
-        if p == path then
-          table.remove(self._cache_order, i)
-          break
-        end
-      end
+      remove_from_cache_order(self, path)
       return ensure_record(self, path)
     end
   end
@@ -320,12 +312,7 @@ local function validate_record(self, path, rec)
   -- Image handle exists but GetSize failed, recreate
   destroy_image(rec.img)
   self._cache[path] = nil
-  for i, p in ipairs(self._cache_order) do
-    if p == path then
-      table.remove(self._cache_order, i)
-      break
-    end
-  end
+  remove_from_cache_order(self, path)
   return ensure_record(self, path)
 end
 
