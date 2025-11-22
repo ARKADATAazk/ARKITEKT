@@ -10,7 +10,7 @@ local Colors = require('rearkitekt.core.colors')
 local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
 local TileFXConfig = require('rearkitekt.gui.rendering.tile.defaults')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
-local TileUtil = require('rearkitekt.gui.systems.tile_utilities')
+local TileUtil = require('RegionPlaylist.core.tile_utilities')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 
 local M = {}

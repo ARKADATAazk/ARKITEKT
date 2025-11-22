@@ -194,10 +194,7 @@ end
 --- @param playlist_items table Array of {rid, reps} objects
 --- @return boolean success
 function M.append_playlist_to_project(playlist_items)
-  reaper.ShowConsoleMsg("[RegionOps] append_playlist_to_project called with " .. tostring(#playlist_items or 0) .. " items\n")
-
   if not playlist_items or #playlist_items == 0 then
-    reaper.ShowConsoleMsg("[RegionOps] No playlist items provided\n")
     return false
   end
 
@@ -209,7 +206,6 @@ function M.append_playlist_to_project(playlist_items)
 
   -- Get current project end
   local project_end = get_project_length(proj)
-  reaper.ShowConsoleMsg("[RegionOps] Project end position: " .. tostring(project_end) .. "\n")
   local current_position = project_end
 
   -- Process each playlist item
@@ -217,21 +213,15 @@ function M.append_playlist_to_project(playlist_items)
     local rid = pl_item.rid
     local reps = pl_item.reps or 1
 
-    reaper.ShowConsoleMsg("[RegionOps] Processing RID " .. tostring(rid) .. " with " .. tostring(reps) .. " reps\n")
-
     local region = Regions.get_region_by_rid(proj, rid)
     if region then
-      reaper.ShowConsoleMsg("[RegionOps] Found region: " .. tostring(region.name) .. " (" .. tostring(region.start) .. " - " .. tostring(region["end"]) .. ")\n")
-
       local region_length = region["end"] - region.start
 
       -- Split items in this region
       local items_in_region = split_items_in_region(proj, region.start, region["end"])
-      reaper.ShowConsoleMsg("[RegionOps] Found " .. #items_in_region .. " items in region\n")
 
       -- Duplicate for each rep
       for rep = 1, reps do
-        reaper.ShowConsoleMsg("[RegionOps] Rep " .. rep .. "/" .. reps .. " at position " .. tostring(current_position) .. "\n")
 
         local time_offset = current_position - region.start
 
@@ -261,8 +251,6 @@ function M.append_playlist_to_project(playlist_items)
 
         current_position = current_position + region_length
       end
-    else
-      reaper.ShowConsoleMsg("[RegionOps] Region not found for RID: " .. tostring(rid) .. "\n")
     end
   end
 
@@ -270,7 +258,6 @@ function M.append_playlist_to_project(playlist_items)
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
 
-  reaper.ShowConsoleMsg("[RegionOps] append_playlist_to_project completed\n")
   return true
 end
 
@@ -278,10 +265,7 @@ end
 --- @param playlist_items table Array of {rid, reps} objects
 --- @return boolean success
 function M.paste_playlist_at_cursor(playlist_items)
-  reaper.ShowConsoleMsg("[RegionOps] paste_playlist_at_cursor called with " .. tostring(#playlist_items or 0) .. " items\n")
-
   if not playlist_items or #playlist_items == 0 then
-    reaper.ShowConsoleMsg("[RegionOps] No playlist items provided\n")
     return false
   end
 
@@ -291,8 +275,6 @@ function M.paste_playlist_at_cursor(playlist_items)
   -- Get edit cursor position
   local cursor_pos = reaper.GetCursorPosition()
   local project_end = get_project_length(proj)
-
-  reaper.ShowConsoleMsg("[RegionOps] Edit cursor: " .. tostring(cursor_pos) .. ", Project end: " .. tostring(project_end) .. "\n")
 
   reaper.PreventUIRefresh(1)
   reaper.Undo_BeginBlock()
@@ -308,11 +290,8 @@ function M.paste_playlist_at_cursor(playlist_items)
     end
   end
 
-  reaper.ShowConsoleMsg("[RegionOps] Total playlist length: " .. tostring(total_length) .. "\n")
-
   -- Insert silence if pasting inside project
   if cursor_pos < project_end then
-    reaper.ShowConsoleMsg("[RegionOps] Inserting silence of " .. tostring(total_length) .. " at " .. tostring(cursor_pos) .. "\n")
     insert_silence(proj, cursor_pos, total_length)
   end
 
@@ -323,8 +302,6 @@ function M.paste_playlist_at_cursor(playlist_items)
     local rid = pl_item.rid
     local reps = pl_item.reps or 1
 
-    reaper.ShowConsoleMsg("[RegionOps] Processing RID " .. tostring(rid) .. " with " .. tostring(reps) .. " reps\n")
-
     local region = Regions.get_region_by_rid(proj, rid)
     if region then
       local region_length = region["end"] - region.start
@@ -334,7 +311,6 @@ function M.paste_playlist_at_cursor(playlist_items)
 
       -- Duplicate for each rep
       for rep = 1, reps do
-        reaper.ShowConsoleMsg("[RegionOps] Rep " .. rep .. "/" .. reps .. " at position " .. tostring(current_position) .. "\n")
 
         local time_offset = current_position - region.start
 
@@ -370,7 +346,6 @@ function M.paste_playlist_at_cursor(playlist_items)
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
 
-  reaper.ShowConsoleMsg("[RegionOps] paste_playlist_at_cursor completed\n")
   return true
 end
 
@@ -378,10 +353,7 @@ end
 --- @param playlist_items table Array of {rid, reps} objects
 --- @return boolean success
 function M.crop_to_playlist(playlist_items)
-  reaper.ShowConsoleMsg("[RegionOps] crop_to_playlist called with " .. tostring(#playlist_items or 0) .. " items\n")
-
   if not playlist_items or #playlist_items == 0 then
-    reaper.ShowConsoleMsg("[RegionOps] No playlist items provided\n")
     return false
   end
 
@@ -461,7 +433,6 @@ function M.crop_to_playlist(playlist_items)
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
 
-  reaper.ShowConsoleMsg("[RegionOps] crop_to_playlist completed\n")
   return true
 end
 
@@ -471,11 +442,7 @@ end
 --- @param playlist_chip_color number Chip color of the playlist
 --- @return boolean success
 function M.crop_to_playlist_new_tab(playlist_items, playlist_name, playlist_chip_color)
-  reaper.ShowConsoleMsg("[RegionOps] crop_to_playlist_new_tab called with " .. tostring(#playlist_items or 0) .. " items\n")
-  reaper.ShowConsoleMsg("[RegionOps] Playlist name: " .. tostring(playlist_name) .. "\n")
-
   if not playlist_items or #playlist_items == 0 then
-    reaper.ShowConsoleMsg("[RegionOps] No playlist items provided\n")
     return false
   end
 
@@ -610,7 +577,6 @@ function M.crop_to_playlist_new_tab(playlist_items, playlist_name, playlist_chip
   State.set_active_playlist(new_playlist.id)
   State.persist()  -- Save to project
 
-  reaper.ShowConsoleMsg("[RegionOps] crop_to_playlist_new_tab completed - Playlist '" .. tostring(playlist_name) .. "' recreated with " .. #new_playlist.items .. " items\n")
   return true
 end
 

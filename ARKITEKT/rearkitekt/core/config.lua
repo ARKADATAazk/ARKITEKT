@@ -269,22 +269,4 @@ function M.diff(expected, actual)
   return differences
 end
 
---- Print config diff to console
---- @param expected table Expected configuration
---- @param actual table Actual configuration
---- @param label string|nil Optional label for the diff
-function M.print_diff(expected, actual, label)
-  local differences = M.diff(expected, actual)
-
-  if #differences == 0 then
-    print((label or "Config diff") .. ": No differences")
-    return
-  end
-
-  print((label or "Config diff") .. ":")
-  for _, diff in ipairs(differences) do
-    print(diff)
-  end
-end
-
 return M

@@ -91,19 +91,13 @@ local function get_project_guid()
     local proj_path = reaper.GetProjectPath("")
     local proj_name = reaper.GetProjectName(0, "")
 
-    reaper.ShowConsoleMsg(string.format("[ItemPicker Cache] Project path: '%s', name: '%s'\n", proj_path or "nil", proj_name or "nil"))
-
     if proj_path and proj_path ~= "" and proj_name and proj_name ~= "" then
       -- Use full path + name as stable identifier
       local full_path = proj_path .. "/" .. proj_name
       guid = "path_" .. tostring(full_path):gsub("[^%w]", "_")
-      reaper.ShowConsoleMsg("[ItemPicker Cache] Generated GUID from path: " .. guid .. "\n")
     else
       guid = "unsaved_project"
-      reaper.ShowConsoleMsg("[ItemPicker Cache] WARNING: Unsaved project, cache won't persist!\n")
     end
-  else
-    reaper.ShowConsoleMsg("[ItemPicker Cache] Using project GUID: " .. guid .. "\n")
   end
 
   return guid
@@ -183,8 +177,6 @@ local function update_project_access(project_guid)
     -- Delete the old project's cache file
     local old_cache_path = cache_dir .. "/" .. oldest.guid .. ".lua"
     os.remove(old_cache_path)
-
-    reaper.ShowConsoleMsg("[ItemPicker Cache] Evicted old project cache: " .. oldest.guid .. "\n")
   end
 
   save_cache_index(index)
@@ -193,24 +185,17 @@ end
 -- Load project cache from disk
 local function load_project_cache(project_guid)
   local cache_path = cache_dir .. "/" .. project_guid .. ".lua"
-
-  reaper.ShowConsoleMsg(string.format("[ItemPicker Cache] Looking for: %s\n", cache_path))
-
   local file = io.open(cache_path, "r")
 
   if not file then
-    reaper.ShowConsoleMsg("[ItemPicker Cache] File not found, starting with empty cache\n")
     return {} -- Empty cache
   end
 
   local content = file:read("*all")
   file:close()
 
-  reaper.ShowConsoleMsg(string.format("[ItemPicker Cache] Read %d bytes from disk\n", #content))
-
   local cache = deserialize(content)
   if not cache then
-    reaper.ShowConsoleMsg("[ItemPicker Cache] WARNING: Failed to deserialize cache!\n")
     return {}
   end
 
@@ -220,13 +205,9 @@ end
 -- Save project cache to disk
 local function save_project_cache(project_guid, cache)
   local cache_path = cache_dir .. "/" .. project_guid .. ".lua"
-
-  reaper.ShowConsoleMsg(string.format("[ItemPicker Cache] Writing to: %s\n", cache_path))
-
   local file = io.open(cache_path, "w")
 
   if not file then
-    reaper.ShowConsoleMsg("[ItemPicker Cache] Failed to save cache: " .. cache_path .. "\n")
     return false
   end
 
@@ -252,13 +233,6 @@ function M.init()
 
   -- Update access time and handle eviction
   update_project_access(current_project_guid)
-
-  local entry_count = 0
-  for _ in pairs(current_cache) do
-    entry_count = entry_count + 1
-  end
-
-  reaper.ShowConsoleMsg(string.format("[ItemPicker Cache] Loaded %d cached entries for project\n", entry_count))
 
   return cache_dir
 end
@@ -317,13 +291,11 @@ end
 -- Save waveform to cache
 function M.save_waveform(item, uuid, waveform)
   if not current_cache or not waveform then
-    reaper.ShowConsoleMsg("[Cache] save_waveform failed: no cache or waveform\n")
     return false
   end
 
   local hash = get_item_hash(item)
   if not hash then
-    reaper.ShowConsoleMsg("[Cache] save_waveform failed: no hash for item\n")
     return false
   end
 
@@ -380,34 +352,14 @@ end
 -- Flush cache to disk (call on exit)
 function M.flush()
   if flushed then
-    reaper.ShowConsoleMsg("[ItemPicker Cache] Already flushed, skipping duplicate flush\n")
     return
   end
 
   if current_cache and current_project_guid then
-    -- Count entries
-    local count = 0
-    local waveforms = 0
-    local thumbnails = 0
-
-    for uuid, entry in pairs(current_cache) do
-      count = count + 1
-      if entry.waveform then waveforms = waveforms + 1 end
-      if entry.midi_thumbnail then thumbnails = thumbnails + 1 end
-    end
-
-    reaper.ShowConsoleMsg(string.format("[ItemPicker Cache] Flushing %d entries (%d waveforms, %d MIDI) to disk...\n",
-      count, waveforms, thumbnails))
-
     local success = save_project_cache(current_project_guid, current_cache)
     if success then
-      reaper.ShowConsoleMsg("[ItemPicker Cache] Successfully saved to disk!\n")
       flushed = true
-    else
-      reaper.ShowConsoleMsg("[ItemPicker Cache] ERROR: Failed to save cache!\n")
     end
-  else
-    reaper.ShowConsoleMsg("[ItemPicker Cache] Nothing to flush\n")
   end
 end
 
@@ -417,7 +369,6 @@ function M.clear_current_project()
     current_cache = {}
     local cache_path = cache_dir .. "/" .. current_project_guid .. ".lua"
     os.remove(cache_path)
-    reaper.ShowConsoleMsg("[ItemPicker Cache] Cleared cache for current project\n")
   end
 end
 

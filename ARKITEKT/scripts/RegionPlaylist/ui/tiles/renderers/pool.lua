@@ -8,7 +8,7 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Draw = require('rearkitekt.gui.draw')
 local TileFXConfig = require('rearkitekt.gui.rendering.tile.defaults')
-local TileUtil = require('rearkitekt.gui.systems.tile_utilities')
+local TileUtil = require('RegionPlaylist.core.tile_utilities')
 local BaseRenderer = require('RegionPlaylist.ui.tiles.renderers.base')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)

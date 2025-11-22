@@ -270,14 +270,6 @@ function M.draw(ctx, dl, x, y, param5, param6, param7, param8)
   local button_pressed = ImGui.InvisibleButton(ctx, "##" .. id, total_width, config.size)
 
   local clicked = ImGui.IsItemClicked(ctx, 0)
-  local is_item_hovered = ImGui.IsItemHovered(ctx)
-  local is_item_active = ImGui.IsItemActive(ctx)
-
-  -- Debug output (only when there's interaction)
-  if id == "play_item_through_track" and (is_item_hovered or clicked or button_pressed or is_item_active) then
-    reaper.ShowConsoleMsg(string.format("[CHECKBOX_WIDGET] id=%s, button_pressed=%s, clicked=%s, hovered=%s, active=%s\n",
-      id, tostring(button_pressed), tostring(clicked), tostring(is_item_hovered), tostring(is_item_active)))
-  end
 
   -- Handle interaction
   if clicked then

@@ -31,11 +31,7 @@ local function convert_rgba_to_reaper_color(rgba_color)
   -- ColorToNative handles platform conversion (BGR on Windows) automatically
   -- Just pass r, g, b and let the API handle it
   local native_rgb = reaper.ColorToNative(r, g, b)
-  local result = native_rgb | 0x1000000
-
-  reaper.ShowConsoleMsg(string.format("      ColorToNative(%d,%d,%d) = %08X, with flag = %08X\n", r, g, b, native_rgb, result))
-
-  return result
+  return native_rgb | 0x1000000
 end
 
 function M.scan_project_regions(proj)
@@ -109,25 +105,14 @@ end
 local function set_region_color_raw(proj, target_rid, rgba_color)
   proj = proj or 0
 
-  reaper.ShowConsoleMsg(string.format("  Regions.set_region_color_raw: rid=%d, rgba_color=%08X\n", target_rid, rgba_color))
-
   -- Get the current region data
   local rgn = M.get_region_by_rid(proj, target_rid)
   if not rgn then
-    reaper.ShowConsoleMsg("    -> Region not found!\n")
     return false
   end
 
-  reaper.ShowConsoleMsg(string.format("    -> Found region at index %d: '%s'\n", rgn.index, rgn.name))
-
   -- Convert RGBA to native Reaper color
   local native_color = convert_rgba_to_reaper_color(rgba_color)
-
-  -- Extract components for logging
-  local r = (rgba_color >> 24) & 0xFF
-  local g = (rgba_color >> 16) & 0xFF
-  local b = (rgba_color >> 8) & 0xFF
-  reaper.ShowConsoleMsg(string.format("    -> RGBA(%d,%d,%d) -> native_color=%08X\n", r, g, b, native_color))
 
   local success = reaper.SetProjectMarkerByIndex2(
     proj,
@@ -140,8 +125,6 @@ local function set_region_color_raw(proj, target_rid, rgba_color)
     native_color,     -- color
     0                 -- flags
   )
-
-  reaper.ShowConsoleMsg(string.format("    -> SetProjectMarkerByIndex2 returned: %s\n", tostring(success)))
 
   if success then
     reaper.MarkProjectDirty(proj)
