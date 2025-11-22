@@ -4,7 +4,9 @@
 
 local Colors = require('rearkitekt.core.colors')
 local ColorDefs = require('rearkitekt.defs.colors')
+local arkit = require('rearkitekt.arkit')
 local hexrgb = Colors.hexrgb
+local utf8 = arkit.utf8
 
 local M = {}
 
@@ -120,9 +122,9 @@ M.TRANSPORT_BUTTONS = {
 
 -- Remix icon unicode values (UTF-8 encoding)
 M.REMIX_ICONS = {
-  shuffle = "\xEF\x84\xA4",
-  hijack_transport = "\xEF\x8E\xB4",  -- U+F3B4
-  follow_viewport = "\xEF\x8C\x81",   -- U+F301
+  shuffle = utf8(0xF124),
+  hijack_transport = utf8(0xF3B4),
+  follow_viewport = utf8(0xF301),
 }
 
 -- ============================================================================

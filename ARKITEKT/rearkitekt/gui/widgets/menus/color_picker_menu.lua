@@ -7,11 +7,12 @@ local Colors = require('rearkitekt.defs.colors')
 local ColorUtils = require('rearkitekt.core.colors')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local Draw = require('rearkitekt.gui.draw')
+local arkit = require('rearkitekt.arkit')
 
 local hexrgb = ColorUtils.hexrgb
 
 -- Remix icon for checkbox (selection indicator)
-local ICON_CHECK = "\xEE\xB1\xA9"  -- U+EC69
+local ICON_CHECK = arkit.utf8(0xEC69)
 
 local M = {}
 

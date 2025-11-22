@@ -14,6 +14,7 @@ local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
 local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local RadioButton = require('rearkitekt.gui.widgets.primitives.radio_button')
+local arkit = require('rearkitekt.arkit')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -248,7 +249,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Draw using RemixIcon font (question-fill icon: U+F044)
   ImGui.PushFont(ctx, icon_font, icon_size)
-  local icon_text = "\xEF\x81\x84"  -- &#xF044; in UTF-8
+  local icon_text = arkit.utf8(0xF044)
   local text_w, text_h = ImGui.CalcTextSize(ctx, icon_text)
   local center_x = help_x + (help_size - text_w) * 0.5
   local center_y = help_y + (help_size - text_h) * 0.5
