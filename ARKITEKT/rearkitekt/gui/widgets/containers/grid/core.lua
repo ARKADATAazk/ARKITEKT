@@ -564,7 +564,7 @@ function Grid:draw(ctx)
       end
       self.selection:apply_rect({x1, y1, x2, y2}, rect_map, self.sel_rect.mode)
       if self.behaviors and self.behaviors.on_select then
-        self.behaviors.on_select(self.selection:selected_keys())
+        self.behaviors.on_select(self, self.selection:selected_keys())
       end
     end
   end
@@ -574,7 +574,7 @@ function Grid:draw(ctx)
     if not self.sel_rect:did_drag() then
       self.selection:clear()
       if self.behaviors and self.behaviors.on_select then
-        self.behaviors.on_select(self.selection:selected_keys())
+        self.behaviors.on_select(self, self.selection:selected_keys())
       end
     end
     self.sel_rect:clear()
@@ -700,7 +700,7 @@ function Grid:draw(ctx)
 
   -- Handle double-click on tile
   if bg_double_clicked and double_clicked_tile_key and self.behaviors and self.behaviors.double_click then
-    self.behaviors.double_click(double_clicked_tile_key)
+    self.behaviors.double_click(self, double_clicked_tile_key)
   end
 
   -- NOW start marquee selection if click was NOT over a tile
@@ -768,14 +768,14 @@ function Grid:draw(ctx)
         new_order[#new_order + 1] = filtered_order[i]
       end
 
-      self.behaviors.reorder(new_order)
+      self.behaviors.reorder(self, new_order)
     end
-    
+
     local pending = self.drag:release()
     if pending and not Input.is_external_drag_active(self) then
       self.selection:single(pending)
       if self.behaviors and self.behaviors.on_select then
-        self.behaviors.on_select(self.selection:selected_keys())
+        self.behaviors.on_select(self, self.selection:selected_keys())
       end
     end
 
@@ -789,7 +789,7 @@ function Grid:draw(ctx)
     if self.drag:has_pending_selection() then
       self.selection:single(self.drag:get_pending_selection())
       if self.behaviors and self.behaviors.on_select then
-        self.behaviors.on_select(self.selection:selected_keys())
+        self.behaviors.on_select(self, self.selection:selected_keys())
       end
     end
 
