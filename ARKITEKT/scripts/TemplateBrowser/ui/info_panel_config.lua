@@ -37,7 +37,7 @@ function M.create(callbacks, is_overlay_mode)
       flags = ImGui.WindowFlags_None,
     },
 
-    padding = 8,
+    padding = 12,
   }
 end
 

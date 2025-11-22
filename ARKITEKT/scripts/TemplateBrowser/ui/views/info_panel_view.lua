@@ -13,12 +13,15 @@ local Tooltips = require('TemplateBrowser.core.tooltips')
 local UI = require('TemplateBrowser.ui.ui_constants')
 
 local M = {}
+local hexrgb = Colors.hexrgb
 
 -- Draw a u-he style section header (dim text, left-aligned)
 local function draw_section_header(ctx, title)
-  ImGui.Spacing(ctx)
-  ImGui.TextDisabled(ctx, title)
-  ImGui.Spacing(ctx)
+  ImGui.Dummy(ctx, 0, 8)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+  ImGui.Text(ctx, title)
+  ImGui.PopStyleColor(ctx)
+  ImGui.Dummy(ctx, 0, 4)
 end
 
 -- Draw info & tag assignment panel (right)
@@ -31,15 +34,144 @@ local function draw_info_panel(ctx, gui, width, height)
 
   -- Begin panel drawing (includes background, border, header)
   if gui.info_container:begin_draw(ctx) then
+    -- Get available content width
+    local content_w = ImGui.GetContentRegionAvail(ctx)
+
     if state.selected_template then
       local tmpl = state.selected_template
       local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
 
-      -- Template name (prominent, at top like u-he)
+      -- ========================================
+      -- TEMPLATE INFO (top section)
+      -- ========================================
+
+      -- Template name (prominent)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
       ImGui.TextWrapped(ctx, tmpl.name)
+      ImGui.PopStyleColor(ctx)
 
       -- Location shown as "in [folder]" style
-      ImGui.TextDisabled(ctx, "in " .. tmpl.folder)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+      ImGui.Text(ctx, "in " .. tmpl.folder)
+      ImGui.PopStyleColor(ctx)
+
+      -- ========================================
+      -- ACTIONS section (moved up for prominence)
+      -- ========================================
+      draw_section_header(ctx, "ACTIONS")
+
+      -- Calculate button width (full width minus some margin)
+      local button_w = content_w - 4
+
+      -- Apply to Selected Track
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#2A5599"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#3A65A9"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#1A4589"))
+      if ImGui.Button(ctx, "Apply to Track", button_w, 28) then
+        TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
+      end
+      ImGui.PopStyleColor(ctx, 3)
+      Tooltips.show(ctx, ImGui, "template_apply")
+
+      ImGui.Dummy(ctx, 0, 2)
+
+      -- Insert as New Track
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#333333"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#444444"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#222222"))
+      if ImGui.Button(ctx, "Insert as New Track", button_w, 24) then
+        TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
+      end
+      ImGui.PopStyleColor(ctx, 3)
+      Tooltips.show(ctx, ImGui, "template_insert")
+
+      ImGui.Dummy(ctx, 0, 2)
+
+      -- Rename
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#333333"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#444444"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#222222"))
+      if ImGui.Button(ctx, "Rename (F2)", button_w, 24) then
+        state.renaming_item = tmpl
+        state.renaming_type = "template"
+        state.rename_buffer = tmpl.name
+      end
+      ImGui.PopStyleColor(ctx, 3)
+      Tooltips.show(ctx, ImGui, "template_rename")
+
+      -- ========================================
+      -- TAGS section
+      -- ========================================
+      draw_section_header(ctx, "TAGS")
+
+      if state.metadata and state.metadata.tags then
+        local has_tags = false
+        local tag_count = 0
+
+        -- Count tags first
+        for _ in pairs(state.metadata.tags) do
+          tag_count = tag_count + 1
+        end
+
+        if tag_count > 0 then
+          -- Draw tags in a flow layout
+          local start_x = ImGui.GetCursorPosX(ctx)
+          local max_x = start_x + content_w - 8
+
+          for tag_name, tag_data in pairs(state.metadata.tags) do
+            has_tags = true
+            ImGui.PushID(ctx, tag_name)
+
+            -- Check if this tag is assigned
+            local is_assigned = false
+            if tmpl_metadata and tmpl_metadata.tags then
+              for _, assigned_tag in ipairs(tmpl_metadata.tags) do
+                if assigned_tag == tag_name then
+                  is_assigned = true
+                  break
+                end
+              end
+            end
+
+            -- Draw tag using Chip component (ACTION style)
+            local clicked, chip_w, chip_h = Chip.draw(ctx, {
+              style = Chip.STYLE.ACTION,
+              label = tag_name,
+              bg_color = tag_data.color,
+              text_color = Colors.auto_text_color(tag_data.color),
+              height = 22,
+              padding_h = 6,
+              rounding = 3,
+              is_selected = is_assigned,
+              interactive = true,
+            })
+
+            if clicked then
+              -- Toggle tag assignment
+              if is_assigned then
+                Tags.remove_tag_from_template(state.metadata, tmpl.uuid, tag_name)
+              else
+                Tags.add_tag_to_template(state.metadata, tmpl.uuid, tag_name)
+              end
+              local Persistence = require('TemplateBrowser.domain.persistence')
+              Persistence.save_metadata(state.metadata)
+            end
+
+            ImGui.PopID(ctx)
+          end
+        end
+
+        if not has_tags or tag_count == 0 then
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#555555"))
+          ImGui.Text(ctx, "No tags available")
+          ImGui.Text(ctx, "Create in Tags panel")
+          ImGui.PopStyleColor(ctx)
+        end
+      else
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#555555"))
+        ImGui.Text(ctx, "No tags available")
+        ImGui.PopStyleColor(ctx)
+      end
 
       -- ========================================
       -- NOTES section
@@ -55,10 +187,10 @@ local function draw_info_panel(ctx, gui, width, height)
       end
 
       local notes_changed, new_notes = MarkdownField.draw_at_cursor(ctx, {
-        width = -1,
-        height = UI.FIELD.NOTES_HEIGHT,
+        width = content_w - 4,
+        height = 120,
         text = notes,
-        placeholder = "Double-click to add notes...\n\nSupports Markdown:\n**bold** and *italic*\n# Headers\n- Lists\n[links](url)\n\nShift+Enter for line breaks\nEnter to save, Esc to cancel",
+        placeholder = "Double-click to add notes...\n\nMarkdown supported",
       }, notes_field_id)
       Tooltips.show(ctx, ImGui, "notes_field")
 
@@ -68,105 +200,20 @@ local function draw_info_panel(ctx, gui, width, height)
         Persistence.save_metadata(state.metadata)
       end
 
-      -- ========================================
-      -- TAGS section
-      -- ========================================
-      draw_section_header(ctx, "TAGS")
-
-      if state.metadata and state.metadata.tags then
-        local has_tags = false
-        for tag_name, tag_data in pairs(state.metadata.tags) do
-          has_tags = true
-          ImGui.PushID(ctx, tag_name)
-
-          -- Check if this tag is assigned
-          local is_assigned = false
-          if tmpl_metadata and tmpl_metadata.tags then
-            for _, assigned_tag in ipairs(tmpl_metadata.tags) do
-              if assigned_tag == tag_name then
-                is_assigned = true
-                break
-              end
-            end
-          end
-
-          -- Draw tag using Chip component (ACTION style)
-          local clicked, chip_w, chip_h = Chip.draw(ctx, {
-            style = Chip.STYLE.ACTION,
-            label = tag_name,
-            bg_color = tag_data.color,
-            text_color = Colors.auto_text_color(tag_data.color),
-            height = UI.CHIP.HEIGHT_DEFAULT,
-            padding_h = 8,
-            rounding = 2,
-            is_selected = is_assigned,
-            interactive = true,
-          })
-
-          if clicked then
-            -- Toggle tag assignment
-            if is_assigned then
-              Tags.remove_tag_from_template(state.metadata, tmpl.uuid, tag_name)
-            else
-              Tags.add_tag_to_template(state.metadata, tmpl.uuid, tag_name)
-            end
-            local Persistence = require('TemplateBrowser.domain.persistence')
-            Persistence.save_metadata(state.metadata)
-          end
-
-          ImGui.PopID(ctx)
-        end
-
-        if not has_tags then
-          ImGui.TextDisabled(ctx, "No tags available")
-          ImGui.TextDisabled(ctx, "Create tags in the Tags panel")
-        end
-      else
-        ImGui.TextDisabled(ctx, "No tags available")
-      end
-
-      -- ========================================
-      -- ACTIONS section
-      -- ========================================
-      draw_section_header(ctx, "ACTIONS")
-
-      if Button.draw_at_cursor(ctx, {
-        label = "Apply to Selected Track",
-        width = -1,
-        height = UI.BUTTON.HEIGHT_ACTION
-      }, "apply_template") then
-        reaper.ShowConsoleMsg("Applying template: " .. tmpl.name .. "\n")
-        TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
-      end
-      Tooltips.show(ctx, ImGui, "template_apply")
-
-      ImGui.Dummy(ctx, 0, UI.PADDING.SMALL)
-
-      if Button.draw_at_cursor(ctx, {
-        label = "Insert as New Track",
-        width = -1,
-        height = UI.BUTTON.HEIGHT_ACTION
-      }, "insert_template") then
-        reaper.ShowConsoleMsg("Inserting template as new track: " .. tmpl.name .. "\n")
-        TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
-      end
-      Tooltips.show(ctx, ImGui, "template_insert")
-
-      ImGui.Dummy(ctx, 0, UI.PADDING.SMALL)
-
-      if Button.draw_at_cursor(ctx, {
-        label = "Rename (F2)",
-        width = -1,
-        height = UI.BUTTON.HEIGHT_ACTION
-      }, "rename_template") then
-        state.renaming_item = tmpl
-        state.renaming_type = "template"
-        state.rename_buffer = tmpl.name
-      end
-      Tooltips.show(ctx, ImGui, "template_rename")
-
     else
-      ImGui.TextDisabled(ctx, "Select a template to view details")
+      -- No template selected
+      ImGui.Dummy(ctx, 0, 20)
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#555555"))
+      local text = "Select a template"
+      local text_w = ImGui.CalcTextSize(ctx, text)
+      ImGui.SetCursorPosX(ctx, (content_w - text_w) / 2)
+      ImGui.Text(ctx, text)
+
+      local text2 = "to view details"
+      local text2_w = ImGui.CalcTextSize(ctx, text2)
+      ImGui.SetCursorPosX(ctx, (content_w - text2_w) / 2)
+      ImGui.Text(ctx, text2)
+      ImGui.PopStyleColor(ctx)
     end
 
     gui.info_container:end_draw(ctx)
