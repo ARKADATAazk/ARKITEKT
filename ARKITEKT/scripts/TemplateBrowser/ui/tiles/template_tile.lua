@@ -247,56 +247,83 @@ function M.render(ctx, rect, template, state, metadata, animator)
   end
 
   -- Render favorite star in top-right corner (no badge, just the star)
-  local star_size = 24  -- 2x bigger star
-  local star_margin = 6
-  local star_x = x2 - star_size - star_margin
-  local star_y = y1 + star_margin
+  local star_radius = 10  -- Big star for grid tiles
+  local star_margin = 8
+  local star_center_x = x2 - star_radius - star_margin
+  local star_center_y = y1 + star_radius + star_margin
+
+  -- Hit area for click detection
+  local hit_size = star_radius * 2 + 4
+  local hit_x = star_center_x - hit_size * 0.5
+  local hit_y = star_center_y - hit_size * 0.5
 
   -- Check if mouse is over star for click detection
   local mx, my = ImGui.GetMousePos(ctx)
-  local is_star_hovered = mx >= star_x and mx <= star_x + star_size and
-                          my >= star_y and my <= star_y + star_size
+  local is_star_hovered = mx >= hit_x and mx <= hit_x + hit_size and
+                          my >= hit_y and my <= hit_y + hit_size
 
   -- Determine star color based on tile color and favorite state
   local star_color
-  local base_grey = hexrgb("#888888")  -- Light grey base
+  local border_color
 
   if chip_color then
     -- Blend with tile color subtly
     local cr, cg, cb = Colors.rgba_to_components(chip_color)
-    local gr, gg, gb = Colors.rgba_to_components(base_grey)
-    local blend = 0.25  -- Subtle color influence
+    local blend = 0.3  -- Color influence
 
     if is_favorite then
-      -- Lighter than tile color when enabled
-      local r = math.floor(math.min(255, cr * 1.3) * blend + 220 * (1 - blend))
-      local g = math.floor(math.min(255, cg * 1.3) * blend + 220 * (1 - blend))
-      local b = math.floor(math.min(255, cb * 1.3) * blend + 220 * (1 - blend))
+      -- Lighter than tile color when enabled (no border)
+      local r = math.floor(math.min(255, cr * 1.4) * blend + 230 * (1 - blend))
+      local g = math.floor(math.min(255, cg * 1.4) * blend + 230 * (1 - blend))
+      local b = math.floor(math.min(255, cb * 1.4) * blend + 230 * (1 - blend))
       star_color = Colors.components_to_rgba(r, g, b, 255)
+      border_color = nil  -- No border when active
     else
-      -- Darker than tile color when disabled
-      local r = math.floor(cr * 0.5 * blend + 100 * (1 - blend))
-      local g = math.floor(cg * 0.5 * blend + 100 * (1 - blend))
-      local b = math.floor(cb * 0.5 * blend + 100 * (1 - blend))
-      star_color = Colors.components_to_rgba(r, g, b, is_star_hovered and 180 or 120)
+      -- Much darker when disabled
+      local r = math.floor(cr * 0.3 * blend + 40 * (1 - blend))
+      local g = math.floor(cg * 0.3 * blend + 40 * (1 - blend))
+      local b = math.floor(cb * 0.3 * blend + 40 * (1 - blend))
+      star_color = Colors.components_to_rgba(r, g, b, is_star_hovered and 200 or 140)
+      -- Even darker border
+      border_color = Colors.components_to_rgba(
+        math.floor(r * 0.5),
+        math.floor(g * 0.5),
+        math.floor(b * 0.5),
+        is_star_hovered and 255 or 180
+      )
     end
   else
     -- No tile color - use pure grey
     if is_favorite then
-      star_color = hexrgb("#E0E0E0")  -- Light grey when enabled
+      star_color = hexrgb("#E8E8E8")  -- Light when enabled
+      border_color = nil  -- No border when active
     else
-      star_color = is_star_hovered and hexrgb("#888888B4") or hexrgb("#64646478")  -- Dark grey when disabled
+      star_color = is_star_hovered and hexrgb("#404040C8") or hexrgb("#2828288C")  -- Much darker
+      border_color = is_star_hovered and hexrgb("#202020FF") or hexrgb("#181818B4")  -- Even darker border
     end
   end
 
-  -- Render the star character directly (no badge)
-  local star_char = "★"
+  -- Generate 5-pointed star polygon
+  local points = {}
+  local inner_radius = star_radius * 0.4
+  local rotation = -math.pi / 2  -- Start from top point
 
-  -- Calculate centered position within the hit area
-  local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)
-  local star_text_x = star_x + (star_size - text_w) * 0.5
-  local star_text_y = star_y + (star_size - text_h) * 0.5
-  Draw.text(dl, star_text_x, star_text_y, star_color, star_char)
+  for i = 0, 9 do
+    local angle = rotation + (i * math.pi / 5)
+    local radius = (i % 2 == 0) and star_radius or inner_radius
+    local px = star_center_x + math.cos(angle) * radius
+    local py = star_center_y + math.sin(angle) * radius
+    table.insert(points, px)
+    table.insert(points, py)
+  end
+
+  -- Draw filled star
+  ImGui.DrawList_AddConvexPolyFilled(dl, points, star_color)
+
+  -- Draw border if not active
+  if border_color then
+    ImGui.DrawList_AddPolyline(dl, points, border_color, ImGui.DrawFlags_Closed, 1.5)
+  end
 
   -- Handle star click to toggle favorite
   if is_star_hovered and ImGui.IsMouseClicked(ctx, 0) then
