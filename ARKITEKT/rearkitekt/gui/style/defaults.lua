@@ -12,7 +12,6 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 local ConfigUtil = require('rearkitekt.core.config')
-local ColorDefs = require('rearkitekt.defs.colors')
 
 local M = {}
 
@@ -20,36 +19,36 @@ local M = {}
 -- SHARED PRIMITIVES (Used across multiple components)
 -- ============================================================================
 -- These are foundational colors that multiple components reference.
--- Now sourced from centralized theme colors for theme support.
+-- Modify these to change the overall theme of the application.
 -- ============================================================================
 
 M.COLORS = {
-  -- Backgrounds (from theme)
-  BG_BASE = hexrgb(ColorDefs.UI.bg_panel),       -- Standard control background
-  BG_HOVER = hexrgb(ColorDefs.UI.bg_elevated),   -- Hovered control background
-  BG_ACTIVE = hexrgb(ColorDefs.UI.bg_hover),     -- Active/pressed control background
-  BG_TRANSPARENT = hexrgb("#00000000"),          -- Transparent background
+  -- Backgrounds
+  BG_BASE = hexrgb("#252525FF"),        -- Standard control background
+  BG_HOVER = hexrgb("#2A2A2AFF"),       -- Hovered control background
+  BG_ACTIVE = hexrgb("#303030FF"),      -- Active/pressed control background
+  BG_TRANSPARENT = hexrgb("#00000000"), -- Transparent background
 
-  -- Borders (from theme)
-  BORDER_OUTER = hexrgb("#000000DD"),            -- Black outer border (strong contrast)
-  BORDER_INNER = hexrgb(ColorDefs.UI.border),    -- Gray inner highlight border
-  BORDER_HOVER = hexrgb(ColorDefs.UI.border_light), -- Lighter border on hover
-  BORDER_ACTIVE = hexrgb("#B0B0B077"),           -- Active state border (semi-transparent)
-  BORDER_FOCUS = hexrgb("#7B7B7BFF"),            -- Focus state border
+  -- Borders
+  BORDER_OUTER = hexrgb("#000000DD"),   -- Black outer border (strong contrast)
+  BORDER_INNER = hexrgb("#2f2f2fff"),   -- Gray inner highlight border
+  BORDER_HOVER = hexrgb("#505050FF"),   -- Lighter border on hover
+  BORDER_ACTIVE = hexrgb("#B0B0B077"),  -- Active state border (semi-transparent)
+  BORDER_FOCUS = hexrgb("#7B7B7BFF"),   -- Focus state border
 
-  -- Text (from theme)
-  TEXT_NORMAL = hexrgb(ColorDefs.UI.text_primary),   -- Standard text color
-  TEXT_HOVER = hexrgb(ColorDefs.UI.text_bright),     -- Bright text on hover
-  TEXT_ACTIVE = hexrgb(ColorDefs.UI.text_bright),    -- Bright text when active
-  TEXT_DIMMED = hexrgb(ColorDefs.UI.text_secondary), -- Dimmed/secondary text
-  TEXT_DARK = hexrgb(ColorDefs.UI.text_disabled),    -- Dark text for high-contrast areas
-  TEXT_BRIGHT = hexrgb(ColorDefs.UI.text_bright),    -- Extra bright text
+  -- Text
+  TEXT_NORMAL = hexrgb("#CCCCCCFF"),    -- Standard text color
+  TEXT_HOVER = hexrgb("#FFFFFFFF"),     -- Bright text on hover
+  TEXT_ACTIVE = hexrgb("#FFFFFFFF"),    -- Bright text when active
+  TEXT_DIMMED = hexrgb("#AAAAAAFF"),    -- Dimmed/secondary text
+  TEXT_DARK = hexrgb("#707070FF"),      -- Dark text for high-contrast areas
+  TEXT_BRIGHT = hexrgb("#EEEEEEFF"),    -- Extra bright text
 
-  -- Accents (from semantic colors)
-  ACCENT_PRIMARY = hexrgb(ColorDefs.SEMANTIC.info),     -- Primary accent (blue)
-  ACCENT_SUCCESS = hexrgb(ColorDefs.SEMANTIC.success),  -- Success/confirmation (green)
-  ACCENT_WARNING = hexrgb(ColorDefs.SEMANTIC.warning),  -- Warning state (orange)
-  ACCENT_DANGER = hexrgb(ColorDefs.SEMANTIC.error),     -- Error/danger state (red)
+  -- Accents (for warnings, errors, success states)
+  ACCENT_PRIMARY = hexrgb("#4A9EFF"),   -- Primary accent (blue)
+  ACCENT_SUCCESS = hexrgb("#4CAF50"),   -- Success/confirmation (green)
+  ACCENT_WARNING = hexrgb("#FFA726"),   -- Warning state (orange)
+  ACCENT_DANGER = hexrgb("#EF5350"),    -- Error/danger state (red)
 }
 
 -- ============================================================================
@@ -66,13 +65,13 @@ M.COLORS = {
 -- ============================================================================
 
 M.PANEL_COLORS = {
-  -- Panel container (from theme)
-  bg_panel = hexrgb(ColorDefs.UI.bg_base),     -- Main panel container background
-  border_panel = M.COLORS.BORDER_OUTER,        -- Panel outer border (reuse shared)
+  -- Panel container
+  bg_panel = hexrgb("#1A1A1AFF"),       -- Main panel container background (darker than controls)
+  border_panel = M.COLORS.BORDER_OUTER, -- Panel outer border (reuse shared)
 
-  -- Header bar (from theme)
-  bg_header = hexrgb(ColorDefs.UI.bg_panel),   -- Header bar background
-  border_header = hexrgb("#00000066"),         -- Subtle header border
+  -- Header bar
+  bg_header = hexrgb("#1E1E1EFF"),      -- Header bar background
+  border_header = hexrgb("#00000066"),  -- Subtle header border
 
   -- Tab strip
   bg_tab = M.COLORS.BG_BASE,            -- Tab background (inactive)
@@ -85,19 +84,19 @@ M.PANEL_COLORS = {
   border_tab_hover = M.COLORS.BORDER_HOVER,  -- Tab border on hover
   border_tab_focus = M.COLORS.BORDER_FOCUS,  -- Tab border when focused
 
-  -- Tab track (background behind tabs, from theme)
-  bg_tab_track = hexrgb(ColorDefs.UI.bg_base), -- Track background
-  border_tab_track = M.COLORS.BORDER_OUTER,    -- Track border
+  -- Tab track (background behind tabs)
+  bg_tab_track = hexrgb("#1A1A1AFF"),   -- Track background
+  border_tab_track = M.COLORS.BORDER_OUTER, -- Track border
 
-  -- Separator (from theme)
-  separator_line = hexrgb(ColorDefs.UI.divider),  -- Separator line color
+  -- Separator
+  separator_line = hexrgb("#30303080"),  -- Separator line color (semi-transparent)
 
   -- Scrollbar
   bg_scrollbar = M.COLORS.BG_TRANSPARENT, -- Scrollbar background
 
   -- Background pattern (decorative grid/dot pattern)
-  pattern_primary = hexrgb(ColorDefs.UI.bg_deep:sub(1, 7) .. "90"),   -- Primary pattern
-  pattern_secondary = hexrgb(ColorDefs.UI.bg_deep:sub(1, 7) .. "20"), -- Secondary pattern
+  pattern_primary = hexrgb("#14141490"),   -- Primary grid/dot color
+  pattern_secondary = hexrgb("#14141420"), -- Secondary grid/dot color
 }
 
 -- ============================================================================
@@ -191,18 +190,18 @@ M.DROPDOWN_COLORS = {
   arrow = M.COLORS.TEXT_NORMAL,
   arrow_hover = M.COLORS.TEXT_HOVER,
 
-  -- Popup menu (from theme)
-  popup_bg = hexrgb(ColorDefs.UI.bg_panel),       -- Popup background
-  popup_border = hexrgb(ColorDefs.UI.bg_deep),    -- Popup border (darker)
+  -- Popup menu (lighter grey with much darker borders)
+  popup_bg = hexrgb("#222222FF"),         -- Popup background (lighter grey)
+  popup_border = hexrgb("#0F0F0FFF"),     -- Popup border (much darker, almost black)
 
-  -- Menu items (from theme)
-  item_bg = hexrgb("#00000000"),                  -- Item background (transparent)
-  item_hover = hexrgb(ColorDefs.UI.bg_elevated),  -- Item background on hover
-  item_active = hexrgb(ColorDefs.UI.bg_hover),    -- Item background when active
-  item_selected = hexrgb(ColorDefs.UI.bg_elevated), -- Item background when selected
-  item_text = M.COLORS.TEXT_NORMAL,               -- Item text
-  item_text_hover = M.COLORS.TEXT_HOVER,          -- Item text on hover
-  item_text_selected = M.COLORS.TEXT_BRIGHT,      -- Item text when selected
+  -- Menu items (enhanced styling)
+  item_bg = hexrgb("#00000000"),          -- Item background (transparent)
+  item_hover = hexrgb("#2E2E2EFF"),       -- Item background on hover (subtle highlight)
+  item_active = hexrgb("#353535FF"),      -- Item background when active (more visible)
+  item_selected = hexrgb("#303030FF"),    -- Item background when selected
+  item_text = M.COLORS.TEXT_NORMAL,       -- Item text
+  item_text_hover = M.COLORS.TEXT_HOVER,  -- Item text on hover
+  item_text_selected = M.COLORS.TEXT_BRIGHT, -- Item text when selected (brighter)
 }
 
 -- ============================================================================
@@ -227,9 +226,9 @@ M.SEARCH_INPUT_COLORS = {
 -- ============================================================================
 
 M.TOOLTIP_COLORS = {
-  bg = hexrgb(ColorDefs.UI.bg_elevated),
+  bg = hexrgb("#2A2A2AFF"),
   border = M.COLORS.BORDER_INNER,
-  text = hexrgb(ColorDefs.UI.text_bright),
+  text = hexrgb("#EEEEEEFF"),
 }
 
 -- ============================================================================
@@ -296,11 +295,11 @@ M.BUTTON = {
   text_color = M.BUTTON_COLORS.text,
   text_hover_color = M.BUTTON_COLORS.text_hover,
   text_active_color = M.BUTTON_COLORS.text_active,
-  -- Disabled state colors (from theme)
-  bg_disabled_color = hexrgb(ColorDefs.UI.bg_base),     -- Darker, dimmed background
-  border_inner_disabled_color = hexrgb(ColorDefs.UI.bg_panel),  -- Very dark inner border
-  border_outer_disabled_color = hexrgb("#000000DD"),    -- Same outer border as normal
-  text_disabled_color = hexrgb(ColorDefs.UI.text_disabled),     -- Dimmed text
+  -- Disabled state colors
+  bg_disabled_color = hexrgb("#1a1a1a"),  -- Darker, dimmed background
+  border_inner_disabled_color = hexrgb("#202020"),  -- Very dark inner border
+  border_outer_disabled_color = hexrgb("#000000DD"),  -- Same outer border as normal
+  text_disabled_color = hexrgb("#555555"),  -- Dimmed text
   padding_x = 10,
   padding_y = 6,
   rounding = 0,
