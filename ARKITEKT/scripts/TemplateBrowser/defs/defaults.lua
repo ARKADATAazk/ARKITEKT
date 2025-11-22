@@ -48,4 +48,16 @@ M.ANIMATION = {
   tile_speed = 16.0,
 }
 
+-- ============================================================================
+-- VST DISPLAY
+-- ============================================================================
+M.VST = {
+  -- VSTs to hide from tile preview (still shown in FX chain views)
+  -- These are typically utility plugins that aren't the "main" instrument
+  tile_blacklist = {
+    "ReaControlMIDI",
+    "ReaInsert",
+  },
+}
+
 return M

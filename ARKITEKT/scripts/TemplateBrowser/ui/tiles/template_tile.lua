@@ -8,6 +8,7 @@ local Draw = require('rearkitekt.gui.draw')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local Badge = require('rearkitekt.gui.widgets.primitives.badge')
+local Defaults = require('TemplateBrowser.defs.defaults')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -28,6 +29,38 @@ M.CONFIG = {
   hide_path_below = 60,
   compact_mode_below = 70,
 }
+
+-- Strip parenthetical content from VST name for display
+-- e.g., "Kontakt (Native Instruments)" -> "Kontakt"
+local function strip_parentheses(name)
+  if not name then return "" end
+  local stripped = name:gsub("%s*%b()", ""):gsub("^%s+", ""):gsub("%s+$", "")
+  -- Return original if stripping would leave nothing
+  return stripped ~= "" and stripped or name
+end
+
+-- Check if VST name is in the tile blacklist
+local function is_blacklisted(name)
+  if not name then return false end
+  local blacklist = Defaults.VST and Defaults.VST.tile_blacklist or {}
+  for _, blocked in ipairs(blacklist) do
+    if name:find(blocked, 1, true) then
+      return true
+    end
+  end
+  return false
+end
+
+-- Get first non-blacklisted VST from fx list
+local function get_display_vst(fx_list)
+  if not fx_list or #fx_list == 0 then return nil end
+  for _, fx_name in ipairs(fx_list) do
+    if not is_blacklisted(fx_name) then
+      return fx_name
+    end
+  end
+  return nil  -- All VSTs are blacklisted
+end
 
 -- Calculate tile height based on content
 local function calculate_content_height(template, config)
@@ -209,24 +242,24 @@ function M.render(ctx, rect, template, state, metadata, animator)
   end
 
   -- Show first VST chip (if height allows and VSTs exist)
-  if tile_h >= M.CONFIG.hide_chips_below and template.fx and #template.fx > 0 then
+  local first_vst = get_display_vst(template.fx)
+  if tile_h >= M.CONFIG.hide_chips_below and first_vst then
     local chip_y = tile_h >= M.CONFIG.compact_mode_below and (content_y + 40) or (content_y + 24)
     local chip_x = content_x
 
-    -- Get first VST name and truncate if needed
-    local first_vst = template.fx[1]
+    -- Strip parenthetical content for display (e.g., "Kontakt (Native Instruments)" -> "Kontakt")
+    local display_vst = strip_parentheses(first_vst)
 
     -- Calculate max width for chip (leave room for favorite badge and margin)
     local max_chip_width = content_w - 40
 
     -- Truncate VST name if it's too long
-    local display_vst = first_vst
-    local text_width = ImGui.CalcTextSize(ctx, first_vst)
+    local text_width = ImGui.CalcTextSize(ctx, display_vst)
     local chip_content_width = 16  -- padding on both sides (8 + 8)
     if text_width + chip_content_width > max_chip_width then
       -- Truncate with ellipsis
       local available_width = max_chip_width - chip_content_width - ImGui.CalcTextSize(ctx, "...")
-      display_vst = truncate_text(ctx, first_vst, available_width)
+      display_vst = truncate_text(ctx, display_vst, available_width)
       text_width = ImGui.CalcTextSize(ctx, display_vst)
     end
 
@@ -247,7 +280,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
   end
 
   -- Render favorite star in top-right corner using remix icon font
-  local star_size = 42  -- Size of the star (3x)
+  local star_size = 21  -- Size of the star (1.5x)
   local star_margin = 4
   local star_x = x2 - star_size - star_margin
   local star_y = y1 + star_margin
@@ -293,7 +326,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Use icon font if available in state
   if state.fonts and state.fonts.icons then
     local base_size = state.fonts.icons_size or 14
-    local font_size = math.floor(base_size * 3)  -- 3x size
+    local font_size = math.floor(base_size * 1.5)  -- 1.5x size
 
     ImGui.PushFont(ctx, state.fonts.icons, font_size)
     local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)
