@@ -51,6 +51,7 @@ function M.new(State, AppConfig, settings)
   local container_config = Config.get_assembler_container_config({
     on_config_select = function(tab_id)
       if State.switch_configuration(tab_id) then
+        self:refresh_tabs()  -- Update active tab visual
         self:refresh_package_model()
       end
     end,
