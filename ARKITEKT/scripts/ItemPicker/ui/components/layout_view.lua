@@ -726,20 +726,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     if filter_bar_height > 1 then
       local filter_bar_y = filter_bar_base_y
 
-      -- Calculate total width needed for all chips
-      local total_chips_width = 0
-      local chip_cfg = self.config.REGION_TAGS.chip
-      for i, region in ipairs(self.state.all_regions) do
-        local text_w = ImGui.CalcTextSize(ctx, region.name)
-        local chip_w = text_w + chip_cfg.padding_x * 2
-        total_chips_width = total_chips_width + chip_w
-        if i < #self.state.all_regions then
-          total_chips_width = total_chips_width + chip_cfg.margin_x
-        end
-      end
-      -- Center the filter bar
-      local filter_bar_x = coord_offset_x + math.floor((screen_w - total_chips_width) / 2 + 0.5)
-      RegionFilterBar.draw(ctx, draw_list, filter_bar_x, filter_bar_y, total_chips_width + 100, self.state, self.config, filter_alpha)
+      -- Pass full screen width - filter bar handles multi-line wrapping and centering
+      RegionFilterBar.draw(ctx, draw_list, coord_offset_x, filter_bar_y, screen_w, self.state, self.config, filter_alpha)
     end
   end
 
