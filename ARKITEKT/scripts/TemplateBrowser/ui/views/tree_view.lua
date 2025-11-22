@@ -554,19 +554,17 @@ function M.draw_physical_tree(ctx, state, config)
     render_context_menu = function(ctx_inner, node)
       local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
       local Colors = require('rearkitekt.core.colors')
+      local ColorDefs = require('rearkitekt.defs.colors')
 
       if ContextMenu.begin(ctx_inner, "folder_context_menu") then
-        -- Predefined color palette
-        local color_options = {
-          { name = "None", color = nil },
-          { name = "Red", color = Colors.hexrgb("#FF6B6BFF") },
-          { name = "Orange", color = Colors.hexrgb("#FFA500FF") },
-          { name = "Yellow", color = Colors.hexrgb("#FFD93DFF") },
-          { name = "Green", color = Colors.hexrgb("#6BCF7FFF") },
-          { name = "Blue", color = Colors.hexrgb("#4A9EFFFF") },
-          { name = "Purple", color = Colors.hexrgb("#B57FFFFF") },
-          { name = "Pink", color = Colors.hexrgb("#FF69B4FF") },
-        }
+        -- Build color options from centralized palette
+        local color_options = {{ name = "None", color = nil }}
+        for _, palette_color in ipairs(ColorDefs.PALETTE) do
+          table.insert(color_options, {
+            name = palette_color.name,
+            color = Colors.hexrgb(palette_color.hex)
+          })
+        end
 
         for _, color_opt in ipairs(color_options) do
           if ContextMenu.item(ctx_inner, color_opt.name) then

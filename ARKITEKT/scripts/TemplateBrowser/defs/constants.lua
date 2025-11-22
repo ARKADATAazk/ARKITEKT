@@ -3,6 +3,7 @@
 -- Pure value constants: colors, dimensions
 
 local Colors = require('rearkitekt.core.colors')
+local ColorDefs = require('rearkitekt.defs.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -29,20 +30,14 @@ M.STATUS = {
   INFO = hexrgb("#FFFFFF"),
 }
 
--- Tag color palette
-M.TAG_COLORS = {
-  hexrgb("#3B82F6"), -- Blue
-  hexrgb("#10B981"), -- Green
-  hexrgb("#F59E0B"), -- Amber
-  hexrgb("#EF4444"), -- Red
-  hexrgb("#8B5CF6"), -- Purple
-  hexrgb("#EC4899"), -- Pink
-  hexrgb("#14B8A6"), -- Teal
-  hexrgb("#F97316"), -- Orange
-}
+-- Tag color palette (from centralized palette)
+M.TAG_COLORS = {}
+for i, color in ipairs(ColorDefs.PALETTE) do
+  M.TAG_COLORS[i] = hexrgb(color.hex)
+end
 
--- Default tag color
-M.DEFAULT_TAG_COLOR = hexrgb("#3B82F6")
+-- Default tag color (Blue from palette)
+M.DEFAULT_TAG_COLOR = hexrgb(ColorDefs.PALETTE[1].hex)
 
 -- ============================================================================
 -- PANEL LAYOUT

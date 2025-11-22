@@ -10,6 +10,7 @@ local Style = require('rearkitekt.gui.style.defaults')
 local InteractionBlocking = require('rearkitekt.gui.utils.interaction_blocking')
 
 local Colors = require('rearkitekt.core.colors')
+local ColorDefs = require('rearkitekt.defs.colors')
 
 local hexrgb = Colors.hexrgb
 
@@ -749,26 +750,11 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
     ImGui.OpenPopup(ctx, "##tab_context_" .. id .. "_" .. unique_id)
   end
 
-  -- Define preset colors (16 vivid rainbow spectrum colors)
-  -- Using hexrgb() for proper color conversion
-  local preset_colors = {
-    hexrgb("#FF0000"), -- H=0°     Red
-    hexrgb("#FF6000"), -- H=22.5°  Red-Orange
-    hexrgb("#FFBF00"), -- H=45°    Orange
-    hexrgb("#FFDF00"), -- H=67.5°  Yellow-Orange
-    hexrgb("#BFFF00"), -- H=90°    Yellow-Green
-    hexrgb("#60FF00"), -- H=112.5° Lime
-    hexrgb("#00FF00"), -- H=135°   Green
-    hexrgb("#00FF60"), -- H=157.5° Spring Green
-    hexrgb("#00FFBF"), -- H=180°   Turquoise
-    hexrgb("#00DFFF"), -- H=202.5° Sky Blue
-    hexrgb("#00BFFF"), -- H=225°   Azure
-    hexrgb("#0060FF"), -- H=247.5° Blue
-    hexrgb("#0000FF"), -- H=270°   Deep Blue
-    hexrgb("#6000FF"), -- H=292.5° Purple
-    hexrgb("#BF00FF"), -- H=315°   Violet
-    hexrgb("#FF00FF"), -- H=337.5° Magenta
-  }
+  -- Get preset colors from centralized palette
+  local preset_colors = {}
+  for i, color in ipairs(ColorDefs.PALETTE) do
+    preset_colors[i] = hexrgb(color.hex)
+  end
 
   if ContextMenu.begin(ctx, "##tab_context_" .. id .. "_" .. unique_id, config.context_menu) then
     if ContextMenu.item(ctx, "Duplicate Playlist", config.context_menu) then

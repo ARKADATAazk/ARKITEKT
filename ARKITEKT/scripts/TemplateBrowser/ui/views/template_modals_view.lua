@@ -8,29 +8,16 @@ local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Fields = require('rearkitekt.gui.widgets.primitives.fields')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local Colors = require('rearkitekt.core.colors')
+local ColorDefs = require('rearkitekt.defs.colors')
 local UI = require('TemplateBrowser.ui.ui_constants')
 
 local M = {}
 
--- Color preset palette for template chips
-local PRESET_COLORS = {
-  Colors.hexrgb("#FF0000"), -- Red
-  Colors.hexrgb("#FF6000"), -- Red-Orange
-  Colors.hexrgb("#FF9900"), -- Orange
-  Colors.hexrgb("#FFCC00"), -- Yellow-Orange
-  Colors.hexrgb("#FFFF00"), -- Yellow
-  Colors.hexrgb("#CCFF00"), -- Yellow-Green
-  Colors.hexrgb("#66FF00"), -- Lime
-  Colors.hexrgb("#00FF00"), -- Green
-  Colors.hexrgb("#00FF66"), -- Green-Cyan
-  Colors.hexrgb("#00FFCC"), -- Cyan-Green
-  Colors.hexrgb("#00FFFF"), -- Cyan
-  Colors.hexrgb("#00CCFF"), -- Cyan-Blue
-  Colors.hexrgb("#0066FF"), -- Blue
-  Colors.hexrgb("#0000FF"), -- Deep Blue
-  Colors.hexrgb("#6600FF"), -- Blue-Purple
-  Colors.hexrgb("#CC00FF"), -- Purple
-}
+-- Color preset palette from centralized colors
+local PRESET_COLORS = {}
+for i, color in ipairs(ColorDefs.PALETTE) do
+  PRESET_COLORS[i] = Colors.hexrgb(color.hex)
+end
 
 -- Draw template context menu (color picker)
 function M.draw_template_context_menu(ctx, state)
