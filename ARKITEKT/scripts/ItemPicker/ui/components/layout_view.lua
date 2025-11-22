@@ -694,10 +694,38 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Render region filter bar with slide animation (if region processing enabled and regions available)
   local filter_bar_height = 0
-  local filter_bar_max_height = self.config.UI_PANELS.filter.max_height
   local enable_region_processing = self.state.settings.enable_region_processing or self.state.settings.show_region_tags
   if enable_region_processing and self.state.all_regions and #self.state.all_regions > 0 then
     local filter_bar_base_y = search_y + search_height + self.config.UI_PANELS.filter.spacing_below_search
+
+    -- Calculate actual height needed based on regions (responsive)
+    local chip_cfg = self.config.REGION_TAGS.chip
+    local padding_x = 14
+    local padding_y = 4
+    local line_spacing = 4
+    local chip_height = chip_cfg.height + 2
+    local available_width = screen_w - padding_x * 2
+
+    -- Count lines needed
+    local num_lines = 1
+    local current_line_width = 0
+    for i, region in ipairs(self.state.all_regions) do
+      local text_w = ImGui.CalcTextSize(ctx, region.name)
+      local chip_w = text_w + chip_cfg.padding_x * 2
+      local needed_width = chip_w
+      if current_line_width > 0 then
+        needed_width = needed_width + chip_cfg.margin_x
+      end
+      if current_line_width + needed_width > available_width and current_line_width > 0 then
+        num_lines = num_lines + 1
+        current_line_width = chip_w
+      else
+        current_line_width = current_line_width + needed_width
+      end
+    end
+
+    -- Calculate actual max height based on content
+    local filter_bar_max_height = padding_y * 2 + num_lines * chip_height + (num_lines - 1) * line_spacing
 
     -- Calculate current panel start position
     local temp_filter_height = filter_bar_max_height * (self.state.filter_slide_progress or 0)
