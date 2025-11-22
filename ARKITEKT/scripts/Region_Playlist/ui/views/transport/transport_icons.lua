@@ -39,14 +39,34 @@ function M.draw_stop(dl, x, y, width, height, color)
   local icon_size = 10
   local cx = floor(x + width / 2 + 0.5)
   local cy = floor(y + height / 2 + 0.5)
-  
+
   local x1 = floor(cx - icon_size / 2 + 0.5)
   local y1 = floor(cy - icon_size / 2 + 0.5)
   local x2 = floor(cx + icon_size / 2 + 0.5)
   local y2 = floor(cy + icon_size / 2 + 0.5)
-  
+
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, color, 0)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, color, 0, 0, 0.5)
+end
+
+function M.draw_pause(dl, x, y, width, height, color)
+  local bar_width = 3
+  local bar_height = 10
+  local spacing = 3
+  local cx = floor(x + width / 2 + 0.5)
+  local cy = floor(y + height / 2 + 0.5)
+
+  -- Left bar
+  local x1 = floor(cx - bar_width - spacing / 2 + 0.5)
+  local y1 = floor(cy - bar_height / 2 + 0.5)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x1 + bar_width, y1 + bar_height, color, 0)
+  ImGui.DrawList_AddRect(dl, x1, y1, x1 + bar_width, y1 + bar_height, color, 0, 0, 0.5)
+
+  -- Right bar
+  local x2 = floor(cx + spacing / 2 + 0.5)
+  local y2 = floor(cy - bar_height / 2 + 0.5)
+  ImGui.DrawList_AddRectFilled(dl, x2, y2, x2 + bar_width, y2 + bar_height, color, 0)
+  ImGui.DrawList_AddRect(dl, x2, y2, x2 + bar_width, y2 + bar_height, color, 0, 0, 0.5)
 end
 
 function M.draw_loop(dl, x, y, width, height, color)

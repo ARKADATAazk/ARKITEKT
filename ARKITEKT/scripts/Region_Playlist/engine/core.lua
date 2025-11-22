@@ -103,6 +103,10 @@ function Engine:stop()
   return self.transport:stop()
 end
 
+function Engine:pause()
+  return self.transport:pause()
+end
+
 function Engine:next()
   return self.transport:next()
 end

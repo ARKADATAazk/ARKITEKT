@@ -163,6 +163,10 @@ function Transport:stop()
   self:_leave_playlist_mode_if_needed()
 end
 
+function Transport:pause()
+  reaper.OnPauseButton()
+end
+
 function Transport:next()
   if #self.state.playlist_order == 0 then return false end
   if self.state.playlist_pointer >= #self.state.playlist_order then return false end

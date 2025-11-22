@@ -281,6 +281,10 @@ function M.create(opts)
     return self.engine:stop()
   end
 
+  function bridge:pause()
+    return self.engine:pause()
+  end
+
   function bridge:next()
     return self.engine:next()
   end

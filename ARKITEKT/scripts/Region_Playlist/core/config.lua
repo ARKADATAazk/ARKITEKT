@@ -156,7 +156,8 @@ M.TRANSPORT_BUTTONS = {
   quantize = { priority = 3, width = 85 },
   playback = { priority = 4, width_dropdown = 90, width_buttons = 120 },  -- Shuffle(40) + Override(40) + Follow(40) - now using icons
   loop = { priority = 5, width = 34 },
-  stop = { priority = 6, width = 34 },
+  pause = { priority = 6, width = 34 },
+  stop = { priority = 7, width = 34 },
 }
 
 -- Responsive breakpoints for transport layout
