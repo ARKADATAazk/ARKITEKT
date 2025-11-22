@@ -78,8 +78,8 @@ if USE_OVERLAY then
   -- Push overlay onto stack using centralized defaults
   overlay_mgr:push(OverlayDefaults.create_overlay_config({
     id = "template_browser_main",
-    -- All other settings use framework defaults from constants.lua
-    -- Only override if truly app-specific
+    -- Disable right-click close to allow context menus on tiles
+    close_on_background_right_click = false,
 
     render = function(ctx, alpha_val, bounds)
       ImGuiStyle.PushMyStyle(ctx, { window_bg = false, modal_dim_bg = false })
