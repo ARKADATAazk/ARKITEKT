@@ -454,8 +454,9 @@ function PackageModal:draw_content(ctx, bounds)
   local pkg = self.package_data
   if not pkg then return true end  -- Close if no package
 
-  local content_w = bounds.w - 20
-  local start_x = 10
+  -- Use full width with minimal padding
+  local content_w = bounds.w
+  local start_x = 0
 
   -- Header
   ImGui.SetCursorPosX(ctx, start_x)
@@ -559,11 +560,11 @@ function PackageModal:draw_content(ctx, bounds)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- Asset view in scrollable child
+  -- Asset view in scrollable child - use all remaining space
   ImGui.SetCursorPosX(ctx, start_x)
-  local child_h = bounds.h - ImGui.GetCursorPosY(ctx) - 60
+  local child_h = bounds.h - ImGui.GetCursorPosY(ctx) - 40
 
-  if ImGui.BeginChild(ctx, "##asset_view", content_w, child_h) then
+  if ImGui.BeginChild(ctx, "##asset_view", 0, child_h) then
     if self.view_mode == "grid" then
       self:draw_grid_view(ctx, pkg)
     else
