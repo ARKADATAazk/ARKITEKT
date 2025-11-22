@@ -173,7 +173,7 @@ function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fa
   g = min(255, (g * brightness)//1)
   b = min(255, (b * brightness)//1)
 
-  local base_alpha = 0x40
+  local base_alpha = 0x80  -- Doubled from 0x40 for more visible progress bar
   local alpha = (base_alpha * fade_alpha)//1
   local progress_color = Colors.components_to_rgba(r, g, b, alpha)
 
