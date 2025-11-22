@@ -141,13 +141,19 @@ function TransportView:build_stop_button()
   }
 end
 
-function TransportView:build_pause_button()
+function TransportView:build_pause_button(bridge_state)
+  -- Get paused state from bridge
+  local bridge = self.state.get_bridge()
+  local is_paused = bridge and bridge.engine and bridge.engine.transport.is_paused or false
+
   return {
     type = "button",
     id = "transport_pause",
     align = "center",
     width = CoreConfig.TRANSPORT_BUTTONS.pause.width,
     config = {
+      is_toggled = is_paused,
+      preset_name = "BUTTON_TOGGLE_WHITE",
       custom_draw = function(ctx, dl, bx, by, bw, bh, is_hovered, is_active, text_color)
         TransportIcons.draw_pause(dl, bx, by, bw, bh, text_color)
       end,
@@ -572,7 +578,7 @@ function TransportView:build_header_elements(bridge_state, available_width, shel
   end
 
   if show_pause then
-    elements[#elements + 1] = self:build_pause_button()
+    elements[#elements + 1] = self:build_pause_button(bridge_state)
   end
 
   if show_loop then
