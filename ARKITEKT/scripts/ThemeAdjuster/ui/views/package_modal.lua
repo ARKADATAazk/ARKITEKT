@@ -13,9 +13,21 @@ PackageModal.__index = PackageModal
 -- Platform path separator
 local SEP = package.config:sub(1,1)
 
--- Tile constants
-local TILE_SIZE = 56
-local TILE_SPACING = 6
+-- Tile constants - wide rectangles
+local TILE_WIDTH = 130
+local TILE_HEIGHT = 32
+local TILE_SPACING = 4
+
+-- Area/category colors
+local AREA_COLORS = {
+  TCP = hexrgb("#5C7CB8"),        -- Blue
+  MCP = hexrgb("#6B9B7C"),        -- Green
+  Transport = hexrgb("#B8A55C"),  -- Yellow/Gold
+  ENVCP = hexrgb("#9B7CB8"),      -- Purple
+  Meter = hexrgb("#5C9BB8"),      -- Cyan
+  Global = hexrgb("#8B8B8B"),     -- Gray
+  Other = hexrgb("#6B6B8B"),      -- Slate
+}
 
 -- Image cache for tooltips
 local image_cache = {}
@@ -232,12 +244,12 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   -- Check DPI variants
   local has_150, has_200 = check_dpi_variants(asset_path)
 
-  -- Get package color for tile background
-  local pkg_color = parse_hex_color(pkg.meta and pkg.meta.color)
-  local base_color = pkg_color or hexrgb("#444455")
+  -- Get area color for tile background
+  local area = get_area_from_key(key)
+  local base_color = AREA_COLORS[area] or hexrgb("#444455")
 
   -- Apply opacity based on included state
-  local bg_opacity = included and 0.6 or 0.2
+  local bg_opacity = included and 0.7 or 0.25
   local r = (base_color >> 24) & 0xFF
   local g = (base_color >> 16) & 0xFF
   local b = (base_color >> 8) & 0xFF
@@ -248,14 +260,14 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
 
   -- Draw tile background
   local x1, y1 = ImGui.GetCursorScreenPos(ctx)
-  local x2, y2 = x1 + TILE_SIZE, y1 + TILE_SIZE
+  local x2, y2 = x1 + TILE_WIDTH, y1 + TILE_HEIGHT
   local dl = ImGui.GetWindowDrawList(ctx)
 
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, 3)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 3, 0, selected and 2 or 1)
 
   -- Invisible button for interaction
-  ImGui.InvisibleButton(ctx, "##tile_" .. key, TILE_SIZE, TILE_SIZE)
+  ImGui.InvisibleButton(ctx, "##tile_" .. key, TILE_WIDTH, TILE_HEIGHT)
 
   local clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
   local right_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right)
@@ -281,42 +293,43 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
     end
   end
 
-  -- Draw key name (truncated)
+  -- Draw key name (truncated) - more space for wider tiles
   local display_name = key
-  if #display_name > 8 then
-    display_name = display_name:sub(1, 6) .. ".."
+  local max_chars = 16
+  if #display_name > max_chars then
+    display_name = display_name:sub(1, max_chars - 2) .. ".."
   end
 
   local text_color = included and hexrgb("#FFFFFF") or hexrgb("#666666")
-  local text_w = ImGui.CalcTextSize(ctx, display_name)
-  local text_x = x1 + (TILE_SIZE - text_w) * 0.5
-  local text_y = y2 - 12
+  local text_w, text_h = ImGui.CalcTextSize(ctx, display_name)
+  local text_x = x1 + 6  -- Left-aligned with padding
+  local text_y = y1 + (TILE_HEIGHT - text_h) * 0.5  -- Vertically centered
 
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, display_name)
 
-  -- BADGE SYSTEM for status indicators
+  -- BADGE SYSTEM for status indicators (right side of tile)
 
-  -- Excluded badge (red X in top-left)
+  -- Excluded badge (red circle with X)
   if not included then
-    local badge_x = x1 + 3
-    local badge_y = y1 + 3
-    ImGui.DrawList_AddCircleFilled(dl, badge_x + 5, badge_y + 5, 6, hexrgb("#CC3333"))
-    ImGui.DrawList_AddText(dl, badge_x + 2, badge_y, hexrgb("#FFFFFF"), "X")
+    local badge_x = x2 - 28
+    local badge_y = y1 + TILE_HEIGHT * 0.5
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb("#CC3333"))
   end
 
-  -- Pinned badge (green dot in top-right)
+  -- Pinned badge (green dot)
   if is_pinned then
-    local badge_x = x2 - 8
-    local badge_y = y1 + 4
-    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y + 4, 5, hexrgb("#4AE290"))
+    local badge_x = x2 - 14
+    local badge_y = y1 + TILE_HEIGHT * 0.5
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y, 5, hexrgb("#4AE290"))
   end
 
-  -- DPI badge (bottom-left corner)
+  -- DPI badge (right side, smaller text)
   if has_150 or has_200 then
-    local dpi_x = x1 + 2
-    local dpi_y = y1 + 2
     local dpi_text = has_200 and "2x" or "1.5"
-    ImGui.DrawList_AddText(dl, dpi_x, dpi_y, hexrgb("#888888"), dpi_text)
+    local dpi_w = ImGui.CalcTextSize(ctx, dpi_text)
+    local dpi_x = x2 - dpi_w - 4
+    local dpi_y = y1 + 2
+    ImGui.DrawList_AddText(dl, dpi_x, dpi_y, hexrgb("#666666"), dpi_text)
   end
 
   -- Tooltip on hover
@@ -372,7 +385,7 @@ end
 -- Draw assets in grid view
 function PackageModal:draw_grid_view(ctx, pkg)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
-  local columns = math.max(1, math.floor(avail_w / (TILE_SIZE + TILE_SPACING)))
+  local columns = math.max(1, math.floor(avail_w / (TILE_WIDTH + TILE_SPACING)))
 
   if self.group_by_area then
     -- Grouped view
@@ -441,8 +454,8 @@ function PackageModal:draw_content(ctx, bounds)
   local pkg = self.package_data
   if not pkg then return true end  -- Close if no package
 
-  local content_w = bounds.w - 80
-  local start_x = 40
+  local content_w = bounds.w - 40
+  local start_x = 20
 
   -- Header
   ImGui.SetCursorPosX(ctx, start_x)
