@@ -519,7 +519,7 @@ function M.create(ctx, config, state, visualization, animator)
       for _, item_data in ipairs(items) do
         if item_data.key == key then
           -- Toggle preview: stop if this exact item is playing, otherwise start/switch
-          if state.previewing and state.preview_item == item_data.item then
+          if state.is_previewing(item_data.item) then
             state.stop_preview()
           else
             state.start_preview(item_data.item)
