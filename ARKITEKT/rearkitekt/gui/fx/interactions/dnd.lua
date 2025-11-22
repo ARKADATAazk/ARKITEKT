@@ -10,6 +10,9 @@ local Colors = require('rearkitekt.core.colors')
 local ColorDefs = require('rearkitekt.defs.colors')
 local hexrgb = Colors.hexrgb
 
+-- Cache math functions for performance
+local sin, min, max = math.sin, math.min, math.max
+
 local M = {}
 
 -- Get operation colors from centralized definitions
@@ -118,8 +121,8 @@ local DragIndicator = {}
 
 local function apply_alpha_factor(color, factor)
   local current_alpha = color & 0xFF
-  local new_alpha = math.floor(current_alpha * factor)
-  return Colors.with_alpha(color, math.min(255, math.max(0, new_alpha)))
+  local new_alpha = (current_alpha * factor)//1
+  return Colors.with_alpha(color, min(255, max(0, new_alpha)))
 end
 
 local function draw_shadow(dl, x1, y1, x2, y2, rounding, config)
@@ -137,7 +140,7 @@ local function draw_shadow(dl, x1, y1, x2, y2, rounding, config)
     local t = i / layers
     local o = offset * t
     local spread = blur_spread * t
-    local alpha = math.floor(base_alpha * (1 - t * 0.5))
+    local alpha = (base_alpha * (1 - t * 0.5))//1
     local color = (base_color & 0xFFFFFF00) | alpha
 
     ImGui.DrawList_AddRectFilled(dl,
@@ -212,8 +215,8 @@ function DragIndicator.draw_badge(ctx, dl, mx, my, count, config, is_copy_mode, 
   local offset_x = cfg.offset_x or M.BADGE_DEFAULTS.offset_x
   local offset_y = cfg.offset_y or M.BADGE_DEFAULTS.offset_y
 
-  local badge_w = math.max(min_w, tw + pad_x * 2)
-  local badge_h = math.max(min_h, th + pad_y * 2)
+  local badge_w = max(min_w, tw + pad_x * 2)
+  local badge_h = max(min_h, th + pad_y * 2)
 
   local bx = mx + offset_x
   local by = my + offset_y
@@ -269,7 +272,7 @@ function DragIndicator.draw(ctx, dl, mx, my, count, config, colors, is_copy_mode
   local scale_factor = stack_cfg.scale_factor or M.STACK_DEFAULTS.scale_factor
   local opacity_falloff = stack_cfg.opacity_falloff or M.STACK_DEFAULTS.opacity_falloff
 
-  local visible_count = math.min(count, max_visible)
+  local visible_count = min(count, max_visible)
 
   if count == 1 then
     local x = mx - base_w / 2
@@ -299,7 +302,7 @@ function DragIndicator.draw(ctx, dl, mx, my, count, config, colors, is_copy_mode
         draw_shadow(dl, x, y, x + w, y + h, rounding * scale, shadow_cfg)
       end
 
-      local color_index = math.min(i, colors and #colors or 0)
+      local color_index = min(i, colors and #colors or 0)
       local item_fill = (colors and colors[color_index]) or base_fill
       local item_stroke = base_stroke
 
@@ -351,8 +354,8 @@ function DropIndicator.draw_vertical(ctx, dl, x, y1, y2, config, is_copy_mode)
 
   local pulse_speed = cfg.pulse_speed or M.DROP_DEFAULTS.pulse_speed
 
-  local pulse = (math.sin(reaper.time_precise() * pulse_speed) * 0.3 + 0.7)
-  local pulsed_alpha = math.floor(pulse * 255)
+  local pulse = (sin(reaper.time_precise() * pulse_speed) * 0.3 + 0.7)
+  local pulsed_alpha = (pulse * 255)//1
   local pulsed_line = (line_color & 0xFFFFFF00) | pulsed_alpha
 
   ImGui.DrawList_AddRectFilled(dl, x - glow_width/2, y1, x + glow_width/2, y2, glow_color, glow_width/2)
@@ -397,8 +400,8 @@ function DropIndicator.draw_horizontal(ctx, dl, x1, x2, y, config, is_copy_mode)
 
   local pulse_speed = cfg.pulse_speed or M.DROP_DEFAULTS.pulse_speed
 
-  local pulse = (math.sin(reaper.time_precise() * pulse_speed) * 0.3 + 0.7)
-  local pulsed_alpha = math.floor(pulse * 255)
+  local pulse = (sin(reaper.time_precise() * pulse_speed) * 0.3 + 0.7)
+  local pulsed_alpha = (pulse * 255)//1
   local pulsed_line = (line_color & 0xFFFFFF00) | pulsed_alpha
 
   ImGui.DrawList_AddRectFilled(dl, x1, y - glow_width/2, x2, y + glow_width/2, glow_color, glow_width/2)
