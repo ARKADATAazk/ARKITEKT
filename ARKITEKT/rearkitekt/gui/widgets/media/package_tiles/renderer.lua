@@ -69,7 +69,7 @@ M.CONFIG = {
   tile = {
     rounding = 6,
     hover_shadow = { enabled = true, max_offset = 2, max_alpha = 20 },
-    max_height = 200,
+    max_height = 220,
   },
   
   colors = {
@@ -337,10 +337,12 @@ function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w, tile_h)
   local footer_y = tile_y + tile_h - M.CONFIG.footer.height
   local y = footer_y - chip_h - M.CONFIG.tags.bottom_offset
 
-  -- Calculate horizontal position (left-aligned with margin)
+  -- Calculate horizontal position (centered)
   local available_start = tile_x + M.CONFIG.tags.margin_x
   local available_end = tile_x + tile_w - M.CONFIG.tags.margin_x
-  local x = available_start
+  local available_width = available_end - available_start
+  local x = available_start + math.floor((available_width - total_width) / 2)
+  x = math.max(x, available_start)  -- Don't go past margin
 
   for _, chip in ipairs(chips) do
     -- Get tag color
