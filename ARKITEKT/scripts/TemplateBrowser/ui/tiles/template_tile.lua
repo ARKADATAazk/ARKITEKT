@@ -292,13 +292,11 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Render the star character directly (no badge)
   local star_char = "★"
 
-  -- Scale font for bigger star
-  ImGui.SetWindowFontScale(ctx, 1.8)
+  -- Calculate centered position within the hit area
   local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)
   local star_text_x = star_x + (star_size - text_w) * 0.5
   local star_text_y = star_y + (star_size - text_h) * 0.5
   Draw.text(dl, star_text_x, star_text_y, star_color, star_char)
-  ImGui.SetWindowFontScale(ctx, 1.0)
 
   -- Handle star click to toggle favorite
   if is_star_hovered and ImGui.IsMouseClicked(ctx, 0) then
