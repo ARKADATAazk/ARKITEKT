@@ -106,7 +106,7 @@ M.TRANSPORT_LAYOUT = {
 -- Button layout priorities (lower = more important)
 M.TRANSPORT_BUTTONS = {
   play = { priority = 1, width = 34 },
-  jump = { priority = 2, width = 34 },
+  jump = { priority = 2, width = 46 },
   quantize = { priority = 3, width = 71 },  -- Reduced from 85
   playback = { priority = 4, width_dropdown = 90, width_buttons = 120 },
   loop = { priority = 5, width = 34 },
