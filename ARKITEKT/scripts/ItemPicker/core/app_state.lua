@@ -507,9 +507,6 @@ function M.start_preview(item)
   reaper.SelectAllMediaItems(0, false)  -- Deselect all
   reaper.SetMediaItemSelected(item, true)
 
-  -- Get currently selected track (if any)
-  local selected_track = reaper.GetSelectedTrack(0, 0)
-
   -- Check if it's MIDI
   local take = reaper.GetActiveTake(item)
   if take and reaper.TakeIsMIDI(take) then
@@ -528,9 +525,9 @@ function M.start_preview(item)
       M.preview_duration = item_len
     end
   else
-    -- Audio: Use SWS commands
-    if selected_track then
-      -- Preview through selected track with FX
+    -- Audio: Check play_item_through_track setting (matching OG behavior)
+    if M.settings.play_item_through_track then
+      -- Preview through track with FX
       local cmd_id = reaper.NamedCommandLookup("_SWS_PREVIEWTRACK")
       if cmd_id and cmd_id ~= 0 then
         reaper.Main_OnCommand(cmd_id, 0)
