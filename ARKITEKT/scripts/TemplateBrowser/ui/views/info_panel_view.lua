@@ -10,7 +10,6 @@ local Button = require('rearkitekt.gui.widgets.primitives.button')
 local MarkdownField = require('rearkitekt.gui.widgets.primitives.markdown_field')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local Tooltips = require('TemplateBrowser.core.tooltips')
-local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.ui_constants')
 
 local M = {}
@@ -23,21 +22,15 @@ local function draw_section_header(ctx, title)
 end
 
 -- Draw info & tag assignment panel (right)
-local function draw_info_panel(ctx, state, config, width, height)
-  -- Outer border container (non-scrollable)
-  if not Helpers.begin_child_compat(ctx, "InfoPanel", width, height, true) then
-    return
-  end
+local function draw_info_panel(ctx, gui, width, height)
+  local state = gui.state
 
-  -- Header (stays at top)
-  Helpers.section_separator_text(ctx, "Info & Tags", config)
+  -- Set container dimensions
+  gui.info_container.width = width
+  gui.info_container.height = height
 
-  ImGui.Spacing(ctx)
-
-  -- Scrollable content region
-  local content_height = height - UI.HEADER.SEPARATOR_TEXT
-
-  if Helpers.begin_child_compat(ctx, "InfoPanelContent", 0, content_height, false) then
+  -- Begin panel drawing (includes background, border, header)
+  if gui.info_container:begin_draw(ctx) then
     if state.selected_template then
       local tmpl = state.selected_template
       local tmpl_metadata = state.metadata and state.metadata.templates[tmpl.uuid]
@@ -65,7 +58,7 @@ local function draw_info_panel(ctx, state, config, width, height)
         width = -1,
         height = UI.FIELD.NOTES_HEIGHT,
         text = notes,
-        placeholder = "Double-click to add notes...\n\nSupports Markdown:\n• **bold** and *italic*\n• # Headers\n• - Lists\n• [links](url)\n\nShift+Enter for line breaks\nEnter to save, Esc to cancel",
+        placeholder = "Double-click to add notes...\n\nSupports Markdown:\n**bold** and *italic*\n# Headers\n- Lists\n[links](url)\n\nShift+Enter for line breaks\nEnter to save, Esc to cancel",
       }, notes_field_id)
       Tooltips.show(ctx, ImGui, "notes_field")
 
@@ -176,10 +169,8 @@ local function draw_info_panel(ctx, state, config, width, height)
       ImGui.TextDisabled(ctx, "Select a template to view details")
     end
 
-    ImGui.EndChild(ctx)  -- End InfoPanelContent
+    gui.info_container:end_draw(ctx)
   end
-
-  ImGui.EndChild(ctx)  -- End InfoPanel
 end
 
 -- Export the main draw function

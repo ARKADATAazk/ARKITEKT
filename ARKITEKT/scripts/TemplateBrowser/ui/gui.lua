@@ -15,6 +15,7 @@ local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_c
 local RecentPanelConfig = require('TemplateBrowser.ui.recent_panel_config')
 local LeftPanelConfig = require('TemplateBrowser.ui.left_panel_config')
 local ConveniencePanelConfig = require('TemplateBrowser.ui.convenience_panel_config')
+local InfoPanelConfig = require('TemplateBrowser.ui.info_panel_config')
 local MarkdownField = require('rearkitekt.gui.widgets.primitives.markdown_field')
 local Shortcuts = require('TemplateBrowser.core.shortcuts')
 
@@ -48,6 +49,7 @@ function M.new(config, state, scanner)
     recent_container = nil,  -- Initialized in initialize_once
     left_panel_container = nil,  -- Initialized in initialize_once
     convenience_panel_container = nil,  -- Initialized in initialize_once
+    info_container = nil,  -- Initialized in initialize_once
   }, GUI)
 
   return self
@@ -454,6 +456,14 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     config = convenience_panel_config,
   })
 
+  -- Create info panel container (template details & tags)
+  local info_panel_config = InfoPanelConfig.create({}, self.is_overlay_mode)
+
+  self.info_container = TilesContainer.new({
+    id = "info_panel_container",
+    config = info_panel_config,
+  })
+
   self.initialized = true
 end
 
@@ -691,7 +701,7 @@ function GUI:draw(ctx, shell_state)
 
   -- Right panel: Info & Tag Assignment
   ImGui.SetCursorPos(ctx, sep2_x_local + separator_thickness / 2, cursor_y)
-  InfoPanelView.draw_info_panel(ctx, self.state, self.config, info_width, panel_height)
+  InfoPanelView.draw_info_panel(ctx, self, info_width, panel_height)
 
   -- Template context menu and rename modal (must be drawn outside panels)
   TemplateModalsView.draw_template_context_menu(ctx, self.state)
