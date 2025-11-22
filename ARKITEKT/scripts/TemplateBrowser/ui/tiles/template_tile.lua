@@ -231,20 +231,10 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local truncated_name = truncate_text(ctx, template.name, content_w)
   Draw.text(dl, content_x, content_y, name_color, truncated_name)
 
-  -- Template path (if height allows)
-  if tile_h >= M.CONFIG.hide_path_below and template.relative_path ~= "" then
-    local path_y = content_y + 18
-    local path_alpha = math.floor(text_alpha * 0.6)
-    local path_color = Colors.with_alpha(hexrgb("#A0A0A0"), path_alpha)
-    local path_text = "[" .. template.folder .. "]"
-    local truncated_path = truncate_text(ctx, path_text, content_w)
-    Draw.text(dl, content_x, path_y, path_color, truncated_path)
-  end
-
-  -- Show first VST chip (if height allows and VSTs exist)
+  -- Show first VST chip below title (where path used to be)
   local first_vst = get_display_vst(template.fx)
   if tile_h >= M.CONFIG.hide_chips_below and first_vst then
-    local chip_y = tile_h >= M.CONFIG.compact_mode_below and (content_y + 40) or (content_y + 24)
+    local chip_y = content_y + 18
     local chip_x = content_x
 
     -- Strip parenthetical content for display (e.g., "Kontakt (Native Instruments)" -> "Kontakt")
@@ -277,6 +267,19 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local text_y = chip_y + math.floor((chip_h - actual_text_height) * 0.5)
     local text_color = hexrgb("#FFFFFF")
     Draw.text(dl, text_x, text_y, text_color, display_vst)
+  end
+
+  -- Template path at bottom right (if height allows)
+  if tile_h >= M.CONFIG.hide_path_below and template.relative_path ~= "" then
+    local path_alpha = math.floor(text_alpha * 0.6)
+    local path_color = Colors.with_alpha(hexrgb("#A0A0A0"), path_alpha)
+    local path_text = "[" .. template.folder .. "]"
+    local path_width = ImGui.CalcTextSize(ctx, path_text)
+    local truncated_path = truncate_text(ctx, path_text, content_w - 30)  -- Leave room for star
+    local actual_path_width = ImGui.CalcTextSize(ctx, truncated_path)
+    local path_x = x2 - padding - actual_path_width
+    local path_y = y2 - padding - 14  -- 14 is approx text height
+    Draw.text(dl, path_x, path_y, path_color, truncated_path)
   end
 
   -- Render favorite star in top-right corner using remix icon font
