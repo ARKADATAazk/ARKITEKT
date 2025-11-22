@@ -514,17 +514,18 @@ function M.create(ctx, config, state, visualization, animator)
       -- Preview selected items (use first selected)
       if not selected_uuids or #selected_uuids == 0 then return end
 
+      -- If anything is currently previewing, stop it (pressing SPACE again stops playback)
+      if state.previewing then
+        state.stop_preview()
+        return
+      end
+
       local uuid = selected_uuids[1]
       local items = get_items()
 
       for _, item_data in ipairs(items) do
         if item_data.uuid == uuid then
-          -- Toggle preview
-          if state.is_previewing(item_data.item) then
-            state.stop_preview()
-          else
-            state.start_preview(item_data.item)
-          end
+          state.start_preview(item_data.item)
           return
         end
       end
