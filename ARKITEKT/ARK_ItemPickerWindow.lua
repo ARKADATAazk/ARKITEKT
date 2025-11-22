@@ -1,6 +1,6 @@
 -- @noindex
 -- @description ARK Item Picker Window
--- ItemPicker as a persistent window (doesn't close on drag-drop)
+-- ItemPicker as a persistent window with TilesContainer panels (like RegionPlaylist)
 
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
@@ -40,19 +40,19 @@ end
 -- Load required modules
 local ImGui = ARK.ImGui
 local Shell = require('rearkitekt.app.runtime.shell')
-local Fonts = require('rearkitekt.app.assets.fonts')
 
--- Load new refactored modules
+-- Load ItemPicker core modules (reuse data layer)
 local Config = require('ItemPicker.core.config')
 local State = require('ItemPicker.core.app_state')
 local Controller = require('ItemPicker.core.controller')
-local GUI = require('ItemPicker.ui.main_window')
+
+-- Load window-specific GUI module
+local GUI = require('ItemPickerWindow.ui.gui')
 
 -- Data and service modules
 local visualization = require('ItemPicker.services.visualization')
 local reaper_interface = require('ItemPicker.data.reaper_api')
 local utils = require('ItemPicker.services.utils')
-local drag_handler = require('ItemPicker.ui.components.drag_handler')
 
 local function SetButtonState(set)
   local is_new_value, filename, sec, cmd, mode, resolution, val = reaper.get_action_context()
@@ -63,9 +63,6 @@ end
 -- Initialize state
 State.initialize(Config)
 
--- Enable persistent mode (window doesn't close on drop)
-State.persistent_mode = true
-
 -- Initialize domain modules
 reaper_interface.init(utils)
 visualization.init(utils, SCRIPT_DIRECTORY, Config)
@@ -73,8 +70,8 @@ visualization.init(utils, SCRIPT_DIRECTORY, Config)
 -- Initialize controller
 Controller.init(reaper_interface, utils)
 
--- Create GUI
-local gui = GUI.new(Config, State, Controller, visualization, drag_handler)
+-- Create window GUI
+local gui = GUI.create(Config, State, Controller, visualization)
 
 -- ============================================================================
 -- PROFILER INSTRUMENTATION (After modules loaded)
@@ -92,7 +89,7 @@ end
 
 SetButtonState(1)
 
--- Run in window mode using Shell
+-- Run in window mode using Shell (like RegionPlaylist)
 Shell.run({
   title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
   version = "1.0.0",
