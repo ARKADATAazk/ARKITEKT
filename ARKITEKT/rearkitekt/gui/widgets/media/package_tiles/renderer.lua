@@ -94,7 +94,7 @@ M.CONFIG = {
   footer = { height = 32, padding_x = 10 },
 
   tags = {
-    y_offset = 8,            -- Same row as badge
+    y_offset = 10,           -- Aligned with badge/checkbox
     height = 12,             -- Small height
     width = 28,              -- Fixed width for rectangle chips
     padding_x = 2,           -- Horizontal padding inside chip
@@ -125,7 +125,7 @@ M.CONFIG = {
       MIDI = hexrgb("#4AD9D9"),     -- Cyan
       GLB = hexrgb("#808080"),      -- Gray
     },
-    text_color = hexrgb("#FFFFFF"),
+    text_color = hexrgb("#000000"),  -- Black text
   },
   
   mosaic = {
@@ -311,23 +311,27 @@ function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w)
 
   if #display_tags == 0 then return end
 
-  -- Calculate positions - same row as badge, after it
-  local y = tile_y + M.CONFIG.tags.y_offset
-  local x = tile_x + M.CONFIG.tags.margin_x
+  -- Calculate total width of all tags
+  local chip_w = M.CONFIG.tags.width
+  local chip_h = M.CONFIG.tags.height
+  local total_width = (#display_tags * chip_w) + ((#display_tags - 1) * M.CONFIG.tags.gap)
 
-  -- Calculate available width (leave room for checkbox)
-  local max_x = tile_x + tile_w - 30  -- Leave room for checkbox
+  -- Calculate centered position
+  local y = tile_y + M.CONFIG.tags.y_offset
+  local available_start = tile_x + M.CONFIG.tags.margin_x
+  local available_end = tile_x + tile_w - 30  -- Leave room for checkbox
+  local available_width = available_end - available_start
+
+  -- Center the tags in available space
+  local x = available_start + math.floor((available_width - total_width) / 2)
+  x = math.max(x, available_start)  -- Don't go past badge
 
   for _, tag in ipairs(display_tags) do
     -- Get tag color
     local bg_color = M.CONFIG.tags.colors[tag] or M.CONFIG.tags.colors.GLB
 
-    -- Fixed width rectangle
-    local chip_w = M.CONFIG.tags.width
-    local chip_h = M.CONFIG.tags.height
-
     -- Check if chip fits
-    if x + chip_w > max_x then
+    if x + chip_w > available_end then
       break
     end
 
