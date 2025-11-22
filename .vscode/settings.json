@@ -62,7 +62,7 @@
         },
         {
             "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\Region_Playlist\\",
-            "color": "foldercolorizer.color_ffcc00"
+            "color": "foldercolorizer.color_ff00cc"
         },
         {
             "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\ColorPalette\\",
@@ -78,7 +78,7 @@
         },
         {
             "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\ItemPicker\\",
-            "color": "foldercolorizer.color_00cc00"
+            "color": "foldercolorizer.color_cc3300"
         },
         {
             "folderPath": "ARKITEKT-Project\\ARKITEKT\\rearkitekt\\app\\",
@@ -94,7 +94,11 @@
         },
         {
             "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\TemplateBrowser\\",
-            "color": "foldercolorizer.color_3333ff"
+            "color": "foldercolorizer.color_3366cc"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\ThemeAdjuster\\",
+            "color": "foldercolorizer.color_ff9933"
         }
     ],
     "python-envs.defaultEnvManager": "ms-python.python:conda",
