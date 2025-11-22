@@ -45,6 +45,7 @@ function M.new(config, state, scanner)
     template_animator = TileAnim.new(16.0),  -- Animation speed
     template_grid = nil,  -- Initialized in initialize_once
     quick_access_grid = nil,  -- Initialized in initialize_once
+    fonts = nil,  -- Set from shell_state in draw()
     template_container = nil,  -- Initialized in initialize_once
     recent_container = nil,  -- Initialized in initialize_once
     left_panel_container = nil,  -- Initialized in initialize_once
@@ -157,7 +158,8 @@ function GUI:initialize_once(ctx, is_overlay_mode)
           Scanner.filter_templates(self.state)
         end
       end
-    end
+    end,
+    self  -- Pass GUI reference for fonts access
   )
 
   -- Get quick access templates helper
@@ -312,7 +314,8 @@ function GUI:initialize_once(ctx, is_overlay_mode)
           Scanner.filter_templates(self.state)
         end
       end
-    end
+    end,
+    self  -- Pass GUI reference for fonts access
   )
 
   -- Create template container with header controls
@@ -470,6 +473,9 @@ end
 function GUI:draw(ctx, shell_state)
   local is_overlay_mode = shell_state.is_overlay_mode == true
   self:initialize_once(ctx, is_overlay_mode)
+
+  -- Store fonts reference for grid tiles
+  self.fonts = shell_state.fonts
 
   -- Process background FX parsing queue (5 templates per frame)
   FXQueue.process_batch(self.state, 5)
