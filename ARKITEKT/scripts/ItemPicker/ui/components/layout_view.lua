@@ -159,7 +159,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Draw overlay background with dotted pattern (layer behind everything)
   local overlay_bg_color = Colors.hexrgb("#181818")
-  overlay_bg_color = Colors.with_alpha(overlay_bg_color, math.floor(overlay_alpha * 200))
+  overlay_bg_color = Colors.with_alpha(overlay_bg_color, math.floor(overlay_alpha * 242))  -- 95% opacity
   ImGui.DrawList_AddRectFilled(draw_list, coord_offset_x, coord_offset_y,
       coord_offset_x + screen_w, coord_offset_y + screen_h, overlay_bg_color, 0)
 
@@ -592,11 +592,10 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Draw layout icon using rectangles (no text, pure shapes)
   -- We'll draw it directly on the button using a custom render function
   local icon_color = Colors.hexrgb("#AAAAAA")
-  local border_color = Colors.hexrgb("#CCCCCC")  -- Lighter border for panels
   local draw_layout_icon = function(btn_draw_list, icon_x, icon_y)
     local icon_size = 14
     local gap = 2
-    local top_bar_h = 1  -- Top bar representing search/settings
+    local top_bar_h = 2  -- Top bar representing search/settings
     local top_padding = 2  -- Padding between top bar and panels
 
     -- Draw top bar (represents search bar/top panel)
@@ -609,15 +608,15 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     if is_vertical then
       -- Vertical mode: 2 rectangles stacked (top and bottom)
       local rect_h = (panels_height - gap) / 2
-      -- Draw borders (lighter color)
-      ImGui.DrawList_AddRect(btn_draw_list, icon_x, panels_start_y, icon_x + icon_size, panels_start_y + rect_h, border_color, 0, 0, 1)
-      ImGui.DrawList_AddRect(btn_draw_list, icon_x, panels_start_y + rect_h + gap, icon_x + icon_size, icon_y + icon_size, border_color, 0, 0, 1)
+      -- Draw filled rectangles
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, panels_start_y, icon_x + icon_size, panels_start_y + rect_h, icon_color, 0)
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, panels_start_y + rect_h + gap, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
     else
       -- Horizontal mode: 2 rectangles side by side (left and right)
       local rect_w = (icon_size - gap) / 2
-      -- Draw borders (lighter color)
-      ImGui.DrawList_AddRect(btn_draw_list, icon_x, panels_start_y, icon_x + rect_w, icon_y + icon_size, border_color, 0, 0, 1)
-      ImGui.DrawList_AddRect(btn_draw_list, icon_x + rect_w + gap, panels_start_y, icon_x + icon_size, icon_y + icon_size, border_color, 0, 0, 1)
+      -- Draw filled rectangles
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, panels_start_y, icon_x + rect_w, icon_y + icon_size, icon_color, 0)
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x + rect_w + gap, panels_start_y, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
     end
   end
 
