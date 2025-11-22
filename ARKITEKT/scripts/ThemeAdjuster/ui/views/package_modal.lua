@@ -20,21 +20,50 @@ local TILE_WIDTH = 130
 local TILE_HEIGHT = 32
 local TILE_SPACING = 4
 
--- Area/category colors
+-- ============================================================================
+-- THEME CATEGORY COLORS PALETTE
+-- Desaturated colors for theming categories (used for tiles and action chips)
+-- ============================================================================
+local THEME_CATEGORY_COLORS = {
+  -- Track/Channel panels
+  tcp_blue = hexrgb("#5C7CB8"),        -- TCP (Track Control Panel)
+  mcp_green = hexrgb("#6B9B7C"),       -- MCP (Mixer Control Panel)
+  envcp_purple = hexrgb("#9B7CB8"),    -- ENVCP (Envelope Control Panel)
+
+  -- Media items
+  items_pink = hexrgb("#B85C8B"),      -- Items/Media items
+  midi_teal = hexrgb("#5C9B9B"),       -- MIDI editor
+
+  -- Transport/Toolbar
+  transport_gold = hexrgb("#B8A55C"),  -- Transport bar
+  toolbar_gold = hexrgb("#B89B5C"),    -- Toolbar
+
+  -- Utility
+  meter_cyan = hexrgb("#5C9BB8"),      -- Meters
+  docker_brown = hexrgb("#9B8B6B"),    -- Docker
+  fx_orange = hexrgb("#B87C5C"),       -- FX/VST
+  menu_blue = hexrgb("#7C8BB8"),       -- Menus
+
+  -- General
+  global_gray = hexrgb("#8B8B8B"),     -- Global/Generic
+  other_slate = hexrgb("#6B6B8B"),     -- Other/Unknown
+}
+
+-- Map area names to palette colors
 local AREA_COLORS = {
-  TCP = hexrgb("#5C7CB8"),        -- Blue
-  MCP = hexrgb("#6B9B7C"),        -- Green
-  Transport = hexrgb("#B8A55C"),  -- Yellow/Gold
-  Toolbar = hexrgb("#B8A55C"),    -- Yellow/Gold (same as Transport)
-  ENVCP = hexrgb("#9B7CB8"),      -- Purple
-  Meter = hexrgb("#5C9BB8"),      -- Cyan
-  Global = hexrgb("#8B8B8B"),     -- Gray
-  Items = hexrgb("#B85C8B"),      -- Pink
-  MIDI = hexrgb("#5CB8A5"),       -- Teal
-  Docker = hexrgb("#8B6B5C"),     -- Brown
-  FX = hexrgb("#B87C5C"),         -- Orange
-  Menu = hexrgb("#7C8BB8"),       -- Periwinkle
-  Other = hexrgb("#6B6B8B"),      -- Slate
+  TCP = THEME_CATEGORY_COLORS.tcp_blue,
+  MCP = THEME_CATEGORY_COLORS.mcp_green,
+  Transport = THEME_CATEGORY_COLORS.transport_gold,
+  Toolbar = THEME_CATEGORY_COLORS.toolbar_gold,
+  ENVCP = THEME_CATEGORY_COLORS.envcp_purple,
+  Meter = THEME_CATEGORY_COLORS.meter_cyan,
+  Global = THEME_CATEGORY_COLORS.global_gray,
+  Items = THEME_CATEGORY_COLORS.items_pink,
+  MIDI = THEME_CATEGORY_COLORS.midi_teal,
+  Docker = THEME_CATEGORY_COLORS.docker_brown,
+  FX = THEME_CATEGORY_COLORS.fx_orange,
+  Menu = THEME_CATEGORY_COLORS.menu_blue,
+  Other = THEME_CATEGORY_COLORS.other_slate,
 }
 
 -- Image cache for tooltips
