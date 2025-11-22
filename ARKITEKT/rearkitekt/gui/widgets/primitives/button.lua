@@ -290,8 +290,8 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
     config.on_right_click()
   end
   
-  -- Handle tooltip (suppress when any popup/modal is open)
-  if is_hovered and config.tooltip and not ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId) then
+  -- Handle tooltip (use IsItemHovered which respects popup layering)
+  if ImGui.IsItemHovered(ctx) and config.tooltip then
     ImGui.SetTooltip(ctx, config.tooltip)
   end
   
