@@ -61,6 +61,9 @@ function GUI:initialize_once(ctx)
   self.coordinator = Coordinator.new(ctx, self.config, self.state, self.visualization)
   self.layout_view = LayoutView.new(self.config, self.state, self.coordinator)
 
+  -- Store coordinator reference in state for drag cleanup access
+  self.state.coordinator = self.coordinator
+
   self.initialized = true
 end
 

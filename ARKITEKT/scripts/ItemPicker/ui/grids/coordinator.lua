@@ -155,4 +155,14 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
   end
 end
 
+-- Clear internal drag state from both grids (called after external drop completes)
+function Coordinator:clear_grid_drag_states()
+  if self.audio_grid and self.audio_grid.drag then
+    self.audio_grid.drag:release()
+  end
+  if self.midi_grid and self.midi_grid.drag then
+    self.midi_grid.drag:release()
+  end
+end
+
 return M

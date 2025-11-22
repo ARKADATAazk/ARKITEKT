@@ -455,6 +455,11 @@ function M.end_drag()
   M.captured_shift = nil
   M.captured_ctrl = nil
   -- Don't clear should_close_after_drop here - it needs to persist to next frame
+
+  -- Clear grid internal drag states to prevent visual artifacts when returning to picker
+  if M.coordinator and M.coordinator.clear_grid_drag_states then
+    M.coordinator:clear_grid_drag_states()
+  end
 end
 
 function M.request_exit()
