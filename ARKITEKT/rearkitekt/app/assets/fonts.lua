@@ -16,13 +16,25 @@ local function file_exists(path)
   return false
 end
 
--- Find fonts directory relative to any entry point
+-- Find fonts directory relative to fonts.lua location
 local function find_fonts_dir()
   local sep = package.config:sub(1,1)
-  local src = debug.getinfo(2, 'S').source:sub(2)
+  -- Get the path to this file (fonts.lua)
+  local src = debug.getinfo(1, 'S').source:sub(2)
   local this_dir = src:match('(.*'..sep..')') or ('.'..sep)
-  local parent = this_dir:match('^(.*'..sep..')[^'..sep..']*'..sep..'$') or this_dir
-  return parent .. 'rearkitekt' .. sep .. 'fonts' .. sep
+  -- Go up from app/assets/ to app/
+  local app_dir = this_dir:match('^(.*'..sep..')[^'..sep..']*'..sep..'$') or this_dir
+  -- Go up from app/ to rearkitekt/
+  local rearkitekt_dir = app_dir:match('^(.*'..sep..')[^'..sep..']*'..sep..'$') or app_dir
+  -- Now add fonts/
+  local fonts_dir = rearkitekt_dir .. 'fonts' .. sep
+
+  reaper.ShowConsoleMsg("FONTS.LUA DEBUG: src = " .. tostring(src) .. "\n")
+  reaper.ShowConsoleMsg("FONTS.LUA DEBUG: this_dir = " .. tostring(this_dir) .. "\n")
+  reaper.ShowConsoleMsg("FONTS.LUA DEBUG: app_dir = " .. tostring(app_dir) .. "\n")
+  reaper.ShowConsoleMsg("FONTS.LUA DEBUG: rearkitekt_dir = " .. tostring(rearkitekt_dir) .. "\n")
+  reaper.ShowConsoleMsg("FONTS.LUA DEBUG: fonts_dir = " .. tostring(fonts_dir) .. "\n")
+  return fonts_dir
 end
 
 ---Load standard ARKITEKT fonts and attach to ImGui context
