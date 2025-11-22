@@ -181,26 +181,29 @@ function M.draw(ctx, opts)
       local y1 = y - half_size
       local x2 = x + half_size
       local y2 = y + half_size
-      
+
       if shadow then
         local shadow_alpha_final = math.floor(shadow_alpha * alpha_factor)
-        Draw.rect_filled(dl, 
-          x1 + shadow_offset_x - shadow_blur, 
-          y1 + shadow_offset_y - shadow_blur, 
-          x2 + shadow_offset_x + shadow_blur, 
-          y2 + shadow_offset_y + shadow_blur, 
-          Colors.with_alpha(hexrgb("#000000"), shadow_alpha_final), 
+        Draw.rect_filled(dl,
+          x1 + shadow_offset_x - shadow_blur,
+          y1 + shadow_offset_y - shadow_blur,
+          x2 + shadow_offset_x + shadow_blur,
+          y2 + shadow_offset_y + shadow_blur,
+          Colors.with_alpha(hexrgb("#000000"), shadow_alpha_final),
           rounding)
       end
-      
+
       if show_glow then
         _render_square_glow(dl, x, y, size, draw_color, rounding, glow_layers)
       end
-      
-      Draw.rect_filled(dl, x1, y1, x2, y2, draw_color, rounding)
-      
+
+      -- Draw border as outer fill, then inner fill (avoids corner stacking)
       if border then
-        Draw.rect(dl, x1, y1, x2, y2, border_color, rounding, border_thickness)
+        Draw.rect_filled(dl, x1, y1, x2, y2, border_color, rounding)
+        local inset = border_thickness
+        Draw.rect_filled(dl, x1 + inset, y1 + inset, x2 - inset, y2 - inset, draw_color, rounding > 0 and rounding - inset or 0)
+      else
+        Draw.rect_filled(dl, x1, y1, x2, y2, draw_color, rounding)
       end
     end
     
