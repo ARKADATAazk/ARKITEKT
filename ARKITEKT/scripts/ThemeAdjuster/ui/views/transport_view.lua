@@ -122,7 +122,8 @@ function TransportView:draw(ctx, shell_state)
         preset_name = "BUTTON_TOGGLE_WHITE",
         on_click = function()
           self.active_layout = layout
-          -- TODO: Apply layout
+          ThemeParams.set_active_layout('trans', layout)
+          self:load_from_theme()
         end
       }, "trans_layout_" .. layout) then
       end

@@ -13,6 +13,51 @@ local ImageCache = require('rearkitekt.gui.images')
 local M = {}
 local hexrgb = Colors.hexrgb
 
+-- Lazy-load metadata module (only when needed)
+local Metadata = nil
+local metadata_debug_done = false
+local function get_metadata()
+  if not Metadata then
+    -- Get script directory from debug info
+    local info = debug.getinfo(1, "S")
+    local script_dir = info.source:match("@(.+[\\/])") or ""
+
+    -- Navigate from rearkitekt/gui/widgets/media/package_tiles/ to scripts/ThemeAdjuster/packages/
+    -- Go up 5 levels (package_tiles -> media -> widgets -> gui -> rearkitekt) then into scripts/ThemeAdjuster/packages
+    local metadata_path = script_dir .. "../../../../../scripts/ThemeAdjuster/packages/metadata.lua"
+
+    if not metadata_debug_done then
+      reaper.ShowConsoleMsg("[Tags] Script dir: " .. script_dir .. "\n")
+      reaper.ShowConsoleMsg("[Tags] Trying metadata path: " .. metadata_path .. "\n")
+      metadata_debug_done = true
+    end
+
+    -- Try loading directly
+    local chunk, err = loadfile(metadata_path)
+    if chunk then
+      Metadata = chunk()
+      reaper.ShowConsoleMsg("[Tags] Metadata loaded successfully!\n")
+    else
+      reaper.ShowConsoleMsg("[Tags] loadfile failed: " .. tostring(err) .. "\n")
+      -- Fallback: try require paths
+      local paths_to_try = {
+        'ThemeAdjuster.packages.metadata',
+        'scripts.ThemeAdjuster.packages.metadata',
+      }
+
+      for _, path in ipairs(paths_to_try) do
+        local ok, mod = pcall(require, path)
+        if ok then
+          Metadata = mod
+          reaper.ShowConsoleMsg("[Tags] Loaded via require: " .. path .. "\n")
+          break
+        end
+      end
+    end
+  end
+  return Metadata
+end
+
 -- Shared image cache for package mosaic previews
 M._package_image_cache = M._package_image_cache or ImageCache.new({
   budget = 20,      -- Load up to 20 images per frame
@@ -24,7 +69,7 @@ M.CONFIG = {
   tile = {
     rounding = 6,
     hover_shadow = { enabled = true, max_offset = 2, max_alpha = 20 },
-    max_height = 200,
+    max_height = 220,
   },
   
   colors = {
@@ -47,6 +92,43 @@ M.CONFIG = {
   badge = { padding_x = 10, padding_y = 6, rounding = 4, margin = 8 },
   checkbox = { min_size = 12, padding_x = 2, padding_y = 1, margin = 8 },
   footer = { height = 32, padding_x = 10 },
+
+  tags = {
+    bottom_offset = 6,       -- Distance from footer
+    height = 14,             -- Tag chip height
+    padding_x = 4,           -- Horizontal padding inside chip
+    gap = 3,                 -- Gap between chips
+    margin_x = 10,           -- Margin from tile edges
+    rounding = 3,            -- Corner rounding
+    max_tags = 10,           -- Maximum tags to show
+    -- Full display names
+    display = {
+      TCP = "TCP",
+      MCP = "MCP",
+      Transport = "TRANSPORT",
+      Toolbar = "TOOLBARS",
+      Meter = "GLOBAL",      -- Meter consolidated into Global
+      EnvCP = "ENVCP",
+      Items = "ITEMS",
+      MIDI = "MIDI",
+      Track = "TCP",         -- Track consolidated into TCP
+      Global = "GLOBAL",
+      RTCONFIG = "RTCONFIG",
+    },
+    -- Color palette matching active assignment tagging system
+    colors = {
+      TCP = hexrgb("#5A7A9A"),      -- Blue
+      MCP = hexrgb("#9A9A5A"),      -- Yellow
+      ENVCP = hexrgb("#5A9A8A"),    -- Teal
+      TRANSPORT = hexrgb("#9A5A5A"),-- Red
+      GLOBAL = hexrgb("#6A6A6A"),   -- Grey
+      TOOLBARS = hexrgb("#8A6A5A"), -- Brown/orange
+      ITEMS = hexrgb("#7A8A5A"),    -- Olive
+      MIDI = hexrgb("#6A5A8A"),     -- Purple
+      RTCONFIG = hexrgb("#5AAA5A"), -- Green (important!)
+    },
+    text_color = hexrgb("#000000"),  -- Black text
+  },
   
   mosaic = {
     padding = 15, max_size = 50, gap = 6, count = 3,
@@ -181,18 +263,104 @@ function M.TileRenderer.conflicts(ctx, dl, pkg, P, tile_x, tile_y, tile_w)
   local conflicts = pkg:conflicts(true)
   local conf_count = conflicts[P.id] or 0
   if conf_count == 0 then return end
-  
+
   local text = string.format('%d conflicts', conf_count)
   local tw, th = ImGui.CalcTextSize(ctx, text)
   local x = tile_x + math.floor((tile_w - tw) / 2)
   local y = tile_y + M.CONFIG.badge.margin
-  
+
   Draw.text(dl, x, y, M.CONFIG.colors.text.conflict, text)
-  
+
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, '##conftip-' .. P.id, tw, th)
   if ImGui.IsItemHovered(ctx) then
     ImGui.SetTooltip(ctx, "Conflicting Assets in Packages\n(autosolved through Overwrite Priority)")
+  end
+end
+
+function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w, tile_h)
+  -- Start with manual tags from package meta (like RTCONFIG)
+  local manual_tags = P.meta and P.meta.tags or {}
+
+  -- Auto-generate area tags from assets using metadata
+  local auto_tags = {}
+  local metadata = get_metadata()
+  if metadata then
+    local image_names = {}
+    for key, _ in pairs(P.assets or {}) do
+      table.insert(image_names, key)
+    end
+    auto_tags = metadata.suggest_tags(image_names, 0.2) or {}
+  end
+
+  -- Combine manual tags (like RTCONFIG) with auto-generated area tags
+  local tags = {}
+  for _, tag in ipairs(manual_tags) do
+    table.insert(tags, tag)
+  end
+  for _, tag in ipairs(auto_tags) do
+    table.insert(tags, tag)
+  end
+
+  if #tags == 0 then return end
+
+  -- Convert to display names and deduplicate
+  local seen = {}
+  local display_tags = {}
+  for _, tag in ipairs(tags) do
+    local display_name = M.CONFIG.tags.display[tag] or tag
+    if not seen[display_name] then
+      seen[display_name] = true
+      table.insert(display_tags, display_name)
+      if #display_tags >= M.CONFIG.tags.max_tags then
+        break
+      end
+    end
+  end
+
+  if #display_tags == 0 then return end
+
+  -- Calculate chip widths based on text
+  local chip_h = M.CONFIG.tags.height
+  local chips = {}
+  local total_width = 0
+
+  for _, tag in ipairs(display_tags) do
+    local text_w, _ = ImGui.CalcTextSize(ctx, tag)
+    local chip_w = text_w + M.CONFIG.tags.padding_x * 2
+    table.insert(chips, {text = tag, width = chip_w})
+    total_width = total_width + chip_w
+  end
+  total_width = total_width + (#chips - 1) * M.CONFIG.tags.gap
+
+  -- Position at bottom of tile, above footer
+  local footer_y = tile_y + tile_h - M.CONFIG.footer.height
+  local y = footer_y - chip_h - M.CONFIG.tags.bottom_offset
+
+  -- Calculate horizontal position (centered)
+  local available_start = tile_x + M.CONFIG.tags.margin_x
+  local available_end = tile_x + tile_w - M.CONFIG.tags.margin_x
+  local available_width = available_end - available_start
+  local x = available_start + math.floor((available_width - total_width) / 2)
+  x = math.max(x, available_start)  -- Don't go past margin
+
+  for _, chip in ipairs(chips) do
+    -- Get tag color
+    local bg_color = M.CONFIG.tags.colors[chip.text] or M.CONFIG.tags.colors.GLOBAL
+
+    -- Check if chip fits
+    if x + chip.width > available_end then
+      break
+    end
+
+    -- Draw chip background
+    Draw.rect_filled(dl, x, y, x + chip.width, y + chip_h, bg_color, M.CONFIG.tags.rounding)
+
+    -- Draw text centered in chip
+    Draw.centered_text(ctx, chip.text, x, y, x + chip.width, y + chip_h, M.CONFIG.tags.text_color)
+
+    -- Move to next chip position
+    x = x + chip.width + M.CONFIG.tags.gap
   end
 end
 
