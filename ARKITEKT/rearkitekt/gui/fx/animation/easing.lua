@@ -3,6 +3,9 @@
 -- Easing functions for animations
 -- All functions take t in [0,1] and return eased value in [0,1]
 
+-- Cache math functions for performance
+local cos, sin, pi = math.cos, math.sin, math.pi
+
 local M = {}
 
 function M.linear(t)
@@ -42,15 +45,15 @@ function M.ease_in_out_cubic(t)
 end
 
 function M.ease_in_sine(t)
-  return 1 - math.cos((t * math.pi) / 2)
+  return 1 - cos((t * pi) / 2)
 end
 
 function M.ease_out_sine(t)
-  return math.sin((t * math.pi) / 2)
+  return sin((t * pi) / 2)
 end
 
 function M.ease_in_out_sine(t)
-  return -(math.cos(math.pi * t) - 1) / 2
+  return -(cos(pi * t) - 1) / 2
 end
 
 function M.smoothstep(t)

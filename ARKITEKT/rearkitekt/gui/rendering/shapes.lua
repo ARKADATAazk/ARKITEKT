@@ -7,6 +7,9 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Badge = require('rearkitekt.gui.widgets.primitives.badge')
 
+-- Cache math functions for performance
+local cos, sin, pi = math.cos, math.sin, math.pi
+
 local M = {}
 
 -- Draw a filled star shape
@@ -23,9 +26,9 @@ function M.draw_star_filled(dl, cx, cy, outer_radius, inner_radius, color, point
 
   ImGui.DrawList_PathClear(dl)
 
-  local angle_step = (math.pi * 2) / points
+  local angle_step = (pi * 2) / points
   local half_step = angle_step / 2
-  local start_angle = -math.pi / 2  -- Start from top
+  local start_angle = -pi / 2  -- Start from top
 
   -- Build star path
   for i = 0, points - 1 do
@@ -33,13 +36,13 @@ function M.draw_star_filled(dl, cx, cy, outer_radius, inner_radius, color, point
     local inner_angle = outer_angle + half_step
 
     -- Outer point
-    local ox = cx + math.cos(outer_angle) * outer_radius
-    local oy = cy + math.sin(outer_angle) * outer_radius
+    local ox = cx + cos(outer_angle) * outer_radius
+    local oy = cy + sin(outer_angle) * outer_radius
     ImGui.DrawList_PathLineTo(dl, ox, oy)
 
     -- Inner point
-    local ix = cx + math.cos(inner_angle) * inner_radius
-    local iy = cy + math.sin(inner_angle) * inner_radius
+    local ix = cx + cos(inner_angle) * inner_radius
+    local iy = cy + sin(inner_angle) * inner_radius
     ImGui.DrawList_PathLineTo(dl, ix, iy)
   end
 
@@ -62,9 +65,9 @@ function M.draw_star_outline(dl, cx, cy, outer_radius, inner_radius, color, thic
 
   ImGui.DrawList_PathClear(dl)
 
-  local angle_step = (math.pi * 2) / points
+  local angle_step = (pi * 2) / points
   local half_step = angle_step / 2
-  local start_angle = -math.pi / 2  -- Start from top
+  local start_angle = -pi / 2  -- Start from top
 
   -- Build star path
   for i = 0, points - 1 do
@@ -72,13 +75,13 @@ function M.draw_star_outline(dl, cx, cy, outer_radius, inner_radius, color, thic
     local inner_angle = outer_angle + half_step
 
     -- Outer point
-    local ox = cx + math.cos(outer_angle) * outer_radius
-    local oy = cy + math.sin(outer_angle) * outer_radius
+    local ox = cx + cos(outer_angle) * outer_radius
+    local oy = cy + sin(outer_angle) * outer_radius
     ImGui.DrawList_PathLineTo(dl, ox, oy)
 
     -- Inner point
-    local ix = cx + math.cos(inner_angle) * inner_radius
-    local iy = cy + math.sin(inner_angle) * inner_radius
+    local ix = cx + cos(inner_angle) * inner_radius
+    local iy = cy + sin(inner_angle) * inner_radius
     ImGui.DrawList_PathLineTo(dl, ix, iy)
   end
 
