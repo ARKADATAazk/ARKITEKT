@@ -331,7 +331,7 @@ M.UI_PANELS = {
   },
 
   filter = {
-    max_height = 100,  -- Increased to support multiple lines of region chips
+    max_height = 200,  -- Increased to support many lines of region chips with long names
     trigger_into_panels = 10,
     spacing_below_search = 8,
   },
