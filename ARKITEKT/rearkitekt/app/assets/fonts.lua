@@ -51,18 +51,16 @@ function M.load(ImGui, ctx, opts)
 
   -- Find fonts directory
   local fonts_dir = find_fonts_dir()
-  local regular = fonts_dir .. 'Inter_18pt-Regular.ttf'
-  local bold = fonts_dir .. 'Inter_18pt-SemiBold.ttf'
   local mono = fonts_dir .. 'JetBrainsMono-Regular.ttf'
   local orbitron = fonts_dir .. 'Orbitron-Bold.ttf'
   local remixicon = fonts_dir .. 'remixicon.ttf'
 
-  -- Create fonts - use CreateFontFromFile for TTF files, CreateFont for system fonts
+  -- Create fonts - use system fonts for default/title (like Shell.run), TTF only for special fonts
   local fonts = {
-    default = file_exists(regular) and ImGui.CreateFontFromFile(regular, 0, 0) or ImGui.CreateFont('sans-serif', 0),
+    default = ImGui.CreateFont('sans-serif', 0),
     default_size = default_size,
 
-    title = file_exists(bold) and ImGui.CreateFontFromFile(bold, 0, 0) or ImGui.CreateFont('sans-serif', 0),
+    title = ImGui.CreateFont('sans-serif', 0),
     title_size = title_size,
 
     monospace = file_exists(mono) and ImGui.CreateFontFromFile(mono, 0, 0) or ImGui.CreateFont('monospace', 0),
