@@ -592,7 +592,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local draw_layout_icon = function(btn_draw_list, icon_x, icon_y)
     local icon_size = 14
     local gap = 2
-    local top_bar_h = 2  -- Top bar representing search/settings
+    local top_bar_h = 1  -- Top bar representing search/settings
     local top_padding = 2  -- Padding between top bar and panels
 
     -- Draw top bar (represents search bar/top panel)
