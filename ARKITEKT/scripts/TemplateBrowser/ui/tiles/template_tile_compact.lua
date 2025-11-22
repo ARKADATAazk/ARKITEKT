@@ -91,10 +91,27 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local BRD_HOVER = hexrgb("#5588FF")
   local rounding = 3
 
-  -- Background color with smooth hover transition
+  -- Background color with smooth hover transition and subtle color tint
   local bg_color = BG_BASE
+
+  -- Apply very subtle color tint if template has color
+  if chip_color then
+    local cr = (chip_color >> 24) & 0xFF
+    local cg = (chip_color >> 16) & 0xFF
+    local cb = (chip_color >> 8) & 0xFF
+    local br = (BG_BASE >> 24) & 0xFF
+    local bg_r = (BG_BASE >> 16) & 0xFF
+    local bb = (BG_BASE >> 8) & 0xFF
+    -- Very subtle 8% color influence
+    local blend = 0.08
+    local r = math.floor(br * (1 - blend) + cr * blend)
+    local g = math.floor(bg_r * (1 - blend) + cg * blend)
+    local b = math.floor(bb * (1 - blend) + cb * blend)
+    bg_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+  end
+
   if hover_factor > 0.01 then
-    local r1, g1, b1 = (BG_BASE >> 24) & 0xFF, (BG_BASE >> 16) & 0xFF, (BG_BASE >> 8) & 0xFF
+    local r1, g1, b1 = (bg_color >> 24) & 0xFF, (bg_color >> 16) & 0xFF, (bg_color >> 8) & 0xFF
     local r2, g2, b2 = (BG_HOVER >> 24) & 0xFF, (BG_HOVER >> 16) & 0xFF, (BG_HOVER >> 8) & 0xFF
     local r = math.floor(r1 + (r2 - r1) * hover_factor * 0.5)
     local g = math.floor(g1 + (g2 - g1) * hover_factor * 0.5)
@@ -107,8 +124,22 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
   -- Draw border or marching ants
   if state.selected then
-    -- Marching ants for selection
-    local ant_color = chip_color and Colors.same_hue_variant(chip_color, 1.0, 1.2, 0x7F) or hexrgb("#5588FF7F")
+    -- Marching ants for selection - light grey base with very subtle color tint
+    local ant_color
+    if chip_color then
+      -- Extract RGB from chip color and blend with light grey
+      local cr = (chip_color >> 24) & 0xFF
+      local cg = (chip_color >> 16) & 0xFF
+      local cb = (chip_color >> 8) & 0xFF
+      -- Light grey base (180) with 15% chip color influence
+      local blend = 0.15
+      local r = math.floor(180 * (1 - blend) + cr * blend)
+      local g = math.floor(180 * (1 - blend) + cg * blend)
+      local b = math.floor(180 * (1 - blend) + cb * blend)
+      ant_color = (r << 24) | (g << 16) | (b << 8) | 0x99
+    else
+      ant_color = hexrgb("#B0B0B099")  -- Light grey with 60% opacity
+    end
     MarchingAnts.draw(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y1 + tile_h - 0.5, ant_color, 1.5, rounding, 8, 6, 20)
   else
     -- Normal border with hover highlight
@@ -124,25 +155,13 @@ function M.render(ctx, rect, template, state, metadata, animator)
     ImGui.DrawList_AddRect(dl, x1, y1, x2, y1 + tile_h, border_color, rounding, 0, 1)
   end
 
-  -- Draw color indicator bar on left edge (if template has color)
-  if chip_color then
-    local bar_color = Colors.same_hue_variant(chip_color, 1.0, 1.1, 200)
-    ImGui.DrawList_AddRectFilled(
-      dl,
-      x1, y1,
-      x1 + M.CONFIG.color_bar_width, y1 + tile_h,
-      bar_color
-    )
-  end
-
   -- Horizontal layout sections with internal padding (like Parameter Library tiles)
   local padding = 3
-  local color_stripe_width = chip_color and M.CONFIG.color_bar_width or 0
-  local cursor_x = x1 + padding + color_stripe_width
+  local cursor_x = x1 + padding
   local cursor_y = y1 + (tile_h / 2) - 6  -- Vertically center text (adjusted for smaller height)
 
   -- Section 1: Template Name (left-aligned, takes ~35% width)
-  local available_width = tile_w - (padding * 2) - color_stripe_width
+  local available_width = tile_w - (padding * 2)
   local name_width = math.floor(available_width * M.CONFIG.name_width_fraction)
   local name_color = hexrgb("#CCCCCC")  -- Match Parameter Library text color
   if state.selected or state.hover then
