@@ -151,7 +151,7 @@ function M.new(State, AppConfig, settings)
   )
 
   -- Override double-click behavior to open modal
-  self.grid.grid.behaviors.double_click = function(key)
+  self.grid.grid.behaviors.double_click = function(grid, key)
     -- Find the package data for this key
     local packages = State.get_packages()
     for _, pkg in ipairs(packages) do
