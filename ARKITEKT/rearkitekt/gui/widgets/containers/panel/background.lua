@@ -47,8 +47,8 @@ local function create_dot_texture(spacing, dot_size, color)
   local b = (color >> 8) & 0xFF
   local a = color & 0xFF
 
-  -- Pack as 0xAABBGGRR for ReaImGui
-  local dot_pixel = a * 0x1000000 + b * 0x10000 + g * 0x100 + r
+  -- Pack as 0xAARRGGBB for ReaImGui (ARGB format)
+  local dot_pixel = a * 0x1000000 + r * 0x10000 + g * 0x100 + b
   local clear_pixel = 0x00000000
 
   -- Fill with transparent, then draw dots
@@ -103,8 +103,8 @@ local function create_grid_texture(spacing, line_thickness, color)
   local b = (color >> 8) & 0xFF
   local a = color & 0xFF
 
-  -- Pack as 0xAABBGGRR for ReaImGui
-  local line_pixel = a * 0x1000000 + b * 0x10000 + g * 0x100 + r
+  -- Pack as 0xAARRGGBB for ReaImGui (ARGB format)
+  local line_pixel = a * 0x1000000 + r * 0x10000 + g * 0x100 + b
   local clear_pixel = 0x00000000
 
   -- Fill with transparent
