@@ -64,7 +64,7 @@ local function create_behaviors(rt)
       rt.drag_state.ctrl_held = false
     end,
     
-    reorder = function(new_order)
+    reorder = function(grid, new_order)
       if not rt.allow_pool_reorder then return end
       
       -- Extract regions and playlists separately
@@ -94,7 +94,7 @@ local function create_behaviors(rt)
     end,
     
     -- Inline editing: Double-click to edit single tile
-    start_inline_edit = function(key)
+    start_inline_edit = function(grid, key)
       local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
       local pool_items = rt.pool_grid.get_items()
       for _, item in ipairs(pool_items) do
@@ -117,14 +117,14 @@ local function create_behaviors(rt)
     end,
 
     -- Inline edit complete callback
-    on_inline_edit_complete = function(key, new_name)
+    on_inline_edit_complete = function(grid, key, new_name)
       if rt.on_pool_rename then
         rt.on_pool_rename(key, new_name)
       end
     end,
 
     -- Double-click outside text zone: Move cursor and seek to region/playlist
-    double_click_seek = function(key)
+    double_click_seek = function(grid, key)
       local pool_items = rt.pool_grid.get_items()
       for _, item in ipairs(pool_items) do
         if rt.pool_grid.key(item) == key then

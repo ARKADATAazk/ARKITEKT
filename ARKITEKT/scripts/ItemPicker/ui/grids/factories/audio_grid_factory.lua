@@ -435,7 +435,7 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     -- Wheel cycling through pooled items
-    wheel_cycle = function(uuids, delta)
+    wheel_cycle = function(grid, uuids, delta)
       if not uuids or #uuids == 0 then
         return nil
       end

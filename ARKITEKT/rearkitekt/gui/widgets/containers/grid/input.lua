@@ -60,14 +60,14 @@ M.DEFAULT_BEHAVIORS = {
     end
     grid.selection:select_all(order)
     if grid.behaviors and grid.behaviors.on_select then
-      grid.behaviors.on_select(grid.selection:selected_keys())
+      grid.behaviors.on_select(grid, grid.selection:selected_keys())
     end
   end,
 
   deselect_all = function(grid)
     grid.selection:clear()
     if grid.behaviors and grid.behaviors.on_select then
-      grid.behaviors.on_select(grid.selection:selected_keys())
+      grid.behaviors.on_select(grid, grid.selection:selected_keys())
     end
   end,
 
@@ -79,7 +79,7 @@ M.DEFAULT_BEHAVIORS = {
     end
     grid.selection:invert(order)
     if grid.behaviors and grid.behaviors.on_select then
-      grid.behaviors.on_select(grid.selection:selected_keys())
+      grid.behaviors.on_select(grid, grid.selection:selected_keys())
     end
   end,
 }
@@ -92,11 +92,11 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
   -- SHIFT+wheel: cycle through item variants
   ['wheel:shift'] = function(grid, target_key, delta)
     if grid.behaviors and grid.behaviors.wheel_cycle then
-      local new_uuid = grid.behaviors.wheel_cycle({target_key}, delta)
+      local new_uuid = grid.behaviors.wheel_cycle(grid, {target_key}, delta)
       if new_uuid and new_uuid ~= target_key then
         grid.selection:single(new_uuid)
         if grid.behaviors and grid.behaviors.on_select then
-          grid.behaviors.on_select(grid.selection:selected_keys())
+          grid.behaviors.on_select(grid, grid.selection:selected_keys())
         end
       end
       return true
@@ -106,8 +106,12 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
 
   -- CTRL+wheel: resize tiles (vertical by default)
   ['wheel:ctrl'] = function(grid, target_key, delta)
-    if grid.behaviors and grid.behaviors.wheel_resize then
-      grid.behaviors.wheel_resize('vertical', delta)
+    if grid.behaviors and grid.behaviors['wheel:ctrl'] then
+      -- Use grid's custom wheel:ctrl behavior
+      grid.behaviors['wheel:ctrl'](grid, target_key, delta)
+      return true
+    elseif grid.behaviors and grid.behaviors.wheel_resize then
+      grid.behaviors.wheel_resize(grid, 'vertical', delta)
       return true
     end
     return false
@@ -116,7 +120,7 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
   -- ALT+wheel: resize tiles (horizontal)
   ['wheel:alt'] = function(grid, target_key, delta)
     if grid.behaviors and grid.behaviors.wheel_resize then
-      grid.behaviors.wheel_resize('horizontal', delta)
+      grid.behaviors.wheel_resize(grid, 'horizontal', delta)
       return true
     end
     return false
@@ -155,7 +159,7 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
   -- Double-click in text zone: inline edit
   ['double_click:text'] = function(grid, key)
     if grid.behaviors and grid.behaviors.start_inline_edit then
-      grid.behaviors.start_inline_edit(key)
+      grid.behaviors.start_inline_edit(grid, key)
       return true
     end
     return false
@@ -164,10 +168,10 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
   -- Double-click outside text zone: seek or custom action
   ['double_click'] = function(grid, key)
     if grid.behaviors and grid.behaviors.double_click_seek then
-      grid.behaviors.double_click_seek(key)
+      grid.behaviors.double_click_seek(grid, key)
       return true
     elseif grid.behaviors and grid.behaviors.double_click then
-      grid.behaviors.double_click(key)
+      grid.behaviors.double_click(grid, key)
       return true
     end
     return false
@@ -466,13 +470,13 @@ function M.handle_tile_input(grid, ctx, item, rect)
         grid.selection:range(order, from_key, key)
 
         if grid.behaviors and grid.behaviors.on_select then
-          grid.behaviors.on_select(grid.selection:selected_keys())
+          grid.behaviors.on_select(grid, grid.selection:selected_keys())
         end
         return is_hovered
       elseif ctrl then
         grid.selection:toggle(key)
         if grid.behaviors and grid.behaviors.on_select then
-          grid.behaviors.on_select(grid.selection:selected_keys())
+          grid.behaviors.on_select(grid, grid.selection:selected_keys())
         end
       else
         if not was_selected then
@@ -566,7 +570,7 @@ function M.stop_inline_edit(grid, commit)
   grid.editing_state = nil
 
   if commit and grid.behaviors and grid.behaviors.on_inline_edit_complete then
-    grid.behaviors.on_inline_edit_complete(key, new_text)
+    grid.behaviors.on_inline_edit_complete(grid, key, new_text)
   end
 end
 
@@ -711,12 +715,12 @@ function M.check_start_drag(grid, ctx)
       grid.drag.ids = { grid.drag.pressed_id }
       grid.selection:single(grid.drag.pressed_id)
       if grid.behaviors and grid.behaviors.on_select then
-        grid.behaviors.on_select(grid.selection:selected_keys())
+        grid.behaviors.on_select(grid, grid.selection:selected_keys())
       end
     end
 
     if grid.behaviors and grid.behaviors.drag_start then
-      grid.behaviors.drag_start(grid.drag.ids, grid)
+      grid.behaviors.drag_start(grid, grid.drag.ids)
     end
   end
 end

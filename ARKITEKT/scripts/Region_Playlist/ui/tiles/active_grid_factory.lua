@@ -22,7 +22,7 @@ local function handle_unified_delete(rt, item_keys)
       rt.active_grid.selection.selected[key] = nil
     end
     if rt.active_grid.behaviors and rt.active_grid.behaviors.on_select then
-      rt.active_grid.behaviors.on_select(rt.active_grid.selection:selected_keys())
+      rt.active_grid.behaviors.on_select(rt.active_grid, rt.active_grid.selection:selected_keys())
     end
   end
   
@@ -74,7 +74,7 @@ local function create_behaviors(rt)
     space = function(grid, selected_keys)
     end,
     
-    reorder = function(new_order)
+    reorder = function(grid, new_order)
       if not rt.active_grid or not rt.active_grid.drag then return end
       
       local is_copy_mode = false
@@ -180,7 +180,7 @@ local function create_behaviors(rt)
       end
     end,
     
-    on_select = function(selected_keys)
+    on_select = function(grid, selected_keys)
       -- Count regions and playlists in active grid selection
       local region_count = 0
       local playlist_count = 0
@@ -229,7 +229,7 @@ local function create_behaviors(rt)
     end,
 
     -- Inline editing: Double-click to edit single tile
-    start_inline_edit = function(key)
+    start_inline_edit = function(grid, key)
       local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
       local playlist_items = rt.active_grid.get_items()
       for _, item in ipairs(playlist_items) do
@@ -250,14 +250,14 @@ local function create_behaviors(rt)
     end,
 
     -- Inline edit complete callback
-    on_inline_edit_complete = function(key, new_name)
+    on_inline_edit_complete = function(grid, key, new_name)
       if rt.on_active_rename then
         rt.on_active_rename(key, new_name)
       end
     end,
 
     -- Double-click outside text zone: Move cursor and seek to region/playlist
-    double_click_seek = function(key)
+    double_click_seek = function(grid, key)
       local playlist_items = rt.active_grid.get_items()
       for _, item in ipairs(playlist_items) do
         if item.key == key then
