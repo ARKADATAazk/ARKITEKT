@@ -222,11 +222,24 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     self.state.settings_sticky_visible = false
   end
 
-  -- Update sticky state
+  -- Update sticky state with delay for closing (helps with multi-monitor overshoot)
+  local close_delay = 1.5  -- seconds before closing when mouse leaves
   if is_in_trigger_zone then
     self.state.settings_sticky_visible = true
+    self.state.settings_close_timer = nil  -- Cancel any pending close
   elseif is_below_search then
-    self.state.settings_sticky_visible = false
+    -- Start close timer if not already running
+    if self.state.settings_sticky_visible then
+      if not self.state.settings_close_timer then
+        self.state.settings_close_timer = reaper.time_precise()
+      elseif reaper.time_precise() - self.state.settings_close_timer >= close_delay then
+        self.state.settings_sticky_visible = false
+        self.state.settings_close_timer = nil
+      end
+    end
+  else
+    -- Mouse is in window but between trigger zone and close zone - cancel timer
+    self.state.settings_close_timer = nil
   end
 
   -- Smooth slide for settings area
