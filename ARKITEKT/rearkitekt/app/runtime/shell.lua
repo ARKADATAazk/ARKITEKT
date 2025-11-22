@@ -11,6 +11,7 @@ local ImGui   = require 'imgui' '0.10'
 local Config = require('rearkitekt.core.config')
 local Constants = require('rearkitekt.defs.app')
 local Typography = require('rearkitekt.defs.typography')
+local Fonts = require('rearkitekt.app.assets.fonts')
 local Runtime = require('rearkitekt.app.runtime.runtime')
 local Window  = require('rearkitekt.app.chrome.window.window')
 
@@ -31,13 +32,8 @@ local function load_fonts(ctx, font_cfg)
     family_icons   = 'remixicon.ttf',
   }, font_cfg or {})
 
-  local SEP      = package.config:sub(1,1)
-  local src      = debug.getinfo(1, 'S').source:sub(2)
-  local this_dir = src:match('(.*'..SEP..')') or ('.'..SEP)
-  -- Go up TWO levels: runtime/ -> app/ -> rearkitekt/
-  local parent   = this_dir:match('^(.*'..SEP..')[^'..SEP..']*'..SEP..'$') or this_dir  -- app/
-  parent = parent:match('^(.*'..SEP..')[^'..SEP..']*'..SEP..'$') or parent  -- rearkitekt/
-  local fontsdir = parent .. 'fonts' .. SEP
+  -- Use shared font directory lookup
+  local fontsdir = Fonts.find_fonts_dir()
 
   local R = fontsdir .. font_cfg.family_regular
   local B = fontsdir .. font_cfg.family_bold
@@ -84,15 +80,8 @@ local function load_fonts(ctx, font_cfg)
 
   local icons_font = nil
   if font_cfg.icons then
-    local icon_path_exists = exists(I)
-    reaper.ShowConsoleMsg("SHELL FONT DEBUG: icons config = " .. tostring(font_cfg.icons) .. "\n")
-    reaper.ShowConsoleMsg("SHELL FONT DEBUG: icon font path = " .. tostring(I) .. "\n")
-    reaper.ShowConsoleMsg("SHELL FONT DEBUG: icon font exists = " .. tostring(icon_path_exists) .. "\n")
-    icons_font = icon_path_exists and ImGui.CreateFontFromFile(I, 0, 0) or default_font
-    reaper.ShowConsoleMsg("SHELL FONT DEBUG: icons_font = " .. tostring(icons_font) .. "\n")
+    icons_font = exists(I) and ImGui.CreateFontFromFile(I, 0, 0) or default_font
     attach_once(icons_font)
-  else
-    reaper.ShowConsoleMsg("SHELL FONT DEBUG: icons not in config\n")
   end
 
   attach_once(default_font)

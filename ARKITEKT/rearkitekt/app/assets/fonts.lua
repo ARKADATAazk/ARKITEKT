@@ -31,6 +31,9 @@ local function find_fonts_dir()
   return fonts_dir
 end
 
+-- Export for use by other modules (e.g., shell.lua)
+M.find_fonts_dir = find_fonts_dir
+
 ---Load standard ARKITEKT fonts and attach to ImGui context
 ---@param ImGui table ReaImGui module
 ---@param ctx userdata ImGui context to attach fonts to
