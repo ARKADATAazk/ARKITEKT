@@ -280,7 +280,8 @@ function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w)
   -- Get tags from package meta or auto-generate from metadata
   local tags = P.meta and P.meta.tags
 
-  if not tags then
+  -- Only use meta tags if they exist AND are not empty
+  if not tags or #tags == 0 then
     -- Auto-generate tags from assets using metadata
     local metadata = get_metadata()
     if metadata then
