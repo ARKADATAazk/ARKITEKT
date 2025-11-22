@@ -355,8 +355,52 @@ local IMAGE_DATA = {
 -- @return string|nil The area or nil if not found
 function M.get_area(image_name)
   local name = image_name:match("^(.+)%.[^.]+$") or image_name
+
+  -- First try exact match
   local data = IMAGE_DATA[name]
-  return data and data.area
+  if data then
+    return data.area
+  end
+
+  -- Fall back to prefix matching for robustness
+  local prefix_map = {
+    {prefix = "tcp_", area = "tcp"},
+    {prefix = "mcp_", area = "mcp"},
+    {prefix = "track_", area = "track"},
+    {prefix = "transport_", area = "transport"},
+    {prefix = "toolbar_", area = "toolbar"},
+    {prefix = "meter_", area = "meter"},
+    {prefix = "envcp_", area = "envcp"},
+    {prefix = "item_", area = "item"},
+    {prefix = "midi_", area = "midi"},
+    {prefix = "piano_", area = "midi"},
+    {prefix = "gen_", area = "global"},
+    {prefix = "global_", area = "transport"},  -- global_trim, etc. are transport controls
+    {prefix = "knob_", area = "global"},
+    {prefix = "scrollbar", area = "global"},
+    {prefix = "button_", area = "global"},
+    {prefix = "slider", area = "global"},
+    {prefix = "fader_", area = "global"},
+    {prefix = "folder_", area = "tcp"},
+    {prefix = "master_tcp_", area = "tcp"},
+    {prefix = "master_mcp_", area = "mcp"},
+    {prefix = "mixer_", area = "mcp"},
+    {prefix = "lane_", area = "global"},
+    {prefix = "monitor_fx_", area = "global"},
+    {prefix = "table_", area = "global"},
+    {prefix = "tab_", area = "global"},
+    {prefix = "fixed_lanes_", area = "global"},
+    {prefix = "cursor_", area = "global"},
+    {prefix = "vu_", area = "meter"},
+  }
+
+  for _, mapping in ipairs(prefix_map) do
+    if name:find("^" .. mapping.prefix) then
+      return mapping.area
+    end
+  end
+
+  return nil
 end
 
 --- Get all valid areas
