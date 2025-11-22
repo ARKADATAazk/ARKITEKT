@@ -247,8 +247,8 @@ function M.render(ctx, rect, template, state, metadata, animator)
   end
 
   -- Render favorite star in top-right corner using remix icon font
-  local star_size = 28  -- Size of the star
-  local star_margin = 6
+  local star_size = 42  -- Size of the star (3x)
+  local star_margin = 4
   local star_x = x2 - star_size - star_margin
   local star_y = y1 + star_margin
 
@@ -289,7 +289,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
   -- Render star using remix icon font
   local star_char = utf8.char(0xF186)  -- Remix star-fill icon
-  local font_size = 24  -- Large font size for the star
+  local font_size = 42  -- 3x font size for the star
 
   -- Use icon font if available in state
   if state.fonts and state.fonts.icons then
