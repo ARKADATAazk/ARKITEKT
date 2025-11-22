@@ -246,32 +246,62 @@ function M.render(ctx, rect, template, state, metadata, animator)
     Draw.text(dl, text_x, text_y, text_color, display_vst)
   end
 
-  -- Render favorite badge in top-right corner (replaces old star icon)
-  local badge_size = 24  -- Larger badge size for grid tiles
-  local badge_margin = 6
-  local badge_x = x2 - badge_size - badge_margin  -- Right side
-  local badge_y = y1 + badge_margin  -- Top with margin
+  -- Render favorite star in top-right corner (no badge, just the star)
+  local star_size = 24  -- 2x bigger star
+  local star_margin = 6
+  local star_x = x2 - star_size - star_margin
+  local star_y = y1 + star_margin
 
-  -- Check if mouse is over badge for click detection
+  -- Check if mouse is over star for click detection
   local mx, my = ImGui.GetMousePos(ctx)
-  local is_badge_hovered = mx >= badge_x and mx <= badge_x + badge_size and
-                           my >= badge_y and my <= badge_y + badge_size
+  local is_star_hovered = mx >= star_x and mx <= star_x + star_size and
+                          my >= star_y and my <= star_y + star_size
 
-  -- Badge configuration (matching ItemPicker style)
-  local badge_config = {
-    rounding = 3,
-    bg = hexrgb("#14181C"),
-    border_alpha = 0x66,
-    border_darken = 0.4,
-    icon_color = is_favorite and hexrgb("#FFA500") or hexrgb("#555555"),  -- Orange when favorited, gray otherwise
-  }
+  -- Determine star color based on tile color and favorite state
+  local star_color
+  local base_grey = hexrgb("#888888")  -- Light grey base
 
-  -- Always render badge (not just when favorited) so it's clickable
-  Badge.render_favorite_badge(ctx, dl, badge_x, badge_y, badge_size, 255, true,
-                             nil, nil, chip_color or hexrgb("#555555"), badge_config)
+  if chip_color then
+    -- Blend with tile color subtly
+    local cr, cg, cb = Colors.rgba_to_components(chip_color)
+    local gr, gg, gb = Colors.rgba_to_components(base_grey)
+    local blend = 0.25  -- Subtle color influence
 
-  -- Handle badge click to toggle favorite
-  if is_badge_hovered and ImGui.IsMouseClicked(ctx, 0) then
+    if is_favorite then
+      -- Lighter than tile color when enabled
+      local r = math.floor(math.min(255, cr * 1.3) * blend + 220 * (1 - blend))
+      local g = math.floor(math.min(255, cg * 1.3) * blend + 220 * (1 - blend))
+      local b = math.floor(math.min(255, cb * 1.3) * blend + 220 * (1 - blend))
+      star_color = Colors.components_to_rgba(r, g, b, 255)
+    else
+      -- Darker than tile color when disabled
+      local r = math.floor(cr * 0.5 * blend + 100 * (1 - blend))
+      local g = math.floor(cg * 0.5 * blend + 100 * (1 - blend))
+      local b = math.floor(cb * 0.5 * blend + 100 * (1 - blend))
+      star_color = Colors.components_to_rgba(r, g, b, is_star_hovered and 180 or 120)
+    end
+  else
+    -- No tile color - use pure grey
+    if is_favorite then
+      star_color = hexrgb("#E0E0E0")  -- Light grey when enabled
+    else
+      star_color = is_star_hovered and hexrgb("#888888B4") or hexrgb("#64646478")  -- Dark grey when disabled
+    end
+  end
+
+  -- Render the star character directly (no badge)
+  local star_char = "★"
+
+  -- Scale font for bigger star
+  ImGui.SetWindowFontScale(ctx, 1.8)
+  local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)
+  local star_text_x = star_x + (star_size - text_w) * 0.5
+  local star_text_y = star_y + (star_size - text_h) * 0.5
+  Draw.text(dl, star_text_x, star_text_y, star_color, star_char)
+  ImGui.SetWindowFontScale(ctx, 1.0)
+
+  -- Handle star click to toggle favorite
+  if is_star_hovered and ImGui.IsMouseClicked(ctx, 0) then
     state.star_clicked = true
   end
 end
