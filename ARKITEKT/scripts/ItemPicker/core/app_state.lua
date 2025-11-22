@@ -557,8 +557,8 @@ end
 
 function M.stop_preview()
   if M.previewing then
-    -- Stop SWS preview
-    local cmd_id = reaper.NamedCommandLookup("_XENAKIOS_STOPITEMPREVIEW")
+    -- Stop SWS preview (matching ItemPicker OG)
+    local cmd_id = reaper.NamedCommandLookup("_SWS_STOPPREVIEW")
     if cmd_id and cmd_id ~= 0 then
       reaper.Main_OnCommand(cmd_id, 0)
     end
