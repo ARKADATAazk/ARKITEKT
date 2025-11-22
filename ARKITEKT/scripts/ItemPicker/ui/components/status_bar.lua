@@ -3,8 +3,9 @@
 -- Status bar showing selection info and tips
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local Constants = require('ItemPicker.defs.constants')
+local Strings = require('ItemPicker.defs.strings')
+local Defaults = require('ItemPicker.defs.defaults')
 
 local M = {}
 local StatusBar = {}
@@ -40,46 +41,44 @@ function StatusBar:render(ctx)
     local percent = math.floor(progress * 100)
 
     -- Animated spinner
-    local spinner_chars = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" }
-    local spinner_idx = math.floor((reaper.time_precise() * 8) % #spinner_chars) + 1
+    local spinner_chars = Strings.STATUS.spinner_chars
+    local spinner_idx = math.floor((reaper.time_precise() * Defaults.ANIMATION.spinner_speed) % #spinner_chars) + 1
     local spinner = spinner_chars[spinner_idx]
 
-    status_text = string.format("%s Loading items... %d%% (%d Audio, %d MIDI)",
+    status_text = string.format(Strings.STATUS.loading_format,
       spinner, percent, total_audio, total_midi)
 
     -- Show loading color
-    local loading_color = hexrgb("#4A9EFF")
-    ImGui.TextColored(ctx, loading_color, status_text)
+    ImGui.TextColored(ctx, Constants.COLORS.LOADING, status_text)
   -- Preview status
   elseif self.state.previewing and self.state.previewing ~= 0 and self.state.preview_item then
     local take = reaper.GetActiveTake(self.state.preview_item)
     local item_name = take and reaper.GetTakeName(take) or "Item"
-    status_text = string.format("🔊 Previewing: %s", item_name)
+    status_text = string.format(Strings.STATUS.preview_format, item_name)
     ImGui.Text(ctx, status_text)
   elseif selected_audio > 0 or selected_midi > 0 then
     local parts = {}
     if selected_audio > 0 then
-      table.insert(parts, string.format("%d Audio", selected_audio))
+      table.insert(parts, string.format(Strings.STATUS.selection_audio, selected_audio))
     end
     if selected_midi > 0 then
-      table.insert(parts, string.format("%d MIDI", selected_midi))
+      table.insert(parts, string.format(Strings.STATUS.selection_midi, selected_midi))
     end
-    status_text = string.format("Selected: %s", table.concat(parts, ", "))
+    status_text = string.format(Strings.STATUS.selection_combined, table.concat(parts, ", "))
     ImGui.Text(ctx, status_text)
   else
-    status_text = string.format("Items: %d Audio, %d MIDI", total_audio, total_midi)
+    status_text = string.format(Strings.STATUS.items_format, total_audio, total_midi)
     ImGui.Text(ctx, status_text)
   end
 
   -- Right side: Keyboard shortcuts hint
   ImGui.SameLine(ctx)
 
-  local hints = "Ctrl+F: Search | Space: Preview | Delete: Disable | Alt+Click: Quick Disable"
+  local hints = Strings.STATUS.hints
   local hints_w = ImGui.CalcTextSize(ctx, hints)
   ImGui.SetCursorPosX(ctx, avail_w - hints_w - 10)
 
-  local hint_color = hexrgb("#888888")
-  ImGui.TextColored(ctx, hint_color, hints)
+  ImGui.TextColored(ctx, Constants.COLORS.HINT, hints)
 
   ImGui.Spacing(ctx)
 end

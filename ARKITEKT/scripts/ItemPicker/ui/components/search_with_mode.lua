@@ -5,16 +5,13 @@
 local ImGui = require 'imgui' '0.10'
 local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
 local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
+local Defaults = require('ItemPicker.defs.defaults')
+local Constants = require('ItemPicker.defs.constants')
 
 local M = {}
 
--- Search modes
-local MODES = {
-  {value = "items", label = "Items"},
-  {value = "tracks", label = "Tracks"},
-  {value = "regions", label = "Regions"},
-  {value = "mixed", label = "Mixed"},
-}
+-- Search modes from defs
+local MODES = Defaults.SEARCH_MODES
 
 function M.get_mode_config(mode_id)
   for _, mode in ipairs(MODES) do
@@ -30,8 +27,8 @@ function M.draw(ctx, draw_list, x, y, width, height, state, config)
   local mode_config = M.get_mode_config(mode_id)
 
   -- Dimensions
-  local dropdown_width = 85
-  local overlap = -1  -- Overlap 1 pixel to share border
+  local dropdown_width = Constants.SEARCH.dropdown_width
+  local overlap = Constants.SEARCH.overlap
   local input_width = width - dropdown_width + overlap
 
   -- Draw search input using ARKITEKT primitive

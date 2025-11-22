@@ -3,38 +3,17 @@
 -- Centralized state management (single source of truth)
 
 local Persistence = require("ItemPicker.data.persistence")
+local Defaults = require("ItemPicker.defs.defaults")
 
 local M = {}
 
 package.loaded["ItemPicker.core.app_state"] = M
 
--- Settings (persisted)
-M.settings = {
-  play_item_through_track = false,
-  show_muted_tracks = false,
-  show_muted_items = false,
-  show_disabled_items = false,
-  show_favorites_only = false,
-  show_audio = true,
-  show_midi = true,
-  split_midi_by_track = false,  -- Split MIDI items per item vs group by track
-  group_items_by_name = true,  -- Group items with same name together (e.g., all "Kick" samples)
-  focus_keyboard_on_init = true,
-  search_string = "",
-  tile_width = nil,
-  tile_height = nil,
-  separator_position = nil,  -- MIDI section height for vertical layout
-  separator_position_horizontal = nil,  -- MIDI section width for horizontal layout
-  sort_mode = "none",  -- Options: "none", "color", "name", "pool", "length"
-  sort_reverse = false,  -- Reverse sort order (descending vs ascending)
-  waveform_quality = 1.0,  -- Waveform resolution multiplier (0.1-1.0, lower = better performance)
-  waveform_filled = true,  -- Use filled polygons for waveforms (false = outline only)
-  waveform_zero_line = false,  -- Show zero line in waveforms
-  show_visualization_in_small_tiles = false,  -- Show waveform/MIDI in compact display mode (toggle)
-  enable_tile_fx = true,  -- Enable TileFX rendering (hover/selection effects) - disable for performance testing
-  layout_mode = "vertical",  -- Options: "vertical" (top/bottom), "horizontal" (left/right)
-  show_region_tags = false,  -- Show region tags on item tiles (toggle)
-}
+-- Settings (persisted) - initialize from defaults
+M.settings = {}
+for k, v in pairs(Defaults.SETTINGS) do
+  M.settings[k] = v
+end
 
 -- Runtime state (volatile)
 M.samples = {}  -- { [filename] = { {item, name, track_muted, item_muted, uuid}, ...} }
