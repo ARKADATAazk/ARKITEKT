@@ -101,7 +101,7 @@ M.CONFIG = {
     gap = 3,                 -- Gap between chips
     margin_x = 38,           -- Start after badge (leave room for #1)
     rounding = 3,            -- Corner rounding
-    max_tags = 4,            -- Maximum tags to show
+    max_tags = 10,           -- Maximum tags to show
     -- Abbreviated display names
     display = {
       TCP = "TCP",
