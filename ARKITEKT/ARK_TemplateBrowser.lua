@@ -79,6 +79,7 @@ if USE_OVERLAY then
   overlay_mgr:push(OverlayDefaults.create_overlay_config({
     id = "template_browser_main",
     -- Disable right-click close to allow context menus on tiles
+    close_on_scrim = false,
     close_on_background_right_click = false,
 
     render = function(ctx, alpha_val, bounds)
