@@ -5,7 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
 local Theme = require('ThemeAdjuster.core.theme')
-local ImageCache = require('rearkitekt.gui.images')  -- Use ARKITEKT's central image system
+local ImageCache = require('rearkitekt.core.images')  -- Use ARKITEKT's central image system
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

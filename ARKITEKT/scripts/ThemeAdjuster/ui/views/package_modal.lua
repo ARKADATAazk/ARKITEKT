@@ -7,7 +7,7 @@ local Colors = require('rearkitekt.core.colors')
 local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Constants = require('ThemeAdjuster.defs.constants')
-local ImageCache = require('rearkitekt.gui.images')
+local ImageCache = require('rearkitekt.core.images')
 local hexrgb = Colors.hexrgb
 
 local M = {}

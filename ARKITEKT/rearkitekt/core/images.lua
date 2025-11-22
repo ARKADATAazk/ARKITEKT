@@ -1,12 +1,12 @@
 -- @noindex
--- ReArkitekt/gui/images.lua
+-- ReArkitekt/core/images.lua
 -- Enterprise-grade image cache with automatic handle validation and lifecycle management
 --
 -- USAGE GUIDELINES:
 -- ================================================================================
 --
 -- BASIC SETUP:
---   local ImageCache = require('rearkitekt.gui.images')
+--   local ImageCache = require('rearkitekt.core.images')
 --   local cache = ImageCache.new({
 --     budget = 20,      -- Max images to load per frame (prevents UI freeze)
 --     max_cache = 100,  -- Max total cached images (LRU eviction)

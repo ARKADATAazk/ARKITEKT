@@ -8,7 +8,7 @@ local ImGui = require 'imgui' '0.10'
 local Draw = require('rearkitekt.gui.draw')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local Colors = require('rearkitekt.core.colors')
-local ImageCache = require('rearkitekt.gui.images')
+local ImageCache = require('rearkitekt.core.images')
 
 local M = {}
 local hexrgb = Colors.hexrgb
