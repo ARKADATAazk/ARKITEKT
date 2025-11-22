@@ -31,7 +31,7 @@ M.TRANSPORT = {
   height = 72,
   padding = 12,
   spacing = 12,
-  panel_bg_color = Colors.with_alpha(hexrgb(ColorDefs.UI.bg_base), 0xc9),
+  panel_bg_color = Colors.with_alpha(hexrgb(ColorDefs.UI.bg_deep), 0xc9),
 
   corner_buttons = {
     size = 30,

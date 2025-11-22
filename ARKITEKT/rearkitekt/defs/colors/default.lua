@@ -37,6 +37,7 @@ M.UI = {
   text_bright = "#FFFFFFFF",
 
   -- Backgrounds
+  bg_deep = "#131313FF",
   bg_base = "#1A1A1AFF",
   bg_panel = "#252525FF",
   bg_elevated = "#333333FF",
