@@ -367,6 +367,26 @@ end
 
 ---
 
+## ⚠️ Common Pitfalls
+
+### Ternary Pattern with Boolean Values
+```lua
+-- ❌ BROKEN (fails when value is false)
+local enabled = opts.enabled ~= nil and opts.enabled or default
+-- When opts.enabled = false: false or default → returns default!
+
+-- ✅ CORRECT (handles false properly)
+local enabled = opts.enabled == nil and default or opts.enabled
+-- When opts.enabled = false: false → returns false
+-- When opts.enabled = nil: default → returns default
+```
+
+**Why:** Lua's idiomatic ternary `cond and val or default` returns `default` when `val` is `false` because `false or default` evaluates to `default`. The inverted pattern `val == nil and default or val` correctly distinguishes between `nil` (use default) and `false` (use false).
+
+**Use for:** Config merges, optional boolean parameters, any option that could legitimately be `false`.
+
+---
+
 ## 📚 Best Practices Summary
 
 1. **Profile first** - Don't guess, measure
