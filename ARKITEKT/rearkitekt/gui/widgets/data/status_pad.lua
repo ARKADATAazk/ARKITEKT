@@ -62,7 +62,8 @@ function M.new(opts)
   }, StatusPad)
   for k, v in pairs(DEFAULTS) do
     if type(v) ~= "table" then
-      pad.config[k] = (opts.config and opts.config[k]) or v
+      local user_val = opts.config and opts.config[k]
+      pad.config[k] = user_val == nil and v or user_val
     end
   end
   return pad

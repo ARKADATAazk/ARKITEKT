@@ -5,6 +5,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
+local Config = require('rearkitekt.core.config')
 
 local M = {}
 M.__index = M
@@ -36,23 +37,14 @@ local DEFAULTS = {
   }
 }
 
-local function deepcopy(t)
-  if type(t) ~= 'table' then return t end
-  local o = {}
-  for k,v in pairs(t) do o[k] = deepcopy(v) end
-  return o
-end
-
 local function snap(v) return math.floor((v or 0) + 0.5) end
 
 local function apply_defaults(opts)
   local o = {}
   o.items = (opts and opts.items) or {}
   o.active = opts and opts.active or (o.items[1] and (o.items[1].id or o.items[1].label))
-  o.style  = deepcopy(DEFAULTS.style)
-  o.colors = deepcopy(DEFAULTS.colors)
-  if opts and opts.style  then for k,v in pairs(opts.style)  do o.style[k]  = v end end
-  if opts and opts.colors then for k,v in pairs(opts.colors) do o.colors[k] = v end end
+  o.style  = Config.deepMerge(DEFAULTS.style, opts and opts.style)
+  o.colors = Config.deepMerge(DEFAULTS.colors, opts and opts.colors)
   o.on_change = opts and opts.on_change
   return o
 end

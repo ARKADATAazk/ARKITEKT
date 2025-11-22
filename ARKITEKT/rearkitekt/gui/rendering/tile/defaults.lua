@@ -80,7 +80,7 @@ end
 function M.override(overrides)
   local config = {}
   for k, v in pairs(M.DEFAULT) do
-    config[k] = overrides[k] or v
+    config[k] = overrides[k] == nil and v or overrides[k]
   end
   return config
 end
