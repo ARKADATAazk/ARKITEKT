@@ -332,7 +332,6 @@ end
 function M.cycle_midi_item(item_name, delta)
   local content = M.midi_items[item_name]
   if not content or #content == 0 then
-    reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] No content for key: %s\n", tostring(item_name)))
     return
   end
 
@@ -383,11 +382,8 @@ function M.cycle_midi_item(item_name, delta)
   end
 
   if #filtered == 0 then
-    reaper.ShowConsoleMsg("[CYCLE_MIDI] No items pass filters\n")
     return
   end
-
-  reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] Group '%s' has %d items (%d after filters)\n", tostring(item_name), #content, #filtered))
 
   -- Find current position in filtered list
   local current = M.box_current_midi_track[item_name] or 1
@@ -399,14 +395,10 @@ function M.cycle_midi_item(item_name, delta)
     end
   end
 
-  reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] Current filtered position: %d/%d\n", current_pos, #filtered))
-
   -- Cycle through filtered list
   current_pos = current_pos + delta
   if current_pos > #filtered then current_pos = 1 end
   if current_pos < 1 then current_pos = #filtered end
-
-  reaper.ShowConsoleMsg(string.format("[CYCLE_MIDI] New filtered position: %d/%d (absolute index: %d)\n", current_pos, #filtered, filtered[current_pos].index))
 
   M.box_current_midi_track[item_name] = filtered[current_pos].index
 

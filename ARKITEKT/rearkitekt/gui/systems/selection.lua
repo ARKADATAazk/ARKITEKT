@@ -27,8 +27,10 @@ end
 -- Toggle selection of an item
 function Selection:toggle(id)
   if not id then return end
-  self.selected[id] = not self.selected[id]
   if self.selected[id] then
+    self.selected[id] = nil
+  else
+    self.selected[id] = true
     self.last_clicked = id
   end
 end

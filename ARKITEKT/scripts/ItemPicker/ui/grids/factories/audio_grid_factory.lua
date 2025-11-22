@@ -175,16 +175,6 @@ function M.create(ctx, config, state, visualization, animator)
       -- Use cached track color (fetched during loading, not every frame!)
       local track_color = entry.track_color or 0
 
-      -- DEBUG: Log track color values
-      if not state._color_debug_logged then
-        state._color_debug_logged = {}
-      end
-      if not state._color_debug_logged[track_color] then
-        reaper.ShowConsoleMsg(string.format("[COLOR DEBUG] track_color = %d (0x%08X) for item: %s\n",
-          track_color, track_color, item_name))
-        state._color_debug_logged[track_color] = true
-      end
-
       -- REAPER returns: ColorToNative(r,g,b) | 0x01000000 for colored items
       -- Check for the 0x01000000 flag to determine if item has a color
       local color
@@ -495,7 +485,7 @@ function M.create(ctx, config, state, visualization, animator)
       state.runtime_cache.audio_filter_hash = nil
     end,
 
-    on_select = function(selected_keys)
+    on_select = function(grid, selected_keys)
       -- Update state with current selection count
       state.audio_selection_count = #selected_keys
     end,
@@ -559,7 +549,7 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     -- Double-click: start rename
-    double_click = function(uuid)
+    double_click = function(grid, uuid)
       local items = get_items()
       for _, item_data in ipairs(items) do
         if item_data.uuid == uuid then
