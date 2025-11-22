@@ -89,7 +89,7 @@ M.CONFIG = {
     width = 28,              -- Fixed width for rectangle chips
     padding_x = 2,           -- Horizontal padding inside chip
     gap = 2,                 -- Gap between chips
-    margin_x = 50,           -- Start after badge (leave room for #1)
+    margin_x = 38,           -- Start after badge (leave room for #1)
     rounding = 2,            -- Small corner rounding
     max_tags = 4,            -- Maximum tags to show
     -- Abbreviated display names
