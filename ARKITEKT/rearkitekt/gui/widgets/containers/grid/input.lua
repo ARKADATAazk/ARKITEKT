@@ -43,9 +43,6 @@ M.DEFAULT_SHORTCUTS = {
   { key = ImGui.Key_Y, ctrl = true, name = 'redo' },  -- Alternate
 }
 
--- Keep old name for any legacy code (will be removed later)
-M.SHORTCUT_REGISTRY = M.DEFAULT_SHORTCUTS
-
 -- =============================================================================
 -- DEFAULT BEHAVIORS
 -- Built-in behaviors that work for all grids.
@@ -87,10 +84,20 @@ M.DEFAULT_BEHAVIORS = {
 -- =============================================================================
 -- DEFAULT MOUSE BEHAVIORS
 -- Mouse + modifier combinations. Grids can override via mouse_behaviors.
+--
+-- Behavior signatures:
+--   wheel behaviors: (grid, target_key, delta)
+--   click behaviors: (grid, key, selected_keys)
+--   double_click:    (grid, key)
 -- =============================================================================
 M.DEFAULT_MOUSE_BEHAVIORS = {
   -- SHIFT+wheel: cycle through item variants
   ['wheel:shift'] = function(grid, target_key, delta)
+    -- Check for direct override first
+    if grid.behaviors and grid.behaviors['wheel:shift'] then
+      return grid.behaviors['wheel:shift'](grid, target_key, delta)
+    end
+    -- Default: use wheel_cycle behavior
     if grid.behaviors and grid.behaviors.wheel_cycle then
       local new_uuid = grid.behaviors.wheel_cycle(grid, {target_key}, delta)
       if new_uuid and new_uuid ~= target_key then
@@ -106,11 +113,13 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
 
   -- CTRL+wheel: resize tiles (vertical by default)
   ['wheel:ctrl'] = function(grid, target_key, delta)
+    -- Check for direct override first
     if grid.behaviors and grid.behaviors['wheel:ctrl'] then
-      -- Use grid's custom wheel:ctrl behavior
       grid.behaviors['wheel:ctrl'](grid, target_key, delta)
       return true
-    elseif grid.behaviors and grid.behaviors.wheel_resize then
+    end
+    -- Default: use wheel_resize behavior
+    if grid.behaviors and grid.behaviors.wheel_resize then
       grid.behaviors.wheel_resize(grid, 'vertical', delta)
       return true
     end
@@ -119,6 +128,12 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
 
   -- ALT+wheel: resize tiles (horizontal)
   ['wheel:alt'] = function(grid, target_key, delta)
+    -- Check for direct override first
+    if grid.behaviors and grid.behaviors['wheel:alt'] then
+      grid.behaviors['wheel:alt'](grid, target_key, delta)
+      return true
+    end
+    -- Default: use wheel_resize behavior
     if grid.behaviors and grid.behaviors.wheel_resize then
       grid.behaviors.wheel_resize(grid, 'horizontal', delta)
       return true
@@ -140,17 +155,10 @@ M.DEFAULT_MOUSE_BEHAVIORS = {
     return false
   end,
 
-  -- Right-click: context menu or toggle
+  -- Right-click: context menu
   ['click:right'] = function(grid, key, selected_keys)
     if grid.behaviors and grid.behaviors['click:right'] then
       grid.behaviors['click:right'](grid, key, selected_keys)
-      return true
-    elseif grid.behaviors and grid.behaviors.toggle_enabled then
-      if grid.selection:is_selected(key) and #selected_keys > 1 then
-        grid.behaviors.toggle_enabled(selected_keys)
-      else
-        grid.behaviors.toggle_enabled({key})
-      end
       return true
     end
     return false
