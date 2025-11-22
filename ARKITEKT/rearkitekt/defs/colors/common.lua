@@ -71,8 +71,8 @@ M.SEMANTIC = {
 -- =============================================================================
 
 M.OPERATIONS = {
-  move = "#FFFFFFFF",         -- White - move operation
-  copy = "#14B8A6FF",         -- Teal - copy operation
+  move = "#CCCCCCFF",         -- Light gray - move operation
+  copy = "#06B6D4FF",         -- Cyan - copy operation
   delete = "#E84A4AFF",       -- Red - delete operation
   link = "#4A9EFFFF",         -- Blue - link/reference operation
 }
