@@ -84,6 +84,7 @@ M.midi_selection_count = 0
 -- Preview state
 M.previewing = false
 M.preview_item = nil
+M.preview_item_guid = nil  -- Track item by GUID for reliable comparison
 M.preview_start_time = nil
 M.preview_duration = nil
 
@@ -490,11 +491,15 @@ function M.request_exit()
 end
 
 -- Preview management (using SWS extension commands)
-function M.start_preview(item)
+-- force_mode: nil (use setting), "through_track" (force with FX), "direct" (force no FX)
+function M.start_preview(item, force_mode)
   if not item then return end
 
   -- Stop current preview
   M.stop_preview()
+
+  -- Get item GUID for reliable comparison
+  local item_guid = reaper.BR_GetMediaItemGUID(item)
 
   -- Get item duration for progress tracking
   local item_len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
@@ -502,9 +507,6 @@ function M.start_preview(item)
   -- First, select the item for SWS commands to work
   reaper.SelectAllMediaItems(0, false)  -- Deselect all
   reaper.SetMediaItemSelected(item, true)
-
-  -- Get currently selected track (if any)
-  local selected_track = reaper.GetSelectedTrack(0, 0)
 
   -- Check if it's MIDI
   local take = reaper.GetActiveTake(item)
@@ -519,18 +521,27 @@ function M.start_preview(item)
       reaper.Main_OnCommand(cmd_id, 0)
       M.previewing = true
       M.preview_item = item
+      M.preview_item_guid = item_guid
       M.preview_start_time = reaper.time_precise()
       M.preview_duration = item_len
     end
   else
-    -- Audio: Use SWS commands
-    if selected_track then
-      -- Preview through selected track with FX
+    -- Audio: Check force_mode or fall back to setting
+    local use_through_track = M.settings.play_item_through_track
+    if force_mode == "through_track" then
+      use_through_track = true
+    elseif force_mode == "direct" then
+      use_through_track = false
+    end
+
+    if use_through_track then
+      -- Preview through track with FX
       local cmd_id = reaper.NamedCommandLookup("_SWS_PREVIEWTRACK")
       if cmd_id and cmd_id ~= 0 then
         reaper.Main_OnCommand(cmd_id, 0)
         M.previewing = true
         M.preview_item = item
+        M.preview_item_guid = item_guid
         M.preview_start_time = reaper.time_precise()
         M.preview_duration = item_len
       end
@@ -541,6 +552,7 @@ function M.start_preview(item)
         reaper.Main_OnCommand(cmd_id, 0)
         M.previewing = true
         M.preview_item = item
+        M.preview_item_guid = item_guid
         M.preview_start_time = reaper.time_precise()
         M.preview_duration = item_len
       end
@@ -550,20 +562,23 @@ end
 
 function M.stop_preview()
   if M.previewing then
-    -- Stop SWS preview
-    local cmd_id = reaper.NamedCommandLookup("_XENAKIOS_STOPITEMPREVIEW")
+    -- Stop SWS preview (matching ItemPicker OG)
+    local cmd_id = reaper.NamedCommandLookup("_SWS_STOPPREVIEW")
     if cmd_id and cmd_id ~= 0 then
       reaper.Main_OnCommand(cmd_id, 0)
     end
     M.previewing = false
     M.preview_item = nil
+    M.preview_item_guid = nil
     M.preview_start_time = nil
     M.preview_duration = nil
   end
 end
 
 function M.is_previewing(item)
-  return M.previewing and M.preview_item == item
+  if not M.previewing or not item then return false end
+  local item_guid = reaper.BR_GetMediaItemGUID(item)
+  return M.preview_item_guid == item_guid
 end
 
 function M.get_preview_progress()

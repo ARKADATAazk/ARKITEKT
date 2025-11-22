@@ -519,10 +519,11 @@ function M.create(ctx, config, state, visualization, animator)
 
       for _, item_data in ipairs(items) do
         if item_data.uuid == uuid then
-          -- Toggle preview
+          -- Toggle preview: stop if this exact item is playing, otherwise start/switch
           if state.is_previewing(item_data.item) then
             state.stop_preview()
           else
+            -- MIDI always uses preview through track, modifier keys don't apply
             state.start_preview(item_data.item)
           end
           return

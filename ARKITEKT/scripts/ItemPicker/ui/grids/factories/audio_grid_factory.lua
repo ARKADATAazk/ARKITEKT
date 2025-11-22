@@ -5,11 +5,26 @@
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
+local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
 local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
 
 local M = {}
 
+-- Add custom shortcuts for preview modes (audio only)
+local shortcuts_added = false
+local function ensure_shortcuts()
+  if shortcuts_added then return end
+
+  -- Add CTRL+SPACE and SHIFT+SPACE shortcuts
+  table.insert(GridInput.SHORTCUT_REGISTRY, { key = ImGui.Key_Space, ctrl = true, name = 'play_through_track' })
+  table.insert(GridInput.SHORTCUT_REGISTRY, { key = ImGui.Key_Space, shift = true, name = 'play_direct' })
+
+  shortcuts_added = true
+end
+
 function M.create(ctx, config, state, visualization, animator)
+  ensure_shortcuts()
+
   local function get_items()
     if not state.sample_indexes then return {} end
 
@@ -510,7 +525,7 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     play = function(selected_keys)
-      -- Preview selected items (use first selected)
+      -- Preview selected items (use first selected) - default mode
       if not selected_keys or #selected_keys == 0 then return end
 
       local key = selected_keys[1]
@@ -518,11 +533,49 @@ function M.create(ctx, config, state, visualization, animator)
 
       for _, item_data in ipairs(items) do
         if item_data.key == key then
-          -- Toggle preview
+          -- Toggle preview: stop if this exact item is playing, otherwise start/switch
           if state.is_previewing(item_data.item) then
             state.stop_preview()
           else
-            state.start_preview(item_data.item)
+            state.start_preview(item_data.item) -- Use default mode (respects setting)
+          end
+          return
+        end
+      end
+    end,
+
+    play_through_track = function(selected_keys)
+      -- CTRL+SPACE: Force play through track (with FX)
+      if not selected_keys or #selected_keys == 0 then return end
+
+      local key = selected_keys[1]
+      local items = get_items()
+
+      for _, item_data in ipairs(items) do
+        if item_data.key == key then
+          if state.is_previewing(item_data.item) then
+            state.stop_preview()
+          else
+            state.start_preview(item_data.item, "through_track")
+          end
+          return
+        end
+      end
+    end,
+
+    play_direct = function(selected_keys)
+      -- SHIFT+SPACE: Force direct preview (no FX)
+      if not selected_keys or #selected_keys == 0 then return end
+
+      local key = selected_keys[1]
+      local items = get_items()
+
+      for _, item_data in ipairs(items) do
+        if item_data.key == key then
+          if state.is_previewing(item_data.item) then
+            state.stop_preview()
+          else
+            state.start_preview(item_data.item, "direct")
           end
           return
         end

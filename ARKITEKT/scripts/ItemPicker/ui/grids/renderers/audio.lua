@@ -8,6 +8,7 @@ local Draw = require('rearkitekt.gui.draw')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
 local Shapes = require('rearkitekt.gui.rendering.shapes')
+local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
 
 local M = {}
 
@@ -218,6 +219,11 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   ::skip_waveform::
+
+  -- Render playback progress bar (after visualization, before header)
+  if playback_progress > 0 and playback_fade > 0 then
+    TileFX.render_playback_progress(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, base_color, playback_progress, playback_fade, config.TILE.ROUNDING)
+  end
 
   -- Render header with animated fade and size transition
   -- Apply header_alpha_factor for transition fade (fades out when going to compact, fades in when going to normal)
