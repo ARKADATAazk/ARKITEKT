@@ -6,8 +6,12 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.defs.colors')
 local ColorUtils = require('rearkitekt.core.colors')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
+local Draw = require('rearkitekt.gui.draw')
 
 local hexrgb = ColorUtils.hexrgb
+
+-- Remix icon for paint fill (selection indicator)
+local ICON_PAINT_FILL = "\xEF\xBF\x82"  -- U+EFC2
 
 local M = {}
 
@@ -76,7 +80,10 @@ function M.render(ctx, opts)
 
   -- Grid spacing based on chip size + gap
   local chip_spacing = effective_size + chip_gap
-  local grid_offset_x = item_padding_x
+
+  -- Calculate actual grid width and center it
+  local actual_grid_width = (columns * effective_size) + ((columns - 1) * chip_gap)
+  local grid_offset_x = (menu_width - actual_grid_width) * 0.5
 
   -- Convert palette to integer colors
   local preset_colors = {}
@@ -116,7 +123,7 @@ function M.render(ctx, opts)
     local br, bg, bb = ColorUtils.hsl_to_rgb(h, s, darker_l)
     local border_col = ColorUtils.components_to_rgba(br, bg, bb, 255)
 
-    -- Draw chip with glow effects
+    -- Draw chip (no glow - using icon for selection)
     Chip.draw(ctx, {
       style = Chip.STYLE.INDICATOR,
       shape = shape,
@@ -129,15 +136,23 @@ function M.render(ctx, opts)
       rounding = 1,  -- Slight rounding for Wwise look
       -- For circles (legacy)
       radius = chip_radius,
-      is_selected = is_selected,
+      is_selected = false,  -- Don't use chip's selection state
       is_hovered = is_hovered,
-      show_glow = is_selected or is_hovered,
-      glow_layers = is_selected and 4 or 2,
+      show_glow = false,  -- No glow - using icon instead
       shadow = false,  -- No shadow for cleaner Wwise look
       border = true,   -- Always show border
       border_color = border_col,
       border_thickness = 1.0,
     })
+
+    -- Draw paint-fill icon for selected color
+    if is_selected then
+      local icon_color = hexrgb("#000000FF")  -- Black icon
+      local text_w, text_h = ImGui.CalcTextSize(ctx, ICON_PAINT_FILL)
+      local icon_x = chip_cx - text_w * 0.5
+      local icon_y = chip_cy - text_h * 0.5
+      Draw.text(dl, icon_x, icon_y, icon_color, ICON_PAINT_FILL)
+    end
   end
 
   -- Calculate grid height and move cursor past it
