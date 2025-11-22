@@ -795,20 +795,17 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Draw panel background
     draw_panel(draw_list, panel_x1, panel_y1, panel_x2, panel_y2, panel_rounding, section_fade)
 
-    -- MIDI grid child (starts at panel top for Z-order, content offset by header_height)
+    -- Draw MIDI header first, in its own space
+    draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config, 0)
+
+    -- MIDI grid child starts below header, in its own space
     local midi_grid_width = content_width - panel_right_padding - panel_padding * 2
-    local midi_child_h = header_height + content_height - panel_padding
-    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y)
+    local midi_child_h = content_height - panel_padding
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
     if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
-      -- MIDI header (centered) - drawn inside child
-      local scroll_y = ImGui.GetScrollY(ctx)
-      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config, scroll_y)
-
-      -- Grid content area - pass header_height so grid starts below header
-      local midi_grid_full_h = header_height + content_height - panel_padding
-      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_grid_full_h, header_height)
+      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_child_h, 0)
       ImGui.EndChild(ctx)
     end
 
@@ -824,20 +821,17 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Draw panel background
     draw_panel(draw_list, panel_x1, panel_y1, panel_x2, panel_y2, panel_rounding, section_fade)
 
-    -- Audio grid child (starts at panel top for Z-order, content offset by header_height)
+    -- Draw Audio header first, in its own space
+    draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config, 0)
+
+    -- Audio grid child starts below header, in its own space
     local audio_grid_width = content_width - panel_right_padding - panel_padding * 2
-    local audio_child_h = header_height + content_height - panel_padding
-    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y)
+    local audio_child_h = content_height - panel_padding
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
     if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
-      -- Audio header (centered) - drawn inside child
-      local scroll_y = ImGui.GetScrollY(ctx)
-      draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config, scroll_y)
-
-      -- Grid content area - pass header_height so grid starts below header
-      local audio_grid_full_h = header_height + content_height - panel_padding
-      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_grid_full_h, header_height)
+      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_child_h, 0)
       ImGui.EndChild(ctx)
     end
 
@@ -893,23 +887,20 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
       draw_panel(draw_list, midi_panel_x1, midi_panel_y1, midi_panel_x2, midi_panel_y2, panel_rounding, section_fade)
 
-      -- MIDI grid child (starts at panel top for Z-order, content offset by header_height)
+      -- Draw MIDI header first, in its own space
+      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14, self.config, 0)
+
+      -- MIDI grid child starts below header, in its own space
       local midi_grid_width = midi_width - panel_padding * 2
-      local midi_child_h = header_height + content_height - panel_padding
-      ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y)
+      local midi_child_h = content_height - panel_padding
+      ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
       if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
         ImGui.WindowFlags_NoScrollbar) then
-        -- MIDI header (centered) - drawn inside child
-        local scroll_y = ImGui.GetScrollY(ctx)
-        draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14, self.config, scroll_y)
-
-        -- Grid content area - pass header_height so grid starts below header
         if self.coordinator.midi_grid then
           self.coordinator.midi_grid.block_all_input = block_input
         end
-        local midi_grid_full_h = header_height + content_height - panel_padding
-        self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_grid_full_h, header_height)
+        self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_child_h, 0)
         ImGui.EndChild(ctx)
       end
 
@@ -934,23 +925,20 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
       draw_panel(draw_list, audio_panel_x1, audio_panel_y1, audio_panel_x2, audio_panel_y2, panel_rounding, section_fade)
 
-      -- Audio grid child (starts at panel top for Z-order, content offset by header_height)
+      -- Draw Audio header first, in its own space
+      draw_panel_title(ctx, draw_list, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15, self.config, 0)
+
+      -- Audio grid child starts below header, in its own space
       local audio_grid_width = audio_width - panel_padding * 2
-      local audio_child_h = header_height + content_height - panel_padding
-      ImGui.SetCursorScreenPos(ctx, audio_start_x + panel_padding, start_y)
+      local audio_child_h = content_height - panel_padding
+      ImGui.SetCursorScreenPos(ctx, audio_start_x + panel_padding, start_y + header_height)
 
       if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
         ImGui.WindowFlags_NoScrollbar) then
-        -- Audio header (centered) - drawn inside child
-        local scroll_y = ImGui.GetScrollY(ctx)
-        draw_panel_title(ctx, draw_list, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15, self.config, scroll_y)
-
-        -- Grid content area - pass header_height so grid starts below header
         if self.coordinator.audio_grid then
           self.coordinator.audio_grid.block_all_input = block_input
         end
-        local audio_grid_full_h = header_height + content_height - panel_padding
-        self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_grid_full_h, header_height)
+        self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_child_h, 0)
         ImGui.EndChild(ctx)
       end
 
@@ -1003,24 +991,21 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Draw MIDI panel background
     draw_panel(draw_list, midi_panel_x1, midi_panel_y1, midi_panel_x2, midi_panel_y2, panel_rounding, section_fade)
 
-    -- MIDI grid child (starts at panel top for Z-order, content offset by header_height)
+    -- Draw MIDI header first, in its own space
+    draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config, 0)
+
+    -- MIDI grid child starts below header, in its own space
     local midi_grid_width = content_width - panel_right_padding - panel_padding * 2
-    local midi_child_h = header_height + midi_height - panel_padding
-    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y)
+    local midi_child_h = midi_height - panel_padding
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
     if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
-      -- MIDI header (centered) - drawn inside child
-      local scroll_y = ImGui.GetScrollY(ctx)
-      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config, scroll_y)
-
-      -- Grid content area - pass header_height so grid starts below header
       -- Block grid input during separator drag
       if self.coordinator.midi_grid then
         self.coordinator.midi_grid.block_all_input = block_input
       end
-      local midi_grid_full_h = header_height + midi_height - panel_padding
-      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_grid_full_h, header_height)
+      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_child_h, 0)
       ImGui.EndChild(ctx)
     end
 
@@ -1046,24 +1031,21 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Draw Audio panel background
     draw_panel(draw_list, audio_panel_x1, audio_panel_y1, audio_panel_x2, audio_panel_y2, panel_rounding, section_fade)
 
-    -- Audio grid child (starts at panel top for Z-order, content offset by header_height)
+    -- Draw Audio header first, in its own space
+    draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config, 0)
+
+    -- Audio grid child starts below header, in its own space
     local audio_grid_width = content_width - panel_right_padding - panel_padding * 2
-    local audio_child_h = header_height + audio_height - panel_padding
-    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_start_y)
+    local audio_child_h = audio_height - panel_padding
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_start_y + header_height)
 
     if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
-      -- Audio header (centered) - drawn inside child
-      local scroll_y = ImGui.GetScrollY(ctx)
-      draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config, scroll_y)
-
-      -- Grid content area - pass header_height so grid starts below header
       -- Block grid input during separator drag
       if self.coordinator.audio_grid then
         self.coordinator.audio_grid.block_all_input = block_input
       end
-      local audio_grid_full_h = header_height + audio_height - panel_padding
-      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_grid_full_h, header_height)
+      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_child_h, 0)
       ImGui.EndChild(ctx)
     end
 
