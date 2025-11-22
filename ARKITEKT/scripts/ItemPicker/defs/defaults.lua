@@ -30,6 +30,7 @@ M.SETTINGS = {
   waveform_filled = true,
   waveform_zero_line = false,
   show_visualization_in_small_tiles = false,
+  show_duration = true,
   enable_tile_fx = true,
   layout_mode = "vertical",
   show_region_tags = false,

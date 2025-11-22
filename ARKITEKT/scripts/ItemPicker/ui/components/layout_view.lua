@@ -459,6 +459,19 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       self.state.set_setting('waveform_zero_line', not waveform_zero_line)
     end
 
+    -- Show Duration checkbox
+    local zero_line_label_width = ImGui.CalcTextSize(ctx, "Zero Line")
+    local show_duration_checkbox_x = zero_line_checkbox_x + zero_line_label_width + 18 + 8
+    local show_duration = self.state.settings.show_duration
+    if show_duration == nil then show_duration = true end
+
+    local _, show_duration_clicked = Checkbox.draw(ctx, draw_list, show_duration_checkbox_x, waveform_y,
+      "Show Duration",
+      show_duration, checkbox_config, "show_duration")
+    if show_duration_clicked then
+      self.state.set_setting('show_duration', not show_duration)
+    end
+
     ImGui.PopStyleVar(ctx)
   end
 

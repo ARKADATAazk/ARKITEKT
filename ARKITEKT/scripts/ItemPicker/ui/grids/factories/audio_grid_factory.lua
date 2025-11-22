@@ -388,6 +388,11 @@ function M.create(ctx, config, state, visualization, animator)
       state.persist_disabled()
       -- Force cache invalidation to refresh grid
       state.runtime_cache.audio_filter_hash = nil
+      -- Deselect all items after disabling to avoid issues
+      grid.selection:clear()
+      if grid.behaviors and grid.behaviors.on_select then
+        grid.behaviors.on_select(grid, grid.selection:selected_keys())
+      end
     end,
 
     -- F key: toggle favorite
