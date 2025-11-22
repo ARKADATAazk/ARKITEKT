@@ -608,7 +608,8 @@ function AssemblerView:draw(ctx, shell_state)
 
   -- Draw package modal (outside panel, as overlay)
   if self.package_modal then
-    self.package_modal:draw(ctx)
+    local window = shell_state and shell_state.window
+    self.package_modal:draw(ctx, window)
   end
 end
 

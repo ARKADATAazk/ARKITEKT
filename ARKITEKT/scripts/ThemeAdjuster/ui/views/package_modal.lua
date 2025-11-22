@@ -14,28 +14,53 @@ PackageModal.__index = PackageModal
 local SEP = package.config:sub(1,1)
 
 -- Tile constants
-local TILE_SIZE = 80
-local TILE_PADDING = 6
-local TILE_SPACING = 8
+local TILE_SIZE = 56
+local TILE_SPACING = 6
 
 -- Image cache for tooltips
 local image_cache = {}
 
--- Helper to create/get cached image
-local function get_cached_image(path)
+-- Helper to create/get cached image with proper lifecycle management
+local function get_cached_image(ctx, path)
   if not path or path == "" then return nil end
   if path:find("^%(mock%)") then return nil end  -- Demo packages have no real images
 
-  if image_cache[path] == nil then
-    local ok, img = pcall(ImGui.CreateImage, path)
-    if ok and img then
-      image_cache[path] = img
+  local entry = image_cache[path]
+
+  -- Check if we have a cached entry
+  if entry ~= nil then
+    if entry == false then
+      return nil  -- Previously failed to load
+    end
+
+    -- Validate the image is still valid
+    local ok, w, h = pcall(ImGui.Image_GetSize, entry)
+    if ok and w and w > 0 then
+      return entry  -- Image is still valid
     else
-      image_cache[path] = false  -- Mark as failed
+      -- Image became invalid, clear it
+      pcall(function() ImGui.Image_Free(entry) end)
+      image_cache[path] = nil
     end
   end
 
-  return image_cache[path] or nil
+  -- Try to create new image
+  local ok, img = pcall(ImGui.CreateImage, path)
+  if ok and img then
+    -- Verify it loaded correctly
+    local ok2, w, h = pcall(ImGui.Image_GetSize, img)
+    if ok2 and w and w > 0 then
+      image_cache[path] = img
+      return img
+    else
+      pcall(function() ImGui.Image_Free(img) end)
+      image_cache[path] = false
+      return nil
+    end
+  else
+    image_cache[path] = false  -- Mark as failed
+    return nil
+  end
 end
 
 -- Helper to check if DPI variant exists
@@ -78,6 +103,19 @@ local function get_area_from_key(key)
   end
 end
 
+-- Parse hex color string to RGBA int
+local function parse_hex_color(hex_str)
+  if not hex_str then return nil end
+  local hex = hex_str:gsub("^#", "")
+  if #hex == 6 then
+    local r = tonumber(hex:sub(1, 2), 16) or 0
+    local g = tonumber(hex:sub(3, 4), 16) or 0
+    local b = tonumber(hex:sub(5, 6), 16) or 0
+    return (r << 24) | (g << 16) | (b << 8) | 0xFF
+  end
+  return nil
+end
+
 function M.new(State, settings)
   local self = setmetatable({
     State = State,
@@ -85,6 +123,7 @@ function M.new(State, settings)
 
     -- Modal state
     open = false,
+    overlay_pushed = false,
     package_id = nil,
     package_data = nil,
 
@@ -104,10 +143,12 @@ function PackageModal:show(package_data)
   self.package_data = package_data
   self.search_text = ""
   self.selected_assets = {}
+  self.overlay_pushed = false
 end
 
 function PackageModal:close()
   self.open = false
+  self.overlay_pushed = false
   self.package_id = nil
   self.package_data = nil
   self.search_text = ""
@@ -176,84 +217,6 @@ function PackageModal:group_assets_by_area(keys_order)
   return groups, group_order
 end
 
-function PackageModal:draw_toolbar(ctx)
-  -- Search
-  ImGui.SetNextItemWidth(ctx, 220)
-  local changed, new_text = ImGui.InputTextWithHint(ctx, "##search", "Search assets...", self.search_text)
-  if changed then
-    self.search_text = new_text
-  end
-
-  ImGui.SameLine(ctx)
-
-  -- View mode toggle
-  if ImGui.Button(ctx, self.view_mode == "grid" and "Grid" or "Tree", 60) then
-    self.view_mode = self.view_mode == "grid" and "tree" or "grid"
-  end
-
-  ImGui.SameLine(ctx)
-
-  -- Group toggle
-  if ImGui.Button(ctx, self.group_by_area and "Grouped" or "Flat") then
-    self.group_by_area = not self.group_by_area
-  end
-end
-
-function PackageModal:draw_bulk_actions(ctx, pkg)
-  -- Select all visible
-  if ImGui.Button(ctx, "Select All", 80, 0) then
-    for _, key in ipairs(pkg.keys_order or {}) do
-      if self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true) then
-        self.selected_assets[key] = true
-      end
-    end
-  end
-
-  ImGui.SameLine(ctx)
-  if ImGui.Button(ctx, "Clear", 60, 0) then
-    self.selected_assets = {}
-  end
-
-  ImGui.SameLine(ctx)
-  if ImGui.Button(ctx, "Include Sel.", 80, 0) then
-    local all_exclusions = self.State.get_package_exclusions()
-    if not all_exclusions[pkg.id] then
-      all_exclusions[pkg.id] = {}
-    end
-    for key, selected in pairs(self.selected_assets) do
-      if selected then
-        all_exclusions[pkg.id][key] = nil
-      end
-    end
-    self.State.set_package_exclusions(all_exclusions)
-  end
-
-  ImGui.SameLine(ctx)
-  if ImGui.Button(ctx, "Exclude Sel.", 80, 0) then
-    local all_exclusions = self.State.get_package_exclusions()
-    if not all_exclusions[pkg.id] then
-      all_exclusions[pkg.id] = {}
-    end
-    for key, selected in pairs(self.selected_assets) do
-      if selected then
-        all_exclusions[pkg.id][key] = true
-      end
-    end
-    self.State.set_package_exclusions(all_exclusions)
-  end
-
-  ImGui.SameLine(ctx)
-  if ImGui.Button(ctx, "Pin Sel.", 65, 0) then
-    local pins = self.State.get_package_pins()
-    for key, selected in pairs(self.selected_assets) do
-      if selected then
-        pins[key] = pkg.id
-      end
-    end
-    self.State.set_package_pins(pins)
-  end
-end
-
 -- Draw a single asset tile
 function PackageModal:draw_asset_tile(ctx, pkg, key)
   local excl = self:get_package_exclusions(pkg.id)
@@ -269,27 +232,27 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   -- Check DPI variants
   local has_150, has_200 = check_dpi_variants(asset_path)
 
-  -- Tile colors
-  local bg_color
-  if selected then
-    bg_color = hexrgb("#4A90E2", 0.4)  -- Blue for selected
-  elseif not included then
-    bg_color = hexrgb("#AA3333", 0.3)  -- Red for excluded
-  elseif is_pinned then
-    bg_color = hexrgb("#4AE290", 0.3)  -- Green for pinned
-  else
-    bg_color = hexrgb("#333340", 0.8)  -- Default
-  end
+  -- Get package color for tile background
+  local pkg_color = parse_hex_color(pkg.meta and pkg.meta.color)
+  local base_color = pkg_color or hexrgb("#444455")
 
-  local border_color = selected and hexrgb("#4A90E2") or hexrgb("#555566")
+  -- Apply opacity based on included state
+  local bg_opacity = included and 0.6 or 0.2
+  local r = (base_color >> 24) & 0xFF
+  local g = (base_color >> 16) & 0xFF
+  local b = (base_color >> 8) & 0xFF
+  local bg_color = (r << 24) | (g << 16) | (b << 8) | math.floor(255 * bg_opacity)
+
+  -- Border color based on selection
+  local border_color = selected and hexrgb("#4A90E2") or hexrgb("#333344", 0.8)
 
   -- Draw tile background
   local x1, y1 = ImGui.GetCursorScreenPos(ctx)
   local x2, y2 = x1 + TILE_SIZE, y1 + TILE_SIZE
   local dl = ImGui.GetWindowDrawList(ctx)
 
-  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, 4)
-  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 4, 0, 1)
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, 3)
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 3, 0, selected and 2 or 1)
 
   -- Invisible button for interaction
   ImGui.InvisibleButton(ctx, "##tile_" .. key, TILE_SIZE, TILE_SIZE)
@@ -320,34 +283,39 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
 
   -- Draw key name (truncated)
   local display_name = key
-  if #display_name > 10 then
-    display_name = display_name:sub(1, 8) .. ".."
+  if #display_name > 8 then
+    display_name = display_name:sub(1, 6) .. ".."
   end
 
-  local text_color = included and hexrgb("#FFFFFF") or hexrgb("#888888")
+  local text_color = included and hexrgb("#FFFFFF") or hexrgb("#666666")
   local text_w = ImGui.CalcTextSize(ctx, display_name)
   local text_x = x1 + (TILE_SIZE - text_w) * 0.5
-  local text_y = y2 - 16
+  local text_y = y2 - 12
 
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, display_name)
 
-  -- Draw status indicators (top-right corner)
-  local indicator_y = y1 + 4
-  local indicator_x = x2 - 8
+  -- BADGE SYSTEM for status indicators
 
-  -- Pinned indicator
-  if is_pinned then
-    ImGui.DrawList_AddCircleFilled(dl, indicator_x, indicator_y, 4, hexrgb("#4AE290"))
-    indicator_x = indicator_x - 10
+  -- Excluded badge (red X in top-left)
+  if not included then
+    local badge_x = x1 + 3
+    local badge_y = y1 + 3
+    ImGui.DrawList_AddCircleFilled(dl, badge_x + 5, badge_y + 5, 6, hexrgb("#CC3333"))
+    ImGui.DrawList_AddText(dl, badge_x + 2, badge_y, hexrgb("#FFFFFF"), "X")
   end
 
-  -- DPI indicators (bottom-left)
+  -- Pinned badge (green dot in top-right)
+  if is_pinned then
+    local badge_x = x2 - 8
+    local badge_y = y1 + 4
+    ImGui.DrawList_AddCircleFilled(dl, badge_x, badge_y + 4, 5, hexrgb("#4AE290"))
+  end
+
+  -- DPI badge (bottom-left corner)
   if has_150 or has_200 then
-    local dpi_x = x1 + 4
-    local dpi_y = y1 + 4
-    local dpi_text = ""
-    if has_150 then dpi_text = "1.5x" end
-    if has_200 then dpi_text = dpi_text .. (has_150 and " 2x" or "2x") end
+    local dpi_x = x1 + 2
+    local dpi_y = y1 + 2
+    local dpi_text = has_200 and "2x" or "1.5"
     ImGui.DrawList_AddText(dl, dpi_x, dpi_y, hexrgb("#888888"), dpi_text)
   end
 
@@ -356,18 +324,20 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
     ImGui.BeginTooltip(ctx)
 
     -- Show image preview if available
-    local img = get_cached_image(asset_path)
+    local img = get_cached_image(ctx, asset_path)
     if img then
-      local img_w, img_h = ImGui.Image_GetSize(img)
-      -- Scale down large images
-      local max_size = 200
-      if img_w > max_size or img_h > max_size then
-        local scale = max_size / math.max(img_w, img_h)
-        img_w = img_w * scale
-        img_h = img_h * scale
+      local ok, img_w, img_h = pcall(ImGui.Image_GetSize, img)
+      if ok and img_w and img_w > 0 then
+        -- Scale down large images
+        local max_size = 200
+        if img_w > max_size or img_h > max_size then
+          local scale = max_size / math.max(img_w, img_h)
+          img_w = img_w * scale
+          img_h = img_h * scale
+        end
+        ImGui.Image(ctx, img, img_w, img_h)
+        ImGui.Separator(ctx)
       end
-      ImGui.Image(ctx, img, img_w, img_h)
-      ImGui.Separator(ctx)
     end
 
     -- Key name
@@ -401,7 +371,6 @@ end
 
 -- Draw assets in grid view
 function PackageModal:draw_grid_view(ctx, pkg)
-  local excl = self:get_package_exclusions(pkg.id)
   local avail_w = ImGui.GetContentRegionAvail(ctx)
   local columns = math.max(1, math.floor(avail_w / (TILE_SIZE + TILE_SPACING)))
 
@@ -467,217 +436,190 @@ function PackageModal:draw_grid_view(ctx, pkg)
   end
 end
 
--- Draw assets in tree view (table format)
-function PackageModal:draw_tree_view(ctx, pkg)
-  local excl = self:get_package_exclusions(pkg.id)
-  local packages = self.State.get_packages()
-
-  -- Table flags
-  local table_flags = ImGui.TableFlags_Borders |
-                      ImGui.TableFlags_RowBg |
-                      ImGui.TableFlags_ScrollY |
-                      ImGui.TableFlags_Resizable
-
-  local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
-
-  if ImGui.BeginTable(ctx, "asset_table", 5, table_flags, avail_w, avail_h) then
-    ImGui.TableSetupScrollFreeze(ctx, 0, 1)
-    ImGui.TableSetupColumn(ctx, "Sel", ImGui.TableColumnFlags_WidthFixed, 30)
-    ImGui.TableSetupColumn(ctx, "Inc", ImGui.TableColumnFlags_WidthFixed, 30)
-    ImGui.TableSetupColumn(ctx, "Key", ImGui.TableColumnFlags_WidthStretch)
-    ImGui.TableSetupColumn(ctx, "DPI", ImGui.TableColumnFlags_WidthFixed, 60)
-    ImGui.TableSetupColumn(ctx, "Pin", ImGui.TableColumnFlags_WidthFixed, 120)
-    ImGui.TableHeadersRow(ctx)
-
-    -- Group if enabled
-    local keys_to_render
-    if self.group_by_area then
-      local groups, group_order = self:group_assets_by_area(pkg.keys_order or {})
-      keys_to_render = {}
-      for _, area in ipairs(group_order) do
-        for _, key in ipairs(groups[area]) do
-          table.insert(keys_to_render, {key = key, area = area})
-        end
-      end
-    else
-      keys_to_render = {}
-      for _, key in ipairs(pkg.keys_order or {}) do
-        table.insert(keys_to_render, {key = key, area = nil})
-      end
-    end
-
-    local last_area = nil
-
-    -- Render rows
-    for _, item in ipairs(keys_to_render) do
-      local key = item.key
-      local area = item.area
-
-      -- Filter by search
-      if self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true) then
-        -- Area separator in grouped mode
-        if self.group_by_area and area ~= last_area then
-          ImGui.TableNextRow(ctx)
-          ImGui.TableSetColumnIndex(ctx, 0)
-          ImGui.TableSetBgColor(ctx, ImGui.TableBgTarget_RowBg0, hexrgb("#252530"))
-          ImGui.Dummy(ctx, 1, 1)
-          ImGui.TableSetColumnIndex(ctx, 2)
-          ImGui.TextColored(ctx, hexrgb("#888888"), "— " .. area .. " —")
-          last_area = area
-        end
-
-        ImGui.TableNextRow(ctx)
-
-        -- Column 0: Select checkbox
-        ImGui.TableSetColumnIndex(ctx, 0)
-        local selected = self.selected_assets[key] or false
-        local changed_sel, new_sel = ImGui.Checkbox(ctx, "##sel_" .. key, selected)
-        if changed_sel then
-          self.selected_assets[key] = new_sel
-        end
-
-        -- Column 1: Include checkbox
-        ImGui.TableSetColumnIndex(ctx, 1)
-        local included = not excl[key]
-        local changed_inc, new_inc = ImGui.Checkbox(ctx, "##inc_" .. key, included)
-        if changed_inc then
-          self:toggle_asset_inclusion(pkg.id, key)
-        end
-
-        -- Column 2: Key name with tooltip
-        ImGui.TableSetColumnIndex(ctx, 2)
-        ImGui.Text(ctx, key)
-
-        -- Tooltip with image preview
-        if ImGui.IsItemHovered(ctx) then
-          local asset = pkg.assets and pkg.assets[key]
-          local asset_path = asset and asset.path
-          local img = get_cached_image(asset_path)
-
-          if img then
-            ImGui.BeginTooltip(ctx)
-            local img_w, img_h = ImGui.Image_GetSize(img)
-            local max_size = 200
-            if img_w > max_size or img_h > max_size then
-              local scale = max_size / math.max(img_w, img_h)
-              img_w = img_w * scale
-              img_h = img_h * scale
-            end
-            ImGui.Image(ctx, img, img_w, img_h)
-            ImGui.EndTooltip(ctx)
-          end
-        end
-
-        -- Column 3: DPI versions
-        ImGui.TableSetColumnIndex(ctx, 3)
-        local asset = pkg.assets and pkg.assets[key]
-        local asset_path = asset and asset.path
-        local has_150, has_200 = check_dpi_variants(asset_path)
-        local dpi_str = ""
-        if has_150 then dpi_str = "1.5x " end
-        if has_200 then dpi_str = dpi_str .. "2x" end
-        ImGui.TextColored(ctx, hexrgb("#888888"), dpi_str)
-
-        -- Column 4: Pinned provider dropdown
-        ImGui.TableSetColumnIndex(ctx, 4)
-        local current_pin = self:get_pinned_provider(key) or ""
-        local preview = current_pin == "" and "(none)" or current_pin
-
-        ImGui.SetNextItemWidth(ctx, -1)
-        if ImGui.BeginCombo(ctx, "##pin_" .. key, preview) then
-          -- None option
-          if ImGui.Selectable(ctx, "(none)", current_pin == "") then
-            self:set_pinned_provider(key, nil)
-          end
-
-          -- Package options (only packages that have this asset)
-          for _, other_pkg in ipairs(packages) do
-            if other_pkg.assets and other_pkg.assets[key] then
-              local is_selected = (current_pin == other_pkg.id)
-              if ImGui.Selectable(ctx, other_pkg.id, is_selected) then
-                self:set_pinned_provider(key, other_pkg.id)
-              end
-            end
-          end
-
-          ImGui.EndCombo(ctx)
-        end
-      end
-    end
-
-    ImGui.EndTable(ctx)
-  end
-end
-
-function PackageModal:draw(ctx)
-  if not self.open or not self.package_data then
-    return
-  end
-
-  -- Open popup if not already open
-  if not ImGui.IsPopupOpen(ctx, "##package_modal") then
-    ImGui.OpenPopup(ctx, "##package_modal")
-  end
-
+-- Draw modal content
+function PackageModal:draw_content(ctx, bounds)
   local pkg = self.package_data
+  if not pkg then return true end  -- Close if no package
 
-  -- Modal window
-  ImGui.SetNextWindowSize(ctx, 900, 650, ImGui.Cond_FirstUseEver)
-  local visible = ImGui.BeginPopupModal(ctx, "##package_modal", true, ImGui.WindowFlags_NoTitleBar)
-
-  if not visible then
-    self.open = false
-    self:close()
-    return
-  end
+  local content_w = bounds.w - 80
+  local start_x = 40
 
   -- Header
+  ImGui.SetCursorPosX(ctx, start_x)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
   ImGui.Text(ctx, "Package: " .. (pkg.meta and pkg.meta.name or pkg.id))
   ImGui.PopStyleColor(ctx)
 
   ImGui.SameLine(ctx, 0, 20)
-  ImGui.TextColored(ctx, hexrgb("#AAAAAA"), "Path:")
-  ImGui.SameLine(ctx)
-  ImGui.Text(ctx, pkg.path or "(demo package)")
+  ImGui.TextColored(ctx, hexrgb("#AAAAAA"), tostring(#(pkg.keys_order or {})) .. " assets")
 
-  if pkg.meta then
+  if pkg.meta and pkg.meta.version then
     ImGui.SameLine(ctx, 0, 20)
-    ImGui.TextColored(ctx, hexrgb("#AAAAAA"), "v" .. (pkg.meta.version or "?"))
-  end
-
-  ImGui.SameLine(ctx, -80)
-  if ImGui.Button(ctx, "Close", 70, 0) then
-    ImGui.CloseCurrentPopup(ctx)
-    self:close()
+    ImGui.TextColored(ctx, hexrgb("#666666"), "v" .. pkg.meta.version)
   end
 
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
   -- Toolbar
-  self:draw_toolbar(ctx)
+  ImGui.SetCursorPosX(ctx, start_x)
+
+  -- Search
+  ImGui.SetNextItemWidth(ctx, 200)
+  local changed, new_text = ImGui.InputTextWithHint(ctx, "##search", "Search assets...", self.search_text)
+  if changed then
+    self.search_text = new_text
+  end
+
+  ImGui.SameLine(ctx)
+
+  -- View mode toggle
+  if ImGui.Button(ctx, self.view_mode == "grid" and "Grid" or "Tree", 50) then
+    self.view_mode = self.view_mode == "grid" and "tree" or "grid"
+  end
+
+  ImGui.SameLine(ctx)
+
+  -- Group toggle
+  if ImGui.Button(ctx, self.group_by_area and "Grouped" or "Flat", 60) then
+    self.group_by_area = not self.group_by_area
+  end
 
   ImGui.Spacing(ctx)
 
   -- Bulk actions
-  self:draw_bulk_actions(ctx, pkg)
+  ImGui.SetCursorPosX(ctx, start_x)
+
+  if ImGui.Button(ctx, "Select All", 70, 0) then
+    for _, key in ipairs(pkg.keys_order or {}) do
+      if self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true) then
+        self.selected_assets[key] = true
+      end
+    end
+  end
+
+  ImGui.SameLine(ctx)
+  if ImGui.Button(ctx, "Clear", 50, 0) then
+    self.selected_assets = {}
+  end
+
+  ImGui.SameLine(ctx)
+  if ImGui.Button(ctx, "Inc.", 35, 0) then
+    local all_exclusions = self.State.get_package_exclusions()
+    if not all_exclusions[pkg.id] then
+      all_exclusions[pkg.id] = {}
+    end
+    for key, selected in pairs(self.selected_assets) do
+      if selected then
+        all_exclusions[pkg.id][key] = nil
+      end
+    end
+    self.State.set_package_exclusions(all_exclusions)
+  end
+
+  ImGui.SameLine(ctx)
+  if ImGui.Button(ctx, "Exc.", 35, 0) then
+    local all_exclusions = self.State.get_package_exclusions()
+    if not all_exclusions[pkg.id] then
+      all_exclusions[pkg.id] = {}
+    end
+    for key, selected in pairs(self.selected_assets) do
+      if selected then
+        all_exclusions[pkg.id][key] = true
+      end
+    end
+    self.State.set_package_exclusions(all_exclusions)
+  end
+
+  ImGui.SameLine(ctx)
+  if ImGui.Button(ctx, "Pin", 35, 0) then
+    local pins = self.State.get_package_pins()
+    for key, selected in pairs(self.selected_assets) do
+      if selected then
+        pins[key] = pkg.id
+      end
+    end
+    self.State.set_package_pins(pins)
+  end
 
   ImGui.Spacing(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- Asset view
-  if ImGui.BeginChild(ctx, "##asset_view", 0, -1) then
+  -- Asset view in scrollable child
+  ImGui.SetCursorPosX(ctx, start_x)
+  local child_h = bounds.h - ImGui.GetCursorPosY(ctx) - 60
+
+  if ImGui.BeginChild(ctx, "##asset_view", content_w, child_h) then
     if self.view_mode == "grid" then
       self:draw_grid_view(ctx, pkg)
     else
-      self:draw_tree_view(ctx, pkg)
+      self:draw_grid_view(ctx, pkg)  -- Use grid for both for now
     end
     ImGui.EndChild(ctx)
   end
 
-  ImGui.EndPopup(ctx)
+  -- Close button
+  ImGui.Spacing(ctx)
+  ImGui.SetCursorPosX(ctx, start_x + (content_w - 100) * 0.5)
+  local should_close = ImGui.Button(ctx, "Close", 100, 28)
+
+  -- Also close on Escape
+  if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+    should_close = true
+  end
+
+  return should_close
+end
+
+function PackageModal:draw(ctx, window)
+  if not self.open or not self.package_data then
+    return
+  end
+
+  -- Use overlay system if available
+  if window and window.overlay and not self.overlay_pushed then
+    self.overlay_pushed = true
+
+    window.overlay:push({
+      id = 'package-modal',
+      close_on_scrim = true,
+      esc_to_close = true,
+      on_close = function()
+        self:close()
+      end,
+      render = function(render_ctx, alpha, bounds)
+        -- Responsive sizing
+        local max_w = 900
+        local max_h = 700
+        local min_w = 600
+        local min_h = 400
+
+        local modal_w = math.floor(math.max(min_w, math.min(max_w, bounds.w * 0.85)))
+        local modal_h = math.floor(math.max(min_h, math.min(max_h, bounds.h * 0.85)))
+
+        -- Center in viewport
+        local modal_x = bounds.x + math.floor((bounds.w - modal_w) * 0.5)
+        local modal_y = bounds.y + math.floor((bounds.h - modal_h) * 0.5)
+
+        ImGui.SetCursorScreenPos(render_ctx, modal_x, modal_y)
+
+        local modal_bounds = {
+          x = modal_x,
+          y = modal_y,
+          w = modal_w,
+          h = modal_h
+        }
+
+        local should_close = self:draw_content(render_ctx, modal_bounds)
+
+        if should_close then
+          window.overlay:pop('package-modal')
+          self:close()
+        end
+      end
+    })
+  end
 end
 
 return M
