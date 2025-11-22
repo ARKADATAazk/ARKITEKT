@@ -275,6 +275,26 @@ local function validate_record(self, path, rec)
     return ensure_record(self, path)
   end
 
+  -- First try ValidatePtr if available (ImGui 0.9+)
+  local validate_fn = ImGui.ValidatePtr
+  if validate_fn then
+    local is_valid = false
+    local ok = pcall(function()
+      is_valid = validate_fn(rec.img, 'ImGui_Image*')
+    end)
+    if not ok or not is_valid then
+      -- Image pointer is invalid, clear and recreate
+      self._cache[path] = nil
+      for i, p in ipairs(self._cache_order) do
+        if p == path then
+          table.remove(self._cache_order, i)
+          break
+        end
+      end
+      return ensure_record(self, path)
+    end
+  end
+
   -- Try to validate the image size, but silently fail if invalid
   -- (avoiding error spam when images are evicted from cache)
   local ok, w, h = pcall(ImGui.Image_GetSize, rec.img)
