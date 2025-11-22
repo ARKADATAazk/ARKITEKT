@@ -2,7 +2,7 @@
 -- Centralized font loading for ARKITEKT applications
 -- Eliminates duplication of font loading logic across entry points
 
-local Constants = require('rearkitekt.defs.app')
+local Typography = require('rearkitekt.defs.typography')
 
 local M = {}
 
@@ -33,11 +33,11 @@ end
 function M.load(ImGui, ctx, opts)
   opts = opts or {}
 
-  -- Use constants for default sizes, allow overrides
-  local default_size = opts.default_size or Constants.TYPOGRAPHY.BODY
-  local title_size = opts.title_size or Constants.TYPOGRAPHY.HEADING
-  local monospace_size = opts.monospace_size or Constants.TYPOGRAPHY.CODE
-  local orbitron_size = opts.orbitron_size or (Constants.TYPOGRAPHY.HEADING * 1.5)  -- Larger for branding
+  -- Use typography for default sizes, allow overrides
+  local default_size = opts.default_size or Typography.SEMANTIC.body
+  local title_size = opts.title_size or Typography.SEMANTIC.heading
+  local monospace_size = opts.monospace_size or Typography.SEMANTIC.code
+  local orbitron_size = opts.orbitron_size or (Typography.SEMANTIC.heading * 1.5)  -- Larger for branding
   local icons_size = opts.icons_size or 14  -- Default icon font size
 
   -- Find fonts directory

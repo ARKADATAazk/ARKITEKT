@@ -3,11 +3,8 @@
 -- App-level defaults for window, titlebar, status bar, overlay, etc.
 
 local Colors = require('rearkitekt.defs.colors')
-local Timing = require('rearkitekt.defs.timing')
-local Layout = require('rearkitekt.defs.layout')
-local Typography = require('rearkitekt.defs.typography')
 
--- Helper for hex colors (using rearkitekt.core.colors for conversion)
+-- Helper for hex colors
 local CoreColors = require('rearkitekt.core.colors')
 local hexrgb = CoreColors.hexrgb
 
@@ -42,7 +39,7 @@ M.OVERLAY = {
     CLOSE_BUTTON_ACTIVE_COLOR = hexrgb("#FF0000"),
 
     -- Layout
-    CONTENT_PADDING = Layout.PADDING.xxl,
+    CONTENT_PADDING = 24,
 
     -- Scrim/backdrop
     SCRIM_OPACITY = 0.99,
@@ -71,7 +68,7 @@ M.WINDOW = {
 
     -- Default window config
     title = "Arkitekt App",
-    content_padding = Layout.PADDING.lg,
+    content_padding = 12,
     min_size = { w = 400, h = 300 },
     initial_size = { w = 900, h = 600 },
     initial_pos = { x = 100, y = 100 },
@@ -101,14 +98,14 @@ M.WINDOW = {
 M.TITLEBAR = {
     -- Layout
     height = 26,
-    pad_h = Layout.PADDING.lg,
+    pad_h = 12,
     pad_v = 0,
     button_width = 44,
     button_spacing = 0,
     button_style = "minimal",
     separator = true,
     icon_size = 18,
-    icon_spacing = Layout.PADDING.md,
+    icon_spacing = 8,
     version_spacing = 6,
     show_icon = true,
     enable_maximize = true,
@@ -151,7 +148,7 @@ M.STATUS_BAR = {
 
     -- Padding
     left_pad = 10,
-    text_pad = Layout.PADDING.md,
+    text_pad = 8,
     right_pad = 10,
 
     -- Resize handle
@@ -166,112 +163,5 @@ M.STATUS_BAR = {
 M.DEPENDENCIES = {
     hub_path = "ARKITEKT.lua",
 }
-
--- ============================================================================
--- FONTS (backward compatibility - re-export from typography)
--- ============================================================================
-M.FONTS = {
-    default = Typography.SIZE.md,
-    title = Typography.SIZE.md,
-    version = Typography.SIZE.sm,
-    titlebar_version_monospace = Typography.SIZE.xs,
-    family_regular = Typography.FAMILY.regular,
-    family_bold = Typography.FAMILY.bold,
-    family_mono = Typography.FAMILY.mono,
-}
-
--- ============================================================================
--- TYPOGRAPHY (backward compatibility - re-export from typography)
--- ============================================================================
-M.TYPOGRAPHY = {
-    SMALL = Typography.SIZE.sm,
-    DEFAULT = Typography.SIZE.md,
-    MEDIUM = Typography.SIZE.lg,
-    LARGE = Typography.SIZE.xl,
-    XLARGE = Typography.SIZE.xxl,
-    BODY = Typography.SEMANTIC.body,
-    HEADING = Typography.SEMANTIC.heading,
-    TITLE = Typography.SEMANTIC.title,
-    CAPTION = Typography.SEMANTIC.caption,
-    CODE = Typography.SEMANTIC.code,
-}
-
--- ============================================================================
--- LAYOUT (backward compatibility - re-export from layout)
--- ============================================================================
-M.LAYOUT = {
-    PADDING_NONE = Layout.PADDING.none,
-    PADDING_SMALL = Layout.PADDING.sm,
-    PADDING_MEDIUM = Layout.PADDING.md,
-    PADDING_LARGE = Layout.PADDING.lg,
-    PADDING_XLARGE = Layout.PADDING.xl,
-    ROUNDING_NONE = Layout.ROUNDING.none,
-    ROUNDING_SMALL = Layout.ROUNDING.sm,
-    ROUNDING_MEDIUM = Layout.ROUNDING.md,
-    ROUNDING_LARGE = Layout.ROUNDING.lg,
-}
-
--- ============================================================================
--- ANIMATION (backward compatibility - re-export from timing)
--- ============================================================================
-M.ANIMATION = {
-    FADE_INSTANT = Timing.FADE.instant,
-    FADE_FAST = Timing.FADE.fast,
-    FADE_NORMAL = Timing.FADE.normal,
-    FADE_SLOW = Timing.FADE.slow,
-    DEFAULT_FADE_CURVE = Timing.EASING.default_fade,
-    HOVER_SPEED = Timing.SPEED.hover,
-}
-
--- ============================================================================
--- ACCESSOR METHODS (backward compatibility)
--- ============================================================================
-
-function M.get_defaults()
-    return {
-        window = M.WINDOW,
-        fonts = {
-            default = Typography.SIZE.md,
-            title = Typography.SIZE.md,
-            version = Typography.SIZE.sm,
-            titlebar_version_monospace = Typography.SIZE.xs,
-            family_regular = Typography.FAMILY.regular,
-            family_bold = Typography.FAMILY.bold,
-            family_mono = Typography.FAMILY.mono,
-        },
-        titlebar = M.TITLEBAR,
-        status_bar = M.STATUS_BAR,
-        dependencies = M.DEPENDENCIES,
-    }
-end
-
-function M.get(path)
-    local keys = {}
-    for key in path:gmatch("[^.]+") do
-        table.insert(keys, key)
-    end
-
-    local root_map = {
-        window = M.WINDOW,
-        fonts = M.get_defaults().fonts,
-        titlebar = M.TITLEBAR,
-        status_bar = M.STATUS_BAR,
-        dependencies = M.DEPENDENCIES,
-    }
-
-    local value = root_map[keys[1]]
-    if not value then
-        return nil
-    end
-
-    for i = 2, #keys do
-        if type(value) ~= "table" then
-            return nil
-        end
-        value = value[keys[i]]
-    end
-
-    return value
-end
 
 return M

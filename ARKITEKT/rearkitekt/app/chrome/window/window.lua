@@ -7,6 +7,8 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Config = require('rearkitekt.core.config')
 local Constants = require('rearkitekt.defs.app')
+local Typography = require('rearkitekt.defs.typography')
+local Timing = require('rearkitekt.defs.timing')
 
 local M = {}
 local hexrgb
@@ -51,7 +53,7 @@ local function create_alpha_tracker(duration)
   return {
     current = 0.0,
     target = 0.0,
-    duration = duration or Constants.ANIMATION.FADE_NORMAL,
+    duration = duration or Timing.FADE.normal,
     elapsed = 0.0,
     set_target = function(self, t) 
       self.target = t 
@@ -92,10 +94,10 @@ function M.new(opts)
 
   -- Apply typography constants for font sizes if not explicitly provided
   if not opts or not opts.title_font_size then
-    config.title_font_size = Constants.TYPOGRAPHY.MEDIUM
+    config.title_font_size = Typography.SIZE.lg
   end
   if not opts or not opts.version_font_size then
-    config.version_font_size = Constants.TYPOGRAPHY.DEFAULT
+    config.version_font_size = Typography.SIZE.md
   end
   if not opts or not opts.titlebar_pad_v then
     config.titlebar_pad_v = Constants.TITLEBAR.pad_v
@@ -130,14 +132,14 @@ function M.new(opts)
     fullscreen = {
       enabled = is_fullscreen,
       use_viewport = fullscreen_config.use_viewport,
-      fade_in_duration = fullscreen_config.fade_in_duration or Constants.ANIMATION.FADE_NORMAL,
-      fade_out_duration = fullscreen_config.fade_out_duration or Constants.ANIMATION.FADE_NORMAL,
+      fade_in_duration = fullscreen_config.fade_in_duration or Timing.FADE.normal,
+      fade_out_duration = fullscreen_config.fade_out_duration or Timing.FADE.normal,
       scrim_enabled = fullscreen_config.scrim_enabled,
       scrim_color = fullscreen_config.scrim_color or Constants.OVERLAY.SCRIM_COLOR,
       scrim_opacity = fullscreen_config.scrim_opacity or Constants.OVERLAY.SCRIM_OPACITY,
       window_bg_override = fullscreen_config.window_bg_override,
       window_opacity = fullscreen_config.window_opacity,
-      alpha = create_alpha_tracker(fullscreen_config.fade_in_duration or Constants.ANIMATION.FADE_NORMAL),
+      alpha = create_alpha_tracker(fullscreen_config.fade_in_duration or Timing.FADE.normal),
       close_requested = false,
       is_closing = false,
       show_close_button = fullscreen_config.show_close_button ~= false,
@@ -693,7 +695,7 @@ local hexrgb = Colors.hexrgb
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
         do
           local sf = self.version_font or self.title_font
-          local ss = (self.version_font_size or Constants.TYPOGRAPHY.DEFAULT)
+          local ss = (self.version_font_size or Typography.SIZE.md)
           if sf and ss and ss > 0 then
             ImGui.PushFont(ctx, sf, ss)
             self.status_bar.render(ctx)

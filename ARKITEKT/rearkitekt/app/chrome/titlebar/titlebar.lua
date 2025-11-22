@@ -10,6 +10,7 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Config = require('rearkitekt.core.config')
 local Constants = require('rearkitekt.defs.app')
+local Typography = require('rearkitekt.defs.typography')
 local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 
 local M = {}
@@ -27,10 +28,10 @@ function M.new(opts)
 
   -- Apply typography constants for font sizes
   if not opts or not opts.title_font_size then
-    config.title_font_size = Constants.TYPOGRAPHY.MEDIUM
+    config.title_font_size = Typography.SIZE.lg
   end
   if not opts or not opts.version_font_size then
-    config.version_font_size = Constants.TYPOGRAPHY.DEFAULT
+    config.version_font_size = Typography.SIZE.md
   end
 
   local titlebar = {

@@ -10,6 +10,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui   = require 'imgui' '0.10'
 local Config = require('rearkitekt.core.config')
 local Constants = require('rearkitekt.defs.app')
+local Typography = require('rearkitekt.defs.typography')
 local Runtime = require('rearkitekt.app.runtime.runtime')
 local Window  = require('rearkitekt.app.chrome.window.window')
 
@@ -17,16 +18,16 @@ local M = {}
 
 local function load_fonts(ctx, font_cfg)
   font_cfg = Config.deepMerge({
-    default        = Constants.FONTS.default,
-    title          = Constants.FONTS.title,
-    version        = Constants.FONTS.version,
-    titlebar_version = Constants.FONTS.titlebar_version_monospace,
-    monospace      = Constants.TYPOGRAPHY.CODE,
+    default        = Typography.SIZE.md,
+    title          = Typography.SIZE.md,
+    version        = Typography.SIZE.sm,
+    titlebar_version = Typography.SIZE.xs,
+    monospace      = Typography.SEMANTIC.code,
     time_display   = nil,
     icons          = nil,
-    family_regular = Constants.FONTS.family_regular,
-    family_bold    = Constants.FONTS.family_bold,
-    family_mono    = Constants.FONTS.family_mono,
+    family_regular = Typography.FAMILY.regular,
+    family_bold    = Typography.FAMILY.bold,
+    family_mono    = Typography.FAMILY.mono,
     family_icons   = 'remixicon.ttf',
   }, font_cfg or {})
 

@@ -25,14 +25,22 @@ M.BASE = {
 }
 
 -- ============================================================================
--- SEMANTIC COLORS
+-- SEMANTIC COLORS (status, feedback, states)
 -- ============================================================================
 M.SEMANTIC = {
+    -- Feedback
     success = "#42E896FF",      -- Green
     warning = "#E0B341FF",      -- Yellow/Orange
     error = "#E04141FF",        -- Red
     info = "#4A9EFFFF",         -- Blue
+
+    -- Accent
     accent = "#5588FFFF",       -- Highlight blue
+
+    -- Status states
+    ready = "#41E0A3FF",        -- Green (alias for success)
+    playing = "#FFFFFFFF",      -- White
+    idle = "#888888FF",         -- Gray
 }
 
 -- ============================================================================
@@ -74,18 +82,6 @@ M.BUTTON = {
     maximize_normal = "#00000000",
     maximize_hover = "#57C290FF",
     maximize_active = "#60FFFFFF",
-}
-
--- ============================================================================
--- STATUS COLORS
--- ============================================================================
-M.STATUS = {
-    ready = "#41E0A3FF",        -- Green
-    warning = "#E0B341FF",      -- Yellow
-    error = "#E04141FF",        -- Red
-    info = "#CCCCCCFF",         -- Light gray
-    playing = "#FFFFFFFF",      -- White
-    idle = "#888888FF",         -- Gray
 }
 
 return M
