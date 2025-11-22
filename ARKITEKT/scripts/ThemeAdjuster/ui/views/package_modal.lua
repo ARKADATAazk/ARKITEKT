@@ -42,8 +42,8 @@ local AREA_COLORS = {
   Other = TC.other_slate,
 }
 
--- Image cache for tooltips (uses rearkitekt.gui.images for proper lifecycle management)
--- See rearkitekt/gui/images.lua for full documentation
+-- Image cache for tooltips (uses rearkitekt.core.images for proper lifecycle management)
+-- See rearkitekt/core/images.lua for full documentation
 local image_cache = ImageCache.new({
   budget = 10,      -- Max images to load per frame
   max_cache = 100,  -- Max total cached images
@@ -137,11 +137,14 @@ function M.new(State, settings)
     selected_assets = {},  -- {key = true/false}
     view_mode = "grid",    -- "grid" or "tree"
     group_by_area = true,
+    status_filter = "all", -- "all", "excluded", "pinned", "pinned_elsewhere"
+    collapsed_groups = {}, -- {area = true/false}
 
     -- Performance caches (populated on show)
     _dpi_cache = {},       -- key -> {has_150, has_200}
     _area_cache = {},      -- key -> area string
     _grouped_cache = nil,  -- cached grouped assets
+    _stats_cache = nil,    -- cached stats {total, included, excluded, pinned}
   }, PackageModal)
 
   return self
@@ -154,11 +157,14 @@ function PackageModal:show(package_data)
   self.search_text = ""
   self.selected_assets = {}
   self.overlay_pushed = false
+  self.status_filter = "all"
+  self.collapsed_groups = {}
 
   -- Pre-compute caches for performance
   self._dpi_cache = {}
   self._area_cache = {}
   self._grouped_cache = nil
+  self._stats_cache = nil
 
   -- Cache area detection and DPI variants for all keys
   for _, key in ipairs(package_data.keys_order or {}) do
@@ -174,6 +180,43 @@ function PackageModal:show(package_data)
 
   -- Pre-compute grouped assets
   self._grouped_cache = self:_compute_grouped_assets(package_data.keys_order or {})
+
+  -- Compute initial stats
+  self:_compute_stats()
+end
+
+-- Compute stats for header display
+function PackageModal:_compute_stats()
+  local pkg = self.package_data
+  if not pkg then return end
+
+  local total = #(pkg.keys_order or {})
+  local excluded = 0
+  local pinned_here = 0
+  local pinned_elsewhere = 0
+
+  local excl = self:get_package_exclusions(pkg.id)
+  local pins = self.State.get_package_pins()
+
+  for _, key in ipairs(pkg.keys_order or {}) do
+    if excl[key] then
+      excluded = excluded + 1
+    end
+    local pin_owner = pins[key]
+    if pin_owner == pkg.id then
+      pinned_here = pinned_here + 1
+    elseif pin_owner then
+      pinned_elsewhere = pinned_elsewhere + 1
+    end
+  end
+
+  self._stats_cache = {
+    total = total,
+    included = total - excluded,
+    excluded = excluded,
+    pinned_here = pinned_here,
+    pinned_elsewhere = pinned_elsewhere
+  }
 end
 
 function PackageModal:close()
@@ -183,10 +226,13 @@ function PackageModal:close()
   self.package_data = nil
   self.search_text = ""
   self.selected_assets = {}
+  self.status_filter = "all"
+  self.collapsed_groups = {}
   -- Clear caches
   self._dpi_cache = {}
   self._area_cache = {}
   self._grouped_cache = nil
+  self._stats_cache = nil
 end
 
 function PackageModal:get_package_exclusions(pkg_id)
@@ -215,6 +261,7 @@ function PackageModal:toggle_asset_inclusion(pkg_id, key)
   end
 
   self.State.set_package_exclusions(all_exclusions)
+  self:_compute_stats()  -- Refresh stats
 end
 
 function PackageModal:get_pinned_provider(key)
@@ -230,6 +277,33 @@ function PackageModal:set_pinned_provider(key, pkg_id)
     pins[key] = nil
   end
   self.State.set_package_pins(pins)
+  self:_compute_stats()  -- Refresh stats
+end
+
+-- Check if key passes current status filter
+function PackageModal:passes_status_filter(key)
+  if self.status_filter == "all" then
+    return true
+  end
+
+  local pkg = self.package_data
+  if not pkg then return true end
+
+  local excl = self:get_package_exclusions(pkg.id)
+  local is_excluded = excl[key] or false
+  local pinned_to = self:get_pinned_provider(key)
+  local is_pinned_here = pinned_to == pkg.id
+  local is_pinned_elsewhere = pinned_to and pinned_to ~= pkg.id
+
+  if self.status_filter == "excluded" then
+    return is_excluded
+  elseif self.status_filter == "pinned" then
+    return is_pinned_here
+  elseif self.status_filter == "pinned_elsewhere" then
+    return is_pinned_elsewhere
+  end
+
+  return true
 end
 
 -- Pre-compute grouped assets (called once on show)
@@ -481,44 +555,52 @@ function PackageModal:draw_grid_view(ctx, pkg)
     for _, area in ipairs(group_order) do
       local keys = groups[area]
       if #keys > 0 then
-        -- Filter by search
+        -- Filter by search and status
         local filtered_keys = {}
         for _, key in ipairs(keys) do
-          if self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true) then
+          local matches_search = self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true)
+          local matches_status = self:passes_status_filter(key)
+          if matches_search and matches_status then
             table.insert(filtered_keys, key)
           end
         end
 
         if #filtered_keys > 0 then
+          local is_collapsed = self.collapsed_groups[area] or false
+
           -- Header
           table.insert(render_items, {
             type = "header",
             y = current_y,
             height = header_height,
             area = area,
-            count = #filtered_keys
+            count = #filtered_keys,
+            collapsed = is_collapsed
           })
           current_y = current_y + header_height
 
-          -- Calculate rows for this group
-          local num_rows = math.ceil(#filtered_keys / columns)
-          for row = 0, num_rows - 1 do
-            local row_keys = {}
-            for col = 0, columns - 1 do
-              local idx = row * columns + col + 1
-              if idx <= #filtered_keys then
-                table.insert(row_keys, filtered_keys[idx])
+          -- Only add rows if not collapsed
+          if not is_collapsed then
+            -- Calculate rows for this group
+            local num_rows = math.ceil(#filtered_keys / columns)
+            for row = 0, num_rows - 1 do
+              local row_keys = {}
+              for col = 0, columns - 1 do
+                local idx = row * columns + col + 1
+                if idx <= #filtered_keys then
+                  table.insert(row_keys, filtered_keys[idx])
+                end
               end
-            end
 
-            if #row_keys > 0 then
-              table.insert(render_items, {
-                type = "row",
-                y = current_y,
-                height = row_height,
-                keys = row_keys
-              })
-              current_y = current_y + row_height
+              if #row_keys > 0 then
+                table.insert(render_items, {
+                  type = "row",
+                  y = current_y,
+                  height = row_height,
+                  keys = row_keys
+                })
+                current_y = current_y + row_height
+              end
             end
           end
 
@@ -544,7 +626,12 @@ function PackageModal:draw_grid_view(ctx, pkg)
 
         if item.type == "header" then
           ImGui.Spacing(ctx)
-          ImGui.TextColored(ctx, hexrgb("#888888"), item.area .. " (" .. item.count .. ")")
+          -- Clickable header for collapse/expand
+          local collapse_icon = item.collapsed and "▶" or "▼"
+          local header_text = collapse_icon .. " " .. item.area .. " (" .. item.count .. ")"
+          if ImGui.Selectable(ctx, header_text, false, ImGui.SelectableFlags_None) then
+            self.collapsed_groups[item.area] = not self.collapsed_groups[item.area]
+          end
           ImGui.Separator(ctx)
           ImGui.Spacing(ctx)
         elseif item.type == "row" then
@@ -566,7 +653,9 @@ function PackageModal:draw_grid_view(ctx, pkg)
     -- Flat view with virtualization
     local filtered_keys = {}
     for _, key in ipairs(pkg.keys_order or {}) do
-      if self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true) then
+      local matches_search = self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true)
+      local matches_status = self:passes_status_filter(key)
+      if matches_search and matches_status then
         table.insert(filtered_keys, key)
       end
     end
@@ -608,23 +697,54 @@ function PackageModal:draw_content(ctx, bounds)
   -- Reset image cache budget for this frame
   image_cache:begin_frame()
 
+  -- Handle keyboard shortcuts
+  if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+    self.selected_assets = {}  -- Clear selection on Esc
+  end
+  if ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl) and ImGui.IsKeyPressed(ctx, ImGui.Key_A) then
+    -- Ctrl+A: Select all visible
+    for _, key in ipairs(pkg.keys_order or {}) do
+      local matches_search = self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true)
+      local matches_status = self:passes_status_filter(key)
+      if matches_search and matches_status then
+        self.selected_assets[key] = true
+      end
+    end
+  end
+
   local dl = ImGui.GetWindowDrawList(ctx)
   local padding = 12
   local content_w = bounds.w - padding * 2
   local start_x = padding
 
-  -- Header
+  -- Header with stats
   ImGui.SetCursorPosX(ctx, start_x)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
   ImGui.Text(ctx, "Package: " .. (pkg.meta and pkg.meta.name or pkg.id))
   ImGui.PopStyleColor(ctx)
 
-  ImGui.SameLine(ctx, 0, 20)
-  ImGui.TextColored(ctx, hexrgb("#AAAAAA"), tostring(#(pkg.keys_order or {})) .. " assets")
-
   if pkg.meta and pkg.meta.version then
-    ImGui.SameLine(ctx, 0, 20)
+    ImGui.SameLine(ctx, 0, 8)
     ImGui.TextColored(ctx, hexrgb("#666666"), "v" .. pkg.meta.version)
+  end
+
+  -- Stats display
+  local stats = self._stats_cache
+  if stats then
+    ImGui.SameLine(ctx, 0, 20)
+    ImGui.TextColored(ctx, hexrgb("#4AE290"), tostring(stats.included) .. " included")
+    ImGui.SameLine(ctx, 0, 8)
+    ImGui.TextColored(ctx, hexrgb("#666666"), "/")
+    ImGui.SameLine(ctx, 0, 8)
+    ImGui.TextColored(ctx, hexrgb("#CC3333"), tostring(stats.excluded) .. " excluded")
+    if stats.pinned_here > 0 then
+      ImGui.SameLine(ctx, 0, 12)
+      ImGui.TextColored(ctx, hexrgb("#4AE290"), tostring(stats.pinned_here) .. " pinned")
+    end
+    if stats.pinned_elsewhere > 0 then
+      ImGui.SameLine(ctx, 0, 8)
+      ImGui.TextColored(ctx, hexrgb("#E8A54A"), tostring(stats.pinned_elsewhere) .. " contested")
+    end
   end
 
   ImGui.Dummy(ctx, 0, 4)
@@ -669,7 +789,54 @@ function PackageModal:draw_content(ctx, bounds)
   if group_clicked then
     self.group_by_area = not self.group_by_area
   end
-  btn_x = btn_x + 65 + 12
+  btn_x = btn_x + 65 + 8
+
+  -- Status filter dropdown
+  local filter_labels = {
+    all = "All",
+    excluded = "Excluded",
+    pinned = "Pinned",
+    pinned_elsewhere = "Contested"
+  }
+  local filter_label = "Filter: " .. filter_labels[self.status_filter]
+  local _, filter_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 90, btn_h, {
+    id = "status_filter",
+    label = filter_label,
+    rounding = 3,
+  }, "pkg_modal_filter")
+  if filter_clicked then
+    ImGui.OpenPopup(ctx, "status_filter_popup")
+  end
+
+  -- Status filter popup menu
+  if ImGui.BeginPopup(ctx, "status_filter_popup") then
+    if ImGui.MenuItem(ctx, "All", nil, self.status_filter == "all") then
+      self.status_filter = "all"
+    end
+    if ImGui.MenuItem(ctx, "Excluded", nil, self.status_filter == "excluded") then
+      self.status_filter = "excluded"
+    end
+    if ImGui.MenuItem(ctx, "Pinned Here", nil, self.status_filter == "pinned") then
+      self.status_filter = "pinned"
+    end
+    if ImGui.MenuItem(ctx, "Contested", nil, self.status_filter == "pinned_elsewhere") then
+      self.status_filter = "pinned_elsewhere"
+    end
+    ImGui.EndPopup(ctx)
+  end
+  btn_x = btn_x + 90 + 12
+
+  -- Selection count display
+  local selection_count = 0
+  for _, selected in pairs(self.selected_assets) do
+    if selected then selection_count = selection_count + 1 end
+  end
+  if selection_count > 0 then
+    ImGui.SetCursorScreenPos(ctx, btn_x, toolbar_y + 5)
+    ImGui.TextColored(ctx, hexrgb("#4A90E2"), tostring(selection_count) .. " selected")
+    local text_w = ImGui.CalcTextSize(ctx, tostring(selection_count) .. " selected")
+    btn_x = btn_x + text_w + 12
+  end
 
   -- Bulk action buttons
   local _, sel_all_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 65, btn_h, {
