@@ -14,7 +14,7 @@ M.TRANSPORT = {
 
   shuffle = "Shuffle\nLeft-click: Toggle shuffle mode\nRight-click: Shuffle options (True Shuffle / Random / Re-shuffle)",
 
-  override_transport = "Hijack Transport\nWhen playback reaches a region in the playlist, Region Playlist takes over and continues playing through the playlist",
+  override_transport = "Hijack Transport\nRegion Playlist takes over REAPER's transport when reaching playlist regions during normal playback",
 
   follow_viewport = "Follow Viewport\nAutomatically scroll viewport to follow playhead during playlist playback (continuous scrolling)",
 }
