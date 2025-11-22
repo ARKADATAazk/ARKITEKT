@@ -95,12 +95,12 @@ M.CONFIG = {
 
   tags = {
     y_offset = 10,           -- Aligned with badge/checkbox
-    height = 12,             -- Small height
-    width = 28,              -- Fixed width for rectangle chips
-    padding_x = 2,           -- Horizontal padding inside chip
-    gap = 2,                 -- Gap between chips
+    height = 16,             -- Taller for padding
+    width = 36,              -- Wider for text padding
+    padding_x = 4,           -- Horizontal padding inside chip
+    gap = 3,                 -- Gap between chips
     margin_x = 38,           -- Start after badge (leave room for #1)
-    rounding = 2,            -- Small corner rounding
+    rounding = 3,            -- Corner rounding
     max_tags = 4,            -- Maximum tags to show
     -- Abbreviated display names
     display = {
@@ -116,14 +116,14 @@ M.CONFIG = {
       Global = "GLB",
     },
     colors = {
-      TCP = hexrgb("#4A90D9"),      -- Blue
-      MCP = hexrgb("#D94A90"),      -- Pink
-      TRS = hexrgb("#90D94A"),      -- Green
-      TBAR = hexrgb("#D9904A"),     -- Orange
-      ENV = hexrgb("#904AD9"),      -- Purple
-      ITEM = hexrgb("#D9D94A"),     -- Yellow
-      MIDI = hexrgb("#4AD9D9"),     -- Cyan
-      GLB = hexrgb("#808080"),      -- Gray
+      TCP = hexrgb("#5A7A9A"),      -- Desaturated blue
+      MCP = hexrgb("#9A5A7A"),      -- Desaturated pink
+      TRS = hexrgb("#7A9A5A"),      -- Desaturated green
+      TBAR = hexrgb("#9A7A5A"),     -- Desaturated orange
+      ENV = hexrgb("#7A5A9A"),      -- Desaturated purple
+      ITEM = hexrgb("#9A9A5A"),     -- Desaturated yellow
+      MIDI = hexrgb("#5A9A7A"),     -- Desaturated teal (not cyan)
+      GLB = hexrgb("#6A6A6A"),      -- Dark gray
     },
     text_color = hexrgb("#000000"),  -- Black text
   },
