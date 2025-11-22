@@ -118,10 +118,8 @@ local function draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, color, offs
 
   -- Calculate UV coordinates for tiling
   -- UV beyond 0-1 will tile the texture
-  -- Compensate for screen position to make pattern window-fixed
-  -- (texture tiling is inherently screen-aligned, so we shift UV based on position)
-  local u_offset = ((x1 + offset_x) % tex_size) / tex_size
-  local v_offset = ((y1 + offset_y) % tex_size) / tex_size
+  local u_offset = (offset_x % tex_size) / tex_size
+  local v_offset = (offset_y % tex_size) / tex_size
   local u_scale = width / tex_size
   local v_scale = height / tex_size
 
