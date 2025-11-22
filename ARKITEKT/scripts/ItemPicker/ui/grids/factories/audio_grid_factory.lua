@@ -513,18 +513,17 @@ function M.create(ctx, config, state, visualization, animator)
       -- Preview selected items (use first selected)
       if not selected_keys or #selected_keys == 0 then return end
 
-      -- If anything is currently previewing, stop it (pressing SPACE again stops playback)
-      if state.previewing then
-        state.stop_preview()
-        return
-      end
-
       local key = selected_keys[1]
       local items = get_items()
 
       for _, item_data in ipairs(items) do
         if item_data.key == key then
-          state.start_preview(item_data.item)
+          -- Toggle preview: stop if this exact item is playing, otherwise start/switch
+          if state.previewing and state.preview_item == item_data.item then
+            state.stop_preview()
+          else
+            state.start_preview(item_data.item)
+          end
           return
         end
       end
