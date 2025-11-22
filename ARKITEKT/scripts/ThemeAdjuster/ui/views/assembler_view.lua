@@ -56,6 +56,18 @@ function M.new(State, AppConfig, settings)
     end,
 
     on_config_add = function(tab_id)
+      -- Generate name if not provided
+      if not tab_id or tab_id == "" then
+        local configs = State.get_configurations()
+        local base_name = "Config"
+        local counter = 1
+        tab_id = base_name .. " " .. counter
+        while configs.items[tab_id] do
+          counter = counter + 1
+          tab_id = base_name .. " " .. counter
+        end
+      end
+
       if State.add_configuration(tab_id, true) then  -- Clone from current
         State.switch_configuration(tab_id)
         self:refresh_tabs()
