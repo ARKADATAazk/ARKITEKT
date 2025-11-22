@@ -164,6 +164,30 @@ class LuaCodeGenerator:
 
             lua_lines.append(f"  ImGui.DrawList_PathBezierCubicCurveTo(dl, x + s*{nx1}, y + s*{ny1}, x + s*{nx2}, y + s*{ny2}, x + s*{nx3}, y + s*{ny3})")
 
+    def _is_likely_convex(self, path) -> bool:
+        """Heuristic check if a path is likely convex (safe for PathFillConvex)."""
+        if len(path) <= 3:
+            return True  # Triangle or simpler is always convex
+        
+        # Simple rectangle (4 line segments)
+        if len(path) == 4 and all(isinstance(seg, Line) for seg in path):
+            return True
+        
+        # Circle-like shapes (smooth bezier curves, no lines)
+        if all(isinstance(seg, (CubicBezier, QuadraticBezier)) for seg in path):
+            # If it's 4 bezier segments, likely a circle/ellipse
+            if len(path) == 4:
+                return True
+        
+        # Mixed line and bezier with many segments suggests complex shape
+        has_lines = any(isinstance(seg, Line) for seg in path)
+        has_beziers = any(isinstance(seg, (CubicBezier, QuadraticBezier)) for seg in path)
+        
+        if has_lines and has_beziers and len(path) > 5:
+            return False  # Complex mixed shape, probably non-convex
+        
+        return True  # Default to convex
+
     def path_to_lua(self, path, fill: str = 'none', stroke: str = 'none',
                     stroke_width: float = 1.0) -> List[str]:
         """Convert a svgpathtools Path to Lua DrawList commands."""
@@ -262,15 +286,25 @@ class LuaCodeGenerator:
 
         has_fill = fill not in ['none', 'transparent', '']
         has_stroke = stroke not in ['none', 'transparent', '']
+        
+        # Check if path is likely convex
+        is_convex = self._is_likely_convex(path)
 
         if has_fill:
-            lua_lines.append(f"  ImGui.DrawList_PathFillConvex(dl, color)")
+            if is_convex:
+                lua_lines.append(f"  ImGui.DrawList_PathFillConvex(dl, color)")
+            else:
+                # Non-convex path - use stroke instead to avoid rendering issues
+                lua_lines.append(f"  ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 2.5 * dpi)")
 
         if has_stroke:
             lua_lines.append(f"  ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, {stroke_width:.2f} * dpi)")
 
         if not has_fill and not has_stroke:
-            lua_lines.append(f"  ImGui.DrawList_PathFillConvex(dl, color)")
+            if is_convex:
+                lua_lines.append(f"  ImGui.DrawList_PathFillConvex(dl, color)")
+            else:
+                lua_lines.append(f"  ImGui.DrawList_PathStroke(dl, color, ImGui.DrawFlags_Closed, 2.0 * dpi)")
 
         return lua_lines
 
@@ -391,19 +425,44 @@ def parse_basic_shapes(svg_root) -> List[Tuple[str, str, str, float]]:
 
 
 def deduplicate_paths(paths, attributes):
-    """Remove duplicate paths based on their string representation."""
-    seen = {}
+    """Remove duplicate paths based on their geometry."""
     unique_paths = []
     unique_attrs = []
     
-    for path, attr in zip(paths, attributes):
-        # Create a unique key from path data and attributes
-        path_str = str(path)
-        attr_str = f"{attr.get('fill', 'none')}_{attr.get('stroke', 'none')}_{attr.get('stroke-width', '1')}"
-        key = f"{path_str}_{attr_str}"
+    for i, (path, attr) in enumerate(zip(paths, attributes)):
+        is_duplicate = False
         
-        if key not in seen:
-            seen[key] = True
+        # Check against all previously added paths
+        for j, prev_path in enumerate(unique_paths):
+            if len(path) != len(prev_path):
+                continue
+            
+            # Compare each segment
+            all_match = True
+            for seg1, seg2 in zip(path, prev_path):
+                if type(seg1) != type(seg2):
+                    all_match = False
+                    break
+                    
+                # Compare coordinates with small tolerance
+                tolerance = 0.001
+                if hasattr(seg1, 'start') and hasattr(seg2, 'start'):
+                    if abs(seg1.start - seg2.start) > tolerance:
+                        all_match = False
+                        break
+                if hasattr(seg1, 'end') and hasattr(seg2, 'end'):
+                    if abs(seg1.end - seg2.end) > tolerance:
+                        all_match = False
+                        break
+            
+            if all_match:
+                # Also check if attributes match
+                if (attr.get('fill') == unique_attrs[j].get('fill') and
+                    attr.get('stroke') == unique_attrs[j].get('stroke')):
+                    is_duplicate = True
+                    break
+        
+        if not is_duplicate:
             unique_paths.append(path)
             unique_attrs.append(attr)
     
@@ -510,30 +569,28 @@ def process_batch(svg_dir: Path, output_dir: Optional[Path] = None,
                 normalize=normalize
             )
 
+            # Always write to file (in svg dir if no output_dir specified)
             if output_dir:
                 output_file = output_dir / f"{svg_file.stem}.lua"
-                full_code = [
-                    "-- @noindex",
-                    f"-- Generated from {svg_file.name}",
-                    "package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path",
-                    "local ImGui = require 'imgui' '0.10'",
-                    "",
-                    "local M = {}",
-                    "",
-                    lua_code,
-                    "",
-                    "return M"
-                ]
-                output_file.write_text('\n'.join(full_code))
-
-                if verbose:
-                    print(f"[{idx}/{total}] OK: {svg_file.name} -> {output_file.name}")
             else:
-                print(f"-- {'=' * 60}")
-                print(f"-- File: {svg_file.name}")
-                print(f"-- {'=' * 60}")
-                print(lua_code)
-                print()
+                output_file = svg_file.parent / f"{svg_file.stem}.lua"
+            
+            full_code = [
+                "-- @noindex",
+                f"-- Generated from {svg_file.name}",
+                "package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path",
+                "local ImGui = require 'imgui' '0.10'",
+                "",
+                "local M = {}",
+                "",
+                lua_code,
+                "",
+                "return M"
+            ]
+            output_file.write_text('\n'.join(full_code))
+
+            if verbose:
+                print(f"[{idx}/{total}] OK: {svg_file.name} -> {output_file.name}")
 
             success_count += 1
 
