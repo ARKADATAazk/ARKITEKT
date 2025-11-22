@@ -36,6 +36,11 @@ function M.new(opts)
   self.last_seek_time = 0
   self.seek_throttle = 0.06
 
+  -- Pause state tracking
+  self.is_paused = false
+  self.paused_playlist_pointer = nil
+  self.paused_time_position = nil
+
   self._playlist_mode = false
   self._old_smoothseek = nil
   self._old_repeat = nil
@@ -131,6 +136,26 @@ function Transport:_seek_to_region(region_num)
 end
 
 function Transport:play()
+  -- If resuming from pause, restore the paused state
+  if self.is_paused and self.paused_playlist_pointer then
+    self.state.playlist_pointer = self.paused_playlist_pointer
+    self.is_paused = false
+    self.paused_playlist_pointer = nil
+
+    -- Restore timeline position if available
+    if self.paused_time_position then
+      reaper.SetEditCurPos2(self.proj, self.paused_time_position, false, false)
+      self.paused_time_position = nil
+    end
+
+    reaper.OnPlayButton()
+    self.is_playing = true
+    self.state.current_idx = -1
+    self.state.next_idx = self.state.playlist_pointer
+    self.state:update_bounds()
+    return true
+  end
+
   local rid = self.state:get_current_rid()
   if not rid then return false end
 
@@ -151,7 +176,7 @@ function Transport:play()
   self.state.current_idx = -1
   self.state.next_idx = self.state.playlist_pointer
   self.state:update_bounds()
-  
+
   return true
 end
 
@@ -160,10 +185,24 @@ function Transport:stop()
   self.is_playing = false
   self.state.current_idx = -1
   self.state.next_idx = -1
+
+  -- Clear pause state on stop
+  self.is_paused = false
+  self.paused_playlist_pointer = nil
+  self.paused_time_position = nil
+
   self:_leave_playlist_mode_if_needed()
 end
 
 function Transport:pause()
+  -- Save current state before pausing
+  if self.is_playing then
+    self.is_paused = true
+    self.paused_playlist_pointer = self.state.playlist_pointer
+    self.paused_time_position = _get_play_pos(self.proj)
+    self.is_playing = false
+  end
+
   reaper.OnPauseButton()
 end
 

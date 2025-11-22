@@ -169,6 +169,14 @@ M.TRANSPORT_LAYOUT = {
   compact_width = 400,
 }
 
+-- Remix icon unicode values for transport buttons
+-- All icons use UTF-8 encoding
+M.REMIX_ICONS = {
+  shuffle = "\xEF\x84\xA4",           -- U+F124 (shuffle-line)
+  override_transport = "\xEE\xB5\x8B", -- U+ED4B
+  follow_viewport = "\xEF\x8C\xA4",    -- U+F324 (expand-right-fill)
+}
+
 -- Separator dimensions
 M.SEPARATOR = {
   horizontal = {

@@ -415,7 +415,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
 
           -- Draw button
           Button.draw(ctx, dl, x, y, width, height, {
-            icon = "\xEF\x84\xA4",  -- shuffle-line (U+F124)
+            icon = CoreConfig.REMIX_ICONS.shuffle,
             icon_font = icon_font,
             icon_size = icon_size,
             label = "",
@@ -445,7 +445,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
       align = "center",
       width = 40,
       config = {
-        icon = "\xEE\xB7\xA4",  -- U+EDE4
+        icon = CoreConfig.REMIX_ICONS.override_transport,
         icon_font = icon_font,
         icon_size = icon_size,
         label = "",
@@ -467,7 +467,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
       align = "center",
       width = 40,
       config = {
-        icon = "\xEF\x8C\xA4",  -- expand-right-fill (U+F324)
+        icon = CoreConfig.REMIX_ICONS.follow_viewport,
         icon_font = icon_font,
         icon_size = icon_size,
         label = "",
