@@ -8,6 +8,7 @@ local Draw = require('rearkitekt.gui.draw')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
 local Shapes = require('rearkitekt.gui.rendering.shapes')
+local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
 
 local M = {}
 
@@ -146,6 +147,11 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
   -- Render base tile fill with rounding
   ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
+
+  -- Render playback progress bar
+  if playback_progress > 0 and playback_fade > 0 then
+    TileFX.render_playback_progress(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, base_color, playback_progress, playback_fade, config.TILE.ROUNDING)
+  end
 
   -- Render dark backdrop for disabled items
   if enabled_factor < 0.999 then
