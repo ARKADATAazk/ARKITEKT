@@ -17,7 +17,7 @@ local M = {}
 
 -- Default configuration
 local DEFAULTS = {
-  chip_size = 17,           -- Size for square chips
+  chip_size = 18,           -- Size for square chips (even for centering)
   chip_radius = 7,          -- Radius for circle chips (legacy)
   columns = 7,              -- 7 columns for 28 colors (4 rows)
   show_none_option = true,
@@ -153,7 +153,7 @@ function M.render(ctx, opts)
       ImGui.PushFont(ctx, opts.icon_font, icon_size)
       local icon_color = hexrgb("#00000099")  -- Black icon at 60% opacity
       local text_w, text_h = ImGui.CalcTextSize(ctx, ICON_CHECK)
-      local icon_x = chip_cx - text_w * 0.5 + 1  -- Shift right 1px (sub-pixel may not work)
+      local icon_x = chip_cx - text_w * 0.5  -- Centered (even chip size)
       local icon_y = chip_cy - text_h * 0.5
       Draw.text(dl, icon_x, icon_y, icon_color, ICON_CHECK)
       ImGui.PopFont(ctx)
