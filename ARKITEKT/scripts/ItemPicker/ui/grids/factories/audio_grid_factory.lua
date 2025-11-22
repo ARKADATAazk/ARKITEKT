@@ -5,25 +5,11 @@
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
-local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
 local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
 
 local M = {}
 
--- Add custom shortcuts for preview modes (audio only)
-local shortcuts_added = false
-local function ensure_shortcuts()
-  if shortcuts_added then return end
-
-  -- Add CTRL+SPACE and SHIFT+SPACE shortcuts
-  table.insert(GridInput.SHORTCUT_REGISTRY, { key = ImGui.Key_Space, ctrl = true, name = 'play_through_track' })
-  table.insert(GridInput.SHORTCUT_REGISTRY, { key = ImGui.Key_Space, shift = true, name = 'play_direct' })
-
-  shortcuts_added = true
-end
-
 function M.create(ctx, config, state, visualization, animator)
-  ensure_shortcuts()
 
   local function get_items()
     if not state.sample_indexes then return {} end
@@ -333,25 +319,22 @@ function M.create(ctx, config, state, visualization, animator)
     end,
   })
 
-  -- Behaviors
+  -- Behaviors (using generic shortcut names)
   grid.behaviors = {
-    drag_start = function(keys)
+    drag_start = function(grid, keys)
       -- Don't start drag if we're closing
       if state.should_close_after_drop then
         return
       end
 
-      reaper.ShowConsoleMsg(string.format("[DRAG_START] Called! keys=%d\n", keys and #keys or 0))
       if not keys or #keys == 0 then return end
 
       -- Support multi-item drag (use first selected item for preview)
       local uuid = keys[1]
-      reaper.ShowConsoleMsg(string.format("[DRAG_START] First UUID: %s\n", tostring(uuid)))
 
       -- O(1) lookup instead of O(n) search
       local item_lookup_data = state.audio_item_lookup[uuid]
       if not item_lookup_data then
-        reaper.ShowConsoleMsg("[DRAG_START] Item not found in lookup!\n")
         return
       end
 
@@ -373,13 +356,12 @@ function M.create(ctx, config, state, visualization, animator)
       end
 
       if display_data then
-        reaper.ShowConsoleMsg(string.format("[DRAG_START] Starting drag for: %s\n", display_data.name))
         state.start_drag(display_data.item, display_data.name, display_data.color, drag_w, drag_h)
       end
     end,
 
-    right_click = function(key, selected_keys)
-      -- Right-click toggles disabled state
+    -- Right-click: toggle disabled state
+    ['click:right'] = function(grid, key, selected_keys)
       local items = get_items()
       local filename_map = {}
       for _, data in ipairs(items) do
@@ -418,8 +400,8 @@ function M.create(ctx, config, state, visualization, animator)
       state.runtime_cache.audio_filter_hash = nil
     end,
 
-    favorite = function(item_uuids)
-      -- Toggle favorite with F key
+    -- F key: toggle favorite
+    f = function(grid, item_uuids)
       local items = get_items()
       local filename_map = {}
       for _, data in ipairs(items) do
@@ -452,10 +434,9 @@ function M.create(ctx, config, state, visualization, animator)
       end
     end,
 
-    wheel_adjust = function(uuids, delta)
-      reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST] Called! uuids=%d, delta=%d\n", uuids and #uuids or 0, delta or 0))
+    -- Wheel cycling through pooled items
+    wheel_cycle = function(grid, uuids, delta)
       if not uuids or #uuids == 0 then
-        reaper.ShowConsoleMsg("[WHEEL_ADJUST] Empty uuids, returning\n")
         return nil
       end
       local uuid = uuids[1]
@@ -464,7 +445,6 @@ function M.create(ctx, config, state, visualization, animator)
       local items = get_items()
       for _, data in ipairs(items) do
         if data.uuid == uuid then
-          reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST] Cycling item: %s\n", data.filename))
           state.cycle_audio_item(data.filename, delta > 0 and 1 or -1)
 
           -- Rebuild items list after cycling to get new UUID
@@ -474,7 +454,6 @@ function M.create(ctx, config, state, visualization, animator)
           -- Find the new item with the same filename
           for _, updated_data in ipairs(updated_items) do
             if updated_data.filename == data.filename then
-              reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST] New UUID: %s\n", updated_data.uuid))
               return updated_data.uuid
             end
           end
@@ -482,13 +461,11 @@ function M.create(ctx, config, state, visualization, animator)
           return uuid  -- Fallback to old UUID if not found
         end
       end
-      reaper.ShowConsoleMsg("[WHEEL_ADJUST] UUID not found in items\n")
       return nil
     end,
 
-    delete = function(item_uuids)
-      -- Toggle disable state for all selected items
-      -- Convert UUIDs to filenames
+    -- Delete key: toggle disable state
+    delete = function(grid, item_uuids)
       local items = get_items()
       local filename_map = {}
       for _, data in ipairs(items) do
@@ -518,14 +495,13 @@ function M.create(ctx, config, state, visualization, animator)
       state.runtime_cache.audio_filter_hash = nil
     end,
 
-
     on_select = function(selected_keys)
       -- Update state with current selection count
       state.audio_selection_count = #selected_keys
     end,
 
-    play = function(selected_keys)
-      -- Preview selected items (use first selected) - default mode
+    -- SPACE: Preview (default mode)
+    space = function(grid, selected_keys)
       if not selected_keys or #selected_keys == 0 then return end
 
       local key = selected_keys[1]
@@ -544,8 +520,8 @@ function M.create(ctx, config, state, visualization, animator)
       end
     end,
 
-    play_through_track = function(selected_keys)
-      -- CTRL+SPACE: Force play through track (with FX)
+    -- CTRL+SPACE: Force play through track (with FX)
+    ['space:ctrl'] = function(grid, selected_keys)
       if not selected_keys or #selected_keys == 0 then return end
 
       local key = selected_keys[1]
@@ -563,8 +539,8 @@ function M.create(ctx, config, state, visualization, animator)
       end
     end,
 
-    play_direct = function(selected_keys)
-      -- SHIFT+SPACE: Force direct preview (no FX)
+    -- SHIFT+SPACE: Force direct preview (no FX)
+    ['space:shift'] = function(grid, selected_keys)
       if not selected_keys or #selected_keys == 0 then return end
 
       local key = selected_keys[1]
@@ -582,8 +558,8 @@ function M.create(ctx, config, state, visualization, animator)
       end
     end,
 
+    -- Double-click: start rename
     double_click = function(uuid)
-      -- Start rename for this item
       local items = get_items()
       for _, item_data in ipairs(items) do
         if item_data.uuid == uuid then
@@ -597,8 +573,8 @@ function M.create(ctx, config, state, visualization, animator)
       end
     end,
 
-    rename = function(selected_keys)
-      -- Start rename for selected items (batch rename)
+    -- F2: batch rename
+    f2 = function(grid, selected_keys)
       if not selected_keys or #selected_keys == 0 then return end
 
       -- Start with first selected item

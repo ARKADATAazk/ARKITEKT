@@ -22,7 +22,7 @@ local function handle_unified_delete(rt, item_keys)
       rt.active_grid.selection.selected[key] = nil
     end
     if rt.active_grid.behaviors and rt.active_grid.behaviors.on_select then
-      rt.active_grid.behaviors.on_select(rt.active_grid.selection:selected_keys())
+      rt.active_grid.behaviors.on_select(rt.active_grid, rt.active_grid.selection:selected_keys())
     end
   end
   
@@ -33,19 +33,20 @@ end
 
 local function create_behaviors(rt)
   return {
-    drag_start = function(item_keys)
+    drag_start = function(grid, item_keys)
     end,
-    
-    right_click = function(key, selected_keys)
+
+    -- Right-click: toggle enabled state
+    ['click:right'] = function(grid, key, selected_keys)
       if not rt.on_active_toggle_enabled then return end
-      
+
       if #selected_keys > 1 then
         local playlist_items = rt.active_grid.get_items()
         local item_map = {}
         for _, item in ipairs(playlist_items) do
           item_map[item.key] = item
         end
-        
+
         local clicked_item = item_map[key]
         if clicked_item then
           local new_state = not (clicked_item.enabled ~= false)
@@ -64,19 +65,16 @@ local function create_behaviors(rt)
         end
       end
     end,
-    
-    delete = function(item_keys)
+
+    delete = function(grid, item_keys)
       handle_unified_delete(rt, item_keys)
     end,
-    
-    alt_click = function(item_keys)
-      handle_unified_delete(rt, item_keys)
+
+    -- SPACE: empty for now
+    space = function(grid, selected_keys)
     end,
     
-    play = function(selected_keys)
-    end,
-    
-    reorder = function(new_order)
+    reorder = function(grid, new_order)
       if not rt.active_grid or not rt.active_grid.drag then return end
       
       local is_copy_mode = false
@@ -182,7 +180,7 @@ local function create_behaviors(rt)
       end
     end,
     
-    on_select = function(selected_keys)
+    on_select = function(grid, selected_keys)
       -- Count regions and playlists in active grid selection
       local region_count = 0
       local playlist_count = 0
@@ -231,7 +229,7 @@ local function create_behaviors(rt)
     end,
 
     -- Inline editing: Double-click to edit single tile
-    start_inline_edit = function(key)
+    start_inline_edit = function(grid, key)
       local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
       local playlist_items = rt.active_grid.get_items()
       for _, item in ipairs(playlist_items) do
@@ -252,14 +250,14 @@ local function create_behaviors(rt)
     end,
 
     -- Inline edit complete callback
-    on_inline_edit_complete = function(key, new_name)
+    on_inline_edit_complete = function(grid, key, new_name)
       if rt.on_active_rename then
         rt.on_active_rename(key, new_name)
       end
     end,
 
     -- Double-click outside text zone: Move cursor and seek to region/playlist
-    double_click_seek = function(key)
+    double_click_seek = function(grid, key)
       local playlist_items = rt.active_grid.get_items()
       for _, item in ipairs(playlist_items) do
         if item.key == key then
@@ -288,7 +286,7 @@ local function create_behaviors(rt)
     end,
 
     -- F2: Batch rename with wildcards
-    rename = function(selected_keys)
+    f2 = function(grid, selected_keys)
       if not selected_keys or #selected_keys == 0 then return end
 
       -- Single selection: start inline editing

@@ -319,10 +319,10 @@ function M.create(ctx, config, state, visualization, animator)
     end,
   })
 
-  -- Behaviors
+  -- Behaviors (using generic shortcut names)
   grid.behaviors = {
-    right_click = function(key, selected_keys)
-      -- Right-click toggles disabled state
+    -- Right-click: toggle disabled state
+    ['click:right'] = function(grid, key, selected_keys)
       local items = get_items()
       local track_guid_map = {}
       for _, data in ipairs(items) do
@@ -361,23 +361,20 @@ function M.create(ctx, config, state, visualization, animator)
       state.runtime_cache.midi_filter_hash = nil
     end,
 
-    drag_start = function(keys)
+    drag_start = function(grid, keys)
       -- Don't start drag if we're closing
       if state.should_close_after_drop then
         return
       end
 
-      reaper.ShowConsoleMsg(string.format("[DRAG_START MIDI] Called! keys=%d\n", keys and #keys or 0))
       if not keys or #keys == 0 then return end
 
       -- Support multi-item drag (use first selected item for preview)
       local uuid = keys[1]
-      reaper.ShowConsoleMsg(string.format("[DRAG_START MIDI] First UUID: %s\n", tostring(uuid)))
 
       -- O(1) lookup instead of O(n) search
       local item_lookup_data = state.midi_item_lookup[uuid]
       if not item_lookup_data then
-        reaper.ShowConsoleMsg("[DRAG_START MIDI] Item not found in lookup!\n")
         return
       end
 
@@ -399,13 +396,12 @@ function M.create(ctx, config, state, visualization, animator)
       end
 
       if display_data then
-        reaper.ShowConsoleMsg(string.format("[DRAG_START MIDI] Starting drag for: %s\n", display_data.name))
         state.start_drag(display_data.item, display_data.name, display_data.color, drag_w, drag_h)
       end
     end,
 
-    favorite = function(item_uuids)
-      -- Toggle favorite with F key
+    -- F key: toggle favorite
+    f = function(grid, item_uuids)
       local items = get_items()
       local track_guid_map = {}
       for _, data in ipairs(items) do
@@ -438,10 +434,9 @@ function M.create(ctx, config, state, visualization, animator)
       end
     end,
 
-    wheel_adjust = function(uuids, delta)
-      reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Called! uuids=%d, delta=%d\n", uuids and #uuids or 0, delta or 0))
+    -- Wheel cycling through pooled items
+    wheel_cycle = function(grid, uuids, delta)
       if not uuids or #uuids == 0 then
-        reaper.ShowConsoleMsg("[WHEEL_ADJUST MIDI] Empty uuids, returning\n")
         return nil
       end
       local uuid = uuids[1]
@@ -450,7 +445,6 @@ function M.create(ctx, config, state, visualization, animator)
       local items = get_items()
       for _, data in ipairs(items) do
         if data.uuid == uuid then
-          reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] Cycling track: %s\n", data.track_guid))
           state.cycle_midi_item(data.track_guid, delta > 0 and 1 or -1)
 
           -- Rebuild items list after cycling to get new UUID
@@ -460,7 +454,6 @@ function M.create(ctx, config, state, visualization, animator)
           -- Find the new item with the same track_guid
           for _, updated_data in ipairs(updated_items) do
             if updated_data.track_guid == data.track_guid then
-              reaper.ShowConsoleMsg(string.format("[WHEEL_ADJUST MIDI] New UUID: %s\n", updated_data.uuid))
               return updated_data.uuid
             end
           end
@@ -468,13 +461,11 @@ function M.create(ctx, config, state, visualization, animator)
           return uuid  -- Fallback to old UUID if not found
         end
       end
-      reaper.ShowConsoleMsg("[WHEEL_ADJUST MIDI] UUID not found in items\n")
       return nil
     end,
 
-    delete = function(item_uuids)
-      -- Toggle disable state for all selected items
-      -- Convert UUIDs to track_guids
+    -- Delete key: toggle disable state
+    delete = function(grid, item_uuids)
       local items = get_items()
       local track_guid_map = {}
       for _, data in ipairs(items) do
@@ -504,14 +495,13 @@ function M.create(ctx, config, state, visualization, animator)
       state.runtime_cache.midi_filter_hash = nil
     end,
 
-
     on_select = function(selected_keys)
       -- Update state with current selection count
       state.midi_selection_count = #selected_keys
     end,
 
-    play = function(selected_uuids)
-      -- Preview selected items (use first selected)
+    -- SPACE: Preview
+    space = function(grid, selected_uuids)
       if not selected_uuids or #selected_uuids == 0 then return end
 
       local uuid = selected_uuids[1]
@@ -523,7 +513,7 @@ function M.create(ctx, config, state, visualization, animator)
           if state.is_previewing(item_data.item) then
             state.stop_preview()
           else
-            -- MIDI always uses preview through track, modifier keys don't apply
+            -- MIDI always uses preview through track
             state.start_preview(item_data.item)
           end
           return
@@ -531,8 +521,8 @@ function M.create(ctx, config, state, visualization, animator)
       end
     end,
 
+    -- Double-click: start rename
     double_click = function(uuid)
-      -- Start rename for this item
       local items = get_items()
       for _, item_data in ipairs(items) do
         if item_data.uuid == uuid then
@@ -546,8 +536,8 @@ function M.create(ctx, config, state, visualization, animator)
       end
     end,
 
-    rename = function(selected_keys)
-      -- Start rename for selected items (batch rename)
+    -- F2: batch rename
+    f2 = function(grid, selected_keys)
       if not selected_keys or #selected_keys == 0 then return end
 
       -- Start with first selected item

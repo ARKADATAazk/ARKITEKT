@@ -117,6 +117,8 @@ function M.new(opts)
     get_exclusion_zones = opts.get_exclusion_zones,
 
     behaviors        = opts.behaviors or {},
+    mouse_behaviors  = opts.mouse_behaviors or {},
+    custom_shortcuts = opts.shortcuts or {},
     render_tile      = opts.render_tile or function() end,
     render_overlays  = opts.render_overlays,
 
@@ -162,6 +164,10 @@ function M.new(opts)
     -- Cache string IDs for performance (avoid string concatenation every frame)
     _cached_bg_id = "##grid_bg_" .. grid_id,
     _cached_empty_id = "##grid_empty_" .. grid_id,
+
+    -- Virtual list mode for large datasets (1000+ items)
+    virtual = opts.virtual or false,
+    virtual_buffer_rows = opts.virtual_buffer_rows or 2,  -- Extra rows above/below viewport
   }, Grid)
 
   grid.animator:set_rect_track(grid.rect_track)
@@ -341,10 +347,307 @@ function Grid:mark_destroyed(keys)
   self.animator:mark_destroyed(keys)
 end
 
+-- Virtual list mode: only calculate layout for visible items
+-- Requires fixed_tile_h for accurate height estimation
+function Grid:_draw_virtual(ctx, items, num_items)
+  local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
+  local origin_x, origin_y = ImGui.GetCursorScreenPos(ctx)
+
+  local ext = self.extend_input_area
+  local extended_x = origin_x - ext.left
+  local extended_y = origin_y - ext.top
+
+  -- Calculate grid parameters
+  local min_col_w = self.min_col_w_fn()
+  local fixed_tile_h = self.fixed_tile_h_fn and self.fixed_tile_h_fn() or self.fixed_tile_h
+
+  if not fixed_tile_h then
+    -- Fall back to regular draw if no fixed height (can't estimate total height)
+    return false
+  end
+
+  -- Calculate columns
+  local cols = math.max(1, math.floor((avail_w + self.gap) / (min_col_w + self.gap)))
+  local tile_w = (avail_w - (cols - 1) * self.gap) / cols
+  local row_height = fixed_tile_h + self.gap
+
+  -- Calculate total dimensions
+  local total_rows = math.ceil(num_items / cols)
+  local total_height = total_rows * row_height + self.gap
+
+  self.last_layout_cols = cols
+
+  -- Handle input
+  local keyboard_consumed = false
+  local wheel_consumed = false
+
+  if not self.block_all_input then
+    keyboard_consumed = Input.handle_shortcuts(self, ctx)
+    wheel_consumed = Input.handle_wheel_input(self, ctx, items)
+  end
+
+  if wheel_consumed then
+    local current_scroll_y = ImGui.GetScrollY(ctx)
+    ImGui.SetScrollY(ctx, current_scroll_y)
+  end
+
+  -- Calculate visible range
+  local scroll_y = ImGui.GetScrollY(ctx)
+  local buffer_rows = self.virtual_buffer_rows
+
+  local first_visible_row = math.max(0, math.floor(scroll_y / row_height) - buffer_rows)
+  local last_visible_row = math.ceil((scroll_y + avail_h) / row_height) + buffer_rows
+
+  local first_item = math.max(1, first_visible_row * cols + 1)
+  local last_item = math.min(num_items, (last_visible_row + 1) * cols)
+
+  -- Update visual bounds
+  local extended_w = avail_w + ext.left + ext.right
+  local extended_h = math.max(total_height, avail_h) + ext.top + ext.bottom
+
+  if self.panel_clip_bounds then
+    self.visual_bounds = self.panel_clip_bounds
+  else
+    local window_x, window_y = ImGui.GetWindowPos(ctx)
+    self.visual_bounds = {
+      window_x,
+      window_y + 30,
+      window_x + avail_w,
+      window_y + 30 + avail_h
+    }
+  end
+
+  self.grid_bounds = {extended_x, extended_y, extended_x + extended_w, extended_y + extended_h}
+
+  -- Mouse interaction detection
+  local mx, my = ImGui.GetMousePos(ctx)
+  local gb = self.grid_bounds
+  local mouse_in_grid = gb and mx >= gb[1] and mx <= gb[3] and my >= gb[2] and my <= gb[4]
+
+  local is_over_ui_element = ImGui.IsAnyItemHovered(ctx) or
+                              ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId)
+  local allow_background_interaction = not self.disable_background_clicks and not is_over_ui_element
+
+  local bg_clicked = mouse_in_grid and ImGui.IsMouseClicked(ctx, 0) and allow_background_interaction
+  local bg_double_clicked = mouse_in_grid and ImGui.IsMouseDoubleClicked(ctx, 0) and allow_background_interaction
+  local deferred_marquee_start = false
+
+  if bg_clicked and not Input.is_external_drag_active(self) then
+    deferred_marquee_start = true
+  end
+
+  -- Marquee selection handling
+  local marquee_threshold = (self.config.marquee and self.config.marquee.drag_threshold) or DEFAULTS.marquee.drag_threshold
+
+  if self.sel_rect:is_active() and ImGui.IsMouseDragging(ctx, 0, marquee_threshold) and not Input.is_external_drag_active(self) then
+    local mx, my = ImGui.GetMousePos(ctx)
+    self.sel_rect:update(mx, my)
+
+    -- Calculate rects for ALL items for marquee selection (necessary evil)
+    local x1, y1, x2, y2 = self.sel_rect:aabb()
+    if x1 then
+      local rect_map = {}
+      for i = 1, num_items do
+        local item = items[i]
+        local row = math.floor((i - 1) / cols)
+        local col = (i - 1) % cols
+        local rx = origin_x + col * (tile_w + self.gap)
+        local ry = origin_y + self.gap + row * row_height
+        rect_map[self.key(item)] = {rx, ry, rx + tile_w, ry + fixed_tile_h}
+      end
+      self.selection:apply_rect({x1, y1, x2, y2}, rect_map, self.sel_rect.mode)
+      if self.behaviors and self.behaviors.on_select then
+        self.behaviors.on_select(self, self.selection:selected_keys())
+      end
+    end
+  end
+
+  if self.sel_rect:is_active() and ImGui.IsMouseReleased(ctx, 0) then
+    if not self.sel_rect:did_drag() then
+      self.selection:clear()
+      if self.behaviors and self.behaviors.on_select then
+        self.behaviors.on_select(self, self.selection:selected_keys())
+      end
+    end
+    self.sel_rect:clear()
+  end
+
+  ImGui.SetCursorScreenPos(ctx, origin_x, origin_y)
+
+  self.hover_id = nil
+  self.current_rects = {}
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  if self.clip_rendering and self.visual_bounds then
+    ImGui.PushClipRect(ctx, self.visual_bounds[1], self.visual_bounds[2], self.visual_bounds[3], self.visual_bounds[4], true)
+  end
+
+  local mouse_over_tile = false
+  local double_clicked_tile_key = nil
+
+  -- Render only visible items
+  for i = first_item, last_item do
+    local item = items[i]
+    local key = self.key(item)
+
+    -- Calculate rect on-the-fly
+    local row = math.floor((i - 1) / cols)
+    local col = (i - 1) % cols
+    local rx = origin_x + col * (tile_w + self.gap)
+    local ry = origin_y + self.gap + row * row_height
+    local rect = {rx, ry, rx + tile_w, ry + fixed_tile_h}
+
+    -- Update rect_track for this item (needed for selection, drag, etc.)
+    self.rect_track:teleport(key, rect)
+
+    self.current_rects[key] = {rect[1], rect[2], rect[3], rect[4], item}
+
+    local state = {
+      hover    = false,
+      selected = self.selection:is_selected(key),
+      index    = i,
+    }
+
+    local is_hovered = false
+    if not self.block_all_input then
+      is_hovered = Input.handle_tile_input(self, ctx, item, rect)
+    end
+    state.hover = is_hovered
+
+    self.render_tile(ctx, rect, item, state, self)
+
+    -- Check for double-click on tile
+    if bg_double_clicked and Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
+      mouse_over_tile = true
+      double_clicked_tile_key = key
+    elseif deferred_marquee_start and Draw.point_in_rect(mx, my, rect[1], rect[2], rect[3], rect[4]) then
+      mouse_over_tile = true
+    end
+  end
+
+  if self.clip_rendering then
+    ImGui.PopClipRect(ctx)
+  end
+
+  -- Handle double-click on tile
+  if bg_double_clicked and double_clicked_tile_key and self.behaviors and self.behaviors.double_click then
+    self.behaviors.double_click(self, double_clicked_tile_key)
+  end
+
+  -- Start marquee selection if click was NOT over a tile
+  if deferred_marquee_start and not mouse_over_tile then
+    local mx, my = ImGui.GetMousePos(ctx)
+    local ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
+    local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
+    local mode = (ctrl or shift) and "add" or "replace"
+
+    self.sel_rect:begin(mx, my, mode, ctx)
+    if self.on_click_empty then self.on_click_empty() end
+  end
+
+  if not self.block_all_input then
+    Input.check_start_drag(self, ctx)
+  end
+
+  -- Draw drag visuals (simplified for virtual mode - no animation)
+  if (not self.block_all_input) and self.drag:is_active() then
+    self:_draw_drag_visuals(ctx, dl)
+  end
+
+  self:_update_external_drop_target(ctx)
+
+  if Input.is_external_drag_active(self) then
+    self:_draw_external_drop_visuals(ctx, dl)
+
+    if self.accept_external_drops and ImGui.IsMouseReleased(ctx, 0) then
+      if self.external_drop_target and self.on_external_drop then
+        self.on_external_drop(self.external_drop_target.index)
+      end
+      self.external_drop_target = nil
+    end
+  end
+
+  -- Handle drag release and reorder
+  if self.drag:is_active() and ImGui.IsMouseReleased(ctx, 0) then
+    if self.drag:get_target_index() and self.behaviors and self.behaviors.reorder then
+      local order = {}
+      for i = 1, num_items do
+        order[i] = self.key(items[i])
+      end
+
+      local dragged_set = DropZones.build_dragged_set(self.drag:get_dragged_ids())
+
+      local filtered_order = {}
+      for i = 1, #order do
+        local id = order[i]
+        if not dragged_set[id] then
+          filtered_order[#filtered_order + 1] = id
+        end
+      end
+
+      local new_order = {}
+      local insert_pos = math.min(self.drag:get_target_index(), #filtered_order + 1)
+
+      for i = 1, insert_pos - 1 do
+        new_order[#new_order + 1] = filtered_order[i]
+      end
+
+      for _, id in ipairs(self.drag:get_dragged_ids()) do
+        new_order[#new_order + 1] = id
+      end
+
+      for i = insert_pos, #filtered_order do
+        new_order[#new_order + 1] = filtered_order[i]
+      end
+
+      self.behaviors.reorder(self, new_order)
+    end
+
+    local pending = self.drag:release()
+    if pending and not Input.is_external_drag_active(self) then
+      self.selection:single(pending)
+      if self.behaviors and self.behaviors.on_select then
+        self.behaviors.on_select(self, self.selection:selected_keys())
+      end
+    end
+  end
+
+  if not self.drag:is_active() and ImGui.IsMouseReleased(ctx, 0) and not Input.is_external_drag_active(self) then
+    if self.drag:has_pending_selection() then
+      self.selection:single(self.drag:get_pending_selection())
+      if self.behaviors and self.behaviors.on_select then
+        self.behaviors.on_select(self, self.selection:selected_keys())
+      end
+    end
+
+    self.drag:release()
+  end
+
+  self:_draw_marquee(ctx, dl)
+
+  if self.render_overlays then
+    self.render_overlays(ctx, self.current_rects)
+  end
+
+  -- Reserve vertical space for scrollbar calculation
+  ImGui.SetCursorPosY(ctx, total_height)
+  ImGui.Dummy(ctx, 0, 0)
+
+  return true  -- Successfully used virtual mode
+end
+
 function Grid:draw(ctx)
   local items = self.get_items()
   -- Cache table length for performance (avoid recalculating #items multiple times)
   local num_items = #items
+
+  -- Use virtual list mode for large datasets when enabled
+  if self.virtual and num_items > 0 then
+    if self:_draw_virtual(ctx, items, num_items) then
+      return
+    end
+    -- Fall through to regular draw if virtual mode failed (e.g., no fixed_tile_h)
+  end
 
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
   local origin_x, origin_y = ImGui.GetCursorScreenPos(ctx)
@@ -562,7 +865,7 @@ function Grid:draw(ctx)
       end
       self.selection:apply_rect({x1, y1, x2, y2}, rect_map, self.sel_rect.mode)
       if self.behaviors and self.behaviors.on_select then
-        self.behaviors.on_select(self.selection:selected_keys())
+        self.behaviors.on_select(self, self.selection:selected_keys())
       end
     end
   end
@@ -572,7 +875,7 @@ function Grid:draw(ctx)
     if not self.sel_rect:did_drag() then
       self.selection:clear()
       if self.behaviors and self.behaviors.on_select then
-        self.behaviors.on_select(self.selection:selected_keys())
+        self.behaviors.on_select(self, self.selection:selected_keys())
       end
     end
     self.sel_rect:clear()
@@ -698,7 +1001,7 @@ function Grid:draw(ctx)
 
   -- Handle double-click on tile
   if bg_double_clicked and double_clicked_tile_key and self.behaviors and self.behaviors.double_click then
-    self.behaviors.double_click(double_clicked_tile_key)
+    self.behaviors.double_click(self, double_clicked_tile_key)
   end
 
   -- NOW start marquee selection if click was NOT over a tile
@@ -766,14 +1069,14 @@ function Grid:draw(ctx)
         new_order[#new_order + 1] = filtered_order[i]
       end
 
-      self.behaviors.reorder(new_order)
+      self.behaviors.reorder(self, new_order)
     end
-    
+
     local pending = self.drag:release()
     if pending and not Input.is_external_drag_active(self) then
       self.selection:single(pending)
       if self.behaviors and self.behaviors.on_select then
-        self.behaviors.on_select(self.selection:selected_keys())
+        self.behaviors.on_select(self, self.selection:selected_keys())
       end
     end
 
@@ -787,7 +1090,7 @@ function Grid:draw(ctx)
     if self.drag:has_pending_selection() then
       self.selection:single(self.drag:get_pending_selection())
       if self.behaviors and self.behaviors.on_select then
-        self.behaviors.on_select(self.selection:selected_keys())
+        self.behaviors.on_select(self, self.selection:selected_keys())
       end
     end
 

@@ -16,15 +16,238 @@ end)
 
 local M = {}
 
-M.SHORTCUT_REGISTRY = {
+-- =============================================================================
+-- DEFAULT SHORTCUTS
+-- Generic names that describe the input, not the action.
+-- Grids can add custom shortcuts via Grid.new({ shortcuts = {...} })
+-- =============================================================================
+M.DEFAULT_SHORTCUTS = {
+  -- Basic keys
   { key = ImGui.Key_Delete, name = 'delete' },
-  { key = ImGui.Key_Space, name = 'play' },
-  { key = ImGui.Key_F2, name = 'rename' },
-  { key = ImGui.Key_F, name = 'favorite' },
+  { key = ImGui.Key_Space, name = 'space' },
+  { key = ImGui.Key_Space, ctrl = true, name = 'space:ctrl' },
+  { key = ImGui.Key_Space, shift = true, name = 'space:shift' },
+  { key = ImGui.Key_F2, name = 'f2' },
+  { key = ImGui.Key_F, name = 'f' },
+  { key = ImGui.Key_Enter, name = 'enter' },
+  { key = ImGui.Key_Escape, name = 'escape' },
+
+  -- Selection shortcuts
   { key = ImGui.Key_A, ctrl = true, name = 'select_all' },
   { key = ImGui.Key_D, ctrl = true, name = 'deselect_all' },
   { key = ImGui.Key_I, ctrl = true, name = 'invert_selection' },
+
+  -- Undo/Redo
+  { key = ImGui.Key_Z, ctrl = true, name = 'undo' },
+  { key = ImGui.Key_Z, ctrl = true, shift = true, name = 'redo' },
+  { key = ImGui.Key_Y, ctrl = true, name = 'redo' },  -- Alternate
 }
+
+-- =============================================================================
+-- DEFAULT BEHAVIORS
+-- Built-in behaviors that work for all grids.
+-- Grids can override by defining their own behavior with the same name.
+-- =============================================================================
+M.DEFAULT_BEHAVIORS = {
+  select_all = function(grid)
+    local items = grid.get_items()
+    local order = {}
+    for _, item in ipairs(items) do
+      order[#order + 1] = grid.key(item)
+    end
+    grid.selection:select_all(order)
+    if grid.behaviors and grid.behaviors.on_select then
+      grid.behaviors.on_select(grid, grid.selection:selected_keys())
+    end
+  end,
+
+  deselect_all = function(grid)
+    grid.selection:clear()
+    if grid.behaviors and grid.behaviors.on_select then
+      grid.behaviors.on_select(grid, grid.selection:selected_keys())
+    end
+  end,
+
+  invert_selection = function(grid)
+    local items = grid.get_items()
+    local order = {}
+    for _, item in ipairs(items) do
+      order[#order + 1] = grid.key(item)
+    end
+    grid.selection:invert(order)
+    if grid.behaviors and grid.behaviors.on_select then
+      grid.behaviors.on_select(grid, grid.selection:selected_keys())
+    end
+  end,
+}
+
+-- =============================================================================
+-- DEFAULT MOUSE BEHAVIORS
+-- Mouse + modifier combinations. Grids can override via mouse_behaviors.
+--
+-- Behavior signatures:
+--   wheel behaviors: (grid, target_key, delta)
+--   click behaviors: (grid, key, selected_keys)
+--   double_click:    (grid, key)
+-- =============================================================================
+M.DEFAULT_MOUSE_BEHAVIORS = {
+  -- SHIFT+wheel: cycle through item variants
+  ['wheel:shift'] = function(grid, target_key, delta)
+    -- Check for direct override first
+    if grid.behaviors and grid.behaviors['wheel:shift'] then
+      return grid.behaviors['wheel:shift'](grid, target_key, delta)
+    end
+    -- Default: use wheel_cycle behavior
+    if grid.behaviors and grid.behaviors.wheel_cycle then
+      local new_uuid = grid.behaviors.wheel_cycle(grid, {target_key}, delta)
+      if new_uuid and new_uuid ~= target_key then
+        grid.selection:single(new_uuid)
+        if grid.behaviors and grid.behaviors.on_select then
+          grid.behaviors.on_select(grid, grid.selection:selected_keys())
+        end
+      end
+      return true
+    end
+    return false
+  end,
+
+  -- CTRL+wheel: resize tiles (vertical by default)
+  ['wheel:ctrl'] = function(grid, target_key, delta)
+    -- Check for direct override first
+    if grid.behaviors and grid.behaviors['wheel:ctrl'] then
+      grid.behaviors['wheel:ctrl'](grid, target_key, delta)
+      return true
+    end
+    -- Default: use wheel_resize behavior
+    if grid.behaviors and grid.behaviors.wheel_resize then
+      grid.behaviors.wheel_resize(grid, 'vertical', delta)
+      return true
+    end
+    return false
+  end,
+
+  -- ALT+wheel: resize tiles (horizontal)
+  ['wheel:alt'] = function(grid, target_key, delta)
+    -- Check for direct override first
+    if grid.behaviors and grid.behaviors['wheel:alt'] then
+      grid.behaviors['wheel:alt'](grid, target_key, delta)
+      return true
+    end
+    -- Default: use wheel_resize behavior
+    if grid.behaviors and grid.behaviors.wheel_resize then
+      grid.behaviors.wheel_resize(grid, 'horizontal', delta)
+      return true
+    end
+    return false
+  end,
+
+  -- ALT+click: delete
+  ['click:alt'] = function(grid, key, selected_keys)
+    local behavior = grid.behaviors and (grid.behaviors['click:alt'] or grid.behaviors.delete)
+    if behavior then
+      if grid.selection:is_selected(key) and #selected_keys > 1 then
+        behavior(grid, selected_keys)
+      else
+        behavior(grid, {key})
+      end
+      return true
+    end
+    return false
+  end,
+
+  -- Right-click: context menu
+  ['click:right'] = function(grid, key, selected_keys)
+    if grid.behaviors and grid.behaviors['click:right'] then
+      grid.behaviors['click:right'](grid, key, selected_keys)
+      return true
+    end
+    return false
+  end,
+
+  -- Double-click in text zone: inline edit
+  ['double_click:text'] = function(grid, key)
+    if grid.behaviors and grid.behaviors.start_inline_edit then
+      grid.behaviors.start_inline_edit(grid, key)
+      return true
+    end
+    return false
+  end,
+
+  -- Double-click outside text zone: seek or custom action
+  ['double_click'] = function(grid, key)
+    if grid.behaviors and grid.behaviors.double_click_seek then
+      grid.behaviors.double_click_seek(grid, key)
+      return true
+    elseif grid.behaviors and grid.behaviors.double_click then
+      grid.behaviors.double_click(grid, key)
+      return true
+    end
+    return false
+  end,
+}
+
+-- =============================================================================
+-- RESOLVE FUNCTIONS
+-- Look up behavior from grid's custom → default fallback
+-- =============================================================================
+function M.resolve_behavior(grid, name)
+  -- Check grid's custom behaviors first
+  if grid.behaviors then
+    local behavior = grid.behaviors[name]
+
+    -- Explicitly disabled
+    if behavior == false then
+      return nil
+    end
+
+    -- Custom override
+    if behavior then
+      return behavior
+    end
+  end
+
+  -- Fall back to default
+  return M.DEFAULT_BEHAVIORS[name]
+end
+
+function M.resolve_mouse_behavior(grid, name)
+  -- Check grid's custom mouse behaviors first
+  if grid.mouse_behaviors then
+    local behavior = grid.mouse_behaviors[name]
+
+    -- Explicitly disabled
+    if behavior == false then
+      return nil
+    end
+
+    -- Custom override
+    if behavior then
+      return behavior
+    end
+  end
+
+  -- Fall back to default
+  return M.DEFAULT_MOUSE_BEHAVIORS[name]
+end
+
+-- Build merged shortcut list (defaults + grid custom)
+function M.get_shortcuts(grid)
+  local shortcuts = {}
+
+  -- Add defaults
+  for _, shortcut in ipairs(M.DEFAULT_SHORTCUTS) do
+    shortcuts[#shortcuts + 1] = shortcut
+  end
+
+  -- Add grid's custom shortcuts
+  if grid.custom_shortcuts then
+    for _, shortcut in ipairs(grid.custom_shortcuts) do
+      shortcuts[#shortcuts + 1] = shortcut
+    end
+  end
+
+  return shortcuts
+end
 
 function M.is_external_drag_active(grid)
   if not grid.external_drag_check then return false end
@@ -98,8 +321,9 @@ function M.is_shortcut_pressed(ctx, shortcut, state)
   return true
 end
 
-function M.reset_shortcut_states(ctx, state)
-  for _, shortcut in ipairs(M.SHORTCUT_REGISTRY) do
+function M.reset_shortcut_states(ctx, grid, state)
+  local shortcuts = M.get_shortcuts(grid)
+  for _, shortcut in ipairs(shortcuts) do
     local is_down = ImGui.IsKeyDown(ctx, shortcut.key)
     local state_key = shortcut.name .. '_pressed_last_frame'
     if not is_down then
@@ -123,63 +347,28 @@ function M.handle_shortcuts(grid, ctx)
 
   grid.shortcut_state = grid.shortcut_state or {}
 
-  for _, shortcut in ipairs(M.SHORTCUT_REGISTRY) do
+  -- Get merged shortcuts (defaults + grid custom)
+  local shortcuts = M.get_shortcuts(grid)
+
+  for _, shortcut in ipairs(shortcuts) do
     if M.is_shortcut_pressed(ctx, shortcut, grid.shortcut_state) then
       local shortcut_name = shortcut.name
 
-      -- Handle built-in selection shortcuts (work for all grids)
-      if shortcut_name == 'select_all' then
-        local items = grid.get_items()
-        local order = {}
-        for _, item in ipairs(items) do
-          order[#order + 1] = grid.key(item)
-        end
-        grid.selection:select_all(order)
-        if grid.behaviors and grid.behaviors.on_select then
-          grid.behaviors.on_select(grid.selection:selected_keys())
-        end
+      -- Resolve behavior (custom → default → nil)
+      local behavior = M.resolve_behavior(grid, shortcut_name)
+      if behavior then
+        local selected_keys = grid.selection:selected_keys()
+        behavior(grid, selected_keys)
         return true
-
-      elseif shortcut_name == 'deselect_all' then
-        grid.selection:clear()
-        if grid.behaviors and grid.behaviors.on_select then
-          grid.behaviors.on_select(grid.selection:selected_keys())
-        end
-        return true
-
-      elseif shortcut_name == 'invert_selection' then
-        local items = grid.get_items()
-        local order = {}
-        for _, item in ipairs(items) do
-          order[#order + 1] = grid.key(item)
-        end
-        grid.selection:invert(order)
-        if grid.behaviors and grid.behaviors.on_select then
-          grid.behaviors.on_select(grid.selection:selected_keys())
-        end
-        return true
-
-      else
-        -- Handle custom shortcuts via behaviors
-        if grid.behaviors then
-          local behavior = grid.behaviors[shortcut_name]
-          if behavior then
-            local selected_keys = grid.selection:selected_keys()
-            behavior(selected_keys)
-            return true
-          end
-        end
       end
     end
   end
 
-  M.reset_shortcut_states(ctx, grid.shortcut_state)
+  M.reset_shortcut_states(ctx, grid, grid.shortcut_state)
   return false
 end
 
 function M.handle_wheel_input(grid, ctx, items)
-  if not grid.behaviors or not grid.behaviors.wheel_adjust then return false end
-
   -- Block wheel input when any popup is open
   if ImGui.IsPopupOpen(ctx, '', ImGui.PopupFlags_AnyPopupId) then
     return false
@@ -200,40 +389,30 @@ function M.handle_wheel_input(grid, ctx, items)
   local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
   local shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
 
-  -- SHIFT+Scroll: Cycle through item group (1/3, 2/3, 3/3)
-  -- Uses hovered item instead of selection
-  if shift and not ctrl and not alt then
-    -- Use hovered item if available
-    local target_key = grid.hover_id
-
-    if target_key and grid.behaviors and grid.behaviors.wheel_adjust then
-      local wheel_step = (grid.config and grid.config.wheel and grid.config.wheel.step) or 1
-      local delta = (wheel_y > 0) and wheel_step or -wheel_step
-
-      -- Call wheel_adjust which will cycle and return the new UUID
-      local new_uuid = grid.behaviors.wheel_adjust({target_key}, delta)
-
-      -- Update selection to the new item if cycling succeeded
-      if new_uuid and new_uuid ~= target_key then
-        grid.selection:single(new_uuid)
-        if grid.behaviors and grid.behaviors.on_select then
-          grid.behaviors.on_select(grid.selection:selected_keys())
-        end
-      end
-
-      return true  -- Consume wheel to prevent scrolling
-    end
-    return false
+  -- Build behavior name from modifiers
+  local behavior_name = 'wheel'
+  if ctrl and shift then
+    behavior_name = 'wheel:ctrl:shift'
+  elseif ctrl then
+    behavior_name = 'wheel:ctrl'
+  elseif shift then
+    behavior_name = 'wheel:shift'
+  elseif alt then
+    behavior_name = 'wheel:alt'
+  else
+    return false  -- Plain wheel = scroll, not handled
   end
 
-  -- CTRL or ALT: Tile resize operation (works anywhere in grid)
-  if ctrl or alt then
+  -- Resolve mouse behavior
+  local behavior = M.resolve_mouse_behavior(grid, behavior_name)
+  if behavior then
     local wheel_step = (grid.config and grid.config.wheel and grid.config.wheel.step) or 1
     local delta = (wheel_y > 0) and wheel_step or -wheel_step
+    local target_key = grid.hover_id
 
-    -- Global resize: pass empty keys array to signal "adjust all tiles"
-    grid.behaviors.wheel_adjust({}, delta)
-    return true  -- Consume wheel to prevent scrolling
+    if behavior(grid, target_key, delta) then
+      return true  -- Consume wheel to prevent scrolling
+    end
   end
 
   return false
@@ -299,13 +478,13 @@ function M.handle_tile_input(grid, ctx, item, rect)
         grid.selection:range(order, from_key, key)
 
         if grid.behaviors and grid.behaviors.on_select then
-          grid.behaviors.on_select(grid.selection:selected_keys())
+          grid.behaviors.on_select(grid, grid.selection:selected_keys())
         end
         return is_hovered
       elseif ctrl then
         grid.selection:toggle(key)
         if grid.behaviors and grid.behaviors.on_select then
-          grid.behaviors.on_select(grid.selection:selected_keys())
+          grid.behaviors.on_select(grid, grid.selection:selected_keys())
         end
       else
         if not was_selected then
@@ -318,46 +497,28 @@ function M.handle_tile_input(grid, ctx, item, rect)
       end
     end
 
-    -- Right-click: Toggle enabled/disabled state (disable tiles, not delete)
+    -- Right-click: Use mouse behavior system
     if ImGui.IsMouseClicked(ctx, 1) then
-      if grid.behaviors and grid.behaviors.right_click then
-        local selected_keys = grid.selection:selected_keys()
-        grid.behaviors.right_click(key, selected_keys)
-      elseif grid.behaviors and grid.behaviors.toggle_enabled then
-        local selected_keys = grid.selection:selected_keys()
-        if grid.selection:is_selected(key) and #selected_keys > 1 then
-          -- Multi-select: toggle all selected
-          grid.behaviors.toggle_enabled(selected_keys)
-        else
-          -- Single item: toggle just this one
-          grid.behaviors.toggle_enabled({key})
-        end
+      local selected_keys = grid.selection:selected_keys()
+      local behavior = M.resolve_mouse_behavior(grid, 'click:right')
+      if behavior then
+        behavior(grid, key, selected_keys)
       end
     end
 
-    -- ALT+Click: Delete items (removal from grid)
+    -- ALT+Click: Use mouse behavior system
     if ImGui.IsMouseClicked(ctx, 0) then
       local alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
-      if alt and grid.behaviors and (grid.behaviors.alt_click or grid.behaviors.delete) then
+      if alt then
         local selected_keys = grid.selection:selected_keys()
-        if grid.selection:is_selected(key) and #selected_keys > 1 then
-          -- Multi-select: delete all selected
-          if grid.behaviors.alt_click then
-            grid.behaviors.alt_click(selected_keys)
-          else
-            grid.behaviors.delete(selected_keys)
-          end
-        else
-          -- Single item: delete just this one
-          if grid.behaviors.alt_click then
-            grid.behaviors.alt_click({key})
-          else
-            grid.behaviors.delete({key})
-          end
+        local behavior = M.resolve_mouse_behavior(grid, 'click:alt')
+        if behavior then
+          behavior(grid, key, selected_keys)
         end
       end
     end
 
+    -- Double-click: Use mouse behavior system
     if ImGui.IsMouseDoubleClicked(ctx, 0) then
       -- Check if double-click is within text zone
       local in_text_zone = false
@@ -369,16 +530,14 @@ function M.handle_tile_input(grid, ctx, item, rect)
       end
 
       if in_text_zone then
-        -- Double-click on text zone triggers inline editing
-        if grid.behaviors and grid.behaviors.start_inline_edit then
-          grid.behaviors.start_inline_edit(key)
+        local behavior = M.resolve_mouse_behavior(grid, 'double_click:text')
+        if behavior then
+          behavior(grid, key)
         end
       else
-        -- Double-click outside text zone triggers seek/cursor movement
-        if grid.behaviors and grid.behaviors.double_click_seek then
-          grid.behaviors.double_click_seek(key)
-        elseif grid.behaviors and grid.behaviors.double_click then
-          grid.behaviors.double_click(key)
+        local behavior = M.resolve_mouse_behavior(grid, 'double_click')
+        if behavior then
+          behavior(grid, key)
         end
       end
     end
@@ -419,7 +578,7 @@ function M.stop_inline_edit(grid, commit)
   grid.editing_state = nil
 
   if commit and grid.behaviors and grid.behaviors.on_inline_edit_complete then
-    grid.behaviors.on_inline_edit_complete(key, new_text)
+    grid.behaviors.on_inline_edit_complete(grid, key, new_text)
   end
 end
 
@@ -564,12 +723,12 @@ function M.check_start_drag(grid, ctx)
       grid.drag.ids = { grid.drag.pressed_id }
       grid.selection:single(grid.drag.pressed_id)
       if grid.behaviors and grid.behaviors.on_select then
-        grid.behaviors.on_select(grid.selection:selected_keys())
+        grid.behaviors.on_select(grid, grid.selection:selected_keys())
       end
     end
 
     if grid.behaviors and grid.behaviors.drag_start then
-      grid.behaviors.drag_start(grid.drag.ids, grid)
+      grid.behaviors.drag_start(grid, grid.drag.ids)
     end
   end
 end

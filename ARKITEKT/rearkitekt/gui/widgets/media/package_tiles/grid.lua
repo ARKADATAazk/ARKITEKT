@@ -91,15 +91,16 @@ function M.create(pkg, settings, theme)
     end,
     
     behaviors = {
-      delete = function(selected_keys)
+      delete = function(grid, selected_keys)
         if #selected_keys == 0 then return end
         for _, id in ipairs(selected_keys) do
           pkg:remove(id)
         end
         if settings then settings:set('pkg_active', pkg.active) end
       end,
-      
-      toggle = function(selected_keys)
+
+      -- Space toggles active state
+      space = function(grid, selected_keys)
         if #selected_keys == 0 then return end
         local first_key = selected_keys[1]
         local new_status = not pkg.active[first_key]
@@ -108,24 +109,24 @@ function M.create(pkg, settings, theme)
         end
         if settings then settings:set('pkg_active', pkg.active) end
       end,
-      
-      select_all = function()
+
+      select_all = function(grid)
         for _, P in ipairs(pkg:visible()) do
           grid.selection.selected[P.id] = true
         end
       end,
-      
-      deselect_all = function()
+
+      deselect_all = function(grid)
         grid.selection:clear()
       end,
-      
-      invert_selection = function()
+
+      invert_selection = function(grid)
         for _, P in ipairs(pkg:visible()) do
           grid.selection:toggle(P.id)
         end
       end,
-      
-      right_click = function(key, selected_keys)
+
+      ['click:right'] = function(grid, key, selected_keys)
         if #selected_keys > 1 then
           local new_status = not pkg.active[key]
           for _, id in ipairs(selected_keys) do
@@ -136,20 +137,20 @@ function M.create(pkg, settings, theme)
         end
         if settings then settings:set('pkg_active', pkg.active) end
       end,
-      
-      double_click = function(key)
+
+      ['double_click'] = function(grid, key)
         Micromanage.open(key)
       end,
-      
-      alt_click = function(keys_to_delete)
+
+      ['click:alt'] = function(grid, keys_to_delete)
         if #keys_to_delete == 0 then return end
         for _, id in ipairs(keys_to_delete) do
           pkg:remove(id)
         end
         grid.selection:clear()
       end,
-      
-      reorder = function(new_keys)
+
+      reorder = function(grid, new_keys)
         pkg.order = new_keys
         if settings then
           settings:set('pkg_order', pkg.order)
@@ -157,14 +158,14 @@ function M.create(pkg, settings, theme)
           settings:set('package_order', pkg.order)
         end
       end,
-      
-      on_select = function(selected_keys)
-      end,
-      
-      drag_start = function(drag_ids)
+
+      on_select = function(grid, selected_keys)
       end,
 
-      wheel_adjust = function(keys, delta)
+      drag_start = function(grid, drag_ids)
+      end,
+
+      ['wheel:ctrl'] = function(grid, target_key, delta)
         -- Adjust global tile size (CTRL+MouseWheel zoom)
         local current_size = pkg.tile or 220
         local step = 20  -- Size change per wheel notch (2x for faster resize)

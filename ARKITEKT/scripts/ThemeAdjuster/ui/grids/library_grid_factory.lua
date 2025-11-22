@@ -12,7 +12,7 @@ local M = {}
 
 local function create_behaviors(view)
   return {
-    drag_start = function(item_keys)
+    drag_start = function(grid, item_keys)
       -- When GridBridge exists, let it handle the drag coordination
       if view.bridge then
         return
@@ -21,7 +21,7 @@ local function create_behaviors(view)
       -- Fallback: no bridge, handle drag locally (not used in ThemeAdjuster)
     end,
 
-    on_select = function(selected_keys)
+    on_select = function(grid, selected_keys)
       -- Optional: Update selection state
     end,
   }

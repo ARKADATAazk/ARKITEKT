@@ -45,14 +45,14 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
     -- Behaviors
     behaviors = {
       -- Selection
-      on_select = function(selected_keys)
+      on_select = function(grid, selected_keys)
         if on_select then
           on_select(selected_keys)
         end
       end,
 
       -- Double-click to apply template or rename with Ctrl (receives only key)
-      double_click = function(key)
+      ['double_click'] = function(grid, key)
         if on_double_click then
           -- Look up template by uuid from key (keep as string!)
           local uuid = key:match("template_(.+)")
@@ -67,7 +67,7 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
       end,
 
       -- Right-click context menu (receives key and selected_keys)
-      right_click = function(key, selected_keys)
+      ['click:right'] = function(grid, key, selected_keys)
         if on_right_click then
           -- Look up template by uuid from key (keep as string!)
           local uuid = key:match("template_(.+)")
@@ -82,7 +82,7 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
       end,
 
       -- Drag start (for drag-drop to folders and tracks)
-      drag_start = function(item_keys, grid)
+      drag_start = function(grid, item_keys)
         local items = {}
         local uuids = {}
 

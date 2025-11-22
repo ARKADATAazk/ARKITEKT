@@ -19,18 +19,18 @@ end
 
 local function create_behaviors(rt)
   return {
-    drag_start = function(item_keys)
+    drag_start = function(grid, item_keys)
       if rt.bridge then
         return
       end
-      
+
       local pool_items = rt.pool_grid.get_items()
       local items_by_key = {}
       for _, item in ipairs(pool_items) do
         local item_key = rt.pool_grid.key(item)
         items_by_key[item_key] = item
       end
-      
+
       local filtered_keys = {}
       for _, key in ipairs(item_keys) do
         local item = items_by_key[key]
@@ -38,11 +38,11 @@ local function create_behaviors(rt)
           filtered_keys[#filtered_keys + 1] = key
         end
       end
-      
+
       if #filtered_keys == 0 then
         return
       end
-      
+
       local payload = {}
       for _, key in ipairs(filtered_keys) do
         local item = items_by_key[key]
@@ -64,7 +64,7 @@ local function create_behaviors(rt)
       rt.drag_state.ctrl_held = false
     end,
     
-    reorder = function(new_order)
+    reorder = function(grid, new_order)
       if not rt.allow_pool_reorder then return end
       
       -- Extract regions and playlists separately
@@ -94,7 +94,7 @@ local function create_behaviors(rt)
     end,
     
     -- Inline editing: Double-click to edit single tile
-    start_inline_edit = function(key)
+    start_inline_edit = function(grid, key)
       local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
       local pool_items = rt.pool_grid.get_items()
       for _, item in ipairs(pool_items) do
@@ -117,14 +117,14 @@ local function create_behaviors(rt)
     end,
 
     -- Inline edit complete callback
-    on_inline_edit_complete = function(key, new_name)
+    on_inline_edit_complete = function(grid, key, new_name)
       if rt.on_pool_rename then
         rt.on_pool_rename(key, new_name)
       end
     end,
 
     -- Double-click outside text zone: Move cursor and seek to region/playlist
-    double_click_seek = function(key)
+    double_click_seek = function(grid, key)
       local pool_items = rt.pool_grid.get_items()
       for _, item in ipairs(pool_items) do
         if rt.pool_grid.key(item) == key then
@@ -155,7 +155,7 @@ local function create_behaviors(rt)
     end,
 
     -- F2: Batch rename with wildcards
-    rename = function(selected_keys)
+    f2 = function(grid, selected_keys)
       if not selected_keys or #selected_keys == 0 then return end
 
       -- Single selection: start inline editing

@@ -16,19 +16,19 @@ M._group_rename_state = M._group_rename_state or {}
 
 local function create_behaviors(view)
   return {
-    drag_start = function(item_keys)
+    drag_start = function(grid, item_keys)
       -- Templates and groups can be dragged to assignment grids
       if view.bridge then
         return
       end
     end,
 
-    reorder = function(new_order)
+    reorder = function(grid, new_order)
       -- Reorder templates
       view:reorder_templates(new_order)
     end,
 
-    delete = function(item_keys)
+    delete = function(grid, item_keys)
       -- Delete templates or groups
       for _, key in ipairs(item_keys) do
         if key:match("^template_group_header_") then
@@ -47,7 +47,7 @@ local function create_behaviors(view)
       end
     end,
 
-    on_select = function(selected_keys)
+    on_select = function(grid, selected_keys)
       -- Optional: Update selection state
     end,
   }
