@@ -767,6 +767,7 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
     -- Color picker using centralized widget
     ColorPickerMenu.render(ctx, {
       current_color = chip_color,
+      icon_font = config.icon_font,  -- Pass icon font for selection indicator
       on_select = function(color_int, color_hex, color_name)
         if config.on_tab_color_change then
           config.on_tab_color_change(id, color_int or false)

@@ -36,11 +36,12 @@ local DEFAULTS = {
 --   - current_color: number - integer color value of currently selected color (optional)
 --   - palette: table - custom palette (optional, defaults to Colors.PALETTE)
 --   - shape: Chip.SHAPE - SQUARE (default) or CIRCLE
---   - chip_size: number - size for square chips (default 12)
+--   - chip_size: number - size for square chips (default 17)
 --   - chip_radius: number - radius for circle chips (default 7)
 --   - columns: number - number of columns (default 7 for 28 colors)
 --   - show_none_option: boolean - show "Remove Color" option (optional)
 --   - none_label: string - label for none option (optional)
+--   - icon_font: font - remix icon font for selection indicator (optional)
 -- @return boolean - true if a color was selected
 function M.render(ctx, opts)
   opts = opts or {}
@@ -146,12 +147,14 @@ function M.render(ctx, opts)
     })
 
     -- Draw paint-fill icon for selected color
-    if is_selected then
+    if is_selected and opts.icon_font then
+      ImGui.PushFont(ctx, opts.icon_font)
       local icon_color = hexrgb("#000000FF")  -- Black icon
       local text_w, text_h = ImGui.CalcTextSize(ctx, ICON_PAINT_FILL)
       local icon_x = chip_cx - text_w * 0.5
       local icon_y = chip_cy - text_h * 0.5
       Draw.text(dl, icon_x, icon_y, icon_color, ICON_PAINT_FILL)
+      ImGui.PopFont(ctx)
     end
   end
 
