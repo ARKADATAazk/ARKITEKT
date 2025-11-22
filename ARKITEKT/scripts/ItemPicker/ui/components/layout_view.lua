@@ -157,13 +157,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local coord_offset_x = window_x
   local coord_offset_y = window_y
 
-  -- Draw overlay background with dotted pattern (layer behind everything)
-  local overlay_bg_color = Colors.hexrgb("#181818")
-  overlay_bg_color = Colors.with_alpha(overlay_bg_color, math.floor(overlay_alpha * 242))  -- 95% opacity
-  ImGui.DrawList_AddRectFilled(draw_list, coord_offset_x, coord_offset_y,
-      coord_offset_x + screen_w, coord_offset_y + screen_h, overlay_bg_color, 0)
-
-  -- Dotted pattern over entire overlay
+  -- Dotted pattern over entire overlay (no background fill - uses shell overlay scrim)
   local overlay_pattern_config = {
     enabled = true,
     primary = {
