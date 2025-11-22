@@ -214,21 +214,24 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local is_in_trigger_zone = mouse_in_window and mouse_y < (temp_search_y - trigger_zone_padding)
 
   -- Once triggered, stay visible until mouse goes below the search field (with buffer)
-  -- Also hide if mouse leaves window entirely
-  local is_below_search = not mouse_in_window or mouse_y > (temp_search_y + search_height + self.config.UI_PANELS.settings.close_below_search)
+  local is_below_search = mouse_in_window and mouse_y > (temp_search_y + search_height + self.config.UI_PANELS.settings.close_below_search)
 
   -- Initialize sticky state
   if self.state.settings_sticky_visible == nil then
     self.state.settings_sticky_visible = false
   end
 
-  -- Update sticky state with delay for closing (helps with multi-monitor overshoot)
-  local close_delay = 1.5  -- seconds before closing when mouse leaves
+  -- Update sticky state with delay only for mouse leaving window (helps with multi-monitor overshoot)
+  local close_delay = 1.5  -- seconds before closing when mouse leaves window
   if is_in_trigger_zone then
     self.state.settings_sticky_visible = true
     self.state.settings_close_timer = nil  -- Cancel any pending close
   elseif is_below_search then
-    -- Start close timer if not already running
+    -- Mouse went below search within window - close immediately
+    self.state.settings_sticky_visible = false
+    self.state.settings_close_timer = nil
+  elseif not mouse_in_window then
+    -- Mouse left window (e.g., overshoot to another monitor) - use delay
     if self.state.settings_sticky_visible then
       if not self.state.settings_close_timer then
         self.state.settings_close_timer = reaper.time_precise()
