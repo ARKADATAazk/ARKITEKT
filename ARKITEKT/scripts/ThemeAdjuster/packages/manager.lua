@@ -672,12 +672,37 @@ local function find_ui_img_dir(root)
   return best
 end
 
+-- Check if a reassembled ZIP already exists
+-- Returns: { exists = bool, path = path, version = n }
+function M.check_reassembled_exists(themes_dir, theme_name)
+  local base_name = (theme_name or "Theme") .. " (Reassembled)"
+  local path = themes_dir .. SEP .. base_name .. ".ReaperThemeZip"
+
+  if file_exists(path) then
+    return { exists = true, path = path, version = 1 }
+  end
+
+  -- Check for versioned files
+  local version = 2
+  while file_exists(themes_dir .. SEP .. base_name .. " " .. version .. ".ReaperThemeZip") do
+    version = version + 1
+  end
+
+  if version > 2 then
+    return { exists = true, path = themes_dir .. SEP .. base_name .. " " .. (version - 1) .. ".ReaperThemeZip", version = version - 1 }
+  end
+
+  return { exists = false, path = nil, version = 0 }
+end
+
 -- Apply resolved map to ZIP theme
 -- cache_dir: extracted ZIP location
 -- themes_dir: ColorThemes directory
 -- theme_name: base name for output
+-- opts: { overwrite = bool } - if true, overwrite existing; if false, create new version
 -- Returns: { ok = bool, files_copied = n, output_path = path, errors = {} }
-function M.apply_to_zip_theme(cache_dir, themes_dir, theme_name, resolved_map)
+function M.apply_to_zip_theme(cache_dir, themes_dir, theme_name, resolved_map, opts)
+  opts = opts or {}
   local result = {
     ok = true,
     files_copied = 0,
@@ -739,14 +764,19 @@ function M.apply_to_zip_theme(cache_dir, themes_dir, theme_name, resolved_map)
   local patched_name = base_name .. ".ReaperThemeZip"
   local final_path = themes_dir .. SEP .. patched_name
 
-  -- Check if file exists and find next version number
+  -- Handle existing file based on opts.overwrite
   if file_exists(final_path) then
-    local version = 2
-    while file_exists(themes_dir .. SEP .. base_name .. " " .. version .. ".ReaperThemeZip") do
-      version = version + 1
+    if opts.overwrite then
+      -- Will overwrite existing file
+    else
+      -- Create new version
+      local version = 2
+      while file_exists(themes_dir .. SEP .. base_name .. " " .. version .. ".ReaperThemeZip") do
+        version = version + 1
+      end
+      patched_name = base_name .. " " .. version .. ".ReaperThemeZip"
+      final_path = themes_dir .. SEP .. patched_name
     end
-    patched_name = base_name .. " " .. version .. ".ReaperThemeZip"
-    final_path = themes_dir .. SEP .. patched_name
   end
 
   local out_zip = script_cache .. SEP .. patched_name

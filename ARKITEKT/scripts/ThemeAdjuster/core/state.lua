@@ -117,6 +117,21 @@ end
 
 function M.set_packages(packages)
   state.packages = packages
+
+  -- Initialize order for new packages
+  local order = state.package_order
+  if #order == 0 then
+    for _, pkg in ipairs(packages) do
+      order[#order + 1] = pkg.id
+    end
+    state.package_order = order
+  end
+
+  -- Try to load saved state for this theme (if not in demo mode)
+  if not state.demo_mode then
+    M.load_assembler_state()
+  end
+
   M.update_resolution()
 end
 

@@ -396,10 +396,26 @@ function AssemblerView:do_apply()
     end
 
     local output_name = (info.theme_name or "Theme") .. " (Reassembled).ReaperThemeZip"
+    local overwrite = false
+
+    -- Check if file already exists
+    local existing = PackageManager.check_reassembled_exists(info.themes_dir, info.theme_name)
+    if existing.exists then
+      -- Prompt for overwrite vs new version
+      local overwrite_confirm = reaper.ShowMessageBox(
+        string.format("A reassembled ZIP already exists:\n%s\n\nOverwrite it?\n\nYes = Overwrite\nNo = Create new version", existing.path:match("[^\\/]+$")),
+        "File Exists",
+        3  -- Yes/No/Cancel
+      )
+
+      if overwrite_confirm == 2 then return end  -- Cancel
+      overwrite = (overwrite_confirm == 6)  -- Yes = overwrite
+    end
 
     -- Confirm apply
+    local action_text = overwrite and "overwrite existing" or "create new"
     local confirm = reaper.ShowMessageBox(
-      string.format("Apply %d assets and create new ZIP?\n\nOutput: %s\n(will auto-version if exists)\n\nLoad theme after creation?", active_count, output_name),
+      string.format("Apply %d assets and %s ZIP?\n\nLoad theme after creation?", active_count, action_text),
       "Confirm Apply (ZIP)",
       3  -- Yes/No/Cancel
     )
@@ -408,7 +424,7 @@ function AssemblerView:do_apply()
     local load_after = (confirm == 6)  -- Yes
 
     -- Do the apply
-    result = PackageManager.apply_to_zip_theme(cache_dir, info.themes_dir, info.theme_name, resolved)
+    result = PackageManager.apply_to_zip_theme(cache_dir, info.themes_dir, info.theme_name, resolved, { overwrite = overwrite })
     self.last_apply_result = result
 
     -- Show result
