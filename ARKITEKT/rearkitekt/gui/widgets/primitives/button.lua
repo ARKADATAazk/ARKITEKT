@@ -6,7 +6,6 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Style = require('rearkitekt.gui.style.defaults')
-local InteractionBlocking = require('rearkitekt.gui.utils.interaction_blocking')
 
 local M = {}
 
@@ -115,7 +114,7 @@ end
 
 local function render_button(ctx, dl, x, y, width, height, config, context, instance)
   local is_disabled = config.is_disabled or false
-  local is_hovered = not is_disabled and InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, x, y, x + width, y + height, config.is_blocking, config.ignore_modal)
+  local is_hovered = not is_disabled and ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
   local is_active = not is_disabled and ImGui.IsMouseDown(ctx, 0) and is_hovered
   local is_toggled = config.is_toggled or false
 
