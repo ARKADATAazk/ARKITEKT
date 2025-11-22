@@ -11,7 +11,7 @@ local Draw = require('rearkitekt.gui.draw')
 local hexrgb = ColorUtils.hexrgb
 
 -- Remix icon for paint fill (selection indicator)
-local ICON_PAINT_FILL = "\xEF\xBF\x82"  -- U+EFC2
+local ICON_PAINT_FILL = "\xEE\xBF\x82"  -- U+EFC2
 
 local M = {}
 

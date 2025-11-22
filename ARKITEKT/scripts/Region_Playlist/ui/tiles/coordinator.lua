@@ -631,6 +631,18 @@ function RegionTiles:draw_active(ctx, playlist, height, shell_state)
     end
   end
 
+  -- Inject icon font into tab_strip config for color picker
+  if icons_font and self.active_container and self.active_container.config and self.active_container.config.header then
+    local header = self.active_container.config.header
+    if header.elements then
+      for _, element in ipairs(header.elements) do
+        if element.type == "tab_strip" and element.config then
+          element.config.icon_font = icons_font
+        end
+      end
+    end
+  end
+
   return Render.draw_active(self, ctx, playlist, height, shell_state)
 end
 
