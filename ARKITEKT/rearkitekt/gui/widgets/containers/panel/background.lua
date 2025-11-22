@@ -185,8 +185,22 @@ end
 -- PUBLIC API
 -- ============================================================================
 
--- Draw pattern with optional texture baking
--- Set pattern_cfg.use_texture = true to enable baked textures
+-- Helper to draw dots with automatic texture baking
+local function draw_dots_auto(dl, x1, y1, x2, y2, spacing, color, dot_size, offset_x, offset_y, use_texture)
+  -- Default to using textures for performance (set use_texture=false to disable)
+  if use_texture ~= false then
+    local img, tex_size = get_pattern_texture('dots', spacing, dot_size, color)
+    if img then
+      draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, color, offset_x, offset_y)
+      return
+    end
+  end
+  -- Fallback to immediate mode
+  draw_dot_pattern(dl, x1, y1, x2, y2, spacing, color, dot_size, offset_x, offset_y)
+end
+
+-- Draw pattern with automatic texture baking for dot patterns
+-- Set pattern_cfg.use_texture = false to disable texture baking
 function M.draw(dl, x1, y1, x2, y2, pattern_cfg)
   if not pattern_cfg or not pattern_cfg.enabled then return end
 
@@ -197,16 +211,7 @@ function M.draw(dl, x1, y1, x2, y2, pattern_cfg)
     if sec.type == 'grid' then
       draw_grid_pattern(dl, x1, y1, x2, y2, sec.spacing, sec.color, sec.line_thickness, sec.offset_x, sec.offset_y)
     elseif sec.type == 'dots' then
-      if pattern_cfg.use_texture then
-        local img, tex_size = get_pattern_texture('dots', sec.spacing, sec.dot_size, sec.color)
-        if img then
-          draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, sec.color, sec.offset_x, sec.offset_y)
-        else
-          draw_dot_pattern(dl, x1, y1, x2, y2, sec.spacing, sec.color, sec.dot_size, sec.offset_x, sec.offset_y)
-        end
-      else
-        draw_dot_pattern(dl, x1, y1, x2, y2, sec.spacing, sec.color, sec.dot_size, sec.offset_x, sec.offset_y)
-      end
+      draw_dots_auto(dl, x1, y1, x2, y2, sec.spacing, sec.color, sec.dot_size, sec.offset_x, sec.offset_y, pattern_cfg.use_texture)
     end
   end
 
@@ -215,16 +220,7 @@ function M.draw(dl, x1, y1, x2, y2, pattern_cfg)
     if pri.type == 'grid' then
       draw_grid_pattern(dl, x1, y1, x2, y2, pri.spacing, pri.color, pri.line_thickness, pri.offset_x, pri.offset_y)
     elseif pri.type == 'dots' then
-      if pattern_cfg.use_texture then
-        local img, tex_size = get_pattern_texture('dots', pri.spacing, pri.dot_size, pri.color)
-        if img then
-          draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, pri.color, pri.offset_x, pri.offset_y)
-        else
-          draw_dot_pattern(dl, x1, y1, x2, y2, pri.spacing, pri.color, pri.dot_size, pri.offset_x, pri.offset_y)
-        end
-      else
-        draw_dot_pattern(dl, x1, y1, x2, y2, pri.spacing, pri.color, pri.dot_size, pri.offset_x, pri.offset_y)
-      end
+      draw_dots_auto(dl, x1, y1, x2, y2, pri.spacing, pri.color, pri.dot_size, pri.offset_x, pri.offset_y, pattern_cfg.use_texture)
     end
   end
 
