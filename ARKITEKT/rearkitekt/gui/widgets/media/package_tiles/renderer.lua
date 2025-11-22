@@ -15,6 +15,7 @@ local hexrgb = Colors.hexrgb
 
 -- Lazy-load metadata module (only when needed)
 local Metadata = nil
+local metadata_debug_done = false
 local function get_metadata()
   if not Metadata then
     -- Get script directory from debug info
@@ -25,11 +26,19 @@ local function get_metadata()
     -- Go up 5 levels (package_tiles -> media -> widgets -> gui -> rearkitekt) then into scripts/ThemeAdjuster/packages
     local metadata_path = script_dir .. "../../../../../scripts/ThemeAdjuster/packages/metadata.lua"
 
+    if not metadata_debug_done then
+      reaper.ShowConsoleMsg("[Tags] Script dir: " .. script_dir .. "\n")
+      reaper.ShowConsoleMsg("[Tags] Trying metadata path: " .. metadata_path .. "\n")
+      metadata_debug_done = true
+    end
+
     -- Try loading directly
     local chunk, err = loadfile(metadata_path)
     if chunk then
       Metadata = chunk()
+      reaper.ShowConsoleMsg("[Tags] Metadata loaded successfully!\n")
     else
+      reaper.ShowConsoleMsg("[Tags] loadfile failed: " .. tostring(err) .. "\n")
       -- Fallback: try require paths
       local paths_to_try = {
         'ThemeAdjuster.packages.metadata',
@@ -40,6 +49,7 @@ local function get_metadata()
         local ok, mod = pcall(require, path)
         if ok then
           Metadata = mod
+          reaper.ShowConsoleMsg("[Tags] Loaded via require: " .. path .. "\n")
           break
         end
       end
