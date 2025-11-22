@@ -246,21 +246,16 @@ function M.render(ctx, rect, template, state, metadata, animator)
     Draw.text(dl, text_x, text_y, text_color, display_vst)
   end
 
-  -- Render favorite star in top-right corner (no badge, just the star)
-  local star_radius = 14  -- Much bigger star for grid tiles
+  -- Render favorite star in top-right corner using remix icon font
+  local star_size = 28  -- Size of the star
   local star_margin = 6
-  local star_center_x = x2 - star_radius - star_margin
-  local star_center_y = y1 + star_radius + star_margin
+  local star_x = x2 - star_size - star_margin
+  local star_y = y1 + star_margin
 
   -- Hit area for click detection
-  local hit_size = star_radius * 2 + 4
-  local hit_x = star_center_x - hit_size * 0.5
-  local hit_y = star_center_y - hit_size * 0.5
-
-  -- Check if mouse is over star for click detection
   local mx, my = ImGui.GetMousePos(ctx)
-  local is_star_hovered = mx >= hit_x and mx <= hit_x + hit_size and
-                          my >= hit_y and my <= hit_y + hit_size
+  local is_star_hovered = mx >= star_x and mx <= star_x + star_size and
+                          my >= star_y and my <= star_y + star_size
 
   -- Determine star color based on tile color and favorite state
   local star_color
@@ -278,36 +273,40 @@ function M.render(ctx, rect, template, state, metadata, animator)
       star_color = Colors.components_to_rgba(r, g, b, 255)
     else
       -- Much darker when disabled
-      local r = math.floor(cr * 0.2 * blend + 25 * (1 - blend))
-      local g = math.floor(cg * 0.2 * blend + 25 * (1 - blend))
-      local b = math.floor(cb * 0.2 * blend + 25 * (1 - blend))
-      star_color = Colors.components_to_rgba(r, g, b, is_star_hovered and 180 or 100)
+      local r = math.floor(cr * 0.2 * blend + 20 * (1 - blend))
+      local g = math.floor(cg * 0.2 * blend + 20 * (1 - blend))
+      local b = math.floor(cb * 0.2 * blend + 20 * (1 - blend))
+      star_color = Colors.components_to_rgba(r, g, b, is_star_hovered and 160 or 80)
     end
   else
     -- No tile color - use pure grey
     if is_favorite then
       star_color = hexrgb("#E8E8E8")  -- Light when enabled
     else
-      star_color = is_star_hovered and hexrgb("#303030B4") or hexrgb("#1A1A1A64")  -- Much darker
+      star_color = is_star_hovered and hexrgb("#282828A0") or hexrgb("#18181850")  -- Much darker
     end
   end
 
-  -- Generate 5-pointed star polygon
-  local points = reaper.new_array(20)  -- 10 points * 2 coordinates
-  local inner_radius = star_radius * 0.4
-  local rotation = -math.pi / 2  -- Start from top point
+  -- Render star using remix icon font
+  local star_char = utf8.char(0xF186)  -- Remix star-fill icon
+  local font_size = 24  -- Large font size for the star
 
-  for i = 0, 9 do
-    local angle = rotation + (i * math.pi / 5)
-    local radius = (i % 2 == 0) and star_radius or inner_radius
-    local px = star_center_x + math.cos(angle) * radius
-    local py = star_center_y + math.sin(angle) * radius
-    points[i * 2 + 1] = px
-    points[i * 2 + 2] = py
+  -- Use icon font if available in state
+  if state.fonts and state.fonts.icons then
+    ImGui.PushFont(ctx, state.fonts.icons, font_size)
+    local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)
+    local star_text_x = star_x + (star_size - text_w) * 0.5
+    local star_text_y = star_y + (star_size - text_h) * 0.5
+    Draw.text(dl, star_text_x, star_text_y, star_color, star_char)
+    ImGui.PopFont(ctx)
+  else
+    -- Fallback to Unicode star if no icon font
+    local star_char_fallback = "★"
+    local text_w, text_h = ImGui.CalcTextSize(ctx, star_char_fallback)
+    local star_text_x = star_x + (star_size - text_w) * 0.5
+    local star_text_y = star_y + (star_size - text_h) * 0.5
+    Draw.text(dl, star_text_x, star_text_y, star_color, star_char_fallback)
   end
-
-  -- Draw filled star
-  ImGui.DrawList_AddConvexPolyFilled(dl, points, star_color)
 
   -- Handle star click to toggle favorite
   if is_star_hovered and ImGui.IsMouseClicked(ctx, 0) then
