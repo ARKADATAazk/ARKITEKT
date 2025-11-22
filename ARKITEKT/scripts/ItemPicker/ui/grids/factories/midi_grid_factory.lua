@@ -293,6 +293,7 @@ function M.create(ctx, config, state, visualization, animator)
     min_col_w = function() return state:get_tile_width() end,
     fixed_tile_h = state:get_tile_height(),
     layout_speed = 12.0,
+    virtual = true,  -- Enable virtual list mode for large item counts (1000+)
 
     get_items = get_items,
 

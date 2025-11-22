@@ -227,6 +227,10 @@ Grid.new({
   min_col_w = function() return 200 end,
   fixed_tile_h = 100,  -- or nil for auto
 
+  -- Performance (for large datasets 1000+)
+  virtual = true,  -- Enable virtual list mode
+  virtual_buffer_rows = 2,  -- Extra rows above/below viewport
+
   -- Behaviors
   behaviors = { ... },
 
@@ -255,6 +259,43 @@ Grid.new({
   end,
 })
 ```
+
+## Virtual List Mode
+
+For grids with 1000+ items, enable virtual list mode for optimal performance:
+
+```lua
+Grid.new({
+  virtual = true,
+  fixed_tile_h = 100,  -- Required for virtual mode
+  virtual_buffer_rows = 2,  -- Optional: extra rows to pre-render (default: 2)
+  -- ...
+})
+```
+
+### How It Works
+
+- Only calculates layout for visible items (plus buffer rows)
+- Estimates total scroll height from `fixed_tile_h` and item count
+- Teleports item positions directly (no animation)
+- Marquee selection still works (calculates all rects when needed)
+
+### Trade-offs
+
+| Feature | Regular Mode | Virtual Mode |
+|---------|-------------|--------------|
+| Layout calculation | All items | Visible only |
+| Position animation | Smooth transitions | Instant teleport |
+| Spawn/destroy effects | Animated | None |
+| Memory usage | Higher | Lower |
+| Best for | < 500 items | 1000+ items |
+
+### Requirements
+
+- `fixed_tile_h` must be set (not nil)
+- Items should have uniform heights
+
+If `fixed_tile_h` is not set, virtual mode falls back to regular rendering.
 
 ## Naming Convention
 
