@@ -140,11 +140,11 @@ function M.create_overlay_config(opts)
     close_button_margin = opts.close_button_margin or C.CLOSE_BUTTON_MARGIN,
     close_button_proximity = opts.close_button_proximity or C.CLOSE_BUTTON_PROXIMITY,
 
-    -- Close behavior
-    close_on_background_click = opts.close_on_background_click ~= nil and opts.close_on_background_click or C.DEFAULT_CLOSE_ON_BG_CLICK,
-    close_on_background_right_click = opts.close_on_background_right_click ~= nil and opts.close_on_background_right_click or C.DEFAULT_CLOSE_ON_BG_RIGHT_CLICK,
-    close_on_scrim = opts.close_on_scrim ~= nil and opts.close_on_scrim or C.DEFAULT_CLOSE_ON_SCRIM,
-    esc_to_close = opts.esc_to_close ~= nil and opts.esc_to_close or C.DEFAULT_ESC_TO_CLOSE,
+    -- Close behavior (use inverted ternary to handle false values correctly)
+    close_on_background_click = opts.close_on_background_click == nil and C.DEFAULT_CLOSE_ON_BG_CLICK or opts.close_on_background_click,
+    close_on_background_right_click = opts.close_on_background_right_click == nil and C.DEFAULT_CLOSE_ON_BG_RIGHT_CLICK or opts.close_on_background_right_click,
+    close_on_scrim = opts.close_on_scrim == nil and C.DEFAULT_CLOSE_ON_SCRIM or opts.close_on_scrim,
+    esc_to_close = opts.esc_to_close == nil and C.DEFAULT_ESC_TO_CLOSE or opts.esc_to_close,
 
     -- Layout
     content_padding = opts.content_padding or C.CONTENT_PADDING,

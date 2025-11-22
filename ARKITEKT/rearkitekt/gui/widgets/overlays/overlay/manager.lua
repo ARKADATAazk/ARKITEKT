@@ -187,10 +187,6 @@ function M:push(opts)
 
   table.insert(self.stack, overlay)
 
-  -- Debug: Show what values were set
-  reaper.ShowConsoleMsg(string.format("DEBUG overlay:push - close_on_scrim=%s, close_on_background_right_click=%s\n",
-    tostring(overlay.close_on_scrim), tostring(overlay.close_on_background_right_click)))
-
   -- Update global counter
   M._global_active_overlay_count = M._global_active_overlay_count + 1
 end
@@ -361,7 +357,6 @@ function M:render(ctx, dt)
         -- Close only if NOT over items and NOT over child containers (i.e., on scrim only)
         if not over_item and not over_child_container then
           if ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right) then
-            reaper.ShowConsoleMsg("DEBUG: Closing on scrim right-click. close_on_scrim=" .. tostring(top.close_on_scrim) .. "\n")
             self:pop()
           end
         end
@@ -392,7 +387,6 @@ function M:render(ctx, dt)
           if not over_content and not ImGui.IsAnyItemHovered(ctx) then
             if (top.close_on_background_click and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)) or
                (top.close_on_background_right_click and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right)) then
-              reaper.ShowConsoleMsg("DEBUG: Closing on background right-click. close_on_background_right_click=" .. tostring(top.close_on_background_right_click) .. "\n")
               self:pop()
             end
           end
