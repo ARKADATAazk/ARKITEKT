@@ -48,7 +48,7 @@ local function smootherstep(t)
   return t * t * t * (t * (t * 6 - 15) + 10)
 end
 
--- Draw a panel background and border with dotted pattern
+-- Draw a panel background and border (no dotted pattern - moved to overlay)
 local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
   alpha = alpha or 1.0
   rounding = rounding or 6
@@ -57,24 +57,6 @@ local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
   local bg_color = Colors.hexrgb("#0F0F0F")
   bg_color = Colors.with_alpha(bg_color, math.floor(alpha * 0x99))  -- 60% opacity (lighter)
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, rounding)
-
-  -- Dotted background pattern (more visible)
-  local pattern_config = {
-    enabled = true,
-    primary = {
-      type = 'dots',
-      spacing = 16,
-      dot_size = 1.5,
-      color = Colors.with_alpha(Colors.hexrgb("#2A2A2A"), math.floor(alpha * 180)),  -- More visible
-      offset_x = 0,
-      offset_y = 0,
-    }
-  }
-
-  -- Push clip rect for rounded corners
-  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
-  Background.draw(dl, x1, y1, x2, y2, pattern_config)
-  ImGui.DrawList_PopClipRect(dl)
 
   -- Panel border
   local border_color = Colors.hexrgb("#1A1A1A")
@@ -174,6 +156,27 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local window_x, window_y = ImGui.GetWindowPos(ctx)
   local coord_offset_x = window_x
   local coord_offset_y = window_y
+
+  -- Draw overlay background with dotted pattern (layer behind everything)
+  local overlay_bg_color = Colors.hexrgb("#0A0A0A")
+  overlay_bg_color = Colors.with_alpha(overlay_bg_color, math.floor(overlay_alpha * 200))
+  ImGui.DrawList_AddRectFilled(draw_list, coord_offset_x, coord_offset_y,
+      coord_offset_x + screen_w, coord_offset_y + screen_h, overlay_bg_color, 0)
+
+  -- Dotted pattern over entire overlay
+  local overlay_pattern_config = {
+    enabled = true,
+    primary = {
+      type = 'dots',
+      spacing = 16,
+      dot_size = 1.5,
+      color = Colors.with_alpha(Colors.hexrgb("#2A2A2A"), math.floor(overlay_alpha * 180)),
+      offset_x = 0,
+      offset_y = 0,
+    }
+  }
+  Background.draw(draw_list, coord_offset_x, coord_offset_y,
+      coord_offset_x + screen_w, coord_offset_y + screen_h, overlay_pattern_config)
 
   -- Mouse-based hover detection for responsive UI (slide/push behavior)
   local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
