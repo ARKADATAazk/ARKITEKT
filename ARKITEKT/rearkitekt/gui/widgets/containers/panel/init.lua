@@ -733,20 +733,22 @@ function Panel:begin_draw(ctx)
   local padding = self.config.padding or 0
   if padding > 0 then
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
-    self._padding_style_pushed = true
-  else
-    self._padding_style_pushed = false
   end
 
   -- Pass self (container) to begin_child for state tracking
   local success = Content.begin_child(ctx, self.id, child_w, child_h, scroll_config, self)
+
+  -- Pop padding style immediately after BeginChild (it only affects window creation)
+  if padding > 0 then
+    ImGui.PopStyleVar(ctx)
+  end
 
   if success then
     local win_x, win_y = ImGui.GetWindowPos(ctx)
     local win_w, win_h = ImGui.GetWindowSize(ctx)
     self.visible_bounds = {win_x, win_y, win_x + win_w, win_y + win_h}
   end
-  
+
   return success
 end
 
@@ -775,12 +777,6 @@ function Panel:end_draw(ctx)
 
       self.scrollbar:draw(ctx, scrollbar_x, scrollbar_y, self.child_height)
     end
-  end
-
-  -- Pop padding style if it was pushed
-  if self._padding_style_pushed then
-    ImGui.PopStyleVar(ctx)
-    self._padding_style_pushed = false
   end
 
   -- CRITICAL: Corner button z-order fix
