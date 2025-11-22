@@ -17,7 +17,7 @@ local hexrgb = Colors.hexrgb
 
 -- Draw a u-he style section header (dim text, left-aligned)
 local function draw_section_header(ctx, title)
-  ImGui.Dummy(ctx, 0, 8)
+  ImGui.Dummy(ctx, 0, 10)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
   ImGui.Text(ctx, title)
   ImGui.PopStyleColor(ctx)
@@ -56,48 +56,44 @@ local function draw_info_panel(ctx, gui, width, height)
       ImGui.PopStyleColor(ctx)
 
       -- ========================================
-      -- ACTIONS section (moved up for prominence)
+      -- VST/FX LIST section
       -- ========================================
-      draw_section_header(ctx, "ACTIONS")
+      if tmpl.fx and #tmpl.fx > 0 then
+        draw_section_header(ctx, "FX CHAIN")
 
-      -- Calculate button width (full width minus some margin)
-      local button_w = content_w - 4
-
-      -- Apply to Selected Track
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#2A5599"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#3A65A9"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#1A4589"))
-      if ImGui.Button(ctx, "Apply to Track", button_w, 28) then
-        TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
+        for i, fx_name in ipairs(tmpl.fx) do
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#6A9EFF"))
+          ImGui.Text(ctx, string.format("%d. %s", i, fx_name))
+          ImGui.PopStyleColor(ctx)
+        end
       end
-      ImGui.PopStyleColor(ctx, 3)
-      Tooltips.show(ctx, ImGui, "template_apply")
 
-      ImGui.Dummy(ctx, 0, 2)
+      -- ========================================
+      -- NOTES section
+      -- ========================================
+      draw_section_header(ctx, "NOTES")
 
-      -- Insert as New Track
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#333333"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#444444"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#222222"))
-      if ImGui.Button(ctx, "Insert as New Track", button_w, 24) then
-        TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
+      local notes = (tmpl_metadata and tmpl_metadata.notes) or ""
+
+      -- Initialize markdown field with current notes
+      local notes_field_id = "template_notes_" .. tmpl.uuid
+      if MarkdownField.get_text(notes_field_id) ~= notes and not MarkdownField.is_editing(notes_field_id) then
+        MarkdownField.set_text(notes_field_id, notes)
       end
-      ImGui.PopStyleColor(ctx, 3)
-      Tooltips.show(ctx, ImGui, "template_insert")
 
-      ImGui.Dummy(ctx, 0, 2)
+      local notes_changed, new_notes = MarkdownField.draw_at_cursor(ctx, {
+        width = content_w,
+        height = 100,
+        text = notes,
+        placeholder = "Double-click to add notes...\n\nMarkdown supported",
+      }, notes_field_id)
+      Tooltips.show(ctx, ImGui, "notes_field")
 
-      -- Rename
-      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#333333"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#444444"))
-      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#222222"))
-      if ImGui.Button(ctx, "Rename (F2)", button_w, 24) then
-        state.renaming_item = tmpl
-        state.renaming_type = "template"
-        state.rename_buffer = tmpl.name
+      if notes_changed then
+        Tags.set_template_notes(state.metadata, tmpl.uuid, new_notes)
+        local Persistence = require('TemplateBrowser.domain.persistence')
+        Persistence.save_metadata(state.metadata)
       end
-      ImGui.PopStyleColor(ctx, 3)
-      Tooltips.show(ctx, ImGui, "template_rename")
 
       -- ========================================
       -- TAGS section
@@ -114,10 +110,6 @@ local function draw_info_panel(ctx, gui, width, height)
         end
 
         if tag_count > 0 then
-          -- Draw tags in a flow layout
-          local start_x = ImGui.GetCursorPosX(ctx)
-          local max_x = start_x + content_w - 8
-
           for tag_name, tag_data in pairs(state.metadata.tags) do
             has_tags = true
             ImGui.PushID(ctx, tag_name)
@@ -174,35 +166,52 @@ local function draw_info_panel(ctx, gui, width, height)
       end
 
       -- ========================================
-      -- NOTES section
+      -- ACTIONS section (at bottom)
       -- ========================================
-      draw_section_header(ctx, "NOTES")
+      draw_section_header(ctx, "ACTIONS")
 
-      local notes = (tmpl_metadata and tmpl_metadata.notes) or ""
-
-      -- Initialize markdown field with current notes
-      local notes_field_id = "template_notes_" .. tmpl.uuid
-      if MarkdownField.get_text(notes_field_id) ~= notes and not MarkdownField.is_editing(notes_field_id) then
-        MarkdownField.set_text(notes_field_id, notes)
+      -- Apply to Selected Track (primary action)
+      if Button.draw_at_cursor(ctx, {
+        label = "Apply to Track",
+        width = content_w,
+        height = 28,
+        bg_color = hexrgb("#2A5599"),
+        bg_hover_color = hexrgb("#3A65A9"),
+        bg_active_color = hexrgb("#1A4589"),
+      }, "apply_template") then
+        TemplateOps.apply_to_selected_track(tmpl.path, tmpl.uuid, state)
       end
+      Tooltips.show(ctx, ImGui, "template_apply")
 
-      local notes_changed, new_notes = MarkdownField.draw_at_cursor(ctx, {
-        width = content_w - 4,
-        height = 120,
-        text = notes,
-        placeholder = "Double-click to add notes...\n\nMarkdown supported",
-      }, notes_field_id)
-      Tooltips.show(ctx, ImGui, "notes_field")
+      ImGui.Dummy(ctx, 0, 4)
 
-      if notes_changed then
-        Tags.set_template_notes(state.metadata, tmpl.uuid, new_notes)
-        local Persistence = require('TemplateBrowser.domain.persistence')
-        Persistence.save_metadata(state.metadata)
+      -- Insert as New Track
+      if Button.draw_at_cursor(ctx, {
+        label = "Insert as New Track",
+        width = content_w,
+        height = 24,
+      }, "insert_template") then
+        TemplateOps.insert_as_new_track(tmpl.path, tmpl.uuid, state)
       end
+      Tooltips.show(ctx, ImGui, "template_insert")
+
+      ImGui.Dummy(ctx, 0, 4)
+
+      -- Rename
+      if Button.draw_at_cursor(ctx, {
+        label = "Rename (F2)",
+        width = content_w,
+        height = 24,
+      }, "rename_template") then
+        state.renaming_item = tmpl
+        state.renaming_type = "template"
+        state.rename_buffer = tmpl.name
+      end
+      Tooltips.show(ctx, ImGui, "template_rename")
 
     else
       -- No template selected
-      ImGui.Dummy(ctx, 0, 20)
+      ImGui.Dummy(ctx, 0, 40)
       ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#555555"))
       local text = "Select a template"
       local text_w = ImGui.CalcTextSize(ctx, text)
