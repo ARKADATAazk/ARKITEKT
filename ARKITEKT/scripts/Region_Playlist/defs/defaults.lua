@@ -3,8 +3,14 @@
 -- Default configuration values
 
 local Colors = require('rearkitekt.core.colors')
+local ColorDefs = require('rearkitekt.defs.colors')
 local Constants = require('Region_Playlist.defs.constants')
 local hexrgb = Colors.hexrgb
+
+-- Helper for glow colors
+local function glow_color(base_hex, alpha)
+  return hexrgb(base_hex:sub(1, 7) .. alpha)
+end
 
 local M = {}
 
@@ -179,33 +185,33 @@ M.REGION_TILES = {
     move_mode = {
       line = {
         width = 2,
-        color = Constants.ACCENT.GREEN,
+        color = Constants.ACCENT.MOVE,
         glow_width = 12,
-        glow_color = hexrgb("#42E89633"),
+        glow_color = glow_color(ColorDefs.OPERATIONS.move, "33"),
       },
       caps = {
         width = 8,
         height = 3,
-        color = Constants.ACCENT.GREEN,
+        color = Constants.ACCENT.MOVE,
         rounding = 0,
         glow_size = 3,
-        glow_color = hexrgb("#42E89644"),
+        glow_color = glow_color(ColorDefs.OPERATIONS.move, "44"),
       },
     },
     copy_mode = {
       line = {
         width = 2,
-        color = Constants.ACCENT.PURPLE,
+        color = Constants.ACCENT.COPY,
         glow_width = 12,
-        glow_color = hexrgb("#9C87E833"),
+        glow_color = glow_color(ColorDefs.OPERATIONS.copy, "33"),
       },
       caps = {
         width = 8,
         height = 3,
-        color = Constants.ACCENT.PURPLE,
+        color = Constants.ACCENT.COPY,
         rounding = 0,
         glow_size = 3,
-        glow_color = hexrgb("#9C87E844"),
+        glow_color = glow_color(ColorDefs.OPERATIONS.copy, "44"),
       },
     },
     pulse_speed = 2.5,
@@ -241,23 +247,23 @@ M.REGION_TILES = {
       },
     },
     copy_mode = {
-      stroke_color = Constants.ACCENT.PURPLE,
-      glow_color = hexrgb("#9C87E833"),
-      badge_accent = Constants.ACCENT.PURPLE,
+      stroke_color = Constants.ACCENT.COPY,
+      glow_color = glow_color(ColorDefs.OPERATIONS.copy, "33"),
+      badge_accent = Constants.ACCENT.COPY,
       indicator_text = "+",
-      indicator_color = Constants.ACCENT.PURPLE,
+      indicator_color = Constants.ACCENT.COPY,
     },
     move_mode = {
-      stroke_color = Constants.ACCENT.GREEN,
-      glow_color = hexrgb("#42E89633"),
-      badge_accent = Constants.ACCENT.GREEN,
+      stroke_color = Constants.ACCENT.MOVE,
+      glow_color = glow_color(ColorDefs.OPERATIONS.move, "33"),
+      badge_accent = Constants.ACCENT.MOVE,
     },
     delete_mode = {
-      stroke_color = Constants.ACCENT.RED,
-      glow_color = hexrgb("#E84A4A33"),
-      badge_accent = Constants.ACCENT.RED,
+      stroke_color = Constants.ACCENT.DELETE,
+      glow_color = glow_color(ColorDefs.OPERATIONS.delete, "33"),
+      badge_accent = Constants.ACCENT.DELETE,
       indicator_text = "-",
-      indicator_color = Constants.ACCENT.RED,
+      indicator_color = Constants.ACCENT.DELETE,
     },
   },
 

@@ -7,34 +7,43 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Draw = require('rearkitekt.gui.draw')
 local Colors = require('rearkitekt.core.colors')
+local ColorDefs = require('rearkitekt.defs.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}
+
+-- Get operation colors from centralized definitions
+local OP = ColorDefs.OPERATIONS
 
 -- =============================================================================
 -- CONFIGURATION
 -- Centralized configuration for drag and drop visual indicators
 -- =============================================================================
 
+-- Extract base hex (without alpha) for glow colors
+local function base_hex(hex)
+  return hex:sub(1, 7)
+end
+
 M.MODES = {
   move = {
-    stroke_color = hexrgb("#42E896"),
-    glow_color = hexrgb("#42E89633"),
-    badge_accent = hexrgb("#42E896"),
+    stroke_color = hexrgb(OP.move),
+    glow_color = hexrgb(base_hex(OP.move) .. "33"),
+    badge_accent = hexrgb(OP.move),
   },
   copy = {
-    stroke_color = hexrgb("#9C87E8"),
-    glow_color = hexrgb("#9C87E833"),
-    badge_accent = hexrgb("#9C87E8"),
+    stroke_color = hexrgb(OP.copy),
+    glow_color = hexrgb(base_hex(OP.copy) .. "33"),
+    badge_accent = hexrgb(OP.copy),
     indicator_text = "+",
-    indicator_color = hexrgb("#9C87E8"),
+    indicator_color = hexrgb(OP.copy),
   },
   delete = {
-    stroke_color = hexrgb("#E84A4A"),
-    glow_color = hexrgb("#E84A4A33"),
-    badge_accent = hexrgb("#E84A4A"),
+    stroke_color = hexrgb(OP.delete),
+    glow_color = hexrgb(base_hex(OP.delete) .. "33"),
+    badge_accent = hexrgb(OP.delete),
     indicator_text = "-",
-    indicator_color = hexrgb("#E84A4A"),
+    indicator_color = hexrgb(OP.delete),
   },
 }
 
@@ -90,7 +99,7 @@ M.SHADOW_DEFAULTS = {
 
 M.INNER_GLOW_DEFAULTS = {
   enabled = false,
-  color = hexrgb("#42E89622"),
+  color = hexrgb(base_hex(OP.move) .. "22"),
   thickness = 2,
 }
 

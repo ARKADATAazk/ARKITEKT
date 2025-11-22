@@ -3,6 +3,7 @@
 -- Pure value constants: colors, dimensions, timing, modes
 
 local Colors = require('rearkitekt.core.colors')
+local ColorDefs = require('rearkitekt.defs.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -20,10 +21,11 @@ M.ANIMATION = {
 -- ============================================================================
 
 -- Semantic operation colors (move/copy/delete visual feedback)
+-- Using centralized colors from framework
 M.ACCENT = {
-  GREEN = hexrgb("#42E896"),   -- Move operation
-  PURPLE = hexrgb("#9C87E8"),  -- Copy operation
-  RED = hexrgb("#E84A4A"),     -- Delete operation
+  MOVE = hexrgb(ColorDefs.OPERATIONS.move),    -- White - move operation
+  COPY = hexrgb(ColorDefs.OPERATIONS.copy),    -- Teal - copy operation
+  DELETE = hexrgb(ColorDefs.OPERATIONS.delete), -- Red - delete operation
 }
 
 -- Dimmed tile appearance
