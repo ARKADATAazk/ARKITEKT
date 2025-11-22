@@ -109,16 +109,15 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
   -- Background color with smooth hover transition and subtle color tint
   local bg_color = BG_BASE
+  local color_blend = 0.035  -- Very subtle 3.5% color influence
 
   -- Apply very subtle color tint if template has color
   if chip_color then
     local cr, cg, cb = Colors.rgba_to_components(chip_color)
     local br, bg_c, bb = Colors.rgba_to_components(BG_BASE)
-    -- Very subtle 8% color influence
-    local blend = 0.08
-    local r = math.floor(br * (1 - blend) + cr * blend)
-    local g = math.floor(bg_c * (1 - blend) + cg * blend)
-    local b = math.floor(bb * (1 - blend) + cb * blend)
+    local r = math.floor(br * (1 - color_blend) + cr * color_blend)
+    local g = math.floor(bg_c * (1 - color_blend) + cg * color_blend)
+    local b = math.floor(bb * (1 - color_blend) + cb * color_blend)
     bg_color = Colors.components_to_rgba(r, g, b, 255)
   end
 
@@ -141,21 +140,32 @@ function M.render(ctx, rect, template, state, metadata, animator)
     if chip_color then
       -- Extract RGB from chip color and blend with light grey
       local cr, cg, cb = Colors.rgba_to_components(chip_color)
-      -- Light grey base (180) with 15% chip color influence
+      -- Light grey base (190) with 15% chip color influence
       local blend = 0.15
-      local r = math.floor(180 * (1 - blend) + cr * blend)
-      local g = math.floor(180 * (1 - blend) + cg * blend)
-      local b = math.floor(180 * (1 - blend) + cb * blend)
+      local r = math.floor(190 * (1 - blend) + cr * blend)
+      local g = math.floor(190 * (1 - blend) + cg * blend)
+      local b = math.floor(190 * (1 - blend) + cb * blend)
       ant_color = Colors.components_to_rgba(r, g, b, 0x99)
     else
-      ant_color = hexrgb("#B0B0B099")  -- Light grey with 60% opacity
+      ant_color = hexrgb("#C0C0C099")  -- Lighter grey with 60% opacity
     end
     MarchingAnts.draw(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5, ant_color, 1.5, rounding, 8, 6, 20)
   else
-    -- Normal border with hover highlight
+    -- Normal border with hover highlight and subtle color tint
     local border_color = BRD_BASE
+
+    -- Apply subtle color tint to border if template has color
+    if chip_color then
+      local cr, cg, cb = Colors.rgba_to_components(chip_color)
+      local br, bg_c, bb = Colors.rgba_to_components(BRD_BASE)
+      local r = math.floor(br * (1 - color_blend) + cr * color_blend)
+      local g = math.floor(bg_c * (1 - color_blend) + cg * color_blend)
+      local b = math.floor(bb * (1 - color_blend) + cb * color_blend)
+      border_color = Colors.components_to_rgba(r, g, b, 255)
+    end
+
     if hover_factor > 0.01 then
-      local r1, g1, b1 = Colors.rgba_to_components(BRD_BASE)
+      local r1, g1, b1 = Colors.rgba_to_components(border_color)
       local r2, g2, b2 = Colors.rgba_to_components(BRD_HOVER)
       local r = math.floor(r1 + (r2 - r1) * hover_factor)
       local g = math.floor(g1 + (g2 - g1) * hover_factor)
