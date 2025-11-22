@@ -9,6 +9,7 @@ local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 local Style = require('rearkitekt.gui.style.defaults')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
+local Constants = require('ThemeAdjuster.defs.constants')
 local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
 local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
@@ -26,13 +27,14 @@ local M = {}
 local AdditionalView = {}
 AdditionalView.__index = AdditionalView
 
--- Tab configurations
+-- Tab configurations (using shared THEME_CATEGORY_COLORS palette)
+local TC = Constants.THEME_CATEGORY_COLORS
 local TAB_CONFIGS = {
-  {id = "TCP", label = "TCP", color = hexrgb("#4A90E2")},          -- Blue
-  {id = "MCP", label = "MCP", color = hexrgb("#E8C547")},          -- Yellow
-  {id = "ENVCP", label = "ENVCP", color = hexrgb("#4AE290")},      -- Green
-  {id = "TRANS", label = "TRANSPORT", color = hexrgb("#E24A4A")},  -- Red
-  {id = "GLOBAL", label = "GLOBAL", color = hexrgb("#888888")},    -- Grey
+  {id = "TCP", label = "TCP", color = TC.tcp_blue},
+  {id = "MCP", label = "MCP", color = TC.mcp_green},
+  {id = "ENVCP", label = "ENVCP", color = TC.envcp_purple},
+  {id = "TRANS", label = "TRANSPORT", color = TC.transport_gold},
+  {id = "GLOBAL", label = "GLOBAL", color = TC.global_gray},
 }
 
 function M.new(State, Config, settings)

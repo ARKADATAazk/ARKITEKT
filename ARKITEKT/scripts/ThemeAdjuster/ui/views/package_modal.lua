@@ -6,6 +6,7 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
+local Constants = require('ThemeAdjuster.defs.constants')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -20,50 +21,24 @@ local TILE_WIDTH = 130
 local TILE_HEIGHT = 32
 local TILE_SPACING = 4
 
--- ============================================================================
--- THEME CATEGORY COLORS PALETTE
--- Desaturated colors for theming categories (used for tiles and action chips)
--- ============================================================================
-local THEME_CATEGORY_COLORS = {
-  -- Track/Channel panels
-  tcp_blue = hexrgb("#5C7CB8"),        -- TCP (Track Control Panel)
-  mcp_green = hexrgb("#6B9B7C"),       -- MCP (Mixer Control Panel)
-  envcp_purple = hexrgb("#9B7CB8"),    -- ENVCP (Envelope Control Panel)
-
-  -- Media items
-  items_pink = hexrgb("#B85C8B"),      -- Items/Media items
-  midi_teal = hexrgb("#5C9B9B"),       -- MIDI editor
-
-  -- Transport/Toolbar
-  transport_gold = hexrgb("#B8A55C"),  -- Transport bar
-  toolbar_gold = hexrgb("#B89B5C"),    -- Toolbar
-
-  -- Utility
-  meter_cyan = hexrgb("#5C9BB8"),      -- Meters
-  docker_brown = hexrgb("#9B8B6B"),    -- Docker
-  fx_orange = hexrgb("#B87C5C"),       -- FX/VST
-  menu_blue = hexrgb("#7C8BB8"),       -- Menus
-
-  -- General
-  global_gray = hexrgb("#8B8B8B"),     -- Global/Generic
-  other_slate = hexrgb("#6B6B8B"),     -- Other/Unknown
-}
+-- Use shared theme category colors palette
+local TC = Constants.THEME_CATEGORY_COLORS
 
 -- Map area names to palette colors
 local AREA_COLORS = {
-  TCP = THEME_CATEGORY_COLORS.tcp_blue,
-  MCP = THEME_CATEGORY_COLORS.mcp_green,
-  Transport = THEME_CATEGORY_COLORS.transport_gold,
-  Toolbar = THEME_CATEGORY_COLORS.toolbar_gold,
-  ENVCP = THEME_CATEGORY_COLORS.envcp_purple,
-  Meter = THEME_CATEGORY_COLORS.meter_cyan,
-  Global = THEME_CATEGORY_COLORS.global_gray,
-  Items = THEME_CATEGORY_COLORS.items_pink,
-  MIDI = THEME_CATEGORY_COLORS.midi_teal,
-  Docker = THEME_CATEGORY_COLORS.docker_brown,
-  FX = THEME_CATEGORY_COLORS.fx_orange,
-  Menu = THEME_CATEGORY_COLORS.menu_blue,
-  Other = THEME_CATEGORY_COLORS.other_slate,
+  TCP = TC.tcp_blue,
+  MCP = TC.mcp_green,
+  Transport = TC.transport_gold,
+  Toolbar = TC.toolbar_gold,
+  ENVCP = TC.envcp_purple,
+  Meter = TC.meter_cyan,
+  Global = TC.global_gray,
+  Items = TC.items_pink,
+  MIDI = TC.midi_teal,
+  Docker = TC.docker_brown,
+  FX = TC.fx_orange,
+  Menu = TC.menu_blue,
+  Other = TC.other_slate,
 }
 
 -- Image cache for tooltips
