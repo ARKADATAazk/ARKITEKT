@@ -117,6 +117,8 @@ function M.new(opts)
     get_exclusion_zones = opts.get_exclusion_zones,
 
     behaviors        = opts.behaviors or {},
+    mouse_behaviors  = opts.mouse_behaviors or {},
+    custom_shortcuts = opts.shortcuts or {},
     render_tile      = opts.render_tile or function() end,
     render_overlays  = opts.render_overlays,
 

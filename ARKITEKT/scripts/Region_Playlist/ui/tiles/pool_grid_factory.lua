@@ -19,18 +19,18 @@ end
 
 local function create_behaviors(rt)
   return {
-    drag_start = function(item_keys)
+    drag_start = function(grid, item_keys)
       if rt.bridge then
         return
       end
-      
+
       local pool_items = rt.pool_grid.get_items()
       local items_by_key = {}
       for _, item in ipairs(pool_items) do
         local item_key = rt.pool_grid.key(item)
         items_by_key[item_key] = item
       end
-      
+
       local filtered_keys = {}
       for _, key in ipairs(item_keys) do
         local item = items_by_key[key]
@@ -38,11 +38,11 @@ local function create_behaviors(rt)
           filtered_keys[#filtered_keys + 1] = key
         end
       end
-      
+
       if #filtered_keys == 0 then
         return
       end
-      
+
       local payload = {}
       for _, key in ipairs(filtered_keys) do
         local item = items_by_key[key]
@@ -155,7 +155,7 @@ local function create_behaviors(rt)
     end,
 
     -- F2: Batch rename with wildcards
-    rename = function(selected_keys)
+    f2 = function(grid, selected_keys)
       if not selected_keys or #selected_keys == 0 then return end
 
       -- Single selection: start inline editing
