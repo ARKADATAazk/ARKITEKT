@@ -10,8 +10,8 @@ local Draw = require('rearkitekt.gui.draw')
 
 local hexrgb = ColorUtils.hexrgb
 
--- Remix icon for paint fill (selection indicator)
-local ICON_PAINT_FILL = "\xEE\xBF\x82"  -- U+EFC2
+-- Remix icon for checkbox (selection indicator)
+local ICON_CHECK = "\xEE\xB1\xA9"  -- U+EC69
 
 local M = {}
 
@@ -146,16 +146,16 @@ function M.render(ctx, opts)
       border_thickness = 1.0,
     })
 
-    -- Draw paint-fill icon for selected color
+    -- Draw check icon for selected color
     if is_selected and opts.icon_font then
       local base_size = opts.icon_font_size or 12
       local icon_size = math.floor(base_size * 0.7)  -- 30% smaller
       ImGui.PushFont(ctx, opts.icon_font, icon_size)
       local icon_color = hexrgb("#00000099")  -- Black icon at 60% opacity
-      local text_w, text_h = ImGui.CalcTextSize(ctx, ICON_PAINT_FILL)
+      local text_w, text_h = ImGui.CalcTextSize(ctx, ICON_CHECK)
       local icon_x = chip_cx - text_w * 0.5
-      local icon_y = chip_cy - text_h * 0.5
-      Draw.text(dl, icon_x, icon_y, icon_color, ICON_PAINT_FILL)
+      local icon_y = chip_cy - text_h * 0.5 - 1  -- Slight upward adjustment for visual centering
+      Draw.text(dl, icon_x, icon_y, icon_color, ICON_CHECK)
       ImGui.PopFont(ctx)
     end
   end
