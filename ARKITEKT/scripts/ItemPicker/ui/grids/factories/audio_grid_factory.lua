@@ -526,12 +526,15 @@ function M.create(ctx, config, state, visualization, animator)
             local force_mode = nil
             local take = reaper.GetActiveTake(item_data.item)
             if take and not reaper.TakeIsMIDI(take) then
-              local mods = ImGui.GetKeyMods(ctx)
+              -- Use captured ctx from factory closure
+              local ctrl = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
+              local shift = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
+
               -- CTRL+SPACE: Force play through track (with FX)
-              if mods & ImGui.Mod_Ctrl ~= 0 then
+              if ctrl then
                 force_mode = "through_track"
               -- SHIFT+SPACE: Force direct preview (no FX)
-              elseif mods & ImGui.Mod_Shift ~= 0 then
+              elseif shift then
                 force_mode = "direct"
               end
             end
