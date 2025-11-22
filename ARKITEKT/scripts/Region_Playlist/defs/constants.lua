@@ -121,7 +121,7 @@ M.TRANSPORT_BUTTONS = {
 -- Remix icon unicode values (UTF-8 encoding)
 M.REMIX_ICONS = {
   shuffle = "\xEF\x84\xA4",
-  hijack_transport = "\xEE\xB4\xBA",  -- U+ED3A
+  hijack_transport = "\xEE\xB7\x80",  -- U+EDC0
   follow_viewport = "\xEF\x8C\x81",   -- U+F301
 }
 
