@@ -52,24 +52,24 @@ function GridBridge:register_grid(id, grid, opts)
   
   if grid.behaviors then
     local original_on_select = grid.behaviors.on_select
-    grid.behaviors.on_select = function(selected_keys)
+    grid.behaviors.on_select = function(grid_param, selected_keys)
       if not bridge.clearing_selections then
         bridge:on_grid_interaction(id)
       end
-      
+
       if original_on_select then
-        original_on_select(selected_keys)
+        original_on_select(grid_param, selected_keys)
       end
     end
-    
+
     local original_drag_start = grid.behaviors.drag_start
-    grid.behaviors.drag_start = function(item_keys)
+    grid.behaviors.drag_start = function(grid_param, item_keys)
       if opts.on_drag_start then
         opts.on_drag_start(item_keys)
       end
-      
+
       if original_drag_start then
-        original_drag_start(item_keys)
+        original_drag_start(grid_param, item_keys)
       end
     end
   end
@@ -112,7 +112,7 @@ function GridBridge:on_grid_interaction(grid_id)
         other_grid.selection:clear()
         
         if other_grid.behaviors and other_grid.behaviors.on_select then
-          other_grid.behaviors.on_select({})
+          other_grid.behaviors.on_select(other_grid, {})
         end
       end
     end
