@@ -6,12 +6,16 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 
+-- Cache math functions for performance
+local abs, max, min = math.abs, math.max, math.min
+local pi, cos, sin, sqrt, atan = math.pi, math.cos, math.sin, math.sqrt, math.atan
+
 local M = {}
 
 -- Convert HSV to RGB
 local function hsv_to_rgb(h, s, v)
   local c = v * s
-  local x = c * (1 - math.abs((h * 6) % 2 - 1))
+  local x = c * (1 - abs((h * 6) % 2 - 1))
   local m = v - c
 
   local r, g, b
@@ -35,8 +39,8 @@ end
 -- Convert RGB to HSV
 local function rgb_to_hsv(r, g, b)
   r, g, b = r / 255, g / 255, b / 255
-  local max_c = math.max(r, g, b)
-  local min_c = math.min(r, g, b)
+  local max_c = max(r, g, b)
+  local min_c = min(r, g, b)
   local delta = max_c - min_c
 
   local h = 0
@@ -100,8 +104,8 @@ function M.render(ctx, size, h, s, v)
   -- Draw hue wheel
   local segments = 64
   for i = 0, segments - 1 do
-    local angle1 = (i / segments) * 2 * math.pi
-    local angle2 = ((i + 1) / segments) * 2 * math.pi
+    local angle1 = (i / segments) * 2 * pi
+    local angle2 = ((i + 1) / segments) * 2 * pi
 
     local hue1 = i / segments
     local hue2 = (i + 1) / segments
@@ -113,16 +117,16 @@ function M.render(ctx, size, h, s, v)
     local color2 = ImGui.ColorConvertDouble4ToU32(r2/255, g2/255, b2/255, 1)
 
     -- Outer points
-    local x1_out = center_x + math.cos(angle1) * outer_radius
-    local y1_out = center_y + math.sin(angle1) * outer_radius
-    local x2_out = center_x + math.cos(angle2) * outer_radius
-    local y2_out = center_y + math.sin(angle2) * outer_radius
+    local x1_out = center_x + cos(angle1) * outer_radius
+    local y1_out = center_y + sin(angle1) * outer_radius
+    local x2_out = center_x + cos(angle2) * outer_radius
+    local y2_out = center_y + sin(angle2) * outer_radius
 
     -- Inner points
-    local x1_in = center_x + math.cos(angle1) * inner_radius
-    local y1_in = center_y + math.sin(angle1) * inner_radius
-    local x2_in = center_x + math.cos(angle2) * inner_radius
-    local y2_in = center_y + math.sin(angle2) * inner_radius
+    local x1_in = center_x + cos(angle1) * inner_radius
+    local y1_in = center_y + sin(angle1) * inner_radius
+    local x2_in = center_x + cos(angle2) * inner_radius
+    local y2_in = center_y + sin(angle2) * inner_radius
 
     -- Draw quad for this segment
     ImGui.DrawList_AddQuadFilled(draw_list, x1_out, y1_out, x2_out, y2_out, x2_in, y2_in, x1_in, y1_in, color1)
@@ -133,19 +137,19 @@ function M.render(ctx, size, h, s, v)
   ImGui.DrawList_AddCircle(draw_list, center_x, center_y, inner_radius, 0x000000FF, segments, 2)
 
   -- Calculate triangle points based on current hue
-  local hue_angle = h * 2 * math.pi - math.pi / 2
+  local hue_angle = h * 2 * pi - pi / 2
   local tri_radius = inner_radius - 8
 
-  local top_x = center_x + math.cos(hue_angle) * tri_radius
-  local top_y = center_y + math.sin(hue_angle) * tri_radius
+  local top_x = center_x + cos(hue_angle) * tri_radius
+  local top_y = center_y + sin(hue_angle) * tri_radius
 
-  local bot_left_angle = hue_angle + 2 * math.pi / 3
-  local bot_left_x = center_x + math.cos(bot_left_angle) * tri_radius
-  local bot_left_y = center_y + math.sin(bot_left_angle) * tri_radius
+  local bot_left_angle = hue_angle + 2 * pi / 3
+  local bot_left_x = center_x + cos(bot_left_angle) * tri_radius
+  local bot_left_y = center_y + sin(bot_left_angle) * tri_radius
 
-  local bot_right_angle = hue_angle - 2 * math.pi / 3
-  local bot_right_x = center_x + math.cos(bot_right_angle) * tri_radius
-  local bot_right_y = center_y + math.sin(bot_right_angle) * tri_radius
+  local bot_right_angle = hue_angle - 2 * pi / 3
+  local bot_right_x = center_x + cos(bot_right_angle) * tri_radius
+  local bot_right_y = center_y + sin(bot_right_angle) * tri_radius
 
   -- Draw SV triangle with gradient
   local r_pure, g_pure, b_pure = hsv_to_rgb(h, 1, 1)
@@ -202,12 +206,12 @@ function M.render(ctx, size, h, s, v)
     local mx, my = ImGui.GetMousePos(ctx)
     local dx = mx - center_x
     local dy = my - center_y
-    local dist = math.sqrt(dx * dx + dy * dy)
+    local dist = sqrt(dx * dx + dy * dy)
 
     -- Check if clicking in hue wheel
     if dist >= inner_radius and dist <= outer_radius then
-      local angle = math.atan(dy, dx)
-      h = (angle + math.pi / 2) / (2 * math.pi)
+      local angle = atan(dy, dx)
+      h = (angle + pi / 2) / (2 * pi)
       if h < 0 then h = h + 1 end
       if h > 1 then h = h - 1 end
       changed = true
@@ -228,8 +232,8 @@ function M.render(ctx, size, h, s, v)
 
       local denom = d00 * d11 - d01 * d01
       if denom ~= 0 then
-        s = math.max(0, math.min(1, (d11 * d20 - d01 * d21) / denom))
-        local t = math.max(0, math.min(1, (d00 * d21 - d01 * d20) / denom))
+        s = max(0, min(1, (d11 * d20 - d01 * d21) / denom))
+        local t = max(0, min(1, (d00 * d21 - d01 * d20) / denom))
         v = 1 - t
         changed = true
       end
