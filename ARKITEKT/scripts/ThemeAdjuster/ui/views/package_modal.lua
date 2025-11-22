@@ -4,6 +4,8 @@
 
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
+local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
+local Button = require('rearkitekt.gui.widgets.primitives.button')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -454,9 +456,10 @@ function PackageModal:draw_content(ctx, bounds)
   local pkg = self.package_data
   if not pkg then return true end  -- Close if no package
 
-  -- Use full width with minimal padding
-  local content_w = bounds.w
-  local start_x = 0
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local padding = 12
+  local content_w = bounds.w - padding * 2
+  local start_x = padding
 
   -- Header
   ImGui.SetCursorPosX(ctx, start_x)
@@ -472,53 +475,81 @@ function PackageModal:draw_content(ctx, bounds)
     ImGui.TextColored(ctx, hexrgb("#666666"), "v" .. pkg.meta.version)
   end
 
-  ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
+  ImGui.Dummy(ctx, 0, 4)
 
-  -- Toolbar
-  ImGui.SetCursorPosX(ctx, start_x)
+  -- Toolbar row
+  local toolbar_x, toolbar_y = ImGui.GetCursorScreenPos(ctx)
+  toolbar_x = toolbar_x + start_x
 
-  -- Search
-  ImGui.SetNextItemWidth(ctx, 200)
-  local changed, new_text = ImGui.InputTextWithHint(ctx, "##search", "Search assets...", self.search_text)
-  if changed then
-    self.search_text = new_text
-  end
+  -- Search input using primitive
+  local search_w = 220
+  local search_h = 26
+  SearchInput.set_text("pkg_modal_search", self.search_text)
+  SearchInput.draw(ctx, dl, toolbar_x, toolbar_y, search_w, search_h, {
+    id = "pkg_modal_search",
+    placeholder = "Search assets...",
+    on_change = function(text)
+      self.search_text = text
+    end
+  }, "pkg_modal_search")
 
-  ImGui.SameLine(ctx)
+  -- Buttons after search
+  local btn_x = toolbar_x + search_w + 8
+  local btn_h = 26
 
   -- View mode toggle
-  if ImGui.Button(ctx, self.view_mode == "grid" and "Grid" or "Tree", 50) then
+  local _, grid_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 50, btn_h, {
+    id = "view_mode",
+    label = self.view_mode == "grid" and "Grid" or "Tree",
+    rounding = 3,
+  }, "pkg_modal_view")
+  if grid_clicked then
     self.view_mode = self.view_mode == "grid" and "tree" or "grid"
   end
-
-  ImGui.SameLine(ctx)
+  btn_x = btn_x + 50 + 4
 
   -- Group toggle
-  if ImGui.Button(ctx, self.group_by_area and "Grouped" or "Flat", 60) then
+  local _, group_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 65, btn_h, {
+    id = "group_mode",
+    label = self.group_by_area and "Grouped" or "Flat",
+    rounding = 3,
+  }, "pkg_modal_group")
+  if group_clicked then
     self.group_by_area = not self.group_by_area
   end
+  btn_x = btn_x + 65 + 12
 
-  ImGui.Spacing(ctx)
-
-  -- Bulk actions
-  ImGui.SetCursorPosX(ctx, start_x)
-
-  if ImGui.Button(ctx, "Select All", 70, 0) then
+  -- Bulk action buttons
+  local _, sel_all_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 65, btn_h, {
+    id = "select_all",
+    label = "Select All",
+    rounding = 3,
+  }, "pkg_modal_sel_all")
+  if sel_all_clicked then
     for _, key in ipairs(pkg.keys_order or {}) do
       if self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true) then
         self.selected_assets[key] = true
       end
     end
   end
+  btn_x = btn_x + 65 + 4
 
-  ImGui.SameLine(ctx)
-  if ImGui.Button(ctx, "Clear", 50, 0) then
+  local _, clear_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 45, btn_h, {
+    id = "clear",
+    label = "Clear",
+    rounding = 3,
+  }, "pkg_modal_clear")
+  if clear_clicked then
     self.selected_assets = {}
   end
+  btn_x = btn_x + 45 + 4
 
-  ImGui.SameLine(ctx)
-  if ImGui.Button(ctx, "Inc.", 35, 0) then
+  local _, inc_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 35, btn_h, {
+    id = "include",
+    label = "Inc.",
+    rounding = 3,
+  }, "pkg_modal_inc")
+  if inc_clicked then
     local all_exclusions = self.State.get_package_exclusions()
     if not all_exclusions[pkg.id] then
       all_exclusions[pkg.id] = {}
@@ -530,9 +561,14 @@ function PackageModal:draw_content(ctx, bounds)
     end
     self.State.set_package_exclusions(all_exclusions)
   end
+  btn_x = btn_x + 35 + 4
 
-  ImGui.SameLine(ctx)
-  if ImGui.Button(ctx, "Exc.", 35, 0) then
+  local _, exc_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 35, btn_h, {
+    id = "exclude",
+    label = "Exc.",
+    rounding = 3,
+  }, "pkg_modal_exc")
+  if exc_clicked then
     local all_exclusions = self.State.get_package_exclusions()
     if not all_exclusions[pkg.id] then
       all_exclusions[pkg.id] = {}
@@ -544,9 +580,14 @@ function PackageModal:draw_content(ctx, bounds)
     end
     self.State.set_package_exclusions(all_exclusions)
   end
+  btn_x = btn_x + 35 + 4
 
-  ImGui.SameLine(ctx)
-  if ImGui.Button(ctx, "Pin", 35, 0) then
+  local _, pin_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 35, btn_h, {
+    id = "pin",
+    label = "Pin",
+    rounding = 3,
+  }, "pkg_modal_pin")
+  if pin_clicked then
     local pins = self.State.get_package_pins()
     for key, selected in pairs(self.selected_assets) do
       if selected then
@@ -556,15 +597,17 @@ function PackageModal:draw_content(ctx, bounds)
     self.State.set_package_pins(pins)
   end
 
-  ImGui.Spacing(ctx)
+  -- Move cursor past toolbar
+  ImGui.SetCursorScreenPos(ctx, toolbar_x - start_x, toolbar_y + btn_h + 8)
+
   ImGui.Separator(ctx)
-  ImGui.Spacing(ctx)
+  ImGui.Dummy(ctx, 0, 4)
 
   -- Asset view in scrollable child - use all remaining space
   ImGui.SetCursorPosX(ctx, start_x)
-  local child_h = bounds.h - ImGui.GetCursorPosY(ctx) - 40
+  local child_h = bounds.h - ImGui.GetCursorPosY(ctx) - 8
 
-  if ImGui.BeginChild(ctx, "##asset_view", 0, child_h) then
+  if ImGui.BeginChild(ctx, "##asset_view", content_w, child_h) then
     if self.view_mode == "grid" then
       self:draw_grid_view(ctx, pkg)
     else
@@ -573,17 +616,8 @@ function PackageModal:draw_content(ctx, bounds)
     ImGui.EndChild(ctx)
   end
 
-  -- Close button
-  ImGui.Spacing(ctx)
-  ImGui.SetCursorPosX(ctx, start_x + (content_w - 100) * 0.5)
-  local should_close = ImGui.Button(ctx, "Close", 100, 28)
-
-  -- Also close on Escape
-  if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
-    should_close = true
-  end
-
-  return should_close
+  -- No close button needed - overlay handles closing
+  return false
 end
 
 function PackageModal:draw(ctx, window)
