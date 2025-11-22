@@ -242,11 +242,11 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local chip_border = hexrgb("#181818")
     ImGui.DrawList_AddRect(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, chip_border, 2, 0, 1)
 
-    -- Text (centered, white)
-    local text_height = 13  -- Approximate default font height
+    -- Text (centered, teal)
+    local _, actual_text_height = ImGui.CalcTextSize(ctx, display_vst)
     local text_x = chip_x + (chip_w - text_width) * 0.5
-    local text_y = chip_y + ((chip_h - text_height) * 0.5)
-    local text_color = hexrgb("#FFFFFF")
+    local text_y = chip_y + math.floor((chip_h - actual_text_height) * 0.5)
+    local text_color = hexrgb("#42DDA2")
     Draw.text(dl, text_x, text_y, text_color, display_vst)
   end
 

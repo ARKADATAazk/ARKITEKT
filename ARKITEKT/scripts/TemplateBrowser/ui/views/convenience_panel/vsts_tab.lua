@@ -36,7 +36,7 @@ function M.draw(ctx, state, config, width, height)
         style = Chip.STYLE.ACTION,
         label = fx_name,
         bg_color = bg_color,
-        text_color = Colors.hexrgb("#FFFFFF"),
+        text_color = Colors.hexrgb("#42DDA2"),
         border_color = Colors.hexrgb("#181818"),
         height = 22,
         padding_h = 8,

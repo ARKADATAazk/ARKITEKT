@@ -66,7 +66,7 @@ local function draw_info_panel(ctx, gui, width, height)
             style = Chip.STYLE.ACTION,
             label = fx_name,
             bg_color = hexrgb("#35504C"),
-            text_color = hexrgb("#FFFFFF"),
+            text_color = hexrgb("#42DDA2"),
             border_color = hexrgb("#181818"),
             height = 22,
             padding_h = 8,
