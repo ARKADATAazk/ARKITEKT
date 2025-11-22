@@ -10,7 +10,7 @@ local Style = require('rearkitekt.gui.style.defaults')
 local InteractionBlocking = require('rearkitekt.gui.utils.interaction_blocking')
 
 local Colors = require('rearkitekt.core.colors')
-local ColorDefs = require('rearkitekt.defs.colors')
+local ColorPickerMenu = require('rearkitekt.gui.widgets.menus.color_picker_menu')
 
 local hexrgb = Colors.hexrgb
 
@@ -750,12 +750,6 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
     ImGui.OpenPopup(ctx, "##tab_context_" .. id .. "_" .. unique_id)
   end
 
-  -- Get preset colors from centralized palette
-  local preset_colors = {}
-  for i, color in ipairs(ColorDefs.PALETTE) do
-    preset_colors[i] = hexrgb(color.hex)
-  end
-
   if ContextMenu.begin(ctx, "##tab_context_" .. id .. "_" .. unique_id, config.context_menu) then
     if ContextMenu.item(ctx, "Duplicate Playlist", config.context_menu) then
       if config.on_tab_duplicate then
@@ -770,96 +764,15 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
       delete_requested = true
     end
 
-    -- Enhanced separator with better spacing
-    ImGui.Dummy(ctx, 1, 4)
-    local sep_x1, sep_y1 = ImGui.GetCursorScreenPos(ctx)
-    local sep_w = ImGui.GetContentRegionAvail(ctx)
-    local dl_menu = ImGui.GetWindowDrawList(ctx)
-    ImGui.DrawList_AddLine(dl_menu, sep_x1 + 8, sep_y1, sep_x1 + sep_w - 8, sep_y1, hexrgb("#505050FF"), 1)
-    ImGui.Dummy(ctx, 1, 18)  -- Move grid down by 12px (6px original + 12px offset)
-
-    -- Draw color grid inline (4x4) using Chip component for consistency
-    local grid_cols = 4
-    local chip_radius = 7  -- Increased by 20% from 6px to 7px
-    local grid_rows = math.ceil(#preset_colors / grid_cols)
-    local menu_width = ImGui.GetContentRegionAvail(ctx)
-    local menu_start_x, menu_start_y = ImGui.GetCursorScreenPos(ctx)
-
-    -- Narrowed horizontal bounds: 21px inset on each side (12px base + 9px adjustment)
-    local item_padding_x = 21  -- Move left chips 9px right, right chips 9px left
-    local available_width = menu_width - (item_padding_x * 2)
-    local chip_spacing = available_width / (grid_cols - 1)  -- Center-to-center spacing
-
-    -- Start position for first chip (with narrowed bounds)
-    local grid_offset_x = item_padding_x
-
-    for i, color in ipairs(preset_colors) do
-      local col_idx = (i - 1) % grid_cols
-      local row_idx = math.floor((i - 1) / grid_cols)
-
-      local chip_cx = menu_start_x + grid_offset_x + col_idx * chip_spacing
-      local chip_cy = menu_start_y + row_idx * chip_spacing  -- Use same spacing for perfect grid
-      local hit_size = chip_radius * 2 + 4  -- Hit area slightly larger than visual
-
-      -- Check if this is the current color
-      local is_selected = (chip_color and chip_color == color)
-
-      -- Make it clickable (check first for hover state)
-      local hit_x = chip_cx - hit_size * 0.5
-      local hit_y = chip_cy - hit_size * 0.5
-      ImGui.SetCursorScreenPos(ctx, hit_x, hit_y)
-      if ImGui.InvisibleButton(ctx, "##color_" .. i .. "_" .. id, hit_size, hit_size) then
+    -- Color picker using centralized widget
+    ColorPickerMenu.render(ctx, {
+      current_color = chip_color,
+      on_select = function(color_int, color_hex, color_name)
         if config.on_tab_color_change then
-          config.on_tab_color_change(id, color)
+          config.on_tab_color_change(id, color_int or false)
         end
-      end
-      local is_hovered = ImGui.IsItemHovered(ctx)
-
-      -- Use Chip component for consistent rendering with glow for selection
-      Chip.draw(ctx, {
-        style = Chip.STYLE.INDICATOR,
-        shape = Chip.SHAPE.CIRCLE,
-        color = color,
-        draw_list = dl_menu,
-        x = chip_cx,
-        y = chip_cy,
-        radius = chip_radius,
-        is_selected = is_selected,
-        is_hovered = is_hovered,
-        show_glow = is_selected or is_hovered,
-        glow_layers = is_selected and 6 or 3,
-        shadow = true,
-        border = is_hovered,
-        border_color = hexrgb("#FFFFFF80"),
-        border_thickness = 1.0,
-      })
-    end
-
-    -- Move cursor past the grid
-    ImGui.SetCursorScreenPos(ctx, menu_start_x,
-      menu_start_y + (grid_rows - 1) * chip_spacing + chip_radius * 2 + 4)
-
-    -- Enhanced separator before Remove button
-    ImGui.Dummy(ctx, 1, 4)
-    local sep_x2, sep_y2 = ImGui.GetCursorScreenPos(ctx)
-    local sep_w2 = ImGui.GetContentRegionAvail(ctx)
-    ImGui.DrawList_AddLine(dl_menu, sep_x2 + 8, sep_y2, sep_x2 + sep_w2 - 8, sep_y2, hexrgb("#505050FF"), 1)
-    ImGui.Dummy(ctx, 1, 6)
-
-    -- Remove color button with better styling
-    local button_text = chip_color and "Remove Color" or "No Color"
-    local button_width = ImGui.GetContentRegionAvail(ctx)
-
-    -- Center button horizontally
-    ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 8)
-    if ImGui.Button(ctx, button_text, button_width - 16, 28) then
-      -- Call callback immediately
-      if config.on_tab_color_change then
-        config.on_tab_color_change(id, false)
-      end
-    end
-
-    ImGui.Dummy(ctx, 1, 4)
+      end,
+    })
 
     ContextMenu.end_menu(ctx)
   end

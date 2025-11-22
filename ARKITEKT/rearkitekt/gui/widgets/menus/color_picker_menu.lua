@@ -1,122 +1,144 @@
 -- @noindex
 -- rearkitekt/gui/widgets/menus/color_picker_menu.lua
--- Reusable color picker for context menus
+-- Reusable color picker for context menus with Chip rendering
 
 local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.defs.colors')
 local ColorUtils = require('rearkitekt.core.colors')
+local Chip = require('rearkitekt.gui.widgets.data.chip')
+
+local hexrgb = ColorUtils.hexrgb
 
 local M = {}
 
 -- Default configuration
 local DEFAULTS = {
-  chip_size = 20,
-  chip_spacing = 4,
-  chip_rounding = 3,
+  chip_radius = 7,
   columns = 4,
-  show_labels = false,
   show_none_option = true,
-  none_label = "None",
+  none_label = "Remove Color",
 }
 
 -- =============================================================================
 -- MAIN RENDER FUNCTION
 -- =============================================================================
 
---- Render a color picker grid in a context menu
+--- Render a color picker grid in a context menu using Chip components
 -- @param ctx ImGui context
 -- @param opts Options table:
---   - on_select: function(color_hex, color_name) - called when color is selected
---   - current_color: string - hex of currently selected color (optional)
+--   - on_select: function(color_int, color_hex, color_name) - called when color is selected
+--   - current_color: number - integer color value of currently selected color (optional)
 --   - palette: table - custom palette (optional, defaults to Colors.PALETTE)
---   - chip_size: number - size of color chips (optional)
+--   - chip_radius: number - radius of color chips (optional)
 --   - columns: number - number of columns (optional)
---   - show_labels: boolean - show color names (optional)
---   - show_none_option: boolean - show "None" option to clear color (optional)
+--   - show_none_option: boolean - show "Remove Color" option (optional)
+--   - none_label: string - label for none option (optional)
 -- @return boolean - true if a color was selected
 function M.render(ctx, opts)
   opts = opts or {}
   local palette = opts.palette or Colors.PALETTE
-  local chip_size = opts.chip_size or DEFAULTS.chip_size
-  local chip_spacing = opts.chip_spacing or DEFAULTS.chip_spacing
-  local chip_rounding = opts.chip_rounding or DEFAULTS.chip_rounding
+  local chip_radius = opts.chip_radius or DEFAULTS.chip_radius
   local columns = opts.columns or DEFAULTS.columns
-  local show_labels = opts.show_labels == nil and DEFAULTS.show_labels or opts.show_labels
   local show_none = opts.show_none_option == nil and DEFAULTS.show_none_option or opts.show_none_option
+  local none_label = opts.none_label or DEFAULTS.none_label
 
   local selected = false
+  local dl = ImGui.GetWindowDrawList(ctx)
 
-  -- "None" option to clear color
-  if show_none then
-    if ImGui.MenuItem(ctx, opts.none_label or DEFAULTS.none_label) then
-      if opts.on_select then
-        opts.on_select(nil, nil)
-      end
-      selected = true
-    end
-    ImGui.Separator(ctx)
+  -- Draw separator line at top
+  ImGui.Dummy(ctx, 1, 4)
+  local sep_x1, sep_y1 = ImGui.GetCursorScreenPos(ctx)
+  local sep_w = ImGui.GetContentRegionAvail(ctx)
+  ImGui.DrawList_AddLine(dl, sep_x1 + 8, sep_y1, sep_x1 + sep_w - 8, sep_y1, hexrgb("#505050FF"), 1)
+  ImGui.Dummy(ctx, 1, 18)
+
+  -- Calculate grid layout
+  local menu_width = ImGui.GetContentRegionAvail(ctx)
+  local menu_start_x, menu_start_y = ImGui.GetCursorScreenPos(ctx)
+
+  -- Narrowed horizontal bounds
+  local item_padding_x = 21
+  local available_width = menu_width - (item_padding_x * 2)
+  local chip_spacing = available_width / (columns - 1)
+  local grid_offset_x = item_padding_x
+
+  -- Convert palette to integer colors
+  local preset_colors = {}
+  for i, color in ipairs(palette) do
+    preset_colors[i] = hexrgb(color.hex)
   end
 
-  -- Render color chips in grid
-  local col = 0
-  for i, color in ipairs(palette) do
-    local hex = color.hex
-    local name = color.name
+  -- Draw color chips
+  for i, color in ipairs(preset_colors) do
+    local col_idx = (i - 1) % columns
+    local row_idx = math.floor((i - 1) / columns)
 
-    -- Convert hex to ImGui color
-    local r, g, b, a = ColorUtils.hex_to_rgba(hex)
-    local color_u32 = ImGui.ColorConvertDouble4ToU32(r, g, b, a or 1.0)
+    local chip_cx = menu_start_x + grid_offset_x + col_idx * chip_spacing
+    local chip_cy = menu_start_y + row_idx * chip_spacing
+    local hit_size = chip_radius * 2 + 4
 
     -- Check if this is the current color
-    local is_current = opts.current_color and opts.current_color:upper() == hex:upper()
+    local is_selected = (opts.current_color and opts.current_color == color)
 
-    -- Push ID for unique button
-    ImGui.PushID(ctx, i)
-
-    -- Draw colored button
-    if is_current then
-      -- Highlight current selection
-      ImGui.PushStyleColor(ctx, ImGui.Col_Border, 0xFFFFFFFF)
-      ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameBorderSize, 2)
-    end
-
-    ImGui.PushStyleColor(ctx, ImGui.Col_Button, color_u32)
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, color_u32)
-    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, color_u32)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameRounding, chip_rounding)
-
-    local label = show_labels and name or "##color"
-    if ImGui.Button(ctx, label, chip_size, chip_size) then
+    -- Make it clickable
+    local hit_x = chip_cx - hit_size * 0.5
+    local hit_y = chip_cy - hit_size * 0.5
+    ImGui.SetCursorScreenPos(ctx, hit_x, hit_y)
+    if ImGui.InvisibleButton(ctx, "##color_" .. i, hit_size, hit_size) then
       if opts.on_select then
-        opts.on_select(hex, name)
+        local color_hex = palette[i].hex
+        local color_name = palette[i].name
+        opts.on_select(color, color_hex, color_name)
       end
       selected = true
     end
+    local is_hovered = ImGui.IsItemHovered(ctx)
 
-    -- Tooltip with color name
-    if ImGui.IsItemHovered(ctx) then
-      ImGui.BeginTooltip(ctx)
-      ImGui.Text(ctx, name)
-      ImGui.EndTooltip(ctx)
+    -- Draw chip with glow effects
+    Chip.draw(ctx, {
+      style = Chip.STYLE.INDICATOR,
+      shape = Chip.SHAPE.CIRCLE,
+      color = color,
+      draw_list = dl,
+      x = chip_cx,
+      y = chip_cy,
+      radius = chip_radius,
+      is_selected = is_selected,
+      is_hovered = is_hovered,
+      show_glow = is_selected or is_hovered,
+      glow_layers = is_selected and 6 or 3,
+      shadow = true,
+      border = is_hovered,
+      border_color = hexrgb("#FFFFFF80"),
+      border_thickness = 1.0,
+    })
+  end
+
+  -- Calculate grid height and move cursor past it
+  local grid_rows = math.ceil(#preset_colors / columns)
+  local grid_height = (grid_rows - 1) * chip_spacing + chip_radius * 2
+  ImGui.SetCursorScreenPos(ctx, menu_start_x, menu_start_y + grid_height + 8)
+
+  -- Draw separator before "Remove Color" button
+  ImGui.Dummy(ctx, 1, 4)
+  local sep_x2, sep_y2 = ImGui.GetCursorScreenPos(ctx)
+  local sep_w2 = ImGui.GetContentRegionAvail(ctx)
+  ImGui.DrawList_AddLine(dl, sep_x2 + 8, sep_y2, sep_x2 + sep_w2 - 8, sep_y2, hexrgb("#505050FF"), 1)
+  ImGui.Dummy(ctx, 1, 6)
+
+  -- "Remove Color" button
+  if show_none then
+    local button_text = opts.current_color and none_label or "No Color"
+    local button_width = ImGui.GetContentRegionAvail(ctx)
+
+    ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 8)
+    if ImGui.Button(ctx, button_text, button_width - 16, 28) then
+      if opts.on_select then
+        opts.on_select(nil, nil, nil)
+      end
+      selected = true
     end
-
-    ImGui.PopStyleVar(ctx)  -- FrameRounding
-    ImGui.PopStyleColor(ctx, 3)  -- Button colors
-
-    if is_current then
-      ImGui.PopStyleVar(ctx)  -- FrameBorderSize
-      ImGui.PopStyleColor(ctx)  -- Border
-    end
-
-    ImGui.PopID(ctx)
-
-    -- Grid layout
-    col = col + 1
-    if col < columns and i < #palette then
-      ImGui.SameLine(ctx, 0, chip_spacing)
-    else
-      col = 0
-    end
+    ImGui.Dummy(ctx, 1, 4)
   end
 
   return selected
