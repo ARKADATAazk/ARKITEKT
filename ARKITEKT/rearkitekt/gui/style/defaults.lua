@@ -96,8 +96,8 @@ M.PANEL_COLORS = {
   bg_scrollbar = M.COLORS.BG_TRANSPARENT, -- Scrollbar background
 
   -- Background pattern (decorative grid/dot pattern)
-  pattern_primary = hexrgb(ColorDefs.UI.bg_deep .. "90"):gsub("FF90", "90"),   -- Primary pattern
-  pattern_secondary = hexrgb(ColorDefs.UI.bg_deep .. "20"):gsub("FF20", "20"), -- Secondary pattern
+  pattern_primary = hexrgb(ColorDefs.UI.bg_deep:sub(1, 7) .. "90"),   -- Primary pattern
+  pattern_secondary = hexrgb(ColorDefs.UI.bg_deep:sub(1, 7) .. "20"), -- Secondary pattern
 }
 
 -- ============================================================================
