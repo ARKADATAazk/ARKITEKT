@@ -395,7 +395,7 @@ function M.get_area(image_name)
   }
 
   for _, mapping in ipairs(prefix_map) do
-    if name:find("^" .. mapping.prefix) then
+    if name:sub(1, #mapping.prefix) == mapping.prefix then
       return mapping.area
     end
   end
@@ -431,6 +431,17 @@ end
 -- @return table Array of suggested tag names
 function M.suggest_tags(image_names, threshold)
   local distribution = M.calculate_area_distribution(image_names)
+
+  -- Debug: show distribution
+  local debug_parts = {}
+  for area, count in pairs(distribution) do
+    table.insert(debug_parts, area .. "=" .. count)
+  end
+  if #debug_parts > 0 then
+    reaper.ShowConsoleMsg("[Tags] Distribution: " .. table.concat(debug_parts, ", ") .. "\n")
+  else
+    reaper.ShowConsoleMsg("[Tags] No areas matched for " .. #image_names .. " images\n")
+  end
 
   local tags = {}
 
