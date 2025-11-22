@@ -50,6 +50,9 @@ function M.new(State, AppConfig, settings)
 
   local container_config = Config.get_assembler_container_config({
     on_config_select = function(tab_id)
+      -- Save current model state before switching
+      self:sync_model_to_state()
+
       if State.switch_configuration(tab_id) then
         self:refresh_tabs()  -- Update active tab visual
         self:refresh_package_model()
@@ -354,6 +357,16 @@ function AssemblerView:refresh_package_model()
   self.package_model.order = State.get_package_order()
   self.package_model.excl = State.get_package_exclusions()
   self.package_model.pins = State.get_package_pins()
+end
+
+function AssemblerView:sync_model_to_state()
+  local State = self.State
+
+  -- Sync model changes back to current configuration
+  State.set_active_packages(self.package_model.active)
+  State.set_package_order(self.package_model.order)
+  State.set_package_exclusions(self.package_model.excl)
+  State.set_package_pins(self.package_model.pins)
 end
 
 function AssemblerView:update(dt)
