@@ -93,37 +93,28 @@ class LuaCodeGenerator:
         self.max_y = max(self.max_y, y)
 
     def _normalize_coord(self, value: float, is_x: bool = True) -> str:
-        """Normalize coordinate to 0-1 range based on viewbox or bounds."""
+        """Normalize coordinate to 0-1 range based on actual content bounds."""
         if not self.normalize:
             return f"{value:.6f}"
 
-        if self.viewbox:
-            vx, vy, vw, vh = self.viewbox
-            if is_x:
-                normalized = (value - vx) / vw
-            else:
-                normalized = (value - vy) / vh
-        else:
-            width = self.max_x - self.min_x
-            height = self.max_y - self.min_y
-            max_dim = max(width, height) if max(width, height) > 0 else 1.0
+        # Always use actual content bounds for normalization
+        width = self.max_x - self.min_x
+        height = self.max_y - self.min_y
+        max_dim = max(width, height) if max(width, height) > 0 else 1.0
 
-            if is_x:
-                normalized = (value - self.min_x) / max_dim
-            else:
-                normalized = (value - self.min_y) / max_dim
+        if is_x:
+            normalized = (value - self.min_x) / max_dim
+        else:
+            normalized = (value - self.min_y) / max_dim
 
         return f"{normalized:.6f}"
 
     def _arc_to_lua(self, arc: Arc, lua_lines: List[str]):
-        """Convert Arc to ImGui PathArcTo or approximate with bezier.
+        """Convert Arc to cubic bezier approximation.
 
-        Uses proper cubic bezier approximation for arc segments.
-        For best accuracy, arcs are split into segments of at most 90 degrees.
+        Arcs are split into segments of at most 90 degrees for accuracy.
         """
-        theta = arc.theta
         delta = arc.delta
-
         num_segments = max(1, int(math.ceil(abs(delta) / 90.0)))
 
         for i in range(num_segments):
@@ -183,22 +174,27 @@ class LuaCodeGenerator:
 
         lua_lines.append("  ImGui.DrawList_PathClear(dl)")
 
-        if self.normalize and not self.viewbox:
+        # Calculate bounds from actual path data (always needed for normalization)
+        if self.normalize:
             for segment in path:
                 if isinstance(segment, Line):
+                    self._update_bounds(segment.start.real, segment.start.imag)
                     self._update_bounds(segment.end.real, segment.end.imag)
                 elif isinstance(segment, QuadraticBezier):
+                    self._update_bounds(segment.start.real, segment.start.imag)
                     self._update_bounds(segment.end.real, segment.end.imag)
                     self._update_bounds(segment.control.real, segment.control.imag)
                 elif isinstance(segment, CubicBezier):
+                    self._update_bounds(segment.start.real, segment.start.imag)
                     self._update_bounds(segment.end.real, segment.end.imag)
                     self._update_bounds(segment.control1.real, segment.control1.imag)
                     self._update_bounds(segment.control2.real, segment.control2.imag)
                 elif isinstance(segment, Arc):
-                    for t in [0, 0.5, 1.0]:
+                    for t in [0, 0.25, 0.5, 0.75, 1.0]:
                         pt = segment.point(t)
                         self._update_bounds(pt.real, pt.imag)
 
+        # Second pass: generate Lua code
         first_point = True
         for segment in path:
             if isinstance(segment, Line):
@@ -394,6 +390,26 @@ def parse_basic_shapes(svg_root) -> List[Tuple[str, str, str, float]]:
     return shapes
 
 
+def deduplicate_paths(paths, attributes):
+    """Remove duplicate paths based on their string representation."""
+    seen = {}
+    unique_paths = []
+    unique_attrs = []
+    
+    for path, attr in zip(paths, attributes):
+        # Create a unique key from path data and attributes
+        path_str = str(path)
+        attr_str = f"{attr.get('fill', 'none')}_{attr.get('stroke', 'none')}_{attr.get('stroke-width', '1')}"
+        key = f"{path_str}_{attr_str}"
+        
+        if key not in seen:
+            seen[key] = True
+            unique_paths.append(path)
+            unique_attrs.append(attr)
+    
+    return unique_paths, unique_attrs
+
+
 def generate_lua_function(svg_path: Path, function_name: str = "draw_icon",
                          normalize: bool = True) -> str:
     """Generate complete Lua function from SVG file."""
@@ -402,9 +418,6 @@ def generate_lua_function(svg_path: Path, function_name: str = "draw_icon",
         paths, attributes = svg2paths(str(svg_path))
     except Exception as e:
         raise ValueError(f"Failed to parse SVG: {e}")
-
-    if not paths:
-        raise ValueError(f"No paths found in SVG file: {svg_path}")
 
     tree = ET.parse(svg_path)
     root = tree.getroot()
@@ -418,6 +431,12 @@ def generate_lua_function(svg_path: Path, function_name: str = "draw_icon",
             attributes.append({'fill': fill, 'stroke': stroke, 'stroke-width': str(stroke_width)})
         except:
             pass
+
+    # Deduplicate paths
+    paths, attributes = deduplicate_paths(paths, attributes)
+
+    if not paths:
+        raise ValueError(f"No paths found in SVG file: {svg_path}")
 
     generator = LuaCodeGenerator(normalize=normalize, viewbox=viewbox)
 
@@ -460,17 +479,7 @@ def generate_lua_function(svg_path: Path, function_name: str = "draw_icon",
 
 def process_batch(svg_dir: Path, output_dir: Optional[Path] = None,
                   normalize: bool = True, verbose: bool = True) -> Tuple[int, int]:
-    """Process all SVG files in a directory.
-
-    Args:
-        svg_dir: Directory containing SVG files
-        output_dir: Output directory for Lua files (default: prints to stdout)
-        normalize: Whether to normalize coordinates
-        verbose: Print progress information
-
-    Returns:
-        Tuple of (success_count, error_count)
-    """
+    """Process all SVG files in a directory."""
     svg_files = list(svg_dir.glob('*.svg'))
 
     if not svg_files:
