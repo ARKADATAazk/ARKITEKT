@@ -10,7 +10,7 @@ local Style = require('rearkitekt.gui.style.defaults')
 local Colors = require('rearkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
-local Tooltips = require('ThemeAdjuster.ui.tooltips')
+local Strings = require('ThemeAdjuster.defs.strings')
 
 local PC = Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
@@ -215,7 +215,7 @@ function GlobalView:draw(ctx, shell_state)
       self:set_param(-1000, self.gamma, true)
     end
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.gamma)
+      ImGui.SetTooltip(ctx, Strings.GLOBAL.gamma)
     end
 
     -- Highlights slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
@@ -236,7 +236,7 @@ function GlobalView:draw(ctx, shell_state)
       self:set_param(-1003, self.highlights, true)
     end
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.highlights)
+      ImGui.SetTooltip(ctx, Strings.GLOBAL.highlights)
     end
 
     -- Midtones slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
@@ -257,7 +257,7 @@ function GlobalView:draw(ctx, shell_state)
       self:set_param(-1002, self.midtones, true)
     end
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.midtones)
+      ImGui.SetTooltip(ctx, Strings.GLOBAL.midtones)
     end
 
     -- Shadows slider (Storage: -256 to 256, Display: -2.00 to 2.00, Default: 0 = 0.00)
@@ -278,7 +278,7 @@ function GlobalView:draw(ctx, shell_state)
       self:set_param(-1001, self.shadows, true)
     end
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.shadows)
+      ImGui.SetTooltip(ctx, Strings.GLOBAL.shadows)
     end
 
     -- Saturation slider (Storage: 0-512, Display: 0%-200%, Default: 256 = 100%)
@@ -299,7 +299,7 @@ function GlobalView:draw(ctx, shell_state)
       self:set_param(-1004, self.saturation, true)
     end
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.saturation)
+      ImGui.SetTooltip(ctx, Strings.GLOBAL.saturation)
     end
 
     -- Tint slider (Storage: 0-384, Display: -180° to +180°, Default: 192 = 0°)
@@ -320,7 +320,7 @@ function GlobalView:draw(ctx, shell_state)
       self:set_param(-1005, self.tint, true)
     end
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.tint)
+      ImGui.SetTooltip(ctx, Strings.GLOBAL.tint)
     end
 
     ImGui.Dummy(ctx, 0, 10)
@@ -339,7 +339,7 @@ function GlobalView:draw(ctx, shell_state)
       ThemeParams.set_param('glb_track_label_color', self.custom_track_names and 1 or 0, true)
     end
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.custom_color_track_names)
+      ImGui.SetTooltip(ctx, Strings.GLOBAL.custom_color_track_names)
     end
     ImGui.NewLine(ctx)
 
@@ -350,7 +350,7 @@ function GlobalView:draw(ctx, shell_state)
       self:set_param(-1006, self.affect_project_colors and 1 or 0, true)
     end
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.GLOBAL.affect_project_colors)
+      ImGui.SetTooltip(ctx, Strings.GLOBAL.affect_project_colors)
     end
     ImGui.NewLine(ctx)
 

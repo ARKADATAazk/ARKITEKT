@@ -3,9 +3,18 @@
 -- Configuration following RegionPlaylist pattern
 
 local Colors = require('rearkitekt.core.colors')
+local Constants = require('ThemeAdjuster.defs.constants')
+local Defaults = require('ThemeAdjuster.defs.defaults')
+local Strings = require('ThemeAdjuster.defs.strings')
 local hexrgb = Colors.hexrgb
 
 local M = {}
+
+-- Re-export constants for backward compatibility
+M.PACKAGE_GRID = Constants.PACKAGE_GRID
+M.TABS = Constants.TABS
+M.DEFAULT_FILTERS = Defaults.FILTERS
+M.DEMO = Defaults.DEMO
 
 -- Assembler container config
 function M.get_assembler_container_config(callbacks, filters)
@@ -88,37 +97,5 @@ function M.get_assembler_container_config(callbacks, filters)
     },
   }
 end
-
--- Package grid config
-M.PACKAGE_GRID = {
-  min_col_width = 220,
-  max_tile_height = 200,
-  gap = 12,
-  base_tile_height = 200,
-}
-
--- Tab definitions
-M.TABS = {
-  { id = "GLOBAL", label = "Global" },
-  { id = "ASSEMBLER", label = "Assembler" },
-  { id = "TCP", label = "TCP" },
-  { id = "MCP", label = "MCP" },
-  { id = "COLORS", label = "Colors" },
-  { id = "ENVELOPES", label = "Envelopes" },
-  { id = "TRANSPORT", label = "Transport" },
-  { id = "DEBUG", label = "Debug" },
-}
-
-M.DEFAULT_FILTERS = {
-  TCP = true,
-  MCP = true,
-  Transport = true,
-  Global = true,
-}
-
-M.DEMO = {
-  enabled = true,
-  package_count = 8,
-}
 
 return M

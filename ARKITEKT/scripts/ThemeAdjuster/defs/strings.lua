@@ -1,6 +1,6 @@
 -- @noindex
--- ThemeAdjuster/ui/tooltips.lua
--- Centralized tooltip text for all Theme Adjuster controls
+-- ThemeAdjuster/defs/strings.lua
+-- All UI text: tooltips, messages, labels
 
 local M = {}
 
@@ -24,14 +24,10 @@ M.GLOBAL = {
 -- ============================================================================
 
 M.TCP = {
-  -- Layout buttons
   layout_button = "Switch to editing Layout %s parameters\nEach layout (A/B/C) has independent settings",
   set_default_layout = "Set Layout %s as the default for new tracks\nNew tracks will use this layout automatically",
-
-  -- Apply size buttons
   apply_size = "Apply Layout %s at %s scale to selected tracks\nTracks will immediately switch to this layout and size",
 
-  -- Spinners
   indent = "Folder indentation width\nGLOBAL: Affects all layouts (A/B/C)",
   control_align = "Control alignment behavior\nGLOBAL: Affects all layouts (A/B/C)",
   label_measure = "Enable dynamic track name width based on text length\nGLOBAL: Affects all layouts (A/B/C)",
@@ -46,7 +42,6 @@ M.TCP = {
   pan_size = "Pan control size\nPer-layout: Each layout (A/B/C) has its own value",
   width_size = "Width control size\nPer-layout: Each layout (A/B/C) has its own value",
 
-  -- Visibility flags
   vis_header = "Control when each element is visible in the TCP\nCheck boxes to HIDE elements under specific conditions",
   vis_if_mixer = "Hide when mixer (MCP) is visible",
   vis_if_not_selected = "Hide when track is not selected",
@@ -54,7 +49,6 @@ M.TCP = {
   vis_always_hide = "Always hide this element",
 }
 
--- Visibility element tooltips
 M.TCP_VIS_ELEMENTS = {
   tcp_Record_Arm = "Record Arm button visibility conditions",
   tcp_Monitor = "Monitor button visibility conditions",
@@ -75,14 +69,10 @@ M.TCP_VIS_ELEMENTS = {
 -- ============================================================================
 
 M.MCP = {
-  -- Layout buttons
   layout_button = "Switch to editing Layout %s parameters\nEach layout (A/B/C) has independent settings",
   set_default_layout = "Set Layout %s as the default for new tracks\nNew tracks will use this layout automatically",
-
-  -- Apply size buttons
   apply_size = "Apply Layout %s at %s scale to selected tracks\nTracks will immediately switch to this layout and size",
 
-  -- Spinners
   indent = "Folder indentation width\nGLOBAL: Affects all layouts (A/B/C)",
   align = "Mixer control alignment (bottom or center)\nGLOBAL: Affects all layouts (A/B/C)",
   meter_exp_size = "Expanded meter width in pixels\nPer-layout: Each layout (A/B/C) has its own value",
@@ -96,14 +86,12 @@ M.MCP = {
   sendlist_size = "Send list area size\nPer-layout: Each layout (A/B/C) has its own value",
   io_size = "I/O controls area size\nPer-layout: Each layout (A/B/C) has its own value",
 
-  -- Visibility flags
   vis_header = "Control when each element is visible in the MCP\nCheck boxes to HIDE elements under specific conditions",
   vis_if_mixer = "Hide when mixer (MCP) is visible",
   vis_if_not_selected = "Hide when track is not selected",
   vis_if_not_armed = "Hide when track is not armed for recording",
   vis_always_hide = "Always hide this element",
 
-  -- Action toggles
   show_fx = "Toggle FX window visibility for selected tracks\nREAPER Action: Show FX for tracks (40549)",
   show_params = "Toggle FX parameter display in mixer\nREAPER Action: FX parameters (40910)",
   show_sends = "Toggle send list visibility in mixer\nREAPER Action: Show sends (40557)",
@@ -113,7 +101,6 @@ M.MCP = {
   folder_collapse = "Collapse/expand selected folder tracks\nREAPER Action: Folder collapse (1042)",
 }
 
--- Visibility element tooltips
 M.MCP_VIS_ELEMENTS = {
   mcp_Sidebar = "Extend mixer strip with sidebar visibility conditions",
   mcp_Narrow = "Narrow form visibility conditions",
@@ -144,7 +131,6 @@ M.TRANSPORT = {
 
   rate_size = "Play rate control size (knob or fader sizes)",
 
-  -- Action toggles
   show_play_rate = "Toggle play rate control visibility\nREAPER Action: Show play rate (40531)",
   center_transport = "Center transport in its docker\nREAPER Action: Center transport (40533)",
   time_signature = "Toggle time signature display\nREAPER Action: Show time signature (40680)",
@@ -168,10 +154,34 @@ M.COLORS = {
 }
 
 -- ============================================================================
+-- UI LABELS
+-- ============================================================================
+
+M.LABELS = {
+  demo_button = "Demo",
+  search_placeholder = "Search packages...",
+  filters_tooltip = "Filter Packages",
+  filters_label = "Filters",
+}
+
+-- ============================================================================
+-- STATUS MESSAGES
+-- ============================================================================
+
+M.STATUS = {
+  cache_needs_rebuild = "Cache needs rebuild",
+  rebuilding_cache = "Rebuilding cache...",
+  theme_not_linked = "Theme not linked",
+  demo_mode = "Demo Mode - %d packages",
+  packages_active = "%d/%d packages active",
+  ready = "Ready",
+  status_error = "Status Error: %s",
+}
+
+-- ============================================================================
 -- HELPER FUNCTION
 -- ============================================================================
 
--- Format tooltip with string.format support
 function M.format(tooltip, ...)
   if select('#', ...) > 0 then
     return string.format(tooltip, ...)

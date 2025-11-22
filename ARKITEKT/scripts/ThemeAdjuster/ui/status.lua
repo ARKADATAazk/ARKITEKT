@@ -2,17 +2,11 @@
 -- ThemeAdjuster/ui/status.lua
 -- Status bar configuration
 
-local Colors = require('rearkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local Constants = require('ThemeAdjuster.defs.constants')
 
 local M = {}
 
-local STATUS_COLORS = {
-  READY = hexrgb("#41E0A3"),    -- Green
-  WARNING = hexrgb("#E0B341"),  -- Yellow
-  ERROR = hexrgb("#E04141"),     -- Red
-  INFO = hexrgb("#CCCCCC"),      -- Light grey
-}
+local STATUS_COLORS = Constants.STATUS
 
 local function get_app_status(State)
   return function()

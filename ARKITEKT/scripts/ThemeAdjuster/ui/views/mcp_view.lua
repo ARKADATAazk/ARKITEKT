@@ -11,7 +11,7 @@ local Style = require('rearkitekt.gui.style.defaults')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
 local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
-local Tooltips = require('ThemeAdjuster.ui.tooltips')
+local Strings = require('ThemeAdjuster.defs.strings')
 local Colors = require('rearkitekt.core.colors')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
 local hexrgb = Colors.hexrgb
@@ -422,7 +422,7 @@ function MCPView:draw(ctx, shell_state)
     }, "mcp_set_default") then
     end
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.format(Tooltips.MCP.set_default_layout, self.active_layout))
+      ImGui.SetTooltip(ctx, Strings.format(Strings.MCP.set_default_layout, self.active_layout))
     end
     ImGui.NewLine(ctx)
 
@@ -618,14 +618,14 @@ function MCPView:draw(ctx, shell_state)
     -- Row 1: Show FX & Show Params
     draw_action_toggle("Show FX Inserts", 40549, "mcp_show_fx")
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.MCP.show_fx)
+      ImGui.SetTooltip(ctx, Strings.MCP.show_fx)
     end
 
     ImGui.SameLine(ctx, 0, 8)
 
     draw_action_toggle("Show FX Parameters", 40910, "mcp_show_params")
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.MCP.show_params)
+      ImGui.SetTooltip(ctx, Strings.MCP.show_params)
     end
     ImGui.NewLine(ctx)
     ImGui.Dummy(ctx, 0, 4)
@@ -633,14 +633,14 @@ function MCPView:draw(ctx, shell_state)
     -- Row 2: Show Sends & Multi-row
     draw_action_toggle("Show Sends", 40557, "mcp_show_sends")
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.MCP.show_sends)
+      ImGui.SetTooltip(ctx, Strings.MCP.show_sends)
     end
 
     ImGui.SameLine(ctx, 0, 8)
 
     draw_action_toggle("Multi-row Mixer", 40371, "mcp_multi_row")
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.MCP.multi_row)
+      ImGui.SetTooltip(ctx, Strings.MCP.multi_row)
     end
     ImGui.NewLine(ctx)
     ImGui.Dummy(ctx, 0, 4)
@@ -648,14 +648,14 @@ function MCPView:draw(ctx, shell_state)
     -- Row 3: Scroll to Selected & Show Icons
     draw_action_toggle("Scroll to Selected", 40221, "mcp_scroll_selected")
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.MCP.scroll_to_selected)
+      ImGui.SetTooltip(ctx, Strings.MCP.scroll_to_selected)
     end
 
     ImGui.SameLine(ctx, 0, 8)
 
     draw_action_toggle("Show Icons", 40903, "mcp_show_icons")
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.MCP.show_icons)
+      ImGui.SetTooltip(ctx, Strings.MCP.show_icons)
     end
     ImGui.NewLine(ctx)
 
@@ -704,7 +704,7 @@ function MCPView:draw(ctx, shell_state)
             self:toggle_bitflag(elem.id, col.bit)
           end
           if ImGui.IsItemHovered(ctx) then
-            local tooltip = Tooltips.MCP_VIS_ELEMENTS[elem.id] or ("Toggle " .. elem.label)
+            local tooltip = Strings.MCP_VIS_ELEMENTS[elem.id] or ("Toggle " .. elem.label)
             ImGui.SetTooltip(ctx, tooltip)
           end
           ImGui.PopID(ctx)

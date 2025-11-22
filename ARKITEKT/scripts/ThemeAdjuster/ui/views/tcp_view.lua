@@ -11,7 +11,7 @@ local Style = require('rearkitekt.gui.style.defaults')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
 local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
-local Tooltips = require('ThemeAdjuster.ui.tooltips')
+local Strings = require('ThemeAdjuster.defs.strings')
 local Colors = require('rearkitekt.core.colors')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
 local hexrgb = Colors.hexrgb
@@ -429,7 +429,7 @@ function TCPView:draw(ctx, shell_state)
     }, "tcp_set_default") then
     end
     if ImGui.IsItemHovered(ctx) then
-      ImGui.SetTooltip(ctx, Tooltips.format(Tooltips.TCP.set_default_layout, self.active_layout))
+      ImGui.SetTooltip(ctx, Strings.format(Strings.TCP.set_default_layout, self.active_layout))
     end
     ImGui.NewLine(ctx)
 
@@ -616,7 +616,7 @@ function TCPView:draw(ctx, shell_state)
             self:toggle_bitflag(elem.id, col.bit)
           end
           if ImGui.IsItemHovered(ctx) then
-            local tooltip = Tooltips.TCP_VIS_ELEMENTS[elem.id] or ("Toggle " .. elem.label)
+            local tooltip = Strings.TCP_VIS_ELEMENTS[elem.id] or ("Toggle " .. elem.label)
             ImGui.SetTooltip(ctx, tooltip)
           end
           ImGui.PopID(ctx)
