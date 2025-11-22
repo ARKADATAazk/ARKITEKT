@@ -1,4 +1,4 @@
-Region_Playlist/
+RegionPlaylist/
 ├── core/
 │   ├── state.lua              # Unified state manager
 │   ├── config.lua             # UI constants, dimensions, colors
@@ -57,7 +57,7 @@ rearkitekt/
     └── bridge.lua             # Grid drag coordination (MOVED)
 
 
-Region_Playlist/
+RegionPlaylist/
 ├── domains/
 │   ├── playback/
 │   │   ├── engine.lua
@@ -99,7 +99,7 @@ Region_Playlist/
 
 ## Option 2: Clean Architecture Layers
 ```
-Region_Playlist/
+RegionPlaylist/
 ├── presentation/
 │   ├── views/
 │   │   ├── main_view.lua
@@ -145,7 +145,7 @@ Region_Playlist/
 
 ## Option 3: Feature-Based Modules
 ```
-Region_Playlist/
+RegionPlaylist/
 ├── core/
 │   ├── state_manager.lua
 │   ├── event_bus.lua
@@ -185,7 +185,7 @@ Region_Playlist/
 
 ## Option 4: Component-Centric Architecture
 ```
-Region_Playlist/
+RegionPlaylist/
 ├── components/
 │   ├── containers/
 │   │   ├── MainWindow/
@@ -241,7 +241,7 @@ Region_Playlist/
 
 **Option 1 (Domain-Driven)** with these refinements:
 ```
-Region_Playlist/
+RegionPlaylist/
 ├── core/
 │   ├── state.lua           # Unified state manager
 │   ├── events.lua          # Event bus
@@ -378,7 +378,7 @@ ARK_FeatureName/
 
 ---
 
-## Region_Playlist Simulation
+## RegionPlaylist Simulation
 ```
 ARK_RegionPlaylist/
 ├── domain/

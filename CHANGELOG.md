@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Core widget library (15+ widget categories)
 - Example applications:
   - ColorPalette - Color management tool
-  - Region_Playlist - Region-based playlist manager
+  - RegionPlaylist - Region-based playlist manager
   - ItemPicker - Audio/MIDI item browser
   - TemplateBrowser - Template selection tool
   - ThemeAdjuster - REAPER theme customization

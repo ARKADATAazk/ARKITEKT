@@ -315,11 +315,11 @@ end
 
 ### Example 2: Overflow Modal
 
-See `scripts/Region_Playlist/ui/views/overflow_modal_view.lua` for complete implementation.
+See `scripts/RegionPlaylist/ui/views/overflow_modal_view.lua` for complete implementation.
 
 **Creating the modal:**
 ```lua
-local OverflowModalView = require('Region_Playlist.ui.views.overflow_modal_view')
+local OverflowModalView = require('RegionPlaylist.ui.views.overflow_modal_view')
 
 local overflow_modal = OverflowModalView.new(region_tiles, state, function()
   print("Tab selected")
@@ -543,7 +543,7 @@ Study these files for complete examples:
   - Color picker integration
   - Input validation
 
-- **Overflow Modal**: `scripts/Region_Playlist/ui/views/overflow_modal_view.lua`
+- **Overflow Modal**: `scripts/RegionPlaylist/ui/views/overflow_modal_view.lua`
   - Instance-based
   - Search input
   - Grid layout

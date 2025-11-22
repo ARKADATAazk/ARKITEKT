@@ -273,7 +273,7 @@ ARKITEKT-Project/
 │   │   │   ├── init.lua (30 lines)
 │   │   │   ├── Item Picker OG.lua (1135 lines)
 │   │   │   └── UNIFIED_DAEMON_README.md (319 lines)
-│   │   ├── Region_Playlist/
+│   │   ├── RegionPlaylist/
 │   │   │   ├── core/
 │   │   │   │   ├── app_state.lua (1147 lines)
 │   │   │   │   ├── config.lua (492 lines)

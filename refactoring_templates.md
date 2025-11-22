@@ -67,18 +67,18 @@ CREATE_FILE: path/to/file.lua | -- Optional initial content
 **Complete Example:**
 ```
 # Create new directory structure first
-CREATE_DIR: Region_Playlist/widgets
-CREATE_DIR: Region_Playlist/storage
-CREATE_DIR: Region_Playlist/app
+CREATE_DIR: RegionPlaylist/widgets
+CREATE_DIR: RegionPlaylist/storage
+CREATE_DIR: RegionPlaylist/app
 
 # Create stub files
-CREATE_FILE: Region_Playlist/__init__.lua | -- Region Playlist module
-CREATE_FILE: Region_Playlist/app/controller.lua
+CREATE_FILE: RegionPlaylist/__init__.lua | -- Region Playlist module
+CREATE_FILE: RegionPlaylist/app/controller.lua
 
 # Map old paths to new paths
-ReArkitekt.gui.widgets.region_tiles -> Region_Playlist.widgets.region_tiles
-ReArkitekt.features.region_playlist.state -> Region_Playlist.storage.state
-ReArkitekt.features.region_playlist.playlist_controller -> Region_Playlist.app.controller
+ReArkitekt.gui.widgets.region_tiles -> RegionPlaylist.widgets.region_tiles
+ReArkitekt.features.region_playlist.state -> RegionPlaylist.storage.state
+ReArkitekt.features.region_playlist.playlist_controller -> RegionPlaylist.app.controller
 ```
 
 ### Execution Order
@@ -107,8 +107,8 @@ The tool:
 
 **Commands:**
 ```
-CREATE_DIR: Region_Playlist/widgets
-ReArkitekt.gui.widgets.region_tiles -> Region_Playlist.widgets.region_tiles
+CREATE_DIR: RegionPlaylist/widgets
+ReArkitekt.gui.widgets.region_tiles -> RegionPlaylist.widgets.region_tiles
 ```
 
 **Before:**
@@ -118,7 +118,7 @@ local RegionTiles = require("ReArkitekt.gui.widgets.region_tiles.coordinator")
 
 **After:**
 ```lua
-local RegionTiles = require("Region_Playlist.widgets.region_tiles.coordinator")
+local RegionTiles = require("RegionPlaylist.widgets.region_tiles.coordinator")
 ```
 
 ## Safety Features

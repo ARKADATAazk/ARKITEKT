@@ -61,7 +61,7 @@ mkdir -p apps
 # Move applications (rename to snake_case)
 mv scripts/ItemPicker apps/item_picker
 mv scripts/ColorPalette apps/color_palette
-mv scripts/Region_Playlist apps/region_playlist
+mv scripts/RegionPlaylist apps/region_playlist
 mv scripts/TemplateBrowser apps/template_browser
 mv scripts/ThemeAdjuster apps/theme_adjuster
 
@@ -155,7 +155,7 @@ find . -type f -name "*.lua" -exec sed -i 's/require("rearkitekt\./require("arki
 find ARKITEKT/apps/color_palette -type f -name "*.lua" -exec sed -i 's/require("ColorPalette\./require("arkitekt.apps.color_palette./g' {} +
 
 # region_playlist
-find ARKITEKT/apps/region_playlist -type f -name "*.lua" -exec sed -i 's/require("Region_Playlist\./require("arkitekt.apps.region_playlist./g' {} +
+find ARKITEKT/apps/region_playlist -type f -name "*.lua" -exec sed -i 's/require("RegionPlaylist\./require("arkitekt.apps.region_playlist./g' {} +
 
 # template_browser
 find ARKITEKT/apps/template_browser -type f -name "*.lua" -exec sed -i 's/require("TemplateBrowser\./require("arkitekt.apps.template_browser./g' {} +
@@ -179,7 +179,7 @@ grep -r "rearkitekt" ARKITEKT/arkitekt/ ARKITEKT/apps/
 # Search for old app names in requires
 grep -r 'require("ItemPicker' ARKITEKT/apps/
 grep -r 'require("ColorPalette' ARKITEKT/apps/
-grep -r 'require("Region_Playlist' ARKITEKT/apps/
+grep -r 'require("RegionPlaylist' ARKITEKT/apps/
 ```
 
 Fix any remaining references manually.
@@ -290,7 +290,7 @@ find . -name "*.md" -type f -exec sed -i 's/ReArkitekt/arkitekt/g' {} +
 # Check for PascalCase app names in docs
 grep -r "ItemPicker" --include="*.md"
 grep -r "ColorPalette" --include="*.md"
-grep -r "Region_Playlist" --include="*.md"
+grep -r "RegionPlaylist" --include="*.md"
 
 # Update to snake_case
 find . -name "*.md" -type f -exec sed -i 's/ItemPicker/item_picker/g' {} +
@@ -441,7 +441,7 @@ After:  require("arkitekt.apps.item_picker.MODULE")
 ## Apps Renamed
 - ItemPicker → item_picker
 - ColorPalette → color_palette
-- Region_Playlist → region_playlist
+- RegionPlaylist → region_playlist
 - TemplateBrowser → template_browser
 - ThemeAdjuster → theme_adjuster
 
@@ -502,7 +502,7 @@ require("arkitekt.apps.item_picker.core.state")
 All apps now use `snake_case`:
 - ItemPicker → item_picker
 - ColorPalette → color_palette
-- Region_Playlist → region_playlist
+- RegionPlaylist → region_playlist
 - TemplateBrowser → template_browser
 - ThemeAdjuster → theme_adjuster
 

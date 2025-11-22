@@ -21,16 +21,16 @@ Generated: 2025-10-17 00:44:31
 **`ARKITEKT/rearkitekt/gui/widgets/grid/core.lua`** (13 dependencies)
   Composes: layout + rect_track + colors + selection + selection_rectangle + draw + drag_indicator + drop_indicator + rendering + animation + input + dnd_state + drop_zones
 
-**`ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/coordinator.lua`** (13 dependencies)
+**`ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/coordinator.lua`** (13 dependencies)
   Composes: config + coordinator_render + draw + colors + tile_motion + height_stabilizer + selector + active_grid_factory + pool_grid_factory + grid_bridge + panel + config + state
 
-**`ARKITEKT/scripts/Region_Playlist/app/gui.lua`** (9 dependencies)
+**`ARKITEKT/scripts/RegionPlaylist/app/gui.lua`** (9 dependencies)
   Composes: coordinator + colors + shortcuts + controller + transport_container + sheet + list + config + tile_motion
 
-**`ARKITEKT/scripts/Region_Playlist/ARK_RegionPlaylist.lua`** (7 dependencies)
+**`ARKITEKT/scripts/RegionPlaylist/ARK_RegionPlaylist.lua`** (7 dependencies)
   Composes: profiler_init + shell + config + state + gui + status + colors
 
-**`ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/base.lua`** (7 dependencies)
+**`ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/base.lua`** (7 dependencies)
   Composes: draw + colors + tile_fx + tile_fx_config + marching_ants + tile_utilities + chip
 
 ## Module API
@@ -1069,7 +1069,7 @@ Generated: 2025-10-17 00:44:31
   - `M.DisplayMidiItemTransparent(ctx, thumbnail, color, draw_list)`
   - `M.DisplayPreviewLine(ctx, preview_start, preview_end, draw_list)`
 
-### `ARKITEKT/scripts/Region_Playlist/app/config.lua` (349 lines)
+### `ARKITEKT/scripts/RegionPlaylist/app/config.lua` (349 lines)
 > @noindex
 **Modules**: `M`
 **Exports**:
@@ -1077,37 +1077,37 @@ Generated: 2025-10-17 00:44:31
   - `M.get_pool_container_config(callbacks)`
   - `M.get_region_tiles_config(layout_mode)`
 
-### `ARKITEKT/scripts/Region_Playlist/app/controller.lua` (368 lines)
+### `ARKITEKT/scripts/RegionPlaylist/app/controller.lua` (368 lines)
 > @noindex
 **Modules**: `M, Controller, keys, keys, keys_set, new_items, keys_set, keys_set`
 **Classes**: `Controller, M`
 **Exports**:
   - `M.new(state_module, settings, undo_manager)` → Instance
-**Requires**: `Region_Playlist.storage.state`
+**Requires**: `RegionPlaylist.storage.state`
 
-### `ARKITEKT/scripts/Region_Playlist/app/gui.lua` (919 lines)
+### `ARKITEKT/scripts/RegionPlaylist/app/gui.lua` (919 lines)
 > @noindex
 **Modules**: `M, GUI, tab_items, selected_ids, filtered`
 **Classes**: `GUI, M`
 **Exports**:
   - `M.create(State, AppConfig, settings)` → Instance
-**Requires**: `Region_Playlist.widgets.region_tiles.coordinator, rearkitekt.core.colors, Region_Playlist.app.shortcuts, Region_Playlist.app.controller, rearkitekt.gui.widgets.transport.transport_container, rearkitekt.gui.widgets.overlay.sheet, rearkitekt.gui.widgets.chip_list.list, Region_Playlist.app.config, rearkitekt.gui.fx.tile_motion`
+**Requires**: `RegionPlaylist.widgets.region_tiles.coordinator, rearkitekt.core.colors, RegionPlaylist.app.shortcuts, RegionPlaylist.app.controller, rearkitekt.gui.widgets.transport.transport_container, rearkitekt.gui.widgets.overlay.sheet, rearkitekt.gui.widgets.chip_list.list, RegionPlaylist.app.config, rearkitekt.gui.fx.tile_motion`
 
-### `ARKITEKT/scripts/Region_Playlist/app/sequence_expander.lua` (104 lines)
+### `ARKITEKT/scripts/RegionPlaylist/app/sequence_expander.lua` (104 lines)
 > @noindex
 **Modules**: `SequenceExpander, nested_sequence, sequence`
 **Exports**:
   - `SequenceExpander.expand_playlist(playlist, get_playlist_by_id)`
   - `SequenceExpander.debug_print_sequence(sequence, get_region_by_rid)`
 
-### `ARKITEKT/scripts/Region_Playlist/app/shortcuts.lua` (81 lines)
+### `ARKITEKT/scripts/RegionPlaylist/app/shortcuts.lua` (81 lines)
 > @noindex
 **Modules**: `M`
 **Exports**:
   - `M.handle_keyboard_shortcuts(ctx, state, region_tiles)`
-**Requires**: `Region_Playlist.app.state`
+**Requires**: `RegionPlaylist.app.state`
 
-### `ARKITEKT/scripts/Region_Playlist/app/state.lua` (618 lines)
+### `ARKITEKT/scripts/RegionPlaylist/app/state.lua` (618 lines)
 > @noindex
 **Modules**: `M, tabs, result, reversed, all_deps, visited, pool_playlists, filtered, reversed, new_path, path_array`
 **Exports**:
@@ -1138,9 +1138,9 @@ Generated: 2025-10-17 00:44:31
   - `M.cleanup_deleted_regions()`
   - `M.update()`
 **Private**: 9 helpers
-**Requires**: `Region_Playlist.engine.coordinator_bridge, Region_Playlist.storage.state, rearkitekt.core.undo_manager, Region_Playlist.storage.undo_bridge, rearkitekt.core.colors`
+**Requires**: `RegionPlaylist.engine.coordinator_bridge, RegionPlaylist.storage.state, rearkitekt.core.undo_manager, RegionPlaylist.storage.undo_bridge, rearkitekt.core.colors`
 
-### `ARKITEKT/scripts/Region_Playlist/app/status.lua` (59 lines)
+### `ARKITEKT/scripts/RegionPlaylist/app/status.lua` (59 lines)
 > @noindex
 **Modules**: `M`
 **Classes**: `M`
@@ -1148,23 +1148,23 @@ Generated: 2025-10-17 00:44:31
   - `M.create(State, Style)` → Instance
 **Requires**: `rearkitekt.app.chrome.status_bar.widget`
 
-### `ARKITEKT/scripts/Region_Playlist/engine/coordinator_bridge.lua` (290 lines)
+### `ARKITEKT/scripts/RegionPlaylist/engine/coordinator_bridge.lua` (290 lines)
 > @noindex
 **Modules**: `M, sequence, regions`
 **Classes**: `M`
 **Exports**:
   - `M.create(opts)` → Instance
-**Requires**: `Region_Playlist.engine.core, Region_Playlist.engine.playback, Region_Playlist.storage.state, Region_Playlist.app.sequence_expander`
+**Requires**: `RegionPlaylist.engine.core, RegionPlaylist.engine.playback, RegionPlaylist.storage.state, RegionPlaylist.app.sequence_expander`
 
-### `ARKITEKT/scripts/Region_Playlist/engine/core.lua` (194 lines)
+### `ARKITEKT/scripts/RegionPlaylist/engine/core.lua` (194 lines)
 > @noindex
 **Modules**: `M, Engine, order`
 **Classes**: `Engine, M`
 **Exports**:
   - `M.new(opts)` → Instance
-**Requires**: `Region_Playlist.engine.state, Region_Playlist.engine.transport, Region_Playlist.engine.transitions, Region_Playlist.engine.quantize`
+**Requires**: `RegionPlaylist.engine.state, RegionPlaylist.engine.transport, RegionPlaylist.engine.transitions, RegionPlaylist.engine.quantize`
 
-### `ARKITEKT/scripts/Region_Playlist/engine/playback.lua` (103 lines)
+### `ARKITEKT/scripts/RegionPlaylist/engine/playback.lua` (103 lines)
 > @noindex
 **Modules**: `M, Playback`
 **Classes**: `Playback, M`
@@ -1172,14 +1172,14 @@ Generated: 2025-10-17 00:44:31
   - `M.new(engine, opts)` → Instance
 **Requires**: `rearkitekt.reaper.transport`
 
-### `ARKITEKT/scripts/Region_Playlist/engine/quantize.lua` (337 lines)
+### `ARKITEKT/scripts/RegionPlaylist/engine/quantize.lua` (337 lines)
 > @noindex
 **Modules**: `M, Quantize`
 **Classes**: `Quantize, M`
 **Exports**:
   - `M.new(opts)` → Instance
 
-### `ARKITEKT/scripts/Region_Playlist/engine/state.lua` (324 lines)
+### `ARKITEKT/scripts/RegionPlaylist/engine/state.lua` (324 lines)
 > @noindex
 **Modules**: `M, State, sequence_copy, sequence`
 **Classes**: `State, M`
@@ -1187,21 +1187,21 @@ Generated: 2025-10-17 00:44:31
   - `M.new(opts)` → Instance
 **Requires**: `rearkitekt.reaper.regions, rearkitekt.reaper.transport`
 
-### `ARKITEKT/scripts/Region_Playlist/engine/transitions.lua` (211 lines)
+### `ARKITEKT/scripts/RegionPlaylist/engine/transitions.lua` (211 lines)
 > @noindex
 **Modules**: `M, Transitions`
 **Classes**: `Transitions, M`
 **Exports**:
   - `M.new(opts)` → Instance
 
-### `ARKITEKT/scripts/Region_Playlist/engine/transport.lua` (239 lines)
+### `ARKITEKT/scripts/RegionPlaylist/engine/transport.lua` (239 lines)
 > @noindex
 **Modules**: `M, Transport`
 **Classes**: `Transport, M`
 **Exports**:
   - `M.new(opts)` → Instance
 
-### `ARKITEKT/scripts/Region_Playlist/storage/state.lua` (152 lines)
+### `ARKITEKT/scripts/RegionPlaylist/storage/state.lua` (152 lines)
 > @noindex
 **Modules**: `M, default_items`
 **Exports**:
@@ -1216,7 +1216,7 @@ Generated: 2025-10-17 00:44:31
   - `M.generate_chip_color()`
 **Requires**: `rearkitekt.core.json, rearkitekt.core.colors`
 
-### `ARKITEKT/scripts/Region_Playlist/storage/undo_bridge.lua` (91 lines)
+### `ARKITEKT/scripts/RegionPlaylist/storage/undo_bridge.lua` (91 lines)
 > @noindex
 **Modules**: `M, restored_playlists`
 **Exports**:
@@ -1224,7 +1224,7 @@ Generated: 2025-10-17 00:44:31
   - `M.restore_snapshot(snapshot, region_index)`
   - `M.should_capture(old_playlists, new_playlists)`
 
-### `ARKITEKT/scripts/Region_Playlist/widgets/controls/controls_widget.lua` (151 lines)
+### `ARKITEKT/scripts/RegionPlaylist/widgets/controls/controls_widget.lua` (151 lines)
 > @noindex
 **Modules**: `M`
 **Exports**:
@@ -1233,24 +1233,24 @@ Generated: 2025-10-17 00:44:31
   - `M.draw_playback_info(ctx, bridge, x, y, width)`
   - `M.draw_complete_controls(ctx, bridge, x, y, available_width)`
 
-### `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/active_grid_factory.lua` (220 lines)
+### `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/active_grid_factory.lua` (220 lines)
 > @noindex
 **Modules**: `M, item_map, items_by_key, dragged_items, items_by_key, new_items`
 **Classes**: `M`
 **Exports**:
   - `M.create(rt, config)` → Instance
 **Private**: 6 helpers
-**Requires**: `rearkitekt.gui.widgets.grid.core, Region_Playlist.widgets.region_tiles.renderers.active`
+**Requires**: `rearkitekt.gui.widgets.grid.core, RegionPlaylist.widgets.region_tiles.renderers.active`
 
-### `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/coordinator.lua` (505 lines)
+### `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/coordinator.lua` (505 lines)
 > @noindex
 **Modules**: `M, RegionTiles, playlist_cache, spawned_keys, payload, colors`
 **Classes**: `RegionTiles, M`
 **Exports**:
   - `M.create(opts)` → Instance
-**Requires**: `Region_Playlist.app.config, Region_Playlist.widgets.region_tiles.coordinator_render, rearkitekt.gui.draw, rearkitekt.core.colors, rearkitekt.gui.fx.tile_motion, rearkitekt.gui.systems.height_stabilizer, Region_Playlist.widgets.region_tiles.selector, Region_Playlist.widgets.region_tiles.active_grid_factory, Region_Playlist.widgets.region_tiles.pool_grid_factory, rearkitekt.gui.widgets.grid.grid_bridge, rearkitekt.gui.widgets.panel, rearkitekt.gui.widgets.panel.config, Region_Playlist.app.state`
+**Requires**: `RegionPlaylist.app.config, RegionPlaylist.widgets.region_tiles.coordinator_render, rearkitekt.gui.draw, rearkitekt.core.colors, rearkitekt.gui.fx.tile_motion, rearkitekt.gui.systems.height_stabilizer, RegionPlaylist.widgets.region_tiles.selector, RegionPlaylist.widgets.region_tiles.active_grid_factory, RegionPlaylist.widgets.region_tiles.pool_grid_factory, rearkitekt.gui.widgets.grid.grid_bridge, rearkitekt.gui.widgets.panel, rearkitekt.gui.widgets.panel.config, RegionPlaylist.app.state`
 
-### `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/coordinator_render.lua` (190 lines)
+### `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/coordinator_render.lua` (190 lines)
 > @noindex
 **Modules**: `M, keys_to_adjust`
 **Exports**:
@@ -1258,27 +1258,27 @@ Generated: 2025-10-17 00:44:31
   - `M.draw_active(self, ctx, playlist, height)`
   - `M.draw_pool(self, ctx, regions, height)`
   - `M.draw_ghosts(self, ctx)`
-**Requires**: `rearkitekt.gui.fx.dnd.drag_indicator, Region_Playlist.widgets.region_tiles.renderers.active, Region_Playlist.widgets.region_tiles.renderers.pool, rearkitekt.gui.systems.responsive_grid`
+**Requires**: `rearkitekt.gui.fx.dnd.drag_indicator, RegionPlaylist.widgets.region_tiles.renderers.active, RegionPlaylist.widgets.region_tiles.renderers.pool, rearkitekt.gui.systems.responsive_grid`
 
-### `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/pool_grid_factory.lua` (193 lines)
+### `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/pool_grid_factory.lua` (193 lines)
 > @noindex
 **Modules**: `M, items_by_key, filtered_keys, rids, rids, items_by_key`
 **Classes**: `M`
 **Exports**:
   - `M.create(rt, config)` → Instance
 **Private**: 5 helpers
-**Requires**: `rearkitekt.gui.widgets.grid.core, Region_Playlist.widgets.region_tiles.renderers.pool`
+**Requires**: `rearkitekt.gui.widgets.grid.core, RegionPlaylist.widgets.region_tiles.renderers.pool`
 
-### `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/active.lua` (186 lines)
+### `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/active.lua` (186 lines)
 > @noindex
 **Modules**: `M, right_elements, right_elements`
 **Exports**:
   - `M.render(ctx, rect, item, state, get_region_by_rid, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, bridge, get_playlist_by_id)`
   - `M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, bridge)`
   - `M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, get_playlist_by_id)`
-**Requires**: `rearkitekt.core.colors, rearkitekt.gui.draw, rearkitekt.gui.fx.tile_fx_config, Region_Playlist.widgets.region_tiles.renderers.base, rearkitekt.gui.systems.playback_manager`
+**Requires**: `rearkitekt.core.colors, rearkitekt.gui.draw, rearkitekt.gui.fx.tile_fx_config, RegionPlaylist.widgets.region_tiles.renderers.base, rearkitekt.gui.systems.playback_manager`
 
-### `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/base.lua` (207 lines)
+### `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/base.lua` (207 lines)
 > @noindex
 **Modules**: `M`
 **Exports**:
@@ -1293,16 +1293,16 @@ Generated: 2025-10-17 00:44:31
   - `M.draw_length_display(ctx, dl, rect, region, base_color, text_alpha)`
 **Requires**: `rearkitekt.gui.draw, rearkitekt.core.colors, rearkitekt.gui.fx.tile_fx, rearkitekt.gui.fx.tile_fx_config, rearkitekt.gui.fx.marching_ants, rearkitekt.gui.systems.tile_utilities, rearkitekt.gui.widgets.component.chip`
 
-### `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/pool.lua` (180 lines)
+### `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/pool.lua` (180 lines)
 > @noindex
 **Modules**: `M, right_elements, right_elements`
 **Exports**:
   - `M.render(ctx, rect, item, state, animator, hover_config, tile_height, border_thickness)`
   - `M.render_region(ctx, rect, region, state, animator, hover_config, tile_height, border_thickness)`
   - `M.render_playlist(ctx, rect, playlist, state, animator, hover_config, tile_height, border_thickness)`
-**Requires**: `rearkitekt.core.colors, rearkitekt.gui.draw, rearkitekt.gui.fx.tile_fx_config, rearkitekt.gui.systems.tile_utilities, Region_Playlist.widgets.region_tiles.renderers.base`
+**Requires**: `rearkitekt.core.colors, rearkitekt.gui.draw, rearkitekt.gui.fx.tile_fx_config, rearkitekt.gui.systems.tile_utilities, RegionPlaylist.widgets.region_tiles.renderers.base`
 
-### `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/selector.lua` (98 lines)
+### `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/selector.lua` (98 lines)
 > @noindex
 **Modules**: `M, Selector`
 **Classes**: `Selector, M`
@@ -1351,41 +1351,41 @@ Generated: 2025-10-17 00:44:31
   → `ARKITEKT/rearkitekt/gui/fx/dnd/drag_indicator.lua`
   → `ARKITEKT/rearkitekt/gui/widgets/grid/dnd_state.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/coordinator.lua`**
+**`ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/coordinator.lua`**
   → `ARKITEKT/rearkitekt/gui/widgets/grid/grid_bridge.lua`
   → `ARKITEKT/rearkitekt/gui/draw.lua`
-  → `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/selector.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/selector.lua`
   → `ARKITEKT/rearkitekt/gui/widgets/panel/config.lua`
   → `ARKITEKT/rearkitekt/core/colors.lua`
-  → `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/active_grid_factory.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/active_grid_factory.lua`
   → `ARKITEKT/rearkitekt/gui/fx/tile_motion.lua`
   → `ARKITEKT/rearkitekt/gui/systems/height_stabilizer.lua`
-  → `ARKITEKT/scripts/Region_Playlist/app/state.lua`
-  → `ARKITEKT/scripts/Region_Playlist/app/config.lua`
-  → `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/coordinator_render.lua`
-  → `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/pool_grid_factory.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/app/state.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/app/config.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/coordinator_render.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/pool_grid_factory.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/app/gui.lua`**
-  → `ARKITEKT/scripts/Region_Playlist/app/shortcuts.lua`
+**`ARKITEKT/scripts/RegionPlaylist/app/gui.lua`**
+  → `ARKITEKT/scripts/RegionPlaylist/app/shortcuts.lua`
   → `ARKITEKT/rearkitekt/gui/widgets/overlay/sheet.lua`
-  → `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/coordinator.lua`
-  → `ARKITEKT/scripts/Region_Playlist/app/controller.lua`
-  → `ARKITEKT/scripts/Region_Playlist/app/config.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/coordinator.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/app/controller.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/app/config.lua`
   → `ARKITEKT/rearkitekt/core/colors.lua`
   → `ARKITEKT/rearkitekt/gui/widgets/transport/transport_container.lua`
   → `ARKITEKT/rearkitekt/gui/widgets/chip_list/list.lua`
   → `ARKITEKT/rearkitekt/gui/fx/tile_motion.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/ARK_RegionPlaylist.lua`**
-  → `ARKITEKT/scripts/Region_Playlist/app/status.lua`
+**`ARKITEKT/scripts/RegionPlaylist/ARK_RegionPlaylist.lua`**
+  → `ARKITEKT/scripts/RegionPlaylist/app/status.lua`
   → `ARKITEKT/rearkitekt/debug/profiler_init.lua`
-  → `ARKITEKT/scripts/Region_Playlist/app/gui.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/app/gui.lua`
   → `ARKITEKT/rearkitekt/core/colors.lua`
   → `ARKITEKT/rearkitekt/app/shell.lua`
-  → `ARKITEKT/scripts/Region_Playlist/app/state.lua`
-  → `ARKITEKT/scripts/Region_Playlist/app/config.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/app/state.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/app/config.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/base.lua`**
+**`ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/base.lua`**
   → `ARKITEKT/rearkitekt/gui/systems/tile_utilities.lua`
   → `ARKITEKT/rearkitekt/gui/widgets/component/chip.lua`
   → `ARKITEKT/rearkitekt/gui/draw.lua`
@@ -1445,26 +1445,26 @@ Generated: 2025-10-17 00:44:31
   → `ARKITEKT/scripts/ColorPalette/app/state.lua`
   → `ARKITEKT/rearkitekt/core/settings.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/app/state.lua`**
-  → `ARKITEKT/scripts/Region_Playlist/storage/state.lua`
-  → `ARKITEKT/scripts/Region_Playlist/engine/coordinator_bridge.lua`
+**`ARKITEKT/scripts/RegionPlaylist/app/state.lua`**
+  → `ARKITEKT/scripts/RegionPlaylist/storage/state.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/engine/coordinator_bridge.lua`
   → `ARKITEKT/rearkitekt/core/colors.lua`
-  → `ARKITEKT/scripts/Region_Playlist/storage/undo_bridge.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/storage/undo_bridge.lua`
   → `ARKITEKT/rearkitekt/core/undo_manager.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/active.lua`**
+**`ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/active.lua`**
   → `ARKITEKT/rearkitekt/gui/systems/playback_manager.lua`
   → `ARKITEKT/rearkitekt/gui/draw.lua`
   → `ARKITEKT/rearkitekt/gui/fx/tile_fx_config.lua`
   → `ARKITEKT/rearkitekt/core/colors.lua`
-  → `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/base.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/base.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/pool.lua`**
+**`ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/pool.lua`**
   → `ARKITEKT/rearkitekt/gui/systems/tile_utilities.lua`
   → `ARKITEKT/rearkitekt/gui/draw.lua`
   → `ARKITEKT/rearkitekt/gui/fx/tile_fx_config.lua`
   → `ARKITEKT/rearkitekt/core/colors.lua`
-  → `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/base.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/base.lua`
 
 **`ARKITEKT/rearkitekt/gui/widgets/component/chip.lua`**
   → `ARKITEKT/rearkitekt/core/colors.lua`
@@ -1502,23 +1502,23 @@ Generated: 2025-10-17 00:44:31
   → `ARKITEKT/rearkitekt/app/shell.lua`
   → `ARKITEKT/rearkitekt/gui/widgets/overlay/config.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/engine/coordinator_bridge.lua`**
-  → `ARKITEKT/scripts/Region_Playlist/app/sequence_expander.lua`
-  → `ARKITEKT/scripts/Region_Playlist/storage/state.lua`
-  → `ARKITEKT/scripts/Region_Playlist/engine/core.lua`
-  → `ARKITEKT/scripts/Region_Playlist/engine/playback.lua`
+**`ARKITEKT/scripts/RegionPlaylist/engine/coordinator_bridge.lua`**
+  → `ARKITEKT/scripts/RegionPlaylist/app/sequence_expander.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/storage/state.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/engine/core.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/engine/playback.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/engine/core.lua`**
-  → `ARKITEKT/scripts/Region_Playlist/engine/state.lua`
-  → `ARKITEKT/scripts/Region_Playlist/engine/transitions.lua`
-  → `ARKITEKT/scripts/Region_Playlist/engine/quantize.lua`
-  → `ARKITEKT/scripts/Region_Playlist/engine/transport.lua`
+**`ARKITEKT/scripts/RegionPlaylist/engine/core.lua`**
+  → `ARKITEKT/scripts/RegionPlaylist/engine/state.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/engine/transitions.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/engine/quantize.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/engine/transport.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/coordinator_render.lua`**
-  → `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/pool.lua`
+**`ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/coordinator_render.lua`**
+  → `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/pool.lua`
   → `ARKITEKT/rearkitekt/gui/systems/responsive_grid.lua`
   → `ARKITEKT/rearkitekt/gui/fx/dnd/drag_indicator.lua`
-  → `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/active.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/active.lua`
 
 **`ARKITEKT/scripts/Sandbox/sandbox_2.lua`**
   → `ARKITEKT/rearkitekt/debug/console.lua`
@@ -1563,7 +1563,7 @@ Generated: 2025-10-17 00:44:31
   → `ARKITEKT/rearkitekt/app/runtime.lua`
   → `ARKITEKT/rearkitekt/app/shell.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/selector.lua`**
+**`ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/selector.lua`**
   → `ARKITEKT/rearkitekt/core/colors.lua`
   → `ARKITEKT/rearkitekt/gui/draw.lua`
   → `ARKITEKT/rearkitekt/gui/fx/tile_motion.lua`
@@ -1608,20 +1608,20 @@ Generated: 2025-10-17 00:44:31
   → `ARKITEKT/rearkitekt/gui/widgets/displays/status_pad.lua`
   → `ARKITEKT/rearkitekt/app/shell.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/engine/state.lua`**
+**`ARKITEKT/scripts/RegionPlaylist/engine/state.lua`**
   → `ARKITEKT/rearkitekt/reaper/transport.lua`
   → `ARKITEKT/rearkitekt/reaper/regions.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/storage/state.lua`**
+**`ARKITEKT/scripts/RegionPlaylist/storage/state.lua`**
   → `ARKITEKT/rearkitekt/core/colors.lua`
   → `ARKITEKT/rearkitekt/core/json.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/active_grid_factory.lua`**
+**`ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/active_grid_factory.lua`**
   → `ARKITEKT/rearkitekt/gui/widgets/grid/core.lua`
-  → `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/active.lua`
+  → `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/active.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/pool_grid_factory.lua`**
-  → `ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/pool.lua`
+**`ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/pool_grid_factory.lua`**
+  → `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/pool.lua`
   → `ARKITEKT/rearkitekt/gui/widgets/grid/core.lua`
 
 **`ARKITEKT/rearkitekt/app/chrome/status_bar/config.lua`**
@@ -1699,13 +1699,13 @@ Generated: 2025-10-17 00:44:31
 **`ARKITEKT/scripts/ColorPalette/app/state.lua`**
   → `ARKITEKT/rearkitekt/core/colors.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/app/controller.lua`**
-  → `ARKITEKT/scripts/Region_Playlist/storage/state.lua`
+**`ARKITEKT/scripts/RegionPlaylist/app/controller.lua`**
+  → `ARKITEKT/scripts/RegionPlaylist/storage/state.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/app/shortcuts.lua`**
-  → `ARKITEKT/scripts/Region_Playlist/app/state.lua`
+**`ARKITEKT/scripts/RegionPlaylist/app/shortcuts.lua`**
+  → `ARKITEKT/scripts/RegionPlaylist/app/state.lua`
 
-**`ARKITEKT/scripts/Region_Playlist/engine/playback.lua`**
+**`ARKITEKT/scripts/RegionPlaylist/engine/playback.lua`**
   → `ARKITEKT/rearkitekt/reaper/transport.lua`
 
 ## External Dependencies

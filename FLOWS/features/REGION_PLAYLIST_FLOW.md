@@ -11,7 +11,7 @@ Generated: 2025-10-17 00:44:31
 
 ## Folder Organization
 
-### ARKITEKT/scripts/Region_Playlist
+### ARKITEKT/scripts/RegionPlaylist
 - Files: 0
 - Lines: 0
 - Exports: 0

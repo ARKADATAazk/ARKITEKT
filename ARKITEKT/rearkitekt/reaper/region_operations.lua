@@ -582,7 +582,7 @@ function M.crop_to_playlist_new_tab(playlist_items, playlist_name, playlist_chip
   reaper.UpdateArrange()
 
   -- Now recreate the playlist in the new project tab
-  local State = require('Region_Playlist.core.app_state')
+  local State = require('RegionPlaylist.core.app_state')
   local UUID = require('rearkitekt.core.uuid')
 
   -- Create new playlist with the same name

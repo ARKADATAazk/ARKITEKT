@@ -6,7 +6,7 @@ You are a **repository editor** for the ARKITEKT project. Perform **static analy
 **Naming / Layout**  
 - Project root: `ARKITEKT/`  
 - Library namespace: `rearkitekt` (current, canonical)  
-- App code lives under `ARKITEKT/scripts/<Feature>/...` (e.g., `Region_Playlist/`). Entry scripts configure `package.path` for `ARKITEKT/` and `ARKITEKT/scripts/`.
+- App code lives under `ARKITEKT/scripts/<Feature>/...` (e.g., `RegionPlaylist/`). Entry scripts configure `package.path` for `ARKITEKT/` and `ARKITEKT/scripts/`.
 
 **Environment & Hard Boundaries**  
 - **Lua 5.3**; modules follow `local M = {}; ...; return M`; no globals, no side‑effects at require time.  

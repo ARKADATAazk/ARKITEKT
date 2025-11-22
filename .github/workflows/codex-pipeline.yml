@@ -152,7 +152,7 @@ jobs:
             
             echo "Testing pattern: $PATTERN (should_match: $SHOULD_MATCH)"
             
-            if grep -r -E "$PATTERN" ARKITEKT/scripts/Region_Playlist/ > /dev/null; then
+            if grep -r -E "$PATTERN" ARKITEKT/scripts/RegionPlaylist/ > /dev/null; then
               FOUND=true
             else
               FOUND=false

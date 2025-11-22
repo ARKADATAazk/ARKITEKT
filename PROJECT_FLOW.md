@@ -29,10 +29,10 @@ Generated: 2025-11-13 04:53:43
 **`ARKITEKT\rearkitekt\gui\widgets\nodal\canvas.lua`** (12 dependencies)
   Composes: auto_layout + background + colors + config + connection + connection_renderer + drag_indicator + drop_indicator + node + node_renderer + port + viewport
 
-**`ARKITEKT\scripts\Region_Playlist\ui\tiles\coordinator.lua`** (11 dependencies)
+**`ARKITEKT\scripts\RegionPlaylist\ui\tiles\coordinator.lua`** (11 dependencies)
   Composes: active_grid_factory + app_state + colors + config + coordinator_render + draw + grid_bridge + height_stabilizer + pool_grid_factory + selector + tile_motion
 
-**`ARKITEKT\scripts\Region_Playlist\ui\gui.lua`** (10 dependencies)
+**`ARKITEKT\scripts\RegionPlaylist\ui\gui.lua`** (10 dependencies)
   Composes: colors + config + controller + coordinator + list + sheet + shortcuts + tooltip + transport_container + transport_widgets
 
 **`ARKITEKT\rearkitekt\gui\widgets\nodal\rendering\node_renderer.lua`** (9 dependencies)
@@ -41,28 +41,28 @@ Generated: 2025-11-13 04:53:43
 **`ARKITEKT\rearkitekt\gui\widgets\panel\init.lua`** (7 dependencies)
   Composes: background + button + config + content + corner_button + scrollbar + tab_animator
 
-**`ARKITEKT\scripts\Region_Playlist\ARK_RegionPlaylist.lua`** (7 dependencies)
+**`ARKITEKT\scripts\RegionPlaylist\ARK_RegionPlaylist.lua`** (7 dependencies)
   Composes: app_state + colors + config + gui + profiler_init + shell + status
 
 **`ARKITEKT\scripts\Sandbox\sandbox_1.lua`** (7 dependencies)
   Composes: arkit + canvas + colors + config + connection + node + shell
 
-**`ARKITEKT\scripts\Region_Playlist\ui\transport_widgets.lua`** (7 dependencies)
+**`ARKITEKT\scripts\RegionPlaylist\ui\transport_widgets.lua`** (7 dependencies)
   Composes: button + chip + colors + layout + tile_fx_config + tooltip + transport_fx
 
-**`ARKITEKT\scripts\Region_Playlist\ui\tiles\renderers\base.lua`** (7 dependencies)
+**`ARKITEKT\scripts\RegionPlaylist\ui\tiles\renderers\base.lua`** (7 dependencies)
   Composes: chip + colors + draw + marching_ants + tile_fx + tile_fx_config + tile_utilities
 
 ## Module API
 
-### `ARKITEKT\scripts\Region_Playlist\ui\gui.lua` (1127 lines)
+### `ARKITEKT\scripts\RegionPlaylist\ui\gui.lua` (1127 lines)
 > @noindex
 **Classes**: `M, GUI`
 **Exports**:
   - `current`
 **Requires**: `colors, config, controller, coordinator, list, sheet, shortcuts, tooltip`
 
-### `ARKITEKT\scripts\Region_Playlist\core\app_state.lua` (999 lines)
+### `ARKITEKT\scripts\RegionPlaylist\core\app_state.lua` (999 lines)
 > @noindex
 **Classes**: `M`
 **Exports**:
@@ -78,7 +78,7 @@ Generated: 2025-11-13 04:53:43
 **Classes**: `M`
 **Requires**: `chip, colors, context_menu`
 
-### `ARKITEKT\scripts\Region_Playlist\ui\transport_widgets.lua` (826 lines)
+### `ARKITEKT\scripts\RegionPlaylist\ui\transport_widgets.lua` (826 lines)
 > @noindex
 **Classes**: `M, TransportIcons, ViewModeButton, TransportDisplay, SimpleToggleButton, JumpControls, TransportButtonBar`
 **Requires**: `button, chip, colors, layout, tile_fx_config, tooltip, transport_fx`
@@ -109,7 +109,7 @@ Generated: 2025-11-13 04:53:43
 **Classes**: `M, Grid`
 **Requires**: `animation, colors, dnd_state, drag_indicator, draw, drop_indicator, drop_zones, input`
 
-### `ARKITEKT\scripts\Region_Playlist\ui\tiles\coordinator.lua` (555 lines)
+### `ARKITEKT\scripts\RegionPlaylist\ui\tiles\coordinator.lua` (555 lines)
 > @noindex
 **Classes**: `M, RegionTiles`
 **Requires**: `active_grid_factory, app_state, colors, config, coordinator_render, draw, grid_bridge, height_stabilizer`
@@ -183,7 +183,7 @@ Generated: 2025-11-13 04:53:43
 > @noindex
 **Requires**: `arkit, button, colors, dropdown, search_input, shell`
 
-### `ARKITEKT\scripts\Region_Playlist\engine\coordinator_bridge.lua` (429 lines)
+### `ARKITEKT\scripts\RegionPlaylist\engine\coordinator_bridge.lua` (429 lines)
 > @noindex
 **Classes**: `M`
 **Exports**:
@@ -198,7 +198,7 @@ Generated: 2025-11-13 04:53:43
   - `total_loops`
 **Requires**: `core, logger, persistence, playback, sequence_expander, transport`
 
-### `ARKITEKT\scripts\Region_Playlist\core\config.lua` (397 lines)
+### `ARKITEKT\scripts\RegionPlaylist\core\config.lua` (397 lines)
 > @noindex
 **Classes**: `M`
 **Exports**:
@@ -242,12 +242,12 @@ Generated: 2025-11-13 04:53:43
 **Classes**: `M`
 **Requires**: `colors`
 
-### `ARKITEKT\scripts\Region_Playlist\app\sws_importer.lua` (372 lines)
+### `ARKITEKT\scripts\RegionPlaylist\app\sws_importer.lua` (372 lines)
 > @noindex
 **Classes**: `M`
 **Requires**: `colors, persistence`
 
-### `ARKITEKT\scripts\Region_Playlist\core\controller.lua` (372 lines)
+### `ARKITEKT\scripts\RegionPlaylist\core\controller.lua` (372 lines)
 > @noindex
 **Classes**: `M, Controller`
 **Requires**: `persistence`
@@ -264,7 +264,7 @@ Generated: 2025-11-13 04:53:43
   - `text`
 **Requires**: `colors, grid, hub, micromanage, selection_rectangle, shell`
 
-### `ARKITEKT\scripts\Region_Playlist\ui\tiles\renderers\pool.lua` (350 lines)
+### `ARKITEKT\scripts\RegionPlaylist\ui\tiles\renderers\pool.lua` (350 lines)
 > @noindex
 **Classes**: `M`
 **Requires**: `base, colors, draw, tile_fx_config, tile_utilities`

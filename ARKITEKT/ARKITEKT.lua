@@ -6,7 +6,7 @@
 --   [main] ARK_ItemPicker.lua
 --   [main] ARK_TemplateBrowser.lua
 --   [main] ARK_ThemeAdjuster.lua
---   [nomain] scripts/Region_Playlist/**/*.lua
+--   [nomain] scripts/RegionPlaylist/**/*.lua
 --   [nomain] scripts/ItemPicker/**/*.lua
 --   [nomain] scripts/TemplateBrowser/**/*.lua
 --   [nomain] scripts/ThemeAdjuster/**/*.lua

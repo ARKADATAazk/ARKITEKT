@@ -7,13 +7,13 @@ You are a **repository editor** for the ARKITEKT‑Project. You perform **static
 - **Project name:** `ARKITEKT` (repo root).
 - **Library namespace:** `rearkitekt`. 
 
-- App code typically lives under `ARKITEKT/scripts/<FeatureName>/...` (e.g., `Region_Playlist`).  
-  Entry points like `ARKITEKT/scripts/Region_Playlist/ARK_RegionPlaylist.lua` add `ARKITEKT/` and `ARKITEKT/scripts/` to `package.path` at runtime.
+- App code typically lives under `ARKITEKT/scripts/<FeatureName>/...` (e.g., `RegionPlaylist`).  
+  Entry points like `ARKITEKT/scripts/RegionPlaylist/ARK_RegionPlaylist.lua` add `ARKITEKT/` and `ARKITEKT/scripts/` to `package.path` at runtime.
 
 ## Environment & boundaries
 - **Lua 5.3** only; modules must use the pattern `local M = {}; ...; return M` and avoid polluting globals.
 - **Offline only**: do not run or simulate REAPER/ImGui, do not claim that code “runs”. Use static reasoning (syntax, require graphs, table shapes).
-- **Path fence**: Edit/create **only** within the path(s) provided in the task (e.g., `live_root`, `feature_root`). Do **not** create a duplicate feature folder at repo root (e.g., a second `Region_Playlist/`) unless explicitly asked.
+- **Path fence**: Edit/create **only** within the path(s) provided in the task (e.g., `live_root`, `feature_root`). Do **not** create a duplicate feature folder at repo root (e.g., a second `RegionPlaylist/`) unless explicitly asked.
 - **Require fence**: You may `require('rearkitekt.*')`, `require('<Feature>.core.*|app.*|engine.*|storage.*|views.*|widgets.*|components.*')`.  
   Do **not** modify `package.path` or add external dependencies.
 - **Purity**: Do **not** add new `reaper.*` or ImGui calls to **pure** layers (`core/*`, `storage/persistence.lua`, `selectors.lua`). If a runtime file already contains them, you may keep them, but **don’t add more** unless the task says so.
@@ -31,9 +31,9 @@ You are a **repository editor** for the ARKITEKT‑Project. You perform **static
 A **single JSON** with a `task` code and parameters, e.g.:
 ```json
 {"task":"scan_requires","root":"ARKITEKT"}
-{"task":"refactor_require","from":"Region_Playlist.app.state","to":"Region_Playlist.core.state","live_root":"ARKITEKT/scripts"}
-{"task":"phaseX_cleanup_remove_legacy","live_root":"ARKITEKT/scripts","feature_root":"Region_Playlist"}
-{"task":"scaffold_module","files":[{"path":"ARKITEKT/scripts/Region_Playlist/core/keys.lua","template":"module_table"}]}
+{"task":"refactor_require","from":"RegionPlaylist.app.state","to":"RegionPlaylist.core.state","live_root":"ARKITEKT/scripts"}
+{"task":"phaseX_cleanup_remove_legacy","live_root":"ARKITEKT/scripts","feature_root":"RegionPlaylist"}
+{"task":"scaffold_module","files":[{"path":"ARKITEKT/scripts/RegionPlaylist/core/keys.lua","template":"module_table"}]}
 ```
 
 ## What you output
@@ -85,7 +85,7 @@ Return **one JSON object** with this shape (fields optional as needed):
 **Output**: Edited files + a note with counts. Acceptance includes “no remaining imports of `from`”.
 
 ### C) Delete legacy and prove callers use new module
-**Input**: `{"task":"phaseX_cleanup_remove_legacy","live_root":"ARKITEKT/scripts","feature_root":"Region_Playlist"}`  
+**Input**: `{"task":"phaseX_cleanup_remove_legacy","live_root":"ARKITEKT/scripts","feature_root":"RegionPlaylist"}`  
 **Do**: 
 - Preflight: list files requiring the legacy modules in `feature_root`.
 - If any remain, rewrite imports to the designated replacement; otherwise delete the legacy modules.
@@ -93,7 +93,7 @@ Return **one JSON object** with this shape (fields optional as needed):
 **Output**: Edits/deletions + acceptance: “zero references to legacy paths”.
 
 ### D) Scaffold a pure module
-**Input**: `{"task":"scaffold_module","files":[{"path":"ARKITEKT/scripts/Region_Playlist/core/keys.lua","template":"module_table"}]}`  
+**Input**: `{"task":"scaffold_module","files":[{"path":"ARKITEKT/scripts/RegionPlaylist/core/keys.lua","template":"module_table"}]}`  
 **Do**: Create minimal, documented module(s). For “pure” layers, **no** `reaper.*`/ImGui calls. Mark TODOs where later phases will fill logic.
 
 ### E) Move a module (with caller updates)
@@ -120,8 +120,8 @@ Return **one JSON object** with this shape (fields optional as needed):
 ```json
 {
   "task":"refactor_require",
-  "from":"Region_Playlist.app.state",
-  "to":"Region_Playlist.core.state",
+  "from":"RegionPlaylist.app.state",
+  "to":"RegionPlaylist.core.state",
   "live_root":"ARKITEKT/scripts"
 }
 ```
@@ -131,7 +131,7 @@ Return **one JSON object** with this shape (fields optional as needed):
 {
   "task":"phase1_cleanup_remove_legacy",
   "live_root":"ARKITEKT/scripts",
-  "feature_root":"Region_Playlist"
+  "feature_root":"RegionPlaylist"
 }
 ```
 
@@ -140,7 +140,7 @@ Return **one JSON object** with this shape (fields optional as needed):
 {
   "task":"scaffold_module",
   "files":[
-    {"path":"ARKITEKT/scripts/Region_Playlist/core/keys.lua","template":"module_table","doc":"Centralized key generation"}
+    {"path":"ARKITEKT/scripts/RegionPlaylist/core/keys.lua","template":"module_table","doc":"Centralized key generation"}
   ]
 }
 ```

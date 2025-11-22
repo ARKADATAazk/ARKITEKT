@@ -9,7 +9,7 @@
 ## Repo facts (don’t guess)
 - **Project root**: `ARKITEKT/`
 - **Library namespace**: `rearkitekt` (canonical; *do not* use `arkitekt`)
-- **App code**: `ARKITEKT/scripts/<Feature>/...` (e.g., `Region_Playlist/`)
+- **App code**: `ARKITEKT/scripts/<Feature>/...` (e.g., `RegionPlaylist/`)
 - **Runtime**: **Lua 5.3**; modules use `local M = {}; ...; return M`
 - **No runtime**: do **not** run/simulate REAPER / ReaScript / ReaImGui
 
@@ -177,7 +177,7 @@ For anything larger than a one-liner, structure `notes`:
 **Acceptance**: no remaining imports of `from`; Lua 5.3 parse; idempotent.
 
 ### 3) Delete legacy & prove callers use new module
-**Input**: `{"task":"phaseX_cleanup_remove_legacy","live_root":"ARKITEKT/scripts","feature_root":"Region_Playlist"}`  
+**Input**: `{"task":"phaseX_cleanup_remove_legacy","live_root":"ARKITEKT/scripts","feature_root":"RegionPlaylist"}`  
 **Do**: preflight importers → rewrite to new path → delete legacy; also delete unused parallel feature tree at repo root.  
 **Acceptance**: “zero references to legacy paths”; idempotent.
 
@@ -259,11 +259,11 @@ Greps enforce that we *do* the positive canonicalization and we *don’t* pass t
 ```json
 {
   "task": "refactor_require",
-  "from": "Region_Playlist.app.state",
-  "to": "Region_Playlist.core.state",
+  "from": "RegionPlaylist.app.state",
+  "to": "RegionPlaylist.core.state",
   "live_root": "ARKITEKT/scripts",
   "constraints": {
-    "allowlist": ["ARKITEKT/scripts/Region_Playlist"],
+    "allowlist": ["ARKITEKT/scripts/RegionPlaylist"],
     "diff_budget": {"files": 12, "added_loc": 700}
   },
   "acceptance": [

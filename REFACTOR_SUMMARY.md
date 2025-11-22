@@ -3,15 +3,15 @@
 ## ✅ What Was Done
 
 ### Phase 0: Moved Transport From Library → Project
-**Reason:** YAGNI - Only Region_Playlist uses these files
+**Reason:** YAGNI - Only RegionPlaylist uses these files
 
 **Deleted from library:**
 - `ARKITEKT/rearkitekt/gui/widgets/transport/transport_container.lua`
 - `ARKITEKT/rearkitekt/gui/widgets/transport/transport_fx.lua`
 
 **Moved to project:**
-- `ARKITEKT/scripts/Region_Playlist/ui/views/transport/transport_container.lua`
-- `ARKITEKT/scripts/Region_Playlist/ui/views/transport/transport_fx.lua`
+- `ARKITEKT/scripts/RegionPlaylist/ui/views/transport/transport_container.lua`
+- `ARKITEKT/scripts/RegionPlaylist/ui/views/transport/transport_fx.lua`
 
 ---
 
@@ -96,7 +96,7 @@ ui/views/
 ## 🗂️ Final Structure
 
 ```
-Region_Playlist/ui/
+RegionPlaylist/ui/
 ├── gui.lua (200 lines) ✨ ORCHESTRATOR
 │
 ├── views/
@@ -151,9 +151,9 @@ local TransportContainer = require("rearkitekt.gui.widgets.transport.transport_c
 
 **New imports in gui.lua:**
 ```lua
-local TransportView = require("Region_Playlist.ui.views.transport.transport_view")
-local LayoutView = require("Region_Playlist.ui.views.layout_view")
-local OverflowModalView = require("Region_Playlist.ui.views.overflow_modal_view")
+local TransportView = require("RegionPlaylist.ui.views.transport.transport_view")
+local LayoutView = require("RegionPlaylist.ui.views.layout_view")
+local OverflowModalView = require("RegionPlaylist.ui.views.overflow_modal_view")
 ```
 
 ---

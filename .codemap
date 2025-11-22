@@ -2,7 +2,7 @@
 
 ## Entry Points
 - [ARKITEKT/ARKITEKT.lua](cci:7://file:///d:/Dropbox/REAPER/Scripts/ARKITEKT-Project/ARKITEKT/ARKITEKT.lua:0:0-0:0) - Main library loader
-- `ARKITEKT/scripts/Region_Playlist/ARK_Region_Playlist.lua` - Example app entry
+- `ARKITEKT/scripts/RegionPlaylist/ARK_RegionPlaylist.lua` - Example app entry
 
 ## Core Architecture
 
@@ -52,7 +52,7 @@ Each feature follows:
 local theme = require("rearkitekt.core.theme")
 
 -- Feature imports (within feature)
-local state = require("Region_Playlist.core.state")
+local state = require("RegionPlaylist.core.state")
 Forbidden Patterns
 ❌ require("arkitekt.*") - old namespace
 ❌ require("path\\with\\backslashes") - Windows separators
