@@ -34,14 +34,14 @@ M.DIM = {
   STROKE = hexrgb("#FFFFFF33"),
 }
 
--- Status bar colors
+-- Status bar colors (using centralized semantic colors)
 M.STATUS = {
-  ERROR = hexrgb("#E04141"),
-  WARNING = hexrgb("#E0B341"),
-  INFO = hexrgb("#CCCCCC"),
-  PLAYING = hexrgb("#CCCCCC"),
-  READY = hexrgb("#CCCCCC"),
-  IDLE = hexrgb("#888888"),
+  ERROR = hexrgb(ColorDefs.SEMANTIC.error),
+  WARNING = hexrgb(ColorDefs.SEMANTIC.warning),
+  INFO = hexrgb(ColorDefs.UI.text_primary),
+  PLAYING = hexrgb(ColorDefs.UI.text_primary),
+  READY = hexrgb(ColorDefs.UI.text_primary),
+  IDLE = hexrgb(ColorDefs.UI.text_secondary),
 }
 
 -- ============================================================================

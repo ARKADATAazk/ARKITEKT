@@ -31,7 +31,7 @@ M.TRANSPORT = {
   height = 72,
   padding = 12,
   spacing = 12,
-  panel_bg_color = hexrgb("#131313c9"),
+  panel_bg_color = Colors.with_alpha(hexrgb(ColorDefs.UI.bg_base), 0xc9),
 
   corner_buttons = {
     size = 30,
@@ -40,16 +40,16 @@ M.TRANSPORT = {
   },
 
   display = {
-    bg_color = hexrgb("#252525"),
-    border_inner = hexrgb("#404040"),
+    bg_color = hexrgb(ColorDefs.UI.bg_panel),
+    border_inner = hexrgb(ColorDefs.UI.border),
     border_outer = hexrgb("#000000DD"),
     rounding = 6,
-    time_color = hexrgb("#CCCCCC"),
-    time_playing_color = hexrgb("#FFFFFF"),
-    status_color = hexrgb("#888888"),
-    region_color = hexrgb("#CCCCCC"),
-    track_color = hexrgb("#404040"),
-    fill_color = hexrgb("#41E0A3"),
+    time_color = hexrgb(ColorDefs.UI.text_primary),
+    time_playing_color = hexrgb(ColorDefs.UI.text_bright),
+    status_color = hexrgb(ColorDefs.UI.text_secondary),
+    region_color = hexrgb(ColorDefs.UI.text_primary),
+    track_color = hexrgb(ColorDefs.UI.border),
+    fill_color = hexrgb(ColorDefs.SEMANTIC.ready),
     progress_height = 3,
   },
 
@@ -57,11 +57,11 @@ M.TRANSPORT = {
     rounding = 8,
     specular = { height = 40, strength = 0.02 },
     inner_glow = { size = 20, strength = 0.08 },
-    border = { color = hexrgb("#000000"), thickness = 1 },
+    border = { color = hexrgb(ColorDefs.BASE.black), thickness = 1 },
     hover = { specular_boost = 1.5, glow_boost = 1.3, transition_speed = 6.0 },
     gradient = {
       fade_speed = 8.0,
-      ready_color = hexrgb("#838383ff"),
+      ready_color = hexrgb(ColorDefs.UI.text_secondary),
       fill_opacity = 0.3,
       fill_saturation = 0.8,
       fill_brightness = 0.8,
@@ -70,7 +70,7 @@ M.TRANSPORT = {
       fade_speed = 3.0,
       max_opacity = 0.85,
     },
-    progress = { height = 3, track_color = hexrgb("#1D1D1D") },
+    progress = { height = 3, track_color = hexrgb(ColorDefs.UI.bg_base) },
   },
 
   background_pattern = {
