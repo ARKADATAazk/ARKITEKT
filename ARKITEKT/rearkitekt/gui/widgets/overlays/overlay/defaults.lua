@@ -5,6 +5,7 @@
 local Colors = require('rearkitekt.core.colors')
 local ConfigUtil = require('rearkitekt.core.config')
 local Constants = require('rearkitekt.defs.app')
+local Timing = require('rearkitekt.defs.timing')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -123,7 +124,6 @@ function M.create_overlay_config(opts)
   assert(opts.render, "Overlay config requires 'render' function")
 
   local C = Constants.OVERLAY
-  local A = Constants.ANIMATION
   local config = M.get()
 
   return {
@@ -131,8 +131,8 @@ function M.create_overlay_config(opts)
     use_viewport = opts.use_viewport ~= nil and opts.use_viewport or C.DEFAULT_USE_VIEWPORT,
 
     -- Animation
-    fade_duration = opts.fade_duration or A.FADE_NORMAL,
-    fade_curve = opts.fade_curve or A.DEFAULT_FADE_CURVE,
+    fade_duration = opts.fade_duration or Timing.FADE.normal,
+    fade_curve = opts.fade_curve or Timing.EASING.default_fade,
 
     -- Close button
     show_close_button = opts.show_close_button ~= nil and opts.show_close_button or C.DEFAULT_SHOW_CLOSE_BUTTON,
