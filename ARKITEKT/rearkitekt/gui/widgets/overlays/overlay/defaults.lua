@@ -141,9 +141,9 @@ function M.create_overlay_config(opts)
     close_button_proximity = opts.close_button_proximity or C.CLOSE_BUTTON_PROXIMITY,
 
     -- Close behavior
-    close_on_background_click = opts.close_on_background_click or C.DEFAULT_CLOSE_ON_BG_CLICK,
+    close_on_background_click = opts.close_on_background_click ~= nil and opts.close_on_background_click or C.DEFAULT_CLOSE_ON_BG_CLICK,
     close_on_background_right_click = opts.close_on_background_right_click ~= nil and opts.close_on_background_right_click or C.DEFAULT_CLOSE_ON_BG_RIGHT_CLICK,
-    close_on_scrim = opts.close_on_scrim or C.DEFAULT_CLOSE_ON_SCRIM,
+    close_on_scrim = opts.close_on_scrim ~= nil and opts.close_on_scrim or C.DEFAULT_CLOSE_ON_SCRIM,
     esc_to_close = opts.esc_to_close ~= nil and opts.esc_to_close or C.DEFAULT_ESC_TO_CLOSE,
 
     -- Layout
