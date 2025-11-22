@@ -178,6 +178,10 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Mouse-based hover detection for responsive UI (slide/push behavior)
   local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
 
+  -- Check if mouse is within window bounds (fixes multi-monitor cursor detection issues)
+  local mouse_in_window = mouse_x >= coord_offset_x and mouse_x < coord_offset_x + screen_w and
+                          mouse_y >= coord_offset_y and mouse_y < coord_offset_y + screen_h
+
   -- Search fade with different offset (always visible)
   local search_fade = smootherstep(math.max(0, (overlay_alpha - 0.05) / 0.95))
   local search_y_offset = 25 * (1.0 - search_fade)
@@ -206,10 +210,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Trigger when mouse is ANYWHERE above the current search position (not just a thin band)
   -- This makes it consistent with filter behavior and works better with fast cursor movement
-  local is_in_trigger_zone = mouse_y < (temp_search_y - trigger_zone_padding)
+  -- Only trigger if mouse is within window bounds (fixes multi-monitor cursor detection)
+  local is_in_trigger_zone = mouse_in_window and mouse_y < (temp_search_y - trigger_zone_padding)
 
   -- Once triggered, stay visible until mouse goes below the search field (with buffer)
-  local is_below_search = mouse_y > (temp_search_y + search_height + self.config.UI_PANELS.settings.close_below_search)
+  -- Also hide if mouse leaves window entirely
+  local is_below_search = not mouse_in_window or mouse_y > (temp_search_y + search_height + self.config.UI_PANELS.settings.close_below_search)
 
   -- Initialize sticky state
   if self.state.settings_sticky_visible == nil then
@@ -667,7 +673,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local temp_panels_start_y = search_y + search_height + temp_filter_height + 20
 
     -- Show filter when hovering anywhere above the panels (trigger threshold into panels)
-    local is_hovering_above_panels = mouse_y < (temp_panels_start_y + self.config.UI_PANELS.filter.trigger_into_panels)
+    -- Only trigger if mouse is within window bounds (fixes multi-monitor cursor detection)
+    local is_hovering_above_panels = mouse_in_window and mouse_y < (temp_panels_start_y + self.config.UI_PANELS.filter.trigger_into_panels)
 
     -- Show filters when hovering above panels OR when settings are visible
     local filters_should_show = is_hovering_above_panels or self.state.settings_sticky_visible
