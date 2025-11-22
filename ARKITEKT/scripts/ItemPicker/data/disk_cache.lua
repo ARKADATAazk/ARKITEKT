@@ -17,52 +17,63 @@ local MAX_PROJECTS = 5
 local flushed = false -- Prevent double flush
 
 -- Simple Lua table serialization (supports nested tables, numbers, and strings)
-local function serialize(t, indent)
+-- Uses table buffer pattern to avoid O(n²) string concatenation
+local function serialize(t, indent, buf)
   indent = indent or ""
+  buf = buf or {}
+
   if type(t) ~= "table" then
     if type(t) == "number" then
       return tostring(t)
     elseif type(t) == "string" then
-      -- Escape strings properly
       return string.format("%q", t)
     else
       return "nil"
     end
   end
 
-  local result = "{\n"
   local next_indent = indent .. "  "
+  buf[#buf + 1] = "{\n"
 
   -- Handle array part
   for i, v in ipairs(t) do
-    result = result .. next_indent
+    buf[#buf + 1] = next_indent
     if type(v) == "number" then
-      result = result .. v
+      buf[#buf + 1] = tostring(v)
     elseif type(v) == "string" then
-      result = result .. string.format("%q", v)
+      buf[#buf + 1] = string.format("%q", v)
     elseif type(v) == "table" then
-      result = result .. serialize(v, next_indent)
+      serialize(v, next_indent, buf)
     end
-    result = result .. ",\n"
+    buf[#buf + 1] = ",\n"
   end
 
   -- Handle hash part (for MIDI thumbnails with x1,y1,x2,y2 and hash strings)
+  local array_len = #t
   for k, v in pairs(t) do
-    if type(k) ~= "number" or k > #t then
-      result = result .. next_indent .. "[" .. string.format("%q", tostring(k)) .. "] = "
+    if type(k) ~= "number" or k > array_len then
+      buf[#buf + 1] = next_indent
+      buf[#buf + 1] = "["
+      buf[#buf + 1] = string.format("%q", tostring(k))
+      buf[#buf + 1] = "] = "
       if type(v) == "number" then
-        result = result .. v
+        buf[#buf + 1] = tostring(v)
       elseif type(v) == "string" then
-        result = result .. string.format("%q", v)
+        buf[#buf + 1] = string.format("%q", v)
       elseif type(v) == "table" then
-        result = result .. serialize(v, next_indent)
+        serialize(v, next_indent, buf)
       end
-      result = result .. ",\n"
+      buf[#buf + 1] = ",\n"
     end
   end
 
-  result = result .. indent .. "}"
-  return result
+  buf[#buf + 1] = indent
+  buf[#buf + 1] = "}"
+
+  -- Only concat at top level
+  if indent == "" then
+    return table.concat(buf)
+  end
 end
 
 -- Deserialize Lua table from string

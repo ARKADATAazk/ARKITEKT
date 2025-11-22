@@ -23,15 +23,7 @@ local function convert_reaper_color_to_rgba(native_color)
 end
 
 local function convert_rgba_to_reaper_color(rgba_color)
-  -- Extract RGB from RGBA (drop alpha channel)
-  local r = (rgba_color >> 24) & 0xFF
-  local g = (rgba_color >> 16) & 0xFF
-  local b = (rgba_color >> 8) & 0xFF
-
-  -- ColorToNative handles platform conversion (BGR on Windows) automatically
-  -- Just pass r, g, b and let the API handle it
-  local native_rgb = reaper.ColorToNative(r, g, b)
-  return native_rgb | 0x1000000
+  return Colors.rgba_to_reaper_native(rgba_color)
 end
 
 function M.scan_project_regions(proj)

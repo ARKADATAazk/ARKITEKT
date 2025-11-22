@@ -2,6 +2,8 @@
 -- ReArkitekt/reaper/region_operations.lua
 -- Region playlist operations matching SWS behavior (Append, Paste, Crop, etc.)
 
+local Colors = require('rearkitekt.core.colors')
+
 local M = {}
 
 -- ============================================================================
@@ -239,13 +241,7 @@ function M.append_playlist_to_project(playlist_items)
         local new_region_end = current_position + region_length
 
         -- Convert RGBA color to native REAPER color
-        local native_color = 0
-        if region.color then
-          local r = (region.color >> 24) & 0xFF
-          local g = (region.color >> 16) & 0xFF
-          local b = (region.color >> 8) & 0xFF
-          native_color = reaper.ColorToNative(r, g, b) | 0x1000000
-        end
+        local native_color = region.color and Colors.rgba_to_reaper_native(region.color) or 0
 
         reaper.AddProjectMarker2(proj, true, new_region_start, new_region_end, region.name or "", -1, native_color)
 
@@ -327,13 +323,7 @@ function M.paste_playlist_at_cursor(playlist_items)
         local new_region_start = current_position
         local new_region_end = current_position + region_length
 
-        local native_color = 0
-        if region.color then
-          local r = (region.color >> 24) & 0xFF
-          local g = (region.color >> 16) & 0xFF
-          local b = (region.color >> 8) & 0xFF
-          native_color = reaper.ColorToNative(r, g, b) | 0x1000000
-        end
+        local native_color = region.color and Colors.rgba_to_reaper_native(region.color) or 0
 
         reaper.AddProjectMarker2(proj, true, new_region_start, new_region_end, region.name or "", -1, native_color)
 
@@ -414,13 +404,7 @@ function M.crop_to_playlist(playlist_items)
 
   -- Create region markers
   for _, rgn in ipairs(regions_to_create) do
-    local native_color = 0
-    if rgn.color then
-      local r = (rgn.color >> 24) & 0xFF
-      local g = (rgn.color >> 16) & 0xFF
-      local b = (rgn.color >> 8) & 0xFF
-      native_color = reaper.ColorToNative(r, g, b) | 0x1000000
-    end
+    local native_color = rgn.color and Colors.rgba_to_reaper_native(rgn.color) or 0
 
     reaper.AddProjectMarker2(proj, true, rgn.start, rgn["end"], rgn.name or "", -1, native_color)
   end
