@@ -283,7 +283,7 @@ function M.create(ctx, config, state, visualization, animator)
       local needs_update = false
       for _, key in ipairs(selected) do
         if not available_keys[key] then
-          grid.selection:deselect(key)
+          grid.selection.selected[key] = nil
           needs_update = true
         end
       end
