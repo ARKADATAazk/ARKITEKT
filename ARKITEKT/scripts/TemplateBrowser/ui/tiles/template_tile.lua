@@ -289,10 +289,11 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
   -- Render star using remix icon font
   local star_char = utf8.char(0xF186)  -- Remix star-fill icon
-  local font_size = 42  -- 3x font size for the star
 
   -- Use icon font if available in state
   if state.fonts and state.fonts.icons then
+    local base_size = state.fonts.icons_size or 14
+    local font_size = math.floor(base_size * 3)  -- 3x size
     ImGui.PushFont(ctx, state.fonts.icons, font_size)
     local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)
     local star_text_x = star_x + (star_size - text_w) * 0.5
