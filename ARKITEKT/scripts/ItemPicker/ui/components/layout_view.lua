@@ -534,6 +534,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     is_toggled = content_filter_mode == "MIXED",  -- Toggled when showing MIXED
     preset_name = "BUTTON_TOGGLE_WHITE",
     tooltip = "Left: Toggle MIDI/AUDIO | Right: Show both",
+    ignore_modal = true,  -- Bypass overlay blocking
     on_click = function()
       -- Left click: toggle between MIDI and AUDIO
       if content_filter_mode == "MIDI" then
@@ -584,6 +585,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     preset_name = "BUTTON_TOGGLE_WHITE",
     tooltip = not is_mixed_mode and "Enable Split View (MIXED mode)" or
               (is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout"),
+    ignore_modal = true,  -- Bypass overlay blocking
     on_click = function()
       if not is_mixed_mode then
         -- Enable MIXED mode (both AUDIO and MIDI)
@@ -621,6 +623,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       label = mode.label,
       is_toggled = is_active,
       preset_name = "BUTTON_TOGGLE_WHITE",
+      ignore_modal = true,  -- Bypass overlay blocking
       on_click = function()
         if current_sort == mode.id then
           -- Clicking the same sort mode toggles ascending/descending
