@@ -213,6 +213,18 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Only trigger if mouse is within window bounds (fixes multi-monitor cursor detection)
   local is_in_trigger_zone = mouse_in_window and mouse_y < (temp_search_y - trigger_zone_padding)
 
+  -- Detect fast mouse crossing through top of window (helps with fast cursor movement)
+  -- If mouse was in window last frame but is now above the window top, trigger the panel
+  local crossed_through_top = false
+  if self.state.last_mouse_in_window and not mouse_in_window and mouse_y < coord_offset_y then
+    -- Mouse was inside, now outside above the top - it crossed through the trigger zone
+    crossed_through_top = true
+  end
+  self.state.last_mouse_in_window = mouse_in_window
+
+  -- Combined trigger: either currently in zone OR crossed through top
+  is_in_trigger_zone = is_in_trigger_zone or crossed_through_top
+
   -- Once triggered, stay visible until mouse goes below the search field (with buffer)
   local is_below_search = mouse_in_window and mouse_y > (temp_search_y + search_height + self.config.UI_PANELS.settings.close_below_search)
 
