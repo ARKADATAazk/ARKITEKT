@@ -488,10 +488,10 @@ function M.RENDER.lerp_color(a, b, t)
   local bb = (b >> 8) & 0xFF
   local ba = b & 0xFF
 
-  local r = math.floor(ar + (br - ar) * t)
-  local g = math.floor(ag + (bg - ag) * t)
-  local b = math.floor(ab + (bb - ab) * t)
-  local a = math.floor(aa + (ba - aa) * t)
+  local r = (ar + (br - ar) * t)//1
+  local g = (ag + (bg - ag) * t)//1
+  local b = (ab + (bb - ab) * t)//1
+  local a = (aa + (ba - aa) * t)//1
 
   return (r << 24) | (g << 16) | (b << 8) | a
 end
@@ -509,7 +509,7 @@ end
 -- Apply alpha to color
 function M.apply_alpha(color, alpha_factor)
   local a = color & 0xFF
-  local new_a = math.floor(a * alpha_factor)
+  local new_a = (a * alpha_factor)//1
   return (color & 0xFFFFFF00) | new_a
 end
 

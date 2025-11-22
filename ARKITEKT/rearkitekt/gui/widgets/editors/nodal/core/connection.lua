@@ -95,29 +95,29 @@ function M.get_manhattan_points(connection, nodes, config)
     local horizontal_offset = config.connection.manhattan_horizontal_offset or 40
     local approach_offset = config.connection.manhattan_approach_offset or 20
     local points = {}
-    
+
     -- Point 1: Start at port
-    table.insert(points, x1)
-    table.insert(points, y1)
-    
+    points[#points + 1] = x1
+    points[#points + 1] = y1
+
     -- Point 2: Go right from port
     local turn_x = x1 + horizontal_offset
-    table.insert(points, turn_x)
-    table.insert(points, y1)
-    
+    points[#points + 1] = turn_x
+    points[#points + 1] = y1
+
     -- Point 3: Go vertical to target level (with some space above)
     local approach_y = y2 - approach_offset
-    table.insert(points, turn_x)
-    table.insert(points, approach_y)
-    
+    points[#points + 1] = turn_x
+    points[#points + 1] = approach_y
+
     -- Point 4: Go horizontal to target x position
-    table.insert(points, x2)
-    table.insert(points, approach_y)
-    
+    points[#points + 1] = x2
+    points[#points + 1] = approach_y
+
     -- Point 5: Go down into target
-    table.insert(points, x2)
-    table.insert(points, y2)
-    
+    points[#points + 1] = x2
+    points[#points + 1] = y2
+
     return points
   end
 end

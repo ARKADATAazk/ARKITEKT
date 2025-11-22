@@ -170,20 +170,20 @@ function DestroyAnim:render(ctx, dl, key, base_rect, base_color, rounding)
 
   local red_factor = math.min(1, t * 3)
 
-  local r = math.floor(r1 + (r2 - r1) * red_factor)
-  local g = math.floor(g1 + (g2 - g1) * red_factor)
-  local b = math.floor(b1 + (b2 - b1) * red_factor)
-  local a = math.floor(a1 * (1 - Easing.ease_out_quad(t) * 0.9))
+  local r = (r1 + (r2 - r1) * red_factor)//1
+  local g = (g1 + (g2 - g1) * red_factor)//1
+  local b = (b1 + (b2 - b1) * red_factor)//1
+  local a = (a1 * (1 - Easing.ease_out_quad(t) * 0.9))//1
 
   local flash_color = (r << 24) | (g << 16) | (b << 8) | a
 
   ImGui.DrawList_AddRectFilled(dl, nx1, ny1, nx2, ny2, flash_color, rounding)
 
   local blur_intensity = Easing.ease_out_quad(t)
-  local blur_layers = math.floor(blur_intensity * 3) + 1
+  local blur_layers = (blur_intensity * 3)//1 + 1
   for i = 1, blur_layers do
     local offset = i * 1.5 * blur_intensity
-    local blur_alpha = math.floor(a * 0.2 / blur_layers)
+    local blur_alpha = (a * 0.2 / blur_layers)//1
     local blur_color = (r << 24) | (g << 16) | (b << 8) | blur_alpha
 
     ImGui.DrawList_AddRectFilled(dl,
@@ -192,7 +192,7 @@ function DestroyAnim:render(ctx, dl, key, base_rect, base_color, rounding)
       blur_color, rounding + offset * 0.3)
   end
 
-  local cross_alpha = math.floor(255 * (1 - Easing.ease_out_quad(t)))
+  local cross_alpha = (255 * (1 - Easing.ease_out_quad(t)))//1
   local cross_color = (hexrgb("#FF4444") & 0xFFFFFF00) | cross_alpha
   local cross_thickness = 2.5
 

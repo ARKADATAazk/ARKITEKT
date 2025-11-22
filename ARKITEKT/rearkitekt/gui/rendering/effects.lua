@@ -16,7 +16,7 @@ function M.hover_shadow(dl, x1, y1, x2, y2, strength, radius)
   
   if strength < 0.01 then return end
   
-  local alpha = math.floor(strength * 20)
+  local alpha = (strength * 20)//1
   local shadow_col = (0x000000 << 8) | alpha
   
   for i = 2, 1, -1 do
@@ -36,7 +36,7 @@ function M.soft_glow(dl, x1, y1, x2, y2, color, intensity, radius)
   local b = (color >> 8) & 0xFF
   
   for i = 4, 1, -1 do
-    local alpha = math.floor(intensity * 30 / i)
+    local alpha = (intensity * 30 / i)//1
     local glow_col = (r << 24) | (g << 16) | (b << 8) | alpha
     ImGui.DrawList_AddRect(dl, x1 - i, y1 - i, x2 + i, y2 + i, glow_col, radius, 0, 1.0)
   end
