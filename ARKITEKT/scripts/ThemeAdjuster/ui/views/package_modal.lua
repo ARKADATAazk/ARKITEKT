@@ -63,7 +63,6 @@ local function get_cached_image(ctx, path)
       return entry  -- Image is still valid
     else
       -- Image became invalid, clear it
-      pcall(function() ImGui.Image_Free(entry) end)
       image_cache[path] = nil
     end
   end
@@ -71,13 +70,15 @@ local function get_cached_image(ctx, path)
   -- Try to create new image
   local ok, img = pcall(ImGui.CreateImage, path)
   if ok and img then
+    -- Attach to context to prevent garbage collection
+    ImGui.Attach(ctx, img)
+
     -- Verify it loaded correctly
     local ok2, w, h = pcall(ImGui.Image_GetSize, img)
     if ok2 and w and w > 0 then
       image_cache[path] = img
       return img
     else
-      pcall(function() ImGui.Image_Free(img) end)
       image_cache[path] = false
       return nil
     end
