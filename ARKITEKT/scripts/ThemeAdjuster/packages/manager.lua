@@ -363,12 +363,10 @@ local function copy_file(src, dst)
   return true
 end
 
--- Helper: Get script cache directory
+-- Helper: Get script cache directory (in REAPER Data folder)
 local function get_cache_dir()
-  local info = debug.getinfo(1, 'S')
-  local script_path = info.source:sub(2)
-  local script_dir = script_path:match("^(.*)" .. SEP)
-  return script_dir .. SEP .. "cache"
+  local resource_path = reaper.GetResourcePath()
+  return resource_path .. SEP .. "Data" .. SEP .. "ARKITEKT" .. SEP .. "ThemeAdjuster" .. SEP .. "cache"
 end
 
 -- Helper: Generate theme ID from path (short hash)
@@ -736,8 +734,21 @@ function M.apply_to_zip_theme(cache_dir, themes_dir, theme_name, resolved_map)
     ::continue::
   end
 
-  -- Create output ZIP
-  local patched_name = (theme_name or "Theme") .. "_packages.ReaperThemeZip"
+  -- Create output ZIP with version handling
+  local base_name = (theme_name or "Theme") .. " (Reassembled)"
+  local patched_name = base_name .. ".ReaperThemeZip"
+  local final_path = themes_dir .. SEP .. patched_name
+
+  -- Check if file exists and find next version number
+  if file_exists(final_path) then
+    local version = 2
+    while file_exists(themes_dir .. SEP .. base_name .. " " .. version .. ".ReaperThemeZip") do
+      version = version + 1
+    end
+    patched_name = base_name .. " " .. version .. ".ReaperThemeZip"
+    final_path = themes_dir .. SEP .. patched_name
+  end
+
   local out_zip = script_cache .. SEP .. patched_name
 
   if not make_zip(work_dir, out_zip) then
@@ -747,7 +758,6 @@ function M.apply_to_zip_theme(cache_dir, themes_dir, theme_name, resolved_map)
   end
 
   -- Move to ColorThemes directory
-  local final_path = themes_dir .. SEP .. patched_name
   local data = read_all(out_zip)
   if not data then
     result.ok = false

@@ -395,11 +395,11 @@ function AssemblerView:do_apply()
       return
     end
 
-    local output_name = (info.theme_name or "Theme") .. "_packages.ReaperThemeZip"
+    local output_name = (info.theme_name or "Theme") .. " (Reassembled).ReaperThemeZip"
 
     -- Confirm apply
     local confirm = reaper.ShowMessageBox(
-      string.format("Apply %d assets and create new ZIP?\n\nOutput: %s\n\nLoad theme after creation?", active_count, output_name),
+      string.format("Apply %d assets and create new ZIP?\n\nOutput: %s\n(will auto-version if exists)\n\nLoad theme after creation?", active_count, output_name),
       "Confirm Apply (ZIP)",
       3  -- Yes/No/Cancel
     )
