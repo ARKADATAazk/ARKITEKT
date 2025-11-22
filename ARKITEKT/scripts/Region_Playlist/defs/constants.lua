@@ -107,7 +107,7 @@ M.TRANSPORT_LAYOUT = {
 M.TRANSPORT_BUTTONS = {
   play = { priority = 1, width = 34 },
   jump = { priority = 2, width = 46 },
-  quantize = { priority = 3, width = 85 },
+  quantize = { priority = 3, width = 71 },  -- Reduced from 85
   playback = { priority = 4, width_dropdown = 90, width_buttons = 120 },
   loop = { priority = 5, width = 34 },
   pause = { priority = 6, width = 34 },
@@ -121,8 +121,8 @@ M.TRANSPORT_BUTTONS = {
 -- Remix icon unicode values (UTF-8 encoding)
 M.REMIX_ICONS = {
   shuffle = "\xEF\x84\xA4",
-  override_transport = "\xEE\xB4\xB8",
-  follow_viewport = "\xEF\x8C\xA4",
+  hijack_transport = "\xEE\xB4\xBA",  -- U+ED3A
+  follow_viewport = "\xEF\x8C\x81",   -- U+F301
 }
 
 -- ============================================================================

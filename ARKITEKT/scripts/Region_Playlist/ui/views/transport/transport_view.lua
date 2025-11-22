@@ -333,7 +333,7 @@ function TransportView:build_playback_dropdown(bridge_state)
         },
         { value = nil, label = "", separator = true },
         {
-          value = "override_transport",
+          value = "hijack_transport",
           label = "Override Transport",
           checkbox = true,
           checked = bridge_state.override_enabled or false,
@@ -363,7 +363,7 @@ function TransportView:build_playback_dropdown(bridge_state)
 
         if value == "shuffle" then
           bridge:set_shuffle_enabled(new_checked)
-        elseif value == "override_transport" then
+        elseif value == "hijack_transport" then
           bridge:set_transport_override(new_checked)
         elseif value == "follow_viewport" then
           bridge:set_follow_viewport(new_checked)
@@ -419,7 +419,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
       type = "custom",
       id = "transport_shuffle",
       align = "center",
-      width = 40,
+      width = 34,
       config = {
         on_draw = function(ctx, dl, x, y, width, height, state)
           local Button = require('rearkitekt.gui.widgets.primitives.button')
@@ -454,17 +454,17 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
     },
     {
       type = "button",
-      id = "transport_override",
+      id = "transport_hijack",
       align = "center",
-      width = 40,
+      width = 34,
       config = {
-        icon = CoreConfig.REMIX_ICONS.override_transport,
+        icon = CoreConfig.REMIX_ICONS.hijack_transport,
         icon_font = icon_font,
         icon_size = icon_size,
         label = "",
         is_toggled = bridge_state.override_enabled or false,
         preset_name = "BUTTON_TOGGLE_WHITE",
-        tooltip = Strings.TRANSPORT.override_transport,
+        tooltip = Strings.TRANSPORT.hijack_transport,
         on_click = function()
           local bridge = self.state.get_bridge()
           if bridge then
@@ -485,7 +485,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
       type = "button",
       id = "transport_follow",
       align = "center",
-      width = 40,
+      width = 34,
       config = {
         icon = CoreConfig.REMIX_ICONS.follow_viewport,
         icon_font = icon_font,
@@ -658,7 +658,7 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
     checkbox = false,
   }
   options[#options + 1] = {
-    value = "override_transport",
+    value = "hijack_transport",
     label = "Override Transport",
     checkbox = true,
     checked = bridge_state.override_enabled or false,
@@ -694,7 +694,7 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
         elseif new_value == "true_shuffle" or new_value == "random" then
           bridge:set_shuffle_mode(new_value)
         -- Handle quantize mode changes
-        elseif new_value and new_value ~= "shuffle" and new_value ~= "override_transport" and new_value ~= "follow_viewport" then
+        elseif new_value and new_value ~= "shuffle" and new_value ~= "hijack_transport" and new_value ~= "follow_viewport" then
           bridge:set_quantize_mode(new_value)
         end
       end,
@@ -704,7 +704,7 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
 
         if value == "shuffle" then
           bridge:set_shuffle_enabled(new_checked)
-        elseif value == "override_transport" then
+        elseif value == "hijack_transport" then
           bridge:set_transport_override(new_checked)
         elseif value == "follow_viewport" then
           bridge:set_follow_viewport(new_checked)
