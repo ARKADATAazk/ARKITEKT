@@ -153,8 +153,8 @@ function M.render(ctx, opts)
       ImGui.PushFont(ctx, opts.icon_font, icon_size)
       local icon_color = hexrgb("#00000099")  -- Black icon at 60% opacity
       local text_w, text_h = ImGui.CalcTextSize(ctx, ICON_CHECK)
-      local icon_x = chip_cx - text_w * 0.5 + 0.5  -- Shift right 0.5px
-      local icon_y = chip_cy - text_h * 0.5 + 0.5  -- Shift down 0.5px
+      local icon_x = chip_cx - text_w * 0.5
+      local icon_y = chip_cy - text_h * 0.5
       Draw.text(dl, icon_x, icon_y, icon_color, ICON_CHECK)
       ImGui.PopFont(ctx)
     end
