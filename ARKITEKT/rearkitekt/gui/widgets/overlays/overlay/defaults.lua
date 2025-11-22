@@ -128,14 +128,14 @@ function M.create_overlay_config(opts)
 
   return {
     id = opts.id,
-    use_viewport = opts.use_viewport ~= nil and opts.use_viewport or C.DEFAULT_USE_VIEWPORT,
+    use_viewport = opts.use_viewport == nil and C.DEFAULT_USE_VIEWPORT or opts.use_viewport,
 
     -- Animation
     fade_duration = opts.fade_duration or Timing.FADE.normal,
     fade_curve = opts.fade_curve or Timing.EASING.default_fade,
 
     -- Close button
-    show_close_button = opts.show_close_button ~= nil and opts.show_close_button or C.DEFAULT_SHOW_CLOSE_BUTTON,
+    show_close_button = opts.show_close_button == nil and C.DEFAULT_SHOW_CLOSE_BUTTON or opts.show_close_button,
     close_button_size = opts.close_button_size or C.CLOSE_BUTTON_SIZE,
     close_button_margin = opts.close_button_margin or C.CLOSE_BUTTON_MARGIN,
     close_button_proximity = opts.close_button_proximity or C.CLOSE_BUTTON_PROXIMITY,

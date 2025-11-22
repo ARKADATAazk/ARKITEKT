@@ -30,10 +30,10 @@ local DEFAULTS = {
 function M.render(ctx, alpha, bounds, content_fn, opts)
   opts = opts or {}
 
-  -- Merge with defaults
+  -- Merge with defaults (use inverted ternary to handle false values correctly)
   local config = {}
   for k, v in pairs(DEFAULTS) do
-    config[k] = opts[k] ~= nil and opts[k] or v
+    config[k] = opts[k] == nil and v or opts[k]
   end
 
   -- Calculate container dimensions

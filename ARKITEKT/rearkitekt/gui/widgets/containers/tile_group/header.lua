@@ -19,10 +19,10 @@ local M = {}
 function M.render(ctx, rect, group, state, config)
   config = config or {}
 
-  -- Merge config with defaults
+  -- Merge config with defaults (use inverted ternary to handle false values correctly)
   local cfg = {}
   for k, v in pairs(Defaults.HEADER) do
-    cfg[k] = config[k] ~= nil and config[k] or v
+    cfg[k] = config[k] == nil and v or config[k]
   end
 
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]

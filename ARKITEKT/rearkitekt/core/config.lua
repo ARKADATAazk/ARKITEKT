@@ -92,7 +92,8 @@ function M.apply_defaults(defaults, user_config, deep_keys)
       result[k] = M.deepMerge(v, user_config[k])
     else
       -- Shallow: user value wins, fall back to default
-      result[k] = user_config[k] ~= nil and user_config[k] or v
+      -- Use inverted ternary to handle false values correctly
+      result[k] = user_config[k] == nil and v or user_config[k]
     end
   end
 
