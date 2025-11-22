@@ -283,7 +283,8 @@ local function validate_record(self, path, rec)
       is_valid = validate_fn(rec.img, 'ImGui_Image*')
     end)
     if not ok or not is_valid then
-      -- Image pointer is invalid, clear and recreate
+      -- Image pointer is invalid, destroy old handle and recreate
+      destroy_image(rec.img)
       self._cache[path] = nil
       for i, p in ipairs(self._cache_order) do
         if p == path then
@@ -295,17 +296,30 @@ local function validate_record(self, path, rec)
     end
   end
 
-  -- Try to validate the image size, but silently fail if invalid
-  -- (avoiding error spam when images are evicted from cache)
+  -- Pointer is valid, now verify size
   local ok, w, h = pcall(ImGui.Image_GetSize, rec.img)
   if ok and w and h and w > 0 and h > 0 then
-    rec.w, rec.h = w, h
+    -- Update dimensions in case they changed
+    if rec.w ~= w or rec.h ~= h then
+      rec.w, rec.h = w, h
+      -- Recalculate source rect if dimensions changed
+      if self._no_crop then
+        rec.src_x, rec.src_y, rec.src_w, rec.src_h = 0, 0, w, h
+      else
+        if is_three_state_from_metadata(path) and w > 0 then
+          local frame_w = math.floor(w / 3)
+          rec.src_x, rec.src_y, rec.src_w, rec.src_h = 0, 0, frame_w, h
+        else
+          rec.src_x, rec.src_y, rec.src_w, rec.src_h = 0, 0, w, h
+        end
+      end
+    end
     return rec
   end
 
-  -- Image is invalid (evicted or destroyed), clear and recreate
+  -- Image handle exists but GetSize failed, recreate
+  destroy_image(rec.img)
   self._cache[path] = nil
-  -- Remove from cache order
   for i, p in ipairs(self._cache_order) do
     if p == path then
       table.remove(self._cache_order, i)
