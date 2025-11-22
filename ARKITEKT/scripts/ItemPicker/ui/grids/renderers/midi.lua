@@ -148,11 +148,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Render base tile fill with rounding
   ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
 
-  -- Render playback progress bar
-  if playback_progress > 0 and playback_fade > 0 then
-    TileFX.render_playback_progress(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, base_color, playback_progress, playback_fade, config.TILE.ROUNDING)
-  end
-
   -- Render dark backdrop for disabled items
   if enabled_factor < 0.999 then
     local backdrop_alpha = config.TILE_RENDER.disabled.backdrop_alpha * (1.0 - enabled_factor) * cascade_factor
@@ -220,6 +215,11 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   ::skip_midi::
+
+  -- Render playback progress bar (after visualization, before header)
+  if playback_progress > 0 and playback_fade > 0 then
+    TileFX.render_playback_progress(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, base_color, playback_progress, playback_fade, config.TILE.ROUNDING)
+  end
 
   -- Render header with animated fade and size transition
   -- Apply header_alpha_factor for transition fade (fades out when going to compact, fades in when going to normal)
