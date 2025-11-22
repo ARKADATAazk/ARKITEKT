@@ -13,10 +13,12 @@ local M = {}
 
 -- Default configuration
 local DEFAULTS = {
-  chip_radius = 7,
-  columns = 4,
+  chip_size = 12,           -- Size for square chips
+  chip_radius = 7,          -- Radius for circle chips (legacy)
+  columns = 7,              -- 7 columns for 28 colors (4 rows)
   show_none_option = true,
   none_label = "Remove Color",
+  shape = Chip.SHAPE.SQUARE, -- Default to square like Wwise
 }
 
 -- =============================================================================
@@ -29,16 +31,20 @@ local DEFAULTS = {
 --   - on_select: function(color_int, color_hex, color_name) - called when color is selected
 --   - current_color: number - integer color value of currently selected color (optional)
 --   - palette: table - custom palette (optional, defaults to Colors.PALETTE)
---   - chip_radius: number - radius of color chips (optional)
---   - columns: number - number of columns (optional)
+--   - shape: Chip.SHAPE - SQUARE (default) or CIRCLE
+--   - chip_size: number - size for square chips (default 12)
+--   - chip_radius: number - radius for circle chips (default 7)
+--   - columns: number - number of columns (default 7 for 28 colors)
 --   - show_none_option: boolean - show "Remove Color" option (optional)
 --   - none_label: string - label for none option (optional)
 -- @return boolean - true if a color was selected
 function M.render(ctx, opts)
   opts = opts or {}
   local palette = opts.palette or Colors.PALETTE
+  local chip_size = opts.chip_size or DEFAULTS.chip_size
   local chip_radius = opts.chip_radius or DEFAULTS.chip_radius
   local columns = opts.columns or DEFAULTS.columns
+  local shape = opts.shape or DEFAULTS.shape
   local show_none = opts.show_none_option == nil and DEFAULTS.show_none_option or opts.show_none_option
   local none_label = opts.none_label or DEFAULTS.none_label
 
@@ -62,6 +68,10 @@ function M.render(ctx, opts)
   local chip_spacing = available_width / (columns - 1)
   local grid_offset_x = item_padding_x
 
+  -- Use size or radius based on shape
+  local is_square = shape == Chip.SHAPE.SQUARE
+  local effective_size = is_square and chip_size or (chip_radius * 2)
+
   -- Convert palette to integer colors
   local preset_colors = {}
   for i, color in ipairs(palette) do
@@ -75,7 +85,7 @@ function M.render(ctx, opts)
 
     local chip_cx = menu_start_x + grid_offset_x + col_idx * chip_spacing
     local chip_cy = menu_start_y + row_idx * chip_spacing
-    local hit_size = chip_radius * 2 + 4
+    local hit_size = effective_size + 4
 
     -- Check if this is the current color
     local is_selected = (opts.current_color and opts.current_color == color)
@@ -94,29 +104,37 @@ function M.render(ctx, opts)
     end
     local is_hovered = ImGui.IsItemHovered(ctx)
 
+    -- Create darker border color from chip color
+    local border_col = ColorUtils.adjust_brightness(color, 0.5)
+    border_col = ColorUtils.with_alpha(border_col, 255)
+
     -- Draw chip with glow effects
     Chip.draw(ctx, {
       style = Chip.STYLE.INDICATOR,
-      shape = Chip.SHAPE.CIRCLE,
+      shape = shape,
       color = color,
       draw_list = dl,
       x = chip_cx,
       y = chip_cy,
+      -- For squares
+      size = chip_size,
+      rounding = 1,  -- Slight rounding for Wwise look
+      -- For circles (legacy)
       radius = chip_radius,
       is_selected = is_selected,
       is_hovered = is_hovered,
       show_glow = is_selected or is_hovered,
-      glow_layers = is_selected and 6 or 3,
-      shadow = true,
-      border = is_hovered,
-      border_color = hexrgb("#FFFFFF80"),
+      glow_layers = is_selected and 4 or 2,
+      shadow = false,  -- No shadow for cleaner Wwise look
+      border = true,   -- Always show border
+      border_color = border_col,
       border_thickness = 1.0,
     })
   end
 
   -- Calculate grid height and move cursor past it
   local grid_rows = math.ceil(#preset_colors / columns)
-  local grid_height = (grid_rows - 1) * chip_spacing + chip_radius * 2
+  local grid_height = (grid_rows - 1) * chip_spacing + effective_size
   ImGui.SetCursorScreenPos(ctx, menu_start_x, menu_start_y + grid_height + 8)
 
   -- Draw separator before "Remove Color" button
