@@ -247,8 +247,8 @@ function M.render(ctx, rect, template, state, metadata, animator)
   end
 
   -- Render favorite star in top-right corner (no badge, just the star)
-  local star_radius = 10  -- Big star for grid tiles
-  local star_margin = 8
+  local star_radius = 14  -- Much bigger star for grid tiles
+  local star_margin = 6
   local star_center_x = x2 - star_radius - star_margin
   local star_center_y = y1 + star_radius + star_margin
 
@@ -264,7 +264,6 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
   -- Determine star color based on tile color and favorite state
   local star_color
-  local border_color
 
   if chip_color then
     -- Blend with tile color subtly
@@ -272,34 +271,24 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local blend = 0.3  -- Color influence
 
     if is_favorite then
-      -- Lighter than tile color when enabled (no border)
+      -- Lighter than tile color when enabled
       local r = math.floor(math.min(255, cr * 1.4) * blend + 230 * (1 - blend))
       local g = math.floor(math.min(255, cg * 1.4) * blend + 230 * (1 - blend))
       local b = math.floor(math.min(255, cb * 1.4) * blend + 230 * (1 - blend))
       star_color = Colors.components_to_rgba(r, g, b, 255)
-      border_color = nil  -- No border when active
     else
       -- Much darker when disabled
-      local r = math.floor(cr * 0.3 * blend + 40 * (1 - blend))
-      local g = math.floor(cg * 0.3 * blend + 40 * (1 - blend))
-      local b = math.floor(cb * 0.3 * blend + 40 * (1 - blend))
-      star_color = Colors.components_to_rgba(r, g, b, is_star_hovered and 200 or 140)
-      -- Even darker border
-      border_color = Colors.components_to_rgba(
-        math.floor(r * 0.5),
-        math.floor(g * 0.5),
-        math.floor(b * 0.5),
-        is_star_hovered and 255 or 180
-      )
+      local r = math.floor(cr * 0.2 * blend + 25 * (1 - blend))
+      local g = math.floor(cg * 0.2 * blend + 25 * (1 - blend))
+      local b = math.floor(cb * 0.2 * blend + 25 * (1 - blend))
+      star_color = Colors.components_to_rgba(r, g, b, is_star_hovered and 180 or 100)
     end
   else
     -- No tile color - use pure grey
     if is_favorite then
       star_color = hexrgb("#E8E8E8")  -- Light when enabled
-      border_color = nil  -- No border when active
     else
-      star_color = is_star_hovered and hexrgb("#404040C8") or hexrgb("#2828288C")  -- Much darker
-      border_color = is_star_hovered and hexrgb("#202020FF") or hexrgb("#181818B4")  -- Even darker border
+      star_color = is_star_hovered and hexrgb("#303030B4") or hexrgb("#1A1A1A64")  -- Much darker
     end
   end
 
