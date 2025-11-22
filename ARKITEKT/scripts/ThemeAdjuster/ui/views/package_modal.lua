@@ -607,7 +607,8 @@ function PackageModal:draw_content(ctx, bounds)
   ImGui.SetCursorPosX(ctx, start_x)
   local child_h = bounds.h - ImGui.GetCursorPosY(ctx) - 8
 
-  if ImGui.BeginChild(ctx, "##asset_view", content_w, child_h) then
+  -- Use 0 width to fill remaining space (avoids right padding)
+  if ImGui.BeginChild(ctx, "##asset_view", 0, child_h) then
     if self.view_mode == "grid" then
       self:draw_grid_view(ctx, pkg)
     else
