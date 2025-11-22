@@ -15,7 +15,7 @@ local hexrgb = Colors.hexrgb
 
 -- Configuration for compact tiles
 M.CONFIG = {
-  tile_height = 18,  -- Fixed compact height (50% smaller than before)
+  tile_height = 15,  -- Fixed compact height (reduced by 3)
   color_bar_width = 3,  -- Left edge color indicator
   text_margin = 6,
   chip_spacing = 3,
@@ -160,9 +160,9 @@ function M.render(ctx, rect, template, state, metadata, animator)
   end
 
   -- Horizontal layout sections with internal padding (like Parameter Library tiles)
-  local padding = 3
+  local padding = 2
   local cursor_x = x1 + padding
-  local cursor_y = y1 + (tile_h / 2) - 6  -- Vertically center text (adjusted for smaller height)
+  local cursor_y = y1 + (tile_h / 2) - 9  -- Vertically center text (moved up 3px)
 
   -- Section 1: Template Name (left-aligned, takes ~35% width)
   local available_width = tile_w - (padding * 2)
