@@ -158,7 +158,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local coord_offset_y = window_y
 
   -- Draw overlay background with dotted pattern (layer behind everything)
-  local overlay_bg_color = Colors.hexrgb("#0A0A0A")
+  local overlay_bg_color = Colors.hexrgb("#181818")
   overlay_bg_color = Colors.with_alpha(overlay_bg_color, math.floor(overlay_alpha * 200))
   ImGui.DrawList_AddRectFilled(draw_list, coord_offset_x, coord_offset_y,
       coord_offset_x + screen_w, coord_offset_y + screen_h, overlay_bg_color, 0)
