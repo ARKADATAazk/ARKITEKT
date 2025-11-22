@@ -107,8 +107,8 @@ function M.draw_loop(dl, x, y, width, height, color)
 end
 
 function M.draw_jump(dl, x, y, width, height, color)
-  local icon_size = 11
-  local spacing = 3
+  local icon_size = 8
+  local spacing = 2
   local cx = floor(x + width / 2 + 0.5)
   local cy = floor(y + height / 2 + 0.5)
 
