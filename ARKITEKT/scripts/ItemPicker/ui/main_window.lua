@@ -336,12 +336,20 @@ function GUI:draw(ctx, shell_state)
         reaper.ShowConsoleMsg(string.format("[MODIFIER DROP] shift=%s ctrl=%s\n", tostring(shift), tostring(ctrl)))
       end
 
+      -- Save dragging_keys before insert in case we need them for Shift+multi-drop
+      -- (InsertMediaItem clears them unconditionally)
+      local saved_dragging_keys = self.state.dragging_keys
+      local saved_dragging_is_audio = self.state.dragging_is_audio
+
       -- Insert the item
       self.controller.insert_item_at_mouse(self.state.item_to_add, self.state)
       self.state.drop_completed = true  -- Mark as completed
 
       if shift then
         -- SHIFT: Keep dragging active for multi-drop
+        -- Restore dragging_keys for subsequent drops
+        self.state.dragging_keys = saved_dragging_keys
+        self.state.dragging_is_audio = saved_dragging_is_audio
         -- Wait for next click/release cycle before allowing another drop
         reaper.ShowConsoleMsg("[SHIFT DROP] Setting up for next drop, capturing modifier state\n")
         self.state.drop_completed = false
