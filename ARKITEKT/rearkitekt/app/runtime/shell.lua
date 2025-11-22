@@ -84,8 +84,15 @@ local function load_fonts(ctx, font_cfg)
 
   local icons_font = nil
   if font_cfg.icons then
-    icons_font = exists(I) and ImGui.CreateFontFromFile(I, 0, 0) or default_font
+    local icon_path_exists = exists(I)
+    reaper.ShowConsoleMsg("SHELL FONT DEBUG: icons config = " .. tostring(font_cfg.icons) .. "\n")
+    reaper.ShowConsoleMsg("SHELL FONT DEBUG: icon font path = " .. tostring(I) .. "\n")
+    reaper.ShowConsoleMsg("SHELL FONT DEBUG: icon font exists = " .. tostring(icon_path_exists) .. "\n")
+    icons_font = icon_path_exists and ImGui.CreateFontFromFile(I, 0, 0) or default_font
+    reaper.ShowConsoleMsg("SHELL FONT DEBUG: icons_font = " .. tostring(icons_font) .. "\n")
     attach_once(icons_font)
+  else
+    reaper.ShowConsoleMsg("SHELL FONT DEBUG: icons not in config\n")
   end
 
   attach_once(default_font)
