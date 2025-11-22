@@ -51,26 +51,32 @@ function M.render(ctx, opts)
   local selected = false
   local dl = ImGui.GetWindowDrawList(ctx)
 
+  -- Use size or radius based on shape
+  local is_square = shape == Chip.SHAPE.SQUARE
+  local effective_size = is_square and chip_size or (chip_radius * 2)
+
+  -- Calculate minimum width needed for grid
+  local chip_gap = 4  -- Gap between chips
+  local item_padding_x = 12
+  local min_grid_width = (columns * effective_size) + ((columns - 1) * chip_gap) + (item_padding_x * 2)
+
+  -- Force minimum width with a dummy
+  ImGui.Dummy(ctx, min_grid_width, 1)
+
   -- Draw separator line at top
   ImGui.Dummy(ctx, 1, 4)
   local sep_x1, sep_y1 = ImGui.GetCursorScreenPos(ctx)
   local sep_w = ImGui.GetContentRegionAvail(ctx)
   ImGui.DrawList_AddLine(dl, sep_x1 + 8, sep_y1, sep_x1 + sep_w - 8, sep_y1, hexrgb("#505050FF"), 1)
-  ImGui.Dummy(ctx, 1, 18)
+  ImGui.Dummy(ctx, 1, 12)
 
   -- Calculate grid layout
   local menu_width = ImGui.GetContentRegionAvail(ctx)
   local menu_start_x, menu_start_y = ImGui.GetCursorScreenPos(ctx)
 
-  -- Narrowed horizontal bounds
-  local item_padding_x = 21
-  local available_width = menu_width - (item_padding_x * 2)
-  local chip_spacing = available_width / (columns - 1)
+  -- Grid spacing based on chip size + gap
+  local chip_spacing = effective_size + chip_gap
   local grid_offset_x = item_padding_x
-
-  -- Use size or radius based on shape
-  local is_square = shape == Chip.SHAPE.SQUARE
-  local effective_size = is_square and chip_size or (chip_radius * 2)
 
   -- Convert palette to integer colors
   local preset_colors = {}
