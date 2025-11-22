@@ -391,7 +391,7 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     -- F key: toggle favorite
-    f = function(grid, item_uuids)
+    f = function(grid, keys)
       local items = get_items()
       local track_guid_map = {}
       for _, data in ipairs(items) do
@@ -400,12 +400,12 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
 
-      if #item_uuids > 1 then
+      if #keys > 1 then
         -- Multi-select: toggle all to opposite of first item's state
-        local first_track_guid = track_guid_map[item_uuids[1]]
+        local first_track_guid = track_guid_map[keys[1]]
         local new_state = not state.is_midi_favorite(first_track_guid)
-        for _, uuid in ipairs(item_uuids) do
-          local track_guid = track_guid_map[uuid]
+        for _, key in ipairs(keys) do
+          local track_guid = track_guid_map[key]
           if track_guid then
             if new_state then
               state.favorites.midi[track_guid] = true
@@ -417,7 +417,7 @@ function M.create(ctx, config, state, visualization, animator)
         state.persist_favorites()
       else
         -- Single item: toggle
-        local track_guid = track_guid_map[item_uuids[1]]
+        local track_guid = track_guid_map[keys[1]]
         if track_guid then
           state.toggle_midi_favorite(track_guid)
         end
@@ -425,16 +425,16 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     -- Wheel cycling through pooled items
-    wheel_cycle = function(grid, uuids, delta)
-      if not uuids or #uuids == 0 then
+    wheel_cycle = function(grid, keys, delta)
+      if not keys or #keys == 0 then
         return nil
       end
-      local uuid = uuids[1]
+      local key = keys[1]
 
       -- Get track_guid from UUID
       local items = get_items()
       for _, data in ipairs(items) do
-        if data.uuid == uuid then
+        if data.uuid == key then
           state.cycle_midi_item(data.track_guid, delta > 0 and 1 or -1)
 
           -- Rebuild items list after cycling to get new UUID
@@ -448,14 +448,14 @@ function M.create(ctx, config, state, visualization, animator)
             end
           end
 
-          return uuid  -- Fallback to old UUID if not found
+          return key  -- Fallback to old key if not found
         end
       end
       return nil
     end,
 
     -- Delete key: toggle disable state
-    delete = function(grid, item_uuids)
+    delete = function(grid, keys)
       local items = get_items()
       local track_guid_map = {}
       for _, data in ipairs(items) do
@@ -465,12 +465,12 @@ function M.create(ctx, config, state, visualization, animator)
       end
 
       -- Determine toggle state: if first item is disabled, enable all; otherwise disable all
-      if #item_uuids > 0 then
-        local first_track_guid = track_guid_map[item_uuids[1]]
+      if #keys > 0 then
+        local first_track_guid = track_guid_map[keys[1]]
         local new_state = not state.disabled.midi[first_track_guid]
 
-        for _, uuid in ipairs(item_uuids) do
-          local track_guid = track_guid_map[uuid]
+        for _, key in ipairs(keys) do
+          local track_guid = track_guid_map[key]
           if track_guid then
             if new_state then
               state.disabled.midi[track_guid] = true
@@ -491,14 +491,14 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     -- SPACE: Preview
-    space = function(grid, selected_uuids)
-      if not selected_uuids or #selected_uuids == 0 then return end
+    space = function(grid, keys)
+      if not keys or #keys == 0 then return end
 
-      local uuid = selected_uuids[1]
+      local key = keys[1]
       local items = get_items()
 
       for _, item_data in ipairs(items) do
-        if item_data.uuid == uuid then
+        if item_data.uuid == key then
           -- Toggle preview: stop if this exact item is playing, otherwise start/switch
           if state.is_previewing(item_data.item) then
             state.stop_preview()
@@ -512,12 +512,12 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     -- Double-click: start rename
-    double_click = function(grid, uuid)
+    double_click = function(grid, key)
       local items = get_items()
       for _, item_data in ipairs(items) do
-        if item_data.uuid == uuid then
+        if item_data.uuid == key then
           state.rename_active = true
-          state.rename_uuid = uuid
+          state.rename_uuid = key
           state.rename_text = item_data.name
           state.rename_is_audio = false
           state.rename_focused = false  -- Reset focus flag

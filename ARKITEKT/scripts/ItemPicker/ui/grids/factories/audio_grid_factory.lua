@@ -391,7 +391,7 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     -- F key: toggle favorite
-    f = function(grid, item_uuids)
+    f = function(grid, keys)
       local items = get_items()
       local filename_map = {}
       for _, data in ipairs(items) do
@@ -400,12 +400,12 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
 
-      if #item_uuids > 1 then
+      if #keys > 1 then
         -- Multi-select: toggle all to opposite of first item's state
-        local first_filename = filename_map[item_uuids[1]]
+        local first_filename = filename_map[keys[1]]
         local new_state = not state.is_audio_favorite(first_filename)
-        for _, uuid in ipairs(item_uuids) do
-          local filename = filename_map[uuid]
+        for _, key in ipairs(keys) do
+          local filename = filename_map[key]
           if filename then
             if new_state then
               state.favorites.audio[filename] = true
@@ -417,7 +417,7 @@ function M.create(ctx, config, state, visualization, animator)
         state.persist_favorites()
       else
         -- Single item: toggle
-        local filename = filename_map[item_uuids[1]]
+        local filename = filename_map[keys[1]]
         if filename then
           state.toggle_audio_favorite(filename)
         end
@@ -425,16 +425,16 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     -- Wheel cycling through pooled items
-    wheel_cycle = function(grid, uuids, delta)
-      if not uuids or #uuids == 0 then
+    wheel_cycle = function(grid, keys, delta)
+      if not keys or #keys == 0 then
         return nil
       end
-      local uuid = uuids[1]
+      local key = keys[1]
 
       -- Get filename from UUID
       local items = get_items()
       for _, data in ipairs(items) do
-        if data.uuid == uuid then
+        if data.uuid == key then
           state.cycle_audio_item(data.filename, delta > 0 and 1 or -1)
 
           -- Rebuild items list after cycling to get new UUID
@@ -448,14 +448,14 @@ function M.create(ctx, config, state, visualization, animator)
             end
           end
 
-          return uuid  -- Fallback to old UUID if not found
+          return key  -- Fallback to old key if not found
         end
       end
       return nil
     end,
 
     -- Delete key: toggle disable state
-    delete = function(grid, item_uuids)
+    delete = function(grid, keys)
       local items = get_items()
       local filename_map = {}
       for _, data in ipairs(items) do
@@ -465,12 +465,12 @@ function M.create(ctx, config, state, visualization, animator)
       end
 
       -- Determine toggle state: if first item is disabled, enable all; otherwise disable all
-      if #item_uuids > 0 then
-        local first_filename = filename_map[item_uuids[1]]
+      if #keys > 0 then
+        local first_filename = filename_map[keys[1]]
         local new_state = not state.disabled.audio[first_filename]
 
-        for _, uuid in ipairs(item_uuids) do
-          local filename = filename_map[uuid]
+        for _, key in ipairs(keys) do
+          local filename = filename_map[key]
           if filename then
             if new_state then
               state.disabled.audio[filename] = true
@@ -549,12 +549,12 @@ function M.create(ctx, config, state, visualization, animator)
     end,
 
     -- Double-click: start rename
-    double_click = function(grid, uuid)
+    double_click = function(grid, key)
       local items = get_items()
       for _, item_data in ipairs(items) do
-        if item_data.uuid == uuid then
+        if item_data.uuid == key then
           state.rename_active = true
-          state.rename_uuid = uuid
+          state.rename_uuid = key
           state.rename_text = item_data.name
           state.rename_is_audio = true
           state.rename_focused = false  -- Reset focus flag
