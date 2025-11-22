@@ -13,6 +13,18 @@ local ImageCache = require('rearkitekt.gui.images')
 local M = {}
 local hexrgb = Colors.hexrgb
 
+-- Lazy-load metadata module (only when needed)
+local Metadata = nil
+local function get_metadata()
+  if not Metadata then
+    local ok, mod = pcall(require, 'ThemeAdjuster.packages.metadata')
+    if ok then
+      Metadata = mod
+    end
+  end
+  return Metadata
+end
+
 -- Shared image cache for package mosaic previews
 M._package_image_cache = M._package_image_cache or ImageCache.new({
   budget = 20,      -- Load up to 20 images per frame
@@ -47,6 +59,31 @@ M.CONFIG = {
   badge = { padding_x = 10, padding_y = 6, rounding = 4, margin = 8 },
   checkbox = { min_size = 12, padding_x = 2, padding_y = 1, margin = 8 },
   footer = { height = 32, padding_x = 10 },
+
+  tags = {
+    y_offset = 28,           -- Below badge row
+    height = 14,             -- Tag chip height
+    padding_x = 4,           -- Horizontal padding inside chip
+    padding_y = 1,           -- Vertical padding inside chip
+    gap = 3,                 -- Gap between chips
+    margin_x = 8,            -- Margin from tile edge
+    rounding = 3,            -- Chip corner rounding
+    font_scale = 0.75,       -- Smaller text for chips
+    max_tags = 3,            -- Maximum tags to show
+    colors = {
+      TCP = hexrgb("#4A90D9"),      -- Blue
+      MCP = hexrgb("#D94A90"),      -- Pink
+      Transport = hexrgb("#90D94A"), -- Green
+      Toolbar = hexrgb("#D9904A"),   -- Orange
+      Meter = hexrgb("#4AD990"),     -- Teal
+      EnvCP = hexrgb("#904AD9"),     -- Purple
+      Items = hexrgb("#D9D94A"),     -- Yellow
+      MIDI = hexrgb("#4AD9D9"),      -- Cyan
+      Track = hexrgb("#D94A4A"),     -- Red
+      Global = hexrgb("#808080"),    -- Gray
+    },
+    text_color = hexrgb("#FFFFFF"),
+  },
   
   mosaic = {
     padding = 15, max_size = 50, gap = 6, count = 3,
@@ -181,18 +218,83 @@ function M.TileRenderer.conflicts(ctx, dl, pkg, P, tile_x, tile_y, tile_w)
   local conflicts = pkg:conflicts(true)
   local conf_count = conflicts[P.id] or 0
   if conf_count == 0 then return end
-  
+
   local text = string.format('%d conflicts', conf_count)
   local tw, th = ImGui.CalcTextSize(ctx, text)
   local x = tile_x + math.floor((tile_w - tw) / 2)
   local y = tile_y + M.CONFIG.badge.margin
-  
+
   Draw.text(dl, x, y, M.CONFIG.colors.text.conflict, text)
-  
+
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, '##conftip-' .. P.id, tw, th)
   if ImGui.IsItemHovered(ctx) then
     ImGui.SetTooltip(ctx, "Conflicting Assets in Packages\n(autosolved through Overwrite Priority)")
+  end
+end
+
+function M.TileRenderer.tags(ctx, dl, P, tile_x, tile_y, tile_w)
+  -- Get tags from package meta or auto-generate from metadata
+  local tags = P.meta and P.meta.tags
+
+  if not tags then
+    -- Auto-generate tags from assets using metadata
+    local metadata = get_metadata()
+    if metadata then
+      local image_names = {}
+      for key, _ in pairs(P.assets or {}) do
+        table.insert(image_names, key)
+      end
+      tags = metadata.suggest_tags(image_names, 0.2) -- Lower threshold for more tags
+    end
+  end
+
+  if not tags or #tags == 0 then return end
+
+  -- Limit to max tags
+  local display_tags = {}
+  for i = 1, math.min(#tags, M.CONFIG.tags.max_tags) do
+    table.insert(display_tags, tags[i])
+  end
+
+  -- Calculate positions
+  local y = tile_y + M.CONFIG.tags.y_offset
+  local x = tile_x + M.CONFIG.tags.margin_x
+
+  for i, tag in ipairs(display_tags) do
+    -- Get tag color
+    local bg_color = M.CONFIG.tags.colors[tag] or M.CONFIG.tags.colors.Global
+
+    -- Calculate text size (approximate for smaller font)
+    local tw, th = ImGui.CalcTextSize(ctx, tag)
+    tw = tw * M.CONFIG.tags.font_scale
+
+    local chip_w = tw + M.CONFIG.tags.padding_x * 2
+    local chip_h = M.CONFIG.tags.height
+
+    -- Check if chip fits in tile width
+    if x + chip_w > tile_x + tile_w - M.CONFIG.tags.margin_x then
+      break
+    end
+
+    -- Draw chip background
+    Draw.rect_filled(dl, x, y, x + chip_w, y + chip_h, bg_color, M.CONFIG.tags.rounding)
+
+    -- Draw text centered in chip
+    local text_x = x + M.CONFIG.tags.padding_x
+    local text_y = y + math.floor((chip_h - th * M.CONFIG.tags.font_scale) / 2)
+
+    -- Use scaled font for tag text
+    ImGui.SetCursorScreenPos(ctx, text_x, text_y)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
+
+    -- Draw with smaller text approximation
+    Draw.text(dl, text_x, text_y + 1, M.CONFIG.tags.text_color, tag)
+
+    ImGui.PopStyleVar(ctx)
+
+    -- Move to next chip position
+    x = x + chip_w + M.CONFIG.tags.gap
   end
 end
 

@@ -61,6 +61,7 @@ local function draw_package_tile(ctx, pkg, theme, P, rect, state, settings, cust
   Renderer.TileRenderer.border(dl, rect, base_color, is_selected, is_active, is_hovered)
   Renderer.TileRenderer.order_badge(ctx, dl, pkg, P, x1, y1)
   Renderer.TileRenderer.conflicts(ctx, dl, pkg, P, x1, y1, tile_w)
+  Renderer.TileRenderer.tags(ctx, dl, P, x1, y1, tile_w)
   Renderer.TileRenderer.checkbox(ctx, pkg, P, custom_state.checkbox_rects, x1, y1, tile_w, tile_h, settings)
   Renderer.TileRenderer.mosaic(ctx, dl, theme, P, x1, y1, tile_w, tile_h)
   Renderer.TileRenderer.footer(ctx, dl, pkg, P, x1, y1, tile_w, tile_h)
