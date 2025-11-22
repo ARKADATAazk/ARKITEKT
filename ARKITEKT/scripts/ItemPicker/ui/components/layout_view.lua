@@ -158,8 +158,10 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local coord_offset_y = window_y
 
   -- Dotted pattern over entire overlay (no background fill - uses shell overlay scrim)
+  -- Using baked texture for performance (single draw call vs 8000+ circles)
   local overlay_pattern_config = {
     enabled = true,
+    use_texture = true,  -- Use baked texture for performance
     primary = {
       type = 'dots',
       spacing = 16,
