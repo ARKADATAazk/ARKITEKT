@@ -445,7 +445,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
       align = "center",
       width = 40,
       config = {
-        icon = "\xEE\xB1\x94",  -- U+EC54
+        icon = "\xEE\xB7\xA4",  -- U+EDE4
         icon_font = icon_font,
         icon_size = icon_size,
         label = "",
