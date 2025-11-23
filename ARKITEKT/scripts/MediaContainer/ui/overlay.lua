@@ -47,8 +47,7 @@ function M.draw_containers(ctx, draw_list, State)
     ImGui.WindowFlags_NoInputs |
     ImGui.WindowFlags_NoTitleBar |
     ImGui.WindowFlags_NoFocusOnAppearing |
-    ImGui.WindowFlags_NoBackground |
-    ImGui.WindowFlags_NoBringToFrontOnFocus)
+    ImGui.WindowFlags_NoBackground)
 
   if not visible then
     ImGui.PopStyleVar(ctx, 1)
