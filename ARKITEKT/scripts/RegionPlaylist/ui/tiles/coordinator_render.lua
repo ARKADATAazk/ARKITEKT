@@ -66,6 +66,42 @@ local function execute_sws_import(self, ctx)
   end
 end
 
+-- Helper: Extract region items from a playlist for operations
+local function extract_playlist_region_items(playlist)
+  local items = {}
+  if playlist and playlist.items then
+    for _, item in ipairs(playlist.items) do
+      if item.type == "region" and item.rid then
+        table.insert(items, {
+          rid = item.rid,
+          reps = item.reps or 1
+        })
+      end
+    end
+  end
+  return items
+end
+
+-- Helper: Extract RIDs and playlist IDs from pool selection
+local function extract_pool_selection(selection)
+  local rids = {}
+  local playlist_ids = {}
+  if selection then
+    local selected_keys = selection:selected_keys()
+    for _, key in ipairs(selected_keys) do
+      local rid = key:match("^pool_(%d+)$")
+      if rid then
+        table.insert(rids, tonumber(rid))
+      end
+      local playlist_id = key:match("^pool_playlist_(.+)$")
+      if playlist_id then
+        table.insert(playlist_ids, playlist_id)
+      end
+    end
+  end
+  return rids, playlist_ids
+end
+
 function M.draw_selector(self, ctx, playlists, active_id, height)
   self.selector:draw(ctx, playlists, active_id, height, self.on_playlist_changed)
 end
@@ -152,84 +188,28 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
 
   if ContextMenu.begin(ctx, "ActionsMenu") then
     if ContextMenu.item(ctx, "Crop Project to Playlist") then
-      reaper.ShowConsoleMsg("[Active Menu] Crop Project to Playlist clicked\n")
-      -- Get ALL playlist items from active playlist
       local playlist = State.get_active_playlist()
-      local playlist_items = {}
-
-      reaper.ShowConsoleMsg("[Active Menu] Active playlist: " .. tostring(playlist and playlist.id or "nil") .. "\n")
-      if playlist then
-        reaper.ShowConsoleMsg("[Active Menu] Playlist has " .. tostring(playlist.items and #playlist.items or 0) .. " items\n")
-      end
-
-      if playlist and playlist.items then
-        for _, item in ipairs(playlist.items) do
-          if item.type == "region" and item.rid then
-            reaper.ShowConsoleMsg("[Active Menu] Found region item with RID: " .. tostring(item.rid) .. " reps: " .. tostring(item.reps or 1) .. "\n")
-            table.insert(playlist_items, {
-              rid = item.rid,
-              reps = item.reps or 1
-            })
-          end
-        end
-      else
-        reaper.ShowConsoleMsg("[Active Menu] No active playlist or playlist has no items\n")
-      end
-
-      reaper.ShowConsoleMsg("[Active Menu] Total playlist items to crop: " .. #playlist_items .. "\n")
+      local playlist_items = extract_playlist_region_items(playlist)
       if #playlist_items > 0 then
         local RegionOps = require('rearkitekt.reaper.region_operations')
         RegionOps.crop_to_playlist(playlist_items)
-        reaper.ShowConsoleMsg("[Active Menu] Crop operation completed\n")
-      else
-        reaper.ShowConsoleMsg("[Active Menu] No playlist items found, operation skipped\n")
       end
       ImGui.CloseCurrentPopup(ctx)
     end
 
     if ContextMenu.item(ctx, "Crop to Playlist (New Tab)") then
-      reaper.ShowConsoleMsg("[Active Menu] Crop to Playlist (New Tab) clicked\n")
-      -- Get the full active playlist object (not just items)
       local playlist = State.get_active_playlist()
-
-      if playlist and playlist.items then
-        -- Build playlist items array
-        local playlist_items = {}
-        for _, item in ipairs(playlist.items) do
-          if item.type == "region" and item.rid then
-            table.insert(playlist_items, {
-              rid = item.rid,
-              reps = item.reps or 1
-            })
-          end
-        end
-
-        reaper.ShowConsoleMsg("[Active Menu] Total playlist items to crop (new tab): " .. #playlist_items .. "\n")
-        if #playlist_items > 0 then
-          -- Pass both the playlist structure and items to preserve playlist
-          local RegionOps = require('rearkitekt.reaper.region_operations')
-          RegionOps.crop_to_playlist_new_tab(playlist_items, playlist.name, playlist.chip_color)
-        end
+      local playlist_items = extract_playlist_region_items(playlist)
+      if #playlist_items > 0 then
+        local RegionOps = require('rearkitekt.reaper.region_operations')
+        RegionOps.crop_to_playlist_new_tab(playlist_items, playlist.name, playlist.chip_color)
       end
       ImGui.CloseCurrentPopup(ctx)
     end
 
     if ContextMenu.item(ctx, "Append Playlist to Project") then
-      -- Get all playlist items from active playlist
       local playlist = State.get_active_playlist()
-      local playlist_items = {}
-
-      if playlist and playlist.items then
-        for _, item in ipairs(playlist.items) do
-          if item.type == "region" and item.rid then
-            table.insert(playlist_items, {
-              rid = item.rid,
-              reps = item.reps or 1
-            })
-          end
-        end
-      end
-
+      local playlist_items = extract_playlist_region_items(playlist)
       if #playlist_items > 0 then
         local RegionOps = require('rearkitekt.reaper.region_operations')
         RegionOps.append_playlist_to_project(playlist_items)
@@ -238,21 +218,8 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
     end
 
     if ContextMenu.item(ctx, "Paste Playlist at Edit Cursor") then
-      -- Get all playlist items from active playlist
       local playlist = State.get_active_playlist()
-      local playlist_items = {}
-
-      if playlist and playlist.items then
-        for _, item in ipairs(playlist.items) do
-          if item.type == "region" and item.rid then
-            table.insert(playlist_items, {
-              rid = item.rid,
-              reps = item.reps or 1
-            })
-          end
-        end
-      end
-
+      local playlist_items = extract_playlist_region_items(playlist)
       if #playlist_items > 0 then
         local RegionOps = require('rearkitekt.reaper.region_operations')
         RegionOps.paste_playlist_at_cursor(playlist_items)
@@ -380,23 +347,7 @@ function M.draw_pool(self, ctx, regions, height)
         on_change = function(color)
           if not self.controller then return end
 
-          local rids = {}
-          local playlist_ids = {}
-
-          -- Check Pool grid selections only
-          if self.pool_grid and self.pool_grid.selection then
-            local selected_keys = self.pool_grid.selection:selected_keys()
-            for _, key in ipairs(selected_keys) do
-              local rid = key:match("^pool_(%d+)$")
-              if rid then
-                table.insert(rids, tonumber(rid))
-              end
-              local playlist_id = key:match("^pool_playlist_(.+)$")
-              if playlist_id then
-                table.insert(playlist_ids, playlist_id)
-              end
-            end
-          end
+          local rids, playlist_ids = extract_pool_selection(self.pool_grid and self.pool_grid.selection)
 
           -- Apply colors to Pool selections
           if #rids > 0 then
@@ -466,53 +417,19 @@ function M.draw_pool(self, ctx, regions, height)
     if ContextMenu.separator(ctx) then end
 
     if ContextMenu.item(ctx, "Append Selected Regions to Project") then
-      reaper.ShowConsoleMsg("[Pool Menu] Append Selected Regions clicked\n")
-      -- Get selected region RIDs from pool grid
-      local selected_keys = self.pool_grid and self.pool_grid.selection and self.pool_grid.selection:selected_keys() or {}
-      reaper.ShowConsoleMsg("[Pool Menu] Selected keys count: " .. #selected_keys .. "\n")
-      local rids = {}
-      for _, key in ipairs(selected_keys) do
-        reaper.ShowConsoleMsg("[Pool Menu] Key: " .. tostring(key) .. "\n")
-        local rid = key:match("^pool_(%d+)$")
-        if rid then
-          reaper.ShowConsoleMsg("[Pool Menu] Matched RID: " .. tostring(rid) .. "\n")
-          table.insert(rids, tonumber(rid))
-        end
-      end
-
-      reaper.ShowConsoleMsg("[Pool Menu] Total RIDs to append: " .. #rids .. "\n")
+      local rids = extract_pool_selection(self.pool_grid and self.pool_grid.selection)
       if #rids > 0 then
         local RegionOps = require('rearkitekt.reaper.region_operations')
         RegionOps.append_regions_to_project(rids)
-        reaper.ShowConsoleMsg("[Pool Menu] Append operation completed\n")
-      else
-        reaper.ShowConsoleMsg("[Pool Menu] No RIDs found, operation skipped\n")
       end
       ImGui.CloseCurrentPopup(ctx)
     end
 
     if ContextMenu.item(ctx, "Paste Selected Regions at Edit Cursor") then
-      reaper.ShowConsoleMsg("[Pool Menu] Paste Selected Regions clicked\n")
-      -- Get selected region RIDs from pool grid
-      local selected_keys = self.pool_grid and self.pool_grid.selection and self.pool_grid.selection:selected_keys() or {}
-      reaper.ShowConsoleMsg("[Pool Menu] Selected keys count: " .. #selected_keys .. "\n")
-      local rids = {}
-      for _, key in ipairs(selected_keys) do
-        reaper.ShowConsoleMsg("[Pool Menu] Key: " .. tostring(key) .. "\n")
-        local rid = key:match("^pool_(%d+)$")
-        if rid then
-          reaper.ShowConsoleMsg("[Pool Menu] Matched RID: " .. tostring(rid) .. "\n")
-          table.insert(rids, tonumber(rid))
-        end
-      end
-
-      reaper.ShowConsoleMsg("[Pool Menu] Total RIDs to paste: " .. #rids .. "\n")
+      local rids = extract_pool_selection(self.pool_grid and self.pool_grid.selection)
       if #rids > 0 then
         local RegionOps = require('rearkitekt.reaper.region_operations')
         RegionOps.paste_regions_at_cursor(rids)
-        reaper.ShowConsoleMsg("[Pool Menu] Paste operation completed\n")
-      else
-        reaper.ShowConsoleMsg("[Pool Menu] No RIDs found, operation skipped\n")
       end
       ImGui.CloseCurrentPopup(ctx)
     end
