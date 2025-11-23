@@ -22,10 +22,10 @@ M.FLAGS = {
 
 -- Default colors for drop indicators
 M.COLORS = {
-  POTENTIAL_TARGET = Colors.hexrgb("#5588FF44"),  -- Subtle highlight for all potential targets
-  ACTIVE_TARGET = Colors.hexrgb("#5588FFCC"),     -- Brighter when hovering
-  ACTIVE_FILL = Colors.hexrgb("#5588FF18"),       -- Fill for active target
-  GLOW_COLOR = Colors.hexrgb("#5588FF"),          -- Base glow color
+  POTENTIAL_TARGET = Colors.hexrgb("#FFFFFF30"),  -- Subtle highlight for all potential targets
+  ACTIVE_TARGET = Colors.hexrgb("#FFFFFFAA"),     -- Brighter when hovering
+  ACTIVE_FILL = Colors.hexrgb("#FFFFFF10"),       -- Fill for active target
+  GLOW_COLOR = Colors.hexrgb("#FFFFFF"),          -- White glow
 }
 
 -- Track active drag type globally
@@ -168,11 +168,11 @@ function M.draw_active_target(ctx, rect, border_color, fill_color, glow_color)
   -- Extract RGB from glow color for alpha manipulation
   local gr, gg, gb = Colors.rgba_to_components(glow_color)
 
-  -- Draw glow layers (outer to inner)
+  -- Draw glow layers (outer to inner) - reduced by 60%
   local glow_layers = {
-    { expand = 8, alpha = 0x20 },   -- Outermost, very faint
-    { expand = 5, alpha = 0x40 },   -- Middle
-    { expand = 3, alpha = 0x60 },   -- Inner glow
+    { expand = 8, alpha = 0x0C },   -- Outermost, very faint
+    { expand = 5, alpha = 0x19 },   -- Middle
+    { expand = 3, alpha = 0x26 },   -- Inner glow
   }
 
   for _, layer in ipairs(glow_layers) do

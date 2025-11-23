@@ -168,8 +168,28 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         -- Get tag name from payload
         local tag_name = payload.label or payload.id
         if tag_name then
-          -- Add tag to template
-          Tags.add_tag_to_template(self.state.metadata, template.uuid, tag_name)
+          -- Check if dropped template is in selection
+          local template_key = "template_" .. template.uuid
+          local is_selected = self.state.selected_template_keys and self.state.selected_template_keys[template_key]
+
+          local tagged_count = 0
+
+          if is_selected and self.state.selected_template_keys then
+            -- Apply tag to ALL selected templates
+            for key, _ in pairs(self.state.selected_template_keys) do
+              local uuid = key:match("template_(.+)")
+              if uuid then
+                if Tags.add_tag_to_template(self.state.metadata, uuid, tag_name) then
+                  tagged_count = tagged_count + 1
+                end
+              end
+            end
+          else
+            -- Apply tag only to dropped template
+            if Tags.add_tag_to_template(self.state.metadata, template.uuid, tag_name) then
+              tagged_count = 1
+            end
+          end
 
           -- Save metadata
           Persistence.save_metadata(self.state.metadata)
@@ -180,7 +200,11 @@ function GUI:initialize_once(ctx, is_overlay_mode)
             Scanner.filter_templates(self.state)
           end
 
-          self.state.set_status("Tagged \"" .. template.name .. "\" with " .. tag_name, "success")
+          if tagged_count > 1 then
+            self.state.set_status("Tagged " .. tagged_count .. " templates with " .. tag_name, "success")
+          elseif tagged_count == 1 then
+            self.state.set_status("Tagged \"" .. template.name .. "\" with " .. tag_name, "success")
+          end
         end
       end
     end,
@@ -349,8 +373,28 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         -- Get tag name from payload
         local tag_name = payload.label or payload.id
         if tag_name then
-          -- Add tag to template
-          Tags.add_tag_to_template(self.state.metadata, template.uuid, tag_name)
+          -- Check if dropped template is in selection
+          local template_key = "template_" .. template.uuid
+          local is_selected = self.state.selected_template_keys and self.state.selected_template_keys[template_key]
+
+          local tagged_count = 0
+
+          if is_selected and self.state.selected_template_keys then
+            -- Apply tag to ALL selected templates
+            for key, _ in pairs(self.state.selected_template_keys) do
+              local uuid = key:match("template_(.+)")
+              if uuid then
+                if Tags.add_tag_to_template(self.state.metadata, uuid, tag_name) then
+                  tagged_count = tagged_count + 1
+                end
+              end
+            end
+          else
+            -- Apply tag only to dropped template
+            if Tags.add_tag_to_template(self.state.metadata, template.uuid, tag_name) then
+              tagged_count = 1
+            end
+          end
 
           -- Save metadata
           Persistence.save_metadata(self.state.metadata)
@@ -361,7 +405,11 @@ function GUI:initialize_once(ctx, is_overlay_mode)
             Scanner.filter_templates(self.state)
           end
 
-          self.state.set_status("Tagged \"" .. template.name .. "\" with " .. tag_name, "success")
+          if tagged_count > 1 then
+            self.state.set_status("Tagged " .. tagged_count .. " templates with " .. tag_name, "success")
+          elseif tagged_count == 1 then
+            self.state.set_status("Tagged \"" .. template.name .. "\" with " .. tag_name, "success")
+          end
         end
       end
     end,
