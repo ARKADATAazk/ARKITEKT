@@ -739,7 +739,14 @@ local hexrgb = Colors.hexrgb
       self.show_imgui_metrics = ImGui.ShowMetricsWindow(ctx, true)
     end
 
-    if self._begun then 
+    -- Ensure body child window is closed before ending main window
+    if self._body_open then
+      ImGui.EndChild(ctx)
+      ImGui.PopStyleVar(ctx)
+      self._body_open = false
+    end
+
+    if self._begun then
       ImGui.End(ctx)
       self._begun = false
     end

@@ -81,27 +81,17 @@ if USE_OVERLAY then
     end,
   }))
 
-  -- Inline defer loop (no separate Runtime module)
-  local open = true
-  local function frame()
-    if not open then
+  -- Use Shell.run_loop for defer loop
+  Shell.run_loop({
+    ctx = ctx,
+    on_frame = function(ctx)
+      overlay_mgr:render(ctx)
+      return overlay_mgr:is_active()
+    end,
+    on_close = function()
       State.cleanup()
-      return
-    end
-
-    overlay_mgr:render(ctx)
-    if not overlay_mgr:is_active() then
-      open = false
-    end
-
-    if open then
-      reaper.defer(frame)
-    else
-      State.cleanup()
-    end
-  end
-
-  reaper.defer(frame)
+    end,
+  })
 
 else
   -- NORMAL WINDOW MODE

@@ -372,4 +372,38 @@ function M.run(opts)
   return runtime
 end
 
+-- Simple defer loop for overlay mode apps
+-- opts: {
+--   ctx = ImGui context (required),
+--   on_frame = function(ctx) -> bool (return false to close),
+--   on_close = function() (optional cleanup)
+-- }
+function M.run_loop(opts)
+  opts = opts or {}
+  local ctx = opts.ctx
+  local on_frame = opts.on_frame or function() return true end
+  local on_close = opts.on_close
+
+  local open = true
+  local function frame()
+    if not open then
+      if on_close then on_close() end
+      return
+    end
+
+    local continue = on_frame(ctx)
+    if continue == false then
+      open = false
+    end
+
+    if open then
+      reaper.defer(frame)
+    else
+      if on_close then on_close() end
+    end
+  end
+
+  reaper.defer(frame)
+end
+
 return M
