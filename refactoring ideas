@@ -1,0 +1,424 @@
+RegionPlaylist/
+├── core/
+│   ├── state.lua              # Unified state manager
+│   ├── config.lua             # UI constants, dimensions, colors
+│   ├── controller.lua         # Playlist operations with undo
+│   ├── shortcuts.lua          # Keyboard handlers
+│   ├── dependency_graph.lua   # Circular reference detection
+│   └── keys.lua               # Centralized key generation
+├── playback/
+│   ├── coordinator.lua        # Bridge between app and engine
+│   ├── engine.lua             # Core playback logic
+│   ├── transport.lua          # Reaper transport wrapper
+│   ├── transitions.lua        # Region-to-region transitions
+│   ├── scheduler.lua          # Quantize with trigger regions
+│   └── tracker.lua            # Progress monitoring
+├── playlists/
+│   ├── manager.lua            # CRUD operations
+│   ├── sequencer.lua          # Cache and sequence lookups
+│   └── expander.lua           # Recursive playlist expansion
+├── regions/
+│   ├── registry.lua           # Region cache, change detection
+│   └── pool.lua               # Pool filtering and sorting
+├── views/
+│   ├── main.lua               # Window orchestration, layout
+│   ├── transport_bar.lua      # Controls, quantize selector
+│   ├── active_panel.lua       # Active playlist with tabs
+│   ├── pool_panel.lua         # Region/playlist pool
+│   └── status_bar.lua         # Status display
+├── components/
+│   ├── tiles/
+│   │   ├── base.lua           # Shared rendering logic
+│   │   ├── active.lua         # Active playlist tiles
+│   │   ├── pool.lua           # Pool tiles
+│   │   └── config.lua         # Tile constants
+│   ├── controls/
+│   │   └── quantize.lua       # Quantize dropdown
+│   └── selector.lua           # Playlist tab chips
+├── storage/
+│   ├── persistence.lua        # ExtState save/load
+│   ├── settings.lua           # User preferences
+│   ├── migration.lua          # Data format upgrades
+│   └── undo.lua               # History management
+└── ARK_RegionPlaylist.lua     # Entry point
+
+Total: ~35 files (down from 116)
+```
+
+Key changes in `arkitekt/` library:
+```
+arkitekt/
+├── core/
+│   └── events.lua             # Generic event bus (NEW)
+├── patterns/
+│   ├── controller.lua         # Base controller pattern (NEW)
+│   └── coordinator.lua        # UI-backend bridge pattern (NEW)
+└── gui/widgets/grid/
+    └── bridge.lua             # Grid drag coordination (MOVED)
+
+
+RegionPlaylist/
+├── domains/
+│   ├── playback/
+│   │   ├── engine.lua
+│   │   ├── transport.lua
+│   │   ├── transitions.lua
+│   │   ├── quantize_hack.lua
+│   │   └── progress_tracker.lua
+│   ├── playlist/
+│   │   ├── manager.lua
+│   │   ├── sequencer.lua
+│   │   ├── expander.lua
+│   │   ├── operations.lua
+│   │   └── circular_check.lua
+│   └── regions/
+│       ├── scanner.lua
+│       ├── cache.lua
+│       └── pool_manager.lua
+├── ui/
+│   ├── windows/
+│   │   ├── main_window.lua
+│   │   ├── transport_bar.lua
+│   │   └── layout_manager.lua
+│   ├── grids/
+│   │   ├── active_playlist.lua
+│   │   ├── region_pool.lua
+│   │   └── grid_bridge.lua
+│   ├── tiles/
+│   │   ├── active_renderer.lua
+│   │   ├── pool_renderer.lua
+│   │   └── tile_base.lua
+│   └── overlays/
+│       └── playlist_selector.lua
+├── state/
+│   ├── store.lua          # Single source of truth
+│   ├── persistence.lua
+│   └── history.lua
+└── main.lua
+```
+
+## Option 2: Clean Architecture Layers
+```
+RegionPlaylist/
+├── presentation/
+│   ├── views/
+│   │   ├── main_view.lua
+│   │   ├── transport_view.lua
+│   │   ├── active_list_view.lua
+│   │   └── pool_view.lua
+│   ├── components/
+│   │   ├── tile.lua
+│   │   ├── grid.lua
+│   │   ├── separator.lua
+│   │   └── header.lua
+│   └── themes/
+│       └── default.lua
+├── application/
+│   ├── controllers/
+│   │   ├── playlist_controller.lua
+│   │   ├── playback_controller.lua
+│   │   └── ui_controller.lua
+│   ├── services/
+│   │   ├── sequence_service.lua
+│   │   ├── region_service.lua
+│   │   └── sync_service.lua
+│   └── commands/         # Command pattern for operations
+│       ├── add_item.lua
+│       ├── reorder.lua
+│       └── delete_item.lua
+├── domain/
+│   ├── entities/
+│   │   ├── playlist.lua
+│   │   ├── region.lua
+│   │   └── playback_state.lua
+│   └── use_cases/
+│       ├── expand_playlist.lua
+│       └── calculate_sequence.lua
+├── infrastructure/
+│   ├── reaper/
+│   │   ├── regions_api.lua
+│   │   └── transport_api.lua
+│   └── storage/
+│       └── ext_state.lua
+└── bootstrap.lua
+```
+
+## Option 3: Feature-Based Modules
+```
+RegionPlaylist/
+├── core/
+│   ├── state_manager.lua
+│   ├── event_bus.lua
+│   └── config.lua
+├── features/
+│   ├── playback/
+│   │   ├── index.lua
+│   │   ├── engine.lua
+│   │   ├── controls.lua
+│   │   └── quantize.lua
+│   ├── playlist_editor/
+│   │   ├── index.lua
+│   │   ├── list_view.lua
+│   │   ├── item_operations.lua
+│   │   └── drag_drop.lua
+│   ├── region_pool/
+│   │   ├── index.lua
+│   │   ├── pool_view.lua
+│   │   ├── filters.lua
+│   │   └── sorting.lua
+│   ├── transport/
+│   │   ├── index.lua
+│   │   ├── controls.lua
+│   │   └── display.lua
+│   └── history/
+│       ├── index.lua
+│       └── undo_redo.lua
+├── shared/
+│   ├── components/
+│   │   ├── grid.lua
+│   │   └── tile.lua
+│   └── utils/
+│       ├── colors.lua
+│       └── timing.lua
+└── app.lua
+```
+
+## Option 4: Component-Centric Architecture
+```
+RegionPlaylist/
+├── components/
+│   ├── containers/
+│   │   ├── MainWindow/
+│   │   │   ├── index.lua
+│   │   │   ├── layout.lua
+│   │   │   └── state.lua
+│   │   ├── TransportBar/
+│   │   │   ├── index.lua
+│   │   │   ├── buttons.lua
+│   │   │   └── quantize_selector.lua
+│   │   └── SplitView/
+│   │       ├── index.lua
+│   │       └── separator.lua
+│   ├── lists/
+│   │   ├── ActivePlaylist/
+│   │   │   ├── index.lua
+│   │   │   ├── grid.lua
+│   │   │   ├── items.lua
+│   │   │   └── interactions.lua
+│   │   └── RegionPool/
+│   │       ├── index.lua
+│   │       ├── grid.lua
+│   │       └── filters.lua
+│   └── primitives/
+│       ├── Tile/
+│       │   ├── index.lua
+│       │   ├── variants.lua
+│       │   └── animations.lua
+│       └── DragGhost/
+│           └── index.lua
+├── services/
+│   ├── playback_engine.lua
+│   ├── playlist_manager.lua
+│   ├── region_scanner.lua
+│   └── state_coordinator.lua
+├── models/
+│   ├── playlist.lua
+│   ├── region.lua
+│   └── app_state.lua
+└── init.lua
+```
+
+## Comparison Table
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **Domain-Driven** | Clear business logic separation, easy to find related code | May duplicate some UI components |
+| **Clean Architecture** | Strict separation of concerns, testable | More boilerplate, steeper learning curve |
+| **Feature-Based** | Self-contained features, easy to add/remove features | Potential for cross-feature dependencies |
+| **Component-Centric** | Mirrors UI structure, React-like patterns | Business logic scattered across components |
+
+## My Recommendation
+
+**Option 1 (Domain-Driven)** with these refinements:
+```
+RegionPlaylist/
+├── core/
+│   ├── state.lua           # Unified state manager
+│   ├── events.lua          # Event bus
+│   └── config.lua
+├── playback/
+│   ├── engine.lua
+│   ├── transport.lua
+│   ├── scheduler.lua       # Instead of "quantize_hack"
+│   └── tracker.lua
+├── playlists/
+│   ├── manager.lua
+│   ├── sequencer.lua
+│   └── expander.lua
+├── regions/
+│   ├── registry.lua        # Instead of "cache"
+│   └── pool.lua
+├── views/
+│   ├── main.lua
+│   ├── transport_bar.lua
+│   ├── active_panel.lua
+│   └── pool_panel.lua
+├── components/
+│   ├── grids/
+│   ├── tiles/
+│   └── controls/
+├── storage/
+│   └── persistence.lua
+└── main.lua
+
+
+Config vs Constants - When to Use Each?
+Use config.lua when:
+
+✅ Values that define how features work
+✅ Complex nested structures
+✅ Factory functions that generate configs
+✅ Things you might want to make user-configurable later
+✅ Values that differ per environment/feature
+
+Examples:
+luaconfig.quantize_grid_options = { ... }  -- List of options
+config.get_container_config(...)        -- Generated configs
+config.separator_defaults = { ... }     -- Feature behavior
+Use constants.lua when:
+
+✅ True mathematical/physical constants
+✅ Magic numbers with no business logic
+✅ Enum-like values
+✅ Values that never change
+✅ Simple primitive values
+
+Examples:
+luaconstants.HOVER_SPEED = 12.0           -- Animation speed
+constants.MAX_UNDO_STACK = 50          -- Hard limit
+constants.EPSILON = 0.001              -- Float comparison
+constants.STATUS = { OK = 1, ERROR = 2 }  -- Enum
+Use theme.lua when:
+
+✅ All visual design tokens
+✅ Colors, fonts, spacing scales
+✅ Things a designer would tweak
+✅ Visual consistency across app
+
+Examples:
+luatheme.colors.primary = 0x42E896FF
+theme.spacing.base = 8
+theme.fonts.default = "Arial"
+
+🎨 Industry Standards (What Others Use)
+Framework/ToolVisualStructuralConstantsReact/Webtheme.jsconfig.jsconstants.jsUnityTheme.csGameConfig.csConstants.csUnrealStyle.hConfig.iniConstants.hAndroidstyles.xml / colors.xmlconfig.xmlConstants.java
+Common pattern: Split visual from structural.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Structure Summary
+Folder Categories
+ARK_FeatureName/
+├── domain/          # Business logic, no UI code
+├── ui/              # Views and components, presentation only
+├── state/           # Store, persistence (ExtState save/load)
+├── network/         # WAAPI, HTTP, WebSocket (only if needed)
+├── config.lua       # Feature behavior, factory functions
+├── constants.lua    # Immutable values, enums, limits
+├── theme.lua        # Colors, spacing, fonts (optional)
+└── ARK_FeatureName.lua  # Entry point
+```
+
+### Rules
+
+**Folder Creation:**
+- Start minimal, add folders when ≥3 related files
+- Max 3 levels deep
+- Cache lives in `domain/{feature}/cache.lua`
+- File I/O stays in `domain/` unless 3+ import/export modules
+
+**File Naming:**
+- `{feature}_manager.lua` - Orchestrates domain logic
+- `{feature}_view.lua` - Renders UI
+- `{feature}_store.lua` - State slice
+- `{feature}_bridge.lua` - Thin REAPER API wrapper (if 80%+ API calls)
+
+**Import Rules:**
+- `domain/` can import: `arkitekt/core`, `arkitekt/reaper`, other `domain/`, `state/` (read-only)
+- `domain/` cannot import: `ui/`
+- `ui/` can import: `domain/` (read-only), `state/`, `arkitekt/gui`
+- `ui/` cannot import: direct REAPER API calls
+
+**Generic helpers:** Put in `arkitekt/core/`, not in scripts
+
+---
+
+## RegionPlaylist Simulation
+```
+ARK_RegionPlaylist/
+├── domain/
+│   ├── playback/
+│   │   ├── engine.lua              # Playback state machine
+│   │   ├── scheduler.lua           # Quantization + triggers
+│   │   ├── transitions.lua         # Region-to-region logic
+│   │   ├── tracker.lua             # Progress monitoring
+│   │   └── reaper_bridge.lua       # Transport wrapper
+│   ├── playlists/
+│   │   ├── manager.lua             # CRUD operations
+│   │   ├── sequencer.lua           # Expansion logic
+│   │   └── validator.lua           # Circular reference check
+│   ├── regions/
+│   │   ├── scanner.lua             # Polls REAPER regions
+│   │   ├── registry.lua            # Cache + change detection
+│   │   └── pool_filter.lua         # Filtering/sorting
+│   └── models/
+│       ├── playlist.lua
+│       ├── region.lua
+│       └── sequence.lua
+├── ui/
+│   ├── views/
+│   │   ├── main_view.lua           # Window orchestration
+│   │   ├── transport_bar_view.lua  # Controls + quantize
+│   │   ├── active_panel_view.lua   # Active playlist tabs
+│   │   └── pool_panel_view.lua     # Region pool
+│   ├── components/
+│   │   ├── region_tile.lua         # Tile renderer
+│   │   ├── playlist_chip.lua       # Tab selector
+│   │   └── separator.lua           # Split view divider
+│   └── widgets/
+│       ├── quantize_dropdown.lua
+│       └── status_display.lua
+├── state/
+│   ├── store.lua                   # Single state tree
+│   ├── actions.lua                 # Action creators
+│   ├── persistence.lua             # ExtState save/load
+│   └── migrations.lua              # Data format upgrades
+├── config.lua                      # Grid sizes, defaults, options
+├── constants.lua                   # Max undo, animation speeds
+├── theme.lua                       # Custom colors (if any)
+└── ARK_RegionPlaylist.lua          # Entry point

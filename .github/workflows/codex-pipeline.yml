@@ -1,0 +1,286 @@
+name: Codex Pipeline Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      pipeline_name:
+        description: 'Pipeline to run'
+        required: true
+        type: choice
+        options:
+          - gui-decomposition
+          - state-consolidation
+          - coordinator-cleanup
+      start_phase:
+        description: 'Start from phase number (0-based)'
+        required: false
+        default: '0'
+      auto_approve:
+        description: 'Auto-approve all phases (dangerous!)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  PIPELINE_DIR: .codex
+
+jobs:
+  validate-lua:
+    name: Validate Lua Syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Lua 5.3
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.3
+      
+      - name: Validate all Lua files
+        run: |
+          echo "Validating Lua syntax..."
+          find ARKITEKT/scripts -name "*.lua" | while read file; do
+            echo "Checking: $file"
+            lua5.3 -p "$file" || exit 1
+          done
+          echo "✓ All Lua files valid"
+
+  run-phase:
+    name: Phase ${{ matrix.phase }}
+    runs-on: ubuntu-latest
+    needs: validate-lua
+    strategy:
+      matrix:
+        phase: [0, 1, 2, 3, 4, 5]
+      fail-fast: true
+      max-parallel: 1
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Check if phase exists
+        id: check_phase
+        run: |
+          PIPELINE_FILE="${{ env.PIPELINE_DIR }}/pipeline-${{ inputs.pipeline_name }}.json"
+          
+          if [ ! -f "$PIPELINE_FILE" ]; then
+            echo "Pipeline file not found: $PIPELINE_FILE"
+            exit 1
+          fi
+          
+          PHASE_COUNT=$(jq '.phases | length' "$PIPELINE_FILE")
+          CURRENT_PHASE=${{ matrix.phase }}
+          START_PHASE=${{ inputs.start_phase }}
+          
+          if [ $CURRENT_PHASE -ge $PHASE_COUNT ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Phase $CURRENT_PHASE doesn't exist (total: $PHASE_COUNT)"
+            exit 0
+          fi
+          
+          if [ $CURRENT_PHASE -lt $START_PHASE ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping phase $CURRENT_PHASE (starting from $START_PHASE)"
+            exit 0
+          fi
+          
+          echo "skip=false" >> $GITHUB_OUTPUT
+          
+          PHASE_NAME=$(jq -r ".phases[$CURRENT_PHASE].name" "$PIPELINE_FILE")
+          echo "phase_name=$PHASE_NAME" >> $GITHUB_OUTPUT
+          echo "Running phase $CURRENT_PHASE: $PHASE_NAME"
+      
+      - name: Create branch for phase
+        if: steps.check_phase.outputs.skip == 'false'
+        run: |
+          BRANCH_NAME="codex/phase-${{ steps.check_phase.outputs.phase_name }}"
+          git checkout -b "$BRANCH_NAME" || git checkout "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+      
+      - name: Run Codex Phase
+        if: steps.check_phase.outputs.skip == 'false'
+        id: codex
+        run: |
+          PIPELINE_FILE="${{ env.PIPELINE_DIR }}/pipeline-${{ inputs.pipeline_name }}.json"
+          
+          echo "🤖 Running Codex on phase ${{ matrix.phase }}..."
+          
+          # Extract phase payload
+          jq ".phases[${{ matrix.phase }}].payload" "$PIPELINE_FILE" > /tmp/phase_task.json
+          
+          # TODO: Replace with actual Codex CLI call
+          # For now, this is a placeholder
+          echo "Codex task:"
+          cat /tmp/phase_task.json
+          
+          # Placeholder: codex run /tmp/phase_task.json
+          
+          # Mock success for now
+          echo "result=success" >> $GITHUB_OUTPUT
+          echo "changes_made=true" >> $GITHUB_OUTPUT
+      
+      - name: Validate Lua syntax after changes
+        if: steps.check_phase.outputs.skip == 'false' && steps.codex.outputs.changes_made == 'true'
+        run: |
+          echo "Validating modified Lua files..."
+          find ARKITEKT/scripts -name "*.lua" | while read file; do
+            lua5.3 -p "$file" || exit 1
+          done
+          echo "✓ All modified files valid"
+      
+      - name: Run proof-greps
+        if: steps.check_phase.outputs.skip == 'false'
+        run: |
+          PIPELINE_FILE="${{ env.PIPELINE_DIR }}/pipeline-${{ inputs.pipeline_name }}.json"
+          
+          echo "Running proof-greps..."
+          
+          # Extract proof_grep array
+          PROOF_GREPS=$(jq -r ".phases[${{ matrix.phase }}].payload.proof_grep" "$PIPELINE_FILE")
+          
+          if [ "$PROOF_GREPS" = "null" ]; then
+            echo "No proof-greps defined"
+            exit 0
+          fi
+          
+          # Run each grep
+          echo "$PROOF_GREPS" | jq -c '.[]' | while read grep; do
+            PATTERN=$(echo "$grep" | jq -r '.pattern')
+            SHOULD_MATCH=$(echo "$grep" | jq -r '.should_match')
+            
+            echo "Testing pattern: $PATTERN (should_match: $SHOULD_MATCH)"
+            
+            if grep -r -E "$PATTERN" ARKITEKT/scripts/RegionPlaylist/ > /dev/null; then
+              FOUND=true
+            else
+              FOUND=false
+            fi
+            
+            if [ "$SHOULD_MATCH" = "true" ] && [ "$FOUND" = "false" ]; then
+              echo "❌ FAILED: Pattern '$PATTERN' should match but didn't"
+              exit 1
+            fi
+            
+            if [ "$SHOULD_MATCH" = "false" ] && [ "$FOUND" = "true" ]; then
+              echo "❌ FAILED: Pattern '$PATTERN' should NOT match but did"
+              exit 1
+            fi
+            
+            echo "✓ Pattern check passed"
+          done
+          
+          echo "✓ All proof-greps passed"
+      
+      - name: Commit changes
+        if: steps.check_phase.outputs.skip == 'false' && steps.codex.outputs.changes_made == 'true'
+        run: |
+          git config user.name "Codex Pipeline Bot"
+          git config user.email "codex@github-actions"
+          
+          git add -A
+          git commit -m "Phase ${{ matrix.phase }}: ${{ steps.check_phase.outputs.phase_name }}
+
+          Pipeline: ${{ inputs.pipeline_name }}
+          Phase: ${{ matrix.phase }}
+          
+          Auto-generated by Codex Pipeline Runner" || echo "No changes to commit"
+          
+          git push origin "$BRANCH_NAME" --force
+      
+      - name: Create Pull Request
+        if: steps.check_phase.outputs.skip == 'false' && steps.codex.outputs.changes_made == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          branch: ${{ env.BRANCH_NAME }}
+          title: "[Codex] Phase ${{ matrix.phase }}: ${{ steps.check_phase.outputs.phase_name }}"
+          body: |
+            ## Automated Codex Phase
+            
+            **Pipeline:** `${{ inputs.pipeline_name }}`
+            **Phase:** `${{ matrix.phase }}`
+            **Name:** `${{ steps.check_phase.outputs.phase_name }}`
+            
+            ### Validation Status
+            - ✅ Lua syntax valid
+            - ✅ Proof-greps passed
+            
+            ### Next Steps
+            1. Review the changes
+            2. Test manually if needed
+            3. Approve to continue to next phase
+            
+            ---
+            *Generated by Codex Pipeline Runner*
+          labels: codex-pipeline,automated
+          draft: false
+      
+      - name: Wait for approval
+        if: steps.check_phase.outputs.skip == 'false' && inputs.auto_approve == false
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: ${{ github.actor }}
+          minimum-approvals: 1
+          issue-title: "Approve Phase ${{ matrix.phase }}: ${{ steps.check_phase.outputs.phase_name }}"
+          issue-body: |
+            Please review the changes in PR and approve to continue.
+            
+            **Pipeline:** ${{ inputs.pipeline_name }}
+            **Phase:** ${{ matrix.phase }}
+            
+            Approve this issue to proceed to the next phase.
+      
+      - name: Notify Discord - Success
+        if: steps.check_phase.outputs.skip == 'false' && success()
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then
+            echo "No Discord webhook configured"
+            exit 0
+          fi
+          
+          MSG="✅ **Phase ${{ matrix.phase }} Complete**: ${{ steps.check_phase.outputs.phase_name }}
+          
+          Pipeline: \`${{ inputs.pipeline_name }}\`
+          PR: https://github.com/${{ github.repository }}/pulls"
+          
+          curl -fsS -H "Content-Type: application/json" \
+            -d "$(jq -n --arg c "$MSG" '{content:$c}')" \
+            "$WEBHOOK"
+      
+      - name: Notify Discord - Failure
+        if: steps.check_phase.outputs.skip == 'false' && failure()
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then
+            echo "No Discord webhook configured"
+            exit 0
+          fi
+          
+          MSG="❌ **Phase ${{ matrix.phase }} Failed**: ${{ steps.check_phase.outputs.phase_name }}
+          
+          Pipeline: \`${{ inputs.pipeline_name }}\`
+          Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          curl -fsS -H "Content-Type: application/json" \
+            -d "$(jq -n --arg c "$MSG" '{content:$c}')" \
+            "$WEBHOOK"
+
+  summary:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: run-phase
+    if: always()
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## Pipeline Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Pipeline:** ${{ inputs.pipeline_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check individual phase jobs for details." >> $GITHUB_STEP_SUMMARY

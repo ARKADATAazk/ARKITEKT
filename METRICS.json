@@ -1,0 +1,3855 @@
+{
+  "project": "D:\\Dropbox\\REAPER\\Scripts\\ARKITEKT-Project",
+  "generated": "2025-10-15T18:25:28.528542",
+  "summary": {
+    "total_files": 137,
+    "total_folders": 1,
+    "total_lines": 25412,
+    "total_code_lines": 19942,
+    "total_exports": 375,
+    "total_classes": 93,
+    "total_modules": 293,
+    "pure_modules": 63,
+    "entry_points": 28,
+    "circular_dependencies": 0,
+    "average_file_size": 185,
+    "average_complexity": 15,
+    "largest_files": [
+      {
+        "path": "ARKITEKT/arkitekt/gui/widgets/panel/header/tab_strip.lua",
+        "lines": 804
+      },
+      {
+        "path": "ARKITEKT/scripts/Region_Playlist/app/state.lua",
+        "lines": 631
+      },
+      {
+        "path": "ARKITEKT/arkitekt/gui/widgets/grid/core.lua",
+        "lines": 569
+      },
+      {
+        "path": "ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/coordinator.lua",
+        "lines": 557
+      },
+      {
+        "path": "ARKITEKT/scripts/Region_Playlist/views/main.lua",
+        "lines": 554
+      },
+      {
+        "path": "ARKITEKT/arkitekt/core/colors.lua",
+        "lines": 550
+      },
+      {
+        "path": "ARKITEKT/arkitekt/app/titlebar.lua",
+        "lines": 507
+      },
+      {
+        "path": "ARKITEKT/arkitekt/app/window.lua",
+        "lines": 481
+      },
+      {
+        "path": "ARKITEKT/scripts/demos/demo_modal_overlay.lua",
+        "lines": 451
+      },
+      {
+        "path": "ARKITEKT/scripts/ColorPalette/app/gui.lua",
+        "lines": 443
+      }
+    ],
+    "most_complex_files": [
+      {
+        "path": "ARKITEKT/scripts/Region_Playlist/app/state.lua",
+        "score": 85
+      },
+      {
+        "path": "ARKITEKT/arkitekt/core/colors.lua",
+        "score": 79
+      },
+      {
+        "path": "ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/coordinator.lua",
+        "score": 62
+      },
+      {
+        "path": "ARKITEKT/arkitekt/gui/widgets/grid/core.lua",
+        "score": 52
+      },
+      {
+        "path": "ARKITEKT/scripts/Region_Playlist/views/main.lua",
+        "score": 48
+      },
+      {
+        "path": "ARKITEKT/scripts/ColorPalette/app/state.lua",
+        "score": 45
+      },
+      {
+        "path": "ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/base.lua",
+        "score": 40
+      },
+      {
+        "path": "ARKITEKT/scripts/Region_Playlist/ARK_RegionPlaylist.lua",
+        "score": 37
+      },
+      {
+        "path": "ARKITEKT/arkitekt/gui/fx/easing.lua",
+        "score": 34
+      },
+      {
+        "path": "ARKITEKT/arkitekt/gui/widgets/panel/init.lua",
+        "score": 34
+      }
+    ],
+    "most_imported_files": [
+      {
+        "path": "ARKITEKT/arkitekt/core/colors.lua",
+        "import_count": 25
+      },
+      {
+        "path": "ARKITEKT/arkitekt/gui/draw.lua",
+        "import_count": 18
+      },
+      {
+        "path": "ARKITEKT/arkitekt/app/shell.lua",
+        "import_count": 8
+      },
+      {
+        "path": "ARKITEKT/scripts/Region_Playlist/core/state.lua",
+        "import_count": 6
+      },
+      {
+        "path": "ARKITEKT/arkitekt/gui/fx/tile_fx_config.lua",
+        "import_count": 5
+      },
+      {
+        "path": "ARKITEKT/arkitekt/gui/widgets/component/chip.lua",
+        "import_count": 5
+      },
+      {
+        "path": "ARKITEKT/arkitekt/core/json.lua",
+        "import_count": 4
+      },
+      {
+        "path": "ARKITEKT/arkitekt/gui/fx/tile_motion.lua",
+        "import_count": 4
+      },
+      {
+        "path": "ARKITEKT/scripts/Region_Playlist/storage/state.lua",
+        "import_count": 4
+      },
+      {
+        "path": "ARKITEKT/arkitekt/core/events.lua",
+        "import_count": 3
+      }
+    ],
+    "isolated_files": [
+      "ARKITEKT/arkitekt/app/config.lua",
+      "ARKITEKT/arkitekt/app/icon.lua",
+      "ARKITEKT/arkitekt/app/titlebar.lua",
+      "ARKITEKT/arkitekt/core/lifecycle.lua",
+      "ARKITEKT/arkitekt/gui/images.lua",
+      "ARKITEKT/arkitekt/gui/systems/reorder.lua",
+      "ARKITEKT/arkitekt/gui/widgets/navigation/menutabs.lua",
+      "ARKITEKT/arkitekt/reaper/timing.lua",
+      "ARKITEKT/scripts/Region_Playlist/core/keys.lua",
+      "ARKITEKT/scripts/Region_Playlist/storage/migration.lua",
+      "ARKITEKT/scripts/Region_Playlist/widgets/controls/controls_widget.lua"
+    ]
+  },
+  "files": [
+    {
+      "path": "ARKITEKT/ARKITEKT.lua",
+      "name": "ARKITEKT.lua",
+      "lines": {
+        "total": 353,
+        "code": 287,
+        "comment": 4,
+        "blank": 62
+      },
+      "exports": 0,
+      "imports": 5,
+      "imported_by": 0,
+      "complexity": 25,
+      "modules": [
+        "result",
+        "conflicts",
+        "asset_providers"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": true,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/app/chrome/status_bar/config.lua",
+      "name": "config.lua",
+      "lines": {
+        "total": 140,
+        "code": 112,
+        "comment": 14,
+        "blank": 14
+      },
+      "exports": 2,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 7,
+      "modules": [
+        "M",
+        "result"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/app/chrome/status_bar/init.lua",
+      "name": "init.lua",
+      "lines": {
+        "total": 3,
+        "code": 1,
+        "comment": 1,
+        "blank": 1
+      },
+      "exports": 0,
+      "imports": 1,
+      "imported_by": 0,
+      "complexity": 3,
+      "modules": [],
+      "classes": [],
+      "flags": {
+        "is_entry_point": true,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/app/chrome/status_bar/widget.lua",
+      "name": "widget.lua",
+      "lines": {
+        "total": 319,
+        "code": 256,
+        "comment": 7,
+        "blank": 56
+      },
+      "exports": 1,
+      "imports": 2,
+      "imported_by": 1,
+      "complexity": 19,
+      "modules": [
+        "M",
+        "right_items"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/app/config.lua",
+      "name": "config.lua",
+      "lines": {
+        "total": 95,
+        "code": 75,
+        "comment": 6,
+        "blank": 14
+      },
+      "exports": 2,
+      "imports": 0,
+      "imported_by": 0,
+      "complexity": 4,
+      "modules": [
+        "M",
+        "keys"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/app/hub.lua",
+      "name": "hub.lua",
+      "lines": {
+        "total": 93,
+        "code": 68,
+        "comment": 6,
+        "blank": 19
+      },
+      "exports": 2,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 5,
+      "modules": [
+        "M",
+        "apps"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/app/icon.lua",
+      "name": "icon.lua",
+      "lines": {
+        "total": 124,
+        "code": 80,
+        "comment": 20,
+        "blank": 24
+      },
+      "exports": 3,
+      "imports": 0,
+      "imported_by": 0,
+      "complexity": 6,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/app/runtime.lua",
+      "name": "runtime.lua",
+      "lines": {
+        "total": 69,
+        "code": 41,
+        "comment": 17,
+        "blank": 11
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 8,
+      "modules": [
+        "M"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/app/shell.lua",
+      "name": "shell.lua",
+      "lines": {
+        "total": 289,
+        "code": 244,
+        "comment": 4,
+        "blank": 41
+      },
+      "exports": 1,
+      "imports": 2,
+      "imported_by": 8,
+      "complexity": 12,
+      "modules": [
+        "M",
+        "DEFAULTS"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/app/titlebar.lua",
+      "name": "titlebar.lua",
+      "lines": {
+        "total": 507,
+        "code": 396,
+        "comment": 3,
+        "blank": 108
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 0,
+      "complexity": 7,
+      "modules": [
+        "M",
+        "DEFAULTS"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/app/window.lua",
+      "name": "window.lua",
+      "lines": {
+        "total": 481,
+        "code": 402,
+        "comment": 3,
+        "blank": 76
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 8,
+      "modules": [
+        "M",
+        "DEFAULTS"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/core/colors.lua",
+      "name": "colors.lua",
+      "lines": {
+        "total": 550,
+        "code": 413,
+        "comment": 35,
+        "blank": 102
+      },
+      "exports": 38,
+      "imports": 0,
+      "imported_by": 25,
+      "complexity": 79,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/core/events.lua",
+      "name": "events.lua",
+      "lines": {
+        "total": 67,
+        "code": 58,
+        "comment": 0,
+        "blank": 9
+      },
+      "exports": 2,
+      "imports": 0,
+      "imported_by": 3,
+      "complexity": 15,
+      "modules": [
+        "Bus",
+        "M"
+      ],
+      "classes": [
+        "Bus",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/core/json.lua",
+      "name": "json.lua",
+      "lines": {
+        "total": 121,
+        "code": 106,
+        "comment": 5,
+        "blank": 10
+      },
+      "exports": 2,
+      "imports": 0,
+      "imported_by": 4,
+      "complexity": 9,
+      "modules": [
+        "M",
+        "out",
+        "obj",
+        "arr"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/core/lifecycle.lua",
+      "name": "lifecycle.lua",
+      "lines": {
+        "total": 81,
+        "code": 52,
+        "comment": 17,
+        "blank": 12
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 0,
+      "complexity": 12,
+      "modules": [
+        "M",
+        "Group"
+      ],
+      "classes": [
+        "Group",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/core/math.lua",
+      "name": "math.lua",
+      "lines": {
+        "total": 52,
+        "code": 37,
+        "comment": 3,
+        "blank": 12
+      },
+      "exports": 6,
+      "imports": 0,
+      "imported_by": 2,
+      "complexity": 12,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/core/settings.lua",
+      "name": "settings.lua",
+      "lines": {
+        "total": 119,
+        "code": 97,
+        "comment": 4,
+        "blank": 18
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 17,
+      "modules": [
+        "Settings",
+        "out",
+        "M",
+        "t"
+      ],
+      "classes": [
+        "Settings"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/core/undo_manager.lua",
+      "name": "undo_manager.lua",
+      "lines": {
+        "total": 70,
+        "code": 51,
+        "comment": 3,
+        "blank": 16
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 7,
+      "modules": [
+        "M"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/draw.lua",
+      "name": "draw.lua",
+      "lines": {
+        "total": 114,
+        "code": 80,
+        "comment": 17,
+        "blank": 17
+      },
+      "exports": 10,
+      "imports": 0,
+      "imported_by": 18,
+      "complexity": 20,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/fx/animation/rect_track.lua",
+      "name": "rect_track.lua",
+      "lines": {
+        "total": 136,
+        "code": 109,
+        "comment": 9,
+        "blank": 18
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 15,
+      "modules": [
+        "M",
+        "RectTrack"
+      ],
+      "classes": [
+        "RectTrack",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/fx/animation/track.lua",
+      "name": "track.lua",
+      "lines": {
+        "total": 53,
+        "code": 34,
+        "comment": 8,
+        "blank": 11
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 15,
+      "modules": [
+        "M",
+        "Track"
+      ],
+      "classes": [
+        "Track",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/fx/animations/destroy.lua",
+      "name": "destroy.lua",
+      "lines": {
+        "total": 149,
+        "code": 111,
+        "comment": 3,
+        "blank": 35
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 15,
+      "modules": [
+        "M",
+        "DestroyAnim",
+        "completed"
+      ],
+      "classes": [
+        "DestroyAnim",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/fx/animations/spawn.lua",
+      "name": "spawn.lua",
+      "lines": {
+        "total": 58,
+        "code": 40,
+        "comment": 3,
+        "blank": 15
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 15,
+      "modules": [
+        "M",
+        "SpawnTracker"
+      ],
+      "classes": [
+        "SpawnTracker",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/fx/dnd/config.lua",
+      "name": "config.lua",
+      "lines": {
+        "total": 91,
+        "code": 78,
+        "comment": 3,
+        "blank": 10
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 2,
+      "complexity": 2,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/fx/dnd/drag_indicator.lua",
+      "name": "drag_indicator.lua",
+      "lines": {
+        "total": 219,
+        "code": 165,
+        "comment": 3,
+        "blank": 51
+      },
+      "exports": 2,
+      "imports": 3,
+      "imported_by": 2,
+      "complexity": 18,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/fx/dnd/drop_indicator.lua",
+      "name": "drop_indicator.lua",
+      "lines": {
+        "total": 113,
+        "code": 82,
+        "comment": 7,
+        "blank": 24
+      },
+      "exports": 3,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 9,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/fx/easing.lua",
+      "name": "easing.lua",
+      "lines": {
+        "total": 94,
+        "code": 71,
+        "comment": 4,
+        "blank": 19
+      },
+      "exports": 17,
+      "imports": 0,
+      "imported_by": 3,
+      "complexity": 34,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/fx/effects.lua",
+      "name": "effects.lua",
+      "lines": {
+        "total": 54,
+        "code": 33,
+        "comment": 8,
+        "blank": 13
+      },
+      "exports": 3,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 6,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/fx/marching_ants.lua",
+      "name": "marching_ants.lua",
+      "lines": {
+        "total": 100,
+        "code": 81,
+        "comment": 3,
+        "blank": 16
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 3,
+      "complexity": 7,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/fx/tile_fx.lua",
+      "name": "tile_fx.lua",
+      "lines": {
+        "total": 170,
+        "code": 125,
+        "comment": 3,
+        "blank": 42
+      },
+      "exports": 8,
+      "imports": 1,
+      "imported_by": 3,
+      "complexity": 19,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/fx/tile_fx_config.lua",
+      "name": "tile_fx_config.lua",
+      "lines": {
+        "total": 79,
+        "code": 48,
+        "comment": 15,
+        "blank": 16
+      },
+      "exports": 2,
+      "imports": 0,
+      "imported_by": 5,
+      "complexity": 4,
+      "modules": [
+        "M",
+        "config"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/fx/tile_motion.lua",
+      "name": "tile_motion.lua",
+      "lines": {
+        "total": 58,
+        "code": 42,
+        "comment": 4,
+        "blank": 12
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 4,
+      "complexity": 15,
+      "modules": [
+        "M",
+        "TileAnimator"
+      ],
+      "classes": [
+        "TileAnimator",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/images.lua",
+      "name": "images.lua",
+      "lines": {
+        "total": 285,
+        "code": 239,
+        "comment": 8,
+        "blank": 38
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 0,
+      "complexity": 21,
+      "modules": [
+        "M",
+        "Cache"
+      ],
+      "classes": [
+        "Cache",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/style.lua",
+      "name": "style.lua",
+      "lines": {
+        "total": 146,
+        "code": 134,
+        "comment": 3,
+        "blank": 9
+      },
+      "exports": 3,
+      "imports": 1,
+      "imported_by": 2,
+      "complexity": 9,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/systems/height_stabilizer.lua",
+      "name": "height_stabilizer.lua",
+      "lines": {
+        "total": 74,
+        "code": 45,
+        "comment": 18,
+        "blank": 11
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 2,
+      "complexity": 12,
+      "modules": [
+        "M",
+        "HeightStabilizer"
+      ],
+      "classes": [
+        "HeightStabilizer",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/systems/playback_manager.lua",
+      "name": "playback_manager.lua",
+      "lines": {
+        "total": 22,
+        "code": 13,
+        "comment": 3,
+        "blank": 6
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 2,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/systems/reorder.lua",
+      "name": "reorder.lua",
+      "lines": {
+        "total": 127,
+        "code": 79,
+        "comment": 28,
+        "blank": 20
+      },
+      "exports": 3,
+      "imports": 0,
+      "imported_by": 0,
+      "complexity": 7,
+      "modules": [
+        "M",
+        "t",
+        "base",
+        "new_order",
+        "new_order",
+        "new_order"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/systems/responsive_grid.lua",
+      "name": "responsive_grid.lua",
+      "lines": {
+        "total": 228,
+        "code": 178,
+        "comment": 3,
+        "blank": 47
+      },
+      "exports": 6,
+      "imports": 0,
+      "imported_by": 2,
+      "complexity": 12,
+      "modules": [
+        "M",
+        "rows",
+        "current_row",
+        "layout"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/systems/selection.lua",
+      "name": "selection.lua",
+      "lines": {
+        "total": 142,
+        "code": 100,
+        "comment": 23,
+        "blank": 19
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 12,
+      "modules": [
+        "M",
+        "Selection",
+        "out",
+        "out"
+      ],
+      "classes": [
+        "Selection",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/systems/tile_utilities.lua",
+      "name": "tile_utilities.lua",
+      "lines": {
+        "total": 49,
+        "code": 35,
+        "comment": 3,
+        "blank": 11
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 2,
+      "complexity": 2,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/chip_list/list.lua",
+      "name": "list.lua",
+      "lines": {
+        "total": 303,
+        "code": 248,
+        "comment": 3,
+        "blank": 52
+      },
+      "exports": 5,
+      "imports": 2,
+      "imported_by": 2,
+      "complexity": 18,
+      "modules": [
+        "M",
+        "filtered",
+        "min_widths",
+        "min_widths"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/component/chip.lua",
+      "name": "chip.lua",
+      "lines": {
+        "total": 333,
+        "code": 272,
+        "comment": 3,
+        "blank": 58
+      },
+      "exports": 2,
+      "imports": 4,
+      "imported_by": 5,
+      "complexity": 20,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/controls/context_menu.lua",
+      "name": "context_menu.lua",
+      "lines": {
+        "total": 106,
+        "code": 77,
+        "comment": 3,
+        "blank": 26
+      },
+      "exports": 4,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 8,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/controls/dropdown.lua",
+      "name": "dropdown.lua",
+      "lines": {
+        "total": 395,
+        "code": 308,
+        "comment": 3,
+        "blank": 84
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 17,
+      "modules": [
+        "M",
+        "Dropdown"
+      ],
+      "classes": [
+        "Dropdown",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/controls/scrollbar.lua",
+      "name": "scrollbar.lua",
+      "lines": {
+        "total": 239,
+        "code": 181,
+        "comment": 3,
+        "blank": 55
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 12,
+      "modules": [
+        "M",
+        "Scrollbar"
+      ],
+      "classes": [
+        "Scrollbar",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/controls/tooltip.lua",
+      "name": "tooltip.lua",
+      "lines": {
+        "total": 129,
+        "code": 98,
+        "comment": 3,
+        "blank": 28
+      },
+      "exports": 4,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 8,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/displays/status_pad.lua",
+      "name": "status_pad.lua",
+      "lines": {
+        "total": 192,
+        "code": 167,
+        "comment": 3,
+        "blank": 22
+      },
+      "exports": 1,
+      "imports": 4,
+      "imported_by": 1,
+      "complexity": 28,
+      "modules": [
+        "M",
+        "FontPool",
+        "StatusPad"
+      ],
+      "classes": [
+        "StatusPad",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/grid/animation.lua",
+      "name": "animation.lua",
+      "lines": {
+        "total": 101,
+        "code": 79,
+        "comment": 4,
+        "blank": 18
+      },
+      "exports": 1,
+      "imports": 2,
+      "imported_by": 1,
+      "complexity": 18,
+      "modules": [
+        "M",
+        "AnimationCoordinator"
+      ],
+      "classes": [
+        "AnimationCoordinator",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/grid/core.lua",
+      "name": "core.lua",
+      "lines": {
+        "total": 569,
+        "code": 452,
+        "comment": 4,
+        "blank": 113
+      },
+      "exports": 1,
+      "imports": 13,
+      "imported_by": 3,
+      "complexity": 52,
+      "modules": [
+        "M",
+        "Grid",
+        "current_keys",
+        "new_keys",
+        "rect_map",
+        "rect_map",
+        "order",
+        "filtered_order",
+        "new_order"
+      ],
+      "classes": [
+        "Grid",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/grid/dnd_state.lua",
+      "name": "dnd_state.lua",
+      "lines": {
+        "total": 113,
+        "code": 87,
+        "comment": 4,
+        "blank": 22
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 12,
+      "modules": [
+        "M",
+        "DnDState"
+      ],
+      "classes": [
+        "DnDState",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/grid/drop_zones.lua",
+      "name": "drop_zones.lua",
+      "lines": {
+        "total": 277,
+        "code": 232,
+        "comment": 6,
+        "blank": 39
+      },
+      "exports": 3,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 11,
+      "modules": [
+        "M",
+        "non_dragged",
+        "zones",
+        "zones",
+        "rows",
+        "sequential_items",
+        "set"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/grid/grid_bridge.lua",
+      "name": "grid_bridge.lua",
+      "lines": {
+        "total": 219,
+        "code": 172,
+        "comment": 4,
+        "blank": 43
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 12,
+      "modules": [
+        "M",
+        "GridBridge"
+      ],
+      "classes": [
+        "GridBridge",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/grid/input.lua",
+      "name": "input.lua",
+      "lines": {
+        "total": 237,
+        "code": 189,
+        "comment": 3,
+        "blank": 45
+      },
+      "exports": 9,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 21,
+      "modules": [
+        "M",
+        "keys_to_adjust",
+        "order",
+        "order"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/grid/layout.lua",
+      "name": "layout.lua",
+      "lines": {
+        "total": 101,
+        "code": 57,
+        "comment": 27,
+        "blank": 17
+      },
+      "exports": 2,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 4,
+      "modules": [
+        "M",
+        "rects"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/grid/rendering.lua",
+      "name": "rendering.lua",
+      "lines": {
+        "total": 92,
+        "code": 69,
+        "comment": 4,
+        "blank": 19
+      },
+      "exports": 0,
+      "imports": 3,
+      "imported_by": 1,
+      "complexity": 9,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": true,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/navigation/menutabs.lua",
+      "name": "menutabs.lua",
+      "lines": {
+        "total": 269,
+        "code": 228,
+        "comment": 4,
+        "blank": 37
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 0,
+      "complexity": 11,
+      "modules": [
+        "M",
+        "o",
+        "o",
+        "edges"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/overlay/config.lua",
+      "name": "config.lua",
+      "lines": {
+        "total": 139,
+        "code": 117,
+        "comment": 3,
+        "blank": 19
+      },
+      "exports": 3,
+      "imports": 0,
+      "imported_by": 3,
+      "complexity": 6,
+      "modules": [
+        "M",
+        "new_config"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/overlay/manager.lua",
+      "name": "manager.lua",
+      "lines": {
+        "total": 178,
+        "code": 142,
+        "comment": 6,
+        "blank": 30
+      },
+      "exports": 1,
+      "imports": 4,
+      "imported_by": 1,
+      "complexity": 20,
+      "modules": [
+        "M"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/overlay/sheet.lua",
+      "name": "sheet.lua",
+      "lines": {
+        "total": 125,
+        "code": 101,
+        "comment": 3,
+        "blank": 21
+      },
+      "exports": 1,
+      "imports": 4,
+      "imported_by": 3,
+      "complexity": 14,
+      "modules": [
+        "Sheet"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/package_tiles/grid.lua",
+      "name": "grid.lua",
+      "lines": {
+        "total": 227,
+        "code": 182,
+        "comment": 3,
+        "blank": 42
+      },
+      "exports": 1,
+      "imports": 6,
+      "imported_by": 2,
+      "complexity": 28,
+      "modules": [
+        "M"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/package_tiles/micromanage.lua",
+      "name": "micromanage.lua",
+      "lines": {
+        "total": 127,
+        "code": 93,
+        "comment": 12,
+        "blank": 22
+      },
+      "exports": 6,
+      "imports": 0,
+      "imported_by": 3,
+      "complexity": 12,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/package_tiles/renderer.lua",
+      "name": "renderer.lua",
+      "lines": {
+        "total": 267,
+        "code": 213,
+        "comment": 3,
+        "blank": 51
+      },
+      "exports": 0,
+      "imports": 3,
+      "imported_by": 1,
+      "complexity": 10,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": true,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/panel/background.lua",
+      "name": "background.lua",
+      "lines": {
+        "total": 61,
+        "code": 45,
+        "comment": 3,
+        "blank": 13
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 4,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/panel/config.lua",
+      "name": "config.lua",
+      "lines": {
+        "total": 257,
+        "code": 229,
+        "comment": 3,
+        "blank": 25
+      },
+      "exports": 0,
+      "imports": 0,
+      "imported_by": 2,
+      "complexity": 0,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/panel/content.lua",
+      "name": "content.lua",
+      "lines": {
+        "total": 44,
+        "code": 28,
+        "comment": 3,
+        "blank": 13
+      },
+      "exports": 2,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 4,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/panel/header/button.lua",
+      "name": "button.lua",
+      "lines": {
+        "total": 119,
+        "code": 89,
+        "comment": 3,
+        "blank": 27
+      },
+      "exports": 2,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 5,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/panel/header/dropdown_field.lua",
+      "name": "dropdown_field.lua",
+      "lines": {
+        "total": 101,
+        "code": 86,
+        "comment": 3,
+        "blank": 12
+      },
+      "exports": 2,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 7,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/panel/header/init.lua",
+      "name": "init.lua",
+      "lines": {
+        "total": 46,
+        "code": 30,
+        "comment": 6,
+        "blank": 10
+      },
+      "exports": 2,
+      "imports": 1,
+      "imported_by": 0,
+      "complexity": 7,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/panel/header/layout.lua",
+      "name": "layout.lua",
+      "lines": {
+        "total": 305,
+        "code": 230,
+        "comment": 15,
+        "blank": 60
+      },
+      "exports": 1,
+      "imports": 5,
+      "imported_by": 1,
+      "complexity": 25,
+      "modules": [
+        "M",
+        "layout",
+        "rounding_info",
+        "element_config"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/panel/header/search_field.lua",
+      "name": "search_field.lua",
+      "lines": {
+        "total": 120,
+        "code": 89,
+        "comment": 3,
+        "blank": 28
+      },
+      "exports": 2,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 5,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/panel/header/separator.lua",
+      "name": "separator.lua",
+      "lines": {
+        "total": 33,
+        "code": 18,
+        "comment": 8,
+        "blank": 7
+      },
+      "exports": 2,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 4,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/panel/header/tab_strip.lua",
+      "name": "tab_strip.lua",
+      "lines": {
+        "total": 804,
+        "code": 644,
+        "comment": 3,
+        "blank": 157
+      },
+      "exports": 2,
+      "imports": 2,
+      "imported_by": 1,
+      "complexity": 22,
+      "modules": [
+        "M",
+        "visible_indices",
+        "positions"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/panel/init.lua",
+      "name": "init.lua",
+      "lines": {
+        "total": 416,
+        "code": 324,
+        "comment": 3,
+        "blank": 89
+      },
+      "exports": 2,
+      "imports": 5,
+      "imported_by": 0,
+      "complexity": 34,
+      "modules": [
+        "M",
+        "result",
+        "Panel"
+      ],
+      "classes": [
+        "Panel",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/panel/tab_animator.lua",
+      "name": "tab_animator.lua",
+      "lines": {
+        "total": 107,
+        "code": 81,
+        "comment": 3,
+        "blank": 23
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 15,
+      "modules": [
+        "M",
+        "TabAnimator",
+        "spawn_complete",
+        "destroy_complete"
+      ],
+      "classes": [
+        "TabAnimator",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/selection_rectangle.lua",
+      "name": "selection_rectangle.lua",
+      "lines": {
+        "total": 99,
+        "code": 67,
+        "comment": 15,
+        "blank": 17
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 3,
+      "complexity": 12,
+      "modules": [
+        "M",
+        "SelRect"
+      ],
+      "classes": [
+        "SelRect",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/sliders/hue.lua",
+      "name": "hue.lua",
+      "lines": {
+        "total": 276,
+        "code": 202,
+        "comment": 22,
+        "blank": 52
+      },
+      "exports": 4,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 13,
+      "modules": [
+        "M",
+        "_locks"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/transport/transport_container.lua",
+      "name": "transport_container.lua",
+      "lines": {
+        "total": 137,
+        "code": 94,
+        "comment": 3,
+        "blank": 40
+      },
+      "exports": 2,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 17,
+      "modules": [
+        "M",
+        "TransportContainer"
+      ],
+      "classes": [
+        "TransportContainer",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/gui/widgets/transport/transport_fx.lua",
+      "name": "transport_fx.lua",
+      "lines": {
+        "total": 107,
+        "code": 79,
+        "comment": 3,
+        "blank": 25
+      },
+      "exports": 5,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 13,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/patterns/controller.lua",
+      "name": "controller.lua",
+      "lines": {
+        "total": 25,
+        "code": 17,
+        "comment": 0,
+        "blank": 8
+      },
+      "exports": 0,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 5,
+      "modules": [
+        "M"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/reaper/regions.lua",
+      "name": "regions.lua",
+      "lines": {
+        "total": 83,
+        "code": 58,
+        "comment": 8,
+        "blank": 17
+      },
+      "exports": 3,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 7,
+      "modules": [
+        "M",
+        "regions"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/reaper/timing.lua",
+      "name": "timing.lua",
+      "lines": {
+        "total": 113,
+        "code": 84,
+        "comment": 3,
+        "blank": 26
+      },
+      "exports": 9,
+      "imports": 0,
+      "imported_by": 0,
+      "complexity": 18,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/arkitekt/reaper/transport.lua",
+      "name": "transport.lua",
+      "lines": {
+        "total": 97,
+        "code": 76,
+        "comment": 3,
+        "blank": 18
+      },
+      "exports": 14,
+      "imports": 0,
+      "imported_by": 2,
+      "complexity": 28,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/ColorPalette/app/controller.lua",
+      "name": "controller.lua",
+      "lines": {
+        "total": 235,
+        "code": 176,
+        "comment": 17,
+        "blank": 42
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 12,
+      "modules": [
+        "M",
+        "Controller",
+        "targets",
+        "colors"
+      ],
+      "classes": [
+        "Controller",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/ColorPalette/app/gui.lua",
+      "name": "gui.lua",
+      "lines": {
+        "total": 443,
+        "code": 313,
+        "comment": 36,
+        "blank": 94
+      },
+      "exports": 1,
+      "imports": 5,
+      "imported_by": 1,
+      "complexity": 27,
+      "modules": [
+        "M",
+        "GUI"
+      ],
+      "classes": [
+        "GUI",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/ColorPalette/app/state.lua",
+      "name": "state.lua",
+      "lines": {
+        "total": 273,
+        "code": 215,
+        "comment": 14,
+        "blank": 44
+      },
+      "exports": 21,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 45,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/ColorPalette/ARK_ColorPalette.lua",
+      "name": "ARK_ColorPalette.lua",
+      "lines": {
+        "total": 116,
+        "code": 68,
+        "comment": 26,
+        "blank": 22
+      },
+      "exports": 0,
+      "imports": 5,
+      "imported_by": 0,
+      "complexity": 19,
+      "modules": [],
+      "classes": [],
+      "flags": {
+        "is_entry_point": true,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/ColorPalette/widgets/color_grid.lua",
+      "name": "color_grid.lua",
+      "lines": {
+        "total": 143,
+        "code": 89,
+        "comment": 17,
+        "blank": 37
+      },
+      "exports": 1,
+      "imports": 2,
+      "imported_by": 1,
+      "complexity": 18,
+      "modules": [
+        "M",
+        "ColorGrid"
+      ],
+      "classes": [
+        "ColorGrid",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/demos/demo.lua",
+      "name": "demo.lua",
+      "lines": {
+        "total": 383,
+        "code": 312,
+        "comment": 6,
+        "blank": 65
+      },
+      "exports": 0,
+      "imports": 4,
+      "imported_by": 0,
+      "complexity": 23,
+      "modules": [
+        "result",
+        "conflicts",
+        "asset_providers"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": true,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/demos/demo2.lua",
+      "name": "demo2.lua",
+      "lines": {
+        "total": 210,
+        "code": 154,
+        "comment": 21,
+        "blank": 35
+      },
+      "exports": 0,
+      "imports": 2,
+      "imported_by": 0,
+      "complexity": 16,
+      "modules": [],
+      "classes": [],
+      "flags": {
+        "is_entry_point": true,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/demos/demo3.lua",
+      "name": "demo3.lua",
+      "lines": {
+        "total": 148,
+        "code": 111,
+        "comment": 13,
+        "blank": 24
+      },
+      "exports": 0,
+      "imports": 2,
+      "imported_by": 0,
+      "complexity": 15,
+      "modules": [
+        "pads"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": true,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/demos/demo_modal_overlay.lua",
+      "name": "demo_modal_overlay.lua",
+      "lines": {
+        "total": 451,
+        "code": 382,
+        "comment": 7,
+        "blank": 62
+      },
+      "exports": 0,
+      "imports": 4,
+      "imported_by": 0,
+      "complexity": 19,
+      "modules": [
+        "selected_tag_items"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": true,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/demos/widget_demo.lua",
+      "name": "widget_demo.lua",
+      "lines": {
+        "total": 250,
+        "code": 194,
+        "comment": 22,
+        "blank": 34
+      },
+      "exports": 0,
+      "imports": 3,
+      "imported_by": 0,
+      "complexity": 27,
+      "modules": [
+        "t",
+        "arr"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": true,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/app/config.lua",
+      "name": "config.lua",
+      "lines": {
+        "total": 349,
+        "code": 305,
+        "comment": 19,
+        "blank": 25
+      },
+      "exports": 3,
+      "imports": 0,
+      "imported_by": 3,
+      "complexity": 6,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/app/controller.lua",
+      "name": "controller.lua",
+      "lines": {
+        "total": 368,
+        "code": 304,
+        "comment": 4,
+        "blank": 60
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 15,
+      "modules": [
+        "M",
+        "Controller",
+        "keys",
+        "keys",
+        "keys_set",
+        "new_items",
+        "keys_set",
+        "keys_set"
+      ],
+      "classes": [
+        "Controller",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/app/sequence_expander.lua",
+      "name": "sequence_expander.lua",
+      "lines": {
+        "total": 104,
+        "code": 86,
+        "comment": 3,
+        "blank": 15
+      },
+      "exports": 2,
+      "imports": 0,
+      "imported_by": 2,
+      "complexity": 6,
+      "modules": [
+        "SequenceExpander",
+        "nested_sequence",
+        "sequence"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/app/shortcuts.lua",
+      "name": "shortcuts.lua",
+      "lines": {
+        "total": 81,
+        "code": 63,
+        "comment": 3,
+        "blank": 15
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 5,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/app/state.lua",
+      "name": "state.lua",
+      "lines": {
+        "total": 631,
+        "code": 509,
+        "comment": 6,
+        "blank": 116
+      },
+      "exports": 26,
+      "imports": 8,
+      "imported_by": 3,
+      "complexity": 85,
+      "modules": [
+        "M",
+        "tabs",
+        "result",
+        "reversed",
+        "all_deps",
+        "visited",
+        "pool_playlists",
+        "filtered",
+        "reversed",
+        "new_path",
+        "path_array"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/app/status.lua",
+      "name": "status.lua",
+      "lines": {
+        "total": 59,
+        "code": 47,
+        "comment": 3,
+        "blank": 9
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 11,
+      "modules": [
+        "M"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/ARK_RegionPlaylist.lua",
+      "name": "ARK_RegionPlaylist.lua",
+      "lines": {
+        "total": 158,
+        "code": 128,
+        "comment": 5,
+        "blank": 25
+      },
+      "exports": 0,
+      "imports": 10,
+      "imported_by": 0,
+      "complexity": 37,
+      "modules": [],
+      "classes": [],
+      "flags": {
+        "is_entry_point": true,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/components/modal_manager.lua",
+      "name": "modal_manager.lua",
+      "lines": {
+        "total": 214,
+        "code": 175,
+        "comment": 0,
+        "blank": 39
+      },
+      "exports": 1,
+      "imports": 3,
+      "imported_by": 1,
+      "complexity": 21,
+      "modules": [
+        "ModalManager",
+        "tab_items",
+        "selected_ids"
+      ],
+      "classes": [
+        "ModalManager"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/components/separator_manager.lua",
+      "name": "separator_manager.lua",
+      "lines": {
+        "total": 106,
+        "code": 82,
+        "comment": 0,
+        "blank": 24
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 9,
+      "modules": [
+        "SeparatorManager"
+      ],
+      "classes": [
+        "SeparatorManager"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/components/tiles/active.lua",
+      "name": "active.lua",
+      "lines": {
+        "total": 206,
+        "code": 169,
+        "comment": 0,
+        "blank": 37
+      },
+      "exports": 2,
+      "imports": 2,
+      "imported_by": 0,
+      "complexity": 15,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/components/tiles/base.lua",
+      "name": "base.lua",
+      "lines": {
+        "total": 252,
+        "code": 214,
+        "comment": 0,
+        "blank": 38
+      },
+      "exports": 4,
+      "imports": 1,
+      "imported_by": 2,
+      "complexity": 16,
+      "modules": [
+        "M",
+        "commands",
+        "commands",
+        "commands"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/components/tiles/config.lua",
+      "name": "config.lua",
+      "lines": {
+        "total": 33,
+        "code": 29,
+        "comment": 0,
+        "blank": 4
+      },
+      "exports": 0,
+      "imports": 0,
+      "imported_by": 3,
+      "complexity": 0,
+      "modules": [],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/components/tiles/pool.lua",
+      "name": "pool.lua",
+      "lines": {
+        "total": 214,
+        "code": 178,
+        "comment": 0,
+        "blank": 36
+      },
+      "exports": 2,
+      "imports": 2,
+      "imported_by": 0,
+      "complexity": 15,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/core/colors.lua",
+      "name": "colors.lua",
+      "lines": {
+        "total": 21,
+        "code": 14,
+        "comment": 0,
+        "blank": 7
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 0,
+      "complexity": 6,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/core/keys.lua",
+      "name": "keys.lua",
+      "lines": {
+        "total": 21,
+        "code": 16,
+        "comment": 0,
+        "blank": 5
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 0,
+      "complexity": 3,
+      "modules": [
+        "Keys"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/core/state.lua",
+      "name": "state.lua",
+      "lines": {
+        "total": 133,
+        "code": 117,
+        "comment": 0,
+        "blank": 16
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 6,
+      "complexity": 11,
+      "modules": [
+        "State",
+        "instances",
+        "t",
+        "out",
+        "Instance",
+        "t",
+        "snapshot"
+      ],
+      "classes": [
+        "Instance"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/engine/coordinator_bridge.lua",
+      "name": "coordinator_bridge.lua",
+      "lines": {
+        "total": 310,
+        "code": 252,
+        "comment": 3,
+        "blank": 55
+      },
+      "exports": 1,
+      "imports": 5,
+      "imported_by": 0,
+      "complexity": 25,
+      "modules": [
+        "M",
+        "sequence",
+        "regions"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/engine/core.lua",
+      "name": "core.lua",
+      "lines": {
+        "total": 194,
+        "code": 153,
+        "comment": 3,
+        "blank": 38
+      },
+      "exports": 1,
+      "imports": 4,
+      "imported_by": 2,
+      "complexity": 24,
+      "modules": [
+        "M",
+        "Engine",
+        "order"
+      ],
+      "classes": [
+        "Engine",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/engine/playback.lua",
+      "name": "playback.lua",
+      "lines": {
+        "total": 103,
+        "code": 76,
+        "comment": 3,
+        "blank": 24
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 2,
+      "complexity": 15,
+      "modules": [
+        "M",
+        "Playback"
+      ],
+      "classes": [
+        "Playback",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/engine/quantize.lua",
+      "name": "quantize.lua",
+      "lines": {
+        "total": 337,
+        "code": 248,
+        "comment": 23,
+        "blank": 66
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 14,
+      "modules": [
+        "M",
+        "Quantize"
+      ],
+      "classes": [
+        "Quantize",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/engine/state.lua",
+      "name": "state.lua",
+      "lines": {
+        "total": 324,
+        "code": 263,
+        "comment": 8,
+        "blank": 53
+      },
+      "exports": 1,
+      "imports": 2,
+      "imported_by": 1,
+      "complexity": 19,
+      "modules": [
+        "M",
+        "State",
+        "sequence_copy",
+        "sequence"
+      ],
+      "classes": [
+        "State",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/engine/transitions.lua",
+      "name": "transitions.lua",
+      "lines": {
+        "total": 211,
+        "code": 166,
+        "comment": 13,
+        "blank": 32
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 14,
+      "modules": [
+        "M",
+        "Transitions"
+      ],
+      "classes": [
+        "Transitions",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/engine/transport.lua",
+      "name": "transport.lua",
+      "lines": {
+        "total": 239,
+        "code": 188,
+        "comment": 3,
+        "blank": 48
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 15,
+      "modules": [
+        "M",
+        "Transport"
+      ],
+      "classes": [
+        "Transport",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/playback/coordinator.lua",
+      "name": "coordinator.lua",
+      "lines": {
+        "total": 422,
+        "code": 358,
+        "comment": 18,
+        "blank": 46
+      },
+      "exports": 2,
+      "imports": 4,
+      "imported_by": 2,
+      "complexity": 32,
+      "modules": [
+        "Coordinator",
+        "cache",
+        "M"
+      ],
+      "classes": [
+        "Coordinator",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/playlists/manager.lua",
+      "name": "manager.lua",
+      "lines": {
+        "total": 37,
+        "code": 25,
+        "comment": 4,
+        "blank": 8
+      },
+      "exports": 1,
+      "imports": 1,
+      "imported_by": 0,
+      "complexity": 10,
+      "modules": [],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/playlists/sequencer.lua",
+      "name": "sequencer.lua",
+      "lines": {
+        "total": 123,
+        "code": 100,
+        "comment": 0,
+        "blank": 23
+      },
+      "exports": 2,
+      "imports": 2,
+      "imported_by": 2,
+      "complexity": 22,
+      "modules": [
+        "Sequencer",
+        "sequence",
+        "lookup",
+        "M"
+      ],
+      "classes": [
+        "Sequencer",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/storage/migration.lua",
+      "name": "migration.lua",
+      "lines": {
+        "total": 9,
+        "code": 5,
+        "comment": 1,
+        "blank": 3
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 0,
+      "complexity": 2,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/storage/persistence.lua",
+      "name": "persistence.lua",
+      "lines": {
+        "total": 75,
+        "code": 54,
+        "comment": 9,
+        "blank": 12
+      },
+      "exports": 4,
+      "imports": 1,
+      "imported_by": 1,
+      "complexity": 14,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/storage/settings.lua",
+      "name": "settings.lua",
+      "lines": {
+        "total": 24,
+        "code": 18,
+        "comment": 0,
+        "blank": 6
+      },
+      "exports": 3,
+      "imports": 1,
+      "imported_by": 0,
+      "complexity": 9,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/storage/state.lua",
+      "name": "state.lua",
+      "lines": {
+        "total": 152,
+        "code": 120,
+        "comment": 7,
+        "blank": 25
+      },
+      "exports": 9,
+      "imports": 2,
+      "imported_by": 4,
+      "complexity": 26,
+      "modules": [
+        "M",
+        "default_items"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/storage/undo_bridge.lua",
+      "name": "undo_bridge.lua",
+      "lines": {
+        "total": 91,
+        "code": 71,
+        "comment": 3,
+        "blank": 17
+      },
+      "exports": 3,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 6,
+      "modules": [
+        "M",
+        "restored_playlists"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/views/active_panel.lua",
+      "name": "active_panel.lua",
+      "lines": {
+        "total": 71,
+        "code": 55,
+        "comment": 0,
+        "blank": 16
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 7,
+      "modules": [
+        "ActivePanel",
+        "filtered"
+      ],
+      "classes": [
+        "ActivePanel"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/views/main.lua",
+      "name": "main.lua",
+      "lines": {
+        "total": 554,
+        "code": 459,
+        "comment": 0,
+        "blank": 95
+      },
+      "exports": 1,
+      "imports": 11,
+      "imported_by": 1,
+      "complexity": 48,
+      "modules": [
+        "M",
+        "bundle"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/views/pool_panel.lua",
+      "name": "pool_panel.lua",
+      "lines": {
+        "total": 46,
+        "code": 33,
+        "comment": 0,
+        "blank": 13
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 7,
+      "modules": [
+        "PoolPanel"
+      ],
+      "classes": [
+        "PoolPanel"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/views/status_bar.lua",
+      "name": "status_bar.lua",
+      "lines": {
+        "total": 16,
+        "code": 12,
+        "comment": 0,
+        "blank": 4
+      },
+      "exports": 1,
+      "imports": 0,
+      "imported_by": 1,
+      "complexity": 7,
+      "modules": [
+        "M"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/views/transport_bar.lua",
+      "name": "transport_bar.lua",
+      "lines": {
+        "total": 308,
+        "code": 250,
+        "comment": 0,
+        "blank": 58
+      },
+      "exports": 1,
+      "imports": 3,
+      "imported_by": 1,
+      "complexity": 19,
+      "modules": [
+        "TransportBar"
+      ],
+      "classes": [
+        "TransportBar"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/widgets/controls/controls_widget.lua",
+      "name": "controls_widget.lua",
+      "lines": {
+        "total": 151,
+        "code": 106,
+        "comment": 7,
+        "blank": 38
+      },
+      "exports": 4,
+      "imports": 0,
+      "imported_by": 0,
+      "complexity": 8,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": true,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/active_grid_factory.lua",
+      "name": "active_grid_factory.lua",
+      "lines": {
+        "total": 220,
+        "code": 180,
+        "comment": 3,
+        "blank": 37
+      },
+      "exports": 1,
+      "imports": 2,
+      "imported_by": 1,
+      "complexity": 19,
+      "modules": [
+        "M",
+        "item_map",
+        "items_by_key",
+        "dragged_items",
+        "items_by_key",
+        "new_items"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/coordinator.lua",
+      "name": "coordinator.lua",
+      "lines": {
+        "total": 557,
+        "code": 449,
+        "comment": 8,
+        "blank": 100
+      },
+      "exports": 1,
+      "imports": 13,
+      "imported_by": 1,
+      "complexity": 62,
+      "modules": [
+        "M",
+        "RegionTiles",
+        "playlist_cache",
+        "spawned_keys",
+        "payload",
+        "colors"
+      ],
+      "classes": [
+        "RegionTiles",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/coordinator_render.lua",
+      "name": "coordinator_render.lua",
+      "lines": {
+        "total": 190,
+        "code": 140,
+        "comment": 3,
+        "blank": 47
+      },
+      "exports": 4,
+      "imports": 4,
+      "imported_by": 1,
+      "complexity": 20,
+      "modules": [
+        "M",
+        "keys_to_adjust"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/pool_grid_factory.lua",
+      "name": "pool_grid_factory.lua",
+      "lines": {
+        "total": 193,
+        "code": 159,
+        "comment": 3,
+        "blank": 31
+      },
+      "exports": 1,
+      "imports": 2,
+      "imported_by": 1,
+      "complexity": 18,
+      "modules": [
+        "M",
+        "items_by_key",
+        "filtered_keys",
+        "rids",
+        "rids",
+        "items_by_key"
+      ],
+      "classes": [
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/active.lua",
+      "name": "active.lua",
+      "lines": {
+        "total": 186,
+        "code": 151,
+        "comment": 3,
+        "blank": 32
+      },
+      "exports": 3,
+      "imports": 5,
+      "imported_by": 2,
+      "complexity": 21,
+      "modules": [
+        "M",
+        "right_elements",
+        "right_elements"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/base.lua",
+      "name": "base.lua",
+      "lines": {
+        "total": 207,
+        "code": 153,
+        "comment": 16,
+        "blank": 38
+      },
+      "exports": 9,
+      "imports": 7,
+      "imported_by": 2,
+      "complexity": 40,
+      "modules": [
+        "M"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/renderers/pool.lua",
+      "name": "pool.lua",
+      "lines": {
+        "total": 180,
+        "code": 144,
+        "comment": 3,
+        "blank": 33
+      },
+      "exports": 3,
+      "imports": 5,
+      "imported_by": 2,
+      "complexity": 21,
+      "modules": [
+        "M",
+        "right_elements",
+        "right_elements"
+      ],
+      "classes": [],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": true,
+        "is_config": false
+      }
+    },
+    {
+      "path": "ARKITEKT/scripts/Region_Playlist/widgets/region_tiles/selector.lua",
+      "name": "selector.lua",
+      "lines": {
+        "total": 98,
+        "code": 72,
+        "comment": 3,
+        "blank": 23
+      },
+      "exports": 1,
+      "imports": 3,
+      "imported_by": 1,
+      "complexity": 21,
+      "modules": [
+        "M",
+        "Selector"
+      ],
+      "classes": [
+        "Selector",
+        "M"
+      ],
+      "flags": {
+        "is_entry_point": false,
+        "is_pure_module": false,
+        "is_utility": false,
+        "is_config": false
+      }
+    }
+  ],
+  "folders": {
+    "ARKITEKT": {
+      "file_count": 137,
+      "total_lines": 25412,
+      "code_lines": 19942,
+      "total_exports": 375,
+      "total_classes": 93
+    }
+  },
+  "dependencies": {
+    "cycles": [],
+    "entry_points": [
+      "ARKITEKT/scripts/demos/widget_demo.lua",
+      "ARKITEKT/scripts/Region_Playlist/storage/settings.lua",
+      "ARKITEKT/scripts/Region_Playlist/playlists/manager.lua",
+      "ARKITEKT/arkitekt/gui/widgets/panel/header/init.lua",
+      "ARKITEKT/scripts/Region_Playlist/ARK_RegionPlaylist.lua",
+      "ARKITEKT/arkitekt/app/icon.lua",
+      "ARKITEKT/scripts/Region_Playlist/engine/coordinator_bridge.lua",
+      "ARKITEKT/arkitekt/reaper/timing.lua",
+      "ARKITEKT/scripts/demos/demo.lua",
+      "ARKITEKT/scripts/Region_Playlist/components/tiles/pool.lua",
+      "ARKITEKT/scripts/Region_Playlist/components/tiles/active.lua",
+      "ARKITEKT/scripts/ColorPalette/ARK_ColorPalette.lua",
+      "ARKITEKT/ARKITEKT.lua",
+      "ARKITEKT/arkitekt/gui/systems/reorder.lua",
+      "ARKITEKT/scripts/demos/demo_modal_overlay.lua",
+      "ARKITEKT/arkitekt/gui/images.lua",
+      "ARKITEKT/arkitekt/app/chrome/status_bar/init.lua",
+      "ARKITEKT/scripts/Region_Playlist/storage/migration.lua",
+      "ARKITEKT/arkitekt/app/titlebar.lua",
+      "ARKITEKT/arkitekt/gui/widgets/panel/init.lua",
+      "ARKITEKT/arkitekt/gui/widgets/navigation/menutabs.lua",
+      "ARKITEKT/scripts/demos/demo2.lua",
+      "ARKITEKT/scripts/Region_Playlist/core/colors.lua",
+      "ARKITEKT/scripts/demos/demo3.lua",
+      "ARKITEKT/arkitekt/core/lifecycle.lua",
+      "ARKITEKT/scripts/Region_Playlist/widgets/controls/controls_widget.lua",
+      "ARKITEKT/scripts/Region_Playlist/core/keys.lua",
+      "ARKITEKT/arkitekt/app/config.lua"
+    ],
+    "pure_modules": [
+      "ARKITEKT/arkitekt/app/config.lua",
+      "ARKITEKT/arkitekt/app/hub.lua",
+      "ARKITEKT/arkitekt/app/icon.lua",
+      "ARKITEKT/arkitekt/app/runtime.lua",
+      "ARKITEKT/arkitekt/app/titlebar.lua",
+      "ARKITEKT/arkitekt/app/window.lua",
+      "ARKITEKT/arkitekt/core/colors.lua",
+      "ARKITEKT/arkitekt/core/events.lua",
+      "ARKITEKT/arkitekt/core/json.lua",
+      "ARKITEKT/arkitekt/core/lifecycle.lua",
+      "ARKITEKT/arkitekt/core/math.lua",
+      "ARKITEKT/arkitekt/core/undo_manager.lua",
+      "ARKITEKT/arkitekt/gui/draw.lua",
+      "ARKITEKT/arkitekt/gui/fx/dnd/config.lua",
+      "ARKITEKT/arkitekt/gui/fx/easing.lua",
+      "ARKITEKT/arkitekt/gui/fx/effects.lua",
+      "ARKITEKT/arkitekt/gui/fx/tile_fx_config.lua",
+      "ARKITEKT/arkitekt/gui/images.lua",
+      "ARKITEKT/arkitekt/gui/systems/height_stabilizer.lua",
+      "ARKITEKT/arkitekt/gui/systems/playback_manager.lua",
+      "ARKITEKT/arkitekt/gui/systems/reorder.lua",
+      "ARKITEKT/arkitekt/gui/systems/responsive_grid.lua",
+      "ARKITEKT/arkitekt/gui/systems/selection.lua",
+      "ARKITEKT/arkitekt/gui/systems/tile_utilities.lua",
+      "ARKITEKT/arkitekt/gui/widgets/controls/context_menu.lua",
+      "ARKITEKT/arkitekt/gui/widgets/controls/scrollbar.lua",
+      "ARKITEKT/arkitekt/gui/widgets/controls/tooltip.lua",
+      "ARKITEKT/arkitekt/gui/widgets/grid/dnd_state.lua",
+      "ARKITEKT/arkitekt/gui/widgets/grid/drop_zones.lua",
+      "ARKITEKT/arkitekt/gui/widgets/grid/grid_bridge.lua",
+      "ARKITEKT/arkitekt/gui/widgets/grid/layout.lua",
+      "ARKITEKT/arkitekt/gui/widgets/navigation/menutabs.lua",
+      "ARKITEKT/arkitekt/gui/widgets/overlay/config.lua",
+      "ARKITEKT/arkitekt/gui/widgets/package_tiles/micromanage.lua",
+      "ARKITEKT/arkitekt/gui/widgets/panel/background.lua",
+      "ARKITEKT/arkitekt/gui/widgets/panel/config.lua",
+      "ARKITEKT/arkitekt/gui/widgets/panel/content.lua",
+      "ARKITEKT/arkitekt/gui/widgets/panel/header/button.lua",
+      "ARKITEKT/arkitekt/gui/widgets/panel/header/search_field.lua",
+      "ARKITEKT/arkitekt/gui/widgets/panel/header/separator.lua",
+      "ARKITEKT/arkitekt/gui/widgets/selection_rectangle.lua",
+      "ARKITEKT/arkitekt/gui/widgets/sliders/hue.lua",
+      "ARKITEKT/arkitekt/patterns/controller.lua",
+      "ARKITEKT/arkitekt/reaper/regions.lua",
+      "ARKITEKT/arkitekt/reaper/timing.lua",
+      "ARKITEKT/arkitekt/reaper/transport.lua",
+      "ARKITEKT/scripts/ColorPalette/app/controller.lua",
+      "ARKITEKT/scripts/Region_Playlist/app/config.lua",
+      "ARKITEKT/scripts/Region_Playlist/app/sequence_expander.lua",
+      "ARKITEKT/scripts/Region_Playlist/app/status.lua",
+      "ARKITEKT/scripts/Region_Playlist/components/separator_manager.lua",
+      "ARKITEKT/scripts/Region_Playlist/components/tiles/config.lua",
+      "ARKITEKT/scripts/Region_Playlist/core/keys.lua",
+      "ARKITEKT/scripts/Region_Playlist/core/state.lua",
+      "ARKITEKT/scripts/Region_Playlist/engine/quantize.lua",
+      "ARKITEKT/scripts/Region_Playlist/engine/transitions.lua",
+      "ARKITEKT/scripts/Region_Playlist/engine/transport.lua",
+      "ARKITEKT/scripts/Region_Playlist/storage/migration.lua",
+      "ARKITEKT/scripts/Region_Playlist/storage/undo_bridge.lua",
+      "ARKITEKT/scripts/Region_Playlist/views/active_panel.lua",
+      "ARKITEKT/scripts/Region_Playlist/views/pool_panel.lua",
+      "ARKITEKT/scripts/Region_Playlist/views/status_bar.lua",
+      "ARKITEKT/scripts/Region_Playlist/widgets/controls/controls_widget.lua"
+    ]
+  }
+}

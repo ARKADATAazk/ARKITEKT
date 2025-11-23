@@ -1,0 +1,43 @@
+# ARKITEKT — Windsurf Rules
+
+**Primary spec:** See [ARKITEKT_Codex_Playbook_v5.md](cci:7://file:///d:/Dropbox/REAPER/Scripts/ARKITEKT-Project/ARKITEKT_Codex_Playbook_v5.md:0:0-0:0) for full details.
+
+## Quick Facts
+- **Language:** Lua 5.3 only
+- **Namespace:** `arkitekt.*`
+- **Module pattern:** `local M = {}; return M`
+- **No globals, no side-effects at require time**
+
+## Layer Boundaries (STRICT)
+**Pure layers** (NO `reaper.*` or `ImGui.*`):
+- `ARKITEKT/arkitekt/core/*`
+- `ARKITEKT/arkitekt/storage/persistence.lua`
+- `ARKITEKT/scripts/*/core/*`
+- `ARKITEKT/scripts/*/storage/*`
+
+**Runtime layers** (may use REAPER/ImGui):
+- `ARKITEKT/scripts/*/app/*`
+- `ARKITEKT/scripts/*/views/*`
+- `ARKITEKT/scripts/*/widgets/*`
+
+## Edit Discipline
+- **Surgical diffs only** — no mass reformatting
+- **Diff budget:** ≤12 files, ≤700 LOC (core/storage: ≤6 files, ≤300 LOC)
+- **Use anchors** for targeted edits (see Playbook §21-33)
+- **Idempotent patches** — re-applying = no-op
+
+## Mandatory Checks
+Before ANY edit:
+1. No `require("arkitekt.` anywhere
+2. No backslashes in `require()` paths
+3. Pure layers stay pure
+4. All importers updated when moving/deleting modules
+5. Canonical shapes before engine calls (`canonicalize_sequence`)
+
+## Workflow
+- Work on `codex/<task-name>` branches
+- Include acceptance criteria + proof-greps
+- Add `@deprecated` + `EXPIRES` date for shims
+- See Playbook V5 for pipeline/phase workflows
+
+**Read ARKITEKT_Codex_Playbook_v5.md for complete rules.**

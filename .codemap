@@ -1,0 +1,59 @@
+# ARKITEKT Code Map
+
+## Entry Points
+- [ARKITEKT/ARKITEKT.lua](cci:7://file:///d:/Dropbox/REAPER/Scripts/ARKITEKT-Project/ARKITEKT/ARKITEKT.lua:0:0-0:0) - Main library loader
+- `ARKITEKT/scripts/RegionPlaylist/ARK_RegionPlaylist.lua` - Example app entry
+
+## Core Architecture
+
+### Library ([ARKITEKT/arkitekt/](cci:7://file:///d:/Dropbox/REAPER/Scripts/ARKITEKT-Project/ARKITEKT/arkitekt:0:0-0:0))
+arkitekt/ 
+├── core/ # Pure logic (no REAPER/ImGui) 
+├── storage/ # Persistence layer 
+├── views/ # View composition 
+├── widgets/ # Low-level ImGui drawing 
+└── components/ # Reusable UI components
+
+
+### Applications (`ARKITEKT/scripts/<Feature>/`)
+Each feature follows:
+├── core/ # Pure business logic 
+├── app/ # Stateful controllers 
+├── engine/ # Execution layer 
+├── storage/ # Feature-specific persistence 
+├── views/ # UI composition 
+└── widgets/ # Feature-specific widgets
+
+
+## Key Modules (by concern)
+
+### State Management
+- `arkitekt/core/state.lua` - Core state utilities
+- `<Feature>/core/state.lua` - Feature state
+
+### UI Rendering
+- `arkitekt/widgets/*` - Primitive widgets
+- `arkitekt/views/*` - Composed views
+- `<Feature>/views/*` - Feature views
+
+### Theme System
+- `arkitekt/core/theme.lua` - Theme engine
+- `arkitekt/core/colors.lua` - Color utilities
+
+### Data Flow
+1. User input → `app/controller.lua`
+2. State update → `core/state.lua`
+3. Engine execution → `engine/*.lua`
+4. View render → `views/*.lua` → `widgets/*.lua`
+
+## Import Patterns
+```lua
+-- Library imports (from anywhere)
+local theme = require("arkitekt.core.theme")
+
+-- Feature imports (within feature)
+local state = require("RegionPlaylist.core.state")
+Forbidden Patterns
+❌ require("arkitekt.*") - old namespace
+❌ require("path\\with\\backslashes") - Windows separators
+❌ reaper.* in core/* or storage/* - purity violation

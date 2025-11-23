@@ -1,0 +1,10 @@
+# @noindex
+# Python dependencies for ARKITEKT development utilities
+
+# SVG to Lua path converter
+svgpathtools>=1.7.1
+
+# Included with svgpathtools:
+# - numpy (matrix operations, path calculations)
+# - scipy (curve fitting, interpolation)
+# - svgwrite (SVG generation for testing)

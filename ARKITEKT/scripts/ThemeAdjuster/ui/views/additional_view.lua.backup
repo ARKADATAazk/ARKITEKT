@@ -1,0 +1,1206 @@
+-- @noindex
+-- ThemeAdjuster/ui/views/additional_view.lua
+-- Additional parameters tab - auto-discovered theme parameters
+
+local ImGui = require 'imgui' '0.10'
+local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
+local Spinner = require('arkitekt.gui.widgets.primitives.spinner')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local Background = require('arkitekt.gui.widgets.containers.panel.background')
+local Style = require('arkitekt.gui.style.defaults')
+local Colors = require('arkitekt.core.colors')
+local hexrgb = Colors.hexrgb
+local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
+local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
+local ThemeParams = require('ThemeAdjuster.core.theme_params')
+
+local PC = Style.PANEL_COLORS
+
+local M = {}
+local AdditionalView = {}
+AdditionalView.__index = AdditionalView
+
+-- Helper function to lighten a hex color
+local function lighten_color(color_int, factor)
+  -- Extract RGBA components
+  local r = (color_int >> 24) & 0xFF
+  local g = (color_int >> 16) & 0xFF
+  local b = (color_int >> 8) & 0xFF
+  local a = color_int & 0xFF
+
+  -- Lighten by mixing with white
+  r = math.floor(r + (255 - r) * factor)
+  g = math.floor(g + (255 - g) * factor)
+  b = math.floor(b + (255 - b) * factor)
+
+  -- Clamp values
+  r = math.min(255, math.max(0, r))
+  g = math.min(255, math.max(0, g))
+  b = math.min(255, math.max(0, b))
+
+  -- Reconstruct color
+  return (r << 24) | (g << 16) | (b << 8) | a
+end
+
+function M.new(State, Config, settings)
+  local self = setmetatable({
+    State = State,
+    Config = Config,
+    settings = settings,
+
+    -- Discovered parameters
+    all_params = {},
+    unknown_params = {},
+    grouped_params = {},
+
+    -- Parameter groups (organized by group headers)
+    param_groups = {},
+    enabled_groups = {},  -- group_name -> true/false
+
+    -- UI state
+    dev_mode = false,
+    show_group_filter = false,  -- Show group filter dialog
+    active_assignment_tab = "TCP",  -- Currently selected tab in assignment grid
+
+    -- NEW: Tab assignments with ordering
+    -- Structure: { TCP = { {param_name = "...", order = 1}, ... }, MCP = {...}, ... }
+    assignments = {
+      TCP = {},
+      MCP = {},
+      ENVCP = {},
+      TRANS = {},
+      GLOBAL = {}
+    },
+
+    -- Custom metadata: param_name -> {display_name = "", description = ""}
+    custom_metadata = {},
+
+    -- Drag and drop state
+    dragging_param = nil,  -- Currently dragged parameter
+    drag_source = nil,  -- "library" or tab_id
+    drag_over_tab = nil,  -- Tab being hovered over
+    drag_insert_index = nil,  -- Index to insert at when reordering
+
+    -- Callback to invalidate caches in TCP/MCP views
+    cache_invalidation_callback = nil,
+  }, AdditionalView)
+
+  -- Discover parameters on init
+  self:refresh_params()
+
+  -- Load assignments from JSON if available
+  self:load_assignments()
+
+  return self
+end
+
+function AdditionalView:refresh_params()
+  -- Discover all theme parameters
+  self.all_params = ParamDiscovery.discover_all_params()
+
+  -- Organize ALL params into groups (including group headers)
+  -- This ensures group headers aren't filtered out before we can detect them
+  self.param_groups = ParamDiscovery.organize_into_groups(self.all_params)
+
+  -- Filter out known params from each group (but keep the group structure)
+  local known_params = ThemeParams.KNOWN_PARAMS or {}
+  for _, group in ipairs(self.param_groups) do
+    local filtered_params = {}
+    for _, param in ipairs(group.params) do
+      if not known_params[param.name] then
+        table.insert(filtered_params, param)
+      end
+    end
+    group.params = filtered_params
+  end
+
+  -- Remove empty groups
+  local non_empty_groups = {}
+  for _, group in ipairs(self.param_groups) do
+    if #group.params > 0 then
+      table.insert(non_empty_groups, group)
+    end
+  end
+  self.param_groups = non_empty_groups
+
+  -- Initialize enabled_groups if not already set
+  if not next(self.enabled_groups) then
+    local disabled_by_default = ParamDiscovery.get_default_disabled_groups()
+    for _, group in ipairs(self.param_groups) do
+      -- Disable groups that are in the default disabled list
+      self.enabled_groups[group.name] = not disabled_by_default[group.name]
+    end
+  end
+
+  -- Filter unknown_params based on enabled groups
+  self:apply_group_filter()
+
+  -- Group by category (for existing UI)
+  self.grouped_params = ParamDiscovery.group_by_category(self.unknown_params)
+end
+
+function AdditionalView:apply_group_filter()
+  -- Build filtered list of params based on enabled groups
+  self.unknown_params = {}
+
+  for _, group in ipairs(self.param_groups) do
+    if self.enabled_groups[group.name] then
+      for _, param in ipairs(group.params) do
+        table.insert(self.unknown_params, param)
+      end
+    end
+  end
+
+  -- Rebuild category groups for display
+  self.grouped_params = ParamDiscovery.group_by_category(self.unknown_params)
+end
+
+function AdditionalView:draw(ctx, shell_state)
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+  local avail_h = ImGui.GetContentRegionAvail(ctx)
+
+  -- Title and buttons
+  ImGui.PushFont(ctx, shell_state.fonts.bold, 16)
+  ImGui.Text(ctx, "Parameter Manager")
+  ImGui.PopFont(ctx)
+
+  ImGui.SameLine(ctx, 0, 20)
+
+  -- Filter Groups button
+  if Button.draw_at_cursor(ctx, {
+    label = "Filter Groups",
+    width = 120,
+    height = 24,
+    on_click = function()
+      self.show_group_filter = not self.show_group_filter
+    end
+  }, "filter_groups") then
+  end
+
+  if ImGui.IsItemHovered(ctx) then
+    local enabled_count = 0
+    for _, enabled in pairs(self.enabled_groups) do
+      if enabled then enabled_count = enabled_count + 1 end
+    end
+    ImGui.SetTooltip(ctx, string.format("Show/hide parameter groups (%d/%d enabled)", enabled_count, #self.param_groups))
+  end
+
+  ImGui.SameLine(ctx, 0, 8)
+
+  -- Export button
+  if Button.draw_at_cursor(ctx, {
+    label = "Export to JSON",
+    width = 120,
+    height = 24,
+    on_click = function()
+      self:export_parameters()
+    end
+  }, "export_json") then
+  end
+
+  ImGui.Dummy(ctx, 0, 8)
+
+  -- Two-panel layout: LEFT = Parameter Library | RIGHT = Assignment Grid
+  local panel_gap = 16
+  local left_width = avail_w * 0.55
+  local right_width = avail_w * 0.45 - panel_gap
+
+  -- LEFT PANEL: Parameter Library
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+  if ImGui.BeginChild(ctx, "param_library", left_width, 0, 1) then
+    local child_x, child_y = ImGui.GetWindowPos(ctx)
+    local child_w, child_h = ImGui.GetWindowSize(ctx)
+    local dl = ImGui.GetWindowDrawList(ctx)
+
+    -- Background pattern
+    local pattern_cfg = {
+      enabled = true,
+      primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
+      secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
+    }
+    Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+
+    ImGui.Indent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Header
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
+    ImGui.Text(ctx, "PARAMETER LIBRARY")
+    ImGui.PopFont(ctx)
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+    local param_count = #self.unknown_params
+    ImGui.Text(ctx, string.format("%d parameters • Drag to assign", param_count))
+    ImGui.PopStyleColor(ctx)
+
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Draw parameter tiles
+    if param_count == 0 then
+      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+      ImGui.Text(ctx, "No additional parameters found")
+      ImGui.PopStyleColor(ctx)
+    else
+      for _, param in ipairs(self.unknown_params) do
+        self:draw_param_tile(ctx, param, shell_state)
+        ImGui.Dummy(ctx, 0, 2)  -- Minimal spacing between lines
+      end
+    end
+
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.EndChild(ctx)
+  end
+  ImGui.PopStyleColor(ctx)
+
+  -- RIGHT PANEL: Assignment Grid
+  ImGui.SameLine(ctx, 0, panel_gap)
+
+  ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+  if ImGui.BeginChild(ctx, "assignment_grid", right_width, 0, 1) then
+    local child_x, child_y = ImGui.GetWindowPos(ctx)
+    local child_w, child_h = ImGui.GetWindowSize(ctx)
+    local dl = ImGui.GetWindowDrawList(ctx)
+
+    -- Background pattern
+    local pattern_cfg = {
+      enabled = true,
+      primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
+      secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
+    }
+    Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+
+    ImGui.Indent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Header
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
+    ImGui.Text(ctx, "ACTIVE ASSIGNMENTS")
+    ImGui.PopFont(ctx)
+
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Tab bar
+    self:draw_assignment_tab_bar(ctx, shell_state)
+
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Draw assigned parameter tiles for active tab
+    self:draw_assignment_grid(ctx, shell_state)
+
+    ImGui.Unindent(ctx, 8)
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.EndChild(ctx)
+  end
+  ImGui.PopStyleColor(ctx)
+
+  -- Group filter dialog
+  if self.show_group_filter then
+    self:draw_group_filter_dialog(ctx, shell_state)
+  end
+end
+
+-- Draw a parameter tile in the library (left panel) - COMPACT SINGLE LINE
+function AdditionalView:draw_param_tile(ctx, param, shell_state)
+  local avail_w = ImGui.GetContentRegionAvail(ctx) - 16
+  local tile_h = 32  -- Compact height
+
+  -- Initialize metadata if needed
+  if not self.custom_metadata[param.name] then
+    self.custom_metadata[param.name] = {
+      display_name = "",
+      description = ""
+    }
+  end
+
+  local metadata = self.custom_metadata[param.name]
+  local assignment_count = self:get_assignment_count(param.name)
+
+  -- Tile background and border
+  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  -- Background
+  local bg_color = hexrgb("#252525")
+  if assignment_count > 0 then
+    bg_color = hexrgb("#2A2A35")  -- Tint if assigned
+  end
+
+  ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + avail_w, cursor_y + tile_h,
+    bg_color, 3)
+
+  -- Border
+  local border_color = hexrgb("#333333")
+  ImGui.DrawList_AddRect(dl, cursor_x, cursor_y, cursor_x + avail_w, cursor_y + tile_h,
+    border_color, 3, 0, 1)
+
+  -- Layout: [NAME 140px] [CONTROL 120px] [NAME INPUT 140px] [DESC INPUT 180px] [BADGE]
+  local name_w = 140
+  local control_w = 120
+  local name_input_w = 140
+  local desc_input_w = 180
+  local spacing = 8
+
+  ImGui.AlignTextToFramePadding(ctx)
+
+  -- 1. Parameter name (DRAGGABLE BUTTON - truncated, with tooltip)
+  local truncated_name = param.name
+  if #param.name > 20 then
+    truncated_name = param.name:sub(1, 17) .. "..."
+  end
+
+  -- Make the param name a selectable button for dragging
+  ImGui.PushStyleColor(ctx, ImGui.Col_Header, hexrgb("#00000000"))  -- Transparent
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, hexrgb("#FFFFFF15"))  -- Subtle hover
+  ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, hexrgb("#FFFFFF25"))  -- Subtle active
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CCCCCC"))
+
+  ImGui.Selectable(ctx, truncated_name .. "##name_" .. param.index, false, 0, name_w, tile_h - 8)
+
+  ImGui.PopStyleColor(ctx, 4)
+
+  -- Drag source from parameter name
+  if ImGui.BeginDragDropSource(ctx) then
+    ImGui.SetDragDropPayload(ctx, "PARAM", param.name)
+    ImGui.Text(ctx, param.name)
+    ImGui.EndDragDropSource(ctx)
+  end
+
+  -- Tooltip with full technical info
+  if ImGui.IsItemHovered(ctx) then
+    local tooltip = string.format(
+      "Parameter: %s\nType: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f\n\nDrag to assign to tabs →",
+      param.name,
+      param.type,
+      param.min,
+      param.max,
+      param.default,
+      param.value
+    )
+    ImGui.SetTooltip(ctx, tooltip)
+  end
+
+  ImGui.SameLine(ctx, 0, spacing)
+
+  -- 2. Live control (slider/spinner/checkbox)
+  ImGui.SetNextItemWidth(ctx, control_w)
+  local changed = false
+  local new_value = param.value
+
+  if param.type == "toggle" then
+    local is_checked = (param.value ~= 0)
+    if Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "lib_" .. param.index) then
+      changed = true
+      new_value = is_checked and 0 or 1
+    end
+
+  elseif param.type == "spinner" then
+    local values = {}
+    for i = param.min, param.max do
+      table.insert(values, tostring(i))
+    end
+
+    local current_idx = math.floor(param.value - param.min + 1)
+    current_idx = math.max(1, math.min(current_idx, #values))
+
+    local changed_spinner, new_idx = Spinner.draw(
+      ctx,
+      "##lib_spinner_" .. param.index,
+      current_idx,
+      values,
+      {w = control_w, h = 24}
+    )
+
+    if changed_spinner then
+      changed = true
+      new_value = param.min + (new_idx - 1)
+    end
+
+  elseif param.type == "slider" then
+    local changed_slider, slider_value = ImGui.SliderDouble(
+      ctx,
+      "##lib_slider_" .. param.index,
+      param.value,
+      param.min,
+      param.max,
+      "%.1f"
+    )
+
+    if changed_slider then
+      changed = true
+      new_value = slider_value
+    end
+  end
+
+  -- Apply parameter change
+  if changed then
+    pcall(reaper.ThemeLayout_SetParameter, param.index, new_value, true)
+    pcall(reaper.ThemeLayout_RefreshAll)
+    param.value = new_value
+  end
+
+  ImGui.SameLine(ctx, 0, spacing)
+
+  -- 3. Name input
+  ImGui.SetNextItemWidth(ctx, name_input_w)
+  local name_changed, new_name = ImGui.InputTextWithHint(ctx, "##name_" .. param.index,
+    "Custom name...", metadata.display_name)
+  if name_changed then
+    metadata.display_name = new_name
+    self:save_assignments()
+  end
+
+  ImGui.SameLine(ctx, 0, spacing)
+
+  -- 4. Description input
+  ImGui.SetNextItemWidth(ctx, desc_input_w)
+  local desc_changed, new_desc = ImGui.InputTextWithHint(ctx, "##desc_" .. param.index,
+    "Description...", metadata.description)
+  if desc_changed then
+    metadata.description = new_desc
+    self:save_assignments()
+  end
+
+  -- 5. Assignment badge (at the end)
+  if assignment_count > 0 then
+    ImGui.SameLine(ctx)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88AAFF"))
+    ImGui.Text(ctx, string.format("(%d)", assignment_count))
+    ImGui.PopStyleColor(ctx)
+  end
+end
+
+-- Draw tab bar for assignment grid (right panel)
+function AdditionalView:draw_assignment_tab_bar(ctx, shell_state)
+  local tabs = {
+    {id = "TCP", label = "TCP", color = hexrgb("#4A90E2")},
+    {id = "MCP", label = "MCP", color = hexrgb("#E24A90")},
+    {id = "ENVCP", label = "ENV", color = hexrgb("#50C878")},
+    {id = "TRANS", label = "TRN", color = hexrgb("#FF8C42")},
+    {id = "GLOBAL", label = "GLB", color = hexrgb("#9B59B6")}
+  }
+
+  local tab_w = 60
+  local tab_h = 28
+
+  for i, tab in ipairs(tabs) do
+    local is_active = (self.active_assignment_tab == tab.id)
+    local assignment_count = #self.assignments[tab.id]
+
+    -- Button styling
+    local bg_color = is_active and tab.color or hexrgb("#2A2A2A")
+    local hover_color = is_active and lighten_color(tab.color, 0.2) or hexrgb("#353535")
+    local text_color = is_active and hexrgb("#FFFFFF") or hexrgb("#888888")
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, bg_color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hover_color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, tab.color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameRounding, 3)
+
+    local label = assignment_count > 0 and string.format("%s (%d)", tab.label, assignment_count) or tab.label
+
+    if ImGui.Button(ctx, label .. "##tab_" .. tab.id, tab_w + (assignment_count > 0 and 20 or 0), tab_h) then
+      self.active_assignment_tab = tab.id
+    end
+
+    ImGui.PopStyleVar(ctx)
+    ImGui.PopStyleColor(ctx, 4)
+
+    -- Drop target
+    if ImGui.BeginDragDropTarget(ctx) then
+      local ret, payload = ImGui.AcceptDragDropPayload(ctx, "PARAM")
+      if ret then
+        local param_name = payload
+        self:assign_param_to_tab(param_name, tab.id)
+      end
+      ImGui.EndDragDropTarget(ctx)
+    end
+
+    if i < #tabs then
+      ImGui.SameLine(ctx, 0, 4)
+    end
+  end
+end
+
+-- Draw assignment grid for active tab (right panel)
+function AdditionalView:draw_assignment_grid(ctx, shell_state)
+  local assignments = self.assignments[self.active_assignment_tab]
+
+  if not assignments or #assignments == 0 then
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+    ImGui.Text(ctx, "No parameters assigned")
+    ImGui.Text(ctx, "Drag from library to assign")
+    ImGui.PopStyleColor(ctx)
+    return
+  end
+
+  -- Build param lookup
+  local param_lookup = {}
+  for _, param in ipairs(self.unknown_params) do
+    param_lookup[param.name] = param
+  end
+
+  -- Draw assigned tiles
+  for i, assignment in ipairs(assignments) do
+    local param = param_lookup[assignment.param_name]
+    if param then
+      self:draw_assigned_tile(ctx, param, i, shell_state)
+      ImGui.Dummy(ctx, 0, 4)
+    end
+  end
+end
+
+-- Draw a simple assigned parameter tile (right panel)
+function AdditionalView:draw_assigned_tile(ctx, param, index, shell_state)
+  local tile_w = ImGui.GetContentRegionAvail(ctx) - 16
+  local tile_h = 50  -- Smaller for assigned tiles
+
+  local metadata = self.custom_metadata[param.name]
+  local display_name = (metadata and metadata.display_name and metadata.display_name ~= "")
+    and metadata.display_name or param.name
+
+  -- Tile background
+  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  local bg_color = hexrgb("#282828")
+  ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + tile_w, cursor_y + tile_h,
+    bg_color, 3)
+
+  local border_color = hexrgb("#404040")
+  ImGui.DrawList_AddRect(dl, cursor_x, cursor_y, cursor_x + tile_w, cursor_y + tile_h,
+    border_color, 3, 0, 1)
+
+  -- Clickable area
+  ImGui.BeginGroup(ctx)
+  ImGui.Dummy(ctx, tile_w, tile_h)
+  ImGui.EndGroup(ctx)
+
+  -- Content
+  ImGui.SetCursorScreenPos(ctx, cursor_x + 8, cursor_y + 12)
+  ImGui.BeginGroup(ctx)
+
+  -- Display name
+  ImGui.PushFont(ctx, shell_state.fonts.bold, 12)
+  ImGui.Text(ctx, display_name)
+  ImGui.PopFont(ctx)
+
+  -- Param name (if different)
+  if display_name ~= param.name then
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#777777"))
+    ImGui.Text(ctx, param.name)
+    ImGui.PopStyleColor(ctx)
+  end
+
+  ImGui.EndGroup(ctx)
+
+  -- Remove button
+  ImGui.SetCursorScreenPos(ctx, cursor_x + tile_w - 60, cursor_y + tile_h / 2 - 10)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#3A2020"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#5A3030"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FF6666"))
+  if ImGui.SmallButton(ctx, "Remove##" .. param.index) then
+    self:unassign_param_from_tab(param.name, self.active_assignment_tab)
+  end
+  ImGui.PopStyleColor(ctx, 3)
+
+  -- Drag source for reordering (simplified - no reordering yet)
+  -- TODO: Implement reordering in next iteration
+end
+
+function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
+  -- Center the window
+  local window_w = 500
+  local window_h = 400
+
+  -- Get parent window position and size for centering
+  local parent_x, parent_y = ImGui.GetWindowPos(ctx)
+  local parent_w, parent_h = ImGui.GetWindowSize(ctx)
+
+  -- Center relative to parent window
+  ImGui.SetNextWindowPos(ctx, parent_x + (parent_w - window_w) / 2, parent_y + (parent_h - window_h) / 2, ImGui.Cond_Appearing)
+  ImGui.SetNextWindowSize(ctx, window_w, window_h, ImGui.Cond_Appearing)
+
+  local flags = ImGui.WindowFlags_NoCollapse
+  local visible, open = ImGui.Begin(ctx, "Parameter Group Filter##group_filter", true, flags)
+
+  if visible then
+    ImGui.PushFont(ctx, shell_state.fonts.bold, 14)
+    ImGui.Text(ctx, "Enable/Disable Parameter Groups")
+    ImGui.PopFont(ctx)
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#999999"))
+    ImGui.Text(ctx, "Only parameters from enabled groups will be shown in the Additional tab")
+    ImGui.PopStyleColor(ctx)
+
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Buttons
+    if Button.draw_at_cursor(ctx, {
+      label = "Enable All",
+      width = 100,
+      height = 24,
+      on_click = function()
+        for group_name, _ in pairs(self.enabled_groups) do
+          self.enabled_groups[group_name] = true
+        end
+        self:apply_group_filter()
+        self:save_group_filter()
+      end
+    }, "enable_all_groups") then
+    end
+
+    ImGui.SameLine(ctx, 0, 8)
+
+    if Button.draw_at_cursor(ctx, {
+      label = "Disable All",
+      width = 100,
+      height = 24,
+      on_click = function()
+        for group_name, _ in pairs(self.enabled_groups) do
+          self.enabled_groups[group_name] = false
+        end
+        self:apply_group_filter()
+        self:save_group_filter()
+      end
+    }, "disable_all_groups") then
+    end
+
+    ImGui.SameLine(ctx, 0, 8)
+
+    if Button.draw_at_cursor(ctx, {
+      label = "Reset to Defaults",
+      width = 130,
+      height = 24,
+      on_click = function()
+        local disabled_by_default = ParamDiscovery.get_default_disabled_groups()
+        for _, group in ipairs(self.param_groups) do
+          self.enabled_groups[group.name] = not disabled_by_default[group.name]
+        end
+        self:apply_group_filter()
+        self:save_group_filter()
+      end
+    }, "reset_groups") then
+    end
+
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Group list
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
+    if ImGui.BeginChild(ctx, "group_list", 0, -32, 1) then
+      ImGui.Indent(ctx, 8)
+      ImGui.Dummy(ctx, 0, 4)
+
+      for i, group in ipairs(self.param_groups) do
+        local is_enabled = self.enabled_groups[group.name]
+        local param_count = #group.params
+
+        -- Checkbox
+        if Checkbox.draw_at_cursor(ctx, "", is_enabled, nil, "group_check_" .. i) then
+          self.enabled_groups[group.name] = not is_enabled
+          self:apply_group_filter()
+          self:save_group_filter()
+        end
+
+        -- Group info
+        ImGui.SameLine(ctx, 0, 8)
+        ImGui.AlignTextToFramePadding(ctx)
+
+        local display_text = string.format("%s (%d params)", group.display_name, param_count)
+        if is_enabled then
+          ImGui.Text(ctx, display_text)
+        else
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
+          ImGui.Text(ctx, display_text)
+          ImGui.PopStyleColor(ctx)
+        end
+
+        ImGui.Dummy(ctx, 0, 2)
+      end
+
+      ImGui.Unindent(ctx, 8)
+      ImGui.Dummy(ctx, 0, 4)
+      ImGui.EndChild(ctx)
+    end
+    ImGui.PopStyleColor(ctx)
+
+    ImGui.End(ctx)
+  end
+
+  if not open then
+    self.show_group_filter = false
+  end
+end
+
+function AdditionalView:draw_param_row(ctx, param, shell_state)
+  local label_w = 250
+  local control_start = label_w
+  local control_w = 150
+  local chips_start = control_start + control_w + 20
+  local name_start = chips_start + 280
+  local desc_start = name_start + 200
+
+  -- Initialize metadata if needed
+  if not self.custom_metadata[param.name] then
+    self.custom_metadata[param.name] = {
+      display_name = "",
+      description = ""
+    }
+  end
+
+  -- Label (left side)
+  ImGui.AlignTextToFramePadding(ctx)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#AAAAAA"))
+  ImGui.Text(ctx, param.name)
+  ImGui.PopStyleColor(ctx)
+
+  -- Tooltip with details
+  if ImGui.IsItemHovered(ctx) then
+    local tooltip = string.format(
+      "Parameter: %s\nType: %s\nRange: %.1f - %.1f\nDefault: %.1f\nCurrent: %.1f",
+      param.name,
+      param.type,
+      param.min,
+      param.max,
+      param.default,
+      param.value
+    )
+    ImGui.SetTooltip(ctx, tooltip)
+  end
+
+  -- Draw the control (checkbox/slider/spinner)
+  ImGui.SameLine(ctx, control_start)
+  local changed, new_value = self:draw_control(ctx, param, control_w)
+
+  if changed then
+    -- Update parameter via REAPER API
+    pcall(reaper.ThemeLayout_SetParameter, param.index, new_value, true)
+    pcall(reaper.ThemeLayout_RefreshAll)
+    param.value = new_value
+  end
+
+  -- Draw assignable tab chips
+  ImGui.SameLine(ctx, chips_start)
+  local assignment_changed = self:draw_assignment_chips(ctx, param)
+  if assignment_changed then
+    self:save_assignments()
+  end
+
+  -- Custom Name field
+  ImGui.SameLine(ctx, name_start)
+  ImGui.AlignTextToFramePadding(ctx)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+  ImGui.Text(ctx, "N:")
+  ImGui.PopStyleColor(ctx)
+  ImGui.SameLine(ctx, 0, 4)
+
+  ImGui.SetNextItemWidth(ctx, 140)
+  local name_changed, new_name = ImGui.InputText(ctx, "##name_" .. param.index,
+    self.custom_metadata[param.name].display_name)
+  if name_changed then
+    self.custom_metadata[param.name].display_name = new_name
+    self:save_assignments()
+  end
+
+  -- Description field
+  ImGui.SameLine(ctx, desc_start)
+  ImGui.AlignTextToFramePadding(ctx)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+  ImGui.Text(ctx, "D:")
+  ImGui.PopStyleColor(ctx)
+  ImGui.SameLine(ctx, 0, 4)
+
+  ImGui.SetNextItemWidth(ctx, 200)
+  local desc_changed, new_desc = ImGui.InputText(ctx, "##desc_" .. param.index,
+    self.custom_metadata[param.name].description)
+  if desc_changed then
+    self.custom_metadata[param.name].description = new_desc
+    self:save_assignments()
+  end
+
+  ImGui.Dummy(ctx, 0, 4)
+end
+
+function AdditionalView:draw_control(ctx, param, width)
+  local changed = false
+  local new_value = param.value
+
+  if param.type == "toggle" then
+    -- Checkbox for 0/1 toggles
+    local is_checked = (param.value ~= 0)
+    if Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "param_" .. param.index) then
+      changed = true
+      new_value = is_checked and 0 or 1
+    end
+
+  elseif param.type == "spinner" then
+    -- Spinner for discrete values
+    local values = {}
+    for i = param.min, param.max do
+      table.insert(values, tostring(i))
+    end
+
+    local current_idx = math.floor(param.value - param.min + 1)
+    current_idx = math.max(1, math.min(current_idx, #values))
+
+    local changed_spinner, new_idx = Spinner.draw(
+      ctx,
+      "##spinner_" .. param.index,
+      current_idx,
+      values,
+      {w = width, h = 24}
+    )
+
+    if changed_spinner then
+      changed = true
+      new_value = param.min + (new_idx - 1)
+    end
+
+  elseif param.type == "slider" then
+    -- Slider for continuous ranges
+    ImGui.SetNextItemWidth(ctx, width)
+    local changed_slider, slider_value = ImGui.SliderDouble(
+      ctx,
+      "##slider_" .. param.index,
+      param.value,
+      param.min,
+      param.max,
+      "%.1f"
+    )
+
+    if changed_slider then
+      changed = true
+      new_value = slider_value
+    end
+
+  else
+    -- Static value display
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888"))
+    ImGui.Text(ctx, string.format("%.1f", param.value))
+    ImGui.PopStyleColor(ctx)
+  end
+
+  return changed, new_value
+end
+
+function AdditionalView:draw_assignment_chips(ctx, param)
+  -- Available tabs for assignment
+  local tabs = {
+    {id = "TCP", label = "TCP", color = hexrgb("#4A90E2")},
+    {id = "MCP", label = "MCP", color = hexrgb("#E24A90")},
+    {id = "ENVCP", label = "ENV", color = hexrgb("#90E24A")},
+    {id = "TRANS", label = "TRN", color = hexrgb("#E2904A")},
+    {id = "GLOBAL", label = "GLB", color = hexrgb("#9B4AE2")},
+  }
+
+  -- Initialize assignment state for this param if needed
+  if not self.assignments[param.name] then
+    self.assignments[param.name] = {}
+  end
+
+  local changed = false
+  local chip_w = 48
+  local chip_h = 20
+  local chip_spacing = 4
+
+  for i, tab in ipairs(tabs) do
+    if i > 1 then
+      ImGui.SameLine(ctx, 0, chip_spacing)
+    end
+
+    local is_assigned = self.assignments[param.name][tab.id] or false
+    local chip_id = "chip_" .. param.index .. "_" .. tab.id
+
+    -- Draw chip button
+    local bg_color = is_assigned and tab.color or hexrgb("#333333")
+    local hover_color = is_assigned and lighten_color(tab.color, 0.2) or hexrgb("#444444")
+    local text_color = is_assigned and hexrgb("#FFFFFF") or hexrgb("#888888")
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_Button, bg_color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hover_color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, tab.color)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, text_color)
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_FrameRounding, 3)
+
+    if ImGui.Button(ctx, tab.label .. "##" .. chip_id, chip_w, chip_h) then
+      self.assignments[param.name][tab.id] = not is_assigned
+      changed = true
+    end
+
+    ImGui.PopStyleVar(ctx)
+    ImGui.PopStyleColor(ctx, 4)
+
+    -- Tooltip
+    if ImGui.IsItemHovered(ctx) then
+      local tooltip = is_assigned
+        and string.format("Remove from %s tab", tab.label)
+        or string.format("Assign to %s tab", tab.label)
+      ImGui.SetTooltip(ctx, tooltip)
+    end
+  end
+
+  return changed
+end
+
+function AdditionalView:load_assignments()
+  -- Load assignments from JSON file
+  local mappings = ThemeMapper.load_current_mappings()
+
+  if mappings and mappings.assignments then
+    -- Check if it's the old format (param_name -> {TCP = true, ...})
+    -- or new format (TCP -> [{param_name = "...", order = 1}, ...])
+    local is_old_format = false
+    for key, value in pairs(mappings.assignments) do
+      if type(value) == "table" and value.TCP ~= nil then
+        is_old_format = true
+        break
+      elseif type(value) == "table" and type(value[1]) == "table" then
+        is_old_format = false
+        break
+      end
+    end
+
+    if is_old_format then
+      -- Convert old format to new format
+      local new_assignments = {
+        TCP = {},
+        MCP = {},
+        ENVCP = {},
+        TRANS = {},
+        GLOBAL = {}
+      }
+
+      for param_name, assignment in pairs(mappings.assignments) do
+        for tab_id, is_assigned in pairs(assignment) do
+          if is_assigned and new_assignments[tab_id] then
+            table.insert(new_assignments[tab_id], {
+              param_name = param_name,
+              order = #new_assignments[tab_id] + 1
+            })
+          end
+        end
+      end
+
+      self.assignments = new_assignments
+    else
+      -- Already new format
+      self.assignments = mappings.assignments
+      -- Ensure all tabs exist
+      for _, tab_id in ipairs({"TCP", "MCP", "ENVCP", "TRANS", "GLOBAL"}) do
+        if not self.assignments[tab_id] then
+          self.assignments[tab_id] = {}
+        end
+      end
+    end
+  else
+    -- Initialize empty assignments
+    self.assignments = {
+      TCP = {},
+      MCP = {},
+      ENVCP = {},
+      TRANS = {},
+      GLOBAL = {}
+    }
+  end
+
+  if mappings and mappings.custom_metadata then
+    self.custom_metadata = mappings.custom_metadata
+  else
+    self.custom_metadata = {}
+  end
+
+  -- Load group filter state
+  if mappings and mappings.enabled_groups then
+    -- Merge with current enabled_groups (in case new groups were added)
+    for group_name, enabled in pairs(mappings.enabled_groups) do
+      self.enabled_groups[group_name] = enabled
+    end
+    -- Re-apply filter with loaded settings
+    self:apply_group_filter()
+  end
+end
+
+function AdditionalView:set_cache_invalidation_callback(callback)
+  -- Set callback to invalidate TCP/MCP caches when assignments change
+  self.cache_invalidation_callback = callback
+end
+
+function AdditionalView:save_assignments()
+  -- Save assignments, metadata, and group filter to JSON file
+  local success = ThemeMapper.save_assignments(self.assignments, self.custom_metadata, self.enabled_groups)
+
+  -- Invalidate TCP/MCP caches so they pick up the new assignments
+  if self.cache_invalidation_callback then
+    self.cache_invalidation_callback()
+  end
+
+  return success
+end
+
+function AdditionalView:save_group_filter()
+  -- Save only group filter state (lightweight save)
+  ThemeMapper.save_assignments(self.assignments, self.custom_metadata, self.enabled_groups)
+
+  -- Invalidate TCP/MCP caches since filtering might affect visible params
+  if self.cache_invalidation_callback then
+    self.cache_invalidation_callback()
+  end
+end
+
+-- NEW: Check if parameter is assigned to a tab
+function AdditionalView:is_param_assigned(param_name, tab_id)
+  if not self.assignments[tab_id] then return false end
+
+  for _, assignment in ipairs(self.assignments[tab_id]) do
+    if assignment.param_name == param_name then
+      return true
+    end
+  end
+
+  return false
+end
+
+-- NEW: Get assignment count for a parameter (how many tabs it's assigned to)
+function AdditionalView:get_assignment_count(param_name)
+  local count = 0
+  for tab_id, assignments in pairs(self.assignments) do
+    for _, assignment in ipairs(assignments) do
+      if assignment.param_name == param_name then
+        count = count + 1
+        break
+      end
+    end
+  end
+  return count
+end
+
+-- NEW: Add parameter to tab (drag from library)
+function AdditionalView:assign_param_to_tab(param_name, tab_id)
+  if not self.assignments[tab_id] then
+    self.assignments[tab_id] = {}
+  end
+
+  -- Check if already assigned
+  if self:is_param_assigned(param_name, tab_id) then
+    return false
+  end
+
+  -- Add to end of list
+  local order = #self.assignments[tab_id] + 1
+  table.insert(self.assignments[tab_id], {
+    param_name = param_name,
+    order = order
+  })
+
+  self:save_assignments()
+  return true
+end
+
+-- NEW: Remove parameter from tab
+function AdditionalView:unassign_param_from_tab(param_name, tab_id)
+  if not self.assignments[tab_id] then return false end
+
+  for i, assignment in ipairs(self.assignments[tab_id]) do
+    if assignment.param_name == param_name then
+      table.remove(self.assignments[tab_id], i)
+      -- Reorder remaining params
+      for j, a in ipairs(self.assignments[tab_id]) do
+        a.order = j
+      end
+      self:save_assignments()
+      return true
+    end
+  end
+
+  return false
+end
+
+-- NEW: Reorder parameter within tab
+function AdditionalView:reorder_param(tab_id, from_index, to_index)
+  if not self.assignments[tab_id] then return false end
+
+  local assignments = self.assignments[tab_id]
+  if from_index < 1 or from_index > #assignments then return false end
+  if to_index < 1 or to_index > #assignments then return false end
+
+  -- Remove from old position
+  local assignment = table.remove(assignments, from_index)
+
+  -- Insert at new position
+  table.insert(assignments, to_index, assignment)
+
+  -- Update order values
+  for i, a in ipairs(assignments) do
+    a.order = i
+  end
+
+  self:save_assignments()
+  return true
+end
+
+-- UPDATED: Get assigned params for a tab (sorted by order)
+function AdditionalView:get_assigned_params(tab_id)
+  local assigned = {}
+
+  if not self.assignments[tab_id] then
+    return assigned
+  end
+
+  -- Build param lookup table for quick access
+  local param_lookup = {}
+  for _, param in ipairs(self.unknown_params) do
+    param_lookup[param.name] = param
+  end
+
+  -- Get assigned params in order
+  for _, assignment in ipairs(self.assignments[tab_id]) do
+    local param = param_lookup[assignment.param_name]
+    if param then
+      -- Clone param to avoid modifying original
+      local param_copy = {}
+      for k, v in pairs(param) do
+        param_copy[k] = v
+      end
+
+      -- Attach custom metadata
+      local metadata = self.custom_metadata[param.name]
+      if metadata then
+        param_copy.display_name = metadata.display_name or param.name
+        param_copy.custom_description = metadata.description or ""
+      else
+        param_copy.display_name = param.name
+        param_copy.custom_description = ""
+      end
+
+      table.insert(assigned, param_copy)
+    end
+  end
+
+  return assigned
+end
+
+function AdditionalView:export_parameters()
+  -- Export all unknown parameters to JSON
+  local success, path_or_error = ThemeMapper.export_mappings(self.unknown_params)
+
+  if success then
+    reaper.ShowMessageBox(
+      "Parameters exported successfully!\n\nFile: " .. path_or_error .. "\n\n" ..
+      "This JSON file can be:\n" ..
+      "• Edited to customize parameter names, colors, and categories\n" ..
+      "• Shared with other users of this theme\n" ..
+      "• Version controlled alongside the theme",
+      "Export Successful",
+      0
+    )
+  else
+    reaper.ShowMessageBox(
+      "Failed to export parameters:\n\n" .. path_or_error,
+      "Export Failed",
+      0
+    )
+  end
+end
+
+return M

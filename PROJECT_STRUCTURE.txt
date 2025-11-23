@@ -1,0 +1,1031 @@
+PROJECT: ARKITEKT-Project
+PATH: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project
+
+STRUCTURE:
+ARKITEKT-Project/
+├── .github/
+│   └── workflows/
+│       ├── check.yml (18 lines)
+│       ├── codex-pipeline.yml (286 lines)
+│       └── deploy.yml (28 lines)
+├── ARKITEKT/
+│   ├── hub/
+│   │   └── hub.lua (93 lines)
+│   ├── arkitekt/
+│   │   ├── app/
+│   │   │   ├── assets/
+│   │   │   │   ├── fonts.lua (74 lines)
+│   │   │   │   └── icon.lua (124 lines)
+│   │   │   ├── chrome/
+│   │   │   │   ├── status_bar/
+│   │   │   │   │   └── widget.lua (275 lines)
+│   │   │   │   ├── titlebar/
+│   │   │   │   │   └── titlebar.lua (555 lines)
+│   │   │   │   └── window/
+│   │   │   │       └── window.lua (759 lines)
+│   │   │   ├── init/
+│   │   │   │   ├── bootstrap.lua (115 lines)
+│   │   │   │   ├── constants.lua (304 lines)
+│   │   │   │   └── init.lua (36 lines)
+│   │   │   ├── runtime/
+│   │   │   │   ├── runtime.lua (69 lines)
+│   │   │   │   └── shell.lua (304 lines)
+│   │   │   ├── utils/
+│   │   │   │   └── monitor_detection.lua (61 lines)
+│   │   │   └── README.md (414 lines)
+│   │   ├── core/
+│   │   │   ├── theme_manager/
+│   │   │   │   └── lua (0 lines)
+│   │   │   ├── colors.lua (571 lines)
+│   │   │   ├── config.lua (289 lines)
+│   │   │   ├── json.lua (120 lines)
+│   │   │   ├── lifecycle.lua (80 lines)
+│   │   │   ├── math.lua (52 lines)
+│   │   │   ├── settings.lua (137 lines)
+│   │   │   ├── undo_manager.lua (70 lines)
+│   │   │   └── uuid.lua (36 lines)
+│   │   ├── debug/
+│   │   │   ├── _console_widget.lua (363 lines)
+│   │   │   ├── console.lua (170 lines)
+│   │   │   ├── console_window.lua (89 lines)
+│   │   │   ├── logger.lua (86 lines)
+│   │   │   └── profiler_init.lua (97 lines)
+│   │   ├── external/
+│   │   │   └── talagan_ReaImGui Markdown/
+│   │   │       ├── reaimgui_markdown/
+│   │   │       │   ├── ext/
+│   │   │       │   │   └── imgui.lua (7 lines)
+│   │   │       │   ├── markdown-ast.lua (838 lines)
+│   │   │       │   ├── markdown-html.lua (127 lines)
+│   │   │       │   ├── markdown-imgui.lua (908 lines)
+│   │   │       │   ├── markdown-test.lua (899 lines)
+│   │   │       │   └── markdown-text.lua (151 lines)
+│   │   │       └── reaimgui_markdown.lua (148 lines)
+│   │   ├── fonts/
+│   │   │   ├── Inter_18pt-Regular.ttf (2337 lines)
+│   │   │   ├── Inter_18pt-SemiBold.ttf (2480 lines)
+│   │   │   ├── JetBrainsMono-Regular.ttf (1480 lines)
+│   │   │   ├── JetBrainsMono-SemiBold.ttf (1572 lines)
+│   │   │   ├── NotoSans-Regular.ttf (3901 lines)
+│   │   │   ├── NotoSans-SemiBold.ttf (3822 lines)
+│   │   │   ├── Orbitron-Bold.ttf (70 lines)
+│   │   │   ├── Orbitron-Medium.ttf (607 lines)
+│   │   │   ├── Orbitron-Regular.ttf (73 lines)
+│   │   │   ├── remixicon.ttf (3422 lines)
+│   │   │   ├── Roboto-Bold.ttf (659 lines)
+│   │   │   ├── Roboto-Medium.ttf (669 lines)
+│   │   │   └── Roboto-Regular.ttf (665 lines)
+│   │   ├── gui/
+│   │   │   ├── fx/
+│   │   │   │   ├── animation/
+│   │   │   │   │   ├── easing.lua (94 lines)
+│   │   │   │   │   ├── lifecycle.lua (225 lines)
+│   │   │   │   │   └── tracks.lua (239 lines)
+│   │   │   │   └── interactions/
+│   │   │   │       ├── dnd.lua (432 lines)
+│   │   │   │       └── marching_ants.lua (100 lines)
+│   │   │   ├── rendering/
+│   │   │   │   ├── tile/
+│   │   │   │   │   ├── animator.lua (59 lines)
+│   │   │   │   │   ├── defaults.lua (88 lines)
+│   │   │   │   │   └── renderer.lua (261 lines)
+│   │   │   │   ├── effects.lua (54 lines)
+│   │   │   │   └── shapes.lua (132 lines)
+│   │   │   ├── style/
+│   │   │   │   ├── defaults.lua (530 lines)
+│   │   │   │   ├── imgui_defaults.lua (170 lines)
+│   │   │   │   └── README.md (113 lines)
+│   │   │   ├── systems/
+│   │   │   │   ├── height_stabilizer.lua (74 lines)
+│   │   │   │   ├── playback_manager.lua (22 lines)
+│   │   │   │   ├── reorder.lua (127 lines)
+│   │   │   │   ├── responsive_grid.lua (232 lines)
+│   │   │   │   ├── selection.lua (142 lines)
+│   │   │   │   └── tile_utilities.lua (68 lines)
+│   │   │   ├── utils/
+│   │   │   │   └── interaction_blocking.lua (72 lines)
+│   │   │   ├── widgets/
+│   │   │   │   ├── containers/
+│   │   │   │   │   ├── grid/
+│   │   │   │   │   │   ├── animation.lua (105 lines)
+│   │   │   │   │   │   ├── core.lua (812 lines)
+│   │   │   │   │   │   ├── dnd_state.lua (113 lines)
+│   │   │   │   │   │   ├── drop_zones.lua (277 lines)
+│   │   │   │   │   │   ├── grid_bridge.lua (281 lines)
+│   │   │   │   │   │   ├── input.lua (542 lines)
+│   │   │   │   │   │   ├── layout.lua (101 lines)
+│   │   │   │   │   │   └── rendering.lua (92 lines)
+│   │   │   │   │   └── panel/
+│   │   │   │   │       ├── header/
+│   │   │   │   │       │   ├── init.lua (125 lines)
+│   │   │   │   │       │   ├── layout.lua (662 lines)
+│   │   │   │   │       │   ├── separator.lua (36 lines)
+│   │   │   │   │       │   └── tab_strip.lua (1495 lines)
+│   │   │   │   │       ├── background.lua (82 lines)
+│   │   │   │   │       ├── content.lua (62 lines)
+│   │   │   │   │       ├── defaults.lua (285 lines)
+│   │   │   │   │       ├── init.lua (1078 lines)
+│   │   │   │   │       └── tab_animator.lua (107 lines)
+│   │   │   │   ├── controls/
+│   │   │   │   │   └── corner_button.lua (199 lines)
+│   │   │   │   ├── data/
+│   │   │   │   │   ├── chip.lua (375 lines)
+│   │   │   │   │   ├── chip_list.lua (323 lines)
+│   │   │   │   │   ├── selection_rectangle.lua (124 lines)
+│   │   │   │   │   └── status_pad.lua (148 lines)
+│   │   │   │   ├── editors/
+│   │   │   │   │   └── nodal/
+│   │   │   │   │       ├── core/
+│   │   │   │   │       │   ├── connection.lua (234 lines)
+│   │   │   │   │       │   ├── node.lua (141 lines)
+│   │   │   │   │       │   └── port.lua (65 lines)
+│   │   │   │   │       ├── rendering/
+│   │   │   │   │       │   ├── connection_renderer.lua (216 lines)
+│   │   │   │   │       │   ├── node_renderer.lua (335 lines)
+│   │   │   │   │       │   └── port_renderer.lua (26 lines)
+│   │   │   │   │       ├── systems/
+│   │   │   │   │       │   ├── auto_layout.lua (103 lines)
+│   │   │   │   │       │   ├── bezier.lua (77 lines)
+│   │   │   │   │       │   └── viewport.lua (261 lines)
+│   │   │   │   │       ├── canvas.lua (539 lines)
+│   │   │   │   │       └── defaults.lua (155 lines)
+│   │   │   │   ├── inputs/
+│   │   │   │   │   ├── dropdown.lua (513 lines)
+│   │   │   │   │   └── search_input.lua (239 lines)
+│   │   │   │   ├── media/
+│   │   │   │   │   ├── media_grid/
+│   │   │   │   │   │   ├── renderers/
+│   │   │   │   │   │   │   └── base.lua (174 lines)
+│   │   │   │   │   │   ├── init.lua (46 lines)
+│   │   │   │   │   │   └── README.md (171 lines)
+│   │   │   │   │   └── package_tiles/
+│   │   │   │   │       ├── grid.lua (224 lines)
+│   │   │   │   │       ├── micromanage.lua (127 lines)
+│   │   │   │   │       └── renderer.lua (414 lines)
+│   │   │   │   ├── navigation/
+│   │   │   │   │   ├── menutabs.lua (271 lines)
+│   │   │   │   │   ├── tabs.lua (136 lines)
+│   │   │   │   │   └── tree_view.lua (639 lines)
+│   │   │   │   ├── overlays/
+│   │   │   │   │   ├── overlay/
+│   │   │   │   │   │   ├── container.lua (84 lines)
+│   │   │   │   │   │   ├── defaults.lua (162 lines)
+│   │   │   │   │   │   ├── manager.lua (459 lines)
+│   │   │   │   │   │   ├── modal_dialog.lua (363 lines)
+│   │   │   │   │   │   ├── README.md (555 lines)
+│   │   │   │   │   │   └── sheet.lua (140 lines)
+│   │   │   │   │   ├── batch_rename_modal.lua (502 lines)
+│   │   │   │   │   ├── context_menu.lua (204 lines)
+│   │   │   │   │   └── tooltip.lua (132 lines)
+│   │   │   │   ├── panel/
+│   │   │   │   │   └── init.lua (949 lines)
+│   │   │   │   ├── primitives/
+│   │   │   │   │   ├── button.lua (310 lines)
+│   │   │   │   │   ├── checkbox.lua (322 lines)
+│   │   │   │   │   ├── close_button.lua (149 lines)
+│   │   │   │   │   ├── corner_button.lua (184 lines)
+│   │   │   │   │   ├── fields.lua (195 lines)
+│   │   │   │   │   ├── hue_slider.lua (266 lines)
+│   │   │   │   │   ├── markdown_field.lua (296 lines)
+│   │   │   │   │   ├── scrollbar.lua (241 lines)
+│   │   │   │   │   ├── separator.lua (99 lines)
+│   │   │   │   │   └── spinner.lua (238 lines)
+│   │   │   │   ├── text/
+│   │   │   │   │   └── colored_text_view.lua (499 lines)
+│   │   │   │   └── tools/
+│   │   │   │       ├── color_picker_window.lua (327 lines)
+│   │   │   │       └── custom_color_picker.lua (242 lines)
+│   │   │   ├── draw.lua (121 lines)
+│   │   │   └── images.lua (432 lines)
+│   │   ├── icons/
+│   │   │   ├── AArkitekt_default.svg (1 lines)
+│   │   │   ├── ARKITEKT.afdesign (107 lines)
+│   │   │   ├── Mock Transport.afdesign (674 lines)
+│   │   │   ├── arkitekt.png
+│   │   │   ├── arkitekt@2.png
+│   │   │   └── arkitekt@3.png
+│   │   ├── reaper/
+│   │   │   ├── region_operations.lua (617 lines)
+│   │   │   ├── regions.lua (341 lines)
+│   │   │   ├── timing.lua (113 lines)
+│   │   │   └── transport.lua (97 lines)
+│   │   ├── themes/
+│   │   │   ├── auto/
+│   │   │   │   └── lua (0 lines)
+│   │   │   ├── dark/
+│   │   │   │   └── lua (0 lines)
+│   │   │   └── light/
+│   │   │       └── lua (0 lines)
+│   │   └── arkit.lua (213 lines)
+│   ├── sandbox/
+│   │   └── sandbox_7.lua (62 lines)
+│   ├── scripts/
+│   │   ├── ColorPalette/
+│   │   │   ├── app/
+│   │   │   │   ├── controller.lua (238 lines)
+│   │   │   │   ├── gui.lua (443 lines)
+│   │   │   │   └── state.lua (273 lines)
+│   │   │   ├── widgets/
+│   │   │   │   └── color_grid.lua (144 lines)
+│   │   │   └── ARK_ColorPalette.lua (98 lines)
+│   │   ├── demos/
+│   │   │   ├── controls_test.lua (241 lines)
+│   │   │   ├── demo.lua (387 lines)
+│   │   │   ├── demo2.lua (213 lines)
+│   │   │   ├── demo3.lua (151 lines)
+│   │   │   ├── demo_modal_overlay.lua (454 lines)
+│   │   │   └── widget_demo.lua (254 lines)
+│   │   ├── ItemPicker/
+│   │   │   ├── core/
+│   │   │   │   ├── app_state.lua (614 lines)
+│   │   │   │   ├── config.lua (314 lines)
+│   │   │   │   └── controller.lua (110 lines)
+│   │   │   ├── data/
+│   │   │   │   ├── loaders/
+│   │   │   │   │   └── incremental_loader.lua (634 lines)
+│   │   │   │   ├── disk_cache.lua (440 lines)
+│   │   │   │   ├── job_queue.lua (188 lines)
+│   │   │   │   ├── persistence.lua (176 lines)
+│   │   │   │   └── reaper_api.lua (537 lines)
+│   │   │   ├── services/
+│   │   │   │   ├── utils.lua (36 lines)
+│   │   │   │   └── visualization.lua (690 lines)
+│   │   │   ├── ui/
+│   │   │   │   ├── components/
+│   │   │   │   │   ├── drag_handler.lua (205 lines)
+│   │   │   │   │   ├── layout_view.lua (958 lines)
+│   │   │   │   │   ├── region_filter_bar.lua (87 lines)
+│   │   │   │   │   ├── search_with_mode.lua (67 lines)
+│   │   │   │   │   └── status_bar.lua (87 lines)
+│   │   │   │   ├── grids/
+│   │   │   │   │   ├── factories/
+│   │   │   │   │   │   ├── audio_grid_factory.lua (534 lines)
+│   │   │   │   │   │   └── midi_grid_factory.lua (535 lines)
+│   │   │   │   │   ├── renderers/
+│   │   │   │   │   │   ├── audio.lua (492 lines)
+│   │   │   │   │   │   ├── base.lua (236 lines)
+│   │   │   │   │   │   └── midi.lua (489 lines)
+│   │   │   │   │   └── coordinator.lua (158 lines)
+│   │   │   │   └── main_window.lua (289 lines)
+│   │   │   ├── utils/
+│   │   │   │   └── logger.lua (44 lines)
+│   │   │   ├── ARK_ItemPicker_Simple.lua (187 lines)
+│   │   │   ├── init.lua (30 lines)
+│   │   │   ├── Item Picker OG.lua (1135 lines)
+│   │   │   └── UNIFIED_DAEMON_README.md (319 lines)
+│   │   ├── RegionPlaylist/
+│   │   │   ├── core/
+│   │   │   │   ├── app_state.lua (1147 lines)
+│   │   │   │   ├── config.lua (492 lines)
+│   │   │   │   ├── controller.lua (560 lines)
+│   │   │   │   └── sequence_expander.lua (154 lines)
+│   │   │   ├── engine/
+│   │   │   │   ├── coordinator_bridge.lua (458 lines)
+│   │   │   │   ├── core.lua (228 lines)
+│   │   │   │   ├── engine_state.lua (447 lines)
+│   │   │   │   ├── playback.lua (121 lines)
+│   │   │   │   ├── quantize.lua (351 lines)
+│   │   │   │   ├── transitions.lua (237 lines)
+│   │   │   │   └── transport.lua (331 lines)
+│   │   │   ├── storage/
+│   │   │   │   ├── persistence.lua (153 lines)
+│   │   │   │   ├── sws_importer.lua (416 lines)
+│   │   │   │   └── undo_bridge.lua (172 lines)
+│   │   │   ├── ui/
+│   │   │   │   ├── tiles/
+│   │   │   │   │   ├── renderers/
+│   │   │   │   │   │   ├── active.lua (323 lines)
+│   │   │   │   │   │   ├── base.lua (358 lines)
+│   │   │   │   │   │   └── pool.lua (354 lines)
+│   │   │   │   │   ├── active_grid_factory.lua (432 lines)
+│   │   │   │   │   ├── coordinator.lua (681 lines)
+│   │   │   │   │   ├── coordinator_render.lua (560 lines)
+│   │   │   │   │   ├── pool_grid_factory.lua (349 lines)
+│   │   │   │   │   └── selector.lua (99 lines)
+│   │   │   │   ├── views/
+│   │   │   │   │   ├── transport/
+│   │   │   │   │   │   ├── button_widgets.lua (184 lines)
+│   │   │   │   │   │   ├── display_widget.lua (285 lines)
+│   │   │   │   │   │   ├── transport_container.lua (326 lines)
+│   │   │   │   │   │   ├── transport_fx.lua (232 lines)
+│   │   │   │   │   │   ├── transport_icons.lua (292 lines)
+│   │   │   │   │   │   └── transport_view.lua (808 lines)
+│   │   │   │   │   ├── layout_view.lua (250 lines)
+│   │   │   │   │   └── overflow_modal_view.lua (213 lines)
+│   │   │   │   ├── gui.lua (572 lines)
+│   │   │   │   ├── shortcuts.lua (85 lines)
+│   │   │   │   └── status.lua (177 lines)
+│   │   │   └── widgets/
+│   │   ├── Sandbox/
+│   │   │   ├── sandbox_1.lua (238 lines)
+│   │   │   ├── sandbox_2.lua (182 lines)
+│   │   │   ├── sandbox_3.lua (179 lines)
+│   │   │   ├── sandbox_4.lua (519 lines)
+│   │   │   ├── sandbox_5.lua (432 lines)
+│   │   │   ├── sandbox_6.lua (465 lines)
+│   │   │   ├── sandbox_7.lua (1 lines)
+│   │   │   ├── sandbox_8.lua (1 lines)
+│   │   │   └── sandbox_9.lua (1 lines)
+│   │   ├── TemplateBrowser/
+│   │   │   ├── core/
+│   │   │   │   ├── config.lua (48 lines)
+│   │   │   │   ├── shortcuts.lua (209 lines)
+│   │   │   │   ├── state.lua (136 lines)
+│   │   │   │   └── tooltips.lua (212 lines)
+│   │   │   ├── domain/
+│   │   │   │   ├── file_ops.lua (336 lines)
+│   │   │   │   ├── fx_parser.lua (115 lines)
+│   │   │   │   ├── fx_queue.lua (128 lines)
+│   │   │   │   ├── persistence.lua (500 lines)
+│   │   │   │   ├── scanner.lua (443 lines)
+│   │   │   │   ├── tags.lua (224 lines)
+│   │   │   │   ├── template_ops.lua (125 lines)
+│   │   │   │   └── undo.lua (104 lines)
+│   │   │   ├── ui/
+│   │   │   │   ├── tiles/
+│   │   │   │   │   ├── template_grid_factory.lua (163 lines)
+│   │   │   │   │   ├── template_tile.lua (302 lines)
+│   │   │   │   │   └── template_tile_compact.lua (282 lines)
+│   │   │   │   ├── views/
+│   │   │   │   │   ├── left_panel/
+│   │   │   │   │   │   ├── directory_tab.lua (355 lines)
+│   │   │   │   │   │   ├── tags_tab.lua (131 lines)
+│   │   │   │   │   │   └── vsts_tab.lua (117 lines)
+│   │   │   │   │   ├── helpers.lua (33 lines)
+│   │   │   │   │   ├── info_panel_view.lua (189 lines)
+│   │   │   │   │   ├── left_panel_view.lua (69 lines)
+│   │   │   │   │   ├── template_modals_view.lua (334 lines)
+│   │   │   │   │   ├── template_panel_view.lua (222 lines)
+│   │   │   │   │   └── tree_view.lua (672 lines)
+│   │   │   │   ├── gui.lua (480 lines)
+│   │   │   │   ├── status_bar.lua (53 lines)
+│   │   │   │   ├── template_container_config.lua (58 lines)
+│   │   │   │   └── ui_constants.lua (93 lines)
+│   │   │   └── README.md (344 lines)
+│   │   └── ThemeAdjuster/
+│   │       ├── (old)/
+│   │       │   ├── core/
+│   │       │   │   ├── image_cache.lua (282 lines)
+│   │       │   │   ├── json.lua (121 lines)
+│   │       │   │   ├── lifecycle.lua (81 lines)
+│   │       │   │   ├── settings.lua (121 lines)
+│   │       │   │   └── status_bar.lua (213 lines)
+│   │       │   ├── tabs/
+│   │       │   │   ├── assembler/
+│   │       │   │   │   ├── core.lua (429 lines)
+│   │       │   │   │   ├── grid.lua (589 lines)
+│   │       │   │   │   ├── grid_packages.lua (257 lines)
+│   │       │   │   │   ├── packages_mm.lua (108 lines)
+│   │       │   │   │   ├── ui_assets.lua (278 lines)
+│   │       │   │   │   └── ui_packages.lua (999 lines)
+│   │       │   │   ├── assembler_tab.lua (193 lines)
+│   │       │   │   └── debug_tab.lua (253 lines)
+│   │       │   ├── about.lua (167 lines)
+│   │       │   ├── app.lua (487 lines)
+│   │       │   ├── assembler.lua (216 lines)
+│   │       │   ├── main.lua (73 lines)
+│   │       │   ├── reaper_img_metadata.json (693 lines)
+│   │       │   ├── style.lua (174 lines)
+│   │       │   └── theme.lua (324 lines)
+│   │       ├── cache/
+│   │       │   ├── cached_theme/
+│   │       │   │   ├── clearview_unpacked/
+│   │       │   │   │   ├── blue-fader/
+│   │       │   │   │   │   └── mcp_volthumb.png
+│   │       │   │   │   ├── color-mixer/
+│   │       │   │   │   │   ├── mcp_bg.png
+│   │       │   │   │   │   └── mcp_bgsel.png
+│   │       │   │   │   ├── emerald-fader/
+│   │       │   │   │   │   └── mcp_volthumb.png
+│   │       │   │   │   ├── mcp_vol_red/
+│   │       │   │   │   │   └── mcp_volthumb.png
+│   │       │   │   │   ├── meters-blue/
+│   │       │   │   │   │   ├── meter_strip_h.png
+│   │       │   │   │   │   └── meter_strip_v.png
+│   │       │   │   │   ├── meters-raw-green/
+│   │       │   │   │   │   ├── meter_strip_h.png
+│   │       │   │   │   │   └── meter_strip_v.png
+│   │       │   │   │   ├── mixer-deep-space-separator/
+│   │       │   │   │   │   ├── mcp_bg.png
+│   │       │   │   │   │   ├── mcp_bgsel.png
+│   │       │   │   │   │   ├── tcp_bg.png
+│   │       │   │   │   │   └── tcp_bgsel.png
+│   │       │   │   │   ├── mixer-separator/
+│   │       │   │   │   │   ├── mcp_bg.png
+│   │       │   │   │   │   ├── mcp_bgsel.png
+│   │       │   │   │   │   ├── mcp_extmixbg.png
+│   │       │   │   │   │   ├── mcp_extmixbgsel.png
+│   │       │   │   │   │   ├── tcp_bg.png
+│   │       │   │   │   │   └── tcp_bgsel.png
+│   │       │   │   │   ├── red-fader/
+│   │       │   │   │   │   └── mcp_volthumb.png
+│   │       │   │   │   ├── separator-cubism-1/
+│   │       │   │   │   │   ├── mcp_bg.png
+│   │       │   │   │   │   └── mcp_bgsel.png
+│   │       │   │   │   ├── separator-ethnic-3/
+│   │       │   │   │   │   ├── mcp_bg.png
+│   │       │   │   │   │   └── mcp_bgsel.png
+│   │       │   │   │   ├── separator-grid-1/
+│   │       │   │   │   │   ├── mcp_bg.png
+│   │       │   │   │   │   └── mcp_bgsel.png
+│   │       │   │   │   ├── separator-misc-8/
+│   │       │   │   │   │   ├── mcp_bg.png
+│   │       │   │   │   │   └── mcp_bgsel.png
+│   │       │   │   │   ├── separator-psychedelic-3/
+│   │       │   │   │   │   ├── mcp_bg.png
+│   │       │   │   │   │   └── mcp_bgsel.png
+│   │       │   │   │   ├── tan-fader/
+│   │       │   │   │   │   └── mcp_volthumb.png
+│   │       │   │   │   ├── violet-fader/
+│   │       │   │   │   │   └── mcp_volthumb.png
+│   │       │   │   │   ├── yellow-fader/
+│   │       │   │   │   │   └── mcp_volthumb.png
+│   │       │   │   │   ├── envcp_arm_off.png
+│   │       │   │   │   ├── envcp_arm_off_OL.png
+│   │       │   │   │   ├── envcp_arm_on.png
+│   │       │   │   │   ├── envcp_arm_on_OL.png
+│   │       │   │   │   ├── envcp_bg.png
+│   │       │   │   │   ├── envcp_bgsel.png
+│   │       │   │   │   ├── envcp_bypass_off.png
+│   │       │   │   │   ├── envcp_bypass_off_ol.png
+│   │       │   │   │   ├── envcp_bypass_on.png
+│   │       │   │   │   ├── envcp_bypass_on_ol.png
+│   │       │   │   │   ├── envcp_fader.png
+│   │       │   │   │   ├── envcp_hide.png
+│   │       │   │   │   ├── envcp_knob_small.png
+│   │       │   │   │   ├── envcp_knob_stack.png
+│   │       │   │   │   ├── envcp_learn.png
+│   │       │   │   │   ├── envcp_learn_ol.png
+│   │       │   │   │   ├── envcp_learn_on.png
+│   │       │   │   │   ├── envcp_learn_on_ol.png
+│   │       │   │   │   ├── envcp_parammod.png
+│   │       │   │   │   ├── envcp_parammod_ol.png
+│   │       │   │   │   ├── envcp_parammod_on.png
+│   │       │   │   │   ├── envcp_parammod_on_ol.png
+│   │       │   │   │   ├── folder_end.png
+│   │       │   │   │   ├── folder_indent.png
+│   │       │   │   │   ├── folder_start.png
+│   │       │   │   │   ├── gen_end.png
+│   │       │   │   │   ├── gen_env.png
+│   │       │   │   │   ├── gen_env_latch.png
+│   │       │   │   │   ├── gen_env_preview.png
+│   │       │   │   │   ├── gen_env_read.png
+│   │       │   │   │   ├── gen_env_touch.png
+│   │       │   │   │   ├── gen_env_write.png
+│   │       │   │   │   ├── gen_home.png
+│   │       │   │   │   ├── gen_io.png
+│   │       │   │   │   ├── gen_knob_bg_small.png
+│   │       │   │   │   ├── gen_midi_off.png
+│   │       │   │   │   ├── gen_midi_on.png
+│   │       │   │   │   ├── gen_mono.png
+│   │       │   │   │   ├── gen_mute_off.png
+│   │       │   │   │   ├── gen_mute_on.png
+│   │       │   │   │   ├── gen_panbg_horz.png
+│   │       │   │   │   ├── gen_panthumb_horz.png
+│   │       │   │   │   ├── gen_pause.png
+│   │       │   │   │   ├── gen_pause_on.png
+│   │       │   │   │   ├── gen_phase_inv.png
+│   │       │   │   │   ├── gen_phase_norm.png
+│   │       │   │   │   ├── gen_play.png
+│   │       │   │   │   ├── gen_play_on.png
+│   │       │   │   │   ├── gen_repeat_off.png
+│   │       │   │   │   ├── gen_repeat_on.png
+│   │       │   │   │   ├── gen_solo_off.png
+│   │       │   │   │   ├── gen_solo_on.png
+│   │       │   │   │   ├── gen_stereo.png
+│   │       │   │   │   ├── gen_stop.png
+│   │       │   │   │   ├── gen_volbg_horz.png
+│   │       │   │   │   ├── gen_volbg_vert.png
+│   │       │   │   │   ├── gen_volthumb_horz.png
+│   │       │   │   │   ├── gen_volthumb_vert.png
+│   │       │   │   │   ├── global_bypass.png
+│   │       │   │   │   ├── global_latch.png
+│   │       │   │   │   ├── global_off.png
+│   │       │   │   │   ├── global_preview.png
+│   │       │   │   │   ├── global_read.png
+│   │       │   │   │   ├── global_touch.png
+│   │       │   │   │   ├── global_trim.png
+│   │       │   │   │   ├── global_write.png
+│   │       │   │   │   ├── item_bg.png
+│   │       │   │   │   ├── item_bg_sel.png
+│   │       │   │   │   ├── item_env_off.png
+│   │       │   │   │   ├── item_env_on.png
+│   │       │   │   │   ├── item_fx_off.png
+│   │       │   │   │   ├── item_fx_on.png
+│   │       │   │   │   ├── item_group.png
+│   │       │   │   │   ├── item_group_sel.png
+│   │       │   │   │   ├── item_lock_off.png
+│   │       │   │   │   ├── item_lock_on.png
+│   │       │   │   │   ├── item_mute_off.png
+│   │       │   │   │   ├── item_mute_on.png
+│   │       │   │   │   ├── item_note_off.png
+│   │       │   │   │   ├── item_note_on.png
+│   │       │   │   │   ├── item_props.png
+│   │       │   │   │   ├── item_props_on.png
+│   │       │   │   │   ├── item_vol.png
+│   │       │   │   │   ├── item_vol_on.png
+│   │       │   │   │   ├── item_volknob.png
+│   │       │   │   │   ├── mcp_arrowbuttons_ud.png
+│   │       │   │   │   ├── mcp_bg.png
+│   │       │   │   │   ├── mcp_bgsel.png
+│   │       │   │   │   ├── mcp_env.png
+│   │       │   │   │   ├── mcp_env_latch.png
+│   │       │   │   │   ├── mcp_env_preview.png
+│   │       │   │   │   ├── mcp_env_read.png
+│   │       │   │   │   ├── mcp_env_touch.png
+│   │       │   │   │   ├── mcp_env_write.png
+│   │       │   │   │   ├── mcp_extmixbg.png
+│   │       │   │   │   ├── mcp_extmixbgsel.png
+│   │       │   │   │   ├── mcp_fcomp_off.png
+│   │       │   │   │   ├── mcp_fcomp_tiny.png
+│   │       │   │   │   ├── mcp_folder_last.png
+│   │       │   │   │   ├── mcp_fx_dis.png
+│   │       │   │   │   ├── mcp_fx_empty.png
+│   │       │   │   │   ├── mcp_fx_in_empty.png
+│   │       │   │   │   ├── mcp_fx_in_empty_ol.png
+│   │       │   │   │   ├── mcp_fx_in_norm.png
+│   │       │   │   │   ├── mcp_fx_in_norm_ol.png
+│   │       │   │   │   ├── mcp_fx_norm.png
+│   │       │   │   │   ├── mcp_fxlist_arrows.png
+│   │       │   │   │   ├── mcp_fxlist_bg.png
+│   │       │   │   │   ├── mcp_fxlist_byp.png
+│   │       │   │   │   ├── mcp_fxlist_empty.png
+│   │       │   │   │   ├── mcp_fxlist_norm.png
+│   │       │   │   │   ├── mcp_fxlist_off.png
+│   │       │   │   │   ├── mcp_fxon_v.png
+│   │       │   │   │   ├── mcp_fxparm_bg.png
+│   │       │   │   │   ├── mcp_fxparm_byp.png
+│   │       │   │   │   ├── mcp_fxparm_empty.png
+│   │       │   │   │   ├── mcp_fxparm_knob_stack.png
+│   │       │   │   │   ├── mcp_fxparm_norm.png
+│   │       │   │   │   ├── mcp_fxparm_off.png
+│   │       │   │   │   ├── mcp_iconbg.png
+│   │       │   │   │   ├── mcp_iconbgsel.png
+│   │       │   │   │   ├── mcp_idxbg.png
+│   │       │   │   │   ├── mcp_idxbg_sel.png
+│   │       │   │   │   ├── mcp_io.png
+│   │       │   │   │   ├── mcp_io_dis.png
+│   │       │   │   │   ├── mcp_io_r.png
+│   │       │   │   │   ├── mcp_io_r_dis.png
+│   │       │   │   │   ├── mcp_io_s.png
+│   │       │   │   │   ├── mcp_io_s_dis.png
+│   │       │   │   │   ├── mcp_io_s_r.png
+│   │       │   │   │   ├── mcp_io_s_r_dis.png
+│   │       │   │   │   ├── mcp_main_namebg.png
+│   │       │   │   │   ├── mcp_main_namebg_sel.png
+│   │       │   │   │   ├── mcp_mainbg.png
+│   │       │   │   │   ├── mcp_mainbgsel.png
+│   │       │   │   │   ├── mcp_master_vol_label.png
+│   │       │   │   │   ├── mcp_master_volbg.png
+│   │       │   │   │   ├── mcp_monitor_auto.png
+│   │       │   │   │   ├── mcp_monitor_off.png
+│   │       │   │   │   ├── mcp_monitor_on.png
+│   │       │   │   │   ├── mcp_mono.png
+│   │       │   │   │   ├── mcp_mute_off.png
+│   │       │   │   │   ├── mcp_mute_off_ol.png
+│   │       │   │   │   ├── mcp_mute_on.png
+│   │       │   │   │   ├── mcp_namebg.png
+│   │       │   │   │   ├── mcp_pan_knob_small.png
+│   │       │   │   │   ├── mcp_pan_knob_stack.png
+│   │       │   │   │   ├── mcp_pan_label.png
+│   │       │   │   │   ├── mcp_panbg.png
+│   │       │   │   │   ├── mcp_panthumb.png
+│   │       │   │   │   ├── mcp_phase_inv.png
+│   │       │   │   │   ├── mcp_phase_norm.png
+│   │       │   │   │   ├── mcp_recarm_auto.png
+│   │       │   │   │   ├── mcp_recarm_auto_norec.png
+│   │       │   │   │   ├── mcp_recarm_auto_on.png
+│   │       │   │   │   ├── mcp_recarm_norec.png
+│   │       │   │   │   ├── mcp_recarm_off.png
+│   │       │   │   │   ├── mcp_recarm_on.png
+│   │       │   │   │   ├── mcp_recinput.png
+│   │       │   │   │   ├── mcp_recmode_in.png
+│   │       │   │   │   ├── mcp_recmode_off.png
+│   │       │   │   │   ├── mcp_recmode_out.png
+│   │       │   │   │   ├── mcp_send_knob_stack.png
+│   │       │   │   │   ├── mcp_sendlist_arrows.png
+│   │       │   │   │   ├── mcp_sendlist_bg.png
+│   │       │   │   │   ├── mcp_sendlist_empty.png
+│   │       │   │   │   ├── mcp_sendlist_meter.png
+│   │       │   │   │   ├── mcp_sendlist_midihw.png
+│   │       │   │   │   ├── mcp_sendlist_mute.png
+│   │       │   │   │   ├── mcp_sendlist_norm.png
+│   │       │   │   │   ├── mcp_solo_off.png
+│   │       │   │   │   ├── mcp_solo_off_ol.png
+│   │       │   │   │   ├── mcp_solo_on.png
+│   │       │   │   │   ├── mcp_solodefeat_on.png
+│   │       │   │   │   ├── mcp_stereo.png
+│   │       │   │   │   ├── mcp_vol_knob.png
+│   │       │   │   │   ├── mcp_vol_knob_small.png
+│   │       │   │   │   ├── mcp_vol_knob_stack-ok.png
+│   │       │   │   │   ├── mcp_vol_knob_stack.png
+│   │       │   │   │   ├── mcp_vol_knob_stack_alt.png
+│   │       │   │   │   ├── mcp_vol_knob_stack_bun.png
+│   │       │   │   │   ├── mcp_vol_label.png
+│   │       │   │   │   ├── mcp_volbg.png
+│   │       │   │   │   ├── mcp_volbg_horz.png
+│   │       │   │   │   ├── mcp_volthumb.png
+│   │       │   │   │   ├── mcp_volthumb_red.png
+│   │       │   │   │   ├── mcp_wid_knob_small.png
+│   │       │   │   │   ├── mcp_wid_knob_stack.png
+│   │       │   │   │   ├── mcp_wid_label.png
+│   │       │   │   │   ├── mcp_widhumb.png
+│   │       │   │   │   ├── mcp_width_knob_small.png
+│   │       │   │   │   ├── mcp_width_knob_stack.png
+│   │       │   │   │   ├── mcp_widthbg.png
+│   │       │   │   │   ├── mcp_widthhumb.png
+│   │       │   │   │   ├── mcp_widththumb.png
+│   │       │   │   │   ├── meter_bg_h.png
+│   │       │   │   │   ├── meter_bg_mcp.png
+│   │       │   │   │   ├── meter_bg_tcp.png
+│   │       │   │   │   ├── meter_bg_v.png
+│   │       │   │   │   ├── meter_clip_h.png
+│   │       │   │   │   ├── meter_clip_v.png
+│   │       │   │   │   ├── meter_clip_v_rms2.png
+│   │       │   │   │   ├── meter_foldermute.png
+│   │       │   │   │   ├── meter_mute.png
+│   │       │   │   │   ├── meter_solodim.png
+│   │       │   │   │   ├── meter_strip_h.png
+│   │       │   │   │   ├── meter_strip_v.png
+│   │       │   │   │   ├── meter_strip_v_rms.png
+│   │       │   │   │   ├── meter_unsolo.png
+│   │       │   │   │   ├── midi_inline_ccwithitems_off.png
+│   │       │   │   │   ├── midi_inline_ccwithitems_on.png
+│   │       │   │   │   ├── midi_inline_close.png
+│   │       │   │   │   ├── midi_inline_fold_none.png
+│   │       │   │   │   ├── midi_inline_fold_unnamed.png
+│   │       │   │   │   ├── midi_inline_fold_unused_unnamed.png
+│   │       │   │   │   ├── midi_inline_noteview_diamond.png
+│   │       │   │   │   ├── midi_inline_noteview_rect.png
+│   │       │   │   │   ├── midi_inline_noteview_triangle.png
+│   │       │   │   │   ├── midi_inline_scroll.png
+│   │       │   │   │   ├── midi_inline_scrollbar.png
+│   │       │   │   │   ├── midi_inline_scrollthumb.png
+│   │       │   │   │   ├── midi_note_colormap.png
+│   │       │   │   │   ├── midi_score_colormap.png
+│   │       │   │   │   ├── mixer_menu.png
+│   │       │   │   │   ├── monitor_fx_byp.png
+│   │       │   │   │   ├── monitor_fx_byp_byp.png
+│   │       │   │   │   ├── monitor_fx_byp_off.png
+│   │       │   │   │   ├── monitor_fx_byp_on.png
+│   │       │   │   │   ├── monitor_fx_off.png
+│   │       │   │   │   ├── monitor_fx_on.png
+│   │       │   │   │   ├── piano_black_key.png
+│   │       │   │   │   ├── piano_black_key_sel.png
+│   │       │   │   │   ├── piano_white_key.png
+│   │       │   │   │   ├── piano_white_key_sel.png
+│   │       │   │   │   ├── rtconfig.txt (1657 lines)
+│   │       │   │   │   ├── scrollbar.png
+│   │       │   │   │   ├── table_expand_off.png
+│   │       │   │   │   ├── table_expand_on.png
+│   │       │   │   │   ├── table_locked_off.png
+│   │       │   │   │   ├── table_locked_on.png
+│   │       │   │   │   ├── table_locked_partial.png
+│   │       │   │   │   ├── table_mute_off.png
+│   │       │   │   │   ├── table_mute_on.png
+│   │       │   │   │   ├── table_recarm_off.png
+│   │       │   │   │   ├── table_recarm_on.png
+│   │       │   │   │   ├── table_remove_off.png
+│   │       │   │   │   ├── table_remove_on.png
+│   │       │   │   │   ├── table_solo_off.png
+│   │       │   │   │   ├── table_solo_on.png
+│   │       │   │   │   ├── table_sub_expand_off.png
+│   │       │   │   │   ├── table_sub_expand_on.png
+│   │       │   │   │   ├── table_target_invalid.png
+│   │       │   │   │   ├── table_target_off.png
+│   │       │   │   │   ├── table_target_on.png
+│   │       │   │   │   ├── table_visible_off.png
+│   │       │   │   │   ├── table_visible_on.png
+│   │       │   │   │   ├── table_visible_partial.png
+│   │       │   │   │   ├── tcp_arrowbuttons_lr.png
+│   │       │   │   │   ├── tcp_arrowbuttons_ud.png
+│   │       │   │   │   ├── tcp_bg.png
+│   │       │   │   │   ├── tcp_bgsel.png
+│   │       │   │   │   ├── tcp_fxparm_arrows_lr.png
+│   │       │   │   │   ├── tcp_fxparm_arrows_ud.png
+│   │       │   │   │   ├── tcp_fxparm_bg.png
+│   │       │   │   │   ├── tcp_fxparm_byp.png
+│   │       │   │   │   ├── tcp_iconbg.png
+│   │       │   │   │   ├── tcp_iconbgsel.png
+│   │       │   │   │   ├── tcp_idxbg.png
+│   │       │   │   │   ├── tcp_idxbg_sel.png
+│   │       │   │   │   ├── tcp_main_namebg_sel.png
+│   │       │   │   │   ├── tcp_mainbg.png
+│   │       │   │   │   ├── tcp_mainbgsel.png
+│   │       │   │   │   ├── tcp_namebg.png
+│   │       │   │   │   ├── tcp_pan_knob_small.png
+│   │       │   │   │   ├── tcp_pan_knob_stack.png
+│   │       │   │   │   ├── tcp_panbg.png
+│   │       │   │   │   ├── tcp_panthumb.png
+│   │       │   │   │   ├── tcp_recinput.png
+│   │       │   │   │   ├── tcp_solodefeat_on.png
+│   │       │   │   │   ├── tcp_vol_knob_small.png
+│   │       │   │   │   ├── tcp_vol_knob_stack.png
+│   │       │   │   │   ├── tcp_volbg.png
+│   │       │   │   │   ├── tcp_volthumb.png
+│   │       │   │   │   ├── tcp_wid_knob_small.png
+│   │       │   │   │   ├── tcp_wid_knob_stack.png
+│   │       │   │   │   ├── tcp_width_knob_small.png
+│   │       │   │   │   ├── tcp_width_knob_stack.png
+│   │       │   │   │   ├── tcp_widthbg.png
+│   │       │   │   │   ├── tcp_widththumb.png
+│   │       │   │   │   ├── toolbar_blank.png
+│   │       │   │   │   ├── toolbar_dock_off.png
+│   │       │   │   │   ├── toolbar_dock_on.png
+│   │       │   │   │   ├── toolbar_envitem_off.png
+│   │       │   │   │   ├── toolbar_envitem_on.png
+│   │       │   │   │   ├── toolbar_filter_off.png
+│   │       │   │   │   ├── toolbar_filter_on.png
+│   │       │   │   │   ├── toolbar_grid_off.png
+│   │       │   │   │   ├── toolbar_grid_on.png
+│   │       │   │   │   ├── toolbar_group_off.png
+│   │       │   │   │   ├── toolbar_group_on.png
+│   │       │   │   │   ├── toolbar_item_selected_take_delete_invert.png
+│   │       │   │   │   ├── toolbar_load.png
+│   │       │   │   │   ├── toolbar_lock_off.png
+│   │       │   │   │   ├── toolbar_lock_on.png
+│   │       │   │   │   ├── toolbar_metro_off.png
+│   │       │   │   │   ├── toolbar_metro_on.png
+│   │       │   │   │   ├── toolbar_midi_itemsel_off.png
+│   │       │   │   │   ├── toolbar_midi_itemsel_on.png
+│   │       │   │   │   ├── toolbar_midi_mode_event_list.png
+│   │       │   │   │   ├── toolbar_midi_mode_musical_notation.png
+│   │       │   │   │   ├── toolbar_midi_mode_named_notes.png
+│   │       │   │   │   ├── toolbar_midi_mode_piano_roll.png
+│   │       │   │   │   ├── toolbar_midi_step.png
+│   │       │   │   │   ├── toolbar_midi_tracksel_off.png
+│   │       │   │   │   ├── toolbar_midi_tracksel_on.png
+│   │       │   │   │   ├── toolbar_new.png
+│   │       │   │   │   ├── toolbar_projprop.png
+│   │       │   │   │   ├── toolbar_quant_off.png
+│   │       │   │   │   ├── toolbar_quant_on.png
+│   │       │   │   │   ├── toolbar_redo.png
+│   │       │   │   │   ├── toolbar_relsnap_off.png
+│   │       │   │   │   ├── toolbar_relsnap_on.png
+│   │       │   │   │   ├── toolbar_replacemode.png
+│   │       │   │   │   ├── toolbar_revert.png
+│   │       │   │   │   ├── toolbar_ripple_all.png
+│   │       │   │   │   ├── toolbar_ripple_off.png
+│   │       │   │   │   ├── toolbar_ripple_one.png
+│   │       │   │   │   ├── toolbar_save.png
+│   │       │   │   │   ├── toolbar_snap_off.png
+│   │       │   │   │   ├── toolbar_snap_on.png
+│   │       │   │   │   ├── toolbar_undo.png
+│   │       │   │   │   ├── toolbar_xfade_off.png
+│   │       │   │   │   ├── toolbar_xfade_on.png
+│   │       │   │   │   ├── toosmall_b.png
+│   │       │   │   │   ├── toosmall_r.png
+│   │       │   │   │   ├── track_env.png
+│   │       │   │   │   ├── track_env_latch.png
+│   │       │   │   │   ├── track_env_latch_ol.png
+│   │       │   │   │   ├── track_env_ol.png
+│   │       │   │   │   ├── track_env_preview.png
+│   │       │   │   │   ├── track_env_preview_ol.png
+│   │       │   │   │   ├── track_env_read.png
+│   │       │   │   │   ├── track_env_read_ol.png
+│   │       │   │   │   ├── track_env_touch.png
+│   │       │   │   │   ├── track_env_touch_ol.png
+│   │       │   │   │   ├── track_env_write.png
+│   │       │   │   │   ├── track_env_write_ol.png
+│   │       │   │   │   ├── track_fcomp_off.png
+│   │       │   │   │   ├── track_fcomp_small.png
+│   │       │   │   │   ├── track_fcomp_tiny.png
+│   │       │   │   │   ├── track_folder_last.png
+│   │       │   │   │   ├── track_folder_off.png
+│   │       │   │   │   ├── track_folder_on.png
+│   │       │   │   │   ├── track_fx_dis.png
+│   │       │   │   │   ├── track_fx_dis_ol.png
+│   │       │   │   │   ├── track_fx_empty.png
+│   │       │   │   │   ├── track_fx_empty_ol.png
+│   │       │   │   │   ├── track_fx_in_empty.png
+│   │       │   │   │   ├── track_fx_in_norm.png
+│   │       │   │   │   ├── track_fx_norm.png
+│   │       │   │   │   ├── track_fx_norm_ol.png
+│   │       │   │   │   ├── track_fxempty_h.png
+│   │       │   │   │   ├── track_fxempty_h_ol.png
+│   │       │   │   │   ├── track_fxempty_v.png
+│   │       │   │   │   ├── track_fxoff_h.png
+│   │       │   │   │   ├── track_fxoff_h_ol.png
+│   │       │   │   │   ├── track_fxoff_v.png
+│   │       │   │   │   ├── track_fxon_h.png
+│   │       │   │   │   ├── track_fxon_h_ol.png
+│   │       │   │   │   ├── track_fxon_v.png
+│   │       │   │   │   ├── track_io.png
+│   │       │   │   │   ├── track_io_dis.png
+│   │       │   │   │   ├── track_io_dis_ol.png
+│   │       │   │   │   ├── track_io_ol.png
+│   │       │   │   │   ├── track_io_r.png
+│   │       │   │   │   ├── track_io_r_dis.png
+│   │       │   │   │   ├── track_io_r_dis_ol.png
+│   │       │   │   │   ├── track_io_r_ol.png
+│   │       │   │   │   ├── track_io_s.png
+│   │       │   │   │   ├── track_io_s_dis.png
+│   │       │   │   │   ├── track_io_s_dis_ol.png
+│   │       │   │   │   ├── track_io_s_ol.png
+│   │       │   │   │   ├── track_io_s_r.png
+│   │       │   │   │   ├── track_io_s_r_dis.png
+│   │       │   │   │   ├── track_io_s_r_dis_ol.png
+│   │       │   │   │   ├── track_io_s_r_ol.png
+│   │       │   │   │   ├── track_monitor_auto.png
+│   │       │   │   │   ├── track_monitor_auto_ol.png
+│   │       │   │   │   ├── track_monitor_off.png
+│   │       │   │   │   ├── track_monitor_off_ol.png
+│   │       │   │   │   ├── track_monitor_on.png
+│   │       │   │   │   ├── track_monitor_on_ol.png
+│   │       │   │   │   ├── track_mono.png
+│   │       │   │   │   ├── track_mute_off.png
+│   │       │   │   │   ├── track_mute_off_ol.png
+│   │       │   │   │   ├── track_mute_on.png
+│   │       │   │   │   ├── track_mute_on_ol.png
+│   │       │   │   │   ├── track_phase_inv.png
+│   │       │   │   │   ├── track_phase_inv_ol.png
+│   │       │   │   │   ├── track_phase_inv_ol_dezactivat.png
+│   │       │   │   │   ├── track_phase_norm.png
+│   │       │   │   │   ├── track_phase_norm_ol.png
+│   │       │   │   │   ├── track_phase_norm_ol_old.png
+│   │       │   │   │   ├── track_recarm_auto.png
+│   │       │   │   │   ├── track_recarm_auto_norec.png
+│   │       │   │   │   ├── track_recarm_auto_norec_ol.png
+│   │       │   │   │   ├── track_recarm_auto_ol.png
+│   │       │   │   │   ├── track_recarm_auto_on.png
+│   │       │   │   │   ├── track_recarm_auto_on_ol.png
+│   │       │   │   │   ├── track_recarm_norec.png
+│   │       │   │   │   ├── track_recarm_norec_ol.png
+│   │       │   │   │   ├── track_recarm_off.png
+│   │       │   │   │   ├── track_recarm_off_ol.png
+│   │       │   │   │   ├── track_recarm_on.png
+│   │       │   │   │   ├── track_recarm_on_ol.png
+│   │       │   │   │   ├── track_recmode_in.png
+│   │       │   │   │   ├── track_recmode_off.png
+│   │       │   │   │   ├── track_recmode_out.png
+│   │       │   │   │   ├── track_solo_off.png
+│   │       │   │   │   ├── track_solo_off_ol.png
+│   │       │   │   │   ├── track_solo_on.png
+│   │       │   │   │   ├── track_solo_on_ol.png
+│   │       │   │   │   ├── track_stereo.png
+│   │       │   │   │   ├── track_stereo_ol.png
+│   │       │   │   │   ├── track_vol_knob_small.png
+│   │       │   │   │   ├── transport_bg.png
+│   │       │   │   │   ├── transport_bpm.png
+│   │       │   │   │   ├── transport_bpm_bg.png
+│   │       │   │   │   ├── transport_end.png
+│   │       │   │   │   ├── transport_home.png
+│   │       │   │   │   ├── transport_knob_bg_large.png
+│   │       │   │   │   ├── transport_next.png
+│   │       │   │   │   ├── transport_pause.png
+│   │       │   │   │   ├── transport_pause_on.png
+│   │       │   │   │   ├── transport_play.png
+│   │       │   │   │   ├── transport_play_on.png
+│   │       │   │   │   ├── transport_play_sync.png
+│   │       │   │   │   ├── transport_play_sync_on.png
+│   │       │   │   │   ├── transport_playspeedbg.png
+│   │       │   │   │   ├── transport_playspeedthumb.png
+│   │       │   │   │   ├── transport_previous.png
+│   │       │   │   │   ├── transport_record.png
+│   │       │   │   │   ├── transport_record_item.png
+│   │       │   │   │   ├── transport_record_item_on.png
+│   │       │   │   │   ├── transport_record_loop.png
+│   │       │   │   │   ├── transport_record_loop_on.png
+│   │       │   │   │   ├── transport_record_on.png
+│   │       │   │   │   ├── transport_repeat.png
+│   │       │   │   │   ├── transport_repeat_off.png
+│   │       │   │   │   ├── transport_repeat_on.png
+│   │       │   │   │   ├── transport_status_bg.png
+│   │       │   │   │   ├── transport_status_bg_err.png
+│   │       │   │   │   └── transport_stop.png
+│   │       │   │   ├── nvk_THEME_Dark_unpacked/
+│   │       │   │   │   ├── 150/
+│   │       │   │   │   │   ├── B/
+│   │       │   │   │   │   ├── C/
+│   │       │   │   │   │   ├── D/
+│   │       │   │   │   │   └── ThinMMCP/
+│   │       │   │   │   ├── 200/
+│   │       │   │   │   │   ├── B/
+│   │       │   │   │   │   ├── C/
+│   │       │   │   │   │   ├── D/
+│   │       │   │   │   │   └── ThinMMCP/
+│   │       │   │   │   ├── B/
+│   │       │   │   │   │   ├── 150/
+│   │       │   │   │   │   └── 200/
+│   │       │   │   │   ├── C/
+│   │       │   │   │   ├── D/
+│   │       │   │   │   └── Dark/
+│   │       │   │   │       ├── 150/
+│   │       │   │   │       └── 200/
+│   │       │   │   ├── nvk_THEME_Light_unpacked/
+│   │       │   │   │   └── B/
+│   │       │   │   │       ├── 150/
+│   │       │   │   │       └── 200/
+│   │       │   │   └── clearview_unpacked.ReaperTheme (351 lines)
+│   │       │   ├── assembler_selection.json (1 lines)
+│   │       │   ├── linked_zip.txt (1 lines)
+│   │       │   ├── meta.txt (1 lines)
+│   │       │   ├── settings.json (1 lines)
+│   │       │   └── theme_links.json (1 lines)
+│   │       ├── core/
+│   │       │   ├── config.lua (124 lines)
+│   │       │   ├── param_discovery.lua (213 lines)
+│   │       │   ├── parameter_link_manager.lua (421 lines)
+│   │       │   ├── state.lua (175 lines)
+│   │       │   ├── theme.lua (339 lines)
+│   │       │   ├── theme_mapper.lua (286 lines)
+│   │       │   └── theme_params.lua (270 lines)
+│   │       ├── packages/
+│   │       │   ├── image_map.lua (91 lines)
+│   │       │   └── manager.lua (359 lines)
+│   │       ├── ui/
+│   │       │   ├── grids/
+│   │       │   │   ├── renderers/
+│   │       │   │   │   ├── additional_param_tile.lua (236 lines)
+│   │       │   │   │   ├── assignment_tile.lua (164 lines)
+│   │       │   │   │   ├── library_tile.lua (399 lines)
+│   │       │   │   │   └── tile_visuals.lua (157 lines)
+│   │       │   │   ├── assignment_grid_factory.lua (133 lines)
+│   │       │   │   └── library_grid_factory.lua (115 lines)
+│   │       │   ├── views/
+│   │       │   │   ├── additional_view.lua (1064 lines)
+│   │       │   │   ├── additional_view.lua.backup (1206 lines)
+│   │       │   │   ├── assembler_view.lua (391 lines)
+│   │       │   │   ├── colors_view.lua (394 lines)
+│   │       │   │   ├── debug_view.lua (340 lines)
+│   │       │   │   ├── envelope_view.lua (294 lines)
+│   │       │   │   ├── global_view.lua (374 lines)
+│   │       │   │   ├── mcp_view.lua (765 lines)
+│   │       │   │   ├── package_modal.lua (287 lines)
+│   │       │   │   ├── packages_view.lua (254 lines)
+│   │       │   │   ├── param_link_modal.lua (244 lines)
+│   │       │   │   ├── tcp_view.lua (677 lines)
+│   │       │   │   └── transport_view.lua (312 lines)
+│   │       │   ├── gui.lua (83 lines)
+│   │       │   ├── gui_panel_test.lua (86 lines)
+│   │       │   ├── main_panel.lua (58 lines)
+│   │       │   ├── status.lua (79 lines)
+│   │       │   ├── tab_content.lua (91 lines)
+│   │       │   └── tooltips.lua (182 lines)
+│   │       ├── Default_6.0_theme_adjuster.lua (2149 lines)
+│   │       ├── INTEGRATION_STATUS.md (232 lines)
+│   │       ├── main_panel_test.lua (88 lines)
+│   │       ├── PARAMETER_GROUPING.md (250 lines)
+│   │       ├── PARAMETER_MAPPINGS.md (263 lines)
+│   │       ├── prd (342 lines)
+│   │       └── THEME_INTEGRATION.md (365 lines)
+│   ├── utils/
+│   ├── ARK_ItemPicker.lua (213 lines)
+│   ├── ARK_RegionPlaylist.lua (93 lines)
+│   ├── ARK_TemplateBrowser.lua (157 lines)
+│   ├── ARK_ThemeAdjuster.lua (114 lines)
+│   └── ARKITEKT.lua (383 lines)
+├── Documentation/
+│   └── 2025-01-19_Framework_Consolidation.md (643 lines)
+├── FLOWS/
+│   ├── features/
+│   │   ├── ARKITEKT_FLOW.md (1711 lines)
+│   │   ├── COLORPALETTE_FLOW.md (25 lines)
+│   │   ├── ITEMPICKER_FLOW.md (25 lines)
+│   │   ├── ARKITEKT_FLOW.md (25 lines)
+│   │   └── REGION_PLAYLIST_FLOW.md (25 lines)
+│   └── PROJECT_FLOW.md (272 lines)
+├── helpers/
+│   ├── imgui_defs.lua (24449 lines)
+│   └── ReaImGui_Demo.lua (9015 lines)
+├── LOCAL/
+│   ├── arkitekt-action-plan.md (415 lines)
+│   ├── arkitekt-final-strategy.md (876 lines)
+│   └── arkitekt_strategy.md (249 lines)
+├── Utils/
+│   └── Python/
+│       ├── example_icon.svg (5 lines)
+│       ├── hexrgb.py (101 lines)
+│       ├── README.md (138 lines)
+│       ├── requirements.txt (10 lines)
+│       ├── svg_to_lua.py (438 lines)
+│       └── test_complex.svg (11 lines)
+├── .codemap (59 lines)
+├── .gitignore (3 lines)
+├── .reapack-index.conf (4 lines)
+├── .windsurfrules (43 lines)
+├── AGENTS.md (147 lines)
+├── ARKITEKT_Codex_Playbook_v5.md (295 lines)
+├── arkitekt_FLOW.md (1575 lines)
+├── ARKITEKT_Generic.md (154 lines)
+├── DEPENDENCIES.md (849 lines)
+├── DOCS_CONFIG_BEST_PRACTICES.md (438 lines)
+├── index.xml (1013 lines)
+├── lua_perf_guide.md (391 lines)
+├── METRICS.json (3855 lines)
+├── PROJECT_FLOW.md (270 lines)
+├── PROJECT_STRUCTURE.txt (1002 lines)
+├── README.md (71 lines)
+├── REFACTOR_SUMMARY.md (183 lines)
+├── refactoring ideas (424 lines)
+├── REFACTORING_SUMMARY.md (316 lines)
+├── refactoring_templates.md (160 lines)
+├── SWS_IMPORT_GUIDE.md (450 lines)
+└── System_Prompt_ARKITEKT_OnePager.md (66 lines)
+
+Total files: 373
+Total lines (with comments): 162,383
+Total lines (code only): 110,956
+Code/Total Ratio: 68.3% is actual code
+
+Generated: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project\PROJECT_STRUCTURE.txt

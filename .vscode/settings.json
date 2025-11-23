@@ -1,0 +1,107 @@
+{
+    "Lua.workspace.library": [
+        "c:\\Users\\arkad\\.vscode\\extensions\\antoinebalaine.reascript-docs-0.1.15/resources/Sexan_reaper_defs.lua",
+        "c:\\Users\\arkad\\.vscode\\extensions\\antoinebalaine.reascript-docs-0.1.15/resources/imgui_defs_0.9.lua",
+        "c:\\Users\\arkad\\.vscode\\extensions\\antoinebalaine.reascript-docs-0.1.15/resources/reawwise_defs.lua"
+    ],
+    "Lua.diagnostics.disable": [
+        "lowercase-global",
+        "param-type-mismatch",
+        "undefined-global"
+    ],
+    "Lua.workspace.preloadFileSize": 1024,
+    "lua_analyzer.codeLinting.enable": false,
+    "folder-color.pathColors": [
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\fonts\\",
+            "color": "foldercolorizer.color_666666"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\gui\\",
+            "color": "foldercolorizer.color_00cc66"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\gui\\fx\\",
+            "color": "foldercolorizer.color_990033"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\gui\\systems\\",
+            "color": "foldercolorizer.color_3366ff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\gui\\widgets\\",
+            "color": "foldercolorizer.color_cc6633"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\gui\\widgets\\grid\\",
+            "color": "foldercolorizer.color_66ccff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\gui\\widgets\\navigation\\",
+            "color": "foldercolorizer.color_009999"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\gui\\widgets\\overlay\\",
+            "color": "foldercolorizer.color_66cc00"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\gui\\widgets\\panel\\",
+            "color": "foldercolorizer.color_ff0099"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\gui\\widgets\\transport\\",
+            "color": "foldercolorizer.color_cc00ff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\icons\\",
+            "color": "foldercolorizer.color_99ccff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\PROJECT_FLOW.md\\",
+            "color": "foldercolorizer.color_33cc00"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\Region_Playlist\\",
+            "color": "foldercolorizer.color_ff00cc"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\ColorPalette\\",
+            "color": "foldercolorizer.color_6600ff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\Region_Playlist\\engine\\",
+            "color": "foldercolorizer.color_3366ff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\Region_Playlist\\app\\",
+            "color": "foldercolorizer.color_cc0066"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\ItemPicker\\",
+            "color": "foldercolorizer.color_cc3300"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\app\\",
+            "color": "foldercolorizer.color_cc0099"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\core\\",
+            "color": "foldercolorizer.color_ccff66"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\arkitekt\\gui\\widgets\\nodal\\",
+            "color": "foldercolorizer.color_cc66ff"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\TemplateBrowser\\",
+            "color": "foldercolorizer.color_3366cc"
+        },
+        {
+            "folderPath": "ARKITEKT-Project\\ARKITEKT\\scripts\\ThemeAdjuster\\",
+            "color": "foldercolorizer.color_ff9933"
+        }
+    ],
+    "python-envs.defaultEnvManager": "ms-python.python:conda",
+    "python-envs.defaultPackageManager": "ms-python.python:conda",
+    "python-envs.pythonProjects": [],
+}
