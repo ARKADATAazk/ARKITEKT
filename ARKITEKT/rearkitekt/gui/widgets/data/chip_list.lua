@@ -9,6 +9,7 @@ local Chip = require('rearkitekt.gui.widgets.data.chip')
 local Colors = require('rearkitekt.core.colors')
 local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')
 local DragDrop = require('rearkitekt.gui.systems.drag_drop')
+local MouseUtil = require('rearkitekt.gui.systems.mouse_util')
 
 local M = {}
 
@@ -84,6 +85,7 @@ function M.draw(ctx, items, opts)
   local dragging_id = nil
   local drag_type = opts.drag_type
   local drag_data_fn = opts.drag_data_fn  -- function(item) -> data table
+  local drag_threshold = opts.drag_threshold or MouseUtil.DEFAULTS.DRAG_THRESHOLD
 
   local draw_opts = {
     style = style,
@@ -96,15 +98,62 @@ function M.draw(ctx, items, opts)
     unselected_alpha = opts.unselected_alpha,
   }
 
-  -- Helper to handle drag source after drawing a chip
-  local function handle_drag_source(item)
-    if drag_type and DragDrop.begin_source(ctx, drag_type, drag_data_fn and drag_data_fn(item) or { id = item.id, label = item.label }) then
-      -- Draw drag preview
-      local preview_color = item.color or Colors.hexrgb("#5B8FB9")
-      DragDrop.draw_preview_text(ctx, item.label)
-      DragDrop.end_source(ctx)
-      dragging_id = item.id
+  -- Helper to handle drag/click differentiation for a chip
+  local function handle_chip_interaction(item, was_clicked)
+    if not drag_type then
+      -- No drag enabled, just return click
+      return was_clicked
     end
+
+    local item_id = "chip_drag_" .. (item.id or item.label)
+
+    -- Check if item was just pressed (hovered + mouse down this frame)
+    if ImGui.IsItemHovered(ctx) and ImGui.IsMouseClicked(ctx, 0) then
+      MouseUtil.start_potential_drag(ctx, item_id, 0)
+    end
+
+    -- Check if we're tracking this item
+    if MouseUtil.is_tracking(item_id) then
+      -- Check if drag threshold exceeded
+      if MouseUtil.check_drag_started(ctx, item_id, drag_threshold) then
+        -- Start drag mode - clear tracking so we don't check again
+        -- The actual drag source will be created below
+      end
+
+      -- If we're in drag mode, create the drag source
+      if MouseUtil.is_dragging(item_id) then
+        if ImGui.BeginDragDropSource(ctx, ImGui.DragDropFlags_SourceAllowNullID) then
+          local payload_data = drag_data_fn and drag_data_fn(item) or { id = item.id, label = item.label }
+          local payload_str = type(payload_data) == "table"
+            and DragDrop._serialize(payload_data)
+            or tostring(payload_data)
+          ImGui.SetDragDropPayload(ctx, drag_type, payload_str)
+          -- Draw drag preview
+          DragDrop.draw_preview_text(ctx, item.label)
+          ImGui.EndDragDropSource(ctx)
+          dragging_id = item.id
+        end
+
+        -- Clear on mouse release
+        if ImGui.IsMouseReleased(ctx, 0) then
+          MouseUtil.clear(item_id)
+        end
+
+        return false  -- Not a click when dragging
+      end
+
+      -- Check if this is a click (released without dragging)
+      if MouseUtil.check_click(ctx, item_id) then
+        MouseUtil.clear(item_id)
+        return true  -- This is a click
+      end
+
+      -- Still tracking, not yet determined
+      return false
+    end
+
+    -- Not tracking, use normal click behavior (but this shouldn't happen with drag enabled)
+    return was_clicked
   end
   
   if justified then
@@ -112,24 +161,24 @@ function M.draw(ctx, items, opts)
     for i, item in ipairs(filtered) do
       min_widths[i] = Chip.calculate_width(ctx, item.label, draw_opts)
     end
-    
+
     local layout = ResponsiveGrid.calculate_justified_layout(filtered, {
       available_width = available_width,
       min_widths = min_widths,
       gap = chip_spacing,
       max_stretch_ratio = opts.max_stretch_ratio or 1.5,
     })
-    
+
     local row_start_x = ImGui.GetCursorPosX(ctx)
-    
+
     for row_idx, row in ipairs(layout) do
       if row_idx > 1 then ImGui.SetCursorPosX(ctx, row_start_x) end
 
       for cell_idx, cell in ipairs(row) do
         draw_opts.explicit_width = cell.final_width
-        local clicked = _draw_chip(ctx, cell.item, selected_ids[cell.item.id], draw_opts)
-        if clicked then clicked_id = cell.item.id end
-        handle_drag_source(cell.item)
+        local chip_clicked = _draw_chip(ctx, cell.item, selected_ids[cell.item.id], draw_opts)
+        local is_click = handle_chip_interaction(cell.item, chip_clicked)
+        if is_click then clicked_id = cell.item.id end
         if cell_idx < #row then ImGui.SameLine(ctx, 0, chip_spacing) end
       end
 
@@ -139,27 +188,27 @@ function M.draw(ctx, items, opts)
     local cursor_start_x = ImGui.GetCursorPosX(ctx)
     local current_x = 0
     local items_in_row = 0
-    
+
     for _, item in ipairs(filtered) do
       local chip_width = Chip.calculate_width(ctx, item.label, draw_opts)
       local space_needed = chip_width + (items_in_row > 0 and chip_spacing or 0)
-      
+
       if items_in_row > 0 and (current_x + space_needed) > available_width then
         ImGui.Dummy(ctx, 0, line_spacing)
         ImGui.SetCursorPosX(ctx, cursor_start_x)
         current_x = 0
         items_in_row = 0
       end
-      
+
       if items_in_row > 0 then
         ImGui.SameLine(ctx, 0, chip_spacing)
         current_x = current_x + chip_spacing
       end
-      
+
       draw_opts.explicit_width = nil
-      local clicked = _draw_chip(ctx, item, selected_ids[item.id], draw_opts)
-      if clicked then clicked_id = item.id end
-      handle_drag_source(item)
+      local chip_clicked = _draw_chip(ctx, item, selected_ids[item.id], draw_opts)
+      local is_click = handle_chip_interaction(item, chip_clicked)
+      if is_click then clicked_id = item.id end
 
       current_x = current_x + chip_width
       items_in_row = items_in_row + 1
