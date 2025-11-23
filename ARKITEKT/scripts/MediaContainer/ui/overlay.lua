@@ -41,14 +41,15 @@ end
 local function move_container_items(container, time_delta, State)
   if time_delta == 0 then return end
 
-  reaper.Undo_BeginBlock()
   reaper.PreventUIRefresh(1)
 
+  local moved_count = 0
   for _, item_ref in ipairs(container.items) do
     local item = State.find_item_by_guid(item_ref.guid)
     if item then
       local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
       reaper.SetMediaItemInfo_Value(item, "D_POSITION", pos + time_delta)
+      moved_count = moved_count + 1
     end
   end
 
@@ -56,7 +57,7 @@ local function move_container_items(container, time_delta, State)
   container.start_time = container.start_time + time_delta
   container.end_time = container.end_time + time_delta
 
-  -- Update item refs
+  -- Update item cache
   for _, item_ref in ipairs(container.items) do
     local item = State.find_item_by_guid(item_ref.guid)
     if item then
@@ -71,7 +72,6 @@ local function move_container_items(container, time_delta, State)
 
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
-  reaper.Undo_EndBlock("Move Media Container", -1)
 end
 
 -- Draw container bounds on arrange view
@@ -110,6 +110,7 @@ function M.draw_containers(ctx, draw_list, State)
       end
     else
       -- End drag
+      reaper.Undo_EndBlock("Move Media Container", -1)
       M.dragging_container_id = nil
       M.drag_start_time = nil
       M.drag_start_mouse_x = nil
@@ -272,20 +273,32 @@ function M.draw_containers(ctx, draw_list, State)
     ::next_container::
   end
 
-  -- Handle click to start drag (only if not already dragging)
-  if hovered_container and left_down and not M.dragging_container_id then
+  -- Handle click to start drag (only if not already dragging and mouse is in arrange)
+  local mouse_in_arrange = mouse_x >= w_x1 and mouse_x <= w_x2 and mouse_y >= w_y1 and mouse_y <= w_y2
+
+  if hovered_container and left_down and not M.dragging_container_id and mouse_in_arrange then
+    reaper.Undo_BeginBlock()
+
     M.dragging_container_id = hovered_container.id
     M.drag_start_time = screen_x_to_timeline(mouse_x, arrange_start_time, zoom_level, w_x1)
     M.drag_start_mouse_x = mouse_x
 
+    reaper.ShowConsoleMsg(string.format("[MediaContainer] Started dragging '%s' with %d items\n",
+      hovered_container.name, #hovered_container.items))
+
     -- Select all items in container
     reaper.SelectAllMediaItems(0, false)
+    local selected_count = 0
     for _, item_ref in ipairs(hovered_container.items) do
       local item = State.find_item_by_guid(item_ref.guid)
       if item then
         reaper.SetMediaItemSelected(item, true)
+        selected_count = selected_count + 1
+      else
+        reaper.ShowConsoleMsg(string.format("[MediaContainer] WARNING: Could not find item with GUID %s\n", item_ref.guid))
       end
     end
+    reaper.ShowConsoleMsg(string.format("[MediaContainer] Selected %d items\n", selected_count))
   end
 
   ImGui.PopStyleVar(ctx, 1)
