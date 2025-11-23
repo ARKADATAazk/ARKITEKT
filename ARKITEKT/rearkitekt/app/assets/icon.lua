@@ -37,7 +37,7 @@ local function find_icons_dir()
   return nil
 end
 
--- Load PNG image for icon (with DPI variants)
+-- Load PNG image for icon (uses largest available for best quality)
 function M.load_image(ctx, base_name)
   if not ctx then return nil end
 
@@ -49,28 +49,21 @@ function M.load_image(ctx, base_name)
   local icons_dir = find_icons_dir()
   if not icons_dir then return nil end
 
-  -- Get DPI scale to pick appropriate image
-  local dpi = ImGui.GetWindowDpiScale(ctx) or 1.0
-
-  -- Select image based on DPI
+  -- Try largest image first for best quality when scaled down
+  local variants = { "@16x", "@8x", "@4x", "@2x", "" }
   local filename
-  if dpi >= 3.0 then
-    filename = icons_dir .. base_name .. "@4x.png"
-  elseif dpi >= 1.5 then
-    filename = icons_dir .. base_name .. "@2x.png"
-  else
-    filename = icons_dir .. base_name .. ".png"
+
+  for _, suffix in ipairs(variants) do
+    local try_file = icons_dir .. base_name .. suffix .. ".png"
+    local f = io.open(try_file, "r")
+    if f then
+      f:close()
+      filename = try_file
+      break
+    end
   end
 
-  -- Check if file exists
-  local f = io.open(filename, "r")
-  if not f then
-    -- Fallback to base image
-    filename = icons_dir .. base_name .. ".png"
-    f = io.open(filename, "r")
-    if not f then return nil end
-  end
-  f:close()
+  if not filename then return nil end
 
   -- Load image
   local image = ImGui.CreateImage(filename)
@@ -78,7 +71,6 @@ function M.load_image(ctx, base_name)
     ImGui.Attach(ctx, image)
     image_cache[cache_key] = {
       image = image,
-      dpi_loaded = dpi
     }
     return image_cache[cache_key]
   end
