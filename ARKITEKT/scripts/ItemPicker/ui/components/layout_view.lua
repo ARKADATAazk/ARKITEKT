@@ -9,6 +9,7 @@ local Button = require('rearkitekt.gui.widgets.primitives.button')
 local DraggableSeparator = require('rearkitekt.gui.widgets.primitives.separator')
 local StatusBar = require('ItemPicker.ui.components.status_bar')
 local RegionFilterBar = require('ItemPicker.ui.components.region_filter_bar')
+local TrackFilter = require('ItemPicker.ui.components.track_filter')
 local Colors = require('rearkitekt.core.colors')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 
@@ -546,15 +547,57 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Layout toggle button (always visible)
   local layout_button_width = button_height  -- Square button (same as height)
 
+  -- Track filter button (square)
+  local track_button_width = button_height
+
   -- Calculate search width and center it
   local search_width = screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO
   local search_x = coord_offset_x + math.floor((screen_w - search_width) / 2)
 
-  -- Position buttons left of search: [Content] [Layout] [Search]
+  -- Position buttons left of search: [Track] [Content] [Layout] [Search]
   local buttons_left_x = search_x
   local current_x = buttons_left_x
 
-  -- Content filter button (leftmost)
+  -- Track filter button (leftmost)
+  current_x = current_x - track_button_width - button_gap
+  local track_filter_x = current_x
+  local track_filter_active = self.state.show_track_filter or false
+
+  -- Draw track filter icon (3 horizontal lines representing tracks)
+  local draw_track_icon = function(btn_draw_list, icon_x, icon_y)
+    local icon_w = 12
+    local icon_h = 10
+    local line_h = 2
+    local line_gap = 2
+
+    for i = 0, 2 do
+      local line_y = icon_y + i * (line_h + line_gap)
+      local line_w = icon_w - i * 2  -- Progressively shorter lines
+      ImGui.DrawList_AddRectFilled(btn_draw_list,
+        icon_x, line_y,
+        icon_x + line_w, line_y + line_h,
+        Colors.hexrgb("#AAAAAA"), 1)
+    end
+  end
+
+  Button.draw(ctx, draw_list, current_x, search_y, track_button_width, button_height, {
+    label = "",
+    is_toggled = track_filter_active,
+    preset_name = "BUTTON_TOGGLE_WHITE",
+    tooltip = "Track Filter",
+    ignore_modal = true,
+    on_click = function()
+      -- Set flag to open track filter modal (main_window will handle it)
+      self.state.open_track_filter_modal = true
+    end,
+  }, "track_filter_button")
+
+  -- Draw track icon on top of button
+  local track_icon_x = (current_x + (track_button_width - 12) / 2 + 0.5)//1
+  local track_icon_y = (search_y + (button_height - 10) / 2 + 0.5)//1
+  draw_track_icon(draw_list, track_icon_x, track_icon_y)
+
+  -- Content filter button
   current_x = current_x - content_button_width - button_gap
   Button.draw(ctx, draw_list, current_x, search_y, content_button_width, button_height, {
     label = content_filter_mode,

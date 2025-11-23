@@ -5,6 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local Coordinator = require('ItemPicker.ui.grids.coordinator')
 local LayoutView = require('ItemPicker.ui.components.layout_view')
+local TrackFilter = require('ItemPicker.ui.components.track_filter')
 
 local M = {}
 local GUI = {}
@@ -127,6 +128,12 @@ function GUI:draw(ctx, shell_state)
     overlay_alpha = overlay.alpha:value()
   end
   self.state.overlay_alpha = overlay_alpha
+
+  -- Check if track filter modal should be opened
+  if self.state.open_track_filter_modal and overlay then
+    self.state.open_track_filter_modal = nil
+    TrackFilter.push_modal(overlay, self.state, self.config)
+  end
 
   -- Get screen dimensions
   local SCREEN_W, SCREEN_H
