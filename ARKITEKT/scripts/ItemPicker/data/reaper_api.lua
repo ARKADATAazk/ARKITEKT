@@ -21,6 +21,9 @@ local function get_item_uuid(item)
   local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
   local length = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
   local track = reaper.GetMediaItem_Track(item)
+  if not track then
+    return string.format("item_notrack_%.6f_%.6f", pos, length)
+  end
   local track_num = reaper.GetMediaTrackInfo_Value(track, "IP_TRACKNUMBER")
 
   return string.format("item_%d_%.6f_%.6f", track_num, pos, length)

@@ -37,11 +37,12 @@ local function find_icons_dir()
   return nil
 end
 
--- Load PNG image for icon (uses largest available for best quality)
-function M.load_image(ctx, base_name)
+-- Load PNG image for icon (selects variant based on DPI)
+function M.load_image(ctx, base_name, dpi_scale)
   if not ctx then return nil end
 
-  local cache_key = tostring(ctx) .. "_" .. base_name
+  dpi_scale = dpi_scale or 1.0
+  local cache_key = tostring(ctx) .. "_" .. base_name .. "_" .. tostring(dpi_scale)
   if image_cache[cache_key] then
     return image_cache[cache_key]
   end
@@ -49,11 +50,40 @@ function M.load_image(ctx, base_name)
   local icons_dir = find_icons_dir()
   if not icons_dir then return nil end
 
-  -- Try largest image first for best quality when scaled down
-  local variants = { "@16x", "@8x", "@4x", "@2x", "" }
-  local filename
+  -- Select variant based on DPI scale
+  local variant_map = {
+    [16] = "@16x",
+    [8] = "@8x",
+    [4] = "@4x",
+    [2] = "@2x",
+    [1] = "",
+  }
 
-  for _, suffix in ipairs(variants) do
+  -- Round DPI to nearest supported scale
+  local scales = {16, 8, 4, 2, 1}
+  local selected_scale = 1
+  for _, scale in ipairs(scales) do
+    if dpi_scale >= scale then
+      selected_scale = scale
+      break
+    end
+  end
+
+  -- Try selected variant first, then fallback to others
+  local try_order = {}
+  local selected_suffix = variant_map[selected_scale]
+  table.insert(try_order, selected_suffix)
+
+  -- Add fallbacks (prefer higher res over lower)
+  for _, scale in ipairs(scales) do
+    local suffix = variant_map[scale]
+    if suffix ~= selected_suffix then
+      table.insert(try_order, suffix)
+    end
+  end
+
+  local filename
+  for _, suffix in ipairs(try_order) do
     local try_file = icons_dir .. base_name .. suffix .. ".png"
     local f = io.open(try_file, "r")
     if f then
@@ -78,22 +108,21 @@ function M.load_image(ctx, base_name)
   return nil
 end
 
--- Draw PNG icon
+-- Draw PNG icon at native size (22×22 logical pixels)
 function M.draw_png(ctx, x, y, size, image_data)
   if not image_data or not image_data.image then return false end
 
   local draw_list = ImGui.GetWindowDrawList(ctx)
-  local dpi = ImGui.GetWindowDpiScale(ctx) or 1.0
 
-  -- Scale size for display
-  local display_size = size * dpi
+  -- Render at native 22×22 size (no DPI scaling - we use DPI-appropriate variants instead)
+  local native_size = 22
 
   -- Draw the image
   ImGui.DrawList_AddImage(
     draw_list,
     image_data.image,
     x, y,
-    x + display_size, y + display_size,
+    x + native_size, y + native_size,
     0, 0, 1, 1,  -- UV coordinates
     0xFFFFFFFF   -- White tint (full color)
   )

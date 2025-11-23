@@ -40,6 +40,8 @@ function M.build_track_tree()
   local all_tracks = {}
   for i = 0, track_count - 1 do
     local track = reaper.GetTrack(0, i)
+    if not track then goto continue end
+
     local guid = reaper.GetTrackGUID(track)
     local _, name = reaper.GetTrackName(track)
     local color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
@@ -58,6 +60,8 @@ function M.build_track_tree()
       children = {},
       is_folder = depth == 1,
     }
+
+    ::continue::
   end
 
   -- Second pass: build tree structure

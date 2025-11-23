@@ -59,6 +59,55 @@ return function(root_path)
   local ImGui = require('imgui')('0.10')
 
   -- ============================================================================
+  -- SWS EXTENSION VALIDATION
+  -- ============================================================================
+
+  -- Check for critical SWS functions used throughout ARKITEKT
+  local has_sws = reaper.BR_GetMediaItemGUID and
+                  reaper.BR_GetMouseCursorContext and
+                  reaper.SNM_GetIntConfigVar
+
+  if not has_sws then
+    reaper.MB(
+      "Missing dependency: SWS Extension.\n\n" ..
+      "ARKITEKT requires SWS for:\n" ..
+      "- Media item tracking (BR_GetMediaItemGUID)\n" ..
+      "- Mouse cursor detection (BR_GetMouseCursorContext)\n" ..
+      "- Configuration management (SNM_GetIntConfigVar)\n\n" ..
+      "Install from: https://www.sws-extension.org/\n" ..
+      "Or via ReaPack: Extensions > ReaPack > Browse packages",
+      "ARKITEKT Bootstrap Error",
+      0
+    )
+    return nil
+  end
+
+  -- ============================================================================
+  -- JS_REASCRIPTAPI VALIDATION
+  -- ============================================================================
+
+  -- Check for critical JS API functions used in Item Picker and Media Container
+  local has_js_api = reaper.JS_Mouse_GetState and
+                     reaper.JS_Window_Find and
+                     reaper.JS_Window_GetRect
+
+  if not has_js_api then
+    reaper.MB(
+      "Missing dependency: js_ReaScriptAPI extension.\n\n" ..
+      "ARKITEKT requires JS API for:\n" ..
+      "- Mouse state detection outside ImGui\n" ..
+      "- Window positioning and multi-monitor support\n" ..
+      "- Drag & drop functionality in Item Picker\n\n" ..
+      "Install via ReaPack:\n" ..
+      "Extensions > ReaPack > Browse packages\n" ..
+      "Search: js_ReaScriptAPI",
+      "ARKITEKT Bootstrap Error",
+      0
+    )
+    return nil
+  end
+
+  -- ============================================================================
   -- UTILITY FUNCTIONS
   -- ============================================================================
 
