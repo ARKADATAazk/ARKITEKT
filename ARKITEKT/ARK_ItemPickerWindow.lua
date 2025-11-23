@@ -40,6 +40,13 @@ end
 -- Load required modules
 local ImGui = ARK.ImGui
 local Shell = require('rearkitekt.app.runtime.shell')
+local Colors = require('rearkitekt.core.colors')
+
+local hexrgb = Colors.hexrgb
+
+-- Load Settings and Style
+local SettingsOK, Settings = pcall(require, "rearkitekt.core.settings")
+local StyleOK, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
 
 -- Load ItemPicker core modules (reuse data layer)
 local Config = require('ItemPicker.core.config')
@@ -58,6 +65,14 @@ local function SetButtonState(set)
   local is_new_value, filename, sec, cmd, mode, resolution, val = reaper.get_action_context()
   reaper.SetToggleCommandState(sec, cmd, set or 0)
   reaper.RefreshToolbar2(sec, cmd)
+end
+
+-- Initialize settings
+local settings = nil
+if SettingsOK and type(Settings.new) == "function" then
+  local data_dir = ARK.get_data_dir("ItemPickerWindow")
+  local ok, inst = pcall(Settings.new, data_dir, "settings.json")
+  if ok then settings = inst end
 end
 
 -- Initialize state
@@ -94,16 +109,22 @@ Shell.run({
   title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
   version = "1.0.0",
 
-  show_titlebar = true,
-  show_status_bar = false,
+  -- Pass settings and style for proper framework initialization
+  settings = settings,
+  style = StyleOK and Style or nil,
 
+  initial_pos = { x = 120, y = 120 },
   initial_size = { w = 1200, h = 800 },
   min_size = { w = 800, h = 600 },
+
+  icon_color = hexrgb("#4A9EFF"),  -- Blue accent for ItemPicker
+  icon_size = 18,
 
   fonts = {
     default = 14,
     title = 24,
     monospace = 14,
+    icons = 20,
   },
 
   draw = function(ctx, shell_state)
