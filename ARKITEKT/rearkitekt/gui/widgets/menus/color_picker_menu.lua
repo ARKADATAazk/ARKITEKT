@@ -8,6 +8,7 @@ local ColorUtils = require('rearkitekt.core.colors')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local Draw = require('rearkitekt.gui.draw')
 local arkit = require('rearkitekt.arkit')
+local Button = require('rearkitekt.gui.widgets.primitives.button')
 
 local hexrgb = ColorUtils.hexrgb
 
@@ -69,12 +70,8 @@ function M.render(ctx, opts)
   -- Force minimum width with a dummy
   ImGui.Dummy(ctx, min_grid_width, 1)
 
-  -- Draw separator line at top
-  ImGui.Dummy(ctx, 1, 4)
-  local sep_x1, sep_y1 = ImGui.GetCursorScreenPos(ctx)
-  local sep_w = ImGui.GetContentRegionAvail(ctx)
-  ImGui.DrawList_AddLine(dl, sep_x1 + 8, sep_y1, sep_x1 + sep_w - 8, sep_y1, hexrgb("#505050FF"), 1)
-  ImGui.Dummy(ctx, 1, 12)
+  -- Add some top padding
+  ImGui.Dummy(ctx, 1, 8)
 
   -- Calculate grid layout
   local menu_width = ImGui.GetContentRegionAvail(ctx)
@@ -85,7 +82,7 @@ function M.render(ctx, opts)
 
   -- Calculate actual grid width and center it
   local actual_grid_width = (columns * effective_size) + ((columns - 1) * chip_gap)
-  local grid_offset_x = (menu_width - actual_grid_width) * 0.5
+  local grid_offset_x = (menu_width - actual_grid_width) / 2
 
   -- Convert palette to integer colors
   local preset_colors = {}
@@ -98,8 +95,9 @@ function M.render(ctx, opts)
     local col_idx = (i - 1) % columns
     local row_idx = math.floor((i - 1) / columns)
 
-    local chip_cx = menu_start_x + grid_offset_x + col_idx * chip_spacing
-    local chip_cy = menu_start_y + row_idx * chip_spacing
+    -- Center position for chip (grid_offset_x positions left edge, add half size for center)
+    local chip_cx = menu_start_x + grid_offset_x + (effective_size / 2) + col_idx * chip_spacing
+    local chip_cy = menu_start_y + (effective_size / 2) + row_idx * chip_spacing
     local hit_size = effective_size + 4
 
     -- Check if this is the current color
@@ -164,14 +162,7 @@ function M.render(ctx, opts)
   -- Calculate grid height and move cursor past it
   local grid_rows = math.ceil(#preset_colors / columns)
   local grid_height = (grid_rows - 1) * chip_spacing + effective_size
-  ImGui.SetCursorScreenPos(ctx, menu_start_x, menu_start_y + grid_height + 8)
-
-  -- Draw separator before "Remove Color" button
-  ImGui.Dummy(ctx, 1, 4)
-  local sep_x2, sep_y2 = ImGui.GetCursorScreenPos(ctx)
-  local sep_w2 = ImGui.GetContentRegionAvail(ctx)
-  ImGui.DrawList_AddLine(dl, sep_x2 + 8, sep_y2, sep_x2 + sep_w2 - 8, sep_y2, hexrgb("#505050FF"), 1)
-  ImGui.Dummy(ctx, 1, 6)
+  ImGui.SetCursorScreenPos(ctx, menu_start_x, menu_start_y + grid_height + 12)
 
   -- "Remove Color" button
   if show_none then
@@ -179,7 +170,13 @@ function M.render(ctx, opts)
     local button_width = ImGui.GetContentRegionAvail(ctx)
 
     ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 8)
-    if ImGui.Button(ctx, button_text, button_width - 16, 28) then
+    local clicked = Button.draw(ctx, {
+      label = button_text,
+      width = button_width - 16,
+      height = 28,
+      id = "##remove_color_btn",
+    })
+    if clicked then
       if opts.on_select then
         opts.on_select(nil, nil, nil)
       end
