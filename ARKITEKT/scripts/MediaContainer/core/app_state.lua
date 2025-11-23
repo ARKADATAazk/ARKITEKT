@@ -224,6 +224,13 @@ function M.update()
     return true
   end
 
+  -- Check for ext state changes (when other scripts modify containers)
+  local current_state = reaper.GetProjectStateChangeCount(0)
+  if current_state ~= M.last_project_state then
+    M.last_project_state = current_state
+    M.load_project_state()
+  end
+
   return false
 end
 
