@@ -41,12 +41,10 @@ end
 local ImGui = ARK.ImGui
 local Shell = require('rearkitekt.app.runtime.shell')
 local Colors = require('rearkitekt.core.colors')
+local Settings = require('rearkitekt.core.settings')
+local Style = require('rearkitekt.gui.style.imgui_defaults')
 
 local hexrgb = Colors.hexrgb
-
--- Load Settings and Style
-local SettingsOK, Settings = pcall(require, "rearkitekt.core.settings")
-local StyleOK, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
 
 -- Load ItemPicker core modules (reuse data layer)
 local Config = require('ItemPicker.core.config')
@@ -68,12 +66,8 @@ local function SetButtonState(set)
 end
 
 -- Initialize settings
-local settings = nil
-if SettingsOK and type(Settings.new) == "function" then
-  local data_dir = ARK.get_data_dir("ItemPickerWindow")
-  local ok, inst = pcall(Settings.new, data_dir, "settings.json")
-  if ok then settings = inst end
-end
+local data_dir = ARK.get_data_dir("ItemPickerWindow")
+local settings = Settings.new(data_dir, "settings.json")
 
 -- Initialize state
 State.initialize(Config)
@@ -108,34 +102,17 @@ SetButtonState(1)
 Shell.run({
   title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
   version = "1.0.0",
-
-  -- Pass settings and style for proper framework initialization
+  draw = function(ctx, shell_state) gui:draw(ctx, shell_state) end,
   settings = settings,
-  style = StyleOK and Style or nil,
-
+  style = Style,
   initial_pos = { x = 120, y = 120 },
   initial_size = { w = 1200, h = 800 },
   min_size = { w = 800, h = 600 },
-
-  icon_color = hexrgb("#4A9EFF"),  -- Blue accent for ItemPicker
+  icon_color = hexrgb("#4A9EFF"),
   icon_size = 18,
-
   fonts = {
-    default = 14,
-    title = 24,
-    monospace = 14,
     icons = 20,
   },
-
-  draw = function(ctx, shell_state)
-    -- Show ImGui debug window when profiling
-    if profiler_enabled then
-      ImGui.ShowMetricsWindow(ctx, true)
-    end
-
-    gui:draw(ctx, shell_state)
-  end,
-
   on_close = function()
     cleanup()
   end,
