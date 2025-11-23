@@ -1,11 +1,113 @@
 -- @noindex
 -- ReArkitekt/app/icon.lua
--- App icon drawing functions (DPI-aware vector graphics)
+-- App icon drawing functions (DPI-aware vector graphics and PNG images)
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local M = {}
+
+-- Cache for loaded images
+local image_cache = {}
+
+-- Find icons directory
+local function find_icons_dir()
+  -- Try to find from package path
+  for path in package.path:gmatch("[^;]+") do
+    local dir = path:match("(.-)%?")
+    if dir then
+      local icons_path = dir .. "rearkitekt/icons/"
+      local f = io.open(icons_path .. "ARKITEKT.png", "r")
+      if f then
+        f:close()
+        return icons_path
+      end
+    end
+  end
+
+  -- Fallback: use script path
+  local info = debug.getinfo(1, "S")
+  if info and info.source then
+    local path = info.source:match("@?(.+)[/\\]")
+    if path then
+      return path:gsub("[/\\]app[/\\]assets$", "") .. "/icons/"
+    end
+  end
+
+  return nil
+end
+
+-- Load PNG image for icon (with DPI variants)
+function M.load_image(ctx, base_name)
+  if not ctx then return nil end
+
+  local cache_key = tostring(ctx) .. "_" .. base_name
+  if image_cache[cache_key] then
+    return image_cache[cache_key]
+  end
+
+  local icons_dir = find_icons_dir()
+  if not icons_dir then return nil end
+
+  -- Get DPI scale to pick appropriate image
+  local dpi = ImGui.GetWindowDpiScale(ctx) or 1.0
+
+  -- Select image based on DPI
+  local filename
+  if dpi >= 3.0 then
+    filename = icons_dir .. base_name .. "@4x.png"
+  elseif dpi >= 1.5 then
+    filename = icons_dir .. base_name .. "@2x.png"
+  else
+    filename = icons_dir .. base_name .. ".png"
+  end
+
+  -- Check if file exists
+  local f = io.open(filename, "r")
+  if not f then
+    -- Fallback to base image
+    filename = icons_dir .. base_name .. ".png"
+    f = io.open(filename, "r")
+    if not f then return nil end
+  end
+  f:close()
+
+  -- Load image
+  local image = ImGui.CreateImage(filename)
+  if image then
+    ImGui.Attach(ctx, image)
+    image_cache[cache_key] = {
+      image = image,
+      dpi_loaded = dpi
+    }
+    return image_cache[cache_key]
+  end
+
+  return nil
+end
+
+-- Draw PNG icon
+function M.draw_png(ctx, x, y, size, image_data)
+  if not image_data or not image_data.image then return false end
+
+  local draw_list = ImGui.GetWindowDrawList(ctx)
+  local dpi = ImGui.GetWindowDpiScale(ctx) or 1.0
+
+  -- Scale size for display
+  local display_size = size * dpi
+
+  -- Draw the image
+  ImGui.DrawList_AddImage(
+    draw_list,
+    image_data.image,
+    x, y,
+    x + display_size, y + display_size,
+    0, 0, 1, 1,  -- UV coordinates
+    0xFFFFFFFF   -- White tint (full color)
+  )
+
+  return true
+end
 
 -- ReArkitekt logo v1: Original (smaller circles, simpler)
 function M.draw_rearkitekt(ctx, x, y, size, color)

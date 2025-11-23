@@ -72,6 +72,7 @@ function M.new(opts)
     icon_spacing    = config.icon_spacing,
     icon_color      = config.icon_color,
     icon_draw       = config.icon_draw,
+    icon_image      = nil,  -- Will be loaded on first draw
 
     -- State
     enable_maximize = config.enable_maximize ~= false,
@@ -118,11 +119,27 @@ function M.new(opts)
   end
 
   function titlebar:_draw_icon(ctx, x, y, color)
+    -- Custom icon draw function takes priority
     if self.icon_draw then
       self.icon_draw(ctx, x, y, self.icon_size, color)
-    elseif Icon and Icon.draw_rearkitekt then
+      return
+    end
+
+    -- Try PNG image first (load once and cache)
+    if Icon and Icon.load_image and Icon.draw_png then
+      if not self.icon_image then
+        self.icon_image = Icon.load_image(ctx, "ARKITEKT")
+      end
+      if self.icon_image and Icon.draw_png(ctx, x, y, self.icon_size, self.icon_image) then
+        return
+      end
+    end
+
+    -- Fall back to vector drawing
+    if Icon and Icon.draw_rearkitekt then
       Icon.draw_rearkitekt(ctx, x, y, self.icon_size, color)
     else
+      -- Ultimate fallback: simple circle
       local draw_list = ImGui.GetWindowDrawList(ctx)
       local dpi = ImGui.GetWindowDpiScale(ctx)
       local r = (self.icon_size * 0.5) * dpi
