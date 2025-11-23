@@ -3,11 +3,11 @@
 -- Mini tags tab for convenience panel
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local Tags = require('TemplateBrowser.domain.tags')
-local Button = require('rearkitekt.gui.widgets.primitives.button')
-local Chip = require('rearkitekt.gui.widgets.data.chip')
-local ChipList = require('rearkitekt.gui.widgets.data.chip_list')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local Chip = require('arkitekt.gui.widgets.data.chip')
+local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.ui_constants')
 local Constants = require('TemplateBrowser.defs.constants')

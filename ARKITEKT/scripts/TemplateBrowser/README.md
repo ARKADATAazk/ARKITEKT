@@ -276,7 +276,7 @@ State = {
 
 ## Metadata Persistence
 
-Metadata is stored in: `REAPER/Scripts/rearkitekt_data/TemplateBrowser/metadata.json`
+Metadata is stored in: `REAPER/Scripts/arkitekt_data/TemplateBrowser/metadata.json`
 
 Contains:
 - Template notes, colors, tags, usage stats
@@ -326,7 +326,7 @@ Potential improvements:
 - Force rescan: VSTs tab → "Force Reparse All"
 
 **Metadata lost:**
-- Check rearkitekt_data/TemplateBrowser/metadata.json
+- Check arkitekt_data/TemplateBrowser/metadata.json
 - Backup created on each save: metadata.json.backup
 
 **Performance issues:**

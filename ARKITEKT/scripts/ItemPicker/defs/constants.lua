@@ -2,7 +2,7 @@
 -- ItemPicker/defs/constants.lua
 -- Centralized constants and configuration values
 
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}

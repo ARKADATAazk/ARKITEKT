@@ -3,12 +3,12 @@
 -- MIDI tile renderer with piano roll visualization
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
-local Draw = require('rearkitekt.gui.draw')
-local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
+local Colors = require('arkitekt.core.colors')
+local Draw = require('arkitekt.gui.draw')
+local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
 local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
-local Shapes = require('rearkitekt.gui.rendering.shapes')
-local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
+local Shapes = require('arkitekt.gui.rendering.shapes')
+local TileFX = require('arkitekt.gui.rendering.tile.renderer')
 
 local M = {}
 

@@ -2,7 +2,7 @@
 -- ThemeAdjuster/core/config.lua
 -- Configuration following RegionPlaylist pattern
 
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local Constants = require('ThemeAdjuster.defs.constants')
 local Defaults = require('ThemeAdjuster.defs.defaults')
 local Strings = require('ThemeAdjuster.defs.strings')

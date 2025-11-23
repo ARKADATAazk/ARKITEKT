@@ -2,10 +2,10 @@
 -- ThemeAdjuster/ui/grids/library_grid_factory.lua
 -- Parameter library grid factory
 
-local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
+local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local LibraryTile = require('ThemeAdjuster.ui.grids.renderers.library_tile')
-local TileGroup = require('rearkitekt.gui.widgets.containers.tile_group')
-local Colors = require('rearkitekt.core.colors')
+local TileGroup = require('arkitekt.gui.widgets.containers.tile_group')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}

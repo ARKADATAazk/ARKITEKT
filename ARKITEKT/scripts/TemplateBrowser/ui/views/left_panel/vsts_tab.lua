@@ -3,9 +3,9 @@
 -- VSTs tab: List of all FX with filtering
 
 local ImGui = require 'imgui' '0.10'
-local Button = require('rearkitekt.gui.widgets.primitives.button')
-local Chip = require('rearkitekt.gui.widgets.data.chip')
-local Colors = require('rearkitekt.core.colors')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local Chip = require('arkitekt.gui.widgets.data.chip')
+local Colors = require('arkitekt.core.colors')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.ui_constants')
 

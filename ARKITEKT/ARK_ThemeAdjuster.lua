@@ -5,20 +5,20 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "rearkitekt/app/init/init.lua").bootstrap()
+local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/init/init.lua").bootstrap()
 
 -- ============================================================================
 -- LOAD MODULES
 -- ============================================================================
 
-local Shell = require("rearkitekt.app.runtime.shell")
+local Shell = require("arkitekt.app.runtime.shell")
 local Config = require("ThemeAdjuster.core.config")
 local State = require("ThemeAdjuster.core.state")
 local ThemeParams = require("ThemeAdjuster.core.theme_params")
 local GUI = require("ThemeAdjuster.ui.gui")
 local StatusConfig = require("ThemeAdjuster.ui.status")
-local Colors = require("rearkitekt.core.colors")
-local Settings = require("rearkitekt.core.settings")
+local Colors = require("arkitekt.core.colors")
+local Settings = require("arkitekt.core.settings")
 
 local hexrgb = Colors.hexrgb
 

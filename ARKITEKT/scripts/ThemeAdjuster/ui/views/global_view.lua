@@ -3,11 +3,11 @@
 -- Global color controls tab
 
 local ImGui = require 'imgui' '0.10'
-local HueSlider = require('rearkitekt.gui.widgets.primitives.hue_slider')
-local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
-local Background = require('rearkitekt.gui.widgets.containers.panel.background')
-local Style = require('rearkitekt.gui.style.defaults')
-local Colors = require('rearkitekt.core.colors')
+local HueSlider = require('arkitekt.gui.widgets.primitives.hue_slider')
+local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
+local Background = require('arkitekt.gui.widgets.containers.panel.background')
+local Style = require('arkitekt.gui.style.defaults')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local Strings = require('ThemeAdjuster.defs.strings')

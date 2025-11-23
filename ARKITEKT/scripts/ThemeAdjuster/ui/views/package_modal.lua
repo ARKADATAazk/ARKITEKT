@@ -3,11 +3,11 @@
 -- Package manifest/micro-manage modal (overlay with visual tile grid)
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
-local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
-local Button = require('rearkitekt.gui.widgets.primitives.button')
+local Colors = require('arkitekt.core.colors')
+local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
+local Button = require('arkitekt.gui.widgets.primitives.button')
 local Constants = require('ThemeAdjuster.defs.constants')
-local ImageCache = require('rearkitekt.core.images')
+local ImageCache = require('arkitekt.core.images')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -42,8 +42,8 @@ local AREA_COLORS = {
   Other = TC.other_slate,
 }
 
--- Image cache for tooltips (uses rearkitekt.core.images for proper lifecycle management)
--- See rearkitekt/core/images.lua for full documentation
+-- Image cache for tooltips (uses arkitekt.core.images for proper lifecycle management)
+-- See arkitekt/core/images.lua for full documentation
 local image_cache = ImageCache.new({
   budget = 10,      -- Max images to load per frame
   max_cache = 100,  -- Max total cached images
@@ -481,7 +481,7 @@ function PackageModal:draw_asset_tile(ctx, pkg, key)
   if hovered then
     ImGui.BeginTooltip(ctx)
 
-    -- Show image preview if available (uses rearkitekt.gui.images)
+    -- Show image preview if available (uses arkitekt.gui.images)
     local rec = image_cache:get_validated(asset_path)
     if rec and rec.img then
       local img_w, img_h = rec.src_w, rec.src_h

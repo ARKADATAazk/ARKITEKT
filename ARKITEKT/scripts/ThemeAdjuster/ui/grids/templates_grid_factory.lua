@@ -2,11 +2,11 @@
 -- ThemeAdjuster/ui/grids/templates_grid_factory.lua
 -- Templates grid factory
 
-local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
+local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local TemplateTile = require('ThemeAdjuster.ui.grids.renderers.template_tile')
 local TemplateGroupConfig = require('ThemeAdjuster.ui.grids.renderers.template_group_config')
-local TileGroup = require('rearkitekt.gui.widgets.containers.tile_group')
-local Colors = require('rearkitekt.core.colors')
+local TileGroup = require('arkitekt.gui.widgets.containers.tile_group')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}

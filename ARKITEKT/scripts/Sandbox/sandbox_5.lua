@@ -13,22 +13,22 @@ package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. pa
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 -- Import system
-local Shell = require('rearkitekt.app.runtime.shell')
-local Arkit = require('rearkitekt.arkit')
+local Shell = require('arkitekt.app.runtime.shell')
+local Arkit = require('arkitekt.arkit')
 
 -- Import refactored base controls
-local Button = require('rearkitekt.gui.widgets.primitives.button')
-local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
-local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
+local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
 
 -- Import panel system
-local Panel = require('rearkitekt.gui.widgets.containers.panel')
+local Panel = require('arkitekt.gui.widgets.containers.panel')
 
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
-local StyleOK, Style = pcall(require, 'rearkitekt.gui.style.imgui_defaults')
-local Colors = require('rearkitekt.core.colors')
+local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
+local Colors = require('arkitekt.core.colors')
 
 -- ============================================================================
 -- STATE

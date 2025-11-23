@@ -3,11 +3,11 @@
 -- Color palette and track coloring tab
 
 local ImGui = require 'imgui' '0.10'
-local Button = require('rearkitekt.gui.widgets.primitives.button')
-local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
-local Background = require('rearkitekt.gui.widgets.containers.panel.background')
-local Style = require('rearkitekt.gui.style.defaults')
-local Colors = require('rearkitekt.core.colors')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local Spinner = require('arkitekt.gui.widgets.primitives.spinner')
+local Background = require('arkitekt.gui.widgets.containers.panel.background')
+local Style = require('arkitekt.gui.style.defaults')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 local PC = Style.PANEL_COLORS  -- Panel colors including pattern defaults

@@ -180,7 +180,7 @@ The Additional tab will support **visual organization** through parameter groupi
 
 ### Selection Rectangle Integration
 ```lua
-local SelectionRect = require('rearkitekt.gui.widgets.data.selection_rectangle')
+local SelectionRect = require('arkitekt.gui.widgets.data.selection_rectangle')
 
 -- In AdditionalView:new()
 self.selection_rect = SelectionRect.new()

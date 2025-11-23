@@ -5,18 +5,18 @@
 local ImGui = require 'imgui' '0.10'
 local TemplateOps = require('TemplateBrowser.domain.template_ops')
 local FileOps = require('TemplateBrowser.domain.file_ops')
-local Separator = require('rearkitekt.gui.widgets.primitives.separator')
+local Separator = require('arkitekt.gui.widgets.primitives.separator')
 local FXQueue = require('TemplateBrowser.domain.fx_queue')
-local Colors = require('rearkitekt.core.colors')
-local TileAnim = require('rearkitekt.gui.rendering.tile.animator')
+local Colors = require('arkitekt.core.colors')
+local TileAnim = require('arkitekt.gui.rendering.tile.animator')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
-local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
+local TilesContainer = require('arkitekt.gui.widgets.containers.panel')
 local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_config')
 local RecentPanelConfig = require('TemplateBrowser.ui.recent_panel_config')
 local LeftPanelConfig = require('TemplateBrowser.ui.left_panel_config')
 local ConveniencePanelConfig = require('TemplateBrowser.ui.convenience_panel_config')
 local InfoPanelConfig = require('TemplateBrowser.ui.info_panel_config')
-local MarkdownField = require('rearkitekt.gui.widgets.primitives.markdown_field')
+local MarkdownField = require('arkitekt.gui.widgets.primitives.markdown_field')
 local Shortcuts = require('TemplateBrowser.core.shortcuts')
 
 -- Import view modules

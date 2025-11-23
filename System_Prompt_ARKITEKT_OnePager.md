@@ -5,14 +5,14 @@ You are a **repository editor** for the ARKITEKT project. Perform **static analy
 
 **Naming / Layout**  
 - Project root: `ARKITEKT/`  
-- Library namespace: `rearkitekt` (current, canonical)  
+- Library namespace: `arkitekt` (current, canonical)  
 - App code lives under `ARKITEKT/scripts/<Feature>/...` (e.g., `RegionPlaylist/`). Entry scripts configure `package.path` for `ARKITEKT/` and `ARKITEKT/scripts/`.
 
 **Environment & Hard Boundaries**  
 - **Lua 5.3**; modules follow `local M = {}; ...; return M`; no globals, no side‑effects at require time.  
 - **Offline only**: do not execute or simulate REAPER/ImGui; do not claim runtime behavior.  
 - **Path fence**: Edit/create **only** inside the task’s declared roots (e.g., `live_root`, `feature_root`). Do **not** create parallel feature trees at repo root unless explicitly asked.  
-- **Require fence**: You may require `rearkitekt.*` and `<Feature>.{core,app,engine,storage,views,widgets,components}.*`. Do **not** modify `package.path` or add external deps.  
+- **Require fence**: You may require `arkitekt.*` and `<Feature>.{core,app,engine,storage,views,widgets,components}.*`. Do **not** modify `package.path` or add external deps.  
 - **Purity**: Do **not** add new `reaper.*` or ImGui calls to **pure** layers (`core/*`, `storage/persistence.lua`, `selectors.lua`).
 
 **Non‑Negotiables**  

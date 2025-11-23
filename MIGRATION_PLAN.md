@@ -1,6 +1,6 @@
-# Migration Plan: rearkitekt → arkitekt
+# Migration Plan: arkitekt → arkitekt
 
-This document outlines the step-by-step plan to migrate from `rearkitekt` to `arkitekt` naming and restructure the project according to the release strategy.
+This document outlines the step-by-step plan to migrate from `arkitekt` to `arkitekt` naming and restructure the project according to the release strategy.
 
 ## Overview
 
@@ -41,13 +41,13 @@ git checkout -b refactor/migrate-to-arkitekt
 
 ```bash
 cd ARKITEKT/
-mv rearkitekt arkitekt
+mv arkitekt arkitekt
 ```
 
 **Result:**
 ```
 ARKITEKT/
-├── arkitekt/          # ✅ Renamed from rearkitekt
+├── arkitekt/          # ✅ Renamed from arkitekt
 ├── scripts/           # To be restructured next
 └── ...
 ```
@@ -113,8 +113,8 @@ This is the most time-consuming step. We need to update all `require()` statemen
 
 **Before:**
 ```lua
-require("rearkitekt.core.colors")
-require("rearkitekt.gui.widgets.button")
+require("arkitekt.core.colors")
+require("arkitekt.gui.widgets.button")
 require("ItemPicker.core.state")
 ```
 
@@ -130,10 +130,10 @@ require("arkitekt.apps.item_picker.core.state")
 **Core Library Requires:**
 ```bash
 # Find all lua files
-find ARKITEKT/arkitekt -type f -name "*.lua" -exec sed -i 's/require("rearkitekt\./require("arkitekt./g' {} +
+find ARKITEKT/arkitekt -type f -name "*.lua" -exec sed -i 's/require("arkitekt\./require("arkitekt./g' {} +
 
 # Or on macOS
-find ARKITEKT/arkitekt -type f -name "*.lua" -exec sed -i '' 's/require("rearkitekt\./require("arkitekt./g' {} +
+find ARKITEKT/arkitekt -type f -name "*.lua" -exec sed -i '' 's/require("arkitekt\./require("arkitekt./g' {} +
 ```
 
 **App Requires (more complex - do per app):**
@@ -146,7 +146,7 @@ cd ARKITEKT/apps/item_picker
 find . -type f -name "*.lua" -exec sed -i 's/require("ItemPicker\./require("arkitekt.apps.item_picker./g' {} +
 
 # Update arkitekt library requires
-find . -type f -name "*.lua" -exec sed -i 's/require("rearkitekt\./require("arkitekt./g' {} +
+find . -type f -name "*.lua" -exec sed -i 's/require("arkitekt\./require("arkitekt./g' {} +
 ```
 
 **Repeat for all apps:**
@@ -167,14 +167,14 @@ find ARKITEKT/apps/theme_adjuster -type f -name "*.lua" -exec sed -i 's/require(
 ### Step 2.3: Manual Review (Critical!)
 
 **Automated replacement may miss:**
-- String concatenations: `"rearkitekt." .. module_name`
+- String concatenations: `"arkitekt." .. module_name`
 - Dynamic requires: `require(module_path_var)`
 - Comments and documentation
 
 **Review:**
 ```bash
-# Search for any remaining "rearkitekt" references
-grep -r "rearkitekt" ARKITEKT/arkitekt/ ARKITEKT/apps/
+# Search for any remaining "arkitekt" references
+grep -r "arkitekt" ARKITEKT/arkitekt/ ARKITEKT/apps/
 
 # Search for old app names in requires
 grep -r 'require("ItemPicker' ARKITEKT/apps/
@@ -246,7 +246,7 @@ Update `hub/hub.lua` to use `require("arkitekt.*")` paths.
 // .vscode/settings.json
 {
   "Lua.workspace.library": [
-    "${workspaceFolder}/ARKITEKT/arkitekt",  // ← Updated from rearkitekt
+    "${workspaceFolder}/ARKITEKT/arkitekt",  // ← Updated from arkitekt
   ],
 
   "files.associations": {
@@ -274,7 +274,7 @@ Update `hub/hub.lua` to use `require("arkitekt.*")` paths.
 ### Step 4.2: Update Documentation Files
 
 **Update references in:**
-- `README.md` - Change all `rearkitekt` → `arkitekt`
+- `README.md` - Change all `arkitekt` → `arkitekt`
 - `PROJECT_STRUCTURE.txt` - Regenerate (see Step 4.3)
 - `ARKITEKT_Codex_Playbook_v5.md` - Update require examples
 - `DOCS_CONFIG_BEST_PRACTICES.md` - Update code examples
@@ -284,7 +284,7 @@ Update `hub/hub.lua` to use `require("arkitekt.*")` paths.
 **Search & replace pattern:**
 ```bash
 # In all markdown files
-find . -name "*.md" -type f -exec sed -i 's/rearkitekt/arkitekt/g' {} +
+find . -name "*.md" -type f -exec sed -i 's/arkitekt/arkitekt/g' {} +
 find . -name "*.md" -type f -exec sed -i 's/ReArkitekt/arkitekt/g' {} +
 
 # Check for PascalCase app names in docs
@@ -319,7 +319,7 @@ tree ARKITEKT/ -L 4 --dirsfirst > PROJECT_STRUCTURE.txt
         <!-- Updated source paths -->
       </source>
       <source file="ARKITEKT/arkitekt/core/colors.lua">
-        <!-- Note: arkitekt not rearkitekt -->
+        <!-- Note: arkitekt not arkitekt -->
       </source>
     </version>
   </reapack>
@@ -342,8 +342,8 @@ reapack-index --commit
 find ARKITEKT -name "*.lua" -type f -exec luac -p {} \;
 
 # Check for remaining old references
-echo "Checking for 'rearkitekt' references..."
-grep -r "rearkitekt" ARKITEKT/ || echo "✅ None found"
+echo "Checking for 'arkitekt' references..."
+grep -r "arkitekt" ARKITEKT/ || echo "✅ None found"
 
 echo "Checking for old app name patterns..."
 grep -r 'require("ItemPicker' ARKITEKT/ || echo "✅ None found"
@@ -394,7 +394,7 @@ grep -r 'require("ColorPalette' ARKITEKT/ || echo "✅ None found"
 Watch for:
 - Missing module errors: `module 'X' not found`
 - Nil global errors: `attempt to index nil value`
-- Path errors: `no file './rearkitekt/...`
+- Path errors: `no file './arkitekt/...`
 
 **Fix any errors before proceeding.**
 
@@ -410,7 +410,7 @@ git diff --name-only
 ```
 
 **Should see:**
-- Renamed: `rearkitekt/` → `arkitekt/`
+- Renamed: `arkitekt/` → `arkitekt/`
 - Moved: `scripts/*/` → `apps/*/`
 - Modified: All `.lua` files (require paths)
 - Modified: Documentation files
@@ -426,13 +426,13 @@ refactor: migrate to arkitekt naming and restructure project
 BREAKING CHANGE: Major refactoring for v1.0.0 release
 
 ## Directory Changes
-- Renamed: rearkitekt/ → arkitekt/ (lowercase)
+- Renamed: arkitekt/ → arkitekt/ (lowercase)
 - Moved: scripts/* → apps/* (snake_case)
 - Created: dev/ for demos and sandbox
 - Standardized: All app directories to snake_case
 
 ## Require Path Changes
-Before: require("rearkitekt.MODULE")
+Before: require("arkitekt.MODULE")
 After:  require("arkitekt.MODULE")
 
 Before: require("ItemPicker.MODULE")
@@ -481,7 +481,7 @@ Major refactoring to align with release strategy and prepare for v1.0.0 public r
 
 **Before:**
 ```lua
-require("rearkitekt.core.colors")
+require("arkitekt.core.colors")
 require("ItemPicker.core.state")
 ```
 
@@ -494,7 +494,7 @@ require("arkitekt.apps.item_picker.core.state")
 ## Changes
 
 ### Directory Structure
-- `rearkitekt/` → `arkitekt/` (lowercase, Lua standard)
+- `arkitekt/` → `arkitekt/` (lowercase, Lua standard)
 - `scripts/ItemPicker/` → `apps/item_picker/` (snake_case)
 - `scripts/demos/` → `dev/demos/` (development tools)
 
@@ -555,7 +555,7 @@ git push
 ## [1.0.0] - 2025-XX-XX
 
 ### Changed
-- BREAKING: Renamed core library from `rearkitekt` to `arkitekt`
+- BREAKING: Renamed core library from `arkitekt` to `arkitekt`
 - BREAKING: Moved all apps to `apps/` directory with snake_case naming
 - BREAKING: All require paths updated to new structure
 - Standardized directory naming to snake_case
@@ -628,7 +628,7 @@ git push -u origin recovery/rollback-arkitekt
 Migration is complete when:
 - [ ] All directories renamed to `arkitekt` and `apps/`
 - [ ] All require paths use new structure
-- [ ] No references to `rearkitekt` remain (except in CHANGELOG)
+- [ ] No references to `arkitekt` remain (except in CHANGELOG)
 - [ ] No references to old app names (ItemPicker, etc.) remain
 - [ ] All apps launch successfully in REAPER
 - [ ] All documentation updated

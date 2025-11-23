@@ -7,8 +7,8 @@ def convert_hex_to_hexrgb(content, filepath):
     """Convert hex literals to hexrgb() calls and add imports if needed."""
     
     # Check if file already has Colors imported
-    has_colors_import = 'require(\'rearkitekt.core.colors\')' in content or \
-                       'require("rearkitekt.core.colors")' in content
+    has_colors_import = 'require(\'arkitekt.core.colors\')' in content or \
+                       'require("arkitekt.core.colors")' in content
     has_hexrgb_local = re.search(r'local\s+hexrgb\s*=', content)
     
     # Find hex color literals (0xRRGGBBAA format)
@@ -49,7 +49,7 @@ def convert_hex_to_hexrgb(content, filepath):
         
         # Insert Colors import and hexrgb local
         if not has_colors_import:
-            lines.insert(insert_idx, "local Colors = require('rearkitekt.core.colors')")
+            lines.insert(insert_idx, "local Colors = require('arkitekt.core.colors')")
             insert_idx += 1
         if not has_hexrgb_local:
             lines.insert(insert_idx, "local hexrgb = Colors.hexrgb")

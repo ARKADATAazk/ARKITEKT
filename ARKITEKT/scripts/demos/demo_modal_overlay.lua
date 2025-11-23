@@ -44,13 +44,13 @@ addpath(join(HERE,  "ReArkitekt/?.lua"))
 addpath(join(HERE,  "ReArkitekt/?/init.lua"))
 addpath(join(HERE,  "ReArkitekt/?/?.lua"))
 
-local Shell = require("rearkitekt.app.runtime.shell")
-local Sheet = require("rearkitekt.gui.widgets.overlays.overlay.sheet")
-local ChipList = require("rearkitekt.gui.widgets.data.chip_list")
-local OverlayConfig = require("rearkitekt.gui.widgets.overlays.overlay.defaults")
+local Shell = require("arkitekt.app.runtime.shell")
+local Sheet = require("arkitekt.gui.widgets.overlays.overlay.sheet")
+local ChipList = require("arkitekt.gui.widgets.data.chip_list")
+local OverlayConfig = require("arkitekt.gui.widgets.overlays.overlay.defaults")
 
-local style_ok, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
-local Colors = require('rearkitekt.core.colors')
+local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 

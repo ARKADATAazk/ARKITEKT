@@ -3,14 +3,14 @@
 -- Transport bar configuration tab
 
 local ImGui = require 'imgui' '0.10'
-local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
-local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
-local Button = require('rearkitekt.gui.widgets.primitives.button')
-local Background = require('rearkitekt.gui.widgets.containers.panel.background')
-local Style = require('rearkitekt.gui.style.defaults')
+local Spinner = require('arkitekt.gui.widgets.primitives.spinner')
+local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local Background = require('arkitekt.gui.widgets.containers.panel.background')
+local Style = require('arkitekt.gui.style.defaults')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local Strings = require('ThemeAdjuster.defs.strings')
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 local PC = Style.PANEL_COLORS  -- Panel colors including pattern defaults

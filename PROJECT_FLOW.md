@@ -23,10 +23,10 @@ Generated: 2025-11-13 04:53:43
 
 ## Orchestrators
 
-**`ARKITEKT\rearkitekt\gui\widgets\grid\core.lua`** (13 dependencies)
+**`ARKITEKT\arkitekt\gui\widgets\grid\core.lua`** (13 dependencies)
   Composes: animation + colors + dnd_state + drag_indicator + draw + drop_indicator + drop_zones + input + layout + rect_track + rendering + selection + selection_rectangle
 
-**`ARKITEKT\rearkitekt\gui\widgets\nodal\canvas.lua`** (12 dependencies)
+**`ARKITEKT\arkitekt\gui\widgets\nodal\canvas.lua`** (12 dependencies)
   Composes: auto_layout + background + colors + config + connection + connection_renderer + drag_indicator + drop_indicator + node + node_renderer + port + viewport
 
 **`ARKITEKT\scripts\RegionPlaylist\ui\tiles\coordinator.lua`** (11 dependencies)
@@ -35,10 +35,10 @@ Generated: 2025-11-13 04:53:43
 **`ARKITEKT\scripts\RegionPlaylist\ui\gui.lua`** (10 dependencies)
   Composes: colors + config + controller + coordinator + list + sheet + shortcuts + tooltip + transport_container + transport_widgets
 
-**`ARKITEKT\rearkitekt\gui\widgets\nodal\rendering\node_renderer.lua`** (9 dependencies)
+**`ARKITEKT\arkitekt\gui\widgets\nodal\rendering\node_renderer.lua`** (9 dependencies)
   Composes: auto_layout + chip + colors + draw + marching_ants + node + port + tile_fx + tile_fx_config
 
-**`ARKITEKT\rearkitekt\gui\widgets\panel\init.lua`** (7 dependencies)
+**`ARKITEKT\arkitekt\gui\widgets\panel\init.lua`** (7 dependencies)
   Composes: background + button + config + content + corner_button + scrollbar + tab_animator
 
 **`ARKITEKT\scripts\RegionPlaylist\ARK_RegionPlaylist.lua`** (7 dependencies)
@@ -73,7 +73,7 @@ Generated: 2025-11-13 04:53:43
   - `type`
 **Requires**: `colors, coordinator_bridge, persistence, undo_bridge, undo_manager`
 
-### `ARKITEKT\rearkitekt\gui\widgets\panel\header\tab_strip.lua` (886 lines)
+### `ARKITEKT\arkitekt\gui\widgets\panel\header\tab_strip.lua` (886 lines)
 > @noindex
 **Classes**: `M`
 **Requires**: `chip, colors, context_menu`
@@ -83,7 +83,7 @@ Generated: 2025-11-13 04:53:43
 **Classes**: `M, TransportIcons, ViewModeButton, TransportDisplay, SimpleToggleButton, JumpControls, TransportButtonBar`
 **Requires**: `button, chip, colors, layout, tile_fx_config, tooltip, transport_fx`
 
-### `ARKITEKT\rearkitekt\app\window.lua` (786 lines)
+### `ARKITEKT\arkitekt\app\window.lua` (786 lines)
 > @noindex
 **Classes**: `M, DEFAULTS`
 **Exports**:
@@ -99,12 +99,12 @@ Generated: 2025-11-13 04:53:43
   - `value`
 **Requires**: `colors`
 
-### `ARKITEKT\rearkitekt\gui\widgets\panel\init.lua` (698 lines)
+### `ARKITEKT\arkitekt\gui\widgets\panel\init.lua` (698 lines)
 > @noindex
 **Classes**: `M, Panel`
 **Requires**: `background, button, config, content, corner_button, scrollbar, tab_animator`
 
-### `ARKITEKT\rearkitekt\gui\widgets\grid\core.lua` (661 lines)
+### `ARKITEKT\arkitekt\gui\widgets\grid\core.lua` (661 lines)
 > @noindex
 **Classes**: `M, Grid`
 **Requires**: `animation, colors, dnd_state, drag_indicator, draw, drop_indicator, drop_zones, input`
@@ -114,7 +114,7 @@ Generated: 2025-11-13 04:53:43
 **Classes**: `M, RegionTiles`
 **Requires**: `active_grid_factory, app_state, colors, config, coordinator_render, draw, grid_bridge, height_stabilizer`
 
-### `ARKITEKT\rearkitekt\core\colors.lua` (550 lines)
+### `ARKITEKT\arkitekt\core\colors.lua` (550 lines)
 > @noindex
 **Classes**: `M`
 **Exports**:
@@ -127,14 +127,14 @@ Generated: 2025-11-13 04:53:43
   - `min_channel`
   - `saturation`
 
-### `ARKITEKT\rearkitekt\gui\widgets\nodal\canvas.lua` (530 lines)
+### `ARKITEKT\arkitekt\gui\widgets\nodal\canvas.lua` (530 lines)
 > @noindex
 **Classes**: `M`
 **Exports**:
   - `values`
 **Requires**: `auto_layout, background, colors, config, connection, connection_renderer, drag_indicator, drop_indicator`
 
-### `ARKITEKT\rearkitekt\app\titlebar.lua` (520 lines)
+### `ARKITEKT\arkitekt\app\titlebar.lua` (520 lines)
 > @noindex
 **Classes**: `M, DEFAULTS`
 **Requires**: `colors`
@@ -143,7 +143,7 @@ Generated: 2025-11-13 04:53:43
 > @noindex
 **Requires**: `button, colors, shell, style_defaults`
 
-### `ARKITEKT\rearkitekt\gui\widgets\colored_text_view.lua` (500 lines)
+### `ARKITEKT\arkitekt\gui\widgets\colored_text_view.lua` (500 lines)
 > @noindex
 **Classes**: `M, ColoredTextView`
 **Exports**:
@@ -151,7 +151,7 @@ Generated: 2025-11-13 04:53:43
   - `line`
 **Requires**: `colors`
 
-### `ARKITEKT\rearkitekt\gui\widgets\panel\header\layout.lua` (494 lines)
+### `ARKITEKT\arkitekt\gui\widgets\panel\header\layout.lua` (494 lines)
 > @noindex
 **Classes**: `M`
 **Requires**: `button, config, dropdown, search_input, separator, tab_strip`
@@ -174,7 +174,7 @@ Generated: 2025-11-13 04:53:43
 **Classes**: `M, GUI`
 **Requires**: `color_grid, colors, controller, draw, sheet`
 
-### `ARKITEKT\rearkitekt\gui\widgets\controls\dropdown.lua` (435 lines)
+### `ARKITEKT\arkitekt\gui\widgets\controls\dropdown.lua` (435 lines)
 > @noindex
 **Classes**: `M, Dropdown`
 **Requires**: `style_defaults, tooltip`
@@ -221,7 +221,7 @@ Generated: 2025-11-13 04:53:43
   - `text`
 **Requires**: `colors, grid, micromanage, selection_rectangle, shell`
 
-### `ARKITEKT\rearkitekt\app\overlay.lua` (381 lines)
+### `ARKITEKT\arkitekt\app\overlay.lua` (381 lines)
 > @noindex
 **Classes**: `M`
 **Exports**:
@@ -252,7 +252,7 @@ Generated: 2025-11-13 04:53:43
 **Classes**: `M, Controller`
 **Requires**: `persistence`
 
-### `ARKITEKT\rearkitekt\debug\_console_widget.lua` (364 lines)
+### `ARKITEKT\arkitekt\debug\_console_widget.lua` (364 lines)
 > @noindex
 **Classes**: `M`
 **Requires**: `colored_text_view, colors, config, logger`

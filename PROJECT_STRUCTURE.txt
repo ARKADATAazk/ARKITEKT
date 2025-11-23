@@ -11,7 +11,7 @@ ARKITEKT-Project/
 ├── ARKITEKT/
 │   ├── hub/
 │   │   └── hub.lua (93 lines)
-│   ├── rearkitekt/
+│   ├── arkitekt/
 │   │   ├── app/
 │   │   │   ├── assets/
 │   │   │   │   ├── fonts.lua (74 lines)
@@ -201,9 +201,9 @@ ARKITEKT-Project/
 │   │   │   ├── AArkitekt_default.svg (1 lines)
 │   │   │   ├── ARKITEKT.afdesign (107 lines)
 │   │   │   ├── Mock Transport.afdesign (674 lines)
-│   │   │   ├── rearkitekt.png
-│   │   │   ├── rearkitekt@2.png
-│   │   │   └── rearkitekt@3.png
+│   │   │   ├── arkitekt.png
+│   │   │   ├── arkitekt@2.png
+│   │   │   └── arkitekt@3.png
 │   │   ├── reaper/
 │   │   │   ├── region_operations.lua (617 lines)
 │   │   │   ├── regions.lua (341 lines)

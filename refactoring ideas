@@ -45,9 +45,9 @@ RegionPlaylist/
 Total: ~35 files (down from 116)
 ```
 
-Key changes in `rearkitekt/` library:
+Key changes in `arkitekt/` library:
 ```
-rearkitekt/
+arkitekt/
 ├── core/
 │   └── events.lua             # Generic event bus (NEW)
 ├── patterns/
@@ -369,12 +369,12 @@ ARK_FeatureName/
 - `{feature}_bridge.lua` - Thin REAPER API wrapper (if 80%+ API calls)
 
 **Import Rules:**
-- `domain/` can import: `rearkitekt/core`, `rearkitekt/reaper`, other `domain/`, `state/` (read-only)
+- `domain/` can import: `arkitekt/core`, `arkitekt/reaper`, other `domain/`, `state/` (read-only)
 - `domain/` cannot import: `ui/`
-- `ui/` can import: `domain/` (read-only), `state/`, `rearkitekt/gui`
+- `ui/` can import: `domain/` (read-only), `state/`, `arkitekt/gui`
 - `ui/` cannot import: direct REAPER API calls
 
-**Generic helpers:** Put in `rearkitekt/core/`, not in scripts
+**Generic helpers:** Put in `arkitekt/core/`, not in scripts
 
 ---
 

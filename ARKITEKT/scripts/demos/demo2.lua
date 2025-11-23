@@ -44,13 +44,13 @@ addpath(join(HERE,  "ReArkitekt/?/init.lua"))
 addpath(join(HERE,  "ReArkitekt/?/?.lua"))
 
 -- Libs
-local Shell         = require("rearkitekt.app.runtime.shell")
-local ColorSliders  = require("rearkitekt.gui.widgets.primitives.hue_slider")
-local TilesContainer = require("rearkitekt.gui.widgets.containers.panel")
+local Shell         = require("arkitekt.app.runtime.shell")
+local ColorSliders  = require("arkitekt.gui.widgets.primitives.hue_slider")
+local TilesContainer = require("arkitekt.gui.widgets.containers.panel")
 
 -- Fallback style
-local style_ok, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
-local Colors = require('rearkitekt.core.colors')
+local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 

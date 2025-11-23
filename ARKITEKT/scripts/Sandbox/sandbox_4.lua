@@ -13,10 +13,10 @@ package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. pa
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 local ImGui = require('imgui')('0.10')
-local Shell = require('rearkitekt.app.runtime.shell')
-local Button = require('rearkitekt.gui.widgets.primitives.button')
-local Style = require('rearkitekt.gui.style.defaults')
-local Colors = require('rearkitekt.core.colors')
+local Shell = require('arkitekt.app.runtime.shell')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local Style = require('arkitekt.gui.style.defaults')
+local Colors = require('arkitekt.core.colors')
 
 local hexrgb = Colors.hexrgb
 

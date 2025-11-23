@@ -13,7 +13,7 @@ do
   local src = debug.getinfo(1, "S").source:sub(2)
   local path = src:match("(.*"..sep..")")
   while path and #path > 3 do
-    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
+    local init = path .. "arkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
     local f = io.open(init, "r")
     if f then
       f:close()
@@ -34,21 +34,21 @@ local SRC = debug.getinfo(1,"S").source:sub(2)
 local HERE = ARK.dirname(SRC) or "."
 
 -- Load dependencies
-local Shell = require("rearkitekt.app.runtime.shell")
+local Shell = require("arkitekt.app.runtime.shell")
 local State = require("ColorPalette.app.state")
 local GUI = require("ColorPalette.app.gui")
-local OverlayManager = require("rearkitekt.gui.widgets.overlays.overlay.manager")
+local OverlayManager = require("arkitekt.gui.widgets.overlays.overlay.manager")
 
 -- Load optional style
-local style_ok, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
+local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
 
 -- Initialize cache directory for settings
 local SEP = package.config:sub(1,1)
 local cache_dir = reaper.GetResourcePath() .. SEP .. "Scripts" .. SEP .. "ReArkitekt" .. SEP .. "cache" .. SEP .. "ColorPalette"
 
 -- Initialize settings and state
-local Settings = require('rearkitekt.core.settings')
-local Colors = require('rearkitekt.core.colors')
+local Settings = require('arkitekt.core.settings')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 local settings = Settings.open(cache_dir, 'settings.json')

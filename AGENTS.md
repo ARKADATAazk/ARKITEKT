@@ -9,7 +9,7 @@ This file is a quick-start and pointer, not a duplicate.
 - Language/runtime: **Lua 5.3**.
 - UI: ReaImGui (keep API calls behind view/widgets layers).
 - Module shape: return a table (usually `M`); constructors are typically `new(opts)` or `create(opts)`.
-- Namespaces: prefer `rearkitekt.*` and project app namespaces; **do not** introduce `arkitekt.*`.
+- Namespaces: prefer `arkitekt.*` and project app namespaces; **do not** introduce `arkitekt.*`.
 
 ## Layering & Purity
 - **Pure layers** (no `reaper.*` / no `ImGui` / no IO at import time):
@@ -44,7 +44,7 @@ do
   local src = debug.getinfo(1, "S").source:sub(2)
   local path = src:match("(.*"..sep..")")
   while path and #path > 3 do
-    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
+    local init = path .. "arkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
     local f = io.open(init, "r")
     if f then
       f:close()
@@ -65,7 +65,7 @@ end
 **Note:** Path is `app/init/init.lua` (not `app/init.lua`) since the app/ folder was reorganized.
 
 ### Constants & Defaults
-- Use `rearkitekt.app.init.constants` for all magic numbers
+- Use `arkitekt.app.init.constants` for all magic numbers
 - Framework controls defaults; apps override **only** when truly app-specific
 - **Anti-pattern:** Hardcoding `32` or `0.3` in app code — use `Constants.OVERLAY.CLOSE_BUTTON_SIZE` or `Constants.ANIMATION.FADE_NORMAL`
 
@@ -104,7 +104,7 @@ overlay_mgr:push(OverlayDefaults.create_overlay_config({
 ### Font Loading
 Use centralized loader:
 ```lua
-local Fonts = require('rearkitekt.app.assets.fonts')
+local Fonts = require('arkitekt.app.assets.fonts')
 local fonts = Fonts.load(ImGui, ctx)  -- Uses constants.lua defaults
 -- OR with app-specific sizes:
 local fonts = Fonts.load(ImGui, ctx, { title_size = 24 })
@@ -114,7 +114,7 @@ local fonts = Fonts.load(ImGui, ctx, { title_size = 24 })
 ### Settings Instances
 Use `Settings.new()` to create fresh instances:
 ```lua
-local Settings = require('rearkitekt.core.settings')
+local Settings = require('arkitekt.core.settings')
 local settings = Settings.new(cache_dir, "my_app.json")
 ```
 **Never** assume singleton behavior — each app gets its own instance.
@@ -130,8 +130,8 @@ local settings = Settings.new(cache_dir, "my_app.json")
 1. **AGENTS.md** (this file): Quick rules, patterns, and architecture overview
 2. **Documentation/** folder: Dated refactoring summaries (`YYYY-MM-DD_Description.md`)
 3. **Module README.md**: High-level module documentation in important folders
-   - `rearkitekt/app/README.md` - Framework application layer
-   - `rearkitekt/gui/widgets/foo/README.md` - Complex widget systems
+   - `arkitekt/app/README.md` - Framework application layer
+   - `arkitekt/gui/widgets/foo/README.md` - Complex widget systems
    - `scripts/MyApp/README.md` - Application-specific docs
 
 ### What to Document in README.md:
@@ -143,5 +143,5 @@ local settings = Settings.new(cache_dir, "my_app.json")
 
 ### Example:
 - **Refactoring summaries:** `Documentation/2025-01-19_Framework_Consolidation.md`
-- **Module documentation:** `rearkitekt/app/README.md` (framework bootstrap & runtime)
+- **Module documentation:** `arkitekt/app/README.md` (framework bootstrap & runtime)
 - **Architecture changes:** Update `AGENTS.md` (this file)

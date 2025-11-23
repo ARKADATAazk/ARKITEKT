@@ -3,12 +3,12 @@
 -- Base tile renderer with shared functionality
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
-local Draw = require('rearkitekt.gui.draw')
-local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
-local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
-local Badge = require('rearkitekt.gui.widgets.primitives.badge')
+local Draw = require('arkitekt.gui.draw')
+local TileFX = require('arkitekt.gui.rendering.tile.renderer')
+local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
+local Badge = require('arkitekt.gui.widgets.primitives.badge')
 
 local M = {}
 

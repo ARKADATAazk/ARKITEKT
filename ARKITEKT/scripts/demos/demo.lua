@@ -43,15 +43,15 @@ addpath(join(HERE,  "ReArkitekt/?.lua"))
 addpath(join(HERE,  "ReArkitekt/?/init.lua"))
 addpath(join(HERE,  "ReArkitekt/?/?.lua"))
 
-local Shell          = require("rearkitekt.app.runtime.shell")
-local PackageGrid    = require("rearkitekt.gui.widgets.media.package_tiles.grid")
-local Micromanage    = require("rearkitekt.gui.widgets.media.package_tiles.micromanage")
-local TilesContainer = require("rearkitekt.gui.widgets.containers.panel")
-local SelRect        = require("rearkitekt.gui.widgets.data.selection_rectangle")
+local Shell          = require("arkitekt.app.runtime.shell")
+local PackageGrid    = require("arkitekt.gui.widgets.media.package_tiles.grid")
+local Micromanage    = require("arkitekt.gui.widgets.media.package_tiles.micromanage")
+local TilesContainer = require("arkitekt.gui.widgets.containers.panel")
+local SelRect        = require("arkitekt.gui.widgets.data.selection_rectangle")
 
-local SettingsOK, Settings = pcall(require, "rearkitekt.core.settings")
-local StyleOK,    Style    = pcall(require, "rearkitekt.gui.style.imgui_defaults")
-local Colors = require('rearkitekt.core.colors')
+local SettingsOK, Settings = pcall(require, "arkitekt.core.settings")
+local StyleOK,    Style    = pcall(require, "arkitekt.gui.style.imgui_defaults")
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 

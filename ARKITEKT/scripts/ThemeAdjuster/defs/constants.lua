@@ -2,7 +2,7 @@
 -- ThemeAdjuster/defs/constants.lua
 -- Pure value constants: colors, dimensions, tabs
 
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}

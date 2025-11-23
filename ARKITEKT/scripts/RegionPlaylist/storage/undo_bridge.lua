@@ -5,7 +5,7 @@
 local M = {}
 
 function M.capture_snapshot(playlists, active_playlist_id)
-  local Regions = require('rearkitekt.reaper.regions')
+  local Regions = require('arkitekt.reaper.regions')
 
   local snapshot = {
     playlists = {},
@@ -65,7 +65,7 @@ function M.capture_snapshot(playlists, active_playlist_id)
 end
 
 function M.restore_snapshot(snapshot, region_index)
-  local Regions = require('rearkitekt.reaper.regions')
+  local Regions = require('arkitekt.reaper.regions')
   local restored_playlists = {}
 
   -- Track what was changed for status reporting

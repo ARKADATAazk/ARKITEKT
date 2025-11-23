@@ -172,7 +172,7 @@ function M.create(State, AppConfig, settings)
       local rid = tonumber(item_key:match("pool_(%d+)"))
       if rid then
         -- Rename region directly
-        local Regions = require('rearkitekt.reaper.regions')
+        local Regions = require('arkitekt.reaper.regions')
         Regions.set_region_name(0, rid, new_name)
       else
         -- Rename playlist

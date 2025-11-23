@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Project structure audit completed
-- Prepared for `rearkitekt` → `arkitekt` migration
+- Prepared for `arkitekt` → `arkitekt` migration
 
 ## [0.2.0] - 2025-01-19
 
@@ -55,11 +55,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive documentation
 
 ### Core Components
-- `rearkitekt/core/` - Core services (colors, config, settings, json, uuid, undo)
-- `rearkitekt/gui/widgets/` - Reusable widget library
-- `rearkitekt/gui/fx/` - Animations and effects
-- `rearkitekt/app/` - Application shell and chrome
-- `rearkitekt/themes/` - Theme presets
+- `arkitekt/core/` - Core services (colors, config, settings, json, uuid, undo)
+- `arkitekt/gui/widgets/` - Reusable widget library
+- `arkitekt/gui/fx/` - Animations and effects
+- `arkitekt/app/` - Application shell and chrome
+- `arkitekt/themes/` - Theme presets
 
 ### Infrastructure
 - GitHub Actions CI/CD workflows
@@ -92,7 +92,7 @@ Breaking changes will be clearly marked with `BREAKING:` prefix:
 
 ```
 ### Changed
-- BREAKING: Renamed `rearkitekt` module to `arkitekt` - all require() paths must update
+- BREAKING: Renamed `arkitekt` module to `arkitekt` - all require() paths must update
 ```
 
 ### Upgrade Notes

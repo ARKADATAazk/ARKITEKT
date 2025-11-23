@@ -237,7 +237,7 @@ end
 Create **one merge utility** everyone uses:
 
 ```lua
--- rearkitekt/core/config.lua (NEW FILE)
+-- arkitekt/core/config.lua (NEW FILE)
 local M = {}
 
 -- Shallow merge (for flat configs)

@@ -3,8 +3,8 @@
 -- Factory for creating audio items grid
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
-local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
+local Colors = require('arkitekt.core.colors')
+local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local AudioRenderer = require('ItemPicker.ui.grids.renderers.audio')
 local shared = require('ItemPicker.ui.grids.factories.grid_factory_shared')
 

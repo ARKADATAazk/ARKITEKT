@@ -7,7 +7,7 @@ local max = math.max
 local min = math.min
 
 -- Performance: Cache module to avoid repeated require() lookups in hot functions
-local Transport = require('rearkitekt.reaper.transport')
+local Transport = require('arkitekt.reaper.transport')
 
 local M = {}
 local Playback = {}

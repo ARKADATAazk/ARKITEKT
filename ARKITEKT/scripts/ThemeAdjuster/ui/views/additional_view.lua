@@ -3,18 +3,18 @@
 -- Additional parameters tab - Grid-based tile manager
 
 local ImGui = require 'imgui' '0.10'
-local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
-local Button = require('rearkitekt.gui.widgets.primitives.button')
-local Background = require('rearkitekt.gui.widgets.containers.panel.background')
-local Style = require('rearkitekt.gui.style.defaults')
-local Colors = require('rearkitekt.core.colors')
+local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local Background = require('arkitekt.gui.widgets.containers.panel.background')
+local Style = require('arkitekt.gui.style.defaults')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 local Constants = require('ThemeAdjuster.defs.constants')
 local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
 local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
-local GridBridge = require('rearkitekt.gui.widgets.containers.grid.grid_bridge')
+local GridBridge = require('arkitekt.gui.widgets.containers.grid.grid_bridge')
 local LibraryGridFactory = require('ThemeAdjuster.ui.grids.library_grid_factory')
 local TemplatesGridFactory = require('ThemeAdjuster.ui.grids.templates_grid_factory')
 local AssignmentGridFactory = require('ThemeAdjuster.ui.grids.assignment_grid_factory')
@@ -382,7 +382,7 @@ end
 -- Grid data provider methods
 function AdditionalView:get_library_items()
   -- Use TileGroup to flatten param_groups into a flat list for the Grid
-  local TileGroup = require('rearkitekt.gui.widgets.containers.tile_group')
+  local TileGroup = require('arkitekt.gui.widgets.containers.tile_group')
 
   -- Convert param_groups to TileGroup structures
   local tile_groups = {}
@@ -1085,7 +1085,7 @@ end
 
 -- Get template items for grid
 function AdditionalView:get_template_items()
-  local TileGroup = require('rearkitekt.gui.widgets.containers.tile_group')
+  local TileGroup = require('arkitekt.gui.widgets.containers.tile_group')
 
   -- Build tile groups from template_groups
   local tile_groups = {}

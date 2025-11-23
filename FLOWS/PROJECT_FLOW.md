@@ -6,7 +6,7 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project
 
 ```
 └── ARKITEKT/
-    ├── rearkitekt/
+    ├── arkitekt/
     │   ├── app/
     │   │   ├── chrome/
     │   │   │   └── status_bar/
@@ -210,47 +210,47 @@ Root: D:\Dropbox\REAPER\Scripts\ARKITEKT-Project
 ## Application Entry Points
 
 **`ARKITEKT/ARKITEKT.lua`** (calls Shell.run())
-  → Dependencies: rearkitekt.app.shell, rearkitekt.app.hub, rearkitekt.gui.widgets.package_tiles.grid, rearkitekt.gui.widgets.package_tiles.micromanage, rearkitekt.gui.widgets.panel, ... +1 more
-**`ARKITEKT/rearkitekt/app/runtime.lua`** (uses reaper.defer())
-**`ARKITEKT/rearkitekt/app/shell.lua`** (calls Shell.run())
-  → Dependencies: rearkitekt.app.runtime, rearkitekt.app.window
-**`ARKITEKT/rearkitekt/debug/profiler_init.lua`** (uses reaper.defer())
-  → Dependencies: rearkitekt.dev.profiler_init
+  → Dependencies: arkitekt.app.shell, arkitekt.app.hub, arkitekt.gui.widgets.package_tiles.grid, arkitekt.gui.widgets.package_tiles.micromanage, arkitekt.gui.widgets.panel, ... +1 more
+**`ARKITEKT/arkitekt/app/runtime.lua`** (uses reaper.defer())
+**`ARKITEKT/arkitekt/app/shell.lua`** (calls Shell.run())
+  → Dependencies: arkitekt.app.runtime, arkitekt.app.window
+**`ARKITEKT/arkitekt/debug/profiler_init.lua`** (uses reaper.defer())
+  → Dependencies: arkitekt.dev.profiler_init
 **`ARKITEKT/scripts/ColorPalette/ARK_ColorPalette.lua`** (calls Shell.run())
-  → Dependencies: rearkitekt.app.shell, ColorPalette.app.state, ColorPalette.app.gui, rearkitekt.gui.widgets.overlay.manager, rearkitekt.core.settings
+  → Dependencies: arkitekt.app.shell, ColorPalette.app.state, ColorPalette.app.gui, arkitekt.gui.widgets.overlay.manager, arkitekt.core.settings
 **`ARKITEKT/scripts/demos/demo.lua`** (calls Shell.run())
-  → Dependencies: rearkitekt.app.shell, rearkitekt.gui.widgets.package_tiles.grid, rearkitekt.gui.widgets.package_tiles.micromanage, rearkitekt.gui.widgets.panel, rearkitekt.gui.widgets.selection_rectangle
+  → Dependencies: arkitekt.app.shell, arkitekt.gui.widgets.package_tiles.grid, arkitekt.gui.widgets.package_tiles.micromanage, arkitekt.gui.widgets.panel, arkitekt.gui.widgets.selection_rectangle
 **`ARKITEKT/scripts/demos/demo2.lua`** (calls Shell.run())
-  → Dependencies: rearkitekt.app.shell, rearkitekt.gui.widgets.sliders.hue, rearkitekt.gui.widgets.panel
+  → Dependencies: arkitekt.app.shell, arkitekt.gui.widgets.sliders.hue, arkitekt.gui.widgets.panel
 **`ARKITEKT/scripts/demos/demo3.lua`** (calls Shell.run())
-  → Dependencies: rearkitekt.app.shell, rearkitekt.gui.widgets.displays.status_pad, rearkitekt.app.chrome.status_bar
+  → Dependencies: arkitekt.app.shell, arkitekt.gui.widgets.displays.status_pad, arkitekt.app.chrome.status_bar
 **`ARKITEKT/scripts/demos/demo_modal_overlay.lua`** (calls Shell.run())
-  → Dependencies: rearkitekt.app.shell, rearkitekt.gui.widgets.overlay.sheet, rearkitekt.gui.widgets.chip_list.list, rearkitekt.gui.widgets.overlay.config
+  → Dependencies: arkitekt.app.shell, arkitekt.gui.widgets.overlay.sheet, arkitekt.gui.widgets.chip_list.list, arkitekt.gui.widgets.overlay.config
 **`ARKITEKT/scripts/demos/widget_demo.lua`** (calls Shell.run())
-  → Dependencies: rearkitekt.app.shell, ReArkitekt.gui.widgets.colorblocks, rearkitekt.gui.draw, rearkitekt.gui.fx.effects, ReArkitekt.*
+  → Dependencies: arkitekt.app.shell, ReArkitekt.gui.widgets.colorblocks, arkitekt.gui.draw, arkitekt.gui.fx.effects, ReArkitekt.*
 **`ARKITEKT/scripts/ItemPicker/ARK_ItemPicker.lua`** (calls Shell.run())
-  → Dependencies: rearkitekt.app.runtime, rearkitekt.app.overlay, rearkitekt.app.shell
+  → Dependencies: arkitekt.app.runtime, arkitekt.app.overlay, arkitekt.app.shell
 **`ARKITEKT/scripts/RegionPlaylist/ARK_RegionPlaylist.lua`** (calls Shell.run())
-  → Dependencies: rearkitekt.debug.profiler_init, rearkitekt.app.shell, RegionPlaylist.app.config, RegionPlaylist.app.state, RegionPlaylist.app.gui, ... +2 more
+  → Dependencies: arkitekt.debug.profiler_init, arkitekt.app.shell, RegionPlaylist.app.config, RegionPlaylist.app.state, RegionPlaylist.app.gui, ... +2 more
 **`ARKITEKT/scripts/Sandbox/sandbox_1.lua`** (uses reaper.defer())
   → Dependencies: imgui
 **`ARKITEKT/scripts/Sandbox/sandbox_2.lua`** (calls Shell.run())
-  → Dependencies: rearkitekt.app.shell, rearkitekt.arkit, rearkitekt.debug.console, rearkitekt.debug.logger
+  → Dependencies: arkitekt.app.shell, arkitekt.arkit, arkitekt.debug.console, arkitekt.debug.logger
 **`ARKITEKT/scripts/Sandbox/sandbox_3.lua`** (calls Shell.run())
-  → Dependencies: rearkitekt.app.shell, rearkitekt.arkit, rearkitekt.debug.console, rearkitekt.debug.logger
+  → Dependencies: arkitekt.app.shell, arkitekt.arkit, arkitekt.debug.console, arkitekt.debug.logger
 **`ARKITEKT/scripts/Sandbox/sandbox_4.lua`** (calls Shell.run())
-  → Dependencies: imgui, rearkitekt.app.shell, rearkitekt.gui.widgets.controls.button, rearkitekt.gui.widgets.controls.style_defaults, rearkitekt.core.colors
+  → Dependencies: imgui, arkitekt.app.shell, arkitekt.gui.widgets.controls.button, arkitekt.gui.widgets.controls.style_defaults, arkitekt.core.colors
 
 ## Top 10 Largest Files
 
 1. `ARKITEKT/scripts/RegionPlaylist/app/gui.lua` (919 lines)
-2. `ARKITEKT/rearkitekt/gui/widgets/panel/header/tab_strip.lua` (804 lines)
-3. `ARKITEKT/rearkitekt/app/window.lua` (779 lines)
+2. `ARKITEKT/arkitekt/gui/widgets/panel/header/tab_strip.lua` (804 lines)
+3. `ARKITEKT/arkitekt/app/window.lua` (779 lines)
 4. `ARKITEKT/scripts/RegionPlaylist/app/state.lua` (618 lines)
-5. `ARKITEKT/rearkitekt/gui/widgets/grid/core.lua` (595 lines)
-6. `ARKITEKT/rearkitekt/core/colors.lua` (550 lines)
+5. `ARKITEKT/arkitekt/gui/widgets/grid/core.lua` (595 lines)
+6. `ARKITEKT/arkitekt/core/colors.lua` (550 lines)
 7. `ARKITEKT/scripts/Sandbox/sandbox_4.lua` (519 lines)
-8. `ARKITEKT/rearkitekt/app/titlebar.lua` (508 lines)
+8. `ARKITEKT/arkitekt/app/titlebar.lua` (508 lines)
 9. `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/coordinator.lua` (505 lines)
 10. `ARKITEKT/scripts/demos/demo_modal_overlay.lua` (451 lines)
 
@@ -260,13 +260,13 @@ No cross-feature dependencies detected
 
 ## Dependency Complexity (Top 10)
 
-1. `ARKITEKT/rearkitekt/core/colors.lua`: 0 imports + 29 importers = 29 total
-2. `ARKITEKT/rearkitekt/gui/draw.lua`: 0 imports + 20 importers = 20 total
-3. `ARKITEKT/rearkitekt/gui/widgets/grid/core.lua`: 13 imports + 4 importers = 17 total
-4. `ARKITEKT/rearkitekt/app/shell.lua`: 2 imports + 12 importers = 14 total
+1. `ARKITEKT/arkitekt/core/colors.lua`: 0 imports + 29 importers = 29 total
+2. `ARKITEKT/arkitekt/gui/draw.lua`: 0 imports + 20 importers = 20 total
+3. `ARKITEKT/arkitekt/gui/widgets/grid/core.lua`: 13 imports + 4 importers = 17 total
+4. `ARKITEKT/arkitekt/app/shell.lua`: 2 imports + 12 importers = 14 total
 5. `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/coordinator.lua`: 12 imports + 1 importers = 13 total
 6. `ARKITEKT/scripts/RegionPlaylist/app/gui.lua`: 9 imports + 1 importers = 10 total
-7. `ARKITEKT/rearkitekt/gui/widgets/component/chip.lua`: 4 imports + 5 importers = 9 total
+7. `ARKITEKT/arkitekt/gui/widgets/component/chip.lua`: 4 imports + 5 importers = 9 total
 8. `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/base.lua`: 7 imports + 2 importers = 9 total
-9. `ARKITEKT/rearkitekt/gui/widgets/package_tiles/grid.lua`: 6 imports + 2 importers = 8 total
+9. `ARKITEKT/arkitekt/gui/widgets/package_tiles/grid.lua`: 6 imports + 2 importers = 8 total
 10. `ARKITEKT/scripts/RegionPlaylist/app/state.lua`: 5 imports + 3 importers = 8 total

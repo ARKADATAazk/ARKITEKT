@@ -8,14 +8,14 @@
 
 ## Repo facts (don’t guess)
 - **Project root**: `ARKITEKT/`
-- **Library namespace**: `rearkitekt` (canonical; *do not* use `arkitekt`)
+- **Library namespace**: `arkitekt` (canonical; *do not* use `arkitekt`)
 - **App code**: `ARKITEKT/scripts/<Feature>/...` (e.g., `RegionPlaylist/`)
 - **Runtime**: **Lua 5.3**; modules use `local M = {}; ...; return M`
 - **No runtime**: do **not** run/simulate REAPER / ReaScript / ReaImGui
 
 ## Hard boundaries (non-negotiable)
 - **Path fence**: Only touch files inside the task’s declared roots (`live_root`, `feature_root`, or explicit allowlist).
-- **Require fence**: You may `require('rearkitekt.*')` and `<Feature>.{core,app,engine,storage,views,widgets,components}.*`.
+- **Require fence**: You may `require('arkitekt.*')` and `<Feature>.{core,app,engine,storage,views,widgets,components}.*`.
 - **Purity**: Do **not** add new `reaper.*` or `ImGui.*` in *pure* layers (`core/*`, `storage/persistence.lua`, `selectors.lua`).
 - **No globals**; no side-effects at `require` time.
 - **Docs**: Do **not** edit `.md/.txt/.xml` unless explicitly asked.

@@ -9,7 +9,7 @@ Controller.__index = Controller
 
 package.loaded["RegionPlaylist.core.controller"] = M
 
-local UUID = require("rearkitekt.core.uuid")
+local UUID = require("arkitekt.core.uuid")
 
 function M.new(state_module, settings, undo_manager)
   local ctrl = setmetatable({
@@ -212,7 +212,7 @@ function Controller:rename_item(playlist_id, item_key, new_name)
         return self:rename_playlist(item.playlist_id, new_name)
       else
         -- Rename region in REAPER
-        local Regions = require('rearkitekt.reaper.regions')
+        local Regions = require('arkitekt.reaper.regions')
         local region = Regions.get_region_by_rid(item.rid)
         if region then
           return self:_with_undo(function()
@@ -241,7 +241,7 @@ function Controller:set_playlist_color(id, color)
 end
 
 function Controller:set_region_color(rid, color)
-  local Regions = require('rearkitekt.reaper.regions')
+  local Regions = require('arkitekt.reaper.regions')
 
   reaper.ShowConsoleMsg(string.format("Controller:set_region_color(%d, %08X)\n", rid, color))
 
@@ -261,7 +261,7 @@ function Controller:set_region_color(rid, color)
 end
 
 function Controller:set_region_colors_batch(rids, color)
-  local Regions = require('rearkitekt.reaper.regions')
+  local Regions = require('arkitekt.reaper.regions')
 
   -- Batch update all regions in a single operation
   local count = Regions.set_region_colors_batch(0, rids, color)

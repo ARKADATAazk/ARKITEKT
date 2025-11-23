@@ -3,7 +3,7 @@
 -- Container operations: create, copy, paste, sync
 
 local State = require("MediaContainer.core.app_state")
-local UUID = require("rearkitekt.core.uuid")
+local UUID = require("arkitekt.core.uuid")
 
 local M = {}
 

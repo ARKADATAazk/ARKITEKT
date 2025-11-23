@@ -3,29 +3,29 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "rearkitekt/app/init/init.lua").bootstrap()
+local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/init/init.lua").bootstrap()
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
 -- ============================================================================
-local ProfilerInit = require('rearkitekt.debug.profiler_init')
+local ProfilerInit = require('arkitekt.debug.profiler_init')
 local profiler_enabled = ProfilerInit.init()
 
 -- ============================================================================
 -- LOAD MODULES
 -- ============================================================================
 
-local Shell = require("rearkitekt.app.runtime.shell")
+local Shell = require("arkitekt.app.runtime.shell")
 local Config = require("RegionPlaylist.core.config")
 local State = require("RegionPlaylist.core.app_state")
 local GUI = require("RegionPlaylist.ui.gui")
 local StatusConfig = require("RegionPlaylist.ui.status")
-local Colors = require("rearkitekt.core.colors")
+local Colors = require("arkitekt.core.colors")
 
 local hexrgb = Colors.hexrgb
 
 -- State needs settings for initialization - Shell will auto-create from app_name
-local Settings = require("rearkitekt.core.settings")
+local Settings = require("arkitekt.core.settings")
 local data_dir = ARK.get_data_dir("RegionPlaylist")
 local settings = Settings.new(data_dir, "settings.json")
 

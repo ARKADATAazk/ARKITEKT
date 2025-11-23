@@ -10,7 +10,7 @@ do
   local src = debug.getinfo(1, "S").source:sub(2)
   local path = src:match("(.*"..sep..")")
   while path and #path > 3 do
-    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
+    local init = path .. "arkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
     local f = io.open(init, "r")
     if f then
       f:close()
@@ -29,23 +29,23 @@ end
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
 -- ============================================================================
-local ProfilerInit = require('rearkitekt.debug.profiler_init')
+local ProfilerInit = require('arkitekt.debug.profiler_init')
 local profiler_enabled = ProfilerInit.init()
 
 if profiler_enabled then
   reaper.ShowConsoleMsg("[ItemPicker] ✓ Profiler enabled and initialized\n")
 else
   reaper.ShowConsoleMsg("[ItemPicker] ✗ Profiler disabled or not found\n")
-  reaper.ShowConsoleMsg("[ItemPicker]   To enable: Set PROFILER_ENABLED=true in rearkitekt/app/app_defaults.lua\n")
+  reaper.ShowConsoleMsg("[ItemPicker]   To enable: Set PROFILER_ENABLED=true in arkitekt/app/app_defaults.lua\n")
   reaper.ShowConsoleMsg("[ItemPicker]   Install profiler: ReaPack > Browse > Search 'cfillion Lua profiler'\n")
 end
 
 -- Load required modules
 local ImGui = ARK.ImGui
-local Shell = require('rearkitekt.app.runtime.shell')
-local Fonts = require('rearkitekt.app.assets.fonts')
-local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
-local OverlayDefaults = require('rearkitekt.gui.widgets.overlays.overlay.defaults')
+local Shell = require('arkitekt.app.runtime.shell')
+local Fonts = require('arkitekt.app.assets.fonts')
+local OverlayManager = require('arkitekt.gui.widgets.overlays.overlay.manager')
+local OverlayDefaults = require('arkitekt.gui.widgets.overlays.overlay.defaults')
 
 -- Load new refactored modules
 local Config = require('ItemPicker.core.config')

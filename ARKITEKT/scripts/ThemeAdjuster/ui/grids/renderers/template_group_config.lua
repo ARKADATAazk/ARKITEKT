@@ -3,7 +3,7 @@
 -- Configuration UI for template groups in the templates grid
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}

@@ -3,7 +3,7 @@
 -- Template Browser TreeView module for folder tree rendering
 -- Handles Physical and Virtual folder trees
 
-local TreeView = require('rearkitekt.gui.widgets.navigation.tree_view')
+local TreeView = require('arkitekt.gui.widgets.navigation.tree_view')
 
 local M = {}
 
@@ -552,9 +552,9 @@ function M.draw_physical_tree(ctx, state, config)
 
     -- Context menu renderer (called inline by TreeView)
     render_context_menu = function(ctx_inner, node)
-      local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
-      local Colors = require('rearkitekt.core.colors')
-      local ColorDefs = require('rearkitekt.defs.colors')
+      local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
+      local Colors = require('arkitekt.core.colors')
+      local ColorDefs = require('arkitekt.defs.colors')
 
       if ContextMenu.begin(ctx_inner, "folder_context_menu") then
         -- Build color options from centralized palette
@@ -984,9 +984,9 @@ function M.draw_virtual_tree(ctx, state, config)
     end,
 
     render_context_menu = function(ctx_inner, node)
-      local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
-      local Colors = require('rearkitekt.core.colors')
-      local ColorDefs = require('rearkitekt.defs.colors')
+      local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
+      local Colors = require('arkitekt.core.colors')
+      local ColorDefs = require('arkitekt.defs.colors')
 
       if ContextMenu.begin(ctx_inner, "folder_context_menu") then
         -- Build color options from centralized palette

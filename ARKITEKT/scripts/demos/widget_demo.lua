@@ -50,13 +50,13 @@ addpath(join(PARENT,"?.lua")); addpath(join(PARENT,"?/init.lua"))
 addpath(join(HERE,  "?.lua")); addpath(join(HERE,  "?/init.lua"))
 
 -- Your modules
-local Shell        = require("rearkitekt.app.runtime.shell")
-local Settings     = (function() local ok,m=pcall(require,"rearkitekt.core.settings"); return ok and m or nil end)()
-local okStyle,Style= pcall(require,"rearkitekt.gui.style.imgui_defaults")
+local Shell        = require("arkitekt.app.runtime.shell")
+local Settings     = (function() local ok,m=pcall(require,"arkitekt.core.settings"); return ok and m or nil end)()
+local okStyle,Style= pcall(require,"arkitekt.gui.style.imgui_defaults")
 local ColorBlocks  = require("ReArkitekt.gui.widgets.colorblocks")
-local Draw         = require("rearkitekt.gui.draw")
-local Effects      = require("rearkitekt.gui.rendering.effects")
-local Colors = require('rearkitekt.core.colors')
+local Draw         = require("arkitekt.gui.draw")
+local Effects      = require("arkitekt.gui.rendering.effects")
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 

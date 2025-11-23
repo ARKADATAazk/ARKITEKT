@@ -3,13 +3,13 @@
 -- Right panel view: Template info & tag assignment
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local TemplateOps = require('TemplateBrowser.domain.template_ops')
 local Tags = require('TemplateBrowser.domain.tags')
-local Button = require('rearkitekt.gui.widgets.primitives.button')
-local MarkdownField = require('rearkitekt.gui.widgets.primitives.markdown_field')
-local Chip = require('rearkitekt.gui.widgets.data.chip')
-local ChipList = require('rearkitekt.gui.widgets.data.chip_list')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local MarkdownField = require('arkitekt.gui.widgets.primitives.markdown_field')
+local Chip = require('arkitekt.gui.widgets.data.chip')
+local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local Tooltips = require('TemplateBrowser.core.tooltips')
 local UI = require('TemplateBrowser.ui.ui_constants')
 

@@ -2,7 +2,7 @@
 -- ThemeAdjuster/ui/main_panel.lua
 -- Top-level panel with tab_strip (alternative to Shell menutabs)
 
-local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
+local TilesContainer = require('arkitekt.gui.widgets.containers.panel')
 local Config = require('ThemeAdjuster.core.config')
 
 local M = {}

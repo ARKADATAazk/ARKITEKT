@@ -3,9 +3,9 @@
 -- Renders parameter tiles in Additional tab with controls and link mode selector
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
-local Checkbox = require('rearkitekt.gui.widgets.primitives.checkbox')
-local Spinner = require('rearkitekt.gui.widgets.primitives.spinner')
+local Colors = require('arkitekt.core.colors')
+local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
+local Spinner = require('arkitekt.gui.widgets.primitives.spinner')
 local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
 local hexrgb = Colors.hexrgb
 

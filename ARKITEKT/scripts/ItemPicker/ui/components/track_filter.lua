@@ -3,7 +3,7 @@
 -- Track whitelist filter modal with tile-style TreeView
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 
 local M = {}
 

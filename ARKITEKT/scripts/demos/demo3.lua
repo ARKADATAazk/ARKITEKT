@@ -41,12 +41,12 @@ addpath(join(PARENT,"?.lua")); addpath(join(PARENT,"?/init.lua"))
 addpath(join(HERE,  "?.lua")); addpath(join(HERE,  "?/init.lua"))
 addpath(join(HERE,  "ReArkitekt/?.lua")); addpath(join(HERE, "ReArkitekt/?/init.lua"))
 
-local Shell = require("rearkitekt.app.runtime.shell")
-local StatusPad = require("rearkitekt.gui.widgets.data.status_pad")
-local StatusBar = require("rearkitekt.app.chrome.status_bar.widget")
+local Shell = require("arkitekt.app.runtime.shell")
+local StatusPad = require("arkitekt.gui.widgets.data.status_pad")
+local StatusBar = require("arkitekt.app.chrome.status_bar.widget")
 
-local style_ok, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
-local Colors = require('rearkitekt.core.colors')
+local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 

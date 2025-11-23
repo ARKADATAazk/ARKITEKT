@@ -11,7 +11,7 @@ local ButtonWidgets = require('RegionPlaylist.ui.views.transport.button_widgets'
 local DisplayWidget = require('RegionPlaylist.ui.views.transport.display_widget')
 local CoreConfig = require('RegionPlaylist.core.config')
 local Strings = require('RegionPlaylist.defs.strings')
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -375,7 +375,7 @@ end
 
 -- Helper function to draw shuffle context menu
 function TransportView:draw_shuffle_context_menu(ctx)
-  local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
+  local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
   local bridge = self.state.get_bridge()
   local engine = bridge and bridge.engine
 
@@ -422,7 +422,7 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
       width = 34,
       config = {
         on_draw = function(ctx, dl, x, y, width, height, state)
-          local Button = require('rearkitekt.gui.widgets.primitives.button')
+          local Button = require('arkitekt.gui.widgets.primitives.button')
           local bridge = self.state.get_bridge()
           local engine = bridge and bridge.engine
 

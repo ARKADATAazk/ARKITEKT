@@ -3,7 +3,7 @@
 -- Simple layout view for window mode (like RegionPlaylist)
 
 local ImGui = require 'imgui' '0.10'
-local SeparatorView = require('rearkitekt.gui.widgets.primitives.separator')
+local SeparatorView = require('arkitekt.gui.widgets.primitives.separator')
 
 local max = math.max
 local min = math.min

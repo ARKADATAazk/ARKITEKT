@@ -34,7 +34,7 @@ python svg_to_lua.py icon.svg
 
 # Generate complete Lua module file
 python svg_to_lua.py arkitekt_logo.svg \
-    -o ../ARKITEKT/rearkitekt/app/icon_generated.lua \
+    -o ../ARKITEKT/arkitekt/app/icon_generated.lua \
     -f draw_arkitekt_accurate
 
 # Without coordinate normalization
@@ -57,7 +57,7 @@ python svg_to_lua.py icon.svg --no-normalize
 
 3. **Use in your code**
    ```lua
-   local Icon = require('rearkitekt.app.icon_accurate')
+   local Icon = require('arkitekt.app.icon_accurate')
    Icon.draw_arkitekt_v3(ctx, x, y, size, color)
    ```
 
@@ -128,7 +128,7 @@ Processes all `.lua` files in ARKITEKT directory with dry-run first, then prompt
 
 - Finds `0xRRGGBBAA` hex literals
 - Converts to `hexrgb("#RRGGBB")` or `hexrgb("#RRGGBBAA")`
-- Adds `local Colors = require('rearkitekt.core.colors')` if needed
+- Adds `local Colors = require('arkitekt.core.colors')` if needed
 - Adds `local hexrgb = Colors.hexrgb` local binding
 
 ---

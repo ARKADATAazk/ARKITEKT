@@ -4,8 +4,8 @@
 
 local ImGui = require 'imgui' '0.10'
 local SearchWithMode = require('ItemPicker.ui.components.search_with_mode')
-local Button = require('rearkitekt.gui.widgets.primitives.button')
-local Colors = require('rearkitekt.core.colors')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local Colors = require('arkitekt.core.colors')
 
 local M = {}
 

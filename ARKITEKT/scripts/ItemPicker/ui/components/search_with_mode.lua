@@ -3,8 +3,8 @@
 -- Custom search field with mode selector using dropdown primitive
 
 local ImGui = require 'imgui' '0.10'
-local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
-local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
+local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
+local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
 local Defaults = require('ItemPicker.defs.defaults')
 local Constants = require('ItemPicker.defs.constants')
 

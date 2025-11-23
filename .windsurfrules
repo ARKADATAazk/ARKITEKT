@@ -4,14 +4,14 @@
 
 ## Quick Facts
 - **Language:** Lua 5.3 only
-- **Namespace:** `rearkitekt.*`
+- **Namespace:** `arkitekt.*`
 - **Module pattern:** `local M = {}; return M`
 - **No globals, no side-effects at require time**
 
 ## Layer Boundaries (STRICT)
 **Pure layers** (NO `reaper.*` or `ImGui.*`):
-- `ARKITEKT/rearkitekt/core/*`
-- `ARKITEKT/rearkitekt/storage/persistence.lua`
+- `ARKITEKT/arkitekt/core/*`
+- `ARKITEKT/arkitekt/storage/persistence.lua`
 - `ARKITEKT/scripts/*/core/*`
 - `ARKITEKT/scripts/*/storage/*`
 

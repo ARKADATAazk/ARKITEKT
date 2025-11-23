@@ -2,9 +2,9 @@
 -- RegionPlaylist/defs/constants.lua
 -- Pure value constants: colors, dimensions, timing, modes
 
-local Colors = require('rearkitekt.core.colors')
-local ColorDefs = require('rearkitekt.defs.colors')
-local arkit = require('rearkitekt.arkit')
+local Colors = require('arkitekt.core.colors')
+local ColorDefs = require('arkitekt.defs.colors')
+local arkit = require('arkitekt.arkit')
 local hexrgb = Colors.hexrgb
 local utf8 = arkit.utf8
 

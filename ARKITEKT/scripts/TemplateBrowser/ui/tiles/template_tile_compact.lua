@@ -4,11 +4,11 @@
 -- Inspired by Parameter Library tiles - much smaller vertically, data laid out horizontally
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
-local Draw = require('rearkitekt.gui.draw')
-local Chip = require('rearkitekt.gui.widgets.data.chip')
-local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
-local Badge = require('rearkitekt.gui.widgets.primitives.badge')
+local Colors = require('arkitekt.core.colors')
+local Draw = require('arkitekt.gui.draw')
+local Chip = require('arkitekt.gui.widgets.data.chip')
+local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
+local Badge = require('arkitekt.gui.widgets.primitives.badge')
 
 local M = {}
 local hexrgb = Colors.hexrgb

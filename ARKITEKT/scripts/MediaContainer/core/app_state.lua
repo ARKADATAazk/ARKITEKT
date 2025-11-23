@@ -3,8 +3,8 @@
 -- Single-source-of-truth state management for media containers
 
 local Persistence = require("MediaContainer.storage.persistence")
-local UUID = require("rearkitekt.core.uuid")
-local Colors = require("rearkitekt.core.colors")
+local UUID = require("arkitekt.core.uuid")
+local Colors = require("arkitekt.core.colors")
 
 local M = {}
 

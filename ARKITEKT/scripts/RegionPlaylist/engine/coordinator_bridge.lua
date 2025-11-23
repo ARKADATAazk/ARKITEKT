@@ -7,14 +7,14 @@ local Engine = require("RegionPlaylist.engine.core")
 local Playback = require("RegionPlaylist.engine.playback")
 local RegionState = require("RegionPlaylist.storage.persistence")
 local SequenceExpander = require("RegionPlaylist.core.sequence_expander")
-local Logger = require("rearkitekt.debug.logger")
+local Logger = require("arkitekt.debug.logger")
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
 local min = math.min
 
 -- Performance: Cache module to avoid repeated require() lookups in hot functions
-local Transport = require('rearkitekt.reaper.transport')
+local Transport = require('arkitekt.reaper.transport')
 
 local M = {}
 

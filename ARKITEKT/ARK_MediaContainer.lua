@@ -14,7 +14,7 @@ do
   local src = debug.getinfo(1, "S").source:sub(2)
   local path = src:match("(.*"..sep..")")
   while path and #path > 3 do
-    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
+    local init = path .. "arkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
     local f = io.open(init, "r")
     if f then
       f:close()
@@ -35,9 +35,9 @@ end
 -- ============================================================================
 
 local ImGui = require 'imgui' '0.10'
-local Shell = require("rearkitekt.app.runtime.shell")
+local Shell = require("arkitekt.app.runtime.shell")
 local MediaContainer = require("MediaContainer.init")
-local Colors = require("rearkitekt.core.colors")
+local Colors = require("arkitekt.core.colors")
 
 local hexrgb = Colors.hexrgb
 

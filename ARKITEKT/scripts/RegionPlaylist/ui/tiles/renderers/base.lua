@@ -5,13 +5,13 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Draw = require('rearkitekt.gui.draw')
-local Colors = require('rearkitekt.core.colors')
-local TileFX = require('rearkitekt.gui.rendering.tile.renderer')
-local TileFXConfig = require('rearkitekt.gui.rendering.tile.defaults')
-local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
+local Draw = require('arkitekt.gui.draw')
+local Colors = require('arkitekt.core.colors')
+local TileFX = require('arkitekt.gui.rendering.tile.renderer')
+local TileFXConfig = require('arkitekt.gui.rendering.tile.defaults')
+local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
 local TileUtil = require('RegionPlaylist.core.tile_utilities')
-local Chip = require('rearkitekt.gui.widgets.data.chip')
+local Chip = require('arkitekt.gui.widgets.data.chip')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -207,7 +207,7 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
 
   -- Check if inline editing mode (if grid is provided)
   if grid and rect then
-    local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
+    local GridInput = require('arkitekt.gui.widgets.containers.grid.input')
     -- Use override key if provided, otherwise try to get from grid.key function
     local item_key = item_key_override or (grid.key and grid.key(region)) or region.rid
     local is_editing, edited_text = GridInput.handle_inline_edit_input(grid, ctx, item_key,
@@ -278,7 +278,7 @@ function M.draw_playlist_text(ctx, dl, pos, playlist_data, state, text_alpha, ri
 
   -- Check if inline editing mode (if grid is provided)
   if grid and rect then
-    local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
+    local GridInput = require('arkitekt.gui.widgets.containers.grid.input')
     -- Use override key if provided, otherwise try to get from grid.key function
     local item_key = item_key_override or (grid.key and grid.key(playlist_data)) or playlist_data.id
     -- Use chip color for inline editing if available, otherwise use base_color

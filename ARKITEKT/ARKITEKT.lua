@@ -10,8 +10,8 @@
 --   [nomain] scripts/ItemPicker/**/*.lua
 --   [nomain] scripts/TemplateBrowser/**/*.lua
 --   [nomain] scripts/ThemeAdjuster/**/*.lua
---   [nomain] rearkitekt/**/*.lua
---   [nomain] rearkitekt/**/*.{png,jpg,svg,ttf,json,txt}
+--   [nomain] arkitekt/**/*.lua
+--   [nomain] arkitekt/**/*.{png,jpg,svg,ttf,json,txt}
 
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
@@ -22,7 +22,7 @@ do
   local src = debug.getinfo(1, "S").source:sub(2)
   local path = src:match("(.*"..sep..")")
   while path and #path > 3 do
-    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
+    local init = path .. "arkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
     local f = io.open(init, "r")
     if f then
       f:close()
@@ -41,16 +41,16 @@ end
 local ImGui = ARK.ImGui
 local script_dir = ARK.root_path
 
-local Shell = require("rearkitekt.app.runtime.shell")
+local Shell = require("arkitekt.app.runtime.shell")
 local Hub = require("hub.hub")
-local PackageGrid = require("rearkitekt.gui.widgets.media.package_tiles.grid")
-local Micromanage = require("rearkitekt.gui.widgets.media.package_tiles.micromanage")
-local TilesContainer = require("rearkitekt.gui.widgets.containers.panel")
-local SelRect = require("rearkitekt.gui.widgets.data.selection_rectangle")
+local PackageGrid = require("arkitekt.gui.widgets.media.package_tiles.grid")
+local Micromanage = require("arkitekt.gui.widgets.media.package_tiles.micromanage")
+local TilesContainer = require("arkitekt.gui.widgets.containers.panel")
+local SelRect = require("arkitekt.gui.widgets.data.selection_rectangle")
 
-local SettingsOK, Settings = pcall(require, "rearkitekt.core.settings")
-local StyleOK, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
-local Colors = require('rearkitekt.core.colors')
+local SettingsOK, Settings = pcall(require, "arkitekt.core.settings")
+local StyleOK, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 

@@ -6,17 +6,17 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 -- Import system
-local Shell = require('rearkitekt.app.runtime.shell')
+local Shell = require('arkitekt.app.runtime.shell')
 
 -- Import base controls
-local Button = require('rearkitekt.gui.widgets.primitives.button')
-local SearchInput = require('rearkitekt.gui.widgets.inputs.search_input')
-local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
+local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
 
 -- Import panel system
-local Panel = require('rearkitekt.gui.widgets.containers.panel')
-local Config = require('rearkitekt.gui.widgets.containers.panel.defaults')
-local Colors = require('rearkitekt.core.colors')
+local Panel = require('arkitekt.gui.widgets.containers.panel')
+local Config = require('arkitekt.gui.widgets.containers.panel.defaults')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 

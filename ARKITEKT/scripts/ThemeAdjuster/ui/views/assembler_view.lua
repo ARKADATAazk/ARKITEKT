@@ -3,14 +3,14 @@
 -- Assembler tab with Panel + package grid
 
 local ImGui = require 'imgui' '0.10'
-local TilesContainer = require('rearkitekt.gui.widgets.containers.panel')
-local PackageTilesGrid = require('rearkitekt.gui.widgets.media.package_tiles.grid')
+local TilesContainer = require('arkitekt.gui.widgets.containers.panel')
+local PackageTilesGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
 local PackageManager = require('ThemeAdjuster.packages.manager')
 local Config = require('ThemeAdjuster.core.config')
 local Theme = require('ThemeAdjuster.core.theme')
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local PackageModal = require('ThemeAdjuster.ui.views.package_modal')
-local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
+local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -647,7 +647,7 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
       ImGui.SetCursorPosX(ctx, cursor_x)
       local screen_x, screen_y = ImGui.GetCursorScreenPos(ctx)
 
-      -- Draw dropdown using rearkitekt widget
+      -- Draw dropdown using arkitekt widget
       local dropdown_width = 220
       local dropdown_height = 20
       local _, changed = Dropdown.draw(ctx, dl, screen_x, screen_y, dropdown_width, dropdown_height, {

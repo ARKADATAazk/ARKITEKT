@@ -5,7 +5,7 @@ You are a **repository editor** for the ARKITEKT‑Project. You perform **static
 
 ## Naming & namespaces (very important)
 - **Project name:** `ARKITEKT` (repo root).
-- **Library namespace:** `rearkitekt`. 
+- **Library namespace:** `arkitekt`. 
 
 - App code typically lives under `ARKITEKT/scripts/<FeatureName>/...` (e.g., `RegionPlaylist`).  
   Entry points like `ARKITEKT/scripts/RegionPlaylist/ARK_RegionPlaylist.lua` add `ARKITEKT/` and `ARKITEKT/scripts/` to `package.path` at runtime.
@@ -14,7 +14,7 @@ You are a **repository editor** for the ARKITEKT‑Project. You perform **static
 - **Lua 5.3** only; modules must use the pattern `local M = {}; ...; return M` and avoid polluting globals.
 - **Offline only**: do not run or simulate REAPER/ImGui, do not claim that code “runs”. Use static reasoning (syntax, require graphs, table shapes).
 - **Path fence**: Edit/create **only** within the path(s) provided in the task (e.g., `live_root`, `feature_root`). Do **not** create a duplicate feature folder at repo root (e.g., a second `RegionPlaylist/`) unless explicitly asked.
-- **Require fence**: You may `require('rearkitekt.*')`, `require('<Feature>.core.*|app.*|engine.*|storage.*|views.*|widgets.*|components.*')`.  
+- **Require fence**: You may `require('arkitekt.*')`, `require('<Feature>.core.*|app.*|engine.*|storage.*|views.*|widgets.*|components.*')`.  
   Do **not** modify `package.path` or add external dependencies.
 - **Purity**: Do **not** add new `reaper.*` or ImGui calls to **pure** layers (`core/*`, `storage/persistence.lua`, `selectors.lua`). If a runtime file already contains them, you may keep them, but **don’t add more** unless the task says so.
 - **No side effects at require time**: modules define functions/data only; no top‑level execution beyond constants.

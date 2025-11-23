@@ -10,15 +10,15 @@
 ### ✅ **Universal Path Resolution**
 - Replaced fragile hardcoded path climbing (`../../../`) with automatic root detection
 - Scripts now work regardless of folder hierarchy depth
-- Scans upward for `rearkitekt/app/shell.lua` as anchor point
+- Scans upward for `arkitekt/app/shell.lua` as anchor point
 
 ### ✅ **Bootstrap Duplication Elimination**
-- Created `rearkitekt/app/init.lua` to centralize bootstrap logic
+- Created `arkitekt/app/init.lua` to centralize bootstrap logic
 - Reduced entry point bootstrap code from 20 lines to 3 lines
 - Eliminated ~140 lines of duplicated initialization code
 
 ### ✅ **Configuration Consolidation**
-- Created `rearkitekt/app/constants.lua` as single source of truth
+- Created `arkitekt/app/constants.lua` as single source of truth
 - Centralized all magic numbers: overlays, animations, typography, chrome
 - Framework now controls design consistency
 
@@ -29,7 +29,7 @@
 - Eliminated ~190 lines of duplicated overlay configuration
 
 ### ✅ **Font Loading Centralization**
-- Created `rearkitekt/app/fonts.lua` module
+- Created `arkitekt/app/fonts.lua` module
 - Eliminated ~105 lines of duplicated font loading code
 - Font sizes now controlled by constants.lua by default
 - Apps can override sizes when needed (e.g., ItemPicker's larger title)
@@ -64,7 +64,7 @@
 
 ### Created Files
 
-#### **`ARKITEKT/rearkitekt/app/init.lua`** (NEW - 35 lines)
+#### **`ARKITEKT/arkitekt/app/init.lua`** (NEW - 35 lines)
 **Purpose:** Eliminates bootstrap finder duplication across entry points
 
 ```lua
@@ -75,10 +75,10 @@ function M.bootstrap()
   local src = debug.getinfo(2, "S").source:sub(2)
   local dir = src:match("(.*"..sep..")")
 
-  -- Scan upward for rearkitekt/app/bootstrap.lua
+  -- Scan upward for arkitekt/app/bootstrap.lua
   local path = dir
   while path and #path > 3 do
-    local bootstrap = path .. "rearkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
+    local bootstrap = path .. "arkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
     local f = io.open(bootstrap, "r")
     if f then
       f:close()
@@ -101,7 +101,7 @@ return M
 
 ---
 
-#### **`ARKITEKT/rearkitekt/app/constants.lua`** (NEW - 126 lines)
+#### **`ARKITEKT/arkitekt/app/constants.lua`** (NEW - 126 lines)
 **Purpose:** Single source of truth for framework constants
 
 ```lua
@@ -158,11 +158,11 @@ return M
 
 ---
 
-#### **`ARKITEKT/rearkitekt/app/fonts.lua`** (NEW - 75 lines)
+#### **`ARKITEKT/arkitekt/app/fonts.lua`** (NEW - 75 lines)
 **Purpose:** Centralized font loading with framework defaults
 
 ```lua
-local Constants = require('rearkitekt.app.constants')
+local Constants = require('arkitekt.app.constants')
 local M = {}
 
 ---Load standard ARKITEKT fonts and attach to ImGui context
@@ -195,7 +195,7 @@ return M
 
 ### Enhanced Files
 
-#### **`ARKITEKT/rearkitekt/gui/widgets/overlays/overlay/defaults.lua`**
+#### **`ARKITEKT/arkitekt/gui/widgets/overlays/overlay/defaults.lua`**
 **Added:** `create_overlay_config()` factory function
 
 ```lua
@@ -235,7 +235,7 @@ end
 
 ---
 
-#### **`ARKITEKT/rearkitekt/core/settings.lua`**
+#### **`ARKITEKT/arkitekt/core/settings.lua`**
 **Fixed:** Singleton anti-pattern
 
 **Before:**
@@ -286,7 +286,7 @@ local function find_root()
 
   local path = dir
   while path and #path > 3 do
-    local bootstrap = path .. "rearkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
+    local bootstrap = path .. "arkitekt" .. sep .. "app" .. sep .. "bootstrap.lua"
     local f = io.open(bootstrap, "r")
     if f then
       f:close()
@@ -305,7 +305,7 @@ if not ARK then return end
 
 **After (3 lines):**
 ```lua
-local Init = require('rearkitekt.app.init')
+local Init = require('arkitekt.app.init')
 local ARK = Init.bootstrap()
 if not ARK then return end
 ```
@@ -371,7 +371,7 @@ local function load_fonts(ctx)
   local src = debug.getinfo(1, 'S').source:sub(2)
   local this_dir = src:match('(.*'..SEP..')') or ('.'..SEP)
   local parent = this_dir:match('^(.*'..SEP..')[^'..SEP..']*'..SEP..'$') or this_dir
-  local fontsdir = parent .. 'rearkitekt' .. SEP .. 'fonts' .. SEP
+  local fontsdir = parent .. 'arkitekt' .. SEP .. 'fonts' .. SEP
 
   local regular = fontsdir .. 'Inter_18pt-Regular.ttf'
   local bold = fontsdir .. 'Inter_18pt-SemiBold.ttf'
@@ -445,7 +445,7 @@ Entry Point B
 
 ### After (Centralized)
 ```
-rearkitekt/app/
+arkitekt/app/
 ├─ init.lua ─────────► Bootstrap (35 lines, used by all)
 ├─ constants.lua ────► Constants (126 lines, used by all)
 ├─ fonts.lua ────────► Font loading (75 lines, used by all)
@@ -465,13 +465,13 @@ Reduction: 700 lines → 313 lines (~55% reduction)
 ### 1. Bootstrap Pattern
 ```lua
 -- Every entry point now uses this 3-line pattern:
-local Init = require('rearkitekt.app.init')
+local Init = require('arkitekt.app.init')
 local ARK = Init.bootstrap()
 if not ARK then return end
 
 -- ARK now contains all framework utilities
 local ImGui = ARK.ImGui
-local Runtime = require('rearkitekt.app.runtime')
+local Runtime = require('arkitekt.app.runtime')
 ```
 
 ### 2. Overlay Configuration
@@ -503,7 +503,7 @@ overlay_mgr:push(OverlayDefaults.create_overlay_config({
 
 **Using Framework Defaults:**
 ```lua
-local Fonts = require('rearkitekt.app.fonts')
+local Fonts = require('arkitekt.app.fonts')
 local fonts = Fonts.load(ImGui, ctx)
 -- fonts.default, fonts.title, fonts.monospace
 -- sizes from constants.lua: BODY=13, HEADING=20, CODE=12
@@ -520,7 +520,7 @@ local fonts = Fonts.load(ImGui, ctx, {
 ### 4. Using Constants
 
 ```lua
-local Constants = require('rearkitekt.app.constants')
+local Constants = require('arkitekt.app.constants')
 
 -- Typography
 local body_size = Constants.TYPOGRAPHY.BODY  -- 13
@@ -542,23 +542,23 @@ local padding = Constants.OVERLAY.CONTENT_PADDING  -- 24
 ### Issue 1: Fragile Path Resolution
 **Problem:** Scripts moved from `scripts/RegionPlaylist/` to `ARKITEKT/` (3 levels up), breaking hardcoded `../../../` path climbing.
 
-**Solution:** Universal root detection that scans upward for anchor file (`rearkitekt/app/shell.lua`).
+**Solution:** Universal root detection that scans upward for anchor file (`arkitekt/app/shell.lua`).
 
 **Result:** Scripts work at any folder depth.
 
 ---
 
 ### Issue 2: Module Path Duplication
-**Problem:** `package.path` included `rearkitekt/` but modules already used full paths like `require('rearkitekt.debug.profiler_init')`, causing duplicate prefix.
+**Problem:** `package.path` included `arkitekt/` but modules already used full paths like `require('arkitekt.debug.profiler_init')`, causing duplicate prefix.
 
-**Solution:** Removed extra `rearkitekt/` from package.path entries in bootstrap.lua.
+**Solution:** Removed extra `arkitekt/` from package.path entries in bootstrap.lua.
 
 **Result:** Modules load correctly without path duplication.
 
 ---
 
 ### Issue 3: ReaPack Data Path
-**Problem:** `[data]` directive moved fonts to `Data/rearkitekt/fonts/` instead of preserving `Scripts/ARKITEKT/rearkitekt/fonts/`.
+**Problem:** `[data]` directive moved fonts to `Data/arkitekt/fonts/` instead of preserving `Scripts/ARKITEKT/arkitekt/fonts/`.
 
 **Solution:** Changed to `[nomain]` directive to preserve directory structure.
 
@@ -587,14 +587,14 @@ local padding = Constants.OVERLAY.CONTENT_PADDING  -- 24
 - ✅ `ARKITEKT/scripts/ItemPicker/ARK_ItemPicker_Simple.lua`
 
 ### Framework Modules
-- ✅ `ARKITEKT/rearkitekt/app/bootstrap.lua` (path fixes)
-- ✅ `ARKITEKT/rearkitekt/core/settings.lua` (singleton fix)
-- ✅ `ARKITEKT/rearkitekt/gui/widgets/overlays/overlay/defaults.lua` (helper added)
+- ✅ `ARKITEKT/arkitekt/app/bootstrap.lua` (path fixes)
+- ✅ `ARKITEKT/arkitekt/core/settings.lua` (singleton fix)
+- ✅ `ARKITEKT/arkitekt/gui/widgets/overlays/overlay/defaults.lua` (helper added)
 
 ### New Framework Modules
-- 🆕 `ARKITEKT/rearkitekt/app/init.lua`
-- 🆕 `ARKITEKT/rearkitekt/app/constants.lua`
-- 🆕 `ARKITEKT/rearkitekt/app/fonts.lua`
+- 🆕 `ARKITEKT/arkitekt/app/init.lua`
+- 🆕 `ARKITEKT/arkitekt/app/constants.lua`
+- 🆕 `ARKITEKT/arkitekt/app/fonts.lua`
 
 ---
 

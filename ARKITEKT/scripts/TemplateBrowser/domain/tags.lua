@@ -2,7 +2,7 @@
 -- TemplateBrowser/domain/tags.lua
 -- Tag management
 
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 
 local M = {}
 

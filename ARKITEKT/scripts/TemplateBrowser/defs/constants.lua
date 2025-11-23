@@ -2,8 +2,8 @@
 -- TemplateBrowser/defs/constants.lua
 -- Pure value constants: colors, dimensions
 
-local Colors = require('rearkitekt.core.colors')
-local ColorDefs = require('rearkitekt.defs.colors')
+local Colors = require('arkitekt.core.colors')
+local ColorDefs = require('arkitekt.defs.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}

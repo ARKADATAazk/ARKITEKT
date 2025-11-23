@@ -12,16 +12,16 @@ local arkitekt_path = root_path .. "ARKITEKT/"
 package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. package.path
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
-local Shell = require('rearkitekt.app.runtime.shell')
-local Arkit = require('rearkitekt.arkit')
-local Console = require('rearkitekt.debug.console')
-local Logger = require('rearkitekt.debug.logger')
+local Shell = require('arkitekt.app.runtime.shell')
+local Arkit = require('arkitekt.arkit')
+local Console = require('arkitekt.debug.console')
+local Logger = require('arkitekt.debug.logger')
 
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
-local StyleOK, Style = pcall(require, 'rearkitekt.gui.style.imgui_defaults')
-local Colors = require('rearkitekt.core.colors')
+local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
+local Colors = require('arkitekt.core.colors')
 
 local console = Console.new()
 

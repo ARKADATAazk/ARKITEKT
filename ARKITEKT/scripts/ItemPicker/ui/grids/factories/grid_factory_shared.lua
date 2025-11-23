@@ -3,7 +3,7 @@
 -- Extracts common filtering, sorting, and conversion logic
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local pool_utils = require('ItemPicker.services.pool_utils')
 
 local M = {}

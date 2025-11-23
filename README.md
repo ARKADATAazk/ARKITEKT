@@ -1,7 +1,7 @@
 # ARKITEKT
 
 **A REAPER toolkit for general use with emphasis on music design, scoring and game audio.**  
-Specialized workflow scripts (e.g., Region Playlist, Theme Adjuster) + a reusable **ReaImGui** components library called **rearkitekt** with a flexible **theme system**.
+Specialized workflow scripts (e.g., Region Playlist, Theme Adjuster) + a reusable **ReaImGui** components library called **arkitekt** with a flexible **theme system**.
 
 Developed by **Pierre "ARKADATA" Daunis**.
 
@@ -25,7 +25,7 @@ https://raw.githubusercontent.com/ARKADATAazk/ARKITEKT/main/index.xml
 
 - **Scripts**  
   Scripts focused on real workflows (e.g., *Region Playlist*, *Color Palette*, theme utilities).
-- **ReaImGui Widgets (rearkitekt library)**  
+- **ReaImGui Widgets (arkitekt library)**  
   A modular UI kit (chips, pads, grids, tiles, status bars, etc.) used across apps.
 - **Theme System**  
   Centralized colors/skins with presets and per-app overrides for consistent styling.
@@ -46,7 +46,7 @@ https://raw.githubusercontent.com/ARKADATAazk/ARKITEKT/main/index.xml
 ## Repository Structure
 
 - `scripts/` – end-user applications (e.g., `RegionPlaylist/`, `ColorPalette/`, `ThemeAdjuster/`)  
-- `rearkitekt/` – shared ReaImGui components, widgets, utilities, and helpers  
+- `arkitekt/` – shared ReaImGui components, widgets, utilities, and helpers  
 
 
 Packaging follows ReaPack conventions. See the **Packaging Documentation** on the reapack-index wiki for metadata headers and versioning.

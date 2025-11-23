@@ -3,9 +3,9 @@
 -- Sequence-driven state management for region playlist engine
 -- MODIFIED: Integrated Logger for debug output
 
-local Regions = require('rearkitekt.reaper.regions')
-local Transport = require('rearkitekt.reaper.transport')
-local Logger = require('rearkitekt.debug.logger')
+local Regions = require('arkitekt.reaper.regions')
+local Transport = require('arkitekt.reaper.transport')
+local Logger = require('arkitekt.debug.logger')
 
 local M = {}
 local State = {}

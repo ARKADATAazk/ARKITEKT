@@ -12,7 +12,7 @@ local EnvelopeView = require("ThemeAdjuster.ui.views.envelope_view")
 local ColorsView = require("ThemeAdjuster.ui.views.colors_view")
 local AdditionalView = require("ThemeAdjuster.ui.views.additional_view")
 local DebugView = require("ThemeAdjuster.ui.views.debug_view")
-local Renderer = require("rearkitekt.gui.widgets.media.package_tiles.renderer")
+local Renderer = require("arkitekt.gui.widgets.media.package_tiles.renderer")
 
 local M = {}
 local TabContent = {}

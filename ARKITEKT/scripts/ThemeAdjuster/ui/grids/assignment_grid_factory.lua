@@ -2,9 +2,9 @@
 -- ThemeAdjuster/ui/grids/assignment_grid_factory.lua
 -- Assignment grid factory (for TCP, MCP, ENV, TRANS, GLOBAL tabs)
 
-local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
+local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local AssignmentTile = require('ThemeAdjuster.ui.grids.renderers.assignment_tile')
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}

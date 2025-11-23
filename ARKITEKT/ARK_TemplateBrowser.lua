@@ -5,16 +5,16 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "rearkitekt/app/init/init.lua").bootstrap()
+local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/init/init.lua").bootstrap()
 
 -- Load required modules
 local ImGui = ARK.ImGui
-local Shell = require('rearkitekt.app.runtime.shell')
-local Fonts = require('rearkitekt.app.assets.fonts')
-local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
-local OverlayDefaults = require('rearkitekt.gui.widgets.overlays.overlay.defaults')
-local ImGuiStyle = require('rearkitekt.gui.style.imgui_defaults')
-local Colors = require('rearkitekt.core.colors')
+local Shell = require('arkitekt.app.runtime.shell')
+local Fonts = require('arkitekt.app.assets.fonts')
+local OverlayManager = require('arkitekt.gui.widgets.overlays.overlay.manager')
+local OverlayDefaults = require('arkitekt.gui.widgets.overlays.overlay.defaults')
+local ImGuiStyle = require('arkitekt.gui.style.imgui_defaults')
+local Colors = require('arkitekt.core.colors')
 
 -- Load TemplateBrowser modules
 local Config = require('TemplateBrowser.core.config')

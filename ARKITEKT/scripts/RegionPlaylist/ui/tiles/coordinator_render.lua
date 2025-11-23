@@ -5,17 +5,17 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Dnd = require('rearkitekt.gui.fx.interactions.dnd')
+local Dnd = require('arkitekt.gui.fx.interactions.dnd')
 local DragIndicator = Dnd.DragIndicator
 local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
 local PoolTile = require('RegionPlaylist.ui.tiles.renderers.pool')
-local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')
+local ResponsiveGrid = require('arkitekt.gui.systems.responsive_grid')
 local State = require('RegionPlaylist.core.app_state')
-local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
+local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local SWSImporter = require('RegionPlaylist.storage.sws_importer')
-local ModalDialog = require('rearkitekt.gui.widgets.overlays.overlay.modal_dialog')
-local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
-local ColorPickerMenu = require('rearkitekt.gui.widgets.menus.color_picker_menu')
+local ModalDialog = require('arkitekt.gui.widgets.overlays.overlay.modal_dialog')
+local BatchRenameModal = require('arkitekt.gui.widgets.overlays.batch_rename_modal')
+local ColorPickerMenu = require('arkitekt.gui.widgets.menus.color_picker_menu')
 local Persistence = require('RegionPlaylist.storage.persistence')
 
 local M = {}
@@ -192,7 +192,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
       local playlist = State.get_active_playlist()
       local playlist_items = extract_playlist_region_items(playlist)
       if #playlist_items > 0 then
-        local RegionOps = require('rearkitekt.reaper.region_operations')
+        local RegionOps = require('arkitekt.reaper.region_operations')
         RegionOps.crop_to_playlist(playlist_items)
       end
       ImGui.CloseCurrentPopup(ctx)
@@ -202,7 +202,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
       local playlist = State.get_active_playlist()
       local playlist_items = extract_playlist_region_items(playlist)
       if #playlist_items > 0 then
-        local RegionOps = require('rearkitekt.reaper.region_operations')
+        local RegionOps = require('arkitekt.reaper.region_operations')
         RegionOps.crop_to_playlist_new_tab(playlist_items, playlist.name, playlist.chip_color)
       end
       ImGui.CloseCurrentPopup(ctx)
@@ -212,7 +212,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
       local playlist = State.get_active_playlist()
       local playlist_items = extract_playlist_region_items(playlist)
       if #playlist_items > 0 then
-        local RegionOps = require('rearkitekt.reaper.region_operations')
+        local RegionOps = require('arkitekt.reaper.region_operations')
         RegionOps.append_playlist_to_project(playlist_items)
       end
       ImGui.CloseCurrentPopup(ctx)
@@ -222,7 +222,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
       local playlist = State.get_active_playlist()
       local playlist_items = extract_playlist_region_items(playlist)
       if #playlist_items > 0 then
-        local RegionOps = require('rearkitekt.reaper.region_operations')
+        local RegionOps = require('arkitekt.reaper.region_operations')
         RegionOps.paste_playlist_at_cursor(playlist_items)
       end
       ImGui.CloseCurrentPopup(ctx)
@@ -336,7 +336,7 @@ function M.draw_pool(self, ctx, regions, height)
     if ContextMenu.item(ctx, "Append Selected Regions to Project") then
       local rids = extract_pool_selection(self.pool_grid and self.pool_grid.selection)
       if #rids > 0 then
-        local RegionOps = require('rearkitekt.reaper.region_operations')
+        local RegionOps = require('arkitekt.reaper.region_operations')
         RegionOps.append_regions_to_project(rids)
       end
       ImGui.CloseCurrentPopup(ctx)
@@ -345,7 +345,7 @@ function M.draw_pool(self, ctx, regions, height)
     if ContextMenu.item(ctx, "Paste Selected Regions at Edit Cursor") then
       local rids = extract_pool_selection(self.pool_grid and self.pool_grid.selection)
       if #rids > 0 then
-        local RegionOps = require('rearkitekt.reaper.region_operations')
+        local RegionOps = require('arkitekt.reaper.region_operations')
         RegionOps.paste_regions_at_cursor(rids)
       end
       ImGui.CloseCurrentPopup(ctx)

@@ -3,13 +3,13 @@
 -- ItemPicker as a persistent window with TilesContainer panels (like RegionPlaylist)
 
 -- Bootstrap ARKITEKT framework
-local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "rearkitekt/app/init/init.lua").bootstrap()
+local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/init/init.lua").bootstrap()
 if not ARK then return end
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
 -- ============================================================================
-local ProfilerInit = require('rearkitekt.debug.profiler_init')
+local ProfilerInit = require('arkitekt.debug.profiler_init')
 local profiler_enabled = ProfilerInit.init()
 
 if profiler_enabled then
@@ -17,9 +17,9 @@ if profiler_enabled then
 end
 
 -- Load required modules
-local Shell = require('rearkitekt.app.runtime.shell')
-local Colors = require('rearkitekt.core.colors')
-local Settings = require('rearkitekt.core.settings')
+local Shell = require('arkitekt.app.runtime.shell')
+local Colors = require('arkitekt.core.colors')
+local Settings = require('arkitekt.core.settings')
 
 local hexrgb = Colors.hexrgb
 

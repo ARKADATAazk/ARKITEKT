@@ -4,11 +4,11 @@
 
 local ImGui = require 'imgui' '0.10'
 local FileOps = require('TemplateBrowser.domain.file_ops')
-local Button = require('rearkitekt.gui.widgets.primitives.button')
-local Fields = require('rearkitekt.gui.widgets.primitives.fields')
-local Chip = require('rearkitekt.gui.widgets.data.chip')
-local Colors = require('rearkitekt.core.colors')
-local ColorDefs = require('rearkitekt.defs.colors')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local Fields = require('arkitekt.gui.widgets.primitives.fields')
+local Chip = require('arkitekt.gui.widgets.data.chip')
+local Colors = require('arkitekt.core.colors')
+local ColorDefs = require('arkitekt.defs.colors')
 local UI = require('TemplateBrowser.ui.ui_constants')
 
 local M = {}

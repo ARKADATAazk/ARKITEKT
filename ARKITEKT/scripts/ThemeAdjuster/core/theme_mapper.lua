@@ -3,7 +3,7 @@
 -- JSON-based theme parameter mappings
 
 local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
-local JSON = require('rearkitekt.core.json')
+local JSON = require('arkitekt.core.json')
 
 local M = {}
 
@@ -33,7 +33,7 @@ local function load_json(path)
     return nil
   end
 
-  -- Decode JSON using rearkitekt JSON library
+  -- Decode JSON using arkitekt JSON library
   local decoded = JSON.decode(content)
   return decoded
 end

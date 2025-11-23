@@ -6,8 +6,8 @@
 **Reason:** YAGNI - Only RegionPlaylist uses these files
 
 **Deleted from library:**
-- `ARKITEKT/rearkitekt/gui/widgets/transport/transport_container.lua`
-- `ARKITEKT/rearkitekt/gui/widgets/transport/transport_fx.lua`
+- `ARKITEKT/arkitekt/gui/widgets/transport/transport_container.lua`
+- `ARKITEKT/arkitekt/gui/widgets/transport/transport_fx.lua`
 
 **Moved to project:**
 - `ARKITEKT/scripts/RegionPlaylist/ui/views/transport/transport_container.lua`
@@ -146,7 +146,7 @@ RegionPlaylist/ui/
 
 **Old imports in gui.lua:**
 ```lua
-local TransportContainer = require("rearkitekt.gui.widgets.transport.transport_container")
+local TransportContainer = require("arkitekt.gui.widgets.transport.transport_container")
 ```
 
 **New imports in gui.lua:**

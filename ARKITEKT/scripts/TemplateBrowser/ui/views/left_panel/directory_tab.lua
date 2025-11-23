@@ -3,10 +3,10 @@
 -- Directory tab: Folder tree + folder creation + tags mini-list
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local Tags = require('TemplateBrowser.domain.tags')
-local Button = require('rearkitekt.gui.widgets.primitives.button')
-local Chip = require('rearkitekt.gui.widgets.data.chip')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local Chip = require('arkitekt.gui.widgets.data.chip')
 local FileOps = require('TemplateBrowser.domain.file_ops')
 local TreeViewModule = require('TemplateBrowser.ui.views.tree_view')
 local Helpers = require('TemplateBrowser.ui.views.helpers')

@@ -2,9 +2,9 @@
 -- RegionPlaylist/ui/tiles/pool_grid_factory.lua
 -- UNCHANGED
 
-local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
+local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local PoolTile = require('RegionPlaylist.ui.tiles.renderers.pool')
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 
@@ -95,7 +95,7 @@ local function create_behaviors(rt)
     
     -- Inline editing: Double-click to edit single tile
     start_inline_edit = function(grid, key)
-      local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
+      local GridInput = require('arkitekt.gui.widgets.containers.grid.input')
       local pool_items = rt.pool_grid.get_items()
       for _, item in ipairs(pool_items) do
         if rt.pool_grid.key(item) == key then
@@ -160,7 +160,7 @@ local function create_behaviors(rt)
 
       -- Single selection: start inline editing
       if #selected_keys == 1 then
-        local GridInput = require('rearkitekt.gui.widgets.containers.grid.input')
+        local GridInput = require('arkitekt.gui.widgets.containers.grid.input')
         local key = selected_keys[1]
         local pool_items = rt.pool_grid.get_items()
         for _, item in ipairs(pool_items) do
@@ -182,7 +182,7 @@ local function create_behaviors(rt)
         end
       else
         -- Multiple selection: open batch rename modal
-        local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
+        local BatchRenameModal = require('arkitekt.gui.widgets.overlays.batch_rename_modal')
         BatchRenameModal.open(#selected_keys, function(pattern)
           if rt.on_pool_batch_rename then
             rt.on_pool_batch_rename(selected_keys, pattern)

@@ -6,8 +6,8 @@
 
 ## Core Architecture
 
-### Library ([ARKITEKT/rearkitekt/](cci:7://file:///d:/Dropbox/REAPER/Scripts/ARKITEKT-Project/ARKITEKT/rearkitekt:0:0-0:0))
-rearkitekt/ 
+### Library ([ARKITEKT/arkitekt/](cci:7://file:///d:/Dropbox/REAPER/Scripts/ARKITEKT-Project/ARKITEKT/arkitekt:0:0-0:0))
+arkitekt/ 
 ├── core/ # Pure logic (no REAPER/ImGui) 
 ├── storage/ # Persistence layer 
 ├── views/ # View composition 
@@ -28,17 +28,17 @@ Each feature follows:
 ## Key Modules (by concern)
 
 ### State Management
-- `rearkitekt/core/state.lua` - Core state utilities
+- `arkitekt/core/state.lua` - Core state utilities
 - `<Feature>/core/state.lua` - Feature state
 
 ### UI Rendering
-- `rearkitekt/widgets/*` - Primitive widgets
-- `rearkitekt/views/*` - Composed views
+- `arkitekt/widgets/*` - Primitive widgets
+- `arkitekt/views/*` - Composed views
 - `<Feature>/views/*` - Feature views
 
 ### Theme System
-- `rearkitekt/core/theme.lua` - Theme engine
-- `rearkitekt/core/colors.lua` - Color utilities
+- `arkitekt/core/theme.lua` - Theme engine
+- `arkitekt/core/colors.lua` - Color utilities
 
 ### Data Flow
 1. User input → `app/controller.lua`
@@ -49,7 +49,7 @@ Each feature follows:
 ## Import Patterns
 ```lua
 -- Library imports (from anywhere)
-local theme = require("rearkitekt.core.theme")
+local theme = require("arkitekt.core.theme")
 
 -- Feature imports (within feature)
 local state = require("RegionPlaylist.core.state")

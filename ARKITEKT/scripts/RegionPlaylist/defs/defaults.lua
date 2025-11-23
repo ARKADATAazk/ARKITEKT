@@ -2,8 +2,8 @@
 -- RegionPlaylist/defs/defaults.lua
 -- Default configuration values
 
-local Colors = require('rearkitekt.core.colors')
-local ColorDefs = require('rearkitekt.defs.colors')
+local Colors = require('arkitekt.core.colors')
+local ColorDefs = require('arkitekt.defs.colors')
 local Constants = require('RegionPlaylist.defs.constants')
 local hexrgb = Colors.hexrgb
 

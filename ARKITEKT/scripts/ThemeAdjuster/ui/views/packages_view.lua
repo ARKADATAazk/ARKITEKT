@@ -3,11 +3,11 @@
 -- Packages grid view with Panel header and ARKITEKT package_tiles
 
 local ImGui = require 'imgui' '0.10'
-local Panel = require('rearkitekt.gui.widgets.containers.panel')
-local PackageTilesGrid = require('rearkitekt.gui.widgets.media.package_tiles.grid')
-local Button = require('rearkitekt.gui.widgets.primitives.button')
+local Panel = require('arkitekt.gui.widgets.containers.panel')
+local PackageTilesGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
+local Button = require('arkitekt.gui.widgets.primitives.button')
 local PackageManager = require('ThemeAdjuster.packages.manager')
-local Colors = require('rearkitekt.core.colors')
+local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -72,7 +72,7 @@ function PackagesView:create_theme_model()
       local sat = 0.6 + (hash % 20) / 100
       local val = 0.5 + (hash % 30) / 100
 
-      -- Simple HSV to RGB (from rearkitekt.core.colors)
+      -- Simple HSV to RGB (from arkitekt.core.colors)
       local function hsv_to_rgb(h, s, v)
         local c = v * s
         local x = c * (1 - math.abs((h / 60) % 2 - 1))

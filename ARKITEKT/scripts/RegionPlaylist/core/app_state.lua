@@ -12,9 +12,9 @@ once per invalidation.
 
 local CoordinatorBridge = require("RegionPlaylist.engine.coordinator_bridge")
 local RegionState = require("RegionPlaylist.storage.persistence")
-local UndoManager = require("rearkitekt.core.undo_manager")
+local UndoManager = require("arkitekt.core.undo_manager")
 local UndoBridge = require("RegionPlaylist.storage.undo_bridge")
-local Colors = require("rearkitekt.core.colors")
+local Colors = require("arkitekt.core.colors")
 local Constants = require("RegionPlaylist.defs.constants")
 
 local M = {}
@@ -173,7 +173,7 @@ function M.load_project_state()
   M.playlists = RegionState.load_playlists(0)
 
   if #M.playlists == 0 then
-    local UUID = require("rearkitekt.core.uuid")
+    local UUID = require("arkitekt.core.uuid")
     M.playlists = {
       {
         id = UUID.generate(),
