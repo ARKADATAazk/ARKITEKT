@@ -228,8 +228,6 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
       ImGui.CloseCurrentPopup(ctx)
     end
 
-    if ContextMenu.separator(ctx) then end
-
     if ContextMenu.item(ctx, "Import from SWS Region Playlist") then
       self._sws_import_requested = true
       ImGui.CloseCurrentPopup(ctx)
@@ -400,8 +398,6 @@ function M.draw_pool(self, ctx, regions, height)
       ImGui.CloseCurrentPopup(ctx)
     end
 
-    if ContextMenu.separator(ctx) then end
-
     -- Color picker submenu
     ColorPickerMenu.render(ctx, {
       on_select = function(color_int, color_hex, color_name)
@@ -416,8 +412,6 @@ function M.draw_pool(self, ctx, regions, height)
         end
       end
     })
-
-    if ContextMenu.separator(ctx) then end
 
     -- Batch Rename & Recolor
     if ContextMenu.item(ctx, "Batch Rename & Recolor...") then

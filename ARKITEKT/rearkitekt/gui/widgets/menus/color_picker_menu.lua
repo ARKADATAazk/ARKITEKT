@@ -70,9 +70,6 @@ function M.render(ctx, opts)
   -- Force minimum width with a dummy
   ImGui.Dummy(ctx, min_grid_width, 1)
 
-  -- Add some top padding
-  ImGui.Dummy(ctx, 1, 8)
-
   -- Calculate grid layout
   local menu_width = ImGui.GetContentRegionAvail(ctx)
   local menu_start_x, menu_start_y = ImGui.GetCursorScreenPos(ctx)
