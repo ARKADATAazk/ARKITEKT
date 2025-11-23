@@ -18,8 +18,8 @@ local Arkit = require('arkitekt.arkit')
 
 -- Import refactored base controls
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
-local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
+local Fields = require('arkitekt.gui.widgets.primitives.fields')
+local Combobox = require('arkitekt.gui.widgets.inputs.dropdown')
 
 -- Import panel system
 local Panel = require('arkitekt.gui.widgets.containers.panel')
@@ -106,7 +106,7 @@ local function create_test_panel()
         },
         {
           id = "panel_dropdown",
-          type = "dropdown_field",
+          type = "combobox_field",
           width = 140,
           spacing_before = 8,
           config = {
@@ -191,7 +191,7 @@ local function draw_standalone_section(ctx)
   
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  SearchInput.draw(ctx, {
+  Fields.search(ctx, {
     id = "standalone_search",
     draw_list = dl,
     x = cursor_x,
@@ -228,7 +228,7 @@ local function draw_standalone_section(ctx)
   
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  Dropdown.draw(ctx, {
+  Combobox.draw(ctx, {
     id = "standalone_dropdown",
     draw_list = dl,
     x = cursor_x,

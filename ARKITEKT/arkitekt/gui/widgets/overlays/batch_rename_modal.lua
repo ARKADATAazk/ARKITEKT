@@ -9,8 +9,8 @@ local Style = require('arkitekt.gui.style.defaults')
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('arkitekt.gui.widgets.tools.color_picker_window')
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
-local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
+local Fields = require('arkitekt.gui.widgets.primitives.fields')
+local Combobox = require('arkitekt.gui.widgets.inputs.dropdown')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local RadioButton = require('arkitekt.gui.widgets.primitives.radio_button')
@@ -301,9 +301,9 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   end
 
   -- Set text in SearchInput component
-  SearchInput.set_text("batch_rename_pattern", self.pattern)
+  Fields.set_text("batch_rename_pattern", self.pattern)
 
-  local _, changed = SearchInput.draw(ctx, dl, screen_x, screen_y, right_col_width, input_height, {
+  local _, changed = Fields.search(ctx, dl, screen_x, screen_y, right_col_width, input_height, {
     id = "batch_rename_pattern",
     placeholder = "pattern$wildcard",
     on_change = function(text)
@@ -445,7 +445,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local dropdown_w = 120
   local dropdown_h = 24
 
-  local category_changed, new_category = Dropdown.draw(ctx, dl, dropdown_x, dropdown_y, dropdown_w, dropdown_h, {
+  local category_changed, new_category = Combobox.draw(ctx, dl, dropdown_x, dropdown_y, dropdown_w, dropdown_h, {
     id = "names_category",
     options = {
       {value = "game", label = "Game Music"},

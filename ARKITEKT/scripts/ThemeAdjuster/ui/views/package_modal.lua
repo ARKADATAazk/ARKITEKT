@@ -4,7 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.core.colors')
-local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
+local Fields = require('arkitekt.gui.widgets.primitives.fields')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local Constants = require('ThemeAdjuster.defs.constants')
 local ImageCache = require('arkitekt.core.images')
@@ -756,8 +756,8 @@ function PackageModal:draw_content(ctx, bounds)
   -- Search input using primitive
   local search_w = 220
   local search_h = 26
-  SearchInput.set_text("pkg_modal_search", self.search_text)
-  SearchInput.draw(ctx, dl, toolbar_x, toolbar_y, search_w, search_h, {
+  Fields.set_text("pkg_modal_search", self.search_text)
+  Fields.search(ctx, dl, toolbar_x, toolbar_y, search_w, search_h, {
     id = "pkg_modal_search",
     placeholder = "Search assets...",
     on_change = function(text)

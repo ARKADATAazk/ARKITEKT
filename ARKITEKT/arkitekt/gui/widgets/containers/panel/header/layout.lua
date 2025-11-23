@@ -14,8 +14,8 @@ local M = {}
 local COMPONENTS = {
   button = require('arkitekt.gui.widgets.primitives.button'),
   checkbox = require('arkitekt.gui.widgets.primitives.checkbox'),
-  search_field = require('arkitekt.gui.widgets.inputs.search_input'),
-  dropdown_field = require('arkitekt.gui.widgets.inputs.dropdown'),
+  fields = require('arkitekt.gui.widgets.primitives.fields'),
+  combobox_field = require('arkitekt.gui.widgets.inputs.dropdown'),
   tab_strip = require('arkitekt.gui.widgets.containers.panel.header.tab_strip'),
   separator = require('arkitekt.gui.widgets.containers.panel.header.separator'),
   custom = {
@@ -33,8 +33,8 @@ local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 
 -- Custom compound element for template browser header with search/sort + filter chips
-local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
-local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
+local Fields = require('arkitekt.gui.widgets.primitives.fields')
+local Combobox = require('arkitekt.gui.widgets.inputs.dropdown')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
 COMPONENTS.template_header_controls = {
@@ -75,7 +75,7 @@ COMPONENTS.template_header_controls = {
     local search_x = x + width - sort_width - search_width - 8
 
     if config.get_search_query and config.on_search_changed then
-      SearchInput.draw(ctx, dl, search_x, y, search_width, row1_height, {
+      Fields.search(ctx, dl, search_x, y, search_width, row1_height, {
         placeholder = "Search templates...",
         get_value = config.get_search_query,
         on_change = config.on_search_changed,
@@ -85,7 +85,7 @@ COMPONENTS.template_header_controls = {
     -- Sort dropdown (140px, right side)
     if config.get_sort_mode and config.on_sort_changed then
       local sort_x = search_x + search_width + 8
-      Dropdown.draw(ctx, dl, sort_x, y, sort_width, row1_height, {
+      Combobox.draw(ctx, dl, sort_x, y, sort_width, row1_height, {
         tooltip = "Sort by",
         tooltip_delay = 0.5,
         enable_sort = false,
