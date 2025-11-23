@@ -443,8 +443,15 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
     local original_pooled_state = state.original_pooled_midi_state
     local current_pooled_state = reaper.GetToggleCommandState(41071) == 1
 
+    -- Ensure use_pooled_copy is boolean (not nil)
+    local want_pooled = use_pooled_copy == true
+
+    -- Debug: show toggle state
+    reaper.ShowConsoleMsg(string.format("[TOGGLE DEBUG] want=%s, current=%s, will_toggle=%s\n",
+      tostring(want_pooled), tostring(current_pooled_state), tostring(want_pooled ~= current_pooled_state)))
+
     -- Toggle if the desired state differs from current
-    if use_pooled_copy ~= current_pooled_state then
+    if want_pooled ~= current_pooled_state then
       reaper.Main_OnCommand(41071, 0)  -- Toggle pooled MIDI source
     end
 

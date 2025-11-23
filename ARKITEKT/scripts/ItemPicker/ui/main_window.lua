@@ -271,19 +271,23 @@ function GUI:draw(ctx, shell_state)
         local alt_actual = (mouse_state & 16) ~= 0   -- Bit 4 = Alt
 
         -- Check if user switched modifiers (e.g., pressing CTRL during SHIFT multi-drop)
+        -- Always capture ALT state regardless of which branch we take
         if self.state.captured_shift and ctrl_actual and not shift_actual then
           shift = false
           ctrl = true
+          alt = alt_actual
           self.state.captured_shift = nil
           self.state.captured_ctrl = nil
         elseif self.state.captured_shift and not shift_actual then
           shift = false
           ctrl = false
+          alt = alt_actual
           self.state.captured_shift = nil
           self.state.captured_ctrl = nil
         elseif self.state.captured_ctrl and not ctrl_actual then
           shift = false
           ctrl = false
+          alt = alt_actual
           self.state.captured_shift = nil
           self.state.captured_ctrl = nil
         else
