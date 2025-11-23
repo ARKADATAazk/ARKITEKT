@@ -233,6 +233,7 @@ local function get_pattern_texture(ctx, pattern_type, spacing, size, color)
       return cached.img, cached.size
     else
       -- Invalid, remove from cache (but attachment count stays)
+      reaper.ShowConsoleMsg(string.format("[BG] ValidatePtr FAILED for key: %s\n", key))
       texture_cache[key] = nil
     end
   end
@@ -241,6 +242,10 @@ local function get_pattern_texture(ctx, pattern_type, spacing, size, color)
   if total_attachments >= MAX_ATTACHMENTS then
     return nil, nil
   end
+
+  -- Debug: log new texture creation
+  reaper.ShowConsoleMsg(string.format("[BG] Creating texture #%d: %s (color: 0x%08X -> 0x%08X)\n",
+    total_attachments + 1, key, color, norm_color))
 
   -- Create new texture using normalized color
   local img, tex_size
