@@ -55,35 +55,81 @@ Shell.run({
     local draw_list = ImGui.GetBackgroundDrawList(ctx)
     MediaContainer.update(ctx, draw_list)
 
-    -- Minimal window content - just show container count
     local containers = MediaContainer.get_containers()
+
+    -- Action buttons
+    local button_width = 80
+    if ImGui.Button(ctx, "Create", button_width, 0) then
+      MediaContainer.create_container()
+    end
+    ImGui.SameLine(ctx)
+    if ImGui.Button(ctx, "Copy", button_width, 0) then
+      MediaContainer.copy_container()
+    end
+    ImGui.SameLine(ctx)
+    if ImGui.Button(ctx, "Paste", button_width, 0) then
+      MediaContainer.paste_container()
+    end
+
+    ImGui.Separator(ctx)
+
+    -- Container count and list
     ImGui.Text(ctx, string.format("Containers: %d", #containers))
 
     if #containers > 0 then
-      ImGui.Separator(ctx)
-      for i, container in ipairs(containers) do
-        local linked_text = container.master_id and " [linked]" or " [master]"
-        local label = string.format("%s%s (%d items)", container.name, linked_text, #container.items)
+      -- Scrollable list
+      if ImGui.BeginChild(ctx, "ContainerList", 0, 120, true) then
+        for i, container in ipairs(containers) do
+          local linked_text = container.master_id and " [linked]" or " [master]"
+          local label = string.format("%s%s (%d items)", container.name, linked_text, #container.items)
 
-        -- Color indicator
-        local r, g, b, a = Colors.rgba_to_components(container.color or 0xFF6600FF)
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, ImGui.ColorConvertDouble4ToU32(r/255, g/255, b/255, 1))
-        ImGui.Bullet(ctx)
-        ImGui.PopStyleColor(ctx, 1)
-        ImGui.SameLine(ctx)
-        ImGui.Text(ctx, label)
+          -- Color indicator
+          local r, g, b, a = Colors.rgba_to_components(container.color or 0xFF6600FF)
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, ImGui.ColorConvertDouble4ToU32(r/255, g/255, b/255, 1))
+          ImGui.Bullet(ctx)
+          ImGui.PopStyleColor(ctx, 1)
+          ImGui.SameLine(ctx)
+
+          -- Selectable item with delete on right-click
+          if ImGui.Selectable(ctx, label, false) then
+            -- Could add selection/focus functionality later
+          end
+
+          -- Context menu for individual container
+          if ImGui.BeginPopupContextItem(ctx) then
+            if ImGui.MenuItem(ctx, "Delete") then
+              MediaContainer.delete_container(container.id)
+            end
+            ImGui.EndPopup(ctx)
+          end
+        end
+        ImGui.EndChild(ctx)
       end
+
+      ImGui.Separator(ctx)
+
+      -- Delete all button
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#662222FF"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#883333FF"))
+      if ImGui.Button(ctx, "Delete All", -1, 0) then
+        -- Clear all containers
+        local State = MediaContainer.State
+        State.containers = {}
+        State.container_lookup = {}
+        State.persist()
+      end
+      ImGui.PopStyleColor(ctx, 2)
     else
       ImGui.TextDisabled(ctx, "No containers yet")
-      ImGui.TextDisabled(ctx, "Select items and run 'Create Container'")
+      ImGui.TextDisabled(ctx, "Select items and click Create")
     end
 
     ImGui.Separator(ctx)
     ImGui.TextDisabled(ctx, "Sync: Active")
   end,
   initial_pos  = { x = 100, y = 100 },
-  initial_size = { w = 300, h = 200 },
+  initial_size = { w = 300, h = 300 },
   icon_color   = hexrgb("#FF9933"),
   icon_size    = 18,
-  min_size     = { w = 200, h = 150 },
+  min_size     = { w = 280, h = 200 },
 })
