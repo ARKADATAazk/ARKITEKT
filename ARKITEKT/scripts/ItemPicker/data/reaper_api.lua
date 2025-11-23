@@ -382,7 +382,7 @@ function M.GetProjectMIDI(settings, state)
   return midi_items, midi_indexes
 end
 
-function M.InsertItemAtMousePos(item, state)
+function M.InsertItemAtMousePos(item, state, use_pooled_copy)
   -- Validate item is a valid MediaItem
   if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
     return
@@ -442,7 +442,7 @@ function M.InsertItemAtMousePos(item, state)
       table.insert(items_to_insert, item)
     end
 
-    reaper.ShowConsoleMsg(string.format("[INSERT] Inserting %d items at position %.2f\n", #items_to_insert, mouse_position_in_arrange))
+    reaper.ShowConsoleMsg(string.format("[INSERT] Inserting %d items at position %.2f (pooled=%s)\n", #items_to_insert, mouse_position_in_arrange, tostring(use_pooled_copy or false)))
 
     -- Insert all items
     reaper.SelectAllMediaItems(0, false)
@@ -450,14 +450,38 @@ function M.InsertItemAtMousePos(item, state)
 
     for _, insert_item in ipairs(items_to_insert) do
       reaper.SetMediaItemSelected(insert_item, true)
-      reaper.ApplyNudge(0, 1, 5, 1, current_pos, false, 1)
-      local inserted = reaper.GetSelectedMediaItem(0, 0)
-      if inserted then
-        reaper.MoveMediaItemToTrack(inserted, track)
 
-        -- Calculate next position (current item length + small gap)
-        local item_len = reaper.GetMediaItemInfo_Value(inserted, "D_LENGTH")
-        current_pos = current_pos + item_len
+      if use_pooled_copy then
+        -- Use pooled copy for MIDI items (preserves MIDI pooling)
+        -- Action 41072: Copy items (pooled)
+        reaper.Main_OnCommand(41072, 0)
+
+        -- Set edit cursor to target position
+        reaper.SetEditCurPos(current_pos, false, false)
+
+        -- Action 40058: Paste items/tracks
+        reaper.Main_OnCommand(40058, 0)
+
+        -- Get the pasted item (should be selected)
+        local inserted = reaper.GetSelectedMediaItem(0, 0)
+        if inserted then
+          reaper.MoveMediaItemToTrack(inserted, track)
+
+          -- Calculate next position (current item length)
+          local item_len = reaper.GetMediaItemInfo_Value(inserted, "D_LENGTH")
+          current_pos = current_pos + item_len
+        end
+      else
+        -- Regular copy using ApplyNudge
+        reaper.ApplyNudge(0, 1, 5, 1, current_pos, false, 1)
+        local inserted = reaper.GetSelectedMediaItem(0, 0)
+        if inserted then
+          reaper.MoveMediaItemToTrack(inserted, track)
+
+          -- Calculate next position (current item length)
+          local item_len = reaper.GetMediaItemInfo_Value(inserted, "D_LENGTH")
+          current_pos = current_pos + item_len
+        end
       end
       reaper.SelectAllMediaItems(0, false)
     end

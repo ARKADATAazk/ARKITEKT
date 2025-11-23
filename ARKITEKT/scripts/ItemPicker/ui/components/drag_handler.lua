@@ -73,6 +73,12 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
   local mouse_key = reaper.JS_Mouse_GetState(-1)
   local left_mouse_down = (mouse_key & 1) == 1
 
+  -- Check ALT modifier for pooled MIDI copy mode
+  local alt_pressed = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+  -- Only enable pool mode for MIDI items
+  local is_midi_drag = state.dragging_is_audio == false
+  state.alt_pool_mode = alt_pressed and is_midi_drag
+
   -- Track mouse state for SHIFT multi-drop behavior
   if left_mouse_down then
     state.mouse_was_pressed_after_drop = true
@@ -471,6 +477,46 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       local text_x = badge_x + padding_x
       local text_y = badge_y + padding_y
       ImGui.DrawList_AddText(state.draw_list, text_x, text_y, hexrgb("#FFFFFFFF"), badge_text)
+    end
+
+    -- ALT + MIDI pooled badge (teal, shown when ALT is held for MIDI items)
+    if state.alt_pool_mode then
+      local pool_badge_text = tostring(dragging_count) .. " midi pooled"
+      local pool_badge_w, pool_badge_h = ImGui.CalcTextSize(ctx, pool_badge_text)
+
+      -- Badge styling
+      local padding_x = 8
+      local padding_y = 4
+      local pool_badge_width = pool_badge_w + padding_x * 2
+      local pool_badge_height = pool_badge_h + padding_y * 2
+      local rounding = 4
+
+      -- Position below the tiles (centered)
+      local pool_badge_x = base_x + (total_width - pool_badge_width) / 2
+      local pool_badge_y = base_y + total_height + 8
+
+      -- Badge shadow
+      ImGui.DrawList_AddRectFilled(state.draw_list,
+        pool_badge_x + 2, pool_badge_y + 2,
+        pool_badge_x + pool_badge_width + 2, pool_badge_y + pool_badge_height + 2,
+        hexrgb("#00000066"), rounding)
+
+      -- Badge background (teal color)
+      ImGui.DrawList_AddRectFilled(state.draw_list,
+        pool_badge_x, pool_badge_y,
+        pool_badge_x + pool_badge_width, pool_badge_y + pool_badge_height,
+        hexrgb("#008B8BE6"), rounding)
+
+      -- Badge border (lighter teal)
+      ImGui.DrawList_AddRect(state.draw_list,
+        pool_badge_x, pool_badge_y,
+        pool_badge_x + pool_badge_width, pool_badge_y + pool_badge_height,
+        hexrgb("#20B2AA66"), rounding, 0, 1)
+
+      -- Badge text (white, centered)
+      local text_x = pool_badge_x + padding_x
+      local text_y = pool_badge_y + padding_y
+      ImGui.DrawList_AddText(state.draw_list, text_x, text_y, hexrgb("#FFFFFFFF"), pool_badge_text)
     end
 
     -- Dummy to reserve space

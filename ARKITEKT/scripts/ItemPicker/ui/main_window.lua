@@ -286,12 +286,13 @@ function GUI:draw(ctx, shell_state)
     if should_insert and not self.state.drop_completed then
       -- Check modifier keys for drop behavior
       -- If we have captured state (from multi-drop sequence), verify keys are still held
-      local shift, ctrl
+      local shift, ctrl, alt
       if self.state.captured_shift ~= nil or self.state.captured_ctrl ~= nil then
         -- Check if keys are ACTUALLY still pressed using Reaper API (works without ImGui focus)
         local mouse_state = reaper.JS_Mouse_GetState(0xFF)
         local shift_actual = (mouse_state & 8) ~= 0  -- Bit 3 = Shift
         local ctrl_actual = (mouse_state & 4) ~= 0   -- Bit 2 = Ctrl
+        local alt_actual = (mouse_state & 16) ~= 0   -- Bit 4 = Alt
 
         -- Check if user switched modifiers (e.g., pressing CTRL during SHIFT multi-drop)
         if self.state.captured_shift and ctrl_actual and not shift_actual then
@@ -320,19 +321,23 @@ function GUI:draw(ctx, shell_state)
           -- Keys still held - use captured state
           shift = self.state.captured_shift or false
           ctrl = self.state.captured_ctrl or false
-          reaper.ShowConsoleMsg(string.format("[KEY DEBUG] Using CAPTURED state: shift=%s ctrl=%s (verified via JS API: shift_actual=%s ctrl_actual=%s)\n",
-            tostring(shift), tostring(ctrl), tostring(shift_actual), tostring(ctrl_actual)))
+          alt = alt_actual  -- ALT is always checked fresh (for pooled MIDI copies)
+          reaper.ShowConsoleMsg(string.format("[KEY DEBUG] Using CAPTURED state: shift=%s ctrl=%s alt=%s (verified via JS API: shift_actual=%s ctrl_actual=%s alt_actual=%s)\n",
+            tostring(shift), tostring(ctrl), tostring(alt), tostring(shift_actual), tostring(ctrl_actual), tostring(alt_actual)))
         end
       else
         -- First drop - check keys directly
         shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
         ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
-        reaper.ShowConsoleMsg(string.format("[KEY DEBUG] LeftShift=%s RightShift=%s LeftCtrl=%s RightCtrl=%s => shift=%s ctrl=%s\n",
+        alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+        reaper.ShowConsoleMsg(string.format("[KEY DEBUG] LeftShift=%s RightShift=%s LeftCtrl=%s RightCtrl=%s LeftAlt=%s RightAlt=%s => shift=%s ctrl=%s alt=%s\n",
           tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift)),
           tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)),
           tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl)),
           tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)),
-          tostring(shift), tostring(ctrl)
+          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt)),
+          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)),
+          tostring(shift), tostring(ctrl), tostring(alt)
         ))
       end
 
@@ -354,8 +359,11 @@ function GUI:draw(ctx, shell_state)
       local saved_dragging_keys = self.state.dragging_keys
       local saved_dragging_is_audio = self.state.dragging_is_audio
 
-      -- Insert the item
-      self.controller.insert_item_at_mouse(self.state.item_to_add, self.state)
+      -- Check if ALT is held for pooled MIDI copy (only for MIDI items)
+      local use_pooled_copy = alt and not self.state.dragging_is_audio
+
+      -- Insert the item (pooled copy if ALT held for MIDI)
+      self.controller.insert_item_at_mouse(self.state.item_to_add, self.state, use_pooled_copy)
       self.state.drop_completed = true  -- Mark as completed
 
       if shift then
