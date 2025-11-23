@@ -42,7 +42,6 @@ end
 
 -- Load required modules
 local ImGui = ARK.ImGui
-local Runtime = require('rearkitekt.app.runtime.runtime')
 local Fonts = require('rearkitekt.app.assets.fonts')
 local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
 local OverlayDefaults = require('rearkitekt.gui.widgets.overlays.overlay.defaults')
@@ -141,50 +140,77 @@ if USE_OVERLAY then
     on_close = cleanup,
   }))
 
-  -- Create runtime
-  local runtime = Runtime.new({
-    title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
+  -- Inline runtime loop
+  local runtime = {
     ctx = ctx,
+    open = true,
+  }
 
-    on_frame = function(ctx)
-      -- Show ImGui debug window when profiling
-      if profiler_enabled then
-        ImGui.ShowMetricsWindow(ctx, true)
-      end
+  local function on_frame()
+    -- Show ImGui debug window when profiling
+    if profiler_enabled then
+      ImGui.ShowMetricsWindow(ctx, true)
+    end
 
-      -- Check if should close after drop
+    -- Check if should close after drop
+    if State.should_close_after_drop then
+      return false  -- Stop running, on_destroy will call cleanup
+    end
+
+    -- When dragging, skip overlay entirely and just render drag handlers
+    if State.dragging then
+      ImGui.PushFont(ctx, fonts.default, fonts.default_size)
+      gui:draw(ctx, {
+        fonts = fonts,
+        overlay_state = {},
+        overlay = overlay_mgr,
+        is_overlay_mode = true,
+      })
+      ImGui.PopFont(ctx)
+
+      -- Check again after draw in case flag was set during draw
       if State.should_close_after_drop then
         return false  -- Stop running, on_destroy will call cleanup
       end
 
-      -- When dragging, skip overlay entirely and just render drag handlers
-      if State.dragging then
-        ImGui.PushFont(ctx, fonts.default, fonts.default_size)
-        gui:draw(ctx, {
-          fonts = fonts,
-          overlay_state = {},
-          overlay = overlay_mgr,
-          is_overlay_mode = true,
-        })
-        ImGui.PopFont(ctx)
+      return true  -- Keep running
+    else
+      -- Normal mode: let overlay manager handle everything
+      overlay_mgr:render(ctx)
+      return overlay_mgr:is_active()
+    end
+  end
 
-        -- Check again after draw in case flag was set during draw
-        if State.should_close_after_drop then
-          return false  -- Stop running, on_destroy will call cleanup
-        end
+  local function on_destroy()
+    cleanup()
+  end
 
-        return true  -- Keep running
-      else
-        -- Normal mode: let overlay manager handle everything
-        overlay_mgr:render(ctx)
-        return overlay_mgr:is_active()
-      end
-    end,
+  -- Main defer loop
+  local function frame()
+    if not runtime.open then
+      on_destroy()
+      return
+    end
 
-    on_destroy = function()
-      cleanup()
-    end,
-  })
+    local continue = on_frame()
+    if continue == false then
+      runtime.open = false
+    end
+
+    if runtime.open then
+      reaper.defer(frame)
+    else
+      on_destroy()
+    end
+  end
+
+  function runtime:start()
+    reaper.defer(frame)
+  end
+
+  function runtime:request_close()
+    self.open = false
+  end
 
   runtime:start()
 
