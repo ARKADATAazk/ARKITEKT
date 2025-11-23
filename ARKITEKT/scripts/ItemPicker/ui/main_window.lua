@@ -132,7 +132,7 @@ function GUI:draw(ctx, shell_state)
   -- Check if track filter modal should be opened
   if self.state.open_track_filter_modal then
     self.state.open_track_filter_modal = nil
-    TrackFilter.open_modal(self.state)
+    TrackFilter.open_modal(self.state, shell_state)
   end
 
   -- Get screen dimensions
@@ -385,9 +385,6 @@ function GUI:draw(ctx, shell_state)
 
     self.drag_handler.render_drag_preview(ctx, self.state, mini_font, self.visualization, self.config)
   end
-
-  -- Render track filter modal on top of everything
-  TrackFilter.render_modal(ctx, self.state, SCREEN_W, SCREEN_H, overlay_alpha)
 
   reaper.PreventUIRefresh(-1)
   ImGui.PopFont(ctx)
