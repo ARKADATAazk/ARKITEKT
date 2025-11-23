@@ -61,6 +61,9 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
         ImGui.SetCursorScreenPos(ctx, rect[1], rect[2])
         ImGui.InvisibleButton(ctx, "##tile_drop_" .. template.uuid, rect[3] - rect[1], rect[4] - rect[2])
 
+        -- Hide default drop target rect (we draw our own glow)
+        ImGui.PushStyleColor(ctx, ImGui.Col_DragDropTarget, 0x00000000)
+
         if ImGui.BeginDragDropTarget(ctx) then
           -- Draw active target highlight when hovering
           DragDrop.draw_active_target(ctx, rect)
@@ -73,6 +76,8 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
           end
           ImGui.EndDragDropTarget(ctx)
         end
+
+        ImGui.PopStyleColor(ctx)
       end
     end,
 
