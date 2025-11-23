@@ -233,6 +233,36 @@ local function calculate_tree_height(tracks, state, depth)
   return height
 end
 
+-- Calculate maximum depth of the track tree
+local function calculate_max_depth(tracks, current_depth)
+  current_depth = current_depth or 0
+  local max_depth = current_depth
+
+  for _, track in ipairs(tracks) do
+    if track.children and #track.children > 0 then
+      local child_depth = calculate_max_depth(track.children, current_depth + 1)
+      if child_depth > max_depth then
+        max_depth = child_depth
+      end
+    end
+  end
+
+  return max_depth
+end
+
+-- Set expansion state based on depth level
+local function set_expansion_level(tracks, state, target_level, current_depth)
+  current_depth = current_depth or 0
+
+  for _, track in ipairs(tracks) do
+    if track.children and #track.children > 0 then
+      -- Expand if current depth is less than target level
+      state.track_expanded[track.guid] = current_depth < target_level
+      set_expansion_level(track.children, state, target_level, current_depth + 1)
+    end
+  end
+end
+
 -- Open the track filter modal
 function M.open_modal(state)
   -- Build track tree
@@ -284,7 +314,8 @@ function M.render_modal(ctx, state, bounds)
   local max_content = bounds.height * 0.6
   local content_height = math.min(tree_height + 32, max_content)
   local modal_width = 320
-  local modal_height = 50 + content_height + 50
+  local slider_area_height = 32  -- Height for depth slider
+  local modal_height = 50 + slider_area_height + content_height + 50
 
   local modal_x = bounds.x + (bounds.width - modal_width) / 2
   local modal_y = bounds.y + (bounds.height - modal_height) / 2
@@ -339,9 +370,71 @@ function M.render_modal(ctx, state, bounds)
   local count_color = Colors.with_alpha(Colors.hexrgb("#888888"), math.floor(0xFF * alpha))
   ImGui.DrawList_AddText(draw_list, modal_x + modal_width - padding - count_w, modal_y + padding, count_color, count_text)
 
-  -- Content area bounds
+  -- Depth slider area
+  local slider_y = modal_y + 42
+  local slider_x = modal_x + padding
+  local slider_w = modal_width - padding * 2
+  local slider_h = 20
+
+  -- Calculate max depth
+  local max_depth = calculate_max_depth(state.track_tree)
+
+  -- Initialize expansion level if not set
+  if state.track_filter_expand_level == nil then
+    state.track_filter_expand_level = max_depth  -- Start fully expanded
+  end
+
+  -- Draw slider label
+  local label_text = "Depth:"
+  local label_color = Colors.with_alpha(Colors.hexrgb("#888888"), math.floor(0xFF * alpha))
+  ImGui.DrawList_AddText(draw_list, slider_x, slider_y + 2, label_color, label_text)
+
+  local label_w = ImGui.CalcTextSize(ctx, label_text) + 8
+  local track_x = slider_x + label_w
+  local track_w = slider_w - label_w - 30  -- Leave space for value
+
+  -- Slider track background
+  local track_bg = Colors.with_alpha(Colors.hexrgb("#2A2A2A"), math.floor(0xCC * alpha))
+  local track_y = slider_y + 8
+  local track_h = 4
+  ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + track_w, track_y + track_h, track_bg, 2)
+
+  -- Slider handle position
+  local handle_radius = 6
+  local slider_value = state.track_filter_expand_level
+  local handle_x = track_x + (slider_value / math.max(1, max_depth)) * track_w
+  if max_depth == 0 then handle_x = track_x + track_w end
+
+  -- Check if dragging slider
+  local is_over_slider = mouse_x >= track_x - handle_radius and mouse_x <= track_x + track_w + handle_radius and
+                         mouse_y >= track_y - handle_radius and mouse_y <= track_y + track_h + handle_radius
+
+  if is_over_slider and ImGui.IsMouseDown(ctx, ImGui.MouseButton_Left) then
+    -- Calculate new value from mouse position
+    local new_value = math.floor(((mouse_x - track_x) / track_w) * max_depth + 0.5)
+    new_value = math.max(0, math.min(new_value, max_depth))
+
+    if new_value ~= state.track_filter_expand_level then
+      state.track_filter_expand_level = new_value
+      -- Update expansion state
+      if not state.track_expanded then state.track_expanded = {} end
+      set_expansion_level(state.track_tree, state, new_value, 0)
+    end
+  end
+
+  -- Draw slider handle
+  local handle_color = is_over_slider and Colors.hexrgb("#FFFFFF") or Colors.hexrgb("#CCCCCC")
+  handle_color = Colors.with_alpha(handle_color, math.floor(0xFF * alpha))
+  ImGui.DrawList_AddCircleFilled(draw_list, handle_x, track_y + track_h / 2, handle_radius, handle_color)
+
+  -- Draw current value
+  local value_text = tostring(slider_value)
+  local value_color = Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(0xFF * alpha))
+  ImGui.DrawList_AddText(draw_list, track_x + track_w + 8, slider_y + 2, value_color, value_text)
+
+  -- Content area bounds (below slider)
   local content_x = modal_x + padding
-  local content_y = modal_y + 50
+  local content_y = modal_y + 50 + slider_area_height
   local content_w = modal_width - padding * 2
   local content_h = content_height
 
