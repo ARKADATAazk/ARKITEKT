@@ -178,23 +178,19 @@ function M.render(ctx, opts)
     local button_height = 28
 
     local button_x = ImGui.GetCursorPosX(ctx) + 8
-    local button_y = ImGui.GetCursorPosY(ctx)
     ImGui.SetCursorPosX(ctx, button_x)
 
     local clicked = Button.draw_at_cursor(ctx, {
       label = button_text,
       width = button_width - 16,
       height = button_height,
-    }, "remove_color_btn")
+    }, "remove_color_btn", "vertical")  -- Use vertical advancement for menu context
     if clicked then
       if opts.on_select then
         opts.on_select(nil, nil, nil)
       end
       selected = true
     end
-
-    -- Advance cursor below button (Button.draw_at_cursor advances horizontally)
-    ImGui.SetCursorPos(ctx, menu_start_x - ImGui.GetWindowPos(ctx), button_y + button_height + 4)
   end
 
   return selected

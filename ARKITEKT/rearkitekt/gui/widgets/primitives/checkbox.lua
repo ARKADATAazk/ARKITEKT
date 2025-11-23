@@ -298,15 +298,25 @@ end
 --- @param is_checked boolean Current checked state
 --- @param user_config table|nil Optional configuration overrides
 --- @param id string Unique identifier for this checkbox
+--- @param advance string|nil Cursor advancement direction: "horizontal" (default), "vertical", or "none"
 --- @return boolean clicked True if checkbox was clicked
-function M.draw_at_cursor(ctx, label, is_checked, user_config, id)
+function M.draw_at_cursor(ctx, label, is_checked, user_config, id, advance)
+  advance = advance or "horizontal"  -- Default to horizontal for backward compatibility
+
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   local dl = ImGui.GetWindowDrawList(ctx)
 
+  local config = Style.apply_defaults(CHECKBOX_DEFAULTS, user_config)
   local total_width, clicked = M.draw(ctx, dl, cursor_x, cursor_y, label, is_checked, user_config, id)
 
-  -- Advance cursor
-  ImGui.SetCursorScreenPos(ctx, cursor_x + total_width, cursor_y)
+  -- Advance cursor based on direction
+  if advance == "horizontal" then
+    ImGui.SetCursorScreenPos(ctx, cursor_x + total_width, cursor_y)
+  elseif advance == "vertical" then
+    local height = config.size
+    ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + height)
+  end
+  -- "none" = don't advance cursor (caller manages it)
 
   return clicked
 end

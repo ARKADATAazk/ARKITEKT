@@ -318,20 +318,32 @@ end
 -- CONVENIENCE FUNCTION (Cursor-based)
 -- ============================================================================
 
-function M.draw_at_cursor(ctx, user_config, id)
+--- Draw button at current cursor position with configurable cursor advancement
+--- @param ctx userdata ImGui context
+--- @param user_config table|nil Button configuration
+--- @param id string|nil Unique identifier
+--- @param advance string|nil Cursor advancement direction: "horizontal" (default), "vertical", or "none"
+--- @return boolean clicked True if button was clicked
+function M.draw_at_cursor(ctx, user_config, id, advance)
   id = id or (user_config and user_config.id) or "button"
-  
+  advance = advance or "horizontal"  -- Default to horizontal for backward compatibility
+
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   local dl = ImGui.GetWindowDrawList(ctx)
-  
+
   local width = M.measure(ctx, user_config)
   local height = user_config and user_config.height or 24
-  
+
   local used_width, clicked = M.draw(ctx, dl, cursor_x, cursor_y, width, height, user_config, id)
-  
-  -- Advance cursor
-  ImGui.SetCursorScreenPos(ctx, cursor_x + used_width, cursor_y)
-  
+
+  -- Advance cursor based on direction
+  if advance == "horizontal" then
+    ImGui.SetCursorScreenPos(ctx, cursor_x + used_width, cursor_y)
+  elseif advance == "vertical" then
+    ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + height)
+  end
+  -- "none" = don't advance cursor (caller manages it)
+
   return clicked
 end
 
