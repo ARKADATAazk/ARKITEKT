@@ -12,6 +12,15 @@ local texture_cache = {}
 local total_attachments = 0  -- Track total attachments (never decreases)
 local MAX_ATTACHMENTS = 64  -- Hard limit on total textures ever created
 
+-- Convert RGBA (0xRRGGBBAA) to ABGR (0xAABBGGRR) for ImGui draw calls
+local function rgba_to_abgr(color)
+  local r = (color >> 24) & 0xFF
+  local g = (color >> 16) & 0xFF
+  local b = (color >> 8) & 0xFF
+  local a = color & 0xFF
+  return (a << 24) | (b << 16) | (g << 8) | r
+end
+
 -- ============================================================================
 -- TEXTURE BAKING: Create tileable pattern textures for performance
 -- ============================================================================
@@ -295,6 +304,9 @@ local function draw_grid_pattern(dl, x1, y1, x2, y2, spacing, color, thickness, 
   offset_x = offset_x or 0
   offset_y = offset_y or 0
 
+  -- Convert RGBA to ABGR for ImGui draw calls
+  local abgr_color = rgba_to_abgr(color)
+
   -- Calculate the starting position by finding the first line that would be visible
   -- We need to account for the offset and wrap it within the spacing
   local start_x = x1 - ((x1 - offset_x) % spacing)
@@ -303,14 +315,14 @@ local function draw_grid_pattern(dl, x1, y1, x2, y2, spacing, color, thickness, 
   -- Draw vertical lines
   local x = start_x
   while x <= x2 do
-    ImGui.DrawList_AddLine(dl, x, y1, x, y2, color, thickness)
+    ImGui.DrawList_AddLine(dl, x, y1, x, y2, abgr_color, thickness)
     x = x + spacing
   end
 
   -- Draw horizontal lines
   local y = start_y
   while y <= y2 do
-    ImGui.DrawList_AddLine(dl, x1, y, x2, y, color, thickness)
+    ImGui.DrawList_AddLine(dl, x1, y, x2, y, abgr_color, thickness)
     y = y + spacing
   end
 end
@@ -318,6 +330,9 @@ end
 local function draw_dot_pattern(dl, x1, y1, x2, y2, spacing, color, dot_size, offset_x, offset_y)
   offset_x = offset_x or 0
   offset_y = offset_y or 0
+
+  -- Convert RGBA to ABGR for ImGui draw calls
+  local abgr_color = rgba_to_abgr(color)
 
   local half_size = dot_size * 0.5
 
@@ -330,7 +345,7 @@ local function draw_dot_pattern(dl, x1, y1, x2, y2, spacing, color, dot_size, of
   while x <= x2 do
     local y = start_y
     while y <= y2 do
-      ImGui.DrawList_AddCircleFilled(dl, x, y, half_size, color)
+      ImGui.DrawList_AddCircleFilled(dl, x, y, half_size, abgr_color)
       y = y + spacing
     end
     x = x + spacing
@@ -376,12 +391,15 @@ local function draw_diagonal_stripe_pattern(dl, x1, y1, x2, y2, spacing, color, 
   local start_offset = -height
   local end_offset = width
 
+  -- Convert RGBA to ABGR for ImGui draw calls
+  local abgr_color = rgba_to_abgr(color)
+
   for offset = start_offset, end_offset, spacing do
     local line_x1 = x1 + offset
     local line_y1 = y1
     local line_x2 = x1 + offset + height
     local line_y2 = y2
-    ImGui.DrawList_AddLine(dl, line_x1, line_y1, line_x2, line_y2, color, thickness)
+    ImGui.DrawList_AddLine(dl, line_x1, line_y1, line_x2, line_y2, abgr_color, thickness)
   end
 end
 
