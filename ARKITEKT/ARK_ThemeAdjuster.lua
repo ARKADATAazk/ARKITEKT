@@ -5,31 +5,7 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK
-do
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, "S").source:sub(2)
-  local path = src:match("(.*"..sep..")")
-  while path and #path > 3 do
-    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
-    local f = io.open(init, "r")
-    if f then
-      f:close()
-      local Init = dofile(init)
-      ARK = Init.bootstrap()
-      break
-    end
-    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
-  end
-  if not ARK then
-    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
-    return
-  end
-end
-
--- Local references
-local SRC = debug.getinfo(1,"S").source:sub(2)
-local HERE = ARK.dirname(SRC) or "."
+local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "rearkitekt/app/init/init.lua").bootstrap()
 
 -- ============================================================================
 -- LOAD MODULES
@@ -42,22 +18,16 @@ local ThemeParams = require("ThemeAdjuster.core.theme_params")
 local GUI = require("ThemeAdjuster.ui.gui")
 local StatusConfig = require("ThemeAdjuster.ui.status")
 local Colors = require("rearkitekt.core.colors")
+local Settings = require("rearkitekt.core.settings")
 
 local hexrgb = Colors.hexrgb
-
-local SettingsOK, Settings = pcall(require, "rearkitekt.core.settings")
-local StyleOK, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
 
 -- ============================================================================
 -- INITIALIZE SETTINGS
 -- ============================================================================
 
-local settings = nil
-if SettingsOK and type(Settings.new) == "function" then
-  local data_dir = ARK.get_data_dir("ThemeAdjuster")
-  local ok, inst = pcall(Settings.new, data_dir, "settings.json")
-  if ok then settings = inst end
-end
+local data_dir = ARK.get_data_dir("ThemeAdjuster")
+local settings = Settings.new(data_dir, "settings.json")
 
 State.initialize(settings)
 
@@ -75,7 +45,6 @@ Shell.run({
   version      = "(1.0.0)",
   draw         = function(ctx, shell_state) gui:draw(ctx, shell_state.window, shell_state) end,
   settings     = settings,
-  style        = StyleOK and Style or nil,
   initial_pos  = { x = 80, y = 80 },
   initial_size = { w = 1120, h = 820 },
   icon_color   = hexrgb("#00B88F"),
@@ -97,8 +66,8 @@ Shell.run({
     },
     active = State.get_active_tab(),
     style = {
-      active_indicator_height = 0,  -- Remove accent line below active tab
-      spacing_after = 2,             -- Reduce spacing below tabs (was 4)
+      active_indicator_height = 0,
+      spacing_after = 2,
     },
     colors = {
       bg_active   = hexrgb("#242424"),

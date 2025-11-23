@@ -16,6 +16,33 @@ local Window  = require('rearkitekt.app.chrome.window.window')
 
 local M = {}
 
+-- Helper to set REAPER toolbar button state
+local function set_button_state(set)
+  local _, _, sec, cmd = reaper.get_action_context()
+  reaper.SetToggleCommandState(sec, cmd, set or 0)
+  reaper.RefreshToolbar2(sec, cmd)
+end
+
+-- Auto-create settings from app_name
+local function auto_init_settings(app_name)
+  if not app_name then return nil end
+
+  local ok, Settings = pcall(require, 'rearkitekt.core.settings')
+  if not ok or type(Settings.new) ~= 'function' then return nil end
+
+  -- Get data directory (ARK global should be available from bootstrap)
+  local data_dir
+  if ARK and ARK.get_data_dir then
+    data_dir = ARK.get_data_dir(app_name)
+  else
+    -- Fallback: use REAPER resource path
+    data_dir = reaper.GetResourcePath() .. '/Scripts/ARKITEKT/data/' .. app_name
+  end
+
+  local success, settings = pcall(Settings.new, data_dir, 'settings.json')
+  return success and settings or nil
+end
+
 local function load_fonts(ctx, font_cfg)
   font_cfg = Config.deepMerge({
     default        = Typography.SIZE.md,
@@ -126,7 +153,17 @@ function M.run(opts)
     if ok then style = default_style end
   end
 
+  -- Auto-init settings from app_name if not provided
   local settings = config.settings
+  if not settings and config.app_name then
+    settings = auto_init_settings(config.app_name)
+  end
+
+  -- Handle toolbar button state
+  local toggle_button = config.toggle_button
+  if toggle_button then
+    set_button_state(1)
+  end
   local raw_content = (config.raw_content == true)
   local enable_profiling = config.enable_profiling ~= false
 
@@ -273,6 +310,7 @@ function M.run(opts)
   end
 
   local function on_destroy()
+    if toggle_button then set_button_state(0) end
     if settings and settings.flush then settings:flush() end
     if opts.on_close then opts.on_close() end
   end

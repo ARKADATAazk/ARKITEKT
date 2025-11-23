@@ -5,35 +5,16 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK
-do
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, "S").source:sub(2)
-  local path = src:match("(.*"..sep..")")
-  while path and #path > 3 do
-    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
-    local f = io.open(init, "r")
-    if f then
-      f:close()
-      local Init = dofile(init)
-      ARK = Init.bootstrap()
-      break
-    end
-    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
-  end
-  if not ARK then
-    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
-    return
-  end
-end
+local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "rearkitekt/app/init/init.lua").bootstrap()
 
 -- Load required modules
 local ImGui = ARK.ImGui
-local Runtime = require('rearkitekt.app.runtime.runtime')
+local Shell = require('rearkitekt.app.runtime.shell')
 local Fonts = require('rearkitekt.app.assets.fonts')
 local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
 local OverlayDefaults = require('rearkitekt.gui.widgets.overlays.overlay.defaults')
 local ImGuiStyle = require('rearkitekt.gui.style.imgui_defaults')
+local Colors = require('rearkitekt.core.colors')
 
 -- Load TemplateBrowser modules
 local Config = require('TemplateBrowser.core.config')
@@ -41,14 +22,10 @@ local State = require('TemplateBrowser.core.state')
 local GUI = require('TemplateBrowser.ui.gui')
 local Scanner = require('TemplateBrowser.domain.scanner')
 
+local hexrgb = Colors.hexrgb
+
 -- Configuration
 local USE_OVERLAY = true  -- Set to false for normal window mode
-
-local function SetButtonState(set)
-  local is_new_value, filename, sec, cmd, mode, resolution, val = reaper.get_action_context()
-  reaper.SetToggleCommandState(sec, cmd, set or 0)
-  reaper.RefreshToolbar2(sec, cmd)
-end
 
 -- Initialize state
 State.initialize(Config)
@@ -59,18 +36,11 @@ Scanner.scan_templates(State)
 -- Create GUI instance
 local gui = GUI.new(Config, State, Scanner)
 
-local function cleanup()
-  SetButtonState()
-  State.cleanup()
-end
-
-SetButtonState(1)
-
 -- Run based on mode
 if USE_OVERLAY then
-  -- OVERLAY MODE
+  -- OVERLAY MODE - uses inline defer loop
   local ctx = ImGui.CreateContext("Template Browser")
-  local fonts = Fonts.load(ImGui, ctx)  -- Uses framework defaults from constants.lua
+  local fonts = Fonts.load(ImGui, ctx)
 
   -- Create overlay manager
   local overlay_mgr = OverlayManager.new()
@@ -78,7 +48,6 @@ if USE_OVERLAY then
   -- Push overlay onto stack using centralized defaults
   overlay_mgr:push(OverlayDefaults.create_overlay_config({
     id = "template_browser_main",
-    -- Disable right-click close to allow context menus on tiles
     close_on_scrim = false,
     close_on_background_right_click = false,
 
@@ -107,53 +76,52 @@ if USE_OVERLAY then
       ImGuiStyle.PopMyStyle(ctx)
     end,
 
-    on_close = cleanup,
+    on_close = function()
+      State.cleanup()
+    end,
   }))
 
-  -- Create runtime
-  local runtime = Runtime.new({
-    title = "Template Browser",
-    ctx = ctx,
+  -- Inline defer loop (no separate Runtime module)
+  local open = true
+  local function frame()
+    if not open then
+      State.cleanup()
+      return
+    end
 
-    on_frame = function(ctx)
-      overlay_mgr:render(ctx)
-      return overlay_mgr:is_active()
-    end,
+    overlay_mgr:render(ctx)
+    if not overlay_mgr:is_active() then
+      open = false
+    end
 
-    on_destroy = function()
-      cleanup()
-    end,
-  })
+    if open then
+      reaper.defer(frame)
+    else
+      State.cleanup()
+    end
+  end
 
-  runtime:start()
+  reaper.defer(frame)
 
 else
   -- NORMAL WINDOW MODE
-  local Shell = require('rearkitekt.app.runtime.shell')
-
   Shell.run({
     title = "Template Browser",
     version = "1.0.0",
-
-    show_titlebar = true,
-    show_status_bar = false,
-
+    toggle_button = true,
+    initial_pos = { x = 100, y = 100 },
     initial_size = { w = 1400, h = 800 },
     min_size = { w = 1000, h = 600 },
-
+    icon_color = hexrgb("#FF9F43"),
+    icon_size = 18,
     fonts = {
-      default = 14,
-      title = 20,
-      monospace = 12,
       icons = 14,
     },
-
     draw = function(ctx, shell_state)
       gui:draw(ctx, shell_state)
     end,
-
     on_close = function()
-      cleanup()
+      State.cleanup()
     end,
   })
 end

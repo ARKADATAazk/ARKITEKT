@@ -17,7 +17,6 @@ if profiler_enabled then
 end
 
 -- Load required modules
-local ImGui = ARK.ImGui
 local Shell = require('rearkitekt.app.runtime.shell')
 local Colors = require('rearkitekt.core.colors')
 local Settings = require('rearkitekt.core.settings')
@@ -36,12 +35,6 @@ local GUI = require('ItemPickerWindow.ui.gui')
 local visualization = require('ItemPicker.services.visualization')
 local reaper_interface = require('ItemPicker.data.reaper_api')
 local utils = require('ItemPicker.services.utils')
-
-local function SetButtonState(set)
-  local is_new_value, filename, sec, cmd, mode, resolution, val = reaper.get_action_context()
-  reaper.SetToggleCommandState(sec, cmd, set or 0)
-  reaper.RefreshToolbar2(sec, cmd)
-end
 
 -- Initialize settings
 local data_dir = ARK.get_data_dir("ItemPickerWindow")
@@ -68,18 +61,11 @@ if profiler_enabled then
   ProfilerInit.launch_window()
 end
 
-local function cleanup()
-  SetButtonState()
-  reaper.Main_OnCommand(reaper.NamedCommandLookup("_SWS_STOPPREVIEW"), 0)
-  State.cleanup()
-end
-
-SetButtonState(1)
-
 -- Run in window mode using Shell (like RegionPlaylist)
 Shell.run({
   title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
   version = "1.0.0",
+  toggle_button = true,
   draw = function(ctx, shell_state) gui:draw(ctx, shell_state) end,
   settings = settings,
   initial_pos = { x = 120, y = 120 },
@@ -91,6 +77,7 @@ Shell.run({
     icons = 20,
   },
   on_close = function()
-    cleanup()
+    reaper.Main_OnCommand(reaper.NamedCommandLookup("_SWS_STOPPREVIEW"), 0)
+    State.cleanup()
   end,
 })
