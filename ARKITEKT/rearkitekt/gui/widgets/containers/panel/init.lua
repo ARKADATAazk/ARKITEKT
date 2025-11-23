@@ -565,16 +565,16 @@ local function draw_sidebar(ctx, dl, x, y, width, height, sidebar_cfg, panel_id,
   local elements = sidebar_cfg.elements or {}
   if #elements == 0 then return width end
 
-  local btn_size = sidebar_cfg.button_size or 28
-  local btn_spacing = sidebar_cfg.button_spacing or 4
+  local btn_height = sidebar_cfg.button_size or 28
+  local btn_width = math.floor(btn_height * 0.7)  -- 30% narrower
   local pad_top = sidebar_cfg.padding and sidebar_cfg.padding.top or 4
   local pad_bottom = sidebar_cfg.padding and sidebar_cfg.padding.bottom or 4
 
   -- Draw sidebar background
   ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, sidebar_cfg.bg_color or 0x1A1A1AFF)
 
-  -- Calculate total buttons height
-  local total_btn_height = (#elements * btn_size) + ((#elements - 1) * btn_spacing)
+  -- Calculate total buttons height with 1px overlap
+  local total_btn_height = (#elements * btn_height) - (#elements - 1)  -- 1px overlap
   local available_height = height - pad_top - pad_bottom
 
   -- Calculate start Y based on valign
@@ -588,19 +588,25 @@ local function draw_sidebar(ctx, dl, x, y, width, height, sidebar_cfg, panel_id,
     start_y = y + pad_top + (available_height - total_btn_height) / 2
   end
 
-  -- Center buttons horizontally in sidebar
-  local btn_x = x + (width - btn_size) / 2
+  -- Position buttons at their side edge
+  local btn_x
+  if side == "left" then
+    btn_x = x + (width - btn_width) / 2  -- Center in sidebar for now
+  else -- right
+    btn_x = x + (width - btn_width) / 2
+  end
 
   -- Draw each button
   for i, element in ipairs(elements) do
-    local btn_y = start_y + (i - 1) * (btn_size + btn_spacing)
+    local btn_y = start_y + (i - 1) * (btn_height - 1)  -- 1px overlap
     local btn_id = panel_id .. "_sidebar_" .. side .. "_" .. (element.id or i)
 
-    -- Determine rounding based on position
+    -- Determine rounding based on position and side
     local is_first = (i == 1)
     local is_last = (i == #elements)
     local rounding = sidebar_cfg.rounding or 4
 
+    -- Only round outer corners at extremities
     local corner_rounding = {
       round_top_left = is_first,
       round_top_right = is_first,
@@ -615,7 +621,7 @@ local function draw_sidebar(ctx, dl, x, y, width, height, sidebar_cfg, panel_id,
     btn_config.corner_rounding = corner_rounding
 
     -- Draw the button
-    Button.draw(ctx, dl, btn_x, btn_y, btn_size, btn_size, btn_config, {})
+    Button.draw(ctx, dl, btn_x, btn_y, btn_width, btn_height, btn_config, {})
   end
 
   return width
