@@ -6,6 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local Colors = require('rearkitekt.core.colors')
+local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -125,35 +126,15 @@ function M.render_inner_shadow(dl, x1, y1, x2, y2, strength, rounding)
   PopClipRect(dl)
 end
 
-function M.render_diagonal_stripes(dl, x1, y1, x2, y2, stripe_color, spacing, thickness, opacity, rounding)
+function M.render_diagonal_stripes(ctx, dl, x1, y1, x2, y2, stripe_color, spacing, thickness, opacity, rounding)
   if opacity <= 0 then return end
-
-  local width = x2 - x1
-  local height = y2 - y1
-  local diagonal_length = math.sqrt(width * width + height * height)
 
   local r, g, b, _ = Colors.rgba_to_components(stripe_color)
   local alpha = (255 * opacity)//1
   local line_color = Colors.components_to_rgba(r, g, b, alpha)
 
-  -- Push clip rect to keep stripes within tile bounds
-  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
-
-  -- Draw diagonal lines at 45 degrees from top-left to bottom-right
-  local start_offset = -height
-  local end_offset = width
-
-  for offset = start_offset, end_offset, spacing do
-    local line_x1 = x1 + offset
-    local line_y1 = y1
-    local line_x2 = x1 + offset + height
-    local line_y2 = y2
-
-    ImGui.DrawList_AddLine(dl, line_x1, line_y1, line_x2, line_y2, line_color, thickness)
-  end
-
-  -- Pop clip rect
-  PopClipRect(dl)
+  -- Use baked texture for performance (25+ lines → 1 draw call)
+  Background.draw_diagonal_stripes(ctx, dl, x1, y1, x2, y2, spacing, line_color, thickness)
 end
 
 function M.render_playback_progress(dl, x1, y1, x2, y2, base_color, progress, fade_alpha, rounding, progress_color_override)
@@ -224,7 +205,7 @@ function M.render_border(dl, x1, y1, x2, y2, base_color, saturation, brightness,
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, ImGui.DrawFlags_RoundCornersAll, thickness)
 end
 
-function M.render_complete(dl, x1, y1, x2, y2, base_color, config, is_selected, hover_factor, playback_progress, playback_fade, border_color_override, progress_color_override, stripe_color, stripe_enabled)
+function M.render_complete(ctx, dl, x1, y1, x2, y2, base_color, config, is_selected, hover_factor, playback_progress, playback_fade, border_color_override, progress_color_override, stripe_color, stripe_enabled)
   hover_factor = hover_factor or 0
   playback_progress = playback_progress or 0
   playback_fade = playback_fade or 0
@@ -245,7 +226,7 @@ function M.render_complete(dl, x1, y1, x2, y2, base_color, config, is_selected, 
     local stripe_spacing = config.stripe_spacing or 10
     local stripe_thickness = config.stripe_thickness or 1
     local stripe_opacity = config.stripe_opacity or 0.08
-    M.render_diagonal_stripes(dl, x1, y1, x2, y2, stripe_color, stripe_spacing, stripe_thickness, stripe_opacity, config.rounding or 6)
+    M.render_diagonal_stripes(ctx, dl, x1, y1, x2, y2, stripe_color, stripe_spacing, stripe_thickness, stripe_opacity, config.rounding or 6)
   end
 
   M.render_gradient(dl, x1, y1, x2, y2, base_color, config.gradient_intensity, config.gradient_opacity, config.rounding or 6)

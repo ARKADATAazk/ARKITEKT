@@ -210,7 +210,7 @@ function ColorsView:draw(ctx, shell_state)
       },
     }
 
-    Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Dummy(ctx, 0, 8)
     ImGui.Indent(ctx, 12)

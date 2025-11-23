@@ -334,7 +334,7 @@ function MCPView:draw(ctx, shell_state)
       primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
       secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
     }
-    Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+    Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
     ImGui.Dummy(ctx, 0, 4)
 
@@ -736,7 +736,7 @@ function MCPView:draw(ctx, shell_state)
         primary = {type = 'grid', spacing = 50, color = PC.pattern_primary, line_thickness = 1.5},
         secondary = {enabled = true, type = 'grid', spacing = 5, color = PC.pattern_secondary, line_thickness = 0.5},
       }
-      Background.draw(dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
+      Background.draw(ctx, dl, child_x, child_y, child_x + child_w, child_y + child_h, pattern_cfg)
 
       ImGui.Dummy(ctx, 0, 4)
       ImGui.Indent(ctx, 8)

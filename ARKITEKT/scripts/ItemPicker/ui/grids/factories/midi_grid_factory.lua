@@ -10,6 +10,8 @@ local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
 local M = {}
 
 function M.create(ctx, config, state, visualization, animator)
+  local grid  -- Forward declaration for selection cleanup
+
   local function get_items()
     if not state.midi_indexes then return {} end
 
@@ -271,13 +273,34 @@ function M.create(ctx, config, state, visualization, animator)
     state.runtime_cache.midi_filtered = filtered
     state.runtime_cache.midi_filter_hash = filter_hash
 
+    -- Smart selection cleanup: deselect items that are no longer accessible
+    if grid and grid.selection then
+      local available_keys = {}
+      for _, item_data in ipairs(filtered) do
+        available_keys[item_data.uuid] = true
+      end
+
+      local selected = grid.selection:selected_keys()
+      local needs_update = false
+      for _, key in ipairs(selected) do
+        if not available_keys[key] then
+          grid.selection.selected[key] = nil
+          needs_update = true
+        end
+      end
+
+      if needs_update and grid.behaviors and grid.behaviors.on_select then
+        grid.behaviors.on_select(grid, grid.selection:selected_keys())
+      end
+    end
+
     return filtered
   end
 
   -- Store badge rectangles for exclusion zones (tile_key -> rect)
   local badge_rects = {}
 
-  local grid = Grid.new({
+  grid = Grid.new({
     id = "midi_items",
     gap = config.TILE.GAP,
     min_col_w = function() return state.get_tile_width() end,

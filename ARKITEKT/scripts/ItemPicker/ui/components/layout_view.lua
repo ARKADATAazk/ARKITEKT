@@ -48,36 +48,18 @@ local function smootherstep(t)
   return t * t * t * (t * (t * 6 - 15) + 10)
 end
 
--- Draw a panel background and border with dotted pattern
+-- Draw a panel background and border (no dotted pattern - moved to overlay)
 local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
   alpha = alpha or 1.0
   rounding = rounding or 6
 
-  -- Panel background (semi-transparent, lighter)
-  local bg_color = Colors.hexrgb("#0F0F0F")
-  bg_color = Colors.with_alpha(bg_color, math.floor(alpha * 0x99))  -- 60% opacity (lighter)
+  -- Panel background (lighter)
+  local bg_color = Colors.hexrgb("#1A1A1A")
+  bg_color = Colors.with_alpha(bg_color, math.floor(alpha * 0x99))  -- 60% opacity
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, rounding)
 
-  -- Dotted background pattern (more visible)
-  local pattern_config = {
-    enabled = true,
-    primary = {
-      type = 'dots',
-      spacing = 16,
-      dot_size = 1.5,
-      color = Colors.with_alpha(Colors.hexrgb("#2A2A2A"), math.floor(alpha * 180)),  -- More visible
-      offset_x = 0,
-      offset_y = 0,
-    }
-  }
-
-  -- Push clip rect for rounded corners
-  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
-  Background.draw(dl, x1, y1, x2, y2, pattern_config)
-  ImGui.DrawList_PopClipRect(dl)
-
-  -- Panel border
-  local border_color = Colors.hexrgb("#1A1A1A")
+  -- Panel border (even lighter)
+  local border_color = Colors.hexrgb("#2A2A2A")
   border_color = Colors.with_alpha(border_color, math.floor(alpha * 0xAA))
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
 end
@@ -175,8 +157,29 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local coord_offset_x = window_x
   local coord_offset_y = window_y
 
+  -- Dotted pattern over entire overlay (no background fill - uses shell overlay scrim)
+  -- Using baked texture for performance (single draw call vs 8000+ circles)
+  local overlay_pattern_config = {
+    enabled = true,
+    use_texture = true,  -- Use baked texture for performance
+    primary = {
+      type = 'dots',
+      spacing = 16,
+      dot_size = 1.5,
+      color = Colors.with_alpha(Colors.hexrgb("#2A2A2A"), math.floor(overlay_alpha * 180)),
+      offset_x = 0,
+      offset_y = 0,
+    }
+  }
+  Background.draw(ctx, draw_list, coord_offset_x, coord_offset_y,
+      coord_offset_x + screen_w, coord_offset_y + screen_h, overlay_pattern_config)
+
   -- Mouse-based hover detection for responsive UI (slide/push behavior)
   local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
+
+  -- Check if mouse is within window bounds (fixes multi-monitor cursor detection issues)
+  local mouse_in_window = mouse_x >= coord_offset_x and mouse_x < coord_offset_x + screen_w and
+                          mouse_y >= coord_offset_y and mouse_y < coord_offset_y + screen_h
 
   -- Search fade with different offset (always visible)
   local search_fade = smootherstep(math.max(0, (overlay_alpha - 0.05) / 0.95))
@@ -206,21 +209,51 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Trigger when mouse is ANYWHERE above the current search position (not just a thin band)
   -- This makes it consistent with filter behavior and works better with fast cursor movement
-  local is_in_trigger_zone = mouse_y < (temp_search_y - trigger_zone_padding)
+  -- Only trigger if mouse is within window bounds (fixes multi-monitor cursor detection)
+  local is_in_trigger_zone = mouse_in_window and mouse_y < (temp_search_y - trigger_zone_padding)
+
+  -- Detect fast mouse crossing through top of window (helps with fast cursor movement)
+  -- If mouse was in window last frame but is now above the window top, trigger the panel
+  local crossed_through_top = false
+  if self.state.last_mouse_in_window and not mouse_in_window and mouse_y < coord_offset_y then
+    -- Mouse was inside, now outside above the top - it crossed through the trigger zone
+    crossed_through_top = true
+  end
+  self.state.last_mouse_in_window = mouse_in_window
+
+  -- Combined trigger: either currently in zone OR crossed through top
+  is_in_trigger_zone = is_in_trigger_zone or crossed_through_top
 
   -- Once triggered, stay visible until mouse goes below the search field (with buffer)
-  local is_below_search = mouse_y > (temp_search_y + search_height + self.config.UI_PANELS.settings.close_below_search)
+  local is_below_search = mouse_in_window and mouse_y > (temp_search_y + search_height + self.config.UI_PANELS.settings.close_below_search)
 
   -- Initialize sticky state
   if self.state.settings_sticky_visible == nil then
     self.state.settings_sticky_visible = false
   end
 
-  -- Update sticky state
+  -- Update sticky state with delay only for mouse leaving window (helps with multi-monitor overshoot)
+  local close_delay = 1.5  -- seconds before closing when mouse leaves window
   if is_in_trigger_zone then
     self.state.settings_sticky_visible = true
+    self.state.settings_close_timer = nil  -- Cancel any pending close
   elseif is_below_search then
+    -- Mouse went below search within window - close immediately
     self.state.settings_sticky_visible = false
+    self.state.settings_close_timer = nil
+  elseif not mouse_in_window then
+    -- Mouse left window (e.g., overshoot to another monitor) - use delay
+    if self.state.settings_sticky_visible then
+      if not self.state.settings_close_timer then
+        self.state.settings_close_timer = reaper.time_precise()
+      elseif reaper.time_precise() - self.state.settings_close_timer >= close_delay then
+        self.state.settings_sticky_visible = false
+        self.state.settings_close_timer = nil
+      end
+    end
+  else
+    -- Mouse is in window but between trigger zone and close zone - cancel timer
+    self.state.settings_close_timer = nil
   end
 
   -- Smooth slide for settings area
@@ -459,6 +492,19 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       self.state.set_setting('waveform_zero_line', not waveform_zero_line)
     end
 
+    -- Show Duration checkbox
+    local zero_line_label_width = ImGui.CalcTextSize(ctx, "Zero Line")
+    local show_duration_checkbox_x = zero_line_checkbox_x + zero_line_label_width + 18 + 8
+    local show_duration = self.state.settings.show_duration
+    if show_duration == nil then show_duration = true end
+
+    local _, show_duration_clicked = Checkbox.draw(ctx, draw_list, show_duration_checkbox_x, waveform_y,
+      "Show Duration",
+      show_duration, checkbox_config, "show_duration")
+    if show_duration_clicked then
+      self.state.set_setting('show_duration', not show_duration)
+    end
+
     ImGui.PopStyleVar(ctx)
   end
 
@@ -515,6 +561,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     is_toggled = content_filter_mode == "MIXED",  -- Toggled when showing MIXED
     preset_name = "BUTTON_TOGGLE_WHITE",
     tooltip = "Left: Toggle MIDI/AUDIO | Right: Show both",
+    ignore_modal = true,  -- Bypass overlay blocking
     on_click = function()
       -- Left click: toggle between MIDI and AUDIO
       if content_filter_mode == "MIDI" then
@@ -544,17 +591,28 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local draw_layout_icon = function(btn_draw_list, icon_x, icon_y)
     local icon_size = 14
     local gap = 2
+    local top_bar_h = 2  -- Top bar representing search/settings
+    local top_padding = 2  -- Padding between top bar and panels
+
+    -- Draw top bar (represents search bar/top panel)
+    ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + icon_size, icon_y + top_bar_h, icon_color, 0)
+
+    -- Calculate remaining height for panels (reduced by top bar + padding)
+    local panels_start_y = icon_y + top_bar_h + top_padding
+    local panels_height = icon_size - top_bar_h - top_padding
 
     if is_vertical then
       -- Vertical mode: 2 rectangles stacked (top and bottom)
-      local rect_h = (icon_size - gap) / 2
-      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + icon_size, icon_y + rect_h, icon_color, 0)
-      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y + rect_h + gap, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
+      local rect_h = (panels_height - gap) / 2
+      -- Draw filled rectangles
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, panels_start_y, icon_x + icon_size, panels_start_y + rect_h, icon_color, 0)
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, panels_start_y + rect_h + gap, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
     else
       -- Horizontal mode: 2 rectangles side by side (left and right)
       local rect_w = (icon_size - gap) / 2
-      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, icon_y, icon_x + rect_w, icon_y + icon_size, icon_color, 0)
-      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x + rect_w + gap, icon_y, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
+      -- Draw filled rectangles
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x, panels_start_y, icon_x + rect_w, icon_y + icon_size, icon_color, 0)
+      ImGui.DrawList_AddRectFilled(btn_draw_list, icon_x + rect_w + gap, panels_start_y, icon_x + icon_size, icon_y + icon_size, icon_color, 0)
     end
   end
 
@@ -565,6 +623,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     preset_name = "BUTTON_TOGGLE_WHITE",
     tooltip = not is_mixed_mode and "Enable Split View (MIXED mode)" or
               (is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout"),
+    ignore_modal = true,  -- Bypass overlay blocking
     on_click = function()
       if not is_mixed_mode then
         -- Enable MIXED mode (both AUDIO and MIDI)
@@ -602,6 +661,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       label = mode.label,
       is_toggled = is_active,
       preset_name = "BUTTON_TOGGLE_WHITE",
+      ignore_modal = true,  -- Bypass overlay blocking
       on_click = function()
         if current_sort == mode.id then
           -- Clicking the same sort mode toggles ascending/descending
@@ -644,17 +704,46 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Render region filter bar with slide animation (if region processing enabled and regions available)
   local filter_bar_height = 0
-  local filter_bar_max_height = self.config.UI_PANELS.filter.max_height
   local enable_region_processing = self.state.settings.enable_region_processing or self.state.settings.show_region_tags
   if enable_region_processing and self.state.all_regions and #self.state.all_regions > 0 then
     local filter_bar_base_y = search_y + search_height + self.config.UI_PANELS.filter.spacing_below_search
+
+    -- Calculate actual height needed based on regions (responsive)
+    local chip_cfg = self.config.REGION_TAGS.chip
+    local padding_x = 14
+    local padding_y = 4
+    local line_spacing = 4
+    local chip_height = chip_cfg.height + 2
+    local available_width = screen_w - padding_x * 2
+
+    -- Count lines needed
+    local num_lines = 1
+    local current_line_width = 0
+    for i, region in ipairs(self.state.all_regions) do
+      local text_w = ImGui.CalcTextSize(ctx, region.name)
+      local chip_w = text_w + chip_cfg.padding_x * 2
+      local needed_width = chip_w
+      if current_line_width > 0 then
+        needed_width = needed_width + chip_cfg.margin_x
+      end
+      if current_line_width + needed_width > available_width and current_line_width > 0 then
+        num_lines = num_lines + 1
+        current_line_width = chip_w
+      else
+        current_line_width = current_line_width + needed_width
+      end
+    end
+
+    -- Calculate actual max height based on content
+    local filter_bar_max_height = padding_y * 2 + num_lines * chip_height + (num_lines - 1) * line_spacing
 
     -- Calculate current panel start position
     local temp_filter_height = filter_bar_max_height * (self.state.filter_slide_progress or 0)
     local temp_panels_start_y = search_y + search_height + temp_filter_height + 20
 
     -- Show filter when hovering anywhere above the panels (trigger threshold into panels)
-    local is_hovering_above_panels = mouse_y < (temp_panels_start_y + self.config.UI_PANELS.filter.trigger_into_panels)
+    -- Only trigger if mouse is within window bounds (fixes multi-monitor cursor detection)
+    local is_hovering_above_panels = mouse_in_window and mouse_y < (temp_panels_start_y + self.config.UI_PANELS.filter.trigger_into_panels)
 
     -- Show filters when hovering above panels OR when settings are visible
     local filters_should_show = is_hovering_above_panels or self.state.settings_sticky_visible
@@ -675,20 +764,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     if filter_bar_height > 1 then
       local filter_bar_y = filter_bar_base_y
 
-      -- Calculate total width needed for all chips
-      local total_chips_width = 0
-      local chip_cfg = self.config.REGION_TAGS.chip
-      for i, region in ipairs(self.state.all_regions) do
-        local text_w = ImGui.CalcTextSize(ctx, region.name)
-        local chip_w = text_w + chip_cfg.padding_x * 2
-        total_chips_width = total_chips_width + chip_w
-        if i < #self.state.all_regions then
-          total_chips_width = total_chips_width + chip_cfg.margin_x
-        end
-      end
-      -- Center the filter bar
-      local filter_bar_x = coord_offset_x + math.floor((screen_w - total_chips_width) / 2 + 0.5)
-      RegionFilterBar.draw(ctx, draw_list, filter_bar_x, filter_bar_y, total_chips_width + 100, self.state, self.config, filter_alpha)
+      -- Pass full screen width - filter bar handles multi-line wrapping and centering
+      RegionFilterBar.draw(ctx, draw_list, coord_offset_x, filter_bar_y, screen_w, self.state, self.config, filter_alpha)
     end
   end
 
@@ -728,21 +805,17 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Draw panel background
     draw_panel(draw_list, panel_x1, panel_y1, panel_x2, panel_y2, panel_rounding, section_fade)
 
-    -- MIDI grid child (starts at panel top to allow selection on header)
+    -- Draw MIDI header first, in its own space
+    draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config, 0)
+
+    -- MIDI grid child starts below header, in its own space
     local midi_grid_width = content_width - panel_right_padding - panel_padding * 2
-    local midi_child_h = header_height + content_height - panel_padding
-    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y)
+    local midi_child_h = content_height - panel_padding
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
     if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
-      -- MIDI header (centered) - drawn inside child
-      local scroll_y = ImGui.GetScrollY(ctx)
-      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config, scroll_y)
-
-      -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
-      -- Pass full height so inner child includes header area for selection rendering
-      local midi_grid_full_h = header_height + content_height - panel_padding
-      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_grid_full_h, header_height)
+      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_child_h, 0)
       ImGui.EndChild(ctx)
     end
 
@@ -758,21 +831,17 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Draw panel background
     draw_panel(draw_list, panel_x1, panel_y1, panel_x2, panel_y2, panel_rounding, section_fade)
 
-    -- Audio grid child (starts at panel top to allow selection on header)
+    -- Draw Audio header first, in its own space
+    draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config, 0)
+
+    -- Audio grid child starts below header, in its own space
     local audio_grid_width = content_width - panel_right_padding - panel_padding * 2
-    local audio_child_h = header_height + content_height - panel_padding
-    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y)
+    local audio_child_h = content_height - panel_padding
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
     if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
-      -- Audio header (centered) - drawn inside child
-      local scroll_y = ImGui.GetScrollY(ctx)
-      draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config, scroll_y)
-
-      -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
-      -- Pass full height so inner child includes header area for selection rendering
-      local audio_grid_full_h = header_height + content_height - panel_padding
-      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_grid_full_h, header_height)
+      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_child_h, 0)
       ImGui.EndChild(ctx)
     end
 
@@ -828,23 +897,20 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
       draw_panel(draw_list, midi_panel_x1, midi_panel_y1, midi_panel_x2, midi_panel_y2, panel_rounding, section_fade)
 
-      -- MIDI grid child (starts at panel top to allow selection on header)
+      -- Draw MIDI header first, in its own space
+      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14, self.config, 0)
+
+      -- MIDI grid child starts below header, in its own space
       local midi_grid_width = midi_width - panel_padding * 2
-      local midi_child_h = header_height + content_height - panel_padding
-      ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y)
+      local midi_child_h = content_height - panel_padding
+      ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
       if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
         ImGui.WindowFlags_NoScrollbar) then
-        -- MIDI header (centered) - drawn inside child
-        local scroll_y = ImGui.GetScrollY(ctx)
-        draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14, self.config, scroll_y)
-
-        -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
         if self.coordinator.midi_grid then
           self.coordinator.midi_grid.block_all_input = block_input
         end
-        local midi_grid_full_h = header_height + content_height - panel_padding
-        self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_grid_full_h, header_height)
+        self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_child_h, 0)
         ImGui.EndChild(ctx)
       end
 
@@ -869,23 +935,20 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
       draw_panel(draw_list, audio_panel_x1, audio_panel_y1, audio_panel_x2, audio_panel_y2, panel_rounding, section_fade)
 
-      -- Audio grid child (starts at panel top to allow selection on header)
+      -- Draw Audio header first, in its own space
+      draw_panel_title(ctx, draw_list, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15, self.config, 0)
+
+      -- Audio grid child starts below header, in its own space
       local audio_grid_width = audio_width - panel_padding * 2
-      local audio_child_h = header_height + content_height - panel_padding
-      ImGui.SetCursorScreenPos(ctx, audio_start_x + panel_padding, start_y)
+      local audio_child_h = content_height - panel_padding
+      ImGui.SetCursorScreenPos(ctx, audio_start_x + panel_padding, start_y + header_height)
 
       if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
         ImGui.WindowFlags_NoScrollbar) then
-        -- Audio header (centered) - drawn inside child
-        local scroll_y = ImGui.GetScrollY(ctx)
-        draw_panel_title(ctx, draw_list, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15, self.config, scroll_y)
-
-        -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
         if self.coordinator.audio_grid then
           self.coordinator.audio_grid.block_all_input = block_input
         end
-        local audio_grid_full_h = header_height + content_height - panel_padding
-        self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_grid_full_h, header_height)
+        self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_child_h, 0)
         ImGui.EndChild(ctx)
       end
 
@@ -938,24 +1001,21 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Draw MIDI panel background
     draw_panel(draw_list, midi_panel_x1, midi_panel_y1, midi_panel_x2, midi_panel_y2, panel_rounding, section_fade)
 
-    -- MIDI grid child (starts at panel top to allow selection on header)
+    -- Draw MIDI header first, in its own space
+    draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config, 0)
+
+    -- MIDI grid child starts below header, in its own space
     local midi_grid_width = content_width - panel_right_padding - panel_padding * 2
-    local midi_child_h = header_height + midi_height - panel_padding
-    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y)
+    local midi_child_h = midi_height - panel_padding
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
     if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
-      -- MIDI header (centered) - drawn inside child
-      local scroll_y = ImGui.GetScrollY(ctx)
-      draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config, scroll_y)
-
-      -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
       -- Block grid input during separator drag
       if self.coordinator.midi_grid then
         self.coordinator.midi_grid.block_all_input = block_input
       end
-      local midi_grid_full_h = header_height + midi_height - panel_padding
-      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_grid_full_h, header_height)
+      self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_child_h, 0)
       ImGui.EndChild(ctx)
     end
 
@@ -981,24 +1041,21 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Draw Audio panel background
     draw_panel(draw_list, audio_panel_x1, audio_panel_y1, audio_panel_x2, audio_panel_y2, panel_rounding, section_fade)
 
-    -- Audio grid child (starts at panel top to allow selection on header)
+    -- Draw Audio header first, in its own space
+    draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config, 0)
+
+    -- Audio grid child starts below header, in its own space
     local audio_grid_width = content_width - panel_right_padding - panel_padding * 2
-    local audio_child_h = header_height + audio_height - panel_padding
-    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_start_y)
+    local audio_child_h = audio_height - panel_padding
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_start_y + header_height)
 
     if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
-      -- Audio header (centered) - drawn inside child
-      local scroll_y = ImGui.GetScrollY(ctx)
-      draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config, scroll_y)
-
-      -- Grid content area (no SetCursorScreenPos - let coordinator child start at top)
       -- Block grid input during separator drag
       if self.coordinator.audio_grid then
         self.coordinator.audio_grid.block_all_input = block_input
       end
-      local audio_grid_full_h = header_height + audio_height - panel_padding
-      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_grid_full_h, header_height)
+      self.coordinator:render_audio_grid(ctx, audio_grid_width, audio_child_h, 0)
       ImGui.EndChild(ctx)
     end
 

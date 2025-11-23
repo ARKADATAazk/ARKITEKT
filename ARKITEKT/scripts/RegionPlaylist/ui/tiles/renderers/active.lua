@@ -102,7 +102,7 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
     playback_fade = animator:get(item.key, 'progress_fade')
   end
   
-  BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade)
+  BaseRenderer.draw_base_tile(ctx, dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade)
   if state.selected and fx_config.ants_enabled then BaseRenderer.draw_marching_ants(dl, rect, base_color, fx_config) end
 
   local actual_height = tile_height or (y2 - y1)
@@ -245,7 +245,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   end
 
   -- Draw base tile with chip color for border and playback progress
-  BaseRenderer.draw_base_tile(dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade, playlist_data.chip_color)
+  BaseRenderer.draw_base_tile(ctx, dl, rect, base_color, fx_config, state, hover_factor, playback_progress, playback_fade, playlist_data.chip_color)
   
   if state.selected and fx_config.ants_enabled then BaseRenderer.draw_marching_ants(dl, rect, playlist_data.chip_color, fx_config) end
 

@@ -6,9 +6,73 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Style = require('rearkitekt.gui.style.defaults')
-local InteractionBlocking = require('rearkitekt.gui.utils.interaction_blocking')
+local Colors = require('rearkitekt.core.colors')
 
 local M = {}
+
+-- ============================================================================
+-- COLOR DERIVATION: HSL-based state colors from base
+-- ============================================================================
+
+-- Derive state colors from a base color using HSL adjustments
+local function derive_state_color(base, state)
+  if state == 'hover' then
+    return Colors.adjust_brightness(base, 1.15)
+  elseif state == 'active' then
+    return Colors.adjust_brightness(base, 0.85)
+  elseif state == 'disabled' then
+    return Colors.with_alpha(Colors.desaturate(base, 0.5), 0x80)
+  end
+  return base
+end
+
+-- Get colors for current button state (data-driven approach)
+local function get_state_colors(config, is_disabled, is_toggled, is_active, hover_alpha)
+  if is_disabled then
+    return config.bg_disabled_color or derive_state_color(config.bg_color, 'disabled'),
+           config.border_inner_disabled_color or derive_state_color(config.border_inner_color, 'disabled'),
+           config.border_outer_disabled_color or derive_state_color(config.border_outer_color, 'disabled'),
+           config.text_disabled_color or derive_state_color(config.text_color, 'disabled')
+  end
+
+  -- Select base colors (toggled or normal)
+  local prefix = is_toggled and '_on' or ''
+  local bg = config['bg' .. prefix .. '_color'] or config.bg_color
+  local border_inner = config['border_inner' .. prefix .. '_color'] or config.border_inner_color
+  local border_outer = config['border_outer' .. prefix .. '_color'] or config.border_outer_color
+  local text = config['text' .. prefix .. '_color'] or config.text_color
+
+  -- Apply active/hover modulation
+  if is_active then
+    local active_suffix = prefix .. '_active_color'
+    bg = config['bg' .. active_suffix] or derive_state_color(bg, 'active')
+    border_inner = config['border' .. (is_toggled and '_on_active_color' or '_active_color')] or derive_state_color(border_inner, 'active')
+    text = config['text' .. active_suffix] or text
+  elseif hover_alpha > 0.01 then
+    local hover_suffix = prefix .. '_hover_color'
+    local hover_bg = config['bg' .. hover_suffix] or derive_state_color(bg, 'hover')
+    local hover_border = config['border' .. (is_toggled and '_on_hover_color' or '_hover_color')] or derive_state_color(border_inner, 'hover')
+    local hover_text = config['text' .. hover_suffix] or text
+    bg = Style.RENDER.lerp_color(bg, hover_bg, hover_alpha)
+    border_inner = Style.RENDER.lerp_color(border_inner, hover_border, hover_alpha)
+    text = Style.RENDER.lerp_color(text, hover_text, hover_alpha)
+  end
+
+  return bg, border_inner, border_outer, text
+end
+
+-- Resolve config with preset support (shared by draw and measure)
+local function resolve_config(user_config)
+  local base = Style.BUTTON
+  if user_config then
+    if user_config.preset_name and Style[user_config.preset_name] then
+      base = Style.apply_defaults(base, Style[user_config.preset_name])
+    elseif user_config.preset and type(user_config.preset) == 'table' then
+      base = Style.apply_defaults(base, user_config.preset)
+    end
+  end
+  return Style.apply_defaults(base, user_config)
+end
 
 -- Instance storage for animation state
 local instances = {}
@@ -115,7 +179,7 @@ end
 
 local function render_button(ctx, dl, x, y, width, height, config, context, instance)
   local is_disabled = config.is_disabled or false
-  local is_hovered = not is_disabled and InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, x, y, x + width, y + height, config.is_blocking, config.ignore_modal)
+  local is_hovered = not is_disabled and ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
   local is_active = not is_disabled and ImGui.IsMouseDown(ctx, 0) and is_hovered
   local is_toggled = config.is_toggled or false
 
@@ -123,48 +187,9 @@ local function render_button(ctx, dl, x, y, width, height, config, context, inst
   local dt = ImGui.GetDeltaTime(ctx)
   instance:update(dt, is_hovered, is_active)
 
-  -- Get animated colors (considering toggle state and disabled state)
-  local bg_color, border_inner, border_outer, text_color
-
-  if is_disabled then
-    -- Use disabled colors
-    bg_color = config.bg_disabled_color or config.bg_color
-    border_inner = config.border_inner_disabled_color or config.border_inner_color
-    border_outer = config.border_outer_disabled_color or config.border_outer_color
-    text_color = config.text_disabled_color or config.text_color
-  elseif is_toggled then
-    -- Use toggle ON colors
-    bg_color = config.bg_on_color or config.bg_color
-    border_inner = config.border_inner_on_color or config.border_inner_color
-    border_outer = config.border_outer_on_color or config.border_outer_color
-    text_color = config.text_on_color or config.text_color
-    
-    if is_active then
-      bg_color = config.bg_on_active_color or bg_color
-      border_inner = config.border_on_active_color or border_inner
-      text_color = config.text_on_active_color or text_color
-    elseif instance.hover_alpha > 0.01 then
-      bg_color = Style.RENDER.lerp_color(config.bg_on_color or config.bg_color, config.bg_on_hover_color or bg_color, instance.hover_alpha)
-      border_inner = Style.RENDER.lerp_color(config.border_inner_on_color or config.border_inner_color, config.border_on_hover_color or border_inner, instance.hover_alpha)
-      text_color = Style.RENDER.lerp_color(config.text_on_color or config.text_color, config.text_on_hover_color or text_color, instance.hover_alpha)
-    end
-  else
-    -- Use normal colors
-    bg_color = config.bg_color
-    border_inner = config.border_inner_color
-    border_outer = config.border_outer_color
-    text_color = config.text_color
-    
-    if is_active then
-      bg_color = config.bg_active_color or bg_color
-      border_inner = config.border_active_color or border_inner
-      text_color = config.text_active_color or text_color
-    elseif instance.hover_alpha > 0.01 then
-      bg_color = Style.RENDER.lerp_color(config.bg_color, config.bg_hover_color or config.bg_color, instance.hover_alpha)
-      border_inner = Style.RENDER.lerp_color(config.border_inner_color, config.border_hover_color or config.border_inner_color, instance.hover_alpha)
-      text_color = Style.RENDER.lerp_color(config.text_color, config.text_hover_color or config.text_color, instance.hover_alpha)
-    end
-  end
+  -- Get animated colors using data-driven approach
+  local bg_color, border_inner, border_outer, text_color =
+    get_state_colors(config, is_disabled, is_toggled, is_active, instance.hover_alpha)
   
   -- Calculate rounding
   local rounding = config.rounding or 0
@@ -201,48 +226,29 @@ local function render_button(ctx, dl, x, y, width, height, config, context, inst
   if config.custom_draw then
     config.custom_draw(ctx, dl, x, y, width, height, is_hovered, is_active, text_color)
   elseif icon ~= "" or label ~= "" then
-    -- If we have both icon and label, or just one
     if icon_font and icon ~= "" then
-      -- Draw icon with icon font and label with regular font
-      local icon_w, icon_h = 0, 0
-      local label_w, label_h = 0, 0
-
-      -- Calculate icon dimensions
+      -- Icon with separate font + optional label
       ImGui.PushFont(ctx, icon_font, icon_size or 16)
-      icon_w = ImGui.CalcTextSize(ctx, icon)
-      icon_h = ImGui.GetTextLineHeight(ctx)
+      local icon_w, icon_h = ImGui.CalcTextSize(ctx, icon), ImGui.GetTextLineHeight(ctx)
       ImGui.PopFont(ctx)
 
-      -- Calculate label dimensions
-      if label ~= "" then
-        label_w = ImGui.CalcTextSize(ctx, label)
-        label_h = ImGui.GetTextLineHeight(ctx)
-      end
+      local label_w = label ~= "" and ImGui.CalcTextSize(ctx, label) or 0
+      local spacing = (label ~= "") and 4 or 0
+      local start_x = x + (width - icon_w - spacing - label_w) * 0.5
 
-      -- Calculate total width (icon + spacing + label)
-      local spacing = (icon ~= "" and label ~= "") and 4 or 0
-      local total_w = icon_w + spacing + label_w
-      local start_x = x + (width - total_w) * 0.5
-
-      -- Draw icon
-      local icon_y = y + (height - icon_h) * 0.5
       ImGui.PushFont(ctx, icon_font, icon_size or 16)
-      ImGui.DrawList_AddText(dl, start_x, icon_y, text_color, icon)
+      ImGui.DrawList_AddText(dl, start_x, y + (height - icon_h) * 0.5, text_color, icon)
       ImGui.PopFont(ctx)
 
-      -- Draw label
       if label ~= "" then
-        local label_x = start_x + icon_w + spacing
-        local label_y = y + (height - label_h) * 0.5
-        ImGui.DrawList_AddText(dl, label_x, label_y, text_color, label)
+        local label_h = ImGui.GetTextLineHeight(ctx)
+        ImGui.DrawList_AddText(dl, start_x + icon_w + spacing, y + (height - label_h) * 0.5, text_color, label)
       end
     else
-      -- Simple case: no icon font, just draw text normally
+      -- Simple text
       local display_text = icon .. (icon ~= "" and label ~= "" and " " or "") .. label
       local text_w = ImGui.CalcTextSize(ctx, display_text)
-      local text_x = x + (width - text_w) * 0.5
-      local text_y = y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5
-      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, display_text)
+      ImGui.DrawList_AddText(dl, x + (width - text_w) * 0.5, y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5, text_color, display_text)
     end
   end
   
@@ -254,17 +260,7 @@ end
 -- ============================================================================
 
 function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
-  -- Resolve base style with optional preset support
-  local base = Style.BUTTON
-  if user_config then
-    if user_config.preset_name and Style[user_config.preset_name] then
-      base = Style.apply_defaults(base, Style[user_config.preset_name])
-    elseif user_config.preset and type(user_config.preset) == 'table' then
-      base = Style.apply_defaults(base, user_config.preset)
-    end
-  end
-  -- Apply style defaults
-  local config = Style.apply_defaults(base, user_config)
+  local config = resolve_config(user_config)
   
   -- Resolve context (panel vs standalone)
   local context = resolve_context(config, state_or_id)
@@ -291,8 +287,8 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
     config.on_right_click()
   end
   
-  -- Handle tooltip
-  if is_hovered and config.tooltip then
+  -- Handle tooltip (use IsItemHovered which respects popup layering)
+  if ImGui.IsItemHovered(ctx) and config.tooltip then
     ImGui.SetTooltip(ctx, config.tooltip)
   end
   
@@ -300,15 +296,7 @@ function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
 end
 
 function M.measure(ctx, user_config)
-  local base = Style.BUTTON
-  if user_config then
-    if user_config.preset_name and Style[user_config.preset_name] then
-      base = Style.apply_defaults(base, Style[user_config.preset_name])
-    elseif user_config.preset and type(user_config.preset) == 'table' then
-      base = Style.apply_defaults(base, user_config.preset)
-    end
-  end
-  local config = Style.apply_defaults(base, user_config)
+  local config = resolve_config(user_config)
   
   -- Fixed width?
   if config.width then

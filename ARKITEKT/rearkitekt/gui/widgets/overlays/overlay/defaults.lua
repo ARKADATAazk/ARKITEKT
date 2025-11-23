@@ -39,12 +39,12 @@ local default_config = {
     },
     
     gradient = {
-      top_enabled = true,
+      top_enabled = false,
       top_color = hexrgb("#FFFFFF"),
       top_height = 80,
       top_max_alpha = 0.06,
-      
-      bottom_enabled = true,
+
+      bottom_enabled = false,
       bottom_color = hexrgb("#000000"),
       bottom_height = 60,
       bottom_max_alpha = 0.08,

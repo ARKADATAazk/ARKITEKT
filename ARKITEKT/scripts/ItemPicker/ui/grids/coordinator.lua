@@ -92,10 +92,22 @@ function Coordinator:render_audio_grid(ctx, avail_w, avail_h, header_offset)
       end
     end
 
-    -- Offset grid rendering down if there's a header above
+    -- Set clip bounds to limit grid rendering below header
     if header_offset > 0 then
       local origin_x, origin_y = ImGui.GetCursorScreenPos(ctx)
+      local window_x, window_y = ImGui.GetWindowPos(ctx)
+      -- Set panel_clip_bounds to constrain grid below header
+      self.audio_grid.panel_clip_bounds = {
+        window_x,
+        origin_y + header_offset,  -- Start below header
+        window_x + avail_w,
+        window_y + avail_h
+      }
+      self.audio_grid.clip_rendering = true  -- Enable actual rendering clipping
       ImGui.SetCursorScreenPos(ctx, origin_x, origin_y + header_offset)
+    else
+      self.audio_grid.panel_clip_bounds = nil
+      self.audio_grid.clip_rendering = false
     end
 
     self.audio_grid:draw(ctx)
@@ -133,10 +145,22 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
       end
     end
 
-    -- Offset grid rendering down if there's a header above
+    -- Set clip bounds to limit grid rendering below header
     if header_offset > 0 then
       local origin_x, origin_y = ImGui.GetCursorScreenPos(ctx)
+      local window_x, window_y = ImGui.GetWindowPos(ctx)
+      -- Set panel_clip_bounds to constrain grid below header
+      self.midi_grid.panel_clip_bounds = {
+        window_x,
+        origin_y + header_offset,  -- Start below header
+        window_x + avail_w,
+        window_y + avail_h
+      }
+      self.midi_grid.clip_rendering = true  -- Enable actual rendering clipping
       ImGui.SetCursorScreenPos(ctx, origin_x, origin_y + header_offset)
+    else
+      self.midi_grid.panel_clip_bounds = nil
+      self.midi_grid.clip_rendering = false
     end
 
     self.midi_grid:draw(ctx)
@@ -152,6 +176,16 @@ function Coordinator:render_midi_grid(ctx, avail_w, avail_h, header_offset)
     end
 
     ImGui.EndChild(ctx)
+  end
+end
+
+-- Clear internal drag state from both grids (called after external drop completes)
+function Coordinator:clear_grid_drag_states()
+  if self.audio_grid and self.audio_grid.drag then
+    self.audio_grid.drag:release()
+  end
+  if self.midi_grid and self.midi_grid.drag then
+    self.midi_grid.drag:release()
   end
 end
 

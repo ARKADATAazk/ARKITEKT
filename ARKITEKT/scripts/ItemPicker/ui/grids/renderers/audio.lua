@@ -560,8 +560,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   end
 
   -- Render duration text at bottom right (plain text, no badge - matches Region Playlist style)
-  -- Don't render on compact tiles
-  if cascade_factor > 0.3 and compact_factor < 0.5 and item_data.item then
+  -- Don't render on compact tiles or if show_duration is disabled
+  local show_duration = state.settings.show_duration
+  if show_duration == nil then show_duration = true end
+  if show_duration and cascade_factor > 0.3 and compact_factor < 0.5 and item_data.item then
     local duration = reaper.GetMediaItemInfo_Value(item_data.item, "D_LENGTH")
     if duration > 0 then
       -- Format duration as time (mm:ss or hh:mm:ss)

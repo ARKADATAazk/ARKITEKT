@@ -51,7 +51,7 @@ function M.render(ctx, node, animator, config)
   
   local fx_config = config.tile_fx
   
-  TileFX.render_complete(dl, x1, y1, x2, y2, bg_color, fx_config, node.selected, hover_factor)
+  TileFX.render_complete(ctx, dl, x1, y1, x2, y2, bg_color, fx_config, node.selected, hover_factor)
   
   if node.selected and fx_config.ants_enabled then
     local ants_color = Colors.same_hue_variant(chip_color, fx_config.border_saturation, fx_config.border_brightness, fx_config.ants_alpha)

@@ -213,7 +213,7 @@ function M.render_grid(canvas, ctx, dl, bounds_x, bounds_y, bounds_w, bounds_h)
   end
   
   -- Make sure we're drawing the grid over the entire canvas bounds
-  Background.draw(dl, bounds_x, bounds_y, bounds_x + bounds_w, bounds_y + bounds_h, scaled_pattern)
+  Background.draw(ctx, dl, bounds_x, bounds_y, bounds_x + bounds_w, bounds_y + bounds_h, scaled_pattern)
 end
 
 function M.render_container(canvas, ctx, dl)

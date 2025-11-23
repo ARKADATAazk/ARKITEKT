@@ -61,6 +61,9 @@ function GUI:initialize_once(ctx)
   self.coordinator = Coordinator.new(ctx, self.config, self.state, self.visualization)
   self.layout_view = LayoutView.new(self.config, self.state, self.coordinator)
 
+  -- Store coordinator reference in state for drag cleanup access
+  self.state.coordinator = self.coordinator
+
   self.initialized = true
 end
 
@@ -243,17 +246,22 @@ function GUI:draw(ctx, shell_state)
     self.controller.start_incremental_loading(self.state, 100, fast_mode)
   end
 
-  -- DISABLED: Auto-reload on project changes (was triggering on playback)
-  -- Playback changes project state count, causing reload loop
-  -- User can manually reload if items are added/removed
-  --
-  -- self.state.frame_count = (self.state.frame_count or 0) + 1
-  -- if self.state.frame_count % 180 == 0 then
-  --   local current_change_count = reaper.GetProjectStateChangeCount(0)
-  --   if self.state.last_change_count and current_change_count ~= self.state.last_change_count then
-  --     self.state.needs_recollect = true
-  --   end
-  -- end
+  -- Auto-reload on project changes (only in persistent window mode)
+  -- Uses item count instead of project state count to avoid playback triggering reload
+  if self.state.persistent_mode and not self.state.is_loading then
+    self.state.frame_count = (self.state.frame_count or 0) + 1
+    if self.state.frame_count % 60 == 0 then  -- Check every ~1 second at 60fps
+      local current_item_count = reaper.CountMediaItems(0)
+      if self.state.last_item_count == nil then
+        self.state.last_item_count = current_item_count
+      elseif current_item_count ~= self.state.last_item_count then
+        reaper.ShowConsoleMsg(string.format("[PERSISTENT MODE] Item count changed (%d -> %d), reloading...\n",
+          self.state.last_item_count, current_item_count))
+        self.state.last_item_count = current_item_count
+        self.state.needs_recollect = true
+      end
+    end
+  end
 
   ImGui.PushFont(ctx, mini_font, mini_font_size)
   reaper.PreventUIRefresh(1)
@@ -330,11 +338,21 @@ function GUI:draw(ctx, shell_state)
 
       -- Set close flag BEFORE inserting for normal drops to block any drag_start calls
       if not shift and not ctrl then
-        reaper.ShowConsoleMsg("[NORMAL DROP] Setting close flag\n")
-        self.state.should_close_after_drop = true
+        -- In persistent mode, don't close on normal drops (behave like CTRL drop)
+        if self.state.persistent_mode then
+          reaper.ShowConsoleMsg("[PERSISTENT MODE] Normal drop - keeping window open\n")
+        else
+          reaper.ShowConsoleMsg("[NORMAL DROP] Setting close flag\n")
+          self.state.should_close_after_drop = true
+        end
       else
         reaper.ShowConsoleMsg(string.format("[MODIFIER DROP] shift=%s ctrl=%s\n", tostring(shift), tostring(ctrl)))
       end
+
+      -- Save dragging_keys before insert in case we need them for Shift+multi-drop
+      -- (InsertMediaItem clears them unconditionally)
+      local saved_dragging_keys = self.state.dragging_keys
+      local saved_dragging_is_audio = self.state.dragging_is_audio
 
       -- Insert the item
       self.controller.insert_item_at_mouse(self.state.item_to_add, self.state)
@@ -342,6 +360,9 @@ function GUI:draw(ctx, shell_state)
 
       if shift then
         -- SHIFT: Keep dragging active for multi-drop
+        -- Restore dragging_keys for subsequent drops
+        self.state.dragging_keys = saved_dragging_keys
+        self.state.dragging_is_audio = saved_dragging_is_audio
         -- Wait for next click/release cycle before allowing another drop
         reaper.ShowConsoleMsg("[SHIFT DROP] Setting up for next drop, capturing modifier state\n")
         self.state.drop_completed = false
@@ -361,14 +382,22 @@ function GUI:draw(ctx, shell_state)
         self.state.captured_shift = nil
         self.state.captured_ctrl = nil
       else
-        -- Normal drop: DON'T end drag - keep State.dragging active
-        -- This keeps us in the dragging branch (no overlay render)
-        -- Cleanup will handle clearing drag state
-        self.state.waiting_for_new_click = false
+        -- Normal drop behavior
+        if self.state.persistent_mode then
+          -- Persistent mode: End drag but keep window open (like CTRL drop)
+          self.state.end_drag()
+          self.state.waiting_for_new_click = false
+          self.state.should_close_after_drop = false
+        else
+          -- Normal drop: DON'T end drag - keep State.dragging active
+          -- This keeps us in the dragging branch (no overlay render)
+          -- Cleanup will handle clearing drag state
+          self.state.waiting_for_new_click = false
+          -- Flag is already set before insert, will close on next render
+        end
         -- Clear captured state
         self.state.captured_shift = nil
         self.state.captured_ctrl = nil
-        -- Flag is already set before insert, will close on next render
       end
     end
 

@@ -111,7 +111,7 @@ function StatusPad:draw(ctx, x, y)
   fx_config.rounding = self.rounding
   fx_config.border_thickness = 1.2
   
-  TileFX.render_complete(dl, x1, y1, x2, y2, self.base_color, fx_config, false, self.hover_alpha)
+  TileFX.render_complete(ctx, dl, x1, y1, x2, y2, self.base_color, fx_config, false, self.hover_alpha)
   
   self:_draw_icon(ctx, dl, x1, y1)
 
