@@ -1,6 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" commit="64483b41f087f7a3e30e2f89711bab09ce9271db" name="ARKITEKT">
+<index version="1" commit="749a6ae96f61d90ae64fec848efa7dfb9e00fea7" name="ARKITEKT">
   <category name="ARKITEKT">
+    <reapack name="ARK_MediaContainer.lua" type="script" desc="Media Container - Linked container groups for items">
+      <metadata>
+        <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
+{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
+\widowctrl\hyphauto
+
+{\pard \ql \f0 \sa180 \li0 \fi0 Create linked containers that mirror changes across all copies. Perfect for glitch percussion and repetitive patterns.\par}
+}
+]]></description>
+      </metadata>
+      <version name="0.1.0" author="ARKITEKT" time="2025-11-23T04:47:29Z">
+        <source main="main">https://github.com/ARKADATAazk/ARKITEKT-Project/raw/3efad817f0540e576595ec18ffdd600297f2eb88/ARKITEKT/ARK_MediaContainer.lua</source>
+      </version>
+    </reapack>
+    <reapack name="ARK_MediaContainer_Copy.lua" type="script" desc="Media Container - Copy">
+      <metadata>
+        <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
+{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
+\widowctrl\hyphauto
+
+{\pard \ql \f0 \sa180 \li0 \fi0 Copy container at cursor position or containing selected items.\par}
+}
+]]></description>
+      </metadata>
+      <version name="0.1.0" author="ARKITEKT" time="2025-11-23T04:47:29Z">
+        <source main="main">https://github.com/ARKADATAazk/ARKITEKT-Project/raw/3efad817f0540e576595ec18ffdd600297f2eb88/ARKITEKT/ARK_MediaContainer_Copy.lua</source>
+      </version>
+    </reapack>
+    <reapack name="ARK_MediaContainer_Create.lua" type="script" desc="Media Container - Create from selection">
+      <metadata>
+        <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
+{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
+\widowctrl\hyphauto
+
+{\pard \ql \f0 \sa180 \li0 \fi0 Create a new container from currently selected items.\par}
+}
+]]></description>
+      </metadata>
+      <version name="0.1.0" author="ARKITEKT" time="2025-11-23T04:47:29Z">
+        <source main="main">https://github.com/ARKADATAazk/ARKITEKT-Project/raw/3efad817f0540e576595ec18ffdd600297f2eb88/ARKITEKT/ARK_MediaContainer_Create.lua</source>
+      </version>
+    </reapack>
+    <reapack name="ARK_MediaContainer_Paste.lua" type="script" desc="Media Container - Paste">
+      <metadata>
+        <description><![CDATA[{\rtf1\ansi\deff0{\fonttbl{\f0 \fswiss Helvetica;}{\f1 \fmodern Courier;}}
+{\colortbl;\red255\green0\blue0;\red0\green0\blue255;}
+\widowctrl\hyphauto
+
+{\pard \ql \f0 \sa180 \li0 \fi0 Paste container from clipboard at cursor position. Creates a linked copy that mirrors changes.\par}
+}
+]]></description>
+      </metadata>
+      <version name="0.1.0" author="ARKITEKT" time="2025-11-23T04:47:29Z">
+        <source main="main">https://github.com/ARKADATAazk/ARKITEKT-Project/raw/3efad817f0540e576595ec18ffdd600297f2eb88/ARKITEKT/ARK_MediaContainer_Paste.lua</source>
+      </version>
+    </reapack>
     <reapack name="ARKITEKT.lua" type="script" desc="ARKITEKT Toolkit">
       <metadata/>
       <version name="0.2.0" author="ARKADATA" time="2025-10-13T02:51:01Z">
