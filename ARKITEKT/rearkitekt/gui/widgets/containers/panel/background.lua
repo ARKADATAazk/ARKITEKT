@@ -31,19 +31,15 @@ local function normalize_color(color)
   local g = (color >> 16) & 0xFF
   local b = (color >> 8) & 0xFF
   local a = color & 0xFF
-  -- Round to nearest 16 to reduce unique combinations
+  -- Round RGB to nearest 16 to reduce unique combinations
   r = math.floor(r / 16 + 0.5) * 16
   g = math.floor(g / 16 + 0.5) * 16
   b = math.floor(b / 16 + 0.5) * 16
-  -- For alpha, use larger buckets but preserve non-zero values
-  if a > 0 then
-    a = math.max(16, math.floor(a / 16 + 0.5) * 16)
-  end
-  -- Clamp to 255
+  -- Keep alpha as-is for subtle opacity control (low values like 5 should stay 5)
+  -- Clamp RGB to 255
   r = math.min(255, r)
   g = math.min(255, g)
   b = math.min(255, b)
-  a = math.min(255, a)
   return (r << 24) | (g << 16) | (b << 8) | a
 end
 
