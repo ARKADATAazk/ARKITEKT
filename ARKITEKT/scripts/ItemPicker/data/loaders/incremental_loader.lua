@@ -64,9 +64,6 @@ function M.start_loading(loader, state, settings)
   -- DON'T do ANY blocking work here!
   -- Everything happens in first batch of process_batch()
 
-  reaper.ShowConsoleMsg(string.format("[ItemPicker] Starting lazy loading (fast_mode: %s)\n",
-    tostring(loader.fast_mode or false)))
-
   -- Reset results
   loader.samples = {}
   loader.sample_indexes = {}
@@ -134,9 +131,6 @@ function M.process_batch(loader, state, settings)
     end
 
     loader.initialization_complete = true
-
-    local init_time = (reaper.time_precise() - init_start) * 1000
-    reaper.ShowConsoleMsg(string.format("[ItemPicker] Initialized: %d items in %.1fms\n", #loader.all_items, init_time))
 
     -- Return to allow UI to update (don't process items this frame)
     return false, 0.0
@@ -207,12 +201,6 @@ function M.process_batch(loader, state, settings)
 
   loader.current_index = batch_end
   local progress = loader.current_index / total_items
-
-  local batch_time = (reaper.time_precise() - batch_start_time) * 1000
-  local reaper_ms = reaper_time * 1000
-  local processing_ms = processing_time * 1000
-  reaper.ShowConsoleMsg(string.format("Batch %d-%d: %.1fms total (REAPER: %.1fms, Processing: %.1fms)\n",
-    batch_end - loader.batch_size + 1, batch_end, batch_time, reaper_ms, processing_ms))
 
   if loader.current_index >= total_items then
     -- All items loaded - calculate pool counts before organizing
@@ -551,16 +539,10 @@ function M.calculate_pool_counts(loader)
       raw_item.pool_id = raw_item.uuid  -- Unique ID for non-pooled items
     end
   end
-
-  reaper.ShowConsoleMsg(string.format("[POOL_COUNT] Calculated pools for %d audio, %d MIDI items\n",
-    #loader.raw_audio_items, #loader.raw_midi_items))
 end
 
 -- Reorganize items based on grouping setting (instant, no REAPER API calls)
 function M.reorganize_items(loader, group_by_name)
-  reaper.ShowConsoleMsg(string.format("[REORGANIZE] Called with group_by_name=%s, raw pools: audio=%d, midi=%d\n",
-    tostring(group_by_name), #loader.raw_audio_items, #loader.raw_midi_items))
-
   -- Clear grouped results
   loader.samples = {}
   loader.sample_indexes = {}

@@ -48,8 +48,6 @@ function GUI:initialize_once(ctx)
   local disk_cache = require('ItemPicker.data.disk_cache')
   local cache_dir = disk_cache.init()
 
-  reaper.ShowConsoleMsg("[ItemPicker] Disk cache initialized, will preload as items load\n")
-
   -- Initialize job queue for lazy waveform/thumbnail generation
   if not self.state.job_queue then
     local job_queue_module = require('ItemPicker.data.job_queue')
@@ -70,8 +68,6 @@ end
 -- Start incremental loading (non-blocking)
 function GUI:start_incremental_loading()
   if self.loading_started then return end
-
-  reaper.ShowConsoleMsg("=== ItemPicker: Starting lazy loading ===\n")
 
   local current_change_count = reaper.GetProjectStateChangeCount(0)
   self.state.last_change_count = current_change_count
@@ -112,18 +108,10 @@ function GUI:draw(ctx, shell_state)
     local is_complete, progress = self.controller.process_loading_batch(self.state)
 
     if is_complete then
-      local elapsed = (reaper.time_precise() - self.loading_start_time) * 1000
-      reaper.ShowConsoleMsg(string.format("=== ItemPicker: Loading complete! (%.1fms) ===\n", elapsed))
-      reaper.ShowConsoleMsg(string.format("[DEBUG] Loaded: %d audio groups, %d MIDI groups\n",
-        #(self.state.sample_indexes or {}), #(self.state.midi_indexes or {})))
-
       -- Skip disk cache in fast mode
       if not self.state.skip_visualizations then
         local disk_cache = require('ItemPicker.data.disk_cache')
-        local stats = disk_cache.preload_to_runtime(self.state.runtime_cache)
-        if stats and stats.loaded > 0 then
-          reaper.ShowConsoleMsg(string.format("[ItemPicker] Loaded %d cached visualizations from disk\n", stats.loaded))
-        end
+        disk_cache.preload_to_runtime(self.state.runtime_cache)
       end
 
       self.data_loaded = true
@@ -195,14 +183,10 @@ function GUI:draw(ctx, shell_state)
   -- Check if we need to reorganize items (instant, no reload)
   if self.state.needs_reorganize and not self.state.is_loading then
     self.state.needs_reorganize = false
-    reaper.ShowConsoleMsg(string.format("[GROUPING] Reorganizing items... group_by_name=%s\n", tostring(self.state.settings.group_items_by_name)))
 
     -- Reorganize from raw pool (instant operation)
     if self.state.incremental_loader then
       local incremental_loader_module = require("ItemPicker.data.loaders.incremental_loader")
-      local raw_audio_count = #(self.state.incremental_loader.raw_audio_items or {})
-      local raw_midi_count = #(self.state.incremental_loader.raw_midi_items or {})
-      reaper.ShowConsoleMsg(string.format("[GROUPING] Raw pools: %d audio, %d midi\n", raw_audio_count, raw_midi_count))
 
       incremental_loader_module.reorganize_items(
         self.state.incremental_loader,
@@ -215,18 +199,12 @@ function GUI:draw(ctx, shell_state)
       self.state.midi_items = self.state.incremental_loader.midi_items
       self.state.midi_indexes = self.state.incremental_loader.midi_indexes
 
-      reaper.ShowConsoleMsg(string.format("[GROUPING] After reorganize: %d audio groups, %d midi groups\n",
-        #self.state.sample_indexes, #self.state.midi_indexes))
-
       -- Rebuild lookups
       incremental_loader_module.get_results(self.state.incremental_loader, self.state)
 
       -- Invalidate filter cache (items changed)
       self.state.runtime_cache.audio_filter_hash = nil
       self.state.runtime_cache.midi_filter_hash = nil
-      reaper.ShowConsoleMsg("[GROUPING] Reorganization complete!\n")
-    else
-      reaper.ShowConsoleMsg("[GROUPING] ERROR: No incremental_loader found!\n")
     end
   end
 
@@ -255,8 +233,6 @@ function GUI:draw(ctx, shell_state)
       if self.state.last_item_count == nil then
         self.state.last_item_count = current_item_count
       elseif current_item_count ~= self.state.last_item_count then
-        reaper.ShowConsoleMsg(string.format("[PERSISTENT MODE] Item count changed (%d -> %d), reloading...\n",
-          self.state.last_item_count, current_item_count))
         self.state.last_item_count = current_item_count
         self.state.needs_recollect = true
       end
@@ -296,62 +272,37 @@ function GUI:draw(ctx, shell_state)
 
         -- Check if user switched modifiers (e.g., pressing CTRL during SHIFT multi-drop)
         if self.state.captured_shift and ctrl_actual and not shift_actual then
-          reaper.ShowConsoleMsg("[KEY DEBUG] Switched to CTRL during SHIFT sequence - returning to picker\n")
           shift = false
           ctrl = true
-          -- Clear captured state - switching modes
           self.state.captured_shift = nil
           self.state.captured_ctrl = nil
-        -- If captured state says SHIFT but key is no longer pressed, treat as normal drop
         elseif self.state.captured_shift and not shift_actual then
-          reaper.ShowConsoleMsg("[KEY DEBUG] SHIFT released (via JS API) - exiting multi-drop mode\n")
           shift = false
           ctrl = false
-          -- Clear captured state
           self.state.captured_shift = nil
           self.state.captured_ctrl = nil
         elseif self.state.captured_ctrl and not ctrl_actual then
-          reaper.ShowConsoleMsg("[KEY DEBUG] CTRL released (via JS API) - exiting multi-drop mode\n")
           shift = false
           ctrl = false
-          -- Clear captured state
           self.state.captured_shift = nil
           self.state.captured_ctrl = nil
         else
-          -- Keys still held - use captured state
           shift = self.state.captured_shift or false
           ctrl = self.state.captured_ctrl or false
-          alt = alt_actual  -- ALT is always checked fresh (for pooled MIDI copies)
-          reaper.ShowConsoleMsg(string.format("[KEY DEBUG] Using CAPTURED state: shift=%s ctrl=%s alt=%s (verified via JS API: shift_actual=%s ctrl_actual=%s alt_actual=%s)\n",
-            tostring(shift), tostring(ctrl), tostring(alt), tostring(shift_actual), tostring(ctrl_actual), tostring(alt_actual)))
+          alt = alt_actual
         end
       else
         -- First drop - check keys directly
         shift = ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift) or ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)
         ctrl = ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl) or ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)
         alt = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
-        reaper.ShowConsoleMsg(string.format("[KEY DEBUG] LeftShift=%s RightShift=%s LeftCtrl=%s RightCtrl=%s LeftAlt=%s RightAlt=%s => shift=%s ctrl=%s alt=%s\n",
-          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftShift)),
-          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightShift)),
-          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftCtrl)),
-          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightCtrl)),
-          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt)),
-          tostring(ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)),
-          tostring(shift), tostring(ctrl), tostring(alt)
-        ))
       end
 
-      -- Set close flag BEFORE inserting for normal drops to block any drag_start calls
+      -- Set close flag BEFORE inserting for normal drops
       if not shift and not ctrl then
-        -- In persistent mode, don't close on normal drops (behave like CTRL drop)
-        if self.state.persistent_mode then
-          reaper.ShowConsoleMsg("[PERSISTENT MODE] Normal drop - keeping window open\n")
-        else
-          reaper.ShowConsoleMsg("[NORMAL DROP] Setting close flag\n")
+        if not self.state.persistent_mode then
           self.state.should_close_after_drop = true
         end
-      else
-        reaper.ShowConsoleMsg(string.format("[MODIFIER DROP] shift=%s ctrl=%s\n", tostring(shift), tostring(ctrl)))
       end
 
       -- Save dragging_keys before insert in case we need them for Shift+multi-drop
@@ -368,11 +319,8 @@ function GUI:draw(ctx, shell_state)
 
       if shift then
         -- SHIFT: Keep dragging active for multi-drop
-        -- Restore dragging_keys for subsequent drops
         self.state.dragging_keys = saved_dragging_keys
         self.state.dragging_is_audio = saved_dragging_is_audio
-        -- Wait for next click/release cycle before allowing another drop
-        reaper.ShowConsoleMsg("[SHIFT DROP] Setting up for next drop, capturing modifier state\n")
         self.state.drop_completed = false
         self.state.waiting_for_new_click = true
         self.state.mouse_was_pressed_after_drop = false
@@ -411,9 +359,8 @@ function GUI:draw(ctx, shell_state)
 
     -- Clear waiting flag once mouse is pressed again (for SHIFT mode)
     if self.state.waiting_for_new_click and self.state.mouse_was_pressed_after_drop then
-      reaper.ShowConsoleMsg("[SHIFT MODE] Clearing waiting flag, ready for next drop\n")
       self.state.waiting_for_new_click = false
-      self.state.drop_completed = false  -- Also reset drop_completed to allow next drop
+      self.state.drop_completed = false
     end
 
     self.drag_handler.render_drag_preview(ctx, self.state, mini_font, self.visualization, self.config)

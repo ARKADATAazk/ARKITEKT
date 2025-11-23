@@ -117,9 +117,6 @@ function M.ItemChunkID(item)
 end
 
 function M.GetProjectSamples(settings, state)
-  reaper.ShowConsoleMsg(string.format("[REGION_TAGS] GetProjectSamples called with show_region_tags = %s\n",
-    tostring(settings.show_region_tags)))
-
   local all_tracks = M.GetAllTracks()
   local samples = {}
   local sample_indexes = {}
@@ -245,8 +242,6 @@ function M.GetProjectSamples(settings, state)
 end
 
 function M.GetProjectMIDI(settings, state)
-  reaper.ShowConsoleMsg(string.format("[REGION_TAGS] GetProjectMIDI called with show_region_tags = %s\n",
-    tostring(settings.show_region_tags)))
 
   local all_tracks = M.GetAllTracks()
   local midi_items = {}
@@ -415,8 +410,6 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
     local items_to_insert = {}
 
     if state.dragging_keys and #state.dragging_keys > 0 then
-      reaper.ShowConsoleMsg(string.format("[INSERT] Batch insert: %d items\n", #state.dragging_keys))
-
       for _, uuid in ipairs(state.dragging_keys) do
         local current_item
 
@@ -442,8 +435,6 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
       table.insert(items_to_insert, item)
     end
 
-    reaper.ShowConsoleMsg(string.format("[INSERT] Inserting %d items at position %.2f (pooled=%s)\n", #items_to_insert, mouse_position_in_arrange, tostring(use_pooled_copy or false)))
-
     -- Handle pooled MIDI toggle state (Action 41071)
     -- Store current state and toggle if needed
     local original_pooled_state = state.original_pooled_midi_state
@@ -452,8 +443,6 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
     -- Toggle if the desired state differs from current
     if use_pooled_copy ~= current_pooled_state then
       reaper.Main_OnCommand(41071, 0)  -- Toggle pooled MIDI source
-      reaper.ShowConsoleMsg(string.format("[INSERT] Toggled pooled MIDI state: %s -> %s\n",
-        tostring(current_pooled_state), tostring(use_pooled_copy)))
     end
 
     -- Insert all items
@@ -482,7 +471,6 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
     local final_pooled_state = reaper.GetToggleCommandState(41071) == 1
     if original_pooled_state ~= nil and final_pooled_state ~= original_pooled_state then
       reaper.Main_OnCommand(41071, 0)  -- Toggle back to original
-      reaper.ShowConsoleMsg(string.format("[INSERT] Restored pooled MIDI state: %s\n", tostring(original_pooled_state)))
     end
 
     -- Cleanup drag state
