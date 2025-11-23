@@ -826,6 +826,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Track filter bar on left side with slide animation
   local track_bar_width = 0
   local track_bar_max_width = 120  -- Max width when expanded
+  local track_bar_collapsed_width = 8  -- Visible strip when collapsed
   local has_track_filters = self.state.track_tree and self.state.track_whitelist
 
   if has_track_filters then
@@ -837,13 +838,13 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
     if whitelist_count > 0 then
       -- Calculate trigger zone on left edge
-      local trigger_zone_width = 30  -- Pixels from left edge to trigger
       local panels_left_edge = coord_offset_x + self.config.LAYOUT.PADDING
 
-      -- Check if mouse is near left edge (within trigger zone or already expanded area)
-      local current_bar_width = track_bar_max_width * (self.state.track_bar_slide_progress or 0)
+      -- Check if mouse is near left edge (within collapsed bar or expanded area)
+      local current_bar_width = track_bar_collapsed_width +
+        (track_bar_max_width - track_bar_collapsed_width) * (self.state.track_bar_slide_progress or 0)
       local is_hovering_left = mouse_in_window and
-                               mouse_x < (panels_left_edge + trigger_zone_width + current_bar_width) and
+                               mouse_x < (panels_left_edge + current_bar_width) and
                                mouse_y >= panels_start_y and mouse_y <= panels_end_y
 
       -- Smooth slide for track bar
@@ -855,15 +856,23 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       self.state.track_bar_slide_progress = self.state.track_bar_slide_progress +
         (target_slide - self.state.track_bar_slide_progress) * slide_speed
 
-      -- Calculate animated width
-      track_bar_width = track_bar_max_width * self.state.track_bar_slide_progress
+      -- Calculate animated width (always at least collapsed width)
+      track_bar_width = track_bar_collapsed_width +
+        (track_bar_max_width - track_bar_collapsed_width) * self.state.track_bar_slide_progress
 
-      -- Only render if visible
-      if track_bar_width > 1 then
+      -- Draw collapsed indicator strip (always visible)
+      local bar_x = panels_left_edge
+      local bar_y = panels_start_y
+      local bar_height = content_height
+
+      -- Draw indicator strip background
+      local strip_alpha = math.floor(0x44 * section_fade)
+      local strip_color = Colors.with_alpha(Colors.hexrgb("#3A3A3A"), strip_alpha)
+      ImGui.DrawList_AddRectFilled(draw_list, bar_x, bar_y, bar_x + track_bar_collapsed_width, bar_y + bar_height, strip_color, 2)
+
+      -- Only render full bar content if expanded
+      if self.state.track_bar_slide_progress > 0.01 then
         local bar_alpha = self.state.track_bar_slide_progress * section_fade
-        local bar_x = panels_left_edge
-        local bar_y = panels_start_y
-        local bar_height = content_height
 
         -- Draw track filter bar
         TrackFilterBar.draw(ctx, draw_list, bar_x, bar_y, bar_height, self.state, bar_alpha)
