@@ -21,6 +21,21 @@ local M = {}
 
 package.loaded["RegionPlaylist.core.app_state"] = M
 
+-- Generate a deterministic color from a string (e.g., playlist ID)
+-- This ensures the same ID always produces the same color
+local function deterministic_color_from_id(id)
+  local str = tostring(id)
+  local hash = 0
+  for i = 1, #str do
+    hash = (hash * 31 + str:byte(i)) % 2147483647
+  end
+  local hue = (hash % 360) / 360
+  local saturation = 0.65 + ((hash % 100) / 400)  -- 0.65-0.90
+  local lightness = 0.50 + ((hash % 60) / 400)    -- 0.50-0.65
+  local r, g, b = Colors.hsl_to_rgb(hue, saturation, lightness)
+  return Colors.components_to_rgba(r, g, b, 0xFF)
+end
+
 -- Re-export mode constants for backward compatibility
 M.POOL_MODES = Constants.POOL_MODES
 M.LAYOUT_MODES = Constants.LAYOUT_MODES
@@ -856,7 +871,7 @@ function M.get_playlists_for_pool()
         id = pl.id,
         name = pl.name,
         items = pl.items,
-        chip_color = pl.chip_color or RegionState.generate_chip_color(),
+        chip_color = pl.chip_color or deterministic_color_from_id(pl.id),
         is_disabled = not is_draggable,
         index = playlist_index_map[pl.id] or 0,
         total_duration = total_duration,
