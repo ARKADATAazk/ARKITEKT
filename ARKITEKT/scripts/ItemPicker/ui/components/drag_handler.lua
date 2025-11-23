@@ -72,6 +72,13 @@ end
 function M.handle_drag_logic(ctx, state, mini_font, visualization)
   local mouse_key = reaper.JS_Mouse_GetState(-1)
   local left_mouse_down = (mouse_key & 1) == 1
+  local right_mouse_down = (mouse_key & 2) == 2
+
+  -- Right-click cancels the drag operation
+  if right_mouse_down then
+    state.end_drag()
+    return false  -- Don't insert, just cancel
+  end
 
   -- Check ALT modifier for toggling pooled MIDI copy mode
   -- Use JS_Mouse_GetState to detect ALT even after ImGui loses focus (during multi-drop)
