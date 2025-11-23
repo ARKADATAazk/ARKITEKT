@@ -14,11 +14,13 @@ package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. pa
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 local Shell = require('arkitekt.app.runtime.shell')
-local Arkit = require('arkitekt.arkit')
+package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
+local ImGui = require 'imgui' '0.10'
+local Colors = require('arkitekt.core.colors')
 local Panel = require('arkitekt.gui.widgets.containers.panel')
 
-local ImGui = Arkit.ImGui
-local hexrgb = Arkit.hexrgb
+
+local hexrgb = Colors.hexrgb
 
 local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
 
