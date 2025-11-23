@@ -75,6 +75,9 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     function() return self.state.template_view_mode end,  -- get_view_mode
     -- on_select
     function(selected_keys)
+      -- Store selected keys for multi-select operations
+      self.state.selected_template_keys = selected_keys or {}
+
       -- Update selected template from grid selection
       if selected_keys and #selected_keys > 0 then
         local key = selected_keys[1]
@@ -168,15 +171,23 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         -- Get tag name from payload
         local tag_name = payload.label or payload.id
         if tag_name then
-          -- Check if dropped template is in selection
+          -- Check if dropped template is in selection (array)
           local template_key = "template_" .. template.uuid
-          local is_selected = self.state.selected_template_keys and self.state.selected_template_keys[template_key]
+          local is_selected = false
+          local selected_keys = self.state.selected_template_keys or {}
+
+          for _, key in ipairs(selected_keys) do
+            if key == template_key then
+              is_selected = true
+              break
+            end
+          end
 
           local tagged_count = 0
 
-          if is_selected and self.state.selected_template_keys then
+          if is_selected and #selected_keys > 1 then
             -- Apply tag to ALL selected templates
-            for key, _ in pairs(self.state.selected_template_keys) do
+            for _, key in ipairs(selected_keys) do
               local uuid = key:match("template_(.+)")
               if uuid then
                 if Tags.add_tag_to_template(self.state.metadata, uuid, tag_name) then
@@ -373,15 +384,23 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         -- Get tag name from payload
         local tag_name = payload.label or payload.id
         if tag_name then
-          -- Check if dropped template is in selection
+          -- Check if dropped template is in selection (array)
           local template_key = "template_" .. template.uuid
-          local is_selected = self.state.selected_template_keys and self.state.selected_template_keys[template_key]
+          local is_selected = false
+          local selected_keys = self.state.selected_template_keys or {}
+
+          for _, key in ipairs(selected_keys) do
+            if key == template_key then
+              is_selected = true
+              break
+            end
+          end
 
           local tagged_count = 0
 
-          if is_selected and self.state.selected_template_keys then
+          if is_selected and #selected_keys > 1 then
             -- Apply tag to ALL selected templates
-            for key, _ in pairs(self.state.selected_template_keys) do
+            for _, key in ipairs(selected_keys) do
               local uuid = key:match("template_(.+)")
               if uuid then
                 if Tags.add_tag_to_template(self.state.metadata, uuid, tag_name) then
