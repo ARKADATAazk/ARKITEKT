@@ -228,7 +228,7 @@ function M.new(opts)
       if self.show_icon then
         local win_x, win_y = ImGui.GetWindowPos(ctx)
         local native_icon_size = 22  -- Native PNG size
-        local icon_x = win_x + self.pad_h - 12  -- Move icon 12px left
+        local icon_x = win_x + self.pad_h - 6  -- Move icon 12px left
         local icon_y = win_y + (self.height - native_icon_size) * 0.5
         local icon_color = self.icon_color or text_color
 
@@ -323,7 +323,7 @@ function M.new(opts)
           ImGui.PopStyleColor(ctx)
           if self.title_font then ImGui.PopFont(ctx) end
 
-          ImGui.SameLine(ctx, 0, self.version_spacing - 10)  -- Move version 10px left
+          ImGui.SameLine(ctx, 0, self.version_spacing )  -- Move version 10px left
           
           local height_diff = title_h - version_h
           if height_diff ~= 0 then
