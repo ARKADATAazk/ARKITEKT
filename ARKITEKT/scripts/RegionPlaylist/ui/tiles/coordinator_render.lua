@@ -15,6 +15,7 @@ local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 local SWSImporter = require('RegionPlaylist.storage.sws_importer')
 local ModalDialog = require('rearkitekt.gui.widgets.overlays.overlay.modal_dialog')
 local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
+local Colors = require('rearkitekt.core.colors')
 
 local M = {}
 
@@ -82,8 +83,8 @@ local function extract_playlist_region_items(playlist)
 end
 
 -- Helper: Draw watermark text centered in area
-local WATERMARK_SIZE = 40
-local WATERMARK_COLOR = 0x0FFFFFFF  -- White at ~6% opacity (ABGR format)
+local WATERMARK_SIZE = 200
+local WATERMARK_COLOR = Colors.hexrgba("#FFFFFF", 0.06)  -- White at 6% opacity
 
 local function draw_watermark(ctx, text, x, y, w, h, shell_state)
   local fonts = shell_state and shell_state.fonts
