@@ -127,6 +127,7 @@ function M.draw(ctx, items, opts)
             and DragDrop._serialize(payload_data)
             or tostring(payload_data)
           ImGui.SetDragDropPayload(ctx, drag_type, payload_str)
+          reaper.ShowConsoleMsg("[DRAG SOURCE] type=" .. tostring(drag_type) .. " payload=" .. tostring(payload_str) .. "\n")
           -- Draw drag preview
           DragDrop.draw_preview_text(ctx, item.label)
           ImGui.EndDragDropSource(ctx)

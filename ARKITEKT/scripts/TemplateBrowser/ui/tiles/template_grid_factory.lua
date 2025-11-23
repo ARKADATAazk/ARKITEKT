@@ -62,11 +62,13 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
         ImGui.InvisibleButton(ctx, "##tile_drop_" .. template.uuid, rect[3] - rect[1], rect[4] - rect[2])
 
         if ImGui.BeginDragDropTarget(ctx) then
+          reaper.ShowConsoleMsg("[DROP TARGET] BeginDragDropTarget returned true for " .. template.name .. "\n")
           -- Draw active target highlight when hovering
           DragDrop.draw_active_target(ctx, rect)
 
           local payload = DragDrop.accept_drop(ctx, Constants.DRAG_TYPES.TAG)
           if payload then
+            reaper.ShowConsoleMsg("[DROP TARGET] Got payload! Calling on_tag_drop\n")
             -- Apply tag to template
             on_tag_drop(template, payload)
           end
