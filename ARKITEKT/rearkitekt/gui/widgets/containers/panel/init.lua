@@ -567,9 +567,13 @@ local function draw_sidebar(ctx, dl, x, y, width, height, sidebar_cfg, panel_id,
 
   local btn_height = sidebar_cfg.button_size or 28
   local btn_width = math.floor(btn_height * 0.7)  -- 30% narrower
+  local rounding = sidebar_cfg.rounding or 8  -- Larger default rounding
 
-  -- Calculate total buttons height with 1px overlap
-  local total_btn_height = (#elements * btn_height) - (#elements - 1)
+  -- Extra height for first/last buttons to accommodate rounding
+  local corner_extension = rounding
+
+  -- Calculate total buttons height with 1px overlap and corner extensions
+  local total_btn_height = (#elements * btn_height) - (#elements - 1) + (corner_extension * 2)
 
   -- Calculate start Y based on valign (no padding)
   local start_y
@@ -592,13 +596,25 @@ local function draw_sidebar(ctx, dl, x, y, width, height, sidebar_cfg, panel_id,
 
   -- Draw each button
   for i, element in ipairs(elements) do
-    local btn_y = start_y + (i - 1) * (btn_height - 1)  -- 1px overlap
-    local btn_id = panel_id .. "_sidebar_" .. side .. "_" .. (element.id or i)
-
-    -- Determine rounding based on position
     local is_first = (i == 1)
     local is_last = (i == #elements)
-    local rounding = sidebar_cfg.rounding or 4
+
+    -- Calculate button position and size
+    local btn_y = start_y + corner_extension + (i - 1) * (btn_height - 1)
+    local current_btn_height = btn_height
+
+    -- Extend first button upward for top rounding
+    if is_first then
+      btn_y = btn_y - corner_extension
+      current_btn_height = current_btn_height + corner_extension
+    end
+
+    -- Extend last button downward for bottom rounding
+    if is_last then
+      current_btn_height = current_btn_height + corner_extension
+    end
+
+    local btn_id = panel_id .. "_sidebar_" .. side .. "_" .. (element.id or i)
 
     -- Only round outer corners at extremities
     local corner_rounding = {
@@ -615,7 +631,7 @@ local function draw_sidebar(ctx, dl, x, y, width, height, sidebar_cfg, panel_id,
     btn_config.corner_rounding = corner_rounding
 
     -- Draw the button with panel context
-    Button.draw(ctx, dl, btn_x, btn_y, btn_width, btn_height, btn_config, { _panel_id = panel_id })
+    Button.draw(ctx, dl, btn_x, btn_y, btn_width, current_btn_height, btn_config, { _panel_id = panel_id })
   end
 
   return width
