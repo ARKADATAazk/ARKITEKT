@@ -427,7 +427,13 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
           local engine = bridge and bridge.engine
 
           -- Draw button
-          Button.draw(ctx, dl, x, y, width, height, {
+          Button.draw(ctx, {
+            id = "transport_shuffle_btn",
+            draw_list = dl,
+            x = x,
+            y = y,
+            width = width,
+            height = height,
             icon = CoreConfig.REMIX_ICONS.shuffle,
             icon_font = icon_font,
             icon_size = icon_size,
@@ -445,7 +451,8 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
             on_right_click = function()
               ImGui.OpenPopup(ctx, "shuffle_context_menu")
             end,
-          }, state)
+            panel_state = state,
+          })
 
           -- Draw context menu
           self:draw_shuffle_context_menu(ctx)

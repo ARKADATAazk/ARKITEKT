@@ -697,27 +697,37 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local can_rename = self.pattern ~= ""
 
   -- Cancel button
-  local _, cancel_clicked = Button.draw(ctx, dl, screen_x, screen_y, button_w_small, button_h, {
-    id = "cancel_btn",
+  local cancel_result = Button.draw(ctx, {
+    id = "batch_rename_cancel",
+    draw_list = dl,
+    x = screen_x,
+    y = screen_y,
+    width = button_w_small,
+    height = button_h,
     label = "Cancel",
     rounding = 4,
     ignore_modal = true,
-  }, "batch_rename_cancel")
+  })
 
-  if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+  if cancel_result.clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
     should_close = true
   end
 
   -- Rename button (disabled when no pattern)
-  local _, rename_clicked = Button.draw(ctx, dl, screen_x + button_w_small + spacing, screen_y, button_w_small, button_h, {
-    id = "rename_btn",
+  local rename_result = Button.draw(ctx, {
+    id = "batch_rename_rename",
+    draw_list = dl,
+    x = screen_x + button_w_small + spacing,
+    y = screen_y,
+    width = button_w_small,
+    height = button_h,
     label = "Rename",
     rounding = 4,
     is_disabled = not can_rename,
     ignore_modal = true,
-  }, "batch_rename_rename")
+  })
 
-  if rename_clicked or (can_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
+  if rename_result.clicked or (can_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
     if self.on_confirm then
       self.on_confirm(self.pattern)
     end
@@ -726,15 +736,20 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Rename & Recolor button (disabled when no pattern) - WIDER
   local rename_recolor_x = screen_x + (button_w_small + spacing) * 2
-  local _, rename_recolor_clicked = Button.draw(ctx, dl, rename_recolor_x, screen_y, button_w_large, button_h, {
-    id = "rename_recolor_btn",
+  local rename_recolor_result = Button.draw(ctx, {
+    id = "batch_rename_both",
+    draw_list = dl,
+    x = rename_recolor_x,
+    y = screen_y,
+    width = button_w_large,
+    height = button_h,
     label = "Rename & Recolor",
     rounding = 4,
     is_disabled = not can_rename,
     ignore_modal = true,
-  }, "batch_rename_both")
+  })
 
-  if rename_recolor_clicked then
+  if rename_recolor_result.clicked then
     if self.on_rename_and_recolor then
       self.on_rename_and_recolor(self.pattern, self.selected_color)
     end
@@ -743,14 +758,19 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Recolor button (always enabled)
   local recolor_x = rename_recolor_x + button_w_large + spacing
-  local _, recolor_clicked = Button.draw(ctx, dl, recolor_x, screen_y, button_w_small, button_h, {
-    id = "recolor_btn",
+  local recolor_result = Button.draw(ctx, {
+    id = "batch_rename_recolor",
+    draw_list = dl,
+    x = recolor_x,
+    y = screen_y,
+    width = button_w_small,
+    height = button_h,
     label = "Recolor",
     rounding = 4,
     ignore_modal = true,
-  }, "batch_rename_recolor")
+  })
 
-  if recolor_clicked then
+  if recolor_result.clicked then
     if self.on_recolor then
       self.on_recolor(self.selected_color)
     end

@@ -200,14 +200,20 @@ local function draw_standalone_test(ctx)
   ImGui.Text(ctx, "Button (standalone):")
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  local button_clicked = Button.draw(ctx, dl, cursor_x, cursor_y, 120, 30, {
+  local button_result = Button.draw(ctx, {
+    id = "standalone_button",
+    draw_list = dl,
+    x = cursor_x,
+    y = cursor_y,
+    width = 120,
+    height = 30,
     label = "Click Me",
     rounding = 4,
     on_click = function()
       reaper.ShowConsoleMsg("Standalone button clicked!\n")
     end,
     tooltip = "This is a standalone button"
-  }, "standalone_button")
+  })
   
   ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + 40)
   
@@ -215,7 +221,13 @@ local function draw_standalone_test(ctx)
   ImGui.Text(ctx, "Search Input (standalone):")
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  local search_changed = SearchInput.draw(ctx, dl, cursor_x, cursor_y, 250, 30, {
+  local search_result = SearchInput.draw(ctx, {
+    id = "standalone_search",
+    draw_list = dl,
+    x = cursor_x,
+    y = cursor_y,
+    width = 250,
+    height = 30,
     placeholder = "Type to search...",
     rounding = 4,
     tooltip = "This is a standalone search field",
@@ -223,7 +235,7 @@ local function draw_standalone_test(ctx)
       test_state.search_text = text
       reaper.ShowConsoleMsg("Standalone search: " .. text .. "\n")
     end,
-  }, "standalone_search")
+  })
   
   ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + 40)
   
@@ -237,8 +249,13 @@ local function draw_standalone_test(ctx)
   ImGui.Text(ctx, "Dropdown (standalone):")
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  local dropdown_changed = Dropdown.draw(ctx, dl, cursor_x, cursor_y, 150, 30, {
+  local dropdown_result = Dropdown.draw(ctx, {
     id = "standalone_dropdown",
+    draw_list = dl,
+    x = cursor_x,
+    y = cursor_y,
+    width = 150,
+    height = 30,
     options = {
       { label = "Red", value = "red" },
       { label = "Green", value = "green" },
@@ -251,7 +268,7 @@ local function draw_standalone_test(ctx)
       test_state.dropdown_value = value
       reaper.ShowConsoleMsg("Standalone dropdown: " .. value .. "\n")
     end,
-  }, "standalone_dropdown")
+  })
   
   ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + 40)
   

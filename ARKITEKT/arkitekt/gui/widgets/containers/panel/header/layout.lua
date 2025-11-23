@@ -51,14 +51,21 @@ COMPONENTS.template_header_controls = {
       local count = config.get_template_count()
       local label = string.format("%d template%s", count, count == 1 and "" or "s")
 
-      Button.draw(ctx, dl, cursor_x, y, 120, row1_height, {
+      Button.draw(ctx, {
+        id = "template_count",
+        draw_list = dl,
+        x = cursor_x,
+        y = y,
+        width = 120,
+        height = row1_height,
         label = label,
         interactive = false,
         style = {
           bg_color = 0x00000000,  -- Transparent
           text_color = 0xAAAAAAFF,
         },
-      }, state)
+        panel_state = state,
+      })
       cursor_x = cursor_x + 128
     end
 

@@ -530,28 +530,64 @@ local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, panel_
   if cb.top_left then
     local btn_x = x + border_thickness + offset_x
     local btn_y = y + border_thickness + offset_y
-    CornerButton.draw(ctx, dl, btn_x, btn_y, size, cb.top_left, panel_id .. "_corner_tl", outer_rounding, inner_rounding, "tl")
+    local opts = ConfigUtil.merge_safe(cb.top_left, {})
+    opts.id = panel_id .. "_corner_tl"
+    opts.draw_list = dl
+    opts.x = btn_x
+    opts.y = btn_y
+    opts.size = size
+    opts.outer_rounding = outer_rounding
+    opts.inner_rounding = inner_rounding
+    opts.position = "tl"
+    CornerButton.draw(ctx, opts)
   end
 
   -- Top-right
   if cb.top_right then
     local btn_x = x + w - size - border_thickness - offset_x
     local btn_y = y + border_thickness + offset_y
-    CornerButton.draw(ctx, dl, btn_x, btn_y, size, cb.top_right, panel_id .. "_corner_tr", outer_rounding, inner_rounding, "tr")
+    local opts = ConfigUtil.merge_safe(cb.top_right, {})
+    opts.id = panel_id .. "_corner_tr"
+    opts.draw_list = dl
+    opts.x = btn_x
+    opts.y = btn_y
+    opts.size = size
+    opts.outer_rounding = outer_rounding
+    opts.inner_rounding = inner_rounding
+    opts.position = "tr"
+    CornerButton.draw(ctx, opts)
   end
 
   -- Bottom-left
   if cb.bottom_left then
     local btn_x = x + border_thickness + offset_x
     local btn_y = y + h - size - border_thickness - offset_y
-    CornerButton.draw(ctx, dl, btn_x, btn_y, size, cb.bottom_left, panel_id .. "_corner_bl", outer_rounding, inner_rounding, "bl")
+    local opts = ConfigUtil.merge_safe(cb.bottom_left, {})
+    opts.id = panel_id .. "_corner_bl"
+    opts.draw_list = dl
+    opts.x = btn_x
+    opts.y = btn_y
+    opts.size = size
+    opts.outer_rounding = outer_rounding
+    opts.inner_rounding = inner_rounding
+    opts.position = "bl"
+    CornerButton.draw(ctx, opts)
   end
 
   -- Bottom-right
   if cb.bottom_right then
     local btn_x = x + w - size - border_thickness - offset_x
     local btn_y = y + h - size - border_thickness - offset_y
-    CornerButton.draw(ctx, dl, btn_x, btn_y, size, cb.bottom_right, panel_id .. "_corner_br", outer_rounding, inner_rounding, "br")
+    local opts = ConfigUtil.merge_safe(cb.bottom_right, {})
+    opts.id = panel_id .. "_corner_br"
+    opts.draw_list = dl
+    opts.x = btn_x
+    opts.y = btn_y
+    opts.size = size
+    opts.outer_rounding = outer_rounding
+    opts.inner_rounding = inner_rounding
+    opts.position = "br"
+    CornerButton.draw(ctx, opts)
   end
 end
 
@@ -640,10 +676,16 @@ local function draw_sidebar(ctx, dl, x, y, width, height, sidebar_cfg, panel_id,
     -- Merge element config with defaults
     local btn_config = ConfigUtil.merge_safe(element.config or {}, PanelConfig.ELEMENT_STYLE.button)
     btn_config.id = btn_id
+    btn_config.draw_list = dl
+    btn_config.x = btn_x
+    btn_config.y = btn_y
+    btn_config.width = btn_width
+    btn_config.height = current_btn_height
     btn_config.corner_rounding = corner_rounding
+    btn_config.panel_state = { _panel_id = panel_id }
 
     -- Draw the button with panel context
-    Button.draw(ctx, dl, btn_x, btn_y, btn_width, current_btn_height, btn_config, { _panel_id = panel_id })
+    Button.draw(ctx, btn_config)
   end
 
   return width
@@ -938,7 +980,16 @@ function Panel:end_draw(ctx)
         if ImGui.BeginChild(ctx, panel_id .. "_corner_" .. suffix, size, size, ImGui.ChildFlags_None, child_flags) then
           local dl = ImGui.GetWindowDrawList(ctx)
           -- Draw the corner button at its position
-          CornerButton.draw(ctx, dl, btn_x, btn_y, size, btn_config, panel_id .. "_corner_" .. suffix, outer_rounding, inner_rounding, position)
+          local opts = ConfigUtil.merge_safe(btn_config, {})
+          opts.id = panel_id .. "_corner_" .. suffix
+          opts.draw_list = dl
+          opts.x = btn_x
+          opts.y = btn_y
+          opts.size = size
+          opts.outer_rounding = outer_rounding
+          opts.inner_rounding = inner_rounding
+          opts.position = position
+          CornerButton.draw(ctx, opts)
           ImGui.EndChild(ctx)
         end
       end

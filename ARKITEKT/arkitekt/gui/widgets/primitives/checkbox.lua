@@ -377,47 +377,4 @@ function M.cleanup()
   Base.cleanup_registry(instances)
 end
 
--- ============================================================================
--- LEGACY API (Backward compatibility - deprecated)
--- ============================================================================
-
---- @deprecated Use M.draw(ctx, opts) instead
-function M.draw_legacy(ctx, dl, x, y, param5, param6, param7, param8)
-  local opts = {}
-
-  -- Detect calling convention
-  if type(param5) == "number" and type(param6) == "number" then
-    -- Panel header context: (ctx, dl, x, y, width, height, config, state)
-    opts = Base.parse_opts(param7, {})
-    opts.x = x
-    opts.y = y
-    opts.draw_list = dl
-    opts.panel_state = param8
-  else
-    -- Standalone context: (ctx, dl, x, y, label, is_checked, user_config, id)
-    opts = Base.parse_opts(param7, {})
-    opts.x = x
-    opts.y = y
-    opts.draw_list = dl
-    opts.label = param5
-    opts.checked = param6
-    opts.id = param8
-  end
-
-  local result = M.draw(ctx, opts)
-  return result.width, result.clicked
-end
-
---- @deprecated Use M.draw(ctx, opts) instead
-function M.draw_at_cursor(ctx, label, is_checked, user_config, id, advance)
-  local opts = Base.parse_opts(user_config, {})
-  opts.label = label
-  opts.checked = is_checked
-  opts.id = id
-  opts.advance = advance or "horizontal"
-
-  local result = M.draw(ctx, opts)
-  return result.clicked
-end
-
 return M

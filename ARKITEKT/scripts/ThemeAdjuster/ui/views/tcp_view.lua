@@ -260,13 +260,14 @@ function TCPView:draw_additional_param(ctx, param)
     local current_idx = math.floor(param.value - param.min + 1)
     current_idx = math.max(1, math.min(current_idx, #values))
 
-    local changed_spinner, new_idx = Spinner.draw(
-      ctx,
-      "##tcp_add_spinner_" .. param.index,
-      current_idx,
-      values,
-      {w = control_w, h = 24}
-    )
+    local spinner_result = Spinner.draw(ctx, {
+      id = "##tcp_add_spinner_" .. param.index,
+      current_index = current_idx,
+      values = values,
+      width = control_w,
+      height = 24,
+    })
+    local changed_spinner, new_idx = spinner_result.changed, spinner_result.new_index
 
     if changed_spinner then
       changed = true
@@ -460,7 +461,14 @@ function TCPView:draw(ctx, shell_state)
 
       -- Spinner (fixed position, fixed width)
       ImGui.SameLine(ctx, 0, 8)
-      local changed, new_idx = Spinner.draw(ctx, id, idx, values, {w = spinner_w, h = 24})
+      local spinner_result = Spinner.draw(ctx, {
+        id = id,
+        current_index = idx,
+        values = values,
+        width = spinner_w,
+        height = 24,
+      })
+      local changed, new_idx = spinner_result.changed, spinner_result.new_index
 
 
       ImGui.Dummy(ctx, 0, 2)

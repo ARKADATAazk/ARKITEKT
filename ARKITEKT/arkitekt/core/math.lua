@@ -13,6 +13,9 @@ function M.clamp(value, min, max)
 end
 
 function M.remap(value, in_min, in_max, out_min, out_max)
+  if in_max == in_min then
+    return (out_min + out_max) * 0.5  -- Return midpoint to avoid divide-by-zero
+  end
   return out_min + (value - in_min) * (out_max - out_min) / (in_max - in_min)
 end
 

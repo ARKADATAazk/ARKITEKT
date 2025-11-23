@@ -290,9 +290,15 @@ function ColorsView:draw(ctx, shell_state)
     ImGui.Text(ctx, "Select Palette")
     ImGui.SameLine(ctx, 140)
 
-    local changed, new_idx = Spinner.draw(ctx, "palette_selector", self.current_palette_idx, PALETTE_NAMES, {w = 200, h = 28})
-    if changed then
-      self.current_palette_idx = new_idx
+    local spinner_result = Spinner.draw(ctx, {
+      id = "palette_selector",
+      current_index = self.current_palette_idx,
+      values = PALETTE_NAMES,
+      width = 200,
+      height = 28,
+    })
+    if spinner_result.changed then
+      self.current_palette_idx = spinner_result.new_index
     end
 
     ImGui.Dummy(ctx, 0, 12)

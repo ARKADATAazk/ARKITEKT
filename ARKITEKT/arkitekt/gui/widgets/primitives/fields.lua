@@ -302,31 +302,4 @@ function M.cleanup()
   Base.cleanup_registry(field_state)
 end
 
--- ============================================================================
--- LEGACY API (Backward compatibility - deprecated)
--- ============================================================================
-
---- @deprecated Use M.draw(ctx, opts) instead
-function M.draw_legacy(ctx, dl, x, y, width, height, user_config, id)
-  local opts = Base.parse_opts(user_config, {})
-  opts.x = x
-  opts.y = y
-  opts.width = width
-  opts.height = height
-  opts.draw_list = dl
-  opts.id = id or opts.id
-
-  local result = M.draw(ctx, opts)
-  return result.changed, result.value
-end
-
---- @deprecated Use M.draw(ctx, opts) instead
-function M.draw_at_cursor(ctx, user_config, id)
-  local opts = Base.parse_opts(user_config, {})
-  opts.id = id or opts.id
-
-  local result = M.draw(ctx, opts)
-  return result.changed, result.value
-end
-
 return M

@@ -292,24 +292,4 @@ function M.cleanup()
   Base.cleanup_registry(instances)
 end
 
--- ============================================================================
--- LEGACY API (Backward compatibility - deprecated)
--- ============================================================================
-
---- @deprecated Use M.draw(ctx, opts) instead
-function M.draw_legacy(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inner_rounding, position)
-  local opts = Base.parse_opts(user_config, {})
-  opts.x = x
-  opts.y = y
-  opts.size = size
-  opts.draw_list = dl
-  opts.id = unique_id
-  opts.outer_rounding = outer_rounding
-  opts.inner_rounding = inner_rounding
-  opts.position = position
-
-  local result = M.draw(ctx, opts)
-  return result.clicked
-end
-
 return M

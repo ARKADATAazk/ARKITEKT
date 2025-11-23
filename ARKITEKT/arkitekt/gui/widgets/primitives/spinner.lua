@@ -306,26 +306,4 @@ function M.draw(ctx, opts)
   })
 end
 
--- ============================================================================
--- LEGACY API (Backward compatibility - deprecated)
--- ============================================================================
-
---- @deprecated Use M.draw(ctx, opts) instead
-function M.draw_legacy(ctx, id, current_index, values, opts_table)
-  opts_table = opts_table or {}
-
-  local opts = {
-    id = id,
-    value = current_index,
-    options = values,
-    width = opts_table.w or 200,
-    height = opts_table.h or 24,
-    button_width = opts_table.button_w or 24,
-    spacing = opts_table.spacing or 2,
-  }
-
-  local result = M.draw(ctx, opts)
-  return result.changed, result.value
-end
-
 return M
