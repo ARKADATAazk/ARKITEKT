@@ -62,10 +62,11 @@ local function draw_info_panel(ctx, gui, width, height)
         draw_section_header(ctx, "FX CHAIN")
 
         for i, fx_name in ipairs(tmpl.fx) do
+          -- Very dark grey with 80% transparency
           Chip.draw(ctx, {
             style = Chip.STYLE.ACTION,
             label = fx_name,
-            bg_color = hexrgb("#3D5A80"),
+            bg_color = hexrgb("#1A1A1ACC"),
             text_color = hexrgb("#FFFFFF"),
             height = 22,
             padding_h = 8,

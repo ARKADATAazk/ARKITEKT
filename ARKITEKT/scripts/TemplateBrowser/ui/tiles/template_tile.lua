@@ -257,8 +257,8 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local chip_w = text_width + chip_content_width
     local chip_h = 20
 
-    -- Background (ACTION style: steel blue)
-    local chip_bg = hexrgb("#3D5A80")
+    -- Background (very dark grey with 80% transparency)
+    local chip_bg = hexrgb("#1A1A1ACC")
     ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, chip_bg, 2)
 
     -- Text (centered, white)
@@ -302,10 +302,10 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local blend = 0.3  -- Color influence
 
     if is_favorite then
-      -- Lighter than tile color when enabled
-      local r = math.floor(math.min(255, cr * 1.4) * blend + 230 * (1 - blend))
-      local g = math.floor(math.min(255, cg * 1.4) * blend + 230 * (1 - blend))
-      local b = math.floor(math.min(255, cb * 1.4) * blend + 230 * (1 - blend))
+      -- Colored but much darker when enabled
+      local r = math.floor(math.min(255, cr * 0.6) * blend + 80 * (1 - blend))
+      local g = math.floor(math.min(255, cg * 0.6) * blend + 80 * (1 - blend))
+      local b = math.floor(math.min(255, cb * 0.6) * blend + 80 * (1 - blend))
       star_color = Colors.components_to_rgba(r, g, b, 255)
     else
       -- Much darker when disabled
@@ -315,9 +315,9 @@ function M.render(ctx, rect, template, state, metadata, animator)
       star_color = Colors.components_to_rgba(r, g, b, is_star_hovered and 160 or 80)
     end
   else
-    -- No tile color - use pure grey
+    -- No tile color - use darker grey
     if is_favorite then
-      star_color = hexrgb("#E8E8E8")  -- Light when enabled
+      star_color = hexrgb("#606060")  -- Darker when enabled
     else
       star_color = is_star_hovered and hexrgb("#282828A0") or hexrgb("#18181850")  -- Much darker
     end
