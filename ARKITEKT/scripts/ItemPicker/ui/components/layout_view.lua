@@ -823,11 +823,62 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local content_height = panels_end_y - panels_start_y
   local content_width = screen_w - (self.config.LAYOUT.PADDING * 2)
 
+  -- Track filter bar on left side with slide animation
+  local track_bar_width = 0
+  local track_bar_max_width = 120  -- Max width when expanded
+  local has_track_filters = self.state.track_tree and self.state.track_whitelist
+
+  if has_track_filters then
+    -- Count whitelisted tracks
+    local whitelist_count = 0
+    for guid, selected in pairs(self.state.track_whitelist) do
+      if selected then whitelist_count = whitelist_count + 1 end
+    end
+
+    if whitelist_count > 0 then
+      -- Calculate trigger zone on left edge
+      local trigger_zone_width = 30  -- Pixels from left edge to trigger
+      local panels_left_edge = coord_offset_x + self.config.LAYOUT.PADDING
+
+      -- Check if mouse is near left edge (within trigger zone or already expanded area)
+      local current_bar_width = track_bar_max_width * (self.state.track_bar_slide_progress or 0)
+      local is_hovering_left = mouse_in_window and
+                               mouse_x < (panels_left_edge + trigger_zone_width + current_bar_width) and
+                               mouse_y >= panels_start_y and mouse_y <= panels_end_y
+
+      -- Smooth slide for track bar
+      if not self.state.track_bar_slide_progress then
+        self.state.track_bar_slide_progress = 0
+      end
+      local target_slide = is_hovering_left and 1.0 or 0.0
+      local slide_speed = self.config.UI_PANELS.settings.slide_speed
+      self.state.track_bar_slide_progress = self.state.track_bar_slide_progress +
+        (target_slide - self.state.track_bar_slide_progress) * slide_speed
+
+      -- Calculate animated width
+      track_bar_width = track_bar_max_width * self.state.track_bar_slide_progress
+
+      -- Only render if visible
+      if track_bar_width > 1 then
+        local bar_alpha = self.state.track_bar_slide_progress * section_fade
+        local bar_x = panels_left_edge
+        local bar_y = panels_start_y
+        local bar_height = content_height
+
+        -- Draw track filter bar
+        TrackFilterBar.draw(ctx, draw_list, bar_x, bar_y, bar_height, self.state, bar_alpha)
+      end
+    end
+  end
+
+  -- Adjust content width to account for track bar
+  content_width = content_width - track_bar_width
+
   -- Get view mode
   local view_mode = self.state.get_view_mode()
 
   -- Calculate section heights based on view mode
-  local start_x = coord_offset_x + self.config.LAYOUT.PADDING
+  local start_x = coord_offset_x + self.config.LAYOUT.PADDING + track_bar_width
   local start_y = panels_start_y
   local header_height = self.config.LAYOUT.HEADER_HEIGHT
 
@@ -950,13 +1001,6 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       local midi_grid_width = midi_width - panel_padding * 2
       local midi_child_h = content_height - panel_padding
 
-      -- Draw track filter bar on left side of MIDI panel
-      local midi_track_bar_width = TrackFilterBar.draw(ctx, draw_list, midi_grid_x, midi_grid_y, midi_child_h, self.state, section_fade)
-      if midi_track_bar_width > 0 then
-        midi_grid_x = midi_grid_x + midi_track_bar_width + 2
-        midi_grid_width = midi_grid_width - midi_track_bar_width - 2
-      end
-
       ImGui.SetCursorScreenPos(ctx, midi_grid_x, midi_grid_y)
 
       if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
@@ -993,19 +1037,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       draw_panel_title(ctx, draw_list, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15, self.config, 0)
 
       -- Audio grid child starts below header, in its own space
-      local audio_grid_x = audio_start_x + panel_padding
-      local audio_grid_y = start_y + header_height
       local audio_grid_width = audio_width - panel_padding * 2
       local audio_child_h = content_height - panel_padding
-
-      -- Draw track filter bar on left side of Audio panel
-      local audio_track_bar_width = TrackFilterBar.draw(ctx, draw_list, audio_grid_x, audio_grid_y, audio_child_h, self.state, section_fade)
-      if audio_track_bar_width > 0 then
-        audio_grid_x = audio_grid_x + audio_track_bar_width + 2
-        audio_grid_width = audio_grid_width - audio_track_bar_width - 2
-      end
-
-      ImGui.SetCursorScreenPos(ctx, audio_grid_x, audio_grid_y)
+      ImGui.SetCursorScreenPos(ctx, audio_start_x + panel_padding, start_y + header_height)
 
       if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
         ImGui.WindowFlags_NoScrollbar) then
@@ -1069,19 +1103,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config, 0)
 
     -- MIDI grid child starts below header, in its own space
-    local midi_grid_x = start_x + panel_padding
-    local midi_grid_y = start_y + header_height
     local midi_grid_width = content_width - panel_right_padding - panel_padding * 2
     local midi_child_h = midi_height - panel_padding
-
-    -- Draw track filter bar on left side of MIDI panel
-    local midi_track_bar_width = TrackFilterBar.draw(ctx, draw_list, midi_grid_x, midi_grid_y, midi_child_h, self.state, section_fade)
-    if midi_track_bar_width > 0 then
-      midi_grid_x = midi_grid_x + midi_track_bar_width + 2
-      midi_grid_width = midi_grid_width - midi_track_bar_width - 2
-    end
-
-    ImGui.SetCursorScreenPos(ctx, midi_grid_x, midi_grid_y)
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
     if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
@@ -1119,19 +1143,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config, 0)
 
     -- Audio grid child starts below header, in its own space
-    local audio_grid_x = start_x + panel_padding
-    local audio_grid_y = audio_start_y + header_height
     local audio_grid_width = content_width - panel_right_padding - panel_padding * 2
     local audio_child_h = audio_height - panel_padding
-
-    -- Draw track filter bar on left side of Audio panel
-    local audio_track_bar_width = TrackFilterBar.draw(ctx, draw_list, audio_grid_x, audio_grid_y, audio_child_h, self.state, section_fade)
-    if audio_track_bar_width > 0 then
-      audio_grid_x = audio_grid_x + audio_track_bar_width + 2
-      audio_grid_width = audio_grid_width - audio_track_bar_width - 2
-    end
-
-    ImGui.SetCursorScreenPos(ctx, audio_grid_x, audio_grid_y)
+    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_start_y + header_height)
 
     if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then

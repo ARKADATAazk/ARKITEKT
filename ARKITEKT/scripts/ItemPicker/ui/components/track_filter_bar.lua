@@ -9,12 +9,12 @@ local M = {}
 
 -- Tag styling constants
 local TAG = {
-  WIDTH = 22,        -- Width of vertical tag bar
-  HEIGHT = 16,       -- Height per tag
-  MARGIN_Y = 1,      -- Vertical spacing between tags
+  HEIGHT = 18,       -- Height per tag
+  MARGIN_Y = 2,      -- Vertical spacing between tags
+  PADDING_X = 8,     -- Left/right padding
   PADDING_Y = 4,     -- Top/bottom padding
-  COLOR_BAR_WIDTH = 3,
-  ROUNDING = 2,
+  COLOR_BAR_WIDTH = 4,
+  ROUNDING = 3,
 }
 
 -- Get display color from REAPER's COLORREF format
@@ -71,8 +71,11 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
     end
   end
 
+  local bar_width = 120  -- Fixed width for the bar
   local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
+  local tag_x = x + TAG.PADDING_X
   local tag_y = y + TAG.PADDING_Y
+  local tag_width = bar_width - TAG.PADDING_X * 2
 
   -- Calculate if we need scrolling
   local total_tags_height = #tracks * (TAG.HEIGHT + TAG.MARGIN_Y) - TAG.MARGIN_Y + TAG.PADDING_Y * 2
@@ -83,7 +86,7 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
   local scroll_y = state.track_bar_scroll_y or 0
   if needs_scroll then
     local max_scroll = total_tags_height - available_height
-    local is_over_bar = mouse_x >= x and mouse_x <= x + TAG.WIDTH and
+    local is_over_bar = mouse_x >= x and mouse_x <= x + bar_width and
                         mouse_y >= y and mouse_y <= y + height
 
     if is_over_bar then
@@ -97,7 +100,7 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
   end
 
   -- Clip to bar area
-  ImGui.DrawList_PushClipRect(draw_list, x, y, x + TAG.WIDTH, y + height, true)
+  ImGui.DrawList_PushClipRect(draw_list, x, y, x + bar_width, y + height, true)
 
   -- Draw each track tag
   for i, track in ipairs(tracks) do
@@ -110,7 +113,7 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       if is_enabled == nil then is_enabled = true end
 
       -- Check hover
-      local is_hovered = mouse_x >= x and mouse_x <= x + TAG.WIDTH and
+      local is_hovered = mouse_x >= tag_x and mouse_x <= tag_x + tag_width and
                          mouse_y >= tag_top and mouse_y <= tag_bottom
 
       -- Background
@@ -121,7 +124,7 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       bg_alpha = math.floor(bg_alpha * alpha)
       local bg_color = Colors.with_alpha(Colors.hexrgb("#2A2A2A"), bg_alpha)
 
-      ImGui.DrawList_AddRectFilled(draw_list, x, tag_top, x + TAG.WIDTH, tag_bottom, bg_color, TAG.ROUNDING)
+      ImGui.DrawList_AddRectFilled(draw_list, tag_x, tag_top, tag_x + tag_width, tag_bottom, bg_color, TAG.ROUNDING)
 
       -- Color bar
       local bar_alpha = is_enabled and 0xFF or 0x66
@@ -129,9 +132,30 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       local bar_color = Colors.with_alpha(track.display_color, bar_alpha)
 
       ImGui.DrawList_AddRectFilled(draw_list,
-        x, tag_top,
-        x + TAG.COLOR_BAR_WIDTH, tag_bottom,
+        tag_x, tag_top,
+        tag_x + TAG.COLOR_BAR_WIDTH, tag_bottom,
         bar_color, TAG.ROUNDING, ImGui.DrawFlags_RoundCornersLeft)
+
+      -- Track name
+      local text_x = tag_x + TAG.COLOR_BAR_WIDTH + 4
+      local text_y = tag_top + (TAG.HEIGHT - ImGui.GetTextLineHeight(ctx)) / 2
+      local text_alpha = is_enabled and 0xFF or 0x66
+      text_alpha = math.floor(text_alpha * alpha)
+      local text_color = Colors.with_alpha(Colors.hexrgb("#FFFFFF"), text_alpha)
+
+      -- Truncate name if too long
+      local max_text_width = tag_width - TAG.COLOR_BAR_WIDTH - 8
+      local name = track.name
+      local name_width = ImGui.CalcTextSize(ctx, name)
+      if name_width > max_text_width then
+        -- Truncate with ellipsis
+        while #name > 3 and ImGui.CalcTextSize(ctx, name .. "...") > max_text_width do
+          name = name:sub(1, -2)
+        end
+        name = name .. "..."
+      end
+
+      ImGui.DrawList_AddText(draw_list, text_x, text_y, text_color, name)
 
       -- Handle click
       if is_hovered and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) then
@@ -140,16 +164,6 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
         state.runtime_cache.audio_filter_hash = nil
         state.runtime_cache.midi_filter_hash = nil
       end
-
-      -- Tooltip on hover
-      if is_hovered then
-        -- Store tooltip info for later rendering (outside clip rect)
-        state.track_bar_tooltip = {
-          text = track.name,
-          x = x + TAG.WIDTH + 4,
-          y = tag_top
-        }
-      end
     end
 
     tag_y = tag_y + TAG.HEIGHT + TAG.MARGIN_Y
@@ -157,30 +171,7 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
 
   ImGui.DrawList_PopClipRect(draw_list)
 
-  -- Draw tooltip if hovering (outside clip rect)
-  if state.track_bar_tooltip then
-    local tip = state.track_bar_tooltip
-    local text_w = ImGui.CalcTextSize(ctx, tip.text)
-    local tip_padding = 4
-    local tip_h = ImGui.GetTextLineHeight(ctx) + tip_padding * 2
-    local tip_w = text_w + tip_padding * 2
-
-    -- Tooltip background
-    local tip_bg = Colors.with_alpha(Colors.hexrgb("#1A1A1A"), math.floor(0xEE * alpha))
-    ImGui.DrawList_AddRectFilled(draw_list, tip.x, tip.y, tip.x + tip_w, tip.y + tip_h, tip_bg, 3)
-
-    -- Tooltip border
-    local tip_border = Colors.with_alpha(Colors.hexrgb("#404040"), math.floor(0xCC * alpha))
-    ImGui.DrawList_AddRect(draw_list, tip.x, tip.y, tip.x + tip_w, tip.y + tip_h, tip_border, 3)
-
-    -- Tooltip text
-    local tip_text_color = Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(0xFF * alpha))
-    ImGui.DrawList_AddText(draw_list, tip.x + tip_padding, tip.y + tip_padding, tip_text_color, tip.text)
-
-    state.track_bar_tooltip = nil  -- Clear for next frame
-  end
-
-  return TAG.WIDTH
+  return bar_width
 end
 
 -- Get list of enabled track GUIDs for filtering
