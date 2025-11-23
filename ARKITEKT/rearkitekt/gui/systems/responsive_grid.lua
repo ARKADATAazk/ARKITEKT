@@ -155,7 +155,7 @@ function M.calculate_justified_layout(items, opts)
     local extra_width = available_width - used_width
     
     local is_last_row = (row_idx == #rows)
-    local should_justify = not is_last_row or #row >= 3
+    local should_justify = not is_last_row
     
     if extra_width > 0 and should_justify then
       local max_allowed_extra = total_min_width * (max_stretch_ratio - 1.0)

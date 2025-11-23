@@ -30,14 +30,17 @@ local function _draw_chip(ctx, item, is_selected, opts)
 
   -- For ACTION style, item.color is used as bg_color
   if opts.style == Chip.STYLE.ACTION and item_color then
-    -- Apply unselected_alpha to background if not selected
+    -- Apply unselected_alpha to entire chip (bg + text) if not selected
     if not is_selected and opts.unselected_alpha then
       bg_color = Colors.with_alpha(item_color, opts.unselected_alpha)
+      -- Also apply alpha to text for consistent opacity
+      local auto_text = Colors.auto_text_color(item_color)
+      text_color = Colors.with_alpha(auto_text, opts.unselected_alpha)
     else
       bg_color = item_color
+      -- Auto text color for readability
+      text_color = Colors.auto_text_color(item_color)
     end
-    -- Auto text color for readability
-    text_color = Colors.auto_text_color(item_color)
   elseif item_color and not is_selected and opts.unselected_alpha then
     -- For other styles (DOT), apply alpha to the dot color
     item_color = Colors.with_alpha(item_color, opts.unselected_alpha)
