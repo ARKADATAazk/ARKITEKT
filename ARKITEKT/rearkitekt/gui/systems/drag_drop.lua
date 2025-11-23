@@ -20,6 +20,13 @@ M.FLAGS = {
   ACCEPT_NO_PREVIEW = ImGui.DragDropFlags_AcceptNoPreviewTooltip,
 }
 
+-- Default colors for drop indicators
+M.COLORS = {
+  POTENTIAL_TARGET = Colors.hexrgb("#5588FF44"),  -- Subtle highlight for all potential targets
+  ACTIVE_TARGET = Colors.hexrgb("#5588FFAA"),     -- Brighter when hovering
+  ACTIVE_FILL = Colors.hexrgb("#5588FF22"),       -- Fill for active target
+}
+
 -- Begin a drag source on the last item
 -- Returns true if drag is active
 function M.begin_source(ctx, payload_type, payload_data, flags)
@@ -62,25 +69,35 @@ function M.accept_drop(ctx, payload_type, flags)
 
   local payload, is_preview, is_delivery = ImGui.AcceptDragDropPayload(ctx, payload_type, flags)
 
-  if payload then
+  if payload and type(payload) == "string" then
     -- Deserialize if it looks like serialized data
     local data = M._deserialize(payload) or payload
-    return data, is_preview, is_delivery
+    -- Only return on delivery, not preview
+    if is_delivery then
+      return data
+    end
   end
 
   return nil
 end
 
--- Check if a specific payload type is being dragged (without accepting)
-function M.is_dragging(ctx, payload_type)
-  local payload = ImGui.GetDragDropPayload(ctx)
-  if payload then
-    -- Check if the payload type matches
-    -- Note: GetDragDropPayload returns the payload data, not the type
-    -- We need to use AcceptDragDropPayload with AcceptBeforeDelivery to peek
-    return true
+-- Peek at the current drag payload without accepting it
+-- Returns payload_data if a matching type is being dragged
+function M.peek_payload(ctx, payload_type)
+  -- Use AcceptBeforeDelivery and AcceptNoDrawDefaultRect to peek without side effects
+  local flags = ImGui.DragDropFlags_AcceptBeforeDelivery | ImGui.DragDropFlags_AcceptNoDrawDefaultRect
+  local payload = ImGui.AcceptDragDropPayload(ctx, payload_type, flags)
+
+  if payload and type(payload) == "string" then
+    return M._deserialize(payload) or payload
   end
-  return false
+
+  return nil
+end
+
+-- Check if any drag is active
+function M.is_drag_active(ctx)
+  return ImGui.GetDragDropPayload(ctx) ~= nil
 end
 
 -- Draw a simple text preview during drag
@@ -111,7 +128,33 @@ function M.draw_preview_chip(ctx, label, bg_color, text_color)
   Draw.text(dl, x + padding, y + 3, text_color, label)
 end
 
--- Draw a highlight on the drop target
+-- Draw highlight for a potential drop target (shown on all valid targets while dragging)
+function M.draw_potential_target(ctx, rect, color)
+  color = color or M.COLORS.POTENTIAL_TARGET
+
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+
+  -- Subtle border
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, color, 4, 0, 1.5)
+end
+
+-- Draw highlight for an active drop target (shown when hovering a valid target)
+function M.draw_active_target(ctx, rect, border_color, fill_color)
+  border_color = border_color or M.COLORS.ACTIVE_TARGET
+  fill_color = fill_color or M.COLORS.ACTIVE_FILL
+
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
+
+  -- Fill
+  ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, fill_color, 4)
+
+  -- Border
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 4, 0, 2)
+end
+
+-- Legacy function for backward compatibility
 function M.draw_target_highlight(ctx, rect, color, thickness)
   color = color or Colors.hexrgb("#5588FFAA")
   thickness = thickness or 2
@@ -138,7 +181,9 @@ end
 
 -- Simple deserialization
 function M._deserialize(str)
-  if not str or str == "" then return nil end
+  -- Type check first
+  if type(str) ~= "string" then return nil end
+  if str == "" then return nil end
 
   -- If it doesn't look like serialized data, return as-is
   if str:sub(1, 1) ~= "{" then return str end
