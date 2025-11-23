@@ -159,6 +159,31 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         end
       end
     end,
+    -- on_tag_drop (receives template and tag payload from drag)
+    function(template, payload)
+      if template and payload then
+        local Tags = require('TemplateBrowser.domain.tags')
+        local Persistence = require('TemplateBrowser.domain.persistence')
+
+        -- Get tag name from payload
+        local tag_name = payload.label or payload.id
+        if tag_name then
+          -- Add tag to template
+          Tags.assign_tag(self.state.metadata, template.uuid, tag_name)
+
+          -- Save metadata
+          Persistence.save_metadata(self.state.metadata)
+
+          -- Re-filter if we have tag filters active
+          if next(self.state.filter_tags) then
+            local Scanner = require('TemplateBrowser.domain.scanner')
+            Scanner.filter_templates(self.state)
+          end
+
+          self.state.set_status("Tagged \"" .. template.name .. "\" with " .. tag_name, "success")
+        end
+      end
+    end,
     self  -- Pass GUI reference for fonts access
   )
 
@@ -312,6 +337,31 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         if self.state.selected_folder == favorites_id then
           local Scanner = require('TemplateBrowser.domain.scanner')
           Scanner.filter_templates(self.state)
+        end
+      end
+    end,
+    -- on_tag_drop (receives template and tag payload from drag)
+    function(template, payload)
+      if template and payload then
+        local Tags = require('TemplateBrowser.domain.tags')
+        local Persistence = require('TemplateBrowser.domain.persistence')
+
+        -- Get tag name from payload
+        local tag_name = payload.label or payload.id
+        if tag_name then
+          -- Add tag to template
+          Tags.assign_tag(self.state.metadata, template.uuid, tag_name)
+
+          -- Save metadata
+          Persistence.save_metadata(self.state.metadata)
+
+          -- Re-filter if we have tag filters active
+          if next(self.state.filter_tags) then
+            local Scanner = require('TemplateBrowser.domain.scanner')
+            Scanner.filter_templates(self.state)
+          end
+
+          self.state.set_status("Tagged \"" .. template.name .. "\" with " .. tag_name, "success")
         end
       end
     end,

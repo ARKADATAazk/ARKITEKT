@@ -11,6 +11,7 @@ local Chip = require('rearkitekt.gui.widgets.data.chip')
 local ChipList = require('rearkitekt.gui.widgets.data.chip_list')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.ui_constants')
+local Constants = require('TemplateBrowser.defs.constants')
 
 local M = {}
 
@@ -94,6 +95,7 @@ function M.draw(ctx, state, config, width, height)
           padding_h = 8,
           max_width = content_w,
           unselected_alpha = 77,
+          drag_type = Constants.DRAG_TYPES.TAG,
         })
 
         -- Handle click - start rename on double-click

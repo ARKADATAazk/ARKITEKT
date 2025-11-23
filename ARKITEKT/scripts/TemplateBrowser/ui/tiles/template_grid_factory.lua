@@ -2,14 +2,17 @@
 -- TemplateBrowser/ui/tiles/template_grid_factory.lua
 -- Grid factory for template tiles
 
+local ImGui = require 'imgui' '0.10'
 local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
 local Colors = require('rearkitekt.core.colors')
 local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
 local TemplateTileCompact = require('TemplateBrowser.ui.tiles.template_tile_compact')
+local DragDrop = require('rearkitekt.gui.systems.drag_drop')
+local Constants = require('TemplateBrowser.defs.constants')
 
 local M = {}
 
-function M.create(get_templates, metadata, animator, get_tile_width, get_view_mode, on_select, on_double_click, on_right_click, on_star_click, gui)
+function M.create(get_templates, metadata, animator, get_tile_width, get_view_mode, on_select, on_double_click, on_right_click, on_star_click, on_tag_drop, gui)
   local grid = Grid.new({
     id = "template_grid",
     gap = TemplateTile.CONFIG.gap,  -- Initial value for grid mode
@@ -42,6 +45,22 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
       if state.star_clicked and on_star_click then
         on_star_click(template)
         state.star_clicked = false  -- Reset flag
+      end
+
+      -- Handle drop targets for tags
+      if on_tag_drop then
+        -- Create invisible button for drop target
+        ImGui.SetCursorScreenPos(ctx, rect[1], rect[2])
+        ImGui.InvisibleButton(ctx, "##tile_drop_" .. template.uuid, rect[3] - rect[1], rect[4] - rect[2])
+
+        if ImGui.BeginDragDropTarget(ctx) then
+          local payload = DragDrop.accept_drop(ctx, Constants.DRAG_TYPES.TAG)
+          if payload then
+            -- Apply tag to template
+            on_tag_drop(template, payload)
+          end
+          ImGui.EndDragDropTarget(ctx)
+        end
       end
     end,
 

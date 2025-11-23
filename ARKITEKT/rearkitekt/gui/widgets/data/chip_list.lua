@@ -8,6 +8,7 @@ local ImGui = require 'imgui' '0.10'
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local Colors = require('rearkitekt.core.colors')
 local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')
+local DragDrop = require('rearkitekt.gui.systems.drag_drop')
 
 local M = {}
 
@@ -80,6 +81,10 @@ function M.draw(ctx, items, opts)
   local justified = opts.justified or false
   
   local clicked_id = nil
+  local dragging_id = nil
+  local drag_type = opts.drag_type
+  local drag_data_fn = opts.drag_data_fn  -- function(item) -> data table
+
   local draw_opts = {
     style = style,
     chip_height = chip_height,
@@ -90,6 +95,17 @@ function M.draw(ctx, items, opts)
     padding_h = opts.padding_h or (style == Chip.STYLE.DOT and 12 or 14),
     unselected_alpha = opts.unselected_alpha,
   }
+
+  -- Helper to handle drag source after drawing a chip
+  local function handle_drag_source(item)
+    if drag_type and DragDrop.begin_source(ctx, drag_type, drag_data_fn and drag_data_fn(item) or { id = item.id, label = item.label }) then
+      -- Draw drag preview
+      local preview_color = item.color or Colors.hexrgb("#5B8FB9")
+      DragDrop.draw_preview_text(ctx, item.label)
+      DragDrop.end_source(ctx)
+      dragging_id = item.id
+    end
+  end
   
   if justified then
     local min_widths = {}
@@ -108,14 +124,15 @@ function M.draw(ctx, items, opts)
     
     for row_idx, row in ipairs(layout) do
       if row_idx > 1 then ImGui.SetCursorPosX(ctx, row_start_x) end
-      
+
       for cell_idx, cell in ipairs(row) do
         draw_opts.explicit_width = cell.final_width
         local clicked = _draw_chip(ctx, cell.item, selected_ids[cell.item.id], draw_opts)
         if clicked then clicked_id = cell.item.id end
+        handle_drag_source(cell.item)
         if cell_idx < #row then ImGui.SameLine(ctx, 0, chip_spacing) end
       end
-      
+
       if row_idx < #layout then ImGui.Dummy(ctx, 0, line_spacing) end
     end
   else
@@ -142,13 +159,14 @@ function M.draw(ctx, items, opts)
       draw_opts.explicit_width = nil
       local clicked = _draw_chip(ctx, item, selected_ids[item.id], draw_opts)
       if clicked then clicked_id = item.id end
-      
+      handle_drag_source(item)
+
       current_x = current_x + chip_width
       items_in_row = items_in_row + 1
     end
   end
-  
-  return clicked_id
+
+  return clicked_id, dragging_id
 end
 
 function M.draw_vertical(ctx, items, opts)
