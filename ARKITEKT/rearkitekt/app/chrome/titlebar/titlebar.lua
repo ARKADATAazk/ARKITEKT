@@ -228,11 +228,11 @@ function M.new(opts)
       if self.show_icon then
         local win_x, win_y = ImGui.GetWindowPos(ctx)
         local native_icon_size = 22  -- Native PNG size
-        local icon_x = win_x + self.pad_h - 10  -- Move icon 10px left (temporary for testing)
+        local icon_x = win_x + self.pad_h - 12  -- Move icon 12px left
         local icon_y = win_y + (self.height - native_icon_size) * 0.5
         local icon_color = self.icon_color or text_color
 
-        ImGui.SetCursorPos(ctx, self.pad_h - 10, (self.height - native_icon_size) * 0.5)  -- Move icon 10px left
+        ImGui.SetCursorPos(ctx, self.pad_h - 12, (self.height - native_icon_size) * 0.5)  -- Move icon 12px left
         ImGui.InvisibleButton(ctx, "##icon_button", native_icon_size, native_icon_size)
 
         local icon_hovered = ImGui.IsItemHovered(ctx)
@@ -290,8 +290,8 @@ function M.new(opts)
           ContextMenu.end_menu(ctx)
         end
 
-        title_x_offset = native_icon_size + self.icon_spacing - 10  -- Account for icon shift
-        ImGui.SetCursorPos(ctx, self.pad_h + title_x_offset - 10, y_center)  -- Move title 10px left
+        title_x_offset = native_icon_size + self.icon_spacing - 10  -- Title stays at -10px
+        ImGui.SetCursorPos(ctx, self.pad_h + title_x_offset, y_center)
       end
       
       local num_buttons = 1 + (self.enable_maximize and 1 or 0)
