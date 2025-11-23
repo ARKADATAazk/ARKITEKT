@@ -5,6 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local Coordinator = require('ItemPickerWindow.ui.coordinator')
 local LayoutView = require('ItemPickerWindow.ui.layout_view')
+local ToolbarView = require('ItemPickerWindow.ui.toolbar_view')
 
 local M = {}
 local GUI = {}
@@ -18,12 +19,14 @@ function M.create(config, state, controller, visualization)
     visualization = visualization,
     coordinator = nil,
     layout_view = nil,
+    toolbar_view = nil,
     initialized = false,
     data_loaded = false,
     loading_started = false,
   }, GUI)
 
   self.layout_view = LayoutView.new(config, state)
+  self.toolbar_view = ToolbarView.new(config, state)
 
   return self
 end
@@ -192,7 +195,15 @@ function GUI:draw(ctx, shell_state)
   self.state.monospace_font = shell_state.fonts.monospace
   self.state.monospace_font_size = shell_state.fonts.monospace_size or 14
 
-  -- Draw layout
+  -- Draw toolbar at top
+  local toolbar_height = self.toolbar_view:draw(ctx, shell_state)
+
+  -- Add gap between toolbar and panels
+  local gap = 8
+  local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
+  ImGui.SetCursorScreenPos(ctx, start_x, start_y + gap)
+
+  -- Draw layout (panels)
   self.layout_view:draw(ctx, self.coordinator, shell_state)
 
   -- Handle exit
