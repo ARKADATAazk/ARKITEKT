@@ -19,6 +19,16 @@ local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_m
 
 local M = {}
 
+-- Color picker layout constants
+local COLOR_PICKER = {
+  size = 130,
+  child_height_extra = 20,
+  position_offset_y = 10,
+  close_button_size = 16,
+  close_button_offset_x = 13,
+  close_button_offset_y = 28,
+}
+
 -- Modal state
 local sws_result_data = nil
 local rename_initial_text = nil
@@ -331,19 +341,16 @@ function M.draw_pool(self, ctx, regions, height)
 
   -- Inline Color Picker for Pool (renders on top at bottom-left)
   if self._pool_color_picker_visible then
-    local picker_size = 130
-
-    -- Position at bottom-left corner (moved down 30px)
     local picker_x = cursor_x + self.container_config.padding
-    local picker_y = cursor_y + height - picker_size - self.container_config.padding + 10
+    local picker_y = cursor_y + height - COLOR_PICKER.size - self.container_config.padding + COLOR_PICKER.position_offset_y
 
     ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
 
-    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", picker_size, picker_size + 20, 0) then
+    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", COLOR_PICKER.size, COLOR_PICKER.size + COLOR_PICKER.child_height_extra, 0) then
       ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
-        size = picker_size,
+        size = COLOR_PICKER.size,
         on_change = function(color)
           if not self.controller then return end
 
@@ -362,13 +369,12 @@ function M.draw_pool(self, ctx, regions, height)
         end,
       })
 
-      -- Close button - moved up 30px and left 13px from center
-      local close_button_size = 16
-      local close_x = (picker_size - close_button_size) / 2 - 13
-      ImGui.SetCursorPos(ctx, close_x, picker_size - 28)
+      -- Close button
+      local close_x = (COLOR_PICKER.size - COLOR_PICKER.close_button_size) / 2 - COLOR_PICKER.close_button_offset_x
+      ImGui.SetCursorPos(ctx, close_x, COLOR_PICKER.size - COLOR_PICKER.close_button_offset_y)
 
       ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 0, 0)
-      if ImGui.Button(ctx, "X##close_pool_picker", close_button_size, close_button_size) then
+      if ImGui.Button(ctx, "X##close_pool_picker", COLOR_PICKER.close_button_size, COLOR_PICKER.close_button_size) then
         self._pool_color_picker_visible = false
       end
       ImGui.PopStyleVar(ctx, 1)
