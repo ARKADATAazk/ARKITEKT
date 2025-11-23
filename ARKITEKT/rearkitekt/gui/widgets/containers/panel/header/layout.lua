@@ -290,7 +290,29 @@ local function calculate_corner_rounding(layout, header_rounding, is_bottom)
         end
       end
 
-      if is_bottom then
+      -- Check for rounding_mode override in element config
+      -- "top" = force top corners, "bottom" = force bottom corners, nil = auto
+      local rounding_mode = item.element.config and item.element.config.rounding_mode
+
+      if rounding_mode == "bottom" then
+        -- Force bottom corners (e.g., transport panel buttons)
+        rounding_info[i] = {
+          round_top_left = false,
+          round_top_right = false,
+          round_bottom_left = is_first or sep_on_left,
+          round_bottom_right = is_last or sep_on_right,
+          rounding = header_rounding,
+        }
+      elseif rounding_mode == "top" then
+        -- Force top corners
+        rounding_info[i] = {
+          round_top_left = is_first or sep_on_left,
+          round_top_right = is_last or sep_on_right,
+          round_bottom_left = false,
+          round_bottom_right = false,
+          rounding = header_rounding,
+        }
+      elseif is_bottom then
         -- Footer: bottom corners for edges, top corners toward separators
         rounding_info[i] = {
           round_top_left = sep_on_left,
