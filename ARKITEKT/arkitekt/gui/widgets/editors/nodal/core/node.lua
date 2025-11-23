@@ -2,8 +2,9 @@
 -- ReArkitekt/gui/widgets/nodal/core/node.lua
 -- Node data structure and logic with trigger UI height calculation
 
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local hexrgb = ark.hexrgb
 
 local M = {}
 

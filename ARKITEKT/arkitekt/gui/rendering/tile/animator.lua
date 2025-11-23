@@ -3,7 +3,8 @@
 -- Per-tile animation state for smooth hover/active/selection transitions (refactored)
 -- Manages multiple animation tracks per tile using extracted Track class
 
-local Tracks = require('arkitekt.gui.fx.animation.tracks')
+local ark = require('arkitekt')
+local Tracks = ark.AnimationTracks
 local Track = Tracks.Track
 
 local M = {}

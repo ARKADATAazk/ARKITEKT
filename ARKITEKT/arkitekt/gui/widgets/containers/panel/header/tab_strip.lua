@@ -4,15 +4,14 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
-local Chip = require('arkitekt.gui.widgets.data.chip')
-local Style = require('arkitekt.gui.style.defaults')
-local InteractionBlocking = require('arkitekt.gui.utils.interaction_blocking')
-
-local Colors = require('arkitekt.core.colors')
-local ColorPickerMenu = require('arkitekt.gui.widgets.menus.color_picker_menu')
-
-local hexrgb = Colors.hexrgb
+local ark = require('arkitekt')
+local ContextMenu = ark.ContextMenu
+local Chip = ark.Chip
+local Style = ark.Style
+local InteractionBlocking = ark.InteractionBlocking
+local Colors = ark.Colors
+local ColorPickerMenu = ark.ColorPickerMenu
+local hexrgb = ark.hexrgb
 
 local M = {}
 local C = Style.COLORS          -- Shared primitives

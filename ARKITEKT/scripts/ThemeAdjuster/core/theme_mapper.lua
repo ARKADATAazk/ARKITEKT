@@ -2,8 +2,11 @@
 -- ThemeAdjuster/core/theme_mapper.lua
 -- JSON-based theme parameter mappings
 
+local ark = require('arkitekt')
+
+local JSON = ark.Json
+
 local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
-local JSON = require('arkitekt.core.json')
 
 local M = {}
 

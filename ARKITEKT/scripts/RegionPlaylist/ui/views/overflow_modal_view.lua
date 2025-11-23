@@ -5,10 +5,11 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Container = require('arkitekt.gui.widgets.overlays.overlay.container')
-local ChipList = require('arkitekt.gui.widgets.data.chip_list')
-local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
-local Colors = require('arkitekt.core.colors')
+local ark = require('arkitekt')
+local Container = ark.OverlayContainer
+local ChipList = ark.ChipList
+local SearchInput = ark.SearchInput
+local Colors = ark.Colors
 local hexrgb = Colors.hexrgb
 
 local M = {}

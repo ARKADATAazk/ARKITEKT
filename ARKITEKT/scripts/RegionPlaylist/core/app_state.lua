@@ -10,11 +10,13 @@ sync_playlist_to_engine() step and guarantees nested playlists expand exactly
 once per invalidation.
 ]]
 
+local ark = require('arkitekt')
+local UndoManager = ark.UndoManager
+local Colors = ark.Colors
+
 local CoordinatorBridge = require("RegionPlaylist.engine.coordinator_bridge")
 local RegionState = require("RegionPlaylist.storage.persistence")
-local UndoManager = require("arkitekt.core.undo_manager")
 local UndoBridge = require("RegionPlaylist.storage.undo_bridge")
-local Colors = require("arkitekt.core.colors")
 local Constants = require("RegionPlaylist.defs.constants")
 
 local M = {}

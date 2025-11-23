@@ -5,27 +5,29 @@
 -- ============================================================================
 local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/init/init.lua").bootstrap()
 
+-- Load arkitekt namespace
+local ark = require('arkitekt')
+
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
 -- ============================================================================
-local ProfilerInit = require('arkitekt.debug.profiler_init')
-local profiler_enabled = ProfilerInit.init()
+local profiler_enabled = ark.ProfilerInit.init()
 
 -- ============================================================================
 -- LOAD MODULES
 -- ============================================================================
 
-local Shell = require("arkitekt.app.runtime.shell")
+-- Aliases from ark namespace
+local Shell = ark.Shell
+local Colors = ark.Colors
+local Settings = ark.Settings
+
 local Config = require("RegionPlaylist.core.config")
 local State = require("RegionPlaylist.core.app_state")
 local GUI = require("RegionPlaylist.ui.gui")
 local StatusConfig = require("RegionPlaylist.ui.status")
-local Colors = require("arkitekt.core.colors")
 
 local hexrgb = Colors.hexrgb
-
--- State needs settings for initialization - Shell will auto-create from app_name
-local Settings = require("arkitekt.core.settings")
 local data_dir = ARK.get_data_dir("RegionPlaylist")
 local settings = Settings.new(data_dir, "settings.json")
 
@@ -37,8 +39,8 @@ local gui = GUI.create(State, Config, settings)
 -- PROFILER INSTRUMENTATION (After modules loaded)
 -- ============================================================================
 if profiler_enabled then
-  ProfilerInit.attach_locals()
-  ProfilerInit.launch_window()
+  ark.ProfilerInit.attach_locals()
+  ark.ProfilerInit.launch_window()
 end
 
 -- ============================================================================

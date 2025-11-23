@@ -36,7 +36,8 @@ local M = {}
 
 -- Re-export base renderer
 M.renderers = {}
-M.renderers.base = require('arkitekt.gui.widgets.media.media_grid.renderers.base')
+local ark = require('arkitekt')
+M.renderers.base = ark.MediaGridBaseRenderer
 
 -- Module metadata
 M._VERSION = '1.0.0'

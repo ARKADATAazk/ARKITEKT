@@ -5,8 +5,9 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Colors = require('arkitekt.core.colors')
-local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local Tooltip = ark.Tooltip
 local hexrgb = Colors.hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)

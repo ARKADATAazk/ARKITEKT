@@ -4,8 +4,9 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
-local Config = require('arkitekt.core.config')
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local Config = ark.Config
 
 local M = {}
 M.__index = M

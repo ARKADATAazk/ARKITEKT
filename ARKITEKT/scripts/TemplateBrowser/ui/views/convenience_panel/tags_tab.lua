@@ -3,11 +3,14 @@
 -- Mini tags tab for convenience panel
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
+
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local Button = ark.Button
+local Chip = ark.Chip
+local ChipList = ark.ChipList
+
 local Tags = require('TemplateBrowser.domain.tags')
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local Chip = require('arkitekt.gui.widgets.data.chip')
-local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.ui_constants')
 local Constants = require('TemplateBrowser.defs.constants')

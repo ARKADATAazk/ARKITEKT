@@ -3,16 +3,19 @@
 -- Main layout view with absolute positioning and fade animations
 
 local ImGui = require 'imgui' '0.10'
+
+local ark = require('arkitekt')
+local Checkbox = ark.Checkbox
+local Button = ark.Button
+local DraggableSeparator = ark.Separator
+local Colors = ark.Colors
+local Background = ark.PanelBackground
+
 local SearchWithMode = require('ItemPicker.ui.components.search_with_mode')
-local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local DraggableSeparator = require('arkitekt.gui.widgets.primitives.separator')
 local StatusBar = require('ItemPicker.ui.components.status_bar')
 local RegionFilterBar = require('ItemPicker.ui.components.region_filter_bar')
 local TrackFilter = require('ItemPicker.ui.components.track_filter')
 local TrackFilterBar = require('ItemPicker.ui.components.track_filter_bar')
-local Colors = require('arkitekt.core.colors')
-local Background = require('arkitekt.gui.widgets.containers.panel.background')
 
 -- Debug module - with error handling
 local Debug = nil

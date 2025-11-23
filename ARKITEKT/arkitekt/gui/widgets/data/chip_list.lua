@@ -4,12 +4,12 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-
-local Chip = require('arkitekt.gui.widgets.data.chip')
-local Colors = require('arkitekt.core.colors')
-local ResponsiveGrid = require('arkitekt.gui.systems.responsive_grid')
-local DragDrop = require('arkitekt.gui.systems.drag_drop')
-local MouseUtil = require('arkitekt.gui.systems.mouse_util')
+local ark = require('arkitekt')
+local Chip = ark.Chip
+local Colors = ark.Colors
+local ResponsiveGrid = ark.ResponsiveGrid
+local DragDrop = ark.DragDrop
+local MouseUtil = ark.MouseUtil
 
 local M = {}
 

@@ -3,12 +3,15 @@
 -- Template Browser modals and context menus
 
 local ImGui = require 'imgui' '0.10'
+
+local ark = require('arkitekt')
+local Button = ark.Button
+local Fields = ark.Fields
+local Chip = ark.Chip
+local Colors = ark.Colors
+local ColorDefs = ark.ColorDefs
+
 local FileOps = require('TemplateBrowser.domain.file_ops')
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local Fields = require('arkitekt.gui.widgets.primitives.fields')
-local Chip = require('arkitekt.gui.widgets.data.chip')
-local Colors = require('arkitekt.core.colors')
-local ColorDefs = require('arkitekt.defs.colors')
 local UI = require('TemplateBrowser.ui.ui_constants')
 
 local M = {}

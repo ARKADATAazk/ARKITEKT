@@ -2,8 +2,10 @@
 -- MediaContainer/storage/persistence.lua
 -- Container state persistence via Project ExtState
 
-local JSON = require('arkitekt.core.json')
-local UUID = require('arkitekt.core.uuid')
+local ark = require('arkitekt')
+
+local JSON = ark.Json
+local UUID = ark.Uuid
 
 local M = {}
 

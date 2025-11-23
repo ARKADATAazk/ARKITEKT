@@ -2,7 +2,9 @@
 -- RegionPlaylist/ui/status.lua
 -- Status bar configuration
 
-local StatusBar = require("arkitekt.app.chrome.status_bar.widget")
+local ark = require('arkitekt')
+local StatusBar = ark.StatusBar
+
 local Constants = require('RegionPlaylist.defs.constants')
 
 local M = {}

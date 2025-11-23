@@ -3,9 +3,10 @@
 -- Renders collapsible group headers for tile groups
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
-local Defaults = require('arkitekt.gui.widgets.containers.tile_group.defaults')
-local hexrgb = Colors.hexrgb
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local Defaults = ark.TileGroupDefaults
+local hexrgb = ark.hexrgb
 
 local M = {}
 

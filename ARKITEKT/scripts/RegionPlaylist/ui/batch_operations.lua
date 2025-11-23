@@ -2,8 +2,9 @@
 -- RegionPlaylist/ui/batch_operations.lua
 -- Helper for batch rename/recolor operations on regions and playlists
 
-local BatchRenameModal = require('arkitekt.gui.widgets.overlays.batch_rename_modal')
-local Regions = require('arkitekt.reaper.regions')
+local ark = require('arkitekt')
+local BatchRenameModal = ark.BatchRenameModal
+local Regions = ark.Regions
 
 local M = {}
 

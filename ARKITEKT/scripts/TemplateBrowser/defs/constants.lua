@@ -2,8 +2,9 @@
 -- TemplateBrowser/defs/constants.lua
 -- Pure value constants: colors, dimensions
 
-local Colors = require('arkitekt.core.colors')
-local ColorDefs = require('arkitekt.defs.colors')
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local ColorDefs = ark.ColorDefs
 local hexrgb = Colors.hexrgb
 
 local M = {}

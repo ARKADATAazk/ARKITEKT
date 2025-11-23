@@ -3,7 +3,9 @@
 -- Status bar component for displaying messages
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
+
+local ark = require('arkitekt')
+local Colors = ark.Colors
 
 local M = {}
 

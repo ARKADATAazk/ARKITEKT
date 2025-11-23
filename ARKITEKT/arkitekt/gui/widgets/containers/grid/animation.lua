@@ -3,11 +3,12 @@
 -- Animation coordination for grid spawn/destroy effects
 -- Thin wrapper around spawn_anim and destroy_anim systems
 
-local Lifecycle = require('arkitekt.gui.fx.animation.lifecycle')
+local ark = require('arkitekt')
+local Lifecycle = ark.Lifecycle
 local SpawnAnim = Lifecycle.SpawnTracker
 local DestroyAnim = Lifecycle.DestroyAnim
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local Colors = ark.Colors
+local hexrgb = ark.hexrgb
 
 
 local M = {}

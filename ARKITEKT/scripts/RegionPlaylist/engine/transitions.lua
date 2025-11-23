@@ -3,7 +3,8 @@
 -- Smooth transition logic between regions - FIXED: Handle same-region repeats with time-based transitions
 -- MODIFIED: Integrated Logger for debug output
 
-local Logger = require("arkitekt.debug.logger")
+local ark = require('arkitekt')
+local Logger = ark.Logger
 
 local M = {}
 local Transitions = {}

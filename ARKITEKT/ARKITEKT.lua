@@ -41,17 +41,22 @@ end
 local ImGui = ARK.ImGui
 local script_dir = ARK.root_path
 
-local Shell = require("arkitekt.app.runtime.shell")
-local Hub = require("hub.hub")
-local PackageGrid = require("arkitekt.gui.widgets.media.package_tiles.grid")
-local Micromanage = require("arkitekt.gui.widgets.media.package_tiles.micromanage")
-local TilesContainer = require("arkitekt.gui.widgets.containers.panel")
-local SelRect = require("arkitekt.gui.widgets.data.selection_rectangle")
+local ark = require('arkitekt')
 
-local SettingsOK, Settings = pcall(require, "arkitekt.core.settings")
-local StyleOK, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local Shell = ark.Shell
+local PackageGrid = ark.PackageGrid
+local Micromanage = ark.PackageMicromanage
+local TilesContainer = ark.Panel
+local SelRect = ark.SelectionRectangle
+local Settings = ark.Settings
+local Style = ark.ImGuiStyle
+local Colors = ark.Colors
+local hexrgb = ark.hexrgb
+
+local Hub = require("hub.hub")
+
+local SettingsOK = Settings ~= nil
+local StyleOK = Style ~= nil
 
 
 local settings = nil

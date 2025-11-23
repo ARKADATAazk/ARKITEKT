@@ -3,11 +3,14 @@
 -- Grid factory for template tiles
 
 local ImGui = require 'imgui' '0.10'
-local Grid = require('arkitekt.gui.widgets.containers.grid.core')
-local Colors = require('arkitekt.core.colors')
+
+local ark = require('arkitekt')
+local Grid = ark.Grid
+local Colors = ark.Colors
+local DragDrop = ark.DragDrop
+
 local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
 local TemplateTileCompact = require('TemplateBrowser.ui.tiles.template_tile_compact')
-local DragDrop = require('arkitekt.gui.systems.drag_drop')
 local Constants = require('TemplateBrowser.defs.constants')
 
 local M = {}

@@ -5,11 +5,13 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Colors = require('arkitekt.core.colors')
-local Draw = require('arkitekt.gui.draw')
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local Draw = ark.Draw
+local Sheet = ark.Sheet
+
 local ColorGrid = require('ColorPalette.widgets.color_grid')
 local Controller = require('ColorPalette.app.controller')
-local Sheet = require('arkitekt.gui.widgets.overlays.overlay.sheet')
 
 local M = {}
 

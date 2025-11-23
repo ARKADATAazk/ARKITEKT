@@ -2,7 +2,8 @@
 -- ReArkitekt/reaper/region_operations.lua
 -- Region playlist operations matching SWS behavior (Append, Paste, Crop, etc.)
 
-local Colors = require('arkitekt.core.colors')
+local ark = require('arkitekt')
+local Colors = ark.Colors
 
 local M = {}
 

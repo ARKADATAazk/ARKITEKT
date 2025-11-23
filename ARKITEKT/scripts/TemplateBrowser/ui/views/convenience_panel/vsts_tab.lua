@@ -3,8 +3,11 @@
 -- Mini VSTs tab for convenience panel
 
 local ImGui = require 'imgui' '0.10'
-local Chip = require('arkitekt.gui.widgets.data.chip')
-local Colors = require('arkitekt.core.colors')
+
+local ark = require('arkitekt')
+local Chip = ark.Chip
+local Colors = ark.Colors
+
 local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.ui_constants')
 

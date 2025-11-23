@@ -5,14 +5,11 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-
-local Draw = require('arkitekt.gui.draw')
+local ark = require('arkitekt')
+local Draw = ark.Draw
 
 -- Load overlay manager for modal blocking checks (optional dependency)
-local OverlayManager = nil
-pcall(function()
-  OverlayManager = require('arkitekt.gui.widgets.overlays.overlay.manager')
-end)
+local OverlayManager = ark.OverlayManager
 
 local M = {}
 
@@ -599,7 +596,7 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   -- Increment frame counter
   state.frames_active = (state.frames_active or 0) + 1
 
-  local Colors = require('arkitekt.core.colors')
+  local Colors = ark.Colors
   local dl = ImGui.GetWindowDrawList(ctx)
 
   -- Calculate text line dimensions

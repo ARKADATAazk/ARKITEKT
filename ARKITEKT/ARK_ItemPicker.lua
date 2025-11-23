@@ -26,26 +26,24 @@ do
   end
 end
 
+-- Load arkitekt namespace
+local ark = require('arkitekt')
+
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
 -- ============================================================================
-local ProfilerInit = require('arkitekt.debug.profiler_init')
-local profiler_enabled = ProfilerInit.init()
+local profiler_enabled = ark.ProfilerInit.init()
 
 if profiler_enabled then
-  reaper.ShowConsoleMsg("[ItemPicker] ✓ Profiler enabled and initialized\n")
+  reaper.ShowConsoleMsg("[ItemPicker] Profiler enabled and initialized\n")
 else
-  reaper.ShowConsoleMsg("[ItemPicker] ✗ Profiler disabled or not found\n")
+  reaper.ShowConsoleMsg("[ItemPicker] Profiler disabled or not found\n")
   reaper.ShowConsoleMsg("[ItemPicker]   To enable: Set PROFILER_ENABLED=true in arkitekt/app/app_defaults.lua\n")
   reaper.ShowConsoleMsg("[ItemPicker]   Install profiler: ReaPack > Browse > Search 'cfillion Lua profiler'\n")
 end
 
 -- Load required modules
 local ImGui = ARK.ImGui
-local Shell = require('arkitekt.app.runtime.shell')
-local Fonts = require('arkitekt.app.assets.fonts')
-local OverlayManager = require('arkitekt.gui.widgets.overlays.overlay.manager')
-local OverlayDefaults = require('arkitekt.gui.widgets.overlays.overlay.defaults')
 
 -- Load new refactored modules
 local Config = require('ItemPicker.core.config')
@@ -58,6 +56,12 @@ local visualization = require('ItemPicker.services.visualization')
 local reaper_interface = require('ItemPicker.data.reaper_api')
 local utils = require('ItemPicker.services.utils')
 local drag_handler = require('ItemPicker.ui.components.drag_handler')
+
+-- Aliases from ark namespace
+local Shell = ark.Shell
+local Fonts = ark.Fonts
+local OverlayManager = ark.OverlayManager
+local OverlayDefaults = ark.OverlayDefaults
 
 -- Configuration
 local USE_OVERLAY = true  -- Set to false for normal window mode
@@ -85,8 +89,8 @@ local gui = GUI.new(Config, State, Controller, visualization, drag_handler)
 -- PROFILER INSTRUMENTATION (After modules loaded)
 -- ============================================================================
 if profiler_enabled then
-  ProfilerInit.attach_locals()
-  ProfilerInit.launch_window()
+  ark.ProfilerInit.attach_locals()
+  ark.ProfilerInit.launch_window()
 end
 
 local function cleanup()

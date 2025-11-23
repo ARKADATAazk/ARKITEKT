@@ -7,21 +7,24 @@ local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])")
 if not ARK then return end
 
 -- ============================================================================
+-- LOAD ARKITEKT MODULES
+-- ============================================================================
+local ark = require('arkitekt')
+
+local ProfilerInit = ark.ProfilerInit
+local Shell = ark.Shell
+local Colors = ark.Colors
+local Settings = ark.Settings
+local hexrgb = ark.hexrgb
+
+-- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
 -- ============================================================================
-local ProfilerInit = require('arkitekt.debug.profiler_init')
 local profiler_enabled = ProfilerInit.init()
 
 if profiler_enabled then
   reaper.ShowConsoleMsg("[ItemPickerWindow] Profiler enabled and initialized\n")
 end
-
--- Load required modules
-local Shell = require('arkitekt.app.runtime.shell')
-local Colors = require('arkitekt.core.colors')
-local Settings = require('arkitekt.core.settings')
-
-local hexrgb = Colors.hexrgb
 
 -- Load ItemPicker core modules (reuse data layer)
 local Config = require('ItemPicker.core.config')

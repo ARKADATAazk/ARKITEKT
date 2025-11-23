@@ -3,7 +3,8 @@
 -- Quantized transitions using trigger region hack
 -- MODIFIED: Integrated Logger for debug output
 
-local Logger = require("arkitekt.debug.logger")
+local ark = require('arkitekt')
+local Logger = ark.Logger
 
 -- Performance: Use VM operations instead of C function calls
 -- floor(x) = x//1 (5-10% faster in loops)

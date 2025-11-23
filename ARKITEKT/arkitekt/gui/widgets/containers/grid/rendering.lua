@@ -4,10 +4,10 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-
-local Draw = require('arkitekt.gui.draw')
-local Colors = require('arkitekt.core.colors')
-local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
+local ark = require('arkitekt')
+local Draw = ark.Draw
+local Colors = ark.Colors
+local MarchingAnts = ark.MarchingAnts
 
 local M = {}
 

@@ -2,7 +2,8 @@
 -- ReArkitekt/ColorPalette/app/state.lua
 -- State management and color palette calculation
 
-local Colors = require('arkitekt.core.colors')
+local ark = require('arkitekt')
+local Colors = ark.Colors
 
 local M = {}
 

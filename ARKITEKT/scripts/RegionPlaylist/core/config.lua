@@ -2,7 +2,9 @@
 -- RegionPlaylist/core/config.lua
 -- Config builders using defs (factory functions for dynamic configs)
 
-local Colors = require('arkitekt.core.colors')
+local ark = require('arkitekt')
+local Colors = ark.Colors
+
 local TransportIcons = require('RegionPlaylist.ui.views.transport.transport_icons')
 local Constants = require('RegionPlaylist.defs.constants')
 local Defaults = require('RegionPlaylist.defs.defaults')

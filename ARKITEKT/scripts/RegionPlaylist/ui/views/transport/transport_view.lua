@@ -5,14 +5,16 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local hexrgb = Colors.hexrgb
+
 local TransportContainer = require('RegionPlaylist.ui.views.transport.transport_container')
 local TransportIcons = require('RegionPlaylist.ui.views.transport.transport_icons')
 local ButtonWidgets = require('RegionPlaylist.ui.views.transport.button_widgets')
 local DisplayWidget = require('RegionPlaylist.ui.views.transport.display_widget')
 local CoreConfig = require('RegionPlaylist.core.config')
 local Strings = require('RegionPlaylist.defs.strings')
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
 
 local M = {}
 

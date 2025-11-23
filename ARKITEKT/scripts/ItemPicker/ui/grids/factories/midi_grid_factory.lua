@@ -3,8 +3,11 @@
 -- Factory for creating MIDI items grid
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
-local Grid = require('arkitekt.gui.widgets.containers.grid.core')
+
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local Grid = ark.Grid
+
 local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
 local shared = require('ItemPicker.ui.grids.factories.grid_factory_shared')
 

@@ -7,14 +7,17 @@
 -- ============================================================================
 local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/init/init.lua").bootstrap()
 
--- Load required modules
+-- Load arkitekt namespace
+local ark = require('arkitekt')
+
+-- Aliases from ark namespace
 local ImGui = ARK.ImGui
-local Shell = require('arkitekt.app.runtime.shell')
-local Fonts = require('arkitekt.app.assets.fonts')
-local OverlayManager = require('arkitekt.gui.widgets.overlays.overlay.manager')
-local OverlayDefaults = require('arkitekt.gui.widgets.overlays.overlay.defaults')
-local ImGuiStyle = require('arkitekt.gui.style.imgui_defaults')
-local Colors = require('arkitekt.core.colors')
+local Shell = ark.Shell
+local Fonts = ark.Fonts
+local OverlayManager = ark.OverlayManager
+local OverlayDefaults = ark.OverlayDefaults
+local ImGuiStyle = ark.ImGuiStyle
+local Colors = ark.Colors
 
 -- Load TemplateBrowser modules
 local Config = require('TemplateBrowser.core.config')

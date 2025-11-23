@@ -2,7 +2,8 @@
 -- Centralized font loading for ARKITEKT applications
 -- Eliminates duplication of font loading logic across entry points
 
-local Typography = require('arkitekt.defs.typography')
+local ark = require('arkitekt')
+local Typography = ark.Typography
 
 local M = {}
 

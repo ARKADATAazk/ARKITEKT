@@ -2,10 +2,12 @@
 -- RegionPlaylist/ui/tiles/pool_grid_factory.lua
 -- UNCHANGED
 
-local Grid = require('arkitekt.gui.widgets.containers.grid.core')
-local PoolTile = require('RegionPlaylist.ui.tiles.renderers.pool')
-local Colors = require('arkitekt.core.colors')
+local ark = require('arkitekt')
+local Grid = ark.Grid
+local Colors = ark.Colors
 local hexrgb = Colors.hexrgb
+
+local PoolTile = require('RegionPlaylist.ui.tiles.renderers.pool')
 
 
 local M = {}

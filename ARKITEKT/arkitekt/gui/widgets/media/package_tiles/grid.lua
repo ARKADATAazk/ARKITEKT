@@ -4,13 +4,13 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-
-local Grid = require('arkitekt.gui.widgets.containers.grid.core')
-local Colors = require('arkitekt.core.colors')
-local TileAnim = require('arkitekt.gui.rendering.tile.animator')
-local Renderer = require('arkitekt.gui.widgets.media.package_tiles.renderer')
-local Micromanage = require('arkitekt.gui.widgets.media.package_tiles.micromanage')
-local HeightStabilizer = require('arkitekt.gui.systems.height_stabilizer')
+local ark = require('arkitekt')
+local Grid = ark.Grid
+local Colors = ark.Colors
+local TileAnim = ark.TileAnimator
+local Renderer = ark.PackageTilesRenderer
+local Micromanage = ark.PackageTilesMicromanage
+local HeightStabilizer = ark.HeightStabilizer
 
 local M = {}
 

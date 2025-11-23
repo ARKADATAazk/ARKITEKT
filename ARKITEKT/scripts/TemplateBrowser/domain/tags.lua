@@ -2,7 +2,8 @@
 -- TemplateBrowser/domain/tags.lua
 -- Tag management
 
-local Colors = require('arkitekt.core.colors')
+local ark = require('arkitekt')
+local Colors = ark.Colors
 
 local M = {}
 

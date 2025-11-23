@@ -3,7 +3,8 @@
 -- Animation tracking utilities - single-value and multi-rectangle trackers
 -- Merged from track.lua and rect_track.lua for better organization
 
-local Math = require('arkitekt.core.math')
+local ark = require('arkitekt')
+local Math = ark.Math
 
 local M = {}
 

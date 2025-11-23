@@ -5,19 +5,20 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
-local ConfigUtil = require('arkitekt.core.config')
+local ark = require('arkitekt')
+local PanelConfig = ark.PanelDefaults
+local ConfigUtil = ark.Config
 
 local M = {}
 
 -- Component registry - imports from controls/ directly for reusable components
 local COMPONENTS = {
-  button = require('arkitekt.gui.widgets.primitives.button'),
-  checkbox = require('arkitekt.gui.widgets.primitives.checkbox'),
-  search_field = require('arkitekt.gui.widgets.inputs.search_input'),
-  dropdown_field = require('arkitekt.gui.widgets.inputs.dropdown'),
-  tab_strip = require('arkitekt.gui.widgets.containers.panel.header.tab_strip'),
-  separator = require('arkitekt.gui.widgets.containers.panel.header.separator'),
+  button = ark.Button,
+  checkbox = ark.Checkbox,
+  search_field = ark.SearchInput,
+  dropdown_field = ark.Dropdown,
+  tab_strip = ark.TabStrip,
+  separator = ark.PanelHeaderSeparator,
   custom = {
     -- Custom element type that accepts a draw callback
     draw = function(ctx, dl, x, y, width, height, config, state)
@@ -29,13 +30,13 @@ local COMPONENTS = {
 }
 
 -- Inline component for filter chip lists
-local ChipList = require('arkitekt.gui.widgets.data.chip_list')
-local Chip = require('arkitekt.gui.widgets.data.chip')
+local ChipList = ark.ChipList
+local Chip = ark.Chip
 
 -- Custom compound element for template browser header with search/sort + filter chips
-local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
-local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
-local Button = require('arkitekt.gui.widgets.primitives.button')
+local SearchInput = ark.SearchInput
+local Dropdown = ark.Dropdown
+local Button = ark.Button
 
 COMPONENTS.template_header_controls = {
   draw = function(ctx, dl, x, y, width, height, config, state)

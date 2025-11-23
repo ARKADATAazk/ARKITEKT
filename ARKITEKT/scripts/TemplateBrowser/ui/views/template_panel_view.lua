@@ -3,7 +3,10 @@
 -- Middle panel view: Recent templates + template grid
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
+
+local ark = require('arkitekt')
+local Colors = ark.Colors
+
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
 
 local M = {}

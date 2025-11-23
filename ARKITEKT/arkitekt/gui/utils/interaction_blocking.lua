@@ -15,7 +15,8 @@ local overlay_manager_loaded = false
 local function get_overlay_manager()
   if not overlay_manager_loaded then
     pcall(function()
-      OverlayManager = require('arkitekt.gui.widgets.overlays.overlay.manager')
+      local ark = require('arkitekt')
+      OverlayManager = ark.OverlayManager
     end)
     overlay_manager_loaded = true
   end

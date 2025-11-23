@@ -2,11 +2,10 @@
 -- arkitekt/defs/app.lua
 -- App-level defaults for window, titlebar, status bar, overlay, etc.
 
-local Colors = require('arkitekt.defs.colors')
-
--- Helper for hex colors
-local CoreColors = require('arkitekt.core.colors')
-local hexrgb = CoreColors.hexrgb
+local ark = require('arkitekt')
+local Colors = ark.ColorDefs
+local CoreColors = ark.Colors
+local hexrgb = ark.hexrgb
 
 local M = {}
 

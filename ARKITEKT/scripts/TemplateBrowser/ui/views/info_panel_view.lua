@@ -3,13 +3,16 @@
 -- Right panel view: Template info & tag assignment
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
+
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local Button = ark.Button
+local MarkdownField = ark.MarkdownField
+local Chip = ark.Chip
+local ChipList = ark.ChipList
+
 local TemplateOps = require('TemplateBrowser.domain.template_ops')
 local Tags = require('TemplateBrowser.domain.tags')
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local MarkdownField = require('arkitekt.gui.widgets.primitives.markdown_field')
-local Chip = require('arkitekt.gui.widgets.data.chip')
-local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local Tooltips = require('TemplateBrowser.core.tooltips')
 local UI = require('TemplateBrowser.ui.ui_constants')
 

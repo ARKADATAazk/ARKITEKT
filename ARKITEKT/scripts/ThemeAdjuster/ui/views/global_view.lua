@@ -3,12 +3,15 @@
 -- Global color controls tab
 
 local ImGui = require 'imgui' '0.10'
-local HueSlider = require('arkitekt.gui.widgets.primitives.hue_slider')
-local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
-local Background = require('arkitekt.gui.widgets.containers.panel.background')
-local Style = require('arkitekt.gui.style.defaults')
-local Colors = require('arkitekt.core.colors')
+
+local ark = require('arkitekt')
+local HueSlider = ark.HueSlider
+local Checkbox = ark.Checkbox
+local Background = ark.PanelBackground
+local Style = ark.Style
+local Colors = ark.Colors
 local hexrgb = Colors.hexrgb
+
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local Strings = require('ThemeAdjuster.defs.strings')
 

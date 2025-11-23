@@ -29,27 +29,30 @@ do
   end
 end
 
+-- Load arkitekt namespace
+local ark = require('arkitekt')
+
 local ImGui = ARK.ImGui
 local SRC = debug.getinfo(1,"S").source:sub(2)
 local HERE = ARK.dirname(SRC) or "."
 
--- Load dependencies
-local Shell = require("arkitekt.app.runtime.shell")
-local State = require("ColorPalette.app.state")
-local GUI = require("ColorPalette.app.gui")
-local OverlayManager = require("arkitekt.gui.widgets.overlays.overlay.manager")
+-- Aliases from ark namespace
+local Shell = ark.Shell
+local OverlayManager = ark.OverlayManager
+local Settings = ark.Settings
+local Colors = ark.Colors
+local hexrgb = Colors.hexrgb
 
 -- Load optional style
-local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
+local style_ok, Style = pcall(function() return ark.ImGuiStyle end)
+
+-- Load app-specific dependencies
+local State = require("ColorPalette.app.state")
+local GUI = require("ColorPalette.app.gui")
 
 -- Initialize cache directory for settings
 local SEP = package.config:sub(1,1)
 local cache_dir = reaper.GetResourcePath() .. SEP .. "Scripts" .. SEP .. "ReArkitekt" .. SEP .. "cache" .. SEP .. "ColorPalette"
-
--- Initialize settings and state
-local Settings = require('arkitekt.core.settings')
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
 
 local settings = Settings.open(cache_dir, 'settings.json')
 

@@ -4,21 +4,21 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-
-local Config = require('arkitekt.gui.widgets.editors.nodal.defaults')
-local Node = require('arkitekt.gui.widgets.editors.nodal.core.node')
-local NodeRenderer = require('arkitekt.gui.widgets.editors.nodal.rendering.node_renderer')
-local Connection = require('arkitekt.gui.widgets.editors.nodal.core.connection')
-local ConnectionRenderer = require('arkitekt.gui.widgets.editors.nodal.rendering.connection_renderer')
-local Port = require('arkitekt.gui.widgets.editors.nodal.core.port')
-local Layout = require('arkitekt.gui.widgets.editors.nodal.systems.auto_layout')
-local Viewport = require('arkitekt.gui.widgets.editors.nodal.systems.viewport')
-local Dnd = require('arkitekt.gui.fx.interactions.dnd')
+local ark = require('arkitekt')
+local Config = ark.NodalDefaults
+local Node = ark.NodalNode
+local NodeRenderer = ark.NodalNodeRenderer
+local Connection = ark.NodalConnection
+local ConnectionRenderer = ark.NodalConnectionRenderer
+local Port = ark.NodalPort
+local Layout = ark.NodalAutoLayout
+local Viewport = ark.NodalViewport
+local Dnd = ark.Dnd
 local DragIndicator = Dnd.DragIndicator
 local DropIndicator = Dnd.DropIndicator
-local Background = require('arkitekt.gui.widgets.containers.panel.background')
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local Background = ark.PanelBackground
+local Colors = ark.Colors
+local hexrgb = ark.hexrgb
 
 
 local M = {}

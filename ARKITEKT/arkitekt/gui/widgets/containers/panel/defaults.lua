@@ -2,14 +2,13 @@
 -- ReArkitekt/gui/widgets/panel/config.lua
 -- Default configuration for panel with enhanced features
 
-local Style = require('arkitekt.gui.style.defaults')
+local ark = require('arkitekt')
+local Style = ark.Style
 local C = Style.COLORS          -- Shared primitives
 local PC = Style.PANEL_COLORS   -- Panel-specific colors
-
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
-
-local Config = require('arkitekt.core.config')
+local Colors = ark.Colors
+local hexrgb = ark.hexrgb
+local Config = ark.Config
 
 local M = {}
 

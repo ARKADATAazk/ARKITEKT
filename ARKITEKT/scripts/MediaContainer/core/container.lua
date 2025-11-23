@@ -2,8 +2,11 @@
 -- MediaContainer/core/container.lua
 -- Container operations: create, copy, paste, sync
 
+local ark = require('arkitekt')
+
+local UUID = ark.Uuid
+
 local State = require("MediaContainer.core.app_state")
-local UUID = require("arkitekt.core.uuid")
 
 local M = {}
 

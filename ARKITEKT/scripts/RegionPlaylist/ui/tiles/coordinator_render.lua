@@ -5,17 +5,19 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Dnd = require('arkitekt.gui.fx.interactions.dnd')
+local ark = require('arkitekt')
+local Dnd = ark.Dnd
 local DragIndicator = Dnd.DragIndicator
+local ResponsiveGrid = ark.ResponsiveGrid
+local ContextMenu = ark.ContextMenu
+local ModalDialog = ark.ModalDialog
+local BatchRenameModal = ark.BatchRenameModal
+local ColorPickerMenu = ark.ColorPickerMenu
+
 local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
 local PoolTile = require('RegionPlaylist.ui.tiles.renderers.pool')
-local ResponsiveGrid = require('arkitekt.gui.systems.responsive_grid')
 local State = require('RegionPlaylist.core.app_state')
-local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local SWSImporter = require('RegionPlaylist.storage.sws_importer')
-local ModalDialog = require('arkitekt.gui.widgets.overlays.overlay.modal_dialog')
-local BatchRenameModal = require('arkitekt.gui.widgets.overlays.batch_rename_modal')
-local ColorPickerMenu = require('arkitekt.gui.widgets.menus.color_picker_menu')
 local Persistence = require('RegionPlaylist.storage.persistence')
 
 local M = {}

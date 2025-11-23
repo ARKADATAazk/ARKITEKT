@@ -2,7 +2,8 @@
 -- ReArkitekt/gui/widgets/nodal/systems/auto_layout.lua
 -- Vertical auto-layout for nodes
 
-local Node = require('arkitekt.gui.widgets.editors.nodal.core.node')
+local ark = require('arkitekt')
+local Node = ark.NodalNode
 
 local M = {}
 

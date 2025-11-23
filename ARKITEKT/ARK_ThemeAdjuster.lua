@@ -7,18 +7,23 @@
 -- ============================================================================
 local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/init/init.lua").bootstrap()
 
+-- Load arkitekt namespace
+local ark = require('arkitekt')
+
 -- ============================================================================
 -- LOAD MODULES
 -- ============================================================================
 
-local Shell = require("arkitekt.app.runtime.shell")
+-- Aliases from ark namespace
+local Shell = ark.Shell
+local Colors = ark.Colors
+local Settings = ark.Settings
+
 local Config = require("ThemeAdjuster.core.config")
 local State = require("ThemeAdjuster.core.state")
 local ThemeParams = require("ThemeAdjuster.core.theme_params")
 local GUI = require("ThemeAdjuster.ui.gui")
 local StatusConfig = require("ThemeAdjuster.ui.status")
-local Colors = require("arkitekt.core.colors")
-local Settings = require("arkitekt.core.settings")
 
 local hexrgb = Colors.hexrgb
 

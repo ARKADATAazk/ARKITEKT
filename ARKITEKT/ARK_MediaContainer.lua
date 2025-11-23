@@ -35,11 +35,13 @@ end
 -- ============================================================================
 
 local ImGui = require 'imgui' '0.10'
-local Shell = require("arkitekt.app.runtime.shell")
-local MediaContainer = require("MediaContainer.init")
-local Colors = require("arkitekt.core.colors")
+local ark = require('arkitekt')
 
-local hexrgb = Colors.hexrgb
+local Shell = ark.Shell
+local Colors = ark.Colors
+local hexrgb = ark.hexrgb
+
+local MediaContainer = require("MediaContainer.init")
 
 -- Initialize
 MediaContainer.initialize()

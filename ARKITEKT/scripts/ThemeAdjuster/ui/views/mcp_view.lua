@@ -3,18 +3,21 @@
 -- MCP (Mixer Control Panel) configuration tab
 
 local ImGui = require 'imgui' '0.10'
-local Spinner = require('arkitekt.gui.widgets.primitives.spinner')
-local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local Background = require('arkitekt.gui.widgets.containers.panel.background')
-local Style = require('arkitekt.gui.style.defaults')
+local ark = require('arkitekt')
+
+local Spinner = ark.Spinner
+local Checkbox = ark.Checkbox
+local Button = ark.Button
+local Background = ark.PanelBackground
+local Style = ark.Style
+local Colors = ark.Colors
+local hexrgb = ark.hexrgb
+
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
 local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
 local Strings = require('ThemeAdjuster.defs.strings')
-local Colors = require('arkitekt.core.colors')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
-local hexrgb = Colors.hexrgb
 
 local PC = Style.PANEL_COLORS  -- Panel colors including pattern defaults
 

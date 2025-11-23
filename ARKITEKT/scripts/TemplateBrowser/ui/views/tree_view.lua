@@ -3,7 +3,8 @@
 -- Template Browser TreeView module for folder tree rendering
 -- Handles Physical and Virtual folder trees
 
-local TreeView = require('arkitekt.gui.widgets.navigation.tree_view')
+local ark = require('arkitekt')
+local TreeView = ark.TreeView
 
 local M = {}
 

@@ -5,9 +5,10 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Style = require('arkitekt.gui.style.defaults')
-local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')
-local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
+local ark = require('arkitekt')
+local Style = ark.Style
+local Tooltip = ark.Tooltip
+local ContextMenu = ark.ContextMenu
 
 local M = {}
 

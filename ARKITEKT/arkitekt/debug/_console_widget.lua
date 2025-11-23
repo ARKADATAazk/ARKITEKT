@@ -4,12 +4,13 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Logger = require('arkitekt.debug.logger')
-local Panel = require('arkitekt.gui.widgets.containers.panel')
-local Config = require('arkitekt.gui.widgets.containers.panel.defaults')
-local ColoredTextView = require('arkitekt.gui.widgets.text.colored_text_view')
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local ark = require('arkitekt')
+local Logger = ark.Logger
+local Panel = ark.Panel
+local Config = ark.PanelDefaults
+local ColoredTextView = ark.ColoredTextView
+local Colors = ark.Colors
+local hexrgb = ark.hexrgb
 
 
 local M = {}

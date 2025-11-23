@@ -3,6 +3,10 @@
 -- Tab content handler - routes tabs to appropriate views
 
 local ImGui = require 'imgui' '0.10'
+local ark = require('arkitekt')
+
+local Renderer = ark.PackageRenderer
+
 local AssemblerView = require("ThemeAdjuster.ui.views.assembler_view")
 local GlobalView = require("ThemeAdjuster.ui.views.global_view")
 local TCPView = require("ThemeAdjuster.ui.views.tcp_view")
@@ -12,7 +16,6 @@ local EnvelopeView = require("ThemeAdjuster.ui.views.envelope_view")
 local ColorsView = require("ThemeAdjuster.ui.views.colors_view")
 local AdditionalView = require("ThemeAdjuster.ui.views.additional_view")
 local DebugView = require("ThemeAdjuster.ui.views.debug_view")
-local Renderer = require("arkitekt.gui.widgets.media.package_tiles.renderer")
 
 local M = {}
 local TabContent = {}

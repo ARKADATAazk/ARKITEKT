@@ -3,11 +3,14 @@
 -- Template tile renderer using arkitekt design system
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
-local Draw = require('arkitekt.gui.draw')
-local Chip = require('arkitekt.gui.widgets.data.chip')
-local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
-local Badge = require('arkitekt.gui.widgets.primitives.badge')
+
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local Draw = ark.Draw
+local Chip = ark.Chip
+local MarchingAnts = ark.MarchingAnts
+local Badge = ark.Badge
+
 local Defaults = require('TemplateBrowser.defs.defaults')
 
 local M = {}

@@ -3,18 +3,21 @@
 -- Additional parameters tab - Grid-based tile manager
 
 local ImGui = require 'imgui' '0.10'
-local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local Background = require('arkitekt.gui.widgets.containers.panel.background')
-local Style = require('arkitekt.gui.style.defaults')
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local ark = require('arkitekt')
+
+local Checkbox = ark.Checkbox
+local Button = ark.Button
+local Background = ark.PanelBackground
+local Style = ark.Style
+local Colors = ark.Colors
+local GridBridge = ark.GridBridge
+local hexrgb = ark.hexrgb
+
 local Constants = require('ThemeAdjuster.defs.constants')
 local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
 local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
-local GridBridge = require('arkitekt.gui.widgets.containers.grid.grid_bridge')
 local LibraryGridFactory = require('ThemeAdjuster.ui.grids.library_grid_factory')
 local TemplatesGridFactory = require('ThemeAdjuster.ui.grids.templates_grid_factory')
 local AssignmentGridFactory = require('ThemeAdjuster.ui.grids.assignment_grid_factory')

@@ -3,12 +3,14 @@
 -- Color palette and track coloring tab
 
 local ImGui = require 'imgui' '0.10'
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local Spinner = require('arkitekt.gui.widgets.primitives.spinner')
-local Background = require('arkitekt.gui.widgets.containers.panel.background')
-local Style = require('arkitekt.gui.style.defaults')
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local ark = require('arkitekt')
+
+local Button = ark.Button
+local Spinner = ark.Spinner
+local Background = ark.PanelBackground
+local Style = ark.Style
+local Colors = ark.Colors
+local hexrgb = ark.hexrgb
 
 local PC = Style.PANEL_COLORS  -- Panel colors including pattern defaults
 

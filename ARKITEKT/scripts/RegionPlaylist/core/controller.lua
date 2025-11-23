@@ -3,13 +3,14 @@
 -- Centralized playlist operations with automatic undo/save/sync
 -- Relies on bridge invalidate logic instead of manual engine sync
 
+local ark = require('arkitekt')
+local UUID = ark.Uuid
+
 local M = {}
 local Controller = {}
 Controller.__index = Controller
 
 package.loaded["RegionPlaylist.core.controller"] = M
-
-local UUID = require("arkitekt.core.uuid")
 
 function M.new(state_module, settings, undo_manager)
   local ctrl = setmetatable({

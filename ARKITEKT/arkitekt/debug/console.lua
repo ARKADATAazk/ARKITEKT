@@ -3,7 +3,8 @@
 -- Visual debug console widget - Public API
 -- Now with ColoredTextView for native selection support
 
-local ConsoleWidget = require('arkitekt.debug._console_widget')
+local ark = require('arkitekt')
+local ConsoleWidget = ark.ConsoleWidget
 
 local M = {}
 

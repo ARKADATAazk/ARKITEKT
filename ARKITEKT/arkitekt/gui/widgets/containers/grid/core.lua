@@ -7,22 +7,22 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-
-local LayoutGrid = require('arkitekt.gui.widgets.containers.grid.layout')
-local Tracks = require('arkitekt.gui.fx.animation.tracks')
+local ark = require('arkitekt')
+local LayoutGrid = ark.GridLayout
+local Tracks = ark.AnimationTracks
 local RectTrack = Tracks.RectTrack
-local Colors = require('arkitekt.core.colors')
-local Selection  = require('arkitekt.gui.systems.selection')
-local SelRect    = require('arkitekt.gui.widgets.data.selection_rectangle')
-local Draw       = require('arkitekt.gui.draw')
-local Dnd = require('arkitekt.gui.fx.interactions.dnd')
+local Colors = ark.Colors
+local Selection = ark.Selection
+local SelRect = ark.SelectionRectangle
+local Draw = ark.Draw
+local Dnd = ark.Dnd
 local DragIndicator = Dnd.DragIndicator
 local DropIndicator = Dnd.DropIndicator
-local Rendering  = require('arkitekt.gui.widgets.containers.grid.rendering')
-local Animation  = require('arkitekt.gui.widgets.containers.grid.animation')
-local Input      = require('arkitekt.gui.widgets.containers.grid.input')
-local DnDState   = require('arkitekt.gui.widgets.containers.grid.dnd_state')
-local DropZones  = require('arkitekt.gui.widgets.containers.grid.drop_zones')
+local Rendering = ark.GridRendering
+local Animation = ark.GridAnimation
+local Input = ark.GridInput
+local DnDState = ark.GridDndState
+local DropZones = ark.GridDropZones
 
 local M = {}
 local hexrgb = Colors.hexrgb

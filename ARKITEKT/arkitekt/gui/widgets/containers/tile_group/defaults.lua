@@ -2,8 +2,9 @@
 -- arkitekt/gui/widgets/containers/tile_group/defaults.lua
 -- Default styling for tile group headers and containers
 
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local hexrgb = ark.hexrgb
 
 local M = {}
 

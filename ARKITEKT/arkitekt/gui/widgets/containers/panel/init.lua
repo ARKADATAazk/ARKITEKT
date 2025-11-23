@@ -5,16 +5,16 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-
-local Header = require('arkitekt.gui.widgets.containers.panel.header')
-local Content = require('arkitekt.gui.widgets.containers.panel.content')
-local Background = require('arkitekt.gui.widgets.containers.panel.background')
-local TabAnimator = require('arkitekt.gui.widgets.containers.panel.tab_animator')
-local Scrollbar = require('arkitekt.gui.widgets.primitives.scrollbar')
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local CornerButton = require('arkitekt.gui.widgets.primitives.corner_button')
-local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
-local ConfigUtil = require('arkitekt.core.config')
+local ark = require('arkitekt')
+local Header = ark.PanelHeader
+local Content = ark.PanelContent
+local Background = ark.PanelBackground
+local TabAnimator = ark.TabAnimator
+local Scrollbar = ark.Scrollbar
+local Button = ark.Button
+local CornerButton = ark.CornerButton
+local PanelConfig = ark.PanelDefaults
+local ConfigUtil = ark.Config
 
 local M = {}
 local DEFAULTS = PanelConfig.DEFAULTS
@@ -348,7 +348,7 @@ local function draw_corner_buttons_foreground(ctx, dl, x, y, w, h, config, panel
     if not button_config then return end
 
     -- Draw visuals on foreground
-    local Style = require('arkitekt.gui.style.defaults')
+    local Style = ark.Style
     local inst = get_corner_button_instance(unique_id)
 
     -- Apply style defaults

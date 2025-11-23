@@ -3,9 +3,10 @@
 -- Region Playlist state persistence via Project ExtState
 -- FIXED: Colors persist correctly and generation is centralized.
 
-local JSON = require('arkitekt.core.json')
-local Colors = require('arkitekt.core.colors')
-local UUID = require('arkitekt.core.uuid')
+local ark = require('arkitekt')
+local JSON = ark.Json
+local Colors = ark.Colors
+local UUID = ark.Uuid
 
 local M = {}
 

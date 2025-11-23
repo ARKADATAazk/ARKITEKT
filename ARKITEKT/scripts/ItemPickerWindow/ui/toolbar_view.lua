@@ -3,9 +3,12 @@
 -- Top toolbar with search, sort, and layout controls
 
 local ImGui = require 'imgui' '0.10'
+local ark = require('arkitekt')
+
+local Button = ark.Button
+local Colors = ark.Colors
+
 local SearchWithMode = require('ItemPicker.ui.components.search_with_mode')
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local Colors = require('arkitekt.core.colors')
 
 local M = {}
 

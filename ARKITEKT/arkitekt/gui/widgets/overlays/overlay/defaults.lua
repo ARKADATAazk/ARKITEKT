@@ -2,10 +2,11 @@
 -- ReArkitekt/gui/widgets/overlay/config.lua
 -- Configuration for modal overlay and sheet appearance
 
-local Colors = require('arkitekt.core.colors')
-local ConfigUtil = require('arkitekt.core.config')
-local Constants = require('arkitekt.defs.app')
-local Timing = require('arkitekt.defs.timing')
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local ConfigUtil = ark.Config
+local Constants = ark.AppDefs
+local Timing = ark.Timing
 
 local M = {}
 local hexrgb = Colors.hexrgb

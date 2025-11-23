@@ -39,17 +39,21 @@ addpath(join(REARKITEKT_ROOT, "?/init.lua"))
 -- LOAD MODULES
 -- ============================================================================
 
-local Shell = require("arkitekt.app.runtime.shell")
+local ark = require('arkitekt')
+
+local Shell = ark.Shell
+local Colors = ark.Colors
+local Settings = ark.Settings
+local Style = ark.ImGuiStyle
+local hexrgb = ark.hexrgb
+
+local SettingsOK = Settings ~= nil
+local StyleOK = Style ~= nil
+
 local Config = require("ThemeAdjuster.core.config")
 local State = require("ThemeAdjuster.core.state")
 local GUI = require("ThemeAdjuster.ui.gui_panel_test")  -- Use test version
 local StatusConfig = require("ThemeAdjuster.ui.status")
-local Colors = require("arkitekt.core.colors")
-
-local hexrgb = Colors.hexrgb
-
-local SettingsOK, Settings = pcall(require, "arkitekt.core.settings")
-local StyleOK, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
 
 -- ============================================================================
 -- INITIALIZE SETTINGS

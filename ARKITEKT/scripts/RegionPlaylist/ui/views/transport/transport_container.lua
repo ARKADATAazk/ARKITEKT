@@ -6,10 +6,12 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
-local Panel = require('arkitekt.gui.widgets.containers.panel.init')
-local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
-local Colors = require('arkitekt.core.colors')
+local ark = require('arkitekt')
+local Panel = ark.Panel
+local Colors = ark.Colors
 local hexrgb = Colors.hexrgb
+
+local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max

@@ -2,15 +2,16 @@
 -- arkitekt/debug/console_window.lua
 -- Standalone debug console window using proper ARKITEKT window system
 
-local Shell = require('arkitekt.app.runtime.shell')
-local Console = require('arkitekt.debug.console')
-local Logger = require('arkitekt.debug.logger')
+local ark = require('arkitekt')
+local Shell = ark.Shell
+local Console = ark.Console
+local Logger = ark.Logger
 
 local M = {}
 
-local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local Style = ark.ImGuiStyle
+local Colors = ark.Colors
+local hexrgb = ark.hexrgb
 
 
 local window_state = {

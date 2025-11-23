@@ -2,8 +2,9 @@
 -- ReArkitekt/gui/widgets/nodal/core/connection.lua
 -- Connection data structure with Manhattan routing
 
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local hexrgb = ark.hexrgb
 
 local M = {}
 

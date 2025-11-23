@@ -2,10 +2,12 @@
 -- RegionPlaylist/ui/tiles/active_grid_factory.lua
 -- UNCHANGED
 
-local Grid = require('arkitekt.gui.widgets.containers.grid.core')
-local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
-local Colors = require('arkitekt.core.colors')
+local ark = require('arkitekt')
+local Grid = ark.Grid
+local Colors = ark.Colors
 local hexrgb = Colors.hexrgb
+
+local ActiveTile = require('RegionPlaylist.ui.tiles.renderers.active')
 
 
 local M = {}

@@ -37,8 +37,9 @@
 --     end
 --   end
 
-local Header = require('arkitekt.gui.widgets.containers.tile_group.header')
-local Defaults = require('arkitekt.gui.widgets.containers.tile_group.defaults')
+local ark = require('arkitekt')
+local Header = ark.TileGroupHeader
+local Defaults = ark.TileGroupDefaults
 
 local M = {}
 

@@ -2,8 +2,10 @@
 -- ThemeAdjuster/core/parameter_link_manager.lua
 -- Parameter linking and synchronization system (GROUP-BASED)
 
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local ark = require('arkitekt')
+
+local Colors = ark.Colors
+local hexrgb = ark.hexrgb
 
 local M = {}
 

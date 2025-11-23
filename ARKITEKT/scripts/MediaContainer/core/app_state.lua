@@ -2,9 +2,12 @@
 -- MediaContainer/core/app_state.lua
 -- Single-source-of-truth state management for media containers
 
+local ark = require('arkitekt')
+
+local UUID = ark.Uuid
+local Colors = ark.Colors
+
 local Persistence = require("MediaContainer.storage.persistence")
-local UUID = require("arkitekt.core.uuid")
-local Colors = require("arkitekt.core.colors")
 
 local M = {}
 

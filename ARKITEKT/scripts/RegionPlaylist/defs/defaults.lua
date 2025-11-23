@@ -2,8 +2,10 @@
 -- RegionPlaylist/defs/defaults.lua
 -- Default configuration values
 
-local Colors = require('arkitekt.core.colors')
-local ColorDefs = require('arkitekt.defs.colors')
+local ark = require('arkitekt')
+local Colors = ark.Colors
+local ColorDefs = ark.ColorDefs
+
 local Constants = require('RegionPlaylist.defs.constants')
 local hexrgb = Colors.hexrgb
 
