@@ -169,7 +169,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         local tag_name = payload.label or payload.id
         if tag_name then
           -- Add tag to template
-          Tags.assign_tag(self.state.metadata, template.uuid, tag_name)
+          Tags.add_tag_to_template(self.state.metadata, template.uuid, tag_name)
 
           -- Save metadata
           Persistence.save_metadata(self.state.metadata)
@@ -350,7 +350,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         local tag_name = payload.label or payload.id
         if tag_name then
           -- Add tag to template
-          Tags.assign_tag(self.state.metadata, template.uuid, tag_name)
+          Tags.add_tag_to_template(self.state.metadata, template.uuid, tag_name)
 
           -- Save metadata
           Persistence.save_metadata(self.state.metadata)
