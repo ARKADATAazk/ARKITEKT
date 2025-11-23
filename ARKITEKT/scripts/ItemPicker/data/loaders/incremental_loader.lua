@@ -35,6 +35,10 @@ function M.new(reaper_interface, batch_size)
     track_chunks = nil,
     item_chunks = {},
 
+    -- Hash sets for O(1) duplicate detection (chunk content -> true)
+    processed_audio_chunks = {},
+    processed_midi_chunks = {},
+
     -- Raw item pool (ALL items with metadata, before grouping)
     raw_audio_items = {},  -- { {item, item_name, filename, track_color, track_muted, item_muted, uuid}, ... }
     raw_midi_items = {},   -- { {item, item_name, track_color, track_muted, item_muted, uuid}, ... }
@@ -69,6 +73,8 @@ function M.start_loading(loader, state, settings)
   loader.midi_items = {}
   loader.midi_indexes = {}
   loader.item_chunks = {}
+  loader.processed_audio_chunks = {}
+  loader.processed_midi_chunks = {}
 end
 
 -- Process one batch (call this every frame)
@@ -279,14 +285,14 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
   local filename = reaper.GetMediaSourceFileName(source)
   if not filename then return end
 
-  -- Check for duplicates
-  if loader.samples[filename] then
-    for _, existing in ipairs(loader.samples[filename]) do
-      if loader.item_chunks[chunk_id] == loader.item_chunks[loader.reaper_interface.ItemChunkID(existing[1])] then
-        return -- Duplicate, skip
-      end
-    end
-  else
+  -- Check for duplicates using hash set (O(1) instead of O(n))
+  local chunk = loader.item_chunks[chunk_id]
+  if loader.processed_audio_chunks[chunk] then
+    return -- Duplicate, skip
+  end
+  loader.processed_audio_chunks[chunk] = true
+
+  if not loader.samples[filename] then
     table.insert(loader.sample_indexes, filename)
     loader.samples[filename] = {}
   end
@@ -300,6 +306,10 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
   local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
   local uuid = get_item_uuid(item)
+
+  -- Get track name for search
+  local _, track_name = reaper.GetTrackName(track)
+  track_name = track_name or ""
 
   -- Get regions if enabled (check both settings for backwards compatibility)
   local regions = nil
@@ -383,14 +393,14 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
     item_name = "Unnamed MIDI"
   end
 
-  -- Check for duplicates
-  if loader.midi_items[item_name] then
-    for _, existing in ipairs(loader.midi_items[item_name]) do
-      if loader.item_chunks[chunk_id] == loader.item_chunks[loader.reaper_interface.ItemChunkID(existing[1])] then
-        return -- Duplicate, skip
-      end
-    end
-  else
+  -- Check for duplicates using hash set (O(1) instead of O(n))
+  local chunk = loader.item_chunks[chunk_id]
+  if loader.processed_midi_chunks[chunk] then
+    return -- Duplicate, skip
+  end
+  loader.processed_midi_chunks[chunk] = true
+
+  if not loader.midi_items[item_name] then
     table.insert(loader.midi_indexes, item_name)
     loader.midi_items[item_name] = {}
   end
@@ -524,13 +534,18 @@ function M.calculate_pool_counts(loader)
     local take = reaper.GetActiveTake(item)
     if take then
       local _, midi_data = reaper.MIDI_GetAllEvts(take, "")
-      raw_item.pool_count = midi_pool_counts[midi_data] or 1
-      -- Use hash of MIDI data as pool ID
-      local hash = 0
-      for i = 1, #midi_data do
-        hash = (hash * 31 + string.byte(midi_data, i)) % 2147483647
+      if midi_data and #midi_data > 0 then
+        raw_item.pool_count = midi_pool_counts[midi_data] or 1
+        -- Use hash of MIDI data as pool ID
+        local hash = 0
+        for i = 1, #midi_data do
+          hash = (hash * 31 + string.byte(midi_data, i)) % 2147483647
+        end
+        raw_item.pool_id = tostring(hash)
+      else
+        raw_item.pool_count = 1
+        raw_item.pool_id = raw_item.uuid  -- Unique ID for empty MIDI items
       end
-      raw_item.pool_id = tostring(hash)
     else
       raw_item.pool_count = 1
       raw_item.pool_id = raw_item.uuid  -- Unique ID for non-pooled items
