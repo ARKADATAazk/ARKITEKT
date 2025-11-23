@@ -1,5 +1,5 @@
--- @description ARKITEKT Toolkit
--- @version 0.0.2
+-- @description ARKITEKT-Toolkit
+-- @version 0.0.1
 -- @license GPL v3
 -- @author ARKADATA
 -- @website https://www.arkadata.com
