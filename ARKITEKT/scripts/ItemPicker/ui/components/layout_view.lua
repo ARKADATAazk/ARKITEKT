@@ -928,7 +928,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       local mx, my = ImGui.GetMousePos(ctx)
       local over_sep = (my >= start_y and my < start_y + header_height + content_height and
                         mx >= sep_x - sep_thickness/2 and mx < sep_x + sep_thickness/2)
-      local block_input = self.separator:is_dragging() or (over_sep and ImGui.IsMouseDown(ctx, 0))
+      local block_input = self.separator:is_dragging() or (over_sep and ImGui.IsMouseDown(ctx, 0)) or self.state.show_track_filter_modal
 
       -- MIDI section (left)
       local panel_padding = 4

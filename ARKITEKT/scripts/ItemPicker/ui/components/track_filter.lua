@@ -257,14 +257,18 @@ function M.open_modal(state)
     state.track_expanded = {}
   end
 
+  -- Reset scroll position
+  state.track_filter_scroll_y = 0
+
   -- Set flag to show modal (rendered directly in ItemPicker)
   state.show_track_filter_modal = true
 end
 
 -- Render the track filter modal directly (called from main_window)
+-- Returns true if modal is active (to block input behind it)
 function M.render_modal(ctx, state, bounds)
-  if not state.show_track_filter_modal then return end
-  if not state.track_tree then return end
+  if not state.show_track_filter_modal then return false end
+  if not state.track_tree then return false end
 
   -- Use foreground draw list to render on top of everything
   local draw_list = ImGui.GetForegroundDrawList(ctx)
@@ -293,13 +297,13 @@ function M.render_modal(ctx, state, bounds)
 
   if left_clicked and not is_over_modal then
     state.show_track_filter_modal = false
-    return
+    return false
   end
 
   -- Check for Escape to close
   if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
     state.show_track_filter_modal = false
-    return
+    return false
   end
 
   -- Modal background
@@ -335,12 +339,36 @@ function M.render_modal(ctx, state, bounds)
   local count_color = Colors.with_alpha(Colors.hexrgb("#888888"), math.floor(0xFF * alpha))
   ImGui.DrawList_AddText(draw_list, modal_x + modal_width - padding - count_w, modal_y + padding, count_color, count_text)
 
-  -- Content area - draw track tree
+  -- Content area bounds
   local content_x = modal_x + padding
   local content_y = modal_y + 50
   local content_w = modal_width - padding * 2
+  local content_h = content_height
 
-  draw_track_tree(ctx, draw_list, state.track_tree, content_x, content_y, content_w, state, 0, content_y)
+  -- Handle scrolling
+  local scroll_y = state.track_filter_scroll_y or 0
+  local max_scroll = math.max(0, tree_height - content_h)
+
+  -- Check if mouse is over content area for scrolling
+  local is_over_content = mouse_x >= content_x and mouse_x <= content_x + content_w and
+                          mouse_y >= content_y and mouse_y <= content_y + content_h
+
+  if is_over_content then
+    local wheel_v = ImGui.GetMouseWheel(ctx)
+    if wheel_v ~= 0 then
+      scroll_y = scroll_y - wheel_v * 40  -- 40 pixels per scroll tick
+      scroll_y = math.max(0, math.min(scroll_y, max_scroll))
+      state.track_filter_scroll_y = scroll_y
+    end
+  end
+
+  -- Clip content area
+  ImGui.DrawList_PushClipRect(draw_list, content_x, content_y, content_x + content_w, content_y + content_h, true)
+
+  -- Draw track tree with scroll offset
+  draw_track_tree(ctx, draw_list, state.track_tree, content_x, content_y - scroll_y, content_w, state, 0, content_y - scroll_y)
+
+  ImGui.DrawList_PopClipRect(draw_list)
 
   -- Footer with buttons
   local footer_y = modal_y + modal_height - 50
@@ -395,6 +423,8 @@ function M.render_modal(ctx, state, bounds)
     none_x + (btn_width - none_text_w) / 2,
     btn_y + (btn_height - ImGui.GetTextLineHeight(ctx)) / 2,
     Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(0xEE * alpha)), "None")
+
+  return true  -- Modal is active, block input behind
 end
 
 return M
