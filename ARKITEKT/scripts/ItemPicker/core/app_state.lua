@@ -438,6 +438,8 @@ function M.start_drag(item, item_name, color, width, height)
   M.item_to_add_width = width
   M.item_to_add_height = height
   M.drag_waveform = nil
+  -- Store original pooled MIDI toggle state (Action 41071)
+  M.original_pooled_midi_state = reaper.GetToggleCommandState(41071) == 1
 end
 
 function M.end_drag()
@@ -454,6 +456,8 @@ function M.end_drag()
   M.drop_completed = nil
   M.captured_shift = nil
   M.captured_ctrl = nil
+  M.original_pooled_midi_state = nil
+  M.alt_pool_mode = nil
   -- Don't clear should_close_after_drop here - it needs to persist to next frame
 
   -- Clear grid internal drag states to prevent visual artifacts when returning to picker

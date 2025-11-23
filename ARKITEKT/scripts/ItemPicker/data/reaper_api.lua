@@ -444,6 +444,18 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
 
     reaper.ShowConsoleMsg(string.format("[INSERT] Inserting %d items at position %.2f (pooled=%s)\n", #items_to_insert, mouse_position_in_arrange, tostring(use_pooled_copy or false)))
 
+    -- Handle pooled MIDI toggle state (Action 41071)
+    -- Store current state and toggle if needed
+    local original_pooled_state = state.original_pooled_midi_state
+    local current_pooled_state = reaper.GetToggleCommandState(41071) == 1
+
+    -- Toggle if the desired state differs from current
+    if use_pooled_copy ~= current_pooled_state then
+      reaper.Main_OnCommand(41071, 0)  -- Toggle pooled MIDI source
+      reaper.ShowConsoleMsg(string.format("[INSERT] Toggled pooled MIDI state: %s -> %s\n",
+        tostring(current_pooled_state), tostring(use_pooled_copy)))
+    end
+
     -- Insert all items
     reaper.SelectAllMediaItems(0, false)
     local current_pos = mouse_position_in_arrange
@@ -451,32 +463,26 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
     for _, insert_item in ipairs(items_to_insert) do
       reaper.SetMediaItemSelected(insert_item, true)
 
-      -- Get source take info before creating copy
-      local source_take = reaper.GetActiveTake(insert_item)
-      local source_midi = source_take and reaper.GetMediaItemTake_Source(source_take)
-
       -- Create copy using ApplyNudge (nudgewhat=5 = duplicate/copies mode)
+      -- The pooled state toggle controls whether copies share MIDI source
       reaper.ApplyNudge(0, 1, 5, 1, current_pos, false, 1)
       local inserted = reaper.GetSelectedMediaItem(0, 0)
 
       if inserted then
         reaper.MoveMediaItemToTrack(inserted, track)
 
-        -- For pooled MIDI copy: set the new take to share the same source
-        if use_pooled_copy and source_midi then
-          local new_take = reaper.GetActiveTake(inserted)
-          if new_take then
-            -- Set the same source on the new take - this creates true MIDI pooling
-            reaper.SetMediaItemTake_Source(new_take, source_midi)
-            reaper.ShowConsoleMsg("[INSERT] Set pooled MIDI source on new item\n")
-          end
-        end
-
         -- Calculate next position (current item length)
         local item_len = reaper.GetMediaItemInfo_Value(inserted, "D_LENGTH")
         current_pos = current_pos + item_len
       end
       reaper.SelectAllMediaItems(0, false)
+    end
+
+    -- Restore original pooled state if we changed it
+    local final_pooled_state = reaper.GetToggleCommandState(41071) == 1
+    if original_pooled_state ~= nil and final_pooled_state ~= original_pooled_state then
+      reaper.Main_OnCommand(41071, 0)  -- Toggle back to original
+      reaper.ShowConsoleMsg(string.format("[INSERT] Restored pooled MIDI state: %s\n", tostring(original_pooled_state)))
     end
 
     -- Cleanup drag state
