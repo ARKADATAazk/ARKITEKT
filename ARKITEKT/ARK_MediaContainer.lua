@@ -90,9 +90,9 @@ Shell.run({
           ImGui.PopStyleColor(ctx, 1)
           ImGui.SameLine(ctx)
 
-          -- Selectable item with delete on right-click
+          -- Selectable item - click to select items in Reaper
           if ImGui.Selectable(ctx, label, false) then
-            -- Could add selection/focus functionality later
+            MediaContainer.select_container(container.id)
           end
 
           -- Context menu for individual container

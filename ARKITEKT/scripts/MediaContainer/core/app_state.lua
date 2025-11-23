@@ -19,6 +19,7 @@ M.clipboard_container_id = nil
 M.last_project_state = -1
 M.last_project_filename = nil
 M.last_project_ptr = nil
+M.last_container_count = 0  -- Track container count for reload detection
 
 -- Change tracking
 M.item_state_cache = {}  -- item_guid -> state_hash
@@ -54,9 +55,16 @@ function M.load_project_state()
   M.containers = Persistence.load_containers(0)
   rebuild_container_lookup()
   M.clipboard_container_id = Persistence.load_clipboard(0)
+  M.last_container_count = #M.containers
 
   -- Rebuild item state cache for change detection
   M.rebuild_item_state_cache()
+end
+
+-- Check if containers changed (another script added/removed)
+function M.check_containers_changed()
+  local stored = Persistence.load_containers(0)
+  return #stored ~= M.last_container_count
 end
 
 function M.reload_project_data()
@@ -224,11 +232,15 @@ function M.update()
     return true
   end
 
-  -- Check for ext state changes (when other scripts modify containers)
+  -- Only reload if another script added/removed containers
+  -- Don't reload on every state change (that would clear item cache)
   local current_state = reaper.GetProjectStateChangeCount(0)
   if current_state ~= M.last_project_state then
     M.last_project_state = current_state
-    M.load_project_state()
+    -- Check if container count changed (another script modified)
+    if M.check_containers_changed() then
+      M.load_project_state()
+    end
   end
 
   return false

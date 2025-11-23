@@ -84,6 +84,23 @@ function M.get_containers()
   return State.get_all_containers()
 end
 
+-- Select all items in a container
+function M.select_container(container_id)
+  local container = State.get_container_by_id(container_id)
+  if not container then return end
+
+  reaper.SelectAllMediaItems(0, false)  -- Deselect all
+
+  for _, item_ref in ipairs(container.items) do
+    local item = State.find_item_by_guid(item_ref.guid)
+    if item then
+      reaper.SetMediaItemSelected(item, true)
+    end
+  end
+
+  reaper.UpdateArrange()
+end
+
 -- Accessors
 M.State = State
 M.Container = Container
