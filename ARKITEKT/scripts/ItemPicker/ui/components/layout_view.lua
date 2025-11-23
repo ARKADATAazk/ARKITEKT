@@ -10,6 +10,7 @@ local DraggableSeparator = require('rearkitekt.gui.widgets.primitives.separator'
 local StatusBar = require('ItemPicker.ui.components.status_bar')
 local RegionFilterBar = require('ItemPicker.ui.components.region_filter_bar')
 local TrackFilter = require('ItemPicker.ui.components.track_filter')
+local TrackFilterBar = require('ItemPicker.ui.components.track_filter_bar')
 local Colors = require('rearkitekt.core.colors')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 
@@ -944,9 +945,19 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14, self.config, 0)
 
       -- MIDI grid child starts below header, in its own space
+      local midi_grid_x = start_x + panel_padding
+      local midi_grid_y = start_y + header_height
       local midi_grid_width = midi_width - panel_padding * 2
       local midi_child_h = content_height - panel_padding
-      ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
+
+      -- Draw track filter bar on left side of MIDI panel
+      local midi_track_bar_width = TrackFilterBar.draw(ctx, draw_list, midi_grid_x, midi_grid_y, midi_child_h, self.state, section_fade)
+      if midi_track_bar_width > 0 then
+        midi_grid_x = midi_grid_x + midi_track_bar_width + 2
+        midi_grid_width = midi_grid_width - midi_track_bar_width - 2
+      end
+
+      ImGui.SetCursorScreenPos(ctx, midi_grid_x, midi_grid_y)
 
       if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
         ImGui.WindowFlags_NoScrollbar) then
@@ -982,9 +993,19 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       draw_panel_title(ctx, draw_list, title_font, "Audio Items", audio_start_x, start_y, audio_width, panel_padding, section_fade, 15, self.config, 0)
 
       -- Audio grid child starts below header, in its own space
+      local audio_grid_x = audio_start_x + panel_padding
+      local audio_grid_y = start_y + header_height
       local audio_grid_width = audio_width - panel_padding * 2
       local audio_child_h = content_height - panel_padding
-      ImGui.SetCursorScreenPos(ctx, audio_start_x + panel_padding, start_y + header_height)
+
+      -- Draw track filter bar on left side of Audio panel
+      local audio_track_bar_width = TrackFilterBar.draw(ctx, draw_list, audio_grid_x, audio_grid_y, audio_child_h, self.state, section_fade)
+      if audio_track_bar_width > 0 then
+        audio_grid_x = audio_grid_x + audio_track_bar_width + 2
+        audio_grid_width = audio_grid_width - audio_track_bar_width - 2
+      end
+
+      ImGui.SetCursorScreenPos(ctx, audio_grid_x, audio_grid_y)
 
       if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
         ImGui.WindowFlags_NoScrollbar) then
@@ -1048,9 +1069,19 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, content_width - panel_right_padding, panel_padding, section_fade, 14, self.config, 0)
 
     -- MIDI grid child starts below header, in its own space
+    local midi_grid_x = start_x + panel_padding
+    local midi_grid_y = start_y + header_height
     local midi_grid_width = content_width - panel_right_padding - panel_padding * 2
     local midi_child_h = midi_height - panel_padding
-    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
+
+    -- Draw track filter bar on left side of MIDI panel
+    local midi_track_bar_width = TrackFilterBar.draw(ctx, draw_list, midi_grid_x, midi_grid_y, midi_child_h, self.state, section_fade)
+    if midi_track_bar_width > 0 then
+      midi_grid_x = midi_grid_x + midi_track_bar_width + 2
+      midi_grid_width = midi_grid_width - midi_track_bar_width - 2
+    end
+
+    ImGui.SetCursorScreenPos(ctx, midi_grid_x, midi_grid_y)
 
     if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
@@ -1088,9 +1119,19 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     draw_panel_title(ctx, draw_list, title_font, "Audio Items", start_x, audio_start_y, content_width - panel_right_padding, panel_padding, section_fade, 15, self.config, 0)
 
     -- Audio grid child starts below header, in its own space
+    local audio_grid_x = start_x + panel_padding
+    local audio_grid_y = audio_start_y + header_height
     local audio_grid_width = content_width - panel_right_padding - panel_padding * 2
     local audio_child_h = audio_height - panel_padding
-    ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, audio_start_y + header_height)
+
+    -- Draw track filter bar on left side of Audio panel
+    local audio_track_bar_width = TrackFilterBar.draw(ctx, draw_list, audio_grid_x, audio_grid_y, audio_child_h, self.state, section_fade)
+    if audio_track_bar_width > 0 then
+      audio_grid_x = audio_grid_x + audio_track_bar_width + 2
+      audio_grid_width = audio_grid_width - audio_track_bar_width - 2
+    end
+
+    ImGui.SetCursorScreenPos(ctx, audio_grid_x, audio_grid_y)
 
     if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
