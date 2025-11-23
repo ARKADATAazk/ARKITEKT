@@ -445,6 +445,13 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
     -- Debug: show toggle state
     reaper.ShowConsoleMsg(string.format("[TOGGLE DEBUG] want_pooled=%s\n", tostring(want_pooled)))
 
+    -- Save original toggle state and set to ON if we want pooled copies
+    -- This is needed to create pooled copies from non-pooled sources
+    local original_toggle = reaper.GetToggleCommandState(41071) == 1
+    if want_pooled and not original_toggle then
+      reaper.Main_OnCommand(41071, 0)  -- Toggle pooled MIDI source ON
+    end
+
     -- Insert all items
     reaper.SelectAllMediaItems(0, false)
     local current_pos = mouse_position_in_arrange
@@ -453,7 +460,6 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
       reaper.SetMediaItemSelected(insert_item, true)
 
       -- Create copy using ApplyNudge (nudgewhat=5 = duplicate/copies mode)
-      -- ApplyNudge always creates pooled copies for pooled sources
       reaper.ApplyNudge(0, 1, 5, 1, current_pos, false, 1)
       local inserted = reaper.GetSelectedMediaItem(0, 0)
 
@@ -461,6 +467,7 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
         reaper.MoveMediaItemToTrack(inserted, track)
 
         -- If user doesn't want pooled copy, unpool the inserted item
+        -- This handles the case where source was already pooled
         if not want_pooled then
           reaper.SetMediaItemSelected(inserted, true)
           reaper.Main_OnCommand(41613, 0)  -- Unpool MIDI item
@@ -471,6 +478,12 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
         current_pos = current_pos + item_len
       end
       reaper.SelectAllMediaItems(0, false)
+    end
+
+    -- Restore original toggle state
+    local current_toggle = reaper.GetToggleCommandState(41071) == 1
+    if current_toggle ~= original_toggle then
+      reaper.Main_OnCommand(41071, 0)  -- Toggle back to original
     end
 
     -- Cleanup drag state
