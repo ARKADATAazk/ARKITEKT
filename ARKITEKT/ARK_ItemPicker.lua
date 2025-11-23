@@ -42,7 +42,7 @@ end
 
 -- Load required modules
 local ImGui = ARK.ImGui
-local Runtime = require('rearkitekt.app.runtime.runtime')
+local Shell = require('rearkitekt.app.runtime.shell')
 local Fonts = require('rearkitekt.app.assets.fonts')
 local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
 local OverlayDefaults = require('rearkitekt.gui.widgets.overlays.overlay.defaults')
@@ -141,11 +141,9 @@ if USE_OVERLAY then
     on_close = cleanup,
   }))
 
-  -- Create runtime
-  local runtime = Runtime.new({
-    title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
+  -- Use Shell.run_loop for defer loop
+  Shell.run_loop({
     ctx = ctx,
-
     on_frame = function(ctx)
       -- Show ImGui debug window when profiling
       if profiler_enabled then
@@ -154,7 +152,7 @@ if USE_OVERLAY then
 
       -- Check if should close after drop
       if State.should_close_after_drop then
-        return false  -- Stop running, on_destroy will call cleanup
+        return false
       end
 
       -- When dragging, skip overlay entirely and just render drag handlers
@@ -170,28 +168,20 @@ if USE_OVERLAY then
 
         -- Check again after draw in case flag was set during draw
         if State.should_close_after_drop then
-          return false  -- Stop running, on_destroy will call cleanup
+          return false
         end
-
-        return true  -- Keep running
+        return true
       else
         -- Normal mode: let overlay manager handle everything
         overlay_mgr:render(ctx)
         return overlay_mgr:is_active()
       end
     end,
-
-    on_destroy = function()
-      cleanup()
-    end,
+    on_close = cleanup,
   })
-
-  runtime:start()
 
 else
   -- NORMAL WINDOW MODE (using Shell)
-  local Shell = require('rearkitekt.app.runtime.shell')
-
   Shell.run({
     title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
     version = "1.0.0",
