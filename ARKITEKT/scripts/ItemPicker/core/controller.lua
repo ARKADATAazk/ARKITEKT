@@ -93,16 +93,17 @@ function M.collect_project_items(state)
 end
 
 -- Insert item at mouse position in arrange view
-function M.insert_item_at_mouse(item, state)
+function M.insert_item_at_mouse(item, state, use_pooled_copy)
   if not item then return false end
 
   reaper.Undo_BeginBlock()
   reaper.PreventUIRefresh(1)
 
-  local success = reaper_interface.InsertItemAtMousePos(item, state)
+  local success = reaper_interface.InsertItemAtMousePos(item, state, use_pooled_copy)
 
   reaper.PreventUIRefresh(-1)
-  reaper.Undo_EndBlock("Insert Item from ItemPicker", -1)
+  local undo_msg = use_pooled_copy and "Insert Pooled MIDI Item from ItemPicker" or "Insert Item from ItemPicker"
+  reaper.Undo_EndBlock(undo_msg, -1)
 
   return success
 end

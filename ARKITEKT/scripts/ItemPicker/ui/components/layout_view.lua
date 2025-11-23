@@ -9,6 +9,8 @@ local Button = require('rearkitekt.gui.widgets.primitives.button')
 local DraggableSeparator = require('rearkitekt.gui.widgets.primitives.separator')
 local StatusBar = require('ItemPicker.ui.components.status_bar')
 local RegionFilterBar = require('ItemPicker.ui.components.region_filter_bar')
+local TrackFilter = require('ItemPicker.ui.components.track_filter')
+local TrackFilterBar = require('ItemPicker.ui.components.track_filter_bar')
 local Colors = require('rearkitekt.core.colors')
 local Background = require('rearkitekt.gui.widgets.containers.panel.background')
 
@@ -546,15 +548,57 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   -- Layout toggle button (always visible)
   local layout_button_width = button_height  -- Square button (same as height)
 
+  -- Track filter button (square)
+  local track_button_width = button_height
+
   -- Calculate search width and center it
   local search_width = screen_w * self.config.LAYOUT.SEARCH_WIDTH_RATIO
   local search_x = coord_offset_x + math.floor((screen_w - search_width) / 2)
 
-  -- Position buttons left of search: [Content] [Layout] [Search]
+  -- Position buttons left of search: [Track] [Content] [Layout] [Search]
   local buttons_left_x = search_x
   local current_x = buttons_left_x
 
-  -- Content filter button (leftmost)
+  -- Track filter button (leftmost)
+  current_x = current_x - track_button_width - button_gap
+  local track_filter_x = current_x
+  local track_filter_active = self.state.show_track_filter or false
+
+  -- Draw track filter icon (3 horizontal lines representing tracks)
+  local draw_track_icon = function(btn_draw_list, icon_x, icon_y)
+    local icon_w = 12
+    local icon_h = 10
+    local line_h = 2
+    local line_gap = 2
+
+    for i = 0, 2 do
+      local line_y = icon_y + i * (line_h + line_gap)
+      local line_w = icon_w - i * 2  -- Progressively shorter lines
+      ImGui.DrawList_AddRectFilled(btn_draw_list,
+        icon_x, line_y,
+        icon_x + line_w, line_y + line_h,
+        Colors.hexrgb("#AAAAAA"), 1)
+    end
+  end
+
+  Button.draw(ctx, draw_list, current_x, search_y, track_button_width, button_height, {
+    label = "",
+    is_toggled = track_filter_active,
+    preset_name = "BUTTON_TOGGLE_WHITE",
+    tooltip = "Track Filter",
+    ignore_modal = true,
+    on_click = function()
+      -- Set flag to open track filter modal (main_window will handle it)
+      self.state.open_track_filter_modal = true
+    end,
+  }, "track_filter_button")
+
+  -- Draw track icon on top of button
+  local track_icon_x = (current_x + (track_button_width - 12) / 2 + 0.5)//1
+  local track_icon_y = (search_y + (button_height - 10) / 2 + 0.5)//1
+  draw_track_icon(draw_list, track_icon_x, track_icon_y)
+
+  -- Content filter button
   current_x = current_x - content_button_width - button_gap
   Button.draw(ctx, draw_list, current_x, search_y, content_button_width, button_height, {
     label = content_filter_mode,
@@ -779,11 +823,71 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local content_height = panels_end_y - panels_start_y
   local content_width = screen_w - (self.config.LAYOUT.PADDING * 2)
 
+  -- Track filter bar on left side with slide animation
+  local track_bar_width = 0
+  local track_bar_max_width = 120  -- Max width when expanded
+  local track_bar_collapsed_width = 8  -- Visible strip when collapsed
+  local has_track_filters = self.state.track_tree and self.state.track_whitelist
+
+  if has_track_filters then
+    -- Count whitelisted tracks
+    local whitelist_count = 0
+    for guid, selected in pairs(self.state.track_whitelist) do
+      if selected then whitelist_count = whitelist_count + 1 end
+    end
+
+    if whitelist_count > 0 then
+      -- Calculate trigger zone on left edge
+      local panels_left_edge = coord_offset_x + self.config.LAYOUT.PADDING
+
+      -- Check if mouse is near left edge (within collapsed bar or expanded area)
+      local current_bar_width = track_bar_collapsed_width +
+        (track_bar_max_width - track_bar_collapsed_width) * (self.state.track_bar_slide_progress or 0)
+      local is_hovering_left = mouse_in_window and
+                               mouse_x < (panels_left_edge + current_bar_width) and
+                               mouse_y >= panels_start_y and mouse_y <= panels_end_y
+
+      -- Smooth slide for track bar
+      if not self.state.track_bar_slide_progress then
+        self.state.track_bar_slide_progress = 0
+      end
+      local target_slide = is_hovering_left and 1.0 or 0.0
+      local slide_speed = self.config.UI_PANELS.settings.slide_speed
+      self.state.track_bar_slide_progress = self.state.track_bar_slide_progress +
+        (target_slide - self.state.track_bar_slide_progress) * slide_speed
+
+      -- Calculate animated width (always at least collapsed width)
+      track_bar_width = track_bar_collapsed_width +
+        (track_bar_max_width - track_bar_collapsed_width) * self.state.track_bar_slide_progress
+
+      -- Draw collapsed indicator strip (always visible)
+      local bar_x = panels_left_edge
+      local bar_y = panels_start_y
+      local bar_height = content_height
+
+      -- Draw indicator strip background
+      local strip_alpha = math.floor(0x44 * section_fade)
+      local strip_color = Colors.with_alpha(Colors.hexrgb("#3A3A3A"), strip_alpha)
+      ImGui.DrawList_AddRectFilled(draw_list, bar_x, bar_y, bar_x + track_bar_collapsed_width, bar_y + bar_height, strip_color, 2)
+
+      -- Only render full bar content if expanded
+      if self.state.track_bar_slide_progress > 0.01 then
+        local bar_alpha = self.state.track_bar_slide_progress * section_fade
+
+        -- Draw track filter bar
+        TrackFilterBar.draw(ctx, draw_list, bar_x, bar_y, bar_height, self.state, bar_alpha)
+      end
+    end
+  end
+
+  -- Adjust content width to account for track bar
+  content_width = content_width - track_bar_width
+
   -- Get view mode
   local view_mode = self.state.get_view_mode()
 
   -- Calculate section heights based on view mode
-  local start_x = coord_offset_x + self.config.LAYOUT.PADDING
+  local start_x = coord_offset_x + self.config.LAYOUT.PADDING + track_bar_width
   local start_y = panels_start_y
   local header_height = self.config.LAYOUT.HEADER_HEIGHT
 
@@ -885,7 +989,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       local mx, my = ImGui.GetMousePos(ctx)
       local over_sep = (my >= start_y and my < start_y + header_height + content_height and
                         mx >= sep_x - sep_thickness/2 and mx < sep_x + sep_thickness/2)
-      local block_input = self.separator:is_dragging() or (over_sep and ImGui.IsMouseDown(ctx, 0))
+      local block_input = self.separator:is_dragging() or (over_sep and ImGui.IsMouseDown(ctx, 0)) or self.state.show_track_filter_modal
 
       -- MIDI section (left)
       local panel_padding = 4
@@ -901,9 +1005,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       draw_panel_title(ctx, draw_list, title_font, "MIDI Items", start_x, start_y, midi_width, panel_padding, section_fade, 14, self.config, 0)
 
       -- MIDI grid child starts below header, in its own space
+      local midi_grid_x = start_x + panel_padding
+      local midi_grid_y = start_y + header_height
       local midi_grid_width = midi_width - panel_padding * 2
       local midi_child_h = content_height - panel_padding
-      ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
+
+      ImGui.SetCursorScreenPos(ctx, midi_grid_x, midi_grid_y)
 
       if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
         ImGui.WindowFlags_NoScrollbar) then

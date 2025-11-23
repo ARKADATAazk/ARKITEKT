@@ -26,6 +26,9 @@ local function get_item_uuid(item)
   return string.format("item_%d_%.6f_%.6f", track_num, pos, length)
 end
 
+-- Export for use by other modules
+M.get_item_uuid = get_item_uuid
+
 function M.init(utils_module)
   utils = utils_module
 end
@@ -117,9 +120,6 @@ function M.ItemChunkID(item)
 end
 
 function M.GetProjectSamples(settings, state)
-  reaper.ShowConsoleMsg(string.format("[REGION_TAGS] GetProjectSamples called with show_region_tags = %s\n",
-    tostring(settings.show_region_tags)))
-
   local all_tracks = M.GetAllTracks()
   local samples = {}
   local sample_indexes = {}
@@ -245,8 +245,6 @@ function M.GetProjectSamples(settings, state)
 end
 
 function M.GetProjectMIDI(settings, state)
-  reaper.ShowConsoleMsg(string.format("[REGION_TAGS] GetProjectMIDI called with show_region_tags = %s\n",
-    tostring(settings.show_region_tags)))
 
   local all_tracks = M.GetAllTracks()
   local midi_items = {}
@@ -382,7 +380,7 @@ function M.GetProjectMIDI(settings, state)
   return midi_items, midi_indexes
 end
 
-function M.InsertItemAtMousePos(item, state)
+function M.InsertItemAtMousePos(item, state, use_pooled_copy)
   -- Validate item is a valid MediaItem
   if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
     return
@@ -415,8 +413,6 @@ function M.InsertItemAtMousePos(item, state)
     local items_to_insert = {}
 
     if state.dragging_keys and #state.dragging_keys > 0 then
-      reaper.ShowConsoleMsg(string.format("[INSERT] Batch insert: %d items\n", #state.dragging_keys))
-
       for _, uuid in ipairs(state.dragging_keys) do
         local current_item
 
@@ -442,7 +438,19 @@ function M.InsertItemAtMousePos(item, state)
       table.insert(items_to_insert, item)
     end
 
-    reaper.ShowConsoleMsg(string.format("[INSERT] Inserting %d items at position %.2f\n", #items_to_insert, mouse_position_in_arrange))
+    -- Handle pooled MIDI copy behavior
+    -- Ensure use_pooled_copy is boolean (not nil)
+    local want_pooled = use_pooled_copy == true
+
+    -- Debug: show toggle state
+    reaper.ShowConsoleMsg(string.format("[TOGGLE DEBUG] want_pooled=%s\n", tostring(want_pooled)))
+
+    -- Save original toggle state and set to ON if we want pooled copies
+    -- This is needed to create pooled copies from non-pooled sources
+    local original_toggle = reaper.GetToggleCommandState(41071) == 1
+    if want_pooled and not original_toggle then
+      reaper.Main_OnCommand(41071, 0)  -- Toggle pooled MIDI source ON
+    end
 
     -- Insert all items
     reaper.SelectAllMediaItems(0, false)
@@ -450,16 +458,32 @@ function M.InsertItemAtMousePos(item, state)
 
     for _, insert_item in ipairs(items_to_insert) do
       reaper.SetMediaItemSelected(insert_item, true)
+
+      -- Create copy using ApplyNudge (nudgewhat=5 = duplicate/copies mode)
       reaper.ApplyNudge(0, 1, 5, 1, current_pos, false, 1)
       local inserted = reaper.GetSelectedMediaItem(0, 0)
+
       if inserted then
         reaper.MoveMediaItemToTrack(inserted, track)
 
-        -- Calculate next position (current item length + small gap)
+        -- If user doesn't want pooled copy, unpool the inserted item
+        -- This handles the case where source was already pooled
+        if not want_pooled then
+          reaper.SetMediaItemSelected(inserted, true)
+          reaper.Main_OnCommand(41613, 0)  -- Unpool MIDI item
+        end
+
+        -- Calculate next position (current item length)
         local item_len = reaper.GetMediaItemInfo_Value(inserted, "D_LENGTH")
         current_pos = current_pos + item_len
       end
       reaper.SelectAllMediaItems(0, false)
+    end
+
+    -- Restore original toggle state
+    local current_toggle = reaper.GetToggleCommandState(41071) == 1
+    if current_toggle ~= original_toggle then
+      reaper.Main_OnCommand(41071, 0)  -- Toggle back to original
     end
 
     -- Cleanup drag state

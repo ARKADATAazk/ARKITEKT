@@ -6,6 +6,7 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('rearkitekt.core.colors')
 local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
 local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
+local shared = require('ItemPicker.ui.grids.factories.grid_factory_shared')
 
 local M = {}
 
@@ -15,20 +16,8 @@ function M.create(ctx, config, state, visualization, animator)
   local function get_items()
     if not state.midi_indexes then return {} end
 
-    -- Compute filter hash to detect changes (EXCLUDING indices to prevent re-sort)
-    local settings = state.settings
-    local filter_hash = string.format("%s|%s|%s|%s|%s|%s|%s|%s|%s|%d",
-      tostring(settings.show_favorites_only),
-      tostring(settings.show_disabled_items),
-      tostring(settings.show_muted_tracks),
-      tostring(settings.show_muted_items),
-      settings.search_string or "",
-      settings.search_mode or "items",
-      settings.sort_mode or "none",
-      tostring(settings.sort_reverse or false),
-      table.concat(state.midi_indexes, ","),  -- Invalidate if items change
-      #state.midi_indexes
-    )
+    -- Compute filter hash to detect changes
+    local filter_hash = shared.build_filter_hash(state.settings, state.midi_indexes)
 
     -- Return cached result if filters haven't changed
     if state.runtime_cache.midi_filter_hash == filter_hash and state.runtime_cache.midi_filtered then
@@ -38,13 +27,11 @@ function M.create(ctx, config, state, visualization, animator)
     -- Filters changed - rebuild filtered list
     local filtered = {}
     for _, track_guid in ipairs(state.midi_indexes) do
-      -- Check favorites filter
-      if state.settings.show_favorites_only and not state.favorites.midi[track_guid] then
+      -- Check favorites and disabled filters
+      if not shared.passes_favorites_filter(state.settings, state.favorites.midi, track_guid) then
         goto continue
       end
-
-      -- Check disabled filter
-      if not state.settings.show_disabled_items and state.disabled.midi[track_guid] then
+      if not shared.passes_disabled_filter(state.settings, state.disabled.midi, track_guid) then
         goto continue
       end
 
@@ -53,36 +40,11 @@ function M.create(ctx, config, state, visualization, animator)
         goto continue
       end
 
-      -- Get current item index (absolute position in full array)
+      -- Get current item index and filtered position
       local current_idx = state.box_current_midi_track[track_guid] or 1
       if current_idx > #content then current_idx = 1 end
 
-      -- Build filtered list to calculate position and count
-      local seen_pools = {}
-      local filtered_list = {}
-      for i, entry in ipairs(content) do
-        local pool_count = entry.pool_count or 1
-        local pool_id = entry.pool_id
-        if pool_count > 1 and pool_id then
-          if not seen_pools[pool_id] then
-            seen_pools[pool_id] = true
-            table.insert(filtered_list, {index = i, entry = entry})
-          end
-        else
-          table.insert(filtered_list, {index = i, entry = entry})
-        end
-      end
-
-      -- Find current position in filtered list
-      local current_position = 1
-      for pos, item in ipairs(filtered_list) do
-        if item.index == current_idx then
-          current_position = pos
-          break
-        end
-      end
-
-      local filtered_count = #filtered_list
+      local current_position, filtered_count = shared.get_filtered_position(content, current_idx)
 
       local entry = content[current_idx]
       if not entry or not entry[2] then  -- Only require name, not item pointer
@@ -102,56 +64,12 @@ function M.create(ctx, config, state, visualization, animator)
         goto continue
       end
 
-      -- Check mute filters
-      if not state.settings.show_muted_tracks and track_muted then
+      -- Check mute and search filters
+      if not shared.passes_mute_filters(state.settings, track_muted, item_muted) then
         goto continue
       end
-
-      if not state.settings.show_muted_items and item_muted then
+      if not shared.passes_search_filter(state.settings, item_name, track_name, entry.regions) then
         goto continue
-      end
-
-      -- Check search filter (mode-based)
-      local search = state.settings.search_string or ""
-      if type(search) == "string" and search ~= "" then
-        local search_mode = state.settings.search_mode or "items"
-        local found = false
-
-        if search_mode == "items" then
-          -- Search only item names
-          found = item_name:lower():find(search:lower(), 1, true) ~= nil
-        elseif search_mode == "tracks" then
-          -- Search only track names
-          found = track_name:lower():find(search:lower(), 1, true) ~= nil
-        elseif search_mode == "regions" then
-          -- Search only region names
-          if entry.regions then
-            for _, region in ipairs(entry.regions) do
-              local region_name = type(region) == "table" and region.name or region
-              if region_name:lower():find(search:lower(), 1, true) then
-                found = true
-                break
-              end
-            end
-          end
-        elseif search_mode == "mixed" then
-          -- Search all: item names, track names, and region names
-          found = item_name:lower():find(search:lower(), 1, true) ~= nil or
-                  track_name:lower():find(search:lower(), 1, true) ~= nil
-          if not found and entry.regions then
-            for _, region in ipairs(entry.regions) do
-              local region_name = type(region) == "table" and region.name or region
-              if region_name:lower():find(search:lower(), 1, true) then
-                found = true
-                break
-              end
-            end
-          end
-        end
-
-        if not found then
-          goto continue
-        end
       end
 
       -- Check region filter (if any regions are selected)
@@ -173,23 +91,14 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
 
-      -- Use cached track color (fetched during loading, not every frame!)
-      local track_color = entry.track_color or 0
-
-      -- REAPER returns: ColorToNative(r,g,b) | 0x01000000 for colored items
-      -- Check for the 0x01000000 flag to determine if item has a color
-      local color
-      if (track_color & 0x01000000) ~= 0 then
-        -- Has color: mask off 0x01000000 flag and extract RGB from COLORREF (0x00BBGGRR)
-        local colorref = track_color & 0x00FFFFFF
-        local R = colorref & 255
-        local G = (colorref >> 8) & 255
-        local B = (colorref >> 16) & 255
-        color = ImGui.ColorConvertDouble4ToU32(R/255, G/255, B/255, 1)
-      else
-        -- No color flag: use default grey
-        color = ImGui.ColorConvertDouble4ToU32(85/255, 91/255, 91/255, 1)
+      -- Check track filter (use entry.track_guid if available, otherwise use loop track_guid)
+      local item_track_guid = entry.track_guid or track_guid
+      if not shared.passes_track_filter(state, item_track_guid) then
+        goto continue
       end
+
+      -- Convert cached track color to ImGui color
+      local color = shared.convert_track_color(entry.track_color or 0)
 
       table.insert(filtered, {
         track_guid = track_guid,
@@ -409,7 +318,8 @@ function M.create(ctx, config, state, visualization, animator)
       end
 
       if display_data then
-        state.start_drag(display_data.item, display_data.name, display_data.color, drag_w, drag_h)
+        local is_source_pooled = (display_data.pool_count or 1) > 1
+        state.start_drag(display_data.item, display_data.name, display_data.color, drag_w, drag_h, is_source_pooled)
       end
     end,
 

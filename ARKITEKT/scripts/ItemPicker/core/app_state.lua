@@ -4,6 +4,7 @@
 
 local Persistence = require("ItemPicker.data.persistence")
 local Defaults = require("ItemPicker.defs.defaults")
+local PreviewManager = require("ItemPicker.core.preview_manager")
 
 local M = {}
 
@@ -124,6 +125,9 @@ function M.initialize(config)
   if M.settings.tile_height then
     M.tile_sizes.height = M.settings.tile_height
   end
+
+  -- Initialize preview manager with settings
+  PreviewManager.init(M.settings)
 end
 
 -- Settings getters/setters
@@ -254,56 +258,16 @@ function M.toggle_midi_favorite(item_name)
   M.persist_favorites()
 end
 
--- Item cycling
+-- Item cycling (uses shared pool_utils for filtering)
+local pool_utils = require('ItemPicker.services.pool_utils')
+
 function M.cycle_audio_item(filename, delta)
   local content = M.samples[filename]
   if not content or #content == 0 then return end
 
-  -- Build filtered list based on current settings
-  local filtered = {}
-  local seen_pools = {}  -- Track pool IDs to exclude pooled duplicates
-
-  for i, entry in ipairs(content) do
-    local should_include = true
-
-    -- Exclude pooled duplicates (only show first occurrence of each pool)
-    local pool_count = entry.pool_count or 1
-    local pool_id = entry.pool_id
-    if pool_count > 1 and pool_id then
-      if seen_pools[pool_id] then
-        should_include = false
-      else
-        seen_pools[pool_id] = true
-      end
-    end
-
-    -- Apply disabled filter
-    if not M.settings.show_disabled_items and M.disabled.audio[filename] then
-      should_include = false
-    end
-
-    -- Apply mute filters
-    local track_muted = entry.track_muted or false
-    local item_muted = entry.item_muted or false
-    if not M.settings.show_muted_tracks and track_muted then
-      should_include = false
-    end
-    if not M.settings.show_muted_items and item_muted then
-      should_include = false
-    end
-
-    -- Apply search filter
-    local search = M.settings.search_string or ""
-    if search ~= "" and entry[2] then
-      if not entry[2]:lower():find(search:lower(), 1, true) then
-        should_include = false
-      end
-    end
-
-    if should_include then
-      table.insert(filtered, {index = i, entry = entry})
-    end
-  end
+  -- Build filtered list using shared utility
+  local is_disabled = M.disabled.audio[filename]
+  local filtered = pool_utils.build_filtered_items(content, M.settings, is_disabled, M.settings.search_string)
 
   if #filtered == 0 then return end
 
@@ -323,67 +287,17 @@ function M.cycle_audio_item(filename, delta)
   if current_pos < 1 then current_pos = #filtered end
 
   M.box_current_item[filename] = filtered[current_pos].index
-
-  -- NOTE: We don't invalidate the cache here to prevent re-sorting
-  -- The grid will pick up the new item on next frame without jumping position
-  -- M.runtime_cache.audio_filter_hash = nil
 end
 
 function M.cycle_midi_item(item_name, delta)
   local content = M.midi_items[item_name]
-  if not content or #content == 0 then
-    return
-  end
+  if not content or #content == 0 then return end
 
-  -- Build filtered list based on current settings
-  local filtered = {}
-  local seen_pools = {}  -- Track pool IDs to exclude pooled duplicates
+  -- Build filtered list using shared utility
+  local is_disabled = M.disabled.midi[item_name]
+  local filtered = pool_utils.build_filtered_items(content, M.settings, is_disabled, M.settings.search_string)
 
-  for i, entry in ipairs(content) do
-    local should_include = true
-
-    -- Exclude pooled duplicates (only show first occurrence of each pool)
-    local pool_count = entry.pool_count or 1
-    local pool_id = entry.pool_id
-    if pool_count > 1 and pool_id then
-      if seen_pools[pool_id] then
-        should_include = false
-      else
-        seen_pools[pool_id] = true
-      end
-    end
-
-    -- Apply disabled filter
-    if not M.settings.show_disabled_items and M.disabled.midi[item_name] then
-      should_include = false
-    end
-
-    -- Apply mute filters
-    local track_muted = entry.track_muted or false
-    local item_muted = entry.item_muted or false
-    if not M.settings.show_muted_tracks and track_muted then
-      should_include = false
-    end
-    if not M.settings.show_muted_items and item_muted then
-      should_include = false
-    end
-
-    -- Apply search filter
-    local search = M.settings.search_string or ""
-    if search ~= "" and entry[2] then
-      if not entry[2]:lower():find(search:lower(), 1, true) then
-        should_include = false
-      end
-    end
-
-    if should_include then
-      table.insert(filtered, {index = i, entry = entry})
-    end
-  end
-
-  if #filtered == 0 then
-    return
-  end
+  if #filtered == 0 then return end
 
   -- Find current position in filtered list
   local current = M.box_current_midi_track[item_name] or 1
@@ -401,10 +315,6 @@ function M.cycle_midi_item(item_name, delta)
   if current_pos < 1 then current_pos = #filtered end
 
   M.box_current_midi_track[item_name] = filtered[current_pos].index
-
-  -- NOTE: We don't invalidate the cache here to prevent re-sorting
-  -- The grid will pick up the new item on next frame without jumping position
-  -- M.runtime_cache.midi_filter_hash = nil
 end
 
 -- Pending operations (for animations)
@@ -430,7 +340,7 @@ function M.clear_pending()
 end
 
 -- Drag state
-function M.start_drag(item, item_name, color, width, height)
+function M.start_drag(item, item_name, color, width, height, is_source_pooled)
   M.dragging = true
   M.item_to_add = item
   M.item_to_add_name = item_name
@@ -438,6 +348,14 @@ function M.start_drag(item, item_name, color, width, height)
   M.item_to_add_width = width
   M.item_to_add_height = height
   M.drag_waveform = nil
+  -- Determine default pooled state:
+  -- If source item is already pooled, default to pooled copies
+  -- Otherwise, use the global toggle state
+  if is_source_pooled then
+    M.original_pooled_midi_state = true
+  else
+    M.original_pooled_midi_state = reaper.GetToggleCommandState(41071) == 1
+  end
 end
 
 function M.end_drag()
@@ -454,6 +372,8 @@ function M.end_drag()
   M.drop_completed = nil
   M.captured_shift = nil
   M.captured_ctrl = nil
+  M.original_pooled_midi_state = nil
+  M.alt_pool_mode = nil
   -- Don't clear should_close_after_drop here - it needs to persist to next frame
 
   -- Clear grid internal drag states to prevent visual artifacts when returning to picker
@@ -466,112 +386,21 @@ function M.request_exit()
   M.exit = true
 end
 
--- Preview management (using SWS extension commands)
--- force_mode: nil (use setting), "through_track" (force with FX), "direct" (force no FX)
+-- Preview management (delegated to PreviewManager)
 function M.start_preview(item, force_mode)
-  if not item then return end
-
-  -- Stop current preview
-  M.stop_preview()
-
-  -- Get item GUID for reliable comparison
-  local item_guid = reaper.BR_GetMediaItemGUID(item)
-
-  -- Get item duration for progress tracking
-  local item_len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
-
-  -- First, select the item for SWS commands to work
-  reaper.SelectAllMediaItems(0, false)  -- Deselect all
-  reaper.SetMediaItemSelected(item, true)
-
-  -- Check if it's MIDI
-  local take = reaper.GetActiveTake(item)
-  if take and reaper.TakeIsMIDI(take) then
-    -- MIDI requires timeline movement (limitation of Reaper API)
-    local item_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
-    reaper.SetEditCurPos(item_pos, false, false)
-
-    -- Use SWS preview through track (required for MIDI)
-    local cmd_id = reaper.NamedCommandLookup("_SWS_PREVIEWTRACK")
-    if cmd_id and cmd_id ~= 0 then
-      reaper.Main_OnCommand(cmd_id, 0)
-      M.previewing = true
-      M.preview_item = item
-      M.preview_item_guid = item_guid
-      M.preview_start_time = reaper.time_precise()
-      M.preview_duration = item_len
-    end
-  else
-    -- Audio: Check force_mode or fall back to setting
-    local use_through_track = M.settings.play_item_through_track
-    if force_mode == "through_track" then
-      use_through_track = true
-    elseif force_mode == "direct" then
-      use_through_track = false
-    end
-
-    if use_through_track then
-      -- Preview through track with FX
-      local cmd_id = reaper.NamedCommandLookup("_SWS_PREVIEWTRACK")
-      if cmd_id and cmd_id ~= 0 then
-        reaper.Main_OnCommand(cmd_id, 0)
-        M.previewing = true
-        M.preview_item = item
-        M.preview_item_guid = item_guid
-        M.preview_start_time = reaper.time_precise()
-        M.preview_duration = item_len
-      end
-    else
-      -- Direct preview (no FX, faster)
-      local cmd_id = reaper.NamedCommandLookup("_XENAKIOS_ITEMASPCM1")
-      if cmd_id and cmd_id ~= 0 then
-        reaper.Main_OnCommand(cmd_id, 0)
-        M.previewing = true
-        M.preview_item = item
-        M.preview_item_guid = item_guid
-        M.preview_start_time = reaper.time_precise()
-        M.preview_duration = item_len
-      end
-    end
-  end
+  PreviewManager.start_preview(item, force_mode)
 end
 
 function M.stop_preview()
-  if M.previewing then
-    -- Stop SWS preview (matching ItemPicker OG)
-    local cmd_id = reaper.NamedCommandLookup("_SWS_STOPPREVIEW")
-    if cmd_id and cmd_id ~= 0 then
-      reaper.Main_OnCommand(cmd_id, 0)
-    end
-    M.previewing = false
-    M.preview_item = nil
-    M.preview_item_guid = nil
-    M.preview_start_time = nil
-    M.preview_duration = nil
-  end
+  PreviewManager.stop_preview()
 end
 
 function M.is_previewing(item)
-  if not M.previewing or not item then return false end
-  local item_guid = reaper.BR_GetMediaItemGUID(item)
-  return M.preview_item_guid == item_guid
+  return PreviewManager.is_previewing(item)
 end
 
 function M.get_preview_progress()
-  if not M.previewing or not M.preview_start_time or not M.preview_duration then
-    return 0
-  end
-
-  local elapsed = reaper.time_precise() - M.preview_start_time
-  local progress = elapsed / M.preview_duration
-
-  -- Auto-stop when preview completes
-  if progress >= 1.0 then
-    M.stop_preview()
-    return 1.0
-  end
-
-  return progress
+  return PreviewManager.get_preview_progress()
 end
 
 -- Persistence

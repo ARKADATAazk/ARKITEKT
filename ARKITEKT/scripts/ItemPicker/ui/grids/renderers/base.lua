@@ -14,6 +14,16 @@ local M = {}
 
 M.tile_spawn_times = {}
 
+-- Ensure color has minimum lightness for readability
+function M.ensure_min_lightness(color, min_lightness)
+  local h, s, l = Colors.rgb_to_hsl(color)
+  if l < min_lightness then
+    l = min_lightness
+  end
+  local r, g, b = Colors.hsl_to_rgb(h, s, l)
+  return Colors.components_to_rgba(r, g, b, 0xFF)
+end
+
 -- Easing functions
 local function ease_out_back(t)
   local c1 = 1.70158
