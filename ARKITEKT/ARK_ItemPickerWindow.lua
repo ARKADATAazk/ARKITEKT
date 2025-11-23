@@ -2,30 +2,9 @@
 -- @description ARK Item Picker Window
 -- ItemPicker as a persistent window with TilesContainer panels (like RegionPlaylist)
 
--- ============================================================================
--- BOOTSTRAP ARKITEKT FRAMEWORK
--- ============================================================================
-local ARK
-do
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, "S").source:sub(2)
-  local path = src:match("(.*"..sep..")")
-  while path and #path > 3 do
-    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
-    local f = io.open(init, "r")
-    if f then
-      f:close()
-      local Init = dofile(init)
-      ARK = Init.bootstrap()
-      break
-    end
-    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
-  end
-  if not ARK then
-    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
-    return
-  end
-end
+-- Bootstrap ARKITEKT framework
+local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "rearkitekt/app/init/init.lua").bootstrap()
+if not ARK then return end
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
