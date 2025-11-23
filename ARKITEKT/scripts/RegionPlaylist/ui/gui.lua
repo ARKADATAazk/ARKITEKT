@@ -498,7 +498,13 @@ function GUI:update_state(ctx, window)
 
   self.State.get_bridge():update()
   self.State.update()
-  
+
+  -- Sync layout_mode from State to region_tiles when it changes
+  local current_layout_mode = self.State.get_layout_mode()
+  if current_layout_mode ~= self.region_tiles.layout_mode then
+    self.region_tiles:set_layout_mode(current_layout_mode)
+  end
+
   local pending_spawn = self.State.get_pending_spawn()
   local pending_select = self.State.get_pending_select()
   local pending_destroy = self.State.get_pending_destroy()
