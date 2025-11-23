@@ -42,7 +42,6 @@ local ImGui = ARK.ImGui
 local Shell = require('rearkitekt.app.runtime.shell')
 local Colors = require('rearkitekt.core.colors')
 local Settings = require('rearkitekt.core.settings')
-local Style = require('rearkitekt.gui.style.imgui_defaults')
 
 local hexrgb = Colors.hexrgb
 
@@ -104,7 +103,6 @@ Shell.run({
   version = "1.0.0",
   draw = function(ctx, shell_state) gui:draw(ctx, shell_state) end,
   settings = settings,
-  style = Style,
   initial_pos = { x = 120, y = 120 },
   initial_size = { w = 1200, h = 800 },
   min_size = { w = 800, h = 600 },

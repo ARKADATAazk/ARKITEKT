@@ -121,7 +121,14 @@ function M.run(opts)
   local title    = config.title
   local version  = config.version
   local draw_fn  = config.draw or function(ctx) ImGui.Text(ctx, 'No draw function provided') end
-  local style    = config.style
+
+  -- Auto-load default style if none provided
+  local style = config.style
+  if not style then
+    local ok, default_style = pcall(require, 'rearkitekt.gui.style.imgui_defaults')
+    if ok then style = default_style end
+  end
+
   local settings = config.settings
   local raw_content = (config.raw_content == true)
   local enable_profiling = config.enable_profiling ~= false
