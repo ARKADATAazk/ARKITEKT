@@ -616,14 +616,26 @@ local function draw_sidebar(ctx, dl, x, y, width, height, sidebar_cfg, panel_id,
 
     local btn_id = panel_id .. "_sidebar_" .. side .. "_" .. (element.id or i)
 
-    -- Only round outer corners at extremities
-    local corner_rounding = {
-      round_top_left = is_first,
-      round_top_right = is_first,
-      round_bottom_left = is_last,
-      round_bottom_right = is_last,
-      rounding = rounding,
-    }
+    -- Round outer corners only (away from panel edge)
+    -- Left sidebar: round right corners, Right sidebar: round left corners
+    local corner_rounding
+    if side == "left" then
+      corner_rounding = {
+        round_top_left = false,
+        round_top_right = is_first,
+        round_bottom_left = false,
+        round_bottom_right = is_last,
+        rounding = rounding,
+      }
+    else -- right
+      corner_rounding = {
+        round_top_left = is_first,
+        round_top_right = false,
+        round_bottom_left = is_last,
+        round_bottom_right = false,
+        rounding = rounding,
+      }
+    end
 
     -- Merge element config with defaults
     local btn_config = ConfigUtil.merge_safe(element.config or {}, PanelConfig.ELEMENT_STYLE.button)
