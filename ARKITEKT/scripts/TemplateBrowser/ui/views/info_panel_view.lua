@@ -146,7 +146,7 @@ local function draw_info_panel(ctx, gui, width, height)
             style = Chip.STYLE.ACTION,
             chip_height = 22,
             chip_spacing = 6,
-            line_spacing = 6,
+            line_spacing = 3,
             rounding = 3,
             padding_h = 6,
             max_width = content_w,

@@ -185,11 +185,11 @@ function M.draw_active_target(ctx, rect, border_color, fill_color, glow_color)
   -- Extract RGB from glow color for alpha manipulation
   local gr, gg, gb = Colors.rgba_to_components(glow_color)
 
-  -- Draw glow layers (outer to inner) - reduced by 60%
+  -- Draw glow layers (outer to inner) - reduced by 80%
   local glow_layers = {
-    { expand = 8, alpha = 0x0C },   -- Outermost, very faint
-    { expand = 5, alpha = 0x19 },   -- Middle
-    { expand = 3, alpha = 0x26 },   -- Inner glow
+    { expand = 8, alpha = 0x02 },   -- Outermost, very faint
+    { expand = 5, alpha = 0x05 },   -- Middle
+    { expand = 3, alpha = 0x08 },   -- Inner glow
   }
 
   for _, layer in ipairs(glow_layers) do

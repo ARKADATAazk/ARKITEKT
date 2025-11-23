@@ -90,7 +90,7 @@ function M.draw(ctx, state, config, width, height)
           style = Chip.STYLE.ACTION,
           chip_height = UI.CHIP.HEIGHT_DEFAULT,
           chip_spacing = 6,
-          line_spacing = 6,
+          line_spacing = 3,
           rounding = 2,
           padding_h = 8,
           max_width = content_w,
