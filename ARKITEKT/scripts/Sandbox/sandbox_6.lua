@@ -310,6 +310,112 @@ local function create_hybrid_panel()
 end
 
 -- ============================================================================
+-- PANEL 5: SIDEBARS
+-- ============================================================================
+
+local function create_sidebar_panel()
+  return Panel.new({
+    id = "sidebar_panel",
+    width = 850,
+    height = 200,
+    config = {
+      bg_color = hexrgb("#1A1A1AFF"),
+      border_color = hexrgb("#000000DD"),
+      border_thickness = 1,
+      rounding = 8,
+      padding = 16,
+
+      header = {
+        enabled = true,
+        height = 30,
+        position = "top",
+        bg_color = hexrgb("#1E1E1EFF"),
+        border_color = hexrgb("#00000066"),
+        rounding = 8,
+
+        elements = {
+          {
+            id = "title",
+            type = "button",
+            config = {
+              label = "📐 Sidebar Demo",
+            }
+          },
+        },
+      },
+
+      -- Left sidebar (centered)
+      left_sidebar = {
+        enabled = true,
+        width = 40,
+        bg_color = hexrgb("#1E1E1EFF"),
+        border_color = hexrgb("#00000066"),
+        valign = "center",
+        padding = { top = 4, bottom = 4 },
+        button_size = 28,
+        button_spacing = 4,
+        elements = {
+          {
+            id = "nav_home",
+            icon = "🏠",
+            tooltip = "Home",
+            on_click = function()
+              reaper.ShowConsoleMsg("[LEFT SIDEBAR] Home clicked\n")
+            end,
+          },
+          {
+            id = "nav_search",
+            icon = "🔍",
+            tooltip = "Search",
+            on_click = function()
+              reaper.ShowConsoleMsg("[LEFT SIDEBAR] Search clicked\n")
+            end,
+          },
+          {
+            id = "nav_settings",
+            icon = "⚙",
+            tooltip = "Settings",
+            on_click = function()
+              reaper.ShowConsoleMsg("[LEFT SIDEBAR] Settings clicked\n")
+            end,
+          },
+        },
+      },
+
+      -- Right sidebar (top-aligned)
+      right_sidebar = {
+        enabled = true,
+        width = 40,
+        bg_color = hexrgb("#1E1E1EFF"),
+        border_color = hexrgb("#00000066"),
+        valign = "top",
+        padding = { top = 4, bottom = 4 },
+        button_size = 28,
+        button_spacing = 4,
+        elements = {
+          {
+            id = "action_add",
+            icon = "+",
+            tooltip = "Add item",
+            on_click = function()
+              reaper.ShowConsoleMsg("[RIGHT SIDEBAR] Add clicked\n")
+            end,
+          },
+          {
+            id = "action_remove",
+            icon = "−",
+            tooltip = "Remove item",
+            on_click = function()
+              reaper.ShowConsoleMsg("[RIGHT SIDEBAR] Remove clicked\n")
+            end,
+          },
+        },
+      },
+    },
+  })
+end
+
+-- ============================================================================
 -- INITIALIZATION
 -- ============================================================================
 
@@ -318,6 +424,7 @@ local function init()
   state.panels.bottom = create_bottom_header_panel()
   state.panels.corner = create_corner_buttons_panel()
   state.panels.hybrid = create_hybrid_panel()
+  state.panels.sidebar = create_sidebar_panel()
 end
 
 init()
@@ -430,7 +537,29 @@ local function draw(ctx, shell_state)
   end
   state.panels.hybrid:end_draw(ctx)
   ImGui.PopID(ctx)
-  
+
+  ImGui.Spacing(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+
+  -- Panel 5: Sidebars
+  ImGui.PushID(ctx, "panel5")
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFD700FF"))
+  ImGui.Text(ctx, "5. SIDEBARS")
+  ImGui.PopStyleColor(ctx, 1)
+  ImGui.Text(ctx, "Vertical button bars on left/right sides of panel.")
+  ImGui.Spacing(ctx)
+
+  if state.panels.sidebar:begin_draw(ctx) then
+    ImGui.Text(ctx, "✓ Left sidebar: 3 buttons, centered vertically")
+    ImGui.Text(ctx, "✓ Right sidebar: 2 buttons, top-aligned")
+    ImGui.Text(ctx, "✓ valign options: \"top\", \"center\", \"bottom\"")
+    ImGui.Spacing(ctx)
+    ImGui.Text(ctx, "Great for navigation, toolbars, or quick actions!")
+  end
+  state.panels.sidebar:end_draw(ctx)
+  ImGui.PopID(ctx)
+
   ImGui.PopStyleVar(ctx, 1)
 end
 
@@ -448,6 +577,7 @@ reaper.ShowConsoleMsg("  ✓ Bottom header positioning\n")
 reaper.ShowConsoleMsg("  ✓ Corner buttons (no header needed)\n")
 reaper.ShowConsoleMsg("  ✓ Separator corner rounding\n")
 reaper.ShowConsoleMsg("  ✓ Hybrid panels (header + corners)\n")
+reaper.ShowConsoleMsg("  ✓ Sidebars (vertical button bars)\n")
 reaper.ShowConsoleMsg("═══════════════════════════════════════\n\n")
 
 Shell.run({
@@ -456,10 +586,10 @@ Shell.run({
   version_color = hexrgb("#888888FF"),
   style = StyleOK and Style or nil,
   initial_pos = { x = 100, y = 100 },
-  initial_size = { w = 900, h = 950 },
-  min_size = { w = 900, h = 800 },
+  initial_size = { w = 900, h = 1150 },
+  min_size = { w = 900, h = 900 },
   icon_color = hexrgb("#41E0A3FF"),
   icon_size = 18,
-  
+
   draw = draw,
 })

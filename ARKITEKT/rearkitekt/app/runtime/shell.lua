@@ -12,10 +12,36 @@ local Config = require('rearkitekt.core.config')
 local Constants = require('rearkitekt.defs.app')
 local Typography = require('rearkitekt.defs.typography')
 local Fonts = require('rearkitekt.app.assets.fonts')
-local Runtime = require('rearkitekt.app.runtime.runtime')
 local Window  = require('rearkitekt.app.chrome.window.window')
 
 local M = {}
+
+-- Helper to set REAPER toolbar button state
+local function set_button_state(set)
+  local _, _, sec, cmd = reaper.get_action_context()
+  reaper.SetToggleCommandState(sec, cmd, set or 0)
+  reaper.RefreshToolbar2(sec, cmd)
+end
+
+-- Auto-create settings from app_name
+local function auto_init_settings(app_name)
+  if not app_name then return nil end
+
+  local ok, Settings = pcall(require, 'rearkitekt.core.settings')
+  if not ok or type(Settings.new) ~= 'function' then return nil end
+
+  -- Get data directory (ARK global should be available from bootstrap)
+  local data_dir
+  if ARK and ARK.get_data_dir then
+    data_dir = ARK.get_data_dir(app_name)
+  else
+    -- Fallback: use REAPER resource path
+    data_dir = reaper.GetResourcePath() .. '/Scripts/ARKITEKT/data/' .. app_name
+  end
+
+  local success, settings = pcall(Settings.new, data_dir, 'settings.json')
+  return success and settings or nil
+end
 
 local function load_fonts(ctx, font_cfg)
   font_cfg = Config.deepMerge({
@@ -127,7 +153,17 @@ function M.run(opts)
     if ok then style = default_style end
   end
 
+  -- Auto-init settings from app_name if not provided
   local settings = config.settings
+  if not settings and config.app_name then
+    settings = auto_init_settings(config.app_name)
+  end
+
+  -- Handle toolbar button state
+  local toggle_button = config.toggle_button
+  if toggle_button then
+    set_button_state(1)
+  end
   local raw_content = (config.raw_content == true)
   local enable_profiling = config.enable_profiling ~= false
 
@@ -205,77 +241,106 @@ function M.run(opts)
     return result
   end
 
-  local runtime = Runtime.new({
-    title = title,
-    ctx   = ctx,
+  -- Inline runtime loop (no separate Runtime module)
+  local runtime = {
+    ctx = ctx,
+    open = true,
+  }
 
-    on_frame = function(ctx)
-      if enable_profiling then
-        state.profiling.frame_start = reaper.time_precise()
+  local function on_frame()
+    if enable_profiling then
+      state.profiling.frame_start = reaper.time_precise()
+    end
+
+    if style and style.PushMyStyle then
+      if enable_profiling and window.start_timer then
+        window:start_timer("style_push")
       end
-      
-      if style and style.PushMyStyle then 
-        if enable_profiling and window.start_timer then
-          window:start_timer("style_push")
-        end
-        style.PushMyStyle(ctx)
-        if enable_profiling and window.end_timer then
-          window:end_timer("style_push")
-        end
+      style.PushMyStyle(ctx)
+      if enable_profiling and window.end_timer then
+        window:end_timer("style_push")
       end
+    end
 
-      ImGui.PushFont(ctx, fonts.default, fonts.default_size)
+    ImGui.PushFont(ctx, fonts.default, fonts.default_size)
 
-      local visible, open = window:Begin(ctx)
-      if visible then
-        if raw_content then
+    local visible, open = window:Begin(ctx)
+    if visible then
+      if raw_content then
+        draw_with_profiling(ctx, state)
+      else
+        if window:BeginBody(ctx) then
           draw_with_profiling(ctx, state)
-        else
-          if window:BeginBody(ctx) then
-            draw_with_profiling(ctx, state)
-            window:EndBody(ctx)
-          end
+          window:EndBody(ctx)
         end
       end
-      window:End(ctx)
+    end
+    window:End(ctx)
 
-      ImGui.PopFont(ctx)
-      
-      if style and style.PopMyStyle then 
-        if enable_profiling and window.start_timer then
-          window:start_timer("style_pop")
-        end
-        style.PopMyStyle(ctx)
-        if enable_profiling and window.end_timer then
-          window:end_timer("style_pop")
-        end
-      end
+    ImGui.PopFont(ctx)
 
-      if settings and settings.maybe_flush then 
-        if enable_profiling and window.start_timer then
-          window:start_timer("settings_flush")
-        end
-        settings:maybe_flush()
-        if enable_profiling and window.end_timer then
-          window:end_timer("settings_flush")
-        end
+    if style and style.PopMyStyle then
+      if enable_profiling and window.start_timer then
+        window:start_timer("style_pop")
       end
-      
-      if enable_profiling then
-        state.profiling.total_time = (reaper.time_precise() - state.profiling.frame_start) * 1000
-        if window.profiling then
-          window.profiling.custom_timers["total_frame"] = state.profiling.total_time
-        end
+      style.PopMyStyle(ctx)
+      if enable_profiling and window.end_timer then
+        window:end_timer("style_pop")
       end
-      
-      return open ~= false
-    end,
+    end
 
-    on_destroy = function()
-      if settings and settings.flush then settings:flush() end
-      if opts.on_close then opts.on_close() end
-    end,
-  })
+    if settings and settings.maybe_flush then
+      if enable_profiling and window.start_timer then
+        window:start_timer("settings_flush")
+      end
+      settings:maybe_flush()
+      if enable_profiling and window.end_timer then
+        window:end_timer("settings_flush")
+      end
+    end
+
+    if enable_profiling then
+      state.profiling.total_time = (reaper.time_precise() - state.profiling.frame_start) * 1000
+      if window.profiling then
+        window.profiling.custom_timers["total_frame"] = state.profiling.total_time
+      end
+    end
+
+    return open ~= false
+  end
+
+  local function on_destroy()
+    if toggle_button then set_button_state(0) end
+    if settings and settings.flush then settings:flush() end
+    if opts.on_close then opts.on_close() end
+  end
+
+  -- Main defer loop
+  local function frame()
+    if not runtime.open then
+      on_destroy()
+      return
+    end
+
+    local continue = on_frame()
+    if continue == false then
+      runtime.open = false
+    end
+
+    if runtime.open then
+      reaper.defer(frame)
+    else
+      on_destroy()
+    end
+  end
+
+  function runtime:start()
+    reaper.defer(frame)
+  end
+
+  function runtime:request_close()
+    self.open = false
+  end
 
   state.start_timer = function(name)
     if window.start_timer then

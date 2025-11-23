@@ -171,31 +171,29 @@ local function layout_elements(ctx, elements, available_width, state)
   local layout = {}
   local fixed_total = 0
   local flex_total = 0
-  local spacing = 0
-  
+
+  -- Headers enforce no spacing between elements - use separators for gaps
+  -- This ensures rounding rules work correctly (elements are always flush)
+
   for i, element in ipairs(elements) do
     local width = calculate_element_width(ctx, element, state)
-    
+
     if width then
       fixed_total = fixed_total + width
     else
       flex_total = flex_total + (element.flex or 1)
     end
-    
-    if i > 1 then
-      spacing = spacing + (element.spacing_before or 0)
-    end
-    
+
     layout[i] = {
       element = element,
       fixed_width = width,
       flex = element.flex,
     }
   end
-  
-  local remaining = available_width - fixed_total - spacing
+
+  local remaining = available_width - fixed_total
   local flex_unit = flex_total > 0 and (remaining / flex_total) or 0
-  
+
   for i, item in ipairs(layout) do
     if not item.fixed_width then
       item.width = math.max(0, item.flex * flex_unit)
@@ -203,7 +201,7 @@ local function layout_elements(ctx, elements, available_width, state)
       item.width = item.fixed_width
     end
   end
-  
+
   return layout
 end
 
@@ -254,12 +252,18 @@ local function find_separator_neighbors(elements, separator_index)
   return left_neighbor, right_neighbor
 end
 
-local function calculate_corner_rounding(layout, header_rounding, is_bottom)
+local function calculate_corner_rounding(layout, header_rounding, is_bottom, side)
   local rounding_info = {}
-  
+
   local first_idx = find_first_non_separator(layout)
   local last_idx = find_last_non_separator(layout)
-  
+
+  -- Determine which edges get outer rounding based on side
+  -- "full" = both edges, "left" = left edge only, "right" = right edge only
+  side = side or "full"
+  local use_left_edge = (side == "full" or side == "left")
+  local use_right_edge = (side == "full" or side == "right")
+
   for i, item in ipairs(layout) do
     if is_separator(item.element.type) then
       -- Separators never have rounding
@@ -270,91 +274,71 @@ local function calculate_corner_rounding(layout, header_rounding, is_bottom)
         round_bottom_right = false,
       }
     else
-      -- Default: no rounding (buttons in the middle of a group)
-      local round_left = false
-      local round_right = false
-      
-      -- Round left edge if: first element OR right neighbor of a separator
-      if i == first_idx then
-        round_left = true
-      end
-      
-      -- Round right edge if: last element OR left neighbor of a separator
-      if i == last_idx then
-        round_right = true
-      end
-      
-      -- Check if this element is adjacent to any separator
+      -- Determine if this element is at edges or next to separators
+      -- Only apply edge rounding if this side is being used
+      local is_first = (i == first_idx) and use_left_edge
+      local is_last = (i == last_idx) and use_right_edge
+
+      -- Check if element is adjacent to separators
+      local sep_on_left = false
+      local sep_on_right = false
+
       for j = 1, #layout do
         if is_separator(layout[j].element.type) then
           local left_neighbor, right_neighbor = find_separator_neighbors(layout, j)
           if left_neighbor == i then
-            -- This element is to the left of a separator
-            round_right = true
+            sep_on_right = true  -- Separator is to our right
           end
           if right_neighbor == i then
-            -- This element is to the right of a separator
-            round_left = true
+            sep_on_left = true   -- Separator is to our left
           end
         end
       end
-      
-      -- Apply rounding based on header position (top vs bottom)
-      -- Distinguish rounding caused by separators vs group edges (first/last)
-      local left_due_to_sep, right_due_to_sep = false, false
-      for j = 1, #layout do
-        if is_separator(layout[j].element.type) then
-          local ln, rn = find_separator_neighbors(layout, j)
-          if ln == i then right_due_to_sep = true end
-          if rn == i then left_due_to_sep = true end
-        end
-      end
-      
-      if is_bottom then
-        -- Footer: round TOP corners only for elements adjacent to separators
-        -- Corner-most elements (first/last) keep original BOTTOM rounding
+
+      -- Check for rounding_mode override in element config
+      -- "top" = force top corners, "bottom" = force bottom corners, nil = auto
+      local rounding_mode = item.element.config and item.element.config.rounding_mode
+
+      if rounding_mode == "bottom" then
+        -- Force bottom corners (e.g., transport panel buttons)
         rounding_info[i] = {
-          round_top_left = left_due_to_sep,
-          round_top_right = right_due_to_sep,
-          round_bottom_left = round_left and not left_due_to_sep,
-          round_bottom_right = round_right and not right_due_to_sep,
+          round_top_left = false,
+          round_top_right = false,
+          round_bottom_left = is_first or sep_on_left,
+          round_bottom_right = is_last or sep_on_right,
+          rounding = header_rounding,
+        }
+      elseif rounding_mode == "top" then
+        -- Force top corners
+        rounding_info[i] = {
+          round_top_left = is_first or sep_on_left,
+          round_top_right = is_last or sep_on_right,
+          round_bottom_left = false,
+          round_bottom_right = false,
+          rounding = header_rounding,
+        }
+      elseif is_bottom then
+        -- Footer: bottom corners for edges, top corners toward separators
+        rounding_info[i] = {
+          round_top_left = sep_on_left,
+          round_top_right = sep_on_right,
+          round_bottom_left = is_first and not sep_on_left,
+          round_bottom_right = is_last and not sep_on_right,
           rounding = header_rounding,
         }
       else
-        -- Header (top): standard behavior is top corners
-        -- Special case: if this is a transport panel, use bottom corners instead
-        local use_bottom_rounding = false
-        -- Detect transport panel by checking if any element has transport-specific IDs
-        for _, layout_item in ipairs(layout) do
-          if layout_item.element.id and layout_item.element.id:match("^transport_") then
-            use_bottom_rounding = true
-            break
-          end
-        end
-        
-        if use_bottom_rounding then
-          -- Transport special case: round BOTTOM corners for all buttons
-          rounding_info[i] = {
-            round_top_left = false,
-            round_top_right = false,
-            round_bottom_left = round_left,
-            round_bottom_right = round_right,
-            rounding = header_rounding,
-          }
-        else
-          -- Standard top header: round TOP corners
-          rounding_info[i] = {
-            round_top_left = round_left,
-            round_top_right = round_right,
-            round_bottom_left = false,
-            round_bottom_right = false,
-            rounding = header_rounding,
-          }
-        end
+        -- Header: top corners for edges, bottom corners toward separators
+        rounding_info[i] = {
+          round_top_left = is_first and not sep_on_left,
+          round_top_right = is_last and not sep_on_right,
+          round_bottom_left = sep_on_left,
+          round_bottom_right = sep_on_right,
+          rounding = header_rounding,
+        }
       end
     end
   end
-  
+
   return rounding_info
 end
 
@@ -412,31 +396,29 @@ end
 -- ELEMENT RENDERING
 -- ============================================================================
 
-local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom)
+local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side)
   if not elements or #elements == 0 then
     return 0
   end
-  
+
   local layout = layout_elements(ctx, elements, width, state)
-  local rounding_info = calculate_corner_rounding(layout, header_rounding, is_bottom)
+  local rounding_info = calculate_corner_rounding(layout, header_rounding, is_bottom, side)
   
   local border_overlap = 1
   local cursor_x = x
   local last_non_sep_idx = find_last_non_separator(layout)
-  
+
   for i, item in ipairs(layout) do
     local element = item.element
     local element_width = item.width
-    local spacing_before = element.spacing_before or 0
-    
+
+    -- Apply 1px overlap between adjacent non-separator elements
     if i > 1 then
       local prev_element = layout[i - 1].element
       if prev_element.type ~= 'separator' and element.type ~= 'separator' then
-        spacing_before = spacing_before - border_overlap
+        cursor_x = cursor_x - border_overlap
       end
     end
-    
-    cursor_x = cursor_x + spacing_before
     
     if i == last_non_sep_idx and element.type ~= 'separator' then
       local remaining_space = (x + width) - cursor_x
@@ -569,15 +551,12 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     local center_width = 0
     for _, item in ipairs(center_layout) do
       center_width = center_width + item.width
-      if item.element.spacing_before then
-        center_width = center_width + item.element.spacing_before
-      end
     end
 
     local valign = config.valign or "top"
     -- Pixel snap center position to prevent blurry borders
     local center_x = math.floor(content_x + (content_width - center_width) / 2 + 0.5)
-    render_elements(ctx, dl, center_x, content_y, center_width, content_height, center_elements, state, header_rounding, is_bottom, valign)
+    render_elements(ctx, dl, center_x, content_y, center_width, content_height, center_elements, state, header_rounding, is_bottom, valign, "full")
 
     -- Draw clip edge borders if content overflows (use actual rendered width, not allocated content_width)
     draw_clip_edge_borders(dl, x, y, width, height, center_x, center_x + center_width)
@@ -595,25 +574,19 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     local left_width = 0
     for _, item in ipairs(left_layout) do
       left_width = left_width + item.width
-      if item.element.spacing_before then
-        left_width = left_width + item.element.spacing_before
-      end
     end
 
     local right_width = 0
     for _, item in ipairs(right_layout) do
       right_width = right_width + item.width
-      if item.element.spacing_before then
-        right_width = right_width + item.element.spacing_before
-      end
     end
 
-    -- Render left-aligned elements
-    render_elements(ctx, dl, content_x, content_y, left_width, content_height, left_elements, state, header_rounding, is_bottom)
+    -- Render left-aligned elements (only left edge gets outer rounding)
+    render_elements(ctx, dl, content_x, content_y, left_width, content_height, left_elements, state, header_rounding, is_bottom, nil, "left")
 
-    -- Render right-aligned elements
+    -- Render right-aligned elements (only right edge gets outer rounding)
     local right_x = content_x + content_width - right_width
-    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom)
+    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom, nil, "right")
 
     -- Draw clip edge borders if content overflows
     draw_clip_edge_borders(dl, x, y, width, height, content_x, content_x + left_width, right_x, right_x + right_width)
@@ -624,13 +597,10 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     local right_width = 0
     for _, item in ipairs(right_layout) do
       right_width = right_width + item.width
-      if item.element.spacing_before then
-        right_width = right_width + item.element.spacing_before
-      end
     end
 
     local right_x = content_x + content_width - right_width
-    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom)
+    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom, nil, "full")
 
     -- Draw clip edge borders if content overflows (use actual rendered width)
     draw_clip_edge_borders(dl, x, y, width, height, right_x, right_x + right_width)
@@ -642,12 +612,9 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     local left_width = 0
     for _, item in ipairs(left_layout) do
       left_width = left_width + item.width
-      if item.element.spacing_before then
-        left_width = left_width + item.element.spacing_before
-      end
     end
 
-    render_elements(ctx, dl, content_x, content_y, content_width, content_height, left_elements, state, header_rounding, is_bottom)
+    render_elements(ctx, dl, content_x, content_y, content_width, content_height, left_elements, state, header_rounding, is_bottom, nil, "full")
 
     -- Draw clip edge borders if content overflows (use actual rendered width, not allocated content_width)
     draw_clip_edge_borders(dl, x, y, width, height, content_x, content_x + left_width)

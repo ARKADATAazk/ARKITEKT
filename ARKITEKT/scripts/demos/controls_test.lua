@@ -101,8 +101,84 @@ local function create_test_panel()
         },
       },
     },
+
+    -- Sidebar test - vertical buttons on left
+    left_sidebar = {
+      enabled = true,
+      width = 40,
+      bg_color = hexrgb("#1E1E1E"),
+      valign = "center",
+      button_size = 30,
+      button_spacing = 4,
+      rounding = 4,
+      elements = {
+        {
+          id = "sidebar_add",
+          config = {
+            label = "+",
+            tooltip = "Add item",
+            on_click = function()
+              reaper.ShowConsoleMsg("Sidebar Add clicked!\n")
+            end,
+          },
+        },
+        {
+          id = "sidebar_remove",
+          config = {
+            label = "-",
+            tooltip = "Remove item",
+            on_click = function()
+              reaper.ShowConsoleMsg("Sidebar Remove clicked!\n")
+            end,
+          },
+        },
+        {
+          id = "sidebar_settings",
+          config = {
+            label = "⚙",
+            tooltip = "Settings",
+            on_click = function()
+              reaper.ShowConsoleMsg("Sidebar Settings clicked!\n")
+            end,
+          },
+        },
+      },
+    },
+
+    -- Right sidebar test
+    right_sidebar = {
+      enabled = true,
+      width = 40,
+      bg_color = hexrgb("#1E1E1E"),
+      valign = "top",
+      button_size = 30,
+      button_spacing = 4,
+      rounding = 4,
+      elements = {
+        {
+          id = "sidebar_up",
+          config = {
+            label = "▲",
+            tooltip = "Move up",
+            on_click = function()
+              reaper.ShowConsoleMsg("Sidebar Up clicked!\n")
+            end,
+          },
+        },
+        {
+          id = "sidebar_down",
+          config = {
+            label = "▼",
+            tooltip = "Move down",
+            on_click = function()
+              reaper.ShowConsoleMsg("Sidebar Down clicked!\n")
+            end,
+          },
+        },
+      },
+    },
   }
-  
+
   return Panel.new({
     id = "controls_test_panel",
     config = panel_config,

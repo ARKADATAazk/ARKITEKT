@@ -22,6 +22,21 @@ do
   if ok then Icon = mod end
 end
 
+-- Format version string: extract numbers and dots, prepend "v"
+local function format_version(version)
+  if not version or version == "" then return nil end
+
+  -- Extract only numbers and dots
+  local clean = version:gsub("[^%d%.]", "")
+
+  -- Remove leading/trailing dots
+  clean = clean:gsub("^%.+", ""):gsub("%.+$", "")
+
+  if clean == "" then return nil end
+
+  return "v" .. clean
+end
+
 function M.new(opts)
   -- Merge user opts with framework defaults
   local config = Config.deepMerge(Constants.TITLEBAR, opts or {})
@@ -37,7 +52,7 @@ function M.new(opts)
   local titlebar = {
     -- Text content
     title           = config.title or "Window",
-    version         = config.version,
+    version         = format_version(config.version),
 
     -- Fonts
     title_font      = config.title_font,
@@ -72,6 +87,7 @@ function M.new(opts)
     icon_spacing    = config.icon_spacing,
     icon_color      = config.icon_color,
     icon_draw       = config.icon_draw,
+    icon_image      = nil,  -- Will be loaded on first draw
 
     -- State
     enable_maximize = config.enable_maximize ~= false,
@@ -118,11 +134,27 @@ function M.new(opts)
   end
 
   function titlebar:_draw_icon(ctx, x, y, color)
+    -- Custom icon draw function takes priority
     if self.icon_draw then
       self.icon_draw(ctx, x, y, self.icon_size, color)
-    elseif Icon and Icon.draw_rearkitekt then
+      return
+    end
+
+    -- Try PNG image first (load once and cache)
+    if Icon and Icon.load_image and Icon.draw_png then
+      if not self.icon_image then
+        self.icon_image = Icon.load_image(ctx, "ARKITEKT")
+      end
+      if self.icon_image and Icon.draw_png(ctx, x, y, self.icon_size, self.icon_image) then
+        return
+      end
+    end
+
+    -- Fall back to vector drawing
+    if Icon and Icon.draw_rearkitekt then
       Icon.draw_rearkitekt(ctx, x, y, self.icon_size, color)
     else
+      -- Ultimate fallback: simple circle
       local draw_list = ImGui.GetWindowDrawList(ctx)
       local dpi = ImGui.GetWindowDpiScale(ctx)
       local r = (self.icon_size * 0.5) * dpi
@@ -135,7 +167,7 @@ function M.new(opts)
   end
   
   function titlebar:set_version(version)
-    self.version = version and tostring(version) or nil
+    self.version = format_version(version)
   end
   
   function titlebar:set_maximized(state)

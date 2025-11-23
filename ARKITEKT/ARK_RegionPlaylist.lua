@@ -3,31 +3,7 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK
-do
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, "S").source:sub(2)
-  local path = src:match("(.*"..sep..")")
-  while path and #path > 3 do
-    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
-    local f = io.open(init, "r")
-    if f then
-      f:close()
-      local Init = dofile(init)
-      ARK = Init.bootstrap()
-      break
-    end
-    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
-  end
-  if not ARK then
-    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
-    return
-  end
-end
-
--- Local references
-local SRC = debug.getinfo(1,"S").source:sub(2)
-local HERE = ARK.dirname(SRC) or "."
+local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "rearkitekt/app/init/init.lua").bootstrap()
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
@@ -48,15 +24,10 @@ local Colors = require("rearkitekt.core.colors")
 
 local hexrgb = Colors.hexrgb
 
-local SettingsOK, Settings = pcall(require, "rearkitekt.core.settings")
-local StyleOK, Style = pcall(require, "rearkitekt.gui.style.imgui_defaults")
-
-local settings = nil
-if SettingsOK and type(Settings.new) == "function" then
-  local data_dir = ARK.get_data_dir("RegionPlaylist")
-  local ok, inst = pcall(Settings.new, data_dir, "settings.json")
-  if ok then settings = inst end
-end
+-- State needs settings for initialization - Shell will auto-create from app_name
+local Settings = require("rearkitekt.core.settings")
+local data_dir = ARK.get_data_dir("RegionPlaylist")
+local settings = Settings.new(data_dir, "settings.json")
 
 State.initialize(settings)
 
@@ -79,7 +50,6 @@ Shell.run({
   version      = "v0.1.0",
   draw         = function(ctx, shell_state) gui:draw(ctx, shell_state.window, shell_state) end,
   settings     = settings,
-  style        = StyleOK and Style or nil,
   initial_pos  = { x = 120, y = 120 },
   initial_size = { w = 1000, h = 700 },
   icon_color   = hexrgb("#41E0A3"),
@@ -87,7 +57,7 @@ Shell.run({
   min_size     = { w = 700, h = 500 },
   get_status_func = StatusConfig.get_status_func and StatusConfig.get_status_func(State) or nil,
   fonts        = {
-    time_display = 20,  -- Transport time display font
-    icons = 20,         -- Icon font (remixicon) for corner buttons
+    time_display = 20,
+    icons = 20,
   },
 })
