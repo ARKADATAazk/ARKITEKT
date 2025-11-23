@@ -74,10 +74,10 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
   local left_mouse_down = (mouse_key & 1) == 1
   local right_mouse_down = (mouse_key & 2) == 2
 
-  -- Right-click cancels the drag operation
+  -- Right-click closes the script instantly
   if right_mouse_down then
-    state.end_drag()
-    return false  -- Don't insert, just cancel
+    state.should_close_after_drop = true
+    return false
   end
 
   -- Check ALT modifier for toggling pooled MIDI copy mode
