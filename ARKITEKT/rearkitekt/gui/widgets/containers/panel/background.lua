@@ -9,8 +9,8 @@ local M = {}
 
 -- Texture cache for baked patterns
 local texture_cache = {}
-local cache_order = {}  -- Track insertion order for LRU eviction
-local MAX_CACHE_SIZE = 32  -- Limit to prevent attachment overflow
+local total_attachments = 0  -- Track total attachments (never decreases)
+local MAX_ATTACHMENTS = 64  -- Hard limit on total textures ever created
 
 -- ============================================================================
 -- TEXTURE BAKING: Create tileable pattern textures for performance
@@ -46,13 +46,6 @@ local function get_pattern_cache_key(pattern_type, spacing, size, color)
   return string.format("%s_%d_%.1f_%d_%d_%d_%d", pattern_type, spacing, size, r, g, b, a), norm_color
 end
 
--- Evict oldest cache entry
-local function evict_oldest()
-  if #cache_order > 0 then
-    local oldest_key = table.remove(cache_order, 1)
-    texture_cache[oldest_key] = nil
-  end
-end
 
 -- Create a baked dot pattern texture
 local function create_dot_texture(spacing, dot_size, color)
@@ -232,34 +225,21 @@ end
 local function get_pattern_texture(ctx, pattern_type, spacing, size, color)
   local key, norm_color = get_pattern_cache_key(pattern_type, spacing, size, color)
 
+  -- Check cache first
   if texture_cache[key] then
     local cached = texture_cache[key]
     -- Validate the texture is still valid
     if ImGui.ValidatePtr and ImGui.ValidatePtr(cached.img, 'ImGui_Image*') then
-      -- Move to end of cache_order for LRU
-      for i, k in ipairs(cache_order) do
-        if k == key then
-          table.remove(cache_order, i)
-          break
-        end
-      end
-      table.insert(cache_order, key)
       return cached.img, cached.size
     else
-      -- Invalid, remove from cache and cache_order
+      -- Invalid, remove from cache (but attachment count stays)
       texture_cache[key] = nil
-      for i, k in ipairs(cache_order) do
-        if k == key then
-          table.remove(cache_order, i)
-          break
-        end
-      end
     end
   end
 
-  -- Evict if cache is full
-  while #cache_order >= MAX_CACHE_SIZE do
-    evict_oldest()
+  -- Don't create new textures if we've hit the limit - fall back to immediate mode
+  if total_attachments >= MAX_ATTACHMENTS then
+    return nil, nil
   end
 
   -- Create new texture using normalized color
@@ -276,9 +256,9 @@ local function get_pattern_texture(ctx, pattern_type, spacing, size, color)
     -- Attach to context to prevent garbage collection
     if ctx and ImGui.Attach then
       ImGui.Attach(ctx, img)
+      total_attachments = total_attachments + 1
     end
     texture_cache[key] = { img = img, size = tex_size }
-    table.insert(cache_order, key)
   end
 
   return img, tex_size
@@ -454,14 +434,10 @@ function M.draw(ctx, dl, x1, y1, x2, y2, pattern_cfg)
 end
 
 -- Clear cached textures (call on shutdown or when patterns change)
+-- Note: This clears our cache but ImGui attachments persist until context is destroyed
 function M.clear_cache()
-  for key, cached in pairs(texture_cache) do
-    if cached.img and ImGui.ValidatePtr and ImGui.ValidatePtr(cached.img, 'ImGui_Image*') then
-      -- Note: ImGui handles cleanup automatically, but we clear our references
-    end
-  end
   texture_cache = {}
-  cache_order = {}
+  -- Don't reset total_attachments - those ImGui attachments still exist
 end
 
 return M
