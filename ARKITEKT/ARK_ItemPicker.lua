@@ -42,6 +42,7 @@ end
 
 -- Load required modules
 local ImGui = ARK.ImGui
+local Shell = require('rearkitekt.app.runtime.shell')
 local Fonts = require('rearkitekt.app.assets.fonts')
 local OverlayManager = require('rearkitekt.gui.widgets.overlays.overlay.manager')
 local OverlayDefaults = require('rearkitekt.gui.widgets.overlays.overlay.defaults')
@@ -140,22 +141,19 @@ if USE_OVERLAY then
     on_close = cleanup,
   }))
 
-  -- Inline runtime loop
-  local runtime = {
+  -- Use Shell.run_loop for defer loop
+  Shell.run_loop({
     ctx = ctx,
-    open = true,
-  }
+    on_frame = function(ctx)
+      -- Show ImGui debug window when profiling
+      if profiler_enabled then
+        ImGui.ShowMetricsWindow(ctx, true)
+      end
 
-  local function on_frame()
-    -- Show ImGui debug window when profiling
-    if profiler_enabled then
-      ImGui.ShowMetricsWindow(ctx, true)
-    end
-
-    -- Check if should close after drop
-    if State.should_close_after_drop then
-      return false  -- Stop running, on_destroy will call cleanup
-    end
+      -- Check if should close after drop
+      if State.should_close_after_drop then
+        return false
+      end
 
     -- When dragging, skip overlay entirely and just render drag handlers
     if State.dragging then
@@ -168,56 +166,22 @@ if USE_OVERLAY then
       })
       ImGui.PopFont(ctx)
 
-      -- Check again after draw in case flag was set during draw
-      if State.should_close_after_drop then
-        return false  -- Stop running, on_destroy will call cleanup
+        -- Check again after draw in case flag was set during draw
+        if State.should_close_after_drop then
+          return false
+        end
+        return true
+      else
+        -- Normal mode: let overlay manager handle everything
+        overlay_mgr:render(ctx)
+        return overlay_mgr:is_active()
       end
-
-      return true  -- Keep running
-    else
-      -- Normal mode: let overlay manager handle everything
-      overlay_mgr:render(ctx)
-      return overlay_mgr:is_active()
-    end
-  end
-
-  local function on_destroy()
-    cleanup()
-  end
-
-  -- Main defer loop
-  local function frame()
-    if not runtime.open then
-      on_destroy()
-      return
-    end
-
-    local continue = on_frame()
-    if continue == false then
-      runtime.open = false
-    end
-
-    if runtime.open then
-      reaper.defer(frame)
-    else
-      on_destroy()
-    end
-  end
-
-  function runtime:start()
-    reaper.defer(frame)
-  end
-
-  function runtime:request_close()
-    self.open = false
-  end
-
-  runtime:start()
+    end,
+    on_close = cleanup,
+  })
 
 else
   -- NORMAL WINDOW MODE (using Shell)
-  local Shell = require('rearkitekt.app.runtime.shell')
-
   Shell.run({
     title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
     version = "1.0.0",
