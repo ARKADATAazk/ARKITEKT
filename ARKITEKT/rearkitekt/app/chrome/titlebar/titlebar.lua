@@ -140,10 +140,11 @@ function M.new(opts)
       return
     end
 
-    -- Try PNG image first (load once and cache)
+    -- Try PNG image first (load once and cache, DPI-aware)
     if Icon and Icon.load_image and Icon.draw_png then
       if not self.icon_image then
-        self.icon_image = Icon.load_image(ctx, "ARKITEKT")
+        local dpi = ImGui.GetWindowDpiScale(ctx) or 1.0
+        self.icon_image = Icon.load_image(ctx, "ARKITEKT", dpi)
       end
       if self.icon_image and Icon.draw_png(ctx, x, y, self.icon_size, self.icon_image) then
         return
@@ -226,12 +227,13 @@ function M.new(opts)
       local title_x_offset = 0
       if self.show_icon then
         local win_x, win_y = ImGui.GetWindowPos(ctx)
+        local native_icon_size = 22  -- Native PNG size
         local icon_x = win_x + self.pad_h
-        local icon_y = win_y + (self.height - self.icon_size) * 0.5
+        local icon_y = win_y + (self.height - native_icon_size) * 0.5
         local icon_color = self.icon_color or text_color
-        
-        ImGui.SetCursorPos(ctx, self.pad_h, (self.height - self.icon_size) * 0.5)
-        ImGui.InvisibleButton(ctx, "##icon_button", self.icon_size, self.icon_size)
+
+        ImGui.SetCursorPos(ctx, self.pad_h, (self.height - native_icon_size) * 0.5)
+        ImGui.InvisibleButton(ctx, "##icon_button", native_icon_size, native_icon_size)
 
         local icon_hovered = ImGui.IsItemHovered(ctx)
         local icon_left_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
@@ -288,7 +290,7 @@ function M.new(opts)
           ContextMenu.end_menu(ctx)
         end
 
-        title_x_offset = self.icon_size + self.icon_spacing
+        title_x_offset = native_icon_size + self.icon_spacing
         ImGui.SetCursorPos(ctx, self.pad_h + title_x_offset, y_center)
       end
       
