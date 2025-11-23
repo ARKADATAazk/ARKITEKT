@@ -438,22 +438,12 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
       table.insert(items_to_insert, item)
     end
 
-    -- Handle pooled MIDI toggle state (Action 41071)
-    -- Store current state and toggle if needed
-    local original_pooled_state = state.original_pooled_midi_state
-    local current_pooled_state = reaper.GetToggleCommandState(41071) == 1
-
+    -- Handle pooled MIDI copy behavior
     -- Ensure use_pooled_copy is boolean (not nil)
     local want_pooled = use_pooled_copy == true
 
     -- Debug: show toggle state
-    reaper.ShowConsoleMsg(string.format("[TOGGLE DEBUG] want=%s, current=%s, will_toggle=%s\n",
-      tostring(want_pooled), tostring(current_pooled_state), tostring(want_pooled ~= current_pooled_state)))
-
-    -- Toggle if the desired state differs from current
-    if want_pooled ~= current_pooled_state then
-      reaper.Main_OnCommand(41071, 0)  -- Toggle pooled MIDI source
-    end
+    reaper.ShowConsoleMsg(string.format("[TOGGLE DEBUG] want_pooled=%s\n", tostring(want_pooled)))
 
     -- Insert all items
     reaper.SelectAllMediaItems(0, false)
@@ -463,24 +453,24 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
       reaper.SetMediaItemSelected(insert_item, true)
 
       -- Create copy using ApplyNudge (nudgewhat=5 = duplicate/copies mode)
-      -- The pooled state toggle controls whether copies share MIDI source
+      -- ApplyNudge always creates pooled copies for pooled sources
       reaper.ApplyNudge(0, 1, 5, 1, current_pos, false, 1)
       local inserted = reaper.GetSelectedMediaItem(0, 0)
 
       if inserted then
         reaper.MoveMediaItemToTrack(inserted, track)
 
+        -- If user doesn't want pooled copy, unpool the inserted item
+        if not want_pooled then
+          reaper.SetMediaItemSelected(inserted, true)
+          reaper.Main_OnCommand(41613, 0)  -- Unpool MIDI item
+        end
+
         -- Calculate next position (current item length)
         local item_len = reaper.GetMediaItemInfo_Value(inserted, "D_LENGTH")
         current_pos = current_pos + item_len
       end
       reaper.SelectAllMediaItems(0, false)
-    end
-
-    -- Restore original pooled state if we changed it
-    local final_pooled_state = reaper.GetToggleCommandState(41071) == 1
-    if original_pooled_state ~= nil and final_pooled_state ~= original_pooled_state then
-      reaper.Main_OnCommand(41071, 0)  -- Toggle back to original
     end
 
     -- Cleanup drag state
