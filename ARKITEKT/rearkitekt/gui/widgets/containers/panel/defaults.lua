@@ -96,6 +96,37 @@ M.DEFAULTS = {
   -- },
 
   corner_buttons_always_visible = false, -- Show corner buttons even with header
+
+  -- Sidebar configuration (vertical button bars on left/right sides)
+  left_sidebar = {
+    enabled = false,
+    width = 36,
+    bg_color = PC.bg_header,
+    border_color = PC.border_header,
+    valign = "center",  -- "top", "center", "bottom"
+    padding = {
+      top = 4,
+      bottom = 4,
+    },
+    button_size = 28,
+    button_spacing = 4,
+    elements = {},  -- Array of button configs
+  },
+
+  right_sidebar = {
+    enabled = false,
+    width = 36,
+    bg_color = PC.bg_header,
+    border_color = PC.border_header,
+    valign = "center",
+    padding = {
+      top = 4,
+      bottom = 4,
+    },
+    button_size = 28,
+    button_spacing = 4,
+    elements = {},
+  },
 }
 
 -- Standard element styling (used by all header elements)

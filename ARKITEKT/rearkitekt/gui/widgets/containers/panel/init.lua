@@ -556,6 +556,72 @@ local function draw_corner_buttons(ctx, dl, x, y, w, h, config, panel_id, panel_
 end
 
 -- ============================================================================
+-- SIDEBAR RENDERING
+-- ============================================================================
+
+local function draw_sidebar(ctx, dl, x, y, width, height, sidebar_cfg, panel_id, side)
+  if not sidebar_cfg or not sidebar_cfg.enabled then return 0 end
+
+  local elements = sidebar_cfg.elements or {}
+  if #elements == 0 then return width end
+
+  local btn_size = sidebar_cfg.button_size or 28
+  local btn_spacing = sidebar_cfg.button_spacing or 4
+  local pad_top = sidebar_cfg.padding and sidebar_cfg.padding.top or 4
+  local pad_bottom = sidebar_cfg.padding and sidebar_cfg.padding.bottom or 4
+
+  -- Draw sidebar background
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, sidebar_cfg.bg_color or 0x1A1A1AFF)
+
+  -- Calculate total buttons height
+  local total_btn_height = (#elements * btn_size) + ((#elements - 1) * btn_spacing)
+  local available_height = height - pad_top - pad_bottom
+
+  -- Calculate start Y based on valign
+  local start_y
+  local valign = sidebar_cfg.valign or "center"
+  if valign == "top" then
+    start_y = y + pad_top
+  elseif valign == "bottom" then
+    start_y = y + height - pad_bottom - total_btn_height
+  else -- center
+    start_y = y + pad_top + (available_height - total_btn_height) / 2
+  end
+
+  -- Center buttons horizontally in sidebar
+  local btn_x = x + (width - btn_size) / 2
+
+  -- Draw each button
+  for i, element in ipairs(elements) do
+    local btn_y = start_y + (i - 1) * (btn_size + btn_spacing)
+    local btn_id = panel_id .. "_sidebar_" .. side .. "_" .. (element.id or i)
+
+    -- Determine rounding based on position
+    local is_first = (i == 1)
+    local is_last = (i == #elements)
+    local rounding = sidebar_cfg.rounding or 4
+
+    local corner_rounding = {
+      round_top_left = is_first,
+      round_top_right = is_first,
+      round_bottom_left = is_last,
+      round_bottom_right = is_last,
+      rounding = rounding,
+    }
+
+    -- Merge element config with defaults
+    local btn_config = ConfigUtil.merge_safe(element.config or {}, PanelConfig.ELEMENT_STYLE.button)
+    btn_config.id = btn_id
+    btn_config.corner_rounding = corner_rounding
+
+    -- Draw the button
+    Button.draw(ctx, dl, btn_x, btn_y, btn_size, btn_size, btn_config, {})
+  end
+
+  return width
+end
+
+-- ============================================================================
 -- MAIN RENDERING
 -- ============================================================================
 
@@ -563,17 +629,17 @@ function Panel:begin_draw(ctx)
   -- Push unique ID scope for entire panel
   ImGui.PushID(ctx, self.id)
   self._id_scope_pushed = true
-  
+
   local dt = ImGui.GetDeltaTime(ctx)
   self:update(dt)
-  
+
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
   local w = self.width or avail_w
   local h = self.height or avail_h
-  
+
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   local dl = ImGui.GetWindowDrawList(ctx)
-  
+
   local x1, y1 = cursor_x, cursor_y
   local x2, y2 = x1 + w, y1 + h
   
@@ -689,25 +755,42 @@ function Panel:begin_draw(ctx)
     self.config.header = saved_header
   end
 
+  -- Draw sidebars
+  local left_sidebar_width = 0
+  local right_sidebar_width = 0
+  local sidebar_height = content_y2 - content_y1
+
+  local left_sidebar_cfg = self.config.left_sidebar
+  if left_sidebar_cfg and left_sidebar_cfg.enabled then
+    left_sidebar_width = left_sidebar_cfg.width or 36
+    draw_sidebar(ctx, dl, x1, content_y1, left_sidebar_width, sidebar_height, left_sidebar_cfg, self.id, "left")
+  end
+
+  local right_sidebar_cfg = self.config.right_sidebar
+  if right_sidebar_cfg and right_sidebar_cfg.enabled then
+    right_sidebar_width = right_sidebar_cfg.width or 36
+    draw_sidebar(ctx, dl, x2 - right_sidebar_width, content_y1, right_sidebar_width, sidebar_height, right_sidebar_cfg, self.id, "right")
+  end
+
   -- Store panel bounds for corner buttons (drawn later in end_draw to be on top)
   self._corner_button_bounds = {x1, y1, w, h}
 
-  -- Calculate content area
+  -- Calculate content area (accounting for sidebars)
   local border_inset = self.config.border_thickness
-  local child_x = x1 + border_inset
+  local child_x = x1 + border_inset + left_sidebar_width
   local child_y = content_y1 + border_inset
-  
+
   self.child_x = child_x
   self.child_y = child_y
-  
+
   local scrollbar_width = 0
   if self.scrollbar then
     scrollbar_width = self.config.scroll.scrollbar_config.width
   end
-  
+
   ImGui.SetCursorScreenPos(ctx, child_x, child_y)
-  
-  local child_w = w - (border_inset * 2) - scrollbar_width
+
+  local child_w = w - (border_inset * 2) - scrollbar_width - left_sidebar_width - right_sidebar_width
   local child_h = (content_y2 - content_y1) - (border_inset * 2)
   
   if child_w < 1 then child_w = 1 end
