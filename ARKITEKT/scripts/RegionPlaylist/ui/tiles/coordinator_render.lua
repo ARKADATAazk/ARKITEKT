@@ -15,6 +15,8 @@ local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 local SWSImporter = require('RegionPlaylist.storage.sws_importer')
 local ModalDialog = require('rearkitekt.gui.widgets.overlays.overlay.modal_dialog')
 local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
+local ColorPickerMenu = require('rearkitekt.gui.widgets.menus.color_picker_menu')
+local Persistence = require('RegionPlaylist.storage.persistence')
 
 local M = {}
 
@@ -347,6 +349,96 @@ function M.draw_pool(self, ctx, regions, height)
       if #rids > 0 then
         local RegionOps = require('rearkitekt.reaper.region_operations')
         RegionOps.paste_regions_at_cursor(rids)
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    ContextMenu.end_menu(ctx)
+  end
+
+  -- Pool tile right-click context menu
+  if self._pool_tile_context_visible then
+    ImGui.OpenPopup(ctx, "PoolTileContextMenu")
+    self._pool_tile_context_visible = false
+  end
+
+  if ContextMenu.begin(ctx, "PoolTileContextMenu") then
+    local selected_keys = self._pool_tile_context_keys or {}
+
+    -- Apply Random Color (same color for all selected)
+    if ContextMenu.item(ctx, "Apply Random Color") then
+      if #selected_keys > 0 and self.controller then
+        local color = Persistence.generate_chip_color()
+        local rids, playlist_ids = extract_pool_selection(self.pool_grid and self.pool_grid.selection)
+
+        if #rids > 0 then
+          self.controller:set_region_colors_batch(rids, color)
+        end
+        for _, playlist_id in ipairs(playlist_ids) do
+          self.controller:set_playlist_color(playlist_id, color)
+        end
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    -- Apply Random Colors (different color for each)
+    if ContextMenu.item(ctx, "Apply Random Colors") then
+      if #selected_keys > 0 and self.controller then
+        for _, key in ipairs(selected_keys) do
+          local color = Persistence.generate_chip_color()
+          local rid = key:match("^pool_(%d+)$")
+          if rid then
+            self.controller:set_region_colors_batch({tonumber(rid)}, color)
+          else
+            local playlist_id = key:match("^pool_playlist_(.+)$")
+            if playlist_id then
+              self.controller:set_playlist_color(playlist_id, color)
+            end
+          end
+        end
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ContextMenu.separator(ctx) then end
+
+    -- Color picker submenu
+    ColorPickerMenu.render(ctx, {
+      on_change = function(color)
+        if self.controller then
+          local rids, playlist_ids = extract_pool_selection(self.pool_grid and self.pool_grid.selection)
+          if #rids > 0 then
+            self.controller:set_region_colors_batch(rids, color)
+          end
+          for _, playlist_id in ipairs(playlist_ids) do
+            self.controller:set_playlist_color(playlist_id, color)
+          end
+        end
+      end
+    })
+
+    if ContextMenu.separator(ctx) then end
+
+    -- Batch Rename & Recolor
+    if ContextMenu.item(ctx, "Batch Rename & Recolor...") then
+      if #selected_keys > 0 then
+        BatchRenameModal.open(#selected_keys, function(pattern)
+          if self.on_pool_batch_rename then
+            self.on_pool_batch_rename(selected_keys, pattern)
+          end
+        end, {
+          item_type = "items",
+          on_rename_and_recolor = function(pattern, color)
+            if self.on_pool_batch_rename_and_recolor then
+              self.on_pool_batch_rename_and_recolor(selected_keys, pattern, color)
+            end
+          end,
+          on_recolor = function(color)
+            if self.on_pool_batch_recolor then
+              self.on_pool_batch_recolor(selected_keys, color)
+            end
+          end
+        })
       end
       ImGui.CloseCurrentPopup(ctx)
     end

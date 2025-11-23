@@ -262,6 +262,20 @@ local function create_behaviors(rt)
         })
       end
     end,
+
+    -- Right-click: Open context menu for tile
+    ['click:right'] = function(grid, key, selected_keys)
+      -- If right-clicked item isn't selected, select only it
+      if not grid.selection:is_selected(key) then
+        grid.selection:clear()
+        grid.selection:select(key)
+        selected_keys = {key}
+      end
+
+      -- Store state for context menu
+      rt._pool_tile_context_keys = selected_keys
+      rt._pool_tile_context_visible = true
+    end,
   }
 end
 
