@@ -10,6 +10,7 @@ local Config = require('ThemeAdjuster.core.config')
 local Theme = require('ThemeAdjuster.core.theme')
 local Colors = require('rearkitekt.core.colors')
 local PackageModal = require('ThemeAdjuster.ui.views.package_modal')
+local Dropdown = require('rearkitekt.gui.widgets.inputs.dropdown')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -612,54 +613,67 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
 
   -- Show inline ZIP picker for ZIP modes
   if is_zip_mode then
-    ImGui.SameLine(ctx)
-    ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 8)
-
     -- Lazy-load available ZIPs
     if #self.available_zips == 0 then
       self.available_zips = Theme.list_theme_zips()
     end
 
     if #self.available_zips > 0 then
-      -- Create display list (just filenames)
-      local zip_names = {}
-      local current_index = 0
+      -- Build dropdown options
+      local options = {}
+      local current_value = nil
 
       for i, zip_path in ipairs(self.available_zips) do
         local name = zip_path:match("[^\\/]+$") or zip_path
-        table.insert(zip_names, name)
+        table.insert(options, {
+          value = zip_path,
+          label = name,
+        })
 
         -- If this ZIP is currently linked, select it
         if zip_name and name == zip_name then
-          current_index = i
+          current_value = zip_path
         end
       end
 
-      -- Use current_index if we found a match, otherwise use stored selection
-      local display_index = (current_index > 0) and current_index or self.selected_zip_index
+      -- Set current value before drawing
+      if current_value then
+        Dropdown.set_value("zip_picker_state", current_value)
+      end
 
-      ImGui.SetNextItemWidth(ctx, 220)
-      local changed, new_index = ImGui.Combo(ctx, "##zip_picker", display_index, table.concat(zip_names, "\0") .. "\0")
+      -- Position for dropdown (on same line after status)
+      ImGui.SameLine(ctx)
+      local cursor_x = ImGui.GetCursorPosX(ctx) + 8
+      ImGui.SetCursorPosX(ctx, cursor_x)
+      local screen_x, screen_y = ImGui.GetCursorScreenPos(ctx)
 
-      if changed and new_index > 0 then
-        self.selected_zip_index = new_index
-        local selected_zip = self.available_zips[new_index]
-        if selected_zip then
-          -- Build cache from selected ZIP
-          local img_dir, err = Theme.build_cache_from_zip(info.theme_name, selected_zip)
-          if img_dir then
-            -- Trigger package rescan
-            local packages = PackageManager.scan_packages(nil, self.State.get_demo_mode())
-            self.State.set_packages(packages)
-            self.package_model.index = packages
+      -- Draw dropdown using rearkitekt widget
+      local dropdown_width = 220
+      local dropdown_height = 20
+      local _, changed = Dropdown.draw(ctx, dl, screen_x, screen_y, dropdown_width, dropdown_height, {
+        id = "zip_picker",
+        options = options,
+        on_change = function(selected_zip)
+          if selected_zip then
+            -- Build cache from selected ZIP
+            local img_dir, err = Theme.build_cache_from_zip(info.theme_name, selected_zip)
+            if img_dir then
+              -- Trigger package rescan
+              local packages = PackageManager.scan_packages(nil, self.State.get_demo_mode())
+              self.State.set_packages(packages)
+              self.package_model.index = packages
 
-            -- Refresh grid
-            if self.grid then
-              self:refresh_package_model()
+              -- Refresh grid
+              if self.grid then
+                self:refresh_package_model()
+              end
             end
           end
-        end
-      end
+        end,
+      }, "zip_picker_state")
+
+      -- Advance cursor past dropdown
+      ImGui.SetCursorPosX(ctx, cursor_x + dropdown_width)
 
       -- Show arrow and theme name for linked states
       if status == "linked-ready" or status == "zip-ready" or status == "linked-needs-build" then
