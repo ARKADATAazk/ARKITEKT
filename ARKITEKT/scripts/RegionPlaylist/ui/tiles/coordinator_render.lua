@@ -14,20 +14,9 @@ local State = require('RegionPlaylist.core.app_state')
 local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 local SWSImporter = require('RegionPlaylist.storage.sws_importer')
 local ModalDialog = require('rearkitekt.gui.widgets.overlays.overlay.modal_dialog')
-local ColorPickerWindow = require('rearkitekt.gui.widgets.tools.color_picker_window')
 local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
 
 local M = {}
-
--- Color picker layout constants
-local COLOR_PICKER = {
-  size = 130,
-  child_height_extra = 20,
-  position_offset_y = 10,
-  close_button_size = 16,
-  close_button_offset_x = 13,
-  close_button_offset_y = 28,
-}
 
 -- Modal state
 local sws_result_data = nil
@@ -330,60 +319,12 @@ function M.draw_pool(self, ctx, regions, height)
   self.pool_grid.fixed_tile_h = responsive_height
   self.pool_grid.gap = raw_gap
 
-  -- Disable background deselection when color picker or action menu is visible
-  local should_block_background_clicks = self._pool_color_picker_visible or
-                                          ImGui.IsPopupOpen(ctx, "PoolActionsMenu")
-  self.pool_grid.disable_background_clicks = should_block_background_clicks
+  -- Disable background deselection when action menu is visible
+  self.pool_grid.disable_background_clicks = ImGui.IsPopupOpen(ctx, "PoolActionsMenu")
 
   self.pool_grid:draw(ctx)
 
   self.pool_container:end_draw(ctx)
-
-  -- Inline Color Picker for Pool (renders on top at bottom-left)
-  if self._pool_color_picker_visible then
-    local picker_x = cursor_x + self.container_config.padding
-    local picker_y = cursor_y + height - COLOR_PICKER.size - self.container_config.padding + COLOR_PICKER.position_offset_y
-
-    ImGui.SetCursorScreenPos(ctx, picker_x, picker_y)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
-    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, 0, 0)
-
-    if ImGui.BeginChild(ctx, "PoolColorPickerRegion", COLOR_PICKER.size, COLOR_PICKER.size + COLOR_PICKER.child_height_extra, 0) then
-      ColorPickerWindow.render_inline(ctx, "pool_recolor_inline", {
-        size = COLOR_PICKER.size,
-        on_change = function(color)
-          if not self.controller then return end
-
-          local rids, playlist_ids = extract_pool_selection(self.pool_grid and self.pool_grid.selection)
-
-          -- Apply colors to Pool selections
-          if #rids > 0 then
-            self.controller:set_region_colors_batch(rids, color)
-          end
-          for _, playlist_id in ipairs(playlist_ids) do
-            self.controller:set_playlist_color(playlist_id, color)
-          end
-        end,
-        on_close = function()
-          self._pool_color_picker_visible = false
-        end,
-      })
-
-      -- Close button
-      local close_x = (COLOR_PICKER.size - COLOR_PICKER.close_button_size) / 2 - COLOR_PICKER.close_button_offset_x
-      ImGui.SetCursorPos(ctx, close_x, COLOR_PICKER.size - COLOR_PICKER.close_button_offset_y)
-
-      ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 0, 0)
-      if ImGui.Button(ctx, "X##close_pool_picker", COLOR_PICKER.close_button_size, COLOR_PICKER.close_button_size) then
-        self._pool_color_picker_visible = false
-      end
-      ImGui.PopStyleVar(ctx, 1)
-
-      ImGui.EndChild(ctx)
-    end
-
-    ImGui.PopStyleVar(ctx, 2)
-  end
 
   -- Pool Actions context menu
   if self._pool_actions_menu_visible then
@@ -392,36 +333,6 @@ function M.draw_pool(self, ctx, regions, height)
   end
 
   if ContextMenu.begin(ctx, "PoolActionsMenu") then
-    if ContextMenu.item(ctx, "Recolor") then
-      -- Toggle behavior: close if already open
-      if self._pool_color_picker_visible then
-        self._pool_color_picker_visible = false
-      else
-        -- Get first selected item's color from Pool as initial color
-        local initial_color = nil
-        if self.pool_grid and self.pool_grid.selection then
-          local selected_keys = self.pool_grid.selection:selected_keys()
-          for _, key in ipairs(selected_keys) do
-            local rid = key:match("^pool_(%d+)$")
-            if rid then
-              local region = State.get_region_by_rid(tonumber(rid))
-              if region and region.color then
-                initial_color = region.color
-                break
-              end
-            end
-          end
-        end
-
-        -- Show inline color picker
-        self._pool_color_picker_visible = true
-        ColorPickerWindow.show_inline("pool_recolor_inline", initial_color)
-      end
-      ImGui.CloseCurrentPopup(ctx)
-    end
-
-    if ContextMenu.separator(ctx) then end
-
     if ContextMenu.item(ctx, "Append Selected Regions to Project") then
       local rids = extract_pool_selection(self.pool_grid and self.pool_grid.selection)
       if #rids > 0 then
