@@ -266,7 +266,8 @@ function M.render_modal(ctx, state, bounds)
   if not state.show_track_filter_modal then return end
   if not state.track_tree then return end
 
-  local draw_list = ImGui.GetWindowDrawList(ctx)
+  -- Use foreground draw list to render on top of everything
+  local draw_list = ImGui.GetForegroundDrawList(ctx)
   local padding = 16
   local alpha = state.overlay_alpha or 1.0
 
