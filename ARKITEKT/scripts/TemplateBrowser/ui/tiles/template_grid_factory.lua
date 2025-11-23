@@ -2,14 +2,17 @@
 -- TemplateBrowser/ui/tiles/template_grid_factory.lua
 -- Grid factory for template tiles
 
+local ImGui = require 'imgui' '0.10'
 local Grid = require('rearkitekt.gui.widgets.containers.grid.core')
 local Colors = require('rearkitekt.core.colors')
 local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
 local TemplateTileCompact = require('TemplateBrowser.ui.tiles.template_tile_compact')
+local DragDrop = require('rearkitekt.gui.systems.drag_drop')
+local Constants = require('TemplateBrowser.defs.constants')
 
 local M = {}
 
-function M.create(get_templates, metadata, animator, get_tile_width, get_view_mode, on_select, on_double_click, on_right_click, on_star_click, gui)
+function M.create(get_templates, metadata, animator, get_tile_width, get_view_mode, on_select, on_double_click, on_right_click, on_star_click, on_tag_drop, gui)
   local grid = Grid.new({
     id = "template_grid",
     gap = TemplateTile.CONFIG.gap,  -- Initial value for grid mode
@@ -42,6 +45,83 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
       if state.star_clicked and on_star_click then
         on_star_click(template)
         state.star_clicked = false  -- Reset flag
+      end
+
+      -- Handle drop targets for tags
+      if on_tag_drop then
+        -- Check if a tag is being dragged (globally)
+        local is_tag_dragging = DragDrop.get_active_drag_type() == Constants.DRAG_TYPES.TAG
+
+        if is_tag_dragging then
+          -- Get selection state from GUI
+          local selected_keys = gui and gui.state and gui.state.selected_template_keys or {}
+          local template_key = "template_" .. template.uuid
+
+          -- Check if this template is selected
+          local is_selected = false
+          for _, key in ipairs(selected_keys) do
+            if key == template_key then
+              is_selected = true
+              break
+            end
+          end
+
+          -- Check if the hovered template is in our selection
+          local hovered_key = DragDrop.get_hovered_drop_target()
+          local hovered_is_selected = false
+          if hovered_key then
+            for _, key in ipairs(selected_keys) do
+              if key == hovered_key then
+                hovered_is_selected = true
+                break
+              end
+            end
+          end
+
+          -- Show active glow if: we're selected AND a selected tile is being hovered
+          if is_selected and hovered_is_selected then
+            DragDrop.draw_active_target(ctx, rect)
+          else
+            -- Draw potential target indicator
+            DragDrop.draw_potential_target(ctx, rect)
+          end
+        end
+
+        -- Create invisible button for drop target
+        ImGui.SetCursorScreenPos(ctx, rect[1], rect[2])
+        ImGui.InvisibleButton(ctx, "##tile_drop_" .. template.uuid, rect[3] - rect[1], rect[4] - rect[2])
+
+        -- Hide default drop target rect (we draw our own glow)
+        ImGui.PushStyleColor(ctx, ImGui.Col_DragDropTarget, 0x00000000)
+
+        if ImGui.BeginDragDropTarget(ctx) then
+          -- Track this as the hovered template
+          local template_key = "template_" .. template.uuid
+          DragDrop.set_hovered_drop_target(template_key)
+
+          -- Draw active target highlight when hovering (if not already drawn for selection)
+          local selected_keys = gui and gui.state and gui.state.selected_template_keys or {}
+          local is_selected = false
+          for _, key in ipairs(selected_keys) do
+            if key == template_key then
+              is_selected = true
+              break
+            end
+          end
+          if not is_selected or #selected_keys <= 1 then
+            DragDrop.draw_active_target(ctx, rect)
+          end
+
+          -- Accept drop with no default rect (we draw our own)
+          local payload = DragDrop.accept_drop(ctx, Constants.DRAG_TYPES.TAG, ImGui.DragDropFlags_AcceptNoDrawDefaultRect)
+          if payload then
+            -- Apply tag to template
+            on_tag_drop(template, payload)
+          end
+          ImGui.EndDragDropTarget(ctx)
+        end
+
+        ImGui.PopStyleColor(ctx)
       end
     end,
 

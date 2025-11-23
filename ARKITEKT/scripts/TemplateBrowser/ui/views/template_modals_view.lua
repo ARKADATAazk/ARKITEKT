@@ -242,6 +242,173 @@ function M.draw_template_rename_modal(ctx, state)
   end
 end
 
+-- Draw tag context menu (color picker)
+function M.draw_tag_context_menu(ctx, state)
+  -- Context menu with color picker for tags
+  if state.context_menu_tag then
+    ImGui.OpenPopup(ctx, "tag_color_picker")
+  end
+
+  if ImGui.BeginPopup(ctx, "tag_color_picker") then
+    local tag_name = state.context_menu_tag
+    if tag_name and state.metadata and state.metadata.tags[tag_name] then
+      local tag_data = state.metadata.tags[tag_name]
+
+      ImGui.Text(ctx, "Set Tag Color: " .. tag_name)
+      ImGui.Separator(ctx)
+      ImGui.Spacing(ctx)
+
+      local current_color = tag_data.color
+
+      -- Draw color grid
+      local grid_cols = UI.COLOR_PICKER.GRID_COLS
+      local chip_size = UI.COLOR_PICKER.CHIP_SIZE
+      local chip_radius = chip_size / 2
+
+      for idx, color in ipairs(PRESET_COLORS) do
+        local col_idx = (idx - 1) % grid_cols
+
+        if col_idx > 0 then
+          ImGui.SameLine(ctx)
+        end
+
+        local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
+
+        if ImGui.InvisibleButton(ctx, "##tag_color_" .. idx, chip_size, chip_size) then
+          tag_data.color = color
+          local Persistence = require('TemplateBrowser.domain.persistence')
+          Persistence.save_metadata(state.metadata)
+          state.context_menu_tag = nil
+          ImGui.CloseCurrentPopup(ctx)
+        end
+
+        local is_hovered = ImGui.IsItemHovered(ctx)
+        local is_this_color = (current_color == color)
+
+        local chip_x = start_x + chip_radius
+        local chip_y = start_y + chip_radius
+        Chip.draw(ctx, {
+          style = Chip.STYLE.INDICATOR,
+          x = chip_x,
+          y = chip_y,
+          radius = chip_radius - 2,
+          color = color,
+          is_selected = is_this_color,
+          is_hovered = is_hovered,
+          show_glow = is_this_color or is_hovered,
+          glow_layers = is_this_color and 6 or 3,
+        })
+      end
+
+      ImGui.Spacing(ctx)
+      ImGui.Separator(ctx)
+      ImGui.Spacing(ctx)
+
+      -- Reset to default (dark grey)
+      if Button.draw_at_cursor(ctx, {
+        label = "Reset to Default",
+        width = -1,
+        height = UI.BUTTON.HEIGHT_DEFAULT
+      }, "tag_reset_color") then
+        tag_data.color = Colors.hexrgb("#646464")
+        local Persistence = require('TemplateBrowser.domain.persistence')
+        Persistence.save_metadata(state.metadata)
+        state.context_menu_tag = nil
+        ImGui.CloseCurrentPopup(ctx)
+      end
+    end
+
+    ImGui.EndPopup(ctx)
+  end
+end
+
+-- Draw VST context menu (color picker)
+function M.draw_vst_context_menu(ctx, state)
+  -- Context menu with color picker for VSTs
+  if state.context_menu_vst then
+    ImGui.OpenPopup(ctx, "vst_color_picker")
+  end
+
+  if ImGui.BeginPopup(ctx, "vst_color_picker") then
+    local vst_name = state.context_menu_vst
+    if vst_name then
+      ImGui.Text(ctx, "Set VST Color: " .. vst_name)
+      ImGui.Separator(ctx)
+      ImGui.Spacing(ctx)
+
+      -- Ensure vsts metadata exists
+      if not state.metadata.vsts then
+        state.metadata.vsts = {}
+      end
+      if not state.metadata.vsts[vst_name] then
+        state.metadata.vsts[vst_name] = {}
+      end
+
+      local vst_data = state.metadata.vsts[vst_name]
+      local current_color = vst_data.color
+
+      -- Draw color grid
+      local grid_cols = UI.COLOR_PICKER.GRID_COLS
+      local chip_size = UI.COLOR_PICKER.CHIP_SIZE
+      local chip_radius = chip_size / 2
+
+      for idx, color in ipairs(PRESET_COLORS) do
+        local col_idx = (idx - 1) % grid_cols
+
+        if col_idx > 0 then
+          ImGui.SameLine(ctx)
+        end
+
+        local start_x, start_y = ImGui.GetCursorScreenPos(ctx)
+
+        if ImGui.InvisibleButton(ctx, "##vst_color_" .. idx, chip_size, chip_size) then
+          vst_data.color = color
+          local Persistence = require('TemplateBrowser.domain.persistence')
+          Persistence.save_metadata(state.metadata)
+          state.context_menu_vst = nil
+          ImGui.CloseCurrentPopup(ctx)
+        end
+
+        local is_hovered = ImGui.IsItemHovered(ctx)
+        local is_this_color = (current_color == color)
+
+        local chip_x = start_x + chip_radius
+        local chip_y = start_y + chip_radius
+        Chip.draw(ctx, {
+          style = Chip.STYLE.INDICATOR,
+          x = chip_x,
+          y = chip_y,
+          radius = chip_radius - 2,
+          color = color,
+          is_selected = is_this_color,
+          is_hovered = is_hovered,
+          show_glow = is_this_color or is_hovered,
+          glow_layers = is_this_color and 6 or 3,
+        })
+      end
+
+      ImGui.Spacing(ctx)
+      ImGui.Separator(ctx)
+      ImGui.Spacing(ctx)
+
+      -- Reset to default (dark grey)
+      if Button.draw_at_cursor(ctx, {
+        label = "Reset to Default",
+        width = -1,
+        height = UI.BUTTON.HEIGHT_DEFAULT
+      }, "vst_reset_color") then
+        vst_data.color = nil
+        local Persistence = require('TemplateBrowser.domain.persistence')
+        Persistence.save_metadata(state.metadata)
+        state.context_menu_vst = nil
+        ImGui.CloseCurrentPopup(ctx)
+      end
+    end
+
+    ImGui.EndPopup(ctx)
+  end
+end
+
 -- Draw conflict resolution modal
 function M.draw_conflict_resolution_modal(ctx, state)
   -- Show conflict modal when conflict is pending

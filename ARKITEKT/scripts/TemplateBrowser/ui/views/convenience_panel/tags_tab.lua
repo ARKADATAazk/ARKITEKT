@@ -7,8 +7,10 @@ local Colors = require('rearkitekt.core.colors')
 local Tags = require('TemplateBrowser.domain.tags')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
+local ChipList = require('rearkitekt.gui.widgets.data.chip_list')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.ui_constants')
+local Constants = require('TemplateBrowser.defs.constants')
 
 local M = {}
 
@@ -42,13 +44,8 @@ function M.draw(ctx, state, config, width, height)
       end
     end
 
-    -- Create tag with random color
-    local r = math.random(50, 255) / 255.0
-    local g = math.random(50, 255) / 255.0
-    local b = math.random(50, 255) / 255.0
-    local color = (math.floor(r * 255) << 16) | (math.floor(g * 255) << 8) | math.floor(b * 255)
-
-    Tags.create_tag(state.metadata, new_tag_name, color)
+    -- Create tag with default color (dark grey)
+    Tags.create_tag(state.metadata, new_tag_name)
 
     -- Save metadata
     local Persistence = require('TemplateBrowser.domain.persistence')
@@ -62,33 +59,53 @@ function M.draw(ctx, state, config, width, height)
   -- Calculate remaining height for tags list
   local tags_list_height = height - UI.HEADER.DEFAULT - UI.PADDING.SEPARATOR_SPACING
 
-  -- List all tags with filtering (scrollable)
+  -- List all tags with filtering (scrollable) using justified layout
   if Helpers.begin_child_compat(ctx, "ConvenienceTagsList", 0, tags_list_height, false) then
     if state.metadata and state.metadata.tags then
+      -- Build sorted list of tags
+      local tag_items = {}
+      local selected_ids = {}
+
       for tag_name, tag_data in pairs(state.metadata.tags) do
-        ImGui.PushID(ctx, tag_name)
-
-        local is_selected = state.filter_tags[tag_name] or false
-
-        -- Draw tag using Chip component (ACTION style)
-        local clicked, chip_w, chip_h = Chip.draw(ctx, {
-          style = Chip.STYLE.ACTION,
+        tag_items[#tag_items + 1] = {
+          id = tag_name,
           label = tag_name,
-          bg_color = tag_data.color,
-          text_color = Colors.auto_text_color(tag_data.color),
-          height = UI.CHIP.HEIGHT_DEFAULT,
-          padding_h = 8,
+          color = tag_data.color,
+        }
+
+        if state.filter_tags[tag_name] then
+          selected_ids[tag_name] = true
+        end
+      end
+
+      -- Sort alphabetically
+      table.sort(tag_items, function(a, b) return a.label < b.label end)
+
+      if #tag_items > 0 then
+        -- Draw tags using justified chip_list (ACTION style)
+        -- Unselected tags at 30% opacity (77 = 0.3 * 255)
+        local content_w = ImGui.GetContentRegionAvail(ctx)
+        local clicked_id, _, right_clicked_id = ChipList.draw(ctx, tag_items, {
+          justified = true,
+          max_stretch_ratio = 1.5,
+          selected_ids = selected_ids,
+          style = Chip.STYLE.ACTION,
+          chip_height = UI.CHIP.HEIGHT_DEFAULT,
+          chip_spacing = 6,
+          line_spacing = 3,
           rounding = 2,
-          is_selected = is_selected,
-          interactive = true,
+          padding_h = 8,
+          max_width = content_w,
+          unselected_alpha = 77,
+          drag_type = Constants.DRAG_TYPES.TAG,
         })
 
-        if clicked then
+        if clicked_id then
           -- Toggle tag filter
-          if is_selected then
-            state.filter_tags[tag_name] = nil
+          if state.filter_tags[clicked_id] then
+            state.filter_tags[clicked_id] = nil
           else
-            state.filter_tags[tag_name] = true
+            state.filter_tags[clicked_id] = true
           end
 
           -- Re-filter templates
@@ -96,7 +113,10 @@ function M.draw(ctx, state, config, width, height)
           Scanner.filter_templates(state)
         end
 
-        ImGui.PopID(ctx)
+        -- Handle right-click - open color picker context menu
+        if right_clicked_id then
+          state.context_menu_tag = right_clicked_id
+        end
       end
     else
       ImGui.TextDisabled(ctx, "No tags yet")

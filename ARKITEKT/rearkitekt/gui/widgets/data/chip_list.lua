@@ -6,7 +6,10 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local Chip = require('rearkitekt.gui.widgets.data.chip')
+local Colors = require('rearkitekt.core.colors')
 local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')
+local DragDrop = require('rearkitekt.gui.systems.drag_drop')
+local MouseUtil = require('rearkitekt.gui.systems.mouse_util')
 
 local M = {}
 
@@ -22,14 +25,38 @@ local function _filter_items(items, search_text)
 end
 
 local function _draw_chip(ctx, item, is_selected, opts)
+  -- Determine colors based on style
+  local item_color = item.color
+  local bg_color = opts.bg_color
+  local text_color = nil
+
+  -- For ACTION style, item.color is used as bg_color
+  if opts.style == Chip.STYLE.ACTION and item_color then
+    -- Apply unselected_alpha to entire chip (bg + text) if not selected
+    if not is_selected and opts.unselected_alpha then
+      bg_color = Colors.with_alpha(item_color, opts.unselected_alpha)
+      -- Also apply alpha to text for consistent opacity
+      local auto_text = Colors.auto_text_color(item_color)
+      text_color = Colors.with_alpha(auto_text, opts.unselected_alpha)
+    else
+      bg_color = item_color
+      -- Auto text color for readability
+      text_color = Colors.auto_text_color(item_color)
+    end
+  elseif item_color and not is_selected and opts.unselected_alpha then
+    -- For other styles (DOT), apply alpha to the dot color
+    item_color = Colors.with_alpha(item_color, opts.unselected_alpha)
+  end
+
   return Chip.draw(ctx, {
     id = "##chip_" .. (item.id or item.label),
     style = opts.style,
     label = item.label,
-    color = item.color,
+    color = item_color,
     height = opts.chip_height,
     is_selected = is_selected,
-    bg_color = opts.bg_color,
+    bg_color = bg_color,
+    text_color = text_color,
     dot_size = opts.dot_size,
     dot_spacing = opts.dot_spacing,
     rounding = opts.rounding,
@@ -44,17 +71,23 @@ function M.draw(ctx, items, opts)
   opts = opts or {}
   local filtered = _filter_items(items, opts.search_text or "")
   if #filtered == 0 then return nil end
-  
+
   local chip_spacing = opts.chip_spacing or 8
   local line_spacing = opts.line_spacing or 8
   local text_h = ImGui.GetTextLineHeight(ctx)
   local chip_height = opts.chip_height or (text_h + 6)
   local available_width = opts.max_width or ImGui.GetContentRegionAvail(ctx)
   local selected_ids = opts.selected_ids or {}
-  local style = opts.use_dot_style and Chip.STYLE.DOT or Chip.STYLE.PILL
+  local style = opts.style or (opts.use_dot_style and Chip.STYLE.DOT or Chip.STYLE.PILL)
   local justified = opts.justified or false
   
   local clicked_id = nil
+  local dragging_id = nil
+  local right_clicked_id = nil
+  local drag_type = opts.drag_type
+  local drag_data_fn = opts.drag_data_fn  -- function(item) -> data table
+  local drag_threshold = opts.drag_threshold or MouseUtil.DEFAULTS.DRAG_THRESHOLD
+
   local draw_opts = {
     style = style,
     chip_height = chip_height,
@@ -63,66 +96,133 @@ function M.draw(ctx, items, opts)
     dot_spacing = opts.dot_spacing,
     rounding = opts.rounding or 4,
     padding_h = opts.padding_h or (style == Chip.STYLE.DOT and 12 or 14),
+    unselected_alpha = opts.unselected_alpha,
   }
+
+  -- Helper to handle drag/click differentiation for a chip
+  -- When drag is enabled, we completely handle click detection ourselves
+  -- to ensure we wait and see if user wants to drag before triggering click
+  local function handle_chip_interaction(item)
+    if not drag_type then
+      -- No drag enabled, use ImGui's native click detection
+      return ImGui.IsItemClicked(ctx, 0)
+    end
+
+    local item_id = "chip_drag_" .. (item.id or item.label)
+
+    -- Start tracking on mouse down over this item
+    if ImGui.IsItemHovered(ctx) and ImGui.IsMouseClicked(ctx, 0) then
+      MouseUtil.start_potential_drag(ctx, item_id, 0)
+    end
+
+    -- If we're tracking this item
+    if MouseUtil.is_tracking(item_id) then
+      -- Check if drag threshold exceeded
+      MouseUtil.check_drag_started(ctx, item_id, drag_threshold)
+
+      -- If we're now in drag mode, handle the drag source
+      if MouseUtil.is_dragging(item_id) then
+        if ImGui.BeginDragDropSource(ctx, ImGui.DragDropFlags_SourceAllowNullID) then
+          local payload_data = drag_data_fn and drag_data_fn(item) or { id = item.id, label = item.label }
+          local payload_str = type(payload_data) == "table"
+            and DragDrop._serialize(payload_data)
+            or tostring(payload_data)
+          ImGui.SetDragDropPayload(ctx, drag_type, payload_str)
+          -- Set global drag type for potential target indicators
+          DragDrop.set_active_drag_type(drag_type)
+          -- Draw drag preview
+          DragDrop.draw_preview_text(ctx, item.label)
+          ImGui.EndDragDropSource(ctx)
+          dragging_id = item.id
+        end
+
+        -- Clear on mouse release
+        if ImGui.IsMouseReleased(ctx, 0) then
+          MouseUtil.clear(item_id)
+          DragDrop.clear_active_drag_type()
+        end
+
+        return false  -- Dragging, not a click
+      end
+
+      -- Not dragging yet - check if mouse was released (this is a click!)
+      if ImGui.IsMouseReleased(ctx, 0) then
+        MouseUtil.clear(item_id)
+        return true  -- Mouse released without exceeding drag threshold = click
+      end
+
+      -- Still tracking, waiting to see if drag or click
+      return false
+    end
+
+    -- Not tracking this item
+    return false
+  end
   
   if justified then
     local min_widths = {}
     for i, item in ipairs(filtered) do
       min_widths[i] = Chip.calculate_width(ctx, item.label, draw_opts)
     end
-    
+
     local layout = ResponsiveGrid.calculate_justified_layout(filtered, {
       available_width = available_width,
       min_widths = min_widths,
       gap = chip_spacing,
       max_stretch_ratio = opts.max_stretch_ratio or 1.5,
     })
-    
+
     local row_start_x = ImGui.GetCursorPosX(ctx)
-    
+
     for row_idx, row in ipairs(layout) do
       if row_idx > 1 then ImGui.SetCursorPosX(ctx, row_start_x) end
-      
+
       for cell_idx, cell in ipairs(row) do
         draw_opts.explicit_width = cell.final_width
-        local clicked = _draw_chip(ctx, cell.item, selected_ids[cell.item.id], draw_opts)
-        if clicked then clicked_id = cell.item.id end
+        _draw_chip(ctx, cell.item, selected_ids[cell.item.id], draw_opts)
+        local is_click = handle_chip_interaction(cell.item)
+        if is_click then clicked_id = cell.item.id end
+        -- Check for right-click
+        if ImGui.IsItemClicked(ctx, 1) then right_clicked_id = cell.item.id end
         if cell_idx < #row then ImGui.SameLine(ctx, 0, chip_spacing) end
       end
-      
+
       if row_idx < #layout then ImGui.Dummy(ctx, 0, line_spacing) end
     end
   else
     local cursor_start_x = ImGui.GetCursorPosX(ctx)
     local current_x = 0
     local items_in_row = 0
-    
+
     for _, item in ipairs(filtered) do
       local chip_width = Chip.calculate_width(ctx, item.label, draw_opts)
       local space_needed = chip_width + (items_in_row > 0 and chip_spacing or 0)
-      
+
       if items_in_row > 0 and (current_x + space_needed) > available_width then
         ImGui.Dummy(ctx, 0, line_spacing)
         ImGui.SetCursorPosX(ctx, cursor_start_x)
         current_x = 0
         items_in_row = 0
       end
-      
+
       if items_in_row > 0 then
         ImGui.SameLine(ctx, 0, chip_spacing)
         current_x = current_x + chip_spacing
       end
-      
+
       draw_opts.explicit_width = nil
-      local clicked = _draw_chip(ctx, item, selected_ids[item.id], draw_opts)
-      if clicked then clicked_id = item.id end
-      
+      _draw_chip(ctx, item, selected_ids[item.id], draw_opts)
+      local is_click = handle_chip_interaction(item)
+      if is_click then clicked_id = item.id end
+      -- Check for right-click
+      if ImGui.IsItemClicked(ctx, 1) then right_clicked_id = item.id end
+
       current_x = current_x + chip_width
       items_in_row = items_in_row + 1
     end
   end
-  
-  return clicked_id
+
+  return clicked_id, dragging_id, right_clicked_id
 end
 
 function M.draw_vertical(ctx, items, opts)

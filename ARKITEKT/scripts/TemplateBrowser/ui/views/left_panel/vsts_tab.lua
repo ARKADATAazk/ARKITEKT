@@ -81,13 +81,26 @@ function M.draw(ctx, state, config, width, height)
 
       local is_selected = state.filter_fx[fx_name] or false
 
+      -- Get stored VST color from metadata
+      local vst_color = nil
+      if state.metadata and state.metadata.vsts and state.metadata.vsts[fx_name] then
+        vst_color = state.metadata.vsts[fx_name].color
+      end
+
       -- Draw VST using Chip component (ACTION style, consistent across Template Browser)
-      local bg_color = is_selected and Colors.hexrgb("#5A7A9D") or Colors.hexrgb("#3D5A80")
+      -- Use stored color or default dark grey with 80% transparency
+      local bg_color
+      if vst_color then
+        bg_color = is_selected and vst_color or Colors.with_alpha(vst_color, 0xCC)
+      else
+        bg_color = is_selected and Colors.hexrgb("#4A4A4ACC") or Colors.hexrgb("#3A3A3ACC")
+      end
+
       local clicked, chip_w, chip_h = Chip.draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
         bg_color = bg_color,
-        text_color = Colors.hexrgb("#FFFFFF"),
+        text_color = vst_color and Colors.auto_text_color(vst_color) or Colors.hexrgb("#FFFFFF"),
         height = 22,
         padding_h = 8,
         rounding = 2,
@@ -105,6 +118,11 @@ function M.draw(ctx, state, config, width, height)
         -- Re-filter templates
         local Scanner = require('TemplateBrowser.domain.scanner')
         Scanner.filter_templates(state)
+      end
+
+      -- Handle right-click - open color picker context menu
+      if ImGui.IsItemClicked(ctx, 1) then
+        state.context_menu_vst = fx_name
       end
 
       ImGui.PopID(ctx)

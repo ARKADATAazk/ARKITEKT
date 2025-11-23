@@ -9,6 +9,7 @@ local Tags = require('TemplateBrowser.domain.tags')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local MarkdownField = require('rearkitekt.gui.widgets.primitives.markdown_field')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
+local ChipList = require('rearkitekt.gui.widgets.data.chip_list')
 local Tooltips = require('TemplateBrowser.core.tooltips')
 local UI = require('TemplateBrowser.ui.ui_constants')
 
@@ -62,10 +63,11 @@ local function draw_info_panel(ctx, gui, width, height)
         draw_section_header(ctx, "FX CHAIN")
 
         for i, fx_name in ipairs(tmpl.fx) do
+          -- Dark grey with 80% transparency
           Chip.draw(ctx, {
             style = Chip.STYLE.ACTION,
             label = fx_name,
-            bg_color = hexrgb("#3D5A80"),
+            bg_color = hexrgb("#3A3A3ACC"),
             text_color = hexrgb("#FFFFFF"),
             height = 22,
             padding_h = 8,
@@ -109,59 +111,59 @@ local function draw_info_panel(ctx, gui, width, height)
       draw_section_header(ctx, "TAGS")
 
       if state.metadata and state.metadata.tags then
-        local has_tags = false
-        local tag_count = 0
+        -- Build items array for chip_list
+        local tag_items = {}
+        local selected_ids = {}
 
-        -- Count tags first
-        for _ in pairs(state.metadata.tags) do
-          tag_count = tag_count + 1
-        end
+        for tag_name, tag_data in pairs(state.metadata.tags) do
+          tag_items[#tag_items + 1] = {
+            id = tag_name,
+            label = tag_name,
+            color = tag_data.color,
+          }
 
-        if tag_count > 0 then
-          for tag_name, tag_data in pairs(state.metadata.tags) do
-            has_tags = true
-            ImGui.PushID(ctx, tag_name)
-
-            -- Check if this tag is assigned
-            local is_assigned = false
-            if tmpl_metadata and tmpl_metadata.tags then
-              for _, assigned_tag in ipairs(tmpl_metadata.tags) do
-                if assigned_tag == tag_name then
-                  is_assigned = true
-                  break
-                end
+          -- Check if this tag is assigned to the template
+          if tmpl_metadata and tmpl_metadata.tags then
+            for _, assigned_tag in ipairs(tmpl_metadata.tags) do
+              if assigned_tag == tag_name then
+                selected_ids[tag_name] = true
+                break
               end
             end
-
-            -- Draw tag using Chip component (ACTION style)
-            local clicked, chip_w, chip_h = Chip.draw(ctx, {
-              style = Chip.STYLE.ACTION,
-              label = tag_name,
-              bg_color = tag_data.color,
-              text_color = Colors.auto_text_color(tag_data.color),
-              height = 22,
-              padding_h = 6,
-              rounding = 3,
-              is_selected = is_assigned,
-              interactive = true,
-            })
-
-            if clicked then
-              -- Toggle tag assignment
-              if is_assigned then
-                Tags.remove_tag_from_template(state.metadata, tmpl.uuid, tag_name)
-              else
-                Tags.add_tag_to_template(state.metadata, tmpl.uuid, tag_name)
-              end
-              local Persistence = require('TemplateBrowser.domain.persistence')
-              Persistence.save_metadata(state.metadata)
-            end
-
-            ImGui.PopID(ctx)
           end
         end
 
-        if not has_tags or tag_count == 0 then
+        if #tag_items > 0 then
+          -- Sort tags alphabetically for consistent display
+          table.sort(tag_items, function(a, b) return a.label < b.label end)
+
+          -- Draw tags using justified chip_list (ACTION style)
+          -- Unselected tags at 30% opacity (77 = 0.3 * 255)
+          local clicked_id = ChipList.draw(ctx, tag_items, {
+            justified = true,
+            max_stretch_ratio = 1.5,
+            selected_ids = selected_ids,
+            style = Chip.STYLE.ACTION,
+            chip_height = 22,
+            chip_spacing = 6,
+            line_spacing = 3,
+            rounding = 3,
+            padding_h = 6,
+            max_width = content_w,
+            unselected_alpha = 77,
+          })
+
+          if clicked_id then
+            -- Toggle tag assignment
+            if selected_ids[clicked_id] then
+              Tags.remove_tag_from_template(state.metadata, tmpl.uuid, clicked_id)
+            else
+              Tags.add_tag_to_template(state.metadata, tmpl.uuid, clicked_id)
+            end
+            local Persistence = require('TemplateBrowser.domain.persistence')
+            Persistence.save_metadata(state.metadata)
+          end
+        else
           ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#555555"))
           ImGui.Text(ctx, "No tags available")
           ImGui.Text(ctx, "Create in Tags panel")

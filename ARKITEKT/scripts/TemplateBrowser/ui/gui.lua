@@ -75,6 +75,9 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     function() return self.state.template_view_mode end,  -- get_view_mode
     -- on_select
     function(selected_keys)
+      -- Store selected keys for multi-select operations
+      self.state.selected_template_keys = selected_keys or {}
+
       -- Update selected template from grid selection
       if selected_keys and #selected_keys > 0 then
         local key = selected_keys[1]
@@ -156,6 +159,63 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         if self.state.selected_folder == favorites_id then
           local Scanner = require('TemplateBrowser.domain.scanner')
           Scanner.filter_templates(self.state)
+        end
+      end
+    end,
+    -- on_tag_drop (receives template and tag payload from drag)
+    function(template, payload)
+      if template and payload then
+        local Tags = require('TemplateBrowser.domain.tags')
+        local Persistence = require('TemplateBrowser.domain.persistence')
+
+        -- Get tag name from payload
+        local tag_name = payload.label or payload.id
+        if tag_name then
+          -- Check if dropped template is in selection (array)
+          local template_key = "template_" .. template.uuid
+          local is_selected = false
+          local selected_keys = self.state.selected_template_keys or {}
+
+          for _, key in ipairs(selected_keys) do
+            if key == template_key then
+              is_selected = true
+              break
+            end
+          end
+
+          local tagged_count = 0
+
+          if is_selected and #selected_keys > 1 then
+            -- Apply tag to ALL selected templates
+            for _, key in ipairs(selected_keys) do
+              local uuid = key:match("template_(.+)")
+              if uuid then
+                if Tags.add_tag_to_template(self.state.metadata, uuid, tag_name) then
+                  tagged_count = tagged_count + 1
+                end
+              end
+            end
+          else
+            -- Apply tag only to dropped template
+            if Tags.add_tag_to_template(self.state.metadata, template.uuid, tag_name) then
+              tagged_count = 1
+            end
+          end
+
+          -- Save metadata
+          Persistence.save_metadata(self.state.metadata)
+
+          -- Re-filter if we have tag filters active
+          if next(self.state.filter_tags) then
+            local Scanner = require('TemplateBrowser.domain.scanner')
+            Scanner.filter_templates(self.state)
+          end
+
+          if tagged_count > 1 then
+            self.state.set_status("Tagged " .. tagged_count .. " templates with " .. tag_name, "success")
+          elseif tagged_count == 1 then
+            self.state.set_status("Tagged \"" .. template.name .. "\" with " .. tag_name, "success")
+          end
         end
       end
     end,
@@ -312,6 +372,63 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         if self.state.selected_folder == favorites_id then
           local Scanner = require('TemplateBrowser.domain.scanner')
           Scanner.filter_templates(self.state)
+        end
+      end
+    end,
+    -- on_tag_drop (receives template and tag payload from drag)
+    function(template, payload)
+      if template and payload then
+        local Tags = require('TemplateBrowser.domain.tags')
+        local Persistence = require('TemplateBrowser.domain.persistence')
+
+        -- Get tag name from payload
+        local tag_name = payload.label or payload.id
+        if tag_name then
+          -- Check if dropped template is in selection (array)
+          local template_key = "template_" .. template.uuid
+          local is_selected = false
+          local selected_keys = self.state.selected_template_keys or {}
+
+          for _, key in ipairs(selected_keys) do
+            if key == template_key then
+              is_selected = true
+              break
+            end
+          end
+
+          local tagged_count = 0
+
+          if is_selected and #selected_keys > 1 then
+            -- Apply tag to ALL selected templates
+            for _, key in ipairs(selected_keys) do
+              local uuid = key:match("template_(.+)")
+              if uuid then
+                if Tags.add_tag_to_template(self.state.metadata, uuid, tag_name) then
+                  tagged_count = tagged_count + 1
+                end
+              end
+            end
+          else
+            -- Apply tag only to dropped template
+            if Tags.add_tag_to_template(self.state.metadata, template.uuid, tag_name) then
+              tagged_count = 1
+            end
+          end
+
+          -- Save metadata
+          Persistence.save_metadata(self.state.metadata)
+
+          -- Re-filter if we have tag filters active
+          if next(self.state.filter_tags) then
+            local Scanner = require('TemplateBrowser.domain.scanner')
+            Scanner.filter_templates(self.state)
+          end
+
+          if tagged_count > 1 then
+            self.state.set_status("Tagged " .. tagged_count .. " templates with " .. tag_name, "success")
+          elseif tagged_count == 1 then
+            self.state.set_status("Tagged \"" .. template.name .. "\" with " .. tag_name, "success")
+          end
         end
       end
     end,
@@ -709,8 +826,10 @@ function GUI:draw(ctx, shell_state)
   ImGui.SetCursorPos(ctx, sep2_x_local + separator_thickness / 2, cursor_y)
   InfoPanelView.draw_info_panel(ctx, self, info_width, panel_height)
 
-  -- Template context menu and rename modal (must be drawn outside panels)
+  -- Context menus and modals (must be drawn outside panels)
   TemplateModalsView.draw_template_context_menu(ctx, self.state)
+  TemplateModalsView.draw_tag_context_menu(ctx, self.state)
+  TemplateModalsView.draw_vst_context_menu(ctx, self.state)
   TemplateModalsView.draw_template_rename_modal(ctx, self.state)
   TemplateModalsView.draw_conflict_resolution_modal(ctx, self.state)
 

@@ -15,7 +15,7 @@ function M.create_tag(metadata, tag_name, color)
 
   metadata.tags[tag_name] = {
     name = tag_name,
-    color = color or Colors.hexrgb("#3B82F6"),  -- Default blue
+    color = color or Colors.hexrgb("#646464"),  -- Default dark grey
     created = os.time()
   }
 
