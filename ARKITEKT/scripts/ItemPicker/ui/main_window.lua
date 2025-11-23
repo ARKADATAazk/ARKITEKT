@@ -311,7 +311,13 @@ function GUI:draw(ctx, shell_state)
       local saved_dragging_is_audio = self.state.dragging_is_audio
 
       -- Check if ALT is held for pooled MIDI copy (only for MIDI items)
-      local use_pooled_copy = alt and not self.state.dragging_is_audio
+      -- Use XOR logic: ALT inverts the original pooled state (matches drag_handler display)
+      local use_pooled_copy = false
+      if not self.state.dragging_is_audio then
+        local original_pooled = self.state.original_pooled_midi_state or false
+        local effective_pooled = (original_pooled and not alt) or (not original_pooled and alt)
+        use_pooled_copy = effective_pooled
+      end
 
       -- Insert the item (pooled copy if ALT held for MIDI)
       self.controller.insert_item_at_mouse(self.state.item_to_add, self.state, use_pooled_copy)
