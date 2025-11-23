@@ -132,7 +132,7 @@ function GUI:draw(ctx, shell_state)
   -- Check if track filter modal should be opened
   if self.state.open_track_filter_modal then
     self.state.open_track_filter_modal = nil
-    TrackFilter.open_modal(self.state, shell_state)
+    TrackFilter.open_modal(self.state)
   end
 
   -- Get screen dimensions
@@ -261,6 +261,14 @@ function GUI:draw(ctx, shell_state)
   if not self.state.dragging then
     -- Normal mode - show main UI
     self.layout_view:render(ctx, big_font, big_font_size, "Item Picker", SCREEN_W, SCREEN_H, is_overlay_mode)
+
+    -- Render track filter modal on top if active
+    TrackFilter.render_modal(ctx, self.state, {
+      x = 0,
+      y = 0,
+      width = SCREEN_W,
+      height = SCREEN_H
+    })
   else
     -- Dragging mode - don't create main window at all
     -- The drag_handler creates its own windows (drag_target_window and MouseFollower)
