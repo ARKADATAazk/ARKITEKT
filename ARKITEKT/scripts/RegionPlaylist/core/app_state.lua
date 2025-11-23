@@ -41,43 +41,66 @@ M.POOL_MODES = Constants.POOL_MODES
 M.LAYOUT_MODES = Constants.LAYOUT_MODES
 M.SORT_DIRECTIONS = Constants.SORT_DIRECTIONS
 
--- Flattened state structure (no nested .state table)
-M.active_playlist = nil
-M.search_filter = ""
-M.sort_mode = nil
-M.sort_direction = M.SORT_DIRECTIONS.ASC
-M.layout_mode = M.LAYOUT_MODES.HORIZONTAL
-M.pool_mode = M.POOL_MODES.REGIONS
-M.region_index = {}
-M.pool_order = {}
-M.pending_spawn = {}
-M.pending_select = {}
-M.pending_destroy = {}
-M.bridge = nil
-M.last_project_state = -1
-M.last_project_filename = nil
-M.last_project_ptr = nil  -- Track actual project pointer to detect tab switches
-M.undo_manager = nil
-M.on_state_restored = nil
-M.on_repeat_cycle = nil
+-- =============================================================================
+-- STATE FIELDS
+-- =============================================================================
 
-M.playlists = {}
-M.playlist_lookup = {}  -- UUID -> playlist object (O(1) lookup)
-M.settings = nil
-M.dependency_graph = {}
-M.graph_dirty = true
+-- Active playlist UUID (string) - the currently selected/displayed playlist
+M.active_playlist = nil
+
+-- Pool filtering and display
+M.search_filter = ""                          -- Text filter for pool items
+M.sort_mode = nil                             -- "color", "index", "alpha", "length", or nil
+M.sort_direction = M.SORT_DIRECTIONS.ASC      -- "asc" or "desc"
+M.layout_mode = M.LAYOUT_MODES.HORIZONTAL     -- "horizontal" (timeline) or "vertical" (list)
+M.pool_mode = M.POOL_MODES.REGIONS            -- "regions", "playlists", or "mixed"
+
+-- Region data
+M.region_index = {}                           -- Map: RID (number) -> region object {rid, name, color, ...}
+M.pool_order = {}                             -- Array of RIDs defining custom pool order
+
+-- Animation pending queues (processed by GUI each frame, then cleared)
+M.pending_spawn = {}                          -- Array of item keys to animate as "spawning in"
+M.pending_select = {}                         -- Array of item keys to highlight as selected
+M.pending_destroy = {}                        -- Array of item keys to animate as "destroying"
+
+-- Engine/playback coordination
+M.bridge = nil                                -- CoordinatorBridge instance for engine communication
+
+-- Project state tracking (for detecting project switches/reloads)
+M.last_project_state = -1                     -- Last seen project state count (for change detection)
+M.last_project_filename = nil                 -- Last seen project filename
+M.last_project_ptr = nil                      -- Last seen project pointer (detects tab switches)
+
+-- Undo system
+M.undo_manager = nil                          -- UndoManager instance
+
+-- Event callbacks (set by GUI)
+M.on_state_restored = nil                     -- Called when undo/redo restores state
+M.on_repeat_cycle = nil                       -- Called when repeat count cycles
+
+-- Playlist data
+M.playlists = {}                              -- Array of playlist objects
+M.playlist_lookup = {}                        -- Map: UUID -> playlist object (O(1) lookup)
+M.settings = nil                              -- Persistent UI settings
+
+-- Dependency tracking (for circular reference detection)
+M.dependency_graph = {}                       -- Map: playlist_id -> {child_ids}
+M.graph_dirty = true                          -- Flag to rebuild graph on next check
 
 -- Status bar state
 M.selection_info = { region_count = 0, playlist_count = 0 }
+
+-- Timed notifications (auto-clear after timeout)
 M.circular_dependency_error = nil
 M.circular_dependency_error_timestamp = nil
 M.circular_dependency_error_timeout = Constants.TIMEOUTS.circular_dependency_error
 
--- Temporary state change notifications
 M.state_change_notification = nil
 M.state_change_notification_timestamp = nil
 M.state_change_notification_timeout = Constants.TIMEOUTS.state_change_notification
 
+-- Transport override state tracking
 M.last_override_state = false
 
 local function get_current_project_filename()
