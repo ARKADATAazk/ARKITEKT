@@ -1,0 +1,89 @@
+-- @description Media Container - Linked container groups for items
+-- @version 0.1.0
+-- @author ARKITEKT
+-- @about
+--   Create linked containers that mirror changes across all copies.
+--   Perfect for glitch percussion and repetitive patterns.
+
+-- ============================================================================
+-- BOOTSTRAP ARKITEKT FRAMEWORK
+-- ============================================================================
+local ARK
+do
+  local sep = package.config:sub(1,1)
+  local src = debug.getinfo(1, "S").source:sub(2)
+  local path = src:match("(.*"..sep..")")
+  while path and #path > 3 do
+    local init = path .. "rearkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
+    local f = io.open(init, "r")
+    if f then
+      f:close()
+      local Init = dofile(init)
+      ARK = Init.bootstrap()
+      break
+    end
+    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
+  end
+  if not ARK then
+    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
+    return
+  end
+end
+
+-- ============================================================================
+-- LOAD MODULES
+-- ============================================================================
+
+local ImGui = require 'imgui' '0.10'
+local Shell = require("rearkitekt.app.runtime.shell")
+local MediaContainer = require("MediaContainer.init")
+local Colors = require("rearkitekt.core.colors")
+
+local hexrgb = Colors.hexrgb
+
+-- Initialize
+MediaContainer.initialize()
+
+-- ============================================================================
+-- RUN APPLICATION
+-- ============================================================================
+
+Shell.run({
+  title        = "Media Container",
+  version      = "v0.1.0",
+  draw         = function(ctx, shell_state)
+    local draw_list = ImGui.GetBackgroundDrawList(ctx)
+    MediaContainer.update(ctx, draw_list)
+
+    -- Minimal window content - just show container count
+    local containers = MediaContainer.get_containers()
+    ImGui.Text(ctx, string.format("Containers: %d", #containers))
+
+    if #containers > 0 then
+      ImGui.Separator(ctx)
+      for i, container in ipairs(containers) do
+        local linked_text = container.master_id and " [linked]" or " [master]"
+        local label = string.format("%s%s (%d items)", container.name, linked_text, #container.items)
+
+        -- Color indicator
+        local r, g, b, a = Colors.rgba_to_components(container.color or 0xFF6600FF)
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, ImGui.ColorConvertDouble4ToU32(r/255, g/255, b/255, 1))
+        ImGui.Bullet(ctx)
+        ImGui.PopStyleColor(ctx, 1)
+        ImGui.SameLine(ctx)
+        ImGui.Text(ctx, label)
+      end
+    else
+      ImGui.TextDisabled(ctx, "No containers yet")
+      ImGui.TextDisabled(ctx, "Select items and run 'Create Container'")
+    end
+
+    ImGui.Separator(ctx)
+    ImGui.TextDisabled(ctx, "Sync: Active")
+  end,
+  initial_pos  = { x = 100, y = 100 },
+  initial_size = { w = 300, h = 200 },
+  icon_color   = hexrgb("#FF9933"),
+  icon_size    = 18,
+  min_size     = { w = 200, h = 150 },
+})
