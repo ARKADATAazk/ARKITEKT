@@ -252,11 +252,17 @@ local function find_separator_neighbors(elements, separator_index)
   return left_neighbor, right_neighbor
 end
 
-local function calculate_corner_rounding(layout, header_rounding, is_bottom)
+local function calculate_corner_rounding(layout, header_rounding, is_bottom, side)
   local rounding_info = {}
 
   local first_idx = find_first_non_separator(layout)
   local last_idx = find_last_non_separator(layout)
+
+  -- Determine which edges get outer rounding based on side
+  -- "full" = both edges, "left" = left edge only, "right" = right edge only
+  side = side or "full"
+  local use_left_edge = (side == "full" or side == "left")
+  local use_right_edge = (side == "full" or side == "right")
 
   for i, item in ipairs(layout) do
     if is_separator(item.element.type) then
@@ -269,8 +275,9 @@ local function calculate_corner_rounding(layout, header_rounding, is_bottom)
       }
     else
       -- Determine if this element is at edges or next to separators
-      local is_first = (i == first_idx)
-      local is_last = (i == last_idx)
+      -- Only apply edge rounding if this side is being used
+      local is_first = (i == first_idx) and use_left_edge
+      local is_last = (i == last_idx) and use_right_edge
 
       -- Check if element is adjacent to separators
       local sep_on_left = false
@@ -389,13 +396,13 @@ end
 -- ELEMENT RENDERING
 -- ============================================================================
 
-local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom)
+local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side)
   if not elements or #elements == 0 then
     return 0
   end
-  
+
   local layout = layout_elements(ctx, elements, width, state)
-  local rounding_info = calculate_corner_rounding(layout, header_rounding, is_bottom)
+  local rounding_info = calculate_corner_rounding(layout, header_rounding, is_bottom, side)
   
   local border_overlap = 1
   local cursor_x = x
@@ -549,7 +556,7 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     local valign = config.valign or "top"
     -- Pixel snap center position to prevent blurry borders
     local center_x = math.floor(content_x + (content_width - center_width) / 2 + 0.5)
-    render_elements(ctx, dl, center_x, content_y, center_width, content_height, center_elements, state, header_rounding, is_bottom, valign)
+    render_elements(ctx, dl, center_x, content_y, center_width, content_height, center_elements, state, header_rounding, is_bottom, valign, "full")
 
     -- Draw clip edge borders if content overflows (use actual rendered width, not allocated content_width)
     draw_clip_edge_borders(dl, x, y, width, height, center_x, center_x + center_width)
@@ -574,12 +581,12 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
       right_width = right_width + item.width
     end
 
-    -- Render left-aligned elements
-    render_elements(ctx, dl, content_x, content_y, left_width, content_height, left_elements, state, header_rounding, is_bottom)
+    -- Render left-aligned elements (only left edge gets outer rounding)
+    render_elements(ctx, dl, content_x, content_y, left_width, content_height, left_elements, state, header_rounding, is_bottom, nil, "left")
 
-    -- Render right-aligned elements
+    -- Render right-aligned elements (only right edge gets outer rounding)
     local right_x = content_x + content_width - right_width
-    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom)
+    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom, nil, "right")
 
     -- Draw clip edge borders if content overflows
     draw_clip_edge_borders(dl, x, y, width, height, content_x, content_x + left_width, right_x, right_x + right_width)
@@ -593,7 +600,7 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     end
 
     local right_x = content_x + content_width - right_width
-    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom)
+    render_elements(ctx, dl, right_x, content_y, right_width, content_height, right_elements, state, header_rounding, is_bottom, nil, "full")
 
     -- Draw clip edge borders if content overflows (use actual rendered width)
     draw_clip_edge_borders(dl, x, y, width, height, right_x, right_x + right_width)
@@ -607,7 +614,7 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
       left_width = left_width + item.width
     end
 
-    render_elements(ctx, dl, content_x, content_y, content_width, content_height, left_elements, state, header_rounding, is_bottom)
+    render_elements(ctx, dl, content_x, content_y, content_width, content_height, left_elements, state, header_rounding, is_bottom, nil, "full")
 
     -- Draw clip edge borders if content overflows (use actual rendered width, not allocated content_width)
     draw_clip_edge_borders(dl, x, y, width, height, content_x, content_x + left_width)
