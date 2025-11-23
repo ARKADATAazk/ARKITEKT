@@ -170,12 +170,11 @@ function M.render(ctx, opts)
     local button_width = ImGui.GetContentRegionAvail(ctx)
 
     ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 8)
-    local clicked = Button.draw(ctx, {
+    local clicked = Button.draw_at_cursor(ctx, {
       label = button_text,
       width = button_width - 16,
       height = 28,
-      id = "##remove_color_btn",
-    })
+    }, "remove_color_btn")
     if clicked then
       if opts.on_select then
         opts.on_select(nil, nil, nil)
