@@ -340,7 +340,7 @@ function M.clear_pending()
 end
 
 -- Drag state
-function M.start_drag(item, item_name, color, width, height)
+function M.start_drag(item, item_name, color, width, height, is_source_pooled)
   M.dragging = true
   M.item_to_add = item
   M.item_to_add_name = item_name
@@ -348,8 +348,14 @@ function M.start_drag(item, item_name, color, width, height)
   M.item_to_add_width = width
   M.item_to_add_height = height
   M.drag_waveform = nil
-  -- Store original pooled MIDI toggle state (Action 41071)
-  M.original_pooled_midi_state = reaper.GetToggleCommandState(41071) == 1
+  -- Determine default pooled state:
+  -- If source item is already pooled, default to pooled copies
+  -- Otherwise, use the global toggle state
+  if is_source_pooled then
+    M.original_pooled_midi_state = true
+  else
+    M.original_pooled_midi_state = reaper.GetToggleCommandState(41071) == 1
+  end
 end
 
 function M.end_drag()

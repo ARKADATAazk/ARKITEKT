@@ -312,7 +312,8 @@ function M.create(ctx, config, state, visualization, animator)
       end
 
       if display_data then
-        state.start_drag(display_data.item, display_data.name, display_data.color, drag_w, drag_h)
+        local is_source_pooled = (display_data.pool_count or 1) > 1
+        state.start_drag(display_data.item, display_data.name, display_data.color, drag_w, drag_h, is_source_pooled)
       end
     end,
 
