@@ -256,10 +256,10 @@ end
 
 local function calculate_corner_rounding(layout, header_rounding, is_bottom)
   local rounding_info = {}
-  
+
   local first_idx = find_first_non_separator(layout)
   local last_idx = find_last_non_separator(layout)
-  
+
   for i, item in ipairs(layout) do
     if is_separator(item.element.type) then
       -- Separators never have rounding
@@ -270,91 +270,48 @@ local function calculate_corner_rounding(layout, header_rounding, is_bottom)
         round_bottom_right = false,
       }
     else
-      -- Default: no rounding (buttons in the middle of a group)
-      local round_left = false
-      local round_right = false
-      
-      -- Round left edge if: first element OR right neighbor of a separator
-      if i == first_idx then
-        round_left = true
-      end
-      
-      -- Round right edge if: last element OR left neighbor of a separator
-      if i == last_idx then
-        round_right = true
-      end
-      
-      -- Check if this element is adjacent to any separator
+      -- Determine if this element is at edges or next to separators
+      local is_first = (i == first_idx)
+      local is_last = (i == last_idx)
+
+      -- Check if element is adjacent to separators
+      local sep_on_left = false
+      local sep_on_right = false
+
       for j = 1, #layout do
         if is_separator(layout[j].element.type) then
           local left_neighbor, right_neighbor = find_separator_neighbors(layout, j)
           if left_neighbor == i then
-            -- This element is to the left of a separator
-            round_right = true
+            sep_on_right = true  -- Separator is to our right
           end
           if right_neighbor == i then
-            -- This element is to the right of a separator
-            round_left = true
+            sep_on_left = true   -- Separator is to our left
           end
         end
       end
-      
-      -- Apply rounding based on header position (top vs bottom)
-      -- Distinguish rounding caused by separators vs group edges (first/last)
-      local left_due_to_sep, right_due_to_sep = false, false
-      for j = 1, #layout do
-        if is_separator(layout[j].element.type) then
-          local ln, rn = find_separator_neighbors(layout, j)
-          if ln == i then right_due_to_sep = true end
-          if rn == i then left_due_to_sep = true end
-        end
-      end
-      
+
       if is_bottom then
-        -- Footer: round TOP corners only for elements adjacent to separators
-        -- Corner-most elements (first/last) keep original BOTTOM rounding
+        -- Footer: bottom corners for edges, top corners toward separators
         rounding_info[i] = {
-          round_top_left = left_due_to_sep,
-          round_top_right = right_due_to_sep,
-          round_bottom_left = round_left and not left_due_to_sep,
-          round_bottom_right = round_right and not right_due_to_sep,
+          round_top_left = sep_on_left,
+          round_top_right = sep_on_right,
+          round_bottom_left = is_first and not sep_on_left,
+          round_bottom_right = is_last and not sep_on_right,
           rounding = header_rounding,
         }
       else
-        -- Header (top): standard behavior is top corners
-        -- Special case: if this is a transport panel, use bottom corners instead
-        local use_bottom_rounding = false
-        -- Detect transport panel by checking if any element has transport-specific IDs
-        for _, layout_item in ipairs(layout) do
-          if layout_item.element.id and layout_item.element.id:match("^transport_") then
-            use_bottom_rounding = true
-            break
-          end
-        end
-        
-        if use_bottom_rounding then
-          -- Transport special case: round BOTTOM corners for all buttons
-          rounding_info[i] = {
-            round_top_left = false,
-            round_top_right = false,
-            round_bottom_left = round_left,
-            round_bottom_right = round_right,
-            rounding = header_rounding,
-          }
-        else
-          -- Standard top header: round TOP corners
-          rounding_info[i] = {
-            round_top_left = round_left,
-            round_top_right = round_right,
-            round_bottom_left = false,
-            round_bottom_right = false,
-            rounding = header_rounding,
-          }
-        end
+        -- Header: top corners for edges, bottom corners toward separators
+        rounding_info[i] = {
+          round_top_left = is_first and not sep_on_left,
+          round_top_right = is_last and not sep_on_right,
+          round_bottom_left = sep_on_left,
+          round_bottom_right = sep_on_right,
+          rounding = header_rounding,
+        }
       end
     end
   end
-  
+
   return rounding_info
 end
 
