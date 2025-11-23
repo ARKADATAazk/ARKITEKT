@@ -23,9 +23,23 @@ local function _filter_items(items, search_text)
 end
 
 local function _draw_chip(ctx, item, is_selected, opts)
-  -- Apply unselected_alpha to item color if not selected
+  -- Determine colors based on style
   local item_color = item.color
-  if item_color and not is_selected and opts.unselected_alpha then
+  local bg_color = opts.bg_color
+  local text_color = nil
+
+  -- For ACTION style, item.color is used as bg_color
+  if opts.style == Chip.STYLE.ACTION and item_color then
+    -- Apply unselected_alpha to background if not selected
+    if not is_selected and opts.unselected_alpha then
+      bg_color = Colors.with_alpha(item_color, opts.unselected_alpha)
+    else
+      bg_color = item_color
+    end
+    -- Auto text color for readability
+    text_color = Colors.auto_text_color(item_color)
+  elseif item_color and not is_selected and opts.unselected_alpha then
+    -- For other styles (DOT), apply alpha to the dot color
     item_color = Colors.with_alpha(item_color, opts.unselected_alpha)
   end
 
@@ -36,7 +50,8 @@ local function _draw_chip(ctx, item, is_selected, opts)
     color = item_color,
     height = opts.chip_height,
     is_selected = is_selected,
-    bg_color = opts.bg_color,
+    bg_color = bg_color,
+    text_color = text_color,
     dot_size = opts.dot_size,
     dot_spacing = opts.dot_spacing,
     rounding = opts.rounding,
