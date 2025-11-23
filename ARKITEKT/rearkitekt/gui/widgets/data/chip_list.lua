@@ -99,28 +99,27 @@ function M.draw(ctx, items, opts)
   }
 
   -- Helper to handle drag/click differentiation for a chip
-  local function handle_chip_interaction(item, was_clicked)
+  -- When drag is enabled, we completely handle click detection ourselves
+  -- to ensure we wait and see if user wants to drag before triggering click
+  local function handle_chip_interaction(item)
     if not drag_type then
-      -- No drag enabled, just return click
-      return was_clicked
+      -- No drag enabled, use ImGui's native click detection
+      return ImGui.IsItemClicked(ctx, 0)
     end
 
     local item_id = "chip_drag_" .. (item.id or item.label)
 
-    -- Check if item was just pressed (hovered + mouse down this frame)
+    -- Start tracking on mouse down over this item
     if ImGui.IsItemHovered(ctx) and ImGui.IsMouseClicked(ctx, 0) then
       MouseUtil.start_potential_drag(ctx, item_id, 0)
     end
 
-    -- Check if we're tracking this item
+    -- If we're tracking this item
     if MouseUtil.is_tracking(item_id) then
       -- Check if drag threshold exceeded
-      if MouseUtil.check_drag_started(ctx, item_id, drag_threshold) then
-        -- Start drag mode - clear tracking so we don't check again
-        -- The actual drag source will be created below
-      end
+      MouseUtil.check_drag_started(ctx, item_id, drag_threshold)
 
-      -- If we're in drag mode, create the drag source
+      -- If we're now in drag mode, handle the drag source
       if MouseUtil.is_dragging(item_id) then
         if ImGui.BeginDragDropSource(ctx, ImGui.DragDropFlags_SourceAllowNullID) then
           local payload_data = drag_data_fn and drag_data_fn(item) or { id = item.id, label = item.label }
@@ -139,21 +138,21 @@ function M.draw(ctx, items, opts)
           MouseUtil.clear(item_id)
         end
 
-        return false  -- Not a click when dragging
+        return false  -- Dragging, not a click
       end
 
-      -- Check if this is a click (released without dragging)
-      if MouseUtil.check_click(ctx, item_id) then
+      -- Not dragging yet - check if mouse was released (this is a click!)
+      if ImGui.IsMouseReleased(ctx, 0) then
         MouseUtil.clear(item_id)
-        return true  -- This is a click
+        return true  -- Mouse released without exceeding drag threshold = click
       end
 
-      -- Still tracking, not yet determined
+      -- Still tracking, waiting to see if drag or click
       return false
     end
 
-    -- Not tracking, use normal click behavior (but this shouldn't happen with drag enabled)
-    return was_clicked
+    -- Not tracking this item
+    return false
   end
   
   if justified then
@@ -176,8 +175,8 @@ function M.draw(ctx, items, opts)
 
       for cell_idx, cell in ipairs(row) do
         draw_opts.explicit_width = cell.final_width
-        local chip_clicked = _draw_chip(ctx, cell.item, selected_ids[cell.item.id], draw_opts)
-        local is_click = handle_chip_interaction(cell.item, chip_clicked)
+        _draw_chip(ctx, cell.item, selected_ids[cell.item.id], draw_opts)
+        local is_click = handle_chip_interaction(cell.item)
         if is_click then clicked_id = cell.item.id end
         if cell_idx < #row then ImGui.SameLine(ctx, 0, chip_spacing) end
       end
@@ -206,8 +205,8 @@ function M.draw(ctx, items, opts)
       end
 
       draw_opts.explicit_width = nil
-      local chip_clicked = _draw_chip(ctx, item, selected_ids[item.id], draw_opts)
-      local is_click = handle_chip_interaction(item, chip_clicked)
+      _draw_chip(ctx, item, selected_ids[item.id], draw_opts)
+      local is_click = handle_chip_interaction(item)
       if is_click then clicked_id = item.id end
 
       current_x = current_x + chip_width
