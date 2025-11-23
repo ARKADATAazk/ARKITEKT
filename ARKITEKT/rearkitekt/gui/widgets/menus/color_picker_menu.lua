@@ -81,6 +81,18 @@ function M.render(ctx, opts)
   local actual_grid_width = (columns * effective_size) + ((columns - 1) * chip_gap)
   local grid_offset_x = (menu_width - actual_grid_width) / 2
 
+  -- Calculate grid dimensions for background
+  local grid_rows = math.ceil(#(opts.palette or Colors.PALETTE) / columns)
+  local grid_height = (grid_rows - 1) * chip_spacing + effective_size
+
+  -- Draw darker background for palette
+  local bg_padding = 6
+  local bg_x = menu_start_x + grid_offset_x - bg_padding
+  local bg_y = menu_start_y - bg_padding
+  local bg_w = actual_grid_width + (bg_padding * 2)
+  local bg_h = grid_height + (bg_padding * 2)
+  ImGui.DrawList_AddRectFilled(dl, bg_x, bg_y, bg_x + bg_w, bg_y + bg_h, hexrgb("#1a1a1aFF"), 4)
+
   -- Convert palette to integer colors
   local preset_colors = {}
   for i, color in ipairs(palette) do
@@ -156,21 +168,23 @@ function M.render(ctx, opts)
     end
   end
 
-  -- Calculate grid height and move cursor past it
-  local grid_rows = math.ceil(#preset_colors / columns)
-  local grid_height = (grid_rows - 1) * chip_spacing + effective_size
+  -- Move cursor past the grid
   ImGui.SetCursorScreenPos(ctx, menu_start_x, menu_start_y + grid_height + 12)
 
   -- "Remove Color" button
   if show_none then
     local button_text = opts.current_color and none_label or "No Color"
     local button_width = ImGui.GetContentRegionAvail(ctx)
+    local button_height = 28
 
-    ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 8)
+    local button_x = ImGui.GetCursorPosX(ctx) + 8
+    local button_y = ImGui.GetCursorPosY(ctx)
+    ImGui.SetCursorPosX(ctx, button_x)
+
     local clicked = Button.draw_at_cursor(ctx, {
       label = button_text,
       width = button_width - 16,
-      height = 28,
+      height = button_height,
     }, "remove_color_btn")
     if clicked then
       if opts.on_select then
@@ -178,7 +192,9 @@ function M.render(ctx, opts)
       end
       selected = true
     end
-    ImGui.Dummy(ctx, 1, 4)
+
+    -- Advance cursor below button (Button.draw_at_cursor advances horizontally)
+    ImGui.SetCursorPos(ctx, menu_start_x - ImGui.GetWindowPos(ctx), button_y + button_height + 4)
   end
 
   return selected
