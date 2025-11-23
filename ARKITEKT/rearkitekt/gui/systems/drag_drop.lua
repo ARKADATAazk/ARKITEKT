@@ -23,9 +23,28 @@ M.FLAGS = {
 -- Default colors for drop indicators
 M.COLORS = {
   POTENTIAL_TARGET = Colors.hexrgb("#5588FF44"),  -- Subtle highlight for all potential targets
-  ACTIVE_TARGET = Colors.hexrgb("#5588FFAA"),     -- Brighter when hovering
-  ACTIVE_FILL = Colors.hexrgb("#5588FF22"),       -- Fill for active target
+  ACTIVE_TARGET = Colors.hexrgb("#5588FFCC"),     -- Brighter when hovering
+  ACTIVE_FILL = Colors.hexrgb("#5588FF18"),       -- Fill for active target
+  GLOW_COLOR = Colors.hexrgb("#5588FF"),          -- Base glow color
 }
+
+-- Track active drag type globally
+M._active_drag_type = nil
+
+-- Set the active drag type (call when drag starts)
+function M.set_active_drag_type(drag_type)
+  M._active_drag_type = drag_type
+end
+
+-- Get the current active drag type
+function M.get_active_drag_type()
+  return M._active_drag_type
+end
+
+-- Clear the active drag type (call when drag ends)
+function M.clear_active_drag_type()
+  M._active_drag_type = nil
+end
 
 -- Begin a drag source on the last item
 -- Returns true if drag is active
@@ -69,12 +88,9 @@ function M.accept_drop(ctx, payload_type, flags)
 
   local retval, payload = ImGui.AcceptDragDropPayload(ctx, payload_type, flags)
 
-  reaper.ShowConsoleMsg("[ACCEPT_DROP] type=" .. tostring(payload_type) .. " retval=" .. tostring(retval) .. " payload=" .. tostring(payload) .. "\n")
-
   if retval and payload and type(payload) == "string" then
     -- Deserialize if it looks like serialized data
     local data = M._deserialize(payload) or payload
-    reaper.ShowConsoleMsg("[ACCEPT_DROP] ACCEPTED! deserialized data type=" .. type(data) .. "\n")
     return data
   end
 
@@ -140,18 +156,36 @@ function M.draw_potential_target(ctx, rect, color)
 end
 
 -- Draw highlight for an active drop target (shown when hovering a valid target)
-function M.draw_active_target(ctx, rect, border_color, fill_color)
+-- Includes a multi-layer glow effect
+function M.draw_active_target(ctx, rect, border_color, fill_color, glow_color)
   border_color = border_color or M.COLORS.ACTIVE_TARGET
   fill_color = fill_color or M.COLORS.ACTIVE_FILL
+  glow_color = glow_color or M.COLORS.GLOW_COLOR
 
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
 
+  -- Extract RGB from glow color for alpha manipulation
+  local gr, gg, gb = Colors.rgba_to_components(glow_color)
+
+  -- Draw glow layers (outer to inner)
+  local glow_layers = {
+    { expand = 8, alpha = 0x20 },   -- Outermost, very faint
+    { expand = 5, alpha = 0x40 },   -- Middle
+    { expand = 3, alpha = 0x60 },   -- Inner glow
+  }
+
+  for _, layer in ipairs(glow_layers) do
+    local e = layer.expand
+    local glow = Colors.components_to_rgba(gr, gg, gb, layer.alpha)
+    ImGui.DrawList_AddRectFilled(dl, x1 - e, y1 - e, x2 + e, y2 + e, glow, 6)
+  end
+
   -- Fill
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, fill_color, 4)
 
-  -- Border
-  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 4, 0, 2)
+  -- Main border (brightest)
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 4, 0, 2.5)
 end
 
 -- Legacy function for backward compatibility

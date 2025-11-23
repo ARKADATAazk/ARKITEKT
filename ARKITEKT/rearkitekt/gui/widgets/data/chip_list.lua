@@ -127,7 +127,8 @@ function M.draw(ctx, items, opts)
             and DragDrop._serialize(payload_data)
             or tostring(payload_data)
           ImGui.SetDragDropPayload(ctx, drag_type, payload_str)
-          reaper.ShowConsoleMsg("[DRAG SOURCE] type=" .. tostring(drag_type) .. " payload=" .. tostring(payload_str) .. "\n")
+          -- Set global drag type for potential target indicators
+          DragDrop.set_active_drag_type(drag_type)
           -- Draw drag preview
           DragDrop.draw_preview_text(ctx, item.label)
           ImGui.EndDragDropSource(ctx)
@@ -137,6 +138,7 @@ function M.draw(ctx, items, opts)
         -- Clear on mouse release
         if ImGui.IsMouseReleased(ctx, 0) then
           MouseUtil.clear(item_id)
+          DragDrop.clear_active_drag_type()
         end
 
         return false  -- Dragging, not a click

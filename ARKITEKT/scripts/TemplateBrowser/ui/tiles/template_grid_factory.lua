@@ -49,10 +49,10 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
 
       -- Handle drop targets for tags
       if on_tag_drop then
-        -- Check if a tag is being dragged
-        local is_tag_dragging = DragDrop.is_drag_active(ctx)
+        -- Check if a tag is being dragged (globally)
+        local is_tag_dragging = DragDrop.get_active_drag_type() == Constants.DRAG_TYPES.TAG
 
-        -- Draw potential target indicator on all tiles while dragging
+        -- Draw potential target indicator on all tiles while dragging a tag
         if is_tag_dragging then
           DragDrop.draw_potential_target(ctx, rect)
         end
@@ -62,13 +62,11 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
         ImGui.InvisibleButton(ctx, "##tile_drop_" .. template.uuid, rect[3] - rect[1], rect[4] - rect[2])
 
         if ImGui.BeginDragDropTarget(ctx) then
-          reaper.ShowConsoleMsg("[DROP TARGET] BeginDragDropTarget returned true for " .. template.name .. "\n")
           -- Draw active target highlight when hovering
           DragDrop.draw_active_target(ctx, rect)
 
           local payload = DragDrop.accept_drop(ctx, Constants.DRAG_TYPES.TAG)
           if payload then
-            reaper.ShowConsoleMsg("[DROP TARGET] Got payload! Calling on_tag_drop\n")
             -- Apply tag to template
             on_tag_drop(template, payload)
           end
