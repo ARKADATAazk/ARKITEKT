@@ -35,7 +35,10 @@ local function normalize_color(color)
   r = math.floor(r / 16 + 0.5) * 16
   g = math.floor(g / 16 + 0.5) * 16
   b = math.floor(b / 16 + 0.5) * 16
-  a = math.floor(a / 16 + 0.5) * 16
+  -- For alpha, use larger buckets but preserve non-zero values
+  if a > 0 then
+    a = math.max(16, math.floor(a / 16 + 0.5) * 16)
+  end
   -- Clamp to 255
   r = math.min(255, r)
   g = math.min(255, g)
