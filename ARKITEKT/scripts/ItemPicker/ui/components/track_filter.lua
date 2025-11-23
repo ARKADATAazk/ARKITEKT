@@ -9,13 +9,13 @@ local M = {}
 
 -- Tile styling constants
 local TRACK_TILE = {
-  HEIGHT = 26,
-  PADDING_X = 8,
-  PADDING_Y = 4,
-  MARGIN_Y = 2,
-  ROUNDING = 4,
-  COLOR_BAR_WIDTH = 4,
-  INDENT = 20,  -- Per level indent
+  HEIGHT = 18,  -- Reduced from 26 (-30%)
+  PADDING_X = 6,
+  PADDING_Y = 2,
+  MARGIN_Y = 1,
+  ROUNDING = 3,
+  COLOR_BAR_WIDTH = 3,
+  INDENT = 16,  -- Per level indent
 }
 
 -- Get track color from REAPER's COLORREF format
@@ -113,25 +113,25 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
   local text_offset = TRACK_TILE.COLOR_BAR_WIDTH + TRACK_TILE.PADDING_X
   if has_children then
     local arrow_x = tile_x + text_offset
-    local arrow_y = y + (height - 8) / 2
+    local arrow_y = y + (height - 6) / 2
     local arrow_color = Colors.hexrgb("#888888")
 
     if is_expanded then
       -- Down arrow
       ImGui.DrawList_AddTriangleFilled(draw_list,
         arrow_x, arrow_y,
-        arrow_x + 8, arrow_y,
-        arrow_x + 4, arrow_y + 6,
+        arrow_x + 6, arrow_y,
+        arrow_x + 3, arrow_y + 5,
         arrow_color)
     else
       -- Right arrow
       ImGui.DrawList_AddTriangleFilled(draw_list,
         arrow_x, arrow_y,
-        arrow_x, arrow_y + 8,
-        arrow_x + 6, arrow_y + 4,
+        arrow_x, arrow_y + 6,
+        arrow_x + 5, arrow_y + 3,
         arrow_color)
     end
-    text_offset = text_offset + 12
+    text_offset = text_offset + 10
   end
 
   -- Track name
