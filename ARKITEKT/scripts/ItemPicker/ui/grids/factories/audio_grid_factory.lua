@@ -91,6 +91,11 @@ function M.create(ctx, config, state, visualization, animator)
         end
       end
 
+      -- Check track filter
+      if not shared.passes_track_filter(state, entry.track_guid) then
+        goto continue
+      end
+
       -- Convert cached track color to ImGui color
       local color = shared.convert_track_color(entry.track_color or 0)
 

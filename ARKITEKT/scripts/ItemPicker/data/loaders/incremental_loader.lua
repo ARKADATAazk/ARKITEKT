@@ -220,6 +220,7 @@ function M.process_audio_item_fast(loader, item, track, state)
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
   local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
+  local track_guid = reaper.GetTrackGUID(track)
 
   -- Get track name for search
   local _, track_name = reaper.GetTrackName(track)
@@ -240,6 +241,7 @@ function M.process_audio_item_fast(loader, item, track, state)
     filename = filename,
     track_name = track_name,
     track_color = track_color,
+    track_guid = track_guid,
     track_muted = track_muted,
     item_muted = item_muted,
     uuid = uuid,
@@ -280,6 +282,7 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
   local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
+  local track_guid = reaper.GetTrackGUID(track)
   local uuid = get_item_uuid(item)
 
   -- Get track name for search
@@ -298,6 +301,7 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
     item_name,
     track_muted = track_muted,
     item_muted = item_muted,
+    track_guid = track_guid,
     uuid = uuid,
     regions = regions,
   })
@@ -309,6 +313,7 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
     filename = filename,
     track_name = track_name,
     track_color = track_color,
+    track_guid = track_guid,
     track_muted = track_muted,
     item_muted = item_muted,
     uuid = uuid,
@@ -331,6 +336,7 @@ function M.process_midi_item_fast(loader, item, track, state)
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
   local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
+  local track_guid = reaper.GetTrackGUID(track)
 
   local uuid = get_item_uuid(item)
 
@@ -349,6 +355,7 @@ function M.process_midi_item_fast(loader, item, track, state)
     item = item,
     item_name = item_name,
     track_color = track_color,
+    track_guid = track_guid,
     track_muted = track_muted,
     item_muted = item_muted,
     uuid = uuid,
@@ -383,6 +390,7 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
   local track_muted = reaper.GetMediaTrackInfo_Value(track, "B_MUTE") == 1 or loader.reaper_interface.IsParentMuted(track)
   local item_muted = reaper.GetMediaItemInfo_Value(item, "B_MUTE") == 1
   local track_color = reaper.GetMediaTrackInfo_Value(track, "I_CUSTOMCOLOR")
+  local track_guid = reaper.GetTrackGUID(track)
   local uuid = get_item_uuid(item)
 
   -- Get track name for search
@@ -401,6 +409,7 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
     item_name,
     track_muted = track_muted,
     item_muted = item_muted,
+    track_guid = track_guid,
     uuid = uuid,
     track_name = track_name,
     regions = regions,
@@ -411,6 +420,7 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
     item = item,
     item_name = item_name,
     track_color = track_color,
+    track_guid = track_guid,
     track_muted = track_muted,
     item_muted = item_muted,
     uuid = uuid,
@@ -564,6 +574,7 @@ function M.reorganize_items(loader, group_by_name)
       raw_item.item_name,
       track_muted = raw_item.track_muted,
       item_muted = raw_item.item_muted,
+      track_guid = raw_item.track_guid,  -- Track GUID for filtering
       uuid = raw_item.uuid,
       track_color = raw_item.track_color,  -- Include cached color
       pool_count = raw_item.pool_count or 1,  -- From REAPER pooling detection
@@ -603,6 +614,7 @@ function M.reorganize_items(loader, group_by_name)
       raw_item.item_name,
       track_muted = raw_item.track_muted,
       item_muted = raw_item.item_muted,
+      track_guid = raw_item.track_guid,  -- Track GUID for filtering
       uuid = raw_item.uuid,
       track_color = raw_item.track_color,  -- Include cached color
       pool_count = raw_item.pool_count or 1,  -- From REAPER pooling detection

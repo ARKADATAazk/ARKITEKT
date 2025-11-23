@@ -97,6 +97,40 @@ function M.passes_search_filter(settings, item_name, track_name, regions)
   return true
 end
 
+-- Check if item passes track filter
+function M.passes_track_filter(state, track_guid)
+  -- If no track filtering is set up, pass all items
+  if not state.track_filters_enabled then
+    return true
+  end
+
+  -- Check if at least one track is disabled (otherwise no filtering needed)
+  local has_disabled = false
+  for guid, enabled in pairs(state.track_filters_enabled) do
+    if not enabled then
+      has_disabled = true
+      break
+    end
+  end
+
+  if not has_disabled then
+    return true  -- All tracks enabled, no filtering
+  end
+
+  -- Check if this item's track is enabled
+  if not track_guid then
+    return true  -- No track info, pass by default
+  end
+
+  local is_enabled = state.track_filters_enabled[track_guid]
+  -- If not in the map, it means it's not whitelisted, so filter it out
+  if is_enabled == nil then
+    return false
+  end
+
+  return is_enabled
+end
+
 -- Sort filtered items by various criteria
 function M.apply_sorting(filtered, sort_mode, sort_reverse)
   if sort_mode == "length" then
