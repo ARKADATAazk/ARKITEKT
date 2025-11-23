@@ -22,6 +22,21 @@ do
   if ok then Icon = mod end
 end
 
+-- Format version string: extract numbers and dots, prepend "v"
+local function format_version(version)
+  if not version or version == "" then return nil end
+
+  -- Extract only numbers and dots
+  local clean = version:gsub("[^%d%.]", "")
+
+  -- Remove leading/trailing dots
+  clean = clean:gsub("^%.+", ""):gsub("%.+$", "")
+
+  if clean == "" then return nil end
+
+  return "v" .. clean
+end
+
 function M.new(opts)
   -- Merge user opts with framework defaults
   local config = Config.deepMerge(Constants.TITLEBAR, opts or {})
@@ -37,7 +52,7 @@ function M.new(opts)
   local titlebar = {
     -- Text content
     title           = config.title or "Window",
-    version         = config.version,
+    version         = format_version(config.version),
 
     -- Fonts
     title_font      = config.title_font,
@@ -152,7 +167,7 @@ function M.new(opts)
   end
   
   function titlebar:set_version(version)
-    self.version = version and tostring(version) or nil
+    self.version = format_version(version)
   end
   
   function titlebar:set_maximized(state)
