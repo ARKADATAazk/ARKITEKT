@@ -404,14 +404,14 @@ function M.draw_pool(self, ctx, regions, height)
 
     -- Color picker submenu
     ColorPickerMenu.render(ctx, {
-      on_change = function(color)
-        if self.controller then
+      on_select = function(color_int, color_hex, color_name)
+        if self.controller and color_int then
           local rids, playlist_ids = extract_pool_selection(self.pool_grid and self.pool_grid.selection)
           if #rids > 0 then
-            self.controller:set_region_colors_batch(rids, color)
+            self.controller:set_region_colors_batch(rids, color_int)
           end
           for _, playlist_id in ipairs(playlist_ids) do
-            self.controller:set_playlist_color(playlist_id, color)
+            self.controller:set_playlist_color(playlist_id, color_int)
           end
         end
       end
