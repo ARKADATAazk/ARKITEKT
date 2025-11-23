@@ -8,6 +8,7 @@ local Tags = require('TemplateBrowser.domain.tags')
 local Button = require('rearkitekt.gui.widgets.primitives.button')
 local Fields = require('rearkitekt.gui.widgets.primitives.fields')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
+local ChipList = require('rearkitekt.gui.widgets.data.chip_list')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.ui_constants')
 
@@ -56,36 +57,85 @@ function M.draw(ctx, state, config, width, height)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
 
-  -- List all tags
+  -- List all tags using justified layout
   if Helpers.begin_child_compat(ctx, "TagsList", width - config.PANEL_PADDING * 2, height - 30, false) then
     if state.metadata and state.metadata.tags then
+      -- Build sorted list of tags
+      local tag_items = {}
       for tag_name, tag_data in pairs(state.metadata.tags) do
-        local is_renaming = (state.renaming_item == tag_name and state.renaming_type == "tag")
+        tag_items[#tag_items + 1] = {
+          id = tag_name,
+          label = tag_name,
+          color = tag_data.color,
+        }
+      end
 
-        ImGui.PushID(ctx, tag_name)
+      -- Sort alphabetically
+      table.sort(tag_items, function(a, b) return a.label < b.label end)
 
-        if is_renaming then
-          -- Rename mode
-          -- Initialize field with current name
-          if Fields.get_text("tag_rename_" .. tag_name) == "" then
-            Fields.set_text("tag_rename_" .. tag_name, state.rename_buffer)
+      if #tag_items > 0 then
+        -- Check if any tag is being renamed
+        local renaming_tag = nil
+        if state.renaming_type == "tag" then
+          renaming_tag = state.renaming_item
+        end
+
+        -- Draw tags using justified chip_list (ACTION style)
+        -- Unselected tags at 30% opacity (77 = 0.3 * 255)
+        local content_w = ImGui.GetContentRegionAvail(ctx)
+        local clicked_id = ChipList.draw(ctx, tag_items, {
+          justified = true,
+          max_stretch_ratio = 1.5,
+          style = Chip.STYLE.ACTION,
+          chip_height = UI.CHIP.HEIGHT_DEFAULT,
+          chip_spacing = 6,
+          line_spacing = 6,
+          rounding = 2,
+          padding_h = 8,
+          max_width = content_w,
+          unselected_alpha = 77,
+        })
+
+        -- Handle click - start rename on double-click
+        if clicked_id then
+          -- Check for double-click
+          if ImGui.IsMouseDoubleClicked(ctx, 0) then
+            state.renaming_item = clicked_id
+            state.renaming_type = "tag"
+            state.rename_buffer = clicked_id
           end
+        end
+
+        -- Handle rename mode separately (show input field overlay)
+        if renaming_tag then
+          -- Initialize field with current name
+          if Fields.get_text("tag_rename_" .. renaming_tag) == "" then
+            Fields.set_text("tag_rename_" .. renaming_tag, state.rename_buffer)
+          end
+
+          ImGui.Spacing(ctx)
+          ImGui.Text(ctx, "Renaming: " .. renaming_tag)
 
           local changed, new_name = Fields.draw_at_cursor(ctx, {
             width = -1,
             height = UI.CHIP.HEIGHT_SMALL,
             text = state.rename_buffer,
-          }, "tag_rename_" .. tag_name)
+          }, "tag_rename_" .. renaming_tag)
 
           if changed then
             state.rename_buffer = new_name
           end
 
+          -- Auto-focus on first frame
+          if ImGui.IsWindowAppearing(ctx) then
+            ImGui.SetKeyboardFocusHere(ctx, -1)
+          end
+
           -- Commit on Enter or deactivate
           if ImGui.IsItemDeactivatedAfterEdit(ctx) or ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) then
-            if state.rename_buffer ~= "" and state.rename_buffer ~= tag_name then
+            if state.rename_buffer ~= "" and state.rename_buffer ~= renaming_tag then
               -- Rename tag
-              Tags.rename_tag(state.metadata, tag_name, state.rename_buffer)
+              Tags.rename_tag(state.metadata, renaming_tag, state.rename_buffer)
               local Persistence = require('TemplateBrowser.domain.persistence')
               Persistence.save_metadata(state.metadata)
             end
@@ -100,29 +150,7 @@ function M.draw(ctx, state, config, width, height)
             state.renaming_type = nil
             state.rename_buffer = ""
           end
-        else
-          -- Normal display - draw tag using Chip component (ACTION style)
-          local clicked, chip_w, chip_h = Chip.draw(ctx, {
-            style = Chip.STYLE.ACTION,
-            label = tag_name,
-            bg_color = tag_data.color,
-            text_color = Colors.auto_text_color(tag_data.color),
-            height = UI.CHIP.HEIGHT_DEFAULT,
-            padding_h = 8,
-            rounding = 2,
-            is_selected = false,
-            interactive = true,
-          })
-
-          -- Double-click to rename
-          if ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0) then
-            state.renaming_item = tag_name
-            state.renaming_type = "tag"
-            state.rename_buffer = tag_name
-          end
         end
-
-        ImGui.PopID(ctx)
       end
     else
       ImGui.TextDisabled(ctx, "No tags yet")

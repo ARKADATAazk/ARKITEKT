@@ -31,8 +31,8 @@ function M.draw(ctx, state, config, width, height)
       local is_selected = state.filter_fx[fx_name] or false
 
       -- Draw VST using Chip component (ACTION style, consistent across Template Browser)
-      -- Very dark grey with 80% transparency
-      local bg_color = is_selected and Colors.hexrgb("#2A2A2ACC") or Colors.hexrgb("#1A1A1ACC")
+      -- Dark grey with 80% transparency
+      local bg_color = is_selected and Colors.hexrgb("#4A4A4ACC") or Colors.hexrgb("#3A3A3ACC")
       local clicked, chip_w, chip_h = Chip.draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,

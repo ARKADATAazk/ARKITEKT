@@ -63,11 +63,11 @@ local function draw_info_panel(ctx, gui, width, height)
         draw_section_header(ctx, "FX CHAIN")
 
         for i, fx_name in ipairs(tmpl.fx) do
-          -- Very dark grey with 80% transparency
+          -- Dark grey with 80% transparency
           Chip.draw(ctx, {
             style = Chip.STYLE.ACTION,
             label = fx_name,
-            bg_color = hexrgb("#1A1A1ACC"),
+            bg_color = hexrgb("#3A3A3ACC"),
             text_color = hexrgb("#FFFFFF"),
             height = 22,
             padding_h = 8,
@@ -138,6 +138,7 @@ local function draw_info_panel(ctx, gui, width, height)
           table.sort(tag_items, function(a, b) return a.label < b.label end)
 
           -- Draw tags using justified chip_list (ACTION style)
+          -- Unselected tags at 30% opacity (77 = 0.3 * 255)
           local clicked_id = ChipList.draw(ctx, tag_items, {
             justified = true,
             max_stretch_ratio = 1.5,
@@ -149,6 +150,7 @@ local function draw_info_panel(ctx, gui, width, height)
             rounding = 3,
             padding_h = 6,
             max_width = content_w,
+            unselected_alpha = 77,
           })
 
           if clicked_id then

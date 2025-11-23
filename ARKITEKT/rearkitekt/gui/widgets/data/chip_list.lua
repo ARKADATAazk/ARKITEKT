@@ -6,6 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local Chip = require('rearkitekt.gui.widgets.data.chip')
+local Colors = require('rearkitekt.core.colors')
 local ResponsiveGrid = require('rearkitekt.gui.systems.responsive_grid')
 
 local M = {}
@@ -22,11 +23,17 @@ local function _filter_items(items, search_text)
 end
 
 local function _draw_chip(ctx, item, is_selected, opts)
+  -- Apply unselected_alpha to item color if not selected
+  local item_color = item.color
+  if item_color and not is_selected and opts.unselected_alpha then
+    item_color = Colors.with_alpha(item_color, opts.unselected_alpha)
+  end
+
   return Chip.draw(ctx, {
     id = "##chip_" .. (item.id or item.label),
     style = opts.style,
     label = item.label,
-    color = item.color,
+    color = item_color,
     height = opts.chip_height,
     is_selected = is_selected,
     bg_color = opts.bg_color,
@@ -63,6 +70,7 @@ function M.draw(ctx, items, opts)
     dot_spacing = opts.dot_spacing,
     rounding = opts.rounding or 4,
     padding_h = opts.padding_h or (style == Chip.STYLE.DOT and 12 or 14),
+    unselected_alpha = opts.unselected_alpha,
   }
   
   if justified then

@@ -257,8 +257,8 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local chip_w = text_width + chip_content_width
     local chip_h = 20
 
-    -- Background (very dark grey with 80% transparency)
-    local chip_bg = hexrgb("#1A1A1ACC")
+    -- Background (dark grey with 80% transparency)
+    local chip_bg = hexrgb("#3A3A3ACC")
     ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, chip_bg, 2)
 
     -- Text (centered, white)
