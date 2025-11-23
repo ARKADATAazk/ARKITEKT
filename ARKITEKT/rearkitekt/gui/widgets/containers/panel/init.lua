@@ -614,8 +614,8 @@ local function draw_sidebar(ctx, dl, x, y, width, height, sidebar_cfg, panel_id,
     btn_config.id = btn_id
     btn_config.corner_rounding = corner_rounding
 
-    -- Draw the button
-    Button.draw(ctx, dl, btn_x, btn_y, btn_width, btn_height, btn_config, {})
+    -- Draw the button with panel context
+    Button.draw(ctx, dl, btn_x, btn_y, btn_width, btn_height, btn_config, { _panel_id = panel_id })
   end
 
   return width
