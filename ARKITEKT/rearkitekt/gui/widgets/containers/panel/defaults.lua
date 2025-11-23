@@ -184,6 +184,10 @@ M.ELEMENT_STYLE = {
   },
 }
 
+-- Aliases for element types (header uses _field suffix)
+M.ELEMENT_STYLE.dropdown_field = M.ELEMENT_STYLE.dropdown
+M.ELEMENT_STYLE.search_field = M.ELEMENT_STYLE.search
+
 -- Example: Header with left/right alignment
 M.ALIGNED_HEADER_EXAMPLE = {
   header = {
