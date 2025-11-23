@@ -38,19 +38,18 @@ local function point_in_rect(px, py, x1, y1, x2, y2)
   return px >= x1 and px <= x2 and py >= y1 and py <= y2
 end
 
--- Move all items in a container by time delta
+-- Move all items in a container by time delta, and sync to linked containers
 local function move_container_items(container, time_delta, State)
   if time_delta == 0 then return end
 
   reaper.PreventUIRefresh(1)
 
-  local moved_count = 0
+  -- Move items in this container
   for _, item_ref in ipairs(container.items) do
     local item = State.find_item_by_guid(item_ref.guid)
     if item then
       local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
       reaper.SetMediaItemInfo_Value(item, "D_POSITION", pos + time_delta)
-      moved_count = moved_count + 1
     end
   end
 
@@ -58,13 +57,40 @@ local function move_container_items(container, time_delta, State)
   container.start_time = container.start_time + time_delta
   container.end_time = container.end_time + time_delta
 
-  -- Update item cache
-  for _, item_ref in ipairs(container.items) do
-    local item = State.find_item_by_guid(item_ref.guid)
-    if item then
-      local hash = State.get_item_state_hash(item)
-      if hash then
-        State.item_state_cache[item_ref.guid] = hash
+  -- Get master ID for finding linked containers
+  local master_id = container.master_id or container.id
+
+  -- Sync to all linked containers
+  local all_containers = State.get_all_containers()
+  for _, other_container in ipairs(all_containers) do
+    local other_master = other_container.master_id or other_container.id
+    if other_master == master_id and other_container.id ~= container.id then
+      -- This is a linked container, move its items too
+      for i, other_item_ref in ipairs(other_container.items) do
+        local other_item = State.find_item_by_guid(other_item_ref.guid)
+        if other_item then
+          local pos = reaper.GetMediaItemInfo_Value(other_item, "D_POSITION")
+          reaper.SetMediaItemInfo_Value(other_item, "D_POSITION", pos + time_delta)
+        end
+      end
+      -- Update linked container bounds
+      other_container.start_time = other_container.start_time + time_delta
+      other_container.end_time = other_container.end_time + time_delta
+    end
+  end
+
+  -- Update all caches to prevent change detection
+  for _, c in ipairs(all_containers) do
+    local c_master = c.master_id or c.id
+    if c_master == master_id then
+      for _, item_ref in ipairs(c.items) do
+        local item = State.find_item_by_guid(item_ref.guid)
+        if item then
+          local hash = State.get_item_state_hash(item)
+          if hash then
+            State.item_state_cache[item_ref.guid] = hash
+          end
+        end
       end
     end
   end
