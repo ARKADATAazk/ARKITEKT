@@ -193,32 +193,50 @@ function M.render(ctx, rect, template, state, metadata, animator)
     Draw.text(dl, cursor_x, cursor_y, tags_color, tags_text)
   end
 
-  -- Section 4: Favorite Badge (right-aligned, replaces old star icon)
-  local badge_size = 14  -- Compact badge size for list view
-  local badge_margin = 4
-  local badge_x = x2 - badge_size - badge_margin  -- Right side
-  local badge_y = y1 + (tile_h - badge_size) / 2  -- Vertically centered
+  -- Section 4: Favorite Star (right-aligned)
+  local star_size = 10  -- Smaller star for compact view
+  local star_margin = 4
+  local star_x = x2 - star_size - star_margin  -- Right side
+  local star_y = y1 + (tile_h - star_size) / 2  -- Vertically centered
 
-  -- Check if mouse is over badge for click detection
+  -- Check if mouse is over star for click detection
   local mx, my = ImGui.GetMousePos(ctx)
-  local is_badge_hovered = mx >= badge_x and mx <= badge_x + badge_size and
-                           my >= badge_y and my <= badge_y + badge_size
+  local is_star_hovered = mx >= star_x and mx <= star_x + star_size and
+                          my >= star_y and my <= star_y + star_size
 
-  -- Badge configuration (matching ItemPicker style, scaled for compact view)
-  local badge_config = {
-    rounding = 2,
-    bg = hexrgb("#14181C"),
-    border_alpha = 0x66,
-    border_darken = 0.4,
-    icon_color = is_favorite and hexrgb("#FFA500") or hexrgb("#555555"),  -- Orange when favorited, gray otherwise
-  }
+  -- Star color: light grey when enabled, dark when disabled
+  local star_color
+  if is_favorite then
+    star_color = hexrgb("#E8E8E8")  -- Light grey when enabled
+  else
+    star_color = is_star_hovered and hexrgb("#282828A0") or hexrgb("#18181850")
+  end
 
-  -- Always render badge (not just when favorited) so it's clickable
-  Badge.render_favorite_badge(ctx, dl, badge_x, badge_y, badge_size, 255, true,
-                             nil, nil, chip_color or hexrgb("#555555"), badge_config)
+  -- Render star using remix icon font
+  local star_char = utf8.char(0xF186)  -- Remix star-fill icon
 
-  -- Handle badge click to toggle favorite
-  if is_badge_hovered and ImGui.IsMouseClicked(ctx, 0) then
+  -- Use icon font if available in state
+  if state.fonts and state.fonts.icons then
+    local base_size = state.fonts.icons_size or 14
+    local font_size = math.floor(base_size * 0.7)  -- Smaller for compact view
+
+    ImGui.PushFont(ctx, state.fonts.icons, font_size)
+    local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)
+    local star_text_x = star_x + (star_size - text_w) * 0.5
+    local star_text_y = star_y + (star_size - text_h) * 0.5
+    ImGui.DrawList_AddText(dl, star_text_x, star_text_y, star_color, star_char)
+    ImGui.PopFont(ctx)
+  else
+    -- Fallback to Unicode star if no icon font
+    local star_char_fallback = "★"
+    local text_w, text_h = ImGui.CalcTextSize(ctx, star_char_fallback)
+    local star_text_x = star_x + (star_size - text_w) * 0.5
+    local star_text_y = star_y + (star_size - text_h) * 0.5
+    Draw.text(dl, star_text_x, star_text_y, star_color, star_char_fallback)
+  end
+
+  -- Handle star click to toggle favorite
+  if is_star_hovered and ImGui.IsMouseClicked(ctx, 0) then
     state.star_clicked = true
   end
 end

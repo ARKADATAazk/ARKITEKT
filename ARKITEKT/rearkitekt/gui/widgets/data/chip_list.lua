@@ -44,14 +44,14 @@ function M.draw(ctx, items, opts)
   opts = opts or {}
   local filtered = _filter_items(items, opts.search_text or "")
   if #filtered == 0 then return nil end
-  
+
   local chip_spacing = opts.chip_spacing or 8
   local line_spacing = opts.line_spacing or 8
   local text_h = ImGui.GetTextLineHeight(ctx)
   local chip_height = opts.chip_height or (text_h + 6)
   local available_width = opts.max_width or ImGui.GetContentRegionAvail(ctx)
   local selected_ids = opts.selected_ids or {}
-  local style = opts.use_dot_style and Chip.STYLE.DOT or Chip.STYLE.PILL
+  local style = opts.style or (opts.use_dot_style and Chip.STYLE.DOT or Chip.STYLE.PILL)
   local justified = opts.justified or false
   
   local clicked_id = nil

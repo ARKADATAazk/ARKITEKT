@@ -283,7 +283,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
   end
 
   -- Render favorite star in top-right corner using remix icon font
-  local star_size = 21  -- Size of the star (1.5x)
+  local star_size = 15  -- Size of the star (reduced 30%)
   local star_margin = 4
   local star_x = x2 - star_size - star_margin
   local star_y = y1 + star_margin
@@ -318,9 +318,8 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Use icon font if available in state
   if state.fonts and state.fonts.icons then
     local base_size = state.fonts.icons_size or 14
-    local font_size = math.floor(base_size * 1.5)  -- 1.5x size
 
-    ImGui.PushFont(ctx, state.fonts.icons, font_size)
+    ImGui.PushFont(ctx, state.fonts.icons, base_size)
     local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)
     local star_text_x = star_x + (star_size - text_w) * 0.5
     local star_text_y = star_y + (star_size - text_h) * 0.5

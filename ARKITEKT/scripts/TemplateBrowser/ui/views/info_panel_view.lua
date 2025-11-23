@@ -142,7 +142,7 @@ local function draw_info_panel(ctx, gui, width, height)
             justified = true,
             max_stretch_ratio = 1.5,
             selected_ids = selected_ids,
-            use_dot_style = false,
+            style = Chip.STYLE.ACTION,
             chip_height = 22,
             chip_spacing = 6,
             line_spacing = 6,
