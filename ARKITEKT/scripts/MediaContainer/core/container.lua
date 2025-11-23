@@ -15,6 +15,8 @@ function M.create_from_selection()
     return nil
   end
 
+  reaper.Undo_BeginBlock()
+
   -- Collect selected items and determine bounds
   local items = {}
   local min_pos = math.huge
@@ -94,6 +96,8 @@ function M.create_from_selection()
       end
     end
   end
+
+  reaper.Undo_EndBlock("Create Media Container", -1)
 
   return container
 end
@@ -291,6 +295,7 @@ function M.detect_changes()
           old_hash = cached_hash,
           new_hash = current_hash,
         }
+        reaper.ShowConsoleMsg(string.format("[MediaContainer] Change detected in %s\n", container.name))
       end
 
       ::continue::
@@ -363,6 +368,8 @@ function M.sync_changes(changes)
       -- Apply properties from source to target
       M.apply_item_properties(source_item, target_item,
         source_container.start_time, linked_container.start_time)
+
+      reaper.ShowConsoleMsg(string.format("[MediaContainer] Synced to %s\n", linked_container.name))
 
       -- Update cache
       local new_hash = State.get_item_state_hash(target_item)
@@ -468,7 +475,9 @@ end
 
 -- Delete container
 function M.delete_container(container_id)
+  reaper.Undo_BeginBlock()
   State.remove_container(container_id)
+  reaper.Undo_EndBlock("Delete Media Container", -1)
 end
 
 -- Get container at position

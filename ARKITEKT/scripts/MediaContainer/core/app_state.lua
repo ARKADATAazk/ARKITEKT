@@ -106,6 +106,7 @@ end
 function M.add_container(container)
   M.containers[#M.containers + 1] = container
   M.container_lookup[container.id] = container
+  M.last_container_count = #M.containers  -- Update count to prevent reload
   M.persist()
 end
 
@@ -117,6 +118,7 @@ function M.remove_container(container_id)
       break
     end
   end
+  M.last_container_count = #M.containers  -- Update count to prevent reload
   M.persist()
 end
 
