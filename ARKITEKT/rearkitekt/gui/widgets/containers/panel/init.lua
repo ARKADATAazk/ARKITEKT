@@ -567,33 +567,27 @@ local function draw_sidebar(ctx, dl, x, y, width, height, sidebar_cfg, panel_id,
 
   local btn_height = sidebar_cfg.button_size or 28
   local btn_width = math.floor(btn_height * 0.7)  -- 30% narrower
-  local pad_top = sidebar_cfg.padding and sidebar_cfg.padding.top or 4
-  local pad_bottom = sidebar_cfg.padding and sidebar_cfg.padding.bottom or 4
-
-  -- Draw sidebar background
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, sidebar_cfg.bg_color or 0x1A1A1AFF)
 
   -- Calculate total buttons height with 1px overlap
-  local total_btn_height = (#elements * btn_height) - (#elements - 1)  -- 1px overlap
-  local available_height = height - pad_top - pad_bottom
+  local total_btn_height = (#elements * btn_height) - (#elements - 1)
 
-  -- Calculate start Y based on valign
+  -- Calculate start Y based on valign (no padding)
   local start_y
   local valign = sidebar_cfg.valign or "center"
   if valign == "top" then
-    start_y = y + pad_top
+    start_y = y
   elseif valign == "bottom" then
-    start_y = y + height - pad_bottom - total_btn_height
+    start_y = y + height - total_btn_height
   else -- center
-    start_y = y + pad_top + (available_height - total_btn_height) / 2
+    start_y = y + (height - total_btn_height) / 2
   end
 
-  -- Position buttons at their side edge
+  -- Position buttons at panel edge
   local btn_x
   if side == "left" then
-    btn_x = x + (width - btn_width) / 2  -- Center in sidebar for now
+    btn_x = x
   else -- right
-    btn_x = x + (width - btn_width) / 2
+    btn_x = x + width - btn_width
   end
 
   -- Draw each button
@@ -601,7 +595,7 @@ local function draw_sidebar(ctx, dl, x, y, width, height, sidebar_cfg, panel_id,
     local btn_y = start_y + (i - 1) * (btn_height - 1)  -- 1px overlap
     local btn_id = panel_id .. "_sidebar_" .. side .. "_" .. (element.id or i)
 
-    -- Determine rounding based on position and side
+    -- Determine rounding based on position
     local is_first = (i == 1)
     local is_last = (i == #elements)
     local rounding = sidebar_cfg.rounding or 4
