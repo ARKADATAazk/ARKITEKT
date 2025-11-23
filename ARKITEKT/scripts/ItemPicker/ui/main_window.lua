@@ -317,6 +317,9 @@ function GUI:draw(ctx, shell_state)
         local original_pooled = self.state.original_pooled_midi_state or false
         local effective_pooled = (original_pooled and not alt) or (not original_pooled and alt)
         use_pooled_copy = effective_pooled
+        -- Debug output
+        reaper.ShowConsoleMsg(string.format("[POOL DEBUG] alt=%s, original=%s, effective=%s, use_pooled=%s\n",
+          tostring(alt), tostring(original_pooled), tostring(effective_pooled), tostring(use_pooled_copy)))
       end
 
       -- Insert the item (pooled copy if ALT held for MIDI)
