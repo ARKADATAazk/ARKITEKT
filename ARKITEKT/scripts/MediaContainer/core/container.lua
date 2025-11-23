@@ -86,11 +86,11 @@ function M.create_from_selection()
 
   State.add_container(container)
 
-  -- Cache initial item states
+  -- Cache initial item states (using relative position)
   for _, item_ref in ipairs(items) do
     local item = State.find_item_by_guid(item_ref.guid)
     if item then
-      local hash = State.get_item_state_hash(item)
+      local hash = State.get_item_state_hash(item, container)
       if hash then
         State.item_state_cache[item_ref.guid] = hash
       end
@@ -231,12 +231,6 @@ function M.paste_container()
       length = item_ref.length,
     }
 
-    -- Cache initial state
-    local hash = State.get_item_state_hash(new_item)
-    if hash then
-      State.item_state_cache[new_guid] = hash
-    end
-
     ::continue::
   end
 
@@ -263,6 +257,17 @@ function M.paste_container()
 
   State.add_container(linked_container)
 
+  -- Cache initial item states (using relative position to the new container)
+  for _, item_ref in ipairs(new_items) do
+    local item = State.find_item_by_guid(item_ref.guid)
+    if item then
+      local hash = State.get_item_state_hash(item, linked_container)
+      if hash then
+        State.item_state_cache[item_ref.guid] = hash
+      end
+    end
+  end
+
   reaper.PreventUIRefresh(-1)
   reaper.UpdateArrange()
   reaper.Undo_EndBlock("Media Container Paste", -1)
@@ -284,7 +289,7 @@ function M.detect_changes()
         goto continue
       end
 
-      local current_hash = State.get_item_state_hash(item)
+      local current_hash = State.get_item_state_hash(item, container)
       local cached_hash = State.item_state_cache[item_ref.guid]
 
       if current_hash and current_hash ~= cached_hash then
@@ -384,8 +389,8 @@ function M.sync_changes(changes)
 
       reaper.ShowConsoleMsg(string.format("[MediaContainer] Synced to %s\n", linked_container.name))
 
-      -- Update cache
-      local new_hash = State.get_item_state_hash(target_item)
+      -- Update cache (using relative position to linked container)
+      local new_hash = State.get_item_state_hash(target_item, linked_container)
       if new_hash then
         State.item_state_cache[target_item_ref.guid] = new_hash
       end
