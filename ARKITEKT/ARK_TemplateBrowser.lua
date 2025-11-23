@@ -145,6 +145,7 @@ else
       default = 14,
       title = 20,
       monospace = 12,
+      icons = 14,
     },
 
     draw = function(ctx, shell_state)

@@ -15,7 +15,7 @@ local hexrgb = Colors.hexrgb
 
 -- Configuration for compact tiles
 M.CONFIG = {
-  tile_height = 18,  -- Fixed compact height (50% smaller than before)
+  tile_height = 15,  -- Fixed compact height (reduced by 3)
   color_bar_width = 3,  -- Left edge color indicator
   text_margin = 6,
   chip_spacing = 3,
@@ -91,15 +91,27 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local BRD_HOVER = hexrgb("#5588FF")
   local rounding = 3
 
-  -- Background color with smooth hover transition
+  -- Background color with smooth hover transition and subtle color tint
   local bg_color = BG_BASE
+  local color_blend = 0.035  -- Very subtle 3.5% color influence
+
+  -- Apply very subtle color tint if template has color
+  if chip_color then
+    local cr, cg, cb = Colors.rgba_to_components(chip_color)
+    local br, bg_c, bb = Colors.rgba_to_components(BG_BASE)
+    local r = math.floor(br * (1 - color_blend) + cr * color_blend)
+    local g = math.floor(bg_c * (1 - color_blend) + cg * color_blend)
+    local b = math.floor(bb * (1 - color_blend) + cb * color_blend)
+    bg_color = Colors.components_to_rgba(r, g, b, 255)
+  end
+
   if hover_factor > 0.01 then
-    local r1, g1, b1 = (BG_BASE >> 24) & 0xFF, (BG_BASE >> 16) & 0xFF, (BG_BASE >> 8) & 0xFF
-    local r2, g2, b2 = (BG_HOVER >> 24) & 0xFF, (BG_HOVER >> 16) & 0xFF, (BG_HOVER >> 8) & 0xFF
+    local r1, g1, b1 = Colors.rgba_to_components(bg_color)
+    local r2, g2, b2 = Colors.rgba_to_components(BG_HOVER)
     local r = math.floor(r1 + (r2 - r1) * hover_factor * 0.5)
     local g = math.floor(g1 + (g2 - g1) * hover_factor * 0.5)
     local b = math.floor(b1 + (b2 - b1) * hover_factor * 0.5)
-    bg_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+    bg_color = Colors.components_to_rgba(r, g, b, 255)
   end
 
   -- Draw background
@@ -107,42 +119,53 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
   -- Draw border or marching ants
   if state.selected then
-    -- Marching ants for selection
-    local ant_color = chip_color and Colors.same_hue_variant(chip_color, 1.0, 1.2, 0x7F) or hexrgb("#5588FF7F")
+    -- Marching ants for selection - light grey base with very subtle color tint
+    local ant_color
+    if chip_color then
+      -- Extract RGB from chip color and blend with light grey
+      local cr, cg, cb = Colors.rgba_to_components(chip_color)
+      -- Light grey base (190) with 15% chip color influence
+      local blend = 0.15
+      local r = math.floor(190 * (1 - blend) + cr * blend)
+      local g = math.floor(190 * (1 - blend) + cg * blend)
+      local b = math.floor(190 * (1 - blend) + cb * blend)
+      ant_color = Colors.components_to_rgba(r, g, b, 0x99)
+    else
+      ant_color = hexrgb("#C0C0C099")  -- Lighter grey with 60% opacity
+    end
     MarchingAnts.draw(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y1 + tile_h - 0.5, ant_color, 1.5, rounding, 8, 6, 20)
   else
-    -- Normal border with hover highlight
+    -- Normal border with hover highlight and subtle color tint
     local border_color = BRD_BASE
+
+    -- Apply subtle color tint to border if template has color
+    if chip_color then
+      local cr, cg, cb = Colors.rgba_to_components(chip_color)
+      local br, bg_c, bb = Colors.rgba_to_components(BRD_BASE)
+      local r = math.floor(br * (1 - color_blend) + cr * color_blend)
+      local g = math.floor(bg_c * (1 - color_blend) + cg * color_blend)
+      local b = math.floor(bb * (1 - color_blend) + cb * color_blend)
+      border_color = Colors.components_to_rgba(r, g, b, 255)
+    end
+
     if hover_factor > 0.01 then
-      local r1, g1, b1 = (BRD_BASE >> 24) & 0xFF, (BRD_BASE >> 16) & 0xFF, (BRD_BASE >> 8) & 0xFF
-      local r2, g2, b2 = (BRD_HOVER >> 24) & 0xFF, (BRD_HOVER >> 16) & 0xFF, (BRD_HOVER >> 8) & 0xFF
+      local r1, g1, b1 = Colors.rgba_to_components(border_color)
+      local r2, g2, b2 = Colors.rgba_to_components(BRD_HOVER)
       local r = math.floor(r1 + (r2 - r1) * hover_factor)
       local g = math.floor(g1 + (g2 - g1) * hover_factor)
       local b = math.floor(b1 + (b2 - b1) * hover_factor)
-      border_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+      border_color = Colors.components_to_rgba(r, g, b, 255)
     end
     ImGui.DrawList_AddRect(dl, x1, y1, x2, y1 + tile_h, border_color, rounding, 0, 1)
   end
 
-  -- Draw color indicator bar on left edge (if template has color)
-  if chip_color then
-    local bar_color = Colors.same_hue_variant(chip_color, 1.0, 1.1, 200)
-    ImGui.DrawList_AddRectFilled(
-      dl,
-      x1, y1,
-      x1 + M.CONFIG.color_bar_width, y1 + tile_h,
-      bar_color
-    )
-  end
-
   -- Horizontal layout sections with internal padding (like Parameter Library tiles)
-  local padding = 3
-  local color_stripe_width = chip_color and M.CONFIG.color_bar_width or 0
-  local cursor_x = x1 + padding + color_stripe_width
-  local cursor_y = y1 + (tile_h / 2) - 6  -- Vertically center text (adjusted for smaller height)
+  local padding = 2
+  local cursor_x = x1 + padding
+  local cursor_y = y1 + (tile_h / 2) - 9  -- Vertically center text (moved up 3px)
 
   -- Section 1: Template Name (left-aligned, takes ~35% width)
-  local available_width = tile_w - (padding * 2) - color_stripe_width
+  local available_width = tile_w - (padding * 2)
   local name_width = math.floor(available_width * M.CONFIG.name_width_fraction)
   local name_color = hexrgb("#CCCCCC")  -- Match Parameter Library text color
   if state.selected or state.hover then

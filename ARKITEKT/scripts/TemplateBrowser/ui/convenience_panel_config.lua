@@ -41,6 +41,8 @@ function M.create(callbacks, is_overlay_mode)
         },
       },
     },
+
+    padding = 8,
   }
 end
 

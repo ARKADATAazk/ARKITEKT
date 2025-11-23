@@ -8,6 +8,7 @@ local Draw = require('rearkitekt.gui.draw')
 local Chip = require('rearkitekt.gui.widgets.data.chip')
 local MarchingAnts = require('rearkitekt.gui.fx.interactions.marching_ants')
 local Badge = require('rearkitekt.gui.widgets.primitives.badge')
+local Defaults = require('TemplateBrowser.defs.defaults')
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -28,6 +29,38 @@ M.CONFIG = {
   hide_path_below = 60,
   compact_mode_below = 70,
 }
+
+-- Strip parenthetical content from VST name for display
+-- e.g., "Kontakt (Native Instruments)" -> "Kontakt"
+local function strip_parentheses(name)
+  if not name then return "" end
+  local stripped = name:gsub("%s*%b()", ""):gsub("^%s+", ""):gsub("%s+$", "")
+  -- Return original if stripping would leave nothing
+  return stripped ~= "" and stripped or name
+end
+
+-- Check if VST name is in the tile blacklist
+local function is_blacklisted(name)
+  if not name then return false end
+  local blacklist = Defaults.VST and Defaults.VST.tile_blacklist or {}
+  for _, blocked in ipairs(blacklist) do
+    if name:find(blocked, 1, true) then
+      return true
+    end
+  end
+  return false
+end
+
+-- Get first non-blacklisted VST from fx list
+local function get_display_vst(fx_list)
+  if not fx_list or #fx_list == 0 then return nil end
+  for _, fx_name in ipairs(fx_list) do
+    if not is_blacklisted(fx_name) then
+      return fx_name
+    end
+  end
+  return nil  -- All VSTs are blacklisted
+end
 
 -- Calculate tile height based on content
 local function calculate_content_height(template, config)
@@ -107,15 +140,27 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local BRD_HOVER = hexrgb("#5588FF")
   local rounding = 4
 
-  -- Background color with smooth hover transition
+  -- Background color with smooth hover transition and subtle color tint
   local bg_color = BG_BASE
+  local color_blend = 0.035  -- Very subtle 3.5% color influence
+
+  -- Apply very subtle color tint if template has color
+  if chip_color then
+    local cr, cg, cb = Colors.rgba_to_components(chip_color)
+    local br, bg_c, bb = Colors.rgba_to_components(BG_BASE)
+    local r = math.floor(br * (1 - color_blend) + cr * color_blend)
+    local g = math.floor(bg_c * (1 - color_blend) + cg * color_blend)
+    local b = math.floor(bb * (1 - color_blend) + cb * color_blend)
+    bg_color = Colors.components_to_rgba(r, g, b, 255)
+  end
+
   if hover_factor > 0.01 then
-    local r1, g1, b1 = (BG_BASE >> 24) & 0xFF, (BG_BASE >> 16) & 0xFF, (BG_BASE >> 8) & 0xFF
-    local r2, g2, b2 = (BG_HOVER >> 24) & 0xFF, (BG_HOVER >> 16) & 0xFF, (BG_HOVER >> 8) & 0xFF
+    local r1, g1, b1 = Colors.rgba_to_components(bg_color)
+    local r2, g2, b2 = Colors.rgba_to_components(BG_HOVER)
     local r = math.floor(r1 + (r2 - r1) * hover_factor * 0.5)
     local g = math.floor(g1 + (g2 - g1) * hover_factor * 0.5)
     local b = math.floor(b1 + (b2 - b1) * hover_factor * 0.5)
-    bg_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+    bg_color = Colors.components_to_rgba(r, g, b, 255)
   end
 
   -- Draw background
@@ -123,27 +168,44 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
   -- Draw border or marching ants
   if state.selected then
-    -- Marching ants for selection
-    local ant_color = chip_color and Colors.same_hue_variant(chip_color, 1.0, 1.2, 0x7F) or hexrgb("#5588FF7F")
+    -- Marching ants for selection - light grey base with very subtle color tint
+    local ant_color
+    if chip_color then
+      -- Extract RGB from chip color and blend with light grey
+      local cr, cg, cb = Colors.rgba_to_components(chip_color)
+      -- Light grey base (190) with 15% chip color influence
+      local blend = 0.15
+      local r = math.floor(190 * (1 - blend) + cr * blend)
+      local g = math.floor(190 * (1 - blend) + cg * blend)
+      local b = math.floor(190 * (1 - blend) + cb * blend)
+      ant_color = Colors.components_to_rgba(r, g, b, 0x99)
+    else
+      ant_color = hexrgb("#C0C0C099")  -- Lighter grey with 60% opacity
+    end
     MarchingAnts.draw(dl, x1 + 0.5, y1 + 0.5, x2 - 0.5, y2 - 0.5, ant_color, 1.5, rounding, 8, 6, 20)
   else
-    -- Normal border with hover highlight
+    -- Normal border with hover highlight and subtle color tint
     local border_color = BRD_BASE
+
+    -- Apply subtle color tint to border if template has color
+    if chip_color then
+      local cr, cg, cb = Colors.rgba_to_components(chip_color)
+      local br, bg_c, bb = Colors.rgba_to_components(BRD_BASE)
+      local r = math.floor(br * (1 - color_blend) + cr * color_blend)
+      local g = math.floor(bg_c * (1 - color_blend) + cg * color_blend)
+      local b = math.floor(bb * (1 - color_blend) + cb * color_blend)
+      border_color = Colors.components_to_rgba(r, g, b, 255)
+    end
+
     if hover_factor > 0.01 then
-      local r1, g1, b1 = (BRD_BASE >> 24) & 0xFF, (BRD_BASE >> 16) & 0xFF, (BRD_BASE >> 8) & 0xFF
-      local r2, g2, b2 = (BRD_HOVER >> 24) & 0xFF, (BRD_HOVER >> 16) & 0xFF, (BRD_HOVER >> 8) & 0xFF
+      local r1, g1, b1 = Colors.rgba_to_components(border_color)
+      local r2, g2, b2 = Colors.rgba_to_components(BRD_HOVER)
       local r = math.floor(r1 + (r2 - r1) * hover_factor)
       local g = math.floor(g1 + (g2 - g1) * hover_factor)
       local b = math.floor(b1 + (b2 - b1) * hover_factor)
-      border_color = (r << 24) | (g << 16) | (b << 8) | 0xFF
+      border_color = Colors.components_to_rgba(r, g, b, 255)
     end
     ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
-  end
-
-  -- Draw color indicator stripe on left edge if template has color
-  if chip_color then
-    local stripe_color = Colors.same_hue_variant(chip_color, 1.0, 1.1, 200)
-    ImGui.DrawList_AddRectFilled(dl, x1, y1, x1 + 3, y2, stripe_color)
   end
 
   -- Calculate text alpha based on tile height
@@ -154,10 +216,9 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
   -- Content positioning with internal padding (like Parameter Library tiles)
   local padding = 6
-  local color_stripe_width = chip_color and 3 or 0
-  local content_x = x1 + padding + color_stripe_width
+  local content_x = x1 + padding
   local content_y = y1 + padding
-  local content_w = tile_w - (padding * 2) - color_stripe_width
+  local content_w = tile_w - (padding * 2)
 
   -- Chip indicator removed - color is shown via diagonal stripes only
 
@@ -170,36 +231,25 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local truncated_name = truncate_text(ctx, template.name, content_w)
   Draw.text(dl, content_x, content_y, name_color, truncated_name)
 
-  -- Template path (if height allows)
-  if tile_h >= M.CONFIG.hide_path_below and template.relative_path ~= "" then
-    local path_y = content_y + 18
-    local path_alpha = math.floor(text_alpha * 0.6)
-    local path_color = Colors.with_alpha(hexrgb("#A0A0A0"), path_alpha)
-    local path_text = "[" .. template.folder .. "]"
-    local truncated_path = truncate_text(ctx, path_text, content_w)
-    Draw.text(dl, content_x, path_y, path_color, truncated_path)
-  end
-
-  -- Show first VST chip (if height allows and VSTs exist)
-  if tile_h >= M.CONFIG.hide_chips_below and template.fx and #template.fx > 0 then
-    local chip_y = tile_h >= M.CONFIG.compact_mode_below and (content_y + 40) or (content_y + 24)
+  -- Show first VST chip below title (where path used to be)
+  local first_vst = get_display_vst(template.fx)
+  if tile_h >= M.CONFIG.hide_chips_below and first_vst then
+    local chip_y = content_y + 18
     local chip_x = content_x
 
-    -- Get first VST name and truncate if needed
-    local first_vst = template.fx[1]
-    local vst_color = hexrgb("#4A9EFF")
+    -- Strip parenthetical content for display (e.g., "Kontakt (Native Instruments)" -> "Kontakt")
+    local display_vst = strip_parentheses(first_vst)
 
     -- Calculate max width for chip (leave room for favorite badge and margin)
     local max_chip_width = content_w - 40
 
     -- Truncate VST name if it's too long
-    local display_vst = first_vst
-    local text_width = ImGui.CalcTextSize(ctx, first_vst)
-    local chip_content_width = 12 + 6 + 10 + 8  -- padding + dot + spacing + end padding
+    local text_width = ImGui.CalcTextSize(ctx, display_vst)
+    local chip_content_width = 16  -- padding on both sides (8 + 8)
     if text_width + chip_content_width > max_chip_width then
       -- Truncate with ellipsis
       local available_width = max_chip_width - chip_content_width - ImGui.CalcTextSize(ctx, "...")
-      display_vst = truncate_text(ctx, first_vst, available_width)
+      display_vst = truncate_text(ctx, display_vst, available_width)
       text_width = ImGui.CalcTextSize(ctx, display_vst)
     end
 
@@ -207,57 +257,97 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local chip_w = text_width + chip_content_width
     local chip_h = 20
 
-    -- Background
-    local bg_color = hexrgb("#1E1E1E")
-    ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, bg_color, 6)
+    -- Background (ACTION style: steel blue)
+    local chip_bg = hexrgb("#3D5A80")
+    ImGui.DrawList_AddRectFilled(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, chip_bg, 2)
 
-    -- Borders (tabstrip style)
-    local border_inner = hexrgb("#2f2f2fff")
-    ImGui.DrawList_AddRect(dl, chip_x + 1, chip_y + 1, chip_x + chip_w - 1, chip_y + chip_h - 1, border_inner, 6, 0, 1)
-    local border_outer = hexrgb("#000000DD")
-    ImGui.DrawList_AddRect(dl, chip_x, chip_y, chip_x + chip_w, chip_y + chip_h, border_outer, 6, 0, 1)
-
-    -- Dot
-    local dot_x = chip_x + 12
-    local dot_y = chip_y + (chip_h * 0.5)
-    local dot_radius = 3
-    ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius + 1, Colors.with_alpha(hexrgb("#000000"), 80))
-    ImGui.DrawList_AddCircleFilled(dl, dot_x, dot_y, dot_radius, vst_color)
-
-    -- Text (use fixed text height for vertical centering)
-    local text_height = 13  -- Approximate default font height
-    local text_x = chip_x + 12 + 6 + 10 - 3  -- padding + dot + spacing - adjustment
-    local text_y = chip_y + ((chip_h - text_height) * 0.5)
-    local text_color = Colors.with_alpha(hexrgb("#FFFFFF"), 200)
+    -- Text (centered, white)
+    local _, actual_text_height = ImGui.CalcTextSize(ctx, display_vst)
+    local text_x = chip_x + (chip_w - text_width) * 0.5
+    local text_y = chip_y + math.floor((chip_h - actual_text_height) * 0.5)
+    local text_color = hexrgb("#FFFFFF")
     Draw.text(dl, text_x, text_y, text_color, display_vst)
   end
 
-  -- Render favorite badge in top-right corner (replaces old star icon)
-  local badge_size = 24  -- Larger badge size for grid tiles
-  local badge_margin = 6
-  local badge_x = x2 - badge_size - badge_margin  -- Right side
-  local badge_y = y1 + badge_margin  -- Top with margin
+  -- Template path at bottom right (if height allows)
+  if tile_h >= M.CONFIG.hide_path_below and template.relative_path ~= "" then
+    local path_alpha = math.floor(text_alpha * 0.6)
+    local path_color = Colors.with_alpha(hexrgb("#A0A0A0"), path_alpha)
+    local path_text = "[" .. template.folder .. "]"
+    local path_width = ImGui.CalcTextSize(ctx, path_text)
+    local truncated_path = truncate_text(ctx, path_text, content_w - 30)  -- Leave room for star
+    local actual_path_width = ImGui.CalcTextSize(ctx, truncated_path)
+    local path_x = x2 - padding - actual_path_width
+    local path_y = y2 - padding - 14  -- 14 is approx text height
+    Draw.text(dl, path_x, path_y, path_color, truncated_path)
+  end
 
-  -- Check if mouse is over badge for click detection
+  -- Render favorite star in top-right corner using remix icon font
+  local star_size = 21  -- Size of the star (1.5x)
+  local star_margin = 4
+  local star_x = x2 - star_size - star_margin
+  local star_y = y1 + star_margin
+
+  -- Hit area for click detection
   local mx, my = ImGui.GetMousePos(ctx)
-  local is_badge_hovered = mx >= badge_x and mx <= badge_x + badge_size and
-                           my >= badge_y and my <= badge_y + badge_size
+  local is_star_hovered = mx >= star_x and mx <= star_x + star_size and
+                          my >= star_y and my <= star_y + star_size
 
-  -- Badge configuration (matching ItemPicker style)
-  local badge_config = {
-    rounding = 3,
-    bg = hexrgb("#14181C"),
-    border_alpha = 0x66,
-    border_darken = 0.4,
-    icon_color = is_favorite and hexrgb("#FFA500") or hexrgb("#555555"),  -- Orange when favorited, gray otherwise
-  }
+  -- Determine star color based on tile color and favorite state
+  local star_color
 
-  -- Always render badge (not just when favorited) so it's clickable
-  Badge.render_favorite_badge(ctx, dl, badge_x, badge_y, badge_size, 255, true,
-                             nil, nil, chip_color or hexrgb("#555555"), badge_config)
+  if chip_color then
+    -- Blend with tile color subtly
+    local cr, cg, cb = Colors.rgba_to_components(chip_color)
+    local blend = 0.3  -- Color influence
 
-  -- Handle badge click to toggle favorite
-  if is_badge_hovered and ImGui.IsMouseClicked(ctx, 0) then
+    if is_favorite then
+      -- Lighter than tile color when enabled
+      local r = math.floor(math.min(255, cr * 1.4) * blend + 230 * (1 - blend))
+      local g = math.floor(math.min(255, cg * 1.4) * blend + 230 * (1 - blend))
+      local b = math.floor(math.min(255, cb * 1.4) * blend + 230 * (1 - blend))
+      star_color = Colors.components_to_rgba(r, g, b, 255)
+    else
+      -- Much darker when disabled
+      local r = math.floor(cr * 0.2 * blend + 20 * (1 - blend))
+      local g = math.floor(cg * 0.2 * blend + 20 * (1 - blend))
+      local b = math.floor(cb * 0.2 * blend + 20 * (1 - blend))
+      star_color = Colors.components_to_rgba(r, g, b, is_star_hovered and 160 or 80)
+    end
+  else
+    -- No tile color - use pure grey
+    if is_favorite then
+      star_color = hexrgb("#E8E8E8")  -- Light when enabled
+    else
+      star_color = is_star_hovered and hexrgb("#282828A0") or hexrgb("#18181850")  -- Much darker
+    end
+  end
+
+  -- Render star using remix icon font
+  local star_char = utf8.char(0xF186)  -- Remix star-fill icon
+
+  -- Use icon font if available in state
+  if state.fonts and state.fonts.icons then
+    local base_size = state.fonts.icons_size or 14
+    local font_size = math.floor(base_size * 1.5)  -- 1.5x size
+
+    ImGui.PushFont(ctx, state.fonts.icons, font_size)
+    local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)
+    local star_text_x = star_x + (star_size - text_w) * 0.5
+    local star_text_y = star_y + (star_size - text_h) * 0.5
+    ImGui.DrawList_AddText(dl, star_text_x, star_text_y, star_color, star_char)
+    ImGui.PopFont(ctx)
+  else
+    -- Fallback to Unicode star if no icon font
+    local star_char_fallback = "★"
+    local text_w, text_h = ImGui.CalcTextSize(ctx, star_char_fallback)
+    local star_text_x = star_x + (star_size - text_w) * 0.5
+    local star_text_y = star_y + (star_size - text_h) * 0.5
+    Draw.text(dl, star_text_x, star_text_y, star_color, star_char_fallback)
+  end
+
+  -- Handle star click to toggle favorite
+  if is_star_hovered and ImGui.IsMouseClicked(ctx, 0) then
     state.star_clicked = true
   end
 end

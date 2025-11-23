@@ -9,7 +9,7 @@ local TemplateTileCompact = require('TemplateBrowser.ui.tiles.template_tile_comp
 
 local M = {}
 
-function M.create(get_templates, metadata, animator, get_tile_width, get_view_mode, on_select, on_double_click, on_right_click, on_star_click)
+function M.create(get_templates, metadata, animator, get_tile_width, get_view_mode, on_select, on_double_click, on_right_click, on_star_click, gui)
   local grid = Grid.new({
     id = "template_grid",
     gap = TemplateTile.CONFIG.gap,  -- Initial value for grid mode
@@ -27,6 +27,9 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
     -- Tile rendering
     render_tile = function(ctx, rect, template, state)
       local view_mode = get_view_mode and get_view_mode() or "grid"
+
+      -- Add fonts to state for tile rendering (from GUI reference)
+      state.fonts = gui and gui.fonts or nil
 
       -- Use appropriate tile renderer based on view mode
       if view_mode == "list" then

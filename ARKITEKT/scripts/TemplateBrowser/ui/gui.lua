@@ -15,6 +15,7 @@ local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_c
 local RecentPanelConfig = require('TemplateBrowser.ui.recent_panel_config')
 local LeftPanelConfig = require('TemplateBrowser.ui.left_panel_config')
 local ConveniencePanelConfig = require('TemplateBrowser.ui.convenience_panel_config')
+local InfoPanelConfig = require('TemplateBrowser.ui.info_panel_config')
 local MarkdownField = require('rearkitekt.gui.widgets.primitives.markdown_field')
 local Shortcuts = require('TemplateBrowser.core.shortcuts')
 
@@ -44,10 +45,12 @@ function M.new(config, state, scanner)
     template_animator = TileAnim.new(16.0),  -- Animation speed
     template_grid = nil,  -- Initialized in initialize_once
     quick_access_grid = nil,  -- Initialized in initialize_once
+    fonts = nil,  -- Set from shell_state in draw()
     template_container = nil,  -- Initialized in initialize_once
     recent_container = nil,  -- Initialized in initialize_once
     left_panel_container = nil,  -- Initialized in initialize_once
     convenience_panel_container = nil,  -- Initialized in initialize_once
+    info_container = nil,  -- Initialized in initialize_once
   }, GUI)
 
   return self
@@ -155,7 +158,8 @@ function GUI:initialize_once(ctx, is_overlay_mode)
           Scanner.filter_templates(self.state)
         end
       end
-    end
+    end,
+    self  -- Pass GUI reference for fonts access
   )
 
   -- Get quick access templates helper
@@ -310,7 +314,8 @@ function GUI:initialize_once(ctx, is_overlay_mode)
           Scanner.filter_templates(self.state)
         end
       end
-    end
+    end,
+    self  -- Pass GUI reference for fonts access
   )
 
   -- Create template container with header controls
@@ -454,12 +459,23 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     config = convenience_panel_config,
   })
 
+  -- Create info panel container (template details & tags)
+  local info_panel_config = InfoPanelConfig.create({}, self.is_overlay_mode)
+
+  self.info_container = TilesContainer.new({
+    id = "info_panel_container",
+    config = info_panel_config,
+  })
+
   self.initialized = true
 end
 
 function GUI:draw(ctx, shell_state)
   local is_overlay_mode = shell_state.is_overlay_mode == true
   self:initialize_once(ctx, is_overlay_mode)
+
+  -- Store fonts reference for grid tiles
+  self.fonts = shell_state.fonts
 
   -- Process background FX parsing queue (5 templates per frame)
   FXQueue.process_batch(self.state, 5)
@@ -691,7 +707,7 @@ function GUI:draw(ctx, shell_state)
 
   -- Right panel: Info & Tag Assignment
   ImGui.SetCursorPos(ctx, sep2_x_local + separator_thickness / 2, cursor_y)
-  InfoPanelView.draw_info_panel(ctx, self.state, self.config, info_width, panel_height)
+  InfoPanelView.draw_info_panel(ctx, self, info_width, panel_height)
 
   -- Template context menu and rename modal (must be drawn outside panels)
   TemplateModalsView.draw_template_context_menu(ctx, self.state)

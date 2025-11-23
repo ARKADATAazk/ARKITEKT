@@ -16,14 +16,23 @@ local function file_exists(path)
   return false
 end
 
--- Find fonts directory relative to any entry point
+-- Find fonts directory relative to fonts.lua location
 local function find_fonts_dir()
   local sep = package.config:sub(1,1)
-  local src = debug.getinfo(2, 'S').source:sub(2)
+  -- Get the path to this file (fonts.lua)
+  local src = debug.getinfo(1, 'S').source:sub(2)
   local this_dir = src:match('(.*'..sep..')') or ('.'..sep)
-  local parent = this_dir:match('^(.*'..sep..')[^'..sep..']*'..sep..'$') or this_dir
-  return parent .. 'rearkitekt' .. sep .. 'fonts' .. sep
+  -- Go up from app/assets/ to app/
+  local app_dir = this_dir:match('^(.*'..sep..')[^'..sep..']*'..sep..'$') or this_dir
+  -- Go up from app/ to rearkitekt/
+  local rearkitekt_dir = app_dir:match('^(.*'..sep..')[^'..sep..']*'..sep..'$') or app_dir
+  -- Now add fonts/
+  local fonts_dir = rearkitekt_dir .. 'fonts' .. sep
+  return fonts_dir
 end
+
+-- Export for use by other modules (e.g., shell.lua)
+M.find_fonts_dir = find_fonts_dir
 
 ---Load standard ARKITEKT fonts and attach to ImGui context
 ---@param ImGui table ReaImGui module
@@ -42,18 +51,18 @@ function M.load(ImGui, ctx, opts)
 
   -- Find fonts directory
   local fonts_dir = find_fonts_dir()
-  local regular = fonts_dir .. 'Inter_18pt-Regular.ttf'
-  local bold = fonts_dir .. 'Inter_18pt-SemiBold.ttf'
+  local roboto_regular = fonts_dir .. 'Roboto-Regular.ttf'
+  local roboto_medium = fonts_dir .. 'Roboto-Medium.ttf'
   local mono = fonts_dir .. 'JetBrainsMono-Regular.ttf'
   local orbitron = fonts_dir .. 'Orbitron-Bold.ttf'
   local remixicon = fonts_dir .. 'remixicon.ttf'
 
-  -- Create fonts - use CreateFontFromFile for TTF files, CreateFont for system fonts
+  -- Create fonts - use Roboto for consistent cross-platform display with tabular figures
   local fonts = {
-    default = file_exists(regular) and ImGui.CreateFontFromFile(regular, 0, 0) or ImGui.CreateFont('sans-serif', 0),
+    default = file_exists(roboto_regular) and ImGui.CreateFontFromFile(roboto_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0),
     default_size = default_size,
 
-    title = file_exists(bold) and ImGui.CreateFontFromFile(bold, 0, 0) or ImGui.CreateFont('sans-serif', 0),
+    title = file_exists(roboto_medium) and ImGui.CreateFontFromFile(roboto_medium, 0, 0) or ImGui.CreateFont('sans-serif', 0),
     title_size = title_size,
 
     monospace = file_exists(mono) and ImGui.CreateFontFromFile(mono, 0, 0) or ImGui.CreateFont('monospace', 0),
