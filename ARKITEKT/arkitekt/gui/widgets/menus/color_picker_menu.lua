@@ -7,13 +7,13 @@ local Colors = require('arkitekt.defs.colors')
 local ColorUtils = require('arkitekt.core.colors')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Draw = require('arkitekt.gui.draw')
-local arkit = require('arkitekt.arkit')
+local Utf8 = require('arkitekt.core.utf8')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
 local hexrgb = ColorUtils.hexrgb
 
 -- Remix icon for checkbox (selection indicator)
-local ICON_CHECK = arkit.utf8(0xEC69)
+local ICON_CHECK = Utf8.utf8(0xEC69)
 
 local M = {}
 
