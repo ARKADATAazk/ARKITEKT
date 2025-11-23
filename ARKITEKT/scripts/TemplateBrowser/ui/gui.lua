@@ -826,8 +826,10 @@ function GUI:draw(ctx, shell_state)
   ImGui.SetCursorPos(ctx, sep2_x_local + separator_thickness / 2, cursor_y)
   InfoPanelView.draw_info_panel(ctx, self, info_width, panel_height)
 
-  -- Template context menu and rename modal (must be drawn outside panels)
+  -- Context menus and modals (must be drawn outside panels)
   TemplateModalsView.draw_template_context_menu(ctx, self.state)
+  TemplateModalsView.draw_tag_context_menu(ctx, self.state)
+  TemplateModalsView.draw_vst_context_menu(ctx, self.state)
   TemplateModalsView.draw_template_rename_modal(ctx, self.state)
   TemplateModalsView.draw_conflict_resolution_modal(ctx, self.state)
 

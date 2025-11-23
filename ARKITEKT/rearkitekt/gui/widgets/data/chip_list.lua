@@ -83,6 +83,7 @@ function M.draw(ctx, items, opts)
   
   local clicked_id = nil
   local dragging_id = nil
+  local right_clicked_id = nil
   local drag_type = opts.drag_type
   local drag_data_fn = opts.drag_data_fn  -- function(item) -> data table
   local drag_threshold = opts.drag_threshold or MouseUtil.DEFAULTS.DRAG_THRESHOLD
@@ -181,6 +182,8 @@ function M.draw(ctx, items, opts)
         _draw_chip(ctx, cell.item, selected_ids[cell.item.id], draw_opts)
         local is_click = handle_chip_interaction(cell.item)
         if is_click then clicked_id = cell.item.id end
+        -- Check for right-click
+        if ImGui.IsItemClicked(ctx, 1) then right_clicked_id = cell.item.id end
         if cell_idx < #row then ImGui.SameLine(ctx, 0, chip_spacing) end
       end
 
@@ -211,13 +214,15 @@ function M.draw(ctx, items, opts)
       _draw_chip(ctx, item, selected_ids[item.id], draw_opts)
       local is_click = handle_chip_interaction(item)
       if is_click then clicked_id = item.id end
+      -- Check for right-click
+      if ImGui.IsItemClicked(ctx, 1) then right_clicked_id = item.id end
 
       current_x = current_x + chip_width
       items_in_row = items_in_row + 1
     end
   end
 
-  return clicked_id, dragging_id
+  return clicked_id, dragging_id, right_clicked_id
 end
 
 function M.draw_vertical(ctx, items, opts)

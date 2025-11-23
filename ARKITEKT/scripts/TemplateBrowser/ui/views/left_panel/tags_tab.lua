@@ -41,13 +41,8 @@ function M.draw(ctx, state, config, width, height)
       end
     end
 
-    -- Create tag with random color
-    local r = math.random(50, 255) / 255.0
-    local g = math.random(50, 255) / 255.0
-    local b = math.random(50, 255) / 255.0
-    local color = (math.floor(r * 255) << 16) | (math.floor(g * 255) << 8) | math.floor(b * 255)
-
-    Tags.create_tag(state.metadata, new_tag_name, color)
+    -- Create tag with default color (dark grey)
+    Tags.create_tag(state.metadata, new_tag_name)
 
     -- Save metadata
     local Persistence = require('TemplateBrowser.domain.persistence')
@@ -84,7 +79,7 @@ function M.draw(ctx, state, config, width, height)
         -- Draw tags using justified chip_list (ACTION style)
         -- Unselected tags at 30% opacity (77 = 0.3 * 255)
         local content_w = ImGui.GetContentRegionAvail(ctx)
-        local clicked_id = ChipList.draw(ctx, tag_items, {
+        local clicked_id, _, right_clicked_id = ChipList.draw(ctx, tag_items, {
           justified = true,
           max_stretch_ratio = 1.5,
           style = Chip.STYLE.ACTION,
@@ -106,6 +101,11 @@ function M.draw(ctx, state, config, width, height)
             state.renaming_type = "tag"
             state.rename_buffer = clicked_id
           end
+        end
+
+        -- Handle right-click - open color picker context menu
+        if right_clicked_id then
+          state.context_menu_tag = right_clicked_id
         end
 
         -- Handle rename mode separately (show input field overlay)
