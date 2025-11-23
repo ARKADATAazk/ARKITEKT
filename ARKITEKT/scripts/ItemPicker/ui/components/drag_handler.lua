@@ -74,12 +74,14 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
   local left_mouse_down = (mouse_key & 1) == 1
 
   -- Check ALT modifier for toggling pooled MIDI copy mode
-  local alt_pressed = ImGui.IsKeyDown(ctx, ImGui.Key_LeftAlt) or ImGui.IsKeyDown(ctx, ImGui.Key_RightAlt)
+  -- Use JS_Mouse_GetState to detect ALT even after ImGui loses focus (during multi-drop)
+  local mouse_state = reaper.JS_Mouse_GetState(0xFF)
+  local alt_pressed = (mouse_state & 16) ~= 0  -- Bit 4 = Alt
   -- Only relevant for MIDI items
   local is_midi_drag = state.dragging_is_audio == false
 
   -- ALT toggles the current pooled state (XOR logic)
-  -- If pooled is ON by default, ALT turns it OFF; if OFF, ALT turns it ON
+  -- If source is pooled, ALT unpools; if source is not pooled, ALT pools
   local original_pooled = state.original_pooled_midi_state or false
   local effective_pooled = (original_pooled and not alt_pressed) or (not original_pooled and alt_pressed)
   state.alt_pool_mode = is_midi_drag and effective_pooled
