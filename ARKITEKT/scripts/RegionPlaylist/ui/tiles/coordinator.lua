@@ -684,7 +684,7 @@ function RegionTiles:draw_pool(ctx, regions, height, shell_state)
     end
   end
 
-  return Render.draw_pool(self, ctx, regions, height, shell_state)
+  return Render.draw_pool(self, ctx, regions, height)
 end
 
 function RegionTiles:draw_ghosts(ctx)

@@ -15,7 +15,6 @@ local ContextMenu = require('rearkitekt.gui.widgets.overlays.context_menu')
 local SWSImporter = require('RegionPlaylist.storage.sws_importer')
 local ModalDialog = require('rearkitekt.gui.widgets.overlays.overlay.modal_dialog')
 local BatchRenameModal = require('rearkitekt.gui.widgets.overlays.batch_rename_modal')
-local Colors = require('rearkitekt.core.colors')
 
 local M = {}
 
@@ -80,31 +79,6 @@ local function extract_playlist_region_items(playlist)
     end
   end
   return items
-end
-
--- Helper: Draw watermark text centered in area
-local WATERMARK_SIZE = 200
-local WATERMARK_COLOR = Colors.hexrgba("#FFFFFF", 0.06)  -- White at 6% opacity
-
-local function draw_watermark(ctx, text, x, y, w, h, shell_state)
-  local fonts = shell_state and shell_state.fonts
-  local orbitron = fonts and fonts.orbitron
-  if not orbitron then return end
-
-  -- Push font and calculate text size
-  ImGui.PushFont(ctx, orbitron, WATERMARK_SIZE)
-  local text_w, text_h = ImGui.CalcTextSize(ctx, text)
-  ImGui.PopFont(ctx)
-
-  -- Center position
-  local text_x = x + (w - text_w) / 2
-  local text_y = y + (h - text_h) / 2
-
-  -- Draw on background
-  local dl = ImGui.GetWindowDrawList(ctx)
-  ImGui.PushFont(ctx, orbitron, WATERMARK_SIZE)
-  ImGui.DrawList_AddText(dl, text_x, text_y, WATERMARK_COLOR, text)
-  ImGui.PopFont(ctx)
 end
 
 -- Helper: Extract RIDs and playlist IDs from pool selection
@@ -174,11 +148,6 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   self.current_active_tile_height = responsive_height
   self.active_grid.fixed_tile_h = responsive_height
   self.active_grid.gap = raw_gap
-
-  -- Draw watermark
-  local content_x = cursor_x + self.container_config.padding
-  local content_y = cursor_y + header_height + self.container_config.padding
-  draw_watermark(ctx, "ACTIVE GRID", content_x, content_y, child_w, child_h, shell_state)
 
   local wheel_y = ImGui.GetMouseWheel(ctx)
 
@@ -307,7 +276,7 @@ function M.draw_active(self, ctx, playlist, height, shell_state)
   end
 end
 
-function M.draw_pool(self, ctx, regions, height, shell_state)
+function M.draw_pool(self, ctx, regions, height)
   self._imgui_ctx = ctx
 
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
@@ -349,11 +318,6 @@ function M.draw_pool(self, ctx, regions, height, shell_state)
   self.current_pool_tile_height = responsive_height
   self.pool_grid.fixed_tile_h = responsive_height
   self.pool_grid.gap = raw_gap
-
-  -- Draw watermark
-  local content_x = cursor_x + self.container_config.padding
-  local content_y = cursor_y + header_height + self.container_config.padding
-  draw_watermark(ctx, "POOL GRID", content_x, content_y, child_w, child_h, shell_state)
 
   -- Disable background deselection when action menu is visible
   self.pool_grid.disable_background_clicks = ImGui.IsPopupOpen(ctx, "PoolActionsMenu")
