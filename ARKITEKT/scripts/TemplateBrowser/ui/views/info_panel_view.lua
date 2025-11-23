@@ -137,12 +137,12 @@ local function draw_info_panel(ctx, gui, width, height)
           -- Sort tags alphabetically for consistent display
           table.sort(tag_items, function(a, b) return a.label < b.label end)
 
-          -- Draw tags using justified chip_list
+          -- Draw tags using justified chip_list (ACTION style)
           local clicked_id = ChipList.draw(ctx, tag_items, {
             justified = true,
             max_stretch_ratio = 1.5,
             selected_ids = selected_ids,
-            use_dot_style = true,
+            use_dot_style = false,
             chip_height = 22,
             chip_spacing = 6,
             line_spacing = 6,

@@ -293,33 +293,22 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local is_star_hovered = mx >= star_x and mx <= star_x + star_size and
                           my >= star_y and my <= star_y + star_size
 
-  -- Determine star color based on tile color and favorite state
+  -- Determine star color based on favorite state (light grey when enabled, no color influence)
   local star_color
 
-  if chip_color then
-    -- Blend with tile color subtly
-    local cr, cg, cb = Colors.rgba_to_components(chip_color)
-    local blend = 0.3  -- Color influence
-
-    if is_favorite then
-      -- Colored but much darker when enabled
-      local r = math.floor(math.min(255, cr * 0.6) * blend + 80 * (1 - blend))
-      local g = math.floor(math.min(255, cg * 0.6) * blend + 80 * (1 - blend))
-      local b = math.floor(math.min(255, cb * 0.6) * blend + 80 * (1 - blend))
-      star_color = Colors.components_to_rgba(r, g, b, 255)
-    else
-      -- Much darker when disabled
+  if is_favorite then
+    star_color = hexrgb("#E8E8E8")  -- Light grey when enabled
+  else
+    -- Darker when disabled, with subtle color influence if tile has color
+    if chip_color then
+      local cr, cg, cb = Colors.rgba_to_components(chip_color)
+      local blend = 0.3  -- Color influence
       local r = math.floor(cr * 0.2 * blend + 20 * (1 - blend))
       local g = math.floor(cg * 0.2 * blend + 20 * (1 - blend))
       local b = math.floor(cb * 0.2 * blend + 20 * (1 - blend))
       star_color = Colors.components_to_rgba(r, g, b, is_star_hovered and 160 or 80)
-    end
-  else
-    -- No tile color - use darker grey
-    if is_favorite then
-      star_color = hexrgb("#606060")  -- Darker when enabled
     else
-      star_color = is_star_hovered and hexrgb("#282828A0") or hexrgb("#18181850")  -- Much darker
+      star_color = is_star_hovered and hexrgb("#282828A0") or hexrgb("#18181850")
     end
   end
 
