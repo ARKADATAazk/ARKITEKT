@@ -595,14 +595,27 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
   -- Position cursor for content (with padding)
   ImGui.SetCursorScreenPos(ctx, x + 12, y + 6)
 
-  -- Show status on the left
+  -- Determine if we're in ZIP mode (show dropdown) or direct mode
+  local is_zip_mode = (status == "needs-link" or status == "linked-ready" or
+                       status == "zip-ready" or status == "linked-needs-build")
+
+  -- Show status indicator
   if status == "needs-link" then
-    -- Red "NOT LINKED" text
     ImGui.TextColored(ctx, hexrgb("#E04141"), "NOT LINKED")
+  elseif status == "linked-ready" or status == "zip-ready" then
+    ImGui.TextColored(ctx, hexrgb("#41E0A3"), "ZIP")
+  elseif status == "linked-needs-build" then
+    ImGui.TextColored(ctx, hexrgb("#E0B341"), "BUILD NEEDED")
+  elseif status == "direct" then
+    ImGui.TextColored(ctx, hexrgb("#41E0A3"), "DIRECT")
+  end
+
+  -- Show inline ZIP picker for ZIP modes
+  if is_zip_mode then
     ImGui.SameLine(ctx)
     ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 8)
 
-    -- ZIP dropdown
+    -- Lazy-load available ZIPs
     if #self.available_zips == 0 then
       self.available_zips = Theme.list_theme_zips()
     end
@@ -610,13 +623,23 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
     if #self.available_zips > 0 then
       -- Create display list (just filenames)
       local zip_names = {}
-      for _, zip_path in ipairs(self.available_zips) do
+      local current_index = 0
+
+      for i, zip_path in ipairs(self.available_zips) do
         local name = zip_path:match("[^\\/]+$") or zip_path
         table.insert(zip_names, name)
+
+        -- If this ZIP is currently linked, select it
+        if zip_name and name == zip_name then
+          current_index = i
+        end
       end
 
-      ImGui.SetNextItemWidth(ctx, 300)
-      local changed, new_index = ImGui.Combo(ctx, "##zip_picker", self.selected_zip_index, table.concat(zip_names, "\0") .. "\0")
+      -- Use current_index if we found a match, otherwise use stored selection
+      local display_index = (current_index > 0) and current_index or self.selected_zip_index
+
+      ImGui.SetNextItemWidth(ctx, 220)
+      local changed, new_index = ImGui.Combo(ctx, "##zip_picker", display_index, table.concat(zip_names, "\0") .. "\0")
 
       if changed and new_index > 0 then
         self.selected_zip_index = new_index
@@ -629,35 +652,31 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
             local packages = PackageManager.scan_packages(nil, self.State.get_demo_mode())
             self.State.set_packages(packages)
             self.package_model.index = packages
+
+            -- Refresh grid
+            if self.grid then
+              self:refresh_package_model()
+            end
           end
         end
       end
 
-      ImGui.SameLine(ctx)
-      ImGui.TextDisabled(ctx, "Select ZIP to link theme")
+      -- Show arrow and theme name for linked states
+      if status == "linked-ready" or status == "zip-ready" or status == "linked-needs-build" then
+        ImGui.SameLine(ctx)
+        ImGui.TextDisabled(ctx, "→ " .. info.theme_name)
+      end
     else
-      ImGui.TextDisabled(ctx, "No .ReaperThemeZip files found in ColorThemes")
-    end
-
-  elseif status == "linked-ready" or status == "zip-ready" then
-    ImGui.TextColored(ctx, hexrgb("#41E0A3"), "LINKED")
-    if zip_name then
       ImGui.SameLine(ctx)
-      ImGui.TextDisabled(ctx, "→ " .. zip_name)
+      ImGui.TextDisabled(ctx, "No .ReaperThemeZip files found")
     end
 
   elseif status == "direct" then
-    ImGui.TextColored(ctx, hexrgb("#41E0A3"), "DIRECT")
+    -- Direct mode: show theme folder
     if dir then
       ImGui.SameLine(ctx)
-      ImGui.TextDisabled(ctx, "→ " .. (dir:match("[^\\/]+$") or dir))
-    end
-
-  elseif status == "linked-needs-build" then
-    ImGui.TextColored(ctx, hexrgb("#E0B341"), "BUILD NEEDED")
-    if zip_name then
-      ImGui.SameLine(ctx)
-      ImGui.TextDisabled(ctx, "→ " .. zip_name)
+      ImGui.SetCursorPosX(ctx, ImGui.GetCursorPosX(ctx) + 8)
+      ImGui.TextDisabled(ctx, "→ " .. (dir:match("[^\\/]+$") or info.theme_name))
     end
   end
 end
