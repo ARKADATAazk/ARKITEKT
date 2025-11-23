@@ -171,31 +171,29 @@ local function layout_elements(ctx, elements, available_width, state)
   local layout = {}
   local fixed_total = 0
   local flex_total = 0
-  local spacing = 0
-  
+
+  -- Headers enforce no spacing between elements - use separators for gaps
+  -- This ensures rounding rules work correctly (elements are always flush)
+
   for i, element in ipairs(elements) do
     local width = calculate_element_width(ctx, element, state)
-    
+
     if width then
       fixed_total = fixed_total + width
     else
       flex_total = flex_total + (element.flex or 1)
     end
-    
-    if i > 1 then
-      spacing = spacing + (element.spacing_before or 0)
-    end
-    
+
     layout[i] = {
       element = element,
       fixed_width = width,
       flex = element.flex,
     }
   end
-  
-  local remaining = available_width - fixed_total - spacing
+
+  local remaining = available_width - fixed_total
   local flex_unit = flex_total > 0 and (remaining / flex_total) or 0
-  
+
   for i, item in ipairs(layout) do
     if not item.fixed_width then
       item.width = math.max(0, item.flex * flex_unit)
@@ -203,7 +201,7 @@ local function layout_elements(ctx, elements, available_width, state)
       item.width = item.fixed_width
     end
   end
-  
+
   return layout
 end
 
@@ -402,20 +400,18 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
   local border_overlap = 1
   local cursor_x = x
   local last_non_sep_idx = find_last_non_separator(layout)
-  
+
   for i, item in ipairs(layout) do
     local element = item.element
     local element_width = item.width
-    local spacing_before = element.spacing_before or 0
-    
+
+    -- Apply 1px overlap between adjacent non-separator elements
     if i > 1 then
       local prev_element = layout[i - 1].element
       if prev_element.type ~= 'separator' and element.type ~= 'separator' then
-        spacing_before = spacing_before - border_overlap
+        cursor_x = cursor_x - border_overlap
       end
     end
-    
-    cursor_x = cursor_x + spacing_before
     
     if i == last_non_sep_idx and element.type ~= 'separator' then
       local remaining_space = (x + width) - cursor_x
@@ -548,9 +544,6 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     local center_width = 0
     for _, item in ipairs(center_layout) do
       center_width = center_width + item.width
-      if item.element.spacing_before then
-        center_width = center_width + item.element.spacing_before
-      end
     end
 
     local valign = config.valign or "top"
@@ -574,17 +567,11 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     local left_width = 0
     for _, item in ipairs(left_layout) do
       left_width = left_width + item.width
-      if item.element.spacing_before then
-        left_width = left_width + item.element.spacing_before
-      end
     end
 
     local right_width = 0
     for _, item in ipairs(right_layout) do
       right_width = right_width + item.width
-      if item.element.spacing_before then
-        right_width = right_width + item.element.spacing_before
-      end
     end
 
     -- Render left-aligned elements
@@ -603,9 +590,6 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     local right_width = 0
     for _, item in ipairs(right_layout) do
       right_width = right_width + item.width
-      if item.element.spacing_before then
-        right_width = right_width + item.element.spacing_before
-      end
     end
 
     local right_x = content_x + content_width - right_width
@@ -621,9 +605,6 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
     local left_width = 0
     for _, item in ipairs(left_layout) do
       left_width = left_width + item.width
-      if item.element.spacing_before then
-        left_width = left_width + item.element.spacing_before
-      end
     end
 
     render_elements(ctx, dl, content_x, content_y, content_width, content_height, left_elements, state, header_rounding, is_bottom)
