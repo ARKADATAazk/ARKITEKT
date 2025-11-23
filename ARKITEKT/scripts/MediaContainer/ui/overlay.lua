@@ -11,6 +11,7 @@ local M = {}
 M.dragging_container_id = nil
 M.drag_start_time = nil
 M.drag_start_mouse_x = nil
+M.was_mouse_down = false  -- Track previous mouse state to detect click start
 
 -- Convert timeline position to screen X coordinate
 local function timeline_to_screen_x(time_pos, arrange_start_time, zoom_level, window_x)
@@ -273,10 +274,11 @@ function M.draw_containers(ctx, draw_list, State)
     ::next_container::
   end
 
-  -- Handle click to start drag (only if not already dragging and mouse is in arrange)
+  -- Handle click to start drag (only on mouse DOWN transition, not while held)
   local mouse_in_arrange = mouse_x >= w_x1 and mouse_x <= w_x2 and mouse_y >= w_y1 and mouse_y <= w_y2
+  local click_started = left_down and not M.was_mouse_down  -- Detect transition from up to down
 
-  if hovered_container and left_down and not M.dragging_container_id and mouse_in_arrange then
+  if hovered_container and click_started and not M.dragging_container_id and mouse_in_arrange then
     reaper.Undo_BeginBlock()
 
     M.dragging_container_id = hovered_container.id
@@ -300,6 +302,9 @@ function M.draw_containers(ctx, draw_list, State)
     end
     reaper.ShowConsoleMsg(string.format("[MediaContainer] Selected %d items\n", selected_count))
   end
+
+  -- Update mouse state for next frame
+  M.was_mouse_down = left_down
 
   ImGui.PopStyleVar(ctx, 1)
   ImGui.End(ctx)

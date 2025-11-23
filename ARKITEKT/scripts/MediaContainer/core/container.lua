@@ -314,6 +314,9 @@ function M.sync_changes(changes)
   reaper.Undo_BeginBlock()
   reaper.PreventUIRefresh(1)
 
+  -- Track which master groups we've already processed to avoid loops
+  local processed_masters = {}
+
   for _, change in ipairs(changes) do
     local source_container = State.get_container_by_id(change.container_id)
     if not source_container then
@@ -322,6 +325,16 @@ function M.sync_changes(changes)
 
     -- Get master ID
     local master_id = source_container.master_id or source_container.id
+
+    -- Skip if we've already processed this master group
+    if processed_masters[master_id] then
+      -- Just update the cache for this item
+      State.item_state_cache[change.item_guid] = change.new_hash
+      goto next_change
+    end
+    processed_masters[master_id] = true
+
+    reaper.ShowConsoleMsg(string.format("[MediaContainer] Processing sync for master group %s\n", master_id:sub(1,8)))
 
     -- Find the item reference in source container
     local source_item_ref = nil
