@@ -30,6 +30,7 @@ M.COLORS = {
 
 -- Track active drag type globally
 M._active_drag_type = nil
+M._hovered_drop_target = nil  -- Track which item is being hovered for drop
 
 -- Set the active drag type (call when drag starts)
 function M.set_active_drag_type(drag_type)
@@ -44,6 +45,22 @@ end
 -- Clear the active drag type (call when drag ends)
 function M.clear_active_drag_type()
   M._active_drag_type = nil
+  M._hovered_drop_target = nil
+end
+
+-- Set the hovered drop target (call when BeginDragDropTarget succeeds)
+function M.set_hovered_drop_target(id)
+  M._hovered_drop_target = id
+end
+
+-- Get the hovered drop target
+function M.get_hovered_drop_target()
+  return M._hovered_drop_target
+end
+
+-- Clear hovered drop target (call at start of frame)
+function M.clear_hovered_drop_target()
+  M._hovered_drop_target = nil
 end
 
 -- Begin a drag source on the last item

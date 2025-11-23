@@ -52,9 +52,39 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
         -- Check if a tag is being dragged (globally)
         local is_tag_dragging = DragDrop.get_active_drag_type() == Constants.DRAG_TYPES.TAG
 
-        -- Draw potential target indicator on all tiles while dragging a tag
         if is_tag_dragging then
-          DragDrop.draw_potential_target(ctx, rect)
+          -- Get selection state from GUI
+          local selected_keys = gui and gui.state and gui.state.selected_template_keys or {}
+          local template_key = "template_" .. template.uuid
+
+          -- Check if this template is selected
+          local is_selected = false
+          for _, key in ipairs(selected_keys) do
+            if key == template_key then
+              is_selected = true
+              break
+            end
+          end
+
+          -- Check if the hovered template is in our selection
+          local hovered_key = DragDrop.get_hovered_drop_target()
+          local hovered_is_selected = false
+          if hovered_key then
+            for _, key in ipairs(selected_keys) do
+              if key == hovered_key then
+                hovered_is_selected = true
+                break
+              end
+            end
+          end
+
+          -- Show active glow if: we're selected AND a selected tile is being hovered
+          if is_selected and hovered_is_selected then
+            DragDrop.draw_active_target(ctx, rect)
+          else
+            -- Draw potential target indicator
+            DragDrop.draw_potential_target(ctx, rect)
+          end
         end
 
         -- Create invisible button for drop target
@@ -65,8 +95,22 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
         ImGui.PushStyleColor(ctx, ImGui.Col_DragDropTarget, 0x00000000)
 
         if ImGui.BeginDragDropTarget(ctx) then
-          -- Draw active target highlight when hovering
-          DragDrop.draw_active_target(ctx, rect)
+          -- Track this as the hovered template
+          local template_key = "template_" .. template.uuid
+          DragDrop.set_hovered_drop_target(template_key)
+
+          -- Draw active target highlight when hovering (if not already drawn for selection)
+          local selected_keys = gui and gui.state and gui.state.selected_template_keys or {}
+          local is_selected = false
+          for _, key in ipairs(selected_keys) do
+            if key == template_key then
+              is_selected = true
+              break
+            end
+          end
+          if not is_selected or #selected_keys <= 1 then
+            DragDrop.draw_active_target(ctx, rect)
+          end
 
           -- Accept drop with no default rect (we draw our own)
           local payload = DragDrop.accept_drop(ctx, Constants.DRAG_TYPES.TAG, ImGui.DragDropFlags_AcceptNoDrawDefaultRect)
