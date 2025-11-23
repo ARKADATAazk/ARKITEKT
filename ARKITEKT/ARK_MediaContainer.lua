@@ -78,7 +78,7 @@ Shell.run({
 
     if #containers > 0 then
       -- Scrollable list
-      if ImGui.BeginChild(ctx, "ContainerList", 0, 120, true) then
+      if ImGui.BeginChild(ctx, "ContainerList", 0, 120) then
         for i, container in ipairs(containers) do
           local linked_text = container.master_id and " [linked]" or " [master]"
           local label = string.format("%s%s (%d items)", container.name, linked_text, #container.items)
