@@ -24,6 +24,11 @@ M.last_container_count = 0  -- Track container count for reload detection
 -- Change tracking
 M.item_state_cache = {}  -- item_guid -> state_hash
 
+-- GUID lookup caches (performance optimization)
+M.item_guid_cache = {}   -- GUID -> item pointer (O(1) lookup)
+M.track_guid_cache = {}  -- GUID -> track pointer (O(1) lookup)
+M.guid_cache_dirty = true  -- Flag to rebuild caches
+
 local function get_current_project_filename()
   local proj_path = reaper.GetProjectPath("")
   local proj_name = reaper.GetProjectName(0, "")
@@ -48,6 +53,7 @@ end
 function M.initialize()
   M.last_project_filename = get_current_project_filename()
   M.last_project_ptr = get_current_project_ptr()
+  M.guid_cache_dirty = true  -- Mark cache dirty on initialization
   M.load_project_state()
 end
 
@@ -56,6 +62,7 @@ function M.load_project_state()
   rebuild_container_lookup()
   M.clipboard_container_id = Persistence.load_clipboard(0)
   M.last_container_count = #M.containers
+  M.guid_cache_dirty = true  -- Mark cache dirty when project state changes
 
   -- Rebuild item state cache for change detection
   M.rebuild_item_state_cache()
@@ -187,28 +194,73 @@ function M.rebuild_item_state_cache()
   end
 end
 
--- Find Reaper item by GUID
-function M.find_item_by_guid(guid)
+-- Rebuild GUID caches (call when project changes detected)
+local function rebuild_guid_caches()
+  -- Rebuild item GUID cache
+  M.item_guid_cache = {}
   for i = 0, reaper.CountMediaItems(0) - 1 do
     local item = reaper.GetMediaItem(0, i)
-    local item_guid = reaper.BR_GetMediaItemGUID(item)
-    if item_guid == guid then
-      return item
+    if item then
+      local guid = reaper.BR_GetMediaItemGUID(item)
+      if guid then
+        M.item_guid_cache[guid] = item
+      end
     end
   end
-  return nil
-end
 
--- Get track by GUID
-function M.find_track_by_guid(guid)
+  -- Rebuild track GUID cache
+  M.track_guid_cache = {}
   for i = 0, reaper.CountTracks(0) - 1 do
     local track = reaper.GetTrack(0, i)
-    local track_guid = reaper.GetTrackGUID(track)
-    if track_guid == guid then
-      return track
+    if track then
+      local guid = reaper.GetTrackGUID(track)
+      if guid then
+        M.track_guid_cache[guid] = track
+      end
     end
   end
-  return nil
+
+  M.guid_cache_dirty = false
+end
+
+-- Find Reaper item by GUID (O(1) with caching)
+function M.find_item_by_guid(guid)
+  if not guid then return nil end
+
+  -- Rebuild cache if dirty
+  if M.guid_cache_dirty then
+    rebuild_guid_caches()
+  end
+
+  -- Try cache first
+  local item = M.item_guid_cache[guid]
+  if item and reaper.ValidatePtr2(0, item, "MediaItem*") then
+    return item
+  end
+
+  -- Cache miss - rebuild and retry (item may have been created recently)
+  rebuild_guid_caches()
+  return M.item_guid_cache[guid]
+end
+
+-- Get track by GUID (O(1) with caching)
+function M.find_track_by_guid(guid)
+  if not guid then return nil end
+
+  -- Rebuild cache if dirty
+  if M.guid_cache_dirty then
+    rebuild_guid_caches()
+  end
+
+  -- Try cache first
+  local track = M.track_guid_cache[guid]
+  if track and reaper.ValidatePtr2(0, track, "MediaTrack*") then
+    return track
+  end
+
+  -- Cache miss - rebuild and retry (track may have been created recently)
+  rebuild_guid_caches()
+  return M.track_guid_cache[guid]
 end
 
 -- Get track index (0-based)

@@ -127,7 +127,7 @@ function M.handle_drag_logic(ctx, state, mini_font, visualization)
   local last_track
   for i = reaper.CountTracks(0) - 1, 0, -1 do
     local tr = reaper.GetTrack(0, i)
-    if reaper.IsTrackVisible(tr, false) then
+    if tr and reaper.IsTrackVisible(tr, false) then
       last_track = tr
       break
     end
