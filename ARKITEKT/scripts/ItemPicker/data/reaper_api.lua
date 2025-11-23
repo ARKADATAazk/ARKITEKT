@@ -26,6 +26,9 @@ local function get_item_uuid(item)
   return string.format("item_%d_%.6f_%.6f", track_num, pos, length)
 end
 
+-- Export for use by other modules
+M.get_item_uuid = get_item_uuid
+
 function M.init(utils_module)
   utils = utils_module
 end

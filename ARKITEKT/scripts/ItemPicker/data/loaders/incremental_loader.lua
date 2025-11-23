@@ -4,22 +4,9 @@
 
 local M = {}
 
--- Generate stable UUID from item GUID (for cache consistency)
-local function get_item_uuid(item)
-  -- Use REAPER's built-in item GUID for stable identification
-  local guid = reaper.BR_GetMediaItemGUID(item)
-  if guid then
-    return guid
-  end
-
-  -- Fallback: generate hash from item properties
-  local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
-  local length = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
-  local track = reaper.GetMediaItem_Track(item)
-  local track_num = reaper.GetMediaTrackInfo_Value(track, "IP_TRACKNUMBER")
-
-  return string.format("item_%d_%.6f_%.6f", track_num, pos, length)
-end
+-- Import shared UUID function from reaper_api
+local reaper_api = require('ItemPicker.data.reaper_api')
+local get_item_uuid = reaper_api.get_item_uuid
 
 function M.new(reaper_interface, batch_size)
   local loader = {
