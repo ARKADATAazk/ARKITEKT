@@ -12,7 +12,6 @@ local Config = require('rearkitekt.core.config')
 local Constants = require('rearkitekt.defs.app')
 local Typography = require('rearkitekt.defs.typography')
 local Fonts = require('rearkitekt.app.assets.fonts')
-local Runtime = require('rearkitekt.app.runtime.runtime')
 local Window  = require('rearkitekt.app.chrome.window.window')
 
 local M = {}
@@ -205,77 +204,105 @@ function M.run(opts)
     return result
   end
 
-  local runtime = Runtime.new({
-    title = title,
-    ctx   = ctx,
+  -- Inline runtime loop (no separate Runtime module)
+  local runtime = {
+    ctx = ctx,
+    open = true,
+  }
 
-    on_frame = function(ctx)
-      if enable_profiling then
-        state.profiling.frame_start = reaper.time_precise()
+  local function on_frame()
+    if enable_profiling then
+      state.profiling.frame_start = reaper.time_precise()
+    end
+
+    if style and style.PushMyStyle then
+      if enable_profiling and window.start_timer then
+        window:start_timer("style_push")
       end
-      
-      if style and style.PushMyStyle then 
-        if enable_profiling and window.start_timer then
-          window:start_timer("style_push")
-        end
-        style.PushMyStyle(ctx)
-        if enable_profiling and window.end_timer then
-          window:end_timer("style_push")
-        end
+      style.PushMyStyle(ctx)
+      if enable_profiling and window.end_timer then
+        window:end_timer("style_push")
       end
+    end
 
-      ImGui.PushFont(ctx, fonts.default, fonts.default_size)
+    ImGui.PushFont(ctx, fonts.default, fonts.default_size)
 
-      local visible, open = window:Begin(ctx)
-      if visible then
-        if raw_content then
+    local visible, open = window:Begin(ctx)
+    if visible then
+      if raw_content then
+        draw_with_profiling(ctx, state)
+      else
+        if window:BeginBody(ctx) then
           draw_with_profiling(ctx, state)
-        else
-          if window:BeginBody(ctx) then
-            draw_with_profiling(ctx, state)
-            window:EndBody(ctx)
-          end
+          window:EndBody(ctx)
         end
       end
-      window:End(ctx)
+    end
+    window:End(ctx)
 
-      ImGui.PopFont(ctx)
-      
-      if style and style.PopMyStyle then 
-        if enable_profiling and window.start_timer then
-          window:start_timer("style_pop")
-        end
-        style.PopMyStyle(ctx)
-        if enable_profiling and window.end_timer then
-          window:end_timer("style_pop")
-        end
-      end
+    ImGui.PopFont(ctx)
 
-      if settings and settings.maybe_flush then 
-        if enable_profiling and window.start_timer then
-          window:start_timer("settings_flush")
-        end
-        settings:maybe_flush()
-        if enable_profiling and window.end_timer then
-          window:end_timer("settings_flush")
-        end
+    if style and style.PopMyStyle then
+      if enable_profiling and window.start_timer then
+        window:start_timer("style_pop")
       end
-      
-      if enable_profiling then
-        state.profiling.total_time = (reaper.time_precise() - state.profiling.frame_start) * 1000
-        if window.profiling then
-          window.profiling.custom_timers["total_frame"] = state.profiling.total_time
-        end
+      style.PopMyStyle(ctx)
+      if enable_profiling and window.end_timer then
+        window:end_timer("style_pop")
       end
-      
-      return open ~= false
-    end,
+    end
 
-    on_destroy = function()
-      if settings and settings.flush then settings:flush() end
-      if opts.on_close then opts.on_close() end
-    end,
-  })
+    if settings and settings.maybe_flush then
+      if enable_profiling and window.start_timer then
+        window:start_timer("settings_flush")
+      end
+      settings:maybe_flush()
+      if enable_profiling and window.end_timer then
+        window:end_timer("settings_flush")
+      end
+    end
+
+    if enable_profiling then
+      state.profiling.total_time = (reaper.time_precise() - state.profiling.frame_start) * 1000
+      if window.profiling then
+        window.profiling.custom_timers["total_frame"] = state.profiling.total_time
+      end
+    end
+
+    return open ~= false
+  end
+
+  local function on_destroy()
+    if settings and settings.flush then settings:flush() end
+    if opts.on_close then opts.on_close() end
+  end
+
+  -- Main defer loop
+  local function frame()
+    if not runtime.open then
+      on_destroy()
+      return
+    end
+
+    local continue = on_frame()
+    if continue == false then
+      runtime.open = false
+    end
+
+    if runtime.open then
+      reaper.defer(frame)
+    else
+      on_destroy()
+    end
+  end
+
+  function runtime:start()
+    reaper.defer(frame)
+  end
+
+  function runtime:request_close()
+    self.open = false
+  end
 
   state.start_timer = function(name)
     if window.start_timer then
