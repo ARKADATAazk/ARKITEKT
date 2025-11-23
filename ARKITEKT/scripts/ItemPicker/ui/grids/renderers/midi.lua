@@ -3,12 +3,14 @@
 -- MIDI tile renderer with piano roll visualization
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
-local Draw = require('arkitekt.gui.draw')
-local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
+local ark = require('arkitekt')
+
+local Colors = ark.Colors
+local Draw = ark.Draw
+local MarchingAnts = ark.MarchingAnts
 local BaseRenderer = require('ItemPicker.ui.grids.renderers.base')
-local Shapes = require('arkitekt.gui.rendering.shapes')
-local TileFX = require('arkitekt.gui.rendering.tile.renderer')
+local Shapes = ark.Shapes
+local TileFX = ark.TileRenderer
 
 local M = {}
 

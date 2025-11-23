@@ -3,7 +3,9 @@
 -- Renders template tiles in the templates grid
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
+local ark = require('arkitekt')
+
+local Colors = ark.Colors
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local hexrgb = Colors.hexrgb
 

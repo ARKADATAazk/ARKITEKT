@@ -3,14 +3,16 @@
 -- Assembler tab with Panel + package grid
 
 local ImGui = require 'imgui' '0.10'
-local TilesContainer = require('arkitekt.gui.widgets.containers.panel')
-local PackageTilesGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
+local ark = require('arkitekt')
+
+local TilesContainer = ark.Panel
+local PackageTilesGrid = ark.PackageTilesGrid
 local PackageManager = require('ThemeAdjuster.packages.manager')
 local Config = require('ThemeAdjuster.core.config')
 local Theme = require('ThemeAdjuster.core.theme')
-local Colors = require('arkitekt.core.colors')
+local Colors = ark.Colors
 local PackageModal = require('ThemeAdjuster.ui.views.package_modal')
-local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
+local Dropdown = ark.Dropdown
 local hexrgb = Colors.hexrgb
 
 local M = {}

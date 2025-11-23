@@ -3,11 +3,13 @@
 -- Packages grid view with Panel header and ARKITEKT package_tiles
 
 local ImGui = require 'imgui' '0.10'
-local Panel = require('arkitekt.gui.widgets.containers.panel')
-local PackageTilesGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
-local Button = require('arkitekt.gui.widgets.primitives.button')
+local ark = require('arkitekt')
+
+local Panel = ark.Panel
+local PackageTilesGrid = ark.PackageTilesGrid
+local Button = ark.Button
 local PackageManager = require('ThemeAdjuster.packages.manager')
-local Colors = require('arkitekt.core.colors')
+local Colors = ark.Colors
 local hexrgb = Colors.hexrgb
 
 local M = {}

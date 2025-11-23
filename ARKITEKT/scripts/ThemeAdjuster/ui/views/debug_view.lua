@@ -3,10 +3,12 @@
 -- Debug tab with theme info and image browser
 
 local ImGui = require 'imgui' '0.10'
-local TilesContainer = require('arkitekt.gui.widgets.containers.panel')
+local ark = require('arkitekt')
+
+local TilesContainer = ark.Panel
 local Theme = require('ThemeAdjuster.core.theme')
-local ImageCache = require('arkitekt.core.images')  -- Use ARKITEKT's central image system
-local Colors = require('arkitekt.core.colors')
+local ImageCache = ark.Images
+local Colors = ark.Colors
 local hexrgb = Colors.hexrgb
 
 local M = {}

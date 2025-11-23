@@ -5,18 +5,20 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
+local ark = require('arkitekt')
+
 -- Import system
-local Shell = require('arkitekt.app.runtime.shell')
+local Shell = ark.Shell
 
 -- Import base controls
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
-local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
+local Button = ark.Button
+local SearchInput = ark.SearchInput
+local Dropdown = ark.Dropdown
 
 -- Import panel system
-local Panel = require('arkitekt.gui.widgets.containers.panel')
+local Panel = ark.Panel
 local Config = require('arkitekt.gui.widgets.containers.panel.defaults')
-local Colors = require('arkitekt.core.colors')
+local Colors = ark.Colors
 local hexrgb = Colors.hexrgb
 
 

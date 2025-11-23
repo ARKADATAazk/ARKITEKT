@@ -3,11 +3,13 @@
 -- Package manifest/micro-manage modal (overlay with visual tile grid)
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
-local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
-local Button = require('arkitekt.gui.widgets.primitives.button')
+local ark = require('arkitekt')
+
+local Colors = ark.Colors
+local SearchInput = ark.SearchInput
+local Button = ark.Button
 local Constants = require('ThemeAdjuster.defs.constants')
-local ImageCache = require('arkitekt.core.images')
+local ImageCache = ark.Images
 local hexrgb = Colors.hexrgb
 
 local M = {}

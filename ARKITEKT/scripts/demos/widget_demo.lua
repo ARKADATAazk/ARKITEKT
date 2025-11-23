@@ -49,14 +49,16 @@ local function addpath(p) if p and p~="" and not package.path:find(p,1,true) the
 addpath(join(PARENT,"?.lua")); addpath(join(PARENT,"?/init.lua"))
 addpath(join(HERE,  "?.lua")); addpath(join(HERE,  "?/init.lua"))
 
+local ark = require('arkitekt')
+
 -- Your modules
-local Shell        = require("arkitekt.app.runtime.shell")
+local Shell        = ark.Shell
 local Settings     = (function() local ok,m=pcall(require,"arkitekt.core.settings"); return ok and m or nil end)()
-local okStyle,Style= pcall(require,"arkitekt.gui.style.imgui_defaults")
+local okStyle,Style= ark.ImGuiStyle and true, ark.ImGuiStyle
 local ColorBlocks  = require("ReArkitekt.gui.widgets.colorblocks")
-local Draw         = require("arkitekt.gui.draw")
+local Draw         = ark.Draw
 local Effects      = require("arkitekt.gui.rendering.effects")
-local Colors = require('arkitekt.core.colors')
+local Colors = ark.Colors
 local hexrgb = Colors.hexrgb
 
 

@@ -11,6 +11,7 @@ local Background = ark.PanelBackground
 local Style = ark.Style
 local Colors = ark.Colors
 local GridBridge = ark.GridBridge
+local TileGroup = ark.TileGroup
 local hexrgb = ark.hexrgb
 
 local Constants = require('ThemeAdjuster.defs.constants')
@@ -385,7 +386,6 @@ end
 -- Grid data provider methods
 function AdditionalView:get_library_items()
   -- Use TileGroup to flatten param_groups into a flat list for the Grid
-  local TileGroup = require('arkitekt.gui.widgets.containers.tile_group')
 
   -- Convert param_groups to TileGroup structures
   local tile_groups = {}
@@ -1088,7 +1088,6 @@ end
 
 -- Get template items for grid
 function AdditionalView:get_template_items()
-  local TileGroup = require('arkitekt.gui.widgets.containers.tile_group')
 
   -- Build tile groups from template_groups
   local tile_groups = {}

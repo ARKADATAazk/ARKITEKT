@@ -3,9 +3,11 @@
 -- Renders parameter tiles in the library
 
 local ImGui = require 'imgui' '0.10'
-local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
-local Spinner = require('arkitekt.gui.widgets.primitives.spinner')
-local Colors = require('arkitekt.core.colors')
+local ark = require('arkitekt')
+
+local Checkbox = ark.Checkbox
+local Spinner = ark.Spinner
+local Colors = ark.Colors
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
 local hexrgb = Colors.hexrgb

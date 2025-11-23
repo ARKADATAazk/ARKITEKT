@@ -3,6 +3,10 @@
 -- Main GUI orchestrator (refactored - view-based architecture)
 
 local ImGui = require 'imgui' '0.10'
+
+local ark = require('arkitekt')
+local Regions = ark.Regions
+
 local RegionTiles = require("RegionPlaylist.ui.tiles.coordinator")
 local Shortcuts = require("RegionPlaylist.ui.shortcuts")
 local PlaylistController = require("RegionPlaylist.core.controller")
@@ -172,7 +176,6 @@ function M.create(State, AppConfig, settings)
       local rid = tonumber(item_key:match("pool_(%d+)"))
       if rid then
         -- Rename region directly
-        local Regions = require('arkitekt.reaper.regions')
         Regions.set_region_name(0, rid, new_name)
       else
         -- Rename playlist

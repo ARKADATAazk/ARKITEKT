@@ -5,6 +5,9 @@
 
 local ark = require('arkitekt')
 local TreeView = ark.TreeView
+local ContextMenu = ark.ContextMenu
+local Colors = ark.Colors
+local ColorDefs = require('arkitekt.defs.colors')
 
 local M = {}
 
@@ -553,10 +556,6 @@ function M.draw_physical_tree(ctx, state, config)
 
     -- Context menu renderer (called inline by TreeView)
     render_context_menu = function(ctx_inner, node)
-      local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
-      local Colors = require('arkitekt.core.colors')
-      local ColorDefs = require('arkitekt.defs.colors')
-
       if ContextMenu.begin(ctx_inner, "folder_context_menu") then
         -- Build color options from centralized palette
         local color_options = {{ name = "None", color = nil }}
@@ -985,10 +984,6 @@ function M.draw_virtual_tree(ctx, state, config)
     end,
 
     render_context_menu = function(ctx_inner, node)
-      local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
-      local Colors = require('arkitekt.core.colors')
-      local ColorDefs = require('arkitekt.defs.colors')
-
       if ContextMenu.begin(ctx_inner, "folder_context_menu") then
         -- Build color options from centralized palette
         local color_options = {{ name = "None", color = nil }}

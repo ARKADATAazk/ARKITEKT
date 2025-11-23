@@ -6,6 +6,7 @@ local ImGui = require 'imgui' '0.10'
 
 local ark = require('arkitekt')
 local Colors = ark.Colors
+local Chip = ark.Chip
 
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
 
@@ -83,9 +84,6 @@ local function draw_template_panel(ctx, gui, width, height)
   local panel_height = height
 
   -- 1. FILTER CHIPS (Tags and FX) - Below header, before grid
-  local Chip = require('arkitekt.gui.widgets.data.chip')
-  local Colors = require('arkitekt.core.colors')
-
   local filter_chip_height = 0
   local has_filters = (next(state.filter_tags) ~= nil) or (next(state.filter_fx) ~= nil)
 
