@@ -9,19 +9,49 @@ local M = {}
 
 -- Texture cache for baked patterns
 local texture_cache = {}
+local cache_order = {}  -- Track insertion order for LRU eviction
+local MAX_CACHE_SIZE = 32  -- Limit to prevent attachment overflow
 
 -- ============================================================================
 -- TEXTURE BAKING: Create tileable pattern textures for performance
 -- ============================================================================
 
--- Generate a unique cache key for a pattern configuration
-local function get_pattern_cache_key(pattern_type, spacing, size, color)
-  -- Extract RGBA components from color for cache key
+-- Normalize color to reduce cache variations (round to nearest 16 for each channel)
+local function normalize_color(color)
   local r = (color >> 24) & 0xFF
   local g = (color >> 16) & 0xFF
   local b = (color >> 8) & 0xFF
   local a = color & 0xFF
-  return string.format("%s_%d_%.1f_%d_%d_%d_%d", pattern_type, spacing, size, r, g, b, a)
+  -- Round to nearest 16 to reduce unique combinations
+  r = math.floor(r / 16 + 0.5) * 16
+  g = math.floor(g / 16 + 0.5) * 16
+  b = math.floor(b / 16 + 0.5) * 16
+  a = math.floor(a / 16 + 0.5) * 16
+  -- Clamp to 255
+  r = math.min(255, r)
+  g = math.min(255, g)
+  b = math.min(255, b)
+  a = math.min(255, a)
+  return (r << 24) | (g << 16) | (b << 8) | a
+end
+
+-- Generate a unique cache key for a pattern configuration
+local function get_pattern_cache_key(pattern_type, spacing, size, color)
+  -- Normalize color first to reduce variations
+  local norm_color = normalize_color(color)
+  local r = (norm_color >> 24) & 0xFF
+  local g = (norm_color >> 16) & 0xFF
+  local b = (norm_color >> 8) & 0xFF
+  local a = norm_color & 0xFF
+  return string.format("%s_%d_%.1f_%d_%d_%d_%d", pattern_type, spacing, size, r, g, b, a), norm_color
+end
+
+-- Evict oldest cache entry
+local function evict_oldest()
+  if #cache_order > 0 then
+    local oldest_key = table.remove(cache_order, 1)
+    texture_cache[oldest_key] = nil
+  end
 end
 
 -- Create a baked dot pattern texture
@@ -200,27 +230,46 @@ end
 
 -- Get or create a cached pattern texture
 local function get_pattern_texture(ctx, pattern_type, spacing, size, color)
-  local key = get_pattern_cache_key(pattern_type, spacing, size, color)
+  local key, norm_color = get_pattern_cache_key(pattern_type, spacing, size, color)
 
   if texture_cache[key] then
     local cached = texture_cache[key]
     -- Validate the texture is still valid
     if ImGui.ValidatePtr and ImGui.ValidatePtr(cached.img, 'ImGui_Image*') then
+      -- Move to end of cache_order for LRU
+      for i, k in ipairs(cache_order) do
+        if k == key then
+          table.remove(cache_order, i)
+          break
+        end
+      end
+      table.insert(cache_order, key)
       return cached.img, cached.size
     else
-      -- Invalid, remove from cache
+      -- Invalid, remove from cache and cache_order
       texture_cache[key] = nil
+      for i, k in ipairs(cache_order) do
+        if k == key then
+          table.remove(cache_order, i)
+          break
+        end
+      end
     end
   end
 
-  -- Create new texture
+  -- Evict if cache is full
+  while #cache_order >= MAX_CACHE_SIZE do
+    evict_oldest()
+  end
+
+  -- Create new texture using normalized color
   local img, tex_size
   if pattern_type == 'dots' then
-    img, tex_size = create_dot_texture(spacing, size, color)
+    img, tex_size = create_dot_texture(spacing, size, norm_color)
   elseif pattern_type == 'grid' then
-    img, tex_size = create_grid_texture(spacing, size, color)
+    img, tex_size = create_grid_texture(spacing, size, norm_color)
   elseif pattern_type == 'diagonal_stripes' then
-    img, tex_size = create_diagonal_stripe_texture(spacing, size, color)
+    img, tex_size = create_diagonal_stripe_texture(spacing, size, norm_color)
   end
 
   if img then
@@ -229,6 +278,7 @@ local function get_pattern_texture(ctx, pattern_type, spacing, size, color)
       ImGui.Attach(ctx, img)
     end
     texture_cache[key] = { img = img, size = tex_size }
+    table.insert(cache_order, key)
   end
 
   return img, tex_size
@@ -411,6 +461,7 @@ function M.clear_cache()
     end
   end
   texture_cache = {}
+  cache_order = {}
 end
 
 return M
