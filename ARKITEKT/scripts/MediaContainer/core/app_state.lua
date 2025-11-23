@@ -133,13 +133,20 @@ function M.get_clipboard()
 end
 
 -- Item state hashing for change detection
-function M.get_item_state_hash(item)
+-- Uses RELATIVE position to container, so moving whole container doesn't trigger sync
+function M.get_item_state_hash(item, container)
   if not item or not reaper.ValidatePtr2(0, item, "MediaItem*") then
     return nil
   end
 
-  local pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
+  local abs_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
   local len = reaper.GetMediaItemInfo_Value(item, "D_LENGTH")
+
+  -- Use relative position if container provided, otherwise absolute
+  local pos = abs_pos
+  if container then
+    pos = abs_pos - container.start_time
+  end
   local mute = reaper.GetMediaItemInfo_Value(item, "B_MUTE")
   local vol = reaper.GetMediaItemInfo_Value(item, "D_VOL")
   local fadein = reaper.GetMediaItemInfo_Value(item, "D_FADEINLEN")
@@ -171,7 +178,7 @@ function M.rebuild_item_state_cache()
     for _, item_ref in ipairs(container.items) do
       local item = M.find_item_by_guid(item_ref.guid)
       if item then
-        local hash = M.get_item_state_hash(item)
+        local hash = M.get_item_state_hash(item, container)
         if hash then
           M.item_state_cache[item_ref.guid] = hash
         end
