@@ -258,140 +258,121 @@ function M.open_modal(state)
   end
 
   state.show_track_filter = true
+  state.track_filter_popup_opened = false
 end
 
 -- Render the track filter modal (call from main render loop)
 function M.render_modal(ctx, state, screen_w, screen_h, alpha)
   if not state.show_track_filter then return end
 
-  alpha = alpha or 1.0
-  local bounds = { x = 0, y = 0, width = screen_w, height = screen_h }
-  local draw_list = ImGui.GetWindowDrawList(ctx)
+  -- Open popup if not already opened
+  if not state.track_filter_popup_opened then
+    ImGui.OpenPopup(ctx, "Track Filter##track_filter_modal")
+    state.track_filter_popup_opened = true
+  end
 
-  -- Draw scrim (darkened background)
-  local scrim_color = Colors.with_alpha(Colors.hexrgb("#000000"), math.floor(0x88 * alpha))
-  ImGui.DrawList_AddRectFilled(draw_list, 0, 0, screen_w, screen_h, scrim_color)
-
-  local padding = 16
-  local modal_width = 320
-  local header_height = 50
-  local footer_height = 50
-
-  -- Calculate content height
+  -- Calculate modal size
   local tree_height = calculate_tree_height(state.track_tree, state, 0)
-  local max_content = bounds.height * 0.6
-  local content_height = math.min(tree_height + padding * 2, max_content)
+  local max_content = screen_h * 0.6
+  local content_height = math.min(tree_height + 32, max_content)
+  local modal_width = 320
+  local modal_height = 50 + content_height + 50  -- header + content + footer
 
-  local modal_height = header_height + content_height + footer_height
-  local modal_x = bounds.x + (bounds.width - modal_width) / 2
-  local modal_y = bounds.y + (bounds.height - modal_height) / 2
+  -- Center modal on screen
+  ImGui.SetNextWindowPos(ctx, (screen_w - modal_width) * 0.5, (screen_h - modal_height) * 0.5, ImGui.Cond_Appearing)
+  ImGui.SetNextWindowSize(ctx, modal_width, modal_height, ImGui.Cond_Appearing)
 
-  -- Modal background
-  local bg_color = Colors.with_alpha(Colors.hexrgb("#1A1A1A"), math.floor(0xF5 * alpha))
-  ImGui.DrawList_AddRectFilled(draw_list, modal_x, modal_y, modal_x + modal_width, modal_y + modal_height, bg_color, 8)
+  -- Modal flags
+  local flags = ImGui.WindowFlags_NoCollapse |
+                ImGui.WindowFlags_NoResize |
+                ImGui.WindowFlags_NoDocking
 
-  -- Border
-  local border_color = Colors.with_alpha(Colors.hexrgb("#333333"), math.floor(0xFF * alpha))
-  ImGui.DrawList_AddRect(draw_list, modal_x, modal_y, modal_x + modal_width, modal_y + modal_height, border_color, 8)
+  -- Apply consistent styling
+  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, Colors.hexrgb("#1A1A1AFF"))
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Colors.hexrgb("#404040FF"))
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 16, 12)
 
-  -- Header
-  local title_color = Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(0xFF * alpha))
-  ImGui.DrawList_AddText(draw_list, modal_x + padding, modal_y + padding, title_color, "TRACK FILTER")
+  -- Begin modal popup
+  local visible, open = ImGui.BeginPopupModal(ctx, "Track Filter##track_filter_modal", true, flags)
 
-  -- Track count
-  local total_count = 0
-  local selected_count = 0
-  local function count_tracks(tracks)
-    for _, track in ipairs(tracks) do
-      total_count = total_count + 1
-      if state.track_whitelist[track.guid] then
-        selected_count = selected_count + 1
-      end
-      if track.children then
-        count_tracks(track.children)
-      end
-    end
-  end
-  count_tracks(state.track_tree)
+  if visible then
+    local draw_list = ImGui.GetWindowDrawList(ctx)
+    local win_x, win_y = ImGui.GetWindowPos(ctx)
+    local win_w, win_h = ImGui.GetWindowSize(ctx)
 
-  local count_text = string.format("%d / %d selected", selected_count, total_count)
-  local count_w = ImGui.CalcTextSize(ctx, count_text)
-  local count_color = Colors.with_alpha(Colors.hexrgb("#888888"), math.floor(0xFF * alpha))
-  ImGui.DrawList_AddText(draw_list, modal_x + modal_width - padding - count_w, modal_y + padding, count_color, count_text)
-
-  -- Content area
-  local content_x = modal_x + padding
-  local content_y = modal_y + header_height
-  local content_w = modal_width - padding * 2
-
-  -- Draw track tree
-  draw_track_tree(ctx, draw_list, state.track_tree, content_x, content_y, content_w, state, 0, content_y)
-
-  -- Footer with buttons
-  local footer_y = modal_y + modal_height - footer_height
-  local btn_width = (content_w - padding) / 2
-  local btn_height = 28
-  local btn_y = footer_y + (footer_height - btn_height) / 2
-
-  local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
-  local left_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)
-
-  -- "All" button
-  local all_x = content_x
-  local all_hovered = mouse_x >= all_x and mouse_x <= all_x + btn_width and
-                      mouse_y >= btn_y and mouse_y <= btn_y + btn_height
-
-  if all_hovered and left_clicked then
-    local function select_all(tracks)
+    -- Track count header
+    local total_count = 0
+    local selected_count = 0
+    local function count_tracks(tracks)
       for _, track in ipairs(tracks) do
-        state.track_whitelist[track.guid] = true
-        if track.children then select_all(track.children) end
+        total_count = total_count + 1
+        if state.track_whitelist[track.guid] then
+          selected_count = selected_count + 1
+        end
+        if track.children then
+          count_tracks(track.children)
+        end
       end
     end
-    select_all(state.track_tree)
-  end
+    count_tracks(state.track_tree)
 
-  local all_bg = all_hovered and Colors.hexrgb("#3A3A3A") or Colors.hexrgb("#2A2A2A")
-  all_bg = Colors.with_alpha(all_bg, math.floor(0xEE * alpha))
-  ImGui.DrawList_AddRectFilled(draw_list, all_x, btn_y, all_x + btn_width, btn_y + btn_height, all_bg, 4)
-  local all_text_w = ImGui.CalcTextSize(ctx, "All")
-  ImGui.DrawList_AddText(draw_list,
-    all_x + (btn_width - all_text_w) / 2,
-    btn_y + (btn_height - ImGui.GetTextLineHeight(ctx)) / 2,
-    Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(0xEE * alpha)), "All")
+    local count_text = string.format("%d / %d selected", selected_count, total_count)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#888888FF"))
+    ImGui.Text(ctx, count_text)
+    ImGui.PopStyleColor(ctx)
 
-  -- "None" button
-  local none_x = content_x + btn_width + padding
-  local none_hovered = mouse_x >= none_x and mouse_x <= none_x + btn_width and
-                       mouse_y >= btn_y and mouse_y <= btn_y + btn_height
+    ImGui.Dummy(ctx, 0, 8)
 
-  if none_hovered and left_clicked then
-    local function select_none(tracks)
-      for _, track in ipairs(tracks) do
-        state.track_whitelist[track.guid] = false
-        if track.children then select_none(track.children) end
+    -- Content area - draw track tree
+    local content_x = win_x + 16
+    local content_y = win_y + ImGui.GetCursorPosY(ctx)
+    local content_w = win_w - 32
+
+    draw_track_tree(ctx, draw_list, state.track_tree, content_x, content_y, content_w, state, 0, content_y)
+
+    -- Move cursor past tree content
+    ImGui.Dummy(ctx, 0, content_height)
+
+    ImGui.Dummy(ctx, 0, 8)
+
+    -- Footer with buttons
+    local btn_width = (content_w - 8) / 2
+    local btn_height = 28
+
+    -- "All" button
+    if ImGui.Button(ctx, "All", btn_width, btn_height) then
+      local function select_all(tracks)
+        for _, track in ipairs(tracks) do
+          state.track_whitelist[track.guid] = true
+          if track.children then select_all(track.children) end
+        end
       end
+      select_all(state.track_tree)
     end
-    select_none(state.track_tree)
+
+    ImGui.SameLine(ctx, 0, 8)
+
+    -- "None" button
+    if ImGui.Button(ctx, "None", btn_width, btn_height) then
+      local function select_none(tracks)
+        for _, track in ipairs(tracks) do
+          state.track_whitelist[track.guid] = false
+          if track.children then select_none(track.children) end
+        end
+      end
+      select_none(state.track_tree)
+    end
+
+    ImGui.EndPopup(ctx)
   end
 
-  local none_bg = none_hovered and Colors.hexrgb("#3A3A3A") or Colors.hexrgb("#2A2A2A")
-  none_bg = Colors.with_alpha(none_bg, math.floor(0xEE * alpha))
-  ImGui.DrawList_AddRectFilled(draw_list, none_x, btn_y, none_x + btn_width, btn_y + btn_height, none_bg, 4)
-  local none_text_w = ImGui.CalcTextSize(ctx, "None")
-  ImGui.DrawList_AddText(draw_list,
-    none_x + (btn_width - none_text_w) / 2,
-    btn_y + (btn_height - ImGui.GetTextLineHeight(ctx)) / 2,
-    Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(0xEE * alpha)), "None")
+  ImGui.PopStyleVar(ctx, 1)
+  ImGui.PopStyleColor(ctx, 2)
 
-  -- Handle closing: ESC or click on scrim
-  local in_modal = mouse_x >= modal_x and mouse_x <= modal_x + modal_width and
-                   mouse_y >= modal_y and mouse_y <= modal_y + modal_height
-
-  if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+  -- Handle close
+  if not open then
     state.show_track_filter = false
-  elseif left_clicked and not in_modal then
-    state.show_track_filter = false
+    state.track_filter_popup_opened = false
   end
 end
 
