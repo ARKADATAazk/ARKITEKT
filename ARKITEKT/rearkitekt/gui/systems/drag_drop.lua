@@ -67,19 +67,15 @@ end
 function M.accept_drop(ctx, payload_type, flags)
   flags = flags or 0
 
-  local payload, is_preview, is_delivery = ImGui.AcceptDragDropPayload(ctx, payload_type, flags)
+  local retval, payload = ImGui.AcceptDragDropPayload(ctx, payload_type, flags)
 
-  reaper.ShowConsoleMsg("[ACCEPT_DROP] type=" .. tostring(payload_type) .. " payload=" .. tostring(payload) .. " is_preview=" .. tostring(is_preview) .. " is_delivery=" .. tostring(is_delivery) .. "\n")
+  reaper.ShowConsoleMsg("[ACCEPT_DROP] type=" .. tostring(payload_type) .. " retval=" .. tostring(retval) .. " payload=" .. tostring(payload) .. "\n")
 
-  if payload and type(payload) == "string" then
+  if retval and payload and type(payload) == "string" then
     -- Deserialize if it looks like serialized data
     local data = M._deserialize(payload) or payload
-    reaper.ShowConsoleMsg("[ACCEPT_DROP] deserialized data type=" .. type(data) .. "\n")
-    -- Only return on delivery, not preview
-    if is_delivery then
-      reaper.ShowConsoleMsg("[ACCEPT_DROP] DELIVERY! returning data\n")
-      return data
-    end
+    reaper.ShowConsoleMsg("[ACCEPT_DROP] ACCEPTED! deserialized data type=" .. type(data) .. "\n")
+    return data
   end
 
   return nil
