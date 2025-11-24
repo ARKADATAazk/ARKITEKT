@@ -253,12 +253,17 @@ function M.draw(ctx, opts)
 
   -- Get delta time for animations
   local dt = ImGui.GetDeltaTime(ctx)
+  local anim_speed = Base.ANIMATION_SPEED or 12.0
 
   -- Left arrow button
   local left_clicked, left_hovered, left_active = draw_spinner_button(
     ctx, unique_id .. "_left", left_x, y, button_w, h, "left", disabled, inst.left_hover_alpha
   )
-  Base.update_hover_animation(inst, dt, left_hovered, left_active, Base.ANIMATION_SPEED, "left_hover_alpha")
+
+  -- Update left hover animation
+  local left_target = (left_hovered or left_active) and 1.0 or 0.0
+  inst.left_hover_alpha = inst.left_hover_alpha + (left_target - inst.left_hover_alpha) * anim_speed * dt
+  inst.left_hover_alpha = math.max(0, math.min(1, inst.left_hover_alpha))
 
   if left_clicked then
     new_index = new_index - 1
@@ -274,7 +279,10 @@ function M.draw(ctx, opts)
   local value_active = not disabled and ImGui.IsItemActive(ctx)
   local value_clicked = not disabled and ImGui.IsItemClicked(ctx, 0)
 
-  Base.update_hover_animation(inst, dt, value_hovered, value_active, Base.ANIMATION_SPEED, "value_hover_alpha")
+  -- Update value hover animation
+  local value_target = (value_hovered or value_active) and 1.0 or 0.0
+  inst.value_hover_alpha = inst.value_hover_alpha + (value_target - inst.value_hover_alpha) * anim_speed * dt
+  inst.value_hover_alpha = math.max(0, math.min(1, inst.value_hover_alpha))
 
   local current_text = tostring(options[current_index] or "")
   draw_value_display(ctx, dl, value_x, y, value_w, h, current_text, inst.value_hover_alpha, value_active, disabled)
@@ -283,7 +291,11 @@ function M.draw(ctx, opts)
   local right_clicked, right_hovered, right_active = draw_spinner_button(
     ctx, unique_id .. "_right", right_x, y, button_w, h, "right", disabled, inst.right_hover_alpha
   )
-  Base.update_hover_animation(inst, dt, right_hovered, right_active, Base.ANIMATION_SPEED, "right_hover_alpha")
+
+  -- Update right hover animation
+  local right_target = (right_hovered or right_active) and 1.0 or 0.0
+  inst.right_hover_alpha = inst.right_hover_alpha + (right_target - inst.right_hover_alpha) * anim_speed * dt
+  inst.right_hover_alpha = math.max(0, math.min(1, inst.right_hover_alpha))
 
   if right_clicked then
     new_index = new_index + 1
