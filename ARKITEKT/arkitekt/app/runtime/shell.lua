@@ -61,8 +61,8 @@ local function load_fonts(ctx, font_cfg)
   -- Use shared font directory lookup
   local fontsdir = Fonts.find_fonts_dir()
 
-  local noto_regular = fontsdir .. 'NotoSans-Regular.ttf'
-  local noto_semibold = fontsdir .. 'NotoSans-SemiBold.ttf'
+  local inter_regular = fontsdir .. 'Inter_18pt-Regular.ttf'
+  local inter_semibold = fontsdir .. 'Inter_18pt-SemiBold.ttf'
   local R = fontsdir .. font_cfg.family_regular
   local B = fontsdir .. font_cfg.family_bold
   local M = fontsdir .. font_cfg.family_mono
@@ -80,10 +80,10 @@ local function load_fonts(ctx, font_cfg)
     end
   end
 
-  -- Use Noto Sans for consistent cross-platform display with full Unicode coverage
-  local default_font   = exists(noto_regular) and ImGui.CreateFontFromFile(noto_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0)
-  local title_font     = exists(noto_semibold) and ImGui.CreateFontFromFile(noto_semibold, 0, 0) or ImGui.CreateFont('sans-serif', 0)
-  local version_font   = exists(noto_regular) and ImGui.CreateFontFromFile(noto_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0)
+  -- Use Inter for consistent cross-platform display with full Unicode coverage
+  local default_font   = exists(inter_regular) and ImGui.CreateFontFromFile(inter_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0)
+  local title_font     = exists(inter_semibold) and ImGui.CreateFontFromFile(inter_semibold, 0, 0) or ImGui.CreateFont('sans-serif', 0)
+  local version_font   = exists(inter_regular) and ImGui.CreateFontFromFile(inter_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0)
 
   -- Keep loading specific fonts from TTF files
   local monospace_font = exists(M) and ImGui.CreateFontFromFile(M, 0, 0)
@@ -95,14 +95,14 @@ local function load_fonts(ctx, font_cfg)
 
   local time_display_font = nil
   if font_cfg.time_display then
-    time_display_font = exists(noto_regular) and ImGui.CreateFontFromFile(noto_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0)
+    time_display_font = exists(inter_regular) and ImGui.CreateFontFromFile(inter_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0)
     attach_once(time_display_font)
   end
 
   local titlebar_version_font = nil
   local titlebar_version_size = font_cfg.titlebar_version or font_cfg.version
   if font_cfg.titlebar_version then
-    titlebar_version_font = exists(noto_regular) and ImGui.CreateFontFromFile(noto_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0)
+    titlebar_version_font = exists(inter_regular) and ImGui.CreateFontFromFile(inter_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0)
     attach_once(titlebar_version_font)
   end
 
