@@ -204,18 +204,18 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   local is_disabled = config.disabled or false
   local is_toggled = config.is_toggled or false
 
-  -- Check hover state using mouse position (like combo does)
+  -- Check hover using GetMousePos (exactly like combo)
   local mx, my = ImGui.GetMousePos(ctx)
   local is_hovered = not is_disabled and not config.is_blocking and
                      mx >= x and mx < x + width and my >= y and my < y + height
   local is_active = not is_disabled and not config.is_blocking and
                     is_hovered and ImGui.IsMouseDown(ctx, 0)
 
-  -- Update animation
+  -- Update animation BEFORE getting colors (exactly like combo)
   local dt = ImGui.GetDeltaTime(ctx)
   instance:update(dt, is_hovered, is_active)
 
-  -- Get colors
+  -- Get colors using the smoothly animated hover_alpha
   local bg_color, border_inner, border_outer, text_color =
     get_state_colors(config, is_disabled, is_toggled, is_active, instance.hover_alpha)
 
@@ -267,7 +267,7 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
     end
   end
 
-  -- Create interaction area LAST (after all drawing, like combo does)
+  -- Create InvisibleButton AFTER drawing (exactly like combo)
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, "##" .. unique_id, width, height)
 
@@ -315,7 +315,7 @@ function M.draw(ctx, opts)
     config.on_right_click()
   end
 
-  -- Handle tooltip (use manual hover check for consistency, like combo)
+  -- Handle tooltip (use is_hovered from GetMousePos, like combo)
   if is_hovered and opts.tooltip then
     ImGui.SetTooltip(ctx, opts.tooltip)
   end

@@ -140,7 +140,7 @@ end
 -- ============================================================================
 
 local function render_text_field(ctx, dl, x, y, width, height, config, state, id, is_disabled, corner_rounding)
-  -- Check hover state using mouse position (like combo does)
+  -- Check hover using GetMousePos (exactly like combo)
   local mx, my = ImGui.GetMousePos(ctx)
   local is_hovered = not is_disabled and mx >= x and mx < x + width and my >= y and my < y + height
 

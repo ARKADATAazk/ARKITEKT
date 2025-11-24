@@ -145,19 +145,19 @@ end
 -- RENDERING
 -- ============================================================================
 
-local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, unique_id, total_width)
+local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, total_width)
   local size = config.size
   local is_disabled = config.disabled or false
   local is_blocking = config.is_blocking or false
 
-  -- Check hover state using mouse position (like combo does)
+  -- Check hover using GetMousePos (exactly like combo)
   local mx, my = ImGui.GetMousePos(ctx)
   local is_hovered = not is_disabled and not is_blocking and
                      mx >= x and mx < x + total_width and my >= y and my < y + size
   local is_active = not is_disabled and not is_blocking and
                     is_hovered and ImGui.IsMouseDown(ctx, 0)
 
-  -- Update animation
+  -- Update animation BEFORE getting colors (exactly like combo)
   local dt = ImGui.GetDeltaTime(ctx)
   instance:update(dt, is_hovered, is_active, is_checked)
 
@@ -250,14 +250,7 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, uniq
     ImGui.DrawList_AddLine(dl, mx, my, ex, ey, check_color, 2)
   end
 
-  -- Create interaction area LAST (after all drawing, like combo does)
-  ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, "##" .. unique_id, total_width, size)
-
-  -- Check for clicks
-  local clicked = not is_disabled and not is_blocking and ImGui.IsItemClicked(ctx, 0)
-
-  return is_hovered, is_active, clicked
+  return is_hovered, is_active
 end
 
 -- ============================================================================
@@ -288,7 +281,7 @@ function M.draw(ctx, opts)
     is_checked = opts.panel_state.checkbox_value
   end
 
-  -- Calculate total width (including label if present)
+  -- Calculate total width (including label) BEFORE rendering
   local size = config.size
   local label = opts.label or ""
   local total_width = size
@@ -298,8 +291,8 @@ function M.draw(ctx, opts)
     total_width = size + config.label_spacing + label_width
   end
 
-  -- Render checkbox box (InvisibleButton is created inside render_checkbox now)
-  local is_hovered, is_active, clicked = render_checkbox(ctx, dl, x, y, config, instance, is_checked, unique_id, total_width)
+  -- Render checkbox box (pass total_width for hover detection)
+  local is_hovered, is_active = render_checkbox(ctx, dl, x, y, config, instance, is_checked, total_width)
 
   -- Render label
   if label ~= "" then
@@ -322,29 +315,35 @@ function M.draw(ctx, opts)
     ImGui.DrawList_AddText(dl, label_x, label_y, label_color, label)
   end
 
-  -- Handle click
+  -- Create interaction area
+  ImGui.SetCursorScreenPos(ctx, x, y)
+  ImGui.InvisibleButton(ctx, "##" .. unique_id, total_width, size)
+
+  local clicked = false
   local changed = false
   local new_value = is_checked
 
-  if clicked then
-    new_value = not is_checked
-    changed = true
+  if not opts.disabled and not opts.is_blocking then
+    clicked = ImGui.IsItemClicked(ctx, 0)
 
-    -- Update panel state
-    if opts.panel_state then
-      opts.panel_state.checkbox_value = new_value
-    end
+    if clicked then
+      new_value = not is_checked
+      changed = true
 
-    -- Call change callback
-    if config.on_change then
-      config.on_change(new_value)
+      -- Update panel state
+      if opts.panel_state then
+        opts.panel_state.checkbox_value = new_value
+      end
+
+      -- Call change callback
+      if config.on_change then
+        config.on_change(new_value)
+      end
     end
   end
 
-  -- Handle tooltip (use manual hover check for consistency, like combo)
-  if is_hovered and opts.tooltip then
-    ImGui.SetTooltip(ctx, opts.tooltip)
-  end
+  -- Handle tooltip
+  Base.handle_tooltip(ctx, opts)
 
   -- Advance cursor
   Base.advance_cursor(ctx, x, y, total_width, size, opts.advance)
