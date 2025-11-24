@@ -5,9 +5,6 @@
 -- Make sure we can see output
 reaper.ShowConsoleMsg("=== ARKITEKT Namespace Debug ===\n")
 
--- Enable debug mode for namespace
-os.setenv("ARK_DEBUG", "1")
-
 -- Setup package path first
 local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
 local root_path = script_path
@@ -23,9 +20,32 @@ reaper.ShowConsoleMsg("Package path set\n\n")
 
 -- Test 1: Load namespace itself
 reaper.ShowConsoleMsg("Test 1: Loading ark namespace...\n")
+
+-- Temporarily replace require to trace what's being loaded
+local original_require = require
+local require_depth = 0
+local max_depth = 50
+_G.require = function(name)
+  require_depth = require_depth + 1
+  local indent = string.rep("  ", math.min(require_depth, 10))
+  reaper.ShowConsoleMsg(indent .. "→ require('" .. tostring(name) .. "')\n")
+
+  if require_depth > max_depth then
+    reaper.ShowConsoleMsg("❌ STACK OVERFLOW: require depth exceeded " .. max_depth .. "\n")
+    error("Stack overflow in require: " .. tostring(name))
+  end
+
+  local result = original_require(name)
+  require_depth = require_depth - 1
+  return result
+end
+
 local success, result = pcall(function()
   return require('arkitekt')
 end)
+
+-- Restore original require
+_G.require = original_require
 
 if not success then
   reaper.ShowConsoleMsg("❌ FAILED loading namespace:\n" .. tostring(result) .. "\n")
