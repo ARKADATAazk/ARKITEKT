@@ -303,14 +303,21 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   -- Set text in SearchInput component
   InputText.set_text("batch_rename_pattern", self.pattern)
 
-  local _, changed = InputText.search(ctx, dl, screen_x, screen_y, right_col_width, input_height, {
+  local result = InputText.search(ctx, {
     id = "batch_rename_pattern",
+    x = screen_x,
+    y = screen_y,
+    width = right_col_width,
+    height = input_height,
+    draw_list = dl,
     placeholder = "pattern$wildcard",
     on_change = function(text)
       self.pattern = text
       self.preview_items = generate_preview(text, count, self.start_index, self.padding, self.letter_case)
     end
-  }, "batch_rename_pattern")
+  })
+
+  local changed = result.changed
 
   -- Advance cursor
   ImGui.SetCursorScreenPos(ctx, screen_x, screen_y + input_height)

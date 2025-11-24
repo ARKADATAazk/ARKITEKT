@@ -757,13 +757,18 @@ function PackageModal:draw_content(ctx, bounds)
   local search_w = 220
   local search_h = 26
   InputText.set_text("pkg_modal_search", self.search_text)
-  InputText.search(ctx, dl, toolbar_x, toolbar_y, search_w, search_h, {
+  InputText.search(ctx, {
     id = "pkg_modal_search",
+    x = toolbar_x,
+    y = toolbar_y,
+    width = search_w,
+    height = search_h,
+    draw_list = dl,
     placeholder = "Search assets...",
     on_change = function(text)
       self.search_text = text
     end
-  }, "pkg_modal_search")
+  })
 
   -- Buttons after search
   local btn_x = toolbar_x + search_w + 8
