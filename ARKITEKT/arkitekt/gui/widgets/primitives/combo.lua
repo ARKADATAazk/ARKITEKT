@@ -537,4 +537,9 @@ function M.set_direction(id, direction)
   end
 end
 
+--- Clean up all combo instances
+function M.cleanup()
+  Base.cleanup_registry(instances)
+end
+
 return M
