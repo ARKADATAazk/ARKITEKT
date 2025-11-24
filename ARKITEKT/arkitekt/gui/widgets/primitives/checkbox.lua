@@ -390,7 +390,7 @@ end
 --- @param checked boolean Current state
 --- @param opts table|nil Additional options
 --- @param id string|nil Optional ID override
---- @return boolean toggled Whether checkbox was toggled
+--- @return boolean changed Whether checkbox state changed
 function M.draw_at_cursor(ctx, label, checked, opts, id)
   opts = opts or {}
   opts.label = label
@@ -398,7 +398,7 @@ function M.draw_at_cursor(ctx, label, checked, opts, id)
   if id then opts.id = id end
   -- Don't set x/y so it uses cursor position
   local result = M.draw(ctx, opts)
-  return result.toggled
+  return result.changed
 end
 
 return M
