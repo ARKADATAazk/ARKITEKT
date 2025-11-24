@@ -1,7 +1,14 @@
 -- Simple namespace test - no bullshit
 
 local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
-package.path = script_path .. "?.lua;" .. script_path .. "?/init.lua;" .. package.path
+local sep = package.config:sub(1,1)
+
+-- Ensure trailing separator
+if not script_path:match("[\\/]$") then
+  script_path = script_path .. sep
+end
+
+package.path = script_path .. "?.lua;" .. script_path .. "?" .. sep .. "init.lua;" .. package.path
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 package.loaded['arkitekt'] = nil
