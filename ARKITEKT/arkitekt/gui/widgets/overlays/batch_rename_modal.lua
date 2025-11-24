@@ -9,8 +9,8 @@ local Style = require('arkitekt.gui.style.defaults')
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('arkitekt.gui.widgets.tools.color_picker_window')
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
-local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
+local Fields = require('arkitekt.gui.widgets.primitives.fields')
+local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local RadioButton = require('arkitekt.gui.widgets.primitives.radio_button')
@@ -301,9 +301,9 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   end
 
   -- Set text in SearchInput component
-  SearchInput.set_text("batch_rename_pattern", self.pattern)
+  Fields.set_text("batch_rename_pattern", self.pattern)
 
-  local _, changed = SearchInput.draw(ctx, dl, screen_x, screen_y, right_col_width, input_height, {
+  local _, changed = Fields.search(ctx, dl, screen_x, screen_y, right_col_width, input_height, {
     id = "batch_rename_pattern",
     placeholder = "pattern$wildcard",
     on_change = function(text)
@@ -445,7 +445,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local dropdown_w = 120
   local dropdown_h = 24
 
-  local category_changed, new_category = Dropdown.draw(ctx, dl, dropdown_x, dropdown_y, dropdown_w, dropdown_h, {
+  local category_changed, new_category = Combobox.draw(ctx, dl, dropdown_x, dropdown_y, dropdown_w, dropdown_h, {
     id = "names_category",
     options = {
       {value = "game", label = "Game Music"},
@@ -624,7 +624,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.SetCursorPosX(ctx, right_col_x)
 
   -- Radio button for "None"
-  if RadioButton.draw(ctx, "None", self.separator == "none", {id = "sep_none"}) then
+  if RadioButton.draw(ctx, {
+    id = "sep_none",
+    label = "None",
+    selected = self.separator == "none",
+    advance = "none",
+  }).clicked then
     self.separator = "none"
     save_separator_preference("none")
   end
@@ -632,7 +637,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.SameLine(ctx, 0, 12)
 
   -- Radio button for "Underscore"
-  if RadioButton.draw(ctx, "Underscore (_)", self.separator == "underscore", {id = "sep_underscore"}) then
+  if RadioButton.draw(ctx, {
+    id = "sep_underscore",
+    label = "Underscore (_)",
+    selected = self.separator == "underscore",
+    advance = "none",
+  }).clicked then
     self.separator = "underscore"
     save_separator_preference("underscore")
   end
@@ -640,7 +650,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.SameLine(ctx, 0, 12)
 
   -- Radio button for "Space"
-  if RadioButton.draw(ctx, "Space ( )", self.separator == "space", {id = "sep_space"}) then
+  if RadioButton.draw(ctx, {
+    id = "sep_space",
+    label = "Space ( )",
+    selected = self.separator == "space",
+    advance = "none",
+  }).clicked then
     self.separator = "space"
     save_separator_preference("space")
   end
@@ -697,27 +712,37 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local can_rename = self.pattern ~= ""
 
   -- Cancel button
-  local _, cancel_clicked = Button.draw(ctx, dl, screen_x, screen_y, button_w_small, button_h, {
-    id = "cancel_btn",
+  local cancel_result = Button.draw(ctx, {
+    id = "batch_rename_cancel",
+    draw_list = dl,
+    x = screen_x,
+    y = screen_y,
+    width = button_w_small,
+    height = button_h,
     label = "Cancel",
     rounding = 4,
     ignore_modal = true,
-  }, "batch_rename_cancel")
+  })
 
-  if cancel_clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+  if cancel_result.clicked or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
     should_close = true
   end
 
   -- Rename button (disabled when no pattern)
-  local _, rename_clicked = Button.draw(ctx, dl, screen_x + button_w_small + spacing, screen_y, button_w_small, button_h, {
-    id = "rename_btn",
+  local rename_result = Button.draw(ctx, {
+    id = "batch_rename_rename",
+    draw_list = dl,
+    x = screen_x + button_w_small + spacing,
+    y = screen_y,
+    width = button_w_small,
+    height = button_h,
     label = "Rename",
     rounding = 4,
     is_disabled = not can_rename,
     ignore_modal = true,
-  }, "batch_rename_rename")
+  })
 
-  if rename_clicked or (can_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
+  if rename_result.clicked or (can_rename and ImGui.IsKeyPressed(ctx, ImGui.Key_Enter)) then
     if self.on_confirm then
       self.on_confirm(self.pattern)
     end
@@ -726,15 +751,20 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Rename & Recolor button (disabled when no pattern) - WIDER
   local rename_recolor_x = screen_x + (button_w_small + spacing) * 2
-  local _, rename_recolor_clicked = Button.draw(ctx, dl, rename_recolor_x, screen_y, button_w_large, button_h, {
-    id = "rename_recolor_btn",
+  local rename_recolor_result = Button.draw(ctx, {
+    id = "batch_rename_both",
+    draw_list = dl,
+    x = rename_recolor_x,
+    y = screen_y,
+    width = button_w_large,
+    height = button_h,
     label = "Rename & Recolor",
     rounding = 4,
     is_disabled = not can_rename,
     ignore_modal = true,
-  }, "batch_rename_both")
+  })
 
-  if rename_recolor_clicked then
+  if rename_recolor_result.clicked then
     if self.on_rename_and_recolor then
       self.on_rename_and_recolor(self.pattern, self.selected_color)
     end
@@ -743,14 +773,19 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
 
   -- Recolor button (always enabled)
   local recolor_x = rename_recolor_x + button_w_large + spacing
-  local _, recolor_clicked = Button.draw(ctx, dl, recolor_x, screen_y, button_w_small, button_h, {
-    id = "recolor_btn",
+  local recolor_result = Button.draw(ctx, {
+    id = "batch_rename_recolor",
+    draw_list = dl,
+    x = recolor_x,
+    y = screen_y,
+    width = button_w_small,
+    height = button_h,
     label = "Recolor",
     rounding = 4,
     ignore_modal = true,
-  }, "batch_rename_recolor")
+  })
 
-  if recolor_clicked then
+  if recolor_result.clicked then
     if self.on_recolor then
       self.on_recolor(self.selected_color)
     end

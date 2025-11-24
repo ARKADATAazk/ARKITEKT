@@ -195,7 +195,14 @@ function EnvelopeView:draw(ctx, shell_state)
 
       -- Spinner (fixed position, fixed width)
       ImGui.SameLine(ctx, 0, 8)
-      local changed, new_idx = Spinner.draw(ctx, id, idx, values, {w = spinner_w, h = 24})
+      local spinner_result = Spinner.draw(ctx, {
+        id = id,
+        current_index = idx,
+        values = values,
+        width = spinner_w,
+        height = 24,
+      })
+      local changed, new_idx = spinner_result.changed, spinner_result.new_index
 
 
       ImGui.Dummy(ctx, 0, 2)

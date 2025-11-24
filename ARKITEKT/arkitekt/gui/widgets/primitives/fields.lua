@@ -1,21 +1,87 @@
 -- @noindex
 -- arkitekt/gui/widgets/primitives/fields.lua
--- Generic text input field widget with arkitekt styling
+-- Standardized text input field widget with Arkitekt styling
+-- Uses unified opts-based API
+-- Includes search input variant
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Style = require('arkitekt.gui.style.defaults')
 local Colors = require('arkitekt.core.colors')
+local Base = require('arkitekt.gui.widgets.base')
+
 local hexrgb = Colors.hexrgb
 
 local M = {}
 
--- Animation state storage (internal to component)
-local field_state = {}
+-- ============================================================================
+-- DEFAULTS
+-- ============================================================================
+
+local DEFAULTS = {
+  -- Identity
+  id = "field",
+
+  -- Position (nil = use cursor)
+  x = nil,
+  y = nil,
+
+  -- Size
+  width = 200,
+  height = 24,
+
+  -- State
+  text = "",
+  disabled = false,
+
+  -- Content
+  hint = nil,
+  placeholder = nil,  -- Alias for hint (search compatibility)
+  multiline = false,
+  flags = nil,  -- ImGui.InputTextFlags_*
+
+  -- Style
+  rounding = 4,
+  padding_x = 8,
+  padding_y = 4,
+  fade_speed = 8.0,
+  border_thickness = 1,
+  preset = nil,  -- "search" or custom preset table
+
+  -- Colors
+  bg_color = nil,
+  bg_hover_color = nil,
+  bg_active_color = nil,
+  bg_disabled_color = nil,
+  border_color = nil,
+  border_hover_color = nil,
+  border_active_color = nil,
+  border_disabled_color = nil,
+  border_inner_color = nil,
+  border_outer_color = nil,
+  text_color = nil,
+  text_disabled_color = nil,
+
+  -- Panel integration
+  panel_state = nil,
+  corner_rounding = nil,
+
+  -- Callbacks
+  on_change = nil,
+  tooltip = nil,
+
+  -- Cursor control
+  advance = "vertical",
+
+  -- Draw list
+  draw_list = nil,
+}
 
 -- ============================================================================
--- STATE MANAGEMENT
+-- STATE MANAGEMENT (weak table to prevent memory leaks)
 -- ============================================================================
+
+local field_state = Base.create_instance_registry()
 
 local function get_or_create_state(id)
   if not field_state[id] then
@@ -29,11 +95,52 @@ local function get_or_create_state(id)
 end
 
 -- ============================================================================
+-- CONFIG RESOLUTION
+-- ============================================================================
+
+local function resolve_config(opts)
+  local base = {
+    bg_color = hexrgb("#1A1A1A"),
+    bg_hover_color = hexrgb("#222222"),
+    bg_active_color = hexrgb("#252525"),
+    bg_disabled_color = hexrgb("#151515"),
+    border_color = hexrgb("#3A3A3A"),
+    border_hover_color = hexrgb("#4A4A4A"),
+    border_active_color = hexrgb("#4A9EFF"),
+    border_disabled_color = hexrgb("#2A2A2A"),
+    border_inner_color = hexrgb("#3A3A3A"),
+    border_outer_color = hexrgb("#0A0A0A"),
+    text_color = hexrgb("#FFFFFF"),
+    text_disabled_color = hexrgb("#808080"),
+  }
+
+  -- Apply search preset if specified
+  if opts.preset == "search" and Style.SEARCH_INPUT then
+    base = Style.apply_defaults(base, Style.SEARCH_INPUT)
+  elseif type(opts.preset) == "table" then
+    base = Style.apply_defaults(base, opts.preset)
+  end
+
+  return Style.apply_defaults(base, opts)
+end
+
+-- ============================================================================
+-- CORNER ROUNDING HELPERS
+-- ============================================================================
+
+local function get_corner_flags(corner_rounding)
+  if not corner_rounding then
+    return 0
+  end
+  return Style.RENDER.get_corner_flags(corner_rounding)
+end
+
+-- ============================================================================
 -- RENDERING
 -- ============================================================================
 
-local function render_text_field(ctx, dl, x, y, width, height, config, state, id)
-  local is_hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
+local function render_text_field(ctx, dl, x, y, width, height, config, state, id, is_disabled, corner_rounding)
+  local is_hovered = not is_disabled and ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
 
   -- Animate focus alpha
   local target_alpha = state.focused and 1.0 or (is_hovered and 0.7 or 0.3)
@@ -41,27 +148,50 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   state.focus_alpha = math.max(0.0, math.min(1.0, state.focus_alpha + alpha_delta))
 
   -- Get state colors
-  local bg_color = config.bg_color or hexrgb("#1A1A1A")
-  local border_color = config.border_color or hexrgb("#3A3A3A")
-  local text_color = config.text_color or hexrgb("#FFFFFF")
+  local bg_color, border_inner, border_outer, text_color
 
-  if state.focused then
-    bg_color = config.bg_active_color or Colors.adjust_brightness(bg_color, 1.2)
-    border_color = config.border_active_color or hexrgb("#4A9EFF")
+  if is_disabled then
+    bg_color = config.bg_disabled_color
+    border_inner = config.border_disabled_color or config.border_inner_color
+    border_outer = config.border_outer_color
+    text_color = config.text_disabled_color
+  elseif state.focused then
+    bg_color = config.bg_active_color
+    border_inner = config.border_active_color or config.border_inner_color
+    border_outer = config.border_outer_color
+    text_color = config.text_color
   elseif is_hovered then
-    bg_color = config.bg_hover_color or Colors.adjust_brightness(bg_color, 1.1)
-    border_color = config.border_hover_color or Colors.adjust_brightness(border_color, 1.3)
+    bg_color = config.bg_hover_color
+    border_inner = config.border_hover_color or config.border_inner_color
+    border_outer = config.border_outer_color
+    text_color = config.text_color
+  else
+    bg_color = config.bg_color
+    border_inner = config.border_inner_color or config.border_color
+    border_outer = config.border_outer_color
+    text_color = config.text_color
   end
 
-  -- Rounding
+  -- Calculate rounding
   local rounding = config.rounding or 4
+  if corner_rounding then
+    rounding = corner_rounding.rounding or rounding
+  end
+  local inner_rounding = math.max(0, rounding - 2)
+  local corner_flags = get_corner_flags(corner_rounding)
 
   -- Draw background
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, rounding)
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, inner_rounding, corner_flags)
 
-  -- Draw border
-  local border_thickness = config.border_thickness or 1
-  ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, border_color, rounding, 0, border_thickness)
+  -- Draw borders (dual border style like buttons)
+  if config.border_inner_color or config.border_outer_color then
+    ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + width - 1, y + height - 1, border_inner, inner_rounding, corner_flags, 1)
+    ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, border_outer, inner_rounding, corner_flags, 1)
+  else
+    -- Simple single border
+    local border_thickness = config.border_thickness or 1
+    ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, border_inner, rounding, corner_flags, border_thickness)
+  end
 
   -- Draw input field
   local padding_x = config.padding_x or 8
@@ -80,8 +210,15 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   local changed, new_text
   local input_id = "##" .. id
 
+  -- Handle disabled state
+  if is_disabled then
+    ImGui.BeginDisabled(ctx)
+  end
+
+  -- Get hint text (support both hint and placeholder)
+  local hint_text = config.hint or config.placeholder
+
   if config.multiline then
-    -- Multiline text input
     local input_height = height - padding_y * 2
     changed, new_text = ImGui.InputTextMultiline(
       ctx,
@@ -92,12 +229,11 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
       config.flags or ImGui.InputTextFlags_None
     )
   else
-    -- Single line text input
-    if config.hint then
+    if hint_text then
       changed, new_text = ImGui.InputTextWithHint(
         ctx,
         input_id,
-        config.hint,
+        hint_text,
         state.text,
         config.flags or ImGui.InputTextFlags_None
       )
@@ -109,6 +245,10 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
         config.flags or ImGui.InputTextFlags_None
       )
     end
+  end
+
+  if is_disabled then
+    ImGui.EndDisabled(ctx)
   end
 
   if changed then
@@ -123,51 +263,80 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   ImGui.PopStyleColor(ctx, 5)
   ImGui.PopItemWidth(ctx)
 
-  return changed
+  return changed, is_hovered
 end
 
 -- ============================================================================
--- PUBLIC API
+-- PUBLIC API (Standardized)
 -- ============================================================================
 
-function M.draw(ctx, dl, x, y, width, height, user_config, id)
-  id = id or (user_config and user_config.id) or "field"
+--- Draw a text field widget
+--- @param ctx userdata ImGui context
+--- @param opts table Widget options
+--- @return table Result { changed, value, width, height, hovered, active }
+function M.draw(ctx, opts)
+  opts = Base.parse_opts(opts, DEFAULTS)
+  local config = resolve_config(opts)
+
+  -- Resolve unique ID
+  local unique_id = Base.resolve_id(opts, "field")
 
   -- Get or create state
-  local state = get_or_create_state(id)
+  local state = get_or_create_state(unique_id)
 
-  -- Set initial text if provided and state is empty
-  if user_config and user_config.text and state.text == "" then
-    state.text = user_config.text
+  -- Support get_value callback pattern for panel integration
+  -- This allows external state management (e.g., app_state.search_query)
+  if opts.get_value and type(opts.get_value) == "function" then
+    state.text = opts.get_value() or ""
+  elseif opts.text and state.text == "" then
+    -- Set initial text if provided and state is empty
+    state.text = opts.text
   end
 
+  -- Get position and draw list
+  local x, y = Base.get_position(ctx, opts)
+  local dl = Base.get_draw_list(ctx, opts)
+
+  -- Get size
+  local width = opts.width or 200
+  local height = opts.height or 24
+
   -- Render text field
-  local changed = render_text_field(ctx, dl, x, y, width, height, user_config or {}, state, id)
+  local changed, is_hovered = render_text_field(ctx, dl, x, y, width, height, config, state, unique_id, opts.disabled, opts.corner_rounding)
 
-  return changed, state.text
-end
-
-function M.draw_at_cursor(ctx, user_config, id)
-  id = id or (user_config and user_config.id) or "field"
-
-  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
-
-  local width = (user_config and user_config.width) or 200
-  local height = (user_config and user_config.height) or 24
-
-  local changed, text = M.draw(ctx, dl, cursor_x, cursor_y, width, height, user_config, id)
+  -- Handle tooltip
+  if is_hovered and opts.tooltip then
+    ImGui.SetTooltip(ctx, opts.tooltip)
+  end
 
   -- Advance cursor
-  ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + height)
+  Base.advance_cursor(ctx, x, y, width, height, opts.advance)
 
-  return changed, text
+  -- Return standardized result
+  return Base.create_result({
+    changed = changed,
+    value = state.text,
+    width = width,
+    height = height,
+    hovered = is_hovered,
+    active = state.focused,
+  })
 end
 
--- ============================================================================
--- STATE ACCESSORS
--- ============================================================================
+--- Draw a search input (convenience wrapper with search preset)
+--- @param ctx userdata ImGui context
+--- @param opts table Widget options
+--- @return table Result
+function M.search(ctx, opts)
+  opts = opts or {}
+  opts.preset = opts.preset or "search"
+  opts.id = opts.id or "search"
+  return M.draw(ctx, opts)
+end
 
+--- Get text value for a field
+--- @param id string Field identifier
+--- @return string Current text value
 function M.get_text(id)
   if field_state[id] then
     return field_state[id].text or ""
@@ -175,6 +344,9 @@ function M.get_text(id)
   return ""
 end
 
+--- Set text value for a field
+--- @param id string Field identifier
+--- @param text string New text value
 function M.set_text(id, text)
   if not field_state[id] then
     field_state[id] = {
@@ -186,10 +358,17 @@ function M.set_text(id, text)
   field_state[id].text = text or ""
 end
 
+--- Clear text for a field
+--- @param id string Field identifier
 function M.clear(id)
   if field_state[id] then
     field_state[id].text = ""
   end
+end
+
+--- Clean up all field instances
+function M.cleanup()
+  Base.cleanup_registry(field_state)
 end
 
 return M

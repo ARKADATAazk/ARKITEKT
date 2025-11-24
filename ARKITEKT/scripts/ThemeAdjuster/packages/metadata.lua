@@ -1,3 +1,4 @@
+-- @noindex
 -- packages/metadata.lua
 -- Utility for querying REAPER image metadata
 -- Used for auto-tagging packages and providing tooltips

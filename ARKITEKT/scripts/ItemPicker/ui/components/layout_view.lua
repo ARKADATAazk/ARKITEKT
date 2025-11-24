@@ -282,79 +282,127 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local spacing = 20  -- Horizontal spacing between checkboxes
 
     -- Line 1: Play Item Through Track | Show Muted Tracks | Show Muted Items | Show Disabled Items
-    local total_width, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
-      "Play Item Through Track (will add delay to preview playback)",
-      self.state.settings.play_item_through_track, checkbox_config, "play_item_through_track")
-    if clicked then
+    local result = Checkbox.draw(ctx, {
+      id = "play_item_through_track",
+      draw_list = draw_list,
+      x = checkbox_x,
+      y = checkbox_y,
+      label = "Play Item Through Track (will add delay to preview playback)",
+      is_checked = self.state.settings.play_item_through_track,
+      alpha = settings_alpha,
+    })
+    if result.clicked then
       self.state.set_setting('play_item_through_track', not self.state.settings.play_item_through_track)
     end
 
     -- Show Muted Tracks on same line
     local prev_width = ImGui.CalcTextSize(ctx, "Play Item Through Track (will add delay to preview playback)") + 18 + 8 + spacing
     local muted_tracks_x = checkbox_x + prev_width
-    _, clicked = Checkbox.draw(ctx, draw_list, muted_tracks_x, checkbox_y,
-      "Show Muted Tracks",
-      self.state.settings.show_muted_tracks, checkbox_config, "show_muted_tracks")
-    if clicked then
+    result = Checkbox.draw(ctx, {
+      id = "show_muted_tracks",
+      draw_list = draw_list,
+      x = muted_tracks_x,
+      y = checkbox_y,
+      label = "Show Muted Tracks",
+      is_checked = self.state.settings.show_muted_tracks,
+      alpha = settings_alpha,
+    })
+    if result.clicked then
       self.state.set_setting('show_muted_tracks', not self.state.settings.show_muted_tracks)
     end
 
     -- Show Muted Items on same line
     prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Muted Tracks") + 18 + 8 + spacing
     local muted_items_x = checkbox_x + prev_width
-    _, clicked = Checkbox.draw(ctx, draw_list, muted_items_x, checkbox_y,
-      "Show Muted Items",
-      self.state.settings.show_muted_items, checkbox_config, "show_muted_items")
-    if clicked then
+    result = Checkbox.draw(ctx, {
+      id = "show_muted_items",
+      draw_list = draw_list,
+      x = muted_items_x,
+      y = checkbox_y,
+      label = "Show Muted Items",
+      is_checked = self.state.settings.show_muted_items,
+      alpha = settings_alpha,
+    })
+    if result.clicked then
       self.state.set_setting('show_muted_items', not self.state.settings.show_muted_items)
     end
 
     -- Show Disabled Items on same line
     prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Muted Items") + 18 + 8 + spacing
     local disabled_x = checkbox_x + prev_width
-    _, clicked = Checkbox.draw(ctx, draw_list, disabled_x, checkbox_y,
-      "Show Disabled Items",
-      self.state.settings.show_disabled_items, checkbox_config, "show_disabled_items")
-    if clicked then
+    result = Checkbox.draw(ctx, {
+      id = "show_disabled_items",
+      draw_list = draw_list,
+      x = disabled_x,
+      y = checkbox_y,
+      label = "Show Disabled Items",
+      is_checked = self.state.settings.show_disabled_items,
+      alpha = settings_alpha,
+    })
+    if result.clicked then
       self.state.set_setting('show_disabled_items', not self.state.settings.show_disabled_items)
     end
 
     -- Line 2: Show Favorites Only | Show Audio | Show MIDI | Group Items | Tile FX | Show Viz | Enable Regions | Show on Tiles
     checkbox_y = checkbox_y + 24
-    _, clicked = Checkbox.draw(ctx, draw_list, checkbox_x, checkbox_y,
-      "Show Favorites Only",
-      self.state.settings.show_favorites_only, checkbox_config, "show_favorites_only")
-    if clicked then
+    result = Checkbox.draw(ctx, {
+      id = "show_favorites_only",
+      draw_list = draw_list,
+      x = checkbox_x,
+      y = checkbox_y,
+      label = "Show Favorites Only",
+      is_checked = self.state.settings.show_favorites_only,
+      alpha = settings_alpha,
+    })
+    if result.clicked then
       self.state.set_setting('show_favorites_only', not self.state.settings.show_favorites_only)
     end
 
     -- Show Audio on same line
     prev_width = ImGui.CalcTextSize(ctx, "Show Favorites Only") + 18 + 8 + spacing
     local show_audio_x = checkbox_x + prev_width
-    _, clicked = Checkbox.draw(ctx, draw_list, show_audio_x, checkbox_y,
-      "Show Audio",
-      self.state.settings.show_audio, checkbox_config, "show_audio")
-    if clicked then
+    result = Checkbox.draw(ctx, {
+      id = "show_audio",
+      draw_list = draw_list,
+      x = show_audio_x,
+      y = checkbox_y,
+      label = "Show Audio",
+      is_checked = self.state.settings.show_audio,
+      alpha = settings_alpha,
+    })
+    if result.clicked then
       self.state.set_setting('show_audio', not self.state.settings.show_audio)
     end
 
     -- Show MIDI on same line
     prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Audio") + 18 + 8 + spacing
     local show_midi_x = checkbox_x + prev_width
-    _, clicked = Checkbox.draw(ctx, draw_list, show_midi_x, checkbox_y,
-      "Show MIDI",
-      self.state.settings.show_midi, checkbox_config, "show_midi")
-    if clicked then
+    result = Checkbox.draw(ctx, {
+      id = "show_midi",
+      draw_list = draw_list,
+      x = show_midi_x,
+      y = checkbox_y,
+      label = "Show MIDI",
+      is_checked = self.state.settings.show_midi,
+      alpha = settings_alpha,
+    })
+    if result.clicked then
       self.state.set_setting('show_midi', not self.state.settings.show_midi)
     end
 
     -- Group Items of Same Name checkbox on same line
     prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show MIDI") + 18 + 8 + spacing
     local group_items_x = checkbox_x + prev_width
-    _, clicked = Checkbox.draw(ctx, draw_list, group_items_x, checkbox_y,
-      "Group Items of Same Name",
-      self.state.settings.group_items_by_name, checkbox_config, "group_items_by_name")
-    if clicked then
+    result = Checkbox.draw(ctx, {
+      id = "group_items_by_name",
+      draw_list = draw_list,
+      x = group_items_x,
+      y = checkbox_y,
+      label = "Group Items of Same Name",
+      is_checked = self.state.settings.group_items_by_name,
+      alpha = settings_alpha,
+    })
+    if result.clicked then
       self.state.set_setting('group_items_by_name', not self.state.settings.group_items_by_name)
       self.state.needs_reorganize = true
     end
@@ -364,10 +412,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local enable_fx_x = checkbox_x + prev_width
     local enable_fx = self.state.settings.enable_tile_fx
     if enable_fx == nil then enable_fx = true end
-    _, clicked = Checkbox.draw(ctx, draw_list, enable_fx_x, checkbox_y,
-      "Tile FX",
-      enable_fx, checkbox_config, "enable_fx")
-    if clicked then
+    result = Checkbox.draw(ctx, {
+      id = "enable_fx",
+      draw_list = draw_list,
+      x = enable_fx_x,
+      y = checkbox_y,
+      label = "Tile FX",
+      is_checked = enable_fx,
+      alpha = settings_alpha,
+    })
+    if result.clicked then
       self.state.set_setting('enable_tile_fx', not enable_fx)
     end
 
@@ -376,10 +430,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local show_viz_small_x = checkbox_x + prev_width
     local show_viz_small = self.state.settings.show_visualization_in_small_tiles
     if show_viz_small == nil then show_viz_small = true end
-    _, clicked = Checkbox.draw(ctx, draw_list, show_viz_small_x, checkbox_y,
-      "Show Viz in Small Tiles",
-      show_viz_small, checkbox_config, "show_viz_small")
-    if clicked then
+    result = Checkbox.draw(ctx, {
+      id = "show_viz_small",
+      draw_list = draw_list,
+      x = show_viz_small_x,
+      y = checkbox_y,
+      label = "Show Viz in Small Tiles",
+      is_checked = show_viz_small,
+      alpha = settings_alpha,
+    })
+    if result.clicked then
       self.state.set_setting('show_visualization_in_small_tiles', not show_viz_small)
     end
 
@@ -388,10 +448,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local enable_regions_x = checkbox_x + prev_width
     local enable_regions = self.state.settings.enable_region_processing
     if enable_regions == nil then enable_regions = false end
-    _, clicked = Checkbox.draw(ctx, draw_list, enable_regions_x, checkbox_y,
-      "Enable Regions",
-      enable_regions, checkbox_config, "enable_regions")
-    if clicked then
+    result = Checkbox.draw(ctx, {
+      id = "enable_regions",
+      draw_list = draw_list,
+      x = enable_regions_x,
+      y = checkbox_y,
+      label = "Enable Regions",
+      is_checked = enable_regions,
+      alpha = settings_alpha,
+    })
+    if result.clicked then
       self.state.set_setting('enable_region_processing', not enable_regions)
       if not enable_regions then
         self.state.all_regions = require('ItemPicker.data.reaper_api').GetAllProjectRegions()
@@ -407,10 +473,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local show_region_tags_x = checkbox_x + prev_width
     local show_region_tags = self.state.settings.show_region_tags
     if show_region_tags == nil then show_region_tags = false end
-    _, clicked = Checkbox.draw(ctx, draw_list, show_region_tags_x, checkbox_y,
-      "Show on Tiles",
-      show_region_tags, checkbox_config, "show_region_tags")
-    if clicked then
+    result = Checkbox.draw(ctx, {
+      id = "show_region_tags",
+      draw_list = draw_list,
+      x = show_region_tags_x,
+      y = checkbox_y,
+      label = "Show on Tiles",
+      is_checked = show_region_tags,
+      alpha = settings_alpha,
+    })
+    if result.clicked then
       self.state.set_setting('show_region_tags', not show_region_tags)
     end
 
@@ -472,10 +544,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local waveform_filled = self.state.settings.waveform_filled
     if waveform_filled == nil then waveform_filled = true end
 
-    local _, fill_clicked = Checkbox.draw(ctx, draw_list, fill_checkbox_x, waveform_y,
-      "Fill",
-      waveform_filled, checkbox_config, "waveform_filled")
-    if fill_clicked then
+    local fill_result = Checkbox.draw(ctx, {
+      id = "waveform_filled",
+      draw_list = draw_list,
+      x = fill_checkbox_x,
+      y = waveform_y,
+      label = "Fill",
+      is_checked = waveform_filled,
+      alpha = settings_alpha,
+    })
+    if fill_result.clicked then
       self.state.set_setting('waveform_filled', not waveform_filled)
       if self.state.runtime_cache and self.state.runtime_cache.waveform_polylines then
         self.state.runtime_cache.waveform_polylines = {}
@@ -487,10 +565,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local zero_line_checkbox_x = fill_checkbox_x + fill_label_width + 18 + 8
     local waveform_zero_line = self.state.settings.waveform_zero_line or false
 
-    local _, zero_line_clicked = Checkbox.draw(ctx, draw_list, zero_line_checkbox_x, waveform_y,
-      "Zero Line",
-      waveform_zero_line, checkbox_config, "waveform_zero_line")
-    if zero_line_clicked then
+    local zero_result = Checkbox.draw(ctx, {
+      id = "waveform_zero_line",
+      draw_list = draw_list,
+      x = zero_line_checkbox_x,
+      y = waveform_y,
+      label = "Zero Line",
+      is_checked = waveform_zero_line,
+      alpha = settings_alpha,
+    })
+    if zero_result.clicked then
       self.state.set_setting('waveform_zero_line', not waveform_zero_line)
     end
 
@@ -500,10 +584,16 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local show_duration = self.state.settings.show_duration
     if show_duration == nil then show_duration = true end
 
-    local _, show_duration_clicked = Checkbox.draw(ctx, draw_list, show_duration_checkbox_x, waveform_y,
-      "Show Duration",
-      show_duration, checkbox_config, "show_duration")
-    if show_duration_clicked then
+    local dur_result = Checkbox.draw(ctx, {
+      id = "show_duration",
+      draw_list = draw_list,
+      x = show_duration_checkbox_x,
+      y = waveform_y,
+      label = "Show Duration",
+      is_checked = show_duration,
+      alpha = settings_alpha,
+    })
+    if dur_result.clicked then
       self.state.set_setting('show_duration', not show_duration)
     end
 
@@ -581,7 +671,13 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end
   end
 
-  Button.draw(ctx, draw_list, current_x, search_y, track_button_width, button_height, {
+  Button.draw(ctx, {
+    id = "track_filter_button",
+    draw_list = draw_list,
+    x = current_x,
+    y = search_y,
+    width = track_button_width,
+    height = button_height,
     label = "",
     is_toggled = track_filter_active,
     preset_name = "BUTTON_TOGGLE_WHITE",
@@ -591,7 +687,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       -- Set flag to open track filter modal (main_window will handle it)
       self.state.open_track_filter_modal = true
     end,
-  }, "track_filter_button")
+  })
 
   -- Draw track icon on top of button
   local track_icon_x = (current_x + (track_button_width - 12) / 2 + 0.5)//1
@@ -600,7 +696,13 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Content filter button
   current_x = current_x - content_button_width - button_gap
-  Button.draw(ctx, draw_list, current_x, search_y, content_button_width, button_height, {
+  Button.draw(ctx, {
+    id = "content_filter_button",
+    draw_list = draw_list,
+    x = current_x,
+    y = search_y,
+    width = content_button_width,
+    height = button_height,
     label = content_filter_mode,
     is_toggled = content_filter_mode == "MIXED",  -- Toggled when showing MIXED
     preset_name = "BUTTON_TOGGLE_WHITE",
@@ -621,7 +723,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       self.state.set_setting('show_audio', true)
       self.state.set_setting('show_midi', true)
     end,
-  }, "content_filter_button")
+  })
 
   -- Layout toggle button (always visible, enables MIXED mode if needed)
   current_x = current_x - layout_button_width - button_gap
@@ -661,7 +763,13 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   end
 
   -- Draw button first
-  Button.draw(ctx, draw_list, current_x, search_y, layout_button_width, button_height, {
+  Button.draw(ctx, {
+    id = "layout_toggle_button",
+    draw_list = draw_list,
+    x = current_x,
+    y = search_y,
+    width = layout_button_width,
+    height = button_height,
     label = "",  -- No text, icon is drawn manually
     is_toggled = is_mixed_mode,  -- Toggled whenever in MIXED mode
     preset_name = "BUTTON_TOGGLE_WHITE",
@@ -679,7 +787,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
         self.state.set_setting('layout_mode', new_mode)
       end
     end,
-  }, "layout_toggle_button")
+  })
 
   -- Calculate center position for icon and draw it on top of button
   local icon_x = (current_x + (layout_button_width - 14) / 2 + 0.5)//1
@@ -701,7 +809,13 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local button_w = sort_button_widths[i]
     local is_active = (current_sort == mode.id)
 
-    Button.draw(ctx, draw_list, sort_x, search_y, button_w, button_height, {
+    Button.draw(ctx, {
+      id = "sort_button_" .. mode.id,
+      draw_list = draw_list,
+      x = sort_x,
+      y = search_y,
+      width = button_w,
+      height = button_height,
       label = mode.label,
       is_toggled = is_active,
       preset_name = "BUTTON_TOGGLE_WHITE",
@@ -717,7 +831,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
           self.state.set_setting('sort_reverse', false)
         end
       end,
-    }, "sort_button_" .. mode.id)
+    })
 
     sort_x = sort_x + button_w + button_gap
   end

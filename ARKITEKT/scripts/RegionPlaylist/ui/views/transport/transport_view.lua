@@ -239,7 +239,7 @@ end
 
 function TransportView:build_quantize_dropdown(bridge_state)
   return {
-    type = "dropdown_field",
+    type = "combobox_field",
     id = "transport_quantize",
     align = "center",
     width = CoreConfig.TRANSPORT_BUTTONS.quantize.width,
@@ -299,7 +299,7 @@ function TransportView:build_playback_dropdown(bridge_state)
   local current_shuffle_mode = bridge_state.shuffle_mode or "true_shuffle"
 
   return {
-    type = "dropdown_field",
+    type = "combobox_field",
     id = "transport_playback",
     align = "center",
     width = CoreConfig.TRANSPORT_BUTTONS.playback.width_dropdown,
@@ -427,7 +427,13 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
           local engine = bridge and bridge.engine
 
           -- Draw button
-          Button.draw(ctx, dl, x, y, width, height, {
+          Button.draw(ctx, {
+            id = "transport_shuffle_btn",
+            draw_list = dl,
+            x = x,
+            y = y,
+            width = width,
+            height = height,
             icon = CoreConfig.REMIX_ICONS.shuffle,
             icon_font = icon_font,
             icon_size = icon_size,
@@ -445,7 +451,8 @@ function TransportView:build_playback_buttons(bridge_state, shell_state)
             on_right_click = function()
               ImGui.OpenPopup(ctx, "shuffle_context_menu")
             end,
-          }, state)
+            panel_state = state,
+          })
 
           -- Draw context menu
           self:draw_shuffle_context_menu(ctx)
@@ -671,7 +678,7 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
   }
 
   return {
-    type = "dropdown_field",
+    type = "combobox_field",
     id = "transport_pb_combined",
     align = "center",
     width = 60,  -- Compact "PB" label

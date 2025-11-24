@@ -11,11 +11,14 @@ local ConfigUtil = require('arkitekt.core.config')
 local M = {}
 
 -- Component registry - imports from controls/ directly for reusable components
+local FieldsModule = require('arkitekt.gui.widgets.primitives.fields')
+local ComboboxModule = require('arkitekt.gui.widgets.inputs.combobox')
+
 local COMPONENTS = {
   button = require('arkitekt.gui.widgets.primitives.button'),
   checkbox = require('arkitekt.gui.widgets.primitives.checkbox'),
-  search_field = require('arkitekt.gui.widgets.inputs.search_input'),
-  dropdown_field = require('arkitekt.gui.widgets.inputs.dropdown'),
+  fields = FieldsModule,
+  combobox_field = ComboboxModule,
   tab_strip = require('arkitekt.gui.widgets.containers.panel.header.tab_strip'),
   separator = require('arkitekt.gui.widgets.containers.panel.header.separator'),
   custom = {
@@ -33,8 +36,8 @@ local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 
 -- Custom compound element for template browser header with search/sort + filter chips
-local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
-local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
+local Fields = require('arkitekt.gui.widgets.primitives.fields')
+local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
 COMPONENTS.template_header_controls = {
@@ -51,14 +54,21 @@ COMPONENTS.template_header_controls = {
       local count = config.get_template_count()
       local label = string.format("%d template%s", count, count == 1 and "" or "s")
 
-      Button.draw(ctx, dl, cursor_x, y, 120, row1_height, {
+      Button.draw(ctx, {
+        id = "template_count",
+        draw_list = dl,
+        x = cursor_x,
+        y = y,
+        width = 120,
+        height = row1_height,
         label = label,
         interactive = false,
         style = {
           bg_color = 0x00000000,  -- Transparent
           text_color = 0xAAAAAAFF,
         },
-      }, state)
+        panel_state = state,
+      })
       cursor_x = cursor_x + 128
     end
 
@@ -68,17 +78,23 @@ COMPONENTS.template_header_controls = {
     local search_x = x + width - sort_width - search_width - 8
 
     if config.get_search_query and config.on_search_changed then
-      SearchInput.draw(ctx, dl, search_x, y, search_width, row1_height, {
+      Fields.search(ctx, {
+        x = search_x,
+        y = y,
+        width = search_width,
+        height = row1_height,
         placeholder = "Search templates...",
         get_value = config.get_search_query,
         on_change = config.on_search_changed,
-      }, state)
+        draw_list = dl,
+        panel_state = state,
+      })
     end
 
     -- Sort dropdown (140px, right side)
     if config.get_sort_mode and config.on_sort_changed then
       local sort_x = search_x + search_width + 8
-      Dropdown.draw(ctx, dl, sort_x, y, sort_width, row1_height, {
+      Combobox.draw(ctx, dl, sort_x, y, sort_width, row1_height, {
         tooltip = "Sort by",
         tooltip_delay = 0.5,
         enable_sort = false,
@@ -396,6 +412,14 @@ end
 -- ELEMENT RENDERING
 -- ============================================================================
 
+-- Widgets that use the new standardized opts-based API
+local STANDARDIZED_WIDGETS = {
+  button = true,
+  checkbox = true,
+  fields = true,
+  -- Note: combobox_field still uses old positional API
+}
+
 local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side)
   if not elements or #elements == 0 then
     return 0
@@ -403,7 +427,7 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
 
   local layout = layout_elements(ctx, elements, width, state)
   local rounding_info = calculate_corner_rounding(layout, header_rounding, is_bottom, side)
-  
+
   local border_overlap = 1
   local cursor_x = x
   local last_non_sep_idx = find_last_non_separator(layout)
@@ -419,27 +443,27 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
         cursor_x = cursor_x - border_overlap
       end
     end
-    
+
     if i == last_non_sep_idx and element.type ~= 'separator' then
       local remaining_space = (x + width) - cursor_x
       if remaining_space > element_width then
         element_width = remaining_space
       end
     end
-    
+
     local component = COMPONENTS[element.type]
     if component and component.draw then
       -- Merge panel ELEMENT_STYLE as fallback (won't override preset colors)
       local style_defaults = PanelConfig.ELEMENT_STYLE[element.type] or {}
       local element_config = ConfigUtil.merge_safe(element.config or {}, style_defaults)
-      
+
       -- Pass element ID to config for unique identification
       element_config.id = element.id
-      
+
       if rounding_info[i] then
         element_config.corner_rounding = rounding_info[i]
       end
-      
+
       -- Update button label from panel current_mode if this is a mode_toggle button
       if element.type == "button" and element.id == "mode_toggle" and state.current_mode then
         if state.current_mode == "regions" then
@@ -457,21 +481,39 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
       end
 
       local element_state = get_or_create_element_state(state, element)
-      
-      local used_width = component.draw(
-        ctx, dl,
-        cursor_x, y,
-        element_width, height,
-        element_config,
-        element_state
-      )
-      
+
+      local used_width
+
+      -- Use new opts-based API for standardized widgets
+      if STANDARDIZED_WIDGETS[element.type] then
+        -- Build opts table for standardized widget API
+        local opts = element_config
+        opts.x = cursor_x
+        opts.y = y
+        opts.width = element_width
+        opts.height = height
+        opts.draw_list = dl
+        opts.panel_state = element_state
+
+        local result = component.draw(ctx, opts)
+        used_width = result and result.width or element_width
+      else
+        -- Use old positional API for non-standardized widgets
+        used_width = component.draw(
+          ctx, dl,
+          cursor_x, y,
+          element_width, height,
+          element_config,
+          element_state
+        )
+      end
+
       cursor_x = cursor_x + (used_width or element_width)
     else
       cursor_x = cursor_x + element_width
     end
   end
-  
+
   return height
 end
 

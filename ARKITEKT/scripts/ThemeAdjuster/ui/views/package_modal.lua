@@ -4,7 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.core.colors')
-local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
+local Fields = require('arkitekt.gui.widgets.primitives.fields')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local Constants = require('ThemeAdjuster.defs.constants')
 local ImageCache = require('arkitekt.core.images')
@@ -756,8 +756,8 @@ function PackageModal:draw_content(ctx, bounds)
   -- Search input using primitive
   local search_w = 220
   local search_h = 26
-  SearchInput.set_text("pkg_modal_search", self.search_text)
-  SearchInput.draw(ctx, dl, toolbar_x, toolbar_y, search_w, search_h, {
+  Fields.set_text("pkg_modal_search", self.search_text)
+  Fields.search(ctx, dl, toolbar_x, toolbar_y, search_w, search_h, {
     id = "pkg_modal_search",
     placeholder = "Search assets...",
     on_change = function(text)
@@ -770,23 +770,33 @@ function PackageModal:draw_content(ctx, bounds)
   local btn_h = 26
 
   -- View mode toggle
-  local _, grid_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 50, btn_h, {
-    id = "view_mode",
+  local grid_result = Button.draw(ctx, {
+    id = "pkg_modal_view",
+    draw_list = dl,
+    x = btn_x,
+    y = toolbar_y,
+    width = 50,
+    height = btn_h,
     label = self.view_mode == "grid" and "Grid" or "Tree",
     rounding = 3,
-  }, "pkg_modal_view")
-  if grid_clicked then
+  })
+  if grid_result.clicked then
     self.view_mode = self.view_mode == "grid" and "tree" or "grid"
   end
   btn_x = btn_x + 50 + 4
 
   -- Group toggle
-  local _, group_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 65, btn_h, {
-    id = "group_mode",
+  local group_result = Button.draw(ctx, {
+    id = "pkg_modal_group",
+    draw_list = dl,
+    x = btn_x,
+    y = toolbar_y,
+    width = 65,
+    height = btn_h,
     label = self.group_by_area and "Grouped" or "Flat",
     rounding = 3,
-  }, "pkg_modal_group")
-  if group_clicked then
+  })
+  if group_result.clicked then
     self.group_by_area = not self.group_by_area
   end
   btn_x = btn_x + 65 + 8
@@ -799,12 +809,17 @@ function PackageModal:draw_content(ctx, bounds)
     pinned_elsewhere = "Contested"
   }
   local filter_label = "Filter: " .. filter_labels[self.status_filter]
-  local _, filter_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 90, btn_h, {
-    id = "status_filter",
+  local filter_result = Button.draw(ctx, {
+    id = "pkg_modal_filter",
+    draw_list = dl,
+    x = btn_x,
+    y = toolbar_y,
+    width = 90,
+    height = btn_h,
     label = filter_label,
     rounding = 3,
-  }, "pkg_modal_filter")
-  if filter_clicked then
+  })
+  if filter_result.clicked then
     ImGui.OpenPopup(ctx, "status_filter_popup")
   end
 
@@ -839,12 +854,17 @@ function PackageModal:draw_content(ctx, bounds)
   end
 
   -- Bulk action buttons
-  local _, sel_all_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 65, btn_h, {
-    id = "select_all",
+  local sel_all_result = Button.draw(ctx, {
+    id = "pkg_modal_sel_all",
+    draw_list = dl,
+    x = btn_x,
+    y = toolbar_y,
+    width = 65,
+    height = btn_h,
     label = "Select All",
     rounding = 3,
-  }, "pkg_modal_sel_all")
-  if sel_all_clicked then
+  })
+  if sel_all_result.clicked then
     for _, key in ipairs(pkg.keys_order or {}) do
       if self.search_text == "" or key:lower():find(self.search_text:lower(), 1, true) then
         self.selected_assets[key] = true
@@ -853,22 +873,32 @@ function PackageModal:draw_content(ctx, bounds)
   end
   btn_x = btn_x + 65 + 4
 
-  local _, clear_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 45, btn_h, {
-    id = "clear",
+  local clear_result = Button.draw(ctx, {
+    id = "pkg_modal_clear",
+    draw_list = dl,
+    x = btn_x,
+    y = toolbar_y,
+    width = 45,
+    height = btn_h,
     label = "Clear",
     rounding = 3,
-  }, "pkg_modal_clear")
-  if clear_clicked then
+  })
+  if clear_result.clicked then
     self.selected_assets = {}
   end
   btn_x = btn_x + 45 + 4
 
-  local _, inc_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 35, btn_h, {
-    id = "include",
+  local inc_result = Button.draw(ctx, {
+    id = "pkg_modal_inc",
+    draw_list = dl,
+    x = btn_x,
+    y = toolbar_y,
+    width = 35,
+    height = btn_h,
     label = "Inc.",
     rounding = 3,
-  }, "pkg_modal_inc")
-  if inc_clicked then
+  })
+  if inc_result.clicked then
     local all_exclusions = self.State.get_package_exclusions()
     if not all_exclusions[pkg.id] then
       all_exclusions[pkg.id] = {}
@@ -882,12 +912,17 @@ function PackageModal:draw_content(ctx, bounds)
   end
   btn_x = btn_x + 35 + 4
 
-  local _, exc_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 35, btn_h, {
-    id = "exclude",
+  local exc_result = Button.draw(ctx, {
+    id = "pkg_modal_exc",
+    draw_list = dl,
+    x = btn_x,
+    y = toolbar_y,
+    width = 35,
+    height = btn_h,
     label = "Exc.",
     rounding = 3,
-  }, "pkg_modal_exc")
-  if exc_clicked then
+  })
+  if exc_result.clicked then
     local all_exclusions = self.State.get_package_exclusions()
     if not all_exclusions[pkg.id] then
       all_exclusions[pkg.id] = {}
@@ -901,12 +936,17 @@ function PackageModal:draw_content(ctx, bounds)
   end
   btn_x = btn_x + 35 + 4
 
-  local _, pin_clicked = Button.draw(ctx, dl, btn_x, toolbar_y, 35, btn_h, {
-    id = "pin",
+  local pin_result = Button.draw(ctx, {
+    id = "pkg_modal_pin",
+    draw_list = dl,
+    x = btn_x,
+    y = toolbar_y,
+    width = 35,
+    height = btn_h,
     label = "Pin",
     rounding = 3,
-  }, "pkg_modal_pin")
-  if pin_clicked then
+  })
+  if pin_result.clicked then
     local pins = self.State.get_package_pins()
     for key, selected in pairs(self.selected_assets) do
       if selected then

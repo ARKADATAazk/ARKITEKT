@@ -90,10 +90,11 @@ function DebugView:create_container_config()
         },
         {
           id = "filter",
-          type = "search_field",
+          type = "fields",
           width = 200,
           spacing_before = 0,
           config = {
+            preset = "search",
             placeholder = "Filter images...",
             on_change = function(text)
               self.filter_text = text

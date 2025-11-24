@@ -273,14 +273,27 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
     local badge_y = y1 + (header_height - badge_h) / 2
 
     -- Render using modular badge system (clickable)
-    local x1, y1, x2_badge, y2_badge = Badge.render_clickable_text_badge(
-      ctx, dl, badge_x, badge_y, badge_text, base_color, text_alpha,
-      item_key, on_badge_click, badge_cfg
-    )
+    local result = Badge.clickable(ctx, {
+      draw_list = dl,
+      x = badge_x,
+      y = badge_y,
+      text = badge_text,
+      base_color = base_color,
+      alpha = text_alpha,
+      id = item_key,
+      on_click = on_badge_click,
+      padding_x = badge_cfg.padding_x,
+      padding_y = badge_cfg.padding_y,
+      rounding = badge_cfg.rounding,
+      bg_color = badge_cfg.bg,
+      border_alpha = badge_cfg.border_alpha,
+      border_darken = badge_cfg.border_darken,
+      text_color = badge_cfg.text_color,
+    })
 
     -- Store badge rect for exclusion zones
     if badge_rects and item_key then
-      badge_rects[item_key] = {x1, y1, x2_badge, y2_badge}
+      badge_rects[item_key] = {result.x1, result.y1, result.x2, result.y2}
     end
   end
 end

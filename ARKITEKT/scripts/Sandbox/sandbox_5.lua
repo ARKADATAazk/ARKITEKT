@@ -18,8 +18,8 @@ local Arkit = require('arkitekt.arkit')
 
 -- Import refactored base controls
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local SearchInput = require('arkitekt.gui.widgets.inputs.search_input')
-local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
+local Fields = require('arkitekt.gui.widgets.primitives.fields')
+local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
 
 -- Import panel system
 local Panel = require('arkitekt.gui.widgets.containers.panel')
@@ -93,7 +93,7 @@ local function create_test_panel()
         },
         {
           id = "panel_search",
-          type = "search_field",
+          type = "fields",
           width = 200,
           spacing_before = 8,
           config = {
@@ -106,7 +106,7 @@ local function create_test_panel()
         },
         {
           id = "panel_dropdown",
-          type = "dropdown_field",
+          type = "combobox_field",
           width = 140,
           spacing_before = 8,
           config = {
@@ -161,7 +161,13 @@ local function draw_standalone_section(ctx)
   
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  Button.draw(ctx, dl, cursor_x, cursor_y, 150, 30, {
+  Button.draw(ctx, {
+    id = "standalone_button",
+    draw_list = dl,
+    x = cursor_x,
+    y = cursor_y,
+    width = 150,
+    height = 30,
     label = "Click Me!",
     rounding = 6,
     tooltip = state.show_tooltips and "Standalone button with 6px rounding" or nil,
@@ -169,7 +175,7 @@ local function draw_standalone_section(ctx)
       state.standalone.button_clicks = state.standalone.button_clicks + 1
       reaper.ShowConsoleMsg(string.format("[STANDALONE] Button clicked! (Total: %d)\n", state.standalone.button_clicks))
     end,
-  }, "standalone_button")
+  })
   
   ImGui.SetCursorScreenPos(ctx, cursor_x + 160, cursor_y + 5)
   ImGui.Text(ctx, string.format("Clicks: %d", state.standalone.button_clicks))
@@ -185,7 +191,13 @@ local function draw_standalone_section(ctx)
   
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  SearchInput.draw(ctx, dl, cursor_x, cursor_y, 300, 30, {
+  Fields.search(ctx, {
+    id = "standalone_search",
+    draw_list = dl,
+    x = cursor_x,
+    y = cursor_y,
+    width = 300,
+    height = 30,
     placeholder = "Type to search...",
     rounding = 6,
     tooltip = state.show_tooltips and "Standalone search with opacity fade on focus" or nil,
@@ -196,7 +208,7 @@ local function draw_standalone_section(ctx)
         reaper.ShowConsoleMsg(string.format("[STANDALONE] Search: '%s'\n", text))
       end
     end,
-  }, "standalone_search")
+  })
   
   ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + 40)
   
@@ -216,8 +228,13 @@ local function draw_standalone_section(ctx)
   
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  Dropdown.draw(ctx, dl, cursor_x, cursor_y, 180, 30, {
+  Combobox.draw(ctx, {
     id = "standalone_dropdown",
+    draw_list = dl,
+    x = cursor_x,
+    y = cursor_y,
+    width = 180,
+    height = 30,
     options = {
       { label = "🔴 Red", value = "red" },
       { label = "🟢 Green", value = "green" },
@@ -236,7 +253,7 @@ local function draw_standalone_section(ctx)
       state.standalone.dropdown_direction = direction
       reaper.ShowConsoleMsg(string.format("[STANDALONE] Sort direction: %s\n", direction))
     end,
-  }, "standalone_dropdown")
+  })
   
   ImGui.SetCursorScreenPos(ctx, cursor_x + 190, cursor_y + 5)
   

@@ -1,15 +1,77 @@
 -- @noindex
--- Arkitekt/gui/widgets/controls/corner_button.lua
--- Corner-shaped button control with asymmetric rounding suitable for panel corners
+-- arkitekt/gui/widgets/primitives/corner_button.lua
+-- Standardized corner-shaped button with asymmetric rounding
+-- Uses unified opts-based API
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Style = require('arkitekt.gui.style.defaults')
+local Colors = require('arkitekt.core.colors')
+local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}
 
--- Instance storage for hover animation
-local instances = {}
+-- ============================================================================
+-- DEFAULTS
+-- ============================================================================
+
+local DEFAULTS = {
+  -- Identity
+  id = "corner_button",
+
+  -- Position (nil = use cursor)
+  x = nil,
+  y = nil,
+
+  -- Size
+  size = 24,
+
+  -- Corner position and rounding
+  position = "tl",        -- Corner position: "tl", "tr", "bl", "br"
+  outer_rounding = 0,     -- Rounding for outer corner
+  inner_rounding = 0,     -- Rounding for inner corner
+
+  -- Content
+  label = "",
+  icon = "",
+
+  -- State
+  disabled = false,
+  is_blocking = false,
+
+  -- Colors (nil = use Style.BUTTON defaults)
+  bg_color = nil,
+  bg_hover_color = nil,
+  bg_active_color = nil,
+  bg_disabled_color = nil,
+  border_inner_color = nil,
+  border_hover_color = nil,
+  border_active_color = nil,
+  border_outer_color = nil,
+  text_color = nil,
+  text_hover_color = nil,
+  text_active_color = nil,
+  text_disabled_color = nil,
+
+  -- Callbacks
+  on_click = nil,
+  tooltip = nil,
+
+  -- Custom rendering
+  custom_draw = nil,
+
+  -- Cursor control
+  advance = "vertical",
+
+  -- Draw list
+  draw_list = nil,
+}
+
+-- ============================================================================
+-- INSTANCE MANAGEMENT (weak table to prevent memory leaks)
+-- ============================================================================
+
+local instances = Base.create_instance_registry()
 
 local function get_instance(id)
   local inst = instances[id]
@@ -20,7 +82,10 @@ local function get_instance(id)
   return inst
 end
 
--- High-quality rounded rect path (localized to avoid coupling)
+-- ============================================================================
+-- RENDERING HELPERS
+-- ============================================================================
+
 local function snap_pixel(v)
   return math.floor(v + 0.5)
 end
@@ -106,50 +171,80 @@ local function draw_corner_shape(dl, x, y, size, bg, border_inner, border_outer,
   draw_rounded_rect_path(dl, x, y, x + size, y + size, border_outer, false, itl, itr, ibr, ibl, 1)
 end
 
--- API:
--- CornerButton.draw(ctx, dl, x, y, size, config, unique_id, outer_rounding, inner_rounding, position)
-function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inner_rounding, position)
-  local config = Style.apply_defaults(Style.BUTTON, user_config)
+-- ============================================================================
+-- PUBLIC API (Standardized)
+-- ============================================================================
+
+--- Draw a corner button widget
+--- @param ctx userdata ImGui context
+--- @param opts table Widget options
+--- @return table Result { clicked, width, height, hovered, active }
+function M.draw(ctx, opts)
+  opts = Base.parse_opts(opts, DEFAULTS)
+  local config = Style.apply_defaults(Style.BUTTON, opts)
+
+  -- Resolve unique ID
+  local unique_id = Base.resolve_id(opts, "corner_button")
+
+  -- Get instance for animation
   local inst = get_instance(unique_id)
 
-  local is_blocking = config.is_blocking or false
+  -- Get position and draw list
+  local x, y = Base.get_position(ctx, opts)
+  local dl = Base.get_draw_list(ctx, opts)
+
+  -- Get size
+  local size = opts.size or 24
+
+  -- Get state
+  local disabled = opts.disabled or false
+  local is_blocking = opts.is_blocking or false
+
   local hovered = false
   local active = false
 
-  if not is_blocking then
+  if not disabled and not is_blocking then
     hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + size, y + size)
     active = hovered and ImGui.IsMouseDown(ctx, 0)
   end
 
+  -- Update animation
   local dt = ImGui.GetDeltaTime(ctx)
   local target = (hovered or active) and 1.0 or 0.0
 
-  -- Reset hover alpha immediately when blocking (don't animate)
-  if is_blocking then
+  if is_blocking or disabled then
     inst.hover_alpha = 0
   else
     inst.hover_alpha = inst.hover_alpha + (target - inst.hover_alpha) * 12.0 * dt
     inst.hover_alpha = math.max(0, math.min(1, inst.hover_alpha))
   end
 
-  local bg = config.bg_color
-  local border_inner = config.border_inner_color
-  local text = config.text_color
+  -- Calculate colors
+  local bg, border_inner, text
 
-  if active then
-    bg = config.bg_active_color or bg
-    border_inner = config.border_active_color or border_inner
-    text = config.text_active_color or text
+  if disabled then
+    bg = config.bg_disabled_color or Colors.with_alpha(Colors.desaturate(config.bg_color, 0.5), 0x80)
+    border_inner = Colors.with_alpha(Colors.desaturate(config.border_inner_color, 0.5), 0x80)
+    text = config.text_disabled_color or Colors.with_alpha(Colors.desaturate(config.text_color, 0.5), 0x80)
+  elseif active then
+    bg = config.bg_active_color or config.bg_color
+    border_inner = config.border_active_color or config.border_inner_color
+    text = config.text_active_color or config.text_color
   elseif inst.hover_alpha > 0.01 then
     bg = Style.RENDER.lerp_color(config.bg_color, config.bg_hover_color or config.bg_color, inst.hover_alpha)
     border_inner = Style.RENDER.lerp_color(config.border_inner_color, config.border_hover_color or config.border_inner_color, inst.hover_alpha)
     text = Style.RENDER.lerp_color(config.text_color, config.text_hover_color or config.text_color, inst.hover_alpha)
+  else
+    bg = config.bg_color
+    border_inner = config.border_inner_color
+    text = config.text_color
   end
 
   -- Draw button visuals
-  draw_corner_shape(dl, x, y, size, bg, border_inner, config.border_outer_color, outer_rounding, inner_rounding, position)
+  draw_corner_shape(dl, x, y, size, bg, border_inner, config.border_outer_color,
+                    opts.outer_rounding, opts.inner_rounding, opts.position)
 
-  -- Support custom draw function or fallback to icon/label text
+  -- Draw content
   if config.custom_draw then
     config.custom_draw(ctx, dl, x, y, size, size, hovered, active, text)
   else
@@ -162,23 +257,39 @@ function M.draw(ctx, dl, x, y, size, user_config, unique_id, outer_rounding, inn
     end
   end
 
-  -- Only create interactive button if no modal is blocking
+  -- Create interaction area
   local clicked = false
-  if not is_blocking then
+  if not is_blocking and not disabled then
     ImGui.SetCursorScreenPos(ctx, x, y)
     ImGui.InvisibleButton(ctx, '##' .. unique_id, size, size)
     clicked = ImGui.IsItemClicked(ctx, 0)
+
     if clicked and config.on_click then
       config.on_click()
     end
 
-    -- Only show tooltip if not blocking
+    -- Handle tooltip
     if hovered and config.tooltip then
       ImGui.SetTooltip(ctx, config.tooltip)
     end
   end
 
-  return clicked
+  -- Advance cursor
+  Base.advance_cursor(ctx, x, y, size, size, opts.advance)
+
+  -- Return standardized result
+  return Base.create_result({
+    clicked = clicked,
+    width = size,
+    height = size,
+    hovered = hovered,
+    active = active,
+  })
+end
+
+--- Clean up all corner button instances
+function M.cleanup()
+  Base.cleanup_registry(instances)
 end
 
 return M

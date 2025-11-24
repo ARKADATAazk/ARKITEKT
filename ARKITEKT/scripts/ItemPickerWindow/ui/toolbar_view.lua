@@ -111,7 +111,13 @@ function ToolbarView:draw(ctx, shell_state)
     end
   end
 
-  Button.draw(ctx, draw_list, layout_x, search_y, layout_button_width, button_height, {
+  Button.draw(ctx, {
+    id = "layout_toggle_button",
+    draw_list = draw_list,
+    x = layout_x,
+    y = search_y,
+    width = layout_button_width,
+    height = button_height,
     label = "",
     preset_name = "BUTTON_TOGGLE_WHITE",
     tooltip = is_vertical and "Switch to Horizontal Layout" or "Switch to Vertical Layout",
@@ -119,7 +125,7 @@ function ToolbarView:draw(ctx, shell_state)
       local new_mode = layout_mode == "vertical" and "horizontal" or "vertical"
       self.state.set_setting('layout_mode', new_mode)
     end,
-  }, "layout_toggle_button")
+  })
 
   -- Draw layout icon on button
   local icon_x = (layout_x + (layout_button_width - 14) / 2 + 0.5) // 1
@@ -151,7 +157,13 @@ function ToolbarView:draw(ctx, shell_state)
     local button_w = sort_button_widths[i]
     local is_active = (current_sort == mode.id)
 
-    Button.draw(ctx, draw_list, sort_x, search_y, button_w, button_height, {
+    Button.draw(ctx, {
+      id = "sort_button_" .. mode.id,
+      draw_list = draw_list,
+      x = sort_x,
+      y = search_y,
+      width = button_w,
+      height = button_height,
       label = mode.label,
       is_toggled = is_active,
       preset_name = "BUTTON_TOGGLE_WHITE",
@@ -164,7 +176,7 @@ function ToolbarView:draw(ctx, shell_state)
           self.state.set_setting('sort_reverse', false)
         end
       end,
-    }, "sort_button_" .. mode.id)
+    })
 
     sort_x = sort_x + button_w + button_gap
   end

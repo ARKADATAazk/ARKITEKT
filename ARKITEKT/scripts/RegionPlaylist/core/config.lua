@@ -152,17 +152,18 @@ function M.get_pool_container_config(callbacks)
         },
         {
           id = "search",
-          type = "search_field",
+          type = "fields",
           width = Defaults.CONTAINER.pool.search_width,
           spacing_before = 0,
           config = {
+            preset = "search",
             placeholder = Strings.POOL.search_placeholder,
             on_change = callbacks.on_search_changed,
           },
         },
         {
           id = "sort",
-          type = "dropdown_field",
+          type = "combobox_field",
           width = Defaults.CONTAINER.pool.sort_width,
           spacing_before = 0,
           config = {
