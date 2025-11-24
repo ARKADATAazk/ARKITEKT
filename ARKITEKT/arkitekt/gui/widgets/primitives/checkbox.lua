@@ -151,10 +151,9 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, tota
   local is_disabled = config.disabled or false
   local is_blocking = config.is_blocking or false
 
-  -- Check hover using GetMousePos (same as combo - avoids ImGui state conflicts)
-  local mx, my = ImGui.GetMousePos(ctx)
+  -- Check hover using IsMouseHoveringRect (ImGui built-in, respects clipping)
   local is_hovered = not is_disabled and not is_blocking and
-                     mx >= x and mx < x + total_width and my >= y and my < y + size
+                     ImGui.IsMouseHoveringRect(ctx, x, y, x + total_width, y + size)
   local is_active = not is_disabled and not is_blocking and
                     is_hovered and ImGui.IsMouseDown(ctx, 0)
 

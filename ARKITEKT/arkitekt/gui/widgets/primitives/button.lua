@@ -205,10 +205,9 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   local is_disabled = config.disabled or false
   local is_toggled = config.is_toggled or false
 
-  -- Check hover using GetMousePos (same as combo - avoids ImGui state conflicts)
-  local mx, my = ImGui.GetMousePos(ctx)
+  -- Check hover using IsMouseHoveringRect (ImGui built-in, respects clipping)
   local is_hovered = not is_disabled and not config.is_blocking and
-                     mx >= x and mx < x + width and my >= y and my < y + height
+                     ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
   local is_active = not is_disabled and not config.is_blocking and
                     is_hovered and ImGui.IsMouseDown(ctx, 0)
 
