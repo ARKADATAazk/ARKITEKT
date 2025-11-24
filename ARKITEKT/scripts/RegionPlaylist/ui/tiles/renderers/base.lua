@@ -32,8 +32,8 @@ M.CONFIG = {
   badge_vertical_center_threshold = 45,
   chip_vertical_center_threshold = 50,
 
-  -- Dynamic index sizing: reserve space for 3 digits (100-999), overflow for 1000+
-  index_reserved_digits = 3,
+  -- Dynamic index sizing: reserve space for 2 digits, compensate for 3 digits (100-999)
+  index_reserved_digits = 2,
   index_separator_spacing = 4,
 }
 
@@ -190,6 +190,14 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
 
   -- Determine if index overflows reserved space
   local overflow = math.max(0, index_w - reserved_width)
+
+  -- For 3-digit indices (100-999), compensate to keep title aligned
+  local num_digits = #index_str
+  if num_digits == 3 then
+    -- Subtract approximately one digit width to keep title in place
+    local single_digit_w = ImGui.CalcTextSize(ctx, "0")
+    overflow = math.max(0, overflow - single_digit_w)
+  end
 
   -- Index shifts RIGHT when it overflows, title shifts by same amount
   local index_start_x = pos.x + overflow + (reserved_width - index_w)
