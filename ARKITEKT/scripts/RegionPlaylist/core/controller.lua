@@ -275,6 +275,22 @@ function Controller:set_region_colors_batch(rids, color)
   return count
 end
 
+function Controller:set_region_colors_individual(rid_color_map)
+  local Regions = require('arkitekt.reaper.regions')
+
+  -- Batch update all regions with individual colors in a single operation
+  local count = Regions.set_region_colors_individual(0, rid_color_map)
+
+  if count > 0 then
+    -- Force engine state refresh to update UI cache (ONCE for all changes)
+    if self.bridge and self.bridge.engine then
+      self.bridge.engine:check_for_changes()
+    end
+  end
+
+  return count
+end
+
 function Controller:delete_playlist(id)
   local playlists = self.state.get_playlists()
   if #playlists <= 1 then
