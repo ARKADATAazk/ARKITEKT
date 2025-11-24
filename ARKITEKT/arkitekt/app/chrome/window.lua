@@ -250,7 +250,7 @@ function M.new(opts)
 
   if not is_fullscreen then
     if opts.show_status_bar ~= false then
-      local ok, StatusBar = pcall(require, 'arkitekt.app.chrome.status_bar.widget')
+      local ok, StatusBar = pcall(require, 'arkitekt.app.chrome.status_bar')
       if ok and StatusBar and StatusBar.new then
         win.status_bar = StatusBar.new({
           height = Constants.STATUS_BAR.height + Constants.STATUS_BAR.compensation,
@@ -270,7 +270,7 @@ function M.new(opts)
 
     if opts.show_titlebar ~= false then
       do
-        local ok, Titlebar = pcall(require, 'arkitekt.app.chrome.titlebar.titlebar')
+        local ok, Titlebar = pcall(require, 'arkitekt.app.chrome.titlebar')
         if ok and Titlebar and Titlebar.new then
           win.titlebar_opts.title = win.title
           win.titlebar_opts.version = win.version
