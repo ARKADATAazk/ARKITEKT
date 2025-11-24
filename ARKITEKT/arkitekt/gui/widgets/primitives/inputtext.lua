@@ -78,10 +78,11 @@ local DEFAULTS = {
 }
 
 -- ============================================================================
--- STATE MANAGEMENT (weak table to prevent memory leaks)
+-- STATE MANAGEMENT (strong table for stable animation state)
 -- ============================================================================
 
-local field_state = Base.create_instance_registry()
+-- Use strong table like combo (prevents GC from clearing animation state during hover)
+local field_state = {}
 
 local function get_or_create_state(id)
   if not field_state[id] then
@@ -140,8 +141,9 @@ end
 -- ============================================================================
 
 local function render_text_field(ctx, dl, x, y, width, height, config, state, id, is_disabled, corner_rounding)
-  -- Check hover using IsMouseHoveringRect (works correctly with weak tables)
-  local is_hovered = not is_disabled and ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
+  -- Check hover using GetMousePos (same as combo - avoids ImGui state conflicts)
+  local mx, my = ImGui.GetMousePos(ctx)
+  local is_hovered = not is_disabled and mx >= x and mx < x + width and my >= y and my < y + height
 
   -- Animate focus alpha
   local target_alpha = state.focused and 1.0 or (is_hovered and 0.7 or 0.3)

@@ -83,10 +83,11 @@ local DEFAULTS = {
 }
 
 -- ============================================================================
--- INSTANCE MANAGEMENT (weak table to prevent memory leaks)
+-- INSTANCE MANAGEMENT (strong table for stable animation state)
 -- ============================================================================
 
-local instances = Base.create_instance_registry()
+-- Use strong table like combo (prevents GC from clearing animation state during hover)
+local instances = {}
 
 local Button = {}
 Button.__index = Button
@@ -204,11 +205,12 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   local is_disabled = config.disabled or false
   local is_toggled = config.is_toggled or false
 
-  -- Check hover using IsMouseHoveringRect (works correctly with weak tables)
+  -- Check hover using GetMousePos (same as combo - avoids ImGui state conflicts)
+  local mx, my = ImGui.GetMousePos(ctx)
   local is_hovered = not is_disabled and not config.is_blocking and
-                     ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
+                     mx >= x and mx < x + width and my >= y and my < y + height
   local is_active = not is_disabled and not config.is_blocking and
-                    ImGui.IsMouseDown(ctx, 0) and is_hovered
+                    is_hovered and ImGui.IsMouseDown(ctx, 0)
 
   -- Update animation
   local dt = ImGui.GetDeltaTime(ctx)
