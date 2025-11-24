@@ -82,8 +82,7 @@ local DEFAULTS = {
 -- INSTANCE MANAGEMENT (weak table to prevent memory leaks)
 -- ============================================================================
 
--- Use strong table like combo (weak tables cause GC to clear animation state)
-local instances = {}
+local instances = Base.create_instance_registry()
 
 local Checkbox = {}
 Checkbox.__index = Checkbox
@@ -151,14 +150,13 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, tota
   local is_disabled = config.disabled or false
   local is_blocking = config.is_blocking or false
 
-  -- Check hover using GetMousePos (exactly like combo)
-  local mx, my = ImGui.GetMousePos(ctx)
+  -- Check hover using IsMouseHoveringRect (works correctly with weak tables)
   local is_hovered = not is_disabled and not is_blocking and
-                     mx >= x and mx < x + total_width and my >= y and my < y + size
+                     ImGui.IsMouseHoveringRect(ctx, x, y, x + total_width, y + size)
   local is_active = not is_disabled and not is_blocking and
-                    is_hovered and ImGui.IsMouseDown(ctx, 0)
+                    ImGui.IsMouseDown(ctx, 0) and is_hovered
 
-  -- Update animation BEFORE getting colors (exactly like combo)
+  -- Update animation
   local dt = ImGui.GetDeltaTime(ctx)
   instance:update(dt, is_hovered, is_active, is_checked)
 

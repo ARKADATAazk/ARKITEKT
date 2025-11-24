@@ -86,8 +86,7 @@ local DEFAULTS = {
 -- INSTANCE MANAGEMENT (weak table to prevent memory leaks)
 -- ============================================================================
 
--- Use strong table like combo (weak tables cause GC to clear animation state)
-local instances = {}
+local instances = Base.create_instance_registry()
 
 local Button = {}
 Button.__index = Button
@@ -205,14 +204,13 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   local is_disabled = config.disabled or false
   local is_toggled = config.is_toggled or false
 
-  -- Check hover using GetMousePos (exactly like combo)
-  local mx, my = ImGui.GetMousePos(ctx)
+  -- Check hover using IsMouseHoveringRect (works correctly with weak tables)
   local is_hovered = not is_disabled and not config.is_blocking and
-                     mx >= x and mx < x + width and my >= y and my < y + height
+                     ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
   local is_active = not is_disabled and not config.is_blocking and
-                    is_hovered and ImGui.IsMouseDown(ctx, 0)
+                    ImGui.IsMouseDown(ctx, 0) and is_hovered
 
-  -- Update animation BEFORE getting colors (exactly like combo)
+  -- Update animation
   local dt = ImGui.GetDeltaTime(ctx)
   instance:update(dt, is_hovered, is_active)
 
@@ -268,7 +266,7 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
     end
   end
 
-  -- Create InvisibleButton AFTER drawing (exactly like combo)
+  -- Create InvisibleButton AFTER drawing for click detection
   ImGui.SetCursorScreenPos(ctx, x, y)
   ImGui.InvisibleButton(ctx, "##" .. unique_id, width, height)
 
@@ -316,8 +314,8 @@ function M.draw(ctx, opts)
     config.on_right_click()
   end
 
-  -- Handle tooltip (use is_hovered from GetMousePos, like combo)
-  if is_hovered and opts.tooltip then
+  -- Handle tooltip (can use manual is_hovered check or IsItemHovered on InvisibleButton)
+  if ImGui.IsItemHovered(ctx) and opts.tooltip then
     ImGui.SetTooltip(ctx, opts.tooltip)
   end
 
