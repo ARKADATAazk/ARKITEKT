@@ -43,7 +43,22 @@ function M.draw_favorite_star(ctx, dl, x, y, size, alpha, is_favorite, icon_font
   base_color = base_color or Colors.hexrgb("#555555")
 
   -- Render using modular badge system
-  Badge.render_icon_badge(ctx, dl, x, y, size, star_char, base_color, alpha_255, icon_font, icon_font_size, config)
+  Badge.icon(ctx, {
+    draw_list = dl,
+    x = x,
+    y = y,
+    size = size,
+    icon = star_char,
+    base_color = base_color,
+    alpha = alpha_255,
+    icon_font = icon_font,
+    icon_font_size = icon_font_size,
+    rounding = config and config.rounding,
+    bg_color = config and config.bg,
+    border_alpha = config and config.border_alpha,
+    border_darken = config and config.border_darken,
+    icon_color = config and config.icon_color,
+  })
 end
 
 return M
