@@ -181,7 +181,7 @@ function M.new(config)
         },
         {
           id = "filter",
-          type = "dropdown_field",
+          type = "combobox_field",
           width = 90,
           spacing_before = 0,
           config = {
@@ -201,10 +201,11 @@ function M.new(config)
         },
         {
           id = "search",
-          type = "search_field",
+          type = "fields",
           width = 180,
           spacing_before = 0,
           config = {
+            preset = "search",
             placeholder = "Search...",
             on_change = function(text)
               console.search_text = text

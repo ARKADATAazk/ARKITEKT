@@ -1117,7 +1117,7 @@ function Panel:get_search_text()
   end
   
   for _, element in ipairs(self.config.header.elements) do
-    if element.type == "search_field" then
+    if element.type == "fields" then
       local element_state = self[element.id]
       if element_state and element_state.search_text then
         return element_state.search_text
@@ -1134,7 +1134,7 @@ function Panel:set_search_text(text)
   end
   
   for _, element in ipairs(self.config.header.elements) do
-    if element.type == "search_field" then
+    if element.type == "fields" then
       if not self[element.id] then
         self[element.id] = {}
       end
@@ -1150,7 +1150,7 @@ function Panel:get_sort_mode()
   end
   
   for _, element in ipairs(self.config.header.elements) do
-    if element.type == "dropdown_field" and element.id == "sort" then
+    if element.type == "combobox_field" and element.id == "sort" then
       local element_state = self[element.id]
       if element_state and element_state.dropdown_value ~= nil then
         return element_state.dropdown_value
@@ -1167,7 +1167,7 @@ function Panel:set_sort_mode(mode)
   end
   
   for _, element in ipairs(self.config.header.elements) do
-    if element.type == "dropdown_field" and element.id == "sort" then
+    if element.type == "combobox_field" and element.id == "sort" then
       if not self[element.id] then
         self[element.id] = {}
       end
@@ -1183,7 +1183,7 @@ function Panel:get_sort_direction()
   end
   
   for _, element in ipairs(self.config.header.elements) do
-    if element.type == "dropdown_field" and element.id == "sort" then
+    if element.type == "combobox_field" and element.id == "sort" then
       local element_state = self[element.id]
       if element_state and element_state.dropdown_direction then
         return element_state.dropdown_direction
@@ -1200,7 +1200,7 @@ function Panel:set_sort_direction(direction)
   end
   
   for _, element in ipairs(self.config.header.elements) do
-    if element.type == "dropdown_field" and element.id == "sort" then
+    if element.type == "combobox_field" and element.id == "sort" then
       if not self[element.id] then
         self[element.id] = {}
       end

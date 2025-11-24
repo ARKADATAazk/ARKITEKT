@@ -19,19 +19,6 @@ local COMPONENTS = {
   checkbox = require('arkitekt.gui.widgets.primitives.checkbox'),
   fields = FieldsModule,
   combobox_field = ComboboxModule,
-  -- Aliases for backward compatibility
-  dropdown_field = ComboboxModule,
-  -- search_field wraps fields with search preset
-  search_field = {
-    draw = function(ctx, opts)
-      -- Use search preset for search_field type
-      opts.preset = "search"
-      return FieldsModule.search(ctx, opts)
-    end,
-    measure = function(ctx, config, state)
-      return config.width or 200
-    end,
-  },
   tab_strip = require('arkitekt.gui.widgets.containers.panel.header.tab_strip'),
   separator = require('arkitekt.gui.widgets.containers.panel.header.separator'),
   custom = {
@@ -430,8 +417,7 @@ local STANDARDIZED_WIDGETS = {
   button = true,
   checkbox = true,
   fields = true,
-  search_field = true,
-  -- Note: combobox_field and dropdown_field still use old API
+  -- Note: combobox_field still uses old positional API
 }
 
 local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side)

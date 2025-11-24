@@ -239,7 +239,7 @@ end
 
 function TransportView:build_quantize_dropdown(bridge_state)
   return {
-    type = "dropdown_field",
+    type = "combobox_field",
     id = "transport_quantize",
     align = "center",
     width = CoreConfig.TRANSPORT_BUTTONS.quantize.width,
@@ -299,7 +299,7 @@ function TransportView:build_playback_dropdown(bridge_state)
   local current_shuffle_mode = bridge_state.shuffle_mode or "true_shuffle"
 
   return {
-    type = "dropdown_field",
+    type = "combobox_field",
     id = "transport_playback",
     align = "center",
     width = CoreConfig.TRANSPORT_BUTTONS.playback.width_dropdown,
@@ -678,7 +678,7 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
   }
 
   return {
-    type = "dropdown_field",
+    type = "combobox_field",
     id = "transport_pb_combined",
     align = "center",
     width = 60,  -- Compact "PB" label

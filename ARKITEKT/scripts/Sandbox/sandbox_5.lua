@@ -93,7 +93,7 @@ local function create_test_panel()
         },
         {
           id = "panel_search",
-          type = "search_field",
+          type = "fields",
           width = 200,
           spacing_before = 8,
           config = {
