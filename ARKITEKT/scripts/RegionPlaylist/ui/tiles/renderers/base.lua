@@ -27,13 +27,13 @@ M.CONFIG = {
   chip_offset = { x = 0, y = 0 },
   text_padding_left = 6,
   text_padding_top = 6,
-  text_vertical_nudge_small_tiles = -3,
+  text_vertical_nudge_small_tiles = -2,  -- Moved down 1px for compact tiles
   vertical_center_threshold = 40,
   badge_vertical_center_threshold = 45,
   chip_vertical_center_threshold = 50,
-  
-  -- Dynamic index sizing: reserve space for 2 digits, overflow for 3+
-  index_reserved_digits = 2,
+
+  -- Dynamic index sizing: reserve space for 3 digits (100-999), overflow for 1000+
+  index_reserved_digits = 3,
   index_separator_spacing = 4,
 }
 

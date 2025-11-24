@@ -151,7 +151,7 @@ M.REGION_TILES = {
 
   responsive = {
     enabled = true,
-    min_tile_height = 30,
+    min_tile_height = 29,  -- Reduced by 1
     base_tile_height_active = 72,
     base_tile_height_pool = 72,
     scrollbar_buffer = 24,

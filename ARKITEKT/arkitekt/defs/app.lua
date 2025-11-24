@@ -83,7 +83,7 @@ M.WINDOW = {
 -- ============================================================================
 M.TITLEBAR = {
     -- Layout
-    height = 26,
+    height = 25,  -- Reduced by 1 for DejaVu Sans alignment
     pad_h = 12,
     pad_v = 0,
     button_width = 44,
