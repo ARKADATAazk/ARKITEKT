@@ -445,8 +445,13 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local dropdown_w = 120
   local dropdown_h = 24
 
-  local category_changed, new_category = Combobox.draw(ctx, dl, dropdown_x, dropdown_y, dropdown_w, dropdown_h, {
+  local result = Combobox.draw(ctx, {
     id = "names_category",
+    draw_list = dl,
+    x = dropdown_x,
+    y = dropdown_y,
+    width = dropdown_w,
+    height = dropdown_h,
     options = {
       {value = "game", label = "Game Music"},
       {value = "general", label = "General Music"},
@@ -456,7 +461,8 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       self.names_category = value
       save_names_category_preference(value)
     end,
-  }, "names_category_dropdown")
+  })
+  local category_changed, new_category = result.changed, result.width
 
   ImGui.SetCursorScreenPos(ctx, dropdown_x, dropdown_y + dropdown_h)
   ImGui.Dummy(ctx, 0, 6)

@@ -468,24 +468,40 @@ end
 -- PUBLIC API
 -- ============================================================================
 
-function M.draw(ctx, dl, x, y, width, height, user_config, state_or_id)
+function M.draw(ctx, opts)
+  -- Extract positional parameters from opts
+  local x = opts.x
+  local y = opts.y
+  local width = opts.width
+  local height = opts.height
+  local dl = opts.draw_list
+  local state_or_id = opts.panel_state or opts.id or "combobox"
+
+  -- Build user_config from remaining opts (excluding the extracted fields)
+  local user_config = {}
+  for k, v in pairs(opts) do
+    if k ~= "x" and k ~= "y" and k ~= "width" and k ~= "height" and k ~= "draw_list" and k ~= "panel_state" then
+      user_config[k] = v
+    end
+  end
+
   -- Apply style defaults
   local config = Style.apply_defaults(Style.DROPDOWN, user_config)
-  
+
   -- Resolve context (panel vs standalone)
   local context = resolve_context(config, state_or_id)
-  
+
   -- Get or create instance
   local instance = get_or_create_instance(context, config, state_or_id)
-  
+
   -- Draw dropdown
   local changed = instance:draw(ctx, dl, x, y, width, height, context.corner_rounding)
-  
+
   -- Sync state back
   sync_to_state(instance, state_or_id, context)
-  
-  -- Return width first (for layout), then changed status
-  return width, changed
+
+  -- Return result as table for consistency with new API
+  return { width = width, changed = changed }
 end
 
 function M.measure(ctx, user_config)

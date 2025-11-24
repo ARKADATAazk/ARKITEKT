@@ -650,8 +650,13 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
       -- Draw dropdown using arkitekt widget
       local dropdown_width = 220
       local dropdown_height = 20
-      local _, changed = Combobox.draw(ctx, dl, screen_x, screen_y, dropdown_width, dropdown_height, {
+      local result = Combobox.draw(ctx, {
         id = "zip_picker",
+        draw_list = dl,
+        x = screen_x,
+        y = screen_y,
+        width = dropdown_width,
+        height = dropdown_height,
         options = options,
         on_change = function(selected_zip)
           if selected_zip then

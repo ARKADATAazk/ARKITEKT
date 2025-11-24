@@ -46,8 +46,13 @@ function M.draw(ctx, draw_list, x, y, width, height, state, config)
   local dropdown_y = y
 
   -- Draw dropdown using ARKITEKT primitive
-  Combobox.draw(ctx, draw_list, dropdown_x, dropdown_y, dropdown_width, height, {
+  Combobox.draw(ctx, {
     id = "search_mode_dropdown",
+    draw_list = draw_list,
+    x = dropdown_x,
+    y = dropdown_y,
+    width = dropdown_width,
+    height = height,
     options = MODES,
     current_value = mode_id,
     on_change = function(new_value)
@@ -58,7 +63,7 @@ function M.draw(ctx, draw_list, x, y, width, height, state, config)
         state.runtime_cache.midi_filter_hash = nil
       end
     end,
-  }, "search_mode_dropdown")
+  })
 end
 
 return M

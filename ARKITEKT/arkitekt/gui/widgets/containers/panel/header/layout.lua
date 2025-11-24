@@ -94,7 +94,13 @@ COMPONENTS.template_header_controls = {
     -- Sort dropdown (140px, right side)
     if config.get_sort_mode and config.on_sort_changed then
       local sort_x = search_x + search_width + 8
-      Combobox.draw(ctx, dl, sort_x, y, sort_width, row1_height, {
+      Combobox.draw(ctx, {
+        x = sort_x,
+        y = y,
+        width = sort_width,
+        height = row1_height,
+        draw_list = dl,
+        panel_state = state,
         tooltip = "Sort by",
         tooltip_delay = 0.5,
         enable_sort = false,
@@ -107,7 +113,7 @@ COMPONENTS.template_header_controls = {
         },
         enable_mousewheel = true,
         on_change = config.on_sort_changed,
-      }, state)
+      })
     end
 
     -- ROW 2: Filter chips
@@ -417,7 +423,7 @@ local STANDARDIZED_WIDGETS = {
   button = true,
   checkbox = true,
   input = true,
-  -- Note: combobox still uses old positional API
+  combobox = true,
 }
 
 local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side)
