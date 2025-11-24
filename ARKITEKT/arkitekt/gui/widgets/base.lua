@@ -11,6 +11,115 @@ local Colors = require('arkitekt.core.colors')
 local M = {}
 
 -- ============================================================================
+-- CONSTANTS
+-- ============================================================================
+
+--- Default animation speed for hover/focus transitions
+M.ANIMATION_SPEED = 12.0
+
+--- Fast animation speed for quick feedback
+M.ANIMATION_SPEED_FAST = 16.0
+
+--- Slow animation speed for smooth transitions
+M.ANIMATION_SPEED_SLOW = 8.0
+
+-- ============================================================================
+-- MATH UTILITIES
+-- ============================================================================
+
+--- Clamp a value between min and max
+--- @param value number Value to clamp
+--- @param min_val number Minimum value
+--- @param max_val number Maximum value
+--- @return number Clamped value
+function M.clamp(value, min_val, max_val)
+  if value < min_val then return min_val
+  elseif value > max_val then return max_val
+  else return value end
+end
+
+--- Snap a value to the nearest pixel (reduces aliasing)
+--- @param v number Value to snap
+--- @return number Snapped value
+function M.snap_pixel(v)
+  return math.floor(v + 0.5)
+end
+
+--- Linear interpolation between two values
+--- @param a number Start value
+--- @param b number End value
+--- @param t number Interpolation factor (0-1)
+--- @return number Interpolated value
+function M.lerp(a, b, t)
+  return a + (b - a) * M.clamp(t, 0, 1)
+end
+
+--- Remap a value from one range to another
+--- @param value number Value to remap
+--- @param in_min number Input range minimum
+--- @param in_max number Input range maximum
+--- @param out_min number Output range minimum
+--- @param out_max number Output range maximum
+--- @return number Remapped value
+function M.remap(value, in_min, in_max, out_min, out_max)
+  if in_max == in_min then
+    return (out_min + out_max) * 0.5
+  end
+  return out_min + (value - in_min) * (out_max - out_min) / (in_max - in_min)
+end
+
+-- ============================================================================
+-- TEXT UTILITIES
+-- ============================================================================
+
+--- Truncate text to fit within a maximum width
+--- @param ctx userdata ImGui context
+--- @param text string Text to truncate
+--- @param max_width number Maximum width in pixels
+--- @param suffix string|nil Suffix to add when truncated (default "...")
+--- @return string Truncated text
+function M.truncate_text(ctx, text, max_width, suffix)
+  suffix = suffix or "..."
+  local text_w = ImGui.CalcTextSize(ctx, text)
+
+  if text_w <= max_width then
+    return text
+  end
+
+  local suffix_w = ImGui.CalcTextSize(ctx, suffix)
+  local available_w = max_width - suffix_w
+
+  if available_w <= 0 then
+    return suffix
+  end
+
+  -- Binary search for the right length
+  local lo, hi = 1, #text
+  while lo < hi do
+    local mid = math.ceil((lo + hi) / 2)
+    local substr = text:sub(1, mid)
+    local w = ImGui.CalcTextSize(ctx, substr)
+    if w <= available_w then
+      lo = mid
+    else
+      hi = mid - 1
+    end
+  end
+
+  return text:sub(1, lo) .. suffix
+end
+
+--- Measure text dimensions
+--- @param ctx userdata ImGui context
+--- @param text string Text to measure
+--- @return number, number width and height
+function M.measure_text(ctx, text)
+  local w = ImGui.CalcTextSize(ctx, text)
+  local h = ImGui.GetTextLineHeight(ctx)
+  return w, h
+end
+
+-- ============================================================================
 -- INSTANCE MANAGEMENT (with weak tables to prevent memory leaks)
 -- ============================================================================
 

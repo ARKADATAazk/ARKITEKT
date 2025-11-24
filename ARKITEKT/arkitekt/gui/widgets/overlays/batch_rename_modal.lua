@@ -624,7 +624,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.SetCursorPosX(ctx, right_col_x)
 
   -- Radio button for "None"
-  if RadioButton.draw(ctx, "None", self.separator == "none", {id = "sep_none"}) then
+  if RadioButton.draw(ctx, {
+    id = "sep_none",
+    label = "None",
+    selected = self.separator == "none",
+    advance = "none",
+  }).clicked then
     self.separator = "none"
     save_separator_preference("none")
   end
@@ -632,7 +637,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.SameLine(ctx, 0, 12)
 
   -- Radio button for "Underscore"
-  if RadioButton.draw(ctx, "Underscore (_)", self.separator == "underscore", {id = "sep_underscore"}) then
+  if RadioButton.draw(ctx, {
+    id = "sep_underscore",
+    label = "Underscore (_)",
+    selected = self.separator == "underscore",
+    advance = "none",
+  }).clicked then
     self.separator = "underscore"
     save_separator_preference("underscore")
   end
@@ -640,7 +650,12 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   ImGui.SameLine(ctx, 0, 12)
 
   -- Radio button for "Space"
-  if RadioButton.draw(ctx, "Space ( )", self.separator == "space", {id = "sep_space"}) then
+  if RadioButton.draw(ctx, {
+    id = "sep_space",
+    label = "Space ( )",
+    selected = self.separator == "space",
+    advance = "none",
+  }).clicked then
     self.separator = "space"
     save_separator_preference("space")
   end
