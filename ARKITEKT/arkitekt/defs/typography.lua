@@ -31,8 +31,8 @@ M.SEMANTIC = {
 -- FONT FAMILIES
 -- ============================================================================
 M.FAMILY = {
-    regular = "NotoSans-Regular.ttf",
-    bold = "NotoSans-Bold.ttf",
+    regular = "DejaVuSans.ttf",
+    bold = "DejaVuSans-Bold.ttf",
     mono = "JetBrainsMono-Regular.ttf",
 }
 
