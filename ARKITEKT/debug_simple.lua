@@ -11,12 +11,17 @@ end
 package.path = script_path .. "?.lua;" .. script_path .. "?" .. sep .. "init.lua;" .. package.path
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
+reaper.ShowConsoleMsg("=== Simple Test ===\n")
+reaper.ShowConsoleMsg("Before clear - package.loaded['arkitekt']: " .. tostring(package.loaded['arkitekt']) .. "\n")
+
 package.loaded['arkitekt'] = nil
 
-reaper.ShowConsoleMsg("=== Simple Test ===\n")
+reaper.ShowConsoleMsg("After clear - package.loaded['arkitekt']: " .. tostring(package.loaded['arkitekt']) .. "\n\n")
 
 -- Just load it directly
 local ark = require('arkitekt')
+
+reaper.ShowConsoleMsg("After require - package.loaded['arkitekt']: " .. tostring(package.loaded['arkitekt']) .. "\n")
 
 reaper.ShowConsoleMsg("Type: " .. type(ark) .. "\n")
 
