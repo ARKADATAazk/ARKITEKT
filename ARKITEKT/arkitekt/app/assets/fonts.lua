@@ -63,7 +63,7 @@ function M.load(ImGui, ctx, opts)
     default = file_exists(dejavu_regular) and ImGui.CreateFontFromFile(dejavu_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0),
     default_size = default_size,
 
-    title = file_exists(dejavu_bold) and ImGui.CreateFontFromFile(dejavu_bold, 0, 0) or ImGui.CreateFont('sans-serif', 0),
+    title = file_exists(dejavu_regular) and ImGui.CreateFontFromFile(dejavu_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0),
     title_size = title_size,
 
     monospace = file_exists(mono) and ImGui.CreateFontFromFile(mono, 0, 0) or ImGui.CreateFont('monospace', 0),
