@@ -16,6 +16,7 @@ local RegionState = require("RegionPlaylist.storage.persistence")
 local UndoManager = require("arkitekt.core.undo_manager")
 local UndoBridge = require("RegionPlaylist.storage.undo_bridge")
 local Constants = require("RegionPlaylist.defs.constants")
+local ProjectMonitor = require("arkitekt.reaper.project_monitor")
 
 local M = {}
 
@@ -75,6 +76,9 @@ M.last_project_ptr = nil                      -- Last seen project pointer (dete
 -- Undo system
 M.undo_manager = nil                          -- UndoManager instance
 
+-- Project monitoring
+M.project_monitor = nil                       -- ProjectMonitor instance
+
 -- Event callbacks (set by GUI)
 M.on_state_restored = nil                     -- Called when undo/redo restores state
 M.on_repeat_cycle = nil                       -- Called when repeat count cycles
@@ -103,22 +107,6 @@ M.state_change_notification_timeout = Constants.TIMEOUTS.state_change_notificati
 -- Transport override state tracking
 M.last_override_state = false
 
-local function get_current_project_filename()
-  local proj_path = reaper.GetProjectPath("")
-  local proj_name = reaper.GetProjectName(0, "")
-  if proj_path == "" or proj_name == "" then
-    return nil
-  end
-  return proj_path .. "/" .. proj_name
-end
-
-local function get_current_project_ptr()
-  -- Get the current project pointer to detect tab switches
-  -- EnumProjects(-1, "") returns the current project
-  local proj, _ = reaper.EnumProjects(-1, "")
-  return proj
-end
-
 local function rebuild_playlist_lookup()
   M.playlist_lookup = {}
   for _, pl in ipairs(M.playlists) do
@@ -128,7 +116,7 @@ end
 
 function M.initialize(settings)
   M.settings = settings
-  
+
   if settings then
     M.search_filter = settings:get('pool_search') or ""
     M.sort_mode = settings:get('pool_sort')
@@ -136,9 +124,20 @@ function M.initialize(settings)
     M.layout_mode = settings:get('layout_mode') or 'horizontal'
     M.pool_mode = settings:get('pool_mode') or 'regions'
   end
-  
-  M.last_project_filename = get_current_project_filename()
-  M.last_project_ptr = get_current_project_ptr()
+
+  -- Initialize project monitor to track changes
+  M.project_monitor = ProjectMonitor.new({
+    on_project_switch = function(old_proj, new_proj)
+      M.reload_project_data()
+    end,
+    on_project_reload = function()
+      M.reload_project_data()
+    end,
+    on_state_change = function(change_count)
+      -- Handle state changes in update() for region tracking
+    end,
+    check_state_changes = true,
+  })
 
   M.load_project_state()
   M.rebuild_dependency_graph()
@@ -1127,22 +1126,21 @@ function M.cleanup_deleted_regions()
 end
 
 function M.update()
-  local current_project_filename = get_current_project_filename()
-  local current_project_ptr = get_current_project_ptr()
+  -- Use project monitor to detect changes
+  local project_changed = M.project_monitor:update()
 
-  -- Detect project change: either filename changed OR project pointer changed
-  -- This handles both saved projects (filename changes) and unsaved projects (pointer changes)
-  local project_changed = (current_project_filename ~= M.last_project_filename) or
-                          (current_project_ptr ~= M.last_project_ptr)
-
-  if project_changed then
-    M.last_project_filename = current_project_filename
-    M.last_project_ptr = current_project_ptr
-    M.reload_project_data()
+  -- If project switched/reloaded, monitor already called our callback
+  -- Just return early
+  if project_changed and (
+      M.project_monitor:get_last_filename() ~= M.last_project_filename or
+      M.project_monitor:get_last_ptr() ~= M.last_project_ptr) then
+    M.last_project_filename = M.project_monitor:get_last_filename()
+    M.last_project_ptr = M.project_monitor:get_last_ptr()
     return
   end
-  
-  local current_project_state = reaper.GetProjectStateChangeCount(0)
+
+  -- Handle region-specific state changes
+  local current_project_state = M.project_monitor:get_last_state_count()
   if current_project_state ~= M.last_project_state then
     local old_region_count = 0
     for _ in pairs(M.region_index) do
