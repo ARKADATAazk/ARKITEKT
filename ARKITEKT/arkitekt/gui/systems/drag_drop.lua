@@ -205,17 +205,6 @@ function M.draw_active_target(ctx, rect, border_color, fill_color, glow_color)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 4, 0, 2.5)
 end
 
--- Legacy function for backward compatibility
-function M.draw_target_highlight(ctx, rect, color, thickness)
-  color = color or Colors.hexrgb("#5588FFAA")
-  thickness = thickness or 2
-
-  local dl = ImGui.GetWindowDrawList(ctx)
-  local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
-
-  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, color, 4, 0, thickness)
-end
-
 -- Simple serialization for tables (supports strings, numbers, booleans)
 function M._serialize(t)
   if type(t) ~= "table" then return tostring(t) end
