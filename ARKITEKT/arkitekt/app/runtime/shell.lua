@@ -16,6 +16,22 @@ local Window  = require('arkitekt.app.chrome.window.window')
 
 local M = {}
 
+-- ============================================================================
+-- ERROR HANDLING: Wrap reaper.defer with xpcall for better stack traces
+-- ============================================================================
+-- Without this, REAPER truncates error messages and loses stack trace context.
+-- This wrapper catches all errors and prints full stack traces to the console.
+do
+  local original_defer = reaper.defer
+  reaper.defer = function(func)
+    return original_defer(function()
+      xpcall(func, function(err)
+        reaper.ShowConsoleMsg("ERROR: " .. tostring(err) .. '\n\n' .. debug.traceback() .. '\n')
+      end)
+    end)
+  end
+end
+
 -- Helper to set REAPER toolbar button state
 local function set_button_state(set)
   local _, _, sec, cmd = reaper.get_action_context()
