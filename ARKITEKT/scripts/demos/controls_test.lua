@@ -10,7 +10,7 @@ local Shell = require('arkitekt.app.runtime.shell')
 
 -- Import base controls
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local Fields = require('arkitekt.gui.widgets.primitives.fields')
+local Input = require('arkitekt.gui.widgets.primitives.input')
 local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
 
 -- Import panel system
@@ -71,7 +71,7 @@ local function create_test_panel()
         },
         {
           id = "test_search",
-          type = "fields",
+          type = "input",
           width = 200,
           spacing_before = 8,
           config = {
@@ -84,7 +84,7 @@ local function create_test_panel()
         },
         {
           id = "test_dropdown",
-          type = "combobox_field",
+          type = "combobox",
           width = 120,
           spacing_before = 8,
           config = {
@@ -221,7 +221,7 @@ local function draw_standalone_test(ctx)
   ImGui.Text(ctx, "Search Input (standalone):")
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  local search_result = Fields.search(ctx, {
+  local search_result = Input.search(ctx, {
     id = "standalone_search",
     draw_list = dl,
     x = cursor_x,

@@ -9,7 +9,7 @@ local Style = require('arkitekt.gui.style.defaults')
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('arkitekt.gui.widgets.tools.color_picker_window')
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local Fields = require('arkitekt.gui.widgets.primitives.fields')
+local Input = require('arkitekt.gui.widgets.primitives.input')
 local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')
@@ -301,9 +301,9 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   end
 
   -- Set text in SearchInput component
-  Fields.set_text("batch_rename_pattern", self.pattern)
+  Input.set_text("batch_rename_pattern", self.pattern)
 
-  local _, changed = Fields.search(ctx, dl, screen_x, screen_y, right_col_width, input_height, {
+  local _, changed = Input.search(ctx, dl, screen_x, screen_y, right_col_width, input_height, {
     id = "batch_rename_pattern",
     placeholder = "pattern$wildcard",
     on_change = function(text)

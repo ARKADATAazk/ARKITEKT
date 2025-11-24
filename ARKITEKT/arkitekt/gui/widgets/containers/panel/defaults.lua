@@ -216,7 +216,7 @@ M.ALIGNED_HEADER_EXAMPLE = {
       },
       {
         id = "search",
-        type = "fields",
+        type = "input",
         align = "left",
         width = 200,
         spacing_before = 8,
@@ -228,7 +228,7 @@ M.ALIGNED_HEADER_EXAMPLE = {
       -- Right-aligned elements
       {
         id = "sort",
-        type = "combobox_field",
+        type = "combobox",
         align = "right",
         width = 120,
         spacing_before = 8,

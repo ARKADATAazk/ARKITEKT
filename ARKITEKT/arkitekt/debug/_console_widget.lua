@@ -181,7 +181,7 @@ function M.new(config)
         },
         {
           id = "filter",
-          type = "combobox_field",
+          type = "combobox",
           width = 90,
           spacing_before = 0,
           config = {
@@ -201,7 +201,7 @@ function M.new(config)
         },
         {
           id = "search",
-          type = "fields",
+          type = "input",
           width = 180,
           spacing_before = 0,
           config = {

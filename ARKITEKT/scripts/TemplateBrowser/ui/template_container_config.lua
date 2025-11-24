@@ -14,7 +14,7 @@ function M.create(callbacks, is_overlay_mode)
         -- Search field (left side)
         {
           id = "search",
-          type = "fields",
+          type = "input",
           width = 200,
           spacing_before = 0,
           config = {
@@ -34,7 +34,7 @@ function M.create(callbacks, is_overlay_mode)
         -- Sort dropdown (right side, grouped)
         {
           id = "sort",
-          type = "combobox_field",
+          type = "combobox",
           width = 120,
           spacing_before = 0,
           config = {

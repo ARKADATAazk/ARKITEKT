@@ -73,7 +73,7 @@ local function create_alignment_panel()
           },
           {
             id = "search",
-            type = "fields",
+            type = "input",
             align = "left",
             width = 200,
             spacing_before = 8,
@@ -110,7 +110,7 @@ local function create_alignment_panel()
           -- Right-aligned elements
           {
             id = "filter",
-            type = "combobox_field",
+            type = "combobox",
             align = "right",
             width = 120,
             spacing_before = 8,

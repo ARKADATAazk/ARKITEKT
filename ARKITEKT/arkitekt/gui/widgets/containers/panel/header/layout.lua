@@ -11,14 +11,14 @@ local ConfigUtil = require('arkitekt.core.config')
 local M = {}
 
 -- Component registry - imports from controls/ directly for reusable components
-local FieldsModule = require('arkitekt.gui.widgets.primitives.fields')
+local InputModule = require('arkitekt.gui.widgets.primitives.input')
 local ComboboxModule = require('arkitekt.gui.widgets.inputs.combobox')
 
 local COMPONENTS = {
   button = require('arkitekt.gui.widgets.primitives.button'),
   checkbox = require('arkitekt.gui.widgets.primitives.checkbox'),
-  fields = FieldsModule,
-  combobox_field = ComboboxModule,
+  input = InputModule,
+  combobox = ComboboxModule,
   tab_strip = require('arkitekt.gui.widgets.containers.panel.header.tab_strip'),
   separator = require('arkitekt.gui.widgets.containers.panel.header.separator'),
   custom = {
@@ -36,7 +36,7 @@ local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 
 -- Custom compound element for template browser header with search/sort + filter chips
-local Fields = require('arkitekt.gui.widgets.primitives.fields')
+local Input = require('arkitekt.gui.widgets.primitives.input')
 local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
@@ -78,7 +78,7 @@ COMPONENTS.template_header_controls = {
     local search_x = x + width - sort_width - search_width - 8
 
     if config.get_search_query and config.on_search_changed then
-      Fields.search(ctx, {
+      Input.search(ctx, {
         x = search_x,
         y = y,
         width = search_width,
@@ -416,8 +416,8 @@ end
 local STANDARDIZED_WIDGETS = {
   button = true,
   checkbox = true,
-  fields = true,
-  -- Note: combobox_field still uses old positional API
+  input = true,
+  -- Note: combobox still uses old positional API
 }
 
 local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side)
