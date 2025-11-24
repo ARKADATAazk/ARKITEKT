@@ -100,7 +100,7 @@ function Button.new(id)
 end
 
 function Button:update(dt, is_hovered, is_active)
-  Base.update_hover_animation(self, dt, is_hovered, is_active, 12.0)
+  Base.update_hover_animation(self, dt, is_hovered, is_active, "hover_alpha")
 end
 
 -- ============================================================================

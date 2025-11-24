@@ -8,6 +8,7 @@ local ImGui = require 'imgui' '0.10'
 local Style = require('arkitekt.gui.style.defaults')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
+local Anim = require('arkitekt.core.animation')
 
 local M = {}
 
@@ -98,13 +99,11 @@ end
 
 function Checkbox:update(dt, is_hovered, is_active, is_checked)
   -- Hover animation
-  Base.update_hover_animation(self, dt, is_hovered, is_active, 12.0)
+  Base.update_hover_animation(self, dt, is_hovered, is_active, "hover_alpha")
 
   -- Check animation
   local target_check = is_checked and 1.0 or 0.0
-  local check_speed = 15.0
-  self.check_alpha = self.check_alpha + (target_check - self.check_alpha) * check_speed * dt
-  self.check_alpha = math.max(0, math.min(1, self.check_alpha))
+  self.check_alpha = Anim.animate_value(self.check_alpha, target_check, dt, Anim.CHECK_SPEED)
 end
 
 -- ============================================================================

@@ -258,7 +258,7 @@ function M.draw(ctx, opts)
   local left_clicked, left_hovered, left_active = draw_spinner_button(
     ctx, unique_id .. "_left", left_x, y, button_w, h, "left", disabled, inst.left_hover_alpha
   )
-  Base.update_hover_animation(inst, dt, left_hovered, left_active, Base.ANIMATION_SPEED, "left_hover_alpha")
+  Base.update_hover_animation(inst, dt, left_hovered, left_active, "left_hover_alpha")
 
   if left_clicked then
     new_index = new_index - 1
@@ -274,7 +274,7 @@ function M.draw(ctx, opts)
   local value_active = not disabled and ImGui.IsItemActive(ctx)
   local value_clicked = not disabled and ImGui.IsItemClicked(ctx, 0)
 
-  Base.update_hover_animation(inst, dt, value_hovered, value_active, Base.ANIMATION_SPEED, "value_hover_alpha")
+  Base.update_hover_animation(inst, dt, value_hovered, value_active, "value_hover_alpha")
 
   local current_text = tostring(options[current_index] or "")
   draw_value_display(ctx, dl, value_x, y, value_w, h, current_text, inst.value_hover_alpha, value_active, disabled)
@@ -283,7 +283,7 @@ function M.draw(ctx, opts)
   local right_clicked, right_hovered, right_active = draw_spinner_button(
     ctx, unique_id .. "_right", right_x, y, button_w, h, "right", disabled, inst.right_hover_alpha
   )
-  Base.update_hover_animation(inst, dt, right_hovered, right_active, Base.ANIMATION_SPEED, "right_hover_alpha")
+  Base.update_hover_animation(inst, dt, right_hovered, right_active, "right_hover_alpha")
 
   if right_clicked then
     new_index = new_index + 1

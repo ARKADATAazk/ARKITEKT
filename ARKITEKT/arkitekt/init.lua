@@ -29,6 +29,7 @@ local MODULES = {
   TileGroup = 'arkitekt.gui.widgets.containers.tile_group',
 
   -- Utilities (commonly used modules)
+  Anim = 'arkitekt.core.animation',
   Colors = 'arkitekt.core.colors',
   Style = 'arkitekt.gui.style.defaults',
   Draw = 'arkitekt.gui.draw',
