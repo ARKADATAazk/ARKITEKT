@@ -107,10 +107,6 @@ function M.init()
 
   M.enabled = true
 
-  if config.log_to_console then
-    reaper.ShowConsoleMsg("[ErrorHandler] Enhanced error logging enabled\n")
-  end
-
   return true
 end
 
