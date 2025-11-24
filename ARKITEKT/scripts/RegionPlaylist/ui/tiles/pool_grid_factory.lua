@@ -268,7 +268,7 @@ local function create_behaviors(rt)
       -- If right-clicked item isn't selected, select only it
       if not grid.selection:is_selected(key) then
         grid.selection:clear()
-        grid.selection:select(key)
+        grid.selection:single(key)  -- Fixed: Use :single() instead of non-existent :select()
         selected_keys = {key}
       end
 
