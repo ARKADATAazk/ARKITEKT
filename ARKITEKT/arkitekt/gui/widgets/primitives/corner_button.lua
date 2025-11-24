@@ -68,10 +68,10 @@ local DEFAULTS = {
 }
 
 -- ============================================================================
--- INSTANCE MANAGEMENT (weak table to prevent memory leaks)
+-- INSTANCE MANAGEMENT
 -- ============================================================================
 
-local instances = Base.create_instance_registry()
+local instances = {}
 
 local function get_instance(id)
   local inst = instances[id]
@@ -204,7 +204,8 @@ function M.draw(ctx, opts)
   local active = false
 
   if not disabled and not is_blocking then
-    hovered = ImGui.IsMouseHoveringRect(ctx, x, y, x + size, y + size)
+    local mx, my = ImGui.GetMousePos(ctx)
+    hovered = mx >= x and mx < x + size and my >= y and my < y + size
     active = hovered and ImGui.IsMouseDown(ctx, 0)
   end
 
