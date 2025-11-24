@@ -158,12 +158,12 @@ function OverflowModalView:draw(ctx, window)
           local search_height = 28
           local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
 
-          ark.InputText.search_at_cursor(ctx, {
+          ark.InputText.search(ctx, {
             id = "overflow_search",
             width = content_w,
             height = search_height,
             placeholder = "Search playlists...",
-            value = self.search_text,
+            text = self.search_text,
             on_change = function(new_text)
               self.search_text = new_text
             end

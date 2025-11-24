@@ -94,7 +94,7 @@ local function load_fonts(ctx, font_cfg)
 
   -- Use configured fonts from Typography (now DejaVu Sans)
   local default_font   = exists(R) and ImGui.CreateFontFromFile(R, 0, 0) or ImGui.CreateFont('sans-serif', 0)
-  local title_font     = exists(B) and ImGui.CreateFontFromFile(B, 0, 0) or ImGui.CreateFont('sans-serif', 0)
+  local title_font     = exists(R) and ImGui.CreateFontFromFile(R, 0, 0) or ImGui.CreateFont('sans-serif', 0)  -- Use regular, not bold
   local version_font   = exists(R) and ImGui.CreateFontFromFile(R, 0, 0) or ImGui.CreateFont('sans-serif', 0)
 
   -- Keep loading specific fonts from TTF files

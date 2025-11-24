@@ -107,7 +107,7 @@ M.CONTAINER = {
     corner_button_inner_rounding = 12,
     mode_toggle_width = 100,
     search_width = 200,
-    sort_width = 120,
+    sort_width = 136,  -- Increased from 120 to fit "Alphabetical"
   },
 }
 
