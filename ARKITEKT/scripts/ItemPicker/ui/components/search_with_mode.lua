@@ -32,14 +32,19 @@ function M.draw(ctx, draw_list, x, y, width, height, state, config)
   local input_width = width - dropdown_width + overlap
 
   -- Draw search input using ARKITEKT primitive
-  Input.search(ctx, draw_list, x, y, input_width, height, {
+  Input.search(ctx, {
     id = "item_picker_search_with_mode",
+    draw_list = draw_list,
+    x = x,
+    y = y,
+    width = input_width,
+    height = height,
     placeholder = "Search " .. mode_config.label:lower() .. "...",
     value = state.settings.search_string or "",
     on_change = function(new_text)
       state.set_search_filter(new_text)
     end,
-  }, "item_picker_search_with_mode")
+  })
 
   -- Dropdown position (overlaps 1 pixel left)
   local dropdown_x = x + input_width + overlap
