@@ -146,17 +146,17 @@ function M.render(ctx, rect, param, state, view)
     local current_idx = math.floor(param.value - param.min + 1)
     current_idx = math.max(1, math.min(current_idx, #values))
 
-    local changed_spinner, new_idx = Spinner.draw(
-      ctx,
-      "##lib_spinner_" .. param.index,
-      current_idx,
-      values,
-      {w = control_w, h = 24}
-    )
+    local spinner_result = Spinner.draw(ctx, {
+      id = "##lib_spinner_" .. param.index,
+      value = current_idx,
+      options = values,
+      width = control_w,
+      height = 24,
+    })
 
-    if changed_spinner then
+    if spinner_result.changed then
       changed = true
-      new_value = param.min + (new_idx - 1)
+      new_value = param.min + (spinner_result.value - 1)
     end
 
   elseif param.type == "slider" then

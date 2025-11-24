@@ -258,9 +258,4 @@ function M.draw_gamma(ctx, id, gamma, opt)
   return draw_slider_base(ctx, id, gamma, 0, 100, opt.default or 50, gradient_fn, tooltip_fn, opt)
 end
 
--- Legacy
-function M.draw(ctx, id, hue, opt)
-  return M.draw_hue(ctx, id, hue, opt)
-end
-
 return M

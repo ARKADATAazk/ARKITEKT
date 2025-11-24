@@ -11,6 +11,15 @@ local hexrgb = CoreColors.hexrgb
 local M = {}
 
 -- ============================================================================
+-- ERROR HANDLER
+-- ============================================================================
+M.ERROR_HANDLER = {
+    enabled = true,                -- Enable enhanced error handling
+    log_to_console = true,         -- Print full stack traces to REAPER Console
+    include_timestamp = true,      -- Add timestamp to error logs
+}
+
+-- ============================================================================
 -- PROFILER
 -- ============================================================================
 M.PROFILER_ENABLED = false

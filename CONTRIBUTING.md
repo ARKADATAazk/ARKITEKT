@@ -1,198 +1,66 @@
 # Contributing to ARKITEKT
 
-Thank you for your interest in contributing to ARKITEKT! This document outlines the guidelines and expectations for contributions.
+## Current Status: Active Development
 
-## 📜 License & Philosophy
+⚠️ **ARKITEKT is in active refactoring.** APIs are unstable, breaking changes are frequent.
 
-ARKITEKT is licensed under **GPL v3** to:
-- Keep the ecosystem open source
-- Prevent closed commercial forks
-- Ensure improvements are shared back with the community
-- Build a collaborative REAPER scripting ecosystem
+We're looking for contributors to help **build the framework**, not use it yet.
 
-**Brand Philosophy:**
-- Apps using ARKITEKT should keep the branding
-- We welcome building on top of ARKITEKT
-- White-labeled forks are discouraged (use as a library instead)
-- Technical coupling makes integration easier than rebranding
+## What We Need
 
-## 🎯 What We Welcome
+- Widget development and bug fixes
+- API standardization
+- Pattern refinement
+- Testing and bug hunting
+- Documentation
 
-### Bug Fixes & Improvements ✅
-- Bug fixes to core library or apps
-- Performance optimizations
-- Code quality improvements
-- Documentation improvements
+## How to Contribute
 
-### New Widgets & Components ✅
-- New reusable widgets for `arkitekt/gui/widgets/`
-- GUI systems (layout, animations, effects)
-- Well-documented and tested components
+1. Open an issue or discussion for major changes
+2. Follow the patterns below
+3. Test thoroughly in REAPER
+4. Submit PR with clear description
+5. All changes require review
 
-### Theme Contributions ✅
-- Custom themes in `arkitekt/themes/`
-- REAPER theme companions
-- Color scheme improvements
+## Core Patterns
 
-### Example Applications ✅
-- New apps demonstrating ARKITEKT usage
-- Reference implementations
-- Educational examples
-- Apps should reside in `apps/` directory
-
-### Documentation ✅
-- Architecture guides
-- API documentation
-- Tutorials and examples
-- Code comments and inline docs
-
-## ❌ What We Don't Accept
-
-### Without Discussion First
-- Breaking architectural changes
-- Major API redesigns
-- Removal of core features
-
-### Not Accepting
-- Feature requests without implementation
-- White-labeled forks (against project philosophy)
-- Code that doesn't match existing patterns
-- Undocumented or untested contributions
-
-## 🔧 Code Standards
-
-### Directory & File Naming
-
-**Directories:** Use `snake_case` for consistency
-```
-✅ arkitekt/core/theme_manager/
-✅ apps/color_palette/
-✅ apps/region_playlist/
-
-❌ arkitekt/Core/ThemeManager/
-❌ apps/ColorPalette/
-```
-
-**Files:** Use `snake_case.lua`
-```
-✅ app_state.lua
-✅ disk_cache.lua
-✅ theme_manager.lua
-
-❌ appState.lua
-❌ DiskCache.lua
-❌ ThemeManager.lua
-```
-
-**Launcher Scripts:** Use `ARK_AppName.lua` (exception for user-facing entry points)
-```
-✅ ARK_ColorPalette.lua
-✅ ARK_RegionPlaylist.lua
-✅ ARKITEKT.lua
-```
-
-### Require Paths
-
-Follow the standardized import pattern:
-
+### Widget API
+All widgets use opts-based API:
 ```lua
--- Core library imports (lowercase "arkitekt")
-local colors = require("arkitekt.core.colors")
-local Grid = require("arkitekt.gui.widgets.grid.core")
-local theme_manager = require("arkitekt.core.theme_manager")
-
--- App imports
-local state = require("arkitekt.apps.color_palette.app.state")
-local engine = require("arkitekt.apps.region_playlist.engine.core")
+Widget.draw(ctx, {
+  id = "##widget",
+  x = 100, y = 100,
+  width = 200, height = 30,
+})
 ```
 
-**Pattern:**
-- Library: `arkitekt.MODULE.SUBMODULE`
-- Apps: `arkitekt.apps.APP_NAME.LAYER.MODULE`
+No positional arguments beyond `ctx` and opts.
 
-### Configuration Management
-
-**Single Source of Truth:**
-- Use `arkitekt/app/init/constants.lua` for framework defaults
-- Use `arkitekt/core/config.lua` for configuration merging
-- Follow patterns in `DOCS_CONFIG_BEST_PRACTICES.md`
-
-**Config Merge Precedence:**
-```
-BASE DEFAULTS < PRESET < CONTEXT DEFAULTS < USER CONFIG
-```
-
-**DON'T** create app-specific config merge patterns. Use the centralized system.
-
+### State Management
+Use **strong tables** for animated widgets:
 ```lua
--- ✅ DO: Use centralized config resolution
-local config = require("arkitekt.core.config")
-local resolved = config.resolve(user_config, context_defaults)
-
--- ❌ DON'T: Create custom merge logic
-local config = deepMerge(deepMerge(base, preset), user)
+local instances = {}  -- NOT weak tables
 ```
 
-### Color System
-
-**Never hardcode colors:**
+### ImGui Stack Safety
+Always balance Begin/End calls:
 ```lua
--- ❌ DON'T
-local bg_color = 0x252525FF
+local success = container:begin_draw(ctx)
 
--- ✅ DO: Use theme system
-local colors = require("arkitekt.core.colors")
-local bg_color = colors.background.primary
+if success then
+  -- drawing code
+end
+
+container:end_draw(ctx)  -- ALWAYS call, even if begin_draw failed
 ```
 
 ### Code Style
+- 2-space indentation
+- `snake_case` for variables/functions
+- `PascalCase` for module tables
+- Comment *why*, not *what*
+- No emojis in code
 
-**Indentation:** 2 spaces (no tabs)
-```lua
-function my_function()
-  if condition then
-    do_something()
-  end
-end
-```
+## License
 
-**Naming Conventions:**
-- Variables/functions: `snake_case`
-- Constants: `SCREAMING_SNAKE_CASE`
-- Modules: `PascalCase` for tables returned from modules
-- Private functions: Prefix with `_` (e.g., `_internal_helper()`)
-
-```lua
--- Variables
-local item_count = 10
-local user_config = {}
-
--- Constants
-local DEFAULT_WIDTH = 400
-local MAX_ITEMS = 1000
-
--- Module returns
-local M = {}
-function M.create_widget() end
-return M
-
--- Private functions
-local function _calculate_offset()
-  -- Internal use only
-end
-```
-
-**Comments:**
-- Explain *why*, not *what*
-- Document complex algorithms
-- Add TODOs with context
-
-```lua
--- ✅ Good: Explains reasoning
--- Use binary search because item_list can exceed 10k items
-local index = binary_search(item_list, target)
-
--- ❌ Bad: States the obvious
--- Search for item in list
-local index = binary_search(item_list, target)
-```
+GPL v3. By contributing, you agree your contributions will be licensed accordingly.

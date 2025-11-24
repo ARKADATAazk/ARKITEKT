@@ -256,13 +256,14 @@ function MCPView:draw_additional_param(ctx, param)
     local current_idx = math.floor(param.value - param.min + 1)
     current_idx = math.max(1, math.min(current_idx, #values))
 
-    local changed_spinner, new_idx = Spinner.draw(
-      ctx,
-      "##mcp_add_spinner_" .. param.index,
-      current_idx,
-      values,
-      {w = control_w, h = 24}
-    )
+    local spinner_result = Spinner.draw(ctx, {
+      id = "##mcp_add_spinner_" .. param.index,
+      value = current_idx,
+      options = values,
+      width = control_w,
+      height = 24,
+    })
+    local changed_spinner, new_idx = spinner_result.changed, spinner_result.value
 
     if changed_spinner then
       changed = true
@@ -455,12 +456,12 @@ function MCPView:draw(ctx, shell_state)
       ImGui.SameLine(ctx, 0, 8)
       local spinner_result = Spinner.draw(ctx, {
         id = id,
-        current_index = idx,
-        values = values,
+        value = idx,
+        options = values,
         width = spinner_w,
         height = 24,
       })
-      local changed, new_idx = spinner_result.changed, spinner_result.new_index
+      local changed, new_idx = spinner_result.changed, spinner_result.value
 
 
       ImGui.Dummy(ctx, 0, 2)

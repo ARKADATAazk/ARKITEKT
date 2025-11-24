@@ -203,21 +203,21 @@ function M.render(ctx, param, tab_color, shell_state, view)
         spinner_state.last_value = current_value
       end
 
-      local changed_spinner, new_idx = Spinner.draw(
-        ctx,
-        "##preset_spinner_" .. param.name,
-        spinner_state.current_idx,
-        preset_labels,
-        {w = CONTROL_WIDTH, h = 24}
-      )
+      local spinner_result = Spinner.draw(ctx, {
+        id = "##preset_spinner_" .. param.name,
+        value = spinner_state.current_idx,
+        options = preset_labels,
+        width = CONTROL_WIDTH,
+        height = 24,
+      })
 
-      if changed_spinner then
-        new_value = preset_values[new_idx]
+      if spinner_result.changed then
+        new_value = preset_values[spinner_result.value]
         value_changed = true
         was_deactivated = true  -- Spinner changes are immediate
 
         -- Update state to track this change
-        spinner_state.current_idx = new_idx
+        spinner_state.current_idx = spinner_result.value
         spinner_state.last_value = new_value
       end
     else
@@ -474,17 +474,17 @@ function M.render_group(ctx, group_param, tab_color, shell_state, view)
 
   local spinner_state = M._preset_spinner_states[group_id]
 
-  local changed_spinner, new_idx = Spinner.draw(
-    ctx,
-    "##group_spinner_" .. group_id,
-    spinner_state.current_idx,
-    preset_labels,
-    {w = CONTROL_WIDTH, h = 24}
-  )
+  local spinner_result = Spinner.draw(ctx, {
+    id = "##group_spinner_" .. group_id,
+    value = spinner_state.current_idx,
+    options = preset_labels,
+    width = CONTROL_WIDTH,
+    height = 24,
+  })
 
-  if changed_spinner then
-    spinner_state.current_idx = new_idx
-    local selected_preset = presets[new_idx]
+  if spinner_result.changed then
+    spinner_state.current_idx = spinner_result.value
+    local selected_preset = presets[spinner_result.value]
 
     -- Apply all preset values to all parameters in the group
     if selected_preset and selected_preset.values then

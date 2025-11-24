@@ -170,16 +170,16 @@ function Coordinator:draw_audio(ctx, height, shell_state)
   self.audio_container.height = height
 
   -- Begin container draw (handles header, search, etc.)
-  if not self.audio_container:begin_draw(ctx) then
-    return
+  local draw_success = self.audio_container:begin_draw(ctx)
+
+  if draw_success then
+    -- Draw the actual grid inside the container
+    if self.audio_grid then
+      self.audio_grid:draw(ctx)
+    end
   end
 
-  -- Draw the actual grid inside the container
-  if self.audio_grid then
-    self.audio_grid:draw(ctx)
-  end
-
-  -- End container draw
+  -- CRITICAL: Always call end_draw to balance begin_draw (even if it failed)
   self.audio_container:end_draw(ctx)
 end
 
@@ -193,16 +193,16 @@ function Coordinator:draw_midi(ctx, height, shell_state)
   self.midi_container.height = height
 
   -- Begin container draw (handles header, search, etc.)
-  if not self.midi_container:begin_draw(ctx) then
-    return
+  local draw_success = self.midi_container:begin_draw(ctx)
+
+  if draw_success then
+    -- Draw the actual grid inside the container
+    if self.midi_grid then
+      self.midi_grid:draw(ctx)
+    end
   end
 
-  -- Draw the actual grid inside the container
-  if self.midi_grid then
-    self.midi_grid:draw(ctx)
-  end
-
-  -- End container draw
+  -- CRITICAL: Always call end_draw to balance begin_draw (even if it failed)
   self.midi_container:end_draw(ctx)
 end
 

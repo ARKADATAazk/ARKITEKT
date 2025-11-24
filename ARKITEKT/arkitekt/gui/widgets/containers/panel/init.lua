@@ -990,6 +990,8 @@ function Panel:end_draw(ctx)
           opts.inner_rounding = inner_rounding
           opts.position = position
           CornerButton.draw(ctx, opts)
+          -- Add Dummy() after SetCursorScreenPos() to inform ImGui about bounds
+          ImGui.Dummy(ctx, size, size)
           ImGui.EndChild(ctx)
         end
       end

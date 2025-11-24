@@ -64,7 +64,7 @@ local DEFAULTS = {
 -- INSTANCE MANAGEMENT
 -- ============================================================================
 
-local instances = Base.create_instance_registry()
+local instances = {}
 
 local function get_instance(id)
   if not instances[id] then
