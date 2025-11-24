@@ -22,15 +22,27 @@ reaper.ShowConsoleMsg("Package path: " .. package.path:sub(1, 200) .. "...\n\n")
 -- Try to find the actual file
 local searchers = package.searchers or package.loaders
 for i, searcher in ipairs(searchers) do
-  local result = searcher('arkitekt')
+  local result, err = searcher('arkitekt')
   if type(result) == "function" then
     reaper.ShowConsoleMsg("Searcher " .. i .. " found arkitekt\n")
+    if type(err) == "string" then
+      reaper.ShowConsoleMsg("  File path: " .. err .. "\n")
+    end
   elseif type(result) == "string" then
-    reaper.ShowConsoleMsg("Searcher " .. i .. " error: " .. result .. "\n")
+    -- error message, skip
   end
 end
 
 reaper.ShowConsoleMsg("\n")
+
+-- Check if arkitekt.lua exists (would shadow arkitekt/init.lua)
+local test_file = io.open(script_path .. "arkitekt.lua", "r")
+if test_file then
+  reaper.ShowConsoleMsg("⚠️  WARNING: " .. script_path .. "arkitekt.lua EXISTS and shadows arkitekt/init.lua!\n\n")
+  test_file:close()
+else
+  reaper.ShowConsoleMsg("✓ No arkitekt.lua shadowing file\n\n")
+end
 
 -- Just load it directly
 local ark = require('arkitekt')
