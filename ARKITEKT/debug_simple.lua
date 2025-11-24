@@ -16,7 +16,21 @@ reaper.ShowConsoleMsg("Before clear - package.loaded['arkitekt']: " .. tostring(
 
 package.loaded['arkitekt'] = nil
 
-reaper.ShowConsoleMsg("After clear - package.loaded['arkitekt']: " .. tostring(package.loaded['arkitekt']) .. "\n\n")
+reaper.ShowConsoleMsg("After clear - package.loaded['arkitekt']: " .. tostring(package.loaded['arkitekt']) .. "\n")
+reaper.ShowConsoleMsg("Package path: " .. package.path:sub(1, 200) .. "...\n\n")
+
+-- Try to find the actual file
+local searchers = package.searchers or package.loaders
+for i, searcher in ipairs(searchers) do
+  local result = searcher('arkitekt')
+  if type(result) == "function" then
+    reaper.ShowConsoleMsg("Searcher " .. i .. " found arkitekt\n")
+  elseif type(result) == "string" then
+    reaper.ShowConsoleMsg("Searcher " .. i .. " error: " .. result .. "\n")
+  end
+end
+
+reaper.ShowConsoleMsg("\n")
 
 -- Just load it directly
 local ark = require('arkitekt')
