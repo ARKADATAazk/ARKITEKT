@@ -191,6 +191,13 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   -- Determine if index overflows reserved space
   local overflow = math.max(0, index_w - reserved_width)
 
+  -- For 3+ digit indices, move title left by one digit width
+  local num_digits = #index_str
+  if num_digits >= 3 then
+    local single_digit_w = ImGui.CalcTextSize(ctx, "0")
+    overflow = math.max(0, overflow - single_digit_w)
+  end
+
   -- Index shifts RIGHT when it overflows, title shifts by same amount
   local index_start_x = pos.x + overflow + (reserved_width - index_w)
   ark.Draw.text(dl, index_start_x, pos.y, accent_color, index_str)
