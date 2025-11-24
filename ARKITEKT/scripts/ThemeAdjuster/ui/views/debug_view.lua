@@ -90,7 +90,7 @@ function DebugView:create_container_config()
         },
         {
           id = "filter",
-          type = "input",
+          type = "inputtext",
           width = 200,
           spacing_before = 0,
           config = {

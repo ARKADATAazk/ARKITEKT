@@ -181,7 +181,7 @@ function M.new(config)
         },
         {
           id = "filter",
-          type = "dropdown",
+          type = "combo",
           width = 90,
           spacing_before = 0,
           config = {
@@ -201,7 +201,7 @@ function M.new(config)
         },
         {
           id = "search",
-          type = "input",
+          type = "inputtext",
           width = 180,
           spacing_before = 0,
           config = {

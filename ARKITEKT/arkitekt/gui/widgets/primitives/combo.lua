@@ -1,6 +1,6 @@
 -- @noindex
--- Arkitekt/gui/widgets/controls/dropdown.lua
--- Standalone dropdown/combobox widget with Arkitekt styling
+-- Arkitekt/gui/widgets/primitives/combo.lua
+-- Standalone combo widget (ImGui.Combo equivalent) with Arkitekt styling
 -- Can be used anywhere, with optional panel integration
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
@@ -475,7 +475,7 @@ function M.draw(ctx, opts)
   local width = opts.width
   local height = opts.height
   local dl = opts.draw_list
-  local state_or_id = opts.panel_state or opts.id or "dropdown"
+  local state_or_id = opts.panel_state or opts.id or "combo"
 
   -- Build user_config from remaining opts (excluding the extracted fields)
   local user_config = {}

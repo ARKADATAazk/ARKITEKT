@@ -152,7 +152,7 @@ function M.get_pool_container_config(callbacks)
         },
         {
           id = "search",
-          type = "input",
+          type = "inputtext",
           width = Defaults.CONTAINER.pool.search_width,
           spacing_before = 0,
           config = {
@@ -163,7 +163,7 @@ function M.get_pool_container_config(callbacks)
         },
         {
           id = "sort",
-          type = "dropdown",
+          type = "combo",
           width = Defaults.CONTAINER.pool.sort_width,
           spacing_before = 0,
           config = {

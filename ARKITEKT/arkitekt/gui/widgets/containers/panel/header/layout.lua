@@ -11,14 +11,14 @@ local ConfigUtil = require('arkitekt.core.config')
 local M = {}
 
 -- Component registry - imports from controls/ directly for reusable components
-local InputModule = require('arkitekt.gui.widgets.primitives.input')
-local DropdownModule = require('arkitekt.gui.widgets.inputs.dropdown')
+local InputTextModule = require('arkitekt.gui.widgets.primitives.inputtext')
+local ComboModule = require('arkitekt.gui.widgets.primitives.combo')
 
 local COMPONENTS = {
   button = require('arkitekt.gui.widgets.primitives.button'),
   checkbox = require('arkitekt.gui.widgets.primitives.checkbox'),
-  input = InputModule,
-  dropdown = DropdownModule,
+  inputtext = InputTextModule,
+  combo = ComboModule,
   tab_strip = require('arkitekt.gui.widgets.containers.panel.header.tab_strip'),
   separator = require('arkitekt.gui.widgets.containers.panel.header.separator'),
   custom = {
@@ -36,8 +36,8 @@ local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 
 -- Custom compound element for template browser header with search/sort + filter chips
-local Input = require('arkitekt.gui.widgets.primitives.input')
-local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
+local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
+local Combo = require('arkitekt.gui.widgets.primitives.combo')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
 COMPONENTS.template_header_controls = {
@@ -78,7 +78,7 @@ COMPONENTS.template_header_controls = {
     local search_x = x + width - sort_width - search_width - 8
 
     if config.get_search_query and config.on_search_changed then
-      Input.search(ctx, {
+      InputText.search(ctx, {
         x = search_x,
         y = y,
         width = search_width,
@@ -94,7 +94,7 @@ COMPONENTS.template_header_controls = {
     -- Sort dropdown (140px, right side)
     if config.get_sort_mode and config.on_sort_changed then
       local sort_x = search_x + search_width + 8
-      Dropdown.draw(ctx, {
+      Combo.draw(ctx, {
         x = sort_x,
         y = y,
         width = sort_width,
@@ -422,8 +422,8 @@ end
 local STANDARDIZED_WIDGETS = {
   button = true,
   checkbox = true,
-  input = true,
-  dropdown = true,
+  inputtext = true,
+  combo = true,
 }
 
 local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side)

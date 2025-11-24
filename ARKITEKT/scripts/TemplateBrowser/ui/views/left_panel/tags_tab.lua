@@ -6,7 +6,7 @@ local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.core.colors')
 local Tags = require('TemplateBrowser.domain.tags')
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local Input = require('arkitekt.gui.widgets.primitives.input')
+local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
@@ -111,14 +111,14 @@ function M.draw(ctx, state, config, width, height)
         -- Handle rename mode separately (show input field overlay)
         if renaming_tag then
           -- Initialize field with current name
-          if Input.get_text("tag_rename_" .. renaming_tag) == "" then
-            Input.set_text("tag_rename_" .. renaming_tag, state.rename_buffer)
+          if InputText.get_text("tag_rename_" .. renaming_tag) == "" then
+            InputText.set_text("tag_rename_" .. renaming_tag, state.rename_buffer)
           end
 
           ImGui.Spacing(ctx)
           ImGui.Text(ctx, "Renaming: " .. renaming_tag)
 
-          local changed, new_name = Input.draw_at_cursor(ctx, {
+          local changed, new_name = InputText.draw_at_cursor(ctx, {
             width = -1,
             height = UI.CHIP.HEIGHT_SMALL,
             text = state.rename_buffer,

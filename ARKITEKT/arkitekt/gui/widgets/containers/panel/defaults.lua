@@ -216,7 +216,7 @@ M.ALIGNED_HEADER_EXAMPLE = {
       },
       {
         id = "search",
-        type = "input",
+        type = "inputtext",
         align = "left",
         width = 200,
         spacing_before = 8,
@@ -228,7 +228,7 @@ M.ALIGNED_HEADER_EXAMPLE = {
       -- Right-aligned elements
       {
         id = "sort",
-        type = "dropdown",
+        type = "combo",
         align = "right",
         width = 120,
         spacing_before = 8,

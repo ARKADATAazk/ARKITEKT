@@ -5,7 +5,7 @@
 local ImGui = require 'imgui' '0.10'
 local FileOps = require('TemplateBrowser.domain.file_ops')
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local Input = require('arkitekt.gui.widgets.primitives.input')
+local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local Colors = require('arkitekt.core.colors')
 local ColorDefs = require('arkitekt.defs.colors')
@@ -160,11 +160,11 @@ function M.draw_template_rename_modal(ctx, state)
     ImGui.Spacing(ctx)
 
     -- Initialize field with current name
-    if Input.get_text("template_rename_modal") == "" then
-      Input.set_text("template_rename_modal", state.rename_buffer)
+    if InputText.get_text("template_rename_modal") == "" then
+      InputText.set_text("template_rename_modal", state.rename_buffer)
     end
 
-    local changed, new_name = Input.draw_at_cursor(ctx, {
+    local changed, new_name = InputText.draw_at_cursor(ctx, {
       width = UI.FIELD.RENAME_WIDTH,
       height = UI.FIELD.RENAME_HEIGHT,
       text = state.rename_buffer,

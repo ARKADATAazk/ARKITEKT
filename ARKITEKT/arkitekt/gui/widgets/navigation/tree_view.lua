@@ -6,7 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Style = require('arkitekt.gui.style.defaults')
 local Colors = require('arkitekt.core.colors')
-local Input = require('arkitekt.gui.widgets.primitives.input')
+local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
 
 local M = {}
 

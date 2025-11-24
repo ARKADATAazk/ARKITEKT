@@ -54,7 +54,7 @@ function M.get_assembler_container_config(callbacks, filters)
         -- Right: Search, Filters
         {
           id = "search",
-          type = "input",
+          type = "inputtext",
           width = 200,
           spacing_before = 0,
           config = {
@@ -64,7 +64,7 @@ function M.get_assembler_container_config(callbacks, filters)
         },
         {
           id = "filters",
-          type = "dropdown",
+          type = "combo",
           width = 80,
           spacing_before = 0,
           config = {

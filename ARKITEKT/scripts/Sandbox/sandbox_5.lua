@@ -18,8 +18,8 @@ local Arkit = require('arkitekt.arkit')
 
 -- Import refactored base controls
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local Input = require('arkitekt.gui.widgets.primitives.input')
-local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
+local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
+local Combo = require('arkitekt.gui.widgets.primitives.combo')
 
 -- Import panel system
 local Panel = require('arkitekt.gui.widgets.containers.panel')
@@ -93,7 +93,7 @@ local function create_test_panel()
         },
         {
           id = "panel_search",
-          type = "input",
+          type = "inputtext",
           width = 200,
           spacing_before = 8,
           config = {
@@ -106,7 +106,7 @@ local function create_test_panel()
         },
         {
           id = "panel_dropdown",
-          type = "dropdown",
+          type = "combo",
           width = 140,
           spacing_before = 8,
           config = {
@@ -191,7 +191,7 @@ local function draw_standalone_section(ctx)
   
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  Input.search(ctx, {
+  InputText.search(ctx, {
     id = "standalone_search",
     draw_list = dl,
     x = cursor_x,
@@ -228,7 +228,7 @@ local function draw_standalone_section(ctx)
   
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  Dropdown.draw(ctx, {
+  Combo.draw(ctx, {
     id = "standalone_dropdown",
     draw_list = dl,
     x = cursor_x,

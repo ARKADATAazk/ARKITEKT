@@ -9,8 +9,8 @@ local Style = require('arkitekt.gui.style.defaults')
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('arkitekt.gui.widgets.tools.color_picker_window')
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local Input = require('arkitekt.gui.widgets.primitives.input')
-local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
+local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
+local Combo = require('arkitekt.gui.widgets.primitives.combo')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local RadioButton = require('arkitekt.gui.widgets.primitives.radio_button')
@@ -301,9 +301,9 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   end
 
   -- Set text in SearchInput component
-  Input.set_text("batch_rename_pattern", self.pattern)
+  InputText.set_text("batch_rename_pattern", self.pattern)
 
-  local _, changed = Input.search(ctx, dl, screen_x, screen_y, right_col_width, input_height, {
+  local _, changed = InputText.search(ctx, dl, screen_x, screen_y, right_col_width, input_height, {
     id = "batch_rename_pattern",
     placeholder = "pattern$wildcard",
     on_change = function(text)
@@ -445,7 +445,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local dropdown_w = 120
   local dropdown_h = 24
 
-  local result = Dropdown.draw(ctx, {
+  local result = Combo.draw(ctx, {
     id = "names_category",
     draw_list = dl,
     x = dropdown_x,
