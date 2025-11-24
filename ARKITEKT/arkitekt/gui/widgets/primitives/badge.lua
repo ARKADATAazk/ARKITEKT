@@ -234,7 +234,7 @@ end
 --- @deprecated Use M.text() instead
 function M.render_text_badge(ctx, dl, x, y, text, base_color, alpha, config)
   config = config or {}
-  return M.text(ctx, {
+  local result = M.text(ctx, {
     draw_list = dl,
     x = x,
     y = y,
@@ -249,6 +249,7 @@ function M.render_text_badge(ctx, dl, x, y, text, base_color, alpha, config)
     border_darken = config.border_darken,
     text_color = config.text_color,
   })
+  return result.x1, result.y1, result.x2, result.y2
 end
 
 --- @deprecated Use M.icon() instead

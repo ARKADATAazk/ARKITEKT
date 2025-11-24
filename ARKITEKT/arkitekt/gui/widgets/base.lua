@@ -158,6 +158,12 @@ end
 --- @param defaults table Default values
 --- @return table Merged options
 function M.parse_opts(opts, defaults)
+  -- Type check to catch incorrect API usage
+  if opts ~= nil and type(opts) ~= "table" then
+    error("parse_opts: expected table or nil for opts, got " .. type(opts) ..
+          ". Did you use the old API format instead of opts table?", 2)
+  end
+
   opts = opts or {}
   local result = {}
 
