@@ -32,8 +32,8 @@ M.CONFIG = {
   badge_vertical_center_threshold = 45,
   chip_vertical_center_threshold = 50,
 
-  -- Dynamic index sizing: reserve space for 3 digits (100-999), overflow for 1000+
-  index_reserved_digits = 3,
+  -- Dynamic index sizing: reserve space for 2 digits, overflow for 3+
+  index_reserved_digits = 2,
   index_separator_spacing = 4,
 }
 
