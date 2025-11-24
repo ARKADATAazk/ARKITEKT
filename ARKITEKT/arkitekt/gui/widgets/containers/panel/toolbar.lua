@@ -39,21 +39,17 @@ end
 --- @param w number Width
 --- @param h number Height
 --- @param state table Panel state
---- @param config table Panel config with toolbar configuration
+--- @param toolbar_cfg table Toolbar configuration
 --- @param rounding number Corner rounding
 --- @param position string Toolbar position ("top", "bottom", "left", "right")
 --- @return number Toolbar size (width or height depending on orientation)
-function M.draw_background(ctx, dl, x, y, w, h, state, config, rounding, position)
+function M.draw_background(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
   local orientation = get_orientation(position)
 
   if orientation == "horizontal" then
-    -- Delegate to header renderer (supports top/bottom)
-    -- Temporarily inject position into header config
-    local saved_position = config.header.position
-    config.header.position = position
-    local result = Header.draw(ctx, dl, x, y, w, h, state, config, rounding)
-    config.header.position = saved_position
-    return result
+    -- Inject position into toolbar config for header renderer
+    toolbar_cfg.position = position
+    return Header.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding)
   else
     -- Vertical toolbars (left/right) don't have backgrounds - they're just button stacks
     return 0
@@ -72,24 +68,21 @@ end
 --- @param w number Width (for horizontal) or panel width (for vertical)
 --- @param h number Height (for vertical) or toolbar height (for horizontal)
 --- @param state table Panel state
---- @param config table Panel config
+--- @param toolbar_cfg table Toolbar configuration
 --- @param panel_id string Panel ID
 --- @param position string Toolbar position ("top", "bottom", "left", "right")
 --- @return number Toolbar size consumed (width for vertical, height for horizontal)
-function M.draw_elements(ctx, dl, x, y, w, h, state, config, panel_id, position)
+function M.draw_elements(ctx, dl, x, y, w, h, state, toolbar_cfg, panel_id, position)
   local orientation = get_orientation(position)
 
   if orientation == "horizontal" then
-    -- Delegate to header element renderer
-    local saved_position = config.header.position
-    config.header.position = position
-    Header.draw_elements(ctx, dl, x, y, w, h, state, config)
-    config.header.position = saved_position
+    -- Inject position into toolbar config for header renderer
+    toolbar_cfg.position = position
+    Header.draw_elements(ctx, dl, x, y, w, h, state, toolbar_cfg)
     return h  -- Return height consumed
   else
     -- Delegate to sidebar renderer
     local side = (position == "left") and "left" or "right"
-    local toolbar_cfg = (position == "left") and config.left_sidebar or config.right_sidebar
 
     if not toolbar_cfg then
       return 0
@@ -128,11 +121,11 @@ function M.draw(ctx, dl, x, y, w, h, toolbar_cfg, state, panel_config, panel_id,
 
   -- Draw background (horizontal toolbars only)
   if orientation == "horizontal" then
-    M.draw_background(ctx, dl, x, y, w, h, state, panel_config, rounding, position)
+    M.draw_background(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
   end
 
   -- Draw elements
-  return M.draw_elements(ctx, dl, x, y, w, h, state, panel_config, panel_id, position)
+  return M.draw_elements(ctx, dl, x, y, w, h, state, toolbar_cfg, panel_id, position)
 end
 
 -- ============================================================================

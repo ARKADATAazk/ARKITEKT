@@ -160,12 +160,12 @@ function Panel:begin_draw(ctx)
 
   -- Top toolbar background
   if top_cfg then
-    Toolbar.draw_background(ctx, dl, x1, y1, w, toolbar_sizes.top, self, self.config, self.config.rounding, "top")
+    Toolbar.draw_background(ctx, dl, x1, y1, w, toolbar_sizes.top, self, top_cfg, self.config.rounding, "top")
   end
 
   -- Bottom toolbar background
   if bottom_cfg then
-    Toolbar.draw_background(ctx, dl, x1, y2 - toolbar_sizes.bottom, w, toolbar_sizes.bottom, self, self.config, self.config.rounding, "bottom")
+    Toolbar.draw_background(ctx, dl, x1, y2 - toolbar_sizes.bottom, w, toolbar_sizes.bottom, self, bottom_cfg, self.config.rounding, "bottom")
   end
 
   -- ============================================================================
@@ -212,12 +212,12 @@ function Panel:begin_draw(ctx)
 
   -- Top toolbar elements
   if top_cfg then
-    Toolbar.draw_elements(ctx, dl, x1, y1, w, toolbar_sizes.top, self, self.config, self.id, "top")
+    Toolbar.draw_elements(ctx, dl, x1, y1, w, toolbar_sizes.top, self, top_cfg, self.id, "top")
   end
 
   -- Bottom toolbar elements
   if bottom_cfg then
-    Toolbar.draw_elements(ctx, dl, x1, y2 - toolbar_sizes.bottom, w, toolbar_sizes.bottom, self, self.config, self.id, "bottom")
+    Toolbar.draw_elements(ctx, dl, x1, y2 - toolbar_sizes.bottom, w, toolbar_sizes.bottom, self, bottom_cfg, self.id, "bottom")
   end
 
   -- ============================================================================
@@ -228,13 +228,13 @@ function Panel:begin_draw(ctx)
 
   -- Left toolbar
   if left_cfg then
-    Toolbar.draw_elements(ctx, dl, x1, content_y1, w, sidebar_height, self, self.config, self.id, "left")
+    Toolbar.draw_elements(ctx, dl, x1, content_y1, w, sidebar_height, self, left_cfg, self.id, "left")
   end
 
   -- Right toolbar
   if right_cfg then
     local right_x = x2 - toolbar_sizes.right
-    Toolbar.draw_elements(ctx, dl, right_x, content_y1, w, sidebar_height, self, self.config, self.id, "right")
+    Toolbar.draw_elements(ctx, dl, right_x, content_y1, w, sidebar_height, self, right_cfg, self.id, "right")
   end
 
   -- Store bounds for corner buttons (drawn in end_draw for z-order)

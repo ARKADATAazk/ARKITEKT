@@ -47,13 +47,23 @@ end
 -- HEADER BACKGROUND DRAWING
 -- ============================================================================
 
-function M.draw(ctx, dl, x, y, w, h, state, config, rounding)
-  local header_cfg = config.header
-  if not header_cfg or not header_cfg.enabled then
+--- Draw toolbar background (horizontal: top or bottom)
+--- @param ctx userdata ImGui context
+--- @param dl userdata ImGui draw list
+--- @param x number X position
+--- @param y number Y position
+--- @param w number Width
+--- @param h number Height
+--- @param state table Panel state
+--- @param toolbar_cfg table Toolbar configuration (not config.header!)
+--- @param rounding number Corner rounding
+--- @return number Height consumed
+function M.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding)
+  if not toolbar_cfg or not toolbar_cfg.enabled then
     return 0
   end
-  
-  local position = header_cfg.position or "top"
+
+  local position = toolbar_cfg.position or "top"
   
   -- Determine corner flags based on position
   local corner_flags
@@ -66,7 +76,7 @@ function M.draw(ctx, dl, x, y, w, h, state, config, rounding)
   -- Draw header background
   ImGui.DrawList_AddRectFilled(
     dl, x, y, x + w, y + h,
-    header_cfg.bg_color or PC.bg_header,
+    toolbar_cfg.bg_color or PC.bg_header,
     rounding,
     corner_flags
   )
@@ -75,13 +85,13 @@ function M.draw(ctx, dl, x, y, w, h, state, config, rounding)
   if position == "bottom" then
     ImGui.DrawList_AddLine(
       dl, x, y, x + w, y,
-      header_cfg.border_color or PC.border_header,
+      toolbar_cfg.border_color or PC.border_header,
       1
     )
   else
     ImGui.DrawList_AddLine(
       dl, x, y + h - 1, x + w, y + h - 1,
-      header_cfg.border_color or PC.border_header,
+      toolbar_cfg.border_color or PC.border_header,
       1
     )
   end
@@ -93,33 +103,32 @@ end
 -- HEADER ELEMENTS DRAWING
 -- ============================================================================
 
---- Draws header elements (buttons, dropdowns, etc.) using the layout engine.
+--- Draws toolbar elements (buttons, dropdowns, etc.) using the layout engine.
 --- IMPORTANT: This function MUST receive a state object with _panel_id set,
 --- otherwise child widgets will not detect panel context and will fall back
 --- to standalone rendering (all corners rounded, no smart corner detection).
 --- @param ctx ImGui context
 --- @param dl ImGui draw list
 --- @param x number X position
---- @param y number Y position  
+--- @param y number Y position
 --- @param w number Width
 --- @param h number Height
 --- @param state table Panel state (MUST have _panel_id field)
---- @param config table Panel config with header configuration
-function M.draw_elements(ctx, dl, x, y, w, h, state, config)
-  local header_cfg = config.header
-  if not header_cfg or not header_cfg.enabled then
+--- @param toolbar_cfg table Toolbar configuration (not config.header!)
+function M.draw_elements(ctx, dl, x, y, w, h, state, toolbar_cfg)
+  if not toolbar_cfg or not toolbar_cfg.enabled then
     return
   end
-  
+
   -- Validate and ensure proper panel context
-  -- Extract panel ID from state or config
-  local panel_id = (state and state.id) or (config and config.id) or "unknown_panel"
+  -- Extract panel ID from state
+  local panel_id = (state and state.id) or "unknown_panel"
   state = ensure_panel_context(state, panel_id)
-  
-  -- Draw header elements with validated state
+
+  -- Draw toolbar elements with validated state
   -- The layout engine will pass corner_rounding info to each element
   -- and elements will detect panel context via state._panel_id
-  Layout.draw(ctx, dl, x, y, w, h, state, header_cfg)
+  Layout.draw(ctx, dl, x, y, w, h, state, toolbar_cfg)
 end
 
 return M
