@@ -18,7 +18,7 @@ local hexrgb = Colors.hexrgb
 
 local Icon = nil
 do
-  local ok, mod = pcall(require, 'arkitekt.app.assets.icon')
+  local ok, mod = pcall(require, 'arkitekt.app.chrome.icon')
   if ok then Icon = mod end
 end
 

@@ -44,7 +44,7 @@ addpath(join(HERE,  "Arkitekt/?.lua"))
 addpath(join(HERE,  "Arkitekt/?/init.lua"))
 addpath(join(HERE,  "Arkitekt/?/?.lua"))
 
-local Shell = require("arkitekt.app.runtime.shell")
+local Shell = require("arkitekt.app.shell")
 local Sheet = require("arkitekt.gui.widgets.overlays.overlay.sheet")
 local ChipList = require("arkitekt.gui.widgets.data.chip_list")
 local OverlayConfig = require("arkitekt.gui.widgets.overlays.overlay.defaults")

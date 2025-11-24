@@ -34,7 +34,7 @@ local SRC = debug.getinfo(1,"S").source:sub(2)
 local HERE = ARK.dirname(SRC) or "."
 
 -- Load dependencies
-local Shell = require("arkitekt.app.runtime.shell")
+local Shell = require("arkitekt.app.shell")
 local State = require("ColorPalette.app.state")
 local GUI = require("ColorPalette.app.gui")
 local OverlayManager = require("arkitekt.gui.widgets.overlays.overlay.manager")

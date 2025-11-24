@@ -62,7 +62,7 @@ end
 local ImGui = ARK.ImGui
 local script_dir = ARK.root_path
 
-local Shell = require("arkitekt.app.runtime.shell")
+local Shell = require("arkitekt.app.shell")
 local Hub = require("hub.hub")
 local PackageGrid = require("arkitekt.gui.widgets.media.package_tiles.grid")
 local Micromanage = require("arkitekt.gui.widgets.media.package_tiles.micromanage")

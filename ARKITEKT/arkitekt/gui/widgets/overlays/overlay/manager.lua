@@ -247,6 +247,46 @@ function M:render(ctx, dt)
   local top = self.stack[#self.stack]
   local alpha_val = top.alpha:value()
 
+  -- ============================================================================
+  -- PASSTHROUGH MODE: Skip overlay chrome, render directly
+  -- ============================================================================
+  -- Used for special cases like drag-to-REAPER, radial menus, screen pickers
+  -- where the app needs to render outside overlay bounds without scrim/modal
+  if top.should_passthrough and top.should_passthrough() then
+    -- Get full viewport bounds
+    local x, y, w, h
+    if JS_API_available then
+      local hwnd = reaper.GetMainHwnd()
+      local retval, left, top_y, right, bottom = reaper.JS_Window_GetRect(hwnd)
+      if retval then
+        x, y = left, top_y
+        w, h = right - left, bottom - top_y
+      else
+        local viewport = ImGui.GetMainViewport(ctx)
+        x, y = ImGui.Viewport_GetPos(viewport)
+        w, h = ImGui.Viewport_GetSize(viewport)
+      end
+    else
+      local viewport = ImGui.GetMainViewport(ctx)
+      x, y = ImGui.Viewport_GetPos(viewport)
+      w, h = ImGui.Viewport_GetSize(viewport)
+    end
+
+    -- Call render directly with full viewport, no modal/scrim
+    local dl = ImGui.GetWindowDrawList(ctx)
+    top.render(ctx, 1.0, {x=x, y=y, w=w, h=h, dl=dl})
+
+    -- Check for escape key even in passthrough mode
+    if top.esc_to_close and ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+      self:pop()
+    end
+
+    return
+  end
+
+  -- ============================================================================
+  -- NORMAL OVERLAY MODE: Modal with scrim/chrome
+  -- ============================================================================
   local x, y, w, h
 
   if top.use_viewport then

@@ -3,7 +3,7 @@
 -- ItemPicker as a persistent window with TilesContainer panels (like RegionPlaylist)
 
 -- Bootstrap ARKITEKT framework
-local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/init/init.lua").bootstrap()
+local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/bootstrap.lua").init()
 if not ARK then return end
 
 -- ============================================================================
@@ -17,7 +17,7 @@ if profiler_enabled then
 end
 
 -- Load required modules
-local Shell = require('arkitekt.app.runtime.shell')
+local Shell = require('arkitekt.app.shell')
 local Colors = require('arkitekt.core.colors')
 local Settings = require('arkitekt.core.settings')
 

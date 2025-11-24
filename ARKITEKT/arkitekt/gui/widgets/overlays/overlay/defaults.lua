@@ -104,6 +104,7 @@ end
 --   - id: Required, unique overlay ID
 --   - render: Required, render function(ctx, alpha, bounds)
 --   - on_close: Optional, cleanup function
+--   - should_passthrough: Optional, function() -> boolean to skip overlay chrome
 --   - use_viewport: Optional, boolean (default: true)
 --   - fade_duration: Optional, number in seconds
 --   - fade_curve: Optional, easing curve name
@@ -156,6 +157,9 @@ function M.create_overlay_config(opts)
     -- Required callbacks
     render = opts.render,
     on_close = opts.on_close,
+
+    -- Optional passthrough callback (for drag-to-REAPER, radial menus, etc.)
+    should_passthrough = opts.should_passthrough,
   }
 end
 

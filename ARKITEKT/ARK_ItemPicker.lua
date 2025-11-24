@@ -4,26 +4,10 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK
-do
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, "S").source:sub(2)
-  local path = src:match("(.*"..sep..")")
-  while path and #path > 3 do
-    local init = path .. "arkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
-    local f = io.open(init, "r")
-    if f then
-      f:close()
-      local Init = dofile(init)
-      ARK = Init.bootstrap()
-      break
-    end
-    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
-  end
-  if not ARK then
-    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
-    return
-  end
+local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/bootstrap.lua").init()
+if not ARK then
+  reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
+  return
 end
 
 -- ============================================================================
@@ -41,11 +25,7 @@ else
 end
 
 -- Load required modules
-local ImGui = ARK.ImGui
-local Shell = require('arkitekt.app.runtime.shell')
-local Fonts = require('arkitekt.app.assets.fonts')
-local OverlayManager = require('arkitekt.gui.widgets.overlays.overlay.manager')
-local OverlayDefaults = require('arkitekt.gui.widgets.overlays.overlay.defaults')
+local Shell = require('arkitekt.app.shell')
 
 -- Load new refactored modules
 local Config = require('ItemPicker.core.config')
@@ -58,9 +38,6 @@ local visualization = require('ItemPicker.services.visualization')
 local reaper_interface = require('ItemPicker.data.reaper_api')
 local utils = require('ItemPicker.services.utils')
 local drag_handler = require('ItemPicker.ui.components.drag_handler')
-
--- Configuration
-local USE_OVERLAY = true  -- Set to false for normal window mode
 
 local function SetButtonState(set)
   local is_new_value, filename, sec, cmd, mode, resolution, val = reaper.get_action_context()
@@ -97,118 +74,47 @@ end
 
 SetButtonState(1)
 
--- Run based on mode
-if USE_OVERLAY then
-  -- OVERLAY MODE
-  local ctx = ImGui.CreateContext("Item Picker" .. (profiler_enabled and " [Profiling]" or ""))
-  local fonts = Fonts.load(ImGui, ctx, { title_size = 24, monospace_size = 14 })  -- App-specific overrides
+-- Run in overlay mode with passthrough for drag handling
+Shell.run({
+  mode = "overlay",
+  title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
+  toggle_button = true,
+  app_name = "item_picker",
 
-  -- Create overlay manager
-  local overlay_mgr = OverlayManager.new()
+  fonts = {
+    title_size = 24,
+    monospace_size = 14,
+  },
 
-  -- Push overlay onto stack using centralized defaults
-  overlay_mgr:push(OverlayDefaults.create_overlay_config({
-    id = "item_picker_main",
-    esc_to_close = false,  -- App-specific: GUI handles ESC for special behavior
-    -- All other settings use framework defaults
+  overlay = {
+    esc_to_close = false,  -- GUI handles ESC for special behavior
+    -- When dragging, bypass overlay chrome and render directly to full viewport
+    should_passthrough = function() return State.dragging end,
+  },
 
-    render = function(ctx, alpha_val, bounds)
-      -- Push font for content with size
-      ImGui.PushFont(ctx, fonts.default, fonts.default_size)
+  draw = function(ctx, state)
+    -- Show ImGui debug window when profiling
+    if profiler_enabled then
+      ARK.ImGui.ShowMetricsWindow(ctx, true)
+    end
 
-      local overlay_state = {
-        x = bounds.x,
-        y = bounds.y,
-        width = bounds.w,
-        height = bounds.h,
-        alpha = alpha_val,
-      }
+    -- Check if should close after drop
+    if State.should_close_after_drop then
+      -- Signal to close
+      return false
+    end
 
-      -- In overlay mode, don't create child window - draw directly
-      -- The overlay manager's window is the container
-      if gui and gui.draw then
-        gui:draw(ctx, {
-          fonts = fonts,
-          overlay_state = overlay_state,
-          overlay = { alpha = { value = function() return alpha_val end } },  -- Provide alpha accessor for animations
-          is_overlay_mode = true,
-        })
-      end
-
-      ImGui.PopFont(ctx)
-    end,
-
-    on_close = cleanup,
-  }))
-
-  -- Use Shell.run_loop for defer loop
-  Shell.run_loop({
-    ctx = ctx,
-    on_frame = function(ctx)
-      -- Show ImGui debug window when profiling
-      if profiler_enabled then
-        ImGui.ShowMetricsWindow(ctx, true)
-      end
-
-      -- Check if should close after drop
-      if State.should_close_after_drop then
-        return false
-      end
-
-    -- When dragging, skip overlay entirely and just render drag handlers
-    if State.dragging then
-      ImGui.PushFont(ctx, fonts.default, fonts.default_size)
+    if gui and gui.draw then
       gui:draw(ctx, {
-        fonts = fonts,
-        overlay_state = {},
-        overlay = overlay_mgr,
+        fonts = state.fonts,
+        overlay_state = state.overlay or {},
+        overlay = { alpha = { value = function() return state.overlay and state.overlay.alpha or 1.0 end } },
         is_overlay_mode = true,
       })
-      ImGui.PopFont(ctx)
+    end
 
-        -- Check again after draw in case flag was set during draw
-        if State.should_close_after_drop then
-          return false
-        end
-        return true
-      else
-        -- Normal mode: let overlay manager handle everything
-        overlay_mgr:render(ctx)
-        return overlay_mgr:is_active()
-      end
-    end,
-    on_close = cleanup,
-  })
+    return true
+  end,
 
-else
-  -- NORMAL WINDOW MODE (using Shell)
-  Shell.run({
-    title = "Item Picker" .. (profiler_enabled and " [Profiling]" or ""),
-    version = "1.0.0",
-
-    show_titlebar = true,
-    show_status_bar = false,
-
-    initial_size = { w = 1200, h = 800 },
-    min_size = { w = 800, h = 600 },
-
-    fonts = {
-      default = 14,
-      title = 24,
-      monospace = 14,
-    },
-
-    draw = function(ctx, shell_state)
-      -- Show ImGui debug window when profiling
-      if profiler_enabled then
-        ImGui.ShowMetricsWindow(ctx, true)
-      end
-
-      gui:draw(ctx, shell_state)
-    end,
-
-    on_close = function()
-      cleanup()
-    end,
-  })
-end
+  on_close = cleanup,
+})

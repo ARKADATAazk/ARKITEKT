@@ -43,7 +43,7 @@ addpath(join(HERE,  "Arkitekt/?.lua"))
 addpath(join(HERE,  "Arkitekt/?/init.lua"))
 addpath(join(HERE,  "Arkitekt/?/?.lua"))
 
-local Shell          = require("arkitekt.app.runtime.shell")
+local Shell          = require("arkitekt.app.shell")
 local PackageGrid    = require("arkitekt.gui.widgets.media.package_tiles.grid")
 local Micromanage    = require("arkitekt.gui.widgets.media.package_tiles.micromanage")
 local TilesContainer = require("arkitekt.gui.widgets.containers.panel")

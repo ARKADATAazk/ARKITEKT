@@ -11,15 +11,6 @@ local hexrgb = CoreColors.hexrgb
 local M = {}
 
 -- ============================================================================
--- ERROR HANDLER
--- ============================================================================
-M.ERROR_HANDLER = {
-    enabled = true,                -- Enable enhanced error handling
-    log_to_console = true,         -- Print full stack traces to REAPER Console
-    include_timestamp = true,      -- Add timestamp to error logs
-}
-
--- ============================================================================
 -- PROFILER
 -- ============================================================================
 M.PROFILER_ENABLED = false
@@ -85,20 +76,6 @@ M.WINDOW = {
     -- Background colors
     bg_color_floating = nil,
     bg_color_docked = hexrgb("#282828"),
-
-    -- Fullscreen/Viewport mode
-    fullscreen = {
-        enabled = false,
-        use_viewport = true,
-        fade_speed = 10.0,
-        scrim_enabled = true,
-        scrim_color = hexrgb(Colors.BASE.black),
-        window_bg_override = nil,
-        window_opacity = 1.0,
-        show_close_button = true,
-        close_on_background_click = true,
-        close_on_background_left_click = false,
-    },
 }
 
 -- ============================================================================
