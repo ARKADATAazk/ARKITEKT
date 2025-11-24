@@ -6,12 +6,11 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 -- Module dependencies
-local Header = require('arkitekt.gui.widgets.containers.panel.header')
+local Toolbar = require('arkitekt.gui.widgets.containers.panel.toolbar')
 local Content = require('arkitekt.gui.widgets.containers.panel.content')
 local Pattern = require('arkitekt.gui.draw.pattern')
 local Rendering = require('arkitekt.gui.widgets.containers.panel.rendering')
 local CornerButtons = require('arkitekt.gui.widgets.containers.panel.corner_buttons')
-local Sidebars = require('arkitekt.gui.widgets.containers.panel.sidebars')
 local Scrolling = require('arkitekt.gui.widgets.containers.panel.scrolling')
 local State = require('arkitekt.gui.widgets.containers.panel.state')
 local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
@@ -117,44 +116,61 @@ function Panel:begin_draw(ctx)
   -- Draw background
   Rendering.draw_background(dl, x1, y1, w, h, self.config.bg_color, self.config.rounding)
 
-  -- Calculate header/footer areas
-  local header_cfg = self.config.header or DEFAULTS.header
-  local footer_cfg = self.config.footer
+  -- ============================================================================
+  -- TOOLBAR CALCULATION (Unified API)
+  -- ============================================================================
 
-  local header_height = 0
-  local footer_height = 0
+  -- Calculate toolbar dimensions and content bounds
+  local toolbar_sizes = {top = 0, bottom = 0, left = 0, right = 0}
   local content_y1 = y1
   local content_y2 = y2
 
-  -- Draw header
-  if header_cfg.enabled then
-    header_height = header_cfg.height or 30
-    local header_position = header_cfg.position or "top"
-
-    if header_position == "top" then
-      Header.draw(ctx, dl, x1, y1, w, header_height, self, self.config, self.config.rounding)
-      content_y1 = y1 + header_height
-    elseif header_position == "bottom" then
-      Header.draw(ctx, dl, x1, y2 - header_height, w, header_height, self, self.config, self.config.rounding)
-      content_y2 = y2 - header_height
-    end
+  -- Top toolbar
+  local top_cfg = Toolbar.get_toolbar_config(self.config, "top")
+  if top_cfg then
+    toolbar_sizes.top = top_cfg.height or 30
+    content_y1 = y1 + toolbar_sizes.top
   end
 
-  -- Draw footer
-  if footer_cfg and footer_cfg.enabled then
-    footer_height = footer_cfg.height or 30
-    footer_cfg.position = "bottom"
-
-    local saved_header = self.config.header
-    self.config.header = footer_cfg
-    Header.draw(ctx, dl, x1, y2 - footer_height, w, footer_height, self, self.config, self.config.rounding)
-    self.config.header = saved_header
-
-    content_y2 = content_y2 - footer_height
+  -- Bottom toolbar
+  local bottom_cfg = Toolbar.get_toolbar_config(self.config, "bottom")
+  if bottom_cfg then
+    toolbar_sizes.bottom = bottom_cfg.height or 30
+    content_y2 = y2 - toolbar_sizes.bottom
   end
 
-  self.header_height = header_height
-  self.footer_height = footer_height
+  -- Left/right toolbars (vertical - calculated but don't affect content_y bounds)
+  local left_cfg = Toolbar.get_toolbar_config(self.config, "left")
+  if left_cfg then
+    toolbar_sizes.left = left_cfg.width or 36
+  end
+
+  local right_cfg = Toolbar.get_toolbar_config(self.config, "right")
+  if right_cfg then
+    toolbar_sizes.right = right_cfg.width or 36
+  end
+
+  -- Store for state accessors (legacy compatibility)
+  self.header_height = toolbar_sizes.top
+  self.footer_height = toolbar_sizes.bottom
+
+  -- ============================================================================
+  -- DRAW HORIZONTAL TOOLBAR BACKGROUNDS
+  -- ============================================================================
+
+  -- Top toolbar background
+  if top_cfg then
+    Toolbar.draw_background(ctx, dl, x1, y1, w, toolbar_sizes.top, self, self.config, self.config.rounding, "top")
+  end
+
+  -- Bottom toolbar background
+  if bottom_cfg then
+    Toolbar.draw_background(ctx, dl, x1, y2 - toolbar_sizes.bottom, w, toolbar_sizes.bottom, self, self.config, self.config.rounding, "bottom")
+  end
+
+  -- ============================================================================
+  -- DRAW PATTERN AND BORDER
+  -- ============================================================================
 
   -- Draw background pattern (if enabled)
   if self.config.background_pattern and self.config.background_pattern.enabled then
@@ -162,16 +178,16 @@ function Panel:begin_draw(ctx)
     local pattern_x1 = x1 + border_inset
     local pattern_x2 = x2 - border_inset
 
-    -- Check if header is transparent
-    local header_is_transparent = false
-    if header_cfg.enabled and header_cfg.bg_color then
-      local alpha = (header_cfg.bg_color & 0xFF) / 255.0
-      header_is_transparent = alpha < 0.1
+    -- Check if top toolbar is transparent
+    local top_is_transparent = false
+    if top_cfg and top_cfg.bg_color then
+      local alpha = (top_cfg.bg_color & 0xFF) / 255.0
+      top_is_transparent = alpha < 0.1
     end
 
-    -- Adjust pattern area based on header transparency
+    -- Adjust pattern area based on top toolbar transparency
     local pattern_y1, pattern_y2
-    if header_is_transparent then
+    if top_is_transparent then
       pattern_y1 = y1 + border_inset
       pattern_y2 = y2 - border_inset
     else
@@ -190,51 +206,52 @@ function Panel:begin_draw(ctx)
     Rendering.draw_border(dl, x1, y1, w, h, self.config.border_color, self.config.rounding, self.config.border_thickness)
   end
 
-  -- Draw header elements
-  if header_cfg.enabled then
-    local header_position = header_cfg.position or "top"
-    if header_position == "top" then
-      Header.draw_elements(ctx, dl, x1, y1, w, header_height, self, self.config)
-    elseif header_position == "bottom" then
-      Header.draw_elements(ctx, dl, x1, y2 - header_height, w, header_height, self, self.config)
-    end
+  -- ============================================================================
+  -- DRAW TOOLBAR ELEMENTS
+  -- ============================================================================
+
+  -- Top toolbar elements
+  if top_cfg then
+    Toolbar.draw_elements(ctx, dl, x1, y1, w, toolbar_sizes.top, self, self.config, self.id, "top")
   end
 
-  -- Draw footer elements
-  if footer_cfg and footer_cfg.enabled then
-    local saved_header = self.config.header
-    self.config.header = footer_cfg
-    Header.draw_elements(ctx, dl, x1, y2 - footer_height, w, footer_height, self, self.config)
-    self.config.header = saved_header
+  -- Bottom toolbar elements
+  if bottom_cfg then
+    Toolbar.draw_elements(ctx, dl, x1, y2 - toolbar_sizes.bottom, w, toolbar_sizes.bottom, self, self.config, self.id, "bottom")
   end
 
-  -- Draw sidebars
-  local left_sidebar_width = 0
-  local right_sidebar_width = 0
+  -- ============================================================================
+  -- DRAW VERTICAL TOOLBARS (LEFT/RIGHT)
+  -- ============================================================================
+
   local sidebar_height = content_y2 - content_y1
 
-  if self.config.left_sidebar then
-    left_sidebar_width = Sidebars.draw(ctx, dl, x1, content_y1, w, sidebar_height,
-                                       self.config.left_sidebar, self.id, "left")
+  -- Left toolbar
+  if left_cfg then
+    Toolbar.draw_elements(ctx, dl, x1, content_y1, w, sidebar_height, self, self.config, self.id, "left")
   end
 
-  if self.config.right_sidebar then
-    right_sidebar_width = Sidebars.draw(ctx, dl, x2 - (self.config.right_sidebar.width or 36), content_y1,
-                                        w, sidebar_height, self.config.right_sidebar, self.id, "right")
+  -- Right toolbar
+  if right_cfg then
+    local right_x = x2 - toolbar_sizes.right
+    Toolbar.draw_elements(ctx, dl, right_x, content_y1, w, sidebar_height, self, self.config, self.id, "right")
   end
 
   -- Store bounds for corner buttons (drawn in end_draw for z-order)
   self._corner_button_bounds = {x1, y1, w, h}
 
-  -- Calculate content area
+  -- ============================================================================
+  -- CALCULATE CONTENT AREA
+  -- ============================================================================
+
   local border_inset = self.config.border_thickness
   local scrollbar_width = Scrolling.get_scrollbar_width(self)
 
-  self.child_x = x1 + border_inset + left_sidebar_width
+  self.child_x = x1 + border_inset + toolbar_sizes.left
   self.child_y = content_y1 + border_inset
 
-  -- Note: right_sidebar_width NOT subtracted - scrollbar overlaps right sidebar (draws on top)
-  local child_w = w - (border_inset * 2) - scrollbar_width - left_sidebar_width
+  -- Note: toolbar_sizes.right NOT subtracted - scrollbar overlaps right toolbar (draws on top)
+  local child_w = w - (border_inset * 2) - scrollbar_width - toolbar_sizes.left
   local child_h = (content_y2 - content_y1) - (border_inset * 2)
 
   if child_w < 1 then child_w = 1 end
@@ -278,8 +295,8 @@ function Panel:end_draw(ctx)
 
   -- Draw corner buttons (z-order: above content, below popups)
   if self._corner_button_bounds then
-    local header_cfg = self.config.header
-    if not header_cfg.enabled or self.config.corner_buttons_always_visible then
+    local top_toolbar = Toolbar.get_toolbar_config(self.config, "top")
+    if not top_toolbar or self.config.corner_buttons_always_visible then
       local x1, y1, w, h = table.unpack(self._corner_button_bounds)
       CornerButtons.draw(ctx, x1, y1, w, h, self.config, self.id)
     end
