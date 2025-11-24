@@ -82,7 +82,7 @@ local function load_fonts(ctx, font_cfg)
 
   -- Use DejaVu Sans for full Unicode coverage (35,000+ glyphs including ⋮, ↑, ↓)
   local default_font   = exists(dejavu_regular) and ImGui.CreateFontFromFile(dejavu_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0)
-  local title_font     = exists(dejavu_bold) and ImGui.CreateFontFromFile(dejavu_bold, 0, 0) or ImGui.CreateFont('sans-serif', 0)
+  local title_font     = exists(dejavu_regular) and ImGui.CreateFontFromFile(dejavu_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0)
   local version_font   = exists(dejavu_regular) and ImGui.CreateFontFromFile(dejavu_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0)
 
   -- Keep loading specific fonts from TTF files
