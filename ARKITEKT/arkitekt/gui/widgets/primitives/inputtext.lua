@@ -140,7 +140,9 @@ end
 -- ============================================================================
 
 local function render_text_field(ctx, dl, x, y, width, height, config, state, id, is_disabled, corner_rounding)
-  local is_hovered = not is_disabled and ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
+  -- Check hover state using mouse position (like combo does)
+  local mx, my = ImGui.GetMousePos(ctx)
+  local is_hovered = not is_disabled and mx >= x and mx < x + width and my >= y and my < y + height
 
   -- Animate focus alpha
   local target_alpha = state.focused and 1.0 or (is_hovered and 0.7 or 0.3)

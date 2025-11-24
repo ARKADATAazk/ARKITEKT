@@ -315,8 +315,8 @@ function M.draw(ctx, opts)
     config.on_right_click()
   end
 
-  -- Handle tooltip (check if item is hovered since we just created InvisibleButton)
-  if ImGui.IsItemHovered(ctx) and opts.tooltip then
+  -- Handle tooltip (use manual hover check for consistency, like combo)
+  if is_hovered and opts.tooltip then
     ImGui.SetTooltip(ctx, opts.tooltip)
   end
 
