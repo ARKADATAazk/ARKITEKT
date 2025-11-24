@@ -14,6 +14,23 @@ local hexrgb = Colors.hexrgb
 local M = {}
 
 -- ============================================================================
+-- INSTANCE MANAGEMENT
+-- ============================================================================
+
+local instances = {}
+
+local function get_instance(id)
+  if not instances[id] then
+    instances[id] = {
+      left_hover_alpha = 0,
+      value_hover_alpha = 0,
+      right_hover_alpha = 0,
+    }
+  end
+  return instances[id]
+end
+
+-- ============================================================================
 -- DEFAULTS
 -- ============================================================================
 
@@ -74,7 +91,7 @@ local function draw_arrow(dl, x, y, w, h, color, direction)
   end
 end
 
-local function draw_spinner_button(ctx, id, x, y, w, h, direction, disabled)
+local function draw_spinner_button(ctx, id, x, y, w, h, direction, disabled, hover_alpha)
   local dl = ImGui.GetWindowDrawList(ctx)
 
   x = math.floor(x + 0.5)
@@ -89,7 +106,7 @@ local function draw_spinner_button(ctx, id, x, y, w, h, direction, disabled)
   local active = not disabled and ImGui.IsItemActive(ctx)
   local clicked = not disabled and ImGui.IsItemClicked(ctx, 0)
 
-  -- Get state colors
+  -- Get state colors with animation
   local bg_color, border_inner, border_outer, arrow_color
 
   if disabled then
@@ -102,11 +119,11 @@ local function draw_spinner_button(ctx, id, x, y, w, h, direction, disabled)
     border_inner = Style.COLORS.BORDER_HOVER
     border_outer = Style.COLORS.BORDER_OUTER
     arrow_color = Style.COLORS.TEXT_HOVER
-  elseif hovered then
-    bg_color = Style.COLORS.BG_HOVER
+  elseif hover_alpha > 0.01 then
+    bg_color = Style.RENDER.lerp_color(Style.COLORS.BG_BASE, Style.COLORS.BG_HOVER, hover_alpha)
     border_inner = Style.COLORS.BORDER_HOVER
     border_outer = Style.COLORS.BORDER_OUTER
-    arrow_color = Style.COLORS.TEXT_HOVER
+    arrow_color = Style.RENDER.lerp_color(Style.COLORS.TEXT_NORMAL, Style.COLORS.TEXT_HOVER, hover_alpha)
   else
     bg_color = Style.COLORS.BG_BASE
     border_inner = Style.COLORS.BORDER_INNER
@@ -124,10 +141,10 @@ local function draw_spinner_button(ctx, id, x, y, w, h, direction, disabled)
   -- Arrow
   draw_arrow(dl, x, y, w, h, arrow_color, direction)
 
-  return clicked
+  return clicked, hovered, active
 end
 
-local function draw_value_display(ctx, dl, x, y, w, h, text, hovered, active, disabled)
+local function draw_value_display(ctx, dl, x, y, w, h, text, hover_alpha, active, disabled)
   x = math.floor(x + 0.5)
   y = math.floor(y + 0.5)
   w = math.floor(w + 0.5)
@@ -145,11 +162,11 @@ local function draw_value_display(ctx, dl, x, y, w, h, text, hovered, active, di
     border_inner = Style.COLORS.BORDER_HOVER
     border_outer = Style.COLORS.BORDER_OUTER
     text_color = Style.COLORS.TEXT_HOVER
-  elseif hovered then
-    bg_color = Style.COLORS.BG_HOVER
+  elseif hover_alpha > 0.01 then
+    bg_color = Style.RENDER.lerp_color(Style.COLORS.BG_BASE, Style.COLORS.BG_HOVER, hover_alpha)
     border_inner = Style.COLORS.BORDER_HOVER
     border_outer = Style.COLORS.BORDER_OUTER
-    text_color = Style.COLORS.TEXT_HOVER
+    text_color = Style.RENDER.lerp_color(Style.COLORS.TEXT_NORMAL, Style.COLORS.TEXT_HOVER, hover_alpha)
   else
     bg_color = Style.COLORS.BG_BASE
     border_inner = Style.COLORS.BORDER_INNER
@@ -201,6 +218,9 @@ function M.draw(ctx, opts)
   -- Resolve unique ID
   local unique_id = Base.resolve_id(opts, "spinner")
 
+  -- Get instance for animation
+  local inst = get_instance(unique_id)
+
   -- Get position and draw list
   local x, y = Base.get_position(ctx, opts)
   local dl = Base.get_draw_list(ctx, opts)
@@ -209,7 +229,6 @@ function M.draw(ctx, opts)
   local total_w = opts.width or 200
   local h = opts.height or 24
   local button_w = opts.button_width or 24
-  local spacing = opts.spacing or 2
 
   -- Get state
   local current_index = opts.value or 1
@@ -225,14 +244,23 @@ function M.draw(ctx, opts)
   x = math.floor(x + 0.5)
   y = math.floor(y + 0.5)
 
-  -- Calculate layout
-  local value_w = math.floor(total_w - (button_w * 2) - (spacing * 2) + 0.5)
+  -- Calculate overlapping layout (arrows extend over value display edges)
+  local overlap = math.floor(button_w * 0.3 + 0.5)  -- 30% overlap
+  local value_w = math.floor(total_w - button_w * 2 + overlap * 2 + 0.5)
   local left_x = x
-  local value_x = x + button_w + spacing
-  local right_x = x + button_w + spacing + value_w + spacing
+  local value_x = x + button_w - overlap
+  local right_x = x + total_w - button_w
+
+  -- Get delta time for animations
+  local dt = ImGui.GetDeltaTime(ctx)
 
   -- Left arrow button
-  if draw_spinner_button(ctx, unique_id .. "_left", left_x, y, button_w, h, "left", disabled) then
+  local left_clicked, left_hovered, left_active = draw_spinner_button(
+    ctx, unique_id .. "_left", left_x, y, button_w, h, "left", disabled, inst.left_hover_alpha
+  )
+  Base.update_hover_animation(inst, dt, left_hovered, left_active, Base.ANIMATION_SPEED, "left_hover_alpha")
+
+  if left_clicked then
     new_index = new_index - 1
     if new_index < 1 then new_index = #options end
     changed = true
@@ -246,47 +274,39 @@ function M.draw(ctx, opts)
   local value_active = not disabled and ImGui.IsItemActive(ctx)
   local value_clicked = not disabled and ImGui.IsItemClicked(ctx, 0)
 
-  local current_text = tostring(options[current_index] or "")
-  draw_value_display(ctx, dl, value_x, y, value_w, h, current_text, value_hovered, value_active, disabled)
+  Base.update_hover_animation(inst, dt, value_hovered, value_active, Base.ANIMATION_SPEED, "value_hover_alpha")
 
-  -- Popup dropdown
+  local current_text = tostring(options[current_index] or "")
+  draw_value_display(ctx, dl, value_x, y, value_w, h, current_text, inst.value_hover_alpha, value_active, disabled)
+
+  -- Right arrow button
+  local right_clicked, right_hovered, right_active = draw_spinner_button(
+    ctx, unique_id .. "_right", right_x, y, button_w, h, "right", disabled, inst.right_hover_alpha
+  )
+  Base.update_hover_animation(inst, dt, right_hovered, right_active, Base.ANIMATION_SPEED, "right_hover_alpha")
+
+  if right_clicked then
+    new_index = new_index + 1
+    if new_index > #options then new_index = 1 end
+    changed = true
+  end
+
+  -- Popup dropdown using ContextMenu
   if value_clicked then
     ImGui.OpenPopup(ctx, unique_id .. "_popup")
   end
 
-  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 4, 4)
-  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, Style.DROPDOWN_COLORS.popup_bg)
-  ImGui.PushStyleColor(ctx, ImGui.Col_Border, Style.DROPDOWN_COLORS.popup_border)
-
-  if ImGui.BeginPopup(ctx, unique_id .. "_popup") then
+  local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
+  if ContextMenu.begin(ctx, unique_id .. "_popup") then
     for i, value in ipairs(options) do
-      local is_selected = (i == current_index)
       local item_text = tostring(value)
 
-      if is_selected then
-        ImGui.PushStyleColor(ctx, ImGui.Col_Text, Style.DROPDOWN_COLORS.item_text_selected)
-      end
-
-      if ImGui.Selectable(ctx, item_text, is_selected) then
+      if ContextMenu.item(ctx, item_text) then
         new_index = i
         changed = true
       end
-
-      if is_selected then
-        ImGui.PopStyleColor(ctx)
-      end
     end
-    ImGui.EndPopup(ctx)
-  end
-
-  ImGui.PopStyleColor(ctx, 2)
-  ImGui.PopStyleVar(ctx, 1)
-
-  -- Right arrow button
-  if draw_spinner_button(ctx, unique_id .. "_right", right_x, y, button_w, h, "right", disabled) then
-    new_index = new_index + 1
-    if new_index > #options then new_index = 1 end
-    changed = true
+    ContextMenu.end_menu(ctx)
   end
 
   -- Call change callback
@@ -304,6 +324,11 @@ function M.draw(ctx, opts)
     width = total_w,
     height = h,
   })
+end
+
+--- Clean up all spinner instances
+function M.cleanup()
+  Base.cleanup_registry(instances)
 end
 
 return M

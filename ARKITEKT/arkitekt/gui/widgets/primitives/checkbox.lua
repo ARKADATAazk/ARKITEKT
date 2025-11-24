@@ -24,7 +24,7 @@ local DEFAULTS = {
   y = nil,
 
   -- Size
-  size = 18,
+  size = 22,
 
   -- State
   checked = false,
@@ -123,17 +123,17 @@ local function resolve_config(opts)
     border_hover_color = Style.BUTTON_COLORS.border_hover,
     border_active_color = Style.BUTTON_COLORS.border_active,
 
-    -- ON state colors (teal variant)
-    bg_on_color = Style.BUTTON_COLORS.toggle_teal.bg_on,
-    bg_on_hover_color = Style.BUTTON_COLORS.toggle_teal.bg_on_hover,
-    bg_on_active_color = Style.BUTTON_COLORS.toggle_teal.bg_on_active,
+    -- ON state colors (neutral, like radio button)
+    bg_on_color = Style.BUTTON_COLORS.bg_hover,
+    bg_on_hover_color = Style.BUTTON_COLORS.bg_hover,
+    bg_on_active_color = Style.BUTTON_COLORS.bg_active,
     border_outer_on_color = Style.BUTTON_COLORS.border_outer,
-    border_inner_on_color = Style.BUTTON_COLORS.toggle_teal.border_inner_on,
-    border_on_hover_color = Style.BUTTON_COLORS.toggle_teal.border_inner_on_hover,
-    border_on_active_color = Style.BUTTON_COLORS.toggle_teal.border_inner_on_active,
+    border_inner_on_color = Style.BUTTON_COLORS.border_hover,
+    border_on_hover_color = Style.BUTTON_COLORS.border_hover,
+    border_on_active_color = Style.BUTTON_COLORS.border_active,
 
-    -- Checkmark and label
-    check_color = Style.BUTTON_COLORS.toggle_teal.text_on,
+    -- Checkmark and label (neutral gray like radio button)
+    check_color = Colors.hexrgb("#7e7e7e"),
     label_color = Style.COLORS.TEXT_NORMAL,
     label_hover_color = Style.COLORS.TEXT_HOVER,
     label_disabled_color = Style.COLORS.TEXT_DISABLED or Colors.with_alpha(Style.COLORS.TEXT_NORMAL, 0x80),
