@@ -436,19 +436,19 @@ local function test_action_buttons(ctx)
   ImGui.Text(ctx, "Action Buttons:")
   ImGui.Separator(ctx)
   ImGui.Text(ctx, "")
-  
+
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   local dl = ImGui.GetWindowDrawList(ctx)
-  
+
   local actions = {
     { icon = "💾", label = "Save", id = "save" },
     { icon = "📂", label = "Open", id = "open" },
     { icon = "🔄", label = "Refresh", id = "refresh" },
     { icon = "🗑", label = "Delete", id = "delete" },
   }
-  
+
   local x = cursor_x
-  
+
   for _, action in ipairs(actions) do
     Button.draw(
       ctx, dl,
@@ -464,11 +464,46 @@ local function test_action_buttons(ctx)
       },
       "btn_" .. action.id
     )
-    
+
     x = x + 85 + 5
   end
-  
+
   ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + 35)
+end
+
+local function test_unicode_diversity(ctx)
+  ImGui.Text(ctx, "")
+  ImGui.Text(ctx, "Unicode Character Diversity Test:")
+  ImGui.Separator(ctx)
+  ImGui.Text(ctx, "")
+
+  local test_categories = {
+    {"Arrows", "← ↑ → ↓ ↔ ↕ ⇐ ⇑ ⇒ ⇓ ⇔ ⇕ ⬅ ⬆ ➡ ⬇ ↖ ↗ ↘ ↙"},
+    {"Math", "∀ ∂ ∃ ∅ ∇ ∈ ∉ ∋ ∏ ∑ − ∓ √ ∛ ∜ ∞ ∟ ∠ ∡ ∢ ∫ ∬ ∭ ≈ ≠ ≡ ≤ ≥"},
+    {"Symbols", "⋮ ⋯ ⋰ ⋱ • ◦ ▪ ▫ ○ ● ◌ ◍ ◎ ★ ☆ ✓ ✔ ✕ ✖ ✗ ✘"},
+    {"Box Draw", "─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ ═ ║ ╔ ╗ ╚ ╝ ╠ ╣ ╦ ╩ ╬"},
+    {"Greek", "Α Β Γ Δ Ε Ζ Η Θ Ι Κ Λ Μ Ν Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω α β γ δ ε ζ η θ"},
+    {"Currency", "$ ¢ £ ¤ ¥ € ₿ ₹ ₽ ₺ ₩ ₪ ₫ ₱ ₡ ₴"},
+    {"Music", "♩ ♪ ♫ ♬ ♭ ♮ ♯ 𝄞 𝄢"},
+    {"Diacritic", "Ä Ö Ü ä ö ü ß Ñ ñ Ç ç É é È è Ê ê"},
+    {"Punctuat", "‚ „ ' ' " " « » ‹ › ¿ ¡ ‐ – — ― … ′ ″ ‴"},
+    {"Tech", "⌘ ⌥ ⇧ ⌃ ⎋ ⌫ ⌦ ↩ ⏎ ⌨ ⏏ ⏻ ⏼ ⏽"},
+  }
+
+  for _, category in ipairs(test_categories) do
+    ImGui.Text(ctx, string.format("%s:", category[1]))
+    ImGui.SameLine(ctx, 100)
+    ImGui.Text(ctx, category[2])
+  end
+
+  ImGui.Text(ctx, "")
+  ImGui.Text(ctx, "CJK Samples:")
+  ImGui.SameLine(ctx, 100)
+  ImGui.Text(ctx, "你好 こんにちは 안녕하세요")
+
+  ImGui.Text(ctx, "Emoji:")
+  ImGui.SameLine(ctx, 100)
+  ImGui.Text(ctx, "😀 🎵 🎨 🚀 ⭐ 🔥 💡 🎯 📊 ⚙️")
 end
 
 -- ============================================================================
@@ -507,7 +542,8 @@ Shell.run({
     test_media_controls(ctx)
     test_custom_draw_buttons(ctx)
     test_action_buttons(ctx)
-    
+    test_unicode_diversity(ctx)
+
     ImGui.Text(ctx, "")
     ImGui.Separator(ctx)
     ImGui.Text(ctx, string.format("State: %s | Volume: %d%% | Theme: %s", 
