@@ -174,15 +174,23 @@ local function draw_folder_icon(dl, x, y, is_open, color)
 end
 
 local function draw_dotted_line(dl, x1, y1, x2, y2, color, thickness, dot_spacing)
+  -- Round to whole pixels for crisp rendering
+  x1 = math.floor(x1 + 0.5)
+  y1 = math.floor(y1 + 0.5)
+  x2 = math.floor(x2 + 0.5)
+  y2 = math.floor(y2 + 0.5)
+
   local dx = x2 - x1
   local dy = y2 - y1
   local length = math.sqrt(dx * dx + dy * dy)
   local num_dots = math.floor(length / dot_spacing)
 
+  if num_dots == 0 then return end
+
   for i = 0, num_dots do
     local t = i / num_dots
-    local x = x1 + dx * t
-    local y = y1 + dy * t
+    local x = math.floor(x1 + dx * t + 0.5)
+    local y = math.floor(y1 + dy * t + 0.5)
     ImGui.DrawList_AddCircleFilled(dl, x, y, thickness / 2, color)
   end
 end
@@ -293,13 +301,13 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   -- Text or edit field
   if is_editing then
     -- Inline editing
-    ImGui.SetCursorScreenPos(ctx, text_x, y_pos + 1)
-
     InputText.set_text("tree_edit_" .. node.id, tree_state.edit_buffer)
 
     local available_w = item_right - text_x
-    local result = InputText.draw_at_cursor(ctx, {
+    local result = InputText.draw(ctx, {
       id = "tree_edit_" .. node.id,
+      x = text_x,
+      y = y_pos + 1,
       width = available_w,
       height = item_h - 2,
     })
