@@ -86,7 +86,8 @@ local DEFAULTS = {
 -- INSTANCE MANAGEMENT (weak table to prevent memory leaks)
 -- ============================================================================
 
-local instances = Base.create_instance_registry()
+-- Use strong table like combo (weak tables cause GC to clear animation state)
+local instances = {}
 
 local Button = {}
 Button.__index = Button

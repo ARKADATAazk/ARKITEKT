@@ -81,7 +81,8 @@ local DEFAULTS = {
 -- STATE MANAGEMENT (weak table to prevent memory leaks)
 -- ============================================================================
 
-local field_state = Base.create_instance_registry()
+-- Use strong table like combo (weak tables cause GC to clear animation state)
+local field_state = {}
 
 local function get_or_create_state(id)
   if not field_state[id] then
