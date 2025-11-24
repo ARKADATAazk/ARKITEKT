@@ -413,7 +413,8 @@ end
 local STANDARDIZED_WIDGETS = {
   button = true,
   checkbox = true,
-  -- Note: fields and combobox_field still use old API in this context
+  fields = true,
+  -- Note: combobox_field still uses old API
 }
 
 local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side)
