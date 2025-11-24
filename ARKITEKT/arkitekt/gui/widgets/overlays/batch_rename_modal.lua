@@ -925,24 +925,49 @@ function M.apply_pattern_to_items(pattern, count)
   return results
 end
 
--- Legacy API compatibility (singleton pattern for backward compatibility)
-local _legacy_instance = nil
+-- ============================================================================
+-- GLOBAL API (ID-based state tracking, matches ModalDialog pattern)
+-- ============================================================================
 
+-- Track open instances by ID (allows multiple concurrent modals)
+local _open_instances = {}
+
+--- Open a batch rename modal (global API with ID-based tracking)
+--- @param item_count number Number of items to rename
+--- @param on_confirm_callback function Callback when user confirms
+--- @param opts table|nil Options (can include id for multiple concurrent modals)
+--- @return string id The ID of this modal instance
 function M.open(item_count, on_confirm_callback, opts)
-  if not _legacy_instance then
-    _legacy_instance = M.new()
+  opts = opts or {}
+  local id = opts.id or "##batch_rename_modal"
+
+  if not _open_instances[id] then
+    _open_instances[id] = M.new()
   end
-  _legacy_instance:open(item_count, on_confirm_callback, opts)
+  _open_instances[id]:open(item_count, on_confirm_callback, opts)
+  return id
 end
 
-function M.is_open()
-  if not _legacy_instance then return false end
-  return _legacy_instance:should_show()
+--- Check if a batch rename modal is open
+--- @param id string|nil Optional ID (defaults to "##batch_rename_modal")
+--- @return boolean
+function M.is_open(id)
+  id = id or "##batch_rename_modal"
+  if not _open_instances[id] then return false end
+  return _open_instances[id]:should_show()
 end
 
-function M.draw(ctx, item_count, window, shell_state)
-  if not _legacy_instance then return false end
-  return _legacy_instance:draw(ctx, item_count, window, shell_state)
+--- Draw the batch rename modal
+--- @param ctx userdata ImGui context
+--- @param item_count number Number of items
+--- @param window table Window object (for overlay mode)
+--- @param shell_state table Shell state (for fonts)
+--- @param id string|nil Optional ID (defaults to "##batch_rename_modal")
+--- @return boolean handled Whether the modal was drawn
+function M.draw(ctx, item_count, window, shell_state, id)
+  id = id or "##batch_rename_modal"
+  if not _open_instances[id] then return false end
+  return _open_instances[id]:draw(ctx, item_count, window, shell_state)
 end
 
 return M
