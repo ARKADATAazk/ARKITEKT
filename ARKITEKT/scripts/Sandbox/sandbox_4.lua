@@ -1,6 +1,6 @@
 -- @noindex
 -- ARKITEKT/scripts/Sandbox/sandbox_4.lua
--- Custom TreeView Prototype - Full control over rendering
+-- Custom TreeView Prototype v2.1 - Better tree lines + inline edit
 
 local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
 local root_path = script_path:match("(.*)[\\/][^\\/]+[\\/]?$") or script_path
@@ -15,6 +15,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require('imgui')('0.10')
 local Shell = require('arkitekt.app.runtime.shell')
 local Colors = require('arkitekt.core.colors')
+local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
 local hexrgb = Colors.hexrgb
 
 -- ============================================================================
@@ -23,25 +24,27 @@ local hexrgb = Colors.hexrgb
 
 local TREE_CONFIG = {
   -- Dimensions
-  item_height = 17,          -- Exact height per entry
-  indent_width = 22,         -- Indentation per level
-  arrow_size = 5,            -- Arrow width/height
-  arrow_margin = 6,          -- Space after arrow
-  icon_width = 13,           -- Folder icon width
-  icon_margin = 4,           -- Space after icon
+  item_height = 17,
+  indent_width = 22,
+  arrow_size = 5,
+  arrow_margin = 6,
+  icon_width = 13,
+  icon_margin = 4,
 
   -- Padding
-  padding_left = 4,          -- Left padding before first level
-  padding_top = 4,           -- Top padding in container
-  padding_right = 4,         -- Right padding
-  padding_bottom = 4,        -- Bottom padding
-  item_padding_left = 2,     -- Extra padding before text
-  item_padding_right = 4,    -- Padding after text
+  padding_left = 4,
+  padding_top = 4,
+  padding_right = 4,
+  padding_bottom = 4,
+  item_padding_left = 2,
+  item_padding_right = 4,
 
   -- Visual features
-  show_tree_lines = true,    -- Show connecting lines
-  show_alternating_bg = false, -- Alternating row backgrounds
-  tree_line_thickness = 1,   -- Line thickness
+  show_tree_lines = true,
+  show_alternating_bg = false,
+  tree_line_thickness = 1,
+  tree_line_style = "dotted", -- "solid" or "dotted"
+  tree_line_dot_spacing = 2,
 
   -- Colors
   bg_hover = hexrgb("#2E2E2EFF"),
@@ -53,7 +56,7 @@ local TREE_CONFIG = {
   arrow_color = hexrgb("#B0B0B0FF"),
   icon_color = hexrgb("#888888FF"),
   icon_open_color = hexrgb("#9A9A9AFF"),
-  tree_line_color = hexrgb("#404040FF"),
+  tree_line_color = hexrgb("#505050FF"),
 }
 
 -- ============================================================================
@@ -109,11 +112,26 @@ local mock_tree = {
   }
 }
 
+-- Find node by ID for renaming
+local function find_node_by_id(nodes, id)
+  for _, node in ipairs(nodes) do
+    if node.id == id then return node end
+    if node.children then
+      local found = find_node_by_id(node.children, id)
+      if found then return found end
+    end
+  end
+  return nil
+end
+
 local tree_state = {
   open = { root = true, src = true, docs = true, components = true, utils = true, guides = true },
   selected = nil,
   hovered = nil,
   scroll_y = 0,
+  editing = nil,
+  edit_buffer = "",
+  edit_focus_set = false,
 }
 
 -- ============================================================================
@@ -128,13 +146,11 @@ local function draw_arrow(dl, x, y, is_open, color)
   y = math.floor(y + 0.5)
 
   if is_open then
-    -- Down-pointing triangle
     local x1, y1 = x, y
     local x2, y2 = x + size, y
     local x3, y3 = math.floor(x + size / 2 + 0.5), y + size
     ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, color)
   else
-    -- Right-pointing triangle
     local x1, y1 = x, y
     local x2, y2 = x, y + size
     local x3, y3 = x + size, y + size / 2
@@ -153,10 +169,22 @@ local function draw_folder_icon(dl, x, y, is_open, color)
   x = math.floor(x + 0.5)
   y = math.floor(y + 0.5)
 
-  -- Draw tab
   ImGui.DrawList_AddRectFilled(dl, x, y, x + tab_w, y + tab_h, color, 0)
-  -- Draw main body
   ImGui.DrawList_AddRectFilled(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, color, 0)
+end
+
+local function draw_dotted_line(dl, x1, y1, x2, y2, color, thickness, dot_spacing)
+  local dx = x2 - x1
+  local dy = y2 - y1
+  local length = math.sqrt(dx * dx + dy * dy)
+  local num_dots = math.floor(length / dot_spacing)
+
+  for i = 0, num_dots do
+    local t = i / num_dots
+    local x = x1 + dx * t
+    local y = y1 + dy * t
+    ImGui.DrawList_AddCircleFilled(dl, x, y, thickness / 2, color)
+  end
 end
 
 local function draw_tree_lines(dl, x, y, depth, item_h, has_children, is_last_child, parent_lines)
@@ -164,30 +192,51 @@ local function draw_tree_lines(dl, x, y, depth, item_h, has_children, is_last_ch
 
   local cfg = TREE_CONFIG
   local line_color = cfg.tree_line_color
-  local line_x = x + cfg.indent_width / 2
+  local is_dotted = cfg.tree_line_style == "dotted"
+
+  -- Better line positioning - align with arrow center
+  local base_x = x - cfg.indent_width / 2
   local mid_y = y + item_h / 2
 
-  -- Draw vertical line from parent (if not root level)
   if depth > 0 then
-    -- Draw horizontal line to item
-    local h_line_start = line_x - cfg.indent_width / 2
-    local h_line_end = line_x + cfg.arrow_size + cfg.arrow_margin - 2
-    ImGui.DrawList_AddLine(dl, h_line_start, mid_y, h_line_end, mid_y, line_color, cfg.tree_line_thickness)
+    -- Horizontal line to item
+    local h_start_x = base_x
+    local h_end_x = x + cfg.arrow_size / 2
 
-    -- Draw vertical line through this level (unless last child)
-    if not is_last_child then
-      ImGui.DrawList_AddLine(dl, h_line_start, y, h_line_start, y + item_h, line_color, cfg.tree_line_thickness)
+    if is_dotted then
+      draw_dotted_line(dl, h_start_x, mid_y, h_end_x, mid_y, line_color, cfg.tree_line_thickness, cfg.tree_line_dot_spacing)
     else
-      -- Only draw to mid point if last child
-      ImGui.DrawList_AddLine(dl, h_line_start, y, h_line_start, mid_y, line_color, cfg.tree_line_thickness)
+      ImGui.DrawList_AddLine(dl, h_start_x, mid_y, h_end_x, mid_y, line_color, cfg.tree_line_thickness)
+    end
+
+    -- Vertical line
+    if not is_last_child then
+      local v_start_y = y
+      local v_end_y = y + item_h
+      if is_dotted then
+        draw_dotted_line(dl, base_x, v_start_y, base_x, v_end_y, line_color, cfg.tree_line_thickness, cfg.tree_line_dot_spacing)
+      else
+        ImGui.DrawList_AddLine(dl, base_x, v_start_y, base_x, v_end_y, line_color, cfg.tree_line_thickness)
+      end
+    else
+      -- Only to mid point if last child
+      if is_dotted then
+        draw_dotted_line(dl, base_x, y, base_x, mid_y, line_color, cfg.tree_line_thickness, cfg.tree_line_dot_spacing)
+      else
+        ImGui.DrawList_AddLine(dl, base_x, y, base_x, mid_y, line_color, cfg.tree_line_thickness)
+      end
     end
   end
 
-  -- Draw vertical lines for all parent levels
+  -- Parent level vertical lines
   for i = 1, depth - 1 do
-    if parent_lines[i] then  -- Only if parent has more siblings
-      local parent_line_x = x - (depth - i) * cfg.indent_width + cfg.indent_width / 2
-      ImGui.DrawList_AddLine(dl, parent_line_x, y, parent_line_x, y + item_h, line_color, cfg.tree_line_thickness)
+    if parent_lines[i] then
+      local parent_x = base_x - (depth - i) * cfg.indent_width
+      if is_dotted then
+        draw_dotted_line(dl, parent_x, y, parent_x, y + item_h, line_color, cfg.tree_line_thickness, cfg.tree_line_dot_spacing)
+      else
+        ImGui.DrawList_AddLine(dl, parent_x, y, parent_x, y + item_h, line_color, cfg.tree_line_thickness)
+      end
     end
   end
 end
@@ -200,30 +249,26 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   local cfg = TREE_CONFIG
   local item_h = cfg.item_height
 
-  -- Calculate positions
   local indent_x = visible_x + cfg.padding_left + depth * cfg.indent_width
   local arrow_x = indent_x
   local arrow_y = y_pos + (item_h - cfg.arrow_size) / 2
   local icon_x = arrow_x + cfg.arrow_size + cfg.arrow_margin
-  local icon_y = y_pos + (item_h - 9) / 2  -- 9 = total icon height (tab + body)
+  local icon_y = y_pos + (item_h - 9) / 2
   local text_x = icon_x + cfg.icon_width + cfg.icon_margin + cfg.item_padding_left
   local text_y = y_pos + (item_h - ImGui.CalcTextSize(ctx, "Tg")) / 2
 
   local item_right = visible_x + visible_w - cfg.padding_right
 
-  -- Check hover
   local mx, my = ImGui.GetMousePos(ctx)
   local is_hovered = mx >= visible_x and mx < visible_x + visible_w and my >= y_pos and my < y_pos + item_h
-
-  -- Check selection
   local is_selected = tree_state.selected == node.id
+  local is_editing = tree_state.editing == node.id
 
-  -- Draw alternating background
+  -- Backgrounds
   if cfg.show_alternating_bg and row_index % 2 == 0 then
     ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, cfg.bg_alternate)
   end
 
-  -- Draw background
   if is_selected then
     local bg_color = is_hovered and cfg.bg_selected_hover or cfg.bg_selected
     ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, bg_color)
@@ -231,54 +276,92 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, cfg.bg_hover)
   end
 
-  -- Draw tree lines
+  -- Tree lines
   local has_children = node.children and #node.children > 0
   draw_tree_lines(dl, indent_x, y_pos, depth, item_h, has_children, is_last_child, parent_lines)
 
-  -- Draw arrow if has children
+  -- Arrow
   local is_open = tree_state.open[node.id]
-
   if has_children then
     draw_arrow(dl, arrow_x, arrow_y, is_open, cfg.arrow_color)
   end
 
-  -- Draw folder icon
+  -- Icon
   local icon_color = node.color or (is_open and cfg.icon_open_color or cfg.icon_color)
   draw_folder_icon(dl, icon_x, icon_y, is_open, icon_color)
 
-  -- Draw text
-  local text_color = (is_hovered or is_selected) and cfg.text_hover or cfg.text_normal
-  local text_w = ImGui.CalcTextSize(ctx, node.name)
-  local available_w = item_right - text_x
+  -- Text or edit field
+  if is_editing then
+    -- Inline editing
+    ImGui.SetCursorScreenPos(ctx, text_x, y_pos + 1)
 
-  -- Truncate if needed
-  if text_w > available_w then
-    local truncated = node.name
-    while text_w > available_w - 10 and #truncated > 3 do
-      truncated = truncated:sub(1, -2)
-      text_w = ImGui.CalcTextSize(ctx, truncated .. "...")
+    InputText.set_text("tree_edit_" .. node.id, tree_state.edit_buffer)
+
+    local available_w = item_right - text_x
+    local result = InputText.draw_at_cursor(ctx, {
+      id = "tree_edit_" .. node.id,
+      width = available_w,
+      height = item_h - 2,
+    })
+
+    tree_state.edit_buffer = InputText.get_text("tree_edit_" .. node.id) or tree_state.edit_buffer
+
+    if not tree_state.edit_focus_set then
+      ImGui.SetKeyboardFocusHere(ctx, -1)
+      tree_state.edit_focus_set = true
     end
-    ImGui.DrawList_AddText(dl, text_x, text_y, text_color, truncated .. "...")
+
+    -- Handle enter/escape
+    if ImGui.IsKeyPressed(ctx, ImGui.Key_Enter) or ImGui.IsKeyPressed(ctx, ImGui.Key_KeypadEnter) then
+      if tree_state.edit_buffer ~= "" then
+        node.name = tree_state.edit_buffer
+      end
+      tree_state.editing = nil
+      tree_state.edit_focus_set = false
+    elseif ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+      tree_state.editing = nil
+      tree_state.edit_focus_set = false
+    end
   else
-    ImGui.DrawList_AddText(dl, text_x, text_y, text_color, node.name)
-  end
+    -- Normal text display
+    local text_color = (is_hovered or is_selected) and cfg.text_hover or cfg.text_normal
+    local text_w = ImGui.CalcTextSize(ctx, node.name)
+    local available_w = item_right - text_x
 
-  -- Handle clicks
-  ImGui.SetCursorScreenPos(ctx, visible_x, y_pos)
-  ImGui.InvisibleButton(ctx, "##tree_item_" .. node.id, visible_w, item_h)
-
-  if ImGui.IsItemClicked(ctx, 0) then
-    -- Check if clicked on arrow area
-    if has_children and mx >= arrow_x and mx < arrow_x + cfg.arrow_size + cfg.arrow_margin then
-      -- Toggle expand/collapse
-      tree_state.open[node.id] = not tree_state.open[node.id]
+    if text_w > available_w then
+      local truncated = node.name
+      while text_w > available_w - 10 and #truncated > 3 do
+        truncated = truncated:sub(1, -2)
+        text_w = ImGui.CalcTextSize(ctx, truncated .. "...")
+      end
+      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, truncated .. "...")
     else
-      -- Select item
-      tree_state.selected = node.id
+      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, node.name)
+    end
+
+    -- Invisible button for interaction
+    ImGui.SetCursorScreenPos(ctx, visible_x, y_pos)
+    ImGui.InvisibleButton(ctx, "##tree_item_" .. node.id, visible_w, item_h)
+
+    if ImGui.IsItemClicked(ctx, 0) then
+      if has_children and mx >= arrow_x and mx < arrow_x + cfg.arrow_size + cfg.arrow_margin then
+        tree_state.open[node.id] = not tree_state.open[node.id]
+      else
+        tree_state.selected = node.id
+      end
+    end
+
+    -- Double-click or F2 to edit
+    if is_selected then
+      if (ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0)) or
+         ImGui.IsKeyPressed(ctx, ImGui.Key_F2) then
+        tree_state.editing = node.id
+        tree_state.edit_buffer = node.name
+        tree_state.edit_focus_set = false
+      end
     end
   end
 
-  -- Update hovered state
   if is_hovered then
     tree_state.hovered = node.id
   end
@@ -286,14 +369,12 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   local next_y = y_pos + item_h
   local next_row = row_index + 1
 
-  -- Render children if open
   if is_open and has_children then
-    -- Update parent lines for children
     local child_parent_lines = {}
     for i = 1, depth do
       child_parent_lines[i] = parent_lines[i]
     end
-    child_parent_lines[depth + 1] = not is_last_child  -- This level continues if not last child
+    child_parent_lines[depth + 1] = not is_last_child
 
     for i, child in ipairs(node.children) do
       local is_last = (i == #node.children)
@@ -308,11 +389,9 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
   local dl = ImGui.GetWindowDrawList(ctx)
   local cfg = TREE_CONFIG
 
-  -- Draw container background
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, hexrgb("#1A1A1AFF"))
   ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, hexrgb("#000000DD"))
 
-  -- Handle mouse wheel for scrolling
   if ImGui.IsWindowHovered(ctx) then
     local wheel = ImGui.GetMouseWheel(ctx)
     if wheel ~= 0 then
@@ -321,7 +400,6 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
     end
   end
 
-  -- Clip rendering to container
   ImGui.DrawList_PushClipRect(dl, x, y, x + w, y + h, true)
 
   local current_y = y + cfg.padding_top - tree_state.scroll_y
@@ -367,7 +445,7 @@ end
 
 Shell.run({
   title = "Custom TreeView Prototype",
-  version = "v2.0.0",
+  version = "v2.1.0",
   version_color = hexrgb("#888888FF"),
   initial_pos = { x = 120, y = 120 },
   initial_size = { w = 700, h = 700 },
@@ -376,11 +454,10 @@ Shell.run({
   icon_size = 18,
 
   draw = function(ctx, shell_state)
-    ImGui.Text(ctx, "Custom TreeView - Full Control Demo")
-    ImGui.Text(ctx, "Complete pixel-perfect control with all features")
+    ImGui.Text(ctx, "Custom TreeView v2.1 - Better Lines + Inline Edit")
+    ImGui.Text(ctx, "Double-click or F2 to rename • Enter/Esc to confirm/cancel")
     ImGui.Separator(ctx)
 
-    -- Left column: Config
     local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
     local left_width = 280
 
@@ -396,13 +473,26 @@ Shell.run({
     TREE_CONFIG.padding_left = slider_int(ctx, "Padding Left", TREE_CONFIG.padding_left, 0, 16, 200)
     TREE_CONFIG.padding_top = slider_int(ctx, "Padding Top", TREE_CONFIG.padding_top, 0, 16, 200)
     TREE_CONFIG.item_padding_left = slider_int(ctx, "Item Pad L", TREE_CONFIG.item_padding_left, 0, 8, 200)
-    TREE_CONFIG.item_padding_right = slider_int(ctx, "Item Pad R", TREE_CONFIG.item_padding_right, 0, 12, 200)
 
-    config_section(ctx, "Visual Features")
-    TREE_CONFIG.show_tree_lines = checkbox(ctx, "Show Tree Lines", TREE_CONFIG.show_tree_lines)
+    config_section(ctx, "Tree Lines")
+    TREE_CONFIG.show_tree_lines = checkbox(ctx, "Show Lines", TREE_CONFIG.show_tree_lines)
     if TREE_CONFIG.show_tree_lines then
       ImGui.Indent(ctx, 20)
-      TREE_CONFIG.tree_line_thickness = slider_int(ctx, "Line Thick", TREE_CONFIG.tree_line_thickness, 1, 3, 160)
+      TREE_CONFIG.tree_line_thickness = slider_int(ctx, "Thickness", TREE_CONFIG.tree_line_thickness, 1, 3, 160)
+
+      ImGui.Text(ctx, "Style:")
+      ImGui.SameLine(ctx)
+      if ImGui.RadioButton(ctx, "Solid##style", TREE_CONFIG.tree_line_style == "solid") then
+        TREE_CONFIG.tree_line_style = "solid"
+      end
+      ImGui.SameLine(ctx)
+      if ImGui.RadioButton(ctx, "Dotted##style", TREE_CONFIG.tree_line_style == "dotted") then
+        TREE_CONFIG.tree_line_style = "dotted"
+      end
+
+      if TREE_CONFIG.tree_line_style == "dotted" then
+        TREE_CONFIG.tree_line_dot_spacing = slider_int(ctx, "Dot Spacing", TREE_CONFIG.tree_line_dot_spacing, 1, 5, 160)
+      end
       ImGui.Unindent(ctx, 20)
     end
     TREE_CONFIG.show_alternating_bg = checkbox(ctx, "Alternating Rows", TREE_CONFIG.show_alternating_bg)
@@ -429,7 +519,6 @@ Shell.run({
 
     ImGui.EndChild(ctx)
 
-    -- Right column: Tree view
     ImGui.SameLine(ctx)
 
     local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
@@ -440,14 +529,12 @@ Shell.run({
 
     ImGui.SetCursorScreenPos(ctx, tree_x, tree_y + tree_h + 4)
 
-    -- Status
     ImGui.Separator(ctx)
-    ImGui.Text(ctx, string.format("Selected: %s  |  Hovered: %s  |  Scroll: %d",
+    ImGui.Text(ctx, string.format("Selected: %s  |  Editing: %s  |  Hovered: %s",
       tree_state.selected or "None",
-      tree_state.hovered or "None",
-      math.floor(tree_state.scroll_y)))
+      tree_state.editing or "None",
+      tree_state.hovered or "None"))
 
-    -- Reset hovered state each frame
     tree_state.hovered = nil
   end,
 })
