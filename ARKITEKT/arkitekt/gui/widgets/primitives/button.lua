@@ -204,13 +204,12 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   local is_disabled = config.disabled or false
   local is_toggled = config.is_toggled or false
 
-  -- Create interaction area FIRST (proper ImGui pattern)
-  ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, "##" .. unique_id, width, height)
-
-  -- Check hover/active state from ImGui item
-  local is_hovered = not is_disabled and not config.is_blocking and ImGui.IsItemHovered(ctx)
-  local is_active = not is_disabled and not config.is_blocking and ImGui.IsItemActive(ctx)
+  -- Check hover state using mouse position (like combo does)
+  local mx, my = ImGui.GetMousePos(ctx)
+  local is_hovered = not is_disabled and not config.is_blocking and
+                     mx >= x and mx < x + width and my >= y and my < y + height
+  local is_active = not is_disabled and not config.is_blocking and
+                    is_hovered and ImGui.IsMouseDown(ctx, 0)
 
   -- Update animation
   local dt = ImGui.GetDeltaTime(ctx)
@@ -268,7 +267,11 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
     end
   end
 
-  -- Check for clicks (already have InvisibleButton from above)
+  -- Create interaction area LAST (after all drawing, like combo does)
+  ImGui.SetCursorScreenPos(ctx, x, y)
+  ImGui.InvisibleButton(ctx, "##" .. unique_id, width, height)
+
+  -- Check for clicks
   local clicked = not is_disabled and not config.is_blocking and ImGui.IsItemClicked(ctx, 0)
   local right_clicked = not is_disabled and not config.is_blocking and ImGui.IsItemClicked(ctx, 1)
 

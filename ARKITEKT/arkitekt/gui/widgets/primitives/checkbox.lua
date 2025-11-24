@@ -150,13 +150,12 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, uniq
   local is_disabled = config.disabled or false
   local is_blocking = config.is_blocking or false
 
-  -- Create interaction area FIRST (proper ImGui pattern)
-  ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, "##" .. unique_id, total_width, size)
-
-  -- Check hover/active state from ImGui item
-  local is_hovered = not is_disabled and not is_blocking and ImGui.IsItemHovered(ctx)
-  local is_active = not is_disabled and not is_blocking and ImGui.IsItemActive(ctx)
+  -- Check hover state using mouse position (like combo does)
+  local mx, my = ImGui.GetMousePos(ctx)
+  local is_hovered = not is_disabled and not is_blocking and
+                     mx >= x and mx < x + total_width and my >= y and my < y + size
+  local is_active = not is_disabled and not is_blocking and
+                    is_hovered and ImGui.IsMouseDown(ctx, 0)
 
   -- Update animation
   local dt = ImGui.GetDeltaTime(ctx)
@@ -251,7 +250,11 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, uniq
     ImGui.DrawList_AddLine(dl, mx, my, ex, ey, check_color, 2)
   end
 
-  -- Check for clicks (InvisibleButton was already created)
+  -- Create interaction area LAST (after all drawing, like combo does)
+  ImGui.SetCursorScreenPos(ctx, x, y)
+  ImGui.InvisibleButton(ctx, "##" .. unique_id, total_width, size)
+
+  -- Check for clicks
   local clicked = not is_disabled and not is_blocking and ImGui.IsItemClicked(ctx, 0)
 
   return is_hovered, is_active, clicked
