@@ -51,18 +51,17 @@ function M.load(ImGui, ctx, opts)
 
   -- Find fonts directory
   local fonts_dir = find_fonts_dir()
-  local inter_regular = fonts_dir .. 'Inter_18pt-Regular.ttf'
-  local inter_semibold = fonts_dir .. 'Inter_18pt-SemiBold.ttf'
   local mono = fonts_dir .. 'JetBrainsMono-Regular.ttf'
   local orbitron = fonts_dir .. 'Orbitron-Bold.ttf'
   local remixicon = fonts_dir .. 'remixicon.ttf'
 
-  -- Create fonts - use Inter for consistent cross-platform display with full Unicode coverage
+  -- Use system sans-serif for full Unicode coverage (arrows, symbols, etc.)
+  -- System fonts automatically include comprehensive character sets
   local fonts = {
-    default = file_exists(inter_regular) and ImGui.CreateFontFromFile(inter_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0),
+    default = ImGui.CreateFont('sans-serif', 0),
     default_size = default_size,
 
-    title = file_exists(inter_semibold) and ImGui.CreateFontFromFile(inter_semibold, 0, 0) or ImGui.CreateFont('sans-serif', 0),
+    title = ImGui.CreateFont('sans-serif', ImGui.FontFlags_Bold()),
     title_size = title_size,
 
     monospace = file_exists(mono) and ImGui.CreateFontFromFile(mono, 0, 0) or ImGui.CreateFont('monospace', 0),
