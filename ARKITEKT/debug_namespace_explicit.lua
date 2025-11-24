@@ -18,6 +18,10 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 reaper.ShowConsoleMsg("Package path set\n\n")
 
+-- Clear module cache to ensure fresh load
+package.loaded['arkitekt'] = nil
+reaper.ShowConsoleMsg("Module cache cleared\n\n")
+
 -- Test 1: Load namespace itself
 reaper.ShowConsoleMsg("Test 1: Loading ark namespace...\n")
 
@@ -53,7 +57,9 @@ if not success then
 end
 
 local ark = result
-reaper.ShowConsoleMsg("✓ Namespace loaded successfully\n\n")
+reaper.ShowConsoleMsg("✓ Namespace loaded successfully\n")
+reaper.ShowConsoleMsg("   Type: " .. type(ark) .. "\n")
+reaper.ShowConsoleMsg("   Value: " .. tostring(ark) .. "\n\n")
 
 -- Test 2: Access Colors (no dependencies on other namespace modules)
 reaper.ShowConsoleMsg("Test 2: Loading ark.Colors...\n")
