@@ -1,6 +1,6 @@
 -- @noindex
--- ARKITEKT/scripts/Sandbox/sandbox_button_test.lua
--- Button Component Test - Standalone and integrated usage
+-- ARKITEKT/scripts/Sandbox/sandbox_4.lua
+-- Custom TreeView Prototype - Full control over rendering
 
 local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
 local root_path = script_path:match("(.*)[\\/][^\\/]+[\\/]?$") or script_path
@@ -14,503 +14,224 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 local ImGui = require('imgui')('0.10')
 local Shell = require('arkitekt.app.runtime.shell')
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local Style = require('arkitekt.gui.style.defaults')
 local Colors = require('arkitekt.core.colors')
-
 local hexrgb = Colors.hexrgb
 
 -- ============================================================================
--- MOCK STATE
+-- CUSTOM TREEVIEW CONFIG
 -- ============================================================================
 
-local mock_state = {
-  click_count = 0,
-  last_clicked = "None",
-  selected_option = "Option A",
-  progress = 0.0,
-  is_playing = false,
-  volume = 0.75,
-  theme = "dark",
+local TREE_CONFIG = {
+  item_height = 17,          -- Exact height per entry
+  indent_width = 22,         -- Indentation per level
+  arrow_size = 5,            -- Arrow width/height
+  arrow_margin = 6,          -- Space after arrow
+  icon_width = 13,           -- Folder icon width
+  icon_margin = 4,           -- Space after icon
+  text_padding_left = 2,     -- Padding before text
+
+  -- Colors
+  bg_hover = hexrgb("#2E2E2EFF"),
+  bg_selected = hexrgb("#393939FF"),
+  bg_selected_hover = hexrgb("#3E3E3EFF"),
+  text_normal = hexrgb("#CCCCCCFF"),
+  text_hover = hexrgb("#FFFFFFFF"),
+  arrow_color = hexrgb("#B0B0B0FF"),
+  icon_color = hexrgb("#888888FF"),
+  icon_open_color = hexrgb("#9A9A9AFF"),
 }
 
 -- ============================================================================
--- BUTTON TESTING SECTIONS
+-- MOCK DATA
 -- ============================================================================
 
-local function test_basic_buttons(ctx)
-  ImGui.Text(ctx, "Basic Buttons:")
-  ImGui.Separator(ctx)
-  ImGui.Text(ctx, "")
-
-  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
-
-  -- Standard button
-  Button.draw(ctx, {
-    id = "btn_standard",
-    x = cursor_x,
-    y = cursor_y,
-    width = 100,
-    height = 28,
-    draw_list = dl,
-    label = "Click Me",
-    on_click = function()
-      mock_state.click_count = mock_state.click_count + 1
-      mock_state.last_clicked = "Standard"
-    end,
-    tooltip = "Standard button"
-  })
-
-  -- With icon
-  Button.draw(ctx, {
-    id = "btn_icon",
-    x = cursor_x + 110,
-    y = cursor_y,
-    width = 110,
-    height = 28,
-    draw_list = dl,
-    icon = "⭐",
-    label = "Starred",
-    on_click = function()
-      mock_state.click_count = mock_state.click_count + 1
-      mock_state.last_clicked = "Starred"
-    end,
-    tooltip = "Button with icon"
-  })
-
-  -- Icon only
-  Button.draw(ctx, {
-    id = "btn_settings",
-    x = cursor_x + 230,
-    y = cursor_y,
-    width = 32,
-    height = 28,
-    draw_list = dl,
-    icon = "⚙",
-    on_click = function()
-      mock_state.click_count = mock_state.click_count + 1
-      mock_state.last_clicked = "Settings"
-    end,
-    tooltip = "Settings (icon only)"
-  })
-
-  ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + 35)
-
-  ImGui.Text(ctx, string.format("Clicks: %d", mock_state.click_count))
-  ImGui.Text(ctx, string.format("Last clicked: %s", mock_state.last_clicked))
-end
-
-local function test_styled_buttons(ctx)
-  ImGui.Text(ctx, "")
-  ImGui.Text(ctx, "Styled Buttons:")
-  ImGui.Separator(ctx)
-  ImGui.Text(ctx, "")
-
-  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
-
-  -- Success button
-  Button.draw(ctx, {
-    id = "btn_success",
-    x = cursor_x,
-    y = cursor_y,
-    width = 100,
-    height = 28,
-    draw_list = dl,
-    label = "Success",
-    bg_color = hexrgb("#1E3A1EFF"),
-    bg_hover_color = hexrgb("#254525FF"),
-    bg_active_color = hexrgb("#2A5A2AFF"),
-    text_color = Style.COLORS.ACCENT_SUCCESS,
-    text_hover_color = hexrgb("#FFFFFFFF"),
-    border_inner_color = hexrgb("#4CAF5033"),
-    border_hover_color = hexrgb("#4CAF5066"),
-    on_click = function()
-      mock_state.last_clicked = "Success"
-    end,
-    tooltip = "Success style"
-  })
-
-  -- Warning button
-  Button.draw(ctx, {
-    id = "btn_warning",
-    x = cursor_x + 110,
-    y = cursor_y,
-    width = 100,
-    height = 28,
-    draw_list = dl,
-    label = "Warning",
-    bg_color = hexrgb("#3A2E1EFF"),
-    bg_hover_color = hexrgb("#453525FF"),
-    bg_active_color = hexrgb("#5A4525FF"),
-    text_color = Style.COLORS.ACCENT_WARNING,
-    text_hover_color = hexrgb("#FFFFFFFF"),
-    border_inner_color = hexrgb("#FFA72633"),
-    border_hover_color = hexrgb("#FFA72666"),
-    on_click = function()
-      mock_state.last_clicked = "Warning"
-    end,
-    tooltip = "Warning style"
-  })
-
-  -- Danger button
-  Button.draw(ctx, {
-    id = "btn_danger",
-    x = cursor_x + 220,
-    y = cursor_y,
-    width = 100,
-    height = 28,
-    draw_list = dl,
-    label = "Danger",
-    bg_color = hexrgb("#3A1E1EFF"),
-    bg_hover_color = hexrgb("#452525FF"),
-    bg_active_color = hexrgb("#5A3030FF"),
-    text_color = Style.COLORS.ACCENT_DANGER,
-    text_hover_color = hexrgb("#FFFFFFFF"),
-    border_inner_color = hexrgb("#EF535033"),
-    border_hover_color = hexrgb("#EF535066"),
-    on_click = function()
-      mock_state.last_clicked = "Danger"
-    end,
-    tooltip = "Danger style"
-  })
-
-  ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + 35)
-end
-
-local function test_rounded_buttons(ctx)
-  ImGui.Text(ctx, "")
-  ImGui.Text(ctx, "Rounded Buttons:")
-  ImGui.Separator(ctx)
-  ImGui.Text(ctx, "")
-
-  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
-
-  -- Slightly rounded
-  Button.draw(ctx, {
-    id = "btn_round_4",
-    x = cursor_x,
-    y = cursor_y,
-    width = 100,
-    height = 28,
-    draw_list = dl,
-    label = "Rounded 4",
-    rounding = 4,
-    on_click = function()
-      mock_state.last_clicked = "Rounded 4"
-    end
-  })
-
-  -- Medium rounded
-  Button.draw(ctx, {
-    id = "btn_round_8",
-    x = cursor_x + 110,
-    y = cursor_y,
-    width = 100,
-    height = 28,
-    draw_list = dl,
-    label = "Rounded 8",
-    rounding = 8,
-    on_click = function()
-      mock_state.last_clicked = "Rounded 8"
-    end
-  })
-
-  -- Pill shaped
-  Button.draw(ctx, {
-    id = "btn_pill",
-    x = cursor_x + 220,
-    y = cursor_y,
-    width = 100,
-    height = 28,
-    draw_list = dl,
-    label = "Pill",
-    rounding = 14,
-    on_click = function()
-      mock_state.last_clicked = "Pill"
-    end
-  })
-
-  ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + 35)
-end
-
-local function test_button_group(ctx)
-  ImGui.Text(ctx, "")
-  ImGui.Text(ctx, "Button Group (Radio):")
-  ImGui.Separator(ctx)
-  ImGui.Text(ctx, "")
-
-  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
-
-  local options = {"Option A", "Option B", "Option C"}
-  local x = cursor_x
-
-  for i, option in ipairs(options) do
-    local is_selected = mock_state.selected_option == option
-
-    Button.draw(ctx, {
-      id = "btn_option_" .. i,
-      x = x,
-      y = cursor_y,
-      width = 80,
-      height = 28,
-      draw_list = dl,
-      label = option,
-      bg_color = is_selected and Style.COLORS.BG_ACTIVE or Style.COLORS.BG_BASE,
-      bg_hover_color = is_selected and Style.COLORS.BG_ACTIVE or Style.COLORS.BG_HOVER,
-      bg_active_color = Style.COLORS.BG_ACTIVE,
-      border_inner_color = is_selected and Style.COLORS.BORDER_FOCUS or Style.COLORS.BORDER_INNER,
-      text_color = is_selected and Style.COLORS.TEXT_HOVER or Style.COLORS.TEXT_NORMAL,
-      on_click = function()
-        mock_state.selected_option = option
-      end
-    })
-
-    x = x + 80 + 2
-  end
-
-  ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + 35)
-  ImGui.Text(ctx, string.format("Selected: %s", mock_state.selected_option))
-end
-
-local function test_media_controls(ctx)
-  ImGui.Text(ctx, "")
-  ImGui.Text(ctx, "Media Controls:")
-  ImGui.Separator(ctx)
-  ImGui.Text(ctx, "")
-
-  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
-
-  -- Play/Pause
-  Button.draw(ctx, {
-    id = "btn_play_pause",
-    x = cursor_x,
-    y = cursor_y,
-    width = 40,
-    height = 32,
-    draw_list = dl,
-    icon = mock_state.is_playing and "⏸" or "▶",
-    rounding = 4,
-    on_click = function()
-      mock_state.is_playing = not mock_state.is_playing
-    end,
-    tooltip = mock_state.is_playing and "Pause" or "Play"
-  })
-
-  -- Stop
-  Button.draw(ctx, {
-    id = "btn_stop",
-    x = cursor_x + 45,
-    y = cursor_y,
-    width = 40,
-    height = 32,
-    draw_list = dl,
-    icon = "⏹",
-    rounding = 4,
-    on_click = function()
-      mock_state.is_playing = false
-      mock_state.progress = 0.0
-    end,
-    tooltip = "Stop"
-  })
-
-  -- Skip Forward
-  Button.draw(ctx, {
-    id = "btn_skip",
-    x = cursor_x + 90,
-    y = cursor_y,
-    width = 40,
-    height = 32,
-    draw_list = dl,
-    icon = "⏭",
-    rounding = 4,
-    on_click = function()
-      mock_state.progress = math.min(1.0, mock_state.progress + 0.1)
-    end,
-    tooltip = "Skip Forward"
-  })
-
-  ImGui.SetCursorScreenPos(ctx, cursor_x + 140, cursor_y + 8)
-  ImGui.Text(ctx, string.format("Progress: %d%%", mock_state.progress * 100))
-
-  ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + 40)
-end
-
-local function test_custom_draw_buttons(ctx)
-  ImGui.Text(ctx, "")
-  ImGui.Text(ctx, "Custom Draw Functions:")
-  ImGui.Separator(ctx)
-  ImGui.Text(ctx, "")
-
-  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
-
-  -- Progress button
-  Button.draw(ctx, {
-    id = "btn_progress",
-    x = cursor_x,
-    y = cursor_y,
-    width = 150,
-    height = 32,
-    draw_list = dl,
-    custom_draw = function(ctx, dl, x, y, w, h, is_hovered, is_active, text_color)
-      -- Draw progress bar background
-      local progress = mock_state.progress
-      local bar_width = w * progress
-
-      ImGui.DrawList_AddRectFilled(
-        dl,
-        x, y,
-        x + bar_width, y + h,
-        Style.COLORS.ACCENT_PRIMARY,
-        0
-      )
-
-      -- Draw text
-      local text = string.format("%d%%", progress * 100)
-      local text_w = ImGui.CalcTextSize(ctx, text)
-      local text_x = x + (w - text_w) * 0.5
-      local text_y = y + (h - ImGui.GetTextLineHeight(ctx)) * 0.5
-
-      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, text)
-    end,
-    on_click = function()
-      mock_state.progress = mock_state.progress + 0.1
-      if mock_state.progress > 1.0 then
-        mock_state.progress = 0.0
-      end
-    end,
-    tooltip = "Click to increment progress"
-  })
-
-  -- Volume slider button
-  Button.draw(ctx, {
-    id = "btn_volume",
-    x = cursor_x + 160,
-    y = cursor_y,
-    width = 150,
-    height = 32,
-    draw_list = dl,
-    custom_draw = function(ctx, dl, x, y, w, h, is_hovered, is_active, text_color)
-      -- Draw volume bars
-      local num_bars = 10
-      local bar_width = (w - 20) / num_bars
-      local bar_spacing = 2
-      local volume = mock_state.volume
-
-      for i = 1, num_bars do
-        local bar_x = x + 10 + (i - 1) * bar_width
-        local bar_height = (h - 10) * (i / num_bars)
-        local bar_y = y + (h - bar_height) * 0.5
-
-        local is_active_bar = (i / num_bars) <= volume
-        local bar_color = is_active_bar and Style.COLORS.ACCENT_PRIMARY or Style.COLORS.BORDER_INNER
-
-        ImGui.DrawList_AddRectFilled(
-          dl,
-          bar_x, bar_y,
-          bar_x + bar_width - bar_spacing, bar_y + bar_height,
-          bar_color,
-          1
-        )
-      end
-    end,
-    on_click = function()
-      mock_state.volume = mock_state.volume + 0.15
-      if mock_state.volume > 1.0 then
-        mock_state.volume = 0.1
-      end
-    end,
-    tooltip = string.format("Volume: %d%%", mock_state.volume * 100)
-  })
-
-  ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + 40)
-end
-
-local function test_action_buttons(ctx)
-  ImGui.Text(ctx, "")
-  ImGui.Text(ctx, "Action Buttons:")
-  ImGui.Separator(ctx)
-  ImGui.Text(ctx, "")
-
-  local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
-  local dl = ImGui.GetWindowDrawList(ctx)
-
-  local actions = {
-    { icon = "💾", label = "Save", id = "save" },
-    { icon = "📂", label = "Open", id = "open" },
-    { icon = "🔄", label = "Refresh", id = "refresh" },
-    { icon = "🗑", label = "Delete", id = "delete" },
+local mock_tree = {
+  {
+    id = "root",
+    name = "Project Root",
+    color = hexrgb("#4A9EFFFF"),
+    children = {
+      {
+        id = "src",
+        name = "src",
+        color = hexrgb("#41E0A3FF"),
+        children = {
+          { id = "components", name = "components", children = {} },
+          { id = "utils", name = "utils", children = {} },
+          { id = "styles", name = "styles", children = {} },
+        }
+      },
+      {
+        id = "docs",
+        name = "Documentation",
+        color = hexrgb("#FFA726FF"),
+        children = {
+          { id = "guides", name = "Guides", children = {} },
+          { id = "api", name = "API Reference", children = {} },
+        }
+      },
+      {
+        id = "tests",
+        name = "tests",
+        children = {
+          { id = "unit", name = "unit", children = {} },
+          { id = "integration", name = "integration", children = {} },
+        }
+      },
+      { id = "config", name = "config", children = {} },
+      { id = "scripts", name = "scripts", children = {} },
+    }
   }
+}
 
-  local x = cursor_x
+local tree_state = {
+  open = { root = true, src = true, docs = true },
+  selected = nil,
+  hovered = nil,
+}
 
-  for _, action in ipairs(actions) do
-    Button.draw(ctx, {
-      id = "btn_" .. action.id,
-      x = x,
-      y = cursor_y,
-      width = 85,
-      height = 28,
-      draw_list = dl,
-      icon = action.icon,
-      label = action.label,
-      on_click = function()
-        mock_state.last_clicked = action.label
-      end,
-      tooltip = action.label .. " action"
-    })
+-- ============================================================================
+-- DRAWING FUNCTIONS
+-- ============================================================================
 
-    x = x + 85 + 5
+local function draw_arrow(dl, x, y, is_open, color)
+  color = color or TREE_CONFIG.arrow_color
+  local size = TREE_CONFIG.arrow_size
+
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  if is_open then
+    -- Down-pointing triangle
+    local x1, y1 = x, y
+    local x2, y2 = x + size, y
+    local x3, y3 = math.floor(x + size / 2 + 0.5), y + size
+    ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, color)
+  else
+    -- Right-pointing triangle
+    local x1, y1 = x, y
+    local x2, y2 = x, y + size
+    local x3, y3 = x + size, y + size / 2
+    ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, color)
   end
-
-  ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + 35)
 end
 
-local function test_unicode_diversity(ctx)
-  ImGui.Text(ctx, "")
-  ImGui.Text(ctx, "Unicode Character Diversity Test:")
-  ImGui.Separator(ctx)
-  ImGui.Text(ctx, "")
+local function draw_folder_icon(dl, x, y, is_open, color)
+  color = color or (is_open and TREE_CONFIG.icon_open_color or TREE_CONFIG.icon_color)
 
-  local test_categories = {
-    {"Arrows", "← ↑ → ↓ ↔ ↕ ⇐ ⇑ ⇒ ⇓ ⇔ ⇕ ⬅ ⬆ ➡ ⬇ ↖ ↗ ↘ ↙"},
-    {"Math", "∀ ∂ ∃ ∅ ∇ ∈ ∉ ∋ ∏ ∑ − ∓ √ ∛ ∜ ∞ ∟ ∠ ∡ ∢ ∫ ∬ ∭ ≈ ≠ ≡ ≤ ≥"},
-    {"Symbols", "⋮ ⋯ ⋰ ⋱ • ◦ ▪ ▫ ○ ● ◌ ◍ ◎ ★ ☆ ✓ ✔ ✕ ✖ ✗ ✘"},
-    {"Box Draw", "─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ┼ ═ ║ ╔ ╗ ╚ ╝ ╠ ╣ ╦ ╩ ╬"},
-    {"Greek", "Α Β Γ Δ Ε Ζ Η Θ Ι Κ Λ Μ Ν Ξ Ο Π Ρ Σ Τ Υ Φ Χ Ψ Ω α β γ δ ε ζ η θ"},
-    {"Currency", "$ ¢ £ ¤ ¥ € ₿ ₹ ₽ ₺ ₩ ₪ ₫ ₱ ₡ ₴"},
-    {"Music", "♩ ♪ ♫ ♬ ♭ ♮ ♯ 𝄞 𝄢"},
-    {"Diacritic", "Ä Ö Ü ä ö ü ß Ñ ñ Ç ç É é È è Ê ê"},
-    {"Punctuat", "‚ „ ' ' \" \" « » ‹ › ¿ ¡ ‐ – — ― … ′ ″ ‴"},
-    {"Tech", "⌘ ⌥ ⇧ ⌃ ⎋ ⌫ ⌦ ↩ ⏎ ⌨ ⏏ ⏻ ⏼ ⏽"},
-    {"Shapes", "△ ▲ ▴ ▵ ▷ ▶ ▸ ▹ ▽ ▼ ▾ ▿ ◁ ◀ ◂ ◃ ◇ ◆ ◊ ○ ● ◐ ◑ ◒ ◓ ◔ ◕"},
-    {"Fractions", "½ ⅓ ⅔ ¼ ¾ ⅛ ⅜ ⅝ ⅞ ⅕ ⅖ ⅗ ⅘ ⅙ ⅚ ⅐ ⅑ ⅒"},
-    {"Sub/Super", "⁰ ¹ ² ³ ⁴ ⁵ ⁶ ⁷ ⁸ ⁹ ⁺ ⁻ ⁼ ⁽ ⁾ ₀ ₁ ₂ ₃ ₄ ₅ ₆ ₇ ₈ ₉ ₊ ₋ ₌ ₍ ₎"},
-    {"Cards", "♠ ♣ ♥ ♦ ♤ ♧ ♡ ♢"},
-    {"Chess", "♔ ♕ ♖ ♗ ♘ ♙ ♚ ♛ ♜ ♝ ♞ ♟"},
-    {"Misc", "© ® ™ ℃ ℉ № ℗ ℠ ℡ ℮ ⅍ ⅎ ℓ ℔ ℥ Ω ℧ ℨ ℩"},
-    {"Braille", "⠁ ⠃ ⠉ ⠙ ⠑ ⠋ ⠛ ⠓ ⠊ ⠚"},
-  }
+  local main_w = 13
+  local main_h = 7
+  local tab_w = 5
+  local tab_h = 2
 
-  for _, category in ipairs(test_categories) do
-    ImGui.Text(ctx, string.format("%s:", category[1]))
-    ImGui.SameLine(ctx, 100)
-    ImGui.Text(ctx, category[2])
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  -- Draw tab
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + tab_w, y + tab_h, color, 0)
+  -- Draw main body
+  ImGui.DrawList_AddRectFilled(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, color, 0)
+end
+
+-- ============================================================================
+-- TREE RENDERING
+-- ============================================================================
+
+local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_w)
+  local cfg = TREE_CONFIG
+  local item_h = cfg.item_height
+
+  -- Calculate positions
+  local indent_x = visible_x + depth * cfg.indent_width
+  local arrow_x = indent_x
+  local arrow_y = y_pos + (item_h - cfg.arrow_size) / 2
+  local icon_x = arrow_x + cfg.arrow_size + cfg.arrow_margin
+  local icon_y = y_pos + (item_h - 9) / 2  -- 9 = total icon height (tab + body)
+  local text_x = icon_x + cfg.icon_width + cfg.icon_margin + cfg.text_padding_left
+  local text_y = y_pos + (item_h - ImGui.CalcTextSize(ctx, "Tg")) / 2
+
+  local item_right = visible_x + visible_w
+
+  -- Check hover
+  local mx, my = ImGui.GetMousePos(ctx)
+  local is_hovered = mx >= visible_x and mx < item_right and my >= y_pos and my < y_pos + item_h
+
+  -- Check selection
+  local is_selected = tree_state.selected == node.id
+
+  -- Draw background
+  if is_selected then
+    local bg_color = is_hovered and cfg.bg_selected_hover or cfg.bg_selected
+    ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, item_right, y_pos + item_h, bg_color)
+  elseif is_hovered then
+    ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, item_right, y_pos + item_h, cfg.bg_hover)
   end
 
-  ImGui.Text(ctx, "")
-  ImGui.Text(ctx, "CJK Samples:")
-  ImGui.SameLine(ctx, 100)
-  ImGui.Text(ctx, "你好 こんにちは 안녕하세요")
+  -- Draw arrow if has children
+  local is_open = tree_state.open[node.id]
+  local has_children = node.children and #node.children > 0
 
-  ImGui.Text(ctx, "Emoji:")
-  ImGui.SameLine(ctx, 100)
-  ImGui.Text(ctx, "😀 🎵 🎨 🚀 ⭐ 🔥 💡 🎯 📊 ⚙️")
+  if has_children then
+    draw_arrow(dl, arrow_x, arrow_y, is_open, cfg.arrow_color)
+  end
+
+  -- Draw folder icon
+  local icon_color = node.color or (is_open and cfg.icon_open_color or cfg.icon_color)
+  draw_folder_icon(dl, icon_x, icon_y, is_open, icon_color)
+
+  -- Draw text
+  local text_color = (is_hovered or is_selected) and cfg.text_hover or cfg.text_normal
+  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, node.name)
+
+  -- Handle clicks
+  ImGui.SetCursorScreenPos(ctx, visible_x, y_pos)
+  ImGui.InvisibleButton(ctx, "##tree_item_" .. node.id, visible_w, item_h)
+
+  if ImGui.IsItemClicked(ctx, 0) then
+    -- Check if clicked on arrow area
+    if has_children and mx >= arrow_x and mx < arrow_x + cfg.arrow_size + cfg.arrow_margin then
+      -- Toggle expand/collapse
+      tree_state.open[node.id] = not tree_state.open[node.id]
+    else
+      -- Select item
+      tree_state.selected = node.id
+    end
+  end
+
+  -- Update hovered state
+  if is_hovered then
+    tree_state.hovered = node.id
+  end
+
+  local next_y = y_pos + item_h
+
+  -- Render children if open
+  if is_open and has_children then
+    for _, child in ipairs(node.children) do
+      next_y = render_tree_item(ctx, dl, child, depth + 1, next_y, visible_x, visible_w)
+    end
+  end
+
+  return next_y
+end
+
+local function draw_custom_tree(ctx, nodes, x, y, w, h)
+  local dl = ImGui.GetWindowDrawList(ctx)
+
+  -- Draw container background
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, hexrgb("#1A1A1AFF"))
+  ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, hexrgb("#000000DD"))
+
+  -- Clip rendering to container
+  ImGui.DrawList_PushClipRect(dl, x, y, x + w, y + h, true)
+
+  local current_y = y + 4  -- Top padding
+
+  for _, node in ipairs(nodes) do
+    current_y = render_tree_item(ctx, dl, node, 0, current_y, x + 4, w - 8)
+  end
+
+  ImGui.DrawList_PopClipRect(dl)
 end
 
 -- ============================================================================
@@ -518,44 +239,54 @@ end
 -- ============================================================================
 
 Shell.run({
-  title = "Button Component Test",
+  title = "Custom TreeView Prototype",
   version = "v1.0.0",
   version_color = hexrgb("#888888FF"),
   initial_pos = { x = 120, y = 120 },
-  initial_size = { w = 700, h = 800 },
-  min_size = { w = 600, h = 600 },
+  initial_size = { w = 500, h = 600 },
+  min_size = { w = 400, h = 400 },
   icon_color = hexrgb("#4A9EFFFF"),
   icon_size = 18,
 
   draw = function(ctx, shell_state)
-    -- Update progress if playing
-    if mock_state.is_playing then
-      mock_state.progress = mock_state.progress + 0.002
-      if mock_state.progress >= 1.0 then
-        mock_state.progress = 1.0
-        mock_state.is_playing = false
-      end
+    ImGui.Text(ctx, "Custom TreeView - Full Control Demo")
+    ImGui.Text(ctx, string.format("Item Height: %dpx (configurable)", TREE_CONFIG.item_height))
+    ImGui.Separator(ctx)
+    ImGui.Text(ctx, "")
+
+    -- Config controls
+    ImGui.Text(ctx, "Configuration:")
+    ImGui.SetNextItemWidth(ctx, 200)
+    local changed, new_height = ImGui.SliderInt(ctx, "Item Height", TREE_CONFIG.item_height, 14, 24)
+    if changed then
+      TREE_CONFIG.item_height = new_height
     end
 
-    ImGui.Text(ctx, "Arkitekt Button Component Demo")
-    ImGui.Text(ctx, "Testing standalone button usage")
-    ImGui.Separator(ctx)
-    ImGui.Text(ctx, "")
-
-    test_basic_buttons(ctx)
-    test_styled_buttons(ctx)
-    test_rounded_buttons(ctx)
-    test_button_group(ctx)
-    test_media_controls(ctx)
-    test_custom_draw_buttons(ctx)
-    test_action_buttons(ctx)
+    ImGui.SetNextItemWidth(ctx, 200)
+    local changed2, new_indent = ImGui.SliderInt(ctx, "Indent Width", TREE_CONFIG.indent_width, 16, 32)
+    if changed2 then
+      TREE_CONFIG.indent_width = new_indent
+    end
 
     ImGui.Text(ctx, "")
     ImGui.Separator(ctx)
-    ImGui.Text(ctx, string.format("State: %s | Volume: %d%% | Theme: %s",
-      mock_state.is_playing and "Playing" or "Stopped",
-      math.floor(mock_state.volume * 100),
-      mock_state.theme
-    ))
+    ImGui.Text(ctx, "")
+
+    -- Tree view
+    local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
+    local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
+    local tree_h = avail_h - 60
+
+    draw_custom_tree(ctx, mock_tree, cursor_x, cursor_y, avail_w, tree_h)
+
+    ImGui.SetCursorScreenPos(ctx, cursor_x, cursor_y + tree_h + 10)
+
+    -- Status
+    ImGui.Separator(ctx)
+    ImGui.Text(ctx, string.format("Selected: %s", tree_state.selected or "None"))
+    ImGui.Text(ctx, string.format("Hovered: %s", tree_state.hovered or "None"))
+
+    -- Reset hovered state each frame
+    tree_state.hovered = nil
   end,
 })
