@@ -4,7 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local Input = require('arkitekt.gui.widgets.primitives.input')
-local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
+local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
 local Defaults = require('ItemPicker.defs.defaults')
 local Constants = require('ItemPicker.defs.constants')
 
@@ -51,7 +51,7 @@ function M.draw(ctx, draw_list, x, y, width, height, state, config)
   local dropdown_y = y
 
   -- Draw dropdown using ARKITEKT primitive
-  Combobox.draw(ctx, {
+  Dropdown.draw(ctx, {
     id = "search_mode_dropdown",
     draw_list = draw_list,
     x = dropdown_x,

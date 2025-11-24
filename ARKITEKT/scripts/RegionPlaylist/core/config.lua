@@ -163,7 +163,7 @@ function M.get_pool_container_config(callbacks)
         },
         {
           id = "sort",
-          type = "combobox",
+          type = "dropdown",
           width = Defaults.CONTAINER.pool.sort_width,
           spacing_before = 0,
           config = {

@@ -10,7 +10,7 @@ local Container = require('arkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('arkitekt.gui.widgets.tools.color_picker_window')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local Input = require('arkitekt.gui.widgets.primitives.input')
-local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
+local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local RadioButton = require('arkitekt.gui.widgets.primitives.radio_button')
@@ -445,7 +445,7 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
   local dropdown_w = 120
   local dropdown_h = 24
 
-  local result = Combobox.draw(ctx, {
+  local result = Dropdown.draw(ctx, {
     id = "names_category",
     draw_list = dl,
     x = dropdown_x,

@@ -181,7 +181,7 @@ function M.new(config)
         },
         {
           id = "filter",
-          type = "combobox",
+          type = "dropdown",
           width = 90,
           spacing_before = 0,
           config = {

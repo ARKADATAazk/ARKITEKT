@@ -110,7 +110,7 @@ local function create_alignment_panel()
           -- Right-aligned elements
           {
             id = "filter",
-            type = "combobox",
+            type = "dropdown",
             align = "right",
             width = 120,
             spacing_before = 8,

@@ -228,7 +228,7 @@ M.ALIGNED_HEADER_EXAMPLE = {
       -- Right-aligned elements
       {
         id = "sort",
-        type = "combobox",
+        type = "dropdown",
         align = "right",
         width = 120,
         spacing_before = 8,

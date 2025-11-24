@@ -16,7 +16,7 @@ function M.create(callbacks, is_overlay_mode)
         -- Quick access mode dropdown (left side)
         {
           id = "quick_access_mode",
-          type = "combobox",
+          type = "dropdown",
           width = 120,
           spacing_before = 0,
           config = {
@@ -56,7 +56,7 @@ function M.create(callbacks, is_overlay_mode)
         -- Sort dropdown (grouped with search and view, no spacing)
         {
           id = "sort",
-          type = "combobox",
+          type = "dropdown",
           width = 120,
           spacing_before = 0,
           config = {

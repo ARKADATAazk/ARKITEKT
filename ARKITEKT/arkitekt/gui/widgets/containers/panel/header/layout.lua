@@ -12,13 +12,13 @@ local M = {}
 
 -- Component registry - imports from controls/ directly for reusable components
 local InputModule = require('arkitekt.gui.widgets.primitives.input')
-local ComboboxModule = require('arkitekt.gui.widgets.inputs.combobox')
+local DropdownModule = require('arkitekt.gui.widgets.inputs.dropdown')
 
 local COMPONENTS = {
   button = require('arkitekt.gui.widgets.primitives.button'),
   checkbox = require('arkitekt.gui.widgets.primitives.checkbox'),
   input = InputModule,
-  combobox = ComboboxModule,
+  dropdown = DropdownModule,
   tab_strip = require('arkitekt.gui.widgets.containers.panel.header.tab_strip'),
   separator = require('arkitekt.gui.widgets.containers.panel.header.separator'),
   custom = {
@@ -37,7 +37,7 @@ local Chip = require('arkitekt.gui.widgets.data.chip')
 
 -- Custom compound element for template browser header with search/sort + filter chips
 local Input = require('arkitekt.gui.widgets.primitives.input')
-local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
+local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
 COMPONENTS.template_header_controls = {
@@ -94,7 +94,7 @@ COMPONENTS.template_header_controls = {
     -- Sort dropdown (140px, right side)
     if config.get_sort_mode and config.on_sort_changed then
       local sort_x = search_x + search_width + 8
-      Combobox.draw(ctx, {
+      Dropdown.draw(ctx, {
         x = sort_x,
         y = y,
         width = sort_width,
@@ -423,7 +423,7 @@ local STANDARDIZED_WIDGETS = {
   button = true,
   checkbox = true,
   input = true,
-  combobox = true,
+  dropdown = true,
 }
 
 local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side)

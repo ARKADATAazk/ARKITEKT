@@ -1150,7 +1150,7 @@ function Panel:get_sort_mode()
   end
   
   for _, element in ipairs(self.config.header.elements) do
-    if element.type == "combobox" and element.id == "sort" then
+    if element.type == "dropdown" and element.id == "sort" then
       local element_state = self[element.id]
       if element_state and element_state.dropdown_value ~= nil then
         return element_state.dropdown_value
@@ -1167,7 +1167,7 @@ function Panel:set_sort_mode(mode)
   end
   
   for _, element in ipairs(self.config.header.elements) do
-    if element.type == "combobox" and element.id == "sort" then
+    if element.type == "dropdown" and element.id == "sort" then
       if not self[element.id] then
         self[element.id] = {}
       end
@@ -1183,7 +1183,7 @@ function Panel:get_sort_direction()
   end
   
   for _, element in ipairs(self.config.header.elements) do
-    if element.type == "combobox" and element.id == "sort" then
+    if element.type == "dropdown" and element.id == "sort" then
       local element_state = self[element.id]
       if element_state and element_state.dropdown_direction then
         return element_state.dropdown_direction
@@ -1200,7 +1200,7 @@ function Panel:set_sort_direction(direction)
   end
   
   for _, element in ipairs(self.config.header.elements) do
-    if element.type == "combobox" and element.id == "sort" then
+    if element.type == "dropdown" and element.id == "sort" then
       if not self[element.id] then
         self[element.id] = {}
       end

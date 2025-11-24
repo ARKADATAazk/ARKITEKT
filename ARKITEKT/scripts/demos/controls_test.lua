@@ -11,7 +11,7 @@ local Shell = require('arkitekt.app.runtime.shell')
 -- Import base controls
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local Input = require('arkitekt.gui.widgets.primitives.input')
-local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
+local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
 
 -- Import panel system
 local Panel = require('arkitekt.gui.widgets.containers.panel')
@@ -84,7 +84,7 @@ local function create_test_panel()
         },
         {
           id = "test_dropdown",
-          type = "combobox",
+          type = "dropdown",
           width = 120,
           spacing_before = 8,
           config = {
@@ -249,7 +249,7 @@ local function draw_standalone_test(ctx)
   ImGui.Text(ctx, "Dropdown (standalone):")
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  local dropdown_result = Combobox.draw(ctx, {
+  local dropdown_result = Dropdown.draw(ctx, {
     id = "standalone_dropdown",
     draw_list = dl,
     x = cursor_x,

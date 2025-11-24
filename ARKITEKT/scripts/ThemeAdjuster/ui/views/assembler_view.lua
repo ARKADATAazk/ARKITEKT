@@ -10,7 +10,7 @@ local Config = require('ThemeAdjuster.core.config')
 local Theme = require('ThemeAdjuster.core.theme')
 local Colors = require('arkitekt.core.colors')
 local PackageModal = require('ThemeAdjuster.ui.views.package_modal')
-local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
+local Dropdown = require('arkitekt.gui.widgets.inputs.dropdown')
 local hexrgb = Colors.hexrgb
 
 local M = {}
@@ -638,7 +638,7 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
 
       -- Set current value before drawing
       if current_value then
-        Combobox.set_value("zip_picker_state", current_value)
+        Dropdown.set_value("zip_picker_state", current_value)
       end
 
       -- Position for dropdown (on same line after status)
@@ -650,7 +650,7 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
       -- Draw dropdown using arkitekt widget
       local dropdown_width = 220
       local dropdown_height = 20
-      local result = Combobox.draw(ctx, {
+      local result = Dropdown.draw(ctx, {
         id = "zip_picker",
         draw_list = dl,
         x = screen_x,

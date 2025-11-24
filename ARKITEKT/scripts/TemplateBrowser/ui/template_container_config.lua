@@ -34,7 +34,7 @@ function M.create(callbacks, is_overlay_mode)
         -- Sort dropdown (right side, grouped)
         {
           id = "sort",
-          type = "combobox",
+          type = "dropdown",
           width = 120,
           spacing_before = 0,
           config = {

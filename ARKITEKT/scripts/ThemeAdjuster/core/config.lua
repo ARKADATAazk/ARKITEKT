@@ -64,7 +64,7 @@ function M.get_assembler_container_config(callbacks, filters)
         },
         {
           id = "filters",
-          type = "combobox",
+          type = "dropdown",
           width = 80,
           spacing_before = 0,
           config = {
