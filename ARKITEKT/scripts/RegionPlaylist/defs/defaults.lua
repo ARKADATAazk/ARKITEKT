@@ -88,7 +88,7 @@ M.TRANSPORT = {
 -- ============================================================================
 M.CONTAINER = {
   active = {
-    header_height = 24,
+    header_height = 23,
     corner_button_size = 24,
     corner_button_margin = 8,
     corner_button_inner_rounding = 12,
