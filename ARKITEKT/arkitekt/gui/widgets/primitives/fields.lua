@@ -284,8 +284,12 @@ function M.draw(ctx, opts)
   -- Get or create state
   local state = get_or_create_state(unique_id)
 
-  -- Set initial text if provided and state is empty
-  if opts.text and state.text == "" then
+  -- Support get_value callback pattern for panel integration
+  -- This allows external state management (e.g., app_state.search_query)
+  if opts.get_value and type(opts.get_value) == "function" then
+    state.text = opts.get_value() or ""
+  elseif opts.text and state.text == "" then
+    -- Set initial text if provided and state is empty
     state.text = opts.text
   end
 

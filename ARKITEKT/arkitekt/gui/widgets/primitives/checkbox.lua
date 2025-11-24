@@ -377,4 +377,21 @@ function M.cleanup()
   Base.cleanup_registry(instances)
 end
 
+--- Draw a checkbox at current ImGui cursor position (convenience function)
+--- @param ctx userdata ImGui context
+--- @param label string Checkbox label
+--- @param checked boolean Current state
+--- @param opts table|nil Additional options
+--- @param id string|nil Optional ID override
+--- @return boolean toggled Whether checkbox was toggled
+function M.draw_at_cursor(ctx, label, checked, opts, id)
+  opts = opts or {}
+  opts.label = label
+  opts.checked = checked
+  if id then opts.id = id end
+  -- Don't set x/y so it uses cursor position
+  local result = M.draw(ctx, opts)
+  return result.toggled
+end
+
 return M

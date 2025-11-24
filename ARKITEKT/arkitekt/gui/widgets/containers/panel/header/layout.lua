@@ -75,11 +75,17 @@ COMPONENTS.template_header_controls = {
     local search_x = x + width - sort_width - search_width - 8
 
     if config.get_search_query and config.on_search_changed then
-      Fields.search(ctx, dl, search_x, y, search_width, row1_height, {
+      Fields.search(ctx, {
+        x = search_x,
+        y = y,
+        width = search_width,
+        height = row1_height,
         placeholder = "Search templates...",
         get_value = config.get_search_query,
         on_change = config.on_search_changed,
-      }, state)
+        draw_list = dl,
+        panel_state = state,
+      })
     end
 
     -- Sort dropdown (140px, right side)

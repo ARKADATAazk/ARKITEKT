@@ -346,6 +346,19 @@ function M.measure(ctx, opts)
   return text_w + padding * 2
 end
 
+--- Draw a button at current ImGui cursor position (convenience function)
+--- @param ctx userdata ImGui context
+--- @param opts table Widget options (x/y will be set from cursor)
+--- @param id string|nil Optional ID override
+--- @return boolean clicked Whether button was clicked
+function M.draw_at_cursor(ctx, opts, id)
+  opts = opts or {}
+  if id then opts.id = id end
+  -- Don't set x/y so it uses cursor position
+  local result = M.draw(ctx, opts)
+  return result.clicked
+end
+
 --- Clean up all button instances
 function M.cleanup()
   Base.cleanup_registry(instances)
