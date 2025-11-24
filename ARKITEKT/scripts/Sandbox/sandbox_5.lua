@@ -14,15 +14,22 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 -- Import system
 local Shell = require('arkitekt.app.runtime.shell')
-local ark = require('arkitekt')
 local Arkit = require('arkitekt.arkit')
 
 -- Import refactored base controls
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
+local Combo = require('arkitekt.gui.widgets.primitives.combo')
+
 -- Import panel system
+local Panel = require('arkitekt.gui.widgets.containers.panel')
+
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
 local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
+local Colors = require('arkitekt.core.colors')
+
 -- ============================================================================
 -- STATE
 -- ============================================================================
@@ -123,7 +130,7 @@ local function create_test_panel()
     },
   }
   
-  return ark.Panel.new({
+  return Panel.new({
     id = "controls_test_panel",
     config = panel_config,
   })
@@ -146,7 +153,7 @@ local function draw_standalone_section(ctx)
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
   -- Button Test
-  ImGui.Text(ctx, "ark.Button:")
+  ImGui.Text(ctx, "Button:")
   ImGui.SameLine(ctx, 0, 8)
   ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#888888FF"))
   ImGui.Text(ctx, "(with custom rounding)")
@@ -154,7 +161,7 @@ local function draw_standalone_section(ctx)
   
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  ark.Button.draw(ctx, {
+  Button.draw(ctx, {
     id = "standalone_button",
     draw_list = dl,
     x = cursor_x,
@@ -184,7 +191,7 @@ local function draw_standalone_section(ctx)
   
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  ark.InputText.search(ctx, {
+  InputText.search(ctx, {
     id = "standalone_search",
     draw_list = dl,
     x = cursor_x,
@@ -221,7 +228,7 @@ local function draw_standalone_section(ctx)
   
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  ark.Combo.draw(ctx, {
+  Combo.draw(ctx, {
     id = "standalone_dropdown",
     draw_list = dl,
     x = cursor_x,

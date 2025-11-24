@@ -3,8 +3,8 @@
 -- Drag and drop handler with visual preview
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
-local hexrgb = ark.Colors.hexrgb
+local Colors = require('arkitekt.core.colors')
+local hexrgb = Colors.hexrgb
 
 local M = {}
 
@@ -349,8 +349,8 @@ function M.render_drag_preview(ctx, state, mini_font, visualization, config)
       if config and config.TILE_RENDER then
         local sat_factor = config.TILE_RENDER.base_fill.saturation_factor
         local bright_factor = config.TILE_RENDER.base_fill.brightness_factor
-        render_color = ark.Colors.desaturate(render_color, 1.0 - sat_factor)
-        render_color = ark.Colors.adjust_brightness(render_color, bright_factor)
+        render_color = Colors.desaturate(render_color, 1.0 - sat_factor)
+        render_color = Colors.adjust_brightness(render_color, bright_factor)
       end
 
       -- Apply opacity to the tile fill color

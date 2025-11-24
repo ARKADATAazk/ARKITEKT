@@ -2,8 +2,8 @@
 -- ThemeAdjuster/defs/constants.lua
 -- Pure value constants: colors, dimensions, tabs
 
-local ark = require('arkitekt')
-local hexrgb = ark.Colors.hexrgb
+local Colors = require('arkitekt.core.colors')
+local hexrgb = Colors.hexrgb
 
 local M = {}
 

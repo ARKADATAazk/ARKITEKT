@@ -3,7 +3,8 @@
 -- Track filter bar - vertical tags on left side to filter items by track
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Colors = require('arkitekt.core.colors')
+
 local M = {}
 
 -- Tag styling constants
@@ -121,14 +122,14 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
         bg_alpha = is_enabled and 0xDD or 0x66
       end
       bg_alpha = math.floor(bg_alpha * alpha)
-      local bg_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#2A2A2A"), bg_alpha)
+      local bg_color = Colors.with_alpha(Colors.hexrgb("#2A2A2A"), bg_alpha)
 
       ImGui.DrawList_AddRectFilled(draw_list, tag_x, tag_top, tag_x + tag_width, tag_bottom, bg_color, TAG.ROUNDING)
 
       -- Color bar
       local bar_alpha = is_enabled and 0xFF or 0x66
       bar_alpha = math.floor(bar_alpha * alpha)
-      local bar_color = ark.Colors.with_alpha(track.display_color, bar_alpha)
+      local bar_color = Colors.with_alpha(track.display_color, bar_alpha)
 
       ImGui.DrawList_AddRectFilled(draw_list,
         tag_x, tag_top,
@@ -140,7 +141,7 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       local text_y = tag_top + (TAG.HEIGHT - ImGui.GetTextLineHeight(ctx)) / 2
       local text_alpha = is_enabled and 0xFF or 0x66
       text_alpha = math.floor(text_alpha * alpha)
-      local text_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), text_alpha)
+      local text_color = Colors.with_alpha(Colors.hexrgb("#FFFFFF"), text_alpha)
 
       -- Truncate name if too long
       local max_text_width = tag_width - TAG.COLOR_BAR_WIDTH - 8

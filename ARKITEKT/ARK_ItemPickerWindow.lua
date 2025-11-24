@@ -10,7 +10,6 @@ if not ARK then return end
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
 -- ============================================================================
 local ProfilerInit = require('arkitekt.debug.profiler_init')
-local ark = require('arkitekt')
 local profiler_enabled = ProfilerInit.init()
 
 if profiler_enabled then
@@ -19,9 +18,10 @@ end
 
 -- Load required modules
 local Shell = require('arkitekt.app.runtime.shell')
+local Colors = require('arkitekt.core.colors')
 local Settings = require('arkitekt.core.settings')
 
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Colors.hexrgb
 
 -- Load ItemPicker core modules (reuse data layer)
 local Config = require('ItemPicker.core.config')

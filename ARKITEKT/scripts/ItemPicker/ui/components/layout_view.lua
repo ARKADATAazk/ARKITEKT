@@ -3,12 +3,15 @@
 -- Main layout view with absolute positioning and fade animations
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
 local SearchWithMode = require('ItemPicker.ui.components.search_with_mode')
+local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local DraggableSeparator = require('arkitekt.gui.widgets.primitives.separator')
 local StatusBar = require('ItemPicker.ui.components.status_bar')
 local RegionFilterBar = require('ItemPicker.ui.components.region_filter_bar')
 local TrackFilter = require('ItemPicker.ui.components.track_filter')
 local TrackFilterBar = require('ItemPicker.ui.components.track_filter_bar')
+local Colors = require('arkitekt.core.colors')
 local Background = require('arkitekt.gui.widgets.containers.panel.background')
 
 -- Debug module - with error handling
@@ -36,7 +39,7 @@ function M.new(config, state, coordinator)
   }, LayoutView)
 
   self.status_bar = StatusBar.new(config, state)
-  self.separator = ark.Separator.new()
+  self.separator = DraggableSeparator.new()
 
   return self
 end
@@ -53,13 +56,13 @@ local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
   rounding = rounding or 6
 
   -- Panel background (lighter)
-  local bg_color = ark.Colors.hexrgb("#1A1A1A")
-  bg_color = ark.Colors.with_alpha(bg_color, math.floor(alpha * 0x99))  -- 60% opacity
+  local bg_color = Colors.hexrgb("#1A1A1A")
+  bg_color = Colors.with_alpha(bg_color, math.floor(alpha * 0x99))  -- 60% opacity
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, rounding)
 
   -- Panel border (even lighter)
-  local border_color = ark.Colors.hexrgb("#2A2A2A")
-  border_color = ark.Colors.with_alpha(border_color, math.floor(alpha * 0xAA))
+  local border_color = Colors.hexrgb("#2A2A2A")
+  border_color = Colors.with_alpha(border_color, math.floor(alpha * 0xAA))
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
 end
 
@@ -82,8 +85,8 @@ local function draw_panel_title(ctx, draw_list, title_font, title, panel_x, pane
   end
 
   -- Use DrawList to avoid blocking mouse input for selection rectangle
-  local text_color = ark.Colors.hexrgb("#FFFFFF")
-  text_color = ark.Colors.with_alpha(text_color, math.floor(final_alpha * 255))
+  local text_color = Colors.hexrgb("#FFFFFF")
+  text_color = Colors.with_alpha(text_color, math.floor(final_alpha * 255))
   ImGui.DrawList_AddText(draw_list, title_x, title_y, text_color, title)
   ImGui.PopFont(ctx)
 end
@@ -165,7 +168,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       type = 'dots',
       spacing = 16,
       dot_size = 1.5,
-      color = ark.Colors.with_alpha(ark.Colors.hexrgb("#2A2A2A"), math.floor(overlay_alpha * 180)),
+      color = Colors.with_alpha(Colors.hexrgb("#2A2A2A"), math.floor(overlay_alpha * 180)),
       offset_x = 0,
       offset_y = 0,
     }
@@ -279,7 +282,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local spacing = 20  -- Horizontal spacing between checkboxes
 
     -- Line 1: Play Item Through Track | Show Muted Tracks | Show Muted Items | Show Disabled Items
-    local result = ark.Checkbox.draw(ctx, {
+    local result = Checkbox.draw(ctx, {
       id = "play_item_through_track",
       draw_list = draw_list,
       x = checkbox_x,
@@ -295,7 +298,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Show Muted Tracks on same line
     local prev_width = ImGui.CalcTextSize(ctx, "Play Item Through Track (will add delay to preview playback)") + 18 + 8 + spacing
     local muted_tracks_x = checkbox_x + prev_width
-    result = ark.Checkbox.draw(ctx, {
+    result = Checkbox.draw(ctx, {
       id = "show_muted_tracks",
       draw_list = draw_list,
       x = muted_tracks_x,
@@ -311,7 +314,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Show Muted Items on same line
     prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Muted Tracks") + 18 + 8 + spacing
     local muted_items_x = checkbox_x + prev_width
-    result = ark.Checkbox.draw(ctx, {
+    result = Checkbox.draw(ctx, {
       id = "show_muted_items",
       draw_list = draw_list,
       x = muted_items_x,
@@ -327,7 +330,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Show Disabled Items on same line
     prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Muted Items") + 18 + 8 + spacing
     local disabled_x = checkbox_x + prev_width
-    result = ark.Checkbox.draw(ctx, {
+    result = Checkbox.draw(ctx, {
       id = "show_disabled_items",
       draw_list = draw_list,
       x = disabled_x,
@@ -342,7 +345,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
     -- Line 2: Show Favorites Only | Show Audio | Show MIDI | Group Items | Tile FX | Show Viz | Enable Regions | Show on Tiles
     checkbox_y = checkbox_y + 24
-    result = ark.Checkbox.draw(ctx, {
+    result = Checkbox.draw(ctx, {
       id = "show_favorites_only",
       draw_list = draw_list,
       x = checkbox_x,
@@ -358,7 +361,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Show Audio on same line
     prev_width = ImGui.CalcTextSize(ctx, "Show Favorites Only") + 18 + 8 + spacing
     local show_audio_x = checkbox_x + prev_width
-    result = ark.Checkbox.draw(ctx, {
+    result = Checkbox.draw(ctx, {
       id = "show_audio",
       draw_list = draw_list,
       x = show_audio_x,
@@ -374,7 +377,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Show MIDI on same line
     prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show Audio") + 18 + 8 + spacing
     local show_midi_x = checkbox_x + prev_width
-    result = ark.Checkbox.draw(ctx, {
+    result = Checkbox.draw(ctx, {
       id = "show_midi",
       draw_list = draw_list,
       x = show_midi_x,
@@ -390,7 +393,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Group Items of Same Name checkbox on same line
     prev_width = prev_width + ImGui.CalcTextSize(ctx, "Show MIDI") + 18 + 8 + spacing
     local group_items_x = checkbox_x + prev_width
-    result = ark.Checkbox.draw(ctx, {
+    result = Checkbox.draw(ctx, {
       id = "group_items_by_name",
       draw_list = draw_list,
       x = group_items_x,
@@ -409,7 +412,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local enable_fx_x = checkbox_x + prev_width
     local enable_fx = self.state.settings.enable_tile_fx
     if enable_fx == nil then enable_fx = true end
-    result = ark.Checkbox.draw(ctx, {
+    result = Checkbox.draw(ctx, {
       id = "enable_fx",
       draw_list = draw_list,
       x = enable_fx_x,
@@ -427,7 +430,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local show_viz_small_x = checkbox_x + prev_width
     local show_viz_small = self.state.settings.show_visualization_in_small_tiles
     if show_viz_small == nil then show_viz_small = true end
-    result = ark.Checkbox.draw(ctx, {
+    result = Checkbox.draw(ctx, {
       id = "show_viz_small",
       draw_list = draw_list,
       x = show_viz_small_x,
@@ -445,7 +448,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local enable_regions_x = checkbox_x + prev_width
     local enable_regions = self.state.settings.enable_region_processing
     if enable_regions == nil then enable_regions = false end
-    result = ark.Checkbox.draw(ctx, {
+    result = Checkbox.draw(ctx, {
       id = "enable_regions",
       draw_list = draw_list,
       x = enable_regions_x,
@@ -470,7 +473,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local show_region_tags_x = checkbox_x + prev_width
     local show_region_tags = self.state.settings.show_region_tags
     if show_region_tags == nil then show_region_tags = false end
-    result = ark.Checkbox.draw(ctx, {
+    result = Checkbox.draw(ctx, {
       id = "show_region_tags",
       draw_list = draw_list,
       x = show_region_tags_x,
@@ -492,7 +495,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
     local slider_label = "Waveform Quality:"
     local slider_label_width = ImGui.CalcTextSize(ctx, slider_label)
-    ImGui.DrawList_AddText(draw_list, waveform_x, waveform_y + 3, ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), math.floor(settings_alpha * 180)), slider_label)
+    ImGui.DrawList_AddText(draw_list, waveform_x, waveform_y + 3, Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(settings_alpha * 180)), slider_label)
 
     -- Draw slider
     local slider_width = 120
@@ -501,12 +504,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local track_h = 6
     local track_rounding = 3
 
-    local track_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#1A1A1A"), math.floor(settings_alpha * 200))
+    local track_color = Colors.with_alpha(Colors.hexrgb("#1A1A1A"), math.floor(settings_alpha * 200))
     ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + slider_width, track_y + track_h, track_color, track_rounding)
 
     local quality = self.state.settings.waveform_quality or 1.0
     local fill_width = slider_width * quality
-    local fill_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#4A9EFF"), math.floor(settings_alpha * 200))
+    local fill_color = Colors.with_alpha(Colors.hexrgb("#4A9EFF"), math.floor(settings_alpha * 200))
     if fill_width > 1 then
       ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + fill_width, track_y + track_h, fill_color, track_rounding)
     end
@@ -517,8 +520,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local thumb_radius = 6
     local is_thumb_hovered = (mouse_x - thumb_x) * (mouse_x - thumb_x) + (mouse_y - thumb_y) * (mouse_y - thumb_y) <= thumb_radius * thumb_radius
 
-    local thumb_color = is_thumb_hovered and ark.Colors.hexrgb("#5AAFFF") or ark.Colors.hexrgb("#4A9EFF")
-    thumb_color = ark.Colors.with_alpha(thumb_color, math.floor(settings_alpha * 255))
+    local thumb_color = is_thumb_hovered and Colors.hexrgb("#5AAFFF") or Colors.hexrgb("#4A9EFF")
+    thumb_color = Colors.with_alpha(thumb_color, math.floor(settings_alpha * 255))
     ImGui.DrawList_AddCircleFilled(draw_list, thumb_x, thumb_y, thumb_radius, thumb_color)
 
     -- Slider interaction
@@ -534,14 +537,14 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     -- Percentage value
     local percent_text = string.format("%d%%", math.floor(quality * 100))
     local percent_x = track_x + slider_width + 8
-    ImGui.DrawList_AddText(draw_list, percent_x, waveform_y + 3, ark.Colors.with_alpha(ark.Colors.hexrgb("#AAAAAA"), math.floor(settings_alpha * 180)), percent_text)
+    ImGui.DrawList_AddText(draw_list, percent_x, waveform_y + 3, Colors.with_alpha(Colors.hexrgb("#AAAAAA"), math.floor(settings_alpha * 180)), percent_text)
 
     -- Waveform Fill checkbox
     local fill_checkbox_x = percent_x + ImGui.CalcTextSize(ctx, percent_text) + 20
     local waveform_filled = self.state.settings.waveform_filled
     if waveform_filled == nil then waveform_filled = true end
 
-    local fill_result = ark.Checkbox.draw(ctx, {
+    local fill_result = Checkbox.draw(ctx, {
       id = "waveform_filled",
       draw_list = draw_list,
       x = fill_checkbox_x,
@@ -562,7 +565,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local zero_line_checkbox_x = fill_checkbox_x + fill_label_width + 18 + 8
     local waveform_zero_line = self.state.settings.waveform_zero_line or false
 
-    local zero_result = ark.Checkbox.draw(ctx, {
+    local zero_result = Checkbox.draw(ctx, {
       id = "waveform_zero_line",
       draw_list = draw_list,
       x = zero_line_checkbox_x,
@@ -581,7 +584,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local show_duration = self.state.settings.show_duration
     if show_duration == nil then show_duration = true end
 
-    local dur_result = ark.Checkbox.draw(ctx, {
+    local dur_result = Checkbox.draw(ctx, {
       id = "show_duration",
       draw_list = draw_list,
       x = show_duration_checkbox_x,
@@ -664,11 +667,11 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       ImGui.DrawList_AddRectFilled(btn_draw_list,
         icon_x, line_y,
         icon_x + line_w, line_y + line_h,
-        ark.Colors.hexrgb("#AAAAAA"), 1)
+        Colors.hexrgb("#AAAAAA"), 1)
     end
   end
 
-  ark.Button.draw(ctx, {
+  Button.draw(ctx, {
     id = "track_filter_button",
     draw_list = draw_list,
     x = current_x,
@@ -693,7 +696,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Content filter button
   current_x = current_x - content_button_width - button_gap
-  ark.Button.draw(ctx, {
+  Button.draw(ctx, {
     id = "content_filter_button",
     draw_list = draw_list,
     x = current_x,
@@ -730,7 +733,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Draw layout icon using rectangles (no text, pure shapes)
   -- We'll draw it directly on the button using a custom render function
-  local icon_color = ark.Colors.hexrgb("#AAAAAA")
+  local icon_color = Colors.hexrgb("#AAAAAA")
   local draw_layout_icon = function(btn_draw_list, icon_x, icon_y)
     local icon_size = 14
     local gap = 2
@@ -760,7 +763,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   end
 
   -- Draw button first
-  ark.Button.draw(ctx, {
+  Button.draw(ctx, {
     id = "layout_toggle_button",
     draw_list = draw_list,
     x = current_x,
@@ -795,8 +798,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local sort_x = search_x + search_width + button_gap
   local sort_label = "Sorting:"
   local sort_label_width = ImGui.CalcTextSize(ctx, sort_label)
-  local sort_label_color = ark.Colors.hexrgb("#AAAAAA")
-  sort_label_color = ark.Colors.with_alpha(sort_label_color, math.floor(search_fade * 200))
+  local sort_label_color = Colors.hexrgb("#AAAAAA")
+  sort_label_color = Colors.with_alpha(sort_label_color, math.floor(search_fade * 200))
   -- Note: Raw text vertical alignment baseline is search_y + 4 (2px up from buttons for better centering)
   ImGui.DrawList_AddText(draw_list, sort_x, search_y + 4, sort_label_color, sort_label)
 
@@ -806,7 +809,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local button_w = sort_button_widths[i]
     local is_active = (current_sort == mode.id)
 
-    ark.Button.draw(ctx, {
+    Button.draw(ctx, {
       id = "sort_button_" .. mode.id,
       draw_list = draw_list,
       x = sort_x,
@@ -978,7 +981,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
       -- Draw indicator strip background
       local strip_alpha = math.floor(0x44 * section_fade)
-      local strip_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#3A3A3A"), strip_alpha)
+      local strip_color = Colors.with_alpha(Colors.hexrgb("#3A3A3A"), strip_alpha)
       ImGui.DrawList_AddRectFilled(draw_list, bar_x, bar_y, bar_x + track_bar_collapsed_width, bar_y + bar_height, strip_color, 2)
 
       -- Only render full bar content if expanded

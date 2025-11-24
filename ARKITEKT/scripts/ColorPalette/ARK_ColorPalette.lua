@@ -35,7 +35,6 @@ local HERE = ARK.dirname(SRC) or "."
 
 -- Load dependencies
 local Shell = require("arkitekt.app.runtime.shell")
-local ark = require('arkitekt')
 local State = require("ColorPalette.app.state")
 local GUI = require("ColorPalette.app.gui")
 local OverlayManager = require("arkitekt.gui.widgets.overlays.overlay.manager")
@@ -49,7 +48,8 @@ local cache_dir = reaper.GetResourcePath() .. SEP .. "Scripts" .. SEP .. "Arkite
 
 -- Initialize settings and state
 local Settings = require('arkitekt.core.settings')
-local hexrgb = ark.Colors.hexrgb
+local Colors = require('arkitekt.core.colors')
+local hexrgb = Colors.hexrgb
 
 local settings = Settings.open(cache_dir, 'settings.json')
 

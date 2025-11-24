@@ -4,7 +4,9 @@
 -- FIXED: Colors persist correctly and generation is centralized.
 
 local JSON = require('arkitekt.core.json')
-local ark = require('arkitekt')
+local Colors = require('arkitekt.core.colors')
+local UUID = require('arkitekt.core.uuid')
+
 local M = {}
 
 local EXT_STATE_SECTION = "ARK_REGIONPLAYLIST"
@@ -87,13 +89,13 @@ function M.get_or_create_default_playlist(playlists, regions)
       rid = i,
       reps = 1,
       enabled = true,
-      key = ark.UUID.generate(),
+      key = UUID.generate(),
     }
   end
 
   return {
     {
-      id = ark.UUID.generate(),
+      id = UUID.generate(),
       name = "Playlist 1",
       items = default_items,
       chip_color = M.generate_chip_color(),
@@ -107,8 +109,8 @@ function M.generate_chip_color()
   local saturation = 0.65 + math.random() * 0.25
   local lightness = 0.50 + math.random() * 0.15
   
-  local r, g, b = ark.Colors.hsl_to_rgb(hue, saturation, lightness)
-  return ark.Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = Colors.hsl_to_rgb(hue, saturation, lightness)
+  return Colors.components_to_rgba(r, g, b, 0xFF)
 end
 
 return M

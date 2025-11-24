@@ -2,8 +2,8 @@
 -- ThemeAdjuster/ui/main_panel.lua
 -- Top-level panel with tab_strip (alternative to Shell menutabs)
 
+local TilesContainer = require('arkitekt.gui.widgets.containers.panel')
 local Config = require('ThemeAdjuster.core.config')
-local ark = require('arkitekt')
 
 local M = {}
 
@@ -44,7 +44,7 @@ function M.create_main_panel(State, callbacks)
     },
   }
 
-  local panel = ark.Panel.new({
+  local panel = TilesContainer.new({
     id = "main_panel",
     config = panel_config,
   })

@@ -5,11 +5,11 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
 
 local Panel = require('arkitekt.gui.widgets.containers.panel.init')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
-local hexrgb = ark.Colors.hexrgb
+local Colors = require('arkitekt.core.colors')
+local hexrgb = Colors.hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -166,23 +166,23 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
   local function lerp_color(from, to, t)
     if not from and not to then return nil end
     if not from then
-      local ready_color = self.config.fx.gradient.ready_color or ark.Colors.hexrgb("#1A1A1A")
+      local ready_color = self.config.fx.gradient.ready_color or Colors.hexrgb("#1A1A1A")
       from = ready_color
     end
     if not to then
-      local ready_color = self.config.fx.gradient.ready_color or ark.Colors.hexrgb("#1A1A1A")
+      local ready_color = self.config.fx.gradient.ready_color or Colors.hexrgb("#1A1A1A")
       to = ready_color
     end
 
-    local r1, g1, b1, a1 = ark.Colors.rgba_to_components(from)
-    local r2, g2, b2, a2 = ark.Colors.rgba_to_components(to)
+    local r1, g1, b1, a1 = Colors.rgba_to_components(from)
+    local r2, g2, b2, a2 = Colors.rgba_to_components(to)
 
     local r = (r1 + (r2 - r1) * t)//1
     local g = (g1 + (g2 - g1) * t)//1
     local b = (b1 + (b2 - b1) * t)//1
     local a = (a1 + (a2 - a1) * t)//1
 
-    return ark.Colors.components_to_rgba(r, g, b, a)
+    return Colors.components_to_rgba(r, g, b, a)
   end
 
   local lerp_factor = min(1.0, fade_speed * dt)
@@ -190,7 +190,7 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
   if self.target_current_color then
     self.current_region_color = lerp_color(self.current_region_color, self.target_current_color, lerp_factor)
   else
-    local ready_color = self.config.fx.gradient.ready_color or ark.Colors.hexrgb("#1A1A1A")
+    local ready_color = self.config.fx.gradient.ready_color or Colors.hexrgb("#1A1A1A")
     if self.current_region_color then
       self.current_region_color = lerp_color(self.current_region_color, ready_color, lerp_factor)
       if abs((self.current_region_color or 0) - ready_color) < 256 then
@@ -204,7 +204,7 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
   if self.target_next_color then
     self.next_region_color = lerp_color(self.next_region_color, self.target_next_color, lerp_factor)
   else
-    local ready_color = self.config.fx.gradient.ready_color or ark.Colors.hexrgb("#1A1A1A")
+    local ready_color = self.config.fx.gradient.ready_color or Colors.hexrgb("#1A1A1A")
     if self.next_region_color then
       self.next_region_color = lerp_color(self.next_region_color, ready_color, lerp_factor)
       if abs((self.next_region_color or 0) - ready_color) < 256 then

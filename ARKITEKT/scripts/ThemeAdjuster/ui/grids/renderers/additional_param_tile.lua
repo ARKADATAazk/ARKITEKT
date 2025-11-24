@@ -3,9 +3,11 @@
 -- Renders parameter tiles in Additional tab with controls and link mode selector
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Colors = require('arkitekt.core.colors')
+local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
+local Spinner = require('arkitekt.gui.widgets.primitives.spinner')
 local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Colors.hexrgb
 
 local M = {}
 
@@ -201,7 +203,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
         spinner_state.last_value = current_value
       end
 
-      local spinner_result = ark.Spinner.draw(ctx, {
+      local spinner_result = Spinner.draw(ctx, {
         id = "##preset_spinner_" .. param.name,
         value = spinner_state.current_idx,
         options = preset_labels,
@@ -226,7 +228,7 @@ function M.render(ctx, param, tab_color, shell_state, view)
   elseif param_type == "bool" then
     -- Checkbox
     local checked = current_value ~= 0
-    if ark.Checkbox.draw_at_cursor(ctx, param_name, checked, nil, "param_" .. param_name) then
+    if Checkbox.draw_at_cursor(ctx, param_name, checked, nil, "param_" .. param_name) then
       new_value = checked and 0 or 1
       value_changed = true
       was_deactivated = true  -- Immediate
@@ -472,7 +474,7 @@ function M.render_group(ctx, group_param, tab_color, shell_state, view)
 
   local spinner_state = M._preset_spinner_states[group_id]
 
-  local spinner_result = ark.Spinner.draw(ctx, {
+  local spinner_result = Spinner.draw(ctx, {
     id = "##group_spinner_" .. group_id,
     value = spinner_state.current_idx,
     options = preset_labels,

@@ -10,18 +10,19 @@ local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])")
 -- Load required modules
 local ImGui = ARK.ImGui
 local Shell = require('arkitekt.app.runtime.shell')
-local ark = require('arkitekt')
 local Fonts = require('arkitekt.app.assets.fonts')
 local OverlayManager = require('arkitekt.gui.widgets.overlays.overlay.manager')
 local OverlayDefaults = require('arkitekt.gui.widgets.overlays.overlay.defaults')
 local ImGuiStyle = require('arkitekt.gui.style.imgui_defaults')
+local Colors = require('arkitekt.core.colors')
+
 -- Load TemplateBrowser modules
 local Config = require('TemplateBrowser.core.config')
 local State = require('TemplateBrowser.core.state')
 local GUI = require('TemplateBrowser.ui.gui')
 local Scanner = require('TemplateBrowser.domain.scanner')
 
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Colors.hexrgb
 
 -- Configuration
 local USE_OVERLAY = true  -- Set to false for normal window mode

@@ -3,17 +3,18 @@
 -- Region filter bar - clickable chips to filter items by region
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Colors = require('arkitekt.core.colors')
+
 local M = {}
 
 -- Ensure color has minimum lightness for readability
 local function ensure_min_lightness(color, min_lightness)
-  local h, s, l = ark.Colors.rgb_to_hsl(color)
+  local h, s, l = Colors.rgb_to_hsl(color)
   if l < min_lightness then
     l = min_lightness
   end
-  local r, g, b = ark.Colors.hsl_to_rgb(h, s, l)
-  return ark.Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = Colors.hsl_to_rgb(h, s, l)
+  return Colors.components_to_rgba(r, g, b, 0xFF)
 end
 
 function M.draw(ctx, draw_list, x, y, width, state, config, alpha)

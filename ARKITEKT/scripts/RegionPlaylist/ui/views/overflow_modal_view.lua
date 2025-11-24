@@ -4,11 +4,12 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
 
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
-local hexrgb = ark.Colors.hexrgb
+local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
+local Colors = require('arkitekt.core.colors')
+local hexrgb = Colors.hexrgb
 
 local M = {}
 
@@ -158,7 +159,7 @@ function OverflowModalView:draw(ctx, window)
           local search_height = 28
           local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
 
-          ark.InputText.search_at_cursor(ctx, {
+          InputText.search_at_cursor(ctx, {
             id = "overflow_search",
             width = content_w,
             height = search_height,

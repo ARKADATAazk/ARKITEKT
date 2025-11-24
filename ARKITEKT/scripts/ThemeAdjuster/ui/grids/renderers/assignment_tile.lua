@@ -3,10 +3,10 @@
 -- Renders parameter tiles in assignment grids
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Colors = require('arkitekt.core.colors')
 local Visuals = require('ThemeAdjuster.ui.grids.renderers.tile_visuals')
 local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Colors.hexrgb
 
 local M = {}
 

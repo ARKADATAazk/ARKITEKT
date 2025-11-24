@@ -3,9 +3,9 @@
 -- Assignment grid factory (for TCP, MCP, ENV, TRANS, GLOBAL tabs)
 
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
-local ark = require('arkitekt')
 local AssignmentTile = require('ThemeAdjuster.ui.grids.renderers.assignment_tile')
-local hexrgb = ark.Colors.hexrgb
+local Colors = require('arkitekt.core.colors')
+local hexrgb = Colors.hexrgb
 
 local M = {}
 

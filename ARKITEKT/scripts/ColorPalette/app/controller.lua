@@ -2,8 +2,8 @@
 -- Arkitekt/ColorPalette/app/controller.lua
 -- Handles color application to REAPER targets
 
-local ark = require('arkitekt')
-local hexrgb = ark.Colors.hexrgb
+local Colors = require('arkitekt.core.colors')
+local hexrgb = Colors.hexrgb
 
 local M = {}
 

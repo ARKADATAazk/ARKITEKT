@@ -3,10 +3,10 @@
 -- Parameter link selection modal
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Colors = require('arkitekt.core.colors')
 local ParameterLinkManager = require('ThemeAdjuster.core.parameter_link_manager')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Colors.hexrgb
 
 local M = {}
 local ParamLinkModal = {}

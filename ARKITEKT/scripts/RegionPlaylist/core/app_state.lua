@@ -11,10 +11,10 @@ once per invalidation.
 ]]
 
 local CoordinatorBridge = require("RegionPlaylist.engine.coordinator_bridge")
-local ark = require('arkitekt')
 local RegionState = require("RegionPlaylist.storage.persistence")
 local UndoManager = require("arkitekt.core.undo_manager")
 local UndoBridge = require("RegionPlaylist.storage.undo_bridge")
+local Colors = require("arkitekt.core.colors")
 local Constants = require("RegionPlaylist.defs.constants")
 
 local M = {}
@@ -32,8 +32,8 @@ local function deterministic_color_from_id(id)
   local hue = (hash % 360) / 360
   local saturation = 0.65 + ((hash % 100) / 400)  -- 0.65-0.90
   local lightness = 0.50 + ((hash % 60) / 400)    -- 0.50-0.65
-  local r, g, b = ark.Colors.hsl_to_rgb(hue, saturation, lightness)
-  return ark.Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = Colors.hsl_to_rgb(hue, saturation, lightness)
+  return Colors.components_to_rgba(r, g, b, 0xFF)
 end
 
 -- Re-export mode constants for backward compatibility
@@ -661,7 +661,7 @@ end
 local function compare_by_color(a, b)
   local color_a = a.color or 0
   local color_b = b.color or 0
-  return ark.Colors.compare_colors(color_a, color_b)
+  return Colors.compare_colors(color_a, color_b)
 end
 
 local function compare_by_index(a, b)
@@ -773,7 +773,7 @@ end
 local function compare_playlists_by_color(a, b)
   local color_a = a.chip_color or 0
   local color_b = b.chip_color or 0
-  return ark.Colors.compare_colors(color_a, color_b)
+  return Colors.compare_colors(color_a, color_b)
 end
 
 local function compare_playlists_by_index(a, b)
@@ -981,7 +981,7 @@ function M.get_mixed_pool_sorted()
     if sort_mode == "color" then
       local color_a = a.chip_color or a.color or 0
       local color_b = b.chip_color or b.color or 0
-      return ark.Colors.compare_colors(color_a, color_b)
+      return Colors.compare_colors(color_a, color_b)
     elseif sort_mode == "index" then
       local idx_a = a.index or a.rid or 0
       local idx_b = b.index or b.rid or 0

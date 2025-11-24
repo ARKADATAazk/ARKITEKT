@@ -3,7 +3,8 @@
 -- Track whitelist filter modal with tile-style TreeView
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Colors = require('arkitekt.core.colors')
+
 local M = {}
 
 -- Tile styling constants
@@ -98,14 +99,14 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
 
   -- Background
   local bg_alpha = is_selected and 0xCC or (is_hovered and 0x66 or 0x33)
-  local bg_color = ark.Colors.hexrgb("#2A2A2A")
-  bg_color = ark.Colors.with_alpha(bg_color, bg_alpha)
+  local bg_color = Colors.hexrgb("#2A2A2A")
+  bg_color = Colors.with_alpha(bg_color, bg_alpha)
 
   ImGui.DrawList_AddRectFilled(draw_list, tile_x, y, tile_x + tile_w, y + height, bg_color, rounding)
 
   -- Color bar on the left
   local bar_alpha = is_selected and 0xFF or 0x88
-  local bar_color = ark.Colors.with_alpha(track_data.display_color, bar_alpha)
+  local bar_color = Colors.with_alpha(track_data.display_color, bar_alpha)
 
   ImGui.DrawList_AddRectFilled(draw_list,
     tile_x, y,
@@ -117,7 +118,7 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
   if has_children then
     local arrow_x = tile_x + text_offset
     local arrow_y = y + (height - 6) / 2
-    local arrow_color = ark.Colors.hexrgb("#888888")
+    local arrow_color = Colors.hexrgb("#888888")
 
     if is_expanded then
       -- Down arrow
@@ -142,7 +143,7 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
   local text_y = y + (height - ImGui.GetTextLineHeight(ctx)) / 2
 
   local text_alpha = is_selected and 0xFF or 0xAA
-  local text_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), text_alpha)
+  local text_color = Colors.with_alpha(Colors.hexrgb("#FFFFFF"), text_alpha)
 
   ImGui.DrawList_AddText(draw_list, text_x, text_y, text_color, track_data.name)
 
@@ -151,7 +152,7 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
     local indicator_size = 6
     local indicator_x = tile_x + tile_w - TRACK_TILE.PADDING_X - indicator_size
     local indicator_y = y + (height - indicator_size) / 2
-    local indicator_color = ark.Colors.hexrgb("#42E896FF")
+    local indicator_color = Colors.hexrgb("#42E896FF")
 
     ImGui.DrawList_AddCircleFilled(draw_list,
       indicator_x + indicator_size/2, indicator_y + indicator_size/2,
@@ -309,7 +310,7 @@ function M.render_modal(ctx, state, bounds)
   local alpha = state.overlay_alpha or 1.0
 
   -- Draw scrim (darkened background)
-  local scrim_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#000000"), math.floor(0x80 * alpha))
+  local scrim_color = Colors.with_alpha(Colors.hexrgb("#000000"), math.floor(0x80 * alpha))
   ImGui.DrawList_AddRectFilled(draw_list, bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, scrim_color)
 
   -- Calculate modal size
@@ -341,15 +342,15 @@ function M.render_modal(ctx, state, bounds)
   end
 
   -- Modal background
-  local bg_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#1A1A1A"), math.floor(0xF5 * alpha))
+  local bg_color = Colors.with_alpha(Colors.hexrgb("#1A1A1A"), math.floor(0xF5 * alpha))
   ImGui.DrawList_AddRectFilled(draw_list, modal_x, modal_y, modal_x + modal_width, modal_y + modal_height, bg_color, 8)
 
   -- Border
-  local border_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#404040"), math.floor(0xFF * alpha))
+  local border_color = Colors.with_alpha(Colors.hexrgb("#404040"), math.floor(0xFF * alpha))
   ImGui.DrawList_AddRect(draw_list, modal_x, modal_y, modal_x + modal_width, modal_y + modal_height, border_color, 8)
 
   -- Header
-  local title_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), math.floor(0xFF * alpha))
+  local title_color = Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(0xFF * alpha))
   ImGui.DrawList_AddText(draw_list, modal_x + padding, modal_y + padding, title_color, "TRACK FILTER")
 
   -- Track count
@@ -370,7 +371,7 @@ function M.render_modal(ctx, state, bounds)
 
   local count_text = string.format("%d / %d selected", selected_count, total_count)
   local count_w = ImGui.CalcTextSize(ctx, count_text)
-  local count_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#888888"), math.floor(0xFF * alpha))
+  local count_color = Colors.with_alpha(Colors.hexrgb("#888888"), math.floor(0xFF * alpha))
   ImGui.DrawList_AddText(draw_list, modal_x + modal_width - padding - count_w, modal_y + padding, count_color, count_text)
 
   -- Depth slider area
@@ -389,7 +390,7 @@ function M.render_modal(ctx, state, bounds)
 
   -- Draw slider label
   local label_text = "Depth:"
-  local label_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#888888"), math.floor(0xFF * alpha))
+  local label_color = Colors.with_alpha(Colors.hexrgb("#888888"), math.floor(0xFF * alpha))
   ImGui.DrawList_AddText(draw_list, slider_x, slider_y + 2, label_color, label_text)
 
   local label_w = ImGui.CalcTextSize(ctx, label_text) + 8
@@ -397,7 +398,7 @@ function M.render_modal(ctx, state, bounds)
   local track_w = slider_w - label_w - 30  -- Leave space for value
 
   -- Slider track background
-  local track_bg = ark.Colors.with_alpha(ark.Colors.hexrgb("#2A2A2A"), math.floor(0xCC * alpha))
+  local track_bg = Colors.with_alpha(Colors.hexrgb("#2A2A2A"), math.floor(0xCC * alpha))
   local track_y = slider_y + 8
   local track_h = 4
   ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + track_w, track_y + track_h, track_bg, 2)
@@ -426,13 +427,13 @@ function M.render_modal(ctx, state, bounds)
   end
 
   -- Draw slider handle
-  local handle_color = is_over_slider and ark.Colors.hexrgb("#FFFFFF") or ark.Colors.hexrgb("#CCCCCC")
-  handle_color = ark.Colors.with_alpha(handle_color, math.floor(0xFF * alpha))
+  local handle_color = is_over_slider and Colors.hexrgb("#FFFFFF") or Colors.hexrgb("#CCCCCC")
+  handle_color = Colors.with_alpha(handle_color, math.floor(0xFF * alpha))
   ImGui.DrawList_AddCircleFilled(draw_list, handle_x, track_y + track_h / 2, handle_radius, handle_color)
 
   -- Draw current value
   local value_text = tostring(slider_value)
-  local value_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), math.floor(0xFF * alpha))
+  local value_color = Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(0xFF * alpha))
   ImGui.DrawList_AddText(draw_list, track_x + track_w + 8, slider_y + 2, value_color, value_text)
 
   -- Content area bounds (below slider)
@@ -487,14 +488,14 @@ function M.render_modal(ctx, state, bounds)
     select_all(state.track_tree)
   end
 
-  local all_bg = all_hovered and ark.Colors.hexrgb("#3A3A3A") or ark.Colors.hexrgb("#2A2A2A")
-  all_bg = ark.Colors.with_alpha(all_bg, math.floor(0xEE * alpha))
+  local all_bg = all_hovered and Colors.hexrgb("#3A3A3A") or Colors.hexrgb("#2A2A2A")
+  all_bg = Colors.with_alpha(all_bg, math.floor(0xEE * alpha))
   ImGui.DrawList_AddRectFilled(draw_list, all_x, btn_y, all_x + btn_width, btn_y + btn_height, all_bg, 4)
   local all_text_w = ImGui.CalcTextSize(ctx, "All")
   ImGui.DrawList_AddText(draw_list,
     all_x + (btn_width - all_text_w) / 2,
     btn_y + (btn_height - ImGui.GetTextLineHeight(ctx)) / 2,
-    ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), math.floor(0xEE * alpha)), "All")
+    Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(0xEE * alpha)), "All")
 
   -- "None" button
   local none_x = content_x + btn_width + 8
@@ -511,14 +512,14 @@ function M.render_modal(ctx, state, bounds)
     select_none(state.track_tree)
   end
 
-  local none_bg = none_hovered and ark.Colors.hexrgb("#3A3A3A") or ark.Colors.hexrgb("#2A2A2A")
-  none_bg = ark.Colors.with_alpha(none_bg, math.floor(0xEE * alpha))
+  local none_bg = none_hovered and Colors.hexrgb("#3A3A3A") or Colors.hexrgb("#2A2A2A")
+  none_bg = Colors.with_alpha(none_bg, math.floor(0xEE * alpha))
   ImGui.DrawList_AddRectFilled(draw_list, none_x, btn_y, none_x + btn_width, btn_y + btn_height, none_bg, 4)
   local none_text_w = ImGui.CalcTextSize(ctx, "None")
   ImGui.DrawList_AddText(draw_list,
     none_x + (btn_width - none_text_w) / 2,
     btn_y + (btn_height - ImGui.GetTextLineHeight(ctx)) / 2,
-    ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), math.floor(0xEE * alpha)), "None")
+    Colors.with_alpha(Colors.hexrgb("#FFFFFF"), math.floor(0xEE * alpha)), "None")
 
   return true  -- Modal is active, block input behind
 end

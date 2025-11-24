@@ -2,7 +2,8 @@
 -- TemplateBrowser/domain/tags.lua
 -- Tag management
 
-local ark = require('arkitekt')
+local Colors = require('arkitekt.core.colors')
+
 local M = {}
 
 -- Create a new tag
@@ -14,7 +15,7 @@ function M.create_tag(metadata, tag_name, color)
 
   metadata.tags[tag_name] = {
     name = tag_name,
-    color = color or ark.Colors.hexrgb("#646464"),  -- Default dark grey
+    color = color or Colors.hexrgb("#646464"),  -- Default dark grey
     created = os.time()
   }
 

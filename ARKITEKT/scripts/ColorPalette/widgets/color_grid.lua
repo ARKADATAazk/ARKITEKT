@@ -4,10 +4,12 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+
+local Colors = require('arkitekt.core.colors')
+local Draw = require('arkitekt.gui.draw')
 
 local M = {}
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Colors.hexrgb
 
 local ColorGrid = {}
 ColorGrid.__index = ColorGrid
@@ -88,11 +90,11 @@ function ColorGrid:draw(ctx, colors, config, allow_interaction)
     
     -- Use full color directly
     local fill_color = color
-    local border_color = ark.Colors.with_alpha(color, 0xFF)
+    local border_color = Colors.with_alpha(color, 0xFF)
     
     -- Apply hover brightening
     if is_hovered and self.hover_alpha > 0.01 then
-      fill_color = ark.Colors.lerp(fill_color, ark.Colors.adjust_brightness(color, 1.2), self.hover_alpha)
+      fill_color = Colors.lerp(fill_color, Colors.adjust_brightness(color, 1.2), self.hover_alpha)
     end
     
     -- Draw hover shadow
@@ -101,19 +103,19 @@ function ColorGrid:draw(ctx, colors, config, allow_interaction)
       local shadow_color = (0x000000 << 8) | shadow_alpha
       
       for offset = 2, 1, -1 do
-        ark.Draw.rect_filled(dl, x1 - offset, y1 - offset, x2 + offset, y2 + offset, shadow_color, rounding)
+        Draw.rect_filled(dl, x1 - offset, y1 - offset, x2 + offset, y2 + offset, shadow_color, rounding)
       end
     end
     
     -- Draw tile fill
-    ark.Draw.rect_filled(dl, x1, y1, x2, y2, fill_color, rounding)
+    Draw.rect_filled(dl, x1, y1, x2, y2, fill_color, rounding)
     
     -- Draw black border (1px)
-    ark.Draw.rect(dl, x1, y1, x2, y2, hexrgb("#000000"), rounding, 1)
+    Draw.rect(dl, x1, y1, x2, y2, hexrgb("#000000"), rounding, 1)
     
     -- Draw color border on top for hover effect
     if is_hovered then
-      ark.Draw.rect(dl, x1, y1, x2, y2, border_color, rounding, 2)
+      Draw.rect(dl, x1, y1, x2, y2, border_color, rounding, 2)
     end
     
     -- Create invisible button for interaction

@@ -3,7 +3,7 @@
 -- Factory for creating MIDI items grid
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Colors = require('arkitekt.core.colors')
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
 local MidiRenderer = require('ItemPicker.ui.grids.renderers.midi')
 local shared = require('ItemPicker.ui.grids.factories.grid_factory_shared')
@@ -147,9 +147,9 @@ function M.create(ctx, config, state, visualization, animator)
       -- Grays (sat < 0.08) are grouped at the end
       table.sort(filtered, function(a, b)
         if sort_reverse then
-          return ark.Colors.compare_colors(b.color, a.color)
+          return Colors.compare_colors(b.color, a.color)
         else
-          return ark.Colors.compare_colors(a.color, b.color)
+          return Colors.compare_colors(a.color, b.color)
         end
       end)
     elseif sort_mode == "name" then

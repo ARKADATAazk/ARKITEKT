@@ -12,15 +12,15 @@ local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])")
 -- ============================================================================
 
 local Shell = require("arkitekt.app.runtime.shell")
-local ark = require('arkitekt')
 local Config = require("ThemeAdjuster.core.config")
 local State = require("ThemeAdjuster.core.state")
 local ThemeParams = require("ThemeAdjuster.core.theme_params")
 local GUI = require("ThemeAdjuster.ui.gui")
 local StatusConfig = require("ThemeAdjuster.ui.status")
+local Colors = require("arkitekt.core.colors")
 local Settings = require("arkitekt.core.settings")
 
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Colors.hexrgb
 
 -- ============================================================================
 -- INITIALIZE SETTINGS

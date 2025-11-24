@@ -4,15 +4,20 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
 
 -- Import system
 local Shell = require('arkitekt.app.runtime.shell')
 
 -- Import base controls
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
+local Combo = require('arkitekt.gui.widgets.primitives.combo')
+
 -- Import panel system
+local Panel = require('arkitekt.gui.widgets.containers.panel')
 local Config = require('arkitekt.gui.widgets.containers.panel.defaults')
-local hexrgb = ark.Colors.hexrgb
+local Colors = require('arkitekt.core.colors')
+local hexrgb = Colors.hexrgb
 
 
 -- ============================================================================
@@ -174,7 +179,7 @@ local function create_test_panel()
     },
   }
 
-  return ark.Panel.new({
+  return Panel.new({
     id = "controls_test_panel",
     config = panel_config,
   })
@@ -195,7 +200,7 @@ local function draw_standalone_test(ctx)
   ImGui.Text(ctx, "Button (standalone):")
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  local button_result = ark.Button.draw(ctx, {
+  local button_result = Button.draw(ctx, {
     id = "standalone_button",
     draw_list = dl,
     x = cursor_x,
@@ -216,7 +221,7 @@ local function draw_standalone_test(ctx)
   ImGui.Text(ctx, "Search Input (standalone):")
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  local search_result = ark.InputText.search(ctx, {
+  local search_result = InputText.search(ctx, {
     id = "standalone_search",
     draw_list = dl,
     x = cursor_x,
@@ -244,7 +249,7 @@ local function draw_standalone_test(ctx)
   ImGui.Text(ctx, "Dropdown (standalone):")
   cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   
-  local dropdown_result = ark.Combo.draw(ctx, {
+  local dropdown_result = Combo.draw(ctx, {
     id = "standalone_dropdown",
     draw_list = dl,
     x = cursor_x,

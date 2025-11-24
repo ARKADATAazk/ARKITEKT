@@ -3,8 +3,9 @@
 -- VSTs tab: List of all FX with filtering
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Button = require('arkitekt.gui.widgets.primitives.button')
 local Chip = require('arkitekt.gui.widgets.data.chip')
+local Colors = require('arkitekt.core.colors')
 local Helpers = require('TemplateBrowser.ui.views.helpers')
 local UI = require('TemplateBrowser.ui.ui_constants')
 
@@ -35,11 +36,11 @@ function M.draw(ctx, state, config, width, height)
       label = button_label,
       width = UI.BUTTON.WIDTH_MEDIUM,
       height = UI.BUTTON.HEIGHT_DEFAULT,
-      bg_color = ark.Colors.hexrgb("#CC3333")
+      bg_color = Colors.hexrgb("#CC3333")
     }
   end
 
-  if ark.Button.draw_at_cursor(ctx, button_config, "force_reparse") then
+  if Button.draw_at_cursor(ctx, button_config, "force_reparse") then
     if state.reparse_armed then
       -- Second click - execute reparse
       reaper.ShowConsoleMsg("Force reparsing all templates...\n")
@@ -90,16 +91,16 @@ function M.draw(ctx, state, config, width, height)
       -- Use stored color or default dark grey with 80% transparency
       local bg_color
       if vst_color then
-        bg_color = is_selected and vst_color or ark.Colors.with_alpha(vst_color, 0xCC)
+        bg_color = is_selected and vst_color or Colors.with_alpha(vst_color, 0xCC)
       else
-        bg_color = is_selected and ark.Colors.hexrgb("#4A4A4ACC") or ark.Colors.hexrgb("#3A3A3ACC")
+        bg_color = is_selected and Colors.hexrgb("#4A4A4ACC") or Colors.hexrgb("#3A3A3ACC")
       end
 
       local clicked, chip_w, chip_h = Chip.draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
         bg_color = bg_color,
-        text_color = vst_color and ark.Colors.auto_text_color(vst_color) or ark.Colors.hexrgb("#FFFFFF"),
+        text_color = vst_color and Colors.auto_text_color(vst_color) or Colors.hexrgb("#FFFFFF"),
         height = 22,
         padding_h = 8,
         rounding = 2,

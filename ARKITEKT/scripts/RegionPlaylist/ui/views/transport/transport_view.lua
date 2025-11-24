@@ -4,7 +4,6 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
 
 local TransportContainer = require('RegionPlaylist.ui.views.transport.transport_container')
 local TransportIcons = require('RegionPlaylist.ui.views.transport.transport_icons')
@@ -12,7 +11,8 @@ local ButtonWidgets = require('RegionPlaylist.ui.views.transport.button_widgets'
 local DisplayWidget = require('RegionPlaylist.ui.views.transport.display_widget')
 local CoreConfig = require('RegionPlaylist.core.config')
 local Strings = require('RegionPlaylist.defs.strings')
-local hexrgb = ark.Colors.hexrgb
+local Colors = require('arkitekt.core.colors')
+local hexrgb = Colors.hexrgb
 
 local M = {}
 
@@ -259,15 +259,15 @@ function TransportView:build_quantize_dropdown(bridge_state)
 
         local label = "Jump Lookahead"
         local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
-        local label_color = ark.Colors.hexrgb("#E0E0E0FF")
+        local label_color = Colors.hexrgb("#E0E0E0FF")
         ImGui.DrawList_AddText(dl, label_x + padding, label_y, label_color, label)
         ImGui.Dummy(ctx, width, 20)
 
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, ark.Colors.hexrgb("#1A1A1AFF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, ark.Colors.hexrgb("#222222FF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, ark.Colors.hexrgb("#252525FF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, ark.Colors.hexrgb("#606060FF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, ark.Colors.hexrgb("#707070FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#1A1A1AFF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#222222FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#252525FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, Colors.hexrgb("#606060FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, Colors.hexrgb("#707070FF"))
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabMinSize, 14)
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 4, 6)
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabRounding, 0)
@@ -725,15 +725,15 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
 
         local label = "Jump Lookahead"
         local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
-        local label_color = ark.Colors.hexrgb("#E0E0E0FF")
+        local label_color = Colors.hexrgb("#E0E0E0FF")
         ImGui.DrawList_AddText(dl, label_x + padding, label_y, label_color, label)
         ImGui.Dummy(ctx, width, 20)
 
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, ark.Colors.hexrgb("#1A1A1AFF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, ark.Colors.hexrgb("#222222FF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, ark.Colors.hexrgb("#252525FF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, ark.Colors.hexrgb("#606060FF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, ark.Colors.hexrgb("#707070FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Colors.hexrgb("#1A1A1AFF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Colors.hexrgb("#222222FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Colors.hexrgb("#252525FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, Colors.hexrgb("#606060FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, Colors.hexrgb("#707070FF"))
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabMinSize, 14)
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 4, 6)
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabRounding, 0)

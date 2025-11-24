@@ -9,7 +9,6 @@ local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])")
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
 -- ============================================================================
 local ProfilerInit = require('arkitekt.debug.profiler_init')
-local ark = require('arkitekt')
 local profiler_enabled = ProfilerInit.init()
 
 -- ============================================================================
@@ -21,7 +20,9 @@ local Config = require("RegionPlaylist.core.config")
 local State = require("RegionPlaylist.core.app_state")
 local GUI = require("RegionPlaylist.ui.gui")
 local StatusConfig = require("RegionPlaylist.ui.status")
-local hexrgb = ark.Colors.hexrgb
+local Colors = require("arkitekt.core.colors")
+
+local hexrgb = Colors.hexrgb
 
 -- State needs settings for initialization - Shell will auto-create from app_name
 local Settings = require("arkitekt.core.settings")

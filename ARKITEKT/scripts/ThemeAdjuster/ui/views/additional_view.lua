@@ -3,9 +3,12 @@
 -- Additional parameters tab - Grid-based tile manager
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
+local Button = require('arkitekt.gui.widgets.primitives.button')
 local Background = require('arkitekt.gui.widgets.containers.panel.background')
-local hexrgb = ark.Colors.hexrgb
+local Style = require('arkitekt.gui.style.defaults')
+local Colors = require('arkitekt.core.colors')
+local hexrgb = Colors.hexrgb
 local Constants = require('ThemeAdjuster.defs.constants')
 local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
 local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
@@ -18,7 +21,7 @@ local AssignmentGridFactory = require('ThemeAdjuster.ui.grids.assignment_grid_fa
 local ParamLinkModal = require('ThemeAdjuster.ui.views.param_link_modal')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
 
-local PC = ark.Style.PANEL_COLORS
+local PC = Style.PANEL_COLORS
 
 local M = {}
 local AdditionalView = {}
@@ -455,7 +458,7 @@ function AdditionalView:draw(ctx, shell_state)
   ImGui.SameLine(ctx, 0, 20)
 
   -- Filter Groups button
-  if ark.Button.draw_at_cursor(ctx, {
+  if Button.draw_at_cursor(ctx, {
     label = "Filter Groups",
     width = 120,
     height = 24,
@@ -476,7 +479,7 @@ function AdditionalView:draw(ctx, shell_state)
   ImGui.SameLine(ctx, 0, 8)
 
   -- Export button
-  if ark.Button.draw_at_cursor(ctx, {
+  if Button.draw_at_cursor(ctx, {
     label = "Export to JSON",
     width = 120,
     height = 24,
@@ -731,7 +734,7 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
     ImGui.Dummy(ctx, 0, 8)
 
     -- Action buttons
-    if ark.Button.draw_at_cursor(ctx, {
+    if Button.draw_at_cursor(ctx, {
       label = "Enable All",
       width = 100,
       height = 24,
@@ -747,7 +750,7 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
 
     ImGui.SameLine(ctx, 0, 8)
 
-    if ark.Button.draw_at_cursor(ctx, {
+    if Button.draw_at_cursor(ctx, {
       label = "Disable All",
       width = 100,
       height = 24,
@@ -763,7 +766,7 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
 
     ImGui.SameLine(ctx, 0, 8)
 
-    if ark.Button.draw_at_cursor(ctx, {
+    if Button.draw_at_cursor(ctx, {
       label = "Reset to Defaults",
       width = 130,
       height = 24,
@@ -791,7 +794,7 @@ function AdditionalView:draw_group_filter_dialog(ctx, shell_state)
         local param_count = #group.params
 
         -- Checkbox
-        if ark.Checkbox.draw_at_cursor(ctx, "", is_enabled, nil, "group_check_" .. i) then
+        if Checkbox.draw_at_cursor(ctx, "", is_enabled, nil, "group_check_" .. i) then
           self.enabled_groups[group.name] = not is_enabled
           self:apply_group_filter()
           self:save_group_filter()

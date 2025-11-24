@@ -5,10 +5,10 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
 
+local Colors = require('arkitekt.core.colors')
 local TileFXConfig = require('arkitekt.gui.rendering.tile.defaults')
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Colors.hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -55,7 +55,7 @@ M.DEFAULT_CONFIG = {
 }
 
 local function process_tile_fill_color(base_color, opacity, saturation, brightness)
-  local r, g, b, _ = ark.Colors.rgba_to_components(base_color)
+  local r, g, b, _ = Colors.rgba_to_components(base_color)
 
   if saturation ~= 1.0 then
     local gray = r * 0.299 + g * 0.587 + b * 0.114
@@ -71,7 +71,7 @@ local function process_tile_fill_color(base_color, opacity, saturation, brightne
   end
 
   local alpha = (255 * opacity)//1
-  return ark.Colors.components_to_rgba(r, g, b, alpha)
+  return Colors.components_to_rgba(r, g, b, alpha)
 end
 
 local function process_tile_border_color(base_color)
@@ -80,7 +80,7 @@ local function process_tile_border_color(base_color)
   local brightness = fx_config.border_brightness
   local alpha = 0xFF
   
-  return ark.Colors.same_hue_variant(base_color, saturation, brightness, alpha)
+  return Colors.same_hue_variant(base_color, saturation, brightness, alpha)
 end
 
 function M.render_gradient_background(dl, x1, y1, x2, y2, color_left, color_right, rounding, gradient_config, jump_flash_alpha, jump_flash_config)
@@ -98,13 +98,13 @@ function M.render_gradient_background(dl, x1, y1, x2, y2, color_left, color_righ
   local processed_left = process_tile_fill_color(color_left, opacity, saturation, brightness)
   local processed_right = process_tile_fill_color(color_right, opacity, saturation, brightness)
 
-  local r1, g1, b1, a1 = ark.Colors.rgba_to_components(processed_left)
-  local r2, g2, b2, a2 = ark.Colors.rgba_to_components(processed_right)
+  local r1, g1, b1, a1 = Colors.rgba_to_components(processed_left)
+  local r2, g2, b2, a2 = Colors.rgba_to_components(processed_right)
 
-  local color_tl = ark.Colors.components_to_rgba(r1, g1, b1, a1)
-  local color_tr = ark.Colors.components_to_rgba(r2, g2, b2, a2)
-  local color_bl = ark.Colors.components_to_rgba(r1, g1, b1, a1)
-  local color_br = ark.Colors.components_to_rgba(r2, g2, b2, a2)
+  local color_tl = Colors.components_to_rgba(r1, g1, b1, a1)
+  local color_tr = Colors.components_to_rgba(r2, g2, b2, a2)
+  local color_bl = Colors.components_to_rgba(r1, g1, b1, a1)
+  local color_br = Colors.components_to_rgba(r2, g2, b2, a2)
 
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, color_tl, rounding, ImGui.DrawFlags_RoundCornersAll)
 
@@ -118,18 +118,18 @@ function M.render_progress_gradient(dl, x1, y1, x2, y2, color_left, color_right,
   local processed_left = process_tile_border_color(color_left)
   local processed_right = process_tile_border_color(color_right)
   
-  local r1, g1, b1, a1 = ark.Colors.rgba_to_components(processed_left)
-  local r2, g2, b2, a2 = ark.Colors.rgba_to_components(processed_right)
+  local r1, g1, b1, a1 = Colors.rgba_to_components(processed_left)
+  local r2, g2, b2, a2 = Colors.rgba_to_components(processed_right)
 
   local boost_factor = 1.15
   r2 = min(255, (r2 * boost_factor)//1)
   g2 = min(255, (g2 * boost_factor)//1)
   b2 = min(255, (b2 * boost_factor)//1)
   
-  local color_tl = ark.Colors.components_to_rgba(r1, g1, b1, a1)
-  local color_tr = ark.Colors.components_to_rgba(r2, g2, b2, a2)
-  local color_bl = ark.Colors.components_to_rgba(r1, g1, b1, a1)
-  local color_br = ark.Colors.components_to_rgba(r2, g2, b2, a2)
+  local color_tl = Colors.components_to_rgba(r1, g1, b1, a1)
+  local color_tr = Colors.components_to_rgba(r2, g2, b2, a2)
+  local color_bl = Colors.components_to_rgba(r1, g1, b1, a1)
+  local color_br = Colors.components_to_rgba(r2, g2, b2, a2)
   
   ImGui.DrawList_AddRectFilledMultiColor(dl, x1, y1, x2, y2, color_tl, color_tr, color_br, color_bl)
 end
@@ -142,8 +142,8 @@ function M.render_specular(dl, x1, y1, x2, y2, config, hover_factor)
   local spec_y2 = y1 + spec_cfg.height
 
   local alpha_top = (255 * strength)//1
-  local color_top = ark.Colors.components_to_rgba(255, 255, 255, alpha_top)
-  local color_bottom = ark.Colors.components_to_rgba(255, 255, 255, 0)
+  local color_top = Colors.components_to_rgba(255, 255, 255, alpha_top)
+  local color_bottom = Colors.components_to_rgba(255, 255, 255, 0)
   
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
   ImGui.DrawList_AddRectFilledMultiColor(dl, x1, y1, x2, spec_y2,
@@ -159,8 +159,8 @@ function M.render_inner_glow(dl, x1, y1, x2, y2, config, hover_factor)
   local size = glow_cfg.size
   local alpha = (255 * strength)//1
   
-  local shadow_color = ark.Colors.components_to_rgba(0, 0, 0, alpha)
-  local transparent = ark.Colors.components_to_rgba(0, 0, 0, 0)
+  local shadow_color = Colors.components_to_rgba(0, 0, 0, alpha)
+  local transparent = Colors.components_to_rgba(0, 0, 0, 0)
   
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
   

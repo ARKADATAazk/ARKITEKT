@@ -3,16 +3,18 @@
 -- Right panel view: Template info & tag assignment
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
+local Colors = require('arkitekt.core.colors')
 local TemplateOps = require('TemplateBrowser.domain.template_ops')
 local Tags = require('TemplateBrowser.domain.tags')
+local Button = require('arkitekt.gui.widgets.primitives.button')
+local MarkdownField = require('arkitekt.gui.widgets.primitives.markdown_field')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')
 local Tooltips = require('TemplateBrowser.core.tooltips')
 local UI = require('TemplateBrowser.ui.ui_constants')
 
 local M = {}
-local hexrgb = ark.Colors.hexrgb
+local hexrgb = Colors.hexrgb
 
 -- Draw a u-he style section header (dim text, left-aligned)
 local function draw_section_header(ctx, title)
@@ -85,11 +87,11 @@ local function draw_info_panel(ctx, gui, width, height)
 
       -- Initialize markdown field with current notes
       local notes_field_id = "template_notes_" .. tmpl.uuid
-      if ark.MarkdownField.get_text(notes_field_id) ~= notes and not ark.MarkdownField.is_editing(notes_field_id) then
-        ark.MarkdownField.set_text(notes_field_id, notes)
+      if MarkdownField.get_text(notes_field_id) ~= notes and not MarkdownField.is_editing(notes_field_id) then
+        MarkdownField.set_text(notes_field_id, notes)
       end
 
-      local notes_changed, new_notes = ark.MarkdownField.draw_at_cursor(ctx, {
+      local notes_changed, new_notes = MarkdownField.draw_at_cursor(ctx, {
         width = content_w,
         height = 100,
         text = notes,
@@ -179,7 +181,7 @@ local function draw_info_panel(ctx, gui, width, height)
       draw_section_header(ctx, "ACTIONS")
 
       -- Apply to Selected Track (primary action)
-      if ark.Button.draw_at_cursor(ctx, {
+      if Button.draw_at_cursor(ctx, {
         label = "Apply to Track",
         width = content_w,
         height = 28,
@@ -194,7 +196,7 @@ local function draw_info_panel(ctx, gui, width, height)
       ImGui.Dummy(ctx, 0, 4)
 
       -- Insert as New Track
-      if ark.Button.draw_at_cursor(ctx, {
+      if Button.draw_at_cursor(ctx, {
         label = "Insert as New Track",
         width = content_w,
         height = 24,
@@ -206,7 +208,7 @@ local function draw_info_panel(ctx, gui, width, height)
       ImGui.Dummy(ctx, 0, 4)
 
       -- Rename
-      if ark.Button.draw_at_cursor(ctx, {
+      if Button.draw_at_cursor(ctx, {
         label = "Rename (F2)",
         width = content_w,
         height = 24,

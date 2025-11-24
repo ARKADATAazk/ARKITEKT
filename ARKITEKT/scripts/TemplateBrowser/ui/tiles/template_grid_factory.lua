@@ -3,8 +3,8 @@
 -- Grid factory for template tiles
 
 local ImGui = require 'imgui' '0.10'
-local ark = require('arkitekt')
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
+local Colors = require('arkitekt.core.colors')
 local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
 local TemplateTileCompact = require('TemplateBrowser.ui.tiles.template_tile_compact')
 local DragDrop = require('arkitekt.gui.systems.drag_drop')
@@ -218,9 +218,9 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
 
       -- Marquee selection box (use ARKITEKT library defaults)
       marquee = {
-        fill_color = ark.Colors.hexrgb("#FFFFFF22"),  -- 13% opacity white
-        fill_color_add = ark.Colors.hexrgb("#FFFFFF33"),  -- 20% opacity for additive selection
-        stroke_color = ark.Colors.hexrgb("#FFFFFF"),  -- Full white stroke
+        fill_color = Colors.hexrgb("#FFFFFF22"),  -- 13% opacity white
+        fill_color_add = Colors.hexrgb("#FFFFFF33"),  -- 20% opacity for additive selection
+        stroke_color = Colors.hexrgb("#FFFFFF"),  -- Full white stroke
         stroke_thickness = 1,
         rounding = 0,
       },

@@ -3,7 +3,8 @@
 -- Import playlists from SWS Region Playlist format
 
 local RegionState = require("RegionPlaylist.storage.persistence")
-local ark = require('arkitekt')
+local Colors = require("arkitekt.core.colors")
+
 local M = {}
 
 -- Constants
