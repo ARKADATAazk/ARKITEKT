@@ -51,19 +51,19 @@ function M.load(ImGui, ctx, opts)
 
   -- Find fonts directory
   local fonts_dir = find_fonts_dir()
-  local dejavu_regular = fonts_dir .. 'DejaVuSans.ttf'
-  local dejavu_bold = fonts_dir .. 'DejaVuSans-Bold.ttf'
+  local roboto_extended = fonts_dir .. 'Roboto-Extended-Regular.ttf'
+  local roboto_extended_medium = fonts_dir .. 'Roboto-Extended-Medium.ttf'
   local mono = fonts_dir .. 'JetBrainsMono-Regular.ttf'
   local orbitron = fonts_dir .. 'Orbitron-Bold.ttf'
   local remixicon = fonts_dir .. 'remixicon.ttf'
 
-  -- Use DejaVu Sans for full Unicode coverage (35,000+ glyphs including ⋮, ↑, ↓)
-  -- DejaVu Sans maintains consistent metrics and spacing across platforms
+  -- Use Roboto Extended (Roboto + DejaVu Unicode arrows)
+  -- Maintains Roboto aesthetic with Unicode arrow support (↑ ↓)
   local fonts = {
-    default = file_exists(dejavu_regular) and ImGui.CreateFontFromFile(dejavu_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0),
+    default = file_exists(roboto_extended) and ImGui.CreateFontFromFile(roboto_extended, 0, 0) or ImGui.CreateFont('sans-serif', 0),
     default_size = default_size,
 
-    title = file_exists(dejavu_regular) and ImGui.CreateFontFromFile(dejavu_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0),
+    title = file_exists(roboto_extended) and ImGui.CreateFontFromFile(roboto_extended, 0, 0) or ImGui.CreateFont('sans-serif', 0),
     title_size = title_size,
 
     monospace = file_exists(mono) and ImGui.CreateFontFromFile(mono, 0, 0) or ImGui.CreateFont('monospace', 0),

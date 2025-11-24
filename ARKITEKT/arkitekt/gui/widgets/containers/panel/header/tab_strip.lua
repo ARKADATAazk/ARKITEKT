@@ -363,8 +363,8 @@ local function draw_overflow_button(ctx, dl, x, y, width, height, config, hidden
     if btn_cfg[k] == nil then btn_cfg[k] = v end
   end
 
-  -- Use vertical ellipsis (⋮) when no overflow, count when overflow exists
-  local display_text = (hidden_count > 0) and tostring(hidden_count) or "⋮"
+  -- Use horizontal ellipsis when no overflow, count when overflow exists
+  local display_text = (hidden_count > 0) and tostring(hidden_count) or "..."
 
   local is_hovered = InteractionBlocking.is_mouse_hovering_rect_unblocked(ctx, x, y, x + width, y + height)
   local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
