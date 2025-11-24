@@ -488,6 +488,13 @@ local function test_unicode_diversity(ctx)
     {"Diacritic", "Ä Ö Ü ä ö ü ß Ñ ñ Ç ç É é È è Ê ê"},
     {"Punctuat", "‚ „ ' ' \" \" « » ‹ › ¿ ¡ ‐ – — ― … ′ ″ ‴"},
     {"Tech", "⌘ ⌥ ⇧ ⌃ ⎋ ⌫ ⌦ ↩ ⏎ ⌨ ⏏ ⏻ ⏼ ⏽"},
+    {"Shapes", "△ ▲ ▴ ▵ ▷ ▶ ▸ ▹ ▽ ▼ ▾ ▿ ◁ ◀ ◂ ◃ ◇ ◆ ◊ ○ ● ◐ ◑ ◒ ◓ ◔ ◕"},
+    {"Fractions", "½ ⅓ ⅔ ¼ ¾ ⅛ ⅜ ⅝ ⅞ ⅕ ⅖ ⅗ ⅘ ⅙ ⅚ ⅐ ⅑ ⅒"},
+    {"Sub/Super", "⁰ ¹ ² ³ ⁴ ⁵ ⁶ ⁷ ⁸ ⁹ ⁺ ⁻ ⁼ ⁽ ⁾ ₀ ₁ ₂ ₃ ₄ ₅ ₆ ₇ ₈ ₉ ₊ ₋ ₌ ₍ ₎"},
+    {"Cards", "♠ ♣ ♥ ♦ ♤ ♧ ♡ ♢"},
+    {"Chess", "♔ ♕ ♖ ♗ ♘ ♙ ♚ ♛ ♜ ♝ ♞ ♟"},
+    {"Misc", "© ® ™ ℃ ℉ № ℗ ℠ ℡ ℮ ⅍ ⅎ ℓ ℔ ℥ Ω ℧ ℨ ℩"},
+    {"Braille", "⠁ ⠃ ⠉ ⠙ ⠑ ⠋ ⠛ ⠓ ⠊ ⠚"},
   }
 
   for _, category in ipairs(test_categories) do
