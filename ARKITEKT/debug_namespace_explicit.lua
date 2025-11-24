@@ -4,7 +4,22 @@
 
 -- Make sure we can see output
 reaper.ShowConsoleMsg("=== ARKITEKT Namespace Debug ===\n")
-reaper.ShowConsoleMsg("Starting tests...\n\n")
+
+-- Enable debug mode for namespace
+os.setenv("ARK_DEBUG", "1")
+
+-- Setup package path first
+local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
+local root_path = script_path
+if not root_path:match("[\\/]$") then root_path = root_path .. "/" end
+
+reaper.ShowConsoleMsg("Root: " .. root_path .. "\n")
+
+-- Add arkitekt to package path
+package.path = root_path .. "?.lua;" .. root_path .. "?/init.lua;" .. package.path
+package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
+
+reaper.ShowConsoleMsg("Package path set\n\n")
 
 -- Test 1: Load namespace itself
 reaper.ShowConsoleMsg("Test 1: Loading ark namespace...\n")
