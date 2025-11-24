@@ -1,12 +1,11 @@
 -- @noindex
 -- RegionPlaylist/ui/tiles/renderers/pool.lua
--- MODIFIED: Using Colors.hexrgb() for all color definitions
+-- MODIFIED: Using ark.Colors.hexrgb() for all color definitions
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local ark = require('arkitekt')
 
-local Colors = require('arkitekt.core.colors')
-local Draw = require('arkitekt.gui.draw')
 local TileFXConfig = require('arkitekt.gui.rendering.tile.defaults')
 local TileUtil = require('RegionPlaylist.core.tile_utilities')
 local BaseRenderer = require('RegionPlaylist.ui.tiles.renderers.base')
@@ -19,34 +18,34 @@ local sqrt = math.sqrt
 local M = {}
 
 M.CONFIG = {
-  bg_base = Colors.hexrgb("#1A1A1A"),
+  bg_base = ark.Colors.hexrgb("#1A1A1A"),
   disabled = { desaturate = 0.9, brightness = 0.5, alpha_multiplier = 0.6, min_lightness = 0.28 },
   responsive = { hide_length_below = 35, hide_text_below = 15 },
   playlist_tile = { 
-    base_color = Colors.hexrgb("#3A3A3A"), 
-    name_color = Colors.hexrgb("#CCCCCC"), 
-    badge_color = Colors.hexrgb("#999999") 
+    base_color = ark.Colors.hexrgb("#3A3A3A"), 
+    name_color = ark.Colors.hexrgb("#CCCCCC"), 
+    badge_color = ark.Colors.hexrgb("#999999") 
   },
   text_margin_right = 6,
   badge_margin = 6,
   badge_padding_x = 6,
   badge_padding_y = 3,
   badge_rounding = 4,
-  badge_bg = Colors.hexrgb("#14181C"),
+  badge_bg = ark.Colors.hexrgb("#14181C"),
   badge_border_alpha = 0x33,
   badge_nudge_x = 0,
   badge_nudge_y = 0,
   badge_text_nudge_x = -1,
   badge_text_nudge_y = -2,
   circular = {
-    base_color = Colors.hexrgb("#240C0Cff"),
-    stripe_color = Colors.with_alpha(Colors.hexrgb("#430d0d85"), 0x33),
-    border_color = Colors.hexrgb("#240f0fff"),
-    text_color = Colors.hexrgb("#901b1bff"),
-    lock_color = Colors.hexrgb("#901b1bff"),
-    playlist_chip_color = Colors.hexrgb("#901b1bff"),
-    badge_bg = Colors.hexrgb("#240C0Cff"),
-    badge_border_color = Colors.hexrgb("#652a2aff"),
+    base_color = ark.Colors.hexrgb("#240C0Cff"),
+    stripe_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#430d0d85"), 0x33),
+    border_color = ark.Colors.hexrgb("#240f0fff"),
+    text_color = ark.Colors.hexrgb("#901b1bff"),
+    lock_color = ark.Colors.hexrgb("#901b1bff"),
+    playlist_chip_color = ark.Colors.hexrgb("#901b1bff"),
+    badge_bg = ark.Colors.hexrgb("#240C0Cff"),
+    badge_border_color = ark.Colors.hexrgb("#652a2aff"),
     lock_base_w = 11,
     lock_base_h = 7,
     lock_handle_w = 2,
@@ -59,10 +58,10 @@ M.CONFIG = {
 }
 
 local function clamp_min_lightness(color, min_l)
-  local lum = Colors.luminance(color)
+  local lum = ark.Colors.luminance(color)
   if lum < (min_l or 0) then
     local factor = (min_l + 0.001) / max(lum, 0.001)
-    return Colors.adjust_brightness(color, factor)
+    return ark.Colors.adjust_brightness(color, factor)
   end
   return color
 end
@@ -160,15 +159,15 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
   local base_color = M.CONFIG.playlist_tile.base_color
   local playlist_data = {
     name = playlist.name or "Unnamed Playlist",
-    chip_color = playlist.chip_color or Colors.hexrgb("#FF5733"),
+    chip_color = playlist.chip_color or ark.Colors.hexrgb("#FF5733"),
     total_duration = playlist.total_duration or 0
   }
 
   if disabled_factor > 0 then
-    base_color = Colors.desaturate(base_color, M.CONFIG.disabled.desaturate * disabled_factor)
-    base_color = Colors.adjust_brightness(base_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
-    playlist_data.chip_color = Colors.desaturate(playlist_data.chip_color, M.CONFIG.disabled.desaturate * disabled_factor)
-    playlist_data.chip_color = Colors.adjust_brightness(playlist_data.chip_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+    base_color = ark.Colors.desaturate(base_color, M.CONFIG.disabled.desaturate * disabled_factor)
+    base_color = ark.Colors.adjust_brightness(base_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+    playlist_data.chip_color = ark.Colors.desaturate(playlist_data.chip_color, M.CONFIG.disabled.desaturate * disabled_factor)
+    playlist_data.chip_color = ark.Colors.adjust_brightness(playlist_data.chip_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     local minL = M.CONFIG.disabled.min_lightness or 0.28
     base_color = clamp_min_lightness(base_color, minL)
     playlist_data.chip_color = clamp_min_lightness(playlist_data.chip_color, minL)
@@ -207,10 +206,10 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
     
     local name_color = M.CONFIG.playlist_tile.name_color
     if disabled_factor > 0 then
-      name_color = Colors.adjust_brightness(name_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+      name_color = ark.Colors.adjust_brightness(name_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     end
     if (state.hover or state.selected) and not is_disabled then
-      name_color = Colors.hexrgb("#FFFFFF")
+      name_color = ark.Colors.hexrgb("#FFFFFF")
     end
 
     BaseRenderer.draw_playlist_text(ctx, dl, text_pos, playlist_data, state, text_alpha, right_bound_x, name_color, actual_height, rect, grid, base_color, key)
@@ -231,16 +230,16 @@ function M.render_playlist(ctx, rect, playlist, state, animator, hover_config, t
     
     local badge_border_color = playlist_data.chip_color
     if disabled_factor > 0 then
-      badge_border_color = Colors.adjust_brightness(badge_border_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
+      badge_border_color = ark.Colors.adjust_brightness(badge_border_color, 1.0 - ((1.0 - M.CONFIG.disabled.brightness) * disabled_factor))
     end
     if (state.hover or state.selected) and not is_disabled then
       badge_border_color = playlist_data.chip_color
     end
     
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors.with_alpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, ark.Colors.with_alpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
     
     -- Use whiter text like active tiles
-    Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, Colors.with_alpha(Colors.hexrgb("#FFFFFFDD"), text_alpha), badge_text)
+    ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFFDD"), text_alpha), badge_text)
   end
   
   -- Draw playlist duration in bottom right (like regions)
@@ -319,7 +318,7 @@ function M.render_circular_playlist(ctx, rect, playlist, state, animator, hover_
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
     
     local badge_border_color = M.CONFIG.circular.badge_border_color
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, Colors.with_alpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, ark.Colors.with_alpha(badge_border_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
     
     -- Draw lock icon centered in badge
     local lock_x = badge_x + (badge_x2 - badge_x) * 0.5

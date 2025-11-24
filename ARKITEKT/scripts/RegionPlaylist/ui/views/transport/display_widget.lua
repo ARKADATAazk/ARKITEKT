@@ -4,12 +4,12 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local ark = require('arkitekt')
 
-local Colors = require('arkitekt.core.colors')
 local TileFXConfig = require('arkitekt.gui.rendering.tile.defaults')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
 local Chip = require('arkitekt.gui.widgets.data.chip')
-local hexrgb = Colors.hexrgb
+local hexrgb = ark.Colors.hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -82,18 +82,18 @@ end
 local function ensure_minimum_brightness(color, min_luminance)
   min_luminance = min_luminance or 0.15
 
-  local lum = Colors.luminance(color)
+  local lum = ark.Colors.luminance(color)
   if lum >= min_luminance then
     return color
   end
 
   local boost_factor = min_luminance / max(lum, 0.01)
-  return Colors.adjust_brightness(color, boost_factor)
+  return ark.Colors.adjust_brightness(color, boost_factor)
 end
 
 local function ensure_progress_bar_brightness(color)
   -- Ensure progress bar is never too dark (min 30% brightness)
-  local r, g, b, a = Colors.rgba_to_components(color)
+  local r, g, b, a = ark.Colors.rgba_to_components(color)
   local lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255.0
 
   if lum < 0.30 then
@@ -103,7 +103,7 @@ local function ensure_progress_bar_brightness(color)
     b = min(255, (b * boost)//1)
   end
 
-  return Colors.components_to_rgba(r, g, b, a)
+  return ark.Colors.components_to_rgba(r, g, b, a)
 end
 
 function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_region, next_region, playlist_data, region_colors, time_font)
@@ -238,7 +238,7 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
       name_str = truncate_text(name_str, truncate_len)
     end
 
-    local index_color = Colors.same_hue_variant(current_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
+    local index_color = ark.Colors.same_hue_variant(current_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
     local name_color = hexrgb("#FFFFFF")
 
     local index_w = ImGui.CalcTextSize(ctx, index_str)
@@ -269,7 +269,7 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
       name_str = truncate_text(name_str, truncate_len)
     end
 
-    local index_color = Colors.same_hue_variant(next_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
+    local index_color = ark.Colors.same_hue_variant(next_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
     local name_color = hexrgb("#FFFFFF")
 
     local index_w = ImGui.CalcTextSize(ctx, index_str)

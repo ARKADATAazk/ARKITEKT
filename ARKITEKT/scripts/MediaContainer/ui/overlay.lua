@@ -3,8 +3,7 @@
 -- Draw container bounds on arrange view with drag support
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
-
+local ark = require('arkitekt')
 local M = {}
 
 -- Drag state
@@ -188,7 +187,7 @@ function M.draw_containers(ctx, draw_list, State)
     -- Fill color (semi-transparent)
     local fill_alpha = is_linked and 0.15 or 0.20
     if is_dragging then fill_alpha = fill_alpha + 0.1 end
-    local r, g, b, a = Colors.rgba_to_components(base_color)
+    local r, g, b, a = ark.Colors.rgba_to_components(base_color)
     local fill_color = ImGui.ColorConvertDouble4ToU32(r/255, g/255, b/255, fill_alpha)
 
     -- Border color

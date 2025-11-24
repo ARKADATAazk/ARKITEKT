@@ -3,13 +3,12 @@
 -- Centralized playlist operations with automatic undo/save/sync
 -- Relies on bridge invalidate logic instead of manual engine sync
 
+local ark = require('arkitekt')
 local M = {}
 local Controller = {}
 Controller.__index = Controller
 
 package.loaded["RegionPlaylist.core.controller"] = M
-
-local UUID = require("arkitekt.core.uuid")
 
 function M.new(state_module, settings, undo_manager)
   local ctrl = setmetatable({
@@ -45,11 +44,11 @@ function Controller:_get_playlist(id)
 end
 
 function Controller:_generate_playlist_id()
-  return UUID.generate()
+  return ark.UUID.generate()
 end
 
 function Controller:_generate_item_key()
-  return UUID.generate()
+  return ark.UUID.generate()
 end
 
 function Controller:_generate_unique_name(base_name, exclude_id)

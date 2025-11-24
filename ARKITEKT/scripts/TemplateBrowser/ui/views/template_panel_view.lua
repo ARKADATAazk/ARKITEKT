@@ -3,7 +3,7 @@
 -- Middle panel view: Recent templates + template grid
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
+local ark = require('arkitekt')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
 
 local M = {}
@@ -111,7 +111,7 @@ local function draw_template_panel(ctx, gui, width, height)
           style = Chip.STYLE.ACTION,
           label = tag_name,
           bg_color = tag_data.color,
-          text_color = Colors.auto_text_color(tag_data.color),
+          text_color = ark.Colors.auto_text_color(tag_data.color),
           height = chip_height,
           padding_h = 8,
           rounding = 2,
@@ -143,8 +143,8 @@ local function draw_template_panel(ctx, gui, width, height)
       local clicked = Chip.draw(ctx, {
         style = Chip.STYLE.ACTION,
         label = fx_name,
-        bg_color = Colors.hexrgb("#888888"),
-        text_color = Colors.hexrgb("#000000"),
+        bg_color = ark.Colors.hexrgb("#888888"),
+        text_color = ark.Colors.hexrgb("#000000"),
         height = chip_height,
         padding_h = 8,
         rounding = 2,

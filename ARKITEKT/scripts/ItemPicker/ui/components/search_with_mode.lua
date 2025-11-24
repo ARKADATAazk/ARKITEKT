@@ -3,8 +3,7 @@
 -- Custom search field with mode selector using dropdown primitive
 
 local ImGui = require 'imgui' '0.10'
-local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
-local Combo = require('arkitekt.gui.widgets.primitives.combo')
+local ark = require('arkitekt')
 local Defaults = require('ItemPicker.defs.defaults')
 local Constants = require('ItemPicker.defs.constants')
 
@@ -32,7 +31,7 @@ function M.draw(ctx, draw_list, x, y, width, height, state, config)
   local input_width = width - dropdown_width + overlap
 
   -- Draw search input using ARKITEKT primitive
-  InputText.search(ctx, {
+  ark.InputText.search(ctx, {
     id = "item_picker_search_with_mode",
     draw_list = draw_list,
     x = x,
@@ -51,7 +50,7 @@ function M.draw(ctx, draw_list, x, y, width, height, state, config)
   local dropdown_y = y
 
   -- Draw dropdown using ARKITEKT primitive
-  Combo.draw(ctx, {
+  ark.Combo.draw(ctx, {
     id = "search_mode_dropdown",
     draw_list = draw_list,
     x = dropdown_x,

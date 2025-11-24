@@ -29,6 +29,7 @@ package.path = root_path .. "?.lua;" .. root_path .. "?/init.lua;" .. package.pa
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local ark = require('arkitekt')
 
 -- Path setup (assuming standard Arkitekt structure)
 local function dirname(p) return p:match("^(.*)[/\\]") end
@@ -46,8 +47,7 @@ local StatusPad = require("arkitekt.gui.widgets.data.status_pad")
 local StatusBar = require("arkitekt.app.chrome.status_bar.widget")
 
 local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = ark.Colors.hexrgb
 
 
 -- Initial states for the pads

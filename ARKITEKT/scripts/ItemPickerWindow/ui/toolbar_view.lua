@@ -3,10 +3,8 @@
 -- Top toolbar with search, sort, and layout controls
 
 local ImGui = require 'imgui' '0.10'
+local ark = require('arkitekt')
 local SearchWithMode = require('ItemPicker.ui.components.search_with_mode')
-local Button = require('arkitekt.gui.widgets.primitives.button')
-local Colors = require('arkitekt.core.colors')
-
 local M = {}
 
 local ToolbarView = {}
@@ -47,7 +45,7 @@ function ToolbarView:draw(ctx, shell_state)
   local draw_list = ImGui.GetWindowDrawList(ctx)
 
   -- Draw toolbar background
-  local bg_color = Colors.hexrgb("#1A1A1AFF")
+  local bg_color = ark.Colors.hexrgb("#1A1A1AFF")
   ImGui.DrawList_AddRectFilled(draw_list, start_x, start_y, start_x + avail_w, start_y + toolbar_height, bg_color, 0)
 
   -- Sort modes
@@ -88,7 +86,7 @@ function ToolbarView:draw(ctx, shell_state)
   local layout_x = search_x - layout_button_width - button_gap
 
   -- Draw layout toggle button
-  local icon_color = Colors.hexrgb("#AAAAAA")
+  local icon_color = ark.Colors.hexrgb("#AAAAAA")
   local draw_layout_icon = function(btn_draw_list, icon_x, icon_y)
     local icon_size = 14
     local gap = 2
@@ -111,7 +109,7 @@ function ToolbarView:draw(ctx, shell_state)
     end
   end
 
-  Button.draw(ctx, {
+  ark.Button.draw(ctx, {
     id = "layout_toggle_button",
     draw_list = draw_list,
     x = layout_x,
@@ -147,7 +145,7 @@ function ToolbarView:draw(ctx, shell_state)
   -- Draw "Sorting:" label
   local sort_label = "Sort:"
   local sort_label_width = ImGui.CalcTextSize(ctx, sort_label)
-  local sort_label_color = Colors.with_alpha(Colors.hexrgb("#AAAAAA"), 200)
+  local sort_label_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#AAAAAA"), 200)
   ImGui.DrawList_AddText(draw_list, sort_x, search_y + 6, sort_label_color, sort_label)
 
   sort_x = sort_x + sort_label_width + 8
@@ -157,7 +155,7 @@ function ToolbarView:draw(ctx, shell_state)
     local button_w = sort_button_widths[i]
     local is_active = (current_sort == mode.id)
 
-    Button.draw(ctx, {
+    ark.Button.draw(ctx, {
       id = "sort_button_" .. mode.id,
       draw_list = draw_list,
       x = sort_x,

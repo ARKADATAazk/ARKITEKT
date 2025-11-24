@@ -3,20 +3,16 @@
 -- MCP (Mixer Control Panel) configuration tab
 
 local ImGui = require 'imgui' '0.10'
-local Spinner = require('arkitekt.gui.widgets.primitives.spinner')
-local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
-local Button = require('arkitekt.gui.widgets.primitives.button')
+local ark = require('arkitekt')
 local Background = require('arkitekt.gui.widgets.containers.panel.background')
-local Style = require('arkitekt.gui.style.defaults')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
 local ThemeMapper = require('ThemeAdjuster.core.theme_mapper')
 local ParamDiscovery = require('ThemeAdjuster.core.param_discovery')
 local Strings = require('ThemeAdjuster.defs.strings')
-local Colors = require('arkitekt.core.colors')
 local AdditionalParamTile = require('ThemeAdjuster.ui.grids.renderers.additional_param_tile')
-local hexrgb = Colors.hexrgb
+local hexrgb = ark.Colors.hexrgb
 
-local PC = Style.PANEL_COLORS  -- Panel colors including pattern defaults
+local PC = ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
 local MCPView = {}
@@ -242,7 +238,7 @@ function MCPView:draw_additional_param(ctx, param)
 
   if param.type == "toggle" then
     local is_checked = (param.value ~= 0)
-    if Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "mcp_add_" .. param.index) then
+    if ark.Checkbox.draw_at_cursor(ctx, "", is_checked, nil, "mcp_add_" .. param.index) then
       changed = true
       new_value = is_checked and 0 or 1
     end
@@ -256,7 +252,7 @@ function MCPView:draw_additional_param(ctx, param)
     local current_idx = math.floor(param.value - param.min + 1)
     current_idx = math.max(1, math.min(current_idx, #values))
 
-    local spinner_result = Spinner.draw(ctx, {
+    local spinner_result = ark.Spinner.draw(ctx, {
       id = "##mcp_add_spinner_" .. param.index,
       value = current_idx,
       options = values,
@@ -354,7 +350,7 @@ function MCPView:draw(ctx, shell_state)
 
     for _, layout in ipairs({'A', 'B', 'C'}) do
       local is_active = (self.active_layout == layout)
-      if Button.draw_at_cursor(ctx, {
+      if ark.Button.draw_at_cursor(ctx, {
         label = layout,
         width = 50,
         height = 24,
@@ -379,7 +375,7 @@ function MCPView:draw(ctx, shell_state)
     ImGui.SameLine(ctx, 120)
 
     for _, size in ipairs({'100%', '150%', '200%'}) do
-      if Button.draw_at_cursor(ctx, {
+      if ark.Button.draw_at_cursor(ctx, {
         label = size,
         width = 70,
         height = 24,
@@ -409,7 +405,7 @@ function MCPView:draw(ctx, shell_state)
     end
     ImGui.SameLine(ctx, 120)
 
-    if Button.draw_at_cursor(ctx, {
+    if ark.Button.draw_at_cursor(ctx, {
       label = is_default and ("✓ " .. self.active_layout .. " is Default") or ("Set " .. self.active_layout .. " as Default"),
       width = 200,
       height = 24,
@@ -454,7 +450,7 @@ function MCPView:draw(ctx, shell_state)
 
       -- Spinner (fixed position, fixed width)
       ImGui.SameLine(ctx, 0, 8)
-      local spinner_result = Spinner.draw(ctx, {
+      local spinner_result = ark.Spinner.draw(ctx, {
         id = id,
         value = idx,
         options = values,
@@ -577,7 +573,7 @@ function MCPView:draw(ctx, shell_state)
     ImGui.PopFont(ctx)
     ImGui.Dummy(ctx, 0, 4)
 
-    if Checkbox.draw_at_cursor(ctx, "Hide MCP of master track", self.hide_mcp_master, nil, "mcp_hide_master") then
+    if ark.Checkbox.draw_at_cursor(ctx, "Hide MCP of master track", self.hide_mcp_master, nil, "mcp_hide_master") then
       self.hide_mcp_master = not self.hide_mcp_master
       reaper.Main_OnCommand(41588, 0)  -- Toggle hide master track in mixer
     end
@@ -585,7 +581,7 @@ function MCPView:draw(ctx, shell_state)
 
     ImGui.Dummy(ctx, 0, 3)
 
-    if Checkbox.draw_at_cursor(ctx, "Indicate tracks that are folder parents", self.folder_parent_indicator, nil, "mcp_folder_indicator") then
+    if ark.Checkbox.draw_at_cursor(ctx, "Indicate tracks that are folder parents", self.folder_parent_indicator, nil, "mcp_folder_indicator") then
       self.folder_parent_indicator = not self.folder_parent_indicator
       reaper.Main_OnCommand(40864, 0)  -- Toggle folder parent indicator in mixer
     end
@@ -609,7 +605,7 @@ function MCPView:draw(ctx, shell_state)
       local state = reaper.GetToggleCommandState(command_id)
       local is_on = (state == 1)
 
-      if Button.draw_at_cursor(ctx, {
+      if ark.Button.draw_at_cursor(ctx, {
         label = label,
         width = 220,
         height = 28,
