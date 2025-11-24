@@ -335,8 +335,8 @@ local function draw_plus_button(ctx, dl, x, y, width, height, config, unique_id,
   
   ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, btn_cfg.border_outer_color or config.border_outer_color, inner_rounding, corner_flags, 1)
 
-  local center_x = x + width * 0.5 
-  local center_y = y + height * 0.5 - 1
+  local center_x = x + width * 0.5
+  local center_y = y + height * 0.5  -- Lowered by 1px (removed -1)
   local cross_size = 7
   local cross_thickness = 1
   

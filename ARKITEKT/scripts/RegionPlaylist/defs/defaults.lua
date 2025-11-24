@@ -107,7 +107,7 @@ M.CONTAINER = {
     corner_button_inner_rounding = 12,
     mode_toggle_width = 100,
     search_width = 200,
-    sort_width = 120,
+    sort_width = 136,  -- Increased from 120 to fit "Alphabetical"
   },
 }
 
@@ -151,7 +151,7 @@ M.REGION_TILES = {
 
   responsive = {
     enabled = true,
-    min_tile_height = 30,
+    min_tile_height = 29,  -- Reduced by 1
     base_tile_height_active = 72,
     base_tile_height_pool = 72,
     scrollbar_buffer = 24,

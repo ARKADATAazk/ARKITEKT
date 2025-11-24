@@ -256,6 +256,58 @@ function M.set_region_colors_batch(proj, rids, rgba_color)
   return success_count
 end
 
+--- Set different colors for multiple regions in a single batch operation
+--- @param proj number Project (0 for current)
+--- @param rid_color_map table Map of region_id -> rgba_color
+--- @return number count Number of successfully updated regions
+function M.set_region_colors_individual(proj, rid_color_map)
+  proj = proj or 0
+
+  if not rid_color_map or next(rid_color_map) == nil then
+    return 0
+  end
+
+  -- Single undo block for all changes
+  reaper.Undo_BeginBlock()
+
+  local success_count = 0
+
+  -- Update all regions with their individual colors
+  for target_rid, rgba_color in pairs(rid_color_map) do
+    local rgn = M.get_region_by_rid(proj, target_rid)
+    if rgn then
+      local native_color = convert_rgba_to_reaper_color(rgba_color)
+      local success = reaper.SetProjectMarkerByIndex2(
+        proj,
+        rgn.index,
+        true,
+        rgn.start,
+        rgn["end"],
+        target_rid,
+        rgn.name,
+        native_color,
+        0
+      )
+      if success then
+        success_count = success_count + 1
+      end
+    end
+  end
+
+  if success_count > 0 then
+    reaper.MarkProjectDirty(proj)
+  end
+
+  reaper.Undo_EndBlock("Set region colors", -1)
+
+  -- Single UI refresh for all changes
+  reaper.UpdateTimeline()
+  reaper.UpdateArrange()
+  reaper.TrackList_AdjustWindows(false)
+
+  return success_count
+end
+
 --- Rename multiple regions in a single batch operation
 --- @param proj number Project (0 for current)
 --- @param renames table Array of {rid = number, name = string} entries

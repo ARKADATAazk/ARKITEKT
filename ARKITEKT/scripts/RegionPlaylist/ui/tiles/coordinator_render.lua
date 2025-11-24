@@ -384,17 +384,31 @@ function M.draw_pool(self, ctx, regions, height)
     -- Apply Random Colors (different color for each)
     if ContextMenu.item(ctx, "Apply Random Colors") then
       if #selected_keys > 0 and self.controller then
+        -- Build map of rid -> color for batch operation
+        local rid_color_map = {}
+        local playlist_colors = {}
+
         for _, key in ipairs(selected_keys) do
           local color = Persistence.generate_chip_color()
           local rid = key:match("^pool_(%d+)$")
           if rid then
-            self.controller:set_region_colors_batch({tonumber(rid)}, color)
+            rid_color_map[tonumber(rid)] = color
           else
             local playlist_id = key:match("^pool_playlist_(.+)$")
             if playlist_id then
-              self.controller:set_playlist_color(playlist_id, color)
+              table.insert(playlist_colors, {id = playlist_id, color = color})
             end
           end
+        end
+
+        -- Single batch operation for all regions (MUCH faster!)
+        if next(rid_color_map) then
+          self.controller:set_region_colors_individual(rid_color_map)
+        end
+
+        -- Apply playlist colors
+        for _, entry in ipairs(playlist_colors) do
+          self.controller:set_playlist_color(entry.id, entry.color)
         end
       end
       ImGui.CloseCurrentPopup(ctx)
