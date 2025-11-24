@@ -145,14 +145,18 @@ end
 -- RENDERING
 -- ============================================================================
 
-local function render_checkbox(ctx, dl, x, y, config, instance, is_checked)
+local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, unique_id, total_width)
   local size = config.size
   local is_disabled = config.disabled or false
   local is_blocking = config.is_blocking or false
 
-  local is_hovered = not is_disabled and not is_blocking and
-                     ImGui.IsMouseHoveringRect(ctx, x, y, x + size, y + size)
-  local is_active = ImGui.IsMouseDown(ctx, 0) and is_hovered
+  -- Create interaction area FIRST (proper ImGui pattern)
+  ImGui.SetCursorScreenPos(ctx, x, y)
+  ImGui.InvisibleButton(ctx, "##" .. unique_id, total_width, size)
+
+  -- Check hover/active state from ImGui item
+  local is_hovered = not is_disabled and not is_blocking and ImGui.IsItemHovered(ctx)
+  local is_active = not is_disabled and not is_blocking and ImGui.IsItemActive(ctx)
 
   -- Update animation
   local dt = ImGui.GetDeltaTime(ctx)
@@ -247,7 +251,10 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked)
     ImGui.DrawList_AddLine(dl, mx, my, ex, ey, check_color, 2)
   end
 
-  return is_hovered, is_active
+  -- Check for clicks (InvisibleButton was already created)
+  local clicked = not is_disabled and not is_blocking and ImGui.IsItemClicked(ctx, 0)
+
+  return is_hovered, is_active, clicked
 end
 
 -- ============================================================================
@@ -278,14 +285,20 @@ function M.draw(ctx, opts)
     is_checked = opts.panel_state.checkbox_value
   end
 
-  -- Render checkbox box
-  local is_hovered, is_active = render_checkbox(ctx, dl, x, y, config, instance, is_checked)
+  -- Calculate total width (including label if present)
+  local size = config.size
+  local label = opts.label or ""
+  local total_width = size
+
+  if label ~= "" then
+    local label_width = ImGui.CalcTextSize(ctx, label)
+    total_width = size + config.label_spacing + label_width
+  end
+
+  -- Render checkbox box (InvisibleButton is created inside render_checkbox now)
+  local is_hovered, is_active, clicked = render_checkbox(ctx, dl, x, y, config, instance, is_checked, unique_id, total_width)
 
   -- Render label
-  local size = config.size
-  local total_width = size
-  local label = opts.label or ""
-
   if label ~= "" then
     local label_x = x + size + config.label_spacing
     local label_y = y + (size - ImGui.GetTextLineHeight(ctx)) * 0.5
@@ -304,40 +317,31 @@ function M.draw(ctx, opts)
     label_color = Colors.with_alpha(label_color, math.floor(((label_color & 0xFF) / 255) * visual_alpha * 255))
 
     ImGui.DrawList_AddText(dl, label_x, label_y, label_color, label)
-
-    local label_width = ImGui.CalcTextSize(ctx, label)
-    total_width = size + config.label_spacing + label_width
   end
 
-  -- Create interaction area
-  ImGui.SetCursorScreenPos(ctx, x, y)
-  ImGui.InvisibleButton(ctx, "##" .. unique_id, total_width, size)
-
-  local clicked = false
+  -- Handle click
   local changed = false
   local new_value = is_checked
 
-  if not opts.disabled and not opts.is_blocking then
-    clicked = ImGui.IsItemClicked(ctx, 0)
+  if clicked then
+    new_value = not is_checked
+    changed = true
 
-    if clicked then
-      new_value = not is_checked
-      changed = true
+    -- Update panel state
+    if opts.panel_state then
+      opts.panel_state.checkbox_value = new_value
+    end
 
-      -- Update panel state
-      if opts.panel_state then
-        opts.panel_state.checkbox_value = new_value
-      end
-
-      -- Call change callback
-      if config.on_change then
-        config.on_change(new_value)
-      end
+    -- Call change callback
+    if config.on_change then
+      config.on_change(new_value)
     end
   end
 
-  -- Handle tooltip
-  Base.handle_tooltip(ctx, opts)
+  -- Handle tooltip (check if item is hovered since we just created InvisibleButton)
+  if ImGui.IsItemHovered(ctx) and opts.tooltip then
+    ImGui.SetTooltip(ctx, opts.tooltip)
+  end
 
   -- Advance cursor
   Base.advance_cursor(ctx, x, y, total_width, size, opts.advance)
