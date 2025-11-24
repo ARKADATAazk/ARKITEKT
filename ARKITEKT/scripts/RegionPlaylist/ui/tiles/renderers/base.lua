@@ -189,21 +189,22 @@ function M.draw_region_text(ctx, dl, pos, region, base_color, text_alpha, right_
   local sep_w = ImGui.CalcTextSize(ctx, separator)
 
   -- Determine if index overflows reserved space
-  local overflow = math.max(0, index_w - reserved_width)
+  local index_overflow = math.max(0, index_w - reserved_width)
+  local title_overflow = index_overflow
 
-  -- For 3+ digit indices, move title left by one digit width
+  -- For 3+ digit indices, move title left by one digit width (but not the index)
   local num_digits = #index_str
   if num_digits >= 3 then
     local single_digit_w = ImGui.CalcTextSize(ctx, "0")
-    overflow = math.max(0, overflow - single_digit_w)
+    title_overflow = math.max(0, title_overflow - single_digit_w)
   end
 
-  -- Index shifts RIGHT when it overflows, title shifts by same amount
-  local index_start_x = pos.x + overflow + (reserved_width - index_w)
+  -- Index shifts RIGHT when it overflows (uses index_overflow)
+  local index_start_x = pos.x + index_overflow + (reserved_width - index_w)
   ark.Draw.text(dl, index_start_x, pos.y, accent_color, index_str)
 
-  -- Separator position: shifts right by overflow amount
-  local separator_x = pos.x + reserved_width + M.CONFIG.index_separator_spacing + overflow
+  -- Separator position: uses title_overflow (reduced for 3+ digits)
+  local separator_x = pos.x + reserved_width + M.CONFIG.index_separator_spacing + title_overflow
   local separator_color = ark.Colors.with_alpha(ark.Colors.same_hue_variant(base_color, fx_config.separator_saturation, fx_config.separator_brightness, fx_config.separator_alpha), text_alpha)
   ark.Draw.text(dl, separator_x, pos.y, separator_color, separator)
 
