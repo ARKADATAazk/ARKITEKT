@@ -11,6 +11,18 @@ local hexrgb = CoreColors.hexrgb
 local M = {}
 
 -- ============================================================================
+-- ERROR HANDLER
+-- ============================================================================
+M.ERROR_HANDLER = {
+    enabled = true,                -- Enable enhanced error handling
+    log_to_console = true,         -- Print full stack traces to console
+    show_in_ui = false,            -- Show error count in status bar (future)
+    max_stored_errors = 10,        -- Keep last N errors in memory
+    include_timestamp = true,      -- Add timestamp to error logs
+    halt_on_error = false,         -- Stop execution on error (strict debugging)
+}
+
+-- ============================================================================
 -- PROFILER
 -- ============================================================================
 M.PROFILER_ENABLED = false
