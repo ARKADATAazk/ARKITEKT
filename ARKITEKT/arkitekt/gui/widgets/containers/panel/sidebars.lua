@@ -1,6 +1,11 @@
 -- @noindex
 -- panel/sidebars.lua
 -- Left/right sidebar button rendering
+--
+-- SCROLLBAR OVERLAP BEHAVIOR:
+-- Right sidebar buttons may overlap with the scrollbar when scrolling is enabled.
+-- The scrollbar draws on top (later in render pipeline), so scrollbar remains fully interactive.
+-- Sidebar buttons remain clickable on the left side of the scrollbar.
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'

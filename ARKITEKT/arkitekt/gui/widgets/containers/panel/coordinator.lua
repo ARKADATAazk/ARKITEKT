@@ -233,7 +233,8 @@ function Panel:begin_draw(ctx)
   self.child_x = x1 + border_inset + left_sidebar_width
   self.child_y = content_y1 + border_inset
 
-  local child_w = w - (border_inset * 2) - scrollbar_width - left_sidebar_width - right_sidebar_width
+  -- Note: right_sidebar_width NOT subtracted - scrollbar overlaps right sidebar (draws on top)
+  local child_w = w - (border_inset * 2) - scrollbar_width - left_sidebar_width
   local child_h = (content_y2 - content_y1) - (border_inset * 2)
 
   if child_w < 1 then child_w = 1 end
