@@ -3,15 +3,7 @@
 -- Usage: local ark = require('arkitekt')
 --        ark.Button.draw(ctx, {label = "Click"})
 
-if reaper then
-  reaper.ShowConsoleMsg("[init.lua] START loading namespace\n")
-end
-
 local ark = {}
-
-if reaper then
-  reaper.ShowConsoleMsg("[init.lua] Created ark table: " .. type(ark) .. "\n")
-end
 
 -- Module registry - maps names to module paths
 -- Lazy loaded on first access to minimize startup overhead
@@ -45,29 +37,15 @@ local MODULES = {
   UUID = 'arkitekt.core.uuid',
 }
 
--- Debug flag (set to true to enable debug output)
-local DEBUG = os.getenv("ARK_DEBUG") == "1"
-
 -- Lazy loading with metatable
 -- Widgets are only loaded when first accessed (like ImGui namespace)
 setmetatable(ark, {
   __index = function(t, key)
-    if DEBUG and reaper then
-      reaper.ShowConsoleMsg("[ark.__index] Accessing: " .. tostring(key) .. "\n")
-    end
-
     local module_path = MODULES[key]
     if module_path then
-      if DEBUG and reaper then
-        reaper.ShowConsoleMsg("[ark.__index] Loading: " .. module_path .. "\n")
-      end
-
       -- Load and cache the module
       local success, module = pcall(require, module_path)
       if success then
-        if DEBUG and reaper then
-          reaper.ShowConsoleMsg("[ark.__index] Success: " .. tostring(key) .. "\n")
-        end
         t[key] = module  -- Cache to avoid future requires
         return module
       else
@@ -78,9 +56,5 @@ setmetatable(ark, {
     error(string.format("ark.%s is not a valid widget. See MODULES table in arkitekt/init.lua", key), 2)
   end
 })
-
-if reaper then
-  reaper.ShowConsoleMsg("[init.lua] About to return ark: " .. type(ark) .. " - " .. tostring(ark) .. "\n")
-end
 
 return ark
