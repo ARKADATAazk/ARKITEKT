@@ -152,10 +152,132 @@ local function load_fonts(ctx, font_cfg)
   }
 end
 
+-- ============================================================================
+-- OVERLAY MODE RUNNER
+-- ============================================================================
+-- Simplified overlay setup - handles OverlayManager automatically
+local function run_overlay_mode(config)
+  local title = config.title or "ARKITEKT Overlay"
+  local draw_fn = config.draw or function(ctx) ImGui.Text(ctx, 'No draw function provided') end
+
+  -- Handle toolbar button state
+  local toggle_button = config.toggle_button
+  if toggle_button then
+    set_button_state(1)
+  end
+
+  -- Create ImGui context
+  local ctx = ImGui.CreateContext(title)
+
+  -- Load fonts
+  local fonts = load_fonts(ctx, config.fonts or config.font_sizes)
+
+  -- Load style
+  local style = config.style
+  if not style then
+    local ok, default_style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
+    if ok then style = default_style end
+  end
+
+  -- Load OverlayManager and OverlayDefaults
+  local OverlayManager = require('arkitekt.gui.widgets.overlays.overlay.manager')
+  local OverlayDefaults = require('arkitekt.gui.widgets.overlays.overlay.defaults')
+
+  -- Create overlay manager
+  local overlay_mgr = OverlayManager.new()
+
+  -- Get overlay config (or use defaults)
+  local overlay_cfg = config.overlay or {}
+
+  -- Push overlay with framework defaults
+  overlay_mgr:push(OverlayDefaults.create_overlay_config({
+    id = overlay_cfg.id or (config.app_name or "app") .. "_overlay",
+
+    -- Close behavior
+    esc_to_close = overlay_cfg.esc_to_close,
+    close_on_scrim = overlay_cfg.close_on_scrim,
+    close_on_background_click = overlay_cfg.close_on_background_click,
+    close_on_background_right_click = overlay_cfg.close_on_background_right_click,
+    show_close_button = overlay_cfg.show_close_button,
+
+    -- Appearance
+    scrim_opacity = overlay_cfg.scrim_opacity,
+    scrim_color = overlay_cfg.scrim_color,
+    fade_duration = overlay_cfg.fade_duration,
+
+    -- Passthrough callback (for drag-to-REAPER, etc.)
+    should_passthrough = overlay_cfg.should_passthrough,
+
+    -- Render callback
+    render = function(ctx, alpha_val, bounds)
+      -- Push style if provided
+      if style and style.PushMyStyle then
+        style.PushMyStyle(ctx, { window_bg = false, modal_dim_bg = false })
+      end
+
+      -- Push default font
+      ImGui.PushFont(ctx, fonts.default, fonts.default_size)
+
+      -- Create overlay state for draw function
+      local state = {
+        fonts = fonts,
+        style = style,
+        overlay = {
+          x = bounds.x,
+          y = bounds.y,
+          width = bounds.w,
+          height = bounds.h,
+          alpha = alpha_val,
+          bounds = bounds,
+        },
+      }
+
+      -- Call user's draw function
+      draw_fn(ctx, state)
+
+      ImGui.PopFont(ctx)
+
+      if style and style.PopMyStyle then
+        style.PopMyStyle(ctx)
+      end
+    end,
+
+    -- Cleanup callback
+    on_close = config.on_close,
+  }))
+
+  -- Use run_loop for overlay rendering
+  M.run_loop({
+    ctx = ctx,
+    on_frame = function(ctx)
+      overlay_mgr:render(ctx)
+      return overlay_mgr:is_active()
+    end,
+    on_close = function()
+      if toggle_button then
+        set_button_state(0)
+      end
+      if config.on_close then
+        config.on_close()
+      end
+    end,
+  })
+end
+
 function M.run(opts)
   -- Merge user opts with framework defaults
   local config = Config.deepMerge(Constants.WINDOW, opts or {})
 
+  -- ============================================================================
+  -- OVERLAY MODE: Branch to overlay setup
+  -- ============================================================================
+  if config.mode == "overlay" then
+    return run_overlay_mode(config)
+  end
+
+  -- ============================================================================
+  -- WINDOW MODE: Standard window with chrome
+  -- ============================================================================
   local title    = config.title
   local version  = config.version
   local draw_fn  = config.draw or function(ctx) ImGui.Text(ctx, 'No draw function provided') end
