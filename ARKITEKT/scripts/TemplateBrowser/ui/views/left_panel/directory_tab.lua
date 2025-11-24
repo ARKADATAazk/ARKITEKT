@@ -3,9 +3,8 @@
 -- Directory tab: Folder tree + folder creation + tags mini-list
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
+local ark = require('arkitekt')
 local Tags = require('TemplateBrowser.domain.tags')
-local Button = require('arkitekt.gui.widgets.primitives.button')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local FileOps = require('TemplateBrowser.domain.file_ops')
 local TreeViewModule = require('TemplateBrowser.ui.views.tree_view')
@@ -30,7 +29,7 @@ local function draw_custom_collapsible_header(ctx, label, is_open, width, config
 
   -- Very subtle hover background (optional - can be removed for pure minimal)
   if hovered then
-    local hover_color = Colors.hexrgba(config.COLORS.header_hover or config.COLORS.header_bg, 0.3) -- 30% alpha
+    local hover_color = ark.Colors.hexrgba(config.COLORS.header_hover or config.COLORS.header_bg, 0.3) -- 30% alpha
     ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + header_height, hover_color, 0)
   end
 
@@ -49,7 +48,7 @@ local function draw_custom_collapsible_header(ctx, label, is_open, width, config
   local text_y = chevron_y
 
   -- Draw text with slight shadow for bold effect
-  ImGui.DrawList_AddText(dl, text_x + 0.5, text_y + 0.5, Colors.hexrgba(config.COLORS.text, 0.5), label)
+  ImGui.DrawList_AddText(dl, text_x + 0.5, text_y + 0.5, ark.Colors.hexrgba(config.COLORS.text, 0.5), label)
   ImGui.DrawList_AddText(dl, text_x, text_y, config.COLORS.text, label)
 
   return clicked
@@ -68,7 +67,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
   local button_x = width - UI.BUTTON.WIDTH_SMALL - 8
   ImGui.SetCursorPosX(ctx, button_x)
 
-  if Button.draw_at_cursor(ctx, {
+  if ark.Button.draw_at_cursor(ctx, {
     label = "+",
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
@@ -118,7 +117,7 @@ local function draw_tags_mini_list(ctx, state, config, width, height)
           style = Chip.STYLE.ACTION,
           label = tag_name,
           bg_color = tag_data.color,
-          text_color = Colors.auto_text_color(tag_data.color),
+          text_color = ark.Colors.auto_text_color(tag_data.color),
           height = UI.CHIP.HEIGHT_DEFAULT,
           padding_h = 8,
           rounding = 2,
@@ -165,7 +164,7 @@ function M.draw(ctx, state, config, width, height, gui)
   ImGui.SetCursorPosX(ctx, button_x)
 
   -- Physical folder button
-  if Button.draw_at_cursor(ctx, {
+  if ark.Button.draw_at_cursor(ctx, {
     label = "+",
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
@@ -278,7 +277,7 @@ function M.draw(ctx, state, config, width, height, gui)
 
   -- Virtual folder button
   ImGui.SameLine(ctx, 0, UI.BUTTON.SPACING)
-  if Button.draw_at_cursor(ctx, {
+  if ark.Button.draw_at_cursor(ctx, {
     label = "V",
     width = UI.BUTTON.WIDTH_SMALL,
     height = UI.BUTTON.HEIGHT_DEFAULT
@@ -471,11 +470,11 @@ function M.draw(ctx, state, config, width, height, gui)
 
   -- Helper function to draw thin separator line above header
   local function draw_thin_separator(ctx, dl, x, y, width, is_hovered, hover_time)
-    local line_color = Colors.hexrgb("#333333")  -- Default dark
+    local line_color = ark.Colors.hexrgb("#333333")  -- Default dark
 
     -- If hovered for more than 1 second, highlight light grey
     if is_hovered and hover_time >= hover_threshold then
-      line_color = Colors.hexrgb("#666666")  -- Light grey highlight
+      line_color = ark.Colors.hexrgb("#666666")  -- Light grey highlight
     end
 
     -- Draw thin horizontal line

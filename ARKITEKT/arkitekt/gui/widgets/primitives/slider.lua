@@ -273,4 +273,11 @@ function M.int(ctx, opts)
   return result
 end
 
+--- Clean up slider state
+function M.cleanup()
+  for k in pairs(slider_locks) do
+    slider_locks[k] = nil
+  end
+end
+
 return M

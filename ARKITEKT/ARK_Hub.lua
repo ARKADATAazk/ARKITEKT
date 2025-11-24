@@ -66,13 +66,11 @@ local Shell = require("arkitekt.app.shell")
 local Hub = require("hub.hub")
 local PackageGrid = require("arkitekt.gui.widgets.media.package_tiles.grid")
 local Micromanage = require("arkitekt.gui.widgets.media.package_tiles.micromanage")
-local TilesContainer = require("arkitekt.gui.widgets.containers.panel")
 local SelRect = require("arkitekt.gui.widgets.data.selection_rectangle")
 
 local SettingsOK, Settings = pcall(require, "arkitekt.core.settings")
 local StyleOK, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = ark.Colors.hexrgb
 
 
 local settings = nil
@@ -241,7 +239,7 @@ local theme = {
 local sel_rect = SelRect.new()
 local grid = PackageGrid.create(pkg, settings, theme)
 
-local container = TilesContainer.new({
+local container = ark.Panel.new({
   id = "packages_container",
   width = nil,
   height = nil,

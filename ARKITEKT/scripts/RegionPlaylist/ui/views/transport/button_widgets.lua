@@ -4,10 +4,10 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local ark = require('arkitekt')
 
-local Colors = require('arkitekt.core.colors')
 local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')
-local hexrgb = Colors.hexrgb
+local hexrgb = ark.Colors.hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -150,8 +150,8 @@ function SimpleToggleButton:draw(ctx, x, y, state, on_click, color)
   
   local bg_off = hexrgb("#252525")
   local bg_off_hover = hexrgb("#2A2A2A")
-  local bg_on = Colors.with_alpha(color or hexrgb("#4A9EFF"), 0x40)
-  local bg_on_hover = Colors.with_alpha(color or hexrgb("#4A9EFF"), 0x50)
+  local bg_on = ark.Colors.with_alpha(color or hexrgb("#4A9EFF"), 0x40)
+  local bg_on_hover = ark.Colors.with_alpha(color or hexrgb("#4A9EFF"), 0x50)
   
   local bg = state and (is_hovered and bg_on_hover or bg_on) or (is_hovered and bg_off_hover or bg_off)
   

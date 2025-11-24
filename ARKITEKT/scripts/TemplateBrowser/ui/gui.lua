@@ -3,20 +3,17 @@
 -- Main GUI with three-panel layout
 
 local ImGui = require 'imgui' '0.10'
+local ark = require('arkitekt')
 local TemplateOps = require('TemplateBrowser.domain.template_ops')
 local FileOps = require('TemplateBrowser.domain.file_ops')
-local Separator = require('arkitekt.gui.widgets.primitives.separator')
 local FXQueue = require('TemplateBrowser.domain.fx_queue')
-local Colors = require('arkitekt.core.colors')
 local TileAnim = require('arkitekt.gui.rendering.tile.animator')
 local TemplateGridFactory = require('TemplateBrowser.ui.tiles.template_grid_factory')
-local TilesContainer = require('arkitekt.gui.widgets.containers.panel')
 local TemplateContainerConfig = require('TemplateBrowser.ui.template_container_config')
 local RecentPanelConfig = require('TemplateBrowser.ui.recent_panel_config')
 local LeftPanelConfig = require('TemplateBrowser.ui.left_panel_config')
 local ConveniencePanelConfig = require('TemplateBrowser.ui.convenience_panel_config')
 local InfoPanelConfig = require('TemplateBrowser.ui.info_panel_config')
-local MarkdownField = require('arkitekt.gui.widgets.primitives.markdown_field')
 local Shortcuts = require('TemplateBrowser.core.shortcuts')
 
 -- Import view modules
@@ -36,12 +33,12 @@ function M.new(config, state, scanner)
     state = state,
     scanner = scanner,
     initialized = false,
-    separator1 = Separator.new("sep1"),
-    separator2 = Separator.new("sep2"),
-    quick_access_separator = Separator.new("quick_access_sep"),
-    left_panel_separator = Separator.new("left_panel_sep"),  -- Between left_panel and convenience_panel
-    dir_separator1 = Separator.new("dir_sep1"),  -- Between Physical and Virtual
-    dir_separator2 = Separator.new("dir_sep2"),  -- Between Virtual and Archive
+    separator1 = ark.Separator.new("sep1"),
+    separator2 = ark.Separator.new("sep2"),
+    quick_access_separator = ark.Separator.new("quick_access_sep"),
+    left_panel_separator = ark.Separator.new("left_panel_sep"),  -- Between left_panel and convenience_panel
+    dir_separator1 = ark.Separator.new("dir_sep1"),  -- Between Physical and Virtual
+    dir_separator2 = ark.Separator.new("dir_sep2"),  -- Between Virtual and Archive
     template_animator = TileAnim.new(16.0),  -- Animation speed
     template_grid = nil,  -- Initialized in initialize_once
     quick_access_grid = nil,  -- Initialized in initialize_once
@@ -508,7 +505,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
   }, self.is_overlay_mode)  -- Pass overlay mode to use transparent backgrounds
 
-  self.template_container = TilesContainer.new({
+  self.template_container = ark.Panel.new({
     id = "templates_container",
     config = container_config,
   })
@@ -541,7 +538,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
   }, self.is_overlay_mode)
 
-  self.recent_container = TilesContainer.new({
+  self.recent_container = ark.Panel.new({
     id = "recent_container",
     config = recent_config,
   })
@@ -556,7 +553,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
   }, self.is_overlay_mode)
 
-  self.left_panel_container = TilesContainer.new({
+  self.left_panel_container = ark.Panel.new({
     id = "left_panel_container",
     config = left_panel_config,
   })
@@ -571,7 +568,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
     end,
   }, self.is_overlay_mode)
 
-  self.convenience_panel_container = TilesContainer.new({
+  self.convenience_panel_container = ark.Panel.new({
     id = "convenience_panel_container",
     config = convenience_panel_config,
   })
@@ -579,7 +576,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
   -- Create info panel container (template details & tags)
   local info_panel_config = InfoPanelConfig.create({}, self.is_overlay_mode)
 
-  self.info_container = TilesContainer.new({
+  self.info_container = ark.Panel.new({
     id = "info_panel_container",
     config = info_panel_config,
   })
@@ -639,7 +636,7 @@ function GUI:draw(ctx, shell_state)
   local is_editing_markdown = false
   if self.state.selected_template then
     local notes_field_id = "template_notes_" .. self.state.selected_template.uuid
-    is_editing_markdown = MarkdownField.is_editing(notes_field_id)
+    is_editing_markdown = ark.MarkdownField.is_editing(notes_field_id)
   end
 
   local action = Shortcuts.check_shortcuts(ctx)
@@ -726,7 +723,7 @@ function GUI:draw(ctx, shell_state)
     local status_w = ImGui.CalcTextSize(ctx, status)
 
     ImGui.SetCursorPos(ctx, (SCREEN_W - status_w) * 0.5, status_y)
-    ImGui.PushStyleColor(ctx, ImGui.Col_Text, Colors.hexrgb("#B3B3B3"))
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, ark.Colors.hexrgb("#B3B3B3"))
     ImGui.Text(ctx, status)
     ImGui.PopStyleColor(ctx)
 

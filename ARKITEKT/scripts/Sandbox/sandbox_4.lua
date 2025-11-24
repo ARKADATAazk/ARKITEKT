@@ -301,10 +301,10 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   -- Text or edit field
   if is_editing then
     -- Inline editing
-    InputText.set_text("tree_edit_" .. node.id, tree_state.edit_buffer)
+    ark.InputText.set_text("tree_edit_" .. node.id, tree_state.edit_buffer)
 
     local available_w = item_right - text_x
-    local result = InputText.draw(ctx, {
+    local result = ark.InputText.draw(ctx, {
       id = "tree_edit_" .. node.id,
       x = text_x,
       y = y_pos + 1,
@@ -312,7 +312,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
       height = item_h - 2,
     })
 
-    tree_state.edit_buffer = InputText.get_text("tree_edit_" .. node.id) or tree_state.edit_buffer
+    tree_state.edit_buffer = ark.InputText.get_text("tree_edit_" .. node.id) or tree_state.edit_buffer
 
     if not tree_state.edit_focus_set then
       ImGui.SetKeyboardFocusHere(ctx, -1)

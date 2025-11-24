@@ -3,16 +3,12 @@
 -- Envelope configuration tab
 
 local ImGui = require 'imgui' '0.10'
-local Spinner = require('arkitekt.gui.widgets.primitives.spinner')
-local Checkbox = require('arkitekt.gui.widgets.primitives.checkbox')
-local Button = require('arkitekt.gui.widgets.primitives.button')
+local ark = require('arkitekt')
 local Background = require('arkitekt.gui.widgets.containers.panel.background')
-local Style = require('arkitekt.gui.style.defaults')
 local ThemeParams = require('ThemeAdjuster.core.theme_params')
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = ark.Colors.hexrgb
 
-local PC = Style.PANEL_COLORS  -- Panel colors including pattern defaults
+local PC = ark.Style.PANEL_COLORS  -- Panel colors including pattern defaults
 
 local M = {}
 local EnvelopeView = {}
@@ -129,7 +125,7 @@ function EnvelopeView:draw(ctx, shell_state)
 
     for _, layout in ipairs({'A', 'B', 'C'}) do
       local is_active = (self.active_layout == layout)
-      if Button.draw_at_cursor(ctx, {
+      if ark.Button.draw_at_cursor(ctx, {
         label = layout,
         width = 50,
         height = 24,
@@ -154,7 +150,7 @@ function EnvelopeView:draw(ctx, shell_state)
     ImGui.SameLine(ctx, 120)
 
     for _, size in ipairs({'100%', '150%', '200%'}) do
-      if Button.draw_at_cursor(ctx, {
+      if ark.Button.draw_at_cursor(ctx, {
         label = size,
         width = 70,
         height = 24,
@@ -195,7 +191,7 @@ function EnvelopeView:draw(ctx, shell_state)
 
       -- Spinner (fixed position, fixed width)
       ImGui.SameLine(ctx, 0, 8)
-      local spinner_result = Spinner.draw(ctx, {
+      local spinner_result = ark.Spinner.draw(ctx, {
         id = id,
         value = idx,
         options = values,
@@ -238,7 +234,7 @@ function EnvelopeView:draw(ctx, shell_state)
     ImGui.PopStyleColor(ctx)
     ImGui.Dummy(ctx, 0, 3)
 
-    if Checkbox.draw_at_cursor(ctx, "Match folder indent", self.envcp_folder_indent, nil, "envcp_folder_indent") then
+    if ark.Checkbox.draw_at_cursor(ctx, "Match folder indent", self.envcp_folder_indent, nil, "envcp_folder_indent") then
       self.envcp_folder_indent = not self.envcp_folder_indent
       ThemeParams.set_param('envcp_folder_indent', self.envcp_folder_indent and 1 or 0, true)
     end
@@ -261,7 +257,7 @@ function EnvelopeView:draw(ctx, shell_state)
     -- Helper function for checkbox rows
     local function draw_checkbox_row(label, checked, id)
       local result = checked
-      if Checkbox.draw_at_cursor(ctx, label, checked, nil, id) then
+      if ark.Checkbox.draw_at_cursor(ctx, label, checked, nil, id) then
         result = not checked
       end
       ImGui.NewLine(ctx)

@@ -121,7 +121,7 @@ function M.draw(ctx, opts)
 
   -- Update animation
   local dt = ImGui.GetDeltaTime(ctx)
-  Base.update_hover_animation(inst, dt, hovered, active, Base.ANIMATION_SPEED)
+  Base.update_hover_animation(inst, dt, hovered, active, "hover_alpha")
 
   -- Calculate center of circle
   local center_x = x + outer_radius

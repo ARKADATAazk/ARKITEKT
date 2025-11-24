@@ -7,21 +7,22 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Style = require('arkitekt.gui.style.defaults')
 local Colors = require('arkitekt.core.colors')
+local Anim = require('arkitekt.core.animation')
 
 local M = {}
 
 -- ============================================================================
--- CONSTANTS
+-- CONSTANTS (deprecated - use arkitekt.core.animation instead)
 -- ============================================================================
 
 --- Default animation speed for hover/focus transitions
-M.ANIMATION_SPEED = 12.0
+M.ANIMATION_SPEED = Anim.HOVER_SPEED
 
 --- Fast animation speed for quick feedback
 M.ANIMATION_SPEED_FAST = 16.0
 
 --- Slow animation speed for smooth transitions
-M.ANIMATION_SPEED_SLOW = 8.0
+M.ANIMATION_SPEED_SLOW = Anim.FADE_SPEED
 
 -- ============================================================================
 -- MATH UTILITIES
@@ -246,12 +247,10 @@ end
 --- @param dt number Delta time
 --- @param is_hovered boolean Current hover state
 --- @param is_active boolean Current active/pressed state
---- @param speed number Animation speed (default 12.0)
-function M.update_hover_animation(state, dt, is_hovered, is_active, speed)
-  speed = speed or 12.0
-  local target = (is_hovered or is_active) and 1.0 or 0.0
-  state.hover_alpha = state.hover_alpha + (target - state.hover_alpha) * speed * dt
-  state.hover_alpha = math.max(0, math.min(1, state.hover_alpha))
+--- @param field string Field name to animate (required)
+--- @param speed number Optional animation speed (defaults to Anim.HOVER_SPEED)
+function M.update_hover_animation(state, dt, is_hovered, is_active, field, speed)
+  Anim.update_hover(state, dt, is_hovered, is_active, field, speed)
 end
 
 --- Check if widget is interactive (not disabled, not blocked)

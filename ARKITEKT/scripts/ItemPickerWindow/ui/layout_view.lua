@@ -3,8 +3,7 @@
 -- Simple layout view for window mode (like RegionPlaylist)
 
 local ImGui = require 'imgui' '0.10'
-local SeparatorView = require('arkitekt.gui.widgets.primitives.separator')
-
+local ark = require('arkitekt')
 local max = math.max
 local min = math.min
 
@@ -17,7 +16,7 @@ function M.new(config, state)
   return setmetatable({
     config = config,
     state = state,
-    separator_view = SeparatorView.new(),
+    separator_view = ark.Separator.new(),
   }, LayoutView)
 end
 

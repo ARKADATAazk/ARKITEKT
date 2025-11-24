@@ -29,6 +29,7 @@ package.path = root_path .. "?.lua;" .. root_path .. "?/init.lua;" .. package.pa
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local ark = require('arkitekt')
 
 -- Path helpers
 local function dirname(p) return p:match("^(.*)[/\\]") end
@@ -50,8 +51,7 @@ local TilesContainer = require("arkitekt.gui.widgets.containers.panel")
 
 -- Fallback style
 local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = ark.Colors.hexrgb
 
 
 -- State variables - ALL AT THE TOP
@@ -115,7 +115,7 @@ local function draw(ctx)
   -- HUE SLIDER (no longer affected by saturation/brightness changes)
   ImGui.Text(ctx, "Hue (0-360°):")
   local changed_h
-  changed_h, hue = ColorSliders.draw_hue(ctx, "##hue_slider", hue, {
+  changed_h, hue = ark.HueSlider.draw_hue(ctx, "##hue_slider", hue, {
     w = 320,
     h = 20,
   })
@@ -125,7 +125,7 @@ local function draw(ctx)
   -- SATURATION SLIDER (updates when hue changes)
   ImGui.Text(ctx, "Saturation (0-100%):")
   local changed_s
-  changed_s, saturation = ColorSliders.draw_saturation(ctx, "##sat_slider", saturation, hue, {
+  changed_s, saturation = ark.HueSlider.draw_saturation(ctx, "##sat_slider", saturation, hue, {
     w = 320,
     h = 20,
     brightness = brightness,
@@ -136,7 +136,7 @@ local function draw(ctx)
   -- BRIGHTNESS/GAMMA SLIDER (independent)
   ImGui.Text(ctx, "Brightness (0-100%):")
   local changed_b
-  changed_b, brightness = ColorSliders.draw_gamma(ctx, "##gamma_slider", brightness, {
+  changed_b, brightness = ark.HueSlider.draw_gamma(ctx, "##gamma_slider", brightness, {
     w = 320,
     h = 20,
   })
@@ -160,7 +160,7 @@ local function draw(ctx)
   ImGui.Text(ctx, "Scrollable Tiles Container:")
   ImGui.Dummy(ctx, 1, 4)
 
-  local container = TilesContainer.new({
+  local container = ark.Panel.new({
     id = "demo_container",
     width = nil,
     height = 200,

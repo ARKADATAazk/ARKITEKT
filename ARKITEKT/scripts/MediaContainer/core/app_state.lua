@@ -3,9 +3,7 @@
 -- Single-source-of-truth state management for media containers
 
 local Persistence = require("MediaContainer.storage.persistence")
-local UUID = require("arkitekt.core.uuid")
-local Colors = require("arkitekt.core.colors")
-
+local ark = require('arkitekt')
 local M = {}
 
 package.loaded["MediaContainer.core.app_state"] = M
@@ -274,8 +272,8 @@ function M.generate_container_color()
   local saturation = 0.65 + math.random() * 0.25
   local lightness = 0.50 + math.random() * 0.15
 
-  local r, g, b = Colors.hsl_to_rgb(hue, saturation, lightness)
-  return Colors.components_to_rgba(r, g, b, 0xFF)
+  local r, g, b = ark.Colors.hsl_to_rgb(hue, saturation, lightness)
+  return ark.Colors.components_to_rgba(r, g, b, 0xFF)
 end
 
 -- Check for project changes

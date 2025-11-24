@@ -21,8 +21,6 @@ local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
 local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
-local Colors = require('arkitekt.core.colors')
-
 local console = Console.new()
 
 local mock_state = {

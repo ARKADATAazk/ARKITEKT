@@ -4,9 +4,8 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local ark = require('arkitekt')
 
-local Colors = require('arkitekt.core.colors')
-local Draw = require('arkitekt.gui.draw')
 local ColorGrid = require('ColorPalette.widgets.color_grid')
 local Controller = require('ColorPalette.app.controller')
 local Sheet = require('arkitekt.gui.widgets.overlays.overlay.sheet')
@@ -218,7 +217,7 @@ function GUI:draw_settings_content(ctx, w, h, alpha)
   local dl = ImGui.GetWindowDrawList(ctx)
   local separator_y = ImGui.GetCursorScreenPos(ctx)
   local win_x, _ = ImGui.GetCursorScreenPos(ctx)
-  Draw.line(dl, win_x, separator_y, win_x + w - padding * 2, separator_y, hexrgb("#404040AA"), 1.0)
+  ark.Draw.line(dl, win_x, separator_y, win_x + w - padding * 2, separator_y, hexrgb("#404040AA"), 1.0)
   
   ImGui.Spacing(ctx)
   ImGui.Spacing(ctx)
@@ -234,8 +233,8 @@ function GUI:draw_settings_content(ctx, w, h, alpha)
   local preview_content_h = preview_height - 50
   
   -- Background rect
-  Draw.rect_filled(dl, preview_x - 8, preview_y - 8, preview_x + preview_w + 8, preview_y + preview_content_h + 8, hexrgb("#00000033"), 6)
-  Draw.rect(dl, preview_x - 8, preview_y - 8, preview_x + preview_w + 8, preview_y + preview_content_h + 8, hexrgb("#404040AA"), 6, 1)
+  ark.Draw.rect_filled(dl, preview_x - 8, preview_y - 8, preview_x + preview_w + 8, preview_y + preview_content_h + 8, hexrgb("#00000033"), 6)
+  ark.Draw.rect(dl, preview_x - 8, preview_y - 8, preview_x + preview_w + 8, preview_y + preview_content_h + 8, hexrgb("#404040AA"), 6, 1)
   
   ImGui.BeginChild(ctx, "##palette_preview", preview_w, preview_content_h, ImGui.ChildFlags_None, ImGui.WindowFlags_NoScrollbar)
   
@@ -283,11 +282,11 @@ function GUI:draw_palette_preview(ctx, colors, config)
     local x2, y2 = x + tile_size, y + tile_size
     
     local fill_color = color
-    local border_color = Colors.with_alpha(color, 0xFF)
+    local border_color = ark.Colors.with_alpha(color, 0xFF)
     
     -- Draw tile
-    Draw.rect_filled(dl, x1, y1, x2, y2, fill_color, rounding)
-    Draw.rect(dl, x1, y1, x2, y2, border_color, rounding, 1)
+    ark.Draw.rect_filled(dl, x1, y1, x2, y2, fill_color, rounding)
+    ark.Draw.rect(dl, x1, y1, x2, y2, border_color, rounding, 1)
   end
 end
 
@@ -377,7 +376,7 @@ function GUI:draw_drag_feedback(ctx)
     -- Draw arc showing progress
     local segments = math.floor(progress * 32)
     if segments > 0 then
-      local arc_color = Colors.with_alpha(hexrgb("#FFFFFF"), math.floor(progress * 120))
+      local arc_color = ark.Colors.with_alpha(hexrgb("#FFFFFF"), math.floor(progress * 120))
       
       for i = 0, segments do
         local angle1 = -math.pi / 2 + (i / 32) * math.pi * 2 * progress
@@ -386,7 +385,7 @@ function GUI:draw_drag_feedback(ctx)
         local y1 = my + math.sin(angle1) * radius
         local x2 = mx + math.cos(angle2) * radius
         local y2 = my + math.sin(angle2) * radius
-        Draw.line(dl, x1, y1, x2, y2, arc_color, thickness)
+        ark.Draw.line(dl, x1, y1, x2, y2, arc_color, thickness)
       end
     end
   end

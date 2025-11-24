@@ -17,10 +17,9 @@ local State = require("ThemeAdjuster.core.state")
 local ThemeParams = require("ThemeAdjuster.core.theme_params")
 local GUI = require("ThemeAdjuster.ui.gui")
 local StatusConfig = require("ThemeAdjuster.ui.status")
-local Colors = require("arkitekt.core.colors")
 local Settings = require("arkitekt.core.settings")
 
-local hexrgb = Colors.hexrgb
+local hexrgb = ark.Colors.hexrgb
 
 -- ============================================================================
 -- INITIALIZE SETTINGS
