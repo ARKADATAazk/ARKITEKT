@@ -51,18 +51,18 @@ function M.load(ImGui, ctx, opts)
 
   -- Find fonts directory
   local fonts_dir = find_fonts_dir()
-  local roboto_regular = fonts_dir .. 'Roboto-Regular.ttf'
-  local roboto_medium = fonts_dir .. 'Roboto-Medium.ttf'
+  local noto_regular = fonts_dir .. 'NotoSans-Regular.ttf'
+  local noto_semibold = fonts_dir .. 'NotoSans-SemiBold.ttf'
   local mono = fonts_dir .. 'JetBrainsMono-Regular.ttf'
   local orbitron = fonts_dir .. 'Orbitron-Bold.ttf'
   local remixicon = fonts_dir .. 'remixicon.ttf'
 
-  -- Create fonts - use Roboto for consistent cross-platform display with tabular figures
+  -- Create fonts - use Noto Sans for consistent cross-platform display with full Unicode coverage
   local fonts = {
-    default = file_exists(roboto_regular) and ImGui.CreateFontFromFile(roboto_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0),
+    default = file_exists(noto_regular) and ImGui.CreateFontFromFile(noto_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0),
     default_size = default_size,
 
-    title = file_exists(roboto_medium) and ImGui.CreateFontFromFile(roboto_medium, 0, 0) or ImGui.CreateFont('sans-serif', 0),
+    title = file_exists(noto_semibold) and ImGui.CreateFontFromFile(noto_semibold, 0, 0) or ImGui.CreateFont('sans-serif', 0),
     title_size = title_size,
 
     monospace = file_exists(mono) and ImGui.CreateFontFromFile(mono, 0, 0) or ImGui.CreateFont('monospace', 0),
