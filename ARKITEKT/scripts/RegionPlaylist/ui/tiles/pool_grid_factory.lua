@@ -3,9 +3,9 @@
 -- UNCHANGED
 
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
+local ark = require('arkitekt')
 local PoolTile = require('RegionPlaylist.ui.tiles.renderers.pool')
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = ark.Colors.hexrgb
 
 
 local M = {}

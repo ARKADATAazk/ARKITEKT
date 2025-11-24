@@ -14,9 +14,8 @@ package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. pa
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 local Shell = require('arkitekt.app.runtime.shell')
+local ark = require('arkitekt')
 local Arkit = require('arkitekt.arkit')
-local Panel = require('arkitekt.gui.widgets.containers.panel')
-
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
@@ -37,7 +36,7 @@ local state = {
 -- ============================================================================
 
 local function create_alignment_panel()
-  return Panel.new({
+  return ark.Panel.new({
     id = "alignment_panel",
     width = 850,
     height = 180,
@@ -150,7 +149,7 @@ end
 -- ============================================================================
 
 local function create_bottom_header_panel()
-  return Panel.new({
+  return ark.Panel.new({
     id = "bottom_panel",
     width = 850,
     height = 150,
@@ -199,7 +198,7 @@ end
 -- ============================================================================
 
 local function create_corner_buttons_panel()
-  return Panel.new({
+  return ark.Panel.new({
     id = "corner_panel",
     width = 850,
     height = 200,
@@ -262,7 +261,7 @@ end
 -- ============================================================================
 
 local function create_hybrid_panel()
-  return Panel.new({
+  return ark.Panel.new({
     id = "hybrid_panel",
     width = 850,
     height = 150,
@@ -314,7 +313,7 @@ end
 -- ============================================================================
 
 local function create_sidebar_panel()
-  return Panel.new({
+  return ark.Panel.new({
     id = "sidebar_panel",
     width = 850,
     height = 200,

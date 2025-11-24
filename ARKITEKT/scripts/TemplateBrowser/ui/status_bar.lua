@@ -3,8 +3,7 @@
 -- Status bar component for displaying messages
 
 local ImGui = require 'imgui' '0.10'
-local Colors = require('arkitekt.core.colors')
-
+local ark = require('arkitekt')
 local M = {}
 
 -- Draw status bar at the bottom of the window
@@ -27,13 +26,13 @@ function M.draw(ctx, state, width, height)
   local text_color
 
   if state.status_type == "error" then
-    text_color = Colors.hexrgb("#FF4444FF")  -- Bright red
+    text_color = ark.Colors.hexrgb("#FF4444FF")  -- Bright red
   elseif state.status_type == "warning" then
-    text_color = Colors.hexrgb("#FFA500FF")  -- Orange
+    text_color = ark.Colors.hexrgb("#FFA500FF")  -- Orange
   elseif state.status_type == "success" then
-    text_color = Colors.hexrgb("#4AFF4AFF")  -- Bright green
+    text_color = ark.Colors.hexrgb("#4AFF4AFF")  -- Bright green
   else  -- info
-    text_color = Colors.hexrgb("#FFFFFFFF")  -- White
+    text_color = ark.Colors.hexrgb("#FFFFFFFF")  -- White
   end
 
   -- Draw text with padding

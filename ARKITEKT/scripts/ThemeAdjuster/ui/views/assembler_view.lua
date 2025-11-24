@@ -3,15 +3,13 @@
 -- Assembler tab with Panel + package grid
 
 local ImGui = require 'imgui' '0.10'
-local TilesContainer = require('arkitekt.gui.widgets.containers.panel')
+local ark = require('arkitekt')
 local PackageTilesGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
 local PackageManager = require('ThemeAdjuster.packages.manager')
 local Config = require('ThemeAdjuster.core.config')
 local Theme = require('ThemeAdjuster.core.theme')
-local Colors = require('arkitekt.core.colors')
 local PackageModal = require('ThemeAdjuster.ui.views.package_modal')
-local Combo = require('arkitekt.gui.widgets.primitives.combo')
-local hexrgb = Colors.hexrgb
+local hexrgb = ark.Colors.hexrgb
 
 local M = {}
 local AssemblerView = {}
@@ -164,7 +162,7 @@ function M.new(State, AppConfig, settings)
     },
   }
 
-  self.container = TilesContainer.new({
+  self.container = ark.Panel.new({
     id = "assembler_container",
     config = container_config,
   })
@@ -638,7 +636,7 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
 
       -- Set current value before drawing
       if current_value then
-        Combo.set_value("zip_picker_state", current_value)
+        ark.Combo.set_value("zip_picker_state", current_value)
       end
 
       -- Position for dropdown (on same line after status)
@@ -650,7 +648,7 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
       -- Draw dropdown using arkitekt widget
       local dropdown_width = 220
       local dropdown_height = 20
-      local result = Combo.draw(ctx, {
+      local result = ark.Combo.draw(ctx, {
         id = "zip_picker",
         draw_list = dl,
         x = screen_x,

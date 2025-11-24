@@ -3,8 +3,7 @@
 -- Container state persistence via Project ExtState
 
 local JSON = require('arkitekt.core.json')
-local UUID = require('arkitekt.core.uuid')
-
+local ark = require('arkitekt')
 local M = {}
 
 local EXT_STATE_SECTION = "ARK_MEDIACONTAINER"

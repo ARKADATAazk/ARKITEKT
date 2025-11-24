@@ -3,12 +3,10 @@
 -- Packages grid view with Panel header and ARKITEKT package_tiles
 
 local ImGui = require 'imgui' '0.10'
-local Panel = require('arkitekt.gui.widgets.containers.panel')
+local ark = require('arkitekt')
 local PackageTilesGrid = require('arkitekt.gui.widgets.media.package_tiles.grid')
-local Button = require('arkitekt.gui.widgets.primitives.button')
 local PackageManager = require('ThemeAdjuster.packages.manager')
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local hexrgb = ark.Colors.hexrgb
 
 local M = {}
 local PackagesView = {}
@@ -32,7 +30,7 @@ function M.new(State, Config, settings)
   self.theme_model = self:create_theme_model()
 
   -- Create panel with header
-  self.panel = Panel.new({
+  self.panel = ark.Panel.new({
     id = "packages_panel",
     config = {
       header = {

@@ -2,8 +2,8 @@
 -- ItemPicker/defs/constants.lua
 -- Centralized constants and configuration values
 
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
+local ark = require('arkitekt')
+local hexrgb = ark.Colors.hexrgb
 
 local M = {}
 

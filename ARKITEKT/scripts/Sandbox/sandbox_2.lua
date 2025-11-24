@@ -13,6 +13,7 @@ package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. pa
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 local Shell = require('arkitekt.app.runtime.shell')
+local ark = require('arkitekt')
 local Arkit = require('arkitekt.arkit')
 local Console = require('arkitekt.debug.console')
 local Logger = require('arkitekt.debug.logger')
@@ -21,8 +22,6 @@ local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
 local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
-local Colors = require('arkitekt.core.colors')
-
 local console = Console.new()
 
 local mock_state = {

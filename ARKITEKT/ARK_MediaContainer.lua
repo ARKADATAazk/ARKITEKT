@@ -33,11 +33,10 @@ end
 -- ============================================================================
 
 local ImGui = require 'imgui' '0.10'
+local ark = require('arkitekt')
 local Shell = require("arkitekt.app.runtime.shell")
 local MediaContainer = require("MediaContainer.init")
-local Colors = require("arkitekt.core.colors")
-
-local hexrgb = Colors.hexrgb
+local hexrgb = ark.Colors.hexrgb
 
 -- Initialize
 MediaContainer.initialize()
@@ -82,7 +81,7 @@ Shell.run({
           local label = string.format("%s%s (%d items)", container.name, linked_text, #container.items)
 
           -- Color indicator
-          local r, g, b, a = Colors.rgba_to_components(container.color or 0xFF6600FF)
+          local r, g, b, a = ark.Colors.rgba_to_components(container.color or 0xFF6600FF)
           ImGui.PushStyleColor(ctx, ImGui.Col_Text, ImGui.ColorConvertDouble4ToU32(r/255, g/255, b/255, 1))
           ImGui.Bullet(ctx)
           ImGui.PopStyleColor(ctx, 1)

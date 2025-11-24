@@ -4,8 +4,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-
-local SeparatorView = require('arkitekt.gui.widgets.primitives.separator')
+local ark = require('arkitekt')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -20,7 +19,7 @@ function M.new(config, state_module)
   return setmetatable({
     config = config,
     state = state_module,
-    separator_view = SeparatorView.new(),
+    separator_view = ark.Separator.new(),
   }, LayoutView)
 end
 
