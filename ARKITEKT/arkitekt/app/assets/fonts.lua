@@ -51,19 +51,19 @@ function M.load(ImGui, ctx, opts)
 
   -- Find fonts directory
   local fonts_dir = find_fonts_dir()
-  local roboto_extended = fonts_dir .. 'Roboto-Extended-Regular.ttf'
-  local roboto_extended_medium = fonts_dir .. 'Roboto-Extended-Medium.ttf'
+  local noto_regular = fonts_dir .. 'NotoSans-Regular.ttf'
+  local noto_semibold = fonts_dir .. 'NotoSans-SemiBold.ttf'
   local mono = fonts_dir .. 'JetBrainsMono-Regular.ttf'
   local orbitron = fonts_dir .. 'Orbitron-Bold.ttf'
   local remixicon = fonts_dir .. 'remixicon.ttf'
 
-  -- Use Roboto Extended (Roboto + DejaVu Unicode arrows)
-  -- Maintains Roboto aesthetic with Unicode arrow support (↑ ↓)
+  -- Use Noto Sans for Unicode support testing
+  -- Note: Current Noto Sans files (615KB) are subsets, may be missing glyphs
   local fonts = {
-    default = file_exists(roboto_extended) and ImGui.CreateFontFromFile(roboto_extended, 0, 0) or ImGui.CreateFont('sans-serif', 0),
+    default = file_exists(noto_regular) and ImGui.CreateFontFromFile(noto_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0),
     default_size = default_size,
 
-    title = file_exists(roboto_extended) and ImGui.CreateFontFromFile(roboto_extended, 0, 0) or ImGui.CreateFont('sans-serif', 0),
+    title = file_exists(noto_regular) and ImGui.CreateFontFromFile(noto_regular, 0, 0) or ImGui.CreateFont('sans-serif', 0),
     title_size = title_size,
 
     monospace = file_exists(mono) and ImGui.CreateFontFromFile(mono, 0, 0) or ImGui.CreateFont('monospace', 0),
