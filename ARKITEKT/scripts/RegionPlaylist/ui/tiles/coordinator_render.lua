@@ -281,49 +281,50 @@ function M.draw_pool(self, ctx, regions, height)
 
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   local avail_w, _ = ImGui.GetContentRegionAvail(ctx)
-  
+
   self.pool_bounds = {cursor_x, cursor_y, cursor_x + avail_w, cursor_y + height}
   self.bridge:update_bounds('pool', cursor_x, cursor_y, cursor_x + avail_w, cursor_y + height)
-  
+
   self.pool_container.width = avail_w
   self.pool_container.height = height
-  
-  if not self.pool_container:begin_draw(ctx) then
-    return
+
+  local draw_success = self.pool_container:begin_draw(ctx)
+
+  if draw_success then
+    local header_height = 0
+    if self.container_config.header and self.container_config.header.enabled then
+      header_height = self.container_config.header.height or 36
+    end
+
+    local child_w = avail_w - (self.container_config.padding * 2)
+    local child_h = (height - header_height) - (self.container_config.padding * 2)
+
+    self.pool_grid.get_items = function() return regions end
+
+    local raw_height, raw_gap = ResponsiveGrid.calculate_responsive_tile_height({
+      item_count = #regions,
+      avail_width = child_w,
+      avail_height = child_h,
+      base_gap = PoolTile.CONFIG.gap,
+      min_col_width = PoolTile.CONFIG.tile_width,
+      base_tile_height = self.responsive_config.base_tile_height_pool,
+      min_tile_height = self.responsive_config.min_tile_height,
+      responsive_config = self.responsive_config,
+    })
+
+    local responsive_height = self.pool_height_stabilizer:update(raw_height)
+
+    self.current_pool_tile_height = responsive_height
+    self.pool_grid.fixed_tile_h = responsive_height
+    self.pool_grid.gap = raw_gap
+
+    -- Disable background deselection when action menu is visible
+    self.pool_grid.disable_background_clicks = ImGui.IsPopupOpen(ctx, "PoolActionsMenu")
+
+    self.pool_grid:draw(ctx)
   end
-  
-  local header_height = 0
-  if self.container_config.header and self.container_config.header.enabled then
-    header_height = self.container_config.header.height or 36
-  end
-  
-  local child_w = avail_w - (self.container_config.padding * 2)
-  local child_h = (height - header_height) - (self.container_config.padding * 2)
 
-  self.pool_grid.get_items = function() return regions end
-
-  local raw_height, raw_gap = ResponsiveGrid.calculate_responsive_tile_height({
-    item_count = #regions,
-    avail_width = child_w,
-    avail_height = child_h,
-    base_gap = PoolTile.CONFIG.gap,
-    min_col_width = PoolTile.CONFIG.tile_width,
-    base_tile_height = self.responsive_config.base_tile_height_pool,
-    min_tile_height = self.responsive_config.min_tile_height,
-    responsive_config = self.responsive_config,
-  })
-
-  local responsive_height = self.pool_height_stabilizer:update(raw_height)
-
-  self.current_pool_tile_height = responsive_height
-  self.pool_grid.fixed_tile_h = responsive_height
-  self.pool_grid.gap = raw_gap
-
-  -- Disable background deselection when action menu is visible
-  self.pool_grid.disable_background_clicks = ImGui.IsPopupOpen(ctx, "PoolActionsMenu")
-
-  self.pool_grid:draw(ctx)
-
+  -- CRITICAL: Always call end_draw to balance begin_draw (even if it failed)
   self.pool_container:end_draw(ctx)
 
   -- Pool Actions context menu
