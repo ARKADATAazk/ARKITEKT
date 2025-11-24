@@ -10,7 +10,7 @@ local Config = require('ThemeAdjuster.core.config')
 local Theme = require('ThemeAdjuster.core.theme')
 local Colors = require('arkitekt.core.colors')
 local PackageModal = require('ThemeAdjuster.ui.views.package_modal')
-local Combobox = require('arkitekt.gui.widgets.inputs.dropdown')
+local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
 local hexrgb = Colors.hexrgb
 
 local M = {}

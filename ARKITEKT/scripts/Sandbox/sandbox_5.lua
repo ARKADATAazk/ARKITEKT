@@ -19,7 +19,7 @@ local Arkit = require('arkitekt.arkit')
 -- Import refactored base controls
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local Fields = require('arkitekt.gui.widgets.primitives.fields')
-local Combobox = require('arkitekt.gui.widgets.inputs.dropdown')
+local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
 
 -- Import panel system
 local Panel = require('arkitekt.gui.widgets.containers.panel')

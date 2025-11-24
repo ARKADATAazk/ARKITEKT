@@ -15,7 +15,7 @@ local COMPONENTS = {
   button = require('arkitekt.gui.widgets.primitives.button'),
   checkbox = require('arkitekt.gui.widgets.primitives.checkbox'),
   fields = require('arkitekt.gui.widgets.primitives.fields'),
-  combobox_field = require('arkitekt.gui.widgets.inputs.dropdown'),
+  combobox_field = require('arkitekt.gui.widgets.inputs.combobox'),
   tab_strip = require('arkitekt.gui.widgets.containers.panel.header.tab_strip'),
   separator = require('arkitekt.gui.widgets.containers.panel.header.separator'),
   custom = {
@@ -34,7 +34,7 @@ local Chip = require('arkitekt.gui.widgets.data.chip')
 
 -- Custom compound element for template browser header with search/sort + filter chips
 local Fields = require('arkitekt.gui.widgets.primitives.fields')
-local Combobox = require('arkitekt.gui.widgets.inputs.dropdown')
+local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
 local Button = require('arkitekt.gui.widgets.primitives.button')
 
 COMPONENTS.template_header_controls = {

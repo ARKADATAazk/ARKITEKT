@@ -4,7 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local Fields = require('arkitekt.gui.widgets.primitives.fields')
-local Combobox = require('arkitekt.gui.widgets.inputs.dropdown')
+local Combobox = require('arkitekt.gui.widgets.inputs.combobox')
 local Defaults = require('ItemPicker.defs.defaults')
 local Constants = require('ItemPicker.defs.constants')
 
