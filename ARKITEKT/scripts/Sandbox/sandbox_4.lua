@@ -355,7 +355,10 @@ end
 
 local function checkbox(ctx, label, value)
   local changed, new_value = ImGui.Checkbox(ctx, label, value)
-  return changed and new_value or value
+  if changed then
+    return new_value
+  end
+  return value
 end
 
 -- ============================================================================
