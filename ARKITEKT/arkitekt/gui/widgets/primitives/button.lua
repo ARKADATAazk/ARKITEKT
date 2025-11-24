@@ -200,13 +200,17 @@ end
 -- RENDERING
 -- ============================================================================
 
-local function render_button(ctx, dl, x, y, width, height, config, instance)
+local function render_button(ctx, dl, x, y, width, height, config, instance, unique_id)
   local is_disabled = config.disabled or false
-  local is_hovered = not is_disabled and not config.is_blocking and
-                     ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
-  local is_active = not is_disabled and not config.is_blocking and
-                    ImGui.IsMouseDown(ctx, 0) and is_hovered
   local is_toggled = config.is_toggled or false
+
+  -- Create interaction area FIRST (proper ImGui pattern)
+  ImGui.SetCursorScreenPos(ctx, x, y)
+  ImGui.InvisibleButton(ctx, "##" .. unique_id, width, height)
+
+  -- Check hover/active state from ImGui item
+  local is_hovered = not is_disabled and not config.is_blocking and ImGui.IsItemHovered(ctx)
+  local is_active = not is_disabled and not config.is_blocking and ImGui.IsItemActive(ctx)
 
   -- Update animation
   local dt = ImGui.GetDeltaTime(ctx)
@@ -264,7 +268,11 @@ local function render_button(ctx, dl, x, y, width, height, config, instance)
     end
   end
 
-  return is_hovered, is_active
+  -- Check for clicks (already have InvisibleButton from above)
+  local clicked = not is_disabled and not config.is_blocking and ImGui.IsItemClicked(ctx, 0)
+  local right_clicked = not is_disabled and not config.is_blocking and ImGui.IsItemClicked(ctx, 1)
+
+  return is_hovered, is_active, clicked, right_clicked
 end
 
 -- ============================================================================
@@ -293,11 +301,8 @@ function M.draw(ctx, opts)
   local width = opts.width or M.measure(ctx, opts)
   local height = opts.height or 24
 
-  -- Render
-  local is_hovered, is_active = render_button(ctx, dl, x, y, width, height, config, instance)
-
-  -- Create interaction area
-  local clicked, right_clicked = Base.create_interaction_area(ctx, unique_id, x, y, width, height, opts)
+  -- Render (InvisibleButton is created inside render_button now)
+  local is_hovered, is_active, clicked, right_clicked = render_button(ctx, dl, x, y, width, height, config, instance, unique_id)
 
   -- Handle callbacks
   if clicked and config.on_click then
@@ -307,8 +312,10 @@ function M.draw(ctx, opts)
     config.on_right_click()
   end
 
-  -- Handle tooltip
-  Base.handle_tooltip(ctx, opts)
+  -- Handle tooltip (check if item is hovered since we just created InvisibleButton)
+  if ImGui.IsItemHovered(ctx) and opts.tooltip then
+    ImGui.SetTooltip(ctx, opts.tooltip)
+  end
 
   -- Advance cursor
   Base.advance_cursor(ctx, x, y, width, height, opts.advance)
