@@ -292,13 +292,13 @@ function ColorsView:draw(ctx, shell_state)
 
     local spinner_result = Spinner.draw(ctx, {
       id = "palette_selector",
-      current_index = self.current_palette_idx,
-      values = PALETTE_NAMES,
+      value = self.current_palette_idx,
+      options = PALETTE_NAMES,
       width = 200,
       height = 28,
     })
     if spinner_result.changed then
-      self.current_palette_idx = spinner_result.new_index
+      self.current_palette_idx = spinner_result.value
     end
 
     ImGui.Dummy(ctx, 0, 12)

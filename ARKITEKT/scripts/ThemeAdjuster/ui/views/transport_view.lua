@@ -179,12 +179,12 @@ function TransportView:draw(ctx, shell_state)
       ImGui.SameLine(ctx, 0, 8)
       local spinner_result = Spinner.draw(ctx, {
         id = id,
-        current_index = idx,
-        values = values,
+        value = idx,
+        options = values,
         width = spinner_w,
         height = 24,
       })
-      local changed, new_idx = spinner_result.changed, spinner_result.new_index
+      local changed, new_idx = spinner_result.changed, spinner_result.value
 
       ImGui.Dummy(ctx, 0, 2)
       return changed, new_idx
