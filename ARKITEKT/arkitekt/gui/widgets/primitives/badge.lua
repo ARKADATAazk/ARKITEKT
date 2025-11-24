@@ -1,48 +1,91 @@
 -- @noindex
--- Arkitekt/gui/widgets/primitives/badge.lua
--- Modular badge rendering system with consistent styling across the codebase
+-- arkitekt/gui/widgets/primitives/badge.lua
+-- Standardized badge rendering system with consistent styling
+-- Uses unified opts-based API
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.core.colors')
+local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}
 
--- Default badge configuration (can be overridden per badge)
+-- ============================================================================
+-- DEFAULTS
+-- ============================================================================
+
 M.DEFAULTS = {
+  -- Position
+  x = 0,
+  y = 0,
+
+  -- Size
+  size = 18,  -- For icon badges
+
+  -- Content
+  text = "",
+  icon = nil,
+
+  -- Colors
+  base_color = Colors.hexrgb("#555555"),  -- For border derivation
+  alpha = 255,
+  bg_color = Colors.hexrgb("#14181C"),
+  text_color = Colors.hexrgb("#FFFFFFDD"),
+  icon_color = Colors.hexrgb("#FFFFFF"),
+
+  -- Style
   padding_x = 5,
   padding_y = 1,
-  margin = 6,
   rounding = 3,
-  bg = Colors.hexrgb("#14181C"),
   border_alpha = 0x55,
   border_darken = 0.4,
-  text_color = Colors.hexrgb("#FFFFFFDD"),
+
+  -- Font
+  icon_font = nil,
+  icon_font_size = 14,
+
+  -- Interaction
+  id = nil,
+  on_click = nil,
+
+  -- Draw list
+  draw_list = nil,
 }
 
----Render a text badge with background and border
----@param ctx userdata ImGui context
----@param dl userdata DrawList
----@param x number X position (top-left)
----@param y number Y position (top-left)
----@param text string Badge text content
----@param base_color number Base tile color (for border derivation)
----@param alpha number Overall alpha multiplier (0-255)
----@param config? table Optional config overrides
----@return number, number, number, number Badge rect (x1, y1, x2, y2)
-function M.render_text_badge(ctx, dl, x, y, text, base_color, alpha, config)
-  config = config or {}
+-- ============================================================================
+-- INTERNAL HELPERS
+-- ============================================================================
 
-  -- Merge with defaults
-  local cfg = {
-    padding_x = config.padding_x or M.DEFAULTS.padding_x,
-    padding_y = config.padding_y or M.DEFAULTS.padding_y,
-    rounding = config.rounding or M.DEFAULTS.rounding,
-    bg = config.bg or M.DEFAULTS.bg,
-    border_alpha = config.border_alpha or M.DEFAULTS.border_alpha,
-    border_darken = config.border_darken or M.DEFAULTS.border_darken,
-    text_color = config.text_color or M.DEFAULTS.text_color,
+local function merge_config(opts)
+  return {
+    padding_x = opts.padding_x or M.DEFAULTS.padding_x,
+    padding_y = opts.padding_y or M.DEFAULTS.padding_y,
+    rounding = opts.rounding or M.DEFAULTS.rounding,
+    bg_color = opts.bg_color or M.DEFAULTS.bg_color,
+    border_alpha = opts.border_alpha or M.DEFAULTS.border_alpha,
+    border_darken = opts.border_darken or M.DEFAULTS.border_darken,
+    text_color = opts.text_color or M.DEFAULTS.text_color,
+    icon_color = opts.icon_color or M.DEFAULTS.icon_color,
   }
+end
+
+-- ============================================================================
+-- PUBLIC API (Standardized)
+-- ============================================================================
+
+--- Render a text badge
+--- @param ctx userdata ImGui context
+--- @param opts table Widget options
+--- @return table Result { x1, y1, x2, y2, width, height }
+function M.text(ctx, opts)
+  opts = Base.parse_opts(opts, M.DEFAULTS)
+  local cfg = merge_config(opts)
+
+  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local x, y = opts.x, opts.y
+  local text = opts.text or ""
+  local base_color = opts.base_color
+  local alpha = opts.alpha or 255
 
   -- Calculate dimensions
   local text_w, text_h = ImGui.CalcTextSize(ctx, text)
@@ -53,8 +96,8 @@ function M.render_text_badge(ctx, dl, x, y, text, base_color, alpha, config)
   local y2 = y + badge_h
 
   -- Background
-  local bg_alpha = math.floor((cfg.bg & 0xFF) * (alpha / 255))
-  local bg_color = (cfg.bg & 0xFFFFFF00) | bg_alpha
+  local bg_alpha = math.floor((cfg.bg_color & 0xFF) * (alpha / 255))
+  local bg_color = (cfg.bg_color & 0xFFFFFF00) | bg_alpha
   ImGui.DrawList_AddRectFilled(dl, x, y, x2, y2, bg_color, cfg.rounding)
 
   -- Border using darker tile color
@@ -68,40 +111,33 @@ function M.render_text_badge(ctx, dl, x, y, text, base_color, alpha, config)
   local text_final = Colors.with_alpha(cfg.text_color, alpha)
   ImGui.DrawList_AddText(dl, text_x, text_y, text_final, text)
 
-  return x, y, x2, y2
+  return {
+    x1 = x, y1 = y, x2 = x2, y2 = y2,
+    width = badge_w, height = badge_h,
+  }
 end
 
----Render an icon badge with background and border
----@param ctx userdata ImGui context
----@param dl userdata DrawList
----@param x number X position (top-left)
----@param y number Y position (top-left)
----@param size number Badge size (square)
----@param icon_char string Icon character (e.g., utf8.char(0xF186) for star-fill)
----@param base_color number Base tile color (for border derivation)
----@param alpha number Overall alpha multiplier (0-255)
----@param icon_font? userdata Optional icon font object
----@param icon_font_size? number Optional icon font size
----@param config? table Optional config overrides
----@return number, number, number, number Badge rect (x1, y1, x2, y2)
-function M.render_icon_badge(ctx, dl, x, y, size, icon_char, base_color, alpha, icon_font, icon_font_size, config)
-  config = config or {}
+--- Render an icon badge
+--- @param ctx userdata ImGui context
+--- @param opts table Widget options
+--- @return table Result { x1, y1, x2, y2, width, height }
+function M.icon(ctx, opts)
+  opts = Base.parse_opts(opts, M.DEFAULTS)
+  local cfg = merge_config(opts)
 
-  -- Merge with defaults
-  local cfg = {
-    rounding = config.rounding or M.DEFAULTS.rounding,
-    bg = config.bg or M.DEFAULTS.bg,
-    border_alpha = config.border_alpha or M.DEFAULTS.border_alpha,
-    border_darken = config.border_darken or M.DEFAULTS.border_darken,
-    icon_color = config.icon_color or Colors.hexrgb("#FFFFFF"),
-  }
+  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+  local x, y = opts.x, opts.y
+  local size = opts.size or 18
+  local icon_char = opts.icon or ""
+  local base_color = opts.base_color
+  local alpha = opts.alpha or 255
 
   local x2 = x + size
   local y2 = y + size
 
   -- Background
-  local bg_alpha = math.floor((cfg.bg & 0xFF) * (alpha / 255))
-  local bg_color = (cfg.bg & 0xFFFFFF00) | bg_alpha
+  local bg_alpha = math.floor((cfg.bg_color & 0xFF) * (alpha / 255))
+  local bg_color = (cfg.bg_color & 0xFFFFFF00) | bg_alpha
   ImGui.DrawList_AddRectFilled(dl, x, y, x2, y2, bg_color, cfg.rounding)
 
   -- Border using darker tile color
@@ -110,8 +146,8 @@ function M.render_icon_badge(ctx, dl, x, y, size, icon_char, base_color, alpha, 
   ImGui.DrawList_AddRect(dl, x, y, x2, y2, border_color, cfg.rounding, 0, 0.5)
 
   -- Icon
-  if icon_font then
-    ImGui.PushFont(ctx, icon_font, icon_font_size or 14)
+  if opts.icon_font then
+    ImGui.PushFont(ctx, opts.icon_font, opts.icon_font_size or 14)
   end
 
   local icon_color = Colors.with_alpha(cfg.icon_color, alpha)
@@ -120,78 +156,166 @@ function M.render_icon_badge(ctx, dl, x, y, size, icon_char, base_color, alpha, 
   local icon_y = y + (size - icon_h) / 2
   ImGui.DrawList_AddText(dl, icon_x, icon_y, icon_color, icon_char)
 
-  if icon_font then
+  if opts.icon_font then
     ImGui.PopFont(ctx)
   end
 
-  return x, y, x2, y2
+  return {
+    x1 = x, y1 = y, x2 = x2, y2 = y2,
+    width = size, height = size,
+  }
 end
 
----Render a clickable badge with text
----Creates an invisible button over the badge for click detection
----@param ctx userdata ImGui context
----@param dl userdata DrawList
----@param x number X position (top-left)
----@param y number Y position (top-left)
----@param text string Badge text content
----@param base_color number Base tile color (for border derivation)
----@param alpha number Overall alpha multiplier (0-255)
----@param unique_id string Unique ID for the button
----@param on_click? function Optional click callback
----@param config? table Optional config overrides
----@return number, number, number, number Badge rect (x1, y1, x2, y2)
-function M.render_clickable_text_badge(ctx, dl, x, y, text, base_color, alpha, unique_id, on_click, config)
-  local x1, y1, x2, y2 = M.render_text_badge(ctx, dl, x, y, text, base_color, alpha, config)
+--- Render a clickable text badge
+--- @param ctx userdata ImGui context
+--- @param opts table Widget options
+--- @return table Result { x1, y1, x2, y2, width, height, left_clicked, right_clicked }
+function M.clickable(ctx, opts)
+  opts = Base.parse_opts(opts, M.DEFAULTS)
+
+  -- Render the text badge first
+  local result = M.text(ctx, opts)
 
   -- Create invisible button over badge
-  ImGui.SetCursorScreenPos(ctx, x1, y1)
-  ImGui.InvisibleButton(ctx, "##badge_" .. unique_id, x2 - x1, y2 - y1)
+  local unique_id = opts.id or "badge"
+  ImGui.SetCursorScreenPos(ctx, result.x1, result.y1)
+  ImGui.InvisibleButton(ctx, "##badge_" .. unique_id, result.width, result.height)
 
-  -- Handle left-click (increment) and right-click (decrement)
-  if on_click then
-    if ImGui.IsItemClicked(ctx, 0) then
-      on_click(1)  -- Left-click: increment (+1)
-    elseif ImGui.IsItemClicked(ctx, 1) then
-      on_click(-1)  -- Right-click: decrement (-1)
+  -- Handle clicks
+  local left_clicked = ImGui.IsItemClicked(ctx, 0)
+  local right_clicked = ImGui.IsItemClicked(ctx, 1)
+
+  if opts.on_click then
+    if left_clicked then
+      opts.on_click(1)  -- Left-click: increment (+1)
+    elseif right_clicked then
+      opts.on_click(-1)  -- Right-click: decrement (-1)
     end
   end
 
-  return x1, y1, x2, y2
+  result.left_clicked = left_clicked
+  result.right_clicked = right_clicked
+  result.clicked = left_clicked
+
+  return result
 end
 
----Render a favorite badge (star icon badge) with consistent styling
----@param ctx userdata ImGui context
----@param dl userdata DrawList
----@param x number X position (top-left)
----@param y number Y position (top-left)
----@param size number Badge size (square)
----@param alpha number Overall alpha multiplier (0-255)
----@param is_favorite boolean Whether the item is favorited
----@param icon_font? userdata Optional icon font object (remixicon)
----@param icon_font_size? number Optional icon font size
----@param base_color? number Optional base tile color for border derivation (defaults to neutral gray)
----@param config? table Optional config overrides
----@return number, number, number, number Badge rect (x1, y1, x2, y2)
-function M.render_favorite_badge(ctx, dl, x, y, size, alpha, is_favorite, icon_font, icon_font_size, base_color, config)
-  if not is_favorite then
-    return x, y, x, y  -- Return empty rect if not favorited
+--- Render a favorite badge (star icon)
+--- @param ctx userdata ImGui context
+--- @param opts table Widget options
+--- @return table Result { x1, y1, x2, y2, width, height }
+function M.favorite(ctx, opts)
+  opts = Base.parse_opts(opts, M.DEFAULTS)
+
+  -- Return empty result if not favorited
+  if not opts.is_favorite then
+    return {
+      x1 = opts.x, y1 = opts.y, x2 = opts.x, y2 = opts.y,
+      width = 0, height = 0,
+    }
   end
 
   -- Use remixicon star-fill if available, otherwise fallback to Unicode star
   local star_char
-  if icon_font then
-    -- Remixicon star-fill: U+F186
-    star_char = utf8.char(0xF186)
+  if opts.icon_font then
+    star_char = utf8.char(0xF186)  -- Remixicon star-fill
   else
-    -- Fallback to Unicode star character
     star_char = "★"  -- U+2605 BLACK STAR
   end
 
-  -- Default base color if not provided
-  base_color = base_color or Colors.hexrgb("#555555")
+  opts.icon = star_char
+  return M.icon(ctx, opts)
+end
 
-  -- Render using modular badge system
-  return M.render_icon_badge(ctx, dl, x, y, size, star_char, base_color, alpha, icon_font, icon_font_size, config)
+-- ============================================================================
+-- LEGACY API (for backward compatibility during migration)
+-- ============================================================================
+
+--- @deprecated Use M.text() instead
+function M.render_text_badge(ctx, dl, x, y, text, base_color, alpha, config)
+  config = config or {}
+  return M.text(ctx, {
+    draw_list = dl,
+    x = x,
+    y = y,
+    text = text,
+    base_color = base_color,
+    alpha = alpha,
+    padding_x = config.padding_x,
+    padding_y = config.padding_y,
+    rounding = config.rounding,
+    bg_color = config.bg,
+    border_alpha = config.border_alpha,
+    border_darken = config.border_darken,
+    text_color = config.text_color,
+  })
+end
+
+--- @deprecated Use M.icon() instead
+function M.render_icon_badge(ctx, dl, x, y, size, icon_char, base_color, alpha, icon_font, icon_font_size, config)
+  config = config or {}
+  local result = M.icon(ctx, {
+    draw_list = dl,
+    x = x,
+    y = y,
+    size = size,
+    icon = icon_char,
+    base_color = base_color,
+    alpha = alpha,
+    icon_font = icon_font,
+    icon_font_size = icon_font_size,
+    rounding = config.rounding,
+    bg_color = config.bg,
+    border_alpha = config.border_alpha,
+    border_darken = config.border_darken,
+    icon_color = config.icon_color,
+  })
+  return result.x1, result.y1, result.x2, result.y2
+end
+
+--- @deprecated Use M.clickable() instead
+function M.render_clickable_text_badge(ctx, dl, x, y, text, base_color, alpha, unique_id, on_click, config)
+  config = config or {}
+  local result = M.clickable(ctx, {
+    draw_list = dl,
+    x = x,
+    y = y,
+    text = text,
+    base_color = base_color,
+    alpha = alpha,
+    id = unique_id,
+    on_click = on_click,
+    padding_x = config.padding_x,
+    padding_y = config.padding_y,
+    rounding = config.rounding,
+    bg_color = config.bg,
+    border_alpha = config.border_alpha,
+    border_darken = config.border_darken,
+    text_color = config.text_color,
+  })
+  return result.x1, result.y1, result.x2, result.y2
+end
+
+--- @deprecated Use M.favorite() instead
+function M.render_favorite_badge(ctx, dl, x, y, size, alpha, is_favorite, icon_font, icon_font_size, base_color, config)
+  config = config or {}
+  local result = M.favorite(ctx, {
+    draw_list = dl,
+    x = x,
+    y = y,
+    size = size,
+    alpha = alpha,
+    is_favorite = is_favorite,
+    icon_font = icon_font,
+    icon_font_size = icon_font_size,
+    base_color = base_color,
+    rounding = config.rounding,
+    bg_color = config.bg,
+    border_alpha = config.border_alpha,
+    border_darken = config.border_darken,
+    icon_color = config.icon_color,
+  })
+  return result.x1, result.y1, result.x2, result.y2
 end
 
 return M
