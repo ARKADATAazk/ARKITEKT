@@ -8,7 +8,7 @@ local ImGui = require 'imgui' '0.10'
 -- Module dependencies
 local Header = require('arkitekt.gui.widgets.containers.panel.header')
 local Content = require('arkitekt.gui.widgets.containers.panel.content')
-local Background = require('arkitekt.gui.draw.background')
+local Pattern = require('arkitekt.gui.draw.pattern')
 local Rendering = require('arkitekt.gui.widgets.containers.panel.rendering')
 local CornerButtons = require('arkitekt.gui.widgets.containers.panel.corner_buttons')
 local Sidebars = require('arkitekt.gui.widgets.containers.panel.sidebars')
@@ -181,7 +181,7 @@ function Panel:begin_draw(ctx)
 
     local clip_rounding = math.max(0, self.config.rounding - border_inset)
     ImGui.DrawList_PushClipRect(dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, true)
-    Background.draw(ctx, dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, self.config.background_pattern)
+    Pattern.draw(ctx, dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, self.config.background_pattern)
     ImGui.DrawList_PopClipRect(dl)
   end
 

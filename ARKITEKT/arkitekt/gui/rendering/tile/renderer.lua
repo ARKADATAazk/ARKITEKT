@@ -6,7 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local Colors = require('arkitekt.core.colors')
-local Background = require('arkitekt.gui.draw.background')
+local Background = require('arkitekt.gui.draw.pattern')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
