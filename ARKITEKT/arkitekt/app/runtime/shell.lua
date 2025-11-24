@@ -17,13 +17,18 @@ local Window  = require('arkitekt.app.chrome.window.window')
 local M = {}
 
 -- ============================================================================
--- ERROR HANDLING: Initialize enhanced error handler
+-- ERROR HANDLING: Wrap reaper.defer with xpcall for full stack traces
 -- ============================================================================
--- Wraps reaper.defer with xpcall for full stack traces
--- Configurable via arkitekt.defs.app.ERROR_HANDLER
--- Can be disabled for production by setting enabled = false in config
-local ErrorHandler = require('arkitekt.debug.error_handler')
-ErrorHandler.init()
+do
+  local original_defer = reaper.defer
+  reaper.defer = function(func)
+    return original_defer(function()
+      xpcall(func, function(err)
+        reaper.ShowConsoleMsg("ERROR: " .. tostring(err) .. '\n\n' .. debug.traceback() .. '\n')
+      end)
+    end)
+  end
+end
 
 -- Helper to set REAPER toolbar button state
 local function set_button_state(set)
