@@ -11,7 +11,7 @@ local ImGui   = require 'imgui' '0.10'
 local Config = require('arkitekt.core.config')
 local Constants = require('arkitekt.defs.app')
 local Typography = require('arkitekt.defs.typography')
-local Fonts = require('arkitekt.app.assets.fonts')
+local Fonts = require('arkitekt.app.chrome.fonts')
 local Window  = require('arkitekt.app.chrome.window.window')
 
 local M = {}

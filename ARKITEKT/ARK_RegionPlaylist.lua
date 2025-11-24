@@ -3,7 +3,7 @@
 -- ============================================================================
 -- BOOTSTRAP ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/init/init.lua").bootstrap()
+local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/bootstrap.lua").init()
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
@@ -15,7 +15,7 @@ local profiler_enabled = ProfilerInit.init()
 -- LOAD MODULES
 -- ============================================================================
 
-local Shell = require("arkitekt.app.runtime.shell")
+local Shell = require("arkitekt.app.shell")
 local Config = require("RegionPlaylist.core.config")
 local State = require("RegionPlaylist.core.app_state")
 local GUI = require("RegionPlaylist.ui.gui")

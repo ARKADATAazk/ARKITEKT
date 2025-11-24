@@ -44,7 +44,7 @@ addpath(join(HERE,  "Arkitekt/?/init.lua"))
 addpath(join(HERE,  "Arkitekt/?/?.lua"))
 
 -- Libs
-local Shell         = require("arkitekt.app.runtime.shell")
+local Shell         = require("arkitekt.app.shell")
 local ColorSliders  = require("arkitekt.gui.widgets.primitives.hue_slider")
 local TilesContainer = require("arkitekt.gui.widgets.containers.panel")
 

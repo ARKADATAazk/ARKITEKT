@@ -33,7 +33,7 @@ end
 -- ============================================================================
 
 local ImGui = require 'imgui' '0.10'
-local Shell = require("arkitekt.app.runtime.shell")
+local Shell = require("arkitekt.app.shell")
 local MediaContainer = require("MediaContainer.init")
 local Colors = require("arkitekt.core.colors")
 

@@ -42,8 +42,8 @@ end
 
 -- Load required modules
 local ImGui = ARK.ImGui
-local Shell = require('arkitekt.app.runtime.shell')
-local Fonts = require('arkitekt.app.assets.fonts')
+local Shell = require('arkitekt.app.shell')
+local Fonts = require('arkitekt.app.chrome.fonts')
 local OverlayManager = require('arkitekt.gui.widgets.overlays.overlay.manager')
 local OverlayDefaults = require('arkitekt.gui.widgets.overlays.overlay.defaults')
 

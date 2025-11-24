@@ -13,7 +13,7 @@ package.path = arkitekt_path .. "?.lua;" .. arkitekt_path .. "?/init.lua;" .. pa
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 
 -- Import system
-local Shell = require('arkitekt.app.runtime.shell')
+local Shell = require('arkitekt.app.shell')
 local Arkit = require('arkitekt.arkit')
 
 -- Import refactored base controls

@@ -2,7 +2,7 @@
 -- arkitekt/debug/console_window.lua
 -- Standalone debug console window using proper ARKITEKT window system
 
-local Shell = require('arkitekt.app.runtime.shell')
+local Shell = require('arkitekt.app.shell')
 local Console = require('arkitekt.debug.console')
 local Logger = require('arkitekt.debug.logger')
 

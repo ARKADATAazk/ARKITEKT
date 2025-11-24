@@ -39,7 +39,7 @@ addpath(join(ARKITEKT_ROOT, "?/init.lua"))
 -- LOAD MODULES
 -- ============================================================================
 
-local Shell = require("arkitekt.app.runtime.shell")
+local Shell = require("arkitekt.app.shell")
 local Config = require("ThemeAdjuster.core.config")
 local State = require("ThemeAdjuster.core.state")
 local GUI = require("ThemeAdjuster.ui.gui_panel_test")  -- Use test version
