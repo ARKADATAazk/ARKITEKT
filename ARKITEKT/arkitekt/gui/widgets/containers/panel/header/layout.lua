@@ -403,6 +403,13 @@ end
 -- ELEMENT RENDERING
 -- ============================================================================
 
+-- Widgets that use the new standardized opts-based API
+local STANDARDIZED_WIDGETS = {
+  button = true,
+  checkbox = true,
+  -- Note: fields and combobox_field still use old API in this context
+}
+
 local function render_elements(ctx, dl, x, y, width, height, elements, state, header_rounding, is_bottom, valign, side)
   if not elements or #elements == 0 then
     return 0
@@ -410,7 +417,7 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
 
   local layout = layout_elements(ctx, elements, width, state)
   local rounding_info = calculate_corner_rounding(layout, header_rounding, is_bottom, side)
-  
+
   local border_overlap = 1
   local cursor_x = x
   local last_non_sep_idx = find_last_non_separator(layout)
@@ -426,27 +433,27 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
         cursor_x = cursor_x - border_overlap
       end
     end
-    
+
     if i == last_non_sep_idx and element.type ~= 'separator' then
       local remaining_space = (x + width) - cursor_x
       if remaining_space > element_width then
         element_width = remaining_space
       end
     end
-    
+
     local component = COMPONENTS[element.type]
     if component and component.draw then
       -- Merge panel ELEMENT_STYLE as fallback (won't override preset colors)
       local style_defaults = PanelConfig.ELEMENT_STYLE[element.type] or {}
       local element_config = ConfigUtil.merge_safe(element.config or {}, style_defaults)
-      
+
       -- Pass element ID to config for unique identification
       element_config.id = element.id
-      
+
       if rounding_info[i] then
         element_config.corner_rounding = rounding_info[i]
       end
-      
+
       -- Update button label from panel current_mode if this is a mode_toggle button
       if element.type == "button" and element.id == "mode_toggle" and state.current_mode then
         if state.current_mode == "regions" then
@@ -464,21 +471,39 @@ local function render_elements(ctx, dl, x, y, width, height, elements, state, he
       end
 
       local element_state = get_or_create_element_state(state, element)
-      
-      local used_width = component.draw(
-        ctx, dl,
-        cursor_x, y,
-        element_width, height,
-        element_config,
-        element_state
-      )
-      
+
+      local used_width
+
+      -- Use new opts-based API for standardized widgets
+      if STANDARDIZED_WIDGETS[element.type] then
+        -- Build opts table for standardized widget API
+        local opts = element_config
+        opts.x = cursor_x
+        opts.y = y
+        opts.width = element_width
+        opts.height = height
+        opts.draw_list = dl
+        opts.panel_state = element_state
+
+        local result = component.draw(ctx, opts)
+        used_width = result and result.width or element_width
+      else
+        -- Use old positional API for non-standardized widgets
+        used_width = component.draw(
+          ctx, dl,
+          cursor_x, y,
+          element_width, height,
+          element_config,
+          element_state
+        )
+      end
+
       cursor_x = cursor_x + (used_width or element_width)
     else
       cursor_x = cursor_x + element_width
     end
   end
-  
+
   return height
 end
 
