@@ -381,7 +381,7 @@ Shell.run({
     local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
     local left_width = 280
 
-    ImGui.BeginChild(ctx, "config_panel", left_width, 0, ImGui.ChildFlags_Border or 0x01)
+    ImGui.BeginChild(ctx, "config_panel", left_width, 0)
 
     config_section(ctx, "Dimensions")
     TREE_CONFIG.item_height = slider_int(ctx, "Item Height", TREE_CONFIG.item_height, 14, 28, 200)
