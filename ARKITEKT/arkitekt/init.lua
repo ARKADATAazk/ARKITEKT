@@ -3,7 +3,15 @@
 -- Usage: local ark = require('arkitekt')
 --        ark.Button.draw(ctx, {label = "Click"})
 
+if reaper then
+  reaper.ShowConsoleMsg("[init.lua] START loading namespace\n")
+end
+
 local ark = {}
+
+if reaper then
+  reaper.ShowConsoleMsg("[init.lua] Created ark table: " .. type(ark) .. "\n")
+end
 
 -- Module registry - maps names to module paths
 -- Lazy loaded on first access to minimize startup overhead
@@ -70,5 +78,9 @@ setmetatable(ark, {
     error(string.format("ark.%s is not a valid widget. See MODULES table in arkitekt/init.lua", key), 2)
   end
 })
+
+if reaper then
+  reaper.ShowConsoleMsg("[init.lua] About to return ark: " .. type(ark) .. " - " .. tostring(ark) .. "\n")
+end
 
 return ark
