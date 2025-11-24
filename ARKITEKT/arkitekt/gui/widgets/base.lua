@@ -247,11 +247,13 @@ end
 --- @param is_hovered boolean Current hover state
 --- @param is_active boolean Current active/pressed state
 --- @param speed number Animation speed (default 12.0)
-function M.update_hover_animation(state, dt, is_hovered, is_active, speed)
+--- @param field string Field name to animate (default "hover_alpha")
+function M.update_hover_animation(state, dt, is_hovered, is_active, speed, field)
   speed = speed or 12.0
+  field = field or "hover_alpha"
   local target = (is_hovered or is_active) and 1.0 or 0.0
-  state.hover_alpha = state.hover_alpha + (target - state.hover_alpha) * speed * dt
-  state.hover_alpha = math.max(0, math.min(1, state.hover_alpha))
+  state[field] = state[field] + (target - state[field]) * speed * dt
+  state[field] = math.max(0, math.min(1, state[field]))
 end
 
 --- Check if widget is interactive (not disabled, not blocked)
