@@ -475,7 +475,7 @@ function M.draw(ctx, opts)
   local width = opts.width
   local height = opts.height
   local dl = opts.draw_list
-  local state_or_id = opts.panel_state or opts.id or "combobox"
+  local state_or_id = opts.panel_state or opts.id or "dropdown"
 
   -- Build user_config from remaining opts (excluding the extracted fields)
   local user_config = {}
