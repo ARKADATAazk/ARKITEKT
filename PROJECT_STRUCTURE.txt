@@ -97,7 +97,6 @@ ARKITEKT-Project/
 │   │   │   │   └── README.md (113 lines)
 │   │   │   ├── systems/
 │   │   │   │   ├── height_stabilizer.lua (74 lines)
-│   │   │   │   ├── playback_manager.lua (22 lines)
 │   │   │   │   ├── reorder.lua (127 lines)
 │   │   │   │   ├── responsive_grid.lua (232 lines)
 │   │   │   │   ├── selection.lua (142 lines)

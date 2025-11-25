@@ -325,7 +325,6 @@ Generated: 2025-10-15 18:25:28
   → `ARKITEKT/arkitekt/core/colors.lua`
   → `ARKITEKT/arkitekt/gui/draw.lua`
   → `ARKITEKT/arkitekt/gui/fx/tile_fx_config.lua`
-  → `ARKITEKT/arkitekt/gui/systems/playback_manager.lua`
   → `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/base.lua`
 
 **`ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/base.lua`**
@@ -651,9 +650,6 @@ Generated: 2025-10-15 18:25:28
 
 **`ARKITEKT/arkitekt/gui/fx/effects.lua`** (1 imports)
   ← `ARKITEKT/scripts/demos/widget_demo.lua`
-
-**`ARKITEKT/arkitekt/gui/systems/playback_manager.lua`** (1 imports)
-  ← `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/active.lua`
 
 **`ARKITEKT/arkitekt/gui/systems/selection.lua`** (1 imports)
   ← `ARKITEKT/arkitekt/gui/widgets/grid/core.lua`
