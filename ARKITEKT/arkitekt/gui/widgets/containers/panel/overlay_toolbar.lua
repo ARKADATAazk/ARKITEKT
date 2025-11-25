@@ -224,15 +224,33 @@ end
 --- @param bounds table {x, y, w, h}
 --- @param config table Overlay toolbar configuration
 --- @param rounding number Corner rounding
-local function draw_background(dl, bounds, config, rounding)
+--- @param position string Position ("top", "bottom", "left", "right")
+local function draw_background(dl, bounds, config, rounding, position)
   if not config.bg_color then
     return  -- No backdrop by default
+  end
+
+  -- Apply position-specific corner rounding
+  -- Top overlay: round bottom corners only (0xC = bottom-left + bottom-right)
+  -- Bottom overlay: round top corners only (0x3 = top-left + top-right)
+  -- Left overlay: round right corners only (0xA = top-right + bottom-right)
+  -- Right overlay: round left corners only (0x5 = top-left + bottom-left)
+  local corner_flags = 0xF  -- Default: all corners
+  if position == "top" then
+    corner_flags = 0xC  -- Bottom corners only
+  elseif position == "bottom" then
+    corner_flags = 0x3  -- Top corners only
+  elseif position == "left" then
+    corner_flags = 0xA  -- Right corners only
+  elseif position == "right" then
+    corner_flags = 0x5  -- Left corners only
   end
 
   ImGui.DrawList_AddRectFilled(
     dl, bounds.x, bounds.y, bounds.x + bounds.w, bounds.y + bounds.h,
     config.bg_color,
-    rounding
+    rounding,
+    corner_flags
   )
 end
 
@@ -424,8 +442,8 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
     end
   end
 
-  -- Draw background
-  draw_background(dl, bounds, config, rounding)
+  -- Draw background with position-specific rounding
+  draw_background(dl, bounds, config, rounding, position)
 
   -- Add clipping to constrain overlay within panel bounds
   -- Offset clip rect by panel border width so buttons slide from BEHIND the border
