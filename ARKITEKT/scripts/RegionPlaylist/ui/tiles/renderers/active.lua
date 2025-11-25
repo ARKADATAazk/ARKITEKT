@@ -1,25 +1,13 @@
 -- @noindex
 -- RegionPlaylist/ui/tiles/renderers/active.lua
--- MODIFIED: Using theme colors from ScriptColors and Style.COLORS
+-- MODIFIED: Lowered responsive threshold for text.
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
-local Style = require('arkitekt.gui.style')
 
 local TileFXConfig = require('arkitekt.gui.rendering.tile.defaults')
 local BaseRenderer = require('RegionPlaylist.ui.tiles.renderers.base')
-
--- Safely require ScriptColors (may fail if theme not initialized)
-local ok_colors, ScriptColors = pcall(require, 'RegionPlaylist.defs.colors')
-if not ok_colors then
-  -- Minimal fallback module
-  ScriptColors = {
-    get_badge = function() return { bg = 0x14181CDD, text = 0xFFFFFFDD, border_opacity = 0.20 } end,
-    get_playlist_tile = function() return { base_color = 0x3A3A3AFF, name_color = 0xCCCCCCFF, badge_color = 0x999999FF } end,
-    get_fallback_chip = function() return 0xFF5733FF end,
-  }
-end
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -27,51 +15,23 @@ local max = math.max
 local M = {}
 local hexrgb = ark.Colors.hexrgb
 
--- Static config (dimensions, timing, behavior)
 M.CONFIG = {
+  bg_base = hexrgb("#1A1A1A"),
   badge_rounding = 4,
   badge_padding_x = 6,
   badge_padding_y = 3,
   badge_margin = 6,
+  badge_bg = hexrgb("#14181C"),
+  badge_border_alpha = 0x33,
   disabled = { desaturate = 0.8, brightness = 0.4, min_alpha = 0x33, fade_speed = 20.0, min_lightness = 0.28 },
-  responsive = { hide_length_below = 35, hide_badge_below = 25, hide_text_below = 15 },
+  responsive = { hide_length_below = 35, hide_badge_below = 25, hide_text_below = 15 }, -- UPDATED
+  playlist_tile = { base_color = hexrgb("#3A3A3A") },
   text_margin_right = 6,
   badge_nudge_x = 0,
   badge_nudge_y = 0,
   badge_text_nudge_x = -1,
   badge_text_nudge_y = -1,
 }
-
---- Get current colors (theme-reactive via Style.COLORS)
---- @return table Colors for rendering
-local function get_colors()
-  local ok, badge = pcall(ScriptColors.get_badge)
-  if not ok then badge = { bg = 0x14181CDD, text = 0xFFFFFFDD, border_opacity = 0.20 } end
-
-  local ok2, playlist = pcall(ScriptColors.get_playlist_tile)
-  if not ok2 then playlist = { base_color = 0x3A3A3AFF, name_color = 0xCCCCCCFF, badge_color = 0x999999FF } end
-
-  local ok3, fallback = pcall(ScriptColors.get_fallback_chip)
-  if not ok3 then fallback = 0xFF5733FF end
-
-  local S = Style.COLORS or {}
-
-  return {
-    -- Badge colors (theme-reactive)
-    badge_bg = badge.bg,
-    badge_text = badge.text,
-    badge_border_opacity = badge.border_opacity,
-
-    -- Playlist tile colors (theme-reactive)
-    playlist_tile = playlist,
-
-    -- Fallback chip color
-    fallback_chip = fallback,
-
-    -- Default background (for regions without color)
-    bg_base = S.BG_PANEL or hexrgb("#1A1A1A"),
-  }
-end
 
 local function clamp_min_lightness(color, min_l)
   local lum = ark.Colors.luminance(color)
@@ -95,17 +55,14 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local region = get_region_by_rid(item.rid)
   if not region then return end
-
-  -- Get theme-reactive colors
-  local colors = get_colors()
-
+  
   local is_enabled = item.enabled ~= false
   animator:track(item.key, 'hover', state.hover and 1.0 or 0.0, hover_config and hover_config.animation_speed_hover or 12.0)
   animator:track(item.key, 'enabled', is_enabled and 1.0 or 0.0, M.CONFIG.disabled.fade_speed)
   local hover_factor = animator:get(item.key, 'hover')
   local enabled_factor = animator:get(item.key, 'enabled')
-
-  local base_color = region.color or colors.bg_base
+  
+  local base_color = region.color or M.CONFIG.bg_base
   if enabled_factor < 1.0 then
     base_color = ark.Colors.desaturate(base_color, M.CONFIG.disabled.desaturate * (1.0 - enabled_factor))
     base_color = ark.Colors.adjust_brightness(base_color, 1.0 - (1.0 - M.CONFIG.disabled.brightness) * (1.0 - enabled_factor))
@@ -180,24 +137,17 @@ function M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on
     local badge_x = x2 - bw - M.CONFIG.badge_padding_x * 2 - M.CONFIG.badge_margin
     local badge_y = BaseRenderer.calculate_badge_position(ctx, rect, badge_height, actual_height)
     local badge_x2, badge_y2 = badge_x + bw + M.CONFIG.badge_padding_x * 2, badge_y + bh + M.CONFIG.badge_padding_y * 2
-
-    -- Badge background with alpha factor
-    local badge_bg_alpha = (colors.badge_bg & 0xFF)
-    local adjusted_alpha = ((badge_bg_alpha * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))) // 1
-    local badge_bg = (colors.badge_bg & 0xFFFFFF00) | adjusted_alpha
-
+    local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | ((((M.CONFIG.badge_bg & 0xFF) * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor)))//1)
+    
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
-
-    local border_opacity = colors.badge_border_opacity or 0.20
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, ark.Colors.with_alpha(base_color, border_opacity * 0xFF), M.CONFIG.badge_rounding, 0, 0.5)
-
-    ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, ark.Colors.with_alpha(colors.badge_text, text_alpha), badge_text)
-
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, ark.Colors.with_alpha(base_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
+    ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, ark.Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
+    
     ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
     ImGui.InvisibleButton(ctx, "##badge_" .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
     if ImGui.IsItemClicked(ctx, 0) and on_repeat_cycle then on_repeat_cycle(item.key) end
   end
-
+  
   if show_length then BaseRenderer.draw_length_display(ctx, dl, rect, region, base_color, text_alpha) end
 end
 
@@ -205,10 +155,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   local dl = ImGui.GetWindowDrawList(ctx)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local playlist = get_playlist_by_id and get_playlist_by_id(item.playlist_id) or {}
-
-  -- Get theme-reactive colors
-  local colors = get_colors()
-
+  
   -- Calculate total duration if playlist has items (in beat positions)
   local total_duration = 0
   if playlist.items and bridge then
@@ -217,7 +164,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     for _, pl_item in ipairs(playlist.items) do
       local item_type = pl_item.type or "region"
       local rid = pl_item.rid
-
+      
       if item_type == "region" and rid then
         local region = State.get_region_by_rid(rid)
         if region then
@@ -232,11 +179,11 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
       end
     end
   end
-
+  
   local playlist_data = {
     name = playlist.name or item.playlist_name or "Unknown Playlist",
     item_count = playlist.items and #playlist.items or item.playlist_item_count or 0,
-    chip_color = playlist.chip_color or item.chip_color or colors.fallback_chip,
+    chip_color = playlist.chip_color or item.chip_color or hexrgb("#FF5733"),
     total_duration = total_duration
   }
 
@@ -246,7 +193,7 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
   local hover_factor = animator:get(item.key, 'hover')
   local enabled_factor = animator:get(item.key, 'enabled')
 
-  local base_color = colors.playlist_tile.base_color
+  local base_color = M.CONFIG.playlist_tile.base_color
   local chip_color = playlist_data.chip_color
   
   -- Apply disabled state to both base and chip color
@@ -335,18 +282,11 @@ function M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, ho
     local badge_x = x2 - bw - M.CONFIG.badge_padding_x * 2 - M.CONFIG.badge_margin
     local badge_y = BaseRenderer.calculate_badge_position(ctx, rect, badge_height, actual_height)
     local badge_x2, badge_y2 = badge_x + bw + M.CONFIG.badge_padding_x * 2, badge_y + bh + M.CONFIG.badge_padding_y * 2
-
-    -- Badge background with alpha factor
-    local badge_bg_alpha = (colors.badge_bg & 0xFF)
-    local adjusted_alpha = ((badge_bg_alpha * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor))) // 1
-    local badge_bg = (colors.badge_bg & 0xFFFFFF00) | adjusted_alpha
+    local badge_bg = (M.CONFIG.badge_bg & 0xFFFFFF00) | ((((M.CONFIG.badge_bg & 0xFF) * enabled_factor) + (M.CONFIG.disabled.min_alpha * (1.0 - enabled_factor)))//1)
 
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, M.CONFIG.badge_rounding)
-
-    local border_opacity = colors.badge_border_opacity or 0.20
-    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, ark.Colors.with_alpha(playlist_data.chip_color, border_opacity * 0xFF), M.CONFIG.badge_rounding, 0, 0.5)
-
-    ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, ark.Colors.with_alpha(colors.badge_text, text_alpha), badge_text)
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x2, badge_y2, ark.Colors.with_alpha(playlist_data.chip_color, M.CONFIG.badge_border_alpha), M.CONFIG.badge_rounding, 0, 0.5)
+    ark.Draw.text(dl, badge_x + M.CONFIG.badge_padding_x + M.CONFIG.badge_text_nudge_x, badge_y + M.CONFIG.badge_padding_y + M.CONFIG.badge_text_nudge_y, ark.Colors.with_alpha(hexrgb("#FFFFFFDD"), text_alpha), badge_text)
     
     ImGui.SetCursorScreenPos(ctx, badge_x, badge_y)
     ImGui.InvisibleButton(ctx, "##badge_" .. item.key, badge_x2 - badge_x, badge_y2 - badge_y)
