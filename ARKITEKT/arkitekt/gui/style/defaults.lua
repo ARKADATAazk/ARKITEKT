@@ -836,6 +836,72 @@ function M.create_triadic_button_set(base_hue)
   }
 end
 
+--- Generate saturation variants of same hue (muted to vivid)
+--- @param base_hue number Base hue (0-1)
+--- @param base_lightness number|nil Lightness (0-1, default: 0.48)
+--- @return table Table with muted, normal, vivid variants
+function M.create_saturation_variants(base_hue, base_lightness)
+  base_lightness = base_lightness or 0.48
+
+  return {
+    muted = M.create_colored_button_preset(base_hue, 0.30, base_lightness),   -- Low saturation
+    normal = M.create_colored_button_preset(base_hue, 0.65, base_lightness),  -- Default
+    vivid = M.create_colored_button_preset(base_hue, 0.85, base_lightness),   -- High saturation
+  }
+end
+
+--- Generate lightness variants of same hue (dark to light)
+--- @param base_hue number Base hue (0-1)
+--- @param base_saturation number|nil Saturation (0-1, default: 0.65)
+--- @return table Table with dark, normal, light variants
+function M.create_lightness_variants(base_hue, base_saturation)
+  base_saturation = base_saturation or 0.65
+
+  return {
+    dark = M.create_colored_button_preset(base_hue, base_saturation, 0.35),   -- Dark
+    normal = M.create_colored_button_preset(base_hue, base_saturation, 0.48), -- Default
+    light = M.create_colored_button_preset(base_hue, base_saturation, 0.62),  -- Light
+  }
+end
+
+--- Generate full matrix of saturation × lightness variants
+--- Creates 9 button presets covering the full range
+--- @param base_hue number Base hue (0-1)
+--- @return table 2D table: variants[saturation][lightness]
+function M.create_button_matrix(base_hue)
+  return {
+    muted = {
+      dark = M.create_colored_button_preset(base_hue, 0.30, 0.35),
+      normal = M.create_colored_button_preset(base_hue, 0.30, 0.48),
+      light = M.create_colored_button_preset(base_hue, 0.30, 0.62),
+    },
+    normal = {
+      dark = M.create_colored_button_preset(base_hue, 0.65, 0.35),
+      normal = M.create_colored_button_preset(base_hue, 0.65, 0.48),
+      light = M.create_colored_button_preset(base_hue, 0.65, 0.62),
+    },
+    vivid = {
+      dark = M.create_colored_button_preset(base_hue, 0.85, 0.35),
+      normal = M.create_colored_button_preset(base_hue, 0.85, 0.48),
+      light = M.create_colored_button_preset(base_hue, 0.85, 0.62),
+    },
+  }
+end
+
+--- Generate monochromatic palette (same hue, varying saturation/lightness)
+--- Creates a harmonious set of buttons from a single hue
+--- @param base_hue number Base hue (0-1)
+--- @return table Named preset variants
+function M.create_monochromatic_set(base_hue)
+  return {
+    primary = M.create_colored_button_preset(base_hue, 0.70, 0.50),      -- Vibrant
+    secondary = M.create_colored_button_preset(base_hue, 0.45, 0.52),    -- Muted
+    subtle = M.create_colored_button_preset(base_hue, 0.25, 0.58),       -- Very muted, lighter
+    bold = M.create_colored_button_preset(base_hue, 0.85, 0.42),         -- Very vivid, darker
+    accent = M.create_colored_button_preset(base_hue, 0.75, 0.60),       -- Bright accent
+  }
+end
+
 -- Pre-generate semantic colored button presets
 -- These use fixed hues for consistent meaning (red=danger, green=success, etc.)
 M.DYNAMIC_PRESETS.BUTTON_DANGER = M.create_colored_button_preset(0.0, 0.68, 0.55)     -- Red

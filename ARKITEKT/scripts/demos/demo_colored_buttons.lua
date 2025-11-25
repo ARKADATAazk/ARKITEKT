@@ -231,6 +231,59 @@ local function draw_color_theory_sets(ctx)
   ImGui.Dummy(ctx, 1, 35)
 end
 
+local function draw_saturation_lightness_variants(ctx)
+  ImGui.Separator(ctx)
+  ImGui.Spacing(ctx)
+  ImGui.Text(ctx, "Saturation & Lightness Variants:")
+  ImGui.Spacing(ctx)
+
+  -- Saturation variants
+  ImGui.Text(ctx, "Saturation Variants (same lightness, different saturation):")
+  local sat_variants = Style.create_saturation_variants(state.current_hue, state.current_light)
+  local x, y = ImGui.GetCursorScreenPos(ctx)
+
+  draw_colored_button(ctx, x, y, 90, 28, sat_variants.muted, "Muted (30%)")
+  draw_colored_button(ctx, x + 95, y, 90, 28, sat_variants.normal, "Normal (65%)")
+  draw_colored_button(ctx, x + 190, y, 90, 28, sat_variants.vivid, "Vivid (85%)")
+
+  ImGui.Dummy(ctx, 1, 35)
+  ImGui.Spacing(ctx)
+
+  -- Lightness variants
+  ImGui.Text(ctx, "Lightness Variants (same saturation, different lightness):")
+  local light_variants = Style.create_lightness_variants(state.current_hue, state.current_sat)
+  x, y = ImGui.GetCursorScreenPos(ctx)
+
+  draw_colored_button(ctx, x, y, 90, 28, light_variants.dark, "Dark (35%)")
+  draw_colored_button(ctx, x + 95, y, 90, 28, light_variants.normal, "Normal (48%)")
+  draw_colored_button(ctx, x + 190, y, 90, 28, light_variants.light, "Light (62%)")
+
+  ImGui.Dummy(ctx, 1, 35)
+  ImGui.Spacing(ctx)
+
+  -- Monochromatic set
+  ImGui.Text(ctx, "Monochromatic Palette (same hue, varying sat/light):")
+  local mono = Style.create_monochromatic_set(state.current_hue)
+  x, y = ImGui.GetCursorScreenPos(ctx)
+
+  local mono_buttons = {
+    {"bold", "Bold"},
+    {"primary", "Primary"},
+    {"secondary", "Secondary"},
+    {"subtle", "Subtle"},
+    {"accent", "Accent"},
+  }
+
+  for i, btn in ipairs(mono_buttons) do
+    local key, label = btn[1], btn[2]
+    draw_colored_button(ctx, x, y, 100, 28, mono[key], label)
+    y = y + 33
+    ImGui.SetCursorScreenPos(ctx, x, y)
+  end
+
+  ImGui.Dummy(ctx, 1, 5)
+end
+
 local function draw_theme_integration(ctx)
   ImGui.Separator(ctx)
   ImGui.Spacing(ctx)
@@ -279,6 +332,9 @@ local function main()
 
   -- Color theory sets
   draw_color_theory_sets(ctx)
+
+  -- Saturation/lightness variants
+  draw_saturation_lightness_variants(ctx)
 
   -- Theme integration
   draw_theme_integration(ctx)
