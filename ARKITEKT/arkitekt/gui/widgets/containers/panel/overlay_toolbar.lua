@@ -6,6 +6,10 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
+-- Delegate to existing renderers for element drawing
+local Header = require('arkitekt.gui.widgets.containers.panel.header')
+local Sidebars = require('arkitekt.gui.widgets.containers.panel.sidebars')
+
 local M = {}
 
 -- ============================================================================
@@ -196,18 +200,20 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
   -- Draw background
   draw_background(dl, bounds, config, rounding)
 
-  -- TODO: Draw elements using existing toolbar element renderers
-  -- This will delegate to Header.draw_elements or Sidebars.draw based on orientation
-  -- For now, just draw a placeholder rect to visualize
+  -- Draw elements using existing toolbar element renderers
   if config.elements and #config.elements > 0 then
-    -- Placeholder: draw outline
-    ImGui.DrawList_AddRect(
-      dl, bounds.x, bounds.y, bounds.x + bounds.w, bounds.y + bounds.h,
-      0xFF00FFFF,  -- Cyan outline for debugging
-      rounding,
-      0,
-      2
-    )
+    local orientation = get_orientation(position)
+
+    if orientation == "horizontal" then
+      -- Use Header renderer for horizontal overlay toolbars (top/bottom)
+      -- Inject position for proper rendering
+      config.position = position
+      Header.draw_elements(ctx, dl, bounds.x, bounds.y, bounds.w, bounds.h, panel_state, config)
+    else
+      -- Use Sidebars renderer for vertical overlay toolbars (left/right)
+      local side = (position == "left") and "left" or "right"
+      Sidebars.draw(ctx, dl, bounds.x, bounds.y, bounds.w, bounds.h, config, panel_id, side)
+    end
   end
 end
 
