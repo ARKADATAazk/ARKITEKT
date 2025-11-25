@@ -3,12 +3,9 @@
 -- Three-panel UI: Folders | Templates | Tags
 
 -- ============================================================================
--- BOOTSTRAP ARKITEKT FRAMEWORK
+-- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/bootstrap.lua").init()
-
--- Load ARKITEKT namespace (lazy-loaded modules)
-local ark = require('arkitekt')
+local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/init.lua")
 
 -- Load required modules
 local Shell = require('arkitekt.app.shell')

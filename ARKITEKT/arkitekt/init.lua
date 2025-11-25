@@ -1,9 +1,23 @@
 -- ARKITEKT Namespace
 -- Provides ImGui-style access to all widgets via lazy loading
--- Usage: local ark = require('arkitekt')
+-- Usage: local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/init.lua")
 --        ark.Button.draw(ctx, {label = "Click"})
 
+-- ============================================================================
+-- AUTO-BOOTSTRAP
+-- ============================================================================
+-- Run bootstrap to set up package paths and validate dependencies
+local bootstrap_path = debug.getinfo(1,"S").source:sub(2):match("(.-arkitekt[/\\])") .. "app/bootstrap.lua"
+local bootstrap_context = dofile(bootstrap_path).init()
+
+if not bootstrap_context then
+  error("ARKITEKT bootstrap failed - cannot continue")
+end
+
 local ark = {}
+
+-- Store bootstrap context for scripts that need it (ImGui, utilities, etc.)
+ark._bootstrap = bootstrap_context
 
 -- Module registry - maps names to module paths
 -- Lazy loaded on first access to minimize startup overhead
