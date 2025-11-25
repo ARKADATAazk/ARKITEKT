@@ -22,6 +22,7 @@ local Notification = require("RegionPlaylist.domains.notification")
 local UIPreferences = require("RegionPlaylist.domains.ui_preferences")
 local Region = require("RegionPlaylist.domains.region")
 local Dependency = require("RegionPlaylist.domains.dependency")
+local Playlist = require("RegionPlaylist.domains.playlist")
 
 local M = {}
 
@@ -51,15 +52,13 @@ M.SORT_DIRECTIONS = Constants.SORT_DIRECTIONS
 -- STATE FIELDS
 -- =============================================================================
 
--- Active playlist UUID (string) - the currently selected/displayed playlist
-M.active_playlist = nil
-
 -- Domain instances
 M.animation = nil                             -- Animation domain instance
 M.notification = nil                          -- Notification domain instance
 M.ui_preferences = nil                        -- UI preferences domain instance
 M.region = nil                                -- Region domain instance
 M.dependency = nil                            -- Dependency domain instance
+M.playlist = nil                              -- Playlist domain instance
 
 -- Engine/playback coordination
 M.bridge = nil                                -- CoordinatorBridge instance for engine communication
@@ -79,17 +78,8 @@ M.project_monitor = nil                       -- ProjectMonitor instance
 M.on_state_restored = nil                     -- Called when undo/redo restores state
 M.on_repeat_cycle = nil                       -- Called when repeat count cycles
 
--- Playlist data
-M.playlists = {}                              -- Array of playlist objects
-M.playlist_lookup = {}                        -- Map: UUID -> playlist object (O(1) lookup)
+-- Settings
 M.settings = nil                              -- Persistent UI settings
-
-local function rebuild_playlist_lookup()
-  M.playlist_lookup = {}
-  for _, pl in ipairs(M.playlists) do
-    M.playlist_lookup[pl.id] = pl
-  end
-end
 
 function M.initialize(settings)
   M.settings = settings
@@ -100,11 +90,12 @@ function M.initialize(settings)
   M.ui_preferences = UIPreferences.new(Constants, settings)
   M.region = Region.new()
   M.dependency = Dependency.new()
+  M.playlist = Playlist.new()
 
   -- Load UI preferences from settings
   M.ui_preferences:load_from_settings()
 
-  reaper.ShowConsoleMsg("[APP_STATE] Initialized with domains: animation, notification, ui_preferences, region, dependency\n")
+  reaper.ShowConsoleMsg("[APP_STATE] Initialized with all 6 domains: animation, notification, ui_preferences, region, dependency, playlist\n")
 
   -- Initialize project monitor to track changes
   M.project_monitor = ProjectMonitor.new({
@@ -136,9 +127,7 @@ function M.initialize(settings)
     end,
     get_playlist_by_id = M.get_playlist_by_id,
     get_active_playlist = M.get_active_playlist,
-    get_active_playlist_id = function()
-      return M.active_playlist
-    end,
+    get_active_playlist_id = M.get_active_playlist_id,
   })
   
   M.undo_manager = UndoManager.new({ max_history = 50 })
@@ -150,11 +139,11 @@ function M.initialize(settings)
 end
 
 function M.load_project_state()
-  M.playlists = RegionState.load_playlists(0)
+  local playlists = RegionState.load_playlists(0)
 
-  if #M.playlists == 0 then
+  if #playlists == 0 then
     local UUID = require("arkitekt.core.uuid")
-    M.playlists = {
+    playlists = {
       {
         id = UUID.generate(),
         name = "Playlist 1",
@@ -162,13 +151,13 @@ function M.load_project_state()
         chip_color = RegionState.generate_chip_color(),
       }
     }
-    RegionState.save_playlists(M.playlists, 0)
+    RegionState.save_playlists(playlists, 0)
   end
 
-  rebuild_playlist_lookup()
+  M.playlist:load_playlists(playlists)
 
   local saved_active = RegionState.load_active_playlist(0)
-  M.active_playlist = saved_active or M.playlists[1].id
+  M.playlist:set_active(saved_active or playlists[1].id)
 end
 
 function M.reload_project_data()
@@ -195,23 +184,19 @@ end
 -- Single source of truth for state access - use these instead of direct field access
 
 function M.get_active_playlist_id()
-  return M.active_playlist
+  return M.playlist:get_active_id()
 end
 
 function M.get_active_playlist()
-  local pl = M.playlist_lookup[M.active_playlist]
-  if pl then
-    return pl
-  end
-  return M.playlists[1]
+  return M.playlist:get_active()
 end
 
 function M.get_playlist_by_id(playlist_id)
-  return M.playlist_lookup[playlist_id]
+  return M.playlist:get_by_id(playlist_id)
 end
 
 function M.get_playlists()
-  return M.playlists
+  return M.playlist:get_all()
 end
 
 function M.get_bridge()
@@ -351,35 +336,11 @@ end
 -- <<< CANONICAL ACCESSORS (END)
 
 function M.get_tabs()
-  local tabs = {}
-  for _, pl in ipairs(M.playlists) do
-    tabs[#tabs + 1] = {
-      id = pl.id,
-      label = pl.name or "Untitled",
-      chip_color = pl.chip_color,
-    }
-  end
-  return tabs
+  return M.playlist:get_tabs()
 end
 
 function M.count_playlist_contents(playlist_id)
-  local playlist = M.get_playlist_by_id(playlist_id)
-  if not playlist or not playlist.items then
-    return 0, 0
-  end
-  
-  local region_count = 0
-  local playlist_count = 0
-  
-  for _, item in ipairs(playlist.items) do
-    if item.type == "region" then
-      region_count = region_count + 1
-    elseif item.type == "playlist" then
-      playlist_count = playlist_count + 1
-    end
-  end
-  
-  return region_count, playlist_count
+  return M.playlist:count_contents(playlist_id)
 end
 
 function M.refresh_regions()
@@ -388,9 +349,9 @@ function M.refresh_regions()
 end
 
 function M.persist()
-  rebuild_playlist_lookup()  -- Rebuild lookup table whenever playlists change
-  RegionState.save_playlists(M.playlists, 0)
-  RegionState.save_active_playlist(M.active_playlist, 0)
+  M.playlist:mark_changed()  -- Rebuild lookup table whenever playlists change
+  RegionState.save_playlists(M.playlist:get_all(), 0)
+  RegionState.save_active_playlist(M.playlist:get_active_id(), 0)
   M.mark_graph_dirty()
   if M.bridge then
     M.bridge:invalidate_sequence()
@@ -402,7 +363,7 @@ function M.persist_ui_prefs()
 end
 
 function M.capture_undo_snapshot()
-  local snapshot = UndoBridge.capture_snapshot(M.playlists, M.active_playlist)
+  local snapshot = UndoBridge.capture_snapshot(M.playlist:get_all(), M.playlist:get_active_id())
   M.undo_manager:push(snapshot)
 end
 
@@ -422,10 +383,8 @@ function M.restore_snapshot(snapshot)
     M.get_region_index()
   )
 
-  M.playlists = restored_playlists
-  M.active_playlist = restored_active
-
-  rebuild_playlist_lookup()
+  M.playlist:load_playlists(restored_playlists)
+  M.playlist:set_active(restored_active)
 
   M.persist()
   M.clear_pending()
@@ -521,7 +480,7 @@ function M.can_redo()
 end
 
 function M.set_active_playlist(playlist_id, move_to_end)
-  M.active_playlist = playlist_id
+  M.playlist:set_active(playlist_id)
 
   -- Optionally move the playlist to the front (first visible tab)
   if move_to_end then
@@ -535,50 +494,12 @@ function M.set_active_playlist(playlist_id, move_to_end)
 end
 
 function M.move_playlist_to_front(playlist_id)
-  -- Find the playlist's current position
-  local playlist_index = nil
-  for i, pl in ipairs(M.playlists) do
-    if pl.id == playlist_id then
-      playlist_index = i
-      break
-    end
-  end
-  
-  if not playlist_index then return end
-  
-  -- Move to position 1 (front) so it's always visible
-  -- Most recently selected playlist appears first
-  if playlist_index ~= 1 then
-    local playlist = table.remove(M.playlists, playlist_index)
-    table.insert(M.playlists, 1, playlist)
-    M.persist()
-  end
+  M.playlist:move_to_front(playlist_id)
+  M.persist()
 end
 
 function M.reorder_playlists_by_ids(new_playlist_ids)
-  -- Build a map of playlists by ID
-  local playlist_map = {}
-  for _, pl in ipairs(M.playlists) do
-    playlist_map[pl.id] = pl
-  end
-  
-  -- Rebuild playlists array in new order
-  local reordered = {}
-  for _, id in ipairs(new_playlist_ids) do
-    local pl = playlist_map[id]
-    if pl then
-      reordered[#reordered + 1] = pl
-      playlist_map[id] = nil  -- Mark as used
-    end
-  end
-  
-  -- Append any playlists not in the reorder list (shouldn't happen, but defensive)
-  for _, pl in pairs(playlist_map) do
-    reordered[#reordered + 1] = pl
-  end
-
-  M.playlists = reordered
-  rebuild_playlist_lookup()
+  M.playlist:reorder_by_ids(new_playlist_ids)
   M.persist()
 end
 
@@ -714,27 +635,28 @@ function M.mark_graph_dirty()
 end
 
 function M.rebuild_dependency_graph()
-  M.dependency:rebuild(M.playlists)
+  M.dependency:rebuild(M.playlist:get_all())
 end
 
 function M.is_playlist_draggable_to(playlist_id, target_playlist_id)
-  M.dependency:ensure_fresh(M.playlists)
+  M.dependency:ensure_fresh(M.playlist:get_all())
   return M.dependency:is_draggable_to(playlist_id, target_playlist_id)
 end
 
 function M.get_playlists_for_pool()
-  M.dependency:ensure_fresh(M.playlists)
-  
+  M.dependency:ensure_fresh(M.playlist:get_all())
+
   local pool_playlists = {}
-  local active_id = M.active_playlist
-  
+  local active_id = M.playlist:get_active_id()
+  local playlists = M.playlist:get_all()
+
   -- Build playlist index map for implicit ordering
   local playlist_index_map = {}
-  for i, pl in ipairs(M.playlists) do
+  for i, pl in ipairs(playlists) do
     playlist_index_map[pl.id] = i
   end
-  
-  for _, pl in ipairs(M.playlists) do
+
+  for _, pl in ipairs(playlists) do
     if pl.id ~= active_id then
       local is_draggable = M.is_playlist_draggable_to(pl.id, active_id)
       local total_duration = calculate_playlist_duration(pl, M.get_region_index())
@@ -878,7 +800,7 @@ function M.get_mixed_pool_sorted()
 end
 
 function M.detect_circular_reference(target_playlist_id, playlist_id_to_add)
-  M.dependency:ensure_fresh(M.playlists)
+  M.dependency:ensure_fresh(M.playlist:get_all())
   return M.dependency:detect_circular_reference(target_playlist_id, playlist_id_to_add)
 end
 
@@ -900,8 +822,9 @@ end
 function M.cleanup_deleted_regions()
   local removed_any = false
   local region_index = M.get_region_index()
+  local playlists = M.playlist:get_all()
 
-  for _, pl in ipairs(M.playlists) do
+  for _, pl in ipairs(playlists) do
     local i = 1
     while i <= #pl.items do
       local item = pl.items[i]
