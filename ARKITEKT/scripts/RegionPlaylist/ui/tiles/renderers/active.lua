@@ -9,7 +9,17 @@ local Style = require('arkitekt.gui.style')
 
 local TileFXConfig = require('arkitekt.gui.rendering.tile.defaults')
 local BaseRenderer = require('RegionPlaylist.ui.tiles.renderers.base')
-local ScriptColors = require('RegionPlaylist.defs.colors')
+
+-- Safely require ScriptColors (may fail if theme not initialized)
+local ok_colors, ScriptColors = pcall(require, 'RegionPlaylist.defs.colors')
+if not ok_colors then
+  -- Minimal fallback module
+  ScriptColors = {
+    get_badge = function() return { bg = 0x14181CDD, text = 0xFFFFFFDD, border_opacity = 0.20 } end,
+    get_playlist_tile = function() return { base_color = 0x3A3A3AFF, name_color = 0xCCCCCCFF, badge_color = 0x999999FF } end,
+    get_fallback_chip = function() return 0xFF5733FF end,
+  }
+end
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
