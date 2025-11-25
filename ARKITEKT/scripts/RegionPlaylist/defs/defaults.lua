@@ -31,7 +31,8 @@ M.TRANSPORT = {
   height = 72,
   padding = 12,
   spacing = 12,
-  panel_bg_color = hexrgb("#131313c9"),
+  -- panel_bg_color: Transparent - Transport uses TransportFX for dynamic themed background
+  panel_bg_color = hexrgb("#00000000"),
 
   corner_buttons = {
     size = 30,
@@ -39,17 +40,19 @@ M.TRANSPORT = {
     inner_rounding = 7,
   },
 
+  -- display: All colors now use nil to fall back to dynamic Style.COLORS
+  -- This enables proper theme reactivity (light/dark themes)
   display = {
-    bg_color = hexrgb("#252525"),
-    border_inner = hexrgb("#404040"),
-    border_outer = hexrgb("#000000DD"),
+    -- bg_color: nil falls back to Style.COLORS.BG_PANEL
+    -- border_inner: nil falls back to Style.COLORS.BORDER_INNER
+    -- border_outer: nil falls back to Style.COLORS.BORDER_OUTER
     rounding = 6,
-    time_color = hexrgb("#CCCCCC"),
-    time_playing_color = hexrgb("#FFFFFF"),
-    status_color = hexrgb("#888888"),
-    region_color = hexrgb("#CCCCCC"),
-    track_color = hexrgb("#404040"),
-    fill_color = hexrgb("#41E0A3"),
+    -- time_color: nil falls back to Style.COLORS.TEXT_NORMAL
+    -- time_playing_color: nil falls back to Style.COLORS.TEXT_BRIGHT
+    -- status_color: nil falls back to Style.COLORS.TEXT_DIM
+    -- region_color: nil falls back to Style.COLORS.TEXT_NORMAL
+    -- track_color: nil falls back to Style.COLORS.BG_HOVER
+    fill_color = hexrgb("#41E0A3"),  -- Accent color (keep explicit)
     progress_height = 3,
   },
 
@@ -73,9 +76,11 @@ M.TRANSPORT = {
     progress = { height = 3 },  -- track_color: Uses Style.COLORS.BG_PANEL dynamically
   },
 
+  -- background_pattern: Colors nil to fall back to dynamic Style.COLORS.PATTERN_*
+  -- This enables theme reactivity for the dot/grid patterns
   background_pattern = {
-    primary = { type = 'dots', spacing = 50, color = hexrgb("#0000001c"), dot_size = 2.5 },
-    secondary = { enabled = true, type = 'dots', spacing = 5, color = hexrgb("#141414d0"), dot_size = 1.5 },
+    primary = { type = 'dots', spacing = 50, dot_size = 2.5 },  -- color: Style.COLORS.PATTERN_PRIMARY
+    secondary = { enabled = true, type = 'dots', spacing = 5, dot_size = 1.5 },  -- color: Style.COLORS.PATTERN_SECONDARY
   },
 
   jump = {
