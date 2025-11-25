@@ -301,6 +301,20 @@ function M.run(opts)
     settings = auto_init_settings(config.app_name)
   end
 
+  -- ============================================================================
+  -- THEME INITIALIZATION
+  -- ============================================================================
+  -- Initialize theme on app startup to ensure Style.COLORS is properly set
+  -- before any UI renders. This prevents the "dark defaults on light theme" bug.
+  -- Theme preferences are persisted via REAPER ExtState and restored automatically.
+  do
+    local ok, ThemeManager = pcall(require, 'arkitekt.core.theme_manager')
+    if ok and ThemeManager and ThemeManager.init then
+      -- init() loads saved preference or defaults to "adapt" mode
+      ThemeManager.init()
+    end
+  end
+
   -- Handle toolbar button state
   local toggle_button = config.toggle_button
   if toggle_button then

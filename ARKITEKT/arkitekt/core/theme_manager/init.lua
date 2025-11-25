@@ -437,10 +437,38 @@ end
 --- @return string|nil "dark", "grey", "light", "adapt", or nil if custom
 M.current_mode = nil
 
+-- ============================================================================
+-- THEME PERSISTENCE (via REAPER ExtState)
+-- ============================================================================
+-- Theme preferences are persisted across sessions using REAPER's ExtState API.
+-- This ensures the user's theme choice is remembered without requiring settings.
+
+local EXTSTATE_SECTION = "ARKITEKT"
+local EXTSTATE_KEY = "theme_mode"
+
+--- Save current theme mode to REAPER ExtState (persistent)
+local function save_theme_preference(mode)
+  if mode then
+    reaper.SetExtState(EXTSTATE_SECTION, EXTSTATE_KEY, mode, true)  -- persist=true
+  end
+end
+
+--- Load saved theme mode from REAPER ExtState
+--- @return string|nil Saved theme mode or nil if not set
+function M.load_saved_mode()
+  local saved = reaper.GetExtState(EXTSTATE_SECTION, EXTSTATE_KEY)
+  if saved and saved ~= "" then
+    return saved
+  end
+  return nil
+end
+
 --- Set theme by mode name (for UI selectors)
 --- @param mode string "dark", "grey", "light", or "adapt"
+--- @param persist boolean|nil Whether to save preference (default: true)
 --- @return boolean Success
-function M.set_mode(mode)
+function M.set_mode(mode, persist)
+  if persist == nil then persist = true end
   local success = false
 
   if mode == "adapt" then
@@ -451,6 +479,9 @@ function M.set_mode(mode)
 
   if success then
     M.current_mode = mode
+    if persist then
+      save_theme_preference(mode)
+    end
   end
 
   return success
@@ -460,6 +491,26 @@ end
 --- @return string|nil
 function M.get_mode()
   return M.current_mode
+end
+
+--- Initialize theme from saved preference or default
+--- Called automatically on first require, or can be called manually
+--- @param default_mode string|nil Default mode if no saved preference ("adapt" if nil)
+--- @return boolean Success
+function M.init(default_mode)
+  default_mode = default_mode or "adapt"
+
+  -- Try to load saved preference
+  local saved_mode = M.load_saved_mode()
+
+  -- Use saved mode if valid, otherwise use default
+  local mode_to_apply = saved_mode
+  if not mode_to_apply or (mode_to_apply ~= "dark" and mode_to_apply ~= "grey" and mode_to_apply ~= "light" and mode_to_apply ~= "adapt") then
+    mode_to_apply = default_mode
+  end
+
+  -- Apply theme (don't persist again if loading saved preference)
+  return M.set_mode(mode_to_apply, saved_mode == nil)
 end
 
 -- ============================================================================
