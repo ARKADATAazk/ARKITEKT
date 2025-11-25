@@ -9,7 +9,7 @@ local ark = require('arkitekt')
 local TileFXConfig = require('arkitekt.gui.rendering.tile.defaults')
 local TileUtil = require('RegionPlaylist.core.tile_utilities')
 local BaseRenderer = require('RegionPlaylist.ui.tiles.renderers.base')
-local Background = require('arkitekt.gui.widgets.containers.panel.background')
+local Background = require('arkitekt.gui.draw.pattern')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max

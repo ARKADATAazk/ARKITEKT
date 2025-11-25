@@ -16,7 +16,7 @@ local Viewport = require('arkitekt.gui.widgets.editors.nodal.systems.viewport')
 local Dnd = require('arkitekt.gui.fx.interactions.dnd')
 local DragIndicator = Dnd.DragIndicator
 local DropIndicator = Dnd.DropIndicator
-local Background = require('arkitekt.gui.widgets.containers.panel.background')
+local Background = require('arkitekt.gui.draw.pattern')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

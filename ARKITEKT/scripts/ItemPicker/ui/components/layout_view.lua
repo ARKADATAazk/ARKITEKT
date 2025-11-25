@@ -9,7 +9,7 @@ local StatusBar = require('ItemPicker.ui.components.status_bar')
 local RegionFilterBar = require('ItemPicker.ui.components.region_filter_bar')
 local TrackFilter = require('ItemPicker.ui.components.track_filter')
 local TrackFilterBar = require('ItemPicker.ui.components.track_filter_bar')
-local Background = require('arkitekt.gui.widgets.containers.panel.background')
+local Background = require('arkitekt.gui.draw.pattern')
 
 -- Debug module - with error handling
 local Debug = nil
