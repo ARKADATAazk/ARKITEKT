@@ -151,17 +151,27 @@ function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, conf
 
   if position == "top" then
     local start_y = (not extend_from_edge and regular_toolbar_bounds) and regular_toolbar_bounds.y2 or y1
+
+    -- Apply edge slide: toolbar starts clipped outside edge, slides down on hover
+    local edge_slide_distance = config.edge_slide_distance or 0
+    local base_y = start_y - edge_slide_distance  -- Start clipped outside
+
     return {
       x = x1,
-      y = start_y,
+      y = base_y + slide_offset,  -- Apply slide offset
       w = x2 - x1,
       h = visible_size
     }
   elseif position == "bottom" then
     local end_y = (not extend_from_edge and regular_toolbar_bounds) and regular_toolbar_bounds.y1 or y2
+
+    -- Apply edge slide: toolbar starts clipped outside edge, slides up on hover
+    local edge_slide_distance = config.edge_slide_distance or 0
+    local base_y = end_y + edge_slide_distance - visible_size  -- Start clipped outside (below)
+
     return {
       x = x1,
-      y = end_y - visible_size,
+      y = base_y - slide_offset,  -- Apply slide offset (negative to slide up)
       w = x2 - x1,
       h = visible_size
     }
@@ -313,34 +323,73 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
   local is_hovering = is_mouse_hovering(ctx, bounds)
   M.update_hover_state(anim_state, config, is_hovering, button_clicked)
 
-  -- Update edge slide animation (for left position)
-  if position == "left" and config.edge_slide_distance and config.edge_slide_distance > 0 then
+  -- Update edge slide animation (for all positions)
+  if config.edge_slide_distance and config.edge_slide_distance > 0 then
     local mx, my = ImGui.GetMousePos(ctx)
     local x1, y1, x2, y2 = table.unpack(panel_bounds)
+    local is_in_hover_zone = false
 
-    -- Calculate actual button area (not full panel height)
-    local button_count = config.elements and #config.elements or 0
-    local button_height = 40  -- Standard button height from sidebars layout
-    local buttons_total_height = button_count * button_height
+    if position == "left" or position == "right" then
+      -- Vertical toolbar (left/right)
+      local button_count = config.elements and #config.elements or 0
+      local button_height = 40  -- Standard button height from sidebars layout
+      local buttons_total_height = button_count * button_height
 
-    -- Center buttons vertically in available space
-    local available_height = bounds.h
-    local button_area_y = bounds.y + (available_height - buttons_total_height) / 2
+      -- Center buttons vertically in available space
+      local available_height = bounds.h
+      local button_area_y = bounds.y + (available_height - buttons_total_height) / 2
 
-    -- Add vertical padding for easier targeting
-    local vertical_padding = 30
-    local hover_zone_y1 = button_area_y - vertical_padding
-    local hover_zone_y2 = button_area_y + buttons_total_height + vertical_padding
+      -- Add vertical padding for easier targeting
+      local vertical_padding = 30
+      local hover_zone_y1 = button_area_y - vertical_padding
+      local hover_zone_y2 = button_area_y + buttons_total_height + vertical_padding
 
-    -- Horizontal hover zone extends OUTSIDE panel edge (to the left) and inside
-    local hover_zone_outside = 30  -- Extend 30px outside panel (to the left)
-    local hover_zone_inside = 50   -- Extend 50px inside panel (to the right)
-    local hover_zone_x1 = x1 - hover_zone_outside  -- Start outside panel
-    local hover_zone_x2 = x1 + hover_zone_inside    -- End inside panel
+      -- Horizontal hover zone extends OUTSIDE panel edge and inside
+      local hover_zone_outside = 30  -- Extend 30px outside panel
+      local hover_zone_inside = 50   -- Extend 50px inside panel
 
-    -- Check if mouse is in the hover zone (spans outside→inside panel edge)
-    local is_in_hover_zone = mx >= hover_zone_x1 and mx <= hover_zone_x2 and
-                             my >= hover_zone_y1 and my <= hover_zone_y2
+      if position == "left" then
+        local hover_zone_x1 = x1 - hover_zone_outside  -- Start outside panel
+        local hover_zone_x2 = x1 + hover_zone_inside    -- End inside panel
+        is_in_hover_zone = mx >= hover_zone_x1 and mx <= hover_zone_x2 and
+                          my >= hover_zone_y1 and my <= hover_zone_y2
+      else -- right
+        local hover_zone_x1 = x2 - hover_zone_inside   -- Start inside panel
+        local hover_zone_x2 = x2 + hover_zone_outside  -- End outside panel
+        is_in_hover_zone = mx >= hover_zone_x1 and mx <= hover_zone_x2 and
+                          my >= hover_zone_y1 and my <= hover_zone_y2
+      end
+    else -- position == "top" or position == "bottom"
+      -- Horizontal toolbar (top/bottom)
+      local button_count = config.elements and #config.elements or 0
+      local button_width = 80  -- Standard button width for horizontal toolbars
+      local buttons_total_width = button_count * button_width
+
+      -- Center buttons horizontally in available space
+      local available_width = bounds.w
+      local button_area_x = bounds.x + (available_width - buttons_total_width) / 2
+
+      -- Add horizontal padding for easier targeting
+      local horizontal_padding = 30
+      local hover_zone_x1 = button_area_x - horizontal_padding
+      local hover_zone_x2 = button_area_x + buttons_total_width + horizontal_padding
+
+      -- Vertical hover zone extends OUTSIDE panel edge and inside
+      local hover_zone_outside = 30  -- Extend 30px outside panel
+      local hover_zone_inside = 50   -- Extend 50px inside panel
+
+      if position == "top" then
+        local hover_zone_y1 = y1 - hover_zone_outside  -- Start outside panel
+        local hover_zone_y2 = y1 + hover_zone_inside    -- End inside panel
+        is_in_hover_zone = mx >= hover_zone_x1 and mx <= hover_zone_x2 and
+                          my >= hover_zone_y1 and my <= hover_zone_y2
+      else -- bottom
+        local hover_zone_y1 = y2 - hover_zone_inside   -- Start inside panel
+        local hover_zone_y2 = y2 + hover_zone_outside  -- End outside panel
+        is_in_hover_zone = mx >= hover_zone_x1 and mx <= hover_zone_x2 and
+                          my >= hover_zone_y1 and my <= hover_zone_y2
+      end
+    end
 
     -- Delay before sliding back when leaving hover zone
     local hover_leave_delay = 0.3  -- 300ms delay
@@ -349,7 +398,7 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
     if is_in_hover_zone then
       -- Inside hover zone: slide out immediately
       anim_state.slide_target = config.edge_slide_distance
-      anim_state.width_scale_target = 1.3  -- 30% wider
+      anim_state.width_scale_target = 1.3  -- 30% wider/taller
       anim_state.hover_leave_time = nil  -- Reset delay timer
       anim_state.is_in_hover_zone = true
     else

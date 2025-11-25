@@ -80,6 +80,69 @@ local panel_config = {
 
   -- Overlay toolbar (left side, edge slide animation)
   overlay_toolbars = {
+    -- Top overlay toolbar (edge slide animation)
+    top = {
+      enabled = true,
+      height = 60,  -- Height for horizontal toolbar
+      extend_from_edge = true,
+      edge_slide_distance = 13,  -- Slide down from top edge
+      auto_hide = {
+        enabled = true,
+        trigger = "hover",
+        visible_amount = 1.0,
+        animation_speed = 0.2,
+      },
+      elements = {
+        {
+          id = "overlay_t1",
+          label = "Top 1",
+          config = {}
+        },
+        {
+          id = "overlay_t2",
+          label = "Top 2",
+          config = {}
+        },
+        {
+          id = "overlay_t3",
+          label = "Top 3",
+          config = {}
+        }
+      }
+    },
+
+    -- Bottom overlay toolbar (edge slide animation)
+    bottom = {
+      enabled = true,
+      height = 60,  -- Height for horizontal toolbar
+      extend_from_edge = true,
+      edge_slide_distance = 13,  -- Slide up from bottom edge
+      auto_hide = {
+        enabled = true,
+        trigger = "hover",
+        visible_amount = 1.0,
+        animation_speed = 0.2,
+      },
+      elements = {
+        {
+          id = "overlay_b1",
+          label = "Bot 1",
+          config = {}
+        },
+        {
+          id = "overlay_b2",
+          label = "Bot 2",
+          config = {}
+        },
+        {
+          id = "overlay_b3",
+          label = "Bot 3",
+          config = {}
+        }
+      }
+    },
+
+    -- Left overlay toolbar (edge slide animation)
     left = {
       enabled = true,
       width = 210,  -- Base width (10px wider than before)
