@@ -268,6 +268,7 @@ function M.create(opts)
     self:_ensure_sequence()
     -- Remember which playlist we're playing when playback starts
     self._playing_playlist_id = safe_call(self.get_active_playlist_id)
+    Logger.info("BRIDGE", "PLAY playlist '%s' (%d items)", tostring(self._playing_playlist_id), #self.sequence_cache)
 
     -- If we're starting after a stop (not resuming from pause), force reset to beginning
     -- This must happen AFTER _ensure_sequence() so it overrides sequence restoration
@@ -281,6 +282,7 @@ function M.create(opts)
   end
 
   function bridge:stop()
+    Logger.info("BRIDGE", "STOP - clearing playlist '%s'", tostring(self._playing_playlist_id))
     -- Clear the playing playlist ID when stopping
     -- This allows the sequence to be rebuilt for a different playlist on next play
     self._playing_playlist_id = nil

@@ -2,6 +2,8 @@
 -- Arkitekt/features/region_playlist/engine/transport.lua
 -- Transport control and seeking logic
 
+local Logger = require('arkitekt.debug.logger')
+
 local M = {}
 local Transport = {}
 Transport.__index = Transport
@@ -135,10 +137,16 @@ end
 
 function Transport:play()
   local rid = self.state:get_current_rid()
-  if not rid then return false end
+  if not rid then
+    Logger.warn("TRANSPORT", "play() called but no current RID")
+    return false
+  end
 
   local region = self.state:get_region_by_rid(rid)
-  if not region then return false end
+  if not region then
+    Logger.warn("TRANSPORT", "play() called but region RID %d not found", rid)
+    return false
+  end
 
   self:_enter_playlist_mode_if_needed()
 
@@ -146,15 +154,18 @@ function Transport:play()
   local is_resuming = self.is_paused
 
   if _is_playing(self.proj) then
+    Logger.info("TRANSPORT", "SEEK to region '%s' (RID %d) at %.2fs", region.name or "?", region.rid, region.start)
     local region_num = region.rid
     self:_seek_to_region(region_num)
   else
     if is_resuming then
       -- Resuming from pause - just unpause without seeking
+      Logger.info("TRANSPORT", "RESUME playback")
       reaper.OnPlayButton()
       self.is_paused = false  -- Clear pause flag
     else
       -- Starting fresh - seek to region start and reset indices
+      Logger.info("TRANSPORT", "PLAY '%s' (RID %d) from %.2fs", region.name or "?", region.rid, region.start)
       reaper.SetEditCurPos2(self.proj, region.start, false, false)
       reaper.OnPlayButton()
       self.state.current_idx = -1
@@ -169,6 +180,7 @@ function Transport:play()
 end
 
 function Transport:stop()
+  Logger.info("TRANSPORT", "STOP - resetting to beginning")
   reaper.OnStopButton()
   self.is_playing = false
   self.is_paused = false  -- Clear pause flag
@@ -180,6 +192,7 @@ function Transport:stop()
 end
 
 function Transport:pause()
+  Logger.info("TRANSPORT", "PAUSE at idx %d", self.state.playlist_pointer)
   -- Pause without resetting playlist state (for resume)
   reaper.OnPauseButton()
   self.is_playing = false
@@ -190,9 +203,13 @@ end
 
 function Transport:next()
   if #self.state.playlist_order == 0 then return false end
-  if self.state.playlist_pointer >= #self.state.playlist_order then return false end
-  
+  if self.state.playlist_pointer >= #self.state.playlist_order then
+    Logger.debug("TRANSPORT", "NEXT blocked - at end of playlist")
+    return false
+  end
+
   self.state.playlist_pointer = self.state.playlist_pointer + 1
+  Logger.info("TRANSPORT", "NEXT -> idx %d/%d", self.state.playlist_pointer, #self.state.playlist_order)
 
   if _is_playing(self.proj) then
     local rid = self.state:get_current_rid()
@@ -203,15 +220,19 @@ function Transport:next()
   else
     return self:play()
   end
-  
+
   return false
 end
 
 function Transport:prev()
   if #self.state.playlist_order == 0 then return false end
-  if self.state.playlist_pointer <= 1 then return false end
-  
+  if self.state.playlist_pointer <= 1 then
+    Logger.debug("TRANSPORT", "PREV blocked - at start of playlist")
+    return false
+  end
+
   self.state.playlist_pointer = self.state.playlist_pointer - 1
+  Logger.info("TRANSPORT", "PREV -> idx %d/%d", self.state.playlist_pointer, #self.state.playlist_order)
 
   if _is_playing(self.proj) then
     local rid = self.state:get_current_rid()
@@ -222,7 +243,7 @@ function Transport:prev()
   else
     return self:play()
   end
-  
+
   return false
 end
 
@@ -305,6 +326,7 @@ end
 
 function Transport:set_shuffle_enabled(enabled)
   self.shuffle_enabled = not not enabled
+  Logger.info("TRANSPORT", "Shuffle %s", enabled and "ENABLED" or "DISABLED")
   -- Notify state to reshuffle if needed
   if self.state and self.state.on_shuffle_changed then
     self.state:on_shuffle_changed(enabled)

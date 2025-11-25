@@ -44,12 +44,22 @@ end
 -- TEST SUITE REGISTRATION (Always loaded for debug console access)
 -- ============================================================================
 local function load_tests()
+  local Logger = require('arkitekt.debug.logger')
+
+  -- Load domain tests (mock-based unit tests)
   local ok, err = pcall(function()
     require('RegionPlaylist.tests.domain_tests')
   end)
   if not ok then
-    local Logger = require('arkitekt.debug.logger')
-    Logger.warn("TEST", "Failed to load RegionPlaylist tests: %s", tostring(err))
+    Logger.warn("TEST", "Failed to load domain tests: %s", tostring(err))
+  end
+
+  -- Load integration tests (real REAPER operations)
+  ok, err = pcall(function()
+    require('RegionPlaylist.tests.integration_tests')
+  end)
+  if not ok then
+    Logger.warn("TEST", "Failed to load integration tests: %s", tostring(err))
   end
 end
 load_tests()

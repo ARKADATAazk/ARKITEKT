@@ -4,6 +4,7 @@
 -- REFACTORED: Now uses arkitekt.reaper.project_state module
 
 local ProjectState = require('arkitekt.reaper.project_state')
+local Logger = require('arkitekt.debug.logger')
 local ark = require('arkitekt')
 local M = {}
 
@@ -24,11 +25,14 @@ local function get_storage(proj)
 end
 
 function M.save_playlists(playlists, proj)
+  Logger.info("STORAGE", "Saving %d playlists to project", #playlists)
   get_storage(proj):save(KEY_PLAYLISTS, playlists)
 end
 
 function M.load_playlists(proj)
-  return get_storage(proj):load(KEY_PLAYLISTS, {})
+  local playlists = get_storage(proj):load(KEY_PLAYLISTS, {})
+  Logger.info("STORAGE", "Loaded %d playlists from project", #playlists)
+  return playlists
 end
 
 function M.save_active_playlist(playlist_id, proj)
