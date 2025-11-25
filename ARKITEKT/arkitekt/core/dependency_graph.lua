@@ -192,37 +192,40 @@ function Graph:get_dependents(node_id)
   return dependents
 end
 
---- Internal: Find a path from start to target using BFS
+--- Internal: Find a path from start to target using BFS with parent pointers
+--- Uses O(n) memory instead of O(n²) by reconstructing path at the end
 --- @param start_id any Starting node
 --- @param target_id any Target node
 --- @return any[]? path Array of node IDs forming the path, or nil if no path
 function Graph:_find_path(start_id, target_id)
-  local queue = {{id = start_id, path = {start_id}}}
-  local visited = {[start_id] = true}
+  local queue = {start_id}
+  local head, tail = 1, 1
+  local parent = {[start_id] = start_id}  -- Maps node -> parent (start points to itself)
 
-  while #queue > 0 do
-    local current = table.remove(queue, 1)
-    local node = self.nodes[current.id]
+  while head <= tail do
+    local current_id = queue[head]
+    head = head + 1
 
+    local node = self.nodes[current_id]
     if not node then goto continue end
 
     for _, dep_id in ipairs(node.direct_deps) do
       if dep_id == target_id then
+        -- Found target - reconstruct path from parent pointers
         local path = {}
-        for _, p in ipairs(current.path) do
-          table.insert(path, p)
+        local p = current_id
+        while p ~= start_id do
+          table.insert(path, 1, p)
+          p = parent[p]
         end
+        table.insert(path, 1, start_id)
         return path
       end
 
-      if not visited[dep_id] then
-        visited[dep_id] = true
-        local new_path = {}
-        for _, p in ipairs(current.path) do
-          table.insert(new_path, p)
-        end
-        table.insert(new_path, dep_id)
-        table.insert(queue, {id = dep_id, path = new_path})
+      if not parent[dep_id] then
+        parent[dep_id] = current_id
+        tail = tail + 1
+        queue[tail] = dep_id
       end
     end
 

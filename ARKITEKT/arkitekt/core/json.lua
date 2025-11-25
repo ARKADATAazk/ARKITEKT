@@ -52,6 +52,24 @@ function M.encode(t) return encode_val(t) end
 local sp = "[ \n\r\t]*"
 local function parse_err(msg, s, i) error(("json decode error @%d: %s"):format(i, msg)) end
 
+-- Convert Unicode code point to UTF-8 string
+local function codepoint_to_utf8(cp)
+  if cp < 0x80 then
+    return string.char(cp)
+  elseif cp < 0x800 then
+    return string.char(0xC0 + math.floor(cp / 0x40), 0x80 + (cp % 0x40))
+  elseif cp < 0x10000 then
+    return string.char(0xE0 + math.floor(cp / 0x1000),
+                       0x80 + math.floor((cp % 0x1000) / 0x40),
+                       0x80 + (cp % 0x40))
+  else
+    return string.char(0xF0 + math.floor(cp / 0x40000),
+                       0x80 + math.floor((cp % 0x40000) / 0x1000),
+                       0x80 + math.floor((cp % 0x1000) / 0x40),
+                       0x80 + (cp % 0x40))
+  end
+end
+
 local function parse_val(s, i)
   i = s:find(sp, i) or i
   local c = s:sub(i,i)
@@ -65,8 +83,25 @@ local function parse_val(s, i)
         local nx = s:sub(j+1,j+1)
         local map = {['"']='"',['\\']='\\',['/']='/',b='\b',f='\f',n='\n',r='\r',t='\t'}
         if map[nx] then out[#out+1] = map[nx]; j = j + 2
-        elseif nx == 'u' then -- skip \uXXXX (store raw)
-          out[#out+1] = s:sub(j, j+5); j = j + 6
+        elseif nx == 'u' then
+          -- Parse \uXXXX Unicode escape and convert to UTF-8
+          local hex = s:sub(j+2, j+5)
+          local cp = tonumber(hex, 16)
+          if cp then
+            -- Handle surrogate pairs for characters outside BMP
+            if cp >= 0xD800 and cp <= 0xDBFF and s:sub(j+6, j+7) == "\\u" then
+              local hex2 = s:sub(j+8, j+11)
+              local cp2 = tonumber(hex2, 16)
+              if cp2 and cp2 >= 0xDC00 and cp2 <= 0xDFFF then
+                cp = 0x10000 + (cp - 0xD800) * 0x400 + (cp2 - 0xDC00)
+                j = j + 6  -- Extra advance for second surrogate
+              end
+            end
+            out[#out+1] = codepoint_to_utf8(cp)
+          else
+            out[#out+1] = "?"  -- Invalid hex, use replacement
+          end
+          j = j + 6
         else parse_err("bad escape", s, j) end
       else
         out[#out+1] = ch; j = j + 1

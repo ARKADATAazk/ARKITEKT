@@ -7,13 +7,15 @@ local M = {}
 
 --- Fisher-Yates shuffle algorithm (in-place)
 --- This is a true shuffle - each item appears exactly once before reshuffling
+--- WARNING: Using seed sets global math.randomseed(), affecting all random generation.
+--- For isolated randomness, use ShuffleManager which generates fresh seeds per shuffle.
 --- @param array table Array to shuffle (modified in-place)
---- @param seed? number Optional seed for reproducibility
+--- @param seed? number Optional seed for reproducibility (affects global state!)
 --- @return table array The shuffled array (same reference)
 function M.fisher_yates(array, seed)
   if #array <= 1 then return array end
 
-  -- Set seed if provided
+  -- Set seed if provided (WARNING: this is global state)
   if seed then
     math.randomseed(seed)
   end
@@ -197,11 +199,10 @@ function ShuffleManager:get_shuffled()
 end
 
 --- Weighted shuffle - items with higher weights are more likely to appear
---- Uses the alias method for O(1) sampling
 --- @param items table Array of items
 --- @param weights table Array of weights (same length as items)
 --- @param count? number Number of items to sample (default: #items)
---- @param seed? number Optional seed
+--- @param seed? number Optional seed (WARNING: affects global math.randomseed!)
 --- @return table sampled Array of sampled items
 function M.weighted_shuffle(items, weights, count, seed)
   if #items ~= #weights then
@@ -212,6 +213,7 @@ function M.weighted_shuffle(items, weights, count, seed)
 
   count = count or #items
 
+  -- WARNING: this affects global random state
   if seed then
     math.randomseed(seed)
   end

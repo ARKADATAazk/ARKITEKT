@@ -23,9 +23,22 @@ end
 
 local function write_file_atomic(p, s)
   local tmp = p .. ".tmp"
-  local f = assert(io.open(tmp, "wb")); f:write(s or ""); f:close()
+  local f, err = io.open(tmp, "wb")
+  if not f then
+    return false, "Failed to create temp file: " .. (err or "unknown error")
+  end
+  local ok, write_err = f:write(s or "")
+  f:close()
+  if not ok then
+    os.remove(tmp)
+    return false, "Failed to write: " .. (write_err or "unknown error")
+  end
   os.remove(p) -- Windows-safe replace
-  assert(os.rename(tmp, p))
+  local rename_ok, rename_err = os.rename(tmp, p)
+  if not rename_ok then
+    return false, "Failed to rename: " .. (rename_err or "unknown error")
+  end
+  return true
 end
 
 local function split_path(key)
@@ -90,9 +103,17 @@ function Settings:flush()
   ensure_dir(self._dir)
   local ok, serialized = pcall(json.encode, self._data)
   if ok then
-    write_file_atomic(self._path, serialized)
-    self._dirty = false
-    self._last_write = now()
+    local write_ok, write_err = write_file_atomic(self._path, serialized)
+    if write_ok then
+      self._dirty = false
+      self._last_write = now()
+    else
+      -- Log error if Logger is available, otherwise silent fail
+      local Logger = package.loaded['arkitekt.debug.logger']
+      if Logger then
+        Logger.error("STORAGE", "Settings flush failed: %s", write_err or "unknown")
+      end
+    end
   end
 end
 

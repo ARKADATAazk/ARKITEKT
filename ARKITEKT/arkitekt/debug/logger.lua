@@ -68,10 +68,21 @@ end
 
 function M.get_entries()
   local result = {}
-  for i = 1, count do
-    local idx = ((start_index + i - 2) % max_entries) + 1
-    if buffer[idx] then
-      table.insert(result, buffer[idx])
+  if count < max_entries then
+    -- Buffer not full yet - entries are at indices 1..count in order
+    for i = 1, count do
+      result[i] = buffer[i]
+    end
+  else
+    -- Buffer is full and wrapping - oldest entry is at start_index
+    local j = 1
+    for i = start_index, max_entries do
+      result[j] = buffer[i]
+      j = j + 1
+    end
+    for i = 1, start_index - 1 do
+      result[j] = buffer[i]
+      j = j + 1
     end
   end
   return result
