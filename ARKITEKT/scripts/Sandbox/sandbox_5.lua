@@ -615,6 +615,162 @@ local function draw_tree_lines(dl, x, y, depth, item_h, has_children, is_last_ch
 end
 
 -- ============================================================================
+-- COLUMN SORTING
+-- ============================================================================
+
+local function compare_values(a, b, ascending)
+  if a == nil and b == nil then return false end
+  if a == nil then return not ascending end
+  if b == nil then return ascending end
+
+  -- Try numeric comparison first
+  local a_num = tonumber(a)
+  local b_num = tonumber(b)
+  if a_num and b_num then
+    return ascending and (a_num < b_num) or (a_num > b_num)
+  end
+
+  -- Fall back to string comparison
+  a = tostring(a):lower()
+  b = tostring(b):lower()
+  return ascending and (a < b) or (a > b)
+end
+
+local function sort_tree_recursive(nodes, column_id, ascending)
+  if not nodes or #nodes == 0 then return end
+
+  -- Find the column definition
+  local col = nil
+  for _, c in ipairs(tree_state.columns) do
+    if c.id == column_id then
+      col = c
+      break
+    end
+  end
+
+  if not col then return end
+
+  -- Sort this level
+  table.sort(nodes, function(a, b)
+    local val_a = col.get_value(a)
+    local val_b = col.get_value(b)
+    return compare_values(val_a, val_b, ascending)
+  end)
+
+  -- Recursively sort children
+  for _, node in ipairs(nodes) do
+    if node.children and #node.children > 0 then
+      sort_tree_recursive(node.children, column_id, ascending)
+    end
+  end
+end
+
+-- ============================================================================
+-- COLUMN HEADER RENDERING
+-- ============================================================================
+
+local function draw_column_headers(ctx, dl, x, y, w)
+  local cfg = TREE_CONFIG
+  local header_h = cfg.header_height
+
+  -- Header background
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + header_h, cfg.header_bg)
+  ImGui.DrawList_AddLine(dl, x, y + header_h, x + w, y + header_h, cfg.header_border, 1)
+
+  local current_x = x
+  local mx, my = ImGui.GetMousePos(ctx)
+  local header_hovered = mx >= x and mx < x + w and my >= y and my < y + header_h
+
+  for col_idx, col in ipairs(tree_state.columns) do
+    local col_x = current_x
+    local col_w = col.width
+    local col_right = col_x + col_w
+
+    -- Column separator line
+    if col_idx > 1 then
+      ImGui.DrawList_AddLine(dl, col_x, y, col_x, y + header_h, cfg.header_border, 1)
+    end
+
+    -- Check if column header is hovered
+    local col_hovered = header_hovered and mx >= col_x and mx < col_right
+
+    -- Hover background
+    if col_hovered and col.sortable then
+      ImGui.DrawList_AddRectFilled(dl, col_x, y, col_right, y + header_h, hexrgb("#33333388"))
+    end
+
+    -- Column title
+    local text_x = col_x + 6
+    local text_y = y + (header_h - ImGui.CalcTextSize(ctx, "Tg")) / 2
+    ImGui.DrawList_AddText(dl, text_x, text_y, cfg.header_text, col.title)
+
+    -- Sort indicator
+    if tree_state.sort_column == col.id then
+      local arrow_size = 4
+      local arrow_x = col_right - arrow_size - 8
+      local arrow_y = y + (header_h - arrow_size) / 2
+
+      if tree_state.sort_ascending then
+        -- Up arrow
+        local x1, y1 = arrow_x + arrow_size / 2, arrow_y
+        local x2, y2 = arrow_x, arrow_y + arrow_size
+        local x3, y3 = arrow_x + arrow_size, arrow_y + arrow_size
+        ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, cfg.header_text)
+      else
+        -- Down arrow
+        local x1, y1 = arrow_x, arrow_y
+        local x2, y2 = arrow_x + arrow_size, arrow_y
+        local x3, y3 = arrow_x + arrow_size / 2, arrow_y + arrow_size
+        ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, cfg.header_text)
+      end
+    end
+
+    -- Resize handle area (last 8 pixels of column)
+    local resize_handle_x = col_right - 4
+    local resize_handle_hovered = header_hovered and mx >= resize_handle_x - 4 and mx < resize_handle_x + 4
+
+    if resize_handle_hovered or tree_state.resizing_column == col_idx then
+      -- Draw resize handle indicator
+      ImGui.DrawList_AddLine(dl, resize_handle_x, y + 2, resize_handle_x, y + header_h - 2, cfg.resize_handle_color, 2)
+      ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeEW)
+    end
+
+    -- Handle header interactions
+    if col_hovered and ImGui.IsMouseClicked(ctx, 0) then
+      if resize_handle_hovered then
+        -- Start resizing
+        tree_state.resizing_column = col_idx
+        tree_state.resize_start_x = mx
+        tree_state.resize_start_width = col.width
+      elseif col.sortable then
+        -- Sort by this column
+        if tree_state.sort_column == col.id then
+          tree_state.sort_ascending = not tree_state.sort_ascending
+        else
+          tree_state.sort_column = col.id
+          tree_state.sort_ascending = true
+        end
+        -- Trigger sort (needs nodes parameter)
+        tree_state.needs_sort = true
+      end
+    end
+
+    current_x = col_right
+  end
+
+  -- Handle column resizing
+  if tree_state.resizing_column then
+    if ImGui.IsMouseDown(ctx, 0) then
+      local delta = mx - tree_state.resize_start_x
+      local col = tree_state.columns[tree_state.resizing_column]
+      col.width = math.max(col.min_width, tree_state.resize_start_width + delta)
+    else
+      tree_state.resizing_column = nil
+    end
+  end
+end
+
+-- ============================================================================
 -- TREE RENDERING
 -- ============================================================================
 
@@ -1244,162 +1400,6 @@ local function draw_context_menu(ctx, nodes)
     ImGui.EndPopup(ctx)
   else
     tree_state.context_menu_open = false
-  end
-end
-
--- ============================================================================
--- COLUMN SORTING
--- ============================================================================
-
-local function compare_values(a, b, ascending)
-  if a == nil and b == nil then return false end
-  if a == nil then return not ascending end
-  if b == nil then return ascending end
-
-  -- Try numeric comparison first
-  local a_num = tonumber(a)
-  local b_num = tonumber(b)
-  if a_num and b_num then
-    return ascending and (a_num < b_num) or (a_num > b_num)
-  end
-
-  -- Fall back to string comparison
-  a = tostring(a):lower()
-  b = tostring(b):lower()
-  return ascending and (a < b) or (a > b)
-end
-
-local function sort_tree_recursive(nodes, column_id, ascending)
-  if not nodes or #nodes == 0 then return end
-
-  -- Find the column definition
-  local col = nil
-  for _, c in ipairs(tree_state.columns) do
-    if c.id == column_id then
-      col = c
-      break
-    end
-  end
-
-  if not col then return end
-
-  -- Sort this level
-  table.sort(nodes, function(a, b)
-    local val_a = col.get_value(a)
-    local val_b = col.get_value(b)
-    return compare_values(val_a, val_b, ascending)
-  end)
-
-  -- Recursively sort children
-  for _, node in ipairs(nodes) do
-    if node.children and #node.children > 0 then
-      sort_tree_recursive(node.children, column_id, ascending)
-    end
-  end
-end
-
--- ============================================================================
--- COLUMN HEADER RENDERING
--- ============================================================================
-
-local function draw_column_headers(ctx, dl, x, y, w)
-  local cfg = TREE_CONFIG
-  local header_h = cfg.header_height
-
-  -- Header background
-  ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + header_h, cfg.header_bg)
-  ImGui.DrawList_AddLine(dl, x, y + header_h, x + w, y + header_h, cfg.header_border, 1)
-
-  local current_x = x
-  local mx, my = ImGui.GetMousePos(ctx)
-  local header_hovered = mx >= x and mx < x + w and my >= y and my < y + header_h
-
-  for col_idx, col in ipairs(tree_state.columns) do
-    local col_x = current_x
-    local col_w = col.width
-    local col_right = col_x + col_w
-
-    -- Column separator line
-    if col_idx > 1 then
-      ImGui.DrawList_AddLine(dl, col_x, y, col_x, y + header_h, cfg.header_border, 1)
-    end
-
-    -- Check if column header is hovered
-    local col_hovered = header_hovered and mx >= col_x and mx < col_right
-
-    -- Hover background
-    if col_hovered and col.sortable then
-      ImGui.DrawList_AddRectFilled(dl, col_x, y, col_right, y + header_h, hexrgb("#33333388"))
-    end
-
-    -- Column title
-    local text_x = col_x + 6
-    local text_y = y + (header_h - ImGui.CalcTextSize(ctx, "Tg")) / 2
-    ImGui.DrawList_AddText(dl, text_x, text_y, cfg.header_text, col.title)
-
-    -- Sort indicator
-    if tree_state.sort_column == col.id then
-      local arrow_size = 4
-      local arrow_x = col_right - arrow_size - 8
-      local arrow_y = y + (header_h - arrow_size) / 2
-
-      if tree_state.sort_ascending then
-        -- Up arrow
-        local x1, y1 = arrow_x + arrow_size / 2, arrow_y
-        local x2, y2 = arrow_x, arrow_y + arrow_size
-        local x3, y3 = arrow_x + arrow_size, arrow_y + arrow_size
-        ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, cfg.header_text)
-      else
-        -- Down arrow
-        local x1, y1 = arrow_x, arrow_y
-        local x2, y2 = arrow_x + arrow_size, arrow_y
-        local x3, y3 = arrow_x + arrow_size / 2, arrow_y + arrow_size
-        ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, cfg.header_text)
-      end
-    end
-
-    -- Resize handle area (last 8 pixels of column)
-    local resize_handle_x = col_right - 4
-    local resize_handle_hovered = header_hovered and mx >= resize_handle_x - 4 and mx < resize_handle_x + 4
-
-    if resize_handle_hovered or tree_state.resizing_column == col_idx then
-      -- Draw resize handle indicator
-      ImGui.DrawList_AddLine(dl, resize_handle_x, y + 2, resize_handle_x, y + header_h - 2, cfg.resize_handle_color, 2)
-      ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeEW)
-    end
-
-    -- Handle header interactions
-    if col_hovered and ImGui.IsMouseClicked(ctx, 0) then
-      if resize_handle_hovered then
-        -- Start resizing
-        tree_state.resizing_column = col_idx
-        tree_state.resize_start_x = mx
-        tree_state.resize_start_width = col.width
-      elseif col.sortable then
-        -- Sort by this column
-        if tree_state.sort_column == col.id then
-          tree_state.sort_ascending = not tree_state.sort_ascending
-        else
-          tree_state.sort_column = col.id
-          tree_state.sort_ascending = true
-        end
-        -- Trigger sort (needs nodes parameter)
-        tree_state.needs_sort = true
-      end
-    end
-
-    current_x = col_right
-  end
-
-  -- Handle column resizing
-  if tree_state.resizing_column then
-    if ImGui.IsMouseDown(ctx, 0) then
-      local delta = mx - tree_state.resize_start_x
-      local col = tree_state.columns[tree_state.resizing_column]
-      col.width = math.max(col.min_width, tree_state.resize_start_width + delta)
-    else
-      tree_state.resizing_column = nil
-    end
   end
 end
 
