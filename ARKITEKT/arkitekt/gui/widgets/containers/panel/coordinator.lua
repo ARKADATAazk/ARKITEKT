@@ -298,6 +298,78 @@ function Panel:begin_draw(ctx)
   return success
 end
 
+--- Calculate bounds for all regular toolbars (used for overlay positioning)
+--- @param x1 number Panel x1
+--- @param y1 number Panel y1
+--- @param w number Panel width
+--- @param h number Panel height
+--- @param config table Panel config
+--- @return table Regular toolbar bounds {top=..., bottom=..., left=..., right=...}
+local function calculate_regular_toolbar_bounds(x1, y1, w, h, config)
+  local bounds = {}
+
+  -- Top toolbar
+  local top_cfg = Toolbar.get_toolbar_config(config, "top")
+  if top_cfg then
+    local top_h = top_cfg.height or 30
+    bounds.top = {
+      x1 = x1,
+      y1 = y1,
+      x2 = x1 + w,
+      y2 = y1 + top_h,
+      content_y1 = y1 + top_h,
+      content_y2 = y1 + h
+    }
+  end
+
+  -- Bottom toolbar
+  local bottom_cfg = Toolbar.get_toolbar_config(config, "bottom")
+  if bottom_cfg then
+    local bottom_h = bottom_cfg.height or 30
+    bounds.bottom = {
+      x1 = x1,
+      y1 = y1 + h - bottom_h,
+      x2 = x1 + w,
+      y2 = y1 + h,
+      content_y1 = y1,
+      content_y2 = y1 + h - bottom_h
+    }
+  end
+
+  -- Calculate content Y bounds (after top/bottom toolbars)
+  local content_y1 = bounds.top and bounds.top.content_y1 or y1
+  local content_y2 = bounds.bottom and bounds.bottom.content_y2 or (y1 + h)
+
+  -- Left toolbar
+  local left_cfg = Toolbar.get_toolbar_config(config, "left")
+  if left_cfg then
+    bounds.left = {
+      x1 = x1,
+      y1 = content_y1,
+      x2 = x1 + (left_cfg.width or 36),
+      y2 = content_y2,
+      content_y1 = content_y1,
+      content_y2 = content_y2
+    }
+  end
+
+  -- Right toolbar
+  local right_cfg = Toolbar.get_toolbar_config(config, "right")
+  if right_cfg then
+    local right_w = right_cfg.width or 36
+    bounds.right = {
+      x1 = x1 + w - right_w,
+      y1 = content_y1,
+      x2 = x1 + w,
+      y2 = content_y2,
+      content_y1 = content_y1,
+      content_y2 = content_y2
+    }
+  end
+
+  return bounds
+end
+
 function Panel:end_draw(ctx)
   -- Update scrollbar and end child window
   if self._child_began_successfully then
@@ -313,66 +385,8 @@ function Panel:end_draw(ctx)
       local x1, y1, w, h = table.unpack(self._corner_button_bounds)
       local panel_bounds = {x1, y1, x1 + w, y1 + h}
 
-      -- Calculate regular toolbar bounds for positioning
-      local regular_toolbar_bounds = {}
-
-      -- Top toolbar bounds (if exists)
-      local top_cfg = Toolbar.get_toolbar_config(self.config, "top")
-      if top_cfg then
-        regular_toolbar_bounds.top = {
-          x1 = x1,
-          y1 = y1,
-          x2 = x1 + w,
-          y2 = y1 + (top_cfg.height or 30),
-          content_y1 = y1 + (top_cfg.height or 30),
-          content_y2 = y1 + h
-        }
-      end
-
-      -- Bottom toolbar bounds (if exists)
-      local bottom_cfg = Toolbar.get_toolbar_config(self.config, "bottom")
-      if bottom_cfg then
-        local bottom_height = bottom_cfg.height or 30
-        regular_toolbar_bounds.bottom = {
-          x1 = x1,
-          y1 = y1 + h - bottom_height,
-          x2 = x1 + w,
-          y2 = y1 + h,
-          content_y1 = y1,
-          content_y2 = y1 + h - bottom_height
-        }
-      end
-
-      -- Left toolbar bounds (if exists)
-      local left_cfg = Toolbar.get_toolbar_config(self.config, "left")
-      if left_cfg then
-        local content_y1 = regular_toolbar_bounds.top and regular_toolbar_bounds.top.content_y1 or y1
-        local content_y2 = regular_toolbar_bounds.bottom and regular_toolbar_bounds.bottom.content_y2 or (y1 + h)
-        regular_toolbar_bounds.left = {
-          x1 = x1,
-          y1 = content_y1,
-          x2 = x1 + (left_cfg.width or 36),
-          y2 = content_y2,
-          content_y1 = content_y1,
-          content_y2 = content_y2
-        }
-      end
-
-      -- Right toolbar bounds (if exists)
-      local right_cfg = Toolbar.get_toolbar_config(self.config, "right")
-      if right_cfg then
-        local content_y1 = regular_toolbar_bounds.top and regular_toolbar_bounds.top.content_y1 or y1
-        local content_y2 = regular_toolbar_bounds.bottom and regular_toolbar_bounds.bottom.content_y2 or (y1 + h)
-        local right_width = right_cfg.width or 36
-        regular_toolbar_bounds.right = {
-          x1 = x1 + w - right_width,
-          y1 = content_y1,
-          x2 = x1 + w,
-          y2 = content_y2,
-          content_y1 = content_y1,
-          content_y2 = content_y2
-        }
-      end
+      -- Calculate regular toolbar bounds for overlay positioning
+      local regular_toolbar_bounds = calculate_regular_toolbar_bounds(x1, y1, w, h, self.config)
 
       -- Draw overlay toolbars
       for position, overlay_cfg in pairs(self.config.overlay_toolbars) do

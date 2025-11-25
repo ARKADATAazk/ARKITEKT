@@ -47,9 +47,7 @@ function M.draw_background(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, po
   local orientation = get_orientation(position)
 
   if orientation == "horizontal" then
-    -- Inject position into toolbar config for header renderer
-    toolbar_cfg.position = position
-    return Header.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding)
+    return Header.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
   else
     -- Vertical toolbars (left/right) don't have backgrounds - they're just button stacks
     return 0
@@ -76,9 +74,7 @@ function M.draw_elements(ctx, dl, x, y, w, h, state, toolbar_cfg, panel_id, posi
   local orientation = get_orientation(position)
 
   if orientation == "horizontal" then
-    -- Inject position into toolbar config for header renderer
-    toolbar_cfg.position = position
-    Header.draw_elements(ctx, dl, x, y, w, h, state, toolbar_cfg)
+    Header.draw_elements(ctx, dl, x, y, w, h, state, toolbar_cfg, position)
     return h  -- Return height consumed
   else
     -- Delegate to sidebar renderer

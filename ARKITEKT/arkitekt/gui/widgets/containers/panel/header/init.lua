@@ -57,14 +57,16 @@ end
 --- @param state table Panel state
 --- @param toolbar_cfg table Toolbar configuration (not config.header!)
 --- @param rounding number Corner rounding
+--- @param position string|nil Position ("top" or "bottom"), defaults to toolbar_cfg.position or "top"
 --- @return number Height consumed
-function M.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding)
+function M.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
   if not toolbar_cfg or not toolbar_cfg.enabled then
     return 0
   end
 
-  local position = toolbar_cfg.position or "top"
-  
+  -- Use explicit position parameter, fallback to config, default to "top"
+  position = position or toolbar_cfg.position or "top"
+
   -- Determine corner flags based on position
   local corner_flags
   if position == "bottom" then
@@ -72,7 +74,7 @@ function M.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding)
   else
     corner_flags = ImGui.DrawFlags_RoundCornersTop
   end
-  
+
   -- Draw header background
   ImGui.DrawList_AddRectFilled(
     dl, x, y, x + w, y + h,
@@ -95,7 +97,7 @@ function M.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding)
       1
     )
   end
-  
+
   return h
 end
 
@@ -115,9 +117,16 @@ end
 --- @param h number Height
 --- @param state table Panel state (MUST have _panel_id field)
 --- @param toolbar_cfg table Toolbar configuration (not config.header!)
-function M.draw_elements(ctx, dl, x, y, w, h, state, toolbar_cfg)
+--- @param position string|nil Position ("top" or "bottom"), stored in toolbar_cfg for downstream use
+function M.draw_elements(ctx, dl, x, y, w, h, state, toolbar_cfg, position)
   if not toolbar_cfg or not toolbar_cfg.enabled then
     return
+  end
+
+  -- Store position in toolbar_cfg if provided (for layout/element rendering)
+  -- This is the ONE place we mutate, but only for downstream layout - not for logic
+  if position then
+    toolbar_cfg.position = position
   end
 
   -- Validate and ensure proper panel context

@@ -206,9 +206,7 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
 
     if orientation == "horizontal" then
       -- Use Header renderer for horizontal overlay toolbars (top/bottom)
-      -- Inject position for proper rendering
-      config.position = position
-      Header.draw_elements(ctx, dl, bounds.x, bounds.y, bounds.w, bounds.h, panel_state, config)
+      Header.draw_elements(ctx, dl, bounds.x, bounds.y, bounds.w, bounds.h, panel_state, config, position)
     else
       -- Use Sidebars renderer for vertical overlay toolbars (left/right)
       local side = (position == "left") and "left" or "right"
