@@ -82,7 +82,7 @@ end
 --- Get badge colors, falling back to Style.COLORS
 --- @return table Badge color values
 function M.get_badge()
-  local S = Style.COLORS
+  local S = Style.COLORS or {}
   return {
     bg = S.BADGE_BG or hexrgb("#14181CDD"),
     text = S.BADGE_TEXT or hexrgb("#FFFFFFDD"),
@@ -93,7 +93,7 @@ end
 --- Get playlist tile colors, falling back to Style.COLORS
 --- @return table Playlist tile color values
 function M.get_playlist_tile()
-  local S = Style.COLORS
+  local S = Style.COLORS or {}
   return {
     base_color = S.PLAYLIST_TILE_COLOR or hexrgb("#3A3A3AFF"),
     name_color = S.PLAYLIST_NAME_COLOR or hexrgb("#CCCCCCFF"),

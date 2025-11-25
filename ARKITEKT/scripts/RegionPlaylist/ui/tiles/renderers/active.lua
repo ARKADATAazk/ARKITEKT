@@ -37,6 +37,7 @@ M.CONFIG = {
 local function get_colors()
   local badge = ScriptColors.get_badge()
   local playlist = ScriptColors.get_playlist_tile()
+  local S = Style.COLORS or {}
 
   return {
     -- Badge colors (theme-reactive)
@@ -51,7 +52,7 @@ local function get_colors()
     fallback_chip = ScriptColors.get_fallback_chip(),
 
     -- Default background (for regions without color)
-    bg_base = Style.COLORS.BG_PANEL or hexrgb("#1A1A1A"),
+    bg_base = S.BG_PANEL or hexrgb("#1A1A1A"),
   }
 end
 
