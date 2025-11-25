@@ -30,6 +30,17 @@ ThemeManager.transition_to_theme("dark", 0.5)    -- Animated
 
 **Status**: Production ready
 
+**REAPER Integration Philosophy:**
+Ultra-minimal approach for maximum adaptability:
+- Reads only 2 colors: `col_main_bg2` (main window) + `col_arrangebg` (arrange view)
+- Extracts contrast intent, clamps extreme deltas to ±10%
+- **NO accent color extraction** - generates neutral grayscale palette
+- Auto-derives text color based on background luminance
+- Adapts hover/active states based on dark vs light detection
+
+**Why neutral/grayscale?**
+Neutrality ensures ARKITEKT works with ANY REAPER theme without imposing colored accents. User's REAPER theme can have vibrant teal/orange/purple accents while ARKITEKT stays neutral white/gray. This maximizes compatibility and prevents visual conflicts.
+
 ---
 
 ### 3. Dynamic Config Builders (`arkitekt/gui/style/defaults.lua`)
@@ -65,6 +76,43 @@ M.DYNAMIC_PRESETS = {
 ```
 
 **Status**: Production ready, backward compatible
+
+---
+
+### 4. Colored Button Preset System (`arkitekt/gui/style/defaults.lua`)
+- ✅ `M.create_colored_button_preset(hue, sat, light)` - Core algorithmic generator
+- ✅ Semantic presets (BUTTON_DANGER, BUTTON_SUCCESS, BUTTON_WARNING, BUTTON_INFO)
+- ✅ Color theory helpers (analogous, complementary, triadic)
+- ✅ Saturation variants (muted, normal, vivid)
+- ✅ Lightness variants (dark, normal, light)
+- ✅ Monochromatic sets (5 coordinated presets from single hue)
+
+**Philosophy:**
+All colored buttons derive from HSL parameters, ensuring visual harmony:
+- Single hue input generates all button states (base, hover, active, borders, text)
+- Consistent saturation/lightness relationships across all variants
+- Color theory helpers maintain harmonic relationships
+- Saturation/lightness variants provide tonal control
+
+**Example Usage:**
+```lua
+-- Generate danger button (red hue)
+local danger = Style.create_colored_button_preset(0.0, 0.70, 0.50)  -- Hue = 0 (red)
+
+-- Generate set of analogous buttons (±30° hue shift)
+local set = Style.create_analogous_button_set(0.5)  -- Cyan + neighbors
+
+-- Generate saturation variants
+local variants = Style.create_saturation_variants(0.55, 0.48)  -- Teal with 3 saturations
+```
+
+**Why algorithmic?**
+- Ensures all buttons share visual "weight" (same saturation/lightness)
+- Easy to adapt to theme changes (regenerate from new hue)
+- No manually-crafted hex codes to maintain
+- Color theory helpers guarantee visual harmony
+
+**Status**: Production ready
 
 ---
 
@@ -138,6 +186,13 @@ end
    - Verifies dynamic behavior
    - Shows M.COLORS live updates
 
+3. ✅ `scripts/demos/demo_colored_buttons.lua`
+   - Interactive colored button preset generator
+   - Live hue/saturation/lightness controls
+   - Color theory set visualization (analogous, complementary, triadic)
+   - Saturation/lightness variant showcase
+   - Theme integration demonstration
+
 ### Test Results
 **All infrastructure tests passing:**
 - ✅ Theme generation from 1-3 colors
@@ -152,9 +207,12 @@ end
 
 ### What Works Now
 ✅ Full theme generation system
-✅ REAPER auto-sync
+✅ REAPER auto-sync (ultra-minimal 2-color approach)
 ✅ Dynamic config builders
 ✅ Preset system with key resolution
+✅ Algorithmic colored button preset generator
+✅ Color theory helpers (analogous, complementary, triadic)
+✅ Saturation/lightness variant generators
 ✅ All infrastructure tested
 
 ### What Doesn't Work Yet
@@ -294,3 +352,4 @@ Questions? See:
 Run demos:
 - `scripts/demos/demo_theme_manager.lua` - Full theme system
 - `scripts/demos/demo_dynamic_config.lua` - Config builder tests
+- `scripts/demos/demo_colored_buttons.lua` - Colored button preset generator
