@@ -13,6 +13,13 @@ local Constants = require('arkitekt.defs.app')
 local Typography = require('arkitekt.defs.typography')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 
+-- Theme manager for theme switching
+local ThemeManager = nil
+do
+  local ok, mod = pcall(require, 'arkitekt.core.theme_manager')
+  if ok then ThemeManager = mod end
+end
+
 local M = {}
 local hexrgb = Colors.hexrgb
 
@@ -239,13 +246,8 @@ function M.new(opts)
         local icon_left_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Left)
         local icon_right_clicked = ImGui.IsItemClicked(ctx, ImGui.MouseButton_Right)
 
-        -- Left click triggers normal icon click
-        if icon_left_clicked then
-          icon_clicked = true
-        end
-
-        -- Right click opens context menu
-        if icon_right_clicked then
+        -- Both left and right click open context menu
+        if icon_left_clicked or icon_right_clicked then
           ImGui.OpenPopup(ctx, "##icon_context_menu")
         end
 
@@ -263,8 +265,41 @@ function M.new(opts)
 
         self:_draw_icon(ctx, icon_x, icon_y, draw_color)
 
-        -- Context menu on right-click
+        -- Context menu on left/right click
         if ContextMenu.begin(ctx, "##icon_context_menu") then
+          -- Theme submenu
+          if ThemeManager then
+            if ContextMenu.begin_menu(ctx, "Theme") then
+              local current_mode = ThemeManager.get_mode()
+
+              -- Checkmark for current selection
+              local dark_label = (current_mode == "dark") and "* Dark" or "  Dark"
+              local grey_label = (current_mode == "grey") and "* Grey" or "  Grey"
+              local light_label = (current_mode == "light") and "* Light" or "  Light"
+              local adapt_label = (current_mode == "adapt") and "* Adapt (REAPER)" or "  Adapt (REAPER)"
+
+              if ContextMenu.item(ctx, dark_label) then
+                ThemeManager.set_mode("dark")
+              end
+              if ContextMenu.item(ctx, grey_label) then
+                ThemeManager.set_mode("grey")
+              end
+              if ContextMenu.item(ctx, light_label) then
+                ThemeManager.set_mode("light")
+              end
+
+              ContextMenu.separator(ctx)
+
+              if ContextMenu.item(ctx, adapt_label) then
+                ThemeManager.set_mode("adapt")
+              end
+
+              ContextMenu.end_menu(ctx)
+            end
+
+            ContextMenu.separator(ctx)
+          end
+
           if ContextMenu.item(ctx, "Open Hub") then
             icon_clicked = true
           end
