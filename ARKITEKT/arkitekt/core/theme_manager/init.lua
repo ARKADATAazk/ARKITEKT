@@ -37,7 +37,7 @@
 --   function main_loop() sync(); draw_ui() end
 
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style.defaults')
+local Style = require('arkitekt.gui.style')
 
 local M = {}
 

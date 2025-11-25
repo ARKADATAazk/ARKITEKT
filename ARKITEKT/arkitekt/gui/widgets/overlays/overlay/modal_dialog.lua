@@ -7,7 +7,7 @@ local ImGui = require 'imgui' '0.10'
 
 local Sheet = require('arkitekt.gui.widgets.overlays.overlay.sheet')
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local Style = require('arkitekt.gui.style.defaults')
+local Style = require('arkitekt.gui.style')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 

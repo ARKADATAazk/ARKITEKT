@@ -50,7 +50,7 @@ local ColorSliders  = require("arkitekt.gui.widgets.primitives.hue_slider")
 local TilesContainer = require("arkitekt.gui.widgets.containers.panel")
 
 -- Fallback style
-local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
+local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui")
 local hexrgb = ark.Colors.hexrgb
 
 

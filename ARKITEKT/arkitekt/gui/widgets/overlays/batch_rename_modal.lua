@@ -5,7 +5,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style.defaults')
+local Style = require('arkitekt.gui.style')
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('arkitekt.gui.widgets.tools.color_picker_window')
 local Button = require('arkitekt.gui.widgets.primitives.button')

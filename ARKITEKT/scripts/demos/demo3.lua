@@ -46,7 +46,7 @@ local Shell = require("arkitekt.app.shell")
 local StatusPad = require("arkitekt.gui.widgets.data.status_pad")
 local StatusBar = require("arkitekt.app.chrome.status_bar")
 
-local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
+local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui")
 local hexrgb = ark.Colors.hexrgb
 
 

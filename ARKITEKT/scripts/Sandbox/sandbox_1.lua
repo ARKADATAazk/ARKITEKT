@@ -23,7 +23,7 @@ local Config = require('arkitekt.gui.widgets.editors.nodal.defaults')
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
-local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
+local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui')
 local function create_mock_music_flow()
   local config = Config.get()
   

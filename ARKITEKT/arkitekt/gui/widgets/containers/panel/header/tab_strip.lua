@@ -6,7 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')
-local Style = require('arkitekt.gui.style.defaults')
+local Style = require('arkitekt.gui.style')
 local InteractionBlocking = require('arkitekt.gui.utils.interaction_blocking')
 
 local Colors = require('arkitekt.core.colors')

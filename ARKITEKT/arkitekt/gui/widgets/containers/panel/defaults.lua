@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/panel/config.lua
 -- Default configuration for panel with enhanced features
 
-local Style = require('arkitekt.gui.style.defaults')
+local Style = require('arkitekt.gui.style')
 local C = Style.COLORS          -- Shared primitives
 local PC = Style.PANEL_COLORS   -- Panel-specific colors
 

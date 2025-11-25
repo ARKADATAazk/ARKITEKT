@@ -40,7 +40,7 @@ local GUI = require("ColorPalette.app.gui")
 local OverlayManager = require("arkitekt.gui.widgets.overlays.overlay.manager")
 
 -- Load optional style
-local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
+local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui")
 
 -- Initialize cache directory for settings
 local SEP = package.config:sub(1,1)
