@@ -150,18 +150,22 @@ function M.new(config)
     filter_category = "All",
     search_text = "",
     paused = false,
-    
+
     last_frame_time = 0,
     fps = 60,
     frame_time_ms = 16.7,
-    
+
     scroll_pos = 0,
     scroll_max = 0,
     user_scrolled_up = false,
-    
+
     panel = nil,
     text_view = ColoredTextView.new(),
     last_entry_count = 0,
+
+    -- Focused slot view state
+    focused_slot_key = nil,  -- key of the slot being viewed in detail (nil = show all)
+    hovered_slot_key = nil,  -- for tracking hover effects
   }
   
   local panel_config = {
@@ -357,8 +361,8 @@ function M.new(config)
 
     local now = reaper.time_precise()
     local line_height = ImGui.GetTextLineHeightWithSpacing(ctx)
-    local row_height = line_height + 2
-    local header_height = 20
+    local row_height = line_height + 4  -- Slightly taller for hover area
+    local header_height = 22
     local padding = 4
 
     -- Calculate height needed for expanded slots
@@ -387,12 +391,13 @@ function M.new(config)
     local window_flags = ImGui.WindowFlags_NoScrollbar
     if ImGui.BeginChild(ctx, "##LiveSlots", avail_w - 16, total_height, ImGui.ChildFlags_None, window_flags) then
       local dl = ImGui.GetWindowDrawList(ctx)
-      local cx, cy = ImGui.GetCursorScreenPos(ctx)
 
       -- Header
       ImGui.TextColored(ctx, COLORS.grey_52, "LIVE")
       ImGui.SameLine(ctx)
       ImGui.TextDisabled(ctx, string.format("(%d)", slot_count))
+      ImGui.SameLine(ctx)
+      ImGui.TextColored(ctx, COLORS.grey_40, "| dbl-click to focus")
       ImGui.SameLine(ctx, avail_w - 80)
       if ImGui.SmallButton(ctx, "Clear All##live") then
         Logger.clear_all_live()
@@ -400,7 +405,7 @@ function M.new(config)
 
       ImGui.Separator(ctx)
 
-      -- Render each slot
+      -- Render each slot with hover/click detection
       for _, entry in ipairs(sorted_slots) do
         local slot = entry.slot
         local color = get_category_color(slot.category)
@@ -412,6 +417,40 @@ function M.new(config)
         if stale then
           display_color = (color & 0xFFFFFF00) | 0x60
         end
+
+        -- Get row position for hover detection
+        local row_x, row_y = ImGui.GetCursorScreenPos(ctx)
+        local row_w = avail_w - 32
+
+        -- Invisible selectable for hover/click detection
+        ImGui.PushStyleColor(ctx, ImGui.Col_Header, hexrgb("#FFFFFF18"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, hexrgb("#FFFFFF22"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_HeaderActive, hexrgb("#FFFFFF30"))
+
+        local is_selected = false
+        local clicked, _ = ImGui.Selectable(ctx, "##slot_" .. entry.key, is_selected,
+          ImGui.SelectableFlags_SpanAllColumns | ImGui.SelectableFlags_AllowDoubleClick,
+          row_w, row_height - 2)
+
+        local is_hovered = ImGui.IsItemHovered(ctx)
+        local is_double_clicked = clicked and ImGui.IsMouseDoubleClicked(ctx, 0)
+
+        ImGui.PopStyleColor(ctx, 3)
+
+        -- Handle double-click to focus
+        if is_double_clicked then
+          self.focused_slot_key = entry.key
+        end
+
+        -- Draw hover highlight background
+        if is_hovered then
+          self.hovered_slot_key = entry.key
+          ImGui.DrawList_AddRectFilled(dl, row_x, row_y, row_x + row_w, row_y + row_height - 2,
+            hexrgb("#FFFFFF10"), 3, 0)
+        end
+
+        -- Move cursor back to draw content over the selectable
+        ImGui.SetCursorScreenPos(ctx, row_x + 4, row_y)
 
         -- Pulsing indicator for active slots
         if not stale then
@@ -469,6 +508,163 @@ function M.new(config)
     ImGui.Spacing(ctx)
 
     return total_height + 8
+  end
+
+  -- ============================================================================
+  -- FOCUSED SLOT VIEW
+  -- ============================================================================
+
+  -- Render dedicated view for a single focused slot
+  function console:render_focused_slot(ctx, avail_w, avail_h)
+    local live_slots = Logger.get_live_slots()
+    local slot = live_slots[self.focused_slot_key]
+
+    -- If slot no longer exists, go back
+    if not slot then
+      self.focused_slot_key = nil
+      return false
+    end
+
+    local now = reaper.time_precise()
+    local color = get_category_color(slot.category)
+    local age = now - slot.last_update
+    local stale = age > 5.0
+    local line_height = ImGui.GetTextLineHeightWithSpacing(ctx)
+
+    ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#0D0D0DFF"))
+    ImGui.PushStyleVar(ctx, ImGui.StyleVar_ChildRounding, 6)
+
+    if ImGui.BeginChild(ctx, "##FocusedSlot", avail_w - 16, avail_h - 20, ImGui.ChildFlags_Border, 0) then
+      local dl = ImGui.GetWindowDrawList(ctx)
+
+      -- Header bar with back button
+      ImGui.PushStyleColor(ctx, ImGui.Col_Button, hexrgb("#333333FF"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonHovered, hexrgb("#444444FF"))
+      ImGui.PushStyleColor(ctx, ImGui.Col_ButtonActive, hexrgb("#555555FF"))
+
+      if ImGui.Button(ctx, "< Back##focused", 60, 24) then
+        self.focused_slot_key = nil
+      end
+
+      ImGui.PopStyleColor(ctx, 3)
+
+      ImGui.SameLine(ctx)
+      ImGui.TextColored(ctx, COLORS.grey_52, "LIVE SLOT:")
+      ImGui.SameLine(ctx)
+
+      -- Category:Key
+      ImGui.TextColored(ctx, color, slot.category)
+      ImGui.SameLine(ctx)
+      ImGui.TextColored(ctx, COLORS.grey_40, ":" .. slot.key)
+
+      -- Status indicator
+      ImGui.SameLine(ctx, avail_w - 140)
+      if stale then
+        ImGui.TextColored(ctx, COLORS.grey_40, "[stale]")
+      else
+        local pulse = math.abs(math.sin(now * 4)) * 0.5 + 0.5
+        local active_color = (COLORS.teal & 0xFFFFFF00) | math.floor(pulse * 255)
+        ImGui.TextColored(ctx, active_color, "[active]")
+      end
+
+      ImGui.SameLine(ctx, avail_w - 60)
+      if ImGui.SmallButton(ctx, "Clear##focused") then
+        Logger.clear_live_slot(slot.category, slot.key)
+        self.focused_slot_key = nil
+      end
+
+      ImGui.Separator(ctx)
+      ImGui.Spacing(ctx)
+
+      -- Current value section
+      ImGui.TextColored(ctx, COLORS.grey_52, "CURRENT VALUE")
+      ImGui.Spacing(ctx)
+
+      -- Big display of current message
+      ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1AFF"))
+      if ImGui.BeginChild(ctx, "##CurrentValue", avail_w - 48, 50, ImGui.ChildFlags_Border, 0) then
+        ImGui.SetCursorPos(ctx, 12, 12)
+
+        -- Pulsing indicator
+        if not stale then
+          local pulse = math.abs(math.sin(now * 4)) * 0.3 + 0.7
+          local indicator_color = (color & 0xFFFFFF00) | math.floor(pulse * 255)
+          ImGui.TextColored(ctx, indicator_color, ">")
+          ImGui.SameLine(ctx)
+        end
+
+        ImGui.TextColored(ctx, color, slot.message)
+      end
+      ImGui.EndChild(ctx)
+      ImGui.PopStyleColor(ctx)
+
+      ImGui.Spacing(ctx)
+
+      -- Stats row
+      ImGui.TextColored(ctx, COLORS.grey_40, string.format(
+        "Updates: %d  |  Last: %s ago  |  History: %d entries",
+        slot.update_count,
+        format_time_ago(age),
+        #slot.history
+      ))
+
+      ImGui.Spacing(ctx)
+      ImGui.Separator(ctx)
+      ImGui.Spacing(ctx)
+
+      -- History section
+      ImGui.TextColored(ctx, COLORS.grey_52, "HISTORY")
+      ImGui.SameLine(ctx)
+      ImGui.TextDisabled(ctx, string.format("(showing all %d)", #slot.history))
+
+      ImGui.Spacing(ctx)
+
+      -- Scrollable history list
+      local history_h = avail_h - 220
+      if history_h < 100 then history_h = 100 end
+
+      ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#141414FF"))
+      if ImGui.BeginChild(ctx, "##History", avail_w - 48, history_h, ImGui.ChildFlags_Border, 0) then
+        if #slot.history == 0 then
+          ImGui.TextDisabled(ctx, "No history yet...")
+        else
+          for i, h in ipairs(slot.history) do
+            local h_age = now - h.time
+            local h_stale = h_age > 10.0
+            local h_color = h_stale and COLORS.grey_40 or COLORS.grey_60
+
+            -- Row hover effect
+            local row_x, row_y = ImGui.GetCursorScreenPos(ctx)
+            local row_w = avail_w - 64
+
+            ImGui.PushStyleColor(ctx, ImGui.Col_Header, hexrgb("#FFFFFF00"))
+            ImGui.PushStyleColor(ctx, ImGui.Col_HeaderHovered, hexrgb("#FFFFFF15"))
+            ImGui.Selectable(ctx, "##hist_" .. i, false, 0, row_w, line_height)
+            ImGui.PopStyleColor(ctx, 2)
+
+            ImGui.SetCursorScreenPos(ctx, row_x + 8, row_y)
+
+            -- Index
+            ImGui.TextColored(ctx, COLORS.grey_40, string.format("%3d.", i))
+            ImGui.SameLine(ctx)
+
+            -- Time ago
+            ImGui.TextColored(ctx, h_color, string.format("-%s:", format_time_ago(h_age)))
+            ImGui.SameLine(ctx)
+
+            -- Message
+            ImGui.TextColored(ctx, h_stale and COLORS.grey_40 or color, h.message)
+          end
+        end
+      end
+      ImGui.EndChild(ctx)
+      ImGui.PopStyleColor(ctx)
+    end
+    ImGui.EndChild(ctx)
+    ImGui.PopStyleVar(ctx)
+    ImGui.PopStyleColor(ctx)
+
+    return true
   end
 
   -- ============================================================================
@@ -577,20 +773,27 @@ function M.new(config)
 
     local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
 
-    if self.panel:begin_draw(ctx) then
-      -- Render live slots section first (if any)
-      local live_height = self:render_live_slots(ctx, avail_w)
+    -- Check if we're in focused slot view
+    if self.focused_slot_key then
+      -- Render focused slot view (full screen, no panel wrapper)
+      self:render_focused_slot(ctx, avail_w, avail_h)
+    else
+      -- Normal console view
+      if self.panel:begin_draw(ctx) then
+        -- Render live slots section first (if any)
+        local live_height = self:render_live_slots(ctx, avail_w)
 
-      -- Remaining height for log entries
-      local log_height = avail_h - live_height
-      if log_height > 50 then
-        self.text_view:render(ctx, avail_w, log_height)
+        -- Remaining height for log entries
+        local log_height = avail_h - live_height
+        if log_height > 50 then
+          self.text_view:render(ctx, avail_w, log_height)
+        end
       end
-    end
-    self.panel:end_draw(ctx)
+      self.panel:end_draw(ctx)
 
-    -- Draw stats overlay in top right
-    draw_stats_overlay(ctx, avail_w, avail_h)
+      -- Draw stats overlay in top right
+      draw_stats_overlay(ctx, avail_w, avail_h)
+    end
   end
   
   -- Initialize with current logs
