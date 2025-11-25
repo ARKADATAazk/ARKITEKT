@@ -317,8 +317,8 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
   local x1, y1, x2, y2 = table.unpack(panel_bounds)
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
 
-  -- Draw elements using existing toolbar element renderers (only when expanded)
-  if config.elements and #config.elements > 0 and anim_state.current > 0.3 then
+  -- Draw elements using existing toolbar element renderers (render if any visibility)
+  if config.elements and #config.elements > 0 and anim_state.current > 0.01 then
     local orientation = get_orientation(position)
 
     if orientation == "horizontal" then

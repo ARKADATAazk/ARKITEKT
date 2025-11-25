@@ -88,7 +88,7 @@ local panel_config = {
       auto_hide = {
         enabled = true,
         trigger = "hover",  -- HOVER TRIGGER: Auto-expand on hover
-        visible_amount = 0.2,  -- 20% visible when collapsed
+        visible_amount = 1.0,  -- Always 100% visible - edge slide + clipping handles hiding
         animation_speed = 0.2,
       },
       -- NO bg_color = overlay is transparent by default (floats above content)
