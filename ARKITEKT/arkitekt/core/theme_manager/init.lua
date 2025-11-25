@@ -90,11 +90,6 @@ function M.generate_palette(base_bg, base_text, base_accent)
   -- Invert deltas for light themes (hover goes darker instead of lighter)
   local sign = is_light and -1 or 1
 
-  -- Scale outer border delta for light themes (need more contrast)
-  -- Dark: -10% from 12% → ~2% (very dark)
-  -- Light: -25% from 88% → ~63% (clearly darker but not black)
-  local border_outer_delta = is_light and -0.25 or rules.border_outer_delta
-
   -- For neutral themes (no accent), derive accents from background
   local neutral_accent
   if base_accent == nil then
@@ -115,8 +110,8 @@ function M.generate_palette(base_bg, base_text, base_accent)
     BG_TRANSPARENT = Colors.with_alpha(base_bg, 0x00),
 
     -- ============ BORDERS ============
-    -- For light themes, borders are darker; for dark themes, they're varied
-    BORDER_OUTER = Colors.adjust_lightness(base_bg, border_outer_delta),  -- Always darker, scaled for theme
+    -- BORDER_OUTER always stays black/very dark for window frames
+    BORDER_OUTER = Colors.hexrgb("#000000DD"),  -- Always dark, not theme-dependent
     BORDER_INNER = Colors.adjust_lightness(base_bg, sign * rules.border_inner_delta),
     BORDER_HOVER = Colors.adjust_lightness(base_bg, sign * rules.border_hover_delta),
     BORDER_ACTIVE = Colors.adjust_lightness(base_bg, sign * rules.border_active_delta),
