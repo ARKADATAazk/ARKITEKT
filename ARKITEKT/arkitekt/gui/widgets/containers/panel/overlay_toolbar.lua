@@ -330,12 +330,13 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
     local hover_zone_y1 = button_area_y - vertical_padding
     local hover_zone_y2 = button_area_y + buttons_total_height + vertical_padding
 
-    -- Horizontal hover zone extends from panel edge
-    local hover_zone_width = 50
-    local hover_zone_x1 = x1
-    local hover_zone_x2 = x1 + hover_zone_width
+    -- Horizontal hover zone extends OUTSIDE panel edge (to the left) and inside
+    local hover_zone_outside = 30  -- Extend 30px outside panel (to the left)
+    local hover_zone_inside = 50   -- Extend 50px inside panel (to the right)
+    local hover_zone_x1 = x1 - hover_zone_outside  -- Start outside panel
+    local hover_zone_x2 = x1 + hover_zone_inside    -- End inside panel
 
-    -- Check if mouse is in the constrained hover zone
+    -- Check if mouse is in the hover zone (spans outside→inside panel edge)
     local is_in_hover_zone = mx >= hover_zone_x1 and mx <= hover_zone_x2 and
                              my >= hover_zone_y1 and my <= hover_zone_y2
 
