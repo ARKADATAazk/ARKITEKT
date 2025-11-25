@@ -30,13 +30,11 @@ All UI colors are then available via `Style.COLORS.*`.
 │              generate_palette(base_bg, base_text)           │
 │                            ↓                                │
 │         compute_rules_for_lightness(lightness, mode)        │
-│                     ┌─────┴─────┐                           │
-│                     ↓           ↓                           │
-│               M.presets    M.contrast                       │
-│            (blend/step)   (threshold)                       │
-│                     └─────┬─────┘                           │
-│                           ↓                                 │
-│                    merged rules                             │
+│                            ↓                                │
+│                       M.presets                             │
+│                    (blend / step)                           │
+│                            ↓                                │
+│                    interpolated rules                       │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -90,7 +88,7 @@ Works with:
 
 ### `step(value)` - Discrete Snap
 
-No interpolation. Snaps to the closest preset's value at midpoint.
+No interpolation. Snaps to the closest preset's value at midpoint (~51% lightness).
 
 ```lua
 -- In presets
@@ -103,30 +101,8 @@ light = { border_outer_color = step("#404040") },  -- Soft grey
 
 Use for:
 - Semantic colors that shouldn't blend
+- Text colors needing hard contrast (e.g., `tile_name_color`)
 - Values with distinct meanings per theme
-
-### Contrast Rules - Binary Flip
-
-For values that need hard contrast (text readability), use `M.contrast`:
-
-```lua
--- Single definition - no duplication, can't desync
-M.contrast = {
-  tile_name_color = { threshold = 0.5, dark = "#DDE3E9", light = "#1A1A1A" },
-}
-
--- At 40% lightness: "#DDE3E9" (below 0.5 threshold)
--- At 60% lightness: "#1A1A1A" (above 0.5 threshold)
-```
-
-Each rule is `{ threshold, dark, light }`:
-- `threshold`: Lightness value to flip at (0.0-1.0)
-- `dark`: Value when bg lightness < threshold
-- `light`: Value when bg lightness >= threshold
-
-Use for:
-- Text colors that need hard contrast
-- Any value that must be readable regardless of gradual changes
 
 ---
 
@@ -140,30 +116,18 @@ M.presets = {
     bg_hover_delta = blend(0.03),
     tile_fill_brightness = blend(0.5),
     border_outer_color = step("#000000"),
+    tile_name_color = step("#DDE3E9"),  -- Light text on dark
     -- ...
   },
   light = {
     bg_hover_delta = blend(-0.04),
     tile_fill_brightness = blend(1.4),
     border_outer_color = step("#404040"),
+    tile_name_color = step("#1A1A1A"),  -- Dark text on light
     -- ...
   },
 }
 ```
-
-### `M.contrast` - Binary Contrast Rules
-
-Single-definition rules for contrast-critical values:
-
-```lua
-M.contrast = {
-  tile_name_color = { threshold = 0.5, dark = "#DDE3E9", light = "#1A1A1A" },
-  -- Add more contrast rules as needed:
-  -- another_text = { threshold = 0.45, dark = "#FFFFFF", light = "#000000" },
-}
-```
-
-Each key maps to `{ threshold, dark, light }` - no duplication, can't desync.
 
 ### `M.preset_anchors` - Lightness Values
 
@@ -199,15 +163,9 @@ Between anchors, `t` ranges from 0.0 to 1.0:
 
 ### For `step()` values:
 
-Same calculation, but snaps at `t = 0.5`:
+Same calculation, but snaps at `t = 0.5` (~51% lightness):
 - `t < 0.5` → use dark preset's value
 - `t >= 0.5` → use light preset's value
-
-### For contrast rules:
-
-Ignores presets entirely. Uses absolute lightness:
-- `lightness < threshold` → use `dark` value
-- `lightness >= threshold` → use `light` value
 
 ---
 
@@ -215,21 +173,21 @@ Ignores presets entirely. Uses absolute lightness:
 
 ### 1. Decide the behavior:
 
-| Behavior | Define in | Format |
-|----------|-----------|--------|
-| Smooth gradient | `M.presets` | `blend(value)` |
-| Discrete snap | `M.presets` | `step(value)` |
-| Binary contrast | `M.contrast` | `{ threshold, dark, light }` |
+| Behavior | Format |
+|----------|--------|
+| Smooth gradient | `blend(value)` |
+| Discrete snap | `step(value)` |
 
-### 2. Add to appropriate table:
+### 2. Add to both presets:
 
 ```lua
--- For blend/step (in both presets):
+-- For smooth interpolation:
 M.presets.dark.my_new_value = blend(0.3)
 M.presets.light.my_new_value = blend(0.8)
 
--- For contrast (single definition):
-M.contrast.my_contrast_value = { threshold = 0.5, dark = "#FFFFFF", light = "#000000" }
+-- For discrete snapping:
+M.presets.dark.my_text_color = step("#FFFFFF")
+M.presets.light.my_text_color = step("#000000")
 ```
 
 ### 3. Use in `generate_palette()`:
@@ -238,7 +196,7 @@ M.contrast.my_contrast_value = { threshold = 0.5, dark = "#FFFFFF", light = "#00
 return {
   -- ...existing colors...
   MY_NEW_VALUE = rules.my_new_value,
-  MY_CONTRAST_VALUE = rules.my_contrast_value,
+  MY_TEXT_COLOR = Colors.hexrgb(rules.my_text_color),
 }
 ```
 
@@ -349,12 +307,9 @@ local l = ThemeManager.get_theme_lightness()
 local blend = ThemeManager.blend
 local step = ThemeManager.step
 
--- Add to presets (both dark and light)
+-- Add to both presets
 M.presets.dark.my_value = blend(0.5)
 M.presets.light.my_value = blend(0.9)
-
--- Add to contrast (single definition)
-M.contrast.my_text = { threshold = 0.5, dark = "#FFFFFF", light = "#000000" }
 ```
 
 ---

@@ -49,8 +49,8 @@ local M = {}
 -- VALUE WRAPPERS - Define interpolation behavior
 -- ============================================================================
 -- These wrappers tell the system HOW to transition between preset values:
---   blend(value)  - smooth gradient between dark↔light
---   step(value)   - discrete snap at midpoint (no interpolation)
+--   blend(value)  - smooth gradient between dark↔light (linear interpolation)
+--   step(value)   - discrete snap at midpoint (no interpolation, uses closest preset)
 
 --- Smooth gradient between preset values
 --- @param value any The value for this preset
@@ -115,6 +115,7 @@ M.presets = {
     tile_fill_brightness = blend(0.5),
     tile_fill_saturation = blend(0.4),
     tile_fill_opacity = blend(0.4),
+    tile_name_color = step("#DDE3E9"),  -- Light text on dark backgrounds
   },
 
   -- LIGHT preset (~88% lightness)
@@ -153,21 +154,8 @@ M.presets = {
     tile_fill_brightness = blend(1.4),
     tile_fill_saturation = blend(0.5),
     tile_fill_opacity = blend(0.5),
+    tile_name_color = step("#1A1A1A"),  -- Dark text on light backgrounds
   },
-}
-
--- ============================================================================
--- CONTRAST RULES (binary flip at lightness threshold)
--- ============================================================================
--- Single-definition format for contrast-critical values.
--- Each rule specifies: { threshold, dark, light }
--- At runtime: lightness < threshold → dark, otherwise → light
---
--- Use for values that need hard contrast (text on backgrounds, etc.)
-
-M.contrast = {
-  -- Tile text color: must be readable regardless of fill color
-  tile_name_color = { threshold = 0.5, dark = "#DDE3E9", light = "#1A1A1A" },
 }
 
 -- ============================================================================
@@ -259,21 +247,6 @@ local function lerp_rules(rules_a, rules_b, t)
   return result
 end
 
---- Resolve contrast values based on current lightness
---- Each contrast rule has { threshold, dark, light } - flip at threshold
---- @param lightness number Current background lightness (0.0-1.0)
---- @return table Resolved contrast values
-local function resolve_contrast(lightness)
-  local result = {}
-
-  for key, rule in pairs(M.contrast) do
-    local threshold = rule.threshold or 0.5
-    result[key] = lightness < threshold and rule.dark or rule.light
-  end
-
-  return result
-end
-
 --- Unwrap all values in a preset (for non-interpolated access)
 --- @param preset table Preset with wrapped values
 --- @return table Unwrapped raw values
@@ -288,7 +261,6 @@ end
 --- Get derivation rules for current theme mode
 --- For explicit modes (dark/grey/light), returns those rules directly.
 --- For "adapt" mode, interpolates between anchor rules based on current lightness.
---- Also merges in contrast values (flipAt) for contrast-critical keys.
 --- @return table Rules table for the current theme (unwrapped raw values)
 function M.get_current_rules()
   return compute_rules_for_lightness(M.get_theme_lightness(), M.current_mode)
@@ -332,12 +304,6 @@ local function compute_rules_for_lightness(lightness, mode)
     end
   end
 
-  -- Merge in contrast values (flipAt) based on lightness
-  local contrast_values = resolve_contrast(lightness)
-  for key, value in pairs(contrast_values) do
-    preset_rules[key] = value
-  end
-
   return preset_rules
 end
 
@@ -361,7 +327,6 @@ function M.generate_palette(base_bg, base_text, base_accent, rules)
 
   -- Get rules: use provided, or compute interpolated rules
   -- In adapt mode this will interpolate between presets based on lightness
-  -- Contrast values (flipAt) are automatically merged in
   if not rules then
     rules = compute_rules_for_lightness(bg_lightness, M.current_mode)
   end
