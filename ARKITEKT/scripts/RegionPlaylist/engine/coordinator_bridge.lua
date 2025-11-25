@@ -8,6 +8,7 @@ local Playback = require("RegionPlaylist.engine.playback")
 local RegionState = require("RegionPlaylist.storage.persistence")
 local SequenceExpander = require("RegionPlaylist.core.sequence_expander")
 local Logger = require("arkitekt.debug.logger")
+local Callbacks = require("arkitekt.core.callbacks")
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -20,12 +21,8 @@ local M = {}
 
 package.loaded["RegionPlaylist.engine.coordinator_bridge"] = M
 
-local function safe_call(fn)
-  if not fn then return nil end
-  local ok, result = pcall(fn)
-  if ok then return result end
-  return nil
-end
+-- Use framework callback wrapper instead of local implementation
+local safe_call = Callbacks.safe_call
 
 function M.create(opts)
   opts = opts or {}
