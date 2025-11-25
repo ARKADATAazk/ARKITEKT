@@ -127,10 +127,25 @@ function M.draw(ctx, dl, panel_x, panel_y, panel_width, panel_height, sidebar_cf
   for i, element in ipairs(layout.elements) do
     local is_first = (i == 1)
     local is_last = (i == #layout.elements)
+    local is_middle = (#layout.elements == 3) and (i == 2)
 
     -- Calculate position and height
     local btn_y = layout.start_y + layout.corner_extension + (i - 1) * (layout.button_height - 1)
     local current_height = layout.button_height
+
+    -- Check hover state for middle button expansion
+    if is_middle then
+      local mx, my = ImGui.GetMousePos(ctx)
+      local is_hovering = mx >= btn_x and mx <= btn_x + layout.button_width and
+                          my >= btn_y and my <= btn_y + current_height
+
+      -- Expand middle button vertically on hover
+      if is_hovering then
+        local expand_amount = math.floor(layout.button_height * 0.5)  -- 50% taller
+        btn_y = btn_y - math.floor(expand_amount * 0.5)  -- Center expansion
+        current_height = current_height + expand_amount
+      end
+    end
 
     -- Extend first/last buttons for rounding
     if is_first then
