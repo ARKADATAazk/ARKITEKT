@@ -7,12 +7,13 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.core.colors')
+local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}
 local hexrgb = Colors.hexrgb
 
--- State for each picker instance
-local instances = {}
+-- State for each picker instance (weak table - allows GC when windows close)
+local instances = Base.create_instance_registry()
 
 -- Convert RGB to HSV
 local function rgb_to_hsv(r, g, b)

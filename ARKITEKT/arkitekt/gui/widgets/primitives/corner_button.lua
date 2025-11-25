@@ -68,10 +68,10 @@ local DEFAULTS = {
 }
 
 -- ============================================================================
--- INSTANCE MANAGEMENT
+-- INSTANCE MANAGEMENT (weak table - allows GC when widgets stop rendering)
 -- ============================================================================
 
-local instances = {}
+local instances = Base.create_instance_registry()
 
 local function get_instance(id)
   local inst = instances[id]

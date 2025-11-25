@@ -9,6 +9,7 @@ local ImGui = require 'imgui' '0.10'
 
 local Draw   = require('arkitekt.gui.draw')
 local Colors = require('arkitekt.core.colors')
+local CoreMath = require('arkitekt.core.math')
 local Style  = require('arkitekt.gui.style.imgui_defaults')
 local OverlayConfig = require('arkitekt.gui.widgets.overlays.overlay.defaults')
 local Constants = require('arkitekt.defs.app')
@@ -16,6 +17,7 @@ local Constants = require('arkitekt.defs.app')
 local M = {}
 M.__index = M
 local hexrgb = Colors.hexrgb
+local clamp = CoreMath.clamp
 
 -- Global state to track if ANY overlay manager has active overlays
 -- This is set BEFORE rendering, so grid input can check it synchronously
@@ -37,10 +39,6 @@ local JS_API_available = reaper.JS_Window_GetRect ~= nil
 -- ============================================================================
 -- SECTION 2: Alpha Tracker (supports both speed-based and curve-based)
 -- ============================================================================
-
-local function clamp(val, min, max)
-  return math.max(min, math.min(max, val))
-end
 
 local function apply_curve(t, curve_name)
   t = clamp(t, 0.0, 1.0)

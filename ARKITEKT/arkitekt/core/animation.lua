@@ -3,6 +3,8 @@
 -- Global animation configuration
 -- Provides centralized control over animation speeds and behaviors
 
+local CoreMath = require('arkitekt.core.math')
+
 local M = {}
 
 -- ============================================================================
@@ -22,13 +24,10 @@ M.CHECK_SPEED = 15.0
 M.SMOOTH_SPEED = 10.0
 
 -- ============================================================================
--- EASING
+-- EASING (lerp re-exported from core/math)
 -- ============================================================================
 
--- Linear interpolation helper
-function M.lerp(a, b, t)
-  return a + (b - a) * t
-end
+M.lerp = CoreMath.lerp
 
 -- Smooth step (ease in/out)
 function M.smoothstep(t)

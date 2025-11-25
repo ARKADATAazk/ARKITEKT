@@ -4,6 +4,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
+local Base = require('arkitekt.gui.widgets.base')
 local CornerButton = require('arkitekt.gui.widgets.primitives.corner_button')
 local ConfigUtil = require('arkitekt.core.config')
 local Rendering = require('arkitekt.gui.widgets.containers.panel.rendering')
@@ -24,10 +25,10 @@ M.DEFAULTS = {
 }
 
 -- ============================================================================
--- INSTANCE MANAGEMENT (for animations)
+-- INSTANCE MANAGEMENT (weak table - allows GC when widgets stop rendering)
 -- ============================================================================
 
-local instances = {}
+local instances = Base.create_instance_registry()
 
 local function get_instance(id)
   if not instances[id] then

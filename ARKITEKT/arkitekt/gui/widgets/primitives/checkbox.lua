@@ -80,11 +80,10 @@ local DEFAULTS = {
 }
 
 -- ============================================================================
--- INSTANCE MANAGEMENT (strong table for stable animation state)
+-- INSTANCE MANAGEMENT (weak table - allows GC when widgets stop rendering)
 -- ============================================================================
 
--- Use strong table like combo (prevents GC from clearing animation state during hover)
-local instances = {}
+local instances = Base.create_instance_registry()
 
 local Checkbox = {}
 Checkbox.__index = Checkbox

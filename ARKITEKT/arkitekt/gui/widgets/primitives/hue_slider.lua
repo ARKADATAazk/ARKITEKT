@@ -6,14 +6,12 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local Colors = require('arkitekt.core.colors')
+local CoreMath = require('arkitekt.core.math')
 local hexrgb = Colors.hexrgb
+local clamp = CoreMath.clamp
 
 local M = {}
 local _locks = {}
-
-local function clamp(v, lo, hi)
-  if v < lo then return lo elseif v > hi then return hi else return v end
-end
 
 local function hsv_rgba_u32(h, s, v, a)
   local i = math.floor(h * 6)

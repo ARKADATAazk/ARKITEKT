@@ -8,6 +8,7 @@ local ImGui = require 'imgui' '0.10'
 local Style = require('arkitekt.gui.style.defaults')
 local Colors = require('arkitekt.core.colors')
 local Anim = require('arkitekt.core.animation')
+local CoreMath = require('arkitekt.core.math')
 
 local M = {}
 
@@ -25,48 +26,18 @@ M.ANIMATION_SPEED_FAST = 16.0
 M.ANIMATION_SPEED_SLOW = Anim.FADE_SPEED
 
 -- ============================================================================
--- MATH UTILITIES
+-- MATH UTILITIES (re-exported from core/math)
 -- ============================================================================
 
---- Clamp a value between min and max
---- @param value number Value to clamp
---- @param min_val number Minimum value
---- @param max_val number Maximum value
---- @return number Clamped value
-function M.clamp(value, min_val, max_val)
-  if value < min_val then return min_val
-  elseif value > max_val then return max_val
-  else return value end
-end
+M.clamp = CoreMath.clamp
+M.lerp = CoreMath.lerp
+M.remap = CoreMath.remap
 
 --- Snap a value to the nearest pixel (reduces aliasing)
 --- @param v number Value to snap
 --- @return number Snapped value
 function M.snap_pixel(v)
   return math.floor(v + 0.5)
-end
-
---- Linear interpolation between two values
---- @param a number Start value
---- @param b number End value
---- @param t number Interpolation factor (0-1)
---- @return number Interpolated value
-function M.lerp(a, b, t)
-  return a + (b - a) * M.clamp(t, 0, 1)
-end
-
---- Remap a value from one range to another
---- @param value number Value to remap
---- @param in_min number Input range minimum
---- @param in_max number Input range maximum
---- @param out_min number Output range minimum
---- @param out_max number Output range maximum
---- @return number Remapped value
-function M.remap(value, in_min, in_max, out_min, out_max)
-  if in_max == in_min then
-    return (out_min + out_max) * 0.5
-  end
-  return out_min + (value - in_min) * (out_max - out_min) / (in_max - in_min)
 end
 
 -- ============================================================================

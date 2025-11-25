@@ -6,13 +6,14 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Style = require('arkitekt.gui.style.defaults')
+local Base = require('arkitekt.gui.widgets.base')
 local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 
 local M = {}
 
--- Instance storage (internal to component)
-local instances = {}
+-- Instance storage (weak table - allows GC when widgets stop rendering)
+local instances = Base.create_instance_registry()
 
 -- ============================================================================
 -- CONTEXT DETECTION

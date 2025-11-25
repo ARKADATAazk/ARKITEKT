@@ -30,32 +30,17 @@ M.desaturate = M.Colors.desaturate
 M.saturate = M.Colors.saturate
 
 -- ============================================================================
--- SECTION 2: Math Utilities
+-- SECTION 2: Math Utilities (re-exported from core/math)
 -- ============================================================================
 
-function M.lerp(a, b, t)
-  return a + (b - a) * math.min(1.0, t)
-end
+local CoreMath = require('arkitekt.core.math')
 
-function M.clamp(val, min, max)
-  return math.max(min, math.min(max, val))
-end
-
-function M.remap(value, in_min, in_max, out_min, out_max)
-  if in_max == in_min then
-    return (out_min + out_max) * 0.5  -- Return midpoint to avoid divide-by-zero
-  end
-  return out_min + (value - in_min) * (out_max - out_min) / (in_max - in_min)
-end
-
-function M.snap(value, step)
-  return math.floor(value / step + 0.5) * step
-end
-
-function M.approximately(a, b, epsilon)
-  epsilon = epsilon or 0.0001
-  return math.abs(a - b) < epsilon
-end
+M.lerp = CoreMath.lerp
+M.clamp = CoreMath.clamp
+M.remap = CoreMath.remap
+M.snap = CoreMath.snap
+M.approximately = CoreMath.approximately
+M.smoothdamp = CoreMath.smoothdamp
 
 -- ============================================================================
 -- SECTION 3: Drawing Utilities

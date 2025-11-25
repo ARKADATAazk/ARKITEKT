@@ -14,10 +14,10 @@ local hexrgb = Colors.hexrgb
 local M = {}
 
 -- ============================================================================
--- INSTANCE MANAGEMENT
+-- INSTANCE MANAGEMENT (weak table - allows GC when widgets stop rendering)
 -- ============================================================================
 
-local instances = {}
+local instances = Base.create_instance_registry()
 
 local function get_instance(id)
   if not instances[id] then
