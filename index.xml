@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" commit="b0a44846f3fa0f6dfd3659f56ec7998db4b8f795" name="ARKITEKT Toolkit">
+<index version="1" commit="d4a2425a64f027c524a71c1483024c53276d52d8" name="ARKITEKT Toolkit">
   <category name="ARKITEKT">
     <reapack name="ARK_Hub.lua" type="script" desc="ARKITEKT-Toolkit">
       <metadata>
@@ -350,16 +350,6 @@ Includes: Region Playlist, Item Picker, Template Browser, Theme Adjuster & Origi
         <source file="arkitekt/icons/ARKITEKT@32x.png">https://github.com/ARKADATAazk/ARKITEKT-Toolkit/raw/020882234e7a136d643bcabefbb485269b579933/ARKITEKT/arkitekt/icons/ARKITEKT@32x.png</source>
         <source file="arkitekt/icons/ARKITEKT@4x.png">https://github.com/ARKADATAazk/ARKITEKT-Toolkit/raw/020882234e7a136d643bcabefbb485269b579933/ARKITEKT/arkitekt/icons/ARKITEKT@4x.png</source>
         <source file="arkitekt/icons/ARKITEKT@8x.png">https://github.com/ARKADATAazk/ARKITEKT-Toolkit/raw/020882234e7a136d643bcabefbb485269b579933/ARKITEKT/arkitekt/icons/ARKITEKT@8x.png</source>
-      </version>
-    </reapack>
-    <reapack name="debug_namespace_explicit.lua" type="script" desc="Debug ARKITEKT Namespace Circular Dependency">
-      <version name="1.0" time="2025-11-24T14:18:13Z">
-        <source main="main">https://github.com/ARKADATAazk/ARKITEKT-Toolkit/raw/cc17c15252f6718c4c75e3dee95844147126a51a/ARKITEKT/debug_namespace_explicit.lua</source>
-      </version>
-    </reapack>
-    <reapack name="debug_namespace_with_path.lua" type="script" desc="Debug ARKITEKT Namespace with Proper Paths">
-      <version name="1.0" time="2025-11-24T14:20:07Z">
-        <source main="main">https://github.com/ARKADATAazk/ARKITEKT-Toolkit/raw/32bfaf383ae81bc01c0793cf9a372d353de316f8/ARKITEKT/debug_namespace_with_path.lua</source>
       </version>
     </reapack>
   </category>
