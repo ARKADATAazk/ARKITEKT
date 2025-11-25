@@ -55,6 +55,10 @@ local CATEGORY_COLORS = {
   UNDO = hexrgb("#F5DEB3FF"),
   SYSTEM = COLORS.grey_84,
   CONSOLE = COLORS.grey_60,
+  TEST = hexrgb("#00FF88FF"),
+  EVENTS = hexrgb("#87CEFAFF"),
+  UI_PREFERENCES = hexrgb("#DDA0DDFF"),
+  DEPENDENCY = hexrgb("#FFA07AFF"),
 }
 
 local LEVEL_COLORS = {
@@ -235,13 +239,32 @@ function M.new(config)
               local text_w = ImGui.CalcTextSize(ctx, label)
               local text_x = x + (width - text_w) * 0.5
               local text_y = y + (height - ImGui.GetTextLineHeight(ctx)) * 0.5
-              
+
               local indicator_x = x + 8
               local indicator_y = y + height * 0.5
               local indicator_color = console.paused and COLORS.yellow or COLORS.teal
               ImGui.DrawList_AddCircleFilled(dl, indicator_x, indicator_y, 3, indicator_color)
-              
+
               ImGui.DrawList_AddText(dl, text_x + 8, text_y, text_color, label)
+            end,
+          },
+        },
+        {
+          id = "tests_btn",
+          type = "button",
+          spacing_before = 0,
+          config = {
+            id = "tests",
+            label = "Tests",
+            width = 48,
+            on_click = function()
+              local TestRunner = require('arkitekt.debug.test_runner')
+              local apps = TestRunner.get_registered_apps()
+              if #apps == 0 then
+                Logger.warn("TEST", "No test suites registered")
+              else
+                TestRunner.run_all()
+              end
             end,
           },
         },
