@@ -73,7 +73,14 @@ local function load_metadata()
   
   local content = file:read("*a")
   file:close()
-  
+
+  -- SECURITY: Check if file read succeeded before attempting to parse
+  if not content then
+    -- File read failed (I/O error, permissions, etc.)
+    metadata = { images = {} }
+    return metadata
+  end
+
   local json_ok, json = pcall(require, 'json')
   if json_ok and json and json.decode then
     local result = json.decode(content)
@@ -82,7 +89,7 @@ local function load_metadata()
       return metadata
     end
   end
-  
+
   metadata = { images = {} }
   local images_start = content:match('"images"%s*:%s*{')
   if images_start then

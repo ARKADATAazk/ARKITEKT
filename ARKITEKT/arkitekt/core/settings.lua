@@ -11,8 +11,9 @@ local function ensure_dir(path)
   if reaper and reaper.RecursiveCreateDirectory then
     reaper.RecursiveCreateDirectory(path, 0)
   else
-    -- naive fallback: try creating leaf
-    os.execute((SEP=="\\") and ('mkdir "'..path..'"') or ('mkdir -p "'..path..'"'))
+    -- SECURITY: Removed unsafe os.execute() fallback to prevent command injection
+    -- If REAPER API is not available, fail with clear error message
+    error("REAPER API not available - cannot create directory: " .. tostring(path))
   end
 end
 
