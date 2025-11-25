@@ -51,7 +51,12 @@ M.derivation_rules = {
   -- Background variations (lightness deltas)
   bg_hover_delta = 0.02,        -- +2% lighter on hover
   bg_active_delta = 0.04,       -- +4% lighter when active/pressed
-  bg_panel_delta = -0.07,       -- -7% darker for panels/chrome (titlebar, statusbar)
+  bg_panel_delta = -0.04,       -- -4% darker for panels (BG_BASE 36 → BG_PANEL 26)
+
+  -- Pattern variations (relative to BG_PANEL, DARKER = etched lines)
+  -- Original design: BG_PANEL=26, Primary=20 (-6 RGB), Secondary=25 (-1 RGB)
+  pattern_primary_delta = -0.024,   -- ~-6 RGB units = -2.4% lightness
+  pattern_secondary_delta = -0.004, -- ~-1 RGB unit = -0.4% lightness
 
   -- Border variations
   border_outer_delta = -0.10,   -- -10% darker for outer borders (strong contrast)
@@ -112,6 +117,10 @@ function M.generate_palette(base_bg, base_text, base_accent)
     neutral_accent = base_accent
   end
 
+  -- Pre-compute BG_PANEL for pattern derivation
+  -- Original design: BG_BASE=36 → BG_PANEL=26 (delta -4%)
+  local bg_panel = Colors.adjust_lightness(base_bg, rules.bg_panel_delta)
+
   return {
     -- ============ BACKGROUNDS ============
     -- All derived from base_bg with lightness adjustments
@@ -119,7 +128,7 @@ function M.generate_palette(base_bg, base_text, base_accent)
     BG_BASE = base_bg,
     BG_HOVER = Colors.adjust_lightness(base_bg, sign * rules.bg_hover_delta),
     BG_ACTIVE = Colors.adjust_lightness(base_bg, sign * rules.bg_active_delta),
-    BG_PANEL = Colors.adjust_lightness(base_bg, rules.bg_panel_delta),  -- Slightly darker
+    BG_PANEL = bg_panel,  -- Slightly darker (used as base for patterns)
     BG_CHROME = base_chrome,  -- Titlebar/statusbar - significantly darker than content
     BG_TRANSPARENT = Colors.with_alpha(base_bg, 0x00),
 
@@ -167,16 +176,13 @@ function M.generate_palette(base_bg, base_text, base_accent)
     ACCENT_DANGER = Colors.hexrgb("#EF5350"),
 
     -- ============ PATTERNS ============
-    -- Subtle background patterns for visual texture
-    -- IMPORTANT: Patterns must CONTRAST with background to be visible!
-    -- Dark themes: use LIGHT patterns (white/gray at low alpha)
-    -- Light themes: use DARK patterns (black/gray at low alpha)
-    PATTERN_PRIMARY = is_light
-      and Colors.hexrgb("#00000040")   -- Black at 25% on light backgrounds
-      or Colors.hexrgb("#FFFFFF30"),   -- White at 19% on dark backgrounds
-    PATTERN_SECONDARY = is_light
-      and Colors.hexrgb("#00000020")   -- Black at 12% on light backgrounds
-      or Colors.hexrgb("#FFFFFF15"),   -- White at 8% on dark backgrounds
+    -- Background grid patterns - SOLID colors darker than BG_PANEL
+    -- Creates "etched" line effect (dark lines on slightly lighter background)
+    -- Original design: BG_PANEL=26, Primary=20 (-6 RGB), Secondary=25 (-1 RGB)
+    --
+    -- Pattern colors are OPAQUE - the grid lines are solid, not transparent overlays
+    PATTERN_PRIMARY = Colors.adjust_lightness(bg_panel, rules.pattern_primary_delta),
+    PATTERN_SECONDARY = Colors.adjust_lightness(bg_panel, rules.pattern_secondary_delta),
   }
 end
 
