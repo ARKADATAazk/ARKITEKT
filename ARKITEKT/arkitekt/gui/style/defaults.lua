@@ -27,6 +27,7 @@ M.COLORS = {
   BG_BASE = hexrgb("#252525FF"),        -- Standard control background
   BG_HOVER = hexrgb("#2A2A2AFF"),       -- Hovered control background
   BG_ACTIVE = hexrgb("#303030FF"),      -- Active/pressed control background
+  BG_PANEL = hexrgb("#1A1A1AFF"),       -- Panel/container background (darker)
   BG_TRANSPARENT = hexrgb("#00000000"), -- Transparent background
 
   -- Borders
@@ -44,8 +45,15 @@ M.COLORS = {
   TEXT_DARK = hexrgb("#707070FF"),      -- Dark text for high-contrast areas
   TEXT_BRIGHT = hexrgb("#EEEEEEFF"),    -- Extra bright text
 
-  -- Accents (for warnings, errors, success states)
+  -- Accents (themed - used for toggle buttons, highlights)
   ACCENT_PRIMARY = hexrgb("#4A9EFF"),   -- Primary accent (blue)
+  ACCENT_TEAL = hexrgb("#295650FF"),    -- Teal accent (for toggle buttons)
+  ACCENT_TEAL_BRIGHT = hexrgb("#41E0A3FF"), -- Bright teal (for text on teal bg)
+  ACCENT_WHITE = hexrgb("#2f2f2fff"),   -- White/gray accent (desaturated)
+  ACCENT_WHITE_BRIGHT = hexrgb("#585858ff"), -- Bright white accent
+  ACCENT_TRANSPARENT = hexrgb("#43434388"), -- Semi-transparent accent (overlays)
+
+  -- Semantic colors (status indicators)
   ACCENT_SUCCESS = hexrgb("#4CAF50"),   -- Success/confirmation (green)
   ACCENT_WARNING = hexrgb("#FFA726"),   -- Warning state (orange)
   ACCENT_DANGER = hexrgb("#EF5350"),    -- Error/danger state (red)
@@ -494,6 +502,222 @@ function M.RENDER.lerp_color(a, b, t)
   local a = (aa + (ba - aa) * t)//1
 
   return (r << 24) | (g << 16) | (b << 8) | a
+end
+
+-- ============================================================================
+-- DYNAMIC CONFIG BUILDERS (Option 3: Direct M.COLORS Access)
+-- ============================================================================
+-- These functions build widget configs from M.COLORS every time they're called.
+-- This enables truly dynamic theming - changing M.COLORS updates all widgets
+-- on the next frame with zero rebuild needed.
+--
+-- Usage in widgets:
+--   local config = Style.build_button_config()
+--   apply_preset(config, opts.preset_name)
+--   merge_user_opts(config, opts)
+-- ============================================================================
+
+--- Build button config from current M.COLORS
+--- @return table Button configuration with all color properties
+function M.build_button_config()
+  return {
+    -- Backgrounds
+    bg_color = M.COLORS.BG_BASE,
+    bg_hover_color = M.COLORS.BG_HOVER,
+    bg_active_color = M.COLORS.BG_ACTIVE,
+    bg_disabled_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.05),
+
+    -- Borders
+    border_outer_color = M.COLORS.BORDER_OUTER,
+    border_inner_color = M.COLORS.BORDER_INNER,
+    border_hover_color = M.COLORS.BORDER_HOVER,
+    border_active_color = M.COLORS.BORDER_ACTIVE,
+    border_inner_disabled_color = Colors.adjust_lightness(M.COLORS.BORDER_INNER, -0.05),
+    border_outer_disabled_color = M.COLORS.BORDER_OUTER,
+
+    -- Text
+    text_color = M.COLORS.TEXT_NORMAL,
+    text_hover_color = M.COLORS.TEXT_HOVER,
+    text_active_color = M.COLORS.TEXT_ACTIVE,
+    text_disabled_color = M.COLORS.TEXT_DIMMED,
+
+    -- Geometry (non-color properties)
+    padding_x = 10,
+    padding_y = 6,
+    rounding = 0,
+  }
+end
+
+--- Build dropdown config from current M.COLORS
+--- @return table Dropdown configuration with all color properties
+function M.build_dropdown_config()
+  return {
+    -- Button (closed state)
+    bg_color = M.COLORS.BG_BASE,
+    bg_hover_color = M.COLORS.BG_HOVER,
+    bg_active_color = M.COLORS.BG_ACTIVE,
+    border_outer_color = M.COLORS.BORDER_OUTER,
+    border_inner_color = M.COLORS.BORDER_INNER,
+    border_hover_color = M.COLORS.BORDER_HOVER,
+    border_active_color = M.COLORS.BORDER_ACTIVE,
+    text_color = M.COLORS.TEXT_NORMAL,
+    text_hover_color = M.COLORS.TEXT_HOVER,
+    text_active_color = M.COLORS.TEXT_ACTIVE,
+
+    -- Arrow
+    arrow_color = M.COLORS.TEXT_NORMAL,
+    arrow_hover_color = M.COLORS.TEXT_HOVER,
+
+    -- Geometry
+    rounding = 0,
+    padding_x = 10,
+    padding_y = 6,
+    arrow_size = 6,
+    enable_mousewheel = true,
+    tooltip_delay = 0.5,
+
+    -- Popup menu
+    popup = {
+      bg_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.02),
+      border_color = Colors.adjust_lightness(M.COLORS.BORDER_OUTER, -0.05),
+      item_bg_color = M.COLORS.BG_TRANSPARENT,
+      item_hover_color = M.COLORS.BG_HOVER,
+      item_active_color = M.COLORS.BG_ACTIVE,
+      item_text_color = M.COLORS.TEXT_NORMAL,
+      item_text_hover_color = M.COLORS.TEXT_HOVER,
+      item_selected_color = M.COLORS.BG_ACTIVE,
+      item_selected_text_color = M.COLORS.TEXT_BRIGHT,
+      rounding = 2,
+      padding = 6,
+      item_height = 26,
+      item_padding_x = 12,
+      border_thickness = 1,
+    },
+  }
+end
+
+--- Build search input config from current M.COLORS
+--- @return table Search input configuration
+function M.build_search_input_config()
+  return {
+    placeholder = "Search...",
+    fade_speed = 8.0,
+    bg_color = M.COLORS.BG_BASE,
+    bg_hover_color = M.COLORS.BG_HOVER,
+    bg_active_color = M.COLORS.BG_ACTIVE,
+    border_outer_color = M.COLORS.BORDER_OUTER,
+    border_inner_color = M.COLORS.BORDER_INNER,
+    border_hover_color = M.COLORS.BORDER_HOVER,
+    border_active_color = M.COLORS.BORDER_ACTIVE,
+    text_color = M.COLORS.TEXT_NORMAL,
+    padding_x = 6,
+    rounding = 0,
+    tooltip_delay = 0.5,
+  }
+end
+
+--- Build tooltip config from current M.COLORS
+--- @return table Tooltip configuration
+function M.build_tooltip_config()
+  return {
+    bg_color = M.COLORS.BG_HOVER,
+    border_color = M.COLORS.BORDER_INNER,
+    text_color = M.COLORS.TEXT_BRIGHT,
+    padding_x = 8,
+    padding_y = 6,
+    rounding = 4,
+    border_thickness = 1,
+    delay = 0.5,
+  }
+end
+
+-- ============================================================================
+-- PRESET DEFINITIONS (Option 3: Key Mappings)
+-- ============================================================================
+-- Presets map config keys to M.COLORS keys (strings) or direct values.
+-- At application time, string keys are resolved to actual colors.
+--
+-- This allows presets to stay dynamic - they reference M.COLORS keys
+-- instead of copying color values.
+-- ============================================================================
+
+M.DYNAMIC_PRESETS = {
+  -- Toggle button variants (ON state colors)
+  BUTTON_TOGGLE_TEAL = {
+    -- ON state (key mappings to M.COLORS)
+    bg_on_color = "ACCENT_TEAL",
+    bg_on_hover_color = "ACCENT_TEAL_BRIGHT",
+    bg_on_active_color = "ACCENT_TEAL",
+    border_inner_on_color = "ACCENT_TEAL_BRIGHT",
+    border_inner_on_hover_color = "ACCENT_TEAL_BRIGHT",
+    border_inner_on_active_color = "ACCENT_TEAL",
+    text_on_color = "ACCENT_TEAL_BRIGHT",
+    text_on_hover_color = "ACCENT_TEAL_BRIGHT",
+    text_on_active_color = "ACCENT_TEAL_BRIGHT",
+  },
+
+  BUTTON_TOGGLE_WHITE = {
+    bg_on_color = "ACCENT_WHITE",
+    bg_on_hover_color = "ACCENT_WHITE_BRIGHT",
+    bg_on_active_color = "ACCENT_WHITE",
+    border_inner_on_color = "ACCENT_WHITE_BRIGHT",
+    border_inner_on_hover_color = "ACCENT_WHITE_BRIGHT",
+    border_inner_on_active_color = "ACCENT_WHITE",
+    text_on_color = "TEXT_BRIGHT",
+    text_on_hover_color = "TEXT_BRIGHT",
+    text_on_active_color = "TEXT_BRIGHT",
+  },
+
+  BUTTON_TOGGLE_TRANSPARENT = {
+    bg_on_color = "ACCENT_TRANSPARENT",
+    bg_on_hover_color = "ACCENT_TRANSPARENT",
+    bg_on_active_color = "ACCENT_TRANSPARENT",
+    border_inner_on_color = "ACCENT_WHITE_BRIGHT",
+    border_inner_on_hover_color = "TEXT_BRIGHT",
+    border_inner_on_active_color = "ACCENT_WHITE",
+    text_on_color = "TEXT_BRIGHT",
+    text_on_hover_color = "TEXT_BRIGHT",
+    text_on_active_color = "TEXT_BRIGHT",
+  },
+
+  -- Action chips (colored rectangles with dark text)
+  ACTION_CHIP_WILDCARD = {
+    bg_color = hexrgb("#5B8FB9"),  -- Direct value (not theme-dependent)
+    text_color = hexrgb("#1a1a1a"),
+    border_color = Colors.with_alpha(hexrgb("#000000"), 100),
+    rounding = 2,
+    padding_h = 8,
+  },
+
+  ACTION_CHIP_TAG = {
+    bg_color = hexrgb("#8B7355"),
+    text_color = hexrgb("#1a1a1a"),
+    border_color = Colors.with_alpha(hexrgb("#000000"), 100),
+    rounding = 2,
+    padding_h = 8,
+  },
+}
+
+-- Legacy alias
+M.DYNAMIC_PRESETS.BUTTON_TOGGLE_ACCENT = M.DYNAMIC_PRESETS.BUTTON_TOGGLE_TEAL
+
+--- Apply a dynamic preset to a config
+--- Resolves string keys (e.g., "ACCENT_TEAL") to actual colors from M.COLORS
+--- @param config table Config to modify
+--- @param preset_name string Preset name from M.DYNAMIC_PRESETS
+function M.apply_dynamic_preset(config, preset_name)
+  local preset = M.DYNAMIC_PRESETS[preset_name]
+  if not preset then return end
+
+  for key, value in pairs(preset) do
+    if type(value) == "string" then
+      -- String value = key into M.COLORS
+      config[key] = M.COLORS[value]
+    else
+      -- Direct value (number, boolean, etc.)
+      config[key] = value
+    end
+  end
 end
 
 -- ============================================================================
