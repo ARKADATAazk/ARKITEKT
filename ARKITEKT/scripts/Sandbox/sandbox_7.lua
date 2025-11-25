@@ -94,19 +94,28 @@ local panel_config = {
       },
       elements = {
         {
+          type = "button",
           id = "overlay_t1",
           label = "Top 1",
-          config = {}
+          config = {
+            width = 80,
+          }
         },
         {
+          type = "button",
           id = "overlay_t2",
           label = "Top 2",
-          config = {}
+          config = {
+            width = 80,
+          }
         },
         {
+          type = "button",
           id = "overlay_t3",
           label = "Top 3",
-          config = {}
+          config = {
+            width = 80,
+          }
         }
       }
     },
@@ -125,19 +134,28 @@ local panel_config = {
       },
       elements = {
         {
+          type = "button",
           id = "overlay_b1",
           label = "Bot 1",
-          config = {}
+          config = {
+            width = 80,
+          }
         },
         {
+          type = "button",
           id = "overlay_b2",
           label = "Bot 2",
-          config = {}
+          config = {
+            width = 80,
+          }
         },
         {
+          type = "button",
           id = "overlay_b3",
           label = "Bot 3",
-          config = {}
+          config = {
+            width = 80,
+          }
         }
       }
     },
