@@ -21,6 +21,7 @@ local Animation = require("RegionPlaylist.domains.animation")
 local Notification = require("RegionPlaylist.domains.notification")
 local UIPreferences = require("RegionPlaylist.domains.ui_preferences")
 local Region = require("RegionPlaylist.domains.region")
+local Dependency = require("RegionPlaylist.domains.dependency")
 
 local M = {}
 
@@ -58,6 +59,7 @@ M.animation = nil                             -- Animation domain instance
 M.notification = nil                          -- Notification domain instance
 M.ui_preferences = nil                        -- UI preferences domain instance
 M.region = nil                                -- Region domain instance
+M.dependency = nil                            -- Dependency domain instance
 
 -- Engine/playback coordination
 M.bridge = nil                                -- CoordinatorBridge instance for engine communication
@@ -82,10 +84,6 @@ M.playlists = {}                              -- Array of playlist objects
 M.playlist_lookup = {}                        -- Map: UUID -> playlist object (O(1) lookup)
 M.settings = nil                              -- Persistent UI settings
 
--- Dependency tracking (for circular reference detection)
-M.dependency_graph = {}                       -- Map: playlist_id -> {child_ids}
-M.graph_dirty = true                          -- Flag to rebuild graph on next check
-
 local function rebuild_playlist_lookup()
   M.playlist_lookup = {}
   for _, pl in ipairs(M.playlists) do
@@ -101,11 +99,12 @@ function M.initialize(settings)
   M.notification = Notification.new(Constants.TIMEOUTS)
   M.ui_preferences = UIPreferences.new(Constants, settings)
   M.region = Region.new()
+  M.dependency = Dependency.new()
 
   -- Load UI preferences from settings
   M.ui_preferences:load_from_settings()
 
-  reaper.ShowConsoleMsg("[APP_STATE] Initialized with domains: animation, notification, ui_preferences, region\n")
+  reaper.ShowConsoleMsg("[APP_STATE] Initialized with domains: animation, notification, ui_preferences, region, dependency\n")
 
   -- Initialize project monitor to track changes
   M.project_monitor = ProjectMonitor.new({
@@ -711,95 +710,20 @@ local function compare_playlists_by_duration(a, b)
 end
 
 function M.mark_graph_dirty()
-  M.graph_dirty = true
+  M.dependency:mark_dirty()
 end
 
 function M.rebuild_dependency_graph()
-  M.dependency_graph = {}
-  
-  for _, pl in ipairs(M.playlists) do
-    M.dependency_graph[pl.id] = {
-      direct_deps = {},
-      all_deps = {},
-      is_disabled_for = {}
-    }
-    
-    for _, item in ipairs(pl.items) do
-      if item.type == "playlist" and item.playlist_id then
-        M.dependency_graph[pl.id].direct_deps[#M.dependency_graph[pl.id].direct_deps + 1] = item.playlist_id
-      end
-    end
-  end
-  
-  for _, pl in ipairs(M.playlists) do
-    local all_deps = {}
-    local visited = {}
-    
-    local function collect_deps(pid)
-      if visited[pid] then return end
-      visited[pid] = true
-      
-      local node = M.dependency_graph[pid]
-      if not node then return end
-      
-      for _, dep_id in ipairs(node.direct_deps) do
-        all_deps[dep_id] = true
-        collect_deps(dep_id)
-      end
-    end
-    
-    collect_deps(pl.id)
-    
-    M.dependency_graph[pl.id].all_deps = all_deps
-  end
-  
-  for target_id, target_node in pairs(M.dependency_graph) do
-    for source_id, source_node in pairs(M.dependency_graph) do
-      if target_id ~= source_id then
-        if source_node.all_deps[target_id] or target_id == source_id then
-          target_node.is_disabled_for[source_id] = true
-        end
-      end
-    end
-  end
-  
-  M.graph_dirty = false
+  M.dependency:rebuild(M.playlists)
 end
 
 function M.is_playlist_draggable_to(playlist_id, target_playlist_id)
-  if M.graph_dirty then
-    M.rebuild_dependency_graph()
-  end
-  
-  if playlist_id == target_playlist_id then
-    return false
-  end
-  
-  local target_node = M.dependency_graph[target_playlist_id]
-  if not target_node then
-    return true
-  end
-  
-  if target_node.is_disabled_for[playlist_id] then
-    return false
-  end
-  
-  local playlist_node = M.dependency_graph[playlist_id]
-  if not playlist_node then
-    return true
-  end
-  
-  if playlist_node.all_deps[target_playlist_id] then
-    return false
-  end
-  
-  return true
+  M.dependency:ensure_fresh(M.playlists)
+  return M.dependency:is_draggable_to(playlist_id, target_playlist_id)
 end
 
 function M.get_playlists_for_pool()
-  if M.graph_dirty then
-    M.rebuild_dependency_graph()
-  end
+  M.dependency:ensure_fresh(M.playlists)
   
   local pool_playlists = {}
   local active_id = M.active_playlist
@@ -954,63 +878,8 @@ function M.get_mixed_pool_sorted()
 end
 
 function M.detect_circular_reference(target_playlist_id, playlist_id_to_add)
-  if M.graph_dirty then
-    M.rebuild_dependency_graph()
-  end
-  
-  if target_playlist_id == playlist_id_to_add then
-    return true, {target_playlist_id}
-  end
-  
-  local target_node = M.dependency_graph[target_playlist_id]
-  if target_node and target_node.is_disabled_for[playlist_id_to_add] then
-    return true, {playlist_id_to_add, target_playlist_id}
-  end
-  
-  local playlist_node = M.dependency_graph[playlist_id_to_add]
-  if playlist_node and playlist_node.all_deps[target_playlist_id] then
-    local path = {playlist_id_to_add}
-    
-    local function build_path(from_id, to_id, current_path)
-      if from_id == to_id then
-        return current_path
-      end
-      
-      local node = M.dependency_graph[from_id]
-      if not node then return nil end
-      
-      for _, dep_id in ipairs(node.direct_deps) do
-        if not current_path[dep_id] then
-          local new_path = {}
-          for k, v in pairs(current_path) do new_path[k] = v end
-          new_path[dep_id] = true
-          
-          local result = build_path(dep_id, to_id, new_path)
-          if result then
-            return result
-          end
-        end
-      end
-      
-      return nil
-    end
-    
-    local path_set = {[playlist_id_to_add] = true}
-    local full_path_set = build_path(playlist_id_to_add, target_playlist_id, path_set)
-    
-    if full_path_set then
-      local path_array = {}
-      for pid in pairs(full_path_set) do
-        path_array[#path_array + 1] = pid
-      end
-      path_array[#path_array + 1] = target_playlist_id
-      return true, path_array
-    end
-    
-    return true, {playlist_id_to_add, "...", target_playlist_id}
-  end
-  
-  return false
+  M.dependency:ensure_fresh(M.playlists)
+  return M.dependency:detect_circular_reference(target_playlist_id, playlist_id_to_add)
 end
 
 function M.create_playlist_item(playlist_id, reps)
