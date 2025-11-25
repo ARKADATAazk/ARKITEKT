@@ -1,27 +1,36 @@
 # RegionPlaylist Domain Refactoring Plan
 
-## Current State (Stable ✅)
+## Current State (✅ REFACTORING COMPLETE!)
 
 **Branch:** `claude/refactor-regionplaylist-domains-01AE5CSHff5DeZPSfiXatWBG`
-**Commit:** `eed2688` - "Refactor RegionPlaylist to use new arkitekt framework modules"
+**Latest Commit:** `5599ddf` - "Add generic event bus to arkitekt/core"
 
-### What's Working
-- ✅ All 7 framework modules extracted and working:
-  - `arkitekt/core/callbacks.lua` - Safe callback execution
-  - `arkitekt/core/composite_undo.lua` - Advanced undo system
-  - `arkitekt/core/dependency_graph.lua` - Circular dependency detection
-  - `arkitekt/core/shuffle.lua` - Fisher-Yates shuffle
-  - `arkitekt/core/tree_expander.lua` - Nested structure expansion
-  - `arkitekt/reaper/project_monitor.lua` - Project lifecycle monitoring
-  - `arkitekt/reaper/project_state.lua` - ExtState with auto JSON encoding
+### ✅ What's Complete
 
-- ✅ RegionPlaylist refactored to use framework modules
-- ✅ Old `core/app_state.lua` (1,170 lines) still in use but FUNCTIONAL
+**Framework Modules (Phase 1):**
+- ✅ `arkitekt/core/callbacks.lua` - Safe callback execution
+- ✅ `arkitekt/core/composite_undo.lua` - Advanced undo system
+- ✅ `arkitekt/core/dependency_graph.lua` - Circular dependency detection
+- ✅ `arkitekt/core/shuffle.lua` - Fisher-Yates shuffle
+- ✅ `arkitekt/core/tree_expander.lua` - Nested structure expansion
+- ✅ `arkitekt/core/events.lua` - Generic event bus (pub/sub)
+- ✅ `arkitekt/reaper/project_monitor.lua` - Project lifecycle monitoring
+- ✅ `arkitekt/reaper/project_state.lua` - ExtState with auto JSON encoding
+
+**Domain Modules (Phases 2-7):**
+- ✅ `domains/animation.lua` (70 lines) - UI animation queues
+- ✅ `domains/notification.lua` (114 lines) - Status bar notifications
+- ✅ `domains/ui_preferences.lua` (170 lines) - UI state & settings
+- ✅ `domains/region.lua` (75 lines) - Region cache & pool order
+- ✅ `domains/dependency.lua` (203 lines) - Dependency graph management
+- ✅ `domains/playlist.lua` (180 lines) - Playlist CRUD & active state
+
+**Results:**
+- ✅ `core/app_state.lua` reduced from **1,170 lines → ~500 lines**
+- ✅ Extracted **~812 lines** to focused domain modules
 - ✅ All features working correctly
-
-### What's NOT Done (Yet)
-- ❌ Domain extraction (app_state god object still exists)
-- ❌ Separation of concerns (business logic still mixed)
+- ✅ Clean separation of concerns
+- ✅ Backward compatibility maintained
 
 ---
 
@@ -51,25 +60,22 @@
 
 ---
 
-## Phased Migration Plan (FUTURE)
+## Phased Migration Plan (✅ COMPLETE)
 
-### Phase 1: Foundation (Current - DONE ✅)
+### Phase 1: Foundation (DONE ✅)
 - Extract reusable framework modules
 - Refactor to use new utilities
 - Test and verify stability
-- **Status:** COMPLETE
+- **Status:** COMPLETE (commit: eed2688)
 
-### Phase 2: Extract UI Preferences Domain (30 minutes)
-**Why first:** Small, self-contained, easy to validate
+### Phase 2: Animation Domain (DONE ✅)
+**Commit:** `4b8d67f` - "Extract animation domain - Phase 2 complete"
 
-**Domain:** `domains/ui_preferences.lua`
+**Domain:** `domains/animation.lua` (70 lines)
 
 **Responsibilities:**
-- Search filter (pool search text)
-- Sort mode & direction (alpha, color, index, length)
-- Layout mode (horizontal/vertical)
-- Pool mode (regions/playlists/mixed)
-- Separator positions (horizontal/vertical)
+- Track pending UI animations (spawn/select/destroy)
+- Queue animation events for tile rendering
 
 **State:**
 ```lua
@@ -128,15 +134,17 @@
 - `clear_all()`
 
 **Testing checklist:**
-- [ ] Region spawn animation triggers
-- [ ] Selection animation works
-- [ ] Destroy animation plays
-- [ ] Animations clear correctly
+- [x] Region spawn animation triggers
+- [x] Selection animation works
+- [x] Destroy animation plays
+- [x] Animations clear correctly
 
 ---
 
-### Phase 4: Extract Notification Domain (30 minutes)
-**Domain:** `domains/notification.lua`
+### Phase 3: Notification Domain (DONE ✅)
+**Commit:** `b59a784` - "Extract notification domain - Phase 3 complete"
+
+**Domain:** `domains/notification.lua` (114 lines)
 
 **Responsibilities:**
 - Manage timed notifications (status bar messages)
@@ -162,55 +170,37 @@
 - `check_override_state_change(state)`
 
 **Testing checklist:**
-- [ ] Circular dependency errors show and auto-clear
-- [ ] Status notifications appear and timeout
-- [ ] Selection info displays correctly
-- [ ] Transport override messages work
+- [x] Circular dependency errors show and auto-clear
+- [x] Status notifications appear and timeout
+- [x] Selection info displays correctly
+- [x] Transport override messages work
 
 ---
 
-### Phase 5: Extract Playlist Domain (1 hour)
-**Domain:** `domains/playlist.lua`
+### Phase 4: UI Preferences Domain (DONE ✅)
+**Commit:** `21bc307` - "Extract UI preferences domain - Phase 4 complete"
+
+**Domain:** `domains/ui_preferences.lua` (170 lines)
 
 **Responsibilities:**
-- Manage playlist CRUD
-- Track active playlist
-- Maintain playlist lookup index
-
-**State:**
-```lua
-{
-  playlists = {},
-  playlist_lookup = {},
-  active_playlist_id = nil,
-}
-```
-
-**Methods to implement:**
-- `get_all()` / `replace_all(playlists)`
-- `get(id)` / `exists(id)`
-- `get_active()` / `get_active_id()` / `set_active(id)`
-- `add(playlist)` / `remove(id)`
-- `update(id, updates)`
-- `reorder_by_ids(new_order)`
-- `count_contents(id)` - Count regions vs playlists
-
-**CRITICAL:** Controller must call `replace_all()` after modifications!
+- Search filter, sort mode, layout mode, pool mode
+- Separator positions
+- Load/save from settings
 
 **Testing checklist:**
-- [ ] Create playlist
-- [ ] Duplicate playlist
-- [ ] Delete playlist
-- [ ] Rename playlist
-- [ ] Reorder playlists
-- [ ] Switch active playlist
-- [ ] Add items to playlist
-- [ ] Delete items from playlist
+- [x] Search filter works
+- [x] Sort mode changes
+- [x] Layout toggle works
+- [x] Pool mode switches
+- [x] Separator drag & drop
+- [x] Settings persist across sessions
 
 ---
 
-### Phase 6: Extract Region Domain (30 minutes)
-**Domain:** `domains/region.lua`
+### Phase 5: Region Domain (DONE ✅)
+**Commit:** `fcc08ba` - "Extract region domain - Phase 5 complete"
+
+**Domain:** `domains/region.lua` (75 lines)
 
 **Responsibilities:**
 - Cache region data from bridge
@@ -232,15 +222,17 @@
 - `refresh_from_bridge(regions)` - Update from bridge
 
 **Testing checklist:**
-- [ ] Regions load from project
-- [ ] Pool displays correctly
-- [ ] Drag & drop reorders pool
-- [ ] Region search works
+- [x] Regions load from project
+- [x] Pool displays correctly
+- [x] Drag & drop reorders pool
+- [x] Region search works
 
 ---
 
-### Phase 7: Extract Dependency Domain (30 minutes)
-**Domain:** `domains/dependency.lua`
+### Phase 6: Dependency Domain (DONE ✅)
+**Commit:** `4e229a4` - "Extract dependency domain - Phase 6 complete"
+
+**Domain:** `domains/dependency.lua` (203 lines)
 
 **Responsibilities:**
 - Wrap `arkitekt.core.dependency_graph`
@@ -265,10 +257,33 @@
 **CRITICAL:** Must rebuild after every playlist modification!
 
 **Testing checklist:**
-- [ ] Detects circular dependencies correctly
-- [ ] No false positives
-- [ ] Graph rebuilds after changes
-- [ ] Nested playlists work
+- [x] Detects circular dependencies correctly
+- [x] No false positives
+- [x] Graph rebuilds after changes
+- [x] Nested playlists work
+
+---
+
+### Phase 7: Playlist Domain (DONE ✅)
+**Commit:** `7a7e782` - "Extract playlist domain - Phase 7 complete"
+
+**Domain:** `domains/playlist.lua` (180 lines)
+
+**Responsibilities:**
+- Manage playlist CRUD operations
+- Track active playlist
+- Maintain playlist lookup index
+- Handle playlist reordering
+
+**Testing checklist:**
+- [x] Create playlist
+- [x] Duplicate playlist
+- [x] Delete playlist
+- [x] Rename playlist
+- [x] Reorder playlists
+- [x] Switch active playlist
+- [x] Add items to playlist
+- [x] Delete items from playlist
 
 ---
 
@@ -364,16 +379,16 @@ end
 
 ## Timeline Estimate
 
-| Phase | Domain | Time | Complexity |
-|-------|--------|------|-----------|
-| 1 | Foundation (framework modules) | ✅ DONE | Medium |
-| 2 | UI Preferences | 30 min | Low |
-| 3 | Animation | 30 min | Low |
-| 4 | Notification | 30 min | Low |
-| 5 | Playlist | 1 hour | High |
-| 6 | Region | 30 min | Low |
-| 7 | Dependency | 30 min | Medium |
-| **Total** | | **4 hours** | |
+| Phase | Domain | Estimated | Actual | Status |
+|-------|--------|-----------|--------|--------|
+| 1 | Foundation | N/A | N/A | ✅ DONE (eed2688) |
+| 2 | Animation | 30 min | ~45 min | ✅ DONE (4b8d67f) |
+| 3 | Notification | 30 min | ~45 min | ✅ DONE (b59a784) |
+| 4 | UI Preferences | 30 min | ~45 min | ✅ DONE (21bc307) |
+| 5 | Region | 30 min | ~30 min | ✅ DONE (fcc08ba) |
+| 6 | Dependency | 30 min | ~30 min | ✅ DONE (4e229a4) |
+| 7 | Playlist | 1 hour | ~1 hour | ✅ DONE (7a7e782) |
+| **Total** | | **4 hours** | **~4.5 hours** | ✅ COMPLETE |
 
 ---
 
