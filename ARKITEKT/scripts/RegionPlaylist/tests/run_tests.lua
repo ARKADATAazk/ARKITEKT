@@ -5,7 +5,7 @@
 local TestRunner = require('arkitekt.debug.test_runner')
 
 -- Load all test suites
-require('scripts.RegionPlaylist.tests.domain_tests')
+require('RegionPlaylist.tests.domain_tests')
 
 local M = {}
 

@@ -41,6 +41,20 @@ if profiler_enabled then
 end
 
 -- ============================================================================
+-- TEST SUITE REGISTRATION (Always loaded for debug console access)
+-- ============================================================================
+local function load_tests()
+  local ok, err = pcall(function()
+    require('RegionPlaylist.tests.domain_tests')
+  end)
+  if not ok then
+    local Logger = require('arkitekt.debug.logger')
+    Logger.warn("TEST", "Failed to load RegionPlaylist tests: %s", tostring(err))
+  end
+end
+load_tests()
+
+-- ============================================================================
 -- RUN APPLICATION
 -- ============================================================================
 

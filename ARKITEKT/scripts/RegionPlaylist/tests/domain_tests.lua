@@ -39,7 +39,7 @@ end
 local region_tests = {}
 
 function region_tests.test_new_creates_empty_domain()
-  local Region = require('scripts.RegionPlaylist.domains.region')
+  local Region = require('RegionPlaylist.domains.region')
   local domain = Region.new()
 
   assert.not_nil(domain, "Domain should be created")
@@ -49,7 +49,7 @@ function region_tests.test_new_creates_empty_domain()
 end
 
 function region_tests.test_refresh_from_bridge()
-  local Region = require('scripts.RegionPlaylist.domains.region')
+  local Region = require('RegionPlaylist.domains.region')
   local domain = Region.new()
 
   local mock_regions = {
@@ -65,7 +65,7 @@ function region_tests.test_refresh_from_bridge()
 end
 
 function region_tests.test_get_region_by_rid()
-  local Region = require('scripts.RegionPlaylist.domains.region')
+  local Region = require('RegionPlaylist.domains.region')
   local domain = Region.new()
 
   local mock_regions = {
@@ -82,7 +82,7 @@ function region_tests.test_get_region_by_rid()
 end
 
 function region_tests.test_set_pool_order()
-  local Region = require('scripts.RegionPlaylist.domains.region')
+  local Region = require('RegionPlaylist.domains.region')
   local domain = Region.new()
 
   local mock_regions = {
@@ -108,7 +108,7 @@ end
 local playlist_tests = {}
 
 function playlist_tests.test_new_creates_empty_domain()
-  local Playlist = require('scripts.RegionPlaylist.domains.playlist')
+  local Playlist = require('RegionPlaylist.domains.playlist')
   local domain = Playlist.new()
 
   assert.not_nil(domain, "Domain should be created")
@@ -117,7 +117,7 @@ function playlist_tests.test_new_creates_empty_domain()
 end
 
 function playlist_tests.test_load_playlists()
-  local Playlist = require('scripts.RegionPlaylist.domains.playlist')
+  local Playlist = require('RegionPlaylist.domains.playlist')
   local domain = Playlist.new()
 
   local mock_playlists = {
@@ -131,7 +131,7 @@ function playlist_tests.test_load_playlists()
 end
 
 function playlist_tests.test_get_by_id()
-  local Playlist = require('scripts.RegionPlaylist.domains.playlist')
+  local Playlist = require('RegionPlaylist.domains.playlist')
   local domain = Playlist.new()
 
   local mock_playlists = {
@@ -149,7 +149,7 @@ function playlist_tests.test_get_by_id()
 end
 
 function playlist_tests.test_set_and_get_active()
-  local Playlist = require('scripts.RegionPlaylist.domains.playlist')
+  local Playlist = require('RegionPlaylist.domains.playlist')
   local domain = Playlist.new()
 
   local mock_playlists = {
@@ -167,7 +167,7 @@ function playlist_tests.test_set_and_get_active()
 end
 
 function playlist_tests.test_get_active_fallback()
-  local Playlist = require('scripts.RegionPlaylist.domains.playlist')
+  local Playlist = require('RegionPlaylist.domains.playlist')
   local domain = Playlist.new()
 
   local mock_playlists = {
@@ -182,7 +182,7 @@ function playlist_tests.test_get_active_fallback()
 end
 
 function playlist_tests.test_move_to_front()
-  local Playlist = require('scripts.RegionPlaylist.domains.playlist')
+  local Playlist = require('RegionPlaylist.domains.playlist')
   local domain = Playlist.new()
 
   local mock_playlists = {
@@ -201,7 +201,7 @@ function playlist_tests.test_move_to_front()
 end
 
 function playlist_tests.test_reorder_by_ids()
-  local Playlist = require('scripts.RegionPlaylist.domains.playlist')
+  local Playlist = require('RegionPlaylist.domains.playlist')
   local domain = Playlist.new()
 
   local mock_playlists = {
@@ -220,7 +220,7 @@ function playlist_tests.test_reorder_by_ids()
 end
 
 function playlist_tests.test_count_contents()
-  local Playlist = require('scripts.RegionPlaylist.domains.playlist')
+  local Playlist = require('RegionPlaylist.domains.playlist')
   local domain = Playlist.new()
 
   local mock_playlists = {
@@ -243,7 +243,7 @@ function playlist_tests.test_count_contents()
 end
 
 function playlist_tests.test_get_tabs()
-  local Playlist = require('scripts.RegionPlaylist.domains.playlist')
+  local Playlist = require('RegionPlaylist.domains.playlist')
   local domain = Playlist.new()
 
   local mock_playlists = {
@@ -265,7 +265,7 @@ end
 local ui_pref_tests = {}
 
 function ui_pref_tests.test_new_creates_domain_with_defaults()
-  local UIPref = require('scripts.RegionPlaylist.domains.ui_preferences')
+  local UIPref = require('RegionPlaylist.domains.ui_preferences')
   local domain = UIPref.new(MOCK_CONSTANTS, nil)
 
   assert.not_nil(domain, "Domain should be created")
@@ -276,7 +276,7 @@ function ui_pref_tests.test_new_creates_domain_with_defaults()
 end
 
 function ui_pref_tests.test_search_filter()
-  local UIPref = require('scripts.RegionPlaylist.domains.ui_preferences')
+  local UIPref = require('RegionPlaylist.domains.ui_preferences')
   local domain = UIPref.new(MOCK_CONSTANTS, nil)
 
   domain:set_search_filter("test query")
@@ -287,7 +287,7 @@ function ui_pref_tests.test_search_filter()
 end
 
 function ui_pref_tests.test_sort_mode()
-  local UIPref = require('scripts.RegionPlaylist.domains.ui_preferences')
+  local UIPref = require('RegionPlaylist.domains.ui_preferences')
   local domain = UIPref.new(MOCK_CONSTANTS, nil)
 
   domain:set_sort_mode("name")
@@ -298,7 +298,7 @@ function ui_pref_tests.test_sort_mode()
 end
 
 function ui_pref_tests.test_sort_direction_validation()
-  local UIPref = require('scripts.RegionPlaylist.domains.ui_preferences')
+  local UIPref = require('RegionPlaylist.domains.ui_preferences')
   local domain = UIPref.new(MOCK_CONSTANTS, nil)
 
   domain:set_sort_direction("desc")
@@ -314,7 +314,7 @@ function ui_pref_tests.test_sort_direction_validation()
 end
 
 function ui_pref_tests.test_layout_mode_validation()
-  local UIPref = require('scripts.RegionPlaylist.domains.ui_preferences')
+  local UIPref = require('RegionPlaylist.domains.ui_preferences')
   local domain = UIPref.new(MOCK_CONSTANTS, nil)
 
   domain:set_layout_mode("vertical")
@@ -326,7 +326,7 @@ function ui_pref_tests.test_layout_mode_validation()
 end
 
 function ui_pref_tests.test_pool_mode_validation()
-  local UIPref = require('scripts.RegionPlaylist.domains.ui_preferences')
+  local UIPref = require('RegionPlaylist.domains.ui_preferences')
   local domain = UIPref.new(MOCK_CONSTANTS, nil)
 
   domain:set_pool_mode("playlists")
@@ -341,7 +341,7 @@ function ui_pref_tests.test_pool_mode_validation()
 end
 
 function ui_pref_tests.test_save_load_settings()
-  local UIPref = require('scripts.RegionPlaylist.domains.ui_preferences')
+  local UIPref = require('RegionPlaylist.domains.ui_preferences')
   local settings = create_mock_settings()
   local domain = UIPref.new(MOCK_CONSTANTS, settings)
 
@@ -367,7 +367,7 @@ function ui_pref_tests.test_save_load_settings()
 end
 
 function ui_pref_tests.test_separator_positions()
-  local UIPref = require('scripts.RegionPlaylist.domains.ui_preferences')
+  local UIPref = require('RegionPlaylist.domains.ui_preferences')
   local domain = UIPref.new(MOCK_CONSTANTS, nil)
 
   assert.is_nil(domain:get_separator_position_horizontal(), "Initial horizontal separator is nil")
@@ -387,7 +387,7 @@ end
 local dependency_tests = {}
 
 function dependency_tests.test_new_creates_empty_domain()
-  local Dependency = require('scripts.RegionPlaylist.domains.dependency')
+  local Dependency = require('RegionPlaylist.domains.dependency')
   local domain = Dependency.new()
 
   assert.not_nil(domain, "Domain should be created")
@@ -395,7 +395,7 @@ function dependency_tests.test_new_creates_empty_domain()
 end
 
 function dependency_tests.test_rebuild_simple()
-  local Dependency = require('scripts.RegionPlaylist.domains.dependency')
+  local Dependency = require('RegionPlaylist.domains.dependency')
   local domain = Dependency.new()
 
   local mock_playlists = {
@@ -411,7 +411,7 @@ function dependency_tests.test_rebuild_simple()
 end
 
 function dependency_tests.test_is_draggable_to_self()
-  local Dependency = require('scripts.RegionPlaylist.domains.dependency')
+  local Dependency = require('RegionPlaylist.domains.dependency')
   local domain = Dependency.new()
 
   local mock_playlists = {
@@ -424,7 +424,7 @@ function dependency_tests.test_is_draggable_to_self()
 end
 
 function dependency_tests.test_is_draggable_to_independent()
-  local Dependency = require('scripts.RegionPlaylist.domains.dependency')
+  local Dependency = require('RegionPlaylist.domains.dependency')
   local domain = Dependency.new()
 
   local mock_playlists = {
@@ -438,7 +438,7 @@ function dependency_tests.test_is_draggable_to_independent()
 end
 
 function dependency_tests.test_circular_reference_direct()
-  local Dependency = require('scripts.RegionPlaylist.domains.dependency')
+  local Dependency = require('RegionPlaylist.domains.dependency')
   local domain = Dependency.new()
 
   -- pl-1 contains pl-2
@@ -460,7 +460,7 @@ function dependency_tests.test_circular_reference_direct()
 end
 
 function dependency_tests.test_circular_reference_self()
-  local Dependency = require('scripts.RegionPlaylist.domains.dependency')
+  local Dependency = require('RegionPlaylist.domains.dependency')
   local domain = Dependency.new()
 
   local mock_playlists = {
@@ -473,7 +473,7 @@ function dependency_tests.test_circular_reference_self()
 end
 
 function dependency_tests.test_circular_reference_transitive()
-  local Dependency = require('scripts.RegionPlaylist.domains.dependency')
+  local Dependency = require('RegionPlaylist.domains.dependency')
   local domain = Dependency.new()
 
   -- pl-1 -> pl-2 -> pl-3 chain
@@ -500,7 +500,7 @@ function dependency_tests.test_circular_reference_transitive()
 end
 
 function dependency_tests.test_no_circular_reference()
-  local Dependency = require('scripts.RegionPlaylist.domains.dependency')
+  local Dependency = require('RegionPlaylist.domains.dependency')
   local domain = Dependency.new()
 
   -- pl-1 -> pl-2 chain
@@ -522,7 +522,7 @@ function dependency_tests.test_no_circular_reference()
 end
 
 function dependency_tests.test_mark_dirty()
-  local Dependency = require('scripts.RegionPlaylist.domains.dependency')
+  local Dependency = require('RegionPlaylist.domains.dependency')
   local domain = Dependency.new()
 
   local mock_playlists = {
@@ -536,7 +536,7 @@ function dependency_tests.test_mark_dirty()
 end
 
 function dependency_tests.test_ensure_fresh()
-  local Dependency = require('scripts.RegionPlaylist.domains.dependency')
+  local Dependency = require('RegionPlaylist.domains.dependency')
   local domain = Dependency.new()
 
   local mock_playlists = {
