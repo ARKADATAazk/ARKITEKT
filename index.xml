@@ -255,7 +255,6 @@ Includes: Region Playlist, Item Picker, Template Browser, Theme Adjuster & Origi
         <source file="arkitekt/gui/systems/drag_drop.lua">https://github.com/ARKADATAazk/ARKITEKT-Toolkit/raw/020882234e7a136d643bcabefbb485269b579933/ARKITEKT/arkitekt/gui/systems/drag_drop.lua</source>
         <source file="arkitekt/gui/systems/height_stabilizer.lua">https://github.com/ARKADATAazk/ARKITEKT-Toolkit/raw/020882234e7a136d643bcabefbb485269b579933/ARKITEKT/arkitekt/gui/systems/height_stabilizer.lua</source>
         <source file="arkitekt/gui/systems/mouse_util.lua">https://github.com/ARKADATAazk/ARKITEKT-Toolkit/raw/020882234e7a136d643bcabefbb485269b579933/ARKITEKT/arkitekt/gui/systems/mouse_util.lua</source>
-        <source file="arkitekt/gui/systems/playback_manager.lua">https://github.com/ARKADATAazk/ARKITEKT-Toolkit/raw/020882234e7a136d643bcabefbb485269b579933/ARKITEKT/arkitekt/gui/systems/playback_manager.lua</source>
         <source file="arkitekt/gui/systems/reorder.lua">https://github.com/ARKADATAazk/ARKITEKT-Toolkit/raw/020882234e7a136d643bcabefbb485269b579933/ARKITEKT/arkitekt/gui/systems/reorder.lua</source>
         <source file="arkitekt/gui/systems/responsive_grid.lua">https://github.com/ARKADATAazk/ARKITEKT-Toolkit/raw/020882234e7a136d643bcabefbb485269b579933/ARKITEKT/arkitekt/gui/systems/responsive_grid.lua</source>
         <source file="arkitekt/gui/systems/selection.lua">https://github.com/ARKADATAazk/ARKITEKT-Toolkit/raw/020882234e7a136d643bcabefbb485269b579933/ARKITEKT/arkitekt/gui/systems/selection.lua</source>

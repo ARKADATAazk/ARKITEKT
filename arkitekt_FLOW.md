@@ -362,12 +362,6 @@ Generated: 2025-10-15 19:22:52
 **Exports**:
   - `M.new(opts)` → Instance
 
-### `ARKITEKT/arkitekt/gui/systems/playback_manager.lua` (22 lines)
-> @noindex
-**Modules**: `M`
-**Exports**:
-  - `M.compute_fade_alpha(progress, fade_in_ratio, fade_out_ratio)`
-
 ### `ARKITEKT/arkitekt/gui/systems/reorder.lua` (127 lines)
 > @noindex
 **Modules**: `M, t, base, new_order, new_order, new_order`
@@ -1141,7 +1135,7 @@ Generated: 2025-10-15 19:22:52
   - `M.render(ctx, rect, item, state, get_region_by_rid, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, bridge, get_playlist_by_id)`
   - `M.render_region(ctx, rect, item, state, get_region_by_rid, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, bridge)`
   - `M.render_playlist(ctx, rect, item, state, animator, on_repeat_cycle, hover_config, tile_height, border_thickness, get_playlist_by_id)`
-**Requires**: `arkitekt.core.colors, arkitekt.gui.draw, arkitekt.gui.fx.tile_fx_config, RegionPlaylist.widgets.region_tiles.renderers.base, arkitekt.gui.systems.playback_manager`
+**Requires**: `arkitekt.core.colors, arkitekt.gui.draw, arkitekt.gui.fx.tile_fx_config, RegionPlaylist.widgets.region_tiles.renderers.base`
 
 ### `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/base.lua` (207 lines)
 > @noindex
@@ -1326,7 +1320,6 @@ Generated: 2025-10-15 19:22:52
   → `ARKITEKT/scripts/RegionPlaylist/app/sequence_expander.lua`
 
 **`ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/active.lua`**
-  → `ARKITEKT/arkitekt/gui/systems/playback_manager.lua`
   → `ARKITEKT/scripts/RegionPlaylist/widgets/region_tiles/renderers/base.lua`
   → `ARKITEKT/arkitekt/gui/draw.lua`
   → `ARKITEKT/arkitekt/gui/fx/tile_fx_config.lua`
