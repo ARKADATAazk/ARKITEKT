@@ -5,6 +5,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
+local Style = require('arkitekt.gui.style')
 
 local TileFXConfig = require('arkitekt.gui.rendering.tile.defaults')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
@@ -121,7 +122,8 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   local bar_w = width - LC.progress_padding_left - LC.progress_padding_right
   local bar_h = LC.progress_height
   
-  local track_color = cfg.track_color or hexrgb("#1D1D1D")
+  -- Dynamic track color from theme
+  local track_color = cfg.track_color or Style.COLORS.BG_PANEL
   ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + bar_w, bar_y + bar_h, track_color, 1.5)
   
   if progress > 0 and region_colors and region_colors.current then
@@ -148,7 +150,8 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   local content_top = y + (LC.padding_top or 8)
 
   local time_text = "READY"
-  local time_color = cfg.time_color or hexrgb("#CCCCCC")
+  -- Dynamic time color from theme (falls back to TEXT_NORMAL for "READY")
+  local time_color = cfg.time_color or Style.COLORS.TEXT_NORMAL
 
   if bridge_state.is_playing then
     local time_remaining = bridge_state.time_remaining or 0
@@ -165,7 +168,8 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
       time_text = string.format("%02d:%02d:%02d", mins, secs, ms)
     end
 
-    time_color = cfg.time_playing_color or hexrgb("#FFFFFF")
+    -- Dynamic playing color from theme (falls back to TEXT_BRIGHT for active time)
+    time_color = cfg.time_playing_color or Style.COLORS.TEXT_BRIGHT
   end
   
   if time_font then
@@ -202,7 +206,8 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
 
     local playlist_name_x = x + LC.padding + LC.playlist_name_offset_x
     local playlist_name_y = row_y + (row_height - text_line_h) / 2 + LC.playlist_name_offset_y
-    local playlist_name_color = hexrgb("#CCCCCC")
+    -- Dynamic playlist name color from theme
+    local playlist_name_color = Style.COLORS.TEXT_NORMAL
     ImGui.DrawList_AddText(dl, playlist_name_x, playlist_name_y, playlist_name_color, playlist_data.name)
   end
   
@@ -239,7 +244,8 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
     end
 
     local index_color = ark.Colors.same_hue_variant(current_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
-    local name_color = hexrgb("#FFFFFF")
+    -- Dynamic region name color from theme
+    local name_color = Style.COLORS.TEXT_BRIGHT
 
     local index_w = ImGui.CalcTextSize(ctx, index_str)
     local name_w = ImGui.CalcTextSize(ctx, name_str)
@@ -270,7 +276,8 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
     end
 
     local index_color = ark.Colors.same_hue_variant(next_region.color, fx_config.index_saturation, fx_config.index_brightness, 0xFF)
-    local name_color = hexrgb("#FFFFFF")
+    -- Dynamic region name color from theme
+    local name_color = Style.COLORS.TEXT_BRIGHT
 
     local index_w = ImGui.CalcTextSize(ctx, index_str)
 

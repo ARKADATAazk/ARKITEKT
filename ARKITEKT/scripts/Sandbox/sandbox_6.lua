@@ -18,7 +18,7 @@ local Arkit = require('arkitekt.arkit')
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
-local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
+local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui')
 
 -- ============================================================================
 -- STATE

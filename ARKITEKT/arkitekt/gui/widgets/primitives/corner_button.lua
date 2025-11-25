@@ -5,7 +5,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Style = require('arkitekt.gui.style.defaults')
+local Style = require('arkitekt.gui.style')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -180,7 +180,18 @@ end
 --- @return table Result { clicked, width, height, hovered, active }
 function M.draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
-  local config = Style.apply_defaults(Style.BUTTON, opts)
+  -- Build config dynamically from Style.COLORS (enables dynamic theming)
+  local config = Style.build_button_config()
+  -- Apply dynamic preset if specified
+  if opts.preset_name then
+    Style.apply_dynamic_preset(config, opts.preset_name)
+  end
+  -- Apply user overrides (copy ALL opts, not just color keys)
+  for k, v in pairs(opts) do
+    if v ~= nil then
+      config[k] = v
+    end
+  end
 
   -- Resolve unique ID
   local unique_id = Base.resolve_id(opts, "corner_button")

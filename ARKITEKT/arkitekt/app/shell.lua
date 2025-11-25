@@ -181,7 +181,7 @@ local function run_overlay_mode(config)
   -- Load style
   local style = config.style
   if not style then
-    local ok, default_style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
+    local ok, default_style = pcall(require, 'arkitekt.gui.style.imgui')
     if ok then style = default_style end
   end
 
@@ -291,7 +291,7 @@ function M.run(opts)
   -- Auto-load default style if none provided
   local style = config.style
   if not style then
-    local ok, default_style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
+    local ok, default_style = pcall(require, 'arkitekt.gui.style.imgui')
     if ok then style = default_style end
   end
 
@@ -299,6 +299,20 @@ function M.run(opts)
   local settings = config.settings
   if not settings and config.app_name then
     settings = auto_init_settings(config.app_name)
+  end
+
+  -- ============================================================================
+  -- THEME INITIALIZATION
+  -- ============================================================================
+  -- Initialize theme on app startup to ensure Style.COLORS is properly set
+  -- before any UI renders. This prevents the "dark defaults on light theme" bug.
+  -- Theme preferences are persisted via REAPER ExtState and restored automatically.
+  do
+    local ok, ThemeManager = pcall(require, 'arkitekt.core.theme_manager')
+    if ok and ThemeManager and ThemeManager.init then
+      -- init() loads saved preference or defaults to "adapt" mode
+      ThemeManager.init()
+    end
   end
 
   -- Handle toolbar button state

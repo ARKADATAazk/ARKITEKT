@@ -16,6 +16,7 @@ local Scrolling = require('arkitekt.gui.widgets.containers.panel.scrolling')
 local State = require('arkitekt.gui.widgets.containers.panel.state')
 local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
 local ConfigUtil = require('arkitekt.core.config')
+local Style = require('arkitekt.gui.style')
 
 local M = {}
 local DEFAULTS = PanelConfig.DEFAULTS
@@ -126,8 +127,11 @@ function Panel:begin_draw(ctx)
   local x1, y1 = cursor_x, cursor_y
   local x2, y2 = x1 + w, y1 + h
 
-  -- Draw background
-  Rendering.draw_background(dl, x1, y1, w, h, self.config.bg_color, self.config.rounding)
+  -- Draw background (read dynamically from Style.COLORS for theme reactivity)
+  -- Custom bg_color (e.g. transparent for transport) is preserved when specified
+  -- Otherwise, falls back to dynamic Style.COLORS.BG_PANEL for regular panels
+  local bg_color = self.config.bg_color or Style.COLORS.BG_PANEL
+  Rendering.draw_background(dl, x1, y1, w, h, bg_color, self.config.rounding)
 
   -- ============================================================================
   -- TOOLBAR CALCULATION (Unified API)
@@ -208,15 +212,39 @@ function Panel:begin_draw(ctx)
       pattern_y2 = content_y2 - border_inset
     end
 
+    -- Build pattern config with colors from component config OR Style.COLORS fallback
+    -- Custom colors (e.g. transport's semi-transparent overlay) are preserved when specified
+    -- Otherwise, theme-reactive colors enable dynamic theming for regular panels
+    local pattern_cfg = {
+      enabled = true,
+      primary = self.config.background_pattern.primary and {
+        type = self.config.background_pattern.primary.type,
+        spacing = self.config.background_pattern.primary.spacing,
+        color = self.config.background_pattern.primary.color or Style.COLORS.PATTERN_PRIMARY,
+        dot_size = self.config.background_pattern.primary.dot_size,
+        line_thickness = self.config.background_pattern.primary.line_thickness,
+      } or nil,
+      secondary = self.config.background_pattern.secondary and self.config.background_pattern.secondary.enabled and {
+        enabled = true,
+        type = self.config.background_pattern.secondary.type,
+        spacing = self.config.background_pattern.secondary.spacing,
+        color = self.config.background_pattern.secondary.color or Style.COLORS.PATTERN_SECONDARY,
+        dot_size = self.config.background_pattern.secondary.dot_size,
+        line_thickness = self.config.background_pattern.secondary.line_thickness,
+      } or nil,
+    }
+
     local clip_rounding = math.max(0, self.config.rounding - border_inset)
     ImGui.DrawList_PushClipRect(dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, true)
-    Pattern.draw(ctx, dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, self.config.background_pattern)
+    Pattern.draw(ctx, dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, pattern_cfg)
     ImGui.DrawList_PopClipRect(dl)
   end
 
-  -- Draw border
+  -- Draw border (read dynamically from Style.COLORS for theme reactivity)
+  -- Custom border_color is preserved when specified, otherwise uses dynamic theme color
   if self.config.border_thickness > 0 then
-    Rendering.draw_border(dl, x1, y1, w, h, self.config.border_color, self.config.rounding, self.config.border_thickness)
+    local border_color = self.config.border_color or Style.COLORS.BORDER_OUTER
+    Rendering.draw_border(dl, x1, y1, w, h, border_color, self.config.rounding, self.config.border_thickness)
   end
 
   -- ============================================================================

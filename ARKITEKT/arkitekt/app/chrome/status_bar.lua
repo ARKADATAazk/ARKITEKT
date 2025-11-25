@@ -8,6 +8,7 @@ local Config = require('arkitekt.core.config')
 local Constants = require('arkitekt.defs.app')
 local Colors = require('arkitekt.core.colors')
 local Logger = require('arkitekt.debug.logger')
+local Style = require('arkitekt.gui.style')
 
 local M = {}
 
@@ -46,19 +47,20 @@ function M.new(config)
   local pending_resize_w  = nil
   local pending_resize_h  = nil
 
-  local style   = config.style or {}
-  local palette = style.palette or {}
-
-  local COL_BG     = palette.grey_08  or hexrgb("#1E1E1E")
-  local COL_BORDER = palette.black    or hexrgb("#000000")
-  local COL_TEXT   = palette.grey_c0  or hexrgb("#C0C0C0")  -- fixed RGBA fallback
-  local COL_SEP    = palette.grey_66  or hexrgb("#666666")
-
-  local DEFAULT_TEAL   = palette.teal    or hexrgb("#ff6f00ff")
-  local DEFAULT_YELLOW = palette.yellow  or hexrgb("#E0B341")
-  local DEFAULT_RED    = palette.red     or hexrgb("#E04141")
-
-  local RESIZE_HANDLE_COLOR = palette.grey_66 or hexrgb("#666666")
+  -- Dynamic color getters (read from Style.COLORS each frame for theming)
+  local function get_colors()
+    local C = Style.COLORS
+    return {
+      bg = C.BG_CHROME,  -- Chrome color (significantly darker than content)
+      border = C.BORDER_OUTER,
+      text = C.TEXT_NORMAL,
+      sep = C.TEXT_DIMMED,
+      teal = C.ACCENT_PRIMARY or hexrgb("#41E0A3"),
+      yellow = C.ACCENT_WARNING or hexrgb("#E0B341"),
+      red = C.ACCENT_DANGER or hexrgb("#E04141"),
+      resize_handle = C.TEXT_DIMMED,
+    }
+  end
 
   local function set_right_text(text)
     right_text = text or ""
@@ -84,7 +86,7 @@ function M.new(config)
     end
   end
 
-  local function draw_resize_handle(ctx, dl, bar_x, bar_y, bar_w, bar_h)
+  local function draw_resize_handle(ctx, dl, bar_x, bar_y, bar_w, bar_h, colors)
     if not show_resize_handle then
       return 0
     end
@@ -139,7 +141,7 @@ function M.new(config)
       ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeNWSE)
     end
 
-    local grip_color = (is_hovering or resize_dragging) and (palette.grey_52 or hexrgb("#858585")) or RESIZE_HANDLE_COLOR
+    local grip_color = (is_hovering or resize_dragging) and Colors.adjust_lightness(colors.resize_handle, 0.1) or colors.resize_handle
 
     local row1_y = center_y + 3
     ImGui.DrawList_AddRectFilled(dl, handle_right - (sz * 3) - (gap * 2), row1_y, handle_right - (sz * 2) - (gap * 2), row1_y + sz, grip_color, 0, 0)
@@ -157,6 +159,9 @@ function M.new(config)
   end
 
   local function render(ctx)
+    -- Get current theme colors (dynamic each frame)
+    local colors = get_colors()
+
     local w = select(1, ImGui.GetContentRegionAvail(ctx)) or 0
     local sx, sy = ImGui.GetCursorScreenPos(ctx)
     local dl = ImGui.GetWindowDrawList(ctx)
@@ -177,12 +182,12 @@ function M.new(config)
     ImGui.SetCursorScreenPos(ctx, sx, sy)
 
     -- Background + top border
-    ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, COL_BG, 0, 0)
-    ImGui.DrawList_AddLine(dl, x1, y1, x2, y1, COL_BORDER, 1.0)
+    ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, colors.bg, 0, 0)
+    ImGui.DrawList_AddLine(dl, x1, y1, x2, y1, colors.border, 1.0)
 
     -- Status content
     local status       = get_status()
-    local text_color   = status.color or DEFAULT_TEAL
+    local text_color   = status.color or colors.teal
     local status_text  = status.text  or "READY"
 
     local center_y = y1 + (h / 2)
@@ -247,14 +252,14 @@ function M.new(config)
       if info.type == "text" then
         local _, rtext_h = ImGui.CalcTextSize(ctx, info.content)
         local rtext_y = center_y - (rtext_h / 2) - 1
-        add_text(dl, x1 + right_x, rtext_y, COL_TEXT, info.content)
+        add_text(dl, x1 + right_x, rtext_y, colors.text, info.content)
         right_x = right_x + info.width + 10
       elseif info.type == "button" then
         if i > 1 then
           local sep_x = right_x - 5
           local sep_y1 = y1 + 4
           local sep_y2 = y2 - 4
-          ImGui.DrawList_AddLine(dl, x1 + sep_x, sep_y1, x1 + sep_x, sep_y2, COL_SEP, 1.0)
+          ImGui.DrawList_AddLine(dl, x1 + sep_x, sep_y1, x1 + sep_x, sep_y2, colors.sep, 1.0)
           right_x = right_x + 10
         end
         ImGui.SetCursorScreenPos(ctx, sx + right_x, sy + button_y)
@@ -270,7 +275,7 @@ function M.new(config)
       end
     end
 
-    draw_resize_handle(ctx, dl, x1, y1, w, h)
+    draw_resize_handle(ctx, dl, x1, y1, w, h, colors)
     ImGui.Dummy(ctx, 0, H)
   end
 

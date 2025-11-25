@@ -1,6 +1,7 @@
 -- @noindex
 -- Arkitekt/gui/widgets/package_tiles/renderer.lua
 -- Package tile rendering module with text truncation support
+-- Theme-aware: uses ThemeAdjuster/defs/colors.lua for script-specific colors
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
@@ -9,6 +10,18 @@ local Draw = require('arkitekt.gui.draw')
 local MarchingAnts = require('arkitekt.gui.fx.interactions.marching_ants')
 local Colors = require('arkitekt.core.colors')
 local ImageCache = require('arkitekt.core.images')
+
+-- Lazy-load script colors (ThemeAdjuster-specific)
+local ScriptColors = nil
+local function get_script_colors()
+  if not ScriptColors then
+    local ok, mod = pcall(require, 'ThemeAdjuster.defs.colors')
+    if ok then
+      ScriptColors = mod
+    end
+  end
+  return ScriptColors
+end
 
 local M = {}
 local hexrgb = Colors.hexrgb
@@ -61,8 +74,9 @@ M.CONFIG = {
     hover_shadow = { enabled = true, max_offset = 2, max_alpha = 20 },
     max_height = 220,
   },
-  
-  colors = {
+
+  -- Static fallback colors (used when ScriptColors not available)
+  colors_static = {
     bg = { inactive = hexrgb("#1A1A1A"), active = hexrgb("#2D4A37"), hover_tint = hexrgb("#2A2A2A"), hover_influence = 0.4 },
     border = { inactive = hexrgb("#303030"), active = nil, hover = nil, thickness = 0.5 },
     text = { active = hexrgb("#FFFFFF"), inactive = hexrgb("#999999"), secondary = hexrgb("#888888"), conflict = hexrgb("#FFA500") },
@@ -132,6 +146,55 @@ M.CONFIG = {
     min_chars = 3,
   },
 }
+
+--- Get theme-aware colors (reads from ScriptColors or falls back to static)
+--- Call this at render time for theme reactivity
+--- @return table Colors table matching colors_static structure
+function M.get_colors()
+  local sc = get_script_colors()
+  if sc then
+    local tile = sc.get_tile_colors()
+    local badge = sc.get_badge_colors()
+    return {
+      bg = {
+        inactive = tile.bg_inactive,
+        active = tile.bg_active,
+        hover_tint = tile.hover_tint,
+        hover_influence = tile.hover_influence,
+      },
+      border = {
+        inactive = tile.border_inactive,
+        active = M.CONFIG.colors_static.border.active,
+        hover = M.CONFIG.colors_static.border.hover,
+        thickness = M.CONFIG.colors_static.border.thickness,
+      },
+      text = {
+        active = tile.text_active,
+        inactive = tile.text_inactive,
+        secondary = tile.text_secondary,
+        conflict = sc.CONFLICT and sc.CONFLICT.text or M.CONFIG.colors_static.text.conflict,
+      },
+      badge = {
+        bg_active = badge.bg_active,
+        bg_inactive = badge.bg_inactive,
+        text = badge.text,
+      },
+      footer = M.CONFIG.colors_static.footer,
+    }
+  end
+  return M.CONFIG.colors_static
+end
+
+-- Backward compatibility: M.CONFIG.colors now calls get_colors()
+-- (Some external code may reference M.CONFIG.colors directly)
+setmetatable(M.CONFIG, {
+  __index = function(t, k)
+    if k == "colors" then
+      return M.get_colors()
+    end
+    return rawget(t, k)
+  end
+})
 
 local function truncate_text(ctx, text, max_width)
   if not text or text == "" then return "" end

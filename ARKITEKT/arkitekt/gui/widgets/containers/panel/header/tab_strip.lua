@@ -6,7 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')
-local Style = require('arkitekt.gui.style.defaults')
+local Style = require('arkitekt.gui.style')
 local InteractionBlocking = require('arkitekt.gui.utils.interaction_blocking')
 
 local Colors = require('arkitekt.core.colors')
@@ -15,24 +15,27 @@ local ColorPickerMenu = require('arkitekt.gui.widgets.menus.color_picker_menu')
 local hexrgb = Colors.hexrgb
 
 local M = {}
-local C = Style.COLORS          -- Shared primitives
-local PC = Style.PANEL_COLORS   -- Panel-specific colors
 
 local TAB_SLIDE_SPEED = 15.0
 local DRAG_THRESHOLD = 3.0
 
-local DEFAULTS = {
-  bg_color = PC.bg_tab,
-  bg_hover_color = PC.bg_tab_hover,
-  bg_active_color = PC.bg_tab_active,
-  border_outer_color = C.BORDER_OUTER,
-  border_inner_color = PC.border_tab_inner,
-  border_hover_color = PC.border_tab_hover,
-  border_active_color = PC.border_tab_focus,
-  text_color = PC.text_tab,
-  text_hover_color = PC.text_tab_hover,
-  text_active_color = PC.text_tab_active,
-}
+-- Dynamic color lookup function for theme reactivity
+-- Called each frame to get fresh colors from Style.COLORS
+local function get_tab_colors()
+  local C = Style.COLORS
+  return {
+    bg_color = C.BG_BASE,
+    bg_hover_color = C.BG_HOVER,
+    bg_active_color = C.BG_ACTIVE,
+    border_outer_color = C.BORDER_OUTER,
+    border_inner_color = C.BORDER_INNER,
+    border_hover_color = C.BORDER_HOVER,
+    border_active_color = C.BORDER_FOCUS,
+    text_color = C.TEXT_DIMMED,
+    text_hover_color = C.TEXT_HOVER,
+    text_active_color = C.TEXT_ACTIVE,
+  }
+end
 
 local function get_corner_flags(corner_rounding)
   if not corner_rounding then
@@ -303,8 +306,9 @@ end
 
 local function draw_plus_button(ctx, dl, x, y, width, height, config, unique_id, corner_rounding)
   local btn_cfg = config.plus_button or {}
-  
-  for k, v in pairs(DEFAULTS) do
+
+  -- Apply dynamic colors from theme
+  for k, v in pairs(get_tab_colors()) do
     if btn_cfg[k] == nil then btn_cfg[k] = v end
   end
   
@@ -359,7 +363,8 @@ end
 local function draw_overflow_button(ctx, dl, x, y, width, height, config, hidden_count, unique_id, corner_rounding)
   local btn_cfg = config.overflow_button or {}
 
-  for k, v in pairs(DEFAULTS) do
+  -- Apply dynamic colors from theme
+  for k, v in pairs(get_tab_colors()) do
     if btn_cfg[k] == nil then btn_cfg[k] = v end
   end
 
@@ -416,11 +421,12 @@ local function draw_track(ctx, dl, x, y, width, height, config, corner_rounding)
   local rounding = corner_rounding and corner_rounding.rounding or (track_cfg.rounding or 6)
   local corner_flags = get_corner_flags(corner_rounding)
   
+  -- Dynamic colors from Style.COLORS for theme reactivity
   ImGui.DrawList_AddRectFilled(
     dl,
     track_x, track_y,
     track_x + track_width, track_y + track_height,
-    track_cfg.bg_color or PC.bg_tab_track,
+    track_cfg.bg_color or Style.COLORS.BG_PANEL,
     rounding,
     corner_flags
   )
@@ -430,7 +436,7 @@ local function draw_track(ctx, dl, x, y, width, height, config, corner_rounding)
       dl,
       track_x, track_y,
       track_x + track_width, track_y + track_height,
-      track_cfg.border_color or PC.border_tab_track,
+      track_cfg.border_color or Style.COLORS.BORDER_OUTER,
       rounding,
       corner_flags,
       track_cfg.border_thickness
@@ -570,7 +576,8 @@ local function handle_inline_edit_input(ctx, dl, state, id, x, y, width, height,
 end
 
 local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, height, state, config, unique_id, animator, corner_rounding)
-  for k, v in pairs(DEFAULTS) do
+  -- Apply dynamic colors from theme
+  for k, v in pairs(get_tab_colors()) do
     if config[k] == nil then config[k] = v end
   end
 

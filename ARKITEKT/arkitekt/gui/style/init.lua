@@ -24,10 +24,12 @@ local M = {}
 
 M.COLORS = {
   -- Backgrounds
-  BG_BASE = hexrgb("#252525FF"),        -- Standard control background
+  BG_BASE = hexrgb("#242424FF"),        -- 36,36,36 RGB - main content background
   BG_HOVER = hexrgb("#2A2A2AFF"),       -- Hovered control background
   BG_ACTIVE = hexrgb("#303030FF"),      -- Active/pressed control background
-  BG_PANEL = hexrgb("#1A1A1AFF"),       -- Panel/container background (darker)
+  BG_HEADER = hexrgb("#1E1E1EFF"),      -- 30,30,30 RGB - header/toolbar background
+  BG_PANEL = hexrgb("#1A1A1AFF"),       -- 26,26,26 RGB - panel content background (darker)
+  BG_CHROME = hexrgb("#0F0F0FFF"),      -- 15,15,15 RGB - titlebar/statusbar
   BG_TRANSPARENT = hexrgb("#00000000"), -- Transparent background
 
   -- Borders
@@ -57,6 +59,10 @@ M.COLORS = {
   ACCENT_SUCCESS = hexrgb("#4CAF50"),   -- Success/confirmation (green)
   ACCENT_WARNING = hexrgb("#FFA726"),   -- Warning state (orange)
   ACCENT_DANGER = hexrgb("#EF5350"),    -- Error/danger state (red)
+
+  -- Background patterns (decorative grid/dot patterns)
+  PATTERN_PRIMARY = hexrgb("#30303060"),   -- Primary pattern color (semi-transparent)
+  PATTERN_SECONDARY = hexrgb("#30303020"), -- Secondary pattern color (more transparent)
 }
 
 -- ============================================================================
@@ -103,8 +109,9 @@ M.PANEL_COLORS = {
   bg_scrollbar = M.COLORS.BG_TRANSPARENT, -- Scrollbar background
 
   -- Background pattern (decorative grid/dot pattern)
-  pattern_primary = hexrgb("#14141490"),   -- Primary grid/dot color
-  pattern_secondary = hexrgb("#14141420"), -- Secondary grid/dot color
+  -- References M.COLORS for dynamic theming
+  pattern_primary = M.COLORS.PATTERN_PRIMARY,
+  pattern_secondary = M.COLORS.PATTERN_SECONDARY,
 }
 
 -- ============================================================================

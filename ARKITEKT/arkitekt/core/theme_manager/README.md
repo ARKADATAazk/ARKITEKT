@@ -2,309 +2,339 @@
 
 Dynamic theme system with algorithmic color palette generation for ARKITEKT.
 
-## Overview
-
-The Theme Manager generates **entire UI color palettes from just 1-3 base colors** using HSL color space manipulation. This enables:
-
-- **REAPER theme auto-sync**: Match REAPER's current theme automatically
-- **Preset themes**: Built-in themes (dark, light, midnight, Pro Tools, etc.)
-- **Custom themes**: Generate themes from user-selected colors
-- **Live sync**: Automatically update when REAPER's theme changes
-- **Smooth transitions**: Animated color transitions between themes
-
 ## Quick Start
 
 ```lua
 local ThemeManager = require('arkitekt.core.theme_manager')
 
--- Sync with REAPER's current theme (2-3 colors → 25+ UI colors!)
-ThemeManager.sync_with_reaper()
-
--- Or apply a preset theme
-ThemeManager.apply_theme("dark")       -- Dark theme (default)
-ThemeManager.apply_theme("light")      -- Light theme
-ThemeManager.apply_theme("midnight")   -- Very dark theme
-ThemeManager.apply_theme("pro_tools")  -- Pro Tools inspired
-
--- Or generate from custom colors
-local bg = Colors.hexrgb("#FF6B6BFF")
-local text = Colors.auto_text_color(bg)
-ThemeManager.generate_and_apply(bg, text)
+-- Pick a mode
+ThemeManager.set_dark()   -- Dark preset (~14% lightness)
+ThemeManager.set_grey()   -- Grey preset (~24% lightness, auto-interpolated)
+ThemeManager.set_light()  -- Light preset (~88% lightness)
+ThemeManager.adapt()      -- Sync with REAPER's theme
 ```
 
-## How It Works
+All UI colors are then available via `Style.COLORS.*`.
 
-### Algorithmic Generation
+---
 
-Instead of manually defining 25+ colors, the Theme Manager derives them algorithmically:
+## Architecture
 
-**Input (2-3 base colors):**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    User selects mode                        │
+│              (dark / grey / light / adapt)                  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│              generate_palette(base_bg, base_text)           │
+│                            ↓                                │
+│         compute_rules_for_lightness(lightness, mode)        │
+│                            ↓                                │
+│                       M.presets                             │
+│                    (blend / step)                           │
+│                            ↓                                │
+│                    interpolated rules                       │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                      Style.COLORS                           │
+│   BG_BASE, TEXT_NORMAL, TILE_NAME_COLOR, etc.              │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│                       UI Code                               │
+│              Reads Style.COLORS at render time              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Two-Preset System
+
+The theme manager uses just **two anchor presets** (dark and light). All intermediate themes (grey, adapt, custom colors) are automatically interpolated between them.
+
+| Preset | Lightness | Description |
+|--------|-----------|-------------|
+| `dark` | ~14% | Very dark (OLED-friendly) |
+| `light` | ~88% | Bright (paper-like) |
+
+**Grey is auto-derived**: When you call `set_grey()`, it applies a 24% lightness background with values automatically interpolated between dark and light presets.
+
+**Adapt mode**: Reads REAPER's background color and interpolates proportionally.
+
+---
+
+## Value Wrappers
+
+Two wrappers define HOW values transition between presets:
+
+### `blend(value)` - Smooth Gradient
+
+Smoothly interpolates between dark and light based on background lightness.
+
 ```lua
-base_bg    = RGB(51, 51, 51)     -- REAPER's background
-base_text  = RGB(170, 170, 170)  -- REAPER's text color
-base_accent = RGB(255, 0, 0)     -- REAPER's time selection
+-- In presets
+dark  = { tile_fill_brightness = blend(0.5) },   -- 50%
+light = { tile_fill_brightness = blend(1.4) },   -- 140%
+
+-- At 50% lightness (midpoint):
+-- Result: ~0.95 (linear interpolation)
 ```
 
-**Output (25+ derived colors):**
+Works with:
+- **Numbers**: Linear interpolation
+- **Colors**: RGB interpolation (`blend("#FF0000")` → `blend("#00FF00")`)
+
+### `step(value)` - Discrete Snap
+
+No interpolation. Snaps to the closest preset's value at midpoint (~51% lightness).
+
 ```lua
-BG_BASE        = RGB(51, 51, 51)     ← base_bg
-BG_HOVER       = RGB(56, 56, 56)     ← base_bg +2% lightness
-BG_ACTIVE      = RGB(61, 61, 61)     ← base_bg +4% lightness
-BORDER_OUTER   = RGB(26, 26, 26)     ← base_bg -10% lightness
-BORDER_INNER   = RGB(64, 64, 64)     ← base_bg +5% lightness
-TEXT_NORMAL    = RGB(170, 170, 170)  ← base_text
-TEXT_HOVER     = RGB(187, 187, 187)  ← base_text +5% lightness
-ACCENT_PRIMARY = RGB(255, 0, 0)      ← base_accent
-... (20+ more colors)
+-- In presets
+dark  = { border_outer_color = step("#000000") },  -- Pure black
+light = { border_outer_color = step("#404040") },  -- Soft grey
+
+-- At 40% lightness: "#000000" (closer to dark)
+-- At 60% lightness: "#404040" (closer to light)
 ```
 
-### HSL Color Space
+Use for:
+- Semantic colors that shouldn't blend
+- Text colors needing hard contrast (e.g., `tile_name_color`)
+- Values with distinct meanings per theme
 
-All derivations use HSL (Hue, Saturation, Lightness) manipulation:
+---
 
-- **Lightness adjustments**: Create hover/active/dimmed variants
-- **Saturation adjustments**: Create muted/vivid variants
-- **Hue preservation**: Maintains color harmony
+## Data Structures
 
-This ensures **mathematically consistent** and **visually harmonious** color relationships.
+### `M.presets` - Two Anchor Presets
+
+```lua
+M.presets = {
+  dark = {
+    bg_hover_delta = blend(0.03),
+    tile_fill_brightness = blend(0.5),
+    border_outer_color = step("#000000"),
+    tile_name_color = step("#DDE3E9"),  -- Light text on dark
+    -- ...
+  },
+  light = {
+    bg_hover_delta = blend(-0.04),
+    tile_fill_brightness = blend(1.4),
+    border_outer_color = step("#404040"),
+    tile_name_color = step("#1A1A1A"),  -- Dark text on light
+    -- ...
+  },
+}
+```
+
+### `M.preset_anchors` - Lightness Values
+
+Defines where each preset sits on the lightness scale:
+
+```lua
+M.preset_anchors = {
+  dark = 0.14,   -- 14% lightness
+  light = 0.88,  -- 88% lightness
+}
+```
+
+Used to calculate interpolation factor `t` between presets.
+
+---
+
+## Interpolation Logic
+
+### For `blend()` values:
+
+```
+Lightness:  0%    14%                    88%    100%
+            |     |                       |      |
+Presets:    dark ←──────────────────────→ light
+                          │
+                          t = (lightness - dark) / (light - dark)
+```
+
+Between anchors, `t` ranges from 0.0 to 1.0:
+- `t = 0.0` → use dark preset's value
+- `t = 0.5` → 50/50 blend
+- `t = 1.0` → use light preset's value
+
+### For `step()` values:
+
+Same calculation, but snaps at `t = 0.5` (~51% lightness):
+- `t < 0.5` → use dark preset's value
+- `t >= 0.5` → use light preset's value
+
+---
+
+## Adding New Theme-Aware Values
+
+### 1. Decide the behavior:
+
+| Behavior | Format |
+|----------|--------|
+| Smooth gradient | `blend(value)` |
+| Discrete snap | `step(value)` |
+
+### 2. Add to both presets:
+
+```lua
+-- For smooth interpolation:
+M.presets.dark.my_new_value = blend(0.3)
+M.presets.light.my_new_value = blend(0.8)
+
+-- For discrete snapping:
+M.presets.dark.my_text_color = step("#FFFFFF")
+M.presets.light.my_text_color = step("#000000")
+```
+
+### 3. Use in `generate_palette()`:
+
+```lua
+return {
+  -- ...existing colors...
+  MY_NEW_VALUE = rules.my_new_value,
+  MY_TEXT_COLOR = Colors.hexrgb(rules.my_text_color),
+}
+```
+
+### 4. Access in UI code:
+
+```lua
+local value = Style.COLORS.MY_NEW_VALUE
+```
+
+---
+
+## Script-Specific Colors
+
+Scripts can override library colors via `script/defs/colors.lua`:
+
+```lua
+-- ThemeAdjuster/defs/colors.lua
+local Style = require('arkitekt.gui.style')
+
+local M = {}
+
+M.TILE = {
+  bg_inactive = nil,        -- nil → use Style.COLORS.BG_PANEL
+  bg_active = "#2D4A37",    -- Explicit → stays fixed
+}
+
+function M.get_tile_colors()
+  local S = Style.COLORS
+  return {
+    bg_inactive = M.TILE.bg_inactive or S.BG_PANEL,
+    bg_active = M.TILE.bg_active,
+  }
+end
+
+return M
+```
+
+Pattern:
+- `nil` = fall back to `Style.COLORS` (theme-reactive)
+- Explicit value = stays fixed regardless of theme
+
+---
 
 ## API Reference
 
-### Core Functions
+### Mode Selection
 
-#### `generate_palette(base_bg, base_text, base_accent)`
-Generate a complete color palette from base colors.
-
-**Parameters:**
-- `base_bg` (number): Background color in RGBA format
-- `base_text` (number): Text color in RGBA format
-- `base_accent` (number, optional): Accent color (defaults to teal)
-
-**Returns:** Table of colors with keys matching `Style.COLORS`
-
-**Example:**
 ```lua
-local palette = ThemeManager.generate_palette(
-  Colors.hexrgb("#252525FF"),  -- Dark gray bg
-  Colors.hexrgb("#CCCCCCFF"),  -- Light gray text
-  Colors.hexrgb("#41E0A3FF")   -- Teal accent
-)
-```
+ThemeManager.set_dark()    -- Apply dark preset
+ThemeManager.set_grey()    -- Apply grey (auto-interpolated)
+ThemeManager.set_light()   -- Apply light preset
+ThemeManager.adapt()       -- Sync with REAPER theme
 
-#### `generate_and_apply(base_bg, base_text, base_accent)`
-Generate palette and immediately apply to `Style.COLORS`.
-
-**Example:**
-```lua
--- User picks a color
-local user_color = Colors.hexrgb("#FF6B6BFF")
-local auto_text = Colors.auto_text_color(user_color)
-
-ThemeManager.generate_and_apply(user_color, auto_text)
-```
-
-### REAPER Integration
-
-#### `sync_with_reaper()`
-Sync with REAPER's current theme.
-
-**Returns:** `true` if successful, `false` if failed to read REAPER colors
-
-**Example:**
-```lua
-if ThemeManager.sync_with_reaper() then
-  print("Synced with REAPER theme!")
-end
-```
-
-**REAPER Colors Used:**
-- `col_main_bg2`: Main window background → `base_bg`
-- `col_main_text2`: Main window text → `base_text`
-- `col_tl_bgsel`: Time selection → `base_accent`
-
-#### `create_live_sync(interval)`
-Create a function for live REAPER theme monitoring.
-
-**Parameters:**
-- `interval` (number, optional): Check interval in seconds (default: 1.0)
-
-**Returns:** Function to call in main loop
-
-**Example:**
-```lua
-local live_sync = ThemeManager.create_live_sync(1.0)
-
-function main_loop()
-  live_sync()  -- Checks REAPER theme every second
-  draw_ui()
-  reaper.defer(main_loop)
-end
+ThemeManager.set_mode("dark")  -- Same as set_dark()
 ```
 
 ### Preset Themes
 
-#### `apply_theme(name)`
-Apply a built-in preset theme.
-
-**Parameters:**
-- `name` (string): Theme name
-
-**Returns:** `true` if theme exists, `false` otherwise
-
-**Available Themes:**
-- `"dark"`: Default ARKITEKT dark theme
-- `"light"`: Light theme
-- `"midnight"`: Very dark theme
-- `"pro_tools"`: Pro Tools inspired
-- `"ableton"`: Ableton inspired (dark with orange)
-- `"fl_studio"`: FL Studio inspired (dark with purple)
-
-**Example:**
 ```lua
+-- Apply named preset
+ThemeManager.apply_theme("dark")
 ThemeManager.apply_theme("pro_tools")
+ThemeManager.apply_theme("ableton")
+
+-- Get available names
+local names = ThemeManager.get_theme_names()
 ```
 
-#### `get_theme_names()`
-Get list of available theme names.
+### REAPER Integration
 
-**Returns:** Array of theme name strings (sorted)
-
-**Example:**
 ```lua
-local themes = ThemeManager.get_theme_names()
-for _, name in ipairs(themes) do
-  print(name)
+-- One-time sync
+ThemeManager.sync_with_reaper()
+
+-- Live sync (call in main loop)
+local sync = ThemeManager.create_live_sync(1.0)
+function main_loop()
+  sync()  -- Checks REAPER theme every second
+  draw_ui()
 end
 ```
 
-### Smooth Transitions
+### Custom Themes
 
-#### `transition_to_theme(name, duration, on_complete)`
-Smoothly transition to a theme with animation.
-
-**Parameters:**
-- `name` (string): Theme name
-- `duration` (number, optional): Transition duration in seconds (default: 0.3)
-- `on_complete` (function, optional): Callback when complete
-
-**Example:**
 ```lua
-ThemeManager.transition_to_theme("light", 0.5, function()
-  print("Transition complete!")
-end)
+-- Generate from custom colors
+local bg = Colors.hexrgb("#FF6B6BFF")
+local text = Colors.auto_text_color(bg)
+ThemeManager.generate_and_apply(bg, text)
+
+-- Or with accent
+ThemeManager.generate_and_apply(bg, text, accent_color)
 ```
 
-## Configuration
-
-### Derivation Rules
-
-Customize how colors are derived by modifying `ThemeManager.derivation_rules`:
+### Debugging
 
 ```lua
--- Default values
-ThemeManager.derivation_rules = {
-  bg_hover_delta = 0.02,        -- +2% lighter on hover
-  bg_active_delta = 0.04,       -- +4% lighter when active
-  border_outer_delta = -0.10,   -- -10% darker for borders
-  text_dimmed_delta = -0.10,    -- -10% darker for dimmed text
-  -- ... etc
+-- Get current interpolated rules
+local rules = ThemeManager.get_current_rules()
+
+-- Get current background lightness
+local l = ThemeManager.get_theme_lightness()
+```
+
+### Wrappers (for extending presets)
+
+```lua
+local blend = ThemeManager.blend
+local step = ThemeManager.step
+
+-- Add to both presets
+M.presets.dark.my_value = blend(0.5)
+M.presets.light.my_value = blend(0.9)
+```
+
+---
+
+## Legacy API
+
+For backward compatibility, these aliases exist:
+
+```lua
+M.theme_rules = {
+  dark = M.presets.dark,
+  grey = M.presets.dark,   -- Grey uses dark (auto-interpolated at runtime)
+  light = M.presets.light,
 }
 
--- Customize for more contrast on hover
-ThemeManager.derivation_rules.bg_hover_delta = 0.05  -- +5% instead of +2%
-
--- Regenerate with new rules
-ThemeManager.sync_with_reaper()  -- Now uses custom deltas
+M.theme_anchors = M.preset_anchors
+M.derivation_rules = unwrap_preset(M.presets.dark)
 ```
 
-## Demo
+---
 
-Run the theme manager demo to test all features:
+## Performance
 
-```
-scripts/demos/demo_theme_manager.lua
-```
-
-Features in demo:
-- Switch between preset themes
-- Sync with REAPER theme (manual + live)
-- Generate custom themes from example colors
-- View current color palette values
-
-## Architecture
-
-### Option 3: Direct References
-
-The theme manager is designed for **Option 3** of the theming refactor:
-
-1. **Theme Manager**: Generates color palettes algorithmically
-2. **Style.COLORS**: Single source of truth (updated by Theme Manager)
-3. **Widgets**: Read `Style.COLORS` directly every frame
-
-**No rebuild needed** - when `Style.COLORS` changes, the next frame uses new colors automatically.
-
-### Performance
-
-- **Theme switch**: <0.1ms (just table updates)
+- **Theme switch**: <0.1ms (table updates)
 - **Live sync check**: <1µs (one REAPER API call per second)
-- **Per-frame cost**: 0ms (widgets already read colors every frame)
+- **Per-frame cost**: 0ms (widgets read colors directly)
 
-### Future: Widget Refactor
-
-Once widgets are refactored to read `Style.COLORS` directly (not via intermediate preset tables), the system will be fully dynamic with zero overhead.
-
-## Examples
-
-### Basic Usage
-
-```lua
-local ThemeManager = require('arkitekt.core.theme_manager')
-
--- Sync with REAPER on startup
-ThemeManager.sync_with_reaper()
-```
-
-### Theme Switcher UI
-
-```lua
-local themes = ThemeManager.get_theme_names()
-local current_theme = "dark"
-
-for _, name in ipairs(themes) do
-  if Button.draw(ctx, {
-    label = name,
-    is_toggled = (name == current_theme),
-  }).clicked then
-    ThemeManager.apply_theme(name)
-    current_theme = name
-  end
-end
-```
-
-### Custom Color Picker
-
-```lua
--- User picks a color in color picker
-local user_color = picked_color
-
--- Auto-generate complementary text color
-local text_color = Colors.auto_text_color(user_color)
-
--- Generate and apply entire theme from this one color!
-ThemeManager.generate_and_apply(user_color, text_color)
-```
-
-### Smooth Theme Transitions
-
-```lua
--- Animated theme switch (like macOS dark mode)
-ThemeManager.transition_to_theme("light", 0.5)
-```
-
-## Credits
-
-Uses HSL color manipulation functions from `arkitekt/core/colors.lua`:
-- `adjust_lightness()`: Lighten/darken colors
-- `adjust_saturation()`: Saturate/desaturate colors
-- `adjust_hue()`: Rotate hue
-- `rgb_to_hsl()` / `hsl_to_rgb()`: Color space conversion
+No rebuild needed - when `Style.COLORS` changes, the next frame uses new colors automatically.

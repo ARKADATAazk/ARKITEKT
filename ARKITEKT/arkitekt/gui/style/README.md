@@ -14,7 +14,7 @@ Use this for:
 - Toggle button variants
 
 ```lua
-local Style = require('arkitekt.gui.style.defaults')
+local Style = require('arkitekt.gui.style')
 
 -- Access centralized colors
 local bg = Style.COLORS.BG_BASE
@@ -36,7 +36,7 @@ Use this for:
 - Base theme application
 
 ```lua
-local ImGuiStyle = require('arkitekt.gui.style.imgui_defaults')
+local ImGuiStyle = require('arkitekt.gui.style.imgui')
 
 -- Apply ImGui theme
 ImGuiStyle.PushMyStyle(ctx)
@@ -60,7 +60,7 @@ M.COLORS = {
 
 Then reference it everywhere:
 ```lua
-local Style = require('arkitekt.gui.style.defaults')
+local Style = require('arkitekt.gui.style')
 local my_color = Style.COLORS.MY_NEW_COLOR
 ```
 

@@ -7,6 +7,7 @@ local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 
 local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')
+local Style = require('arkitekt.gui.style')
 local hexrgb = ark.Colors.hexrgb
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
@@ -26,7 +27,7 @@ function M.ViewModeButton_new(config)
 end
 
 function ViewModeButton:draw_icon(ctx, dl, x, y, mode)
-  local color = self.config.icon_color or hexrgb("#AAAAAA")
+  local color = self.config.icon_color or Style.COLORS.TEXT_DIMMED
   local icon_size = 16  -- Smaller icon for 30px button (was 20px for 32px button)
 
   if mode == 'vertical' then
@@ -67,9 +68,11 @@ function ViewModeButton:draw(ctx, x, y, current_mode, on_click, use_foreground_d
     self.hover_alpha = max(0, min(1, self.hover_alpha))
   end
 
-  local bg = self:lerp_color(cfg.bg_color or hexrgb("#252525"), cfg.bg_hover or hexrgb("#2A2A2A"), self.hover_alpha)
-  local border_inner = self:lerp_color(cfg.border_inner or hexrgb("#404040"), cfg.border_hover or hexrgb("#505050"), self.hover_alpha)
-  local border_outer = cfg.border_outer or hexrgb("#000000DD")
+  -- Use dynamic colors from Style.COLORS
+  local C = Style.COLORS
+  local bg = self:lerp_color(cfg.bg_color or C.BG_BASE, cfg.bg_hover or C.BG_HOVER, self.hover_alpha)
+  local border_inner = self:lerp_color(cfg.border_inner or C.BORDER_INNER, cfg.border_hover or C.BORDER_HOVER, self.hover_alpha)
+  local border_outer = cfg.border_outer or C.BORDER_OUTER
 
   local rounding = cfg.rounding or 4
   local inner_rounding = max(0, rounding - 2)
@@ -139,28 +142,31 @@ end
 function SimpleToggleButton:draw(ctx, x, y, state, on_click, color)
   local dl = ImGui.GetWindowDrawList(ctx)
   self.state = state
-  
+
   local mx, my = ImGui.GetMousePos(ctx)
   local is_hovered = mx >= x and mx < x + self.width and my >= y and my < y + self.height
-  
+
   local target = is_hovered and 1.0 or 0.0
   local dt = ImGui.GetDeltaTime(ctx)
   self.hover_alpha = self.hover_alpha + (target - self.hover_alpha) * 12.0 * dt
   self.hover_alpha = max(0, min(1, self.hover_alpha))
-  
-  local bg_off = hexrgb("#252525")
-  local bg_off_hover = hexrgb("#2A2A2A")
-  local bg_on = ark.Colors.with_alpha(color or hexrgb("#4A9EFF"), 0x40)
-  local bg_on_hover = ark.Colors.with_alpha(color or hexrgb("#4A9EFF"), 0x50)
-  
+
+  -- Use dynamic colors from Style.COLORS
+  local C = Style.COLORS
+  local bg_off = C.BG_BASE
+  local bg_off_hover = C.BG_HOVER
+  local accent = color or C.ACCENT_PRIMARY
+  local bg_on = ark.Colors.with_alpha(accent, 0x40)
+  local bg_on_hover = ark.Colors.with_alpha(accent, 0x50)
+
   local bg = state and (is_hovered and bg_on_hover or bg_on) or (is_hovered and bg_off_hover or bg_off)
-  
-  local border_color = state and (color or hexrgb("#4A9EFF")) or hexrgb("#404040")
-  
+
+  local border_color = state and accent or C.BORDER_INNER
+
   ImGui.DrawList_AddRectFilled(dl, x, y, x + self.width, y + self.height, bg, 4)
   ImGui.DrawList_AddRect(dl, x, y, x + self.width, y + self.height, border_color, 4, 0, 1)
-  
-  local text_color = state and hexrgb("#FFFFFF") or hexrgb("#999999")
+
+  local text_color = state and C.TEXT_BRIGHT or C.TEXT_DIMMED
   local tw, th = ImGui.CalcTextSize(ctx, self.label)
   ImGui.DrawList_AddText(dl, x + (self.width - tw) / 2, y + (self.height - th) / 2, text_color, self.label)
 

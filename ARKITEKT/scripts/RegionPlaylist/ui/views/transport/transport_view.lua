@@ -12,6 +12,7 @@ local ButtonWidgets = require('RegionPlaylist.ui.views.transport.button_widgets'
 local DisplayWidget = require('RegionPlaylist.ui.views.transport.display_widget')
 local CoreConfig = require('RegionPlaylist.core.config')
 local Strings = require('RegionPlaylist.defs.strings')
+local Style = require('arkitekt.gui.style')
 local hexrgb = ark.Colors.hexrgb
 
 local M = {}
@@ -257,17 +258,18 @@ function TransportView:build_quantize_dropdown(bridge_state)
         local width = footer_ctx.width
         local padding = footer_ctx.padding
 
+        -- Use dynamic colors from Style.COLORS
+        local C = Style.COLORS
         local label = "Jump Lookahead"
         local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
-        local label_color = ark.Colors.hexrgb("#E0E0E0FF")
-        ImGui.DrawList_AddText(dl, label_x + padding, label_y, label_color, label)
+        ImGui.DrawList_AddText(dl, label_x + padding, label_y, C.TEXT_BRIGHT, label)
         ImGui.Dummy(ctx, width, 20)
 
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, ark.Colors.hexrgb("#1A1A1AFF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, ark.Colors.hexrgb("#222222FF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, ark.Colors.hexrgb("#252525FF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, ark.Colors.hexrgb("#606060FF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, ark.Colors.hexrgb("#707070FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, C.BG_PANEL)
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, C.BG_BASE)
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, C.BG_HOVER)
+        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, C.BORDER_HOVER)
+        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, C.BORDER_FOCUS)
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabMinSize, 14)
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 4, 6)
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabRounding, 0)
@@ -723,17 +725,18 @@ function TransportView:build_combined_pb_dropdown(bridge_state)
         local width = footer_ctx.width
         local padding = footer_ctx.padding
 
+        -- Use dynamic colors from Style.COLORS
+        local C = Style.COLORS
         local label = "Jump Lookahead"
         local label_x, label_y = ImGui.GetCursorScreenPos(ctx)
-        local label_color = ark.Colors.hexrgb("#E0E0E0FF")
-        ImGui.DrawList_AddText(dl, label_x + padding, label_y, label_color, label)
+        ImGui.DrawList_AddText(dl, label_x + padding, label_y, C.TEXT_BRIGHT, label)
         ImGui.Dummy(ctx, width, 20)
 
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, ark.Colors.hexrgb("#1A1A1AFF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, ark.Colors.hexrgb("#222222FF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, ark.Colors.hexrgb("#252525FF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, ark.Colors.hexrgb("#606060FF"))
-        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, ark.Colors.hexrgb("#707070FF"))
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, C.BG_PANEL)
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, C.BG_BASE)
+        ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, C.BG_HOVER)
+        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrab, C.BORDER_HOVER)
+        ImGui.PushStyleColor(ctx, ImGui.Col_SliderGrabActive, C.BORDER_FOCUS)
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabMinSize, 14)
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_FramePadding, 4, 6)
         ImGui.PushStyleVar(ctx, ImGui.StyleVar_GrabRounding, 0)

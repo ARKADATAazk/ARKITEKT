@@ -8,7 +8,7 @@ local Logger = require('arkitekt.debug.logger')
 
 local M = {}
 
-local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
+local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
