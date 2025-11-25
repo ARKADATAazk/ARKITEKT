@@ -18,6 +18,7 @@ local UndoBridge = require("RegionPlaylist.storage.undo_bridge")
 local Constants = require("RegionPlaylist.defs.constants")
 local ProjectMonitor = require("arkitekt.reaper.project_monitor")
 local Animation = require("RegionPlaylist.domains.animation")
+local Notification = require("RegionPlaylist.domains.notification")
 
 local M = {}
 
@@ -61,8 +62,9 @@ M.pool_mode = M.POOL_MODES.REGIONS            -- "regions", "playlists", or "mix
 M.region_index = {}                           -- Map: RID (number) -> region object {rid, name, color, ...}
 M.pool_order = {}                             -- Array of RIDs defining custom pool order
 
--- Animation domain (managed by domains/animation.lua)
+-- Domain instances
 M.animation = nil                             -- Animation domain instance
+M.notification = nil                          -- Notification domain instance
 
 -- Engine/playback coordination
 M.bridge = nil                                -- CoordinatorBridge instance for engine communication
@@ -91,21 +93,6 @@ M.settings = nil                              -- Persistent UI settings
 M.dependency_graph = {}                       -- Map: playlist_id -> {child_ids}
 M.graph_dirty = true                          -- Flag to rebuild graph on next check
 
--- Status bar state
-M.selection_info = { region_count = 0, playlist_count = 0 }
-
--- Timed notifications (auto-clear after timeout)
-M.circular_dependency_error = nil
-M.circular_dependency_error_timestamp = nil
-M.circular_dependency_error_timeout = Constants.TIMEOUTS.circular_dependency_error
-
-M.state_change_notification = nil
-M.state_change_notification_timestamp = nil
-M.state_change_notification_timeout = Constants.TIMEOUTS.state_change_notification
-
--- Transport override state tracking
-M.last_override_state = false
-
 local function rebuild_playlist_lookup()
   M.playlist_lookup = {}
   for _, pl in ipairs(M.playlists) do
@@ -116,8 +103,9 @@ end
 function M.initialize(settings)
   M.settings = settings
 
-  -- Initialize animation domain
+  -- Initialize domains
   M.animation = Animation.new()
+  M.notification = Notification.new(Constants.TIMEOUTS)
 
   if settings then
     M.search_filter = settings:get('pool_search') or ""
@@ -352,63 +340,37 @@ function M.add_pending_destroy(key)
   M.animation:queue_destroy(key)
 end
 
--- Status bar state accessors
+-- Status bar state accessors (delegated to notification domain)
 function M.get_selection_info()
-  return M.selection_info
+  return M.notification:get_selection_info()
 end
 
 function M.set_selection_info(info)
-  M.selection_info = info or { region_count = 0, playlist_count = 0 }
+  M.notification:set_selection_info(info)
 end
 
 function M.get_circular_dependency_error()
-  -- Auto-clear error after timeout
-  if M.circular_dependency_error and M.circular_dependency_error_timestamp then
-    local current_time = reaper.time_precise()
-    if (current_time - M.circular_dependency_error_timestamp) >= M.circular_dependency_error_timeout then
-      M.circular_dependency_error = nil
-      M.circular_dependency_error_timestamp = nil
-    end
-  end
-  return M.circular_dependency_error
+  return M.notification:get_circular_dependency_error()
 end
 
 function M.set_circular_dependency_error(error_msg)
-  M.circular_dependency_error = error_msg
-  M.circular_dependency_error_timestamp = reaper.time_precise()
+  M.notification:set_circular_dependency_error(error_msg)
 end
 
 function M.clear_circular_dependency_error()
-  M.circular_dependency_error = nil
-  M.circular_dependency_error_timestamp = nil
+  M.notification:clear_circular_dependency_error()
 end
 
 function M.get_state_change_notification()
-  -- Auto-clear notification after timeout
-  if M.state_change_notification and M.state_change_notification_timestamp then
-    local current_time = reaper.time_precise()
-    if (current_time - M.state_change_notification_timestamp) >= M.state_change_notification_timeout then
-      M.state_change_notification = nil
-      M.state_change_notification_timestamp = nil
-    end
-  end
-  return M.state_change_notification
+  return M.notification:get_state_change_notification()
 end
 
 function M.set_state_change_notification(message)
-  M.state_change_notification = message
-  M.state_change_notification_timestamp = reaper.time_precise()
+  M.notification:set_state_change_notification(message)
 end
 
 function M.check_override_state_change(current_override_state)
-  if current_override_state ~= M.last_override_state then
-    M.last_override_state = current_override_state
-    if current_override_state then
-      M.set_state_change_notification("Override: Transport will take over when hitting a region")
-    else
-      M.set_state_change_notification("Override disabled")
-    end
-  end
+  M.notification:check_override_state_change(current_override_state)
 end
 
 -- <<< CANONICAL ACCESSORS (END)
