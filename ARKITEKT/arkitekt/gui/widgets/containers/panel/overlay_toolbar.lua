@@ -377,8 +377,23 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
   draw_background(dl, bounds, config, rounding)
 
   -- Add clipping to constrain overlay within panel bounds
+  -- Offset clip rect by panel border width so buttons slide from BEHIND the border
   local x1, y1, x2, y2 = table.unpack(panel_bounds)
-  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
+  local panel_border_width = 1  -- Panel border thickness
+
+  -- Adjust clip rect based on position to clip at inner edge (after border)
+  local clip_x1, clip_y1, clip_x2, clip_y2 = x1, y1, x2, y2
+  if position == "left" then
+    clip_x1 = x1 + panel_border_width  -- Clip at inner edge (after left border)
+  elseif position == "right" then
+    clip_x2 = x2 - panel_border_width  -- Clip at inner edge (before right border)
+  elseif position == "top" then
+    clip_y1 = y1 + panel_border_width  -- Clip at inner edge (after top border)
+  elseif position == "bottom" then
+    clip_y2 = y2 - panel_border_width  -- Clip at inner edge (before bottom border)
+  end
+
+  ImGui.DrawList_PushClipRect(dl, clip_x1, clip_y1, clip_x2, clip_y2, true)
 
   -- Draw elements using existing toolbar element renderers (render if any visibility)
   if config.elements and #config.elements > 0 and anim_state.current > 0.01 then
