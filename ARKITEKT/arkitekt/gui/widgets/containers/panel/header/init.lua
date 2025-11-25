@@ -76,7 +76,8 @@ function M.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
   end
 
   -- Draw header background (read dynamically from Style.COLORS for theme reactivity)
-  local bg_color = toolbar_cfg.bg_color or C.BG_BASE
+  -- BG_HEADER = 30,30,30 for dark theme (between BG_BASE=36 and BG_PANEL=26)
+  local bg_color = toolbar_cfg.bg_color or C.BG_HEADER
   ImGui.DrawList_AddRectFilled(
     dl, x, y, x + w, y + h,
     bg_color,

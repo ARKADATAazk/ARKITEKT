@@ -51,6 +51,7 @@ M.derivation_rules = {
   -- Background variations (lightness deltas)
   bg_hover_delta = 0.02,        -- +2% lighter on hover
   bg_active_delta = 0.04,       -- +4% lighter when active/pressed
+  bg_header_delta = -0.024,     -- -2.4% darker for headers (BG_BASE 36 → BG_HEADER 30)
   bg_panel_delta = -0.04,       -- -4% darker for panels (BG_BASE 36 → BG_PANEL 26)
 
   -- Pattern variations (relative to BG_PANEL, DARKER = etched lines)
@@ -128,7 +129,8 @@ function M.generate_palette(base_bg, base_text, base_accent)
     BG_BASE = base_bg,
     BG_HOVER = Colors.adjust_lightness(base_bg, sign * rules.bg_hover_delta),
     BG_ACTIVE = Colors.adjust_lightness(base_bg, sign * rules.bg_active_delta),
-    BG_PANEL = bg_panel,  -- Slightly darker (used as base for patterns)
+    BG_HEADER = Colors.adjust_lightness(base_bg, rules.bg_header_delta),  -- Header/toolbar background (30)
+    BG_PANEL = bg_panel,  -- Panel content area (26, used as base for patterns)
     BG_CHROME = base_chrome,  -- Titlebar/statusbar - significantly darker than content
     BG_TRANSPARENT = Colors.with_alpha(base_bg, 0x00),
 
