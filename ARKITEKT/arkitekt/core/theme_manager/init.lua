@@ -148,27 +148,55 @@ local function reaper_to_imgui(reaper_color)
   return (reaper_color << 8) | 0xFF  -- Shift left 8 bits, add full opacity
 end
 
---- Sync theme colors with REAPER's current theme
---- Reads 2-3 base colors from REAPER and generates entire palette
+--- Sync theme colors with REAPER's current theme (minimal approach)
+--- Reads only 2 colors (main_bg + arrange_bg), extracts contrast intent,
+--- generates neutral grayscale palette for maximum theme compatibility
 --- @return boolean Success (true if colors were read and applied)
 function M.sync_with_reaper()
-  -- Read base colors from REAPER
-  local reaper_bg = reaper.GetThemeColor("col_main_bg2", 0)        -- Main background
-  local reaper_text = reaper.GetThemeColor("col_main_text2", 0)    -- Main text
-  local reaper_accent = reaper.GetThemeColor("col_tl_bgsel", 0)    -- Time selection (accent)
+  -- Read only 2 background colors
+  local main_bg_raw = reaper.GetThemeColor("col_main_bg2", 0)      -- Main window bg
+  local arrange_bg_raw = reaper.GetThemeColor("col_arrangebg", 0)  -- Arrange view bg
 
-  -- Check if we got valid colors
-  if reaper_bg == -1 or reaper_text == -1 then
+  if main_bg_raw == -1 then
     return false  -- Failed to read REAPER theme
   end
 
   -- Convert to ImGui format
-  local base_bg = reaper_to_imgui(reaper_bg)
-  local base_text = reaper_to_imgui(reaper_text)
-  local base_accent = reaper_to_imgui(reaper_accent)  -- May be nil if failed
+  local main_bg = reaper_to_imgui(main_bg_raw)
+  local arrange_bg = arrange_bg_raw ~= -1 and reaper_to_imgui(arrange_bg_raw) or main_bg
 
-  -- Generate and apply palette
-  M.generate_and_apply(base_bg, base_text, base_accent)
+  -- Extract lightness values
+  local main_h, main_s, main_l = Colors.rgb_to_hsl(main_bg)
+  local arrange_h, arrange_s, arrange_l = Colors.rgb_to_hsl(arrange_bg)
+
+  -- Calculate contrast delta between main and arrange
+  -- Some themes have white arrange + gray main (extreme), clamp to reasonable range
+  local contrast_delta = arrange_l - main_l
+  local max_delta = 0.10  -- Clamp to ±10% lightness difference
+  contrast_delta = math.max(-max_delta, math.min(max_delta, contrast_delta))
+
+  -- Determine theme type
+  local is_dark = main_l < 0.5
+
+  -- Generate text color (auto white on dark, black on light)
+  local base_text = Colors.auto_text_color(main_bg)
+
+  -- Generate palette with NO accent (neutral grayscale)
+  -- This keeps ARKITEKT theme-agnostic, works with any REAPER theme
+  local palette = M.generate_palette(main_bg, base_text, nil)
+
+  -- Override BG_PANEL with extracted arrange bg (respects REAPER's actual delta)
+  palette.BG_PANEL = Colors.adjust_lightness(main_bg, contrast_delta)
+
+  -- Adjust hover/active using contrast preference
+  local hover_delta = is_dark and 0.02 or -0.02  -- Lighter on dark, darker on light
+  palette.BG_HOVER = Colors.adjust_lightness(main_bg, hover_delta)
+  palette.BG_ACTIVE = Colors.adjust_lightness(main_bg, hover_delta * 2)
+
+  -- Apply palette
+  for key, value in pairs(palette) do
+    Style.COLORS[key] = value
+  end
 
   return true
 end
