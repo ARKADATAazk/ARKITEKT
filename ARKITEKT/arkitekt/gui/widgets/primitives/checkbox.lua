@@ -138,9 +138,9 @@ local function resolve_config(opts)
     label_disabled_color = Colors.with_alpha(Style.COLORS.TEXT_NORMAL, 0x80),
   }
 
-  -- Apply user overrides
+  -- Apply user overrides (copy ALL opts, not just color keys)
   for k, v in pairs(opts) do
-    if v ~= nil and config[k] ~= nil then
+    if v ~= nil then
       config[k] = v
     end
   end
