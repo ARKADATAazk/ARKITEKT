@@ -625,7 +625,41 @@ local function try_run(cmd)
   return r == true or r == 0
 end
 
+-- SECURITY: Validate paths before passing to shell commands to prevent command injection
+local function is_safe_path(path)
+  if not path or path == "" then
+    return false, "Path cannot be empty"
+  end
+
+  -- Only allow alphanumeric, spaces, dots, dashes, underscores, parentheses, and path separators
+  -- This blocks shell metacharacters: quotes, semicolons, pipes, backticks, $, etc.
+  local safe_pattern = "^[%w%s%.%-%_/\\:()]+$"
+  if not path:match(safe_pattern) then
+    return false, "Path contains unsafe characters"
+  end
+
+  -- Block directory traversal attempts
+  if path:find("%.%.") then
+    return false, "Path cannot contain '..'"
+  end
+
+  return true
+end
+
 local function make_zip(src_dir, out_zip)
+  -- SECURITY: Validate paths before passing to shell commands
+  local ok, err = is_safe_path(src_dir)
+  if not ok then
+    reaper.ShowMessageBox("Invalid source directory: " .. err, "Security Error", 0)
+    return false
+  end
+
+  ok, err = is_safe_path(out_zip)
+  if not ok then
+    reaper.ShowMessageBox("Invalid output ZIP path: " .. err, "Security Error", 0)
+    return false
+  end
+
   local osname = reaper.GetOS() or ""
   if osname:find("Win") then
     local ps = ([[powershell -NoProfile -Command "Set-Location '%s'; if (Test-Path '%s') {Remove-Item '%s' -Force}; Compress-Archive -Path * -DestinationPath '%s' -Force"]])
