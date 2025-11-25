@@ -61,7 +61,7 @@ M.TRANSPORT = {
     hover = { specular_boost = 1.5, glow_boost = 1.3, transition_speed = 6.0 },
     gradient = {
       fade_speed = 8.0,
-      ready_color = hexrgb("#838383ff"),
+      -- ready_color: Uses Style.COLORS.BG_PANEL dynamically for theme reactivity
       fill_opacity = 0.3,
       fill_saturation = 0.8,
       fill_brightness = 0.8,

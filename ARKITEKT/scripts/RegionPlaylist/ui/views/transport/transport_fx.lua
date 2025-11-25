@@ -6,6 +6,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
+local Style = require('arkitekt.gui.style')
 
 local TileFXConfig = require('arkitekt.gui.rendering.tile.defaults')
 local hexrgb = ark.Colors.hexrgb
@@ -42,7 +43,8 @@ M.DEFAULT_CONFIG = {
   
   gradient = {
     fade_speed = 8.0,
-    ready_color = hexrgb("#1A1A1A"),
+    -- ready_color: Uses Style.COLORS.BG_PANEL dynamically for theme reactivity
+    -- Can be overridden in config if custom color needed
     fill_opacity = 0.18,
     fill_saturation = 0.35,
     fill_brightness = 0.45,
@@ -217,7 +219,8 @@ function M.render_complete(dl, x1, y1, x2, y2, config, hover_factor, current_reg
     color_left = current_region_color
     color_right = hexrgb("#000000")
   else
-    local ready_color = config.gradient.ready_color or hexrgb("#1A1A1A")
+    -- Dynamic ready color from theme for proper light/dark theme support
+    local ready_color = config.gradient.ready_color or Style.COLORS.BG_PANEL
     color_left = ready_color
     color_right = ready_color
   end

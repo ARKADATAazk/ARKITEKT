@@ -6,6 +6,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
+local Style = require('arkitekt.gui.style')
 
 local Panel = require('arkitekt.gui.widgets.containers.panel.init')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
@@ -163,15 +164,18 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
   self.target_current_color = target_current
   self.target_next_color = target_next
   
+  -- Helper to get ready color dynamically from theme
+  local function get_ready_color()
+    return self.config.fx.gradient.ready_color or Style.COLORS.BG_PANEL
+  end
+
   local function lerp_color(from, to, t)
     if not from and not to then return nil end
     if not from then
-      local ready_color = self.config.fx.gradient.ready_color or ark.Colors.hexrgb("#1A1A1A")
-      from = ready_color
+      from = get_ready_color()
     end
     if not to then
-      local ready_color = self.config.fx.gradient.ready_color or ark.Colors.hexrgb("#1A1A1A")
-      to = ready_color
+      to = get_ready_color()
     end
 
     local r1, g1, b1, a1 = ark.Colors.rgba_to_components(from)
@@ -186,11 +190,11 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
   end
 
   local lerp_factor = min(1.0, fade_speed * dt)
-  
+
   if self.target_current_color then
     self.current_region_color = lerp_color(self.current_region_color, self.target_current_color, lerp_factor)
   else
-    local ready_color = self.config.fx.gradient.ready_color or ark.Colors.hexrgb("#1A1A1A")
+    local ready_color = get_ready_color()
     if self.current_region_color then
       self.current_region_color = lerp_color(self.current_region_color, ready_color, lerp_factor)
       if abs((self.current_region_color or 0) - ready_color) < 256 then
@@ -200,11 +204,11 @@ function TransportPanel:update_region_colors(ctx, target_current, target_next)
       self.current_region_color = nil
     end
   end
-  
+
   if self.target_next_color then
     self.next_region_color = lerp_color(self.next_region_color, self.target_next_color, lerp_factor)
   else
-    local ready_color = self.config.fx.gradient.ready_color or ark.Colors.hexrgb("#1A1A1A")
+    local ready_color = get_ready_color()
     if self.next_region_color then
       self.next_region_color = lerp_color(self.next_region_color, ready_color, lerp_factor)
       if abs((self.next_region_color or 0) - ready_color) < 256 then
