@@ -17,6 +17,7 @@ local UndoManager = require("arkitekt.core.undo_manager")
 local UndoBridge = require("RegionPlaylist.storage.undo_bridge")
 local Constants = require("RegionPlaylist.defs.constants")
 local ProjectMonitor = require("arkitekt.reaper.project_monitor")
+local Animation = require("RegionPlaylist.domains.animation")
 
 local M = {}
 
@@ -60,10 +61,8 @@ M.pool_mode = M.POOL_MODES.REGIONS            -- "regions", "playlists", or "mix
 M.region_index = {}                           -- Map: RID (number) -> region object {rid, name, color, ...}
 M.pool_order = {}                             -- Array of RIDs defining custom pool order
 
--- Animation pending queues (processed by GUI each frame, then cleared)
-M.pending_spawn = {}                          -- Array of item keys to animate as "spawning in"
-M.pending_select = {}                         -- Array of item keys to highlight as selected
-M.pending_destroy = {}                        -- Array of item keys to animate as "destroying"
+-- Animation domain (managed by domains/animation.lua)
+M.animation = nil                             -- Animation domain instance
 
 -- Engine/playback coordination
 M.bridge = nil                                -- CoordinatorBridge instance for engine communication
@@ -116,6 +115,9 @@ end
 
 function M.initialize(settings)
   M.settings = settings
+
+  -- Initialize animation domain
+  M.animation = Animation.new()
 
   if settings then
     M.search_filter = settings:get('pool_search') or ""
@@ -310,15 +312,15 @@ function M.set_pool_mode(mode)
 end
 
 function M.get_pending_spawn()
-  return M.pending_spawn
+  return M.animation:get_pending_spawn()
 end
 
 function M.get_pending_select()
-  return M.pending_select
+  return M.animation:get_pending_select()
 end
 
 function M.get_pending_destroy()
-  return M.pending_destroy
+  return M.animation:get_pending_destroy()
 end
 
 function M.get_separator_position_horizontal()
@@ -339,15 +341,15 @@ end
 
 -- Pending operation helpers
 function M.add_pending_spawn(key)
-  M.pending_spawn[#M.pending_spawn + 1] = key
+  M.animation:queue_spawn(key)
 end
 
 function M.add_pending_select(key)
-  M.pending_select[#M.pending_select + 1] = key
+  M.animation:queue_select(key)
 end
 
 function M.add_pending_destroy(key)
-  M.pending_destroy[#M.pending_destroy + 1] = key
+  M.animation:queue_destroy(key)
 end
 
 -- Status bar state accessors
@@ -480,9 +482,7 @@ function M.capture_undo_snapshot()
 end
 
 function M.clear_pending()
-  M.pending_spawn = {}
-  M.pending_select = {}
-  M.pending_destroy = {}
+  M.animation:clear_all()
 end
 
 function M.restore_snapshot(snapshot)
@@ -1111,7 +1111,7 @@ function M.cleanup_deleted_regions()
       if item.type == "region" and not M.region_index[item.rid] then
         table.remove(pl.items, i)
         removed_any = true
-        M.pending_destroy[item.key] = true
+        M.add_pending_destroy(item.key)
       else
         i = i + 1
       end
