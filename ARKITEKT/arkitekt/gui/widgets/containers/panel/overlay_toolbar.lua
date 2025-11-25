@@ -451,10 +451,18 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
     if orientation == "horizontal" then
       -- Use Header renderer for horizontal overlay toolbars (top/bottom)
       Header.draw_elements(ctx, dl, bounds.x, bounds.y, bounds.w, bounds.h, panel_state, config, position)
+
+      -- Add dummy to establish window bounds for SetCursorPos calls
+      ImGui.SetCursorScreenPos(ctx, bounds.x, bounds.y)
+      ImGui.Dummy(ctx, bounds.w, bounds.h)
     else
       -- Use Sidebars renderer for vertical overlay toolbars (left/right)
       local side = (position == "left") and "left" or "right"
       Sidebars.draw(ctx, dl, bounds.x, bounds.y, bounds.w, bounds.h, config, panel_id, side)
+
+      -- Add dummy to establish window bounds for SetCursorPos calls
+      ImGui.SetCursorScreenPos(ctx, bounds.x, bounds.y)
+      ImGui.Dummy(ctx, bounds.w, bounds.h)
     end
   end
 
