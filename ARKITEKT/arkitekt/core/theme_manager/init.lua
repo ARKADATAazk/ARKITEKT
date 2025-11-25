@@ -49,9 +49,8 @@ local M = {}
 -- VALUE WRAPPERS - Define interpolation behavior
 -- ============================================================================
 -- These wrappers tell the system HOW to transition between preset values:
---   blend(value)        - smooth gradient across black→grey→white
---   step(value)         - discrete zones, no interpolation
---   flipAt(0.5, value)  - binary flip at lightness threshold (for contrast)
+--   blend(value)  - smooth gradient between dark↔light
+--   step(value)   - discrete snap at midpoint (no interpolation)
 
 --- Smooth gradient between preset values
 --- @param value any The value for this preset
@@ -60,38 +59,30 @@ local function blend(value)
   return { value = value, mode = "blend" }
 end
 
---- Discrete steps - use value from current zone (no interpolation)
+--- Discrete steps - snap at midpoint (no interpolation)
 --- @param value any The value for this preset
 --- @return table Wrapper with mode metadata
 local function step(value)
   return { value = value, mode = "step" }
 end
 
---- Binary flip at lightness threshold (used in M.contrast)
---- @param threshold number Lightness threshold (0.0-1.0) to flip at
---- @param value any The value for this contrast mode
---- @return table Wrapper with mode metadata
-local function flipAt(threshold, value)
-  return { value = value, mode = "flip", threshold = threshold }
-end
-
 -- Export wrappers for external use
 M.blend = blend
 M.step = step
-M.flipAt = flipAt
 
 -- ============================================================================
--- THEME PRESETS (black/grey/white)
+-- THEME PRESETS (dark/light)
 -- ============================================================================
--- Concrete theme presets for blend() and step() interpolation.
--- Values wrapped with blend() will smoothly interpolate between presets.
--- Values wrapped with step() will snap to the nearest preset's value.
--- Raw values (no wrapper) are treated as blend() for backwards compatibility.
+-- Two anchor presets defining the endpoints for interpolation.
+-- Values wrapped with blend() will smoothly interpolate between dark↔light.
+-- Values wrapped with step() will snap at the midpoint.
+-- All intermediate themes (grey, adapt, custom) are auto-derived.
 
 M.presets = {
-  -- BLACK preset (very dark, ~14% lightness)
-  black = {
-    -- Background deltas (positive = lighter)
+  -- DARK preset (~14% lightness)
+  -- Optimized for: low-light environments, OLED screens
+  dark = {
+    -- Background deltas (positive = lighter on dark themes)
     bg_hover_delta = blend(0.03),
     bg_active_delta = blend(0.05),
     bg_header_delta = blend(-0.024),
@@ -102,7 +93,7 @@ M.presets = {
     pattern_secondary_delta = blend(-0.004),
 
     -- Borders
-    border_outer_color = step("#000000"),
+    border_outer_color = step("#000000"),  -- Pure black for dark themes
     border_outer_opacity = blend(0.87),
     border_inner_delta = blend(0.05),
     border_hover_delta = blend(0.10),
@@ -126,63 +117,39 @@ M.presets = {
     tile_fill_opacity = blend(0.4),
   },
 
-  -- GREY preset (medium, ~24% lightness)
-  grey = {
-    bg_hover_delta = blend(0.025),
-    bg_active_delta = blend(0.04),
-    bg_header_delta = blend(-0.024),
-    bg_panel_delta = blend(-0.04),
-
-    pattern_primary_delta = blend(-0.03),
-    pattern_secondary_delta = blend(-0.006),
-
-    border_outer_color = step("#000000"),
-    border_outer_opacity = blend(0.75),
-    border_inner_delta = blend(0.05),
-    border_hover_delta = blend(0.10),
-    border_active_delta = blend(0.15),
-    border_focus_delta = blend(0.20),
-
-    text_hover_delta = blend(0.05),
-    text_dimmed_delta = blend(-0.10),
-    text_dark_delta = blend(-0.20),
-    text_bright_delta = blend(0.10),
-
-    accent_bright_delta = blend(0.15),
-    accent_white_lightness = blend(0.30),
-    accent_white_bright_lightness = blend(0.40),
-
-    tile_fill_brightness = blend(0.55),
-    tile_fill_saturation = blend(0.45),
-    tile_fill_opacity = blend(0.45),
-  },
-
-  -- WHITE preset (bright, ~88% lightness)
-  white = {
+  -- LIGHT preset (~88% lightness)
+  -- Optimized for: bright environments, paper-like appearance
+  light = {
+    -- Background deltas (negative = darker on light themes)
     bg_hover_delta = blend(-0.04),
     bg_active_delta = blend(-0.07),
     bg_header_delta = blend(-0.06),
     bg_panel_delta = blend(-0.04),
 
+    -- Pattern visibility (needs more contrast on light backgrounds)
     pattern_primary_delta = blend(-0.06),
     pattern_secondary_delta = blend(-0.02),
 
-    border_outer_color = step("#404040"),
+    -- Borders
+    border_outer_color = step("#404040"),  -- Soft grey for light themes
     border_outer_opacity = blend(0.60),
     border_inner_delta = blend(-0.03),
     border_hover_delta = blend(-0.08),
     border_active_delta = blend(-0.12),
     border_focus_delta = blend(-0.15),
 
+    -- Text
     text_hover_delta = blend(-0.05),
     text_dimmed_delta = blend(0.15),
     text_dark_delta = blend(0.25),
     text_bright_delta = blend(-0.08),
 
+    -- Accents
     accent_bright_delta = blend(-0.12),
     accent_white_lightness = blend(0.55),
     accent_white_bright_lightness = blend(0.45),
 
+    -- Tile rendering (inverted: brighten fills, dark text)
     tile_fill_brightness = blend(1.4),
     tile_fill_saturation = blend(0.5),
     tile_fill_opacity = blend(0.5),
@@ -193,7 +160,7 @@ M.presets = {
 -- CONTRAST RULES (binary flip at lightness threshold)
 -- ============================================================================
 -- Single-definition format for contrast-critical values.
--- Each rule specifies: { threshold, dark_value, light_value }
+-- Each rule specifies: { threshold, dark, light }
 -- At runtime: lightness < threshold → dark, otherwise → light
 --
 -- Use for values that need hard contrast (text on backgrounds, etc.)
@@ -204,24 +171,28 @@ M.contrast = {
 }
 
 -- ============================================================================
+-- PRESET ANCHORS
+-- ============================================================================
+-- Lightness values for the two anchor presets.
+-- All intermediate values are interpolated between these endpoints.
+
+M.preset_anchors = {
+  dark = 0.14,   -- ~14% lightness
+  light = 0.88,  -- ~88% lightness
+}
+
+-- ============================================================================
 -- LEGACY COMPATIBILITY
 -- ============================================================================
--- Map old theme_rules to new presets for backwards compatibility
+-- Map old names to new presets for backwards compatibility
 M.theme_rules = {
-  dark = M.presets.black,
-  grey = M.presets.grey,
-  light = M.presets.white,
+  dark = M.presets.dark,
+  grey = M.presets.dark,   -- Grey now uses dark as base (auto-interpolated)
+  light = M.presets.light,
+  black = M.presets.dark,
+  white = M.presets.light,
 }
 
--- Anchor lightness values for each theme preset
--- Used for interpolation in adapt mode
-M.preset_anchors = {
-  black = 0.14,  -- ~14% lightness (black preset)
-  grey = 0.24,   -- ~24% lightness (grey preset)
-  white = 0.88,  -- ~88% lightness (white preset)
-}
-
--- Legacy alias
 M.theme_anchors = M.preset_anchors
 
 --- Extract raw value from wrapper or return as-is
@@ -340,26 +311,24 @@ local function compute_rules_for_lightness(lightness, mode)
   local preset_rules
 
   -- Get preset rules based on mode
-  if mode == "dark" then
-    preset_rules = unwrap_preset(M.presets.black)
-  elseif mode == "grey" then
-    preset_rules = unwrap_preset(M.presets.grey)
+  -- "dark" and "grey" both use dark preset (grey is auto-interpolated)
+  if mode == "dark" or mode == "grey" then
+    preset_rules = unwrap_preset(M.presets.dark)
   elseif mode == "light" then
-    preset_rules = unwrap_preset(M.presets.white)
+    preset_rules = unwrap_preset(M.presets.light)
   else
-    -- "adapt" mode or nil: interpolate based on lightness
-    if lightness <= M.preset_anchors.black then
-      preset_rules = unwrap_preset(M.presets.black)
-    elseif lightness >= M.preset_anchors.white then
-      preset_rules = unwrap_preset(M.presets.white)
-    elseif lightness <= M.preset_anchors.grey then
-      local range = M.preset_anchors.grey - M.preset_anchors.black
-      local t = (lightness - M.preset_anchors.black) / range
-      preset_rules = lerp_rules(M.presets.black, M.presets.grey, t)
+    -- "adapt" mode or nil: interpolate between dark and light based on lightness
+    if lightness <= M.preset_anchors.dark then
+      -- Below dark anchor: use dark preset
+      preset_rules = unwrap_preset(M.presets.dark)
+    elseif lightness >= M.preset_anchors.light then
+      -- Above light anchor: use light preset
+      preset_rules = unwrap_preset(M.presets.light)
     else
-      local range = M.preset_anchors.white - M.preset_anchors.grey
-      local t = (lightness - M.preset_anchors.grey) / range
-      preset_rules = lerp_rules(M.presets.grey, M.presets.white, t)
+      -- Between anchors: interpolate linearly between dark and light
+      local range = M.preset_anchors.light - M.preset_anchors.dark
+      local t = (lightness - M.preset_anchors.dark) / range
+      preset_rules = lerp_rules(M.presets.dark, M.presets.light, t)
     end
   end
 
@@ -372,8 +341,8 @@ local function compute_rules_for_lightness(lightness, mode)
   return preset_rules
 end
 
--- Legacy compatibility: keep derivation_rules pointing to black preset
-M.derivation_rules = unwrap_preset(M.presets.black)
+-- Legacy compatibility: keep derivation_rules pointing to dark preset
+M.derivation_rules = unwrap_preset(M.presets.dark)
 
 -- ============================================================================
 -- CORE: ALGORITHMIC PALETTE GENERATION

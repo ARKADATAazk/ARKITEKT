@@ -8,9 +8,9 @@ Dynamic theme system with algorithmic color palette generation for ARKITEKT.
 local ThemeManager = require('arkitekt.core.theme_manager')
 
 -- Pick a mode
-ThemeManager.set_dark()   -- Black preset
-ThemeManager.set_grey()   -- Grey preset
-ThemeManager.set_light()  -- White preset
+ThemeManager.set_dark()   -- Dark preset (~14% lightness)
+ThemeManager.set_grey()   -- Grey preset (~24% lightness, auto-interpolated)
+ThemeManager.set_light()  -- Light preset (~88% lightness)
 ThemeManager.adapt()      -- Sync with REAPER's theme
 ```
 
@@ -33,7 +33,7 @@ All UI colors are then available via `Style.COLORS.*`.
 │                     ┌─────┴─────┐                           │
 │                     ↓           ↓                           │
 │               M.presets    M.contrast                       │
-│            (blend/step)     (flipAt)                        │
+│            (blend/step)   (threshold)                       │
 │                     └─────┬─────┘                           │
 │                           ↓                                 │
 │                    merged rules                             │
@@ -52,40 +52,53 @@ All UI colors are then available via `Style.COLORS.*`.
 
 ---
 
+## Two-Preset System
+
+The theme manager uses just **two anchor presets** (dark and light). All intermediate themes (grey, adapt, custom colors) are automatically interpolated between them.
+
+| Preset | Lightness | Description |
+|--------|-----------|-------------|
+| `dark` | ~14% | Very dark (OLED-friendly) |
+| `light` | ~88% | Bright (paper-like) |
+
+**Grey is auto-derived**: When you call `set_grey()`, it applies a 24% lightness background with values automatically interpolated between dark and light presets.
+
+**Adapt mode**: Reads REAPER's background color and interpolates proportionally.
+
+---
+
 ## Value Wrappers
 
-Three wrappers define HOW values transition between themes:
+Two wrappers define HOW values transition between presets:
 
 ### `blend(value)` - Smooth Gradient
 
-Smoothly interpolates across presets based on background lightness.
+Smoothly interpolates between dark and light based on background lightness.
 
 ```lua
 -- In presets
-black = { tile_fill_brightness = blend(0.5) },   -- 50%
-grey  = { tile_fill_brightness = blend(0.55) },  -- 55%
-white = { tile_fill_brightness = blend(1.4) },   -- 140%
+dark  = { tile_fill_brightness = blend(0.5) },   -- 50%
+light = { tile_fill_brightness = blend(1.4) },   -- 140%
 
--- At 20% lightness (between black and grey anchors):
--- Result: ~0.52 (interpolated)
+-- At 50% lightness (midpoint):
+-- Result: ~0.95 (linear interpolation)
 ```
 
 Works with:
 - **Numbers**: Linear interpolation
 - **Colors**: RGB interpolation (`blend("#FF0000")` → `blend("#00FF00")`)
 
-### `step(value)` - Discrete Zones
+### `step(value)` - Discrete Snap
 
-No interpolation. Snaps to the nearest preset's value.
+No interpolation. Snaps to the closest preset's value at midpoint.
 
 ```lua
 -- In presets
-black = { border_outer_color = step("#000000") },  -- Pure black
-grey  = { border_outer_color = step("#000000") },  -- Still black
-white = { border_outer_color = step("#404040") },  -- Soft grey
+dark  = { border_outer_color = step("#000000") },  -- Pure black
+light = { border_outer_color = step("#404040") },  -- Soft grey
 
--- At 50% lightness:
--- Result: "#000000" (closest to grey anchor)
+-- At 40% lightness: "#000000" (closer to dark)
+-- At 60% lightness: "#404040" (closer to light)
 ```
 
 Use for:
@@ -94,7 +107,7 @@ Use for:
 
 ### Contrast Rules - Binary Flip
 
-For values that need hard contrast (no gradual blending), use `M.contrast`:
+For values that need hard contrast (text readability), use `M.contrast`:
 
 ```lua
 -- Single definition - no duplication, can't desync
@@ -119,26 +132,22 @@ Use for:
 
 ## Data Structures
 
-### `M.presets` - Concrete Theme Presets
-
-Three presets defining the color "anchors":
-
-| Preset | Lightness | Description |
-|--------|-----------|-------------|
-| `black` | ~14% | Very dark (OLED-friendly) |
-| `grey` | ~24% | Balanced neutral |
-| `white` | ~88% | Bright (paper-like) |
+### `M.presets` - Two Anchor Presets
 
 ```lua
 M.presets = {
-  black = {
+  dark = {
     bg_hover_delta = blend(0.03),
     tile_fill_brightness = blend(0.5),
     border_outer_color = step("#000000"),
     -- ...
   },
-  grey = { ... },
-  white = { ... },
+  light = {
+    bg_hover_delta = blend(-0.04),
+    tile_fill_brightness = blend(1.4),
+    border_outer_color = step("#404040"),
+    -- ...
+  },
 }
 ```
 
@@ -162,9 +171,8 @@ Defines where each preset sits on the lightness scale:
 
 ```lua
 M.preset_anchors = {
-  black = 0.14,  -- 14% lightness
-  grey = 0.24,   -- 24% lightness
-  white = 0.88,  -- 88% lightness
+  dark = 0.14,   -- 14% lightness
+  light = 0.88,  -- 88% lightness
 }
 ```
 
@@ -177,25 +185,23 @@ Used to calculate interpolation factor `t` between presets.
 ### For `blend()` values:
 
 ```
-Lightness:  0%    14%    24%         88%    100%
-            |     |      |           |      |
-Presets:    black ←→ grey ←────────→ white
-            │      │                  │
-            └──t───┘                  │
-               │                      │
-        t = (lightness - black) / (grey - black)
+Lightness:  0%    14%                    88%    100%
+            |     |                       |      |
+Presets:    dark ←──────────────────────→ light
+                          │
+                          t = (lightness - dark) / (light - dark)
 ```
 
 Between anchors, `t` ranges from 0.0 to 1.0:
-- `t = 0.0` → use preset A's value
+- `t = 0.0` → use dark preset's value
 - `t = 0.5` → 50/50 blend
-- `t = 1.0` → use preset B's value
+- `t = 1.0` → use light preset's value
 
 ### For `step()` values:
 
 Same calculation, but snaps at `t = 0.5`:
-- `t < 0.5` → use preset A's value
-- `t >= 0.5` → use preset B's value
+- `t < 0.5` → use dark preset's value
+- `t >= 0.5` → use light preset's value
 
 ### For contrast rules:
 
@@ -212,16 +218,15 @@ Ignores presets entirely. Uses absolute lightness:
 | Behavior | Define in | Format |
 |----------|-----------|--------|
 | Smooth gradient | `M.presets` | `blend(value)` |
-| Discrete zones | `M.presets` | `step(value)` |
+| Discrete snap | `M.presets` | `step(value)` |
 | Binary contrast | `M.contrast` | `{ threshold, dark, light }` |
 
 ### 2. Add to appropriate table:
 
 ```lua
--- For blend/step (in M.presets - all 3 presets):
-M.presets.black.my_new_value = blend(0.3)
-M.presets.grey.my_new_value = blend(0.5)
-M.presets.white.my_new_value = blend(0.8)
+-- For blend/step (in both presets):
+M.presets.dark.my_new_value = blend(0.3)
+M.presets.light.my_new_value = blend(0.8)
 
 -- For contrast (single definition):
 M.contrast.my_contrast_value = { threshold = 0.5, dark = "#FFFFFF", light = "#000000" }
@@ -282,9 +287,9 @@ Pattern:
 ### Mode Selection
 
 ```lua
-ThemeManager.set_dark()    -- Apply black preset
-ThemeManager.set_grey()    -- Apply grey preset
-ThemeManager.set_light()   -- Apply white preset
+ThemeManager.set_dark()    -- Apply dark preset
+ThemeManager.set_grey()    -- Apply grey (auto-interpolated)
+ThemeManager.set_light()   -- Apply light preset
 ThemeManager.adapt()       -- Sync with REAPER theme
 
 ThemeManager.set_mode("dark")  -- Same as set_dark()
@@ -344,10 +349,9 @@ local l = ThemeManager.get_theme_lightness()
 local blend = ThemeManager.blend
 local step = ThemeManager.step
 
--- Add to presets (all 3)
-M.presets.black.my_value = blend(0.5)
-M.presets.grey.my_value = blend(0.6)
-M.presets.white.my_value = blend(0.9)
+-- Add to presets (both dark and light)
+M.presets.dark.my_value = blend(0.5)
+M.presets.light.my_value = blend(0.9)
 
 -- Add to contrast (single definition)
 M.contrast.my_text = { threshold = 0.5, dark = "#FFFFFF", light = "#000000" }
@@ -361,13 +365,13 @@ For backward compatibility, these aliases exist:
 
 ```lua
 M.theme_rules = {
-  dark = M.presets.black,
-  grey = M.presets.grey,
-  light = M.presets.white,
+  dark = M.presets.dark,
+  grey = M.presets.dark,   -- Grey uses dark (auto-interpolated at runtime)
+  light = M.presets.light,
 }
 
 M.theme_anchors = M.preset_anchors
-M.derivation_rules = unwrap_preset(M.presets.black)
+M.derivation_rules = unwrap_preset(M.presets.dark)
 ```
 
 ---
