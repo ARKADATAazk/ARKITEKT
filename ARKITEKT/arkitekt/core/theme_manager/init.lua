@@ -86,6 +86,13 @@ M.theme_rules = {
     accent_bright_delta = 0.15,
     accent_white_lightness = 0.25,
     accent_white_bright_lightness = 0.35,
+
+    -- Tile rendering (region tiles with user-defined colors)
+    -- Fill is darkened to create depth, text is light for contrast
+    tile_fill_brightness = 0.5,     -- Darken fills to 50%
+    tile_fill_saturation = 0.4,     -- Desaturate fills
+    tile_fill_opacity = 0.4,        -- Semi-transparent
+    tile_name_color = "#DDE3E9",    -- Light text on dark fills
   },
 
   -- GREY theme rules (base ~24% lightness)
@@ -114,6 +121,12 @@ M.theme_rules = {
     accent_bright_delta = 0.15,
     accent_white_lightness = 0.30,
     accent_white_bright_lightness = 0.40,
+
+    -- Tile rendering (slightly less darkening than pure dark)
+    tile_fill_brightness = 0.55,
+    tile_fill_saturation = 0.45,
+    tile_fill_opacity = 0.45,
+    tile_name_color = "#E0E4E8",
   },
 
   -- LIGHT theme rules (base ~88% lightness)
@@ -146,6 +159,13 @@ M.theme_rules = {
     accent_bright_delta = -0.12,
     accent_white_lightness = 0.55,
     accent_white_bright_lightness = 0.45,
+
+    -- Tile rendering (INVERTED: brighten/whiten fills, dark text)
+    -- Creates pastel/washed look that works on light backgrounds
+    tile_fill_brightness = 1.4,     -- Brighten fills to 140% (whiten)
+    tile_fill_saturation = 0.5,     -- Slightly more saturated than dark
+    tile_fill_opacity = 0.5,        -- Slightly more opaque
+    tile_name_color = "#1A1A1A",    -- Dark text on light fills
   },
 }
 
