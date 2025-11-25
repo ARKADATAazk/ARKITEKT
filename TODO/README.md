@@ -11,7 +11,7 @@ Actionable improvement tasks for the ARKITEKT codebase.
 ## Related Documentation
 
 - `/Documentation/architecture/` - Architecture and migration plans
-- `/lua_perf_guide.md` - Performance reference guide
+- `/Documentation/LUA_PERFORMANCE_GUIDE.md` - Performance reference guide
 
 ## Process
 

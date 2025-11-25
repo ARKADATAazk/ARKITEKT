@@ -1,6 +1,6 @@
 # Performance Optimization TODOs
 
-Reference: `lua_perf_guide.md`
+Reference: [`Documentation/LUA_PERFORMANCE_GUIDE.md`](../Documentation/LUA_PERFORMANCE_GUIDE.md)
 
 ## Current Compliance: 7.5/10
 
