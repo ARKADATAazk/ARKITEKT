@@ -83,7 +83,7 @@ local panel_config = {
     -- Top overlay toolbar (edge slide animation)
     top = {
       enabled = true,
-      height = 60,  -- Height for horizontal toolbar
+      height = 40,  -- Height for horizontal toolbar
       extend_from_edge = true,
       edge_slide_distance = 13,  -- Slide down from top edge
       auto_hide = {
@@ -123,7 +123,7 @@ local panel_config = {
     -- Bottom overlay toolbar (edge slide animation)
     bottom = {
       enabled = true,
-      height = 60,  -- Height for horizontal toolbar
+      height = 40,  -- Height for horizontal toolbar
       extend_from_edge = true,
       edge_slide_distance = 13,  -- Slide up from bottom edge
       auto_hide = {

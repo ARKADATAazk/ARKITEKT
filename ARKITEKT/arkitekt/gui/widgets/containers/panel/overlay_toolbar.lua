@@ -150,7 +150,8 @@ function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, conf
   slide_offset = slide_offset or 0
 
   if position == "top" then
-    local start_y = (not extend_from_edge and regular_toolbar_bounds) and regular_toolbar_bounds.y2 or y1
+    -- If there's a regular toolbar, start after it; otherwise start at panel edge
+    local start_y = regular_toolbar_bounds and regular_toolbar_bounds.y2 or y1
 
     -- Apply edge slide: toolbar starts clipped outside edge, slides down on hover
     local edge_slide_distance = config.edge_slide_distance or 0
@@ -163,7 +164,8 @@ function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, conf
       h = visible_size
     }
   elseif position == "bottom" then
-    local end_y = (not extend_from_edge and regular_toolbar_bounds) and regular_toolbar_bounds.y1 or y2
+    -- If there's a regular toolbar, start before it; otherwise start at panel edge
+    local end_y = regular_toolbar_bounds and regular_toolbar_bounds.y1 or y2
 
     -- Apply edge slide: toolbar starts clipped outside edge, slides up on hover
     local edge_slide_distance = config.edge_slide_distance or 0
