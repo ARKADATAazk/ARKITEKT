@@ -3,6 +3,7 @@
 -- Keyboard shortcut handling using sequence-aware bridge helpers
 
 local ImGui = require 'imgui' '0.10'
+local Logger = require('arkitekt.debug.logger')
 
 local M = {}
 
@@ -48,7 +49,7 @@ function M.handle_keyboard_shortcuts(ctx, state, region_tiles)
       
       local success = state.bridge:play()
       if not success then
-        reaper.ShowConsoleMsg("Failed to play - check playlist\n")
+        Logger.warn("PLAYBACK", "Failed to play - check playlist")
       end
     end
     return true

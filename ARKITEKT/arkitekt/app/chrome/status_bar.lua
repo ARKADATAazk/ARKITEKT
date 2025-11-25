@@ -7,8 +7,12 @@ local ImGui = require 'imgui' '0.10'
 local Config = require('arkitekt.core.config')
 local Constants = require('arkitekt.defs.app')
 local Colors = require('arkitekt.core.colors')
+local Logger = require('arkitekt.debug.logger')
 
 local M = {}
+
+-- Set to true to enable resize grip debugging
+local DEBUG_RESIZE = false
 local hexrgb = Colors.hexrgb
 
 local function add_text(dl, x, y, col_u32, s)
@@ -107,7 +111,9 @@ function M.new(config)
       local mx, my = ImGui.GetMousePos(ctx)
       drag_start_x, drag_start_y = mx, my
       drag_start_w, drag_start_h = ImGui.GetWindowSize(ctx)
-      reaper.ShowConsoleMsg("Resize grip: DRAG START - w=" .. drag_start_w .. " h=" .. drag_start_h .. "\n")
+      if DEBUG_RESIZE then
+        Logger.debug("GUI", "Resize grip: DRAG START - w=%d h=%d", drag_start_w, drag_start_h)
+      end
     end
 
     if resize_dragging then
@@ -117,11 +123,15 @@ function M.new(config)
         local delta_y = my - drag_start_y
         pending_resize_w = math.max(200, drag_start_w + delta_x)
         pending_resize_h = math.max(100, drag_start_h + delta_y)
-        reaper.ShowConsoleMsg("Resize grip: DRAGGING - new_w=" .. pending_resize_w .. " new_h=" .. pending_resize_h .. " (delta: " .. delta_x .. ", " .. delta_y .. ")\n")
+        if DEBUG_RESIZE then
+          Logger.debug("GUI", "Resize grip: DRAGGING - new_w=%d new_h=%d (delta: %d, %d)", pending_resize_w, pending_resize_h, delta_x, delta_y)
+        end
       else
         resize_dragging = false
         pending_resize_w, pending_resize_h = nil, nil
-        reaper.ShowConsoleMsg("Resize grip: DRAG END\n")
+        if DEBUG_RESIZE then
+          Logger.debug("GUI", "Resize grip: DRAG END")
+        end
       end
     end
 

@@ -13,18 +13,25 @@ local Constants = require('arkitekt.defs.app')
 local Typography = require('arkitekt.defs.typography')
 local Fonts = require('arkitekt.app.chrome.fonts')
 local Window  = require('arkitekt.app.chrome.window')
+local Logger = require('arkitekt.debug.logger')
 
 local M = {}
 
 -- ============================================================================
 -- ERROR HANDLING: Wrap reaper.defer with xpcall for full stack traces
+-- Logs to both Logger (debug console) and REAPER console (immediate visibility)
 -- ============================================================================
 do
   local original_defer = reaper.defer
   reaper.defer = function(func)
     return original_defer(function()
       xpcall(func, function(err)
-        reaper.ShowConsoleMsg("ERROR: " .. tostring(err) .. '\n\n' .. debug.traceback() .. '\n')
+        local error_msg = tostring(err)
+        local stack = debug.traceback()
+        -- Log to debug console
+        Logger.error("SYSTEM", "%s\n%s", error_msg, stack)
+        -- Also output to REAPER console for immediate visibility
+        reaper.ShowConsoleMsg("ERROR: " .. error_msg .. '\n\n' .. stack .. '\n')
       end)
     end)
   end

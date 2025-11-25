@@ -4,6 +4,7 @@
 -- Extracted from RegionPlaylist for reuse across scripts
 
 local JSON = require('arkitekt.core.json')
+local Logger = require('arkitekt.debug.logger')
 
 local M = {}
 
@@ -66,7 +67,7 @@ function M.new(section, proj)
     -- REAPER doesn't provide a way to enumerate keys, so we can't truly clear all
     -- Instead, we document common keys and let the caller specify them
     -- Or we could use a manifest key that tracks all keys used
-    reaper.ShowConsoleMsg("[ProjectState] Warning: clear_all() requires manual key specification\n")
+    Logger.warn("STORAGE", "ProjectState.clear_all() requires manual key specification")
   end
 
   --- Get the section name

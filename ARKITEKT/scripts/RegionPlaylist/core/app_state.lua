@@ -23,8 +23,12 @@ local UIPreferences = require("RegionPlaylist.domains.ui_preferences")
 local Region = require("RegionPlaylist.domains.region")
 local Dependency = require("RegionPlaylist.domains.dependency")
 local Playlist = require("RegionPlaylist.domains.playlist")
+local Logger = require('arkitekt.debug.logger')
 
 local M = {}
+
+-- Set to true for verbose app state logging
+local DEBUG_APP_STATE = false
 
 package.loaded["RegionPlaylist.core.app_state"] = M
 
@@ -95,7 +99,9 @@ function M.initialize(settings)
   -- Load UI preferences from settings
   M.ui_preferences:load_from_settings()
 
-  reaper.ShowConsoleMsg("[APP_STATE] Initialized with all 6 domains: animation, notification, ui_preferences, region, dependency, playlist\n")
+  if DEBUG_APP_STATE then
+    Logger.info("STATE", "Initialized with all 6 domains: animation, notification, ui_preferences, region, dependency, playlist")
+  end
 
   -- Initialize project monitor to track changes
   M.project_monitor = ProjectMonitor.new({

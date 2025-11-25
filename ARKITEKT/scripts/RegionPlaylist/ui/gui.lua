@@ -12,6 +12,7 @@ local BatchOperations = require("RegionPlaylist.ui.batch_operations")
 local TransportView = require("RegionPlaylist.ui.views.transport.transport_view")
 local LayoutView = require("RegionPlaylist.ui.views.layout_view")
 local OverflowModalView = require("RegionPlaylist.ui.views.overflow_modal_view")
+local Logger = require('arkitekt.debug.logger')
 
 local M = {}
 local GUI = {}
@@ -274,7 +275,7 @@ function M.create(State, AppConfig, settings)
         local circular, path = State.detect_circular_reference(active_playlist_id, playlist_id)
         if circular then
           local path_str = table.concat(path, " → ")
-          reaper.ShowConsoleMsg(string.format("Circular reference detected: %s\n", path_str))
+          Logger.warn("GUI", "Circular reference detected: %s", path_str)
           reaper.MB("Cannot add playlist: circular reference detected.\n\nPath: " .. path_str, "Circular Reference", 0)
           return
         end

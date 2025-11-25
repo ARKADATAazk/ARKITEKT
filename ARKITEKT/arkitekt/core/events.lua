@@ -12,6 +12,8 @@
 --   -- Emit
 --   bus:emit("user.clicked", { x = 100, y = 200 })
 
+local Logger = require('arkitekt.debug.logger')
+
 local M = {}
 
 --- Create a new event bus instance
@@ -60,7 +62,7 @@ function M.new(options)
     end)
 
     if self.debug then
-      reaper.ShowConsoleMsg(string.format("[EVENTS] Subscribed to '%s' (priority: %d)\n", event_name, priority))
+      Logger.debug("EVENTS", "Subscribed to '%s' (priority: %d)", event_name, priority)
     end
 
     -- Return unsubscribe function
@@ -72,7 +74,7 @@ function M.new(options)
         if l.id == listener_id then
           table.remove(self.listeners[event_name], i)
           if self.debug then
-            reaper.ShowConsoleMsg(string.format("[EVENTS] Unsubscribed from '%s'\n", event_name))
+            Logger.debug("EVENTS", "Unsubscribed from '%s'", event_name)
           end
           break
         end
@@ -108,7 +110,7 @@ function M.new(options)
     end
 
     if self.debug then
-      reaper.ShowConsoleMsg(string.format("[EVENTS] Emitting '%s'\n", event_name))
+      Logger.debug("EVENTS", "Emitting '%s'", event_name)
     end
 
     -- Call specific listeners
@@ -117,7 +119,7 @@ function M.new(options)
       for _, listener in ipairs(callbacks) do
         local ok, err = pcall(listener.callback, data)
         if not ok then
-          reaper.ShowConsoleMsg(string.format("[EVENTS] Error in listener for '%s': %s\n", event_name, tostring(err)))
+          Logger.error("EVENTS", "Error in listener for '%s': %s", event_name, tostring(err))
         end
       end
     end
@@ -128,7 +130,7 @@ function M.new(options)
       for _, listener in ipairs(wildcard_callbacks) do
         local ok, err = pcall(listener.callback, event_name, data)
         if not ok then
-          reaper.ShowConsoleMsg(string.format("[EVENTS] Error in wildcard listener for '%s': %s\n", event_name, tostring(err)))
+          Logger.error("EVENTS", "Error in wildcard listener for '%s': %s", event_name, tostring(err))
         end
       end
     end
@@ -139,7 +141,7 @@ function M.new(options)
   function bus:off(event_name)
     self.listeners[event_name] = nil
     if self.debug then
-      reaper.ShowConsoleMsg(string.format("[EVENTS] Removed all listeners for '%s'\n", event_name))
+      Logger.debug("EVENTS", "Removed all listeners for '%s'", event_name)
     end
   end
 
@@ -147,7 +149,7 @@ function M.new(options)
   function bus:clear()
     self.listeners = {}
     if self.debug then
-      reaper.ShowConsoleMsg("[EVENTS] Cleared all listeners\n")
+      Logger.debug("EVENTS", "Cleared all listeners")
     end
   end
 
@@ -167,10 +169,10 @@ function M.new(options)
   --- @param count number Optional max number of events to print
   function bus:print_history(count)
     count = count or 10
-    reaper.ShowConsoleMsg(string.format("\n[EVENTS] Last %d events:\n", count))
+    Logger.info("EVENTS", "Last %d events:", count)
     for i = 1, math.min(count, #self.history) do
       local event = self.history[i]
-      reaper.ShowConsoleMsg(string.format("  [%.3f] %s\n", event.timestamp, event.event))
+      Logger.info("EVENTS", "  [%.3f] %s", event.timestamp, event.event)
     end
   end
 
@@ -195,7 +197,7 @@ function M.new(options)
   function bus:set_debug(enabled)
     self.debug = enabled
     if enabled then
-      reaper.ShowConsoleMsg("[EVENTS] Debug mode enabled\n")
+      Logger.info("EVENTS", "Debug mode enabled")
     end
   end
 

@@ -2,7 +2,12 @@
 -- RegionPlaylist/domains/playlist.lua
 -- Manages playlist data, active playlist, and playlist operations
 
+local Logger = require('arkitekt.debug.logger')
+
 local M = {}
+
+-- Set to true for verbose domain logging
+local DEBUG_DOMAIN = false
 
 --- Create a new playlist domain
 --- @return table domain The playlist domain instance
@@ -13,7 +18,9 @@ function M.new()
     active_playlist = nil,   -- Currently active/selected playlist ID
   }
 
-  reaper.ShowConsoleMsg("[PLAYLIST] Domain initialized\n")
+  if DEBUG_DOMAIN then
+    Logger.debug("PLAYLIST", "Domain initialized")
+  end
 
   --- Rebuild lookup index from playlists array
   local function rebuild_lookup()
@@ -28,7 +35,9 @@ function M.new()
   function domain:load_playlists(playlists)
     self.playlists = playlists or {}
     rebuild_lookup()
-    reaper.ShowConsoleMsg(string.format("[PLAYLIST] Loaded %d playlists\n", #self.playlists))
+    if DEBUG_DOMAIN then
+      Logger.debug("PLAYLIST", "Loaded %d playlists", #self.playlists)
+    end
   end
 
   --- Get all playlists
@@ -65,7 +74,9 @@ function M.new()
   --- @param playlist_id string Playlist UUID to make active
   function domain:set_active(playlist_id)
     self.active_playlist = playlist_id
-    reaper.ShowConsoleMsg(string.format("[PLAYLIST] Active playlist: %s\n", playlist_id or "nil"))
+    if DEBUG_DOMAIN then
+      Logger.debug("PLAYLIST", "Active playlist: %s", playlist_id or "nil")
+    end
   end
 
   --- Move playlist to front (position 1)
@@ -85,7 +96,9 @@ function M.new()
       local playlist = table.remove(self.playlists, playlist_index)
       table.insert(self.playlists, 1, playlist)
       rebuild_lookup()
-      reaper.ShowConsoleMsg(string.format("[PLAYLIST] Moved to front: %s\n", playlist_id))
+      if DEBUG_DOMAIN then
+        Logger.debug("PLAYLIST", "Moved to front: %s", playlist_id)
+      end
     end
   end
 
@@ -115,7 +128,9 @@ function M.new()
 
     self.playlists = reordered
     rebuild_lookup()
-    reaper.ShowConsoleMsg(string.format("[PLAYLIST] Reordered: %d playlists\n", #reordered))
+    if DEBUG_DOMAIN then
+      Logger.debug("PLAYLIST", "Reordered: %d playlists", #reordered)
+    end
   end
 
   --- Get tabs for UI display

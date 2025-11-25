@@ -5,6 +5,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
+local Logger = require('arkitekt.debug.logger')
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
@@ -203,7 +204,7 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
   ImGui.PopStyleVar(ctx)
 
   if not success and error_msg then
-    reaper.ShowConsoleMsg("Layout error (left column): " .. tostring(error_msg) .. "\n")
+    Logger.error("GUI", "Layout error (left column): %s", tostring(error_msg))
   end
   
   local separator_x = sep_x
@@ -242,7 +243,7 @@ function LayoutView:draw_vertical(ctx, region_tiles, display_playlist, pool_data
   ImGui.PopStyleVar(ctx)
 
   if not success and error_msg then
-    reaper.ShowConsoleMsg("Layout error (right column): " .. tostring(error_msg) .. "\n")
+    Logger.error("GUI", "Layout error (right column): %s", tostring(error_msg))
   end
 end
 

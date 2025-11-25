@@ -4,9 +4,14 @@
 -- Relies on bridge invalidate logic instead of manual engine sync
 
 local ark = require('arkitekt')
+local Logger = require('arkitekt.debug.logger')
+
 local M = {}
 local Controller = {}
 Controller.__index = Controller
+
+-- Set to true for verbose controller debugging
+local DEBUG_CONTROLLER = false
 
 package.loaded["RegionPlaylist.core.controller"] = M
 
@@ -185,17 +190,25 @@ function Controller:duplicate_playlist(id)
 end
 
 function Controller:rename_playlist(id, new_name)
-  reaper.ShowConsoleMsg("[Debug] rename_playlist called with ID: " .. tostring(id) .. " new_name: " .. tostring(new_name) .. "\n")
+  if DEBUG_CONTROLLER then
+    Logger.debug("CONTROLLER", "rename_playlist called with ID: %s new_name: %s", tostring(id), tostring(new_name))
+  end
   local playlist = self:_get_playlist(id)
   if not playlist then
-    reaper.ShowConsoleMsg("[Debug] ERROR: Playlist not found for ID: " .. tostring(id) .. "\n")
+    if DEBUG_CONTROLLER then
+      Logger.warn("CONTROLLER", "Playlist not found for ID: %s", tostring(id))
+    end
     return false, "Playlist not found"
   end
 
-  reaper.ShowConsoleMsg("[Debug] Found playlist, renaming from '" .. tostring(playlist.name) .. "' to '" .. tostring(new_name) .. "'\n")
+  if DEBUG_CONTROLLER then
+    Logger.debug("CONTROLLER", "Found playlist, renaming from '%s' to '%s'", tostring(playlist.name), tostring(new_name))
+  end
   return self:_with_undo(function()
     playlist.name = new_name or playlist.name
-    reaper.ShowConsoleMsg("[Debug] Rename complete, new name: " .. tostring(playlist.name) .. "\n")
+    if DEBUG_CONTROLLER then
+      Logger.debug("CONTROLLER", "Rename complete, new name: %s", tostring(playlist.name))
+    end
     return true
   end)
 end
@@ -242,12 +255,16 @@ end
 function Controller:set_region_color(rid, color)
   local Regions = require('arkitekt.reaper.regions')
 
-  reaper.ShowConsoleMsg(string.format("Controller:set_region_color(%d, %08X)\n", rid, color))
+  if DEBUG_CONTROLLER then
+    Logger.debug("CONTROLLER", "set_region_color(%d, %08X)", rid, color)
+  end
 
   -- Set color in Reaper (this updates the timeline immediately)
   local success = Regions.set_region_color(0, rid, color)
 
-  reaper.ShowConsoleMsg(string.format("  -> Regions.set_region_color returned: %s\n", tostring(success)))
+  if DEBUG_CONTROLLER then
+    Logger.debug("CONTROLLER", "  -> Regions.set_region_color returned: %s", tostring(success))
+  end
 
   if success then
     -- Force engine state refresh to update UI cache

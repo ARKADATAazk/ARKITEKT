@@ -2,7 +2,12 @@
 -- RegionPlaylist/domains/ui_preferences.lua
 -- Manages UI preferences (search, sort, layout, pool mode, separators)
 
+local Logger = require('arkitekt.debug.logger')
+
 local M = {}
+
+-- Set to true for verbose domain logging
+local DEBUG_DOMAIN = false
 
 --- Create a new UI preferences domain
 --- @param constants table Constants table with LAYOUT_MODES, POOL_MODES, SORT_DIRECTIONS
@@ -21,12 +26,16 @@ function M.new(constants, settings)
     constants = constants,
   }
 
-  reaper.ShowConsoleMsg("[UI_PREFERENCES] Domain initialized\n")
+  if DEBUG_DOMAIN then
+    Logger.debug("UI_PREFERENCES", "Domain initialized")
+  end
 
   --- Load preferences from settings
   function domain:load_from_settings()
     if not self.settings then
-      reaper.ShowConsoleMsg("[UI_PREFERENCES] No settings instance, using defaults\n")
+      if DEBUG_DOMAIN then
+        Logger.debug("UI_PREFERENCES", "No settings instance, using defaults")
+      end
       return
     end
 
@@ -36,14 +45,15 @@ function M.new(constants, settings)
     self.layout_mode = self.settings:get('layout_mode') or 'horizontal'
     self.pool_mode = self.settings:get('pool_mode') or 'regions'
 
-    reaper.ShowConsoleMsg(string.format(
-      "[UI_PREFERENCES] Loaded: search='%s', sort=%s:%s, layout=%s, pool=%s\n",
-      self.search_filter,
-      tostring(self.sort_mode),
-      self.sort_direction,
-      self.layout_mode,
-      self.pool_mode
-    ))
+    if DEBUG_DOMAIN then
+      Logger.debug("UI_PREFERENCES", "Loaded: search='%s', sort=%s:%s, layout=%s, pool=%s",
+        self.search_filter,
+        tostring(self.sort_mode),
+        self.sort_direction,
+        self.layout_mode,
+        self.pool_mode
+      )
+    end
   end
 
   --- Save preferences to settings
@@ -56,14 +66,15 @@ function M.new(constants, settings)
     self.settings:set('layout_mode', self.layout_mode)
     self.settings:set('pool_mode', self.pool_mode)
 
-    reaper.ShowConsoleMsg(string.format(
-      "[UI_PREFERENCES] Saved: search='%s', sort=%s:%s, layout=%s, pool=%s\n",
-      self.search_filter,
-      tostring(self.sort_mode),
-      self.sort_direction,
-      self.layout_mode,
-      self.pool_mode
-    ))
+    if DEBUG_DOMAIN then
+      Logger.debug("UI_PREFERENCES", "Saved: search='%s', sort=%s:%s, layout=%s, pool=%s",
+        self.search_filter,
+        tostring(self.sort_mode),
+        self.sort_direction,
+        self.layout_mode,
+        self.pool_mode
+      )
+    end
   end
 
   -- Search filter accessors
@@ -73,7 +84,9 @@ function M.new(constants, settings)
 
   function domain:set_search_filter(text)
     self.search_filter = text
-    reaper.ShowConsoleMsg(string.format("[UI_PREFERENCES] Search filter: '%s'\n", text))
+    if DEBUG_DOMAIN then
+      Logger.debug("UI_PREFERENCES", "Search filter: '%s'", text)
+    end
   end
 
   -- Sort mode accessors
@@ -83,7 +96,9 @@ function M.new(constants, settings)
 
   function domain:set_sort_mode(mode)
     self.sort_mode = mode
-    reaper.ShowConsoleMsg(string.format("[UI_PREFERENCES] Sort mode: %s\n", tostring(mode)))
+    if DEBUG_DOMAIN then
+      Logger.debug("UI_PREFERENCES", "Sort mode: %s", tostring(mode))
+    end
   end
 
   -- Sort direction accessors
@@ -98,7 +113,9 @@ function M.new(constants, settings)
       error(string.format("Invalid sort_direction: %s (expected 'asc' or 'desc')", tostring(direction)))
     end
     self.sort_direction = direction
-    reaper.ShowConsoleMsg(string.format("[UI_PREFERENCES] Sort direction: %s\n", direction))
+    if DEBUG_DOMAIN then
+      Logger.debug("UI_PREFERENCES", "Sort direction: %s", direction)
+    end
   end
 
   -- Layout mode accessors
@@ -113,7 +130,9 @@ function M.new(constants, settings)
       error(string.format("Invalid layout_mode: %s (expected 'horizontal' or 'vertical')", tostring(mode)))
     end
     self.layout_mode = mode
-    reaper.ShowConsoleMsg(string.format("[UI_PREFERENCES] Layout mode: %s\n", mode))
+    if DEBUG_DOMAIN then
+      Logger.debug("UI_PREFERENCES", "Layout mode: %s", mode)
+    end
   end
 
   -- Pool mode accessors
@@ -129,7 +148,9 @@ function M.new(constants, settings)
       error(string.format("Invalid pool_mode: %s (expected 'regions', 'playlists', or 'mixed')", tostring(mode)))
     end
     self.pool_mode = mode
-    reaper.ShowConsoleMsg(string.format("[UI_PREFERENCES] Pool mode: %s\n", mode))
+    if DEBUG_DOMAIN then
+      Logger.debug("UI_PREFERENCES", "Pool mode: %s", mode)
+    end
   end
 
   -- Separator position accessors

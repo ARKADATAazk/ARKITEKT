@@ -15,6 +15,7 @@ local PoolGridFactory = require('RegionPlaylist.ui.tiles.pool_grid_factory')
 local GridBridge = require('arkitekt.gui.widgets.containers.grid.grid_bridge')
 local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
 local State = require("RegionPlaylist.core.app_state")
+local Logger = require('arkitekt.debug.logger')
 
 local M = {}
 
@@ -110,7 +111,7 @@ function M.create(opts)
       if success then
         rt.active_container:set_tabs(State.get_tabs(), State.get_active_playlist_id())
       elseif err then
-        reaper.ShowConsoleMsg("[RegionPlaylist] Error: " .. tostring(err) .. "\n")
+        Logger.error("COORDINATOR", "Error: %s", tostring(err))
       end
       return success, err
     end

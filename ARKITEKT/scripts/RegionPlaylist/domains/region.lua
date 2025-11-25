@@ -2,7 +2,12 @@
 -- RegionPlaylist/domains/region.lua
 -- Manages region data cache and pool ordering
 
+local Logger = require('arkitekt.debug.logger')
+
 local M = {}
+
+-- Set to true for verbose domain logging
+local DEBUG_DOMAIN = false
 
 --- Create a new region domain
 --- @return table domain The region domain instance
@@ -12,7 +17,9 @@ function M.new()
     pool_order = {},    -- Array of RIDs defining custom pool order
   }
 
-  reaper.ShowConsoleMsg("[REGION] Domain initialized\n")
+  if DEBUG_DOMAIN then
+    Logger.debug("REGION", "Domain initialized")
+  end
 
   --- Get region by RID
   --- @param rid number Region ID
@@ -37,7 +44,9 @@ function M.new()
   --- @param new_order table Array of RIDs
   function domain:set_pool_order(new_order)
     self.pool_order = new_order
-    reaper.ShowConsoleMsg(string.format("[REGION] Pool order updated: %d regions\n", #new_order))
+    if DEBUG_DOMAIN then
+      Logger.debug("REGION", "Pool order updated: %d regions", #new_order)
+    end
   end
 
   --- Refresh regions from bridge
@@ -53,7 +62,9 @@ function M.new()
       self.pool_order[#self.pool_order + 1] = region.rid
     end
 
-    reaper.ShowConsoleMsg(string.format("[REGION] Refreshed from bridge: %d regions loaded\n", #regions))
+    if DEBUG_DOMAIN then
+      Logger.debug("REGION", "Refreshed from bridge: %d regions loaded", #regions)
+    end
   end
 
   --- Count regions

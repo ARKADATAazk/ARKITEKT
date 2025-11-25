@@ -7,6 +7,7 @@ local ark = require('arkitekt')
 local Constants = require('RegionPlaylist.defs.constants')
 local Defaults = require('RegionPlaylist.defs.defaults')
 local Strings = require('RegionPlaylist.defs.strings')
+local Logger = require('arkitekt.debug.logger')
 
 local M = {}
 local hexrgb = ark.Colors.hexrgb
@@ -68,7 +69,7 @@ M.TRANSPORT = {
       end,
       tooltip = Strings.TRANSPORT.settings,
       on_click = function()
-        reaper.ShowConsoleMsg("Settings button clicked (coming soon)\n")
+        Logger.info("GUI", "Settings button clicked (coming soon)")
       end,
     },
   },

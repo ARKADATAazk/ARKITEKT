@@ -9,6 +9,7 @@ local Config = require('arkitekt.core.config')
 local Constants = require('arkitekt.defs.app')
 local Typography = require('arkitekt.defs.typography')
 local Timing = require('arkitekt.defs.timing')
+local Logger = require('arkitekt.debug.logger')
 
 local M = {}
 local hexrgb
@@ -311,7 +312,7 @@ function M.new(opts)
                   reaper.Main_OnCommand(cmd_id, 0)
                 end
               else
-                reaper.ShowConsoleMsg("Hub not found: " .. hub_path .. "\n")
+                Logger.warn("GUI", "Hub not found: %s", hub_path)
               end
             end
           end

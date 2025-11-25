@@ -2,6 +2,8 @@
 -- RegionPlaylist/core/sequence_expander.lua
 -- Expands nested playlists into a flat playback sequence with loop metadata
 
+local Logger = require('arkitekt.debug.logger')
+
 local SequenceExpander = {}
 
 local function normalize_loops(value)
@@ -127,7 +129,7 @@ function SequenceExpander.expand_playlist(playlist, get_playlist_by_id)
 end
 
 function SequenceExpander.debug_print_sequence(sequence, get_region_by_rid)
-  reaper.ShowConsoleMsg("=== PLAYBACK SEQUENCE ===\n")
+  Logger.info("SEQUENCER", "=== PLAYBACK SEQUENCE ===")
   for index, entry in ipairs(sequence or {}) do
     local region_name = "(unknown)"
     if get_region_by_rid then
@@ -137,18 +139,17 @@ function SequenceExpander.debug_print_sequence(sequence, get_region_by_rid)
       end
     end
 
-    reaper.ShowConsoleMsg(string.format(
-      "[%d] rid=%s %s (loop %d/%d) key=%s\n",
+    Logger.info("SEQUENCER", "[%d] rid=%s %s (loop %d/%d) key=%s",
       index,
       tostring(entry.rid or "nil"),
       region_name,
       entry.loop or 1,
       entry.total_loops or 1,
       tostring(entry.item_key or "")
-    ))
+    )
   end
 
-  reaper.ShowConsoleMsg(string.format("=== TOTAL: %d entries ===\n", #(sequence or {})))
+  Logger.info("SEQUENCER", "=== TOTAL: %d entries ===", #(sequence or {}))
 end
 
 return SequenceExpander

@@ -2,7 +2,12 @@
 -- RegionPlaylist/domains/dependency.lua
 -- Manages playlist dependency graph and circular reference detection
 
+local Logger = require('arkitekt.debug.logger')
+
 local M = {}
+
+-- Set to true for verbose domain logging
+local DEBUG_DOMAIN = false
 
 --- Create a new dependency domain
 --- @return table domain The dependency domain instance
@@ -12,12 +17,16 @@ function M.new()
     dirty = true,    -- Flag to rebuild graph on next check
   }
 
-  reaper.ShowConsoleMsg("[DEPENDENCY] Domain initialized\n")
+  if DEBUG_DOMAIN then
+    Logger.debug("DEPENDENCY", "Domain initialized")
+  end
 
   --- Mark graph as dirty (needs rebuild)
   function domain:mark_dirty()
     self.dirty = true
-    reaper.ShowConsoleMsg("[DEPENDENCY] Graph marked dirty\n")
+    if DEBUG_DOMAIN then
+      Logger.debug("DEPENDENCY", "Graph marked dirty")
+    end
   end
 
   --- Rebuild dependency graph from playlists
@@ -74,7 +83,9 @@ function M.new()
     end
 
     self.dirty = false
-    reaper.ShowConsoleMsg(string.format("[DEPENDENCY] Graph rebuilt: %d playlists\n", #playlists))
+    if DEBUG_DOMAIN then
+      Logger.debug("DEPENDENCY", "Graph rebuilt: %d playlists", #playlists)
+    end
   end
 
   --- Ensure graph is fresh (rebuild if dirty)
