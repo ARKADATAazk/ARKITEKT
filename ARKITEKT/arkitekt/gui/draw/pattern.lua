@@ -13,26 +13,8 @@ local texture_cache = {}
 local total_attachments = 0  -- Track total attachments (never decreases)
 local MAX_ATTACHMENTS = 64  -- Hard limit on total textures ever created
 
--- DEBUG: Throttle logging (once per second)
-local _last_log_time = 0
-local _last_primary_color = nil
-local function should_log()
-  local now = reaper.time_precise()
-  if now - _last_log_time > 1.0 then
-    _last_log_time = now
-    return true
-  end
-  return false
-end
-
--- Convert RGBA (0xRRGGBBAA) to ABGR (0xAABBGGRR) for ImGui draw calls
-local function rgba_to_abgr(color)
-  local r = (color >> 24) & 0xFF
-  local g = (color >> 16) & 0xFF
-  local b = (color >> 8) & 0xFF
-  local a = color & 0xFF
-  return (a << 24) | (b << 16) | (g << 8) | r
-end
+-- NOTE: ReaImGui DrawList functions expect colors in 0xRRGGBBAA format
+-- This matches hexrgb() output - no conversion needed!
 
 -- ============================================================================
 -- TEXTURE BAKING: Create tileable pattern textures for performance
@@ -262,15 +244,12 @@ local function draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, color, offs
   local u_scale = width / tex_size
   local v_scale = height / tex_size
 
-  -- Convert color from RGBA (0xRRGGBBAA) to ABGR for ImGui
-  local tint_color = rgba_to_abgr(color)
-
-  -- Draw the image tiled with color tint
+  -- Draw the image tiled with color tint (color is already in 0xRRGGBBAA format)
   -- White texture pixels become the tint color, transparent stays transparent
   ImGui.DrawList_AddImage(dl, img, x1, y1, x2, y2,
     u_offset, v_offset,
     u_offset + u_scale, v_offset + v_scale,
-    tint_color)
+    color)
 end
 
 -- ============================================================================
@@ -281,25 +260,22 @@ local function draw_grid_pattern(dl, x1, y1, x2, y2, spacing, color, thickness, 
   offset_x = offset_x or 0
   offset_y = offset_y or 0
 
-  -- Convert RGBA to ABGR for ImGui draw calls
-  local abgr_color = rgba_to_abgr(color)
-
   -- Calculate the starting position by finding the first line that would be visible
   -- We need to account for the offset and wrap it within the spacing
   local start_x = x1 - ((x1 - offset_x) % spacing)
   local start_y = y1 - ((y1 - offset_y) % spacing)
 
-  -- Draw vertical lines
+  -- Draw vertical lines (color is already in 0xRRGGBBAA format)
   local x = start_x
   while x <= x2 do
-    ImGui.DrawList_AddLine(dl, x, y1, x, y2, abgr_color, thickness)
+    ImGui.DrawList_AddLine(dl, x, y1, x, y2, color, thickness)
     x = x + spacing
   end
 
   -- Draw horizontal lines
   local y = start_y
   while y <= y2 do
-    ImGui.DrawList_AddLine(dl, x1, y, x2, y, abgr_color, thickness)
+    ImGui.DrawList_AddLine(dl, x1, y, x2, y, color, thickness)
     y = y + spacing
   end
 end
@@ -308,21 +284,18 @@ local function draw_dot_pattern(dl, x1, y1, x2, y2, spacing, color, dot_size, of
   offset_x = offset_x or 0
   offset_y = offset_y or 0
 
-  -- Convert RGBA to ABGR for ImGui draw calls
-  local abgr_color = rgba_to_abgr(color)
-
   local half_size = dot_size * 0.5
 
   -- Calculate the starting position using modulo to wrap within spacing
   local start_x = x1 - ((x1 - offset_x) % spacing)
   local start_y = y1 - ((y1 - offset_y) % spacing)
 
-  -- Draw dots
+  -- Draw dots (color is already in 0xRRGGBBAA format)
   local x = start_x
   while x <= x2 do
     local y = start_y
     while y <= y2 do
-      ImGui.DrawList_AddCircleFilled(dl, x, y, half_size, abgr_color)
+      ImGui.DrawList_AddCircleFilled(dl, x, y, half_size, color)
       y = y + spacing
     end
     x = x + spacing
@@ -335,8 +308,6 @@ end
 
 -- Helper to draw dots with automatic texture baking
 local function draw_dots_auto(ctx, dl, x1, y1, x2, y2, spacing, color, dot_size, offset_x, offset_y, use_texture)
-  -- TEMPORARY: Force immediate mode to debug
-  use_texture = false
   -- Default to using textures for performance (set use_texture=false to disable)
   if use_texture ~= false then
     local img, tex_size = get_pattern_texture(ctx, 'dots', spacing, dot_size)
@@ -351,8 +322,6 @@ end
 
 -- Helper to draw grid with automatic texture baking
 local function draw_grid_auto(ctx, dl, x1, y1, x2, y2, spacing, color, line_thickness, offset_x, offset_y, use_texture)
-  -- TEMPORARY: Force immediate mode to debug
-  use_texture = false
   -- Default to using textures for performance (set use_texture=false to disable)
   if use_texture ~= false then
     local img, tex_size = get_pattern_texture(ctx, 'grid', spacing, line_thickness)
@@ -372,15 +341,13 @@ local function draw_diagonal_stripe_pattern(dl, x1, y1, x2, y2, spacing, color, 
   local start_offset = -height
   local end_offset = width
 
-  -- Convert RGBA to ABGR for ImGui draw calls
-  local abgr_color = rgba_to_abgr(color)
-
+  -- Draw diagonal stripes (color is already in 0xRRGGBBAA format)
   for offset = start_offset, end_offset, spacing do
     local line_x1 = x1 + offset
     local line_y1 = y1
     local line_x2 = x1 + offset + height
     local line_y2 = y2
-    ImGui.DrawList_AddLine(dl, line_x1, line_y1, line_x2, line_y2, abgr_color, thickness)
+    ImGui.DrawList_AddLine(dl, line_x1, line_y1, line_x2, line_y2, color, thickness)
   end
 end
 
@@ -389,8 +356,6 @@ end
 function M.draw_diagonal_stripes(ctx, dl, x1, y1, x2, y2, spacing, color, thickness, use_texture)
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
 
-  -- TEMPORARY: Force immediate mode to debug
-  use_texture = false
   -- Default to using textures for performance
   if use_texture ~= false then
     local img, tex_size = get_pattern_texture(ctx, 'diagonal_stripes', spacing, thickness)
@@ -411,18 +376,6 @@ end
 function M.draw(ctx, dl, x1, y1, x2, y2, pattern_cfg)
   if not pattern_cfg or not pattern_cfg.enabled then
     return
-  end
-
-  -- DEBUG: Log when color changes OR once per second
-  local primary_color = pattern_cfg.primary and pattern_cfg.primary.color or 0
-  if primary_color ~= _last_primary_color or should_log() then
-    _last_primary_color = primary_color
-    reaper.ShowConsoleMsg(string.format("[M.draw] primary color=0x%08X alpha=%d\n",
-      primary_color, primary_color & 0xFF))
-    if pattern_cfg.secondary and pattern_cfg.secondary.enabled then
-      local c = pattern_cfg.secondary.color or 0
-      reaper.ShowConsoleMsg(string.format("[M.draw] secondary color=0x%08X alpha=%d\n", c, c & 0xFF))
-    end
   end
 
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
