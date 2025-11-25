@@ -51,7 +51,7 @@ M.derivation_rules = {
   -- Background variations (lightness deltas)
   bg_hover_delta = 0.02,        -- +2% lighter on hover
   bg_active_delta = 0.04,       -- +4% lighter when active/pressed
-  bg_panel_delta = -0.02,       -- -2% darker for panels
+  bg_panel_delta = -0.07,       -- -7% darker for panels/chrome (titlebar, statusbar)
 
   -- Border variations
   border_outer_delta = -0.10,   -- -10% darker for outer borders (strong contrast)
