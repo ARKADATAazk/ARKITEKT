@@ -20,6 +20,7 @@ local ProjectMonitor = require("arkitekt.reaper.project_monitor")
 local Animation = require("RegionPlaylist.domains.animation")
 local Notification = require("RegionPlaylist.domains.notification")
 local UIPreferences = require("RegionPlaylist.domains.ui_preferences")
+local Region = require("RegionPlaylist.domains.region")
 
 local M = {}
 
@@ -52,14 +53,11 @@ M.SORT_DIRECTIONS = Constants.SORT_DIRECTIONS
 -- Active playlist UUID (string) - the currently selected/displayed playlist
 M.active_playlist = nil
 
--- Region data
-M.region_index = {}                           -- Map: RID (number) -> region object {rid, name, color, ...}
-M.pool_order = {}                             -- Array of RIDs defining custom pool order
-
 -- Domain instances
 M.animation = nil                             -- Animation domain instance
 M.notification = nil                          -- Notification domain instance
 M.ui_preferences = nil                        -- UI preferences domain instance
+M.region = nil                                -- Region domain instance
 
 -- Engine/playback coordination
 M.bridge = nil                                -- CoordinatorBridge instance for engine communication
@@ -102,11 +100,12 @@ function M.initialize(settings)
   M.animation = Animation.new()
   M.notification = Notification.new(Constants.TIMEOUTS)
   M.ui_preferences = UIPreferences.new(Constants, settings)
+  M.region = Region.new()
 
   -- Load UI preferences from settings
   M.ui_preferences:load_from_settings()
 
-  reaper.ShowConsoleMsg("[APP_STATE] Initialized with domains: animation, notification, ui_preferences\n")
+  reaper.ShowConsoleMsg("[APP_STATE] Initialized with domains: animation, notification, ui_preferences, region\n")
 
   -- Initialize project monitor to track changes
   M.project_monitor = ProjectMonitor.new({
@@ -221,19 +220,19 @@ function M.get_bridge()
 end
 
 function M.get_region_by_rid(rid)
-  return M.region_index[rid]
+  return M.region:get_region_by_rid(rid)
 end
 
 function M.get_region_index()
-  return M.region_index
+  return M.region:get_region_index()
 end
 
 function M.get_pool_order()
-  return M.pool_order
+  return M.region:get_pool_order()
 end
 
 function M.set_pool_order(new_order)
-  M.pool_order = new_order
+  M.region:set_pool_order(new_order)
 end
 
 function M.get_search_filter()
@@ -386,14 +385,7 @@ end
 
 function M.refresh_regions()
   local regions = M.bridge:get_regions_for_ui()
-  
-  M.region_index = {}
-  M.pool_order = {}
-  
-  for _, region in ipairs(regions) do
-    M.region_index[region.rid] = region
-    M.pool_order[#M.pool_order + 1] = region.rid
-  end
+  M.region:refresh_from_bridge(regions)
 end
 
 function M.persist()
@@ -428,7 +420,7 @@ function M.restore_snapshot(snapshot)
 
   local restored_playlists, restored_active, changes = UndoBridge.restore_snapshot(
     snapshot,
-    M.region_index
+    M.get_region_index()
   )
 
   M.playlists = restored_playlists
@@ -617,8 +609,9 @@ function M.get_filtered_pool_regions()
   local result = {}
   local search = M.get_search_filter():lower()
 
-  for _, rid in ipairs(M.pool_order) do
-    local region = M.region_index[rid]
+  local region_index = M.get_region_index()
+  for _, rid in ipairs(M.get_pool_order()) do
+    local region = region_index[rid]
     if region and region.name ~= "__TRANSITION_TRIGGER" and (search == "" or region.name:lower():find(search, 1, true)) then
       result[#result + 1] = region
     end
@@ -820,7 +813,7 @@ function M.get_playlists_for_pool()
   for _, pl in ipairs(M.playlists) do
     if pl.id ~= active_id then
       local is_draggable = M.is_playlist_draggable_to(pl.id, active_id)
-      local total_duration = calculate_playlist_duration(pl, M.region_index)
+      local total_duration = calculate_playlist_duration(pl, M.get_region_index())
       
       pool_playlists[#pool_playlists + 1] = {
         type = "playlist",  -- Mark as playlist for mixed mode
@@ -1037,12 +1030,13 @@ end
 
 function M.cleanup_deleted_regions()
   local removed_any = false
-  
+  local region_index = M.get_region_index()
+
   for _, pl in ipairs(M.playlists) do
     local i = 1
     while i <= #pl.items do
       local item = pl.items[i]
-      if item.type == "region" and not M.region_index[item.rid] then
+      if item.type == "region" and not region_index[item.rid] then
         table.remove(pl.items, i)
         removed_any = true
         M.add_pending_destroy(item.key)
@@ -1076,17 +1070,11 @@ function M.update()
   -- Handle region-specific state changes
   local current_project_state = M.project_monitor:get_last_state_count()
   if current_project_state ~= M.last_project_state then
-    local old_region_count = 0
-    for _ in pairs(M.region_index) do
-      old_region_count = old_region_count + 1
-    end
-    
+    local old_region_count = M.region:count()
+
     M.refresh_regions()
-    
-    local new_region_count = 0
-    for _ in pairs(M.region_index) do
-      new_region_count = new_region_count + 1
-    end
+
+    local new_region_count = M.region:count()
     
     local regions_deleted = new_region_count < old_region_count
     
