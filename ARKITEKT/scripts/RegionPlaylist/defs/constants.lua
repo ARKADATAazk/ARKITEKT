@@ -4,9 +4,9 @@
 
 local ColorDefs = require('arkitekt.defs.colors')
 local ark = require('arkitekt')
-local arkit = require('arkitekt.arkit')
+local Unicode = require('arkitekt.core.unicode')
 local hexrgb = ark.Colors.hexrgb
-local utf8 = arkit.utf8
+local utf8 = Unicode.utf8
 
 local M = {}
 

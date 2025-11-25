@@ -83,7 +83,7 @@ local DEFAULTS = {
 }
 
 -- ============================================================================
--- INSTANCE MANAGEMENT (weak table - allows GC when widgets stop rendering)
+-- INSTANCE MANAGEMENT (strong tables with access tracking for cleanup)
 -- ============================================================================
 
 local instances = Base.create_instance_registry()

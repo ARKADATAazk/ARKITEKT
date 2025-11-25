@@ -68,18 +68,17 @@ local DEFAULTS = {
 }
 
 -- ============================================================================
--- INSTANCE MANAGEMENT (weak table - allows GC when widgets stop rendering)
+-- INSTANCE MANAGEMENT (strong tables with access tracking for cleanup)
 -- ============================================================================
 
 local instances = Base.create_instance_registry()
 
+local function create_corner_button_instance(id)
+  return { hover_alpha = 0 }
+end
+
 local function get_instance(id)
-  local inst = instances[id]
-  if not inst then
-    inst = { hover_alpha = 0 }
-    instances[id] = inst
-  end
-  return inst
+  return Base.get_or_create_instance(instances, id, create_corner_button_instance)
 end
 
 -- ============================================================================

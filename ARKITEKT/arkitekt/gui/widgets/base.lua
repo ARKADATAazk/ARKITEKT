@@ -92,13 +92,25 @@ function M.measure_text(ctx, text)
 end
 
 -- ============================================================================
--- INSTANCE MANAGEMENT (with weak tables to prevent memory leaks)
+-- INSTANCE MANAGEMENT (strong tables with access tracking for cleanup)
 -- ============================================================================
 
---- Create a new instance registry with weak value references
---- @return table Instance registry that auto-cleans unused instances
+-- Global tracking of all registries for periodic cleanup
+local all_registries = setmetatable({}, { __mode = "v" })
+local last_cleanup_time = 0
+local CLEANUP_INTERVAL = 60.0  -- Cleanup every 60 seconds
+local STALE_THRESHOLD = 30.0   -- Remove instances not accessed for 30 seconds
+
+--- Create a new instance registry with access tracking
+--- Uses strong references but tracks access time for periodic cleanup
+--- @return table Instance registry
 function M.create_instance_registry()
-  return setmetatable({}, { __mode = "v" })
+  local registry = {
+    _instances = {},
+    _access_times = {},
+  }
+  all_registries[#all_registries + 1] = registry
+  return registry
 end
 
 --- Get or create an instance from the registry
@@ -107,17 +119,66 @@ end
 --- @param create_fn function Factory function to create new instance
 --- @return table The instance
 function M.get_or_create_instance(registry, id, create_fn)
-  if not registry[id] then
-    registry[id] = create_fn(id)
+  local instances = registry._instances or registry  -- Support both old and new format
+  local access_times = registry._access_times
+
+  if not instances[id] then
+    instances[id] = create_fn(id)
   end
-  return registry[id]
+
+  -- Track access time for cleanup
+  if access_times then
+    access_times[id] = reaper.time_precise()
+  end
+
+  return instances[id]
+end
+
+--- Clean up stale instances from a registry
+--- @param registry table The instance registry
+--- @param threshold number|nil Seconds of inactivity before cleanup (default 30)
+function M.cleanup_stale(registry, threshold)
+  threshold = threshold or STALE_THRESHOLD
+  local now = reaper.time_precise()
+  local instances = registry._instances or registry
+  local access_times = registry._access_times
+
+  if not access_times then return end
+
+  for id, last_access in pairs(access_times) do
+    if now - last_access > threshold then
+      instances[id] = nil
+      access_times[id] = nil
+    end
+  end
 end
 
 --- Clean up all instances in a registry
 --- @param registry table The instance registry
 function M.cleanup_registry(registry)
-  for k in pairs(registry) do
-    registry[k] = nil
+  local instances = registry._instances or registry
+  local access_times = registry._access_times
+
+  for k in pairs(instances) do
+    instances[k] = nil
+  end
+  if access_times then
+    for k in pairs(access_times) do
+      access_times[k] = nil
+    end
+  end
+end
+
+--- Periodic cleanup of all registries (call from main loop)
+function M.periodic_cleanup()
+  local now = reaper.time_precise()
+  if now - last_cleanup_time < CLEANUP_INTERVAL then
+    return
+  end
+  last_cleanup_time = now
+
+  for _, registry in ipairs(all_registries) do
+    M.cleanup_stale(registry)
   end
 end
 

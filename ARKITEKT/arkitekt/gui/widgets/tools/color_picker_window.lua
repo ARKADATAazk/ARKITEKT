@@ -12,8 +12,20 @@ local Base = require('arkitekt.gui.widgets.base')
 local M = {}
 local hexrgb = Colors.hexrgb
 
--- State for each picker instance (weak table - allows GC when windows close)
+-- State for each picker instance (strong tables with access tracking for cleanup)
 local instances = Base.create_instance_registry()
+
+local function create_color_picker_instance(id)
+  return {
+    is_open = false,
+    current_color = 0xFF0000FF,  -- Default red
+    backup_color = nil,
+    first_open = true,
+    h = 0,
+    s = 1,
+    v = 1,
+  }
+end
 
 -- Convert RGB to HSV
 local function rgb_to_hsv(r, g, b)
@@ -68,18 +80,7 @@ end
 --- @param id string Unique identifier for this picker
 --- @return table Instance state
 local function get_instance(id)
-  if not instances[id] then
-    instances[id] = {
-      is_open = false,
-      current_color = 0xFF0000FF,  -- Default red
-      backup_color = nil,
-      first_open = true,
-      h = 0,
-      s = 1,
-      v = 1,
-    }
-  end
-  return instances[id]
+  return Base.get_or_create_instance(instances, id, create_color_picker_instance)
 end
 
 --- Open the color picker window

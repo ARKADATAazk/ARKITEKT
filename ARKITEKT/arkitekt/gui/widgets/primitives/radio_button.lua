@@ -61,16 +61,17 @@ local DEFAULTS = {
 }
 
 -- ============================================================================
--- INSTANCE MANAGEMENT (weak table - allows GC when widgets stop rendering)
+-- INSTANCE MANAGEMENT (strong tables with access tracking for cleanup)
 -- ============================================================================
 
 local instances = Base.create_instance_registry()
 
+local function create_radio_instance(id)
+  return { hover_alpha = 0 }
+end
+
 local function get_instance(id)
-  if not instances[id] then
-    instances[id] = { hover_alpha = 0 }
-  end
-  return instances[id]
+  return Base.get_or_create_instance(instances, id, create_radio_instance)
 end
 
 -- ============================================================================

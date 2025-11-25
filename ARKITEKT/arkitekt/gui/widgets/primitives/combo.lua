@@ -12,8 +12,24 @@ local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 
 local M = {}
 
--- Instance storage (weak table - allows GC when widgets stop rendering)
+-- Instance storage (strong tables with access tracking for cleanup)
 local instances = Base.create_instance_registry()
+
+-- Helper to access instances from the registry
+local function get_inst(id)
+  local inst = instances._instances[id]
+  if inst and instances._access_times then
+    instances._access_times[id] = reaper.time_precise()
+  end
+  return inst
+end
+
+local function set_inst(id, inst)
+  instances._instances[id] = inst
+  if instances._access_times then
+    instances._access_times[id] = reaper.time_precise()
+  end
+end
 
 -- ============================================================================
 -- CONTEXT DETECTION
@@ -405,7 +421,7 @@ end
 -- ============================================================================
 
 local function get_or_create_instance(context, config, state_or_id)
-  local instance = instances[context.unique_id]
+  local instance = get_inst(context.unique_id)
 
   if not instance then
     -- Get initial values from state (if panel context)
@@ -423,7 +439,7 @@ local function get_or_create_instance(context, config, state_or_id)
     end
 
     instance = Dropdown.new(context.unique_id, config, initial_value, initial_direction)
-    instances[context.unique_id] = instance
+    set_inst(context.unique_id, instance)
   else
     -- Update config
     instance.config = config
@@ -515,24 +531,24 @@ end
 -- ============================================================================
 
 function M.get_value(id)
-  local instance = instances[id]
+  local instance = get_inst(id)
   return instance and instance.current_value or nil
 end
 
 function M.set_value(id, value)
-  local instance = instances[id]
+  local instance = get_inst(id)
   if instance then
     instance.current_value = value
   end
 end
 
 function M.get_direction(id)
-  local instance = instances[id]
+  local instance = get_inst(id)
   return instance and instance.sort_direction or "asc"
 end
 
 function M.set_direction(id, direction)
-  local instance = instances[id]
+  local instance = get_inst(id)
   if instance then
     instance.sort_direction = direction
   end
