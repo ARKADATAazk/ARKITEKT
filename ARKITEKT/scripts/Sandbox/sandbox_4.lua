@@ -1,7 +1,8 @@
 -- @noindex
 -- ARKITEKT/scripts/Sandbox/sandbox_4.lua
--- Custom TreeView Prototype v3.0 - Full-Featured Tree Control
+-- Custom TreeView Prototype v3.5 - Advanced Tree Control
 -- Multiselection, keyboard nav, search, context menu, clipboard ops
+-- Virtual scrolling, custom icons, drag & drop reordering
 
 local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
 local root_path = script_path:match("(.*)[\\/][^\\/]+[\\/]?$") or script_path
@@ -267,6 +268,57 @@ local function has_matching_children(node, search_text)
   return false
 end
 
+-- Drag & drop helpers
+local function is_ancestor(potential_ancestor_id, node_id, nodes)
+  local function check(current_id)
+    if current_id == node_id then return true end
+    local node = find_node_by_id(nodes, current_id)
+    if node and node.children then
+      for _, child in ipairs(node.children) do
+        if check(child.id) then return true end
+      end
+    end
+    return false
+  end
+  return check(potential_ancestor_id)
+end
+
+local function remove_node_from_tree(nodes, node_id)
+  for i = #nodes, 1, -1 do
+    if nodes[i].id == node_id then
+      return table.remove(nodes, i)
+    elseif nodes[i].children then
+      local removed = remove_node_from_tree(nodes[i].children, node_id)
+      if removed then return removed end
+    end
+  end
+  return nil
+end
+
+local function insert_node_at(nodes, target_id, node_to_insert, position)
+  for i, target_node in ipairs(nodes) do
+    if target_node.id == target_id then
+      if position == "before" then
+        table.insert(nodes, i, node_to_insert)
+        return true
+      elseif position == "after" then
+        table.insert(nodes, i + 1, node_to_insert)
+        return true
+      elseif position == "into" then
+        target_node.children = target_node.children or {}
+        table.insert(target_node.children, node_to_insert)
+        tree_state.open[target_id] = true -- Auto-expand
+        return true
+      end
+    elseif target_node.children then
+      if insert_node_at(target_node.children, target_id, node_to_insert, position) then
+        return true
+      end
+    end
+  end
+  return false
+end
+
 local tree_state = {
   open = { root = true, src = true, docs = true, components = true, utils = true, guides = true },
   selected = {}, -- Now a table of selected IDs: { [id] = true, ... }
@@ -286,6 +338,28 @@ local tree_state = {
   search_text = "",
   search_active = false,
   tree_bounds = {}, -- Store tree bounds for click detection
+
+  -- Drag & drop state
+  drag_active = false,
+  drag_node_id = nil,
+  drag_start_x = 0,
+  drag_start_y = 0,
+  drag_threshold = 5, -- pixels to move before drag starts
+  drop_target_id = nil,
+  drop_position = nil, -- "before", "into", "after"
+
+  -- Virtual scrolling
+  use_virtual_scrolling = true,
+  total_content_height = 0,
+
+  -- Icon types
+  icon_types = {
+    folder = "folder",
+    file = "file",
+    lua = "lua",
+    markdown = "markdown",
+    config = "config",
+  },
 }
 
 -- ============================================================================
@@ -325,6 +399,86 @@ local function draw_folder_icon(dl, x, y, is_open, color)
 
   ImGui.DrawList_AddRectFilled(dl, x, y, x + tab_w, y + tab_h, color, 0)
   ImGui.DrawList_AddRectFilled(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, color, 0)
+end
+
+local function draw_file_icon(dl, x, y, color)
+  color = color or TREE_CONFIG.icon_color
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  local w = 10
+  local h = 12
+  local corner = 3
+
+  -- File body
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, color, 0)
+  -- Corner fold
+  ImGui.DrawList_AddTriangleFilled(dl, x + w - corner, y, x + w, y, x + w, y + corner, hexrgb("#000000AA"))
+end
+
+local function draw_lua_icon(dl, x, y, color)
+  color = color or hexrgb("#00007FFF") -- Blue for Lua
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  -- Draw "L" shape
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + 3, y + 12, color, 0)
+  ImGui.DrawList_AddRectFilled(dl, x, y + 9, x + 10, y + 12, color, 0)
+end
+
+local function draw_markdown_icon(dl, x, y, color)
+  color = color or hexrgb("#0A7EA3FF") -- Cyan for markdown
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  -- Draw "M" shape
+  local pts = {
+    x, y + 10,
+    x, y,
+    x + 5, y + 5,
+    x + 10, y,
+    x + 10, y + 10
+  }
+  ImGui.DrawList_AddPolyline(dl, pts, color, 0, 2)
+end
+
+local function draw_config_icon(dl, x, y, color)
+  color = color or hexrgb("#888888FF")
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  -- Draw gear-like shape
+  ImGui.DrawList_AddCircleFilled(dl, x + 5, y + 6, 4, color)
+  ImGui.DrawList_AddCircleFilled(dl, x + 5, y + 6, 2, hexrgb("#000000AA"))
+end
+
+local function get_node_icon_type(node)
+  if node.children and #node.children > 0 then
+    return "folder"
+  end
+
+  local name = node.name:lower()
+  if name:match("%.lua$") then return "lua" end
+  if name:match("%.md$") then return "markdown" end
+  if name:match("config") or name:match("%.json$") or name:match("%.yaml$") then return "config" end
+
+  return "file"
+end
+
+local function draw_node_icon(dl, x, y, node, is_open, color)
+  local icon_type = get_node_icon_type(node)
+
+  if icon_type == "folder" then
+    draw_folder_icon(dl, x, y, is_open, color)
+  elseif icon_type == "lua" then
+    draw_lua_icon(dl, x, y, color)
+  elseif icon_type == "markdown" then
+    draw_markdown_icon(dl, x, y, color)
+  elseif icon_type == "config" then
+    draw_config_icon(dl, x, y, color)
+  else
+    draw_file_icon(dl, x, y, color)
+  end
 end
 
 local function draw_dotted_line(dl, x1, y1, x2, y2, color, thickness, dot_spacing)
@@ -407,7 +561,7 @@ end
 -- TREE RENDERING
 -- ============================================================================
 
-local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_w, parent_lines, is_last_child, row_index, parent_id)
+local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_w, parent_lines, is_last_child, row_index, parent_id, visible_top, visible_bottom)
   local cfg = TREE_CONFIG
   local item_h = cfg.item_height
 
@@ -428,6 +582,10 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     height = item_h,
   })
 
+  -- Virtual scrolling: check if item is visible
+  local is_visible = not tree_state.use_virtual_scrolling or
+                    (y_pos + item_h >= visible_top and y_pos <= visible_bottom)
+
   local indent_x = visible_x + cfg.padding_left + depth * cfg.indent_width
   local arrow_x = indent_x
   local arrow_y = y_pos + (item_h - cfg.arrow_size) / 2
@@ -439,11 +597,13 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   local item_right = visible_x + visible_w - cfg.padding_right
 
   local mx, my = ImGui.GetMousePos(ctx)
-  local is_hovered = mx >= visible_x and mx < visible_x + visible_w and my >= y_pos and my < y_pos + item_h
+  local is_hovered = is_visible and mx >= visible_x and mx < visible_x + visible_w and my >= y_pos and my < y_pos + item_h
   local item_selected = is_selected(node.id)
   local is_focused = tree_state.focused == node.id
   local is_editing = tree_state.editing == node.id
 
+  -- Only draw if visible (virtual scrolling optimization)
+  if is_visible then
   -- Backgrounds
   if cfg.show_alternating_bg and row_index % 2 == 0 then
     ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, cfg.bg_alternate)
@@ -466,6 +626,18 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     ImGui.DrawList_AddRect(dl, visible_x + 1, y_pos, visible_x + visible_w - 1, y_pos + item_h, hexrgb("#6A9EFFAA"), 0, 0, 1)
   end
 
+  -- Drag & drop visual feedback
+  if tree_state.drag_active and tree_state.drop_target_id == node.id then
+    local drop_color = hexrgb("#4A9EFFFF")
+    if tree_state.drop_position == "before" then
+      ImGui.DrawList_AddLine(dl, visible_x, y_pos, visible_x + visible_w, y_pos, drop_color, 2)
+    elseif tree_state.drop_position == "after" then
+      ImGui.DrawList_AddLine(dl, visible_x, y_pos + item_h, visible_x + visible_w, y_pos + item_h, drop_color, 2)
+    elseif tree_state.drop_position == "into" then
+      ImGui.DrawList_AddRect(dl, visible_x + 2, y_pos + 1, visible_x + visible_w - 2, y_pos + item_h - 1, drop_color, 0, 0, 2)
+    end
+  end
+
   -- Tree lines
   local has_children = node.children and #node.children > 0
   draw_tree_lines(dl, indent_x, y_pos, depth, item_h, has_children, is_last_child, parent_lines)
@@ -476,9 +648,9 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     draw_arrow(dl, arrow_x, arrow_y, is_open, cfg.arrow_color)
   end
 
-  -- Icon
+  -- Icon (custom based on type)
   local icon_color = node.color or (is_open and cfg.icon_open_color or cfg.icon_color)
-  draw_folder_icon(dl, icon_x, icon_y, is_open, icon_color)
+  draw_node_icon(dl, icon_x, icon_y, node, is_open, icon_color)
 
   -- Text or edit field
   if is_editing then
@@ -533,6 +705,14 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     ImGui.SetCursorScreenPos(ctx, visible_x, y_pos)
     ImGui.InvisibleButton(ctx, "##tree_item_" .. node.id, visible_w, item_h)
 
+    -- Mouse down for drag start
+    if ImGui.IsItemActive(ctx) and ImGui.IsMouseDragging(ctx, 0, 0) and not tree_state.drag_active then
+      tree_state.drag_active = true
+      tree_state.drag_node_id = node.id
+      tree_state.drag_start_x = mx
+      tree_state.drag_start_y = my
+    end
+
     -- Left click
     if ImGui.IsItemClicked(ctx, 0) then
       if has_children and mx >= arrow_x and mx < arrow_x + cfg.arrow_size + cfg.arrow_margin then
@@ -555,6 +735,23 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
         else
           -- Normal click: Single selection
           set_single_selection(node.id)
+        end
+      end
+    end
+
+    -- Detect drop target during drag
+    if tree_state.drag_active and tree_state.drag_node_id ~= node.id then
+      if is_hovered then
+        local relative_y = my - y_pos
+        if relative_y < item_h * 0.25 then
+          tree_state.drop_target_id = node.id
+          tree_state.drop_position = "before"
+        elseif relative_y > item_h * 0.75 then
+          tree_state.drop_target_id = node.id
+          tree_state.drop_position = "after"
+        elseif has_children then
+          tree_state.drop_target_id = node.id
+          tree_state.drop_position = "into"
         end
       end
     end
@@ -583,6 +780,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   if is_hovered then
     tree_state.hovered = node.id
   end
+  end -- Close if is_visible
 
   local next_y = y_pos + item_h
   local next_row = row_index + 1
@@ -596,7 +794,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
 
     for i, child in ipairs(node.children) do
       local is_last = (i == #node.children)
-      next_y, next_row = render_tree_item(ctx, dl, child, depth + 1, next_y, visible_x, visible_w, child_parent_lines, is_last, next_row, node.id)
+      next_y, next_row = render_tree_item(ctx, dl, child, depth + 1, next_y, visible_x, visible_w, child_parent_lines, is_last, next_row, node.id, visible_top, visible_bottom)
     end
   end
 
@@ -628,12 +826,19 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
   local current_y = y + cfg.padding_top - tree_state.scroll_y
   local row_index = 0
 
+  -- Calculate visible range for virtual scrolling
+  local visible_top = y
+  local visible_bottom = y + h
+
   for i, node in ipairs(nodes) do
     local is_last = (i == #nodes)
-    local next_y, next_row = render_tree_item(ctx, dl, node, 0, current_y, x, w, {}, is_last, row_index, nil)
+    local next_y, next_row = render_tree_item(ctx, dl, node, 0, current_y, x, w, {}, is_last, row_index, nil, visible_top, visible_bottom)
     current_y = next_y
     row_index = next_row
   end
+
+  -- Store total content height for scrollbar
+  tree_state.total_content_height = current_y - (y + cfg.padding_top - tree_state.scroll_y)
 
   ImGui.DrawList_PopClipRect(dl)
 
@@ -809,6 +1014,37 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
     end
   end
 
+  -- Handle drag & drop completion
+  if tree_state.drag_active then
+    if ImGui.IsMouseReleased(ctx, 0) then
+      -- Perform drop
+      if tree_state.drop_target_id and tree_state.drop_position then
+        local drag_id = tree_state.drag_node_id
+        local target_id = tree_state.drop_target_id
+
+        -- Prevent dropping into self or descendants
+        if drag_id ~= target_id and not is_ancestor(drag_id, target_id, nodes) then
+          local node_to_move = remove_node_from_tree(nodes, drag_id)
+          if node_to_move then
+            insert_node_at(nodes, target_id, node_to_move, tree_state.drop_position)
+          end
+        end
+      end
+
+      -- Reset drag state
+      tree_state.drag_active = false
+      tree_state.drag_node_id = nil
+      tree_state.drop_target_id = nil
+      tree_state.drop_position = nil
+    else
+      -- Clear drop target if not hovering
+      if not tree_state.hovered then
+        tree_state.drop_target_id = nil
+        tree_state.drop_position = nil
+      end
+    end
+  end
+
   -- Click on empty space to deselect
   local mx, my = ImGui.GetMousePos(ctx)
   if ImGui.IsMouseClicked(ctx, 0) then
@@ -939,7 +1175,7 @@ end
 
 Shell.run({
   title = "Custom TreeView Prototype",
-  version = "v3.0.0",
+  version = "v3.5.0",
   version_color = hexrgb("#888888FF"),
   initial_pos = { x = 120, y = 120 },
   initial_size = { w = 700, h = 700 },
@@ -948,10 +1184,10 @@ Shell.run({
   icon_size = 18,
 
   draw = function(ctx, shell_state)
-    ImGui.Text(ctx, "Custom TreeView v3.0 - Full-Featured Tree Control")
-    ImGui.Text(ctx, "Selection: Click • CTRL+Click • SHIFT+Click • CTRL+A • CTRL+I • ESC")
-    ImGui.Text(ctx, "Navigation: Arrows • Home/End • PgUp/PgDown • Search")
-    ImGui.Text(ctx, "Edit: F2/DblClick • Del • CTRL+D/X/C/V • Right-Click Menu")
+    ImGui.Text(ctx, "Custom TreeView v3.5 - Advanced Tree Control")
+    ImGui.Text(ctx, "Features: Virtual Scrolling • Custom Icons • Drag & Drop Reordering")
+    ImGui.Text(ctx, "Selection: Click • CTRL+Click • SHIFT+Click • CTRL+A • CTRL+I")
+    ImGui.Text(ctx, "Navigation: Arrows • Home/End • PgUp/PgDown • Search • F2/Del/Menu")
     ImGui.Separator(ctx)
 
     local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
