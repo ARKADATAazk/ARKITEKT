@@ -13,51 +13,22 @@ local texture_cache = {}
 local total_attachments = 0  -- Track total attachments (never decreases)
 local MAX_ATTACHMENTS = 64  -- Hard limit on total textures ever created
 
--- Convert RGBA (0xRRGGBBAA) to ABGR (0xAABBGGRR) for ImGui draw calls
-local function rgba_to_abgr(color)
-  local r = (color >> 24) & 0xFF
-  local g = (color >> 16) & 0xFF
-  local b = (color >> 8) & 0xFF
-  local a = color & 0xFF
-  return (a << 24) | (b << 16) | (g << 8) | r
-end
+-- NOTE: ReaImGui DrawList functions expect colors in 0xRRGGBBAA format
+-- This matches hexrgb() output - no conversion needed!
 
 -- ============================================================================
 -- TEXTURE BAKING: Create tileable pattern textures for performance
 -- ============================================================================
 
--- Normalize color to reduce cache variations (round to nearest 16 for each channel)
-local function normalize_color(color)
-  local r = (color >> 24) & 0xFF
-  local g = (color >> 16) & 0xFF
-  local b = (color >> 8) & 0xFF
-  local a = color & 0xFF
-  -- Round RGB to nearest 16 to reduce unique combinations
-  r = math.floor(r / 16 + 0.5) * 16
-  g = math.floor(g / 16 + 0.5) * 16
-  b = math.floor(b / 16 + 0.5) * 16
-  -- Keep alpha as-is for subtle opacity control (low values like 5 should stay 5)
-  -- Clamp RGB to 255
-  r = math.min(255, r)
-  g = math.min(255, g)
-  b = math.min(255, b)
-  return (r << 24) | (g << 16) | (b << 8) | a
-end
-
 -- Generate a unique cache key for a pattern configuration
-local function get_pattern_cache_key(pattern_type, spacing, size, color)
-  -- Normalize color first to reduce variations
-  local norm_color = normalize_color(color)
-  local r = (norm_color >> 24) & 0xFF
-  local g = (norm_color >> 16) & 0xFF
-  local b = (norm_color >> 8) & 0xFF
-  local a = norm_color & 0xFF
-  return string.format("%s_%d_%.1f_%d_%d_%d_%d", pattern_type, spacing, size, r, g, b, a), norm_color
+-- NOTE: Color is NOT part of the key - we use white textures and apply color as tint
+local function get_pattern_cache_key(pattern_type, spacing, size)
+  return string.format("%s_%d_%.1f", pattern_type, spacing, size)
 end
 
 
--- Create a baked dot pattern texture
-local function create_dot_texture(spacing, dot_size, color)
+-- Create a WHITE dot pattern texture (color applied as tint when drawing)
+local function create_dot_texture(spacing, dot_size)
   -- Texture size matches spacing for perfect tiling
   local tex_size = spacing
 
@@ -73,14 +44,9 @@ local function create_dot_texture(spacing, dot_size, color)
   -- Create pixel array (RGBA format, 4 bytes per pixel)
   local pixels = reaper.new_array(tex_size * tex_size)
 
-  -- Extract color components (color is 0xRRGGBBAA)
-  local r = (color >> 24) & 0xFF
-  local g = (color >> 16) & 0xFF
-  local b = (color >> 8) & 0xFF
-  local a = color & 0xFF
-
-  -- Pack as 0xRRGGBBAA (native RGBA format)
-  local dot_pixel = r * 0x1000000 + g * 0x10000 + b * 0x100 + a
+  -- White pixel for pattern, transparent for background
+  -- Color will be applied as tint when drawing
+  local white_pixel = 0xFFFFFFFF
   local clear_pixel = 0x00000000
 
   -- Fill with transparent, then draw dots
@@ -101,7 +67,7 @@ local function create_dot_texture(spacing, dot_size, color)
       local dist = math.sqrt(dx * dx + dy * dy)
       if dist <= half_size then
         local idx = py * tex_size + px + 1
-        pixels[idx] = dot_pixel
+        pixels[idx] = white_pixel
       end
     end
   end
@@ -112,8 +78,8 @@ local function create_dot_texture(spacing, dot_size, color)
   return img, tex_size
 end
 
--- Create a baked grid pattern texture
-local function create_grid_texture(spacing, line_thickness, color)
+-- Create a WHITE grid pattern texture (color applied as tint when drawing)
+local function create_grid_texture(spacing, line_thickness)
   -- Texture size matches spacing for perfect tiling
   local tex_size = spacing
 
@@ -129,14 +95,9 @@ local function create_grid_texture(spacing, line_thickness, color)
   -- Create pixel array
   local pixels = reaper.new_array(tex_size * tex_size)
 
-  -- Extract color components (color is 0xRRGGBBAA)
-  local r = (color >> 24) & 0xFF
-  local g = (color >> 16) & 0xFF
-  local b = (color >> 8) & 0xFF
-  local a = color & 0xFF
-
-  -- Pack as 0xRRGGBBAA (native RGBA format)
-  local line_pixel = r * 0x1000000 + g * 0x10000 + b * 0x100 + a
+  -- White pixel for pattern, transparent for background
+  -- Color will be applied as tint when drawing
+  local white_pixel = 0xFFFFFFFF
   local clear_pixel = 0x00000000
 
   -- Fill with transparent
@@ -151,7 +112,7 @@ local function create_grid_texture(spacing, line_thickness, color)
   for py = 0, thickness - 1 do
     for px = 0, tex_size - 1 do
       local idx = py * tex_size + px + 1
-      pixels[idx] = line_pixel
+      pixels[idx] = white_pixel
     end
   end
 
@@ -159,7 +120,7 @@ local function create_grid_texture(spacing, line_thickness, color)
   for py = 0, tex_size - 1 do
     for px = 0, thickness - 1 do
       local idx = py * tex_size + px + 1
-      pixels[idx] = line_pixel
+      pixels[idx] = white_pixel
     end
   end
 
@@ -169,8 +130,8 @@ local function create_grid_texture(spacing, line_thickness, color)
   return img, tex_size
 end
 
--- Create a baked diagonal stripe pattern texture (45-degree lines)
-local function create_diagonal_stripe_texture(spacing, line_thickness, color)
+-- Create a WHITE diagonal stripe pattern texture (color applied as tint when drawing)
+local function create_diagonal_stripe_texture(spacing, line_thickness)
   -- Texture size matches spacing for perfect tiling
   local tex_size = spacing
 
@@ -186,14 +147,9 @@ local function create_diagonal_stripe_texture(spacing, line_thickness, color)
   -- Create pixel array
   local pixels = reaper.new_array(tex_size * tex_size)
 
-  -- Extract color components (color is 0xRRGGBBAA)
-  local r = (color >> 24) & 0xFF
-  local g = (color >> 16) & 0xFF
-  local b = (color >> 8) & 0xFF
-  local a = color & 0xFF
-
-  -- Pack as 0xRRGGBBAA (native RGBA format)
-  local line_pixel = r * 0x1000000 + g * 0x10000 + b * 0x100 + a
+  -- White pixel for pattern, transparent for background
+  -- Color will be applied as tint when drawing
+  local white_pixel = 0xFFFFFFFF
   local clear_pixel = 0x00000000
 
   -- Fill with transparent
@@ -219,7 +175,7 @@ local function create_diagonal_stripe_texture(spacing, line_thickness, color)
 
       if min_dist <= half_thick then
         local idx = py * tex_size + px + 1
-        pixels[idx] = line_pixel
+        pixels[idx] = white_pixel
       end
     end
   end
@@ -230,9 +186,9 @@ local function create_diagonal_stripe_texture(spacing, line_thickness, color)
   return img, tex_size
 end
 
--- Get or create a cached pattern texture
-local function get_pattern_texture(ctx, pattern_type, spacing, size, color)
-  local key, norm_color = get_pattern_cache_key(pattern_type, spacing, size, color)
+-- Get or create a cached pattern texture (WHITE texture, color applied as tint)
+local function get_pattern_texture(ctx, pattern_type, spacing, size)
+  local key = get_pattern_cache_key(pattern_type, spacing, size)
 
   -- Check cache first
   if texture_cache[key] then
@@ -251,14 +207,14 @@ local function get_pattern_texture(ctx, pattern_type, spacing, size, color)
     return nil, nil
   end
 
-  -- Create new texture using normalized color
+  -- Create new WHITE texture (color will be applied as tint when drawing)
   local img, tex_size
   if pattern_type == 'dots' then
-    img, tex_size = create_dot_texture(spacing, size, norm_color)
+    img, tex_size = create_dot_texture(spacing, size)
   elseif pattern_type == 'grid' then
-    img, tex_size = create_grid_texture(spacing, size, norm_color)
+    img, tex_size = create_grid_texture(spacing, size)
   elseif pattern_type == 'diagonal_stripes' then
-    img, tex_size = create_diagonal_stripe_texture(spacing, size, norm_color)
+    img, tex_size = create_diagonal_stripe_texture(spacing, size)
   end
 
   if img then
@@ -273,7 +229,7 @@ local function get_pattern_texture(ctx, pattern_type, spacing, size, color)
   return img, tex_size
 end
 
--- Draw tiled texture pattern
+-- Draw tiled texture pattern with color tint
 local function draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, color, offset_x, offset_y)
   offset_x = offset_x or 0
   offset_y = offset_y or 0
@@ -288,12 +244,12 @@ local function draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, color, offs
   local u_scale = width / tex_size
   local v_scale = height / tex_size
 
-  -- Draw the image tiled
-  -- Note: We use white color (0xFFFFFFFF) to preserve texture colors
+  -- Draw the image tiled with color tint (color is already in 0xRRGGBBAA format)
+  -- White texture pixels become the tint color, transparent stays transparent
   ImGui.DrawList_AddImage(dl, img, x1, y1, x2, y2,
     u_offset, v_offset,
     u_offset + u_scale, v_offset + v_scale,
-    0xFFFFFFFF)
+    color)
 end
 
 -- ============================================================================
@@ -304,25 +260,22 @@ local function draw_grid_pattern(dl, x1, y1, x2, y2, spacing, color, thickness, 
   offset_x = offset_x or 0
   offset_y = offset_y or 0
 
-  -- Convert RGBA to ABGR for ImGui draw calls
-  local abgr_color = rgba_to_abgr(color)
-
   -- Calculate the starting position by finding the first line that would be visible
   -- We need to account for the offset and wrap it within the spacing
   local start_x = x1 - ((x1 - offset_x) % spacing)
   local start_y = y1 - ((y1 - offset_y) % spacing)
 
-  -- Draw vertical lines
+  -- Draw vertical lines (color is already in 0xRRGGBBAA format)
   local x = start_x
   while x <= x2 do
-    ImGui.DrawList_AddLine(dl, x, y1, x, y2, abgr_color, thickness)
+    ImGui.DrawList_AddLine(dl, x, y1, x, y2, color, thickness)
     x = x + spacing
   end
 
   -- Draw horizontal lines
   local y = start_y
   while y <= y2 do
-    ImGui.DrawList_AddLine(dl, x1, y, x2, y, abgr_color, thickness)
+    ImGui.DrawList_AddLine(dl, x1, y, x2, y, color, thickness)
     y = y + spacing
   end
 end
@@ -331,21 +284,18 @@ local function draw_dot_pattern(dl, x1, y1, x2, y2, spacing, color, dot_size, of
   offset_x = offset_x or 0
   offset_y = offset_y or 0
 
-  -- Convert RGBA to ABGR for ImGui draw calls
-  local abgr_color = rgba_to_abgr(color)
-
   local half_size = dot_size * 0.5
 
   -- Calculate the starting position using modulo to wrap within spacing
   local start_x = x1 - ((x1 - offset_x) % spacing)
   local start_y = y1 - ((y1 - offset_y) % spacing)
 
-  -- Draw dots
+  -- Draw dots (color is already in 0xRRGGBBAA format)
   local x = start_x
   while x <= x2 do
     local y = start_y
     while y <= y2 do
-      ImGui.DrawList_AddCircleFilled(dl, x, y, half_size, abgr_color)
+      ImGui.DrawList_AddCircleFilled(dl, x, y, half_size, color)
       y = y + spacing
     end
     x = x + spacing
@@ -360,7 +310,7 @@ end
 local function draw_dots_auto(ctx, dl, x1, y1, x2, y2, spacing, color, dot_size, offset_x, offset_y, use_texture)
   -- Default to using textures for performance (set use_texture=false to disable)
   if use_texture ~= false then
-    local img, tex_size = get_pattern_texture(ctx, 'dots', spacing, dot_size, color)
+    local img, tex_size = get_pattern_texture(ctx, 'dots', spacing, dot_size)
     if img then
       draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, color, offset_x, offset_y)
       return
@@ -374,7 +324,7 @@ end
 local function draw_grid_auto(ctx, dl, x1, y1, x2, y2, spacing, color, line_thickness, offset_x, offset_y, use_texture)
   -- Default to using textures for performance (set use_texture=false to disable)
   if use_texture ~= false then
-    local img, tex_size = get_pattern_texture(ctx, 'grid', spacing, line_thickness, color)
+    local img, tex_size = get_pattern_texture(ctx, 'grid', spacing, line_thickness)
     if img then
       draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, color, offset_x, offset_y)
       return
@@ -391,15 +341,13 @@ local function draw_diagonal_stripe_pattern(dl, x1, y1, x2, y2, spacing, color, 
   local start_offset = -height
   local end_offset = width
 
-  -- Convert RGBA to ABGR for ImGui draw calls
-  local abgr_color = rgba_to_abgr(color)
-
+  -- Draw diagonal stripes (color is already in 0xRRGGBBAA format)
   for offset = start_offset, end_offset, spacing do
     local line_x1 = x1 + offset
     local line_y1 = y1
     local line_x2 = x1 + offset + height
     local line_y2 = y2
-    ImGui.DrawList_AddLine(dl, line_x1, line_y1, line_x2, line_y2, abgr_color, thickness)
+    ImGui.DrawList_AddLine(dl, line_x1, line_y1, line_x2, line_y2, color, thickness)
   end
 end
 
@@ -410,7 +358,7 @@ function M.draw_diagonal_stripes(ctx, dl, x1, y1, x2, y2, spacing, color, thickn
 
   -- Default to using textures for performance
   if use_texture ~= false then
-    local img, tex_size = get_pattern_texture(ctx, 'diagonal_stripes', spacing, thickness, color)
+    local img, tex_size = get_pattern_texture(ctx, 'diagonal_stripes', spacing, thickness)
     if img then
       draw_tiled_texture(dl, x1, y1, x2, y2, img, tex_size, color, 0, 0)
       ImGui.DrawList_PopClipRect(dl)
@@ -426,7 +374,9 @@ end
 -- Draw pattern with automatic texture baking for dot patterns
 -- Set pattern_cfg.use_texture = false to disable texture baking
 function M.draw(ctx, dl, x1, y1, x2, y2, pattern_cfg)
-  if not pattern_cfg or not pattern_cfg.enabled then return end
+  if not pattern_cfg or not pattern_cfg.enabled then
+    return
+  end
 
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
 

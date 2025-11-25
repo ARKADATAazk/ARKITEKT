@@ -50,7 +50,7 @@ local Sheet = require("arkitekt.gui.widgets.overlays.overlay.sheet")
 local ChipList = require("arkitekt.gui.widgets.data.chip_list")
 local OverlayConfig = require("arkitekt.gui.widgets.overlays.overlay.defaults")
 
-local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
+local style_ok, Style = pcall(require, "arkitekt.gui.style.imgui")
 local hexrgb = ark.Colors.hexrgb
 
 

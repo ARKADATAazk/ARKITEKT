@@ -20,7 +20,7 @@ local Logger = require('arkitekt.debug.logger')
 local ImGui = Arkit.ImGui
 local hexrgb = Arkit.hexrgb
 
-local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
+local StyleOK, Style = pcall(require, 'arkitekt.gui.style.imgui')
 local console = Console.new()
 
 local mock_state = {

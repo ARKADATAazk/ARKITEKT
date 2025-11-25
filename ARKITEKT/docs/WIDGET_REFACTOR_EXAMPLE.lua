@@ -7,7 +7,7 @@
 -- ============================================================================
 
 -- OLD VERSION (button.lua before refactor):
-local Style = require('arkitekt.gui.style.defaults')
+local Style = require('arkitekt.gui.style')
 
 local function resolve_config_OLD(opts)
   -- Problem: Style.BUTTON is a static table, copied at module load time
@@ -32,7 +32,7 @@ end
 -- ============================================================================
 
 -- NEW VERSION (button.lua after refactor):
-local Style = require('arkitekt.gui.style.defaults')
+local Style = require('arkitekt.gui.style')
 local Colors = require('arkitekt.core.colors')
 
 local function resolve_config_NEW(opts)

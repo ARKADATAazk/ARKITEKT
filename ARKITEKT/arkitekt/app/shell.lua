@@ -181,7 +181,7 @@ local function run_overlay_mode(config)
   -- Load style
   local style = config.style
   if not style then
-    local ok, default_style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
+    local ok, default_style = pcall(require, 'arkitekt.gui.style.imgui')
     if ok then style = default_style end
   end
 
@@ -291,7 +291,7 @@ function M.run(opts)
   -- Auto-load default style if none provided
   local style = config.style
   if not style then
-    local ok, default_style = pcall(require, 'arkitekt.gui.style.imgui_defaults')
+    local ok, default_style = pcall(require, 'arkitekt.gui.style.imgui')
     if ok then style = default_style end
   end
 

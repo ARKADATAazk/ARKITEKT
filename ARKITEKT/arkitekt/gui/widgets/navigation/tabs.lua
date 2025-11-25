@@ -6,6 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Button = require('arkitekt.gui.widgets.primitives.button')
 local Colors = require('arkitekt.core.colors')
+local Style = require('arkitekt.gui.style')
 
 local M = {}
 
@@ -14,13 +15,15 @@ local M = {}
 -- ============================================================================
 
 local function render_tab(ctx, tab_id, label, is_active, width, height, config)
+  -- Use dynamic colors from Style.COLORS
+  local C = Style.COLORS
   local button_config = {
     label = label,
     width = width,
     height = height,
     style = is_active and "primary" or "secondary",
-    bg_color = is_active and (config.active_color or Colors.hexrgb("#2A5599")) or (config.bg_color or Colors.hexrgb("#252525")),
-    text_color = config.text_color or Colors.hexrgb("#FFFFFF"),
+    bg_color = is_active and (config.active_color or C.ACCENT_PRIMARY) or (config.bg_color or C.BG_BASE),
+    text_color = config.text_color or C.TEXT_NORMAL,
     border_thickness = 0,
     rounding = config.rounding or 0,
   }

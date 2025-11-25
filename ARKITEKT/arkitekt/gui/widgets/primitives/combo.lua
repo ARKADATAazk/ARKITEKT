@@ -5,7 +5,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Style = require('arkitekt.gui.style.defaults')
+local Style = require('arkitekt.gui.style')
 local Base = require('arkitekt.gui.widgets.base')
 local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
@@ -502,8 +502,11 @@ function M.draw(ctx, opts)
     end
   end
 
-  -- Apply style defaults
-  local config = Style.apply_defaults(Style.DROPDOWN, user_config)
+  -- Build config dynamically from Style.COLORS (enables dynamic theming)
+  local config = Style.build_dropdown_config()
+  for k, v in pairs(user_config) do
+    if v ~= nil then config[k] = v end
+  end
 
   -- Resolve context (panel vs standalone)
   local context = resolve_context(config, state_or_id)
@@ -522,7 +525,10 @@ function M.draw(ctx, opts)
 end
 
 function M.measure(ctx, user_config)
-  local config = Style.apply_defaults(Style.DROPDOWN, user_config)
+  local config = Style.build_dropdown_config()
+  for k, v in pairs(user_config or {}) do
+    if v ~= nil then config[k] = v end
+  end
   return config.width or 120
 end
 

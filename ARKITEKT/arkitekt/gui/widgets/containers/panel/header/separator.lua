@@ -2,7 +2,7 @@
 -- Arkitekt/gui/widgets/panel/header/separator.lua
 -- Separator element for header layout
 
-local Style = require('arkitekt.gui.style.defaults')
+local Style = require('arkitekt.gui.style')
 local PC = Style.PANEL_COLORS   -- Panel-specific colors
 
 local M = {}

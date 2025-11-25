@@ -69,7 +69,7 @@ local Micromanage = require("arkitekt.gui.widgets.media.package_tiles.micromanag
 local SelRect = require("arkitekt.gui.widgets.data.selection_rectangle")
 
 local SettingsOK, Settings = pcall(require, "arkitekt.core.settings")
-local StyleOK, Style = pcall(require, "arkitekt.gui.style.imgui_defaults")
+local StyleOK, Style = pcall(require, "arkitekt.gui.style.imgui")
 local hexrgb = ark.Colors.hexrgb
 
 
