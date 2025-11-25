@@ -29,9 +29,10 @@ function M.create_animation_state(position, config)
 
   return {
     position = position,
-    current = initial,  -- Current visibility (0.0 - 1.0)
-    target = initial,   -- Target visibility
+    current = initial,     -- Current visibility (0.0 - 1.0)
+    target = initial,      -- Target visibility
     is_hovering = false,
+    is_expanded = false,   -- For button trigger mode
   }
 end
 
@@ -61,7 +62,8 @@ end
 --- @param anim_state table Animation state
 --- @param config table Overlay toolbar configuration
 --- @param is_hovering boolean Whether mouse is over overlay area
-function M.update_hover_state(anim_state, config, is_hovering)
+--- @param button_clicked boolean|nil Whether toggle button was clicked (button mode only)
+function M.update_hover_state(anim_state, config, is_hovering, button_clicked)
   local auto_hide_cfg = config.auto_hide or {}
 
   if not auto_hide_cfg.enabled then
@@ -76,6 +78,13 @@ function M.update_hover_state(anim_state, config, is_hovering)
   elseif auto_hide_cfg.trigger == "hover" then
     local visible_amount = auto_hide_cfg.visible_amount or 0.2
     anim_state.target = is_hovering and 1.0 or visible_amount
+  elseif auto_hide_cfg.trigger == "button" then
+    -- Toggle on button click
+    if button_clicked then
+      anim_state.is_expanded = not anim_state.is_expanded
+    end
+    local visible_amount = auto_hide_cfg.visible_amount or 0.2
+    anim_state.target = anim_state.is_expanded and 1.0 or visible_amount
   end
 end
 
@@ -177,6 +186,64 @@ local function draw_background(dl, bounds, config, rounding)
   )
 end
 
+--- Draw toggle button for button-triggered overlays
+--- @param ctx userdata ImGui context
+--- @param dl userdata ImGui draw list
+--- @param bounds table {x, y, w, h}
+--- @param position string Position ("top", "bottom", "left", "right")
+--- @param anim_state table Animation state
+--- @param panel_id string Panel ID
+--- @return boolean True if button was clicked
+local function draw_toggle_button(ctx, dl, bounds, position, anim_state, panel_id)
+  local btn_size = 20
+  local btn_x, btn_y
+
+  -- Position button based on orientation
+  if position == "left" then
+    btn_x = bounds.x + bounds.w - btn_size - 2
+    btn_y = bounds.y + (bounds.h - btn_size) * 0.5
+  elseif position == "right" then
+    btn_x = bounds.x + 2
+    btn_y = bounds.y + (bounds.h - btn_size) * 0.5
+  elseif position == "top" then
+    btn_x = bounds.x + (bounds.w - btn_size) * 0.5
+    btn_y = bounds.y + bounds.h - btn_size - 2
+  else -- bottom
+    btn_x = bounds.x + (bounds.w - btn_size) * 0.5
+    btn_y = bounds.y + 2
+  end
+
+  -- Simple invisible button for click detection
+  ImGui.SetCursorScreenPos(ctx, btn_x, btn_y)
+  local clicked = ImGui.InvisibleButton(ctx, panel_id .. "_overlay_toggle", btn_size, btn_size)
+
+  -- Draw arrow indicator
+  local mx, my = ImGui.GetMousePos(ctx)
+  local is_hovering = mx >= btn_x and mx <= btn_x + btn_size and my >= btn_y and my <= btn_y + btn_size
+  local color = is_hovering and 0xFFFFFFFF or 0xAAAAAAFF
+
+  local arrow_icon = anim_state.is_expanded and "<" or ">"
+  if position == "right" then
+    arrow_icon = anim_state.is_expanded and ">" or "<"
+  elseif position == "top" then
+    arrow_icon = anim_state.is_expanded and "^" or "v"
+  elseif position == "bottom" then
+    arrow_icon = anim_state.is_expanded and "v" or "^"
+  end
+
+  -- Draw button background
+  local btn_bg = is_hovering and 0x444444FF or 0x333333FF
+  ImGui.DrawList_AddRectFilled(dl, btn_x, btn_y, btn_x + btn_size, btn_y + btn_size, btn_bg, 3)
+
+  -- Draw arrow text centered
+  local text_w, text_h = ImGui.CalcTextSize(ctx, arrow_icon)
+  local text_x = btn_x + (btn_size - text_w) * 0.5
+  local text_y = btn_y + (btn_size - text_h) * 0.5
+  ImGui.DrawList_AddText(dl, text_x, text_y, color, arrow_icon)
+
+  return clicked
+end
+
 --- Draw overlay toolbar
 --- @param ctx userdata ImGui context
 --- @param dl userdata ImGui draw list
@@ -196,15 +263,23 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
   -- Calculate bounds
   local bounds = M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, config, anim_state.current)
 
-  -- Update hover state
+  local auto_hide_cfg = config.auto_hide or {}
+  local button_clicked = false
+
+  -- Draw toggle button for button-triggered overlays
+  if auto_hide_cfg.trigger == "button" then
+    button_clicked = draw_toggle_button(ctx, dl, bounds, position, anim_state, panel_id)
+  end
+
+  -- Update hover state (and handle button clicks)
   local is_hovering = is_mouse_hovering(ctx, bounds)
-  M.update_hover_state(anim_state, config, is_hovering)
+  M.update_hover_state(anim_state, config, is_hovering, button_clicked)
 
   -- Draw background
   draw_background(dl, bounds, config, rounding)
 
-  -- Draw elements using existing toolbar element renderers
-  if config.elements and #config.elements > 0 then
+  -- Draw elements using existing toolbar element renderers (only when expanded)
+  if config.elements and #config.elements > 0 and anim_state.current > 0.3 then
     local orientation = get_orientation(position)
 
     if orientation == "horizontal" then
