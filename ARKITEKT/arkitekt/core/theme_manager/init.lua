@@ -116,6 +116,17 @@ M.presets = {
     tile_fill_saturation = blend(0.4),
     tile_fill_opacity = blend(0.4),
     tile_name_color = step("#DDE3E9"),  -- Light text on dark backgrounds
+
+    -- Badges (count indicators, playlist chips)
+    badge_bg_color = step("#14181C"),       -- Dark blue-grey background
+    badge_bg_opacity = blend(0.85),
+    badge_text_color = step("#FFFFFF"),     -- White text on dark badges
+    badge_border_opacity = blend(0.20),
+
+    -- Playlist tiles (in pool/active views)
+    playlist_tile_color = step("#3A3A3A"),  -- Neutral grey base
+    playlist_name_color = step("#CCCCCC"),  -- Light grey text
+    playlist_badge_color = step("#999999"), -- Dimmed badge text
   },
 
   -- LIGHT preset (~88% lightness)
@@ -155,6 +166,17 @@ M.presets = {
     tile_fill_saturation = blend(0.5),
     tile_fill_opacity = blend(0.5),
     tile_name_color = step("#1A1A1A"),  -- Dark text on light backgrounds
+
+    -- Badges (count indicators, playlist chips)
+    badge_bg_color = step("#E8ECF0"),       -- Light grey background
+    badge_bg_opacity = blend(0.90),
+    badge_text_color = step("#1A1A1A"),     -- Dark text on light badges
+    badge_border_opacity = blend(0.15),
+
+    -- Playlist tiles (in pool/active views)
+    playlist_tile_color = step("#D0D0D0"),  -- Light grey base
+    playlist_name_color = step("#2A2A2A"),  -- Dark text
+    playlist_badge_color = step("#666666"), -- Dimmed badge text
   },
 }
 
@@ -420,6 +442,21 @@ function M.generate_palette(base_bg, base_text, base_accent, rules)
     TILE_FILL_SATURATION = rules.tile_fill_saturation,
     TILE_FILL_OPACITY = rules.tile_fill_opacity,
     TILE_NAME_COLOR = Colors.hexrgb(rules.tile_name_color),
+
+    -- ============ BADGES ============
+    -- Count indicators, playlist chips, status badges
+    BADGE_BG = Colors.with_alpha(
+      Colors.hexrgb(rules.badge_bg_color),
+      Colors.opacity(rules.badge_bg_opacity)
+    ),
+    BADGE_TEXT = Colors.hexrgb(rules.badge_text_color),
+    BADGE_BORDER_OPACITY = rules.badge_border_opacity,
+
+    -- ============ PLAYLIST TILES ============
+    -- Playlist tiles in pool/active views (distinct from region tiles)
+    PLAYLIST_TILE_COLOR = Colors.hexrgb(rules.playlist_tile_color),
+    PLAYLIST_NAME_COLOR = Colors.hexrgb(rules.playlist_name_color),
+    PLAYLIST_BADGE_COLOR = Colors.hexrgb(rules.playlist_badge_color),
   }
 end
 
