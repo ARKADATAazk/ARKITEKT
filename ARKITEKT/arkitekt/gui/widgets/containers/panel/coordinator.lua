@@ -128,8 +128,9 @@ function Panel:begin_draw(ctx)
   local x2, y2 = x1 + w, y1 + h
 
   -- Draw background (read dynamically from Style.COLORS for theme reactivity)
-  -- Use config.bg_color as override, fall back to Style.COLORS.BG_PANEL
-  local bg_color = self.config._custom_bg_color or Style.COLORS.BG_PANEL
+  -- Custom bg_color (e.g. transparent for transport) is preserved when specified
+  -- Otherwise, falls back to dynamic Style.COLORS.BG_PANEL for regular panels
+  local bg_color = self.config.bg_color or Style.COLORS.BG_PANEL
   Rendering.draw_background(dl, x1, y1, w, h, bg_color, self.config.rounding)
 
   -- ============================================================================
@@ -240,8 +241,9 @@ function Panel:begin_draw(ctx)
   end
 
   -- Draw border (read dynamically from Style.COLORS for theme reactivity)
+  -- Custom border_color is preserved when specified, otherwise uses dynamic theme color
   if self.config.border_thickness > 0 then
-    local border_color = self.config._custom_border_color or Style.COLORS.BORDER_OUTER
+    local border_color = self.config.border_color or Style.COLORS.BORDER_OUTER
     Rendering.draw_border(dl, x1, y1, w, h, border_color, self.config.rounding, self.config.border_thickness)
   end
 

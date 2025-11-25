@@ -14,8 +14,9 @@ local Config = require('arkitekt.core.config')
 local M = {}
 
 M.DEFAULTS = {
-  bg_color = PC.bg_panel,
-  border_color = PC.border_panel,
+  -- bg_color: Dynamically reads from Style.COLORS.BG_PANEL (don't set static value here!)
+  -- Custom colors can be provided by components needing transparency (e.g. transport)
+  -- border_color: Dynamically reads from Style.COLORS.BORDER_OUTER
   border_thickness = 1,
   rounding = 8,
   padding = 8,
