@@ -106,7 +106,7 @@ function M.generate_palette(base_bg, base_text, base_accent)
     BG_BASE = base_bg,
     BG_HOVER = Colors.adjust_lightness(base_bg, sign * rules.bg_hover_delta),
     BG_ACTIVE = Colors.adjust_lightness(base_bg, sign * rules.bg_active_delta),
-    BG_PANEL = Colors.adjust_lightness(base_bg, sign * rules.bg_panel_delta),
+    BG_PANEL = Colors.adjust_lightness(base_bg, rules.bg_panel_delta),  -- Always darker, no sign flip
     BG_TRANSPARENT = Colors.with_alpha(base_bg, 0x00),
 
     -- ============ BORDERS ============
