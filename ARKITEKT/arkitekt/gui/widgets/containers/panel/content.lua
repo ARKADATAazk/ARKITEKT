@@ -49,9 +49,14 @@ function M.end_child(ctx, container)
   if anti_jitter and anti_jitter.enabled and anti_jitter.track_scrollbar then
     local cursor_y = ImGui.GetCursorPosY(ctx)
     local content_height = cursor_y
-    
+
     local threshold = anti_jitter.height_threshold or 5
-    
+
+    -- Initialize last_content_height if not set
+    if not container.last_content_height then
+      container.last_content_height = content_height
+    end
+
     if math.abs(content_height - container.last_content_height) > threshold then
       container.had_scrollbar_last_frame = content_height > (container.actual_child_height + threshold)
       container.last_content_height = content_height
