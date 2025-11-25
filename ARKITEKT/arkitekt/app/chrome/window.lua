@@ -109,6 +109,7 @@ function M.new(opts)
     title           = config.title,
     version         = config.version,
     flags           = config.flags or WF_None,
+    topmost         = config.topmost or false,
 
     content_padding = config.content_padding,
     titlebar_pad_h  = config.titlebar_pad_h,
@@ -578,6 +579,11 @@ local hexrgb = Colors.hexrgb
     local window_flags = self.flags
     if self.fullscreen.enabled and self.fullscreen.is_closing and ImGui.WindowFlags_NoInputs then
       window_flags = window_flags | ImGui.WindowFlags_NoInputs
+    end
+
+    -- Keep window on top if topmost is set
+    if self.topmost and ImGui.WindowFlags_TopMost then
+      window_flags = window_flags | ImGui.WindowFlags_TopMost
     end
 
     local visible, open = ImGui.Begin(ctx, self.title .. "##main", true, window_flags)

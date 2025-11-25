@@ -383,8 +383,9 @@ function M.new(config)
     ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#141414FF"))
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ChildRounding, 4)
 
-    local child_flags = ImGui.WindowFlags_NoScrollbar
-    if ImGui.BeginChild(ctx, "##LiveSlots", avail_w - 16, total_height, child_flags) then
+    -- BeginChild params: ctx, id, size_w, size_h, child_flags, window_flags
+    local window_flags = ImGui.WindowFlags_NoScrollbar
+    if ImGui.BeginChild(ctx, "##LiveSlots", avail_w - 16, total_height, ImGui.ChildFlags_None, window_flags) then
       local dl = ImGui.GetWindowDrawList(ctx)
       local cx, cy = ImGui.GetCursorScreenPos(ctx)
 

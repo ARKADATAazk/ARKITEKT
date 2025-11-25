@@ -347,6 +347,7 @@ function M.run(opts)
     tabs            = config.tabs,
     bg_color_floating = config.bg_color_floating,
     bg_color_docked   = config.bg_color_docked,
+    topmost         = config.topmost,
   })
 
 

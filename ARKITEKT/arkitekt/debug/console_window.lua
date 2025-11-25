@@ -51,11 +51,12 @@ function M.launch()
     show_status_bar = false,
     show_titlebar = true,
     raw_content = true,
-    
+    topmost = true,  -- Keep debug console on top
+
     window = {
       content_padding = 0,
     },
-    
+
     draw = function(ctx, shell_state)
       if window_state.console then
         Console.render(window_state.console, ctx)
