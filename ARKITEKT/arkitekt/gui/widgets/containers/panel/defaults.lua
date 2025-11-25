@@ -58,10 +58,10 @@ M.DEFAULTS = {
     enabled = false,
     height = 30,
     position = "top", -- "top" or "bottom"
-    bg_color = PC.bg_header,
-    border_color = PC.border_header,
+    -- bg_color: Dynamically reads from Style.COLORS.BG_HEADER (don't set static value here!)
+    -- border_color: Dynamically reads from Style.COLORS.BORDER_OUTER
     rounding = 8,
-    
+
     -- IMPORTANT: Keep left/right padding at 0 so corner rounding on
     -- first/last buttons is visible. Otherwise rounded corners are hidden.
     padding = {
@@ -70,7 +70,7 @@ M.DEFAULTS = {
       top = 0,
       bottom = 0,
     },
-    
+
     elements = {},
   },
   
@@ -101,8 +101,8 @@ M.DEFAULTS = {
   left_sidebar = {
     enabled = false,
     width = 36,
-    bg_color = PC.bg_header,
-    border_color = PC.border_header,
+    -- bg_color: Dynamically reads from Style.COLORS.BG_HEADER
+    -- border_color: Dynamically reads from Style.COLORS.BORDER_OUTER
     valign = "center",  -- "top", "center", "bottom"
     padding = {
       top = 4,
@@ -116,8 +116,8 @@ M.DEFAULTS = {
   right_sidebar = {
     enabled = false,
     width = 36,
-    bg_color = PC.bg_header,
-    border_color = PC.border_header,
+    -- bg_color: Dynamically reads from Style.COLORS.BG_HEADER
+    -- border_color: Dynamically reads from Style.COLORS.BORDER_OUTER
     valign = "center",
     padding = {
       top = 4,
@@ -170,10 +170,9 @@ M.ALIGNED_HEADER_EXAMPLE = {
     enabled = true,
     height = 30,
     position = "top",
-    bg_color = PC.bg_header,
-    border_color = PC.border_header,
+    -- bg_color/border_color: Uses dynamic Style.COLORS.BG_HEADER
     rounding = 8,
-    
+
     padding = {
       left = 0,
       right = 0,
@@ -235,10 +234,9 @@ M.BOTTOM_HEADER_EXAMPLE = {
     enabled = true,
     height = 30,
     position = "bottom", -- Header at bottom
-    bg_color = PC.bg_header,
-    border_color = PC.border_header,
+    -- bg_color/border_color: Uses dynamic Style.COLORS.BG_HEADER
     rounding = 8,
-    
+
     elements = {
       {
         id = "status",
@@ -256,10 +254,9 @@ M.TAB_MODE_WITH_CORNER_BUTTONS = {
   header = {
     enabled = true,
     height = 20,
-    bg_color = PC.bg_tab,
-    border_color = PC.border_header,
+    -- bg_color/border_color: Uses dynamic Style.COLORS.BG_HEADER
     rounding = 8,
-    
+
     elements = {
       {
         id = "tabs",
