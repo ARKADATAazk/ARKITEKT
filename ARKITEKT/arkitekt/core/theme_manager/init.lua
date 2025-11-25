@@ -38,7 +38,6 @@
 
 local Colors = require('arkitekt.core.colors')
 local Style = require('arkitekt.gui.style')
-local Pattern = require('arkitekt.gui.draw.pattern')
 
 local M = {}
 
@@ -188,9 +187,11 @@ local function apply_palette(palette)
     Style.COLORS[key] = value
   end
 
-  -- Clear pattern texture cache since colors changed
-  -- Patterns will be re-baked with new colors on next draw
-  Pattern.clear_cache()
+  -- NOTE: We intentionally do NOT clear the pattern texture cache here.
+  -- Each unique color gets its own cache entry. When switching themes,
+  -- different colors create new entries while old ones remain cached.
+  -- This way, switching back to a previous theme reuses existing textures
+  -- instead of creating duplicates (which would leak ImGui attachments).
 end
 
 --- Generate palette from base colors and apply to Style.COLORS
