@@ -31,7 +31,7 @@ M.DEFAULT_CONFIG = {
   },
   
   border = {
-    color = hexrgb("#000000"),
+    -- color: Uses Style.COLORS.BORDER_OUTER dynamically for theme reactivity
     thickness = 1,
   },
   
@@ -52,7 +52,7 @@ M.DEFAULT_CONFIG = {
   
   progress = {
     height = 3,
-    track_color = hexrgb("#1D1D1D"),
+    -- track_color: Uses Style.COLORS.BG_PANEL dynamically for theme reactivity
   },
 }
 
@@ -191,7 +191,9 @@ end
 
 function M.render_border(dl, x1, y1, x2, y2, config)
   local border_cfg = config.border
-  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_cfg.color, config.rounding, ImGui.DrawFlags_RoundCornersAll, border_cfg.thickness)
+  -- Dynamic border color from theme
+  local border_color = border_cfg.color or Style.COLORS.BORDER_OUTER
+  ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, config.rounding, ImGui.DrawFlags_RoundCornersAll, border_cfg.thickness)
 end
 
 ---Renders complete transport FX including gradient, specular, glow, and border
@@ -211,21 +213,30 @@ function M.render_complete(dl, x1, y1, x2, y2, config, hover_factor, current_reg
   jump_flash_alpha = jump_flash_alpha or 0
 
   local color_left, color_right
+  local is_ready_state = false
 
   if current_region_color and next_region_color then
     color_left = current_region_color
     color_right = next_region_color
   elseif current_region_color then
     color_left = current_region_color
-    color_right = hexrgb("#000000")
+    -- Use ready_color instead of hardcoded black for next color
+    color_right = config.gradient.ready_color or Style.COLORS.BG_PANEL
   else
-    -- Dynamic ready color from theme for proper light/dark theme support
+    -- Ready/idle state: use theme background directly without brightness reduction
+    is_ready_state = true
     local ready_color = config.gradient.ready_color or Style.COLORS.BG_PANEL
     color_left = ready_color
     color_right = ready_color
   end
 
-  M.render_gradient_background(dl, x1, y1, x2, y2, color_left, color_right, config.rounding, config.gradient, jump_flash_alpha, config.jump_flash)
+  if is_ready_state then
+    -- Ready state: draw solid background without processing (no brightness reduction)
+    ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, color_left, config.rounding, ImGui.DrawFlags_RoundCornersAll)
+  else
+    -- Active state: render gradient with region color processing
+    M.render_gradient_background(dl, x1, y1, x2, y2, color_left, color_right, config.rounding, config.gradient, jump_flash_alpha, config.jump_flash)
+  end
 
   M.render_specular(dl, x1, y1, x2, y2, config, hover_factor)
   M.render_inner_glow(dl, x1, y1, x2, y2, config, hover_factor)

@@ -57,7 +57,7 @@ M.TRANSPORT = {
     rounding = 8,
     specular = { height = 40, strength = 0.02 },
     inner_glow = { size = 20, strength = 0.08 },
-    border = { color = hexrgb("#000000"), thickness = 1 },
+    border = { thickness = 1 },  -- color: Uses Style.COLORS.BORDER_OUTER dynamically
     hover = { specular_boost = 1.5, glow_boost = 1.3, transition_speed = 6.0 },
     gradient = {
       fade_speed = 8.0,
@@ -70,7 +70,7 @@ M.TRANSPORT = {
       fade_speed = 3.0,
       max_opacity = 0.85,
     },
-    progress = { height = 3, track_color = hexrgb("#1D1D1D") },
+    progress = { height = 3 },  -- track_color: Uses Style.COLORS.BG_PANEL dynamically
   },
 
   background_pattern = {

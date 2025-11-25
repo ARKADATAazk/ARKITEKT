@@ -5,6 +5,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
+local Style = require('arkitekt.gui.style')
 
 local TileFXConfig = require('arkitekt.gui.rendering.tile.defaults')
 local TransportFX = require('RegionPlaylist.ui.views.transport.transport_fx')
@@ -121,7 +122,8 @@ function TransportDisplay:draw(ctx, x, y, width, height, bridge_state, current_r
   local bar_w = width - LC.progress_padding_left - LC.progress_padding_right
   local bar_h = LC.progress_height
   
-  local track_color = cfg.track_color or hexrgb("#1D1D1D")
+  -- Dynamic track color from theme
+  local track_color = cfg.track_color or Style.COLORS.BG_PANEL
   ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + bar_w, bar_y + bar_h, track_color, 1.5)
   
   if progress > 0 and region_colors and region_colors.current then
