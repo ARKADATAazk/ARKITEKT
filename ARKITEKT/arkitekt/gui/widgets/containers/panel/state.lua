@@ -2,7 +2,44 @@
 -- panel/state.lua
 -- Panel state management (search, sort, tabs, mode)
 
+local Toolbar = require('arkitekt.gui.widgets.containers.panel.toolbar')
+
 local M = {}
+
+-- ============================================================================
+-- TOOLBAR ELEMENT ITERATION
+-- ============================================================================
+
+--- Iterate through all toolbar elements in all positions
+--- @param config table Panel config
+--- @return function Iterator function
+local function iter_toolbar_elements(config)
+  local positions = {"top", "bottom", "left", "right"}
+  local pos_idx = 1
+  local elem_idx = 0
+  local current_toolbar = nil
+
+  return function()
+    while pos_idx <= #positions do
+      if not current_toolbar then
+        current_toolbar = Toolbar.get_toolbar_config(config, positions[pos_idx])
+        elem_idx = 0
+      end
+
+      if current_toolbar and current_toolbar.elements then
+        elem_idx = elem_idx + 1
+        if elem_idx <= #current_toolbar.elements then
+          return current_toolbar.elements[elem_idx]
+        end
+      end
+
+      -- Move to next position
+      pos_idx = pos_idx + 1
+      current_toolbar = nil
+    end
+    return nil
+  end
+end
 
 -- ============================================================================
 -- SEARCH TEXT STATE
@@ -12,11 +49,7 @@ local M = {}
 --- @param panel table Panel instance
 --- @return string Search text or empty string
 function M.get_search_text(panel)
-  if not panel.config.header or not panel.config.header.elements then
-    return ""
-  end
-
-  for _, element in ipairs(panel.config.header.elements) do
+  for element in iter_toolbar_elements(panel.config) do
     if element.type == "inputtext" then
       local element_state = panel[element.id]
       if element_state and element_state.search_text then
@@ -24,7 +57,6 @@ function M.get_search_text(panel)
       end
     end
   end
-
   return ""
 end
 
@@ -32,11 +64,7 @@ end
 --- @param panel table Panel instance
 --- @param text string Search text
 function M.set_search_text(panel, text)
-  if not panel.config.header or not panel.config.header.elements then
-    return
-  end
-
-  for _, element in ipairs(panel.config.header.elements) do
+  for element in iter_toolbar_elements(panel.config) do
     if element.type == "inputtext" then
       if not panel[element.id] then
         panel[element.id] = {}
@@ -55,11 +83,7 @@ end
 --- @param panel table Panel instance
 --- @return string|nil Sort mode or nil
 function M.get_sort_mode(panel)
-  if not panel.config.header or not panel.config.header.elements then
-    return nil
-  end
-
-  for _, element in ipairs(panel.config.header.elements) do
+  for element in iter_toolbar_elements(panel.config) do
     if element.type == "combo" and element.id == "sort" then
       local element_state = panel[element.id]
       if element_state and element_state.dropdown_value ~= nil then
@@ -67,7 +91,6 @@ function M.get_sort_mode(panel)
       end
     end
   end
-
   return nil
 end
 
@@ -75,11 +98,7 @@ end
 --- @param panel table Panel instance
 --- @param mode string Sort mode
 function M.set_sort_mode(panel, mode)
-  if not panel.config.header or not panel.config.header.elements then
-    return
-  end
-
-  for _, element in ipairs(panel.config.header.elements) do
+  for element in iter_toolbar_elements(panel.config) do
     if element.type == "combo" and element.id == "sort" then
       if not panel[element.id] then
         panel[element.id] = {}
@@ -98,11 +117,7 @@ end
 --- @param panel table Panel instance
 --- @return string Sort direction ("asc" or "desc")
 function M.get_sort_direction(panel)
-  if not panel.config.header or not panel.config.header.elements then
-    return "asc"
-  end
-
-  for _, element in ipairs(panel.config.header.elements) do
+  for element in iter_toolbar_elements(panel.config) do
     if element.type == "combo" and element.id == "sort" then
       local element_state = panel[element.id]
       if element_state and element_state.dropdown_direction then
@@ -110,7 +125,6 @@ function M.get_sort_direction(panel)
       end
     end
   end
-
   return "asc"
 end
 
@@ -118,11 +132,7 @@ end
 --- @param panel table Panel instance
 --- @param direction string Sort direction ("asc" or "desc")
 function M.set_sort_direction(panel, direction)
-  if not panel.config.header or not panel.config.header.elements then
-    return
-  end
-
-  for _, element in ipairs(panel.config.header.elements) do
+  for element in iter_toolbar_elements(panel.config) do
     if element.type == "combo" and element.id == "sort" then
       if not panel[element.id] then
         panel[element.id] = {}
