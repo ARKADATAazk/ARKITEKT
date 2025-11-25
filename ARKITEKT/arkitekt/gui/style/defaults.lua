@@ -27,6 +27,7 @@ M.COLORS = {
   BG_BASE = hexrgb("#252525FF"),        -- Standard control background
   BG_HOVER = hexrgb("#2A2A2AFF"),       -- Hovered control background
   BG_ACTIVE = hexrgb("#303030FF"),      -- Active/pressed control background
+  BG_PANEL = hexrgb("#1A1A1AFF"),       -- Panel/container background (darker)
   BG_TRANSPARENT = hexrgb("#00000000"), -- Transparent background
 
   -- Borders
@@ -44,8 +45,15 @@ M.COLORS = {
   TEXT_DARK = hexrgb("#707070FF"),      -- Dark text for high-contrast areas
   TEXT_BRIGHT = hexrgb("#EEEEEEFF"),    -- Extra bright text
 
-  -- Accents (for warnings, errors, success states)
+  -- Accents (themed - used for toggle buttons, highlights)
   ACCENT_PRIMARY = hexrgb("#4A9EFF"),   -- Primary accent (blue)
+  ACCENT_TEAL = hexrgb("#295650FF"),    -- Teal accent (for toggle buttons)
+  ACCENT_TEAL_BRIGHT = hexrgb("#41E0A3FF"), -- Bright teal (for text on teal bg)
+  ACCENT_WHITE = hexrgb("#2f2f2fff"),   -- White/gray accent (desaturated)
+  ACCENT_WHITE_BRIGHT = hexrgb("#585858ff"), -- Bright white accent
+  ACCENT_TRANSPARENT = hexrgb("#43434388"), -- Semi-transparent accent (overlays)
+
+  -- Semantic colors (status indicators)
   ACCENT_SUCCESS = hexrgb("#4CAF50"),   -- Success/confirmation (green)
   ACCENT_WARNING = hexrgb("#FFA726"),   -- Warning state (orange)
   ACCENT_DANGER = hexrgb("#EF5350"),    -- Error/danger state (red)
@@ -495,6 +503,412 @@ function M.RENDER.lerp_color(a, b, t)
 
   return (r << 24) | (g << 16) | (b << 8) | a
 end
+
+-- ============================================================================
+-- DYNAMIC CONFIG BUILDERS (Option 3: Direct M.COLORS Access)
+-- ============================================================================
+-- These functions build widget configs from M.COLORS every time they're called.
+-- This enables truly dynamic theming - changing M.COLORS updates all widgets
+-- on the next frame with zero rebuild needed.
+--
+-- Usage in widgets:
+--   local config = Style.build_button_config()
+--   apply_preset(config, opts.preset_name)
+--   merge_user_opts(config, opts)
+-- ============================================================================
+
+--- Build button config from current M.COLORS
+--- @return table Button configuration with all color properties
+function M.build_button_config()
+  return {
+    -- Backgrounds
+    bg_color = M.COLORS.BG_BASE,
+    bg_hover_color = M.COLORS.BG_HOVER,
+    bg_active_color = M.COLORS.BG_ACTIVE,
+    bg_disabled_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.05),
+
+    -- Borders
+    border_outer_color = M.COLORS.BORDER_OUTER,
+    border_inner_color = M.COLORS.BORDER_INNER,
+    border_hover_color = M.COLORS.BORDER_HOVER,
+    border_active_color = M.COLORS.BORDER_ACTIVE,
+    border_inner_disabled_color = Colors.adjust_lightness(M.COLORS.BORDER_INNER, -0.05),
+    border_outer_disabled_color = M.COLORS.BORDER_OUTER,
+
+    -- Text
+    text_color = M.COLORS.TEXT_NORMAL,
+    text_hover_color = M.COLORS.TEXT_HOVER,
+    text_active_color = M.COLORS.TEXT_ACTIVE,
+    text_disabled_color = M.COLORS.TEXT_DIMMED,
+
+    -- Geometry (non-color properties)
+    padding_x = 10,
+    padding_y = 6,
+    rounding = 0,
+  }
+end
+
+--- Build dropdown config from current M.COLORS
+--- @return table Dropdown configuration with all color properties
+function M.build_dropdown_config()
+  return {
+    -- Button (closed state)
+    bg_color = M.COLORS.BG_BASE,
+    bg_hover_color = M.COLORS.BG_HOVER,
+    bg_active_color = M.COLORS.BG_ACTIVE,
+    border_outer_color = M.COLORS.BORDER_OUTER,
+    border_inner_color = M.COLORS.BORDER_INNER,
+    border_hover_color = M.COLORS.BORDER_HOVER,
+    border_active_color = M.COLORS.BORDER_ACTIVE,
+    text_color = M.COLORS.TEXT_NORMAL,
+    text_hover_color = M.COLORS.TEXT_HOVER,
+    text_active_color = M.COLORS.TEXT_ACTIVE,
+
+    -- Arrow
+    arrow_color = M.COLORS.TEXT_NORMAL,
+    arrow_hover_color = M.COLORS.TEXT_HOVER,
+
+    -- Geometry
+    rounding = 0,
+    padding_x = 10,
+    padding_y = 6,
+    arrow_size = 6,
+    enable_mousewheel = true,
+    tooltip_delay = 0.5,
+
+    -- Popup menu
+    popup = {
+      bg_color = Colors.adjust_lightness(M.COLORS.BG_BASE, -0.02),
+      border_color = Colors.adjust_lightness(M.COLORS.BORDER_OUTER, -0.05),
+      item_bg_color = M.COLORS.BG_TRANSPARENT,
+      item_hover_color = M.COLORS.BG_HOVER,
+      item_active_color = M.COLORS.BG_ACTIVE,
+      item_text_color = M.COLORS.TEXT_NORMAL,
+      item_text_hover_color = M.COLORS.TEXT_HOVER,
+      item_selected_color = M.COLORS.BG_ACTIVE,
+      item_selected_text_color = M.COLORS.TEXT_BRIGHT,
+      rounding = 2,
+      padding = 6,
+      item_height = 26,
+      item_padding_x = 12,
+      border_thickness = 1,
+    },
+  }
+end
+
+--- Build search input config from current M.COLORS
+--- @return table Search input configuration
+function M.build_search_input_config()
+  return {
+    placeholder = "Search...",
+    fade_speed = 8.0,
+    bg_color = M.COLORS.BG_BASE,
+    bg_hover_color = M.COLORS.BG_HOVER,
+    bg_active_color = M.COLORS.BG_ACTIVE,
+    border_outer_color = M.COLORS.BORDER_OUTER,
+    border_inner_color = M.COLORS.BORDER_INNER,
+    border_hover_color = M.COLORS.BORDER_HOVER,
+    border_active_color = M.COLORS.BORDER_ACTIVE,
+    text_color = M.COLORS.TEXT_NORMAL,
+    padding_x = 6,
+    rounding = 0,
+    tooltip_delay = 0.5,
+  }
+end
+
+--- Build tooltip config from current M.COLORS
+--- @return table Tooltip configuration
+function M.build_tooltip_config()
+  return {
+    bg_color = M.COLORS.BG_HOVER,
+    border_color = M.COLORS.BORDER_INNER,
+    text_color = M.COLORS.TEXT_BRIGHT,
+    padding_x = 8,
+    padding_y = 6,
+    rounding = 4,
+    border_thickness = 1,
+    delay = 0.5,
+  }
+end
+
+-- ============================================================================
+-- PRESET DEFINITIONS (Option 3: Key Mappings)
+-- ============================================================================
+-- Presets map config keys to M.COLORS keys (strings) or direct values.
+-- At application time, string keys are resolved to actual colors.
+--
+-- This allows presets to stay dynamic - they reference M.COLORS keys
+-- instead of copying color values.
+-- ============================================================================
+
+M.DYNAMIC_PRESETS = {
+  -- Toggle button variants (ON state colors)
+  BUTTON_TOGGLE_TEAL = {
+    -- ON state (key mappings to M.COLORS)
+    bg_on_color = "ACCENT_TEAL",
+    bg_on_hover_color = "ACCENT_TEAL_BRIGHT",
+    bg_on_active_color = "ACCENT_TEAL",
+    border_inner_on_color = "ACCENT_TEAL_BRIGHT",
+    border_inner_on_hover_color = "ACCENT_TEAL_BRIGHT",
+    border_inner_on_active_color = "ACCENT_TEAL",
+    text_on_color = "ACCENT_TEAL_BRIGHT",
+    text_on_hover_color = "ACCENT_TEAL_BRIGHT",
+    text_on_active_color = "ACCENT_TEAL_BRIGHT",
+  },
+
+  BUTTON_TOGGLE_WHITE = {
+    bg_on_color = "ACCENT_WHITE",
+    bg_on_hover_color = "ACCENT_WHITE_BRIGHT",
+    bg_on_active_color = "ACCENT_WHITE",
+    border_inner_on_color = "ACCENT_WHITE_BRIGHT",
+    border_inner_on_hover_color = "ACCENT_WHITE_BRIGHT",
+    border_inner_on_active_color = "ACCENT_WHITE",
+    text_on_color = "TEXT_BRIGHT",
+    text_on_hover_color = "TEXT_BRIGHT",
+    text_on_active_color = "TEXT_BRIGHT",
+  },
+
+  BUTTON_TOGGLE_TRANSPARENT = {
+    bg_on_color = "ACCENT_TRANSPARENT",
+    bg_on_hover_color = "ACCENT_TRANSPARENT",
+    bg_on_active_color = "ACCENT_TRANSPARENT",
+    border_inner_on_color = "ACCENT_WHITE_BRIGHT",
+    border_inner_on_hover_color = "TEXT_BRIGHT",
+    border_inner_on_active_color = "ACCENT_WHITE",
+    text_on_color = "TEXT_BRIGHT",
+    text_on_hover_color = "TEXT_BRIGHT",
+    text_on_active_color = "TEXT_BRIGHT",
+  },
+
+  -- Action chips (colored rectangles with dark text)
+  ACTION_CHIP_WILDCARD = {
+    bg_color = hexrgb("#5B8FB9"),  -- Direct value (not theme-dependent)
+    text_color = hexrgb("#1a1a1a"),
+    border_color = Colors.with_alpha(hexrgb("#000000"), 100),
+    rounding = 2,
+    padding_h = 8,
+  },
+
+  ACTION_CHIP_TAG = {
+    bg_color = hexrgb("#8B7355"),
+    text_color = hexrgb("#1a1a1a"),
+    border_color = Colors.with_alpha(hexrgb("#000000"), 100),
+    rounding = 2,
+    padding_h = 8,
+  },
+}
+
+-- Legacy alias
+M.DYNAMIC_PRESETS.BUTTON_TOGGLE_ACCENT = M.DYNAMIC_PRESETS.BUTTON_TOGGLE_TEAL
+
+--- Apply a dynamic preset to a config
+--- Resolves string keys (e.g., "ACCENT_TEAL") to actual colors from M.COLORS
+--- @param config table Config to modify
+--- @param preset_name string Preset name from M.DYNAMIC_PRESETS
+function M.apply_dynamic_preset(config, preset_name)
+  local preset = M.DYNAMIC_PRESETS[preset_name]
+  if not preset then return end
+
+  for key, value in pairs(preset) do
+    if type(value) == "string" then
+      -- String value = key into M.COLORS
+      config[key] = M.COLORS[value]
+    else
+      -- Direct value (number, boolean, etc.)
+      config[key] = value
+    end
+  end
+end
+
+-- ============================================================================
+-- COLORED BUTTON PRESET GENERATOR (Algorithmic Hue Variations)
+-- ============================================================================
+-- Generate colored button presets from HSL values for visual consistency.
+-- All variants maintain the same saturation/lightness relationships,
+-- differing only in hue. This ensures mathematical harmony and allows
+-- buttons to adapt to theme changes.
+--
+-- Examples:
+--   Red button:    create_colored_button_preset(0.0)      -- 0° hue
+--   Green button:  create_colored_button_preset(0.33)     -- 120° hue
+--   Blue button:   create_colored_button_preset(0.66)     -- 240° hue
+--   Theme accent:  create_colored_button_preset(nil)      -- Uses theme's accent hue
+-- ============================================================================
+
+--- Create a colored button preset from HSL values
+--- @param hue number|nil Hue (0-1): 0=red, 0.33=green, 0.66=blue, nil=theme accent
+--- @param saturation number|nil Saturation intensity (0-1, default: 0.65)
+--- @param lightness number|nil Brightness (0-1, default: 0.48)
+--- @return table Button preset configuration with derived colors
+function M.create_colored_button_preset(hue, saturation, lightness)
+  -- Use theme accent hue if not specified
+  if hue == nil then
+    local h, s, l = Colors.rgb_to_hsl(M.COLORS.ACCENT_PRIMARY)
+    hue = h
+  end
+
+  -- Default to vibrant, balanced colors
+  saturation = saturation or 0.65
+  lightness = lightness or 0.48
+
+  -- Generate base color from HSL
+  local r, g, b = Colors.hsl_to_rgb(hue, saturation, lightness)
+  local base_color = Colors.components_to_rgba(r, g, b, 0xFF)
+
+  -- Derive all button states with consistent relationships
+  return {
+    -- Base states
+    bg_color = base_color,
+    bg_hover_color = Colors.adjust_lightness(base_color, 0.08),   -- +8% lighter
+    bg_active_color = Colors.adjust_lightness(base_color, -0.08), -- -8% darker
+    bg_disabled_color = Colors.adjust_saturation(
+      Colors.adjust_lightness(base_color, -0.1),
+      -0.4
+    ), -- Desaturated & darker
+
+    -- Borders (darker/lighter variations)
+    border_outer_color = Colors.adjust_lightness(base_color, -0.18),  -- Much darker
+    border_inner_color = Colors.adjust_lightness(base_color, 0.15),   -- Lighter highlight
+    border_hover_color = Colors.adjust_lightness(base_color, 0.22),   -- Even lighter
+    border_active_color = Colors.adjust_lightness(base_color, -0.12), -- Darker when pressed
+    border_inner_disabled_color = Colors.adjust_lightness(base_color, -0.15),
+    border_outer_disabled_color = Colors.adjust_lightness(base_color, -0.20),
+
+    -- Text (auto white/black based on background luminance)
+    text_color = Colors.auto_text_color(base_color),
+    text_hover_color = Colors.auto_text_color(base_color),
+    text_active_color = Colors.auto_text_color(base_color),
+    text_disabled_color = Colors.adjust_lightness(Colors.auto_text_color(base_color), -0.3),
+
+    -- Geometry
+    padding_x = 10,
+    padding_y = 6,
+    rounding = 0,
+  }
+end
+
+--- Generate a full set of colored button presets with consistent HSL
+--- @param base_hue number|nil Base hue (0-1), nil for theme accent
+--- @return table Table of button presets (primary, secondary, tertiary)
+function M.create_colored_button_set(base_hue)
+  base_hue = base_hue or 0.55  -- Default blue
+
+  return {
+    primary = M.create_colored_button_preset(base_hue, 0.70, 0.50),        -- Vibrant
+    secondary = M.create_colored_button_preset(base_hue, 0.45, 0.52),      -- Muted
+    tertiary = M.create_colored_button_preset(base_hue, 0.30, 0.55),       -- Very muted
+    danger = M.create_colored_button_preset(0.0, 0.70, 0.55),              -- Red (fixed)
+    success = M.create_colored_button_preset(0.33, 0.65, 0.50),            -- Green (fixed)
+    warning = M.create_colored_button_preset(0.08, 0.80, 0.60),            -- Orange (fixed)
+    info = M.create_colored_button_preset(base_hue, 0.70, 0.50),           -- Theme hue
+  }
+end
+
+--- Generate analogous colored buttons (adjacent hues on color wheel)
+--- @param base_hue number Base hue (0-1)
+--- @param angle number|nil Hue angle offset (0-1, default: 0.083 = 30°)
+--- @return table Table with main, left, right button presets
+function M.create_analogous_button_set(base_hue, angle)
+  angle = angle or 0.083  -- 30° default
+
+  return {
+    main = M.create_colored_button_preset(base_hue, 0.70, 0.50),
+    left = M.create_colored_button_preset((base_hue - angle) % 1, 0.70, 0.50),  -- -30°
+    right = M.create_colored_button_preset((base_hue + angle) % 1, 0.70, 0.50), -- +30°
+  }
+end
+
+--- Generate complementary colored button (opposite hue)
+--- @param base_hue number Base hue (0-1)
+--- @return table Button preset for complementary color
+function M.create_complementary_button(base_hue)
+  return M.create_colored_button_preset((base_hue + 0.5) % 1, 0.70, 0.50)  -- +180°
+end
+
+--- Generate triadic colored buttons (120° apart on color wheel)
+--- @param base_hue number Base hue (0-1)
+--- @return table Array of 3 button presets
+function M.create_triadic_button_set(base_hue)
+  return {
+    M.create_colored_button_preset(base_hue, 0.70, 0.50),
+    M.create_colored_button_preset((base_hue + 0.333) % 1, 0.70, 0.50),  -- +120°
+    M.create_colored_button_preset((base_hue + 0.666) % 1, 0.70, 0.50),  -- +240°
+  }
+end
+
+--- Generate saturation variants of same hue (muted to vivid)
+--- @param base_hue number Base hue (0-1)
+--- @param base_lightness number|nil Lightness (0-1, default: 0.48)
+--- @return table Table with muted, normal, vivid variants
+function M.create_saturation_variants(base_hue, base_lightness)
+  base_lightness = base_lightness or 0.48
+
+  return {
+    muted = M.create_colored_button_preset(base_hue, 0.30, base_lightness),   -- Low saturation
+    normal = M.create_colored_button_preset(base_hue, 0.65, base_lightness),  -- Default
+    vivid = M.create_colored_button_preset(base_hue, 0.85, base_lightness),   -- High saturation
+  }
+end
+
+--- Generate lightness variants of same hue (dark to light)
+--- @param base_hue number Base hue (0-1)
+--- @param base_saturation number|nil Saturation (0-1, default: 0.65)
+--- @return table Table with dark, normal, light variants
+function M.create_lightness_variants(base_hue, base_saturation)
+  base_saturation = base_saturation or 0.65
+
+  return {
+    dark = M.create_colored_button_preset(base_hue, base_saturation, 0.35),   -- Dark
+    normal = M.create_colored_button_preset(base_hue, base_saturation, 0.48), -- Default
+    light = M.create_colored_button_preset(base_hue, base_saturation, 0.62),  -- Light
+  }
+end
+
+--- Generate full matrix of saturation × lightness variants
+--- Creates 9 button presets covering the full range
+--- @param base_hue number Base hue (0-1)
+--- @return table 2D table: variants[saturation][lightness]
+function M.create_button_matrix(base_hue)
+  return {
+    muted = {
+      dark = M.create_colored_button_preset(base_hue, 0.30, 0.35),
+      normal = M.create_colored_button_preset(base_hue, 0.30, 0.48),
+      light = M.create_colored_button_preset(base_hue, 0.30, 0.62),
+    },
+    normal = {
+      dark = M.create_colored_button_preset(base_hue, 0.65, 0.35),
+      normal = M.create_colored_button_preset(base_hue, 0.65, 0.48),
+      light = M.create_colored_button_preset(base_hue, 0.65, 0.62),
+    },
+    vivid = {
+      dark = M.create_colored_button_preset(base_hue, 0.85, 0.35),
+      normal = M.create_colored_button_preset(base_hue, 0.85, 0.48),
+      light = M.create_colored_button_preset(base_hue, 0.85, 0.62),
+    },
+  }
+end
+
+--- Generate monochromatic palette (same hue, varying saturation/lightness)
+--- Creates a harmonious set of buttons from a single hue
+--- @param base_hue number Base hue (0-1)
+--- @return table Named preset variants
+function M.create_monochromatic_set(base_hue)
+  return {
+    primary = M.create_colored_button_preset(base_hue, 0.70, 0.50),      -- Vibrant
+    secondary = M.create_colored_button_preset(base_hue, 0.45, 0.52),    -- Muted
+    subtle = M.create_colored_button_preset(base_hue, 0.25, 0.58),       -- Very muted, lighter
+    bold = M.create_colored_button_preset(base_hue, 0.85, 0.42),         -- Very vivid, darker
+    accent = M.create_colored_button_preset(base_hue, 0.75, 0.60),       -- Bright accent
+  }
+end
+
+-- Pre-generate semantic colored button presets
+-- These use fixed hues for consistent meaning (red=danger, green=success, etc.)
+M.DYNAMIC_PRESETS.BUTTON_DANGER = M.create_colored_button_preset(0.0, 0.68, 0.55)     -- Red
+M.DYNAMIC_PRESETS.BUTTON_SUCCESS = M.create_colored_button_preset(0.33, 0.60, 0.50)   -- Green
+M.DYNAMIC_PRESETS.BUTTON_WARNING = M.create_colored_button_preset(0.08, 0.78, 0.62)   -- Orange
+M.DYNAMIC_PRESETS.BUTTON_INFO = M.create_colored_button_preset(0.55, 0.68, 0.52)      -- Blue
+M.DYNAMIC_PRESETS.BUTTON_PRIMARY = M.create_colored_button_preset(nil, 0.70, 0.50)    -- Theme accent
 
 -- ============================================================================
 -- UTILITY FUNCTIONS
