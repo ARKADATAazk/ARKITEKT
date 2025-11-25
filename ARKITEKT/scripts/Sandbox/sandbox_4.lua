@@ -124,14 +124,67 @@ local function find_node_by_id(nodes, id)
   return nil
 end
 
+-- ============================================================================
+-- MULTISELECTION HELPERS
+-- ============================================================================
+
+local function is_selected(id)
+  return tree_state.selected[id] == true
+end
+
+local function toggle_selection(id)
+  if tree_state.selected[id] then
+    tree_state.selected[id] = nil
+  else
+    tree_state.selected[id] = true
+  end
+end
+
+local function set_single_selection(id)
+  tree_state.selected = { [id] = true }
+  tree_state.anchor = id
+  tree_state.focused = id
+end
+
+local function clear_selection()
+  tree_state.selected = {}
+  tree_state.anchor = nil
+end
+
+local function select_range(from_id, to_id)
+  local from_idx, to_idx = nil, nil
+  for i, item in ipairs(tree_state.flat_list) do
+    if item.id == from_id then from_idx = i end
+    if item.id == to_id then to_idx = i end
+  end
+
+  if from_idx and to_idx then
+    if from_idx > to_idx then from_idx, to_idx = to_idx, from_idx end
+    tree_state.selected = {}
+    for i = from_idx, to_idx do
+      tree_state.selected[tree_state.flat_list[i].id] = true
+    end
+  end
+end
+
+local function select_all_visible()
+  tree_state.selected = {}
+  for _, item in ipairs(tree_state.flat_list) do
+    tree_state.selected[item.id] = true
+  end
+end
+
 local tree_state = {
   open = { root = true, src = true, docs = true, components = true, utils = true, guides = true },
-  selected = nil,
+  selected = {}, -- Now a table of selected IDs: { [id] = true, ... }
+  focused = nil, -- Currently focused item for keyboard nav
+  anchor = nil, -- Anchor point for shift-selection
   hovered = nil,
   scroll_y = 0,
   editing = nil,
   edit_buffer = "",
   edit_focus_set = false,
+  flat_list = {}, -- Flat list of visible items in order for arrow navigation
 }
 
 -- ============================================================================
@@ -253,9 +306,16 @@ end
 -- TREE RENDERING
 -- ============================================================================
 
-local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_w, parent_lines, is_last_child, row_index)
+local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_w, parent_lines, is_last_child, row_index, parent_id)
   local cfg = TREE_CONFIG
   local item_h = cfg.item_height
+
+  -- Add to flat list for keyboard navigation
+  table.insert(tree_state.flat_list, {
+    id = node.id,
+    node = node,
+    parent_id = parent_id,
+  })
 
   local indent_x = visible_x + cfg.padding_left + depth * cfg.indent_width
   local arrow_x = indent_x
@@ -269,7 +329,8 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
 
   local mx, my = ImGui.GetMousePos(ctx)
   local is_hovered = mx >= visible_x and mx < visible_x + visible_w and my >= y_pos and my < y_pos + item_h
-  local is_selected = tree_state.selected == node.id
+  local item_selected = is_selected(node.id)
+  local is_focused = tree_state.focused == node.id
   local is_editing = tree_state.editing == node.id
 
   -- Backgrounds
@@ -277,11 +338,16 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, cfg.bg_alternate)
   end
 
-  if is_selected then
+  if item_selected then
     local bg_color = is_hovered and cfg.bg_selected_hover or cfg.bg_selected
     ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, bg_color)
   elseif is_hovered then
     ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, cfg.bg_hover)
+  end
+
+  -- Focused indicator (subtle border)
+  if is_focused and not tree_state.editing then
+    ImGui.DrawList_AddRect(dl, visible_x + 1, y_pos, visible_x + visible_w - 1, y_pos + item_h, hexrgb("#6A9EFFAA"), 0, 0, 1)
   end
 
   -- Tree lines
@@ -332,7 +398,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     end
   else
     -- Normal text display
-    local text_color = (is_hovered or is_selected) and cfg.text_hover or cfg.text_normal
+    local text_color = (is_hovered or item_selected) and cfg.text_hover or cfg.text_normal
     local text_w = ImGui.CalcTextSize(ctx, node.name)
     local available_w = item_right - text_x
 
@@ -353,14 +419,31 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
 
     if ImGui.IsItemClicked(ctx, 0) then
       if has_children and mx >= arrow_x and mx < arrow_x + cfg.arrow_size + cfg.arrow_margin then
+        -- Toggle open/close
         tree_state.open[node.id] = not tree_state.open[node.id]
       else
-        tree_state.selected = node.id
+        -- Selection handling
+        local ctrl_held = ImGui.GetKeyMods(ctx) & ImGui.Mod_Ctrl ~= 0
+        local shift_held = ImGui.GetKeyMods(ctx) & ImGui.Mod_Shift ~= 0
+
+        if ctrl_held then
+          -- CTRL+click: Toggle individual selection
+          toggle_selection(node.id)
+          tree_state.anchor = node.id
+          tree_state.focused = node.id
+        elseif shift_held and tree_state.anchor then
+          -- SHIFT+click: Range selection from anchor
+          select_range(tree_state.anchor, node.id)
+          tree_state.focused = node.id
+        else
+          -- Normal click: Single selection
+          set_single_selection(node.id)
+        end
       end
     end
 
     -- Double-click or F2 to edit
-    if is_selected then
+    if item_selected then
       if (ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0)) or
          ImGui.IsKeyPressed(ctx, ImGui.Key_F2) then
         tree_state.editing = node.id
@@ -386,7 +469,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
 
     for i, child in ipairs(node.children) do
       local is_last = (i == #node.children)
-      next_y, next_row = render_tree_item(ctx, dl, child, depth + 1, next_y, visible_x, visible_w, child_parent_lines, is_last, next_row)
+      next_y, next_row = render_tree_item(ctx, dl, child, depth + 1, next_y, visible_x, visible_w, child_parent_lines, is_last, next_row, node.id)
     end
   end
 
@@ -400,6 +483,7 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, hexrgb("#1A1A1AFF"))
   ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, hexrgb("#000000DD"))
 
+  -- Mouse wheel scrolling
   if ImGui.IsWindowHovered(ctx) then
     local wheel = ImGui.GetMouseWheel(ctx)
     if wheel ~= 0 then
@@ -408,6 +492,10 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
     end
   end
 
+  -- Clear flat list and rebuild this frame
+  local old_flat_list = tree_state.flat_list
+  tree_state.flat_list = {}
+
   ImGui.DrawList_PushClipRect(dl, x, y, x + w, y + h, true)
 
   local current_y = y + cfg.padding_top - tree_state.scroll_y
@@ -415,12 +503,86 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
 
   for i, node in ipairs(nodes) do
     local is_last = (i == #nodes)
-    local next_y, next_row = render_tree_item(ctx, dl, node, 0, current_y, x, w, {}, is_last, row_index)
+    local next_y, next_row = render_tree_item(ctx, dl, node, 0, current_y, x, w, {}, is_last, row_index, nil)
     current_y = next_y
     row_index = next_row
   end
 
   ImGui.DrawList_PopClipRect(dl)
+
+  -- Initialize focus if nothing is focused and we have items
+  if not tree_state.focused and #tree_state.flat_list > 0 then
+    tree_state.focused = tree_state.flat_list[1].id
+  end
+
+  -- Keyboard shortcuts (after flat_list is built)
+  if ImGui.IsWindowFocused(ctx) and not tree_state.editing then
+    -- CTRL+A: Select all visible
+    if ImGui.GetKeyMods(ctx) & ImGui.Mod_Ctrl ~= 0 and ImGui.IsKeyPressed(ctx, ImGui.Key_A) then
+      select_all_visible()
+    end
+
+    -- Arrow key navigation
+    if tree_state.focused and #tree_state.flat_list > 0 then
+      local focused_idx = nil
+      for i, item in ipairs(tree_state.flat_list) do
+        if item.id == tree_state.focused then
+          focused_idx = i
+          break
+        end
+      end
+
+      if focused_idx then
+        local new_idx = nil
+        local shift_held = ImGui.GetKeyMods(ctx) & ImGui.Mod_Shift ~= 0
+
+        -- Up arrow
+        if ImGui.IsKeyPressed(ctx, ImGui.Key_UpArrow) then
+          new_idx = math.max(1, focused_idx - 1)
+        -- Down arrow
+        elseif ImGui.IsKeyPressed(ctx, ImGui.Key_DownArrow) then
+          new_idx = math.min(#tree_state.flat_list, focused_idx + 1)
+        -- Left arrow: collapse node or go to parent
+        elseif ImGui.IsKeyPressed(ctx, ImGui.Key_LeftArrow) then
+          local focused_node = tree_state.flat_list[focused_idx]
+          if tree_state.open[focused_node.id] then
+            tree_state.open[focused_node.id] = false
+          elseif focused_node.parent_id then
+            -- Find parent in flat list
+            for i, item in ipairs(tree_state.flat_list) do
+              if item.id == focused_node.parent_id then
+                new_idx = i
+                break
+              end
+            end
+          end
+        -- Right arrow: expand node or go to first child
+        elseif ImGui.IsKeyPressed(ctx, ImGui.Key_RightArrow) then
+          local focused_node = tree_state.flat_list[focused_idx]
+          local has_children = focused_node.node.children and #focused_node.node.children > 0
+          if has_children then
+            if not tree_state.open[focused_node.id] then
+              tree_state.open[focused_node.id] = true
+            elseif focused_idx < #tree_state.flat_list then
+              new_idx = focused_idx + 1
+            end
+          end
+        end
+
+        if new_idx and new_idx ~= focused_idx then
+          local new_id = tree_state.flat_list[new_idx].id
+          if shift_held and tree_state.anchor then
+            -- SHIFT+arrow: Range selection
+            select_range(tree_state.anchor, new_id)
+            tree_state.focused = new_id
+          else
+            -- Normal arrow: Move selection
+            set_single_selection(new_id)
+          end
+        end
+      end
+    end
+  end
 end
 
 -- ============================================================================
@@ -453,7 +615,7 @@ end
 
 Shell.run({
   title = "Custom TreeView Prototype",
-  version = "v2.1.0",
+  version = "v2.2.0",
   version_color = hexrgb("#888888FF"),
   initial_pos = { x = 120, y = 120 },
   initial_size = { w = 700, h = 700 },
@@ -462,8 +624,9 @@ Shell.run({
   icon_size = 18,
 
   draw = function(ctx, shell_state)
-    ImGui.Text(ctx, "Custom TreeView v2.1 - Better Lines + Inline Edit")
-    ImGui.Text(ctx, "Double-click or F2 to rename • Enter/Esc to confirm/cancel")
+    ImGui.Text(ctx, "Custom TreeView v2.2 - Multiselection + Keyboard Nav")
+    ImGui.Text(ctx, "CTRL+Click=Toggle • SHIFT+Click=Range • CTRL+A=Select All • Arrows=Navigate")
+    ImGui.Text(ctx, "F2/Dbl-Click=Rename • Left/Right=Collapse/Expand")
     ImGui.Separator(ctx)
 
     local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
@@ -538,8 +701,25 @@ Shell.run({
     ImGui.SetCursorScreenPos(ctx, tree_x, tree_y + tree_h + 4)
 
     ImGui.Separator(ctx)
-    ImGui.Text(ctx, string.format("Selected: %s  |  Editing: %s  |  Hovered: %s",
-      tree_state.selected or "None",
+
+    -- Count selected items
+    local selected_count = 0
+    local selected_ids = {}
+    for id, _ in pairs(tree_state.selected) do
+      selected_count = selected_count + 1
+      table.insert(selected_ids, id)
+    end
+
+    local selected_text = "None"
+    if selected_count == 1 then
+      selected_text = selected_ids[1]
+    elseif selected_count > 1 then
+      selected_text = string.format("%d items", selected_count)
+    end
+
+    ImGui.Text(ctx, string.format("Selected: %s  |  Focused: %s  |  Editing: %s  |  Hovered: %s",
+      selected_text,
+      tree_state.focused or "None",
       tree_state.editing or "None",
       tree_state.hovered or "None"))
 
