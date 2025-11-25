@@ -230,19 +230,20 @@ local function create_diagonal_stripe_texture(spacing, line_thickness, color)
   return img, tex_size
 end
 
--- Debug: track last logged color to avoid spam
-local _last_debug_color = nil
+-- Debug: track logged colors per key to avoid spam (only log when a key's color changes)
+local _debug_logged_keys = {}
 
 -- Get or create a cached pattern texture
 local function get_pattern_texture(ctx, pattern_type, spacing, size, color)
   local key, norm_color = get_pattern_cache_key(pattern_type, spacing, size, color)
 
-  -- DEBUG: Log when color changes (only log once per color change)
-  if color ~= _last_debug_color then
+  -- DEBUG: Log only when this specific key's color changes (or first time seen)
+  local base_key = pattern_type .. "_" .. spacing  -- Track by type+spacing, not full key
+  if _debug_logged_keys[base_key] ~= color then
     local a = color & 0xFF
-    reaper.ShowConsoleMsg(string.format("[Pattern] color=0x%08X alpha=%d key=%s attachments=%d/%d\n",
-      color, a, key, total_attachments, MAX_ATTACHMENTS))
-    _last_debug_color = color
+    reaper.ShowConsoleMsg(string.format("[Pattern] %s color=0x%08X alpha=%d attachments=%d/%d\n",
+      base_key, color, a, total_attachments, MAX_ATTACHMENTS))
+    _debug_logged_keys[base_key] = color
   end
 
   -- Check cache first
