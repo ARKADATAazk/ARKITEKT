@@ -183,10 +183,21 @@ M.theme_anchors = {
 --- @param t number Interpolation factor (0.0 = rules_a, 1.0 = rules_b)
 --- @return table Interpolated rules
 local function lerp_rules(rules_a, rules_b, t)
+  -- Keys that should SNAP (no interpolation) - typically contrast-critical values
+  -- These switch at t=0.5 instead of blending smoothly
+  local snap_keys = {
+    tile_name_color = true,      -- Text needs hard contrast, no grey middle ground
+    border_outer_color = true,   -- Border color often has semantic meaning
+  }
+
   local result = {}
   for key, value_a in pairs(rules_a) do
     local value_b = rules_b[key]
-    if type(value_a) == "number" and type(value_b) == "number" then
+
+    -- Check if this key should snap instead of lerp
+    if snap_keys[key] then
+      result[key] = t < 0.5 and value_a or value_b
+    elseif type(value_a) == "number" and type(value_b) == "number" then
       -- Lerp numeric values
       result[key] = value_a + (value_b - value_a) * t
     elseif type(value_a) == "string" and type(value_b) == "string" then
