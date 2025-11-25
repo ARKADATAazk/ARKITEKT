@@ -51,7 +51,7 @@ function M.new(config)
   local function get_colors()
     local C = Style.COLORS
     return {
-      bg = C.BG_PANEL,
+      bg = C.BG_CHROME,  -- Chrome color (significantly darker than content)
       border = C.BORDER_OUTER,
       text = C.TEXT_NORMAL,
       sep = C.TEXT_DIMMED,

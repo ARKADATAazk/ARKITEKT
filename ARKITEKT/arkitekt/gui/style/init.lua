@@ -28,6 +28,7 @@ M.COLORS = {
   BG_HOVER = hexrgb("#2A2A2AFF"),       -- Hovered control background
   BG_ACTIVE = hexrgb("#303030FF"),      -- Active/pressed control background
   BG_PANEL = hexrgb("#1A1A1AFF"),       -- Panel/container background (darker)
+  BG_CHROME = hexrgb("#141414FF"),      -- Chrome (titlebar/statusbar) - significantly darker
   BG_TRANSPARENT = hexrgb("#00000000"), -- Transparent background
 
   -- Borders

@@ -101,10 +101,10 @@ function M.PushMyStyle(ctx, opts)
   push_color(ImGui.Col_FrameBgHovered, A(C.BG_HOVER, 0x99))
   push_color(ImGui.Col_FrameBgActive, A(C.BG_ACTIVE, 0xAB))
 
-  -- Title bar (uses panel color - always darker than content)
-  push_color(ImGui.Col_TitleBg, C.BG_PANEL)
-  push_color(ImGui.Col_TitleBgActive, C.BG_PANEL)
-  push_color(ImGui.Col_TitleBgCollapsed, A(C.BG_PANEL, 0x82))
+  -- Title bar (uses chrome color - significantly darker than content)
+  push_color(ImGui.Col_TitleBg, C.BG_CHROME)
+  push_color(ImGui.Col_TitleBgActive, C.BG_CHROME)
+  push_color(ImGui.Col_TitleBgCollapsed, A(C.BG_CHROME, 0x82))
 
   -- Menu bar
   push_color(ImGui.Col_MenuBarBg, C.BG_PANEL)
@@ -194,17 +194,18 @@ M.palette = setmetatable({}, {
     local S = get_style()
     local Colors = require('arkitekt.core.colors')
     -- Map palette names to themed colors
-    -- Chrome elements use BG_PANEL (always darker than content)
+    -- Chrome elements (grey_05-08) use BG_CHROME (significantly darker than content)
     local mapping = {
       white = hexrgb("#FFFFFFFF"),
       black = hexrgb("#000000FF"),
-      -- Dark greys map to panel/chrome colors
-      grey_05 = Colors.adjust_lightness(S.COLORS.BG_PANEL, -0.03),
-      grey_06 = Colors.adjust_lightness(S.COLORS.BG_PANEL, -0.02),
-      grey_07 = Colors.adjust_lightness(S.COLORS.BG_PANEL, -0.01),
-      grey_08 = S.COLORS.BG_PANEL,  -- statusbar bg
-      grey_09 = Colors.adjust_lightness(S.COLORS.BG_PANEL, 0.01),
-      grey_10 = Colors.adjust_lightness(S.COLORS.BG_PANEL, 0.02),
+      -- Very dark greys map to chrome colors (titlebar/statusbar)
+      grey_05 = Colors.adjust_lightness(S.COLORS.BG_CHROME, -0.02),
+      grey_06 = Colors.adjust_lightness(S.COLORS.BG_CHROME, -0.01),
+      grey_07 = S.COLORS.BG_CHROME,
+      grey_08 = S.COLORS.BG_CHROME,  -- statusbar bg
+      -- Lighter greys map to content/panel colors
+      grey_09 = S.COLORS.BG_PANEL,
+      grey_10 = S.COLORS.BG_PANEL,
       grey_14 = S.COLORS.BG_BASE,   -- content bg
       grey_18 = S.COLORS.BG_HOVER,
       grey_20 = S.COLORS.BG_ACTIVE,

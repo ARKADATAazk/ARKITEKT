@@ -238,6 +238,18 @@ function M.adjust_lightness(color, delta)
   return M.components_to_rgba(r, g, b, a)
 end
 
+--- Set absolute lightness of a color in HSL space
+--- @param color number Color in RGBA format
+--- @param lightness number Target lightness (0.0 to 1.0)
+--- @return number Color with new lightness in RGBA format
+function M.set_lightness(color, lightness)
+  local h, s, _ = M.rgb_to_hsl(color)
+  lightness = max(0, min(1, lightness))
+  local r, g, b = M.hsl_to_rgb(h, s, lightness)
+  local _, _, _, a = M.rgba_to_components(color)
+  return M.components_to_rgba(r, g, b, a)
+end
+
 --- Adjust saturation of a color in HSL space
 --- @param color number Color in RGBA format
 --- @param delta number Saturation adjustment (-1.0 to 1.0)

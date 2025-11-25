@@ -90,6 +90,19 @@ function M.generate_palette(base_bg, base_text, base_accent)
   -- Invert deltas for light themes (hover goes darker instead of lighter)
   local sign = is_light and -1 or 1
 
+  -- Calculate chrome color (titlebar/statusbar) - always significantly darker than content
+  -- Dark themes (~12%): chrome at ~6-8% (about half)
+  -- Grey themes (~24%): chrome at ~12-15%
+  -- Light themes (~88%): chrome at ~75%
+  local chrome_lightness
+  if is_light then
+    chrome_lightness = bg_lightness - 0.15  -- 15% darker for light themes
+  else
+    chrome_lightness = bg_lightness * 0.5   -- Half brightness for dark/grey themes
+  end
+  chrome_lightness = math.max(0.04, math.min(0.85, chrome_lightness))  -- Clamp
+  local base_chrome = Colors.set_lightness(base_bg, chrome_lightness)
+
   -- For neutral themes (no accent), derive accents from background
   local neutral_accent
   if base_accent == nil then
@@ -106,7 +119,8 @@ function M.generate_palette(base_bg, base_text, base_accent)
     BG_BASE = base_bg,
     BG_HOVER = Colors.adjust_lightness(base_bg, sign * rules.bg_hover_delta),
     BG_ACTIVE = Colors.adjust_lightness(base_bg, sign * rules.bg_active_delta),
-    BG_PANEL = Colors.adjust_lightness(base_bg, rules.bg_panel_delta),  -- Always darker, no sign flip
+    BG_PANEL = Colors.adjust_lightness(base_bg, rules.bg_panel_delta),  -- Slightly darker
+    BG_CHROME = base_chrome,  -- Titlebar/statusbar - significantly darker than content
     BG_TRANSPARENT = Colors.with_alpha(base_bg, 0x00),
 
     -- ============ BORDERS ============
