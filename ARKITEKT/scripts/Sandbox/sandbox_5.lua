@@ -196,6 +196,8 @@ local tree_state = {
   context_menu_y = 0,
   search_text = "",
   search_active = false,
+  search_popup_open = false,
+  search_focus_requested = false,
   tree_bounds = {}, -- Store tree bounds for click detection
 
   -- Drag & drop state
@@ -623,21 +625,31 @@ end
 -- ============================================================================
 
 local function compare_values(a, b, ascending)
+  -- Handle nil values
   if a == nil and b == nil then return false end
-  if a == nil then return not ascending end
-  if b == nil then return ascending end
+  if a == nil then return ascending end  -- nil sorts to end regardless
+  if b == nil then return not ascending end
 
-  -- Try numeric comparison first
-  local a_num = tonumber(a)
-  local b_num = tonumber(b)
+  -- Convert to strings for consistent comparison
+  local a_str = tostring(a):lower()
+  local b_str = tostring(b):lower()
+
+  -- Try to extract numeric values from strings like "12.5 KB"
+  local a_num = a_str:match("^([%d%.]+)")
+  local b_num = b_str:match("^([%d%.]+)")
+
+  -- If both have numeric prefixes, compare numerically
   if a_num and b_num then
-    return ascending and (a_num < b_num) or (a_num > b_num)
+    a_num = tonumber(a_num)
+    b_num = tonumber(b_num)
+    if a_num and b_num and a_num ~= b_num then
+      return ascending and (a_num < b_num) or (a_num > b_num)
+    end
   end
 
   -- Fall back to string comparison
-  a = tostring(a):lower()
-  b = tostring(b):lower()
-  return ascending and (a < b) or (a > b)
+  if a_str == b_str then return false end
+  return ascending and (a_str < b_str) or (a_str > b_str)
 end
 
 local function sort_tree_recursive(nodes, column_id, ascending)
@@ -1235,6 +1247,12 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
       end
     end
 
+    -- CTRL+F: Open search
+    if ctrl_held and ImGui.IsKeyPressed(ctx, ImGui.Key_F) then
+      tree_state.search_popup_open = true
+      tree_state.search_focus_requested = true
+    end
+
     -- CTRL+D: Duplicate selected items
     if ctrl_held and ImGui.IsKeyPressed(ctx, ImGui.Key_D) then
       local selected_nodes = get_selected_nodes(nodes)
@@ -1408,6 +1426,51 @@ local function draw_context_menu(ctx, nodes)
 end
 
 -- ============================================================================
+-- SEARCH POPUP
+-- ============================================================================
+
+local function draw_search_popup(ctx)
+  if not tree_state.search_popup_open then return end
+
+  -- Open the popup
+  if not ImGui.IsPopupOpen(ctx, "##tree_search_popup") then
+    ImGui.OpenPopup(ctx, "##tree_search_popup")
+  end
+
+  -- Position at center of window
+  local vp_w, vp_h = ImGui.Viewport_GetSize(ImGui.GetWindowViewport(ctx))
+  ImGui.SetNextWindowPos(ctx, vp_w * 0.5, vp_h * 0.3, ImGui.Cond_Appearing, 0.5, 0.5)
+  ImGui.SetNextWindowSize(ctx, 400, 0)
+
+  if ImGui.BeginPopup(ctx, "##tree_search_popup", ImGui.WindowFlags_NoMove) then
+    ImGui.Text(ctx, "Search (CTRL+F)")
+    ImGui.Separator(ctx)
+
+    -- Search input
+    ImGui.SetNextItemWidth(ctx, -1)
+    if tree_state.search_focus_requested then
+      ImGui.SetKeyboardFocusHere(ctx)
+      tree_state.search_focus_requested = false
+    end
+
+    local changed, new_text = ImGui.InputText(ctx, "##search_input", tree_state.search_text, ImGui.InputTextFlags_EscapeClearsAll)
+    if changed then
+      tree_state.search_text = new_text
+    end
+
+    -- Close on ESC or if empty and not focused
+    if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) or (tree_state.search_text == "" and not ImGui.IsItemActive(ctx) and not ImGui.IsItemFocused(ctx)) then
+      tree_state.search_popup_open = false
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    ImGui.EndPopup(ctx)
+  else
+    tree_state.search_popup_open = false
+  end
+end
+
+-- ============================================================================
 -- UI HELPERS
 -- ============================================================================
 
@@ -1511,27 +1574,38 @@ Shell.run({
       tree_state.open = { root = true }
     end
 
+    if ImGui.Button(ctx, "Select All", 120, 24) then
+      select_all_visible()
+    end
+
+    ImGui.SameLine(ctx)
+    if ImGui.Button(ctx, "Clear Selection", 120, 24) then
+      clear_selection()
+    end
+
+    if ImGui.Button(ctx, "Search (Ctrl+F)", 250, 24) then
+      tree_state.search_popup_open = true
+      tree_state.search_focus_requested = true
+    end
+
+    if ImGui.Button(ctx, "Toggle Virtual Scroll", 250, 24) then
+      tree_state.use_virtual_scrolling = not tree_state.use_virtual_scrolling
+    end
+    ImGui.Text(ctx, "Virtual Scroll: " .. (tree_state.use_virtual_scrolling and "ON" or "OFF"))
+
     ImGui.EndChild(ctx)
 
     ImGui.SameLine(ctx)
 
     local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
 
-    -- Search bar
-    ImGui.SetNextItemWidth(ctx, avail_w - 100)
-    local search_changed, new_search = ImGui.InputText(ctx, "##search", tree_state.search_text)
-    if search_changed then
-      tree_state.search_text = new_search
-    end
-    ImGui.SameLine(ctx)
-    if ImGui.Button(ctx, "Clear", 90, 0) then
-      tree_state.search_text = ""
-    end
-
     local tree_x, tree_y = ImGui.GetCursorScreenPos(ctx)
-    local tree_h = avail_h - 90
+    local tree_h = avail_h - 40
 
     draw_custom_tree(ctx, mock_tree, tree_x, tree_y, avail_w, tree_h)
+
+    -- Search popup (CTRL+F)
+    draw_search_popup(ctx)
 
     -- Context menu
     if tree_state.context_menu_open then
