@@ -78,14 +78,13 @@ local panel_config = {
     }
   },
 
-  -- Overlay toolbar (left side, hover trigger with button expansion)
+  -- Overlay toolbar (left side, edge slide animation)
   overlay_toolbars = {
     left = {
       enabled = true,
       width = 200,
       extend_from_edge = true,  -- Start from panel edge, not regular toolbar edge
-      expand_on_hover = true,   -- Enable per-button horizontal slide
-      expand_distance = 120,    -- How far buttons slide right on hover (px)
+      edge_slide_distance = 14, -- Buttons start 14px OUTSIDE edge, slide in 14px on hover
       auto_hide = {
         enabled = true,
         trigger = "hover",  -- HOVER TRIGGER: Auto-expand on hover
@@ -167,7 +166,8 @@ local function init()
   })
 
   reaper.ShowConsoleMsg("\n=== Overlay Toolbar Test Started ===\n")
-  reaper.ShowConsoleMsg("Left overlay: Buttons slide right on hover (120px expansion)\n")
+  reaper.ShowConsoleMsg("Left overlay: ALL buttons slide together (14px edge slide)\n")
+  reaper.ShowConsoleMsg("Hover NEAR left edge - buttons slide right from clipped state\n")
   reaper.ShowConsoleMsg("Right overlay: Always visible, with background\n\n")
 end
 
@@ -194,21 +194,21 @@ local function render()
       ImGui.Dummy(ctx, 0, 10)
 
       ImGui.Text(ctx, "Overlay Toolbars:")
-      ImGui.BulletText(ctx, "Left: Buttons slide RIGHT on hover (per-button animation)")
+      ImGui.BulletText(ctx, "Left: Entire toolbar slides RIGHT (all buttons move together)")
       ImGui.BulletText(ctx, "Right: Always visible, semi-transparent background")
       ImGui.Dummy(ctx, 0, 10)
 
       ImGui.Text(ctx, "Configuration:")
-      ImGui.BulletText(ctx, "expand_on_hover = true -> enables button slide animation")
-      ImGui.BulletText(ctx, "expand_distance = 120 -> how far buttons slide (px)")
-      ImGui.BulletText(ctx, "Buttons start hidden outside panel edge")
-      ImGui.BulletText(ctx, "Each button slides independently with lerp easing")
+      ImGui.BulletText(ctx, "edge_slide_distance = 14 -> buttons start 14px outside edge")
+      ImGui.BulletText(ctx, "Hover zone = 50px from panel edge (NOT on buttons!)")
+      ImGui.BulletText(ctx, "All buttons slide together as single unit")
+      ImGui.BulletText(ctx, "Buttons clipped by panel edge until hover")
       ImGui.Dummy(ctx, 0, 20)
 
       ImGui.TextColored(ctx, 0x00FF00FF, "Instructions:")
-      ImGui.BulletText(ctx, "Hover over LEFT EDGE buttons (partially visible)")
-      ImGui.BulletText(ctx, "Watch each button slide RIGHT independently")
-      ImGui.BulletText(ctx, "Move mouse away - buttons slide back to edge")
+      ImGui.BulletText(ctx, "Move cursor NEAR left edge (50px zone)")
+      ImGui.BulletText(ctx, "Watch ALL buttons slide RIGHT together (14px)")
+      ImGui.BulletText(ctx, "Move cursor away - buttons slide back (clipped)")
       ImGui.BulletText(ctx, "Smooth lerp animation (25% speed)")
       ImGui.Dummy(ctx, 0, 10)
 

@@ -33,6 +33,8 @@ function M.create_animation_state(position, config)
     target = initial,      -- Target visibility
     is_hovering = false,
     is_expanded = false,   -- For button trigger mode
+    slide_offset = 0,      -- Current slide offset (pixels) for edge slide
+    slide_target = 0,      -- Target slide offset
   }
 end
 
@@ -55,6 +57,15 @@ function M.update_animation(anim_state, config, dt)
   -- Snap when very close (prevent jitter)
   if math.abs(anim_state.target - anim_state.current) < 0.001 then
     anim_state.current = anim_state.target
+  end
+
+  -- Lerp slide offset for edge slide animation
+  local slide_speed = 0.25
+  anim_state.slide_offset = anim_state.slide_offset + (anim_state.slide_target - anim_state.slide_offset) * slide_speed
+
+  -- Snap when very close
+  if math.abs(anim_state.slide_target - anim_state.slide_offset) < 0.5 then
+    anim_state.slide_offset = anim_state.slide_target
   end
 end
 
@@ -105,8 +116,9 @@ end
 --- @param regular_toolbar_bounds table|nil Regular toolbar bounds on same side (if exists)
 --- @param config table Overlay toolbar configuration
 --- @param visibility number Current visibility (0.0 - 1.0)
+--- @param slide_offset number Current slide offset in pixels (for edge slide animation)
 --- @return table {x, y, w, h} Overlay bounds
-function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, config, visibility)
+function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, config, visibility, slide_offset)
   local x1, y1, x2, y2 = table.unpack(panel_bounds)
   local orientation = get_orientation(position)
 
@@ -115,6 +127,9 @@ function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, conf
 
   -- Check if overlay should extend from panel edge (ignore regular toolbar)
   local extend_from_edge = config.extend_from_edge or false
+
+  -- Apply slide offset for edge animations (default 0)
+  slide_offset = slide_offset or 0
 
   if position == "top" then
     local start_y = (not extend_from_edge and regular_toolbar_bounds) and regular_toolbar_bounds.y2 or y1
@@ -136,8 +151,13 @@ function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, conf
     local start_x = (not extend_from_edge and regular_toolbar_bounds) and regular_toolbar_bounds.x2 or x1
     local content_y1 = regular_toolbar_bounds and regular_toolbar_bounds.content_y1 or y1
     local content_y2 = regular_toolbar_bounds and regular_toolbar_bounds.content_y2 or y2
+
+    -- Apply edge slide: buttons start clipped outside edge, slide right on hover
+    local edge_slide_distance = config.edge_slide_distance or 0
+    local base_x = start_x - edge_slide_distance  -- Start clipped outside
+
     return {
-      x = start_x,
+      x = base_x + slide_offset,  -- Apply slide offset
       y = content_y1,
       w = visible_size,
       h = content_y2 - content_y1
@@ -260,8 +280,8 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
     return
   end
 
-  -- Calculate bounds
-  local bounds = M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, config, anim_state.current)
+  -- Calculate bounds with slide offset
+  local bounds = M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, config, anim_state.current, anim_state.slide_offset)
 
   local auto_hide_cfg = config.auto_hide or {}
   local button_clicked = false
@@ -274,6 +294,21 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
   -- Update hover state (and handle button clicks)
   local is_hovering = is_mouse_hovering(ctx, bounds)
   M.update_hover_state(anim_state, config, is_hovering, button_clicked)
+
+  -- Update edge slide animation (for left position)
+  if position == "left" and config.edge_slide_distance and config.edge_slide_distance > 0 then
+    -- Create extended hover zone (wider than just the visible buttons)
+    local mx, my = ImGui.GetMousePos(ctx)
+    local hover_zone_width = 50  -- Hover zone extends this far from panel edge
+    local x1, y1, x2, y2 = table.unpack(panel_bounds)
+
+    -- Hover zone: from panel edge to hover_zone_width pixels right
+    local is_in_hover_zone = mx >= x1 and mx <= x1 + hover_zone_width and
+                             my >= bounds.y and my <= bounds.y + bounds.h
+
+    -- Update slide target
+    anim_state.slide_target = is_in_hover_zone and config.edge_slide_distance or 0
+  end
 
   -- Draw background
   draw_background(dl, bounds, config, rounding)

@@ -15,9 +15,6 @@ local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
 
 local M = {}
 
--- Track hover animation state per button
-local button_hover_state = {}
-
 -- ============================================================================
 -- DEFAULTS
 -- ============================================================================
@@ -118,19 +115,13 @@ function M.draw(ctx, dl, panel_x, panel_y, panel_width, panel_height, sidebar_cf
     return sidebar_cfg.width or M.DEFAULTS.width
   end
 
-  -- Check if this is an overlay toolbar (has expand_on_hover config)
-  local is_overlay = sidebar_cfg.expand_on_hover
-  local expand_distance = sidebar_cfg.expand_distance or 100  -- How far buttons slide in
-
   -- Calculate base button X position
-  local base_btn_x
+  local btn_x
   if side == "left" then
-    base_btn_x = panel_x
+    btn_x = panel_x
   else -- right
-    base_btn_x = panel_x + panel_width - layout.button_width
+    btn_x = panel_x + panel_width - layout.button_width
   end
-
-  local dt = ImGui.GetDeltaTime(ctx)
 
   -- Draw each button
   for i, element in ipairs(layout.elements) do
@@ -148,40 +139,6 @@ function M.draw(ctx, dl, panel_x, panel_y, panel_width, panel_height, sidebar_cf
     end
     if is_last then
       current_height = current_height + layout.corner_extension
-    end
-
-    -- Calculate button X with hover expansion (overlay mode only)
-    local btn_x = base_btn_x
-    if is_overlay and side == "left" then
-      local btn_id = panel_id .. "_sidebar_" .. side .. "_" .. (element.id or i)
-
-      -- Initialize hover state
-      if not button_hover_state[btn_id] then
-        button_hover_state[btn_id] = { offset = 0, target = 0 }
-      end
-
-      local hover_state = button_hover_state[btn_id]
-
-      -- Check if mouse is hovering this button
-      local mx, my = ImGui.GetMousePos(ctx)
-      local check_x = base_btn_x + hover_state.offset
-      local is_hovering = mx >= check_x and mx <= check_x + layout.button_width and
-                          my >= btn_y and my <= btn_y + current_height
-
-      -- Update target based on hover
-      hover_state.target = is_hovering and expand_distance or 0
-
-      -- Lerp towards target with easing
-      local speed = 0.25  -- Animation speed
-      hover_state.offset = hover_state.offset + (hover_state.target - hover_state.offset) * speed
-
-      -- Snap when very close
-      if math.abs(hover_state.target - hover_state.offset) < 0.5 then
-        hover_state.offset = hover_state.target
-      end
-
-      -- Apply offset to button position
-      btn_x = base_btn_x + hover_state.offset
     end
 
     -- Corner rounding config
