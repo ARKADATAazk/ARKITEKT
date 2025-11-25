@@ -16,6 +16,7 @@ local Scrolling = require('arkitekt.gui.widgets.containers.panel.scrolling')
 local State = require('arkitekt.gui.widgets.containers.panel.state')
 local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
 local ConfigUtil = require('arkitekt.core.config')
+local Style = require('arkitekt.gui.style')
 
 local M = {}
 local DEFAULTS = PanelConfig.DEFAULTS
@@ -208,9 +209,29 @@ function Panel:begin_draw(ctx)
       pattern_y2 = content_y2 - border_inset
     end
 
+    -- Build pattern config with fresh colors from Style.COLORS (enables dynamic theming)
+    local pattern_cfg = {
+      enabled = true,
+      primary = self.config.background_pattern.primary and {
+        type = self.config.background_pattern.primary.type,
+        spacing = self.config.background_pattern.primary.spacing,
+        color = Style.COLORS.PATTERN_PRIMARY,  -- Fresh from current theme
+        dot_size = self.config.background_pattern.primary.dot_size,
+        line_thickness = self.config.background_pattern.primary.line_thickness,
+      } or nil,
+      secondary = self.config.background_pattern.secondary and self.config.background_pattern.secondary.enabled and {
+        enabled = true,
+        type = self.config.background_pattern.secondary.type,
+        spacing = self.config.background_pattern.secondary.spacing,
+        color = Style.COLORS.PATTERN_SECONDARY,  -- Fresh from current theme
+        dot_size = self.config.background_pattern.secondary.dot_size,
+        line_thickness = self.config.background_pattern.secondary.line_thickness,
+      } or nil,
+    }
+
     local clip_rounding = math.max(0, self.config.rounding - border_inset)
     ImGui.DrawList_PushClipRect(dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, true)
-    Pattern.draw(ctx, dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, self.config.background_pattern)
+    Pattern.draw(ctx, dl, pattern_x1, pattern_y1, pattern_x2, pattern_y2, pattern_cfg)
     ImGui.DrawList_PopClipRect(dl)
   end
 

@@ -58,6 +58,10 @@ M.COLORS = {
   ACCENT_SUCCESS = hexrgb("#4CAF50"),   -- Success/confirmation (green)
   ACCENT_WARNING = hexrgb("#FFA726"),   -- Warning state (orange)
   ACCENT_DANGER = hexrgb("#EF5350"),    -- Error/danger state (red)
+
+  -- Background patterns (decorative grid/dot patterns)
+  PATTERN_PRIMARY = hexrgb("#30303060"),   -- Primary pattern color (semi-transparent)
+  PATTERN_SECONDARY = hexrgb("#30303020"), -- Secondary pattern color (more transparent)
 }
 
 -- ============================================================================
@@ -104,8 +108,9 @@ M.PANEL_COLORS = {
   bg_scrollbar = M.COLORS.BG_TRANSPARENT, -- Scrollbar background
 
   -- Background pattern (decorative grid/dot pattern)
-  pattern_primary = hexrgb("#14141490"),   -- Primary grid/dot color
-  pattern_secondary = hexrgb("#14141420"), -- Secondary grid/dot color
+  -- References M.COLORS for dynamic theming
+  pattern_primary = M.COLORS.PATTERN_PRIMARY,
+  pattern_secondary = M.COLORS.PATTERN_SECONDARY,
 }
 
 -- ============================================================================

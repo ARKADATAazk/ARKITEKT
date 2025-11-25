@@ -38,6 +38,7 @@
 
 local Colors = require('arkitekt.core.colors')
 local Style = require('arkitekt.gui.style')
+local Pattern = require('arkitekt.gui.draw.pattern')
 
 local M = {}
 
@@ -165,6 +166,19 @@ function M.generate_palette(base_bg, base_text, base_accent)
     ACCENT_SUCCESS = Colors.hexrgb("#4CAF50"),
     ACCENT_WARNING = Colors.hexrgb("#FFA726"),
     ACCENT_DANGER = Colors.hexrgb("#EF5350"),
+
+    -- ============ PATTERNS ============
+    -- Subtle background patterns for visual texture
+    -- Dark themes: patterns are slightly lighter than background
+    -- Light themes: patterns are slightly darker than background
+    PATTERN_PRIMARY = Colors.with_alpha(
+      Colors.adjust_lightness(base_bg, sign * 0.08),  -- 8% shift
+      0x60  -- ~38% opacity
+    ),
+    PATTERN_SECONDARY = Colors.with_alpha(
+      Colors.adjust_lightness(base_bg, sign * 0.04),  -- 4% shift
+      0x20  -- ~12% opacity
+    ),
   }
 end
 
@@ -174,6 +188,10 @@ local function apply_palette(palette)
   for key, value in pairs(palette) do
     Style.COLORS[key] = value
   end
+
+  -- Clear pattern texture cache since colors changed
+  -- Patterns will be re-baked with new colors on next draw
+  Pattern.clear_cache()
 end
 
 --- Generate palette from base colors and apply to Style.COLORS
