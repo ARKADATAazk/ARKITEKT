@@ -37,6 +37,8 @@ function M.create_animation_state(position, config)
     slide_target = 0,      -- Target slide offset
     width_scale = 1.0,     -- Current width scale (1.0 = normal, 1.3 = 30% wider)
     width_scale_target = 1.0,  -- Target width scale
+    hover_leave_time = nil,    -- Time when hover zone was left (for delay)
+    is_in_hover_zone = false,  -- Current hover zone state
   }
 end
 
@@ -340,9 +342,35 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
     local is_in_hover_zone = mx >= hover_zone_x1 and mx <= hover_zone_x2 and
                              my >= hover_zone_y1 and my <= hover_zone_y2
 
-    -- Update slide target and width scale on hover
-    anim_state.slide_target = is_in_hover_zone and config.edge_slide_distance or 0
-    anim_state.width_scale_target = is_in_hover_zone and 1.3 or 1.0  -- 30% wider when hovering
+    -- Delay before sliding back when leaving hover zone
+    local hover_leave_delay = 0.3  -- 300ms delay
+    local current_time = ImGui.GetTime(ctx)
+
+    if is_in_hover_zone then
+      -- Inside hover zone: slide out immediately
+      anim_state.slide_target = config.edge_slide_distance
+      anim_state.width_scale_target = 1.3  -- 30% wider
+      anim_state.hover_leave_time = nil  -- Reset delay timer
+      anim_state.is_in_hover_zone = true
+    else
+      -- Outside hover zone: check delay before sliding back
+      if anim_state.is_in_hover_zone then
+        -- Just left the zone, start timer
+        if not anim_state.hover_leave_time then
+          anim_state.hover_leave_time = current_time
+        end
+      end
+
+      -- Check if enough time has passed since leaving
+      if anim_state.hover_leave_time and (current_time - anim_state.hover_leave_time) >= hover_leave_delay then
+        -- Delay passed, slide back
+        anim_state.slide_target = 0
+        anim_state.width_scale_target = 1.0
+        anim_state.is_in_hover_zone = false
+        anim_state.hover_leave_time = nil  -- Reset for next time
+      end
+      -- If delay hasn't passed yet, keep current targets (buttons stay out)
+    end
   end
 
   -- Draw background
