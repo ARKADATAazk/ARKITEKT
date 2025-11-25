@@ -208,9 +208,11 @@ function M.combine(...)
 
   return function(...)
     local results = {}
+    local call_args = {...}
     for i, fn in ipairs(fns) do
       if fn then
-        results[i] = M.safe_call(fn, ...)
+        local ok, result = pcall(fn, table.unpack(call_args))
+        results[i] = ok and result or nil
       end
     end
     return table.unpack(results)

@@ -478,18 +478,18 @@ end
 
 function M.derive_marching_ants(base_color, opts)
   if not base_color or base_color == 0 then
-    return hexrgb("#42E896")
+    return M.hexrgb("#42E896")
   end
-  
+
   opts = opts or {}
   local brightness = opts.brightness or 1.5
   local saturation = opts.saturation or 0.5
-  
+
   local r, g, b, a = M.rgba_to_components(base_color)
   local max_ch = max(r, g, b)
-  
+
   if max_ch == 0 then
-    return hexrgb("#42E896")
+    return M.hexrgb("#42E896")
   end
   
   local boost = 255 / max_ch
@@ -647,7 +647,7 @@ end
 
 function M.tile_text_colors(base_color)
   local accent = M.same_hue_variant(base_color, 1.25, 1.15, 0xFF)
-  local name = hexrgb("#DDE3E9")
+  local name = M.hexrgb("#DDE3E9")
   return accent, name
 end
 
