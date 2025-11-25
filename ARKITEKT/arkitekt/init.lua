@@ -1,6 +1,8 @@
 -- ARKITEKT Namespace
 -- Provides ImGui-style access to all widgets via lazy loading
--- Usage: local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/init.lua")
+-- Auto-loads ImGui and bootstrap utilities
+-- Usage: local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
+--        local ctx = ark.ImGui.CreateContext('My Script')
 --        ark.Button.draw(ctx, {label = "Click"})
 
 -- ============================================================================
@@ -16,7 +18,10 @@ end
 
 local ark = {}
 
--- Store bootstrap context for scripts that need it (ImGui, utilities, etc.)
+-- Expose ImGui directly (no need to require in every script)
+ark.ImGui = bootstrap_context.ImGui
+
+-- Store full bootstrap context for advanced use cases
 ark._bootstrap = bootstrap_context
 
 -- Module registry - maps names to module paths
