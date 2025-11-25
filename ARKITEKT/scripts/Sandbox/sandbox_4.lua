@@ -1,6 +1,7 @@
 -- @noindex
 -- ARKITEKT/scripts/Sandbox/sandbox_4.lua
--- Custom TreeView Prototype v2.1 - Better tree lines + inline edit
+-- Custom TreeView Prototype v3.0 - Full-Featured Tree Control
+-- Multiselection, keyboard nav, search, context menu, clipboard ops
 
 local script_path = debug.getinfo(1, "S").source:match("@?(.*)[\\/]") or ""
 local root_path = script_path:match("(.*)[\\/][^\\/]+[\\/]?$") or script_path
@@ -174,6 +175,98 @@ local function select_all_visible()
   end
 end
 
+local function invert_selection()
+  local new_selection = {}
+  for _, item in ipairs(tree_state.flat_list) do
+    if not tree_state.selected[item.id] then
+      new_selection[item.id] = true
+    end
+  end
+  tree_state.selected = new_selection
+end
+
+local function expand_all_recursive(nodes)
+  for _, node in ipairs(nodes) do
+    tree_state.open[node.id] = true
+    if node.children and #node.children > 0 then
+      expand_all_recursive(node.children)
+    end
+  end
+end
+
+local function collapse_all_recursive(nodes)
+  for _, node in ipairs(nodes) do
+    tree_state.open[node.id] = false
+    if node.children and #node.children > 0 then
+      collapse_all_recursive(node.children)
+    end
+  end
+end
+
+local function delete_nodes_by_ids(nodes, ids_to_delete)
+  local i = 1
+  while i <= #nodes do
+    if ids_to_delete[nodes[i].id] then
+      table.remove(nodes, i)
+    else
+      if nodes[i].children then
+        delete_nodes_by_ids(nodes[i].children, ids_to_delete)
+      end
+      i = i + 1
+    end
+  end
+end
+
+local function duplicate_node(node)
+  local new_node = {
+    id = node.id .. "_copy_" .. os.time(),
+    name = node.name .. " (copy)",
+    color = node.color,
+    children = {}
+  }
+  if node.children then
+    for _, child in ipairs(node.children) do
+      table.insert(new_node.children, duplicate_node(child))
+    end
+  end
+  return new_node
+end
+
+local function get_selected_nodes(nodes)
+  local selected_nodes = {}
+  local function collect(ns)
+    for _, node in ipairs(ns) do
+      if tree_state.selected[node.id] then
+        table.insert(selected_nodes, node)
+      end
+      if node.children then
+        collect(node.children)
+      end
+    end
+  end
+  collect(nodes)
+  return selected_nodes
+end
+
+local function node_matches_search(node, search_text)
+  if search_text == "" then return true end
+  local lower_search = search_text:lower()
+  local lower_name = node.name:lower()
+  return lower_name:find(lower_search, 1, true) ~= nil
+end
+
+local function has_matching_children(node, search_text)
+  if node_matches_search(node, search_text) then return true end
+  if node.children then
+    for _, child in ipairs(node.children) do
+      if has_matching_children(child, search_text) then
+        return true
+      end
+    end
+  end
+  return false
+end
+
 local tree_state = {
   open = { root = true, src = true, docs = true, components = true, utils = true, guides = true },
   selected = {}, -- Now a table of selected IDs: { [id] = true, ... }
@@ -185,6 +278,14 @@ local tree_state = {
   edit_buffer = "",
   edit_focus_set = false,
   flat_list = {}, -- Flat list of visible items in order for arrow navigation
+  clipboard = {}, -- Clipboard for cut/copy/paste
+  clipboard_mode = nil, -- "cut" or "copy"
+  context_menu_open = false,
+  context_menu_x = 0,
+  context_menu_y = 0,
+  search_text = "",
+  search_active = false,
+  tree_bounds = {}, -- Store tree bounds for click detection
 }
 
 -- ============================================================================
@@ -310,11 +411,21 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   local cfg = TREE_CONFIG
   local item_h = cfg.item_height
 
+  -- Skip if doesn't match search
+  local search_active = tree_state.search_text ~= ""
+  if search_active and not has_matching_children(node, tree_state.search_text) then
+    return y_pos, row_index
+  end
+
+  local matches_search = node_matches_search(node, tree_state.search_text)
+
   -- Add to flat list for keyboard navigation
   table.insert(tree_state.flat_list, {
     id = node.id,
     node = node,
     parent_id = parent_id,
+    y_pos = y_pos,
+    height = item_h,
   })
 
   local indent_x = visible_x + cfg.padding_left + depth * cfg.indent_width
@@ -336,6 +447,11 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   -- Backgrounds
   if cfg.show_alternating_bg and row_index % 2 == 0 then
     ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, cfg.bg_alternate)
+  end
+
+  -- Search highlight
+  if search_active and matches_search then
+    ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, hexrgb("#4A4A1AFF"))
   end
 
   if item_selected then
@@ -417,6 +533,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     ImGui.SetCursorScreenPos(ctx, visible_x, y_pos)
     ImGui.InvisibleButton(ctx, "##tree_item_" .. node.id, visible_w, item_h)
 
+    -- Left click
     if ImGui.IsItemClicked(ctx, 0) then
       if has_children and mx >= arrow_x and mx < arrow_x + cfg.arrow_size + cfg.arrow_margin then
         -- Toggle open/close
@@ -440,6 +557,16 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
           set_single_selection(node.id)
         end
       end
+    end
+
+    -- Right click for context menu
+    if ImGui.IsItemClicked(ctx, 1) then
+      if not item_selected then
+        set_single_selection(node.id)
+      end
+      tree_state.context_menu_open = true
+      tree_state.context_menu_x = mx
+      tree_state.context_menu_y = my
     end
 
     -- Double-click or F2 to edit
@@ -515,11 +642,37 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
     tree_state.focused = tree_state.flat_list[1].id
   end
 
+  -- Store tree bounds for click-to-deselect
+  tree_state.tree_bounds = { x = x, y = y, w = w, h = h }
+
   -- Keyboard shortcuts (after flat_list is built)
   if ImGui.IsWindowFocused(ctx) and not tree_state.editing then
+    local ctrl_held = ImGui.GetKeyMods(ctx) & ImGui.Mod_Ctrl ~= 0
+    local shift_held = ImGui.GetKeyMods(ctx) & ImGui.Mod_Shift ~= 0
+
+    -- ESC: Clear selection
+    if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
+      clear_selection()
+    end
+
     -- CTRL+A: Select all visible
-    if ImGui.GetKeyMods(ctx) & ImGui.Mod_Ctrl ~= 0 and ImGui.IsKeyPressed(ctx, ImGui.Key_A) then
+    if ctrl_held and ImGui.IsKeyPressed(ctx, ImGui.Key_A) then
       select_all_visible()
+    end
+
+    -- CTRL+I: Invert selection
+    if ctrl_held and ImGui.IsKeyPressed(ctx, ImGui.Key_I) then
+      invert_selection()
+    end
+
+    -- CTRL+8 (*): Expand all
+    if ctrl_held and ImGui.IsKeyPressed(ctx, ImGui.Key_8) then
+      expand_all_recursive(nodes)
+    end
+
+    -- CTRL+9 ((: Collapse all
+    if ctrl_held and ImGui.IsKeyPressed(ctx, ImGui.Key_9) then
+      collapse_all_recursive(nodes)
     end
 
     -- Arrow key navigation
@@ -534,10 +687,21 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
 
       if focused_idx then
         local new_idx = nil
-        local shift_held = ImGui.GetKeyMods(ctx) & ImGui.Mod_Shift ~= 0
 
+        -- Home: Jump to first item
+        if ImGui.IsKeyPressed(ctx, ImGui.Key_Home) then
+          new_idx = 1
+        -- End: Jump to last item
+        elseif ImGui.IsKeyPressed(ctx, ImGui.Key_End) then
+          new_idx = #tree_state.flat_list
+        -- Page Up: Jump up by ~10 items
+        elseif ImGui.IsKeyPressed(ctx, ImGui.Key_PageUp) then
+          new_idx = math.max(1, focused_idx - 10)
+        -- Page Down: Jump down by ~10 items
+        elseif ImGui.IsKeyPressed(ctx, ImGui.Key_PageDown) then
+          new_idx = math.min(#tree_state.flat_list, focused_idx + 10)
         -- Up arrow
-        if ImGui.IsKeyPressed(ctx, ImGui.Key_UpArrow) then
+        elseif ImGui.IsKeyPressed(ctx, ImGui.Key_UpArrow) then
           new_idx = math.max(1, focused_idx - 1)
         -- Down arrow
         elseif ImGui.IsKeyPressed(ctx, ImGui.Key_DownArrow) then
@@ -579,9 +743,169 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
             -- Normal arrow: Move selection
             set_single_selection(new_id)
           end
+
+          -- Auto-scroll to keep focused item visible
+          local item_info = tree_state.flat_list[new_idx]
+          local item_screen_y = item_info.y_pos
+          local visible_top = y + cfg.padding_top
+          local visible_bottom = y + h - cfg.padding_bottom
+
+          if item_screen_y < visible_top then
+            tree_state.scroll_y = tree_state.scroll_y - (visible_top - item_screen_y)
+          elseif item_screen_y + item_info.height > visible_bottom then
+            tree_state.scroll_y = tree_state.scroll_y + (item_screen_y + item_info.height - visible_bottom)
+          end
+          tree_state.scroll_y = math.max(0, tree_state.scroll_y)
         end
       end
     end
+
+    -- Delete key: Remove selected items
+    if ImGui.IsKeyPressed(ctx, ImGui.Key_Delete) then
+      if next(tree_state.selected) then
+        delete_nodes_by_ids(nodes, tree_state.selected)
+        clear_selection()
+      end
+    end
+
+    -- CTRL+D: Duplicate selected items
+    if ctrl_held and ImGui.IsKeyPressed(ctx, ImGui.Key_D) then
+      local selected_nodes = get_selected_nodes(nodes)
+      for _, node in ipairs(selected_nodes) do
+        local parent_list = nodes -- Would need proper parent tracking for real implementation
+        local duplicated = duplicate_node(node)
+        table.insert(parent_list, duplicated)
+      end
+    end
+
+    -- CTRL+X: Cut
+    if ctrl_held and ImGui.IsKeyPressed(ctx, ImGui.Key_X) then
+      tree_state.clipboard = get_selected_nodes(nodes)
+      tree_state.clipboard_mode = "cut"
+    end
+
+    -- CTRL+C: Copy
+    if ctrl_held and ImGui.IsKeyPressed(ctx, ImGui.Key_C) then
+      tree_state.clipboard = get_selected_nodes(nodes)
+      tree_state.clipboard_mode = "copy"
+    end
+
+    -- CTRL+V: Paste
+    if ctrl_held and ImGui.IsKeyPressed(ctx, ImGui.Key_V) then
+      if #tree_state.clipboard > 0 then
+        for _, node in ipairs(tree_state.clipboard) do
+          if tree_state.clipboard_mode == "copy" then
+            table.insert(nodes, duplicate_node(node))
+          else
+            -- For cut, would need to remove from original location
+            table.insert(nodes, node)
+          end
+        end
+        if tree_state.clipboard_mode == "cut" then
+          tree_state.clipboard = {}
+          tree_state.clipboard_mode = nil
+        end
+      end
+    end
+  end
+
+  -- Click on empty space to deselect
+  local mx, my = ImGui.GetMousePos(ctx)
+  if ImGui.IsMouseClicked(ctx, 0) then
+    local in_tree = mx >= x and mx < x + w and my >= y and my < y + h
+    if in_tree and not tree_state.hovered then
+      clear_selection()
+    end
+  end
+end
+
+-- ============================================================================
+-- CONTEXT MENU
+-- ============================================================================
+
+local function draw_context_menu(ctx, nodes)
+  if not tree_state.context_menu_open then return end
+
+  ImGui.SetNextWindowPos(ctx, tree_state.context_menu_x, tree_state.context_menu_y)
+  if ImGui.BeginPopup(ctx, "##tree_context_menu") then
+    local selected_count = 0
+    for _ in pairs(tree_state.selected) do
+      selected_count = selected_count + 1
+    end
+
+    ImGui.Text(ctx, string.format("%d item(s) selected", selected_count))
+    ImGui.Separator(ctx)
+
+    if ImGui.MenuItem(ctx, "Rename (F2)") then
+      if tree_state.focused then
+        tree_state.editing = tree_state.focused
+        local node = find_node_by_id(nodes, tree_state.focused)
+        if node then
+          tree_state.edit_buffer = node.name
+          tree_state.edit_focus_set = false
+        end
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ImGui.MenuItem(ctx, "Duplicate (Ctrl+D)") then
+      local selected_nodes = get_selected_nodes(nodes)
+      for _, node in ipairs(selected_nodes) do
+        table.insert(nodes, duplicate_node(node))
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ImGui.MenuItem(ctx, "Delete (Del)") then
+      delete_nodes_by_ids(nodes, tree_state.selected)
+      clear_selection()
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    ImGui.Separator(ctx)
+
+    if ImGui.MenuItem(ctx, "Cut (Ctrl+X)") then
+      tree_state.clipboard = get_selected_nodes(nodes)
+      tree_state.clipboard_mode = "cut"
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ImGui.MenuItem(ctx, "Copy (Ctrl+C)") then
+      tree_state.clipboard = get_selected_nodes(nodes)
+      tree_state.clipboard_mode = "copy"
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ImGui.MenuItem(ctx, "Paste (Ctrl+V)", nil, false, #tree_state.clipboard > 0) then
+      for _, node in ipairs(tree_state.clipboard) do
+        if tree_state.clipboard_mode == "copy" then
+          table.insert(nodes, duplicate_node(node))
+        else
+          table.insert(nodes, node)
+        end
+      end
+      if tree_state.clipboard_mode == "cut" then
+        tree_state.clipboard = {}
+        tree_state.clipboard_mode = nil
+      end
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    ImGui.Separator(ctx)
+
+    if ImGui.MenuItem(ctx, "Select All (Ctrl+A)") then
+      select_all_visible()
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    if ImGui.MenuItem(ctx, "Invert Selection (Ctrl+I)") then
+      invert_selection()
+      ImGui.CloseCurrentPopup(ctx)
+    end
+
+    ImGui.EndPopup(ctx)
+  else
+    tree_state.context_menu_open = false
   end
 end
 
@@ -615,7 +939,7 @@ end
 
 Shell.run({
   title = "Custom TreeView Prototype",
-  version = "v2.2.0",
+  version = "v3.0.0",
   version_color = hexrgb("#888888FF"),
   initial_pos = { x = 120, y = 120 },
   initial_size = { w = 700, h = 700 },
@@ -624,9 +948,10 @@ Shell.run({
   icon_size = 18,
 
   draw = function(ctx, shell_state)
-    ImGui.Text(ctx, "Custom TreeView v2.2 - Multiselection + Keyboard Nav")
-    ImGui.Text(ctx, "CTRL+Click=Toggle • SHIFT+Click=Range • CTRL+A=Select All • Arrows=Navigate")
-    ImGui.Text(ctx, "F2/Dbl-Click=Rename • Left/Right=Collapse/Expand")
+    ImGui.Text(ctx, "Custom TreeView v3.0 - Full-Featured Tree Control")
+    ImGui.Text(ctx, "Selection: Click • CTRL+Click • SHIFT+Click • CTRL+A • CTRL+I • ESC")
+    ImGui.Text(ctx, "Navigation: Arrows • Home/End • PgUp/PgDown • Search")
+    ImGui.Text(ctx, "Edit: F2/DblClick • Del • CTRL+D/X/C/V • Right-Click Menu")
     ImGui.Separator(ctx)
 
     local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
@@ -693,10 +1018,28 @@ Shell.run({
     ImGui.SameLine(ctx)
 
     local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
+
+    -- Search bar
+    ImGui.SetNextItemWidth(ctx, avail_w - 100)
+    local search_changed, new_search = ImGui.InputText(ctx, "##search", tree_state.search_text)
+    if search_changed then
+      tree_state.search_text = new_search
+    end
+    ImGui.SameLine(ctx)
+    if ImGui.Button(ctx, "Clear", 90, 0) then
+      tree_state.search_text = ""
+    end
+
     local tree_x, tree_y = ImGui.GetCursorScreenPos(ctx)
-    local tree_h = avail_h - 60
+    local tree_h = avail_h - 90
 
     draw_custom_tree(ctx, mock_tree, tree_x, tree_y, avail_w, tree_h)
+
+    -- Context menu
+    if tree_state.context_menu_open then
+      ImGui.OpenPopup(ctx, "##tree_context_menu")
+    end
+    draw_context_menu(ctx, mock_tree)
 
     ImGui.SetCursorScreenPos(ctx, tree_x, tree_y + tree_h + 4)
 
