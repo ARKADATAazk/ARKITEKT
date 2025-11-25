@@ -7,9 +7,11 @@
 -- ============================================================================
 local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/bootstrap.lua").init()
 
+-- Load ARKITEKT namespace (lazy-loaded modules)
+local ark = require('arkitekt')
+
 -- Load required modules
 local Shell = require('arkitekt.app.shell')
-local Colors = require('arkitekt.core.colors')
 
 -- Load TemplateBrowser modules
 local Config = require('TemplateBrowser.core.config')
@@ -17,7 +19,7 @@ local State = require('TemplateBrowser.core.state')
 local GUI = require('TemplateBrowser.ui.gui')
 local Scanner = require('TemplateBrowser.domain.scanner')
 
-local hexrgb = Colors.hexrgb
+local hexrgb = ark.Colors.hexrgb
 
 -- Initialize state
 State.initialize(Config)
