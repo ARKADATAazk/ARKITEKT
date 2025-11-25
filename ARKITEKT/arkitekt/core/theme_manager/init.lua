@@ -5,17 +5,36 @@
 -- Generates entire UI color palettes from 1-3 base colors using HSL manipulation.
 -- Supports REAPER theme auto-sync and manual theme presets.
 --
--- Usage:
+-- ============================================================================
+-- PRIMARY API (4 theme modes)
+-- ============================================================================
+--
 --   local ThemeManager = require('arkitekt.core.theme_manager')
 --
---   -- Sync with REAPER's current theme (auto-generates 25+ colors from 2-3 base colors)
---   ThemeManager.sync_with_reaper()
+--   ThemeManager.set_dark()   -- Dark preset (~12% lightness)
+--   ThemeManager.set_grey()   -- Grey preset (~24% lightness)
+--   ThemeManager.set_light()  -- Light preset (~88% lightness)
+--   ThemeManager.adapt()      -- Sync with REAPER's current theme
 --
---   -- Or apply a manual theme preset
+--   -- Or use set_mode() for UI selectors:
+--   ThemeManager.set_mode("dark")   -- "dark", "grey", "light", or "adapt"
+--
+-- ============================================================================
+-- ADVANCED API
+-- ============================================================================
+--
+--   -- Apply named preset
 --   ThemeManager.apply_theme("dark")
 --
---   -- Or generate from custom colors
+--   -- Generate from custom colors
 --   ThemeManager.generate_and_apply(base_bg, base_text, base_accent)
+--
+--   -- Animated transitions
+--   ThemeManager.transition_to_theme("light", 0.3)
+--
+--   -- Live REAPER sync (monitors theme changes)
+--   local sync = ThemeManager.create_live_sync(1.0)
+--   function main_loop() sync(); draw_ui() end
 
 local Colors = require('arkitekt.core.colors')
 local Style = require('arkitekt.gui.style.defaults')
@@ -59,56 +78,71 @@ M.derivation_rules = {
 --- Generate complete UI color palette from 1-3 base colors
 --- @param base_bg number Background color in RGBA format
 --- @param base_text number Text color in RGBA format
---- @param base_accent number|nil Optional accent color (defaults to teal)
+--- @param base_accent number|nil Optional accent color (nil for neutral grayscale)
 --- @return table Color palette with all UI colors
 function M.generate_palette(base_bg, base_text, base_accent)
-  base_accent = base_accent or Colors.hexrgb("#41E0A3FF")  -- Default teal
-
   local rules = M.derivation_rules
+
+  -- Detect if this is a light theme (background lightness > 50%)
+  local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
+  local is_light = bg_lightness > 0.5
+
+  -- Invert deltas for light themes (hover goes darker instead of lighter)
+  local sign = is_light and -1 or 1
+
+  -- For neutral themes (no accent), derive accents from background
+  local neutral_accent
+  if base_accent == nil then
+    -- Create neutral gray "accent" from background
+    neutral_accent = Colors.adjust_lightness(base_bg, sign * 0.08)
+  else
+    neutral_accent = base_accent
+  end
 
   return {
     -- ============ BACKGROUNDS ============
     -- All derived from base_bg with lightness adjustments
+    -- For light themes, hover/active go darker; for dark themes, they go lighter
     BG_BASE = base_bg,
-    BG_HOVER = Colors.adjust_lightness(base_bg, rules.bg_hover_delta),
-    BG_ACTIVE = Colors.adjust_lightness(base_bg, rules.bg_active_delta),
-    BG_PANEL = Colors.adjust_lightness(base_bg, rules.bg_panel_delta),
+    BG_HOVER = Colors.adjust_lightness(base_bg, sign * rules.bg_hover_delta),
+    BG_ACTIVE = Colors.adjust_lightness(base_bg, sign * rules.bg_active_delta),
+    BG_PANEL = Colors.adjust_lightness(base_bg, sign * rules.bg_panel_delta),
     BG_TRANSPARENT = Colors.with_alpha(base_bg, 0x00),
 
     -- ============ BORDERS ============
-    -- Derived from base_bg with different lightness
-    BORDER_OUTER = Colors.adjust_lightness(base_bg, rules.border_outer_delta),
-    BORDER_INNER = Colors.adjust_lightness(base_bg, rules.border_inner_delta),
-    BORDER_HOVER = Colors.adjust_lightness(base_bg, rules.border_hover_delta),
-    BORDER_ACTIVE = Colors.adjust_lightness(base_bg, rules.border_active_delta),
-    BORDER_FOCUS = Colors.adjust_lightness(base_bg, rules.border_focus_delta),
+    -- For light themes, borders are darker; for dark themes, they're varied
+    BORDER_OUTER = Colors.adjust_lightness(base_bg, rules.border_outer_delta),  -- Always darker
+    BORDER_INNER = Colors.adjust_lightness(base_bg, sign * rules.border_inner_delta),
+    BORDER_HOVER = Colors.adjust_lightness(base_bg, sign * rules.border_hover_delta),
+    BORDER_ACTIVE = Colors.adjust_lightness(base_bg, sign * rules.border_active_delta),
+    BORDER_FOCUS = Colors.adjust_lightness(base_bg, sign * rules.border_focus_delta),
 
     -- ============ TEXT ============
-    -- All derived from base_text with lightness adjustments
+    -- Text deltas adapt to light/dark context
     TEXT_NORMAL = base_text,
-    TEXT_HOVER = Colors.adjust_lightness(base_text, rules.text_hover_delta),
-    TEXT_ACTIVE = Colors.adjust_lightness(base_text, rules.text_hover_delta),
-    TEXT_DIMMED = Colors.adjust_lightness(base_text, rules.text_dimmed_delta),
-    TEXT_DARK = Colors.adjust_lightness(base_text, rules.text_dark_delta),
-    TEXT_BRIGHT = Colors.adjust_lightness(base_text, rules.text_bright_delta),
+    TEXT_HOVER = Colors.adjust_lightness(base_text, sign * rules.text_hover_delta),
+    TEXT_ACTIVE = Colors.adjust_lightness(base_text, sign * rules.text_hover_delta),
+    TEXT_DIMMED = Colors.adjust_lightness(base_text, -sign * math.abs(rules.text_dimmed_delta)),
+    TEXT_DARK = Colors.adjust_lightness(base_text, -sign * math.abs(rules.text_dark_delta)),
+    TEXT_BRIGHT = Colors.adjust_lightness(base_text, sign * rules.text_bright_delta),
 
     -- ============ ACCENTS ============
-    -- Derived from base_accent with saturation/lightness adjustments
-    ACCENT_PRIMARY = base_accent,
-    ACCENT_TEAL = base_accent,
-    ACCENT_TEAL_BRIGHT = Colors.adjust_lightness(base_accent, rules.accent_bright_delta),
+    -- Neutral or colored depending on base_accent parameter
+    ACCENT_PRIMARY = neutral_accent,
+    ACCENT_TEAL = neutral_accent,
+    ACCENT_TEAL_BRIGHT = Colors.adjust_lightness(neutral_accent, sign * rules.accent_bright_delta),
 
-    -- White/gray variant (fully desaturated accent)
-    ACCENT_WHITE = Colors.adjust_saturation(base_accent, rules.accent_desaturate),
+    -- White/gray variant (fully desaturated)
+    ACCENT_WHITE = Colors.adjust_saturation(neutral_accent, rules.accent_desaturate),
     ACCENT_WHITE_BRIGHT = Colors.adjust_lightness(
-      Colors.adjust_saturation(base_accent, rules.accent_desaturate),
-      0.20
+      Colors.adjust_saturation(neutral_accent, rules.accent_desaturate),
+      sign * 0.20
     ),
 
     -- Transparent variant (for overlays)
-    ACCENT_TRANSPARENT = Colors.with_alpha(base_accent, 0xAA),
+    ACCENT_TRANSPARENT = Colors.with_alpha(neutral_accent, 0xAA),
 
-    -- Status colors (fixed for semantic meaning, could be derived in future)
+    -- Status colors (fixed for semantic meaning)
     ACCENT_SUCCESS = Colors.hexrgb("#4CAF50"),
     ACCENT_WARNING = Colors.hexrgb("#FFA726"),
     ACCENT_DANGER = Colors.hexrgb("#EF5350"),
@@ -232,58 +266,75 @@ end
 
 --- Built-in theme presets
 --- Each returns a palette generator function
+---
+--- Primary presets: dark, grey, light (neutral, no accent colors)
+--- ADAPT mode: Uses sync_with_reaper() to match REAPER's theme
 M.themes = {
-  -- Default dark theme (current ARKITEKT colors)
+  -- DARK: Deep, high-contrast theme
+  -- Best for: Low-light environments, OLED screens
   dark = function()
     return M.generate_palette(
-      Colors.hexrgb("#252525FF"),  -- Dark gray background
-      Colors.hexrgb("#CCCCCCFF"),  -- Light gray text
-      Colors.hexrgb("#41E0A3FF")   -- Teal accent
+      Colors.hexrgb("#1E1E1EFF"),  -- Deep gray (~12% lightness)
+      Colors.hexrgb("#CCCCCCFF"),  -- Light gray text (~80%)
+      nil                          -- No accent (neutral grayscale)
     )
   end,
 
-  -- Light theme
+  -- GREY: Balanced neutral theme
+  -- Best for: All-day use, reduces eye strain
+  grey = function()
+    return M.generate_palette(
+      Colors.hexrgb("#3D3D3DFF"),  -- Medium gray (~24% lightness)
+      Colors.hexrgb("#E0E0E0FF"),  -- Off-white text (~88%)
+      nil                          -- No accent (neutral grayscale)
+    )
+  end,
+
+  -- LIGHT: Bright, paper-like theme
+  -- Best for: Bright environments, printable mockups
   light = function()
     return M.generate_palette(
-      Colors.hexrgb("#E5E5E5FF"),  -- Light gray background
-      Colors.hexrgb("#333333FF"),  -- Dark text
-      Colors.hexrgb("#2F9984FF")   -- Darker teal for better contrast on light bg
+      Colors.hexrgb("#E0E0E0FF"),  -- Light gray (~88% lightness)
+      Colors.hexrgb("#2A2A2AFF"),  -- Dark text (~16%)
+      nil                          -- No accent (neutral grayscale)
     )
   end,
 
-  -- Midnight (very dark)
+  -- ===== Legacy presets (kept for backward compatibility) =====
+
+  -- Midnight (very dark) - alias to dark
   midnight = function()
     return M.generate_palette(
       Colors.hexrgb("#0A0A0AFF"),  -- Almost black
       Colors.hexrgb("#AAAAAAFF"),  -- Medium gray text
-      Colors.hexrgb("#6B9EFF")     -- Blue accent
+      nil
     )
   end,
 
-  -- Pro Tools inspired
+  -- Pro Tools inspired - alias to grey
   pro_tools = function()
     return M.generate_palette(
       Colors.hexrgb("#3D3D3DFF"),  -- Medium dark gray (PT background)
       Colors.hexrgb("#D4D4D4FF"),  -- Off-white text
-      Colors.hexrgb("#5FB4F0FF")   -- PT blue
+      nil
     )
   end,
 
-  -- Ableton inspired (dark with warm accent)
+  -- Ableton inspired
   ableton = function()
     return M.generate_palette(
       Colors.hexrgb("#1A1A1AFF"),  -- Very dark gray
       Colors.hexrgb("#CCCCCCFF"),  -- Light text
-      Colors.hexrgb("#FF764D")     -- Ableton orange
+      nil
     )
   end,
 
-  -- FL Studio inspired (dark with purple)
+  -- FL Studio inspired
   fl_studio = function()
     return M.generate_palette(
       Colors.hexrgb("#2B2B2BFF"),  -- Dark gray
       Colors.hexrgb("#E0E0E0FF"),  -- Light text
-      Colors.hexrgb("#B24BF3")     -- FL purple
+      nil
     )
   end,
 }
@@ -312,6 +363,75 @@ function M.get_theme_names()
   end
   table.sort(names)
   return names
+end
+
+--- Get primary preset names (Dark, Grey, Light)
+--- @return table Array of primary theme names
+function M.get_primary_presets()
+  return { "dark", "grey", "light" }
+end
+
+-- ============================================================================
+-- SIMPLE API: Primary Theme Selection
+-- ============================================================================
+-- Use these functions for the main theme selector UI
+--
+-- Example:
+--   ThemeManager.set_dark()   -- Apply dark preset
+--   ThemeManager.set_grey()   -- Apply grey preset
+--   ThemeManager.set_light()  -- Apply light preset
+--   ThemeManager.adapt()      -- Sync with REAPER theme
+-- ============================================================================
+
+--- Apply dark preset (deep gray, ~12% lightness)
+function M.set_dark()
+  return M.apply_theme("dark")
+end
+
+--- Apply grey preset (medium gray, ~24% lightness)
+function M.set_grey()
+  return M.apply_theme("grey")
+end
+
+--- Apply light preset (light gray, ~88% lightness)
+function M.set_light()
+  return M.apply_theme("light")
+end
+
+--- Adapt to REAPER's current theme
+--- Reads main window + arrange backgrounds, generates neutral palette
+--- @return boolean Success
+function M.adapt()
+  return M.sync_with_reaper()
+end
+
+--- Current active theme mode
+--- @return string|nil "dark", "grey", "light", "adapt", or nil if custom
+M.current_mode = nil
+
+--- Set theme by mode name (for UI selectors)
+--- @param mode string "dark", "grey", "light", or "adapt"
+--- @return boolean Success
+function M.set_mode(mode)
+  local success = false
+
+  if mode == "adapt" then
+    success = M.sync_with_reaper()
+  elseif M.themes[mode] then
+    success = M.apply_theme(mode)
+  end
+
+  if success then
+    M.current_mode = mode
+  end
+
+  return success
+end
+
+--- Get current theme mode
+--- @return string|nil
+function M.get_mode()
+  return M.current_mode
 end
 
 -- ============================================================================
