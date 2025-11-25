@@ -35,6 +35,8 @@ function M.create_animation_state(position, config)
     is_expanded = false,   -- For button trigger mode
     slide_offset = 0,      -- Current slide offset (pixels) for edge slide
     slide_target = 0,      -- Target slide offset
+    width_scale = 1.0,     -- Current width scale (1.0 = normal, 1.3 = 30% wider)
+    width_scale_target = 1.0,  -- Target width scale
   }
 end
 
@@ -66,6 +68,15 @@ function M.update_animation(anim_state, config, dt)
   -- Snap when very close
   if math.abs(anim_state.slide_target - anim_state.slide_offset) < 0.5 then
     anim_state.slide_offset = anim_state.slide_target
+  end
+
+  -- Lerp width scale for hover expansion
+  local width_scale_speed = 0.2
+  anim_state.width_scale = anim_state.width_scale + (anim_state.width_scale_target - anim_state.width_scale) * width_scale_speed
+
+  -- Snap when very close
+  if math.abs(anim_state.width_scale_target - anim_state.width_scale) < 0.01 then
+    anim_state.width_scale = anim_state.width_scale_target
   end
 end
 
@@ -117,12 +128,17 @@ end
 --- @param config table Overlay toolbar configuration
 --- @param visibility number Current visibility (0.0 - 1.0)
 --- @param slide_offset number Current slide offset in pixels (for edge slide animation)
+--- @param width_scale number Width scale multiplier (1.0 = normal, 1.3 = 30% wider)
 --- @return table {x, y, w, h} Overlay bounds
-function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, config, visibility, slide_offset)
+function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, config, visibility, slide_offset, width_scale)
   local x1, y1, x2, y2 = table.unpack(panel_bounds)
   local orientation = get_orientation(position)
 
+  -- Apply width scale (default 1.0)
+  width_scale = width_scale or 1.0
+
   local size = orientation == "horizontal" and (config.height or 40) or (config.width or 200)
+  size = size * width_scale  -- Apply width/height scaling
   local visible_size = size * visibility
 
   -- Check if overlay should extend from panel edge (ignore regular toolbar)
@@ -280,8 +296,8 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
     return
   end
 
-  -- Calculate bounds with slide offset
-  local bounds = M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, config, anim_state.current, anim_state.slide_offset)
+  -- Calculate bounds with slide offset and width scale
+  local bounds = M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, config, anim_state.current, anim_state.slide_offset, anim_state.width_scale)
 
   local auto_hide_cfg = config.auto_hide or {}
   local button_clicked = false
@@ -323,8 +339,9 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
     local is_in_hover_zone = mx >= hover_zone_x1 and mx <= hover_zone_x2 and
                              my >= hover_zone_y1 and my <= hover_zone_y2
 
-    -- Update slide target
+    -- Update slide target and width scale on hover
     anim_state.slide_target = is_in_hover_zone and config.edge_slide_distance or 0
+    anim_state.width_scale_target = is_in_hover_zone and 1.3 or 1.0  -- 30% wider when hovering
   end
 
   -- Draw background
