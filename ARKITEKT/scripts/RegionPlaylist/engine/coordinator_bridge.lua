@@ -10,6 +10,9 @@ local SequenceExpander = require("RegionPlaylist.core.sequence_expander")
 local Logger = require("arkitekt.debug.logger")
 local Callbacks = require("arkitekt.core.callbacks")
 
+-- Set to true for verbose sequence building debug logs
+local DEBUG_BRIDGE = false
+
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
 local min = math.min
@@ -134,8 +137,10 @@ function M.create(opts)
     -- Don't rebuild sequence if we're currently playing
     -- This prevents the transport from switching playlists when user changes tabs during playback
     if is_playing and bridge._playing_playlist_id then
-      Logger.debug("BRIDGE", "Skipping sequence rebuild - currently playing playlist %s (active: %s)",
-        tostring(bridge._playing_playlist_id), tostring(active_playlist_id))
+      if DEBUG_BRIDGE then
+        Logger.debug("BRIDGE", "Skipping sequence rebuild - currently playing playlist %s (active: %s)",
+          tostring(bridge._playing_playlist_id), tostring(active_playlist_id))
+      end
       bridge.sequence_cache_dirty = false
       return
     end
@@ -154,12 +159,14 @@ function M.create(opts)
     for idx, entry in ipairs(sequence) do
       if entry.item_key and not bridge.sequence_lookup[entry.item_key] then
         bridge.sequence_lookup[entry.item_key] = idx
-        Logger.debug("BRIDGE", "Mapping key '%s' -> idx %d", entry.item_key, idx)
+        if DEBUG_BRIDGE then Logger.debug("BRIDGE", "Mapping key '%s' -> idx %d", entry.item_key, idx) end
       end
     end
 
-    Logger.debug("BRIDGE", "Final sequence_lookup built with %d entries",
-      (function() local count = 0; for _ in pairs(bridge.sequence_lookup) do count = count + 1 end; return count end)())
+    if DEBUG_BRIDGE then
+      Logger.debug("BRIDGE", "Final sequence_lookup built with %d entries",
+        (function() local count = 0; for _ in pairs(bridge.sequence_lookup) do count = count + 1 end; return count end)())
+    end
 
     for playlist_key, range_info in pairs(playlist_map) do
       bridge.playlist_ranges[playlist_key] = range_info

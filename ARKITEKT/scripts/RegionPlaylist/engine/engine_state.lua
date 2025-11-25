@@ -7,6 +7,9 @@ local Regions = require('arkitekt.reaper.regions')
 local Transport = require('arkitekt.reaper.transport')
 local Logger = require('arkitekt.debug.logger')
 
+-- Set to true for verbose sequence building logs
+local DEBUG_SEQUENCE = false
+
 local M = {}
 local State = {}
 State.__index = State
@@ -139,7 +142,7 @@ function State:set_sequence(sequence)
   self.playlist_metadata = {}
   self.sequence_lookup_by_key = {}
 
-  Logger.debug("STATE", "Building sequence from %d entries...", #sequence)
+  if DEBUG_SEQUENCE then Logger.debug("STATE", "Building sequence from %d entries...", #sequence) end
   for _, entry in ipairs(sequence) do
     local rid = entry.rid
     if rid and self.region_cache[rid] then
@@ -153,9 +156,11 @@ function State:set_sequence(sequence)
         normalized.loop = normalized.total_loops
       end
 
-      Logger.debug("STATE", "✓ Entry #%d: rid=%d key=%s loop=%d/%d", 
-        #self.sequence + 1, rid, tostring(entry.item_key), normalized.loop, normalized.total_loops)
-      
+      if DEBUG_SEQUENCE then
+        Logger.debug("STATE", "✓ Entry #%d: rid=%d key=%s loop=%d/%d",
+          #self.sequence + 1, rid, tostring(entry.item_key), normalized.loop, normalized.total_loops)
+      end
+
       self.sequence[#self.sequence + 1] = normalized
       self.playlist_order[#self.playlist_order + 1] = rid
 
@@ -169,13 +174,13 @@ function State:set_sequence(sequence)
 
       if normalized.item_key and not self.sequence_lookup_by_key[normalized.item_key] then
         self.sequence_lookup_by_key[normalized.item_key] = #self.sequence
-        Logger.debug("STATE", "Lookup: '%s' -> idx %d", normalized.item_key, #self.sequence)
+        if DEBUG_SEQUENCE then Logger.debug("STATE", "Lookup: '%s' -> idx %d", normalized.item_key, #self.sequence) end
       end
     else
       Logger.warn("STATE", "✗ DROPPED: rid=%s (not in region_cache) key=%s", tostring(rid), tostring(entry.item_key))
     end
   end
-  Logger.info("STATE", "Final sequence has %d items", #self.sequence)
+  Logger.info("STATE", "Sequence built: %d items", #self.sequence)
 
   -- Apply shuffle if enabled (before resolving pointers)
   if self._shuffle_enabled and #self.sequence > 1 then
@@ -183,9 +188,11 @@ function State:set_sequence(sequence)
     Logger.info("STATE", "Shuffle applied to sequence")
   end
 
-  Logger.debug("STATE", "playlist_order:")
-  for i, rid in ipairs(self.playlist_order) do
-    Logger.debug("STATE", "  [%d] rid=%d", i, rid)
+  if DEBUG_SEQUENCE then
+    Logger.debug("STATE", "playlist_order:")
+    for i, rid in ipairs(self.playlist_order) do
+      Logger.debug("STATE", "  [%d] rid=%d", i, rid)
+    end
   end
 
   local function resolve_index_by_entry(entry)
@@ -283,21 +290,23 @@ function State:update_bounds()
 end
 
 function State:find_index_at_position(pos)
-  Logger.debug("STATE", "find_index_at_position(%.3f) scanning %d entries...", pos, #self.playlist_order)
+  if DEBUG_SEQUENCE then Logger.debug("STATE", "find_index_at_position(%.3f) scanning %d entries...", pos, #self.playlist_order) end
   for i = 1, #self.playlist_order do
     local rid = self.playlist_order[i]
     local region = self:get_region_by_rid(rid)
     if region then
       local in_bounds = pos >= region.start and pos < region["end"] - 1e-9
-      Logger.debug("STATE", "  [%d] rid=%d bounds=[%.3f-%.3f] in_bounds=%s", 
-        i, rid, region.start, region["end"], tostring(in_bounds))
+      if DEBUG_SEQUENCE then
+        Logger.debug("STATE", "  [%d] rid=%d bounds=[%.3f-%.3f] in_bounds=%s",
+          i, rid, region.start, region["end"], tostring(in_bounds))
+      end
       if in_bounds then
-        Logger.debug("STATE", "Returning idx %d", i)
+        if DEBUG_SEQUENCE then Logger.debug("STATE", "Returning idx %d", i) end
         return i
       end
     end
   end
-  Logger.debug("STATE", "No index found, returning -1")
+  if DEBUG_SEQUENCE then Logger.debug("STATE", "No index found, returning -1") end
   return -1
 end
 

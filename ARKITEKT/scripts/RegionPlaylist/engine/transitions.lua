@@ -5,6 +5,9 @@
 
 local Logger = require("arkitekt.debug.logger")
 
+-- Set to true for per-frame playback position logging (very verbose!)
+local DEBUG_PLAYPOS = false
+
 local M = {}
 local Transitions = {}
 Transitions.__index = Transitions
@@ -36,12 +39,14 @@ function Transitions:handle_smooth_transitions()
   if #self.state.playlist_order == 0 then return end
   
   local playpos = _get_play_pos(self.proj)
-  
-  Logger.debug("TRANSITIONS", "playpos=%.3f curr_idx=%d next_idx=%d curr_bounds=[%.3f-%.3f] next_bounds=[%.3f-%.3f]",
-    playpos, self.state.current_idx, self.state.next_idx,
-    self.state.current_bounds.start_pos, self.state.current_bounds.end_pos,
-    self.state.next_bounds.start_pos, self.state.next_bounds.end_pos)
-  
+
+  if DEBUG_PLAYPOS then
+    Logger.debug("TRANSITIONS", "playpos=%.3f curr_idx=%d next_idx=%d curr_bounds=[%.3f-%.3f] next_bounds=[%.3f-%.3f]",
+      playpos, self.state.current_idx, self.state.next_idx,
+      self.state.current_bounds.start_pos, self.state.current_bounds.end_pos,
+      self.state.next_bounds.start_pos, self.state.next_bounds.end_pos)
+  end
+
   local curr_rid = self.state.current_idx >= 1 and self.state.playlist_order[self.state.current_idx] or nil
   local next_rid = self.state.next_idx >= 1 and self.state.playlist_order[self.state.next_idx] or nil
   local is_same_region = (curr_rid == next_rid and curr_rid ~= nil)
@@ -51,7 +56,7 @@ function Transitions:handle_smooth_transitions()
      playpos >= self.state.next_bounds.start_pos and 
      playpos < self.state.next_bounds.end_pos + self.state.boundary_epsilon then
     
-    Logger.debug("TRANSITIONS", "Branch 1: In next_bounds (different region)")
+    if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "Branch 1: In next_bounds (different region)") end
     
     local entering_different_region = (self.state.current_idx ~= self.state.next_idx)
     local playhead_went_backward = (playpos < self.state.last_play_pos - 0.1)
@@ -145,23 +150,25 @@ function Transitions:handle_smooth_transitions()
     end
     
   else
-    Logger.debug("TRANSITIONS", "Branch 3: Out of bounds, syncing")
+    if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "Branch 3: Out of bounds, syncing") end
     local found_idx = self.state:find_index_at_position(playpos)
-    Logger.debug("TRANSITIONS", "find_index_at_position(%.3f) returned: %d", playpos, found_idx)
+    if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "find_index_at_position(%.3f) returned: %d", playpos, found_idx) end
     
     if found_idx >= 1 then
       local was_uninitialized = (self.state.current_idx == -1)
       
       local first_idx_at_pos = found_idx
-      Logger.debug("TRANSITIONS", "Checking for earlier entries with same rid as idx %d (rid=%d)", 
-        found_idx, self.state.playlist_order[found_idx])
-      
+      if DEBUG_PLAYPOS then
+        Logger.debug("TRANSITIONS", "Checking for earlier entries with same rid as idx %d (rid=%d)",
+          found_idx, self.state.playlist_order[found_idx])
+      end
+
       for i = 1, found_idx - 1 do
         local rid = self.state.playlist_order[i]
-        Logger.debug("TRANSITIONS", "  idx %d: rid=%d", i, rid)
+        if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "  idx %d: rid=%d", i, rid) end
         if rid == self.state.playlist_order[found_idx] then
           first_idx_at_pos = i
-          Logger.debug("TRANSITIONS", "Found earlier match! Using idx %d instead of %d", i, found_idx)
+          if DEBUG_PLAYPOS then Logger.debug("TRANSITIONS", "Found earlier match! Using idx %d instead of %d", i, found_idx) end
           break
         end
       end

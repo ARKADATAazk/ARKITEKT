@@ -36,29 +36,78 @@ local COLORS = {
   grey_08 = hexrgb("#141414FF"),
 }
 
+-- ==========================================================================
+-- CATEGORY COLOR SCHEME
+-- ==========================================================================
+-- Colors are organized by functional group for visual coherence:
+--
+-- BLUE FAMILY (Playback/Transport) - Audio and timing operations
+--   #4682B4 Steel Blue   - TRANSPORT (play/stop/pause/seek)
+--   #00CED1 Dark Cyan    - TRANSITIONS (region transitions)
+--   #5F9EA0 Cadet Blue   - PLAYBACK (playback monitoring)
+--   #6495ED Cornflower   - SEQUENCER (sequence building)
+--   #7B68EE Med Slate    - QUANTIZE (beat quantization)
+--
+-- GOLD/AMBER FAMILY (State/Data) - Data flow and persistence
+--   #DAA520 Goldenrod    - STATE (state management)
+--   #CD853F Peru         - STORAGE (save/load operations)
+--   #D2691E Chocolate    - BRIDGE (coordinator bridge)
+--
+-- PURPLE FAMILY (Domains) - Business logic domains
+--   #9370DB Med Purple   - PLAYLIST (playlist domain)
+--   #20B2AA Lt Sea Green - REGION (region domain)
+--   #BA55D3 Med Orchid   - UI_PREFERENCES (UI prefs domain)
+--   #DB7093 Pale Violet  - DEPENDENCY (dependency graph)
+--
+-- GREEN FAMILY (Actions/Control) - User actions
+--   #41E0A3 Teal         - ENGINE (main engine)
+--   #98FB98 Pale Green   - CONTROLLER (user commands)
+--   #66CDAA Med Aqua     - COORDINATOR (tile coordinator)
+--   #F5DEB3 Wheat        - UNDO (undo operations)
+--
+-- GREY FAMILY (System/UI) - Framework and UI
+--   #D6D6D6 Light Grey   - GUI, SYSTEM (general UI/system)
+--   #87CEEB Sky Blue     - WIDGET, EVENTS (widget events)
+--   #999999 Med Grey     - CONSOLE (console messages)
+--
+-- SPECIAL
+--   #00FF88 Bright Green - TEST (test results)
+-- ==========================================================================
+
 local CATEGORY_COLORS = {
-  ENGINE = COLORS.teal,
-  GUI = COLORS.grey_84,
-  STATE = hexrgb("#FFD700FF"),
-  BRIDGE = COLORS.yellow,
-  STORAGE = hexrgb("#CD853FFF"),
-  TRANSITIONS = hexrgb("#00CED1FF"),
-  TRANSPORT = hexrgb("#4682B4FF"),
-  PLAYLIST = hexrgb("#9370DBFF"),
-  REGION = hexrgb("#20B2AAFF"),
-  COORDINATOR = hexrgb("#FF69B4FF"),
-  WIDGET = hexrgb("#87CEEBFF"),
-  CONTROLLER = hexrgb("#98FB98FF"),
-  QUANTIZE = hexrgb("#DDA0DDFF"),
-  PLAYBACK = hexrgb("#F0E68CFF"),
-  SEQUENCER = hexrgb("#ADD8E6FF"),
-  UNDO = hexrgb("#F5DEB3FF"),
-  SYSTEM = COLORS.grey_84,
+  -- Playback/Transport (Blues)
+  TRANSPORT   = hexrgb("#4682B4FF"),  -- Steel Blue
+  TRANSITIONS = hexrgb("#00CED1FF"),  -- Dark Cyan
+  PLAYBACK    = hexrgb("#5F9EA0FF"),  -- Cadet Blue
+  SEQUENCER   = hexrgb("#6495EDFF"),  -- Cornflower Blue
+  QUANTIZE    = hexrgb("#7B68EEFF"),  -- Medium Slate Blue
+
+  -- State/Data (Golds)
+  STATE   = hexrgb("#DAA520FF"),  -- Goldenrod
+  STORAGE = hexrgb("#CD853FFF"),  -- Peru
+  BRIDGE  = hexrgb("#D2691EFF"),  -- Chocolate
+
+  -- Domains (Purples/Teals)
+  PLAYLIST       = hexrgb("#9370DBFF"),  -- Medium Purple
+  REGION         = hexrgb("#20B2AAFF"),  -- Light Sea Green
+  UI_PREFERENCES = hexrgb("#BA55D3FF"),  -- Medium Orchid
+  DEPENDENCY     = hexrgb("#DB7093FF"),  -- Pale Violet Red
+
+  -- Actions/Control (Greens)
+  ENGINE      = COLORS.teal,             -- #41E0A3
+  CONTROLLER  = hexrgb("#98FB98FF"),     -- Pale Green
+  COORDINATOR = hexrgb("#66CDAAFF"),     -- Medium Aquamarine
+  UNDO        = hexrgb("#F5DEB3FF"),     -- Wheat
+
+  -- System/UI (Greys)
+  GUI     = COLORS.grey_84,
+  SYSTEM  = COLORS.grey_84,
+  WIDGET  = hexrgb("#87CEEBFF"),  -- Sky Blue
+  EVENTS  = hexrgb("#87CEEBFF"),  -- Sky Blue
   CONSOLE = COLORS.grey_60,
-  TEST = hexrgb("#00FF88FF"),
-  EVENTS = hexrgb("#87CEFAFF"),
-  UI_PREFERENCES = hexrgb("#DDA0DDFF"),
-  DEPENDENCY = hexrgb("#FFA07AFF"),
+
+  -- Special
+  TEST = hexrgb("#00FF88FF"),  -- Bright Green
 }
 
 local LEVEL_COLORS = {
