@@ -37,8 +37,17 @@ end
 function Transitions:handle_smooth_transitions()
   if not _is_playing(self.proj) then return end
   if #self.state.playlist_order == 0 then return end
-  
+
   local playpos = _get_play_pos(self.proj)
+
+  -- Live slot for playback position (updates in place, doesn't flood console)
+  local curr_region = self.state.current_idx >= 1 and self.state:get_region_by_rid(self.state.playlist_order[self.state.current_idx])
+  local region_name = curr_region and curr_region.name or "---"
+  Logger.live("PLAYBACK", "position", "%.2fs | %d/%d | %s",
+    playpos,
+    self.state.playlist_pointer,
+    #self.state.playlist_order,
+    region_name)
 
   if DEBUG_PLAYPOS then
     Logger.debug("TRANSITIONS", "playpos=%.3f curr_idx=%d next_idx=%d curr_bounds=[%.3f-%.3f] next_bounds=[%.3f-%.3f]",
