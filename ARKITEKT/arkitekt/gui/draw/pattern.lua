@@ -323,6 +323,8 @@ end
 
 -- Helper to draw dots with automatic texture baking
 local function draw_dots_auto(ctx, dl, x1, y1, x2, y2, spacing, color, dot_size, offset_x, offset_y, use_texture)
+  -- TEMPORARY: Force immediate mode to debug
+  use_texture = false
   -- Default to using textures for performance (set use_texture=false to disable)
   if use_texture ~= false then
     local img, tex_size = get_pattern_texture(ctx, 'dots', spacing, dot_size)
@@ -337,6 +339,8 @@ end
 
 -- Helper to draw grid with automatic texture baking
 local function draw_grid_auto(ctx, dl, x1, y1, x2, y2, spacing, color, line_thickness, offset_x, offset_y, use_texture)
+  -- TEMPORARY: Force immediate mode to debug
+  use_texture = false
   -- Default to using textures for performance (set use_texture=false to disable)
   if use_texture ~= false then
     local img, tex_size = get_pattern_texture(ctx, 'grid', spacing, line_thickness)
@@ -373,6 +377,8 @@ end
 function M.draw_diagonal_stripes(ctx, dl, x1, y1, x2, y2, spacing, color, thickness, use_texture)
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
 
+  -- TEMPORARY: Force immediate mode to debug
+  use_texture = false
   -- Default to using textures for performance
   if use_texture ~= false then
     local img, tex_size = get_pattern_texture(ctx, 'diagonal_stripes', spacing, thickness)
