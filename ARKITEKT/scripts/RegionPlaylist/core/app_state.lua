@@ -19,6 +19,7 @@ local Constants = require("RegionPlaylist.defs.constants")
 local ProjectMonitor = require("arkitekt.reaper.project_monitor")
 local Animation = require("RegionPlaylist.domains.animation")
 local Notification = require("RegionPlaylist.domains.notification")
+local UIPreferences = require("RegionPlaylist.domains.ui_preferences")
 
 local M = {}
 
@@ -51,13 +52,6 @@ M.SORT_DIRECTIONS = Constants.SORT_DIRECTIONS
 -- Active playlist UUID (string) - the currently selected/displayed playlist
 M.active_playlist = nil
 
--- Pool filtering and display
-M.search_filter = ""                          -- Text filter for pool items
-M.sort_mode = nil                             -- "color", "index", "alpha", "length", or nil
-M.sort_direction = M.SORT_DIRECTIONS.ASC      -- "asc" or "desc"
-M.layout_mode = M.LAYOUT_MODES.HORIZONTAL     -- "horizontal" (timeline) or "vertical" (list)
-M.pool_mode = M.POOL_MODES.REGIONS            -- "regions", "playlists", or "mixed"
-
 -- Region data
 M.region_index = {}                           -- Map: RID (number) -> region object {rid, name, color, ...}
 M.pool_order = {}                             -- Array of RIDs defining custom pool order
@@ -65,6 +59,7 @@ M.pool_order = {}                             -- Array of RIDs defining custom p
 -- Domain instances
 M.animation = nil                             -- Animation domain instance
 M.notification = nil                          -- Notification domain instance
+M.ui_preferences = nil                        -- UI preferences domain instance
 
 -- Engine/playback coordination
 M.bridge = nil                                -- CoordinatorBridge instance for engine communication
@@ -106,14 +101,12 @@ function M.initialize(settings)
   -- Initialize domains
   M.animation = Animation.new()
   M.notification = Notification.new(Constants.TIMEOUTS)
+  M.ui_preferences = UIPreferences.new(Constants, settings)
 
-  if settings then
-    M.search_filter = settings:get('pool_search') or ""
-    M.sort_mode = settings:get('pool_sort')
-    M.sort_direction = settings:get('pool_sort_direction') or "asc"
-    M.layout_mode = settings:get('layout_mode') or 'horizontal'
-    M.pool_mode = settings:get('pool_mode') or 'regions'
-  end
+  -- Load UI preferences from settings
+  M.ui_preferences:load_from_settings()
+
+  reaper.ShowConsoleMsg("[APP_STATE] Initialized with domains: animation, notification, ui_preferences\n")
 
   -- Initialize project monitor to track changes
   M.project_monitor = ProjectMonitor.new({
@@ -244,59 +237,43 @@ function M.set_pool_order(new_order)
 end
 
 function M.get_search_filter()
-  return M.search_filter
+  return M.ui_preferences:get_search_filter()
 end
 
 function M.set_search_filter(text)
-  M.search_filter = text
+  M.ui_preferences:set_search_filter(text)
 end
 
 function M.get_sort_mode()
-  return M.sort_mode
+  return M.ui_preferences:get_sort_mode()
 end
 
 function M.set_sort_mode(mode)
-  M.sort_mode = mode
+  M.ui_preferences:set_sort_mode(mode)
 end
 
 function M.get_sort_direction()
-  return M.sort_direction
+  return M.ui_preferences:get_sort_direction()
 end
 
 function M.set_sort_direction(direction)
-  -- Validate sort direction
-  if direction ~= M.SORT_DIRECTIONS.ASC and 
-     direction ~= M.SORT_DIRECTIONS.DESC then
-    error(string.format("Invalid sort_direction: %s (expected 'asc' or 'desc')", tostring(direction)))
-  end
-  M.sort_direction = direction
+  M.ui_preferences:set_sort_direction(direction)
 end
 
 function M.get_layout_mode()
-  return M.layout_mode
+  return M.ui_preferences:get_layout_mode()
 end
 
 function M.set_layout_mode(mode)
-  -- Validate layout mode
-  if mode ~= M.LAYOUT_MODES.HORIZONTAL and 
-     mode ~= M.LAYOUT_MODES.VERTICAL then
-    error(string.format("Invalid layout_mode: %s (expected 'horizontal' or 'vertical')", tostring(mode)))
-  end
-  M.layout_mode = mode
+  M.ui_preferences:set_layout_mode(mode)
 end
 
 function M.get_pool_mode()
-  return M.pool_mode
+  return M.ui_preferences:get_pool_mode()
 end
 
 function M.set_pool_mode(mode)
-  -- Validate pool mode
-  if mode ~= M.POOL_MODES.REGIONS and 
-     mode ~= M.POOL_MODES.PLAYLISTS and 
-     mode ~= M.POOL_MODES.MIXED then
-    error(string.format("Invalid pool_mode: %s (expected 'regions', 'playlists', or 'mixed')", tostring(mode)))
-  end
-  M.pool_mode = mode
+  M.ui_preferences:set_pool_mode(mode)
 end
 
 function M.get_pending_spawn()
@@ -312,19 +289,19 @@ function M.get_pending_destroy()
 end
 
 function M.get_separator_position_horizontal()
-  return M.separator_position_horizontal
+  return M.ui_preferences:get_separator_position_horizontal()
 end
 
 function M.set_separator_position_horizontal(pos)
-  M.separator_position_horizontal = pos
+  M.ui_preferences:set_separator_position_horizontal(pos)
 end
 
 function M.get_separator_position_vertical()
-  return M.separator_position_vertical
+  return M.ui_preferences:get_separator_position_vertical()
 end
 
 function M.set_separator_position_vertical(pos)
-  M.separator_position_vertical = pos
+  M.ui_preferences:set_separator_position_vertical(pos)
 end
 
 -- Pending operation helpers
@@ -430,12 +407,7 @@ function M.persist()
 end
 
 function M.persist_ui_prefs()
-  if not M.settings then return end
-  M.settings:set('pool_search', M.search_filter)
-  M.settings:set('pool_sort', M.sort_mode)
-  M.settings:set('pool_sort_direction', M.sort_direction)
-  M.settings:set('layout_mode', M.layout_mode)
-  M.settings:set('pool_mode', M.pool_mode)
+  M.ui_preferences:save_to_settings()
 end
 
 function M.capture_undo_snapshot()
@@ -643,17 +615,17 @@ end
 
 function M.get_filtered_pool_regions()
   local result = {}
-  local search = M.search_filter:lower()
-  
+  local search = M.get_search_filter():lower()
+
   for _, rid in ipairs(M.pool_order) do
     local region = M.region_index[rid]
     if region and region.name ~= "__TRANSITION_TRIGGER" and (search == "" or region.name:lower():find(search, 1, true)) then
       result[#result + 1] = region
     end
   end
-  
-  local sort_mode = M.sort_mode
-  local sort_dir = M.sort_direction or "asc"
+
+  local sort_mode = M.get_sort_mode()
+  local sort_dir = M.get_sort_direction() or "asc"
   
   -- ONLY sort if there's an active sort mode
   if sort_mode == "color" then
@@ -863,7 +835,7 @@ function M.get_playlists_for_pool()
     end
   end
   
-  local search = M.search_filter:lower()
+  local search = M.get_search_filter():lower()
   if search ~= "" then
     local filtered = {}
     for _, pl in ipairs(pool_playlists) do
@@ -873,9 +845,9 @@ function M.get_playlists_for_pool()
     end
     pool_playlists = filtered
   end
-  
-  local sort_mode = M.sort_mode
-  local sort_dir = M.sort_direction or "asc"
+
+  local sort_mode = M.get_sort_mode()
+  local sort_dir = M.get_sort_direction() or "asc"
   
   -- Apply sorting (only if sort_mode is active)
   if sort_mode == "color" then
@@ -905,9 +877,9 @@ end
 function M.get_mixed_pool_sorted()
   local regions = M.get_filtered_pool_regions()
   local playlists = M.get_playlists_for_pool()
-  
-  local sort_mode = M.sort_mode
-  local sort_dir = M.sort_direction or "asc"
+
+  local sort_mode = M.get_sort_mode()
+  local sort_dir = M.get_sort_direction() or "asc"
   
   -- If no sort mode, return regions first, then playlists (natural order)
   if not sort_mode then
