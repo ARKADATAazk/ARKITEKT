@@ -166,10 +166,9 @@ local function draw_corner_shape(dl, x, y, size, bg, border_inner, border_outer,
   local ibr = math.max(0, rbr - 2)
   local ibl = math.max(0, rbl - 2)
 
-  -- Draw order: outer border first, then fill inside it, then inner border
-  draw_rounded_rect_path(dl, x, y, x + size, y + size, border_outer, false, itl, itr, ibr, ibl, 1)
-  draw_rounded_rect_path(dl, x + 1, y + 1, x + size - 1, y + size - 1, bg, true, itl, itr, ibr, ibl)
+  draw_rounded_rect_path(dl, x, y, x + size, y + size, bg, true, itl, itr, ibr, ibl)
   draw_rounded_rect_path(dl, x + 1, y + 1, x + size - 1, y + size - 1, border_inner, false, itl, itr, ibr, ibl, 1)
+  draw_rounded_rect_path(dl, x, y, x + size, y + size, border_outer, false, itl, itr, ibr, ibl, 1)
 end
 
 -- ============================================================================

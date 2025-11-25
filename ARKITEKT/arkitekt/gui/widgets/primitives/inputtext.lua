@@ -112,9 +112,9 @@ local function resolve_config(opts)
     end
   end
 
-  -- Apply user overrides (copy ALL opts, not just color keys)
+  -- Apply user overrides
   for k, v in pairs(opts) do
-    if v ~= nil then
+    if v ~= nil and config[k] ~= nil then
       config[k] = v
     end
   end
@@ -179,14 +179,15 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   local inner_rounding = math.max(0, rounding - 2)
   local corner_flags = get_corner_flags(corner_rounding)
 
-  -- Draw borders and background (outer border first, then fill inside, then inner border)
+  -- Draw background
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, inner_rounding, corner_flags)
+
+  -- Draw borders (dual border style like buttons)
   if config.border_inner_color or config.border_outer_color then
-    ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, border_outer, inner_rounding, corner_flags, 1)
-    ImGui.DrawList_AddRectFilled(dl, x + 1, y + 1, x + width - 1, y + height - 1, bg_color, inner_rounding, corner_flags)
     ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + width - 1, y + height - 1, border_inner, inner_rounding, corner_flags, 1)
+    ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, border_outer, inner_rounding, corner_flags, 1)
   else
     -- Simple single border
-    ImGui.DrawList_AddRectFilled(dl, x, y, x + width, y + height, bg_color, inner_rounding, corner_flags)
     local border_thickness = config.border_thickness or 1
     ImGui.DrawList_AddRect(dl, x, y, x + width, y + height, border_inner, rounding, corner_flags, border_thickness)
   end

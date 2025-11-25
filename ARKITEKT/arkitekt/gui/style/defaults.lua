@@ -448,19 +448,18 @@ function M.RENDER.get_corner_flags(corner_rounding)
 end
 
 -- Draw standard double-border control background
--- Order: outer border first, then fill inside it, then inner border on top
 function M.RENDER.draw_control_background(dl, x, y, w, h, bg_color, border_inner, border_outer, rounding, corner_flags)
   corner_flags = corner_flags or 0
   local inner_rounding = math.max(0, rounding - 2)
 
-  -- Outer border (drawn first, at edge)
-  ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_outer, inner_rounding, corner_flags, 1)
+  -- Background
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, bg_color, inner_rounding, corner_flags)
 
-  -- Background (inset 1px to not overlap outer border)
-  ImGui.DrawList_AddRectFilled(dl, x + 1, y + 1, x + w - 1, y + h - 1, bg_color, inner_rounding, corner_flags)
-
-  -- Inner border (on top of fill)
+  -- Inner border
   ImGui.DrawList_AddRect(dl, x + 1, y + 1, x + w - 1, y + h - 1, border_inner, inner_rounding, corner_flags, 1)
+
+  -- Outer border
+  ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, border_outer, inner_rounding, corner_flags, 1)
 end
 
 -- Get state-based colors for a control
