@@ -187,6 +187,13 @@ local function apply_palette(palette)
     Style.COLORS[key] = value
   end
 
+  -- DEBUG: Log pattern colors being applied
+  if palette.PATTERN_PRIMARY then
+    local a = palette.PATTERN_PRIMARY & 0xFF
+    reaper.ShowConsoleMsg(string.format("[ThemeManager] Applied PATTERN_PRIMARY=0x%08X (alpha=%d)\n",
+      palette.PATTERN_PRIMARY, a))
+  end
+
   -- NOTE: We intentionally do NOT clear the pattern texture cache here.
   -- Each unique color gets its own cache entry. When switching themes,
   -- different colors create new entries while old ones remain cached.

@@ -230,9 +230,20 @@ local function create_diagonal_stripe_texture(spacing, line_thickness, color)
   return img, tex_size
 end
 
+-- Debug: track last logged color to avoid spam
+local _last_debug_color = nil
+
 -- Get or create a cached pattern texture
 local function get_pattern_texture(ctx, pattern_type, spacing, size, color)
   local key, norm_color = get_pattern_cache_key(pattern_type, spacing, size, color)
+
+  -- DEBUG: Log when color changes (only log once per color change)
+  if color ~= _last_debug_color then
+    local a = color & 0xFF
+    reaper.ShowConsoleMsg(string.format("[Pattern] color=0x%08X alpha=%d key=%s attachments=%d/%d\n",
+      color, a, key, total_attachments, MAX_ATTACHMENTS))
+    _last_debug_color = color
+  end
 
   -- Check cache first
   if texture_cache[key] then
@@ -248,6 +259,7 @@ local function get_pattern_texture(ctx, pattern_type, spacing, size, color)
 
   -- Don't create new textures if we've hit the limit - fall back to immediate mode
   if total_attachments >= MAX_ATTACHMENTS then
+    reaper.ShowConsoleMsg("[Pattern] WARNING: Hit MAX_ATTACHMENTS limit, using immediate mode\n")
     return nil, nil
   end
 
