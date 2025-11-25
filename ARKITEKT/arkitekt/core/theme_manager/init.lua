@@ -124,8 +124,10 @@ function M.generate_palette(base_bg, base_text, base_accent)
     BG_TRANSPARENT = Colors.with_alpha(base_bg, 0x00),
 
     -- ============ BORDERS ============
-    -- BORDER_OUTER always stays black/very dark for window frames
-    BORDER_OUTER = Colors.hexrgb("#000000DD"),  -- Always dark, not theme-dependent
+    -- BORDER_OUTER provides contrast - dark for dark themes, medium-dark for light themes
+    BORDER_OUTER = is_light
+      and Colors.hexrgb("#606060DD")  -- Medium gray for light themes (visible but not harsh)
+      or Colors.hexrgb("#000000DD"),   -- Black for dark themes
     BORDER_INNER = Colors.adjust_lightness(base_bg, sign * rules.border_inner_delta),
     BORDER_HOVER = Colors.adjust_lightness(base_bg, sign * rules.border_hover_delta),
     BORDER_ACTIVE = Colors.adjust_lightness(base_bg, sign * rules.border_active_delta),
@@ -146,12 +148,15 @@ function M.generate_palette(base_bg, base_text, base_accent)
     ACCENT_TEAL = neutral_accent,
     ACCENT_TEAL_BRIGHT = Colors.adjust_lightness(neutral_accent, sign * rules.accent_bright_delta),
 
-    -- White/gray variant (fully desaturated)
-    ACCENT_WHITE = Colors.adjust_saturation(neutral_accent, rules.accent_desaturate),
-    ACCENT_WHITE_BRIGHT = Colors.adjust_lightness(
-      Colors.adjust_saturation(neutral_accent, rules.accent_desaturate),
-      sign * 0.20
-    ),
+    -- White/gray variant for toggle buttons
+    -- On dark themes: lighter gray for ON state (contrast against dark bg)
+    -- On light themes: darker gray for ON state (contrast against light bg)
+    ACCENT_WHITE = is_light
+      and Colors.set_lightness(base_bg, 0.55)  -- Medium gray for light themes
+      or Colors.set_lightness(base_bg, 0.25),   -- Dark gray for dark themes
+    ACCENT_WHITE_BRIGHT = is_light
+      and Colors.set_lightness(base_bg, 0.45)  -- Darker on hover for light themes
+      or Colors.set_lightness(base_bg, 0.35),   -- Lighter on hover for dark themes
 
     -- Transparent variant (for overlays)
     ACCENT_TRANSPARENT = Colors.with_alpha(neutral_accent, 0xAA),
