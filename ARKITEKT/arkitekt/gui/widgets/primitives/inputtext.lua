@@ -96,33 +96,30 @@ local function get_or_create_state(id)
 end
 
 -- ============================================================================
--- CONFIG RESOLUTION
+-- CONFIG RESOLUTION (Dynamic - reads Style.COLORS each call)
 -- ============================================================================
 
 local function resolve_config(opts)
-  local base = {
-    bg_color = hexrgb("#1A1A1A"),
-    bg_hover_color = hexrgb("#222222"),
-    bg_active_color = hexrgb("#252525"),
-    bg_disabled_color = hexrgb("#151515"),
-    border_color = hexrgb("#3A3A3A"),
-    border_hover_color = hexrgb("#4A4A4A"),
-    border_active_color = hexrgb("#4A9EFF"),
-    border_disabled_color = hexrgb("#2A2A2A"),
-    border_inner_color = hexrgb("#3A3A3A"),
-    border_outer_color = hexrgb("#0A0A0A"),
-    text_color = hexrgb("#FFFFFF"),
-    text_disabled_color = hexrgb("#808080"),
-  }
+  -- Build config from current Style.COLORS (enables dynamic theming)
+  local config = Style.build_search_input_config()
 
-  -- Apply search preset if specified
-  if opts.preset == "search" and Style.SEARCH_INPUT then
-    base = Style.apply_defaults(base, Style.SEARCH_INPUT)
+  -- Apply preset if specified
+  if opts.preset == "search" then
+    -- Already using search_input_config as base
   elseif type(opts.preset) == "table" then
-    base = Style.apply_defaults(base, opts.preset)
+    for k, v in pairs(opts.preset) do
+      config[k] = v
+    end
   end
 
-  return Style.apply_defaults(base, opts)
+  -- Apply user overrides
+  for k, v in pairs(opts) do
+    if v ~= nil and config[k] ~= nil then
+      config[k] = v
+    end
+  end
+
+  return config
 end
 
 -- ============================================================================

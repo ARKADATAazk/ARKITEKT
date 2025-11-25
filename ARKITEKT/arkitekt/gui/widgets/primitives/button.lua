@@ -181,20 +181,31 @@ local function get_corner_flags(corner_rounding)
 end
 
 -- ============================================================================
--- CONFIG RESOLUTION
+-- CONFIG RESOLUTION (Dynamic - reads Style.COLORS each call)
 -- ============================================================================
 
 local function resolve_config(opts)
-  local base = Style.BUTTON
+  -- Build config from current M.COLORS (enables dynamic theming)
+  local config = Style.build_button_config()
 
-  -- Apply preset if specified
-  if opts.preset_name and Style[opts.preset_name] then
-    base = Style.apply_defaults(base, Style[opts.preset_name])
+  -- Apply dynamic preset if specified (resolves key mappings to colors)
+  if opts.preset_name then
+    Style.apply_dynamic_preset(config, opts.preset_name)
   elseif opts.preset and type(opts.preset) == 'table' then
-    base = Style.apply_defaults(base, opts.preset)
+    -- Custom preset table - merge directly
+    for k, v in pairs(opts.preset) do
+      config[k] = v
+    end
   end
 
-  return Style.apply_defaults(base, opts)
+  -- Apply user overrides
+  for k, v in pairs(opts) do
+    if v ~= nil and config[k] ~= nil then
+      config[k] = v
+    end
+  end
+
+  return config
 end
 
 -- ============================================================================

@@ -107,38 +107,45 @@ function Checkbox:update(dt, is_hovered, is_active, is_checked)
 end
 
 -- ============================================================================
--- CONFIG RESOLUTION
+-- CONFIG RESOLUTION (Dynamic - reads Style.COLORS each call)
 -- ============================================================================
 
 local function resolve_config(opts)
-  -- Start with button colors as base
-  local base = {
-    -- OFF state colors
-    bg_color = Style.BUTTON_COLORS.bg,
-    bg_hover_color = Style.BUTTON_COLORS.bg_hover,
-    bg_active_color = Style.BUTTON_COLORS.bg_active,
-    border_outer_color = Style.BUTTON_COLORS.border_outer,
-    border_inner_color = Style.BUTTON_COLORS.border_inner,
-    border_hover_color = Style.BUTTON_COLORS.border_hover,
-    border_active_color = Style.BUTTON_COLORS.border_active,
+  -- Build config from current Style.COLORS (enables dynamic theming)
+  local config = {
+    -- OFF state colors (from dynamic COLORS)
+    bg_color = Style.COLORS.BG_BASE,
+    bg_hover_color = Style.COLORS.BG_HOVER,
+    bg_active_color = Style.COLORS.BG_ACTIVE,
+    border_outer_color = Style.COLORS.BORDER_OUTER,
+    border_inner_color = Style.COLORS.BORDER_INNER,
+    border_hover_color = Style.COLORS.BORDER_HOVER,
+    border_active_color = Style.COLORS.BORDER_ACTIVE,
 
-    -- ON state colors (neutral, like radio button)
-    bg_on_color = Style.BUTTON_COLORS.bg_hover,
-    bg_on_hover_color = Style.BUTTON_COLORS.bg_hover,
-    bg_on_active_color = Style.BUTTON_COLORS.bg_active,
-    border_outer_on_color = Style.BUTTON_COLORS.border_outer,
-    border_inner_on_color = Style.BUTTON_COLORS.border_hover,
-    border_on_hover_color = Style.BUTTON_COLORS.border_hover,
-    border_on_active_color = Style.BUTTON_COLORS.border_active,
+    -- ON state colors (neutral, uses hover as "on" state)
+    bg_on_color = Style.COLORS.BG_HOVER,
+    bg_on_hover_color = Style.COLORS.BG_HOVER,
+    bg_on_active_color = Style.COLORS.BG_ACTIVE,
+    border_outer_on_color = Style.COLORS.BORDER_OUTER,
+    border_inner_on_color = Style.COLORS.BORDER_HOVER,
+    border_on_hover_color = Style.COLORS.BORDER_HOVER,
+    border_on_active_color = Style.COLORS.BORDER_ACTIVE,
 
-    -- Checkmark and label (neutral gray like radio button)
-    check_color = Colors.hexrgb("#7e7e7e"),
+    -- Checkmark and label (derived from text colors)
+    check_color = Style.COLORS.TEXT_DIMMED,
     label_color = Style.COLORS.TEXT_NORMAL,
     label_hover_color = Style.COLORS.TEXT_HOVER,
-    label_disabled_color = Style.COLORS.TEXT_DISABLED or Colors.with_alpha(Style.COLORS.TEXT_NORMAL, 0x80),
+    label_disabled_color = Colors.with_alpha(Style.COLORS.TEXT_NORMAL, 0x80),
   }
 
-  return Style.apply_defaults(base, opts)
+  -- Apply user overrides
+  for k, v in pairs(opts) do
+    if v ~= nil and config[k] ~= nil then
+      config[k] = v
+    end
+  end
+
+  return config
 end
 
 -- ============================================================================

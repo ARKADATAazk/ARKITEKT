@@ -182,14 +182,13 @@ local function reaper_to_imgui(reaper_color)
   return (reaper_color << 8) | 0xFF  -- Shift left 8 bits, add full opacity
 end
 
---- Sync theme colors with REAPER's current theme (minimal approach)
---- Reads only 2 colors (main_bg + arrange_bg), extracts contrast intent,
+--- Sync theme colors with REAPER's current theme (ultra-minimal approach)
+--- Reads only 1 color (main_bg), applies slight offset for visual separation,
 --- generates neutral grayscale palette for maximum theme compatibility
 --- @return boolean Success (true if colors were read and applied)
 function M.sync_with_reaper()
-  -- Read only 2 background colors
-  local main_bg_raw = reaper.GetThemeColor("col_main_bg2", 0)      -- Main window bg
-  local arrange_bg_raw = reaper.GetThemeColor("col_arrangebg", 0)  -- Arrange view bg
+  -- Read single background color from REAPER
+  local main_bg_raw = reaper.GetThemeColor("col_main_bg2", 0)
 
   if main_bg_raw == -1 then
     return false  -- Failed to read REAPER theme
@@ -197,35 +196,16 @@ function M.sync_with_reaper()
 
   -- Convert to ImGui format
   local main_bg = reaper_to_imgui(main_bg_raw)
-  local arrange_bg = arrange_bg_raw ~= -1 and reaper_to_imgui(arrange_bg_raw) or main_bg
 
-  -- Extract lightness values
-  local main_h, main_s, main_l = Colors.rgb_to_hsl(main_bg)
-  local arrange_h, arrange_s, arrange_l = Colors.rgb_to_hsl(arrange_bg)
-
-  -- Calculate contrast delta between main and arrange
-  -- Some themes have white arrange + gray main (extreme), clamp to reasonable range
-  local contrast_delta = arrange_l - main_l
-  local max_delta = 0.10  -- Clamp to ±10% lightness difference
-  contrast_delta = math.max(-max_delta, math.min(max_delta, contrast_delta))
-
-  -- Determine theme type
-  local is_dark = main_l < 0.5
+  -- Apply -3 RGB offset (~-1.2% lightness) for subtle visual separation
+  -- ARKITEKT sits slightly darker than REAPER, regardless of light/dark theme
+  local offset_bg = Colors.adjust_lightness(main_bg, -0.012)
 
   -- Generate text color (auto white on dark, black on light)
-  local base_text = Colors.auto_text_color(main_bg)
+  local base_text = Colors.auto_text_color(offset_bg)
 
-  -- Generate palette with NO accent (neutral grayscale)
-  -- This keeps ARKITEKT theme-agnostic, works with any REAPER theme
-  local palette = M.generate_palette(main_bg, base_text, nil)
-
-  -- Override BG_PANEL with extracted arrange bg (respects REAPER's actual delta)
-  palette.BG_PANEL = Colors.adjust_lightness(main_bg, contrast_delta)
-
-  -- Adjust hover/active using contrast preference
-  local hover_delta = is_dark and 0.02 or -0.02  -- Lighter on dark, darker on light
-  palette.BG_HOVER = Colors.adjust_lightness(main_bg, hover_delta)
-  palette.BG_ACTIVE = Colors.adjust_lightness(main_bg, hover_delta * 2)
+  -- Generate neutral grayscale palette
+  local palette = M.generate_palette(offset_bg, base_text, nil)
 
   -- Apply palette
   for key, value in pairs(palette) do
