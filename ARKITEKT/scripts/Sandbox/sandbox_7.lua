@@ -62,7 +62,7 @@ local panel_config = {
 
   -- Regular left toolbar (vertical buttons)
   left_sidebar = {
-    enabled = true,
+    enabled = false,  -- Disabled for overlay test - only overlay toolbar visible
     width = 36,
     elements = {
       {

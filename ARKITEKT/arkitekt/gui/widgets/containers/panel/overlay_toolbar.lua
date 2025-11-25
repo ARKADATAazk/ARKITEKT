@@ -313,6 +313,10 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
   -- Draw background
   draw_background(dl, bounds, config, rounding)
 
+  -- Add clipping to constrain overlay within panel bounds
+  local x1, y1, x2, y2 = table.unpack(panel_bounds)
+  ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
+
   -- Draw elements using existing toolbar element renderers (only when expanded)
   if config.elements and #config.elements > 0 and anim_state.current > 0.3 then
     local orientation = get_orientation(position)
@@ -326,6 +330,9 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
       Sidebars.draw(ctx, dl, bounds.x, bounds.y, bounds.w, bounds.h, config, panel_id, side)
     end
   end
+
+  -- Pop clip rect after rendering
+  ImGui.DrawList_PopClipRect(dl)
 end
 
 return M
