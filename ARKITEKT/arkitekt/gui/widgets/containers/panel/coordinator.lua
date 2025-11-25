@@ -7,6 +7,7 @@ local ImGui = require 'imgui' '0.10'
 
 -- Module dependencies
 local Toolbar = require('arkitekt.gui.widgets.containers.panel.toolbar')
+local OverlayToolbar = require('arkitekt.gui.widgets.containers.panel.overlay_toolbar')
 local Content = require('arkitekt.gui.widgets.containers.panel.content')
 local Pattern = require('arkitekt.gui.draw.pattern')
 local Rendering = require('arkitekt.gui.widgets.containers.panel.rendering')
@@ -81,10 +82,22 @@ function M.new(opts)
 
     -- Corner button bounds (for end_draw)
     _corner_button_bounds = nil,
+
+    -- Overlay toolbar animation states
+    overlay_toolbar_animations = {},
   }, Panel)
 
   -- Initialize scrollbar if custom scrollbar enabled
   panel.scrollbar = Scrolling.create_scrollbar(id, panel.config)
+
+  -- Initialize overlay toolbar animations
+  if panel.config.overlay_toolbars then
+    for position, overlay_cfg in pairs(panel.config.overlay_toolbars) do
+      if overlay_cfg and overlay_cfg.enabled then
+        panel.overlay_toolbar_animations[position] = OverlayToolbar.create_animation_state(position, overlay_cfg)
+      end
+    end
+  end
 
   return panel
 end
@@ -290,6 +303,92 @@ function Panel:end_draw(ctx)
   if self._child_began_successfully then
     Scrolling.update_scrollbar(ctx, self)
     Content.end_child(ctx, self)
+
+    -- ============================================================================
+    -- DRAW OVERLAY TOOLBARS (Z-order: after content, before scrollbar)
+    -- ============================================================================
+
+    if self.config.overlay_toolbars and self._corner_button_bounds then
+      local dl = ImGui.GetWindowDrawList(ctx)
+      local x1, y1, w, h = table.unpack(self._corner_button_bounds)
+      local panel_bounds = {x1, y1, x1 + w, y1 + h}
+
+      -- Calculate regular toolbar bounds for positioning
+      local regular_toolbar_bounds = {}
+
+      -- Top toolbar bounds (if exists)
+      local top_cfg = Toolbar.get_toolbar_config(self.config, "top")
+      if top_cfg then
+        regular_toolbar_bounds.top = {
+          x1 = x1,
+          y1 = y1,
+          x2 = x1 + w,
+          y2 = y1 + (top_cfg.height or 30),
+          content_y1 = y1 + (top_cfg.height or 30),
+          content_y2 = y1 + h
+        }
+      end
+
+      -- Bottom toolbar bounds (if exists)
+      local bottom_cfg = Toolbar.get_toolbar_config(self.config, "bottom")
+      if bottom_cfg then
+        local bottom_height = bottom_cfg.height or 30
+        regular_toolbar_bounds.bottom = {
+          x1 = x1,
+          y1 = y1 + h - bottom_height,
+          x2 = x1 + w,
+          y2 = y1 + h,
+          content_y1 = y1,
+          content_y2 = y1 + h - bottom_height
+        }
+      end
+
+      -- Left toolbar bounds (if exists)
+      local left_cfg = Toolbar.get_toolbar_config(self.config, "left")
+      if left_cfg then
+        local content_y1 = regular_toolbar_bounds.top and regular_toolbar_bounds.top.content_y1 or y1
+        local content_y2 = regular_toolbar_bounds.bottom and regular_toolbar_bounds.bottom.content_y2 or (y1 + h)
+        regular_toolbar_bounds.left = {
+          x1 = x1,
+          y1 = content_y1,
+          x2 = x1 + (left_cfg.width or 36),
+          y2 = content_y2,
+          content_y1 = content_y1,
+          content_y2 = content_y2
+        }
+      end
+
+      -- Right toolbar bounds (if exists)
+      local right_cfg = Toolbar.get_toolbar_config(self.config, "right")
+      if right_cfg then
+        local content_y1 = regular_toolbar_bounds.top and regular_toolbar_bounds.top.content_y1 or y1
+        local content_y2 = regular_toolbar_bounds.bottom and regular_toolbar_bounds.bottom.content_y2 or (y1 + h)
+        local right_width = right_cfg.width or 36
+        regular_toolbar_bounds.right = {
+          x1 = x1 + w - right_width,
+          y1 = content_y1,
+          x2 = x1 + w,
+          y2 = content_y2,
+          content_y1 = content_y1,
+          content_y2 = content_y2
+        }
+      end
+
+      -- Draw overlay toolbars
+      for position, overlay_cfg in pairs(self.config.overlay_toolbars) do
+        if overlay_cfg and overlay_cfg.enabled then
+          local anim_state = self.overlay_toolbar_animations[position]
+          if anim_state then
+            OverlayToolbar.draw(
+              ctx, dl, panel_bounds, regular_toolbar_bounds[position],
+              overlay_cfg, anim_state, self, self.id, position, self.config.rounding
+            )
+          end
+        end
+      end
+    end
+
+    -- Draw scrollbar (z-order: on top of overlay toolbars)
     Scrolling.draw_scrollbar(ctx, self)
   end
 
@@ -321,8 +420,23 @@ function Panel:reset()
 end
 
 function Panel:update(dt)
+  dt = dt or 0.016
+
+  -- Update scrollbar
   if self.scrollbar then
-    self.scrollbar:update(dt or 0.016)
+    self.scrollbar:update(dt)
+  end
+
+  -- Update overlay toolbar animations
+  if self.config.overlay_toolbars then
+    for position, overlay_cfg in pairs(self.config.overlay_toolbars) do
+      if overlay_cfg and overlay_cfg.enabled then
+        local anim_state = self.overlay_toolbar_animations[position]
+        if anim_state then
+          OverlayToolbar.update_animation(anim_state, overlay_cfg, dt)
+        end
+      end
+    end
   end
 end
 
