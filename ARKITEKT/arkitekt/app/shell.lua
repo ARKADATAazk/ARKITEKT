@@ -14,6 +14,7 @@ local Typography = require('arkitekt.defs.typography')
 local Fonts = require('arkitekt.app.chrome.fonts')
 local Window  = require('arkitekt.app.chrome.window')
 local Logger = require('arkitekt.debug.logger')
+local Base = require('arkitekt.gui.widgets.base')
 
 local M = {}
 
@@ -469,6 +470,10 @@ function M.run(opts)
       runtime.open = false
     end
 
+    -- Periodic cleanup (internally throttled)
+    Base.periodic_cleanup()
+    Logger.prune_stale_live()
+
     if runtime.open then
       reaper.defer(frame)
     else
@@ -537,6 +542,10 @@ function M.run_loop(opts)
     if continue == false then
       open = false
     end
+
+    -- Periodic cleanup (internally throttled)
+    Base.periodic_cleanup()
+    Logger.prune_stale_live()
 
     if open then
       reaper.defer(frame)

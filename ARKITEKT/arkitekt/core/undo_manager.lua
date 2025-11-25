@@ -21,12 +21,12 @@ function M.new(opts)
     end
     
     table.insert(self.history, state)
-    
+
     if #self.history > self.max_history then
       table.remove(self.history, 1)
-    else
-      self.current_index = #self.history
     end
+    -- Always update index to point to current state
+    self.current_index = #self.history
   end
   
   function manager:can_undo()

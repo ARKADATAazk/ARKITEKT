@@ -14,13 +14,6 @@ local hexrgb = Colors.hexrgb
 
 local M = {}
 
-local function hexrgb(hex)
-  if hex:sub(1, 1) == "#" then hex = hex:sub(2) end
-  local h = tonumber(hex, 16)
-  if not h then return hexrgb("#FFFFFF") end
-  return (#hex == 8) and h or ((h << 8) | 0xFF)
-end
-
 local COLORS = {
   teal = hexrgb("#41E0A3FF"),
   red = hexrgb("#E04141FF"),

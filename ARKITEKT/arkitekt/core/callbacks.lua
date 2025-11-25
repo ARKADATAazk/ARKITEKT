@@ -87,23 +87,39 @@ end
 --- @param delay_ms number Delay in milliseconds
 --- @return function debounced_fn The debounced function
 function M.debounce(fn, delay_ms)
-  local timer = nil
   local delay_seconds = delay_ms / 1000.0
+  local pending_call = nil  -- { time, args }
 
   return function(...)
     local args = {...}
-    local current_time = reaper.time_precise()
+    local call_time = reaper.time_precise()
 
-    -- Store timer and args for this invocation
-    timer = current_time
+    -- Update pending call (overwrites any previous)
+    pending_call = { time = call_time, args = args }
 
-    -- Defer the actual call
-    reaper.defer(function()
-      local elapsed = reaper.time_precise() - timer
+    -- Schedule check after delay
+    local function check_and_fire()
+      if not pending_call then return end
+      local elapsed = reaper.time_precise() - pending_call.time
       if elapsed >= delay_seconds then
-        fn(table.unpack(args))
+        -- Enough time has passed since last call, fire it
+        local call_args = pending_call.args
+        pending_call = nil
+        fn(table.unpack(call_args))
       end
-    end)
+      -- If elapsed < delay, another defer was scheduled by a newer call
+    end
+
+    -- Wait for delay then check
+    local start_time = reaper.time_precise()
+    local function wait_then_check()
+      if reaper.time_precise() - start_time >= delay_seconds then
+        check_and_fire()
+      else
+        reaper.defer(wait_then_check)
+      end
+    end
+    reaper.defer(wait_then_check)
   end
 end
 
@@ -140,36 +156,46 @@ function M.once(fn)
   end
 end
 
---- Create a callback that retries on failure
+--- Create a callback that retries on failure (async with defer)
 --- @param fn function The function to retry
 --- @param max_attempts? number Maximum retry attempts (default: 3)
 --- @param delay_ms? number Delay between retries in ms (default: 100)
---- @return function retry_fn The retrying function
-function M.retry(fn, max_attempts, delay_ms)
+--- @param on_success? function Callback on success with result
+--- @param on_failure? function Callback on final failure
+function M.retry(fn, max_attempts, delay_ms, on_success, on_failure)
   max_attempts = max_attempts or 3
   delay_ms = delay_ms or 100
+  local delay_seconds = delay_ms / 1000.0
 
   return function(...)
     local args = {...}
     local attempt = 1
 
-    while attempt <= max_attempts do
+    local function try_once()
       local ok, result = pcall(fn, table.unpack(args))
       if ok then
-        return result
+        if on_success then on_success(result) end
+        return
       end
 
       attempt = attempt + 1
       if attempt <= max_attempts then
-        -- Simple delay using busy wait (not ideal but works)
-        local start = reaper.time_precise()
-        while (reaper.time_precise() - start) < (delay_ms / 1000.0) do
-          -- Wait
+        -- Schedule next attempt after delay (non-blocking)
+        local start_time = reaper.time_precise()
+        local function wait_and_retry()
+          if reaper.time_precise() - start_time >= delay_seconds then
+            try_once()
+          else
+            reaper.defer(wait_and_retry)
+          end
         end
+        reaper.defer(wait_and_retry)
+      else
+        if on_failure then on_failure() end
       end
     end
 
-    return nil
+    try_once()
   end
 end
 
