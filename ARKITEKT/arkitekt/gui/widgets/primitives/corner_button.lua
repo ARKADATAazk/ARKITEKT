@@ -187,9 +187,9 @@ function M.draw(ctx, opts)
   if opts.preset_name then
     Style.apply_dynamic_preset(config, opts.preset_name)
   end
-  -- Apply user overrides
+  -- Apply user overrides (copy ALL opts, not just color keys)
   for k, v in pairs(opts) do
-    if v ~= nil and config[k] ~= nil then
+    if v ~= nil then
       config[k] = v
     end
   end

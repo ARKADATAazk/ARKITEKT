@@ -198,9 +198,9 @@ local function resolve_config(opts)
     end
   end
 
-  -- Apply user overrides
+  -- Apply user overrides (copy ALL opts, not just color keys)
   for k, v in pairs(opts) do
-    if v ~= nil and config[k] ~= nil then
+    if v ~= nil then
       config[k] = v
     end
   end
