@@ -47,35 +47,136 @@ local M = {}
 
 -- Derivation rules: how much to adjust colors for different UI states
 -- Users can customize these to change the overall theme "feel"
-M.derivation_rules = {
-  -- Background variations (lightness deltas)
-  bg_hover_delta = 0.02,        -- +2% lighter on hover
-  bg_active_delta = 0.04,       -- +4% lighter when active/pressed
-  bg_header_delta = -0.024,     -- -2.4% darker for headers (BG_BASE 36 → BG_HEADER 30)
-  bg_panel_delta = -0.04,       -- -4% darker for panels (BG_BASE 36 → BG_PANEL 26)
+-- ============================================================================
+-- PER-THEME DERIVATION RULES
+-- ============================================================================
+-- Each theme mode can have different adjustment values. Light themes need
+-- larger/inverted deltas compared to dark themes due to perception differences.
+-- Values are floats for opacity (0.0-1.0) and lightness deltas (-1.0 to 1.0).
 
-  -- Pattern variations (relative to BG_PANEL, DARKER = etched lines)
-  -- Original design: BG_PANEL=26, Primary=20 (-6 RGB), Secondary=25 (-1 RGB)
-  pattern_primary_delta = -0.024,   -- ~-6 RGB units = -2.4% lightness
-  pattern_secondary_delta = -0.004, -- ~-1 RGB unit = -0.4% lightness
+M.theme_rules = {
+  -- DARK theme rules (base ~12% lightness)
+  -- Hover/active go LIGHTER, patterns need subtle contrast
+  dark = {
+    -- Background deltas (positive = lighter)
+    bg_hover_delta = 0.03,
+    bg_active_delta = 0.05,
+    bg_header_delta = -0.024,
+    bg_panel_delta = -0.04,
 
-  -- Border variations
-  border_outer_delta = -0.10,   -- -10% darker for outer borders (strong contrast)
-  border_inner_delta = 0.05,    -- +5% lighter for inner borders (subtle highlight)
-  border_hover_delta = 0.10,    -- +10% lighter on hover
-  border_active_delta = 0.15,   -- +15% lighter when active
-  border_focus_delta = 0.20,    -- +20% lighter when focused
+    -- Pattern visibility (negative = darker than panel)
+    pattern_primary_delta = -0.024,
+    pattern_secondary_delta = -0.004,
 
-  -- Text variations
-  text_hover_delta = 0.05,      -- +5% lighter on hover
-  text_dimmed_delta = -0.10,    -- -10% darker for dimmed/secondary text
-  text_dark_delta = -0.20,      -- -20% darker for dark text
-  text_bright_delta = 0.10,     -- +10% lighter for bright text
+    -- Borders
+    border_outer_color = "#000000",  -- Pure black works well on dark
+    border_outer_opacity = 0.87,
+    border_inner_delta = 0.05,
+    border_hover_delta = 0.10,
+    border_active_delta = 0.15,
+    border_focus_delta = 0.20,
 
-  -- Accent variations
-  accent_bright_delta = 0.15,   -- +15% lighter for bright accent variant
-  accent_desaturate = -1.0,     -- Fully desaturate for white/gray variant
+    -- Text
+    text_hover_delta = 0.05,
+    text_dimmed_delta = -0.10,
+    text_dark_delta = -0.20,
+    text_bright_delta = 0.10,
+
+    -- Accents
+    accent_bright_delta = 0.15,
+    accent_white_lightness = 0.25,
+    accent_white_bright_lightness = 0.35,
+  },
+
+  -- GREY theme rules (base ~24% lightness)
+  -- Similar to dark but slightly adjusted
+  grey = {
+    bg_hover_delta = 0.025,
+    bg_active_delta = 0.04,
+    bg_header_delta = -0.024,
+    bg_panel_delta = -0.04,
+
+    pattern_primary_delta = -0.03,
+    pattern_secondary_delta = -0.006,
+
+    border_outer_color = "#000000",
+    border_outer_opacity = 0.75,
+    border_inner_delta = 0.05,
+    border_hover_delta = 0.10,
+    border_active_delta = 0.15,
+    border_focus_delta = 0.20,
+
+    text_hover_delta = 0.05,
+    text_dimmed_delta = -0.10,
+    text_dark_delta = -0.20,
+    text_bright_delta = 0.10,
+
+    accent_bright_delta = 0.15,
+    accent_white_lightness = 0.30,
+    accent_white_bright_lightness = 0.40,
+  },
+
+  -- LIGHT theme rules (base ~88% lightness)
+  -- Hover/active go DARKER, patterns need more contrast to be visible
+  light = {
+    -- Background deltas (negative = darker for light themes)
+    bg_hover_delta = -0.04,
+    bg_active_delta = -0.07,
+    bg_header_delta = -0.06,
+    bg_panel_delta = -0.04,
+
+    -- Patterns need more contrast on light backgrounds
+    pattern_primary_delta = -0.06,
+    pattern_secondary_delta = -0.02,
+
+    -- Softer borders for light themes (harsh black looks bad)
+    border_outer_color = "#404040",
+    border_outer_opacity = 0.60,
+    border_inner_delta = -0.03,
+    border_hover_delta = -0.08,
+    border_active_delta = -0.12,
+    border_focus_delta = -0.15,
+
+    -- Text deltas inverted
+    text_hover_delta = -0.05,
+    text_dimmed_delta = 0.15,
+    text_dark_delta = 0.25,
+    text_bright_delta = -0.08,
+
+    accent_bright_delta = -0.12,
+    accent_white_lightness = 0.55,
+    accent_white_bright_lightness = 0.45,
+  },
 }
+
+--- Get derivation rules for current theme mode
+--- @return table Rules table for the current theme
+function M.get_current_rules()
+  local mode = M.current_mode
+
+  -- Explicit modes use their rules directly
+  if mode == "light" then
+    return M.theme_rules.light
+  elseif mode == "grey" then
+    return M.theme_rules.grey
+  end
+
+  -- "dark", "adapt", or fallback all use dark rules
+  -- NOTE: For smarter adapt handling, could detect lightness:
+  --   local bg_l = Colors.get_lightness(Style.COLORS.BG_BASE)
+  --   if bg_l > 0.5 then return M.theme_rules.light end
+  return M.theme_rules.dark
+end
+
+--- Get current theme's base lightness (0.0-1.0)
+--- @return number Lightness of current BG_BASE
+function M.get_theme_lightness()
+  local _, _, l = Colors.rgb_to_hsl(Style.COLORS.BG_BASE)
+  return l
+end
+
+-- Legacy compatibility: keep derivation_rules pointing to dark theme
+M.derivation_rules = M.theme_rules.dark
 
 -- ============================================================================
 -- CORE: ALGORITHMIC PALETTE GENERATION
@@ -85,89 +186,87 @@ M.derivation_rules = {
 --- @param base_bg number Background color in RGBA format
 --- @param base_text number Text color in RGBA format
 --- @param base_accent number|nil Optional accent color (nil for neutral grayscale)
+--- @param rules table|nil Optional rules override (defaults to rules for detected theme)
 --- @return table Color palette with all UI colors
-function M.generate_palette(base_bg, base_text, base_accent)
-  local rules = M.derivation_rules
-
-  -- Detect if this is a light theme (background lightness > 50%)
+function M.generate_palette(base_bg, base_text, base_accent, rules)
+  -- Detect theme type from background lightness
   local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
   local is_light = bg_lightness > 0.5
 
-  -- Invert deltas for light themes (hover goes darker instead of lighter)
-  local sign = is_light and -1 or 1
+  -- Get rules: use provided, or select based on lightness
+  if not rules then
+    if bg_lightness > 0.65 then
+      rules = M.theme_rules.light
+    elseif bg_lightness > 0.35 then
+      rules = M.theme_rules.grey
+    else
+      rules = M.theme_rules.dark
+    end
+  end
 
   -- Calculate chrome color (titlebar/statusbar) - always significantly darker than content
-  -- Dark themes (14%): chrome at ~6% (ratio ~0.42)
-  -- Grey themes (~24%): chrome at ~10%
-  -- Light themes (~88%): chrome at ~73%
   local chrome_lightness
   if is_light then
     chrome_lightness = bg_lightness - 0.15  -- 15% darker for light themes
   else
     chrome_lightness = bg_lightness * 0.42  -- ~42% of content brightness for dark/grey
   end
-  chrome_lightness = math.max(0.04, math.min(0.85, chrome_lightness))  -- Clamp
+  chrome_lightness = math.max(0.04, math.min(0.85, chrome_lightness))
   local base_chrome = Colors.set_lightness(base_bg, chrome_lightness)
 
   -- For neutral themes (no accent), derive accents from background
   local neutral_accent
   if base_accent == nil then
-    -- Create neutral gray "accent" from background
-    neutral_accent = Colors.adjust_lightness(base_bg, sign * 0.08)
+    neutral_accent = Colors.adjust_lightness(base_bg, rules.accent_bright_delta)
   else
     neutral_accent = base_accent
   end
 
   -- Pre-compute BG_PANEL for pattern derivation
-  -- Original design: BG_BASE=36 → BG_PANEL=26 (delta -4%)
   local bg_panel = Colors.adjust_lightness(base_bg, rules.bg_panel_delta)
+
+  -- Build BORDER_OUTER from rules (color + opacity as floats)
+  local border_outer = Colors.with_alpha(
+    Colors.hexrgb(rules.border_outer_color),
+    Colors.opacity(rules.border_outer_opacity)
+  )
 
   return {
     -- ============ BACKGROUNDS ============
-    -- All derived from base_bg with lightness adjustments
-    -- For light themes, hover/active go darker; for dark themes, they go lighter
+    -- Deltas already have correct sign baked into rules
     BG_BASE = base_bg,
-    BG_HOVER = Colors.adjust_lightness(base_bg, sign * rules.bg_hover_delta),
-    BG_ACTIVE = Colors.adjust_lightness(base_bg, sign * rules.bg_active_delta),
-    BG_HEADER = Colors.adjust_lightness(base_bg, rules.bg_header_delta),  -- Header/toolbar background (30)
-    BG_PANEL = bg_panel,  -- Panel content area (26, used as base for patterns)
-    BG_CHROME = base_chrome,  -- Titlebar/statusbar - significantly darker than content
+    BG_HOVER = Colors.adjust_lightness(base_bg, rules.bg_hover_delta),
+    BG_ACTIVE = Colors.adjust_lightness(base_bg, rules.bg_active_delta),
+    BG_HEADER = Colors.adjust_lightness(base_bg, rules.bg_header_delta),
+    BG_PANEL = bg_panel,
+    BG_CHROME = base_chrome,
     BG_TRANSPARENT = Colors.with_alpha(base_bg, 0x00),
 
     -- ============ BORDERS ============
-    -- BORDER_OUTER provides contrast - dark for dark themes, medium-dark for light themes
-    BORDER_OUTER = is_light
-      and Colors.hexrgb("#606060DD")  -- Medium gray for light themes (visible but not harsh)
-      or Colors.hexrgb("#000000DD"),   -- Black for dark themes
-    BORDER_INNER = Colors.adjust_lightness(base_bg, sign * rules.border_inner_delta),
-    BORDER_HOVER = Colors.adjust_lightness(base_bg, sign * rules.border_hover_delta),
-    BORDER_ACTIVE = Colors.adjust_lightness(base_bg, sign * rules.border_active_delta),
-    BORDER_FOCUS = Colors.adjust_lightness(base_bg, sign * rules.border_focus_delta),
+    -- BORDER_OUTER uses theme-specific color and opacity from rules
+    BORDER_OUTER = border_outer,
+    BORDER_INNER = Colors.adjust_lightness(base_bg, rules.border_inner_delta),
+    BORDER_HOVER = Colors.adjust_lightness(base_bg, rules.border_hover_delta),
+    BORDER_ACTIVE = Colors.adjust_lightness(base_bg, rules.border_active_delta),
+    BORDER_FOCUS = Colors.adjust_lightness(base_bg, rules.border_focus_delta),
 
     -- ============ TEXT ============
-    -- Text deltas adapt to light/dark context
+    -- Deltas already have correct sign baked into rules
     TEXT_NORMAL = base_text,
-    TEXT_HOVER = Colors.adjust_lightness(base_text, sign * rules.text_hover_delta),
-    TEXT_ACTIVE = Colors.adjust_lightness(base_text, sign * rules.text_hover_delta),
-    TEXT_DIMMED = Colors.adjust_lightness(base_text, -sign * math.abs(rules.text_dimmed_delta)),
-    TEXT_DARK = Colors.adjust_lightness(base_text, -sign * math.abs(rules.text_dark_delta)),
-    TEXT_BRIGHT = Colors.adjust_lightness(base_text, sign * rules.text_bright_delta),
+    TEXT_HOVER = Colors.adjust_lightness(base_text, rules.text_hover_delta),
+    TEXT_ACTIVE = Colors.adjust_lightness(base_text, rules.text_hover_delta),
+    TEXT_DIMMED = Colors.adjust_lightness(base_text, rules.text_dimmed_delta),
+    TEXT_DARK = Colors.adjust_lightness(base_text, rules.text_dark_delta),
+    TEXT_BRIGHT = Colors.adjust_lightness(base_text, rules.text_bright_delta),
 
     -- ============ ACCENTS ============
-    -- Neutral or colored depending on base_accent parameter
     ACCENT_PRIMARY = neutral_accent,
     ACCENT_TEAL = neutral_accent,
-    ACCENT_TEAL_BRIGHT = Colors.adjust_lightness(neutral_accent, sign * rules.accent_bright_delta),
+    ACCENT_TEAL_BRIGHT = Colors.adjust_lightness(neutral_accent, rules.accent_bright_delta),
 
-    -- White/gray variant for toggle buttons
-    -- On dark themes: lighter gray for ON state (contrast against dark bg)
-    -- On light themes: darker gray for ON state (contrast against light bg)
-    ACCENT_WHITE = is_light
-      and Colors.set_lightness(base_bg, 0.55)  -- Medium gray for light themes
-      or Colors.set_lightness(base_bg, 0.25),   -- Dark gray for dark themes
-    ACCENT_WHITE_BRIGHT = is_light
-      and Colors.set_lightness(base_bg, 0.45)  -- Darker on hover for light themes
-      or Colors.set_lightness(base_bg, 0.35),   -- Lighter on hover for dark themes
+    -- White/gray variant for toggle buttons (absolute lightness from rules)
+    ACCENT_WHITE = Colors.set_lightness(base_bg, rules.accent_white_lightness),
+    ACCENT_WHITE_BRIGHT = Colors.set_lightness(base_bg, rules.accent_white_bright_lightness),
 
     -- Transparent variant (for overlays)
     ACCENT_TRANSPARENT = Colors.with_alpha(neutral_accent, 0xAA),
@@ -525,6 +624,42 @@ function M.get_current_colors()
     current[key] = value
   end
   return current
+end
+
+--- Adapt a color to the current theme using a "pull factor"
+--- The pull factor determines how much the color's lightness moves toward the theme's base lightness.
+--- Use this for custom components that need to follow theme changes without using fixed Style.COLORS keys.
+---
+--- @param base_color number Base color in RGBA format
+--- @param pull_factor number|nil How much to pull toward theme lightness (0.0-1.0, default 0.5)
+---   - 0.0 = keep original lightness
+---   - 0.5 = halfway between original and theme
+---   - 1.0 = match theme lightness exactly
+--- @return number Adapted color in RGBA format
+---
+--- Example usage:
+---   local ready_bg = ThemeManager.adapt_color(hexrgb("#1A1A1A"), 0.9)  -- Strongly follows theme
+---   local specular = ThemeManager.adapt_color(hexrgb("#FFFFFF"), 0.2)  -- Mostly white, slight theme influence
+function M.adapt_color(base_color, pull_factor)
+  pull_factor = pull_factor or 0.5
+
+  -- Get current theme lightness
+  local theme_l = M.get_theme_lightness()
+
+  -- Get base color's HSL
+  local base_h, base_s, base_l = Colors.rgb_to_hsl(base_color)
+
+  -- Pull lightness toward theme
+  local target_l = base_l + (theme_l - base_l) * pull_factor
+
+  -- Clamp to valid range
+  target_l = math.max(0, math.min(1, target_l))
+
+  -- Convert back to RGBA, preserving original alpha
+  local r, g, b = Colors.hsl_to_rgb(base_h, base_s, target_l)
+  local _, _, _, a = Colors.rgba_to_components(base_color)
+
+  return Colors.components_to_rgba(r, g, b, a)
 end
 
 --- Smooth transition between current colors and a new theme

@@ -84,6 +84,27 @@ function M.with_alpha(color, alpha)
   return (color & 0xFFFFFF00) | (alpha & 0xFF)
 end
 
+--- Convert float opacity (0.0-1.0) to byte (0-255)
+--- @param opacity number Float opacity value
+--- @return number Byte alpha value
+function M.opacity(opacity)
+  return math.floor((opacity or 1.0) * 255 + 0.5)
+end
+
+--- Convert byte alpha (0-255) to float opacity (0.0-1.0)
+--- @param byte number Byte alpha value
+--- @return number Float opacity value
+function M.to_opacity(byte)
+  return (byte or 255) / 255
+end
+
+--- Get alpha component of a color as float opacity (0.0-1.0)
+--- @param color number RGBA color
+--- @return number Float opacity value
+function M.get_opacity(color)
+  return (color & 0xFF) / 255
+end
+
 function M.adjust_brightness(color, factor)
   local r, g, b, a = M.rgba_to_components(color)
   r = min(255, max(0, (r * factor)//1))
