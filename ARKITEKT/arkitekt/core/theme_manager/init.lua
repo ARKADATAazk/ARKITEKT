@@ -168,15 +168,15 @@ function M.generate_palette(base_bg, base_text, base_accent)
 
     -- ============ PATTERNS ============
     -- Subtle background patterns for visual texture
-    -- Use fixed neutral colors (no hue derivation to avoid color artifacts)
-    -- Dark themes: dark patterns create subtle depth (original style)
-    -- Light themes: dark patterns also work well as subtle shadows
+    -- IMPORTANT: Patterns must CONTRAST with background to be visible!
+    -- Dark themes: use LIGHT patterns (white/gray at low alpha)
+    -- Light themes: use DARK patterns (black/gray at low alpha)
     PATTERN_PRIMARY = is_light
-      and Colors.hexrgb("#00000025")   -- Black at ~15% on light backgrounds
-      or Colors.hexrgb("#00000050"),   -- Black at ~31% on dark backgrounds (like original #14141490)
+      and Colors.hexrgb("#00000040")   -- Black at 25% on light backgrounds
+      or Colors.hexrgb("#FFFFFF30"),   -- White at 19% on dark backgrounds
     PATTERN_SECONDARY = is_light
-      and Colors.hexrgb("#0000000A")   -- Black at ~4% on light backgrounds
-      or Colors.hexrgb("#00000018"),   -- Black at ~9% on dark backgrounds (like original #14141420)
+      and Colors.hexrgb("#00000020")   -- Black at 12% on light backgrounds
+      or Colors.hexrgb("#FFFFFF15"),   -- White at 8% on dark backgrounds
   }
 end
 
