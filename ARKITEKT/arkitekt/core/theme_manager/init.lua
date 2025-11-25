@@ -45,173 +45,285 @@ local M = {}
 -- CONFIGURATION
 -- ============================================================================
 
--- Derivation rules: how much to adjust colors for different UI states
--- Users can customize these to change the overall theme "feel"
 -- ============================================================================
--- PER-THEME DERIVATION RULES
+-- VALUE WRAPPERS - Define interpolation behavior
 -- ============================================================================
--- Each theme mode can have different adjustment values. Light themes need
--- larger/inverted deltas compared to dark themes due to perception differences.
--- Values are floats for opacity (0.0-1.0) and lightness deltas (-1.0 to 1.0).
+-- These wrappers tell the system HOW to transition between preset values:
+--   blend(value)        - smooth gradient across black→grey→white
+--   step(value)         - discrete zones, no interpolation
+--   flipAt(0.5, value)  - binary flip at lightness threshold (for contrast)
 
-M.theme_rules = {
-  -- DARK theme rules (base ~12% lightness)
-  -- Hover/active go LIGHTER, patterns need subtle contrast
-  dark = {
+--- Smooth gradient between preset values
+--- @param value any The value for this preset
+--- @return table Wrapper with mode metadata
+local function blend(value)
+  return { value = value, mode = "blend" }
+end
+
+--- Discrete steps - use value from current zone (no interpolation)
+--- @param value any The value for this preset
+--- @return table Wrapper with mode metadata
+local function step(value)
+  return { value = value, mode = "step" }
+end
+
+--- Binary flip at lightness threshold (used in M.contrast)
+--- @param threshold number Lightness threshold (0.0-1.0) to flip at
+--- @param value any The value for this contrast mode
+--- @return table Wrapper with mode metadata
+local function flipAt(threshold, value)
+  return { value = value, mode = "flip", threshold = threshold }
+end
+
+-- Export wrappers for external use
+M.blend = blend
+M.step = step
+M.flipAt = flipAt
+
+-- ============================================================================
+-- THEME PRESETS (black/grey/white)
+-- ============================================================================
+-- Concrete theme presets for blend() and step() interpolation.
+-- Values wrapped with blend() will smoothly interpolate between presets.
+-- Values wrapped with step() will snap to the nearest preset's value.
+-- Raw values (no wrapper) are treated as blend() for backwards compatibility.
+
+M.presets = {
+  -- BLACK preset (very dark, ~14% lightness)
+  black = {
     -- Background deltas (positive = lighter)
-    bg_hover_delta = 0.03,
-    bg_active_delta = 0.05,
-    bg_header_delta = -0.024,
-    bg_panel_delta = -0.04,
+    bg_hover_delta = blend(0.03),
+    bg_active_delta = blend(0.05),
+    bg_header_delta = blend(-0.024),
+    bg_panel_delta = blend(-0.04),
 
-    -- Pattern visibility (negative = darker than panel)
-    pattern_primary_delta = -0.024,
-    pattern_secondary_delta = -0.004,
+    -- Pattern visibility
+    pattern_primary_delta = blend(-0.024),
+    pattern_secondary_delta = blend(-0.004),
 
     -- Borders
-    border_outer_color = "#000000",  -- Pure black works well on dark
-    border_outer_opacity = 0.87,
-    border_inner_delta = 0.05,
-    border_hover_delta = 0.10,
-    border_active_delta = 0.15,
-    border_focus_delta = 0.20,
+    border_outer_color = step("#000000"),
+    border_outer_opacity = blend(0.87),
+    border_inner_delta = blend(0.05),
+    border_hover_delta = blend(0.10),
+    border_active_delta = blend(0.15),
+    border_focus_delta = blend(0.20),
 
     -- Text
-    text_hover_delta = 0.05,
-    text_dimmed_delta = -0.10,
-    text_dark_delta = -0.20,
-    text_bright_delta = 0.10,
+    text_hover_delta = blend(0.05),
+    text_dimmed_delta = blend(-0.10),
+    text_dark_delta = blend(-0.20),
+    text_bright_delta = blend(0.10),
 
     -- Accents
-    accent_bright_delta = 0.15,
-    accent_white_lightness = 0.25,
-    accent_white_bright_lightness = 0.35,
+    accent_bright_delta = blend(0.15),
+    accent_white_lightness = blend(0.25),
+    accent_white_bright_lightness = blend(0.35),
 
-    -- Tile rendering (region tiles with user-defined colors)
-    -- Fill is darkened to create depth, text is light for contrast
-    tile_fill_brightness = 0.5,     -- Darken fills to 50%
-    tile_fill_saturation = 0.4,     -- Desaturate fills
-    tile_fill_opacity = 0.4,        -- Semi-transparent
-    tile_name_color = "#DDE3E9",    -- Light text on dark fills
+    -- Tile rendering
+    tile_fill_brightness = blend(0.5),
+    tile_fill_saturation = blend(0.4),
+    tile_fill_opacity = blend(0.4),
   },
 
-  -- GREY theme rules (base ~24% lightness)
-  -- Similar to dark but slightly adjusted
+  -- GREY preset (medium, ~24% lightness)
   grey = {
-    bg_hover_delta = 0.025,
-    bg_active_delta = 0.04,
-    bg_header_delta = -0.024,
-    bg_panel_delta = -0.04,
+    bg_hover_delta = blend(0.025),
+    bg_active_delta = blend(0.04),
+    bg_header_delta = blend(-0.024),
+    bg_panel_delta = blend(-0.04),
 
-    pattern_primary_delta = -0.03,
-    pattern_secondary_delta = -0.006,
+    pattern_primary_delta = blend(-0.03),
+    pattern_secondary_delta = blend(-0.006),
 
-    border_outer_color = "#000000",
-    border_outer_opacity = 0.75,
-    border_inner_delta = 0.05,
-    border_hover_delta = 0.10,
-    border_active_delta = 0.15,
-    border_focus_delta = 0.20,
+    border_outer_color = step("#000000"),
+    border_outer_opacity = blend(0.75),
+    border_inner_delta = blend(0.05),
+    border_hover_delta = blend(0.10),
+    border_active_delta = blend(0.15),
+    border_focus_delta = blend(0.20),
 
-    text_hover_delta = 0.05,
-    text_dimmed_delta = -0.10,
-    text_dark_delta = -0.20,
-    text_bright_delta = 0.10,
+    text_hover_delta = blend(0.05),
+    text_dimmed_delta = blend(-0.10),
+    text_dark_delta = blend(-0.20),
+    text_bright_delta = blend(0.10),
 
-    accent_bright_delta = 0.15,
-    accent_white_lightness = 0.30,
-    accent_white_bright_lightness = 0.40,
+    accent_bright_delta = blend(0.15),
+    accent_white_lightness = blend(0.30),
+    accent_white_bright_lightness = blend(0.40),
 
-    -- Tile rendering (slightly less darkening than pure dark)
-    tile_fill_brightness = 0.55,
-    tile_fill_saturation = 0.45,
-    tile_fill_opacity = 0.45,
-    tile_name_color = "#E0E4E8",
+    tile_fill_brightness = blend(0.55),
+    tile_fill_saturation = blend(0.45),
+    tile_fill_opacity = blend(0.45),
   },
 
-  -- LIGHT theme rules (base ~88% lightness)
-  -- Hover/active go DARKER, patterns need more contrast to be visible
+  -- WHITE preset (bright, ~88% lightness)
+  white = {
+    bg_hover_delta = blend(-0.04),
+    bg_active_delta = blend(-0.07),
+    bg_header_delta = blend(-0.06),
+    bg_panel_delta = blend(-0.04),
+
+    pattern_primary_delta = blend(-0.06),
+    pattern_secondary_delta = blend(-0.02),
+
+    border_outer_color = step("#404040"),
+    border_outer_opacity = blend(0.60),
+    border_inner_delta = blend(-0.03),
+    border_hover_delta = blend(-0.08),
+    border_active_delta = blend(-0.12),
+    border_focus_delta = blend(-0.15),
+
+    text_hover_delta = blend(-0.05),
+    text_dimmed_delta = blend(0.15),
+    text_dark_delta = blend(0.25),
+    text_bright_delta = blend(-0.08),
+
+    accent_bright_delta = blend(-0.12),
+    accent_white_lightness = blend(0.55),
+    accent_white_bright_lightness = blend(0.45),
+
+    tile_fill_brightness = blend(1.4),
+    tile_fill_saturation = blend(0.5),
+    tile_fill_opacity = blend(0.5),
+  },
+}
+
+-- ============================================================================
+-- CONTRAST MODES (dark/light)
+-- ============================================================================
+-- Binary contrast modes for flipAt() - used for values that need hard contrast
+-- (like text colors that must be readable regardless of background).
+-- flipAt(threshold, value) flips between dark/light when bg crosses threshold.
+
+M.contrast = {
+  -- DARK contrast mode (bg lightness < threshold)
+  dark = {
+    tile_name_color = flipAt(0.5, "#DDE3E9"),  -- Light text on dark
+  },
+
+  -- LIGHT contrast mode (bg lightness >= threshold)
   light = {
-    -- Background deltas (negative = darker for light themes)
-    bg_hover_delta = -0.04,
-    bg_active_delta = -0.07,
-    bg_header_delta = -0.06,
-    bg_panel_delta = -0.04,
-
-    -- Patterns need more contrast on light backgrounds
-    pattern_primary_delta = -0.06,
-    pattern_secondary_delta = -0.02,
-
-    -- Softer borders for light themes (harsh black looks bad)
-    border_outer_color = "#404040",
-    border_outer_opacity = 0.60,
-    border_inner_delta = -0.03,
-    border_hover_delta = -0.08,
-    border_active_delta = -0.12,
-    border_focus_delta = -0.15,
-
-    -- Text deltas inverted
-    text_hover_delta = -0.05,
-    text_dimmed_delta = 0.15,
-    text_dark_delta = 0.25,
-    text_bright_delta = -0.08,
-
-    accent_bright_delta = -0.12,
-    accent_white_lightness = 0.55,
-    accent_white_bright_lightness = 0.45,
-
-    -- Tile rendering (INVERTED: brighten/whiten fills, dark text)
-    -- Creates pastel/washed look that works on light backgrounds
-    tile_fill_brightness = 1.4,     -- Brighten fills to 140% (whiten)
-    tile_fill_saturation = 0.5,     -- Slightly more saturated than dark
-    tile_fill_opacity = 0.5,        -- Slightly more opaque
-    tile_name_color = "#1A1A1A",    -- Dark text on light fills
+    tile_name_color = flipAt(0.5, "#1A1A1A"),  -- Dark text on light
   },
+}
+
+-- ============================================================================
+-- LEGACY COMPATIBILITY
+-- ============================================================================
+-- Map old theme_rules to new presets for backwards compatibility
+M.theme_rules = {
+  dark = M.presets.black,
+  grey = M.presets.grey,
+  light = M.presets.white,
 }
 
 -- Anchor lightness values for each theme preset
 -- Used for interpolation in adapt mode
-M.theme_anchors = {
-  dark = 0.14,   -- ~14% lightness (dark preset)
+M.preset_anchors = {
+  black = 0.14,  -- ~14% lightness (black preset)
   grey = 0.24,   -- ~24% lightness (grey preset)
-  light = 0.88,  -- ~88% lightness (light preset)
+  white = 0.88,  -- ~88% lightness (white preset)
 }
 
---- Interpolate between two rule sets
---- @param rules_a table First rule set
---- @param rules_b table Second rule set
+-- Legacy alias
+M.theme_anchors = M.preset_anchors
+
+--- Extract raw value from wrapper or return as-is
+--- @param wrapped any Wrapped value or raw value
+--- @return any Raw value
+local function unwrap(wrapped)
+  if type(wrapped) == "table" and wrapped.mode then
+    return wrapped.value
+  end
+  return wrapped
+end
+
+--- Get interpolation mode from wrapper
+--- @param wrapped any Wrapped value or raw value
+--- @return string Mode ("blend", "step", or "blend" for raw values)
+local function get_mode(wrapped)
+  if type(wrapped) == "table" and wrapped.mode then
+    return wrapped.mode
+  end
+  return "blend"  -- Default: raw values blend
+end
+
+--- Interpolate between two rule sets respecting wrapper modes
+--- @param rules_a table First rule set (preset)
+--- @param rules_b table Second rule set (preset)
 --- @param t number Interpolation factor (0.0 = rules_a, 1.0 = rules_b)
---- @return table Interpolated rules
+--- @return table Interpolated rules (unwrapped raw values)
 local function lerp_rules(rules_a, rules_b, t)
-  -- Keys that should SNAP (no interpolation) - typically contrast-critical values
-  -- These switch at t=0.5 instead of blending smoothly
-  local snap_keys = {
-    tile_name_color = true,      -- Text needs hard contrast, no grey middle ground
-    border_outer_color = true,   -- Border color often has semantic meaning
-  }
-
   local result = {}
-  for key, value_a in pairs(rules_a) do
-    local value_b = rules_b[key]
 
-    -- Check if this key should snap instead of lerp
-    if snap_keys[key] then
+  for key, wrapped_a in pairs(rules_a) do
+    local wrapped_b = rules_b[key]
+    local value_a = unwrap(wrapped_a)
+    local value_b = unwrap(wrapped_b)
+    local mode = get_mode(wrapped_a)
+
+    if mode == "step" then
+      -- Step: no interpolation, use closest preset's value
       result[key] = t < 0.5 and value_a or value_b
-    elseif type(value_a) == "number" and type(value_b) == "number" then
-      -- Lerp numeric values
-      result[key] = value_a + (value_b - value_a) * t
-    elseif type(value_a) == "string" and type(value_b) == "string" then
-      -- Lerp colors (hex strings like "#RRGGBB")
-      local color_a = Colors.hexrgb(value_a)
-      local color_b = Colors.hexrgb(value_b)
-      result[key] = Colors.lerp(color_a, color_b, t)
-      -- Convert back to hex string for consistency
-      local r, g, b = Colors.rgba_to_components(result[key])
-      result[key] = string.format("#%02X%02X%02X", r, g, b)
+
+    elseif mode == "blend" then
+      -- Blend: smooth interpolation
+      if type(value_a) == "number" and type(value_b) == "number" then
+        result[key] = value_a + (value_b - value_a) * t
+      elseif type(value_a) == "string" and type(value_b) == "string" then
+        -- Lerp colors (hex strings like "#RRGGBB")
+        local color_a = Colors.hexrgb(value_a)
+        local color_b = Colors.hexrgb(value_b)
+        result[key] = Colors.lerp(color_a, color_b, t)
+        -- Convert back to hex string for consistency
+        local r, g, b = Colors.rgba_to_components(result[key])
+        result[key] = string.format("#%02X%02X%02X", r, g, b)
+      else
+        -- Non-interpolatable, use closest
+        result[key] = t < 0.5 and value_a or value_b
+      end
+
     else
-      -- Non-interpolatable, use closest
+      -- Unknown mode, treat as blend
       result[key] = t < 0.5 and value_a or value_b
     end
+  end
+
+  return result
+end
+
+--- Resolve contrast values (flipAt) based on current lightness
+--- @param lightness number Current background lightness (0.0-1.0)
+--- @return table Resolved contrast values (unwrapped)
+local function resolve_contrast(lightness)
+  local result = {}
+
+  for key, wrapped_dark in pairs(M.contrast.dark) do
+    local wrapped_light = M.contrast.light[key]
+    local value_dark = unwrap(wrapped_dark)
+    local value_light = unwrap(wrapped_light)
+
+    -- Get threshold from the wrapper (default 0.5)
+    local threshold = 0.5
+    if type(wrapped_dark) == "table" and wrapped_dark.threshold then
+      threshold = wrapped_dark.threshold
+    end
+
+    -- Flip at threshold
+    result[key] = lightness < threshold and value_dark or value_light
+  end
+
+  return result
+end
+
+--- Unwrap all values in a preset (for non-interpolated access)
+--- @param preset table Preset with wrapped values
+--- @return table Unwrapped raw values
+local function unwrap_preset(preset)
+  local result = {}
+  for key, wrapped in pairs(preset) do
+    result[key] = unwrap(wrapped)
   end
   return result
 end
@@ -219,51 +331,63 @@ end
 --- Get derivation rules for current theme mode
 --- For explicit modes (dark/grey/light), returns those rules directly.
 --- For "adapt" mode, interpolates between anchor rules based on current lightness.
---- @return table Rules table for the current theme
+--- Also merges in contrast values (flipAt) for contrast-critical keys.
+--- @return table Rules table for the current theme (unwrapped raw values)
 function M.get_current_rules()
-  local mode = M.current_mode
-
-  -- Explicit modes use their rules directly (no interpolation)
-  if mode == "dark" then
-    return M.theme_rules.dark
-  elseif mode == "grey" then
-    return M.theme_rules.grey
-  elseif mode == "light" then
-    return M.theme_rules.light
-  end
-
-  -- "adapt" mode: interpolate based on current theme lightness
-  local lightness = M.get_theme_lightness()
-
-  -- Find which two anchors we're between and interpolate
-  if lightness <= M.theme_anchors.dark then
-    -- Below dark anchor, use dark rules
-    return M.theme_rules.dark
-  elseif lightness >= M.theme_anchors.light then
-    -- Above light anchor, use light rules
-    return M.theme_rules.light
-  elseif lightness <= M.theme_anchors.grey then
-    -- Between dark and grey
-    local range = M.theme_anchors.grey - M.theme_anchors.dark
-    local t = (lightness - M.theme_anchors.dark) / range
-    return lerp_rules(M.theme_rules.dark, M.theme_rules.grey, t)
-  else
-    -- Between grey and light
-    local range = M.theme_anchors.light - M.theme_anchors.grey
-    local t = (lightness - M.theme_anchors.grey) / range
-    return lerp_rules(M.theme_rules.grey, M.theme_rules.light, t)
-  end
+  return compute_rules_for_lightness(M.get_theme_lightness(), M.current_mode)
 end
 
 --- Get current theme's base lightness (0.0-1.0)
 --- @return number Lightness of current BG_BASE
 function M.get_theme_lightness()
+  if not Style.COLORS.BG_BASE then return 0.14 end  -- Default to dark
   local _, _, l = Colors.rgb_to_hsl(Style.COLORS.BG_BASE)
   return l
 end
 
--- Legacy compatibility: keep derivation_rules pointing to dark theme
-M.derivation_rules = M.theme_rules.dark
+--- Compute interpolated rules for a given lightness value
+--- This is the core interpolation logic used by both generate_palette and get_current_rules
+--- @param lightness number Background lightness (0.0-1.0)
+--- @param mode string|nil Theme mode ("dark", "grey", "light", "adapt", or nil for adapt)
+--- @return table Interpolated rules (unwrapped raw values)
+local function compute_rules_for_lightness(lightness, mode)
+  local preset_rules
+
+  -- Get preset rules based on mode
+  if mode == "dark" then
+    preset_rules = unwrap_preset(M.presets.black)
+  elseif mode == "grey" then
+    preset_rules = unwrap_preset(M.presets.grey)
+  elseif mode == "light" then
+    preset_rules = unwrap_preset(M.presets.white)
+  else
+    -- "adapt" mode or nil: interpolate based on lightness
+    if lightness <= M.preset_anchors.black then
+      preset_rules = unwrap_preset(M.presets.black)
+    elseif lightness >= M.preset_anchors.white then
+      preset_rules = unwrap_preset(M.presets.white)
+    elseif lightness <= M.preset_anchors.grey then
+      local range = M.preset_anchors.grey - M.preset_anchors.black
+      local t = (lightness - M.preset_anchors.black) / range
+      preset_rules = lerp_rules(M.presets.black, M.presets.grey, t)
+    else
+      local range = M.preset_anchors.white - M.preset_anchors.grey
+      local t = (lightness - M.preset_anchors.grey) / range
+      preset_rules = lerp_rules(M.presets.grey, M.presets.white, t)
+    end
+  end
+
+  -- Merge in contrast values (flipAt) based on lightness
+  local contrast_values = resolve_contrast(lightness)
+  for key, value in pairs(contrast_values) do
+    preset_rules[key] = value
+  end
+
+  return preset_rules
+end
+
+-- Legacy compatibility: keep derivation_rules pointing to black preset
+M.derivation_rules = unwrap_preset(M.presets.black)
 
 -- ============================================================================
 -- CORE: ALGORITHMIC PALETTE GENERATION
@@ -273,22 +397,18 @@ M.derivation_rules = M.theme_rules.dark
 --- @param base_bg number Background color in RGBA format
 --- @param base_text number Text color in RGBA format
 --- @param base_accent number|nil Optional accent color (nil for neutral grayscale)
---- @param rules table|nil Optional rules override (defaults to rules for detected theme)
+--- @param rules table|nil Optional rules override (defaults to interpolated rules for current mode)
 --- @return table Color palette with all UI colors
 function M.generate_palette(base_bg, base_text, base_accent, rules)
   -- Detect theme type from background lightness
   local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
   local is_light = bg_lightness > 0.5
 
-  -- Get rules: use provided, or select based on lightness
+  -- Get rules: use provided, or compute interpolated rules
+  -- In adapt mode this will interpolate between presets based on lightness
+  -- Contrast values (flipAt) are automatically merged in
   if not rules then
-    if bg_lightness > 0.65 then
-      rules = M.theme_rules.light
-    elseif bg_lightness > 0.35 then
-      rules = M.theme_rules.grey
-    else
-      rules = M.theme_rules.dark
-    end
+    rules = compute_rules_for_lightness(bg_lightness, M.current_mode)
   end
 
   -- Calculate chrome color (titlebar/statusbar) - always significantly darker than content
