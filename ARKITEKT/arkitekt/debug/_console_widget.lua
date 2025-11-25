@@ -397,7 +397,7 @@ function M.new(config)
       ImGui.SameLine(ctx)
       ImGui.TextDisabled(ctx, string.format("(%d)", slot_count))
       ImGui.SameLine(ctx)
-      ImGui.TextColored(ctx, COLORS.grey_40, "| dbl-click to focus")
+      ImGui.TextColored(ctx, COLORS.grey_40, "| click to focus")
       ImGui.SameLine(ctx, avail_w - 80)
       if ImGui.SmallButton(ctx, "Clear All##live") then
         Logger.clear_all_live()
@@ -429,16 +429,15 @@ function M.new(config)
 
         local is_selected = false
         local clicked, _ = ImGui.Selectable(ctx, "##slot_" .. entry.key, is_selected,
-          ImGui.SelectableFlags_SpanAllColumns | ImGui.SelectableFlags_AllowDoubleClick,
+          ImGui.SelectableFlags_SpanAllColumns,
           row_w, row_height - 2)
 
         local is_hovered = ImGui.IsItemHovered(ctx)
-        local is_double_clicked = clicked and ImGui.IsMouseDoubleClicked(ctx, 0)
 
         ImGui.PopStyleColor(ctx, 3)
 
-        -- Handle double-click to focus
-        if is_double_clicked then
+        -- Handle single-click to focus
+        if clicked then
           self.focused_slot_key = entry.key
         end
 
@@ -534,7 +533,7 @@ function M.new(config)
     ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#0D0D0DFF"))
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ChildRounding, 6)
 
-    if ImGui.BeginChild(ctx, "##FocusedSlot", avail_w - 16, avail_h - 20, ImGui.ChildFlags_Border, 0) then
+    if ImGui.BeginChild(ctx, "##FocusedSlot", avail_w - 16, avail_h - 20, ImGui.ChildFlags_Borders, 0) then
       local dl = ImGui.GetWindowDrawList(ctx)
 
       -- Header bar with back button
@@ -582,7 +581,7 @@ function M.new(config)
 
       -- Big display of current message
       ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1AFF"))
-      if ImGui.BeginChild(ctx, "##CurrentValue", avail_w - 48, 50, ImGui.ChildFlags_Border, 0) then
+      if ImGui.BeginChild(ctx, "##CurrentValue", avail_w - 48, 50, ImGui.ChildFlags_Borders, 0) then
         ImGui.SetCursorPos(ctx, 12, 12)
 
         -- Pulsing indicator
@@ -624,7 +623,7 @@ function M.new(config)
       if history_h < 100 then history_h = 100 end
 
       ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#141414FF"))
-      if ImGui.BeginChild(ctx, "##History", avail_w - 48, history_h, ImGui.ChildFlags_Border, 0) then
+      if ImGui.BeginChild(ctx, "##History", avail_w - 48, history_h, ImGui.ChildFlags_Borders, 0) then
         if #slot.history == 0 then
           ImGui.TextDisabled(ctx, "No history yet...")
         else
