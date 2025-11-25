@@ -282,8 +282,21 @@ function Panel:begin_draw(ctx)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
   end
 
+  -- Prepare scroll config, adding NoMove flag if disable_window_drag is set
+  local scroll_config = self.config.scroll
+  if self.config.disable_window_drag then
+    local flags = scroll_config.flags or 0
+    if ImGui.WindowFlags_NoMove then
+      flags = flags | ImGui.WindowFlags_NoMove
+    end
+    scroll_config = {
+      flags = flags,
+      bg_color = scroll_config.bg_color,
+    }
+  end
+
   -- Begin child window
-  local success = Content.begin_child(ctx, self.id, child_w, child_h, self.config.scroll, self)
+  local success = Content.begin_child(ctx, self.id, child_w, child_h, scroll_config, self)
 
   if padding > 0 then
     ImGui.PopStyleVar(ctx)

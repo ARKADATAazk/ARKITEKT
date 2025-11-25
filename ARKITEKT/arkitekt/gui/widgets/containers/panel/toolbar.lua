@@ -158,7 +158,7 @@ end
 --- Handles both old and new config formats
 --- @param config table Panel config
 --- @param position string Position ("top", "bottom", "left", "right")
---- @return table|nil Toolbar config or nil
+--- @return table|nil Toolbar config or nil if disabled
 function M.get_toolbar_config(config, position)
   -- Check new unified format first
   if config.toolbars and config.toolbars[position] then
@@ -177,9 +177,15 @@ function M.get_toolbar_config(config, position)
       return config.header
     end
   elseif position == "left" then
-    return config.left_sidebar
+    -- FIX: Check enabled flag before returning sidebar config
+    if config.left_sidebar and config.left_sidebar.enabled then
+      return config.left_sidebar
+    end
   elseif position == "right" then
-    return config.right_sidebar
+    -- FIX: Check enabled flag before returning sidebar config
+    if config.right_sidebar and config.right_sidebar.enabled then
+      return config.right_sidebar
+    end
   end
 
   return nil
