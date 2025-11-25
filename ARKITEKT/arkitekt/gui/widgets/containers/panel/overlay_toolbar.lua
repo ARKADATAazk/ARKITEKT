@@ -297,14 +297,31 @@ function M.draw(ctx, dl, panel_bounds, regular_toolbar_bounds, config, anim_stat
 
   -- Update edge slide animation (for left position)
   if position == "left" and config.edge_slide_distance and config.edge_slide_distance > 0 then
-    -- Create extended hover zone (wider than just the visible buttons)
     local mx, my = ImGui.GetMousePos(ctx)
-    local hover_zone_width = 50  -- Hover zone extends this far from panel edge
     local x1, y1, x2, y2 = table.unpack(panel_bounds)
 
-    -- Hover zone: from panel edge to hover_zone_width pixels right
-    local is_in_hover_zone = mx >= x1 and mx <= x1 + hover_zone_width and
-                             my >= bounds.y and my <= bounds.y + bounds.h
+    -- Calculate actual button area (not full panel height)
+    local button_count = config.elements and #config.elements or 0
+    local button_height = 40  -- Standard button height from sidebars layout
+    local buttons_total_height = button_count * button_height
+
+    -- Center buttons vertically in available space
+    local available_height = bounds.h
+    local button_area_y = bounds.y + (available_height - buttons_total_height) / 2
+
+    -- Add vertical padding for easier targeting
+    local vertical_padding = 30
+    local hover_zone_y1 = button_area_y - vertical_padding
+    local hover_zone_y2 = button_area_y + buttons_total_height + vertical_padding
+
+    -- Horizontal hover zone extends from panel edge
+    local hover_zone_width = 50
+    local hover_zone_x1 = x1
+    local hover_zone_x2 = x1 + hover_zone_width
+
+    -- Check if mouse is in the constrained hover zone
+    local is_in_hover_zone = mx >= hover_zone_x1 and mx <= hover_zone_x2 and
+                             my >= hover_zone_y1 and my <= hover_zone_y2
 
     -- Update slide target
     anim_state.slide_target = is_in_hover_zone and config.edge_slide_distance or 0
