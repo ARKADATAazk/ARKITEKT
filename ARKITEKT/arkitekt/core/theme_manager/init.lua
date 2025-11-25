@@ -91,14 +91,14 @@ function M.generate_palette(base_bg, base_text, base_accent)
   local sign = is_light and -1 or 1
 
   -- Calculate chrome color (titlebar/statusbar) - always significantly darker than content
-  -- Dark themes (~12%): chrome at ~6-8% (about half)
-  -- Grey themes (~24%): chrome at ~12-15%
-  -- Light themes (~88%): chrome at ~75%
+  -- Dark themes (14%): chrome at ~6% (ratio ~0.42)
+  -- Grey themes (~24%): chrome at ~10%
+  -- Light themes (~88%): chrome at ~73%
   local chrome_lightness
   if is_light then
     chrome_lightness = bg_lightness - 0.15  -- 15% darker for light themes
   else
-    chrome_lightness = bg_lightness * 0.5   -- Half brightness for dark/grey themes
+    chrome_lightness = bg_lightness * 0.42  -- ~42% of content brightness for dark/grey
   end
   chrome_lightness = math.max(0.04, math.min(0.85, chrome_lightness))  -- Clamp
   local base_chrome = Colors.set_lightness(base_bg, chrome_lightness)
@@ -268,7 +268,7 @@ M.themes = {
   -- Best for: Low-light environments, OLED screens
   dark = function()
     return M.generate_palette(
-      Colors.hexrgb("#1E1E1EFF"),  -- Deep gray (~12% lightness)
+      Colors.hexrgb("#242424FF"),  -- 36,36,36 RGB (~14% lightness)
       Colors.hexrgb("#CCCCCCFF"),  -- Light gray text (~80%)
       nil                          -- No accent (neutral grayscale)
     )

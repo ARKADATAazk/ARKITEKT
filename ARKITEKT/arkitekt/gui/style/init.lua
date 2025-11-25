@@ -24,11 +24,11 @@ local M = {}
 
 M.COLORS = {
   -- Backgrounds
-  BG_BASE = hexrgb("#252525FF"),        -- Standard control background
+  BG_BASE = hexrgb("#242424FF"),        -- 36,36,36 RGB - main content background
   BG_HOVER = hexrgb("#2A2A2AFF"),       -- Hovered control background
   BG_ACTIVE = hexrgb("#303030FF"),      -- Active/pressed control background
   BG_PANEL = hexrgb("#1A1A1AFF"),       -- Panel/container background (darker)
-  BG_CHROME = hexrgb("#141414FF"),      -- Chrome (titlebar/statusbar) - significantly darker
+  BG_CHROME = hexrgb("#0F0F0FFF"),      -- 15,15,15 RGB - titlebar/statusbar
   BG_TRANSPARENT = hexrgb("#00000000"), -- Transparent background
 
   -- Borders
