@@ -35,8 +35,15 @@ M.CONFIG = {
 --- Get current colors (theme-reactive via Style.COLORS)
 --- @return table Colors for rendering
 local function get_colors()
-  local badge = ScriptColors.get_badge()
-  local playlist = ScriptColors.get_playlist_tile()
+  local ok, badge = pcall(ScriptColors.get_badge)
+  if not ok then badge = { bg = 0x14181CDD, text = 0xFFFFFFDD, border_opacity = 0.20 } end
+
+  local ok2, playlist = pcall(ScriptColors.get_playlist_tile)
+  if not ok2 then playlist = { base_color = 0x3A3A3AFF, name_color = 0xCCCCCCFF, badge_color = 0x999999FF } end
+
+  local ok3, fallback = pcall(ScriptColors.get_fallback_chip)
+  if not ok3 then fallback = 0xFF5733FF end
+
   local S = Style.COLORS or {}
 
   return {
@@ -49,7 +56,7 @@ local function get_colors()
     playlist_tile = playlist,
 
     -- Fallback chip color
-    fallback_chip = ScriptColors.get_fallback_chip(),
+    fallback_chip = fallback,
 
     -- Default background (for regions without color)
     bg_base = S.BG_PANEL or hexrgb("#1A1A1A"),

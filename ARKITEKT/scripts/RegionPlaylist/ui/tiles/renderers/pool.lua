@@ -44,9 +44,22 @@ M.CONFIG = {
 --- Get current colors (theme-reactive for badges/tiles, fixed for circular)
 --- @return table Colors for rendering
 local function get_colors()
-  local badge = ScriptColors.get_badge()
-  local playlist = ScriptColors.get_playlist_tile()
-  local circular = ScriptColors.get_circular()
+  local ok, badge = pcall(ScriptColors.get_badge)
+  if not ok then badge = { bg = 0x14181CDD, text = 0xFFFFFFDD, border_opacity = 0.20 } end
+
+  local ok2, playlist = pcall(ScriptColors.get_playlist_tile)
+  if not ok2 then playlist = { base_color = 0x3A3A3AFF, name_color = 0xCCCCCCFF, badge_color = 0x999999FF } end
+
+  local ok3, circular = pcall(ScriptColors.get_circular)
+  if not ok3 then circular = {
+    base_color = 0x240C0CFF, stripe_color = 0x430D0D33, border_color = 0x240F0FFF,
+    text_color = 0x901B1BFF, lock_color = 0x901B1BFF, chip_color = 0x901B1BFF,
+    badge_bg = 0x240C0CFF, badge_border_color = 0x652A2AFF,
+    stripe_width = 8, stripe_spacing = 16,
+  } end
+
+  local ok4, fallback = pcall(ScriptColors.get_fallback_chip)
+  if not ok4 then fallback = 0xFF5733FF end
 
   return {
     -- Badge colors (theme-reactive via Style.COLORS)
@@ -61,7 +74,7 @@ local function get_colors()
     circular = circular,
 
     -- Fallback chip color
-    fallback_chip = ScriptColors.get_fallback_chip(),
+    fallback_chip = fallback,
   }
 end
 
