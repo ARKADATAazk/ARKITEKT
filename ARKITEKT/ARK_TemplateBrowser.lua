@@ -5,7 +5,7 @@
 -- ============================================================================
 -- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/init.lua")
+local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
 
 -- Load required modules
 local Shell = require('arkitekt.app.shell')
