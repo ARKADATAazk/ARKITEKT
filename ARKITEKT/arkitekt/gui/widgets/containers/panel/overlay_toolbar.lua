@@ -104,8 +104,11 @@ function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, conf
   local size = orientation == "horizontal" and (config.height or 40) or (config.width or 200)
   local visible_size = size * visibility
 
+  -- Check if overlay should extend from panel edge (ignore regular toolbar)
+  local extend_from_edge = config.extend_from_edge or false
+
   if position == "top" then
-    local start_y = regular_toolbar_bounds and regular_toolbar_bounds.y2 or y1
+    local start_y = (not extend_from_edge and regular_toolbar_bounds) and regular_toolbar_bounds.y2 or y1
     return {
       x = x1,
       y = start_y,
@@ -113,7 +116,7 @@ function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, conf
       h = visible_size
     }
   elseif position == "bottom" then
-    local end_y = regular_toolbar_bounds and regular_toolbar_bounds.y1 or y2
+    local end_y = (not extend_from_edge and regular_toolbar_bounds) and regular_toolbar_bounds.y1 or y2
     return {
       x = x1,
       y = end_y - visible_size,
@@ -121,7 +124,7 @@ function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, conf
       h = visible_size
     }
   elseif position == "left" then
-    local start_x = regular_toolbar_bounds and regular_toolbar_bounds.x2 or x1
+    local start_x = (not extend_from_edge and regular_toolbar_bounds) and regular_toolbar_bounds.x2 or x1
     local content_y1 = regular_toolbar_bounds and regular_toolbar_bounds.content_y1 or y1
     local content_y2 = regular_toolbar_bounds and regular_toolbar_bounds.content_y2 or y2
     return {
@@ -131,7 +134,7 @@ function M.calculate_bounds(position, panel_bounds, regular_toolbar_bounds, conf
       h = content_y2 - content_y1
     }
   else -- right
-    local end_x = regular_toolbar_bounds and regular_toolbar_bounds.x1 or x2
+    local end_x = (not extend_from_edge and regular_toolbar_bounds) and regular_toolbar_bounds.x1 or x2
     local content_y1 = regular_toolbar_bounds and regular_toolbar_bounds.content_y1 or y1
     local content_y2 = regular_toolbar_bounds and regular_toolbar_bounds.content_y2 or y2
     return {

@@ -83,13 +83,14 @@ local panel_config = {
     left = {
       enabled = true,
       width = 200,
+      extend_from_edge = true,  -- Start from panel edge, not regular toolbar edge
       auto_hide = {
         enabled = true,
         trigger = "hover",
         visible_amount = 0.15,  -- 15% visible when hidden
         animation_speed = 0.2,
       },
-      bg_color = 0x252525CC,  -- Semi-transparent background
+      -- NO bg_color = overlay is transparent by default (floats above content)
       elements = {
         {
           id = "overlay1",
@@ -109,17 +110,18 @@ local panel_config = {
       }
     },
 
-    -- Overlay toolbar on right (always visible)
+    -- Overlay toolbar on right (always visible, with background)
     right = {
       enabled = true,
       width = 150,
+      extend_from_edge = true,  -- Start from panel edge
       auto_hide = {
         enabled = true,
         trigger = "always_visible",
         visible_amount = 1.0,
         animation_speed = 0.15,
       },
-      bg_color = 0x2A2A2AEE,
+      bg_color = 0x2A2A2A99,  -- Optional: semi-transparent background (if you want it)
       elements = {
         {
           id = "overlay_r1",
@@ -163,8 +165,8 @@ local function init()
   })
 
   reaper.ShowConsoleMsg("\n=== Overlay Toolbar Test Started ===\n")
-  reaper.ShowConsoleMsg("Left overlay: Hover to show (15% visible when hidden)\n")
-  reaper.ShowConsoleMsg("Right overlay: Always visible\n\n")
+  reaper.ShowConsoleMsg("Left overlay: NO background, hover to expand from LEFT EDGE\n")
+  reaper.ShowConsoleMsg("Right overlay: With background, always visible\n\n")
 end
 
 -- ============================================================================
@@ -190,20 +192,20 @@ local function render()
       ImGui.Dummy(ctx, 0, 10)
 
       ImGui.Text(ctx, "Overlay Toolbars:")
-      ImGui.BulletText(ctx, "Left overlay: Hover to expand (15% visible)")
-      ImGui.BulletText(ctx, "Right overlay: Always fully visible")
+      ImGui.BulletText(ctx, "Left: Transparent (no background), starts at panel LEFT EDGE")
+      ImGui.BulletText(ctx, "Right: Semi-transparent background, always visible")
       ImGui.Dummy(ctx, 0, 10)
 
-      ImGui.Text(ctx, "Z-Order (bottom to top):")
-      ImGui.BulletText(ctx, "1. Panel background + regular toolbars")
-      ImGui.BulletText(ctx, "2. Content area (this text)")
-      ImGui.BulletText(ctx, "3. Overlay toolbars (animated)")
-      ImGui.BulletText(ctx, "4. Scrollbar (if present)")
+      ImGui.Text(ctx, "Configuration:")
+      ImGui.BulletText(ctx, "extend_from_edge = true -> overlay at panel edge")
+      ImGui.BulletText(ctx, "extend_from_edge = false -> overlay after regular toolbar")
+      ImGui.BulletText(ctx, "bg_color = nil -> transparent overlay (default)")
+      ImGui.BulletText(ctx, "bg_color = 0xRRGGBBAA -> optional background")
       ImGui.Dummy(ctx, 0, 20)
 
       ImGui.TextColored(ctx, 0x00FF00FF, "Instructions:")
-      ImGui.BulletText(ctx, "Move mouse to LEFT EDGE to see overlay slide out")
-      ImGui.BulletText(ctx, "Right overlay is always visible for comparison")
+      ImGui.BulletText(ctx, "Hover LEFT EDGE to expand left overlay (buttons appear)")
+      ImGui.BulletText(ctx, "Overlay buttons float ABOVE content (no grey box)")
       ImGui.BulletText(ctx, "Scroll down to see scrollbar z-order")
       ImGui.Dummy(ctx, 0, 10)
 
