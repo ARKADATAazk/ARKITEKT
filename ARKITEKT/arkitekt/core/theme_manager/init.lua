@@ -371,6 +371,15 @@ function M.generate_palette(base_bg, base_text, base_accent, rules)
     -- Pattern colors are OPAQUE - the grid lines are solid, not transparent overlays
     PATTERN_PRIMARY = Colors.adjust_lightness(bg_panel, rules.pattern_primary_delta),
     PATTERN_SECONDARY = Colors.adjust_lightness(bg_panel, rules.pattern_secondary_delta),
+
+    -- ============ TILES ============
+    -- Rendering parameters for region tiles (user-colored elements)
+    -- Dark themes: darken/desaturate fills, light text
+    -- Light themes: brighten/whiten fills, dark text
+    TILE_FILL_BRIGHTNESS = rules.tile_fill_brightness,
+    TILE_FILL_SATURATION = rules.tile_fill_saturation,
+    TILE_FILL_OPACITY = rules.tile_fill_opacity,
+    TILE_NAME_COLOR = Colors.hexrgb(rules.tile_name_color),
   }
 end
 

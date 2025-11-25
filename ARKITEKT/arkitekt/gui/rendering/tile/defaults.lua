@@ -79,39 +79,34 @@ M.STATIC_DEFAULTS = {
 M.DEFAULT = M.STATIC_DEFAULTS
 
 --- Get theme-aware tile config
---- Reads tile_* values from ThemeManager.get_current_rules() and applies them
---- Falls back to STATIC_DEFAULTS if ThemeManager not available
+--- Reads tile values from Style.COLORS (set by ThemeManager.generate_palette)
+--- Falls back to STATIC_DEFAULTS if Style not available
 --- @return table Tile config with theme-appropriate values
 function M.get()
-  -- Try to get ThemeManager (may not be loaded yet on first frame)
-  local ok, ThemeManager = pcall(require, 'arkitekt.core.theme_manager')
-  if not ok or not ThemeManager or not ThemeManager.get_current_rules then
+  -- Try to get Style (may not be loaded yet on first frame)
+  local ok, Style = pcall(require, 'arkitekt.gui.style')
+  if not ok or not Style or not Style.COLORS then
     return M.STATIC_DEFAULTS
   end
 
-  local rules = ThemeManager.get_current_rules()
-  if not rules then
-    return M.STATIC_DEFAULTS
-  end
-
-  -- Build config: start with static defaults, override with theme rules
+  -- Build config: start with static defaults, override with Style.COLORS values
   local config = {}
   for k, v in pairs(M.STATIC_DEFAULTS) do
     config[k] = v
   end
 
-  -- Apply theme-specific tile values if present
-  if rules.tile_fill_brightness then
-    config.fill_brightness = rules.tile_fill_brightness
+  -- Apply theme values from Style.COLORS (single source of truth)
+  if Style.COLORS.TILE_FILL_BRIGHTNESS then
+    config.fill_brightness = Style.COLORS.TILE_FILL_BRIGHTNESS
   end
-  if rules.tile_fill_saturation then
-    config.fill_saturation = rules.tile_fill_saturation
+  if Style.COLORS.TILE_FILL_SATURATION then
+    config.fill_saturation = Style.COLORS.TILE_FILL_SATURATION
   end
-  if rules.tile_fill_opacity then
-    config.fill_opacity = rules.tile_fill_opacity
+  if Style.COLORS.TILE_FILL_OPACITY then
+    config.fill_opacity = Style.COLORS.TILE_FILL_OPACITY
   end
-  if rules.tile_name_color then
-    config.name_base_color = hexrgb(rules.tile_name_color)
+  if Style.COLORS.TILE_NAME_COLOR then
+    config.name_base_color = Style.COLORS.TILE_NAME_COLOR
   end
 
   return config
