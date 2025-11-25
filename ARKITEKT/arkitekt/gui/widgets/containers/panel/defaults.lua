@@ -26,7 +26,7 @@ M.DEFAULTS = {
   scroll = {
     flags = 0,
     custom_scrollbar = false,
-    bg_color = PC.bg_scrollbar,
+    -- bg_color: Dynamically reads from Style.COLORS.BG_TRANSPARENT
   },
 
   anti_jitter = {
