@@ -169,23 +169,79 @@ M.theme_rules = {
   },
 }
 
+-- Anchor lightness values for each theme preset
+-- Used for interpolation in adapt mode
+M.theme_anchors = {
+  dark = 0.14,   -- ~14% lightness (dark preset)
+  grey = 0.24,   -- ~24% lightness (grey preset)
+  light = 0.88,  -- ~88% lightness (light preset)
+}
+
+--- Interpolate between two rule sets
+--- @param rules_a table First rule set
+--- @param rules_b table Second rule set
+--- @param t number Interpolation factor (0.0 = rules_a, 1.0 = rules_b)
+--- @return table Interpolated rules
+local function lerp_rules(rules_a, rules_b, t)
+  local result = {}
+  for key, value_a in pairs(rules_a) do
+    local value_b = rules_b[key]
+    if type(value_a) == "number" and type(value_b) == "number" then
+      -- Lerp numeric values
+      result[key] = value_a + (value_b - value_a) * t
+    elseif type(value_a) == "string" and type(value_b) == "string" then
+      -- Lerp colors (hex strings like "#RRGGBB")
+      local color_a = Colors.hexrgb(value_a)
+      local color_b = Colors.hexrgb(value_b)
+      result[key] = Colors.lerp(color_a, color_b, t)
+      -- Convert back to hex string for consistency
+      local r, g, b = Colors.rgba_to_components(result[key])
+      result[key] = string.format("#%02X%02X%02X", r, g, b)
+    else
+      -- Non-interpolatable, use closest
+      result[key] = t < 0.5 and value_a or value_b
+    end
+  end
+  return result
+end
+
 --- Get derivation rules for current theme mode
+--- For explicit modes (dark/grey/light), returns those rules directly.
+--- For "adapt" mode, interpolates between anchor rules based on current lightness.
 --- @return table Rules table for the current theme
 function M.get_current_rules()
   local mode = M.current_mode
 
-  -- Explicit modes use their rules directly
-  if mode == "light" then
-    return M.theme_rules.light
+  -- Explicit modes use their rules directly (no interpolation)
+  if mode == "dark" then
+    return M.theme_rules.dark
   elseif mode == "grey" then
     return M.theme_rules.grey
+  elseif mode == "light" then
+    return M.theme_rules.light
   end
 
-  -- "dark", "adapt", or fallback all use dark rules
-  -- NOTE: For smarter adapt handling, could detect lightness:
-  --   local bg_l = Colors.get_lightness(Style.COLORS.BG_BASE)
-  --   if bg_l > 0.5 then return M.theme_rules.light end
-  return M.theme_rules.dark
+  -- "adapt" mode: interpolate based on current theme lightness
+  local lightness = M.get_theme_lightness()
+
+  -- Find which two anchors we're between and interpolate
+  if lightness <= M.theme_anchors.dark then
+    -- Below dark anchor, use dark rules
+    return M.theme_rules.dark
+  elseif lightness >= M.theme_anchors.light then
+    -- Above light anchor, use light rules
+    return M.theme_rules.light
+  elseif lightness <= M.theme_anchors.grey then
+    -- Between dark and grey
+    local range = M.theme_anchors.grey - M.theme_anchors.dark
+    local t = (lightness - M.theme_anchors.dark) / range
+    return lerp_rules(M.theme_rules.dark, M.theme_rules.grey, t)
+  else
+    -- Between grey and light
+    local range = M.theme_anchors.light - M.theme_anchors.grey
+    local t = (lightness - M.theme_anchors.grey) / range
+    return lerp_rules(M.theme_rules.grey, M.theme_rules.light, t)
+  end
 end
 
 --- Get current theme's base lightness (0.0-1.0)
