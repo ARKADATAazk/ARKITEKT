@@ -211,13 +211,15 @@ function Panel:begin_draw(ctx)
       pattern_y2 = content_y2 - border_inset
     end
 
-    -- Build pattern config with fresh colors from Style.COLORS (enables dynamic theming)
+    -- Build pattern config with colors from component config OR Style.COLORS fallback
+    -- Custom colors (e.g. transport's semi-transparent overlay) are preserved when specified
+    -- Otherwise, theme-reactive colors enable dynamic theming for regular panels
     local pattern_cfg = {
       enabled = true,
       primary = self.config.background_pattern.primary and {
         type = self.config.background_pattern.primary.type,
         spacing = self.config.background_pattern.primary.spacing,
-        color = Style.COLORS.PATTERN_PRIMARY,  -- Fresh from current theme
+        color = self.config.background_pattern.primary.color or Style.COLORS.PATTERN_PRIMARY,
         dot_size = self.config.background_pattern.primary.dot_size,
         line_thickness = self.config.background_pattern.primary.line_thickness,
       } or nil,
@@ -225,7 +227,7 @@ function Panel:begin_draw(ctx)
         enabled = true,
         type = self.config.background_pattern.secondary.type,
         spacing = self.config.background_pattern.secondary.spacing,
-        color = Style.COLORS.PATTERN_SECONDARY,  -- Fresh from current theme
+        color = self.config.background_pattern.secondary.color or Style.COLORS.PATTERN_SECONDARY,
         dot_size = self.config.background_pattern.secondary.dot_size,
         line_thickness = self.config.background_pattern.secondary.line_thickness,
       } or nil,

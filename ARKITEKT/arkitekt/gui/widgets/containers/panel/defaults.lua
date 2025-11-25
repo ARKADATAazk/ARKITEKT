@@ -39,7 +39,8 @@ M.DEFAULTS = {
     primary = {
       type = 'grid',
       spacing = 50,
-      color = PC.pattern_primary,
+      -- color: Dynamically reads from Style.COLORS.PATTERN_PRIMARY (don't set static value here!)
+      -- Custom colors can be provided by components needing specific overlay effects (e.g. transport)
       dot_size = 2.5,
       line_thickness = 1.5,
     },
@@ -47,7 +48,7 @@ M.DEFAULTS = {
       enabled = true,
       type = 'grid',
       spacing = 5,
-      color = PC.pattern_secondary,
+      -- color: Dynamically reads from Style.COLORS.PATTERN_SECONDARY
       dot_size = 1.5,
       line_thickness = 0.5,
     },
