@@ -130,53 +130,29 @@ M.DEFAULTS = {
 }
 
 -- Standard element styling (used by all header elements)
+-- NOTE: Button colors are handled dynamically by the button widget's simplified color system
+-- which reads Style.COLORS each frame. No explicit color overrides needed here.
 M.ELEMENT_STYLE = {
   button = {
-    -- Base button colors for panel context
-    -- NOTE: Toggle colors are NOT defined here - use preset_name in your button config
-    --       to apply toggle styles (e.g., preset_name = "BUTTON_TOGGLE_TEAL")
-    bg_color = C.BG_BASE,
-    bg_hover_color = C.BG_HOVER,
-    bg_active_color = C.BG_ACTIVE,
-    border_outer_color = C.BORDER_OUTER,
-    border_inner_color = C.BORDER_INNER,
-    border_hover_color = C.BORDER_HOVER,
-    text_color = C.TEXT_NORMAL,
-    text_hover_color = C.TEXT_HOVER,
-    text_active_color = C.TEXT_ACTIVE,
+    -- Button widget uses its internal simplified color system (reads Style.COLORS dynamically)
+    -- No explicit colors needed - let the widget handle theme-aware rendering
   },
 
   dropdown = {
-    bg_color = C.BG_BASE,
-    bg_hover_color = C.BG_HOVER,
-    bg_active_color = C.BG_HOVER,
-    border_outer_color = C.BORDER_OUTER,
-    border_inner_color = C.BORDER_INNER,
-    border_hover_color = C.BORDER_HOVER,
-    border_active_color = C.BORDER_ACTIVE,
-    text_color = C.TEXT_NORMAL,
-    text_hover_color = C.TEXT_HOVER,
-    text_active_color = C.TEXT_ACTIVE,
+    -- Combo widget uses Style.build_dropdown_config() for dynamic colors
+    -- Only non-color properties are specified here
     rounding = 0,
     padding_x = 10,
     padding_y = 6,
     arrow_size = 6,
-    arrow_color = C.TEXT_NORMAL,
-    arrow_hover_color = C.TEXT_HOVER,
     enable_mousewheel = true,
   },
 
   search = {
+    -- InputText widget handles its own dynamic colors
+    -- Only non-color properties are specified here
     placeholder = "Search...",
     fade_speed = 8.0,
-    bg_color = C.BG_BASE,
-    bg_hover_color = C.BG_HOVER,
-    bg_active_color = C.BG_HOVER,
-    border_outer_color = C.BORDER_OUTER,
-    border_inner_color = C.BORDER_INNER,
-    border_hover_color = C.BORDER_HOVER,
-    border_active_color = C.BORDER_ACTIVE,
-    text_color = C.TEXT_NORMAL,
   },
   
   separator = {

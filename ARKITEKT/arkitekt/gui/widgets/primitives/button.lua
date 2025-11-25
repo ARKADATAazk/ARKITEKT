@@ -104,18 +104,70 @@ function Button:update(dt, is_hovered, is_active)
 end
 
 -- ============================================================================
--- COLOR DERIVATION
+-- COLOR DERIVATION (Theme-aware HSL-based)
 -- ============================================================================
 
+-- Determine if current theme is light based on BG_BASE lightness
+local function is_light_theme()
+  local bg = Style.COLORS.BG_BASE
+  local _, _, l = Colors.rgb_to_hsl(bg)
+  return l > 0.5
+end
+
+-- Derive state colors using HSL lightness shifts
+-- For dark themes: hover = lighter, active = even lighter
+-- For light themes: hover = darker, active = even darker
 local function derive_state_color(base, state)
+  local light = is_light_theme()
+  local sign = light and -1 or 1
+
   if state == 'hover' then
-    return Colors.adjust_brightness(base, 1.15)
+    return Colors.adjust_lightness(base, sign * 0.06)
   elseif state == 'active' then
-    return Colors.adjust_brightness(base, 0.85)
+    return Colors.adjust_lightness(base, sign * 0.12)
   elseif state == 'disabled' then
     return Colors.with_alpha(Colors.desaturate(base, 0.5), 0x80)
   end
   return base
+end
+
+-- Get simple button colors with automatic state derivation
+-- This replaces the complex preset system for most use cases
+local function get_simple_colors(is_toggled, is_hovered, is_active, is_disabled, accent_color)
+  local C = Style.COLORS
+
+  -- Base colors
+  local bg_base = C.BG_BASE
+  local text_base = C.TEXT_NORMAL
+  local border_inner = C.BORDER_INNER
+  local border_outer = C.BORDER_OUTER
+
+  -- Toggle ON state uses accent color
+  if is_toggled then
+    bg_base = accent_color or C.ACCENT_WHITE
+    text_base = C.TEXT_BRIGHT
+    border_inner = accent_color or C.ACCENT_WHITE_BRIGHT
+  end
+
+  -- Derive state colors
+  local bg, text
+  if is_disabled then
+    bg = derive_state_color(bg_base, 'disabled')
+    text = C.TEXT_DIMMED
+    border_inner = derive_state_color(border_inner, 'disabled')
+  elseif is_active then
+    bg = derive_state_color(bg_base, 'active')
+    text = C.TEXT_BRIGHT
+  elseif is_hovered then
+    bg = derive_state_color(bg_base, 'hover')
+    text = C.TEXT_HOVER
+    border_inner = derive_state_color(border_inner, 'hover')
+  else
+    bg = bg_base
+    text = text_base
+  end
+
+  return bg, border_inner, border_outer, text
 end
 
 local function get_state_colors(config, is_disabled, is_toggled, is_active, hover_alpha)
@@ -185,23 +237,52 @@ end
 -- ============================================================================
 
 local function resolve_config(opts)
-  -- Build config from current M.COLORS (enables dynamic theming)
-  local config = Style.build_button_config()
+  -- Start with defaults merged with opts
+  local config = {}
 
-  -- Apply dynamic preset if specified (resolves key mappings to colors)
-  if opts.preset_name then
-    Style.apply_dynamic_preset(config, opts.preset_name)
-  elseif opts.preset and type(opts.preset) == 'table' then
-    -- Custom preset table - merge directly
-    for k, v in pairs(opts.preset) do
+  -- Copy defaults
+  for k, v in pairs(DEFAULTS) do
+    config[k] = v
+  end
+
+  -- Apply user overrides first (so we know if preset_name is set)
+  for k, v in pairs(opts) do
+    if v ~= nil then
       config[k] = v
     end
   end
 
-  -- Apply user overrides (copy ALL opts, not just color keys)
-  for k, v in pairs(opts) do
-    if v ~= nil then
-      config[k] = v
+  -- Determine if we should use simple (auto-derived) colors or complex preset
+  -- Use simple colors when:
+  --   1. No preset_name specified, OR
+  --   2. Using BUTTON_TOGGLE_WHITE or similar basic toggle preset
+  local use_simple = not opts.preset_name and not opts.preset
+  local is_toggle_preset = opts.preset_name and opts.preset_name:find("TOGGLE")
+
+  if use_simple or is_toggle_preset then
+    -- Mark for simple color derivation (handled in render)
+    config._use_simple_colors = true
+    config._accent_color = nil  -- Will use ACCENT_WHITE by default for toggles
+
+    -- For custom accent, check if user specified one
+    if opts.accent_color then
+      config._accent_color = opts.accent_color
+    end
+  else
+    -- Legacy: use complex preset system
+    local base_config = Style.build_button_config()
+    for k, v in pairs(base_config) do
+      if config[k] == nil then
+        config[k] = v
+      end
+    end
+
+    if opts.preset_name then
+      Style.apply_dynamic_preset(config, opts.preset_name)
+    elseif opts.preset and type(opts.preset) == 'table' then
+      for k, v in pairs(opts.preset) do
+        config[k] = v
+      end
     end
   end
 
@@ -226,9 +307,17 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   local dt = ImGui.GetDeltaTime(ctx)
   instance:update(dt, is_hovered, is_active)
 
-  -- Get colors using the smoothly animated hover_alpha
-  local bg_color, border_inner, border_outer, text_color =
-    get_state_colors(config, is_disabled, is_toggled, is_active, instance.hover_alpha)
+  -- Get colors - use simplified system when marked, otherwise legacy
+  local bg_color, border_inner, border_outer, text_color
+  if config._use_simple_colors then
+    -- New simplified approach: auto-derive all state colors
+    bg_color, border_inner, border_outer, text_color =
+      get_simple_colors(is_toggled, is_hovered, is_active, is_disabled, config._accent_color)
+  else
+    -- Legacy: complex config-based approach with hover animation
+    bg_color, border_inner, border_outer, text_color =
+      get_state_colors(config, is_disabled, is_toggled, is_active, instance.hover_alpha)
+  end
 
   -- Calculate rounding
   local rounding = config.rounding or 0
