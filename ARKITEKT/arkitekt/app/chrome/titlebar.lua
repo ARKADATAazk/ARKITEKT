@@ -294,7 +294,7 @@ function M.new(opts)
                 ThemeManager.set_mode("adapt")
               end
 
-              ContextMenu.end_menu(ctx)
+              ContextMenu.end_submenu(ctx)
             end
 
             ContextMenu.separator(ctx)

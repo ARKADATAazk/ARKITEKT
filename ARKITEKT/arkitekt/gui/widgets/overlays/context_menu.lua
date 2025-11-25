@@ -201,4 +201,71 @@ function M.separator(ctx, config)
   ImGui.Dummy(ctx, 1, 6)
 end
 
+-- Submenu support
+function M.begin_menu(ctx, label, config)
+  config = config or {}
+
+  local item_height = config.item_height or DEFAULTS.item_height
+  local item_padding_x = config.item_padding_x or DEFAULTS.item_padding_x
+  local item_hover_color = config.item_hover_color or DEFAULTS.item_hover_color
+  local item_text_color = config.item_text_color or DEFAULTS.item_text_color
+  local item_text_hover_color = config.item_text_hover_color or DEFAULTS.item_text_hover_color
+
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local item_x, item_y = ImGui.GetCursorScreenPos(ctx)
+  local avail_w = ImGui.GetContentRegionAvail(ctx)
+
+  local text_w, text_h = ImGui.CalcTextSize(ctx, label)
+  local arrow_text = ">"
+  local arrow_w = ImGui.CalcTextSize(ctx, arrow_text)
+  local item_w = math.max(avail_w, text_w + arrow_w + item_padding_x * 3)
+
+  local item_hovered = ImGui.IsMouseHoveringRect(ctx, item_x, item_y, item_x + item_w, item_y + item_height)
+
+  if item_hovered then
+    ImGui.DrawList_AddRectFilled(dl, item_x, item_y, item_x + item_w, item_y + item_height, item_hover_color, 2)
+  end
+
+  local text_color = item_hovered and item_text_hover_color or item_text_color
+  local text_x = item_x + item_padding_x
+  local text_y = item_y + (item_height - text_h) * 0.5
+
+  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, label)
+  ImGui.DrawList_AddText(dl, item_x + item_w - item_padding_x - arrow_w, text_y, text_color, arrow_text)
+
+  ImGui.InvisibleButton(ctx, label .. "_submenu", item_w, item_height)
+
+  -- Open submenu on hover
+  if item_hovered then
+    ImGui.OpenPopup(ctx, label .. "_submenu_popup")
+  end
+
+  -- Style for submenu popup
+  local bg_color = config.bg_color or DEFAULTS.bg_color
+  local border_color = config.border_color or DEFAULTS.border_color
+  local rounding = config.rounding or DEFAULTS.rounding
+  local padding = config.padding or DEFAULTS.padding
+
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, padding, padding)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowRounding, rounding)
+  ImGui.PushStyleVar(ctx, ImGui.StyleVar_PopupRounding, rounding)
+  ImGui.PushStyleColor(ctx, ImGui.Col_PopupBg, bg_color)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Border, border_color)
+
+  local submenu_open = ImGui.BeginPopup(ctx, label .. "_submenu_popup")
+
+  if not submenu_open then
+    ImGui.PopStyleColor(ctx, 2)
+    ImGui.PopStyleVar(ctx, 3)
+  end
+
+  return submenu_open
+end
+
+function M.end_submenu(ctx)
+  ImGui.EndPopup(ctx)
+  ImGui.PopStyleColor(ctx, 2)
+  ImGui.PopStyleVar(ctx, 3)
+end
+
 return M
