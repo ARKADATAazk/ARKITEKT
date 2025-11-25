@@ -155,9 +155,153 @@ These files are exemplary:
 
 ---
 
+## Second Pass Findings (Additional Items)
+
+### 6. Event Bus Sort on Every Subscribe
+
+**Impact:** Low (only affects startup/init)
+**Location:** `arkitekt/core/events.lua:60`
+
+```lua
+-- Current: Sorts entire listener array on each subscription
+table.sort(self.listeners[event_name], function(a, b)
+  return a.priority > b.priority
+end)
+```
+
+**Recommendation:** Fine for now since subscriptions happen at init, not runtime.
+Keep as-is unless profiling shows issues.
+
+---
+
+### 7. Timing Functions Using `math.floor/ceil`
+
+**Impact:** Low (not in frame loops)
+**Location:** `arkitekt/reaper/timing.lua`
+
+Uses `math.floor`, `math.ceil` for quantization. These are called on user actions (transitions), not every frame. **No action needed.**
+
+---
+
+### 8. String ID Caching - Already Good!
+
+**Location:** `arkitekt/gui/widgets/containers/grid/core.lua:164-166`
+
+```lua
+-- Cache string IDs for performance (avoid string concatenation every frame)
+_cached_bg_id = "##grid_bg_" .. grid_id,
+_cached_empty_id = "##grid_empty_" .. grid_id,
+```
+
+Excellent pattern. Consider applying to other widgets that generate IDs.
+
+---
+
+### 9. Virtual List Mode Available
+
+**Location:** `arkitekt/gui/widgets/containers/grid/core.lua:168-170`
+
+```lua
+-- Virtual list mode for large datasets (1000+ items)
+virtual = opts.virtual or false,
+virtual_buffer_rows = opts.virtual_buffer_rows or 2,
+```
+
+Good to have this option. Enable for grids with 100+ items.
+
+---
+
+## REAPER-Specific Optimizations
+
+### 10. Project State Change Detection - Good Pattern
+
+**Locations:** Multiple files use `reaper.GetProjectStateChangeCount(0)`
+
+This is the correct pattern for detecting project changes without polling every item. Already implemented correctly in:
+- `arkitekt/reaper/project_monitor.lua`
+- `scripts/ItemPicker/ui/main_window.lua`
+- `scripts/RegionPlaylist/engine/engine_state.lua`
+
+---
+
+### 11. Consider: Cache REAPER API Lookups
+
+**Impact:** Medium in heavy loops
+**Current:** Direct calls to `reaper.*` in some loops
+
+For functions called in tight loops, consider:
+```lua
+-- At module top
+local GetPlayPosition = reaper.GetPlayPosition
+local EnumProjectMarkers = reaper.EnumProjectMarkers
+
+-- In loop
+local pos = GetPlayPosition()  -- Instead of reaper.GetPlayPosition()
+```
+
+**Files to audit:**
+- `scripts/RegionPlaylist/engine/core.lua`
+- `arkitekt/reaper/regions.lua`
+
+---
+
+## Patterns to Avoid (Already Handled)
+
+| Anti-Pattern | Status | Notes |
+|--------------|--------|-------|
+| `debug.*` in hot paths | ✅ OK | Only used at startup for path resolution |
+| `collectgarbage()` in loops | ✅ OK | Only 2 usages, both in cleanup/shutdown |
+| `loadstring` in loops | ✅ OK | Not found |
+| `setmetatable` in loops | ✅ OK | Only at object creation |
+| Dynamic `__index` functions | ✅ OK | Only 2 usages (init.lua, assembler_view.lua) |
+
+---
+
+## ImGui-Specific Optimizations
+
+### Already Good:
+- DrawList caching in renderers
+- Cursor position caching where needed
+- Clipping rect usage
+
+### Consider:
+- Batch similar draw calls (lines → polyline)
+- Use `ImGui.IsItemVisible()` to skip hidden widget internals
+- Pre-calculate style values outside render loops
+
+---
+
+## Performance Profiling Checklist
+
+Before optimizing, profile with:
+
+```lua
+local start = reaper.time_precise()
+-- ... code to measure ...
+local elapsed = reaper.time_precise() - start
+reaper.ShowConsoleMsg(string.format("Elapsed: %.4fms\n", elapsed * 1000))
+```
+
+Target metrics:
+- **Idle CPU < 1%** = Fine
+- **Idle CPU 1-5%** = Monitor
+- **Idle CPU > 5%** = Investigate
+
+---
+
 ## Notes
 
 - **ThemeAdjuster excluded** - reference code, not ours
 - **External libs excluded** - `talagan_ReaImGui Markdown`, etc.
 - Profile with `reaper.time_precise()` before/after changes
 - Don't optimize cold paths (startup, config loading)
+
+---
+
+## Summary: What Matters Most
+
+1. **High Priority:** `table.insert` → `[#t+1]` (easy wins)
+2. **Medium Priority:** Remaining `math.floor` → `//1`
+3. **Low Priority:** Everything else - profile first
+
+The hot rendering paths are already well-optimized. Focus on domain/storage layers only if profiling shows issues.
