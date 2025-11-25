@@ -190,22 +190,17 @@ M.presets = {
 }
 
 -- ============================================================================
--- CONTRAST MODES (dark/light)
+-- CONTRAST RULES (binary flip at lightness threshold)
 -- ============================================================================
--- Binary contrast modes for flipAt() - used for values that need hard contrast
--- (like text colors that must be readable regardless of background).
--- flipAt(threshold, value) flips between dark/light when bg crosses threshold.
+-- Single-definition format for contrast-critical values.
+-- Each rule specifies: { threshold, dark_value, light_value }
+-- At runtime: lightness < threshold → dark, otherwise → light
+--
+-- Use for values that need hard contrast (text on backgrounds, etc.)
 
 M.contrast = {
-  -- DARK contrast mode (bg lightness < threshold)
-  dark = {
-    tile_name_color = flipAt(0.5, "#DDE3E9"),  -- Light text on dark
-  },
-
-  -- LIGHT contrast mode (bg lightness >= threshold)
-  light = {
-    tile_name_color = flipAt(0.5, "#1A1A1A"),  -- Dark text on light
-  },
+  -- Tile text color: must be readable regardless of fill color
+  tile_name_color = { threshold = 0.5, dark = "#DDE3E9", light = "#1A1A1A" },
 }
 
 -- ============================================================================
@@ -293,25 +288,16 @@ local function lerp_rules(rules_a, rules_b, t)
   return result
 end
 
---- Resolve contrast values (flipAt) based on current lightness
+--- Resolve contrast values based on current lightness
+--- Each contrast rule has { threshold, dark, light } - flip at threshold
 --- @param lightness number Current background lightness (0.0-1.0)
---- @return table Resolved contrast values (unwrapped)
+--- @return table Resolved contrast values
 local function resolve_contrast(lightness)
   local result = {}
 
-  for key, wrapped_dark in pairs(M.contrast.dark) do
-    local wrapped_light = M.contrast.light[key]
-    local value_dark = unwrap(wrapped_dark)
-    local value_light = unwrap(wrapped_light)
-
-    -- Get threshold from the wrapper (default 0.5)
-    local threshold = 0.5
-    if type(wrapped_dark) == "table" and wrapped_dark.threshold then
-      threshold = wrapped_dark.threshold
-    end
-
-    -- Flip at threshold
-    result[key] = lightness < threshold and value_dark or value_light
+  for key, rule in pairs(M.contrast) do
+    local threshold = rule.threshold or 0.5
+    result[key] = lightness < threshold and rule.dark or rule.light
   end
 
   return result

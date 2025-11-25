@@ -92,20 +92,24 @@ Use for:
 - Semantic colors that shouldn't blend
 - Values with distinct meanings per theme
 
-### `flipAt(threshold, value)` - Binary Flip
+### Contrast Rules - Binary Flip
 
-Flips between dark/light at an absolute lightness threshold.
+For values that need hard contrast (no gradual blending), use `M.contrast`:
 
 ```lua
--- In contrast (not presets!)
+-- Single definition - no duplication, can't desync
 M.contrast = {
-  dark  = { tile_name_color = flipAt(0.5, "#DDE3E9") },  -- Light text
-  light = { tile_name_color = flipAt(0.5, "#1A1A1A") },  -- Dark text
+  tile_name_color = { threshold = 0.5, dark = "#DDE3E9", light = "#1A1A1A" },
 }
 
--- At 40% lightness: "#DDE3E9" (below 0.5)
--- At 60% lightness: "#1A1A1A" (above 0.5)
+-- At 40% lightness: "#DDE3E9" (below 0.5 threshold)
+-- At 60% lightness: "#1A1A1A" (above 0.5 threshold)
 ```
+
+Each rule is `{ threshold, dark, light }`:
+- `threshold`: Lightness value to flip at (0.0-1.0)
+- `dark`: Value when bg lightness < threshold
+- `light`: Value when bg lightness >= threshold
 
 Use for:
 - Text colors that need hard contrast
@@ -138,25 +142,19 @@ M.presets = {
 }
 ```
 
-### `M.contrast` - Binary Contrast Modes
+### `M.contrast` - Binary Contrast Rules
 
-Two modes for `flipAt()` values:
-
-| Mode | Condition | Description |
-|------|-----------|-------------|
-| `dark` | lightness < threshold | Dark background mode |
-| `light` | lightness >= threshold | Light background mode |
+Single-definition rules for contrast-critical values:
 
 ```lua
 M.contrast = {
-  dark = {
-    tile_name_color = flipAt(0.5, "#DDE3E9"),  -- Light text
-  },
-  light = {
-    tile_name_color = flipAt(0.5, "#1A1A1A"),  -- Dark text
-  },
+  tile_name_color = { threshold = 0.5, dark = "#DDE3E9", light = "#1A1A1A" },
+  -- Add more contrast rules as needed:
+  -- another_text = { threshold = 0.45, dark = "#FFFFFF", light = "#000000" },
 }
 ```
+
+Each key maps to `{ threshold, dark, light }` - no duplication, can't desync.
 
 ### `M.preset_anchors` - Lightness Values
 
@@ -199,11 +197,11 @@ Same calculation, but snaps at `t = 0.5`:
 - `t < 0.5` → use preset A's value
 - `t >= 0.5` → use preset B's value
 
-### For `flipAt()` values:
+### For contrast rules:
 
 Ignores presets entirely. Uses absolute lightness:
-- `lightness < threshold` → use `M.contrast.dark` value
-- `lightness >= threshold` → use `M.contrast.light` value
+- `lightness < threshold` → use `dark` value
+- `lightness >= threshold` → use `light` value
 
 ---
 
@@ -211,27 +209,22 @@ Ignores presets entirely. Uses absolute lightness:
 
 ### 1. Decide the behavior:
 
-| Behavior | Wrapper | Define in |
-|----------|---------|-----------|
-| Smooth gradient | `blend()` | `M.presets` |
-| Discrete zones | `step()` | `M.presets` |
-| Binary contrast | `flipAt()` | `M.contrast` |
+| Behavior | Define in | Format |
+|----------|-----------|--------|
+| Smooth gradient | `M.presets` | `blend(value)` |
+| Discrete zones | `M.presets` | `step(value)` |
+| Binary contrast | `M.contrast` | `{ threshold, dark, light }` |
 
 ### 2. Add to appropriate table:
 
 ```lua
--- For blend/step (in M.presets):
-M.presets = {
-  black = { my_new_value = blend(0.3) },
-  grey  = { my_new_value = blend(0.5) },
-  white = { my_new_value = blend(0.8) },
-}
+-- For blend/step (in M.presets - all 3 presets):
+M.presets.black.my_new_value = blend(0.3)
+M.presets.grey.my_new_value = blend(0.5)
+M.presets.white.my_new_value = blend(0.8)
 
--- For flipAt (in M.contrast):
-M.contrast = {
-  dark  = { my_contrast_value = flipAt(0.5, "#FFFFFF") },
-  light = { my_contrast_value = flipAt(0.5, "#000000") },
-}
+-- For contrast (single definition):
+M.contrast.my_contrast_value = { threshold = 0.5, dark = "#FFFFFF", light = "#000000" }
 ```
 
 ### 3. Use in `generate_palette()`:
@@ -350,16 +343,14 @@ local l = ThemeManager.get_theme_lightness()
 ```lua
 local blend = ThemeManager.blend
 local step = ThemeManager.step
-local flipAt = ThemeManager.flipAt
 
--- Add to presets
+-- Add to presets (all 3)
 M.presets.black.my_value = blend(0.5)
 M.presets.grey.my_value = blend(0.6)
 M.presets.white.my_value = blend(0.9)
 
--- Add to contrast
-M.contrast.dark.my_text = flipAt(0.5, "#FFFFFF")
-M.contrast.light.my_text = flipAt(0.5, "#000000")
+-- Add to contrast (single definition)
+M.contrast.my_text = { threshold = 0.5, dark = "#FFFFFF", light = "#000000" }
 ```
 
 ---
