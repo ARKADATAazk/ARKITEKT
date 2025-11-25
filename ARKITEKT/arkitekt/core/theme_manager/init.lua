@@ -184,16 +184,20 @@ end
 -- REAPER INTEGRATION
 -- ============================================================================
 
---- Convert REAPER color format (0xRRGGBB) to ImGui format (0xRRGGBBAA)
---- @param reaper_color number REAPER color in RGB format
+--- Convert REAPER native color format to ImGui format (0xRRGGBBAA)
+--- REAPER uses native OS format: Windows=0x00BBGGRR, macOS may differ
+--- @param reaper_color number REAPER native color
 --- @return number|nil ImGui color in RGBA format, or nil on error
 local function reaper_to_imgui(reaper_color)
   if reaper_color == -1 then
     return nil  -- Failed to get color
   end
-  -- REAPER: 0x00RRGGBB (no alpha)
-  -- ImGui:  0xRRGGBBAA (with alpha)
-  return (reaper_color << 8) | 0xFF  -- Shift left 8 bits, add full opacity
+  -- REAPER native (Windows): 0x00BBGGRR
+  -- ImGui:  0xRRGGBBAA
+  local b = (reaper_color >> 16) & 0xFF
+  local g = (reaper_color >> 8) & 0xFF
+  local r = reaper_color & 0xFF
+  return (r << 24) | (g << 16) | (b << 8) | 0xFF
 end
 
 --- Sync theme colors with REAPER's current theme (ultra-minimal approach)
