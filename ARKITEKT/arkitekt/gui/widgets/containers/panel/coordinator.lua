@@ -127,8 +127,10 @@ function Panel:begin_draw(ctx)
   local x1, y1 = cursor_x, cursor_y
   local x2, y2 = x1 + w, y1 + h
 
-  -- Draw background
-  Rendering.draw_background(dl, x1, y1, w, h, self.config.bg_color, self.config.rounding)
+  -- Draw background (read dynamically from Style.COLORS for theme reactivity)
+  -- Use config.bg_color as override, fall back to Style.COLORS.BG_PANEL
+  local bg_color = self.config._custom_bg_color or Style.COLORS.BG_PANEL
+  Rendering.draw_background(dl, x1, y1, w, h, bg_color, self.config.rounding)
 
   -- ============================================================================
   -- TOOLBAR CALCULATION (Unified API)
@@ -235,9 +237,10 @@ function Panel:begin_draw(ctx)
     ImGui.DrawList_PopClipRect(dl)
   end
 
-  -- Draw border
+  -- Draw border (read dynamically from Style.COLORS for theme reactivity)
   if self.config.border_thickness > 0 then
-    Rendering.draw_border(dl, x1, y1, w, h, self.config.border_color, self.config.rounding, self.config.border_thickness)
+    local border_color = self.config._custom_border_color or Style.COLORS.BORDER_OUTER
+    Rendering.draw_border(dl, x1, y1, w, h, border_color, self.config.rounding, self.config.border_thickness)
   end
 
   -- ============================================================================

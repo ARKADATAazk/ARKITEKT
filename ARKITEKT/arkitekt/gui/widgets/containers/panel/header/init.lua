@@ -75,25 +75,27 @@ function M.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
     corner_flags = ImGui.DrawFlags_RoundCornersTop
   end
 
-  -- Draw header background
+  -- Draw header background (read dynamically from Style.COLORS for theme reactivity)
+  local bg_color = toolbar_cfg.bg_color or C.BG_BASE
   ImGui.DrawList_AddRectFilled(
     dl, x, y, x + w, y + h,
-    toolbar_cfg.bg_color or PC.bg_header,
+    bg_color,
     rounding,
     corner_flags
   )
 
   -- Draw border (top or bottom depending on position)
+  local border_color = toolbar_cfg.border_color or C.BORDER_OUTER
   if position == "bottom" then
     ImGui.DrawList_AddLine(
       dl, x, y, x + w, y,
-      toolbar_cfg.border_color or PC.border_header,
+      border_color,
       1
     )
   else
     ImGui.DrawList_AddLine(
       dl, x, y + h - 1, x + w, y + h - 1,
-      toolbar_cfg.border_color or PC.border_header,
+      border_color,
       1
     )
   end
