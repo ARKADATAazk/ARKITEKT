@@ -87,7 +87,7 @@ function M.PushMyStyle(ctx, opts)
 
   -- Window backgrounds
   if push_window_bg then
-    push_color(ImGui.Col_WindowBg, opts.window_bg_color or C.BG_PANEL)
+    push_color(ImGui.Col_WindowBg, opts.window_bg_color or C.BG_BASE)
   end
   push_color(ImGui.Col_ChildBg, STATIC.transparent)
   push_color(ImGui.Col_PopupBg, A(C.BG_PANEL, 0xF0))
