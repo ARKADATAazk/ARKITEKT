@@ -13,6 +13,18 @@ local texture_cache = {}
 local total_attachments = 0  -- Track total attachments (never decreases)
 local MAX_ATTACHMENTS = 64  -- Hard limit on total textures ever created
 
+-- DEBUG: Throttle logging (once per second)
+local _last_log_time = 0
+local _last_primary_color = nil
+local function should_log()
+  local now = reaper.time_precise()
+  if now - _last_log_time > 1.0 then
+    _last_log_time = now
+    return true
+  end
+  return false
+end
+
 -- Convert RGBA (0xRRGGBBAA) to ABGR (0xAABBGGRR) for ImGui draw calls
 local function rgba_to_abgr(color)
   local r = (color >> 24) & 0xFF
@@ -397,7 +409,21 @@ end
 -- Draw pattern with automatic texture baking for dot patterns
 -- Set pattern_cfg.use_texture = false to disable texture baking
 function M.draw(ctx, dl, x1, y1, x2, y2, pattern_cfg)
-  if not pattern_cfg or not pattern_cfg.enabled then return end
+  if not pattern_cfg or not pattern_cfg.enabled then
+    return
+  end
+
+  -- DEBUG: Log when color changes OR once per second
+  local primary_color = pattern_cfg.primary and pattern_cfg.primary.color or 0
+  if primary_color ~= _last_primary_color or should_log() then
+    _last_primary_color = primary_color
+    reaper.ShowConsoleMsg(string.format("[M.draw] primary color=0x%08X alpha=%d\n",
+      primary_color, primary_color & 0xFF))
+    if pattern_cfg.secondary and pattern_cfg.secondary.enabled then
+      local c = pattern_cfg.secondary.color or 0
+      reaper.ShowConsoleMsg(string.format("[M.draw] secondary color=0x%08X alpha=%d\n", c, c & 0xFF))
+    end
+  end
 
   ImGui.DrawList_PushClipRect(dl, x1, y1, x2, y2, true)
 
