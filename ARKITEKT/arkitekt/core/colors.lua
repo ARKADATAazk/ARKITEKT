@@ -222,6 +222,66 @@ function M.hsl_to_rgb(h, s, l)
   return (r * 255 + 0.5)//1, (g * 255 + 0.5)//1, (b * 255 + 0.5)//1
 end
 
+-- ============================================================================
+-- SECTION 1.6: HSL Manipulation Utilities (for theme generation)
+-- ============================================================================
+
+--- Adjust lightness of a color in HSL space
+--- @param color number Color in RGBA format
+--- @param delta number Lightness adjustment (-1.0 to 1.0, typically -0.2 to 0.2)
+--- @return number Adjusted color in RGBA format
+function M.adjust_lightness(color, delta)
+  local h, s, l = M.rgb_to_hsl(color)
+  l = max(0, min(1, l + delta))
+  local r, g, b = M.hsl_to_rgb(h, s, l)
+  local _, _, _, a = M.rgba_to_components(color)
+  return M.components_to_rgba(r, g, b, a)
+end
+
+--- Adjust saturation of a color in HSL space
+--- @param color number Color in RGBA format
+--- @param delta number Saturation adjustment (-1.0 to 1.0)
+--- @return number Adjusted color in RGBA format
+function M.adjust_saturation(color, delta)
+  local h, s, l = M.rgb_to_hsl(color)
+  s = max(0, min(1, s + delta))
+  local r, g, b = M.hsl_to_rgb(h, s, l)
+  local _, _, _, a = M.rgba_to_components(color)
+  return M.components_to_rgba(r, g, b, a)
+end
+
+--- Adjust hue of a color in HSL space
+--- @param color number Color in RGBA format
+--- @param delta number Hue rotation (-1.0 to 1.0, wraps around)
+--- @return number Adjusted color in RGBA format
+function M.adjust_hue(color, delta)
+  local h, s, l = M.rgb_to_hsl(color)
+  h = (h + delta) % 1  -- Wrap around
+  local r, g, b = M.hsl_to_rgb(h, s, l)
+  local _, _, _, a = M.rgba_to_components(color)
+  return M.components_to_rgba(r, g, b, a)
+end
+
+--- Set specific HSL values while preserving others
+--- @param color number Color in RGBA format
+--- @param h_new number|nil New hue (0-1) or nil to keep current
+--- @param s_new number|nil New saturation (0-1) or nil to keep current
+--- @param l_new number|nil New lightness (0-1) or nil to keep current
+--- @return number Adjusted color in RGBA format
+function M.set_hsl(color, h_new, s_new, l_new)
+  local h, s, l = M.rgb_to_hsl(color)
+  h = h_new or h
+  s = s_new or s
+  l = l_new or l
+  local r, g, b = M.hsl_to_rgb(h, s, l)
+  local _, _, _, a = M.rgba_to_components(color)
+  return M.components_to_rgba(r, g, b, a)
+end
+
+-- ============================================================================
+-- SECTION 1.7: Color Space Conversions (HSV)
+-- ============================================================================
+
 local function _rgb_to_hsv(r, g, b)
   r, g, b = r / 255, g / 255, b / 255
   local maxv, minv = max(r, g, b), min(r, g, b)
@@ -251,7 +311,7 @@ local function _hsv_to_rgb(h, s, v)
 end
 
 -- ============================================================================
--- SECTION 1.6: Color Sorting Utilities
+-- SECTION 1.8: Color Sorting Utilities
 -- ============================================================================
 
 function M.get_color_sort_key(color)
