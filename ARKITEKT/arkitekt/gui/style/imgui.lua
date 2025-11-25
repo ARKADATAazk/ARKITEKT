@@ -101,10 +101,10 @@ function M.PushMyStyle(ctx, opts)
   push_color(ImGui.Col_FrameBgHovered, A(C.BG_HOVER, 0x99))
   push_color(ImGui.Col_FrameBgActive, A(C.BG_ACTIVE, 0xAB))
 
-  -- Title bar (stays dark - chrome element)
-  push_color(ImGui.Col_TitleBg, hexrgb("#0F0F0FFF"))
-  push_color(ImGui.Col_TitleBgActive, hexrgb("#141414FF"))
-  push_color(ImGui.Col_TitleBgCollapsed, hexrgb("#00000082"))
+  -- Title bar (uses panel color - always darker than content)
+  push_color(ImGui.Col_TitleBg, C.BG_PANEL)
+  push_color(ImGui.Col_TitleBgActive, C.BG_PANEL)
+  push_color(ImGui.Col_TitleBgCollapsed, A(C.BG_PANEL, 0x82))
 
   -- Menu bar
   push_color(ImGui.Col_MenuBarBg, C.BG_PANEL)
@@ -188,34 +188,37 @@ function M.PopMyStyle(ctx)
 end
 
 -- Expose palette for backward compatibility (some scripts might use M.palette)
--- Chrome elements (titlebar, statusbar) use these and should stay dark
+-- Maps old grey names to themed colors
 M.palette = setmetatable({}, {
   __index = function(_, key)
     local S = get_style()
-    -- Dark greys stay hardcoded for chrome elements (titlebar, statusbar)
-    local hardcoded = {
+    local Colors = require('arkitekt.core.colors')
+    -- Map palette names to themed colors
+    -- Chrome elements use BG_PANEL (always darker than content)
+    local mapping = {
       white = hexrgb("#FFFFFFFF"),
       black = hexrgb("#000000FF"),
-      grey_05 = hexrgb("#0D0D0DFF"),
-      grey_06 = hexrgb("#0F0F0FFF"),
-      grey_07 = hexrgb("#121212FF"),
-      grey_08 = hexrgb("#141414FF"),  -- statusbar bg
-      grey_09 = hexrgb("#171717FF"),
-      grey_10 = hexrgb("#1A1A1AFF"),
-      grey_14 = hexrgb("#242424FF"),  -- titlebar bg
-      grey_18 = hexrgb("#2E2E2EFF"),
-      grey_20 = hexrgb("#333333FF"),
-      border_strong = hexrgb("#000000FF"),
-      border_soft = hexrgb("#000000DD"),
-      -- Semantic mappings for lighter greys that can theme
+      -- Dark greys map to panel/chrome colors
+      grey_05 = Colors.adjust_lightness(S.COLORS.BG_PANEL, -0.03),
+      grey_06 = Colors.adjust_lightness(S.COLORS.BG_PANEL, -0.02),
+      grey_07 = Colors.adjust_lightness(S.COLORS.BG_PANEL, -0.01),
+      grey_08 = S.COLORS.BG_PANEL,  -- statusbar bg
+      grey_09 = Colors.adjust_lightness(S.COLORS.BG_PANEL, 0.01),
+      grey_10 = Colors.adjust_lightness(S.COLORS.BG_PANEL, 0.02),
+      grey_14 = S.COLORS.BG_BASE,   -- content bg
+      grey_18 = S.COLORS.BG_HOVER,
+      grey_20 = S.COLORS.BG_ACTIVE,
       grey_52 = S.COLORS.TEXT_DIMMED,
       grey_60 = S.COLORS.TEXT_NORMAL,
+      grey_66 = S.COLORS.TEXT_DIMMED,
       grey_c0 = S.COLORS.TEXT_NORMAL,
+      border_strong = S.COLORS.BORDER_OUTER,
+      border_soft = S.COLORS.BORDER_INNER,
       teal = S.COLORS.ACCENT_PRIMARY,
       yellow = S.COLORS.ACCENT_WARNING,
       red = S.COLORS.ACCENT_DANGER,
     }
-    return hardcoded[key] or S.COLORS.BG_BASE
+    return mapping[key] or S.COLORS.BG_BASE
   end
 })
 
