@@ -85,10 +85,11 @@ M.colors = {
   BG_CHROME       = offset(-0.08, -0.15),
 
   -- === BORDERS (from BG_BASE) ===
+  -- Increased offsets for more visible contrast (matching older visual style)
   BORDER_INNER    = offset(0.05, -0.03),
-  BORDER_HOVER    = offset(0.10, -0.08),
-  BORDER_ACTIVE   = offset(0.15, -0.12),
-  BORDER_FOCUS    = offset(0.20, -0.15),
+  BORDER_HOVER    = offset(0.18, -0.14),   -- was 0.10/-0.08, increased for visible pop
+  BORDER_ACTIVE   = offset(0.30, -0.22),   -- was 0.15/-0.12, much brighter on click
+  BORDER_FOCUS    = offset(0.25, -0.18),   -- was 0.20/-0.15
   BORDER_OUTER    = snap("#000000", "#404040"),
   BORDER_OUTER_OPACITY = lerp(0.87, 0.60),
 
