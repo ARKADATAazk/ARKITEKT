@@ -316,15 +316,14 @@ function M.new(opts)
                   custom_color = ThemeManager.COLORS and ThemeManager.COLORS.BG_BASE or hexrgb("#333333")
                 end
 
-                -- Convert from our format (0xRRGGBBAA) to ImGui format (0xAABBGGRR)
-                local r = (custom_color >> 24) & 0xFF
-                local g = (custom_color >> 16) & 0xFF
-                local b = (custom_color >> 8) & 0xFF
-                local a = custom_color & 0xFF
-                local imgui_color = (a << 24) | (b << 16) | (g << 8) | r
+                -- Clickable "Custom" label to apply the custom theme
+                if ContextMenu.item(ctx, custom_label) then
+                  if ThemeManager.set_mode then
+                    ThemeManager.set_mode("custom")
+                  end
+                end
 
-                -- Show label and color picker on same line
-                ImGui.Text(ctx, custom_label)
+                -- Color picker on same line (after the menu item)
                 ImGui.SameLine(ctx)
 
                 -- Color picker flags: no alpha, no options button
@@ -332,14 +331,11 @@ function M.new(opts)
                               | ImGui.ColorEditFlags_NoInputs
                               | ImGui.ColorEditFlags_NoLabel
 
-                local changed, new_imgui_color = ImGui.ColorEdit3(ctx, "##custom_color", imgui_color, flags)
+                -- ReaImGui uses same format as our internal (0xRRGGBBAA)
+                local changed, new_color = ImGui.ColorEdit3(ctx, "##custom_color", custom_color, flags)
                 if changed then
-                  -- Convert back from ImGui format (0xAABBGGRR) to our format (0xRRGGBBAA)
                   -- Force alpha to 0xFF since we're using ColorEdit3 (no alpha)
-                  local nb = (new_imgui_color >> 16) & 0xFF
-                  local ng = (new_imgui_color >> 8) & 0xFF
-                  local nr = new_imgui_color & 0xFF
-                  local new_color = (nr << 24) | (ng << 16) | (nb << 8) | 0xFF
+                  new_color = (new_color & 0xFFFFFF00) | 0xFF
                   ThemeManager.set_custom(new_color)
                 end
               end
