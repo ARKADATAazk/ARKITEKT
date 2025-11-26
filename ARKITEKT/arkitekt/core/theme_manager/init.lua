@@ -1132,11 +1132,11 @@ function M.render_debug_overlay(ctx, ImGui)
 
       -- Get final computed color from Style.COLORS if available
       local final_color = style_key and Style.COLORS[style_key]
-      local has_final_color = final_color and type(final_color) == "number"
+      local has_final_color = final_color and type(final_color) == "number" and final_color == math.floor(final_color)
 
-      -- Show final color swatch if it's a color value
+      -- Show final color swatch if it's a color value (integer)
       if has_final_color then
-        ImGui.ColorButton(ctx, "final_" .. key, final_color, 0, 12, 12)
+        ImGui.ColorButton(ctx, "final_" .. key, math.floor(final_color), 0, 12, 12)
         ImGui.SameLine(ctx)
       end
 
@@ -1193,10 +1193,14 @@ function M.render_debug_overlay(ctx, ImGui)
 
       for _, k in ipairs(color_keys) do
         local v = Style.COLORS[k]
-        if type(v) == "number" then
-          ImGui.ColorButton(ctx, "style_" .. k, v, 0, 12, 12)
+        -- Only show color swatch for integer color values (RGBA format)
+        if type(v) == "number" and v == math.floor(v) then
+          ImGui.ColorButton(ctx, "style_" .. k, math.floor(v), 0, 12, 12)
           ImGui.SameLine(ctx)
-          ImGui.Text(ctx, string.format("%s: 0x%08X", k, v))
+          ImGui.Text(ctx, string.format("%s: 0x%08X", k, math.floor(v)))
+        elseif type(v) == "number" then
+          -- Non-integer numbers (multipliers, opacities, etc.)
+          ImGui.Text(ctx, string.format("%s: %.3f", k, v))
         else
           ImGui.Text(ctx, string.format("%s: %s", k, tostring(v)))
         end
