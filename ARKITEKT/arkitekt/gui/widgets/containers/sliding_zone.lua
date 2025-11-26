@@ -2,16 +2,18 @@
 -- arkitekt/gui/widgets/containers/sliding_zone.lua
 -- Reusable sliding zone/panel component with multi-track animation
 -- Supports all 4 edges, hover zones, delayed retraction, and content callbacks
+-- Uses existing Track system for consistent animation behavior
 
 local ImGui = require('arkitekt.core.imgui')
 local Base = require('arkitekt.gui.widgets.base')
-local Easing = require('arkitekt.gui.fx.animation.easing')
-local Colors = require('arkitekt.core.colors')
+local Tracks = require('arkitekt.gui.fx.animation.tracks')
+local Anim = require('arkitekt.core.animation')
+local Math = require('arkitekt.core.math')
 
 local M = {}
 
 -- ============================================================================
--- DEFAULTS
+-- DEFAULTS (uses library animation constants)
 -- ============================================================================
 
 local DEFAULTS = {
@@ -28,12 +30,13 @@ local DEFAULTS = {
   size = 40,                -- Width (for left/right) or height (for top/bottom)
   min_visible = 0.0,        -- Minimum visibility when hidden (0.0 = fully hidden)
 
-  -- Animation
+  -- Animation (uses library defaults)
   slide_distance = 20,      -- How far to slide when revealing
-  animation_speed = 0.15,   -- Lerp speed for visibility
-  slide_speed = 0.25,       -- Lerp speed for slide offset
-  scale_speed = 0.20,       -- Lerp speed for scale changes
+  animation_speed = nil,    -- nil = use Anim.FADE_SPEED
+  slide_speed = nil,        -- nil = use Anim.SMOOTH_SPEED
+  scale_speed = nil,        -- nil = use Anim.SMOOTH_SPEED
   retract_delay = 0.3,      -- Seconds to wait before retracting
+  snap_epsilon = 0.001,     -- Threshold for considering animation settled
 
   -- Hover zone
   hover_extend_outside = 30,  -- Extend hover zone outside bounds
@@ -73,61 +76,65 @@ local SlidingZone = {}
 SlidingZone.__index = SlidingZone
 
 function SlidingZone.new(id)
-  return setmetatable({
+  local self = setmetatable({
     id = id,
 
-    -- Animation tracks
-    visibility = 0.0,       -- 0.0 = hidden, 1.0 = fully visible
-    visibility_target = 0.0,
-
-    slide_offset = 0.0,     -- Current slide offset in pixels
-    slide_target = 0.0,
-
-    scale = 1.0,            -- Current scale
-    scale_target = 1.0,
+    -- Animation tracks (using library Track class)
+    visibility_track = Tracks.Track.new(0, Anim.FADE_SPEED),
+    slide_track = Tracks.Track.new(0, Anim.SMOOTH_SPEED),
+    scale_track = Tracks.Track.new(1.0, Anim.SMOOTH_SPEED),
 
     -- State
     is_expanded = false,    -- For button trigger mode
     is_in_hover_zone = false,
     hover_leave_time = nil,
-
-    -- Settled detection
-    is_settled = true,
   }, SlidingZone)
+
+  return self
 end
 
--- ============================================================================
--- ANIMATION UPDATE
--- ============================================================================
-
-local function lerp_track(current, target, speed)
-  local new_val = current + (target - current) * speed
-  -- Snap when very close
-  if math.abs(target - new_val) < 0.001 then
-    return target, true
+function SlidingZone:configure_speeds(opts)
+  -- Allow per-instance speed overrides
+  if opts.animation_speed then
+    self.visibility_track:set_speed(opts.animation_speed)
   end
-  return new_val, false
+  if opts.slide_speed then
+    self.slide_track:set_speed(opts.slide_speed)
+  end
+  if opts.scale_speed then
+    self.scale_track:set_speed(opts.scale_speed)
+  end
 end
 
-function SlidingZone:update(dt, opts)
-  local settled = true
+function SlidingZone:set_targets(visibility, slide, scale)
+  self.visibility_track:to(visibility)
+  self.slide_track:to(slide)
+  self.scale_track:to(scale)
+end
 
-  -- Update visibility
-  self.visibility, local vis_settled = lerp_track(
-    self.visibility, self.visibility_target, opts.animation_speed or 0.15)
-  settled = settled and vis_settled
+function SlidingZone:update(dt)
+  self.visibility_track:update(dt)
+  self.slide_track:update(dt)
+  self.scale_track:update(dt)
+end
 
-  -- Update slide offset
-  self.slide_offset, local slide_settled = lerp_track(
-    self.slide_offset, self.slide_target, opts.slide_speed or 0.25)
-  settled = settled and slide_settled
+function SlidingZone:get_values()
+  return self.visibility_track:get(),
+         self.slide_track:get(),
+         self.scale_track:get()
+end
 
-  -- Update scale
-  self.scale, local scale_settled = lerp_track(
-    self.scale, self.scale_target, opts.scale_speed or 0.20)
-  settled = settled and scale_settled
+function SlidingZone:is_settled(epsilon)
+  epsilon = epsilon or 0.001
+  return not self.visibility_track:is_animating(epsilon) and
+         not self.slide_track:is_animating(epsilon) and
+         not self.scale_track:is_animating(epsilon)
+end
 
-  self.is_settled = settled
+function SlidingZone:teleport(visibility, slide, scale)
+  self.visibility_track:teleport(visibility)
+  self.slide_track:teleport(slide)
+  self.scale_track:teleport(scale)
 end
 
 -- ============================================================================
@@ -196,23 +203,23 @@ local function normalize_bounds(bounds)
   return bounds
 end
 
-local function calculate_content_bounds(opts, state)
+local function calculate_content_bounds(opts, visibility, slide_offset, scale)
   local bounds = normalize_bounds(opts.bounds)
   local edge = opts.edge or "right"
   local size = opts.size or 40
-  local slide_distance = opts.slide_distance or 20
 
   -- Apply scale
-  local scaled_size = size * state.scale
+  local scaled_size = size * scale
 
   -- Apply visibility to size
-  local visible_size = scaled_size * math.max(opts.min_visible or 0, state.visibility)
+  local visible_size = scaled_size * math.max(opts.min_visible or 0, visibility)
 
   if edge == "left" then
     -- Starts clipped outside left edge, slides right
+    local slide_distance = opts.slide_distance or 20
     local base_x = bounds.x - slide_distance
     return {
-      x = base_x + state.slide_offset,
+      x = base_x + slide_offset,
       y = bounds.y,
       w = visible_size,
       h = bounds.h
@@ -220,9 +227,10 @@ local function calculate_content_bounds(opts, state)
 
   elseif edge == "right" then
     -- Starts clipped outside right edge, slides left
+    local slide_distance = opts.slide_distance or 20
     local base_x = bounds.x + bounds.w + slide_distance - visible_size
     return {
-      x = base_x - state.slide_offset,
+      x = base_x - slide_offset,
       y = bounds.y,
       w = visible_size,
       h = bounds.h
@@ -230,20 +238,22 @@ local function calculate_content_bounds(opts, state)
 
   elseif edge == "top" then
     -- Starts clipped outside top edge, slides down
+    local slide_distance = opts.slide_distance or 20
     local base_y = bounds.y - slide_distance
     return {
       x = bounds.x,
-      y = base_y + state.slide_offset,
+      y = base_y + slide_offset,
       w = bounds.w,
       h = visible_size
     }
 
   else -- bottom
     -- Starts clipped outside bottom edge, slides up
+    local slide_distance = opts.slide_distance or 20
     local base_y = bounds.y + bounds.h + slide_distance - visible_size
     return {
       x = bounds.x,
-      y = base_y - state.slide_offset,
+      y = base_y - slide_offset,
       w = bounds.w,
       h = visible_size
     }
@@ -294,7 +304,7 @@ end
 --- Draw a sliding zone
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options
---- @return table Result { expanded, visibility, bounds, hovered }
+--- @return table Result { expanded, visibility, bounds, hovered, settled }
 function M.draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
 
@@ -309,7 +319,10 @@ function M.draw(ctx, opts)
   -- Get or create instance
   local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new)
 
-  -- Get draw list
+  -- Configure speeds (allows runtime changes)
+  state:configure_speeds(opts)
+
+  -- Get draw list and delta time
   local dl = Base.get_draw_list(ctx, opts)
   local dt = ImGui.GetDeltaTime(ctx)
 
@@ -319,12 +332,11 @@ function M.draw(ctx, opts)
   -- Handle trigger modes
   local trigger = opts.trigger or "hover"
   local current_time = ImGui.GetTime(ctx)
+  local slide_distance = opts.slide_distance or 20
 
   if trigger == "always" then
     -- Always visible
-    state.visibility_target = 1.0
-    state.slide_target = opts.slide_distance or 20
-    state.scale_target = opts.expand_scale or 1.0
+    state:set_targets(1.0, slide_distance, opts.expand_scale or 1.0)
 
   elseif trigger == "hover" then
     -- Check hover zone
@@ -332,9 +344,7 @@ function M.draw(ctx, opts)
 
     if in_zone then
       -- Expand immediately
-      state.visibility_target = 1.0
-      state.slide_target = opts.slide_distance or 20
-      state.scale_target = opts.expand_scale or 1.0
+      state:set_targets(1.0, slide_distance, opts.expand_scale or 1.0)
       state.hover_leave_time = nil
       state.is_in_hover_zone = true
 
@@ -353,9 +363,7 @@ function M.draw(ctx, opts)
       local delay = opts.retract_delay or 0.3
       if state.hover_leave_time and (current_time - state.hover_leave_time) >= delay then
         -- Retract
-        state.visibility_target = opts.min_visible or 0.0
-        state.slide_target = 0
-        state.scale_target = 1.0
+        state:set_targets(opts.min_visible or 0.0, 0, 1.0)
         state.is_in_hover_zone = false
         state.hover_leave_time = nil
 
@@ -369,24 +377,31 @@ function M.draw(ctx, opts)
 
   elseif trigger == "button" then
     -- Toggle state managed externally or via click
-    state.visibility_target = state.is_expanded and 1.0 or (opts.min_visible or 0.0)
-    state.slide_target = state.is_expanded and (opts.slide_distance or 20) or 0
-    state.scale_target = state.is_expanded and (opts.expand_scale or 1.0) or 1.0
+    if state.is_expanded then
+      state:set_targets(1.0, slide_distance, opts.expand_scale or 1.0)
+    else
+      state:set_targets(opts.min_visible or 0.0, 0, 1.0)
+    end
   end
 
   -- Update animation tracks
-  state:update(dt, opts)
+  state:update(dt)
+
+  -- Get current animation values
+  local visibility, slide_offset, scale = state:get_values()
 
   -- Calculate content bounds
-  local content_bounds = calculate_content_bounds(opts, state)
+  local content_bounds = calculate_content_bounds(opts, visibility, slide_offset, scale)
 
-  -- Skip drawing if completely hidden
-  if state.visibility < 0.001 and state.slide_offset < 0.5 then
+  -- Check if completely hidden (skip drawing)
+  local is_settled = state:is_settled(opts.snap_epsilon or 0.001)
+  if visibility < 0.001 and slide_offset < 0.5 and is_settled then
     return Base.create_result({
       expanded = state.is_expanded,
-      visibility = state.visibility,
+      visibility = visibility,
       bounds = content_bounds,
       hovered = false,
+      settled = true,
     })
   end
 
@@ -400,7 +415,7 @@ function M.draw(ctx, opts)
 
   -- Call content draw callback
   if opts.on_draw then
-    opts.on_draw(ctx, dl, content_bounds, state.visibility, state)
+    opts.on_draw(ctx, dl, content_bounds, visibility, state)
   end
 
   -- Pop clipping
@@ -415,10 +430,10 @@ function M.draw(ctx, opts)
 
   return Base.create_result({
     expanded = state.is_expanded,
-    visibility = state.visibility,
+    visibility = visibility,
     bounds = content_bounds,
     hovered = is_hovered,
-    settled = state.is_settled,
+    settled = is_settled,
   })
 end
 
@@ -458,6 +473,25 @@ function M.set_expanded(ctx, opts, expanded)
   end
 end
 
+--- Teleport to a state immediately (skip animation)
+--- @param ctx userdata ImGui context
+--- @param opts table Widget options (must include id)
+--- @param expanded boolean Target expanded state
+function M.teleport(ctx, opts, expanded)
+  opts = Base.parse_opts(opts, DEFAULTS)
+  local unique_id = Base.resolve_id(opts, "sliding_zone")
+  local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new)
+
+  state.is_expanded = expanded
+  local slide_distance = opts.slide_distance or 20
+
+  if expanded then
+    state:teleport(1.0, slide_distance, opts.expand_scale or 1.0)
+  else
+    state:teleport(opts.min_visible or 0.0, 0, 1.0)
+  end
+end
+
 --- Get current state (for external state inspection)
 --- @param ctx userdata ImGui context
 --- @param opts table Widget options (must include id)
@@ -475,7 +509,7 @@ end
 --- @return boolean True if all animations are settled
 function M.is_settled(ctx, opts)
   local state = M.get_state(ctx, opts)
-  return state and state.is_settled or true
+  return state and state:is_settled() or true
 end
 
 --- Clean up sliding zone instances
