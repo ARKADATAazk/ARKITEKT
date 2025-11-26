@@ -316,11 +316,6 @@ function M.new(opts)
                   custom_color = ThemeManager.COLORS and ThemeManager.COLORS.BG_BASE or hexrgb("#333333")
                 end
 
-                -- Extract RGB components (color is 0xRRGGBBAA)
-                local r = ((custom_color >> 24) & 0xFF) / 255
-                local g = ((custom_color >> 16) & 0xFF) / 255
-                local b = ((custom_color >> 8) & 0xFF) / 255
-
                 -- Show label and color picker on same line
                 ImGui.Text(ctx, custom_label)
                 ImGui.SameLine(ctx)
@@ -330,13 +325,9 @@ function M.new(opts)
                               | ImGui.ColorEditFlags_NoInputs
                               | ImGui.ColorEditFlags_NoLabel
 
-                local changed, new_r, new_g, new_b = ImGui.ColorEdit3(ctx, "##custom_color", r, g, b, flags)
+                -- ReaImGui ColorEdit3 takes packed color (0xRRGGBBAA) and returns changed, new_color
+                local changed, new_color = ImGui.ColorEdit3(ctx, "##custom_color", custom_color, flags)
                 if changed then
-                  -- Convert back to ImGui format (0xRRGGBBAA)
-                  local nr = math.floor(new_r * 255 + 0.5)
-                  local ng = math.floor(new_g * 255 + 0.5)
-                  local nb = math.floor(new_b * 255 + 0.5)
-                  local new_color = (nr << 24) | (ng << 16) | (nb << 8) | 0xFF
                   ThemeManager.set_custom(new_color)
                 end
               end
