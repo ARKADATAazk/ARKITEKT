@@ -153,30 +153,41 @@ function M.draw(dl, x1, y1, x2, y2, color, thickness, radius, dash, gap, speed_p
       {x1=x1, y1=y2, x2=x1, y2=y1, len=h},     -- Left
     }
 
+    -- Helper function to draw a dash segment
+    local function draw_dash(dash_start, dash_end)
+      local points = {}
+      local pos = 0
+      for _, edge in ipairs(edges) do
+        if dash_end > pos and dash_start < pos + edge.len then
+          local u0 = max(0, dash_start - pos) / edge.len
+          local u1 = min(edge.len, dash_end - pos) / edge.len
+          if #points == 0 then
+            points[#points + 1] = edge.x1 + (edge.x2 - edge.x1) * u0
+            points[#points + 1] = edge.y1 + (edge.y2 - edge.y1) * u0
+          end
+          points[#points + 1] = edge.x1 + (edge.x2 - edge.x1) * u1
+          points[#points + 1] = edge.y1 + (edge.y2 - edge.y1) * u1
+        end
+        pos = pos + edge.len
+      end
+      if #points >= 4 then
+        local points_arr = reaper.new_array(points)
+        ImGui.DrawList_AddPolyline(dl, points_arr, color, ImGui.DrawFlags_None, thickness)
+      end
+    end
+
     local s = -phase
     while s < perimeter do
-      local e = min(perimeter, s + dash)
-      if e > max(0, s) then
-        -- Find which edge(s) this dash spans
-        local points = {}
-        local pos = 0
-        for _, edge in ipairs(edges) do
-          if e > pos and s < pos + edge.len then
-            local u0 = max(0, s - pos) / edge.len
-            local u1 = min(edge.len, e - pos) / edge.len
-            if #points == 0 then
-              points[#points + 1] = edge.x1 + (edge.x2 - edge.x1) * u0
-              points[#points + 1] = edge.y1 + (edge.y2 - edge.y1) * u0
-            end
-            points[#points + 1] = edge.x1 + (edge.x2 - edge.x1) * u1
-            points[#points + 1] = edge.y1 + (edge.y2 - edge.y1) * u1
-          end
-          pos = pos + edge.len
+      local e = s + dash
+      if e > perimeter then
+        -- Dash wraps around: draw two segments
+        if s < perimeter then
+          draw_dash(max(0, s), perimeter)  -- End portion
         end
-        if #points >= 4 then
-          local points_arr = reaper.new_array(points)
-          ImGui.DrawList_AddPolyline(dl, points_arr, color, ImGui.DrawFlags_None, thickness)
-        end
+        draw_dash(0, e - perimeter)  -- Wrapped beginning portion
+      elseif e > 0 then
+        -- Normal dash within bounds
+        draw_dash(max(0, s), e)
       end
       s = s + period
     end
