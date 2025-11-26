@@ -304,30 +304,11 @@ function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_
   local ny1 = y1 + slide_offset
   local ny2 = y2 + slide_offset
 
-  -- Convert base color to HSL and reduce lightness and saturation
-  local Colors = require('arkitekt.core.colors')
-  local r1 = (base_color >> 24) & 0xFF
-  local g1 = (base_color >> 16) & 0xFF
-  local b1 = (base_color >> 8) & 0xFF
-  local a1 = base_color & 0xFF
+  -- Simple dark grey animation
+  local grey = 0x40  -- Dark grey (64/255)
+  local a = (255 * (1 - Easing.ease_out_quad(t) * 0.9))//1
 
-  local h_hsl, s_hsl, l_hsl = Colors.rgb_to_hsl(base_color)
-
-  -- Reduce saturation by 35% and lightness much more (by 65%)
-  local target_s = s_hsl * 0.65  -- 35% reduction in saturation
-  local target_l = l_hsl * 0.35  -- 65% reduction in lightness (much darker)
-
-  local r2, g2, b2 = Colors.hsl_to_rgb(h_hsl, target_s, target_l)
-  r2, g2, b2 = r2 * 255, g2 * 255, b2 * 255
-
-  local grey_factor = math.min(1, t * 3)
-
-  local r = (r1 + (r2 - r1) * grey_factor)//1
-  local g = (g1 + (g2 - g1) * grey_factor)//1
-  local b = (b1 + (b2 - b1) * grey_factor)//1
-  local a = (a1 * (1 - Easing.ease_out_quad(t) * 0.9))//1
-
-  local fade_color = (r << 24) | (g << 16) | (b << 8) | a
+  local fade_color = (grey << 24) | (grey << 16) | (grey << 8) | a
 
   ImGui.DrawList_AddRectFilled(dl, x1, ny1, x2, ny2, fade_color, rounding)
 
@@ -337,7 +318,7 @@ function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_
   for i = 1, blur_layers do
     local offset = i * 1.5 * blur_intensity
     local blur_alpha = (a * 0.2 / blur_layers)//1
-    local blur_color = (r << 24) | (g << 16) | (b << 8) | blur_alpha
+    local blur_color = (grey << 24) | (grey << 16) | (grey << 8) | blur_alpha
 
     ImGui.DrawList_AddRectFilled(dl,
       x1 - offset, ny1 - offset,
