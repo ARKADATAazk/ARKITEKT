@@ -335,11 +335,11 @@ function M.new(opts)
                 local changed, new_imgui_color = ImGui.ColorEdit3(ctx, "##custom_color", imgui_color, flags)
                 if changed then
                   -- Convert back from ImGui format (0xAABBGGRR) to our format (0xRRGGBBAA)
-                  local na = (new_imgui_color >> 24) & 0xFF
+                  -- Force alpha to 0xFF since we're using ColorEdit3 (no alpha)
                   local nb = (new_imgui_color >> 16) & 0xFF
                   local ng = (new_imgui_color >> 8) & 0xFF
                   local nr = new_imgui_color & 0xFF
-                  local new_color = (nr << 24) | (ng << 16) | (nb << 8) | na
+                  local new_color = (nr << 24) | (ng << 16) | (nb << 8) | 0xFF
                   ThemeManager.set_custom(new_color)
                 end
               end
