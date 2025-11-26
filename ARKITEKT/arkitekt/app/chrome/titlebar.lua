@@ -313,6 +313,15 @@ function M.new(opts)
                 end
               end
 
+              -- Dock adapts to REAPER checkbox
+              if ThemeManager.is_dock_adapt_enabled and ThemeManager.set_dock_adapt_enabled then
+                ContextMenu.separator(ctx)
+                local dock_adapt_enabled = ThemeManager.is_dock_adapt_enabled()
+                if ContextMenu.checkbox_item(ctx, "Docked adapts to Reaper Theme", dock_adapt_enabled) then
+                  ThemeManager.set_dock_adapt_enabled(not dock_adapt_enabled)
+                end
+              end
+
               ContextMenu.end_submenu(ctx)
             end
 

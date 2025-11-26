@@ -225,6 +225,14 @@ M.transition_to_theme = Integration.transition_to_theme
 M.create_live_sync = Integration.create_live_sync
 
 -- =============================================================================
+-- DOCK ADAPTS TO REAPER
+-- =============================================================================
+
+M.is_dock_adapt_enabled = Integration.is_dock_adapt_enabled
+M.set_dock_adapt_enabled = Integration.set_dock_adapt_enabled
+M.get_reaper_bg_color = Integration.get_reaper_bg_color
+
+-- =============================================================================
 -- REGISTRY (script palettes)
 -- =============================================================================
 

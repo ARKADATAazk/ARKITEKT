@@ -40,6 +40,12 @@ do
   if ok then CloseButton = mod end
 end
 
+local Theme = nil
+do
+  local ok, mod = pcall(require, 'arkitekt.core.theme')
+  if ok then Theme = mod end
+end
+
 local WF_None = 0
 
 local function floor(n) return math.floor(n + 0.5) end
@@ -568,7 +574,18 @@ local hexrgb = Colors.hexrgb
         self._fullscreen_scrim_pushed = true
       end
     else
-      local bg_color = self._was_docked and self.bg_color_docked or self.bg_color_floating
+      local bg_color
+      if self._was_docked then
+        -- Check if dock adapt to REAPER theme is enabled
+        if Theme and Theme.is_dock_adapt_enabled and Theme.is_dock_adapt_enabled() then
+          -- Use REAPER's exact background color (no offset)
+          bg_color = Theme.get_reaper_bg_color() or self.bg_color_docked
+        else
+          bg_color = self.bg_color_docked
+        end
+      else
+        bg_color = self.bg_color_floating
+      end
       if bg_color then
         ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, bg_color)
         self._bg_color_pushed = true

@@ -22,6 +22,9 @@ end
 -- Visual separation offset when syncing with REAPER theme
 local REAPER_SYNC_OFFSET = -0.012
 
+-- ExtState section for persistence
+local EXTSTATE_SECTION = "ARKITEKT"
+
 -- =============================================================================
 -- REAPER COLOR CONVERSION
 -- =============================================================================
@@ -39,6 +42,36 @@ local function reaper_to_imgui(reaper_color)
   local g = (reaper_color >> 8) & 0xFF
   local r = reaper_color & 0xFF
   return (r << 24) | (g << 16) | (b << 8) | 0xFF
+end
+
+-- =============================================================================
+-- DOCK ADAPTS TO REAPER SETTING
+-- =============================================================================
+
+local DOCK_ADAPT_KEY = "dock_adapts_to_reaper"
+
+--- Check if dock adapts to REAPER theme is enabled
+--- @return boolean Whether dock adapt is enabled
+function M.is_dock_adapt_enabled()
+  local saved = reaper.GetExtState(EXTSTATE_SECTION, DOCK_ADAPT_KEY)
+  return saved == "1"
+end
+
+--- Set dock adapts to REAPER theme setting
+--- @param enabled boolean Whether to enable dock adapt
+function M.set_dock_adapt_enabled(enabled)
+  reaper.SetExtState(EXTSTATE_SECTION, DOCK_ADAPT_KEY, enabled and "1" or "0", true)
+end
+
+--- Get REAPER's background color WITHOUT any offset
+--- For use when docked to match REAPER exactly
+--- @return number|nil ImGui color in RGBA format, or nil on error
+function M.get_reaper_bg_color()
+  local main_bg_raw = reaper.GetThemeColor("col_main_bg2", 0)
+  if main_bg_raw == -1 then
+    return nil
+  end
+  return reaper_to_imgui(main_bg_raw)
 end
 
 -- =============================================================================
@@ -102,7 +135,6 @@ end
 -- PERSISTENCE (via REAPER ExtState)
 -- =============================================================================
 
-local EXTSTATE_SECTION = "ARKITEKT"
 local EXTSTATE_KEY = "theme_mode"
 
 --- Save theme mode to REAPER ExtState (persistent across sessions)
