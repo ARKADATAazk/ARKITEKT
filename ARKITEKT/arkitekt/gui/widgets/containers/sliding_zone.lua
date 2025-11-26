@@ -66,6 +66,9 @@ local DEFAULTS = {
   -- Content
   content_bounds = nil,     -- Optional: specific area for content (for hover calc)
 
+  -- Window bounds (for reliable cursor tracking when cursor leaves window)
+  window_bounds = nil,      -- {x, y, w, h} - if provided, enables "exited toward edge" detection
+
   -- Callbacks
   on_draw = nil,            -- function(ctx, dl, bounds, visibility, state)
   on_expand = nil,          -- function(state) - called when expanding
@@ -138,6 +141,9 @@ function SlidingZone.new(id)
     last_mouse_x = nil,
     last_mouse_y = nil,
     exit_direction = nil,   -- "toward" or "away"
+
+    -- Window bounds tracking (for reliable edge detection)
+    last_mouse_in_window = false,
   }, SlidingZone)
 
   return self
@@ -341,6 +347,56 @@ local function crossed_toward_edge(opts, state, bounds, mx, my)
   end
 end
 
+--- Detect if cursor exited the window toward the panel edge (like Settings panel)
+--- This is the most reliable detection - doesn't depend on exact cursor position outside window
+--- @param opts table Widget options (needs window_bounds)
+--- @param state table Instance state with last_mouse_in_window
+--- @param bounds table Panel bounds
+--- @param mx number Current mouse X
+--- @param my number Current mouse Y
+--- @param mouse_in_window boolean Is cursor currently in window
+--- @return boolean True if cursor exited window toward the panel edge
+local function exited_toward_edge(opts, state, bounds, mx, my, mouse_in_window)
+  -- Requires window_bounds to be set
+  if not opts.window_bounds then return false end
+
+  local win = opts.window_bounds
+  local edge = opts.edge or "right"
+  local content = opts.content_bounds or bounds
+  local padding = opts.hover_padding or 30
+
+  -- Check if cursor was in window last frame but not this frame
+  if not state.last_mouse_in_window or mouse_in_window then
+    return false
+  end
+
+  -- Cursor just left the window - check if it exited toward the panel edge
+  if edge == "left" then
+    -- Left edge panel: trigger if cursor exited to the LEFT of window
+    local exited_left = mx < win.x
+    local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
+    return exited_left and in_y_range
+
+  elseif edge == "right" then
+    -- Right edge panel: trigger if cursor exited to the RIGHT of window
+    local exited_right = mx > (win.x + win.w)
+    local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
+    return exited_right and in_y_range
+
+  elseif edge == "top" then
+    -- Top edge panel: trigger if cursor exited ABOVE window
+    local exited_top = my < win.y
+    local in_x_range = mx >= (content.x - padding) and mx <= (content.x + content.w + padding)
+    return exited_top and in_x_range
+
+  else -- bottom
+    -- Bottom edge panel: trigger if cursor exited BELOW window
+    local exited_bottom = my > (win.y + win.h)
+    local in_x_range = mx >= (content.x - padding) and mx <= (content.x + content.w + padding)
+    return exited_bottom and in_x_range
+  end
+end
+
 -- ============================================================================
 -- BOUNDS CALCULATION
 -- ============================================================================
@@ -503,11 +559,20 @@ function M.draw(ctx, opts)
     -- Get current mouse position
     local mx, my = ImGui.GetMousePos(ctx)
 
-    -- Check hover zone OR fast cursor movement toward edge
+    -- Calculate mouse_in_window if window_bounds provided
+    local mouse_in_window = true  -- Default to true if no window bounds
+    if opts.window_bounds then
+      local win = opts.window_bounds
+      mouse_in_window = mx >= win.x and mx <= (win.x + win.w) and
+                        my >= win.y and my <= (win.y + win.h)
+    end
+
+    -- Check hover zone OR fast cursor movement toward edge OR exited window toward edge
     local in_zone = is_in_hover_zone(ctx, opts, state, bounds)
     local crossed_toward = crossed_toward_edge(opts, state, bounds, mx, my)
+    local exited_toward = exited_toward_edge(opts, state, bounds, mx, my, mouse_in_window)
 
-    if in_zone or crossed_toward then
+    if in_zone or crossed_toward or exited_toward then
       -- Expand immediately
       state:set_targets(1.0, slide_distance, opts.expand_scale or 1.0)
       state.hover_leave_time = nil
@@ -571,6 +636,7 @@ function M.draw(ctx, opts)
     -- Update cursor tracking
     state.last_mouse_x = mx
     state.last_mouse_y = my
+    state.last_mouse_in_window = mouse_in_window
 
   elseif trigger == "button" then
     -- Toggle state managed externally or via click
