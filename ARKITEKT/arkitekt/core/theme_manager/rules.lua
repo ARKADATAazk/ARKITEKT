@@ -74,6 +74,10 @@ M.anchors = {
 local W = M  -- Alias for brevity
 
 M.definitions = {
+  -- ========== TEXT DERIVATION ==========
+  -- Threshold for auto text color (below = white text, above = black text)
+  text_luminance_threshold = W.lerpDarkLight(0.5, 0.5),  -- Could vary by theme if needed
+
   -- ========== BACKGROUND OFFSETS ==========
   bg_hover_delta = W.offsetFromBase(0.03, -0.04),
   bg_active_delta = W.offsetFromBase(0.05, -0.07),
@@ -83,6 +87,8 @@ M.definitions = {
   -- ========== CHROME (titlebar/statusbar) ==========
   chrome_lightness_factor = W.lerpDarkLight(0.42, 1.0),
   chrome_lightness_offset = W.lerpDarkLight(0, -0.15),
+  chrome_lightness_min = W.lerpDarkLight(0.04, 0.04),
+  chrome_lightness_max = W.lerpDarkLight(0.85, 0.85),
 
   -- ========== PATTERN OFFSETS ==========
   pattern_primary_delta = W.offsetFromBase(-0.024, -0.06),

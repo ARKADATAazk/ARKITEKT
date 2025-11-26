@@ -3,11 +3,12 @@
 -- Rule computation and palette generation
 --
 -- Core engine that computes rule values based on theme lightness
--- and generates complete UI color palettes from base colors.
+-- and generates color palettes using the palette definition.
 
 local Colors = require('arkitekt.core.colors')
 local Style = require('arkitekt.gui.style')
 local Rules = require('arkitekt.core.theme_manager.rules')
+local Palette = require('arkitekt.defs.palette')
 
 local M = {}
 
@@ -92,11 +93,102 @@ function M.compute_rules(lightness, mode)
 end
 
 -- =============================================================================
+-- SOURCE COMPUTATION
+-- =============================================================================
+
+--- Compute derived source colors from base background
+--- All derivation uses rules - no hardcoded values
+--- @param base_bg number Background color in RGBA format
+--- @param rules table Computed rules
+--- @return table Source colors { bg, text, accent, chrome, panel }
+local function compute_sources(base_bg, rules)
+  local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
+
+  -- Text: white on dark, black on light (threshold from rules)
+  local threshold = rules.text_luminance_threshold or 0.5
+  local text = bg_lightness < threshold
+    and Colors.hexrgb("#FFFFFFFF")
+    or Colors.hexrgb("#000000FF")
+
+  -- Accent: derived from background using rule
+  local accent = Colors.adjust_lightness(base_bg, rules.accent_bright_delta)
+
+  -- Chrome: factor + offset calculation, clamped by rules
+  local chrome_l = bg_lightness * rules.chrome_lightness_factor + rules.chrome_lightness_offset
+  local min_l = rules.chrome_lightness_min or 0.04
+  local max_l = rules.chrome_lightness_max or 0.85
+  chrome_l = math.max(min_l, math.min(max_l, chrome_l))
+  local chrome = Colors.set_lightness(base_bg, chrome_l)
+
+  -- Panel: derived from background using rule
+  local panel = Colors.adjust_lightness(base_bg, rules.bg_panel_delta)
+
+  return {
+    bg = base_bg,
+    text = text,
+    accent = accent,
+    chrome = chrome,
+    panel = panel,
+  }
+end
+
+-- =============================================================================
+-- COLOR DERIVATION
+-- =============================================================================
+
+--- Derive a single color from the palette definition
+--- @param def table Derivation definition { source, type, rule_key(s) }
+--- @param sources table Source colors
+--- @param rules table Computed rules
+--- @return any Derived color or value
+local function derive_color(def, sources, rules)
+  local source_key = def[1]
+  local derive_type = def[2]
+  local rule_key = def[3]
+  local rule_key2 = def[4]
+
+  local source = source_key and sources[source_key]
+
+  if derive_type == "base" then
+    return source
+
+  elseif derive_type == "lightness" then
+    local delta = rules[rule_key]
+    return Colors.adjust_lightness(source, delta)
+
+  elseif derive_type == "set_light" then
+    local lightness = rules[rule_key]
+    return Colors.set_lightness(source, lightness)
+
+  elseif derive_type == "opacity" then
+    local opacity = type(rule_key) == "number" and rule_key or rules[rule_key]
+    return Colors.with_opacity(source, opacity)
+
+  elseif derive_type == "alpha" then
+    -- Combine hex color rule with opacity rule
+    local hex_color = Colors.hexrgb(rules[rule_key])
+    local opacity = Colors.opacity(rules[rule_key2])
+    return Colors.with_alpha(hex_color, opacity)
+
+  elseif derive_type == "hex" then
+    return Colors.hexrgb(rules[rule_key])
+
+  elseif derive_type == "value" then
+    return rules[rule_key]
+
+  elseif derive_type == "chrome" then
+    return sources.chrome
+  end
+
+  return nil
+end
+
+-- =============================================================================
 -- PALETTE GENERATION
 -- =============================================================================
 
 --- Generate complete UI color palette from a single base color
---- Text color and accent are automatically derived from background
+--- Uses palette definition - no hardcoded palette structure here
 --- @param base_bg number Background color in RGBA format
 --- @param rules table|nil Optional rules override (defaults to computed rules)
 --- @return table Color palette with all UI colors
@@ -106,85 +198,16 @@ function M.generate_palette(base_bg, rules)
   -- Get rules: use provided, or compute from lightness
   rules = rules or M.compute_rules(bg_lightness, nil)
 
-  -- Derive text color from background (white on dark, black on light)
-  local base_text = Colors.auto_text_color(base_bg)
+  -- Compute source colors (all rule-based)
+  local sources = compute_sources(base_bg, rules)
 
-  -- Calculate chrome color (titlebar/statusbar)
-  local chrome_lightness = bg_lightness * rules.chrome_lightness_factor + rules.chrome_lightness_offset
-  chrome_lightness = math.max(0.04, math.min(0.85, chrome_lightness))
-  local base_chrome = Colors.set_lightness(base_bg, chrome_lightness)
+  -- Generate palette from definition
+  local palette = {}
+  for key, def in pairs(Palette.definition) do
+    palette[key] = derive_color(def, sources, rules)
+  end
 
-  -- Derive accent from background
-  local accent = Colors.adjust_lightness(base_bg, rules.accent_bright_delta)
-
-  -- Pre-compute BG_PANEL for pattern derivation
-  local bg_panel = Colors.adjust_lightness(base_bg, rules.bg_panel_delta)
-
-  -- Build BORDER_OUTER from rules
-  local border_outer = Colors.with_alpha(
-    Colors.hexrgb(rules.border_outer_color),
-    Colors.opacity(rules.border_outer_opacity)
-  )
-
-  return {
-    -- ============ BACKGROUNDS ============
-    BG_BASE = base_bg,
-    BG_HOVER = Colors.adjust_lightness(base_bg, rules.bg_hover_delta),
-    BG_ACTIVE = Colors.adjust_lightness(base_bg, rules.bg_active_delta),
-    BG_HEADER = Colors.adjust_lightness(base_bg, rules.bg_header_delta),
-    BG_PANEL = bg_panel,
-    BG_CHROME = base_chrome,
-    BG_TRANSPARENT = Colors.with_alpha(base_bg, 0x00),
-
-    -- ============ BORDERS ============
-    BORDER_OUTER = border_outer,
-    BORDER_INNER = Colors.adjust_lightness(base_bg, rules.border_inner_delta),
-    BORDER_HOVER = Colors.adjust_lightness(base_bg, rules.border_hover_delta),
-    BORDER_ACTIVE = Colors.adjust_lightness(base_bg, rules.border_active_delta),
-    BORDER_FOCUS = Colors.adjust_lightness(base_bg, rules.border_focus_delta),
-
-    -- ============ TEXT ============
-    TEXT_NORMAL = base_text,
-    TEXT_HOVER = Colors.adjust_lightness(base_text, rules.text_hover_delta),
-    TEXT_ACTIVE = Colors.adjust_lightness(base_text, rules.text_hover_delta),
-    TEXT_DIMMED = Colors.adjust_lightness(base_text, rules.text_dimmed_delta),
-    TEXT_DARK = Colors.adjust_lightness(base_text, rules.text_dark_delta),
-    TEXT_BRIGHT = Colors.adjust_lightness(base_text, rules.text_bright_delta),
-
-    -- ============ ACCENTS ============
-    ACCENT_PRIMARY = accent,
-    ACCENT_TEAL = accent,
-    ACCENT_TEAL_BRIGHT = Colors.adjust_lightness(accent, rules.accent_bright_delta),
-    ACCENT_WHITE = Colors.set_lightness(base_bg, rules.accent_white_lightness),
-    ACCENT_WHITE_BRIGHT = Colors.set_lightness(base_bg, rules.accent_white_bright_lightness),
-    ACCENT_TRANSPARENT = Colors.with_opacity(accent, 0.67),
-    ACCENT_SUCCESS = Colors.hexrgb(rules.status_success),
-    ACCENT_WARNING = Colors.hexrgb(rules.status_warning),
-    ACCENT_DANGER = Colors.hexrgb(rules.status_danger),
-
-    -- ============ PATTERNS ============
-    PATTERN_PRIMARY = Colors.adjust_lightness(bg_panel, rules.pattern_primary_delta),
-    PATTERN_SECONDARY = Colors.adjust_lightness(bg_panel, rules.pattern_secondary_delta),
-
-    -- ============ TILES ============
-    TILE_FILL_BRIGHTNESS = rules.tile_fill_brightness,
-    TILE_FILL_SATURATION = rules.tile_fill_saturation,
-    TILE_FILL_OPACITY = rules.tile_fill_opacity,
-    TILE_NAME_COLOR = Colors.hexrgb(rules.tile_name_color),
-
-    -- ============ BADGES ============
-    BADGE_BG = Colors.with_alpha(
-      Colors.hexrgb(rules.badge_bg_color),
-      Colors.opacity(rules.badge_bg_opacity)
-    ),
-    BADGE_TEXT = Colors.hexrgb(rules.badge_text_color),
-    BADGE_BORDER_OPACITY = rules.badge_border_opacity,
-
-    -- ============ PLAYLIST TILES ============
-    PLAYLIST_TILE_COLOR = Colors.hexrgb(rules.playlist_tile_color),
-    PLAYLIST_NAME_COLOR = Colors.hexrgb(rules.playlist_name_color),
-    PLAYLIST_BADGE_COLOR = Colors.hexrgb(rules.playlist_badge_color),
-  }
+  return palette
 end
 
 --- Apply a color palette to Style.COLORS
