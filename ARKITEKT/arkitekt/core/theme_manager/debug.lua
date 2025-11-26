@@ -1,6 +1,6 @@
 -- @noindex
 -- arkitekt/core/theme_manager/debug.lua
--- Debug overlay and validation
+-- Debug window and validation
 --
 -- Provides visual debugging tools for tuning theme values
 -- and validation utilities for catching config errors.
@@ -15,7 +15,7 @@ local Palette = require('arkitekt.defs.palette')
 local M = {}
 
 -- =============================================================================
--- DEBUG OVERLAY STATE
+-- DEBUG STATE
 -- =============================================================================
 
 M.debug_enabled = false
@@ -136,7 +136,7 @@ function M.get_validation_summary()
 end
 
 -- =============================================================================
--- DEBUG OVERLAY RENDERING
+-- DEBUG WINDOW RENDERING
 -- =============================================================================
 
 -- Build rule -> style map from palette definition (auto-generated)
@@ -321,7 +321,7 @@ function M.render_debug_window(ctx, ImGui, state)
   end
 end
 
---- Check for F12 key press to toggle debug overlay
+--- Check for F12 key press to toggle debug window
 --- @param ctx userdata ImGui context
 --- @param ImGui table ImGui library reference
 function M.check_debug_hotkey(ctx, ImGui)

@@ -12,7 +12,7 @@ local M = {}
 -- =============================================================================
 -- SCRIPT COLOR REGISTRATION
 -- =============================================================================
--- Scripts can register their color modules for display in the debug overlay.
+-- Scripts can register their color modules for display in the debug window.
 
 --- Registered script color modules
 --- @type table<string, table<string, any>>
