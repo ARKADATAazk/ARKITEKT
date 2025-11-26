@@ -177,17 +177,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
     ImGui.Dummy(ctx, content_w, content_h)
 
-    -- Invert visualization color for selected tiles
-    local viz_color
-    if tile_state.selected then
-      -- Selected: use bright inverted color (opposite of dark waveform)
-      viz_color = ark.Colors.adjust_brightness(base_color, 2.5)  -- Very bright
-      viz_color = ark.Colors.desaturate(viz_color, 0.3)  -- Slightly desaturate for contrast
-    else
-      -- Normal: use dark color
-      viz_color = BaseRenderer.get_dark_waveform_color(base_color, config)
-    end
-
+    local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config)
     local waveform_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
 
     -- In small tile mode, apply very low opacity for subtle visualization
@@ -195,7 +185,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       waveform_alpha = waveform_alpha * config.TILE_RENDER.small_tile.visualization_alpha
     end
 
-    viz_color = ark.Colors.with_alpha(viz_color, ark.Colors.opacity(waveform_alpha))
+    dark_color = ark.Colors.with_alpha(dark_color, ark.Colors.opacity(waveform_alpha))
 
     -- Skip all waveform rendering if skip_visualizations is enabled (fast mode)
     if not state.skip_visualizations then
@@ -209,7 +199,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
           local use_filled = state.settings.waveform_filled
           if use_filled == nil then use_filled = true end
           local show_zero_line = state.settings.waveform_zero_line or false
-          visualization.DisplayWaveformTransparent(ctx, waveform, viz_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled, show_zero_line)
+          visualization.DisplayWaveformTransparent(ctx, waveform, dark_color, dl, target_width, item_data.uuid, state.runtime_cache, use_filled, show_zero_line)
         end
       else
         -- Show placeholder and queue waveform generation

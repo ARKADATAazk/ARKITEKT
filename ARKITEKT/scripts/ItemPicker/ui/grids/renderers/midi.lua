@@ -177,17 +177,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
     ImGui.Dummy(ctx, content_w, content_h)
 
-    -- Invert visualization color for selected tiles
-    local viz_color
-    if tile_state.selected then
-      -- Selected: use bright inverted color (opposite of dark waveform)
-      viz_color = ark.Colors.adjust_brightness(base_color, 2.5)  -- Very bright
-      viz_color = ark.Colors.desaturate(viz_color, 0.3)  -- Slightly desaturate for contrast
-    else
-      -- Normal: use dark color
-      viz_color = BaseRenderer.get_dark_waveform_color(base_color, config)
-    end
-
+    local dark_color = BaseRenderer.get_dark_waveform_color(base_color, config)
     local midi_alpha = combined_alpha * config.TILE_RENDER.waveform.line_alpha
 
     -- In small tile mode, apply very low opacity for subtle visualization
@@ -195,7 +185,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       midi_alpha = midi_alpha * config.TILE_RENDER.small_tile.visualization_alpha
     end
 
-    viz_color = ark.Colors.with_alpha(viz_color, ark.Colors.opacity(midi_alpha))
+    dark_color = ark.Colors.with_alpha(dark_color, ark.Colors.opacity(midi_alpha))
 
     -- Skip all MIDI thumbnail rendering if skip_visualizations is enabled (fast mode)
     if not state.skip_visualizations then
@@ -205,7 +195,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         if visualization.DisplayMidiItemTransparent then
           ImGui.SetCursorScreenPos(ctx, scaled_x1, content_y1)
           ImGui.Dummy(ctx, content_w, content_h)
-          visualization.DisplayMidiItemTransparent(ctx, thumbnail, viz_color, dl)
+          visualization.DisplayMidiItemTransparent(ctx, thumbnail, dark_color, dl)
         end
       else
         -- Show placeholder and queue thumbnail generation
