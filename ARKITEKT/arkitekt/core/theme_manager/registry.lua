@@ -94,7 +94,7 @@ function M.get_computed_rules(script_name, current_t)
   -- Compute rules for current theme
   local computed = { _t = current_t }
   for key, rule in pairs(rule_defs) do
-    computed[key] = Engine.compute_rule_value(rule, current_t)
+    computed[key] = Engine.resolve_value(rule, current_t)
   end
 
   rules_cache[script_name] = computed

@@ -200,4 +200,12 @@ function M.get_current_colors()
   return current
 end
 
+--- Resolve a wrapped value based on current t (exported for registry)
+--- @param def table Wrapper from palette definition
+--- @param t number Interpolation factor (0.0-1.0)
+--- @return any Resolved value
+function M.resolve_value(def, t)
+  return resolve_value(def, t)
+end
+
 return M
