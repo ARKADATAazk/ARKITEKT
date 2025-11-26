@@ -493,6 +493,11 @@ function M.render_modal(ctx, state, bounds)
     end
   end
 
+  -- Create invisible button over modal area to register it for IsAnyItemHovered()
+  -- This prevents overlay from closing on right-click within the modal
+  ImGui.SetCursorScreenPos(ctx, modal_x, modal_y)
+  ImGui.InvisibleButton(ctx, "##track_filter_modal_area", modal_width, modal_height)
+
   -- Modal background
   local bg_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#1A1A1A"), math.floor(0xF5 * alpha))
   ImGui.DrawList_AddRectFilled(draw_list, modal_x, modal_y, modal_x + modal_width, modal_y + modal_height, bg_color, 8)

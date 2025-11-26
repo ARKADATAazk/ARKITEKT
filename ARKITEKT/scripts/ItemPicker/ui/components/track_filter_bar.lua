@@ -124,6 +124,11 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
     end
   end
 
+  -- Create invisible button over entire bar area to register it for IsAnyItemHovered()
+  -- This prevents overlay from closing on right-click (overlay manager checks IsAnyItemHovered)
+  ImGui.SetCursorScreenPos(ctx, x, y)
+  ImGui.InvisibleButton(ctx, "##track_filter_bar_area", bar_width, height)
+
   -- Clip to content area only (exclude button area at bottom)
   ImGui.DrawList_PushClipRect(draw_list, x, y, x + bar_width, y + content_height, true)
 
