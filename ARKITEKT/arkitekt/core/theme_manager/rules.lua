@@ -91,9 +91,10 @@ M.definitions = {
   -- ========== CHROME (titlebar/statusbar) ==========
   bg_chrome_delta = W.offsetFromBase(-0.08, -0.15),
 
-  -- ========== PATTERN OFFSETS ==========
-  pattern_primary_delta = W.offsetFromBase(-0.024, -0.06),
-  pattern_secondary_delta = W.offsetFromBase(-0.004, -0.02),
+  -- ========== PATTERN OFFSETS (from bg, includes panel offset) ==========
+  -- Combined: bg_panel_delta (-0.04) + pattern offset
+  pattern_primary_delta = W.offsetFromBase(-0.064, -0.10),
+  pattern_secondary_delta = W.offsetFromBase(-0.044, -0.06),
 
   -- ========== BORDER COLORS ==========
   border_outer_color = W.snapAtMidpoint("#000000", "#404040"),
@@ -110,7 +111,8 @@ M.definitions = {
   text_bright_delta = W.offsetFromBase(0.10, -0.08),
 
   -- ========== ACCENT VALUES ==========
-  accent_bright_delta = W.offsetFromBase(0.15, -0.12),
+  accent_delta = W.offsetFromBase(0.15, -0.12),
+  accent_bright_delta = W.offsetFromBase(0.25, -0.20),  -- Extra bright variant
   accent_white_lightness = W.lerpDarkLight(0.25, 0.55),
   accent_white_bright_lightness = W.lerpDarkLight(0.35, 0.45),
 

@@ -97,10 +97,9 @@ end
 -- =============================================================================
 
 --- Compute derived source colors from base background
---- All derivation uses rules - no hardcoded values
 --- @param base_bg number Background color in RGBA format
 --- @param rules table Computed rules
---- @return table Source colors { bg, text, accent, panel }
+--- @return table Source colors { bg, text }
 local function compute_sources(base_bg, rules)
   local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
 
@@ -110,17 +109,9 @@ local function compute_sources(base_bg, rules)
     and Colors.hexrgb("#FFFFFFFF")
     or Colors.hexrgb("#000000FF")
 
-  -- Accent: derived from background using rule
-  local accent = Colors.adjust_lightness(base_bg, rules.accent_bright_delta)
-
-  -- Panel: derived from background using rule
-  local panel = Colors.adjust_lightness(base_bg, rules.bg_panel_delta)
-
   return {
     bg = base_bg,
     text = text,
-    accent = accent,
-    panel = panel,
   }
 end
 
@@ -155,6 +146,13 @@ local function derive_color(def, sources, rules)
   elseif derive_type == "opacity" then
     local opacity = type(rule_key) == "number" and rule_key or rules[rule_key]
     return Colors.with_opacity(source, opacity)
+
+  elseif derive_type == "lightness_opacity" then
+    -- Lightness adjustment + opacity in one step
+    local delta = rules[rule_key]
+    local opacity = type(rule_key2) == "number" and rule_key2 or rules[rule_key2]
+    local adjusted = Colors.adjust_lightness(source, delta)
+    return Colors.with_opacity(adjusted, opacity)
 
   elseif derive_type == "alpha" then
     -- Combine hex color rule with opacity rule

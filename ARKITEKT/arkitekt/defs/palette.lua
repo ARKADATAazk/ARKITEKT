@@ -5,15 +5,16 @@
 -- Defines WHAT colors exist in the UI palette and HOW each is derived.
 -- All derivation uses rules - no hardcoded logic here.
 --
+-- Sources: "bg" (input color) or "text" (auto white/black)
 -- Derivation types:
---   "base"       - The input color itself
---   "text"       - Auto text color (white on dark, black on light)
---   "lightness"  - adjust_lightness(source, rule)
---   "set_light"  - set_lightness(source, rule)
---   "opacity"    - with_opacity(source, rule)
---   "alpha"      - with_alpha(hex_rule, opacity_rule)
---   "hex"        - hexrgb(rule)
---   "value"      - raw rule value (for non-color data)
+--   "base"              - The source itself
+--   "lightness"         - adjust_lightness(source, rule)
+--   "set_light"         - set_lightness(source, rule)
+--   "opacity"           - with_opacity(source, value)
+--   "lightness_opacity" - adjust_lightness + opacity in one step
+--   "alpha"             - with_alpha(hex_rule, opacity_rule)
+--   "hex"               - hexrgb(rule)
+--   "value"             - raw rule value (for non-color data)
 
 local M = {}
 
@@ -21,7 +22,7 @@ local M = {}
 -- PALETTE DEFINITION
 -- =============================================================================
 -- Each entry: { source, derivation_type, rule_key(s) }
--- source: "bg" | "text" | "accent" | "chrome" | "panel" | color_key
+-- source: "bg" | "text"
 -- This is the single source of truth for palette structure.
 
 M.definition = {
@@ -50,19 +51,19 @@ M.definition = {
   TEXT_BRIGHT     = { "text", "lightness", "text_bright_delta" },
 
   -- ============ ACCENTS ============
-  ACCENT_PRIMARY       = { "accent", "base" },
-  ACCENT_TEAL          = { "accent", "base" },
-  ACCENT_TEAL_BRIGHT   = { "accent", "lightness", "accent_bright_delta" },
+  ACCENT_PRIMARY       = { "bg", "lightness", "accent_delta" },
+  ACCENT_TEAL          = { "bg", "lightness", "accent_delta" },
+  ACCENT_TEAL_BRIGHT   = { "bg", "lightness", "accent_bright_delta" },
   ACCENT_WHITE         = { "bg", "set_light", "accent_white_lightness" },
   ACCENT_WHITE_BRIGHT  = { "bg", "set_light", "accent_white_bright_lightness" },
-  ACCENT_TRANSPARENT   = { "accent", "opacity", 0.67 },
+  ACCENT_TRANSPARENT   = { "bg", "lightness_opacity", "accent_delta", 0.67 },
   ACCENT_SUCCESS       = { nil, "hex", "status_success" },
   ACCENT_WARNING       = { nil, "hex", "status_warning" },
   ACCENT_DANGER        = { nil, "hex", "status_danger" },
 
   -- ============ PATTERNS ============
-  PATTERN_PRIMARY   = { "panel", "lightness", "pattern_primary_delta" },
-  PATTERN_SECONDARY = { "panel", "lightness", "pattern_secondary_delta" },
+  PATTERN_PRIMARY   = { "bg", "lightness", "pattern_primary_delta" },
+  PATTERN_SECONDARY = { "bg", "lightness", "pattern_secondary_delta" },
 
   -- ============ TILES ============
   TILE_FILL_BRIGHTNESS = { nil, "value", "tile_fill_brightness" },
@@ -79,17 +80,6 @@ M.definition = {
   PLAYLIST_TILE_COLOR  = { nil, "hex", "playlist_tile_color" },
   PLAYLIST_NAME_COLOR  = { nil, "hex", "playlist_name_color" },
   PLAYLIST_BADGE_COLOR = { nil, "hex", "playlist_badge_color" },
-}
-
--- =============================================================================
--- DERIVED SOURCES
--- =============================================================================
--- These are computed once from base_bg, then used as sources for other colors.
-
-M.derived_sources = {
-  "text",    -- auto_text_color(bg)
-  "accent",  -- adjust_lightness(bg, accent_bright_delta)
-  "panel",   -- adjust_lightness(bg, bg_panel_delta) -- same as BG_PANEL
 }
 
 -- =============================================================================
