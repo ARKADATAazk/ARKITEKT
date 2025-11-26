@@ -394,44 +394,35 @@ local function draw_slider(ctx, ImGui, label, value, min_val, max_val, format)
   return changed, new_val
 end
 
---- Convert RRGGBBAA to AABBGGRR (for ImGui ColorEdit)
-local function rgba_to_abgr(color)
-  local r = (color >> 24) & 0xFF
-  local g = (color >> 16) & 0xFF
-  local b = (color >> 8) & 0xFF
-  local a = color & 0xFF
-  return (a << 24) | (b << 16) | (g << 8) | r
+--- Parse hex string to simple 0xRRGGBB (no alpha)
+local function hex_to_rgb(hex)
+  if not hex then return 0x808080 end
+  local h = hex:gsub("#", "")
+  -- If 8-char hex (RRGGBBAA), strip alpha
+  if #h == 8 then h = h:sub(1, 6) end
+  return tonumber(h, 16) or 0x808080
 end
 
---- Convert AABBGGRR to RRGGBBAA (from ImGui ColorEdit)
-local function abgr_to_rgba(color)
-  local a = (color >> 24) & 0xFF
-  local b = (color >> 16) & 0xFF
-  local g = (color >> 8) & 0xFF
-  local r = color & 0xFF
-  return (r << 24) | (g << 16) | (b << 8) | a
+--- Format 0xRRGGBB to hex string
+local function rgb_to_hex(color_int)
+  return string.format("#%06X", color_int & 0xFFFFFF)
 end
 
 --- Draw a color picker for a hex string
---- Note: ReaImGui ColorEdit3 uses AABBGGRR format, ARKITEKT uses RRGGBBAA
+--- ColorEdit3 uses simple 0xRRGGBB format - no conversion needed
 local function draw_color_picker(ctx, ImGui, label, hex_value)
-  -- Convert hex to packed color (RRGGBBAA format)
-  local color_rgba = Colors.hexrgb(hex_value or "#808080")
-
-  -- Convert to ImGui format (AABBGGRR) for display
-  local color_abgr = rgba_to_abgr(color_rgba)
+  -- Parse hex to simple RGB int (no alpha)
+  local color_rgb = hex_to_rgb(hex_value)
 
   -- Color picker flags
   local flags = ImGui.ColorEditFlags_NoInputs
               | ImGui.ColorEditFlags_NoLabel
               | ImGui.ColorEditFlags_NoAlpha
 
-  local changed, new_color_abgr = ImGui.ColorEdit3(ctx, label, color_abgr, flags)
+  local changed, new_color = ImGui.ColorEdit3(ctx, label, color_rgb, flags)
 
   if changed then
-    -- Convert back from ImGui format (AABBGGRR) to ARKITEKT format (RRGGBBAA)
-    local new_color_rgba = abgr_to_rgba(new_color_abgr)
-    return true, Colors.to_hexrgb(new_color_rgba)
+    return true, rgb_to_hex(new_color)
   end
 
   return false, hex_value
