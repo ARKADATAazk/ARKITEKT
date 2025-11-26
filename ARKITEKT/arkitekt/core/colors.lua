@@ -29,6 +29,23 @@ function M.hexrgb(hex_string)
   end
 end
 
+-- Convert 0xRRGGBBAA color to hex string "#RRGGBB" (without alpha)
+function M.to_hexrgb(color)
+  local r = (color >> 24) & 0xFF
+  local g = (color >> 16) & 0xFF
+  local b = (color >> 8) & 0xFF
+  return string.format("#%02X%02X%02X", r, g, b)
+end
+
+-- Convert 0xRRGGBBAA color to hex string "#RRGGBBAA" (with alpha)
+function M.to_hexrgba(color)
+  local r = (color >> 24) & 0xFF
+  local g = (color >> 16) & 0xFF
+  local b = (color >> 8) & 0xFF
+  local a = color & 0xFF
+  return string.format("#%02X%02X%02X%02X", r, g, b, a)
+end
+
 -- Convert hex string or color to 0xRRGGBBAA format with specified alpha
 -- If first param is a string, converts from hex. If number, uses as-is.
 -- Alpha is a float 0.0-1.0 that gets converted to 0-255 range
