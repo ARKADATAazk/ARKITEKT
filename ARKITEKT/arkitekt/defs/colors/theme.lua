@@ -7,25 +7,95 @@
 --   - Anchors (lightness values)
 --   - All theme-reactive color definitions
 
+local Colors = require('arkitekt.core.colors')
+
 local M = {}
 
 -- =============================================================================
 -- PRESETS
 -- =============================================================================
--- Base colors for dark/light themes. Anchors are computed from these.
+-- Base colors for dark/light themes. Anchors are auto-computed from these.
 
 M.presets = {
-  dark       = "#242424",  -- ~14% lightness (t=0)
-  grey       = "#333333",  -- ~31% lightness
-  light_grey = "#505050",  -- ~56% lightness
-  light      = "#E0E0E0",  -- ~88% lightness (t=1)
+  dark       = "#242424",  -- t=0 anchor
+  grey       = "#333333",
+  light_grey = "#505050",
+  light      = "#E0E0E0",  -- t=1 anchor
 }
 
--- Anchors: lightness values for dark/light presets
--- These match the preset hex values above
+-- =============================================================================
+-- VALIDATION
+-- =============================================================================
+
+--- Validate hex color format
+--- @param hex string Hex color string
+--- @param name string Variable name for error messages
+--- @return boolean valid, string|nil error_message
+local function validate_hex(hex, name)
+  if type(hex) ~= "string" then
+    return false, string.format("%s: expected string, got %s", name, type(hex))
+  end
+  if not hex:match("^#[0-9A-Fa-f]+$") then
+    return false, string.format("%s: invalid hex format '%s'", name, hex)
+  end
+  local len = #hex - 1  -- minus the #
+  if len ~= 6 and len ~= 8 then
+    return false, string.format("%s: hex must be 6 or 8 chars, got %d", name, len)
+  end
+  return true
+end
+
+--- Compute contrast ratio between two colors (WCAG formula)
+--- @param color1 number RGBA color
+--- @param color2 number RGBA color
+--- @return number Contrast ratio (1.0 to 21.0)
+local function contrast_ratio(color1, color2)
+  local l1 = Colors.luminance(color1)
+  local l2 = Colors.luminance(color2)
+  local lighter = math.max(l1, l2)
+  local darker = math.min(l1, l2)
+  return (lighter + 0.05) / (darker + 0.05)
+end
+
+--- Warn if contrast ratio is too low for text readability
+--- @param fg_hex string Foreground hex color
+--- @param bg_hex string Background hex color
+--- @param name string Variable name for warning
+--- @param min_ratio number Minimum contrast ratio (default 4.5 for WCAG AA)
+local function warn_low_contrast(fg_hex, bg_hex, name, min_ratio)
+  min_ratio = min_ratio or 4.5
+  local fg = Colors.hexrgb(fg_hex)
+  local bg = Colors.hexrgb(bg_hex)
+  local ratio = contrast_ratio(fg, bg)
+  if ratio < min_ratio then
+    reaper.ShowConsoleMsg(string.format(
+      "[Theme] Warning: %s has low contrast (%.1f:1, need %.1f:1)\n",
+      name, ratio, min_ratio
+    ))
+  end
+end
+
+-- Validate presets on load
+for name, hex in pairs(M.presets) do
+  local valid, err = validate_hex(hex, "presets." .. name)
+  if not valid then
+    reaper.ShowConsoleMsg("[Theme] " .. err .. "\n")
+  end
+end
+
+-- =============================================================================
+-- ANCHORS (auto-computed from presets)
+-- =============================================================================
+
+local function compute_lightness(hex)
+  local color = Colors.hexrgb(hex)
+  local _, _, l = Colors.rgb_to_hsl(color)
+  return l
+end
+
 M.anchors = {
-  dark  = 0.14,  -- #242424
-  light = 0.88,  -- #E0E0E0
+  dark  = compute_lightness(M.presets.dark),
+  light = compute_lightness(M.presets.light),
 }
 
 -- =============================================================================
@@ -185,5 +255,10 @@ function M.get_all_keys()
   table.sort(keys)
   return keys
 end
+
+-- Export validation utilities
+M.validate_hex = validate_hex
+M.contrast_ratio = contrast_ratio
+M.warn_low_contrast = warn_low_contrast
 
 return M
