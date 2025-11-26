@@ -213,9 +213,10 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
 end
 
 -- Recursive function to draw track tree
-local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth, current_y)
+local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth, current_y, visible_tracks_list)
   depth = depth or 0
   current_y = current_y or y
+  visible_tracks_list = visible_tracks_list or {}
 
   local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
   local left_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)
@@ -322,6 +323,14 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
 
     -- Draw tile
     draw_track_tile(ctx, draw_list, x, tile_y, width, track, is_selected, is_hovered, depth, is_expanded, has_children, parent_disabled)
+
+    -- Add to visible tracks list for crossing detection (all depths)
+    table.insert(visible_tracks_list, {
+      track = track,
+      y = tile_y,
+      height = TRACK_TILE.HEIGHT + TRACK_TILE.MARGIN_Y
+    })
+
     current_y = current_y + TRACK_TILE.HEIGHT + TRACK_TILE.MARGIN_Y
 
     -- Track hovered item for tooltip (only for nested tracks with depth > 0)
@@ -331,13 +340,49 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
 
     -- Draw children if expanded
     if has_children and is_expanded then
-      current_y = draw_track_tree(ctx, draw_list, track.children, x, y, width, state, depth + 1, current_y)
+      current_y = draw_track_tree(ctx, draw_list, track.children, x, y, width, state, depth + 1, current_y, visible_tracks_list)
     end
   end
 
-  -- Update previous mouse position for future crossing detection
-  -- (Currently gap detection via MARGIN_Y is sufficient, but this enables future enhancements)
-  if depth == 0 then  -- Only update at top level to avoid redundant updates
+  -- Handle crossing detection for fast cursor movement (only at top level)
+  if depth == 0 and state.track_filter_painting and state.track_filter_prev_mouse_y then
+    local is_dragging = (state.track_filter_paint_mode == "enable" and left_down) or
+                        (state.track_filter_paint_mode == "disable" and right_down)
+
+    if is_dragging then
+      -- Find tracks that cursor crossed between previous and current frame
+      local prev_y = state.track_filter_prev_mouse_y
+      local curr_y = mouse_y
+      local min_y = math.min(prev_y, curr_y)
+      local max_y = math.max(prev_y, curr_y)
+
+      -- Paint all tracks in the crossed range
+      for _, visible_track in ipairs(visible_tracks_list) do
+        local track_top = visible_track.y
+        local track_bottom = visible_track.y + visible_track.height
+
+        -- Check if track overlaps with the crossed Y range
+        if track_bottom >= min_y and track_top <= max_y then
+          if state.track_filter_last_painted ~= visible_track.track.guid then
+            if not state.track_whitelist then state.track_whitelist = {} end
+
+            local new_value
+            if state.track_filter_paint_mode == "enable" then
+              new_value = true
+            else
+              new_value = false
+            end
+
+            state.track_whitelist[visible_track.track.guid] = new_value
+            state.track_filter_last_painted = visible_track.track.guid
+          end
+        end
+      end
+    end
+  end
+
+  -- Update previous mouse position for crossing detection (at top level)
+  if depth == 0 then
     state.track_filter_prev_mouse_y = mouse_y
   end
 
