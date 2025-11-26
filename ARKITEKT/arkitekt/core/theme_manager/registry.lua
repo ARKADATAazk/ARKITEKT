@@ -44,23 +44,7 @@ function M.register_palette(script_name, palette)
   if type(script_name) ~= "string" or type(palette) ~= "table" then
     return
   end
-
-  -- Support both flat and legacy { specific = {}, values = {} } structures
-  if palette.specific or palette.values then
-    -- Legacy structure: merge into flat
-    local flat = {}
-    if palette.specific then
-      for k, v in pairs(palette.specific) do flat[k] = v end
-    end
-    if palette.values then
-      for k, v in pairs(palette.values) do flat[k] = v end
-    end
-    M.script_palettes[script_name] = flat
-  else
-    -- Already flat
-    M.script_palettes[script_name] = palette
-  end
-
+  M.script_palettes[script_name] = palette
   palette_cache[script_name] = nil  -- Invalidate cache
 end
 

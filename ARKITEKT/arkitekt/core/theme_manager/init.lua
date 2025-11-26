@@ -54,22 +54,15 @@ local M = {}
 -- RE-EXPORTS
 -- =============================================================================
 
--- DSL wrappers (short names - primary API)
+-- DSL wrappers
 M.snap = Palette.snap
 M.lerp = Palette.lerp
 M.offset = Palette.offset
 
--- DSL wrappers (legacy aliases - deprecated)
-M.snapAtMidpoint = Palette.snapAtMidpoint
-M.lerpDarkLight = Palette.lerpDarkLight
-M.offsetFromBase = Palette.offsetFromBase
-M.snapAt = Palette.snapAt
-
 -- Palette structure
-M.presets, M.anchors = Palette.presets, Palette.anchors
-M.palette = Palette.palette  -- Flat palette (primary)
-M.from_bg = Palette.from_bg  -- Legacy section view
-M.specific, M.values = Palette.specific, Palette.values  -- Legacy section views
+M.presets = Palette.presets
+M.anchors = Palette.anchors
+M.palette = Palette.palette
 
 -- Presets API
 M.get_theme_names, M.get_primary_presets = Presets.get_names, Presets.get_primary

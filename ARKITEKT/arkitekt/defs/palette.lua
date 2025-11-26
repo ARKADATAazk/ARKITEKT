@@ -60,14 +60,6 @@ M.snap = snap
 M.lerp = lerp
 M.offset = offset
 
--- Legacy aliases (deprecated, for backwards compatibility)
-M.snapAtMidpoint = snap
-M.lerpDarkLight = lerp
-M.offsetFromBase = offset
-M.snapAt = function(threshold, dark_val, light_val)
-  return snap(dark_val, light_val, threshold)
-end
-
 -- =============================================================================
 -- PALETTE (flat structure)
 -- =============================================================================
@@ -139,27 +131,6 @@ M.palette = {
   -- === SYSTEM ===
   REAPER_SYNC_OFFSET = offset(-0.012),
 }
-
--- =============================================================================
--- LEGACY SECTION VIEWS (deprecated, for backwards compatibility)
--- =============================================================================
-
--- Build section views from flat palette
-M.from_bg = {}
-M.specific = {}
-M.values = {}
-
-for key, def in pairs(M.palette) do
-  if def == "base" or (type(def) == "table" and def.mode == "offset") then
-    M.from_bg[key] = def
-  elseif type(def) == "table" and (def.mode == "snap" or def.mode == "lerp") then
-    if type(def.dark) == "string" then
-      M.specific[key] = def
-    else
-      M.values[key] = def
-    end
-  end
-end
 
 -- =============================================================================
 -- UTILITIES
