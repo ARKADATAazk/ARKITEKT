@@ -66,6 +66,9 @@ local DEFAULTS = {
   -- Content
   content_bounds = nil,     -- Optional: specific area for content (for hover calc)
 
+  -- Window bounds (for reliable cursor tracking when cursor leaves window)
+  window_bounds = nil,      -- {x, y, w, h} - if provided, enables "exited toward edge" detection
+
   -- Callbacks
   on_draw = nil,            -- function(ctx, dl, bounds, visibility, state)
   on_expand = nil,          -- function(state) - called when expanding
@@ -138,6 +141,9 @@ function SlidingZone.new(id)
     last_mouse_x = nil,
     last_mouse_y = nil,
     exit_direction = nil,   -- "toward" or "away"
+
+    -- Window bounds tracking (for reliable edge detection)
+    last_mouse_in_window = false,
   }, SlidingZone)
 
   return self
@@ -279,74 +285,115 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
   end
 end
 
---- Detect if cursor crossed through the trigger zone between frames (fast movement)
---- This catches cases where cursor moves so fast it skips the hover zone entirely
+--- Detect if cursor moved from content area toward the panel edge (fast movement)
+--- This matches the pattern used by ItemPicker's Settings panel - tracks if cursor
+--- was in the "content area" (away from edge) and moved toward/past the edge.
 --- @param opts table Widget options
 --- @param state table Instance state with last_mouse_x/y
 --- @param bounds table Normalized bounds
 --- @param mx number Current mouse X
 --- @param my number Current mouse Y
---- @return boolean True if cursor crossed through the zone
-local function crossed_through_zone(opts, state, bounds, mx, my)
+--- @return boolean True if cursor moved from content toward edge
+local function crossed_toward_edge(opts, state, bounds, mx, my)
   local prev_x, prev_y = state.last_mouse_x, state.last_mouse_y
   if not prev_x or not prev_y then return false end
 
   local edge = opts.edge or "right"
   local content = opts.content_bounds or bounds
   local padding = opts.hover_padding or 30
-  local hover_outside = opts.hover_extend_outside or 30
   local hover_inside = opts.hover_extend_inside or 50
 
-  -- Check if cursor path crossed THROUGH the trigger zone
-  -- (was on one side, now on the other side)
+  -- Define "content area" as the area AWAY from the panel edge
+  -- If cursor was in content and moved toward edge, trigger the panel
   if edge == "left" then
-    -- Trigger zone: from (bounds.x - hover_outside) to (bounds.x + hover_inside)
-    local zone_left = bounds.x - hover_outside
-    local zone_right = bounds.x + hover_inside
-    -- Crossed through if prev was left of zone and current is right of zone (or vice versa)
-    local was_left = prev_x < zone_left
-    local now_right = mx > zone_right
-    local was_right = prev_x > zone_right
-    local now_left = mx < zone_left
-    local crossed = (was_left and now_right) or (was_right and now_left)
+    -- Content area = right of the trigger zone
+    local content_threshold = bounds.x + hover_inside
+    local edge_threshold = bounds.x
+    -- Was in content area (right of trigger), now at or past edge (left of bounds)
+    local was_in_content = prev_x > content_threshold
+    local now_at_edge = mx <= edge_threshold
     local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
-    return crossed and in_y_range
+    return was_in_content and now_at_edge and in_y_range
 
   elseif edge == "right" then
-    -- Trigger zone: from (bounds.x + bounds.w - hover_inside) to (bounds.x + bounds.w + hover_outside)
-    local zone_left = bounds.x + bounds.w - hover_inside
-    local zone_right = bounds.x + bounds.w + hover_outside
-    local was_left = prev_x < zone_left
-    local now_right = mx > zone_right
-    local was_right = prev_x > zone_right
-    local now_left = mx < zone_left
-    local crossed = (was_left and now_right) or (was_right and now_left)
+    -- Content area = left of the trigger zone
+    local content_threshold = bounds.x + bounds.w - hover_inside
+    local edge_threshold = bounds.x + bounds.w
+    -- Was in content area (left of trigger), now at or past edge (right of bounds)
+    local was_in_content = prev_x < content_threshold
+    local now_at_edge = mx >= edge_threshold
     local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
-    return crossed and in_y_range
+    return was_in_content and now_at_edge and in_y_range
 
   elseif edge == "top" then
-    -- Trigger zone: from (bounds.y - hover_outside) to (bounds.y + hover_inside)
-    local zone_top = bounds.y - hover_outside
-    local zone_bottom = bounds.y + hover_inside
-    local was_above = prev_y < zone_top
-    local now_below = my > zone_bottom
-    local was_below = prev_y > zone_bottom
-    local now_above = my < zone_top
-    local crossed = (was_above and now_below) or (was_below and now_above)
+    -- Content area = below the trigger zone
+    local content_threshold = bounds.y + hover_inside
+    local edge_threshold = bounds.y
+    -- Was in content area (below trigger), now at or past edge (above bounds)
+    local was_in_content = prev_y > content_threshold
+    local now_at_edge = my <= edge_threshold
     local in_x_range = mx >= (content.x - padding) and mx <= (content.x + content.w + padding)
-    return crossed and in_x_range
+    return was_in_content and now_at_edge and in_x_range
 
   else -- bottom
-    -- Trigger zone: from (bounds.y + bounds.h - hover_inside) to (bounds.y + bounds.h + hover_outside)
-    local zone_top = bounds.y + bounds.h - hover_inside
-    local zone_bottom = bounds.y + bounds.h + hover_outside
-    local was_above = prev_y < zone_top
-    local now_below = my > zone_bottom
-    local was_below = prev_y > zone_bottom
-    local now_above = my < zone_top
-    local crossed = (was_above and now_below) or (was_below and now_above)
+    -- Content area = above the trigger zone
+    local content_threshold = bounds.y + bounds.h - hover_inside
+    local edge_threshold = bounds.y + bounds.h
+    -- Was in content area (above trigger), now at or past edge (below bounds)
+    local was_in_content = prev_y < content_threshold
+    local now_at_edge = my >= edge_threshold
     local in_x_range = mx >= (content.x - padding) and mx <= (content.x + content.w + padding)
-    return crossed and in_x_range
+    return was_in_content and now_at_edge and in_x_range
+  end
+end
+
+--- Detect if cursor exited the window toward the panel edge (like Settings panel)
+--- This is the most reliable detection - doesn't depend on exact cursor position outside window
+--- @param opts table Widget options (needs window_bounds)
+--- @param state table Instance state with last_mouse_in_window
+--- @param bounds table Panel bounds
+--- @param mx number Current mouse X
+--- @param my number Current mouse Y
+--- @param mouse_in_window boolean Is cursor currently in window
+--- @return boolean True if cursor exited window toward the panel edge
+local function exited_toward_edge(opts, state, bounds, mx, my, mouse_in_window)
+  -- Requires window_bounds to be set
+  if not opts.window_bounds then return false end
+
+  local win = opts.window_bounds
+  local edge = opts.edge or "right"
+  local content = opts.content_bounds or bounds
+  local padding = opts.hover_padding or 30
+
+  -- Check if cursor was in window last frame but not this frame
+  if not state.last_mouse_in_window or mouse_in_window then
+    return false
+  end
+
+  -- Cursor just left the window - check if it exited toward the panel edge
+  if edge == "left" then
+    -- Left edge panel: trigger if cursor exited to the LEFT of window
+    local exited_left = mx < win.x
+    local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
+    return exited_left and in_y_range
+
+  elseif edge == "right" then
+    -- Right edge panel: trigger if cursor exited to the RIGHT of window
+    local exited_right = mx > (win.x + win.w)
+    local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
+    return exited_right and in_y_range
+
+  elseif edge == "top" then
+    -- Top edge panel: trigger if cursor exited ABOVE window
+    local exited_top = my < win.y
+    local in_x_range = mx >= (content.x - padding) and mx <= (content.x + content.w + padding)
+    return exited_top and in_x_range
+
+  else -- bottom
+    -- Bottom edge panel: trigger if cursor exited BELOW window
+    local exited_bottom = my > (win.y + win.h)
+    local in_x_range = mx >= (content.x - padding) and mx <= (content.x + content.w + padding)
+    return exited_bottom and in_x_range
   end
 end
 
@@ -512,11 +559,20 @@ function M.draw(ctx, opts)
     -- Get current mouse position
     local mx, my = ImGui.GetMousePos(ctx)
 
-    -- Check hover zone OR fast cursor crossing (for fast mouse movement)
-    local in_zone = is_in_hover_zone(ctx, opts, state, bounds)
-    local crossed_through = crossed_through_zone(opts, state, bounds, mx, my)
+    -- Calculate mouse_in_window if window_bounds provided
+    local mouse_in_window = true  -- Default to true if no window bounds
+    if opts.window_bounds then
+      local win = opts.window_bounds
+      mouse_in_window = mx >= win.x and mx <= (win.x + win.w) and
+                        my >= win.y and my <= (win.y + win.h)
+    end
 
-    if in_zone or crossed_through then
+    -- Check hover zone OR fast cursor movement toward edge OR exited window toward edge
+    local in_zone = is_in_hover_zone(ctx, opts, state, bounds)
+    local crossed_toward = crossed_toward_edge(opts, state, bounds, mx, my)
+    local exited_toward = exited_toward_edge(opts, state, bounds, mx, my, mouse_in_window)
+
+    if in_zone or crossed_toward or exited_toward then
       -- Expand immediately
       state:set_targets(1.0, slide_distance, opts.expand_scale or 1.0)
       state.hover_leave_time = nil
@@ -580,6 +636,7 @@ function M.draw(ctx, opts)
     -- Update cursor tracking
     state.last_mouse_x = mx
     state.last_mouse_y = my
+    state.last_mouse_in_window = mouse_in_window
 
   elseif trigger == "button" then
     -- Toggle state managed externally or via click

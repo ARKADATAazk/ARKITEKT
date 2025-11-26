@@ -970,6 +970,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
         hover_extend_outside = 5,
         hover_extend_inside = 10,  -- Small trigger zone near the collapsed strip
         hover_padding = 0,
+        window_bounds = { x = coord_offset_x, y = coord_offset_y, w = screen_w, h = screen_h },
         draw_list = draw_list,
 
         on_draw = function(zone_ctx, dl, bounds, visibility, zone_state)
