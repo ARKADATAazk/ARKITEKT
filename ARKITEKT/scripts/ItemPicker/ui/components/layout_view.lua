@@ -1028,6 +1028,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local midi_child_h = content_height - panel_padding
     ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
 
+    -- Block input when track filter modal is open
+    self.coordinator.midi_grid.block_all_input = self.state.show_track_filter_modal or false
+
     if ImGui.BeginChild(ctx, "midi_container", midi_grid_width, midi_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
       self.coordinator:render_midi_grid(ctx, midi_grid_width, midi_child_h, 0)
@@ -1053,6 +1056,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local audio_grid_width = content_width - panel_right_padding - panel_padding * 2
     local audio_child_h = content_height - panel_padding
     ImGui.SetCursorScreenPos(ctx, start_x + panel_padding, start_y + header_height)
+
+    -- Block input when track filter modal is open
+    self.coordinator.audio_grid.block_all_input = self.state.show_track_filter_modal or false
 
     if ImGui.BeginChild(ctx, "audio_container", audio_grid_width, audio_child_h, 0,
       ImGui.WindowFlags_NoScrollbar) then
@@ -1206,7 +1212,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local mx, my = ImGui.GetMousePos(ctx)
     local over_sep = (mx >= start_x and mx < start_x + content_width and
                       my >= sep_y - sep_thickness/2 and my < sep_y + sep_thickness/2)
-    local block_input = self.separator:is_dragging() or (over_sep and ImGui.IsMouseDown(ctx, 0))
+    local block_input = self.separator:is_dragging() or (over_sep and ImGui.IsMouseDown(ctx, 0)) or self.state.show_track_filter_modal
 
     -- MIDI section with panel
     local panel_padding = 4

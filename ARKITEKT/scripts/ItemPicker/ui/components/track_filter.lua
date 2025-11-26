@@ -321,7 +321,7 @@ function M.render_modal(ctx, state, bounds)
   local modal_height = 50 + slider_area_height + content_height + 50
 
   local modal_x = bounds.x + (bounds.width - modal_width) / 2
-  local modal_y = bounds.y + (bounds.height - modal_height) / 2
+  local modal_y = bounds.y + 80  -- Align to top with padding (slider stays fixed)
 
   -- Check for clicks outside modal to close
   local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
