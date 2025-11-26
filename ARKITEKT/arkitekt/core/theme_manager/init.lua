@@ -1019,6 +1019,46 @@ function M.disable_debug()
   M.debug_enabled = false
 end
 
+-- ============================================================================
+-- SCRIPT COLOR REGISTRATION
+-- ============================================================================
+-- Scripts can register their color modules for display in the debug overlay.
+-- This allows script-specific colors to be visible without modifying the library.
+--
+-- Usage in script init:
+--   local ScriptColors = require('MyScript.defs.colors')
+--   ThemeManager.register_script_colors("MyScript", {
+--     CIRCULAR_BASE = hexrgb("#240C0CFF"),
+--     CIRCULAR_TEXT = hexrgb("#901B1BFF"),
+--     FALLBACK_CHIP = hexrgb("#FF5733FF"),
+--   })
+
+--- Registered script color modules
+--- @type table<string, table<string, any>>
+M.registered_script_colors = {}
+
+--- Register a script's color table for debug display
+--- @param script_name string Name of the script (e.g., "RegionPlaylist")
+--- @param colors table Color table with key-value pairs
+function M.register_script_colors(script_name, colors)
+  if type(script_name) ~= "string" or type(colors) ~= "table" then
+    return
+  end
+  M.registered_script_colors[script_name] = colors
+end
+
+--- Unregister a script's colors
+--- @param script_name string Name of the script to unregister
+function M.unregister_script_colors(script_name)
+  M.registered_script_colors[script_name] = nil
+end
+
+--- Get all registered script colors
+--- @return table<string, table<string, any>>
+function M.get_registered_script_colors()
+  return M.registered_script_colors
+end
+
 -- Mapping from preset rule keys to their corresponding Style.COLORS keys
 local RULE_TO_STYLE_MAP = {
   -- Background deltas
@@ -1203,6 +1243,40 @@ function M.render_debug_overlay(ctx, ImGui)
           ImGui.Text(ctx, string.format("%s: %.3f", k, v))
         else
           ImGui.Text(ctx, string.format("%s: %s", k, tostring(v)))
+        end
+      end
+    end
+
+    -- Show registered script colors
+    for script_name, script_colors in pairs(M.registered_script_colors) do
+      if ImGui.CollapsingHeader(ctx, "Script: " .. script_name) then
+        local script_keys = {}
+        for k in pairs(script_colors) do
+          script_keys[#script_keys + 1] = k
+        end
+        table.sort(script_keys)
+
+        for _, k in ipairs(script_keys) do
+          local v = script_colors[k]
+          -- Only show color swatch for integer color values (RGBA format)
+          if type(v) == "number" and v == math.floor(v) then
+            ImGui.ColorButton(ctx, script_name .. "_" .. k, math.floor(v), 0, 12, 12)
+            ImGui.SameLine(ctx)
+            ImGui.Text(ctx, string.format("%s: 0x%08X", k, math.floor(v)))
+          elseif type(v) == "number" then
+            -- Non-integer numbers (multipliers, opacities, etc.)
+            ImGui.Text(ctx, string.format("%s: %.3f", k, v))
+          elseif type(v) == "string" and v:match("^#") then
+            -- Hex color strings
+            local hex_with_alpha = v
+            if #v == 7 then hex_with_alpha = v .. "FF" end
+            local color = Colors.hexrgb(hex_with_alpha)
+            ImGui.ColorButton(ctx, script_name .. "_" .. k, color, 0, 12, 12)
+            ImGui.SameLine(ctx)
+            ImGui.Text(ctx, string.format("%s: %s", k, v))
+          else
+            ImGui.Text(ctx, string.format("%s: %s", k, tostring(v)))
+          end
         end
       end
     end
