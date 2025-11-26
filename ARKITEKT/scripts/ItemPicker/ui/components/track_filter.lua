@@ -210,12 +210,16 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
   local left_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)
   local left_down = ImGui.IsMouseDown(ctx, ImGui.MouseButton_Left)
   local left_released = ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Left)
+  local right_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right)
+  local right_down = ImGui.IsMouseDown(ctx, ImGui.MouseButton_Right)
+  local right_released = ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Right)
 
   -- Stop painting on mouse release
-  if left_released then
+  if left_released or right_released then
     state.track_filter_painting = false
     state.track_filter_paint_value = nil
-    state.track_filter_last_painted = nil  -- Reset last painted track
+    state.track_filter_last_painted = nil
+    state.track_filter_paint_mode = nil  -- "toggle" or "fixed"
   end
 
   for _, track in ipairs(tracks) do
@@ -241,30 +245,50 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
     local arrow_x = tile_x + TRACK_TILE.COLOR_BAR_WIDTH + TRACK_TILE.PADDING_X
     local over_arrow = has_children and mouse_x >= arrow_x and mouse_x <= arrow_x + 12
 
-    -- Handle click to start painting or toggle expand
+    -- Handle left click: toggle mode (back-and-forth painting)
     if is_hovered and left_clicked then
       if over_arrow then
         -- Toggle expand (not part of paint mode)
         if not state.track_expanded then state.track_expanded = {} end
         state.track_expanded[track.guid] = not is_expanded
       else
-        -- Start painting - toggle the clicked track and mark as last painted
+        -- Start toggle paint mode
         state.track_filter_painting = true
+        state.track_filter_paint_mode = "toggle"
         state.track_filter_last_painted = track.guid
         if not state.track_whitelist then state.track_whitelist = {} end
         state.track_whitelist[track.guid] = not is_selected
       end
     end
 
-    -- Paint mode: toggle track when entering it (allows back-and-forth painting)
-    if state.track_filter_painting and left_down and is_hovered and not over_arrow then
-      -- Only toggle when entering a different track than last painted
-      if state.track_filter_last_painted ~= track.guid then
+    -- Handle right click: fixed paint mode (bulk enable/disable)
+    if is_hovered and right_clicked and not over_arrow then
+      state.track_filter_painting = true
+      state.track_filter_paint_mode = "fixed"
+      state.track_filter_paint_value = not is_selected  -- Paint with opposite of first track
+      state.track_filter_last_painted = track.guid
+      if not state.track_whitelist then state.track_whitelist = {} end
+      state.track_whitelist[track.guid] = state.track_filter_paint_value
+    end
+
+    -- Paint mode while dragging
+    if state.track_filter_painting and is_hovered and not over_arrow then
+      local is_dragging = (state.track_filter_paint_mode == "toggle" and left_down) or
+                          (state.track_filter_paint_mode == "fixed" and right_down)
+
+      if is_dragging and state.track_filter_last_painted ~= track.guid then
         if not state.track_whitelist then state.track_whitelist = {} end
-        -- Toggle the track's state
-        local current = state.track_whitelist[track.guid]
-        if current == nil then current = true end
-        state.track_whitelist[track.guid] = not current
+
+        if state.track_filter_paint_mode == "toggle" then
+          -- Toggle mode: flip the track's current state
+          local current = state.track_whitelist[track.guid]
+          if current == nil then current = true end
+          state.track_whitelist[track.guid] = not current
+        else
+          -- Fixed mode: apply the paint value
+          state.track_whitelist[track.guid] = state.track_filter_paint_value
+        end
+
         state.track_filter_last_painted = track.guid
       end
     end

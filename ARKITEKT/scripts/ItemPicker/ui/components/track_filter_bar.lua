@@ -126,12 +126,16 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
   local left_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)
   local left_down = ImGui.IsMouseDown(ctx, ImGui.MouseButton_Left)
   local left_released = ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Left)
+  local right_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right)
+  local right_down = ImGui.IsMouseDown(ctx, ImGui.MouseButton_Right)
+  local right_released = ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Right)
 
   -- Stop painting on mouse release
-  if left_released then
+  if left_released or right_released then
     state.track_bar_painting = false
     state.track_bar_paint_value = nil
-    state.track_bar_last_painted = nil  -- Reset last painted track
+    state.track_bar_last_painted = nil
+    state.track_bar_paint_mode = nil  -- "toggle" or "fixed"
   end
 
   -- Draw each track tag
@@ -189,9 +193,10 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
 
       ImGui.DrawList_AddText(draw_list, text_x, text_y, text_color, name)
 
-      -- Handle click to start painting
+      -- Handle left click: toggle mode (back-and-forth painting)
       if is_hovered and left_clicked then
         state.track_bar_painting = true
+        state.track_bar_paint_mode = "toggle"
         state.track_bar_last_painted = track.guid
         state.track_filters_enabled[track.guid] = not is_enabled
         -- Invalidate filter cache
@@ -199,13 +204,36 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
         state.runtime_cache.midi_filter_hash = nil
       end
 
-      -- Paint mode: toggle track when entering it (allows back-and-forth painting)
-      if state.track_bar_painting and left_down and is_hovered then
-        -- Only toggle when entering a different track than last painted
-        if state.track_bar_last_painted ~= track.guid then
-          local current = state.track_filters_enabled[track.guid]
-          if current == nil then current = true end
-          state.track_filters_enabled[track.guid] = not current
+      -- Handle right click: fixed paint mode (bulk enable/disable)
+      if is_hovered and right_clicked then
+        state.track_bar_painting = true
+        state.track_bar_paint_mode = "fixed"
+        state.track_bar_paint_value = not is_enabled  -- Paint with opposite of first track
+        state.track_bar_last_painted = track.guid
+        state.track_filters_enabled[track.guid] = state.track_bar_paint_value
+        -- Invalidate filter cache
+        state.runtime_cache.audio_filter_hash = nil
+        state.runtime_cache.midi_filter_hash = nil
+      end
+
+      -- Paint mode while dragging
+      if state.track_bar_painting and is_hovered then
+        local is_dragging = (state.track_bar_paint_mode == "toggle" and left_down) or
+                            (state.track_bar_paint_mode == "fixed" and right_down)
+
+        if is_dragging and state.track_bar_last_painted ~= track.guid then
+          local new_value
+          if state.track_bar_paint_mode == "toggle" then
+            -- Toggle mode: flip the track's current state
+            local current = state.track_filters_enabled[track.guid]
+            if current == nil then current = true end
+            new_value = not current
+          else
+            -- Fixed mode: apply the paint value
+            new_value = state.track_bar_paint_value
+          end
+
+          state.track_filters_enabled[track.guid] = new_value
           state.track_bar_last_painted = track.guid
           -- Invalidate filter cache
           state.runtime_cache.audio_filter_hash = nil
