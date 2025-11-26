@@ -312,34 +312,42 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
   local in_zone = false
   local trigger_line = nil  -- For debug logging
 
+  -- Maximum distance outside bounds before trigger stops working
+  -- Prevents triggering from another monitor
+  local max_outside = opts.hover_extend_outside or 50
+
   if edge == "left" then
-    -- Trigger zone: everything LEFT of (bounds.x + trigger_threshold)
-    -- This is like Settings panel's "everything ABOVE Y"
+    -- Trigger zone: BETWEEN (bounds.x - max_outside) and (bounds.x + trigger_threshold)
+    -- NOT infinite - stops at max_outside distance
     trigger_line = bounds.x + trigger_threshold
+    local min_x = bounds.x - max_outside
     local zone_y1 = content.y - padding
     local zone_y2 = content.y + content.h + padding
-    in_zone = mx < trigger_line and my >= zone_y1 and my <= zone_y2
+    in_zone = mx >= min_x and mx < trigger_line and my >= zone_y1 and my <= zone_y2
 
   elseif edge == "right" then
-    -- Trigger zone: everything RIGHT of (bounds.x + bounds.w - trigger_threshold)
+    -- Trigger zone: BETWEEN (bounds.x + bounds.w - trigger_threshold) and (bounds.x + bounds.w + max_outside)
     trigger_line = bounds.x + bounds.w - trigger_threshold
+    local max_x = bounds.x + bounds.w + max_outside
     local zone_y1 = content.y - padding
     local zone_y2 = content.y + content.h + padding
-    in_zone = mx > trigger_line and my >= zone_y1 and my <= zone_y2
+    in_zone = mx > trigger_line and mx <= max_x and my >= zone_y1 and my <= zone_y2
 
   elseif edge == "top" then
-    -- Trigger zone: everything ABOVE (bounds.y + trigger_threshold)
+    -- Trigger zone: BETWEEN (bounds.y - max_outside) and (bounds.y + trigger_threshold)
     trigger_line = bounds.y + trigger_threshold
+    local min_y = bounds.y - max_outside
     local zone_x1 = content.x - padding
     local zone_x2 = content.x + content.w + padding
-    in_zone = my < trigger_line and mx >= zone_x1 and mx <= zone_x2
+    in_zone = my >= min_y and my < trigger_line and mx >= zone_x1 and mx <= zone_x2
 
   else -- bottom
-    -- Trigger zone: everything BELOW (bounds.y + bounds.h - trigger_threshold)
+    -- Trigger zone: BETWEEN (bounds.y + bounds.h - trigger_threshold) and (bounds.y + bounds.h + max_outside)
     trigger_line = bounds.y + bounds.h - trigger_threshold
+    local max_y = bounds.y + bounds.h + max_outside
     local zone_x1 = content.x - padding
     local zone_x2 = content.x + content.w + padding
-    in_zone = my > trigger_line and mx >= zone_x1 and mx <= zone_x2
+    in_zone = my > trigger_line and my <= max_y and mx >= zone_x1 and mx <= zone_x2
   end
 
   -- Debug logging for trigger zone
