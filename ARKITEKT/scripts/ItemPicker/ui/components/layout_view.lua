@@ -967,10 +967,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
         directional_delay = true,
         retract_delay_toward = 1.0,  -- Longer delay when moving left (toward another monitor)
         retract_delay_away = 0.1,    -- Quick retract when moving right (back to content)
-        hover_extend_outside = 5,
-        hover_extend_inside = 10,  -- Small trigger zone near the collapsed strip
+        -- MASSIVE trigger zone (uses default of 200px) - like Settings panel's "everything ABOVE Y"
+        -- This is reliable even with fast cursor movement (no thin strip detection)
         hover_padding = 0,
-        window_bounds = { x = coord_offset_x, y = coord_offset_y, w = screen_w, h = screen_h },
         draw_list = draw_list,
 
         on_draw = function(zone_ctx, dl, bounds, visibility, zone_state)

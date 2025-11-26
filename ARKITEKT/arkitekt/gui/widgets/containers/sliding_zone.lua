@@ -197,22 +197,13 @@ end
 -- MOUSE POSITION TRACKING
 -- ============================================================================
 
---- Get reliable mouse position using reaper.GetMousePosition()
---- This works even when cursor is outside the ImGui window bounds
---- reaper.GetMousePosition() returns screen coordinates, same as ImGui.GetMousePos()
+--- Get mouse position
+--- Note: When cursor is outside ImGui window, position may be stale/clamped
 --- @param ctx ImGui_Context
---- @return number mx Mouse X in screen coordinates
---- @return number my Mouse Y in screen coordinates
+--- @return number mx Mouse X
+--- @return number my Mouse Y
 local function get_mouse_position(ctx)
-  -- Use reaper.GetMousePosition() for reliable tracking outside window
-  -- This works because both reaper and ImGui use screen coordinates
-  if reaper.GetMousePosition then
-    return reaper.GetMousePosition()
-  else
-    -- Fallback to ImGui.GetMousePos() if reaper API not available
-    -- Note: This may return stale values when cursor is outside window
-    return ImGui.GetMousePos(ctx)
-  end
+  return ImGui.GetMousePos(ctx)
 end
 
 -- ============================================================================
@@ -262,48 +253,53 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
   local content = opts.content_bounds or bounds
 
   -- Calculate hover zone based on edge
-  local hover_outside = opts.hover_extend_outside or 30
   local padding = opts.hover_padding or 30
 
-  -- DYNAMIC hover_inside: when expanded, extend to cover full content
-  -- When collapsed, use small trigger zone
-  local hover_inside
+  -- MASSIVE TRIGGER ZONE (like Settings panel's "everything ABOVE Y")
+  -- This is more reliable than trying to detect crossing through a thin strip
+  -- For left/right edges: trigger extends far into content area
+  -- For top/bottom edges: trigger extends far into content area
+
+  -- When expanded, extend trigger to cover full panel
+  local trigger_threshold
   if state.is_expanded or state.is_in_hover_zone then
-    -- Expanded: hover zone covers the full panel size
+    -- Expanded: trigger covers the full panel size
     local size = opts.size or 40
-    hover_inside = size
+    trigger_threshold = size
   else
-    -- Collapsed: use the small trigger zone
-    hover_inside = opts.hover_extend_inside or 50
+    -- Collapsed: MASSIVE trigger zone extends into content
+    -- This makes it easy to trigger even with fast mouse movement
+    trigger_threshold = opts.hover_extend_inside or 200  -- Was 50, now 200 (massive)
   end
 
   if edge == "left" then
-    local zone_x1 = bounds.x - hover_outside
-    local zone_x2 = bounds.x + hover_inside
+    -- Trigger zone: everything LEFT of (bounds.x + trigger_threshold)
+    -- This is like Settings panel's "everything ABOVE Y"
+    local trigger_x = bounds.x + trigger_threshold
     local zone_y1 = content.y - padding
     local zone_y2 = content.y + content.h + padding
-    return mx >= zone_x1 and mx <= zone_x2 and my >= zone_y1 and my <= zone_y2
+    return mx < trigger_x and my >= zone_y1 and my <= zone_y2
 
   elseif edge == "right" then
-    local zone_x1 = bounds.x + bounds.w - hover_inside
-    local zone_x2 = bounds.x + bounds.w + hover_outside
+    -- Trigger zone: everything RIGHT of (bounds.x + bounds.w - trigger_threshold)
+    local trigger_x = bounds.x + bounds.w - trigger_threshold
     local zone_y1 = content.y - padding
     local zone_y2 = content.y + content.h + padding
-    return mx >= zone_x1 and mx <= zone_x2 and my >= zone_y1 and my <= zone_y2
+    return mx > trigger_x and my >= zone_y1 and my <= zone_y2
 
   elseif edge == "top" then
+    -- Trigger zone: everything ABOVE (bounds.y + trigger_threshold)
+    local trigger_y = bounds.y + trigger_threshold
     local zone_x1 = content.x - padding
     local zone_x2 = content.x + content.w + padding
-    local zone_y1 = bounds.y - hover_outside
-    local zone_y2 = bounds.y + hover_inside
-    return mx >= zone_x1 and mx <= zone_x2 and my >= zone_y1 and my <= zone_y2
+    return my < trigger_y and mx >= zone_x1 and mx <= zone_x2
 
   else -- bottom
+    -- Trigger zone: everything BELOW (bounds.y + bounds.h - trigger_threshold)
+    local trigger_y = bounds.y + bounds.h - trigger_threshold
     local zone_x1 = content.x - padding
     local zone_x2 = content.x + content.w + padding
-    local zone_y1 = bounds.y + bounds.h - hover_inside
-    local zone_y2 = bounds.y + bounds.h + hover_outside
-    return mx >= zone_x1 and mx <= zone_x2 and my >= zone_y1 and my <= zone_y2
+    return my > trigger_y and mx >= zone_x1 and mx <= zone_x2
   end
 end
 
@@ -589,12 +585,11 @@ function M.draw(ctx, opts)
                         my >= win.y and my <= (win.y + win.h)
     end
 
-    -- Check hover zone OR fast cursor movement toward edge OR exited window toward edge
+    -- Check massive trigger zone (like Settings panel's "everything ABOVE Y")
+    -- No need for complex crossing detection - the massive zone catches everything
     local in_zone = is_in_hover_zone(ctx, opts, state, bounds)
-    local crossed_toward = crossed_toward_edge(opts, state, bounds, mx, my)
-    local exited_toward = exited_toward_edge(opts, state, bounds, mx, my, mouse_in_window)
 
-    if in_zone or crossed_toward or exited_toward then
+    if in_zone then
       -- Expand immediately
       state:set_targets(1.0, slide_distance, opts.expand_scale or 1.0)
       state.hover_leave_time = nil
