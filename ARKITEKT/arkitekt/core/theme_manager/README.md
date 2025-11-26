@@ -9,7 +9,6 @@ local ThemeManager = require('arkitekt.core.theme_manager')
 
 -- Pick a mode
 ThemeManager.set_dark()   -- Dark preset (~14% lightness)
-ThemeManager.set_grey()   -- Grey preset (~24% lightness, auto-interpolated)
 ThemeManager.set_light()  -- Light preset (~88% lightness)
 ThemeManager.adapt()      -- Sync with REAPER's theme
 ```
@@ -23,13 +22,13 @@ All UI colors are then available via `Style.COLORS.*`.
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    User selects mode                        │
-│              (dark / grey / light / adapt)                  │
+│                 (dark / light / adapt)                      │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│              generate_palette(base_bg, base_text)           │
+│                  generate_palette(base_bg)                  │
 │                            ↓                                │
-│         compute_rules_for_lightness(lightness, mode)        │
+│              compute_rules(lightness, mode)                 │
 │                            ↓                                │
 │                        M.rules                              │
 │       (offsetFromBase / lerpDarkLight / snapAtMidpoint)     │
@@ -293,7 +292,6 @@ Script rules are cached and automatically invalidated when the theme changes.
 
 ```lua
 ThemeManager.set_dark()    -- Apply dark preset (t=0)
-ThemeManager.set_grey()    -- Apply grey (t≈0.14)
 ThemeManager.set_light()   -- Apply light preset (t=1)
 ThemeManager.adapt()       -- Sync with REAPER theme
 
@@ -335,11 +333,11 @@ local l = ThemeManager.get_theme_lightness()
 -- Get current interpolation factor
 local t = ThemeManager.get_current_t()
 
--- Toggle debug overlay
+-- Toggle debug window (F12 hotkey also works)
 ThemeManager.toggle_debug()
 
--- Render debug overlay (in main loop)
-ThemeManager.render_debug_overlay(ctx, ImGui)
+-- Render debug window (in main loop)
+ThemeManager.render_debug_window(ctx, ImGui)
 
 -- Validate rules configuration
 local valid, err = ThemeManager.validate()
@@ -348,13 +346,9 @@ local valid, err = ThemeManager.validate()
 ### Custom Themes
 
 ```lua
--- Generate from custom colors
-local bg = Colors.hexrgb("#FF6B6BFF")
-local text = Colors.auto_text_color(bg)
-ThemeManager.generate_and_apply(bg, text)
-
--- Or with accent
-ThemeManager.generate_and_apply(bg, text, accent_color)
+-- Generate from a single base color (text/accent derived automatically)
+local bg = Colors.hexrgb("#3A3A3AFF")
+ThemeManager.generate_and_apply(bg)
 ```
 
 ### Script Rules API
@@ -383,7 +377,7 @@ local all_rules = ThemeManager.get_registered_script_rules()
 ### Script Colors API (static colors for debug visibility)
 
 ```lua
--- Register static colors for debug overlay visibility
+-- Register static colors for debug window visibility
 ThemeManager.register_script_colors("ScriptName", {
   MY_COLOR = 0xFF6B6BFF,
 })
@@ -393,26 +387,6 @@ ThemeManager.unregister_script_colors("ScriptName")
 
 -- Get all registered
 local all_colors = ThemeManager.get_registered_script_colors()
-```
-
----
-
-## Legacy API
-
-For backward compatibility, these aliases exist:
-
-```lua
--- Old wrappers (map to new system)
-M.blend = function(v) return lerpDarkLight(v, v) end
-M.step = function(v) return snapAtMidpoint(v, v) end
-
--- Legacy presets (via metatable, read-only)
-M.presets.dark[key]   -- Returns M.rules[key].dark
-M.presets.light[key]  -- Returns M.rules[key].light
-
-M.theme_rules = M.presets
-M.theme_anchors = M.preset_anchors
-M.derivation_rules  -- Returns dark values
 ```
 
 ---
