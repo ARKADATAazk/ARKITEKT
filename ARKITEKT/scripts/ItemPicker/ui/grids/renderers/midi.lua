@@ -104,6 +104,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     render_color = ark.Colors.components_to_rgba(r_new, g_new, b_new, a)
   end
 
+  -- Snapshot the stable color (after all permanent transforms, before hover/alpha)
+  -- This is the "true" tile color for animations
+  local stable_tile_color = render_color
+
   -- Apply hover effect (brightness boost)
   if hover_factor > 0.001 then
     local hover_boost = config.TILE_RENDER.hover.brightness_boost * hover_factor
@@ -137,8 +141,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Trigger disable animation if item is being disabled when show_disabled_items = false
   if disable_animator and item_data.key and is_disabled and not state.settings.show_disabled_items then
     if not disable_animator:is_disabling(item_data.key) then
-      -- Pass the ACTUAL rendered color (not base_color) so animation matches what's visible
-      disable_animator:disable(item_data.key, {scaled_x1, scaled_y1, scaled_x2, scaled_y2}, render_color)
+      -- Use stable_tile_color (before hover/alpha) for consistent animation color
+      disable_animator:disable(item_data.key, {scaled_x1, scaled_y1, scaled_x2, scaled_y2}, stable_tile_color)
     end
   end
 
