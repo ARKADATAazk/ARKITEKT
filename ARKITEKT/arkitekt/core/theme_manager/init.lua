@@ -61,6 +61,12 @@ local Style = require('arkitekt.gui.style')
 
 local M = {}
 
+-- Forward declaration for script rules cache (used by apply_palette)
+local script_rules_cache = {}
+local function clear_script_rules_cache()
+  script_rules_cache = {}
+end
+
 -- ============================================================================
 -- VALUE WRAPPERS - Unified Single-Definition System
 -- ============================================================================
@@ -137,6 +143,14 @@ M.rules = {
   bg_header_delta = offsetFromBase(-0.024, -0.06),   -- Headers slightly darker
   bg_panel_delta = offsetFromBase(-0.04),            -- Panels always darker (same both)
 
+  -- ========== CHROME (titlebar/statusbar) ==========
+  -- Chrome is significantly darker than content area
+  -- Formula: chrome_lightness = bg_lightness * factor + offset
+  -- Dark: multiply by 0.42, no offset → chrome ≈ 6% lightness for 14% bg
+  -- Light: keep full lightness, subtract 0.15 → chrome ≈ 73% for 88% bg
+  chrome_lightness_factor = lerpDarkLight(0.42, 1.0),   -- Multiplier for bg_lightness
+  chrome_lightness_offset = lerpDarkLight(0, -0.15),    -- Additive offset after multiply
+
   -- ========== PATTERN OFFSETS ==========
   -- Applied to BG_PANEL (which is derived from BG_BASE)
   pattern_primary_delta = offsetFromBase(-0.024, -0.06),
@@ -163,6 +177,12 @@ M.rules = {
   accent_bright_delta = offsetFromBase(0.15, -0.12),
   accent_white_lightness = lerpDarkLight(0.25, 0.55),         -- Absolute lightness values
   accent_white_bright_lightness = lerpDarkLight(0.35, 0.45),
+
+  -- ========== SEMANTIC STATUS COLORS ==========
+  -- These lerp for better integration with theme
+  status_success = lerpDarkLight("#4CAF50", "#2E7D32"),   -- Green (brighter on dark)
+  status_warning = lerpDarkLight("#FFA726", "#F57C00"),   -- Orange (brighter on dark)
+  status_danger = lerpDarkLight("#EF5350", "#C62828"),    -- Red (brighter on dark)
 
   -- ========== TILE RENDERING ==========
   -- Multipliers for user-colored elements
@@ -374,13 +394,10 @@ function M.generate_palette(base_bg, base_text, base_accent, rules)
     rules = compute_rules_for_lightness(bg_lightness, M.current_mode)
   end
 
-  -- Calculate chrome color (titlebar/statusbar) - always significantly darker than content
-  local chrome_lightness
-  if is_light then
-    chrome_lightness = bg_lightness - 0.15  -- 15% darker for light themes
-  else
-    chrome_lightness = bg_lightness * 0.42  -- ~42% of content brightness for dark/grey
-  end
+  -- Calculate chrome color (titlebar/statusbar) - significantly darker than content
+  -- Formula: chrome_lightness = bg_lightness * factor + offset
+  -- This allows smooth interpolation for grey themes
+  local chrome_lightness = bg_lightness * rules.chrome_lightness_factor + rules.chrome_lightness_offset
   chrome_lightness = math.max(0.04, math.min(0.85, chrome_lightness))
   local base_chrome = Colors.set_lightness(base_bg, chrome_lightness)
 
@@ -441,10 +458,10 @@ function M.generate_palette(base_bg, base_text, base_accent, rules)
     -- Transparent variant (for overlays)
     ACCENT_TRANSPARENT = Colors.with_alpha(neutral_accent, 0xAA),
 
-    -- Status colors (fixed for semantic meaning)
-    ACCENT_SUCCESS = Colors.hexrgb("#4CAF50"),
-    ACCENT_WARNING = Colors.hexrgb("#FFA726"),
-    ACCENT_DANGER = Colors.hexrgb("#EF5350"),
+    -- Status colors (theme-reactive for better integration)
+    ACCENT_SUCCESS = Colors.hexrgb(rules.status_success),
+    ACCENT_WARNING = Colors.hexrgb(rules.status_warning),
+    ACCENT_DANGER = Colors.hexrgb(rules.status_danger),
 
     -- ============ PATTERNS ============
     -- Background grid patterns - SOLID colors darker than BG_PANEL
@@ -487,6 +504,10 @@ local function apply_palette(palette)
   for key, value in pairs(palette) do
     Style.COLORS[key] = value
   end
+
+  -- Invalidate script rules cache (they depend on theme lightness)
+  clear_script_rules_cache()
+
   -- NOTE: We intentionally do NOT clear the pattern texture cache here.
   -- Each unique color gets its own cache entry. When switching themes,
   -- different colors create new entries while old ones remain cached.
@@ -1065,6 +1086,83 @@ function M.get_registered_script_colors()
   return M.registered_script_colors
 end
 
+-- ============================================================================
+-- SCRIPT RULES REGISTRATION
+-- ============================================================================
+-- Scripts can register their own theme-reactive rules using the same wrappers.
+-- Unlike static colors, these rules adapt to theme lightness automatically.
+--
+-- Usage in script init:
+--   local ThemeManager = require('arkitekt.core.theme_manager')
+--   local offsetFromBase = ThemeManager.offsetFromBase
+--   local lerpDarkLight = ThemeManager.lerpDarkLight
+--   local snapAtMidpoint = ThemeManager.snapAtMidpoint
+--
+--   ThemeManager.register_script_rules("MyScript", {
+--     panel_bg_delta = offsetFromBase(-0.06, -0.08),       -- Darker panels
+--     highlight_color = lerpDarkLight("#FF6B6B", "#CC4444"), -- Theme-reactive red
+--     badge_text = snapAtMidpoint("#FFFFFF", "#1A1A1A"),     -- Contrast text
+--   })
+--
+--   -- Access computed values (after theme applies):
+--   local rules = ThemeManager.get_script_rules("MyScript")
+--   local my_color = rules.highlight_color  -- Already computed for current theme
+
+--- Registered script rule definitions
+--- @type table<string, table<string, table>>
+M.registered_script_rules = {}
+
+--- Register a script's theme-reactive rules
+--- @param script_name string Name of the script (e.g., "RegionPlaylist")
+--- @param rules table Rules table using wrappers (offsetFromBase, lerpDarkLight, etc.)
+function M.register_script_rules(script_name, rules)
+  if type(script_name) ~= "string" or type(rules) ~= "table" then
+    return
+  end
+  M.registered_script_rules[script_name] = rules
+  -- Invalidate cache for this script
+  script_rules_cache[script_name] = nil
+end
+
+--- Unregister a script's rules
+--- @param script_name string Name of the script to unregister
+function M.unregister_script_rules(script_name)
+  M.registered_script_rules[script_name] = nil
+  script_rules_cache[script_name] = nil
+end
+
+--- Get computed rules for a script (computed for current theme)
+--- @param script_name string Name of the script
+--- @return table|nil Computed rules table, or nil if not registered
+function M.get_script_rules(script_name)
+  local rule_defs = M.registered_script_rules[script_name]
+  if not rule_defs then
+    return nil
+  end
+
+  -- Check cache
+  local cached = script_rules_cache[script_name]
+  local current_t = M.get_current_t()
+  if cached and cached._t == current_t then
+    return cached
+  end
+
+  -- Compute rules for current theme
+  local computed = { _t = current_t }
+  for key, rule in pairs(rule_defs) do
+    computed[key] = compute_rule_value(rule, current_t)
+  end
+
+  script_rules_cache[script_name] = computed
+  return computed
+end
+
+--- Get all registered script rules (definitions, not computed)
+--- @return table<string, table<string, table>>
+function M.get_registered_script_rules()
+  return M.registered_script_rules
+end
+
 -- Mapping from preset rule keys to their corresponding Style.COLORS keys
 local RULE_TO_STYLE_MAP = {
   -- Background deltas
@@ -1072,6 +1170,9 @@ local RULE_TO_STYLE_MAP = {
   bg_active_delta = "BG_ACTIVE",
   bg_header_delta = "BG_HEADER",
   bg_panel_delta = "BG_PANEL",
+  -- Chrome (derived)
+  chrome_lightness_factor = "BG_CHROME",
+  chrome_lightness_offset = "BG_CHROME",
   -- Patterns
   pattern_primary_delta = "PATTERN_PRIMARY",
   pattern_secondary_delta = "PATTERN_SECONDARY",
@@ -1091,6 +1192,10 @@ local RULE_TO_STYLE_MAP = {
   accent_bright_delta = "ACCENT_TEAL_BRIGHT",
   accent_white_lightness = "ACCENT_WHITE",
   accent_white_bright_lightness = "ACCENT_WHITE_BRIGHT",
+  -- Status colors
+  status_success = "ACCENT_SUCCESS",
+  status_warning = "ACCENT_WARNING",
+  status_danger = "ACCENT_DANGER",
   -- Tiles
   tile_fill_brightness = "TILE_FILL_BRIGHTNESS",
   tile_fill_saturation = "TILE_FILL_SATURATION",

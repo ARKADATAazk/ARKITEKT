@@ -241,6 +241,52 @@ return M
 
 ---
 
+## Script-Specific Theme Rules
+
+For more advanced theme integration, scripts can register their own **theme-reactive rules** using the same wrapper functions. These rules automatically adapt to theme changes:
+
+```lua
+-- MyScript/defs/colors.lua
+local ThemeManager = require('arkitekt.core.theme_manager')
+local offsetFromBase = ThemeManager.offsetFromBase
+local lerpDarkLight = ThemeManager.lerpDarkLight
+local snapAtMidpoint = ThemeManager.snapAtMidpoint
+
+-- Register theme-reactive rules (at script init)
+ThemeManager.register_script_rules("MyScript", {
+  -- Background offset from BG_BASE
+  panel_bg_delta = offsetFromBase(-0.06, -0.08),
+
+  -- Smooth color interpolation
+  highlight_color = lerpDarkLight("#FF6B6B", "#CC4444"),
+
+  -- Discrete snap for text contrast
+  badge_text = snapAtMidpoint("#FFFFFF", "#1A1A1A"),
+
+  -- Numeric lerp
+  glow_opacity = lerpDarkLight(0.8, 0.5),
+})
+
+-- Access computed values (these update when theme changes)
+function M.get_colors()
+  local rules = ThemeManager.get_script_rules("MyScript")
+  if not rules then return M.STATIC end
+
+  return {
+    highlight = Colors.hexrgb(rules.highlight_color),
+    badge_text = Colors.hexrgb(rules.badge_text),
+    glow_alpha = rules.glow_opacity,
+    panel_bg = Colors.adjust_lightness(Style.COLORS.BG_BASE, rules.panel_bg_delta),
+  }
+end
+
+return M
+```
+
+Script rules are cached and automatically invalidated when the theme changes.
+
+---
+
 ## API Reference
 
 ### Mode Selection
@@ -309,6 +355,44 @@ ThemeManager.generate_and_apply(bg, text)
 
 -- Or with accent
 ThemeManager.generate_and_apply(bg, text, accent_color)
+```
+
+### Script Rules API
+
+```lua
+-- Register theme-reactive rules for a script
+ThemeManager.register_script_rules("ScriptName", {
+  my_delta = offsetFromBase(0.05, -0.05),
+  my_color = lerpDarkLight("#AAA", "#555"),
+})
+
+-- Get computed rules (cached, invalidated on theme change)
+local rules = ThemeManager.get_script_rules("ScriptName")
+if rules then
+  local delta = rules.my_delta  -- Already computed for current theme
+  local color = rules.my_color
+end
+
+-- Unregister when script unloads
+ThemeManager.unregister_script_rules("ScriptName")
+
+-- Get all registered script rules (definitions)
+local all_rules = ThemeManager.get_registered_script_rules()
+```
+
+### Script Colors API (static colors for debug visibility)
+
+```lua
+-- Register static colors for debug overlay visibility
+ThemeManager.register_script_colors("ScriptName", {
+  MY_COLOR = 0xFF6B6BFF,
+})
+
+-- Unregister
+ThemeManager.unregister_script_colors("ScriptName")
+
+-- Get all registered
+local all_colors = ThemeManager.get_registered_script_colors()
 ```
 
 ---
