@@ -5,6 +5,12 @@
 
 local Logger = require("arkitekt.debug.logger")
 
+-- Performance: Localize math functions for hot path (runs every frame during playback)
+local max = math.max
+local min = math.min
+local abs = math.abs
+local floor = math.floor
+
 -- Set to true for per-frame playback position logging (very verbose!)
 local DEBUG_PLAYPOS = false
 

@@ -7,6 +7,13 @@ local Regions = require('arkitekt.reaper.regions')
 local Transport = require('arkitekt.reaper.transport')
 local Logger = require('arkitekt.debug.logger')
 
+-- Performance: Localize math and table functions for hot loops (region lookup, shuffling)
+local max = math.max
+local min = math.min
+local floor = math.floor
+local random = math.random
+local insert = table.insert
+
 -- Set to true for verbose sequence building logs
 local DEBUG_SEQUENCE = false
 
@@ -94,7 +101,7 @@ function State:set_order(new_order)
       local rid = entry.rid
       if rid then
         local reps = tonumber(entry.reps) or 1
-        reps = math.max(1, math.floor(reps))
+        reps = max(1, floor(reps))
         local key = entry.key
         for loop_index = 1, reps do
           sequence[#sequence + 1] = {
@@ -149,8 +156,8 @@ function State:set_sequence(sequence)
       local normalized = {
         rid = rid,
         item_key = entry.item_key,
-        loop = math.max(1, math.floor(entry.loop or 1)),
-        total_loops = math.max(1, math.floor(entry.total_loops or 1)),
+        loop = max(1, floor(entry.loop or 1)),
+        total_loops = max(1, floor(entry.total_loops or 1)),
       }
       if normalized.loop > normalized.total_loops then
         normalized.loop = normalized.total_loops
@@ -225,7 +232,7 @@ function State:set_sequence(sequence)
   elseif #self.sequence == 0 then
     self.current_idx = -1
   else
-    self.current_idx = math.min(self.current_idx or -1, #self.sequence)
+    self.current_idx = min(self.current_idx or -1, #self.sequence)
   end
 
   local resolved_next = resolve_index_by_entry(previous_next)
@@ -234,7 +241,7 @@ function State:set_sequence(sequence)
   elseif #self.sequence == 0 then
     self.next_idx = -1
   else
-    self.next_idx = math.min(self.next_idx or -1, #self.sequence)
+    self.next_idx = min(self.next_idx or -1, #self.sequence)
     if self.next_idx < 1 then
       self.next_idx = (#self.sequence >= 1) and 1 or -1
     end
@@ -369,14 +376,14 @@ function State:_apply_shuffle()
   if self._shuffle_mode == "true_shuffle" then
     -- Fisher-Yates shuffle - play each item once before reshuffling
     for i = #self.sequence, 2, -1 do
-      local j = math.random(1, i)
+      local j = random(1, i)
       self.sequence[i], self.sequence[j] = self.sequence[j], self.sequence[i]
     end
   elseif self._shuffle_mode == "random" then
     -- For random mode, we still shuffle but will reshuffle more frequently
     -- This creates a "pure random" feel where items can play close together
     for i = #self.sequence, 2, -1 do
-      local j = math.random(1, i)
+      local j = random(1, i)
       self.sequence[i], self.sequence[j] = self.sequence[j], self.sequence[i]
     end
   end
@@ -414,7 +421,7 @@ function State:on_shuffle_changed(enabled)
   if #self.sequence > 0 then
     local current_sequence = {}
     for _, entry in ipairs(self.sequence) do
-      table.insert(current_sequence, {
+      insert(current_sequence, {
         rid = entry.rid,
         item_key = entry.item_key,
         loop = entry.loop,
@@ -442,7 +449,7 @@ function State:set_shuffle_mode(mode)
   if self._shuffle_enabled and #self.sequence > 0 then
     local current_sequence = {}
     for _, entry in ipairs(self.sequence) do
-      table.insert(current_sequence, {
+      insert(current_sequence, {
         rid = entry.rid,
         item_key = entry.item_key,
         loop = entry.loop,
