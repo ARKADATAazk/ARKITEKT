@@ -81,12 +81,18 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Get base color from item
   local base_color = item_data.color or 0xFF555555
 
+  -- Capture stable tile color BEFORE state effects (matching drag handler approach)
+  -- This is the "enabled" tile appearance that should be used for animations
+  local sat_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_saturation_factor or config.TILE_RENDER.base_fill.saturation_factor
+  local bright_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_brightness_factor or config.TILE_RENDER.base_fill.brightness_factor
+  local stable_tile_color = base_color
+  stable_tile_color = ark.Colors.desaturate(stable_tile_color, 1.0 - sat_factor)
+  stable_tile_color = ark.Colors.adjust_brightness(stable_tile_color, bright_factor)
+
   -- Apply muted and disabled state effects
   local render_color = BaseRenderer.apply_state_effects(base_color, muted_factor, enabled_factor, config)
 
   -- Apply base tile fill adjustments (use compact mode values for small tiles)
-  local sat_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_saturation_factor or config.TILE_RENDER.base_fill.saturation_factor
-  local bright_factor = is_small_tile and config.TILE_RENDER.base_fill.compact_brightness_factor or config.TILE_RENDER.base_fill.brightness_factor
   render_color = ark.Colors.desaturate(render_color, 1.0 - sat_factor)
   render_color = ark.Colors.adjust_brightness(render_color, bright_factor)
 
@@ -103,10 +109,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local r_new, g_new, b_new = ark.Colors.hsl_to_rgb(h, s, l)
     render_color = ark.Colors.components_to_rgba(r_new, g_new, b_new, a)
   end
-
-  -- Snapshot the stable color (after all permanent transforms, before hover/alpha)
-  -- This is the "true" tile color for animations
-  local stable_tile_color = render_color
 
   -- Apply hover effect (brightness boost)
   if hover_factor > 0.001 then
