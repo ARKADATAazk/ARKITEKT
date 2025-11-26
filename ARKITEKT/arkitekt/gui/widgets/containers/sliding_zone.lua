@@ -197,13 +197,21 @@ end
 -- MOUSE POSITION TRACKING
 -- ============================================================================
 
---- Get mouse position
---- Note: When cursor is outside ImGui window, position may be stale/clamped
+--- Get mouse position using reaper.GetMousePosition() for reliable tracking
+--- even when cursor is outside the ImGui window.
+--- Both reaper and ImGui use the same screen coordinate system (proven by drag_handler).
 --- @param ctx ImGui_Context
 --- @return number mx Mouse X
 --- @return number my Mouse Y
 local function get_mouse_position(ctx)
-  return ImGui.GetMousePos(ctx)
+  -- Use reaper.GetMousePosition() for reliable global tracking
+  -- This works even when cursor is outside window (unlike ImGui.GetMousePos)
+  if reaper.GetMousePosition then
+    return reaper.GetMousePosition()
+  else
+    -- Fallback to ImGui if REAPER API not available
+    return ImGui.GetMousePos(ctx)
+  end
 end
 
 -- ============================================================================
