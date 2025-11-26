@@ -101,29 +101,22 @@ M.anchors = {
 -- =============================================================================
 -- DSL WRAPPERS
 -- =============================================================================
--- Short names with optional threshold parameter:
---   snap(dark, light, [threshold=0.5]) - discrete snap
---   lerp(dark, light)                  - smooth interpolation
---   offset(dark, [light], [threshold=0.5]) - delta from BG_BASE
---   bg() - use BG_BASE directly (passthrough)
+-- Simple DSL - all snap/offset at midpoint (t=0.5):
+--   snap(dark, light)        - discrete snap at midpoint
+--   lerp(dark, light)        - smooth interpolation
+--   offset(dark, [light])    - delta from BG_BASE (light defaults to dark)
+--   bg()                     - use BG_BASE directly
 
-local function snap(dark_val, light_val, threshold)
-  return { mode = "snap", dark = dark_val, light = light_val, threshold = threshold or 0.5 }
+local function snap(dark_val, light_val)
+  return { mode = "snap", dark = dark_val, light = light_val }
 end
 
 local function lerp(dark_val, light_val)
   return { mode = "lerp", dark = dark_val, light = light_val }
 end
 
-local function offset(dark_delta, light_delta, threshold)
-  if light_delta == nil then
-    return { mode = "offset", dark = dark_delta, light = dark_delta, threshold = 0.5 }
-  elseif type(light_delta) == "number" and light_delta <= 1 and light_delta >= 0 and threshold == nil then
-    -- Could be threshold if light_delta looks like a threshold (0-1) and no third arg
-    -- But for clarity, require explicit: offset(0.03) or offset(0.03, -0.04) or offset(0.03, -0.04, 0.3)
-    return { mode = "offset", dark = dark_delta, light = light_delta, threshold = 0.5 }
-  end
-  return { mode = "offset", dark = dark_delta, light = light_delta, threshold = threshold or 0.5 }
+local function offset(dark_delta, light_delta)
+  return { mode = "offset", dark = dark_delta, light = light_delta or dark_delta }
 end
 
 local function bg()

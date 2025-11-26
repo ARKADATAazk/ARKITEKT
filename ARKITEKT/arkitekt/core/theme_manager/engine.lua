@@ -43,11 +43,12 @@ local function resolve_value(def, t)
   end
 
   local mode = def.mode
-  local threshold = def.threshold or 0.5
 
+  -- snap/offset: discrete switch at midpoint (t=0.5)
   if mode == "offset" or mode == "snap" then
-    return t < threshold and def.dark or def.light
+    return t < 0.5 and def.dark or def.light
 
+  -- lerp: smooth interpolation
   elseif mode == "lerp" then
     local dark_val, light_val = def.dark, def.light
     if type(dark_val) == "number" and type(light_val) == "number" then

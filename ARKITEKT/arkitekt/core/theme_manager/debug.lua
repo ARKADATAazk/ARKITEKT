@@ -31,7 +31,7 @@ end
 M.debug_enabled = false
 
 -- Temporary overrides (session only, not persisted)
--- Structure: { KEY = { dark = val, light = val, threshold = val }, ... }
+-- Structure: { KEY = { dark = val, light = val }, ... }
 M.overrides = {}
 
 -- Track which keys have been modified
@@ -70,7 +70,7 @@ end
 
 --- Apply an override to a palette key
 --- @param key string Palette key
---- @param field string "dark", "light", or "threshold"
+--- @param field string "dark" or "light"
 --- @param value any New value
 function M.set_override(key, field, value)
   if not M.overrides[key] then
@@ -81,7 +81,6 @@ function M.set_override(key, field, value)
         mode = def.mode,
         dark = def.dark,
         light = def.light,
-        threshold = def.threshold or 0.5,
       }
     else
       return -- Can't override non-DSL values
@@ -155,7 +154,6 @@ function M.apply_overrides()
       mode = override.mode,
       dark = override.dark,
       light = override.light,
-      threshold = override.threshold,
     }
 
     -- Derive the new value
@@ -295,15 +293,8 @@ function M.export_global_as_lua()
               key, format_value(def.dark), format_value(def.light), modified)
           end
         elseif def.mode == "snap" then
-          local threshold = def.threshold or 0.5
-          if threshold == 0.5 then
-            lines[#lines + 1] = string.format("  %s = snap(%s, %s),%s",
-              key, format_value(def.dark), format_value(def.light), modified)
-          else
-            lines[#lines + 1] = string.format("  %s = snap(%s, %s, %s),%s",
-              key, format_value(def.dark), format_value(def.light),
-              format_value(threshold), modified)
-          end
+          lines[#lines + 1] = string.format("  %s = snap(%s, %s),%s",
+            key, format_value(def.dark), format_value(def.light), modified)
         end
       end
     end
@@ -361,15 +352,8 @@ function M.export_modified_as_lua()
             key, format_value(def.dark), format_value(def.light))
         end
       elseif def.mode == "snap" then
-        local threshold = def.threshold or 0.5
-        if threshold == 0.5 then
-          lines[#lines + 1] = string.format("  %s = snap(%s, %s),",
-            key, format_value(def.dark), format_value(def.light))
-        else
-          lines[#lines + 1] = string.format("  %s = snap(%s, %s, %s),",
-            key, format_value(def.dark), format_value(def.light),
-            format_value(threshold))
-        end
+        lines[#lines + 1] = string.format("  %s = snap(%s, %s),",
+          key, format_value(def.dark), format_value(def.light))
       end
     end
   end
@@ -521,12 +505,6 @@ local function draw_entry_editor(ctx, ImGui, key, original_def, current_def)
       if changed then M.set_override(key, "light", new_val) end
     end
 
-    ImGui.SameLine(ctx)
-
-    -- Threshold
-    local threshold = def.threshold or 0.5
-    local changed_t, new_t = draw_slider(ctx, ImGui, "##threshold", threshold, 0, 1, "T:%.2f")
-    if changed_t then M.set_override(key, "threshold", new_t) end
   end
 
   -- Reset button for modified entries
