@@ -446,6 +446,14 @@ function M.run(opts)
       end
     end
 
+    -- Render theme debug overlay (if enabled via titlebar menu or F12)
+    do
+      local ok, ThemeManager = pcall(require, 'arkitekt.core.theme_manager')
+      if ok and ThemeManager and ThemeManager.render_debug_overlay then
+        ThemeManager.render_debug_overlay(ctx, ImGui)
+      end
+    end
+
     if settings and settings.maybe_flush then
       if enable_profiling and window.start_timer then
         window:start_timer("settings_flush")
