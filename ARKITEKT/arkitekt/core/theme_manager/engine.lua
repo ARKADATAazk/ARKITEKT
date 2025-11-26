@@ -79,17 +79,17 @@ end
 --- @param t number Interpolation factor
 --- @return any Computed value (RGBA color or number)
 local function derive_entry(base_bg, key, def, t)
-  -- Special case: "base" means use BG_BASE directly
-  if def == "base" then
-    return base_bg
-  end
-
   -- Raw value (not a table)
   if type(def) ~= "table" or not def.mode then
     return def
   end
 
   local mode = def.mode
+
+  -- BASE: Use BG_BASE directly (passthrough)
+  if mode == "base" then
+    return base_bg
+  end
 
   -- OFFSET: Apply delta to BG_BASE
   if mode == "offset" then

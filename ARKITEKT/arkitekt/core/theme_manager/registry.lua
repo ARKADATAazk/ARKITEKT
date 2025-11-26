@@ -24,7 +24,7 @@ local M = {}
 --- @type table<string, table>
 M.script_palettes = {}
 
---- Cache for computed script palettes
+--- Cache for computed script palettes { palette = {}, t = number }
 local palette_cache = {}
 
 --- Round t to 3 decimal places to avoid float comparison issues
@@ -68,17 +68,17 @@ function M.get_computed_palette(script_name, current_t)
   -- Round t to avoid float comparison issues
   local t_key = round_t(current_t)
 
-  -- Check cache
+  -- Check cache (t stored separately, not in palette)
   local cached = palette_cache[script_name]
-  if cached and cached._t == t_key then
-    return cached
+  if cached and cached.t == t_key then
+    return cached.palette
   end
 
   -- Get current BG_BASE for offset support
   local bg_base = Style.COLORS and Style.COLORS.BG_BASE
 
   -- Compute palette for current theme
-  local computed = { _t = t_key }
+  local computed = {}
 
   for key, def in pairs(palette_def) do
     -- Use unified derive_entry if BG_BASE available, otherwise fallback
@@ -106,7 +106,8 @@ function M.get_computed_palette(script_name, current_t)
     end
   end
 
-  palette_cache[script_name] = computed
+  -- Cache with t stored separately
+  palette_cache[script_name] = { palette = computed, t = t_key }
   return computed
 end
 

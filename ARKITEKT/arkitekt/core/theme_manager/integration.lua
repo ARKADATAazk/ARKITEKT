@@ -55,7 +55,7 @@ function M.sync_with_reaper()
 
   -- Apply lightness offset for subtle visual separation
   -- Use dark value since we're in dark mode context for REAPER sync
-  local sync_offset_def = Palette.values.REAPER_SYNC_OFFSET
+  local sync_offset_def = Palette.palette.REAPER_SYNC_OFFSET
   local offset = type(sync_offset_def) == "table" and sync_offset_def.dark or -0.012
   local offset_bg = Colors.adjust_lightness(main_bg, offset)
 

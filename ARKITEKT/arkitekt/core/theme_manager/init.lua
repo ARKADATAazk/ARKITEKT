@@ -58,6 +58,7 @@ local M = {}
 M.snap = Palette.snap
 M.lerp = Palette.lerp
 M.offset = Palette.offset
+M.base = Palette.base
 
 -- Palette structure
 M.presets = Palette.presets

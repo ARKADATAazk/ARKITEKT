@@ -35,6 +35,7 @@ M.anchors = {
 --   snap(dark, light, [threshold=0.5]) - discrete snap
 --   lerp(dark, light)                  - smooth interpolation
 --   offset(dark, [light], [threshold=0.5]) - delta from BG_BASE
+--   base() - use BG_BASE directly (passthrough)
 
 local function snap(dark_val, light_val, threshold)
   return { mode = "snap", dark = dark_val, light = light_val, threshold = threshold or 0.5 }
@@ -55,10 +56,17 @@ local function offset(dark_delta, light_delta, threshold)
   return { mode = "offset", dark = dark_delta, light = light_delta, threshold = threshold or 0.5 }
 end
 
+-- PLACEHOLDER: Replace with chosen name
+-- Options: base(), bg(), self(), inherit(), passthrough(), same()
+local function base()
+  return { mode = "base" }
+end
+
 -- Export wrappers
 M.snap = snap
 M.lerp = lerp
 M.offset = offset
+M.base = base
 
 -- =============================================================================
 -- PALETTE (flat structure)
@@ -70,7 +78,7 @@ M.offset = offset
 
 M.palette = {
   -- === BACKGROUNDS (from BG_BASE) ===
-  BG_BASE         = "base",
+  BG_BASE         = base(),
   BG_HOVER        = offset(0.03, -0.04),
   BG_ACTIVE       = offset(0.05, -0.07),
   BG_HEADER       = offset(-0.024, -0.06),

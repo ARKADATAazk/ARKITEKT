@@ -37,27 +37,33 @@ end
 --- Validate flat palette structure
 function M.validate()
   local errors = {}
-  local valid_modes = { lerp = true, offset = true, snap = true }
+  local valid_modes = { base = true, lerp = true, offset = true, snap = true }
 
   for key, def in pairs(Palette.palette) do
     if type(def) == "table" and def.mode then
-      -- Check: Has dark and light values
-      if def.dark == nil then
-        errors[#errors + 1] = string.format("palette.%s missing 'dark' value", key)
-      end
-      if def.light == nil then
-        errors[#errors + 1] = string.format("palette.%s missing 'light' value", key)
-      end
-
-      -- Check: Valid mode (only 3 core modes)
+      -- Check: Valid mode
       if not valid_modes[def.mode] then
         errors[#errors + 1] = string.format(
           "palette.%s has invalid mode '%s'",
           key, tostring(def.mode)
         )
       end
-    elseif def ~= "base" and type(def) ~= "table" then
-      -- Raw values are allowed but unusual
+
+      -- Check: Has dark and light values (except base mode)
+      if def.mode ~= "base" then
+        if def.dark == nil then
+          errors[#errors + 1] = string.format("palette.%s missing 'dark' value", key)
+        end
+        if def.light == nil then
+          errors[#errors + 1] = string.format("palette.%s missing 'light' value", key)
+        end
+      end
+    elseif type(def) ~= "table" then
+      -- Raw values without mode - could be typo
+      errors[#errors + 1] = string.format(
+        "palette.%s is raw value '%s' (missing DSL wrapper?)",
+        key, tostring(def)
+      )
     end
   end
 
