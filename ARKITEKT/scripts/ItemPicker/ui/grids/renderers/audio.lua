@@ -235,6 +235,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     )
 
     local inset = selection_config.ants_inset
+    local selection_count = state.audio_selection_count or 1
     MarchingAnts.draw(
       dl,
       scaled_x1 + inset, scaled_y1 + inset, scaled_x2 - inset, scaled_y2 - inset,
@@ -243,7 +244,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       config.TILE.ROUNDING,
       selection_config.ants_dash,
       selection_config.ants_gap,
-      selection_config.ants_speed
+      selection_config.ants_speed,
+      selection_count  -- Performance: LOD based on selection size
     )
   end
 

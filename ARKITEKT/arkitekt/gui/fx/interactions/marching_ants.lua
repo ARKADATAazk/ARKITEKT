@@ -16,9 +16,14 @@ local max = math.max
 local min = math.min
 local sqrt = math.sqrt
 
+-- Performance: Frame-level animation phase cache (batch time calculation)
+local _phase_cache = { time = 0, value = 0 }
+
 -- Add arc points to a points array (for polyline batching)
-local function add_arc_points(points, cx, cy, r, a0, a1)
-  local steps = max(1, floor((r * abs(a1 - a0)) / 3))
+-- quality_factor: 1.0 = full quality, 0.5 = half points (faster)
+local function add_arc_points(points, cx, cy, r, a0, a1, quality_factor)
+  quality_factor = quality_factor or 1.0
+  local steps = max(1, floor((r * abs(a1 - a0)) / (3 / quality_factor)))
   for i = 0, steps do
     local ang = a0 + (a1 - a0) * (i / steps)
     points[#points + 1] = cx + r * cos(ang)
@@ -27,7 +32,8 @@ local function add_arc_points(points, cx, cy, r, a0, a1)
 end
 
 -- Collect points for a dash segment and draw with single polyline
-local function draw_path_segment(dl, x1, y1, x2, y2, r, s, e, color, thickness)
+local function draw_path_segment(dl, x1, y1, x2, y2, r, s, e, color, thickness, quality_factor)
+  quality_factor = quality_factor or 1.0
   local w, h = x2 - x1, y2 - y1
   local straight_w = max(0, w - 2*r)
   local straight_h = max(0, h - 2*r)
@@ -70,7 +76,7 @@ local function draw_path_segment(dl, x1, y1, x2, y2, r, s, e, color, thickness)
         local aa1 = seg.a0 + (seg.a1 - seg.a0) * (u1 / seg_len)
         -- Skip first point if we already have points (avoid duplicates)
         local start_i = (#points == 0) and 0 or 1
-        local steps = max(1, floor((r * abs(aa1 - aa0)) / 3))
+        local steps = max(1, floor((r * abs(aa1 - aa0)) / (3 / quality_factor)))
         for i = start_i, steps do
           local ang = aa0 + (aa1 - aa0) * (i / steps)
           points[#points + 1] = seg.cx + r * cos(ang)
@@ -90,7 +96,7 @@ local function draw_path_segment(dl, x1, y1, x2, y2, r, s, e, color, thickness)
   return pos
 end
 
-function M.draw(dl, x1, y1, x2, y2, color, thickness, radius, dash, gap, speed_px)
+function M.draw(dl, x1, y1, x2, y2, color, thickness, radius, dash, gap, speed_px, selection_count)
   if x2 <= x1 or y2 <= y1 then return end
 
   thickness = thickness or 1
@@ -98,6 +104,26 @@ function M.draw(dl, x1, y1, x2, y2, color, thickness, radius, dash, gap, speed_p
   dash = max(2, dash or 8)
   gap = max(2, gap or 6)
   speed_px = speed_px or 20
+  selection_count = selection_count or 1
+
+  -- LOD: Reduce dash density for large selections (HUGE performance gain)
+  if selection_count > 100 then
+    -- Sparse dashes for 100+ selections (3x reduction in draw calls)
+    dash = dash * 3    -- 8px → 24px
+    gap = gap * 3      -- 6px → 18px
+  elseif selection_count > 50 then
+    -- Medium density for 50-100 selections (2x reduction)
+    dash = dash * 2    -- 8px → 16px
+    gap = gap * 2      -- 6px → 12px
+  end
+
+  -- Arc quality reduction for high selection counts
+  local quality_factor = 1.0
+  if selection_count > 75 then
+    quality_factor = 0.5  -- Half the arc points for 75+ selections
+  elseif selection_count > 30 then
+    quality_factor = 0.75 -- Slightly reduced quality for 30+ selections
+  end
 
   local w, h = x2 - x1, y2 - y1
   local r = max(0, min(radius, floor(min(w, h) * 0.5)))
@@ -110,13 +136,21 @@ function M.draw(dl, x1, y1, x2, y2, color, thickness, radius, dash, gap, speed_p
   if perimeter <= 0 then return end
 
   local period = dash + gap
-  local phase = (reaper.time_precise() * speed_px) % period
+
+  -- Batch time calculation: Cache phase per frame (eliminates redundant time_precise calls)
+  local current_time = reaper.time_precise()
+  local phase
+  if _phase_cache.time ~= current_time then
+    _phase_cache.time = current_time
+    _phase_cache.value = (current_time * speed_px) % period
+  end
+  phase = _phase_cache.value
 
   local s = -phase
   while s < perimeter do
     local e = min(perimeter, s + dash)
     if e > max(0, s) then
-      draw_path_segment(dl, x1, y1, x2, y2, r, max(0, s), e, color, thickness)
+      draw_path_segment(dl, x1, y1, x2, y2, r, max(0, s), e, color, thickness, quality_factor)
     end
     s = s + period
   end
