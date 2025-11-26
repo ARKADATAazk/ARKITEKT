@@ -446,7 +446,7 @@ function M.new(config)
         -- Pulsing indicator for active slots
         if not stale then
           local pulse = math.abs(math.sin(now * 4)) * 0.3 + 0.7
-          local indicator_color = (color & 0xFFFFFF00) | math.floor(pulse * 255)
+          local indicator_color = (color & 0xFFFFFF00) | Colors.opacity(pulse)
           ImGui.TextColored(ctx, indicator_color, ">")
         else
           ImGui.TextColored(ctx, COLORS.grey_40, " ")
@@ -554,7 +554,7 @@ function M.new(config)
         ImGui.TextColored(ctx, COLORS.grey_40, "[stale]")
       else
         local pulse = math.abs(math.sin(now * 4)) * 0.5 + 0.5
-        local active_color = (COLORS.teal & 0xFFFFFF00) | math.floor(pulse * 255)
+        local active_color = (COLORS.teal & 0xFFFFFF00) | Colors.opacity(pulse)
         ImGui.TextColored(ctx, active_color, "[active]")
       end
 
@@ -579,7 +579,7 @@ function M.new(config)
         -- Pulsing indicator
         if not stale then
           local pulse = math.abs(math.sin(now * 4)) * 0.3 + 0.7
-          local indicator_color = (color & 0xFFFFFF00) | math.floor(pulse * 255)
+          local indicator_color = (color & 0xFFFFFF00) | Colors.opacity(pulse)
           ImGui.TextColored(ctx, indicator_color, ">")
           ImGui.SameLine(ctx)
         end

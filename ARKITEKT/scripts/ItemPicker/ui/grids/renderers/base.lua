@@ -113,9 +113,9 @@ function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, c
   local final_alpha
   if is_small_tile then
     -- In small tile mode, alpha is already pre-multiplied by header_alpha in the caller
-    final_alpha = math.floor(alpha * 255)
+    final_alpha = ark.Colors.opacity(alpha)
   else
-    final_alpha = math.floor(base_header_alpha * alpha * 255)
+    final_alpha = ark.Colors.opacity(base_header_alpha * alpha)
   end
 
   local header_color = ImGui.ColorConvertDouble4ToU32(r, g, b, final_alpha / 255)

@@ -85,7 +85,7 @@ function M.render_header_bar(dl, x1, y1, x2, header_height, base_color, alpha, c
 
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local final_alpha = math.floor((config.header.alpha / 255) * alpha * 255)
+  local final_alpha = Colors.opacity((config.header.alpha / 255) * alpha)
   local header_color = ImGui.ColorConvertDouble4ToU32(r, g, b, final_alpha / 255)
 
   local rounding = config.TILE and config.TILE.ROUNDING or 0
