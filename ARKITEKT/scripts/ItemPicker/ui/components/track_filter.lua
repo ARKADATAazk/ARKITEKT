@@ -256,7 +256,7 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
     local arrow_x = tile_x + TRACK_TILE.COLOR_BAR_WIDTH + TRACK_TILE.PADDING_X
     local over_arrow = has_children and mouse_x >= arrow_x and mouse_x <= arrow_x + 12
 
-    -- Handle left click: toggle mode (back-and-forth painting)
+    -- Handle left click/drag: ENABLE tracks
     local shift_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
     if is_hovered and left_clicked then
       if over_arrow then
@@ -278,41 +278,38 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
           state.track_expanded[track.guid] = not is_expanded
         end
       else
-        -- Start toggle paint mode
+        -- Start ENABLE paint mode (left click = enable)
         state.track_filter_painting = true
-        state.track_filter_paint_mode = "toggle"
+        state.track_filter_paint_mode = "enable"
         state.track_filter_last_painted = track.guid
         if not state.track_whitelist then state.track_whitelist = {} end
-        state.track_whitelist[track.guid] = not is_selected
+        state.track_whitelist[track.guid] = true
       end
     end
 
-    -- Handle right click: fixed paint mode (bulk enable/disable)
+    -- Handle right click/drag: DISABLE tracks
     if is_hovered and right_clicked and not over_arrow then
       state.track_filter_painting = true
-      state.track_filter_paint_mode = "fixed"
-      state.track_filter_paint_value = not is_selected  -- Paint with opposite of first track
+      state.track_filter_paint_mode = "disable"
       state.track_filter_last_painted = track.guid
       if not state.track_whitelist then state.track_whitelist = {} end
-      state.track_whitelist[track.guid] = state.track_filter_paint_value
+      state.track_whitelist[track.guid] = false
     end
 
     -- Paint mode while dragging
     if state.track_filter_painting and is_hovered and not over_arrow then
-      local is_dragging = (state.track_filter_paint_mode == "toggle" and left_down) or
-                          (state.track_filter_paint_mode == "fixed" and right_down)
+      local is_dragging = (state.track_filter_paint_mode == "enable" and left_down) or
+                          (state.track_filter_paint_mode == "disable" and right_down)
 
       if is_dragging and state.track_filter_last_painted ~= track.guid then
         if not state.track_whitelist then state.track_whitelist = {} end
 
-        if state.track_filter_paint_mode == "toggle" then
-          -- Toggle mode: flip the track's current state
-          local current = state.track_whitelist[track.guid]
-          if current == nil then current = true end
-          state.track_whitelist[track.guid] = not current
+        if state.track_filter_paint_mode == "enable" then
+          -- Enable mode: always set to true
+          state.track_whitelist[track.guid] = true
         else
-          -- Fixed mode: apply the paint value
-          state.track_whitelist[track.guid] = state.track_filter_paint_value
+          -- Disable mode: always set to false
+          state.track_whitelist[track.guid] = false
         end
 
         state.track_filter_last_painted = track.guid
@@ -447,13 +444,14 @@ function M.render_modal(ctx, state, bounds)
   local modal_x = bounds.x + (bounds.width - modal_width) / 2
   local modal_y = bounds.y + 80  -- Align to top with padding (slider stays fixed)
 
-  -- Check for clicks outside modal to close
+  -- Check for clicks outside modal to close (left click only, right-click for painting)
   local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
   local left_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)
   local is_over_modal = mouse_x >= modal_x and mouse_x <= modal_x + modal_width and
                         mouse_y >= modal_y and mouse_y <= modal_y + modal_height
 
-  if left_clicked and not is_over_modal then
+  -- Only close on left-click outside modal (not right-click, which is used for painting)
+  if left_clicked and not is_over_modal and not state.track_filter_painting then
     state.show_track_filter_modal = false
     -- Persist track filter state when modal closes
     if state.persist_track_filter then state.persist_track_filter() end
@@ -675,6 +673,7 @@ function M.render_modal(ctx, state, bounds)
       end
     end
     select_all(state.track_tree)
+    if state.persist_track_filter then state.persist_track_filter() end
   end
 
   local all_bg = all_hovered and ark.Colors.hexrgb("#3A3A3A") or ark.Colors.hexrgb("#2A2A2A")
@@ -699,6 +698,7 @@ function M.render_modal(ctx, state, bounds)
       end
     end
     select_none(state.track_tree)
+    if state.persist_track_filter then state.persist_track_filter() end
   end
 
   local none_bg = none_hovered and ark.Colors.hexrgb("#3A3A3A") or ark.Colors.hexrgb("#2A2A2A")
