@@ -48,6 +48,7 @@ M.scroll_y = 0
 M.filter_text = ""
 M.show_only_modified = false
 M.show_script_column = false  -- Toggle for two-column view
+M.selected_script = nil       -- Currently selected script for column view
 M.expand_global = true
 M.expand_scripts = {}
 
@@ -616,6 +617,38 @@ function M.render_debug_window(ctx, ImGui, state)
     local _, show_scripts = ImGui.Checkbox(ctx, "Script column", M.show_script_column)
     M.show_script_column = show_scripts
 
+    -- Script selector (when script column enabled)
+    local script_names = {}
+    for name in pairs(Registry.script_palettes) do
+      script_names[#script_names + 1] = name
+    end
+    table.sort(script_names)
+
+    if M.show_script_column and #script_names > 0 then
+      ImGui.SameLine(ctx)
+      ImGui.SetNextItemWidth(ctx, 150)
+
+      -- Auto-select first script if none selected
+      if not M.selected_script or not Registry.script_palettes[M.selected_script] then
+        M.selected_script = script_names[1]
+      end
+
+      -- Find current index
+      local current_idx = 1
+      for i, name in ipairs(script_names) do
+        if name == M.selected_script then
+          current_idx = i
+          break
+        end
+      end
+
+      local combo_items = table.concat(script_names, "\0") .. "\0"
+      local changed, new_idx = ImGui.Combo(ctx, "##script_select", current_idx, combo_items)
+      if changed then
+        M.selected_script = script_names[new_idx]
+      end
+    end
+
     ImGui.Separator(ctx)
 
     -- Filter
@@ -665,6 +698,12 @@ function M.render_debug_window(ctx, ImGui, state)
           table.sort(keys)
         end
 
+        -- Get selected script palette for comparison
+        local script_palette = nil
+        if M.show_script_column and M.selected_script then
+          script_palette = Registry.script_palettes[M.selected_script]
+        end
+
         -- Draw entries by category
         local total_keys = 0
         for _, cat in ipairs(CATEGORY_ORDER) do
@@ -674,6 +713,27 @@ function M.render_debug_window(ctx, ImGui, state)
               local original = Palette.colors[key]
               local current = M.overrides[key]
               draw_entry_editor(ctx, ImGui, key, original, current)
+
+              -- Show script override indicator if script has this key
+              if script_palette and script_palette[key] then
+                ImGui.SameLine(ctx)
+                ImGui.TextColored(ctx, 0x4CAF50FF, "[S]")
+                if ImGui.IsItemHovered(ctx) then
+                  local script_def = script_palette[key]
+                  local tip = string.format("Script override: %s", M.selected_script)
+                  if type(script_def) == "table" and script_def.mode then
+                    tip = tip .. string.format("\nMode: %s", script_def.mode)
+                    if script_def.dark then
+                      tip = tip .. string.format("\nDark: %s", format_value(script_def.dark))
+                    end
+                    if script_def.light then
+                      tip = tip .. string.format("\nLight: %s", format_value(script_def.light))
+                    end
+                  end
+                  ImGui.SetTooltip(ctx, tip)
+                end
+              end
+
               total_keys = total_keys + 1
             end
             ImGui.Spacing(ctx)
@@ -687,6 +747,13 @@ function M.render_debug_window(ctx, ImGui, state)
             local original = Palette.colors[key]
             local current = M.overrides[key]
             draw_entry_editor(ctx, ImGui, key, original, current)
+
+            -- Show script override indicator
+            if script_palette and script_palette[key] then
+              ImGui.SameLine(ctx)
+              ImGui.TextColored(ctx, 0x4CAF50FF, "[S]")
+            end
+
             total_keys = total_keys + 1
           end
         end
