@@ -146,8 +146,8 @@ M.TILE_RENDER = {
     ants_alpha = 0xFF,
     ants_thickness = 1,
     ants_inset = 0,
-    ants_dash = 8,
-    ants_gap = 6,
+    ants_dash = 24,  -- 3x sparser than original (was 8px)
+    ants_gap = 8,    -- Slightly larger gap (was 6px)
     ants_speed = 20,
   },
 
@@ -247,8 +247,8 @@ M.TILE_RENDER = {
     ants_enabled = true,
     ants_replace_border = false,
     ants_thickness = 1,
-    ants_dash = 8,
-    ants_gap = 6,
+    ants_dash = 24,  -- 3x sparser than original (was 8px)
+    ants_gap = 8,    -- Slightly larger gap (was 6px)
     ants_speed = 20,
     ants_inset = 0,
     ants_alpha = 0xFF,

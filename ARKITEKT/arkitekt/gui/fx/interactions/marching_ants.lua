@@ -101,28 +101,29 @@ function M.draw(dl, x1, y1, x2, y2, color, thickness, radius, dash, gap, speed_p
 
   thickness = thickness or 1
   radius = radius or 6
-  dash = max(2, dash or 8)
-  gap = max(2, gap or 6)
+  dash = max(2, dash or 24)  -- Default: 3x sparser than old baseline (24px vs 8px)
+  gap = max(2, gap or 8)     -- Default: slightly larger gap (8px vs 6px)
   speed_px = speed_px or 20
   selection_count = selection_count or 1
 
-  -- LOD: Reduce dash density for large selections (HUGE performance gain)
-  if selection_count > 100 then
-    -- Sparse dashes for 100+ selections (3x reduction in draw calls)
-    dash = dash * 3    -- 8px → 24px
-    gap = gap * 3      -- 6px → 18px
-  elseif selection_count > 50 then
-    -- Medium density for 50-100 selections (2x reduction)
-    dash = dash * 2    -- 8px → 16px
-    gap = gap * 2      -- 6px → 12px
+  -- LOD: Smooth lerp for MASSIVE selections (200+) to avoid visible density jumps
+  -- Base is already 3x sparser (24px dash, 8px gap from constants)
+  if selection_count > 200 then
+    -- Lerp from 1x to 1.5x between 200-300 items, cap at 1.5x
+    local lerp_factor = min((selection_count - 200) / 100, 1.0)
+    local sparsity_multiplier = 1.0 + (lerp_factor * 0.5)  -- 1.0 → 1.5x
+    dash = dash * sparsity_multiplier  -- 24px → 36px at 300+
+    gap = gap * sparsity_multiplier    -- 8px → 12px at 300+
   end
 
-  -- Arc quality reduction for high selection counts
+  -- Arc quality reduction: More aggressive for large selections
   local quality_factor = 1.0
-  if selection_count > 75 then
-    quality_factor = 0.5  -- Half the arc points for 75+ selections
+  if selection_count > 150 then
+    quality_factor = 0.25  -- Very aggressive: quarter of arc points for 150+ selections
+  elseif selection_count > 75 then
+    quality_factor = 0.5   -- Half the arc points for 75-150 selections
   elseif selection_count > 30 then
-    quality_factor = 0.75 -- Slightly reduced quality for 30+ selections
+    quality_factor = 0.75  -- Slightly reduced for 30-75 selections
   end
 
   local w, h = x2 - x1, y2 - y1
