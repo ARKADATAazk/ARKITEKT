@@ -187,13 +187,12 @@ function M.draw_containers(ctx, draw_list, State)
     -- Fill color (semi-transparent)
     local fill_alpha = is_linked and 0.15 or 0.20
     if is_dragging then fill_alpha = fill_alpha + 0.1 end
-    local r, g, b, a = ark.Colors.rgba_to_components(base_color)
-    local fill_color = ImGui.ColorConvertDouble4ToU32(r/255, g/255, b/255, fill_alpha)
+    local fill_color = ark.Colors.with_opacity(base_color, fill_alpha)
 
     -- Border color
     local border_alpha = is_linked and 0.6 or 0.8
     if is_dragging then border_alpha = 1.0 end
-    local border_color = ImGui.ColorConvertDouble4ToU32(r/255, g/255, b/255, border_alpha)
+    local border_color = ark.Colors.with_opacity(base_color, border_alpha)
 
     -- Dashed pattern for linked containers
     local border_thickness = is_linked and 1 or 2
@@ -250,10 +249,10 @@ function M.draw_containers(ctx, draw_list, State)
       label = label .. " [linked]"
     end
 
-    local text_color = ImGui.ColorConvertDouble4ToU32(1, 1, 1, 0.9)
-    local label_bg = ImGui.ColorConvertDouble4ToU32(0, 0, 0, 0.6)
+    local text_color = ark.Colors.hexrgba("#FFFFFF", 0.9)
+    local label_bg = ark.Colors.hexrgba("#000000", 0.6)
     if hovered_container == container and not M.dragging_container_id then
-      label_bg = ImGui.ColorConvertDouble4ToU32(0.2, 0.2, 0.2, 0.8)  -- Highlight on hover
+      label_bg = ark.Colors.hexrgba("#333333", 0.8)  -- Highlight on hover
     end
 
     local text_w, text_h = ImGui.CalcTextSize(ctx, label)
