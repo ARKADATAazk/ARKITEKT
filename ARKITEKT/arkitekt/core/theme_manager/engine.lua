@@ -3,10 +3,10 @@
 -- Palette generation engine
 --
 -- Computes colors from the palette definition based on theme lightness.
+-- Processes flat palette structure with type inference.
 
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style')
-local Palette = require('arkitekt.defs.palette')
+local Palette = require('arkitekt.defs.colors')
 
 local M = {}
 
@@ -68,69 +68,44 @@ local function resolve_value(def, t)
 end
 
 -- =============================================================================
--- COLOR DERIVATION
+-- COLOR DERIVATION (unified)
 -- =============================================================================
 
---- Derive a color from bg using a definition
-local function derive_from_bg(bg, def, t)
-  if def == "base" then
-    return bg
+--- Derive a single palette entry based on its definition
+--- @param base_bg number Background color in RGBA format
+--- @param key string Palette key name
+--- @param def any Definition (string, table with mode, or raw value)
+--- @param t number Interpolation factor
+--- @return any Computed value (RGBA color or number)
+local function derive_entry(base_bg, key, def, t)
+  -- Raw value (not a table)
+  if type(def) ~= "table" or not def.mode then
+    return def
   end
 
   local mode = def.mode
 
-  if mode == "offset" or mode == "snap" then
+  -- BG: Use BG_BASE directly (passthrough)
+  if mode == "bg" then
+    return base_bg
+  end
+
+  -- OFFSET: Apply delta to BG_BASE
+  if mode == "offset" then
     local delta = resolve_value(def, t)
-    return Colors.adjust_lightness(bg, delta)
-
-  elseif mode == "opacity" then
-    return Colors.with_opacity(bg, def.value)
-
-  elseif mode == "set_light" then
-    local lightness = resolve_value(def.lightness, t)
-    return Colors.set_lightness(bg, lightness)
-
-  elseif mode == "lightness_opacity" then
-    local delta = resolve_value(def.delta, t)
-    local adjusted = Colors.adjust_lightness(bg, delta)
-    return Colors.with_opacity(adjusted, def.opacity)
+    return Colors.adjust_lightness(base_bg, delta)
   end
 
-  return bg
-end
+  -- SNAP or LERP: Check value type
+  local resolved = resolve_value(def, t)
 
---- Derive a color from text using a definition
-local function derive_from_text(text, def, t)
-  if def == "base" then
-    return text
+  if type(resolved) == "string" then
+    -- Hex string → convert to RGBA
+    return Colors.hexrgb(resolved .. "FF")
+  else
+    -- Number → return as-is
+    return resolved
   end
-
-  local mode = def.mode
-
-  if mode == "offset" or mode == "snap" then
-    local delta = resolve_value(def, t)
-    return Colors.adjust_lightness(text, delta)
-  end
-
-  return text
-end
-
---- Derive a specific (standalone) color
-local function derive_specific(def, t)
-  local mode = def.mode
-
-  if mode == "lerp" or mode == "snap" then
-    local hex = resolve_value(def, t)
-    return Colors.hexrgb(hex .. "FF")
-
-  elseif mode == "alpha" then
-    local hex = resolve_value(def.color, t)
-    local opacity = resolve_value(def.opacity, t)
-    local color = Colors.hexrgb(hex .. "FF")
-    return Colors.with_opacity(color, opacity)
-  end
-
-  return nil
 end
 
 -- =============================================================================
@@ -138,66 +113,20 @@ end
 -- =============================================================================
 
 --- Generate complete palette from base background color
+--- Uses flat M.palette structure with type inference
 --- @param base_bg number Background color in RGBA format
 --- @return table Color palette
 function M.generate_palette(base_bg)
   local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
   local t = M.compute_t(bg_lightness)
 
-  -- Auto text color (white on dark, black on light)
-  local text_threshold = resolve_value(Palette.values.TEXT_LUMINANCE_THRESHOLD, t)
-  local text = bg_lightness < text_threshold
-    and Colors.hexrgb("#FFFFFFFF")
-    or Colors.hexrgb("#000000FF")
+  local result = {}
 
-  local palette = {}
-
-  -- From BG
-  for key, def in pairs(Palette.from_bg) do
-    palette[key] = derive_from_bg(base_bg, def, t)
+  for key, def in pairs(Palette.colors) do
+    result[key] = derive_entry(base_bg, key, def, t)
   end
 
-  -- From TEXT
-  for key, def in pairs(Palette.from_text) do
-    palette[key] = derive_from_text(text, def, t)
-  end
-
-  -- Specific (standalone)
-  for key, def in pairs(Palette.specific) do
-    palette[key] = derive_specific(def, t)
-  end
-
-  -- Values (non-colors)
-  for key, def in pairs(Palette.values) do
-    palette[key] = resolve_value(def, t)
-  end
-
-  return palette
-end
-
---- Apply a color palette to Style.COLORS
---- @param palette table Color palette from generate_palette()
-function M.apply_palette(palette)
-  for key, value in pairs(palette) do
-    Style.COLORS[key] = value
-  end
-end
-
---- Generate palette from base color and apply to Style.COLORS
---- @param base_bg number Background color
-function M.generate_and_apply(base_bg)
-  local palette = M.generate_palette(base_bg)
-  M.apply_palette(palette)
-end
-
---- Get current color values (for transitions)
---- @return table Copy of current Style.COLORS
-function M.get_current_colors()
-  local current = {}
-  for key, value in pairs(Style.COLORS) do
-    current[key] = value
-  end
-  return current
+  return result
 end
 
 --- Resolve a wrapped value based on current t (exported for registry)
@@ -206,6 +135,15 @@ end
 --- @return any Resolved value
 function M.resolve_value(def, t)
   return resolve_value(def, t)
+end
+
+--- Derive an entry with BG_BASE (exported for registry offset support)
+--- @param base_bg number Background color in RGBA format
+--- @param def any Definition
+--- @param t number Interpolation factor
+--- @return any Computed value
+function M.derive_entry(base_bg, def, t)
+  return derive_entry(base_bg, nil, def, t)
 end
 
 return M

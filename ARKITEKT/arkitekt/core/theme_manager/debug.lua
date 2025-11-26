@@ -5,12 +5,20 @@
 -- Provides visual debugging tools for tuning theme values.
 
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style')
-local Palette = require('arkitekt.defs.palette')
+local Palette = require('arkitekt.defs.colors')
 local Engine = require('arkitekt.core.theme_manager.engine')
 local Registry = require('arkitekt.core.theme_manager.registry')
 
 local M = {}
+
+-- Lazy load Theme to avoid circular dependency
+local _Theme
+local function get_theme()
+  if not _Theme then
+    _Theme = require('arkitekt.core.theme')
+  end
+  return _Theme
+end
 
 -- =============================================================================
 -- DEBUG STATE
@@ -34,37 +42,38 @@ end
 -- VALIDATION
 -- =============================================================================
 
-local function validate_section(section_name, section, errors)
-  for key, def in pairs(section) do
-    if type(def) == "table" and def.mode then
-      -- Check: Has dark and light values
-      if def.dark == nil then
-        errors[#errors + 1] = string.format("%s.%s missing 'dark' value", section_name, key)
-      end
-      if def.light == nil then
-        errors[#errors + 1] = string.format("%s.%s missing 'light' value", section_name, key)
-      end
-
-      -- Check: Valid mode
-      local valid_modes = { lerp = true, offset = true, snap = true }
-      if not valid_modes[def.mode] then
-        errors[#errors + 1] = string.format(
-          "%s.%s has invalid mode '%s'",
-          section_name, key, tostring(def.mode)
-        )
-      end
-    end
-  end
-end
-
---- Validate palette configuration
+--- Validate colors structure
 function M.validate()
   local errors = {}
+  local valid_modes = { bg = true, lerp = true, offset = true, snap = true }
 
-  validate_section("from_bg", Palette.from_bg, errors)
-  validate_section("from_text", Palette.from_text, errors)
-  validate_section("specific", Palette.specific, errors)
-  validate_section("values", Palette.values, errors)
+  for key, def in pairs(Palette.colors) do
+    if type(def) == "table" and def.mode then
+      -- Check: Valid mode
+      if not valid_modes[def.mode] then
+        errors[#errors + 1] = string.format(
+          "colors.%s has invalid mode '%s'",
+          key, tostring(def.mode)
+        )
+      end
+
+      -- Check: Has dark and light values (except bg mode)
+      if def.mode ~= "bg" then
+        if def.dark == nil then
+          errors[#errors + 1] = string.format("colors.%s missing 'dark' value", key)
+        end
+        if def.light == nil then
+          errors[#errors + 1] = string.format("colors.%s missing 'light' value", key)
+        end
+      end
+    elseif type(def) ~= "table" then
+      -- Raw values without mode - could be typo
+      errors[#errors + 1] = string.format(
+        "colors.%s is raw value '%s' (missing DSL wrapper?)",
+        key, tostring(def)
+      )
+    end
+  end
 
   if #errors > 0 then
     return false, table.concat(errors, "\n")
@@ -78,10 +87,7 @@ function M.get_validation_summary()
   local valid, err = M.validate()
   local count = 0
 
-  for _ in pairs(Palette.from_bg) do count = count + 1 end
-  for _ in pairs(Palette.from_text) do count = count + 1 end
-  for _ in pairs(Palette.specific) do count = count + 1 end
-  for _ in pairs(Palette.values) do count = count + 1 end
+  for _ in pairs(Palette.colors) do count = count + 1 end
 
   return {
     valid = valid,
@@ -136,16 +142,17 @@ function M.render_debug_window(ctx, ImGui, state)
     ImGui.Text(ctx, string.format("Light preset: %s (t=1, L=%.2f)", Palette.presets.light, Palette.anchors.light))
     ImGui.Separator(ctx)
 
-    -- All Style.COLORS
-    if ImGui.CollapsingHeader(ctx, "Style.COLORS", ImGui.TreeNodeFlags_DefaultOpen) then
+    -- All Theme.COLORS
+    if ImGui.CollapsingHeader(ctx, "Theme.COLORS", ImGui.TreeNodeFlags_DefaultOpen) then
+      local Theme = get_theme()
       local color_keys = {}
-      for k in pairs(Style.COLORS) do
+      for k in pairs(Theme.COLORS) do
         color_keys[#color_keys + 1] = k
       end
       table.sort(color_keys)
 
       for _, k in ipairs(color_keys) do
-        local v = Style.COLORS[k]
+        local v = Theme.COLORS[k]
         if type(v) == "number" and v == math.floor(v) then
           ImGui.ColorButton(ctx, "style_" .. k, math.floor(v), 0, 12, 12)
           ImGui.SameLine(ctx)
@@ -158,48 +165,42 @@ function M.render_debug_window(ctx, ImGui, state)
       end
     end
 
-    -- Palette sections
-    if ImGui.CollapsingHeader(ctx, "Palette.from_bg") then
-      for k in pairs(Palette.from_bg) do
-        ImGui.Text(ctx, "  " .. k)
-      end
-    end
-
-    if ImGui.CollapsingHeader(ctx, "Palette.from_text") then
-      for k in pairs(Palette.from_text) do
-        ImGui.Text(ctx, "  " .. k)
-      end
-    end
-
-    if ImGui.CollapsingHeader(ctx, "Palette.specific") then
-      for k in pairs(Palette.specific) do
-        ImGui.Text(ctx, "  " .. k)
-      end
-    end
-
-    if ImGui.CollapsingHeader(ctx, "Palette.values") then
-      for k in pairs(Palette.values) do
-        ImGui.Text(ctx, "  " .. k)
-      end
-    end
-
-    -- Registered script colors
-    for script_name, script_colors in pairs(Registry.script_colors) do
-      if ImGui.CollapsingHeader(ctx, "Script: " .. script_name) then
-        local script_keys = {}
-        for k in pairs(script_colors) do
-          script_keys[#script_keys + 1] = k
+    -- Colors (flat structure, grouped by mode)
+    if ImGui.CollapsingHeader(ctx, "Colors") then
+      -- Group by mode for readability
+      local by_mode = { bg = {}, offset = {}, snap = {}, lerp = {}, other = {} }
+      for k, def in pairs(Palette.colors) do
+        if type(def) == "table" and def.mode then
+          by_mode[def.mode] = by_mode[def.mode] or {}
+          by_mode[def.mode][#by_mode[def.mode] + 1] = k
+        else
+          by_mode.other[#by_mode.other + 1] = k
         end
-        table.sort(script_keys)
+      end
 
-        for _, k in ipairs(script_keys) do
-          local v = script_colors[k]
-          if type(v) == "number" and v == math.floor(v) then
-            ImGui.ColorButton(ctx, script_name .. "_" .. k, math.floor(v), 0, 12, 12)
-            ImGui.SameLine(ctx)
-            ImGui.Text(ctx, string.format("%s: 0x%08X", k, math.floor(v)))
+      for _, mode in ipairs({"bg", "offset", "snap", "lerp", "other"}) do
+        if #(by_mode[mode] or {}) > 0 then
+          table.sort(by_mode[mode])
+          ImGui.Text(ctx, string.format("  [%s]", mode))
+          for _, k in ipairs(by_mode[mode]) do
+            ImGui.Text(ctx, "    " .. k)
+          end
+        end
+      end
+    end
+
+    -- Registered script palettes
+    for script_name, palette_def in pairs(Registry.script_palettes) do
+      if ImGui.CollapsingHeader(ctx, "Script: " .. script_name) then
+        local keys = {}
+        for k in pairs(palette_def) do keys[#keys + 1] = k end
+        table.sort(keys)
+        for _, k in ipairs(keys) do
+          local def = palette_def[k]
+          if type(def) == "table" and def.mode then
+            ImGui.Text(ctx, string.format("  %s [%s]", k, def.mode))
           else
-            ImGui.Text(ctx, string.format("%s: %s", k, tostring(v)))
+            ImGui.Text(ctx, "  " .. k)
           end
         end
       end

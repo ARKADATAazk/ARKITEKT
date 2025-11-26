@@ -5,7 +5,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -41,10 +41,10 @@ local DEFAULTS = {
   -- Style
   rounding = 0,
   padding_x = 10,
-  preset_name = nil,  -- Use a named preset from Style
+  preset_name = nil,  -- Use a named preset from Theme
   preset = nil,       -- Use a custom preset table
 
-  -- Colors (nil = use Style.BUTTON defaults)
+  -- Colors (nil = use Theme.BUTTON defaults)
   bg_color = nil,
   bg_hover_color = nil,
   bg_active_color = nil,
@@ -108,7 +108,7 @@ end
 
 -- Determine if current theme is light based on BG_BASE lightness
 local function is_light_theme()
-  local bg = Style.COLORS.BG_BASE
+  local bg = Theme.COLORS.BG_BASE
   local _, _, l = Colors.rgb_to_hsl(bg)
   return l > 0.5
 end
@@ -130,43 +130,59 @@ local function derive_state_color(base, state)
   return base
 end
 
--- Get simple button colors with automatic state derivation
--- This replaces the complex preset system for most use cases
-local function get_simple_colors(is_toggled, is_hovered, is_active, is_disabled, accent_color)
-  local C = Style.COLORS
+-- Get simple button colors with smooth hover animation
+-- Uses Theme.COLORS directly (like combo/dropdown) for consistent ratios
+local function get_simple_colors(is_toggled, is_hovered, is_active, is_disabled, accent_color, hover_alpha)
+  local C = Theme.COLORS
+  hover_alpha = hover_alpha or 0
 
-  -- Base colors
+  -- Base colors (normal state)
   local bg_base = C.BG_BASE
+  local bg_hover = C.BG_HOVER
+  local bg_active = C.BG_ACTIVE
   local text_base = C.TEXT_NORMAL
+  local text_hover = C.TEXT_HOVER
   local border_inner = C.BORDER_INNER
+  local border_hover = C.BORDER_HOVER
+  local border_active = C.BORDER_ACTIVE
   local border_outer = C.BORDER_OUTER
 
   -- Toggle ON state uses accent color
   if is_toggled then
     bg_base = accent_color or C.ACCENT_WHITE
+    bg_hover = Colors.adjust_lightness(bg_base, 0.06)
+    bg_active = Colors.adjust_lightness(bg_base, 0.12)
     text_base = C.TEXT_BRIGHT
+    text_hover = C.TEXT_BRIGHT
     border_inner = accent_color or C.ACCENT_WHITE_BRIGHT
+    border_hover = Colors.adjust_lightness(border_inner, 0.08)
+    border_active = Colors.adjust_lightness(border_inner, -0.05)
   end
 
-  -- Derive state colors
-  local bg, text
+  -- Derive final colors based on state
+  local bg, text, border
   if is_disabled then
     bg = derive_state_color(bg_base, 'disabled')
     text = C.TEXT_DIMMED
-    border_inner = derive_state_color(border_inner, 'disabled')
+    border = derive_state_color(border_inner, 'disabled')
   elseif is_active then
-    bg = derive_state_color(bg_base, 'active')
+    -- Active state (pressed) - no lerp, immediate
+    bg = bg_active
     text = C.TEXT_BRIGHT
-  elseif is_hovered then
-    bg = derive_state_color(bg_base, 'hover')
-    text = C.TEXT_HOVER
-    border_inner = derive_state_color(border_inner, 'hover')
+    border = border_active
+  elseif hover_alpha > 0.01 then
+    -- Hover with smooth lerp (like combo/dropdown)
+    bg = Colors.lerp(bg_base, bg_hover, hover_alpha)
+    text = Colors.lerp(text_base, text_hover, hover_alpha)
+    border = Colors.lerp(border_inner, border_hover, hover_alpha)
   else
+    -- Normal state
     bg = bg_base
     text = text_base
+    border = border_inner
   end
 
-  return bg, border_inner, border_outer, text
+  return bg, border, border_outer, text
 end
 
 local function get_state_colors(config, is_disabled, is_toggled, is_active, hover_alpha)
@@ -193,9 +209,9 @@ local function get_state_colors(config, is_disabled, is_toggled, is_active, hove
     local hover_bg = config['bg' .. hover_suffix] or derive_state_color(bg, 'hover')
     local hover_border = config['border' .. (is_toggled and '_on_hover_color' or '_hover_color')] or derive_state_color(border_inner, 'hover')
     local hover_text = config['text' .. hover_suffix] or text
-    bg = Style.RENDER.lerp_color(bg, hover_bg, hover_alpha)
-    border_inner = Style.RENDER.lerp_color(border_inner, hover_border, hover_alpha)
-    text = Style.RENDER.lerp_color(text, hover_text, hover_alpha)
+    bg = Colors.lerp(bg, hover_bg, hover_alpha)
+    border_inner = Colors.lerp(border_inner, hover_border, hover_alpha)
+    text = Colors.lerp(text, hover_text, hover_alpha)
   end
 
   return bg, border_inner, border_outer, text
@@ -232,7 +248,7 @@ local function get_corner_flags(corner_rounding)
 end
 
 -- ============================================================================
--- CONFIG RESOLUTION (Dynamic - reads Style.COLORS each call)
+-- CONFIG RESOLUTION (Dynamic - reads Theme.COLORS each call)
 -- ============================================================================
 
 local function resolve_config(opts)
@@ -269,7 +285,7 @@ local function resolve_config(opts)
     end
   else
     -- Legacy: use complex preset system
-    local base_config = Style.build_button_config()
+    local base_config = Theme.build_button_config()
     for k, v in pairs(base_config) do
       if config[k] == nil then
         config[k] = v
@@ -277,7 +293,7 @@ local function resolve_config(opts)
     end
 
     if opts.preset_name then
-      Style.apply_dynamic_preset(config, opts.preset_name)
+      Theme.apply_preset(config, opts.preset_name)
     elseif opts.preset and type(opts.preset) == 'table' then
       for k, v in pairs(opts.preset) do
         config[k] = v
@@ -309,9 +325,9 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   -- Get colors - use simplified system when marked, otherwise legacy
   local bg_color, border_inner, border_outer, text_color
   if config._use_simple_colors then
-    -- New simplified approach: auto-derive all state colors
+    -- Simplified approach with smooth hover animation (like combo/dropdown)
     bg_color, border_inner, border_outer, text_color =
-      get_simple_colors(is_toggled, is_hovered, is_active, is_disabled, config._accent_color)
+      get_simple_colors(is_toggled, is_hovered, is_active, is_disabled, config._accent_color, instance.hover_alpha)
   else
     -- Legacy: complex config-based approach with hover animation
     bg_color, border_inner, border_outer, text_color =

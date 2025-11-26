@@ -7,7 +7,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Draw = require('arkitekt.gui.draw')
 local Colors = require('arkitekt.core.colors')
-local ColorDefs = require('arkitekt.defs.colors')
+local Theme = require('arkitekt.core.theme')
 local hexrgb = Colors.hexrgb
 
 -- Cache math functions for performance
@@ -15,40 +15,59 @@ local sin, min, max = math.sin, math.min, math.max
 
 local M = {}
 
--- Get operation colors from centralized definitions
-local OP = ColorDefs.OPERATIONS
-
 -- =============================================================================
 -- CONFIGURATION
 -- Centralized configuration for drag and drop visual indicators
 -- =============================================================================
 
--- Extract base hex (without alpha) for glow colors
-local function base_hex(hex)
-  return hex:sub(1, 7)
+-- Get operation color from Theme.COLORS (theme-reactive)
+local function get_op_color(key)
+  return Theme.COLORS[key] or 0xCCCCCCFF  -- Fallback gray
 end
 
-M.MODES = {
-  move = {
-    stroke_color = hexrgb(OP.move),
-    glow_color = hexrgb(base_hex(OP.move) .. "33"),
-    badge_accent = hexrgb(OP.move),
-  },
-  copy = {
-    stroke_color = hexrgb(OP.copy),
-    glow_color = hexrgb(base_hex(OP.copy) .. "33"),
-    badge_accent = hexrgb(OP.copy),
-    indicator_text = "+",
-    indicator_color = hexrgb(OP.copy),
-  },
-  delete = {
-    stroke_color = hexrgb(OP.delete),
-    glow_color = hexrgb(base_hex(OP.delete) .. "33"),
-    badge_accent = hexrgb(OP.delete),
-    indicator_text = "-",
-    indicator_color = hexrgb(OP.delete),
-  },
-}
+-- Get glow version of a color (33% alpha)
+local function get_glow_color(color)
+  return Colors.with_alpha(color, 0x33)
+end
+
+-- Build mode config dynamically from Theme.COLORS
+local function build_mode_config(mode)
+  if mode == "move" then
+    local color = get_op_color("OP_MOVE")
+    return {
+      stroke_color = color,
+      glow_color = get_glow_color(color),
+      badge_accent = color,
+    }
+  elseif mode == "copy" then
+    local color = get_op_color("OP_COPY")
+    return {
+      stroke_color = color,
+      glow_color = get_glow_color(color),
+      badge_accent = color,
+      indicator_text = "+",
+      indicator_color = color,
+    }
+  elseif mode == "delete" then
+    local color = get_op_color("OP_DELETE")
+    return {
+      stroke_color = color,
+      glow_color = get_glow_color(color),
+      badge_accent = color,
+      indicator_text = "-",
+      indicator_color = color,
+    }
+  end
+  -- Fallback to move
+  return build_mode_config("move")
+end
+
+-- Lazy accessor for mode configs (reads Theme.COLORS at access time)
+M.MODES = setmetatable({}, {
+  __index = function(_, key)
+    return build_mode_config(key)
+  end
+})
 
 M.TILE_DEFAULTS = {
   width = 60,
@@ -102,9 +121,14 @@ M.SHADOW_DEFAULTS = {
 
 M.INNER_GLOW_DEFAULTS = {
   enabled = false,
-  color = hexrgb(base_hex(OP.move) .. "22"),
+  color = nil,  -- Will use OP_MOVE with 22 alpha at runtime
   thickness = 2,
 }
+
+-- Get inner glow color (lazy evaluation)
+function M.get_inner_glow_color()
+  return Colors.with_alpha(get_op_color("OP_MOVE"), 0x22)
+end
 
 function M.get_mode_config(config, is_copy, is_delete)
   local mode_key = is_delete and 'delete' or (is_copy and 'copy' or 'move')
@@ -154,7 +178,7 @@ local function draw_tile(dl, x, y, w, h, fill, stroke, thickness, rounding, inne
   ImGui.DrawList_AddRectFilled(dl, x, y, x + w, y + h, fill, rounding)
 
   if inner_glow_cfg and inner_glow_cfg.enabled then
-    local glow_color = inner_glow_cfg.color or M.INNER_GLOW_DEFAULTS.color
+    local glow_color = inner_glow_cfg.color or M.get_inner_glow_color()
     local glow_thick = inner_glow_cfg.thickness or M.INNER_GLOW_DEFAULTS.thickness
 
     for i = 1, glow_thick do

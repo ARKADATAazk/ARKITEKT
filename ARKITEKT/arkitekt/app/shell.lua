@@ -304,7 +304,7 @@ function M.run(opts)
   -- ============================================================================
   -- THEME INITIALIZATION
   -- ============================================================================
-  -- Initialize theme on app startup to ensure Style.COLORS is properly set
+  -- Initialize theme on app startup to ensure Theme.COLORS is properly set
   -- before any UI renders. This prevents the "dark defaults on light theme" bug.
   -- Theme preferences are persisted via REAPER ExtState and restored automatically.
   do

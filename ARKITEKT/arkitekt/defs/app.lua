@@ -2,9 +2,6 @@
 -- arkitekt/defs/app.lua
 -- App-level defaults for window, titlebar, status bar, overlay, etc.
 
-local Colors = require('arkitekt.defs.colors')
-
--- Helper for hex colors
 local CoreColors = require('arkitekt.core.colors')
 local hexrgb = CoreColors.hexrgb
 
@@ -31,19 +28,19 @@ M.OVERLAY = {
     CLOSE_BUTTON_PROXIMITY = 150,
 
     -- Close button colors
-    CLOSE_BUTTON_BG_COLOR = hexrgb(Colors.BASE.black),
+    CLOSE_BUTTON_BG_COLOR = hexrgb("#000000FF"),
     CLOSE_BUTTON_BG_OPACITY = 0.6,
     CLOSE_BUTTON_BG_OPACITY_HOVER = 0.8,
-    CLOSE_BUTTON_ICON_COLOR = hexrgb(Colors.BASE.white),
-    CLOSE_BUTTON_HOVER_COLOR = hexrgb("#FF4444"),
-    CLOSE_BUTTON_ACTIVE_COLOR = hexrgb("#FF0000"),
+    CLOSE_BUTTON_ICON_COLOR = hexrgb("#FFFFFFFF"),
+    CLOSE_BUTTON_HOVER_COLOR = hexrgb("#FF4444FF"),
+    CLOSE_BUTTON_ACTIVE_COLOR = hexrgb("#FF0000FF"),
 
     -- Layout
     CONTENT_PADDING = 24,
 
     -- Scrim/backdrop
     SCRIM_OPACITY = 0.99,
-    SCRIM_COLOR = hexrgb(Colors.BASE.black),
+    SCRIM_COLOR = hexrgb("#000000FF"),
 
     -- Behavior defaults
     DEFAULT_USE_VIEWPORT = true,
@@ -110,11 +107,11 @@ M.TITLEBAR = {
 
     -- Button colors (minimal style)
     button_maximize_normal = hexrgb("#00000000"),
-    button_maximize_hovered = hexrgb(Colors.SEMANTIC.success),
-    button_maximize_active = hexrgb("#60FFFF"),
+    button_maximize_hovered = hexrgb("#4CAF50FF"),  -- Success green
+    button_maximize_active = hexrgb("#60FFFFFF"),
     button_close_normal = hexrgb("#00000000"),
-    button_close_hovered = hexrgb("#CC3333"),
-    button_close_active = hexrgb("#FF1111"),
+    button_close_hovered = hexrgb("#CC3333FF"),
+    button_close_active = hexrgb("#FF1111FF"),
 
     -- Button colors (filled style)
     button_maximize_filled_normal = hexrgb("#808080"),

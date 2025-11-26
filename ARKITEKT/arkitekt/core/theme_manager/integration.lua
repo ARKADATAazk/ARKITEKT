@@ -6,11 +6,21 @@
 -- animated transitions, and live sync polling.
 
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style')
 local Engine = require('arkitekt.core.theme_manager.engine')
-local Palette = require('arkitekt.defs.palette')
 
 local M = {}
+
+-- Lazy load Theme to avoid circular dependency
+local _Theme
+local function get_theme()
+  if not _Theme then
+    _Theme = require('arkitekt.core.theme')
+  end
+  return _Theme
+end
+
+-- Visual separation offset when syncing with REAPER theme
+local REAPER_SYNC_OFFSET = -0.012
 
 -- =============================================================================
 -- REAPER COLOR CONVERSION
@@ -54,13 +64,10 @@ function M.sync_with_reaper()
   end
 
   -- Apply lightness offset for subtle visual separation
-  -- Use dark value since we're in dark mode context for REAPER sync
-  local sync_offset_def = Palette.values.REAPER_SYNC_OFFSET
-  local offset = type(sync_offset_def) == "table" and sync_offset_def.dark or -0.012
-  local offset_bg = Colors.adjust_lightness(main_bg, offset)
+  local offset_bg = Colors.adjust_lightness(main_bg, REAPER_SYNC_OFFSET)
 
   -- Generate and apply palette (text color derived automatically)
-  Engine.generate_and_apply(offset_bg)
+  get_theme().generate_and_apply(offset_bg)
 
   return true
 end
@@ -130,7 +137,8 @@ end
 --- @param duration number Transition duration in seconds
 --- @param on_complete function|nil Optional callback when complete
 function M.transition_to_palette(target_palette, duration, on_complete)
-  local start_colors = Engine.get_current_colors()
+  local Theme = get_theme()
+  local start_colors = Theme.get_current_colors()
   local start_time = reaper.time_precise()
 
   local function animate()
@@ -141,9 +149,9 @@ function M.transition_to_palette(target_palette, duration, on_complete)
     for key, target_color in pairs(target_palette) do
       local start_color = start_colors[key]
       if start_color and type(target_color) == "number" and type(start_color) == "number" then
-        Style.COLORS[key] = Colors.lerp(start_color, target_color, t)
+        Theme.COLORS[key] = Colors.lerp(start_color, target_color, t)
       elseif target_color then
-        Style.COLORS[key] = target_color
+        Theme.COLORS[key] = target_color
       end
     end
 
@@ -152,7 +160,9 @@ function M.transition_to_palette(target_palette, duration, on_complete)
       reaper.defer(animate)
     else
       -- Ensure final values are exact
-      Engine.apply_palette(target_palette)
+      for key, value in pairs(target_palette) do
+        Theme.COLORS[key] = value
+      end
       if on_complete then
         on_complete()
       end

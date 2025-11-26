@@ -5,7 +5,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 local Anim = require('arkitekt.core.animation')
@@ -106,35 +106,35 @@ function Checkbox:update(dt, is_hovered, is_active, is_checked)
 end
 
 -- ============================================================================
--- CONFIG RESOLUTION (Dynamic - reads Style.COLORS each call)
+-- CONFIG RESOLUTION (Dynamic - reads Theme.COLORS each call)
 -- ============================================================================
 
 local function resolve_config(opts)
-  -- Build config from current Style.COLORS (enables dynamic theming)
+  -- Build config from current Theme.COLORS (enables dynamic theming)
   local config = {
     -- OFF state colors (from dynamic COLORS)
-    bg_color = Style.COLORS.BG_BASE,
-    bg_hover_color = Style.COLORS.BG_HOVER,
-    bg_active_color = Style.COLORS.BG_ACTIVE,
-    border_outer_color = Style.COLORS.BORDER_OUTER,
-    border_inner_color = Style.COLORS.BORDER_INNER,
-    border_hover_color = Style.COLORS.BORDER_HOVER,
-    border_active_color = Style.COLORS.BORDER_ACTIVE,
+    bg_color = Theme.COLORS.BG_BASE,
+    bg_hover_color = Theme.COLORS.BG_HOVER,
+    bg_active_color = Theme.COLORS.BG_ACTIVE,
+    border_outer_color = Theme.COLORS.BORDER_OUTER,
+    border_inner_color = Theme.COLORS.BORDER_INNER,
+    border_hover_color = Theme.COLORS.BORDER_HOVER,
+    border_active_color = Theme.COLORS.BORDER_ACTIVE,
 
     -- ON state colors (neutral, uses hover as "on" state)
-    bg_on_color = Style.COLORS.BG_HOVER,
-    bg_on_hover_color = Style.COLORS.BG_HOVER,
-    bg_on_active_color = Style.COLORS.BG_ACTIVE,
-    border_outer_on_color = Style.COLORS.BORDER_OUTER,
-    border_inner_on_color = Style.COLORS.BORDER_HOVER,
-    border_on_hover_color = Style.COLORS.BORDER_HOVER,
-    border_on_active_color = Style.COLORS.BORDER_ACTIVE,
+    bg_on_color = Theme.COLORS.BG_HOVER,
+    bg_on_hover_color = Theme.COLORS.BG_HOVER,
+    bg_on_active_color = Theme.COLORS.BG_ACTIVE,
+    border_outer_on_color = Theme.COLORS.BORDER_OUTER,
+    border_inner_on_color = Theme.COLORS.BORDER_HOVER,
+    border_on_hover_color = Theme.COLORS.BORDER_HOVER,
+    border_on_active_color = Theme.COLORS.BORDER_ACTIVE,
 
     -- Checkmark and label (derived from text colors)
-    check_color = Style.COLORS.TEXT_DIMMED,
-    label_color = Style.COLORS.TEXT_NORMAL,
-    label_hover_color = Style.COLORS.TEXT_HOVER,
-    label_disabled_color = Colors.with_opacity(Style.COLORS.TEXT_NORMAL, 0.5),
+    check_color = Theme.COLORS.TEXT_DIMMED,
+    label_color = Theme.COLORS.TEXT_NORMAL,
+    label_hover_color = Theme.COLORS.TEXT_HOVER,
+    label_disabled_color = Colors.with_opacity(Theme.COLORS.TEXT_NORMAL, 0.5),
   }
 
   -- Apply user overrides
@@ -178,26 +178,26 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, tota
     -- Checked or animating to checked
     local base_bg = is_active and config.bg_on_active_color or
                     (instance.hover_alpha > 0.01 and
-                      Style.RENDER.lerp_color(config.bg_on_color, config.bg_on_hover_color, instance.hover_alpha) or
+                      Colors.lerp(config.bg_on_color, config.bg_on_hover_color, instance.hover_alpha) or
                       config.bg_on_color)
     local base_border = is_active and config.border_on_active_color or
                         (instance.hover_alpha > 0.01 and
-                          Style.RENDER.lerp_color(config.border_inner_on_color, config.border_on_hover_color, instance.hover_alpha) or
+                          Colors.lerp(config.border_inner_on_color, config.border_on_hover_color, instance.hover_alpha) or
                           config.border_inner_on_color)
 
     -- Blend with unchecked colors if animating
     if instance.check_alpha < 0.99 then
       local unchecked_bg = is_active and config.bg_active_color or
                            (instance.hover_alpha > 0.01 and
-                             Style.RENDER.lerp_color(config.bg_color, config.bg_hover_color, instance.hover_alpha) or
+                             Colors.lerp(config.bg_color, config.bg_hover_color, instance.hover_alpha) or
                              config.bg_color)
       local unchecked_border = is_active and config.border_active_color or
                                (instance.hover_alpha > 0.01 and
-                                 Style.RENDER.lerp_color(config.border_inner_color, config.border_hover_color, instance.hover_alpha) or
+                                 Colors.lerp(config.border_inner_color, config.border_hover_color, instance.hover_alpha) or
                                  config.border_inner_color)
 
-      bg_color = Style.RENDER.lerp_color(unchecked_bg, base_bg, instance.check_alpha)
-      border_inner = Style.RENDER.lerp_color(unchecked_border, base_border, instance.check_alpha)
+      bg_color = Colors.lerp(unchecked_bg, base_bg, instance.check_alpha)
+      border_inner = Colors.lerp(unchecked_border, base_border, instance.check_alpha)
     else
       bg_color = base_bg
       border_inner = base_border
@@ -208,11 +208,11 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, tota
     -- Unchecked
     bg_color = is_active and config.bg_active_color or
                (instance.hover_alpha > 0.01 and
-                 Style.RENDER.lerp_color(config.bg_color, config.bg_hover_color, instance.hover_alpha) or
+                 Colors.lerp(config.bg_color, config.bg_hover_color, instance.hover_alpha) or
                  config.bg_color)
     border_inner = is_active and config.border_active_color or
                    (instance.hover_alpha > 0.01 and
-                     Style.RENDER.lerp_color(config.border_inner_color, config.border_hover_color, instance.hover_alpha) or
+                     Colors.lerp(config.border_inner_color, config.border_hover_color, instance.hover_alpha) or
                      config.border_inner_color)
     border_outer = config.border_outer_color
   end
@@ -308,7 +308,7 @@ function M.draw(ctx, opts)
     if opts.disabled then
       label_color = config.label_disabled_color
     elseif instance.hover_alpha > 0.01 then
-      label_color = Style.RENDER.lerp_color(config.label_color, config.label_hover_color, instance.hover_alpha)
+      label_color = Colors.lerp(config.label_color, config.label_hover_color, instance.hover_alpha)
     else
       label_color = config.label_color
     end

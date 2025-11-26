@@ -6,9 +6,9 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 
 local Layout = require('arkitekt.gui.widgets.containers.panel.header.layout')
-local Style = require('arkitekt.gui.style')
-local C = Style.COLORS          -- Shared primitives
-local PC = Style.PANEL_COLORS   -- Panel-specific colors
+local Theme = require('arkitekt.core.theme')
+local C = Theme.COLORS          -- Shared primitives
+local PC = Theme.build_panel_colors()   -- Panel-specific colors
 
 
 local M = {}
@@ -75,7 +75,7 @@ function M.draw(ctx, dl, x, y, w, h, state, toolbar_cfg, rounding, position)
     corner_flags = ImGui.DrawFlags_RoundCornersTop
   end
 
-  -- Draw header background (read dynamically from Style.COLORS for theme reactivity)
+  -- Draw header background (read dynamically from Theme.COLORS for theme reactivity)
   -- BG_HEADER = 30,30,30 for dark theme (between BG_BASE=36 and BG_PANEL=26)
   local bg_color = toolbar_cfg.bg_color or C.BG_HEADER
   ImGui.DrawList_AddRectFilled(

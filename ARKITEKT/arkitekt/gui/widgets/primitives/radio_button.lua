@@ -6,7 +6,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local Base = require('arkitekt.gui.widgets.base')
 
 local hexrgb = Colors.hexrgb
@@ -132,34 +132,34 @@ function M.draw(ctx, opts)
   local bg_color, inner_color, text_color, border_inner, border_outer
 
   if disabled then
-    bg_color = Colors.with_opacity(Colors.desaturate(opts.bg_color or Style.COLORS.BG_BASE, 0.5), 0.5)
-    inner_color = Colors.with_opacity(Colors.desaturate(opts.inner_color or Style.COLORS.BG_BASE, 0.5), 0.5)
-    text_color = Colors.with_opacity(Colors.desaturate(opts.text_color or Style.COLORS.TEXT_NORMAL, 0.5), 0.5)
-    border_inner = Colors.with_opacity(Colors.desaturate(opts.border_inner_color or Style.COLORS.BORDER_INNER, 0.5), 0.5)
-    border_outer = Colors.with_opacity(Colors.desaturate(opts.border_outer_color or Style.COLORS.BORDER_OUTER, 0.5), 0.5)
+    bg_color = Colors.with_opacity(Colors.desaturate(opts.bg_color or Theme.COLORS.BG_BASE, 0.5), 0.5)
+    inner_color = Colors.with_opacity(Colors.desaturate(opts.inner_color or Theme.COLORS.BG_BASE, 0.5), 0.5)
+    text_color = Colors.with_opacity(Colors.desaturate(opts.text_color or Theme.COLORS.TEXT_NORMAL, 0.5), 0.5)
+    border_inner = Colors.with_opacity(Colors.desaturate(opts.border_inner_color or Theme.COLORS.BORDER_INNER, 0.5), 0.5)
+    border_outer = Colors.with_opacity(Colors.desaturate(opts.border_outer_color or Theme.COLORS.BORDER_OUTER, 0.5), 0.5)
   elseif active then
-    bg_color = opts.bg_active_color or Style.COLORS.BG_ACTIVE
-    inner_color = Colors.adjust_brightness(opts.inner_color or Style.COLORS.BG_BASE, 0.85)
-    text_color = opts.text_hover_color or Style.COLORS.TEXT_HOVER
-    border_inner = opts.border_inner_color or Style.COLORS.BORDER_INNER
-    border_outer = opts.border_outer_color or Style.COLORS.BORDER_OUTER
+    bg_color = opts.bg_active_color or Theme.COLORS.BG_ACTIVE
+    inner_color = Colors.adjust_brightness(opts.inner_color or Theme.COLORS.BG_BASE, 0.85)
+    text_color = opts.text_hover_color or Theme.COLORS.TEXT_HOVER
+    border_inner = opts.border_inner_color or Theme.COLORS.BORDER_INNER
+    border_outer = opts.border_outer_color or Theme.COLORS.BORDER_OUTER
   elseif inst.hover_alpha > 0.01 then
-    local hover_bg = opts.bg_hover_color or Style.COLORS.BG_HOVER
-    bg_color = Style.RENDER.lerp_color(opts.bg_color or Style.COLORS.BG_BASE, hover_bg, inst.hover_alpha)
-    inner_color = Colors.adjust_brightness(opts.inner_color or Style.COLORS.BG_BASE, 0.85)
-    text_color = Style.RENDER.lerp_color(
-      opts.text_color or Style.COLORS.TEXT_NORMAL,
-      opts.text_hover_color or Style.COLORS.TEXT_HOVER,
+    local hover_bg = opts.bg_hover_color or Theme.COLORS.BG_HOVER
+    bg_color = Colors.lerp(opts.bg_color or Theme.COLORS.BG_BASE, hover_bg, inst.hover_alpha)
+    inner_color = Colors.adjust_brightness(opts.inner_color or Theme.COLORS.BG_BASE, 0.85)
+    text_color = Colors.lerp(
+      opts.text_color or Theme.COLORS.TEXT_NORMAL,
+      opts.text_hover_color or Theme.COLORS.TEXT_HOVER,
       inst.hover_alpha
     )
-    border_inner = opts.border_inner_color or Style.COLORS.BORDER_INNER
-    border_outer = opts.border_outer_color or Style.COLORS.BORDER_OUTER
+    border_inner = opts.border_inner_color or Theme.COLORS.BORDER_INNER
+    border_outer = opts.border_outer_color or Theme.COLORS.BORDER_OUTER
   else
-    bg_color = opts.bg_color or Style.COLORS.BG_BASE
-    inner_color = Colors.adjust_brightness(opts.inner_color or Style.COLORS.BG_BASE, 0.85)
-    text_color = opts.text_color or Style.COLORS.TEXT_NORMAL
-    border_inner = opts.border_inner_color or Style.COLORS.BORDER_INNER
-    border_outer = opts.border_outer_color or Style.COLORS.BORDER_OUTER
+    bg_color = opts.bg_color or Theme.COLORS.BG_BASE
+    inner_color = Colors.adjust_brightness(opts.inner_color or Theme.COLORS.BG_BASE, 0.85)
+    text_color = opts.text_color or Theme.COLORS.TEXT_NORMAL
+    border_inner = opts.border_inner_color or Theme.COLORS.BORDER_INNER
+    border_outer = opts.border_outer_color or Theme.COLORS.BORDER_OUTER
   end
 
   -- Draw outer circle (22x22)

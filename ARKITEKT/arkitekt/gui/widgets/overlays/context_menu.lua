@@ -5,14 +5,14 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 
 local M = {}
 local hexrgb = Colors.hexrgb
 
--- Get dynamic defaults from Style.COLORS
+-- Get dynamic defaults from Theme.COLORS
 local function get_defaults()
-  local C = Style.COLORS
+  local C = Theme.COLORS
   return {
     bg_color = C.BG_BASE,
     border_color = C.BORDER_OUTER,
@@ -37,7 +37,7 @@ local DEFAULTS = get_defaults()
 
 function M.begin(ctx, id, config)
   config = config or {}
-  local defaults = get_defaults()  -- Get fresh colors from Style.COLORS
+  local defaults = get_defaults()  -- Get fresh colors from Theme.COLORS
 
   local bg_color = config.bg_color or defaults.bg_color
   local border_color = config.border_color or defaults.border_color
@@ -100,7 +100,7 @@ end
 
 function M.item(ctx, label, config)
   config = config or {}
-  local defaults = get_defaults()  -- Get fresh colors from Style.COLORS
+  local defaults = get_defaults()  -- Get fresh colors from Theme.COLORS
 
   local item_height = config.item_height or defaults.item_height
   local item_padding_x = config.item_padding_x or defaults.item_padding_x
@@ -134,7 +134,7 @@ end
 
 function M.checkbox_item(ctx, label, checked, config)
   config = config or {}
-  local defaults = get_defaults()  -- Get fresh colors from Style.COLORS
+  local defaults = get_defaults()  -- Get fresh colors from Theme.COLORS
 
   local item_height = config.item_height or defaults.item_height
   local item_padding_x = config.item_padding_x or defaults.item_padding_x
@@ -218,7 +218,7 @@ end
 -- Submenu support
 function M.begin_menu(ctx, label, config)
   config = config or {}
-  local defaults = get_defaults()  -- Get fresh colors from Style.COLORS
+  local defaults = get_defaults()  -- Get fresh colors from Theme.COLORS
 
   local item_height = config.item_height or defaults.item_height
   local item_padding_x = config.item_padding_x or defaults.item_padding_x

@@ -28,12 +28,10 @@ All UI colors are then available via `Style.COLORS.*`.
 ┌─────────────────────────────────────────────────────────────┐
 │                  generate_palette(base_bg)                  │
 │                            ↓                                │
-│              compute_rules(lightness, mode)                 │
-│                            ↓                                │
-│                        M.rules                              │
-│       (offsetFromBase / lerpDarkLight / snapAtMidpoint)     │
-│                            ↓                                │
-│                    computed rule values                     │
+│                   Flat palette with:                        │
+│           offset() - BG-derived colors                      │
+│           snap()   - discrete dark/light                    │
+│           lerp()   - smooth interpolation                   │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -49,11 +47,41 @@ All UI colors are then available via `Style.COLORS.*`.
 
 ---
 
-## Unified Rules System
+## DSL Wrappers
 
-The theme manager uses a **single rules table** with self-documenting wrapper functions. Each rule is defined once with its dark/light behavior baked in.
+Three wrappers define HOW values adapt to theme lightness:
 
-### Preset Anchors
+### `offset(dark, light, [threshold])` - Delta from BG_BASE
+
+Applies a lightness offset to BG_BASE. **Snaps** between deltas at threshold.
+
+```lua
+BG_HOVER = offset(0.03, -0.04)     -- +3% dark, -4% light (snap at 0.5)
+BG_PANEL = offset(-0.04)           -- -4% both (constant)
+SPECIAL  = offset(0.05, -0.05, 0.3) -- snap at t=0.3
+```
+
+### `lerp(dark, light)` - Smooth Interpolation
+
+Linearly interpolates between values based on `t`.
+
+```lua
+OPACITY = lerp(0.87, 0.60)         -- smooth transition
+ACCENT  = lerp("#334455", "#AABBCC") -- RGB color lerp
+```
+
+### `snap(dark, light, [threshold])` - Discrete Snap
+
+No interpolation. Picks one value or the other.
+
+```lua
+TEXT_NORMAL = snap("#FFFFFF", "#000000")     -- snap at 0.5
+SPECIAL     = snap("#AAA", "#555", 0.3)      -- snap at t=0.3
+```
+
+---
+
+## Preset Anchors
 
 | Anchor | Lightness | t value |
 |--------|-----------|---------|
@@ -67,102 +95,31 @@ t = (lightness - 0.14) / (0.88 - 0.14)
 
 ---
 
-## Rule Wrappers
+## Flat Palette Structure
 
-Four wrappers define HOW values adapt to theme lightness:
-
-### `offsetFromBase(dark, light)` - Delta from BG_BASE
-
-Applies a lightness offset to BG_BASE. **Snaps** between deltas at threshold (no lerp, because BG_BASE already adapts).
+All colors in one flat table. The mode determines processing:
 
 ```lua
--- Different deltas: snap at t=0.5
-bg_hover_delta = offsetFromBase(0.03, -0.04)
--- t < 0.5: +3% (lighter on dark themes)
--- t >= 0.5: -4% (darker on light themes)
+M.palette = {
+  -- === BACKGROUNDS (offset = BG-derived) ===
+  BG_BASE   = "base",
+  BG_HOVER  = offset(0.03, -0.04),
+  BG_PANEL  = offset(-0.04),
 
--- Same delta: constant offset
-bg_panel_delta = offsetFromBase(-0.04)
--- Always -4% (panels darker than base)
+  -- === TEXT (snap on hex = color) ===
+  TEXT_NORMAL = snap("#FFFFFF", "#000000"),
+  TEXT_DIMMED = snap("#A0A0A0", "#606060"),
 
--- Custom threshold
-special_delta = offsetFromBase(0.05, -0.05, 0.3)
--- Snaps at t=0.3 instead of t=0.5
-```
-
-**Why snap instead of lerp?** BG_BASE already changes with lightness. If we lerped the delta, `offsetFromBase(+0.03, -0.03)` would give delta=0 at midpoint (no contrast!). Snapping preserves contrast.
-
-### `lerpDarkLight(dark, light)` - Smooth Interpolation
-
-Linearly interpolates between dark and light values based on `t`.
-
-```lua
--- Numeric lerp
-border_opacity = lerpDarkLight(0.87, 0.60)
--- t=0: 0.87, t=0.5: 0.735, t=1: 0.60
-
--- Color lerp (hex strings)
-some_accent = lerpDarkLight("#334455", "#AABBCC")
--- Smoothly transitions through intermediate colors
-```
-
-Works with:
-- **Numbers**: Linear interpolation
-- **Hex colors**: RGB interpolation
-
-### `snapAtMidpoint(dark, light)` - Discrete Snap at t=0.5
-
-No interpolation. Picks one value or the other at the midpoint.
-
-```lua
-tile_name_color = snapAtMidpoint("#DDE3E9", "#1A1A1A")
--- t < 0.5: "#DDE3E9" (light text for dark themes)
--- t >= 0.5: "#1A1A1A" (dark text for light themes)
-```
-
-Use for:
-- Text colors (need hard contrast)
-- Semantic colors that shouldn't blend
-- Boolean-like choices per theme
-
-### `snapAt(threshold, dark, light)` - Snap at Custom Threshold
-
-Same as `snapAtMidpoint` but at a custom `t` value.
-
-```lua
-special_element = snapAt(0.3, "#AAA", "#555")
--- Snaps at t=0.3 (~37% lightness)
-```
-
----
-
-## Rules Table
-
-All rules are defined in `M.rules`:
-
-```lua
-M.rules = {
-  -- ========== BACKGROUND OFFSETS ==========
-  bg_hover_delta = offsetFromBase(0.03, -0.04),      -- Contrast-preserving
-  bg_active_delta = offsetFromBase(0.05, -0.07),
-  bg_header_delta = offsetFromBase(-0.024, -0.06),
-  bg_panel_delta = offsetFromBase(-0.04),            -- Same both (constant)
-
-  -- ========== BORDER COLORS ==========
-  border_outer_color = snapAtMidpoint("#000000", "#404040"),
-  border_outer_opacity = lerpDarkLight(0.87, 0.60),
-  border_inner_delta = offsetFromBase(0.05, -0.03),
-
-  -- ========== TILE RENDERING ==========
-  tile_fill_brightness = lerpDarkLight(0.5, 1.4),
-  tile_name_color = snapAtMidpoint("#DDE3E9", "#1A1A1A"),
-
-  -- ========== BADGES ==========
-  badge_bg_color = snapAtMidpoint("#14181C", "#E8ECF0"),
-  badge_text_color = snapAtMidpoint("#FFFFFF", "#1A1A1A"),
-  -- ...
+  -- === VALUES (lerp on numbers = value) ===
+  TILE_BRIGHTNESS = lerp(0.5, 1.4),
+  BORDER_OPACITY  = lerp(0.87, 0.60),
 }
 ```
+
+Type inference:
+- `offset` → Apply delta to BG_BASE → RGBA color
+- `snap`/`lerp` on hex strings → RGBA color
+- `snap`/`lerp` on numbers → numeric value
 
 ---
 
@@ -172,117 +129,80 @@ M.rules = {
 
 | Behavior | Wrapper |
 |----------|---------|
-| Delta from BG_BASE (contrast-preserving) | `offsetFromBase(d, l)` |
-| Delta from BG_BASE (constant) | `offsetFromBase(d)` |
-| Smooth gradient | `lerpDarkLight(d, l)` |
-| Discrete snap at midpoint | `snapAtMidpoint(d, l)` |
-| Discrete snap at custom point | `snapAt(t, d, l)` |
+| Delta from BG_BASE | `offset(d, l)` |
+| Smooth gradient | `lerp(d, l)` |
+| Discrete snap | `snap(d, l)` |
+| Custom threshold | `snap(d, l, t)` or `offset(d, l, t)` |
 
-### 2. Add to `M.rules`:
+### 2. Add to palette:
 
 ```lua
-M.rules = {
-  -- ...existing rules...
-  my_new_delta = offsetFromBase(0.08, -0.06),
-  my_new_opacity = lerpDarkLight(0.9, 0.7),
-  my_new_color = snapAtMidpoint("#FF0000", "#00FF00"),
+M.palette = {
+  -- ...existing...
+  MY_NEW_BG = offset(0.08, -0.06),
+  MY_NEW_OPACITY = lerp(0.9, 0.7),
+  MY_NEW_COLOR = snap("#FF0000", "#00FF00"),
 }
 ```
 
-### 3. Use in `generate_palette()`:
-
-```lua
-return {
-  -- ...existing colors...
-  MY_NEW_COLOR = Colors.hexrgb(rules.my_new_color),
-  MY_NEW_BG = Colors.adjust_lightness(base_bg, rules.my_new_delta),
-}
-```
-
-### 4. Access in UI code:
+### 3. Access in UI code:
 
 ```lua
 local color = Style.COLORS.MY_NEW_COLOR
+local opacity = Style.COLORS.MY_NEW_OPACITY
 ```
 
 ---
 
-## Script-Specific Colors
+## Script-Specific Palettes
 
-Scripts can define their own colors that follow the theme system:
+Scripts can register their own theme-reactive palettes using the same DSL:
 
 ```lua
--- MyScript/defs/colors.lua
+-- MyScript/defs/palette.lua
 local ThemeManager = require('arkitekt.core.theme_manager')
-local Style = require('arkitekt.gui.style')
+local Colors = require('arkitekt.core.colors')
+
+local snap = ThemeManager.snap
+local lerp = ThemeManager.lerp
+local offset = ThemeManager.offset
 
 local M = {}
 
--- Option 1: Static colors (don't change with theme)
-M.STATIC = {
-  HIGHLIGHT = 0xFF6B6BFF,
-}
+-- Register flat palette at load time
+ThemeManager.register_script_palette("MyScript", {
+  -- Colors (snap/lerp on hex)
+  HIGHLIGHT = snap("#FF6B6B", "#CC4444"),
+  BADGE_TEXT = snap("#FFFFFF", "#1A1A1A"),
+  ERROR_BG = snap("#240C0C", "#FFDDDD"),
 
--- Option 2: Register with ThemeManager for debug visibility
-ThemeManager.register_script_colors("MyScript", M.STATIC)
+  -- Values (lerp on numbers)
+  GLOW_OPACITY = lerp(0.8, 0.5),
+  STRIPE_WIDTH = lerp(8, 8),  -- constant
 
--- Option 3: Theme-reactive with fallback
-function M.get_colors()
-  local S = Style.COLORS
-  return {
-    bg = S.BG_PANEL,           -- Follows theme
-    highlight = M.STATIC.HIGHLIGHT,  -- Fixed
-  }
-end
-
-return M
-```
-
----
-
-## Script-Specific Theme Rules
-
-For more advanced theme integration, scripts can register their own **theme-reactive rules** using the same wrapper functions. These rules automatically adapt to theme changes:
-
-```lua
--- MyScript/defs/colors.lua
-local ThemeManager = require('arkitekt.core.theme_manager')
-local offsetFromBase = ThemeManager.offsetFromBase
-local lerpDarkLight = ThemeManager.lerpDarkLight
-local snapAtMidpoint = ThemeManager.snapAtMidpoint
-
--- Register theme-reactive rules (at script init)
-ThemeManager.register_script_rules("MyScript", {
-  -- Background offset from BG_BASE
-  panel_bg_delta = offsetFromBase(-0.06, -0.08),
-
-  -- Smooth color interpolation
-  highlight_color = lerpDarkLight("#FF6B6B", "#CC4444"),
-
-  -- Discrete snap for text contrast
-  badge_text = snapAtMidpoint("#FFFFFF", "#1A1A1A"),
-
-  -- Numeric lerp
-  glow_opacity = lerpDarkLight(0.8, 0.5),
+  -- BG-derived (offset)
+  PANEL_BG = offset(-0.06),
 })
 
--- Access computed values (these update when theme changes)
+-- Access computed values (cached, auto-invalidated on theme change)
 function M.get_colors()
-  local rules = ThemeManager.get_script_rules("MyScript")
-  if not rules then return M.STATIC end
+  local p = ThemeManager.get_script_palette("MyScript")
+  if not p then
+    return { highlight = Colors.hexrgb("#FF6B6BFF") }
+  end
 
   return {
-    highlight = Colors.hexrgb(rules.highlight_color),
-    badge_text = Colors.hexrgb(rules.badge_text),
-    glow_alpha = rules.glow_opacity,
-    panel_bg = Colors.adjust_lightness(Style.COLORS.BG_BASE, rules.panel_bg_delta),
+    highlight = p.HIGHLIGHT,      -- Already RGBA
+    badge_text = p.BADGE_TEXT,
+    glow_alpha = p.GLOW_OPACITY,  -- Number
+    panel_bg = p.PANEL_BG,        -- RGBA (derived from BG_BASE)
   }
 end
 
 return M
 ```
 
-Script rules are cached and automatically invalidated when the theme changes.
+Script palettes support all three modes including `offset` for BG-derived colors.
 
 ---
 
@@ -298,13 +218,17 @@ ThemeManager.adapt()       -- Sync with REAPER theme
 ThemeManager.set_mode("dark")  -- Same as set_dark()
 ```
 
-### Rule Wrappers (for extending rules)
+### DSL Wrappers
 
 ```lua
-local offsetFromBase = ThemeManager.offsetFromBase
-local lerpDarkLight = ThemeManager.lerpDarkLight
-local snapAtMidpoint = ThemeManager.snapAtMidpoint
-local snapAt = ThemeManager.snapAt
+local snap = ThemeManager.snap
+local lerp = ThemeManager.lerp
+local offset = ThemeManager.offset
+
+-- Usage
+snap(dark, light, [threshold])   -- discrete snap (default t=0.5)
+lerp(dark, light)                -- smooth interpolation
+offset(dark, [light], [threshold]) -- BG-relative delta
 ```
 
 ### REAPER Integration
@@ -324,69 +248,45 @@ end
 ### Debugging
 
 ```lua
--- Get current computed rules
-local rules = ThemeManager.get_current_rules()
-
--- Get current background lightness
+-- Get current values
 local l = ThemeManager.get_theme_lightness()
-
--- Get current interpolation factor
 local t = ThemeManager.get_current_t()
 
 -- Toggle debug window (F12 hotkey also works)
 ThemeManager.toggle_debug()
 
--- Render debug window (in main loop)
-ThemeManager.render_debug_window(ctx, ImGui)
-
--- Validate rules configuration
+-- Validate palette configuration
 local valid, err = ThemeManager.validate()
 ```
 
 ### Custom Themes
 
 ```lua
--- Generate from a single base color (text/accent derived automatically)
+-- Generate from a single base color
 local bg = Colors.hexrgb("#3A3A3AFF")
 ThemeManager.generate_and_apply(bg)
 ```
 
-### Script Rules API
+### Script Palette API
 
 ```lua
--- Register theme-reactive rules for a script
-ThemeManager.register_script_rules("ScriptName", {
-  my_delta = offsetFromBase(0.05, -0.05),
-  my_color = lerpDarkLight("#AAA", "#555"),
+-- Register flat palette
+ThemeManager.register_script_palette("ScriptName", {
+  MY_COLOR = snap("#AAA", "#555"),
+  MY_OPACITY = lerp(0.8, 0.5),
+  MY_PANEL = offset(-0.04),
 })
 
--- Get computed rules (cached, invalidated on theme change)
-local rules = ThemeManager.get_script_rules("ScriptName")
-if rules then
-  local delta = rules.my_delta  -- Already computed for current theme
-  local color = rules.my_color
+-- Get computed palette (cached, invalidated on theme change)
+local p = ThemeManager.get_script_palette("ScriptName")
+if p then
+  local color = p.MY_COLOR    -- RGBA
+  local opacity = p.MY_OPACITY -- Number
+  local panel = p.MY_PANEL    -- RGBA (BG-derived)
 end
 
 -- Unregister when script unloads
-ThemeManager.unregister_script_rules("ScriptName")
-
--- Get all registered script rules (definitions)
-local all_rules = ThemeManager.get_registered_script_rules()
-```
-
-### Script Colors API (static colors for debug visibility)
-
-```lua
--- Register static colors for debug window visibility
-ThemeManager.register_script_colors("ScriptName", {
-  MY_COLOR = 0xFF6B6BFF,
-})
-
--- Unregister
-ThemeManager.unregister_script_colors("ScriptName")
-
--- Get all registered
-local all_colors = ThemeManager.get_registered_script_colors()
+ThemeManager.unregister_script_palette("ScriptName")
 ```
 
 ---

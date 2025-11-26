@@ -5,15 +5,15 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local hexrgb = Colors.hexrgb
 
 
 local M = {}
 
--- Get dynamic defaults from Style.COLORS
+-- Get dynamic defaults from Theme.COLORS
 local function get_defaults()
-  local C = Style.COLORS
+  local C = Theme.COLORS
   return {
     bg_color = C.BG_HOVER,
     border_color = C.BORDER_INNER,
@@ -42,7 +42,7 @@ function M.show(ctx, text, config)
   if not text or text == "" then return end
 
   config = config or {}
-  local defaults = get_defaults()  -- Get fresh colors from Style.COLORS
+  local defaults = get_defaults()  -- Get fresh colors from Theme.COLORS
 
   local bg_color = config.bg_color or defaults.bg_color
   local border_color = config.border_color or defaults.border_color
@@ -95,7 +95,7 @@ function M.show_at_mouse(ctx, text, config)
   if not text or text == "" then return end
 
   config = config or {}
-  local defaults = get_defaults()  -- Get fresh colors from Style.COLORS
+  local defaults = get_defaults()  -- Get fresh colors from Theme.COLORS
 
   local bg_color = config.bg_color or defaults.bg_color
   local border_color = config.border_color or defaults.border_color

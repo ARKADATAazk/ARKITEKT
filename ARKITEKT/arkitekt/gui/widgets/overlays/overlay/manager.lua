@@ -10,7 +10,7 @@ local ImGui = require 'imgui' '0.10'
 local Draw   = require('arkitekt.gui.draw')
 local Colors = require('arkitekt.core.colors')
 local CoreMath = require('arkitekt.core.math')
-local Style  = require('arkitekt.gui.style.imgui')
+local Theme  = require('arkitekt.core.theme')
 local OverlayConfig = require('arkitekt.gui.widgets.overlays.overlay.defaults')
 local Constants = require('arkitekt.defs.app')
 

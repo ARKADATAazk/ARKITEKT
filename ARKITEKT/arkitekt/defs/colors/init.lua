@@ -1,43 +1,65 @@
 -- @noindex
 -- arkitekt/defs/colors/init.lua
--- Color system entry point - exports theme colors + common colors
+-- Color system entry point
+--
+-- Exports:
+--   Theme-reactive (from theme.lua):
+--     - presets, anchors, colors
+--     - DSL: snap, lerp, offset, bg
+--     - get_all_keys()
+--
+--   Static (from static.lua):
+--     - PALETTE (28 Wwise colors)
+--     - get_color_by_id(), get_palette_colors(), get_color_by_name()
 
-local Common = require('arkitekt.defs.colors.common')
-local Theme = require('arkitekt.defs.colors.default')
+local Theme = require('arkitekt.defs.colors.theme')
+local Static = require('arkitekt.defs.colors.static')
 
 local M = {}
 
 -- =============================================================================
--- EXPORT THEME COLORS
+-- THEME-REACTIVE (from theme.lua)
 -- =============================================================================
 
-M.BASE = Theme.BASE
-M.UI = Theme.UI
-M.BUTTON = Theme.BUTTON
-M.SCRIM = Theme.SCRIM
+-- Presets & anchors
+M.presets = Theme.presets
+M.anchors = Theme.anchors
+
+-- DSL wrappers
+M.snap = Theme.snap
+M.lerp = Theme.lerp
+M.offset = Theme.offset
+M.bg = Theme.bg
+
+-- Color definitions
+M.colors = Theme.colors
+
+-- Utilities
+M.get_all_keys = Theme.get_all_keys
 
 -- =============================================================================
--- EXPORT COMMON COLORS (theme-agnostic)
+-- STATIC (from static.lua)
 -- =============================================================================
 
-M.PALETTE = Common.PALETTE
-M.SEMANTIC = Common.SEMANTIC
-M.OPERATIONS = Common.OPERATIONS
+-- Wwise palette
+M.PALETTE = Static.PALETTE
 
--- Helper functions from common
-M.get_palette_colors = Common.get_palette_colors
-M.get_color_by_name = Common.get_color_by_name
+-- Helpers
+M.get_color_by_id = Static.get_color_by_id
+M.get_palette_colors = Static.get_palette_colors
+M.get_color_by_name = Static.get_color_by_name
 
 -- =============================================================================
 -- BACKWARD COMPATIBILITY
 -- =============================================================================
+-- Static fallback values for code that reads OPERATIONS at require time.
+-- For theme-reactive colors, use Style.COLORS.OP_MOVE/OP_COPY/etc. at runtime.
 
-M.success = Common.SEMANTIC.success
-M.warning = Common.SEMANTIC.warning
-M.error = Common.SEMANTIC.error
-M.info = Common.SEMANTIC.info
-M.ready = Common.SEMANTIC.ready
-M.playing = Common.SEMANTIC.playing
-M.idle = Common.SEMANTIC.idle
+M.OPERATIONS = {
+  move = "#CCCCCCFF",   -- Fallback: light gray
+  copy = "#06B6D4FF",   -- Fallback: cyan
+  delete = "#E84A4AFF", -- Fallback: red
+  link = "#4A9EFFFF",   -- Fallback: blue
+}
 
 return M

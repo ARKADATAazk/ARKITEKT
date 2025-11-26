@@ -6,9 +6,18 @@
 
 local Colors = require('arkitekt.core.colors')
 local Engine = require('arkitekt.core.theme_manager.engine')
-local Palette = require('arkitekt.defs.palette')
+local Palette = require('arkitekt.defs.colors')
 
 local M = {}
+
+-- Lazy load Theme to avoid circular dependency
+local _Theme
+local function get_theme()
+  if not _Theme then
+    _Theme = require('arkitekt.core.theme')
+  end
+  return _Theme
+end
 
 -- Re-export presets from palette (single source of truth)
 M.presets = Palette.presets
@@ -39,7 +48,7 @@ function M.apply(name)
   if not hex then return false end
 
   local bg = Colors.hexrgb(hex .. "FF")
-  Engine.generate_and_apply(bg)
+  get_theme().generate_and_apply(bg)
   return true
 end
 

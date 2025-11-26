@@ -2,9 +2,9 @@
 -- Arkitekt/gui/widgets/panel/config.lua
 -- Default configuration for panel with enhanced features
 
-local Style = require('arkitekt.gui.style')
-local C = Style.COLORS          -- Shared primitives
-local PC = Style.PANEL_COLORS   -- Panel-specific colors
+local Theme = require('arkitekt.core.theme')
+local C = Theme.COLORS          -- Shared primitives
+local PC = Theme.build_panel_colors()   -- Panel-specific colors
 
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
@@ -14,9 +14,9 @@ local Config = require('arkitekt.core.config')
 local M = {}
 
 M.DEFAULTS = {
-  -- bg_color: Dynamically reads from Style.COLORS.BG_PANEL (don't set static value here!)
+  -- bg_color: Dynamically reads from Theme.COLORS.BG_PANEL (don't set static value here!)
   -- Custom colors can be provided by components needing transparency (e.g. transport)
-  -- border_color: Dynamically reads from Style.COLORS.BORDER_OUTER
+  -- border_color: Dynamically reads from Theme.COLORS.BORDER_OUTER
   border_thickness = 1,
   rounding = 8,
   padding = 8,
@@ -26,7 +26,7 @@ M.DEFAULTS = {
   scroll = {
     flags = 0,
     custom_scrollbar = false,
-    -- bg_color: Dynamically reads from Style.COLORS.BG_TRANSPARENT
+    -- bg_color: Dynamically reads from Theme.COLORS.BG_TRANSPARENT
   },
 
   anti_jitter = {
@@ -40,7 +40,7 @@ M.DEFAULTS = {
     primary = {
       type = 'grid',
       spacing = 50,
-      -- color: Dynamically reads from Style.COLORS.PATTERN_PRIMARY (don't set static value here!)
+      -- color: Dynamically reads from Theme.COLORS.PATTERN_PRIMARY (don't set static value here!)
       -- Custom colors can be provided by components needing specific overlay effects (e.g. transport)
       dot_size = 2.5,
       line_thickness = 1.5,
@@ -49,7 +49,7 @@ M.DEFAULTS = {
       enabled = true,
       type = 'grid',
       spacing = 5,
-      -- color: Dynamically reads from Style.COLORS.PATTERN_SECONDARY
+      -- color: Dynamically reads from Theme.COLORS.PATTERN_SECONDARY
       dot_size = 1.5,
       line_thickness = 0.5,
     },
@@ -60,8 +60,8 @@ M.DEFAULTS = {
     enabled = false,
     height = 30,
     position = "top", -- "top" or "bottom"
-    -- bg_color: Dynamically reads from Style.COLORS.BG_HEADER (don't set static value here!)
-    -- border_color: Dynamically reads from Style.COLORS.BORDER_OUTER
+    -- bg_color: Dynamically reads from Theme.COLORS.BG_HEADER (don't set static value here!)
+    -- border_color: Dynamically reads from Theme.COLORS.BORDER_OUTER
     rounding = 8,
 
     -- IMPORTANT: Keep left/right padding at 0 so corner rounding on
@@ -103,8 +103,8 @@ M.DEFAULTS = {
   left_sidebar = {
     enabled = false,
     width = 36,
-    -- bg_color: Dynamically reads from Style.COLORS.BG_HEADER
-    -- border_color: Dynamically reads from Style.COLORS.BORDER_OUTER
+    -- bg_color: Dynamically reads from Theme.COLORS.BG_HEADER
+    -- border_color: Dynamically reads from Theme.COLORS.BORDER_OUTER
     valign = "center",  -- "top", "center", "bottom"
     padding = {
       top = 4,
@@ -118,8 +118,8 @@ M.DEFAULTS = {
   right_sidebar = {
     enabled = false,
     width = 36,
-    -- bg_color: Dynamically reads from Style.COLORS.BG_HEADER
-    -- border_color: Dynamically reads from Style.COLORS.BORDER_OUTER
+    -- bg_color: Dynamically reads from Theme.COLORS.BG_HEADER
+    -- border_color: Dynamically reads from Theme.COLORS.BORDER_OUTER
     valign = "center",
     padding = {
       top = 4,
@@ -133,15 +133,15 @@ M.DEFAULTS = {
 
 -- Standard element styling (used by all header elements)
 -- NOTE: Button colors are handled dynamically by the button widget's simplified color system
--- which reads Style.COLORS each frame. No explicit color overrides needed here.
+-- which reads Theme.COLORS each frame. No explicit color overrides needed here.
 M.ELEMENT_STYLE = {
   button = {
-    -- Button widget uses its internal simplified color system (reads Style.COLORS dynamically)
+    -- Button widget uses its internal simplified color system (reads Theme.COLORS dynamically)
     -- No explicit colors needed - let the widget handle theme-aware rendering
   },
 
   dropdown = {
-    -- Combo widget uses Style.build_dropdown_config() for dynamic colors
+    -- Combo widget uses Theme.build_dropdown_config() for dynamic colors
     -- Only non-color properties are specified here
     rounding = 0,
     padding_x = 10,
@@ -172,7 +172,7 @@ M.ALIGNED_HEADER_EXAMPLE = {
     enabled = true,
     height = 30,
     position = "top",
-    -- bg_color/border_color: Uses dynamic Style.COLORS.BG_HEADER
+    -- bg_color/border_color: Uses dynamic Theme.COLORS.BG_HEADER
     rounding = 8,
 
     padding = {
@@ -236,7 +236,7 @@ M.BOTTOM_HEADER_EXAMPLE = {
     enabled = true,
     height = 30,
     position = "bottom", -- Header at bottom
-    -- bg_color/border_color: Uses dynamic Style.COLORS.BG_HEADER
+    -- bg_color/border_color: Uses dynamic Theme.COLORS.BG_HEADER
     rounding = 8,
 
     elements = {
@@ -256,7 +256,7 @@ M.TAB_MODE_WITH_CORNER_BUTTONS = {
   header = {
     enabled = true,
     height = 20,
-    -- bg_color/border_color: Uses dynamic Style.COLORS.BG_HEADER
+    -- bg_color/border_color: Uses dynamic Theme.COLORS.BG_HEADER
     rounding = 8,
 
     elements = {

@@ -1,110 +1,129 @@
 -- @noindex
 -- arkitekt/core/theme_manager/registry.lua
--- Script color and rule registration
+-- Script palette registration
 --
--- Allows scripts to register their own theme-reactive colors and rules
--- for integration with the theme system.
+-- Allows scripts to register their own theme-reactive palettes
+-- using the same DSL as the main palette (snap/lerp/offset).
+-- Flat structure with type inference.
 
+local Colors = require('arkitekt.core.colors')
 local Engine = require('arkitekt.core.theme_manager.engine')
 
 local M = {}
 
--- =============================================================================
--- SCRIPT COLOR REGISTRATION
--- =============================================================================
--- Scripts can register their color modules for display in the debug window.
-
---- Registered script color modules
---- @type table<string, table<string, any>>
-M.script_colors = {}
-
---- Register a script's color table
---- @param script_name string Name of the script (e.g., "RegionPlaylist")
---- @param colors table Color table with key-value pairs
-function M.register_colors(script_name, colors)
-  if type(script_name) ~= "string" or type(colors) ~= "table" then
-    return
+-- Lazy load Theme to avoid circular dependency
+local _Theme
+local function get_theme()
+  if not _Theme then
+    _Theme = require('arkitekt.core.theme')
   end
-  M.script_colors[script_name] = colors
-end
-
---- Unregister a script's colors
---- @param script_name string Name of the script to unregister
-function M.unregister_colors(script_name)
-  M.script_colors[script_name] = nil
-end
-
---- Get all registered script colors
---- @return table<string, table<string, any>>
-function M.get_all_colors()
-  return M.script_colors
+  return _Theme
 end
 
 -- =============================================================================
--- SCRIPT RULES REGISTRATION
+-- SCRIPT PALETTE REGISTRATION
 -- =============================================================================
--- Scripts can register their own theme-reactive rules using the same wrappers.
+-- Scripts register flat palettes using the same DSL wrappers:
+--   snap(dark, light)  → color (hex) or value (number)
+--   lerp(dark, light)  → color (hex) or value (number)
+--   offset(dark, light) → BG-derived color
 
---- Registered script rule definitions
---- @type table<string, table<string, table>>
-M.script_rules = {}
+--- Registered script palette definitions
+--- @type table<string, table>
+M.script_palettes = {}
 
---- Cache for computed script rules
-local rules_cache = {}
+--- Cache for computed script palettes { palette = {}, t = number }
+local palette_cache = {}
 
---- Clear the script rules cache (called when theme changes)
+--- Round t to 3 decimal places to avoid float comparison issues
+local function round_t(t)
+  return math.floor(t * 1000 + 0.5) / 1000
+end
+
+--- Clear the script palette cache (called when theme changes)
 function M.clear_cache()
-  rules_cache = {}
+  palette_cache = {}
 end
 
---- Register a script's theme-reactive rules
+--- Register a script's theme-reactive palette (flat structure)
 --- @param script_name string Name of the script
---- @param rules table Rules table using wrappers
-function M.register_rules(script_name, rules)
-  if type(script_name) ~= "string" or type(rules) ~= "table" then
+--- @param palette table Flat palette with DSL wrappers
+function M.register_palette(script_name, palette)
+  if type(script_name) ~= "string" or type(palette) ~= "table" then
     return
   end
-  M.script_rules[script_name] = rules
-  rules_cache[script_name] = nil  -- Invalidate cache
+  M.script_palettes[script_name] = palette
+  palette_cache[script_name] = nil  -- Invalidate cache
 end
 
---- Unregister a script's rules
+--- Unregister a script's palette
 --- @param script_name string Name of the script to unregister
-function M.unregister_rules(script_name)
-  M.script_rules[script_name] = nil
-  rules_cache[script_name] = nil
+function M.unregister_palette(script_name)
+  M.script_palettes[script_name] = nil
+  palette_cache[script_name] = nil
 end
 
---- Get computed rules for a script (computed for current theme)
+--- Get computed palette for a script (computed for current theme)
 --- @param script_name string Name of the script
 --- @param current_t number Current interpolation factor
---- @return table|nil Computed rules table, or nil if not registered
-function M.get_computed_rules(script_name, current_t)
-  local rule_defs = M.script_rules[script_name]
-  if not rule_defs then
+--- @return table|nil Computed palette, or nil if not registered
+function M.get_computed_palette(script_name, current_t)
+  local palette_def = M.script_palettes[script_name]
+  if not palette_def then
     return nil
   end
 
-  -- Check cache
-  local cached = rules_cache[script_name]
-  if cached and cached._t == current_t then
-    return cached
+  -- Round t to avoid float comparison issues
+  local t_key = round_t(current_t)
+
+  -- Check cache (t stored separately, not in palette)
+  local cached = palette_cache[script_name]
+  if cached and cached.t == t_key then
+    return cached.palette
   end
 
-  -- Compute rules for current theme
-  local computed = { _t = current_t }
-  for key, rule in pairs(rule_defs) do
-    computed[key] = Engine.resolve_value(rule, current_t)
+  -- Get current BG_BASE for offset support
+  local Theme = get_theme()
+  local bg_base = Theme.COLORS and Theme.COLORS.BG_BASE
+
+  -- Compute palette for current theme
+  local computed = {}
+
+  for key, def in pairs(palette_def) do
+    -- Use unified derive_entry if BG_BASE available, otherwise fallback
+    if type(def) == "table" and def.mode == "offset" then
+      -- Offset mode requires BG_BASE
+      if bg_base then
+        computed[key] = Engine.derive_entry(bg_base, def, current_t)
+      else
+        -- Fallback: can't compute offset without BG_BASE
+        computed[key] = nil
+      end
+    elseif type(def) == "table" and def.mode then
+      -- snap or lerp
+      local resolved = Engine.resolve_value(def, current_t)
+      if type(resolved) == "string" then
+        -- Hex string → convert to RGBA
+        computed[key] = Colors.hexrgb(resolved .. "FF")
+      else
+        -- Number → return as-is
+        computed[key] = resolved
+      end
+    else
+      -- Raw value
+      computed[key] = def
+    end
   end
 
-  rules_cache[script_name] = computed
+  -- Cache with t stored separately
+  palette_cache[script_name] = { palette = computed, t = t_key }
   return computed
 end
 
---- Get all registered script rules (definitions, not computed)
---- @return table<string, table<string, table>>
-function M.get_all_rules()
-  return M.script_rules
+--- Get all registered script palettes (definitions, not computed)
+--- @return table<string, table>
+function M.get_all_palettes()
+  return M.script_palettes
 end
 
 return M

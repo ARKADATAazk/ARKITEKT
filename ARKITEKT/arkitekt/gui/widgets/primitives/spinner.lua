@@ -6,7 +6,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local Base = require('arkitekt.gui.widgets.base')
 
 local hexrgb = Colors.hexrgb
@@ -111,25 +111,25 @@ local function draw_spinner_button(ctx, id, x, y, w, h, direction, disabled, hov
   local bg_color, border_inner, border_outer, arrow_color
 
   if disabled then
-    bg_color = Colors.with_opacity(Style.COLORS.BG_BASE, 0.5)
-    border_inner = Colors.with_opacity(Style.COLORS.BORDER_INNER, 0.5)
-    border_outer = Colors.with_opacity(Style.COLORS.BORDER_OUTER, 0.5)
-    arrow_color = Colors.with_opacity(Style.COLORS.TEXT_NORMAL, 0.5)
+    bg_color = Colors.with_opacity(Theme.COLORS.BG_BASE, 0.5)
+    border_inner = Colors.with_opacity(Theme.COLORS.BORDER_INNER, 0.5)
+    border_outer = Colors.with_opacity(Theme.COLORS.BORDER_OUTER, 0.5)
+    arrow_color = Colors.with_opacity(Theme.COLORS.TEXT_NORMAL, 0.5)
   elseif active then
-    bg_color = Style.COLORS.BG_ACTIVE
-    border_inner = Style.COLORS.BORDER_HOVER
-    border_outer = Style.COLORS.BORDER_OUTER
-    arrow_color = Style.COLORS.TEXT_HOVER
+    bg_color = Theme.COLORS.BG_ACTIVE
+    border_inner = Theme.COLORS.BORDER_HOVER
+    border_outer = Theme.COLORS.BORDER_OUTER
+    arrow_color = Theme.COLORS.TEXT_HOVER
   elseif hover_alpha > 0.01 then
-    bg_color = Style.RENDER.lerp_color(Style.COLORS.BG_BASE, Style.COLORS.BG_HOVER, hover_alpha)
-    border_inner = Style.COLORS.BORDER_HOVER
-    border_outer = Style.COLORS.BORDER_OUTER
-    arrow_color = Style.RENDER.lerp_color(Style.COLORS.TEXT_NORMAL, Style.COLORS.TEXT_HOVER, hover_alpha)
+    bg_color = Colors.lerp(Theme.COLORS.BG_BASE, Theme.COLORS.BG_HOVER, hover_alpha)
+    border_inner = Theme.COLORS.BORDER_HOVER
+    border_outer = Theme.COLORS.BORDER_OUTER
+    arrow_color = Colors.lerp(Theme.COLORS.TEXT_NORMAL, Theme.COLORS.TEXT_HOVER, hover_alpha)
   else
-    bg_color = Style.COLORS.BG_BASE
-    border_inner = Style.COLORS.BORDER_INNER
-    border_outer = Style.COLORS.BORDER_OUTER
-    arrow_color = Style.COLORS.TEXT_NORMAL
+    bg_color = Theme.COLORS.BG_BASE
+    border_inner = Theme.COLORS.BORDER_INNER
+    border_outer = Theme.COLORS.BORDER_OUTER
+    arrow_color = Theme.COLORS.TEXT_NORMAL
   end
 
   -- Background
@@ -154,25 +154,25 @@ local function draw_value_display(ctx, dl, x, y, w, h, text, hover_alpha, active
   local bg_color, border_inner, border_outer, text_color
 
   if disabled then
-    bg_color = Colors.with_opacity(Style.COLORS.BG_BASE, 0.5)
-    border_inner = Colors.with_opacity(Style.COLORS.BORDER_INNER, 0.5)
-    border_outer = Colors.with_opacity(Style.COLORS.BORDER_OUTER, 0.5)
-    text_color = Colors.with_opacity(Style.COLORS.TEXT_NORMAL, 0.5)
+    bg_color = Colors.with_opacity(Theme.COLORS.BG_BASE, 0.5)
+    border_inner = Colors.with_opacity(Theme.COLORS.BORDER_INNER, 0.5)
+    border_outer = Colors.with_opacity(Theme.COLORS.BORDER_OUTER, 0.5)
+    text_color = Colors.with_opacity(Theme.COLORS.TEXT_NORMAL, 0.5)
   elseif active then
-    bg_color = Style.COLORS.BG_ACTIVE
-    border_inner = Style.COLORS.BORDER_HOVER
-    border_outer = Style.COLORS.BORDER_OUTER
-    text_color = Style.COLORS.TEXT_HOVER
+    bg_color = Theme.COLORS.BG_ACTIVE
+    border_inner = Theme.COLORS.BORDER_HOVER
+    border_outer = Theme.COLORS.BORDER_OUTER
+    text_color = Theme.COLORS.TEXT_HOVER
   elseif hover_alpha > 0.01 then
-    bg_color = Style.RENDER.lerp_color(Style.COLORS.BG_BASE, Style.COLORS.BG_HOVER, hover_alpha)
-    border_inner = Style.COLORS.BORDER_HOVER
-    border_outer = Style.COLORS.BORDER_OUTER
-    text_color = Style.RENDER.lerp_color(Style.COLORS.TEXT_NORMAL, Style.COLORS.TEXT_HOVER, hover_alpha)
+    bg_color = Colors.lerp(Theme.COLORS.BG_BASE, Theme.COLORS.BG_HOVER, hover_alpha)
+    border_inner = Theme.COLORS.BORDER_HOVER
+    border_outer = Theme.COLORS.BORDER_OUTER
+    text_color = Colors.lerp(Theme.COLORS.TEXT_NORMAL, Theme.COLORS.TEXT_HOVER, hover_alpha)
   else
-    bg_color = Style.COLORS.BG_BASE
-    border_inner = Style.COLORS.BORDER_INNER
-    border_outer = Style.COLORS.BORDER_OUTER
-    text_color = Style.COLORS.TEXT_NORMAL
+    bg_color = Theme.COLORS.BG_BASE
+    border_inner = Theme.COLORS.BORDER_INNER
+    border_outer = Theme.COLORS.BORDER_OUTER
+    text_color = Theme.COLORS.TEXT_NORMAL
   end
 
   -- Background

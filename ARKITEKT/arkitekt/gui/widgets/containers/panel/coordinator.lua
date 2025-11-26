@@ -16,7 +16,7 @@ local Scrolling = require('arkitekt.gui.widgets.containers.panel.scrolling')
 local State = require('arkitekt.gui.widgets.containers.panel.state')
 local PanelConfig = require('arkitekt.gui.widgets.containers.panel.defaults')
 local ConfigUtil = require('arkitekt.core.config')
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 
 local M = {}
 local DEFAULTS = PanelConfig.DEFAULTS
@@ -127,10 +127,10 @@ function Panel:begin_draw(ctx)
   local x1, y1 = cursor_x, cursor_y
   local x2, y2 = x1 + w, y1 + h
 
-  -- Draw background (read dynamically from Style.COLORS for theme reactivity)
+  -- Draw background (read dynamically from Theme.COLORS for theme reactivity)
   -- Custom bg_color (e.g. transparent for transport) is preserved when specified
-  -- Otherwise, falls back to dynamic Style.COLORS.BG_PANEL for regular panels
-  local bg_color = self.config.bg_color or Style.COLORS.BG_PANEL
+  -- Otherwise, falls back to dynamic Theme.COLORS.BG_PANEL for regular panels
+  local bg_color = self.config.bg_color or Theme.COLORS.BG_PANEL
   Rendering.draw_background(dl, x1, y1, w, h, bg_color, self.config.rounding)
 
   -- ============================================================================
@@ -212,7 +212,7 @@ function Panel:begin_draw(ctx)
       pattern_y2 = content_y2 - border_inset
     end
 
-    -- Build pattern config with colors from component config OR Style.COLORS fallback
+    -- Build pattern config with colors from component config OR Theme.COLORS fallback
     -- Custom colors (e.g. transport's semi-transparent overlay) are preserved when specified
     -- Otherwise, theme-reactive colors enable dynamic theming for regular panels
     local pattern_cfg = {
@@ -220,7 +220,7 @@ function Panel:begin_draw(ctx)
       primary = self.config.background_pattern.primary and {
         type = self.config.background_pattern.primary.type,
         spacing = self.config.background_pattern.primary.spacing,
-        color = self.config.background_pattern.primary.color or Style.COLORS.PATTERN_PRIMARY,
+        color = self.config.background_pattern.primary.color or Theme.COLORS.PATTERN_PRIMARY,
         dot_size = self.config.background_pattern.primary.dot_size,
         line_thickness = self.config.background_pattern.primary.line_thickness,
       } or nil,
@@ -228,7 +228,7 @@ function Panel:begin_draw(ctx)
         enabled = true,
         type = self.config.background_pattern.secondary.type,
         spacing = self.config.background_pattern.secondary.spacing,
-        color = self.config.background_pattern.secondary.color or Style.COLORS.PATTERN_SECONDARY,
+        color = self.config.background_pattern.secondary.color or Theme.COLORS.PATTERN_SECONDARY,
         dot_size = self.config.background_pattern.secondary.dot_size,
         line_thickness = self.config.background_pattern.secondary.line_thickness,
       } or nil,
@@ -240,10 +240,10 @@ function Panel:begin_draw(ctx)
     ImGui.DrawList_PopClipRect(dl)
   end
 
-  -- Draw border (read dynamically from Style.COLORS for theme reactivity)
+  -- Draw border (read dynamically from Theme.COLORS for theme reactivity)
   -- Custom border_color is preserved when specified, otherwise uses dynamic theme color
   if self.config.border_thickness > 0 then
-    local border_color = self.config.border_color or Style.COLORS.BORDER_OUTER
+    local border_color = self.config.border_color or Theme.COLORS.BORDER_OUTER
     Rendering.draw_border(dl, x1, y1, w, h, border_color, self.config.rounding, self.config.border_thickness)
   end
 
