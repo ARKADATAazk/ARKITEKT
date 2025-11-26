@@ -176,26 +176,11 @@ function M.draw(dl, x1, y1, x2, y2, color, thickness, radius, dash, gap, speed_p
       end
     end
 
-    -- Track where the first dash ends to avoid overlap when wrapping
-    local first_end = min(perimeter, max(0, dash - phase))
-
     local s = -phase
     while s < perimeter do
-      local e = s + dash
-      if s >= 0 and e <= perimeter then
-        -- Normal dash entirely within bounds
-        draw_dash(s, e)
-      elseif s < 0 and e > 0 then
-        -- First dash, potentially clipped at start
-        draw_dash(0, min(perimeter, e))
-      elseif s >= 0 and e > perimeter then
-        -- Wrapping dash: draw end portion, then wrapped portion (if not already drawn)
-        draw_dash(s, perimeter)
-        local wrap_end = e - perimeter
-        if wrap_end > first_end then
-          -- Only draw wrapped portion beyond what first dash already covered
-          draw_dash(first_end, wrap_end)
-        end
+      local e = min(perimeter, s + dash)
+      if e > max(0, s) then
+        draw_dash(max(0, s), e)
       end
       s = s + period
     end
