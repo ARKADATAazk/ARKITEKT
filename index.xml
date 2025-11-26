@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<index version="1" commit="d4a2425a64f027c524a71c1483024c53276d52d8" name="ARKITEKT Toolkit">
+<index version="1" commit="7a944412b0bafac9fe7d632b34a9c675b12694e5" name="ARKITEKT Toolkit">
   <category name="ARKITEKT">
     <reapack name="ARK_Hub.lua" type="script" desc="ARKITEKT-Toolkit">
       <metadata>
