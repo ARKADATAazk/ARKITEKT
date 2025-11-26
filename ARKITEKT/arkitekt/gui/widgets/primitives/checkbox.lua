@@ -134,7 +134,7 @@ local function resolve_config(opts)
     check_color = Style.COLORS.TEXT_DIMMED,
     label_color = Style.COLORS.TEXT_NORMAL,
     label_hover_color = Style.COLORS.TEXT_HOVER,
-    label_disabled_color = Colors.with_alpha(Style.COLORS.TEXT_NORMAL, 0x80),
+    label_disabled_color = Colors.with_opacity(Style.COLORS.TEXT_NORMAL, 0.5),
   }
 
   -- Apply user overrides
@@ -171,9 +171,9 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, tota
 
   if is_disabled then
     -- Disabled state
-    bg_color = config.bg_disabled_color or Colors.with_alpha(Colors.desaturate(config.bg_color, 0.5), 0x80)
-    border_inner = Colors.with_alpha(Colors.desaturate(config.border_inner_color, 0.5), 0x80)
-    border_outer = Colors.with_alpha(Colors.desaturate(config.border_outer_color, 0.5), 0x80)
+    bg_color = config.bg_disabled_color or Colors.with_opacity(Colors.desaturate(config.bg_color, 0.5), 0.5)
+    border_inner = Colors.with_opacity(Colors.desaturate(config.border_inner_color, 0.5), 0.5)
+    border_outer = Colors.with_opacity(Colors.desaturate(config.border_outer_color, 0.5), 0.5)
   elseif is_checked or instance.check_alpha > 0.01 then
     -- Checked or animating to checked
     local base_bg = is_active and config.bg_on_active_color or
@@ -237,7 +237,7 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, tota
   if instance.check_alpha > 0.01 then
     local check_color = config.check_color
     if is_disabled then
-      check_color = Colors.with_alpha(Colors.desaturate(check_color, 0.5), 0x80)
+      check_color = Colors.with_opacity(Colors.desaturate(check_color, 0.5), 0.5)
     end
     check_color = Colors.with_alpha(check_color, Colors.opacity(instance.check_alpha * visual_alpha))
 

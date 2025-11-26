@@ -111,10 +111,10 @@ local function draw_spinner_button(ctx, id, x, y, w, h, direction, disabled, hov
   local bg_color, border_inner, border_outer, arrow_color
 
   if disabled then
-    bg_color = Colors.with_alpha(Style.COLORS.BG_BASE, 0x80)
-    border_inner = Colors.with_alpha(Style.COLORS.BORDER_INNER, 0x80)
-    border_outer = Colors.with_alpha(Style.COLORS.BORDER_OUTER, 0x80)
-    arrow_color = Colors.with_alpha(Style.COLORS.TEXT_NORMAL, 0x80)
+    bg_color = Colors.with_opacity(Style.COLORS.BG_BASE, 0.5)
+    border_inner = Colors.with_opacity(Style.COLORS.BORDER_INNER, 0.5)
+    border_outer = Colors.with_opacity(Style.COLORS.BORDER_OUTER, 0.5)
+    arrow_color = Colors.with_opacity(Style.COLORS.TEXT_NORMAL, 0.5)
   elseif active then
     bg_color = Style.COLORS.BG_ACTIVE
     border_inner = Style.COLORS.BORDER_HOVER
@@ -154,10 +154,10 @@ local function draw_value_display(ctx, dl, x, y, w, h, text, hover_alpha, active
   local bg_color, border_inner, border_outer, text_color
 
   if disabled then
-    bg_color = Colors.with_alpha(Style.COLORS.BG_BASE, 0x80)
-    border_inner = Colors.with_alpha(Style.COLORS.BORDER_INNER, 0x80)
-    border_outer = Colors.with_alpha(Style.COLORS.BORDER_OUTER, 0x80)
-    text_color = Colors.with_alpha(Style.COLORS.TEXT_NORMAL, 0x80)
+    bg_color = Colors.with_opacity(Style.COLORS.BG_BASE, 0.5)
+    border_inner = Colors.with_opacity(Style.COLORS.BORDER_INNER, 0.5)
+    border_outer = Colors.with_opacity(Style.COLORS.BORDER_OUTER, 0.5)
+    text_color = Colors.with_opacity(Style.COLORS.TEXT_NORMAL, 0.5)
   elseif active then
     bg_color = Style.COLORS.BG_ACTIVE
     border_inner = Style.COLORS.BORDER_HOVER

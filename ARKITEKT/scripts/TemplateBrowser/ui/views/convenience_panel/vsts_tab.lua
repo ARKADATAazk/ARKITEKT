@@ -40,7 +40,7 @@ function M.draw(ctx, state, config, width, height)
       -- Use stored color or default dark grey with 80% transparency
       local bg_color
       if vst_color then
-        bg_color = is_selected and vst_color or ark.Colors.with_alpha(vst_color, 0xCC)
+        bg_color = is_selected and vst_color or ark.Colors.with_opacity(vst_color, 0.8)
       else
         bg_color = is_selected and ark.Colors.hexrgb("#4A4A4ACC") or ark.Colors.hexrgb("#3A3A3ACC")
       end

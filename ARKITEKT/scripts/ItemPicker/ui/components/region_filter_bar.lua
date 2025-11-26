@@ -97,7 +97,7 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
       -- Chip background (dark grey, dimmed by default, bright when selected)
       local bg_alpha = is_selected and 0xFF or 0x66  -- 40% opacity when unselected
       if is_hovered and not is_selected then
-        bg_alpha = 0x99  -- 60% opacity when hovered
+        bg_alpha = ark.Colors.opacity(0.6)  -- 60% opacity when hovered
       end
       bg_alpha = math.floor(bg_alpha * alpha)  -- Apply hover fade
       local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha

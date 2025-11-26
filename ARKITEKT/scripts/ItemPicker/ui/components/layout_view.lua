@@ -54,12 +54,12 @@ local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
 
   -- Panel background (lighter)
   local bg_color = ark.Colors.hexrgb("#1A1A1A")
-  bg_color = ark.Colors.with_alpha(bg_color, math.floor(alpha * 0x99))  -- 60% opacity
+  bg_color = ark.Colors.with_opacity(bg_color, alpha * 0.6)  -- 60% opacity
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, rounding)
 
   -- Panel border (even lighter)
   local border_color = ark.Colors.hexrgb("#2A2A2A")
-  border_color = ark.Colors.with_alpha(border_color, math.floor(alpha * 0xAA))
+  border_color = ark.Colors.with_opacity(border_color, alpha * 0.67)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
 end
 

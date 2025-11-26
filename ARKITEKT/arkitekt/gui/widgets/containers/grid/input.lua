@@ -627,14 +627,14 @@ function M.handle_inline_edit_input(grid, ctx, key, rect, current_text, tile_col
   if tile_color then
     -- Create darker version of tile color for backdrop
     bg_color = Colors.adjust_brightness(tile_color, 0.15)
-    bg_color = Colors.with_alpha(bg_color, 0xE0)
+    bg_color = Colors.with_opacity(bg_color, 0.88)
 
     -- Use brighter version for text
     text_color = Colors.adjust_brightness(tile_color, 1.8)
 
     -- Selection highlight - medium bright variant
     selection_color = Colors.adjust_brightness(tile_color, 0.8)
-    selection_color = Colors.with_alpha(selection_color, 0xAA)
+    selection_color = Colors.with_opacity(selection_color, 0.67)
   else
     -- Fallback colors
     local hexrgb = Colors.hexrgb

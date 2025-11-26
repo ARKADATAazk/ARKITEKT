@@ -22,7 +22,7 @@ M.CIRCULAR = {
   -- Tile appearance
   base_color = "#240C0C",           -- Dark red background
   stripe_color = "#430D0D",         -- Diagonal stripe color
-  stripe_opacity = 0x33,            -- Stripe transparency
+  stripe_opacity = Colors.opacity(0.2),  -- Stripe transparency (20%)
   border_color = "#240F0F",         -- Tile border
   text_color = "#901B1B",           -- Warning text
   lock_color = "#901B1B",           -- Lock icon color

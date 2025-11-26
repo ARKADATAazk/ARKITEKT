@@ -504,7 +504,7 @@ local function handle_inline_edit_input(ctx, dl, state, id, x, y, width, height,
   if chip_color then
     -- Create darker version of chip color for backdrop
     bg_color = Colors.adjust_brightness(chip_color, 0.15)
-    bg_color = Colors.with_alpha(bg_color, 0xE0)
+    bg_color = Colors.with_opacity(bg_color, 0.88)
   else
     bg_color = hexrgb("#1A1A1AE0")
   end
@@ -527,7 +527,7 @@ local function handle_inline_edit_input(ctx, dl, state, id, x, y, width, height,
   if chip_color then
     text_color = Colors.adjust_brightness(chip_color, 1.8)
     selection_color = Colors.adjust_brightness(chip_color, 0.8)
-    selection_color = Colors.with_alpha(selection_color, 0xAA)
+    selection_color = Colors.with_opacity(selection_color, 0.67)
   else
     text_color = hexrgb("#FFFFFFDD")
     selection_color = hexrgb("#4444AAAA")

@@ -330,10 +330,10 @@ function M.get_state_colors(base_colors, opts, is_hovered, is_active, hover_alph
   -- Disabled state
   if opts.disabled then
     return
-      base_colors.bg_disabled or Colors.with_alpha(Colors.desaturate(bg, 0.5), 0x80),
-      base_colors.border_inner_disabled or Colors.with_alpha(Colors.desaturate(border_inner, 0.5), 0x80),
-      base_colors.border_outer_disabled or Colors.with_alpha(Colors.desaturate(border_outer, 0.5), 0x80),
-      base_colors.text_disabled or Colors.with_alpha(Colors.desaturate(text, 0.5), 0x80)
+      base_colors.bg_disabled or Colors.with_opacity(Colors.desaturate(bg, 0.5), 0.5),
+      base_colors.border_inner_disabled or Colors.with_opacity(Colors.desaturate(border_inner, 0.5), 0.5),
+      base_colors.border_outer_disabled or Colors.with_opacity(Colors.desaturate(border_outer, 0.5), 0.5),
+      base_colors.text_disabled or Colors.with_opacity(Colors.desaturate(text, 0.5), 0.5)
   end
 
   -- Active state
@@ -367,7 +367,7 @@ end
 --- @return number Modified color
 function M.apply_disabled_effect(color, opts)
   if opts.disabled then
-    return Colors.with_alpha(Colors.desaturate(color, 0.5), 0x80)
+    return Colors.with_opacity(Colors.desaturate(color, 0.5), 0.5)
   end
   return color
 end

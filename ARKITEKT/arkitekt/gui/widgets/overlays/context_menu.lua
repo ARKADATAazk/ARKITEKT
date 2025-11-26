@@ -162,7 +162,7 @@ function M.checkbox_item(ctx, label, checked, config)
   local checkbox_y = item_y + (item_height - checkbox_size) * 0.5
   local accent = defaults.checkbox_accent
 
-  local checkbox_bg = checked and Colors.with_alpha(accent, 0x40) or defaults.item_bg_color
+  local checkbox_bg = checked and Colors.with_opacity(accent, 0.25) or defaults.item_bg_color
   local checkbox_border = checked and accent or defaults.separator_color
 
   ImGui.DrawList_AddRectFilled(dl, checkbox_x, checkbox_y, checkbox_x + checkbox_size, checkbox_y + checkbox_size, checkbox_bg, 2)

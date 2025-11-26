@@ -389,7 +389,7 @@ function M.generate_palette(base_bg, base_text, base_accent, rules)
     BG_HEADER = Colors.adjust_lightness(base_bg, rules.bg_header_delta),
     BG_PANEL = bg_panel,
     BG_CHROME = base_chrome,
-    BG_TRANSPARENT = Colors.with_alpha(base_bg, 0x00),
+    BG_TRANSPARENT = Colors.with_alpha(base_bg, 0x00),  -- Keep 0x00 as-is (fully transparent)
 
     -- ============ BORDERS ============
     -- BORDER_OUTER uses theme-specific color and opacity from rules
@@ -418,7 +418,7 @@ function M.generate_palette(base_bg, base_text, base_accent, rules)
     ACCENT_WHITE_BRIGHT = Colors.set_lightness(base_bg, rules.accent_white_bright_lightness),
 
     -- Transparent variant (for overlays)
-    ACCENT_TRANSPARENT = Colors.with_alpha(neutral_accent, 0xAA),
+    ACCENT_TRANSPARENT = Colors.with_opacity(neutral_accent, 0.67),
 
     -- Status colors (fixed for semantic meaning)
     ACCENT_SUCCESS = Colors.hexrgb("#4CAF50"),
