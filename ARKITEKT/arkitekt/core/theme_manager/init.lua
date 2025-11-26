@@ -58,12 +58,12 @@ local M = {}
 M.snap = Palette.snap
 M.lerp = Palette.lerp
 M.offset = Palette.offset
-M.base = Palette.base
+M.bg = Palette.bg
 
 -- Palette structure
 M.presets = Palette.presets
 M.anchors = Palette.anchors
-M.palette = Palette.palette
+M.colors = Palette.colors
 
 -- Presets API
 M.get_theme_names, M.get_primary_presets = Presets.get_names, Presets.get_primary

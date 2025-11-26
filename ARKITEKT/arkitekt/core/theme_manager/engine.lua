@@ -86,8 +86,8 @@ local function derive_entry(base_bg, key, def, t)
 
   local mode = def.mode
 
-  -- BASE: Use BG_BASE directly (passthrough)
-  if mode == "base" then
+  -- BG: Use BG_BASE directly (passthrough)
+  if mode == "bg" then
     return base_bg
   end
 
@@ -123,7 +123,7 @@ function M.generate_palette(base_bg)
 
   local result = {}
 
-  for key, def in pairs(Palette.palette) do
+  for key, def in pairs(Palette.colors) do
     result[key] = derive_entry(base_bg, key, def, t)
   end
 

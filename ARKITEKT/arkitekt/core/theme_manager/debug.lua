@@ -34,34 +34,34 @@ end
 -- VALIDATION
 -- =============================================================================
 
---- Validate flat palette structure
+--- Validate colors structure
 function M.validate()
   local errors = {}
-  local valid_modes = { base = true, lerp = true, offset = true, snap = true }
+  local valid_modes = { bg = true, lerp = true, offset = true, snap = true }
 
-  for key, def in pairs(Palette.palette) do
+  for key, def in pairs(Palette.colors) do
     if type(def) == "table" and def.mode then
       -- Check: Valid mode
       if not valid_modes[def.mode] then
         errors[#errors + 1] = string.format(
-          "palette.%s has invalid mode '%s'",
+          "colors.%s has invalid mode '%s'",
           key, tostring(def.mode)
         )
       end
 
-      -- Check: Has dark and light values (except base mode)
-      if def.mode ~= "base" then
+      -- Check: Has dark and light values (except bg mode)
+      if def.mode ~= "bg" then
         if def.dark == nil then
-          errors[#errors + 1] = string.format("palette.%s missing 'dark' value", key)
+          errors[#errors + 1] = string.format("colors.%s missing 'dark' value", key)
         end
         if def.light == nil then
-          errors[#errors + 1] = string.format("palette.%s missing 'light' value", key)
+          errors[#errors + 1] = string.format("colors.%s missing 'light' value", key)
         end
       end
     elseif type(def) ~= "table" then
       -- Raw values without mode - could be typo
       errors[#errors + 1] = string.format(
-        "palette.%s is raw value '%s' (missing DSL wrapper?)",
+        "colors.%s is raw value '%s' (missing DSL wrapper?)",
         key, tostring(def)
       )
     end
@@ -79,7 +79,7 @@ function M.get_validation_summary()
   local valid, err = M.validate()
   local count = 0
 
-  for _ in pairs(Palette.palette) do count = count + 1 end
+  for _ in pairs(Palette.colors) do count = count + 1 end
 
   return {
     valid = valid,
@@ -156,14 +156,12 @@ function M.render_debug_window(ctx, ImGui, state)
       end
     end
 
-    -- Palette (flat structure, grouped by mode)
-    if ImGui.CollapsingHeader(ctx, "Palette (flat)") then
+    -- Colors (flat structure, grouped by mode)
+    if ImGui.CollapsingHeader(ctx, "Colors") then
       -- Group by mode for readability
-      local by_mode = { offset = {}, snap = {}, lerp = {}, other = {} }
-      for k, def in pairs(Palette.palette) do
-        if def == "base" then
-          by_mode.other[#by_mode.other + 1] = k .. " = base"
-        elseif type(def) == "table" and def.mode then
+      local by_mode = { bg = {}, offset = {}, snap = {}, lerp = {}, other = {} }
+      for k, def in pairs(Palette.colors) do
+        if type(def) == "table" and def.mode then
           by_mode[def.mode] = by_mode[def.mode] or {}
           by_mode[def.mode][#by_mode[def.mode] + 1] = k
         else
@@ -171,7 +169,7 @@ function M.render_debug_window(ctx, ImGui, state)
         end
       end
 
-      for _, mode in ipairs({"offset", "snap", "lerp", "other"}) do
+      for _, mode in ipairs({"bg", "offset", "snap", "lerp", "other"}) do
         if #(by_mode[mode] or {}) > 0 then
           table.sort(by_mode[mode])
           ImGui.Text(ctx, string.format("  [%s]", mode))

@@ -8,9 +8,11 @@
 local Colors = require('arkitekt.core.colors')
 local Style = require('arkitekt.gui.style')
 local Engine = require('arkitekt.core.theme_manager.engine')
-local Palette = require('arkitekt.defs.palette')
 
 local M = {}
+
+-- Visual separation offset when syncing with REAPER theme
+local REAPER_SYNC_OFFSET = -0.012
 
 -- =============================================================================
 -- REAPER COLOR CONVERSION
@@ -54,10 +56,7 @@ function M.sync_with_reaper()
   end
 
   -- Apply lightness offset for subtle visual separation
-  -- Use dark value since we're in dark mode context for REAPER sync
-  local sync_offset_def = Palette.palette.REAPER_SYNC_OFFSET
-  local offset = type(sync_offset_def) == "table" and sync_offset_def.dark or -0.012
-  local offset_bg = Colors.adjust_lightness(main_bg, offset)
+  local offset_bg = Colors.adjust_lightness(main_bg, REAPER_SYNC_OFFSET)
 
   -- Generate and apply palette (text color derived automatically)
   Engine.generate_and_apply(offset_bg)

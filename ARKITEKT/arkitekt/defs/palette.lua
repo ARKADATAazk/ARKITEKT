@@ -35,7 +35,7 @@ M.anchors = {
 --   snap(dark, light, [threshold=0.5]) - discrete snap
 --   lerp(dark, light)                  - smooth interpolation
 --   offset(dark, [light], [threshold=0.5]) - delta from BG_BASE
---   base() - use BG_BASE directly (passthrough)
+--   bg() - use BG_BASE directly (passthrough)
 
 local function snap(dark_val, light_val, threshold)
   return { mode = "snap", dark = dark_val, light = light_val, threshold = threshold or 0.5 }
@@ -56,29 +56,28 @@ local function offset(dark_delta, light_delta, threshold)
   return { mode = "offset", dark = dark_delta, light = light_delta, threshold = threshold or 0.5 }
 end
 
--- PLACEHOLDER: Replace with chosen name
--- Options: base(), bg(), self(), inherit(), passthrough(), same()
-local function base()
-  return { mode = "base" }
+local function bg()
+  return { mode = "bg" }
 end
 
 -- Export wrappers
 M.snap = snap
 M.lerp = lerp
 M.offset = offset
-M.base = base
+M.bg = bg
 
 -- =============================================================================
--- PALETTE (flat structure)
+-- COLORS (flat structure)
 -- =============================================================================
 -- The mode determines processing:
+--   bg      → use input BG directly
 --   offset  → BG-derived (apply delta to BG_BASE)
 --   snap    → hex strings = color, numbers = value
 --   lerp    → hex strings = color, numbers = value
 
-M.palette = {
+M.colors = {
   -- === BACKGROUNDS (from BG_BASE) ===
-  BG_BASE         = base(),
+  BG_BASE         = bg(),
   BG_HOVER        = offset(0.03, -0.04),
   BG_ACTIVE       = offset(0.05, -0.07),
   BG_HEADER       = offset(-0.024, -0.06),
@@ -135,9 +134,6 @@ M.palette = {
   PLAYLIST_TILE_COLOR  = snap("#3A3A3A", "#D0D0D0"),
   PLAYLIST_NAME_COLOR  = snap("#CCCCCC", "#2A2A2A"),
   PLAYLIST_BADGE_COLOR = snap("#999999", "#666666"),
-
-  -- === SYSTEM ===
-  REAPER_SYNC_OFFSET = offset(-0.012),
 }
 
 -- =============================================================================
@@ -147,7 +143,7 @@ M.palette = {
 --- Get all color keys
 function M.get_all_keys()
   local keys = {}
-  for key in pairs(M.palette) do
+  for key in pairs(M.colors) do
     keys[#keys + 1] = key
   end
   table.sort(keys)
