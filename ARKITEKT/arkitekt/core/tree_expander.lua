@@ -14,7 +14,7 @@ local function normalize_loops(value)
   if reps < 1 then
     return 1
   end
-  return math.floor(reps)
+  return reps // 1
 end
 
 --- Expand a tree structure into a flat sequence
@@ -72,13 +72,13 @@ function M.expand(root, config)
         local value = config.get_value(item)
 
         for loop_index = 1, reps do
-          table.insert(sequence, {
+          sequence[#sequence + 1] = {
             value = value,
             key = item_key,
             loop = loop_index,
             total_loops = reps,
             type = config.get_type(item),
-          })
+          }
         end
       else
         -- Branch node - recursively expand
@@ -131,13 +131,13 @@ function M.expand(root, config)
           local rep_start = #sequence + 1
 
           for _, entry in ipairs(child_sequence) do
-            table.insert(sequence, {
+            sequence[#sequence + 1] = {
               value = entry.value,
               key = entry.key,
               loop = entry.loop,
               total_loops = entry.total_loops,
               type = entry.type,
-            })
+            }
           end
 
           local rep_end = #sequence

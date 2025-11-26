@@ -45,7 +45,7 @@ end
 --- Useful for creating non-reproducible shuffles
 --- @return number seed Random seed value
 function M.generate_seed()
-  return math.floor(reaper.time_precise() * 1000000) % 2147483647
+  return (reaper.time_precise() * 1000000) // 1 % 2147483647
 end
 
 --- Shuffle with automatic seed generation
@@ -249,7 +249,7 @@ function M.weighted_shuffle(items, weights, count, seed)
       end
     end
 
-    table.insert(sampled, remaining_items[selected_index])
+    sampled[#sampled + 1] = remaining_items[selected_index]
 
     -- Remove selected item
     total_weight = total_weight - remaining_weights[selected_index]

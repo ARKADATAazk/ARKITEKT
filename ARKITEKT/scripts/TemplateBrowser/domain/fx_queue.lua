@@ -25,7 +25,7 @@ function M.add_to_queue(state, templates)
   local added = 0
   for _, tmpl in ipairs(templates) do
     if tmpl.needs_fx_parse then
-      table.insert(state.fx_queue.templates, tmpl)
+      state.fx_queue.templates[#state.fx_queue.templates + 1] = tmpl
       added = added + 1
     end
   end

@@ -240,7 +240,7 @@ local function ensure_record(self, path)
     src_x, src_y, src_w, src_h = 0, 0, w, h
   else
     if is_three_state_from_metadata(path) and w > 0 then
-      local frame_w = math.floor(w / 3)
+      local frame_w = w / 3 // 1
       src_x, src_y, src_w, src_h = 0, 0, frame_w, h
     else
       src_x, src_y, src_w, src_h = 0, 0, w, h
@@ -260,7 +260,7 @@ local function ensure_record(self, path)
   self._creates_left = self._creates_left - 1
 
   -- Track in LRU order
-  table.insert(self._cache_order, path)
+  self._cache_order[#self._cache_order + 1] = path
   self:evict_if_needed()
 
   return rec
@@ -305,7 +305,7 @@ local function validate_record(self, path, rec)
         rec.src_x, rec.src_y, rec.src_w, rec.src_h = 0, 0, w, h
       else
         if is_three_state_from_metadata(path) and w > 0 then
-          local frame_w = math.floor(w / 3)
+          local frame_w = w / 3 // 1
           rec.src_x, rec.src_y, rec.src_w, rec.src_h = 0, 0, frame_w, h
         else
           rec.src_x, rec.src_y, rec.src_w, rec.src_h = 0, 0, w, h
@@ -398,7 +398,7 @@ function Cache:draw_original(ctx, path)
 end
 
 function Cache:draw_thumb(ctx, path, cell)
-  cell = math.max(1, math.floor(tonumber(cell) or 1))
+  cell = math.max(1, (tonumber(cell) or 1) // 1)
   if not path or path == "" then
     ImGui.Dummy(ctx, cell, cell)
     return false
@@ -414,8 +414,8 @@ function Cache:draw_thumb(ctx, path, cell)
     return false
   end
   local scale = math.min(cell / src_w, cell / src_h)
-  local dw = math.max(1, math.floor(src_w * scale))
-  local dh = math.max(1, math.floor(src_h * scale))
+  local dw = math.max(1, (src_w * scale) // 1)
+  local dh = math.max(1, (src_h * scale) // 1)
   local u0 = rec.src_x / rec.w
   local v0 = rec.src_y / rec.h
   local u1 = (rec.src_x + rec.src_w) / rec.w
@@ -431,8 +431,8 @@ function Cache:draw_thumb(ctx, path, cell)
 end
 
 function Cache:draw_fit(ctx, path, w, h)
-  w = math.max(1, math.floor(tonumber(w) or 1))
-  h = math.max(1, math.floor(tonumber(h) or 1))
+  w = math.max(1, (tonumber(w) or 1) // 1)
+  h = math.max(1, (tonumber(h) or 1) // 1)
   if not path or path == "" then
     ImGui.Dummy(ctx, w, h)
     return false

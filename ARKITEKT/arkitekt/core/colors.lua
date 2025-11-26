@@ -41,7 +41,7 @@ function M.hexrgba(hex_or_color, alpha)
   end
 
   -- Convert alpha from 0.0-1.0 to 0-255 range
-  local alpha_byte = math.floor((alpha or 1.0) * 255 + 0.5)
+  local alpha_byte = ((alpha or 1.0) * 255 + 0.5) // 1
   alpha_byte = math.max(0, math.min(255, alpha_byte))
 
   return M.with_alpha(color, alpha_byte)
@@ -88,7 +88,7 @@ end
 --- @param opacity number Float opacity value
 --- @return number Byte alpha value
 function M.opacity(opacity)
-  return math.floor((opacity or 1.0) * 255 + 0.5)
+  return ((opacity or 1.0) * 255 + 0.5) // 1
 end
 
 --- Convert byte alpha (0-255) to float opacity (0.0-1.0)

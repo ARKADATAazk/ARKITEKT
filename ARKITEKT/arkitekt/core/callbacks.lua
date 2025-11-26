@@ -71,7 +71,7 @@ function M.chain(callbacks, continue_on_error)
     if callback then
       local ok, err = pcall(callback)
       if not ok then
-        table.insert(errors, string.format("Callback #%d failed: %s", i, tostring(err)))
+        errors[#errors + 1] = string.format("Callback #%d failed: %s", i, tostring(err))
         if not continue_on_error then
           return false, errors
         end

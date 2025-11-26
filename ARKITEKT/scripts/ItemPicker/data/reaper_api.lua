@@ -40,7 +40,7 @@ function M.GetAllTracks()
   local tracks = {}
   for i = 0, reaper.CountTracks(0) - 1 do
     local track = reaper.GetTrack(0, i)
-    table.insert(tracks, track)
+    tracks[#tracks + 1] = track
   end
   return tracks
 end
@@ -53,7 +53,7 @@ function M.GetItemInTrack(track)
   local items = {}
   for i = 0, reaper.CountTrackMediaItems(track) - 1 do
     local item = reaper.GetTrackMediaItem(track, i)
-    table.insert(items, item)
+    items[#items + 1] = item
   end
   return items
 end
@@ -94,7 +94,7 @@ function M.GetAllTrackStateChunks()
   local chunks = {}
   for key, track in pairs(all_tracks) do
     local _, chunk = reaper.GetTrackStateChunk(track, "")
-    table.insert(chunks, chunk)
+    chunks[#chunks + 1] = chunk
   end
   return chunks
 end
@@ -198,7 +198,7 @@ function M.GetProjectSamples(settings, state)
         end
 
         if not samples[filename] then
-          table.insert(sample_indexes, filename)
+          sample_indexes[#sample_indexes + 1] = filename
           samples[filename] = {}
         end
 
@@ -227,7 +227,7 @@ function M.GetProjectSamples(settings, state)
           regions = M.GetRegionsForItem(item)
         end
 
-        table.insert(samples[filename], {
+        samples[filename][#samples[filename] + 1] = {
           item,
           item_name,
           track_muted = track_muted,
@@ -235,7 +235,7 @@ function M.GetProjectSamples(settings, state)
           uuid = get_item_uuid(item),
           pool_count = pool_count,
           regions = regions
-        })
+        }
 
         -- Mark this source as collected
         collected_sources[source_ptr] = true

@@ -170,7 +170,7 @@ local function update_project_access(project_guid)
     if proj.guid == project_guid then
       -- Update timestamp (move to end - most recent)
       table.remove(index.projects, i)
-      table.insert(index.projects, { guid = project_guid, timestamp = timestamp })
+      index.projects[#index.projects + 1] = { guid = project_guid, timestamp = timestamp }
       found = true
       break
     end
@@ -178,7 +178,7 @@ local function update_project_access(project_guid)
 
   -- Add new project if not found
   if not found then
-    table.insert(index.projects, { guid = project_guid, timestamp = timestamp })
+    index.projects[#index.projects + 1] = { guid = project_guid, timestamp = timestamp }
   end
 
   -- Evict oldest project if we exceed MAX_PROJECTS

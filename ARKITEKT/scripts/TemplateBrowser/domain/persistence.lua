@@ -75,7 +75,7 @@ local function json_encode(data, indent, current_indent)
         return "[]"
       end
       for i, v in ipairs(data) do
-        table.insert(parts, next_indent .. json_encode(v, indent, next_indent))
+        parts[#parts + 1] = next_indent .. json_encode(v, indent, next_indent)
       end
       return "[\n" .. table.concat(parts, ",\n") .. "\n" .. current_indent .. "]"
     else
@@ -89,13 +89,13 @@ local function json_encode(data, indent, current_indent)
       -- Sort keys for consistent output
       local sorted_keys = {}
       for k in pairs(data) do
-        table.insert(sorted_keys, k)
+        sorted_keys[#sorted_keys + 1] = k
       end
       table.sort(sorted_keys)
 
       for _, k in ipairs(sorted_keys) do
         local v = data[k]
-        table.insert(parts, next_indent .. '"' .. k .. '": ' .. json_encode(v, indent, next_indent))
+        parts[#parts + 1] = next_indent .. '"' .. k .. '": ' .. json_encode(v, indent, next_indent)
       end
       return "{\n" .. table.concat(parts, ",\n") .. "\n" .. current_indent .. "}"
     end
@@ -186,7 +186,7 @@ local function json_decode(str)
       end
 
       while true do
-        table.insert(arr, decode_value())
+        arr[#arr + 1] = decode_value()
         skip_whitespace()
         char = str:sub(pos, pos)
         if char == "]" then

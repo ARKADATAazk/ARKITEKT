@@ -20,7 +20,7 @@ function M.remap(value, in_min, in_max, out_min, out_max)
 end
 
 function M.snap(value, step)
-  return math.floor(value / step + 0.5) * step
+  return (value / step + 0.5) // 1 * step
 end
 
 function M.smoothdamp(current, target, velocity, smoothtime, maxspeed, dt)

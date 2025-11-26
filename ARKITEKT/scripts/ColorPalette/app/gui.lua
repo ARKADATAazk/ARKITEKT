@@ -261,8 +261,8 @@ function GUI:draw_palette_preview(ctx, colors, config)
   local rows = math.ceil(#colors / cols)
   local total_spacing_w = (cols - 1) * spacing
   local total_spacing_h = (rows - 1) * spacing
-  local tile_w = math.floor((avail_w - total_spacing_w) / cols)
-  local tile_h = math.floor((avail_h - total_spacing_h) / rows)
+  local tile_w = (avail_w - total_spacing_w) / cols // 1
+  local tile_h = (avail_h - total_spacing_h) / rows // 1
   local tile_size = math.min(tile_w, tile_h)
   tile_size = math.max(tile_size, 16)
   
@@ -273,7 +273,7 @@ function GUI:draw_palette_preview(ctx, colors, config)
   -- Draw all color tiles (no interaction in preview)
   for i, color in ipairs(colors) do
     local col_idx = (i - 1) % cols
-    local row_idx = math.floor((i - 1) / cols)
+    local row_idx = (i - 1) / cols // 1
     
     local x = origin_x + col_idx * (tile_size + spacing)
     local y = origin_y + row_idx * (tile_size + spacing)
@@ -374,9 +374,9 @@ function GUI:draw_drag_feedback(ctx)
     local thickness = 3
     
     -- Draw arc showing progress
-    local segments = math.floor(progress * 32)
+    local segments = progress * 32 // 1
     if segments > 0 then
-      local arc_color = ark.Colors.with_alpha(hexrgb("#FFFFFF"), math.floor(progress * 120))
+      local arc_color = ark.Colors.with_alpha(hexrgb("#FFFFFF"), progress * 120 // 1)
       
       for i = 0, segments do
         local angle1 = -math.pi / 2 + (i / 32) * math.pi * 2 * progress

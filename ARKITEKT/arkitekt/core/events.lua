@@ -54,7 +54,7 @@ function M.new(options)
       id = #self.listeners[event_name] + 1
     }
 
-    table.insert(self.listeners[event_name], listener)
+    self.listeners[event_name][#self.listeners[event_name] + 1] = listener
 
     -- Sort by priority (higher first)
     table.sort(self.listeners[event_name], function(a, b)

@@ -105,7 +105,7 @@ local function create_grid_texture(spacing, line_thickness)
   end
 
   -- Draw grid lines at edges (they connect when tiled)
-  local thickness = math.max(1, math.floor(line_thickness))
+  local thickness = math.max(1, line_thickness // 1)
 
   -- Horizontal line at top (y=0)
   for py = 0, thickness - 1 do

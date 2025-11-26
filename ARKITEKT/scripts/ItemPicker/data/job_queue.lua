@@ -45,11 +45,11 @@ function M.add_waveform_job(job_queue, item, cache_key, is_visible)
     end
   end
 
-  table.insert(target_queue, {
+  target_queue[#target_queue + 1] = {
     type = "waveform",
     item = item,
     cache_key = cache_key,
-  })
+  }
 end
 
 function M.add_midi_job(job_queue, item, width, height, cache_key, is_visible)
@@ -73,13 +73,13 @@ function M.add_midi_job(job_queue, item, width, height, cache_key, is_visible)
     end
   end
 
-  table.insert(target_queue, {
+  target_queue[#target_queue + 1] = {
     type = "midi",
     item = item,
     width = width,
     height = height,
     cache_key = cache_key,
-  })
+  }
 end
 
 function M.process_jobs(job_queue, visualization, runtime_cache, imgui_ctx)

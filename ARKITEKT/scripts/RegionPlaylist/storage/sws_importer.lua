@@ -53,10 +53,10 @@ local function parse_sws_playlist_section(lines, start_idx)
     -- Parse item line: regionId loopCount (allow leading whitespace)
     local rgn_id, loop_count = line:match('^%s*(%d+)%s+(-?%d+)%s*$')
     if rgn_id and loop_count then
-      table.insert(playlist.items, {
+      playlist.items[#playlist.items + 1] = {
         sws_rgn_id = tonumber(rgn_id),
         sws_loop_count = tonumber(loop_count),
-      })
+      }
     end
 
     idx = idx + 1
@@ -84,7 +84,7 @@ local function read_project_file()
   
   local lines = {}
   for line in file:lines() do
-    table.insert(lines, line)
+    lines[#lines + 1] = line
   end
   file:close()
   
@@ -104,7 +104,7 @@ local function parse_sws_playlists(lines)
     if line:match('<S&M_RGN_PLAYLIST') then
       local playlist, end_idx = parse_sws_playlist_section(lines, idx)
       if playlist then
-        table.insert(playlists, playlist)
+        playlists[#playlists + 1] = playlist
         idx = end_idx
       end
     end
@@ -204,7 +204,7 @@ local function convert_sws_playlist_to_ark(sws_playlist, playlist_num)
 
       if not is_valid then
         report.skipped_items = report.skipped_items + 1
-        table.insert(report.skipped_rids, sws_item.sws_rgn_id)
+        report.skipped_rids[#report.skipped_rids + 1] = sws_item.sws_rgn_id
         goto continue
       end
 
@@ -212,19 +212,19 @@ local function convert_sws_playlist_to_ark(sws_playlist, playlist_num)
         report.infinite_loops = report.infinite_loops + 1
       end
 
-      table.insert(ark_playlist.items, {
+      ark_playlist.items[#ark_playlist.items + 1] = {
         type = "region",
         rid = ark_region_num,
         reps = reps,
         enabled = true,
         key = generate_item_key(ark_region_num),
-      })
+      }
 
       report.converted_items = report.converted_items + 1
     else
       -- Region not found (deleted or ID mismatch)
       report.skipped_items = report.skipped_items + 1
-      table.insert(report.skipped_rids, sws_item.sws_rgn_id)
+      report.skipped_rids[#report.skipped_rids + 1] = sws_item.sws_rgn_id
     end
     
     ::continue::
@@ -268,24 +268,24 @@ function M.import_from_current_project(merge_mode)
     
     -- Only add if at least one item was converted
     if #ark_playlist.items > 0 then
-      table.insert(ark_playlists, ark_playlist)
+      ark_playlists[#ark_playlists + 1] = ark_playlist
       overall_report.ark_playlists_created = overall_report.ark_playlists_created + 1
-      
+
       -- Track which playlist was active in SWS
       if sws_playlist.is_active then
         overall_report.active_playlist_idx = #ark_playlists
       end
-      
+
       -- Aggregate stats
       overall_report.total_items = overall_report.total_items + report.total_items
       overall_report.converted_items = overall_report.converted_items + report.converted_items
       overall_report.skipped_items = overall_report.skipped_items + report.skipped_items
       overall_report.infinite_loops = overall_report.infinite_loops + report.infinite_loops
-      
-      table.insert(overall_report.per_playlist, {
+
+      overall_report.per_playlist[#overall_report.per_playlist + 1] = {
         name = ark_playlist.name,
         report = report,
-      })
+      }
     end
   end
   
@@ -368,27 +368,27 @@ function M.format_report(report)
   end
   
   local lines = {}
-  
-  table.insert(lines, string.format("SWS Playlists Found: %d", report.sws_playlists_found))
-  table.insert(lines, string.format("ARK Playlists Created: %d", report.ark_playlists_created))
-  table.insert(lines, "")
-  table.insert(lines, string.format("Total Items: %d", report.total_items))
-  table.insert(lines, string.format("Converted: %d", report.converted_items))
-  
+
+  lines[#lines + 1] = string.format("SWS Playlists Found: %d", report.sws_playlists_found)
+  lines[#lines + 1] = string.format("ARK Playlists Created: %d", report.ark_playlists_created)
+  lines[#lines + 1] = ""
+  lines[#lines + 1] = string.format("Total Items: %d", report.total_items)
+  lines[#lines + 1] = string.format("Converted: %d", report.converted_items)
+
   if report.skipped_items > 0 then
-    table.insert(lines, string.format("Skipped: %d (regions not found)", report.skipped_items))
+    lines[#lines + 1] = string.format("Skipped: %d (regions not found)", report.skipped_items)
   end
-  
+
   if report.infinite_loops > 0 then
-    table.insert(lines, string.format("Infinite loops converted to 999 reps: %d", report.infinite_loops))
+    lines[#lines + 1] = string.format("Infinite loops converted to 999 reps: %d", report.infinite_loops)
   end
-  
+
   if report.per_playlist then
-    table.insert(lines, "")
-    table.insert(lines, "Per Playlist:")
+    lines[#lines + 1] = ""
+    lines[#lines + 1] = "Per Playlist:"
     for i, pl_report in ipairs(report.per_playlist) do
-      table.insert(lines, string.format("  %d. \"%s\": %d/%d items", 
-        i, pl_report.name, pl_report.report.converted_items, pl_report.report.total_items))
+      lines[#lines + 1] = string.format("  %d. \"%s\": %d/%d items",
+        i, pl_report.name, pl_report.report.converted_items, pl_report.report.total_items)
     end
   end
   

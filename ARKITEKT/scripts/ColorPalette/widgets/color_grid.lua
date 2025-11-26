@@ -28,10 +28,10 @@ function ColorGrid:calculate_tile_size(ctx, num_colors, cols, spacing)
   
   local total_spacing_w = (cols - 1) * spacing
   local total_spacing_h = (rows - 1) * spacing
-  
-  local tile_w = math.floor((avail_w - total_spacing_w) / cols)
-  local tile_h = math.floor((avail_h - total_spacing_h) / rows)
-  
+
+  local tile_w = (avail_w - total_spacing_w) / cols // 1
+  local tile_h = (avail_h - total_spacing_h) / rows // 1
+
   local tile_size = math.min(tile_w, tile_h)
   tile_size = math.max(tile_size, 24)
   
@@ -71,8 +71,8 @@ function ColorGrid:draw(ctx, colors, config, allow_interaction)
   -- Draw all color tiles
   for i, color in ipairs(colors) do
     local col_idx = (i - 1) % cols
-    local row_idx = math.floor((i - 1) / cols)
-    
+    local row_idx = (i - 1) / cols // 1
+
     local x = origin_x + col_idx * (tile_size + spacing)
     local y = origin_y + row_idx * (tile_size + spacing)
     
@@ -97,7 +97,7 @@ function ColorGrid:draw(ctx, colors, config, allow_interaction)
     
     -- Draw hover shadow
     if is_hovered and self.hover_alpha > 0.1 then
-      local shadow_alpha = math.floor(self.hover_alpha * 30)
+      local shadow_alpha = self.hover_alpha * 30 // 1
       local shadow_color = (0x000000 << 8) | shadow_alpha
       
       for offset = 2, 1, -1 do

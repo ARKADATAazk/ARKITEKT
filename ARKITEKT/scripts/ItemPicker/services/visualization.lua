@@ -112,14 +112,14 @@ function M.GetItemWaveform(cache, item, uuid)
     ret_tab = {}
     for i = 1, #tab - 1, 2 do
       local val = utils.SampleLimit(tab[i]) + utils.SampleLimit(tab[i + 1])
-      table.insert(ret_tab, -val / 2)
+      ret_tab[#ret_tab + 1] = -val / 2
     end
   else
     -- Mono: clamp values to prevent waveform exceeding tile bounds
     local tab = buf.table()
     ret_tab = {}
     for i = 1, #tab do
-      table.insert(ret_tab, utils.SampleLimit(tab[i]))
+      ret_tab[#ret_tab + 1] = utils.SampleLimit(tab[i])
     end
   end
 
@@ -335,12 +335,12 @@ function M.GenerateMidiThumbnail(cache, item, w, h, uuid)
       local note_x2 = (end_ppq) / pqq_to_pixel
       local note_y1 = midi_note_height * note_pos_y + y_offset
       local note_y2 = midi_note_height * (note_pos_y + 1) + y_offset
-      table.insert(thumbnail, {
+      thumbnail[#thumbnail + 1] = {
         x1 = note_x1,
         y1 = note_y1,
         x2 = note_x2,
         y2 = note_y2,
-      })
+      }
     end
   end
 
