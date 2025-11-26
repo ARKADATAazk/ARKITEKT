@@ -280,6 +280,7 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
 end
 
 --- Detect if cursor crossed through the trigger zone between frames (fast movement)
+--- This catches cases where cursor moves so fast it skips the hover zone entirely
 --- @param opts table Widget options
 --- @param state table Instance state with last_mouse_x/y
 --- @param bounds table Normalized bounds
@@ -293,35 +294,59 @@ local function crossed_through_zone(opts, state, bounds, mx, my)
   local edge = opts.edge or "right"
   local content = opts.content_bounds or bounds
   local padding = opts.hover_padding or 30
+  local hover_outside = opts.hover_extend_outside or 30
+  local hover_inside = opts.hover_extend_inside or 50
 
-  -- Check if cursor was inside content area last frame and is now outside past the edge
+  -- Check if cursor path crossed THROUGH the trigger zone
+  -- (was on one side, now on the other side)
   if edge == "left" then
-    -- Was inside (right of left edge), now outside to the left
-    local was_inside = prev_x > bounds.x
-    local now_outside_left = mx < bounds.x
+    -- Trigger zone: from (bounds.x - hover_outside) to (bounds.x + hover_inside)
+    local zone_left = bounds.x - hover_outside
+    local zone_right = bounds.x + hover_inside
+    -- Crossed through if prev was left of zone and current is right of zone (or vice versa)
+    local was_left = prev_x < zone_left
+    local now_right = mx > zone_right
+    local was_right = prev_x > zone_right
+    local now_left = mx < zone_left
+    local crossed = (was_left and now_right) or (was_right and now_left)
     local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
-    return was_inside and now_outside_left and in_y_range
+    return crossed and in_y_range
 
   elseif edge == "right" then
-    -- Was inside (left of right edge), now outside to the right
-    local was_inside = prev_x < (bounds.x + bounds.w)
-    local now_outside_right = mx > (bounds.x + bounds.w)
+    -- Trigger zone: from (bounds.x + bounds.w - hover_inside) to (bounds.x + bounds.w + hover_outside)
+    local zone_left = bounds.x + bounds.w - hover_inside
+    local zone_right = bounds.x + bounds.w + hover_outside
+    local was_left = prev_x < zone_left
+    local now_right = mx > zone_right
+    local was_right = prev_x > zone_right
+    local now_left = mx < zone_left
+    local crossed = (was_left and now_right) or (was_right and now_left)
     local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
-    return was_inside and now_outside_right and in_y_range
+    return crossed and in_y_range
 
   elseif edge == "top" then
-    -- Was inside (below top edge), now outside above
-    local was_inside = prev_y > bounds.y
-    local now_outside_top = my < bounds.y
+    -- Trigger zone: from (bounds.y - hover_outside) to (bounds.y + hover_inside)
+    local zone_top = bounds.y - hover_outside
+    local zone_bottom = bounds.y + hover_inside
+    local was_above = prev_y < zone_top
+    local now_below = my > zone_bottom
+    local was_below = prev_y > zone_bottom
+    local now_above = my < zone_top
+    local crossed = (was_above and now_below) or (was_below and now_above)
     local in_x_range = mx >= (content.x - padding) and mx <= (content.x + content.w + padding)
-    return was_inside and now_outside_top and in_x_range
+    return crossed and in_x_range
 
   else -- bottom
-    -- Was inside (above bottom edge), now outside below
-    local was_inside = prev_y < (bounds.y + bounds.h)
-    local now_outside_bottom = my > (bounds.y + bounds.h)
+    -- Trigger zone: from (bounds.y + bounds.h - hover_inside) to (bounds.y + bounds.h + hover_outside)
+    local zone_top = bounds.y + bounds.h - hover_inside
+    local zone_bottom = bounds.y + bounds.h + hover_outside
+    local was_above = prev_y < zone_top
+    local now_below = my > zone_bottom
+    local was_below = prev_y > zone_bottom
+    local now_above = my < zone_top
+    local crossed = (was_above and now_below) or (was_below and now_above)
     local in_x_range = mx >= (content.x - padding) and mx <= (content.x + content.w + padding)
-    return was_inside and now_outside_bottom and in_x_range
+    return crossed and in_x_range
   end
 end
 
