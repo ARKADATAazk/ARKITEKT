@@ -268,6 +268,52 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
   end
 end
 
+--- Detect if cursor crossed through the trigger zone between frames (fast movement)
+--- @param opts table Widget options
+--- @param state table Instance state with last_mouse_x/y
+--- @param bounds table Normalized bounds
+--- @param mx number Current mouse X
+--- @param my number Current mouse Y
+--- @return boolean True if cursor crossed through the zone
+local function crossed_through_zone(opts, state, bounds, mx, my)
+  local prev_x, prev_y = state.last_mouse_x, state.last_mouse_y
+  if not prev_x or not prev_y then return false end
+
+  local edge = opts.edge or "right"
+  local content = opts.content_bounds or bounds
+  local padding = opts.hover_padding or 30
+
+  -- Check if cursor was inside content area last frame and is now outside past the edge
+  if edge == "left" then
+    -- Was inside (right of left edge), now outside to the left
+    local was_inside = prev_x > bounds.x
+    local now_outside_left = mx < bounds.x
+    local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
+    return was_inside and now_outside_left and in_y_range
+
+  elseif edge == "right" then
+    -- Was inside (left of right edge), now outside to the right
+    local was_inside = prev_x < (bounds.x + bounds.w)
+    local now_outside_right = mx > (bounds.x + bounds.w)
+    local in_y_range = my >= (content.y - padding) and my <= (content.y + content.h + padding)
+    return was_inside and now_outside_right and in_y_range
+
+  elseif edge == "top" then
+    -- Was inside (below top edge), now outside above
+    local was_inside = prev_y > bounds.y
+    local now_outside_top = my < bounds.y
+    local in_x_range = mx >= (content.x - padding) and mx <= (content.x + content.w + padding)
+    return was_inside and now_outside_top and in_x_range
+
+  else -- bottom
+    -- Was inside (above bottom edge), now outside below
+    local was_inside = prev_y < (bounds.y + bounds.h)
+    local now_outside_bottom = my > (bounds.y + bounds.h)
+    local in_x_range = mx >= (content.x - padding) and mx <= (content.x + content.w + padding)
+    return was_inside and now_outside_bottom and in_x_range
+  end
+end
+
 -- ============================================================================
 -- BOUNDS CALCULATION
 -- ============================================================================
@@ -430,10 +476,11 @@ function M.draw(ctx, opts)
     -- Get current mouse position
     local mx, my = ImGui.GetMousePos(ctx)
 
-    -- Check hover zone
+    -- Check hover zone OR fast cursor crossing (for fast mouse movement)
     local in_zone = is_in_hover_zone(ctx, opts, state, bounds)
+    local crossed_through = crossed_through_zone(opts, state, bounds, mx, my)
 
-    if in_zone then
+    if in_zone or crossed_through then
       -- Expand immediately
       state:set_targets(1.0, slide_distance, opts.expand_scale or 1.0)
       state.hover_leave_time = nil
