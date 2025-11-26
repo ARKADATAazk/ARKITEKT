@@ -132,6 +132,10 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
 
   -- Stop painting on mouse release
   if left_released or right_released then
+    -- Persist track filter state when painting stops
+    if state.track_bar_painting and state.persist_track_filter then
+      state.persist_track_filter()
+    end
     state.track_bar_painting = false
     state.track_bar_paint_value = nil
     state.track_bar_last_painted = nil

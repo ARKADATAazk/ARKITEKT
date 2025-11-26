@@ -45,6 +45,12 @@ M.tile_sizes = { width = nil, height = nil }  -- nil = use config default
 M.selected_regions = {}  -- { [region_name] = true } for active filters
 M.all_regions = {}  -- Cached list of {name, color} from GetAllProjectRegions()
 
+-- Track filter state (persisted)
+M.track_whitelist = nil  -- { [guid] = bool } which tracks are in the filter whitelist
+M.track_filters_enabled = nil  -- { [guid] = bool } which whitelisted tracks are enabled
+M.track_expanded = nil  -- { [guid] = bool } folder expansion state (not persisted)
+M.track_tree = nil  -- Built track hierarchy (rebuilt each session)
+
 -- Drag state
 M.dragging = nil
 M.item_to_add = nil
@@ -124,6 +130,15 @@ function M.initialize(config)
   end
   if M.settings.tile_height then
     M.tile_sizes.height = M.settings.tile_height
+  end
+
+  -- Load track filter state
+  local track_filter_data = Persistence.load_track_filter()
+  if track_filter_data.whitelist then
+    M.track_whitelist = track_filter_data.whitelist
+  end
+  if track_filter_data.enabled then
+    M.track_filters_enabled = track_filter_data.enabled
   end
 
   -- Initialize preview manager with settings
@@ -416,10 +431,15 @@ function M.persist_favorites()
   Persistence.save_favorites(M.favorites)
 end
 
+function M.persist_track_filter()
+  Persistence.save_track_filter(M.track_whitelist, M.track_filters_enabled)
+end
+
 function M.persist_all()
   M.persist_settings()
   M.persist_disabled()
   M.persist_favorites()
+  M.persist_track_filter()
 end
 
 -- Cleanup

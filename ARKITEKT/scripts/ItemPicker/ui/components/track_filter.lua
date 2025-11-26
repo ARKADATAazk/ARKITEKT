@@ -120,6 +120,17 @@ local function is_parent_disabled(track, whitelist)
   return false
 end
 
+-- Build full track path string (e.g., "Folder > Subfolder > Track")
+local function get_track_path(track)
+  local path_parts = {}
+  local current = track
+  while current do
+    table.insert(path_parts, 1, current.name)
+    current = current.parent
+  end
+  return table.concat(path_parts, " > ")
+end
+
 -- Draw a single track tile
 local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selected, is_hovered, depth, is_expanded, has_children, parent_disabled)
   local height = TRACK_TILE.HEIGHT
@@ -246,11 +257,26 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
     local over_arrow = has_children and mouse_x >= arrow_x and mouse_x <= arrow_x + 12
 
     -- Handle left click: toggle mode (back-and-forth painting)
+    local shift_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Shift)
     if is_hovered and left_clicked then
       if over_arrow then
-        -- Toggle expand (not part of paint mode)
-        if not state.track_expanded then state.track_expanded = {} end
-        state.track_expanded[track.guid] = not is_expanded
+        if shift_down and has_children then
+          -- Shift+click arrow: toggle all children to match parent's NEW state
+          local new_state = not is_selected
+          if not state.track_whitelist then state.track_whitelist = {} end
+          state.track_whitelist[track.guid] = new_state
+          local function set_children(children, value)
+            for _, child in ipairs(children) do
+              state.track_whitelist[child.guid] = value
+              if child.children then set_children(child.children, value) end
+            end
+          end
+          set_children(track.children, new_state)
+        else
+          -- Normal click: Toggle expand (not part of paint mode)
+          if not state.track_expanded then state.track_expanded = {} end
+          state.track_expanded[track.guid] = not is_expanded
+        end
       else
         -- Start toggle paint mode
         state.track_filter_painting = true
@@ -299,6 +325,11 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
     -- Draw tile
     draw_track_tile(ctx, draw_list, x, tile_y, width, track, is_selected, is_hovered, depth, is_expanded, has_children, parent_disabled)
     current_y = current_y + TRACK_TILE.HEIGHT + TRACK_TILE.MARGIN_Y
+
+    -- Track hovered item for tooltip (only for nested tracks with depth > 0)
+    if is_hovered and depth > 0 then
+      state.track_filter_hovered_track = track
+    end
 
     -- Draw children if expanded
     if has_children and is_expanded then
@@ -424,13 +455,44 @@ function M.render_modal(ctx, state, bounds)
 
   if left_clicked and not is_over_modal then
     state.show_track_filter_modal = false
+    -- Persist track filter state when modal closes
+    if state.persist_track_filter then state.persist_track_filter() end
     return false
   end
 
   -- Check for Escape to close
   if ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
     state.show_track_filter_modal = false
+    -- Persist track filter state when modal closes
+    if state.persist_track_filter then state.persist_track_filter() end
     return false
+  end
+
+  -- Keyboard shortcuts
+  local ctrl_down = ImGui.IsKeyDown(ctx, ImGui.Mod_Ctrl)
+  if ctrl_down then
+    -- Ctrl+A: Select all
+    if ImGui.IsKeyPressed(ctx, ImGui.Key_A) then
+      local function select_all(tracks)
+        for _, track in ipairs(tracks) do
+          state.track_whitelist[track.guid] = true
+          if track.children then select_all(track.children) end
+        end
+      end
+      select_all(state.track_tree)
+      if state.persist_track_filter then state.persist_track_filter() end
+    end
+    -- Ctrl+D: Deselect all
+    if ImGui.IsKeyPressed(ctx, ImGui.Key_D) then
+      local function deselect_all(tracks)
+        for _, track in ipairs(tracks) do
+          state.track_whitelist[track.guid] = false
+          if track.children then deselect_all(track.children) end
+        end
+      end
+      deselect_all(state.track_tree)
+      if state.persist_track_filter then state.persist_track_filter() end
+    end
   end
 
   -- Modal background
@@ -554,10 +616,45 @@ function M.render_modal(ctx, state, bounds)
   -- Clip content area
   ImGui.DrawList_PushClipRect(draw_list, content_x, content_y, content_x + content_w, content_y + content_h, true)
 
+  -- Clear hovered track before drawing (will be set by draw_track_tree if hovering)
+  state.track_filter_hovered_track = nil
+
   -- Draw track tree with scroll offset
   draw_track_tree(ctx, draw_list, state.track_tree, content_x, content_y - scroll_y, content_w, state, 0, content_y - scroll_y)
 
   ImGui.DrawList_PopClipRect(draw_list)
+
+  -- Draw tooltip for hovered nested track (outside clip rect)
+  if state.track_filter_hovered_track then
+    local hovered = state.track_filter_hovered_track
+    local path_text = get_track_path(hovered)
+    local tooltip_padding = 6
+    local text_w, text_h = ImGui.CalcTextSize(ctx, path_text)
+    local tooltip_w = text_w + tooltip_padding * 2
+    local tooltip_h = text_h + tooltip_padding * 2
+
+    -- Position tooltip below cursor, clamped to screen bounds
+    local tip_x = mouse_x + 12
+    local tip_y = mouse_y + 18
+
+    -- Keep tooltip within modal bounds
+    if tip_x + tooltip_w > modal_x + modal_width - 8 then
+      tip_x = modal_x + modal_width - 8 - tooltip_w
+    end
+    if tip_y + tooltip_h > modal_y + modal_height - 8 then
+      tip_y = mouse_y - tooltip_h - 4
+    end
+
+    -- Draw tooltip background
+    local tip_bg = ark.Colors.with_alpha(ark.Colors.hexrgb("#1A1A1A"), math.floor(0xF5 * alpha))
+    local tip_border = ark.Colors.with_alpha(ark.Colors.hexrgb("#505050"), math.floor(0xFF * alpha))
+    ImGui.DrawList_AddRectFilled(draw_list, tip_x, tip_y, tip_x + tooltip_w, tip_y + tooltip_h, tip_bg, 4)
+    ImGui.DrawList_AddRect(draw_list, tip_x, tip_y, tip_x + tooltip_w, tip_y + tooltip_h, tip_border, 4)
+
+    -- Draw tooltip text
+    local tip_text_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#CCCCCC"), math.floor(0xFF * alpha))
+    ImGui.DrawList_AddText(draw_list, tip_x + tooltip_padding, tip_y + tooltip_padding, tip_text_color, path_text)
+  end
 
   -- Footer with buttons
   local footer_y = modal_y + modal_height - 50
