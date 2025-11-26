@@ -318,6 +318,14 @@ function M.new(opts)
             end
           end
 
+          -- Theme Debug overlay toggle
+          if ThemeManager then
+            local debug_label = ThemeManager.debug_enabled and "* Theme Debug" or "  Theme Debug"
+            if ContextMenu.item(ctx, debug_label) then
+              ThemeManager.toggle_debug()
+            end
+          end
+
           if ContextMenu.item(ctx, "Lua Profiler") then
             -- Trigger profiler (originally CTRL+SHIFT+ALT+CLICK)
             -- You can add profiler launch logic here if needed

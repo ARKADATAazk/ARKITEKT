@@ -31,10 +31,10 @@ All UI colors are then available via `Style.COLORS.*`.
 │                            ↓                                │
 │         compute_rules_for_lightness(lightness, mode)        │
 │                            ↓                                │
-│                       M.presets                             │
-│                    (blend / step)                           │
+│                        M.rules                              │
+│       (offsetFromBase / lerpDarkLight / snapAtMidpoint)     │
 │                            ↓                                │
-│                    interpolated rules                       │
+│                    computed rule values                     │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -50,144 +50,144 @@ All UI colors are then available via `Style.COLORS.*`.
 
 ---
 
-## Two-Preset System
+## Unified Rules System
 
-The theme manager uses just **two anchor presets** (dark and light). All intermediate themes (grey, adapt, custom colors) are automatically interpolated between them.
+The theme manager uses a **single rules table** with self-documenting wrapper functions. Each rule is defined once with its dark/light behavior baked in.
 
-| Preset | Lightness | Description |
-|--------|-----------|-------------|
-| `dark` | ~14% | Very dark (OLED-friendly) |
-| `light` | ~88% | Bright (paper-like) |
+### Preset Anchors
 
-**Grey is auto-derived**: When you call `set_grey()`, it applies a 24% lightness background with values automatically interpolated between dark and light presets.
+| Anchor | Lightness | t value |
+|--------|-----------|---------|
+| `dark` | ~14% | 0.0 |
+| `light` | ~88% | 1.0 |
 
-**Adapt mode**: Reads REAPER's background color and interpolates proportionally.
+The interpolation factor `t` is computed from current lightness:
+```
+t = (lightness - 0.14) / (0.88 - 0.14)
+```
 
 ---
 
-## Value Wrappers
+## Rule Wrappers
 
-Two wrappers define HOW values transition between presets:
+Four wrappers define HOW values adapt to theme lightness:
 
-### `blend(value)` - Smooth Gradient
+### `offsetFromBase(dark, light)` - Delta from BG_BASE
 
-Smoothly interpolates between dark and light based on background lightness.
+Applies a lightness offset to BG_BASE. **Snaps** between deltas at threshold (no lerp, because BG_BASE already adapts).
 
 ```lua
--- In presets
-dark  = { tile_fill_brightness = blend(0.5) },   -- 50%
-light = { tile_fill_brightness = blend(1.4) },   -- 140%
+-- Different deltas: snap at t=0.5
+bg_hover_delta = offsetFromBase(0.03, -0.04)
+-- t < 0.5: +3% (lighter on dark themes)
+-- t >= 0.5: -4% (darker on light themes)
 
--- At 50% lightness (midpoint):
--- Result: ~0.95 (linear interpolation)
+-- Same delta: constant offset
+bg_panel_delta = offsetFromBase(-0.04)
+-- Always -4% (panels darker than base)
+
+-- Custom threshold
+special_delta = offsetFromBase(0.05, -0.05, 0.3)
+-- Snaps at t=0.3 instead of t=0.5
+```
+
+**Why snap instead of lerp?** BG_BASE already changes with lightness. If we lerped the delta, `offsetFromBase(+0.03, -0.03)` would give delta=0 at midpoint (no contrast!). Snapping preserves contrast.
+
+### `lerpDarkLight(dark, light)` - Smooth Interpolation
+
+Linearly interpolates between dark and light values based on `t`.
+
+```lua
+-- Numeric lerp
+border_opacity = lerpDarkLight(0.87, 0.60)
+-- t=0: 0.87, t=0.5: 0.735, t=1: 0.60
+
+-- Color lerp (hex strings)
+some_accent = lerpDarkLight("#334455", "#AABBCC")
+-- Smoothly transitions through intermediate colors
 ```
 
 Works with:
 - **Numbers**: Linear interpolation
-- **Colors**: RGB interpolation (`blend("#FF0000")` → `blend("#00FF00")`)
+- **Hex colors**: RGB interpolation
 
-### `step(value)` - Discrete Snap
+### `snapAtMidpoint(dark, light)` - Discrete Snap at t=0.5
 
-No interpolation. Snaps to the closest preset's value at midpoint (~51% lightness).
+No interpolation. Picks one value or the other at the midpoint.
 
 ```lua
--- In presets
-dark  = { border_outer_color = step("#000000") },  -- Pure black
-light = { border_outer_color = step("#404040") },  -- Soft grey
-
--- At 40% lightness: "#000000" (closer to dark)
--- At 60% lightness: "#404040" (closer to light)
+tile_name_color = snapAtMidpoint("#DDE3E9", "#1A1A1A")
+-- t < 0.5: "#DDE3E9" (light text for dark themes)
+-- t >= 0.5: "#1A1A1A" (dark text for light themes)
 ```
 
 Use for:
+- Text colors (need hard contrast)
 - Semantic colors that shouldn't blend
-- Text colors needing hard contrast (e.g., `tile_name_color`)
-- Values with distinct meanings per theme
+- Boolean-like choices per theme
+
+### `snapAt(threshold, dark, light)` - Snap at Custom Threshold
+
+Same as `snapAtMidpoint` but at a custom `t` value.
+
+```lua
+special_element = snapAt(0.3, "#AAA", "#555")
+-- Snaps at t=0.3 (~37% lightness)
+```
 
 ---
 
-## Data Structures
+## Rules Table
 
-### `M.presets` - Two Anchor Presets
-
-```lua
-M.presets = {
-  dark = {
-    bg_hover_delta = blend(0.03),
-    tile_fill_brightness = blend(0.5),
-    border_outer_color = step("#000000"),
-    tile_name_color = step("#DDE3E9"),  -- Light text on dark
-    -- ...
-  },
-  light = {
-    bg_hover_delta = blend(-0.04),
-    tile_fill_brightness = blend(1.4),
-    border_outer_color = step("#404040"),
-    tile_name_color = step("#1A1A1A"),  -- Dark text on light
-    -- ...
-  },
-}
-```
-
-### `M.preset_anchors` - Lightness Values
-
-Defines where each preset sits on the lightness scale:
+All rules are defined in `M.rules`:
 
 ```lua
-M.preset_anchors = {
-  dark = 0.14,   -- 14% lightness
-  light = 0.88,  -- 88% lightness
+M.rules = {
+  -- ========== BACKGROUND OFFSETS ==========
+  bg_hover_delta = offsetFromBase(0.03, -0.04),      -- Contrast-preserving
+  bg_active_delta = offsetFromBase(0.05, -0.07),
+  bg_header_delta = offsetFromBase(-0.024, -0.06),
+  bg_panel_delta = offsetFromBase(-0.04),            -- Same both (constant)
+
+  -- ========== BORDER COLORS ==========
+  border_outer_color = snapAtMidpoint("#000000", "#404040"),
+  border_outer_opacity = lerpDarkLight(0.87, 0.60),
+  border_inner_delta = offsetFromBase(0.05, -0.03),
+
+  -- ========== TILE RENDERING ==========
+  tile_fill_brightness = lerpDarkLight(0.5, 1.4),
+  tile_name_color = snapAtMidpoint("#DDE3E9", "#1A1A1A"),
+
+  -- ========== BADGES ==========
+  badge_bg_color = snapAtMidpoint("#14181C", "#E8ECF0"),
+  badge_text_color = snapAtMidpoint("#FFFFFF", "#1A1A1A"),
+  -- ...
 }
 ```
-
-Used to calculate interpolation factor `t` between presets.
-
----
-
-## Interpolation Logic
-
-### For `blend()` values:
-
-```
-Lightness:  0%    14%                    88%    100%
-            |     |                       |      |
-Presets:    dark ←──────────────────────→ light
-                          │
-                          t = (lightness - dark) / (light - dark)
-```
-
-Between anchors, `t` ranges from 0.0 to 1.0:
-- `t = 0.0` → use dark preset's value
-- `t = 0.5` → 50/50 blend
-- `t = 1.0` → use light preset's value
-
-### For `step()` values:
-
-Same calculation, but snaps at `t = 0.5` (~51% lightness):
-- `t < 0.5` → use dark preset's value
-- `t >= 0.5` → use light preset's value
 
 ---
 
 ## Adding New Theme-Aware Values
 
-### 1. Decide the behavior:
+### 1. Choose the wrapper:
 
-| Behavior | Format |
-|----------|--------|
-| Smooth gradient | `blend(value)` |
-| Discrete snap | `step(value)` |
+| Behavior | Wrapper |
+|----------|---------|
+| Delta from BG_BASE (contrast-preserving) | `offsetFromBase(d, l)` |
+| Delta from BG_BASE (constant) | `offsetFromBase(d)` |
+| Smooth gradient | `lerpDarkLight(d, l)` |
+| Discrete snap at midpoint | `snapAtMidpoint(d, l)` |
+| Discrete snap at custom point | `snapAt(t, d, l)` |
 
-### 2. Add to both presets:
+### 2. Add to `M.rules`:
 
 ```lua
--- For smooth interpolation:
-M.presets.dark.my_new_value = blend(0.3)
-M.presets.light.my_new_value = blend(0.8)
-
--- For discrete snapping:
-M.presets.dark.my_text_color = step("#FFFFFF")
-M.presets.light.my_text_color = step("#000000")
+M.rules = {
+  -- ...existing rules...
+  my_new_delta = offsetFromBase(0.08, -0.06),
+  my_new_opacity = lerpDarkLight(0.9, 0.7),
+  my_new_color = snapAtMidpoint("#FF0000", "#00FF00"),
+}
 ```
 
 ### 3. Use in `generate_palette()`:
@@ -195,48 +195,95 @@ M.presets.light.my_text_color = step("#000000")
 ```lua
 return {
   -- ...existing colors...
-  MY_NEW_VALUE = rules.my_new_value,
-  MY_TEXT_COLOR = Colors.hexrgb(rules.my_text_color),
+  MY_NEW_COLOR = Colors.hexrgb(rules.my_new_color),
+  MY_NEW_BG = Colors.adjust_lightness(base_bg, rules.my_new_delta),
 }
 ```
 
 ### 4. Access in UI code:
 
 ```lua
-local value = Style.COLORS.MY_NEW_VALUE
+local color = Style.COLORS.MY_NEW_COLOR
 ```
 
 ---
 
 ## Script-Specific Colors
 
-Scripts can override library colors via `script/defs/colors.lua`:
+Scripts can define their own colors that follow the theme system:
 
 ```lua
--- ThemeAdjuster/defs/colors.lua
+-- MyScript/defs/colors.lua
+local ThemeManager = require('arkitekt.core.theme_manager')
 local Style = require('arkitekt.gui.style')
 
 local M = {}
 
-M.TILE = {
-  bg_inactive = nil,        -- nil → use Style.COLORS.BG_PANEL
-  bg_active = "#2D4A37",    -- Explicit → stays fixed
+-- Option 1: Static colors (don't change with theme)
+M.STATIC = {
+  HIGHLIGHT = 0xFF6B6BFF,
 }
 
-function M.get_tile_colors()
+-- Option 2: Register with ThemeManager for debug visibility
+ThemeManager.register_script_colors("MyScript", M.STATIC)
+
+-- Option 3: Theme-reactive with fallback
+function M.get_colors()
   local S = Style.COLORS
   return {
-    bg_inactive = M.TILE.bg_inactive or S.BG_PANEL,
-    bg_active = M.TILE.bg_active,
+    bg = S.BG_PANEL,           -- Follows theme
+    highlight = M.STATIC.HIGHLIGHT,  -- Fixed
   }
 end
 
 return M
 ```
 
-Pattern:
-- `nil` = fall back to `Style.COLORS` (theme-reactive)
-- Explicit value = stays fixed regardless of theme
+---
+
+## Script-Specific Theme Rules
+
+For more advanced theme integration, scripts can register their own **theme-reactive rules** using the same wrapper functions. These rules automatically adapt to theme changes:
+
+```lua
+-- MyScript/defs/colors.lua
+local ThemeManager = require('arkitekt.core.theme_manager')
+local offsetFromBase = ThemeManager.offsetFromBase
+local lerpDarkLight = ThemeManager.lerpDarkLight
+local snapAtMidpoint = ThemeManager.snapAtMidpoint
+
+-- Register theme-reactive rules (at script init)
+ThemeManager.register_script_rules("MyScript", {
+  -- Background offset from BG_BASE
+  panel_bg_delta = offsetFromBase(-0.06, -0.08),
+
+  -- Smooth color interpolation
+  highlight_color = lerpDarkLight("#FF6B6B", "#CC4444"),
+
+  -- Discrete snap for text contrast
+  badge_text = snapAtMidpoint("#FFFFFF", "#1A1A1A"),
+
+  -- Numeric lerp
+  glow_opacity = lerpDarkLight(0.8, 0.5),
+})
+
+-- Access computed values (these update when theme changes)
+function M.get_colors()
+  local rules = ThemeManager.get_script_rules("MyScript")
+  if not rules then return M.STATIC end
+
+  return {
+    highlight = Colors.hexrgb(rules.highlight_color),
+    badge_text = Colors.hexrgb(rules.badge_text),
+    glow_alpha = rules.glow_opacity,
+    panel_bg = Colors.adjust_lightness(Style.COLORS.BG_BASE, rules.panel_bg_delta),
+  }
+end
+
+return M
+```
+
+Script rules are cached and automatically invalidated when the theme changes.
 
 ---
 
@@ -245,24 +292,21 @@ Pattern:
 ### Mode Selection
 
 ```lua
-ThemeManager.set_dark()    -- Apply dark preset
-ThemeManager.set_grey()    -- Apply grey (auto-interpolated)
-ThemeManager.set_light()   -- Apply light preset
+ThemeManager.set_dark()    -- Apply dark preset (t=0)
+ThemeManager.set_grey()    -- Apply grey (t≈0.14)
+ThemeManager.set_light()   -- Apply light preset (t=1)
 ThemeManager.adapt()       -- Sync with REAPER theme
 
 ThemeManager.set_mode("dark")  -- Same as set_dark()
 ```
 
-### Preset Themes
+### Rule Wrappers (for extending rules)
 
 ```lua
--- Apply named preset
-ThemeManager.apply_theme("dark")
-ThemeManager.apply_theme("pro_tools")
-ThemeManager.apply_theme("ableton")
-
--- Get available names
-local names = ThemeManager.get_theme_names()
+local offsetFromBase = ThemeManager.offsetFromBase
+local lerpDarkLight = ThemeManager.lerpDarkLight
+local snapAtMidpoint = ThemeManager.snapAtMidpoint
+local snapAt = ThemeManager.snapAt
 ```
 
 ### REAPER Integration
@@ -279,6 +323,28 @@ function main_loop()
 end
 ```
 
+### Debugging
+
+```lua
+-- Get current computed rules
+local rules = ThemeManager.get_current_rules()
+
+-- Get current background lightness
+local l = ThemeManager.get_theme_lightness()
+
+-- Get current interpolation factor
+local t = ThemeManager.get_current_t()
+
+-- Toggle debug overlay
+ThemeManager.toggle_debug()
+
+-- Render debug overlay (in main loop)
+ThemeManager.render_debug_overlay(ctx, ImGui)
+
+-- Validate rules configuration
+local valid, err = ThemeManager.validate()
+```
+
 ### Custom Themes
 
 ```lua
@@ -291,25 +357,42 @@ ThemeManager.generate_and_apply(bg, text)
 ThemeManager.generate_and_apply(bg, text, accent_color)
 ```
 
-### Debugging
+### Script Rules API
 
 ```lua
--- Get current interpolated rules
-local rules = ThemeManager.get_current_rules()
+-- Register theme-reactive rules for a script
+ThemeManager.register_script_rules("ScriptName", {
+  my_delta = offsetFromBase(0.05, -0.05),
+  my_color = lerpDarkLight("#AAA", "#555"),
+})
 
--- Get current background lightness
-local l = ThemeManager.get_theme_lightness()
+-- Get computed rules (cached, invalidated on theme change)
+local rules = ThemeManager.get_script_rules("ScriptName")
+if rules then
+  local delta = rules.my_delta  -- Already computed for current theme
+  local color = rules.my_color
+end
+
+-- Unregister when script unloads
+ThemeManager.unregister_script_rules("ScriptName")
+
+-- Get all registered script rules (definitions)
+local all_rules = ThemeManager.get_registered_script_rules()
 ```
 
-### Wrappers (for extending presets)
+### Script Colors API (static colors for debug visibility)
 
 ```lua
-local blend = ThemeManager.blend
-local step = ThemeManager.step
+-- Register static colors for debug overlay visibility
+ThemeManager.register_script_colors("ScriptName", {
+  MY_COLOR = 0xFF6B6BFF,
+})
 
--- Add to both presets
-M.presets.dark.my_value = blend(0.5)
-M.presets.light.my_value = blend(0.9)
+-- Unregister
+ThemeManager.unregister_script_colors("ScriptName")
+
+-- Get all registered
+local all_colors = ThemeManager.get_registered_script_colors()
 ```
 
 ---
@@ -319,14 +402,17 @@ M.presets.light.my_value = blend(0.9)
 For backward compatibility, these aliases exist:
 
 ```lua
-M.theme_rules = {
-  dark = M.presets.dark,
-  grey = M.presets.dark,   -- Grey uses dark (auto-interpolated at runtime)
-  light = M.presets.light,
-}
+-- Old wrappers (map to new system)
+M.blend = function(v) return lerpDarkLight(v, v) end
+M.step = function(v) return snapAtMidpoint(v, v) end
 
+-- Legacy presets (via metatable, read-only)
+M.presets.dark[key]   -- Returns M.rules[key].dark
+M.presets.light[key]  -- Returns M.rules[key].light
+
+M.theme_rules = M.presets
 M.theme_anchors = M.preset_anchors
-M.derivation_rules = unwrap_preset(M.presets.dark)
+M.derivation_rules  -- Returns dark values
 ```
 
 ---
