@@ -222,7 +222,26 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
         state.runtime_cache.midi_filter_hash = nil
       end
 
-      -- Paint mode while dragging (handled below with crossing detection)
+      -- Paint currently hovered track while dragging (catches current frame)
+      -- Crossing detection below handles tracks skipped by fast movement
+      if state.track_bar_painting and is_hovered and state.track_bar_last_painted ~= track.guid then
+        local is_dragging = (state.track_bar_paint_mode == "toggle" and left_down) or
+                            (state.track_bar_paint_mode == "fixed" and right_down)
+        if is_dragging then
+          local new_value
+          if state.track_bar_paint_mode == "toggle" then
+            local current = state.track_filters_enabled[track.guid]
+            if current == nil then current = true end
+            new_value = not current
+          else
+            new_value = state.track_bar_paint_value
+          end
+          state.track_filters_enabled[track.guid] = new_value
+          state.track_bar_last_painted = track.guid
+          state.runtime_cache.audio_filter_hash = nil
+          state.runtime_cache.midi_filter_hash = nil
+        end
+      end
     end
 
     tag_y = tag_y + TAG.HEIGHT + TAG.MARGIN_Y
