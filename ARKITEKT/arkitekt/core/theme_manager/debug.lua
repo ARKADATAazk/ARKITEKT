@@ -46,7 +46,15 @@ local function validate_section(section_name, section, errors)
       end
 
       -- Check: Valid mode
-      local valid_modes = { lerp = true, offset = true, snap = true }
+      local valid_modes = {
+        lerp = true,
+        offset = true,
+        snap = true,
+        alpha = true,
+        opacity = true,
+        set_light = true,
+        lightness_opacity = true,
+      }
       if not valid_modes[def.mode] then
         errors[#errors + 1] = string.format(
           "%s.%s has invalid mode '%s'",

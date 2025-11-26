@@ -52,6 +52,11 @@ M.script_rules = {}
 --- Cache for computed script rules
 local rules_cache = {}
 
+--- Round t to 3 decimal places to avoid float comparison issues
+local function round_t(t)
+  return math.floor(t * 1000 + 0.5) / 1000
+end
+
 --- Clear the script rules cache (called when theme changes)
 function M.clear_cache()
   rules_cache = {}
@@ -85,14 +90,17 @@ function M.get_computed_rules(script_name, current_t)
     return nil
   end
 
+  -- Round t to avoid float comparison issues
+  local t_key = round_t(current_t)
+
   -- Check cache
   local cached = rules_cache[script_name]
-  if cached and cached._t == current_t then
+  if cached and cached._t == t_key then
     return cached
   end
 
   -- Compute rules for current theme
-  local computed = { _t = current_t }
+  local computed = { _t = t_key }
   for key, rule in pairs(rule_defs) do
     computed[key] = Engine.resolve_value(rule, current_t)
   end

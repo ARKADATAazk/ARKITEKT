@@ -100,7 +100,7 @@ M.current_mode = nil
 --- Get current theme's base lightness (0.0-1.0)
 --- @return number Lightness of current BG_BASE
 function M.get_theme_lightness()
-  if not Style.COLORS.BG_BASE then return 0.14 end
+  if not Style.COLORS.BG_BASE then return Palette.anchors.dark end
   local _, _, l = Colors.rgb_to_hsl(Style.COLORS.BG_BASE)
   return l
 end
