@@ -972,6 +972,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
         hover_padding = 0,
         draw_list = draw_list,
 
+        -- Enable debug logging to compare reaper.GetMousePosition() vs ImGui.GetMousePos()
+        debug_mouse_tracking = true,
+
         on_draw = function(zone_ctx, dl, bounds, visibility, zone_state)
           local bar_x = bounds.x
           local bar_y = bounds.y

@@ -9,6 +9,7 @@ local Base = require('arkitekt.gui.widgets.base')
 local Tracks = require('arkitekt.gui.fx.animation.tracks')
 local Anim = require('arkitekt.core.animation')
 local Math = require('arkitekt.core.math')
+local Logger = require('arkitekt.debug.logger')
 
 local M = {}
 
@@ -76,6 +77,9 @@ local DEFAULTS = {
 
   -- Draw list
   draw_list = nil,
+
+  -- Debug
+  debug_mouse_tracking = false,  -- Enable debug logging for mouse position tracking
 }
 
 -- ============================================================================
@@ -201,16 +205,41 @@ end
 --- even when cursor is outside the ImGui window.
 --- Both reaper and ImGui use the same screen coordinate system (proven by drag_handler).
 --- @param ctx ImGui_Context
+--- @param opts table Options (for debug flag)
 --- @return number mx Mouse X
 --- @return number my Mouse Y
-local function get_mouse_position(ctx)
+local function get_mouse_position(ctx, opts)
+  local reaper_mx, reaper_my = nil, nil
+  local imgui_mx, imgui_my = ImGui.GetMousePos(ctx)
+
   -- Use reaper.GetMousePosition() for reliable global tracking
   -- This works even when cursor is outside window (unlike ImGui.GetMousePos)
   if reaper.GetMousePosition then
-    return reaper.GetMousePosition()
+    reaper_mx, reaper_my = reaper.GetMousePosition()
+  end
+
+  -- Debug logging to compare both methods
+  if opts and opts.debug_mouse_tracking then
+    if reaper_mx and reaper_my then
+      local delta_x = reaper_mx - imgui_mx
+      local delta_y = reaper_my - imgui_my
+      local delta_mag = math.sqrt(delta_x * delta_x + delta_y * delta_y)
+
+      -- Only log when there's a difference (to avoid spam)
+      if delta_mag > 1 then
+        Logger.debug("SlidingZone", "Mouse pos: REAPER(%.1f, %.1f) vs ImGui(%.1f, %.1f) delta=%.1f",
+          reaper_mx, reaper_my, imgui_mx, imgui_my, delta_mag)
+      end
+    else
+      Logger.debug("SlidingZone", "Mouse pos: ImGui(%.1f, %.1f) [reaper API N/A]", imgui_mx, imgui_my)
+    end
+  end
+
+  -- Return REAPER position if available, otherwise ImGui
+  if reaper_mx and reaper_my then
+    return reaper_mx, reaper_my
   else
-    -- Fallback to ImGui if REAPER API not available
-    return ImGui.GetMousePos(ctx)
+    return imgui_mx, imgui_my
   end
 end
 
@@ -254,7 +283,7 @@ end
 -- ============================================================================
 
 local function is_in_hover_zone(ctx, opts, state, bounds)
-  local mx, my = get_mouse_position(ctx)
+  local mx, my = get_mouse_position(ctx, opts)  -- Pass opts for debug logging
   local edge = opts.edge or "right"
 
   -- Get content bounds for hover calculation
@@ -280,35 +309,47 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
     trigger_threshold = opts.hover_extend_inside or 200  -- Was 50, now 200 (massive)
   end
 
+  local in_zone = false
+  local trigger_line = nil  -- For debug logging
+
   if edge == "left" then
     -- Trigger zone: everything LEFT of (bounds.x + trigger_threshold)
     -- This is like Settings panel's "everything ABOVE Y"
-    local trigger_x = bounds.x + trigger_threshold
+    trigger_line = bounds.x + trigger_threshold
     local zone_y1 = content.y - padding
     local zone_y2 = content.y + content.h + padding
-    return mx < trigger_x and my >= zone_y1 and my <= zone_y2
+    in_zone = mx < trigger_line and my >= zone_y1 and my <= zone_y2
 
   elseif edge == "right" then
     -- Trigger zone: everything RIGHT of (bounds.x + bounds.w - trigger_threshold)
-    local trigger_x = bounds.x + bounds.w - trigger_threshold
+    trigger_line = bounds.x + bounds.w - trigger_threshold
     local zone_y1 = content.y - padding
     local zone_y2 = content.y + content.h + padding
-    return mx > trigger_x and my >= zone_y1 and my <= zone_y2
+    in_zone = mx > trigger_line and my >= zone_y1 and my <= zone_y2
 
   elseif edge == "top" then
     -- Trigger zone: everything ABOVE (bounds.y + trigger_threshold)
-    local trigger_y = bounds.y + trigger_threshold
+    trigger_line = bounds.y + trigger_threshold
     local zone_x1 = content.x - padding
     local zone_x2 = content.x + content.w + padding
-    return my < trigger_y and mx >= zone_x1 and mx <= zone_x2
+    in_zone = my < trigger_line and mx >= zone_x1 and mx <= zone_x2
 
   else -- bottom
     -- Trigger zone: everything BELOW (bounds.y + bounds.h - trigger_threshold)
-    local trigger_y = bounds.y + bounds.h - trigger_threshold
+    trigger_line = bounds.y + bounds.h - trigger_threshold
     local zone_x1 = content.x - padding
     local zone_x2 = content.x + content.w + padding
-    return my > trigger_y and mx >= zone_x1 and mx <= zone_x2
+    in_zone = my > trigger_line and mx >= zone_x1 and mx <= zone_x2
   end
+
+  -- Debug logging for trigger zone
+  if opts.debug_mouse_tracking then
+    local state_str = state.is_expanded and "expanded" or "collapsed"
+    Logger.debug("SlidingZone", "Trigger zone [%s edge, %s]: threshold=%.1f, trigger_line=%.1f, in_zone=%s",
+      edge, state_str, trigger_threshold, trigger_line or 0, tostring(in_zone))
+  end
+
+  return in_zone
 end
 
 --- Detect if cursor moved from content area toward the panel edge (fast movement)
