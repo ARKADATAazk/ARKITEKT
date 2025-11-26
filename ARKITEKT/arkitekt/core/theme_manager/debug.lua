@@ -37,10 +37,17 @@ M.overrides = {}
 -- Track which keys have been modified
 M.modified_keys = {}
 
+-- Category order (matches theme.lua structure)
+local CATEGORY_ORDER = {
+  "BG", "BORDER", "ACCENT", "TEXT", "PATTERN",
+  "TILE", "BADGE", "PLAYLIST", "OP", "BUTTON"
+}
+
 -- UI state
 M.scroll_y = 0
 M.filter_text = ""
 M.show_only_modified = false
+M.show_script_column = false  -- Toggle for two-column view
 M.expand_global = true
 M.expand_scripts = {}
 
@@ -238,10 +245,6 @@ function M.export_global_as_lua()
 
   -- Group by category (based on prefix)
   local categories = {}
-  local category_order = {
-    "BG", "BORDER", "ACCENT", "TEXT", "PATTERN",
-    "TILE", "BADGE", "PLAYLIST", "OP", "BUTTON"
-  }
 
   -- Collect all keys and categorize
   local all_keys = {}
@@ -255,7 +258,7 @@ function M.export_global_as_lua()
     if type(def) == "table" and def.mode then
       -- Find category
       local cat = "OTHER"
-      for _, prefix in ipairs(category_order) do
+      for _, prefix in ipairs(CATEGORY_ORDER) do
         if key:sub(1, #prefix) == prefix then
           cat = prefix
           break
@@ -268,7 +271,7 @@ function M.export_global_as_lua()
   end
 
   -- Output by category
-  for _, cat in ipairs(category_order) do
+  for _, cat in ipairs(CATEGORY_ORDER) do
     if categories[cat] and #categories[cat] > 0 then
       lines[#lines + 1] = ""
       lines[#lines + 1] = string.format("  -- === %s ===", cat)
@@ -609,6 +612,10 @@ function M.render_debug_window(ctx, ImGui, state)
     local _, show_mod = ImGui.Checkbox(ctx, "Show modified only", M.show_only_modified)
     M.show_only_modified = show_mod
 
+    ImGui.SameLine(ctx)
+    local _, show_scripts = ImGui.Checkbox(ctx, "Script column", M.show_script_column)
+    M.show_script_column = show_scripts
+
     ImGui.Separator(ctx)
 
     -- Filter
@@ -624,8 +631,8 @@ function M.render_debug_window(ctx, ImGui, state)
       -- Global palette section
       local global_open = ImGui.CollapsingHeader(ctx, "Global Theme Colors", ImGui.TreeNodeFlags_DefaultOpen)
       if global_open then
-        -- Collect and sort keys
-        local keys = {}
+        -- Collect keys by category (matching theme.lua order)
+        local categories = {}
         for key in pairs(Palette.colors) do
           local include = true
 
@@ -640,19 +647,51 @@ function M.render_debug_window(ctx, ImGui, state)
           end
 
           if include then
-            keys[#keys + 1] = key
+            -- Find category
+            local cat = "OTHER"
+            for _, prefix in ipairs(CATEGORY_ORDER) do
+              if key:sub(1, #prefix) == prefix then
+                cat = prefix
+                break
+              end
+            end
+            categories[cat] = categories[cat] or {}
+            categories[cat][#categories[cat] + 1] = key
           end
         end
-        table.sort(keys)
 
-        -- Draw entries
-        for _, key in ipairs(keys) do
-          local original = Palette.colors[key]
-          local current = M.overrides[key]
-          draw_entry_editor(ctx, ImGui, key, original, current)
+        -- Sort keys within each category
+        for _, keys in pairs(categories) do
+          table.sort(keys)
         end
 
-        if #keys == 0 then
+        -- Draw entries by category
+        local total_keys = 0
+        for _, cat in ipairs(CATEGORY_ORDER) do
+          if categories[cat] and #categories[cat] > 0 then
+            ImGui.TextDisabled(ctx, "-- " .. cat .. " --")
+            for _, key in ipairs(categories[cat]) do
+              local original = Palette.colors[key]
+              local current = M.overrides[key]
+              draw_entry_editor(ctx, ImGui, key, original, current)
+              total_keys = total_keys + 1
+            end
+            ImGui.Spacing(ctx)
+          end
+        end
+
+        -- Handle OTHER category
+        if categories.OTHER and #categories.OTHER > 0 then
+          ImGui.TextDisabled(ctx, "-- OTHER --")
+          for _, key in ipairs(categories.OTHER) do
+            local original = Palette.colors[key]
+            local current = M.overrides[key]
+            draw_entry_editor(ctx, ImGui, key, original, current)
+            total_keys = total_keys + 1
+          end
+        end
+
+        if total_keys == 0 then
           ImGui.TextDisabled(ctx, "(no matching entries)")
         end
       end
