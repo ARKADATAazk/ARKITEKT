@@ -50,7 +50,7 @@ local MODULES = {
   -- Utilities (commonly used modules)
   Anim = 'arkitekt.core.animation',
   Colors = 'arkitekt.core.colors',
-  Style = 'arkitekt.gui.style.defaults',
+  Style = 'arkitekt.gui.style',
   Draw = 'arkitekt.gui.draw',
   Easing = 'arkitekt.gui.fx.animation.easing',
   Math = 'arkitekt.core.math',
