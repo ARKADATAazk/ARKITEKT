@@ -8,6 +8,7 @@
 local Colors = require('arkitekt.core.colors')
 local Style = require('arkitekt.gui.style')
 local Engine = require('arkitekt.core.theme_manager.engine')
+local Rules = require('arkitekt.core.theme_manager.rules')
 
 local M = {}
 
@@ -52,8 +53,9 @@ function M.sync_with_reaper()
     return false
   end
 
-  -- Apply -1.2% lightness offset for subtle visual separation
-  local offset_bg = Colors.adjust_lightness(main_bg, -0.012)
+  -- Apply lightness offset for subtle visual separation
+  local offset = Rules.definitions.reaper_sync_offset.dark
+  local offset_bg = Colors.adjust_lightness(main_bg, offset)
 
   -- Generate and apply palette (text color derived automatically)
   Engine.generate_and_apply(offset_bg)

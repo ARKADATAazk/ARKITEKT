@@ -15,19 +15,19 @@ local M = {}
 --   t = (lightness - 0.14) / (0.88 - 0.14)
 --   t=0.0 at dark anchor (14%), t=1.0 at light anchor (88%)
 
---- Offset from BG_BASE color
+--- Snap between delta values (semantic alias for snap, used for numeric offsets)
 --- Single arg: constant delta regardless of theme
---- Two args: SNAP between deltas at t=0.5
---- Three args: SNAP between deltas at custom threshold
+--- Two args: snap between deltas at t=0.5
+--- Three args: snap between deltas at custom threshold
 --- @param dark_delta number Delta for dark themes (or constant if only arg)
 --- @param light_delta number|nil Delta for light themes (optional)
 --- @param threshold number|nil Snap threshold in t-space (default 0.5)
 --- @return table Wrapper with mode metadata
 function M.offsetFromBase(dark_delta, light_delta, threshold)
   if light_delta == nil then
-    return { mode = "offset", dark = dark_delta, light = dark_delta, threshold = 0.5 }
+    return { mode = "snap", dark = dark_delta, light = dark_delta, threshold = 0.5 }
   end
-  return { mode = "offset", dark = dark_delta, light = light_delta, threshold = threshold or 0.5 }
+  return { mode = "snap", dark = dark_delta, light = light_delta, threshold = threshold or 0.5 }
 end
 
 --- Smooth interpolation between dark and light values
@@ -74,6 +74,10 @@ M.anchors = {
 local W = M  -- Alias for brevity
 
 M.definitions = {
+  -- ========== REAPER SYNC ==========
+  -- Lightness offset when syncing from REAPER theme (subtle visual separation)
+  reaper_sync_offset = W.offsetFromBase(-0.012),
+
   -- ========== TEXT DERIVATION ==========
   -- Threshold for auto text color (below = white text, above = black text)
   text_luminance_threshold = W.lerpDarkLight(0.5, 0.5),  -- Could vary by theme if needed

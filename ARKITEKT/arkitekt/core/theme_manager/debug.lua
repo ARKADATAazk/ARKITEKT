@@ -1,15 +1,15 @@
 -- @noindex
 -- arkitekt/core/theme_manager/debug.lua
--- Debug overlay, validation, and script registration
+-- Debug overlay and validation
 --
--- Provides visual debugging tools for tuning theme values,
--- validation utilities for catching config errors,
--- and a registry system for script-specific colors and rules.
+-- Provides visual debugging tools for tuning theme values
+-- and validation utilities for catching config errors.
 
 local Colors = require('arkitekt.core.colors')
 local Style = require('arkitekt.gui.style')
 local Rules = require('arkitekt.core.theme_manager.rules')
 local Engine = require('arkitekt.core.theme_manager.engine')
+local Registry = require('arkitekt.core.theme_manager.registry')
 
 local M = {}
 
@@ -32,102 +32,21 @@ function M.disable_debug()
 end
 
 -- =============================================================================
--- SCRIPT COLOR REGISTRATION
+-- SCRIPT REGISTRATION (delegated to Registry)
 -- =============================================================================
--- Scripts can register their color modules for display in the debug overlay.
 
---- Registered script color modules
---- @type table<string, table<string, any>>
-M.registered_script_colors = {}
+--- Delegate to Registry for backward compatibility
+M.registered_script_colors = Registry.script_colors
+M.registered_script_rules = Registry.script_rules
 
---- Register a script's color table for debug display
---- @param script_name string Name of the script (e.g., "RegionPlaylist")
---- @param colors table Color table with key-value pairs
-function M.register_script_colors(script_name, colors)
-  if type(script_name) ~= "string" or type(colors) ~= "table" then
-    return
-  end
-  M.registered_script_colors[script_name] = colors
-end
+M.register_script_colors = Registry.register_colors
+M.unregister_script_colors = Registry.unregister_colors
+M.get_registered_script_colors = Registry.get_all_colors
 
---- Unregister a script's colors
---- @param script_name string Name of the script to unregister
-function M.unregister_script_colors(script_name)
-  M.registered_script_colors[script_name] = nil
-end
-
---- Get all registered script colors
---- @return table<string, table<string, any>>
-function M.get_registered_script_colors()
-  return M.registered_script_colors
-end
-
--- =============================================================================
--- SCRIPT RULES REGISTRATION
--- =============================================================================
--- Scripts can register their own theme-reactive rules using the same wrappers.
-
---- Registered script rule definitions
---- @type table<string, table<string, table>>
-M.registered_script_rules = {}
-
---- Cache for computed script rules
-local script_rules_cache = {}
-
---- Clear the script rules cache (called when theme changes)
-function M.clear_script_rules_cache()
-  script_rules_cache = {}
-end
-
---- Register a script's theme-reactive rules
---- @param script_name string Name of the script
---- @param rules table Rules table using wrappers
-function M.register_script_rules(script_name, rules)
-  if type(script_name) ~= "string" or type(rules) ~= "table" then
-    return
-  end
-  M.registered_script_rules[script_name] = rules
-  script_rules_cache[script_name] = nil  -- Invalidate cache
-end
-
---- Unregister a script's rules
---- @param script_name string Name of the script to unregister
-function M.unregister_script_rules(script_name)
-  M.registered_script_rules[script_name] = nil
-  script_rules_cache[script_name] = nil
-end
-
---- Get computed rules for a script (computed for current theme)
---- @param script_name string Name of the script
---- @param current_t number Current interpolation factor
---- @return table|nil Computed rules table, or nil if not registered
-function M.get_script_rules(script_name, current_t)
-  local rule_defs = M.registered_script_rules[script_name]
-  if not rule_defs then
-    return nil
-  end
-
-  -- Check cache
-  local cached = script_rules_cache[script_name]
-  if cached and cached._t == current_t then
-    return cached
-  end
-
-  -- Compute rules for current theme
-  local computed = { _t = current_t }
-  for key, rule in pairs(rule_defs) do
-    computed[key] = Engine.compute_rule_value(rule, current_t)
-  end
-
-  script_rules_cache[script_name] = computed
-  return computed
-end
-
---- Get all registered script rules (definitions, not computed)
---- @return table<string, table<string, table>>
-function M.get_registered_script_rules()
-  return M.registered_script_rules
-end
+M.register_script_rules = Registry.register_rules
+M.unregister_script_rules = Registry.unregister_rules
+M.get_script_rules = Registry.get_computed_rules
+M.clear_script_rules_cache = Registry.clear_cache
 
 -- =============================================================================
 -- VALIDATION
@@ -156,10 +75,10 @@ function M.validate()
       end
 
       -- Check: Valid mode
-      local valid_modes = { offset = true, lerp = true, snap = true }
+      local valid_modes = { lerp = true, snap = true }
       if not valid_modes[rule.mode] then
         errors[#errors + 1] = string.format(
-          "Rule '%s' has invalid mode '%s' (expected: offset, lerp, snap)",
+          "Rule '%s' has invalid mode '%s' (expected: lerp, snap)",
           key, tostring(rule.mode)
         )
       end
@@ -200,7 +119,7 @@ end
 function M.get_validation_summary()
   local valid, err = M.validate()
   local rule_count = 0
-  local mode_counts = { offset = 0, lerp = 0, snap = 0 }
+  local mode_counts = { lerp = 0, snap = 0 }
 
   for _, rule in pairs(Rules.definitions) do
     rule_count = rule_count + 1
@@ -393,7 +312,7 @@ function M.render_debug_overlay(ctx, ImGui, state)
     end
 
     -- Registered script colors (collapsible per script)
-    for script_name, script_colors in pairs(M.registered_script_colors) do
+    for script_name, script_colors in pairs(Registry.script_colors) do
       if ImGui.CollapsingHeader(ctx, "Script: " .. script_name) then
         local script_keys = {}
         for k in pairs(script_colors) do

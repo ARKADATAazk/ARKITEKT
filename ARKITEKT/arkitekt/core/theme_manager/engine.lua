@@ -40,7 +40,7 @@ function M.compute_rule_value(rule, t)
   local light_val = rule.light
   local threshold = rule.threshold or 0.5
 
-  if mode == "offset" or mode == "snap" then
+  if mode == "snap" then
     -- Discrete switch at threshold
     return t < threshold and dark_val or light_val
 

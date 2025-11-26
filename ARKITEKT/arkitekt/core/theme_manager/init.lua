@@ -45,6 +45,7 @@ local Rules = require('arkitekt.core.theme_manager.rules')
 local Engine = require('arkitekt.core.theme_manager.engine')
 local Presets = require('arkitekt.core.theme_manager.presets')
 local Integration = require('arkitekt.core.theme_manager.integration')
+local Registry = require('arkitekt.core.theme_manager.registry')
 local Debug = require('arkitekt.core.theme_manager.debug')
 
 local M = {}
@@ -93,13 +94,14 @@ M.get_validation_summary = Debug.get_validation_summary
 -- RE-EXPORTS: Script Registration
 -- =============================================================================
 
-M.register_script_colors = Debug.register_script_colors
-M.unregister_script_colors = Debug.unregister_script_colors
-M.get_registered_script_colors = Debug.get_registered_script_colors
-M.register_script_rules = Debug.register_script_rules
-M.unregister_script_rules = Debug.unregister_script_rules
-M.registered_script_colors = Debug.registered_script_colors
-M.registered_script_rules = Debug.registered_script_rules
+M.register_script_colors = Registry.register_colors
+M.unregister_script_colors = Registry.unregister_colors
+M.get_registered_script_colors = Registry.get_all_colors
+M.register_script_rules = Registry.register_rules
+M.unregister_script_rules = Registry.unregister_rules
+M.registered_script_colors = Registry.script_colors
+M.registered_script_rules = Registry.script_rules
+M.clear_script_rules_cache = Registry.clear_cache
 
 -- =============================================================================
 -- RE-EXPORTS: Transitions
@@ -148,7 +150,7 @@ end
 --- @param script_name string Name of the script
 --- @return table|nil Computed rules table, or nil if not registered
 function M.get_script_rules(script_name)
-  return Debug.get_script_rules(script_name, M.get_current_t())
+  return Registry.get_computed_rules(script_name, M.get_current_t())
 end
 
 -- =============================================================================
@@ -160,7 +162,7 @@ end
 --- @param base_bg number Background color
 function M.generate_and_apply(base_bg)
   Engine.generate_and_apply(base_bg)
-  Debug.clear_script_rules_cache()
+  Registry.clear_cache()
 end
 
 --- Generate complete UI color palette from base color (without applying)
@@ -178,7 +180,7 @@ end
 function M.apply_theme(name)
   local success = Presets.apply(name)
   if success then
-    Debug.clear_script_rules_cache()
+    Registry.clear_cache()
   end
   return success
 end
@@ -198,7 +200,7 @@ end
 function M.sync_with_reaper()
   local success = Integration.sync_with_reaper()
   if success then
-    Debug.clear_script_rules_cache()
+    Registry.clear_cache()
   end
   return success
 end
@@ -321,38 +323,5 @@ end
 function M.check_debug_hotkey(ctx, ImGui)
   Debug.check_debug_hotkey(ctx, ImGui)
 end
-
--- =============================================================================
--- LEGACY COMPATIBILITY
--- =============================================================================
-
--- Legacy presets structure (proxies to new system)
-M.presets = setmetatable({}, {
-  __index = function(_, preset_name)
-    return setmetatable({}, {
-      __index = function(_, key)
-        local rule = Rules.definitions[key]
-        if rule and type(rule) == "table" then
-          if preset_name == "dark" then return rule.dark end
-          if preset_name == "light" then return rule.light end
-        end
-        return rule
-      end
-    })
-  end
-})
-
-M.theme_rules = M.presets  -- Legacy alias
-
--- Legacy derivation_rules (returns dark values)
-M.derivation_rules = setmetatable({}, {
-  __index = function(_, key)
-    local rule = Rules.definitions[key]
-    if rule and type(rule) == "table" then
-      return rule.dark
-    end
-    return rule
-  end
-})
 
 return M
