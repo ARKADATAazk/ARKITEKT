@@ -85,6 +85,7 @@
 1. [x] Add theme debug overlay (F12 toggle, visual debugging)
 2. [x] Add theme validation (runtime checks for preset consistency)
 3. [x] Auto-validate in dev mode
+4. [x] Refactor to unified single-definition rules system
 
 **Implementation Status**: COMPLETE
 
@@ -92,49 +93,71 @@
 
 All features have been implemented in `arkitekt/core/theme_manager/init.lua`:
 
-#### 1. Theme Validation (`M.validate()`)
-- Checks both presets have matching keys
-- Validates all values are properly wrapped with `blend()` or `step()`
-- Ensures wrapper modes match between presets (dark/light)
-- Verifies value types match between presets
+#### 1. Unified Rules System (NEW)
+
+Replaced the two-preset system (`dark`/`light` tables) with a single unified `M.rules` table using self-documenting wrapper functions:
+
+| Wrapper | Args | Behavior |
+|---------|------|----------|
+| `offsetFromBase(d)` | single delta | Constant offset from BG_BASE |
+| `offsetFromBase(d, l)` | dark, light deltas | Snap between deltas at t=0.5 |
+| `offsetFromBase(d, l, t)` | + threshold | Snap at custom threshold |
+| `lerpDarkLight(d, l)` | dark, light values | Smooth interpolation |
+| `snapAtMidpoint(d, l)` | dark, light values | Snap at t=0.5 |
+| `snapAt(t, d, l)` | threshold, values | Snap at custom threshold |
+
+**Key design decisions:**
+- `offsetFromBase` uses **snap** (not lerp) because BG_BASE already adapts to lightness
+- This prevents "zero contrast at midpoint" when using opposite deltas like `(+0.03, -0.03)`
+- The interpolation factor `t` is computed from lightness: `t = (L - 0.14) / (0.88 - 0.14)`
+
+**Example rules:**
+```lua
+M.rules = {
+  bg_hover_delta = offsetFromBase(0.03, -0.04),      -- Contrast-preserving
+  bg_panel_delta = offsetFromBase(-0.04),            -- Same both (constant)
+  border_opacity = lerpDarkLight(0.87, 0.60),        -- Smooth lerp
+  tile_name_color = snapAtMidpoint("#DDE3E9", "#1A1A1A"),  -- Discrete snap
+}
+```
+
+#### 2. Theme Validation (`M.validate()`)
+- Checks all rules are properly wrapped
+- Validates dark/light values present and same type
+- Checks threshold values in valid range (0.0-1.0)
 - Returns `boolean, string|nil` (valid, error_message)
 
-#### 2. Debug Overlay (`M.render_debug_overlay(ctx, ImGui)`)
+#### 3. Debug Overlay (`M.render_debug_overlay(ctx, ImGui)`)
 - Shows current lightness value and interpolation factor `t`
 - Displays validation status (green OK / red ERRORS with tooltip)
-- Lists all preset values with their current interpolated result
+- Lists all rules with mode indicator [O]=offset, [L]=lerp, [S]=snap
 - Color swatches for hex color values
-- Hover tooltips showing dark→light range for each value
+- Hover tooltips showing dark/light values and threshold
 - Sorted keys for consistent display
-- Window flags: AlwaysAutoResize, closable
 
-#### 3. Debug Controls
+#### 4. Debug Controls
 - `M.toggle_debug()` - Toggle overlay visibility
 - `M.enable_debug()` / `M.disable_debug()` - Direct control
 - `M.check_debug_hotkey(ctx, ImGui)` - F12 key detection
 - `M.debug_enabled` - State variable
 
-#### 4. Auto-Validation (Dev Mode)
+#### 5. Auto-Validation (Dev Mode)
 - Runs on module load when `ARKITEKT_DEV` env var is set
 - Or when REAPER ExtState `ARKITEKT/dev_mode` = "1" or "true"
-- Logs validation errors to REAPER console
-
-#### 5. Additional Utilities
-- `M.get_validation_summary()` - Returns summary table with counts
 
 ### Usage Example
 
 ```lua
 local ThemeManager = require('arkitekt.core.theme_manager')
 
+-- Define custom rules using wrappers:
+local offsetFromBase = ThemeManager.offsetFromBase
+local lerpDarkLight = ThemeManager.lerpDarkLight
+local snapAtMidpoint = ThemeManager.snapAtMidpoint
+
 -- In main render loop:
 function render(ctx, ImGui)
   -- ... your UI code ...
-
-  -- Check for F12 to toggle debug overlay
-  ThemeManager.check_debug_hotkey(ctx, ImGui)
-
-  -- Render debug overlay (if enabled)
   ThemeManager.render_debug_overlay(ctx, ImGui)
 end
 
@@ -146,14 +169,13 @@ end
 ```
 
 **File areas**:
-- `arkitekt/core/theme_manager/init.lua` - All implementation here (lines 890-1178)
-- `arkitekt/gui/app.lua` (or equivalent) - Consumer calls render_debug_overlay in main loop
+- `arkitekt/core/theme_manager/init.lua` - All implementation
 
-**Conflict potential**: VERY LOW (isolated to theme system, appended at end of file)
+**Conflict potential**: MEDIUM (significant refactor to rules system)
 
 **Dependencies**: None
 
-**Can be merged**: Independently at any time
+**Can be merged**: After thorough testing of theme behavior
 
 ---
 
