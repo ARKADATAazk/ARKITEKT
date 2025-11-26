@@ -41,7 +41,7 @@ local Colors = require('arkitekt.core.colors')
 local Style = require('arkitekt.gui.style')
 
 -- Submodules
-local Palette = require('arkitekt.defs.palette')
+local Palette = require('arkitekt.defs.colors')
 local Engine = require('arkitekt.core.theme_manager.engine')
 local Presets = require('arkitekt.core.theme_manager.presets')
 local Integration = require('arkitekt.core.theme_manager.integration')

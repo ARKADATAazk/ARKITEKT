@@ -1,22 +1,21 @@
 -- @noindex
--- arkitekt/defs/colors.lua
--- Static color palettes (theme-agnostic)
+-- arkitekt/defs/colors/static.lua
+-- Static color palettes (API-bound, never change with theme)
 --
 -- Contains:
---   PALETTE    - 28 Wwise-compatible user-assignable colors
---   OPERATIONS - Drag/drop indicator colors
+--   PALETTE - 28 Wwise-compatible user-assignable colors
 --
--- For dynamic theming, use ThemeManager instead:
---   local ThemeManager = require('arkitekt.core.theme_manager')
---   local Style = require('arkitekt.gui.style')
+-- These colors are fixed for external API compatibility.
+-- For theme-reactive colors, see theme.lua
 
 local M = {}
 
 -- =============================================================================
--- USER-ASSIGNABLE COLOR PALETTE (28 colors)
+-- WWISE COLOR PALETTE (28 colors)
 -- =============================================================================
--- Wwise color palette for assigning colors to tags, items, regions, etc.
+-- User-assignable colors for tags, items, regions, etc.
 -- Organized as 4 rows of 7, with id for Wwise API compatibility.
+-- These must remain static to match exported audio metadata.
 
 M.PALETTE = {
   -- Row 1: Light Gray + dark blues/greens
@@ -51,17 +50,6 @@ M.PALETTE = {
   {id = 23, name = "Pink",          hex = "#AA50AA"},
   {id = 24, name = "Light Lavender", hex = "#9B56BD"},
   {id = 25, name = "Light Violet",  hex = "#8760E2"},
-}
-
--- =============================================================================
--- DRAG/DROP OPERATION COLORS
--- =============================================================================
-
-M.OPERATIONS = {
-  move = "#CCCCCCFF",   -- Light gray - move operation
-  copy = "#06B6D4FF",   -- Cyan - copy operation
-  delete = "#E84A4AFF", -- Red - delete operation
-  link = "#4A9EFFFF",   -- Blue - link/reference operation
 }
 
 -- =============================================================================

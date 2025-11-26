@@ -7,7 +7,7 @@
 
 local Colors = require('arkitekt.core.colors')
 local Style = require('arkitekt.gui.style')
-local Palette = require('arkitekt.defs.palette')
+local Palette = require('arkitekt.defs.colors')
 
 local M = {}
 

@@ -1,11 +1,11 @@
 -- @noindex
--- arkitekt/defs/palette.lua
--- Theme palette definition
+-- arkitekt/defs/colors/theme.lua
+-- Theme-reactive color definitions (DSL)
 --
 -- Single source of truth for:
 --   - Presets (dark/light base colors)
 --   - Anchors (lightness values)
---   - All color definitions (flat structure)
+--   - All theme-reactive color definitions
 
 local M = {}
 
@@ -134,6 +134,12 @@ M.colors = {
   PLAYLIST_TILE_COLOR  = snap("#3A3A3A", "#D0D0D0"),
   PLAYLIST_NAME_COLOR  = snap("#CCCCCC", "#2A2A2A"),
   PLAYLIST_BADGE_COLOR = snap("#999999", "#666666"),
+
+  -- === OPERATIONS (drag/drop feedback) ===
+  OP_MOVE   = snap("#CCCCCC", "#444444"),  -- Gray - move operation
+  OP_COPY   = snap("#06B6D4", "#0891B2"),  -- Cyan - copy operation
+  OP_DELETE = snap("#E84A4A", "#DC2626"),  -- Red - delete operation
+  OP_LINK   = snap("#4A9EFF", "#2563EB"),  -- Blue - link/reference
 }
 
 -- =============================================================================

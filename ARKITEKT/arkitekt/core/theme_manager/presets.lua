@@ -6,7 +6,7 @@
 
 local Colors = require('arkitekt.core.colors')
 local Engine = require('arkitekt.core.theme_manager.engine')
-local Palette = require('arkitekt.defs.palette')
+local Palette = require('arkitekt.defs.colors')
 
 local M = {}
 
