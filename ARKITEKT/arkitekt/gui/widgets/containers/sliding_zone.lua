@@ -519,13 +519,13 @@ function M.draw(ctx, opts)
   -- Check if completely hidden (skip drawing)
   local is_settled = state:is_settled(opts.snap_epsilon or 0.001)
   if visibility < 0.001 and slide_offset < 0.5 and is_settled then
-    return Base.create_result({
+    return {
       expanded = state.is_expanded,
       visibility = visibility,
       bounds = content_bounds,
       hovered = false,
       settled = true,
-    })
+    }
   end
 
   -- Apply clipping if enabled
@@ -551,13 +551,13 @@ function M.draw(ctx, opts)
   local is_hovered = mx >= content_bounds.x and mx <= content_bounds.x + content_bounds.w and
                      my >= content_bounds.y and my <= content_bounds.y + content_bounds.h
 
-  return Base.create_result({
+  return {
     expanded = state.is_expanded,
     visibility = visibility,
     bounds = content_bounds,
     hovered = is_hovered,
     settled = is_settled,
-  })
+  }
 end
 
 --- Toggle expanded state (for button trigger mode)
