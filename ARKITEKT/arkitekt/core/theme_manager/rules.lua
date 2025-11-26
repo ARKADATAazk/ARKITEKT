@@ -44,7 +44,7 @@ end
 --- @param light_val any Value for light themes
 --- @return table Wrapper with mode metadata
 function M.snapAtMidpoint(dark_val, light_val)
-  return { mode = "offset", dark = dark_val, light = light_val, threshold = 0.5 }
+  return { mode = "snap", dark = dark_val, light = light_val, threshold = 0.5 }
 end
 
 --- Snap between values at custom threshold
@@ -53,7 +53,7 @@ end
 --- @param light_val any Value for light themes (t >= threshold)
 --- @return table Wrapper with mode metadata
 function M.snapAt(threshold, dark_val, light_val)
-  return { mode = "offset", dark = dark_val, light = light_val, threshold = threshold }
+  return { mode = "snap", dark = dark_val, light = light_val, threshold = threshold }
 end
 
 -- =============================================================================

@@ -51,60 +51,38 @@ local Debug = require('arkitekt.core.theme_manager.debug')
 local M = {}
 
 -- =============================================================================
--- RE-EXPORTS: DSL Wrappers
+-- RE-EXPORTS
 -- =============================================================================
 
-M.offsetFromBase = Rules.offsetFromBase
-M.lerpDarkLight = Rules.lerpDarkLight
-M.snapAtMidpoint = Rules.snapAtMidpoint
-M.snapAt = Rules.snapAt
+-- DSL wrappers (for defining theme-reactive rules)
+M.offsetFromBase, M.lerpDarkLight = Rules.offsetFromBase, Rules.lerpDarkLight
+M.snapAtMidpoint, M.snapAt = Rules.snapAtMidpoint, Rules.snapAt
 
--- =============================================================================
--- RE-EXPORTS: Rules and Anchors
--- =============================================================================
+-- Rules and anchors
+M.rules, M.anchors = Rules.definitions, Rules.anchors
 
-M.rules = Rules.definitions
-M.anchors = Rules.anchors
+-- Presets
+M.themes, M.get_theme_names, M.get_primary_presets =
+  Presets.themes, Presets.get_names, Presets.get_primary
 
--- =============================================================================
--- RE-EXPORTS: Presets
--- =============================================================================
+-- Debug and validation
+M.debug_enabled, M.toggle_debug = Debug.debug_enabled, Debug.toggle_debug
+M.enable_debug, M.disable_debug = Debug.enable_debug, Debug.disable_debug
+M.validate, M.get_validation_summary = Debug.validate, Debug.get_validation_summary
 
-M.themes = Presets.themes
-M.get_theme_names = Presets.get_names
-M.get_primary_presets = Presets.get_primary
-
--- =============================================================================
--- RE-EXPORTS: Debug and Validation
--- =============================================================================
-
-M.debug_enabled = Debug.debug_enabled
-M.toggle_debug = Debug.toggle_debug
-M.enable_debug = Debug.enable_debug
-M.disable_debug = Debug.disable_debug
-M.validate = Debug.validate
-M.get_validation_summary = Debug.get_validation_summary
-
--- =============================================================================
--- RE-EXPORTS: Script Registration
--- =============================================================================
-
-M.register_script_colors = Registry.register_colors
-M.unregister_script_colors = Registry.unregister_colors
+-- Script registration
+M.register_script_colors, M.unregister_script_colors =
+  Registry.register_colors, Registry.unregister_colors
+M.register_script_rules, M.unregister_script_rules =
+  Registry.register_rules, Registry.unregister_rules
 M.get_registered_script_colors = Registry.get_all_colors
-M.register_script_rules = Registry.register_rules
-M.unregister_script_rules = Registry.unregister_rules
-M.registered_script_colors = Registry.script_colors
-M.registered_script_rules = Registry.script_rules
+M.registered_script_colors, M.registered_script_rules =
+  Registry.script_colors, Registry.script_rules
 M.clear_script_rules_cache = Registry.clear_cache
 
--- =============================================================================
--- RE-EXPORTS: Transitions
--- =============================================================================
-
-M.transition_to_palette = Integration.transition_to_palette
-M.transition_to_theme = Integration.transition_to_theme
-M.create_live_sync = Integration.create_live_sync
+-- Transitions
+M.transition_to_palette, M.transition_to_theme, M.create_live_sync =
+  Integration.transition_to_palette, Integration.transition_to_theme, Integration.create_live_sync
 
 -- =============================================================================
 -- STATE

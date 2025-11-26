@@ -33,20 +33,6 @@ function M.disable_debug()
 end
 
 -- =============================================================================
--- SCRIPT REGISTRATION (delegated to Registry)
--- =============================================================================
-
-M.registered_script_colors = Registry.script_colors
-M.registered_script_rules = Registry.script_rules
-M.register_script_colors = Registry.register_colors
-M.unregister_script_colors = Registry.unregister_colors
-M.get_registered_script_colors = Registry.get_all_colors
-M.register_script_rules = Registry.register_rules
-M.unregister_script_rules = Registry.unregister_rules
-M.get_script_rules = Registry.get_computed_rules
-M.clear_script_rules_cache = Registry.clear_cache
-
--- =============================================================================
 -- VALIDATION
 -- =============================================================================
 
@@ -73,10 +59,10 @@ function M.validate()
       end
 
       -- Check: Valid mode
-      local valid_modes = { lerp = true, offset = true }
+      local valid_modes = { lerp = true, offset = true, snap = true }
       if not valid_modes[rule.mode] then
         errors[#errors + 1] = string.format(
-          "Rule '%s' has invalid mode '%s' (expected: lerp, offset)",
+          "Rule '%s' has invalid mode '%s' (expected: lerp, offset, snap)",
           key, tostring(rule.mode)
         )
       end
@@ -140,16 +126,18 @@ end
 -- =============================================================================
 
 -- Build rule -> style map from palette definition (auto-generated)
+-- Most rules are discovered via palette.definition[key][3..4]
 local RULE_TO_STYLE_MAP = {}
 for style_key, def in pairs(Palette.definition) do
   if type(def[3]) == "string" then RULE_TO_STYLE_MAP[def[3]] = style_key end
   if type(def[4]) == "string" then RULE_TO_STYLE_MAP[def[4]] = style_key end
 end
--- BG_CHROME uses chrome_lightness_* rules (special derivation)
-RULE_TO_STYLE_MAP["chrome_lightness_factor"] = "BG_CHROME"
-RULE_TO_STYLE_MAP["chrome_lightness_offset"] = "BG_CHROME"
-RULE_TO_STYLE_MAP["chrome_lightness_min"] = "BG_CHROME"
-RULE_TO_STYLE_MAP["chrome_lightness_max"] = "BG_CHROME"
+-- BG_CHROME: uses "chrome" derivation type which doesn't reference rules directly
+-- These rules are used internally by engine.compute_sources() for chrome color
+for _, rule_key in ipairs({ "chrome_lightness_factor", "chrome_lightness_offset",
+                            "chrome_lightness_min", "chrome_lightness_max" }) do
+  RULE_TO_STYLE_MAP[rule_key] = "BG_CHROME"
+end
 
 --- Render debug window showing current theme state
 --- @param ctx userdata ImGui context
