@@ -382,16 +382,21 @@ local function delete_nodes_by_ids(nodes, ids_to_delete)
   end
 end
 
-local function duplicate_node(node)
+local function duplicate_node(node, add_copy_suffix)
+  -- add_copy_suffix: true = add " (copy)" to name, false/nil = keep original name
+  if add_copy_suffix == nil then add_copy_suffix = true end
+
   local new_node = {
-    id = node.id .. "_copy_" .. os.time(),
-    name = node.name .. " (copy)",
+    id = node.id .. "_copy_" .. os.time() .. "_" .. math.random(1000, 9999),
+    name = add_copy_suffix and (node.name .. " (copy)") or node.name,
     color = node.color,
+    flags = node.flags,
+    checked = node.checked,
     children = {}
   }
   if node.children then
     for _, child in ipairs(node.children) do
-      table.insert(new_node.children, duplicate_node(child))
+      table.insert(new_node.children, duplicate_node(child, false))  -- Children keep original names
     end
   end
   return new_node
@@ -1501,6 +1506,21 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
       if tree_state.drop_target_id and tree_state.drop_position then
         local target_id = tree_state.drop_target_id
         local is_copy = tree_state.drag_is_copy
+        local new_selected_ids = {}  -- Track new IDs for selection restoration
+
+        -- Determine target parent (for checking if copying to same location)
+        local target_parent_id = nil
+        if tree_state.drop_position == "into" then
+          target_parent_id = target_id
+        else
+          -- Find parent of target node
+          for _, item in ipairs(tree_state.flat_list) do
+            if item.id == target_id then
+              target_parent_id = item.parent_id
+              break
+            end
+          end
+        end
 
         -- Move or copy all dragged nodes
         local nodes_to_insert = {}
@@ -1512,11 +1532,26 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
               -- Copy mode: Duplicate the node
               local source_node = find_node_by_id(nodes, drag_id)
               if source_node then
-                node_to_insert = duplicate_node(source_node)
+                -- Find source parent to check if copying to same location
+                local source_parent_id = nil
+                for _, item in ipairs(tree_state.flat_list) do
+                  if item.id == drag_id then
+                    source_parent_id = item.parent_id
+                    break
+                  end
+                end
+
+                -- Only add (copy) suffix if copying to same parent
+                local same_parent = (source_parent_id == target_parent_id)
+                node_to_insert = duplicate_node(source_node, same_parent)
+                table.insert(new_selected_ids, node_to_insert.id)
               end
             else
               -- Move mode: Remove and move
               node_to_insert = remove_node_from_tree(nodes, drag_id)
+              if node_to_insert then
+                table.insert(new_selected_ids, node_to_insert.id)
+              end
             end
 
             if node_to_insert then
@@ -1534,6 +1569,16 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
             pos = "after"
           end
           insert_node_at(nodes, target_id, node_to_insert, pos)
+        end
+
+        -- Restore selection to moved/copied items
+        if #new_selected_ids > 0 then
+          tree_state.selected = {}
+          for _, id in ipairs(new_selected_ids) do
+            tree_state.selected[id] = true
+          end
+          tree_state.focused = new_selected_ids[1]
+          tree_state.anchor = new_selected_ids[1]
         end
       end
 
