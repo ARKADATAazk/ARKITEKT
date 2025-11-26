@@ -11,13 +11,33 @@
 --
 --   local ThemeManager = require('arkitekt.core.theme_manager')
 --
---   ThemeManager.set_dark()   -- Dark preset (~12% lightness)
+--   ThemeManager.set_dark()   -- Dark preset (~14% lightness)
 --   ThemeManager.set_grey()   -- Grey preset (~24% lightness)
 --   ThemeManager.set_light()  -- Light preset (~88% lightness)
 --   ThemeManager.adapt()      -- Sync with REAPER's current theme
 --
 --   -- Or use set_mode() for UI selectors:
 --   ThemeManager.set_mode("dark")   -- "dark", "grey", "light", or "adapt"
+--
+-- ============================================================================
+-- RULE WRAPPERS (Unified Single-Definition System)
+-- ============================================================================
+--
+-- Each rule is defined ONCE with a wrapper that describes its behavior:
+--
+--   offsetFromBase(delta)           - Fixed delta from BG_BASE (same both themes)
+--   offsetFromBase(dark, light)     - Different deltas, SNAP at t=0.5
+--   offsetFromBase(dark, light, t)  - Different deltas, SNAP at custom threshold
+--
+--   lerpDarkLight(dark, light)      - Smooth interpolation between values
+--                                     (auto-detects numbers vs hex colors)
+--
+--   snapAtMidpoint(dark, light)     - Discrete snap at t=0.5
+--   snapAt(threshold, dark, light)  - Discrete snap at custom threshold
+--
+-- The interpolation factor 't' is computed from current lightness:
+--   t = (lightness - 0.14) / (0.88 - 0.14)
+--   t=0.0 at dark anchor (14%), t=1.0 at light anchor (88%)
 --
 -- ============================================================================
 -- ADVANCED API
@@ -42,243 +62,145 @@ local Style = require('arkitekt.gui.style')
 local M = {}
 
 -- ============================================================================
--- CONFIGURATION
+-- VALUE WRAPPERS - Unified Single-Definition System
 -- ============================================================================
+-- Each wrapper defines HOW a rule adapts to theme lightness.
+-- All rules are defined once (not in separate dark/light presets).
 
--- ============================================================================
--- VALUE WRAPPERS - Define interpolation behavior
--- ============================================================================
--- These wrappers tell the system HOW to transition between preset values:
---   blend(value)  - smooth gradient between dark↔light (linear interpolation)
---   step(value)   - discrete snap at midpoint (no interpolation, uses closest preset)
-
---- Smooth gradient between preset values
---- @param value any The value for this preset
+--- Offset from BG_BASE color
+--- Single arg: constant delta regardless of theme
+--- Two args: SNAP between deltas at t=0.5 (no lerp - base already adapts)
+--- Three args: SNAP between deltas at custom threshold
+--- @param dark_delta number Delta for dark themes (or constant if only arg)
+--- @param light_delta number|nil Delta for light themes (optional)
+--- @param threshold number|nil Snap threshold in t-space (default 0.5)
 --- @return table Wrapper with mode metadata
-local function blend(value)
-  return { value = value, mode = "blend" }
+local function offsetFromBase(dark_delta, light_delta, threshold)
+  if light_delta == nil then
+    -- Single value: constant delta
+    return { mode = "offset", dark = dark_delta, light = dark_delta, threshold = 0.5 }
+  else
+    -- Two values: snap between them
+    return { mode = "offset", dark = dark_delta, light = light_delta, threshold = threshold or 0.5 }
+  end
 end
 
---- Discrete steps - snap at midpoint (no interpolation)
---- @param value any The value for this preset
+--- Smooth interpolation between dark and light values
+--- Works with numbers (linear lerp) and hex colors (RGB lerp)
+--- @param dark_val any Value for dark themes
+--- @param light_val any Value for light themes
 --- @return table Wrapper with mode metadata
-local function step(value)
-  return { value = value, mode = "step" }
+local function lerpDarkLight(dark_val, light_val)
+  return { mode = "lerp", dark = dark_val, light = light_val }
+end
+
+--- Snap between values at midpoint (t=0.5)
+--- @param dark_val any Value for dark themes
+--- @param light_val any Value for light themes
+--- @return table Wrapper with mode metadata
+local function snapAtMidpoint(dark_val, light_val)
+  return { mode = "snap", dark = dark_val, light = light_val, threshold = 0.5 }
+end
+
+--- Snap between values at custom threshold
+--- @param threshold number Threshold in t-space (0.0-1.0)
+--- @param dark_val any Value for dark themes (t < threshold)
+--- @param light_val any Value for light themes (t >= threshold)
+--- @return table Wrapper with mode metadata
+local function snapAt(threshold, dark_val, light_val)
+  return { mode = "snap", dark = dark_val, light = light_val, threshold = threshold }
 end
 
 -- Export wrappers for external use
-M.blend = blend
-M.step = step
+M.offsetFromBase = offsetFromBase
+M.lerpDarkLight = lerpDarkLight
+M.snapAtMidpoint = snapAtMidpoint
+M.snapAt = snapAt
+
+-- Legacy exports (for backward compatibility during transition)
+M.blend = function(value) return lerpDarkLight(value, value) end
+M.step = function(value) return snapAtMidpoint(value, value) end
 
 -- ============================================================================
--- THEME PRESETS (dark/light)
+-- THEME RULES (Unified Single-Definition)
 -- ============================================================================
--- Two anchor presets defining the endpoints for interpolation.
--- Values wrapped with blend() will smoothly interpolate between dark↔light.
--- Values wrapped with step() will snap at the midpoint.
--- All intermediate themes (grey, adapt, custom) are auto-derived.
+-- All rules defined once. Each wrapper specifies behavior across dark↔light.
+-- BG_BASE itself adapts to lightness; offsets are applied on top.
 
-M.presets = {
-  -- DARK preset (~14% lightness)
-  -- Optimized for: low-light environments, OLED screens
-  dark = {
-    -- Background deltas (positive = lighter on dark themes)
-    bg_hover_delta = blend(0.03),
-    bg_active_delta = blend(0.05),
-    bg_header_delta = blend(-0.024),
-    bg_panel_delta = blend(-0.04),
+M.rules = {
+  -- ========== BACKGROUND OFFSETS ==========
+  -- offsetFromBase: delta applied to BG_BASE
+  -- Different signs = snap at threshold (contrast-preserving)
+  -- Same signs = constant offset
+  bg_hover_delta = offsetFromBase(0.03, -0.04),      -- Lighter on dark, darker on light
+  bg_active_delta = offsetFromBase(0.05, -0.07),     -- More pronounced for active state
+  bg_header_delta = offsetFromBase(-0.024, -0.06),   -- Headers slightly darker
+  bg_panel_delta = offsetFromBase(-0.04),            -- Panels always darker (same both)
 
-    -- Pattern visibility
-    pattern_primary_delta = blend(-0.024),
-    pattern_secondary_delta = blend(-0.004),
+  -- ========== PATTERN OFFSETS ==========
+  -- Applied to BG_PANEL (which is derived from BG_BASE)
+  pattern_primary_delta = offsetFromBase(-0.024, -0.06),
+  pattern_secondary_delta = offsetFromBase(-0.004, -0.02),
 
-    -- Borders
-    border_outer_color = step("#000000"),  -- Pure black for dark themes
-    border_outer_opacity = blend(0.87),
-    border_inner_delta = blend(0.05),
-    border_hover_delta = blend(0.10),
-    border_active_delta = blend(0.15),
-    border_focus_delta = blend(0.20),
+  -- ========== BORDER COLORS ==========
+  border_outer_color = snapAtMidpoint("#000000", "#404040"),  -- Black on dark, grey on light
+  border_outer_opacity = lerpDarkLight(0.87, 0.60),           -- More opaque on dark
 
-    -- Text
-    text_hover_delta = blend(0.05),
-    text_dimmed_delta = blend(-0.10),
-    text_dark_delta = blend(-0.20),
-    text_bright_delta = blend(0.10),
+  -- Border offsets from BG_BASE
+  border_inner_delta = offsetFromBase(0.05, -0.03),
+  border_hover_delta = offsetFromBase(0.10, -0.08),
+  border_active_delta = offsetFromBase(0.15, -0.12),
+  border_focus_delta = offsetFromBase(0.20, -0.15),
 
-    -- Accents
-    accent_bright_delta = blend(0.15),
-    accent_white_lightness = blend(0.25),
-    accent_white_bright_lightness = blend(0.35),
+  -- ========== TEXT OFFSETS ==========
+  -- Applied to base_text color
+  text_hover_delta = offsetFromBase(0.05, -0.05),
+  text_dimmed_delta = offsetFromBase(-0.10, 0.15),
+  text_dark_delta = offsetFromBase(-0.20, 0.25),
+  text_bright_delta = offsetFromBase(0.10, -0.08),
 
-    -- Tile rendering
-    tile_fill_brightness = blend(0.5),
-    tile_fill_saturation = blend(0.4),
-    tile_fill_opacity = blend(0.4),
-    tile_name_color = step("#DDE3E9"),  -- Light text on dark backgrounds
+  -- ========== ACCENT VALUES ==========
+  accent_bright_delta = offsetFromBase(0.15, -0.12),
+  accent_white_lightness = lerpDarkLight(0.25, 0.55),         -- Absolute lightness values
+  accent_white_bright_lightness = lerpDarkLight(0.35, 0.45),
 
-    -- Badges (count indicators, playlist chips)
-    badge_bg_color = step("#14181C"),       -- Dark blue-grey background
-    badge_bg_opacity = blend(0.85),
-    badge_text_color = step("#FFFFFF"),     -- White text on dark badges
-    badge_border_opacity = blend(0.20),
+  -- ========== TILE RENDERING ==========
+  -- Multipliers for user-colored elements
+  tile_fill_brightness = lerpDarkLight(0.5, 1.4),
+  tile_fill_saturation = lerpDarkLight(0.4, 0.5),
+  tile_fill_opacity = lerpDarkLight(0.4, 0.5),
+  tile_name_color = snapAtMidpoint("#DDE3E9", "#1A1A1A"),     -- Light text dark bg, dark text light bg
 
-    -- Playlist tiles (in pool/active views)
-    playlist_tile_color = step("#3A3A3A"),  -- Neutral grey base
-    playlist_name_color = step("#CCCCCC"),  -- Light grey text
-    playlist_badge_color = step("#999999"), -- Dimmed badge text
-  },
+  -- ========== BADGES ==========
+  badge_bg_color = snapAtMidpoint("#14181C", "#E8ECF0"),
+  badge_bg_opacity = lerpDarkLight(0.85, 0.90),
+  badge_text_color = snapAtMidpoint("#FFFFFF", "#1A1A1A"),
+  badge_border_opacity = lerpDarkLight(0.20, 0.15),
 
-  -- LIGHT preset (~88% lightness)
-  -- Optimized for: bright environments, paper-like appearance
-  light = {
-    -- Background deltas (negative = darker on light themes)
-    bg_hover_delta = blend(-0.04),
-    bg_active_delta = blend(-0.07),
-    bg_header_delta = blend(-0.06),
-    bg_panel_delta = blend(-0.04),
-
-    -- Pattern visibility (needs more contrast on light backgrounds)
-    pattern_primary_delta = blend(-0.06),
-    pattern_secondary_delta = blend(-0.02),
-
-    -- Borders
-    border_outer_color = step("#404040"),  -- Soft grey for light themes
-    border_outer_opacity = blend(0.60),
-    border_inner_delta = blend(-0.03),
-    border_hover_delta = blend(-0.08),
-    border_active_delta = blend(-0.12),
-    border_focus_delta = blend(-0.15),
-
-    -- Text
-    text_hover_delta = blend(-0.05),
-    text_dimmed_delta = blend(0.15),
-    text_dark_delta = blend(0.25),
-    text_bright_delta = blend(-0.08),
-
-    -- Accents
-    accent_bright_delta = blend(-0.12),
-    accent_white_lightness = blend(0.55),
-    accent_white_bright_lightness = blend(0.45),
-
-    -- Tile rendering (inverted: brighten fills, dark text)
-    tile_fill_brightness = blend(1.4),
-    tile_fill_saturation = blend(0.5),
-    tile_fill_opacity = blend(0.5),
-    tile_name_color = step("#1A1A1A"),  -- Dark text on light backgrounds
-
-    -- Badges (count indicators, playlist chips)
-    badge_bg_color = step("#E8ECF0"),       -- Light grey background
-    badge_bg_opacity = blend(0.90),
-    badge_text_color = step("#1A1A1A"),     -- Dark text on light badges
-    badge_border_opacity = blend(0.15),
-
-    -- Playlist tiles (in pool/active views)
-    playlist_tile_color = step("#D0D0D0"),  -- Light grey base
-    playlist_name_color = step("#2A2A2A"),  -- Dark text
-    playlist_badge_color = step("#666666"), -- Dimmed badge text
-  },
+  -- ========== PLAYLIST TILES ==========
+  playlist_tile_color = snapAtMidpoint("#3A3A3A", "#D0D0D0"),
+  playlist_name_color = snapAtMidpoint("#CCCCCC", "#2A2A2A"),
+  playlist_badge_color = snapAtMidpoint("#999999", "#666666"),
 }
 
 -- ============================================================================
 -- PRESET ANCHORS
 -- ============================================================================
--- Lightness values for the two anchor presets.
--- All intermediate values are interpolated between these endpoints.
+-- Lightness values defining the dark↔light interpolation range.
+-- t=0.0 at dark anchor, t=1.0 at light anchor.
 
 M.preset_anchors = {
   dark = 0.14,   -- ~14% lightness
   light = 0.88,  -- ~88% lightness
 }
 
--- ============================================================================
--- LEGACY COMPATIBILITY
--- ============================================================================
--- Map old names to new presets for backwards compatibility
-M.theme_rules = {
-  dark = M.presets.dark,
-  grey = M.presets.dark,   -- Grey now uses dark as base (auto-interpolated)
-  light = M.presets.light,
-  black = M.presets.dark,
-  white = M.presets.light,
-}
-
+-- Legacy alias
 M.theme_anchors = M.preset_anchors
 
---- Extract raw value from wrapper or return as-is
---- @param wrapped any Wrapped value or raw value
---- @return any Raw value
-local function unwrap(wrapped)
-  if type(wrapped) == "table" and wrapped.mode then
-    return wrapped.value
-  end
-  return wrapped
-end
-
---- Get interpolation mode from wrapper
---- @param wrapped any Wrapped value or raw value
---- @return string Mode ("blend", "step", or "blend" for raw values)
-local function get_mode(wrapped)
-  if type(wrapped) == "table" and wrapped.mode then
-    return wrapped.mode
-  end
-  return "blend"  -- Default: raw values blend
-end
-
---- Interpolate between two rule sets respecting wrapper modes
---- @param rules_a table First rule set (preset)
---- @param rules_b table Second rule set (preset)
---- @param t number Interpolation factor (0.0 = rules_a, 1.0 = rules_b)
---- @return table Interpolated rules (unwrapped raw values)
-local function lerp_rules(rules_a, rules_b, t)
-  local result = {}
-
-  for key, wrapped_a in pairs(rules_a) do
-    local wrapped_b = rules_b[key]
-    local value_a = unwrap(wrapped_a)
-    local value_b = unwrap(wrapped_b)
-    local mode = get_mode(wrapped_a)
-
-    if mode == "step" then
-      -- Step: no interpolation, use closest preset's value
-      result[key] = t < 0.5 and value_a or value_b
-
-    elseif mode == "blend" then
-      -- Blend: smooth interpolation
-      if type(value_a) == "number" and type(value_b) == "number" then
-        result[key] = value_a + (value_b - value_a) * t
-      elseif type(value_a) == "string" and type(value_b) == "string" then
-        -- Lerp colors (hex strings like "#RRGGBB")
-        local color_a = Colors.hexrgb(value_a)
-        local color_b = Colors.hexrgb(value_b)
-        result[key] = Colors.lerp(color_a, color_b, t)
-        -- Convert back to hex string for consistency
-        local r, g, b = Colors.rgba_to_components(result[key])
-        result[key] = string.format("#%02X%02X%02X", r, g, b)
-      else
-        -- Non-interpolatable, use closest
-        result[key] = t < 0.5 and value_a or value_b
-      end
-
-    else
-      -- Unknown mode, treat as blend
-      result[key] = t < 0.5 and value_a or value_b
-    end
-  end
-
-  return result
-end
-
---- Unwrap all values in a preset (for non-interpolated access)
---- @param preset table Preset with wrapped values
---- @return table Unwrapped raw values
-local function unwrap_preset(preset)
-  local result = {}
-  for key, wrapped in pairs(preset) do
-    result[key] = unwrap(wrapped)
-  end
-  return result
-end
+-- ============================================================================
+-- RULE COMPUTATION
+-- ============================================================================
+-- Core logic for computing rule values based on current lightness.
 
 --- Get current theme's base lightness (0.0-1.0)
 --- @return number Lightness of current BG_BASE
@@ -288,49 +210,148 @@ function M.get_theme_lightness()
   return l
 end
 
---- Compute interpolated rules for a given lightness value
---- This is the core interpolation logic used by both generate_palette and get_current_rules
+--- Compute interpolation factor 't' from lightness
 --- @param lightness number Background lightness (0.0-1.0)
---- @param mode string|nil Theme mode ("dark", "grey", "light", "adapt", or nil for adapt)
---- @return table Interpolated rules (unwrapped raw values)
-local function compute_rules_for_lightness(lightness, mode)
-  local preset_rules
+--- @return number t value (0.0 at dark anchor, 1.0 at light anchor)
+local function compute_t(lightness)
+  local range = M.preset_anchors.light - M.preset_anchors.dark
+  if range <= 0 then return 0 end
+  local t = (lightness - M.preset_anchors.dark) / range
+  return math.max(0, math.min(1, t))
+end
 
-  -- Get preset rules based on mode
-  -- "dark" and "grey" both use dark preset (grey is auto-interpolated)
-  if mode == "dark" or mode == "grey" then
-    preset_rules = unwrap_preset(M.presets.dark)
-  elseif mode == "light" then
-    preset_rules = unwrap_preset(M.presets.light)
-  else
-    -- "adapt" mode or nil: interpolate between dark and light based on lightness
-    if lightness <= M.preset_anchors.dark then
-      -- Below dark anchor: use dark preset
-      preset_rules = unwrap_preset(M.presets.dark)
-    elseif lightness >= M.preset_anchors.light then
-      -- Above light anchor: use light preset
-      preset_rules = unwrap_preset(M.presets.light)
-    else
-      -- Between anchors: interpolate linearly between dark and light
-      local range = M.preset_anchors.light - M.preset_anchors.dark
-      local t = (lightness - M.preset_anchors.dark) / range
-      preset_rules = lerp_rules(M.presets.dark, M.presets.light, t)
-    end
+--- Compute a single rule value based on wrapper type and current t
+--- @param rule table Wrapped rule from M.rules
+--- @param t number Interpolation factor (0.0-1.0)
+--- @return any Computed value
+local function compute_rule_value(rule, t)
+  if type(rule) ~= "table" or not rule.mode then
+    -- Raw value (not wrapped), return as-is
+    return rule
   end
 
-  return preset_rules
+  local mode = rule.mode
+  local dark_val = rule.dark
+  local light_val = rule.light
+  local threshold = rule.threshold or 0.5
+
+  if mode == "offset" then
+    -- Offset: snap between deltas at threshold
+    -- (No lerp - BG_BASE already adapts, we just pick the right delta)
+    return t < threshold and dark_val or light_val
+
+  elseif mode == "snap" then
+    -- Snap: discrete switch at threshold
+    return t < threshold and dark_val or light_val
+
+  elseif mode == "lerp" then
+    -- Lerp: smooth interpolation
+    if type(dark_val) == "number" and type(light_val) == "number" then
+      return dark_val + (light_val - dark_val) * t
+    elseif type(dark_val) == "string" and type(light_val) == "string" then
+      -- RGB color lerp for hex strings
+      local color_a = Colors.hexrgb(dark_val .. (dark_val:len() == 7 and "FF" or ""))
+      local color_b = Colors.hexrgb(light_val .. (light_val:len() == 7 and "FF" or ""))
+      local lerped = Colors.lerp(color_a, color_b, t)
+      -- Convert back to hex string
+      local r, g, b = Colors.rgba_to_components(lerped)
+      return string.format("#%02X%02X%02X", r, g, b)
+    else
+      -- Non-interpolatable, snap at midpoint
+      return t < 0.5 and dark_val or light_val
+    end
+
+  else
+    -- Unknown mode, return dark value
+    return dark_val
+  end
+end
+
+--- Compute all rules for a given lightness value
+--- @param lightness number Background lightness (0.0-1.0)
+--- @param mode string|nil Theme mode ("dark", "grey", "light", "adapt", or nil)
+--- @return table Computed rules (raw values ready for use)
+local function compute_rules_for_lightness(lightness, mode)
+  local t
+
+  -- Determine t based on mode
+  if mode == "dark" then
+    t = 0  -- Force dark values
+  elseif mode == "grey" then
+    -- Grey is at ~24% lightness, compute its t value
+    t = compute_t(0.24)
+  elseif mode == "light" then
+    t = 1  -- Force light values
+  else
+    -- "adapt" mode or nil: compute t from actual lightness
+    t = compute_t(lightness)
+  end
+
+  -- Compute each rule value
+  local result = {}
+  for key, rule in pairs(M.rules) do
+    result[key] = compute_rule_value(rule, t)
+  end
+
+  return result
 end
 
 --- Get derivation rules for current theme mode
---- For explicit modes (dark/grey/light), returns those rules directly.
---- For "adapt" mode, interpolates between anchor rules based on current lightness.
---- @return table Rules table for the current theme (unwrapped raw values)
+--- @return table Rules table for the current theme (computed values)
 function M.get_current_rules()
   return compute_rules_for_lightness(M.get_theme_lightness(), M.current_mode)
 end
 
--- Legacy compatibility: keep derivation_rules pointing to dark preset
-M.derivation_rules = unwrap_preset(M.presets.dark)
+--- Get current interpolation factor t
+--- @return number t value (0.0 at dark, 1.0 at light)
+function M.get_current_t()
+  local lightness = M.get_theme_lightness()
+  if M.current_mode == "dark" then return 0 end
+  if M.current_mode == "light" then return 1 end
+  if M.current_mode == "grey" then return compute_t(0.24) end
+  return compute_t(lightness)
+end
+
+-- ============================================================================
+-- LEGACY COMPATIBILITY
+-- ============================================================================
+-- Backward compatibility for code using old two-preset system
+
+-- Legacy presets structure (maps to new unified rules evaluated at endpoints)
+M.presets = {
+  dark = setmetatable({}, {
+    __index = function(_, key)
+      local rule = M.rules[key]
+      if rule and type(rule) == "table" then
+        return rule.dark
+      end
+      return rule
+    end
+  }),
+  light = setmetatable({}, {
+    __index = function(_, key)
+      local rule = M.rules[key]
+      if rule and type(rule) == "table" then
+        return rule.light
+      end
+      return rule
+    end
+  }),
+}
+
+-- Legacy theme_rules map
+M.theme_rules = M.presets
+
+-- Legacy derivation_rules (returns dark values)
+M.derivation_rules = setmetatable({}, {
+  __index = function(_, key)
+    local rule = M.rules[key]
+    if rule and type(rule) == "table" then
+      return rule.dark
+    end
+    return rule
+  end
+})
 
 -- ============================================================================
 -- CORE: ALGORITHMIC PALETTE GENERATION
@@ -891,79 +912,60 @@ end
 -- THEME VALIDATION
 -- ============================================================================
 -- Runtime checks to catch configuration errors early.
--- Validates that presets are structurally consistent.
+-- With the unified rules system, validation is simpler - just check wrappers.
 
---- Validate preset configuration
---- Checks that both presets have matching keys, proper wrapper format,
---- consistent modes, and compatible value types.
+--- Validate rules configuration
+--- Checks that all rules are properly wrapped with valid dark/light values.
 --- @return boolean valid True if configuration is valid
 --- @return string|nil error_message Error details if invalid
 function M.validate()
   local errors = {}
 
-  -- Collect keys from both presets
-  local dark_keys = {}
-  for key in pairs(M.presets.dark) do
-    dark_keys[key] = true
-  end
+  for key, rule in pairs(M.rules) do
+    -- Check: Rule is properly wrapped
+    if type(rule) ~= "table" or not rule.mode then
+      errors[#errors + 1] = string.format(
+        "Rule '%s' is not wrapped (use offsetFromBase, lerpDarkLight, snapAtMidpoint, or snapAt)",
+        key
+      )
+    else
+      -- Check: Has dark and light values
+      if rule.dark == nil then
+        errors[#errors + 1] = string.format("Rule '%s' missing 'dark' value", key)
+      end
+      if rule.light == nil then
+        errors[#errors + 1] = string.format("Rule '%s' missing 'light' value", key)
+      end
 
-  local light_keys = {}
-  for key in pairs(M.presets.light) do
-    light_keys[key] = true
-  end
-
-  -- Check: Keys in dark but not light
-  for key in pairs(dark_keys) do
-    if not light_keys[key] then
-      errors[#errors + 1] = string.format("Key '%s' in dark preset but missing from light", key)
-    end
-  end
-
-  -- Check: Keys in light but not dark
-  for key in pairs(light_keys) do
-    if not dark_keys[key] then
-      errors[#errors + 1] = string.format("Key '%s' in light preset but missing from dark", key)
-    end
-  end
-
-  -- Check: All values are properly wrapped
-  for preset_name, preset in pairs(M.presets) do
-    for key, value in pairs(preset) do
-      if type(value) ~= "table" or not value.mode then
+      -- Check: Valid mode
+      local valid_modes = { offset = true, lerp = true, snap = true }
+      if not valid_modes[rule.mode] then
         errors[#errors + 1] = string.format(
-          "Key '%s' in %s preset is not wrapped (use blend() or step())",
-          key, preset_name
+          "Rule '%s' has invalid mode '%s' (expected: offset, lerp, snap)",
+          key, tostring(rule.mode)
         )
       end
-    end
-  end
 
-  -- Check: Wrapper modes match between presets
-  for key in pairs(M.presets.dark) do
-    if M.presets.light[key] then
-      local dark_mode = get_mode(M.presets.dark[key])
-      local light_mode = get_mode(M.presets.light[key])
-      if dark_mode ~= light_mode then
-        errors[#errors + 1] = string.format(
-          "Key '%s' has mismatched modes: dark=%s, light=%s",
-          key, dark_mode, light_mode
-        )
+      -- Check: Dark and light have same type
+      if rule.dark ~= nil and rule.light ~= nil then
+        local dark_type = type(rule.dark)
+        local light_type = type(rule.light)
+        if dark_type ~= light_type then
+          errors[#errors + 1] = string.format(
+            "Rule '%s' has type mismatch: dark=%s (%s), light=%s (%s)",
+            key, tostring(rule.dark), dark_type, tostring(rule.light), light_type
+          )
+        end
       end
-    end
-  end
 
-  -- Check: Value types match between presets
-  for key in pairs(M.presets.dark) do
-    if M.presets.light[key] then
-      local dark_val = unwrap(M.presets.dark[key])
-      local light_val = unwrap(M.presets.light[key])
-      local dark_type = type(dark_val)
-      local light_type = type(light_val)
-      if dark_type ~= light_type then
-        errors[#errors + 1] = string.format(
-          "Key '%s' has mismatched types: dark=%s (%s), light=%s (%s)",
-          key, tostring(dark_val), dark_type, tostring(light_val), light_type
-        )
+      -- Check: Threshold in valid range (for snap modes)
+      if rule.threshold ~= nil then
+        if type(rule.threshold) ~= "number" or rule.threshold < 0 or rule.threshold > 1 then
+          errors[#errors + 1] = string.format(
+            "Rule '%s' has invalid threshold '%s' (expected: 0.0-1.0)",
+            key, tostring(rule.threshold)
+          )
+        end
       end
     end
   end
@@ -980,17 +982,21 @@ end
 --- @return table Summary with counts and status
 function M.get_validation_summary()
   local valid, err = M.validate()
-  local dark_count = 0
-  local light_count = 0
+  local rule_count = 0
+  local mode_counts = { offset = 0, lerp = 0, snap = 0 }
 
-  for _ in pairs(M.presets.dark) do dark_count = dark_count + 1 end
-  for _ in pairs(M.presets.light) do light_count = light_count + 1 end
+  for _, rule in pairs(M.rules) do
+    rule_count = rule_count + 1
+    if type(rule) == "table" and rule.mode then
+      mode_counts[rule.mode] = (mode_counts[rule.mode] or 0) + 1
+    end
+  end
 
   return {
     valid = valid,
     error_message = err,
-    dark_key_count = dark_count,
-    light_key_count = light_count,
+    rule_count = rule_count,
+    mode_counts = mode_counts,
     error_count = err and select(2, err:gsub("\n", "\n")) + 1 or 0,
   }
 end
@@ -1110,12 +1116,7 @@ function M.render_debug_overlay(ctx, ImGui)
   if not ctx or not ImGui then return end
 
   local lightness = M.get_theme_lightness()
-  local t = 0
-  local range = M.preset_anchors.light - M.preset_anchors.dark
-  if range > 0 then
-    t = (lightness - M.preset_anchors.dark) / range
-    t = math.max(0, math.min(1, t))
-  end
+  local t = M.get_current_t()
 
   -- Window setup
   ImGui.SetNextWindowBgAlpha(ctx, 0.92)
@@ -1146,28 +1147,30 @@ function M.render_debug_overlay(ctx, ImGui)
     ImGui.Separator(ctx)
 
     -- Preset anchors
-    ImGui.Text(ctx, string.format("Dark anchor: %.2f", M.preset_anchors.dark))
-    ImGui.Text(ctx, string.format("Light anchor: %.2f", M.preset_anchors.light))
+    ImGui.Text(ctx, string.format("Dark anchor: %.2f (t=0)", M.preset_anchors.dark))
+    ImGui.Text(ctx, string.format("Light anchor: %.2f (t=1)", M.preset_anchors.light))
     ImGui.Separator(ctx)
 
-    -- Show each preset value with current interpolated result
-    ImGui.Text(ctx, "Preset Rules -> Style.COLORS:")
+    -- Show each rule with current computed result
+    ImGui.Text(ctx, "Rules -> Style.COLORS:")
     ImGui.Separator(ctx)
 
-    local rules = M.get_current_rules()
+    local computed_rules = M.get_current_rules()
 
     -- Sort keys for consistent display
     local sorted_keys = {}
-    for key in pairs(rules) do
+    for key in pairs(M.rules) do
       sorted_keys[#sorted_keys + 1] = key
     end
     table.sort(sorted_keys)
 
     for _, key in ipairs(sorted_keys) do
-      local value = rules[key]
-      local dark_val = unwrap(M.presets.dark[key])
-      local light_val = unwrap(M.presets.light[key])
-      local mode = get_mode(M.presets.dark[key])
+      local rule = M.rules[key]
+      local value = computed_rules[key]
+      local mode = rule.mode or "?"
+      local dark_val = rule.dark
+      local light_val = rule.light
+      local threshold = rule.threshold
       local style_key = RULE_TO_STYLE_MAP[key]
 
       -- Get final computed color from Style.COLORS if available
@@ -1180,7 +1183,7 @@ function M.render_debug_overlay(ctx, ImGui)
         ImGui.SameLine(ctx)
       end
 
-      -- Color swatch for hex color values in preset
+      -- Color swatch for hex color values in computed result
       if type(value) == "string" and value:match("^#") then
         local hex_len = #value
         local hex_with_alpha = value
@@ -1190,7 +1193,7 @@ function M.render_debug_overlay(ctx, ImGui)
           hex_with_alpha = value .. "FF"
         end
         local color = Colors.hexrgb(hex_with_alpha)
-        ImGui.ColorButton(ctx, "preset_" .. key, color, 0, 12, 12)
+        ImGui.ColorButton(ctx, "computed_" .. key, color, 0, 12, 12)
         ImGui.SameLine(ctx)
       end
 
@@ -1202,15 +1205,20 @@ function M.render_debug_overlay(ctx, ImGui)
         display_value = tostring(value)
       end
 
+      -- Mode indicator: O=offset, L=lerp, S=snap
+      local mode_char = mode:sub(1, 1):upper()
       local style_suffix = style_key and (" -> " .. style_key) or ""
-      ImGui.Text(ctx, string.format("[%s] %s: %s%s", mode:sub(1, 1):upper(), key, display_value, style_suffix))
+      ImGui.Text(ctx, string.format("[%s] %s: %s%s", mode_char, key, display_value, style_suffix))
 
-      -- Show dark→light range on hover
+      -- Show dark→light range and threshold on hover
       if ImGui.IsItemHovered(ctx) then
         local tooltip = string.format(
           "dark: %s\nlight: %s\nt=%.3f\nmode: %s",
           tostring(dark_val), tostring(light_val), t, mode
         )
+        if threshold and threshold ~= 0.5 then
+          tooltip = tooltip .. string.format("\nthreshold: %.2f", threshold)
+        end
         if style_key then
           tooltip = tooltip .. "\n\nStyle.COLORS." .. style_key
           if has_final_color then
