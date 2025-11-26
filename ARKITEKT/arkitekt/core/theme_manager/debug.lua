@@ -394,21 +394,41 @@ local function draw_slider(ctx, ImGui, label, value, min_val, max_val, format)
   return changed, new_val
 end
 
---- Draw a color picker for a hex string (uses Colors module for consistency)
+--- Convert RRGGBBAA to AABBGGRR for ImGui ColorEdit (swap byte order)
+local function rgba_to_abgr(rgba)
+  local r = (rgba >> 24) & 0xFF
+  local g = (rgba >> 16) & 0xFF
+  local b = (rgba >> 8) & 0xFF
+  local a = rgba & 0xFF
+  return (a << 24) | (b << 16) | (g << 8) | r
+end
+
+--- Convert AABBGGRR back to RRGGBBAA
+local function abgr_to_rgba(abgr)
+  local a = (abgr >> 24) & 0xFF
+  local b = (abgr >> 16) & 0xFF
+  local g = (abgr >> 8) & 0xFF
+  local r = abgr & 0xFF
+  return (r << 24) | (g << 16) | (b << 8) | a
+end
+
+--- Draw a color picker for a hex string
 local function draw_color_picker(ctx, ImGui, label, hex_value)
-  -- Use Colors.hexrgb for consistent parsing
-  local color_int = Colors.hexrgb(hex_value or "#808080")
+  -- Convert hex to RRGGBBAA, then to AABBGGRR for ColorEdit
+  local rgba = Colors.hexrgb(hex_value or "#808080")
+  local abgr = rgba_to_abgr(rgba)
 
   -- Color picker flags
   local flags = ImGui.ColorEditFlags_NoInputs
               | ImGui.ColorEditFlags_NoLabel
               | ImGui.ColorEditFlags_NoAlpha
 
-  local changed, new_color = ImGui.ColorEdit3(ctx, label, color_int, flags)
+  local changed, new_abgr = ImGui.ColorEdit3(ctx, label, abgr, flags)
 
   if changed then
-    -- Use Colors.to_hexrgb for consistent output
-    return true, Colors.to_hexrgb(new_color)
+    -- Convert back: AABBGGRR -> RRGGBBAA -> hex string
+    local new_rgba = abgr_to_rgba(new_abgr)
+    return true, Colors.to_hexrgb(new_rgba)
   end
 
   return false, hex_value
