@@ -430,7 +430,7 @@ function GUI:draw(ctx, shell_state)
       -- Invalidate cache to refresh display
       self.state.runtime_cache.audio_filter_hash = nil
       self.state.runtime_cache.midi_filter_hash = nil
-      self.state.save_settings()
+      self.state.persist_settings()
     end
 
     -- D: Toggle disabled items
@@ -439,7 +439,7 @@ function GUI:draw(ctx, shell_state)
       -- Invalidate cache to refresh display
       self.state.runtime_cache.audio_filter_hash = nil
       self.state.runtime_cache.midi_filter_hash = nil
-      self.state.save_settings()
+      self.state.persist_settings()
     end
 
     -- F: Toggle favorites filter when nothing selected
@@ -448,7 +448,7 @@ function GUI:draw(ctx, shell_state)
       -- Invalidate cache to refresh display
       self.state.runtime_cache.audio_filter_hash = nil
       self.state.runtime_cache.midi_filter_hash = nil
-      self.state.save_settings()
+      self.state.persist_settings()
     end
   end
 
