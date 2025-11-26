@@ -39,8 +39,13 @@ local DEFAULTS = {
   animation_speed = nil,    -- nil = use Anim.FADE_SPEED
   slide_speed = nil,        -- nil = use Anim.SMOOTH_SPEED
   scale_speed = nil,        -- nil = use Anim.SMOOTH_SPEED
-  retract_delay = 0.3,      -- Seconds to wait before retracting
   snap_epsilon = 0.001,     -- Threshold for considering animation settled
+
+  -- Retract delays
+  retract_delay = 0.3,      -- Base delay (used when directional_delay = false)
+  directional_delay = false, -- Enable direction-aware retract delays
+  retract_delay_toward = 1.0, -- Delay when cursor exits toward panel edge (longer)
+  retract_delay_away = 0.1, -- Delay when cursor exits away from panel edge (shorter)
 
   -- Hover zone
   hover_extend_outside = 30,  -- Extend hover zone outside bounds
@@ -128,6 +133,11 @@ function SlidingZone.new(id)
     is_expanded = false,    -- For button trigger mode
     is_in_hover_zone = false,
     hover_leave_time = nil,
+
+    -- Cursor tracking (for direction-aware retract)
+    last_mouse_x = nil,
+    last_mouse_y = nil,
+    exit_direction = nil,   -- "toward" or "away"
   }, SlidingZone)
 
   return self
@@ -175,6 +185,41 @@ function SlidingZone:teleport(visibility, slide, scale)
   self.visibility_track:teleport(visibility)
   self.slide_track:teleport(slide)
   self.scale_track:teleport(scale)
+end
+
+-- ============================================================================
+-- EXIT DIRECTION CALCULATION
+-- ============================================================================
+
+--- Determine if cursor exit direction is "toward" or "away" from panel edge
+--- @param edge string Panel edge ("left", "right", "top", "bottom")
+--- @param prev_x number Previous cursor X
+--- @param prev_y number Previous cursor Y
+--- @param curr_x number Current cursor X
+--- @param curr_y number Current cursor Y
+--- @return string "toward" if moving toward edge, "away" otherwise
+local function calculate_exit_direction(edge, prev_x, prev_y, curr_x, curr_y)
+  if not prev_x or not prev_y then
+    return "away"  -- Default to shorter delay if no previous position
+  end
+
+  local dx = curr_x - prev_x
+  local dy = curr_y - prev_y
+
+  -- Primary axis movement determines direction
+  if edge == "left" then
+    -- Moving left (negative X) = toward left edge
+    return dx < 0 and "toward" or "away"
+  elseif edge == "right" then
+    -- Moving right (positive X) = toward right edge
+    return dx > 0 and "toward" or "away"
+  elseif edge == "top" then
+    -- Moving up (negative Y) = toward top edge
+    return dy < 0 and "toward" or "away"
+  else -- bottom
+    -- Moving down (positive Y) = toward bottom edge
+    return dy > 0 and "toward" or "away"
+  end
 end
 
 -- ============================================================================
@@ -382,6 +427,9 @@ function M.draw(ctx, opts)
     state:set_targets(1.0, slide_distance, opts.expand_scale or 1.0)
 
   elseif trigger == "hover" then
+    -- Get current mouse position
+    local mx, my = ImGui.GetMousePos(ctx)
+
     -- Check hover zone
     local in_zone = is_in_hover_zone(ctx, opts, state, bounds)
 
@@ -390,6 +438,7 @@ function M.draw(ctx, opts)
       state:set_targets(1.0, slide_distance, opts.expand_scale or 1.0)
       state.hover_leave_time = nil
       state.is_in_hover_zone = true
+      state.exit_direction = nil
 
       -- Fire expand callback on transition
       if not state.is_expanded then
@@ -406,15 +455,36 @@ function M.draw(ctx, opts)
       -- Start delay timer when leaving
       if state.is_in_hover_zone and not state.hover_leave_time then
         state.hover_leave_time = current_time
+
+        -- Calculate exit direction for directional delays
+        if opts.directional_delay then
+          state.exit_direction = calculate_exit_direction(
+            opts.edge or "right",
+            state.last_mouse_x, state.last_mouse_y,
+            mx, my
+          )
+        end
+      end
+
+      -- Determine delay based on direction
+      local delay
+      if opts.directional_delay and state.exit_direction then
+        if state.exit_direction == "toward" then
+          delay = opts.retract_delay_toward or 1.0
+        else
+          delay = opts.retract_delay_away or 0.1
+        end
+      else
+        delay = opts.retract_delay or 0.3
       end
 
       -- Check if delay has passed
-      local delay = opts.retract_delay or 0.3
       if state.hover_leave_time and (current_time - state.hover_leave_time) >= delay then
         -- Retract
         state:set_targets(opts.min_visible or 0.0, 0, 1.0)
         state.is_in_hover_zone = false
         state.hover_leave_time = nil
+        state.exit_direction = nil
 
         -- Fire collapse callback on transition
         if state.is_expanded and opts.on_collapse then
@@ -423,6 +493,10 @@ function M.draw(ctx, opts)
         state.is_expanded = false
       end
     end
+
+    -- Update cursor tracking
+    state.last_mouse_x = mx
+    state.last_mouse_y = my
 
   elseif trigger == "button" then
     -- Toggle state managed externally or via click
