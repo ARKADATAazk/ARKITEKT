@@ -78,8 +78,8 @@ M.bg = bg
 M.colors = {
   -- === BACKGROUNDS (from BG_BASE) ===
   BG_BASE         = bg(),
-  BG_HOVER        = offset(0.03, -0.04),
-  BG_ACTIVE       = offset(0.05, -0.07),
+  BG_HOVER        = offset(0.03, -0.06),   -- Light: more contrast (was -0.04)
+  BG_ACTIVE       = offset(0.05, -0.10),   -- Light: more contrast (was -0.07)
   BG_HEADER       = offset(-0.024, -0.06),
   BG_PANEL        = offset(-0.04),
   BG_CHROME       = offset(-0.08, -0.15),
@@ -123,9 +123,9 @@ M.colors = {
 
   -- === TILES ===
   TILE_NAME_COLOR      = snap("#DDE3E9", "#1A1A1A"),
-  TILE_FILL_BRIGHTNESS = lerp(0.5, 1.4),
-  TILE_FILL_SATURATION = lerp(0.4, 0.5),
-  TILE_FILL_OPACITY    = lerp(0.4, 0.5),
+  TILE_FILL_BRIGHTNESS = lerp(0.5, 0.7),   -- Light: darker tiles (was 1.4)
+  TILE_FILL_SATURATION = lerp(0.4, 0.7),   -- Light: more saturated (was 0.5)
+  TILE_FILL_OPACITY    = lerp(0.4, 0.6),   -- Light: slightly more opaque (was 0.5)
 
   -- === BADGES ===
   BADGE_BG             = snap("#14181C", "#E8ECF0"),
@@ -134,7 +134,7 @@ M.colors = {
   BADGE_BORDER_OPACITY = lerp(0.20, 0.15),
 
   -- === PLAYLIST ===
-  PLAYLIST_TILE_COLOR  = snap("#3A3A3A", "#D0D0D0"),
+  PLAYLIST_TILE_COLOR  = snap("#3A3A3A", "#A0A0A0"),  -- Light: darker for contrast (was #D0D0D0)
   PLAYLIST_NAME_COLOR  = snap("#CCCCCC", "#2A2A2A"),
   PLAYLIST_BADGE_COLOR = snap("#999999", "#666666"),
 
