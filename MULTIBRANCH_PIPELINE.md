@@ -82,15 +82,74 @@
 **Source TODO**: `TODO/theme-debug-overlay.md`, `TODO/theme-validation.md`
 
 **Tasks**:
-1. Add theme debug overlay (F12 toggle, visual debugging)
-2. Add theme validation (runtime checks for preset consistency)
-3. Auto-validate in dev mode
+1. [x] Add theme debug overlay (F12 toggle, visual debugging)
+2. [x] Add theme validation (runtime checks for preset consistency)
+3. [x] Auto-validate in dev mode
+
+**Implementation Status**: COMPLETE
+
+### Implementation Details
+
+All features have been implemented in `arkitekt/core/theme_manager/init.lua`:
+
+#### 1. Theme Validation (`M.validate()`)
+- Checks both presets have matching keys
+- Validates all values are properly wrapped with `blend()` or `step()`
+- Ensures wrapper modes match between presets (dark/light)
+- Verifies value types match between presets
+- Returns `boolean, string|nil` (valid, error_message)
+
+#### 2. Debug Overlay (`M.render_debug_overlay(ctx, ImGui)`)
+- Shows current lightness value and interpolation factor `t`
+- Displays validation status (green OK / red ERRORS with tooltip)
+- Lists all preset values with their current interpolated result
+- Color swatches for hex color values
+- Hover tooltips showing dark→light range for each value
+- Sorted keys for consistent display
+- Window flags: AlwaysAutoResize, closable
+
+#### 3. Debug Controls
+- `M.toggle_debug()` - Toggle overlay visibility
+- `M.enable_debug()` / `M.disable_debug()` - Direct control
+- `M.check_debug_hotkey(ctx, ImGui)` - F12 key detection
+- `M.debug_enabled` - State variable
+
+#### 4. Auto-Validation (Dev Mode)
+- Runs on module load when `ARKITEKT_DEV` env var is set
+- Or when REAPER ExtState `ARKITEKT/dev_mode` = "1" or "true"
+- Logs validation errors to REAPER console
+
+#### 5. Additional Utilities
+- `M.get_validation_summary()` - Returns summary table with counts
+
+### Usage Example
+
+```lua
+local ThemeManager = require('arkitekt.core.theme_manager')
+
+-- In main render loop:
+function render(ctx, ImGui)
+  -- ... your UI code ...
+
+  -- Check for F12 to toggle debug overlay
+  ThemeManager.check_debug_hotkey(ctx, ImGui)
+
+  -- Render debug overlay (if enabled)
+  ThemeManager.render_debug_overlay(ctx, ImGui)
+end
+
+-- Manual validation:
+local valid, err = ThemeManager.validate()
+if not valid then
+  print("Errors: " .. err)
+end
+```
 
 **File areas**:
-- `arkitekt/core/theme_manager/init.lua`
-- `arkitekt/gui/app.lua` (or equivalent main render loop)
+- `arkitekt/core/theme_manager/init.lua` - All implementation here (lines 890-1178)
+- `arkitekt/gui/app.lua` (or equivalent) - Consumer calls render_debug_overlay in main loop
 
-**Conflict potential**: VERY LOW (isolated to theme system)
+**Conflict potential**: VERY LOW (isolated to theme system, appended at end of file)
 
 **Dependencies**: None
 
@@ -250,7 +309,7 @@ If conflicts become unmanageable:
 - [ ] All 5 branches successfully merged
 - [ ] Zero runtime errors in any script
 - [ ] Performance improvements measurable (Branch 1 & 2)
-- [ ] Theme debug tools functional (Branch 3)
+- [x] Theme debug tools functional (Branch 3) - **IMPLEMENTED**
 - [ ] ark. namespace used consistently (Branch 4)
 - [ ] GUI structure reorganized (Branch 5)
 

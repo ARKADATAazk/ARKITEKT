@@ -887,4 +887,292 @@ function M.transition_to_theme(name, duration, on_complete)
   return true
 end
 
+-- ============================================================================
+-- THEME VALIDATION
+-- ============================================================================
+-- Runtime checks to catch configuration errors early.
+-- Validates that presets are structurally consistent.
+
+--- Validate preset configuration
+--- Checks that both presets have matching keys, proper wrapper format,
+--- consistent modes, and compatible value types.
+--- @return boolean valid True if configuration is valid
+--- @return string|nil error_message Error details if invalid
+function M.validate()
+  local errors = {}
+
+  -- Collect keys from both presets
+  local dark_keys = {}
+  for key in pairs(M.presets.dark) do
+    dark_keys[key] = true
+  end
+
+  local light_keys = {}
+  for key in pairs(M.presets.light) do
+    light_keys[key] = true
+  end
+
+  -- Check: Keys in dark but not light
+  for key in pairs(dark_keys) do
+    if not light_keys[key] then
+      errors[#errors + 1] = string.format("Key '%s' in dark preset but missing from light", key)
+    end
+  end
+
+  -- Check: Keys in light but not dark
+  for key in pairs(light_keys) do
+    if not dark_keys[key] then
+      errors[#errors + 1] = string.format("Key '%s' in light preset but missing from dark", key)
+    end
+  end
+
+  -- Check: All values are properly wrapped
+  for preset_name, preset in pairs(M.presets) do
+    for key, value in pairs(preset) do
+      if type(value) ~= "table" or not value.mode then
+        errors[#errors + 1] = string.format(
+          "Key '%s' in %s preset is not wrapped (use blend() or step())",
+          key, preset_name
+        )
+      end
+    end
+  end
+
+  -- Check: Wrapper modes match between presets
+  for key in pairs(M.presets.dark) do
+    if M.presets.light[key] then
+      local dark_mode = get_mode(M.presets.dark[key])
+      local light_mode = get_mode(M.presets.light[key])
+      if dark_mode ~= light_mode then
+        errors[#errors + 1] = string.format(
+          "Key '%s' has mismatched modes: dark=%s, light=%s",
+          key, dark_mode, light_mode
+        )
+      end
+    end
+  end
+
+  -- Check: Value types match between presets
+  for key in pairs(M.presets.dark) do
+    if M.presets.light[key] then
+      local dark_val = unwrap(M.presets.dark[key])
+      local light_val = unwrap(M.presets.light[key])
+      local dark_type = type(dark_val)
+      local light_type = type(light_val)
+      if dark_type ~= light_type then
+        errors[#errors + 1] = string.format(
+          "Key '%s' has mismatched types: dark=%s (%s), light=%s (%s)",
+          key, tostring(dark_val), dark_type, tostring(light_val), light_type
+        )
+      end
+    end
+  end
+
+  if #errors > 0 then
+    return false, table.concat(errors, "\n")
+  end
+
+  return true, nil
+end
+
+--- Get validation status as a summary table
+--- Useful for debug overlays and status displays
+--- @return table Summary with counts and status
+function M.get_validation_summary()
+  local valid, err = M.validate()
+  local dark_count = 0
+  local light_count = 0
+
+  for _ in pairs(M.presets.dark) do dark_count = dark_count + 1 end
+  for _ in pairs(M.presets.light) do light_count = light_count + 1 end
+
+  return {
+    valid = valid,
+    error_message = err,
+    dark_key_count = dark_count,
+    light_key_count = light_count,
+    error_count = err and select(2, err:gsub("\n", "\n")) + 1 or 0,
+  }
+end
+
+-- ============================================================================
+-- DEBUG OVERLAY
+-- ============================================================================
+-- Visual debugging tool for tuning theme values in real-time.
+-- Toggle with F12 or call ThemeManager.toggle_debug()
+
+--- Debug mode state
+M.debug_enabled = false
+
+--- Toggle debug overlay visibility
+function M.toggle_debug()
+  M.debug_enabled = not M.debug_enabled
+end
+
+--- Enable debug overlay
+function M.enable_debug()
+  M.debug_enabled = true
+end
+
+--- Disable debug overlay
+function M.disable_debug()
+  M.debug_enabled = false
+end
+
+--- Render debug overlay showing current theme state
+--- Call this from your main render loop after other UI
+--- @param ctx userdata ImGui context
+--- @param ImGui table ImGui library reference
+function M.render_debug_overlay(ctx, ImGui)
+  if not M.debug_enabled then return end
+  if not ctx or not ImGui then return end
+
+  local lightness = M.get_theme_lightness()
+  local t = 0
+  local range = M.preset_anchors.light - M.preset_anchors.dark
+  if range > 0 then
+    t = (lightness - M.preset_anchors.dark) / range
+    t = math.max(0, math.min(1, t))
+  end
+
+  -- Window setup
+  ImGui.SetNextWindowBgAlpha(ctx, 0.92)
+
+  local window_flags = ImGui.WindowFlags_AlwaysAutoResize
+  if ImGui.WindowFlags_NoSavedSettings then
+    window_flags = window_flags | ImGui.WindowFlags_NoSavedSettings
+  end
+
+  local visible, open = ImGui.Begin(ctx, "Theme Debug", true, window_flags)
+  if visible then
+    -- Header info
+    ImGui.Text(ctx, string.format("Lightness: %.3f", lightness))
+    ImGui.Text(ctx, string.format("Interpolation t: %.3f", t))
+    ImGui.Text(ctx, string.format("Mode: %s", M.current_mode or "nil"))
+
+    -- Validation status
+    local valid, err = M.validate()
+    if valid then
+      ImGui.TextColored(ctx, 0x4CAF50FF, "Validation: OK")
+    else
+      ImGui.TextColored(ctx, 0xEF5350FF, "Validation: ERRORS")
+      if ImGui.IsItemHovered(ctx) then
+        ImGui.SetTooltip(ctx, err)
+      end
+    end
+
+    ImGui.Separator(ctx)
+
+    -- Preset anchors
+    ImGui.Text(ctx, string.format("Dark anchor: %.2f", M.preset_anchors.dark))
+    ImGui.Text(ctx, string.format("Light anchor: %.2f", M.preset_anchors.light))
+    ImGui.Separator(ctx)
+
+    -- Show each preset value with current interpolated result
+    ImGui.Text(ctx, "Preset Values (dark -> light):")
+    ImGui.Separator(ctx)
+
+    local rules = M.get_current_rules()
+
+    -- Sort keys for consistent display
+    local sorted_keys = {}
+    for key in pairs(rules) do
+      sorted_keys[#sorted_keys + 1] = key
+    end
+    table.sort(sorted_keys)
+
+    for _, key in ipairs(sorted_keys) do
+      local value = rules[key]
+      local dark_val = unwrap(M.presets.dark[key])
+      local light_val = unwrap(M.presets.light[key])
+      local mode = get_mode(M.presets.dark[key])
+
+      -- Color swatch for hex color values
+      if type(value) == "string" and value:match("^#") then
+        local color = Colors.hexrgb(value .. "FF")  -- Add alpha if not present
+        ImGui.ColorButton(ctx, key, color, 0, 12, 12)
+        ImGui.SameLine(ctx)
+      end
+
+      -- Value display with mode indicator
+      local display_value
+      if type(value) == "number" then
+        display_value = string.format("%.3f", value)
+      else
+        display_value = tostring(value)
+      end
+
+      ImGui.Text(ctx, string.format("[%s] %s: %s", mode:sub(1, 1):upper(), key, display_value))
+
+      -- Show dark→light range on hover
+      if ImGui.IsItemHovered(ctx) then
+        ImGui.SetTooltip(ctx, string.format(
+          "dark: %s\nlight: %s\nt=%.3f\nmode: %s",
+          tostring(dark_val), tostring(light_val), t, mode
+        ))
+      end
+    end
+
+    ImGui.End(ctx)
+  end
+
+  -- Handle window close button
+  if not open then
+    M.debug_enabled = false
+  end
+end
+
+--- Check for F12 key press to toggle debug overlay
+--- Call this from your main loop
+--- @param ctx userdata ImGui context
+--- @param ImGui table ImGui library reference
+function M.check_debug_hotkey(ctx, ImGui)
+  if not ctx or not ImGui then return end
+
+  -- F12 to toggle debug overlay
+  if ImGui.IsKeyPressed and ImGui.Key_F12 then
+    if ImGui.IsKeyPressed(ctx, ImGui.Key_F12) then
+      M.toggle_debug()
+    end
+  end
+end
+
+-- ============================================================================
+-- AUTO-VALIDATION (Dev Mode)
+-- ============================================================================
+-- Automatically validate presets on module load when in dev mode.
+-- Enable dev mode via environment variable or REAPER ExtState.
+
+local function run_auto_validation()
+  local is_dev_mode = false
+
+  -- Check environment variable
+  if os.getenv("ARKITEKT_DEV") then
+    is_dev_mode = true
+  end
+
+  -- Check REAPER ExtState
+  if reaper and reaper.GetExtState then
+    local dev_state = reaper.GetExtState("ARKITEKT", "dev_mode")
+    if dev_state == "1" or dev_state == "true" then
+      is_dev_mode = true
+    end
+  end
+
+  if is_dev_mode then
+    local valid, err = M.validate()
+    if not valid then
+      local msg = "[ThemeManager] Validation errors:\n" .. err .. "\n"
+      if reaper and reaper.ShowConsoleMsg then
+        reaper.ShowConsoleMsg(msg)
+      else
+        print(msg)
+      end
+    end
+  end
+end
+
+-- Run auto-validation on module load
+run_auto_validation()
+
 return M
