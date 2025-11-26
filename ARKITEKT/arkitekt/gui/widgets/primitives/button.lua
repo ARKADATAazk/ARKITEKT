@@ -130,43 +130,59 @@ local function derive_state_color(base, state)
   return base
 end
 
--- Get simple button colors with automatic state derivation
--- This replaces the complex preset system for most use cases
-local function get_simple_colors(is_toggled, is_hovered, is_active, is_disabled, accent_color)
+-- Get simple button colors with smooth hover animation
+-- Uses Theme.COLORS directly (like combo/dropdown) for consistent ratios
+local function get_simple_colors(is_toggled, is_hovered, is_active, is_disabled, accent_color, hover_alpha)
   local C = Theme.COLORS
+  hover_alpha = hover_alpha or 0
 
-  -- Base colors
+  -- Base colors (normal state)
   local bg_base = C.BG_BASE
+  local bg_hover = C.BG_HOVER
+  local bg_active = C.BG_ACTIVE
   local text_base = C.TEXT_NORMAL
+  local text_hover = C.TEXT_HOVER
   local border_inner = C.BORDER_INNER
+  local border_hover = C.BORDER_HOVER
+  local border_active = C.BORDER_ACTIVE
   local border_outer = C.BORDER_OUTER
 
   -- Toggle ON state uses accent color
   if is_toggled then
     bg_base = accent_color or C.ACCENT_WHITE
+    bg_hover = Colors.adjust_lightness(bg_base, 0.06)
+    bg_active = Colors.adjust_lightness(bg_base, 0.12)
     text_base = C.TEXT_BRIGHT
+    text_hover = C.TEXT_BRIGHT
     border_inner = accent_color or C.ACCENT_WHITE_BRIGHT
+    border_hover = Colors.adjust_lightness(border_inner, 0.08)
+    border_active = Colors.adjust_lightness(border_inner, -0.05)
   end
 
-  -- Derive state colors
-  local bg, text
+  -- Derive final colors based on state
+  local bg, text, border
   if is_disabled then
     bg = derive_state_color(bg_base, 'disabled')
     text = C.TEXT_DIMMED
-    border_inner = derive_state_color(border_inner, 'disabled')
+    border = derive_state_color(border_inner, 'disabled')
   elseif is_active then
-    bg = derive_state_color(bg_base, 'active')
+    -- Active state (pressed) - no lerp, immediate
+    bg = bg_active
     text = C.TEXT_BRIGHT
-  elseif is_hovered then
-    bg = derive_state_color(bg_base, 'hover')
-    text = C.TEXT_HOVER
-    border_inner = derive_state_color(border_inner, 'hover')
+    border = border_active
+  elseif hover_alpha > 0.01 then
+    -- Hover with smooth lerp (like combo/dropdown)
+    bg = Colors.lerp(bg_base, bg_hover, hover_alpha)
+    text = Colors.lerp(text_base, text_hover, hover_alpha)
+    border = Colors.lerp(border_inner, border_hover, hover_alpha)
   else
+    -- Normal state
     bg = bg_base
     text = text_base
+    border = border_inner
   end
 
-  return bg, border_inner, border_outer, text
+  return bg, border, border_outer, text
 end
 
 local function get_state_colors(config, is_disabled, is_toggled, is_active, hover_alpha)
@@ -309,9 +325,9 @@ local function render_button(ctx, dl, x, y, width, height, config, instance, uni
   -- Get colors - use simplified system when marked, otherwise legacy
   local bg_color, border_inner, border_outer, text_color
   if config._use_simple_colors then
-    -- New simplified approach: auto-derive all state colors
+    -- Simplified approach with smooth hover animation (like combo/dropdown)
     bg_color, border_inner, border_outer, text_color =
-      get_simple_colors(is_toggled, is_hovered, is_active, is_disabled, config._accent_color)
+      get_simple_colors(is_toggled, is_hovered, is_active, is_disabled, config._accent_color, instance.hover_alpha)
   else
     -- Legacy: complex config-based approach with hover animation
     bg_color, border_inner, border_outer, text_color =

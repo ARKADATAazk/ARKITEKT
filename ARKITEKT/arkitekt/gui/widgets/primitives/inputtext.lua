@@ -89,7 +89,7 @@ local function get_or_create_state(id)
     field_state[id] = {
       text = "",
       focused = false,
-      focus_alpha = 0.0,
+      hover_alpha = 0.0,
     }
   end
   return field_state[id]
@@ -141,30 +141,43 @@ local function render_text_field(ctx, dl, x, y, width, height, config, state, id
   -- Check hover using IsMouseHoveringRect (ImGui built-in, respects clipping)
   local is_hovered = not is_disabled and ImGui.IsMouseHoveringRect(ctx, x, y, x + width, y + height)
 
-  -- Animate focus alpha
-  local target_alpha = state.focused and 1.0 or (is_hovered and 0.7 or 0.3)
-  local alpha_delta = (target_alpha - state.focus_alpha) * (config.fade_speed or 8.0) * ImGui.GetDeltaTime(ctx)
-  state.focus_alpha = math.max(0.0, math.min(1.0, state.focus_alpha + alpha_delta))
+  -- Animate hover alpha (like combo/button)
+  local dt = ImGui.GetDeltaTime(ctx)
+  local alpha_speed = config.fade_speed or 12.0
 
-  -- Get state colors
+  -- Initialize hover_alpha if not present
+  if not state.hover_alpha then state.hover_alpha = 0 end
+
+  local target_alpha = (is_hovered or state.focused) and 1.0 or 0.0
+  state.hover_alpha = state.hover_alpha + (target_alpha - state.hover_alpha) * alpha_speed * dt
+  state.hover_alpha = math.max(0, math.min(1, state.hover_alpha))
+
+  -- Get state colors with smooth lerping (like combo/dropdown)
   local bg_color, border_inner, border_outer, text_color
 
   if is_disabled then
-    bg_color = config.bg_disabled_color
+    bg_color = config.bg_disabled_color or config.bg_color
     border_inner = config.border_disabled_color or config.border_inner_color
     border_outer = config.border_outer_color
-    text_color = config.text_disabled_color
+    text_color = config.text_disabled_color or config.text_color
   elseif state.focused then
-    bg_color = config.bg_active_color
+    -- Active/focused state - immediate (no lerp)
+    bg_color = config.bg_active_color or config.bg_color
     border_inner = config.border_active_color or config.border_inner_color
     border_outer = config.border_outer_color
     text_color = config.text_color
-  elseif is_hovered then
-    bg_color = config.bg_hover_color
-    border_inner = config.border_hover_color or config.border_inner_color
+  elseif state.hover_alpha > 0.01 then
+    -- Hover with smooth lerp (like combo/dropdown)
+    bg_color = Colors.lerp(config.bg_color, config.bg_hover_color or config.bg_color, state.hover_alpha)
+    border_inner = Colors.lerp(
+      config.border_inner_color or config.border_color,
+      config.border_hover_color or config.border_inner_color,
+      state.hover_alpha
+    )
     border_outer = config.border_outer_color
     text_color = config.text_color
   else
+    -- Normal state
     bg_color = config.bg_color
     border_inner = config.border_inner_color or config.border_color
     border_outer = config.border_outer_color
@@ -351,7 +364,7 @@ function M.set_text(id, text)
     field_state[id] = {
       text = "",
       focused = false,
-      focus_alpha = 0.0,
+      hover_alpha = 0.0,
     }
   end
   field_state[id].text = text or ""
