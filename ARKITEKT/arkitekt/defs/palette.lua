@@ -78,7 +78,6 @@ M.from_bg = {
   BG_HEADER       = offset(-0.024, -0.06),
   BG_PANEL        = offset(-0.04),
   BG_CHROME       = offset(-0.08, -0.15),
-  BG_TRANSPARENT  = { mode = "opacity", value = 0 },
 
   -- Borders (from bg)
   BORDER_INNER    = offset(0.05, -0.03),
@@ -90,9 +89,7 @@ M.from_bg = {
   ACCENT_PRIMARY       = offset(0.15, -0.12),
   ACCENT_TEAL          = offset(0.15, -0.12),
   ACCENT_TEAL_BRIGHT   = offset(0.25, -0.20),
-  ACCENT_WHITE         = { mode = "set_light", lightness = lerp(0.25, 0.55) },
-  ACCENT_WHITE_BRIGHT  = { mode = "set_light", lightness = lerp(0.35, 0.45) },
-  ACCENT_TRANSPARENT   = { mode = "lightness_opacity", delta = offset(0.15, -0.12), opacity = 0.67 },
+  ACCENT_TRANSPARENT   = offset(0.15, -0.12),  -- use with ACCENT_TRANSPARENT_OPACITY
 
   -- Patterns (from bg, includes panel offset)
   PATTERN_PRIMARY   = offset(-0.064, -0.10),
@@ -104,7 +101,7 @@ M.from_bg = {
 -- =============================================================================
 
 M.specific = {
-  -- Text colors (explicit snap - no auto-derivation magic)
+  -- Text colors (explicit snap for contrast)
   TEXT_NORMAL = snap("#FFFFFF", "#000000"),
   TEXT_HOVER  = snap("#F0F0F0", "#1A1A1A"),
   TEXT_ACTIVE = snap("#E8E8E8", "#222222"),
@@ -112,8 +109,12 @@ M.specific = {
   TEXT_DARK   = snap("#808080", "#808080"),
   TEXT_BRIGHT = snap("#FFFFFF", "#000000"),
 
-  -- Border outer (hex + opacity)
-  BORDER_OUTER = { mode = "alpha", color = snap("#000000", "#404040"), opacity = lerp(0.87, 0.60) },
+  -- Accents (standalone grays)
+  ACCENT_WHITE        = lerp("#404040", "#8C8C8C"),  -- 25% → 55% lightness
+  ACCENT_WHITE_BRIGHT = lerp("#595959", "#737373"),  -- 35% → 45% lightness
+
+  -- Border outer (use with BORDER_OUTER_OPACITY)
+  BORDER_OUTER = snap("#000000", "#404040"),
 
   -- Status colors
   ACCENT_SUCCESS = lerp("#4CAF50", "#2E7D32"),
@@ -123,8 +124,8 @@ M.specific = {
   -- Tiles
   TILE_NAME_COLOR = snap("#DDE3E9", "#1A1A1A"),
 
-  -- Badges
-  BADGE_BG   = { mode = "alpha", color = snap("#14181C", "#E8ECF0"), opacity = lerp(0.85, 0.90) },
+  -- Badges (use with BADGE_BG_OPACITY)
+  BADGE_BG   = snap("#14181C", "#E8ECF0"),
   BADGE_TEXT = snap("#FFFFFF", "#1A1A1A"),
 
   -- Playlist
@@ -143,8 +144,11 @@ M.values = {
   TILE_FILL_SATURATION = lerp(0.4, 0.5),
   TILE_FILL_OPACITY    = lerp(0.4, 0.5),
 
-  -- Badge border
-  BADGE_BORDER_OPACITY = lerp(0.20, 0.15),
+  -- Opacities (pair with corresponding color)
+  BORDER_OUTER_OPACITY     = lerp(0.87, 0.60),
+  BADGE_BG_OPACITY         = lerp(0.85, 0.90),
+  BADGE_BORDER_OPACITY     = lerp(0.20, 0.15),
+  ACCENT_TRANSPARENT_OPACITY = lerp(0.67, 0.67),  -- constant for now
 
   -- System
   REAPER_SYNC_OFFSET = offset(-0.012),

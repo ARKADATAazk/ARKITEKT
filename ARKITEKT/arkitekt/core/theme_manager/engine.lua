@@ -72,49 +72,22 @@ end
 -- =============================================================================
 
 --- Derive a color from bg using a definition
+--- Only supports: "base", offset, snap (all apply lightness delta)
 local function derive_from_bg(bg, def, t)
   if def == "base" then
     return bg
   end
 
-  local mode = def.mode
-
-  if mode == "offset" or mode == "snap" then
-    local delta = resolve_value(def, t)
-    return Colors.adjust_lightness(bg, delta)
-
-  elseif mode == "opacity" then
-    return Colors.with_opacity(bg, def.value)
-
-  elseif mode == "set_light" then
-    local lightness = resolve_value(def.lightness, t)
-    return Colors.set_lightness(bg, lightness)
-
-  elseif mode == "lightness_opacity" then
-    local delta = resolve_value(def.delta, t)
-    local adjusted = Colors.adjust_lightness(bg, delta)
-    return Colors.with_opacity(adjusted, def.opacity)
-  end
-
-  return bg
+  -- offset and snap both resolve to a delta value
+  local delta = resolve_value(def, t)
+  return Colors.adjust_lightness(bg, delta)
 end
 
 --- Derive a specific (standalone) color
+--- Only supports: lerp, snap (both resolve to hex string)
 local function derive_specific(def, t)
-  local mode = def.mode
-
-  if mode == "lerp" or mode == "snap" then
-    local hex = resolve_value(def, t)
-    return Colors.hexrgb(hex .. "FF")
-
-  elseif mode == "alpha" then
-    local hex = resolve_value(def.color, t)
-    local opacity = resolve_value(def.opacity, t)
-    local color = Colors.hexrgb(hex .. "FF")
-    return Colors.with_opacity(color, opacity)
-  end
-
-  return nil
+  local hex = resolve_value(def, t)
+  return Colors.hexrgb(hex .. "FF")
 end
 
 -- =============================================================================
