@@ -313,9 +313,9 @@ function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_
 
   local h_hsl, s_hsl, l_hsl = Colors.rgb_to_hsl(base_color)
 
-  -- Reduce saturation and lightness by 35%
-  local target_s = s_hsl * 0.65
-  local target_l = l_hsl * 0.65
+  -- Reduce saturation by 35% and lightness much more (by 65%)
+  local target_s = s_hsl * 0.65  -- 35% reduction in saturation
+  local target_l = l_hsl * 0.35  -- 65% reduction in lightness (much darker)
 
   local r2, g2, b2 = Colors.hsl_to_rgb(h_hsl, target_s, target_l)
   r2, g2, b2 = r2 * 255, g2 * 255, b2 * 255

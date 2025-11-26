@@ -145,8 +145,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Render base tile fill with rounding
   ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
 
-  -- Render dark backdrop for disabled items
-  if enabled_factor < 0.999 then
+  -- Render dark backdrop for disabled items (skip if show_disabled_items = false, animation handles it)
+  if enabled_factor < 0.999 and state.settings.show_disabled_items then
     local backdrop_alpha = config.TILE_RENDER.disabled.backdrop_alpha * (1.0 - enabled_factor) * cascade_factor
     local backdrop_color = ark.Colors.with_alpha(config.TILE_RENDER.disabled.backdrop_color, math.floor(backdrop_alpha))
     ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, backdrop_color, config.TILE.ROUNDING)
