@@ -577,15 +577,16 @@ local function draw_markdown_icon(dl, x, y, color)
   x = math.floor(x + 0.5)
   y = math.floor(y + 0.5)
 
-  -- Draw "M" shape
-  local pts = {
-    x, y + 10,
-    x, y,
-    x + 5, y + 5,
-    x + 10, y,
-    x + 10, y + 10
-  }
-  ImGui.DrawList_AddPolyline(dl, pts, color, 0, 2)
+  -- Draw "M" shape using individual lines
+  local thickness = 2
+  -- Left vertical line
+  ImGui.DrawList_AddLine(dl, x, y + 10, x, y, color, thickness)
+  -- Left diagonal up to peak
+  ImGui.DrawList_AddLine(dl, x, y, x + 5, y + 5, color, thickness)
+  -- Right diagonal down from peak
+  ImGui.DrawList_AddLine(dl, x + 5, y + 5, x + 10, y, color, thickness)
+  -- Right vertical line
+  ImGui.DrawList_AddLine(dl, x + 10, y, x + 10, y + 10, color, thickness)
 end
 
 local function draw_config_icon(dl, x, y, color)
