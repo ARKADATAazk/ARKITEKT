@@ -1397,17 +1397,50 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
       tree_state.type_timeout = 0
     end
 
-    -- Capture text input (alphanumeric and common symbols)
+    -- Capture text input using named keys
     local char_captured = false
-    for char_code = 32, 126 do  -- Printable ASCII characters
-      local char = string.char(char_code)
-      if ImGui.IsKeyPressed(ctx, char_code) then
-        -- Ignore if Ctrl/Alt held (for shortcuts)
-        local mods = ImGui.GetKeyMods(ctx)
-        if mods & ImGui.Mod_Ctrl == 0 and mods & ImGui.Mod_Alt == 0 then
-          -- Only allow alphanumeric and basic punctuation
-          if char:match("[%w%s%-%_%.%/]") then
-            tree_state.type_buffer = tree_state.type_buffer .. char:lower()
+    local mods = ImGui.GetKeyMods(ctx)
+    local no_modifiers = mods & ImGui.Mod_Ctrl == 0 and mods & ImGui.Mod_Alt == 0
+
+    if no_modifiers then
+      -- Check letter keys A-Z
+      local letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      for i = 1, #letters do
+        local letter = letters:sub(i, i)
+        local key = ImGui["Key_" .. letter]
+        if key and ImGui.IsKeyPressed(ctx, key) then
+          local shift_held = mods & ImGui.Mod_Shift ~= 0
+          tree_state.type_buffer = tree_state.type_buffer .. (shift_held and letter or letter:lower())
+          tree_state.type_timeout = current_time + tree_state.type_timeout_duration
+          char_captured = true
+          break
+        end
+      end
+
+      -- Check number keys 0-9 if no letter was pressed
+      if not char_captured then
+        local numbers = "0123456789"
+        for i = 1, #numbers do
+          local num = numbers:sub(i, i)
+          local key = ImGui["Key_" .. num]
+          if key and ImGui.IsKeyPressed(ctx, key) then
+            tree_state.type_buffer = tree_state.type_buffer .. num
+            tree_state.type_timeout = current_time + tree_state.type_timeout_duration
+            char_captured = true
+            break
+          end
+        end
+      end
+
+      -- Check common punctuation
+      if not char_captured then
+        local punct_keys = {
+          {ImGui.Key_Space, " "}, {ImGui.Key_Minus, "-"}, {ImGui.Key_Period, "."},
+          {ImGui.Key_Slash, "/"}, {ImGui.Key_Apostrophe, "_"}
+        }
+        for _, pair in ipairs(punct_keys) do
+          if ImGui.IsKeyPressed(ctx, pair[1]) then
+            tree_state.type_buffer = tree_state.type_buffer .. pair[2]
             tree_state.type_timeout = current_time + tree_state.type_timeout_duration
             char_captured = true
             break
