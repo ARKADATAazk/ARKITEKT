@@ -95,17 +95,20 @@ end
 -- PALETTE GENERATION
 -- =============================================================================
 
---- Generate complete UI color palette from 1-3 base colors
+--- Generate complete UI color palette from a single base color
+--- Text color is automatically derived (white on dark, black on light)
 --- @param base_bg number Background color in RGBA format
---- @param base_text number Text color in RGBA format
 --- @param base_accent number|nil Optional accent color (nil for neutral grayscale)
 --- @param rules table|nil Optional rules override (defaults to computed rules)
 --- @return table Color palette with all UI colors
-function M.generate_palette(base_bg, base_text, base_accent, rules)
+function M.generate_palette(base_bg, base_accent, rules)
   local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
 
   -- Get rules: use provided, or compute from lightness
   rules = rules or M.compute_rules(bg_lightness, nil)
+
+  -- Derive text color from background (white on dark, black on light)
+  local base_text = Colors.auto_text_color(base_bg)
 
   -- Calculate chrome color (titlebar/statusbar)
   local chrome_lightness = bg_lightness * rules.chrome_lightness_factor + rules.chrome_lightness_offset
@@ -193,12 +196,11 @@ function M.apply_palette(palette)
   end
 end
 
---- Generate palette from base colors and apply to Style.COLORS
+--- Generate palette from base color and apply to Style.COLORS
 --- @param base_bg number Background color
---- @param base_text number Text color
 --- @param base_accent number|nil Optional accent color
-function M.generate_and_apply(base_bg, base_text, base_accent)
-  local palette = M.generate_palette(base_bg, base_text, base_accent)
+function M.generate_and_apply(base_bg, base_accent)
+  local palette = M.generate_palette(base_bg, base_accent)
   M.apply_palette(palette)
 end
 

@@ -55,11 +55,8 @@ function M.sync_with_reaper()
   -- Apply -1.2% lightness offset for subtle visual separation
   local offset_bg = Colors.adjust_lightness(main_bg, -0.012)
 
-  -- Generate text color (auto white on dark, black on light)
-  local base_text = Colors.auto_text_color(offset_bg)
-
-  -- Generate and apply neutral grayscale palette
-  Engine.generate_and_apply(offset_bg, base_text, nil)
+  -- Generate and apply palette (text color derived automatically)
+  Engine.generate_and_apply(offset_bg)
 
   return true
 end
