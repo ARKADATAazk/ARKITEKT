@@ -2,6 +2,8 @@
 -- ItemPicker/defs/defaults.lua
 -- Default settings and mode options
 
+local Lookup = require('arkitekt.core.lookup')
+
 local M = {}
 
 -- =============================================================================
@@ -69,6 +71,11 @@ M.SEARCH_MODES = {
   {value = "regions", label = "Regions"},
   {value = "mixed", label = "Mixed"},
 }
+
+-- Reverse lookups for O(1) access
+M.SEARCH_MODE_BY_LABEL = Lookup.build_reverse_lookup(M.SEARCH_MODES, "label", "value")
+M.SEARCH_MODE_BY_VALUE = Lookup.build_reverse_lookup(M.SEARCH_MODES, "value", "label")
+M.SEARCH_MODE_INDEX = Lookup.build_index(M.SEARCH_MODES, "value")
 
 -- =============================================================================
 -- ANIMATION DEFAULTS

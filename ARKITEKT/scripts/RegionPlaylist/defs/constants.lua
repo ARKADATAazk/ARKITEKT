@@ -5,6 +5,7 @@
 local ColorDefs = require('arkitekt.defs.colors')
 local ark = require('arkitekt')
 local Unicode = require('arkitekt.core.unicode')
+local Lookup = require('arkitekt.core.lookup')
 local hexrgb = ark.Colors.hexrgb
 local utf8 = Unicode.utf8
 
@@ -55,15 +56,24 @@ M.POOL_MODES = {
   MIXED = "mixed",
 }
 
+-- Reverse lookup: value → key (e.g., "regions" → "REGIONS")
+M.POOL_MODES_REVERSE = Lookup.build_reverse(M.POOL_MODES)
+
 M.LAYOUT_MODES = {
   HORIZONTAL = "horizontal",
   VERTICAL = "vertical",
 }
 
+-- Reverse lookup: value → key
+M.LAYOUT_MODES_REVERSE = Lookup.build_reverse(M.LAYOUT_MODES)
+
 M.SORT_DIRECTIONS = {
   ASC = "asc",
   DESC = "desc",
 }
+
+-- Reverse lookup: value → key
+M.SORT_DIRECTIONS_REVERSE = Lookup.build_reverse(M.SORT_DIRECTIONS)
 
 -- ============================================================================
 -- TIMING / TIMEOUTS
@@ -142,5 +152,10 @@ M.QUANTIZE_OPTIONS = {
   { value = 0.0625, label = "1/16" },
   { value = 0.03125, label = "1/32" },
 }
+
+-- Reverse lookups for O(1) access
+M.QUANTIZE_BY_LABEL = Lookup.build_reverse_lookup(M.QUANTIZE_OPTIONS, "label", "value")
+M.QUANTIZE_BY_VALUE = Lookup.build_reverse_lookup(M.QUANTIZE_OPTIONS, "value", "label")
+M.QUANTIZE_INDEX = Lookup.build_index(M.QUANTIZE_OPTIONS, "value")
 
 return M
