@@ -183,8 +183,7 @@ local function draw_custom_theme(ctx)
 
     -- Handle click
     if is_hovered and ImGui.IsMouseClicked(ctx, 0) then
-      local auto_text = Colors.auto_text_color(color)
-      ThemeManager.generate_and_apply(color, auto_text, color)
+      ThemeManager.generate_and_apply(color)
       state.current_theme = "Custom: " .. name
     end
 

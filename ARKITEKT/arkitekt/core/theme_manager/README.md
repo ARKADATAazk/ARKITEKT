@@ -207,82 +207,55 @@ local color = Style.COLORS.MY_NEW_COLOR
 
 ---
 
-## Script-Specific Colors
+## Script-Specific Palettes
 
-Scripts can define their own colors that follow the theme system:
+Scripts can register their own **theme-reactive palettes** using the same DSL wrappers. The structure mirrors the main palette with `specific` (colors) and `values` (numbers):
 
 ```lua
--- MyScript/defs/colors.lua
+-- MyScript/defs/palette.lua
 local ThemeManager = require('arkitekt.core.theme_manager')
-local Style = require('arkitekt.gui.style')
+local Colors = require('arkitekt.core.colors')
+
+local snap = ThemeManager.snapAtMidpoint
+local lerp = ThemeManager.lerpDarkLight
 
 local M = {}
 
--- Option 1: Static colors (don't change with theme)
-M.STATIC = {
-  HIGHLIGHT = 0xFF6B6BFF,
-}
-
--- Option 2: Register with ThemeManager for debug visibility
-ThemeManager.register_script_colors("MyScript", M.STATIC)
-
--- Option 3: Theme-reactive with fallback
-function M.get_colors()
-  local S = Style.COLORS
-  return {
-    bg = S.BG_PANEL,           -- Follows theme
-    highlight = M.STATIC.HIGHLIGHT,  -- Fixed
-  }
-end
-
-return M
-```
-
----
-
-## Script-Specific Theme Rules
-
-For more advanced theme integration, scripts can register their own **theme-reactive rules** using the same wrapper functions. These rules automatically adapt to theme changes:
-
-```lua
--- MyScript/defs/colors.lua
-local ThemeManager = require('arkitekt.core.theme_manager')
-local offsetFromBase = ThemeManager.offsetFromBase
-local lerpDarkLight = ThemeManager.lerpDarkLight
-local snapAtMidpoint = ThemeManager.snapAtMidpoint
-
--- Register theme-reactive rules (at script init)
-ThemeManager.register_script_rules("MyScript", {
-  -- Background offset from BG_BASE
-  panel_bg_delta = offsetFromBase(-0.06, -0.08),
-
-  -- Smooth color interpolation
-  highlight_color = lerpDarkLight("#FF6B6B", "#CC4444"),
-
-  -- Discrete snap for text contrast
-  badge_text = snapAtMidpoint("#FFFFFF", "#1A1A1A"),
-
-  -- Numeric lerp
-  glow_opacity = lerpDarkLight(0.8, 0.5),
+-- Register at load time
+ThemeManager.register_script_palette("MyScript", {
+  specific = {
+    -- Discrete snap for text contrast
+    HIGHLIGHT = snap("#FF6B6B", "#CC4444"),
+    BADGE_TEXT = snap("#FFFFFF", "#1A1A1A"),
+    ERROR_BG = snap("#240C0C", "#FFDDDD"),
+  },
+  values = {
+    -- Numeric lerp
+    GLOW_OPACITY = lerp(0.8, 0.5),
+    STRIPE_WIDTH = lerp(8, 8),  -- constant
+  },
 })
 
--- Access computed values (these update when theme changes)
+-- Access computed values (cached, auto-invalidated on theme change)
 function M.get_colors()
-  local rules = ThemeManager.get_script_rules("MyScript")
-  if not rules then return M.STATIC end
+  local p = ThemeManager.get_script_palette("MyScript")
+  if not p then
+    -- Fallback if not registered
+    return { highlight = Colors.hexrgb("#FF6B6BFF") }
+  end
 
   return {
-    highlight = Colors.hexrgb(rules.highlight_color),
-    badge_text = Colors.hexrgb(rules.badge_text),
-    glow_alpha = rules.glow_opacity,
-    panel_bg = Colors.adjust_lightness(Style.COLORS.BG_BASE, rules.panel_bg_delta),
+    highlight = p.HIGHLIGHT,      -- Already RGBA
+    badge_text = p.BADGE_TEXT,
+    error_bg = p.ERROR_BG,
+    glow_alpha = p.GLOW_OPACITY,  -- Number
   }
 end
 
 return M
 ```
 
-Script rules are cached and automatically invalidated when the theme changes.
+Script palettes are cached and automatically invalidated when the theme changes.
 
 ---
 
@@ -351,42 +324,32 @@ local bg = Colors.hexrgb("#3A3A3AFF")
 ThemeManager.generate_and_apply(bg)
 ```
 
-### Script Rules API
+### Script Palette API
 
 ```lua
--- Register theme-reactive rules for a script
-ThemeManager.register_script_rules("ScriptName", {
-  my_delta = offsetFromBase(0.05, -0.05),
-  my_color = lerpDarkLight("#AAA", "#555"),
+-- Register theme-reactive palette for a script
+ThemeManager.register_script_palette("ScriptName", {
+  specific = {
+    MY_COLOR = snapAtMidpoint("#AAA", "#555"),
+    BADGE_BG = snapAtMidpoint("#240C0C", "#FFDDDD"),
+  },
+  values = {
+    MY_OPACITY = lerpDarkLight(0.8, 0.5),
+  },
 })
 
--- Get computed rules (cached, invalidated on theme change)
-local rules = ThemeManager.get_script_rules("ScriptName")
-if rules then
-  local delta = rules.my_delta  -- Already computed for current theme
-  local color = rules.my_color
+-- Get computed palette (cached, invalidated on theme change)
+local p = ThemeManager.get_script_palette("ScriptName")
+if p then
+  local color = p.MY_COLOR    -- Already RGBA
+  local opacity = p.MY_OPACITY  -- Number
 end
 
 -- Unregister when script unloads
-ThemeManager.unregister_script_rules("ScriptName")
+ThemeManager.unregister_script_palette("ScriptName")
 
--- Get all registered script rules (definitions)
-local all_rules = ThemeManager.get_registered_script_rules()
-```
-
-### Script Colors API (static colors for debug visibility)
-
-```lua
--- Register static colors for debug window visibility
-ThemeManager.register_script_colors("ScriptName", {
-  MY_COLOR = 0xFF6B6BFF,
-})
-
--- Unregister
-ThemeManager.unregister_script_colors("ScriptName")
-
--- Get all registered
-local all_colors = ThemeManager.get_registered_script_colors()
+-- Get all registered palettes (definitions, not computed)
+local all_palettes = ThemeManager.get_registered_palettes()
 ```
 
 ---
