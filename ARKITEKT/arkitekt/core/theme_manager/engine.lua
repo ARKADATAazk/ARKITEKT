@@ -144,9 +144,10 @@ end
 --- @param base_bg number Background color in RGBA format
 --- @param def any Definition
 --- @param t number Interpolation factor
+--- @param key string|nil Optional key for value clamping
 --- @return any Computed value
-function M.derive_entry(base_bg, def, t)
-  return derive_entry(base_bg, nil, def, t)
+function M.derive_entry(base_bg, def, t, key)
+  return derive_entry(base_bg, key, def, t)
 end
 
 return M

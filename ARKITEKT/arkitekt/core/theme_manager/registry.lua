@@ -7,6 +7,7 @@
 -- Flat structure with type inference.
 
 local Colors = require('arkitekt.core.colors')
+local Palette = require('arkitekt.defs.colors')
 local Engine = require('arkitekt.core.theme_manager.engine')
 
 local M = {}
@@ -94,7 +95,7 @@ function M.get_computed_palette(script_name, current_t)
     if type(def) == "table" and def.mode == "offset" then
       -- Offset mode requires BG_BASE
       if bg_base then
-        computed[key] = Engine.derive_entry(bg_base, def, current_t)
+        computed[key] = Engine.derive_entry(bg_base, def, current_t, key)
       else
         -- Fallback: can't compute offset without BG_BASE
         computed[key] = nil
@@ -106,8 +107,8 @@ function M.get_computed_palette(script_name, current_t)
         -- Hex string → convert to RGBA
         computed[key] = Colors.hexrgb(resolved .. "FF")
       else
-        -- Number → return as-is
-        computed[key] = resolved
+        -- Number → clamp to valid range for key type
+        computed[key] = Palette.clamp_value(key, resolved)
       end
     else
       -- Raw value
