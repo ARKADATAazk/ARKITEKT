@@ -20,6 +20,11 @@ local Colors = require('arkitekt.core.colors')
 local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
 local hexrgb = Colors.hexrgb
 
+-- Create namespace for widget modules
+local ark = {
+  InputText = InputText
+}
+
 -- ============================================================================
 -- CUSTOM TREEVIEW CONFIG
 -- ============================================================================
@@ -32,6 +37,8 @@ local TREE_CONFIG = {
   arrow_margin = 6,
   icon_width = 13,
   icon_margin = 4,
+  checkbox_size = 12,
+  checkbox_margin = 6,
 
   -- Padding
   padding_left = 4,
@@ -44,21 +51,38 @@ local TREE_CONFIG = {
   -- Visual features
   show_tree_lines = true,
   show_alternating_bg = false,
+  show_checkboxes = true,  -- NEW: Global checkbox toggle
   tree_line_thickness = 1,
   tree_line_style = "dotted", -- "solid" or "dotted"
   tree_line_dot_spacing = 2,
+
+  -- Default item flags
+  default_item_flags = {
+    selectable = true,
+    editable = true,
+    enabled = true,
+    checkable = false,
+    draggable = true,
+    droppable = true,
+  },
 
   -- Colors
   bg_hover = hexrgb("#2E2E2EFF"),
   bg_selected = hexrgb("#393939FF"),
   bg_selected_hover = hexrgb("#3E3E3EFF"),
   bg_alternate = hexrgb("#1C1C1CFF"),
+  bg_disabled = hexrgb("#0F0F0FFF"),
   text_normal = hexrgb("#CCCCCCFF"),
   text_hover = hexrgb("#FFFFFFFF"),
+  text_disabled = hexrgb("#666666FF"),
   arrow_color = hexrgb("#B0B0B0FF"),
   icon_color = hexrgb("#888888FF"),
   icon_open_color = hexrgb("#9A9A9AFF"),
   tree_line_color = hexrgb("#505050FF"),
+  checkbox_border = hexrgb("#888888FF"),
+  checkbox_check = hexrgb("#4A9EFFFF"),
+  checkbox_bg = hexrgb("#2A2A2AFF"),
+  checkbox_bg_disabled = hexrgb("#1A1A1AFF"),
 }
 
 -- ============================================================================
@@ -70,21 +94,25 @@ local mock_tree = {
     id = "root",
     name = "Project Root",
     color = hexrgb("#4A9EFFFF"),
+    flags = { checkable = true },
+    checked = true,
     children = {
       {
         id = "src",
         name = "src",
         color = hexrgb("#41E0A3FF"),
+        flags = { checkable = true },
+        checked = true,
         children = {
-          { id = "components", name = "components", children = {
-            { id = "button", name = "Button.lua", children = {} },
-            { id = "dropdown", name = "Dropdown.lua", children = {} },
+          { id = "components", name = "components", flags = { checkable = true }, checked = true, children = {
+            { id = "button", name = "Button.lua", flags = { checkable = true }, checked = true, children = {} },
+            { id = "dropdown", name = "Dropdown.lua", flags = { checkable = true }, checked = false, children = {} },
           }},
-          { id = "utils", name = "utils", children = {
-            { id = "colors", name = "colors.lua", children = {} },
-            { id = "config", name = "config.lua", children = {} },
+          { id = "utils", name = "utils", flags = { checkable = true }, checked = true, children = {
+            { id = "colors", name = "colors.lua", flags = { checkable = true }, checked = true, children = {} },
+            { id = "config", name = "config.lua", flags = { checkable = true }, checked = true, children = {} },
           }},
-          { id = "styles", name = "styles", children = {} },
+          { id = "styles", name = "styles", flags = { checkable = true }, checked = false, children = {} },
         }
       },
       {
@@ -124,6 +152,88 @@ local function find_node_by_id(nodes, id)
     end
   end
   return nil
+end
+
+-- Get item flags (merge with defaults)
+local function get_item_flags(node)
+  if not node.flags then
+    return TREE_CONFIG.default_item_flags
+  end
+
+  local flags = {}
+  for key, default_val in pairs(TREE_CONFIG.default_item_flags) do
+    flags[key] = node.flags[key] ~= nil and node.flags[key] or default_val
+  end
+  return flags
+end
+
+-- Check if item is enabled
+local function is_item_enabled(node)
+  local flags = get_item_flags(node)
+  return flags.enabled
+end
+
+-- Check if item is checkable
+local function is_item_checkable(node)
+  local flags = get_item_flags(node)
+  return flags.checkable and TREE_CONFIG.show_checkboxes
+end
+
+-- Get checkbox state (true, false, or "partial" for tri-state)
+local function get_check_state(node)
+  return node.checked or false
+end
+
+-- Set checkbox state and update parent tri-state
+local function set_check_state(nodes, node_id, checked)
+  local function update_node(ns)
+    for _, n in ipairs(ns) do
+      if n.id == node_id then
+        n.checked = checked
+        -- Update children recursively if enabled
+        if n.children and #n.children > 0 then
+          for _, child in ipairs(n.children) do
+            if is_item_checkable(child) then
+              set_check_state(n.children, child.id, checked)
+            end
+          end
+        end
+        return true
+      elseif n.children then
+        if update_node(n.children) then
+          -- Update this parent's tri-state
+          local all_checked = true
+          local any_checked = false
+          local has_partial = false
+
+          for _, child in ipairs(n.children) do
+            if is_item_checkable(child) then
+              local child_state = get_check_state(child)
+              if child_state == true then
+                any_checked = true
+              elseif child_state == "partial" then
+                has_partial = true
+              else
+                all_checked = false
+              end
+            end
+          end
+
+          if has_partial or (any_checked and not all_checked) then
+            n.checked = "partial"
+          elseif all_checked then
+            n.checked = true
+          else
+            n.checked = false
+          end
+          return true
+        end
+      end
+    end
+    return false
+  end
+
+  update_node(nodes)
 end
 
 -- ============================================================================
@@ -369,6 +479,38 @@ end
 -- ============================================================================
 -- DRAWING FUNCTIONS
 -- ============================================================================
+
+local function draw_checkbox(dl, x, y, checked, enabled)
+  local cfg = TREE_CONFIG
+  local size = cfg.checkbox_size
+
+  x = math.floor(x + 0.5)
+  y = math.floor(y + 0.5)
+
+  local bg_color = enabled and cfg.checkbox_bg or cfg.checkbox_bg_disabled
+  local border_color = enabled and cfg.checkbox_border or cfg.text_disabled
+  local check_color = enabled and cfg.checkbox_check or cfg.text_disabled
+
+  -- Background
+  ImGui.DrawList_AddRectFilled(dl, x, y, x + size, y + size, bg_color, 2)
+
+  -- Border
+  ImGui.DrawList_AddRect(dl, x, y, x + size, y + size, border_color, 2, 0, 1.5)
+
+  -- Checkmark or partial state
+  if checked == true then
+    -- Draw checkmark
+    local x1, y1 = x + 3, y + 6
+    local x2, y2 = x + 5, y + 9
+    local x3, y3 = x + 9, y + 3
+
+    ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, check_color, 2)
+    ImGui.DrawList_AddLine(dl, x2, y2, x3, y3, check_color, 2)
+  elseif checked == "partial" then
+    -- Draw dash for partial state (tri-state)
+    ImGui.DrawList_AddLine(dl, x + 3, y + size / 2, x + size - 3, y + size / 2, check_color, 2)
+  end
+end
 
 local function draw_arrow(dl, x, y, is_open, color)
   color = color or TREE_CONFIG.arrow_color

@@ -20,6 +20,11 @@ local Colors = require('arkitekt.core.colors')
 local InputText = require('arkitekt.gui.widgets.primitives.inputtext')
 local hexrgb = Colors.hexrgb
 
+-- Create namespace for widget modules
+local ark = {
+  InputText = InputText
+}
+
 -- ============================================================================
 -- CUSTOM TREEVIEW CONFIG
 -- ============================================================================
