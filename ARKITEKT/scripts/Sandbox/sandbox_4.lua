@@ -1442,11 +1442,23 @@ Shell.run({
       selected_text = string.format("%d items", selected_count)
     end
 
+    -- Debug info
     ImGui.Text(ctx, string.format("Selected: %s  |  Focused: %s  |  Editing: %s  |  Hovered: %s",
       selected_text,
       tree_state.focused or "None",
       tree_state.editing or "None",
       tree_state.hovered or "None"))
+
+    -- Debug: Show tree structure info
+    ImGui.Text(ctx, string.format("Tree nodes: %d  |  Flat list: %d  |  Scroll: %.1f",
+      #mock_tree,
+      #tree_state.flat_list,
+      tree_state.scroll_y))
+
+    ImGui.Text(ctx, string.format("Root: %s (children: %d)  |  src open: %s",
+      mock_tree[1] and mock_tree[1].name or "nil",
+      mock_tree[1] and mock_tree[1].children and #mock_tree[1].children or 0,
+      tree_state.open["src"] and "yes" or "no"))
 
     tree_state.hovered = nil
   end,
