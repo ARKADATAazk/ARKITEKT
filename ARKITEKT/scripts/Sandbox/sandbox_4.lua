@@ -260,6 +260,11 @@ local tree_state = {
   search_active = false,
   tree_bounds = {}, -- Store tree bounds for click detection
 
+  -- Type-to-search state
+  type_buffer = "",
+  type_timeout = 0,
+  type_timeout_duration = 1.0, -- seconds to wait before clearing buffer
+
   -- Drag & drop state
   drag_active = false,
   drag_node_id = nil,  -- Primary dragged node
@@ -1011,8 +1016,9 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     local text_color = (is_hovered or item_selected) and cfg.text_hover or cfg.text_normal
     local text_w = ImGui.CalcTextSize(ctx, node.name)
     local available_w = item_right - text_x
+    local is_truncated = text_w > available_w
 
-    if text_w > available_w then
+    if is_truncated then
       local truncated = node.name
       while text_w > available_w - 10 and #truncated > 3 do
         truncated = truncated:sub(1, -2)
@@ -1026,6 +1032,11 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     -- Invisible button for interaction
     ImGui.SetCursorScreenPos(ctx, visible_x, y_pos)
     ImGui.InvisibleButton(ctx, "##item", visible_w, item_h)  -- Scoped by PushID
+
+    -- Tooltip for truncated items
+    if is_truncated and ImGui.IsItemHovered(ctx, ImGui.HoveredFlags_DelayNormal) then
+      ImGui.SetTooltip(ctx, node.name)
+    end
 
     -- Mouse down for drag start
     if ImGui.IsItemActive(ctx) and ImGui.IsMouseDragging(ctx, 0, 0) and not tree_state.drag_active then
@@ -1374,6 +1385,78 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
           tree_state.clipboard = {}
           tree_state.clipboard_mode = nil
         end
+      end
+    end
+
+    -- Type-to-search: Capture alphanumeric input
+    local current_time = reaper.time_precise()
+
+    -- Update timeout - clear buffer if timeout exceeded
+    if tree_state.type_timeout > 0 and current_time > tree_state.type_timeout then
+      tree_state.type_buffer = ""
+      tree_state.type_timeout = 0
+    end
+
+    -- Capture text input (alphanumeric and common symbols)
+    local char_captured = false
+    for char_code = 32, 126 do  -- Printable ASCII characters
+      local char = string.char(char_code)
+      if ImGui.IsKeyPressed(ctx, char_code) then
+        -- Ignore if Ctrl/Alt held (for shortcuts)
+        local mods = ImGui.GetKeyMods(ctx)
+        if mods & ImGui.Mod_Ctrl == 0 and mods & ImGui.Mod_Alt == 0 then
+          -- Only allow alphanumeric and basic punctuation
+          if char:match("[%w%s%-%_%.%/]") then
+            tree_state.type_buffer = tree_state.type_buffer .. char:lower()
+            tree_state.type_timeout = current_time + tree_state.type_timeout_duration
+            char_captured = true
+            break
+          end
+        end
+      end
+    end
+
+    -- Search for matching item if buffer has content
+    if char_captured and tree_state.type_buffer ~= "" and #tree_state.flat_list > 0 then
+      local search_term = tree_state.type_buffer:lower()
+
+      -- Find first item that starts with the search term
+      local found_idx = nil
+      for i, item in ipairs(tree_state.flat_list) do
+        local item_name = item.node.name:lower()
+        if item_name:sub(1, #search_term) == search_term then
+          found_idx = i
+          break
+        end
+      end
+
+      -- If no match at start, try match anywhere
+      if not found_idx then
+        for i, item in ipairs(tree_state.flat_list) do
+          local item_name = item.node.name:lower()
+          if item_name:find(search_term, 1, true) then
+            found_idx = i
+            break
+          end
+        end
+      end
+
+      -- Jump to found item
+      if found_idx then
+        set_single_selection(tree_state.flat_list[found_idx].id)
+
+        -- Auto-scroll to item
+        local item_info = tree_state.flat_list[found_idx]
+        local item_screen_y = item_info.y_pos
+        local visible_top = y + cfg.padding_top
+        local visible_bottom = y + h - cfg.padding_bottom
+
+        if item_screen_y < visible_top then
+          tree_state.scroll_y = tree_state.scroll_y - (visible_top - item_screen_y)
+        elseif item_screen_y + item_info.height > visible_bottom then
+          tree_state.scroll_y = tree_state.scroll_y + (item_screen_y + item_info.height - visible_bottom)
+        end
+        tree_state.scroll_y = math.max(0, tree_state.scroll_y)
       end
     end
   end
