@@ -54,7 +54,7 @@ function Coordinator:render_disable_animations(ctx)
   -- Render all active disable animations (like grid/animation.lua does)
   for key, anim_data in pairs(self.disable_animator.disabling) do
     self.disable_animator:render(ctx, dl, key, anim_data.rect,
-                                  0xFF555555, -- Default grey color
+                                  nil, -- Color is stored in anim_data
                                   self.config.TILE.ROUNDING,
                                   self.state.icon_font,
                                   self.state.icon_font_size)

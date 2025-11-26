@@ -240,12 +240,13 @@ function DisableAnim.new(opts)
   }, DisableAnim)
 end
 
-function DisableAnim:disable(key, rect)
+function DisableAnim:disable(key, rect, base_color)
   if not key or not rect then return end
 
   self.disabling[key] = {
     elapsed = 0,
     rect = {rect[1], rect[2], rect[3], rect[4]},
+    base_color = base_color or 0xFF555555,  -- Store original tile color
   }
 end
 
@@ -289,6 +290,9 @@ function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_
   local t = math.min(1, anim.elapsed / self.duration)
   local rect = anim.rect
 
+  -- Use stored base color from when animation was triggered
+  base_color = anim.base_color or base_color
+
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local cx = (x1 + x2) * 0.5
   local cy = (y1 + y2) * 0.5
@@ -300,8 +304,8 @@ function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_
   local ny1 = y1 + slide_offset
   local ny2 = y2 + slide_offset
 
-  -- Grey target color (desaturated, darker)
-  local target_grey = hexrgb("#55555588")
+  -- Grey target color (desaturated, darker) - keep original color, just desaturate
+  local target_grey = hexrgb("#88888888")
 
   local r1 = (base_color >> 24) & 0xFF
   local g1 = (base_color >> 16) & 0xFF
@@ -342,21 +346,22 @@ function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_
   -- Only render if icon font is available
   if icon_font then
     local eye_alpha = (255 * (1 - Easing.ease_out_quad(t)))//1
-    local eye_color = (hexrgb("#AAAAAA") & 0xFFFFFF00) | eye_alpha
+    local eye_color = (hexrgb("#FFFFFF") & 0xFFFFFF00) | eye_alpha  -- White for better visibility
 
-    -- Push Remix Icon font for icon rendering
+    -- Push Remix Icon font for icon rendering - much larger size
     local icon_text = "\u{ECB6}"
-    local icon_size = icon_font_size or 14
-    ImGui.PushFont(ctx, icon_font, icon_size)
+    local large_icon_size = math.min(h * 0.5, 48)  -- 50% of tile height, max 48px
+    ImGui.PushFont(ctx, icon_font, large_icon_size)
 
     -- Calculate icon size and position (centered on tile)
     local text_w = ImGui.CalcTextSize(ctx, icon_text)
+    local text_h = ImGui.GetTextLineHeight(ctx)
     local icon_x = cx - text_w / 2
-    local icon_y = (ny1 + ny2) / 2 - ImGui.GetTextLineHeight(ctx) / 2
+    local icon_y = (ny1 + ny2) / 2 - text_h / 2
 
-    -- Render eye icon with shadow for better visibility
-    local shadow_color = (hexrgb("#000000") & 0xFFFFFF00) | (eye_alpha // 2)
-    ImGui.DrawList_AddText(dl, icon_x + 1, icon_y + 1, shadow_color, icon_text)
+    -- Render eye icon with dark shadow for better visibility on any background
+    local shadow_color = (hexrgb("#000000") & 0xFFFFFF00) | eye_alpha
+    ImGui.DrawList_AddText(dl, icon_x + 2, icon_y + 2, shadow_color, icon_text)
     ImGui.DrawList_AddText(dl, icon_x, icon_y, eye_color, icon_text)
 
     ImGui.PopFont(ctx)
