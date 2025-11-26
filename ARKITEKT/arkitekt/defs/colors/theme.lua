@@ -140,6 +140,33 @@ M.colors = {
   OP_COPY   = snap("#06B6D4", "#0891B2"),  -- Cyan - copy operation
   OP_DELETE = snap("#E84A4A", "#DC2626"),  -- Red - delete operation
   OP_LINK   = snap("#4A9EFF", "#2563EB"),  -- Blue - link/reference
+
+  -- === COLORED BUTTONS ===
+  -- Each variant: BG (base), HOVER (+lightness), ACTIVE (-lightness), TEXT (auto contrast)
+
+  -- Danger (red)
+  BUTTON_DANGER_BG     = lerp("#B91C1C", "#FCA5A5"),
+  BUTTON_DANGER_HOVER  = lerp("#DC2626", "#FEE2E2"),
+  BUTTON_DANGER_ACTIVE = lerp("#991B1B", "#F87171"),
+  BUTTON_DANGER_TEXT   = snap("#FFFFFF", "#7F1D1D"),
+
+  -- Success (green)
+  BUTTON_SUCCESS_BG     = lerp("#15803D", "#86EFAC"),
+  BUTTON_SUCCESS_HOVER  = lerp("#16A34A", "#BBF7D0"),
+  BUTTON_SUCCESS_ACTIVE = lerp("#166534", "#4ADE80"),
+  BUTTON_SUCCESS_TEXT   = snap("#FFFFFF", "#14532D"),
+
+  -- Warning (amber/orange)
+  BUTTON_WARNING_BG     = lerp("#B45309", "#FCD34D"),
+  BUTTON_WARNING_HOVER  = lerp("#D97706", "#FDE68A"),
+  BUTTON_WARNING_ACTIVE = lerp("#92400E", "#FBBF24"),
+  BUTTON_WARNING_TEXT   = snap("#FFFFFF", "#78350F"),
+
+  -- Info (blue)
+  BUTTON_INFO_BG     = lerp("#1D4ED8", "#93C5FD"),
+  BUTTON_INFO_HOVER  = lerp("#2563EB", "#BFDBFE"),
+  BUTTON_INFO_ACTIVE = lerp("#1E40AF", "#60A5FA"),
+  BUTTON_INFO_TEXT   = snap("#FFFFFF", "#1E3A8A"),
 }
 
 -- =============================================================================

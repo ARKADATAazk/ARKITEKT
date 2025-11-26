@@ -554,6 +554,47 @@ function M.build_button_config()
   }
 end
 
+--- Build colored button config (danger, success, warning, info)
+--- @param variant string "danger", "success", "warning", or "info"
+--- @return table Button configuration with colored theme
+function M.build_colored_button_config(variant)
+  local prefix = "BUTTON_" .. string.upper(variant) .. "_"
+  local bg = M.COLORS[prefix .. "BG"]
+  local hover = M.COLORS[prefix .. "HOVER"]
+  local active = M.COLORS[prefix .. "ACTIVE"]
+  local text = M.COLORS[prefix .. "TEXT"]
+
+  -- Fallback to default button if variant not found
+  if not bg then return M.build_button_config() end
+
+  return {
+    -- Backgrounds
+    bg_color = bg,
+    bg_hover_color = hover,
+    bg_active_color = active,
+    bg_disabled_color = Colors.adjust_saturation(Colors.adjust_lightness(bg, -0.1), -0.4),
+
+    -- Borders (derived from bg)
+    border_outer_color = Colors.adjust_lightness(bg, -0.18),
+    border_inner_color = Colors.adjust_lightness(bg, 0.12),
+    border_hover_color = Colors.adjust_lightness(hover, 0.10),
+    border_active_color = Colors.adjust_lightness(active, -0.10),
+    border_inner_disabled_color = Colors.adjust_lightness(bg, -0.15),
+    border_outer_disabled_color = Colors.adjust_lightness(bg, -0.20),
+
+    -- Text
+    text_color = text,
+    text_hover_color = text,
+    text_active_color = text,
+    text_disabled_color = Colors.adjust_lightness(text, -0.3),
+
+    -- Geometry
+    padding_x = 10,
+    padding_y = 6,
+    rounding = 0,
+  }
+end
+
 --- Build dropdown config from current M.COLORS
 --- @return table Dropdown configuration with all color properties
 function M.build_dropdown_config()
