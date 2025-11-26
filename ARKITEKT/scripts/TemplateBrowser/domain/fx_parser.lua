@@ -80,7 +80,7 @@ function M.parse_template_fx(filepath)
         local fx_name = extract_fx_name(line)
         if fx_name and not fx_set[fx_name] then
           fx_set[fx_name] = true
-          table.insert(fx_list, fx_name)
+          fx_list[#fx_list + 1] = fx_name
         end
       end
     end
@@ -100,7 +100,7 @@ function M.get_all_fx(templates)
       for _, fx in ipairs(tmpl.fx) do
         if not fx_set[fx] then
           fx_set[fx] = true
-          table.insert(all_fx, fx)
+          all_fx[#all_fx + 1] = fx
         end
       end
     end

@@ -123,7 +123,7 @@ function M.add_tag_to_template(metadata, template_uuid, tag_name)
     end
   end
 
-  table.insert(tmpl.tags, tag_name)
+  tmpl.tags[#tmpl.tags + 1] = tag_name
   reaper.ShowConsoleMsg("Added tag '" .. tag_name .. "' to template: " .. tmpl.name .. "\n")
   return true
 end
@@ -168,7 +168,7 @@ function M.add_tag_to_folder(metadata, folder_uuid, tag_name)
     end
   end
 
-  table.insert(fld.tags, tag_name)
+  fld.tags[#fld.tags + 1] = tag_name
   reaper.ShowConsoleMsg("Added tag '" .. tag_name .. "' to folder: " .. fld.name .. "\n")
   return true
 end
@@ -210,7 +210,7 @@ function M.get_templates_by_tag(metadata, tag_name)
     if tmpl.tags then
       for _, t in ipairs(tmpl.tags) do
         if t == tag_name then
-          table.insert(results, tmpl)
+          results[#results + 1] = tmpl
           break
         end
       end

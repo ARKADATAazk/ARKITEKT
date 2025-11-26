@@ -122,7 +122,7 @@ local function scan_directory(path, relative_path, metadata)
         reaper.ShowConsoleMsg("New template UUID: " .. template_name .. " -> " .. uuid .. "\n")
       end
 
-      table.insert(templates, {
+      templates[#templates + 1] = {
         uuid = uuid,
         name = template_name,
         file = file,
@@ -131,7 +131,7 @@ local function scan_directory(path, relative_path, metadata)
         folder = relative_path ~= "" and relative_path or "Root",
         fx = fx_list,
         needs_fx_parse = needs_fx_parse,  -- Flag for queue
-      })
+      }
     end
 
     idx = idx + 1
@@ -181,23 +181,23 @@ local function scan_directory(path, relative_path, metadata)
       end
 
       -- Add folder to list
-      table.insert(folders, {
+      folders[#folders + 1] = {
         uuid = folder_uuid,
         name = subdir,
         path = new_relative,
         full_path = sub_path,
         parent = relative_path,
         color = folder_color,
-      })
+      }
 
       -- Merge templates
       for _, tmpl in ipairs(sub_templates) do
-        table.insert(templates, tmpl)
+        templates[#templates + 1] = tmpl
       end
 
       -- Merge folders
       for _, fld in ipairs(sub_folders) do
-        table.insert(folders, fld)
+        folders[#folders + 1] = fld
       end
     end
 
@@ -236,7 +236,7 @@ local function build_folder_tree(folders)
       parent = parent_node,
       color = folder.color,  -- Pass color from metadata to tree node
     }
-    table.insert(parent_node.children, node)
+    parent_node.children[#parent_node.children + 1] = node
     path_to_node[folder.path] = node
   end
 
@@ -310,11 +310,11 @@ function M.filter_templates(state)
       if state.selected_folders and next(state.selected_folders) then
         -- Multi-select: use all selected folders
         for folder_path, _ in pairs(state.selected_folders) do
-          table.insert(selected_folders, folder_path)
+          selected_folders[#selected_folders + 1] = folder_path
         end
       else
         -- Single select: use state.selected_folder
-        table.insert(selected_folders, state.selected_folder)
+        selected_folders[#selected_folders + 1] = state.selected_folder
       end
 
       -- Check if template matches any of the selected folders (including subfolders)
@@ -453,7 +453,7 @@ function M.filter_templates(state)
     end
 
     if matches then
-      table.insert(filtered, tmpl)
+      filtered[#filtered + 1] = tmpl
     end
   end
 

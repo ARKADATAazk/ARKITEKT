@@ -45,9 +45,9 @@ function M.quantize_to_bar(time, proj, allow_backward)
   
   local num, denom = M.get_time_signature_at_time(time, proj)
   local beats_per_bar = num or 4
-  
+
   local qn = M.time_to_qn(time, proj)
-  local current_bar = math.floor(qn / beats_per_bar)
+  local current_bar = qn / beats_per_bar // 1
   local next_bar_qn = (current_bar + 1) * beats_per_bar
   
   if allow_backward then
@@ -107,7 +107,7 @@ function M.get_beats_in_region(start_time, end_time, proj)
   proj = proj or 0
   local start_qn = M.time_to_qn(start_time, proj)
   local end_qn = M.time_to_qn(end_time, proj)
-  return math.floor(end_qn - start_qn)
+  return (end_qn - start_qn) // 1
 end
 
 return M

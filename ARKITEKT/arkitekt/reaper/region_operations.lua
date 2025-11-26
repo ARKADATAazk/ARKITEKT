@@ -58,7 +58,7 @@ local function split_items_in_region(proj, region_start, region_end)
       item_end = item_pos + item_len
 
       if item_pos >= region_start and item_end <= region_end then
-        table.insert(items_in_region, item)
+        items_in_region[#items_in_region + 1] = item
       end
     end
   end
@@ -84,7 +84,7 @@ local function duplicate_items_to_position(items, time_offset)
     local old_pos = reaper.GetMediaItemInfo_Value(item, "D_POSITION")
     reaper.SetMediaItemInfo_Value(new_item, "D_POSITION", old_pos + time_offset)
 
-    table.insert(new_items, new_item)
+    new_items[#new_items + 1] = new_item
   end
 
   return new_items
@@ -117,12 +117,12 @@ local function copy_envelope_points(proj, source_start, source_end, time_offset)
       for k = 0, num_points - 1 do
         local retval, time, value, shape, tension, selected = reaper.GetEnvelopePoint(envelope, k)
         if time >= source_start and time <= source_end then
-          table.insert(points_to_copy, {
+          points_to_copy[#points_to_copy + 1] = {
             time = time + time_offset,
             value = value,
             shape = shape,
             tension = tension
-          })
+          }
         end
       end
 
@@ -176,7 +176,7 @@ local function insert_silence(proj, position, length)
       for k = num_points - 1, 0, -1 do
         local retval, time, value, shape, tension, selected = reaper.GetEnvelopePoint(envelope, k)
         if time >= position then
-          table.insert(points_to_move, {idx = k, time = time, value = value, shape = shape, tension = tension})
+          points_to_move[#points_to_move + 1] = {idx = k, time = time, value = value, shape = shape, tension = tension}
         end
       end
 
@@ -382,12 +382,12 @@ function M.crop_to_playlist(playlist_items)
         copy_envelope_points(proj, region.start, region["end"], time_offset)
 
         -- Store region for creation
-        table.insert(regions_to_create, {
+        regions_to_create[#regions_to_create + 1] = {
           start = current_position,
           ["end"] = current_position + region_length,
           name = region.name,
           color = region.color
-        })
+        }
 
         current_position = current_position + region_length
       end
@@ -466,14 +466,14 @@ function M.crop_to_playlist_new_tab(playlist_items, playlist_name, playlist_chip
         copy_envelope_points(proj, region.start, region["end"], time_offset)
 
         -- Store region for creation (preserving original RID!)
-        table.insert(regions_to_create, {
+        regions_to_create[#regions_to_create + 1] = {
           start = current_position,
           ["end"] = current_position + region_length,
           name = region.name,
           color = region.color,
           rid = rid,  -- CRITICAL: Store original RID for playlist recreation
           reps = reps  -- Store reps for playlist recreation
-        })
+        }
 
         current_position = current_position + region_length
       end
@@ -546,18 +546,18 @@ function M.crop_to_playlist_new_tab(playlist_items, playlist_name, playlist_chip
 
   -- Rebuild playlist items with the preserved RIDs
   for _, pl_item in ipairs(playlist_items) do
-    table.insert(new_playlist.items, {
+    new_playlist.items[#new_playlist.items + 1] = {
       type = "region",
       rid = pl_item.rid,  -- RID is preserved since we used it when creating regions
       reps = pl_item.reps or 1,
       enabled = true,
       key = UUID.generate()
-    })
+    }
   end
 
   -- Add playlist to state
   local playlists = State.get_playlists()
-  table.insert(playlists, new_playlist)
+  playlists[#playlists + 1] = new_playlist
   State.set_active_playlist(new_playlist.id)
   State.persist()  -- Save to project
 

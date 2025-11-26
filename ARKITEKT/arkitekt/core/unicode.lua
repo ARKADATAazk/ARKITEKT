@@ -22,22 +22,22 @@ function M.utf8(codepoint)
   elseif codepoint < 0x800 then
     -- 2-byte sequence
     return string.char(
-      0xC0 + math.floor(codepoint / 0x40),
+      0xC0 + codepoint / 0x40 // 1,
       0x80 + (codepoint % 0x40)
     )
   elseif codepoint < 0x10000 then
     -- 3-byte sequence (most common for icons)
     return string.char(
-      0xE0 + math.floor(codepoint / 0x1000),
-      0x80 + math.floor((codepoint % 0x1000) / 0x40),
+      0xE0 + codepoint / 0x1000 // 1,
+      0x80 + (codepoint % 0x1000) / 0x40 // 1,
       0x80 + (codepoint % 0x40)
     )
   else
     -- 4-byte sequence
     return string.char(
-      0xF0 + math.floor(codepoint / 0x40000),
-      0x80 + math.floor((codepoint % 0x40000) / 0x1000),
-      0x80 + math.floor((codepoint % 0x1000) / 0x40),
+      0xF0 + codepoint / 0x40000 // 1,
+      0x80 + (codepoint % 0x40000) / 0x1000 // 1,
+      0x80 + (codepoint % 0x1000) / 0x40 // 1,
       0x80 + (codepoint % 0x40)
     )
   end

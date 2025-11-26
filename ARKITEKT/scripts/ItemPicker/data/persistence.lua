@@ -89,7 +89,7 @@ function M.save_settings(settings)
         val_str = "nil"  -- Skip complex types
       end
 
-      table.insert(parts, key_str .. "=" .. val_str)
+      parts[#parts + 1] = key_str .. "=" .. val_str
     end
     return "{" .. table.concat(parts, ",") .. "}"
   end
@@ -122,7 +122,7 @@ function M.save_disabled_items(disabled)
     local parts = {}
     for k, _ in pairs(tbl) do
       local key_str = string.format("[%q]", tostring(k))
-      table.insert(parts, key_str .. "=true")
+      parts[#parts + 1] = key_str .. "=true"
     end
     return "{" .. table.concat(parts, ",") .. "}"
   end
@@ -160,7 +160,7 @@ function M.save_favorites(favorites)
     local parts = {}
     for k, _ in pairs(tbl) do
       local key_str = string.format("[%q]", tostring(k))
-      table.insert(parts, key_str .. "=true")
+      parts[#parts + 1] = key_str .. "=true"
     end
     return "{" .. table.concat(parts, ",") .. "}"
   end

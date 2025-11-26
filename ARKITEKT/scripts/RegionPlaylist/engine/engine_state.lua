@@ -94,7 +94,7 @@ function State:set_order(new_order)
       local rid = entry.rid
       if rid then
         local reps = tonumber(entry.reps) or 1
-        reps = math.max(1, math.floor(reps))
+        reps = math.max(1, reps // 1)
         local key = entry.key
         for loop_index = 1, reps do
           sequence[#sequence + 1] = {
@@ -149,8 +149,8 @@ function State:set_sequence(sequence)
       local normalized = {
         rid = rid,
         item_key = entry.item_key,
-        loop = math.max(1, math.floor(entry.loop or 1)),
-        total_loops = math.max(1, math.floor(entry.total_loops or 1)),
+        loop = math.max(1, (entry.loop or 1) // 1),
+        total_loops = math.max(1, (entry.total_loops or 1) // 1),
       }
       if normalized.loop > normalized.total_loops then
         normalized.loop = normalized.total_loops
@@ -363,7 +363,7 @@ function State:_apply_shuffle()
   if #self.sequence <= 1 then return end
 
   -- Always generate a new seed for each shuffle (new random order every time)
-  self._shuffle_seed = math.floor(reaper.time_precise() * 1000000) % 2147483647
+  self._shuffle_seed = (reaper.time_precise() * 1000000) // 1 % 2147483647
   math.randomseed(self._shuffle_seed)
 
   if self._shuffle_mode == "true_shuffle" then
@@ -414,12 +414,12 @@ function State:on_shuffle_changed(enabled)
   if #self.sequence > 0 then
     local current_sequence = {}
     for _, entry in ipairs(self.sequence) do
-      table.insert(current_sequence, {
+      current_sequence[#current_sequence + 1] = {
         rid = entry.rid,
         item_key = entry.item_key,
         loop = entry.loop,
         total_loops = entry.total_loops,
-      })
+      }
     end
     self:set_sequence(current_sequence)
   end
@@ -442,12 +442,12 @@ function State:set_shuffle_mode(mode)
   if self._shuffle_enabled and #self.sequence > 0 then
     local current_sequence = {}
     for _, entry in ipairs(self.sequence) do
-      table.insert(current_sequence, {
+      current_sequence[#current_sequence + 1] = {
         rid = entry.rid,
         item_key = entry.item_key,
         loop = entry.loop,
         total_loops = entry.total_loops,
-      })
+      }
     end
     self:set_sequence(current_sequence)
   end

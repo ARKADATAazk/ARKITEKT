@@ -237,21 +237,21 @@ function M.diff(expected, actual)
       if type(v) == "number" and type(actual[k]) == "number" then
         -- Format as hex if looks like color
         if v > 0xFFFFFF then
-          table.insert(differences, string.format(
+          differences[#differences + 1] = string.format(
             "  %s: expected 0x%08X, got %s",
             k, v, actual[k] and string.format("0x%08X", actual[k]) or "nil"
-          ))
+          )
         else
-          table.insert(differences, string.format(
+          differences[#differences + 1] = string.format(
             "  %s: expected %s, got %s",
             k, tostring(v), tostring(actual[k])
-          ))
+          )
         end
       else
-        table.insert(differences, string.format(
+        differences[#differences + 1] = string.format(
           "  %s: expected %s, got %s",
           k, tostring(v), tostring(actual[k])
-        ))
+        )
       end
     end
   end
@@ -259,10 +259,10 @@ function M.diff(expected, actual)
   -- Check for unexpected keys
   for k, v in pairs(actual) do
     if expected[k] == nil then
-      table.insert(differences, string.format(
+      differences[#differences + 1] = string.format(
         "  %s: not in expected, got %s",
         k, tostring(v)
-      ))
+      )
     end
   end
 

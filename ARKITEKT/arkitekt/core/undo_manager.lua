@@ -19,8 +19,8 @@ function M.new(opts)
         table.remove(self.history, i)
       end
     end
-    
-    table.insert(self.history, state)
+
+    self.history[#self.history + 1] = state
 
     if #self.history > self.max_history then
       table.remove(self.history, 1)
