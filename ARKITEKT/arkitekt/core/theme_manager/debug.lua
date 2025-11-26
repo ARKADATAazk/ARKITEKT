@@ -35,14 +35,11 @@ end
 -- SCRIPT REGISTRATION (delegated to Registry)
 -- =============================================================================
 
---- Delegate to Registry for backward compatibility
 M.registered_script_colors = Registry.script_colors
 M.registered_script_rules = Registry.script_rules
-
 M.register_script_colors = Registry.register_colors
 M.unregister_script_colors = Registry.unregister_colors
 M.get_registered_script_colors = Registry.get_all_colors
-
 M.register_script_rules = Registry.register_rules
 M.unregister_script_rules = Registry.unregister_rules
 M.get_script_rules = Registry.get_computed_rules

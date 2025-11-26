@@ -59,17 +59,12 @@ M.lerpDarkLight = Rules.lerpDarkLight
 M.snapAtMidpoint = Rules.snapAtMidpoint
 M.snapAt = Rules.snapAt
 
--- Legacy aliases
-M.blend = function(value) return Rules.lerpDarkLight(value, value) end
-M.step = function(value) return Rules.snapAtMidpoint(value, value) end
-
 -- =============================================================================
 -- RE-EXPORTS: Rules and Anchors
 -- =============================================================================
 
 M.rules = Rules.definitions
-M.preset_anchors = Rules.anchors
-M.theme_anchors = Rules.anchors  -- Legacy alias
+M.anchors = Rules.anchors
 
 -- =============================================================================
 -- RE-EXPORTS: Presets

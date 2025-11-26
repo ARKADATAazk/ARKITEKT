@@ -17,33 +17,13 @@ local M = {}
 
 M.themes = {
   -- DARK: Deep, high-contrast theme (~14% lightness)
-  -- Best for: Low-light environments, OLED screens
   dark = function()
-    return Engine.generate_palette(Colors.hexrgb("#242424FF"))  -- ~14% lightness
+    return Engine.generate_palette(Colors.hexrgb("#242424FF"))
   end,
 
   -- LIGHT: Bright, paper-like theme (~88% lightness)
-  -- Best for: Bright environments, printable mockups
   light = function()
-    return Engine.generate_palette(Colors.hexrgb("#E0E0E0FF"))  -- ~88% lightness
-  end,
-
-  -- ===== Legacy presets (kept for backward compatibility) =====
-
-  midnight = function()
-    return Engine.generate_palette(Colors.hexrgb("#0A0A0AFF"))  -- Almost black
-  end,
-
-  pro_tools = function()
-    return Engine.generate_palette(Colors.hexrgb("#3D3D3DFF"))  -- Medium dark gray
-  end,
-
-  ableton = function()
-    return Engine.generate_palette(Colors.hexrgb("#1A1A1AFF"))  -- Very dark gray
-  end,
-
-  fl_studio = function()
-    return Engine.generate_palette(Colors.hexrgb("#2B2B2BFF"))  -- Dark gray
+    return Engine.generate_palette(Colors.hexrgb("#E0E0E0FF"))
   end,
 }
 
