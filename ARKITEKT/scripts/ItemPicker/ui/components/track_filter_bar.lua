@@ -29,12 +29,33 @@ local function get_display_color(track_color)
   end
 end
 
+-- Check if a track is effectively whitelisted (itself and all ancestors)
+local function is_effectively_whitelisted(track, whitelist)
+  -- Check self
+  local self_selected = whitelist[track.guid]
+  if self_selected == nil then self_selected = true end
+  if not self_selected then return false end
+
+  -- Check ancestors
+  local ancestor = track.parent
+  while ancestor do
+    local ancestor_selected = whitelist[ancestor.guid]
+    if ancestor_selected == nil then ancestor_selected = true end
+    if not ancestor_selected then return false end
+    ancestor = ancestor.parent
+  end
+
+  return true
+end
+
 -- Flatten track tree to get whitelisted tracks in order
+-- Only includes tracks that are effectively whitelisted (parent chain is whitelisted)
 local function get_whitelisted_tracks(tracks, whitelist, result)
   result = result or {}
 
   for _, track in ipairs(tracks) do
-    if whitelist[track.guid] then
+    -- Only include if track AND all its ancestors are whitelisted
+    if is_effectively_whitelisted(track, whitelist) then
       table.insert(result, track)
     end
     if track.children and #track.children > 0 then

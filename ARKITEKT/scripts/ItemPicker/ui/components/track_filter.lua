@@ -58,17 +58,19 @@ function M.build_track_tree()
       folder_depth = depth,  -- 1 = folder start, 0 = normal, -1/-2 = folder end
       children = {},
       is_folder = depth == 1,
+      parent = nil,  -- Will be set during tree building
     }
 
     ::continue::
   end
 
-  -- Second pass: build tree structure
-  local root = { children = {} }
+  -- Second pass: build tree structure with parent references
+  local root = { children = {}, guid = nil }
   local stack = { root }
 
   for i, track_data in ipairs(all_tracks) do
     local parent = stack[#stack]
+    track_data.parent = parent.guid and parent or nil  -- Don't set root as parent
     table.insert(parent.children, track_data)
 
     if track_data.folder_depth == 1 then
@@ -87,8 +89,39 @@ function M.build_track_tree()
   return root.children
 end
 
+-- Check if a track is effectively selected (itself and all ancestors)
+local function is_effectively_selected(track, whitelist)
+  -- Check self
+  local self_selected = whitelist[track.guid]
+  if self_selected == nil then self_selected = true end
+  if not self_selected then return false end
+
+  -- Check ancestors
+  local ancestor = track.parent
+  while ancestor do
+    local ancestor_selected = whitelist[ancestor.guid]
+    if ancestor_selected == nil then ancestor_selected = true end
+    if not ancestor_selected then return false end
+    ancestor = ancestor.parent
+  end
+
+  return true
+end
+
+-- Check if parent is disabled (for visual feedback)
+local function is_parent_disabled(track, whitelist)
+  local ancestor = track.parent
+  while ancestor do
+    local ancestor_selected = whitelist[ancestor.guid]
+    if ancestor_selected == nil then ancestor_selected = true end
+    if not ancestor_selected then return true end
+    ancestor = ancestor.parent
+  end
+  return false
+end
+
 -- Draw a single track tile
-local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selected, is_hovered, depth, is_expanded, has_children)
+local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selected, is_hovered, depth, is_expanded, has_children, parent_disabled)
   local height = TRACK_TILE.HEIGHT
   local rounding = TRACK_TILE.ROUNDING
   local indent = depth * TRACK_TILE.INDENT
@@ -96,8 +129,12 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
   local tile_x = x + indent
   local tile_w = width - indent
 
+  -- Dim everything if parent is disabled
+  local dim_factor = parent_disabled and 0.4 or 1.0
+
   -- Background
   local bg_alpha = is_selected and 0xCC or (is_hovered and 0x66 or 0x33)
+  bg_alpha = math.floor(bg_alpha * dim_factor)
   local bg_color = ark.Colors.hexrgb("#2A2A2A")
   bg_color = ark.Colors.with_alpha(bg_color, bg_alpha)
 
@@ -105,6 +142,7 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
 
   -- Color bar on the left
   local bar_alpha = is_selected and 0xFF or 0x88
+  bar_alpha = math.floor(bar_alpha * dim_factor)
   local bar_color = ark.Colors.with_alpha(track_data.display_color, bar_alpha)
 
   ImGui.DrawList_AddRectFilled(draw_list,
@@ -117,7 +155,8 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
   if has_children then
     local arrow_x = tile_x + text_offset
     local arrow_y = y + (height - 6) / 2
-    local arrow_color = ark.Colors.hexrgb("#888888")
+    local arrow_alpha = math.floor(0x88 * dim_factor)
+    local arrow_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#888888"), arrow_alpha)
 
     if is_expanded then
       -- Down arrow
@@ -142,12 +181,13 @@ local function draw_track_tile(ctx, draw_list, x, y, width, track_data, is_selec
   local text_y = y + (height - ImGui.GetTextLineHeight(ctx)) / 2
 
   local text_alpha = is_selected and 0xFF or 0xAA
+  text_alpha = math.floor(text_alpha * dim_factor)
   local text_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), text_alpha)
 
   ImGui.DrawList_AddText(draw_list, text_x, text_y, text_color, track_data.name)
 
-  -- Selection indicator
-  if is_selected then
+  -- Selection indicator (only show if not parent-disabled)
+  if is_selected and not parent_disabled then
     local indicator_size = 6
     local indicator_x = tile_x + tile_w - TRACK_TILE.PADDING_X - indicator_size
     local indicator_y = y + (height - indicator_size) / 2
@@ -221,8 +261,11 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
       state.track_whitelist[track.guid] = state.track_filter_paint_value
     end
 
+    -- Check if parent is disabled (for visual dimming)
+    local parent_disabled = is_parent_disabled(track, state.track_whitelist or {})
+
     -- Draw tile
-    draw_track_tile(ctx, draw_list, x, tile_y, width, track, is_selected, is_hovered, depth, is_expanded, has_children)
+    draw_track_tile(ctx, draw_list, x, tile_y, width, track, is_selected, is_hovered, depth, is_expanded, has_children, parent_disabled)
     current_y = current_y + TRACK_TILE.HEIGHT + TRACK_TILE.MARGIN_Y
 
     -- Draw children if expanded
@@ -540,5 +583,9 @@ function M.render_modal(ctx, state, bounds)
 
   return true  -- Modal is active, block input behind
 end
+
+-- Export helper functions for use by other modules
+M.is_effectively_selected = is_effectively_selected
+M.is_parent_disabled = is_parent_disabled
 
 return M
