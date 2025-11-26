@@ -101,6 +101,17 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
   -- Clip to bar area
   ImGui.DrawList_PushClipRect(draw_list, x, y, x + bar_width, y + height, true)
 
+  -- Paint mode state
+  local left_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)
+  local left_down = ImGui.IsMouseDown(ctx, ImGui.MouseButton_Left)
+  local left_released = ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Left)
+
+  -- Stop painting on mouse release
+  if left_released then
+    state.track_bar_painting = false
+    state.track_bar_paint_value = nil
+  end
+
   -- Draw each track tag
   for i, track in ipairs(tracks) do
     local tag_top = tag_y - scroll_y
@@ -156,12 +167,24 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
 
       ImGui.DrawList_AddText(draw_list, text_x, text_y, text_color, name)
 
-      -- Handle click
-      if is_hovered and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) then
-        state.track_filters_enabled[track.guid] = not is_enabled
+      -- Handle click to start painting
+      if is_hovered and left_clicked then
+        state.track_bar_painting = true
+        state.track_bar_paint_value = not is_enabled
+        state.track_filters_enabled[track.guid] = state.track_bar_paint_value
         -- Invalidate filter cache
         state.runtime_cache.audio_filter_hash = nil
         state.runtime_cache.midi_filter_hash = nil
+      end
+
+      -- Paint mode: apply paint value while dragging over tracks
+      if state.track_bar_painting and left_down and is_hovered then
+        if state.track_filters_enabled[track.guid] ~= state.track_bar_paint_value then
+          state.track_filters_enabled[track.guid] = state.track_bar_paint_value
+          -- Invalidate filter cache
+          state.runtime_cache.audio_filter_hash = nil
+          state.runtime_cache.midi_filter_hash = nil
+        end
       end
     end
 

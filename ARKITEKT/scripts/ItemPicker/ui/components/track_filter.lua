@@ -168,6 +168,14 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
 
   local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
   local left_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)
+  local left_down = ImGui.IsMouseDown(ctx, ImGui.MouseButton_Left)
+  local left_released = ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Left)
+
+  -- Stop painting on mouse release
+  if left_released then
+    state.track_filter_painting = false
+    state.track_filter_paint_value = nil
+  end
 
   for _, track in ipairs(tracks) do
     local tile_y = current_y
@@ -188,19 +196,29 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
     local is_expanded = state.track_expanded and state.track_expanded[track.guid]
     if is_expanded == nil then is_expanded = true end  -- Default expanded
 
-    -- Handle clicks
+    -- Check if over arrow area (for expand/collapse)
+    local arrow_x = tile_x + TRACK_TILE.COLOR_BAR_WIDTH + TRACK_TILE.PADDING_X
+    local over_arrow = has_children and mouse_x >= arrow_x and mouse_x <= arrow_x + 12
+
+    -- Handle click to start painting or toggle expand
     if is_hovered and left_clicked then
-      -- Check if clicked on arrow area
-      local arrow_x = tile_x + TRACK_TILE.COLOR_BAR_WIDTH + TRACK_TILE.PADDING_X
-      if has_children and mouse_x >= arrow_x and mouse_x <= arrow_x + 12 then
-        -- Toggle expand
+      if over_arrow then
+        -- Toggle expand (not part of paint mode)
         if not state.track_expanded then state.track_expanded = {} end
         state.track_expanded[track.guid] = not is_expanded
       else
-        -- Toggle selection
+        -- Start painting - paint value is opposite of current selection
+        state.track_filter_painting = true
+        state.track_filter_paint_value = not is_selected
         if not state.track_whitelist then state.track_whitelist = {} end
-        state.track_whitelist[track.guid] = not is_selected
+        state.track_whitelist[track.guid] = state.track_filter_paint_value
       end
+    end
+
+    -- Paint mode: apply paint value while dragging over tracks
+    if state.track_filter_painting and left_down and is_hovered and not over_arrow then
+      if not state.track_whitelist then state.track_whitelist = {} end
+      state.track_whitelist[track.guid] = state.track_filter_paint_value
     end
 
     -- Draw tile
