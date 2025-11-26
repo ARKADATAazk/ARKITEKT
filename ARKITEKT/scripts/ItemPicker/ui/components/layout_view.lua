@@ -967,8 +967,8 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
         directional_delay = true,
         retract_delay_toward = 1.0,  -- Longer delay when moving left (toward another monitor)
         retract_delay_away = 0.1,    -- Quick retract when moving right (back to content)
-        hover_extend_outside = 10,
-        hover_extend_inside = track_bar_max_width,
+        hover_extend_outside = 5,
+        hover_extend_inside = 10,  -- Small trigger zone near the collapsed strip
         hover_padding = 0,
         draw_list = draw_list,
 
