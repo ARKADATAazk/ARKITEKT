@@ -96,12 +96,11 @@ end
 -- =============================================================================
 
 --- Generate complete UI color palette from a single base color
---- Text color is automatically derived (white on dark, black on light)
+--- Text color and accent are automatically derived from background
 --- @param base_bg number Background color in RGBA format
---- @param base_accent number|nil Optional accent color (nil for neutral grayscale)
 --- @param rules table|nil Optional rules override (defaults to computed rules)
 --- @return table Color palette with all UI colors
-function M.generate_palette(base_bg, base_accent, rules)
+function M.generate_palette(base_bg, rules)
   local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
 
   -- Get rules: use provided, or compute from lightness
@@ -115,8 +114,8 @@ function M.generate_palette(base_bg, base_accent, rules)
   chrome_lightness = math.max(0.04, math.min(0.85, chrome_lightness))
   local base_chrome = Colors.set_lightness(base_bg, chrome_lightness)
 
-  -- For neutral themes (no accent), derive from background
-  local neutral_accent = base_accent or Colors.adjust_lightness(base_bg, rules.accent_bright_delta)
+  -- Derive accent from background
+  local accent = Colors.adjust_lightness(base_bg, rules.accent_bright_delta)
 
   -- Pre-compute BG_PANEL for pattern derivation
   local bg_panel = Colors.adjust_lightness(base_bg, rules.bg_panel_delta)
@@ -153,12 +152,12 @@ function M.generate_palette(base_bg, base_accent, rules)
     TEXT_BRIGHT = Colors.adjust_lightness(base_text, rules.text_bright_delta),
 
     -- ============ ACCENTS ============
-    ACCENT_PRIMARY = neutral_accent,
-    ACCENT_TEAL = neutral_accent,
-    ACCENT_TEAL_BRIGHT = Colors.adjust_lightness(neutral_accent, rules.accent_bright_delta),
+    ACCENT_PRIMARY = accent,
+    ACCENT_TEAL = accent,
+    ACCENT_TEAL_BRIGHT = Colors.adjust_lightness(accent, rules.accent_bright_delta),
     ACCENT_WHITE = Colors.set_lightness(base_bg, rules.accent_white_lightness),
     ACCENT_WHITE_BRIGHT = Colors.set_lightness(base_bg, rules.accent_white_bright_lightness),
-    ACCENT_TRANSPARENT = Colors.with_opacity(neutral_accent, 0.67),
+    ACCENT_TRANSPARENT = Colors.with_opacity(accent, 0.67),
     ACCENT_SUCCESS = Colors.hexrgb(rules.status_success),
     ACCENT_WARNING = Colors.hexrgb(rules.status_warning),
     ACCENT_DANGER = Colors.hexrgb(rules.status_danger),
@@ -198,9 +197,8 @@ end
 
 --- Generate palette from base color and apply to Style.COLORS
 --- @param base_bg number Background color
---- @param base_accent number|nil Optional accent color
-function M.generate_and_apply(base_bg, base_accent)
-  local palette = M.generate_palette(base_bg, base_accent)
+function M.generate_and_apply(base_bg)
+  local palette = M.generate_palette(base_bg)
   M.apply_palette(palette)
 end
 

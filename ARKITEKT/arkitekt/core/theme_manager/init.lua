@@ -33,8 +33,7 @@
 -- =============================================================================
 --
 --   ThemeManager.apply_theme("dark")
---   ThemeManager.generate_and_apply(base_bg)           -- Text auto-derived
---   ThemeManager.generate_and_apply(base_bg, accent)   -- With custom accent
+--   ThemeManager.generate_and_apply(base_bg)   -- Everything derived from one color
 --   ThemeManager.transition_to_theme("light", 0.3)
 --   local sync = ThemeManager.create_live_sync(1.0)
 
@@ -157,22 +156,20 @@ end
 -- =============================================================================
 
 --- Generate palette from base color and apply to Style.COLORS
---- Text color is automatically derived (white on dark, black on light)
+--- All colors (text, accent, etc.) are derived from the single base color
 --- @param base_bg number Background color
---- @param base_accent number|nil Optional accent color
-function M.generate_and_apply(base_bg, base_accent)
-  Engine.generate_and_apply(base_bg, base_accent)
+function M.generate_and_apply(base_bg)
+  Engine.generate_and_apply(base_bg)
   Debug.clear_script_rules_cache()
 end
 
 --- Generate complete UI color palette from base color (without applying)
---- Text color is automatically derived (white on dark, black on light)
+--- All colors (text, accent, etc.) are derived from the single base color
 --- @param base_bg number Background color in RGBA format
---- @param base_accent number|nil Optional accent color
 --- @param rules table|nil Optional rules override
 --- @return table Color palette
-function M.generate_palette(base_bg, base_accent, rules)
-  return Engine.generate_palette(base_bg, base_accent, rules)
+function M.generate_palette(base_bg, rules)
+  return Engine.generate_palette(base_bg, rules)
 end
 
 --- Apply a preset theme by name
