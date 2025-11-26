@@ -34,36 +34,32 @@ end
 -- VALIDATION
 -- =============================================================================
 
-local function validate_section(section_name, section, errors)
-  for key, def in pairs(section) do
+--- Validate flat palette structure
+function M.validate()
+  local errors = {}
+  local valid_modes = { lerp = true, offset = true, snap = true }
+
+  for key, def in pairs(Palette.palette) do
     if type(def) == "table" and def.mode then
       -- Check: Has dark and light values
       if def.dark == nil then
-        errors[#errors + 1] = string.format("%s.%s missing 'dark' value", section_name, key)
+        errors[#errors + 1] = string.format("palette.%s missing 'dark' value", key)
       end
       if def.light == nil then
-        errors[#errors + 1] = string.format("%s.%s missing 'light' value", section_name, key)
+        errors[#errors + 1] = string.format("palette.%s missing 'light' value", key)
       end
 
       -- Check: Valid mode (only 3 core modes)
-      local valid_modes = { lerp = true, offset = true, snap = true }
       if not valid_modes[def.mode] then
         errors[#errors + 1] = string.format(
-          "%s.%s has invalid mode '%s'",
-          section_name, key, tostring(def.mode)
+          "palette.%s has invalid mode '%s'",
+          key, tostring(def.mode)
         )
       end
+    elseif def ~= "base" and type(def) ~= "table" then
+      -- Raw values are allowed but unusual
     end
   end
-end
-
---- Validate palette configuration
-function M.validate()
-  local errors = {}
-
-  validate_section("from_bg", Palette.from_bg, errors)
-  validate_section("specific", Palette.specific, errors)
-  validate_section("values", Palette.values, errors)
 
   if #errors > 0 then
     return false, table.concat(errors, "\n")
@@ -77,9 +73,7 @@ function M.get_validation_summary()
   local valid, err = M.validate()
   local count = 0
 
-  for _ in pairs(Palette.from_bg) do count = count + 1 end
-  for _ in pairs(Palette.specific) do count = count + 1 end
-  for _ in pairs(Palette.values) do count = count + 1 end
+  for _ in pairs(Palette.palette) do count = count + 1 end
 
   return {
     valid = valid,
@@ -156,40 +150,44 @@ function M.render_debug_window(ctx, ImGui, state)
       end
     end
 
-    -- Palette sections
-    if ImGui.CollapsingHeader(ctx, "Palette.from_bg") then
-      for k in pairs(Palette.from_bg) do
-        ImGui.Text(ctx, "  " .. k)
+    -- Palette (flat structure, grouped by mode)
+    if ImGui.CollapsingHeader(ctx, "Palette (flat)") then
+      -- Group by mode for readability
+      local by_mode = { offset = {}, snap = {}, lerp = {}, other = {} }
+      for k, def in pairs(Palette.palette) do
+        if def == "base" then
+          by_mode.other[#by_mode.other + 1] = k .. " = base"
+        elseif type(def) == "table" and def.mode then
+          by_mode[def.mode] = by_mode[def.mode] or {}
+          by_mode[def.mode][#by_mode[def.mode] + 1] = k
+        else
+          by_mode.other[#by_mode.other + 1] = k
+        end
       end
-    end
 
-    if ImGui.CollapsingHeader(ctx, "Palette.specific") then
-      for k in pairs(Palette.specific) do
-        ImGui.Text(ctx, "  " .. k)
-      end
-    end
-
-    if ImGui.CollapsingHeader(ctx, "Palette.values") then
-      for k in pairs(Palette.values) do
-        ImGui.Text(ctx, "  " .. k)
+      for _, mode in ipairs({"offset", "snap", "lerp", "other"}) do
+        if #(by_mode[mode] or {}) > 0 then
+          table.sort(by_mode[mode])
+          ImGui.Text(ctx, string.format("  [%s]", mode))
+          for _, k in ipairs(by_mode[mode]) do
+            ImGui.Text(ctx, "    " .. k)
+          end
+        end
       end
     end
 
     -- Registered script palettes
     for script_name, palette_def in pairs(Registry.script_palettes) do
       if ImGui.CollapsingHeader(ctx, "Script: " .. script_name) then
-        -- Show specific colors
-        if palette_def.specific then
-          ImGui.Text(ctx, "  specific:")
-          for k in pairs(palette_def.specific) do
-            ImGui.Text(ctx, "    " .. k)
-          end
-        end
-        -- Show values
-        if palette_def.values then
-          ImGui.Text(ctx, "  values:")
-          for k in pairs(palette_def.values) do
-            ImGui.Text(ctx, "    " .. k)
+        local keys = {}
+        for k in pairs(palette_def) do keys[#keys + 1] = k end
+        table.sort(keys)
+        for _, k in ipairs(keys) do
+          local def = palette_def[k]
+          if type(def) == "table" and def.mode then
+            ImGui.Text(ctx, string.format("  %s [%s]", k, def.mode))
+          else
+            ImGui.Text(ctx, "  " .. k)
           end
         end
       end

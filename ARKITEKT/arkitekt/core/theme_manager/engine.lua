@@ -3,6 +3,7 @@
 -- Palette generation engine
 --
 -- Computes colors from the palette definition based on theme lightness.
+-- Processes flat palette structure with type inference.
 
 local Colors = require('arkitekt.core.colors')
 local Style = require('arkitekt.gui.style')
@@ -68,26 +69,44 @@ local function resolve_value(def, t)
 end
 
 -- =============================================================================
--- COLOR DERIVATION
+-- COLOR DERIVATION (unified)
 -- =============================================================================
 
---- Derive a color from bg using a definition
---- Only supports: "base", offset, snap (all apply lightness delta)
-local function derive_from_bg(bg, def, t)
+--- Derive a single palette entry based on its definition
+--- @param base_bg number Background color in RGBA format
+--- @param key string Palette key name
+--- @param def any Definition (string, table with mode, or raw value)
+--- @param t number Interpolation factor
+--- @return any Computed value (RGBA color or number)
+local function derive_entry(base_bg, key, def, t)
+  -- Special case: "base" means use BG_BASE directly
   if def == "base" then
-    return bg
+    return base_bg
   end
 
-  -- offset and snap both resolve to a delta value
-  local delta = resolve_value(def, t)
-  return Colors.adjust_lightness(bg, delta)
-end
+  -- Raw value (not a table)
+  if type(def) ~= "table" or not def.mode then
+    return def
+  end
 
---- Derive a specific (standalone) color
---- Only supports: lerp, snap (both resolve to hex string)
-local function derive_specific(def, t)
-  local hex = resolve_value(def, t)
-  return Colors.hexrgb(hex .. "FF")
+  local mode = def.mode
+
+  -- OFFSET: Apply delta to BG_BASE
+  if mode == "offset" then
+    local delta = resolve_value(def, t)
+    return Colors.adjust_lightness(base_bg, delta)
+  end
+
+  -- SNAP or LERP: Check value type
+  local resolved = resolve_value(def, t)
+
+  if type(resolved) == "string" then
+    -- Hex string → convert to RGBA
+    return Colors.hexrgb(resolved .. "FF")
+  else
+    -- Number → return as-is
+    return resolved
+  end
 end
 
 -- =============================================================================
@@ -95,30 +114,20 @@ end
 -- =============================================================================
 
 --- Generate complete palette from base background color
+--- Uses flat M.palette structure with type inference
 --- @param base_bg number Background color in RGBA format
 --- @return table Color palette
 function M.generate_palette(base_bg)
   local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
   local t = M.compute_t(bg_lightness)
 
-  local palette = {}
+  local result = {}
 
-  -- From BG (derived from base background)
-  for key, def in pairs(Palette.from_bg) do
-    palette[key] = derive_from_bg(base_bg, def, t)
+  for key, def in pairs(Palette.palette) do
+    result[key] = derive_entry(base_bg, key, def, t)
   end
 
-  -- Specific (standalone colors using snap/lerp)
-  for key, def in pairs(Palette.specific) do
-    palette[key] = derive_specific(def, t)
-  end
-
-  -- Values (non-colors)
-  for key, def in pairs(Palette.values) do
-    palette[key] = resolve_value(def, t)
-  end
-
-  return palette
+  return result
 end
 
 --- Apply a color palette to Style.COLORS
@@ -152,6 +161,15 @@ end
 --- @return any Resolved value
 function M.resolve_value(def, t)
   return resolve_value(def, t)
+end
+
+--- Derive an entry with BG_BASE (exported for registry offset support)
+--- @param base_bg number Background color in RGBA format
+--- @param def any Definition
+--- @param t number Interpolation factor
+--- @return any Computed value
+function M.derive_entry(base_bg, def, t)
+  return derive_entry(base_bg, nil, def, t)
 end
 
 return M

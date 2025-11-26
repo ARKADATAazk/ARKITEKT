@@ -4,8 +4,10 @@
 --
 -- Allows scripts to register their own theme-reactive palettes
 -- using the same DSL as the main palette (snap/lerp/offset).
+-- Flat structure with type inference.
 
 local Colors = require('arkitekt.core.colors')
+local Style = require('arkitekt.gui.style')
 local Engine = require('arkitekt.core.theme_manager.engine')
 
 local M = {}
@@ -13,12 +15,13 @@ local M = {}
 -- =============================================================================
 -- SCRIPT PALETTE REGISTRATION
 -- =============================================================================
--- Scripts register palettes with the same structure as the main palette:
---   specific = { COLOR = snap/lerp }
---   values   = { VALUE = snap/lerp }
+-- Scripts register flat palettes using the same DSL wrappers:
+--   snap(dark, light)  → color (hex) or value (number)
+--   lerp(dark, light)  → color (hex) or value (number)
+--   offset(dark, light) → BG-derived color
 
 --- Registered script palette definitions
---- @type table<string, { specific: table, values: table }>
+--- @type table<string, table>
 M.script_palettes = {}
 
 --- Cache for computed script palettes
@@ -34,17 +37,30 @@ function M.clear_cache()
   palette_cache = {}
 end
 
---- Register a script's theme-reactive palette
+--- Register a script's theme-reactive palette (flat structure)
 --- @param script_name string Name of the script
---- @param palette table Palette with { specific = {}, values = {} }
+--- @param palette table Flat palette with DSL wrappers
 function M.register_palette(script_name, palette)
   if type(script_name) ~= "string" or type(palette) ~= "table" then
     return
   end
-  M.script_palettes[script_name] = {
-    specific = palette.specific or {},
-    values = palette.values or {},
-  }
+
+  -- Support both flat and legacy { specific = {}, values = {} } structures
+  if palette.specific or palette.values then
+    -- Legacy structure: merge into flat
+    local flat = {}
+    if palette.specific then
+      for k, v in pairs(palette.specific) do flat[k] = v end
+    end
+    if palette.values then
+      for k, v in pairs(palette.values) do flat[k] = v end
+    end
+    M.script_palettes[script_name] = flat
+  else
+    -- Already flat
+    M.script_palettes[script_name] = palette
+  end
+
   palette_cache[script_name] = nil  -- Invalidate cache
 end
 
@@ -74,18 +90,36 @@ function M.get_computed_palette(script_name, current_t)
     return cached
   end
 
+  -- Get current BG_BASE for offset support
+  local bg_base = Style.COLORS and Style.COLORS.BG_BASE
+
   -- Compute palette for current theme
   local computed = { _t = t_key }
 
-  -- Specific colors (resolve to hex, convert to RGBA)
-  for key, def in pairs(palette_def.specific) do
-    local hex = Engine.resolve_value(def, current_t)
-    computed[key] = Colors.hexrgb(hex .. "FF")
-  end
-
-  -- Values (resolve to number/string)
-  for key, def in pairs(palette_def.values) do
-    computed[key] = Engine.resolve_value(def, current_t)
+  for key, def in pairs(palette_def) do
+    -- Use unified derive_entry if BG_BASE available, otherwise fallback
+    if type(def) == "table" and def.mode == "offset" then
+      -- Offset mode requires BG_BASE
+      if bg_base then
+        computed[key] = Engine.derive_entry(bg_base, def, current_t)
+      else
+        -- Fallback: can't compute offset without BG_BASE
+        computed[key] = nil
+      end
+    elseif type(def) == "table" and def.mode then
+      -- snap or lerp
+      local resolved = Engine.resolve_value(def, current_t)
+      if type(resolved) == "string" then
+        -- Hex string → convert to RGBA
+        computed[key] = Colors.hexrgb(resolved .. "FF")
+      else
+        -- Number → return as-is
+        computed[key] = resolved
+      end
+    else
+      -- Raw value
+      computed[key] = def
+    end
   end
 
   palette_cache[script_name] = computed

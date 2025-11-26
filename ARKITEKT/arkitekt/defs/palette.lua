@@ -5,7 +5,7 @@
 -- Single source of truth for:
 --   - Presets (dark/light base colors)
 --   - Anchors (lightness values)
---   - All color definitions with inline values
+--   - All color definitions (flat structure)
 
 local M = {}
 
@@ -31,47 +31,53 @@ M.anchors = {
 -- =============================================================================
 -- DSL WRAPPERS
 -- =============================================================================
--- offsetFromBase(dark, light) - snap between deltas at t=0.5
--- lerpDarkLight(dark, light)  - smooth interpolation
--- snapAtMidpoint(dark, light) - snap between values at t=0.5
--- snapAt(t, dark, light)      - snap at custom threshold
+-- Short names with optional threshold parameter:
+--   snap(dark, light, [threshold=0.5]) - discrete snap
+--   lerp(dark, light)                  - smooth interpolation
+--   offset(dark, [light], [threshold=0.5]) - delta from BG_BASE
 
-local function offsetFromBase(dark_delta, light_delta)
-  if light_delta == nil then
-    return { mode = "offset", dark = dark_delta, light = dark_delta, threshold = 0.5 }
-  end
-  return { mode = "offset", dark = dark_delta, light = light_delta, threshold = 0.5 }
+local function snap(dark_val, light_val, threshold)
+  return { mode = "snap", dark = dark_val, light = light_val, threshold = threshold or 0.5 }
 end
 
-local function lerpDarkLight(dark_val, light_val)
+local function lerp(dark_val, light_val)
   return { mode = "lerp", dark = dark_val, light = light_val }
 end
 
-local function snapAtMidpoint(dark_val, light_val)
-  return { mode = "snap", dark = dark_val, light = light_val, threshold = 0.5 }
+local function offset(dark_delta, light_delta, threshold)
+  if light_delta == nil then
+    return { mode = "offset", dark = dark_delta, light = dark_delta, threshold = 0.5 }
+  elseif type(light_delta) == "number" and light_delta <= 1 and light_delta >= 0 and threshold == nil then
+    -- Could be threshold if light_delta looks like a threshold (0-1) and no third arg
+    -- But for clarity, require explicit: offset(0.03) or offset(0.03, -0.04) or offset(0.03, -0.04, 0.3)
+    return { mode = "offset", dark = dark_delta, light = light_delta, threshold = 0.5 }
+  end
+  return { mode = "offset", dark = dark_delta, light = light_delta, threshold = threshold or 0.5 }
 end
 
-local function snapAt(threshold, dark_val, light_val)
-  return { mode = "snap", dark = dark_val, light = light_val, threshold = threshold }
+-- Export wrappers
+M.snap = snap
+M.lerp = lerp
+M.offset = offset
+
+-- Legacy aliases (deprecated, for backwards compatibility)
+M.snapAtMidpoint = snap
+M.lerpDarkLight = lerp
+M.offsetFromBase = offset
+M.snapAt = function(threshold, dark_val, light_val)
+  return snap(dark_val, light_val, threshold)
 end
 
--- Shortcuts
-local offset = offsetFromBase
-local lerp = lerpDarkLight
-local snap = snapAtMidpoint
-
--- Export wrappers for external use
-M.offsetFromBase = offsetFromBase
-M.lerpDarkLight = lerpDarkLight
-M.snapAtMidpoint = snapAtMidpoint
-M.snapAt = snapAt
-
 -- =============================================================================
--- FROM BG (derived from base background color)
+-- PALETTE (flat structure)
 -- =============================================================================
+-- The mode determines processing:
+--   offset  → BG-derived (apply delta to BG_BASE)
+--   snap    → hex strings = color, numbers = value
+--   lerp    → hex strings = color, numbers = value
 
-M.from_bg = {
-  -- Backgrounds
+M.palette = {
+  -- === BACKGROUNDS (from BG_BASE) ===
   BG_BASE         = "base",
   BG_HOVER        = offset(0.03, -0.04),
   BG_ACTIVE       = offset(0.05, -0.07),
@@ -79,29 +85,29 @@ M.from_bg = {
   BG_PANEL        = offset(-0.04),
   BG_CHROME       = offset(-0.08, -0.15),
 
-  -- Borders (from bg)
+  -- === BORDERS (from BG_BASE) ===
   BORDER_INNER    = offset(0.05, -0.03),
   BORDER_HOVER    = offset(0.10, -0.08),
   BORDER_ACTIVE   = offset(0.15, -0.12),
   BORDER_FOCUS    = offset(0.20, -0.15),
+  BORDER_OUTER    = snap("#000000", "#404040"),
+  BORDER_OUTER_OPACITY = lerp(0.87, 0.60),
 
-  -- Accents (from bg)
+  -- === ACCENTS (from BG_BASE) ===
   ACCENT_PRIMARY       = offset(0.15, -0.12),
   ACCENT_TEAL          = offset(0.15, -0.12),
   ACCENT_TEAL_BRIGHT   = offset(0.25, -0.20),
-  ACCENT_TRANSPARENT   = offset(0.15, -0.12),  -- use with ACCENT_TRANSPARENT_OPACITY
+  ACCENT_TRANSPARENT   = offset(0.15, -0.12),
+  ACCENT_TRANSPARENT_OPACITY = lerp(0.67, 0.67),
 
-  -- Patterns (from bg, includes panel offset)
-  PATTERN_PRIMARY   = offset(-0.064, -0.10),
-  PATTERN_SECONDARY = offset(-0.044, -0.06),
-}
+  -- === ACCENTS (standalone) ===
+  ACCENT_WHITE        = lerp("#404040", "#8C8C8C"),
+  ACCENT_WHITE_BRIGHT = lerp("#595959", "#737373"),
+  ACCENT_SUCCESS = lerp("#4CAF50", "#2E7D32"),
+  ACCENT_WARNING = lerp("#FFA726", "#F57C00"),
+  ACCENT_DANGER  = lerp("#EF5350", "#C62828"),
 
--- =============================================================================
--- SPECIFIC (standalone colors using snap/lerp)
--- =============================================================================
-
-M.specific = {
-  -- Text colors (explicit snap for contrast)
+  -- === TEXT ===
   TEXT_NORMAL = snap("#FFFFFF", "#000000"),
   TEXT_HOVER  = snap("#F0F0F0", "#1A1A1A"),
   TEXT_ACTIVE = snap("#E8E8E8", "#222222"),
@@ -109,61 +115,62 @@ M.specific = {
   TEXT_DARK   = snap("#808080", "#808080"),
   TEXT_BRIGHT = snap("#FFFFFF", "#000000"),
 
-  -- Accents (standalone grays)
-  ACCENT_WHITE        = lerp("#404040", "#8C8C8C"),  -- 25% → 55% lightness
-  ACCENT_WHITE_BRIGHT = lerp("#595959", "#737373"),  -- 35% → 45% lightness
+  -- === PATTERNS (from BG_BASE, includes panel offset) ===
+  PATTERN_PRIMARY   = offset(-0.064, -0.10),
+  PATTERN_SECONDARY = offset(-0.044, -0.06),
 
-  -- Border outer (use with BORDER_OUTER_OPACITY)
-  BORDER_OUTER = snap("#000000", "#404040"),
-
-  -- Status colors
-  ACCENT_SUCCESS = lerp("#4CAF50", "#2E7D32"),
-  ACCENT_WARNING = lerp("#FFA726", "#F57C00"),
-  ACCENT_DANGER  = lerp("#EF5350", "#C62828"),
-
-  -- Tiles
-  TILE_NAME_COLOR = snap("#DDE3E9", "#1A1A1A"),
-
-  -- Badges (use with BADGE_BG_OPACITY)
-  BADGE_BG   = snap("#14181C", "#E8ECF0"),
-  BADGE_TEXT = snap("#FFFFFF", "#1A1A1A"),
-
-  -- Playlist
-  PLAYLIST_TILE_COLOR  = snap("#3A3A3A", "#D0D0D0"),
-  PLAYLIST_NAME_COLOR  = snap("#CCCCCC", "#2A2A2A"),
-  PLAYLIST_BADGE_COLOR = snap("#999999", "#666666"),
-}
-
--- =============================================================================
--- VALUES (non-color values)
--- =============================================================================
-
-M.values = {
-  -- Tile rendering
+  -- === TILES ===
+  TILE_NAME_COLOR      = snap("#DDE3E9", "#1A1A1A"),
   TILE_FILL_BRIGHTNESS = lerp(0.5, 1.4),
   TILE_FILL_SATURATION = lerp(0.4, 0.5),
   TILE_FILL_OPACITY    = lerp(0.4, 0.5),
 
-  -- Opacities (pair with corresponding color)
-  BORDER_OUTER_OPACITY     = lerp(0.87, 0.60),
-  BADGE_BG_OPACITY         = lerp(0.85, 0.90),
-  BADGE_BORDER_OPACITY     = lerp(0.20, 0.15),
-  ACCENT_TRANSPARENT_OPACITY = lerp(0.67, 0.67),  -- constant for now
+  -- === BADGES ===
+  BADGE_BG             = snap("#14181C", "#E8ECF0"),
+  BADGE_TEXT           = snap("#FFFFFF", "#1A1A1A"),
+  BADGE_BG_OPACITY     = lerp(0.85, 0.90),
+  BADGE_BORDER_OPACITY = lerp(0.20, 0.15),
 
-  -- System
+  -- === PLAYLIST ===
+  PLAYLIST_TILE_COLOR  = snap("#3A3A3A", "#D0D0D0"),
+  PLAYLIST_NAME_COLOR  = snap("#CCCCCC", "#2A2A2A"),
+  PLAYLIST_BADGE_COLOR = snap("#999999", "#666666"),
+
+  -- === SYSTEM ===
   REAPER_SYNC_OFFSET = offset(-0.012),
 }
+
+-- =============================================================================
+-- LEGACY SECTION VIEWS (deprecated, for backwards compatibility)
+-- =============================================================================
+
+-- Build section views from flat palette
+M.from_bg = {}
+M.specific = {}
+M.values = {}
+
+for key, def in pairs(M.palette) do
+  if def == "base" or (type(def) == "table" and def.mode == "offset") then
+    M.from_bg[key] = def
+  elseif type(def) == "table" and (def.mode == "snap" or def.mode == "lerp") then
+    if type(def.dark) == "string" then
+      M.specific[key] = def
+    else
+      M.values[key] = def
+    end
+  end
+end
 
 -- =============================================================================
 -- UTILITIES
 -- =============================================================================
 
---- Get all color keys across all sections
+--- Get all color keys
 function M.get_all_keys()
   local keys = {}
-  for key in pairs(M.from_bg) do keys[#keys + 1] = key end
-  for key in pairs(M.specific) do keys[#keys + 1] = key end
-  for key in pairs(M.values) do keys[#keys + 1] = key end
+  for key in pairs(M.palette) do
+    keys[#keys + 1] = key
+  end
   table.sort(keys)
   return keys
 end

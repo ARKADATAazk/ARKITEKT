@@ -2,45 +2,46 @@
 -- RegionPlaylist/defs/palette.lua
 -- Script-specific theme-reactive palette
 --
--- Uses ThemeManager's DSL (snap/lerp) for theme-reactive colors.
+-- Uses ThemeManager's DSL (snap/lerp/offset) for theme-reactive colors.
 -- Register at load time, access computed values via get_colors().
 
 local Style = require('arkitekt.gui.style')
 local Colors = require('arkitekt.core.colors')
 local ThemeManager = require('arkitekt.core.theme_manager')
 
--- DSL wrappers
-local snap = ThemeManager.snapAtMidpoint
-local lerp = ThemeManager.lerpDarkLight
+-- DSL wrappers (short names)
+local snap = ThemeManager.snap
+local lerp = ThemeManager.lerp
+local offset = ThemeManager.offset
 
 local M = {}
 
 -- =============================================================================
--- REGISTER THEME-REACTIVE PALETTE
+-- REGISTER THEME-REACTIVE PALETTE (flat structure)
 -- =============================================================================
 -- Colors adapt to dark/light theme while preserving semantic meaning.
 
 ThemeManager.register_script_palette("RegionPlaylist", {
-  specific = {
-    -- Circular dependency (error state - red, but adjusted for visibility)
-    CIRCULAR_BASE         = snap("#240C0C", "#FFDDDD"),  -- dark red / light pink
-    CIRCULAR_STRIPE       = snap("#430D0D", "#FFCCCC"),
-    CIRCULAR_BORDER       = snap("#240F0F", "#FFCCCC"),
-    CIRCULAR_TEXT         = snap("#901B1B", "#CC0000"),  -- muted red / vivid red
-    CIRCULAR_LOCK         = snap("#901B1B", "#CC0000"),
-    CIRCULAR_CHIP         = snap("#901B1B", "#CC0000"),
-    CIRCULAR_BADGE_BG     = snap("#240C0C", "#FFE0E0"),
-    CIRCULAR_BADGE_BORDER = snap("#652A2A", "#CC8888"),
+  -- === CIRCULAR DEPENDENCY (error state) ===
+  CIRCULAR_BASE         = snap("#240C0C", "#FFDDDD"),  -- dark red / light pink
+  CIRCULAR_STRIPE       = snap("#430D0D", "#FFCCCC"),
+  CIRCULAR_BORDER       = snap("#240F0F", "#FFCCCC"),
+  CIRCULAR_TEXT         = snap("#901B1B", "#CC0000"),  -- muted red / vivid red
+  CIRCULAR_LOCK         = snap("#901B1B", "#CC0000"),
+  CIRCULAR_CHIP         = snap("#901B1B", "#CC0000"),
+  CIRCULAR_BADGE_BG     = snap("#240C0C", "#FFE0E0"),
+  CIRCULAR_BADGE_BORDER = snap("#652A2A", "#CC8888"),
 
-    -- Fallback chip color
-    FALLBACK_CHIP = snap("#FF5733", "#E64A19"),  -- orange-red
-  },
-  values = {
-    -- Circular stripe pattern
-    CIRCULAR_STRIPE_OPACITY = lerp(0.20, 0.30),
-    CIRCULAR_STRIPE_WIDTH   = lerp(8, 8),      -- constant
-    CIRCULAR_STRIPE_SPACING = lerp(16, 16),    -- constant
-  },
+  -- === CIRCULAR VALUES ===
+  CIRCULAR_STRIPE_OPACITY = lerp(0.20, 0.30),
+  CIRCULAR_STRIPE_WIDTH   = lerp(8, 8),      -- constant
+  CIRCULAR_STRIPE_SPACING = lerp(16, 16),    -- constant
+
+  -- === FALLBACK ===
+  FALLBACK_CHIP = snap("#FF5733", "#E64A19"),  -- orange-red
+
+  -- === CUSTOM PANEL (example of offset) ===
+  -- CUSTOM_PANEL_BG = offset(-0.06),  -- Would derive from BG_BASE
 })
 
 -- =============================================================================
