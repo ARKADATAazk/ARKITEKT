@@ -89,10 +89,7 @@ M.definitions = {
   bg_panel_delta = W.offsetFromBase(-0.04),
 
   -- ========== CHROME (titlebar/statusbar) ==========
-  chrome_lightness_factor = W.lerpDarkLight(0.42, 1.0),
-  chrome_lightness_offset = W.lerpDarkLight(0, -0.15),
-  chrome_lightness_min = W.lerpDarkLight(0.04, 0.04),
-  chrome_lightness_max = W.lerpDarkLight(0.85, 0.85),
+  bg_chrome_delta = W.offsetFromBase(-0.08, -0.15),
 
   -- ========== PATTERN OFFSETS ==========
   pattern_primary_delta = W.offsetFromBase(-0.024, -0.06),

@@ -100,7 +100,7 @@ end
 --- All derivation uses rules - no hardcoded values
 --- @param base_bg number Background color in RGBA format
 --- @param rules table Computed rules
---- @return table Source colors { bg, text, accent, chrome, panel }
+--- @return table Source colors { bg, text, accent, panel }
 local function compute_sources(base_bg, rules)
   local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
 
@@ -113,13 +113,6 @@ local function compute_sources(base_bg, rules)
   -- Accent: derived from background using rule
   local accent = Colors.adjust_lightness(base_bg, rules.accent_bright_delta)
 
-  -- Chrome: factor + offset calculation, clamped by rules
-  local chrome_l = bg_lightness * rules.chrome_lightness_factor + rules.chrome_lightness_offset
-  local min_l = rules.chrome_lightness_min or 0.04
-  local max_l = rules.chrome_lightness_max or 0.85
-  chrome_l = math.max(min_l, math.min(max_l, chrome_l))
-  local chrome = Colors.set_lightness(base_bg, chrome_l)
-
   -- Panel: derived from background using rule
   local panel = Colors.adjust_lightness(base_bg, rules.bg_panel_delta)
 
@@ -127,7 +120,6 @@ local function compute_sources(base_bg, rules)
     bg = base_bg,
     text = text,
     accent = accent,
-    chrome = chrome,
     panel = panel,
   }
 end
@@ -175,9 +167,6 @@ local function derive_color(def, sources, rules)
 
   elseif derive_type == "value" then
     return rules[rule_key]
-
-  elseif derive_type == "chrome" then
-    return sources.chrome
   end
 
   return nil

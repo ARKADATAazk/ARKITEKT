@@ -31,7 +31,7 @@ M.definition = {
   BG_ACTIVE       = { "bg", "lightness", "bg_active_delta" },
   BG_HEADER       = { "bg", "lightness", "bg_header_delta" },
   BG_PANEL        = { "bg", "lightness", "bg_panel_delta" },
-  BG_CHROME       = { "bg", "chrome" },  -- Special: uses chrome_lightness_factor + offset
+  BG_CHROME       = { "bg", "lightness", "bg_chrome_delta" },
   BG_TRANSPARENT  = { "bg", "opacity", 0 },
 
   -- ============ BORDERS ============
@@ -89,7 +89,6 @@ M.definition = {
 M.derived_sources = {
   "text",    -- auto_text_color(bg)
   "accent",  -- adjust_lightness(bg, accent_bright_delta)
-  "chrome",  -- set_lightness(bg, computed_chrome_lightness)
   "panel",   -- adjust_lightness(bg, bg_panel_delta) -- same as BG_PANEL
 }
 

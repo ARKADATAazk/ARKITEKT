@@ -126,17 +126,10 @@ end
 -- =============================================================================
 
 -- Build rule -> style map from palette definition (auto-generated)
--- Most rules are discovered via palette.definition[key][3..4]
 local RULE_TO_STYLE_MAP = {}
 for style_key, def in pairs(Palette.definition) do
   if type(def[3]) == "string" then RULE_TO_STYLE_MAP[def[3]] = style_key end
   if type(def[4]) == "string" then RULE_TO_STYLE_MAP[def[4]] = style_key end
-end
--- BG_CHROME: uses "chrome" derivation type which doesn't reference rules directly
--- These rules are used internally by engine.compute_sources() for chrome color
-for _, rule_key in ipairs({ "chrome_lightness_factor", "chrome_lightness_offset",
-                            "chrome_lightness_min", "chrome_lightness_max" }) do
-  RULE_TO_STYLE_MAP[rule_key] = "BG_CHROME"
 end
 
 --- Render debug window showing current theme state
