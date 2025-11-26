@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
+local Cursor = ark.Cursor
 local M = {}
 
 -- Tag styling constants
@@ -140,6 +141,7 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
     state.track_bar_paint_value = nil
     state.track_bar_last_painted = nil
     state.track_bar_paint_mode = nil  -- "toggle" or "fixed"
+    state.track_bar_prev_mouse_y = nil  -- Reset cursor tracking
   end
 
   -- Draw each track tag
@@ -220,12 +222,30 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
         state.runtime_cache.midi_filter_hash = nil
       end
 
-      -- Paint mode while dragging
-      if state.track_bar_painting and is_hovered then
-        local is_dragging = (state.track_bar_paint_mode == "toggle" and left_down) or
-                            (state.track_bar_paint_mode == "fixed" and right_down)
+      -- Paint mode while dragging (handled below with crossing detection)
+    end
 
-        if is_dragging and state.track_bar_last_painted ~= track.guid then
+    tag_y = tag_y + TAG.HEIGHT + TAG.MARGIN_Y
+  end
+
+  -- Handle paint drag with crossing detection (for fast cursor movement)
+  if state.track_bar_painting then
+    local is_dragging = (state.track_bar_paint_mode == "toggle" and left_down) or
+                        (state.track_bar_paint_mode == "fixed" and right_down)
+
+    if is_dragging and state.track_bar_prev_mouse_y then
+      -- Use crossing detection to find all tracks between prev and current Y
+      local item_height = TAG.HEIGHT + TAG.MARGIN_Y
+      local first_item_y = y + TAG.PADDING_Y - scroll_y
+      local crossed = Cursor.crossed_items_vertical(
+        state.track_bar_prev_mouse_y, mouse_y,
+        first_item_y, item_height, #tracks, 0
+      )
+
+      -- Paint all crossed tracks
+      for _, idx in ipairs(crossed) do
+        local track = tracks[idx]
+        if track and state.track_bar_last_painted ~= track.guid then
           local new_value
           if state.track_bar_paint_mode == "toggle" then
             -- Toggle mode: flip the track's current state
@@ -245,9 +265,10 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
         end
       end
     end
-
-    tag_y = tag_y + TAG.HEIGHT + TAG.MARGIN_Y
   end
+
+  -- Update previous mouse position for crossing detection
+  state.track_bar_prev_mouse_y = mouse_y
 
   ImGui.DrawList_PopClipRect(draw_list)
 
