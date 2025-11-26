@@ -1,170 +1,133 @@
 -- @noindex
 -- arkitekt/core/theme_manager/engine.lua
--- Rule computation and palette generation
+-- Palette generation engine
 --
--- Core engine that computes rule values based on theme lightness
--- and generates color palettes using the palette definition.
+-- Computes colors from the palette definition based on theme lightness.
 
 local Colors = require('arkitekt.core.colors')
 local Style = require('arkitekt.gui.style')
-local Rules = require('arkitekt.core.theme_manager.rules')
 local Palette = require('arkitekt.defs.palette')
 
 local M = {}
 
 -- =============================================================================
--- RULE COMPUTATION
+-- T COMPUTATION
 -- =============================================================================
 
 --- Compute interpolation factor 't' from lightness
+--- Uses anchors derived from presets (single source of truth)
 --- @param lightness number Background lightness (0.0-1.0)
---- @return number t value (0.0 at dark anchor, 1.0 at light anchor)
+--- @return number t value (0.0 at dark preset, 1.0 at light preset)
 function M.compute_t(lightness)
-  local range = Rules.anchors.light - Rules.anchors.dark
+  local range = Palette.anchors.light - Palette.anchors.dark
   if range <= 0 then return 0 end
-  local t = (lightness - Rules.anchors.dark) / range
+  local t = (lightness - Palette.anchors.dark) / range
   return math.max(0, math.min(1, t))
 end
 
---- Compute a single rule value based on wrapper type and current t
---- @param rule table Wrapped rule from Rules.definitions
+-- =============================================================================
+-- VALUE RESOLUTION
+-- =============================================================================
+
+--- Resolve a wrapped value based on current t
+--- @param def table Wrapper from palette definition
 --- @param t number Interpolation factor (0.0-1.0)
---- @return any Computed value
-function M.compute_rule_value(rule, t)
-  if type(rule) ~= "table" or not rule.mode then
-    return rule  -- Raw value (not wrapped), return as-is
+--- @return any Resolved value
+local function resolve_value(def, t)
+  if type(def) ~= "table" then
+    return def  -- Raw value
   end
 
-  local mode = rule.mode
-  local dark_val = rule.dark
-  local light_val = rule.light
-  local threshold = rule.threshold or 0.5
+  if not def.mode then
+    return def  -- Not a wrapper
+  end
+
+  local mode = def.mode
+  local threshold = def.threshold or 0.5
 
   if mode == "offset" or mode == "snap" then
-    -- Discrete switch at threshold
-    return t < threshold and dark_val or light_val
+    return t < threshold and def.dark or def.light
 
   elseif mode == "lerp" then
-    -- Smooth interpolation
+    local dark_val, light_val = def.dark, def.light
     if type(dark_val) == "number" and type(light_val) == "number" then
       return dark_val + (light_val - dark_val) * t
-
     elseif type(dark_val) == "string" and type(light_val) == "string" then
-      -- RGB color lerp for hex strings
+      -- RGB color lerp
       local color_a = Colors.hexrgb(dark_val .. (#dark_val == 7 and "FF" or ""))
       local color_b = Colors.hexrgb(light_val .. (#light_val == 7 and "FF" or ""))
       local lerped = Colors.lerp(color_a, color_b, t)
       local r, g, b = Colors.rgba_to_components(lerped)
       return string.format("#%02X%02X%02X", r, g, b)
-
     else
-      -- Non-interpolatable, snap at midpoint
       return t < 0.5 and dark_val or light_val
     end
   end
 
-  return dark_val
-end
-
---- Compute all rules for a given lightness value
---- @param lightness number Background lightness (0.0-1.0)
---- @param mode string|nil Theme mode ("dark", "light", "adapt", or nil)
---- @return table Computed rules (raw values ready for use)
-function M.compute_rules(lightness, mode)
-  local t
-
-  -- Determine t based on mode
-  if mode == "dark" then
-    t = 0  -- Force dark values
-  elseif mode == "light" then
-    t = 1  -- Force light values
-  else
-    -- "adapt" mode or nil: compute t from actual lightness
-    t = M.compute_t(lightness)
-  end
-
-  -- Compute each rule value
-  local result = {}
-  for key, rule in pairs(Rules.definitions) do
-    result[key] = M.compute_rule_value(rule, t)
-  end
-
-  return result
-end
-
--- =============================================================================
--- SOURCE COMPUTATION
--- =============================================================================
-
---- Compute derived source colors from base background
---- @param base_bg number Background color in RGBA format
---- @param rules table Computed rules
---- @return table Source colors { bg, text }
-local function compute_sources(base_bg, rules)
-  local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
-
-  -- Text: white on dark, black on light (threshold from rules)
-  local threshold = rules.text_luminance_threshold or 0.5
-  local text = bg_lightness < threshold
-    and Colors.hexrgb("#FFFFFFFF")
-    or Colors.hexrgb("#000000FF")
-
-  return {
-    bg = base_bg,
-    text = text,
-  }
+  return def.dark  -- Fallback
 end
 
 -- =============================================================================
 -- COLOR DERIVATION
 -- =============================================================================
 
---- Derive a single color from the palette definition
---- @param def table Derivation definition { source, type, rule_key(s) }
---- @param sources table Source colors
---- @param rules table Computed rules
---- @return any Derived color or value
-local function derive_color(def, sources, rules)
-  local source_key = def[1]
-  local derive_type = def[2]
-  local rule_key = def[3]
-  local rule_key2 = def[4]
+--- Derive a color from bg using a definition
+local function derive_from_bg(bg, def, t)
+  if def == "base" then
+    return bg
+  end
 
-  local source = source_key and sources[source_key]
+  local mode = def.mode
 
-  if derive_type == "base" then
-    return source
+  if mode == "offset" or mode == "snap" then
+    local delta = resolve_value(def, t)
+    return Colors.adjust_lightness(bg, delta)
 
-  elseif derive_type == "lightness" then
-    local delta = rules[rule_key]
-    return Colors.adjust_lightness(source, delta)
+  elseif mode == "opacity" then
+    return Colors.with_opacity(bg, def.value)
 
-  elseif derive_type == "set_light" then
-    local lightness = rules[rule_key]
-    return Colors.set_lightness(source, lightness)
+  elseif mode == "set_light" then
+    local lightness = resolve_value(def.lightness, t)
+    return Colors.set_lightness(bg, lightness)
 
-  elseif derive_type == "opacity" then
-    local opacity = type(rule_key) == "number" and rule_key or rules[rule_key]
-    return Colors.with_opacity(source, opacity)
+  elseif mode == "lightness_opacity" then
+    local delta = resolve_value(def.delta, t)
+    local adjusted = Colors.adjust_lightness(bg, delta)
+    return Colors.with_opacity(adjusted, def.opacity)
+  end
 
-  elseif derive_type == "lightness_opacity" then
-    -- Lightness adjustment + opacity in one step
-    local delta = rules[rule_key]
-    local opacity = type(rule_key2) == "number" and rule_key2 or rules[rule_key2]
-    local adjusted = Colors.adjust_lightness(source, delta)
-    return Colors.with_opacity(adjusted, opacity)
+  return bg
+end
 
-  elseif derive_type == "alpha" then
-    -- Combine hex color rule with opacity rule
-    local hex_color = Colors.hexrgb(rules[rule_key])
-    local opacity = Colors.opacity(rules[rule_key2])
-    return Colors.with_alpha(hex_color, opacity)
+--- Derive a color from text using a definition
+local function derive_from_text(text, def, t)
+  if def == "base" then
+    return text
+  end
 
-  elseif derive_type == "hex" then
-    return Colors.hexrgb(rules[rule_key])
+  local mode = def.mode
 
-  elseif derive_type == "value" then
-    return rules[rule_key]
+  if mode == "offset" or mode == "snap" then
+    local delta = resolve_value(def, t)
+    return Colors.adjust_lightness(text, delta)
+  end
+
+  return text
+end
+
+--- Derive a specific (standalone) color
+local function derive_specific(def, t)
+  local mode = def.mode
+
+  if mode == "lerp" or mode == "snap" then
+    local hex = resolve_value(def, t)
+    return Colors.hexrgb(hex .. "FF")
+
+  elseif mode == "alpha" then
+    local hex = resolve_value(def.color, t)
+    local opacity = resolve_value(def.opacity, t)
+    local color = Colors.hexrgb(hex .. "FF")
+    return Colors.with_opacity(color, opacity)
   end
 
   return nil
@@ -174,24 +137,39 @@ end
 -- PALETTE GENERATION
 -- =============================================================================
 
---- Generate complete UI color palette from a single base color
---- Uses palette definition - no hardcoded palette structure here
+--- Generate complete palette from base background color
 --- @param base_bg number Background color in RGBA format
---- @param rules table|nil Optional rules override (defaults to computed rules)
---- @return table Color palette with all UI colors
-function M.generate_palette(base_bg, rules)
+--- @return table Color palette
+function M.generate_palette(base_bg)
   local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
+  local t = M.compute_t(bg_lightness)
 
-  -- Get rules: use provided, or compute from lightness
-  rules = rules or M.compute_rules(bg_lightness, nil)
+  -- Auto text color (white on dark, black on light)
+  local text_threshold = resolve_value(Palette.values.TEXT_LUMINANCE_THRESHOLD, t)
+  local text = bg_lightness < text_threshold
+    and Colors.hexrgb("#FFFFFFFF")
+    or Colors.hexrgb("#000000FF")
 
-  -- Compute source colors (all rule-based)
-  local sources = compute_sources(base_bg, rules)
-
-  -- Generate palette from definition
   local palette = {}
-  for key, def in pairs(Palette.definition) do
-    palette[key] = derive_color(def, sources, rules)
+
+  -- From BG
+  for key, def in pairs(Palette.from_bg) do
+    palette[key] = derive_from_bg(base_bg, def, t)
+  end
+
+  -- From TEXT
+  for key, def in pairs(Palette.from_text) do
+    palette[key] = derive_from_text(text, def, t)
+  end
+
+  -- Specific (standalone)
+  for key, def in pairs(Palette.specific) do
+    palette[key] = derive_specific(def, t)
+  end
+
+  -- Values (non-colors)
+  for key, def in pairs(Palette.values) do
+    palette[key] = resolve_value(def, t)
   end
 
   return palette

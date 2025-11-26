@@ -41,7 +41,7 @@ local Colors = require('arkitekt.core.colors')
 local Style = require('arkitekt.gui.style')
 
 -- Submodules
-local Rules = require('arkitekt.core.theme_manager.rules')
+local Palette = require('arkitekt.defs.palette')
 local Engine = require('arkitekt.core.theme_manager.engine')
 local Presets = require('arkitekt.core.theme_manager.presets')
 local Integration = require('arkitekt.core.theme_manager.integration')
@@ -54,16 +54,17 @@ local M = {}
 -- RE-EXPORTS
 -- =============================================================================
 
--- DSL wrappers (for defining theme-reactive rules)
-M.offsetFromBase, M.lerpDarkLight = Rules.offsetFromBase, Rules.lerpDarkLight
-M.snapAtMidpoint, M.snapAt = Rules.snapAtMidpoint, Rules.snapAt
+-- DSL wrappers (for defining theme-reactive values)
+M.offsetFromBase, M.lerpDarkLight = Palette.offsetFromBase, Palette.lerpDarkLight
+M.snapAtMidpoint, M.snapAt = Palette.snapAtMidpoint, Palette.snapAt
 
--- Rules and anchors
-M.rules, M.anchors = Rules.definitions, Rules.anchors
+-- Palette structure
+M.presets, M.anchors = Palette.presets, Palette.anchors
+M.from_bg, M.from_text = Palette.from_bg, Palette.from_text
+M.specific, M.values = Palette.specific, Palette.values
 
--- Presets
-M.themes, M.get_theme_names, M.get_primary_presets =
-  Presets.themes, Presets.get_names, Presets.get_primary
+-- Presets API
+M.get_theme_names, M.get_primary_presets = Presets.get_names, Presets.get_primary
 
 -- Debug and validation
 M.debug_enabled, M.toggle_debug = Debug.debug_enabled, Debug.toggle_debug
@@ -113,10 +114,15 @@ function M.get_current_t()
   return Engine.compute_t(lightness)
 end
 
---- Get derivation rules for current theme mode
---- @return table Rules table (computed values)
-function M.get_current_rules()
-  return Engine.compute_rules(M.get_theme_lightness(), M.current_mode)
+--- Get computed values for current theme
+--- @return table Values from M.values resolved for current t
+function M.get_current_values()
+  local t = M.get_current_t()
+  local values = {}
+  for key, def in pairs(Palette.values) do
+    values[key] = Engine.resolve_value and Engine.resolve_value(def, t) or def
+  end
+  return values
 end
 
 --- Get computed rules for a script
@@ -141,10 +147,9 @@ end
 --- Generate complete UI color palette from base color (without applying)
 --- All colors (text, accent, etc.) are derived from the single base color
 --- @param base_bg number Background color in RGBA format
---- @param rules table|nil Optional rules override
 --- @return table Color palette
-function M.generate_palette(base_bg, rules)
-  return Engine.generate_palette(base_bg, rules)
+function M.generate_palette(base_bg)
+  return Engine.generate_palette(base_bg)
 end
 
 --- Apply a preset theme by name

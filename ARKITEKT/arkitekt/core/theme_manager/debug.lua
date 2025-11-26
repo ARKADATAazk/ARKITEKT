@@ -2,15 +2,13 @@
 -- arkitekt/core/theme_manager/debug.lua
 -- Debug window and validation
 --
--- Provides visual debugging tools for tuning theme values
--- and validation utilities for catching config errors.
+-- Provides visual debugging tools for tuning theme values.
 
 local Colors = require('arkitekt.core.colors')
 local Style = require('arkitekt.gui.style')
-local Rules = require('arkitekt.core.theme_manager.rules')
+local Palette = require('arkitekt.defs.palette')
 local Engine = require('arkitekt.core.theme_manager.engine')
 local Registry = require('arkitekt.core.theme_manager.registry')
-local Palette = require('arkitekt.defs.palette')
 
 local M = {}
 
@@ -36,60 +34,37 @@ end
 -- VALIDATION
 -- =============================================================================
 
---- Validate rules configuration
---- @return boolean valid True if configuration is valid
---- @return string|nil error_message Error details if invalid
-function M.validate()
-  local errors = {}
-
-  for key, rule in pairs(Rules.definitions) do
-    -- Check: Rule is properly wrapped
-    if type(rule) ~= "table" or not rule.mode then
-      errors[#errors + 1] = string.format(
-        "Rule '%s' is not wrapped (use offsetFromBase, lerpDarkLight, snapAtMidpoint, or snapAt)",
-        key
-      )
-    else
+local function validate_section(section_name, section, errors)
+  for key, def in pairs(section) do
+    if type(def) == "table" and def.mode then
       -- Check: Has dark and light values
-      if rule.dark == nil then
-        errors[#errors + 1] = string.format("Rule '%s' missing 'dark' value", key)
+      if def.dark == nil then
+        errors[#errors + 1] = string.format("%s.%s missing 'dark' value", section_name, key)
       end
-      if rule.light == nil then
-        errors[#errors + 1] = string.format("Rule '%s' missing 'light' value", key)
+      if def.light == nil then
+        errors[#errors + 1] = string.format("%s.%s missing 'light' value", section_name, key)
       end
 
       -- Check: Valid mode
       local valid_modes = { lerp = true, offset = true, snap = true }
-      if not valid_modes[rule.mode] then
+      if not valid_modes[def.mode] then
         errors[#errors + 1] = string.format(
-          "Rule '%s' has invalid mode '%s' (expected: lerp, offset, snap)",
-          key, tostring(rule.mode)
+          "%s.%s has invalid mode '%s'",
+          section_name, key, tostring(def.mode)
         )
-      end
-
-      -- Check: Dark and light have same type
-      if rule.dark ~= nil and rule.light ~= nil then
-        local dark_type = type(rule.dark)
-        local light_type = type(rule.light)
-        if dark_type ~= light_type then
-          errors[#errors + 1] = string.format(
-            "Rule '%s' has type mismatch: dark=%s (%s), light=%s (%s)",
-            key, tostring(rule.dark), dark_type, tostring(rule.light), light_type
-          )
-        end
-      end
-
-      -- Check: Threshold in valid range
-      if rule.threshold ~= nil then
-        if type(rule.threshold) ~= "number" or rule.threshold < 0 or rule.threshold > 1 then
-          errors[#errors + 1] = string.format(
-            "Rule '%s' has invalid threshold '%s' (expected: 0.0-1.0)",
-            key, tostring(rule.threshold)
-          )
-        end
       end
     end
   end
+end
+
+--- Validate palette configuration
+function M.validate()
+  local errors = {}
+
+  validate_section("from_bg", Palette.from_bg, errors)
+  validate_section("from_text", Palette.from_text, errors)
+  validate_section("specific", Palette.specific, errors)
+  validate_section("values", Palette.values, errors)
 
   if #errors > 0 then
     return false, table.concat(errors, "\n")
@@ -98,25 +73,20 @@ function M.validate()
   return true, nil
 end
 
---- Get validation status as a summary table
---- @return table Summary with counts and status
+--- Get validation summary
 function M.get_validation_summary()
   local valid, err = M.validate()
-  local rule_count = 0
-  local mode_counts = { lerp = 0, offset = 0 }
+  local count = 0
 
-  for _, rule in pairs(Rules.definitions) do
-    rule_count = rule_count + 1
-    if type(rule) == "table" and rule.mode then
-      mode_counts[rule.mode] = (mode_counts[rule.mode] or 0) + 1
-    end
-  end
+  for _ in pairs(Palette.from_bg) do count = count + 1 end
+  for _ in pairs(Palette.from_text) do count = count + 1 end
+  for _ in pairs(Palette.specific) do count = count + 1 end
+  for _ in pairs(Palette.values) do count = count + 1 end
 
   return {
     valid = valid,
     error_message = err,
-    rule_count = rule_count,
-    mode_counts = mode_counts,
+    color_count = count,
     error_count = err and select(2, err:gsub("\n", "\n")) + 1 or 0,
   }
 end
@@ -125,17 +95,7 @@ end
 -- DEBUG WINDOW RENDERING
 -- =============================================================================
 
--- Build rule -> style map from palette definition (auto-generated)
-local RULE_TO_STYLE_MAP = {}
-for style_key, def in pairs(Palette.definition) do
-  if type(def[3]) == "string" then RULE_TO_STYLE_MAP[def[3]] = style_key end
-  if type(def[4]) == "string" then RULE_TO_STYLE_MAP[def[4]] = style_key end
-end
-
 --- Render debug window showing current theme state
---- @param ctx userdata ImGui context
---- @param ImGui table ImGui library reference
---- @param state table State from init.lua (lightness, t, mode)
 function M.render_debug_window(ctx, ImGui, state)
   if not M.debug_enabled then return end
   if not ctx or not ImGui then return end
@@ -171,78 +131,13 @@ function M.render_debug_window(ctx, ImGui, state)
 
     ImGui.Separator(ctx)
 
-    -- Preset anchors
-    ImGui.Text(ctx, string.format("Dark anchor: %.2f (t=0)", Rules.anchors.dark))
-    ImGui.Text(ctx, string.format("Light anchor: %.2f (t=1)", Rules.anchors.light))
+    -- Presets and anchors
+    ImGui.Text(ctx, string.format("Dark preset: %s (t=0, L=%.2f)", Palette.presets.dark, Palette.anchors.dark))
+    ImGui.Text(ctx, string.format("Light preset: %s (t=1, L=%.2f)", Palette.presets.light, Palette.anchors.light))
     ImGui.Separator(ctx)
 
-    -- Computed rules
-    ImGui.Text(ctx, "Rules -> Style.COLORS:")
-    ImGui.Separator(ctx)
-
-    local computed_rules = Engine.compute_rules(lightness, current_mode)
-
-    -- Sort keys for consistent display
-    local sorted_keys = {}
-    for key in pairs(Rules.definitions) do
-      sorted_keys[#sorted_keys + 1] = key
-    end
-    table.sort(sorted_keys)
-
-    for _, key in ipairs(sorted_keys) do
-      local rule = Rules.definitions[key]
-      local value = computed_rules[key]
-      local mode = rule.mode or "?"
-      local style_key = RULE_TO_STYLE_MAP[key]
-
-      -- Get final color from Style.COLORS
-      local final_color = style_key and Style.COLORS[style_key]
-      local has_final_color = final_color and type(final_color) == "number" and final_color == math.floor(final_color)
-
-      -- Show final color swatch
-      if has_final_color then
-        ImGui.ColorButton(ctx, "final_" .. key, math.floor(final_color), 0, 12, 12)
-        ImGui.SameLine(ctx)
-      end
-
-      -- Show computed value swatch for hex colors
-      if type(value) == "string" and value:match("^#") then
-        local hex_with_alpha = value
-        if #value == 7 then hex_with_alpha = value .. "FF" end
-        local color = Colors.hexrgb(hex_with_alpha)
-        ImGui.ColorButton(ctx, "computed_" .. key, color, 0, 12, 12)
-        ImGui.SameLine(ctx)
-      end
-
-      -- Value display
-      local display_value = type(value) == "number" and string.format("%.3f", value) or tostring(value)
-      local mode_char = mode:sub(1, 1):upper()
-      local style_suffix = style_key and (" -> " .. style_key) or ""
-      ImGui.Text(ctx, string.format("[%s] %s: %s%s", mode_char, key, display_value, style_suffix))
-
-      -- Tooltip with details
-      if ImGui.IsItemHovered(ctx) then
-        local tooltip = string.format(
-          "dark: %s\nlight: %s\nt=%.3f\nmode: %s",
-          tostring(rule.dark), tostring(rule.light), t, mode
-        )
-        if rule.threshold and rule.threshold ~= 0.5 then
-          tooltip = tooltip .. string.format("\nthreshold: %.2f", rule.threshold)
-        end
-        if style_key then
-          tooltip = tooltip .. "\n\nStyle.COLORS." .. style_key
-          if has_final_color then
-            tooltip = tooltip .. string.format(" = 0x%08X", final_color)
-          end
-        end
-        ImGui.SetTooltip(ctx, tooltip)
-      end
-    end
-
-    ImGui.Separator(ctx)
-
-    -- All Style.COLORS (collapsible)
-    if ImGui.CollapsingHeader(ctx, "All Style.COLORS") then
+    -- All Style.COLORS
+    if ImGui.CollapsingHeader(ctx, "Style.COLORS", ImGui.TreeNodeFlags_DefaultOpen) then
       local color_keys = {}
       for k in pairs(Style.COLORS) do
         color_keys[#color_keys + 1] = k
@@ -263,7 +158,32 @@ function M.render_debug_window(ctx, ImGui, state)
       end
     end
 
-    -- Registered script colors (collapsible per script)
+    -- Palette sections
+    if ImGui.CollapsingHeader(ctx, "Palette.from_bg") then
+      for k in pairs(Palette.from_bg) do
+        ImGui.Text(ctx, "  " .. k)
+      end
+    end
+
+    if ImGui.CollapsingHeader(ctx, "Palette.from_text") then
+      for k in pairs(Palette.from_text) do
+        ImGui.Text(ctx, "  " .. k)
+      end
+    end
+
+    if ImGui.CollapsingHeader(ctx, "Palette.specific") then
+      for k in pairs(Palette.specific) do
+        ImGui.Text(ctx, "  " .. k)
+      end
+    end
+
+    if ImGui.CollapsingHeader(ctx, "Palette.values") then
+      for k in pairs(Palette.values) do
+        ImGui.Text(ctx, "  " .. k)
+      end
+    end
+
+    -- Registered script colors
     for script_name, script_colors in pairs(Registry.script_colors) do
       if ImGui.CollapsingHeader(ctx, "Script: " .. script_name) then
         local script_keys = {}
@@ -278,15 +198,6 @@ function M.render_debug_window(ctx, ImGui, state)
             ImGui.ColorButton(ctx, script_name .. "_" .. k, math.floor(v), 0, 12, 12)
             ImGui.SameLine(ctx)
             ImGui.Text(ctx, string.format("%s: 0x%08X", k, math.floor(v)))
-          elseif type(v) == "number" then
-            ImGui.Text(ctx, string.format("%s: %.3f", k, v))
-          elseif type(v) == "string" and v:match("^#") then
-            local hex_with_alpha = v
-            if #v == 7 then hex_with_alpha = v .. "FF" end
-            local color = Colors.hexrgb(hex_with_alpha)
-            ImGui.ColorButton(ctx, script_name .. "_" .. k, color, 0, 12, 12)
-            ImGui.SameLine(ctx)
-            ImGui.Text(ctx, string.format("%s: %s", k, v))
           else
             ImGui.Text(ctx, string.format("%s: %s", k, tostring(v)))
           end
@@ -303,8 +214,6 @@ function M.render_debug_window(ctx, ImGui, state)
 end
 
 --- Check for F12 key press to toggle debug window
---- @param ctx userdata ImGui context
---- @param ImGui table ImGui library reference
 function M.check_debug_hotkey(ctx, ImGui)
   if not ctx or not ImGui then return end
 
@@ -314,39 +223,5 @@ function M.check_debug_hotkey(ctx, ImGui)
     end
   end
 end
-
--- =============================================================================
--- AUTO-VALIDATION (Dev Mode)
--- =============================================================================
-
-local function run_auto_validation()
-  local is_dev_mode = false
-
-  if os.getenv("ARKITEKT_DEV") then
-    is_dev_mode = true
-  end
-
-  if reaper and reaper.GetExtState then
-    local dev_state = reaper.GetExtState("ARKITEKT", "dev_mode")
-    if dev_state == "1" or dev_state == "true" then
-      is_dev_mode = true
-    end
-  end
-
-  if is_dev_mode then
-    local valid, err = M.validate()
-    if not valid then
-      local msg = "[ThemeManager] Validation errors:\n" .. err .. "\n"
-      if reaper and reaper.ShowConsoleMsg then
-        reaper.ShowConsoleMsg(msg)
-      else
-        print(msg)
-      end
-    end
-  end
-end
-
--- Run auto-validation on module load
-run_auto_validation()
 
 return M

@@ -1,107 +1,178 @@
 -- @noindex
 -- arkitekt/defs/palette.lua
--- Palette structure definition
+-- Theme palette definition
 --
--- Defines WHAT colors exist in the UI palette and HOW each is derived.
--- All derivation uses rules - no hardcoded logic here.
---
--- Sources: "bg" (input color) or "text" (auto white/black)
--- Derivation types:
---   "base"              - The source itself
---   "lightness"         - adjust_lightness(source, rule)
---   "set_light"         - set_lightness(source, rule)
---   "opacity"           - with_opacity(source, value)
---   "lightness_opacity" - adjust_lightness + opacity in one step
---   "alpha"             - with_alpha(hex_rule, opacity_rule)
---   "hex"               - hexrgb(rule)
---   "value"             - raw rule value (for non-color data)
+-- Single source of truth for:
+--   - Presets (dark/light base colors)
+--   - Anchors (derived from presets)
+--   - All color definitions with inline values
+
+local Colors = require('arkitekt.core.colors')
 
 local M = {}
 
 -- =============================================================================
--- PALETTE DEFINITION
+-- PRESETS
 -- =============================================================================
--- Each entry: { source, derivation_type, rule_key(s) }
--- source: "bg" | "text"
--- This is the single source of truth for palette structure.
+-- Base colors for dark/light themes. Anchors are computed from these.
 
-M.definition = {
-  -- ============ BACKGROUNDS ============
-  BG_BASE         = { "bg", "base" },
-  BG_HOVER        = { "bg", "lightness", "bg_hover_delta" },
-  BG_ACTIVE       = { "bg", "lightness", "bg_active_delta" },
-  BG_HEADER       = { "bg", "lightness", "bg_header_delta" },
-  BG_PANEL        = { "bg", "lightness", "bg_panel_delta" },
-  BG_CHROME       = { "bg", "lightness", "bg_chrome_delta" },
-  BG_TRANSPARENT  = { "bg", "opacity", 0 },
+M.presets = {
+  dark  = "#242424",  -- ~14% lightness (t=0)
+  light = "#E0E0E0",  -- ~88% lightness (t=1)
+}
 
-  -- ============ BORDERS ============
-  BORDER_OUTER    = { nil, "alpha", "border_outer_color", "border_outer_opacity" },
-  BORDER_INNER    = { "bg", "lightness", "border_inner_delta" },
-  BORDER_HOVER    = { "bg", "lightness", "border_hover_delta" },
-  BORDER_ACTIVE   = { "bg", "lightness", "border_active_delta" },
-  BORDER_FOCUS    = { "bg", "lightness", "border_focus_delta" },
+-- Compute anchors from preset lightness (single source of truth)
+local function get_lightness(hex)
+  local _, _, l = Colors.rgb_to_hsl(Colors.hexrgb(hex .. "FF"))
+  return l
+end
 
-  -- ============ TEXT ============
-  TEXT_NORMAL     = { "text", "base" },
-  TEXT_HOVER      = { "text", "lightness", "text_hover_delta" },
-  TEXT_ACTIVE     = { "text", "lightness", "text_hover_delta" },
-  TEXT_DIMMED     = { "text", "lightness", "text_dimmed_delta" },
-  TEXT_DARK       = { "text", "lightness", "text_dark_delta" },
-  TEXT_BRIGHT     = { "text", "lightness", "text_bright_delta" },
+M.anchors = {
+  dark  = get_lightness(M.presets.dark),
+  light = get_lightness(M.presets.light),
+}
 
-  -- ============ ACCENTS ============
-  ACCENT_PRIMARY       = { "bg", "lightness", "accent_delta" },
-  ACCENT_TEAL          = { "bg", "lightness", "accent_delta" },
-  ACCENT_TEAL_BRIGHT   = { "bg", "lightness", "accent_bright_delta" },
-  ACCENT_WHITE         = { "bg", "set_light", "accent_white_lightness" },
-  ACCENT_WHITE_BRIGHT  = { "bg", "set_light", "accent_white_bright_lightness" },
-  ACCENT_TRANSPARENT   = { "bg", "lightness_opacity", "accent_delta", 0.67 },
-  ACCENT_SUCCESS       = { nil, "hex", "status_success" },
-  ACCENT_WARNING       = { nil, "hex", "status_warning" },
-  ACCENT_DANGER        = { nil, "hex", "status_danger" },
+-- =============================================================================
+-- DSL WRAPPERS
+-- =============================================================================
+-- offsetFromBase(dark, light) - snap between deltas at t=0.5
+-- lerpDarkLight(dark, light)  - smooth interpolation
+-- snapAtMidpoint(dark, light) - snap between values at t=0.5
+-- snapAt(t, dark, light)      - snap at custom threshold
 
-  -- ============ PATTERNS ============
-  PATTERN_PRIMARY   = { "bg", "lightness", "pattern_primary_delta" },
-  PATTERN_SECONDARY = { "bg", "lightness", "pattern_secondary_delta" },
+local function offsetFromBase(dark_delta, light_delta)
+  if light_delta == nil then
+    return { mode = "offset", dark = dark_delta, light = dark_delta, threshold = 0.5 }
+  end
+  return { mode = "offset", dark = dark_delta, light = light_delta, threshold = 0.5 }
+end
 
-  -- ============ TILES ============
-  TILE_FILL_BRIGHTNESS = { nil, "value", "tile_fill_brightness" },
-  TILE_FILL_SATURATION = { nil, "value", "tile_fill_saturation" },
-  TILE_FILL_OPACITY    = { nil, "value", "tile_fill_opacity" },
-  TILE_NAME_COLOR      = { nil, "hex", "tile_name_color" },
+local function lerpDarkLight(dark_val, light_val)
+  return { mode = "lerp", dark = dark_val, light = light_val }
+end
 
-  -- ============ BADGES ============
-  BADGE_BG             = { nil, "alpha", "badge_bg_color", "badge_bg_opacity" },
-  BADGE_TEXT           = { nil, "hex", "badge_text_color" },
-  BADGE_BORDER_OPACITY = { nil, "value", "badge_border_opacity" },
+local function snapAtMidpoint(dark_val, light_val)
+  return { mode = "snap", dark = dark_val, light = light_val, threshold = 0.5 }
+end
 
-  -- ============ PLAYLIST TILES ============
-  PLAYLIST_TILE_COLOR  = { nil, "hex", "playlist_tile_color" },
-  PLAYLIST_NAME_COLOR  = { nil, "hex", "playlist_name_color" },
-  PLAYLIST_BADGE_COLOR = { nil, "hex", "playlist_badge_color" },
+local function snapAt(threshold, dark_val, light_val)
+  return { mode = "snap", dark = dark_val, light = light_val, threshold = threshold }
+end
+
+-- Shortcuts
+local offset = offsetFromBase
+local lerp = lerpDarkLight
+local snap = snapAtMidpoint
+
+-- Export wrappers for external use
+M.offsetFromBase = offsetFromBase
+M.lerpDarkLight = lerpDarkLight
+M.snapAtMidpoint = snapAtMidpoint
+M.snapAt = snapAt
+
+-- =============================================================================
+-- FROM BG (derived from base background color)
+-- =============================================================================
+
+M.from_bg = {
+  -- Backgrounds
+  BG_BASE         = "base",
+  BG_HOVER        = offset(0.03, -0.04),
+  BG_ACTIVE       = offset(0.05, -0.07),
+  BG_HEADER       = offset(-0.024, -0.06),
+  BG_PANEL        = offset(-0.04),
+  BG_CHROME       = offset(-0.08, -0.15),
+  BG_TRANSPARENT  = { mode = "opacity", value = 0 },
+
+  -- Borders (from bg)
+  BORDER_INNER    = offset(0.05, -0.03),
+  BORDER_HOVER    = offset(0.10, -0.08),
+  BORDER_ACTIVE   = offset(0.15, -0.12),
+  BORDER_FOCUS    = offset(0.20, -0.15),
+
+  -- Accents (from bg)
+  ACCENT_PRIMARY       = offset(0.15, -0.12),
+  ACCENT_TEAL          = offset(0.15, -0.12),
+  ACCENT_TEAL_BRIGHT   = offset(0.25, -0.20),
+  ACCENT_WHITE         = { mode = "set_light", lightness = lerp(0.25, 0.55) },
+  ACCENT_WHITE_BRIGHT  = { mode = "set_light", lightness = lerp(0.35, 0.45) },
+  ACCENT_TRANSPARENT   = { mode = "lightness_opacity", delta = offset(0.15, -0.12), opacity = 0.67 },
+
+  -- Patterns (from bg, includes panel offset)
+  PATTERN_PRIMARY   = offset(-0.064, -0.10),
+  PATTERN_SECONDARY = offset(-0.044, -0.06),
+}
+
+-- =============================================================================
+-- FROM TEXT (derived from auto white/black text color)
+-- =============================================================================
+
+M.from_text = {
+  TEXT_NORMAL  = "base",
+  TEXT_HOVER   = offset(0.05, -0.05),
+  TEXT_ACTIVE  = offset(0.05, -0.05),
+  TEXT_DIMMED  = offset(-0.10, 0.15),
+  TEXT_DARK    = offset(-0.20, 0.25),
+  TEXT_BRIGHT  = offset(0.10, -0.08),
+}
+
+-- =============================================================================
+-- SPECIFIC (standalone colors, not derived from bg/text)
+-- =============================================================================
+
+M.specific = {
+  -- Border outer (hex + opacity)
+  BORDER_OUTER = { mode = "alpha", color = snap("#000000", "#404040"), opacity = lerp(0.87, 0.60) },
+
+  -- Status colors
+  ACCENT_SUCCESS = lerp("#4CAF50", "#2E7D32"),
+  ACCENT_WARNING = lerp("#FFA726", "#F57C00"),
+  ACCENT_DANGER  = lerp("#EF5350", "#C62828"),
+
+  -- Tiles
+  TILE_NAME_COLOR = snap("#DDE3E9", "#1A1A1A"),
+
+  -- Badges
+  BADGE_BG   = { mode = "alpha", color = snap("#14181C", "#E8ECF0"), opacity = lerp(0.85, 0.90) },
+  BADGE_TEXT = snap("#FFFFFF", "#1A1A1A"),
+
+  -- Playlist
+  PLAYLIST_TILE_COLOR  = snap("#3A3A3A", "#D0D0D0"),
+  PLAYLIST_NAME_COLOR  = snap("#CCCCCC", "#2A2A2A"),
+  PLAYLIST_BADGE_COLOR = snap("#999999", "#666666"),
+}
+
+-- =============================================================================
+-- VALUES (non-color values)
+-- =============================================================================
+
+M.values = {
+  -- Tile rendering
+  TILE_FILL_BRIGHTNESS = lerp(0.5, 1.4),
+  TILE_FILL_SATURATION = lerp(0.4, 0.5),
+  TILE_FILL_OPACITY    = lerp(0.4, 0.5),
+
+  -- Badge border
+  BADGE_BORDER_OPACITY = lerp(0.20, 0.15),
+
+  -- System
+  TEXT_LUMINANCE_THRESHOLD = lerp(0.5, 0.5),
+  REAPER_SYNC_OFFSET = offset(-0.012),
 }
 
 -- =============================================================================
 -- UTILITIES
 -- =============================================================================
 
---- Get all color keys in the palette
---- @return table Array of color key names
-function M.get_keys()
+--- Get all color keys across all sections
+function M.get_all_keys()
   local keys = {}
-  for key in pairs(M.definition) do
-    keys[#keys + 1] = key
-  end
+  for key in pairs(M.from_bg) do keys[#keys + 1] = key end
+  for key in pairs(M.from_text) do keys[#keys + 1] = key end
+  for key in pairs(M.specific) do keys[#keys + 1] = key end
+  for key in pairs(M.values) do keys[#keys + 1] = key end
   table.sort(keys)
   return keys
-end
-
---- Get derivation info for a color
---- @param key string Color key name
---- @return table|nil Derivation definition
-function M.get_derivation(key)
-  return M.definition[key]
 end
 
 return M

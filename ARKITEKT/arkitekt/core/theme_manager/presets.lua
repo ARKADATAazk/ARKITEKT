@@ -1,41 +1,22 @@
 -- @noindex
 -- arkitekt/core/theme_manager/presets.lua
--- Built-in theme presets
+-- Theme preset application
 --
--- Provides dark and light presets plus legacy presets for backward compatibility.
--- Note: "grey" preset was removed - use "adapt" mode with a grey REAPER theme
--- or call generate_and_apply() directly with grey base colors.
+-- Thin wrapper around Palette.presets for applying themes.
 
 local Colors = require('arkitekt.core.colors')
 local Engine = require('arkitekt.core.theme_manager.engine')
+local Palette = require('arkitekt.defs.palette')
 
 local M = {}
 
--- =============================================================================
--- THEME DEFINITIONS
--- =============================================================================
+-- Re-export presets from palette (single source of truth)
+M.presets = Palette.presets
 
-M.themes = {
-  -- DARK: Deep, high-contrast theme (~14% lightness)
-  dark = function()
-    return Engine.generate_palette(Colors.hexrgb("#242424FF"))
-  end,
-
-  -- LIGHT: Bright, paper-like theme (~88% lightness)
-  light = function()
-    return Engine.generate_palette(Colors.hexrgb("#E0E0E0FF"))
-  end,
-}
-
--- =============================================================================
--- PUBLIC API
--- =============================================================================
-
---- Get list of available theme names
---- @return table Array of theme names (sorted)
+--- Get list of available preset names
 function M.get_names()
   local names = {}
-  for name in pairs(M.themes) do
+  for name in pairs(M.presets) do
     names[#names + 1] = name
   end
   table.sort(names)
@@ -43,41 +24,32 @@ function M.get_names()
 end
 
 --- Get primary preset names (for UI selectors)
---- @return table Array of primary theme names
 function M.get_primary()
   return { "dark", "light" }
 end
 
---- Check if a theme name exists
---- @param name string Theme name to check
---- @return boolean True if theme exists
+--- Check if a preset exists
 function M.exists(name)
-  return M.themes[name] ~= nil
+  return M.presets[name] ~= nil
 end
 
---- Apply a preset theme by name
---- @param name string Theme name from M.themes
---- @return boolean Success (true if theme exists and was applied)
+--- Apply a preset by name
 function M.apply(name)
-  local generator = M.themes[name]
-  if not generator then
-    return false
-  end
+  local hex = M.presets[name]
+  if not hex then return false end
 
-  local palette = generator()
-  Engine.apply_palette(palette)
+  local bg = Colors.hexrgb(hex .. "FF")
+  Engine.generate_and_apply(bg)
   return true
 end
 
---- Get palette for a theme without applying it
---- @param name string Theme name
---- @return table|nil Palette or nil if theme doesn't exist
+--- Get palette for a preset without applying
 function M.get_palette(name)
-  local generator = M.themes[name]
-  if not generator then
-    return nil
-  end
-  return generator()
+  local hex = M.presets[name]
+  if not hex then return nil end
+
+  local bg = Colors.hexrgb(hex .. "FF")
+  return Engine.generate_palette(bg)
 end
 
 return M
