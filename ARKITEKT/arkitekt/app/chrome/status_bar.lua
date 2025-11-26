@@ -7,7 +7,7 @@ local Config = require('arkitekt.core.config')
 local Constants = require('arkitekt.defs.app')
 local Colors = require('arkitekt.core.colors')
 local Logger = require('arkitekt.debug.logger')
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 
 local M = {}
 
@@ -46,9 +46,9 @@ function M.new(config)
   local pending_resize_w  = nil
   local pending_resize_h  = nil
 
-  -- Dynamic color getters (read from Style.COLORS each frame for theming)
+  -- Dynamic color getters (read from Theme.COLORS each frame for theming)
   local function get_colors()
-    local C = Style.COLORS
+    local C = Theme.COLORS
     return {
       bg = C.BG_CHROME,  -- Chrome color (significantly darker than content)
       border = C.BORDER_OUTER,

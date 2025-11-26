@@ -6,7 +6,6 @@
 -- Processes flat palette structure with type inference.
 
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style')
 local Palette = require('arkitekt.defs.colors')
 
 local M = {}
@@ -128,31 +127,6 @@ function M.generate_palette(base_bg)
   end
 
   return result
-end
-
---- Apply a color palette to Style.COLORS
---- @param palette table Color palette from generate_palette()
-function M.apply_palette(palette)
-  for key, value in pairs(palette) do
-    Style.COLORS[key] = value
-  end
-end
-
---- Generate palette from base color and apply to Style.COLORS
---- @param base_bg number Background color
-function M.generate_and_apply(base_bg)
-  local palette = M.generate_palette(base_bg)
-  M.apply_palette(palette)
-end
-
---- Get current color values (for transitions)
---- @return table Copy of current Style.COLORS
-function M.get_current_colors()
-  local current = {}
-  for key, value in pairs(Style.COLORS) do
-    current[key] = value
-  end
-  return current
 end
 
 --- Resolve a wrapped value based on current t (exported for registry)

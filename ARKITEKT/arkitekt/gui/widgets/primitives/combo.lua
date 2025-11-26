@@ -5,7 +5,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')
@@ -183,10 +183,10 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   
   -- Calculate rounding
   local rounding = corner_rounding and corner_rounding.rounding or cfg.rounding
-  local corner_flags = Style.RENDER.get_corner_flags(corner_rounding)
-  
+  local corner_flags = Base.get_corner_flags(corner_rounding)
+
   -- Draw background and borders
-  Style.RENDER.draw_control_background(dl, x1, y1, width, height, bg_color, border_inner, cfg.border_outer_color, rounding, corner_flags)
+  Base.draw_background(dl, x1, y1, width, height, bg_color, border_inner, cfg.border_outer_color, rounding, corner_flags)
   
   -- Draw text
   local display_text = self:get_display_text()
@@ -232,7 +232,7 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
   -- Tooltip
   if is_hovered and cfg.tooltip then
     Tooltip.show_delayed(ctx, cfg.tooltip, {
-      delay = cfg.tooltip_delay or Style.TOOLTIP.delay
+      delay = cfg.tooltip_delay or Theme.TOOLTIP.delay
     })
   else
     if not is_hovered then
@@ -503,8 +503,8 @@ function M.draw(ctx, opts)
     end
   end
 
-  -- Build config dynamically from Style.COLORS (enables dynamic theming)
-  local config = Style.build_dropdown_config()
+  -- Build config dynamically from Theme.COLORS (enables dynamic theming)
+  local config = Theme.build_dropdown_config()
   for k, v in pairs(user_config) do
     if v ~= nil then config[k] = v end
   end
@@ -526,7 +526,7 @@ function M.draw(ctx, opts)
 end
 
 function M.measure(ctx, user_config)
-  local config = Style.build_dropdown_config()
+  local config = Theme.build_dropdown_config()
   for k, v in pairs(user_config or {}) do
     if v ~= nil then config[k] = v end
   end

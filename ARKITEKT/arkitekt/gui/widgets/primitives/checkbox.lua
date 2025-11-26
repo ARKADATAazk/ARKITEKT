@@ -5,7 +5,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 local Anim = require('arkitekt.core.animation')
@@ -106,35 +106,35 @@ function Checkbox:update(dt, is_hovered, is_active, is_checked)
 end
 
 -- ============================================================================
--- CONFIG RESOLUTION (Dynamic - reads Style.COLORS each call)
+-- CONFIG RESOLUTION (Dynamic - reads Theme.COLORS each call)
 -- ============================================================================
 
 local function resolve_config(opts)
-  -- Build config from current Style.COLORS (enables dynamic theming)
+  -- Build config from current Theme.COLORS (enables dynamic theming)
   local config = {
     -- OFF state colors (from dynamic COLORS)
-    bg_color = Style.COLORS.BG_BASE,
-    bg_hover_color = Style.COLORS.BG_HOVER,
-    bg_active_color = Style.COLORS.BG_ACTIVE,
-    border_outer_color = Style.COLORS.BORDER_OUTER,
-    border_inner_color = Style.COLORS.BORDER_INNER,
-    border_hover_color = Style.COLORS.BORDER_HOVER,
-    border_active_color = Style.COLORS.BORDER_ACTIVE,
+    bg_color = Theme.COLORS.BG_BASE,
+    bg_hover_color = Theme.COLORS.BG_HOVER,
+    bg_active_color = Theme.COLORS.BG_ACTIVE,
+    border_outer_color = Theme.COLORS.BORDER_OUTER,
+    border_inner_color = Theme.COLORS.BORDER_INNER,
+    border_hover_color = Theme.COLORS.BORDER_HOVER,
+    border_active_color = Theme.COLORS.BORDER_ACTIVE,
 
     -- ON state colors (neutral, uses hover as "on" state)
-    bg_on_color = Style.COLORS.BG_HOVER,
-    bg_on_hover_color = Style.COLORS.BG_HOVER,
-    bg_on_active_color = Style.COLORS.BG_ACTIVE,
-    border_outer_on_color = Style.COLORS.BORDER_OUTER,
-    border_inner_on_color = Style.COLORS.BORDER_HOVER,
-    border_on_hover_color = Style.COLORS.BORDER_HOVER,
-    border_on_active_color = Style.COLORS.BORDER_ACTIVE,
+    bg_on_color = Theme.COLORS.BG_HOVER,
+    bg_on_hover_color = Theme.COLORS.BG_HOVER,
+    bg_on_active_color = Theme.COLORS.BG_ACTIVE,
+    border_outer_on_color = Theme.COLORS.BORDER_OUTER,
+    border_inner_on_color = Theme.COLORS.BORDER_HOVER,
+    border_on_hover_color = Theme.COLORS.BORDER_HOVER,
+    border_on_active_color = Theme.COLORS.BORDER_ACTIVE,
 
     -- Checkmark and label (derived from text colors)
-    check_color = Style.COLORS.TEXT_DIMMED,
-    label_color = Style.COLORS.TEXT_NORMAL,
-    label_hover_color = Style.COLORS.TEXT_HOVER,
-    label_disabled_color = Colors.with_opacity(Style.COLORS.TEXT_NORMAL, 0.5),
+    check_color = Theme.COLORS.TEXT_DIMMED,
+    label_color = Theme.COLORS.TEXT_NORMAL,
+    label_hover_color = Theme.COLORS.TEXT_HOVER,
+    label_disabled_color = Colors.with_opacity(Theme.COLORS.TEXT_NORMAL, 0.5),
   }
 
   -- Apply user overrides

@@ -6,7 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
 local Chip = require('arkitekt.gui.widgets.data.chip')
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local InteractionBlocking = require('arkitekt.gui.utils.interaction_blocking')
 
 local Colors = require('arkitekt.core.colors')
@@ -20,9 +20,9 @@ local TAB_SLIDE_SPEED = 15.0
 local DRAG_THRESHOLD = 3.0
 
 -- Dynamic color lookup function for theme reactivity
--- Called each frame to get fresh colors from Style.COLORS
+-- Called each frame to get fresh colors from Theme.COLORS
 local function get_tab_colors()
-  local C = Style.COLORS
+  local C = Theme.COLORS
   return {
     bg_color = C.BG_BASE,
     bg_hover_color = C.BG_HOVER,
@@ -420,13 +420,13 @@ local function draw_track(ctx, dl, x, y, width, height, config, corner_rounding)
   
   local rounding = corner_rounding and corner_rounding.rounding or (track_cfg.rounding or 6)
   local corner_flags = get_corner_flags(corner_rounding)
-  
-  -- Dynamic colors from Style.COLORS for theme reactivity
+
+  -- Dynamic colors from Theme.COLORS for theme reactivity
   ImGui.DrawList_AddRectFilled(
     dl,
     track_x, track_y,
     track_x + track_width, track_y + track_height,
-    track_cfg.bg_color or Style.COLORS.BG_PANEL,
+    track_cfg.bg_color or Theme.COLORS.BG_PANEL,
     rounding,
     corner_flags
   )
@@ -436,7 +436,7 @@ local function draw_track(ctx, dl, x, y, width, height, config, corner_rounding)
       dl,
       track_x, track_y,
       track_x + track_width, track_y + track_height,
-      track_cfg.border_color or Style.COLORS.BORDER_OUTER,
+      track_cfg.border_color or Theme.COLORS.BORDER_OUTER,
       rounding,
       corner_flags,
       track_cfg.border_thickness

@@ -5,7 +5,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -41,10 +41,10 @@ local DEFAULTS = {
   -- Style
   rounding = 0,
   padding_x = 10,
-  preset_name = nil,  -- Use a named preset from Style
+  preset_name = nil,  -- Use a named preset from Theme
   preset = nil,       -- Use a custom preset table
 
-  -- Colors (nil = use Style.BUTTON defaults)
+  -- Colors (nil = use Theme.BUTTON defaults)
   bg_color = nil,
   bg_hover_color = nil,
   bg_active_color = nil,
@@ -108,7 +108,7 @@ end
 
 -- Determine if current theme is light based on BG_BASE lightness
 local function is_light_theme()
-  local bg = Style.COLORS.BG_BASE
+  local bg = Theme.COLORS.BG_BASE
   local _, _, l = Colors.rgb_to_hsl(bg)
   return l > 0.5
 end
@@ -133,7 +133,7 @@ end
 -- Get simple button colors with automatic state derivation
 -- This replaces the complex preset system for most use cases
 local function get_simple_colors(is_toggled, is_hovered, is_active, is_disabled, accent_color)
-  local C = Style.COLORS
+  local C = Theme.COLORS
 
   -- Base colors
   local bg_base = C.BG_BASE
@@ -232,7 +232,7 @@ local function get_corner_flags(corner_rounding)
 end
 
 -- ============================================================================
--- CONFIG RESOLUTION (Dynamic - reads Style.COLORS each call)
+-- CONFIG RESOLUTION (Dynamic - reads Theme.COLORS each call)
 -- ============================================================================
 
 local function resolve_config(opts)
@@ -269,7 +269,7 @@ local function resolve_config(opts)
     end
   else
     -- Legacy: use complex preset system
-    local base_config = Style.build_button_config()
+    local base_config = Theme.build_button_config()
     for k, v in pairs(base_config) do
       if config[k] == nil then
         config[k] = v
@@ -277,7 +277,7 @@ local function resolve_config(opts)
     end
 
     if opts.preset_name then
-      Style.apply_dynamic_preset(config, opts.preset_name)
+      Theme.apply_preset(config, opts.preset_name)
     elseif opts.preset and type(opts.preset) == 'table' then
       for k, v in pairs(opts.preset) do
         config[k] = v

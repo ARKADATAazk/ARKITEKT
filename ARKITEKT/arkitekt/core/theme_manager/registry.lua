@@ -7,10 +7,18 @@
 -- Flat structure with type inference.
 
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style')
 local Engine = require('arkitekt.core.theme_manager.engine')
 
 local M = {}
+
+-- Lazy load Theme to avoid circular dependency
+local _Theme
+local function get_theme()
+  if not _Theme then
+    _Theme = require('arkitekt.core.theme')
+  end
+  return _Theme
+end
 
 -- =============================================================================
 -- SCRIPT PALETTE REGISTRATION
@@ -75,7 +83,8 @@ function M.get_computed_palette(script_name, current_t)
   end
 
   -- Get current BG_BASE for offset support
-  local bg_base = Style.COLORS and Style.COLORS.BG_BASE
+  local Theme = get_theme()
+  local bg_base = Theme.COLORS and Theme.COLORS.BG_BASE
 
   -- Compute palette for current theme
   local computed = {}

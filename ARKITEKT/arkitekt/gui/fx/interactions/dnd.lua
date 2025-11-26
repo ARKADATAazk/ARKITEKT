@@ -7,7 +7,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Draw = require('arkitekt.gui.draw')
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local hexrgb = Colors.hexrgb
 
 -- Cache math functions for performance
@@ -20,9 +20,9 @@ local M = {}
 -- Centralized configuration for drag and drop visual indicators
 -- =============================================================================
 
--- Get operation color from Style.COLORS (theme-reactive)
+-- Get operation color from Theme.COLORS (theme-reactive)
 local function get_op_color(key)
-  return Style.COLORS[key] or 0xCCCCCCFF  -- Fallback gray
+  return Theme.COLORS[key] or 0xCCCCCCFF  -- Fallback gray
 end
 
 -- Get glow version of a color (33% alpha)
@@ -30,7 +30,7 @@ local function get_glow_color(color)
   return Colors.with_alpha(color, 0x33)
 end
 
--- Build mode config dynamically from Style.COLORS
+-- Build mode config dynamically from Theme.COLORS
 local function build_mode_config(mode)
   if mode == "move" then
     local color = get_op_color("OP_MOVE")
@@ -62,7 +62,7 @@ local function build_mode_config(mode)
   return build_mode_config("move")
 end
 
--- Lazy accessor for mode configs (reads Style.COLORS at access time)
+-- Lazy accessor for mode configs (reads Theme.COLORS at access time)
 M.MODES = setmetatable({}, {
   __index = function(_, key)
     return build_mode_config(key)

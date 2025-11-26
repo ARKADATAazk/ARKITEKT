@@ -1,7 +1,7 @@
 -- @noindex
 -- Arkitekt/gui/style/imgui.lua
 -- ImGui theme overrides and base styling
--- Reads colors dynamically from Style.COLORS for unified theming
+-- Reads colors dynamically from Theme.COLORS for unified theming
 
 local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
@@ -21,13 +21,13 @@ function M.with_alpha(col, a)
   return (col & 0xFFFFFF00) | (a & 0xFF)
 end
 
--- Lazy-load Style to avoid circular dependency
-local Style
-local function get_style()
-  if not Style then
-    Style = require('arkitekt.gui.style')
+-- Lazy-load Theme to avoid circular dependency
+local Theme
+local function get_theme()
+  if not Theme then
+    Theme = require('arkitekt.core.theme')
   end
-  return Style
+  return Theme
 end
 
 function M.PushMyStyle(ctx, opts)
@@ -36,8 +36,8 @@ function M.PushMyStyle(ctx, opts)
   local push_modal_dim_bg = (opts.modal_dim_bg ~= false)
 
   -- Get current theme colors
-  local S = get_style()
-  local C = S.COLORS
+  local T = get_theme()
+  local C = T.COLORS
 
   local color_pushes = 0
   local function push_color(...)
@@ -190,7 +190,7 @@ end
 -- Maps old grey names to themed colors
 M.palette = setmetatable({}, {
   __index = function(_, key)
-    local S = get_style()
+    local T = get_theme()
     local Colors = require('arkitekt.core.colors')
     -- Map palette names to themed colors
     -- Chrome elements (grey_05-08) use BG_CHROME (significantly darker than content)
@@ -198,27 +198,27 @@ M.palette = setmetatable({}, {
       white = hexrgb("#FFFFFFFF"),
       black = hexrgb("#000000FF"),
       -- Very dark greys map to chrome colors (titlebar/statusbar)
-      grey_05 = Colors.adjust_lightness(S.COLORS.BG_CHROME, -0.02),
-      grey_06 = Colors.adjust_lightness(S.COLORS.BG_CHROME, -0.01),
-      grey_07 = S.COLORS.BG_CHROME,
-      grey_08 = S.COLORS.BG_CHROME,  -- statusbar bg
+      grey_05 = Colors.adjust_lightness(T.COLORS.BG_CHROME, -0.02),
+      grey_06 = Colors.adjust_lightness(T.COLORS.BG_CHROME, -0.01),
+      grey_07 = T.COLORS.BG_CHROME,
+      grey_08 = T.COLORS.BG_CHROME,  -- statusbar bg
       -- Lighter greys map to content/panel colors
-      grey_09 = S.COLORS.BG_PANEL,
-      grey_10 = S.COLORS.BG_PANEL,
-      grey_14 = S.COLORS.BG_BASE,   -- content bg
-      grey_18 = S.COLORS.BG_HOVER,
-      grey_20 = S.COLORS.BG_ACTIVE,
-      grey_52 = S.COLORS.TEXT_DIMMED,
-      grey_60 = S.COLORS.TEXT_NORMAL,
-      grey_66 = S.COLORS.TEXT_DIMMED,
-      grey_c0 = S.COLORS.TEXT_NORMAL,
-      border_strong = S.COLORS.BORDER_OUTER,
-      border_soft = S.COLORS.BORDER_INNER,
-      teal = S.COLORS.ACCENT_PRIMARY,
-      yellow = S.COLORS.ACCENT_WARNING,
-      red = S.COLORS.ACCENT_DANGER,
+      grey_09 = T.COLORS.BG_PANEL,
+      grey_10 = T.COLORS.BG_PANEL,
+      grey_14 = T.COLORS.BG_BASE,   -- content bg
+      grey_18 = T.COLORS.BG_HOVER,
+      grey_20 = T.COLORS.BG_ACTIVE,
+      grey_52 = T.COLORS.TEXT_DIMMED,
+      grey_60 = T.COLORS.TEXT_NORMAL,
+      grey_66 = T.COLORS.TEXT_DIMMED,
+      grey_c0 = T.COLORS.TEXT_NORMAL,
+      border_strong = T.COLORS.BORDER_OUTER,
+      border_soft = T.COLORS.BORDER_INNER,
+      teal = T.COLORS.ACCENT_PRIMARY,
+      yellow = T.COLORS.ACCENT_WARNING,
+      red = T.COLORS.ACCENT_DANGER,
     }
-    return mapping[key] or S.COLORS.BG_BASE
+    return mapping[key] or T.COLORS.BG_BASE
   end
 })
 

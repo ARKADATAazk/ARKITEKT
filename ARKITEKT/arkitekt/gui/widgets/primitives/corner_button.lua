@@ -5,7 +5,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -39,7 +39,7 @@ local DEFAULTS = {
   disabled = false,
   is_blocking = false,
 
-  -- Colors (nil = use Style.BUTTON defaults)
+  -- Colors (nil = use Theme.BUTTON defaults)
   bg_color = nil,
   bg_hover_color = nil,
   bg_active_color = nil,
@@ -180,11 +180,11 @@ end
 --- @return table Result { clicked, width, height, hovered, active }
 function M.draw(ctx, opts)
   opts = Base.parse_opts(opts, DEFAULTS)
-  -- Build config dynamically from Style.COLORS (enables dynamic theming)
-  local config = Style.build_button_config()
+  -- Build config dynamically from Theme.COLORS (enables dynamic theming)
+  local config = Theme.build_button_config()
   -- Apply dynamic preset if specified
   if opts.preset_name then
-    Style.apply_dynamic_preset(config, opts.preset_name)
+    Theme.apply_preset(config, opts.preset_name)
   end
   -- Apply user overrides (copy ALL opts, not just color keys)
   for k, v in pairs(opts) do

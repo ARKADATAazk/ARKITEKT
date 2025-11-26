@@ -6,7 +6,7 @@
 
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 
@@ -96,12 +96,12 @@ local function get_or_create_state(id)
 end
 
 -- ============================================================================
--- CONFIG RESOLUTION (Dynamic - reads Style.COLORS each call)
+-- CONFIG RESOLUTION (Dynamic - reads Theme.COLORS each call)
 -- ============================================================================
 
 local function resolve_config(opts)
-  -- Build config from current Style.COLORS (enables dynamic theming)
-  local config = Style.build_search_input_config()
+  -- Build config from current Theme.COLORS (enables dynamic theming)
+  local config = Theme.build_search_input_config()
 
   -- Apply preset if specified
   if opts.preset == "search" then
@@ -130,7 +130,7 @@ local function get_corner_flags(corner_rounding)
   if not corner_rounding then
     return 0
   end
-  return Style.RENDER.get_corner_flags(corner_rounding)
+  return Base.get_corner_flags(corner_rounding)
 end
 
 -- ============================================================================

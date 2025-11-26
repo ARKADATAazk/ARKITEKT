@@ -5,7 +5,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local Container = require('arkitekt.gui.widgets.overlays.overlay.container')
 local ColorPickerWindow = require('arkitekt.gui.widgets.tools.color_picker_window')
 local Button = require('arkitekt.gui.widgets.primitives.button')
@@ -341,16 +341,17 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       ImGui.SameLine(ctx, 0, chip_spacing)
     end
 
+    local wildcard_config = Theme.build_action_chip_config('wildcard')
     local clicked, right_clicked = Chip.draw(ctx, {
       label = chip_data.label,
       style = Chip.STYLE.ACTION,
       interactive = true,
       id = "wildcard_" .. i,
-      bg_color = Style.ACTION_CHIP_WILDCARD.bg_color,
-      text_color = Style.ACTION_CHIP_WILDCARD.text_color,
+      bg_color = wildcard_config.bg_color,
+      text_color = wildcard_config.text_color,
       border_color = hexrgb("#00000000"),  -- Transparent border (flat color fill)
-      rounding = Style.ACTION_CHIP_WILDCARD.rounding,
-      padding_h = Style.ACTION_CHIP_WILDCARD.padding_h,
+      rounding = wildcard_config.rounding,
+      padding_h = wildcard_config.padding_h,
     })
 
     -- Left click - insert wildcard
@@ -561,9 +562,10 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
       local color = name_data.color
 
       -- Use Chip.calculate_width to get the accurate chip width
+      local tag_config = Theme.build_action_chip_config('tag')
       local chip_width = Chip.calculate_width(ctx, name, {
         style = Chip.STYLE.ACTION,
-        padding_h = Style.ACTION_CHIP_TAG.padding_h,
+        padding_h = tag_config.padding_h,
       })
 
       -- Check if chip fits on current line
@@ -585,10 +587,10 @@ function BatchRenameModal:draw_content(ctx, count, is_overlay_mode, content_w, c
         interactive = true,
         id = "common_name_" .. i,
         bg_color = color,
-        text_color = Style.ACTION_CHIP_TAG.text_color,
+        text_color = tag_config.text_color,
         border_color = hexrgb("#00000000"),  -- Transparent border (flat color fill)
-        rounding = Style.ACTION_CHIP_TAG.rounding,
-        padding_h = Style.ACTION_CHIP_TAG.padding_h,
+        rounding = tag_config.rounding,
+        padding_h = tag_config.padding_h,
       })
 
       -- Advance x position for next chip

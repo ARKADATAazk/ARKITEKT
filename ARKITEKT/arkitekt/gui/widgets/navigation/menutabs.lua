@@ -6,7 +6,7 @@ package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Colors = require('arkitekt.core.colors')
 local Config = require('arkitekt.core.config')
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 
 local M = {}
 M.__index = M
@@ -25,13 +25,13 @@ local DEFAULTS = {
     active_indicator_min_px = 8,
     active_indicator_max_px = 48,
   },
-  -- colors defined as nil - will be read from Style.COLORS at runtime
+  -- colors defined as nil - will be read from Theme.COLORS at runtime
   colors = nil
 }
 
--- Build dynamic colors from Style.COLORS
+-- Build dynamic colors from Theme.COLORS
 local function get_default_colors()
-  local C = Style.COLORS
+  local C = Theme.COLORS
   return {
     bg_active   = C.BG_BASE,
     bg_clicked  = C.BG_HOVER,
@@ -52,7 +52,7 @@ local function apply_defaults(opts)
   o.items = (opts and opts.items) or {}
   o.active = opts and opts.active or (o.items[1] and (o.items[1].id or o.items[1].label))
   o.style  = Config.deepMerge(DEFAULTS.style, opts and opts.style)
-  -- Get dynamic colors from Style.COLORS and merge with user overrides
+  -- Get dynamic colors from Theme.COLORS and merge with user overrides
   o.colors = Config.deepMerge(get_default_colors(), opts and opts.colors)
   o.on_change = opts and opts.on_change
   return o

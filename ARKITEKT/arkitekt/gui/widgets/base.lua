@@ -4,7 +4,6 @@
 -- Provides shared functionality: instance management, state handling, opts parsing
 
 local ImGui = require('arkitekt.core.imgui')
-local Style = require('arkitekt.gui.style')
 local Colors = require('arkitekt.core.colors')
 local Anim = require('arkitekt.core.animation')
 local CoreMath = require('arkitekt.core.math')
@@ -375,6 +374,39 @@ end
 -- ============================================================================
 -- DRAWING UTILITIES
 -- ============================================================================
+
+--- Converts corner_rounding config to ImGui corner flags.
+--- Logic:
+---   - nil corner_rounding = standalone element, return 0 (caller handles default)
+---   - corner_rounding exists with flags = specific corners rounded
+---   - corner_rounding exists with no flags = middle element, explicitly no rounding
+--- @param corner_rounding table|nil Corner rounding configuration from layout engine
+--- @return integer ImGui DrawFlags for corner rounding
+function M.get_corner_flags(corner_rounding)
+  if not corner_rounding then
+    return 0
+  end
+
+  local flags = 0
+  if corner_rounding.round_top_left then
+    flags = flags | ImGui.DrawFlags_RoundCornersTopLeft
+  end
+  if corner_rounding.round_top_right then
+    flags = flags | ImGui.DrawFlags_RoundCornersTopRight
+  end
+  if corner_rounding.round_bottom_left then
+    flags = flags | ImGui.DrawFlags_RoundCornersBottomLeft
+  end
+  if corner_rounding.round_bottom_right then
+    flags = flags | ImGui.DrawFlags_RoundCornersBottomRight
+  end
+
+  if flags == 0 then
+    return ImGui.DrawFlags_RoundCornersNone
+  end
+
+  return flags
+end
 
 --- Draw standard widget background with borders
 --- @param dl userdata Draw list

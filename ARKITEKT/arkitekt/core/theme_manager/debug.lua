@@ -5,12 +5,20 @@
 -- Provides visual debugging tools for tuning theme values.
 
 local Colors = require('arkitekt.core.colors')
-local Style = require('arkitekt.gui.style')
 local Palette = require('arkitekt.defs.colors')
 local Engine = require('arkitekt.core.theme_manager.engine')
 local Registry = require('arkitekt.core.theme_manager.registry')
 
 local M = {}
+
+-- Lazy load Theme to avoid circular dependency
+local _Theme
+local function get_theme()
+  if not _Theme then
+    _Theme = require('arkitekt.core.theme')
+  end
+  return _Theme
+end
 
 -- =============================================================================
 -- DEBUG STATE
@@ -134,16 +142,17 @@ function M.render_debug_window(ctx, ImGui, state)
     ImGui.Text(ctx, string.format("Light preset: %s (t=1, L=%.2f)", Palette.presets.light, Palette.anchors.light))
     ImGui.Separator(ctx)
 
-    -- All Style.COLORS
-    if ImGui.CollapsingHeader(ctx, "Style.COLORS", ImGui.TreeNodeFlags_DefaultOpen) then
+    -- All Theme.COLORS
+    if ImGui.CollapsingHeader(ctx, "Theme.COLORS", ImGui.TreeNodeFlags_DefaultOpen) then
+      local Theme = get_theme()
       local color_keys = {}
-      for k in pairs(Style.COLORS) do
+      for k in pairs(Theme.COLORS) do
         color_keys[#color_keys + 1] = k
       end
       table.sort(color_keys)
 
       for _, k in ipairs(color_keys) do
-        local v = Style.COLORS[k]
+        local v = Theme.COLORS[k]
         if type(v) == "number" and v == math.floor(v) then
           ImGui.ColorButton(ctx, "style_" .. k, math.floor(v), 0, 12, 12)
           ImGui.SameLine(ctx)

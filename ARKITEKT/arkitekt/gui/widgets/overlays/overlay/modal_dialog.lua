@@ -7,7 +7,7 @@ local ImGui = require 'imgui' '0.10'
 
 local Sheet = require('arkitekt.gui.widgets.overlays.overlay.sheet')
 local Button = require('arkitekt.gui.widgets.primitives.button')
-local Style = require('arkitekt.gui.style')
+local Theme = require('arkitekt.core.theme')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb
 
@@ -71,9 +71,10 @@ end
 
 -- Helper: Draw text input field
 local function draw_text_input(ctx, x, y, width, height, unique_id, text, placeholder)
-  local bg_color = Style.SEARCH_INPUT_COLORS.bg
-  local border_inner = Style.SEARCH_INPUT_COLORS.border_inner
-  local border_outer = Style.SEARCH_INPUT_COLORS.border_outer
+  local cfg = Theme.build_search_input_config()
+  local bg_color = cfg.bg_color
+  local border_inner = cfg.border_inner_color
+  local border_outer = cfg.border_outer_color
 
   local dl = ImGui.GetWindowDrawList(ctx)
 
@@ -94,7 +95,7 @@ local function draw_text_input(ctx, x, y, width, height, unique_id, text, placeh
   ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, hexrgb("#00000000"))
   ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, hexrgb("#00000000"))
   ImGui.PushStyleColor(ctx, ImGui.Col_Border, hexrgb("#00000000"))
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, Style.SEARCH_INPUT_COLORS.text)
+  ImGui.PushStyleColor(ctx, ImGui.Col_Text, cfg.text_color)
 
   local changed, new_text = ImGui.InputTextWithHint(
     ctx,
@@ -295,11 +296,12 @@ function M.show_input(ctx, window, title, initial_text, opts)
           ImGui.Dummy(ctx, 0, 4)
           ImGui.SetNextItemWidth(ctx, w)
 
-          ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, Style.SEARCH_INPUT_COLORS.bg)
-          ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, Style.SEARCH_INPUT_COLORS.bg_hover)
-          ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, Style.SEARCH_INPUT_COLORS.bg_active)
-          ImGui.PushStyleColor(ctx, ImGui.Col_Border, Style.SEARCH_INPUT_COLORS.border_outer)
-          ImGui.PushStyleColor(ctx, ImGui.Col_Text, Style.SEARCH_INPUT_COLORS.text)
+          local input_cfg = Theme.build_search_input_config()
+          ImGui.PushStyleColor(ctx, ImGui.Col_FrameBg, input_cfg.bg_color)
+          ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgHovered, input_cfg.bg_hover_color)
+          ImGui.PushStyleColor(ctx, ImGui.Col_FrameBgActive, input_cfg.bg_active_color)
+          ImGui.PushStyleColor(ctx, ImGui.Col_Border, input_cfg.border_outer_color)
+          ImGui.PushStyleColor(ctx, ImGui.Col_Text, input_cfg.text_color)
 
           local changed, new_text = ImGui.InputTextWithHint(
             ctx,
