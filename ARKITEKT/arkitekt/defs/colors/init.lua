@@ -36,6 +36,8 @@ M.colors = Theme.colors
 
 -- Utilities
 M.get_all_keys = Theme.get_all_keys
+M.get_range_for_key = Theme.get_range_for_key
+M.clamp_value = Theme.clamp_value
 
 -- =============================================================================
 -- STATIC (from static.lua)
