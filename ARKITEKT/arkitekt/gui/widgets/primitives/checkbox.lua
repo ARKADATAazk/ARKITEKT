@@ -29,6 +29,7 @@ local DEFAULTS = {
 
   -- State
   checked = false,
+  is_checked = false,  -- Alias for 'checked' (for compatibility)
   disabled = false,
   is_blocking = false,
 
@@ -288,8 +289,8 @@ function M.draw(ctx, opts)
   local x, y = Base.get_position(ctx, opts)
   local dl = Base.get_draw_list(ctx, opts)
 
-  -- Get checked state
-  local is_checked = opts.checked
+  -- Get checked state (accept both 'checked' and 'is_checked' for compatibility)
+  local is_checked = opts.checked or opts.is_checked
   if opts.panel_state and opts.panel_state.checkbox_value ~= nil then
     is_checked = opts.panel_state.checkbox_value
   end
