@@ -74,6 +74,25 @@ function M.get_reaper_bg_color()
   return reaper_to_imgui(main_bg_raw)
 end
 
+--- Sync theme with REAPER WITHOUT the lightness offset
+--- Used for "Adapt on docking" to match REAPER exactly
+--- @return boolean Success
+function M.sync_with_reaper_no_offset()
+  local main_bg_raw = reaper.GetThemeColor("col_main_bg2", 0)
+  if main_bg_raw == -1 then
+    return false
+  end
+
+  local main_bg = reaper_to_imgui(main_bg_raw)
+  if not main_bg then
+    return false
+  end
+
+  -- Generate and apply palette WITHOUT offset (exact REAPER color)
+  get_theme().generate_and_apply(main_bg)
+  return true
+end
+
 -- =============================================================================
 -- REAPER THEME SYNC
 -- =============================================================================

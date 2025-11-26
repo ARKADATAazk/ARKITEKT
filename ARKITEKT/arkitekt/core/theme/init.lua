@@ -239,6 +239,7 @@ M.create_live_sync = Integration.create_live_sync
 M.is_dock_adapt_enabled = Integration.is_dock_adapt_enabled
 M.set_dock_adapt_enabled = Integration.set_dock_adapt_enabled
 M.get_reaper_bg_color = Integration.get_reaper_bg_color
+M.sync_with_reaper_no_offset = Integration.sync_with_reaper_no_offset
 
 -- =============================================================================
 -- CUSTOM COLOR

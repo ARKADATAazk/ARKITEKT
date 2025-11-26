@@ -574,18 +574,9 @@ local hexrgb = Colors.hexrgb
         self._fullscreen_scrim_pushed = true
       end
     else
-      local bg_color
-      if self._was_docked then
-        -- Check if dock adapt to REAPER theme is enabled
-        if Theme and Theme.is_dock_adapt_enabled and Theme.is_dock_adapt_enabled() then
-          -- Use REAPER's exact background color (no offset)
-          bg_color = Theme.get_reaper_bg_color() or self.bg_color_docked
-        else
-          bg_color = self.bg_color_docked
-        end
-      else
-        bg_color = self.bg_color_floating
-      end
+      -- Use docked or floating background color
+      -- (When "Adapt on docking" is enabled, the full theme is applied on dock transition)
+      local bg_color = self._was_docked and self.bg_color_docked or self.bg_color_floating
       if bg_color then
         ImGui.PushStyleColor(ctx, ImGui.Col_WindowBg, bg_color)
         self._bg_color_pushed = true
@@ -643,7 +634,15 @@ local hexrgb = Colors.hexrgb
         end
       else
         if ImGui.IsWindowDocked then
-          self._was_docked = ImGui.IsWindowDocked(ctx)
+          local is_docked = ImGui.IsWindowDocked(ctx)
+          -- Check if we just transitioned to docked state
+          if is_docked and not self._was_docked then
+            -- Apply REAPER theme without offset when docking (if enabled)
+            if Theme and Theme.is_dock_adapt_enabled and Theme.is_dock_adapt_enabled() then
+              Theme.sync_with_reaper_no_offset()
+            end
+          end
+          self._was_docked = is_docked
         end
         
         if self._pending_maximize then

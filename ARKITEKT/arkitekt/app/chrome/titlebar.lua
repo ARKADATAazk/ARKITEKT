@@ -307,8 +307,6 @@ function M.new(opts)
 
               -- Custom color picker
               if ThemeManager.set_custom and ThemeManager.get_custom_color then
-                local custom_label = (current_mode == "custom") and "* Custom" or "  Custom"
-
                 -- Get current custom color or default (in our format: 0xRRGGBBAA)
                 local custom_color = ThemeManager.get_custom_color()
                 if not custom_color then
@@ -316,27 +314,26 @@ function M.new(opts)
                   custom_color = ThemeManager.COLORS and ThemeManager.COLORS.BG_BASE or hexrgb("#333333")
                 end
 
-                -- Clickable "Custom" label to apply the custom theme
-                if ContextMenu.item(ctx, custom_label) then
-                  if ThemeManager.set_mode then
-                    ThemeManager.set_mode("custom")
-                  end
-                end
-
-                -- Color picker on same line (after the menu item)
-                ImGui.SameLine(ctx)
-
                 -- Color picker flags: no alpha, no options button
                 local flags = ImGui.ColorEditFlags_NoAlpha
                               | ImGui.ColorEditFlags_NoInputs
                               | ImGui.ColorEditFlags_NoLabel
 
-                -- ReaImGui uses same format as our internal (0xRRGGBBAA)
+                -- Color picker widget
                 local changed, new_color = ImGui.ColorEdit3(ctx, "##custom_color", custom_color, flags)
                 if changed then
                   -- Force alpha to 0xFF since we're using ColorEdit3 (no alpha)
                   new_color = (new_color & 0xFFFFFF00) | 0xFF
                   ThemeManager.set_custom(new_color)
+                end
+
+                -- Clickable "Custom" label to apply the custom theme (same line as picker)
+                ImGui.SameLine(ctx)
+                local custom_label = (current_mode == "custom") and "* Custom" or "  Custom"
+                if ContextMenu.item(ctx, custom_label) then
+                  if ThemeManager.set_mode then
+                    ThemeManager.set_mode("custom")
+                  end
                 end
               end
 
@@ -350,11 +347,11 @@ function M.new(opts)
                 end
               end
 
-              -- Dock adapts to REAPER checkbox
+              -- Adapt on docking checkbox
               if ThemeManager.is_dock_adapt_enabled and ThemeManager.set_dock_adapt_enabled then
                 ContextMenu.separator(ctx)
                 local dock_adapt_enabled = ThemeManager.is_dock_adapt_enabled()
-                if ContextMenu.checkbox_item(ctx, "Docked adapts to Reaper Theme", dock_adapt_enabled) then
+                if ContextMenu.checkbox_item(ctx, "Adapt on docking", dock_adapt_enabled) then
                   ThemeManager.set_dock_adapt_enabled(not dock_adapt_enabled)
                 end
               end
