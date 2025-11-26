@@ -269,9 +269,9 @@ function M.new(opts)
         -- Context menu on left/right click
         if ContextMenu.begin(ctx, "##icon_context_menu") then
           -- Theme submenu (auto-generated from presets)
-          if ThemeManager then
+          if ThemeManager and ThemeManager.presets then
             if ContextMenu.begin_menu(ctx, "Theme") then
-              local current_mode = ThemeManager.get_mode()
+              local current_mode = ThemeManager.get_mode and ThemeManager.get_mode() or nil
 
               -- Format preset name: "light_grey" -> "Light Grey"
               local function format_preset_name(name)
@@ -292,7 +292,9 @@ function M.new(opts)
                 local display = format_preset_name(name)
                 local label = (current_mode == name) and ("* " .. display) or ("  " .. display)
                 if ContextMenu.item(ctx, label) then
-                  ThemeManager.set_mode(name)
+                  if ThemeManager.set_mode then
+                    ThemeManager.set_mode(name)
+                  end
                 end
               end
 
@@ -301,7 +303,9 @@ function M.new(opts)
               -- Adapt mode (sync with REAPER)
               local adapt_label = (current_mode == "adapt") and "* Adapt (REAPER)" or "  Adapt (REAPER)"
               if ContextMenu.item(ctx, adapt_label) then
-                ThemeManager.set_mode("adapt")
+                if ThemeManager.set_mode then
+                  ThemeManager.set_mode("adapt")
+                end
               end
 
               ContextMenu.end_submenu(ctx)

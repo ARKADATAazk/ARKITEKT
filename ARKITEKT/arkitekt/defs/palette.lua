@@ -25,13 +25,16 @@ M.presets = {
 
 -- Compute anchors from preset lightness (single source of truth)
 local function get_lightness(hex)
-  local _, _, l = Colors.rgb_to_hsl(Colors.hexrgb(hex .. "FF"))
-  return l
+  local ok, result = pcall(function()
+    local _, _, l = Colors.rgb_to_hsl(Colors.hexrgb(hex .. "FF"))
+    return l
+  end)
+  return ok and result or 0.5
 end
 
 M.anchors = {
-  dark  = get_lightness(M.presets.dark),
-  light = get_lightness(M.presets.light),
+  dark  = get_lightness(M.presets.dark),   -- ~0.14
+  light = get_lightness(M.presets.light),  -- ~0.88
 }
 
 -- =============================================================================
