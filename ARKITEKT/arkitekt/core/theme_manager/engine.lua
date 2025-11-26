@@ -53,11 +53,16 @@ local function resolve_value(def, t)
     if type(dark_val) == "number" and type(light_val) == "number" then
       return dark_val + (light_val - dark_val) * t
     elseif type(dark_val) == "string" and type(light_val) == "string" then
-      -- RGB color lerp
+      -- HSL color lerp (preserves hue, avoids muddy midpoints)
       local color_a = Colors.hexrgb(dark_val .. (#dark_val == 7 and "FF" or ""))
       local color_b = Colors.hexrgb(light_val .. (#light_val == 7 and "FF" or ""))
-      local lerped = Colors.lerp(color_a, color_b, t)
-      local r, g, b = Colors.rgba_to_components(lerped)
+      local h1, s1, l1 = Colors.rgb_to_hsl(color_a)
+      local h2, s2, l2 = Colors.rgb_to_hsl(color_b)
+      -- Lerp HSL components
+      local h = h1 + (h2 - h1) * t
+      local s = s1 + (s2 - s1) * t
+      local l = l1 + (l2 - l1) * t
+      local r, g, b = Colors.hsl_to_rgb(h, s, l)
       return string.format("#%02X%02X%02X", r, g, b)
     else
       return t < 0.5 and dark_val or light_val
