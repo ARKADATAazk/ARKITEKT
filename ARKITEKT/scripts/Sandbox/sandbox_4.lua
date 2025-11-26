@@ -264,6 +264,7 @@ local tree_state = {
   drag_active = false,
   drag_node_id = nil,  -- Primary dragged node
   drag_node_ids = {},  -- All nodes being dragged (for multi-drag)
+  drag_is_copy = false, -- Ctrl held = copy instead of move
   drag_start_x = 0,
   drag_start_y = 0,
   drag_threshold = 5, -- pixels to move before drag starts
@@ -709,7 +710,7 @@ end
 -- DRAG PREVIEW (VS Code style)
 -- ============================================================================
 
-local function draw_drag_preview(ctx, dl, drag_node, selected_count)
+local function draw_drag_preview(ctx, dl, drag_node, selected_count, is_copy_mode)
   if not drag_node then return end
 
   local mx, my = ImGui.GetMousePos(ctx)
@@ -718,6 +719,7 @@ local function draw_drag_preview(ctx, dl, drag_node, selected_count)
   local padding = 8
   local icon_size = 16
   local badge_size = 18
+  local copy_indicator_size = 14
   local spacing = 6
 
   -- Measure text
@@ -732,6 +734,11 @@ local function draw_drag_preview(ctx, dl, drag_node, selected_count)
   local show_badge = selected_count > 1
   if show_badge then
     preview_w = preview_w + spacing + badge_size
+  end
+
+  -- Add copy indicator size if in copy mode
+  if is_copy_mode then
+    preview_w = preview_w + spacing + copy_indicator_size
   end
 
   -- Position slightly offset from cursor
@@ -800,8 +807,9 @@ local function draw_drag_preview(ctx, dl, drag_node, selected_count)
   ImGui.DrawList_AddText(dl, text_x, text_y, text_color, text)
 
   -- Draw count badge if multiple items selected
+  local content_end_x = text_x + text_w
   if show_badge then
-    local badge_x = text_x + text_w + spacing
+    local badge_x = content_end_x + spacing
     local badge_y = preview_y + (preview_h - badge_size) / 2
     local badge_radius = badge_size / 2
 
@@ -814,6 +822,37 @@ local function draw_drag_preview(ctx, dl, drag_node, selected_count)
     local count_x = badge_x + (badge_size - count_w) / 2
     local count_y = badge_y + (badge_size - count_h) / 2
     ImGui.DrawList_AddText(dl, count_x, count_y, badge_text, count_text)
+
+    content_end_x = badge_x + badge_size
+  end
+
+  -- Draw copy indicator (+ symbol) if in copy mode
+  if is_copy_mode then
+    local plus_x = content_end_x + spacing
+    local plus_y = preview_y + (preview_h - copy_indicator_size) / 2
+    local plus_size = copy_indicator_size
+    local plus_color = hexrgb("#00FF00FF")  -- Green for copy
+
+    -- Draw circle background
+    ImGui.DrawList_AddCircleFilled(dl, plus_x + plus_size/2, plus_y + plus_size/2, plus_size/2, hexrgb("#00000080"))
+
+    -- Draw + symbol
+    local plus_w = plus_size * 0.5
+    local plus_thickness = 2
+    local center_x = plus_x + plus_size / 2
+    local center_y = plus_y + plus_size / 2
+
+    -- Horizontal line
+    ImGui.DrawList_AddLine(dl,
+      center_x - plus_w/2, center_y,
+      center_x + plus_w/2, center_y,
+      plus_color, plus_thickness)
+
+    -- Vertical line
+    ImGui.DrawList_AddLine(dl,
+      center_x, center_y - plus_w/2,
+      center_x, center_y + plus_w/2,
+      plus_color, plus_thickness)
   end
 end
 
@@ -1342,31 +1381,43 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
   -- Handle drag & drop completion
   if tree_state.drag_active then
     if ImGui.IsMouseReleased(ctx, 0) then
-      -- Perform drop (multi-drag support)
+      -- Perform drop (multi-drag support with copy-on-drag)
       if tree_state.drop_target_id and tree_state.drop_position then
         local target_id = tree_state.drop_target_id
+        local is_copy = tree_state.drag_is_copy
 
-        -- Move all dragged nodes
-        local nodes_to_move = {}
+        -- Move or copy all dragged nodes
+        local nodes_to_insert = {}
         for _, drag_id in ipairs(tree_state.drag_node_ids) do
           -- Prevent dropping into self or descendants
           if drag_id ~= target_id and not is_ancestor(drag_id, target_id, nodes) then
-            local node_to_move = remove_node_from_tree(nodes, drag_id)
-            if node_to_move then
-              table.insert(nodes_to_move, node_to_move)
+            local node_to_insert
+            if is_copy then
+              -- Copy mode: Duplicate the node
+              local source_node = find_node_by_id(nodes, drag_id)
+              if source_node then
+                node_to_insert = duplicate_node(source_node)
+              end
+            else
+              -- Move mode: Remove and move
+              node_to_insert = remove_node_from_tree(nodes, drag_id)
+            end
+
+            if node_to_insert then
+              table.insert(nodes_to_insert, node_to_insert)
             end
           end
         end
 
-        -- Insert all moved nodes at target
-        for i, node_to_move in ipairs(nodes_to_move) do
+        -- Insert all nodes at target
+        for i, node_to_insert in ipairs(nodes_to_insert) do
           -- Insert in order, adjusting position for "after" to maintain order
           local pos = tree_state.drop_position
           if i > 1 and pos == "after" then
             -- For subsequent items in multi-drag, keep inserting after
             pos = "after"
           end
-          insert_node_at(nodes, target_id, node_to_move, pos)
+          insert_node_at(nodes, target_id, node_to_insert, pos)
         end
       end
 
@@ -1374,6 +1425,7 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
       tree_state.drag_active = false
       tree_state.drag_node_id = nil
       tree_state.drag_node_ids = {}
+      tree_state.drag_is_copy = false
       tree_state.drop_target_id = nil
       tree_state.drop_position = nil
     else
@@ -1381,6 +1433,24 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
       if not tree_state.hovered then
         tree_state.drop_target_id = nil
         tree_state.drop_position = nil
+      end
+
+      -- Detect Ctrl for copy-on-drag
+      local ctrl_held = ImGui.GetKeyMods(ctx) & ImGui.Mod_Ctrl ~= 0
+      tree_state.drag_is_copy = ctrl_held
+
+      -- Auto-scroll when dragging near edges
+      local my = ImGui.GetMousePos(ctx)
+      local scroll_zone = 40  -- pixels from edge to trigger scroll
+      local scroll_speed = 8   -- pixels per frame
+
+      if my < y + scroll_zone then
+        -- Near top edge - scroll up
+        tree_state.scroll_y = math.max(0, tree_state.scroll_y - scroll_speed)
+      elseif my > y + h - scroll_zone then
+        -- Near bottom edge - scroll down
+        local max_scroll = math.max(0, tree_state.total_content_height - h + cfg.padding_top)
+        tree_state.scroll_y = math.min(max_scroll, tree_state.scroll_y + scroll_speed)
       end
     end
   end
@@ -1392,7 +1462,7 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
       -- Use actual count of dragged items (multi-drag support)
       local drag_count = #tree_state.drag_node_ids
 
-      draw_drag_preview(ctx, dl, drag_node, drag_count)
+      draw_drag_preview(ctx, dl, drag_node, drag_count, tree_state.drag_is_copy)
     end
   end
 
