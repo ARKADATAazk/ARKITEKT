@@ -149,8 +149,11 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     end
   end
 
+  -- Convert render_color back to ARGB format for ImGui
+  local imgui_color = ark.Colors.rgba_to_argb(render_color)
+
   -- Render base tile fill with rounding
-  ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
+  ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, imgui_color, config.TILE.ROUNDING)
 
   -- Render dark backdrop for disabled items (skip if show_disabled_items = false, animation handles it)
   if enabled_factor < 0.999 and state.settings.show_disabled_items then
