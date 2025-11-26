@@ -147,8 +147,8 @@ M.TILE_RENDER = {
     ants_thickness = 1,
     ants_inset = 0,
     ants_dash = 24,  -- 3x sparser than original (was 8px)
-    ants_gap = 8,    -- Slightly larger gap (was 6px)
-    ants_speed = 20,
+    ants_gap = 11,   -- Even larger gap for more spacing (was 8px, originally 6px)
+    ants_speed = 30, -- 50% faster animation for better visibility (was 20)
     tile_brightness_boost = 0.35,  -- Brightness boost for selected tile fill
   },
 
@@ -249,8 +249,8 @@ M.TILE_RENDER = {
     ants_replace_border = false,
     ants_thickness = 1,
     ants_dash = 24,  -- 3x sparser than original (was 8px)
-    ants_gap = 8,    -- Slightly larger gap (was 6px)
-    ants_speed = 20,
+    ants_gap = 11,   -- Even larger gap for more spacing (was 8px, originally 6px)
+    ants_speed = 30, -- 50% faster animation for better visibility (was 20)
     ants_inset = 0,
     ants_alpha = 0xFF,
     glow_strength = 0.4,
