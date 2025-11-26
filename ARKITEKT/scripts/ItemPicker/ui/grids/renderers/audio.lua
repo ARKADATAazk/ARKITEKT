@@ -11,7 +11,7 @@ local TileFX = require('arkitekt.gui.rendering.tile.renderer')
 
 local M = {}
 
-function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects)
+function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visualization, state, badge_rects, disable_animator)
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local tile_w, tile_h = x2 - x1, y2 - y1
   local center_x, center_y = (x1 + x2) / 2, (y1 + y2) / 2
@@ -133,6 +133,13 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- In compact mode (compact_factor = 1.0), header alpha should be 0
   -- In normal mode (compact_factor = 0.0), header alpha should be normal
   local header_alpha_factor = 1.0 - compact_factor
+
+  -- Trigger disable animation if item is being disabled when show_disabled_items = false
+  if disable_animator and item_data.key and is_disabled and not state.settings.show_disabled_items then
+    if not disable_animator:is_disabling(item_data.key) then
+      disable_animator:disable(item_data.key, {scaled_x1, scaled_y1, scaled_x2, scaled_y2})
+    end
+  end
 
   -- Render base tile fill with rounding
   ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
@@ -589,6 +596,11 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Draw duration text
       ark.Draw.text(dl, text_x, text_y, text_color, duration_text)
     end
+  end
+
+  -- Render disable animation overlay (if active)
+  if disable_animator and item_data.key and disable_animator:is_disabling(item_data.key) then
+    disable_animator:render(ctx, dl, item_data.key, {scaled_x1, scaled_y1, scaled_x2, scaled_y2}, base_color, config.TILE.ROUNDING)
   end
 end
 

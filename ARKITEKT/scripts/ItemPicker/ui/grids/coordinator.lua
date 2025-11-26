@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local TileAnim = require('arkitekt.gui.rendering.tile.animator')
+local Lifecycle = require('arkitekt.gui.fx.animation.lifecycle')
 local AudioGridFactory = require('ItemPicker.ui.grids.factories.audio_grid_factory')
 local MidiGridFactory = require('ItemPicker.ui.grids.factories.midi_grid_factory')
 
@@ -18,6 +19,7 @@ function M.new(ctx, config, state, visualization)
     visualization = visualization,
 
     animator = nil,
+    disable_animator = nil,
     audio_grid = nil,
     midi_grid = nil,
   }, Coordinator)
@@ -25,9 +27,12 @@ function M.new(ctx, config, state, visualization)
   -- Create animator
   self.animator = TileAnim.new(12.0)
 
+  -- Create disable animator (for when items are disabled AND show_disabled_items = false)
+  self.disable_animator = Lifecycle.DisableAnim.new({duration = 0.10})
+
   -- Create grids
-  self.audio_grid = AudioGridFactory.create(ctx, config, state, visualization, self.animator)
-  self.midi_grid = MidiGridFactory.create(ctx, config, state, visualization, self.animator)
+  self.audio_grid = AudioGridFactory.create(ctx, config, state, visualization, self.animator, self.disable_animator)
+  self.midi_grid = MidiGridFactory.create(ctx, config, state, visualization, self.animator, self.disable_animator)
 
   return self
 end
@@ -35,6 +40,9 @@ end
 function Coordinator:update_animations(dt)
   if self.animator then
     self.animator:update(dt)
+  end
+  if self.disable_animator then
+    self.disable_animator:update(dt)
   end
 end
 
