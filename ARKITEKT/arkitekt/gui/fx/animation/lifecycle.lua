@@ -282,7 +282,7 @@ function DisableAnim:get_factor(key)
   return Easing.ease_out_quad(t)
 end
 
-function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding)
+function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_font, icon_font_size)
   local anim = self.disabling[key]
   if not anim then return false end
 
@@ -339,24 +339,28 @@ function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding)
 
   -- Eye icon (fade out as animation progresses)
   -- Using Remix Icon eye-off: &#xECB6; (UTF-8: \u{ECB6})
-  local eye_alpha = (255 * (1 - Easing.ease_out_quad(t)))//1
-  local eye_color = (hexrgb("#AAAAAA") & 0xFFFFFF00) | eye_alpha
+  -- Only render if icon font is available
+  if icon_font then
+    local eye_alpha = (255 * (1 - Easing.ease_out_quad(t)))//1
+    local eye_color = (hexrgb("#AAAAAA") & 0xFFFFFF00) | eye_alpha
 
-  -- Push Remix Icon font for icon rendering
-  local icon_text = "\u{ECB6}"
-  ImGui.PushFont(ctx, ImGui.Font_RemixIcon())
+    -- Push Remix Icon font for icon rendering
+    local icon_text = "\u{ECB6}"
+    local icon_size = icon_font_size or 14
+    ImGui.PushFont(ctx, icon_font, icon_size)
 
-  -- Calculate icon size and position (centered on tile)
-  local icon_size = ImGui.CalcTextSize(ctx, icon_text)
-  local icon_x = cx - icon_size / 2
-  local icon_y = (ny1 + ny2) / 2 - ImGui.GetTextLineHeight(ctx) / 2
+    -- Calculate icon size and position (centered on tile)
+    local text_w = ImGui.CalcTextSize(ctx, icon_text)
+    local icon_x = cx - text_w / 2
+    local icon_y = (ny1 + ny2) / 2 - ImGui.GetTextLineHeight(ctx) / 2
 
-  -- Render eye icon with shadow for better visibility
-  local shadow_color = (hexrgb("#000000") & 0xFFFFFF00) | (eye_alpha // 2)
-  ImGui.DrawList_AddText(dl, icon_x + 1, icon_y + 1, shadow_color, icon_text)
-  ImGui.DrawList_AddText(dl, icon_x, icon_y, eye_color, icon_text)
+    -- Render eye icon with shadow for better visibility
+    local shadow_color = (hexrgb("#000000") & 0xFFFFFF00) | (eye_alpha // 2)
+    ImGui.DrawList_AddText(dl, icon_x + 1, icon_y + 1, shadow_color, icon_text)
+    ImGui.DrawList_AddText(dl, icon_x, icon_y, eye_color, icon_text)
 
-  ImGui.PopFont(ctx)
+    ImGui.PopFont(ctx)
+  end
 
   return true
 end
