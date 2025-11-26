@@ -712,9 +712,13 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   local cfg = TREE_CONFIG
   local item_h = cfg.item_height
 
+  -- Push ID scope for this node (ImGui best practice)
+  ImGui.PushID(ctx, node.id)
+
   -- Skip if doesn't match search
   local search_active = tree_state.search_text ~= ""
   if search_active and not has_matching_children(node, tree_state.search_text) then
+    ImGui.PopID(ctx)
     return y_pos, row_index
   end
 
@@ -803,19 +807,19 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
 
   -- Text or edit field
   if is_editing then
-    -- Inline editing
-    ark.InputText.set_text("tree_edit_" .. node.id, tree_state.edit_buffer)
+    -- Inline editing (ID scoped by PushID)
+    ark.InputText.set_text("##edit", tree_state.edit_buffer)
 
     local available_w = item_right - text_x
     local result = ark.InputText.draw(ctx, {
-      id = "tree_edit_" .. node.id,
+      id = "##edit",
       x = text_x,
       y = y_pos + 1,
       width = available_w,
       height = item_h - 2,
     })
 
-    tree_state.edit_buffer = ark.InputText.get_text("tree_edit_" .. node.id) or tree_state.edit_buffer
+    tree_state.edit_buffer = ark.InputText.get_text("##edit") or tree_state.edit_buffer
 
     if not tree_state.edit_focus_set then
       ImGui.SetKeyboardFocusHere(ctx, -1)
@@ -852,7 +856,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
 
     -- Invisible button for interaction
     ImGui.SetCursorScreenPos(ctx, visible_x, y_pos)
-    ImGui.InvisibleButton(ctx, "##tree_item_" .. node.id, visible_w, item_h)
+    ImGui.InvisibleButton(ctx, "##item", visible_w, item_h)  -- Scoped by PushID
 
     -- Mouse down for drag start
     if ImGui.IsItemActive(ctx) and ImGui.IsMouseDragging(ctx, 0, 0) and not tree_state.drag_active then
@@ -964,6 +968,9 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
       next_y, next_row = render_tree_item(ctx, dl, child, depth + 1, next_y, visible_x, visible_w, child_parent_lines, is_last, next_row, node.id, visible_top, visible_bottom)
     end
   end
+
+  -- Pop ID scope
+  ImGui.PopID(ctx)
 
   return next_y, next_row
 end
