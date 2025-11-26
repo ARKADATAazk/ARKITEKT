@@ -153,12 +153,12 @@ M.TILE_RENDER = {
 
   -- Disabled state
   disabled = {
-    desaturate = 0.15,
-    brightness = 0.65,
-    min_alpha = 0x33,
+    desaturate = 0.10,   -- Less desaturation to show more original color (was 0.15)
+    brightness = 0.60,   -- Slightly darker (was 0.75)
+    min_alpha = 0x44,    -- Lower opacity for more transparency (was 0x66)
     fade_speed = 20.0,
     backdrop_color = hexrgb("#1A1A1A"),
-    backdrop_alpha = 0xCC,
+    backdrop_alpha = 0x88,  -- Grey backdrop (unchanged)
   },
 
   -- Muted state

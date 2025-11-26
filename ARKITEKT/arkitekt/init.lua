@@ -45,11 +45,13 @@ local MODULES = {
 
   -- Containers
   Panel = 'arkitekt.gui.widgets.containers.panel',
+  SlidingZone = 'arkitekt.gui.widgets.containers.sliding_zone',
   TileGroup = 'arkitekt.gui.widgets.containers.tile_group',
 
   -- Utilities (commonly used modules)
   Anim = 'arkitekt.core.animation',
   Colors = 'arkitekt.core.colors',
+  Cursor = 'arkitekt.core.cursor',
   Style = 'arkitekt.gui.style',
   Draw = 'arkitekt.gui.draw',
   Easing = 'arkitekt.gui.fx.animation.easing',

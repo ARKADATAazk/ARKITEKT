@@ -67,6 +67,22 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
   local mouse_x, mouse_y = ImGui.GetMousePos(ctx)
   local total_height = 0
 
+  -- Paint mode state for drag selection
+  local left_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)
+  local left_down = ImGui.IsMouseDown(ctx, ImGui.MouseButton_Left)
+  local left_released = ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Left)
+  local right_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right)
+  local right_down = ImGui.IsMouseDown(ctx, ImGui.MouseButton_Right)
+  local right_released = ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Right)
+
+  -- Stop painting on mouse release
+  if left_released or right_released then
+    state.region_filter_painting = false
+    state.region_filter_paint_value = nil
+    state.region_filter_last_painted = nil
+    state.region_filter_paint_mode = nil
+  end
+
   for line_idx, line in ipairs(lines) do
     -- Calculate line width
     local line_width = 0
@@ -114,8 +130,11 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
       local text_y = line_y + (chip_height - chip_data.text_h) / 2
       ImGui.DrawList_AddText(draw_list, text_x, text_y, text_color, region_name)
 
-      -- Handle click
-      if is_hovered and ImGui.IsMouseClicked(ctx, 0) then
+      -- Handle left click: toggle mode (back-and-forth painting)
+      if is_hovered and left_clicked then
+        state.region_filter_painting = true
+        state.region_filter_paint_mode = "toggle"
+        state.region_filter_last_painted = region_name
         -- Toggle selection
         if is_selected then
           state.selected_regions[region_name] = nil
@@ -125,6 +144,50 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
         -- Invalidate filter cache to refresh grid
         state.runtime_cache.audio_filter_hash = nil
         state.runtime_cache.midi_filter_hash = nil
+      end
+
+      -- Handle right click: fixed paint mode (bulk enable/disable)
+      if is_hovered and right_clicked then
+        state.region_filter_painting = true
+        state.region_filter_paint_mode = "fixed"
+        state.region_filter_paint_value = not is_selected
+        state.region_filter_last_painted = region_name
+        if state.region_filter_paint_value then
+          state.selected_regions[region_name] = true
+        else
+          state.selected_regions[region_name] = nil
+        end
+        -- Invalidate filter cache to refresh grid
+        state.runtime_cache.audio_filter_hash = nil
+        state.runtime_cache.midi_filter_hash = nil
+      end
+
+      -- Paint mode while dragging
+      if state.region_filter_painting and is_hovered then
+        local is_dragging = (state.region_filter_paint_mode == "toggle" and left_down) or
+                            (state.region_filter_paint_mode == "fixed" and right_down)
+
+        if is_dragging and state.region_filter_last_painted ~= region_name then
+          if state.region_filter_paint_mode == "toggle" then
+            -- Toggle mode: flip the region's current state
+            if is_selected then
+              state.selected_regions[region_name] = nil
+            else
+              state.selected_regions[region_name] = true
+            end
+          else
+            -- Fixed mode: apply the paint value
+            if state.region_filter_paint_value then
+              state.selected_regions[region_name] = true
+            else
+              state.selected_regions[region_name] = nil
+            end
+          end
+          state.region_filter_last_painted = region_name
+          -- Invalidate filter cache
+          state.runtime_cache.audio_filter_hash = nil
+          state.runtime_cache.midi_filter_hash = nil
+        end
       end
 
       -- Move to next chip position

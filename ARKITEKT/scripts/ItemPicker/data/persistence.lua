@@ -174,4 +174,42 @@ function M.save_favorites(favorites)
   reaper.SetProjExtState(0, EXTNAME, "favorites", serialized)
 end
 
+-- Track filter persistence
+function M.load_track_filter()
+  local has_state, state_str = reaper.GetProjExtState(0, EXTNAME, "track_filter")
+
+  if not has_state or has_state == 0 or state_str == "" then
+    return { whitelist = nil, enabled = nil }
+  end
+
+  local success, filter = pcall(load("return " .. state_str))
+  if not success or type(filter) ~= "table" then
+    return { whitelist = nil, enabled = nil }
+  end
+
+  return filter
+end
+
+function M.save_track_filter(whitelist, enabled)
+  local function serialize_set(tbl)
+    if not tbl then return "nil" end
+    local parts = {}
+    for k, v in pairs(tbl) do
+      local key_str = string.format("[%q]", tostring(k))
+      local val_str = v and "true" or "false"
+      parts[#parts + 1] = key_str .. "=" .. val_str
+    end
+    if #parts == 0 then return "nil" end
+    return "{" .. table.concat(parts, ",") .. "}"
+  end
+
+  local serialized = string.format(
+    "{whitelist=%s,enabled=%s}",
+    serialize_set(whitelist),
+    serialize_set(enabled)
+  )
+
+  reaper.SetProjExtState(0, EXTNAME, "track_filter", serialized)
+end
+
 return M

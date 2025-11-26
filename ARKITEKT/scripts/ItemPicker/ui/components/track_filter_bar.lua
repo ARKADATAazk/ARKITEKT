@@ -4,6 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
+local Cursor = ark.Cursor
 local M = {}
 
 -- Tag styling constants
@@ -29,12 +30,33 @@ local function get_display_color(track_color)
   end
 end
 
+-- Check if a track is effectively whitelisted (itself and all ancestors)
+local function is_effectively_whitelisted(track, whitelist)
+  -- Check self
+  local self_selected = whitelist[track.guid]
+  if self_selected == nil then self_selected = true end
+  if not self_selected then return false end
+
+  -- Check ancestors
+  local ancestor = track.parent
+  while ancestor do
+    local ancestor_selected = whitelist[ancestor.guid]
+    if ancestor_selected == nil then ancestor_selected = true end
+    if not ancestor_selected then return false end
+    ancestor = ancestor.parent
+  end
+
+  return true
+end
+
 -- Flatten track tree to get whitelisted tracks in order
+-- Only includes tracks that are effectively whitelisted (parent chain is whitelisted)
 local function get_whitelisted_tracks(tracks, whitelist, result)
   result = result or {}
 
   for _, track in ipairs(tracks) do
-    if whitelist[track.guid] then
+    -- Only include if track AND all its ancestors are whitelisted
+    if is_effectively_whitelisted(track, whitelist) then
       table.insert(result, track)
     end
     if track.children and #track.children > 0 then
@@ -101,6 +123,27 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
   -- Clip to bar area
   ImGui.DrawList_PushClipRect(draw_list, x, y, x + bar_width, y + height, true)
 
+  -- Paint mode state
+  local left_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left)
+  local left_down = ImGui.IsMouseDown(ctx, ImGui.MouseButton_Left)
+  local left_released = ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Left)
+  local right_clicked = ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Right)
+  local right_down = ImGui.IsMouseDown(ctx, ImGui.MouseButton_Right)
+  local right_released = ImGui.IsMouseReleased(ctx, ImGui.MouseButton_Right)
+
+  -- Stop painting on mouse release
+  if left_released or right_released then
+    -- Persist track filter state when painting stops
+    if state.track_bar_painting and state.persist_track_filter then
+      state.persist_track_filter()
+    end
+    state.track_bar_painting = false
+    state.track_bar_paint_value = nil
+    state.track_bar_last_painted = nil
+    state.track_bar_paint_mode = nil  -- "toggle" or "fixed"
+    state.track_bar_prev_mouse_y = nil  -- Reset cursor tracking
+  end
+
   -- Draw each track tag
   for i, track in ipairs(tracks) do
     local tag_top = tag_y - scroll_y
@@ -156,17 +199,76 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
 
       ImGui.DrawList_AddText(draw_list, text_x, text_y, text_color, name)
 
-      -- Handle click
-      if is_hovered and ImGui.IsMouseClicked(ctx, ImGui.MouseButton_Left) then
+      -- Handle left click: toggle mode (back-and-forth painting)
+      if is_hovered and left_clicked then
+        state.track_bar_painting = true
+        state.track_bar_paint_mode = "toggle"
+        state.track_bar_last_painted = track.guid
         state.track_filters_enabled[track.guid] = not is_enabled
         -- Invalidate filter cache
         state.runtime_cache.audio_filter_hash = nil
         state.runtime_cache.midi_filter_hash = nil
       end
+
+      -- Handle right click: fixed paint mode (bulk enable/disable)
+      if is_hovered and right_clicked then
+        state.track_bar_painting = true
+        state.track_bar_paint_mode = "fixed"
+        state.track_bar_paint_value = not is_enabled  -- Paint with opposite of first track
+        state.track_bar_last_painted = track.guid
+        state.track_filters_enabled[track.guid] = state.track_bar_paint_value
+        -- Invalidate filter cache
+        state.runtime_cache.audio_filter_hash = nil
+        state.runtime_cache.midi_filter_hash = nil
+      end
+
+      -- Paint mode while dragging (handled below with crossing detection)
     end
 
     tag_y = tag_y + TAG.HEIGHT + TAG.MARGIN_Y
   end
+
+  -- Handle paint drag with crossing detection (for fast cursor movement)
+  if state.track_bar_painting then
+    local is_dragging = (state.track_bar_paint_mode == "toggle" and left_down) or
+                        (state.track_bar_paint_mode == "fixed" and right_down)
+
+    if is_dragging and state.track_bar_prev_mouse_y then
+      -- Use crossing detection to find all tracks between prev and current Y
+      local item_height = TAG.HEIGHT + TAG.MARGIN_Y
+      local first_item_y = y + TAG.PADDING_Y - scroll_y
+      local crossed = Cursor.crossed_items_vertical(
+        state.track_bar_prev_mouse_y, mouse_y,
+        first_item_y, item_height, #tracks, 0
+      )
+
+      -- Paint all crossed tracks
+      for _, idx in ipairs(crossed) do
+        local track = tracks[idx]
+        if track and state.track_bar_last_painted ~= track.guid then
+          local new_value
+          if state.track_bar_paint_mode == "toggle" then
+            -- Toggle mode: flip the track's current state
+            local current = state.track_filters_enabled[track.guid]
+            if current == nil then current = true end
+            new_value = not current
+          else
+            -- Fixed mode: apply the paint value
+            new_value = state.track_bar_paint_value
+          end
+
+          state.track_filters_enabled[track.guid] = new_value
+          state.track_bar_last_painted = track.guid
+          -- Invalidate filter cache
+          state.runtime_cache.audio_filter_hash = nil
+          state.runtime_cache.midi_filter_hash = nil
+        end
+      end
+    end
+  end
+
+  -- Update previous mouse position for crossing detection
+  state.track_bar_prev_mouse_y = mouse_y
 
   ImGui.DrawList_PopClipRect(draw_list)
 

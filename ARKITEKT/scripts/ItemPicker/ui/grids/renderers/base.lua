@@ -136,9 +136,9 @@ function M.render_placeholder(dl, x1, y1, x2, y2, base_color, alpha)
   local r, g, b = ImGui.ColorConvertU32ToDouble4(base_color)
   local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
 
-  -- Darker background
-  s = s * 0.2
-  v = v * 0.15
+  -- Darkened background preserving original color hue
+  s = s * 0.6   -- Keep more saturation (was 0.2)
+  v = v * 0.35  -- Darker but still visible (was 0.15)
 
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
   local placeholder_color = ImGui.ColorConvertDouble4ToU32(r, g, b, alpha)

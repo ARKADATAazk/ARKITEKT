@@ -32,6 +32,23 @@ function StatusBar:render(ctx)
   local selected_audio = self.state.audio_selection_count or 0
   local selected_midi = self.state.midi_selection_count or 0
 
+  -- Calculate filtered counts (if filters are active)
+  local filtered_audio = nil
+  local filtered_midi = nil
+  local cache = self.state.runtime_cache
+  if cache then
+    if cache.audio_filtered then
+      filtered_audio = #cache.audio_filtered
+    end
+    if cache.midi_filtered then
+      filtered_midi = #cache.midi_filtered
+    end
+  end
+
+  -- Check if any filtering is active
+  local is_filtered = (filtered_audio and filtered_audio ~= total_audio) or
+                      (filtered_midi and filtered_midi ~= total_midi)
+
   -- Left side: Selection info, loading progress, and preview status
   local status_text = ""
 
@@ -66,6 +83,13 @@ function StatusBar:render(ctx)
     end
     status_text = string.format(Strings.STATUS.selection_combined, table.concat(parts, ", "))
     ImGui.Text(ctx, status_text)
+  elseif is_filtered then
+    -- Show filtered count when filters are active
+    local visible_audio = filtered_audio or total_audio
+    local visible_midi = filtered_midi or total_midi
+    status_text = string.format("%d/%d audio, %d/%d midi visible",
+      visible_audio, total_audio, visible_midi, total_midi)
+    ImGui.TextColored(ctx, Constants.COLORS.HINT, status_text)
   else
     status_text = string.format(Strings.STATUS.items_format, total_audio, total_midi)
     ImGui.Text(ctx, status_text)
