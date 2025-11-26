@@ -280,14 +280,6 @@ local function unwrap_preset(preset)
   return result
 end
 
---- Get derivation rules for current theme mode
---- For explicit modes (dark/grey/light), returns those rules directly.
---- For "adapt" mode, interpolates between anchor rules based on current lightness.
---- @return table Rules table for the current theme (unwrapped raw values)
-function M.get_current_rules()
-  return compute_rules_for_lightness(M.get_theme_lightness(), M.current_mode)
-end
-
 --- Get current theme's base lightness (0.0-1.0)
 --- @return number Lightness of current BG_BASE
 function M.get_theme_lightness()
@@ -327,6 +319,14 @@ local function compute_rules_for_lightness(lightness, mode)
   end
 
   return preset_rules
+end
+
+--- Get derivation rules for current theme mode
+--- For explicit modes (dark/grey/light), returns those rules directly.
+--- For "adapt" mode, interpolates between anchor rules based on current lightness.
+--- @return table Rules table for the current theme (unwrapped raw values)
+function M.get_current_rules()
+  return compute_rules_for_lightness(M.get_theme_lightness(), M.current_mode)
 end
 
 -- Legacy compatibility: keep derivation_rules pointing to dark preset
