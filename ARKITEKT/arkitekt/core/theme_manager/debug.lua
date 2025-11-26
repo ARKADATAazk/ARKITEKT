@@ -519,13 +519,29 @@ function M.render_debug_window(ctx, ImGui, state)
   local t = state.t or 0
   local current_mode = state.mode
 
-  ImGui.SetNextWindowBgAlpha(ctx, 0.95)
-  ImGui.SetNextWindowSize(ctx, 700, 600, ImGui.Cond_FirstUseEver)
+  -- Get Theme colors for proper styling
+  local Theme = get_theme()
+  local C = Theme.COLORS or {}
+
+  -- Apply ARKITEKT window styling
+  ImGui.SetNextWindowSize(ctx, 750, 650, ImGui.Cond_FirstUseEver)
+
+  -- Push window colors from Theme
+  local color_pushes = 0
+  local function push_color(col_idx, color)
+    if color then
+      ImGui.PushStyleColor(ctx, col_idx, color)
+      color_pushes = color_pushes + 1
+    end
+  end
+
+  push_color(ImGui.Col_WindowBg, C.BG_PANEL or C.BG_BASE)
+  push_color(ImGui.Col_TitleBg, C.BG_HEADER or C.BG_CHROME)
+  push_color(ImGui.Col_TitleBgActive, C.BG_HEADER or C.BG_CHROME)
+  push_color(ImGui.Col_Border, C.BORDER_OUTER)
+  push_color(ImGui.Col_Text, C.TEXT_NORMAL)
 
   local window_flags = 0
-  if ImGui.WindowFlags_NoSavedSettings then
-    window_flags = window_flags | ImGui.WindowFlags_NoSavedSettings
-  end
 
   local visible, open = ImGui.Begin(ctx, "Theme Debugger", true, window_flags)
   if visible then
@@ -683,6 +699,13 @@ function M.render_debug_window(ctx, ImGui, state)
     end
 
     ImGui.End(ctx)
+  else
+    ImGui.End(ctx)
+  end
+
+  -- Pop the style colors we pushed
+  if color_pushes > 0 then
+    ImGui.PopStyleColor(ctx, color_pushes)
   end
 
   if not open then
