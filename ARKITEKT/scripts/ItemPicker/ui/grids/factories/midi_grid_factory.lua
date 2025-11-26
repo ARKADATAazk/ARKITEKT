@@ -27,33 +27,12 @@ function M.create(ctx, config, state, visualization, animator, disable_animator)
     -- Filters changed - rebuild filtered list
     local filtered = {}
     for _, track_guid in ipairs(state.midi_indexes) do
-      -- Check favorites filter
+      -- Check favorites and disabled filters
       if not shared.passes_favorites_filter(state.settings, state.favorites.midi, track_guid) then
         goto continue
       end
-
-      -- Check disabled filter (but keep items visible if they're being animated)
-      local is_disabled = state.disabled.midi[track_guid]
-      if is_disabled and not state.settings.show_disabled_items then
-        -- Check if this item is currently playing disable animation
-        -- Build key to check (need to look up UUID from content)
-        local content = state.midi_items[track_guid]
-        if content and #content > 0 then
-          local entry = content[state.box_current_midi_track[track_guid] or 1]
-          if entry and entry.uuid then
-            local is_animating = disable_animator and disable_animator:is_disabling(entry.uuid)
-            if not is_animating then
-              -- Not animating, filter it out
-              goto continue
-            end
-          else
-            -- No UUID, filter it out normally
-            goto continue
-          end
-        else
-          -- No content, filter it out
-          goto continue
-        end
+      if not shared.passes_disabled_filter(state.settings, state.disabled.midi, track_guid) then
+        goto continue
       end
 
       local content = state.midi_items[track_guid]

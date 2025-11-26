@@ -597,11 +597,6 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       ark.Draw.text(dl, text_x, text_y, text_color, duration_text)
     end
   end
-
-  -- Render disable animation overlay (if active)
-  if disable_animator and item_data.key and disable_animator:is_disabling(item_data.key) then
-    disable_animator:render(ctx, dl, item_data.key, {scaled_x1, scaled_y1, scaled_x2, scaled_y2}, base_color, config.TILE.ROUNDING, state.icon_font, state.icon_font_size)
-  end
 end
 
 return M
