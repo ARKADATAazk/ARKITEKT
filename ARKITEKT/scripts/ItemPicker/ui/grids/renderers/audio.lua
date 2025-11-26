@@ -483,6 +483,32 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local chip_x = scaled_x1 + chip_cfg.margin_left
     local chip_y = scaled_y2 - chip_cfg.height - chip_cfg.margin_bottom
 
+    -- Calculate available width for chips (accounting for duration if enabled)
+    local max_chip_x = scaled_x2 - chip_cfg.margin_left
+    local show_duration = state.settings.show_duration
+    if show_duration == nil then show_duration = true end
+    if show_duration and compact_factor < 0.5 and item_data.item then
+      local duration = reaper.GetMediaItemInfo_Value(item_data.item, "D_LENGTH")
+      if duration > 0 then
+        -- Calculate duration text width (same logic as duration rendering below)
+        local duration_text
+        if duration >= 3600 then
+          local hours = math.floor(duration / 3600)
+          local minutes = math.floor((duration % 3600) / 60)
+          local seconds = math.floor(duration % 60)
+          duration_text = string.format("%d:%02d:%02d", hours, minutes, seconds)
+        else
+          local minutes = math.floor(duration / 60)
+          local seconds = math.floor(duration % 60)
+          duration_text = string.format("%d:%02d", minutes, seconds)
+        end
+        local duration_w, _ = ImGui.CalcTextSize(ctx, duration_text)
+        local dt_cfg = config.TILE_RENDER.duration_text
+        -- Reserve space for duration text + its margin + extra spacing
+        max_chip_x = max_chip_x - duration_w - dt_cfg.margin_x - chip_cfg.margin_x
+      end
+    end
+
     -- Limit number of chips displayed
     local max_chips = config.REGION_TAGS.max_chips_per_tile
     local num_chips = math.min(#item_data.regions, max_chips)
@@ -494,12 +520,48 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       local text_w, text_h = ImGui.CalcTextSize(ctx, region_name)
       local chip_w = text_w + chip_cfg.padding_x * 2
-      local chip_h = chip_cfg.height
 
-      -- Check if chip fits within tile width
-      if chip_x + chip_w > scaled_x2 - chip_cfg.margin_left then
-        break  -- Stop rendering if we run out of space
+      -- Check available space for this chip
+      local available_width = max_chip_x - chip_x
+      if available_width < chip_cfg.padding_x * 2 + 10 then
+        break  -- Not enough space for even a minimal chip
       end
+
+      -- Truncate text if needed to fit
+      local display_name = region_name
+      if chip_w > available_width then
+        -- Binary search to find max text that fits with "..."
+        local ellipsis = "..."
+        local ellipsis_w, _ = ImGui.CalcTextSize(ctx, ellipsis)
+        local target_w = available_width - chip_cfg.padding_x * 2 - ellipsis_w
+
+        if target_w > 0 then
+          local low, high = 1, #region_name
+          local best_len = 0
+          while low <= high do
+            local mid = math.floor((low + high) / 2)
+            local test_text = region_name:sub(1, mid)
+            local test_w, _ = ImGui.CalcTextSize(ctx, test_text)
+            if test_w <= target_w then
+              best_len = mid
+              low = mid + 1
+            else
+              high = mid - 1
+            end
+          end
+          if best_len > 0 then
+            display_name = region_name:sub(1, best_len) .. ellipsis
+            text_w, text_h = ImGui.CalcTextSize(ctx, display_name)
+            chip_w = text_w + chip_cfg.padding_x * 2
+          else
+            break  -- Can't fit even one character
+          end
+        else
+          break  -- Not enough space
+        end
+      end
+
+      local chip_h = chip_cfg.height
 
       -- Chip background (dark grey)
       local bg_alpha = math.floor(chip_cfg.alpha * combined_alpha)
@@ -512,7 +574,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       text_color = (text_color & 0xFFFFFF00) | text_alpha_val
       local text_x = chip_x + chip_cfg.padding_x
       local text_y = chip_y + (chip_h - text_h) / 2
-      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, region_name)
+      ImGui.DrawList_AddText(dl, text_x, text_y, text_color, display_name)
 
       -- Move to next chip position
       chip_x = chip_x + chip_w + chip_cfg.margin_x
