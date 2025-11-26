@@ -2,7 +2,7 @@
 -- arkitekt/core/theme_manager/init.lua
 -- Dynamic theme system with algorithmic color palette generation
 --
--- Generates entire UI color palettes from 1-3 base colors using HSL manipulation.
+-- Generates entire UI color palette from a single base color using HSL manipulation.
 -- Supports REAPER theme auto-sync and manual theme presets.
 --
 -- =============================================================================
