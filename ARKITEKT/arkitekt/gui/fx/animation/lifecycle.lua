@@ -293,10 +293,6 @@ function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_
   -- Use stored base color from when animation was triggered
   base_color = anim.base_color or base_color
 
-  -- Convert from ImGui ARGB format to RGBA format for ark.Colors
-  local Colors = require('arkitekt.core.colors')
-  base_color = Colors.argb_to_rgba(base_color)
-
   local x1, y1, x2, y2 = rect[1], rect[2], rect[3], rect[4]
   local cx = (x1 + x2) * 0.5
   local cy = (y1 + y2) * 0.5
@@ -308,7 +304,8 @@ function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_
   local ny1 = y1 + slide_offset
   local ny2 = y2 + slide_offset
 
-  -- Extract RGBA components and convert to HSL
+  -- Convert base color to HSL and reduce lightness and saturation
+  local Colors = require('arkitekt.core.colors')
   local r1 = (base_color >> 24) & 0xFF
   local g1 = (base_color >> 16) & 0xFF
   local b1 = (base_color >> 8) & 0xFF
@@ -330,9 +327,7 @@ function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_
   local b = (b1 + (b2 - b1) * grey_factor)//1
   local a = (a1 * (1 - Easing.ease_out_quad(t) * 0.9))//1
 
-  -- Pack as RGBA, then convert to ARGB for ImGui
-  local fade_color_rgba = (r << 24) | (g << 16) | (b << 8) | a
-  local fade_color = Colors.rgba_to_argb(fade_color_rgba)
+  local fade_color = (r << 24) | (g << 16) | (b << 8) | a
 
   ImGui.DrawList_AddRectFilled(dl, x1, ny1, x2, ny2, fade_color, rounding)
 
@@ -342,8 +337,7 @@ function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_
   for i = 1, blur_layers do
     local offset = i * 1.5 * blur_intensity
     local blur_alpha = (a * 0.2 / blur_layers)//1
-    local blur_color_rgba = (r << 24) | (g << 16) | (b << 8) | blur_alpha
-    local blur_color = Colors.rgba_to_argb(blur_color_rgba)
+    local blur_color = (r << 24) | (g << 16) | (b << 8) | blur_alpha
 
     ImGui.DrawList_AddRectFilled(dl,
       x1 - offset, ny1 - offset,
