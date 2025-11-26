@@ -135,7 +135,7 @@ local mock_tree = {
           { id = "integration", name = "integration", children = {} },
         }
       },
-      { id = "config", name = "config", children = {} },
+      { id = "config-root", name = "config", children = {} },
       { id = "scripts", name = "scripts", children = {} },
       { id = "assets", name = "assets", children = {} },
     }
@@ -262,7 +262,8 @@ local tree_state = {
 
   -- Drag & drop state
   drag_active = false,
-  drag_node_id = nil,
+  drag_node_id = nil,  -- Primary dragged node
+  drag_node_ids = {},  -- All nodes being dragged (for multi-drag)
   drag_start_x = 0,
   drag_start_y = 0,
   drag_threshold = 5, -- pixels to move before drag starts
@@ -976,6 +977,17 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
       tree_state.drag_node_id = node.id
       tree_state.drag_start_x = mx
       tree_state.drag_start_y = my
+
+      -- Multi-drag: if dragged node is selected, drag all selected nodes
+      if is_selected(node.id) then
+        tree_state.drag_node_ids = {}
+        for id, _ in pairs(tree_state.selected) do
+          table.insert(tree_state.drag_node_ids, id)
+        end
+      else
+        -- Single drag: only drag this node
+        tree_state.drag_node_ids = { node.id }
+      end
     end
 
     -- Left click
@@ -1005,8 +1017,18 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     end
 
     -- Detect drop target during drag
-    if tree_state.drag_active and tree_state.drag_node_id ~= node.id then
-      if is_hovered then
+    if tree_state.drag_active then
+      -- Check if this node is being dragged (multi-drag support)
+      local is_being_dragged = false
+      for _, drag_id in ipairs(tree_state.drag_node_ids) do
+        if drag_id == node.id then
+          is_being_dragged = true
+          break
+        end
+      end
+
+      -- Only allow drop if node is not being dragged
+      if not is_being_dragged and is_hovered then
         local relative_y = my - y_pos
         if relative_y < item_h * 0.25 then
           tree_state.drop_target_id = node.id
@@ -1303,23 +1325,38 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
   -- Handle drag & drop completion
   if tree_state.drag_active then
     if ImGui.IsMouseReleased(ctx, 0) then
-      -- Perform drop
+      -- Perform drop (multi-drag support)
       if tree_state.drop_target_id and tree_state.drop_position then
-        local drag_id = tree_state.drag_node_id
         local target_id = tree_state.drop_target_id
 
-        -- Prevent dropping into self or descendants
-        if drag_id ~= target_id and not is_ancestor(drag_id, target_id, nodes) then
-          local node_to_move = remove_node_from_tree(nodes, drag_id)
-          if node_to_move then
-            insert_node_at(nodes, target_id, node_to_move, tree_state.drop_position)
+        -- Move all dragged nodes
+        local nodes_to_move = {}
+        for _, drag_id in ipairs(tree_state.drag_node_ids) do
+          -- Prevent dropping into self or descendants
+          if drag_id ~= target_id and not is_ancestor(drag_id, target_id, nodes) then
+            local node_to_move = remove_node_from_tree(nodes, drag_id)
+            if node_to_move then
+              table.insert(nodes_to_move, node_to_move)
+            end
           end
+        end
+
+        -- Insert all moved nodes at target
+        for i, node_to_move in ipairs(nodes_to_move) do
+          -- Insert in order, adjusting position for "after" to maintain order
+          local pos = tree_state.drop_position
+          if i > 1 and pos == "after" then
+            -- For subsequent items in multi-drag, keep inserting after
+            pos = "after"
+          end
+          insert_node_at(nodes, target_id, node_to_move, pos)
         end
       end
 
       -- Reset drag state
       tree_state.drag_active = false
       tree_state.drag_node_id = nil
+      tree_state.drag_node_ids = {}
       tree_state.drop_target_id = nil
       tree_state.drop_position = nil
     else
@@ -1335,15 +1372,10 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
   if tree_state.drag_active and tree_state.drag_node_id then
     local drag_node = find_node_by_id(nodes, tree_state.drag_node_id)
     if drag_node then
-      -- Count selected items
-      local selected_count = 0
-      for _ in pairs(tree_state.selected) do
-        selected_count = selected_count + 1
-      end
-      -- Ensure at least 1 (the dragged item itself)
-      if selected_count == 0 then selected_count = 1 end
+      -- Use actual count of dragged items (multi-drag support)
+      local drag_count = #tree_state.drag_node_ids
 
-      draw_drag_preview(ctx, dl, drag_node, selected_count)
+      draw_drag_preview(ctx, dl, drag_node, drag_count)
     end
   end
 
