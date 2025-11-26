@@ -138,9 +138,8 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       state.persist_track_filter()
     end
     state.track_bar_painting = false
-    state.track_bar_paint_value = nil
     state.track_bar_last_painted = nil
-    state.track_bar_paint_mode = nil  -- "toggle" or "fixed"
+    state.track_bar_paint_mode = nil  -- "enable" or "disable"
     state.track_bar_prev_mouse_y = nil  -- Reset cursor tracking
   end
 
@@ -199,24 +198,23 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
 
       ImGui.DrawList_AddText(draw_list, text_x, text_y, text_color, name)
 
-      -- Handle left click: toggle mode (back-and-forth painting)
+      -- Handle left click/drag: ENABLE tracks
       if is_hovered and left_clicked then
         state.track_bar_painting = true
-        state.track_bar_paint_mode = "toggle"
+        state.track_bar_paint_mode = "enable"
         state.track_bar_last_painted = track.guid
-        state.track_filters_enabled[track.guid] = not is_enabled
+        state.track_filters_enabled[track.guid] = true
         -- Invalidate filter cache
         state.runtime_cache.audio_filter_hash = nil
         state.runtime_cache.midi_filter_hash = nil
       end
 
-      -- Handle right click: fixed paint mode (bulk enable/disable)
+      -- Handle right click/drag: DISABLE tracks
       if is_hovered and right_clicked then
         state.track_bar_painting = true
-        state.track_bar_paint_mode = "fixed"
-        state.track_bar_paint_value = not is_enabled  -- Paint with opposite of first track
+        state.track_bar_paint_mode = "disable"
         state.track_bar_last_painted = track.guid
-        state.track_filters_enabled[track.guid] = state.track_bar_paint_value
+        state.track_filters_enabled[track.guid] = false
         -- Invalidate filter cache
         state.runtime_cache.audio_filter_hash = nil
         state.runtime_cache.midi_filter_hash = nil
@@ -225,16 +223,14 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       -- Paint currently hovered track while dragging (catches current frame)
       -- Crossing detection below handles tracks skipped by fast movement
       if state.track_bar_painting and is_hovered and state.track_bar_last_painted ~= track.guid then
-        local is_dragging = (state.track_bar_paint_mode == "toggle" and left_down) or
-                            (state.track_bar_paint_mode == "fixed" and right_down)
+        local is_dragging = (state.track_bar_paint_mode == "enable" and left_down) or
+                            (state.track_bar_paint_mode == "disable" and right_down)
         if is_dragging then
           local new_value
-          if state.track_bar_paint_mode == "toggle" then
-            local current = state.track_filters_enabled[track.guid]
-            if current == nil then current = true end
-            new_value = not current
+          if state.track_bar_paint_mode == "enable" then
+            new_value = true
           else
-            new_value = state.track_bar_paint_value
+            new_value = false
           end
           state.track_filters_enabled[track.guid] = new_value
           state.track_bar_last_painted = track.guid
@@ -249,8 +245,8 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
 
   -- Handle paint drag with crossing detection (for fast cursor movement)
   if state.track_bar_painting then
-    local is_dragging = (state.track_bar_paint_mode == "toggle" and left_down) or
-                        (state.track_bar_paint_mode == "fixed" and right_down)
+    local is_dragging = (state.track_bar_paint_mode == "enable" and left_down) or
+                        (state.track_bar_paint_mode == "disable" and right_down)
 
     if is_dragging and state.track_bar_prev_mouse_y then
       -- Use crossing detection to find all tracks between prev and current Y
@@ -266,14 +262,10 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
         local track = tracks[idx]
         if track and state.track_bar_last_painted ~= track.guid then
           local new_value
-          if state.track_bar_paint_mode == "toggle" then
-            -- Toggle mode: flip the track's current state
-            local current = state.track_filters_enabled[track.guid]
-            if current == nil then current = true end
-            new_value = not current
+          if state.track_bar_paint_mode == "enable" then
+            new_value = true
           else
-            -- Fixed mode: apply the paint value
-            new_value = state.track_bar_paint_value
+            new_value = false
           end
 
           state.track_filters_enabled[track.guid] = new_value
