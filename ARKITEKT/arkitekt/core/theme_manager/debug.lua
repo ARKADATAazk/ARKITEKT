@@ -363,32 +363,40 @@ local function draw_slider(ctx, ImGui, label, value, min_val, max_val, format)
   return changed, new_val
 end
 
+--- Convert hex string to packed RGBA integer
+local function hex_to_int(hex_value)
+  if type(hex_value) ~= "string" then return 0x808080FF end
+  local hex = hex_value:gsub("^#", "")
+  if #hex >= 6 then
+    local r = tonumber(hex:sub(1, 2), 16) or 128
+    local g = tonumber(hex:sub(3, 4), 16) or 128
+    local b = tonumber(hex:sub(5, 6), 16) or 128
+    return (r << 24) | (g << 16) | (b << 8) | 0xFF
+  end
+  return 0x808080FF
+end
+
+--- Convert packed RGBA integer to hex string
+local function int_to_hex(color_int)
+  local r = (color_int >> 24) & 0xFF
+  local g = (color_int >> 16) & 0xFF
+  local b = (color_int >> 8) & 0xFF
+  return string.format("#%02X%02X%02X", r, g, b)
+end
+
 --- Draw a color picker for a hex string
 local function draw_color_picker(ctx, ImGui, label, hex_value)
-  -- Convert hex to RGB floats
-  local r, g, b = 0.5, 0.5, 0.5
-  if type(hex_value) == "string" then
-    local hex = hex_value:gsub("^#", "")
-    if #hex >= 6 then
-      r = tonumber(hex:sub(1, 2), 16) / 255
-      g = tonumber(hex:sub(3, 4), 16) / 255
-      b = tonumber(hex:sub(5, 6), 16) / 255
-    end
-  end
+  local color_int = hex_to_int(hex_value)
 
   -- Color picker flags
   local flags = ImGui.ColorEditFlags_NoInputs
               | ImGui.ColorEditFlags_NoLabel
               | ImGui.ColorEditFlags_NoAlpha
 
-  local changed, new_r, new_g, new_b = ImGui.ColorEdit3(ctx, label, r, g, b, flags)
+  local changed, new_color = ImGui.ColorEdit3(ctx, label, color_int, flags)
 
   if changed then
-    local new_hex = string.format("#%02X%02X%02X",
-      math.floor(new_r * 255 + 0.5),
-      math.floor(new_g * 255 + 0.5),
-      math.floor(new_b * 255 + 0.5))
-    return true, new_hex
+    return true, int_to_hex(new_color)
   end
 
   return false, hex_value
