@@ -87,18 +87,49 @@ function M.set_override(key, field, value)
   M.apply_overrides()
 end
 
+--- Restore a single key to its original value
+local function restore_original(key)
+  local Theme = get_theme()
+  local base_bg = Theme.COLORS.BG_BASE
+  if not base_bg then return end
+
+  local original_def = Palette.colors[key]
+  if not original_def then return end
+
+  local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
+  local t = Engine.compute_t(bg_lightness)
+
+  local original_value = Engine.derive_entry(base_bg, original_def, t)
+  if original_value then
+    Theme.COLORS[key] = original_value
+  end
+end
+
 --- Clear override for a key (revert to original)
 function M.clear_override(key)
   M.overrides[key] = nil
   M.modified_keys[key] = nil
-  M.apply_overrides()
+  -- Restore the original value for this key
+  restore_original(key)
+  Registry.clear_cache()
 end
 
 --- Clear all overrides
 function M.clear_all_overrides()
+  -- Collect keys to restore before clearing
+  local keys_to_restore = {}
+  for key in pairs(M.overrides) do
+    keys_to_restore[#keys_to_restore + 1] = key
+  end
+
   M.overrides = {}
   M.modified_keys = {}
-  M.apply_overrides()
+
+  -- Restore all original values
+  for _, key in ipairs(keys_to_restore) do
+    restore_original(key)
+  end
+  Registry.clear_cache()
 end
 
 --- Apply current overrides to Theme.COLORS
@@ -519,31 +550,10 @@ function M.render_debug_window(ctx, ImGui, state)
   local t = state.t or 0
   local current_mode = state.mode
 
-  -- Get Theme colors for proper styling
-  local Theme = get_theme()
-  local C = Theme.COLORS or {}
-
-  -- Apply ARKITEKT window styling
+  -- Window setup - style is already pushed by shell
   ImGui.SetNextWindowSize(ctx, 750, 650, ImGui.Cond_FirstUseEver)
 
-  -- Push window colors from Theme
-  local color_pushes = 0
-  local function push_color(col_idx, color)
-    if color then
-      ImGui.PushStyleColor(ctx, col_idx, color)
-      color_pushes = color_pushes + 1
-    end
-  end
-
-  push_color(ImGui.Col_WindowBg, C.BG_PANEL or C.BG_BASE)
-  push_color(ImGui.Col_TitleBg, C.BG_HEADER or C.BG_CHROME)
-  push_color(ImGui.Col_TitleBgActive, C.BG_HEADER or C.BG_CHROME)
-  push_color(ImGui.Col_Border, C.BORDER_OUTER)
-  push_color(ImGui.Col_Text, C.TEXT_NORMAL)
-
-  local window_flags = 0
-
-  local visible, open = ImGui.Begin(ctx, "Theme Debugger", true, window_flags)
+  local visible, open = ImGui.Begin(ctx, "Theme Debugger", true)
   if visible then
     -- Header info
     ImGui.Text(ctx, string.format("Mode: %s | Lightness: %.3f | t: %.3f",
@@ -701,11 +711,6 @@ function M.render_debug_window(ctx, ImGui, state)
     ImGui.End(ctx)
   else
     ImGui.End(ctx)
-  end
-
-  -- Pop the style colors we pushed
-  if color_pushes > 0 then
-    ImGui.PopStyleColor(ctx, color_pushes)
   end
 
   if not open then
