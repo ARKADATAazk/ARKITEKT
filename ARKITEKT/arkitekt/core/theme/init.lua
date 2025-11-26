@@ -243,7 +243,11 @@ end
 -- DEBUG
 -- =============================================================================
 
-M.debug_enabled = Debug.debug_enabled
+-- Use function to get current state (not a stale copy)
+function M.is_debug_enabled()
+  return Debug.debug_enabled
+end
+
 M.toggle_debug = Debug.toggle_debug
 M.enable_debug = Debug.enable_debug
 M.disable_debug = Debug.disable_debug
