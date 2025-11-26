@@ -4,10 +4,8 @@
 --
 -- Single source of truth for:
 --   - Presets (dark/light base colors)
---   - Anchors (derived from presets)
+--   - Anchors (lightness values)
 --   - All color definitions with inline values
-
-local Colors = require('arkitekt.core.colors')
 
 local M = {}
 
@@ -23,18 +21,11 @@ M.presets = {
   light      = "#E0E0E0",  -- ~88% lightness (t=1)
 }
 
--- Compute anchors from preset lightness (single source of truth)
-local function get_lightness(hex)
-  local ok, result = pcall(function()
-    local _, _, l = Colors.rgb_to_hsl(Colors.hexrgb(hex .. "FF"))
-    return l
-  end)
-  return ok and result or 0.5
-end
-
+-- Anchors: lightness values for dark/light presets
+-- These match the preset hex values above
 M.anchors = {
-  dark  = get_lightness(M.presets.dark),   -- ~0.14
-  light = get_lightness(M.presets.light),  -- ~0.88
+  dark  = 0.14,  -- #242424
+  light = 0.88,  -- #E0E0E0
 }
 
 -- =============================================================================
