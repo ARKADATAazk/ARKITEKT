@@ -267,6 +267,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Check if item is favorited
   local is_favorite = state.favorites and state.favorites.audio and state.favorites.audio[item_data.filename]
 
+  -- Use light yellow for favorite items (not muted)
+  local favorite_color = ark.Colors.hexrgb("#FFE87C")  -- Light yellow
+  local display_text_color = is_favorite and favorite_color or text_color
+
   -- Calculate star badge space - match cycle badge height dynamically
   local fav_cfg = config.TILE_RENDER.badges.favorite
   local _, text_h = ImGui.CalcTextSize(ctx, "1")  -- Get text height to match cycle badge
@@ -444,7 +448,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       -- Pass full x2 (cycle badge position stays fixed), use extra_text_margin for text truncation only
       BaseRenderer.render_tile_text(ctx, dl, scaled_x1, scaled_y1, scaled_x2, header_height,
         item_data.name, item_data.index, item_data.total, render_color, text_alpha, config,
-        item_data.uuid, badge_rects, on_badge_click, extra_text_margin, text_color)
+        item_data.uuid, badge_rects, on_badge_click, extra_text_margin, display_text_color)
     end
   end
 
@@ -469,7 +473,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     local star_y = scaled_y1 + (header_height - star_badge_size) / 2
     local icon_size = fav_cfg.icon_size or state.icon_font_size
     Shapes.draw_favorite_star(ctx, dl, star_x, star_y, star_badge_size, combined_alpha, is_favorite,
-      state.icon_font, icon_size, render_color, fav_cfg)
+      state.icon_font, icon_size, favorite_color, fav_cfg)
   end
 
   -- Render region tags (bottom left, only on larger tiles)

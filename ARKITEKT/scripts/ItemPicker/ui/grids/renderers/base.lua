@@ -237,7 +237,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
   if not show_text then return end
 
   local text_x = x1 + tile_render.text.padding_left
-  local text_y = y1 + (header_height - ImGui.GetTextLineHeight(ctx)) / 2 - (4 - tile_render.text.padding_top)
+  local text_y = y1 + (header_height - ImGui.GetTextLineHeight(ctx)) / 2 - (4 - tile_render.text.padding_top) + 1
 
   -- Calculate text truncation boundary (includes extra margin for favorite badge, etc.)
   local right_bound_x = x2 - tile_render.text.margin_right - (extra_text_margin or 0)

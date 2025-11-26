@@ -397,6 +397,61 @@ function GUI:draw(ctx, shell_state)
   reaper.PreventUIRefresh(-1)
   ImGui.PopFont(ctx)
 
+  -- Keyboard shortcuts (only when not renaming)
+  if not self.state.rename_active then
+    -- M: Toggle muted items/tracks (respects user's checkbox preferences)
+    if ImGui.IsKeyPressed(ctx, ImGui.Key_M) then
+      -- Remember which muted options were previously enabled
+      local had_tracks = self.state.settings.show_muted_tracks
+      local had_items = self.state.settings.show_muted_items
+      local any_enabled = had_tracks or had_items
+
+      if any_enabled then
+        -- Turn off whatever was enabled
+        self.state.settings.show_muted_tracks = false
+        self.state.settings.show_muted_items = false
+      else
+        -- Restore previous state, or default to both if first time
+        if not self.state.muted_prev_state then
+          self.state.muted_prev_state = {tracks = true, items = true}
+        end
+        self.state.settings.show_muted_tracks = self.state.muted_prev_state.tracks
+        self.state.settings.show_muted_items = self.state.muted_prev_state.items
+      end
+
+      -- Save current enabled state for next toggle
+      if self.state.settings.show_muted_tracks or self.state.settings.show_muted_items then
+        self.state.muted_prev_state = {
+          tracks = self.state.settings.show_muted_tracks,
+          items = self.state.settings.show_muted_items
+        }
+      end
+
+      -- Invalidate cache to refresh display
+      self.state.runtime_cache.audio_filter_hash = nil
+      self.state.runtime_cache.midi_filter_hash = nil
+      self.state.save_settings()
+    end
+
+    -- D: Toggle disabled items
+    if ImGui.IsKeyPressed(ctx, ImGui.Key_D) then
+      self.state.settings.show_disabled_items = not self.state.settings.show_disabled_items
+      -- Invalidate cache to refresh display
+      self.state.runtime_cache.audio_filter_hash = nil
+      self.state.runtime_cache.midi_filter_hash = nil
+      self.state.save_settings()
+    end
+
+    -- F: Toggle favorites filter when nothing selected
+    if ImGui.IsKeyPressed(ctx, ImGui.Key_F) then
+      self.state.settings.show_favorites_only = not self.state.settings.show_favorites_only
+      -- Invalidate cache to refresh display
+      self.state.runtime_cache.audio_filter_hash = nil
+      self.state.runtime_cache.midi_filter_hash = nil
+      self.state.save_settings()
+    end
+  end
+
   -- Handle exit
   if self.state.exit or ImGui.IsKeyPressed(ctx, ImGui.Key_Escape) then
     -- Clear drag state if still dragging on exit (e.g., Escape pressed)
