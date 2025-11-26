@@ -934,7 +934,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local content_height = panels_end_y - panels_start_y
   local content_width = screen_w - (self.config.LAYOUT.PADDING * 2)
 
-  -- Track filter bar on left side with slide animation
+  -- Track filter bar on left side using SlidingZone
   local track_bar_width = 0
   local track_bar_max_width = 120  -- Max width when expanded
   local track_bar_collapsed_width = 8  -- Visible strip when collapsed
@@ -948,46 +948,51 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end
 
     if whitelist_count > 0 then
-      -- Calculate trigger zone on left edge
       local panels_left_edge = coord_offset_x + self.config.LAYOUT.PADDING
 
-      -- Check if mouse is near left edge (within collapsed bar or expanded area)
-      local current_bar_width = track_bar_collapsed_width +
-        (track_bar_max_width - track_bar_collapsed_width) * (self.state.track_bar_slide_progress or 0)
-      local is_hovering_left = mouse_in_window and
-                               mouse_x < (panels_left_edge + current_bar_width) and
-                               mouse_y >= panels_start_y and mouse_y <= panels_end_y
+      -- Use SlidingZone for the track filter bar
+      local track_zone_result = ark.SlidingZone.draw(ctx, {
+        id = "track_filter_bar",
+        edge = "left",
+        bounds = {
+          x = panels_left_edge,
+          y = panels_start_y,
+          w = track_bar_max_width,
+          h = content_height,
+        },
+        size = track_bar_max_width,
+        min_visible = track_bar_collapsed_width / track_bar_max_width,  -- ~0.067
+        slide_distance = 0,  -- No slide offset, just fade/scale
+        retract_delay = 0.2,
+        directional_delay = true,
+        retract_delay_toward = 1.0,  -- Longer delay when moving left (toward another monitor)
+        retract_delay_away = 0.1,    -- Quick retract when moving right (back to content)
+        hover_extend_outside = 10,
+        hover_extend_inside = track_bar_max_width,
+        hover_padding = 0,
+        draw_list = draw_list,
 
-      -- Smooth slide for track bar
-      if not self.state.track_bar_slide_progress then
-        self.state.track_bar_slide_progress = 0
-      end
-      local target_slide = is_hovering_left and 1.0 or 0.0
-      local slide_speed = self.config.UI_PANELS.settings.slide_speed
-      self.state.track_bar_slide_progress = self.state.track_bar_slide_progress +
-        (target_slide - self.state.track_bar_slide_progress) * slide_speed
+        on_draw = function(zone_ctx, dl, bounds, visibility, zone_state)
+          local bar_x = bounds.x
+          local bar_y = bounds.y
+          local bar_height = bounds.h
+          local current_width = bounds.w
 
-      -- Calculate animated width (always at least collapsed width)
-      track_bar_width = track_bar_collapsed_width +
-        (track_bar_max_width - track_bar_collapsed_width) * self.state.track_bar_slide_progress
+          -- Always draw indicator strip background
+          local strip_alpha = math.floor(0x44 * section_fade)
+          local strip_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#3A3A3A"), strip_alpha)
+          ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + track_bar_collapsed_width, bar_y + bar_height, strip_color, 2)
 
-      -- Draw collapsed indicator strip (always visible)
-      local bar_x = panels_left_edge
-      local bar_y = panels_start_y
-      local bar_height = content_height
+          -- Only render full bar content when visibility is high enough
+          if visibility > 0.1 then
+            local bar_alpha = visibility * section_fade
+            TrackFilterBar.draw(zone_ctx, dl, bar_x, bar_y, bar_height, self.state, bar_alpha)
+          end
+        end,
+      })
 
-      -- Draw indicator strip background
-      local strip_alpha = math.floor(0x44 * section_fade)
-      local strip_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#3A3A3A"), strip_alpha)
-      ImGui.DrawList_AddRectFilled(draw_list, bar_x, bar_y, bar_x + track_bar_collapsed_width, bar_y + bar_height, strip_color, 2)
-
-      -- Only render full bar content if expanded
-      if self.state.track_bar_slide_progress > 0.01 then
-        local bar_alpha = self.state.track_bar_slide_progress * section_fade
-
-        -- Draw track filter bar
-        TrackFilterBar.draw(ctx, draw_list, bar_x, bar_y, bar_height, self.state, bar_alpha)
-      end
+      -- Use the actual rendered width for content offset
+      track_bar_width = track_zone_result.bounds.w
     end
   end
 
