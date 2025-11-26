@@ -71,15 +71,12 @@ M.debug_enabled, M.toggle_debug = Debug.debug_enabled, Debug.toggle_debug
 M.enable_debug, M.disable_debug = Debug.enable_debug, Debug.disable_debug
 M.validate, M.get_validation_summary = Debug.validate, Debug.get_validation_summary
 
--- Script registration
-M.register_script_colors, M.unregister_script_colors =
-  Registry.register_colors, Registry.unregister_colors
-M.register_script_rules, M.unregister_script_rules =
-  Registry.register_rules, Registry.unregister_rules
-M.get_registered_script_colors = Registry.get_all_colors
-M.registered_script_colors, M.registered_script_rules =
-  Registry.script_colors, Registry.script_rules
-M.clear_script_rules_cache = Registry.clear_cache
+-- Script palette registration (unified API)
+M.register_script_palette = Registry.register_palette
+M.unregister_script_palette = Registry.unregister_palette
+M.get_registered_palettes = Registry.get_all_palettes
+M.script_palettes = Registry.script_palettes
+M.clear_script_cache = Registry.clear_cache
 
 -- Transitions
 M.transition_to_palette, M.transition_to_theme, M.create_live_sync =
@@ -125,11 +122,11 @@ function M.get_current_values()
   return values
 end
 
---- Get computed rules for a script
+--- Get computed palette for a script
 --- @param script_name string Name of the script
---- @return table|nil Computed rules table, or nil if not registered
-function M.get_script_rules(script_name)
-  return Registry.get_computed_rules(script_name, M.get_current_t())
+--- @return table|nil Computed palette (colors as RGBA, values as numbers), or nil if not registered
+function M.get_script_palette(script_name)
+  return Registry.get_computed_palette(script_name, M.get_current_t())
 end
 
 -- =============================================================================

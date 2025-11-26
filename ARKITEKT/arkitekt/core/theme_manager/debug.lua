@@ -175,23 +175,21 @@ function M.render_debug_window(ctx, ImGui, state)
       end
     end
 
-    -- Registered script colors
-    for script_name, script_colors in pairs(Registry.script_colors) do
+    -- Registered script palettes
+    for script_name, palette_def in pairs(Registry.script_palettes) do
       if ImGui.CollapsingHeader(ctx, "Script: " .. script_name) then
-        local script_keys = {}
-        for k in pairs(script_colors) do
-          script_keys[#script_keys + 1] = k
+        -- Show specific colors
+        if palette_def.specific then
+          ImGui.Text(ctx, "  specific:")
+          for k in pairs(palette_def.specific) do
+            ImGui.Text(ctx, "    " .. k)
+          end
         end
-        table.sort(script_keys)
-
-        for _, k in ipairs(script_keys) do
-          local v = script_colors[k]
-          if type(v) == "number" and v == math.floor(v) then
-            ImGui.ColorButton(ctx, script_name .. "_" .. k, math.floor(v), 0, 12, 12)
-            ImGui.SameLine(ctx)
-            ImGui.Text(ctx, string.format("%s: 0x%08X", k, math.floor(v)))
-          else
-            ImGui.Text(ctx, string.format("%s: %s", k, tostring(v)))
+        -- Show values
+        if palette_def.values then
+          ImGui.Text(ctx, "  values:")
+          for k in pairs(palette_def.values) do
+            ImGui.Text(ctx, "    " .. k)
           end
         end
       end
