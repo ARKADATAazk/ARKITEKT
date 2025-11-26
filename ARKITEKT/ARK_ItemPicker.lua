@@ -2,13 +2,9 @@
 -- ItemPicker main launcher with clean overlay support
 
 -- ============================================================================
--- BOOTSTRAP ARKITEKT FRAMEWORK
+-- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/bootstrap.lua").init()
-if not ARK then
-  reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
-  return
-end
+local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)

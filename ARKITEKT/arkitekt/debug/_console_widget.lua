@@ -2,8 +2,7 @@
 -- arkitekt/debug/_console_widget.lua
 -- Console widget implementation with ColoredTextView
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.core.imgui')
 local Logger = require('arkitekt.debug.logger')
 local Panel = require('arkitekt.gui.widgets.containers.panel')
 local Config = require('arkitekt.gui.widgets.containers.panel.defaults')

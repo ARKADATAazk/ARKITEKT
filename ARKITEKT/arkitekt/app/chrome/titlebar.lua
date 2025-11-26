@@ -5,8 +5,7 @@
 -- REMOVED: Keyboard shortcuts and tooltips for cleaner interface
 -- UPDATED: ImGui 0.10 font size handling
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.core.imgui')
 local Colors = require('arkitekt.core.colors')
 local Config = require('arkitekt.core.config')
 local Constants = require('arkitekt.defs.app')

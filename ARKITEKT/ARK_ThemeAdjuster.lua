@@ -3,9 +3,9 @@
 -- Refactored to use ARKITEKT framework
 
 -- ============================================================================
--- BOOTSTRAP ARKITEKT FRAMEWORK
+-- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/bootstrap.lua").init()
+local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
 
 -- ============================================================================
 -- LOAD MODULES

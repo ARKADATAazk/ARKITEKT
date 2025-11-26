@@ -3,8 +3,7 @@
 -- Spawn and destroy animations for UI elements
 -- Merged from spawn.lua and destroy.lua for better organization
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.core.imgui')
 local Easing = require('arkitekt.gui.fx.animation.easing')
 local Colors = require('arkitekt.core.colors')
 local hexrgb = Colors.hexrgb

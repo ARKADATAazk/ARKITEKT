@@ -3,8 +3,7 @@
 -- Centralized utility for checking if user interactions should be blocked
 -- due to popups, modals, or overlay managers being active
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

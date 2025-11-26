@@ -2,8 +2,7 @@
 -- Arkitekt/app/chrome/status_bar/widget.lua
 -- Modular status bar rendering - positioning handled by the containing window
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.core.imgui')
 local Config = require('arkitekt.core.config')
 local Constants = require('arkitekt.defs.app')
 local Colors = require('arkitekt.core.colors')

@@ -2,8 +2,7 @@
 -- Arkitekt/gui/fx/tile_fx.lua
 -- Multi-layer tile rendering with granular controls
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.core.imgui')
 
 local Colors = require('arkitekt.core.colors')
 local Background = require('arkitekt.gui.draw.pattern')

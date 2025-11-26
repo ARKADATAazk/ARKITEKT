@@ -2,8 +2,7 @@
 -- Arkitekt/gui/systems/mouse_util.lua
 -- Mouse utilities for differentiating clicks from drags
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

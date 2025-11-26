@@ -2,8 +2,7 @@
 -- Arkitekt/gui/systems/drag_drop.lua
 -- Generic drag and drop helpers for ImGui
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.core.imgui')
 
 local Colors = require('arkitekt.core.colors')
 local Draw = require('arkitekt.gui.draw')

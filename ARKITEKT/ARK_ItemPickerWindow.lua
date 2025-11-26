@@ -2,15 +2,15 @@
 -- @description ARK Item Picker Window
 -- ItemPicker as a persistent window with TilesContainer panels (like RegionPlaylist)
 
--- Bootstrap ARKITEKT framework
-local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/bootstrap.lua").init()
-if not ARK then return end
+-- ============================================================================
+-- LOAD ARKITEKT FRAMEWORK
+-- ============================================================================
+local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
 -- ============================================================================
 local ProfilerInit = require('arkitekt.debug.profiler_init')
-local ark = require('arkitekt')
 local profiler_enabled = ProfilerInit.init()
 
 if profiler_enabled then

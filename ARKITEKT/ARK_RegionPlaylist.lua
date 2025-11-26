@@ -1,15 +1,14 @@
 -- @noindex
 
 -- ============================================================================
--- BOOTSTRAP ARKITEKT FRAMEWORK
+-- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "arkitekt/app/bootstrap.lua").init()
+local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
 
 -- ============================================================================
 -- PROFILER INITIALIZATION (Controlled by ARKITEKT/config.lua)
 -- ============================================================================
 local ProfilerInit = require('arkitekt.debug.profiler_init')
-local ark = require('arkitekt')
 local profiler_enabled = ProfilerInit.init()
 
 -- ============================================================================

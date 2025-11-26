@@ -3,8 +3,7 @@
 -- Simple inline visual effects (hover shadows, glows, etc.)
 -- For advanced multi-layer tile rendering, see Arkitekt/gui/fx/tile_fx.lua
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

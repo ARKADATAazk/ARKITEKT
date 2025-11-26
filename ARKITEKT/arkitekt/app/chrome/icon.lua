@@ -2,8 +2,7 @@
 -- Arkitekt/app/icon.lua
 -- App icon drawing functions (DPI-aware vector graphics and PNG images)
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.core.imgui')
 
 local M = {}
 

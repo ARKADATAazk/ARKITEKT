@@ -3,8 +3,7 @@
 -- Base widget utilities for standardized widget API
 -- Provides shared functionality: instance management, state handling, opts parsing
 
-package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
-local ImGui = require 'imgui' '0.10'
+local ImGui = require('arkitekt.core.imgui')
 local Style = require('arkitekt.gui.style')
 local Colors = require('arkitekt.core.colors')
 local Anim = require('arkitekt.core.animation')
