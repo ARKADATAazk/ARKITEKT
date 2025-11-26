@@ -78,9 +78,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     end
   end
 
-  -- Get base color from item (ImGui ARGB format) and convert to ark.Colors RGBA format
+  -- Get base color from item
   local base_color = item_data.color or 0xFF555555
-  base_color = ark.Colors.argb_to_rgba(base_color)
 
   -- Capture stable tile color BEFORE state effects (matching drag handler approach)
   -- This is the "enabled" tile appearance that should be used for animations
@@ -149,11 +148,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     end
   end
 
-  -- Convert render_color back to ARGB format for ImGui
-  local imgui_color = ark.Colors.rgba_to_argb(render_color)
-
   -- Render base tile fill with rounding
-  ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, imgui_color, config.TILE.ROUNDING)
+  ImGui.DrawList_AddRectFilled(dl, scaled_x1, scaled_y1, scaled_x2, scaled_y2, render_color, config.TILE.ROUNDING)
 
   -- Render dark backdrop for disabled items (skip if show_disabled_items = false, animation handles it)
   if enabled_factor < 0.999 and state.settings.show_disabled_items then
