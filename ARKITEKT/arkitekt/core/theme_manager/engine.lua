@@ -94,6 +94,8 @@ local function derive_entry(base_bg, key, def, t)
   -- OFFSET: Apply delta to BG_BASE
   if mode == "offset" then
     local delta = resolve_value(def, t)
+    -- Clamp delta to valid range
+    delta = math.max(-1, math.min(1, delta))
     return Colors.adjust_lightness(base_bg, delta)
   end
 
@@ -104,8 +106,8 @@ local function derive_entry(base_bg, key, def, t)
     -- Hex string → convert to RGBA
     return Colors.hexrgb(resolved .. "FF")
   else
-    -- Number → return as-is
-    return resolved
+    -- Number → clamp to valid range for key type
+    return Palette.clamp_value(key, resolved)
   end
 end
 

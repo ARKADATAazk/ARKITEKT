@@ -99,6 +99,45 @@ M.anchors = {
 }
 
 -- =============================================================================
+-- VALUE RANGES (for clamping)
+-- =============================================================================
+-- Define valid ranges for value types inferred from key names
+
+M.value_ranges = {
+  OPACITY    = { min = 0, max = 1 },
+  BRIGHTNESS = { min = 0, max = 2 },
+  SATURATION = { min = 0, max = 2 },
+  -- offset deltas (lightness adjustments)
+  OFFSET     = { min = -1, max = 1 },
+}
+
+--- Infer value range from key name
+--- @param key string Palette key name
+--- @return table|nil Range with min/max, or nil for no clamping
+local function get_range_for_key(key)
+  if not key then return nil end
+  if key:match("OPACITY") then return M.value_ranges.OPACITY end
+  if key:match("BRIGHTNESS") then return M.value_ranges.BRIGHTNESS end
+  if key:match("SATURATION") then return M.value_ranges.SATURATION end
+  return nil
+end
+
+--- Clamp a value to its valid range based on key name
+--- @param key string Palette key name
+--- @param value number Value to clamp
+--- @return number Clamped value
+local function clamp_value(key, value)
+  if type(value) ~= "number" then return value end
+  local range = get_range_for_key(key)
+  if not range then return value end
+  return math.max(range.min, math.min(range.max, value))
+end
+
+-- Export for engine use
+M.get_range_for_key = get_range_for_key
+M.clamp_value = clamp_value
+
+-- =============================================================================
 -- DSL WRAPPERS
 -- =============================================================================
 -- Simple DSL - all snap/offset at midpoint (t=0.5):

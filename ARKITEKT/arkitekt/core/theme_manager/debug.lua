@@ -382,6 +382,18 @@ local function draw_slider(ctx, ImGui, label, value, min_val, max_val, format)
   return changed, new_val
 end
 
+--- Get slider range for a key based on its type
+--- @param key string Palette key name
+--- @return number min, number max
+local function get_slider_range(key)
+  local range = Palette.get_range_for_key(key)
+  if range then
+    return range.min, range.max
+  end
+  -- Default range for unknown types
+  return 0, 2
+end
+
 --- Parse hex string to simple 0xRRGGBB (no alpha)
 local function hex_to_rgb(hex)
   if not hex then return 0x808080 end
@@ -440,31 +452,6 @@ local function draw_entry_editor(ctx, ImGui, key, original_def, current_def)
     ImGui.SameLine(ctx)
     ImGui.TextDisabled(ctx, "(passthrough)")
 
-  elseif mode == "lerp" then
-    ImGui.SameLine(ctx)
-
-    -- Dark value
-    if type(def.dark) == "number" then
-      local changed, new_val = draw_slider(ctx, ImGui, "##dark", def.dark, 0, 2, "D:%.3f")
-      if changed then M.set_override(key, "dark", new_val) end
-    elseif type(def.dark) == "string" then
-      local changed, new_val = draw_color_picker(ctx, ImGui, "##dark", def.dark)
-      if changed then M.set_override(key, "dark", new_val) end
-    end
-
-    ImGui.SameLine(ctx)
-    ImGui.Text(ctx, "->")
-    ImGui.SameLine(ctx)
-
-    -- Light value
-    if type(def.light) == "number" then
-      local changed, new_val = draw_slider(ctx, ImGui, "##light", def.light, 0, 2, "L:%.3f")
-      if changed then M.set_override(key, "light", new_val) end
-    elseif type(def.light) == "string" then
-      local changed, new_val = draw_color_picker(ctx, ImGui, "##light", def.light)
-      if changed then M.set_override(key, "light", new_val) end
-    end
-
   elseif mode == "offset" then
     ImGui.SameLine(ctx)
 
@@ -480,15 +467,18 @@ local function draw_entry_editor(ctx, ImGui, key, original_def, current_def)
     local changed_l, new_l = draw_slider(ctx, ImGui, "##light", def.light or 0, -0.5, 0.5, "L:%+.3f")
     if changed_l then M.set_override(key, "light", new_l) end
 
-  elseif mode == "snap" then
+  elseif mode == "snap" or mode == "lerp" then
     ImGui.SameLine(ctx)
+
+    -- Get appropriate range for this key
+    local range_min, range_max = get_slider_range(key)
 
     -- Dark value
     if type(def.dark) == "string" then
       local changed, new_val = draw_color_picker(ctx, ImGui, "##dark", def.dark)
       if changed then M.set_override(key, "dark", new_val) end
     elseif type(def.dark) == "number" then
-      local changed, new_val = draw_slider(ctx, ImGui, "##dark", def.dark, 0, 2, "D:%.3f")
+      local changed, new_val = draw_slider(ctx, ImGui, "##dark", def.dark, range_min, range_max, "D:%.3f")
       if changed then M.set_override(key, "dark", new_val) end
     end
 
@@ -501,7 +491,7 @@ local function draw_entry_editor(ctx, ImGui, key, original_def, current_def)
       local changed, new_val = draw_color_picker(ctx, ImGui, "##light", def.light)
       if changed then M.set_override(key, "light", new_val) end
     elseif type(def.light) == "number" then
-      local changed, new_val = draw_slider(ctx, ImGui, "##light", def.light, 0, 2, "L:%.3f")
+      local changed, new_val = draw_slider(ctx, ImGui, "##light", def.light, range_min, range_max, "L:%.3f")
       if changed then M.set_override(key, "light", new_val) end
     end
 
