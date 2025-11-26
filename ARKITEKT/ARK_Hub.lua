@@ -35,32 +35,12 @@
 --   [nomain] arkitekt/**/*.{png,jpg,svg,ttf,json,txt}
 
 -- ============================================================================
--- BOOTSTRAP ARKITEKT FRAMEWORK
+-- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK
-do
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, "S").source:sub(2)
-  local path = src:match("(.*"..sep..")")
-  while path and #path > 3 do
-    local init = path .. "arkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
-    local f = io.open(init, "r")
-    if f then
-      f:close()
-      local Init = dofile(init)
-      ARK = Init.bootstrap()
-      break
-    end
-    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
-  end
-  if not ARK then
-    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
-    return
-  end
-end
+local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
 
-local ImGui = ARK.ImGui
-local script_dir = ARK.root_path
+local ImGui = ark.ImGui
+local script_dir = ark._bootstrap.root_path
 
 local Shell = require("arkitekt.app.shell")
 local Hub = require("hub.hub")
@@ -75,7 +55,7 @@ local hexrgb = ark.Colors.hexrgb
 
 local settings = nil
 if SettingsOK and type(Settings.new)=="function" then
-  local data_dir = ARK.get_data_dir("ARKITEKT")
+  local data_dir = ark._bootstrap.get_data_dir("ARKITEKT")
   local ok, inst = pcall(Settings.new, data_dir, "settings.json")
   if ok then settings = inst end
 end

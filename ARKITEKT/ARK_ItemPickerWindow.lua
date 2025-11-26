@@ -38,7 +38,7 @@ local reaper_interface = require('ItemPicker.data.reaper_api')
 local utils = require('ItemPicker.services.utils')
 
 -- Initialize settings
-local data_dir = ARK.get_data_dir("ItemPickerWindow")
+local data_dir = ark._bootstrap.get_data_dir("ItemPickerWindow")
 local settings = Settings.new(data_dir, "settings.json")
 
 -- Initialize state

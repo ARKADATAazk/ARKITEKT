@@ -25,7 +25,7 @@ local hexrgb = ark.Colors.hexrgb
 -- INITIALIZE SETTINGS
 -- ============================================================================
 
-local data_dir = ARK.get_data_dir("ThemeAdjuster")
+local data_dir = ark._bootstrap.get_data_dir("ThemeAdjuster")
 local settings = Settings.new(data_dir, "settings.json")
 
 State.initialize(settings)

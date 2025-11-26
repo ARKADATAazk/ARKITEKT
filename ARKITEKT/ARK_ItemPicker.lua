@@ -91,7 +91,7 @@ Shell.run({
   draw = function(ctx, state)
     -- Show ImGui debug window when profiling
     if profiler_enabled then
-      ARK.ImGui.ShowMetricsWindow(ctx, true)
+      ark.ImGui.ShowMetricsWindow(ctx, true)
     end
 
     -- Check if should close after drop

@@ -24,7 +24,7 @@ local hexrgb = ark.Colors.hexrgb
 
 -- State needs settings for initialization - Shell will auto-create from app_name
 local Settings = require("arkitekt.core.settings")
-local data_dir = ARK.get_data_dir("RegionPlaylist")
+local data_dir = ark._bootstrap.get_data_dir("RegionPlaylist")
 local settings = Settings.new(data_dir, "settings.json")
 
 State.initialize(settings)

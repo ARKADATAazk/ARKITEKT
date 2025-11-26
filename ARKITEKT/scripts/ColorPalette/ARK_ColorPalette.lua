@@ -5,33 +5,13 @@
 -- Add to REAPER startup actions for instant availability
 
 -- ============================================================================
--- BOOTSTRAP ARKITEKT FRAMEWORK
+-- LOAD ARKITEKT FRAMEWORK
 -- ============================================================================
-local ARK
-do
-  local sep = package.config:sub(1,1)
-  local src = debug.getinfo(1, "S").source:sub(2)
-  local path = src:match("(.*"..sep..")")
-  while path and #path > 3 do
-    local init = path .. "arkitekt" .. sep .. "app" .. sep .. "init" .. sep .. "init.lua"
-    local f = io.open(init, "r")
-    if f then
-      f:close()
-      local Init = dofile(init)
-      ARK = Init.bootstrap()
-      break
-    end
-    path = path:match("(.*"..sep..")[^"..sep.."]-"..sep.."$")
-  end
-  if not ARK then
-    reaper.MB("ARKITEKT framework not found!", "FATAL ERROR", 0)
-    return
-  end
-end
+local ark = dofile(debug.getinfo(1,"S").source:sub(2):match("(.-ARKITEKT[/\\])") .. "loader.lua")
 
-local ImGui = ARK.ImGui
+local ImGui = ark.ImGui
 local SRC = debug.getinfo(1,"S").source:sub(2)
-local HERE = ARK.dirname(SRC) or "."
+local HERE = ark._bootstrap.dirname(SRC) or "."
 
 -- Load dependencies
 local Shell = require("arkitekt.app.shell")
