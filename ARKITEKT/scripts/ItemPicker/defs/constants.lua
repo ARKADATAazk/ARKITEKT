@@ -141,8 +141,8 @@ M.TILE_RENDER = {
 
   -- Selection (marching ants)
   selection = {
-    border_saturation = 0.8,
-    border_brightness = 1.4,
+    border_saturation = 1.0,  -- Full saturation for vibrant, visible ants (was 0.8)
+    border_brightness = 2.0,  -- Much brighter for visibility on dark tiles (was 1.4)
     ants_alpha = 0xFF,
     ants_thickness = 1,
     ants_inset = 0,
