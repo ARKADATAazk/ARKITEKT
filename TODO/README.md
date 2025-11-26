@@ -6,6 +6,7 @@ Actionable improvement tasks for the ARKITEKT codebase.
 
 | File | Description | Priority |
 |------|-------------|----------|
+| [CONSTANT_ORGANIZATION.md](CONSTANT_ORGANIZATION.md) | Improve constant organization, bidirectional lookups, feature flags | Medium |
 | [PERFORMANCE.md](PERFORMANCE.md) | Lua performance optimizations per `lua_perf_guide.md` | Medium |
 
 ## Related Documentation
