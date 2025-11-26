@@ -78,8 +78,9 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     end
   end
 
-  -- Get base color from item
+  -- Get base color from item (ImGui ARGB format) and convert to ark.Colors RGBA format
   local base_color = item_data.color or 0xFF555555
+  base_color = ark.Colors.argb_to_rgba(base_color)
 
   -- Capture stable tile color BEFORE state effects (matching drag handler approach)
   -- This is the "enabled" tile appearance that should be used for animations
