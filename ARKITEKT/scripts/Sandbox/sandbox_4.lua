@@ -931,6 +931,13 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   local next_y = y_pos + item_h
   local next_row = row_index + 1
 
+  -- Debug: Track why children aren't rendering for root
+  if node.id == "root" and depth == 0 then
+    tree_state.debug_root_open = is_open
+    tree_state.debug_root_has_children = has_children
+    tree_state.debug_root_child_count = has_children and #node.children or 0
+  end
+
   if is_open and has_children then
     local child_parent_lines = {}
     for i = 1, depth do
@@ -1399,9 +1406,12 @@ Shell.run({
 
     ImGui.SameLine(ctx)
 
+    -- Right side: Tree view
+    ImGui.BeginChild(ctx, "tree_container", 0, 0)
+
     local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
 
-    -- Search bar
+    -- Search bar at top
     ImGui.SetNextItemWidth(ctx, avail_w - 100)
     local search_changed, new_search = ImGui.InputText(ctx, "##search", tree_state.search_text)
     if search_changed then
@@ -1413,7 +1423,7 @@ Shell.run({
     end
 
     local tree_x, tree_y = ImGui.GetCursorScreenPos(ctx)
-    local tree_h = avail_h - 90
+    local tree_h = avail_h - 130  -- Leave room for search + debug info
 
     draw_custom_tree(ctx, mock_tree, tree_x, tree_y, avail_w, tree_h)
 
@@ -1460,6 +1470,17 @@ Shell.run({
       mock_tree[1] and mock_tree[1].children and #mock_tree[1].children or 0,
       tree_state.open["src"] and "yes" or "no"))
 
+    -- More detailed debug
+    if #tree_state.flat_list <= 1 then
+      ImGui.TextColored(ctx, 0xFF0000FF, "WARNING: Only root in flat_list! Children not rendering!")
+      ImGui.Text(ctx, string.format("Debug: is_open=%s | has_children=%s | child_count=%d",
+        tree_state.debug_root_open and "TRUE" or "FALSE",
+        tree_state.debug_root_has_children and "TRUE" or "FALSE",
+        tree_state.debug_root_child_count or 0))
+    end
+
     tree_state.hovered = nil
+
+    ImGui.EndChild(ctx)  -- End tree_container
   end,
 })
