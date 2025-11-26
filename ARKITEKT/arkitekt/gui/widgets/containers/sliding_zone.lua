@@ -235,8 +235,19 @@ local function is_in_hover_zone(ctx, opts, state, bounds)
 
   -- Calculate hover zone based on edge
   local hover_outside = opts.hover_extend_outside or 30
-  local hover_inside = opts.hover_extend_inside or 50
   local padding = opts.hover_padding or 30
+
+  -- DYNAMIC hover_inside: when expanded, extend to cover full content
+  -- When collapsed, use small trigger zone
+  local hover_inside
+  if state.is_expanded or state.is_in_hover_zone then
+    -- Expanded: hover zone covers the full panel size
+    local size = opts.size or 40
+    hover_inside = size
+  else
+    -- Collapsed: use the small trigger zone
+    hover_inside = opts.hover_extend_inside or 50
+  end
 
   if edge == "left" then
     local zone_x1 = bounds.x - hover_outside
