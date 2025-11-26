@@ -25,9 +25,9 @@ local M = {}
 --- @return table Wrapper with mode metadata
 function M.offsetFromBase(dark_delta, light_delta, threshold)
   if light_delta == nil then
-    return { mode = "snap", dark = dark_delta, light = dark_delta, threshold = 0.5 }
+    return { mode = "offset", dark = dark_delta, light = dark_delta, threshold = 0.5 }
   end
-  return { mode = "snap", dark = dark_delta, light = light_delta, threshold = threshold or 0.5 }
+  return { mode = "offset", dark = dark_delta, light = light_delta, threshold = threshold or 0.5 }
 end
 
 --- Smooth interpolation between dark and light values
@@ -44,7 +44,7 @@ end
 --- @param light_val any Value for light themes
 --- @return table Wrapper with mode metadata
 function M.snapAtMidpoint(dark_val, light_val)
-  return { mode = "snap", dark = dark_val, light = light_val, threshold = 0.5 }
+  return { mode = "offset", dark = dark_val, light = light_val, threshold = 0.5 }
 end
 
 --- Snap between values at custom threshold
@@ -53,7 +53,7 @@ end
 --- @param light_val any Value for light themes (t >= threshold)
 --- @return table Wrapper with mode metadata
 function M.snapAt(threshold, dark_val, light_val)
-  return { mode = "snap", dark = dark_val, light = light_val, threshold = threshold }
+  return { mode = "offset", dark = dark_val, light = light_val, threshold = threshold }
 end
 
 -- =============================================================================

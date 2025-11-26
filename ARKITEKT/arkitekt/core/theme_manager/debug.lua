@@ -75,10 +75,10 @@ function M.validate()
       end
 
       -- Check: Valid mode
-      local valid_modes = { lerp = true, snap = true }
+      local valid_modes = { lerp = true, offset = true }
       if not valid_modes[rule.mode] then
         errors[#errors + 1] = string.format(
-          "Rule '%s' has invalid mode '%s' (expected: lerp, snap)",
+          "Rule '%s' has invalid mode '%s' (expected: lerp, offset)",
           key, tostring(rule.mode)
         )
       end
@@ -119,7 +119,7 @@ end
 function M.get_validation_summary()
   local valid, err = M.validate()
   local rule_count = 0
-  local mode_counts = { lerp = 0, snap = 0 }
+  local mode_counts = { lerp = 0, offset = 0 }
 
   for _, rule in pairs(Rules.definitions) do
     rule_count = rule_count + 1
