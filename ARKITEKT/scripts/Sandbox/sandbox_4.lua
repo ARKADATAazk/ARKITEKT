@@ -705,6 +705,118 @@ local function draw_tree_lines(dl, x, y, depth, item_h, has_children, is_last_ch
 end
 
 -- ============================================================================
+-- DRAG PREVIEW (VS Code style)
+-- ============================================================================
+
+local function draw_drag_preview(ctx, dl, drag_node, selected_count)
+  if not drag_node then return end
+
+  local mx, my = ImGui.GetMousePos(ctx)
+
+  -- VS Code-style drag preview
+  local padding = 8
+  local icon_size = 16
+  local badge_size = 18
+  local spacing = 6
+
+  -- Measure text
+  local text = drag_node.name
+  local text_w, text_h = ImGui.CalcTextSize(ctx, text)
+
+  -- Calculate preview dimensions
+  local preview_w = padding + icon_size + spacing + text_w + padding
+  local preview_h = math.max(icon_size, text_h) + padding * 2
+
+  -- Add badge width if multiple items
+  local show_badge = selected_count > 1
+  if show_badge then
+    preview_w = preview_w + spacing + badge_size
+  end
+
+  -- Position slightly offset from cursor
+  local offset_x = 16
+  local offset_y = 16
+  local preview_x = mx + offset_x
+  local preview_y = my + offset_y
+
+  -- VS Code colors
+  local bg_color = hexrgb("#252526E6")  -- Dark semi-transparent
+  local border_color = hexrgb("#454545FF")
+  local text_color = hexrgb("#CCCCCCFF")
+  local badge_bg = hexrgb("#007ACCFF")  -- VS Code blue
+  local badge_text = hexrgb("#FFFFFFFF")
+
+  -- Draw shadow (subtle)
+  local shadow_offset = 2
+  local shadow_color = hexrgb("#00000040")
+  ImGui.DrawList_AddRectFilled(dl,
+    preview_x + shadow_offset, preview_y + shadow_offset,
+    preview_x + preview_w + shadow_offset, preview_y + preview_h + shadow_offset,
+    shadow_color, 4)
+
+  -- Draw background with rounded corners
+  ImGui.DrawList_AddRectFilled(dl, preview_x, preview_y, preview_x + preview_w, preview_y + preview_h, bg_color, 4)
+
+  -- Draw border
+  ImGui.DrawList_AddRect(dl, preview_x, preview_y, preview_x + preview_w, preview_y + preview_h, border_color, 4, 0, 1)
+
+  -- Draw icon
+  local icon_x = preview_x + padding
+  local icon_y = preview_y + (preview_h - icon_size) / 2
+  local has_children = drag_node.children and #drag_node.children > 0
+  local icon_color = hexrgb("#CCCCCCFF")
+
+  if has_children then
+    -- Folder icon (scaled down version)
+    local scale = icon_size / 13  -- Original folder is 13 wide
+    local folder_w = math.floor(13 * scale)
+    local folder_h = math.floor(7 * scale)
+    local tab_w = math.floor(5 * scale)
+    local tab_h = math.floor(2 * scale)
+
+    icon_x = math.floor(icon_x + 0.5)
+    icon_y = math.floor(icon_y + 0.5)
+
+    ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y, icon_x + tab_w, icon_y + tab_h, icon_color, 0)
+    ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y + tab_h, icon_x + folder_w, icon_y + tab_h + folder_h, icon_color, 0)
+  else
+    -- File icon (scaled down)
+    local scale = icon_size / 12
+    local file_w = math.floor(10 * scale)
+    local file_h = math.floor(12 * scale)
+    local fold = math.floor(3 * scale)
+
+    icon_x = math.floor(icon_x + 0.5)
+    icon_y = math.floor(icon_y + 0.5)
+
+    ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y, icon_x + file_w - fold, icon_y + file_h, icon_color, 0)
+    ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y + fold, icon_x + file_w, icon_y + file_h, icon_color, 0)
+  end
+
+  -- Draw text
+  local text_x = icon_x + icon_size + spacing
+  local text_y = preview_y + (preview_h - text_h) / 2
+  ImGui.DrawList_AddText(dl, text_x, text_y, text_color, text)
+
+  -- Draw count badge if multiple items selected
+  if show_badge then
+    local badge_x = text_x + text_w + spacing
+    local badge_y = preview_y + (preview_h - badge_size) / 2
+    local badge_radius = badge_size / 2
+
+    -- Badge circle
+    ImGui.DrawList_AddCircleFilled(dl, badge_x + badge_radius, badge_y + badge_radius, badge_radius, badge_bg)
+
+    -- Badge count text
+    local count_text = tostring(selected_count)
+    local count_w, count_h = ImGui.CalcTextSize(ctx, count_text)
+    local count_x = badge_x + (badge_size - count_w) / 2
+    local count_y = badge_y + (badge_size - count_h) / 2
+    ImGui.DrawList_AddText(dl, count_x, count_y, badge_text, count_text)
+  end
+end
+
+-- ============================================================================
 -- TREE RENDERING
 -- ============================================================================
 
@@ -1216,6 +1328,22 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
         tree_state.drop_target_id = nil
         tree_state.drop_position = nil
       end
+    end
+  end
+
+  -- Draw drag preview (VS Code style) - drawn last to appear on top
+  if tree_state.drag_active and tree_state.drag_node_id then
+    local drag_node = find_node_by_id(nodes, tree_state.drag_node_id)
+    if drag_node then
+      -- Count selected items
+      local selected_count = 0
+      for _ in pairs(tree_state.selected) do
+        selected_count = selected_count + 1
+      end
+      -- Ensure at least 1 (the dragged item itself)
+      if selected_count == 0 then selected_count = 1 end
+
+      draw_drag_preview(ctx, dl, drag_node, selected_count)
     end
   end
 
