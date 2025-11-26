@@ -131,6 +131,7 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
   if left_released then
     state.track_bar_painting = false
     state.track_bar_paint_value = nil
+    state.track_bar_last_painted = nil  -- Reset last painted track
   end
 
   -- Draw each track tag
@@ -191,17 +192,21 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       -- Handle click to start painting
       if is_hovered and left_clicked then
         state.track_bar_painting = true
-        state.track_bar_paint_value = not is_enabled
-        state.track_filters_enabled[track.guid] = state.track_bar_paint_value
+        state.track_bar_last_painted = track.guid
+        state.track_filters_enabled[track.guid] = not is_enabled
         -- Invalidate filter cache
         state.runtime_cache.audio_filter_hash = nil
         state.runtime_cache.midi_filter_hash = nil
       end
 
-      -- Paint mode: apply paint value while dragging over tracks
+      -- Paint mode: toggle track when entering it (allows back-and-forth painting)
       if state.track_bar_painting and left_down and is_hovered then
-        if state.track_filters_enabled[track.guid] ~= state.track_bar_paint_value then
-          state.track_filters_enabled[track.guid] = state.track_bar_paint_value
+        -- Only toggle when entering a different track than last painted
+        if state.track_bar_last_painted ~= track.guid then
+          local current = state.track_filters_enabled[track.guid]
+          if current == nil then current = true end
+          state.track_filters_enabled[track.guid] = not current
+          state.track_bar_last_painted = track.guid
           -- Invalidate filter cache
           state.runtime_cache.audio_filter_hash = nil
           state.runtime_cache.midi_filter_hash = nil

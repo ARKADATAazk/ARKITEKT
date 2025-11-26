@@ -215,6 +215,7 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
   if left_released then
     state.track_filter_painting = false
     state.track_filter_paint_value = nil
+    state.track_filter_last_painted = nil  -- Reset last painted track
   end
 
   for _, track in ipairs(tracks) do
@@ -247,18 +248,25 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
         if not state.track_expanded then state.track_expanded = {} end
         state.track_expanded[track.guid] = not is_expanded
       else
-        -- Start painting - paint value is opposite of current selection
+        -- Start painting - toggle the clicked track and mark as last painted
         state.track_filter_painting = true
-        state.track_filter_paint_value = not is_selected
+        state.track_filter_last_painted = track.guid
         if not state.track_whitelist then state.track_whitelist = {} end
-        state.track_whitelist[track.guid] = state.track_filter_paint_value
+        state.track_whitelist[track.guid] = not is_selected
       end
     end
 
-    -- Paint mode: apply paint value while dragging over tracks
+    -- Paint mode: toggle track when entering it (allows back-and-forth painting)
     if state.track_filter_painting and left_down and is_hovered and not over_arrow then
-      if not state.track_whitelist then state.track_whitelist = {} end
-      state.track_whitelist[track.guid] = state.track_filter_paint_value
+      -- Only toggle when entering a different track than last painted
+      if state.track_filter_last_painted ~= track.guid then
+        if not state.track_whitelist then state.track_whitelist = {} end
+        -- Toggle the track's state
+        local current = state.track_whitelist[track.guid]
+        if current == nil then current = true end
+        state.track_whitelist[track.guid] = not current
+        state.track_filter_last_painted = track.guid
+      end
     end
 
     -- Check if parent is disabled (for visual dimming)
