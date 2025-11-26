@@ -314,25 +314,16 @@ function M.new(opts)
                   custom_color = ThemeManager.COLORS and ThemeManager.COLORS.BG_BASE or hexrgb("#333333")
                 end
 
-                -- Convert our format (0xRRGGBBAA) to ImGui format (0xAABBGGRR)
-                local our_r = (custom_color >> 24) & 0xFF
-                local our_g = (custom_color >> 16) & 0xFF
-                local our_b = (custom_color >> 8) & 0xFF
-                local imgui_color = (0xFF << 24) | (our_b << 16) | (our_g << 8) | our_r
-
                 -- Color picker flags: no alpha, no options button
                 local flags = ImGui.ColorEditFlags_NoAlpha
                               | ImGui.ColorEditFlags_NoInputs
                               | ImGui.ColorEditFlags_NoLabel
 
-                -- Color picker widget
-                local changed, new_imgui = ImGui.ColorEdit3(ctx, "##custom_color", imgui_color, flags)
+                -- Color picker widget - pass color directly, no conversion
+                local changed, new_color = ImGui.ColorEdit3(ctx, "##custom_color", custom_color, flags)
                 if changed then
-                  -- Convert ImGui format (0xAABBGGRR) back to our format (0xRRGGBBAA)
-                  local imgui_b = (new_imgui >> 16) & 0xFF
-                  local imgui_g = (new_imgui >> 8) & 0xFF
-                  local imgui_r = new_imgui & 0xFF
-                  local new_color = (imgui_r << 24) | (imgui_g << 16) | (imgui_b << 8) | 0xFF
+                  -- Ensure alpha is 0xFF
+                  new_color = (new_color & 0xFFFFFF00) | 0xFF
                   ThemeManager.set_custom(new_color)
                 end
 
