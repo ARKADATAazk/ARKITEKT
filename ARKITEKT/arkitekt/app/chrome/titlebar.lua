@@ -382,9 +382,10 @@ function M.new(opts)
             end
           end
 
-          -- Theme Debug overlay toggle
+          -- Theme Debugger (live editor)
           if ThemeManager then
-            local debug_label = ThemeManager.debug_enabled and "* Theme Debug" or "  Theme Debug"
+            local is_enabled = ThemeManager.is_debug_enabled and ThemeManager.is_debug_enabled() or false
+            local debug_label = is_enabled and "* Theme Debugger" or "  Theme Debugger"
             if ContextMenu.item(ctx, debug_label) then
               ThemeManager.toggle_debug()
             end

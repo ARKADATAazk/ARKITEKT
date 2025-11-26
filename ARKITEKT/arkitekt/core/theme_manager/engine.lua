@@ -43,11 +43,12 @@ local function resolve_value(def, t)
   end
 
   local mode = def.mode
-  local threshold = def.threshold or 0.5
 
+  -- snap/offset: discrete switch at midpoint (t=0.5)
   if mode == "offset" or mode == "snap" then
-    return t < threshold and def.dark or def.light
+    return t < 0.5 and def.dark or def.light
 
+  -- lerp: smooth interpolation
   elseif mode == "lerp" then
     local dark_val, light_val = def.dark, def.light
     if type(dark_val) == "number" and type(light_val) == "number" then
@@ -93,6 +94,8 @@ local function derive_entry(base_bg, key, def, t)
   -- OFFSET: Apply delta to BG_BASE
   if mode == "offset" then
     local delta = resolve_value(def, t)
+    -- Clamp delta to valid range
+    delta = math.max(-1, math.min(1, delta))
     return Colors.adjust_lightness(base_bg, delta)
   end
 
@@ -103,8 +106,8 @@ local function derive_entry(base_bg, key, def, t)
     -- Hex string → convert to RGBA
     return Colors.hexrgb(resolved .. "FF")
   else
-    -- Number → return as-is
-    return resolved
+    -- Number → clamp to valid range for key type
+    return Palette.clamp_value(key, resolved)
   end
 end
 
@@ -141,9 +144,10 @@ end
 --- @param base_bg number Background color in RGBA format
 --- @param def any Definition
 --- @param t number Interpolation factor
+--- @param key string|nil Optional key for value clamping
 --- @return any Computed value
-function M.derive_entry(base_bg, def, t)
-  return derive_entry(base_bg, nil, def, t)
+function M.derive_entry(base_bg, def, t, key)
+  return derive_entry(base_bg, key, def, t)
 end
 
 return M

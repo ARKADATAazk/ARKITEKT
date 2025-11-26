@@ -7,53 +7,155 @@
 --   - Anchors (lightness values)
 --   - All theme-reactive color definitions
 
+local Colors = require('arkitekt.core.colors')
+
 local M = {}
 
 -- =============================================================================
 -- PRESETS
 -- =============================================================================
--- Base colors for dark/light themes. Anchors are computed from these.
+-- Base colors for dark/light themes. Anchors are auto-computed from these.
 
 M.presets = {
-  dark       = "#242424",  -- ~14% lightness (t=0)
-  grey       = "#333333",  -- ~31% lightness
-  light_grey = "#505050",  -- ~56% lightness
-  light      = "#E0E0E0",  -- ~88% lightness (t=1)
+  dark       = "#242424",  -- t=0 anchor
+  grey       = "#333333",
+  light_grey = "#505050",
+  light      = "#E0E0E0",  -- t=1 anchor
 }
 
--- Anchors: lightness values for dark/light presets
--- These match the preset hex values above
+-- =============================================================================
+-- VALIDATION
+-- =============================================================================
+
+--- Validate hex color format
+--- @param hex string Hex color string
+--- @param name string Variable name for error messages
+--- @return boolean valid, string|nil error_message
+local function validate_hex(hex, name)
+  if type(hex) ~= "string" then
+    return false, string.format("%s: expected string, got %s", name, type(hex))
+  end
+  if not hex:match("^#[0-9A-Fa-f]+$") then
+    return false, string.format("%s: invalid hex format '%s'", name, hex)
+  end
+  local len = #hex - 1  -- minus the #
+  if len ~= 6 and len ~= 8 then
+    return false, string.format("%s: hex must be 6 or 8 chars, got %d", name, len)
+  end
+  return true
+end
+
+--- Compute contrast ratio between two colors (WCAG formula)
+--- @param color1 number RGBA color
+--- @param color2 number RGBA color
+--- @return number Contrast ratio (1.0 to 21.0)
+local function contrast_ratio(color1, color2)
+  local l1 = Colors.luminance(color1)
+  local l2 = Colors.luminance(color2)
+  local lighter = math.max(l1, l2)
+  local darker = math.min(l1, l2)
+  return (lighter + 0.05) / (darker + 0.05)
+end
+
+--- Warn if contrast ratio is too low for text readability
+--- @param fg_hex string Foreground hex color
+--- @param bg_hex string Background hex color
+--- @param name string Variable name for warning
+--- @param min_ratio number Minimum contrast ratio (default 4.5 for WCAG AA)
+local function warn_low_contrast(fg_hex, bg_hex, name, min_ratio)
+  min_ratio = min_ratio or 4.5
+  local fg = Colors.hexrgb(fg_hex)
+  local bg = Colors.hexrgb(bg_hex)
+  local ratio = contrast_ratio(fg, bg)
+  if ratio < min_ratio then
+    reaper.ShowConsoleMsg(string.format(
+      "[Theme] Warning: %s has low contrast (%.1f:1, need %.1f:1)\n",
+      name, ratio, min_ratio
+    ))
+  end
+end
+
+-- Validate presets on load
+for name, hex in pairs(M.presets) do
+  local valid, err = validate_hex(hex, "presets." .. name)
+  if not valid then
+    reaper.ShowConsoleMsg("[Theme] " .. err .. "\n")
+  end
+end
+
+-- =============================================================================
+-- ANCHORS (auto-computed from presets)
+-- =============================================================================
+
+local function compute_lightness(hex)
+  local color = Colors.hexrgb(hex)
+  local _, _, l = Colors.rgb_to_hsl(color)
+  return l
+end
+
 M.anchors = {
-  dark  = 0.14,  -- #242424
-  light = 0.88,  -- #E0E0E0
+  dark  = compute_lightness(M.presets.dark),
+  light = compute_lightness(M.presets.light),
 }
+
+-- =============================================================================
+-- VALUE RANGES (for clamping)
+-- =============================================================================
+-- Define valid ranges for value types inferred from key names
+
+M.value_ranges = {
+  OPACITY    = { min = 0, max = 1 },
+  BRIGHTNESS = { min = 0, max = 2 },
+  SATURATION = { min = 0, max = 2 },
+  -- offset deltas (lightness adjustments)
+  OFFSET     = { min = -1, max = 1 },
+}
+
+--- Infer value range from key name
+--- @param key string Palette key name
+--- @return table|nil Range with min/max, or nil for no clamping
+local function get_range_for_key(key)
+  if not key then return nil end
+  if key:match("OPACITY") then return M.value_ranges.OPACITY end
+  if key:match("BRIGHTNESS") then return M.value_ranges.BRIGHTNESS end
+  if key:match("SATURATION") then return M.value_ranges.SATURATION end
+  return nil
+end
+
+--- Clamp a value to its valid range based on key name
+--- @param key string Palette key name
+--- @param value number Value to clamp
+--- @return number Clamped value
+local function clamp_value(key, value)
+  if type(value) ~= "number" then return value end
+  local range = get_range_for_key(key)
+  if not range then return value end
+  return math.max(range.min, math.min(range.max, value))
+end
+
+-- Export for engine use
+M.get_range_for_key = get_range_for_key
+M.clamp_value = clamp_value
 
 -- =============================================================================
 -- DSL WRAPPERS
 -- =============================================================================
--- Short names with optional threshold parameter:
---   snap(dark, light, [threshold=0.5]) - discrete snap
---   lerp(dark, light)                  - smooth interpolation
---   offset(dark, [light], [threshold=0.5]) - delta from BG_BASE
---   bg() - use BG_BASE directly (passthrough)
+-- Simple DSL - all snap/offset at midpoint (t=0.5):
+--   snap(dark, light)        - discrete snap at midpoint
+--   lerp(dark, light)        - smooth interpolation
+--   offset(dark, [light])    - delta from BG_BASE (light defaults to dark)
+--   bg()                     - use BG_BASE directly
 
-local function snap(dark_val, light_val, threshold)
-  return { mode = "snap", dark = dark_val, light = light_val, threshold = threshold or 0.5 }
+local function snap(dark_val, light_val)
+  return { mode = "snap", dark = dark_val, light = light_val }
 end
 
 local function lerp(dark_val, light_val)
   return { mode = "lerp", dark = dark_val, light = light_val }
 end
 
-local function offset(dark_delta, light_delta, threshold)
-  if light_delta == nil then
-    return { mode = "offset", dark = dark_delta, light = dark_delta, threshold = 0.5 }
-  elseif type(light_delta) == "number" and light_delta <= 1 and light_delta >= 0 and threshold == nil then
-    -- Could be threshold if light_delta looks like a threshold (0-1) and no third arg
-    -- But for clarity, require explicit: offset(0.03) or offset(0.03, -0.04) or offset(0.03, -0.04, 0.3)
-    return { mode = "offset", dark = dark_delta, light = light_delta, threshold = 0.5 }
-  end
-  return { mode = "offset", dark = dark_delta, light = light_delta, threshold = threshold or 0.5 }
+local function offset(dark_delta, light_delta)
+  return { mode = "offset", dark = dark_delta, light = light_delta or dark_delta }
 end
 
 local function bg()
@@ -78,8 +180,8 @@ M.bg = bg
 M.colors = {
   -- === BACKGROUNDS (from BG_BASE) ===
   BG_BASE         = bg(),
-  BG_HOVER        = offset(0.03, -0.04),
-  BG_ACTIVE       = offset(0.05, -0.07),
+  BG_HOVER        = offset(0.03, -0.06),   -- Light: more contrast (was -0.04)
+  BG_ACTIVE       = offset(0.05, -0.10),   -- Light: more contrast (was -0.07)
   BG_HEADER       = offset(-0.024, -0.06),
   BG_PANEL        = offset(-0.04),
   BG_CHROME       = offset(-0.08, -0.15),
@@ -123,9 +225,9 @@ M.colors = {
 
   -- === TILES ===
   TILE_NAME_COLOR      = snap("#DDE3E9", "#1A1A1A"),
-  TILE_FILL_BRIGHTNESS = lerp(0.5, 1.4),
-  TILE_FILL_SATURATION = lerp(0.4, 0.5),
-  TILE_FILL_OPACITY    = lerp(0.4, 0.5),
+  TILE_FILL_BRIGHTNESS = lerp(0.5, 0.7),   -- Light: darker tiles (was 1.4)
+  TILE_FILL_SATURATION = lerp(0.4, 0.7),   -- Light: more saturated (was 0.5)
+  TILE_FILL_OPACITY    = lerp(0.4, 0.6),   -- Light: slightly more opaque (was 0.5)
 
   -- === BADGES ===
   BADGE_BG             = snap("#14181C", "#E8ECF0"),
@@ -134,7 +236,7 @@ M.colors = {
   BADGE_BORDER_OPACITY = lerp(0.20, 0.15),
 
   -- === PLAYLIST ===
-  PLAYLIST_TILE_COLOR  = snap("#3A3A3A", "#D0D0D0"),
+  PLAYLIST_TILE_COLOR  = snap("#3A3A3A", "#A0A0A0"),  -- Light: darker for contrast (was #D0D0D0)
   PLAYLIST_NAME_COLOR  = snap("#CCCCCC", "#2A2A2A"),
   PLAYLIST_BADGE_COLOR = snap("#999999", "#666666"),
 
@@ -185,5 +287,10 @@ function M.get_all_keys()
   table.sort(keys)
   return keys
 end
+
+-- Export validation utilities
+M.validate_hex = validate_hex
+M.contrast_ratio = contrast_ratio
+M.warn_low_contrast = warn_low_contrast
 
 return M
