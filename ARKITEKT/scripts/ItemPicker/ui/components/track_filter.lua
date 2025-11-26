@@ -230,7 +230,8 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
     state.track_filter_painting = false
     state.track_filter_paint_value = nil
     state.track_filter_last_painted = nil
-    state.track_filter_paint_mode = nil  -- "toggle" or "fixed"
+    state.track_filter_paint_mode = nil  -- "enable" or "disable"
+    state.track_filter_prev_mouse_y = nil  -- Reset cursor tracking
   end
 
   for _, track in ipairs(tracks) do
@@ -239,9 +240,9 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
     local tile_x = x + indent
     local tile_w = width - indent
 
-    -- Check hover
+    -- Check hover (include margin/gap after track for seamless painting)
     local is_hovered = mouse_x >= tile_x and mouse_x <= tile_x + tile_w and
-                       mouse_y >= tile_y and mouse_y <= tile_y + TRACK_TILE.HEIGHT
+                       mouse_y >= tile_y and mouse_y <= tile_y + TRACK_TILE.HEIGHT + TRACK_TILE.MARGIN_Y
 
     -- Check selection state
     local is_selected = state.track_whitelist and state.track_whitelist[track.guid]
@@ -332,6 +333,12 @@ local function draw_track_tree(ctx, draw_list, tracks, x, y, width, state, depth
     if has_children and is_expanded then
       current_y = draw_track_tree(ctx, draw_list, track.children, x, y, width, state, depth + 1, current_y)
     end
+  end
+
+  -- Update previous mouse position for future crossing detection
+  -- (Currently gap detection via MARGIN_Y is sufficient, but this enables future enhancements)
+  if depth == 0 then  -- Only update at top level to avoid redundant updates
+    state.track_filter_prev_mouse_y = mouse_y
   end
 
   return current_y

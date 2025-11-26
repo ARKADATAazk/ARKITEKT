@@ -162,9 +162,9 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       local is_enabled = state.track_filters_enabled[track.guid]
       if is_enabled == nil then is_enabled = true end
 
-      -- Check hover
+      -- Check hover (include margin/gap after track for seamless painting)
       local is_hovered = mouse_x >= tag_x and mouse_x <= tag_x + tag_width and
-                         mouse_y >= tag_top and mouse_y <= tag_bottom
+                         mouse_y >= tag_top and mouse_y <= tag_bottom + TAG.MARGIN_Y
 
       -- Background
       local bg_alpha = is_enabled and 0xAA or 0x33
