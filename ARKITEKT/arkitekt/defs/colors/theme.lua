@@ -101,8 +101,10 @@ M.colors = {
   ACCENT_TRANSPARENT_OPACITY = lerp(0.67, 0.67),
 
   -- === ACCENTS (standalone) ===
-  ACCENT_WHITE        = lerp("#404040", "#8C8C8C"),
-  ACCENT_WHITE_BRIGHT = lerp("#595959", "#737373"),
+  -- Changed from lerp to offset to guarantee visible contrast from BG_BASE
+  -- (lerp created a "dead zone" in mid-range themes like light_grey)
+  ACCENT_WHITE        = offset(0.12, -0.15),
+  ACCENT_WHITE_BRIGHT = offset(0.20, -0.22),
   ACCENT_SUCCESS = lerp("#4CAF50", "#2E7D32"),
   ACCENT_WARNING = lerp("#FFA726", "#F57C00"),
   ACCENT_DANGER  = lerp("#EF5350", "#C62828"),
