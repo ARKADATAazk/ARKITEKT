@@ -25,7 +25,7 @@ end
 
 --- Get primary preset names (for UI selectors)
 function M.get_primary()
-  return { "dark", "light" }
+  return { "dark", "grey", "light_grey", "light" }
 end
 
 --- Check if a preset exists

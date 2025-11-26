@@ -268,29 +268,38 @@ function M.new(opts)
 
         -- Context menu on left/right click
         if ContextMenu.begin(ctx, "##icon_context_menu") then
-          -- Theme submenu
+          -- Theme submenu (auto-generated from presets)
           if ThemeManager then
             if ContextMenu.begin_menu(ctx, "Theme") then
               local current_mode = ThemeManager.get_mode()
 
-              -- Checkmark for current selection
-              local dark_label = (current_mode == "dark") and "* Dark" or "  Dark"
-              local grey_label = (current_mode == "grey") and "* Grey" or "  Grey"
-              local light_label = (current_mode == "light") and "* Light" or "  Light"
-              local adapt_label = (current_mode == "adapt") and "* Adapt (REAPER)" or "  Adapt (REAPER)"
+              -- Format preset name: "light_grey" -> "Light Grey"
+              local function format_preset_name(name)
+                return name:gsub("_", " "):gsub("(%a)([%w]*)", function(a, b)
+                  return a:upper() .. b
+                end)
+              end
 
-              if ContextMenu.item(ctx, dark_label) then
-                ThemeManager.set_mode("dark")
+              -- Get sorted preset names
+              local preset_names = {}
+              for name in pairs(ThemeManager.presets) do
+                preset_names[#preset_names + 1] = name
               end
-              if ContextMenu.item(ctx, grey_label) then
-                ThemeManager.set_mode("grey")
-              end
-              if ContextMenu.item(ctx, light_label) then
-                ThemeManager.set_mode("light")
+              table.sort(preset_names)
+
+              -- Show all presets
+              for _, name in ipairs(preset_names) do
+                local display = format_preset_name(name)
+                local label = (current_mode == name) and ("* " .. display) or ("  " .. display)
+                if ContextMenu.item(ctx, label) then
+                  ThemeManager.set_mode(name)
+                end
               end
 
               ContextMenu.separator(ctx)
 
+              -- Adapt mode (sync with REAPER)
+              local adapt_label = (current_mode == "adapt") and "* Adapt (REAPER)" or "  Adapt (REAPER)"
               if ContextMenu.item(ctx, adapt_label) then
                 ThemeManager.set_mode("adapt")
               end

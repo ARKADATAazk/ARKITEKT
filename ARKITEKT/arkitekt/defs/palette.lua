@@ -17,8 +17,10 @@ local M = {}
 -- Base colors for dark/light themes. Anchors are computed from these.
 
 M.presets = {
-  dark  = "#242424",  -- ~14% lightness (t=0)
-  light = "#E0E0E0",  -- ~88% lightness (t=1)
+  dark       = "#242424",  -- ~14% lightness (t=0)
+  grey       = "#505050",  -- ~31% lightness
+  light_grey = "#909090",  -- ~56% lightness
+  light      = "#E0E0E0",  -- ~88% lightness (t=1)
 }
 
 -- Compute anchors from preset lightness (single source of truth)
