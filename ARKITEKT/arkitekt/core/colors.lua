@@ -1,6 +1,15 @@
 -- @noindex
 -- Arkitekt/core/colors.lua
 -- Color manipulation and adaptive palette generation
+--
+-- ============================================================================
+-- COLOR FORMAT REFERENCE
+-- ============================================================================
+-- ARKITEKT internal:        0xRRGGBBAA (use hexrgb() to parse strings)
+-- ImGui ColorEdit4/Picker4: 0xRRGGBBAA (direct, no conversion needed)
+-- ImGui ColorEdit3/Picker3: 0xAARRGGBB (use rgba_to_argb / argb_to_rgba)
+-- REAPER native:            platform-specific (use rgba_to_reaper_native)
+-- ============================================================================
 
 -- Performance: Localize math functions for hot path (30% faster in loops)
 local max = math.max
