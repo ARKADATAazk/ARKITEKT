@@ -45,6 +45,7 @@ local MODULES = {
 
   -- Containers
   Panel = 'arkitekt.gui.widgets.containers.panel',
+  SlidingZone = 'arkitekt.gui.widgets.containers.sliding_zone',
   TileGroup = 'arkitekt.gui.widgets.containers.tile_group',
 
   -- Utilities (commonly used modules)
