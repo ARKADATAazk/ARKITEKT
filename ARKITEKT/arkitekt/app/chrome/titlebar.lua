@@ -305,6 +305,44 @@ function M.new(opts)
 
               ContextMenu.separator(ctx)
 
+              -- Custom color picker
+              if ThemeManager.set_custom and ThemeManager.get_custom_color then
+                local custom_label = (current_mode == "custom") and "* Custom" or "  Custom"
+
+                -- Get current custom color or default
+                local custom_color = ThemeManager.get_custom_color()
+                if not custom_color then
+                  -- Default to current BG_BASE if no custom color set
+                  custom_color = ThemeManager.COLORS and ThemeManager.COLORS.BG_BASE or hexrgb("#333333")
+                end
+
+                -- Extract RGB components (color is 0xRRGGBBAA)
+                local r = ((custom_color >> 24) & 0xFF) / 255
+                local g = ((custom_color >> 16) & 0xFF) / 255
+                local b = ((custom_color >> 8) & 0xFF) / 255
+
+                -- Show label and color picker on same line
+                ImGui.Text(ctx, custom_label)
+                ImGui.SameLine(ctx)
+
+                -- Color picker flags: no alpha, no options button
+                local flags = ImGui.ColorEditFlags_NoAlpha
+                              | ImGui.ColorEditFlags_NoInputs
+                              | ImGui.ColorEditFlags_NoLabel
+
+                local changed, new_r, new_g, new_b = ImGui.ColorEdit3(ctx, "##custom_color", r, g, b, flags)
+                if changed then
+                  -- Convert back to ImGui format (0xRRGGBBAA)
+                  local nr = math.floor(new_r * 255 + 0.5)
+                  local ng = math.floor(new_g * 255 + 0.5)
+                  local nb = math.floor(new_b * 255 + 0.5)
+                  local new_color = (nr << 24) | (ng << 16) | (nb << 8) | 0xFF
+                  ThemeManager.set_custom(new_color)
+                end
+              end
+
+              ContextMenu.separator(ctx)
+
               -- Adapt mode (sync with REAPER)
               local adapt_label = (current_mode == "adapt") and "* Adapt (REAPER)" or "  Adapt (REAPER)"
               if ContextMenu.item(ctx, adapt_label) then

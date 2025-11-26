@@ -175,7 +175,7 @@ function M.adapt()
 end
 
 --- Set theme by mode name
---- @param mode string "dark", "light", or "adapt"
+--- @param mode string "dark", "light", "adapt", or "custom"
 --- @param persist boolean|nil Whether to save preference (default: true)
 function M.set_mode(mode, persist)
   if persist == nil then persist = true end
@@ -183,6 +183,8 @@ function M.set_mode(mode, persist)
 
   if mode == "adapt" then
     success = Integration.sync_with_reaper()
+  elseif mode == "custom" then
+    success = Integration.apply_custom_color()
   elseif Presets.exists(mode) then
     success = Presets.apply(mode)
   end
@@ -209,7 +211,13 @@ function M.init(default_mode)
   local saved_mode = Integration.load_mode()
   local mode_to_apply = saved_mode
 
-  if not mode_to_apply or (mode_to_apply ~= "dark" and mode_to_apply ~= "light" and mode_to_apply ~= "adapt") then
+  -- Validate saved mode (including custom if a custom color exists)
+  local valid_modes = { dark = true, light = true, adapt = true, grey = true, light_grey = true }
+  if saved_mode == "custom" and Integration.get_custom_color() then
+    valid_modes.custom = true
+  end
+
+  if not mode_to_apply or not valid_modes[mode_to_apply] then
     mode_to_apply = default_mode
   end
 
@@ -231,6 +239,23 @@ M.create_live_sync = Integration.create_live_sync
 M.is_dock_adapt_enabled = Integration.is_dock_adapt_enabled
 M.set_dock_adapt_enabled = Integration.set_dock_adapt_enabled
 M.get_reaper_bg_color = Integration.get_reaper_bg_color
+
+-- =============================================================================
+-- CUSTOM COLOR
+-- =============================================================================
+
+M.get_custom_color = Integration.get_custom_color
+M.set_custom_color = Integration.set_custom_color
+M.apply_custom_color = Integration.apply_custom_color
+
+--- Set custom color and apply it as the current theme
+--- @param color number ImGui color in RGBA format
+--- @return boolean Success
+function M.set_custom(color)
+  if not color then return false end
+  Integration.set_custom_color(color)
+  return M.set_mode("custom")
+end
 
 -- =============================================================================
 -- REGISTRY (script palettes)

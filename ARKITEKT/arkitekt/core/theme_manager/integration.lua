@@ -161,6 +161,43 @@ function M.clear_mode()
 end
 
 -- =============================================================================
+-- CUSTOM COLOR
+-- =============================================================================
+
+local CUSTOM_COLOR_KEY = "theme_custom_color"
+
+--- Get saved custom theme color
+--- @return number|nil ImGui color in RGBA format, or nil if not set
+function M.get_custom_color()
+  local saved = reaper.GetExtState(EXTSTATE_SECTION, CUSTOM_COLOR_KEY)
+  if saved and saved ~= "" then
+    local color = tonumber(saved)
+    if color then return color end
+  end
+  return nil
+end
+
+--- Save custom theme color
+--- @param color number ImGui color in RGBA format
+function M.set_custom_color(color)
+  if color then
+    reaper.SetExtState(EXTSTATE_SECTION, CUSTOM_COLOR_KEY, tostring(color), true)
+  end
+end
+
+--- Apply custom color as theme
+--- @param color number|nil ImGui color in RGBA format (uses saved if nil)
+--- @return boolean Success
+function M.apply_custom_color(color)
+  color = color or M.get_custom_color()
+  if not color then
+    return false
+  end
+  get_theme().generate_and_apply(color)
+  return true
+end
+
+-- =============================================================================
 -- ANIMATED TRANSITIONS
 -- =============================================================================
 
