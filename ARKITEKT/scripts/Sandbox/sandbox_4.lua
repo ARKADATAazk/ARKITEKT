@@ -127,6 +127,53 @@ local function find_node_by_id(nodes, id)
 end
 
 -- ============================================================================
+-- TREE STATE - MUST BE DEFINED BEFORE HELPER FUNCTIONS
+-- ============================================================================
+
+local tree_state = {
+  open = { root = true, src = true, docs = true, components = true, utils = true, guides = true },
+  selected = {}, -- Now a table of selected IDs: { [id] = true, ... }
+  focused = nil, -- Currently focused item for keyboard nav
+  anchor = nil, -- Anchor point for shift-selection
+  hovered = nil,
+  scroll_y = 0,
+  editing = nil,
+  edit_buffer = "",
+  edit_focus_set = false,
+  flat_list = {}, -- Flat list of visible items in order for arrow navigation
+  clipboard = {}, -- Clipboard for cut/copy/paste
+  clipboard_mode = nil, -- "cut" or "copy"
+  context_menu_open = false,
+  context_menu_x = 0,
+  context_menu_y = 0,
+  search_text = "",
+  search_active = false,
+  tree_bounds = {}, -- Store tree bounds for click detection
+
+  -- Drag & drop state
+  drag_active = false,
+  drag_node_id = nil,
+  drag_start_x = 0,
+  drag_start_y = 0,
+  drag_threshold = 5, -- pixels to move before drag starts
+  drop_target_id = nil,
+  drop_position = nil, -- "before", "into", "after"
+
+  -- Virtual scrolling
+  use_virtual_scrolling = true,
+  total_content_height = 0,
+
+  -- Icon types
+  icon_types = {
+    folder = "folder",
+    file = "file",
+    lua = "lua",
+    markdown = "markdown",
+    config = "config",
+  },
+}
+
+-- ============================================================================
 -- MULTISELECTION HELPERS
 -- ============================================================================
 
@@ -318,49 +365,6 @@ local function insert_node_at(nodes, target_id, node_to_insert, position)
   end
   return false
 end
-
-local tree_state = {
-  open = { root = true, src = true, docs = true, components = true, utils = true, guides = true },
-  selected = {}, -- Now a table of selected IDs: { [id] = true, ... }
-  focused = nil, -- Currently focused item for keyboard nav
-  anchor = nil, -- Anchor point for shift-selection
-  hovered = nil,
-  scroll_y = 0,
-  editing = nil,
-  edit_buffer = "",
-  edit_focus_set = false,
-  flat_list = {}, -- Flat list of visible items in order for arrow navigation
-  clipboard = {}, -- Clipboard for cut/copy/paste
-  clipboard_mode = nil, -- "cut" or "copy"
-  context_menu_open = false,
-  context_menu_x = 0,
-  context_menu_y = 0,
-  search_text = "",
-  search_active = false,
-  tree_bounds = {}, -- Store tree bounds for click detection
-
-  -- Drag & drop state
-  drag_active = false,
-  drag_node_id = nil,
-  drag_start_x = 0,
-  drag_start_y = 0,
-  drag_threshold = 5, -- pixels to move before drag starts
-  drop_target_id = nil,
-  drop_position = nil, -- "before", "into", "after"
-
-  -- Virtual scrolling
-  use_virtual_scrolling = true,
-  total_content_height = 0,
-
-  -- Icon types
-  icon_types = {
-    folder = "folder",
-    file = "file",
-    lua = "lua",
-    markdown = "markdown",
-    config = "config",
-  },
-}
 
 -- ============================================================================
 -- DRAWING FUNCTIONS

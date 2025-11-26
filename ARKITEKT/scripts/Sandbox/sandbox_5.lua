@@ -175,7 +175,7 @@ local function find_node_by_id(nodes, id)
 end
 
 -- ============================================================================
--- TREE STATE
+-- TREE STATE - MUST BE DEFINED BEFORE HELPER FUNCTIONS
 -- ============================================================================
 
 local tree_state = {
