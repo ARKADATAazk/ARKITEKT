@@ -240,15 +240,13 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       math.floor(selection_config.ants_alpha * combined_alpha)
     )
 
-    -- Enforce minimum lightness for marching ants (always visible on all tiles)
-    local min_ant_lightness = 0.75  -- Very light, visible even on medium tiles
+    -- Mix with white to make marching ants much lighter (tinted but very bright)
+    local white_mix = 0.65  -- Mix 65% white to make ants very light but still tinted
     local r, g, b, a = ark.Colors.rgba_to_components(ant_color)
-    local h, s, l = ark.Colors.rgb_to_hsl(ant_color)
-    if l < min_ant_lightness then
-      l = min_ant_lightness
-      local r_new, g_new, b_new = ark.Colors.hsl_to_rgb(h, s, l)
-      ant_color = ark.Colors.components_to_rgba(r_new, g_new, b_new, a)
-    end
+    r = r + (255 - r) * white_mix
+    g = g + (255 - g) * white_mix
+    b = b + (255 - b) * white_mix
+    ant_color = ark.Colors.components_to_rgba(math.floor(r), math.floor(g), math.floor(b), a)
 
     local inset = selection_config.ants_inset
     local selection_count = state.audio_selection_count or 1
