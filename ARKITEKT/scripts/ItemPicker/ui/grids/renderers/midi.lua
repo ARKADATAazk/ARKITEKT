@@ -110,6 +110,12 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
     render_color = ark.Colors.adjust_brightness(render_color, 1.0 + hover_boost)
   end
 
+  -- Apply selection effect (brightness boost for selected tiles)
+  if tile_state.selected then
+    local selection_boost = config.TILE_RENDER.selection.tile_brightness_boost or 0.35
+    render_color = ark.Colors.adjust_brightness(render_color, 1.0 + selection_boost)
+  end
+
   -- Calculate combined alpha with state effects
   local base_alpha = (render_color & 0xFF) / 255
   local combined_alpha, final_alpha = BaseRenderer.calculate_combined_alpha(cascade_factor, enabled_factor, muted_factor, base_alpha, config)

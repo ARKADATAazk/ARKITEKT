@@ -149,6 +149,7 @@ M.TILE_RENDER = {
     ants_dash = 24,  -- 3x sparser than original (was 8px)
     ants_gap = 8,    -- Slightly larger gap (was 6px)
     ants_speed = 20,
+    tile_brightness_boost = 0.35,  -- Brightness boost for selected tile fill
   },
 
   -- Disabled state
