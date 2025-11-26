@@ -22,6 +22,9 @@ local GUI = require("RegionPlaylist.ui.gui")
 local StatusConfig = require("RegionPlaylist.ui.status")
 local hexrgb = ark.Colors.hexrgb
 
+-- Register script palette (for Theme Debugger)
+require("RegionPlaylist.defs.palette")
+
 -- State needs settings for initialization - Shell will auto-create from app_name
 local Settings = require("arkitekt.core.settings")
 local data_dir = ark._bootstrap.get_data_dir("RegionPlaylist")
