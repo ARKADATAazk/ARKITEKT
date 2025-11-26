@@ -241,7 +241,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       scaled_x1 + inset, scaled_y1 + inset, scaled_x2 - inset, scaled_y2 - inset,
       ant_color,
       selection_config.ants_thickness,
-      config.TILE.ROUNDING,
+      0,  -- No rounding for marching ants (performance: skips arc calculations)
       selection_config.ants_dash,
       selection_config.ants_gap,
       selection_config.ants_speed,

@@ -129,6 +129,61 @@ function M.draw(dl, x1, y1, x2, y2, color, thickness, radius, dash, gap, speed_p
   local w, h = x2 - x1, y2 - y1
   local r = max(0, min(radius, floor(min(w, h) * 0.5)))
 
+  -- FAST PATH: No rounding (r=0) - skip all arc calculations
+  if r <= 0 then
+    local perimeter = 2 * (w + h)
+    if perimeter <= 0 then return end
+
+    local period = dash + gap
+
+    -- Batch time calculation: Cache phase per frame
+    local current_time = reaper.time_precise()
+    local phase
+    if _phase_cache.time ~= current_time then
+      _phase_cache.time = current_time
+      _phase_cache.value = (current_time * speed_px) % period
+    end
+    phase = _phase_cache.value
+
+    -- Simple rectangular path: top, right, bottom, left
+    local edges = {
+      {x1=x1, y1=y1, x2=x2, y2=y1, len=w},     -- Top
+      {x1=x2, y1=y1, x2=x2, y2=y2, len=h},     -- Right
+      {x1=x2, y1=y2, x2=x1, y2=y2, len=w},     -- Bottom
+      {x1=x1, y1=y2, x2=x1, y2=y1, len=h},     -- Left
+    }
+
+    local s = -phase
+    while s < perimeter do
+      local e = min(perimeter, s + dash)
+      if e > max(0, s) then
+        -- Find which edge(s) this dash spans
+        local points = {}
+        local pos = 0
+        for _, edge in ipairs(edges) do
+          if e > pos and s < pos + edge.len then
+            local u0 = max(0, s - pos) / edge.len
+            local u1 = min(edge.len, e - pos) / edge.len
+            if #points == 0 then
+              points[#points + 1] = edge.x1 + (edge.x2 - edge.x1) * u0
+              points[#points + 1] = edge.y1 + (edge.y2 - edge.y1) * u0
+            end
+            points[#points + 1] = edge.x1 + (edge.x2 - edge.x1) * u1
+            points[#points + 1] = edge.y1 + (edge.y2 - edge.y1) * u1
+          end
+          pos = pos + edge.len
+        end
+        if #points >= 4 then
+          local points_arr = reaper.new_array(points)
+          ImGui.DrawList_AddPolyline(dl, points_arr, color, ImGui.DrawFlags_None, thickness)
+        end
+      end
+      s = s + period
+    end
+    return
+  end
+
+  -- NORMAL PATH: With rounding (r>0) - use arc segments
   local straight_w = max(0, w - 2*r)
   local straight_h = max(0, h - 2*r)
   local arc_len = (math.pi * r) / 2
