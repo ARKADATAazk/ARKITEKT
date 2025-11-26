@@ -194,6 +194,28 @@ function SlidingZone:teleport(visibility, slide, scale)
 end
 
 -- ============================================================================
+-- MOUSE POSITION TRACKING
+-- ============================================================================
+
+--- Get reliable mouse position using reaper.GetMousePosition()
+--- This works even when cursor is outside the ImGui window bounds
+--- reaper.GetMousePosition() returns screen coordinates, same as ImGui.GetMousePos()
+--- @param ctx ImGui_Context
+--- @return number mx Mouse X in screen coordinates
+--- @return number my Mouse Y in screen coordinates
+local function get_mouse_position(ctx)
+  -- Use reaper.GetMousePosition() for reliable tracking outside window
+  -- This works because both reaper and ImGui use screen coordinates
+  if reaper.GetMousePosition then
+    return reaper.GetMousePosition()
+  else
+    -- Fallback to ImGui.GetMousePos() if reaper API not available
+    -- Note: This may return stale values when cursor is outside window
+    return ImGui.GetMousePos(ctx)
+  end
+end
+
+-- ============================================================================
 -- EXIT DIRECTION CALCULATION
 -- ============================================================================
 
@@ -233,7 +255,7 @@ end
 -- ============================================================================
 
 local function is_in_hover_zone(ctx, opts, state, bounds)
-  local mx, my = ImGui.GetMousePos(ctx)
+  local mx, my = get_mouse_position(ctx)
   local edge = opts.edge or "right"
 
   -- Get content bounds for hover calculation
@@ -556,8 +578,8 @@ function M.draw(ctx, opts)
     state:set_targets(1.0, slide_distance, opts.expand_scale or 1.0)
 
   elseif trigger == "hover" then
-    -- Get current mouse position
-    local mx, my = ImGui.GetMousePos(ctx)
+    -- Get current mouse position (using reaper API for reliability outside window)
+    local mx, my = get_mouse_position(ctx)
 
     -- Calculate mouse_in_window if window_bounds provided
     local mouse_in_window = true  -- Default to true if no window bounds
@@ -686,8 +708,8 @@ function M.draw(ctx, opts)
     ImGui.DrawList_PopClipRect(dl)
   end
 
-  -- Check if mouse is over content bounds
-  local mx, my = ImGui.GetMousePos(ctx)
+  -- Check if mouse is over content bounds (using reaper API for reliability)
+  local mx, my = get_mouse_position(ctx)
   local is_hovered = mx >= content_bounds.x and mx <= content_bounds.x + content_bounds.w and
                      my >= content_bounds.y and my <= content_bounds.y + content_bounds.h
 
