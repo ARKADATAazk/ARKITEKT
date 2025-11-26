@@ -27,11 +27,11 @@
 --   [main] scripts/ItemPicker/ARK_ItemPicker.lua > ARK Item Picker.lua
 --   [main] scripts/TemplateBrowser/ARK_TemplateBrowser.lua > ARK Template Browser.lua
 --   [main] scripts/ThemeAdjuster/ARK_ThemeAdjuster.lua > ARK Theme Adjuster.lua
---   [nomain] scripts/RegionPlaylist/**/*.lua
---   [nomain] scripts/ItemPicker/**/*.lua
---   [nomain] scripts/TemplateBrowser/**/*.lua
---   [nomain] scripts/ThemeAdjuster/**/*.lua
---   [nomain] scripts/MediaContainer/**/*.lua
+--   [nomain] scripts/RegionPlaylist/*/**/*.lua
+--   [nomain] scripts/ItemPicker/*/**/*.lua
+--   [nomain] scripts/TemplateBrowser/*/**/*.lua
+--   [nomain] scripts/ThemeAdjuster/*/**/*.lua
+--   [nomain] scripts/MediaContainer/*/**/*.lua
 --   [nomain] arkitekt/**/*.lua
 --   [nomain] arkitekt/**/*.{png,jpg,svg,ttf,json,txt}
 
