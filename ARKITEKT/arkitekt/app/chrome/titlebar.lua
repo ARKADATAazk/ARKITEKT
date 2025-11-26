@@ -309,12 +309,19 @@ function M.new(opts)
               if ThemeManager.set_custom and ThemeManager.get_custom_color then
                 local custom_label = (current_mode == "custom") and "* Custom" or "  Custom"
 
-                -- Get current custom color or default
+                -- Get current custom color or default (in our format: 0xRRGGBBAA)
                 local custom_color = ThemeManager.get_custom_color()
                 if not custom_color then
                   -- Default to current BG_BASE if no custom color set
                   custom_color = ThemeManager.COLORS and ThemeManager.COLORS.BG_BASE or hexrgb("#333333")
                 end
+
+                -- Convert from our format (0xRRGGBBAA) to ImGui format (0xAABBGGRR)
+                local r = (custom_color >> 24) & 0xFF
+                local g = (custom_color >> 16) & 0xFF
+                local b = (custom_color >> 8) & 0xFF
+                local a = custom_color & 0xFF
+                local imgui_color = (a << 24) | (b << 16) | (g << 8) | r
 
                 -- Show label and color picker on same line
                 ImGui.Text(ctx, custom_label)
@@ -325,9 +332,14 @@ function M.new(opts)
                               | ImGui.ColorEditFlags_NoInputs
                               | ImGui.ColorEditFlags_NoLabel
 
-                -- ReaImGui ColorEdit3 takes packed color (0xRRGGBBAA) and returns changed, new_color
-                local changed, new_color = ImGui.ColorEdit3(ctx, "##custom_color", custom_color, flags)
+                local changed, new_imgui_color = ImGui.ColorEdit3(ctx, "##custom_color", imgui_color, flags)
                 if changed then
+                  -- Convert back from ImGui format (0xAABBGGRR) to our format (0xRRGGBBAA)
+                  local na = (new_imgui_color >> 24) & 0xFF
+                  local nb = (new_imgui_color >> 16) & 0xFF
+                  local ng = (new_imgui_color >> 8) & 0xFF
+                  local nr = new_imgui_color & 0xFF
+                  local new_color = (nr << 24) | (ng << 16) | (nb << 8) | na
                   ThemeManager.set_custom(new_color)
                 end
               end
