@@ -394,41 +394,44 @@ local function draw_slider(ctx, ImGui, label, value, min_val, max_val, format)
   return changed, new_val
 end
 
---- Convert RRGGBBAA to AABBGGRR for ImGui ColorEdit (swap byte order)
-local function rgba_to_abgr(rgba)
-  local r = (rgba >> 24) & 0xFF
-  local g = (rgba >> 16) & 0xFF
-  local b = (rgba >> 8) & 0xFF
-  local a = rgba & 0xFF
+--- Convert RRGGBBAA to AABBGGRR (for ImGui ColorEdit)
+local function rgba_to_abgr(color)
+  local r = (color >> 24) & 0xFF
+  local g = (color >> 16) & 0xFF
+  local b = (color >> 8) & 0xFF
+  local a = color & 0xFF
   return (a << 24) | (b << 16) | (g << 8) | r
 end
 
---- Convert AABBGGRR back to RRGGBBAA
-local function abgr_to_rgba(abgr)
-  local a = (abgr >> 24) & 0xFF
-  local b = (abgr >> 16) & 0xFF
-  local g = (abgr >> 8) & 0xFF
-  local r = abgr & 0xFF
+--- Convert AABBGGRR to RRGGBBAA (from ImGui ColorEdit)
+local function abgr_to_rgba(color)
+  local a = (color >> 24) & 0xFF
+  local b = (color >> 16) & 0xFF
+  local g = (color >> 8) & 0xFF
+  local r = color & 0xFF
   return (r << 24) | (g << 16) | (b << 8) | a
 end
 
 --- Draw a color picker for a hex string
+--- Note: ReaImGui ColorEdit3 uses AABBGGRR format, ARKITEKT uses RRGGBBAA
 local function draw_color_picker(ctx, ImGui, label, hex_value)
-  -- Convert hex to RRGGBBAA, then to AABBGGRR for ColorEdit
-  local rgba = Colors.hexrgb(hex_value or "#808080")
-  local abgr = rgba_to_abgr(rgba)
+  -- Convert hex to packed color (RRGGBBAA format)
+  local color_rgba = Colors.hexrgb(hex_value or "#808080")
+
+  -- Convert to ImGui format (AABBGGRR) for display
+  local color_abgr = rgba_to_abgr(color_rgba)
 
   -- Color picker flags
   local flags = ImGui.ColorEditFlags_NoInputs
               | ImGui.ColorEditFlags_NoLabel
               | ImGui.ColorEditFlags_NoAlpha
 
-  local changed, new_abgr = ImGui.ColorEdit3(ctx, label, abgr, flags)
+  local changed, new_color_abgr = ImGui.ColorEdit3(ctx, label, color_abgr, flags)
 
   if changed then
-    -- Convert back: AABBGGRR -> RRGGBBAA -> hex string
-    local new_rgba = abgr_to_rgba(new_abgr)
-    return true, Colors.to_hexrgb(new_rgba)
+    -- Convert back from ImGui format (AABBGGRR) to ARKITEKT format (RRGGBBAA)
+    local new_color_rgba = abgr_to_rgba(new_color_abgr)
+    return true, Colors.to_hexrgb(new_color_rgba)
   end
 
   return false, hex_value
