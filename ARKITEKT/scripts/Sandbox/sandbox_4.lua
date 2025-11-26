@@ -889,6 +889,23 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, cfg.bg_hover)
   end
 
+  -- Visual feedback: Show items being dragged with semi-transparent overlay
+  if tree_state.drag_active then
+    local is_being_dragged = false
+    for _, drag_id in ipairs(tree_state.drag_node_ids) do
+      if drag_id == node.id then
+        is_being_dragged = true
+        break
+      end
+    end
+    if is_being_dragged then
+      -- Semi-transparent white overlay to indicate "being dragged"
+      ImGui.DrawList_AddRectFilled(dl, visible_x, y_pos, visible_x + visible_w, y_pos + item_h, hexrgb("#FFFFFF18"))
+      -- Subtle border for additional feedback
+      ImGui.DrawList_AddRect(dl, visible_x + 1, y_pos + 1, visible_x + visible_w - 1, y_pos + item_h - 1, hexrgb("#FFFFFF40"), 0, 0, 1)
+    end
+  end
+
   -- Focused indicator (subtle border)
   if is_focused and not tree_state.editing then
     ImGui.DrawList_AddRect(dl, visible_x + 1, y_pos, visible_x + visible_w - 1, y_pos + item_h, hexrgb("#6A9EFFAA"), 0, 0, 1)
