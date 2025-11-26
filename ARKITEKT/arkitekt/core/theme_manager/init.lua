@@ -1019,6 +1019,48 @@ function M.disable_debug()
   M.debug_enabled = false
 end
 
+-- Mapping from preset rule keys to their corresponding Style.COLORS keys
+local RULE_TO_STYLE_MAP = {
+  -- Background deltas
+  bg_hover_delta = "BG_HOVER",
+  bg_active_delta = "BG_ACTIVE",
+  bg_header_delta = "BG_HEADER",
+  bg_panel_delta = "BG_PANEL",
+  -- Patterns
+  pattern_primary_delta = "PATTERN_PRIMARY",
+  pattern_secondary_delta = "PATTERN_SECONDARY",
+  -- Borders
+  border_outer_color = "BORDER_OUTER",
+  border_outer_opacity = "BORDER_OUTER",
+  border_inner_delta = "BORDER_INNER",
+  border_hover_delta = "BORDER_HOVER",
+  border_active_delta = "BORDER_ACTIVE",
+  border_focus_delta = "BORDER_FOCUS",
+  -- Text
+  text_hover_delta = "TEXT_HOVER",
+  text_dimmed_delta = "TEXT_DIMMED",
+  text_dark_delta = "TEXT_DARK",
+  text_bright_delta = "TEXT_BRIGHT",
+  -- Accents
+  accent_bright_delta = "ACCENT_TEAL_BRIGHT",
+  accent_white_lightness = "ACCENT_WHITE",
+  accent_white_bright_lightness = "ACCENT_WHITE_BRIGHT",
+  -- Tiles
+  tile_fill_brightness = "TILE_FILL_BRIGHTNESS",
+  tile_fill_saturation = "TILE_FILL_SATURATION",
+  tile_fill_opacity = "TILE_FILL_OPACITY",
+  tile_name_color = "TILE_NAME_COLOR",
+  -- Badges
+  badge_bg_color = "BADGE_BG",
+  badge_bg_opacity = "BADGE_BG",
+  badge_text_color = "BADGE_TEXT",
+  badge_border_opacity = "BADGE_BORDER_OPACITY",
+  -- Playlist tiles
+  playlist_tile_color = "PLAYLIST_TILE_COLOR",
+  playlist_name_color = "PLAYLIST_NAME_COLOR",
+  playlist_badge_color = "PLAYLIST_BADGE_COLOR",
+}
+
 --- Render debug overlay showing current theme state
 --- Call this from your main render loop after other UI
 --- @param ctx userdata ImGui context
@@ -1069,7 +1111,7 @@ function M.render_debug_overlay(ctx, ImGui)
     ImGui.Separator(ctx)
 
     -- Show each preset value with current interpolated result
-    ImGui.Text(ctx, "Preset Values (dark -> light):")
+    ImGui.Text(ctx, "Preset Rules -> Style.COLORS:")
     ImGui.Separator(ctx)
 
     local rules = M.get_current_rules()
@@ -1086,15 +1128,33 @@ function M.render_debug_overlay(ctx, ImGui)
       local dark_val = unwrap(M.presets.dark[key])
       local light_val = unwrap(M.presets.light[key])
       local mode = get_mode(M.presets.dark[key])
+      local style_key = RULE_TO_STYLE_MAP[key]
 
-      -- Color swatch for hex color values
-      if type(value) == "string" and value:match("^#") then
-        local color = Colors.hexrgb(value .. "FF")  -- Add alpha if not present
-        ImGui.ColorButton(ctx, key, color, 0, 12, 12)
+      -- Get final computed color from Style.COLORS if available
+      local final_color = style_key and Style.COLORS[style_key]
+      local has_final_color = final_color and type(final_color) == "number"
+
+      -- Show final color swatch if it's a color value
+      if has_final_color then
+        ImGui.ColorButton(ctx, "final_" .. key, final_color, 0, 12, 12)
         ImGui.SameLine(ctx)
       end
 
-      -- Value display with mode indicator
+      -- Color swatch for hex color values in preset
+      if type(value) == "string" and value:match("^#") then
+        local hex_len = #value
+        local hex_with_alpha = value
+        if hex_len == 4 then  -- #RGB
+          hex_with_alpha = value .. "F"
+        elseif hex_len == 7 then  -- #RRGGBB
+          hex_with_alpha = value .. "FF"
+        end
+        local color = Colors.hexrgb(hex_with_alpha)
+        ImGui.ColorButton(ctx, "preset_" .. key, color, 0, 12, 12)
+        ImGui.SameLine(ctx)
+      end
+
+      -- Value display with mode indicator and Style.COLORS mapping
       local display_value
       if type(value) == "number" then
         display_value = string.format("%.3f", value)
@@ -1102,14 +1162,44 @@ function M.render_debug_overlay(ctx, ImGui)
         display_value = tostring(value)
       end
 
-      ImGui.Text(ctx, string.format("[%s] %s: %s", mode:sub(1, 1):upper(), key, display_value))
+      local style_suffix = style_key and (" -> " .. style_key) or ""
+      ImGui.Text(ctx, string.format("[%s] %s: %s%s", mode:sub(1, 1):upper(), key, display_value, style_suffix))
 
       -- Show dark→light range on hover
       if ImGui.IsItemHovered(ctx) then
-        ImGui.SetTooltip(ctx, string.format(
+        local tooltip = string.format(
           "dark: %s\nlight: %s\nt=%.3f\nmode: %s",
           tostring(dark_val), tostring(light_val), t, mode
-        ))
+        )
+        if style_key then
+          tooltip = tooltip .. "\n\nStyle.COLORS." .. style_key
+          if has_final_color then
+            tooltip = tooltip .. string.format(" = 0x%08X", final_color)
+          end
+        end
+        ImGui.SetTooltip(ctx, tooltip)
+      end
+    end
+
+    ImGui.Separator(ctx)
+
+    -- Show all Style.COLORS with swatches
+    if ImGui.CollapsingHeader(ctx, "All Style.COLORS") then
+      local color_keys = {}
+      for k in pairs(Style.COLORS) do
+        color_keys[#color_keys + 1] = k
+      end
+      table.sort(color_keys)
+
+      for _, k in ipairs(color_keys) do
+        local v = Style.COLORS[k]
+        if type(v) == "number" then
+          ImGui.ColorButton(ctx, "style_" .. k, v, 0, 12, 12)
+          ImGui.SameLine(ctx)
+          ImGui.Text(ctx, string.format("%s: 0x%08X", k, v))
+        else
+          ImGui.Text(ctx, string.format("%s: %s", k, tostring(v)))
+        end
       end
     end
 
