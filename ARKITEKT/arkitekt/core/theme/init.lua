@@ -262,6 +262,9 @@ function M.render_debug_window(ctx, ImGui)
   })
 end
 
+-- Alias for shell.lua compatibility
+M.render_debug_overlay = M.render_debug_window
+
 function M.check_debug_hotkey(ctx, ImGui)
   Debug.check_debug_hotkey(ctx, ImGui)
 end
