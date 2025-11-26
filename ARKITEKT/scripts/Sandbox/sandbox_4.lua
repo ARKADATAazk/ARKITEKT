@@ -936,6 +936,17 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
     tree_state.debug_root_open = is_open
     tree_state.debug_root_has_children = has_children
     tree_state.debug_root_child_count = has_children and #node.children or 0
+
+    -- More detailed debugging
+    tree_state.debug_node_id = node.id
+    tree_state.debug_node_name = node.name
+    tree_state.debug_children_nil = (node.children == nil)
+    tree_state.debug_children_count = node.children and #node.children or "NIL"
+    tree_state.debug_open_table_root = tree_state.open["root"]
+    tree_state.debug_open_table_size = 0
+    for k, v in pairs(tree_state.open) do
+      tree_state.debug_open_table_size = tree_state.debug_open_table_size + 1
+    end
   end
 
   if is_open and has_children then
@@ -1473,10 +1484,20 @@ Shell.run({
     -- More detailed debug
     if #tree_state.flat_list <= 1 then
       ImGui.TextColored(ctx, 0xFF0000FF, "WARNING: Only root in flat_list! Children not rendering!")
-      ImGui.Text(ctx, string.format("Debug: is_open=%s | has_children=%s | child_count=%d",
+      ImGui.Text(ctx, string.format("Debug: is_open=%s | has_children=%s | child_count=%s",
         tree_state.debug_root_open and "TRUE" or "FALSE",
         tree_state.debug_root_has_children and "TRUE" or "FALSE",
-        tree_state.debug_root_child_count or 0))
+        tostring(tree_state.debug_root_child_count or 0)))
+
+      ImGui.Text(ctx, string.format("Node: id=%s name=%s",
+        tree_state.debug_node_id or "NIL",
+        tree_state.debug_node_name or "NIL"))
+
+      ImGui.Text(ctx, string.format("Children: nil=%s count=%s | open_table[root]=%s table_size=%d",
+        tree_state.debug_children_nil and "YES" or "NO",
+        tostring(tree_state.debug_children_count or "?"),
+        tostring(tree_state.debug_open_table_root),
+        tree_state.debug_open_table_size or 0))
     end
 
     tree_state.hovered = nil
