@@ -299,22 +299,26 @@ function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_
   local w = x2 - x1
   local h = y2 - y1
 
-  -- Slide down instead of zoom up (negative offset)
+  -- Slide down instead of zoom up
   local slide_offset = t * h * 0.15  -- Slide down 15% of height
   local ny1 = y1 + slide_offset
   local ny2 = y2 + slide_offset
 
-  -- Grey target color (desaturated, darker) - keep original color, just desaturate
-  local target_grey = hexrgb("#88888888")
-
+  -- Convert base color to HSL and reduce lightness and saturation
+  local Colors = require('arkitekt.core.colors')
   local r1 = (base_color >> 24) & 0xFF
   local g1 = (base_color >> 16) & 0xFF
   local b1 = (base_color >> 8) & 0xFF
   local a1 = base_color & 0xFF
 
-  local r2 = (target_grey >> 24) & 0xFF
-  local g2 = (target_grey >> 16) & 0xFF
-  local b2 = (target_grey >> 8) & 0xFF
+  local h_hsl, s_hsl, l_hsl = Colors.rgb_to_hsl(base_color)
+
+  -- Reduce saturation and lightness by 35%
+  local target_s = s_hsl * 0.65
+  local target_l = l_hsl * 0.65
+
+  local r2, g2, b2 = Colors.hsl_to_rgb(h_hsl, target_s, target_l)
+  r2, g2, b2 = r2 * 255, g2 * 255, b2 * 255
 
   local grey_factor = math.min(1, t * 3)
 
@@ -339,32 +343,6 @@ function DisableAnim:render(ctx, dl, key, base_rect, base_color, rounding, icon_
       x1 - offset, ny1 - offset,
       x2 + offset, ny2 + offset,
       blur_color, rounding + offset * 0.3)
-  end
-
-  -- Eye icon (fade out as animation progresses)
-  -- Using Remix Icon eye-off: &#xECB6; (UTF-8: \u{ECB6})
-  -- Only render if icon font is available
-  if icon_font then
-    local eye_alpha = (255 * (1 - Easing.ease_out_quad(t)))//1
-    local eye_color = (hexrgb("#FFFFFF") & 0xFFFFFF00) | eye_alpha  -- White for better visibility
-
-    -- Push Remix Icon font for icon rendering - much larger size
-    local icon_text = "\u{ECB6}"
-    local large_icon_size = math.min(h * 0.5, 48)  -- 50% of tile height, max 48px
-    ImGui.PushFont(ctx, icon_font, large_icon_size)
-
-    -- Calculate icon size and position (centered on tile)
-    local text_w = ImGui.CalcTextSize(ctx, icon_text)
-    local text_h = ImGui.GetTextLineHeight(ctx)
-    local icon_x = cx - text_w / 2
-    local icon_y = (ny1 + ny2) / 2 - text_h / 2
-
-    -- Render eye icon with dark shadow for better visibility on any background
-    local shadow_color = (hexrgb("#000000") & 0xFFFFFF00) | eye_alpha
-    ImGui.DrawList_AddText(dl, icon_x + 2, icon_y + 2, shadow_color, icon_text)
-    ImGui.DrawList_AddText(dl, icon_x, icon_y, eye_color, icon_text)
-
-    ImGui.PopFont(ctx)
   end
 
   return true
