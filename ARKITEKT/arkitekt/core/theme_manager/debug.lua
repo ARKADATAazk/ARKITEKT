@@ -10,6 +10,7 @@ local Style = require('arkitekt.gui.style')
 local Rules = require('arkitekt.core.theme_manager.rules')
 local Engine = require('arkitekt.core.theme_manager.engine')
 local Registry = require('arkitekt.core.theme_manager.registry')
+local Palette = require('arkitekt.defs.palette')
 
 local M = {}
 
@@ -138,50 +139,23 @@ end
 -- DEBUG OVERLAY RENDERING
 -- =============================================================================
 
--- Mapping from rule keys to Style.COLORS keys (for debug display)
-local RULE_TO_STYLE_MAP = {
-  bg_hover_delta = "BG_HOVER",
-  bg_active_delta = "BG_ACTIVE",
-  bg_header_delta = "BG_HEADER",
-  bg_panel_delta = "BG_PANEL",
-  chrome_lightness_factor = "BG_CHROME",
-  chrome_lightness_offset = "BG_CHROME",
-  pattern_primary_delta = "PATTERN_PRIMARY",
-  pattern_secondary_delta = "PATTERN_SECONDARY",
-  border_outer_color = "BORDER_OUTER",
-  border_outer_opacity = "BORDER_OUTER",
-  border_inner_delta = "BORDER_INNER",
-  border_hover_delta = "BORDER_HOVER",
-  border_active_delta = "BORDER_ACTIVE",
-  border_focus_delta = "BORDER_FOCUS",
-  text_hover_delta = "TEXT_HOVER",
-  text_dimmed_delta = "TEXT_DIMMED",
-  text_dark_delta = "TEXT_DARK",
-  text_bright_delta = "TEXT_BRIGHT",
-  accent_bright_delta = "ACCENT_TEAL_BRIGHT",
-  accent_white_lightness = "ACCENT_WHITE",
-  accent_white_bright_lightness = "ACCENT_WHITE_BRIGHT",
-  status_success = "ACCENT_SUCCESS",
-  status_warning = "ACCENT_WARNING",
-  status_danger = "ACCENT_DANGER",
-  tile_fill_brightness = "TILE_FILL_BRIGHTNESS",
-  tile_fill_saturation = "TILE_FILL_SATURATION",
-  tile_fill_opacity = "TILE_FILL_OPACITY",
-  tile_name_color = "TILE_NAME_COLOR",
-  badge_bg_color = "BADGE_BG",
-  badge_bg_opacity = "BADGE_BG",
-  badge_text_color = "BADGE_TEXT",
-  badge_border_opacity = "BADGE_BORDER_OPACITY",
-  playlist_tile_color = "PLAYLIST_TILE_COLOR",
-  playlist_name_color = "PLAYLIST_NAME_COLOR",
-  playlist_badge_color = "PLAYLIST_BADGE_COLOR",
-}
+-- Build rule -> style map from palette definition (auto-generated)
+local RULE_TO_STYLE_MAP = {}
+for style_key, def in pairs(Palette.definition) do
+  if type(def[3]) == "string" then RULE_TO_STYLE_MAP[def[3]] = style_key end
+  if type(def[4]) == "string" then RULE_TO_STYLE_MAP[def[4]] = style_key end
+end
+-- BG_CHROME uses chrome_lightness_* rules (special derivation)
+RULE_TO_STYLE_MAP["chrome_lightness_factor"] = "BG_CHROME"
+RULE_TO_STYLE_MAP["chrome_lightness_offset"] = "BG_CHROME"
+RULE_TO_STYLE_MAP["chrome_lightness_min"] = "BG_CHROME"
+RULE_TO_STYLE_MAP["chrome_lightness_max"] = "BG_CHROME"
 
---- Render debug overlay showing current theme state
+--- Render debug window showing current theme state
 --- @param ctx userdata ImGui context
 --- @param ImGui table ImGui library reference
 --- @param state table State from init.lua (lightness, t, mode)
-function M.render_debug_overlay(ctx, ImGui, state)
+function M.render_debug_window(ctx, ImGui, state)
   if not M.debug_enabled then return end
   if not ctx or not ImGui then return end
 

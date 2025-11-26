@@ -298,21 +298,21 @@ function M.adapt_color(base_color, pull_factor)
 end
 
 -- =============================================================================
--- DEBUG OVERLAY
+-- DEBUG WINDOW
 -- =============================================================================
 
---- Render debug overlay showing current theme state
+--- Render debug window showing current theme state
 --- @param ctx userdata ImGui context
 --- @param ImGui table ImGui library reference
-function M.render_debug_overlay(ctx, ImGui)
-  Debug.render_debug_overlay(ctx, ImGui, {
+function M.render_debug_window(ctx, ImGui)
+  Debug.render_debug_window(ctx, ImGui, {
     lightness = M.get_theme_lightness(),
     t = M.get_current_t(),
     mode = M.current_mode,
   })
 end
 
---- Check for F12 key press to toggle debug overlay
+--- Check for F12 key press to toggle debug window
 --- @param ctx userdata ImGui context
 --- @param ImGui table ImGui library reference
 function M.check_debug_hotkey(ctx, ImGui)
