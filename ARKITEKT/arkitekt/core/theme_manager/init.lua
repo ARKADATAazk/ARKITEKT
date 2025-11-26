@@ -60,7 +60,7 @@ M.snapAtMidpoint, M.snapAt = Palette.snapAtMidpoint, Palette.snapAt
 
 -- Palette structure
 M.presets, M.anchors = Palette.presets, Palette.anchors
-M.from_bg, M.from_text = Palette.from_bg, Palette.from_text
+M.from_bg = Palette.from_bg
 M.specific, M.values = Palette.specific, Palette.values
 
 -- Presets API

@@ -99,22 +99,6 @@ local function derive_from_bg(bg, def, t)
   return bg
 end
 
---- Derive a color from text using a definition
-local function derive_from_text(text, def, t)
-  if def == "base" then
-    return text
-  end
-
-  local mode = def.mode
-
-  if mode == "offset" or mode == "snap" then
-    local delta = resolve_value(def, t)
-    return Colors.adjust_lightness(text, delta)
-  end
-
-  return text
-end
-
 --- Derive a specific (standalone) color
 local function derive_specific(def, t)
   local mode = def.mode
@@ -144,25 +128,14 @@ function M.generate_palette(base_bg)
   local _, _, bg_lightness = Colors.rgb_to_hsl(base_bg)
   local t = M.compute_t(bg_lightness)
 
-  -- Auto text color (white on dark, black on light)
-  local text_threshold = resolve_value(Palette.values.TEXT_LUMINANCE_THRESHOLD, t)
-  local text = bg_lightness < text_threshold
-    and Colors.hexrgb("#FFFFFFFF")
-    or Colors.hexrgb("#000000FF")
-
   local palette = {}
 
-  -- From BG
+  -- From BG (derived from base background)
   for key, def in pairs(Palette.from_bg) do
     palette[key] = derive_from_bg(base_bg, def, t)
   end
 
-  -- From TEXT
-  for key, def in pairs(Palette.from_text) do
-    palette[key] = derive_from_text(text, def, t)
-  end
-
-  -- Specific (standalone)
+  -- Specific (standalone colors using snap/lerp)
   for key, def in pairs(Palette.specific) do
     palette[key] = derive_specific(def, t)
   end

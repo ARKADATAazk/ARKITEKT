@@ -28,12 +28,12 @@ All UI colors are then available via `Style.COLORS.*`.
 ┌─────────────────────────────────────────────────────────────┐
 │                  generate_palette(base_bg)                  │
 │                            ↓                                │
-│              compute_rules(lightness, mode)                 │
+│                    Palette sections:                        │
+│         from_bg   - derived from base background            │
+│         specific  - standalone (snap/lerp colors)           │
+│         values    - non-color values                        │
 │                            ↓                                │
-│                        M.rules                              │
 │       (offsetFromBase / lerpDarkLight / snapAtMidpoint)     │
-│                            ↓                                │
-│                    computed rule values                     │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐

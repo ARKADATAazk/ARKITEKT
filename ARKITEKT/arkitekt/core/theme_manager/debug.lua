@@ -62,7 +62,6 @@ function M.validate()
   local errors = {}
 
   validate_section("from_bg", Palette.from_bg, errors)
-  validate_section("from_text", Palette.from_text, errors)
   validate_section("specific", Palette.specific, errors)
   validate_section("values", Palette.values, errors)
 
@@ -79,7 +78,6 @@ function M.get_validation_summary()
   local count = 0
 
   for _ in pairs(Palette.from_bg) do count = count + 1 end
-  for _ in pairs(Palette.from_text) do count = count + 1 end
   for _ in pairs(Palette.specific) do count = count + 1 end
   for _ in pairs(Palette.values) do count = count + 1 end
 
@@ -161,12 +159,6 @@ function M.render_debug_window(ctx, ImGui, state)
     -- Palette sections
     if ImGui.CollapsingHeader(ctx, "Palette.from_bg") then
       for k in pairs(Palette.from_bg) do
-        ImGui.Text(ctx, "  " .. k)
-      end
-    end
-
-    if ImGui.CollapsingHeader(ctx, "Palette.from_text") then
-      for k in pairs(Palette.from_text) do
         ImGui.Text(ctx, "  " .. k)
       end
     end

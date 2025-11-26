@@ -100,23 +100,18 @@ M.from_bg = {
 }
 
 -- =============================================================================
--- FROM TEXT (derived from auto white/black text color)
--- =============================================================================
-
-M.from_text = {
-  TEXT_NORMAL  = "base",
-  TEXT_HOVER   = offset(0.05, -0.05),
-  TEXT_ACTIVE  = offset(0.05, -0.05),
-  TEXT_DIMMED  = offset(-0.10, 0.15),
-  TEXT_DARK    = offset(-0.20, 0.25),
-  TEXT_BRIGHT  = offset(0.10, -0.08),
-}
-
--- =============================================================================
--- SPECIFIC (standalone colors, not derived from bg/text)
+-- SPECIFIC (standalone colors using snap/lerp)
 -- =============================================================================
 
 M.specific = {
+  -- Text colors (explicit snap - no auto-derivation magic)
+  TEXT_NORMAL = snap("#FFFFFF", "#000000"),
+  TEXT_HOVER  = snap("#F0F0F0", "#1A1A1A"),
+  TEXT_ACTIVE = snap("#E8E8E8", "#222222"),
+  TEXT_DIMMED = snap("#A0A0A0", "#606060"),
+  TEXT_DARK   = snap("#808080", "#808080"),
+  TEXT_BRIGHT = snap("#FFFFFF", "#000000"),
+
   -- Border outer (hex + opacity)
   BORDER_OUTER = { mode = "alpha", color = snap("#000000", "#404040"), opacity = lerp(0.87, 0.60) },
 
@@ -152,7 +147,6 @@ M.values = {
   BADGE_BORDER_OPACITY = lerp(0.20, 0.15),
 
   -- System
-  TEXT_LUMINANCE_THRESHOLD = lerp(0.5, 0.5),
   REAPER_SYNC_OFFSET = offset(-0.012),
 }
 
@@ -164,7 +158,6 @@ M.values = {
 function M.get_all_keys()
   local keys = {}
   for key in pairs(M.from_bg) do keys[#keys + 1] = key end
-  for key in pairs(M.from_text) do keys[#keys + 1] = key end
   for key in pairs(M.specific) do keys[#keys + 1] = key end
   for key in pairs(M.values) do keys[#keys + 1] = key end
   table.sort(keys)
