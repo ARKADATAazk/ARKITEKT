@@ -137,8 +137,8 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Trigger disable animation if item is being disabled when show_disabled_items = false
   if disable_animator and item_data.key and is_disabled and not state.settings.show_disabled_items then
     if not disable_animator:is_disabling(item_data.key) then
-      -- Pass the actual tile color so animation keeps the original hue
-      disable_animator:disable(item_data.key, {scaled_x1, scaled_y1, scaled_x2, scaled_y2}, base_color)
+      -- Pass the ACTUAL rendered color (not base_color) so animation matches what's visible
+      disable_animator:disable(item_data.key, {scaled_x1, scaled_y1, scaled_x2, scaled_y2}, render_color)
     end
   end
 
