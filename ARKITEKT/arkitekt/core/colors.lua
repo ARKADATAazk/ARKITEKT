@@ -91,6 +91,14 @@ function M.opacity(opacity)
   return ((opacity or 1.0) * 255 + 0.5) // 1
 end
 
+--- Set alpha channel using float opacity (0.0-1.0) instead of byte value
+--- @param color number RGBA color
+--- @param opacity_float number Opacity value (0.0-1.0)
+--- @return number Color with new opacity
+function M.with_opacity(color, opacity_float)
+  return (color & 0xFFFFFF00) | M.opacity(opacity_float)
+end
+
 --- Convert byte alpha (0-255) to float opacity (0.0-1.0)
 --- @param byte number Byte alpha value
 --- @return number Float opacity value
@@ -555,7 +563,7 @@ function M.derive_palette(base_color, opts)
     selection = M.derive_selection(base_color, opts.selection),
     marching_ants = M.derive_marching_ants(base_color, opts.marching_ants),
     text = M.auto_text_color(base_color),
-    dim = M.with_alpha(base_color, 0x88),
+    dim = M.with_opacity(base_color, 0.53),
   }
 end
 

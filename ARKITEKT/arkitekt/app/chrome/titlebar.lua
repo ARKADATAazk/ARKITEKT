@@ -210,7 +210,7 @@ function M.new(opts)
     local text_color = self.text_color or ImGui.GetColor(ctx, ImGui.Col_Text)
     -- Version color: auto-contrast based on chrome background, with transparency
     local auto_version_base = Colors.auto_text_color(bg_color)
-    local version_color = self.version_color or Colors.with_alpha(auto_version_base, 0x5B)
+    local version_color = self.version_color or Colors.with_opacity(auto_version_base, 0.36)
     
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 0, 0)
     ImGui.PushStyleVar(ctx, ImGui.StyleVar_ItemSpacing, self.button_spacing, 0)

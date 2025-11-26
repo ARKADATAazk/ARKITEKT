@@ -36,7 +36,7 @@ local function compute_waveform_color(base_color)
   v = v * bright_mult
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
+  local col_wave = ark.Colors.components_to_rgba(r*255, g*255, b*255, 255)
   waveform_color_cache[base_color] = col_wave
   return col_wave
 end
@@ -220,7 +220,7 @@ function M.DisplayWaveform(ctx, waveform, color, draw_list, target_width)
   v = v * bright_mult
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local col_wave = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
+  local col_wave = ark.Colors.components_to_rgba(r*255, g*255, b*255, 255)
   local col_zero_line = col_wave
 
   local waveform_height = item_h / 2 * 0.95
@@ -390,7 +390,7 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
   v = v * bright_mult
   r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
 
-  local col_note = ImGui.ColorConvertDouble4ToU32(r, g, b, 1)
+  local col_note = ark.Colors.components_to_rgba(r*255, g*255, b*255, 255)
 
   -- Use indexed loop instead of pairs() for better performance
   local num_notes = #thumbnail

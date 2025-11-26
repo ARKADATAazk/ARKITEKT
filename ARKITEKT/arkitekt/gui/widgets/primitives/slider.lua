@@ -97,7 +97,7 @@ local function render_grab(dl, gx, y, h, grab_w, active, hovered, disabled, conf
   -- Determine grab color
   local grab_color
   if disabled then
-    grab_color = Colors.with_alpha(Colors.desaturate(config.grab_color or hexrgb("#383C45"), 0.5), 0x80)
+    grab_color = Colors.with_opacity(Colors.desaturate(config.grab_color or hexrgb("#383C45"), 0.5), 0.5)
   elseif active then
     grab_color = config.grab_active_color or hexrgb("#585C65")
   elseif hovered then

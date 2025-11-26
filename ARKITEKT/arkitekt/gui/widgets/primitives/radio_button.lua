@@ -132,11 +132,11 @@ function M.draw(ctx, opts)
   local bg_color, inner_color, text_color, border_inner, border_outer
 
   if disabled then
-    bg_color = Colors.with_alpha(Colors.desaturate(opts.bg_color or Style.COLORS.BG_BASE, 0.5), 0x80)
-    inner_color = Colors.with_alpha(Colors.desaturate(opts.inner_color or Style.COLORS.BG_BASE, 0.5), 0x80)
-    text_color = Colors.with_alpha(Colors.desaturate(opts.text_color or Style.COLORS.TEXT_NORMAL, 0.5), 0x80)
-    border_inner = Colors.with_alpha(Colors.desaturate(opts.border_inner_color or Style.COLORS.BORDER_INNER, 0.5), 0x80)
-    border_outer = Colors.with_alpha(Colors.desaturate(opts.border_outer_color or Style.COLORS.BORDER_OUTER, 0.5), 0x80)
+    bg_color = Colors.with_opacity(Colors.desaturate(opts.bg_color or Style.COLORS.BG_BASE, 0.5), 0.5)
+    inner_color = Colors.with_opacity(Colors.desaturate(opts.inner_color or Style.COLORS.BG_BASE, 0.5), 0.5)
+    text_color = Colors.with_opacity(Colors.desaturate(opts.text_color or Style.COLORS.TEXT_NORMAL, 0.5), 0.5)
+    border_inner = Colors.with_opacity(Colors.desaturate(opts.border_inner_color or Style.COLORS.BORDER_INNER, 0.5), 0.5)
+    border_outer = Colors.with_opacity(Colors.desaturate(opts.border_outer_color or Style.COLORS.BORDER_OUTER, 0.5), 0.5)
   elseif active then
     bg_color = opts.bg_active_color or Style.COLORS.BG_ACTIVE
     inner_color = Colors.adjust_brightness(opts.inner_color or Style.COLORS.BG_BASE, 0.85)
@@ -175,7 +175,7 @@ function M.draw(ctx, opts)
   if selected then
     local selected_color = opts.selected_color or hexrgb("#7e7e7e")
     if disabled then
-      selected_color = Colors.with_alpha(Colors.desaturate(selected_color, 0.5), 0x80)
+      selected_color = Colors.with_opacity(Colors.desaturate(selected_color, 0.5), 0.5)
     end
     ImGui.DrawList_AddCircleFilled(dl, center_x, center_y, selected_radius, selected_color)
   end

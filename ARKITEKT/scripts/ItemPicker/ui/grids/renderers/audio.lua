@@ -113,7 +113,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
   -- Calculate combined alpha with state effects
   local base_alpha = (render_color & 0xFF) / 255
   local combined_alpha, final_alpha = BaseRenderer.calculate_combined_alpha(cascade_factor, enabled_factor, muted_factor, base_alpha, config)
-  render_color = ark.Colors.with_alpha(render_color, math.floor(final_alpha * 255))
+  render_color = ark.Colors.with_alpha(render_color, ark.Colors.opacity(final_alpha))
 
   local text_alpha = math.floor(0xFF * combined_alpha)
   local text_color = BaseRenderer.get_text_color(muted_factor, config)
@@ -179,7 +179,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       waveform_alpha = waveform_alpha * config.TILE_RENDER.small_tile.visualization_alpha
     end
 
-    dark_color = ark.Colors.with_alpha(dark_color, math.floor(waveform_alpha * 255))
+    dark_color = ark.Colors.with_alpha(dark_color, ark.Colors.opacity(waveform_alpha))
 
     -- Skip all waveform rendering if skip_visualizations is enabled (fast mode)
     if not state.skip_visualizations then
@@ -491,7 +491,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
       -- Chip text (region color with minimum lightness for readability)
       local text_color = BaseRenderer.ensure_min_lightness(region_color, chip_cfg.text_min_lightness)
-      local text_alpha_val = math.floor(combined_alpha * 255)
+      local text_alpha_val = ark.Colors.opacity(combined_alpha)
       text_color = (text_color & 0xFFFFFF00) | text_alpha_val
       local text_x = chip_x + chip_cfg.padding_x
       local text_y = chip_y + (chip_h - text_h) / 2
@@ -544,7 +544,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
 
     -- Pool count text (match cycle badge brightness)
     local text_color = ark.Colors.hexrgb("#FFFFFFDD")
-    text_color = ark.Colors.with_alpha(text_color, math.floor(combined_alpha * 255))
+    text_color = ark.Colors.with_alpha(text_color, ark.Colors.opacity(combined_alpha))
     ImGui.DrawList_AddText(dl, badge_x + pool_cfg.padding_x, badge_y + pool_cfg.padding_y, text_color, pool_text)
   end
 
@@ -580,10 +580,10 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local text_color
       if luminance < dt_cfg.dark_tile_threshold then
         -- Very dark tile only: use light text
-        text_color = ark.Colors.same_hue_variant(render_color, dt_cfg.light_saturation, dt_cfg.light_value, math.floor(combined_alpha * 255))
+        text_color = ark.Colors.same_hue_variant(render_color, dt_cfg.light_saturation, dt_cfg.light_value, ark.Colors.opacity(combined_alpha))
       else
         -- All other tiles: dark grey with subtle tile color
-        text_color = ark.Colors.same_hue_variant(render_color, dt_cfg.dark_saturation, dt_cfg.dark_value, math.floor(combined_alpha * 255))
+        text_color = ark.Colors.same_hue_variant(render_color, dt_cfg.dark_saturation, dt_cfg.dark_value, ark.Colors.opacity(combined_alpha))
       end
 
       -- Draw duration text

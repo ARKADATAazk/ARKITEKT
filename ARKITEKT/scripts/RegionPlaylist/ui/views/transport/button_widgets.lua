@@ -156,8 +156,8 @@ function SimpleToggleButton:draw(ctx, x, y, state, on_click, color)
   local bg_off = C.BG_BASE
   local bg_off_hover = C.BG_HOVER
   local accent = color or C.ACCENT_PRIMARY
-  local bg_on = ark.Colors.with_alpha(accent, 0x40)
-  local bg_on_hover = ark.Colors.with_alpha(accent, 0x50)
+  local bg_on = ark.Colors.with_opacity(accent, 0.25)
+  local bg_on_hover = ark.Colors.with_opacity(accent, 0.31)
 
   local bg = state and (is_hovered and bg_on_hover or bg_on) or (is_hovered and bg_off_hover or bg_off)
 

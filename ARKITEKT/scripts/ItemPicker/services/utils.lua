@@ -20,7 +20,7 @@ function M.RGBvalues(RGB)
 end
 
 function M.Color(ImGui, r, g, b, a)
-  return ImGui.ColorConvertDouble4ToU32(r, g, b, a)
+  return ark.Colors.components_to_rgba(r*255, g*255, b*255, (a or 1)*255)
 end
 
 function M.SampleLimit(spl)

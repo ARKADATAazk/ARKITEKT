@@ -125,7 +125,7 @@ local function derive_state_color(base, state)
   elseif state == 'active' then
     return Colors.adjust_lightness(base, sign * 0.12)
   elseif state == 'disabled' then
-    return Colors.with_alpha(Colors.desaturate(base, 0.5), 0x80)
+    return Colors.with_opacity(Colors.desaturate(base, 0.5), 0.5)
   end
   return base
 end

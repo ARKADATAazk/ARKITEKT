@@ -234,9 +234,9 @@ function M.draw(ctx, opts)
   local bg, border_inner, text
 
   if disabled then
-    bg = config.bg_disabled_color or Colors.with_alpha(Colors.desaturate(config.bg_color, 0.5), 0x80)
-    border_inner = Colors.with_alpha(Colors.desaturate(config.border_inner_color, 0.5), 0x80)
-    text = config.text_disabled_color or Colors.with_alpha(Colors.desaturate(config.text_color, 0.5), 0x80)
+    bg = config.bg_disabled_color or Colors.with_opacity(Colors.desaturate(config.bg_color, 0.5), 0.5)
+    border_inner = Colors.with_opacity(Colors.desaturate(config.border_inner_color, 0.5), 0.5)
+    text = config.text_disabled_color or Colors.with_opacity(Colors.desaturate(config.text_color, 0.5), 0.5)
   elseif active then
     bg = config.bg_active_color or config.bg_color
     border_inner = config.border_active_color or config.border_inner_color

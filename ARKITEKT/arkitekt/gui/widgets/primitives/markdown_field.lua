@@ -219,7 +219,7 @@ function M.draw_at_cursor(ctx, config, id)
     -- Draw background only when hovering (faded in)
     if state.hover_alpha > 0.01 then
       local dl = ImGui.GetWindowDrawList(ctx)
-      local hover_bg = Colors.with_alpha(view_bg, math.floor(state.hover_alpha * 0x30))  -- Very subtle
+      local hover_bg = Colors.with_opacity(view_bg, state.hover_alpha * 0.19)  -- Very subtle
       ImGui.DrawList_AddRectFilled(dl, cursor_x, cursor_y, cursor_x + actual_width, cursor_y + height, hover_bg, rounding)
     end
 

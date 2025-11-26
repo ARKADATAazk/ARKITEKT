@@ -54,12 +54,12 @@ local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
 
   -- Panel background (lighter)
   local bg_color = ark.Colors.hexrgb("#1A1A1A")
-  bg_color = ark.Colors.with_alpha(bg_color, math.floor(alpha * 0x99))  -- 60% opacity
+  bg_color = ark.Colors.with_opacity(bg_color, alpha * 0.6)  -- 60% opacity
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, rounding)
 
   -- Panel border (even lighter)
   local border_color = ark.Colors.hexrgb("#2A2A2A")
-  border_color = ark.Colors.with_alpha(border_color, math.floor(alpha * 0xAA))
+  border_color = ark.Colors.with_opacity(border_color, alpha * 0.67)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
 end
 
@@ -83,7 +83,7 @@ local function draw_panel_title(ctx, draw_list, title_font, title, panel_x, pane
 
   -- Use DrawList to avoid blocking mouse input for selection rectangle
   local text_color = ark.Colors.hexrgb("#FFFFFF")
-  text_color = ark.Colors.with_alpha(text_color, math.floor(final_alpha * 255))
+  text_color = ark.Colors.with_alpha(text_color, ark.Colors.opacity(final_alpha))
   ImGui.DrawList_AddText(draw_list, title_x, title_y, text_color, title)
   ImGui.PopFont(ctx)
 end
@@ -518,7 +518,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local is_thumb_hovered = (mouse_x - thumb_x) * (mouse_x - thumb_x) + (mouse_y - thumb_y) * (mouse_y - thumb_y) <= thumb_radius * thumb_radius
 
     local thumb_color = is_thumb_hovered and ark.Colors.hexrgb("#5AAFFF") or ark.Colors.hexrgb("#4A9EFF")
-    thumb_color = ark.Colors.with_alpha(thumb_color, math.floor(settings_alpha * 255))
+    thumb_color = ark.Colors.with_alpha(thumb_color, ark.Colors.opacity(settings_alpha))
     ImGui.DrawList_AddCircleFilled(draw_list, thumb_x, thumb_y, thumb_radius, thumb_color)
 
     -- Slider interaction
