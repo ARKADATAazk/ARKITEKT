@@ -20,6 +20,10 @@ local DEFAULTS = {
   -- Identity
   id = "sliding_zone",
 
+  -- Group coordination (for multiple zones)
+  group = nil,              -- Group name - zones in same group coordinate
+  exclusive = false,        -- If true, expanding this collapses others in group
+
   -- Edge positioning
   edge = "right",           -- "top", "bottom", "left", "right"
 
@@ -67,10 +71,46 @@ local DEFAULTS = {
 }
 
 -- ============================================================================
--- INSTANCE MANAGEMENT
+-- INSTANCE & GROUP MANAGEMENT
 -- ============================================================================
 
 local instances = Base.create_instance_registry()
+
+-- Group registry: tracks which zone IDs belong to which group
+-- groups[group_name] = { zone_id1 = true, zone_id2 = true, ... }
+local groups = {}
+
+local function register_in_group(group_name, zone_id)
+  if not group_name then return end
+  if not groups[group_name] then
+    groups[group_name] = {}
+  end
+  groups[group_name][zone_id] = true
+end
+
+local function get_group_members(group_name)
+  if not group_name or not groups[group_name] then return {} end
+  local members = {}
+  local registry = instances._instances or instances
+  for zone_id in pairs(groups[group_name]) do
+    if registry[zone_id] then
+      members[zone_id] = registry[zone_id]
+    end
+  end
+  return members
+end
+
+local function collapse_others_in_group(group_name, except_id)
+  if not group_name then return end
+  local members = get_group_members(group_name)
+  for zone_id, state in pairs(members) do
+    if zone_id ~= except_id and state.is_expanded then
+      state.is_expanded = false
+      state.is_in_hover_zone = false
+      state.hover_leave_time = nil
+    end
+  end
+end
 
 local SlidingZone = {}
 SlidingZone.__index = SlidingZone
@@ -319,6 +359,9 @@ function M.draw(ctx, opts)
   -- Get or create instance
   local state = Base.get_or_create_instance(instances, unique_id, SlidingZone.new)
 
+  -- Register in group if specified
+  register_in_group(opts.group, unique_id)
+
   -- Configure speeds (allows runtime changes)
   state:configure_speeds(opts)
 
@@ -349,8 +392,14 @@ function M.draw(ctx, opts)
       state.is_in_hover_zone = true
 
       -- Fire expand callback on transition
-      if not state.is_expanded and opts.on_expand then
-        opts.on_expand(state)
+      if not state.is_expanded then
+        -- Collapse others in group if exclusive
+        if opts.exclusive then
+          collapse_others_in_group(opts.group, unique_id)
+        end
+        if opts.on_expand then
+          opts.on_expand(state)
+        end
       end
       state.is_expanded = true
     else
@@ -512,9 +561,58 @@ function M.is_settled(ctx, opts)
   return state and state:is_settled() or true
 end
 
+-- ============================================================================
+-- GROUP MANAGEMENT
+-- ============================================================================
+
+--- Collapse all zones in a group
+--- @param group_name string Group name
+function M.collapse_group(group_name)
+  if not group_name then return end
+  local members = get_group_members(group_name)
+  for _, state in pairs(members) do
+    state.is_expanded = false
+    state.is_in_hover_zone = false
+    state.hover_leave_time = nil
+  end
+end
+
+--- Get all expanded zones in a group
+--- @param group_name string Group name
+--- @return table Array of zone IDs that are expanded
+function M.get_expanded_in_group(group_name)
+  if not group_name then return {} end
+  local expanded = {}
+  local members = get_group_members(group_name)
+  for zone_id, state in pairs(members) do
+    if state.is_expanded then
+      expanded[#expanded + 1] = zone_id
+    end
+  end
+  return expanded
+end
+
+--- Check if any zone in group is expanded
+--- @param group_name string Group name
+--- @return boolean True if any zone in group is expanded
+function M.is_group_active(group_name)
+  if not group_name then return false end
+  local members = get_group_members(group_name)
+  for _, state in pairs(members) do
+    if state.is_expanded then
+      return true
+    end
+  end
+  return false
+end
+
 --- Clean up sliding zone instances
 function M.cleanup()
   Base.cleanup_registry(instances)
+  -- Also clear groups
+  for k in pairs(groups) do
+    groups[k] = nil
+  end
 end
 
 return M
