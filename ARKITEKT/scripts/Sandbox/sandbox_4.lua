@@ -748,6 +748,10 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   local is_focused = tree_state.focused == node.id
   local is_editing = tree_state.editing == node.id
 
+  -- MUST define these BEFORE is_visible block so they're available for child rendering
+  local has_children = node.children and #node.children > 0
+  local is_open = tree_state.open[node.id]
+
   -- Only draw if visible (virtual scrolling optimization)
   if is_visible then
   -- Backgrounds
@@ -785,11 +789,9 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   end
 
   -- Tree lines
-  local has_children = node.children and #node.children > 0
   draw_tree_lines(dl, indent_x, y_pos, depth, item_h, has_children, is_last_child, parent_lines)
 
   -- Arrow
-  local is_open = tree_state.open[node.id]
   if has_children then
     draw_arrow(dl, arrow_x, arrow_y, is_open, cfg.arrow_color)
   end
