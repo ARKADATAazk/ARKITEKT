@@ -178,26 +178,26 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, tota
     -- Checked or animating to checked
     local base_bg = is_active and config.bg_on_active_color or
                     (instance.hover_alpha > 0.01 and
-                      Style.RENDER.lerp_color(config.bg_on_color, config.bg_on_hover_color, instance.hover_alpha) or
+                      Colors.lerp(config.bg_on_color, config.bg_on_hover_color, instance.hover_alpha) or
                       config.bg_on_color)
     local base_border = is_active and config.border_on_active_color or
                         (instance.hover_alpha > 0.01 and
-                          Style.RENDER.lerp_color(config.border_inner_on_color, config.border_on_hover_color, instance.hover_alpha) or
+                          Colors.lerp(config.border_inner_on_color, config.border_on_hover_color, instance.hover_alpha) or
                           config.border_inner_on_color)
 
     -- Blend with unchecked colors if animating
     if instance.check_alpha < 0.99 then
       local unchecked_bg = is_active and config.bg_active_color or
                            (instance.hover_alpha > 0.01 and
-                             Style.RENDER.lerp_color(config.bg_color, config.bg_hover_color, instance.hover_alpha) or
+                             Colors.lerp(config.bg_color, config.bg_hover_color, instance.hover_alpha) or
                              config.bg_color)
       local unchecked_border = is_active and config.border_active_color or
                                (instance.hover_alpha > 0.01 and
-                                 Style.RENDER.lerp_color(config.border_inner_color, config.border_hover_color, instance.hover_alpha) or
+                                 Colors.lerp(config.border_inner_color, config.border_hover_color, instance.hover_alpha) or
                                  config.border_inner_color)
 
-      bg_color = Style.RENDER.lerp_color(unchecked_bg, base_bg, instance.check_alpha)
-      border_inner = Style.RENDER.lerp_color(unchecked_border, base_border, instance.check_alpha)
+      bg_color = Colors.lerp(unchecked_bg, base_bg, instance.check_alpha)
+      border_inner = Colors.lerp(unchecked_border, base_border, instance.check_alpha)
     else
       bg_color = base_bg
       border_inner = base_border
@@ -208,11 +208,11 @@ local function render_checkbox(ctx, dl, x, y, config, instance, is_checked, tota
     -- Unchecked
     bg_color = is_active and config.bg_active_color or
                (instance.hover_alpha > 0.01 and
-                 Style.RENDER.lerp_color(config.bg_color, config.bg_hover_color, instance.hover_alpha) or
+                 Colors.lerp(config.bg_color, config.bg_hover_color, instance.hover_alpha) or
                  config.bg_color)
     border_inner = is_active and config.border_active_color or
                    (instance.hover_alpha > 0.01 and
-                     Style.RENDER.lerp_color(config.border_inner_color, config.border_hover_color, instance.hover_alpha) or
+                     Colors.lerp(config.border_inner_color, config.border_hover_color, instance.hover_alpha) or
                      config.border_inner_color)
     border_outer = config.border_outer_color
   end
@@ -308,7 +308,7 @@ function M.draw(ctx, opts)
     if opts.disabled then
       label_color = config.label_disabled_color
     elseif instance.hover_alpha > 0.01 then
-      label_color = Style.RENDER.lerp_color(config.label_color, config.label_hover_color, instance.hover_alpha)
+      label_color = Colors.lerp(config.label_color, config.label_hover_color, instance.hover_alpha)
     else
       label_color = config.label_color
     end

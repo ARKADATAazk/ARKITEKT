@@ -242,9 +242,9 @@ function M.draw(ctx, opts)
     border_inner = config.border_active_color or config.border_inner_color
     text = config.text_active_color or config.text_color
   elseif inst.hover_alpha > 0.01 then
-    bg = Style.RENDER.lerp_color(config.bg_color, config.bg_hover_color or config.bg_color, inst.hover_alpha)
-    border_inner = Style.RENDER.lerp_color(config.border_inner_color, config.border_hover_color or config.border_inner_color, inst.hover_alpha)
-    text = Style.RENDER.lerp_color(config.text_color, config.text_hover_color or config.text_color, inst.hover_alpha)
+    bg = Colors.lerp(config.bg_color, config.bg_hover_color or config.bg_color, inst.hover_alpha)
+    border_inner = Colors.lerp(config.border_inner_color, config.border_hover_color or config.border_inner_color, inst.hover_alpha)
+    text = Colors.lerp(config.text_color, config.text_hover_color or config.text_color, inst.hover_alpha)
   else
     bg = config.bg_color
     border_inner = config.border_inner_color

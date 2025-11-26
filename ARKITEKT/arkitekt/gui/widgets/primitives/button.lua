@@ -193,9 +193,9 @@ local function get_state_colors(config, is_disabled, is_toggled, is_active, hove
     local hover_bg = config['bg' .. hover_suffix] or derive_state_color(bg, 'hover')
     local hover_border = config['border' .. (is_toggled and '_on_hover_color' or '_hover_color')] or derive_state_color(border_inner, 'hover')
     local hover_text = config['text' .. hover_suffix] or text
-    bg = Style.RENDER.lerp_color(bg, hover_bg, hover_alpha)
-    border_inner = Style.RENDER.lerp_color(border_inner, hover_border, hover_alpha)
-    text = Style.RENDER.lerp_color(text, hover_text, hover_alpha)
+    bg = Colors.lerp(bg, hover_bg, hover_alpha)
+    border_inner = Colors.lerp(border_inner, hover_border, hover_alpha)
+    text = Colors.lerp(text, hover_text, hover_alpha)
   end
 
   return bg, border_inner, border_outer, text

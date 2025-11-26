@@ -145,9 +145,9 @@ function M.draw(ctx, opts)
     border_outer = opts.border_outer_color or Style.COLORS.BORDER_OUTER
   elseif inst.hover_alpha > 0.01 then
     local hover_bg = opts.bg_hover_color or Style.COLORS.BG_HOVER
-    bg_color = Style.RENDER.lerp_color(opts.bg_color or Style.COLORS.BG_BASE, hover_bg, inst.hover_alpha)
+    bg_color = Colors.lerp(opts.bg_color or Style.COLORS.BG_BASE, hover_bg, inst.hover_alpha)
     inner_color = Colors.adjust_brightness(opts.inner_color or Style.COLORS.BG_BASE, 0.85)
-    text_color = Style.RENDER.lerp_color(
+    text_color = Colors.lerp(
       opts.text_color or Style.COLORS.TEXT_NORMAL,
       opts.text_hover_color or Style.COLORS.TEXT_HOVER,
       inst.hover_alpha

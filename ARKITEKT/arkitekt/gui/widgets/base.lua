@@ -352,10 +352,10 @@ function M.get_state_colors(base_colors, opts, is_hovered, is_active, hover_alph
     local hover_text = base_colors.text_hover or text
 
     return
-      Style.RENDER.lerp_color(bg, hover_bg, hover_alpha),
-      Style.RENDER.lerp_color(border_inner, hover_border, hover_alpha),
+      Colors.lerp(bg, hover_bg, hover_alpha),
+      Colors.lerp(border_inner, hover_border, hover_alpha),
       border_outer,
-      Style.RENDER.lerp_color(text, hover_text, hover_alpha)
+      Colors.lerp(text, hover_text, hover_alpha)
   end
 
   return bg, border_inner, border_outer, text

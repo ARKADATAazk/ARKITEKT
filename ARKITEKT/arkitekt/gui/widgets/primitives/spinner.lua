@@ -121,10 +121,10 @@ local function draw_spinner_button(ctx, id, x, y, w, h, direction, disabled, hov
     border_outer = Style.COLORS.BORDER_OUTER
     arrow_color = Style.COLORS.TEXT_HOVER
   elseif hover_alpha > 0.01 then
-    bg_color = Style.RENDER.lerp_color(Style.COLORS.BG_BASE, Style.COLORS.BG_HOVER, hover_alpha)
+    bg_color = Colors.lerp(Style.COLORS.BG_BASE, Style.COLORS.BG_HOVER, hover_alpha)
     border_inner = Style.COLORS.BORDER_HOVER
     border_outer = Style.COLORS.BORDER_OUTER
-    arrow_color = Style.RENDER.lerp_color(Style.COLORS.TEXT_NORMAL, Style.COLORS.TEXT_HOVER, hover_alpha)
+    arrow_color = Colors.lerp(Style.COLORS.TEXT_NORMAL, Style.COLORS.TEXT_HOVER, hover_alpha)
   else
     bg_color = Style.COLORS.BG_BASE
     border_inner = Style.COLORS.BORDER_INNER
@@ -164,10 +164,10 @@ local function draw_value_display(ctx, dl, x, y, w, h, text, hover_alpha, active
     border_outer = Style.COLORS.BORDER_OUTER
     text_color = Style.COLORS.TEXT_HOVER
   elseif hover_alpha > 0.01 then
-    bg_color = Style.RENDER.lerp_color(Style.COLORS.BG_BASE, Style.COLORS.BG_HOVER, hover_alpha)
+    bg_color = Colors.lerp(Style.COLORS.BG_BASE, Style.COLORS.BG_HOVER, hover_alpha)
     border_inner = Style.COLORS.BORDER_HOVER
     border_outer = Style.COLORS.BORDER_OUTER
-    text_color = Style.RENDER.lerp_color(Style.COLORS.TEXT_NORMAL, Style.COLORS.TEXT_HOVER, hover_alpha)
+    text_color = Colors.lerp(Style.COLORS.TEXT_NORMAL, Style.COLORS.TEXT_HOVER, hover_alpha)
   else
     bg_color = Style.COLORS.BG_BASE
     border_inner = Style.COLORS.BORDER_INNER

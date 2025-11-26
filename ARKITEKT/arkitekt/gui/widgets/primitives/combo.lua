@@ -6,6 +6,7 @@
 package.path = reaper.ImGui_GetBuiltinPath() .. '/?.lua;' .. package.path
 local ImGui = require 'imgui' '0.10'
 local Style = require('arkitekt.gui.style')
+local Colors = require('arkitekt.core.colors')
 local Base = require('arkitekt.gui.widgets.base')
 local Tooltip = require('arkitekt.gui.widgets.overlays.tooltip')
 local ContextMenu = require('arkitekt.gui.widgets.overlays.context_menu')
@@ -174,10 +175,10 @@ function Dropdown:draw(ctx, dl, x, y, width, height, corner_rounding)
     border_inner = cfg.border_active_color
     arrow_color = cfg.arrow_hover_color
   elseif self.hover_alpha > 0.01 then
-    bg_color = Style.RENDER.lerp_color(cfg.bg_color, cfg.bg_hover_color, self.hover_alpha)
-    text_color = Style.RENDER.lerp_color(cfg.text_color, cfg.text_hover_color, self.hover_alpha)
-    border_inner = Style.RENDER.lerp_color(cfg.border_inner_color, cfg.border_hover_color, self.hover_alpha)
-    arrow_color = Style.RENDER.lerp_color(cfg.arrow_color, cfg.arrow_hover_color, self.hover_alpha)
+    bg_color = Colors.lerp(cfg.bg_color, cfg.bg_hover_color, self.hover_alpha)
+    text_color = Colors.lerp(cfg.text_color, cfg.text_hover_color, self.hover_alpha)
+    border_inner = Colors.lerp(cfg.border_inner_color, cfg.border_hover_color, self.hover_alpha)
+    arrow_color = Colors.lerp(cfg.arrow_color, cfg.arrow_hover_color, self.hover_alpha)
   end
   
   -- Calculate rounding
