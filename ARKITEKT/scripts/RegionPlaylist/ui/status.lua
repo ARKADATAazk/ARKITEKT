@@ -70,10 +70,10 @@ local function get_app_status(State)
       if selection_info and (selection_info.region_count > 0 or selection_info.playlist_count > 0) then
         local parts = {}
         if selection_info.region_count > 0 then
-          table.insert(parts, string.format("%d Region%s", selection_info.region_count, selection_info.region_count > 1 and "s" or ""))
+          parts[#parts + 1] = string.format("%d Region%s", selection_info.region_count, selection_info.region_count > 1 and "s" or "")
         end
         if selection_info.playlist_count > 0 then
-          table.insert(parts, string.format("%d Playlist%s", selection_info.playlist_count, selection_info.playlist_count > 1 and "s" or ""))
+          parts[#parts + 1] = string.format("%d Playlist%s", selection_info.playlist_count, selection_info.playlist_count > 1 and "s" or "")
         end
         status_message = table.concat(parts, ", ") .. " selected"
         status_color = STATUS_COLORS.INFO
@@ -95,23 +95,23 @@ local function get_app_status(State)
           -- Add playlist name
           local active_playlist = State.get_active_playlist and State.get_active_playlist()
           if active_playlist then
-            table.insert(play_parts, string.format("Playing '%s'", active_playlist.name or "Untitled"))
+            play_parts[#play_parts + 1] = string.format("Playing '%s'", active_playlist.name or "Untitled")
           end
 
-          table.insert(play_parts, string.format("▶ %s", region.name))
-          table.insert(play_parts, string.format("[%d/%d]", bridge_state.playlist_pointer, #bridge_state.playlist_order))
+          play_parts[#play_parts + 1] = string.format("▶ %s", region.name)
+          play_parts[#play_parts + 1] = string.format("[%d/%d]", bridge_state.playlist_pointer, #bridge_state.playlist_order)
 
           -- Add loop info if looping
           if bridge_state.current_loop and bridge_state.total_loops and bridge_state.total_loops > 1 then
-            table.insert(play_parts, string.format("Loop %d/%d", bridge_state.current_loop, bridge_state.total_loops))
+            play_parts[#play_parts + 1] = string.format("Loop %d/%d", bridge_state.current_loop, bridge_state.total_loops)
           end
 
           -- Add progress percentage
-          table.insert(play_parts, string.format("%.0f%%", progress * 100))
+          play_parts[#play_parts + 1] = string.format("%.0f%%", progress * 100)
 
           -- Add time remaining
           if time_remaining then
-            table.insert(play_parts, string.format("%.1fs left", time_remaining))
+            play_parts[#play_parts + 1] = string.format("%.1fs left", time_remaining)
           end
 
           local play_text = table.concat(play_parts, "  ")

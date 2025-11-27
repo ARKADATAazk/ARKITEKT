@@ -125,7 +125,7 @@ function M.add_to_group(param_name, param_type, target_param_name)
     M.remove_from_group(param_name)
 
     -- Add to group
-    table.insert(group.params, param_name)
+    group.params[#group.params + 1] = param_name
     state.param_to_group[param_name] = target_group_id
 
     -- Set default mode to LINK
@@ -239,7 +239,7 @@ function M.get_other_group_params(param_name)
 
   for _, p in ipairs(all_params) do
     if p ~= param_name then
-      table.insert(others, p)
+      others[#others + 1] = p
     end
   end
 
@@ -336,11 +336,11 @@ function M.propagate_value_change(param_name, old_value, new_value, param)
 
       if mode == M.LINK_MODE.SYNC then
         -- SYNC: Match same percentage position in target's range
-        table.insert(propagations, {
+        propagations[#propagations + 1] = {
           param_name = other_param,
           mode = "sync",
           percent = new_percent,  -- Position as percentage (0-1)
-        })
+        }
 
       elseif mode == M.LINK_MODE.LINK then
         -- LINK: Apply absolute delta maintaining virtual offset
@@ -358,11 +358,11 @@ function M.propagate_value_change(param_name, old_value, new_value, param)
         -- Store updated virtual value
         state.virtual_values[other_param] = new_virtual
 
-        table.insert(propagations, {
+        propagations[#propagations + 1] = {
           param_name = other_param,
           mode = "link",
           virtual_value = new_virtual,  -- Virtual value (can be negative)
-        })
+        }
       end
       -- UNLINKED mode: do nothing
     end
@@ -403,7 +403,7 @@ end
 -- ============================================================================
 
 function M.add_listener(callback)
-  table.insert(state.listeners, callback)
+  state.listeners[#state.listeners + 1] = callback
 end
 
 function M.remove_listener(callback)

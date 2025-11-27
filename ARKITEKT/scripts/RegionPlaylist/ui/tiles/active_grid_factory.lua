@@ -114,10 +114,10 @@ local function create_behaviors(rt)
 
             local parts = {}
             if region_count > 0 then
-              table.insert(parts, string.format("%d region%s", region_count, region_count > 1 and "s" or ""))
+              parts[#parts + 1] = string.format("%d region%s", region_count, region_count > 1 and "s" or "")
             end
             if playlist_count > 0 then
-              table.insert(parts, string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or ""))
+              parts[#parts + 1] = string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or "")
             end
 
             if #parts > 0 then
@@ -163,10 +163,10 @@ local function create_behaviors(rt)
 
             local parts = {}
             if region_count > 0 then
-              table.insert(parts, string.format("%d region%s", region_count, region_count > 1 and "s" or ""))
+              parts[#parts + 1] = string.format("%d region%s", region_count, region_count > 1 and "s" or "")
             end
             if playlist_count > 0 then
-              table.insert(parts, string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or ""))
+              parts[#parts + 1] = string.format("%d playlist%s", playlist_count, playlist_count > 1 and "s" or "")
             end
 
             if #parts > 0 then

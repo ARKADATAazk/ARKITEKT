@@ -421,16 +421,16 @@ function M.undo()
     -- Build status message from changes
     local parts = {}
     if changes.playlists_count > 0 then
-      table.insert(parts, string.format("%d playlist%s", changes.playlists_count, changes.playlists_count ~= 1 and "s" or ""))
+      parts[#parts + 1] = string.format("%d playlist%s", changes.playlists_count, changes.playlists_count ~= 1 and "s" or "")
     end
     if changes.items_count > 0 then
-      table.insert(parts, string.format("%d item%s", changes.items_count, changes.items_count ~= 1 and "s" or ""))
+      parts[#parts + 1] = string.format("%d item%s", changes.items_count, changes.items_count ~= 1 and "s" or "")
     end
     if changes.regions_renamed > 0 then
-      table.insert(parts, string.format("%d region%s renamed", changes.regions_renamed, changes.regions_renamed ~= 1 and "s" or ""))
+      parts[#parts + 1] = string.format("%d region%s renamed", changes.regions_renamed, changes.regions_renamed ~= 1 and "s" or "")
     end
     if changes.regions_recolored > 0 then
-      table.insert(parts, string.format("%d region%s recolored", changes.regions_recolored, changes.regions_recolored ~= 1 and "s" or ""))
+      parts[#parts + 1] = string.format("%d region%s recolored", changes.regions_recolored, changes.regions_recolored ~= 1 and "s" or "")
     end
 
     if #parts > 0 then
@@ -455,16 +455,16 @@ function M.redo()
     -- Build status message from changes
     local parts = {}
     if changes.playlists_count > 0 then
-      table.insert(parts, string.format("%d playlist%s", changes.playlists_count, changes.playlists_count ~= 1 and "s" or ""))
+      parts[#parts + 1] = string.format("%d playlist%s", changes.playlists_count, changes.playlists_count ~= 1 and "s" or "")
     end
     if changes.items_count > 0 then
-      table.insert(parts, string.format("%d item%s", changes.items_count, changes.items_count ~= 1 and "s" or ""))
+      parts[#parts + 1] = string.format("%d item%s", changes.items_count, changes.items_count ~= 1 and "s" or "")
     end
     if changes.regions_renamed > 0 then
-      table.insert(parts, string.format("%d region%s renamed", changes.regions_renamed, changes.regions_renamed ~= 1 and "s" or ""))
+      parts[#parts + 1] = string.format("%d region%s renamed", changes.regions_renamed, changes.regions_renamed ~= 1 and "s" or "")
     end
     if changes.regions_recolored > 0 then
-      table.insert(parts, string.format("%d region%s recolored", changes.regions_recolored, changes.regions_recolored ~= 1 and "s" or ""))
+      parts[#parts + 1] = string.format("%d region%s recolored", changes.regions_recolored, changes.regions_recolored ~= 1 and "s" or "")
     end
 
     if #parts > 0 then

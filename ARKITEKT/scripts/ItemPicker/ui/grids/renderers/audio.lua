@@ -514,7 +514,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
         local duration_text
         if duration >= 3600 then
           local hours = (duration / 3600) // 1
-          local minutes = math.floor((duration % 3600) / 60)
+          local minutes = (duration % 3600) // 60
           local seconds = (duration % 60) // 1
           duration_text = string.format("%d:%02d:%02d", hours, minutes, seconds)
         else
@@ -559,7 +559,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
           local low, high = 1, #region_name
           local best_len = 0
           while low <= high do
-            local mid = math.floor((low + high) / 2)
+            local mid = (low + high) // 2
             local test_text = region_name:sub(1, mid)
             local test_w, _ = ImGui.CalcTextSize(ctx, test_text)
             if test_w <= target_w then
@@ -658,7 +658,7 @@ function M.render(ctx, dl, rect, item_data, tile_state, config, animator, visual
       local duration_text
       if duration >= 3600 then
         local hours = (duration / 3600) // 1
-        local minutes = math.floor((duration % 3600) / 60)
+        local minutes = (duration % 3600) // 60
         local seconds = (duration % 60) // 1
         duration_text = string.format("%d:%02d:%02d", hours, minutes, seconds)
       else

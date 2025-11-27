@@ -256,7 +256,7 @@ function AdditionalView:create_grids()
         if not key:match("^group_header_") then
           local param = params_by_key[key]
           if param then
-            table.insert(param_names, param.name)
+            param_names[#param_names + 1] = param.name
           end
         end
       end
@@ -279,13 +279,13 @@ function AdditionalView:create_grids()
           -- This is a group
           local group_id = key:match("^template_group_header_(.+)")
           if group_id then
-            table.insert(payload, {type = "group", id = group_id})
+            payload[#payload + 1] = {type = "group", id = group_id}
           end
         else
           -- This is a template
           local template_id = key:match("^template_(.+)")
           if template_id then
-            table.insert(payload, {type = "template", id = template_id})
+            payload[#payload + 1] = {type = "template", id = template_id}
           end
         end
       end
@@ -307,7 +307,7 @@ function AdditionalView:create_grids()
         for _, key in ipairs(item_keys) do
           local param_name = key:match("^assign_(.+)")
           if param_name then
-            table.insert(param_names, param_name)
+            param_names[#param_names + 1] = param_name
           end
         end
 
@@ -330,7 +330,7 @@ function AdditionalView:refresh_params()
     local filtered_params = {}
     for _, param in ipairs(group.params) do
       if not known_params[param.name] then
-        table.insert(filtered_params, param)
+        filtered_params[#filtered_params + 1] = param
       end
     end
     group.params = filtered_params
@@ -340,7 +340,7 @@ function AdditionalView:refresh_params()
   local non_empty_groups = {}
   for _, group in ipairs(self.param_groups) do
     if #group.params > 0 then
-      table.insert(non_empty_groups, group)
+      non_empty_groups[#non_empty_groups + 1] = group
     end
   end
   self.param_groups = non_empty_groups
@@ -367,7 +367,7 @@ function AdditionalView:apply_group_filter()
   for _, group in ipairs(self.param_groups) do
     if self.enabled_groups[group.name] then
       for _, param in ipairs(group.params) do
-        table.insert(self.unknown_params, param)
+        self.unknown_params[#self.unknown_params + 1] = param
       end
     end
   end
@@ -392,13 +392,13 @@ function AdditionalView:get_library_items()
         collapsed = false
       end
 
-      table.insert(tile_groups, TileGroup.create_group({
+      tile_groups[#tile_groups + 1] = TileGroup.create_group({
         id = group.name,
         name = group.display_name or group.name,
         color = group.color,
         collapsed = collapsed,
         items = group.params
-      }))
+      })
     end
   end
 
@@ -422,18 +422,18 @@ function AdditionalView:get_assignment_items(tab_id)
   for _, assignment in ipairs(self.assignments[tab_id]) do
     if assignment.type == "group" then
       -- This is a group assignment
-      table.insert(items, {
+      items[#items + 1] = {
         type = "group",
         group_id = assignment.group_id,
         order = assignment.order,
-      })
+      }
     elseif assignment.param_name and param_lookup[assignment.param_name] then
       -- This is a parameter assignment
-      table.insert(items, {
+      items[#items + 1] = {
         type = "param",
         param_name = assignment.param_name,
         order = assignment.order,
-      })
+      }
     end
   end
 
@@ -874,10 +874,10 @@ function AdditionalView:assign_param_to_tab(param_name, tab_id)
 
   -- Add to end of list
   local order = #self.assignments[tab_id] + 1
-  table.insert(self.assignments[tab_id], {
+  self.assignments[tab_id][#self.assignments[tab_id] + 1] = {
     param_name = param_name,
     order = order
-  })
+  }
 
   self:save_assignments()
   return true
@@ -971,7 +971,7 @@ function AdditionalView:reorder_assignments(tab_id, new_order_keys)
   for _, key in ipairs(new_order_keys) do
     local assignment = assignments_by_key[key]
     if assignment then
-      table.insert(new_assignments, assignment)
+      new_assignments[#new_assignments + 1] = assignment
     end
   end
 
@@ -1013,14 +1013,14 @@ function AdditionalView:get_assigned_params(tab_id)
 
       -- Create a single "group control" pseudo-parameter (macro)
       if group then
-        table.insert(assigned, {
+        assigned[#assigned + 1] = {
           type = "group",
           group_id = group.id,
           name = group.name or "Unnamed Group",
           display_name = group.name or "Unnamed Group",
           description = "Group macro controlling " .. #(group.template_ids or {}) .. " templates",
           is_group = true,  -- Flag for special rendering
-        })
+        }
       end
 
     -- Regular parameter assignment
@@ -1048,7 +1048,7 @@ function AdditionalView:get_assigned_params(tab_id)
           param_copy.description = ""
         end
 
-        table.insert(assigned, param_copy)
+        assigned[#assigned + 1] = param_copy
       end
     end
   end
@@ -1097,20 +1097,20 @@ function AdditionalView:get_template_items()
     local group_items = {}
     for _, template_id in ipairs(group.template_ids or {}) do
       if self.templates[template_id] then
-        table.insert(group_items, {
+        group_items[#group_items + 1] = {
           id = template_id,
           order = self.templates[template_id].order or 0
-        })
+        }
       end
     end
 
-    table.insert(tile_groups, TileGroup.create_group({
+    tile_groups[#tile_groups + 1] = TileGroup.create_group({
       id = group.id,
       name = group.name or ("Group " .. group.id),
       color = group.color,
       collapsed = collapsed,
       items = group_items
-    }))
+    })
   end
 
   -- Get ungrouped templates
@@ -1124,10 +1124,10 @@ function AdditionalView:get_template_items()
   local ungrouped = {}
   for id, template in pairs(self.templates) do
     if not grouped_template_ids[id] then
-      table.insert(ungrouped, {
+      ungrouped[#ungrouped + 1] = {
         id = id,
         order = template.order or 0
-      })
+      }
     end
   end
 
@@ -1181,7 +1181,7 @@ function AdditionalView:create_template_from_params(param_names, insert_index)
     }
 
     self.templates[template_id] = template
-    table.insert(template_ids, template_id)
+    template_ids[#template_ids + 1] = template_id
   end
 
   -- Create the template group
@@ -1193,7 +1193,7 @@ function AdditionalView:create_template_from_params(param_names, insert_index)
     template_ids = template_ids
   }
 
-  table.insert(self.template_groups, group)
+  self.template_groups[#self.template_groups + 1] = group
   self:save_templates()
 
   return group_id
@@ -1230,7 +1230,7 @@ function AdditionalView:reorder_templates(new_order_keys)
       if template_id then
         if current_group_id then
           -- Template is inside a group
-          table.insert(new_group_memberships[current_group_id], template_id)
+          new_group_memberships[current_group_id][#new_group_memberships[current_group_id] + 1] = template_id
         end
         -- Update template order
         if self.templates[template_id] then
@@ -1367,10 +1367,10 @@ function AdditionalView:load_assignments()
       for param_name, assignment in pairs(mappings.assignments) do
         for tab_id, is_assigned in pairs(assignment) do
           if is_assigned and new_assignments[tab_id] then
-            table.insert(new_assignments[tab_id], {
+            new_assignments[tab_id][#new_assignments[tab_id] + 1] = {
               param_name = param_name,
               order = #new_assignments[tab_id] + 1
-            })
+            }
           end
         end
       end

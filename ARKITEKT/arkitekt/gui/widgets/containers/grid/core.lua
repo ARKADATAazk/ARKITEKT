@@ -367,7 +367,7 @@ function Grid:_draw_virtual(ctx, items, num_items)
   end
 
   -- Calculate columns
-  local cols = math.max(1, math.floor((avail_w + self.gap) / (min_col_w + self.gap)))
+  local cols = math.max(1, (avail_w + self.gap) // (min_col_w + self.gap))
   local tile_w = (avail_w - (cols - 1) * self.gap) / cols
   local row_height = fixed_tile_h + self.gap
 
@@ -449,7 +449,7 @@ function Grid:_draw_virtual(ctx, items, num_items)
       local rect_map = {}
       for i = 1, num_items do
         local item = items[i]
-        local row = math.floor((i - 1) / cols)
+        local row = (i - 1) // cols
         local col = (i - 1) % cols
         local rx = origin_x + col * (tile_w + self.gap)
         local ry = origin_y + self.gap + row * row_height
@@ -491,7 +491,7 @@ function Grid:_draw_virtual(ctx, items, num_items)
     local key = self.key(item)
 
     -- Calculate rect on-the-fly
-    local row = math.floor((i - 1) / cols)
+    local row = (i - 1) // cols
     local col = (i - 1) % cols
     local rx = origin_x + col * (tile_w + self.gap)
     local ry = origin_y + self.gap + row * row_height
@@ -910,7 +910,7 @@ function Grid:draw(ctx)
     local viewport_top = self.visual_bounds[2] - VIEWPORT_BUFFER
     local viewport_bottom = self.visual_bounds[4] + VIEWPORT_BUFFER
 
-    local first_visible_row = max(0, floor((viewport_top - origin_y - self.gap) / row_height))
+    local first_visible_row = max(0, (viewport_top - origin_y - self.gap) // row_height)
     local last_visible_row = ceil((viewport_bottom - origin_y - self.gap) / row_height)
 
     -- Convert row range to item indices

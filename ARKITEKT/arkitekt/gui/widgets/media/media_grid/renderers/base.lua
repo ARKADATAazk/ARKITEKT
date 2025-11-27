@@ -158,7 +158,7 @@ function M.render_tile_text(ctx, dl, x1, y1, x2, header_height, item_name, index
     local badge_x2 = badge_x + bw + config.badge.padding_x * 2
     local badge_y2 = badge_y + bh + config.badge.padding_y * 2
 
-    local badge_bg_alpha = math.floor((config.badge.bg & 0xFF) * (text_alpha / 255))
+    local badge_bg_alpha = ((config.badge.bg & 0xFF) * (text_alpha / 255)) // 1
     local badge_bg = (config.badge.bg & 0xFFFFFF00) | badge_bg_alpha
 
     ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x2, badge_y2, badge_bg, config.badge.rounding)

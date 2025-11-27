@@ -329,10 +329,10 @@ function AssemblerView:refresh_tabs()
   -- Build tab items from configurations
   local tab_items = {}
   for name, _ in pairs(configs.items) do
-    table.insert(tab_items, {
+    tab_items[#tab_items + 1] = {
       id = name,
       label = name,
-    })
+    }
   end
 
   -- Sort alphabetically but keep Default first
@@ -623,10 +623,10 @@ function AssemblerView:draw_zip_status(ctx, dl, x, y, width, height)
 
       for i, zip_path in ipairs(self.available_zips) do
         local name = zip_path:match("[^\\/]+$") or zip_path
-        table.insert(options, {
+        options[#options + 1] = {
           value = zip_path,
           label = name,
-        })
+        }
 
         -- If this ZIP is currently linked, select it
         if zip_name and name == zip_name then
