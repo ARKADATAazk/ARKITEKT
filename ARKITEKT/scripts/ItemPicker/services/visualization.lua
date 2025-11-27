@@ -134,7 +134,6 @@ function M.DownsampleWaveform(waveform, target_width)
   if not waveform then return nil end
 
   -- Cache math functions for performance (30% faster in hot loops)
-  local floor = math.floor
   local max = math.max
   local min = math.min
   local huge = math.huge
@@ -151,8 +150,9 @@ function M.DownsampleWaveform(waveform, target_width)
   -- Use direct indexing instead of table.insert (10-15% faster)
   local idx = 1
   for i = 1, target_width do
-    local start_idx = floor((i - 1) * ratio) + 1
-    local end_idx = floor(i * ratio)
+    -- Use //1 instead of math.floor() for better performance in Lua 5.3+
+    local start_idx = ((i - 1) * ratio) // 1 + 1
+    local end_idx = (i * ratio) // 1
 
     local max_val = -huge
     local min_val = huge
@@ -170,8 +170,9 @@ function M.DownsampleWaveform(waveform, target_width)
   end
 
   for i = 1, target_width do
-    local start_idx = floor((i - 1) * ratio) + 1
-    local end_idx = floor(i * ratio)
+    -- Use //1 instead of math.floor() for better performance in Lua 5.3+
+    local start_idx = ((i - 1) * ratio) // 1 + 1
+    local end_idx = (i * ratio) // 1
 
     local min_val = huge
 
@@ -197,7 +198,6 @@ function M.DisplayWaveform(ctx, waveform, color, draw_list, target_width)
   local DrawList_AddLine = ImGui.DrawList_AddLine
   local DrawList_AddPolyline = ImGui.DrawList_AddPolyline
   local DrawList_AddRectFilled = ImGui.DrawList_AddRectFilled
-  local floor = math.floor
 
   local item_x1, item_y1 = GetItemRectMin(ctx)
   local item_x2, item_y2 = GetItemRectMax(ctx)
@@ -205,7 +205,8 @@ function M.DisplayWaveform(ctx, waveform, color, draw_list, target_width)
 
   if not waveform then return end
 
-  local display_waveform = M.DownsampleWaveform(waveform, floor(target_width or item_w))
+  -- Use //1 instead of math.floor() for better performance in Lua 5.3+
+  local display_waveform = M.DownsampleWaveform(waveform, (target_width or item_w) // 1)
   if not display_waveform or #display_waveform == 0 then return end
 
   DrawList_AddRectFilled(draw_list, item_x1, item_y1, item_x2, item_y2, color)
@@ -419,7 +420,6 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
   local GetItemRectSize = ImGui.GetItemRectSize
   local DrawList_AddLine = ImGui.DrawList_AddLine
   local DrawList_AddPolyline = ImGui.DrawList_AddPolyline
-  local floor = math.floor
 
   local item_x1, item_y1 = GetItemRectMin(ctx)
   local item_x2, item_y2 = GetItemRectMax(ctx)
@@ -427,7 +427,8 @@ function M.DisplayWaveformTransparent(ctx, waveform, color, draw_list, target_wi
 
   if not waveform then return end
 
-  local width = floor(target_width or item_w)
+  -- Use //1 instead of math.floor() for better performance in Lua 5.3+
+  local width = (target_width or item_w) // 1
 
   -- Use the color directly - it's already been transformed by get_dark_waveform_color
   local col_wave = color
