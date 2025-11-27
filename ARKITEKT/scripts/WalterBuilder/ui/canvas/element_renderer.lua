@@ -223,15 +223,32 @@ function Renderer:draw_element(ctx, dl, canvas_x, canvas_y, sim_result, opts)
   local border_thickness = opts.selected and 2 or 1
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, 2, 0, border_thickness)
 
-  -- Draw element name (if big enough)
+  -- Draw element name and ID (if big enough)
   if rect.w > 30 and rect.h > 14 then
     local name = element.name or element.id
-    -- Truncate if needed
-    if #name > 12 then
-      name = name:sub(1, 10) .. ".."
+    -- Truncate name if needed
+    local max_chars = math.floor((rect.w - 6) / 6)  -- Approximate char width
+    if #name > max_chars then
+      name = name:sub(1, max_chars - 2) .. ".."
     end
 
     ImGui.DrawList_AddText(dl, x1 + 3, y1 + 2, Colors.TEXT.BRIGHT, name)
+
+    -- Show ID below name if there's room (for elements with different name/id)
+    if rect.h > 26 and element.id and element.name ~= element.id then
+      local id_display = element.id
+      -- Extract short ID (e.g., "tcp.mute" -> "mute")
+      local short_id = id_display:match("%.([^%.]+)$") or id_display
+      if #short_id > max_chars then
+        short_id = short_id:sub(1, max_chars - 2) .. ".."
+      end
+      ImGui.DrawList_AddText(dl, x1 + 3, y1 + 14, Colors.TEXT.DIM, short_id)
+    end
+  elseif rect.w > 16 and rect.h > 10 then
+    -- For smaller elements, show abbreviated ID
+    local short = (element.id or "?"):match("%.([^%.]+)$") or (element.id or "?")
+    local abbrev = short:sub(1, 3):upper()
+    ImGui.DrawList_AddText(dl, x1 + 2, y1 + 1, Colors.TEXT.DIM, abbrev)
   end
 
   -- Draw attachment indicators if enabled

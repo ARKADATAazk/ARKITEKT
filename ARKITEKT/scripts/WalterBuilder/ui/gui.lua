@@ -9,6 +9,7 @@ local PreviewCanvas = require('WalterBuilder.ui.canvas.preview_canvas')
 local ElementRenderer = require('WalterBuilder.ui.canvas.element_renderer')
 local ElementsPanel = require('WalterBuilder.ui.panels.elements_panel')
 local PropertiesPanel = require('WalterBuilder.ui.panels.properties_panel')
+local TrackPropertiesPanel = require('WalterBuilder.ui.panels.track_properties_panel')
 local CodePanel = require('WalterBuilder.ui.panels.code_panel')
 local TCPElements = require('WalterBuilder.defs.tcp_elements')
 
@@ -28,6 +29,7 @@ function M.new(state_module, settings)
     canvas = nil,
     elements_panel = nil,
     properties_panel = nil,
+    track_properties_panel = nil,
     code_panel = nil,
 
     -- Layout
@@ -64,6 +66,18 @@ function GUI:initialize_once(ctx)
     end,
     on_delete = function(element)
       self:handle_delete_element(element)
+    end,
+  })
+
+  self.track_properties_panel = TrackPropertiesPanel.new({
+    on_change = function(track)
+      self:handle_track_changed(track)
+    end,
+    on_delete = function(track)
+      self:handle_delete_track(track)
+    end,
+    on_add = function()
+      self:handle_add_track()
     end,
   })
 
@@ -123,6 +137,34 @@ function GUI:handle_delete_element(element)
   self.properties_panel:set_element(nil)
   self:sync_canvas()
   self.code_panel:invalidate()
+end
+
+-- Handle track changes
+function GUI:handle_track_changed(track)
+  -- Track object already updated, just refresh canvas
+  self.canvas.sim_cache = nil  -- Invalidate simulation cache
+end
+
+-- Handle track deletion
+function GUI:handle_delete_track(track)
+  self.State.remove_track(track)
+  self.State.set_selected_track(nil)
+  self.canvas:set_selected_track(nil)
+  self.track_properties_panel:set_track(nil)
+  self:sync_canvas()
+end
+
+-- Handle adding a new track
+function GUI:handle_add_track()
+  local new_track = self.State.add_track({
+    name = "New Track " .. (#self.State.get_tracks() + 1),
+  })
+  if new_track then
+    self.State.set_selected_track(new_track)
+    self.canvas:set_selected_track(new_track)
+    self.track_properties_panel:set_track(new_track)
+    self:sync_canvas()
+  end
 end
 
 -- Draw toolbar
@@ -260,14 +302,24 @@ function GUI:draw(ctx, window, shell_state)
     if canvas_result.type == "select" then
       self.State.set_selected(canvas_result.element)
       self.properties_panel:set_element(canvas_result.element)
+      -- Also select the track if provided
+      if canvas_result.track then
+        self.State.set_selected_track(canvas_result.track)
+        self.track_properties_panel:set_track(canvas_result.track)
+      end
     elseif canvas_result.type == "select_track" then
       self.State.set_selected_track(canvas_result.track)
+      self.track_properties_panel:set_track(canvas_result.track)
+      -- Clear element selection when selecting track background
+      self.State.clear_selection()
+      self.properties_panel:set_element(nil)
     elseif canvas_result.type == "resize_width" then
       -- Width changed - sync to state
       self.State.set_parent_size(canvas_result.width, self.State.get_parent_size())
     elseif canvas_result.type == "resize_track" then
       -- Track height changed - track object already updated, just sync canvas
       self.canvas:set_selected_track(canvas_result.track)
+      self.track_properties_panel:set_track(canvas_result.track)
     end
   end
 
@@ -299,10 +351,28 @@ function GUI:draw(ctx, window, shell_state)
   ImGui.Dummy(ctx, 0, 4)
   ImGui.Indent(ctx, 4)
 
-  -- Tab bar for Properties / Code
+  -- Tab bar for Track / Element / Code
   if ImGui.BeginTabBar(ctx, "right_tabs") then
-    -- Properties tab
-    if ImGui.BeginTabItem(ctx, "Properties") then
+    -- Track tab (for track properties)
+    if ImGui.BeginTabItem(ctx, "Track") then
+      ImGui.Dummy(ctx, 0, 4)
+      local track_result = self.track_properties_panel:draw(ctx)
+
+      if track_result then
+        if track_result.type == "add_track" then
+          self:handle_add_track()
+        elseif track_result.type == "delete_track" then
+          self:handle_delete_track(track_result.track)
+        elseif track_result.type == "change_track" then
+          self:handle_track_changed(track_result.track)
+        end
+      end
+
+      ImGui.EndTabItem(ctx)
+    end
+
+    -- Element tab (for element properties)
+    if ImGui.BeginTabItem(ctx, "Element") then
       ImGui.Dummy(ctx, 0, 4)
       local props_result = self.properties_panel:draw(ctx)
 
