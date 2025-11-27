@@ -30,6 +30,12 @@ function M.new(opts)
     show_raw = false,
     filter_text = "",
 
+    -- Splitter state
+    tree_width = 200,
+    min_tree_width = 120,
+    max_tree_width = 400,
+    dragging_splitter = false,
+
     -- Callbacks
     on_element_select = opts.on_element_select,
   }, Panel)
@@ -437,19 +443,60 @@ function Panel:draw(ctx)
 
   -- Two-column layout: tree on left, detail on right
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
-  local tree_w = 200
+  local splitter_w = 8
+  local panel_start_x, _ = ImGui.GetCursorScreenPos(ctx)
+
+  -- Ensure tree_width is valid
+  local max_tree = math.min(self.max_tree_width, avail_w - 150)
+  self.tree_width = math.max(self.min_tree_width, math.min(max_tree, self.tree_width))
+
+  local detail_w = avail_w - self.tree_width - splitter_w
 
   -- Tree panel
-  ImGui.BeginChild(ctx, "rtconfig_tree", tree_w, avail_h - 20, 1)
+  ImGui.BeginChild(ctx, "rtconfig_tree", self.tree_width, avail_h - 20, 1)
   self:draw_sections(ctx)
   self:draw_macros(ctx)
   self:draw_layouts(ctx)
   ImGui.EndChild(ctx)
 
-  ImGui.SameLine(ctx)
+  ImGui.SameLine(ctx, 0, 0)
+
+  -- Splitter
+  local splitter_x, splitter_y = ImGui.GetCursorScreenPos(ctx)
+  ImGui.InvisibleButton(ctx, "##rtconfig_splitter", splitter_w, avail_h - 20)
+
+  -- Splitter visual and interaction
+  local is_hovered = ImGui.IsItemHovered(ctx)
+  local is_active = ImGui.IsItemActive(ctx)
+
+  if is_hovered or is_active then
+    ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeEW)
+  end
+
+  -- Draw splitter - visible grip area
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local splitter_color = (is_hovered or is_active) and hexrgb("#888888") or hexrgb("#444444")
+  local line_x = splitter_x + splitter_w / 2
+  -- Draw 3 small grip lines
+  for i = -1, 1 do
+    local grip_y = splitter_y + (avail_h - 20) / 2 + i * 8
+    ImGui.DrawList_AddLine(dl, line_x - 2, grip_y, line_x + 2, grip_y, splitter_color, 2)
+  end
+
+  -- Handle dragging - use mouse position relative to panel start
+  if is_active then
+    local mouse_x, _ = ImGui.GetMousePos(ctx)
+    local new_width = mouse_x - panel_start_x - splitter_w / 2
+
+    -- Clamp to min/max
+    new_width = math.max(self.min_tree_width, math.min(max_tree, new_width))
+    self.tree_width = new_width
+  end
+
+  ImGui.SameLine(ctx, 0, 0)
 
   -- Detail panel
-  ImGui.BeginChild(ctx, "rtconfig_detail", avail_w - tree_w - 10, avail_h - 20, 1)
+  ImGui.BeginChild(ctx, "rtconfig_detail", detail_w, avail_h - 20, 1)
   ImGui.Indent(ctx, 4)
   self:draw_detail(ctx)
   ImGui.Unindent(ctx, 4)
