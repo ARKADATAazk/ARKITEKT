@@ -294,6 +294,12 @@ function M.new(opts)
     win._saved_pos  = win.settings:get("window.pos",  nil)
     win._saved_size = win.settings:get("window.size", nil)
     win._is_maximized = win.settings:get("window.maximized", false)
+
+    -- Load pre-maximize position/size if available (for proper un-maximize)
+    if win._is_maximized then
+      win._pre_max_pos  = win.settings:get("window.pre_max_pos",  nil)
+      win._pre_max_size = win.settings:get("window.pre_max_size", nil)
+    end
   end
 
   -- ============================================================================
@@ -504,9 +510,20 @@ function M.new(opts)
     if self._titlebar then
       self._titlebar:set_maximized(self._is_maximized)
     end
-    
+
     if self.settings then
       self.settings:set("window.maximized", self._is_maximized)
+
+      -- Save/clear pre-maximize position based on state
+      if self._is_maximized and self._pre_max_pos and self._pre_max_size then
+        -- Save pre-maximize position so un-maximize works after relaunch
+        self.settings:set("window.pre_max_pos", self._pre_max_pos)
+        self.settings:set("window.pre_max_size", self._pre_max_size)
+      elseif not self._is_maximized then
+        -- Clear pre-maximize position when un-maximizing
+        self.settings:set("window.pre_max_pos", nil)
+        self.settings:set("window.pre_max_size", nil)
+      end
     end
   end
 
@@ -537,6 +554,51 @@ function M.new(opts)
       end
       ImGui.SetNextWindowSize(ctx, self._max_viewport.w, self._max_viewport.h, ImGui.Cond_Always)
       self._pos_size_set = true
+    elseif self._is_maximized and not self._max_viewport then
+      -- Maximized on launch but no viewport calculated yet - calculate it now
+      local pos = self._pre_max_pos or self._saved_pos or self.initial_pos
+      if pos and pos.x and pos.y then
+        local js_success = false
+        if reaper.JS_Window_GetViewportFromRect then
+          -- Use the pre-maximize position to find the correct monitor
+          local left, top, right, bottom = reaper.JS_Window_GetViewportFromRect(
+            pos.x, pos.y, pos.x + 100, pos.y + 100, true
+          )
+          if left and right and top and bottom then
+            self._max_viewport = {
+              x = left,
+              y = top,
+              w = right - left,
+              h = bottom - top
+            }
+            js_success = true
+          end
+        end
+
+        if not js_success then
+          -- Fallback viewport calculation
+          local monitor_width = 1920
+          local monitor_height = 1080
+          local taskbar_offset = 40
+          local monitor_index = math.floor((pos.x + monitor_width / 2) / monitor_width)
+          local monitor_left = monitor_index * monitor_width
+          local monitor_top = 0
+
+          self._max_viewport = {
+            x = monitor_left,
+            y = monitor_top,
+            w = monitor_width,
+            h = monitor_height - taskbar_offset
+          }
+        end
+
+        -- Now apply the maximized geometry
+        if self._max_viewport.x and self._max_viewport.y then
+          ImGui.SetNextWindowPos(ctx, self._max_viewport.x, self._max_viewport.y, ImGui.Cond_Always)
+        end
+        ImGui.SetNextWindowSize(ctx, self._max_viewport.w, self._max_viewport.h, ImGui.Cond_Always)
+        self._pos_size_set = true
+      end
     elseif self._pending_restore and self._pre_max_pos then
       ImGui.SetNextWindowPos(ctx, self._pre_max_pos.x, self._pre_max_pos.y, ImGui.Cond_Always)
       ImGui.SetNextWindowSize(ctx, self._pre_max_size.w, self._pre_max_size.h, ImGui.Cond_Always)
