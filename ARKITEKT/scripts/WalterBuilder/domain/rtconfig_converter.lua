@@ -407,11 +407,27 @@ local function convert_clear_item(item)
   return element
 end
 
+-- Group to child elements mapping
+-- Groups in flow macros contain these tcp.* child elements
+local FLOW_GROUP_CHILDREN = {
+  pan_group = { "tcp.pan", "tcp.width" },
+  fx_group = { "tcp.fx" },
+  input_group = { "tcp.recinput" },
+  master_pan_group = { "master.tcp.pan", "master.tcp.width" },
+  master_fx_group = { "master.tcp.fx" },
+}
+
 -- Calculate positions for flow layout elements
 -- Flow elements are positioned sequentially based on their order and widths
 -- @param result: The conversion result with elements array
 -- @param eval_context: The evaluation context for resolving any remaining variables
 local function calculate_flow_positions(result, eval_context)
+  -- Build element lookup by ID for group child resolution
+  local elements_by_id = {}
+  for _, entry in ipairs(result.elements) do
+    elements_by_id[entry.element.id] = entry
+  end
+
   -- Collect flow elements (preserving their order by source_line)
   local flow_elements = {}
   for _, entry in ipairs(result.elements) do
@@ -456,10 +472,37 @@ local function calculate_flow_positions(result, eval_context)
   for _, entry in ipairs(flow_elements) do
     local elem = entry.element
     local coords = elem.coords
+    local elem_id = elem.id
 
-    -- Only position tcp.* elements (skip groups like pan_group, fx_group)
-    if elem.id:match("^tcp%.") then
-      -- Update X position
+    -- Check if this is a group that should expand to children
+    local children = FLOW_GROUP_CHILDREN[elem_id]
+    if children then
+      -- Position each child element at current X
+      local group_width = coords.w or 0
+      Console.info("  Flow group: %s (w=%d) -> children: %s", elem_id, group_width, table.concat(children, ", "))
+
+      for _, child_id in ipairs(children) do
+        local child_entry = elements_by_id[child_id]
+        if child_entry then
+          local child_coords = child_entry.element.coords
+          child_coords.x = current_x
+          child_coords.y = flow_y
+          -- Use group width for child if child has no width
+          if (child_coords.w or 0) == 0 and group_width > 0 then
+            child_coords.w = group_width
+          end
+          Console.info("    Child positioned: %s at x=%d (w=%d)", child_id, child_coords.x, child_coords.w or 0)
+          positioned_count = positioned_count + 1
+        end
+      end
+
+      -- Advance X by group width
+      if group_width > 0 then
+        current_x = current_x + group_width + 2
+      end
+
+    elseif elem_id:match("^tcp%.") or elem_id:match("^master%.tcp%.") then
+      -- Direct tcp.* element - position it
       coords.x = current_x
       coords.y = flow_y
 
@@ -468,7 +511,7 @@ local function calculate_flow_positions(result, eval_context)
       if elem_width > 0 then
         current_x = current_x + elem_width + 2  -- 2px gap between elements
         positioned_count = positioned_count + 1
-        Console.info("  Flow positioned: %s at x=%d (w=%d)", elem.id, coords.x, elem_width)
+        Console.info("  Flow positioned: %s at x=%d (w=%d)", elem_id, coords.x, elem_width)
       end
     end
   end
@@ -529,6 +572,10 @@ local function convert_items(items, context_filter)
       local matches_context = true
       if context_filter then
         matches_context = item.element and item.element:match("^" .. context_filter .. "%.")
+        -- Also allow flow groups (pan_group, fx_group, input_group) for layout calculation
+        if not matches_context and item.is_flow_element and FLOW_GROUP_CHILDREN[item.element] then
+          matches_context = true
+        end
       end
 
       if matches_context then
