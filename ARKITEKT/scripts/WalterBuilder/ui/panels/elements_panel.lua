@@ -50,6 +50,7 @@ function Panel:set_active_elements(elements)
 end
 
 -- Draw a category header (collapsible)
+-- Returns: open (boolean), action (string or nil)
 function Panel:draw_category_header(ctx, category, display_name)
   local is_collapsed = self.collapsed[category]
 
@@ -62,8 +63,14 @@ function Panel:draw_category_header(ctx, category, display_name)
 
   ImGui.PopStyleColor(ctx, 3)
 
+  -- Right-click on category header toggles all elements in category
+  local action = nil
+  if ImGui.IsItemClicked(ctx, 1) then  -- 1 = right mouse button
+    action = "toggle_category"
+  end
+
   self.collapsed[category] = not open
-  return open
+  return open, action
 end
 
 -- Draw a single element item using Chip widget
@@ -108,22 +115,9 @@ function Panel:draw_element_item(ctx, def)
     dot_rounding = 2,
   })
 
-  -- Context menu for active elements (right-click)
-  if is_active and ImGui.BeginPopupContextItem(ctx, "elem_ctx_" .. def.id) then
-    -- Toggle visibility
-    local toggle_label = is_hidden and "Show" or "Hide"
-    if ImGui.MenuItem(ctx, toggle_label) then
-      return "toggle", active_elem
-    end
-
-    ImGui.Separator(ctx)
-
-    -- Reset to defaults
-    if ImGui.MenuItem(ctx, "Reset to Defaults") then
-      return "reset", active_elem
-    end
-
-    ImGui.EndPopup(ctx)
+  -- Right-click on active elements directly toggles visibility (no menu)
+  if is_active and ImGui.IsItemClicked(ctx, 1) then  -- 1 = right mouse button
+    return "toggle", active_elem
   end
 
   -- Tooltip on hover
@@ -142,7 +136,7 @@ function Panel:draw_element_item(ctx, def)
         ImGui.PopStyleColor(ctx)
       else
         ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CC88"))
-        ImGui.Text(ctx, "(click to edit, right-click for options)")
+        ImGui.Text(ctx, "(click to select, right-click to hide)")
         ImGui.PopStyleColor(ctx)
       end
     else
@@ -210,7 +204,14 @@ function Panel:draw(ctx)
         local display_name = TCPElements.category_names[category] or category
         display_name = display_name .. " (" .. #filtered .. ")"
 
-        if self:draw_category_header(ctx, category, display_name) then
+        local header_open, header_action = self:draw_category_header(ctx, category, display_name)
+
+        -- Handle category header right-click (toggle all elements in category)
+        if header_action == "toggle_category" then
+          result = { type = "toggle_category", category = category }
+        end
+
+        if header_open then
           ImGui.Indent(ctx, 4)
 
           for _, def in ipairs(filtered) do

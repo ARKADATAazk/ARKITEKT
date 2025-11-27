@@ -231,6 +231,30 @@ function GUI:handle_reset_element(element)
   end
 end
 
+-- Handle toggle all elements in a category
+function GUI:handle_toggle_category(category)
+  local elements = self.State.get_elements()
+  -- Check if any element in category is visible
+  local any_visible = false
+  for _, elem in ipairs(elements) do
+    if elem.category == category and elem.visible then
+      any_visible = true
+      break
+    end
+  end
+
+  -- Toggle: if any visible, hide all; if all hidden, show all
+  local new_visible = not any_visible
+  for _, elem in ipairs(elements) do
+    if elem.category == category then
+      elem.visible = new_visible
+    end
+  end
+
+  self:sync_canvas()
+  self.code_panel:invalidate()
+end
+
 -- Handle selecting an active element from the palette
 function GUI:handle_select_active_element(element)
   self.State.set_selected(element)
@@ -528,30 +552,33 @@ function GUI:draw(ctx, window, shell_state)
   -- Left panel: Elements
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
 
-  ImGui.BeginChild(ctx, "left_panel", self.left_panel_width, remaining_h, 1, 0)
-  ImGui.Dummy(ctx, 0, 4)
-  ImGui.Indent(ctx, 4)
+  if ImGui.BeginChild(ctx, "left_panel", self.left_panel_width, remaining_h, 1, 0) then
+    ImGui.Dummy(ctx, 0, 4)
+    ImGui.Indent(ctx, 4)
 
-  ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
-  ImGui.Text(ctx, "Elements")
-  ImGui.PopStyleColor(ctx)
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#FFFFFF"))
+    ImGui.Text(ctx, "Elements")
+    ImGui.PopStyleColor(ctx)
 
-  ImGui.Dummy(ctx, 0, 4)
+    ImGui.Dummy(ctx, 0, 4)
 
-  local result = self.elements_panel:draw(ctx)
-  if result then
-    if result.type == "add" then
-      self:handle_add_element(result.definition)
-    elseif result.type == "select_active" then
-      self:handle_select_active_element(result.element)
-    elseif result.type == "toggle" then
-      self:handle_toggle_element(result.element)
-    elseif result.type == "reset" then
-      self:handle_reset_element(result.element)
+    local result = self.elements_panel:draw(ctx)
+    if result then
+      if result.type == "add" then
+        self:handle_add_element(result.definition)
+      elseif result.type == "select_active" then
+        self:handle_select_active_element(result.element)
+      elseif result.type == "toggle" then
+        self:handle_toggle_element(result.element)
+      elseif result.type == "reset" then
+        self:handle_reset_element(result.element)
+      elseif result.type == "toggle_category" then
+        self:handle_toggle_category(result.category)
+      end
     end
-  end
 
-  ImGui.Unindent(ctx, 4)
+    ImGui.Unindent(ctx, 4)
+  end
   ImGui.EndChild(ctx)
   ImGui.PopStyleColor(ctx)
 
