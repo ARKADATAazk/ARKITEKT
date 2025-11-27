@@ -275,9 +275,21 @@ local function convert_items(items, context_filter)
   return result
 end
 
+-- Recursively collect items from all layouts
+local function collect_layout_items(layouts, all_items)
+  for _, layout in ipairs(layouts) do
+    for _, item in ipairs(layout.items) do
+      all_items[#all_items + 1] = item
+    end
+    if layout.children then
+      collect_layout_items(layout.children, all_items)
+    end
+  end
+end
+
 -- Convert elements from a specific layout
 -- @param parsed: The parsed rtconfig result
--- @param layout_name: Name of the layout to convert (nil = global/default)
+-- @param layout_name: Name of the layout to convert (nil = all sections + layouts)
 -- @param context: Filter by context (e.g., "tcp", "mcp") or nil for all
 -- @return table with elements and stats
 function M.convert_layout(parsed, layout_name, context)
@@ -285,14 +297,20 @@ function M.convert_layout(parsed, layout_name, context)
     return nil, "No parsed rtconfig provided"
   end
 
-  -- If no layout specified, use global sections
+  -- If no layout specified, collect from ALL sections AND layouts
   if not layout_name then
     local all_items = {}
+
+    -- Collect from sections (global elements)
     for _, section in ipairs(parsed.sections) do
       for _, item in ipairs(section.items) do
         all_items[#all_items + 1] = item
       end
     end
+
+    -- Also collect from all layouts (where most elements actually live!)
+    collect_layout_items(parsed.layouts, all_items)
+
     return convert_items(all_items, context)
   end
 
