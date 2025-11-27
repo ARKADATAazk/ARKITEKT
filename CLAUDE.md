@@ -131,15 +131,20 @@ local config = {
 
 ### Task: Add a New Widget
 
-1. **Read the widget guide**: `cookbook/WIDGETS.md`
-2. **Check existing widgets**: `arkitekt/gui/widgets/[category]/`
-3. **Find similar widget** to use as template
-4. **Follow the widget API contract**:
+1. **Read the API philosophy**: `cookbook/API_DESIGN_PHILOSOPHY.md` - Understand when to match ImGui vs improve
+2. **Read the widget guide**: `cookbook/WIDGETS.md`
+3. **Check existing widgets**: `arkitekt/gui/widgets/[category]/`
+4. **Find similar widget** to use as template
+5. **Decide API pattern**:
+   - Single-frame widget → `M.draw(ctx, opts)` with opts table
+   - Multi-frame stateful → `M.begin_xxx()` / `M.end_xxx()` like ImGui
+   - Keep naming familiar to ImGui users (`same_line` not `nextHorizontal`)
+6. **Follow the widget API contract**:
    - Signature: `function M.draw(ctx, opts) return result end`
    - Use `Theme.COLORS` for colors (read every frame!)
    - Use `Base.get_state(id)` for persistent state
    - Advance cursor after drawing
-5. **Test in Sandbox**: `scripts/Sandbox/`
+7. **Test in Sandbox**: `scripts/Sandbox/`
 
 ### Task: Fix a Bug
 
@@ -363,13 +368,14 @@ scripts/MyApp/
 When you need more detail:
 
 1. **This file** (CLAUDE.md) - Quick reference, task cookbook
-2. **cookbook/CONVENTIONS.md** - Detailed coding standards
-3. **cookbook/PROJECT_STRUCTURE.md** - Full architecture guide
-4. **cookbook/WIDGETS.md** - Widget development patterns
-5. **cookbook/THEME_MANAGER.md** - Theming system guide
-6. **cookbook/LUA_PERFORMANCE_GUIDE.md** - Performance optimization
-7. **cookbook/DEPRECATED.md** - Deprecation tracker
-8. **TODO/** - Actionable improvements to work on
+2. **cookbook/API_DESIGN_PHILOSOPHY.md** - When to match ImGui vs when to improve
+3. **cookbook/CONVENTIONS.md** - Detailed coding standards
+4. **cookbook/PROJECT_STRUCTURE.md** - Full architecture guide
+5. **cookbook/WIDGETS.md** - Widget development patterns
+6. **cookbook/THEME_MANAGER.md** - Theming system guide
+7. **cookbook/LUA_PERFORMANCE_GUIDE.md** - Performance optimization
+8. **cookbook/DEPRECATED.md** - Deprecation tracker
+9. **TODO/** - Actionable improvements to work on
 
 ---
 
