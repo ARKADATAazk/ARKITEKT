@@ -26,10 +26,11 @@ local M = {}
 -- Evaluation context with default values
 -- These provide reasonable defaults for visualization when runtime state isn't available
 local DEFAULT_CONTEXT = {
-  -- Parent dimensions
-  w = 300,  -- Default TCP width
-  h = 90,   -- Default TCP height
+  -- Parent dimensions (use larger values to reveal more elements)
+  w = 400,  -- Default TCP width (wider to show more)
+  h = 150,  -- Default TCP height (taller to pass height thresholds)
   scale = 1.0,
+  lscale = 1.0,  -- Layout scale (used by some themes)
 
   -- Common pre-computed variables (typical values at 100% DPI)
   tcp_padding = 7,
@@ -39,10 +40,11 @@ local DEFAULT_CONTEXT = {
   folder_sec = 20,
 
   -- Track state variables (defaults for visualization)
-  recarm = 0,
+  recarm = 1,  -- Show record arm button
+  recmon = 1,  -- Show record monitor
   track_selected = 1,  -- Show as if track is selected
   mixer_visible = 0,
-  trackcolor_valid = 0,
+  trackcolor_valid = 1,  -- Show track color
   folderstate = 0,
   folderdepth = 0,
   maxfolderdepth = 3,
@@ -54,7 +56,11 @@ local DEFAULT_CONTEXT = {
   hide_fx_group = 0,
   hide_pan_group = 0,
   hide_io_group = 0,
-  trackpanmode = 0,
+  hide_recarm_group = 0,
+  hide_recmon_group = 0,
+  hide_label_group = 0,
+  hide_volume_group = 0,
+  trackpanmode = 6,  -- Stereo pan mode (shows both pan and width)
 
   -- Theme variant
   theme_version = 1,
@@ -62,6 +68,17 @@ local DEFAULT_CONTEXT = {
 
   -- Main font
   main_font = 1,
+
+  -- Height thresholds (set low to show elements)
+  labelHide_h = 0,
+  panHide_h = 0,
+  volumeHide_h = 0,
+  recinputHide_h = 0,
+  fxHide_h = 0,
+  ioHide_h = 0,
+  phaseHide_h = 0,
+  envHide_h = 0,
+  fixed_lanes_hide_h = 0,
 }
 
 -- Check if a SET statement defines a variable (vs an element)
@@ -278,6 +295,15 @@ local function convert_set_item(item, context)
         bs = evaluated[8] or 0,
       })
       eval_success = true
+
+      -- Debug: log elements that evaluate to 0x0 (hidden by conditional)
+      local is_visual_id = item.element:match("^tcp%.[^.]+$") and
+                          not item.element:match("%.color$") and
+                          not item.element:match("%.font$") and
+                          not item.element:match("%.margin$")
+      if is_visual_id and evaluated[3] == 0 and evaluated[4] == 0 then
+        Console.warn("  HIDDEN %s: expr='%s'", item.element, item.value or "?")
+      end
 
       -- Also store element coordinates in context for self-references
       -- (e.g., tcp.solo references tcp.mute{3})
