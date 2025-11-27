@@ -96,13 +96,35 @@ local DEFAULT_CONTEXT = {
   show_env_group = 1,
 }
 
+-- Known element context prefixes (these define visual elements, not variables)
+local ELEMENT_CONTEXTS = {
+  tcp = true,
+  mcp = true,
+  envcp = true,
+  trans = true,
+  masterlayout = true,
+  master = true,
+  global = true,
+}
+
 -- Check if a SET statement defines a variable (vs an element)
 -- Variables: simple names like "meter_sec", "tcp_padding"
--- Elements: dotted names like "tcp.mute", "tcp.pan"
+--            OR dotted names that don't start with element contexts (OVR.*, etc.)
+-- Elements: dotted names like "tcp.mute", "tcp.pan" (context.element format)
 local function is_variable_definition(element_name)
-  -- Elements always have dots (tcp.mute, mcp.volume, etc.)
-  -- Variables are simple names (meter_sec, element_h, etc.)
-  return not element_name:match("%.")
+  -- Simple names without dots are always variables
+  if not element_name:match("%.") then
+    return true
+  end
+
+  -- Dotted names: check if they start with a known element context
+  local prefix = element_name:match("^([^.]+)%.")
+  if prefix and ELEMENT_CONTEXTS[prefix:lower()] then
+    return false  -- It's an element (tcp.mute, mcp.volume, etc.)
+  end
+
+  -- Dotted names with unknown prefixes are variables (OVR.*, etc.)
+  return true
 end
 
 -- Element name to category mapping
@@ -421,14 +443,6 @@ local function convert_items(items, context_filter)
     if item.type == RtconfigParser.TOKEN.SET then
       set_count = set_count + 1
 
-      -- Debug: track any elements containing recarm/recmon/recmode/env
-      if item.element and (
-        item.element:match("recarm") or item.element:match("recmon") or
-        item.element:match("recmode") or item.element:match("%.env")
-      ) then
-        Console.warn(">>> FOUND element matching rec*/env: %s = %s", item.element, item.value or "(simple)")
-      end
-
       -- Check if this is a variable definition (no dot in name)
       if is_variable_definition(item.element) then
         -- Process variable and add to context
@@ -585,6 +599,50 @@ local function parse_macro_body_item(body_entry)
     }
   end
 
+  -- Try to parse as THEN statement (flow layout DSL)
+  -- Format: then element_id   width_var   row_flag   row_val   hide_cond   hide_val
+  -- Example: then tcp.recarm     OVR.tcp_recarm.width   0   0   0   0
+  -- These elements are positioned by the flow layout system, we create placeholder coords
+  local then_elem = code:match("^%s*then%s+([%w._]+)")
+  if then_elem then
+    -- Extract all parameters after element ID
+    local params_str = code:match("^%s*then%s+[%w._]+%s+(.*)$") or ""
+
+    -- Parse the parameters (space-separated)
+    -- Typical format: width_var row_flag row_val hide_condition hide_val
+    local params = {}
+    for param in params_str:gmatch("%S+") do
+      params[#params + 1] = param
+    end
+
+    -- Build a synthetic expression for the element
+    -- The width comes from the first parameter (e.g., OVR.tcp_recarm.width)
+    -- For now, create a placeholder that references the width variable
+    local width_var = params[1] or "20"
+    local value_expr
+
+    -- Check if width_var looks like a variable reference or a number
+    if width_var:match("^[%d%-%.]+$") then
+      -- It's a number, create simple coords
+      value_expr = string.format("[0 0 %s 20]", width_var)
+    else
+      -- It's a variable reference, create expression that uses it
+      -- Flow elements typically have height from context and width from variable
+      value_expr = string.format("[0 0 %s element_h]", width_var)
+    end
+
+    return {
+      type = RtconfigParser.TOKEN.SET,
+      element = then_elem,
+      value = value_expr,
+      line = body_entry.line,
+      is_simple = false,
+      coords = nil,
+      is_flow_element = true,  -- Mark as flow-positioned
+      flow_params = params,     -- Keep original params for debugging
+    }
+  end
+
   -- Try to parse as CLEAR statement
   local clear_elem = code:match("^%s*clear%s+([%w._*]+)%s*$")
   if clear_elem then
@@ -602,6 +660,7 @@ end
 -- Handles line continuations (lines ending with \)
 local function collect_macro_items(macros, all_items)
   local macro_items = 0
+  local flow_items = 0
 
   for _, macro in ipairs(macros) do
     local i = 1
@@ -609,11 +668,6 @@ local function collect_macro_items(macros, all_items)
       local body_entry = macro.body[i]
       local code = body_entry.code or ""
       local line_num = body_entry.line
-
-      -- Debug: log any line containing recarm/recmon/recmode/env
-      if code:match("recarm") or code:match("recmon") or code:match("recmode") or code:match("tcp%.env") then
-        Console.warn(">>> MACRO %s line %d: %s", macro.name, line_num, code:sub(1, 100))
-      end
 
       -- Handle line continuations: join lines ending with \
       while code:match("\\%s*$") and i < #macro.body do
@@ -634,10 +688,21 @@ local function collect_macro_items(macros, all_items)
       if item then
         all_items[#all_items + 1] = item
         macro_items = macro_items + 1
+
+        -- Log flow elements for debugging
+        if item.is_flow_element then
+          flow_items = flow_items + 1
+          Console.info("  FLOW: %s from '%s' (width=%s)",
+            item.element, macro.name, item.flow_params and item.flow_params[1] or "?")
+        end
       end
 
       i = i + 1
     end
+  end
+
+  if flow_items > 0 then
+    Console.info("Found %d flow elements (then statements) in macros", flow_items)
   end
 
   return macro_items
@@ -661,11 +726,6 @@ function M.convert_layout(parsed, layout_name, context)
     local section_items = 0
     for _, section in ipairs(parsed.sections) do
       for _, item in ipairs(section.items) do
-        -- Debug: log any section item containing recarm/recmon/recmode/env
-        if item.element and (item.element:match("recarm") or item.element:match("recmon") or
-           item.element:match("recmode") or item.element:match("%.env")) then
-          Console.warn(">>> SECTION %s item: %s = %s", section.name, item.element, item.value or "(simple)")
-        end
         all_items[#all_items + 1] = item
         section_items = section_items + 1
       end
