@@ -110,14 +110,27 @@ end
 
 ## Display Recommendations
 
-- **Badge**: `5T` (5 tracks)
-- **FX Badge**: `15 FX` or `5× Kontakt`
-- **Stacked Visual**: Show 3-4 offset layers to indicate multi-track
-- **Hover Preview**:
+- **Track Badge**: `5T` - total track count (simple, includes folders)
+- **FX Badge**: `15 FX` or show primary plugin
+- **Stacked Visual**: Max 3-4 offset layers for multi-track templates (regardless of folder structure)
+- **Hover Preview** (with indentation for folders):
   ```
-  VI-M: ST-VN2 (3 FX)
-  VI-M: ST-VN1 (3 FX)
-  VI-M: ST-VA (3 FX)
-  VI-M: ST-VC (3 FX)
-  VI-M: ST-B (3 FX)
+  ▼ Strings
+    ├ VI-M: ST-VN2 (3 FX)
+    ├ VI-M: ST-VN1 (3 FX)
+    ├ VI-M: ST-VA (3 FX)
+    ├ VI-M: ST-VC (3 FX)
+    └ VI-M: ST-B (3 FX)
   ```
+
+## Folder Track Format
+
+Folder tracks use `ISBUS` field:
+```
+ISBUS 1 1    # Folder start
+ISBUS 0 0    # Regular track (child)
+ISBUS 1 -1   # Last child (closes folder)
+ISBUS 2 -1   # Closes nested folder (depth 2)
+```
+
+Parsing hierarchy requires tracking depth as you iterate through tracks.
