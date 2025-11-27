@@ -28,7 +28,7 @@ See [cookbook/MIGRATION_PLANS.md](../../../../cookbook/MIGRATION_PLANS.md#region
 |---------|--------|----------------|
 | `core/` | `app/` + distribute | 5 |
 | `domains/` | `domain/` + `ui/state/` | 6 |
-| `engine/` | `domain/playback/` + `platform/` | 7 |
+| `engine/` | Keep `engine/` | 0 (no change) |
 | `storage/` | `infra/` | 3 |
 
 ## Key Decisions
@@ -40,70 +40,26 @@ These are UI concerns, not business logic:
 - `domains/notification.lua` → `ui/state/notification.lua`
 - `domains/ui_preferences.lua` → `ui/state/preferences.lua`
 
-### 2. Engine → domain/playback/ + platform/
+### 2. Engine → Keep as `engine/`
 
-The engine contains **mixed concerns**. Per [cookbook/SCRIPT_LAYERS.md](../../../../cookbook/SCRIPT_LAYERS.md), we must separate:
+**Why not split into `domain/` + `platform/`?**
 
-**Pure playback logic → `domain/playback/`** (NO `reaper.*` calls):
-- `engine/engine_state.lua` → `domain/playback/state.lua` (sequence, indices)
-- `engine/playback.lua` → `domain/playback/loop.lua` (loop logic)
-- Sequence expansion, item management
+The engine is a **playback orchestration layer** - it naturally uses `reaper.*` for transport control, timing, and playback. This is fine because:
 
-**REAPER API wrappers → `platform/`** (wraps `reaper.*` calls):
-- `platform/transport.lua` - Wraps `reaper.GetPlayState()`, `reaper.OnPlayButton()`, etc.
-- `platform/timing.lua` - Wraps `reaper.GetPlayPosition()`, `reaper.time_precise()`
-- `platform/regions.lua` - Wraps `reaper.EnumProjectMarkers()`, region queries
+1. All ARKITEKT code runs inside REAPER - there's no "outside" environment to test in
+2. Forcing purity adds complexity without real benefit
+3. `engine/` is like `app/` - an orchestration layer that coordinates things
+4. Scripts don't need `platform/` layers (see [cookbook/SCRIPT_LAYERS.md](../../../../cookbook/SCRIPT_LAYERS.md))
 
-**Orchestration → `app/` or `engine/`** (uses platform + domain):
-- `engine/core.lua` → `app/playback_controller.lua` or keep in `engine/`
-- `engine/transport.lua` → Split: pure logic to domain, REAPER calls to platform
-- `engine/transitions.lua` → Split: state machine to domain, timing to platform
+**Keep engine/ as-is:**
+- `engine/core.lua` - Playback coordinator
+- `engine/engine_state.lua` - Sequence and position state
+- `engine/transport.lua` - Transport control
+- `engine/transitions.lua` - Transition handling
+- `engine/quantize.lua` - Quantization logic
+- `engine/playback.lua` - Playback loop
 
-**Example split for transport.lua:**
-
-```lua
--- platform/transport.lua (REAPER wrappers)
-local M = {}
-
-function M.get_play_state(proj)
-  return reaper.GetPlayState()
-end
-
-function M.get_play_position(proj)
-  return reaper.GetPlayPosition()
-end
-
-function M.start_playback()
-  reaper.OnPlayButton()
-end
-
-function M.stop_playback()
-  reaper.OnStopButton()
-end
-
-return M
-```
-
-```lua
--- domain/playback/transport.lua (pure logic)
-local M = {}
-
-function M.new(platform_transport)
-  local self = {
-    _platform = platform_transport,
-    loop_enabled = false,
-    shuffle_enabled = false,
-  }
-  return setmetatable(self, { __index = M })
-end
-
-function M:is_playing()
-  local state = self._platform.get_play_state()
-  return state & 1 == 1  -- Pure bit check
-end
-
-return M
-```
+The `engine/` folder is **script-specific** - it makes sense for RegionPlaylist's playback needs, just like other scripts might have their own specialized folders.
 
 ### 3. coordinator_bridge → infra/
 

@@ -1,251 +1,186 @@
 # Script Layer Architecture
 
-> Guide for organizing platform-specific code in ARKITEKT scripts.
+> Guide for organizing code in ARKITEKT framework and scripts.
 
 ---
 
-## Overview
+## Key Insight: Framework vs Scripts
 
-ARKITEKT scripts follow a layered architecture where **pure logic** is separated from **platform-specific code**. This enables:
+ARKITEKT code runs **exclusively inside REAPER**. There's no external environment to test in. This means:
 
-- **Testability**: Pure layers can be unit tested without REAPER
-- **Portability**: Business logic could theoretically run outside REAPER
-- **Clarity**: Clear boundaries for where REAPER/ImGui calls belong
+- "Pure domain testing" still happens inside REAPER
+- Strict purity enforcement adds complexity without real benefit for scripts
+- The framework keeps discipline; scripts stay pragmatic
+
+| Level | Purity Rules | `platform/` Layer | Why |
+|-------|--------------|-------------------|-----|
+| **Framework** (`arkitekt/`) | Strict in `core/` | Yes | Framework utilities should be stable, reusable |
+| **Scripts** (`scripts/X/`) | Relaxed | No | Scripts are app-specific, always in REAPER |
 
 ---
 
-## Layer Hierarchy
+## Framework: `arkitekt/`
+
+The framework maintains purity in `core/` to keep utilities stable and reusable.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         UI / VIEWS                          │
-│   (renders widgets, handles user input)                     │
-│   MAY use: ImGui, platform/*, arkitekt/platform/*           │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│                        PLATFORM                             │
-│   (wraps REAPER/ImGui APIs for script-specific needs)       │
-│   USES: reaper.*, ImGui.* directly                          │
-└─────────────────────────┬───────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────┐
-│                     DOMAIN / CORE                           │
-│   (pure business logic, no platform dependencies)           │
-│   NEVER uses: reaper.*, ImGui.*                             │
-└─────────────────────────────────────────────────────────────┘
+arkitekt/
+├── core/           # Pure utilities - NO reaper.*, NO ImGui.*
+│   ├── json.lua
+│   ├── uuid.lua
+│   ├── colors.lua
+│   └── ...
+│
+├── platform/       # REAPER/ImGui abstractions
+│   ├── imgui.lua   # ImGui version loader (0.8/0.9 compat)
+│   └── images.lua  # Image loading with cache/budget
+│
+├── gui/            # Widgets and rendering (uses ImGui)
+├── app/            # Bootstrap and runtime
+└── debug/          # Logger, test runner
+```
+
+### Framework Rules
+
+| Folder | May use `reaper.*` | May use `ImGui.*` |
+|--------|-------------------|-------------------|
+| `core/` | No | No |
+| `platform/` | Yes | Yes |
+| `gui/`, `app/`, `debug/` | Yes | Yes |
+
+**Why keep `core/` pure?** Framework utilities (json, uuid, colors, math) are used everywhere. Keeping them pure ensures they're stable and don't have hidden dependencies.
+
+---
+
+## Scripts: `scripts/X/`
+
+Scripts organize by **responsibility**, not purity. Use folders that make sense for your app.
+
+### Typical Script Structure
+
+```
+scripts/RegionPlaylist/
+├── ARK_RegionPlaylist.lua   # Entry point
+├── app/                     # Bootstrap, state container
+├── engine/                  # ← Script-specific: playback orchestration
+├── domains/                 # Business data (playlists, regions)
+├── ui/                      # Views, tiles
+├── storage/                 # Persistence
+├── defs/                    # Constants
+└── tests/                   # Integration tests
+```
+
+### Script-Specific Folders
+
+Scripts can have **specialized folders** that don't fit the canonical structure:
+
+| Script | Special Folder | Purpose |
+|--------|---------------|---------|
+| RegionPlaylist | `engine/` | Playback orchestration (uses `reaper.*` for transport) |
+| ThemeAdjuster | `packages/` | Theme package management |
+| TemplateBrowser | `scanner/` | Template file scanning |
+
+**This is fine.** The `engine/` folder is like `app/` - an orchestration layer that naturally uses platform APIs.
+
+### No `platform/` in Scripts
+
+Scripts don't need a `platform/` folder because:
+
+1. All script code runs in REAPER anyway
+2. Forcing purity splits adds complexity without benefit
+3. Orchestration layers (`app/`, `engine/`) can use `reaper.*` directly
+
+**Instead of:**
+```
+scripts/RegionPlaylist/
+├── platform/           # ❌ Unnecessary
+│   └── transport.lua
+├── domain/
+│   └── playback/
+│       └── transport.lua
+```
+
+**Just do:**
+```
+scripts/RegionPlaylist/
+├── engine/             # ✅ Simpler - orchestration uses reaper.* directly
+│   └── transport.lua
 ```
 
 ---
 
-## Two Platform Layers
+## Using Framework Platform
 
-### 1. Framework Platform: `arkitekt/platform/`
+Scripts should use `arkitekt/platform/` for shared utilities:
 
-Shared utilities used across all scripts. Located in the ARKITEKT framework.
-
-| Module | Purpose |
-|--------|---------|
-| `imgui.lua` | ImGui version loader (handles 0.8/0.9 compatibility) |
-| `images.lua` | Image loading and caching with budget management |
-| `reaper.lua` | Common REAPER API wrappers (if needed) |
-
-**Usage:**
 ```lua
+-- ImGui (handles version compatibility)
 local ImGui = require('arkitekt.platform.imgui')
+
+-- Image cache (with budget management)
 local Images = require('arkitekt.platform.images')
 ```
 
-### 2. Script Platform: `scripts/[AppName]/platform/`
-
-Script-specific REAPER/ImGui wrappers. Contains APIs unique to that script's domain.
-
-**Examples:**
-
-| Script | Platform Module | Wraps |
-|--------|-----------------|-------|
-| ThemeAdjuster | `platform/theme_params.lua` | `reaper.ThemeLayout_GetParameter()` |
-| ThemeAdjuster | `platform/param_discovery.lua` | Theme parameter scanning |
-| ItemPicker | `platform/item_source.lua` | `reaper.GetMediaItem*()` calls |
-| TemplateBrowser | `platform/template_io.lua` | Track template file I/O |
+These exist because they solve **cross-script problems** (ImGui version compat, image memory management).
 
 ---
 
-## When to Use Which Layer
+## Organizing by Responsibility
 
-### Use `arkitekt/platform/` when:
+### Common Script Folders
 
-- The utility is **generic** (ImGui loading, image caching)
-- Multiple scripts would benefit from it
-- It's not tied to a specific business domain
+| Folder | Purpose | Uses `reaper.*`? |
+|--------|---------|------------------|
+| `app/` | Bootstrap, state container, wiring | Yes (defer, init) |
+| `ui/`, `views/` | Rendering, user interaction | Yes (via ImGui) |
+| `engine/` | Script-specific orchestration | Yes (transport, timing) |
+| `domains/` | Business data structures | Can if needed |
+| `storage/` | Persistence | Yes (ExtState, files) |
+| `defs/` | Constants, defaults | No |
+| `tests/` | Integration tests | Yes (runs in REAPER) |
 
-### Use `scripts/X/platform/` when:
+### The Real Rule
 
-- The wrapper is **script-specific** (theme parameters, item sources)
-- It wraps domain-specific REAPER APIs
-- No other script would need it
-
-### Keep in `domain/` or `core/` when:
-
-- Logic is **100% pure** (no `reaper.*`, no `ImGui.*`)
-- It could run in standalone Lua (theoretically)
-- It operates only on data passed in as arguments
+Organize code so it's **easy to find and understand**, not to satisfy abstract purity requirements.
 
 ---
 
-## Script Structure with Platform Layer
+## Testing Reality
 
-```
-scripts/ThemeAdjuster/
-├── ARK_ThemeAdjuster.lua     # Entry point
-├── app/
-│   ├── init.lua              # Bootstrap, wiring
-│   └── state.lua             # State container
-│
-├── platform/                  # ← Script-specific REAPER wrappers
-│   ├── theme_params.lua      # reaper.ThemeLayout_GetParameter()
-│   ├── param_discovery.lua   # Theme parameter scanning
-│   └── imgui.lua             # (Optional) Re-export or extend framework ImGui
-│
-├── domain/                    # ← Pure business logic
-│   ├── theme/
-│   │   └── reader.lua        # Parse theme data (pure)
-│   └── packages/
-│       ├── image_map.lua     # Map package images (pure)
-│       └── metadata.lua      # Package metadata (pure)
-│
-├── ui/
-│   └── views/
-│       └── main.lua          # Uses platform/ + domain/
-│
-└── defs/
-    └── constants.lua
-```
-
----
-
-## Migration Pattern
-
-When moving REAPER API calls from `core/` to `platform/`:
-
-### Step 1: Identify Violations
+All ARKITEKT tests are **integration tests** - they run inside REAPER using the test runner:
 
 ```lua
--- BAD: core/theme_params.lua
-local M = {}
+local TestRunner = require('arkitekt.debug.test_runner')
 
-function M.get_parameter(name)
-  return reaper.ThemeLayout_GetParameter(name)  -- ❌ REAPER call in core/
+-- Tests run in REAPER, can use reaper.* freely
+function tests.test_playlist_saves()
+  Persistence.save_playlists(data, 0)
+  local loaded = Persistence.load_playlists(0)
+  assert.not_nil(loaded)
 end
-
-return M
 ```
 
-### Step 2: Move to Platform
-
-```lua
--- GOOD: platform/theme_params.lua
-local M = {}
-
-function M.get_parameter(name)
-  return reaper.ThemeLayout_GetParameter(name)  -- ✅ REAPER call in platform/
-end
-
-return M
-```
-
-### Step 3: Add Compatibility Shim (Optional)
-
-To avoid breaking existing imports during migration:
-
-```lua
--- core/theme_params.lua (temporary shim)
--- @deprecated TEMP_PARITY_SHIM: Use platform/theme_params.lua
--- EXPIRES: After all imports updated
-return require("ThemeAdjuster.platform.theme_params")
-```
-
-### Step 4: Update Imports
-
-```lua
--- Before
-local ThemeParams = require("ThemeAdjuster.core.theme_params")
-
--- After
-local ThemeParams = require("ThemeAdjuster.platform.theme_params")
-```
+You can mock dependencies for isolation, but the tests still execute in REAPER. See [TESTING.md](./TESTING.md) for the test framework.
 
 ---
 
-## ImGui Import Pattern
+## Summary
 
-### Option A: Use Framework Loader (Recommended)
+| Principle | Framework | Scripts |
+|-----------|-----------|---------|
+| Keep `core/` pure | Yes | Not required |
+| Use `platform/` | Yes, for shared abstractions | No, not needed |
+| Organize by... | Layer type | Responsibility |
+| Test environment | REAPER | REAPER |
 
-```lua
--- In any file that needs ImGui
-local ImGui = require('arkitekt.platform.imgui')
-```
+**Framework = disciplined.** Keeps utilities stable and reusable.
 
-### Option B: Script-Level Re-Export
-
-If you need to extend or configure ImGui for a specific script:
-
-```lua
--- platform/imgui.lua
-local ImGui = require('arkitekt.platform.imgui')
-
--- Add script-specific extensions if needed
-M.CustomWidget = function(ctx, ...)
-  -- ...
-end
-
-return ImGui
-```
-
-Then use:
-```lua
-local ImGui = require('ThemeAdjuster.platform.imgui')
-```
-
----
-
-## Layer Purity Rules
-
-### Pure Layers (NO `reaper.*` or `ImGui.*`)
-
-| Layer | Allowed | Forbidden |
-|-------|---------|-----------|
-| `domain/` | Pure Lua, arkitekt.core.* | reaper.*, ImGui.* |
-| `core/` (if exists) | Pure Lua, arkitekt.core.* | reaper.*, ImGui.* |
-| `storage/` | Pure serialization logic | Direct file I/O* |
-
-*Storage may use `io.*` for file operations, but not `reaper.*` for ExtState.
-
-### Runtime Layers (May use platform APIs)
-
-| Layer | May Use |
-|-------|---------|
-| `platform/` | reaper.*, ImGui.* directly |
-| `ui/`, `views/` | ImGui via platform layer |
-| `app/` | reaper.* for bootstrap, defer |
-| `engine/` | reaper.* for transport, timing |
-
----
-
-## Verification Checklist
-
-Before completing a refactor:
-
-- [ ] No `reaper.*` calls in `domain/` or `core/`
-- [ ] No direct `ImGui.*` requires in `domain/` or `core/`
-- [ ] All ImGui imports go through `arkitekt.platform.imgui` or `ScriptName.platform.imgui`
-- [ ] Script-specific REAPER wrappers are in `ScriptName/platform/`
-- [ ] Generic utilities are in `arkitekt/platform/` (or proposed for addition)
+**Scripts = pragmatic.** Organize by what makes sense for your app.
 
 ---
 
 ## See Also
 
-- [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) - Full layer definitions
+- [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) - Canonical folder structure
+- [TESTING.md](./TESTING.md) - Test framework guide
 - [CONVENTIONS.md](./CONVENTIONS.md) - Naming and coding standards
-- [TESTING.md](./TESTING.md) - Testing pure vs platform layers
