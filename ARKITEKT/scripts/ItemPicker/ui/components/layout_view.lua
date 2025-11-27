@@ -1,5 +1,5 @@
 -- @noindex
--- ItemPicker/ui/views/layout_view.lua
+-- ItemPicker/ui/components/layout_view.lua
 -- Main layout view with absolute positioning and fade animations
 -- Refactored: Now uses separate modules for settings, search toolbar, and content panels
 

@@ -1,5 +1,5 @@
 -- @noindex
--- ItemPicker/ui/tiles/coordinator.lua
+-- ItemPicker/ui/grids/coordinator.lua
 -- Coordinator for managing audio and MIDI grids
 
 local ImGui = require 'imgui' '0.10'
