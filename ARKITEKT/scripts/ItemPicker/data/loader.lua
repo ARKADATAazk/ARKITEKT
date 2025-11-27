@@ -186,7 +186,7 @@ function M.process_batch(loader, state, settings)
       local t2 = time_precise()
       reaper_time = reaper_time + (t2 - t1)
 
-      local utils = require('ItemPicker.services.utils')
+      local utils = require('ItemPicker.domain.items.utils')
       chunk = utils.RemoveKeyFromChunk(chunk, "POSITION")
       chunk = utils.RemoveKeyFromChunk(chunk, "IGUID")
       chunk = utils.RemoveKeyFromChunk(chunk, "IID")

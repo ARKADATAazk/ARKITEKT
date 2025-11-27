@@ -24,15 +24,15 @@ end
 local Shell = require('arkitekt.app.shell')
 
 -- Load new refactored modules
-local Config = require('ItemPicker.core.config')
-local State = require('ItemPicker.core.app_state')
-local Controller = require('ItemPicker.core.controller')
+local Config = require('ItemPicker.app.config')
+local State = require('ItemPicker.app.state')
+local Controller = require('ItemPicker.domain.items.service')
 local GUI = require('ItemPicker.ui.main_window')
 
 -- Data and service modules
-local visualization = require('ItemPicker.services.visualization')
+local visualization = require('ItemPicker.ui.visualization')
 local reaper_interface = require('ItemPicker.data.reaper_api')
-local utils = require('ItemPicker.services.utils')
+local utils = require('ItemPicker.domain.items.utils')
 local drag_handler = require('ItemPicker.ui.components.drag_handler')
 
 local function SetButtonState(set)

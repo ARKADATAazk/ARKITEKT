@@ -22,9 +22,9 @@ local MIDI_CACHE_HEIGHT = 200
 local waveform_color_cache = {}
 setmetatable(waveform_color_cache, {__mode = "kv"})
 
--- Performance: Compute waveform color with caching
--- Uses config values for HSV transformation multipliers
-local function compute_waveform_color(base_color)
+-- Compute darkened waveform/MIDI color with caching
+-- Applies HSV transformation to create contrast against tile background
+local function get_waveform_color(base_color)
   if waveform_color_cache[base_color] then
     return waveform_color_cache[base_color]
   end
@@ -214,18 +214,7 @@ function M.DisplayWaveform(ctx, waveform, color, draw_list, target_width)
   if not display_waveform or #display_waveform == 0 then return end
 
   DrawList_AddRectFilled(draw_list, item_x1, item_y1, item_x2, item_y2, color)
-  local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
-  local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-
-  -- Use config values for HSV transformation
-  local sat_mult = config and config.TILE_RENDER.waveform.saturation_multiplier or 0.64
-  local bright_mult = config and config.TILE_RENDER.waveform.brightness_multiplier or 0.35
-
-  s = s * sat_mult
-  v = v * bright_mult
-  r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
-
-  local col_wave = ark.Colors.components_to_rgba(r*255, g*255, b*255, 255)
+  local col_wave = get_waveform_color(color)
   local col_zero_line = col_wave
 
   local waveform_height = item_h / 2 * 0.95
@@ -384,18 +373,7 @@ function M.DisplayMidiItem(ctx, thumbnail, color, draw_list)
   local scale_x = display_w / MIDI_CACHE_WIDTH
   local scale_y = display_h / MIDI_CACHE_HEIGHT
 
-  local r, g, b = ImGui.ColorConvertU32ToDouble4(color)
-  local h, s, v = ImGui.ColorConvertRGBtoHSV(r, g, b)
-
-  -- Use config values for HSV transformation
-  local sat_mult = config and config.TILE_RENDER.waveform.saturation_multiplier or 0.64
-  local bright_mult = config and config.TILE_RENDER.waveform.brightness_multiplier or 0.35
-
-  s = s * sat_mult
-  v = v * bright_mult
-  r, g, b = ImGui.ColorConvertHSVtoRGB(h, s, v)
-
-  local col_note = ark.Colors.components_to_rgba(r*255, g*255, b*255, 255)
+  local col_note = get_waveform_color(color)
 
   -- Use indexed loop instead of pairs() for better performance
   local num_notes = #thumbnail

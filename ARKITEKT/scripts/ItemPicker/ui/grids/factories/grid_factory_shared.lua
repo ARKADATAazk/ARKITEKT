@@ -4,7 +4,7 @@
 
 local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
-local pool_utils = require('ItemPicker.services.pool_utils')
+local pool_utils = require('ItemPicker.domain.pool.utils')
 
 local M = {}
 

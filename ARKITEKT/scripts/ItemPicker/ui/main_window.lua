@@ -46,7 +46,7 @@ function GUI:initialize_once(ctx)
 
   -- Initialize disk cache for waveform/thumbnail persistence
   -- Pre-loading will happen incrementally as items are loaded
-  local disk_cache = require('ItemPicker.data.disk_cache')
+  local disk_cache = require('ItemPicker.data.cache')
   local cache_dir = disk_cache.init()
 
   -- Initialize job queue for lazy waveform/thumbnail generation
@@ -111,7 +111,7 @@ function GUI:draw(ctx, shell_state)
     if is_complete then
       -- Skip disk cache in fast mode
       if not self.state.skip_visualizations then
-        local disk_cache = require('ItemPicker.data.disk_cache')
+        local disk_cache = require('ItemPicker.data.cache')
         disk_cache.preload_to_runtime(self.state.runtime_cache)
       end
 
@@ -193,7 +193,7 @@ function GUI:draw(ctx, shell_state)
 
     -- Reorganize from raw pool (instant operation)
     if self.state.incremental_loader then
-      local incremental_loader_module = require("ItemPicker.data.loaders.incremental_loader")
+      local incremental_loader_module = require("ItemPicker.data.loader")
 
       incremental_loader_module.reorganize_items(
         self.state.incremental_loader,

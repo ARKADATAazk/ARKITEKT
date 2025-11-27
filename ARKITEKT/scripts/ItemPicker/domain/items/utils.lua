@@ -1,4 +1,10 @@
 -- @noindex
+-- ItemPicker/domain/items/utils.lua
+-- Item processing utilities
+-- @migrated 2024-11-27 from services/utils.lua
+
+local ark = require('arkitekt')
+
 local M = {}
 
 function M.getn(tab)
