@@ -288,10 +288,19 @@ function M.run(opts)
   local config = Config.deepMerge(Constants.WINDOW, opts or {})
 
   -- ============================================================================
+  -- OVERLAY MODE: Branch to dedicated overlay setup
+  -- ============================================================================
+  -- Overlay mode uses OverlayManager for fullscreen, scrim, and proper multi-monitor support.
+  -- This must be checked BEFORE applying imgui_flags presets.
+  if config.mode == "overlay" then
+    return run_overlay_mode(config)
+  end
+
+  -- ============================================================================
   -- MODE-BASED PRESETS: Apply ImGui flags and chrome configuration
   -- ============================================================================
-  -- If mode is specified, apply the corresponding presets (unless explicitly overridden)
-  if config.mode and (config.mode == "overlay" or config.mode == "hud" or config.mode == "window") then
+  -- If mode is specified (hud, window), apply the corresponding presets (unless explicitly overridden)
+  if config.mode and (config.mode == "hud" or config.mode == "window") then
     -- Apply ImGui flags preset if not already specified
     if not opts.imgui_flags and not opts.flags then
       config.imgui_flags = config.mode
@@ -301,14 +310,6 @@ function M.run(opts)
     if not opts.chrome then
       config.chrome = config.mode
     end
-  end
-
-  -- ============================================================================
-  -- OVERLAY MODE: Branch to overlay setup (legacy mode support)
-  -- LEGACY_COMPAT: Remove in v2.0 - Use unified Window.new() path with imgui_flags
-  -- ============================================================================
-  if config.mode == "overlay" and not config.imgui_flags then
-    return run_overlay_mode(config)
   end
 
   -- ============================================================================
