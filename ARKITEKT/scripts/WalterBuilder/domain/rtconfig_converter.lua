@@ -506,8 +506,9 @@ local function convert_items(items, context_filter)
 
   local set_count = 0
   local matched_count = 0
-  local seen_ids = {}  -- Track seen element IDs to deduplicate
+  local seen_ids = {}  -- Track seen element IDs -> index in result.elements
   local duplicate_count = 0
+  local replaced_count = 0
   local sample_non_matching = {}  -- Sample of elements that didn't match filter
 
   for _, item in ipairs(items) do
@@ -534,11 +535,28 @@ local function convert_items(items, context_filter)
         matched_count = matched_count + 1
 
         -- Check for duplicate element IDs
-        if seen_ids[item.element] then
-          duplicate_count = duplicate_count + 1
-          -- Skip duplicate - keep first occurrence
+        local existing_idx = seen_ids[item.element]
+        if existing_idx then
+          -- Flow elements REPLACE existing definitions (they have proper widths)
+          if item.is_flow_element then
+            local element, is_computed, eval_success = convert_set_item(item, eval_context)
+            if element then
+              result.elements[existing_idx] = {
+                element = element,
+                is_computed = is_computed,
+                eval_success = eval_success,
+                source_line = item.line,
+                raw_value = item.value,
+                is_flow_element = true,
+              }
+              replaced_count = replaced_count + 1
+              Console.info("  REPLACED %s with flow element (w=%d)", item.element, element.coords.w or 0)
+            end
+          else
+            duplicate_count = duplicate_count + 1
+            -- Skip duplicate - keep first occurrence
+          end
         else
-          seen_ids[item.element] = true
           local element, is_computed, eval_success = convert_set_item(item, eval_context)
           if element then
             local status = "simple"
@@ -567,6 +585,8 @@ local function convert_items(items, context_filter)
               raw_value = item.value,
               is_flow_element = item.is_flow_element or false,
             }
+            -- Store index for duplicate detection
+            seen_ids[item.element] = #result.elements
             if is_computed then
               result.computed_count = result.computed_count + 1
               if eval_success then
@@ -612,8 +632,8 @@ local function convert_items(items, context_filter)
   end
 
   -- Log summary with deduplication info
-  Console.success("Conversion complete: %d SET items, %d variables processed, %d matched context, %d unique elements (%d duplicates skipped)",
-    set_count, result.variable_count, matched_count, #result.elements, duplicate_count)
+  Console.success("Conversion complete: %d SET items, %d variables processed, %d matched context, %d unique elements (%d duplicates skipped, %d replaced by flow)",
+    set_count, result.variable_count, matched_count, #result.elements, duplicate_count, replaced_count)
   Console.info("  Simple: %d | Computed: %d (eval OK: %d, eval FAIL: %d) | Cleared: %d",
     result.simple_count, result.computed_count, result.eval_success_count, result.eval_failed_count, result.cleared_count)
 
@@ -797,7 +817,7 @@ function M.convert_layout(parsed, layout_name, context)
   if not layout_name then
     local all_items = {}
 
-    -- Collect from sections (global elements)
+    -- Collect from sections first (contains variable definitions needed by flow elements)
     local section_items = 0
     for _, section in ipairs(parsed.sections) do
       for _, item in ipairs(section.items) do
@@ -807,7 +827,7 @@ function M.convert_layout(parsed, layout_name, context)
     end
     Console.info("Collected %d items from %d sections", section_items, #parsed.sections)
 
-    -- Collect from macro bodies (where TCP elements like tcp.mute are defined!)
+    -- Collect from macro bodies (flow elements will REPLACE section duplicates)
     local macro_items = collect_macro_items(parsed.macros, all_items)
     Console.info("Collected %d items from %d macros", macro_items, #parsed.macros)
 
