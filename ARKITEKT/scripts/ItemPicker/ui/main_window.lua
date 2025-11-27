@@ -442,13 +442,107 @@ function GUI:draw(ctx, shell_state)
       self.state.persist_settings()
     end
 
-    -- F: Toggle favorites filter when nothing selected
+    -- F: Toggle favorites (filter when nothing selected, favorite status when items selected)
     if ImGui.IsKeyPressed(ctx, ImGui.Key_F) then
-      self.state.settings.show_favorites_only = not self.state.settings.show_favorites_only
-      -- Invalidate cache to refresh display
-      self.state.runtime_cache.audio_filter_hash = nil
-      self.state.runtime_cache.midi_filter_hash = nil
-      self.state.persist_settings()
+      local has_selection = (self.state.audio_selection_count or 0) + (self.state.midi_selection_count or 0) > 0
+
+      if not has_selection then
+        -- Nothing selected: toggle favorites filter
+        self.state.settings.show_favorites_only = not self.state.settings.show_favorites_only
+        -- Invalidate cache to refresh display
+        self.state.runtime_cache.audio_filter_hash = nil
+        self.state.runtime_cache.midi_filter_hash = nil
+        self.state.persist_settings()
+      else
+        -- Items selected: toggle favorite status on selected items
+        local toggled_any = false
+
+        -- Handle audio selections
+        if self.coordinator.audio_grid and self.coordinator.audio_grid.selection then
+          local audio_keys = self.coordinator.audio_grid.selection:selected_keys()
+          if audio_keys and #audio_keys > 0 then
+            -- Build filename map from current items
+            local items = self.coordinator.audio_grid.items or {}
+            local filename_map = {}
+            for _, data in ipairs(items) do
+              if data.uuid then
+                filename_map[data.uuid] = data.filename
+              end
+            end
+
+            -- Toggle favorites
+            if #audio_keys > 1 then
+              -- Multi-select: toggle all to opposite of first item's state
+              local first_filename = filename_map[audio_keys[1]]
+              local new_state = not self.state.is_audio_favorite(first_filename)
+              for _, key in ipairs(audio_keys) do
+                local filename = filename_map[key]
+                if filename then
+                  if new_state then
+                    self.state.favorites.audio[filename] = true
+                  else
+                    self.state.favorites.audio[filename] = nil
+                  end
+                end
+              end
+            else
+              -- Single item: toggle
+              local filename = filename_map[audio_keys[1]]
+              if filename then
+                self.state.toggle_audio_favorite(filename)
+              end
+            end
+            toggled_any = true
+          end
+        end
+
+        -- Handle MIDI selections
+        if self.coordinator.midi_grid and self.coordinator.midi_grid.selection then
+          local midi_keys = self.coordinator.midi_grid.selection:selected_keys()
+          if midi_keys and #midi_keys > 0 then
+            -- Build track_guid map from current items
+            local items = self.coordinator.midi_grid.items or {}
+            local guid_map = {}
+            for _, data in ipairs(items) do
+              if data.uuid then
+                guid_map[data.uuid] = data.track_guid
+              end
+            end
+
+            -- Toggle favorites
+            if #midi_keys > 1 then
+              -- Multi-select: toggle all to opposite of first item's state
+              local first_guid = guid_map[midi_keys[1]]
+              local new_state = not self.state.is_midi_favorite(first_guid)
+              for _, key in ipairs(midi_keys) do
+                local track_guid = guid_map[key]
+                if track_guid then
+                  if new_state then
+                    self.state.favorites.midi[track_guid] = true
+                  else
+                    self.state.favorites.midi[track_guid] = nil
+                  end
+                end
+              end
+            else
+              -- Single item: toggle
+              local track_guid = guid_map[midi_keys[1]]
+              if track_guid then
+                self.state.toggle_midi_favorite(track_guid)
+              end
+            end
+            toggled_any = true
+          end
+        end
+
+        -- Persist favorites if any were toggled
+        if toggled_any then
+          self.state.persist_favorites()
+          -- Invalidate cache to refresh display
+          self.state.runtime_cache.audio_filter_hash = nil
+          self.state.runtime_cache.midi_filter_hash = nil
+        end
+      end
     end
   end
 
