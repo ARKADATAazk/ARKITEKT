@@ -12,6 +12,15 @@ This document tracks the development progress of the visual rtconfig editor/buil
 
 The expression evaluator now successfully parses and evaluates 80/80 computed expressions from complex rtconfig themes. Elements are positioned correctly on the canvas.
 
+### Recent Updates
+
+**2024-11-27 (Session 2)**
+- Added **Customs section** in elements panel for theme-specific elements not in standard definitions
+- Custom elements display with purple color for easy identification
+- Improved **right-click UX**: direct toggle (no context menu)
+- Right-click on category headers toggles all elements in that category
+- Added `is_custom` flag to Element model for tracking non-standard elements
+
 ---
 
 ## Architecture Overview

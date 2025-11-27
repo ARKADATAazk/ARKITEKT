@@ -796,6 +796,15 @@ function GUI:draw(ctx, window, shell_state)
       if rtconfig_result then
         if rtconfig_result.type == "load_to_canvas" then
           self:handle_load_from_rtconfig(rtconfig_result)
+        elseif rtconfig_result.type == "context_changed" then
+          -- Re-load elements with new context values
+          local elements = self.rtconfig_panel:get_loadable_elements()
+          if elements and #elements > 0 then
+            self:handle_load_from_rtconfig({
+              elements = elements,
+              context = self.rtconfig_panel.current_context,
+            })
+          end
         end
       end
 

@@ -24,6 +24,9 @@ local TCPElements = require('WalterBuilder.defs.tcp_elements')
 
 local M = {}
 
+-- Custom context overrides (set by UI)
+local custom_context = {}
+
 -- Evaluation context with default values
 -- These provide reasonable defaults for visualization when runtime state isn't available
 local DEFAULT_CONTEXT = {
@@ -387,8 +390,13 @@ local function convert_items(items, context_filter)
   }
 
   -- Initialize evaluation context from defaults
+  -- Initialize eval context from defaults, then apply custom overrides
   local eval_context = {}
   for k, v in pairs(DEFAULT_CONTEXT) do
+    eval_context[k] = v
+  end
+  -- Apply custom context overrides
+  for k, v in pairs(custom_context) do
     eval_context[k] = v
   end
 
@@ -827,6 +835,68 @@ function M.extract_elements(result, opts)
   end
 
   return elements
+end
+
+-- Get default context value for a key
+function M.get_default_context_value(key)
+  return DEFAULT_CONTEXT[key]
+end
+
+-- Get custom context value (returns override or default)
+function M.get_context_value(key)
+  if custom_context[key] ~= nil then
+    return custom_context[key]
+  end
+  return DEFAULT_CONTEXT[key]
+end
+
+-- Set custom context value
+function M.set_context_value(key, value)
+  if value == DEFAULT_CONTEXT[key] then
+    custom_context[key] = nil  -- Remove override if it matches default
+  else
+    custom_context[key] = value
+  end
+end
+
+-- Reset all custom context values to defaults
+function M.reset_context()
+  custom_context = {}
+end
+
+-- Get list of context variables that can be controlled via UI
+-- Returns list of { key, label, type, default, min, max }
+function M.get_controllable_context_vars()
+  return {
+    -- Dimensions
+    { key = "w", label = "Track Width", type = "int", default = 400, min = 100, max = 800 },
+    { key = "h", label = "Track Height", type = "int", default = 150, min = 40, max = 300 },
+
+    -- Visibility toggles
+    { key = "hide_mute_group", label = "Hide Mute/Solo", type = "bool", default = 0 },
+    { key = "hide_fx_group", label = "Hide FX", type = "bool", default = 0 },
+    { key = "hide_pan_group", label = "Hide Pan", type = "bool", default = 0 },
+    { key = "hide_volume_group", label = "Hide Volume", type = "bool", default = 0 },
+    { key = "hide_io_group", label = "Hide I/O", type = "bool", default = 0 },
+    { key = "hide_recarm_group", label = "Hide Record Arm", type = "bool", default = 0 },
+    { key = "hide_label_group", label = "Hide Label", type = "bool", default = 0 },
+
+    -- Track state
+    { key = "is_solo_flipped", label = "Solo Flipped", type = "bool", default = 0 },
+    { key = "recarm", label = "Record Armed", type = "bool", default = 1 },
+    { key = "track_selected", label = "Track Selected", type = "bool", default = 1 },
+    { key = "folderstate", label = "Is Folder", type = "bool", default = 0 },
+  }
+end
+
+-- Check if context has been modified from defaults
+function M.is_context_modified()
+  for k, v in pairs(custom_context) do
+    if v ~= nil then
+      return true
+    end
+  end
+  return false
 end
 
 return M

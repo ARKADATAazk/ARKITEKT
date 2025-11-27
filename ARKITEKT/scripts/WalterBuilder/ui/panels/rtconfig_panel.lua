@@ -275,6 +275,95 @@ function Panel:draw_load_controls(ctx)
   return nil
 end
 
+-- Draw context variable controls
+-- Returns true if any value changed (caller should re-convert)
+function Panel:draw_context_controls(ctx)
+  local changed = false
+  local vars = RtconfigConverter.get_controllable_context_vars()
+
+  -- Header with reset button
+  local header_flags = ImGui.TreeNodeFlags_DefaultOpen
+  if RtconfigConverter.is_context_modified() then
+    header_flags = header_flags | ImGui.TreeNodeFlags_Framed
+  end
+
+  local header_label = "Context Variables"
+  if RtconfigConverter.is_context_modified() then
+    header_label = header_label .. " (modified)"
+  end
+
+  if ImGui.CollapsingHeader(ctx, header_label, header_flags) then
+    ImGui.Indent(ctx, 4)
+
+    -- Reset button if modified
+    if RtconfigConverter.is_context_modified() then
+      if ImGui.SmallButton(ctx, "Reset to Defaults") then
+        RtconfigConverter.reset_context()
+        changed = true
+      end
+      ImGui.Dummy(ctx, 0, 4)
+    end
+
+    -- Dimensions section
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CCFF"))
+    ImGui.Text(ctx, "Dimensions")
+    ImGui.PopStyleColor(ctx)
+
+    for _, var in ipairs(vars) do
+      if var.type == "int" then
+        local current = RtconfigConverter.get_context_value(var.key)
+        ImGui.PushItemWidth(ctx, 100)
+        local val_changed, new_val = ImGui.SliderInt(ctx, var.label, current, var.min, var.max)
+        ImGui.PopItemWidth(ctx)
+        if val_changed then
+          RtconfigConverter.set_context_value(var.key, new_val)
+          changed = true
+        end
+      end
+    end
+
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Visibility toggles section
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CCFF"))
+    ImGui.Text(ctx, "Visibility")
+    ImGui.PopStyleColor(ctx)
+
+    for _, var in ipairs(vars) do
+      if var.type == "bool" and var.key:match("^hide_") then
+        local current = RtconfigConverter.get_context_value(var.key)
+        local val_changed, new_val = ImGui.Checkbox(ctx, var.label, current == 1)
+        if val_changed then
+          RtconfigConverter.set_context_value(var.key, new_val and 1 or 0)
+          changed = true
+        end
+      end
+    end
+
+    ImGui.Dummy(ctx, 0, 4)
+
+    -- Track state section
+    ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CCFF"))
+    ImGui.Text(ctx, "Track State")
+    ImGui.PopStyleColor(ctx)
+
+    for _, var in ipairs(vars) do
+      if var.type == "bool" and not var.key:match("^hide_") then
+        local current = RtconfigConverter.get_context_value(var.key)
+        local val_changed, new_val = ImGui.Checkbox(ctx, var.label, current == 1)
+        if val_changed then
+          RtconfigConverter.set_context_value(var.key, new_val and 1 or 0)
+          changed = true
+        end
+      end
+    end
+
+    ImGui.Unindent(ctx, 4)
+  end
+
+  return changed
+end
+
 -- Draw sections tree
 function Panel:draw_sections(ctx)
   if not self.rtconfig then return end
@@ -613,6 +702,21 @@ function Panel:draw(ctx)
 
   -- Load to Canvas controls
   result = self:draw_load_controls(ctx)
+
+  ImGui.Dummy(ctx, 0, 4)
+
+  -- Context variable controls
+  if self.rtconfig then
+    local context_changed = self:draw_context_controls(ctx)
+    if context_changed then
+      -- Re-convert with new context values
+      self:update_conversion()
+      -- Signal that canvas should reload
+      if not result then
+        result = { type = "context_changed" }
+      end
+    end
+  end
 
   ImGui.Dummy(ctx, 0, 8)
 
