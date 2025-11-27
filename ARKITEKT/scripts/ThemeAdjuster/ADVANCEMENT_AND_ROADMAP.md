@@ -58,40 +58,29 @@ ThemeAdjuster/
 
 ### Phase 1: Core Functionality (Critical Path)
 
-#### 1.1 Theme Output System
-**Priority: HIGH** - Without this, nothing is usable
+#### 1.1 Assembler: Theme Output System
+**Priority: HIGH** - Without this, the Assembler tab is incomplete
 
 - [ ] Implement "Reassemble Theme" action
   - Copy base theme to output folder
   - Apply package assets based on resolution order
-  - Handle image strips and individual images
   - Preserve theme metadata
-- [ ] Add output folder selection
+- [ ] Add output folder selection (or default to `<ThemeName>_Reassembled/`)
 - [ ] Add theme backup before modification
 - [ ] Status feedback (progress, errors)
+- [ ] Handle conflicts (same key from multiple packages)
 
-#### 1.2 Parameter Value Application
-**Priority: HIGH** - Required for parameter adjustments to work
+#### 1.2 Additional Tab: Polish & Organization
+**Priority: MEDIUM** - Core param system works, need better organization
 
-- [ ] Write parameter values back to theme
-  - Via `reaper.ThemeLayout_SetParameter()`?
-  - Or modify theme files directly?
-- [ ] Track "dirty" state (unsaved changes)
-- [ ] Save/restore parameter presets
+Parameter adjustment via `ThemeLayout_SetParameter()` already works.
+Focus on organization and UX:
 
-#### 1.3 Additional Tab Completion
-**Priority: MEDIUM** - Large effort, needed for advanced users
-
-- [ ] Template configuration UI
-  - Preset spinner (discrete values)
-  - Slider (continuous range)
-  - Toggle (on/off)
-  - Color picker (for color params)
-- [ ] Parameter controls in assignment grid
-  - Currently tiles exist but no interactive controls?
-  - Need value display, adjustment widgets
-- [ ] Polish drag-drop between panels
+- [ ] Clear separation: DEFAULT vs ADDITIONAL params in TCP/MCP views
+- [ ] Template controls (spinner, slider, toggle) - wire up properly
+- [ ] Polish drag-drop between Library → Templates → Assignment
 - [ ] Template export/import (share templates)
+- [ ] Better visual distinction for param categories
 
 ---
 
@@ -169,33 +158,42 @@ ThemeAdjuster/
 
 ---
 
-## Questions to Resolve
+## Design Decisions (Resolved)
 
-### Technical
+### Parameter System
+- **`ThemeLayout_SetParameter()`** - Permanent, works correctly. This is the core mechanism.
+- **No image strip handling** - Not needed. Users see changes live in REAPER, no in-app visualization.
 
-1. **Parameter persistence**: Does `ThemeLayout_SetParameter()` persist across sessions, or do we need to modify theme files directly?
+### Control Types (Current)
+Three types cover current needs:
+- **Preset spinner** - Cycle through discrete values
+- **Slider** - Continuous range
+- **Toggle** - On/off
 
-2. **Theme reload**: Can we force REAPER to reload theme without restart? Required for real-time preview.
+Future: Tables, macros, grouped controls - but not immediate priority.
 
-3. **Image strip handling**: How to properly slice/combine image strips when assembling?
+### The "Generic vs Theme 6.0" Challenge
 
-### Design
+**Problem**: ThemeAdjuster aims to be generic (work with any theme), but Theme 6.0 (the reference) has messy, inconsistent param naming. This creates tension:
+- Filter/treat Theme 6.0 params specially
+- Hard to represent values meant for it
+- Need backward compatibility for 6.0-based themes
 
-1. **Template types**: What control types do we need?
-   - Preset spinner (discrete values)
-   - Slider (continuous)
-   - Toggle (boolean)
-   - Color picker
-   - Others?
+**Possible approaches**:
+1. **Rename Theme 6.0 params** with a backward compat layer for existing themes
+2. **Rebuild as example** - Show how devs can "visually program" their own adjuster (like Wordpress blocks)
+3. **Default vs Additional split** - Keep organized: stock params in one spot, custom/additional elsewhere
 
-2. **Assignment behavior**: When a param is assigned to TCP tab, what exactly happens?
-   - Shows in TCP view with controls?
-   - Just tagged for organization?
-   - Something else?
+### Open Questions
 
-3. **Package priority**: Current model is linear priority. Do we need:
-   - Per-category priorities?
-   - Conditional priorities (if X then use Y)?
+1. **TCP view organization**: How to clearly separate:
+   - DEFAULT theme controls (stock params)
+   - ADDITIONAL params (custom/unknown)
+   - Need clear visual distinction
+
+2. **Theme agnostic goal**: How much do we optimize for Theme 6.0 vs building a truly generic system?
+
+3. **Future vision**: Custom tables, macro handling, visual block programming - defer to later phases
 
 ---
 
