@@ -91,13 +91,37 @@ function M.compute_rect(coord, parent_w, parent_h)
     return { x = 0, y = 0, w = 0, h = 0 }
   end
 
+  local x, y, w, h = coord.x, coord.y, coord.w, coord.h
+  local ls, ts, rs, bs = coord.ls, coord.ts, coord.rs, coord.bs
+
+  -- Handle negative coordinates without attachments as right/bottom-relative
+  -- This is a common theme pattern where elements are positioned relative to
+  -- a computed section boundary rather than using the attachment system
+  if x < 0 and ls == 0 and rs == 0 then
+    -- Negative x with no horizontal attachments = right-relative
+    x = parent_w + x
+  end
+  if y < 0 and ts == 0 and bs == 0 then
+    -- Negative y with no vertical attachments = bottom-relative
+    y = parent_h + y
+  end
+
+  -- Handle negative dimensions (stretch from edge)
+  -- e.g., w=-27 means "stretch to 27px from right edge"
+  if w < 0 and rs == 0 then
+    w = parent_w - x + w
+  end
+  if h < 0 and bs == 0 then
+    h = parent_h - y + h
+  end
+
   -- Edge positions considering attachments
   -- Left edge = base_x + (left_attach * parent_width)
   -- Right edge = base_x + base_w + (right_attach * parent_width)
-  local left = coord.x + coord.ls * parent_w
-  local top = coord.y + coord.ts * parent_h
-  local right = coord.x + coord.w + coord.rs * parent_w
-  local bottom = coord.y + coord.h + coord.bs * parent_h
+  local left = x + ls * parent_w
+  local top = y + ts * parent_h
+  local right = x + w + rs * parent_w
+  local bottom = y + h + bs * parent_h
 
   return {
     x = left,
