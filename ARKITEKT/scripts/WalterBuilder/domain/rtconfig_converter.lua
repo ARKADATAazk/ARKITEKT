@@ -18,6 +18,7 @@
 local Element = require('WalterBuilder.domain.element')
 local Coordinate = require('WalterBuilder.domain.coordinate')
 local RtconfigParser = require('WalterBuilder.domain.rtconfig_parser')
+local Console = require('WalterBuilder.ui.panels.debug_console')
 
 local M = {}
 
@@ -217,6 +218,8 @@ end
 -- Convert all elements from a section or layout items list
 -- Returns: { elements = {...}, computed_count = n, simple_count = n }
 local function convert_items(items, context_filter)
+  Console.info("Converting %d items with filter '%s'", #items, context_filter or "none")
+
   local result = {
     elements = {},
     computed_count = 0,
@@ -224,17 +227,26 @@ local function convert_items(items, context_filter)
     cleared_count = 0,
   }
 
+  local set_count = 0
+  local matched_count = 0
+
   for _, item in ipairs(items) do
     if item.type == RtconfigParser.TOKEN.SET then
+      set_count = set_count + 1
       -- Filter by context if specified
       local matches_context = true
       if context_filter then
-        matches_context = item.element:match("^" .. context_filter .. "%.")
+        matches_context = item.element and item.element:match("^" .. context_filter .. "%.")
       end
 
       if matches_context then
+        matched_count = matched_count + 1
         local element, is_computed = convert_set_item(item)
         if element then
+          Console.info("  + %s [%s] coords: x=%s y=%s w=%s h=%s",
+            element.id,
+            is_computed and "computed" or "simple",
+            element.coords.x, element.coords.y, element.coords.w, element.coords.h)
           result.elements[#result.elements + 1] = {
             element = element,
             is_computed = is_computed,
@@ -272,6 +284,9 @@ local function convert_items(items, context_filter)
     end
   end
 
+  Console.success("Conversion complete: %d SET items found, %d matched context, %d elements created (%d simple, %d computed, %d cleared)",
+    set_count, matched_count, #result.elements, result.simple_count, result.computed_count, result.cleared_count)
+
   return result
 end
 
@@ -302,14 +317,19 @@ function M.convert_layout(parsed, layout_name, context)
     local all_items = {}
 
     -- Collect from sections (global elements)
+    local section_items = 0
     for _, section in ipairs(parsed.sections) do
       for _, item in ipairs(section.items) do
         all_items[#all_items + 1] = item
+        section_items = section_items + 1
       end
     end
+    Console.info("Collected %d items from %d sections", section_items, #parsed.sections)
 
     -- Also collect from all layouts (where most elements actually live!)
+    local before_layouts = #all_items
     collect_layout_items(parsed.layouts, all_items)
+    Console.info("Collected %d items from layouts (total: %d)", #all_items - before_layouts, #all_items)
 
     return convert_items(all_items, context)
   end

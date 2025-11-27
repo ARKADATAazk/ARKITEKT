@@ -12,6 +12,7 @@ local PropertiesPanel = require('WalterBuilder.ui.panels.properties_panel')
 local TrackPropertiesPanel = require('WalterBuilder.ui.panels.track_properties_panel')
 local CodePanel = require('WalterBuilder.ui.panels.code_panel')
 local RtconfigPanel = require('WalterBuilder.ui.panels.rtconfig_panel')
+local DebugConsole = require('WalterBuilder.ui.panels.debug_console')
 local TCPElements = require('WalterBuilder.defs.tcp_elements')
 local Constants = require('WalterBuilder.defs.constants')
 local Notification = require('WalterBuilder.domain.notification')
@@ -283,7 +284,12 @@ end
 
 -- Handle loading elements from rtconfig to canvas
 function GUI:handle_load_from_rtconfig(action)
-  if not action or not action.elements then return end
+  if not action or not action.elements then
+    DebugConsole.error("Load failed: no action or elements")
+    return
+  end
+
+  DebugConsole.info("=== Loading %d elements to canvas ===", #action.elements)
 
   -- Clear existing elements first
   if self.controller then
@@ -295,18 +301,30 @@ function GUI:handle_load_from_rtconfig(action)
   -- Update context to match what was loaded
   if action.context then
     self.State.set_context(action.context)
+    DebugConsole.info("Set context to: %s", action.context)
   end
 
   -- Add each element
   local loaded_count = 0
+  local skipped_count = 0
   for _, element in ipairs(action.elements) do
+    local added = nil
     if self.controller then
-      self.controller:add_element_direct(element)
+      added = self.controller:add_element_direct(element)
     else
-      self.State.add_element_direct(element)
+      added = self.State.add_element_direct(element)
     end
-    loaded_count = loaded_count + 1
+    if added then
+      loaded_count = loaded_count + 1
+      DebugConsole.success("  Loaded: %s at (%d, %d) size %dx%d",
+        added.id, added.coords.x, added.coords.y, added.coords.w, added.coords.h)
+    else
+      skipped_count = skipped_count + 1
+      DebugConsole.warn("  Skipped (duplicate?): %s", element.id)
+    end
   end
+
+  DebugConsole.info("=== Load complete: %d loaded, %d skipped ===", loaded_count, skipped_count)
 
   -- Sync canvas
   self:sync_canvas()
@@ -719,6 +737,13 @@ function GUI:draw(ctx, window, shell_state)
         end
       end
 
+      ImGui.EndTabItem(ctx)
+    end
+
+    -- Debug console tab
+    if ImGui.BeginTabItem(ctx, "Console") then
+      ImGui.Dummy(ctx, 0, 4)
+      DebugConsole.draw(ctx)
       ImGui.EndTabItem(ctx)
     end
 
