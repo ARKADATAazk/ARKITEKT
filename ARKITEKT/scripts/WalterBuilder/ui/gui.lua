@@ -11,6 +11,7 @@ local ElementsPanel = require('WalterBuilder.ui.panels.elements_panel')
 local PropertiesPanel = require('WalterBuilder.ui.panels.properties_panel')
 local TrackPropertiesPanel = require('WalterBuilder.ui.panels.track_properties_panel')
 local CodePanel = require('WalterBuilder.ui.panels.code_panel')
+local RtconfigPanel = require('WalterBuilder.ui.panels.rtconfig_panel')
 local TCPElements = require('WalterBuilder.defs.tcp_elements')
 local Constants = require('WalterBuilder.defs.constants')
 local Notification = require('WalterBuilder.domain.notification')
@@ -35,6 +36,7 @@ function M.new(state_module, settings, controller)
     properties_panel = nil,
     track_properties_panel = nil,
     code_panel = nil,
+    rtconfig_panel = nil,
 
     -- Notification system
     notification = Notification.new(),
@@ -112,6 +114,8 @@ function GUI:initialize_once(ctx)
   })
 
   self.code_panel = CodePanel.new()
+
+  self.rtconfig_panel = RtconfigPanel.new()
 
   -- Load default tracks if none exist
   if #self.State.get_tracks() == 0 then
@@ -610,6 +614,13 @@ function GUI:draw(ctx, window, shell_state)
     if ImGui.BeginTabItem(ctx, "Code") then
       ImGui.Dummy(ctx, 0, 4)
       self.code_panel:draw(ctx)
+      ImGui.EndTabItem(ctx)
+    end
+
+    -- rtconfig tab (theme file viewer)
+    if ImGui.BeginTabItem(ctx, "rtconfig") then
+      ImGui.Dummy(ctx, 0, 4)
+      self.rtconfig_panel:draw(ctx)
       ImGui.EndTabItem(ctx)
     end
 
