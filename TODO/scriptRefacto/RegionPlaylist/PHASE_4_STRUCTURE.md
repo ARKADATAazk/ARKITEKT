@@ -28,7 +28,7 @@ See [cookbook/MIGRATION_PLANS.md](../../../../cookbook/MIGRATION_PLANS.md#region
 |---------|--------|----------------|
 | `core/` | `app/` + distribute | 5 |
 | `domains/` | `domain/` + `ui/state/` | 6 |
-| `engine/` | Keep `engine/` | 0 (no change) |
+| `engine/` | `domain/playback/` | 7 |
 | `storage/` | `infra/` | 3 |
 
 ## Key Decisions
@@ -40,26 +40,24 @@ These are UI concerns, not business logic:
 - `domains/notification.lua` → `ui/state/notification.lua`
 - `domains/ui_preferences.lua` → `ui/state/preferences.lua`
 
-### 2. Engine → Keep as `engine/`
+### 2. Engine → domain/playback/
 
-**Why not split into `domain/` + `platform/`?**
+The "engine" is actually **playback domain logic** - it's the core business logic of RegionPlaylist. Renaming clarifies this:
 
-The engine is a **playback orchestration layer** - it naturally uses `reaper.*` for transport control, timing, and playback. This is fine because:
+**RegionPlaylist has three domains:**
+1. `domain/playlist/` - Playlist data structures
+2. `domain/region/` - Region data
+3. `domain/playback/` - How playlists play (was `engine/`)
 
-1. All ARKITEKT code runs inside REAPER - there's no "outside" environment to test in
-2. Forcing purity adds complexity without real benefit
-3. `engine/` is like `app/` - an orchestration layer that coordinates things
-4. Scripts don't need `platform/` layers (see [cookbook/SCRIPT_LAYERS.md](../../../../cookbook/SCRIPT_LAYERS.md))
+**Migration:**
+- `engine/core.lua` → `domain/playback/controller.lua`
+- `engine/engine_state.lua` → `domain/playback/state.lua`
+- `engine/transport.lua` → `domain/playback/transport.lua`
+- `engine/transitions.lua` → `domain/playback/transitions.lua`
+- `engine/quantize.lua` → `domain/playback/quantize.lua`
+- `engine/playback.lua` → `domain/playback/loop.lua`
 
-**Keep engine/ as-is:**
-- `engine/core.lua` - Playback coordinator
-- `engine/engine_state.lua` - Sequence and position state
-- `engine/transport.lua` - Transport control
-- `engine/transitions.lua` - Transition handling
-- `engine/quantize.lua` - Quantization logic
-- `engine/playback.lua` - Playback loop
-
-The `engine/` folder is **script-specific** - it makes sense for RegionPlaylist's playback needs, just like other scripts might have their own specialized folders.
+**Note:** `domain/playback/` can use `reaper.*` - we don't enforce strict purity in scripts (see [cookbook/SCRIPT_LAYERS.md](../../../../cookbook/SCRIPT_LAYERS.md)).
 
 ### 3. coordinator_bridge → infra/
 

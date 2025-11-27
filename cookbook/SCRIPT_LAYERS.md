@@ -62,25 +62,27 @@ Scripts organize by **responsibility**, not purity. Use folders that make sense 
 scripts/RegionPlaylist/
 ├── ARK_RegionPlaylist.lua   # Entry point
 ├── app/                     # Bootstrap, state container
-├── engine/                  # ← Script-specific: playback orchestration
-├── domains/                 # Business data (playlists, regions)
+├── domain/                  # Business logic
+│   ├── playlist/            # Playlist data
+│   ├── region/              # Region data
+│   └── playback/            # Playback logic (transport, transitions)
 ├── ui/                      # Views, tiles
 ├── storage/                 # Persistence
 ├── defs/                    # Constants
 └── tests/                   # Integration tests
 ```
 
-### Script-Specific Folders
+### Multiple Domains
 
-Scripts can have **specialized folders** that don't fit the canonical structure:
+Scripts can have **multiple domain subfolders** for different business concerns:
 
-| Script | Special Folder | Purpose |
-|--------|---------------|---------|
-| RegionPlaylist | `engine/` | Playback orchestration (uses `reaper.*` for transport) |
-| ThemeAdjuster | `packages/` | Theme package management |
-| TemplateBrowser | `scanner/` | Template file scanning |
+| Script | Domains | Purpose |
+|--------|---------|---------|
+| RegionPlaylist | `playlist/`, `region/`, `playback/` | Data + playback logic |
+| ThemeAdjuster | `theme/`, `packages/` | Theme reading + package management |
+| TemplateBrowser | `templates/`, `favorites/` | Template data + user favorites |
 
-**This is fine.** The `engine/` folder is like `app/` - an orchestration layer that naturally uses platform APIs.
+**`domain/` can use `reaper.*`** - we don't enforce strict purity in scripts.
 
 ### No `platform/` in Scripts
 
@@ -88,23 +90,14 @@ Scripts don't need a `platform/` folder because:
 
 1. All script code runs in REAPER anyway
 2. Forcing purity splits adds complexity without benefit
-3. Orchestration layers (`app/`, `engine/`) can use `reaper.*` directly
+3. Domain layers can use `reaper.*` directly in scripts
 
-**Instead of:**
+**Just put it in domain:**
 ```
 scripts/RegionPlaylist/
-├── platform/           # ❌ Unnecessary
-│   └── transport.lua
 ├── domain/
 │   └── playback/
-│       └── transport.lua
-```
-
-**Just do:**
-```
-scripts/RegionPlaylist/
-├── engine/             # ✅ Simpler - orchestration uses reaper.* directly
-│   └── transport.lua
+│       └── transport.lua   # ✅ Can use reaper.* directly
 ```
 
 ---
