@@ -295,8 +295,26 @@ function State:update_bounds()
   end
 end
 
-function State:find_index_at_position(pos)
-  if DEBUG_SEQUENCE then Logger.debug("STATE", "find_index_at_position(%.3f) scanning %d entries...", pos, #self.playlist_order) end
+function State:find_index_at_position(pos, preferred_key)
+  if DEBUG_SEQUENCE then Logger.debug("STATE", "find_index_at_position(%.3f, key=%s) scanning %d entries...", pos, tostring(preferred_key), #self.playlist_order) end
+
+  -- First: try preferred_key if provided (resolves multi-loop ambiguity)
+  if preferred_key then
+    local idx = self.sequence_lookup_by_key[preferred_key]
+    if idx and idx >= 1 and idx <= #self.playlist_order then
+      local rid = self.playlist_order[idx]
+      local region = self:get_region_by_rid(rid)
+      if region then
+        local in_bounds = pos >= region.start and pos < region["end"] - 1e-9
+        if in_bounds then
+          if DEBUG_SEQUENCE then Logger.debug("STATE", "Preferred key match at idx %d", idx) end
+          return idx
+        end
+      end
+    end
+  end
+
+  -- Fallback: first matching entry
   for i = 1, #self.playlist_order do
     local rid = self.playlist_order[i]
     local region = self:get_region_by_rid(rid)
