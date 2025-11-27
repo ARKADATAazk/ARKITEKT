@@ -7,12 +7,12 @@ Actionable improvement tasks for the ARKITEKT codebase.
 | File | Description | Priority |
 |------|-------------|----------|
 | [CONSTANT_ORGANIZATION.md](CONSTANT_ORGANIZATION.md) | Improve constant organization, bidirectional lookups, feature flags | Medium |
-| [PERFORMANCE.md](PERFORMANCE.md) | Lua performance optimizations per `lua_perf_guide.md` | Medium |
+| [PERFORMANCE.md](PERFORMANCE.md) | Lua performance optimizations | Medium |
+| [IMGUI_CENTRALIZATION.md](IMGUI_CENTRALIZATION.md) | Consolidate scattered ImGui imports to central loader | Low |
 
 ## Related Documentation
 
-- `/Documentation/architecture/` - Architecture and migration plans
-- `/Documentation/LUA_PERFORMANCE_GUIDE.md` - Performance reference guide
+- `cookbook/` - Architecture and coding guides
 
 ## Process
 
