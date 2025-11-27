@@ -202,7 +202,12 @@ local function evaluate_expression(expr, context, debug_element)
     Console.warn("DEBUG tcp.mute expr: %s", expr)
     Console.warn("DEBUG context.scale = %s", tostring(context.scale))
     Console.warn("DEBUG context.is_solo_flipped = %s", tostring(context.is_solo_flipped))
-    Console.warn("DEBUG context.meter_sec = %s", tostring(context.meter_sec))
+    if type(context.meter_sec) == "table" then
+      Console.warn("DEBUG context.meter_sec = [%s]", table.concat(context.meter_sec, ", "))
+    else
+      Console.warn("DEBUG context.meter_sec = %s", tostring(context.meter_sec))
+    end
+    Console.warn("DEBUG context.tcp_padding = %s", tostring(context.tcp_padding))
   end
 
   -- Check if it's a simple bracket expression first
