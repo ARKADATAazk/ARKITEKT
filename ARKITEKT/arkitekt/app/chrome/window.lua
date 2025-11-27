@@ -378,9 +378,6 @@ function M.new(opts)
 
   do
     local ok, OverlayManager = pcall(require, 'arkitekt.gui.widgets.overlays.overlay.manager')
-local Colors = require('arkitekt.core.colors')
-local hexrgb = Colors.hexrgb
-
     if ok and OverlayManager and OverlayManager.new then
       win.overlay = OverlayManager.new()
     end
@@ -547,8 +544,8 @@ local hexrgb = Colors.hexrgb
     elseif not self._pos_size_set then
       local pos  = self._saved_pos  or self.initial_pos
       local size = self._saved_size or self.initial_size
-      if pos  and pos.x  and pos.y  then ImGui.SetNextWindowPos(ctx,  pos.x,  pos.y) end
-      if size and size.w and size.h then ImGui.SetNextWindowSize(ctx, size.w, size.h) end
+      if pos  and pos.x  and pos.y  then ImGui.SetNextWindowPos(ctx,  pos.x,  pos.y, ImGui.Cond_Always) end
+      if size and size.w and size.h then ImGui.SetNextWindowSize(ctx, size.w, size.h, ImGui.Cond_Always) end
       self._pos_size_set = true
     end
     
