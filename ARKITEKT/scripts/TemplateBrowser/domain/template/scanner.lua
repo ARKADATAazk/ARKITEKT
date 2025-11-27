@@ -6,6 +6,7 @@ local M = {}
 local Logger = require('arkitekt.debug.logger')
 local Persistence = require('TemplateBrowser.data.storage')
 local FXQueue = require('TemplateBrowser.domain.fx.queue')
+local FuzzySearch = require('TemplateBrowser.domain.search.fuzzy')
 
 -- Scan state for incremental scanning
 local scan_state = {
@@ -455,11 +456,13 @@ function M.filter_templates(state)
       end
     end
 
-    -- Filter by search query
+    -- Filter by search query (fuzzy match)
     if matches and state.search_query ~= "" then
-      local query_lower = state.search_query:lower()
-      if not tmpl.name:lower():match(query_lower) then
+      local score = FuzzySearch.score(state.search_query, tmpl.name)
+      if score == 0 then
         matches = false
+      else
+        tmpl._fuzzy_score = score  -- Store for sorting
       end
     end
 
@@ -512,7 +515,17 @@ function M.filter_templates(state)
   end
 
   -- Sort filtered templates based on sort mode
-  if state.sort_mode == "alphabetical" then
+  -- When searching, sort by fuzzy score first (best matches at top)
+  if state.search_query ~= "" then
+    table.sort(filtered, function(a, b)
+      local a_score = a._fuzzy_score or 0
+      local b_score = b._fuzzy_score or 0
+      if a_score ~= b_score then
+        return a_score > b_score  -- Higher score first
+      end
+      return a.name:lower() < b.name:lower()  -- Tie-breaker: alphabetical
+    end)
+  elseif state.sort_mode == "alphabetical" then
     table.sort(filtered, function(a, b)
       return a.name:lower() < b.name:lower()
     end)

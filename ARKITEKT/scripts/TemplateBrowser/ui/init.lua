@@ -10,6 +10,7 @@ local TemplateOps = require('TemplateBrowser.domain.template.operations')
 local FileOps = require('TemplateBrowser.data.file_ops')
 local FXQueue = require('TemplateBrowser.domain.fx.queue')
 local Scanner = require('TemplateBrowser.domain.template.scanner')
+local FuzzySearch = require('TemplateBrowser.domain.search.fuzzy')
 
 -- UI components
 local TileAnim = require('arkitekt.gui.animation.tile_animator')
@@ -139,28 +140,39 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       end
     end
 
-    -- Apply search filter
-    local search_query = (self.state.quick_access_search or ""):lower()
+    -- Apply search filter (fuzzy match)
+    local search_query = self.state.quick_access_search or ""
     if search_query ~= "" then
       local filtered = {}
       for _, tmpl in ipairs(templates) do
-        if tmpl.name:lower():find(search_query, 1, true) then
+        local score = FuzzySearch.score(search_query, tmpl.name)
+        if score > 0 then
+          tmpl._fuzzy_score = score
           table.insert(filtered, tmpl)
         end
       end
-      templates = filtered
-    end
-
-    -- Apply sort
-    local sort_mode = self.state.quick_access_sort or "alphabetical"
-    if sort_mode == "alphabetical" then
-      table.sort(templates, function(a, b) return a.name:lower() < b.name:lower() end)
-    elseif sort_mode == "color" then
-      table.sort(templates, function(a, b)
-        local a_color = (self.state.metadata and self.state.metadata.templates[a.uuid] and self.state.metadata.templates[a.uuid].color) or 0
-        local b_color = (self.state.metadata and self.state.metadata.templates[b.uuid] and self.state.metadata.templates[b.uuid].color) or 0
-        return a_color < b_color
+      -- Sort by fuzzy score when searching
+      table.sort(filtered, function(a, b)
+        local a_score = a._fuzzy_score or 0
+        local b_score = b._fuzzy_score or 0
+        if a_score ~= b_score then
+          return a_score > b_score
+        end
+        return a.name:lower() < b.name:lower()
       end)
+      templates = filtered
+    else
+      -- Apply sort only when not searching
+      local sort_mode = self.state.quick_access_sort or "alphabetical"
+      if sort_mode == "alphabetical" then
+        table.sort(templates, function(a, b) return a.name:lower() < b.name:lower() end)
+      elseif sort_mode == "color" then
+        table.sort(templates, function(a, b)
+          local a_color = (self.state.metadata and self.state.metadata.templates[a.uuid] and self.state.metadata.templates[a.uuid].color) or 0
+          local b_color = (self.state.metadata and self.state.metadata.templates[b.uuid] and self.state.metadata.templates[b.uuid].color) or 0
+          return a_color < b_color
+        end)
+      end
     end
 
     return templates

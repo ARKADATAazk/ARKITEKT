@@ -39,20 +39,20 @@
 - [x] Platform abstraction for ImGui
 - [x] Magic numbers to constants
 
-### In Progress
-- [ ] Fuzzy search implementation
-- [ ] Track count parsing
+### Recently Completed
+- [x] Fuzzy search implementation
+- [x] Track count parsing from .RTrackTemplate files
+- [x] Track count badge on tiles (`5T`, `16T`)
+- [x] Stacked visual for multi-track templates
 
 ### Planned (Next Sprint)
-- [ ] Track count badge on tiles (`16T`)
-- [ ] Stacked visual for multi-track templates
 - [ ] Inbox folder workflow
 - [ ] Star ratings (1-5)
+- [ ] Track-tree hover preview
 
 ### Backlog
 - [ ] Search in notes
 - [ ] Usage statistics over time
-- [ ] Track-tree hover preview
 - [ ] New template indicator
 - [ ] Auto-tag suggestions
 - [ ] Bulk operations
@@ -70,6 +70,7 @@ TemplateBrowser/
 ├── domain/                     # Business logic
 │   ├── template/              # Scanner, operations
 │   ├── tags/                  # Tag service
+│   ├── search/                # Fuzzy search
 │   └── fx/                    # FX parser, queue
 ├── ui/                        # Views, tiles, config
 │   ├── views/                 # Panel renderers
@@ -82,6 +83,7 @@ TemplateBrowser/
 |------|---------|
 | `domain/template/scanner.lua` | Scan filesystem, filter templates |
 | `domain/template/operations.lua` | Insert/apply templates |
+| `domain/search/fuzzy.lua` | Fuzzy string matching for search |
 | `domain/fx/parser.lua` | Parse FX from .RTrackTemplate |
 | `data/storage.lua` | JSON metadata persistence |
 | `data/file_ops.lua` | Move/rename/delete with archive |
