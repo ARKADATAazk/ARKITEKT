@@ -23,6 +23,9 @@
 | **Marching Ants** | `gui/interaction/marching_ants.lua` | TemplateBrowser, ItemPicker, RegionPlaylist | - |
 | **Blocking** | `gui/interaction/blocking.lua` | Framework (tab_strip) | - |
 | **Sliding Zone** | `gui/widgets/containers/sliding_zone.lua` | - | ItemPicker (has local impl) |
+| **Tree View** | `gui/widgets/navigation/tree_view.lua` | TemplateBrowser | - |
+| **Grid** | `gui/widgets/containers/grid/` | ThemeAdjuster | - |
+| **Primitives** | `gui/widgets/primitives/` | WalterBuilder (button, slider, checkbox, chip) | - |
 
 ### ⚠️ Exists but UNUSED (scripts have own copies)
 
@@ -172,8 +175,13 @@ These modules were extracted to framework but RegionPlaylist never migrated to u
 ### Notification/Toast System
 - [ ] **arkitekt/gui/widgets/notification.lua** - Temporary notifications
   - Timed auto-dismiss
-  - Priority levels (error > warning > info)
-  - **Found in**: RegionPlaylist (ui/state/notification.lua)
+  - Priority levels (error > warning > info/success)
+  - Color based on type
+  - **Implementations found**:
+    - RegionPlaylist: `ui/state/notification.lua` (112 lines) - domain-specific (circular deps, state changes)
+    - WalterBuilder: `domain/notification.lua` (86 lines) - generic (message, type, timeout)
+    - TemplateBrowser: `ui/status.lua` (49 lines) - simple (auto-clear after 10s)
+  - **Common pattern**: message + type + timeout-based auto-clear
 
 ### Track Filter (High Value)
 - [ ] **arkitekt/gui/widgets/track_filter.lua** - Hierarchical track tree filter
@@ -215,17 +223,37 @@ These modules were extracted to framework but RegionPlaylist never migrated to u
   - **Found in**: ItemPicker (`data/loaders/incremental_loader.lua`)
   - **Reuse potential**: Any script loading large datasets (templates, samples, items)
 
+### Tags Service
+- [ ] **arkitekt/core/tags.lua** - Tag management
+  - Create, rename, delete tags
+  - Assign/remove tags from items
+  - Tag color support
+  - **Found in**: TemplateBrowser (`domain/tags/service.lua`)
+  - **Reuse potential**: Any script with tagging (RegionPlaylist could use for playlist tags)
+
 ---
 
 ## Script Audit Summary
 
 | Script | Uses Framework | Has Local Copy (should migrate) | Extraction Candidates |
 |--------|---------------|--------------------------------|----------------------|
-| **RegionPlaylist** | sorting, status_bar, drag_visual, marching_ants | dependency, tree_expander, shuffle, undo | selection |
-| **TemplateBrowser** | drag_drop, marching_ants | - | sorting, status_bar, selection |
+| **RegionPlaylist** | sorting, status_bar, drag_visual, marching_ants | dependency, tree_expander, shuffle, undo | notification |
+| **TemplateBrowser** | tree_view, drag_drop, marching_ants | - | sorting, status_bar, selection, tags_service |
 | **ItemPicker** | marching_ants | sliding_zone (partial) | track_filter, incremental_loader, search_toolbar |
-| **ThemeAdjuster** | grid | - | ? |
-| **WalterBuilder** | button, slider, checkbox, chip | - | ? |
+| **ThemeAdjuster** | grid, GridBridge | - | *(domain-specific: param_link_manager, packages)* |
+| **WalterBuilder** | button, slider, checkbox, chip | - | notification *(generic 86 lines)* |
+
+### Script-Specific (Not Reusable)
+
+These are domain-specific and unlikely to be extracted:
+
+| Script | Module | Why Not Extract |
+|--------|--------|-----------------|
+| ThemeAdjuster | `parameter_link_manager.lua` | Theme param linking (slider/spinner types) |
+| ThemeAdjuster | `packages/manager.lua` | Theme package management |
+| TemplateBrowser | `domain/template/scanner.lua` | REAPER TrackTemplate scanning |
+| WalterBuilder | `domain/rtconfig_parser.lua` | Walter theme config parsing |
+| WalterBuilder | `domain/simulator.lua` | Theme element simulation |
 
 ---
 
