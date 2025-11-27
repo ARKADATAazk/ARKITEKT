@@ -1,9 +1,18 @@
 # ItemPicker Refactoring Plan
 
-> **Status:** Not Started
+> **Status:** ✅ COMPLETED (2024-11-27)
 > **Priority:** 2nd (after TemplateBrowser)
 > **Effort:** Medium (28 files to move, 4 folders to delete)
 > **Target Architecture:** [MIGRATION_PLANS.md](../../cookbook/MIGRATION_PLANS.md#itempicker-migration)
+>
+> ## Migration Summary
+> - Created `app/` layer with `init.lua`, `config.lua`, `state.lua`
+> - Created `domain/` layer with `items/service.lua`, `preview/manager.lua`, `pool/utils.lua`
+> - Reorganized `data/` layer: renamed `persistence.lua` → `storage.lua`, `disk_cache.lua` → `cache.lua`, flattened `loaders/` → `loader.lua`
+> - Created `ui/init.lua` entry point, component shims, and `filters/` subfolder
+> - Deleted unused `utils/logger.lua`
+> - All old paths have backward-compatible shims pointing to new locations
+> - Test stubs created in `tests/domain/` and `tests/data/`
 
 ---
 
