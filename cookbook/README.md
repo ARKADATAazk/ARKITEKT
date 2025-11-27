@@ -15,7 +15,6 @@
 | [TESTING.md](TESTING.md) | Test runner, assertions, integration testing |
 | [LUA_PERFORMANCE_GUIDE.md](LUA_PERFORMANCE_GUIDE.md) | Lua/REAPER/ImGui performance optimization |
 | [DEPRECATED.md](DEPRECATED.md) | Deprecation tracker and removal process |
-| [MIGRATION_PLANS.md](MIGRATION_PLANS.md) | Migration overview (details in `TODO/scriptRefacto/`) |
 
 ## Quick Links
 
