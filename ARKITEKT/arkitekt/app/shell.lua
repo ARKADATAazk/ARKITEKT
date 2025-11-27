@@ -185,6 +185,19 @@ local function run_overlay_mode(config)
     if ok then style = default_style end
   end
 
+  -- ============================================================================
+  -- THEME INITIALIZATION (same as window mode)
+  -- ============================================================================
+  -- Initialize theme on overlay startup to ensure Theme.COLORS is properly set.
+  -- This enables overlays (ItemPicker, Template Browser, etc.) to respect the
+  -- persisted theme preference from the titlebar context menu.
+  do
+    local ok, ThemeManager = pcall(require, 'arkitekt.core.theme_manager')
+    if ok and ThemeManager and ThemeManager.init then
+      ThemeManager.init()
+    end
+  end
+
   -- Load OverlayManager and OverlayDefaults
   local OverlayManager = require('arkitekt.gui.widgets.overlays.overlay.manager')
   local OverlayDefaults = require('arkitekt.gui.widgets.overlays.overlay.defaults')
