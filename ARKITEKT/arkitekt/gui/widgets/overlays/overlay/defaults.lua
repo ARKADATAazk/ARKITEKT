@@ -1,6 +1,10 @@
 -- @noindex
 -- Arkitekt/gui/widgets/overlay/config.lua
 -- Configuration for modal overlay and sheet appearance
+--
+-- THEME INTEGRATION:
+-- Colors are now derived from Theme Manager for dark/light theme support.
+-- The overlay will automatically adapt to the current theme.
 
 local Colors = require('arkitekt.core.colors')
 local ConfigUtil = require('arkitekt.core.config')
@@ -10,73 +14,111 @@ local Timing = require('arkitekt.defs.timing')
 local M = {}
 local hexrgb = Colors.hexrgb
 
-local default_config = {
-  scrim = {
-    color = hexrgb("#121212"),
-    opacity = 0.99,
-  },
-  
-  sheet = {
-    background = {
-      color = hexrgb("#121212"),
+-- Lazy load Theme to avoid circular dependency
+local _Theme
+local function get_theme()
+  if not _Theme then
+    local ok, theme = pcall(require, 'arkitekt.core.theme')
+    if ok then _Theme = theme end
+  end
+  return _Theme
+end
+
+--- Build theme-reactive overlay config
+--- @return table Overlay configuration with theme-derived colors
+local function build_config()
+  local Theme = get_theme()
+
+  -- Use Theme.COLORS if available, otherwise fall back to dark defaults
+  local bg_chrome = Theme and Theme.COLORS and Theme.COLORS.BG_CHROME or hexrgb("#121212")
+  local border_outer = Theme and Theme.COLORS and Theme.COLORS.BORDER_OUTER or hexrgb("#404040")
+  local text_normal = Theme and Theme.COLORS and Theme.COLORS.TEXT_NORMAL or hexrgb("#FFFFFF")
+  local text_dimmed = Theme and Theme.COLORS and Theme.COLORS.TEXT_DIMMED or hexrgb("#666666")
+
+  -- Determine if we're in a light theme (t > 0.5)
+  local is_light = Theme and Theme.get_t and Theme.get_t() > 0.5 or false
+
+  return {
+    scrim = {
+      color = bg_chrome,
       opacity = 0.99,
     },
-    
-    shadow = {
-      enabled = true,
-      layers = 4,
-      max_offset = 12,
-      base_alpha = 20,
-    },
-    
-    border = {
-      outer_color = hexrgb("#404040"),
-      outer_opacity = 0.7,
-      outer_thickness = 1.5,
-      inner_color = hexrgb("#FFFFFF"),
-      inner_opacity = 0.10,
-      inner_thickness = 1.0,
-    },
-    
-    gradient = {
-      top_enabled = false,
-      top_color = hexrgb("#FFFFFF"),
-      top_height = 80,
-      top_max_alpha = 0.06,
 
-      bottom_enabled = false,
-      bottom_color = hexrgb("#000000"),
-      bottom_height = 60,
-      bottom_max_alpha = 0.08,
-    },
-    
-    header = {
-      height = 42,
-      text_color = hexrgb("#FFFFFF"),
-      text_opacity = 1.0,
-      
-      divider_color = hexrgb("#666666"),
-      divider_opacity = 0.31,
-      divider_thickness = 1.0,
-      divider_fade_width = 60,
-      
-      highlight_color = hexrgb("#FFFFFF"),
-      highlight_opacity = 0.06,
-      highlight_thickness = 1.0,
-    },
-    
-    rounding = 12,
-  },
-}
+    sheet = {
+      background = {
+        color = bg_chrome,
+        opacity = 0.99,
+      },
 
-local current_config = nil
+      shadow = {
+        enabled = true,
+        layers = 4,
+        max_offset = 12,
+        base_alpha = is_light and 30 or 20,  -- Stronger shadows for light theme
+      },
+
+      border = {
+        outer_color = border_outer,
+        outer_opacity = is_light and 0.5 or 0.7,
+        outer_thickness = 1.5,
+        inner_color = is_light and hexrgb("#000000") or hexrgb("#FFFFFF"),
+        inner_opacity = is_light and 0.08 or 0.10,
+        inner_thickness = 1.0,
+      },
+
+      gradient = {
+        top_enabled = false,
+        top_color = is_light and hexrgb("#000000") or hexrgb("#FFFFFF"),
+        top_height = 80,
+        top_max_alpha = 0.06,
+
+        bottom_enabled = false,
+        bottom_color = is_light and hexrgb("#FFFFFF") or hexrgb("#000000"),
+        bottom_height = 60,
+        bottom_max_alpha = 0.08,
+      },
+
+      header = {
+        height = 42,
+        text_color = text_normal,
+        text_opacity = 1.0,
+
+        divider_color = text_dimmed,
+        divider_opacity = 0.31,
+        divider_thickness = 1.0,
+        divider_fade_width = 60,
+
+        highlight_color = is_light and hexrgb("#000000") or hexrgb("#FFFFFF"),
+        highlight_opacity = 0.06,
+        highlight_thickness = 1.0,
+      },
+
+      rounding = 12,
+    },
+  }
+end
+
+-- Cache for config (invalidated when theme changes)
+local _config_cache = nil
+local _config_cache_t = nil
 
 function M.get()
-  if not current_config then
-    -- Deep copy default config on first access
-    current_config = ConfigUtil.deepMerge({}, default_config)
+  local Theme = get_theme()
+  local current_t = Theme and Theme.get_t and Theme.get_t() or 0
+
+  -- Rebuild config if theme changed
+  if not _config_cache or _config_cache_t ~= current_t then
+    _config_cache = build_config()
+    _config_cache_t = current_t
   end
-  return current_config
+
+  return _config_cache
+end
+
+--- Force refresh of config (call when theme changes)
+function M.refresh()
+  _config_cache = nil
+  _config_cache_t = nil
 end
 
 function M.override(overrides)
