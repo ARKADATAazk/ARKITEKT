@@ -59,20 +59,8 @@ local function check_dpi_variants(base_path)
   local base = base_path:gsub("%.png$", ""):gsub("%.PNG$", "")
 
   -- Check for 150% and 200% variants
-  local has_150 = false
-  local has_200 = false
-
-  local file_150 = io.open(base .. "_150.png", "r")
-  if file_150 then
-    file_150:close()
-    has_150 = true
-  end
-
-  local file_200 = io.open(base .. "_200.png", "r")
-  if file_200 then
-    file_200:close()
-    has_200 = true
-  end
+  local has_150 = Fs.file_exists(base .. "_150.png")
+  local has_200 = Fs.file_exists(base .. "_200.png")
 
   return has_150, has_200
 end

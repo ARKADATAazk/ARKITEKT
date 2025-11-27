@@ -42,9 +42,7 @@ local function scan_package_folder(package_path, package_id)
 
   -- Check for preview.png first
   local preview_path = package_path .. SEP .. "preview.png"
-  local preview_file = io.open(preview_path, "r")
-  if preview_file then
-    preview_file:close()
+  if file_exists(preview_path) then
     package.meta.preview_path = preview_path
   end
 
@@ -53,9 +51,7 @@ local function scan_package_folder(package_path, package_id)
   local rtconfig_patterns = {"rtconfig.txt", "rtconfig"}
   for _, rtconfig_name in ipairs(rtconfig_patterns) do
     local rtconfig_path = package_path .. SEP .. rtconfig_name
-    local rtconfig_file = io.open(rtconfig_path, "r")
-    if rtconfig_file then
-      rtconfig_file:close()
+    if file_exists(rtconfig_path) then
       rtconfig_found = true
       break
     end
@@ -67,11 +63,8 @@ local function scan_package_folder(package_path, package_id)
 
   -- Try to load manifest.json (optional)
   local manifest_path = package_path .. SEP .. "manifest.json"
-  local manifest_file = io.open(manifest_path, "r")
-  if manifest_file then
-    local content = manifest_file:read("*all")
-    manifest_file:close()
-
+  local content = Fs.read_text(manifest_path)
+  if content then
     local ok, manifest = pcall(function()
       -- Simple JSON parse for basic structure
       -- Note: This is a minimal implementation. For production, use a proper JSON library
