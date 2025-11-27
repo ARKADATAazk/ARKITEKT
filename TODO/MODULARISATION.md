@@ -481,6 +481,104 @@ These are domain-specific and unlikely to be extracted:
 
 ---
 
+## Substantial Systems (100+ lines) - Consolidation Needed
+
+### Undo/History Systems (CRITICAL - 3 COMPETING IMPLEMENTATIONS)
+
+**Problem**: 3 different undo philosophies coexist, with `composite_undo.lua` extracted but unused.
+
+| Implementation | Location | Lines | Approach |
+|---------------|----------|-------|----------|
+| **Snapshot-based** | `RegionPlaylist/data/undo.lua` | 171 | Captures full state (playlists, regions) |
+| **Operation-based** | `TemplateBrowser/infra/undo.lua` | 104 | Stores undo_fn/redo_fn callbacks |
+| **State-based** | `arkitekt/core/undo_manager.lua` | 69 | Returns states, no REAPER integration |
+| **Composite** | `arkitekt/core/composite_undo.lua` | 161 | **EXTRACTED from RegionPlaylist but UNUSED** |
+
+**Action**: Unify into framework with multi-mode support. RegionPlaylist should migrate to composite_undo.
+
+---
+
+### Keyboard Shortcut Systems (2 PATTERNS)
+
+| Implementation | Location | Lines | Pattern |
+|---------------|----------|-------|---------|
+| **Inline checks** | `RegionPlaylist/ui/shortcuts.lua` | 86 | Direct `IsKeyPressed()` calls |
+| **Declarative table** | `TemplateBrowser/ui/shortcuts.lua` | 209 | `{key, mods, action, description}` format |
+
+**Proposed**: Create `arkitekt/gui/interaction/shortcut_manager.lua`
+- Support both inline and declarative patterns
+- Auto-generate help dialog from declarative shortcuts
+- Modal blocking integration
+
+---
+
+### Search/Filter Systems (VERY HIGH VALUE - DISTRIBUTED)
+
+**Problem**: Search/filter logic scattered across domain, UI, and modals.
+
+| Component | Location | Lines | Purpose |
+|-----------|----------|-------|---------|
+| **Domain filter** | `RegionPlaylist/app/pool_queries.lua` | 220 | Text search, sorting wrapper |
+| **Search UI** | `ItemPicker/ui/components/search_toolbar.lua` | 261 | Input + sort buttons + layout toggle |
+| **Filter modal** | `ItemPicker/ui/components/track_filter.lua` | 777 | Tree-based whitelist filtering |
+
+**Proposed extraction**:
+1. `arkitekt/core/search_filter.lua` - Pure search/filter logic
+2. `arkitekt/gui/widgets/search_toolbar.lua` - Reusable search input with sort
+3. `arkitekt/gui/widgets/modals/filter_tree_modal.lua` - Whitelist tree UI
+
+---
+
+### Persistence/Settings (4 DIFFERENT APPROACHES)
+
+| Approach | Location | Lines | Backend |
+|----------|----------|-------|---------|
+| **File-based** | `arkitekt/core/settings.lua` | 159 | JSON file in /cache/ |
+| **Project state** | `ItemPicker/data/persistence.lua` | 160 | `GetProjExtState()` |
+| **Domain object** | `RegionPlaylist/ui/state/preferences.lua` | 176 | Wraps Settings |
+| **Inline ExtState** | `batch_rename_modal.lua:33-90` | 57 | Raw REAPER API |
+
+**Proposed**: Create abstraction layer supporting all three backends:
+```lua
+local Persistence = require('arkitekt.core.persistence')
+local store = Persistence.file("app_name")  -- JSON file
+local store = Persistence.project("app_name")  -- Project state
+local store = Persistence.extstate("SECTION")  -- Global REAPER state
+```
+
+---
+
+### Modal Dialog Patterns (5+ IMPLEMENTATIONS)
+
+**Problem**: Each app rolls its own modals.
+
+| Modal | Location | Lines |
+|-------|----------|-------|
+| **Batch rename** | `arkitekt/gui/widgets/overlays/batch_rename_modal.lua` | 982 |
+| **Package modal** | `ThemeAdjuster/ui/views/package_modal.lua` | 1036 |
+| **Template modals** | `TemplateBrowser/ui/views/template_modals_view.lua` | 486 |
+| **Param link** | `ThemeAdjuster/ui/views/param_link_modal.lua` | 244 |
+| **Overflow** | `RegionPlaylist/ui/views/overflow_modal_view.lua` | 212 |
+
+**Proposed**:
+1. `arkitekt/gui/widgets/overlays/modal_base.lua` - Common modal structure
+2. `arkitekt/gui/widgets/overlays/confirm_dialog.lua` - Simple OK/Cancel
+3. `arkitekt/gui/widgets/overlays/input_dialog.lua` - Text input with validation
+
+---
+
+## Substantial Systems Priority
+
+| # | System | Size | Duplicates | Effort | Value |
+|---|--------|------|------------|--------|-------|
+| 1 | **Search/Filter** | 1200+ lines | Distributed | High | **Very High** |
+| 2 | **Undo Systems** | 500+ lines | 3 approaches | Medium | **High** |
+| 3 | **Persistence** | 600+ lines | 4 approaches | Medium | **High** |
+| 4 | **Modals** | 3000+ lines | Per-app | High | High |
+| 5 | **Shortcuts** | 300 lines | 2 patterns | Low | Medium-High |
+
+---
+
 ## Pattern Documentation (No Code Extraction)
 
 ### Renderer Factory Pattern
