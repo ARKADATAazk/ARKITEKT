@@ -26,10 +26,10 @@ ItemPicker has **excellent code quality (9/10)** but is **architecturally non-co
 
 - Missing `domain/` layer entirely (business logic scattered)
 - Uses `core/` instead of `app/`
-- Uses `data/` instead of `data/`
 - Has `services/` folder (should be split/deleted)
 - Has `utils/` folder (should use arkitekt.debug.logger)
 - `init.lua` at root instead of `app/init.lua`
+- Files in `data/` need renaming (persistence.lua → storage.lua, etc.)
 
 ---
 
@@ -48,13 +48,13 @@ ItemPicker/
 │   ├── controller.lua                # ❌ Should be domain/items/service.lua
 │   └── preview_manager.lua           # ❌ Should be domain/preview/manager.lua
 │
-├── data/                             # ❌ Should be "data/"
-│   ├── reaper_api.lua
-│   ├── persistence.lua               # ❌ Should be data/storage.lua
-│   ├── disk_cache.lua                # ❌ Should be data/cache.lua
-│   ├── job_queue.lua
+├── data/                             # ✅ Correct folder name
+│   ├── reaper_api.lua                # Keep
+│   ├── persistence.lua               # ⚠️ Rename to storage.lua
+│   ├── disk_cache.lua                # ⚠️ Rename to cache.lua
+│   ├── job_queue.lua                 # Keep
 │   └── loaders/
-│       └── incremental_loader.lua    # ❌ Should be data/loader.lua (flattened)
+│       └── incremental_loader.lua    # ⚠️ Flatten to data/loader.lua
 │
 ├── services/                         # ❌ Should NOT exist - split this!
 │   ├── utils.lua                     # ❌ Delete or merge
@@ -391,33 +391,17 @@ mv services/pool_utils.lua domain/pool/utils.lua
 
 ---
 
-### Phase 5: Rename data/ → data/ 🏗️
+### Phase 5: Reorganize data/ Files 🏗️
 
-**Rename folder and reorganize files:**
+**Rename and flatten files within `data/` folder:**
 
-#### 5.1: Rename folder
-
-```bash
-mv data/ data/
-```
-
-**Note:** This is a bulk rename - all files move at once.
-
-- [ ] Rename `data/` → `data/`
-- [ ] Update ALL requires: `ItemPicker.data.` → `ItemPicker.infra.`
-- [ ] Test: Items still load
-- [ ] Test: Settings persist correctly
-- [ ] Test: Disk cache works
-
-**Time:** 1 hour (mostly find/replace)
-
-#### 5.2: Rename specific files
+> **Note:** The `data/` folder name is already correct - just reorganizing files inside it.
 
 | Old Path | New Path | Action |
 |----------|----------|--------|
-| `data/persistence.lua` | `data/storage.lua` | Rename + update requires |
-| `data/disk_cache.lua` | `data/cache.lua` | Rename + update requires |
-| `data/loaders/incremental_loader.lua` | `data/loader.lua` | Flatten + update requires |
+| `data/persistence.lua` | `data/storage.lua` | Rename |
+| `data/disk_cache.lua` | `data/cache.lua` | Rename |
+| `data/loaders/incremental_loader.lua` | `data/loader.lua` | Flatten |
 
 **Steps:**
 
@@ -427,7 +411,7 @@ mv data/ data/
    ```
    - [ ] Rename file
    - [ ] Update file path comment
-   - [ ] Update requires: `data.persistence` → `infra.storage`
+   - [ ] Update requires: `data.persistence` → `data.storage`
    - [ ] Test: Settings save/load works
 
 2. **Rename disk_cache → cache:**
@@ -436,7 +420,7 @@ mv data/ data/
    ```
    - [ ] Rename file
    - [ ] Update file path comment
-   - [ ] Update requires: `data.disk_cache` → `infra.cache`
+   - [ ] Update requires: `data.disk_cache` → `data.cache`
    - [ ] Test: Waveform caching works
 
 3. **Flatten incremental_loader:**
@@ -446,13 +430,11 @@ mv data/ data/
    ```
    - [ ] Move file out of loaders/ subfolder
    - [ ] Update file path comment
-   - [ ] Update requires: `data.loaders.incremental_loader` → `infra.loader`
+   - [ ] Update requires: `data.loaders.incremental_loader` → `data.loader`
    - [ ] Delete empty `loaders/` folder
    - [ ] Test: Incremental loading works
 
 **Time:** 1.5 hours
-
-**Total Phase 5 Time:** 2.5 hours
 
 ---
 
@@ -771,7 +753,7 @@ git add .
 git commit -m "refactor(ItemPicker): Migrate to target architecture
 
 - Move core/ → app/
-- Move data/ → data/
+- Reorganize data/ (rename files, flatten loaders/)
 - Create domain/ layer with items/, preview/, pool/
 - Split services/ → domain/ and ui/
 - Delete utils/ (use arkitekt logger)
@@ -803,7 +785,7 @@ Fixes: #XXX"
 | 2 | Move app layer | 2h |
 | 3 | Create UI state | 1.5h |
 | 4 | Create domain layer | 2.5h |
-| 5 | Rename data/ → data/ | 2.5h |
+| 5 | Reorganize data/ files | 1.5h |
 | 6 | Split/delete services/ | 1.75h |
 | 7 | Delete utils/ | 0.75h |
 | 8 | Reorganize UI | 2.5h |
@@ -905,30 +887,30 @@ After each phase, run this checklist:
 
 Migration is complete when:
 
-- [x] All 28 files moved to correct locations
-- [x] All 4 folders deleted (core/, data/, services/, utils/)
-- [x] New folders created (app/, domain/, data/, ui/state/)
-- [x] Entry point uses new structure
-- [x] All features work as before
-- [x] No performance regression
-- [x] Settings/favorites/cache persist correctly
-- [x] Documentation updated
-- [x] Test stubs created
-- [x] Commit message documents migration
+- [ ] All files moved to correct locations
+- [ ] 3 folders deleted (core/, services/, utils/)
+- [ ] New folders created (app/, domain/, ui/state/)
+- [ ] data/ reorganized (files renamed, loaders/ flattened)
+- [ ] Entry point uses new structure
+- [ ] All features work as before
+- [ ] No performance regression
+- [ ] Settings/favorites/cache persist correctly
+- [ ] Documentation updated
+- [ ] Test stubs created
+- [ ] Commit message documents migration
 
 **Final Verification:**
 
 ```bash
 # Should NOT exist:
 ls core/        # ❌ Should fail (or be re-exports only)
-ls data/        # ❌ Should fail
 ls services/    # ❌ Should fail
 ls utils/       # ❌ Should fail
 
 # MUST exist:
 ls app/         # ✅ Should contain: init.lua, config.lua, state.lua
 ls domain/      # ✅ Should contain: items/, preview/, pool/
-ls data/       # ✅ Should contain: storage.lua, cache.lua, loader.lua, etc.
+ls data/        # ✅ Should contain: storage.lua, cache.lua, loader.lua, etc.
 ls ui/state/    # ✅ Should contain: preferences.lua
 ```
 

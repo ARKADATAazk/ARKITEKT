@@ -81,9 +81,9 @@ TemplateBrowser/
 │   ├── scanner.lua                  # → domain/template/scanner.lua
 │   ├── template_ops.lua             # → domain/template/ops.lua
 │   ├── tags.lua                     # → domain/tags/service.lua
-│   ├── file_ops.lua                 # → infra/file_ops.lua (I/O!)
-│   ├── persistence.lua              # → infra/storage.lua (I/O!)
-│   └── undo.lua                     # → infra/undo.lua (I/O!)
+│   ├── file_ops.lua                 # → data/file_ops.lua (I/O!)
+│   ├── persistence.lua              # → data/storage.lua (I/O!)
+│   └── undo.lua                     # → data/undo.lua (I/O!)
 │
 ├── defs/                            # ✓ Keep as-is
 │   ├── constants.lua
@@ -141,7 +141,7 @@ TemplateBrowser/
 │       ├── parser.lua               # FROM: domain/fx_parser.lua
 │       └── queue.lua                # FROM: domain/fx_queue.lua
 │
-├── infra/
+├── data/
 │   ├── storage.lua                  # FROM: domain/persistence.lua
 │   ├── undo.lua                     # FROM: domain/undo.lua
 │   └── file_ops.lua                 # FROM: domain/file_ops.lua
@@ -195,7 +195,7 @@ TemplateBrowser/
     │   ├── template_test.lua
     │   ├── tags_test.lua
     │   └── fx_test.lua
-    └── infra/
+    └── data/
         └── storage_test.lua
 ```
 
@@ -206,7 +206,7 @@ TemplateBrowser/
 ```bash
 # Create new directories
 mkdir -p TemplateBrowser/app
-mkdir -p TemplateBrowser/infra
+mkdir -p TemplateBrowser/data
 mkdir -p TemplateBrowser/domain/template
 mkdir -p TemplateBrowser/domain/tags
 mkdir -p TemplateBrowser/domain/fx
@@ -214,7 +214,7 @@ mkdir -p TemplateBrowser/ui/state
 mkdir -p TemplateBrowser/ui/config
 mkdir -p TemplateBrowser/ui/views/modals
 mkdir -p TemplateBrowser/tests/domain
-mkdir -p TemplateBrowser/tests/infra
+mkdir -p TemplateBrowser/tests/data
 ```
 
 #### Phase 2: Move Files (with backward-compat re-exports)
@@ -229,16 +229,16 @@ mkdir -p TemplateBrowser/tests/infra
 | ADD RE-EXPORT | `core/config.lua` | `return require("TemplateBrowser.app.config")` |
 | ADD RE-EXPORT | `core/state.lua` | `return require("TemplateBrowser.app.state")` |
 
-**Step 2.2: Create `infra/` folder (I/O operations)**
+**Step 2.2: Create `data/` folder (I/O operations)**
 
 | Action | File | Notes |
 |--------|------|-------|
-| MOVE | `domain/persistence.lua` → `infra/storage.lua` | Rename to match convention |
-| MOVE | `domain/undo.lua` → `infra/undo.lua` | Keep name |
-| MOVE | `domain/file_ops.lua` → `infra/file_ops.lua` | Keep name |
-| ADD RE-EXPORT | `domain/persistence.lua` | `return require("TemplateBrowser.infra.storage")` |
-| ADD RE-EXPORT | `domain/undo.lua` | `return require("TemplateBrowser.infra.undo")` |
-| ADD RE-EXPORT | `domain/file_ops.lua` | `return require("TemplateBrowser.infra.file_ops")` |
+| MOVE | `domain/persistence.lua` → `data/storage.lua` | Rename to match convention |
+| MOVE | `domain/undo.lua` → `data/undo.lua` | Keep name |
+| MOVE | `domain/file_ops.lua` → `data/file_ops.lua` | Keep name |
+| ADD RE-EXPORT | `domain/persistence.lua` | `return require("TemplateBrowser.data.storage")` |
+| ADD RE-EXPORT | `domain/undo.lua` | `return require("TemplateBrowser.data.undo")` |
+| ADD RE-EXPORT | `domain/file_ops.lua` | `return require("TemplateBrowser.data.file_ops")` |
 
 **Step 2.3: Reorganize `domain/` folder**
 
@@ -311,7 +311,7 @@ Update all `require()` statements to use new paths. Example:
 local Persistence = require("TemplateBrowser.domain.persistence")
 
 -- NEW
-local Storage = require("TemplateBrowser.infra.storage")
+local Storage = require("TemplateBrowser.data.storage")
 ```
 
 #### Phase 4: Create New Files
@@ -341,11 +341,11 @@ M.fx = {
     queue = require("TemplateBrowser.domain.fx.queue"),
 }
 
--- Infrastructure
-M.infra = {
-    storage = require("TemplateBrowser.infra.storage"),
-    undo = require("TemplateBrowser.infra.undo"),
-    file_ops = require("TemplateBrowser.infra.file_ops"),
+-- Data layer
+M.data = {
+    storage = require("TemplateBrowser.data.storage"),
+    undo = require("TemplateBrowser.data.undo"),
+    file_ops = require("TemplateBrowser.data.file_ops"),
 }
 
 return M
@@ -386,9 +386,9 @@ After confirming everything works:
 | 2 | `core/state.lua` | `app/state.lua` | ⬜ |
 | 3 | `core/shortcuts.lua` | `ui/shortcuts.lua` | ⬜ |
 | 4 | `core/tooltips.lua` | `ui/tooltips.lua` | ⬜ |
-| 5 | `domain/persistence.lua` | `infra/storage.lua` | ⬜ |
-| 6 | `domain/undo.lua` | `infra/undo.lua` | ⬜ |
-| 7 | `domain/file_ops.lua` | `infra/file_ops.lua` | ⬜ |
+| 5 | `domain/persistence.lua` | `data/storage.lua` | ⬜ |
+| 6 | `domain/undo.lua` | `data/undo.lua` | ⬜ |
+| 7 | `domain/file_ops.lua` | `data/file_ops.lua` | ⬜ |
 | 8 | `domain/scanner.lua` | `domain/template/scanner.lua` | ⬜ |
 | 9 | `domain/template_ops.lua` | `domain/template/ops.lua` | ⬜ |
 | 10 | `domain/tags.lua` | `domain/tags/service.lua` | ⬜ |
@@ -493,7 +493,7 @@ ItemPicker/
 │   └── pool/
 │       └── utils.lua         # FROM: services/pool_utils.lua
 │
-├── infra/
+├── data/
 │   ├── storage.lua           # FROM: data/persistence.lua
 │   ├── cache.lua             # FROM: data/disk_cache.lua
 │   ├── job_queue.lua         # FROM: data/job_queue.lua
@@ -545,11 +545,11 @@ ItemPicker/
 | `core/config.lua` | `app/config.lua` | Move |
 | `core/controller.lua` | `domain/items/service.lua` | Move + rename |
 | `core/preview_manager.lua` | `domain/preview/manager.lua` | Move |
-| `data/persistence.lua` | `infra/storage.lua` | Move + rename |
-| `data/disk_cache.lua` | `infra/cache.lua` | Move + rename |
-| `data/job_queue.lua` | `infra/job_queue.lua` | Move |
-| `data/reaper_api.lua` | `infra/reaper_api.lua` | Move |
-| `data/loaders/incremental_loader.lua` | `infra/loader.lua` | Move + flatten |
+| `data/persistence.lua` | `data/storage.lua` | Move + rename |
+| `data/disk_cache.lua` | `data/cache.lua` | Move + rename |
+| `data/job_queue.lua` | `data/job_queue.lua` | Move |
+| `data/reaper_api.lua` | `data/reaper_api.lua` | Move |
+| `data/loaders/incremental_loader.lua` | `data/loader.lua` | Move + flatten |
 | `services/utils.lua` | Delete or merge | Evaluate necessity |
 | `services/pool_utils.lua` | `domain/pool/utils.lua` | Move |
 | `services/visualization.lua` | `ui/visualization.lua` | Move (UI concern) |
@@ -645,7 +645,7 @@ ThemeAdjuster/
 │   └── links/
 │       └── manager.lua       # FROM: core/parameter_link_manager.lua
 │
-├── infra/
+├── data/
 │   ├── storage.lua           # NEW: Persistence abstraction
 │   └── packages/
 │       ├── manager.lua       # FROM: packages/manager.lua
@@ -708,9 +708,9 @@ ThemeAdjuster/
 | `core/theme_params.lua` | `domain/theme/params.lua` | Move |
 | `core/param_discovery.lua` | `domain/theme/discovery.lua` | Move |
 | `core/parameter_link_manager.lua` | `domain/links/manager.lua` | Move |
-| `packages/manager.lua` | `infra/packages/manager.lua` | Move |
-| `packages/metadata.lua` | `infra/packages/metadata.lua` | Move |
-| `packages/image_map.lua` | `infra/packages/image_map.lua` | Move |
+| `packages/manager.lua` | `data/packages/manager.lua` | Move |
+| `packages/metadata.lua` | `data/packages/metadata.lua` | Move |
+| `packages/image_map.lua` | `data/packages/image_map.lua` | Move |
 | `ui/gui.lua` | `ui/init.lua` | Rename |
 | `ui/views/*_view.lua` | `ui/views/*.lua` | Remove `_view` suffix |
 | `ui/views/*_modal.lua` | `ui/views/modals/*.lua` | Move to modals/ |
@@ -814,7 +814,7 @@ RegionPlaylist/
 │   │   └── transitions.lua   # FROM: engine/transitions.lua
 │   └── dependency.lua        # FROM: domains/dependency.lua
 │
-├── infra/
+├── data/
 │   ├── storage.lua           # FROM: data/persistence.lua
 │   ├── sws_import.lua        # FROM: data/sws_importer.lua
 │   ├── undo.lua              # FROM: data/undo_bridge.lua
@@ -865,7 +865,7 @@ RegionPlaylist/
     │   ├── playlist_test.lua # FROM: tests/domain_tests.lua (split)
     │   ├── region_test.lua
     │   └── playback_test.lua
-    ├── infra/
+    ├── data/
     │   └── storage_test.lua
     └── integration/
         └── workflow_test.lua # FROM: tests/integration_tests.lua
@@ -892,10 +892,10 @@ RegionPlaylist/
 | `engine/transport.lua` | `domain/playback/transport.lua` | Move |
 | `engine/quantize.lua` | `domain/playback/quantize.lua` | Move |
 | `engine/transitions.lua` | `domain/playback/transitions.lua` | Move |
-| `engine/coordinator_bridge.lua` | `infra/bridge.lua` | Move |
-| `data/persistence.lua` | `infra/storage.lua` | Move |
-| `data/sws_importer.lua` | `infra/sws_import.lua` | Move |
-| `data/undo_bridge.lua` | `infra/undo.lua` | Move |
+| `engine/coordinator_bridge.lua` | `data/bridge.lua` | Move |
+| `data/persistence.lua` | `data/storage.lua` | Move |
+| `data/sws_importer.lua` | `data/sws_import.lua` | Move |
+| `data/undo_bridge.lua` | `data/undo.lua` | Move |
 | `ui/gui.lua` | `ui/init.lua` | Rename |
 | `ui/status.lua` | `ui/views/status.lua` | Move |
 | `ui/shortcuts.lua` | `ui/shortcuts.lua` | Keep |
@@ -935,7 +935,7 @@ domain/
 ├── region/                                                               ✓
 └── playback/                                                             ✓
 
-infra/
+data/
 ├── storage.lua      ✓                ✓                 ✓                 ✓
 ├── undo.lua         ✓
 ├── file_ops.lua     ✓
@@ -982,7 +982,7 @@ tests/               ✓                ✓                 ✓                 
 ### Recommended Approach
 
 1. **Phase 1: Create new folders**
-   - Create `app/`, `domain/`, `infra/` folders
+   - Create `app/`, `domain/`, `data/` folders
    - Add `init.lua` re-exports for backward compatibility
 
 2. **Phase 2: Move files one at a time**

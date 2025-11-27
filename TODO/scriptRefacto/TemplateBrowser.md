@@ -514,12 +514,12 @@ return require("TemplateBrowser.app.config")
 **Action Items**:
 - [ ] VERIFY: Files are actually in `data/` (check filesystem)
 - [ ] IF NOT: Move them now
-- [ ] UPDATE: All `require()` statements to use `infra.*` not `domain.*`
-- [ ] GREP: Find all `require.*domain\.persistence` → change to `infra.storage`
-- [ ] GREP: Find all `require.*domain\.undo` → change to `infra.undo`
-- [ ] GREP: Find all `require.*domain\.file_ops` → change to `infra.file_ops`
+- [ ] UPDATE: All `require()` statements to use `data.*` not `domain.*`
+- [ ] GREP: Find all `require.*domain\.persistence` → change to `data.storage`
+- [ ] GREP: Find all `require.*domain\.undo` → change to `data.undo`
+- [ ] GREP: Find all `require.*domain\.file_ops` → change to `data.file_ops`
 - [ ] TEST: All file operations work
-- [ ] COMMIT: "Complete domain → infra migration for I/O modules"
+- [ ] COMMIT: "Complete domain → data migration for I/O modules"
 
 ---
 
@@ -654,12 +654,12 @@ M.fx = {
 }
 
 -- ============================================================================
--- INFRASTRUCTURE
+-- DATA LAYER
 -- ============================================================================
-M.infra = {
-  storage = require('TemplateBrowser.infra.storage'),
-  undo = require('TemplateBrowser.infra.undo'),
-  file_ops = require('TemplateBrowser.infra.file_ops'),
+M.data = {
+  storage = require('TemplateBrowser.data.storage'),
+  undo = require('TemplateBrowser.data.undo'),
+  file_ops = require('TemplateBrowser.data.file_ops'),
 }
 
 -- ============================================================================
@@ -1221,7 +1221,7 @@ FXQueue.process_batch(self.state, config.FX_QUEUE.BATCH_SIZE)
 -- Already have JSON encoder in data/storage.lua
 -- Just need UI buttons and file picker
 function M.export_metadata(path)
-  local Storage = require('TemplateBrowser.infra.storage')
+  local Storage = require('TemplateBrowser.data.storage')
   Storage.save_metadata_to_path(metadata, path)
 end
 ```

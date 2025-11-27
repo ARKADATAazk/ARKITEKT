@@ -293,10 +293,10 @@ M.domain = {
     },
 }
 
--- Infrastructure (I/O operations)
-M.infra = {
-    storage = require("ThemeAdjuster.infra.storage"),
-    packages = require("ThemeAdjuster.infra.packages.manager"),
+-- Data layer (I/O operations)
+M.data = {
+    storage = require("ThemeAdjuster.data.storage"),
+    packages = require("ThemeAdjuster.data.packages.manager"),
 }
 
 -- Initialize systems
@@ -405,7 +405,7 @@ return M
 -- packages/manager.lua
 function M.scan_packages(theme_root, demo_mode)
     if demo_mode then
-        local DemoData = require('ThemeAdjuster.infra.packages.demo_data')
+        local DemoData = require('ThemeAdjuster.data.packages.demo_data')
         return DemoData.generate_demo_packages()
     end
     -- ... real scanning logic ...
@@ -467,7 +467,7 @@ mkdir -p ThemeAdjuster/tests/platform
 | MOVE | `packages/manager.lua` → `data/packages/manager.lua` | Heavy I/O |
 | CREATE | `data/storage.lua` | Extract persistence abstraction |
 | CREATE | `data/packages/demo_data.lua` | Extract demo data (Task #6) |
-| ADD RE-EXPORT | `packages/manager.lua` | `return require("ThemeAdjuster.infra.packages.manager")` |
+| ADD RE-EXPORT | `packages/manager.lua` | `return require("ThemeAdjuster.data.packages.manager")` |
 
 **Step 2.4**: Reorganize `ui/` folder
 | Action | File | Notes |
@@ -504,7 +504,7 @@ tests/
 **Example test** (using busted or similar):
 ```lua
 -- tests/domain/packages_test.lua
-local Manager = require('ThemeAdjuster.infra.packages.manager')
+local Manager = require('ThemeAdjuster.data.packages.manager')
 
 describe("Package Resolution", function()
     it("should resolve conflicts by order", function()
