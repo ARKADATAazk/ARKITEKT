@@ -185,7 +185,7 @@ function Panel:draw(ctx)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1E1E1E"))
   ImGui.PushStyleVar(ctx, ImGui.StyleVar_WindowPadding, 8, 8)
 
-  ImGui.BeginChild(ctx, "code_view", avail_w, avail_h - 4, true)
+  ImGui.BeginChild(ctx, "code_view", avail_w, avail_h - 4, 1, 0)
   local code = self:generate_code()
 
   if code == "" or #self.elements == 0 then

@@ -188,7 +188,7 @@ function GUI:draw(ctx, window, shell_state)
   -- Left panel: Elements
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
 
-  ImGui.BeginChild(ctx, "left_panel", self.left_panel_width, remaining_h, true)
+  ImGui.BeginChild(ctx, "left_panel", self.left_panel_width, remaining_h, 1, 0)
   ImGui.Dummy(ctx, 0, 4)
   ImGui.Indent(ctx, 4)
 
@@ -214,7 +214,7 @@ function GUI:draw(ctx, window, shell_state)
 
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
 
-  ImGui.BeginChild(ctx, "center_panel", canvas_w, remaining_h, true)
+  ImGui.BeginChild(ctx, "center_panel", canvas_w, remaining_h, 1, 0)
   ImGui.Dummy(ctx, 0, 4)
   ImGui.Indent(ctx, 4)
 
@@ -267,7 +267,7 @@ function GUI:draw(ctx, window, shell_state)
   -- Right panel: Properties and Code (tabbed or split)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
 
-  ImGui.BeginChild(ctx, "right_panel", self.right_panel_width, remaining_h, true)
+  ImGui.BeginChild(ctx, "right_panel", self.right_panel_width, remaining_h, 1, 0)
   ImGui.Dummy(ctx, 0, 4)
   ImGui.Indent(ctx, 4)
 
