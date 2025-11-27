@@ -47,11 +47,60 @@
 
 #### Selection Manager Migration
 - [ ] **Migrate scripts to use `arkitekt/gui/interaction/selection.lua`**
-  - Framework has full implementation with single/toggle/range select
+  - Framework has full implementation with single/toggle/range/rectangle select
   - RegionPlaylist: ❌ Reimplements selection in tiles/coordinator
   - TemplateBrowser: ❌ Reimplements in app/state.lua
   - ItemPicker: ❌ Reimplements in app_state.lua
   - **Action**: Audit each script's selection needs, migrate to framework
+
+##### Framework Selection API (what exists)
+
+```lua
+local Selection = require('arkitekt.gui.interaction.selection')
+local sel = Selection.new()
+
+-- Core operations
+sel:single(id)                         -- Click: select one, clear others
+sel:toggle(id)                         -- Ctrl+click: add/remove
+sel:range(order, from_id, to_id)       -- Shift+click: select range
+sel:apply_rect(aabb, rects_by_key, mode)  -- Rectangle/marquee select
+
+-- Queries
+sel:is_selected(id)                    -- Check if selected
+sel:count()                            -- Number selected
+sel:selected_keys()                    -- Unordered list
+sel:selected_keys_in(order)            -- Selected in display order
+
+-- Bulk operations
+sel:clear()                            -- Deselect all
+sel:select_all(order)                  -- Ctrl+A
+sel:invert(order)                      -- Flip selection
+```
+
+##### Audit Checklist
+
+- [ ] **RegionPlaylist** - Audit `ui/tiles/` selection logic
+  - Where is selection state stored?
+  - What modifiers are supported (Ctrl/Shift)?
+  - Does it need rectangle selection?
+  - Does coordinator have special selection needs?
+
+- [ ] **TemplateBrowser** - Audit `app/state.lua` selection logic
+  - Where is selection state stored?
+  - What modifiers are supported?
+  - Grid layout - rectangle selection useful?
+
+- [ ] **ItemPicker** - Audit `app_state.lua` selection logic
+  - Where is selection state stored?
+  - What modifiers are supported?
+  - List vs grid view - different selection needs?
+
+##### Migration Blockers to Check
+
+1. **API mismatch**: Does framework API cover all use cases?
+2. **State location**: Can `sel.selected` map integrate with script state?
+3. **Order requirement**: Scripts must provide display order for range/select_all
+4. **Modifier detection**: UI layer must detect Ctrl/Shift (not in selection.lua)
 
 #### Sorting Migration
 - [x] **arkitekt/core/sorting.lua** - Created
