@@ -452,6 +452,156 @@ These are domain-specific and unlikely to be extracted:
 
 ---
 
+## Underutilized Framework Components (2025-11-27 Audit)
+
+These framework utilities exist but scripts duplicate them locally instead of importing.
+
+### Math Utilities - `arkitekt/core/math.lua` (UNDERUSED)
+
+**Framework provides:**
+```lua
+local Math = require('arkitekt.core.math')
+Math.lerp(a, b, t)         -- Linear interpolation
+Math.clamp(value, min, max) -- Clamp to range
+Math.remap(value, in_min, in_max, out_min, out_max)
+Math.snap(value, step)      -- Snap to grid
+Math.smoothdamp(...)        -- Smooth movement
+Math.approximately(a, b, epsilon)
+```
+
+**Current usage**: Only 6 files use it (animation.lua, hue_slider.lua, tracks.lua, base.lua, manager.lua, sliding_zone.lua)
+
+**Duplications found:**
+| File | Function | Notes |
+|------|----------|-------|
+| `ThemeAdjuster/ui/grids/renderers/tile_visuals.lua:153` | `M.lerp(a, b, t)` | Exact duplicate |
+| `ThemeAdjuster/ui/grids/renderers/tile_visuals.lua:134` | `M.color_lerp(c1, c2, t)` | Should use Colors.lerp |
+| `scripts/demos/widget_demo.lua:64` | `clamp(x, a, b)` | Inline function |
+| `RegionPlaylist/ui/views/transport/button_widgets.lua:114` | `ViewModeButton:lerp_color()` | Should use Colors.lerp |
+| `RegionPlaylist/ui/views/transport/transport_container.lua:172` | `lerp_color()` | Should use Colors.lerp |
+
+**Action**: Migrate scripts to use `arkitekt.core.math` or `arkitekt.core.colors` (for color lerp)
+
+---
+
+### UUID - `arkitekt/core/uuid.lua` (UNDERUSED)
+
+**Framework provides:**
+```lua
+local UUID = require('arkitekt.core.uuid')
+UUID.generate()   -- Returns "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+UUID.is_valid(uuid)  -- Validates format
+```
+
+**Current usage**: Only 2 files use it (region_operations.lua, RegionPlaylist/app/state.lua)
+
+**Duplications found:**
+| File | Notes |
+|------|-------|
+| `TemplateBrowser/infra/storage.lua:52-60` | **Exact duplicate** of generate() function! |
+
+**Action**: Migrate TemplateBrowser to use `arkitekt.core.uuid`
+
+---
+
+### JSON - `arkitekt/core/json.lua` (PARTIALLY USED)
+
+**Framework provides:**
+```lua
+local JSON = require('arkitekt.core.json')
+JSON.encode(table)    -- Table → JSON string
+JSON.decode(string)   -- JSON string → table
+```
+
+**Current usage**: 7 files use it (project_state, ItemPicker persistence/disk_cache, ThemeAdjuster mapper/manager, MediaContainer, settings)
+
+**Duplications found:**
+| File | Lines | Notes |
+|------|-------|-------|
+| `TemplateBrowser/infra/storage.lua:62-190` | ~130 | **Complete JSON encoder/decoder** with pretty printing |
+
+**Action**: Migrate TemplateBrowser to use `arkitekt.core.json` (add pretty-print option if needed)
+
+---
+
+### File Utilities - MISSING FROM FRAMEWORK (Extraction Needed)
+
+**Problem**: Multiple scripts implement the same file utilities:
+
+| Utility | ThemeAdjuster | WalterBuilder | fonts.lua | packages/manager |
+|---------|---------------|---------------|-----------|------------------|
+| `file_exists(path)` | ✅ line 9 | ✅ line 29 | ✅ line 10 | ✅ line 340 |
+| `dir_exists(path)` | ✅ line 10 | ✅ line 39 | ❌ | ✅ line 558 |
+| `read_text(path)` | ✅ line 11 | ❌ | ❌ | ❌ |
+| `write_text(path, s)` | ✅ line 12 | ❌ | ❌ | ❌ |
+| `dirname(path)` | ✅ line 13 | ❌ | ❌ | ❌ |
+| `basename_no_ext(path)` | ✅ line 14 | ❌ | ❌ | ❌ |
+| `join(a, b)` | ✅ line 8 | ❌ | ❌ | ❌ |
+| `list_files(dir, ext)` | ✅ line 17 | ❌ | ❌ | ❌ |
+| `list_files_recursive()` | ✅ line 27 | ❌ | ❌ | ❌ |
+| `list_subdirs(dir)` | ✅ line 37 | ❌ | ❌ | ❌ |
+
+**Best source**: `ThemeAdjuster/core/theme.lua` lines 8-44 (most complete)
+
+**Proposed extraction**: `arkitekt/core/file_utils.lua`
+```lua
+local File = require('arkitekt.core.file_utils')
+
+-- Basic operations
+File.exists(path)        -- io.open check
+File.dir_exists(path)    -- reaper.EnumerateFiles check
+File.read(path)          -- Read entire file
+File.write(path, content) -- Write entire file
+
+-- Path manipulation
+File.join(a, b)          -- Platform-aware path join
+File.dirname(path)       -- Get directory part
+File.basename(path)      -- Get filename
+File.basename_no_ext(path) -- Get filename without extension
+File.extension(path)     -- Get extension
+
+-- Directory listing
+File.list(dir, ext)      -- List files (optional extension filter)
+File.list_recursive(dir, ext)  -- Recursive file listing
+File.list_subdirs(dir)   -- List subdirectories
+```
+
+**Effort**: Medium (consolidate from ThemeAdjuster)
+**Value**: High (eliminates 4+ duplications, standardizes file ops)
+
+---
+
+### Colors - `arkitekt/core/colors.lua` (WELL ADOPTED but with gaps)
+
+**Framework provides** (732 lines, comprehensive):
+- `Colors.lerp(color_a, color_b, t)` - Color interpolation
+- `Colors.hexrgb("#RRGGBB")` - Parse hex strings
+- `Colors.adjust_brightness()`, `Colors.desaturate()`, etc.
+- HSL/HSV conversions
+- Palette generation
+
+**Current usage**: 95+ files use it (excellent adoption!)
+
+**Gaps found**:
+- ThemeAdjuster's `tile_visuals.lua` has its own `color_lerp()` instead of using `Colors.lerp()`
+
+---
+
+## Updated Quick Win Priority List
+
+| # | Task | Effort | Value | Duplicates | Status |
+|---|------|--------|-------|------------|--------|
+| 1 | **Consolidate text truncation** | Low-Med | **Critical** | 9+ copies | |
+| 2 | **Migrate TemplateBrowser to core/uuid** | **Trivial** | Medium | 1 exact copy | |
+| 3 | **Migrate TemplateBrowser to core/json** | Low | Medium | 1 copy (130 lines) | |
+| 4 | **Extract file utilities** | Medium | High | 4+ copies | |
+| 5 | **Migrate lerp/clamp usage to core/math** | Low | Medium | 5+ copies | |
+| 6 | Extract transport icons | Low | High | 1 | |
+| 7 | Migrate TemplateBrowser sorting | Low | Medium | - | |
+| 8 | Migrate ItemPicker sorting | Low | Medium | - | |
+
+---
+
 ## Discovery Commands
 
 ```bash
