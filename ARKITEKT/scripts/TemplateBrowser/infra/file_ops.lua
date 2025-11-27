@@ -4,6 +4,9 @@
 
 local M = {}
 
+-- DEPENDENCIES
+local PathValidation = require('arkitekt.core.path_validation')
+
 -- Get separator for current OS
 local function get_sep()
   return package.config:sub(1,1)
@@ -139,6 +142,21 @@ end
 
 -- Rename a template file
 function M.rename_template(old_path, new_name)
+  -- SECURITY: Validate inputs
+  local ok, err = PathValidation.is_safe_path(old_path)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid source path: %s\n", err))
+    return false, nil
+  end
+
+  -- SECURITY: Sanitize and validate new filename
+  new_name = PathValidation.sanitize_filename(new_name)
+  ok, err = PathValidation.is_safe_filename(new_name)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid filename: %s\n", err))
+    return false, nil
+  end
+
   local sep = get_sep()
   old_path = normalize_path(old_path)
   local dir = old_path:match("^(.*)[/\\]")
@@ -156,6 +174,21 @@ end
 
 -- Rename a folder (directory)
 function M.rename_folder(old_path, new_name)
+  -- SECURITY: Validate inputs
+  local ok, err = PathValidation.is_safe_path(old_path)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid source path: %s\n", err))
+    return false, nil
+  end
+
+  -- SECURITY: Sanitize and validate new folder name
+  new_name = PathValidation.sanitize_filename(new_name)
+  ok, err = PathValidation.is_safe_filename(new_name)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid folder name: %s\n", err))
+    return false, nil
+  end
+
   local sep = get_sep()
   old_path = normalize_path(old_path)
   local parent = old_path:match("^(.*)[/\\]")
@@ -266,6 +299,21 @@ end
 
 -- Create a new folder
 function M.create_folder(parent_path, folder_name)
+  -- SECURITY: Validate inputs
+  local ok, err = PathValidation.is_safe_path(parent_path)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid parent path: %s\n", err))
+    return false, nil
+  end
+
+  -- SECURITY: Sanitize and validate new folder name
+  folder_name = PathValidation.sanitize_filename(folder_name)
+  ok, err = PathValidation.is_safe_filename(folder_name)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Invalid folder name: %s\n", err))
+    return false, nil
+  end
+
   local sep = get_sep()
   parent_path = normalize_path(parent_path)
   local new_path = parent_path .. sep .. folder_name

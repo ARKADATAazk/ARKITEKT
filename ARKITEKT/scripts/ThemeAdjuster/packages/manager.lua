@@ -4,6 +4,7 @@
 
 local M = {}
 local JSON = require('arkitekt.core.json')
+local PathValidation = require('arkitekt.core.path_validation')
 
 -- Platform path separator
 local SEP = package.config:sub(1,1)
@@ -626,36 +627,15 @@ local function try_run(cmd)
   return r == true or r == 0
 end
 
--- SECURITY: Validate paths before passing to shell commands to prevent command injection
-local function is_safe_path(path)
-  if not path or path == "" then
-    return false, "Path cannot be empty"
-  end
-
-  -- Only allow alphanumeric, spaces, dots, dashes, underscores, parentheses, and path separators
-  -- This blocks shell metacharacters: quotes, semicolons, pipes, backticks, $, etc.
-  local safe_pattern = "^[%w%s%.%-%_/\\:()]+$"
-  if not path:match(safe_pattern) then
-    return false, "Path contains unsafe characters"
-  end
-
-  -- Block directory traversal attempts
-  if path:find("%.%.") then
-    return false, "Path cannot contain '..'"
-  end
-
-  return true
-end
-
 local function make_zip(src_dir, out_zip)
-  -- SECURITY: Validate paths before passing to shell commands
-  local ok, err = is_safe_path(src_dir)
+  -- SECURITY: Validate paths before passing to shell commands (using centralized validation)
+  local ok, err = PathValidation.is_safe_path(src_dir)
   if not ok then
     reaper.ShowMessageBox("Invalid source directory: " .. err, "Security Error", 0)
     return false
   end
 
-  ok, err = is_safe_path(out_zip)
+  ok, err = PathValidation.is_safe_path(out_zip)
   if not ok then
     reaper.ShowMessageBox("Invalid output ZIP path: " .. err, "Security Error", 0)
     return false

@@ -216,13 +216,15 @@ function M.rgb_to_reaper(rgb_color)
 end
 
 --- Convert RGBA color to REAPER native format with custom color flag
+--- REAPER native format is BGR (not RGB) with 0x1000000 custom color flag
 --- @param rgba_color number Color in RGBA format (0xRRGGBBAA)
---- @return number Native REAPER color with 0x1000000 flag
+--- @return number Native REAPER color with 0x1000000 flag (0x01BBGGRR)
 function M.rgba_to_reaper_native(rgba_color)
   local r = (rgba_color >> 24) & 0xFF
   local g = (rgba_color >> 16) & 0xFF
   local b = (rgba_color >> 8) & 0xFF
-  return reaper.ColorToNative(r, g, b) | 0x1000000
+  -- REAPER native format is BGR with custom color flag (no reaper.* call needed)
+  return (b << 16) | (g << 8) | r | 0x1000000
 end
 
 function M.rgb_to_hsl(color)

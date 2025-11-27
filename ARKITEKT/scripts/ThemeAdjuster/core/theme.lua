@@ -1,6 +1,7 @@
 -- @noindex
 -- core/theme.lua â€“ Streamlined theme/cache management with JSON-based linking
 local M = {}
+local PathValidation = require('arkitekt.core.path_validation')
 local SEP = package.config:sub(1,1)
 
 -- ---------------- utils ----------------
@@ -51,36 +52,15 @@ end
 
 local function try_run(cmd) local r=os.execute(cmd); return r==true or r==0 end
 
--- SECURITY: Validate paths before passing to shell commands to prevent command injection
-local function is_safe_path(path)
-  if not path or path == "" then
-    return false, "Path cannot be empty"
-  end
-
-  -- Only allow alphanumeric, spaces, dots, dashes, underscores, parentheses, and path separators
-  -- This blocks shell metacharacters: quotes, semicolons, pipes, backticks, $, etc.
-  local safe_pattern = "^[%w%s%.%-%_/\\:()]+$"
-  if not path:match(safe_pattern) then
-    return false, "Path contains unsafe characters"
-  end
-
-  -- Block directory traversal attempts
-  if path:find("%.%.") then
-    return false, "Path cannot contain '..'"
-  end
-
-  return true
-end
-
 local function unzip(zip_path, dest_dir)
-  -- SECURITY: Validate paths before passing to shell commands
-  local ok, err = is_safe_path(zip_path)
+  -- SECURITY: Validate paths before passing to shell commands (using centralized validation)
+  local ok, err = PathValidation.is_safe_path(zip_path)
   if not ok then
     reaper.ShowMessageBox("Invalid ZIP path: " .. err, "Security Error", 0)
     return false
   end
 
-  ok, err = is_safe_path(dest_dir)
+  ok, err = PathValidation.is_safe_path(dest_dir)
   if not ok then
     reaper.ShowMessageBox("Invalid destination path: " .. err, "Security Error", 0)
     return false
