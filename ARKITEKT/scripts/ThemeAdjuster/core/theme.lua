@@ -45,9 +45,16 @@ end
 
 local function remove_dir_rec(dir)
   if not dir_exists(dir) then return end
+  -- SECURITY: Validate path before recursive deletion
+  local ok, err = PathValidation.is_safe_path(dir)
+  if not ok then
+    reaper.ShowConsoleMsg(string.format("ERROR: Blocked unsafe recursive deletion: %s\n", err or "unknown"))
+    return false
+  end
   for _,p in ipairs(list_files(dir, nil, {})) do os.remove(p) end
   for _,sd in ipairs(list_subdirs(dir, {})) do remove_dir_rec(sd) end
   os.remove(dir)
+  return true
 end
 
 local function try_run(cmd) local r=os.execute(cmd); return r==true or r==0 end
