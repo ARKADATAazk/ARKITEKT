@@ -591,6 +591,60 @@ function GUI:draw(ctx, shell_state)
   -- Store fonts reference for grid tiles
   self.fonts = shell_state.fonts
 
+  -- Show loading screen while scanning templates
+  if not self.state.scan_complete then
+    local window_width, window_height = ImGui.GetWindowSize(ctx)
+
+    -- Guard against NaN/inf from window size (can happen on first frame)
+    if window_width ~= window_width or window_width == math.huge or window_width == -math.huge or window_width <= 0 then
+      window_width = 800  -- Fallback width
+    end
+    if window_height ~= window_height or window_height == math.huge or window_height == -math.huge or window_height <= 0 then
+      window_height = 600  -- Fallback height
+    end
+
+    -- Title text
+    local text = self.state.scan_in_progress and "Scanning templates..." or "Initializing..."
+    local text_width = ImGui.CalcTextSize(ctx, text)
+    ImGui.SetCursorPosX(ctx, (window_width - text_width) * 0.5)
+    ImGui.SetCursorPosY(ctx, window_height * 0.5 - 30)
+    ImGui.Text(ctx, text)
+
+    -- Progress bar and percentage (only during actual scanning)
+    if self.state.scan_in_progress then
+      local progress = self.state.scan_progress or 0
+
+      -- Guard against NaN/inf
+      if progress ~= progress or progress == math.huge or progress == -math.huge then
+        progress = 0
+      end
+
+      -- Clamp to 0-1 range
+      progress = math.max(0, math.min(1, progress))
+
+      local bar_width = 300
+
+      -- Progress bar using new widget
+      ark.ProgressBar.draw(ctx, {
+        x = (window_width - bar_width) * 0.5,
+        y = window_height * 0.5,
+        width = bar_width,
+        height = 4,
+        progress = progress,
+        advance = "none",
+      })
+
+      -- Percentage text (use math.floor to ensure integer)
+      local percent_text = string.format("%d%%", math.floor(progress * 100))
+      local percent_width = ImGui.CalcTextSize(ctx, percent_text)
+      ImGui.SetCursorPosX(ctx, (window_width - percent_width) * 0.5)
+      ImGui.SetCursorPosY(ctx, window_height * 0.5 + 10)
+      ImGui.Text(ctx, percent_text)
+    end
+
+    return  -- Don't render main UI until scan is complete
+  end
+
   -- Process background FX parsing queue (5 templates per frame)
   FXQueue.process_batch(self.state, 5)
 
