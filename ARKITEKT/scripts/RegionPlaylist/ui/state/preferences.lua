@@ -1,5 +1,5 @@
 -- @noindex
--- RegionPlaylist/domains/ui_preferences.lua
+-- RegionPlaylist/ui/state/ui_preferences.lua
 -- Manages UI preferences (search, sort, layout, pool mode, separators)
 
 local Logger = require('arkitekt.debug.logger')

@@ -1,5 +1,5 @@
 -- @noindex
--- RegionPlaylist/domains/notification.lua
+-- RegionPlaylist/ui/state/notification.lua
 -- Manages status bar notifications and timed messages
 
 local M = {}

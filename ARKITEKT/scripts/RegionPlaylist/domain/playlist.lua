@@ -1,5 +1,5 @@
 -- @noindex
--- RegionPlaylist/domains/playlist.lua
+-- RegionPlaylist/domain/playlist.lua
 -- Manages playlist data, active playlist, and playlist operations
 
 local Logger = require('arkitekt.debug.logger')

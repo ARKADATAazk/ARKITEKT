@@ -1,11 +1,11 @@
 -- @noindex
--- Arkitekt/features/region_playlist/engine/engine.lua
+-- RegionPlaylist/domain/playback/controller.lua
 -- Refactored: State, Transport, and Transitions extracted
 
-local EngineState = require('RegionPlaylist.engine.engine_state')
-local EngineTransport = require('RegionPlaylist.engine.transport')
-local EngineTransitions = require('RegionPlaylist.engine.transitions')
-local EngineQuantize = require('RegionPlaylist.engine.quantize')
+local EngineState = require('RegionPlaylist.domain.playback.state')
+local EngineTransport = require('RegionPlaylist.domain.playback.transport')
+local EngineTransitions = require('RegionPlaylist.domain.playback.transitions')
+local EngineQuantize = require('RegionPlaylist.domain.playback.quantize')
 
 local M = {}
 local Engine = {}

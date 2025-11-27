@@ -1,5 +1,5 @@
 -- @noindex
--- RegionPlaylist/core/app_state.lua
+-- RegionPlaylist/app/state.lua
 -- Single-source-of-truth app state (playlist expansion handled lazily)
 --[[
 The app layer is now the authoritative owner of playlist structure. Engine-side
@@ -10,19 +10,19 @@ sync_playlist_to_engine() step and guarantees nested playlists expand exactly
 once per invalidation.
 ]]
 
-local CoordinatorBridge = require("RegionPlaylist.engine.coordinator_bridge")
+local CoordinatorBridge = require("RegionPlaylist.data.bridge")
 local ark = require('arkitekt')
-local RegionState = require("RegionPlaylist.storage.persistence")
+local RegionState = require("RegionPlaylist.data.storage")
 local UndoManager = require("arkitekt.core.undo_manager")
-local UndoBridge = require("RegionPlaylist.storage.undo_bridge")
+local UndoBridge = require("RegionPlaylist.data.undo")
 local Constants = require("RegionPlaylist.defs.constants")
 local ProjectMonitor = require("arkitekt.reaper.project_monitor")
-local Animation = require("RegionPlaylist.domains.animation")
-local Notification = require("RegionPlaylist.domains.notification")
-local UIPreferences = require("RegionPlaylist.domains.ui_preferences")
-local Region = require("RegionPlaylist.domains.region")
-local Dependency = require("RegionPlaylist.domains.dependency")
-local Playlist = require("RegionPlaylist.domains.playlist")
+local Animation = require("RegionPlaylist.ui.state.animation")
+local Notification = require("RegionPlaylist.ui.state.notification")
+local UIPreferences = require("RegionPlaylist.ui.state.preferences")
+local Region = require("RegionPlaylist.domain.region")
+local Dependency = require("RegionPlaylist.domain.dependency")
+local Playlist = require("RegionPlaylist.domain.playlist")
 local Logger = require('arkitekt.debug.logger')
 
 local M = {}
@@ -30,7 +30,7 @@ local M = {}
 -- Set to true for verbose app state logging
 local DEBUG_APP_STATE = false
 
-package.loaded["RegionPlaylist.core.app_state"] = M
+package.loaded["RegionPlaylist.app.state"] = M
 
 -- Generate a deterministic color from a string (e.g., playlist ID)
 -- This ensures the same ID always produces the same color

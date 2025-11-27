@@ -1,7 +1,6 @@
 -- @noindex
--- RegionPlaylist/engine/engine_state.lua
+-- RegionPlaylist/domain/playback/state.lua
 -- Sequence-driven state management for region playlist engine
--- MODIFIED: Integrated Logger for debug output
 
 local Regions = require('arkitekt.reaper.regions')
 local Transport = require('arkitekt.reaper.transport')
@@ -21,7 +20,7 @@ local M = {}
 local State = {}
 State.__index = State
 
-package.loaded["RegionPlaylist.engine.engine_state"] = M
+package.loaded["RegionPlaylist.domain.playback.state"] = M
 
 function M.new(opts)
   opts = opts or {}

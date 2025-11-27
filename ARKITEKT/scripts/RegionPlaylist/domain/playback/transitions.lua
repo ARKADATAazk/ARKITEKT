@@ -1,5 +1,5 @@
 -- @noindex
--- Arkitekt/features/region_playlist/engine/transitions.lua
+-- RegionPlaylist/domain/playback/transitions.lua
 -- Smooth transition logic between regions - FIXED: Handle same-region repeats with time-based transitions
 -- MODIFIED: Integrated Logger for debug output
 

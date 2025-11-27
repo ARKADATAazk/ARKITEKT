@@ -1,12 +1,11 @@
 -- @noindex
--- RegionPlaylist/engine/coordinator_bridge.lua
+-- RegionPlaylist/data/bridge.lua
 -- Sequence-driven coordinator bridge that lazily expands playlists on demand
--- MODIFIED: Integrated Logger for debug output
 
-local Engine = require("RegionPlaylist.engine.core")
-local Playback = require("RegionPlaylist.engine.playback")
-local RegionState = require("RegionPlaylist.storage.persistence")
-local SequenceExpander = require("RegionPlaylist.core.sequence_expander")
+local Engine = require("RegionPlaylist.domain.playback.controller")
+local Playback = require("RegionPlaylist.domain.playback.loop")
+local RegionState = require("RegionPlaylist.data.storage")
+local SequenceExpander = require("RegionPlaylist.domain.playback.expander")
 local Logger = require("arkitekt.debug.logger")
 local Callbacks = require("arkitekt.core.callbacks")
 
@@ -22,7 +21,7 @@ local Transport = require('arkitekt.reaper.transport')
 
 local M = {}
 
-package.loaded["RegionPlaylist.engine.coordinator_bridge"] = M
+package.loaded["RegionPlaylist.data.bridge"] = M
 
 -- Use framework callback wrapper instead of local implementation
 local safe_call = Callbacks.safe_call

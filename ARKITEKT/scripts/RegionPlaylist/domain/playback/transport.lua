@@ -1,5 +1,5 @@
 -- @noindex
--- Arkitekt/features/region_playlist/engine/transport.lua
+-- RegionPlaylist/domain/playback/transport.lua
 -- Transport control and seeking logic
 
 local Logger = require('arkitekt.debug.logger')

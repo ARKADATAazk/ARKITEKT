@@ -15,10 +15,10 @@ function M.run_all()
   local results = {}
 
   -- Run each registered suite
-  results.region = TestRunner.run("RegionPlaylist.domains.region")
-  results.playlist = TestRunner.run("RegionPlaylist.domains.playlist")
-  results.ui_preferences = TestRunner.run("RegionPlaylist.domains.ui_preferences")
-  results.dependency = TestRunner.run("RegionPlaylist.domains.dependency")
+  results.region = TestRunner.run("RegionPlaylist.domain.region")
+  results.playlist = TestRunner.run("RegionPlaylist.domain.playlist")
+  results.ui_preferences = TestRunner.run("RegionPlaylist.ui.state.preferences")
+  results.dependency = TestRunner.run("RegionPlaylist.domain.dependency")
 
   -- Calculate totals
   local total = 0

@@ -16,8 +16,8 @@ local profiler_enabled = ProfilerInit.init()
 -- ============================================================================
 
 local Shell = require("arkitekt.app.shell")
-local Config = require("RegionPlaylist.core.config")
-local State = require("RegionPlaylist.core.app_state")
+local Config = require("RegionPlaylist.app.config")
+local State = require("RegionPlaylist.app.state")
 local GUI = require("RegionPlaylist.ui.gui")
 local StatusConfig = require("RegionPlaylist.ui.status")
 local hexrgb = ark.Colors.hexrgb

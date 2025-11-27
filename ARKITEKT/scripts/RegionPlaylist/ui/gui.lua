@@ -5,8 +5,8 @@
 local ImGui = require 'imgui' '0.10'
 local RegionTiles = require("RegionPlaylist.ui.tiles.coordinator")
 local Shortcuts = require("RegionPlaylist.ui.shortcuts")
-local PlaylistController = require("RegionPlaylist.core.controller")
-local Config = require('RegionPlaylist.core.config')
+local PlaylistController = require("RegionPlaylist.app.controller")
+local Config = require('RegionPlaylist.app.config')
 local BatchOperations = require("RegionPlaylist.ui.batch_operations")
 
 local TransportView = require("RegionPlaylist.ui.views.transport.transport_view")

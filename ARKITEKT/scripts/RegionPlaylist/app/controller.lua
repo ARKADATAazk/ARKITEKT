@@ -1,5 +1,5 @@
 -- @noindex
--- RegionPlaylist/core/controller.lua
+-- RegionPlaylist/app/controller.lua
 -- Centralized playlist operations with automatic undo/save/sync
 -- Relies on bridge invalidate logic instead of manual engine sync
 
@@ -13,7 +13,7 @@ Controller.__index = Controller
 -- Set to true for verbose controller debugging
 local DEBUG_CONTROLLER = false
 
-package.loaded["RegionPlaylist.core.controller"] = M
+package.loaded["RegionPlaylist.app.controller"] = M
 
 function M.new(state_module, settings, undo_manager)
   local ctrl = setmetatable({
@@ -92,7 +92,7 @@ function Controller:create_playlist(name)
   return self:_with_undo(function()
     local new_id = self:_generate_playlist_id()
 
-    local RegionState = require("RegionPlaylist.storage.persistence")
+    local RegionState = require("RegionPlaylist.data.storage")
 
     -- Generate human-readable default name based on count
     local default_name = "Playlist " .. tostring(#self.state.get_playlists() + 1)
@@ -142,7 +142,7 @@ function Controller:duplicate_playlist(id)
 
   return self:_with_undo(function()
     local new_id = self:_generate_playlist_id()
-    local RegionState = require("RegionPlaylist.storage.persistence")
+    local RegionState = require("RegionPlaylist.data.storage")
 
     -- Deep copy items with proper structure and new keys
     local new_items = {}

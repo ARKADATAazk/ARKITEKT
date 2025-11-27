@@ -1,5 +1,5 @@
 -- @noindex
--- RegionPlaylist/domains/region.lua
+-- RegionPlaylist/domain/region.lua
 -- Manages region data cache and pool ordering
 
 local Logger = require('arkitekt.debug.logger')

@@ -7,7 +7,7 @@ local ImGui = require 'imgui' '0.10'
 local ark = require('arkitekt')
 
 local TileFXConfig = require('arkitekt.gui.renderers.tile.defaults')
-local TileUtil = require('RegionPlaylist.core.tile_utilities')
+local TileUtil = require('RegionPlaylist.ui.tile_utilities')
 local BaseRenderer = require('RegionPlaylist.ui.tiles.renderers.base')
 local Background = require('arkitekt.gui.draw.patterns')
 

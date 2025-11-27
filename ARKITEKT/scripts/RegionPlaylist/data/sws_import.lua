@@ -2,7 +2,7 @@
 -- RegionPlaylist/app/sws_importer.lua
 -- Import playlists from SWS Region Playlist format
 
-local RegionState = require("RegionPlaylist.storage.persistence")
+local RegionState = require("RegionPlaylist.data.storage")
 local ark = require('arkitekt')
 local M = {}
 
