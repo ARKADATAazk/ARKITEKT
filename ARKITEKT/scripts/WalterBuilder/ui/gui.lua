@@ -255,13 +255,19 @@ function GUI:draw(ctx, window, shell_state)
   -- Draw canvas
   local canvas_result = self.canvas:draw(ctx)
 
-  -- Handle canvas selection
+  -- Handle canvas events
   if canvas_result then
     if canvas_result.type == "select" then
       self.State.set_selected(canvas_result.element)
       self.properties_panel:set_element(canvas_result.element)
     elseif canvas_result.type == "select_track" then
       self.State.set_selected_track(canvas_result.track)
+    elseif canvas_result.type == "resize_width" then
+      -- Width changed - sync to state
+      self.State.set_parent_size(canvas_result.width, self.State.get_parent_size())
+    elseif canvas_result.type == "resize_track" then
+      -- Track height changed - track object already updated, just sync canvas
+      self.canvas:set_selected_track(canvas_result.track)
     end
   end
 

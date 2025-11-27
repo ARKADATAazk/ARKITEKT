@@ -54,11 +54,12 @@ function M.new(opts)
     },
 
     -- Interaction state
-    dragging = nil,  -- nil, "right", "bottom", "corner"
+    dragging = nil,  -- nil, "right", "bottom", "corner", "width", "track_height"
     drag_start_w = 0,
     drag_start_h = 0,
     drag_start_x = 0,
     drag_start_y = 0,
+    drag_track = nil,  -- Track being resized
 
     -- Selection
     selected_element = nil,
@@ -302,9 +303,10 @@ function Canvas:handle_interaction(ctx, canvas_x, canvas_y, handles)
   return nil
 end
 
--- Draw track list view
+-- Draw track list view with resize handles
 function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
   local result = nil
+  local hs = self.config.handle_size  -- Handle size
 
   -- Calculate total height needed for all tracks
   local total_height = 0
@@ -317,47 +319,170 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
   -- Canvas position (left-aligned with padding, scrollable vertically)
   local canvas_x = win_x + 20
   local canvas_y = win_y + 10 - self.scroll_y
+  local visible_top = win_y + 10
+  local visible_bottom = win_y + win_h - 10
 
-  -- Draw tracks
+  -- Draw tracks and collect resize handle positions
   local track_y = canvas_y
+  local track_handles = {}  -- Store track bottom handles for interaction
+
   for i, track in ipairs(self.tracks) do
     if track.visible then
       local is_selected = (track == self.selected_track)
+      local track_bottom = track_y + track.height
 
-      -- Draw track background and info
-      self.track_renderer:draw_track(ctx, dl, canvas_x, track_y, self.parent_w, track, {
-        selected = is_selected,
-        index = i,
-      })
-
-      -- Draw elements within this track
-      local sim = Simulator.simulate(self.elements, self.parent_w, track.height)
-      for _, sim_result in ipairs(sim) do
-        local elem_is_selected = sim_result.element == self.selected_element and is_selected
-        local elem_is_hovered = sim_result.element == self.hovered_element
-
-        -- Offset element by track position
-        local offset_result = {
-          element = sim_result.element,
-          rect = {
-            x = sim_result.rect.x,
-            y = sim_result.rect.y,
-            w = sim_result.rect.w,
-            h = sim_result.rect.h,
-          },
-          h_behavior = sim_result.h_behavior,
-          v_behavior = sim_result.v_behavior,
-        }
-
-        self.renderer:draw_element(ctx, dl, canvas_x, track_y, offset_result, {
-          selected = elem_is_selected,
-          hovered = elem_is_hovered,
-          show_attachments = self.config.show_attachments,
+      -- Only draw if track is visible in the scrollable area
+      if track_bottom > visible_top and track_y < visible_bottom then
+        -- Draw track background and info
+        self.track_renderer:draw_track(ctx, dl, canvas_x, track_y, self.parent_w, track, {
+          selected = is_selected,
+          index = i,
         })
+
+        -- Draw elements within this track
+        local sim = Simulator.simulate(self.elements, self.parent_w, track.height)
+        for _, sim_result in ipairs(sim) do
+          local elem_is_selected = sim_result.element == self.selected_element and is_selected
+          local elem_is_hovered = sim_result.element == self.hovered_element
+
+          -- Offset element by track position
+          local offset_result = {
+            element = sim_result.element,
+            rect = {
+              x = sim_result.rect.x,
+              y = sim_result.rect.y,
+              w = sim_result.rect.w,
+              h = sim_result.rect.h,
+            },
+            h_behavior = sim_result.h_behavior,
+            v_behavior = sim_result.v_behavior,
+          }
+
+          self.renderer:draw_element(ctx, dl, canvas_x, track_y, offset_result, {
+            selected = elem_is_selected,
+            hovered = elem_is_hovered,
+            show_attachments = self.config.show_attachments,
+          })
+        end
+
+        -- Track height resize handle (bottom edge, center)
+        local track_handle = {
+          x = canvas_x + self.parent_w / 2 - hs,
+          y = track_bottom - hs / 2,
+          w = hs * 2,
+          h = hs,
+          track = track,
+          track_index = i,
+        }
+        track_handles[#track_handles + 1] = track_handle
+
+        -- Draw track height handle
+        local handle_color = (self.dragging == "track_height" and self.drag_track == track)
+                           and Colors.CANVAS.HANDLE_ACTIVE or Colors.CANVAS.HANDLE_NORMAL
+        ImGui.DrawList_AddRectFilled(dl,
+          track_handle.x, track_handle.y,
+          track_handle.x + track_handle.w, track_handle.y + track_handle.h,
+          handle_color, 2)
       end
 
       track_y = track_y + track.height
     end
+  end
+
+  -- Width resize handle (right edge of track list, vertically centered)
+  local list_height = math.min(total_height, win_h - 20)
+  local width_handle = {
+    x = canvas_x + self.parent_w - hs / 2,
+    y = win_y + 10 + list_height / 2 - hs,
+    w = hs,
+    h = hs * 2,
+  }
+
+  -- Draw width resize handle
+  local width_handle_color = (self.dragging == "width")
+                           and Colors.CANVAS.HANDLE_ACTIVE or Colors.CANVAS.HANDLE_NORMAL
+  ImGui.DrawList_AddRectFilled(dl,
+    width_handle.x, width_handle.y,
+    width_handle.x + width_handle.w, width_handle.y + width_handle.h,
+    width_handle_color, 2)
+
+  -- Handle mouse interaction
+  local mx, my = ImGui.GetMousePos(ctx)
+
+  -- Check for drag start
+  if ImGui.IsMouseClicked(ctx, 0) then
+    -- Check width handle
+    if point_in_rect(mx, my, width_handle) then
+      self.dragging = "width"
+      self.drag_start_w = self.parent_w
+      self.drag_start_x = mx
+    else
+      -- Check track height handles
+      local handle_hit = false
+      for _, handle in ipairs(track_handles) do
+        if point_in_rect(mx, my, handle) then
+          self.dragging = "track_height"
+          self.drag_track = handle.track
+          self.drag_start_h = handle.track.height
+          self.drag_start_y = my
+          handle_hit = true
+          break
+        end
+      end
+
+      -- If no handle hit, check for track/element selection
+      if not handle_hit then
+        local rel_x = mx - canvas_x
+        local rel_y = my - canvas_y + self.scroll_y
+
+        if rel_x >= 0 and rel_x <= self.parent_w then
+          -- Find clicked track
+          local track_top = 0
+          for _, track in ipairs(self.tracks) do
+            if track.visible then
+              if rel_y >= track_top and rel_y < track_top + track.height then
+                self.selected_track = track
+                result = { type = "select_track", track = track }
+
+                -- Check for element within track
+                local track_rel_y = rel_y - track_top
+                local sim = Simulator.simulate(self.elements, self.parent_w, track.height)
+                local clicked_elem = Simulator.hit_test(sim, rel_x, track_rel_y)
+                if clicked_elem then
+                  self.selected_element = clicked_elem
+                  result = { type = "select", element = clicked_elem, track = track }
+                end
+                break
+              end
+              track_top = track_top + track.height
+            end
+          end
+        end
+      end
+    end
+  end
+
+  -- Handle dragging
+  if self.dragging and ImGui.IsMouseDown(ctx, 0) then
+    if self.dragging == "width" then
+      local dx = mx - self.drag_start_x
+      local new_w = self.drag_start_w + dx
+      new_w = math.max(self.config.min_parent_w, math.min(self.config.max_parent_w, new_w))
+      self.parent_w = math.floor(new_w)
+      result = { type = "resize_width", width = self.parent_w }
+    elseif self.dragging == "track_height" and self.drag_track then
+      local dy = my - self.drag_start_y
+      local new_h = self.drag_start_h + dy
+      new_h = math.max(25, math.min(200, new_h))  -- Min 25px, max 200px per track
+      self.drag_track.height = math.floor(new_h)
+      result = { type = "resize_track", track = self.drag_track, height = self.drag_track.height }
+    end
+  end
+
+  -- End dragging
+  if ImGui.IsMouseReleased(ctx, 0) then
+    self.dragging = nil
+    self.drag_track = nil
   end
 
   -- Handle mouse scroll
@@ -367,39 +492,7 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
     self.scroll_y = math.max(0, math.min(total_height - win_h + 40, self.scroll_y - wheel * scroll_speed))
   end
 
-  -- Handle track selection on click
-  local mx, my = ImGui.GetMousePos(ctx)
-  if ImGui.IsMouseClicked(ctx, 0) then
-    local rel_x = mx - canvas_x
-    local rel_y = my - canvas_y + self.scroll_y
-
-    if rel_x >= 0 and rel_x <= self.parent_w then
-      -- Find clicked track
-      local track_top = 0
-      for _, track in ipairs(self.tracks) do
-        if track.visible then
-          if rel_y >= track_top and rel_y < track_top + track.height then
-            self.selected_track = track
-            result = { type = "select_track", track = track }
-
-            -- Check for element within track
-            local track_rel_y = rel_y - track_top
-            local sim = Simulator.simulate(self.elements, self.parent_w, track.height)
-            local clicked_elem = Simulator.hit_test(sim, rel_x, track_rel_y)
-            if clicked_elem then
-              self.selected_element = clicked_elem
-              result = { type = "select", element = clicked_elem, track = track }
-            end
-            break
-          end
-          track_top = track_top + track.height
-        end
-      end
-    end
-  end
-
   -- Draw border around the track list area
-  local list_height = math.min(total_height, win_h - 20)
   ImGui.DrawList_AddRect(dl,
     canvas_x, win_y + 10,
     canvas_x + self.parent_w, win_y + 10 + list_height,
@@ -481,6 +574,16 @@ function Canvas:draw(ctx)
 
   -- Draw controls below canvas
   ImGui.Text(ctx, string.format("TCP Width: %d px", self.parent_w))
+
+  -- Show selected track height in tracks view
+  if self.view_mode == M.VIEW_TRACKS and self.selected_track then
+    ImGui.SameLine(ctx, 0, 15)
+    ImGui.Text(ctx, string.format("Track: %s  H: %d px", self.selected_track.name, self.selected_track.height))
+  elseif self.view_mode == M.VIEW_SINGLE then
+    ImGui.SameLine(ctx, 0, 15)
+    ImGui.Text(ctx, string.format("H: %d px", self.parent_h))
+  end
+
   ImGui.SameLine(ctx, 0, 20)
 
   -- View mode toggle
