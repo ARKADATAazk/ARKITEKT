@@ -1,0 +1,801 @@
+WALTER Reference
+WALTER (Window Arrangement Logic Template Engine for REAPER)
+Commands
+Layouts
+Expressions
+Scalar Values
+Edge Attachment Coordinates
+UI Elements
+
+top  WALTER (Window Arrangement Logic Template Engine for REAPER)
+
+WALTER is a system to define the visual layout and appearance of objects within REAPER -- currently, it can be used to customize the layout and appearance of the REAPER track panels, mixer panels, envelope panels, transport, and so on.
+
+WALTER commands are defined in two places:
+In a theme's rtconfig.txt, specifying layout information specific to the theme (for more information on this, see XXX)
+In REAPER's Plugins/default_rules.txt, which is used when a theme does not define any WALTER in its rtconfig.txt (such as classic 3.x and 2.x themes)
+top  Commands
+
+clear
+Clears a particular attribute (or wildcard list of attributes) to empty
+Examples:
+        clear tcp.mute
+        clear tcp.*
+reset
+Resets a particular attribute (or wildcard list of attributes) to their default settings
+Examples:
+        reset tcp.mute
+        reset tcp.*
+set
+Sets an attribute or user variable to an expression. For information on what expression can be, see "Expressions" below. Note that you do not need to declare use variables, simply setting them is sufficient. As a matter of etiquette, do not use "." in user variables (although you can), names with "." in them are reserved for future expansion.
+
+Examples:
+        set tcp.mute [0 0 10 10]
+        set myvar w<100 [0 0 10 10] [20 20 10 10]
+        set myvar w<100 [0 0 10 10] w<200 [20 20 10 10] [40 40 10 10]
+def
+Defines a value to be replaced with another value (e.g. a preprocessor #define). Example:
+        def square10 10 10
+        set tcp.mute [0 0 square10] ; sets tcp.mute to [0 0 10 10]
+        def two_coords [10 10 0 0] [0 0 10 10]
+        set tcp.mute + two_coords   ; sets tcp.mute to [10 10 10 10]
+        set tcp.mute w<100 two_coords ; like set.tcp.mute w<100 [10 10 0 0] [0 0 10 10]
+front
+Brings an element to the front of the Z order. Note that the ordering of elements is static and can't be affected by logic. Example (supposing you wanted the mute button to always be above the solo button in the Z order):
+        front tcp.solo
+        front tcp.mute
+macro (REAPER 5.0+)
+Defines a macro with any number of parameters which can be used later. Example:
+   macro setall dest src
+      set dest [src src src src src src src src]
+      set master.##dest dest
+   endmacro
+   setall tcp.mute 1  ; set tcp.mute [1 1 1 1 1 1 1], set master.tcp.mute tcp.mute
+Note that using ## in a macro allows the parameter to be concatenated with another named string.
+
+
+define_parameter (REAPER 6.0+)
+Defines a ReaScript-accessible user-defined parameter which the WALTER code can use. The default theme adjuster script will allow tweaking the first 10 parameters. Example:
+        ;                variable name     description for user   default  minimum maximum
+        define_parameter "hide_mute"       "Hide Mute Button"     0        0       1
+
+        ; later in script, hide tcp.mute if hide_mute is set
+        set tcp.mute hide_mute==1 [0]
+
+        ;  note that variable name is used to make the value persist for this theme
+custom (REAPER 7.0+)
+Defines a custom element. Usage:
+  custom tcp.custom.xyz text_label command_id accessibility_description button_image
+Note that the custom element name must include the string 'custom.' Custom elements become a normal part of the layout that contains them and can be used with set, front, etc. If command_id is specified and valid, and button_image is a valid image name, element will be a button. Otherwise, it will be a static text element with 'text_label.' tcp.custom.xyz.font .color and .margin may all be specified.
+
+top  Layouts
+
+The above commands can be specified at the top (global) level to control the default layouts. Additionally the author can define layouts, by using the commands "Layout" and "EndLayout". When defining a Layout, it inherits the behavior from the parent (or default) layout (at the time of first use in that UI context -- more on this later, ignore this comment for now).
+
+The Layout command can take one or two paraemeters -- the first parameter defines the name of that layout, and the optional second parameter defines the theme image subdirectory to use for that layout.
+
+Example:
+
+Layout "Mute button mixer"
+  clear mcp.*
+  set mcp.size [20 20]
+  set mcp.mute [0 0 20 20 0 0 1 1]
+EndLayout
+
+You can specify multiple Layouts with the same name, and they will be treated similar to a single Layout definiton, though for clarity it might be good to separate them based on the UI context (i.e. tcp.*, mcp.*, etc).
+
+If you define layouts with the same name for various UI contexts, you may wish to expose them as a global theme layout using GlobalLayout, which then lists that layout in the main layout list.
+
+top  Expressions
+
+An expression can be any of the following:
+coordinate_list
+Coordinate lists are a sequence of values in []s. They represent a sequence of 8 values, and only one is required (any omitted values are set to 0). The meaning of these values depends on context, but for most UI elements the meaning is as follows:
+        [0 0 20 20 0 0 1 1]
+         ^ ^ ^  ^  ^ ^ ^ ^
+         | | |  |  | | | |
+         | | |  |  | | | \ bottom attach: scale the bottom edge of control with parent height by this factor
+         | | |  |  | | \ right attach: scale the right edge of control with parent width by this factor
+         | | |  |  | \ top attach: scale the top edge of control with parent height by this factor
+         | | |  |  \ left attach: scale the left edge of control with parent width by this factor
+         | | |  \ height: height of control (before edge scaling, if any)
+         | | \ width: width of control (before edge scaling, if any)
+         | \ top: top edge of control (before edge scaling, if any)
+         \ left: left edge of control (before edge scaling, if any)
+            
+Other uses:
+*.size: the left/top coordinates are interpreted as default width/height. The width/height coordinates may specify "minimum sizes" for some contexts (notably tcp, mcp, envcp, etc). These minimum sizes aren't necessarily enforced in the UI, but instead it is kept larger with a "you're not seeing everything" image overlayed.
+*.margin: the first four coordinates represent left, top, right, bottom margins, respectively, and the fifth coordinate represents (when supported) where to justify text (0=left,0.5=center,1=right)
+*.color, the first four coordinates represent red, green, blue, and alpha (0-255), and the second four coordinates may specify another color (or may be ignored).
+Additionally, some fields may use the values in other ways (as documented).
+
+
+scalar_value
+You can use a scalar_value as an expression in the following ways:
+Specifying the scalar name/value directly -- in this case, all values in the coordinate_list get this value. For example:
+   set foo 1.0
+     and
+   set foo [1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0]
+...or
+   set foo h
+     and
+   set foo [h h h h h h h h]
+ 
+are equivalent.
+You can specify a scalar as a sparse coordinate_list by using the following syntax:
+   scalar@x or scalar@0
+   scalar@y or scalar@1
+   scalar@w or scalar@2
+   scalar@h or scalar@3
+   scalar@ls or scalar@4
+   scalar@ts or scalar@5
+   scalar@rs or scalar@6
+   scalar@bs or scalar@7
+For example, the following are equivalent:
+   set foo 1.0@w
+     and
+   set foo [0 0 1.0 0]
+...or
+   set foo recarm@w
+     and
+   set foo [0 0 recarm 0]
+As a shorthand for making a sparse coordinate_list from one value of a coordinate_list, "coordlist{x}@x" can be abbreviated as "coordlist@x".
+
+
+operator_string expression optional_expression
+If operator_string is specified, it can contain simple expressions, and allows you to either choose or combine the following expressions. The format of operator_string is one of the following (val1/val2 can be constant or scalar_value variables, see comment below) -- note the lack of spaces in the string:
+Comparisons:
+        val1<val2     --   if val1 is less than val2, use first expression, otherwise second
+        val1>val2     --   if val1 is greater than val2 ...
+        val1<=val2     --   if val1 is less than or equal to val2, use first expression, otherwise second
+        val1>=val2     --   if val1 is greater than or equal to val2 ...
+        val1==val2    --   if val1 equals val2 ...
+        val1!=val2    --   if val1 does not equal val2 ...
+        ?val1         --   if val1 is nonzero ...
+        !val1         --   if val1 is zero ...
+        val1&val2     --   bitwise AND (if any bit is set in both val1 and val2)
+
+Combinators:
+        +             --   sum first expression and second expression
+        -             --   subtract second expression from first expression  (REAPER 5.0+)
+        *             --   multiply first expression and second expression
+        /             --   divide first expression by second expression (REAPER 5.0+)
+        +:val1:val2   --   val1*(first expression) + val2*(second expression)
+        *:val1:val2   --   ((first expression)+[val1 val1...])*((second expression)+[val2 val2...])
+ 
+If optional_expression is not specified, then in its place will be the current value of the destination, which can also be abbreviated as "." -- so, for example, the following commands are all compiled to the same logic:
+  set var w<100 [0]
+  set var w<100 [0] .
+  set var w<100 [0] var
+            
+Finally, you can extend expressions (which are often nested and thus quite long) over multiple lines by ending each line (except the last) with a backslash ("\")(requires v4.25+).
+
+top  Scalar Values
+
+scalar: adjective: capable of being represented by a point on a scale (a single value, as compared to a coordinate_list)
+
+Scalar values in WALTER are generally read-only, meaning you cannot create scalar variables (though you can use coordinate_lists and read their values if needed).
+predefined scalar variables: these are variables which can be used in operator_string, or used directly as values in expressions The variables are:
+        w                 -- width of parent, pixels
+        h                 -- height of parent, pixels
+        reaper_version    -- REAPER version (i.e. 4.25)(requires v4.15+)
+        os_type           -- (REAPER 5.972+) - set to 0 on Windows, 1 on macOS, 2 on Linux
+
+Track specific:
+        folderstate       -- folder state of track, if applicable (0 for normal, 1 for folder, 
+                             -n for last track in folder(s))
+        folderdepth       -- positive if in a folder (how many folders deep)
+        maxfolderdepth    -- highest folder depth of any track
+        mcp_maxfolderdepth -- highest folder depth of any track in mixer(requires v4.15+)
+        recarm            -- nonzero if track record armed
+        tcp_iconsize      -- size of track panel icon column, if any
+        mcp_iconsize      -- size of mixer icon row, if any
+        mcp_wantextmix    -- flags indicating which extended mixer settings are desired 
+                             (&1 for inserts, &2 for sends, &4 for fx parms)
+        tracknch          -- number of track channels (2-64)
+        trackpanmode      -- pan mode of track (0=classic 3.x, 3=new balance, 5=stereo pan, 6=dualpan)
+        tcp_fxparms       -- count of TCP FX parameters visible (0-n) (including sends or FX items, if visible)
+        tcp_fxembed       -- (REAPER 6.0+) - count of TCP embedded FX visible
+        mcp_fxembed       -- (REAPER 6.38+) count of MCP embedded FX visible
+        tcp_sends_enabled -- (REAPER 7.0+) user preference to show sends in TCP is enabled
+        tcp_fxlist_enabled -- (REAPER 7.0+) user preference to show FX inserts in TCP is enabled
+        send_cnt          -- (REAPER 7.0+) number of sends
+        fx_parm_cnt       -- (REAPER 7.0+) number of FX parameters
+        fx_cnt            -- (REAPER 7.0+) number of FX inserts
+        recfx_cnt         -- (REAPER 7.0+) number of record input FX
+        trackcolor_valid  -- (REAPER 5.0+) - set to 1 if track color set
+        trackcolor_r      -- (REAPER 5.0+) - valid if trackcolor_valid set, red value 0-255
+        trackcolor_g      -- (REAPER 5.0+) - valid if trackcolor_valid set, green value 0-255
+        trackcolor_b      -- (REAPER 5.0+) - valid if trackcolor_valid set, blue value 0-255
+        mixer_visible     -- (REAPER 5.972+) - set to 1 if the mixer is visible
+        track_selected    -- (REAPER 5.972+) - set to 1 if track is selected
+        trackidx          -- (REAPER 6.47+) track index (0 for master, 1+)
+        ntracks           -- (REAPER 6.47+) total track count (not including master)
+        trackfixedlanes   -- (REAPER 7.0+) number of fixed lanes (or 0)
+
+Transport specific:
+        trans_flags       -- trans_flags&1 is nonzero if transport centered
+                             trans_flags&2 is nonzero if user wants playspeed controls visible
+                             trans_flags&4 is nonzero if user wants current time signature visible
+        trans_docked      -- nonzero if docked transport
+        trans_center      -- nonzero if transport centered
+
+Envelope specific:
+        envcp_type        -- 4 if FX envelope (can display additional controls)
+        env_selected      -- (REAPER 7.0+) set to 1 if envelope is selected
+accessing scalar components of coordinate_list/expressions:
+A coordinate_list is composed of 8 scalar values, as described above. To convert from a named coordinate_list to a scalar value, you can use the following syntax:
+   set tmp [1 2 3 4 5 6 7 8]
+   tmp{x} or tmp{0}  -- first item in coordinate_list (1)
+   tmp{y} or tmp{1}
+   tmp{w} or tmp{2}
+   tmp{h} or tmp{3}
+   tmp{ls} or tmp{4}
+   tmp{ts} or tmp{5}
+   tmp{rs} or tmp{6}
+   tmp{bs} or tmp{7}  -- last item in coordinate_list (8)
+So, in the above example, you can specify "tmp{y}" anywhere you would otherwise use "2". For example, instead of
+  set foo w>2 [1] [0 1 2 3 4 5 6 7]
+you could specify
+  set foo w>tmp{y} [1] [0 1 tmp{y} 3 4 5 6 7]
+Note: in the context of using coordinate_list names inside of [] coordinate_list, if the {} index is omitted, the current index will be used, i.e. the following are the same:
+  set tmp [1 2 3 4]
+  set foo [0 0 tmp tmp]
+    and
+  set foo [0 0 tmp{2} tmp{3}]
+
+
+
+
+top  Edge Attachment Coordinates
+
+For coordinate_lists that define a position, the 5th-8th items in a coordinate_list are used to specify "edge attachment". This controls how the position/size of the item changes in relation to changes of the parent size. These values are usually within 0..1, where 0 means that a change in the parent size does not affect a change in this coordinate, and 1 means that a change in the parent size changes this coordinate similarly, and 0.5 means that an increase of 2 pixels in the parent size will increase this coordinate by 1.
+
+For other types (fonts, margins), the meanings of these items is specific to those types.
+
+top  UI Elements
+
+The UI elements that you can define and/or modify are grouped into categories based on what part of the UI they define. The list is as follows:
+Track Control Panels (tcp.*)
+tcp.dragdropinfo: Sets additional offsets relating to drag/drop. First value is additional indentation for sibling track. Second value is additional indentation for child track (used for drawing and for mouse hit testing whether a track dragged will be a child track).
+tcp.env: Envelope/automation mode button
+tcp.folder: Folder button
+tcp.foldercomp: Folder compact button
+tcp.fx: FX button
+tcp.fxbyp: FX bypass button
+tcp.fxembed: FX Embed area rectangle (if omitted or with negative width/height, fx embed area is shared with fx parameter list)
+tcp.fxembedheader.color: FX Embed Header Color
+tcp.fxin: Input-FX button
+tcp.fxlist: FX insert list
+tcp.fxlist.font: FX insert list font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan, second is row height if nonzero). The third and fourth parameters, if nonzero, define the minimum and maximum column width. The fifth parameter specifies line spacing adjustment. The seventh parameter is is scrollbar gap size (scrollbar size includes this gap), and the eighth parameter (if nonzero) is scrollbar size
+tcp.fxlist.margin: FX insert list margins (first coordinate is left, third is right, fifth is alignment, sixth is scroll button size if positive. alignment is 0 for left, 0.5 for center, 1 for right). The eighth coordinate specifies gap between columns, if any
+tcp.fxparm: FX parameter list
+tcp.fxparm.font: FX parameter list font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan, second is row height if nonzero). The third and fourth parameters, if nonzero, define the minimum and maximum column width. The fifth parameter specifies line spacing adjustment. The seventh parameter is is scrollbar gap size (scrollbar size includes this gap), and the eighth parameter (if nonzero) is scrollbar size
+tcp.fxparm.margin: FX parameter list margins (first coordinate is left, third is right, fifth is alignment, sixth is scroll button size if positive. alignment is 0 for left, 0.5 for center, 1 for right). The eighth coordinate specifies gap between columns, if any. The seventh coordinate is alignment for FX instances
+tcp.fxparm.visflags: First element: FX parameters, second element: FX inserts, third element: sends. Set each element to -1 to force hide, 0 to use user preference, or 1 to force show.
+tcp.io: IO button
+tcp.label: Track name text
+tcp.label.color:
+Track name text colors
+First four coordinates: foreground
+Second four coordinates: background
+tcp.label.font: Track name text font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+tcp.label.margin: Track name text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+tcp.margin: Inner margins
+tcp.meter: Meter outer coordinates
+tcp.meter.inputlabel.color: First four coordinates: meter input source label text color
+tcp.meter.inputlabelbox.color:
+First four coordinates: background for meter input source label
+Second four coordinates: foreground/border color
+tcp.meter.readout.color:
+non-clipped peak text color
+Second four coordinates: clipped peak text color
+tcp.meter.rmsreadout.color: First four coordinates: RMS/LUFS mode readout text color
+tcp.meter.scale.color.lit.bottom:
+First four coordinates: meter scale, lit/bottom, foreground
+Second four coordinates: shadow color
+tcp.meter.scale.color.lit.top:
+First four coordinates: meter scale, lit/top, foreground
+Second four coordinates: shadow color
+tcp.meter.scale.color.unlit.bottom:
+First four coordinates: meter scale, unlit/bottom, foreground
+Second four coordinates: shadow color
+tcp.meter.scale.color.unlit.top:
+First four coordinates: meter scale, unlit/top, foreground
+Second four coordinates: shadow color
+tcp.meter.vu.div:
+First coordinate: division between channels in meter
+Second coordinate: division mode:
+0=default (increase center division as necessary)
+1=center, increasing middle by 1px max
+-1=for all even division/sizes (uncentered possibly)
+-2=possibly uneven sized channels
+
+Third coordinate: GR division adjustment: space to add or subtract between last channel and gain reduction meter, default spacing is half the regular channel division
+Fourth coordinate: maximum width for GR meter
+tcp.mute: Mute button
+tcp.pan: Pan fader/knob
+tcp.pan.color:
+Pan fader/knob colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+tcp.pan.fadermode:
+Pan fader/knob: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+tcp.pan.label: Pan readout text
+tcp.pan.label.color:
+Pan readout text colors
+First four coordinates: foreground
+Second four coordinates: background
+tcp.pan.label.font: Pan readout text font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+tcp.pan.label.margin: Pan readout text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+tcp.phase: Phase/polarity button
+tcp.recarm: Record arm button
+tcp.recinput: Record input text field
+tcp.recinput.color: Record input text field text color + background color
+tcp.recinput.font: Record input text field font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+tcp.recinput.margin: Record input text field margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+tcp.recmode: Record mode button
+tcp.recmon: Record monitor mode button
+tcp.sendlist: TCP send list area (dedicated for sends, optional)
+tcp.sendlist.font: TCP send list font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan, second is row height if nonzero). The third and fourth parameters, if nonzero, define the minimum and maximum column width. The fifth parameter specifies line spacing adjustment. The seventh parameter is is scrollbar gap size (scrollbar size includes this gap), and the eighth parameter (if nonzero) is scrollbar size
+tcp.sendlist.margin: TCP send list margins (first coordinate is left, third is right, fifth is alignment, sixth is scroll button size if positive. alignment is 0 for left, 0.5 for center, 1 for right). The eighth coordinate specifies gap between columns, if any
+tcp.size:
+First two coordinates: baseline size
+Second two coordinates: minimum size
+tcp.solo: Solo button
+tcp.trackidx: Track index
+tcp.trackidx.color:
+Track index colors
+First four coordinates: foreground
+Second four coordinates: background
+tcp.trackidx.font: Track index font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+tcp.trackidx.margin: Track index margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+tcp.volume: Volume fader
+tcp.volume.color:
+Volume fader colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+tcp.volume.fadermode:
+Volume fader: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+tcp.volume.label: Volume readout text
+tcp.volume.label.color:
+Volume readout text colors
+First four coordinates: foreground
+Second four coordinates: background
+tcp.volume.label.font: Volume readout text font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+tcp.volume.label.margin: Volume readout text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+tcp.width: Width fader/knob
+tcp.width.color:
+Width fader/knob colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+tcp.width.fadermode:
+Width fader/knob: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+tcp.width.label: Width readout text
+tcp.width.label.color:
+Width readout text colors
+First four coordinates: foreground
+Second four coordinates: background
+tcp.width.label.font: Width readout text font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+tcp.width.label.margin: Width readout text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+Master Track Control Panel (master.tcp.*)
+master.tcp.env: Envelope/automation mode button
+master.tcp.fx: FX button
+master.tcp.fxbyp: FX bypass button
+master.tcp.fxembed: FX Embed area rectangle (if omitted or with negative width/height, fx embed area is shared with fx parameter list)
+master.tcp.fxembedheader.color: FX Embed Header Color
+master.tcp.fxlist: FX insert list
+master.tcp.fxlist.font: FX insert list font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan, second is row height if nonzero). The third and fourth parameters, if nonzero, define the minimum and maximum column width. The fifth parameter specifies line spacing adjustment. The seventh parameter is is scrollbar gap size (scrollbar size includes this gap), and the eighth parameter (if nonzero) is scrollbar size
+master.tcp.fxlist.margin: FX insert list margins (first coordinate is left, third is right, fifth is alignment, sixth is scroll button size if positive. alignment is 0 for left, 0.5 for center, 1 for right). The eighth coordinate specifies gap between columns, if any
+master.tcp.fxparm: FX parameter list
+master.tcp.fxparm.font: FX parameter list font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan, second is row height if nonzero). The third and fourth parameters, if nonzero, define the minimum and maximum column width. The fifth parameter specifies line spacing adjustment. The seventh parameter is is scrollbar gap size (scrollbar size includes this gap), and the eighth parameter (if nonzero) is scrollbar size
+master.tcp.fxparm.margin: FX parameter list margins (first coordinate is left, third is right, fifth is alignment, sixth is scroll button size if positive. alignment is 0 for left, 0.5 for center, 1 for right). The eighth coordinate specifies gap between columns, if any. The seventh coordinate is alignment for FX instances
+master.tcp.fxparm.visflags: First element: FX parameters, second element: FX inserts, third element: sends. Set each element to -1 to force hide, 0 to use user preference, or 1 to force show.
+master.tcp.io: IO button
+master.tcp.label: Track name text
+master.tcp.label.color:
+Track name text colors
+First four coordinates: foreground
+Second four coordinates: background
+master.tcp.label.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+master.tcp.label.margin: Track name text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+master.tcp.margin: Inner margins
+master.tcp.meter: Meter outer coordinates
+master.tcp.meter.readout.color:
+non-clipped peak text color
+Second four coordinates: clipped peak text color
+master.tcp.meter.rmsreadout.color: First four coordinates: RMS/LUFS mode readout text color
+master.tcp.meter.scale.color.lit.bottom:
+First four coordinates: meter scale, lit/bottom, foreground
+Second four coordinates: shadow color
+master.tcp.meter.scale.color.lit.top:
+First four coordinates: meter scale, lit/top, foreground
+Second four coordinates: shadow color
+master.tcp.meter.scale.color.unlit.bottom:
+First four coordinates: meter scale, unlit/bottom, foreground
+Second four coordinates: shadow color
+master.tcp.meter.scale.color.unlit.top:
+First four coordinates: meter scale, unlit/top, foreground
+Second four coordinates: shadow color
+master.tcp.meter.vu.div:
+First coordinate: division between channels in meter
+Second coordinate: division mode:
+0=default (increase center division as necessary)
+1=center, increasing middle by 1px max
+-1=for all even division/sizes (uncentered possibly)
+-2=possibly uneven sized channels
+
+Third coordinate: GR division adjustment: space to add or subtract between last channel and gain reduction meter, default spacing is half the regular channel division
+Fourth coordinate: maximum width for GR meter
+master.tcp.mono: Mono button
+master.tcp.mute: Mute button
+master.tcp.pan: Pan fader/knob
+master.tcp.pan.color:
+Pan fader/knob colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+master.tcp.pan.fadermode:
+Pan fader/knob: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+master.tcp.pan.label: Pan readout text
+master.tcp.pan.label.color:
+Pan readout text colors
+First four coordinates: foreground
+Second four coordinates: background
+master.tcp.pan.label.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+master.tcp.pan.label.margin: Pan readout text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+master.tcp.sendlist: send list (hardware output list) area
+master.tcp.sendlist.font: send list area font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan, second is row height if nonzero). The third and fourth parameters, if nonzero, define the minimum and maximum column width. The fifth parameter specifies line spacing adjustment. The seventh parameter is is scrollbar gap size (scrollbar size includes this gap), and the eighth parameter (if nonzero) is scrollbar size
+master.tcp.sendlist.margin: send list area margins (first coordinate is left, third is right, fifth is alignment, sixth is scroll button size if positive. alignment is 0 for left, 0.5 for center, 1 for right). The eighth coordinate specifies gap between columns, if any
+master.tcp.size:
+First two coordinates: baseline size
+Second two coordinates: minimum size
+master.tcp.solo: Solo button
+master.tcp.volume: Volume fader
+master.tcp.volume.color:
+Volume fader colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+master.tcp.volume.fadermode:
+Volume fader: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+master.tcp.volume.label: Volume readout text
+master.tcp.volume.label.color:
+Volume readout text colors
+First four coordinates: foreground
+Second four coordinates: background
+master.tcp.volume.label.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+master.tcp.volume.label.margin: Volume readout text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+master.tcp.width: Width fader/knob
+master.tcp.width.color:
+Width fader/knob colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+master.tcp.width.fadermode:
+Width fader/knob: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+master.tcp.width.label: Width readout text
+master.tcp.width.label.color:
+Width readout text colors
+First four coordinates: foreground
+Second four coordinates: background
+master.tcp.width.label.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+master.tcp.width.label.margin: Width readout text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+Mixer Control Panel (mcp.*)
+mcp.env: Envelope/automation mode button
+mcp.extmixer.mode: (set to [1] to use mcp.extmixer.position. set to [-1] to use default handling but with mcp.extmixer.position as a margin)
+mcp.extmixer.position: Position of extended mixer elements (including FX, sends, FX parameters), only used if extmixer.mode is set to [1]. Also used as a margin if extmixer.mode is set to [-1]
+mcp.folder: Folder button
+mcp.fx: FX button
+mcp.fxbyp: FX bypass button
+mcp.fxin: Input-FX button
+mcp.fxlist.font: fx list font index font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan, second is row height if nonzero). The third and fourth parameters, if nonzero, define the minimum and maximum column width. The fifth parameter specifies line spacing adjustment. The seventh parameter is is scrollbar gap size (scrollbar size includes this gap), and the eighth parameter (if nonzero) is scrollbar size
+mcp.fxlist.margin: fx list margins (first coordinate is left, third is right, fifth is alignment, sixth is scroll button size if positive. alignment is 0 for left, 0.5 for center, 1 for right). The eighth coordinate specifies gap between columns, if any
+mcp.fxparm.font: fxparm list font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan, second is row height if nonzero). The third and fourth parameters, if nonzero, define the minimum and maximum column width. The fifth parameter specifies line spacing adjustment. The seventh parameter is is scrollbar gap size (scrollbar size includes this gap), and the eighth parameter (if nonzero) is scrollbar size
+mcp.fxparm.margin: fxparm list margins (first coordinate is left, third is right, fifth is alignment, sixth is scroll button size if positive. alignment is 0 for left, 0.5 for center, 1 for right). The eighth coordinate specifies gap between columns, if any
+mcp.io: IO button
+mcp.label: Track name text
+mcp.label.color:
+Track name text colors
+First four coordinates: foreground
+Second four coordinates: background
+mcp.label.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+mcp.label.margin: Track name text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+mcp.margin: Inner margins
+mcp.meter: Meter outer coordinates
+mcp.meter.inputlabel.color: First four coordinates: meter input source label text color
+mcp.meter.inputlabelbox.color:
+First four coordinates: background for meter input source label
+Second four coordinates: foreground/border color
+mcp.meter.readout.color:
+non-clipped peak text color
+Second four coordinates: clipped peak text color
+mcp.meter.rmsreadout.color: First four coordinates: RMS/LUFS mode readout text color
+mcp.meter.scale.color.lit.bottom:
+First four coordinates: meter scale, lit/bottom, foreground
+Second four coordinates: shadow color
+mcp.meter.scale.color.lit.top:
+First four coordinates: meter scale, lit/top, foreground
+Second four coordinates: shadow color
+mcp.meter.scale.color.unlit.bottom:
+First four coordinates: meter scale, unlit/bottom, foreground
+Second four coordinates: shadow color
+mcp.meter.scale.color.unlit.top:
+First four coordinates: meter scale, unlit/top, foreground
+Second four coordinates: shadow color
+mcp.meter.vu.div:
+First coordinate: division between channels in meter
+Second coordinate: division mode:
+0=default (increase center division as necessary)
+1=center, increasing middle by 1px max
+-1=for all even division/sizes (uncentered possibly)
+-2=possibly uneven sized channels
+
+Third coordinate: GR division adjustment: space to add or subtract between last channel and gain reduction meter, default spacing is half the regular channel division
+Fourth coordinate: maximum width for GR meter
+mcp.mute: Mute button
+mcp.pan: Pan fader/knob
+mcp.pan.color:
+Pan fader/knob colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+mcp.pan.fadermode:
+Pan fader/knob: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+mcp.pan.label: Pan readout text
+mcp.pan.label.color:
+Pan readout text colors
+First four coordinates: foreground
+Second four coordinates: background
+mcp.pan.label.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+mcp.pan.label.margin: Pan readout text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+mcp.phase: Phase/polarity button
+mcp.recarm: Record arm button
+mcp.recinput: Record input text field
+mcp.recinput.color: Record input text field text color + background color
+mcp.recinput.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+mcp.recinput.margin: Record input text field margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+mcp.recmode: Record mode button
+mcp.recmon: Record monitor mode button
+mcp.sendlist.font: send list font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan, second is row height if nonzero). The third and fourth parameters, if nonzero, define the minimum and maximum column width. The fifth parameter specifies line spacing adjustment. The seventh parameter is is scrollbar gap size (scrollbar size includes this gap), and the eighth parameter (if nonzero) is scrollbar size
+mcp.sendlist.margin: send list margins (first coordinate is left, third is right, fifth is alignment, sixth is scroll button size if positive. alignment is 0 for left, 0.5 for center, 1 for right). The eighth coordinate specifies gap between columns, if any
+mcp.size:
+First two coordinates: baseline size
+Second two coordinates: minimum size
+mcp.solo: Solo button
+mcp.trackidx: Track index
+mcp.trackidx.color:
+Track index colors
+First four coordinates: foreground
+Second four coordinates: background
+mcp.trackidx.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+mcp.trackidx.margin: Track index margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+mcp.volume: Volume fader
+mcp.volume.color:
+Volume fader colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+mcp.volume.fadermode:
+Volume fader: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+mcp.volume.label: Volume readout text
+mcp.volume.label.color:
+Volume readout text colors
+First four coordinates: foreground
+Second four coordinates: background
+mcp.volume.label.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+mcp.volume.label.margin: Volume readout text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+mcp.width: Width fader/knob
+mcp.width.color:
+Width fader/knob colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+mcp.width.fadermode:
+Width fader/knob: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+mcp.width.label: Width readout text
+mcp.width.label.color:
+Width readout text colors
+First four coordinates: foreground
+Second four coordinates: background
+mcp.width.label.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+mcp.width.label.margin: Width readout text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+Mixer Control Panel (master.mcp.*)
+master.mcp.env: Envelope/automation mode button
+master.mcp.extmixer.mode: (set to [1] to use mcp.extmixer.position. set to [-1] to use default handling but with mcp.extmixer.position as a margin)
+master.mcp.extmixer.position: Position of extended mixer elements (including FX, sends, FX parameters), only used if extmixer.mode is set to [1]. Also used as a margin if extmixer.mode is set to [-1]
+master.mcp.fx: FX button
+master.mcp.fxbyp: FX bypass button
+master.mcp.fxlist.font: fx list font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan, second is row height if nonzero). The third and fourth parameters, if nonzero, define the minimum and maximum column width. The fifth parameter specifies line spacing adjustment. The seventh parameter is is scrollbar gap size (scrollbar size includes this gap), and the eighth parameter (if nonzero) is scrollbar size
+master.mcp.fxlist.margin: fx list margins (first coordinate is left, third is right, fifth is alignment, sixth is scroll button size if positive. alignment is 0 for left, 0.5 for center, 1 for right). The eighth coordinate specifies gap between columns, if any
+master.mcp.fxparm.font: fxparm list font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan, second is row height if nonzero). The third and fourth parameters, if nonzero, define the minimum and maximum column width. The fifth parameter specifies line spacing adjustment. The seventh parameter is is scrollbar gap size (scrollbar size includes this gap), and the eighth parameter (if nonzero) is scrollbar size
+master.mcp.fxparm.margin: fxparm list margins (first coordinate is left, third is right, fifth is alignment, sixth is scroll button size if positive. alignment is 0 for left, 0.5 for center, 1 for right). The eighth coordinate specifies gap between columns, if any
+master.mcp.io: IO button
+master.mcp.label: Track name text
+master.mcp.label.color:
+Track name text colors
+First four coordinates: foreground
+Second four coordinates: background
+master.mcp.label.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+master.mcp.label.margin: Track name text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+master.mcp.margin: Inner margins
+master.mcp.menubutton: Mixer menu button
+master.mcp.meter: Meter outer coordinates
+master.mcp.meter.readout.color:
+non-clipped peak text color
+Second four coordinates: clipped peak text color
+master.mcp.meter.rmsreadout.color: First four coordinates: RMS/LUFS mode readout text color
+master.mcp.meter.scale.color.lit.bottom:
+First four coordinates: meter scale, lit/bottom, foreground
+Second four coordinates: shadow color
+master.mcp.meter.scale.color.lit.top:
+First four coordinates: meter scale, lit/top, foreground
+Second four coordinates: shadow color
+master.mcp.meter.scale.color.unlit.bottom:
+First four coordinates: meter scale, unlit/bottom, foreground
+Second four coordinates: shadow color
+master.mcp.meter.scale.color.unlit.top:
+First four coordinates: meter scale, unlit/top, foreground
+Second four coordinates: shadow color
+master.mcp.meter.vu.div:
+First coordinate: division between channels in meter
+Second coordinate: division mode:
+0=default (increase center division as necessary)
+1=center, increasing middle by 1px max
+-1=for all even division/sizes (uncentered possibly)
+-2=possibly uneven sized channels
+
+Third coordinate: GR division adjustment: space to add or subtract between last channel and gain reduction meter, default spacing is half the regular channel division
+Fourth coordinate: maximum width for GR meter
+master.mcp.meter.vu.rmsdiv:
+First coordinate: division between RMS meter channels.
+Second coordinate: adjust size of RMS in RMS+peak mode
+master.mcp.mono: Mono button
+master.mcp.mute: Mute button
+master.mcp.pan: Pan fader/knob
+master.mcp.pan.color:
+Pan fader/knob colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+master.mcp.pan.fadermode:
+Pan fader/knob: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+master.mcp.pan.label: Pan readout text
+master.mcp.pan.label.color:
+Pan readout text colors
+First four coordinates: foreground
+Second four coordinates: background
+master.mcp.pan.label.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+master.mcp.pan.label.margin: Pan readout text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+master.mcp.sendlist.font: send list font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan, second is row height if nonzero). The third and fourth parameters, if nonzero, define the minimum and maximum column width. The fifth parameter specifies line spacing adjustment. The seventh parameter is is scrollbar gap size (scrollbar size includes this gap), and the eighth parameter (if nonzero) is scrollbar size
+master.mcp.sendlist.margin: send list margins (first coordinate is left, third is right, fifth is alignment, sixth is scroll button size if positive. alignment is 0 for left, 0.5 for center, 1 for right). The eighth coordinate specifies gap between columns, if any
+master.mcp.size:
+First two coordinates: baseline size
+Second two coordinates: minimum size
+master.mcp.solo: Solo button
+master.mcp.volume: Volume fader
+master.mcp.volume.color:
+Volume fader colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+master.mcp.volume.fadermode:
+Volume fader: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+master.mcp.volume.label: Volume readout text
+master.mcp.volume.label.color:
+Volume readout text colors
+First four coordinates: foreground
+Second four coordinates: background
+master.mcp.volume.label.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+master.mcp.volume.label.margin: Volume readout text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+master.mcp.width: Width fader/knob
+master.mcp.width.color:
+Width fader/knob colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+master.mcp.width.fadermode:
+Width fader/knob: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+master.mcp.width.label: Width readout text
+master.mcp.width.label.color:
+Width readout text colors
+First four coordinates: foreground
+Second four coordinates: background
+master.mcp.width.label.font: font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+master.mcp.width.label.margin: Width readout text margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+Envelope Control Panel (envcp.*)
+envcp.arm: Arm button
+envcp.bypass: Bypass button
+envcp.fader: Envelope fader
+envcp.fader.color:
+Envelope fader colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+envcp.fader.fadermode:
+Envelope fader: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+envcp.hide: Hide button
+envcp.label: Envelope label
+envcp.label.color:
+Envelope label colors
+First four coordinates: foreground
+Second four coordinates: background
+envcp.label.font: Envelope label font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+envcp.label.margin: Envelope label margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+envcp.learn: Learn button
+envcp.margin: Inner margins
+envcp.mod: Parameter modulation button
+envcp.size:
+First two coordinates: baseline size
+Second two coordinates: minimum size
+envcp.value: Envelope value
+envcp.value.color:
+Envelope value colors
+First four coordinates: foreground
+Second four coordinates: background
+envcp.value.font: Envelope value font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+envcp.value.margin: Envelope value margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+Transport (trans.*)
+trans.automode: Automation mode button
+trans.bpm.edit: BPM text/edit
+trans.bpm.edit.color:
+BPM text/edit colors
+First four coordinates: foreground
+Second four coordinates: background
+trans.bpm.edit.font: BPM text/edit font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+trans.bpm.edit.margin: BPM text/edit margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+trans.bpm.tap: BPM tap button
+trans.bpm.tap.color:
+BPM tap button colors
+First four coordinates: foreground
+Second four coordinates: background
+trans.bpm.tap.font: BPM tap button font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+trans.bpm.tap.margin: BPM tap button margins
+trans.curtimesig: Time signature display
+trans.curtimesig.color:
+colors
+First four coordinates: foreground
+Second four coordinates: background
+trans.curtimesig.font: Time signature display font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+trans.fwd: Forward/end of project button
+trans.margin: Inner margins
+trans.pause: Pause button
+trans.play: Play button
+trans.rate: Playback rate text/edit
+trans.rate.color:
+Playback rate text/edit colors
+First four coordinates: foreground
+Second four coordinates: background
+trans.rate.fader: Playback rate slider
+trans.rate.fader.color:
+Playback rate slider colors
+First four coordinates: knob line color
+Second four coordinates: fader zero line color
+trans.rate.fader.fadermode:
+Playback rate slider: fader vs knob mode
+First coordinate: -1 to prevent knob, 1 to force knob, 0 for default
+trans.rate.font: Playback rate text/edit font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+trans.rate.margin: Playback rate text/edit margins (l,t,r,b) + alignment (alignment is 0 for left, 0.5 for center, 1 for right)
+trans.rec: Record button
+trans.repeat: Repeat button
+trans.rew: Rewind/start of project button
+trans.sel: Selection information/edit
+trans.sel.color:
+Selection information/edit colors
+First four coordinates: foreground
+Second four coordinates: background
+trans.sel.font: Selection information/edit font (first coordinate is font index, 1-8 user, 0=main, -1 = volpan)
+trans.sel.margin: Selection information/edit margins
+trans.size: Baseline size
+trans.size.dockedheight: First coordinate: desired docked height
+trans.size.minmax:
+First two coordinates: minimum size
+Second two coordinates: maximum size
+trans.status: Status display
+trans.status.color: Status display fg/bg colors
+trans.status.margin: Status display margins
+trans.stop: Stop button
+trans.timebase: Project timebase
