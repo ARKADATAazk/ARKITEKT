@@ -588,8 +588,8 @@ local function eval_tokens(tokens, pos, context)
     -- Get false branch
     local false_val, pos_after_false = eval_tokens(tokens, pos_after_true, context)
     if not false_val then
-      -- No false branch, use true value or zero
-      return condition and true_val or { 0 }, pos_after_true
+      -- No false branch: if condition is true, use true_val; if false, return nil (no change)
+      return condition and true_val or nil, pos_after_true
     end
 
     return condition and true_val or false_val, pos_after_false
