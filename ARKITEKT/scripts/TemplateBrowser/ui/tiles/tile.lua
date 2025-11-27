@@ -25,6 +25,10 @@ M.CONFIG = {
   hide_chips_below = 50,
   hide_path_below = 60,
   compact_mode_below = 70,
+
+  -- Stacked visual for multi-track templates
+  stack_offset = 3,        -- Pixel offset between layers
+  stack_max_layers = 3,    -- Maximum number of stack layers
 }
 
 -- Local aliases for frequently used helpers
@@ -32,6 +36,50 @@ local truncate_text = TileHelpers.truncate_text
 local is_favorited = TileHelpers.is_favorited
 local strip_parentheses = TileHelpers.strip_parentheses
 local get_display_vst = TileHelpers.get_display_vst
+
+-- Draw stacked layers behind tile for multi-track templates
+local function draw_stack_layers(ctx, dl, x1, y1, x2, y2, track_count, chip_color)
+  if track_count <= 1 then return end
+
+  -- Calculate number of layers (capped at max)
+  local num_layers = math.min(track_count - 1, M.CONFIG.stack_max_layers)
+  local offset = M.CONFIG.stack_offset
+  local rounding = 4
+
+  -- Stack layer colors (progressively darker/more transparent)
+  local STACK_BASE = hexrgb("#1E1E1E")
+  local STACK_BORDER = hexrgb("#2A2A2A")
+
+  -- Draw layers from back to front
+  for i = num_layers, 1, -1 do
+    local layer_offset = offset * i
+    local alpha_factor = 0.5 + (0.3 * (1 - i / num_layers))  -- More visible for closer layers
+
+    -- Layer background with color tint if chip_color exists
+    local layer_bg = STACK_BASE
+    local layer_border = STACK_BORDER
+    if chip_color then
+      local cr, cg, cb = ark.Colors.rgba_to_components(chip_color)
+      local br, bg_c, bb = ark.Colors.rgba_to_components(STACK_BASE)
+      local blend = 0.05  -- Very subtle tint
+      local r = math.floor(br * (1 - blend) + cr * blend)
+      local g = math.floor(bg_c * (1 - blend) + cg * blend)
+      local b = math.floor(bb * (1 - blend) + cb * blend)
+      layer_bg = ark.Colors.components_to_rgba(r, g, b, math.floor(255 * alpha_factor))
+    else
+      layer_bg = ark.Colors.with_alpha(STACK_BASE, math.floor(255 * alpha_factor))
+    end
+
+    -- Draw layer rectangle (offset to bottom-right)
+    local lx1 = x1 + layer_offset
+    local ly1 = y1 + layer_offset
+    local lx2 = x2 + layer_offset
+    local ly2 = y2 + layer_offset
+
+    ImGui.DrawList_AddRectFilled(dl, lx1, ly1, lx2, ly2, layer_bg, rounding)
+    ImGui.DrawList_AddRect(dl, lx1, ly1, lx2, ly2, ark.Colors.with_alpha(layer_border, math.floor(180 * alpha_factor)), rounding, 0, 1)
+  end
+end
 
 -- Calculate tile height based on content
 local function calculate_content_height(template, config)
@@ -58,6 +106,10 @@ function M.render(ctx, rect, template, state, metadata, animator)
   local tmpl_meta = metadata and metadata.templates[template.uuid]
   local chip_color = tmpl_meta and tmpl_meta.chip_color
   local is_favorite = is_favorited(template.uuid, metadata)
+
+  -- Draw stacked layers for multi-track templates (behind main tile)
+  local track_count = template.track_count or 1
+  draw_stack_layers(ctx, dl, x1, y1, x2, y2, track_count, chip_color)
 
   -- Animation tracking
   animator:track(template.uuid, 'hover', state.hover and 1.0 or 0.0, 12.0)
@@ -210,6 +262,32 @@ function M.render(ctx, rect, template, state, metadata, animator)
     local path_x = x2 - padding - actual_path_width
     local path_y = y2 - padding - 14  -- 14 is approx text height
     ark.Draw.text(dl, path_x, path_y, path_color, truncated_path)
+  end
+
+  -- Track count badge at bottom left (if multi-track template)
+  if tile_h >= M.CONFIG.hide_chips_below and track_count > 1 then
+    local badge_text = track_count .. "T"
+    local badge_text_w, badge_text_h = ImGui.CalcTextSize(ctx, badge_text)
+    local badge_padding_x = 5
+    local badge_padding_y = 2
+    local badge_w = badge_text_w + badge_padding_x * 2
+    local badge_h = badge_text_h + badge_padding_y * 2
+    local badge_x = content_x
+    local badge_y = y2 - padding - badge_h
+
+    -- Badge background (semi-transparent dark)
+    local badge_bg = hexrgb("#2A2A2ACC")
+    ImGui.DrawList_AddRectFilled(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_bg, M.CONFIG.badge_rounding)
+
+    -- Badge border (subtle)
+    local badge_border = hexrgb("#40404080")
+    ImGui.DrawList_AddRect(dl, badge_x, badge_y, badge_x + badge_w, badge_y + badge_h, badge_border, M.CONFIG.badge_rounding)
+
+    -- Badge text
+    local badge_text_color = hexrgb("#A8A8A8")
+    local badge_text_x = badge_x + badge_padding_x
+    local badge_text_y = badge_y + badge_padding_y
+    ark.Draw.text(dl, badge_text_x, badge_text_y, badge_text_color, badge_text)
   end
 
   -- Render favorite star in top-right corner using remix icon font

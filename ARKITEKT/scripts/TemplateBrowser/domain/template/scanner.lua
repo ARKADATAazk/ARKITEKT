@@ -18,6 +18,22 @@ local scan_state = {
   folders = {},
 }
 
+-- Count tracks in a template file (quick parse)
+local function count_tracks(filepath)
+  local file = io.open(filepath, "r")
+  if not file then return 1 end  -- Default to 1 if can't read
+
+  local count = 0
+  for line in file:lines() do
+    if line:match("^<TRACK") then
+      count = count + 1
+    end
+  end
+
+  file:close()
+  return count > 0 and count or 1  -- At least 1 track
+end
+
 -- Get REAPER's default track template path
 local function get_template_path()
   local resource_path = reaper.GetResourcePath()
@@ -63,6 +79,7 @@ local function scan_directory(path, relative_path, metadata)
 
       local uuid
       local fx_list = {}
+      local track_count = 1
       local needs_fx_parse = false
 
       if existing then
@@ -93,13 +110,24 @@ local function scan_directory(path, relative_path, metadata)
           Logger.debug("SCANNER", "FX: File changed (size): %s (%s -> %s)", template_name, tostring(existing.file_size), tostring(file_size))
           needs_fx_parse = true
           fx_list = {}
+          -- Re-count tracks on file change
+          track_count = count_tracks(full_path)
+          existing.track_count = track_count
         elseif missing_fx then
           Logger.debug("SCANNER", "FX: Missing FX data: %s", template_name)
           needs_fx_parse = true
           fx_list = {}
+          -- Count tracks if missing
+          if not existing.track_count then
+            track_count = count_tracks(full_path)
+            existing.track_count = track_count
+          else
+            track_count = existing.track_count
+          end
         else
-          -- File unchanged - use cached FX
+          -- File unchanged - use cached data
           fx_list = existing.fx or {}
+          track_count = existing.track_count or 1
         end
 
         -- Update file size in metadata
@@ -110,6 +138,9 @@ local function scan_directory(path, relative_path, metadata)
         -- Create new UUID and metadata entry
         uuid = Persistence.generate_uuid()
 
+        -- Count tracks for new template
+        track_count = count_tracks(full_path)
+
         local new_metadata = {
           uuid = uuid,
           name = template_name,
@@ -117,6 +148,7 @@ local function scan_directory(path, relative_path, metadata)
           tags = {},
           notes = "",
           fx = {},
+          track_count = track_count,
           created = os.time(),
           last_seen = os.time(),
           usage_count = 0,
@@ -131,7 +163,7 @@ local function scan_directory(path, relative_path, metadata)
 
         metadata.templates[uuid] = new_metadata
         needs_fx_parse = true
-        Logger.debug("SCANNER", "New template UUID: %s -> %s", template_name, uuid)
+        Logger.debug("SCANNER", "New template UUID: %s -> %s (%dT)", template_name, uuid, track_count)
       end
 
       templates[#templates + 1] = {
@@ -142,6 +174,7 @@ local function scan_directory(path, relative_path, metadata)
         relative_path = relative_path,
         folder = relative_path ~= "" and relative_path or "Root",
         fx = fx_list,
+        track_count = track_count,
         needs_fx_parse = needs_fx_parse,  -- Flag for queue
       }
     end
@@ -646,6 +679,7 @@ function M.scan_batch(state, batch_size)
 
     local uuid
     local fx_list = {}
+    local track_count = 1
     local needs_fx_parse = false
 
     if existing then
@@ -667,11 +701,23 @@ function M.scan_batch(state, batch_size)
       if size_changed then
         needs_fx_parse = true
         fx_list = {}
+        -- Re-count tracks on file change
+        track_count = count_tracks(full_path)
+        existing.track_count = track_count
       elseif missing_fx then
         needs_fx_parse = true
         fx_list = {}
+        -- Count tracks if missing
+        if not existing.track_count then
+          track_count = count_tracks(full_path)
+          existing.track_count = track_count
+        else
+          track_count = existing.track_count
+        end
       else
+        -- File unchanged - use cached data
         fx_list = existing.fx or {}
+        track_count = existing.track_count or 1
       end
 
       if file_size then
@@ -681,6 +727,9 @@ function M.scan_batch(state, batch_size)
       -- Create new UUID
       uuid = Persistence.generate_uuid()
 
+      -- Count tracks for new template
+      track_count = count_tracks(full_path)
+
       local new_metadata = {
         uuid = uuid,
         name = template_name,
@@ -688,6 +737,7 @@ function M.scan_batch(state, batch_size)
         tags = {},
         notes = "",
         fx = {},
+        track_count = track_count,
         created = os.time(),
         last_seen = os.time(),
         usage_count = 0,
@@ -711,6 +761,7 @@ function M.scan_batch(state, batch_size)
       relative_path = relative_path,
       folder = relative_path ~= "" and relative_path or "Root",
       fx = fx_list,
+      track_count = track_count,
       needs_fx_parse = needs_fx_parse,
     }
   end

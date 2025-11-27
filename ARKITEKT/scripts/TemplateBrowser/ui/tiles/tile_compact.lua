@@ -137,7 +137,16 @@ function M.render(ctx, rect, template, state, metadata, animator)
   ark.Draw.text(dl, cursor_x, cursor_y, name_color, truncated_name)
   cursor_x = cursor_x + name_width
 
-  -- Section 2: VST Info (just show count badge, no chips due to small height)
+  -- Section 2: Track count badge (if multi-track)
+  local track_count = template.track_count or 1
+  if track_count > 1 then
+    local track_text = track_count .. "T"
+    local track_color = ark.Colors.with_alpha(hexrgb("#A8A8A8"), 200)
+    ark.Draw.text(dl, cursor_x, cursor_y, track_color, track_text)
+    cursor_x = cursor_x + ImGui.CalcTextSize(ctx, track_text) + 12
+  end
+
+  -- Section 3: VST Info (just show count badge, no chips due to small height)
   if template.fx and #template.fx > 0 then
     local vst_text = string.format("VST:%d", #template.fx)
     local vst_color = ark.Colors.with_alpha(hexrgb("#6A9EFF"), 200)
@@ -147,14 +156,14 @@ function M.render(ctx, rect, template, state, metadata, animator)
     cursor_x = cursor_x + M.CONFIG.vst_section_width
   end
 
-  -- Section 3: Tags (just show count, no chips due to small height)
+  -- Section 4: Tags (just show count, no chips due to small height)
   if tmpl_meta and tmpl_meta.tags and #tmpl_meta.tags > 0 then
     local tags_text = string.format("Tags:%d", #tmpl_meta.tags)
     local tags_color = ark.Colors.with_alpha(hexrgb("#888888"), 180)
     ark.Draw.text(dl, cursor_x, cursor_y, tags_color, tags_text)
   end
 
-  -- Section 4: Favorite Star (right-aligned)
+  -- Section 5: Favorite Star (right-aligned)
   local star_size = 10  -- Smaller star for compact view
   local star_margin = 4
   local star_x = x2 - star_size - star_margin  -- Right side
