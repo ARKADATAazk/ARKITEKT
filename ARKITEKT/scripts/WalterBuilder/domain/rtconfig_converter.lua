@@ -82,7 +82,18 @@ local DEFAULT_CONTEXT = {
   ioHide_h = 0,
   phaseHide_h = 0,
   envHide_h = 0,
+  recarmHide_h = 0,
+  recmonHide_h = 0,
+  recmodeHide_h = 0,
+  folderHide_h = 0,
+  meterHide_h = 0,
   fixed_lanes_hide_h = 0,
+
+  -- Show flags (opposite of hide, some themes use these)
+  show_recarm_group = 1,
+  show_recmon_group = 1,
+  show_recmode_group = 1,
+  show_env_group = 1,
 }
 
 -- Check if a SET statement defines a variable (vs an element)
