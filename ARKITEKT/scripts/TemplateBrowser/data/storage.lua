@@ -2,6 +2,8 @@
 -- TemplateBrowser/data/storage.lua
 -- JSON persistence for tags, notes, and UUIDs
 
+local Logger = require('arkitekt.debug.logger')
+
 local M = {}
 
 -- Get REAPER's data directory
@@ -37,8 +39,8 @@ function M.log(message)
     log_file_handle:flush()  -- Ensure it's written immediately
   end
 
-  -- Also log to console
-  reaper.ShowConsoleMsg(message .. "\n")
+  -- Also log to Logger
+  Logger.debug("STORAGE", "%s", message)
 end
 
 function M.close_log()
@@ -268,15 +270,15 @@ function M.save_json(filename, data)
   if reaper.RecursiveCreateDirectory then
     local success = reaper.RecursiveCreateDirectory(data_dir, 0)
     if not success then
-      reaper.ShowConsoleMsg("ERROR: Failed to create directory: " .. data_dir .. "\n")
+      Logger.error("STORAGE", "Failed to create directory: %s", data_dir)
     end
   end
 
   local file, err = io.open(filepath, "w")
   if not file then
-    reaper.ShowConsoleMsg("ERROR: Failed to open file for writing: " .. filepath .. "\n")
+    Logger.error("STORAGE", "Failed to open file for writing: %s", filepath)
     if err then
-      reaper.ShowConsoleMsg("ERROR: " .. err .. "\n")
+      Logger.error("STORAGE", "%s", err)
     end
     return false
   end
@@ -284,14 +286,14 @@ function M.save_json(filename, data)
   local json_str = json_encode(data)
   local write_ok, write_err = file:write(json_str)
   if not write_ok then
-    reaper.ShowConsoleMsg("ERROR: Failed to write data: " .. tostring(write_err) .. "\n")
+    Logger.error("STORAGE", "Failed to write data: %s", tostring(write_err))
     file:close()
     return false
   end
 
   file:close()
 
-  reaper.ShowConsoleMsg("Saved metadata: " .. filepath .. "\n")
+  Logger.debug("STORAGE", "Saved metadata: %s", filepath)
   return true
 end
 
@@ -303,7 +305,7 @@ function M.load_json(filename)
 
   local file = io.open(filepath, "r")
   if not file then
-    reaper.ShowConsoleMsg("No existing data: " .. filepath .. "\n")
+    Logger.debug("STORAGE", "No existing data: %s", filepath)
     return nil
   end
 
@@ -311,7 +313,7 @@ function M.load_json(filename)
   file:close()
 
   local data = json_decode(content)
-  reaper.ShowConsoleMsg("Loaded: " .. filepath .. "\n")
+  Logger.debug("STORAGE", "Loaded: %s", filepath)
   return data
 end
 
@@ -391,7 +393,7 @@ function M.load_metadata()
       is_system = true,  -- Mark as non-deletable system folder
       created = os.time(),
     }
-    reaper.ShowConsoleMsg("Created default Favorites virtual folder\n")
+    Logger.debug("STORAGE", "Created default Favorites virtual folder")
   elseif not data.virtual_folders[favorites_id].is_system then
     -- Mark existing Favorites as system folder
     data.virtual_folders[favorites_id].is_system = true
@@ -403,7 +405,7 @@ end
 -- Save template metadata
 function M.save_metadata(metadata)
   if not metadata then
-    reaper.ShowConsoleMsg("ERROR: Cannot save nil metadata\n")
+    Logger.error("STORAGE", "Cannot save nil metadata")
     return false
   end
 

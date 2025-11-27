@@ -3,6 +3,7 @@
 -- Scans REAPER's track template directory with UUID tracking
 
 local M = {}
+local Logger = require('arkitekt.debug.logger')
 local Persistence = require('TemplateBrowser.data.storage')
 local FXQueue = require('TemplateBrowser.domain.fx.queue')
 
@@ -51,9 +52,9 @@ local function scan_directory(path, relative_path, metadata)
         file_size = file_handle:seek("end")  -- Returns position at end = file size
         file_handle:close()
       else
-        reaper.ShowConsoleMsg("WARNING: Cannot open file for size check: " .. full_path .. "\n")
+        Logger.warn("SCANNER", "Cannot open file for size check: %s", full_path)
         if err then
-          reaper.ShowConsoleMsg("ERROR: " .. tostring(err) .. "\n")
+          Logger.error("SCANNER", "%s", tostring(err))
         end
       end
 
@@ -78,10 +79,10 @@ local function scan_directory(path, relative_path, metadata)
         elseif file_size and not existing.file_size then
           -- We have size now but didn't before - old metadata without file_size
           size_changed = true  -- Re-parse to get FX with new system
-          reaper.ShowConsoleMsg("FX: Old metadata (no file_size): " .. template_name .. "\n")
+          Logger.debug("SCANNER", "FX: Old metadata (no file_size): %s", template_name)
         elseif not file_size and existing.file_size then
           -- Had size before but can't read now - something wrong
-          reaper.ShowConsoleMsg("WARNING: Could not read file size for: " .. template_name .. "\n")
+          Logger.warn("SCANNER", "Could not read file size for: %s", template_name)
           size_changed = false  -- Don't re-parse due to read error
         end
 
@@ -89,11 +90,11 @@ local function scan_directory(path, relative_path, metadata)
         local missing_fx = (existing.fx == nil)
 
         if size_changed then
-          reaper.ShowConsoleMsg("FX: File changed (size): " .. template_name .. " (" .. tostring(existing.file_size) .. " -> " .. tostring(file_size) .. ")\n")
+          Logger.debug("SCANNER", "FX: File changed (size): %s (%s -> %s)", template_name, tostring(existing.file_size), tostring(file_size))
           needs_fx_parse = true
           fx_list = {}
         elseif missing_fx then
-          reaper.ShowConsoleMsg("FX: Missing FX data: " .. template_name .. "\n")
+          Logger.debug("SCANNER", "FX: Missing FX data: %s", template_name)
           needs_fx_parse = true
           fx_list = {}
         else
@@ -130,7 +131,7 @@ local function scan_directory(path, relative_path, metadata)
 
         metadata.templates[uuid] = new_metadata
         needs_fx_parse = true
-        reaper.ShowConsoleMsg("New template UUID: " .. template_name .. " -> " .. uuid .. "\n")
+        Logger.debug("SCANNER", "New template UUID: %s -> %s", template_name, uuid)
       end
 
       templates[#templates + 1] = {
@@ -179,7 +180,7 @@ local function scan_directory(path, relative_path, metadata)
           created = os.time(),
           last_seen = os.time()
         }
-        reaper.ShowConsoleMsg("New folder UUID: " .. subdir .. " -> " .. folder_uuid .. "\n")
+        Logger.debug("SCANNER", "New folder UUID: %s -> %s", subdir, folder_uuid)
       end
 
       -- Recursively scan subdirectory
@@ -258,8 +259,8 @@ end
 function M.scan_templates(state)
   local template_path = get_template_path()
 
-  reaper.ShowConsoleMsg("=== TemplateBrowser: Scanning templates ===\n")
-  reaper.ShowConsoleMsg("Template path: " .. template_path .. "\n")
+  Logger.info("SCANNER", "=== Scanning templates ===")
+  Logger.info("SCANNER", "Template path: %s", template_path)
 
   -- Load metadata
   local metadata = Persistence.load_metadata()
@@ -287,7 +288,7 @@ function M.scan_templates(state)
   -- Save updated metadata
   Persistence.save_metadata(metadata)
 
-  reaper.ShowConsoleMsg(string.format("Found %d templates in %d folders\n", #templates, #folders))
+  Logger.info("SCANNER", "Found %d templates in %d folders", #templates, #folders)
 
   -- Start background FX parsing
   FXQueue.add_to_queue(state, templates)
@@ -539,8 +540,8 @@ end
 function M.scan_init(state)
   local template_path = get_template_path()
 
-  reaper.ShowConsoleMsg("=== TemplateBrowser: Starting incremental scan ===\n")
-  reaper.ShowConsoleMsg("Template path: " .. template_path .. "\n")
+  Logger.info("SCANNER", "=== Starting incremental scan ===")
+  Logger.info("SCANNER", "Template path: %s", template_path)
 
   -- Load metadata
   local metadata = Persistence.load_metadata()
@@ -607,7 +608,7 @@ function M.scan_init(state)
   scan_state.templates = {}
   scan_state.folders = folders
 
-  reaper.ShowConsoleMsg(string.format("Found %d templates to scan\n", #files_to_scan))
+  Logger.info("SCANNER", "Found %d templates to scan", #files_to_scan)
 end
 
 -- Scan a batch of templates (call this each frame)
@@ -762,8 +763,8 @@ function M.scan_batch(state, batch_size)
     -- Save metadata
     Persistence.save_metadata(scan_state.metadata)
 
-    reaper.ShowConsoleMsg(string.format("Scan complete: %d templates in %d folders\n",
-      #scan_state.templates, #folders_with_uuids))
+    Logger.info("SCANNER", "Scan complete: %d templates in %d folders",
+      #scan_state.templates, #folders_with_uuids)
 
     -- Start background FX parsing
     FXQueue.add_to_queue(state, scan_state.templates)

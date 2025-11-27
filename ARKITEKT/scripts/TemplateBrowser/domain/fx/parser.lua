@@ -2,6 +2,8 @@
 -- TemplateBrowser/domain/fx/parser.lua
 -- Parse FX/VST information from REAPER track template files
 
+local Logger = require('arkitekt.debug.logger')
+
 local M = {}
 
 -- Extract FX name from different VST formats
@@ -93,7 +95,7 @@ function M.parse_template_fx(filepath)
 
   if not ok then
     -- Log warning but don't crash - return empty list
-    reaper.ShowConsoleMsg("WARNING: Failed to parse FX from " .. filepath .. ": " .. tostring(err) .. "\n")
+    Logger.warn("FXPARSER", "Failed to parse FX from %s: %s", filepath, tostring(err))
     return {}
   end
 

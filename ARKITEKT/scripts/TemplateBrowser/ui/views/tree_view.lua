@@ -4,6 +4,7 @@
 -- Handles Physical and Virtual folder trees
 
 -- Dependencies (cached at module load per Lua Performance Guide)
+local Logger = require('arkitekt.debug.logger')
 local TreeView = require('arkitekt.gui.widgets.navigation.tree_view')
 local PathValidation = require('arkitekt.core.path_validation')
 local ImGui = require('arkitekt.platform.imgui')
@@ -792,7 +793,7 @@ function M.draw_physical_tree(ctx, state, config)
               local src_ok, src_err = PathValidation.is_safe_path(archive_path)
               local dst_ok, dst_err = PathValidation.is_safe_path(node.full_path)
               if not src_ok or not dst_ok then
-                reaper.ShowConsoleMsg(string.format("Undo blocked - invalid path: %s\n", src_err or dst_err or "unknown"))
+                Logger.error("TREEVIEW", "Undo blocked - invalid path: %s", src_err or dst_err or "unknown")
                 return false
               end
               local restore_success = os.rename(archive_path, node.full_path)
@@ -810,7 +811,7 @@ function M.draw_physical_tree(ctx, state, config)
               -- SECURITY: Validate path before redo
               local path_ok, path_err = PathValidation.is_safe_path(node.full_path)
               if not path_ok then
-                reaper.ShowConsoleMsg(string.format("Redo blocked - invalid path: %s\n", path_err or "unknown"))
+                Logger.error("TREEVIEW", "Redo blocked - invalid path: %s", path_err or "unknown")
                 return false
               end
               local redo_success = os.remove(node.full_path)

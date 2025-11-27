@@ -2,6 +2,7 @@
 -- TemplateBrowser/ui/views/left_panel/vsts_tab.lua
 -- VSTs tab: List of all FX with filtering
 
+local Logger = require('arkitekt.debug.logger')
 local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local Chip = require('arkitekt.gui.widgets.data.chip')
@@ -42,7 +43,7 @@ function M.draw(ctx, state, config, width, height)
   if ark.Button.draw_at_cursor(ctx, button_config, "force_reparse") then
     if state.reparse_armed then
       -- Second click - execute reparse
-      reaper.ShowConsoleMsg("Force reparsing all templates...\n")
+      Logger.info("VSTSTAB", "Force reparsing all templates...")
 
       -- Clear file_size from all templates in metadata to force re-parse
       if state.metadata and state.metadata.templates then
