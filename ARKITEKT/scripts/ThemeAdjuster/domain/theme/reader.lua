@@ -44,7 +44,20 @@ local function remove_dir_rec(dir)
   return true
 end
 
+-- Run shell command, returns true on success
+-- For non-Windows or non-PowerShell: uses os.execute
+-- For Windows PowerShell: uses io.popen to avoid console window flash
 local function try_run(cmd) local r=os.execute(cmd); return r==true or r==0 end
+
+local function try_run_hidden_ps(ps_cmd)
+  -- Use io.popen with -WindowStyle Hidden to avoid console flash
+  local f = io.popen(ps_cmd, "r")
+  if not f then return false end
+  f:read("*a")  -- consume any output
+  local ok, _, code = f:close()
+  -- Lua 5.3: f:close() returns (true, "exit", 0) on success
+  return ok == true or code == 0
+end
 
 local function unzip(zip_path, dest_dir)
   -- SECURITY: Validate paths before passing to shell commands (using centralized validation)
@@ -63,9 +76,11 @@ local function unzip(zip_path, dest_dir)
   reaper.RecursiveCreateDirectory(dest_dir, 0)
   local osname = reaper.GetOS() or ""
   if osname:find("Win") then
-    local ps = ([[powershell -NoProfile -Command "Try{Expand-Archive -LiteralPath '%s' -DestinationPath '%s' -Force;$Host.SetShouldExit(0)}Catch{$Host.SetShouldExit(1)}"]])
+    -- Use -WindowStyle Hidden to prevent console window flash
+    local ps = ([[powershell -WindowStyle Hidden -NoProfile -Command "Try{Expand-Archive -LiteralPath '%s' -DestinationPath '%s' -Force;$Host.SetShouldExit(0)}Catch{$Host.SetShouldExit(1)}"]])
       :format(zip_path:gsub("'", "''"), dest_dir:gsub("'", "''"))
-    if try_run(ps) then return true end
+    if try_run_hidden_ps(ps) then return true end
+    -- Fallback to tar (also available on Win10+)
     return try_run(([[tar -xf "%s" -C "%s"]]):format(zip_path, dest_dir))
   else
     if try_run(([[unzip -o -qq "%s" -d "%s"]]):format(zip_path, dest_dir)) then return true end

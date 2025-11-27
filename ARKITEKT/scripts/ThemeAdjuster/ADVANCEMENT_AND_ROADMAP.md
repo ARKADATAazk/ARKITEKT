@@ -67,8 +67,11 @@ ThemeAdjuster/
   - Preserve theme metadata
 - [ ] Add output folder selection (or default to `<ThemeName>_Reassembled/`)
 - [ ] Add theme backup before modification
-- [ ] Status feedback (progress, errors)
 - [ ] Handle conflicts (same key from multiple packages)
+- [ ] **ZIP operation progress UI** - Since PowerShell runs hidden (no scary console flash), need in-app feedback:
+  - Progress bar or spinner during extract/compress
+  - Log/status text showing what's happening
+  - Clear success/failure indication
 
 #### 1.2 Additional Tab: Polish & Organization
 **Priority: MEDIUM** - Core param system works, need better organization

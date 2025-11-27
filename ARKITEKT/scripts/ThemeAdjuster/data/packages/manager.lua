@@ -494,6 +494,16 @@ local function try_run(cmd)
   return r == true or r == 0
 end
 
+local function try_run_hidden_ps(ps_cmd)
+  -- Use io.popen with -WindowStyle Hidden to avoid console flash on Windows
+  local f = io.popen(ps_cmd, "r")
+  if not f then return false end
+  f:read("*a")  -- consume any output
+  local ok, _, code = f:close()
+  -- Lua 5.3: f:close() returns (true, "exit", 0) on success
+  return ok == true or code == 0
+end
+
 local function make_zip(src_dir, out_zip)
   -- SECURITY: Validate paths before passing to shell commands (using centralized validation)
   local ok, err = PathValidation.is_safe_path(src_dir)
@@ -510,9 +520,10 @@ local function make_zip(src_dir, out_zip)
 
   local osname = reaper.GetOS() or ""
   if osname:find("Win") then
-    local ps = ([[powershell -NoProfile -Command "Set-Location '%s'; if (Test-Path '%s') {Remove-Item '%s' -Force}; Compress-Archive -Path * -DestinationPath '%s' -Force"]])
+    -- Use -WindowStyle Hidden to prevent console window flash
+    local ps = ([[powershell -WindowStyle Hidden -NoProfile -Command "Set-Location '%s'; if (Test-Path '%s') {Remove-Item '%s' -Force}; Compress-Archive -Path * -DestinationPath '%s' -Force"]])
       :format(src_dir:gsub("'", "''"), out_zip:gsub("'", "''"), out_zip:gsub("'", "''"), out_zip:gsub("'", "''"))
-    return try_run(ps)
+    return try_run_hidden_ps(ps)
   else
     local zip = ([[cd "%s" && rm -f "%s" && zip -qr "%s" *]]):format(src_dir, out_zip, out_zip)
     return try_run(zip)
