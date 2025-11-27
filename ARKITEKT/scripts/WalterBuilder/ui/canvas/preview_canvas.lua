@@ -587,9 +587,11 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
 
         -- Draw elements within this track
         local sim = Simulator.simulate(self.elements, self.parent_w, track.height)
+        local track_selected_rect = nil
         for _, sim_result in ipairs(sim) do
           local elem_is_selected = sim_result.element == self.selected_element and is_selected
           local elem_is_hovered = sim_result.element == self.hovered_element
+          local is_modified = self:is_element_modified(sim_result.element)
 
           -- Offset element by track position
           local offset_result = {
@@ -608,7 +610,24 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
             selected = elem_is_selected,
             hovered = elem_is_hovered,
             show_attachments = self.config.show_attachments,
+            modified = is_modified,
           })
+
+          -- Track selected element's rect for handles (in track-relative coords)
+          if elem_is_selected and sim_result.rect.w > 0 and sim_result.rect.h > 0 then
+            track_selected_rect = {
+              x = sim_result.rect.x,
+              y = sim_result.rect.y,
+              w = sim_result.rect.w,
+              h = sim_result.rect.h,
+              track_y = track_y,  -- Store track Y for absolute positioning
+            }
+          end
+        end
+
+        -- Draw resize handles on selected element (if in this track)
+        if track_selected_rect then
+          self:draw_element_handles(ctx, dl, canvas_x, track_selected_rect.track_y, track_selected_rect)
         end
 
         -- Track height resize handle (bottom edge, center)
@@ -654,14 +673,79 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
 
   -- Handle mouse interaction
   local mx, my = ImGui.GetMousePos(ctx)
+  local rel_x = mx - canvas_x
+  local rel_y = my - canvas_y + self.scroll_y
+
+  -- Find which track the mouse is in and get simulation for it
+  local mouse_track = nil
+  local mouse_track_top = 0
+  local mouse_track_sim = nil
+  local track_search_top = 0
+  for _, track in ipairs(self.tracks) do
+    if track.visible then
+      if rel_y >= track_search_top and rel_y < track_search_top + track.height then
+        mouse_track = track
+        mouse_track_top = track_search_top
+        mouse_track_sim = Simulator.simulate(self.elements, self.parent_w, track.height)
+        break
+      end
+      track_search_top = track_search_top + track.height
+    end
+  end
+
+  -- Find selected element's rect in current track context (for drag/resize detection)
+  local selected_rect_screen = nil
+  if self.selected_element and self.selected_track then
+    local track_sim = Simulator.simulate(self.elements, self.parent_w, self.selected_track.height)
+    for _, sim_result in ipairs(track_sim) do
+      if sim_result.element == self.selected_element then
+        -- Find where this track is rendered
+        local sel_track_y = 0
+        for _, t in ipairs(self.tracks) do
+          if t == self.selected_track then break end
+          if t.visible then sel_track_y = sel_track_y + t.height end
+        end
+        -- Convert to mouse-relative coordinates (accounting for scroll)
+        selected_rect_screen = {
+          x = sim_result.rect.x,
+          y = sim_result.rect.y + sel_track_y,
+          w = sim_result.rect.w,
+          h = sim_result.rect.h,
+        }
+        break
+      end
+    end
+  end
 
   -- Check for drag start
   if ImGui.IsMouseClicked(ctx, 0) then
-    -- Check width handle
+    -- First check canvas resize handles
     if point_in_rect(mx, my, width_handle) then
       self.dragging = "width"
       self.drag_start_w = self.parent_w
       self.drag_start_x = mx
+
+    -- Then check if clicking on selected element (for drag/resize)
+    elseif selected_rect_screen and self.selected_element then
+      local zone = get_element_hit_zone(rel_x, rel_y, selected_rect_screen, self.config.element_edge_threshold)
+      if zone then
+        -- Start element drag
+        if zone == "move" then
+          self.dragging = "element_move"
+        else
+          self.dragging = "element_" .. zone
+        end
+        self.drag_element = self.selected_element
+        self.drag_element_start_coords = {
+          x = self.selected_element.coords.x,
+          y = self.selected_element.coords.y,
+          w = self.selected_element.coords.w,
+          h = self.selected_element.coords.h,
+        }
+        self.drag_start_x = mx
+        self.drag_start_y = my
+      end
+
     else
       -- Check track height handles
       local handle_hit = false
@@ -677,32 +761,19 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
       end
 
       -- If no handle hit, check for track/element selection
-      if not handle_hit then
-        local rel_x = mx - canvas_x
-        local rel_y = my - canvas_y + self.scroll_y
+      if not handle_hit and rel_x >= 0 and rel_x <= self.parent_w and mouse_track then
+        self.selected_track = mouse_track
+        result = { type = "select_track", track = mouse_track }
 
-        if rel_x >= 0 and rel_x <= self.parent_w then
-          -- Find clicked track
-          local track_top = 0
-          for _, track in ipairs(self.tracks) do
-            if track.visible then
-              if rel_y >= track_top and rel_y < track_top + track.height then
-                self.selected_track = track
-                result = { type = "select_track", track = track }
-
-                -- Check for element within track
-                local track_rel_y = rel_y - track_top
-                local sim = Simulator.simulate(self.elements, self.parent_w, track.height)
-                local clicked_elem = Simulator.hit_test(sim, rel_x, track_rel_y)
-                if clicked_elem then
-                  self.selected_element = clicked_elem
-                  result = { type = "select", element = clicked_elem, track = track }
-                end
-                break
-              end
-              track_top = track_top + track.height
-            end
-          end
+        -- Check for element within track
+        local track_rel_y = rel_y - mouse_track_top
+        local clicked_elem = Simulator.hit_test(mouse_track_sim, rel_x, track_rel_y)
+        if clicked_elem then
+          self.selected_element = clicked_elem
+          result = { type = "select", element = clicked_elem, track = mouse_track }
+        else
+          -- Clicked empty space in track - deselect element
+          self.selected_element = nil
         end
       end
     end
@@ -710,25 +781,45 @@ function Canvas:draw_tracks_view(ctx, dl, win_x, win_y, win_w, win_h)
 
   -- Handle dragging
   if self.dragging and ImGui.IsMouseDown(ctx, 0) then
+    local dx = mx - self.drag_start_x
+    local dy = my - self.drag_start_y
+
     if self.dragging == "width" then
-      local dx = mx - self.drag_start_x
       local new_w = self.drag_start_w + dx
       new_w = math.max(self.config.min_parent_w, math.min(self.config.max_parent_w, new_w))
       self.parent_w = math.floor(new_w)
       result = { type = "resize_width", width = self.parent_w }
+
     elseif self.dragging == "track_height" and self.drag_track then
-      local dy = my - self.drag_start_y
       local new_h = self.drag_start_h + dy
-      new_h = math.max(25, math.min(200, new_h))  -- Min 25px, max 200px per track
+      new_h = math.max(25, math.min(200, new_h))
       self.drag_track.height = math.floor(new_h)
       result = { type = "resize_track", track = self.drag_track, height = self.drag_track.height }
+
+    elseif self.dragging:match("^element_") then
+      self:apply_element_drag(self.dragging, dx, dy)
+      result = { type = "element_modified", element = self.drag_element }
     end
   end
 
   -- End dragging
   if ImGui.IsMouseReleased(ctx, 0) then
+    if self.dragging and self.dragging:match("^element_") and self.drag_element then
+      result = { type = "element_drag_end", element = self.drag_element }
+    end
     self.dragging = nil
     self.drag_track = nil
+    self.drag_element = nil
+    self.drag_element_start_coords = nil
+  end
+
+  -- Update cursor based on what we're hovering over
+  if selected_rect_screen and not self.dragging then
+    local zone = get_element_hit_zone(rel_x, rel_y, selected_rect_screen, self.config.element_edge_threshold)
+    local cursor = get_cursor_for_zone(zone)
+    if cursor then
+      ImGui.SetMouseCursor(ctx, cursor)
+    end
   end
 
   -- Handle mouse scroll
