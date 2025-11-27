@@ -239,10 +239,41 @@ local function parse_bracket(str, context)
   local content = str:match("^%[(.*)%]$")
   if not content then return nil end
 
+  -- Collect all tokens first
+  local tokens = {}
+  for token in content:gmatch("%S+") do
+    tokens[#tokens + 1] = token
+  end
+
+  -- Special case: single token that's a table variable -> return the table directly
+  -- This handles [meter_sec] where meter_sec is an array like [19, 0, 280, 90]
+  if #tokens == 1 then
+    local token = tokens[1]
+    local num = tonumber(token)
+    if not num then
+      -- Not a number, check if it's a variable
+      local var_name = token:match("^([%w_.]+)$")
+      if var_name then
+        local var_val = context and context[var_name]
+        if var_val == nil then
+          var_val = M.DEFAULT_SCALARS[var_name]
+        end
+        if type(var_val) == "table" then
+          -- Return the table directly for single-token array variables
+          return var_val
+        elseif var_val then
+          return { var_val }
+        else
+          return { 0 }
+        end
+      end
+    end
+  end
+
   local values = {}
 
   -- Parse each space-separated token in the bracket
-  for token in content:gmatch("%S+") do
+  for _, token in ipairs(tokens) do
     -- Check if it's a number
     local num = tonumber(token)
     if num then
@@ -267,6 +298,7 @@ local function parse_bracket(str, context)
         if var_name then
           local var_val = context and context[var_name]
           if type(var_val) == "table" then
+            -- For multi-token brackets, take first element of table
             values[#values + 1] = var_val[1] or 0
           elseif var_val then
             values[#values + 1] = var_val
