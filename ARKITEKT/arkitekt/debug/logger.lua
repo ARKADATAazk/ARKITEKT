@@ -224,4 +224,48 @@ function M.set_live_history_max(max)
   LIVE_HISTORY_MAX = math.max(10, math.min(500, max))
 end
 
+-- ============================================================================
+-- CATEGORY LOGGER INSTANCES
+-- ============================================================================
+
+--- Create a logger instance bound to a specific category
+--- Usage:
+---   local log = Logger.new("MyCategory")
+---   log:info("message")
+---   log:debug("value: %d", 42)
+---   log:warn("warning")
+---   log:error("error occurred")
+---
+--- @param category string The category name for all logs from this instance
+--- @return table logger Logger instance with :info, :debug, :warn, :error methods
+function M.new(category)
+  local instance = {}
+
+  function instance:info(message, ...)
+    M.info(category, message, ...)
+  end
+
+  function instance:debug(message, ...)
+    M.debug(category, message, ...)
+  end
+
+  function instance:warn(message, ...)
+    M.warn(category, message, ...)
+  end
+
+  function instance:error(message, ...)
+    M.error(category, message, ...)
+  end
+
+  function instance:profile(duration_ms)
+    M.profile(category, duration_ms)
+  end
+
+  function instance:live(key, message, ...)
+    M.live(category, key, message, ...)
+  end
+
+  return instance
+end
+
 return M
