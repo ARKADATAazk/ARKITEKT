@@ -47,18 +47,33 @@ local function smootherstep(t)
   return t * t * t * (t * (t * 6 - 15) + 10)
 end
 
+-- Lazy load Theme for panel colors
+local _Theme
+local function get_theme()
+  if not _Theme then
+    local ok, theme = pcall(require, 'arkitekt.core.theme')
+    if ok then _Theme = theme end
+  end
+  return _Theme
+end
+
 -- Draw a panel background and border (no dotted pattern - moved to overlay)
+-- Uses Theme.COLORS when available for theme-reactive appearance
 local function draw_panel(dl, x1, y1, x2, y2, rounding, alpha)
   alpha = alpha or 1.0
   rounding = rounding or 6
 
-  -- Panel background (lighter)
-  local bg_color = ark.Colors.hexrgb("#1A1A1A")
+  -- Get theme colors if available
+  local Theme = get_theme()
+  local ThemeColors = Theme and Theme.COLORS or {}
+
+  -- Panel background - use theme color or fallback
+  local bg_color = ThemeColors.BG_PANEL or ark.Colors.hexrgb("#1A1A1A")
   bg_color = ark.Colors.with_opacity(bg_color, alpha * 0.6)  -- 60% opacity
   ImGui.DrawList_AddRectFilled(dl, x1, y1, x2, y2, bg_color, rounding)
 
-  -- Panel border (even lighter)
-  local border_color = ark.Colors.hexrgb("#2A2A2A")
+  -- Panel border - use theme color or fallback
+  local border_color = ThemeColors.BORDER_OUTER or ark.Colors.hexrgb("#2A2A2A")
   border_color = ark.Colors.with_opacity(border_color, alpha * 0.67)
   ImGui.DrawList_AddRect(dl, x1, y1, x2, y2, border_color, rounding, 0, 1)
 end
@@ -82,7 +97,8 @@ local function draw_panel_title(ctx, draw_list, title_font, title, panel_x, pane
   end
 
   -- Use DrawList to avoid blocking mouse input for selection rectangle
-  local text_color = ark.Colors.hexrgb("#FFFFFF")
+  -- Use theme-derived text color (from constants)
+  local text_color = config.COLORS.SECTION_HEADER_TEXT or ark.Colors.hexrgb("#FFFFFF")
   text_color = ark.Colors.with_alpha(text_color, ark.Colors.opacity(final_alpha))
   ImGui.DrawList_AddText(draw_list, title_x, title_y, text_color, title)
   ImGui.PopFont(ctx)
@@ -167,6 +183,11 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
   -- Dotted pattern over entire overlay (no background fill - uses shell overlay scrim)
   -- Using baked texture for performance (single draw call vs 8000+ circles)
+  -- Use theme-derived pattern color
+  local Theme = get_theme()
+  local ThemeColors = Theme and Theme.COLORS or {}
+  local pattern_color = ThemeColors.PATTERN_PRIMARY or ark.Colors.hexrgb("#2A2A2A")
+
   local overlay_pattern_config = {
     enabled = true,
     use_texture = true,  -- Use baked texture for performance
@@ -174,7 +195,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       type = 'dots',
       spacing = 16,
       dot_size = 1.5,
-      color = ark.Colors.with_alpha(ark.Colors.hexrgb("#2A2A2A"), math.floor(overlay_alpha * 180)),
+      color = ark.Colors.with_alpha(pattern_color, math.floor(overlay_alpha * 180)),
       offset_x = 0,
       offset_y = 0,
     }
