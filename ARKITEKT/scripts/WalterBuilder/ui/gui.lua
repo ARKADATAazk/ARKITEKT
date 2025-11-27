@@ -368,6 +368,10 @@ function GUI:handle_load_from_rtconfig(action)
   local ctx_h = RtconfigConverter.get_context_value("h")
   self.canvas:set_parent_size(ctx_w, ctx_h)
 
+  -- Update all track heights to match context
+  self.State.set_all_tracks_height(ctx_h)
+  self.canvas:set_tracks(self.State.get_tracks())
+
   -- Sync canvas
   self:sync_canvas()
   self.code_panel:invalidate()
@@ -807,6 +811,10 @@ function GUI:draw(ctx, window, shell_state)
           local ctx_w = RtconfigConverter.get_context_value("w")
           local ctx_h = RtconfigConverter.get_context_value("h")
           self.canvas:set_parent_size(ctx_w, ctx_h)
+
+          -- Update all track heights to match context
+          self.State.set_all_tracks_height(ctx_h)
+          self.canvas:set_tracks(self.State.get_tracks())
 
           -- Re-load elements with new context values
           local elements = self.rtconfig_panel:get_loadable_elements()

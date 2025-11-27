@@ -337,6 +337,13 @@ function M.get_total_tracks_height()
   return total
 end
 
+-- Update all track heights to a new value
+function M.set_all_tracks_height(height)
+  for _, track in ipairs(state.tracks) do
+    track.height = height
+  end
+end
+
 -- Get track at Y position (for hit testing)
 function M.get_track_at_y(y)
   local current_y = 0
