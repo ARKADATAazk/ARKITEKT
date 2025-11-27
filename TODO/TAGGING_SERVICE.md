@@ -103,46 +103,53 @@ PresetRegistry.save_derivation("common_names", "game_music", {
 
 ### 2. Preset Editor Window (`arkitekt/gui/windows/preset_editor.lua`)
 
-Dedicated window to manage all presets:
+Dedicated window using **dual-grid drag-and-drop** interface:
 
 ```
-┌─────────────────────────────────────────────────────┐
-│ Preset Editor                               [_][□][×]│
-├─────────────────────────────────────────────────────┤
-│ Type: [Common Names ▾]                              │
-│                                                     │
-│ Lists:                                              │
-│ ┌───────────────────────────────────────────────┐  │
-│ │ ★ Game Music (default)        [Edit] [Reset]  │  │
-│ │ ★ General Music (default)     [Edit] [Reset]  │  │
-│ │   My SFX Names (custom)       [Edit] [Delete] │  │
-│ │                                               │  │
-│ │                        [+ New List]           │  │
-│ └───────────────────────────────────────────────┘  │
-├─────────────────────────────────────────────────────┤
-│ Editing: Game Music (derived from default)          │
-│                                                     │
-│ [Show All] [Show Additions Only] [Show Deletions]   │
-│                                                     │
-│ ┌───────────────────────────────────────────────┐  │
-│ │ ✓ combat      [■ red]    [×]  (default)       │  │
-│ │ ✓ calm        [■ green]  [×]  (default)       │  │
-│ │ ✗ victory     [■ gold]        (hidden)        │  │
-│ │ ✓ stealth     [■ green]  [×]  (added)         │  │
-│ │ ✓ chase       [■ red]    [×]  (added)         │  │
-│ └───────────────────────────────────────────────┘  │
-│                                                     │
-│ [+ Add Item]                    [Save] [Cancel]     │
-└─────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│ Preset Editor                                                [_][□][×]│
+├──────────────────────────────────────────────────────────────────────┤
+│ Type: [Common Names ▾]    List: [Game Music (derived) ▾]  [+ New]    │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│   DEFAULT (read-only)              YOUR LIST                         │
+│  ┌─────────────────────┐          ┌─────────────────────┐           │
+│  │ ┌───────┐ ┌───────┐ │          │ ┌───────┐ ┌───────┐ │           │
+│  │ │combat │ │ boss  │ │  drag →  │ │combat │ │ calm  │ │           │
+│  │ └───────┘ └───────┘ │  ← drag  │ └───────┘ └───────┘ │           │
+│  │ ┌───────┐ ┌───────┐ │          │ ┌───────┐ ┌───────┐ │           │
+│  │ │ calm  │ │explore│ │          │ │tension│ │stealth│ │  (added)  │
+│  │ └───────┘ └───────┘ │          │ └───────┘ └───────┘ │           │
+│  │ ┌───────┐ ┌───────┐ │          │ ┌───────┐           │           │
+│  │ │tension│ │victory│ │          │ │ chase │  [+ Add]  │  (added)  │
+│  │ └───────┘ └───────┘ │          │ └───────┘           │           │
+│  └─────────────────────┘          └─────────────────────┘           │
+│                                                                      │
+│  [Select All] [Clear]              [Reset to Default] [Save]         │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-Features:
-- List all preset types (common names, wildcards, tags, etc.)
-- Show default vs user-created lists
-- Edit derivations (add, hide, modify items)
-- Create entirely new custom lists
-- Reset to default (clear derivation)
-- Delete custom lists
+**Core interaction**: Drag chips between grids using existing GridBridge system.
+
+**Left grid (Defaults)**:
+- Read-only display of framework defaults
+- Drag FROM here to add to your list
+- Grayed out items = already in your list
+
+**Right grid (Your List)**:
+- Your current derivation (defaults you kept + your additions)
+- Drag TO here from defaults
+- Drag OUT to remove
+- Reorder by dragging within
+- [+ Add] for custom items not in defaults
+
+**Features**:
+- Type selector: Common Names, Wildcards, Tags, etc.
+- List selector: Game Music, General Music, custom lists
+- "New List" creates empty custom list (not derived)
+- "Reset to Default" clears all derivations
+- Visual distinction: default items vs user-added items
+- Color picker on right-click for custom items
 
 ### 3. Persistence (`arkitekt/core/preset_persistence.lua`)
 
