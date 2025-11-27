@@ -89,7 +89,7 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
     local left_margin = math.max(0, padding_x - 3)
     local right_margin = 6
     local actual_chip_space = has_chip and 12 or 0
-    local actual_text_width = math.floor(text_w + left_margin + right_margin + actual_chip_space + 0.5)
+    local actual_text_width = (text_w + left_margin + right_margin + actual_chip_space + 0.5) // 1
 
     -- Apply very small floor (20px) to prevent microscopic tabs
     min_text_widths[i] = math.max(20, actual_text_width)
@@ -97,7 +97,7 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
     -- Natural width: use actual text width, cap at max only
     local natural = min_text_widths[i]
     natural = math.min(max_width, natural)  -- Hard cap at max
-    natural = math.floor(natural + 0.5)     -- Round to whole pixels
+    natural = (natural + 0.5) // 1     -- Round to whole pixels
 
     natural_widths[i] = natural
     total_natural = total_natural + natural
@@ -132,7 +132,7 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
 
       for i, deficit in pairs(clipped_tabs) do
         local proportion = deficit / total_deficit
-        local extra = math.floor(space_to_distribute * proportion + 0.5)
+        local extra = (space_to_distribute * proportion + 0.5) // 1
         -- Allow exceeding max_width to show full text
         natural_widths[i] = natural_widths[i] + extra
       end
@@ -152,7 +152,7 @@ local function calculate_responsive_tab_widths(ctx, tabs, config, available_widt
   -- STAGE 2: If should_extend (80% threshold), distribute remaining space evenly to all tabs
   if should_extend and total_with_spacing < available_width then
     local extra_space = available_width - total_with_spacing
-    local base_per_tab = math.floor(extra_space / #tabs)
+    local base_per_tab = (extra_space / #tabs) // 1
     local remainder = extra_space - (base_per_tab * #tabs)
 
     for i = 1, #tabs do
@@ -618,7 +618,7 @@ local function draw_tab(ctx, dl, tab_data, is_active, tab_index, x, y, width, he
 
   local apply_alpha = function(color, factor)
     local a = color & 0xFF
-    local new_a = math.floor(a * factor)
+    local new_a = (a * factor) // 1
     return (color & 0xFFFFFF00) | new_a
   end
 
@@ -1042,7 +1042,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
         -- Not all tabs fit - re-extend only visible tabs to fill space
         local visible_tabs = {}
         for _, idx in ipairs(visible_indices) do
-          table.insert(visible_tabs, tabs[idx])
+          visible_tabs[#visible_tabs + 1] = tabs[idx]
         end
 
         -- Re-calculate widths for only visible tabs to fill the entire available width
@@ -1203,12 +1203,12 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
       if pos then
         local tab_w = responsive_widths[i] or calculate_tab_width(ctx, tab_data.label or "Tab", config, tab_data.chip_color ~= nil)
         -- Snap to whole pixels for crisp rendering during animation
-        local tab_x = math.floor(pos.current_x + 0.5)
+        local tab_x = (pos.current_x + 0.5) // 1
 
         if state.dragging_tab and state.dragging_tab.id == tab_data.id then
           -- Use pre-clamped position from handle_drag_reorder
           if state.dragging_tab.clamped_x then
-            tab_x = math.floor(state.dragging_tab.clamped_x + 0.5)
+            tab_x = (state.dragging_tab.clamped_x + 0.5) // 1
           else
             -- Fallback if clamped_x not set (shouldn't happen)
             local mx = ImGui.GetMousePos(ctx)
@@ -1236,11 +1236,11 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
         if next_visible_idx then
           local next_pos = state.tab_positions[tabs[next_visible_idx].id]
           if next_pos then
-            local next_x = math.floor(next_pos.current_x + 0.5)
+            local next_x = (next_pos.current_x + 0.5) // 1
             if state.dragging_tab and state.dragging_tab.id == tabs[next_visible_idx].id then
               -- Use pre-clamped position from handle_drag_reorder
               if state.dragging_tab.clamped_x then
-                next_x = math.floor(state.dragging_tab.clamped_x + 0.5)
+                next_x = (state.dragging_tab.clamped_x + 0.5) // 1
               else
                 -- Fallback if clamped_x not set (shouldn't happen)
                 local mx = ImGui.GetMousePos(ctx)
@@ -1265,7 +1265,7 @@ function M.draw(ctx, dl, x, y, available_width, height, config, state)
 
         -- Ensure render_width is always positive and at least 1px
         render_width = math.max(1, render_width)
-        render_width = math.floor(render_width + 0.5)
+        render_width = (render_width + 0.5) // 1
 
         local is_active = (tab_data.id == active_tab_id)
         local clicked, delete_requested = draw_tab(

@@ -174,7 +174,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
       type = 'dots',
       spacing = 16,
       dot_size = 1.5,
-      color = ark.Colors.with_alpha(ark.Colors.hexrgb("#2A2A2A"), math.floor(overlay_alpha * 180)),
+      color = ark.Colors.with_alpha(ark.Colors.hexrgb("#2A2A2A"), (overlay_alpha * 180) // 1),
       offset_x = 0,
       offset_y = 0,
     }
@@ -501,7 +501,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
 
     local slider_label = "Waveform Quality:"
     local slider_label_width = ImGui.CalcTextSize(ctx, slider_label)
-    ImGui.DrawList_AddText(draw_list, waveform_x, waveform_y + 3, ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), math.floor(settings_alpha * 180)), slider_label)
+    ImGui.DrawList_AddText(draw_list, waveform_x, waveform_y + 3, ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), (settings_alpha * 180) // 1), slider_label)
 
     -- Draw slider
     local slider_width = 120
@@ -510,12 +510,12 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     local track_h = 6
     local track_rounding = 3
 
-    local track_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#1A1A1A"), math.floor(settings_alpha * 200))
+    local track_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#1A1A1A"), (settings_alpha * 200) // 1)
     ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + slider_width, track_y + track_h, track_color, track_rounding)
 
     local quality = self.state.settings.waveform_quality or 1.0
     local fill_width = slider_width * quality
-    local fill_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#4A9EFF"), math.floor(settings_alpha * 200))
+    local fill_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#4A9EFF"), (settings_alpha * 200) // 1)
     if fill_width > 1 then
       ImGui.DrawList_AddRectFilled(draw_list, track_x, track_y, track_x + fill_width, track_y + track_h, fill_color, track_rounding)
     end
@@ -541,9 +541,9 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
     end
 
     -- Percentage value
-    local percent_text = string.format("%d%%", math.floor(quality * 100))
+    local percent_text = string.format("%d%%", (quality * 100) // 1)
     local percent_x = track_x + slider_width + 8
-    ImGui.DrawList_AddText(draw_list, percent_x, waveform_y + 3, ark.Colors.with_alpha(ark.Colors.hexrgb("#AAAAAA"), math.floor(settings_alpha * 180)), percent_text)
+    ImGui.DrawList_AddText(draw_list, percent_x, waveform_y + 3, ark.Colors.with_alpha(ark.Colors.hexrgb("#AAAAAA"), (settings_alpha * 180) // 1), percent_text)
 
     -- Waveform Fill checkbox
     local fill_checkbox_x = percent_x + ImGui.CalcTextSize(ctx, percent_text) + 20
@@ -805,7 +805,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
   local sort_label = "Sorting:"
   local sort_label_width = ImGui.CalcTextSize(ctx, sort_label)
   local sort_label_color = ark.Colors.hexrgb("#AAAAAA")
-  sort_label_color = ark.Colors.with_alpha(sort_label_color, math.floor(search_fade * 200))
+  sort_label_color = ark.Colors.with_alpha(sort_label_color, (search_fade * 200) // 1)
   -- Note: Raw text vertical alignment baseline is search_y + 4 (2px up from buttons for better centering)
   ImGui.DrawList_AddText(draw_list, sort_x, search_y + 4, sort_label_color, sort_label)
 
@@ -993,7 +993,7 @@ function LayoutView:render(ctx, title_font, title_font_size, title, screen_w, sc
           local current_width = bounds.w
 
           -- Always draw indicator strip background
-          local strip_alpha = math.floor(0x44 * section_fade)
+          local strip_alpha = (0x44 * section_fade) // 1
           local strip_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#3A3A3A"), strip_alpha)
           ImGui.DrawList_AddRectFilled(dl, bar_x, bar_y, bar_x + track_bar_collapsed_width, bar_y + bar_height, strip_color, 2)
 

@@ -178,11 +178,11 @@ local function separate_by_alignment(elements)
   for _, element in ipairs(elements) do
     local align = element.align or "left"
     if align == "right" then
-      table.insert(right, element)
+      right[#right + 1] = element
     elseif align == "center" then
-      table.insert(center, element)
+      center[#center + 1] = element
     else
-      table.insert(left, element)
+      left[#left + 1] = element
     end
   end
   
@@ -603,7 +603,7 @@ function M.draw(ctx, dl, x, y, width, height, state, config)
 
     local valign = config.valign or "top"
     -- Pixel snap center position to prevent blurry borders
-    local center_x = math.floor(content_x + (content_width - center_width) / 2 + 0.5)
+    local center_x = (content_x + (content_width - center_width) / 2 + 0.5) // 1
     render_elements(ctx, dl, center_x, content_y, center_width, content_height, center_elements, state, header_rounding, is_bottom, valign, "full")
 
     -- Draw clip edge borders if content overflows (use actual rendered width, not allocated content_width)

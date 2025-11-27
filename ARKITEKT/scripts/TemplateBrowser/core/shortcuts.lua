@@ -183,10 +183,10 @@ function M.format_shortcut(shortcut)
   local parts = {}
 
   for _, mod in ipairs(shortcut.mods) do
-    table.insert(parts, mod)
+    parts[#parts + 1] = mod
   end
 
-  table.insert(parts, shortcut.key)
+  parts[#parts + 1] = shortcut.key
 
   return table.concat(parts, "+")
 end
@@ -196,8 +196,8 @@ function M.get_shortcuts_list()
   local list = {}
 
   for _, shortcut in ipairs(M.SHORTCUTS) do
-    table.insert(list, {
-      keys = M.format_shortcut(shortcut),
+    list[#list + 1] = {
+      keys = M.format_shortcut(shortcut,
       description = shortcut.description,
       action = shortcut.action,
     })

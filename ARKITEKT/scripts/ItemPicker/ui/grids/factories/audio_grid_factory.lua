@@ -99,7 +99,7 @@ function M.create(ctx, config, state, visualization, animator, disable_animator)
       -- Convert cached track color to ImGui color
       local color = shared.convert_track_color(entry.track_color or 0)
 
-      table.insert(filtered, {
+      filtered[#filtered + 1] = {
         filename = filename,
         item = item,
         name = item_name,
@@ -113,7 +113,7 @@ function M.create(ctx, config, state, visualization, animator, disable_animator)
         regions = entry.regions,  -- Region tags from loader
         track_muted = track_muted,  -- Track mute state
         item_muted = item_muted,  -- Item mute state
-      })
+      }
 
       ::continue::
     end

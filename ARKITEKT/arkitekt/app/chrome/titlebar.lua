@@ -528,12 +528,12 @@ function M.new(opts)
   function titlebar:_draw_button_icon(ctx, min_x, min_y, max_x, max_y, icon_type, color, button_bg_color)
     local draw_list = ImGui.GetWindowDrawList(ctx)
     local dpi = ImGui.GetWindowDpiScale(ctx)
-    local thickness = math.max(1, math.floor(1.0 * dpi))
+    local thickness = math.max(1, (1.0 * dpi) // 1)
 
     local h = max_y - min_y
     local w = max_x - min_x
     
-    local v_padding = math.floor(h * 0.35)
+    local v_padding = (h * 0.35) // 1
     local iy1 = min_y + v_padding
     local iy2 = max_y - v_padding
 
@@ -546,7 +546,7 @@ function M.new(opts)
     
     local center_x = min_x + (w / 2)
     local half_size = square_size / 2
-    local ix1 = math.floor(center_x - half_size)
+    local ix1 = (center_x - half_size) // 1
     local ix2 = ix1 + square_size
 
     if icon_type == 'maximize' then

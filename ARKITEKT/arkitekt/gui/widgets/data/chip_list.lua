@@ -283,7 +283,7 @@ function M.draw_columns(ctx, items, opts)
   
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
   local max_height = opts.max_height or avail_h
-  local items_per_column = math.floor(max_height / (item_height + item_spacing))
+  local items_per_column = (max_height / (item_height + item_spacing)) // 1
   if items_per_column < 1 then items_per_column = 1 end
 
   local num_columns = math.ceil(#filtered / items_per_column)

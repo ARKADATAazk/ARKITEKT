@@ -74,7 +74,7 @@ local function hsv_to_rgba_u32(hdeg, s, v, a)
   local h = (hdeg % 360) / 360.0
   s = s / 100.0
   v = v / 100.0
-  local i = math.floor(h * 6)
+  local i = (h * 6) // 1
   local f = h * 6 - i
   local p = v * (1 - s)
   local q = v * (1 - f * s)
@@ -88,9 +88,9 @@ local function hsv_to_rgba_u32(hdeg, s, v, a)
   elseif i == 4 then r,g,b = t,p,v
   else               r,g,b = v,p,q
   end
-  local R = math.floor(r*255+0.5)
-  local G = math.floor(g*255+0.5)
-  local B = math.floor(b*255+0.5)
+  local R = (r*255+0.5) // 1
+  local G = (g*255+0.5) // 1
+  local B = (b*255+0.5) // 1
   local A = math.floor((a or 1)*255+0.5)
   return (R<<24)|(G<<16)|(B<<8)|A
 end
@@ -177,7 +177,7 @@ local function draw(ctx)
     
     for i = 0, 14 do
       local col = i % cols
-      local row = math.floor(i / cols)
+      local row = (i / cols) // 1
       
       local x = cx + col * (tile_w + gap)
       local y = cy + row * (tile_h + gap)

@@ -84,7 +84,7 @@ function M.process_batch(loader, state, settings)
           local track_items = loader.reaper_interface.GetItemInTrack(track)
           for _, item in pairs(track_items) do
             if item and reaper.ValidatePtr2(0, item, "MediaItem*") then
-              table.insert(loader.all_items, {item = item, track = track})
+              loader.all_items[#loader.all_items + 1] = {item = item, track = track}
             end
           end
         end
@@ -110,7 +110,7 @@ function M.process_batch(loader, state, settings)
           local track_items = loader.reaper_interface.GetItemInTrack(track)
           for _, item in pairs(track_items) do
             if item and reaper.ValidatePtr2(0, item, "MediaItem*") then
-              table.insert(loader.all_items, {item = item, track = track})
+              loader.all_items[#loader.all_items + 1] = {item = item, track = track}
             end
           end
         end
@@ -235,7 +235,7 @@ function M.process_audio_item_fast(loader, item, track, state)
   end
 
   -- Store in raw pool (before grouping)
-  table.insert(loader.raw_audio_items, {
+  loader.raw_audio_items[#loader.raw_audio_items + 1] = {
     item = item,
     item_name = item_name,
     filename = filename,
@@ -246,7 +246,7 @@ function M.process_audio_item_fast(loader, item, track, state)
     item_muted = item_muted,
     uuid = uuid,
     regions = regions,
-  })
+  }
 end
 
 -- Normal mode: Full chunk-based duplicate detection
@@ -270,7 +270,7 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
   loader.processed_audio_chunks[chunk] = true
 
   if not loader.samples[filename] then
-    table.insert(loader.sample_indexes, filename)
+    loader.sample_indexes[#loader.sample_indexes + 1] = filename
     loader.samples[filename] = {}
   end
 
@@ -296,7 +296,7 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
   end
 
   -- Store in loader.samples for duplicate detection
-  table.insert(loader.samples[filename], {
+  loader.samples[filename][#loader.samples[filename] + 1] = {
     item,
     item_name,
     track_muted = track_muted,
@@ -304,10 +304,10 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
     track_guid = track_guid,
     uuid = uuid,
     regions = regions,
-  })
+  }
 
   -- ALSO store in raw pool for reorganization
-  table.insert(loader.raw_audio_items, {
+  loader.raw_audio_items[#loader.raw_audio_items + 1] = {
     item = item,
     item_name = item_name,
     filename = filename,
@@ -318,7 +318,7 @@ function M.process_audio_item(loader, item, track, chunk, chunk_id, state)
     item_muted = item_muted,
     uuid = uuid,
     regions = regions,
-  })
+  }
 end
 
 -- Fast mode: Skip chunk-based duplicate detection
@@ -351,7 +351,7 @@ function M.process_midi_item_fast(loader, item, track, state)
   end
 
   -- Store in raw pool (before grouping)
-  table.insert(loader.raw_midi_items, {
+  loader.raw_midi_items[#loader.raw_midi_items + 1] = {
     item = item,
     item_name = item_name,
     track_color = track_color,
@@ -361,7 +361,7 @@ function M.process_midi_item_fast(loader, item, track, state)
     uuid = uuid,
     track_name = track_name,
     regions = regions,
-  })
+  }
 end
 
 -- Normal mode: Full chunk-based duplicate detection
@@ -383,7 +383,7 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
   loader.processed_midi_chunks[chunk] = true
 
   if not loader.midi_items[item_name] then
-    table.insert(loader.midi_indexes, item_name)
+    loader.midi_indexes[#loader.midi_indexes + 1] = item_name
     loader.midi_items[item_name] = {}
   end
 
@@ -404,7 +404,7 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
   end
 
   -- Store in loader.midi_items for duplicate detection
-  table.insert(loader.midi_items[item_name], {
+  loader.midi_items[item_name][#loader.midi_items[item_name] + 1] = {
     item,
     item_name,
     track_muted = track_muted,
@@ -413,10 +413,10 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
     uuid = uuid,
     track_name = track_name,
     regions = regions,
-  })
+  }
 
   -- ALSO store in raw pool for reorganization
-  table.insert(loader.raw_midi_items, {
+  loader.raw_midi_items[#loader.raw_midi_items + 1] = {
     item = item,
     item_name = item_name,
     track_color = track_color,
@@ -426,7 +426,7 @@ function M.process_midi_item(loader, item, track, chunk, chunk_id, state)
     uuid = uuid,
     track_name = track_name,
     regions = regions,
-  })
+  }
 end
 
 -- Get current results (safe to call anytime)
@@ -565,11 +565,11 @@ function M.reorganize_items(loader, group_by_name)
     end
 
     if not loader.samples[group_key] then
-      table.insert(loader.sample_indexes, group_key)
+      loader.sample_indexes[#loader.sample_indexes + 1] = group_key
       loader.samples[group_key] = {}
     end
 
-    table.insert(loader.samples[group_key], {
+    loader.samples[group_key][#loader.samples[group_key] + 1] = {
       raw_item.item,
       raw_item.item_name,
       track_muted = raw_item.track_muted,
@@ -581,7 +581,7 @@ function M.reorganize_items(loader, group_by_name)
       pool_id = raw_item.pool_id,  -- Pool identifier for filtering
       track_name = raw_item.track_name,  -- Track name for search
       regions = raw_item.regions,  -- Region tags
-    })
+    }
 
     ::skip_audio::
   end
@@ -605,11 +605,11 @@ function M.reorganize_items(loader, group_by_name)
     end
 
     if not loader.midi_items[group_key] then
-      table.insert(loader.midi_indexes, group_key)
+      loader.midi_indexes[#loader.midi_indexes + 1] = group_key
       loader.midi_items[group_key] = {}
     end
 
-    table.insert(loader.midi_items[group_key], {
+    loader.midi_items[group_key][#loader.midi_items[group_key] + 1] = {
       raw_item.item,
       raw_item.item_name,
       track_muted = raw_item.track_muted,
@@ -621,7 +621,7 @@ function M.reorganize_items(loader, group_by_name)
       pool_id = raw_item.pool_id,  -- Pool identifier for filtering
       track_name = raw_item.track_name,  -- Track name for search
       regions = raw_item.regions,  -- Region tags
-    })
+    }
 
     ::skip_midi::
   end

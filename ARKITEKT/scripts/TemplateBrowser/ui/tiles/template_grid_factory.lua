@@ -174,8 +174,8 @@ function M.create(get_templates, metadata, animator, get_tile_width, get_view_mo
           local templates = get_templates()
           for _, tmpl in ipairs(templates) do
             if tmpl.uuid == uuid then
-              table.insert(items, tmpl)
-              table.insert(uuids, uuid)
+              items[#items + 1] = tmpl
+              uuids[#uuids + 1] = uuid
               break
             end
           end

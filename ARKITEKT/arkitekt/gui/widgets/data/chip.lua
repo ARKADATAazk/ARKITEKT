@@ -37,7 +37,7 @@ local function _render_glow(dl, center_x, center_y, radius, color, layers)
   for i = layers, 1, -1 do
     local t = i / layers
     local alpha_multiplier = (1.0 - t) * (1.0 - t)
-    local current_alpha = math.floor(max_alpha * alpha_multiplier)
+    local current_alpha = (max_alpha * alpha_multiplier) // 1
     local current_radius = radius + (t * spread)
     
     if current_alpha > 0 then
@@ -58,7 +58,7 @@ local function _render_square_glow(dl, center_x, center_y, size, color, rounding
   for i = layers, 1, -1 do
     local t = i / layers
     local alpha_multiplier = (1.0 - t) * (1.0 - t)
-    local current_alpha = math.floor(max_alpha * alpha_multiplier)
+    local current_alpha = (max_alpha * alpha_multiplier) // 1
     local expand = t * spread
     local current_size = size + (expand * 2)
     local current_half = current_size * 0.5
@@ -85,7 +85,7 @@ local function _render_border_glow(dl, x1, y1, x2, y2, color, rounding, layers)
   for i = layers, 1, -1 do
     local t = i / layers
     local alpha_multiplier = (1.0 - t) * (1.0 - t)
-    local current_alpha = math.floor(max_alpha * alpha_multiplier)
+    local current_alpha = (max_alpha * alpha_multiplier) // 1
     local expand = t * spread
     
     if current_alpha > 0 then
@@ -153,12 +153,12 @@ function M.draw(ctx, opts)
     local draw_color = _apply_state(color, is_active, is_hovered, is_selected)
     if alpha_factor < 1.0 then
       local current_alpha = draw_color & 0xFF
-      draw_color = (draw_color & 0xFFFFFF00) | math.floor(current_alpha * alpha_factor)
+      draw_color = (draw_color & 0xFFFFFF00) | (current_alpha * alpha_factor) // 1
     end
     
     if shape == SHAPE.CIRCLE then
       if shadow then
-        local shadow_alpha_final = math.floor(shadow_alpha * alpha_factor)
+        local shadow_alpha_final = (shadow_alpha * alpha_factor) // 1
         ImGui.DrawList_AddCircleFilled(dl, 
           x + shadow_offset_x, 
           y + shadow_offset_y, 
@@ -183,7 +183,7 @@ function M.draw(ctx, opts)
       local y2 = y + half_size
 
       if shadow then
-        local shadow_alpha_final = math.floor(shadow_alpha * alpha_factor)
+        local shadow_alpha_final = (shadow_alpha * alpha_factor) // 1
         Draw.rect_filled(dl,
           x1 + shadow_offset_x - shadow_blur,
           y1 + shadow_offset_y - shadow_blur,

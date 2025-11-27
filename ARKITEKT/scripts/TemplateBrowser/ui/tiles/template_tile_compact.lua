@@ -96,18 +96,18 @@ function M.render(ctx, rect, template, state, metadata, animator)
   if chip_color then
     local cr, cg, cb = ark.Colors.rgba_to_components(chip_color)
     local br, bg_c, bb = ark.Colors.rgba_to_components(BG_BASE)
-    local r = math.floor(br * (1 - color_blend) + cr * color_blend)
-    local g = math.floor(bg_c * (1 - color_blend) + cg * color_blend)
-    local b = math.floor(bb * (1 - color_blend) + cb * color_blend)
+    local r = (br * (1 - color_blend) + cr * color_blend) // 1
+    local g = (bg_c * (1 - color_blend) + cg * color_blend) // 1
+    local b = (bb * (1 - color_blend) + cb * color_blend) // 1
     bg_color = ark.Colors.components_to_rgba(r, g, b, 255)
   end
 
   if hover_factor > 0.01 then
     local r1, g1, b1 = ark.Colors.rgba_to_components(bg_color)
     local r2, g2, b2 = ark.Colors.rgba_to_components(BG_HOVER)
-    local r = math.floor(r1 + (r2 - r1) * hover_factor * 0.5)
-    local g = math.floor(g1 + (g2 - g1) * hover_factor * 0.5)
-    local b = math.floor(b1 + (b2 - b1) * hover_factor * 0.5)
+    local r = (r1 + (r2 - r1) * hover_factor * 0.5) // 1
+    local g = (g1 + (g2 - g1) * hover_factor * 0.5) // 1
+    local b = (b1 + (b2 - b1) * hover_factor * 0.5) // 1
     bg_color = ark.Colors.components_to_rgba(r, g, b, 255)
   end
 
@@ -123,9 +123,9 @@ function M.render(ctx, rect, template, state, metadata, animator)
       local cr, cg, cb = ark.Colors.rgba_to_components(chip_color)
       -- Light grey base (190) with 15% chip color influence
       local blend = 0.15
-      local r = math.floor(190 * (1 - blend) + cr * blend)
-      local g = math.floor(190 * (1 - blend) + cg * blend)
-      local b = math.floor(190 * (1 - blend) + cb * blend)
+      local r = (190 * (1 - blend) + cr * blend) // 1
+      local g = (190 * (1 - blend) + cg * blend) // 1
+      local b = (190 * (1 - blend) + cb * blend) // 1
       ant_color = ark.Colors.components_to_rgba(r, g, b, 0x99)
     else
       ant_color = hexrgb("#C0C0C099")  -- Lighter grey with 60% opacity
@@ -139,18 +139,18 @@ function M.render(ctx, rect, template, state, metadata, animator)
     if chip_color then
       local cr, cg, cb = ark.Colors.rgba_to_components(chip_color)
       local br, bg_c, bb = ark.Colors.rgba_to_components(BRD_BASE)
-      local r = math.floor(br * (1 - color_blend) + cr * color_blend)
-      local g = math.floor(bg_c * (1 - color_blend) + cg * color_blend)
-      local b = math.floor(bb * (1 - color_blend) + cb * color_blend)
+      local r = (br * (1 - color_blend) + cr * color_blend) // 1
+      local g = (bg_c * (1 - color_blend) + cg * color_blend) // 1
+      local b = (bb * (1 - color_blend) + cb * color_blend) // 1
       border_color = ark.Colors.components_to_rgba(r, g, b, 255)
     end
 
     if hover_factor > 0.01 then
       local r1, g1, b1 = ark.Colors.rgba_to_components(border_color)
       local r2, g2, b2 = ark.Colors.rgba_to_components(BRD_HOVER)
-      local r = math.floor(r1 + (r2 - r1) * hover_factor)
-      local g = math.floor(g1 + (g2 - g1) * hover_factor)
-      local b = math.floor(b1 + (b2 - b1) * hover_factor)
+      local r = (r1 + (r2 - r1) * hover_factor) // 1
+      local g = (g1 + (g2 - g1) * hover_factor) // 1
+      local b = (b1 + (b2 - b1) * hover_factor) // 1
       border_color = ark.Colors.components_to_rgba(r, g, b, 255)
     end
     ImGui.DrawList_AddRect(dl, x1, y1, x2, y1 + tile_h, border_color, rounding, 0, 1)
@@ -163,7 +163,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
 
   -- Section 1: Template Name (left-aligned, takes ~35% width)
   local available_width = tile_w - (padding * 2)
-  local name_width = math.floor(available_width * M.CONFIG.name_width_fraction)
+  local name_width = (available_width * M.CONFIG.name_width_fraction) // 1
   local name_color = hexrgb("#CCCCCC")  -- Match Parameter Library text color
   if state.selected or state.hover then
     name_color = hexrgb("#FFFFFF")
@@ -215,7 +215,7 @@ function M.render(ctx, rect, template, state, metadata, animator)
   -- Use icon font if available in state
   if state.fonts and state.fonts.icons then
     local base_size = state.fonts.icons_size or 14
-    local font_size = math.floor(base_size * 0.7)  -- Smaller for compact view
+    local font_size = (base_size * 0.7) // 1  -- Smaller for compact view
 
     ImGui.PushFont(ctx, state.fonts.icons, font_size)
     local text_w, text_h = ImGui.CalcTextSize(ctx, star_char)

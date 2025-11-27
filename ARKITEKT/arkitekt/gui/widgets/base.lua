@@ -35,7 +35,7 @@ M.remap = CoreMath.remap
 --- @param v number Value to snap
 --- @return number Snapped value
 function M.snap_pixel(v)
-  return math.floor(v + 0.5)
+  return (v + 0.5) // 1
 end
 
 -- ============================================================================

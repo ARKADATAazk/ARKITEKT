@@ -407,7 +407,7 @@ local function get_selected_nodes(nodes)
   local function collect(ns)
     for _, node in ipairs(ns) do
       if tree_state.selected[node.id] then
-        table.insert(selected_nodes, node)
+        selected_nodes[#selected_nodes + 1] = node
       end
       if node.children then
         collect(node.children)
@@ -475,7 +475,7 @@ local function insert_node_at(nodes, target_id, node_to_insert, position)
         return true
       elseif position == "into" then
         target_node.children = target_node.children or {}
-        table.insert(target_node.children, node_to_insert)
+        target_node.children[#target_node.children + 1] = node_to_insert
         tree_state.open[target_id] = true -- Auto-expand
         return true
       end
@@ -496,8 +496,8 @@ local function draw_checkbox(dl, x, y, checked, enabled)
   local cfg = TREE_CONFIG
   local size = cfg.checkbox_size
 
-  x = math.floor(x + 0.5)
-  y = math.floor(y + 0.5)
+  x = (x + 0.5) // 1
+  y = (y + 0.5) // 1
 
   local bg_color = enabled and cfg.checkbox_bg or cfg.checkbox_bg_disabled
   local border_color = enabled and cfg.checkbox_border or cfg.text_disabled
@@ -528,13 +528,13 @@ local function draw_arrow(dl, x, y, is_open, color)
   color = color or TREE_CONFIG.arrow_color
   local size = TREE_CONFIG.arrow_size
 
-  x = math.floor(x + 0.5)
-  y = math.floor(y + 0.5)
+  x = (x + 0.5) // 1
+  y = (y + 0.5) // 1
 
   if is_open then
     local x1, y1 = x, y
     local x2, y2 = x + size, y
-    local x3, y3 = math.floor(x + size / 2 + 0.5), y + size
+    local x3, y3 = (x + size / 2 + 0.5) // 1, y + size
     ImGui.DrawList_AddTriangleFilled(dl, x1, y1, x2, y2, x3, y3, color)
   else
     local x1, y1 = x, y
@@ -552,8 +552,8 @@ local function draw_folder_icon(dl, x, y, is_open, color)
   local tab_w = 5
   local tab_h = 2
 
-  x = math.floor(x + 0.5)
-  y = math.floor(y + 0.5)
+  x = (x + 0.5) // 1
+  y = (y + 0.5) // 1
 
   ImGui.DrawList_AddRectFilled(dl, x, y, x + tab_w, y + tab_h, color, 0)
   ImGui.DrawList_AddRectFilled(dl, x, y + tab_h, x + main_w, y + tab_h + main_h, color, 0)
@@ -561,8 +561,8 @@ end
 
 local function draw_file_icon(dl, x, y, color)
   color = color or TREE_CONFIG.icon_color
-  x = math.floor(x + 0.5)
-  y = math.floor(y + 0.5)
+  x = (x + 0.5) // 1
+  y = (y + 0.5) // 1
 
   local w = 10
   local h = 12
@@ -576,8 +576,8 @@ end
 
 local function draw_lua_icon(dl, x, y, color)
   color = color or hexrgb("#00007FFF") -- Blue for Lua
-  x = math.floor(x + 0.5)
-  y = math.floor(y + 0.5)
+  x = (x + 0.5) // 1
+  y = (y + 0.5) // 1
 
   -- Draw "L" shape
   ImGui.DrawList_AddRectFilled(dl, x, y, x + 3, y + 12, color, 0)
@@ -586,8 +586,8 @@ end
 
 local function draw_markdown_icon(dl, x, y, color)
   color = color or hexrgb("#0A7EA3FF") -- Cyan for markdown
-  x = math.floor(x + 0.5)
-  y = math.floor(y + 0.5)
+  x = (x + 0.5) // 1
+  y = (y + 0.5) // 1
 
   -- Draw "M" shape using individual lines
   local thickness = 2
@@ -603,8 +603,8 @@ end
 
 local function draw_config_icon(dl, x, y, color)
   color = color or hexrgb("#888888FF")
-  x = math.floor(x + 0.5)
-  y = math.floor(y + 0.5)
+  x = (x + 0.5) // 1
+  y = (y + 0.5) // 1
 
   -- Draw gear-like shape
   ImGui.DrawList_AddCircleFilled(dl, x + 5, y + 6, 4, color)
@@ -642,22 +642,22 @@ end
 
 local function draw_dotted_line(dl, x1, y1, x2, y2, color, thickness, dot_spacing)
   -- Round to whole pixels for crisp rendering
-  x1 = math.floor(x1 + 0.5)
-  y1 = math.floor(y1 + 0.5)
-  x2 = math.floor(x2 + 0.5)
-  y2 = math.floor(y2 + 0.5)
+  x1 = (x1 + 0.5) // 1
+  y1 = (y1 + 0.5) // 1
+  x2 = (x2 + 0.5) // 1
+  y2 = (y2 + 0.5) // 1
 
   local dx = x2 - x1
   local dy = y2 - y1
   local length = math.sqrt(dx * dx + dy * dy)
-  local num_dots = math.floor(length / dot_spacing)
+  local num_dots = (length / dot_spacing) // 1
 
   if num_dots == 0 then return end
 
   for i = 0, num_dots do
     local t = i / num_dots
-    local x = math.floor(x1 + dx * t + 0.5)
-    local y = math.floor(y1 + dy * t + 0.5)
+    local x = (x1 + dx * t + 0.5) // 1
+    local y = (y1 + dy * t + 0.5) // 1
     ImGui.DrawList_AddCircleFilled(dl, x, y, thickness / 2, color)
   end
 end
@@ -787,25 +787,25 @@ local function draw_drag_preview(ctx, dl, drag_node, selected_count, is_copy_mod
   if has_children then
     -- Folder icon (scaled down version)
     local scale = icon_size / 13  -- Original folder is 13 wide
-    local folder_w = math.floor(13 * scale)
-    local folder_h = math.floor(7 * scale)
-    local tab_w = math.floor(5 * scale)
-    local tab_h = math.floor(2 * scale)
+    local folder_w = (13 * scale) // 1
+    local folder_h = (7 * scale) // 1
+    local tab_w = (5 * scale) // 1
+    local tab_h = (2 * scale) // 1
 
-    icon_x = math.floor(icon_x + 0.5)
-    icon_y = math.floor(icon_y + 0.5)
+    icon_x = (icon_x + 0.5) // 1
+    icon_y = (icon_y + 0.5) // 1
 
     ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y, icon_x + tab_w, icon_y + tab_h, icon_color, 0)
     ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y + tab_h, icon_x + folder_w, icon_y + tab_h + folder_h, icon_color, 0)
   else
     -- File icon (scaled down)
     local scale = icon_size / 12
-    local file_w = math.floor(10 * scale)
-    local file_h = math.floor(12 * scale)
-    local fold = math.floor(3 * scale)
+    local file_w = (10 * scale) // 1
+    local file_h = (12 * scale) // 1
+    local fold = (3 * scale) // 1
 
-    icon_x = math.floor(icon_x + 0.5)
-    icon_y = math.floor(icon_y + 0.5)
+    icon_x = (icon_x + 0.5) // 1
+    icon_y = (icon_y + 0.5) // 1
 
     ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y, icon_x + file_w - fold, icon_y + file_h, icon_color, 0)
     ImGui.DrawList_AddRectFilled(dl, icon_x, icon_y + fold, icon_x + file_w, icon_y + file_h, icon_color, 0)
@@ -887,13 +887,13 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
   local matches_search = node_matches_search(node, tree_state.search_text)
 
   -- Add to flat list for keyboard navigation
-  table.insert(tree_state.flat_list, {
+  tree_state.flat_list[#tree_state.flat_list + 1] = {
     id = node.id,
     node = node,
     parent_id = parent_id,
     y_pos = y_pos,
     height = item_h,
-  })
+  }
 
   -- Virtual scrolling: check if item is visible
   local is_visible = not tree_state.use_virtual_scrolling or
@@ -1054,7 +1054,7 @@ local function render_tree_item(ctx, dl, node, depth, y_pos, visible_x, visible_
       if is_selected(node.id) then
         tree_state.drag_node_ids = {}
         for id, _ in pairs(tree_state.selected) do
-          table.insert(tree_state.drag_node_ids, id)
+          tree_state.drag_node_ids[#tree_state.drag_node_ids + 1] = id
         end
       else
         -- Single drag: only drag this node
@@ -1359,7 +1359,7 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
       for _, node in ipairs(selected_nodes) do
         local parent_list = nodes -- Would need proper parent tracking for real implementation
         local duplicated = duplicate_node(node)
-        table.insert(parent_list, duplicated)
+        parent_list[#parent_list + 1] = duplicated
       end
     end
 
@@ -1380,10 +1380,10 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
       if #tree_state.clipboard > 0 then
         for _, node in ipairs(tree_state.clipboard) do
           if tree_state.clipboard_mode == "copy" then
-            table.insert(nodes, duplicate_node(node))
+            nodes[#nodes + 1] = duplicate_node(node)
           else
             -- For cut, would need to remove from original location
-            table.insert(nodes, node)
+            nodes[#nodes + 1] = node
           end
         end
         if tree_state.clipboard_mode == "cut" then
@@ -1544,18 +1544,18 @@ local function draw_custom_tree(ctx, nodes, x, y, w, h)
                 -- Only add (copy) suffix if copying to same parent
                 local same_parent = (source_parent_id == target_parent_id)
                 node_to_insert = duplicate_node(source_node, same_parent)
-                table.insert(new_selected_ids, node_to_insert.id)
+                new_selected_ids[#new_selected_ids + 1] = node_to_insert.id
               end
             else
               -- Move mode: Remove and move
               node_to_insert = remove_node_from_tree(nodes, drag_id)
               if node_to_insert then
-                table.insert(new_selected_ids, node_to_insert.id)
+                new_selected_ids[#new_selected_ids + 1] = node_to_insert.id
               end
             end
 
             if node_to_insert then
-              table.insert(nodes_to_insert, node_to_insert)
+              nodes_to_insert[#nodes_to_insert + 1] = node_to_insert
             end
           end
         end
@@ -1669,7 +1669,7 @@ local function draw_context_menu(ctx, nodes)
     if ImGui.MenuItem(ctx, "Duplicate (Ctrl+D)") then
       local selected_nodes = get_selected_nodes(nodes)
       for _, node in ipairs(selected_nodes) do
-        table.insert(nodes, duplicate_node(node))
+        nodes[#nodes + 1] = duplicate_node(node)
       end
       ImGui.CloseCurrentPopup(ctx)
     end
@@ -1697,9 +1697,9 @@ local function draw_context_menu(ctx, nodes)
     if ImGui.MenuItem(ctx, "Paste (Ctrl+V)", nil, false, #tree_state.clipboard > 0) then
       for _, node in ipairs(tree_state.clipboard) do
         if tree_state.clipboard_mode == "copy" then
-          table.insert(nodes, duplicate_node(node))
+          nodes[#nodes + 1] = duplicate_node(node)
         else
-          table.insert(nodes, node)
+          nodes[#nodes + 1] = node
         end
       end
       if tree_state.clipboard_mode == "cut" then
@@ -1871,7 +1871,7 @@ Shell.run({
     local selected_ids = {}
     for id, _ in pairs(tree_state.selected) do
       selected_count = selected_count + 1
-      table.insert(selected_ids, id)
+      selected_ids[#selected_ids + 1] = id
     end
 
     local selected_text = "None"

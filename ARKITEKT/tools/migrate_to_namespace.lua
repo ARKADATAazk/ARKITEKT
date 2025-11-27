@@ -61,7 +61,7 @@ local function migrate_file(path)
     if var_name and module_path then
       local ns_key = MODULE_MAP[module_path]
       if ns_key then
-        table.insert(require_lines, {line = line, var = var_name, ns_key = ns_key})
+        require_lines[#require_lines + 1] = {line = line, var = var_name, ns_key = ns_key}
         used_modules[ns_key] = true
         local_names[var_name] = ns_key
       end

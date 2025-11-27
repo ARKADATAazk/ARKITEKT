@@ -48,7 +48,7 @@ end
 
 local WF_None = 0
 
-local function floor(n) return math.floor(n + 0.5) end
+local function floor(n) return (n + 0.5) // 1 end
 
 local function smootherstep(t)
   t = math.max(0.0, math.min(1.0, t))
@@ -565,7 +565,7 @@ local hexrgb = Colors.hexrgb
     if self.fullscreen.enabled then
       if self.fullscreen.window_bg_override then
         local alpha_val = self.fullscreen.alpha:value()
-        local bg_alpha = math.floor(255 * alpha_val + 0.5)
+        local bg_alpha = (255 * alpha_val + 0.5) // 1
         local bg_color = Colors and Colors.with_alpha(
           self.fullscreen.window_bg_override, 
           bg_alpha
@@ -608,7 +608,7 @@ local hexrgb = Colors.hexrgb
           
           local alpha_val = self.fullscreen.alpha:value()
           local scrim_opacity = self.fullscreen.scrim_opacity * alpha_val
-          local scrim_alpha = math.floor(255 * scrim_opacity + 0.5)
+          local scrim_alpha = (255 * scrim_opacity + 0.5) // 1
           local scrim_color = Colors.with_alpha(self.fullscreen.scrim_color, scrim_alpha)
           
           Draw.rect_filled(dl, wx, wy, wx + ww, wy + wh, scrim_color, 0)

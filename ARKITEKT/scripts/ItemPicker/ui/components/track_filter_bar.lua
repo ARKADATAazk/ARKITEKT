@@ -57,7 +57,7 @@ local function get_whitelisted_tracks(tracks, whitelist, result)
   for _, track in ipairs(tracks) do
     -- Only include if track AND all its ancestors are whitelisted
     if is_effectively_whitelisted(track, whitelist) then
-      table.insert(result, track)
+      result[#result + 1] = track
     end
     if track.children and #track.children > 0 then
       get_whitelisted_tracks(track.children, whitelist, result)
@@ -171,14 +171,14 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       if is_hovered then
         bg_alpha = is_enabled and 0xDD or 0x66
       end
-      bg_alpha = math.floor(bg_alpha * alpha)
+      bg_alpha = (bg_alpha * alpha) // 1
       local bg_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#2A2A2A"), bg_alpha)
 
       ImGui.DrawList_AddRectFilled(draw_list, tag_x, tag_top, tag_x + tag_width, tag_bottom, bg_color, TAG.ROUNDING)
 
       -- Color bar
       local bar_alpha = is_enabled and 0xFF or 0x66
-      bar_alpha = math.floor(bar_alpha * alpha)
+      bar_alpha = (bar_alpha * alpha) // 1
       local bar_color = ark.Colors.with_alpha(track.display_color, bar_alpha)
 
       ImGui.DrawList_AddRectFilled(draw_list,
@@ -190,7 +190,7 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
       local text_x = tag_x + TAG.COLOR_BAR_WIDTH + 4
       local text_y = tag_top + (TAG.HEIGHT - ImGui.GetTextLineHeight(ctx)) / 2
       local text_alpha = is_enabled and 0xFF or 0x66
-      text_alpha = math.floor(text_alpha * alpha)
+      text_alpha = (text_alpha * alpha) // 1
       local text_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), text_alpha)
 
       -- Truncate name if too long
@@ -313,11 +313,11 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
   end
 
   local all_bg = all_hovered and ark.Colors.hexrgb("#3A3A3A") or ark.Colors.hexrgb("#2A2A2A")
-  all_bg = ark.Colors.with_alpha(all_bg, math.floor(0xEE * alpha))
+  all_bg = ark.Colors.with_alpha(all_bg, (0xEE * alpha) // 1)
   ImGui.DrawList_AddRectFilled(draw_list, all_x, button_y, all_x + button_width, button_y + button_height, all_bg, 3)
 
   local all_text_w = ImGui.CalcTextSize(ctx, "ALL")
-  local all_text_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), math.floor(0xEE * alpha))
+  local all_text_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), (0xEE * alpha) // 1)
   ImGui.DrawList_AddText(draw_list,
     all_x + (button_width - all_text_w) / 2,
     button_y + (button_height - ImGui.GetTextLineHeight(ctx)) / 2,
@@ -338,11 +338,11 @@ function M.draw(ctx, draw_list, x, y, height, state, alpha)
   end
 
   local none_bg = none_hovered and ark.Colors.hexrgb("#3A3A3A") or ark.Colors.hexrgb("#2A2A2A")
-  none_bg = ark.Colors.with_alpha(none_bg, math.floor(0xEE * alpha))
+  none_bg = ark.Colors.with_alpha(none_bg, (0xEE * alpha) // 1)
   ImGui.DrawList_AddRectFilled(draw_list, none_x, button_y, none_x + button_width, button_y + button_height, none_bg, 3)
 
   local none_text_w = ImGui.CalcTextSize(ctx, "NONE")
-  local none_text_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), math.floor(0xEE * alpha))
+  local none_text_color = ark.Colors.with_alpha(ark.Colors.hexrgb("#FFFFFF"), (0xEE * alpha) // 1)
   ImGui.DrawList_AddText(draw_list,
     none_x + (button_width - none_text_w) / 2,
     button_y + (button_height - ImGui.GetTextLineHeight(ctx)) / 2,
@@ -360,7 +360,7 @@ function M.get_enabled_track_guids(state)
   local enabled = {}
   for guid, is_enabled in pairs(state.track_filters_enabled) do
     if is_enabled then
-      table.insert(enabled, guid)
+      enabled[#enabled + 1] = guid
     end
   end
 

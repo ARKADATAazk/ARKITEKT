@@ -54,12 +54,12 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
     end
 
     -- Add chip to current line
-    table.insert(lines[current_line], {
+    lines[current_line][#lines[current_line] + 1] = {
       region = region,
       width = chip_w,
       text_w = text_w,
       text_h = text_h
-    })
+    }
     current_line_width = current_line_width + needed_width
   end
 
@@ -115,7 +115,7 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
       if is_hovered and not is_selected then
         bg_alpha = ark.Colors.opacity(0.6)  -- 60% opacity when hovered
       end
-      bg_alpha = math.floor(bg_alpha * alpha)  -- Apply hover fade
+      bg_alpha = (bg_alpha * alpha) // 1  -- Apply hover fade
       local bg_color = (chip_cfg.bg_color & 0xFFFFFF00) | bg_alpha
 
       -- Draw chip background
@@ -124,7 +124,7 @@ function M.draw(ctx, draw_list, x, y, width, state, config, alpha)
       -- Chip text (region color with minimum lightness, dimmed when unselected)
       local text_color = ensure_min_lightness(region_color, chip_cfg.text_min_lightness)
       local text_alpha = is_selected and 0xFF or 0x66
-      text_alpha = math.floor(text_alpha * alpha)  -- Apply hover fade
+      text_alpha = (text_alpha * alpha) // 1  -- Apply hover fade
       text_color = (text_color & 0xFFFFFF00) | text_alpha
       local text_x = chip_x + chip_cfg.padding_x
       local text_y = line_y + (chip_height - chip_data.text_h) / 2

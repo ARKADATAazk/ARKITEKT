@@ -71,13 +71,13 @@ function M.load_image(ctx, base_name, dpi_scale)
   -- Try selected variant first, then fallback to others
   local try_order = {}
   local selected_suffix = variant_map[selected_scale]
-  table.insert(try_order, selected_suffix)
+  try_order[#try_order + 1] = selected_suffix
 
   -- Add fallbacks (prefer higher res over lower)
   for _, scale in ipairs(scales) do
     local suffix = variant_map[scale]
     if suffix ~= selected_suffix then
-      table.insert(try_order, suffix)
+      try_order[#try_order + 1] = suffix
     end
   end
 

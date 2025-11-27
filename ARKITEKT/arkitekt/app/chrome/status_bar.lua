@@ -223,10 +223,10 @@ function M.new(config)
     local resize_handle_width_final = show_resize_handle and 16 or 0
 
     local right_items = {}
-    if right_text and right_text ~= "" then table.insert(right_items, right_text) end
+    if right_text and right_text ~= "" then right_items[#right_items + 1] = right_text end
     if status.right_buttons then
       for _, btn in ipairs(status.right_buttons) do
-        table.insert(right_items, { type = "button", data = btn })
+        right_items[#right_items + 1] = { type = "button", data = btn }
       end
     end
 
@@ -234,12 +234,12 @@ function M.new(config)
     for _, item in ipairs(right_items) do
       if type(item) == "string" then
         local tw = select(1, ImGui.CalcTextSize(ctx, item)) or 0
-        table.insert(item_widths, { type = "text", width = tw, content = item })
+        item_widths[#item_widths + 1] = { type = "text", width = tw, content = item }
         total_right_w = total_right_w + tw + 10
       elseif type(item) == "table" and item.type == "button" then
         local btn = item.data
         local bw = btn.width or math.max(80, (select(1, ImGui.CalcTextSize(ctx, btn.label)) or 0) + 16)
-        table.insert(item_widths, { type = "button", width = bw, data = btn })
+        item_widths[#item_widths + 1] = { type = "button", width = bw, data = btn }
         total_right_w = total_right_w + bw + 10
       end
     end

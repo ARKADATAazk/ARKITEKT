@@ -33,7 +33,7 @@ function M.exclude_pooled_duplicates(items)
 
   for i, entry in ipairs(items) do
     if not M.is_pooled_duplicate(entry, seen_pools) then
-      table.insert(filtered, entry)
+      filtered[#filtered + 1] = entry
     end
   end
 
@@ -84,7 +84,7 @@ function M.build_filtered_items(content, settings, is_disabled, search_string)
     end
 
     if should_include then
-      table.insert(filtered, {index = i, entry = entry})
+      filtered[#filtered + 1] = {index = i, entry = entry}
     end
   end
 
@@ -111,7 +111,7 @@ function M.get_unique_pooled_items(items)
   -- Second pass: collect first occurrence of each pool
   for _, entry in ipairs(items) do
     if not M.is_pooled_duplicate(entry, seen_pools) then
-      table.insert(unique, entry)
+      unique[#unique + 1] = entry
     end
   end
 

@@ -175,7 +175,7 @@ function M.PushMyStyle(ctx, opts)
     push_color(ImGui.Col_ModalWindowDimBg, A(C.TEXT_DIMMED, 0x59))
   end
 
-  table.insert(style_color_stack, color_pushes)
+  style_color_stack[#style_color_stack + 1] = color_pushes
 end
 
 function M.PopMyStyle(ctx)

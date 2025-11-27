@@ -25,7 +25,7 @@ function UndoManager:push(operation)
   end
 
   -- Add new operation
-  table.insert(self.stack, operation)
+  self.stack[#self.stack + 1] = operation
   self.current_index = #self.stack
 
   -- Limit stack size

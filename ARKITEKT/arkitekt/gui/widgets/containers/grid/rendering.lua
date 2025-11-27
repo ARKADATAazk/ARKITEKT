@@ -31,7 +31,7 @@ function M.TileHelpers.render_hover_shadow(dl, x1, y1, x2, y2, hover_factor, rou
   config = config or DEFAULTS.hover_shadow
   if not config.enabled or hover_factor < 0.01 then return end
   
-  local shadow_alpha = math.floor(hover_factor * (config.max_alpha or 20))
+  local shadow_alpha = (hover_factor * (config.max_alpha or 20)) // 1
   local shadow_col = (0x000000 << 8) | shadow_alpha
   
   for i = (config.max_offset or 2), 1, -1 do

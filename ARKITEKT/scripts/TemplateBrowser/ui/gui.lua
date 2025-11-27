@@ -145,7 +145,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
           self.state.set_status("Removed from Favorites: " .. template.name, "success")
         else
           -- Add to favorites
-          table.insert(favorites.template_refs, template.uuid)
+          favorites.template_refs[#favorites.template_refs + 1] = template.uuid
           self.state.set_status("Added to Favorites: " .. template.name, "success")
         end
 
@@ -235,7 +235,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       for _, ref_uuid in ipairs(favorites.template_refs) do
         for _, tmpl in ipairs(self.state.templates) do
           if tmpl.uuid == ref_uuid then
-            table.insert(templates, tmpl)
+            templates[#templates + 1] = tmpl
             break
           end
         end
@@ -247,13 +247,13 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         local metadata = self.state.metadata and self.state.metadata.templates[tmpl.uuid]
         local usage_count = metadata and metadata.usage_count or 0
         if usage_count > 0 then
-          table.insert(usage_list, {template = tmpl, usage_count = usage_count})
+          usage_list[#usage_list + 1] = {template = tmpl, usage_count = usage_count}
         end
       end
       table.sort(usage_list, function(a, b) return a.usage_count > b.usage_count end)
       templates = {}
       for i = 1, math.min(100, #usage_list) do
-        table.insert(templates, usage_list[i].template)
+        templates[#templates + 1] = usage_list[i].template
       end
     else
       -- Get recents
@@ -261,13 +261,13 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       for _, tmpl in ipairs(self.state.templates) do
         local metadata = self.state.metadata and self.state.metadata.templates[tmpl.uuid]
         if metadata and metadata.last_used then
-          table.insert(recent, {template = tmpl, last_used = metadata.last_used})
+          recent[#recent + 1] = {template = tmpl, last_used = metadata.last_used}
         end
       end
       table.sort(recent, function(a, b) return a.last_used > b.last_used end)
       templates = {}
       for i = 1, math.min(100, #recent) do
-        table.insert(templates, recent[i].template)
+        templates[#templates + 1] = recent[i].template
       end
     end
 
@@ -277,7 +277,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
       local filtered = {}
       for _, tmpl in ipairs(templates) do
         if tmpl.name:lower():find(search_query, 1, true) then
-          table.insert(filtered, tmpl)
+          filtered[#filtered + 1] = tmpl
         end
       end
       templates = filtered
@@ -362,7 +362,7 @@ function GUI:initialize_once(ctx, is_overlay_mode)
           table.remove(favorites.template_refs, favorite_index)
           self.state.set_status("Removed from Favorites: " .. template.name, "success")
         else
-          table.insert(favorites.template_refs, template.uuid)
+          favorites.template_refs[#favorites.template_refs + 1] = template.uuid
           self.state.set_status("Added to Favorites: " .. template.name, "success")
         end
         Persistence.save_metadata(self.state.metadata)
@@ -461,22 +461,22 @@ function GUI:initialize_once(ctx, is_overlay_mode)
         for tag_name, _ in pairs(self.state.filter_tags) do
           local tag_data = self.state.metadata.tags[tag_name]
           if tag_data then
-            table.insert(items, {
+            items[#items + 1] = {
               id = "tag:" .. tag_name,
               label = tag_name,
               color = tag_data.color,
-            })
+            }
           end
         end
       end
 
       -- Add active FX filters
       for fx_name, _ in pairs(self.state.filter_fx) do
-        table.insert(items, {
+        items[#items + 1] = {
           id = "fx:" .. fx_name,
           label = fx_name,
           color = 0x888888,  -- Gray for FX
-        })
+        }
       end
 
       return items

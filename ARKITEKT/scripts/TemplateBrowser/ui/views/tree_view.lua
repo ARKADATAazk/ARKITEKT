@@ -30,7 +30,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     -- Convert children recursively
     if n.children then
       for _, child in ipairs(n.children) do
-        table.insert(tree_node.children, convert_physical_node(child))
+        tree_node.children[#tree_node.children + 1] = convert_physical_node(child)
       end
     end
 
@@ -56,7 +56,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
           color = vfolder.color,
           children = build_virtual_tree(vfolder.id),  -- Recursively add virtual children
         }
-        table.insert(virtual_children, vnode)
+        virtual_children[#virtual_children + 1] = vnode
       end
     end
 
@@ -94,7 +94,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
           is_folder = true,
         }
 
-        table.insert(nodes, folder_node)
+        nodes[#nodes + 1] = folder_node
         idx = idx + 1
       end
 
@@ -117,7 +117,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
           is_file = true,
         }
 
-        table.insert(nodes, file_node)
+        nodes[#nodes + 1] = file_node
         idx = idx + 1
       end
 
@@ -153,11 +153,11 @@ local function prepare_tree_nodes(node, metadata, all_templates)
   -- Add all physical folders as children of Physical Root
   if node.children then
     for _, child in ipairs(node.children) do
-      table.insert(physical_root.children, convert_physical_node(child))
+      physical_root.children[#physical_root.children + 1] = convert_physical_node(child)
     end
   end
 
-  table.insert(root_nodes, physical_root)
+  root_nodes[#root_nodes + 1] = physical_root
 
   -- Add Virtual Root node (separate from physical)
   local virtual_root = {
@@ -168,7 +168,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     is_virtual = true,
   }
 
-  table.insert(root_nodes, virtual_root)
+  root_nodes[#root_nodes + 1] = virtual_root
 
   -- Add Archive Root node
   local archive_root = {
@@ -179,7 +179,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     is_archive = true,
   }
 
-  table.insert(root_nodes, archive_root)
+  root_nodes[#root_nodes + 1] = archive_root
 
   return root_nodes
 end
@@ -279,11 +279,11 @@ function M.draw_physical_tree(ctx, state, config)
       if dragged_node_id:find("\n") then
         -- Multi-drag: split by newline
         for id in dragged_node_id:gmatch("[^\n]+") do
-          table.insert(dragged_ids, id)
+          dragged_ids[#dragged_ids + 1] = id
         end
       else
         -- Single drag
-        table.insert(dragged_ids, dragged_node_id)
+        dragged_ids[#dragged_ids + 1] = dragged_node_id
       end
 
       -- Validate all folders before moving any
@@ -307,7 +307,7 @@ function M.draw_physical_tree(ctx, state, config)
           return
         end
 
-        table.insert(folders_to_move, source_node)
+        folders_to_move[#folders_to_move + 1] = source_node
       end
 
       -- Prepare move operations for all folders
@@ -328,12 +328,12 @@ function M.draw_physical_tree(ctx, state, config)
           return
         end
 
-        table.insert(move_operations, {
+        move_operations[#move_operations + 1] = {
           source_normalized = source_normalized,
           source_name = source_name,
           old_parent = old_parent,
           new_path = nil  -- Will be set after move
-        })
+        }
       end
 
       -- Execute all moves
@@ -419,11 +419,11 @@ function M.draw_physical_tree(ctx, state, config)
       if template_payload:find("\n") then
         -- Multi-template drag
         for uuid in template_payload:gmatch("[^\n]+") do
-          table.insert(uuids, uuid)
+          uuids[#uuids + 1] = uuid
         end
       else
         -- Single template
-        table.insert(uuids, template_payload)
+        uuids[#uuids + 1] = template_payload
       end
 
       if #uuids == 0 then return end
@@ -457,7 +457,7 @@ function M.draw_physical_tree(ctx, state, config)
           end
 
           if not already_exists then
-            table.insert(vfolder.template_refs, uuid)
+            vfolder.template_refs[#vfolder.template_refs + 1] = uuid
             added_count = added_count + 1
           end
         end
@@ -488,7 +488,7 @@ function M.draw_physical_tree(ctx, state, config)
       for _, uuid in ipairs(uuids) do
         for _, tmpl in ipairs(state.templates) do
           if tmpl.uuid == uuid then
-            table.insert(templates_to_move, tmpl)
+            templates_to_move[#templates_to_move + 1] = tmpl
             break
           end
         end
@@ -560,10 +560,10 @@ function M.draw_physical_tree(ctx, state, config)
         -- Build color options from centralized palette
         local color_options = {{ name = "None", color = nil }}
         for _, palette_color in ipairs(ColorDefs.PALETTE) do
-          table.insert(color_options, {
+          color_options[#color_options + 1] = {
             name = palette_color.name,
             color = Colors.hexrgb(palette_color.hex)
-          })
+          }
         end
 
         for _, color_opt in ipairs(color_options) do
@@ -924,10 +924,10 @@ function M.draw_virtual_tree(ctx, state, config)
       local uuids = {}
       if template_payload:find("\n") then
         for uuid in template_payload:gmatch("[^\n]+") do
-          table.insert(uuids, uuid)
+          uuids[#uuids + 1] = uuid
         end
       else
-        table.insert(uuids, template_payload)
+        uuids[#uuids + 1] = template_payload
       end
 
       if #uuids == 0 then return end
@@ -956,7 +956,7 @@ function M.draw_virtual_tree(ctx, state, config)
           end
 
           if not already_exists then
-            table.insert(vfolder.template_refs, uuid)
+            vfolder.template_refs[#vfolder.template_refs + 1] = uuid
             added_count = added_count + 1
           end
         end
@@ -992,10 +992,10 @@ function M.draw_virtual_tree(ctx, state, config)
         -- Build color options from centralized palette
         local color_options = {{ name = "None", color = nil }}
         for _, palette_color in ipairs(ColorDefs.PALETTE) do
-          table.insert(color_options, {
+          color_options[#color_options + 1] = {
             name = palette_color.name,
             color = Colors.hexrgb(palette_color.hex)
-          })
+          }
         end
 
         for _, color_opt in ipairs(color_options) do

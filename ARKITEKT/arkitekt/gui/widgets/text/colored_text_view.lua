@@ -141,7 +141,7 @@ function ColoredTextView:screen_pos_to_coordinates(ctx, screen_pos)
   local local_x = screen_pos.x - origin_x
   local local_y = screen_pos.y - origin_y
   
-  local line_no = math.max(0, math.floor(local_y / self.char_advance.y))
+  local line_no = math.max(0, (local_y / self.char_advance.y) // 1)
   line_no = math.min(line_no, #self.lines - 1)
   
   if line_no < 0 or line_no >= #self.lines then
@@ -406,7 +406,7 @@ function ColoredTextView:render(ctx, width, height)
   local cursor_x, cursor_y = ImGui.GetCursorScreenPos(ctx)
   local scroll_y = ImGui.GetScrollY(ctx)
   
-  local first_line = math.floor(scroll_y / self.char_advance.y)
+  local first_line = (scroll_y / self.char_advance.y) // 1
   local visible_lines = math.ceil(height / self.char_advance.y) + 1
   local last_line = math.min(#self.lines - 1, first_line + visible_lines)
   

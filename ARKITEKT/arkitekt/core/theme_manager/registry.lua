@@ -38,7 +38,7 @@ local palette_cache = {}
 
 --- Round t to 3 decimal places to avoid float comparison issues
 local function round_t(t)
-  return math.floor(t * 1000 + 0.5) / 1000
+  return (t * 1000 + 0.5) // 1 / 1000
 end
 
 --- Clear the script palette cache (called when theme changes)

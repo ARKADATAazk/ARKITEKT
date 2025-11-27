@@ -359,10 +359,10 @@ function M.GetProjectMIDI(settings, state)
           -- Split mode: one tile per MIDI item (use item GUID as key)
           local item_guid = reaper.BR_GetMediaItemGUID(item)
           midi_items[item_guid] = { item_data }  -- Wrap in array for consistency
-          table.insert(midi_indexes, item_guid)
+          midi_indexes[#midi_indexes + 1] = item_guid
         else
           -- Grouped mode: collect items by track
-          table.insert(track_midi, item_data)
+          track_midi[#track_midi + 1] = item_data
         end
 
         -- Mark this MIDI data as collected
@@ -375,7 +375,7 @@ function M.GetProjectMIDI(settings, state)
     if not split_mode and #track_midi > 0 then
       local track_guid = reaper.GetTrackGUID(track)
       midi_items[track_guid] = track_midi
-      table.insert(midi_indexes, track_guid)
+      midi_indexes[#midi_indexes + 1] = track_guid
     end
     ::next_track::
   end
@@ -434,11 +434,11 @@ function M.InsertItemAtMousePos(item, state, use_pooled_copy)
         end
 
         if current_item and reaper.ValidatePtr2(0, current_item, "MediaItem*") then
-          table.insert(items_to_insert, current_item)
+          items_to_insert[#items_to_insert + 1] = current_item
         end
       end
     else
-      table.insert(items_to_insert, item)
+      items_to_insert[#items_to_insert + 1] = item
     end
 
     -- Handle pooled MIDI copy behavior
@@ -515,7 +515,7 @@ function M.GetAllProjectRegions()
         rgba_color = 0x4A5A6AFF  -- Fallback gray color
       end
 
-      table.insert(regions, {name = name, color = rgba_color})
+      regions[#regions + 1] = {name = name, color = rgba_color}
     end
   end
 
@@ -552,7 +552,7 @@ function M.GetRegionsForItem(item)
             rgba_color = 0x4A5A6AFF  -- Fallback gray color
           end
 
-          table.insert(regions, {name = name, color = rgba_color})
+          regions[#regions + 1] = {name = name, color = rgba_color}
         end
       end
     end

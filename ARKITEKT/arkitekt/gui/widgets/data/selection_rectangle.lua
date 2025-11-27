@@ -91,10 +91,10 @@ function SelRect:aabb()
   local x2 = math.max(adjusted_start_x, self.current_pos[1])
   local y2 = math.max(adjusted_start_y, self.current_pos[2])
 
-  x1 = math.floor(x1 + 0.5)
-  y1 = math.floor(y1 + 0.5)
-  x2 = math.floor(x2 + 0.5)
-  y2 = math.floor(y2 + 0.5)
+  x1 = (x1 + 0.5) // 1
+  y1 = (y1 + 0.5) // 1
+  x2 = (x2 + 0.5) // 1
+  y2 = (y2 + 0.5) // 1
 
   return x1, y1, x2, y2
 end
