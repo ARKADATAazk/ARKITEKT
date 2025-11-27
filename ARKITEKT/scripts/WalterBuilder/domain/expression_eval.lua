@@ -478,11 +478,14 @@ local function eval_tokens(tokens, pos, context)
     b, next_pos = eval_tokens(tokens, next_pos, context)
     if not b then return nil, next_pos end
 
-    -- If one is a single scalar, scale the other
-    if #a == 1 and #b > 1 then
-      return scale_array(b, a[1]), next_pos
-    elseif #b == 1 and #a > 1 then
-      return scale_array(a, b[1]), next_pos
+    -- For multiplication only: if one is a single scalar, scale the other
+    -- This handles "* scale [coords]" where scale is a number
+    if op == "*" then
+      if #a == 1 and #b > 1 then
+        return scale_array(b, a[1]), next_pos
+      elseif #b == 1 and #a > 1 then
+        return scale_array(a, b[1]), next_pos
+      end
     end
 
     return eval_op(op, a, b), next_pos
