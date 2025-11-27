@@ -275,9 +275,26 @@ function M.run(opts)
   local config = Config.deepMerge(Constants.WINDOW, opts or {})
 
   -- ============================================================================
-  -- OVERLAY MODE: Branch to overlay setup
+  -- MODE-BASED PRESETS: Apply ImGui flags and chrome configuration
   -- ============================================================================
-  if config.mode == "overlay" then
+  -- If mode is specified, apply the corresponding presets (unless explicitly overridden)
+  if config.mode and (config.mode == "overlay" or config.mode == "hud" or config.mode == "window") then
+    -- Apply ImGui flags preset if not already specified
+    if not opts.imgui_flags and not opts.flags then
+      config.imgui_flags = config.mode
+    end
+
+    -- Apply chrome preset if not already specified
+    if not opts.chrome then
+      config.chrome = config.mode
+    end
+  end
+
+  -- ============================================================================
+  -- OVERLAY MODE: Branch to overlay setup (legacy mode support)
+  -- LEGACY_COMPAT: Remove in v2.0 - Use unified Window.new() path with imgui_flags
+  -- ============================================================================
+  if config.mode == "overlay" and not config.imgui_flags then
     return run_overlay_mode(config)
   end
 
@@ -349,15 +366,25 @@ function M.run(opts)
     initial_pos     = config.initial_pos,
     initial_size    = config.initial_size,
     min_size        = config.min_size,
+
+    -- Chrome configuration (new)
+    chrome          = config.chrome,
+    imgui_flags     = config.imgui_flags,
+
+    -- LEGACY_COMPAT: Remove in v2.0 - Use chrome/imgui_flags instead
     show_status_bar = config.show_status_bar,
+    show_statusbar  = config.show_statusbar,
     show_titlebar   = config.show_titlebar,
     show_icon       = show_icon,
+    show_version    = config.show_version,
+    enable_maximize = config.enable_maximize,
+
     get_status_func = config.get_status_func,
     status_bar_height = Constants.STATUS_BAR.height,
     content_padding = config.content_padding,
     titlebar_pad_h  = config.titlebar_pad_h,
     titlebar_pad_v  = config.titlebar_pad_v,
-    flags           = config.flags,
+    flags           = config.flags,  -- LEGACY_COMPAT: Use imgui_flags
     style           = style,
     tabs            = config.tabs,
     bg_color_floating = config.bg_color_floating,
