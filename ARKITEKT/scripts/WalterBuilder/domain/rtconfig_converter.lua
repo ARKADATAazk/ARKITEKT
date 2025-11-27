@@ -691,6 +691,7 @@ end
 -- Non-visual elements: .color, .font, .margin (these are styling, not layout)
 local function is_visual_element(element)
   local id = element.id or ""
+  local coords = element.coords
 
   -- Filter out styling elements (not positioned on canvas)
   if id:match("%.color$") or id:match("%.color%.") then
@@ -702,13 +703,30 @@ local function is_visual_element(element)
   if id:match("%.margin$") then
     return false
   end
+  if id:match("%.fadermode$") then
+    return false  -- Fader mode flags, not visual
+  end
+  if id:match("%.visflags$") then
+    return false  -- Visibility flags, not visual
+  end
 
-  -- Filter elements with no valid size (0x0 can be hidden)
-  -- But keep .size elements since they define container bounds
-  if not id:match("%.size$") then
-    if element.coords.w <= 0 and element.coords.h <= 0 then
-      return false  -- Zero-size non-container elements aren't visual
-    end
+  -- Keep .size elements - they define container bounds
+  if id:match("%.size$") then
+    return true
+  end
+
+  -- Keep elements with attachment scaling (they stretch with parent)
+  -- If rs > ls or bs > ts, the element has width/height from attachment
+  local has_h_stretch = (coords.rs or 0) > (coords.ls or 0)
+  local has_v_stretch = (coords.bs or 0) > (coords.ts or 0)
+
+  if has_h_stretch or has_v_stretch then
+    return true  -- Element stretches with parent
+  end
+
+  -- Filter elements with no valid size (0x0 and no stretching)
+  if coords.w <= 0 and coords.h <= 0 then
+    return false  -- Zero-size non-container elements aren't visual
   end
 
   return true
