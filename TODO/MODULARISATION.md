@@ -344,6 +344,76 @@ These are domain-specific and unlikely to be extracted:
 
 ---
 
+## New Extraction Candidates (2025-11-27)
+
+### Transport Icon Library (HIGH VALUE - Quick Win)
+- [ ] **arkitekt/gui/draw/icon_library.lua** - Generic icon drawing functions
+  - **Source**: `RegionPlaylist/ui/views/transport/transport_icons.lua` (312 lines)
+  - **Functions**: `draw_play()`, `draw_stop()`, `draw_pause()`, `draw_jump()`, `draw_bolt()`, `draw_gear()`, `draw_tool()`, `draw_timeline()`, `draw_list()`, `draw_close()`
+  - **Dependencies**: Only ImGui (clean extraction)
+  - **Reuse potential**: Very high - any script needing control/action icons
+  - **Effort**: Low (copy + cleanup)
+
+### Animated Button Widget (MEDIUM VALUE)
+- [ ] **arkitekt/gui/widgets/primitives/animated_button.lua** - Button with hover animation
+  - **Source**: `RegionPlaylist/ui/views/transport/button_widgets.lua` (159 lines)
+  - **Features**: Hover color lerp, icon slot, border/background styling
+  - **Reuse potential**: Medium - enables animated buttons elsewhere
+  - **Effort**: Medium (needs generalization)
+
+### Text Truncation Utility (MEDIUM VALUE - Quick Win)
+- [ ] **arkitekt/core/text_utils.lua** - Text fitting utilities
+  - **Source**: `TemplateBrowser/ui/tiles/helpers.lua` (30 lines)
+  - **Function**: `truncate_text(ctx, text, max_width)` - Binary search for fit
+  - **Reuse potential**: High - needed anywhere text must fit
+  - **Effort**: Low (single function)
+
+### Music Time Formatting (LOW-MEDIUM VALUE)
+- [ ] **arkitekt/core/music_formatting.lua** - Musical time display
+  - **Source**: `RegionPlaylist/ui/tile_utilities.lua` (61 lines)
+  - **Function**: Format bar length with musical notation (bars:beats:hundredths)
+  - **Reuse potential**: Medium - useful for music-focused scripts
+  - **Effort**: Low
+
+### Job Queue (MEDIUM VALUE)
+- [ ] **arkitekt/core/job_queue.lua** - Background task processing
+  - **Source**: `ItemPicker/data/job_queue.lua` (369 lines)
+  - **Features**: Queue jobs, process in batches, progress tracking
+  - **Reuse potential**: Medium - useful for heavy async operations
+  - **Effort**: Medium (review for generalization)
+
+### Disk Cache Abstraction (LOW-MEDIUM VALUE)
+- [ ] **arkitekt/core/disk_cache.lua** - File-based caching
+  - **Source**: `ItemPicker/data/disk_cache.lua`
+  - **Features**: Cache data to disk, invalidation, size limits
+  - **Reuse potential**: Medium - useful for expensive computations
+  - **Effort**: Medium
+
+---
+
+## Pattern Documentation (No Code Extraction)
+
+### Renderer Factory Pattern
+- [ ] **cookbook/RENDERER_PATTERN.md** - Document common renderer pattern
+  - **Found in**: ItemPicker (3 renderers), RegionPlaylist (3 renderers), TemplateBrowser (tile renderers), ThemeAdjuster (5+ renderers), WalterBuilder (2 renderers)
+  - **Pattern**: `M.draw(ctx, data, config) → result`
+  - **Value**: Consistency, easier onboarding
+  - **No code extraction** - too app-specific, but pattern should be documented
+
+---
+
+## Quick Win Priority List
+
+| # | Task | Effort | Value | Files |
+|---|------|--------|-------|-------|
+| 1 | Extract transport icons | Low | High | 1 → 1 |
+| 2 | Extract text truncation | Low | Medium | 1 → 1 |
+| 3 | Migrate TemplateBrowser sorting | Low | Medium | 1 |
+| 4 | Migrate ItemPicker sorting | Low | Medium | 1 |
+| 5 | Extract music time formatting | Low | Low-Med | 1 → 1 |
+
+---
+
 ## Discovery Commands
 
 ```bash
