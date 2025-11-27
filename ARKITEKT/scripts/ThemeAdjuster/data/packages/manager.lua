@@ -65,16 +65,7 @@ local function scan_package_folder(package_path, package_id)
   local manifest_path = package_path .. SEP .. "manifest.json"
   local content = Fs.read_text(manifest_path)
   if content then
-    local ok, manifest = pcall(function()
-      -- Simple JSON parse for basic structure
-      -- Note: This is a minimal implementation. For production, use a proper JSON library
-      local data = {}
-      for key, value in string.gmatch(content, '"([^"]+)"%s*:%s*"([^"]+)"') do
-        data[key] = value
-      end
-      return data
-    end)
-
+    local ok, manifest = pcall(JSON.decode, content)
     if ok and manifest then
       package.meta.name = manifest.name or package_id
       package.meta.version = manifest.version or "1.0.0"
