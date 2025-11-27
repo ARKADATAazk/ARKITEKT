@@ -1,7 +1,8 @@
 # Script Migration Plans
 
-> Detailed file-by-file migration plans for restructuring ARKITEKT scripts.
-> **TemplateBrowser is the reference implementation** - migrate it first to establish patterns.
+> Overview of migration patterns for restructuring ARKITEKT scripts.
+>
+> **Detailed per-script plans are in `TODO/scriptRefacto/`** - that's the source of truth for file-by-file migration steps. This doc provides the overview and target architecture.
 
 ## Table of Contents
 
@@ -16,26 +17,24 @@
 
 ## Target Architecture
 
-All scripts will follow this canonical structure:
+All scripts follow this canonical structure (see [SCRIPT_LAYERS.md](./SCRIPT_LAYERS.md) for the pragmatic approach):
 
 ```
 [ScriptName]/
 ├── app/              # Application bootstrap, config, state container
 │   ├── init.lua      # Dependency injection, startup sequence
-│   ├── config.lua    # Static configuration
 │   └── state.lua     # Central state container (simplified)
 │
-├── domain/           # Pure business logic (NO I/O, NO UI)
+├── domain/           # Business logic (can use reaper.* in scripts)
 │   ├── [entity]/     # Grouped by business entity
 │   │   ├── model.lua     # Data structures
 │   │   ├── service.lua   # Business operations
 │   │   └── repository.lua # Data access abstraction
 │   └── ...
 │
-├── infra/            # External I/O (files, network, REAPER API bridges)
-│   ├── storage.lua   # Persistence
-│   ├── undo.lua      # Undo system bridge
-│   └── ...
+├── storage/          # Persistence (ExtState, JSON)
+│   ├── persistence.lua
+│   └── undo.lua      # Undo system bridge
 │
 ├── ui/               # Presentation layer
 │   ├── init.lua      # Main GUI orchestrator
@@ -44,18 +43,18 @@ All scripts will follow this canonical structure:
 │   └── ...
 │
 ├── defs/             # Static definitions (constants, defaults, strings)
-└── tests/            # Test files
+└── tests/            # Test files (integration tests in REAPER)
 ```
 
 ### Key Principles
 
 | Principle | Description |
 |-----------|-------------|
-| **Separation of Concerns** | Domain logic knows nothing about UI or I/O |
-| **Dependency Direction** | `ui/` → `domain/` → `infra/` (never reverse) |
+| **Separation of Concerns** | Domain logic grouped by concept |
+| **Dependency Direction** | `ui/` → `domain/` → `storage/` |
 | **State Simplification** | `app/state.lua` is a container, not business logic |
 | **UI State Isolation** | Animation, preferences → `ui/state/` |
-| **I/O Isolation** | All file/network/REAPER API in `infra/` |
+| **Pragmatic Purity** | Scripts can use `reaper.*` in domain (see SCRIPT_LAYERS.md) |
 
 ---
 
@@ -63,8 +62,7 @@ All scripts will follow this canonical structure:
 
 > **Priority: 1st** | **Effort: Low** | **Status: Reference Implementation**
 >
-> TemplateBrowser already has `domain/` folder - it's the closest to target architecture.
-> Complete this first to establish patterns for other scripts.
+> See `TODO/scriptRefacto/TemplateBrowser/` for detailed migration steps.
 
 ### Current Structure (39 files)
 
@@ -426,7 +424,7 @@ After confirming everything works:
 
 > **Priority: 2nd** | **Effort: Medium**
 >
-> Most fragmented structure; clear improvement opportunities.
+> See `TODO/scriptRefacto/ItemPicker/` for detailed migration steps.
 
 ### Current Structure (32 files)
 
@@ -576,7 +574,7 @@ ItemPicker/
 
 > **Priority: 3rd** | **Effort: Medium**
 >
-> Clear domain (theme logic); straightforward migration path.
+> See `TODO/scriptRefacto/ThemeAdjuster/` for detailed migration steps.
 
 ### Current Structure (40 files)
 
@@ -726,7 +724,7 @@ ThemeAdjuster/
 
 > **Priority: 4th** | **Effort: High**
 >
-> Most complex script; migrate last with lessons learned from other scripts.
+> See `TODO/scriptRefacto/RegionPlaylist/` for detailed migration steps.
 
 ### Current Structure (47 files)
 

@@ -85,11 +85,13 @@ function M.create(config) end
 | Rule | Description |
 |------|-------------|
 | **app/ always has 2 files** | `init.lua` (bootstrap), `state.lua` (container) |
-| **domain/ has no I/O** | Never `require` storage, never call REAPER API |
-| **infra/ handles all I/O** | Persistence, caching, REAPER API wrappers |
+| **domain/ organization** | Group by business concept (see note below) |
+| **storage/ handles persistence** | ExtState, JSON files |
 | **ui/init.lua** | Always the UI orchestrator entry point |
 | **ui/state/** | UI-only state (preferences, animation, NOT business data) |
 | **Keep defs/** | This name is clear and doesn't collide |
+
+> **Note:** Scripts take a pragmatic approach - `domain/` can use `reaper.*` directly since all code runs in REAPER anyway. See [SCRIPT_LAYERS.md](./SCRIPT_LAYERS.md) for the framework vs scripts distinction.
 
 ### Forbidden Folder Names
 
@@ -97,9 +99,9 @@ function M.create(config) end
 |--------|-----|-------------|
 | `core/` | Becomes dumping ground | Distribute to proper layers |
 | `utils/` | Too vague | Use arkitekt utilities or specific layer |
-| `services/` | Ambiguous | `domain/*/service.lua` or `infra/` |
+| `services/` | Ambiguous | `domain/*/service.lua` or `storage/` |
 | `helpers/` | Too vague | Put in specific layer |
-| `lib/` | Unclear scope | `domain/` for logic, `infra/` for I/O |
+| `lib/` | Unclear scope | `domain/` for logic, `storage/` for persistence |
 | `common/` | Everything is "common" | Be specific |
 
 ### File Size Guidelines
@@ -574,11 +576,13 @@ local clamped_pos = max(region.start, min(playpos, region["end"]))
 
 ### Layer Checklist
 
-- [ ] `app/` has only `init.lua` and `state.lua`
-- [ ] `domain/` has no `require` for storage or REAPER API
-- [ ] `infra/` handles all I/O operations
+- [ ] `app/` has `init.lua` and `state.lua`
+- [ ] `domain/` groups by business concept
+- [ ] `storage/` handles persistence (ExtState, JSON)
 - [ ] `ui/state/` contains only UI preferences, not business data
 - [ ] No `core/`, `utils/`, or `services/` folders
+
+> See [SCRIPT_LAYERS.md](./SCRIPT_LAYERS.md) for pragmatic vs strict purity guidance.
 
 ---
 
