@@ -71,11 +71,8 @@ ThemeAdjuster/
   - `.assembler_state.json` tracks applied assets
   - Restores original files when packages are removed
 - [x] **Output mode toggle** - Folder (📁) vs ZIP (📦) in footer
-- [ ] Handle conflicts (same key from multiple packages) - show warning?
-- [ ] **ZIP operation progress UI** - Since PowerShell runs hidden (no scary console flash), need in-app feedback:
-  - Progress bar or spinner during extract/compress
-  - Log/status text showing what's happening
-  - Clear success/failure indication
+- [ ] Handle conflicts (same key from multiple packages) - show visual indicator? Maybe not needed if priority is clear
+- [ ] **ZIP operation progress UI** - Fetch spinner/progress from existing arkitekt library when needed
 
 #### 1.2 Additional Tab: Polish & Organization
 **Priority: MEDIUM** - Core param system works, need better organization
