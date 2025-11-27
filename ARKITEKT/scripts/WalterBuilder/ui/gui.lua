@@ -44,6 +44,10 @@ function M.new(state_module, settings, controller)
     -- Layout
     left_panel_width = Constants.PANEL.LEFT_WIDTH,
     right_panel_width = Constants.PANEL.RIGHT_WIDTH,
+
+    -- Splitter drag state
+    left_splitter_drag_start = 0,
+    right_splitter_drag_start = 0,
   }, GUI)
 
   -- Wire up controller callbacks
@@ -490,10 +494,33 @@ function GUI:draw(ctx, window, shell_state)
   ImGui.EndChild(ctx)
   ImGui.PopStyleColor(ctx)
 
-  ImGui.SameLine(ctx, 0, 4)
+  ImGui.SameLine(ctx, 0, 0)
+
+  -- Left splitter
+  local splitter_w = 6
+  local lsplit_x, lsplit_y = ImGui.GetCursorScreenPos(ctx)
+  ImGui.Button(ctx, "##left_splitter", splitter_w, remaining_h)
+  local ls_hovered = ImGui.IsItemHovered(ctx)
+  local ls_active = ImGui.IsItemActive(ctx)
+
+  if ImGui.IsItemClicked(ctx, 0) then
+    self.left_splitter_drag_start = self.left_panel_width
+  end
+  if ls_active then
+    local delta_x, _ = ImGui.GetMouseDragDelta(ctx, 0)
+    local new_w = self.left_splitter_drag_start + delta_x
+    new_w = math.max(150, math.min(350, new_w))
+    self.left_panel_width = new_w
+  end
+
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local ls_color = (ls_hovered or ls_active) and hexrgb("#888888") or hexrgb("#555555")
+  ImGui.DrawList_AddRectFilled(dl, lsplit_x, lsplit_y, lsplit_x + splitter_w, lsplit_y + remaining_h, ls_color)
+
+  ImGui.SameLine(ctx, 0, 0)
 
   -- Center: Canvas
-  local canvas_w = avail_w - self.left_panel_width - self.right_panel_width - 12
+  local canvas_w = avail_w - self.left_panel_width - self.right_panel_width - splitter_w * 2
 
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))
 
@@ -565,7 +592,29 @@ function GUI:draw(ctx, window, shell_state)
   ImGui.EndChild(ctx)
   ImGui.PopStyleColor(ctx)
 
-  ImGui.SameLine(ctx, 0, 4)
+  ImGui.SameLine(ctx, 0, 0)
+
+  -- Right splitter
+  local rsplit_x, rsplit_y = ImGui.GetCursorScreenPos(ctx)
+  ImGui.Button(ctx, "##right_splitter", splitter_w, remaining_h)
+  local rs_hovered = ImGui.IsItemHovered(ctx)
+  local rs_active = ImGui.IsItemActive(ctx)
+
+  if ImGui.IsItemClicked(ctx, 0) then
+    self.right_splitter_drag_start = self.right_panel_width
+  end
+  if rs_active then
+    local delta_x, _ = ImGui.GetMouseDragDelta(ctx, 0)
+    -- Right panel grows when dragging left (negative delta)
+    local new_w = self.right_splitter_drag_start - delta_x
+    new_w = math.max(200, math.min(450, new_w))
+    self.right_panel_width = new_w
+  end
+
+  local rs_color = (rs_hovered or rs_active) and hexrgb("#888888") or hexrgb("#555555")
+  ImGui.DrawList_AddRectFilled(dl, rsplit_x, rsplit_y, rsplit_x + splitter_w, rsplit_y + remaining_h, rs_color)
+
+  ImGui.SameLine(ctx, 0, 0)
 
   -- Right panel: Properties and Code (tabbed or split)
   ImGui.PushStyleColor(ctx, ImGui.Col_ChildBg, hexrgb("#1A1A1A"))

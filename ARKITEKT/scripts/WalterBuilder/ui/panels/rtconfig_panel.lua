@@ -34,7 +34,7 @@ function M.new(opts)
     tree_width = 200,
     min_tree_width = 120,
     max_tree_width = 400,
-    dragging_splitter = false,
+    drag_start_width = 0,
 
     -- Callbacks
     on_element_select = opts.on_element_select,
@@ -443,8 +443,7 @@ function Panel:draw(ctx)
 
   -- Two-column layout: tree on left, detail on right
   local avail_w, avail_h = ImGui.GetContentRegionAvail(ctx)
-  local splitter_w = 8
-  local panel_start_x, _ = ImGui.GetCursorScreenPos(ctx)
+  local splitter_w = 6
 
   -- Ensure tree_width is valid
   local max_tree = math.min(self.max_tree_width, avail_w - 150)
@@ -461,37 +460,30 @@ function Panel:draw(ctx)
 
   ImGui.SameLine(ctx, 0, 0)
 
-  -- Splitter
+  -- Splitter button
   local splitter_x, splitter_y = ImGui.GetCursorScreenPos(ctx)
-  ImGui.InvisibleButton(ctx, "##rtconfig_splitter", splitter_w, avail_h - 20)
+  ImGui.Button(ctx, "##rtconfig_splitter", splitter_w, avail_h - 20)
 
-  -- Splitter visual and interaction
   local is_hovered = ImGui.IsItemHovered(ctx)
   local is_active = ImGui.IsItemActive(ctx)
 
-  if is_hovered or is_active then
-    ImGui.SetMouseCursor(ctx, ImGui.MouseCursor_ResizeEW)
+  -- Capture start width when drag begins
+  if ImGui.IsItemClicked(ctx, 0) then
+    self.drag_start_width = self.tree_width
   end
 
-  -- Draw splitter - visible grip area
-  local dl = ImGui.GetWindowDrawList(ctx)
-  local splitter_color = (is_hovered or is_active) and hexrgb("#888888") or hexrgb("#444444")
-  local line_x = splitter_x + splitter_w / 2
-  -- Draw 3 small grip lines
-  for i = -1, 1 do
-    local grip_y = splitter_y + (avail_h - 20) / 2 + i * 8
-    ImGui.DrawList_AddLine(dl, line_x - 2, grip_y, line_x + 2, grip_y, splitter_color, 2)
-  end
-
-  -- Handle dragging - use mouse position relative to panel start
+  -- Handle dragging using delta
   if is_active then
-    local mouse_x, _ = ImGui.GetMousePos(ctx)
-    local new_width = mouse_x - panel_start_x - splitter_w / 2
-
-    -- Clamp to min/max
+    local delta_x, _ = ImGui.GetMouseDragDelta(ctx, 0)
+    local new_width = self.drag_start_width + delta_x
     new_width = math.max(self.min_tree_width, math.min(max_tree, new_width))
     self.tree_width = new_width
   end
+
+  -- Draw splitter visual
+  local dl = ImGui.GetWindowDrawList(ctx)
+  local splitter_color = (is_hovered or is_active) and hexrgb("#888888") or hexrgb("#555555")
+  ImGui.DrawList_AddRectFilled(dl, splitter_x, splitter_y, splitter_x + splitter_w, splitter_y + avail_h - 20, splitter_color)
 
   ImGui.SameLine(ctx, 0, 0)
 
