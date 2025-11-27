@@ -136,7 +136,7 @@ function GUI:sync_canvas()
   local tracks = self.State.get_tracks()
   self.canvas:set_elements(elements)
   self.canvas:set_tracks(tracks)
-  self.elements_panel:set_active_elements(self.State.get_element_ids())
+  self.elements_panel:set_active_elements(elements)  -- Pass full elements for visibility state
   self.code_panel:set_elements(elements)
 end
 
@@ -185,6 +185,46 @@ function GUI:handle_delete_element(element)
     self:sync_canvas()
     self.code_panel:invalidate()
   end
+end
+
+-- Handle element visibility toggle
+function GUI:handle_toggle_element(element)
+  element.visible = not element.visible
+  self:handle_element_changed(element)
+  self:sync_canvas()
+end
+
+-- Handle reset element to defaults
+function GUI:handle_reset_element(element)
+  -- Get the default definition for this element
+  local def = TCPElements.get_definition(element.id)
+  if def and def.coords then
+    -- Reset coords to defaults
+    element.coords.x = def.coords.x
+    element.coords.y = def.coords.y
+    element.coords.w = def.coords.w
+    element.coords.h = def.coords.h
+    element.coords.ls = def.coords.ls
+    element.coords.ts = def.coords.ts
+    element.coords.rs = def.coords.rs
+    element.coords.bs = def.coords.bs
+    element.visible = true  -- Also restore visibility
+
+    self:handle_element_changed(element)
+    self:sync_canvas()
+
+    -- Update properties panel if this element is selected
+    if self.State.get_selected() == element then
+      self.properties_panel:set_element(element)
+    end
+  end
+end
+
+-- Handle selecting an active element from the palette
+function GUI:handle_select_active_element(element)
+  self.State.set_selected(element)
+  self.canvas:set_selected(element)
+  self.properties_panel:set_element(element)
 end
 
 -- Handle track changes
@@ -430,8 +470,16 @@ function GUI:draw(ctx, window, shell_state)
   ImGui.Dummy(ctx, 0, 4)
 
   local result = self.elements_panel:draw(ctx)
-  if result and result.type == "add" then
-    self:handle_add_element(result.definition)
+  if result then
+    if result.type == "add" then
+      self:handle_add_element(result.definition)
+    elseif result.type == "select_active" then
+      self:handle_select_active_element(result.element)
+    elseif result.type == "toggle" then
+      self:handle_toggle_element(result.element)
+    elseif result.type == "reset" then
+      self:handle_reset_element(result.element)
+    end
   end
 
   ImGui.Unindent(ctx, 4)

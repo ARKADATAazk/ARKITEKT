@@ -28,21 +28,24 @@ function M.new(opts)
     -- Selected element in palette (for adding)
     selected_def = nil,
 
-    -- Callback when element is added
-    on_add = opts.on_add,
+    -- Callbacks
+    on_add = opts.on_add,            -- When adding new element
+    on_select = opts.on_select,      -- When clicking active element
+    on_toggle = opts.on_toggle,      -- When toggling visibility
+    on_reset = opts.on_reset,        -- When resetting to defaults
 
-    -- Active elements (already in layout)
-    active_ids = {},
+    -- Active elements (already in layout) - keyed by ID
+    active_elements = {},
   }, Panel)
 
   return self
 end
 
 -- Set which elements are currently active in the layout
-function Panel:set_active_elements(element_ids)
-  self.active_ids = {}
-  for _, id in ipairs(element_ids) do
-    self.active_ids[id] = true
+function Panel:set_active_elements(elements)
+  self.active_elements = {}
+  for _, elem in ipairs(elements) do
+    self.active_elements[elem.id] = elem
   end
 end
 
@@ -65,16 +68,27 @@ end
 
 -- Draw a single element item using Chip widget
 function Panel:draw_element_item(ctx, def)
-  local is_active = self.active_ids[def.id]
+  local active_elem = self.active_elements[def.id]
+  local is_active = active_elem ~= nil
+  local is_hidden = is_active and not active_elem.visible
   local is_selected = self.selected_def and self.selected_def.id == def.id
 
   -- Get category color
   local cat_color = Colors.CATEGORY[def.category] or Colors.CATEGORY.other
 
-  -- Display name with active indicator
+  -- For hidden elements, dim the color
+  if is_hidden then
+    cat_color = hexrgb("#555555")
+  end
+
+  -- Display name with status indicators
   local label = def.name
   if is_active then
-    label = label .. " +"
+    if is_hidden then
+      label = label .. " [hidden]"
+    else
+      label = label .. " +"
+    end
   end
 
   local avail_w = ImGui.GetContentRegionAvail(ctx)
@@ -94,6 +108,24 @@ function Panel:draw_element_item(ctx, def)
     dot_rounding = 2,
   })
 
+  -- Context menu for active elements (right-click)
+  if is_active and ImGui.BeginPopupContextItem(ctx, "elem_ctx_" .. def.id) then
+    -- Toggle visibility
+    local toggle_label = is_hidden and "Show" or "Hide"
+    if ImGui.MenuItem(ctx, toggle_label) then
+      return "toggle", active_elem
+    end
+
+    ImGui.Separator(ctx)
+
+    -- Reset to defaults
+    if ImGui.MenuItem(ctx, "Reset to Defaults") then
+      return "reset", active_elem
+    end
+
+    ImGui.EndPopup(ctx)
+  end
+
   -- Tooltip on hover
   if ImGui.IsItemHovered(ctx) then
     ImGui.BeginTooltip(ctx)
@@ -104,9 +136,15 @@ function Panel:draw_element_item(ctx, def)
       ImGui.PopStyleColor(ctx)
     end
     if is_active then
-      ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CC88"))
-      ImGui.Text(ctx, "(already in layout)")
-      ImGui.PopStyleColor(ctx)
+      if is_hidden then
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#CC6666"))
+        ImGui.Text(ctx, "(hidden - right-click to show)")
+        ImGui.PopStyleColor(ctx)
+      else
+        ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#88CC88"))
+        ImGui.Text(ctx, "(click to edit, right-click for options)")
+        ImGui.PopStyleColor(ctx)
+      end
     else
       ImGui.PushStyleColor(ctx, ImGui.Col_Text, hexrgb("#666666"))
       ImGui.Text(ctx, "Double-click to add")
@@ -115,15 +153,21 @@ function Panel:draw_element_item(ctx, def)
     ImGui.EndTooltip(ctx)
   end
 
-  -- Check for double-click to add
+  -- Check for double-click to add (only for inactive elements)
   local double_clicked = ImGui.IsItemHovered(ctx) and ImGui.IsMouseDoubleClicked(ctx, 0)
 
   -- Handle click/double-click
-  if double_clicked then
+  if clicked then
+    if is_active then
+      -- Active element: select it for editing
+      return "select_active", active_elem
+    else
+      -- Inactive: select in palette
+      self.selected_def = def
+      return "select"
+    end
+  elseif double_clicked and not is_active then
     return "add"
-  elseif clicked then
-    self.selected_def = def
-    return "select"
   end
 
   return nil
@@ -170,11 +214,17 @@ function Panel:draw(ctx)
           ImGui.Indent(ctx, 4)
 
           for _, def in ipairs(filtered) do
-            local action = self:draw_element_item(ctx, def)
-            if action == "add" and self.on_add then
+            local action, elem = self:draw_element_item(ctx, def)
+            if action == "add" then
               result = { type = "add", definition = def }
             elseif action == "select" then
               result = { type = "select", definition = def }
+            elseif action == "select_active" then
+              result = { type = "select_active", element = elem }
+            elseif action == "toggle" then
+              result = { type = "toggle", element = elem }
+            elseif action == "reset" then
+              result = { type = "reset", element = elem }
             end
           end
 
