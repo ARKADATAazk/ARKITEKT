@@ -42,6 +42,7 @@ M.filters = {
   items = require("ItemPicker.domain.filters.items"),
   track = require("ItemPicker.domain.filters.track"),
   pool = require("ItemPicker.domain.filters.pool"),
+  region = require("ItemPicker.domain.filters.region"),
 }
 
 -- ============================================================================
