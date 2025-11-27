@@ -6,7 +6,7 @@ local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 
 -- Domain services
-local TemplateOps = require('TemplateBrowser.domain.template.ops')
+local TemplateOps = require('TemplateBrowser.domain.template.operations')
 local FileOps = require('TemplateBrowser.data.file_ops')
 local FXQueue = require('TemplateBrowser.domain.fx.queue')
 local Scanner = require('TemplateBrowser.domain.template.scanner')

@@ -4,7 +4,7 @@
 
 local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
-local TemplateOps = require('TemplateBrowser.domain.template.ops')
+local TemplateOps = require('TemplateBrowser.domain.template.operations')
 local Tags = require('TemplateBrowser.domain.tags.service')
 local Chip = require('arkitekt.gui.widgets.data.chip')
 local ChipList = require('arkitekt.gui.widgets.data.chip_list')

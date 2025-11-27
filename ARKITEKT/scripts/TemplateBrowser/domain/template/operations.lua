@@ -1,5 +1,5 @@
 -- @noindex
--- TemplateBrowser/domain/template/ops.lua
+-- TemplateBrowser/domain/template/operations.lua
 -- Template apply/insert operations
 
 -- Dependencies (cached at module load per Lua Performance Guide)
