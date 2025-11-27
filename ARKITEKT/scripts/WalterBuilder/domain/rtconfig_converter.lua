@@ -37,11 +37,40 @@ local DEFAULT_CONTEXT = {
   lscale = 1.0,  -- Layout scale (used by some themes)
 
   -- Common pre-computed variables (typical values at 100% DPI)
-  tcp_padding = 7,
+  -- tcp_padding is an array [padding_x, padding_y]
+  tcp_padding = { 7, 7 },
   element_h = 20,
-  meter_sec = 50,
-  main_sec = 200,
-  folder_sec = 20,
+
+  -- meter_sec is an array [x, y, w, h] representing the meter section bounds
+  -- Computed from: + + + * scale + [0 0 tcp_MeterSize{0}] [0 0 34] [folder_sec{2} 0 0 h] ...
+  -- At default values: x=folder_sec=20, y=0, w=tcp_MeterSize+34=84, h=parent_h=150
+  meter_sec = { 20, 0, 84, 150 },
+
+  -- main_sec is the main controls section [x, y, w, h]
+  main_sec = { 104, 0, 200, 150 },  -- x starts after meter_sec
+
+  -- folder_sec defines the folder/indent area [x, y, w]
+  folder_sec = { 0, 0, 20 },
+
+  -- Default element coordinates (used when element isn't evaluated yet but is referenced)
+  -- tcp.mute is referenced by tcp.meter expression: tcp.mute{2} = mute width
+  ["tcp.mute"] = { 60, 7, 21, 20 },  -- [x, y, w, h] - typical mute button
+  ["tcp.solo"] = { 60, 27, 21, 20 }, -- Solo button (below mute when stacked)
+
+  -- Meter positioning variables (these control tcp.meter position)
+  -- tcp_MeterSize is a user preference (1-7), maps to pixel widths
+  -- From rtconfig indexParams: 'A_tcp_MeterSize' 2 1 7 4 (default=4)
+  tcp_MeterSize = 50,  -- Pixel width at default setting (4) at 1.0 scale
+  tcp_MeterSize_min = 18,  -- Minimum meter width
+  meterRight = 0,  -- 0=left, 1=right side meter position
+  tcp_MeterLoc = 0,  -- Meter location preference
+
+  -- Solo/mute flip threshold (height where solo/mute switch from stacked to side-by-side)
+  soloFlip_h = 51,  -- At heights >= 51px, solo flips to side-by-side
+
+  -- Folder section (affects meter_sec calculation)
+  tcp_control_align = 0,  -- Control alignment mode (0, 1, or 2)
+  tcp_indent = 5,  -- Folder indent per depth level
 
   -- Track state variables (defaults for visualization)
   recarm = 1,  -- Show record arm button
@@ -518,11 +547,20 @@ local function calculate_flow_positions(result, eval_context)
     return val
   end
 
+  -- Helper to get value at specific index from array or scalar
+  local function get_at_index(val, index, default)
+    if val == nil then return default end
+    if type(val) == "table" then return val[index] or default end
+    return val  -- Scalar value
+  end
+
   -- Determine starting X position
   -- Flow elements typically start after the meter section
-  local meter_sec = get_scalar(eval_context.meter_sec, 50)
+  -- meter_sec is [x, y, w, h], so flow starts at meter_sec.x + meter_sec.w + padding
+  local meter_sec_x = get_at_index(eval_context.meter_sec, 1, 20)
+  local meter_sec_w = get_at_index(eval_context.meter_sec, 3, 84)
   local tcp_padding = get_scalar(eval_context.tcp_padding, 7)
-  local start_x = meter_sec + tcp_padding
+  local start_x = meter_sec_x + meter_sec_w + tcp_padding
 
   -- Element dimensions
   local element_h = get_scalar(eval_context.element_h, 20)
@@ -1241,6 +1279,10 @@ function M.get_controllable_context_vars()
     { key = "w", label = "Track Width", type = "int", default = 400, min = 100, max = 800 },
     { key = "h", label = "Track Height", type = "int", default = 150, min = 40, max = 300 },
     { key = "scale", label = "DPI Scale", type = "float", default = 1.0, min = 0.5, max = 2.0 },
+
+    -- Meter positioning (tcp_MeterSize controls meter width, meterRight flips position)
+    { key = "tcp_MeterSize", label = "Meter Width", type = "int", default = 50, min = 10, max = 150 },
+    { key = "meterRight", label = "Meter on Right", type = "bool", default = 0 },
 
     -- Flow element widths
     { key = "tcp_LabelSize", label = "Label Width", type = "int", default = 80, min = 0, max = 200 },

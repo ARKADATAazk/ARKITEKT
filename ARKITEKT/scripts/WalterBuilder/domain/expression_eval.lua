@@ -48,28 +48,39 @@ end
 M.DEFAULT_SCALARS = {
   -- DPI scaling
   scale = 1.0,
+  lscale = 1.0,
 
   -- Panel dimensions (set at runtime)
-  w = 300,  -- parent width
-  h = 90,   -- parent height
+  w = 400,  -- parent width
+  h = 150,  -- parent height
 
   -- Track state (for conditionals) - defaults for visualization
-  recarm = 0,
+  recarm = 1,
+  recmon = 1,
   track_selected = 1,  -- Show as if track is selected
   mixer_visible = 0,
-  trackcolor_valid = 0,
+  trackcolor_valid = 1,
   folderstate = 0,
   folderdepth = 0,
   maxfolderdepth = 3,
   supercollapsed = 0,
 
   -- Common computed values (approximations)
-  tcp_padding = 7,
-  meter_sec = 50,
-  main_sec = 200,
-  folder_sec = 20,
+  -- Arrays: [x, y, w, h, ...]
+  tcp_padding = { 7, 7 },  -- [padding_x, padding_y]
+  meter_sec = { 20, 0, 84, 150 },  -- [x, y, w, h] of meter section
+  main_sec = { 104, 0, 200, 150 },  -- [x, y, w, h] of main section
+  folder_sec = { 0, 0, 20 },  -- [x, y, w] of folder indent area
   element_h = 20,
-  soloFlip_h = 52,
+  soloFlip_h = 51,
+
+  -- Meter positioning variables
+  tcp_MeterSize = 50,
+  tcp_MeterSize_min = 18,
+  meterRight = 0,
+  tcp_MeterLoc = 0,
+  tcp_control_align = 0,
+  tcp_indent = 5,
 
   -- Common conditionals (assume visible/enabled by default)
   is_solo_flipped = 0,
@@ -77,7 +88,11 @@ M.DEFAULT_SCALARS = {
   hide_fx_group = 0,
   hide_pan_group = 0,
   hide_io_group = 0,
-  trackpanmode = 0,
+  hide_recarm_group = 0,
+  hide_recmon_group = 0,
+  hide_label_group = 0,
+  hide_volume_group = 0,
+  trackpanmode = 6,
 
   -- Theme variant
   theme_version = 1,
@@ -87,7 +102,7 @@ M.DEFAULT_SCALARS = {
   main_font = 1,
 
   -- Version info
-  reaper_version = 7,
+  reaper_version = 700,  -- REAPER 7.x
   os_type = 0,  -- 0=Windows, 1=macOS, 2=Linux
 }
 
