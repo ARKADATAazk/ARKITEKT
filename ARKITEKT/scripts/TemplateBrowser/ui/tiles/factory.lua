@@ -5,8 +5,8 @@
 local ImGui = require('arkitekt.platform.imgui')
 local ark = require('arkitekt')
 local Grid = require('arkitekt.gui.widgets.containers.grid.core')
-local TemplateTile = require('TemplateBrowser.ui.tiles.template_tile')
-local TemplateTileCompact = require('TemplateBrowser.ui.tiles.template_tile_compact')
+local TemplateTile = require('TemplateBrowser.ui.tiles.tile')
+local TemplateTileCompact = require('TemplateBrowser.ui.tiles.tile_compact')
 local DragDrop = require('arkitekt.gui.interaction.drag_drop')
 local Constants = require('TemplateBrowser.defs.constants')
 
