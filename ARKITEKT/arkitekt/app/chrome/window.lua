@@ -583,10 +583,6 @@ function M.new(opts)
     self._should_close = false
     self._current_ctx = ctx
 
-    -- DEBUG: Track frame count for spawn debugging
-    if not self._frame_count then self._frame_count = 0 end
-    self._frame_count = self._frame_count + 1
-    
     if self.fullscreen.enabled then
       local current_time = reaper.time_precise()
       local dt = 1/60
@@ -644,12 +640,6 @@ function M.new(opts)
 
     local visible, open = ImGui.Begin(ctx, self.title .. "##main", true, window_flags)
     self._begun = true
-
-    -- DEBUG: Log visibility on first 5 frames
-    if self._frame_count <= 5 then
-      reaper.ShowConsoleMsg(string.format("[Frame %d] visible=%s, open=%s, flags=%d\n",
-        self._frame_count, tostring(visible), tostring(open), window_flags))
-    end
 
     if visible then
       if self.fullscreen.enabled then
