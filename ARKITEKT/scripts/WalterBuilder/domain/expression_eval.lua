@@ -378,7 +378,44 @@ local function eval_tokens(tokens, pos, context)
   end
 
   -- Identifier - variable reference, possibly with @position
+  -- FIRST check if this is a comparison conditional (e.g., scale==1 [true] [false])
   if token.type == "ident" then
+    local next_token = tokens[pos + 1]
+    if next_token and next_token.type == "cmp" then
+      -- This is a comparison conditional: ident<value [true] [false]
+      local cmp_op = next_token.value
+      local lhs = get_scalar(token.value, context, token.index)
+      if type(lhs) == "table" then lhs = lhs[1] or 0 end
+
+      local rhs_token = tokens[pos + 2]
+      local rhs = 0
+      local cmp_end = pos + 3
+
+      if rhs_token then
+        if rhs_token.type == "number" then
+          rhs = rhs_token.value
+        elseif rhs_token.type == "ident" then
+          rhs = get_scalar(rhs_token.value, context, rhs_token.index)
+          if type(rhs) == "table" then rhs = rhs[1] or 0 end
+        end
+      end
+
+      local condition = eval_cmp(cmp_op, lhs, rhs)
+
+      -- Get true branch
+      local true_val, pos_after_true = eval_tokens(tokens, cmp_end, context)
+      if not true_val then return nil, pos_after_true end
+
+      -- Get false branch
+      local false_val, pos_after_false = eval_tokens(tokens, pos_after_true, context)
+      if not false_val then
+        return condition and true_val or { 0 }, pos_after_true
+      end
+
+      return condition and true_val or false_val, pos_after_false
+    end
+
+    -- Simple identifier - just a variable reference
     local value = get_scalar(token.value, context, token.index)
     local result
     if type(value) == "table" then
@@ -455,43 +492,6 @@ local function eval_tokens(tokens, pos, context)
     end
 
     return condition and true_val or false_val, pos_after_false
-  end
-
-  -- Comparison: ident<value [true] [false]
-  if token.type == "ident" then
-    local next_token = tokens[pos + 1]
-    if next_token and next_token.type == "cmp" then
-      local cmp_op = next_token.value
-      local lhs = get_scalar(token.value, context, token.index)
-      if type(lhs) == "table" then lhs = lhs[1] or 0 end
-
-      local rhs_token = tokens[pos + 2]
-      local rhs = 0
-      local cmp_end = pos + 3
-
-      if rhs_token then
-        if rhs_token.type == "number" then
-          rhs = rhs_token.value
-        elseif rhs_token.type == "ident" then
-          rhs = get_scalar(rhs_token.value, context, rhs_token.index)
-          if type(rhs) == "table" then rhs = rhs[1] or 0 end
-        end
-      end
-
-      local condition = eval_cmp(cmp_op, lhs, rhs)
-
-      -- Get true branch
-      local true_val, pos_after_true = eval_tokens(tokens, cmp_end, context)
-      if not true_val then return nil, pos_after_true end
-
-      -- Get false branch
-      local false_val, pos_after_false = eval_tokens(tokens, pos_after_true, context)
-      if not false_val then
-        return condition and true_val or { 0 }, pos_after_true
-      end
-
-      return condition and true_val or false_val, pos_after_false
-    end
   end
 
   -- Dot means "keep current value" - return nil to indicate no change
