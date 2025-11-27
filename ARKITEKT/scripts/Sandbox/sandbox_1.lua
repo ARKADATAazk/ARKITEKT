@@ -178,58 +178,58 @@ Shell.run({
 
     ImGui.Dummy(ctx, 0, box_h + 20)
 
-    -- Row 2: Overflow/Glow effects (the cool glitch)
-    ImGui.Text(ctx, "Overflow Effects (the cool glitch - no clip rect):")
+    -- Row 2: Glitch effects (the original bug turned into art)
+    ImGui.Text(ctx, "Glitch Effects (the original bug - curved exponential patterns):")
     ImGui.Dummy(ctx, 0, 5)
 
     local row2_y = select(2, ImGui.GetCursorScreenPos(ctx))
+    local glitch_w, glitch_h = 180, 120
 
-    -- Overflow forward
-    x1 = win_x + 40  -- Extra margin for overflow
-    HatchedFill.draw_overflow(ctx, {
-      x = x1, y = row2_y, w = box_w, h = box_h,
-      direction = HatchedFill.DIRECTION.FORWARD,
-      color = hexrgb("#FF5555AA"),
+    -- Glitch effect (original bug)
+    x1 = win_x + 30
+    HatchedFill.draw_glitch(ctx, {
+      x = x1, y = row2_y, w = glitch_w, h = glitch_h,
+      color = hexrgb("#FF5555CC"),
       spacing = demo_state.spacing,
       thickness = demo_state.thickness,
-      overflow = demo_state.overflow,
-      glow_layers = demo_state.glow_layers,
+      intensity = 1.0 + (demo_state.overflow / 50),
+      layers = demo_state.glow_layers,
+      show_box = true,
       draw_list = dl,
     })
-    ImGui.DrawList_AddRect(dl, x1, row2_y, x1 + box_w, row2_y + box_h, hexrgb("#FF5555"), 4, 0, 2)
-    ImGui.DrawList_AddText(dl, x1 + 5, row2_y + box_h - 18, hexrgb("#FFFFFFCC"), "OVERFLOW FWD")
+    ImGui.DrawList_AddText(dl, x1 + 5, row2_y + glitch_h + 5, hexrgb("#FFFFFFAA"), "GLITCH (original bug)")
 
-    -- Overflow backward
-    x2 = x1 + box_w + gap + 30
-    HatchedFill.draw_overflow(ctx, {
-      x = x2, y = row2_y, w = box_w, h = box_h,
-      direction = HatchedFill.DIRECTION.BACKWARD,
-      color = hexrgb("#55FF55AA"),
+    -- Curved effect (exponential)
+    x2 = x1 + glitch_w + gap + 40
+    HatchedFill.draw_curved(ctx, {
+      x = x2, y = row2_y, w = glitch_w, h = glitch_h,
+      color = hexrgb("#55FF55CC"),
       spacing = demo_state.spacing,
       thickness = demo_state.thickness,
-      overflow = demo_state.overflow,
-      glow_layers = demo_state.glow_layers,
+      curve_factor = 1.0 + (demo_state.overflow / 20),
+      layers = demo_state.glow_layers,
+      direction = "both",
       draw_list = dl,
     })
-    ImGui.DrawList_AddRect(dl, x2, row2_y, x2 + box_w, row2_y + box_h, hexrgb("#55FF55"), 4, 0, 2)
-    ImGui.DrawList_AddText(dl, x2 + 5, row2_y + box_h - 18, hexrgb("#FFFFFFCC"), "OVERFLOW BWD")
+    ImGui.DrawList_AddRect(dl, x2, row2_y, x2 + glitch_w, row2_y + glitch_h, hexrgb("#55FF5580"), 0, 0, 1)
+    ImGui.DrawList_AddText(dl, x2 + 5, row2_y + glitch_h + 5, hexrgb("#FFFFFFAA"), "CURVED (exponential)")
 
-    -- Overflow both (intense cross-hatch glow)
-    x3 = x2 + box_w + gap + 30
-    HatchedFill.draw_overflow(ctx, {
-      x = x3, y = row2_y, w = box_w, h = box_h,
-      direction = HatchedFill.DIRECTION.BOTH,
-      color = hexrgb("#5555FFAA"),
+    -- Curved forward only
+    x3 = x2 + glitch_w + gap + 40
+    HatchedFill.draw_curved(ctx, {
+      x = x3, y = row2_y, w = glitch_w, h = glitch_h,
+      color = hexrgb("#5555FFCC"),
       spacing = demo_state.spacing,
       thickness = demo_state.thickness,
-      overflow = demo_state.overflow,
-      glow_layers = demo_state.glow_layers,
+      curve_factor = 2.5,
+      layers = demo_state.glow_layers,
+      direction = "forward",
       draw_list = dl,
     })
-    ImGui.DrawList_AddRect(dl, x3, row2_y, x3 + box_w, row2_y + box_h, hexrgb("#5555FF"), 4, 0, 2)
-    ImGui.DrawList_AddText(dl, x3 + 5, row2_y + box_h - 18, hexrgb("#FFFFFFCC"), "OVERFLOW BOTH")
+    ImGui.DrawList_AddRect(dl, x3, row2_y, x3 + glitch_w, row2_y + glitch_h, hexrgb("#5555FF80"), 0, 0, 1)
+    ImGui.DrawList_AddText(dl, x3 + 5, row2_y + glitch_h + 5, hexrgb("#FFFFFFAA"), "CURVED (forward)")
 
-    ImGui.Dummy(ctx, 0, box_h + 40)
+    ImGui.Dummy(ctx, 0, glitch_h + 40)
 
     -- Row 3: Marching ants
     ImGui.Text(ctx, "Marching Ants (animated dashed border):")

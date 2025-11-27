@@ -295,6 +295,130 @@ function M.draw_marching_ants(ctx, opts)
   return { width = w, height = h }
 end
 
+--- Draw the original "glitch" effect with curved/exponential pattern
+--- This recreates the buggy math that created the cool visual artifact
+--- @param ctx userdata ImGui context
+--- @param opts table Options: x, y, w, h, spacing, thickness, color, intensity, layers
+--- @return table Result { width, height }
+function M.draw_glitch(ctx, opts)
+  opts = opts or {}
+
+  local x = opts.x or DEFAULTS.x
+  local y = opts.y or DEFAULTS.y
+  local w = opts.w or DEFAULTS.w
+  local h = opts.h or DEFAULTS.h
+  local spacing = opts.spacing or DEFAULTS.spacing
+  local thickness = opts.thickness or DEFAULTS.thickness
+  local color = opts.color or DEFAULTS.color
+  local intensity = opts.intensity or 1.0  -- Multiplier for the glitch effect
+  local layers = opts.layers or 3
+  local show_box = opts.show_box ~= false
+
+  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+
+  -- Draw multiple layers for depth
+  for layer = layers, 1, -1 do
+    local layer_mult = layer / layers
+    local layer_alpha = math.floor(((color & 0xFF) * layer_mult))
+    local layer_color = (color & 0xFFFFFF00) | layer_alpha
+    local layer_thickness = thickness + (layers - layer) * 0.3
+
+    -- The original buggy forward diagonal pattern (↘)
+    -- The "bug" was in how endpoints were calculated, creating curved appearance
+    for i = -h * intensity, w * intensity, spacing do
+      -- Original buggy math that created the cool effect
+      local x1 = math.max(x, x + i)
+      local y1 = y + math.max(0, -i * layer_mult)
+      local x2 = math.min(x + w, x + i + h * intensity)
+      local y2 = y + math.min(h, h - i * layer_mult)
+
+      -- Only draw if line has length
+      if x2 > x1 then
+        ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, layer_color, layer_thickness)
+      end
+    end
+
+    -- The original buggy backward diagonal pattern (↙)
+    for i = -w * intensity, h * intensity, spacing do
+      local x1 = x + math.max(0, -i * layer_mult)
+      local y1 = math.max(y, y + i)
+      local x2 = x + math.min(w, w + i * layer_mult)
+      local y2 = math.min(y + h, y + i + w * intensity)
+
+      if y2 > y1 then
+        ImGui.DrawList_AddLine(dl, x1, y2, x2, y1, layer_color, layer_thickness)
+      end
+    end
+  end
+
+  -- Optional: draw the bounding box to show where the "clean" area would be
+  if show_box then
+    local box_color = (color & 0xFFFFFF00) | 0x40
+    ImGui.DrawList_AddRect(dl, x, y, x + w, y + h, box_color, 0, 0, 1)
+  end
+
+  return { width = w, height = h }
+end
+
+--- Draw exponential curve pattern (variation of the glitch)
+--- Creates a more pronounced curved/radial effect
+--- @param ctx userdata ImGui context
+--- @param opts table Options: x, y, w, h, spacing, color, curve_factor, layers
+--- @return table Result { width, height }
+function M.draw_curved(ctx, opts)
+  opts = opts or {}
+
+  local x = opts.x or DEFAULTS.x
+  local y = opts.y or DEFAULTS.y
+  local w = opts.w or DEFAULTS.w
+  local h = opts.h or DEFAULTS.h
+  local spacing = opts.spacing or 8
+  local thickness = opts.thickness or 1
+  local color = opts.color or DEFAULTS.color
+  local curve_factor = opts.curve_factor or 2.0  -- How much curve (1=linear, 2+=exponential)
+  local layers = opts.layers or 4
+  local direction = opts.direction or "both"  -- "forward", "backward", "both"
+
+  local dl = opts.draw_list or ImGui.GetWindowDrawList(ctx)
+
+  for layer = layers, 1, -1 do
+    local layer_mult = layer / layers
+    local layer_alpha = math.floor(((color & 0xFF) * layer_mult))
+    local layer_color = (color & 0xFFFFFF00) | layer_alpha
+
+    local num_lines = math.floor((w + h) / spacing)
+
+    for i = 0, num_lines do
+      local t = i / num_lines  -- 0 to 1
+
+      -- Apply exponential curve to the interpolation
+      local curved_t = t ^ curve_factor
+
+      if direction == "forward" or direction == "both" then
+        -- Forward diagonal with curve
+        local x1 = x + (w * curved_t) * layer_mult
+        local y1 = y
+        local x2 = x + w
+        local y2 = y + (h * (1 - curved_t)) * layer_mult + h * (1 - layer_mult)
+
+        ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, layer_color, thickness)
+      end
+
+      if direction == "backward" or direction == "both" then
+        -- Backward diagonal with curve
+        local x1 = x
+        local y1 = y + (h * curved_t) * layer_mult
+        local x2 = x + (w * (1 - curved_t)) * layer_mult + w * (1 - layer_mult)
+        local y2 = y + h
+
+        ImGui.DrawList_AddLine(dl, x1, y1, x2, y2, layer_color, thickness)
+      end
+    end
+  end
+
+  return { width = w, height = h }
+end
+
 --- Helper to create color with alpha
 --- @param base_color number Base color (RGBA)
 --- @param alpha number Alpha value (0-255 or 0-1)
