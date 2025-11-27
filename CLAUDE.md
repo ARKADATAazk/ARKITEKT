@@ -1,7 +1,6 @@
 # CLAUDE.md - AI Assistant Field Guide for ARKITEKT
 
 > **This is the definitive guide for AI assistants working with ARKITEKT.**
-> For heavy batch/pipeline operations, see `ARKITEKT_Codex_Playbook_v5.md`.
 
 ---
 
@@ -11,7 +10,7 @@
 A Lua 5.3 framework for building ReaImGui applications in REAPER (audio workstation). It provides reusable widgets, window management, theming, and application scaffolding.
 
 **Critical Rules:**
-1. **Namespace**: Always `arkitekt` (lowercase). NEVER `arkitekt`.
+1. **Namespace**: Always `arkitekt` (lowercase). NEVER `Arkitekt`.
 2. **Bootstrap**: Use `dofile()`, not `require()` for entry points.
 3. **Layer purity**: `core/*` and `storage/*` must NOT use `reaper.*` or `ImGui.*` at import time.
 4. **No globals**: Everything returns a module table `M`.
