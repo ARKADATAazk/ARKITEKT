@@ -67,6 +67,37 @@ tests/      # Unit tests
 | Touch >12 files in one change | Break into smaller phases |
 | Reformat entire files | Keep diffs surgical |
 | Add features beyond request | Do exactly what was asked |
+| Override default configs | Trust framework defaults (see below) |
+
+### Config Bloat (IMPORTANT)
+
+**NEVER re-declare colors, rounding, padding, or other config values that are already framework defaults.**
+
+The framework provides sensible defaults. Scripts should NOT override them unless explicitly requested.
+
+```lua
+-- BAD: Redundant config bloat
+local config = {
+  bg_color = Theme.COLORS.BG_BASE,      -- Already the default!
+  text_color = Theme.COLORS.TEXT_NORMAL, -- Already the default!
+  rounding = 4,                          -- Already the default!
+  padding_x = 10,                        -- Already the default!
+  padding_y = 6,                         -- Already the default!
+}
+
+-- GOOD: Only override what's actually different
+local config = {
+  width = 200,  -- App-specific requirement
+}
+-- Let framework handle the rest
+```
+
+**Rule**: If a value matches the framework default, **don't specify it**. This:
+- Reduces bloat
+- Ensures consistency when defaults change
+- Makes actual customizations visible
+
+**When to override**: Only when the user explicitly asks for custom styling, or the app genuinely needs different values.
 
 ### Layer Purity Violations
 
