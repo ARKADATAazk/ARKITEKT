@@ -224,12 +224,24 @@ These modules were extracted to framework but RegionPlaylist never migrated to u
   - **Reuse potential**: Any script loading large datasets (templates, samples, items)
 
 ### Tags Service
-- [ ] **arkitekt/core/tags.lua** - Tag management
+- [ ] **arkitekt/core/tags.lua** - Tag management (CRUD)
   - Create, rename, delete tags
   - Assign/remove tags from items
   - Tag color support
   - **Found in**: TemplateBrowser (`domain/tags/service.lua`)
-  - **Reuse potential**: Any script with tagging (RegionPlaylist could use for playlist tags)
+  - **Note**: For action-chip UI design, see `TODO/TAGGING_SERVICE.md`
+
+### Action Chip Palette (High Value)
+- [ ] **arkitekt/gui/widgets/data/action_chip_palette.lua** - Interactive chip palette
+  - Superior design from `batch_rename_modal.lua`
+  - Semantic color-coding by category
+  - Click-to-insert with modifier keys (Shift, Ctrl)
+  - Right-click context menus
+  - Automatic flow layout (wrapping)
+  - Category selector (dropdown)
+  - ~200 lines to extract from 983-line modal
+  - **Reference**: `arkitekt/gui/widgets/overlays/batch_rename_modal.lua`
+  - **See**: `TODO/TAGGING_SERVICE.md` for full design
 
 ---
 
