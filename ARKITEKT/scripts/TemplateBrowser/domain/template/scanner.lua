@@ -7,6 +7,7 @@ local Logger = require('arkitekt.debug.logger')
 local Persistence = require('TemplateBrowser.data.storage')
 local FXQueue = require('TemplateBrowser.domain.fx.queue')
 local FuzzySearch = require('TemplateBrowser.domain.search.fuzzy')
+local Constants = require('TemplateBrowser.defs.constants')
 
 -- Scan state for incremental scanning
 local scan_state = {
@@ -190,7 +191,7 @@ local function scan_directory(path, relative_path, metadata)
     if not subdir then break end
 
     -- Skip .archive folder (it's managed separately)
-    if subdir ~= ".archive" then
+    if subdir ~= Constants.FOLDERS.ARCHIVE then
       local new_relative = relative_path ~= "" and (relative_path .. sep .. subdir) or subdir
       local sub_path = path .. subdir .. sep
 
@@ -623,7 +624,7 @@ function M.scan_init(state)
       local subdir = reaper.EnumerateSubdirectories(path, idx)
       if not subdir then break end
 
-      if subdir ~= ".archive" then
+      if subdir ~= Constants.FOLDERS.ARCHIVE then
         local new_relative = relative_path ~= "" and (relative_path .. sep .. subdir) or subdir
         local sub_path = path .. subdir .. sep
 

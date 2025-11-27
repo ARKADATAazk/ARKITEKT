@@ -73,7 +73,7 @@ local function prepare_tree_nodes(node, metadata, all_templates)
     return virtual_children
   end
 
-  -- Build archive tree from .archive folder
+  -- Build archive tree from _Archive folder
   local function build_archive_tree()
     local archive_children = {}
     local archive_path = FileOps.get_archive_path()

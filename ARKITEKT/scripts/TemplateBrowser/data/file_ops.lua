@@ -7,6 +7,7 @@ local M = {}
 -- DEPENDENCIES
 local Logger = require('arkitekt.debug.logger')
 local PathValidation = require('arkitekt.core.path_validation')
+local Constants = require('TemplateBrowser.defs.constants')
 
 -- Get separator for current OS
 local function get_sep()
@@ -34,7 +35,7 @@ end
 local function get_archive_dir()
   local root = get_templates_root()
   local sep = get_sep()
-  local archive_path = root .. sep .. ".archive"
+  local archive_path = root .. sep .. Constants.FOLDERS.ARCHIVE
 
   -- Ensure archive directory exists
   if reaper.RecursiveCreateDirectory then
