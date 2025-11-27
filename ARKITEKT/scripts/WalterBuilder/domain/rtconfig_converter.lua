@@ -429,15 +429,22 @@ local function calculate_flow_positions(result, eval_context)
     return (a.source_line or 0) < (b.source_line or 0)
   end)
 
+  -- Helper to get scalar value (some context vars are arrays)
+  local function get_scalar(val, default)
+    if val == nil then return default end
+    if type(val) == "table" then return val[1] or default end
+    return val
+  end
+
   -- Determine starting X position
   -- Flow elements typically start after the meter section
   -- Use meter_sec variable if available, otherwise default to 50
-  local meter_sec = eval_context.meter_sec or 50
-  local tcp_padding = eval_context.tcp_padding or 7
+  local meter_sec = get_scalar(eval_context.meter_sec, 50)
+  local tcp_padding = get_scalar(eval_context.tcp_padding, 7)
   local start_x = meter_sec + tcp_padding
 
   -- Calculate Y position (flow elements are typically in main content area)
-  local element_h = eval_context.element_h or 20
+  local element_h = get_scalar(eval_context.element_h, 20)
   local flow_y = tcp_padding  -- Start below top padding
 
   -- Position flow elements sequentially
